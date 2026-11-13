@@ -185,7 +185,7 @@ def _paths() -> dict[str, Path]:
         "SOURCES": data / "sources",
         "DATASETS": data / "datasets",
         "MATERIALIZED": data / "materialized",
-        "CONFIGS": data / "configs",
+        "SYSTEMS": data / "systems",
         "RUNS": root / Path(runs_override).expanduser() if runs_override else data / "runs",
         "BASELINES": data / "baselines",
         "REFERENCES": data / "references",
@@ -211,7 +211,7 @@ DATA: Path
 SOURCES: Path
 DATASETS: Path
 MATERIALIZED: Path
-CONFIGS: Path
+SYSTEMS: Path
 RUNS: Path
 BASELINES: Path
 REFERENCES: Path
@@ -461,22 +461,38 @@ def build_info() -> dict[str, Any]:
     }
 
 
-def arm_config_files() -> list[Path]:
-    """Every arm config of the project: data/configs, and the globs `configs` in <data>/validate.json names
-    (relative to the project root), for a project that keeps its arms elsewhere (this repository's are in
-    examples/). Here, not in validate_tree, because measuring code reads it (a hypothesis's `against`) and
-    the validator is not part of what a run's code hash covers."""
+def system_now(system_id: Any) -> Any:
+    """The id a system has now, for an id a frozen record keeps (a reference's author, a judging set's arm): the
+    systems a migration renamed (data/renames.json, RFC-032 step 3) by their new id, any other as it is."""
+    from evaluation_harness import _store  # noqa: PLC0415
+
+    if not isinstance(system_id, str):
+        return system_id
+    f = _paths()["DATA"] / "renames.json"
+    try:
+        renamed = (read_json(f).get("systems") or {}) if _store.is_file(f) else {}
+    except (OSError, ValueError):
+        renamed = {}
+    return renamed.get(system_id, system_id)
+
+
+def system_files() -> list[Path]:
+    """Every system of the project (RFC-032): data/systems, a study's trials, and the globs `systems` in
+    <data>/validate.json names (relative to the project root), for a project that keeps its systems elsewhere (this
+    repository's are in examples/). Here, not in validate_tree, because measuring code reads it (a hypothesis's
+    `against`) and the validator is not part of what a run's code hash covers."""
     from evaluation_harness import _store  # noqa: PLC0415
 
     p = _paths()
-    found = set(_store.glob(p["CONFIGS"], "*.yaml"))
-    # A study's trials (RFC-029): written once under data/studies/<goal>/<study>/, found like any config.
+    found = (
+        set(_store.glob(p["DATA"] / "systems", "*.yaml")) if _store.is_dir(p["DATA"] / "systems") else set()
+    )
     studies = p["DATA"] / "studies"
     if _store.is_dir(studies):
-        found |= {f for f in _store.glob(studies, "*/*/t*.yaml") if _store.is_file(f)}
+        found |= {f for f in _store.glob(studies, "*/*/*-t*.yaml") if _store.is_file(f)}
         found |= {f for f in _store.glob(studies, "*/*/confirm/*.yaml") if _store.is_file(f)}
     policy_file = p["DATA"] / "validate.json"
-    for pattern in (read_json(policy_file).get("configs") or []) if _store.is_file(policy_file) else []:
+    for pattern in (read_json(policy_file).get("systems") or []) if _store.is_file(policy_file) else []:
         found |= {f for f in _store.glob(p["ROOT"], pattern) if _store.is_file(f)}
     return sorted(found)
 

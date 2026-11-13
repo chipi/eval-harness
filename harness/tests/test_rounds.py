@@ -23,7 +23,7 @@ HERE = Path(__file__).resolve().parents[1] / "scripts"  # the core modules (this
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tests/
 KIT = HERE.parent / "tutorial"
-from evaluation_harness import _common  # noqa: E402
+from evaluation_harness import _common, _format  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
@@ -47,7 +47,8 @@ def out(r):
 
 try:
     data = proj / "data"
-    (data / "configs").mkdir(parents=True)
+    (data / "systems").mkdir(parents=True)
+    _runstore.write_text(proj, _format.NAME, f"format: {_format.FORMAT}\n")
     (data / "goals").mkdir()
     shutil.copytree(KIT / "tickets", proj / "tutorial" / "tickets")
     _runstore.write_text(
@@ -86,9 +87,9 @@ try:
     check("setup: the kit's gold, imported and promoted", r.returncode == 0, (r.stdout + r.stderr)[-300:])
     for arm in ("lead1", "lead2"):
         _runstore.write_text(
-            proj, f"configs/tickets_{arm}.yaml", (KIT / "configs" / f"tickets_{arm}.yaml").read_text()
+            proj, f"systems/tickets_{arm}_v1.yaml", (KIT / "systems" / f"tickets_{arm}_v1.yaml").read_text()
         )
-        evh("run", "--config", f"data/configs/tickets_{arm}.yaml")
+        evh("run", "--system", f"tickets_{arm}_v1", "--dataset", "tickets_v1")
 
     r = evh("rounds", "--goal", "tickets_summary")
     check(
@@ -109,15 +110,25 @@ try:
         out(r),
     )
 
-    cfg = (KIT / "configs" / "tickets_author.yaml").read_text()
-    _runstore.write_text(proj, "configs/author.yaml", cfg + "goal: tickets_summary\nround: r1\n")
-    r = evh("run", "--config", "data/configs/author.yaml")
+    cfg = (KIT / "systems" / "tickets_author_v1.yaml").read_text()
+    _runstore.write_text(proj, "systems/tickets_author_v1.yaml", cfg)
+    r = evh(
+        "run",
+        "--system",
+        "tickets_author_v1",
+        "--dataset",
+        "tickets_v1",
+        "--goal",
+        "tickets_summary",
+        "--round",
+        "r1",
+    )
     run = next(
         (data / "runs" / n for n in _runstore.listdir(proj, "runs") if n.startswith("tickets_author_v1_")),
         None,
     )
     check(
-        "a config naming the round runs in it, and the run records the round",
+        "a run naming the round runs in it, and the run records the round",
         r.returncode == 0
         and run is not None
         and _runstore.read_json(proj, f"runs/{run.name}/metrics.json").get("round") == "r1",
@@ -278,7 +289,18 @@ try:
         and _runstore.read_json(proj, base)["reason"].startswith("three sentences lead"),
         out(r)[-300:],
     )
-    r = evh("run", "--config", "data/configs/author.yaml", "--dry-run")
+    r = evh(
+        "run",
+        "--system",
+        "tickets_author_v1",
+        "--dataset",
+        "tickets_v1",
+        "--goal",
+        "tickets_summary",
+        "--round",
+        "r1",
+        "--dry-run",
+    )
     check("a closed round refuses new runs", r.returncode != 0 and "is closed" in out(r), out(r)[-300:])
 
     r = evh(
@@ -389,8 +411,17 @@ try:
         "harness:" in doc3 and "code_sha256:" in doc3 and "On harness " in r.stdout,
         out(r) + doc3,
     )
-    _runstore.write_text(proj, "configs/author3.yaml", cfg + "goal: tickets_summary\nround: r3\n")
-    evh("run", "--config", "data/configs/author3.yaml")
+    evh(
+        "run",
+        "--system",
+        "tickets_author_v1",
+        "--dataset",
+        "tickets_v1",
+        "--goal",
+        "tickets_summary",
+        "--round",
+        "r3",
+    )
     r3run = next(
         (n for n in _runstore.listdir(proj, "runs") if n.startswith("tickets_author_v1_")
          and _runstore.read_json(proj, f"runs/{n}/metrics.json").get("round") == "r3"),
@@ -459,7 +490,7 @@ try:
     )
 
     # The fleet's feedback 33: k runs of a deterministic arm are near-copies, not k samples.
-    r = evh("run", "--config", "data/configs/tickets_lead1.yaml", "--repeat", "2")
+    r = evh("run", "--system", "tickets_lead1_v1", "--dataset", "tickets_v1", "--repeat", "2")
     check(
         "run --repeat: the summary says how many items every repeat scored the same, and items, not item-runs",
         r.returncode == 0

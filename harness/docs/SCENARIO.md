@@ -119,11 +119,11 @@ warnings in the adapter as tutorial 1's does, so the run's output is the harness
 ## 4 · Measure
 
 ```bash
-git add -A && git commit -qm "datasets, gold, goals, adapters, arms"
-evh run --config data/configs/briefs_mistral_small.yaml --dry-run    # price it first
-evh arm-smoke --config data/configs/briefs_mistral_small.yaml        # a few items, before the full run; prints "spent $…"
-evh run --config data/configs/<arm>.yaml                              # every arm
-evh run --config data/configs/<hosted arm>.yaml --repeat 3            # the noise floor; prints "spent $…"
+git add -A && git commit -qm "datasets, gold, goals, adapters, systems"
+evh run --system briefs_mistral_small_v1 --dataset briefs_v1 --goal brief_summary --dry-run   # price it first
+evh arm-smoke --system briefs_mistral_small_v1 --dataset briefs_v1   # a few items, before the full run; prints "spent $…"
+evh run --system <id> --dataset briefs_v1 --goal brief_summary       # every system
+evh run --system <hosted id> --dataset briefs_v1 --goal brief_summary --repeat 3   # the noise floor; prints "spent $…"
 evh leaderboard --dataset-id briefs_v1
 evh family-test --dataset-id briefs_v1 --a briefs_mistral_small_v1 --against briefs_ --metric rouge_l
 ```
@@ -225,9 +225,9 @@ evh round-open --goal brief_summary --dataset briefs_v1 --from r1 \
     --change "briefs_mistral_small_v2: the prompt asks for the news and its key facts, at most 25 words" \
     --keep briefs_mistral_small_v1,briefs_opus_v1 \
     --retire briefs_lead1_v1 --reason "<why it is dropped>" --budget-usd 0.05
-# data/configs/briefs_mistral_small_v2.yaml: the new prompt, a new config_id, and `round: r2` beside `goal:`
+# data/systems/briefs_mistral_small_v2.yaml: the new prompt, a new system_id
 git add -A && git commit -qm "brief_summary r2: open; mistral-small v2"
-evh run --config data/configs/briefs_mistral_small_v2.yaml --repeat 3
+evh run --system briefs_mistral_small_v2 --dataset briefs_v1 --goal brief_summary --round r2 --repeat 3
 git add data/runs && git commit -qm "brief_summary r2: runs"
 evh rounds --goal brief_summary                    # r2 against r1's best, the baseline, the budget
 evh inspect --round r2 --goal brief_summary --baseline briefs_mistral_small_v1
@@ -235,7 +235,7 @@ evh leaderboard --dataset-id briefs_v1 --round r2
 evh catalog && evh catalog-serve                   # screenshot the goal page's rounds now: r2's suggestions show only while it is open
 evh round-close --goal brief_summary --round r2 --conclusion "<what r2 showed>" [--promote <run_id>]
 git add data/rounds data/baselines && git commit -qm "brief_summary r2: closed"
-evh run --config data/configs/briefs_mistral_small_v2.yaml --dry-run   # refused: r2 is closed
+evh run --system briefs_mistral_small_v2 --dataset briefs_v1 --goal brief_summary --round r2 --dry-run   # refused: r2 is closed
 ```
 
 `--promote` only if r2 chose a new baseline; it then records the conclusion as the reason.

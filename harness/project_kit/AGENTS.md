@@ -20,17 +20,19 @@ The procedures are skills: `evh skills-install` copies them into `.claude/skills
 1. **Frozen means frozen.** Never edit or delete anything under `data/datasets/`, `data/runs*/`,
    `data/labels/`, `data/references/` or `data/baselines/`. A change is a new id: a dataset
    `_v2`, a new label set, a new reference.
-2. **One change, one new `config_id`.** An arm is a config in `data/configs/`. To try a change
-   (a prompt, a model, a setting), copy the config and give it a new `config_id`; never edit a
-   config that has runs. Running the same config again is `evh run --repeat N`, a deliberate
-   repeat; any other second run of a `config_id` fails `evh validate` (V8).
+2. **One change, one new `system_id`.** A system is a file in `data/systems/`, named by its
+   `system_id`; a run puts it on a dataset (`evh run --system S --dataset D`). To try a change (a
+   prompt, a model, a setting), copy the system and give it a new `system_id`; never edit a system
+   that has runs. Running the same system again is `evh run --repeat N`, a deliberate repeat; any
+   other second run of a system on the same dataset fails `evh validate` (V8).
 3. **Commit before you run.** A run records the commit it was made from; a run from a dirty tree
    is refused later (`label-from-run`, `run-promote`). Commit `data/` as the harness writes it,
    runs included: they are the evidence. `.gitignore` already keeps out what is derived.
 4. **Spending is capped, and checked first.** Before any run that calls a paid model, set
-   `EVAL_MAX_COST_USD` (with none, a run has no cap). `evh run --config C --dry-run` estimates one
-   call per item and is not an upper bound: an arm that makes several calls per item costs more.
-   Run `evh arm-smoke --config C` (a few items), read the replies, and set the cap from the
+   `EVAL_MAX_COST_USD` (with none, a run has no cap). `evh run --system S --dataset D --dry-run`
+   estimates one call per item and is not an upper bound: a system that makes several calls per item
+   costs more. Run `evh arm-smoke --system S --dataset D` (a few items), read the replies, and set the
+   cap from the
    measured cost it records (the dry run then shows it as `MEASURED`) before the full run.
 5. **What you may do** (the owner's rule for agents, 2026-11-04): run arms, make labels and
    references, and promote a baseline **when your operator asked for that task**, within the
@@ -47,7 +49,7 @@ The procedures are skills: `evh skills-install` copies them into `.claude/skills
 7. **Validate, then report with evidence.** `evh validate` checks the whole tree. A claim that
    one arm is better cites the paired test that says so (`evh pair-test`, `evh goals`), not a
    mean.
-8. **Name the comparison before the run.** Write a `hypothesis:` into the new arm's config
+8. **Name the comparison before the run.** Write a `hypothesis:` into the new system
    (`against`, `measure`, `direction`, `statement`) and commit it before `evh run`. `evh pair-test`
    then reports "named in advance: yes"; a pair you chose after reading the table is a search, and
    `evh family-test` is its test.
@@ -63,26 +65,26 @@ evh dataset-materialize --dataset-id prod_v1
 # what is right for each item: a person's labels (gold), production's outcomes, or yours (model)
 evh label-from-capture --dataset-id prod_v1 --capture prod_c1 --map rules.yaml --set outcomes
 evh reference-promote --dataset-id prod_v1 --labels outcomes --tier silver --reason "..." --by "<who>"
-# arms: one config per version of your system (data/configs/*.yaml), your adapter if it is yours
-git add -A && git commit -m "dataset, reference, arms"
-evh run --config data/configs/<arm>.yaml --dry-run
-evh arm-smoke --config data/configs/<arm>.yaml
-evh run --config data/configs/<arm>.yaml        # prints the run id it wrote
+# systems: one per version of what you evaluate (data/systems/<system_id>.yaml), your adapter if it is yours
+git add -A && git commit -m "dataset, reference, systems"
+evh run --system <system_id> --dataset prod_v1 --dry-run
+evh arm-smoke --system <system_id> --dataset prod_v1
+evh run --system <system_id> --dataset prod_v1  # prints the run id it wrote
 git add -A && git commit -m "runs"
 # compare and decide
 evh leaderboard --dataset-id prod_v1 --json
-evh pair-test --dataset-id prod_v1 --a <new_config_id> --b <baseline_config_id> --json
+evh pair-test --dataset-id prod_v1 --a <new_system_id> --b <baseline_system_id> --json
 evh run-promote --run <run_id> --reason "<who asked>: <why>"
 ```
 
-A goal (`data/goals/<goal_id>.yaml`) says what the evaluation is for and which measure decides;
-with one, `evh goals --goal <goal_id> --json` gives the leader, the baseline, the paired test
+A goal (`data/goals/<goal_id>.yaml`) says what the evaluation is for and which measure decides; a
+run names it (`evh run ... --goal <goal_id>`), and `evh goals --goal <goal_id> --json` gives the leader, the baseline, the paired test
 and what the goal recommends, in one answer.
 
 Rounds are optional: a round is one line of investigation of a goal, with its hypothesis, its arms,
 the ones retired and a conclusion (`evh round-open`, `evh round-retire`, `evh rounds --goal G --json`
-for what the evidence suggests next). Open the round **before** its arms run: a new arm names it in
-its config (`round: rN`); an arm already run joins only through `round-open --keep CONFIG_ID`.
+for what the evidence suggests next). Open the round **before** its systems run: a new one runs in it
+(`evh run ... --goal G --round rN`); one already run joins only through `round-open --keep SYSTEM_ID`.
 Closing it is your operator's (rule 5).
 
 ## Reading results
@@ -92,7 +94,7 @@ Closing it is your operator's (rule 5).
 | what is in the project | `evh overview --json`, `evh datasets --json`, `evh arms --json` |
 | which arm leads, and is it significant | `evh goals --goal G --json`; `evh leaderboard --dataset-id D --json` |
 | is A better than B | `evh pair-test --dataset-id D --a A --b B --json` |
-| one arm against several, corrected | `evh family-test --dataset-id D --a A --against B,C --json` (`--against`: a comma list of config ids, or one substring) |
+| one arm against several, corrected | `evh family-test --dataset-id D --a A --against B,C --json` (`--against`: a comma list of system ids, or one substring) |
 | where two arms differ, item by item | `evh inspect --runs A,B --json` |
 | what two runs did differently | `evh run-compare --baseline RUN_A --candidate RUN_B --json` |
 | is the tree consistent | `evh validate` |

@@ -117,8 +117,8 @@ def main() -> int:
             "2",
         )
         setup("dataset-materialize", "--dataset-id", "tickets_v1")
-        for f in sorted((proj / "tutorial/configs").glob("tickets_*.yaml")):
-            put(proj, f"configs/{f.name}", f.read_bytes())
+        for f in sorted((proj / "tutorial/systems").glob("tickets_*.yaml")):
+            put(proj, f"systems/{f.name}", f.read_bytes())
         setup(
             "label-import",
             "tutorial/gold",
@@ -146,7 +146,7 @@ def main() -> int:
         for f in sorted((proj / "tutorial/gold").glob("*.txt"))[:2]:
             put(proj, f"references/gold/tickets_pilot_v1/{f.name}", f.read_bytes())
         for arm in ("lead1", "lead2", "lead2_noisy", "author"):
-            setup("run", "--config", f"data/configs/tickets_{arm}.yaml", "--repeat", "2")
+            setup("run", "--system", f"tickets_{arm}_v1", "--dataset", "tickets_v1", "--repeat", "2")
         for f in sorted((proj / "tutorial/scorers").rglob("*")):
             if f.is_file():
                 put(proj, f"scorers/{f.relative_to(proj / 'tutorial/scorers').as_posix()}", f.read_bytes())
@@ -196,13 +196,15 @@ def main() -> int:
                 ],
                 "ok:2 item(s), gold, promoted from person",
             ),
-            ("run", ["--config", "data/configs/tickets_lead1.yaml", "--dry-run"], "ok"),
+            ("run", ["--system", "tickets_lead1_v1", "--dataset", "tickets_v1", "--dry-run"], "ok"),
             (
                 "sweep",
                 [
-                    "--configs",
-                    "data/configs/tickets_lead1.yaml",
-                    "data/configs/tickets_lead2.yaml",
+                    "--systems",
+                    "tickets_lead1_v1",
+                    "tickets_lead2_v1",
+                    "--dataset",
+                    "tickets_v1",
                     "--dry-run",
                 ],
                 "ok",
@@ -289,7 +291,7 @@ def main() -> int:
             ("dataset-split", ["tickets_v1", "--test", "0.5", "--seed", "3"], "ok:tickets_v1_test"),
             (
                 "dataset-unseal",
-                ["tickets_v1_test", "--config", "nope_v1", "--reason", "only to read the arguments"],
+                ["tickets_v1_test", "--system", "nope_v1", "--reason", "only to read the arguments"],
                 "is not sealed",
             ),
             ("baselines", [], "ok:no baselines yet"),
@@ -362,7 +364,7 @@ def main() -> int:
             ),
             ("label-from-run", ["--run", "no_such_run", "--set", "installed_v1"], "no finished run"),
             ("picks", [], "ok:No picks waiting"),
-            ("deploy-sheet", ["--config", "no_such_v1"], "no run of that config"),
+            ("deploy-sheet", ["--system", "no_such_v1"], "no run of that system"),
             ("pick", ["--dataset-id", "tickets_v1", "--item", "no_such_item"], "not in tickets_v1"),
             ("dataset-extend", ["tickets_v1", "--dataset-id", "tickets_v9", "--picks"], "no pick is waiting"),
             (
@@ -438,6 +440,14 @@ def main() -> int:
             ("goals", [], "ok"),
             # The goal through the model (RFC-032 step 1): the flow is test_model_goals.py.
             ("goal-list", [], "ok"),
+            # The system through the model (RFC-032 step 3): installed, each answers in words.
+            ("prompt-list", [], "ok:no prompt versions yet"),
+            ("prompt-show", ["--name", "no/such"], "no prompt 'no/such'"),
+            ("system-list", [], "ok:tickets_lead1_v1"),
+            ("system-show", ["tickets_lead1_v1"], "ok:tickets_lead1_v1"),
+            ("system-show", ["no_such_v1"], "no system 'no_such_v1'"),
+            ("system-new", ["tickets_lead1_v1"], "system 'tickets_lead1_v1' exists"),
+            ("system-set", ["no_such_v1", "--set", "params.a=1"], "no system 'no_such_v1'"),
             ("goal-show", ["no_such_goal"], "no goal 'no_such_goal'"),
             ("goal-status", ["no_such_goal"], "no goal 'no_such_goal'"),
             ("goal-history", ["no_such_goal"], "no goal 'no_such_goal'"),
@@ -465,7 +475,7 @@ def main() -> int:
             # test_model_onboard.py, test_arm_smoke.py and test_catalog_models.py.
             ("models", [], "ok:no model records"),
             ("model-onboard", ["no_such_model"], "no model record 'no_such_model'"),
-            ("arm-smoke", ["--config", "no_such.yaml"], "no config at no_such.yaml"),
+            ("arm-smoke", ["--system", "no_such_v1", "--dataset", "tickets_v1"], "no system 'no_such_v1'"),
             # Scoring that evolves (RFC-022): the flow is test_scoring_evolves.py.
             ("score-preview", ["--goal", "no_such_goal"], "no goal 'no_such_goal'"),
             ("search", ["lead2"], "ok:evh inspect --runs runs/tickets_v1/tickets_lead2_v1"),
@@ -498,8 +508,8 @@ def main() -> int:
             ("periods", ["--model", "no_such"], "no model record 'no_such'"),
             (
                 "period-compare",
-                ["--config", "no.yaml", "--candidate", "x", "--period", "1"],
-                "no config at no.yaml",
+                ["--system", "no_v1", "--dataset", "tickets_v1", "--candidate", "x", "--period", "1"],
+                "no system 'no_v1'",
             ),
             (
                 "label-mutants",
@@ -534,7 +544,11 @@ def main() -> int:
             ("prompt-version", ["bad name!", "--text", "x", "--note", "n"], "prompt name"),
             ("prompt-export", ["a/0123456789abcdef", "--to", "x.txt"], "no prompt version"),
             # Replay and faithfulness (RFC-030): installed, each answers in words; the flow is test_replay.py.
-            ("faithfulness", ["--config", "no_such.yaml", "--production", "x"], "no config at no_such.yaml"),
+            (
+                "faithfulness",
+                ["--system", "no_such_v1", "--dataset", "tickets_v1", "--production", "x"],
+                "no system 'no_such_v1'",
+            ),
             (
                 "faithfulness-name",
                 ["--model", "no_such", "--item", "x", "--cause", "c"],
@@ -712,9 +726,19 @@ def main() -> int:
             )
         # `evh run` names the runs it wrote, and with --json says so as data, its progress on stderr.
         env_ids = {**env, "EVAL_RUNS_DIR": str(proj / "data" / "runs-smoke-ids")}
-        cfg1 = str(proj / "data/configs/tickets_lead1.yaml")
         r = subprocess.run(
-            [sys.executable, "-m", "evaluation_harness", "run", "--config", cfg1, "--run-id", "ids_probe"],
+            [
+                sys.executable,
+                "-m",
+                "evaluation_harness",
+                "run",
+                "--system",
+                "tickets_lead1_v1",
+                "--dataset",
+                "tickets_v1",
+                "--run-id",
+                "ids_probe",
+            ],
             cwd=proj,
             env=env_ids,
             capture_output=True,
@@ -736,8 +760,10 @@ def main() -> int:
                 "-m",
                 "evaluation_harness",
                 "run",
-                "--config",
-                cfg1,
+                "--system",
+                "tickets_lead1_v1",
+                "--dataset",
+                "tickets_v1",
                 "--run-id",
                 "ids_json",
                 "--json",

@@ -41,7 +41,7 @@ COPIED_DIRS = (
     "goals",
     "baselines",
     "rounds",
-    "configs",
+    "systems",
     "scorers",
     "judging-sets",
     "judge-verdicts",
@@ -53,7 +53,8 @@ COPIED_DIRS = (
     "tags",
     "failure-modes",
 )
-COPIED_FILES: tuple[str, ...] = ("project.yaml",)  # the data's format (RFC-032): the deploy checks it
+#: The data's format (RFC-032): the deploy checks it; the systems a migration renamed: the catalog redirects them.
+COPIED_FILES: tuple[str, ...] = ("project.yaml", "renames.json")
 #: What a hidden dataset's prediction rows keep of `_meta`: what describes the call (its cost, model,
 #: finish), never what the system answered or the parser made of it (`predicted`, `llm_raw`, ...).
 CALL_META = (

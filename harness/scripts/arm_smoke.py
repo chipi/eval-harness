@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Smoke an arm before its full run (RFC-020): a few items, the way evh run would run them.
+"""Smoke a system on a dataset before its full run (RFC-020): a few items, the way evh run would run them.
 
-    evh arm-smoke --config configs/<arm>.yaml [--items 3] [--replies] [--json]
+    evh arm-smoke --system <id> --dataset <id> [--items 3] [--replies] [--json]
 
 Writes no run. For any arm (an LLM, an ML model, a baseline) it checks, from what every run already
 produces: that each item runs and its output is valid for the scorer; the time per item and a projection
@@ -30,7 +30,6 @@ import argparse
 import statistics
 import sys
 import time
-from pathlib import Path
 from typing import Any
 
 from evaluation_harness import _common, _jsonout, _models, _store
@@ -200,7 +199,12 @@ def projection(items: list[dict[str, Any]], n_items: int) -> dict[str, Any]:
 def main() -> int:
     """Smoke one arm; exit 0 on SMOKE PASS, 6 (EXIT_PROBLEMS) on SMOKE CHECK."""
     ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.split("\n\n")[0])
-    ap.add_argument("--config", type=Path, required=True)
+    ap.add_argument("--system", required=True, help="the system to smoke: its id (evh system-list)")
+    ap.add_argument("--dataset", required=True, help="the dataset whose first items it runs")
+    ap.add_argument("--goal", help="the goal its full run is for")
+    ap.add_argument(
+        "--round", help="the round its full run is in: the smoke spends on the round (needs --goal)"
+    )
     ap.add_argument("--items", type=int, default=3, help="how many of the dataset's first items (default 3)")
     ap.add_argument("--no-record", action="store_true", help="do not write the report into the model record")
     ap.add_argument(
@@ -223,11 +227,9 @@ def main() -> int:
 
 
 def _smoke(args: argparse.Namespace) -> int:
-    if not _store.is_file(args.config):
-        die(f"no config at {args.config}", "not-found")
-    import yaml  # noqa: PLC0415
+    from evaluation_harness.model.systems import arm_of  # noqa: PLC0415
 
-    cfg = yaml.safe_load(_store.read_text(args.config, encoding="utf-8")) or {}
+    cfg, args.config = arm_of(args.system, args.dataset, args.goal, args.round)
     try:
         cfg = _models.resolve(cfg, DATA)
     except ValueError as exc:
@@ -401,7 +403,10 @@ def _smoke(args: argparse.Namespace) -> int:
         dep_id = cfg.get("deployment") or (deps[0]["id"] if len(deps) == 1 else None)
         if dep_id:
             _models.add_check(
-                DATA, cfg["model_record"], dep_id, {"kind": "smoke", "config": cfg["config_id"], **smoke}
+                DATA,
+                cfg["model_record"],
+                dep_id,
+                {"kind": "smoke", "system": cfg["config_id"], "dataset": cfg["dataset_id"], **smoke},
             )
             path = _models.deployments_dir(DATA, cfg["model_record"]) / f"{dep_id}.yaml"
             print(f"  written into {path.relative_to(DATA.parent) if DATA.parent in path.parents else path}")

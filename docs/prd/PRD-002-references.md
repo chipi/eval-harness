@@ -151,7 +151,7 @@ against the books in [LABELS_ANALYSIS_0.6.0](https://github.com/chipi/eval-harne
 
 ### FR6: Scoring against labels (0.6.0)
 
-- **FR6.1**: `evh rescore --dataset-id D --labels SET` and `evh run --config C --labels SET` score against
+- **FR6.1**: `evh rescore --dataset-id D --labels SET` and `evh run --system S --dataset D --labels SET` score against
   a label set of the run's own dataset without promoting it (a set on another dataset is refused: promote it, or
   label this one). The run records `reference_id: labels/<dataset>/<set>` and `reference_tier: labels`, and its
   fingerprint hashes the set's files. A run scored against a set, measured or re-scored, is written beside the

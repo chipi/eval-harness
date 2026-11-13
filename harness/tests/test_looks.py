@@ -28,6 +28,7 @@ from evaluation_harness._check import check, summary  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
 import _runstore  # noqa: E402
+from evaluation_harness import _format  # noqa: E402
 
 check(
     "levels: look k at 2.5%·6/(π²k²): 1.52%, 0.38%, 0.17%; the series sums to 2.5%",
@@ -82,14 +83,14 @@ def git(*args):
                           capture_output=True, text=True, check=False)  # fmt: skip
 
 
-def config(name, sentences, against=None):
-    text = f"config_id: {name}\ndataset_id: tk_v1_test\nparams:\n  provider: echo\n  sentences: {sentences}\n"
+def system(name, sentences, against=None):
+    text = f"system_id: {name}\nparams:\n  provider: echo\n  sentences: {sentences}\n"
     if against:
         text += (
             f"hypothesis:\n  against: {against}\n  measure: overlap_f1\n  direction: better\n"
             f"  statement: {name} summarises better than {against}\n"
         )
-    _runstore.write_text(proj, f"configs/{name}.yaml", text)
+    _runstore.write_text(proj, f"systems/{name}.yaml", text)
 
 
 def commit(msg):
@@ -109,7 +110,8 @@ def looks_of():
 
 
 try:
-    (proj / "data" / "configs").mkdir(parents=True)
+    (proj / "data" / "systems").mkdir(parents=True)
+    _runstore.write_text(proj, _format.NAME, f"format: {_format.FORMAT}\n")
     shutil.copytree(KIT / "tickets", proj / "tickets")
     git("init", "-q")
     (proj / ".gitignore").write_text(
@@ -130,25 +132,25 @@ try:
     for ds in ("tk_v1_validation", "tk_v1_test"):
         r = r if r.returncode else evh("dataset-materialize", "--dataset-id", ds)
     check("setup: a split whose test side is sealed", r.returncode == 0, (r.stdout + r.stderr)[-400:])
-    config("base_v1", 1)
-    config("cand_v1", 2, against="base_v1")
-    config("cand2_v1", 3, against="base_v1")
-    config("cand3_v1", 4, against="base_v1")
+    system("base_v1", 1)
+    system("cand_v1", 2, against="base_v1")
+    system("cand2_v1", 3, against="base_v1")
+    system("cand3_v1", 4, against="base_v1")
     git("add", "-A")
-    git("commit", "-qm", "configs with their hypotheses")
+    git("commit", "-qm", "systems with their hypotheses")
 
     u1 = evh(
-        "dataset-unseal", "tk_v1_test", "--config", "cand_v1", "--reason", "the two-sentence arm, frozen now"
+        "dataset-unseal", "tk_v1_test", "--system", "cand_v1", "--reason", "the two-sentence arm, frozen now"
     )
     commit("unsealed for cand_v1")
     u1b = evh(
-        "dataset-unseal", "tk_v1_test", "--config", "cand_v1", "--reason", "the same question asked again"
+        "dataset-unseal", "tk_v1_test", "--system", "cand_v1", "--reason", "the same question asked again"
     )
     commit("again")
     u2 = evh(
         "dataset-unseal",
         "tk_v1_test",
-        "--config",
+        "--system",
         "cand2_v1",
         "--reason",
         "the three-sentence arm, frozen now",
@@ -175,14 +177,14 @@ try:
     )
     commit("the goal")
     refused = evh(
-        "dataset-unseal", "tk_v1_test", "--config", "cand3_v1", "--reason", "a third arm, past the limit"
+        "dataset-unseal", "tk_v1_test", "--system", "cand3_v1", "--reason", "a third arm, past the limit"
     )
     agent = evh(
-        "dataset-unseal", "tk_v1_test", "--config", "cand3_v1", "--reason", "a third arm, past the limit",
+        "dataset-unseal", "tk_v1_test", "--system", "cand3_v1", "--reason", "a third arm, past the limit",
         "--confirm-extra-look", extra={"EVH_ACTOR": "agent:helper", "EVH_FOR": "person:test"},
     )  # fmt: skip
     person = evh(
-        "dataset-unseal", "tk_v1_test", "--config", "cand3_v1", "--reason", "a third arm, past the limit",
+        "dataset-unseal", "tk_v1_test", "--system", "cand3_v1", "--reason", "a third arm, past the limit",
         "--confirm-extra-look",
     )  # fmt: skip
     check(
@@ -207,8 +209,8 @@ try:
         "--reason", "the kit's summaries, for the test side", "--by", "t",
     )  # fmt: skip
     check("setup: the test side's gold", g.returncode == 0, (g.stdout + g.stderr)[-400:])
-    r1 = evh("run", "--config", "data/configs/base_v1.yaml")
-    r2 = evh("run", "--config", "data/configs/cand_v1.yaml")
+    r1 = evh("run", "--system", "base_v1", "--dataset", "tk_v1_test")
+    r2 = evh("run", "--system", "cand_v1", "--dataset", "tk_v1_test")
     pt = evh("pair-test", "--dataset-id", "tk_v1_test", "--a", "cand_v1", "--b", "base_v1")
     check(
         "pair-test on a test set: 'nominal, not a look', and the next look's level",

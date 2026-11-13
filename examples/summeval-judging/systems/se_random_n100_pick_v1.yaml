@@ -1,0 +1,9 @@
+# The floor for a pick judge: a seeded random pick; its score is the validation's min_metric.
+system_id: se_random_n100_pick_v1
+adapter: ../adapter.py
+params:
+  provider: random
+  seed: 20261015
+  family: baseline
+  price_tier: free
+  mode: pick

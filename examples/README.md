@@ -202,8 +202,8 @@ uv run fetch.py --n <N>
 cd ../../harness
 make dataset-create DATASET_ID=<id> ARGS='--source-dir data/sources/<id>'
 make dataset-materialize DATASET_ID=<id>
-for f in ../examples/<name>/configs/arm_*_n200.yaml; do
-  ../examples/<name>/.venv/bin/python scripts/run.py --config "$f"
+for s in ../examples/<name>/systems/*.yaml; do
+  ../examples/<name>/.venv/bin/python scripts/run.py --system "$(basename "$s" .yaml)" --dataset <id> --goal <goal>
 done
 ```
 

@@ -87,7 +87,16 @@ try:
         r = evh(*argv)
         if r.returncode:
             break
-    prod = evh("run", "--config", "data/configs/filing_production_v1.yaml", "--json")
+    prod = evh(
+        "run",
+        "--system",
+        "filing_production_v1",
+        "--dataset",
+        "filing_history_v1",
+        "--goal",
+        "filing",
+        "--json",
+    )
     prod_id = run_id(prod)
     check(
         "setup: the example's history, its dataset, gold, and production's recorded arm",
@@ -98,12 +107,12 @@ try:
         sys.exit(summary())
 
     bad = (
-        _runstore.read_text(proj, "configs/filing_replay_hidden_v1.yaml")
-        .replace("config_id: filing_replay_hidden_v1", "config_id: filing_bad_hide_v1")
+        _runstore.read_text(proj, "systems/filing_replay_hidden_v1.yaml")
+        .replace("system_id: filing_replay_hidden_v1", "system_id: filing_bad_hide_v1")
         .replace("hide: {kinds: [reopened]}", "hide: {kinds: [], window: always}")
     )
-    _runstore.write_text(proj, "configs/filing_bad_hide_v1.yaml", bad)
-    r = evh("run", "--config", "data/configs/filing_bad_hide_v1.yaml")
+    _runstore.write_text(proj, "systems/filing_bad_hide_v1.yaml", bad)
+    r = evh("run", "--system", "filing_bad_hide_v1", "--dataset", "filing_history_v1", "--goal", "filing")
     check(
         "a malformed replay.hide is refused, saying its shape",
         r.returncode != 0 and "replay.hide is" in said(r),
@@ -111,9 +120,18 @@ try:
     )
 
     f0 = evh(
-        "faithfulness", "--config", "data/configs/filing_replay_v1.yaml", "--production", prod_id, "--json"
+        "faithfulness",
+        "--system",
+        "filing_replay_v1",
+        "--dataset",
+        "filing_history_v1",
+        "--production",
+        prod_id,
+        "--json",
     )
-    r = evh("run", "--config", "data/configs/filing_replay_hidden_v1.yaml")
+    r = evh(
+        "run", "--system", "filing_replay_hidden_v1", "--dataset", "filing_history_v1", "--goal", "filing"
+    )
     check(
         "the hiding is part of the adapter's identity: the record made without it does not let the hidden replay be scored",
         f0.returncode == 0
@@ -124,8 +142,10 @@ try:
     )
     f1 = evh(
         "faithfulness",
-        "--config",
-        "data/configs/filing_replay_hidden_v1.yaml",
+        "--system",
+        "filing_replay_hidden_v1",
+        "--dataset",
+        "filing_history_v1",
         "--production",
         prod_id,
         "--json",
@@ -136,7 +156,16 @@ try:
         f1.returncode == 0 and (rec.get("counts") or {}).get("agree") == 20 and not rec.get("disagreements"),
         said(f1)[-600:],
     )
-    hid = evh("run", "--config", "data/configs/filing_replay_hidden_v1.yaml", "--json")
+    hid = evh(
+        "run",
+        "--system",
+        "filing_replay_hidden_v1",
+        "--dataset",
+        "filing_history_v1",
+        "--goal",
+        "filing",
+        "--json",
+    )
     mh = _runstore.read_json(proj, f"runs/{run_id(hid)}/metrics.json") if run_id(hid) else {}
     check(
         "the hidden replay is scored once its record exists; the default variant meets no confound (0 of 20)",
@@ -145,7 +174,16 @@ try:
         and mh.get("history_confound") == {"items": 0, "of": 20},
         said(hid)[-500:] + json.dumps(mh.get("history_confound")),
     )
-    cand = evh("run", "--config", "data/configs/filing_candidate_v3_hidden.yaml", "--json")
+    cand = evh(
+        "run",
+        "--system",
+        "filing_candidate_v3_hidden",
+        "--dataset",
+        "filing_history_v1",
+        "--goal",
+        "filing",
+        "--json",
+    )
     cid = run_id(cand)
     mc = _runstore.read_json(proj, f"runs/{cid}/metrics.json") if cid else {}
     hc = mc.get("history_confound") or {}
@@ -187,7 +225,14 @@ try:
 
     # ── P2: a past period at its own code, beside the candidate ───────────────────────────────────────────────────
     per = evh(
-        "periods", "--model", "toy_filing", "--config", "data/configs/filing_replay_hidden_v1.yaml", "--json"
+        "periods",
+        "--model",
+        "toy_filing",
+        "--system",
+        "filing_replay_hidden_v1",
+        "--dataset",
+        "filing_history_v1",
+        "--json",
     )
     ps = values(per).get("periods") or []
     check(
@@ -209,8 +254,10 @@ try:
     ]
     pc = evh(
         *PC,
-        "--config",
-        "data/configs/filing_replay_hidden_v1.yaml",
+        "--system",
+        "filing_replay_hidden_v1",
+        "--dataset",
+        "filing_history_v1",
         "--candidate",
         "filing_candidate_v3_hidden",
     )
@@ -238,17 +285,19 @@ try:
     prod_run = sorted(n for n in _runstore.listdir(proj, "runs") if n.startswith("filing_production_v1_"))[-1]
     pc_id = evh(
         *[prod_run if x == "filing_production_v1" else x for x in PC],
-        "--config", "data/configs/filing_replay_hidden_v1.yaml", "--candidate", "filing_candidate_v3_hidden",
+        "--system", "filing_replay_hidden_v1", "--dataset", "filing_history_v1", "--candidate", "filing_candidate_v3_hidden",
     )  # fmt: skip
     check(
-        "period-compare --production takes a run id too, with the same answer as its config_id",
+        "period-compare --production takes a run id too, with the same answer as its system id",
         pc_id.returncode == 0 and values(pc_id).get("production") == pv.get("production"),
         said(pc_id)[-400:],
     )
     bad_pc = evh(
         *PC,
-        "--config",
-        "data/configs/filing_candidate_v3_hidden.yaml",
+        "--system",
+        "filing_candidate_v3_hidden",
+        "--dataset",
+        "filing_history_v1",
         "--candidate",
         "filing_replay_hidden_v1",
     )
@@ -330,7 +379,7 @@ try:
         page is not None and "history confound" in page.read_text() and "1 of 20 item(s)" in page.read_text(),
         str(page),
     )
-    _runstore.unlink(proj, "configs/filing_bad_hide_v1.yaml")
+    _runstore.unlink(proj, "systems/filing_bad_hide_v1.yaml")
     v = evh("validate")
     check(
         "validate passes",

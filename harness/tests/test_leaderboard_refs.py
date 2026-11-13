@@ -26,6 +26,7 @@ from evaluation_harness._check import check, summary  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
 import _runstore  # noqa: E402
+from evaluation_harness import _format  # noqa: E402
 
 proj = Path(tempfile.mkdtemp(prefix="evh-lbrefs-"))
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-lbrefs")
@@ -41,20 +42,23 @@ def evh(*args):
 
 try:
     data = proj / "data"
-    (data / "configs").mkdir(parents=True)
+    (data / "systems").mkdir(parents=True)
+    _runstore.write_text(proj, _format.NAME, f"format: {_format.FORMAT}\n")
     shutil.copytree(KIT / "tickets", proj / "tutorial" / "tickets")
     r = evh("dataset-create", "--dataset-id", "tickets_v1", "--source-dir", "tutorial/tickets")
     r = r if r.returncode else evh("dataset-materialize", "--dataset-id", "tickets_v1")
     check("setup: the tutorial dataset", r.returncode == 0, r.stderr[-300:])
     for arm in ("lead1", "author"):
         _runstore.write_bytes(
-            proj, f"configs/tickets_{arm}.yaml", (KIT / "configs" / f"tickets_{arm}.yaml").read_bytes()
+            proj, f"systems/tickets_{arm}_v1.yaml", (KIT / "systems" / f"tickets_{arm}_v1.yaml").read_bytes()
         )
     for cfg in ("lead1", "author"):  # no reference yet
         r = evh(
             "run",
-            "--config",
-            f"data/configs/tickets_{cfg}.yaml",
+            "--system",
+            f"tickets_{cfg}_v1",
+            "--dataset",
+            "tickets_v1",
             "--run-id",
             f"tickets_{cfg}_v1_none",
         )
@@ -80,7 +84,15 @@ try:
     )
     check("setup: a silver reference from the author's run", r.returncode == 0, (r.stdout + r.stderr)[-300:])
     time.sleep(1.1)  # created_at has whole seconds: each run is measured after the last
-    r = evh("run", "--config", "data/configs/tickets_lead1.yaml", "--run-id", "tickets_lead1_v1_silver")
+    r = evh(
+        "run",
+        "--system",
+        "tickets_lead1_v1",
+        "--dataset",
+        "tickets_v1",
+        "--run-id",
+        "tickets_lead1_v1_silver",
+    )
     check("setup: lead1 runs against silver", r.returncode == 0, (r.stdout + r.stderr)[-400:])
     r = evh(
         "label-import",
@@ -111,7 +123,9 @@ try:
     )
     check("setup: the kit's gold, imported and promoted", r.returncode == 0, (r.stdout + r.stderr)[-300:])
     time.sleep(1.1)
-    r = evh("run", "--config", "data/configs/tickets_lead1.yaml", "--run-id", "tickets_lead1_v1_gold")
+    r = evh(
+        "run", "--system", "tickets_lead1_v1", "--dataset", "tickets_v1", "--run-id", "tickets_lead1_v1_gold"
+    )
     check("setup: lead1 runs against gold", r.returncode == 0, (r.stdout + r.stderr)[-400:])
 
     r = evh("leaderboard", "--dataset-id", "tickets_v1")

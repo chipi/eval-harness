@@ -1878,17 +1878,17 @@ def catalog_inspect(x: dict) -> str:
     call "not significant" what the site, testing the whole field, finds significant)."""
     keys = []
     for a in x["arms"]:
-        cid = f"{x['prefix']}{a['arm']}{x['suffix']}"
+        cid = figures.system_id(x, a["arm"])
         require(
             any(
                 (m := json.loads(_store.read_text(p))).get("config_id") == cid
                 and m.get("dataset_id") == x["dataset"]
-                for p in _store.glob(figures.DATA / x["base"], f"{cid}*/metrics.json")
+                for p in _store.glob(figures.DATA / x["base"], f"{x['prefix']}*/metrics.json")
             ),
             f"{x['slug']}: a committed run of {cid} on {x['dataset']} for the inspector link",
         )
         keys.append(f"{x['base']}/{x['dataset']}/{cid}")
-    base = f"{x['base']}/{x['dataset']}/{x['prefix']}{x['leader']}{x['suffix']}".replace("/", "%2F")
+    base = f"{x['base']}/{x['dataset']}/{figures.system_id(x, x['leader'])}".replace("/", "%2F")
     return f"inspect.html?runs={','.join(keys)}&amp;baseline={base}&amp;metric={x['metric']}"
 
 
@@ -1914,7 +1914,7 @@ def goal_note(x: dict) -> str:
     else:
         # The reasons after the strategy line (what broke the tie, or why nothing could), with
         # config ids shortened to the arm names this page uses.
-        short = re.compile(rf"\b{re.escape(x['prefix'])}(\w+?){re.escape(x['suffix'])}\b")
+        short = re.compile(rf"\b{re.escape(x['prefix'])}(\w+?)(?:_n\d+|_dm\d+)?_v\d+\b")
         says = "recommends no single arm yet. " + e(
             " ".join(short.sub(r"\1", w) for w in g["why"][1:]).rstrip(".")
         )

@@ -33,16 +33,16 @@ def aim(proj: Path) -> Path:
     return proj
 
 
-def kit_config(proj: Path, name: str) -> None:
-    """A tutorial config copied from the project's kit into its configs."""
-    _runstore.write_text(aim(proj), f"configs/{name}", (proj / "tutorial/configs" / name).read_text())
+def kit_system(proj: Path, name: str) -> None:
+    """A tutorial system copied from the project's kit into its systems."""
+    _runstore.write_text(aim(proj), f"systems/{name}", (proj / "tutorial/systems" / name).read_text())
 
 
-def config_paths(proj: Path) -> list[str]:
-    """The tickets_lead*.yaml configs of the project, as paths under its data/configs."""
+def system_ids(proj: Path) -> list[str]:
+    """The ids of the tickets_lead* systems of the project."""
     return sorted(
-        str(proj / "data/configs" / n)
-        for n in _runstore.listdir(aim(proj), "configs")
+        n.removesuffix(".yaml")
+        for n in _runstore.listdir(aim(proj), "systems")
         if n.startswith("tickets_lead") and n.endswith(".yaml")
     )
 
@@ -93,7 +93,7 @@ def test_init(tmp: Path) -> None:
         # command run in the project finds it) and says the store, never folders it did not make.
         made = "store    sqlite" in r.stdout and "folders" not in r.stdout
     else:
-        made = (proj / "data/sources").is_dir() and (proj / "data/configs").is_dir()
+        made = (proj / "data/sources").is_dir() and (proj / "data/systems").is_dir()
     check(
         "init (no args): exit 0, makes data/ and the store's folders",
         r.returncode == 0
@@ -121,7 +121,7 @@ def test_init(tmp: Path) -> None:
         r.returncode == 0
         and "tutorial" in r.stdout
         and (proj_tut / "tutorial/tickets").is_dir()
-        and (proj_tut / "tutorial/configs").is_dir(),
+        and (proj_tut / "tutorial/systems").is_dir(),
         r.stdout[:200],
     )
 
@@ -169,8 +169,8 @@ def test_list_runs(tmp: Path) -> None:
         env=env,
     )
     r = evh_run("dataset-materialize", "--dataset-id", "tickets_v1", cwd=proj, env=env)
-    kit_config(proj, "tickets_lead1.yaml")
-    r = evh_run("run", "--config", "data/configs/tickets_lead1.yaml", cwd=proj, env=env)
+    kit_system(proj, "tickets_lead1_v1.yaml")
+    r = evh_run("run", "--system", "tickets_lead1_v1", "--dataset", "tickets_v1", cwd=proj, env=env)
     check("evh run: succeeds", r.returncode == 0, r.stderr[:200])
 
     # Now list the run
@@ -237,14 +237,16 @@ def test_sweep(tmp: Path) -> None:
     )
     evh_run("dataset-materialize", "--dataset-id", "tickets_v1", cwd=proj, env=env)
     for arm in ("lead1", "lead2"):
-        kit_config(proj, f"tickets_{arm}.yaml")
+        kit_system(proj, f"tickets_{arm}_v1.yaml")
 
     # Dry run: costs nothing
-    config_files = config_paths(proj)
+    system_list = system_ids(proj)
     r = evh_run(
         "sweep",
-        "--configs",
-        *config_files,
+        "--systems",
+        *system_list,
+        "--dataset",
+        "tickets_v1",
         "--dry-run",
         cwd=proj,
         env=env,
@@ -256,11 +258,13 @@ def test_sweep(tmp: Path) -> None:
     )
 
     # Real sweep
-    config_files = config_paths(proj)
+    system_list = system_ids(proj)
     r = evh_run(
         "sweep",
-        "--configs",
-        *config_files,
+        "--systems",
+        *system_list,
+        "--dataset",
+        "tickets_v1",
         "--repeat",
         "1",
         cwd=proj,
@@ -296,7 +300,7 @@ def test_judge_panel(tmp: Path) -> None:
         env=env,
     )
     evh_run("dataset-materialize", "--dataset-id", "tickets_v1", cwd=proj, env=env)
-    kit_config(proj, "tickets_lead1.yaml")
+    kit_system(proj, "tickets_lead1_v1.yaml")
     evh_run(
         "label-import",
         "tutorial/gold",
@@ -326,7 +330,7 @@ def test_judge_panel(tmp: Path) -> None:
     )
 
     # Run an arm to judge
-    evh_run("run", "--config", "data/configs/tickets_lead1.yaml", cwd=proj, env=env)
+    evh_run("run", "--system", "tickets_lead1_v1", "--dataset", "tickets_v1", cwd=proj, env=env)
 
     # Create a judge panel config
     # Use output_words as the primary metric (a real metric from runs)
@@ -403,8 +407,8 @@ def test_cost_report(tmp: Path) -> None:
         env=env,
     )
     evh_run("dataset-materialize", "--dataset-id", "tickets_v1", cwd=proj, env=env)
-    kit_config(proj, "tickets_lead1.yaml")
-    evh_run("run", "--config", "data/configs/tickets_lead1.yaml", cwd=proj, env=env)
+    kit_system(proj, "tickets_lead1_v1.yaml")
+    evh_run("run", "--system", "tickets_lead1_v1", "--dataset", "tickets_v1", cwd=proj, env=env)
 
     # cost-report with no runs (nothing billed yet)
     r = evh_run("cost-report", "--dataset-id", "tickets_v1", cwd=proj, env=env)

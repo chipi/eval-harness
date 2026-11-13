@@ -11,7 +11,7 @@ correctness bugs, not just missing features.
   carries until the release: moving such a pin from one commit to another takes `pip install --force-reinstall`, as
   pip keeps an installed copy of the same version.
 - **Run `evh migrate` once** (`--dry-run` first shows what each step will do; a second run changes nothing). It
-  brings the data to format 2 and records it in `data/project.yaml` (RFC-032): from 0.8.0 a project's data has a
+  brings the data to format 3 and records it in `data/project.yaml` (RFC-032): from 0.8.0 a project's data has a
   format, `evh migrate --check` compares it with the release's, and a deploy runs that check (the RUNBOOK's "The
   data's format"). A SQLite project's database is copied beside it first. Commit `data/project.yaml` with the
   migrated data. Its steps, in order:
@@ -35,6 +35,21 @@ correctness bugs, not just missing features.
     model's only deployment). A smoke whose deployment is neither is refused before anything is written, naming the
     config: set its `deployment:` and migrate again. The model record keeps its comments and loses only those two
     keys. `evh models` and the catalog's model pages read the same as before.
+  - *systems* (RFC-032 step 3, format 3): each config becomes a system, `<folder>/<system_id>.yaml` (a folder named
+    `configs` becomes `systems`: `data/systems/`, and the folders validate.json's `systems` globs name, which were its
+    `configs` globs; config.yaml's `configs:` folders are added to them), with `system_id` and without `dataset_id`,
+    `goal` or `round`, its comments kept. Configs in one folder whose ids differ only by a dataset token (`_n200`,
+    `_n100`, `_dm200`) and their version, on different datasets and alike in every other key, become one system
+    whose id drops the token and keeps the highest version; any other group is left as it is, and a group on different
+    datasets that differs in another key is refused, naming the key. Every live reference to a renamed id is renamed
+    with it (runs' `config_id`, rounds' carried and retired arms, smoke checks, which name `system:` now, a sealed
+    dataset's unseals, study specs, whose `baseline.config` becomes `baseline.system`, faithfulness records,
+    validate.json); judging sets with their verdicts, and reference manifests, keep the ids they were made with (a
+    judging set's id and a run's reference hash are made of them). `data/renames.json` lists each renamed id; the
+    catalog redirects an old arm page to its new one. Then change your commands: `evh run --system ID --dataset ID
+    [--goal G] [--round R]` (a run names its goal and round now), `evh sweep --systems … --dataset …`, `arm-smoke`,
+    `faithfulness`, `period-compare`, `periods` and `model-onboard` take `--system`/`--dataset`, `deploy-sheet` and
+    `dataset-unseal` take `--system`, `arm-from-capture --like` takes a system id, `make run SYSTEM=… DATASET_ID=…`.
 
   `run-migrate`, `dataset-migrate` and `baselines-migrate` (built during 0.8.0, never released) and
   `fingerprint-migrate` (0.6.0 to 0.7.2) are this one command now. Moving the data into SQLite is

@@ -77,7 +77,7 @@ when it starts, so after a new run, stop it and start it again.
 | the captures page: what was read from production, when, and the datasets and recorded arm made from it ([tutorial 6](6-datasets-from-production.md)) | `evh captures` |
 | a dataset page's "Open its sheet": its items down, a column per arm (what it wrote, its scores), the labels, the winner per item, the signals (wrong, disagree, split, new, unlabelled), and a footer per arm | `evh inspect --sheet --dataset-id tickets_v1 --runs tickets_lead1_v1,tickets_lead2_v1` |
 | a dataset page's picks waiting, and the command the ticked boxes give | `evh picks` |
-| a goal page's deploy sheet: what production must match to run the promoted arm, and whether a capture shows it did | `evh deploy-sheet --config tickets_lead2_v1` |
+| a goal page's deploy sheet: what production must match to run the promoted arm, and whether a capture shows it did | `evh deploy-sheet --system tickets_lead2_v1` |
 | the metrics page: what each metric measures, which way is better, where it is recorded | `evh metrics` |
 | a metric page: what it measures, its kind, the goals it decides, per-dataset strip chart | `evh metrics --metric overlap_f1` |
 | the search box on every catalog page | `evh search lead2` |

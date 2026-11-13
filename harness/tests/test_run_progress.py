@@ -25,6 +25,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in test
 KIT = HERE.parent / "tutorial"
 import _model_records  # noqa: E402
 import _runstore  # noqa: E402
+from evaluation_harness import _format  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 from evaluation_harness.run import progress_every, progress_line  # noqa: E402
 
@@ -57,18 +58,19 @@ def evh(*args):
     )
 
 
-def config(name, adapter=None, record=None, **params):
+def system(name, adapter=None, record=None, **params):
     body = "".join(f"  {k}: {json.dumps(v)}\n" for k, v in params.items())
-    head = f"config_id: {name}_v1\ndataset_id: tickets_v1\n"
+    head = f"system_id: {name}_v1\n"
     head += f"adapter: {adapter}\n" if adapter else ""
     head += f"model_record: {record}\n" if record else ""
-    _runstore.write_text(proj, f"configs/{name}.yaml", head + "params:\n" + body)
-    return f"data/configs/{name}.yaml"
+    _runstore.write_text(proj, f"systems/{name}_v1.yaml", head + "params:\n" + body)
+    return ["--system", f"{name}_v1", "--dataset", "tickets_v1"]
 
 
 try:
+    _runstore.write_text(proj, _format.NAME, f"format: {_format.FORMAT}\n")
     if not _runstore.sqlite():
-        (proj / "data" / "configs").mkdir(parents=True)
+        (proj / "data" / "systems").mkdir(parents=True)
         (proj / "data" / "models").mkdir()
     shutil.copytree(KIT / "tickets", proj / "tutorial" / "tickets")
     (proj / "calls_adapter.py").write_text(ADAPTER)
@@ -78,7 +80,7 @@ try:
 
     # the dry run: a one-call adapter
     priced = {"provider": "echo", "usd_per_mtok_in": 1.0, "usd_per_mtok_out": 2.0, "max_tokens": 100}
-    r = evh("run", "--config", config("one", **priced), "--repeat", "3", "--dry-run", "--json")
+    r = evh("run", *system("one", **priced), "--repeat", "3", "--dry-run", "--json")
     dry = (json.loads(r.stdout).get("result", {}).get("values", {}) if r.returncode == 0 else {}).get(
         "dry_run", {}
     )
@@ -106,7 +108,7 @@ try:
     check(
         "dry run: no arm-smoke of the config, so it says so and names the command to run before a cap",
         "MEASURED    none for one_v1" in text
-        and "evh arm-smoke --config data/configs/one.yaml" in text
+        and "evh arm-smoke --system one_v1 --dataset tickets_v1" in text
         and dry.get("measured_usd_per_item") is None,
         text[-700:],
     )
@@ -114,8 +116,7 @@ try:
     # the dry run: an adapter that declares its calls
     r = evh(
         "run",
-        "--config",
-        config("multi", adapter="calls_adapter.py", **priced),
+        *system("multi", adapter="calls_adapter.py", **priced),
         "--repeat",
         "2",
         "--dry-run",
@@ -158,9 +159,7 @@ try:
             },
         },
     )
-    r = evh(
-        "run", "--config", config("measured", record="mrec", **priced), "--repeat", "3", "--dry-run", "--json"
-    )
+    r = evh("run", *system("measured", record="mrec", **priced), "--repeat", "3", "--dry-run", "--json")
     meas = (json.loads(r.stdout).get("result", {}).get("values", {}) if r.returncode == 0 else {}).get(
         "dry_run", {}
     )
@@ -186,10 +185,10 @@ try:
         and progress_line(2, 6, "t2", "ok", 1.0, 0.0123).endswith("1.0s  $0.0123 so far"),
     )
 
-    cfg = config("slow", adapter="calls_adapter.py", provider="echo", sleep=0.5)
+    cfg = system("slow", adapter="calls_adapter.py", provider="echo", sleep=0.5)
     started = time.perf_counter()
     p = subprocess.Popen(
-        [sys.executable, str(HERE / "cli.py"), "run", "--config", cfg],
+        [sys.executable, str(HERE / "cli.py"), "run", *cfg],
         cwd=proj,
         env=env,
         stdout=subprocess.PIPE,
@@ -217,7 +216,7 @@ try:
         (prog[0][0] if prog else None, ended),
     )
 
-    r = evh("run", "--config", cfg, "--json", "--run-id", "slow_json")
+    r = evh("run", *cfg, "--json", "--run-id", "slow_json")
     done = [ln.split()[0] for ln in r.stderr.splitlines() if ln.lstrip().startswith("[")]
     check(
         "progress under --json: the lines are on stderr, and stdout is one JSON object",
@@ -240,7 +239,7 @@ try:
             (proj / "data" / "runs" / f"{cid}_{stamp}").mkdir(parents=True, exist_ok=True)
         _runstore.write_text(proj, f"runs/{cid}_{stamp}/MARKER", "an earlier run\n")
         marked.append(f"{cid}_{stamp}")
-    r = evh("run", "--config", "data/configs/one.yaml", "--json")
+    r = evh("run", "--system", "one_v1", "--dataset", "tickets_v1", "--json")
     made = json.loads(r.stdout)["result"]["values"]["runs"][0]["run_id"] if r.returncode == 0 else ""
     check(
         "run: an id already taken (a run started in the same second) is never written into: the run takes a new one",
@@ -250,7 +249,7 @@ try:
         and all(_runstore.listdir(proj, f"runs/{m}") == ["MARKER"] for m in marked),
         (r.stderr[-300:], made),
     )
-    r = evh("run", "--config", "data/configs/one.yaml", "--run-id", marked[0])
+    r = evh("run", "--system", "one_v1", "--dataset", "tickets_v1", "--run-id", marked[0])
     check(
         "run: --run-id naming a directory that exists is refused, and nothing is written into it",
         r.returncode != 0

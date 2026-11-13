@@ -25,6 +25,10 @@ sys.path.insert(
 )  # the evaluation_harness package: every read of the data goes through its store
 from evaluation_harness import _store  # noqa: E402
 
+sys.path.insert(0, str(ROOT / "examples" / "_shared"))
+from eval_arms import arm_of  # noqa: E402
+from evaluation_harness._common import system_now  # noqa: E402
+
 #: The test slices on the site, from the registry `make reproduce` uses too -- so the site
 #: and a stranger's rerun cannot mean different evals. `base` is the directory the
 #: REPORT is computed from; billed cost always comes from data/runs, where the provider's
@@ -51,19 +55,26 @@ BASELINES = {
 }
 
 
-def _runs(base: str, dataset: str, prefix: str, suffix: str) -> dict:
+def _runs(base: str, dataset: str, prefix: str) -> dict:
     """{arm: run_dir} for one slice. Two runs sharing an arm is an error, as in V8."""
     out: dict = {}
     for f in sorted(_store.glob(DATA / base, f"{prefix}*/metrics.json")):
         m = json.loads(_store.read_text(f))
         cid = m.get("config_id", "")
-        if m.get("dataset_id") != dataset or not cid.endswith(suffix):
+        arm = arm_of(prefix, cid)
+        if m.get("dataset_id") != dataset or arm is None:
             continue
-        arm = cid[len(prefix) : -len(suffix)]
         if arm in out:
             raise SystemExit(f"two runs for {cid} under {base}: {out[arm].name}, {f.parent.name}")
         out[arm] = f.parent
     return out
+
+
+def system_id(exp: dict, arm: str) -> str:
+    """The id of the system behind an arm of an eval, as its run records it."""
+    return json.loads(
+        _store.read_text(_runs(exp["base"], exp["dataset"], exp["prefix"])[arm] / "metrics.json")
+    )["config_id"]
 
 
 def _billed(run_dir: Path) -> float:
@@ -93,6 +104,11 @@ def _weights() -> dict:
 
 def _not_significant(exp: dict) -> list:
     """Opponents the leader's Holm family test finds not significantly different."""
+    cids = {
+        json.loads(_store.read_text(d / "metrics.json"))["config_id"]: arm
+        for arm, d in _runs(exp["base"], exp["dataset"], exp["prefix"]).items()
+    }
+    leader = next(c for c, arm in cids.items() if arm == exp["leader"])
     r = subprocess.run(
         [
             sys.executable,
@@ -100,9 +116,9 @@ def _not_significant(exp: dict) -> list:
             "--dataset-id",
             exp["dataset"],
             "--a",
-            f"{exp['prefix']}{exp['leader']}{exp['suffix']}",
+            leader,
             "--against",
-            exp["suffix"],
+            ",".join(cids),
             "--metric",
             exp["metric"],
             "--runs-dir",
@@ -115,15 +131,15 @@ def _not_significant(exp: dict) -> list:
     if r.returncode != 0:
         raise SystemExit(f"family test failed for {exp['slug']}:\n{r.stderr[-800:]}")
     return [
-        ln.split()[0][len(exp["prefix"]) : -len(exp["suffix"])]
+        cids[ln.split()[0]]
         for ln in r.stdout.splitlines()
-        if ln.strip().endswith("--") and ln.split()[0].endswith(exp["suffix"])
+        if ln.strip().endswith("--") and ln.split()[0] in cids and ln.split()[0] != leader
     ]
 
 
 def eval_figures(exp: dict, weights: dict) -> dict:
-    scored = _runs(exp["base"], exp["dataset"], exp["prefix"], exp["suffix"])
-    billed = _runs("runs", exp["dataset"], exp["prefix"], exp["suffix"])
+    scored = _runs(exp["base"], exp["dataset"], exp["prefix"])
+    billed = _runs("runs", exp["dataset"], exp["prefix"])
     arms = []
     for arm, d in scored.items():
         m = json.loads(_store.read_text(d / "metrics.json"))
@@ -222,7 +238,7 @@ def hardware() -> list:
     hw = json.loads(_store.read_text(ROOT / "docs" / "evidence" / "hardware.json"))["machines"]
     machines = [{**m, "hosted": 0, "local": 0} for m in hw]
     for exp in EVALS:
-        for _arm, d in _runs("runs", exp["dataset"], exp["prefix"], exp["suffix"]).items():
+        for _arm, d in _runs("runs", exp["dataset"], exp["prefix"]).items():
             fp = json.loads(_store.read_text(d / "metrics.json")).get("fingerprint") or {}
             host = fp.get("runner") or {}
             hits = [
@@ -245,8 +261,8 @@ def hardware() -> list:
 def dailymail() -> list:
     """The five local summarisation arms on the CNN slice and on the DailyMail slice."""
     out = []
-    cnn = _runs("runs", "cnn_dailymail_200", "cnn_", "_n200_v1")
-    dm = _runs("runs", "cnn_dailymail_dm200", "cnn_", "_dm200_v1")
+    cnn = _runs("runs", "cnn_dailymail_200", "cnn_")
+    dm = _runs("runs", "cnn_dailymail_dm200", "cnn_")
     for arm in ("bart_l", "bart_m", "bart_s", "lead3", "bart_l_xsum"):
         c = json.loads(_store.read_text(cnn[arm] / "metrics.json"))["scores"]["coverage"]
         d = json.loads(_store.read_text(dm[arm] / "metrics.json"))["scores"]["coverage"]
@@ -271,7 +287,7 @@ def adjudicated(slug: str, exps: list) -> dict:
     from evaluation_harness._runs import item_rows  # noqa: PLC0415
 
     v1, v2 = {}, {}
-    for arm, d in _runs(x["base"], x["dataset"], x["prefix"], x["suffix"]).items():
+    for arm, d in _runs(x["base"], x["dataset"], x["prefix"]).items():
         rows = list(item_rows(d))
         v1[arm] = sum(r["correct"] for r in rows) / len(rows)
         v2[arm] = sum(
@@ -320,9 +336,7 @@ def judged_summarisation(exps: list, scorer: str = "") -> dict:
     ctrl = summ["controls"]
     x = next(e for e in exps if e["slug"] == "summarization")
     judged = {
-        a["config_id"][len(x["prefix"]) : -len(x["suffix"])]: sum(
-            proj[i][a["config_id"]]["_mean"] for i in proj
-        )
+        arm_of(x["prefix"], system_now(a["config_id"])): sum(proj[i][a["config_id"]]["_mean"] for i in proj)
         / len(proj)
         for a in m["arms"]
     }
@@ -431,7 +445,7 @@ def goal_decisions(exps: list) -> None:
 
         def short(arm, x=x):
             config = (arm or "").rsplit("/", 1)[-1]
-            return config[len(x["prefix"]) : -len(x["suffix"])] if config.startswith(x["prefix"]) else config
+            return arm_of(x["prefix"], config) or config
 
         x["goal"] = {
             **r,

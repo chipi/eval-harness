@@ -38,7 +38,7 @@ def files_of(doc: dict[str, Any], smoke_deployment: dict[str, str] | None = None
         dep = (smoke_deployment or {}).get(cid) or (str(deps[0]["id"]) if deps else None)
         if dep is None:
             raise ValueError(f"{mid}: a smoke ({cid}) needs a deployment to be a check of")
-        checks[dep].append({"kind": "smoke", "config": cid, **smoke})
+        checks[dep].append({"kind": "smoke", "system": cid, **smoke})
     for place, d in enumerate(deps):
         did = str(d["id"])
         rec = {"model_id": mid, "deployment_id": did, "order": place}

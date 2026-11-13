@@ -163,7 +163,7 @@ fleet-eval-data, as config or hooks.
 
 ### P2: a baseline from a past period (gap 6)
 
-- **`evh period-compare --config REPLAY --candidate CONFIG --from T --to T`**: on the items whose replay time falls in
+- **`evh period-compare --system REPLAY --dataset D --candidate CANDIDATE --from T --to T`**: on the items whose replay time falls in
   the period, three columns per measure: what production recorded (`arm-from-capture`), the code that ran then
   (the replay run, which must agree with production on those items or the report says it does not count), and the
   candidate on the same items; the paired test between the last two, on the period's items only.

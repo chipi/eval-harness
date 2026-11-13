@@ -21,6 +21,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parents[1] / "scripts"
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 KIT = HERE.parent / "tutorial"
+from evaluation_harness import _format  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
@@ -57,7 +58,8 @@ def metrics_of(prefix):
 
 
 try:
-    (proj / "data" / "configs").mkdir(parents=True)
+    (proj / "data" / "systems").mkdir(parents=True)
+    _runstore.write_text(proj, _format.NAME, f"format: {_format.FORMAT}\n")
     shutil.copytree(KIT / "tickets", proj / "tickets")
     r = evh("dataset-create", "--dataset-id", "tickets_v1", "--source-dir", "tickets")
     r = r if r.returncode else evh("dataset-materialize", "--dataset-id", "tickets_v1")
@@ -79,10 +81,10 @@ try:
     for cid, n in (("one_v1", 1), ("two_v1", 2)):
         _runstore.write_text(
             proj,
-            f"configs/{cid}.yaml",
-            f"config_id: {cid}\ndataset_id: tickets_v1\nadapter: adapter.py\nparams:\n  provider: echo\n  sentences: {n}\n",
+            f"systems/{cid}.yaml",
+            f"system_id: {cid}\nadapter: adapter.py\nparams:\n  provider: echo\n  sentences: {n}\n",
         )
-        r = evh("run", "--config", f"data/configs/{cid}.yaml")
+        r = evh("run", "--system", cid, "--dataset", "tickets_v1")
         check(f"setup: {cid} runs", r.returncode == 0, out(r)[-400:])
     name, m = metrics_of("one_v1_")
     check(
@@ -166,7 +168,7 @@ try:
     (proj / "adapter.py").write_text(
         ADAPTER.replace('"items_seen": len(items)', '"items_seen": len(items) + 100')
     )
-    r = evh("rescore", "--config", "one_v1", "--dataset-id", "tickets_v1")
+    r = evh("rescore", "--match", "one_v1", "--dataset-id", "tickets_v1")
     rs = [
         p
         for p in (proj / "data").rglob("metrics.json")
@@ -192,7 +194,7 @@ try:
         (proj / "adapter.py").write_text(
             ADAPTER.split("def score_run")[0] + f"def score_run(items):\n    return {bad}\n"
         )
-        r = evh("run", "--config", "data/configs/one_v1.yaml")
+        r = evh("run", "--system", "one_v1", "--dataset", "tickets_v1")
         check(
             f"run: score_run returning {bad} is refused ({said})",
             r.returncode != 0 and said in out(r),

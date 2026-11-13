@@ -5,7 +5,7 @@ on the FULL 7,600-item test set, against the accuracy each model card publishes.
     python examples/classification-ag-news/calibrate.py
 
 The eval scores 200 items (50 per class from the first 1,600 test rows). This runs
-the same adapter, with each arm's own config, on all 7,600 and compares with the card:
+the same adapter, with each arm's own system, on all 7,600 and compares with the card:
 
     bert_mini     mrm8488/bert-mini-finetuned-age_news-classification   0.9339 (HF-verified, test)
     bert_base_ta  textattack/bert-base-uncased-ag-news                  0.9514 ("eval set" = 7,231/7,600)
@@ -49,7 +49,7 @@ def main() -> int:
         "arms": {},
     }
     for arm, pub in ARMS.items():
-        params = yaml.safe_load((HERE / "configs" / f"arm_{arm}_n200.yaml").read_text())["params"]
+        params = yaml.safe_load((HERE / "systems" / f"ag_{arm}_v1.yaml").read_text())["params"]
         adapter.warmup(params)
         acc = cal.accuracy(
             lambda t, params=params: adapter.call_system(t, params).output,

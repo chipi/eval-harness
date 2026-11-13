@@ -75,7 +75,9 @@ def main() -> int:
     )
 
     # M1: --against as a comma-separated list names the family exactly; one value stays a substring.
-    a, b, c = "ag_anthropic_l_n200_v1", "ag_anthropic_m_n200_v1", "ag_anthropic_s_n200_v1"
+    a, b, c = "ag_anthropic_l_v1", "ag_anthropic_m_v1", "ag_anthropic_s_v1"
+    # a run's directory keeps the id it was made under (data/renames.json: systems)
+    dirs = {x: x.replace("_v1", "_n200_v1") for x in (a, b, c)}
     r = evh("family-test", "--dataset-id", "ag_news_200", "--a", a, "--against", f"{b},{c}", "--json")
     v = json.loads(r.stdout)["result"]["values"] if r.returncode == 0 else {}
     check("family-test: --against B,C is the family {B, C}", v.get("family_size") == 2, r.stderr[-300:] or v)
@@ -87,8 +89,8 @@ def main() -> int:
     tmp = Path(tempfile.mkdtemp(prefix="evh-family-"))
     try:
         for cid in (a, b, c):
-            _runstore.copy_run(run_of(cid), tmp / run_of(cid).name)
-        short = tmp / run_of(c).name
+            _runstore.copy_run(run_of(dirs[cid]), tmp / run_of(dirs[cid]).name)
+        short = tmp / run_of(dirs[c]).name
         _runstore.put_rows_text(
             short, "".join((_outputs.rows_text(short) or "").splitlines(keepends=True)[:40])
         )

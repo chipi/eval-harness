@@ -39,7 +39,7 @@ checks:
     deterministic: false
     json_valid: true
 - kind: smoke
-  config: triage_baseline_pro_noreason_v1
+  system: triage_baseline_pro_noreason_v1
   status: pass
   at: '2026-10-31T14:49:58Z'
   flags: []

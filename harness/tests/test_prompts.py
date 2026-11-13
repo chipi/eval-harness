@@ -28,6 +28,7 @@ from evaluation_harness._check import check, summary  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
 import _runstore  # noqa: E402
+from evaluation_harness import _format  # noqa: E402
 
 proj = Path(tempfile.mkdtemp(prefix="evh-prompts-"))
 env = dict(os.environ, EVH_ACTOR="person:test", EVAL_HOME=str(proj), EVAL_BUILD_REF="test-prompts")
@@ -54,13 +55,13 @@ def evh(*args):
                           text=True, stdin=subprocess.DEVNULL)  # fmt: skip
 
 
-def config(name, cid, extra=""):
+def system(name, cid, extra=""):
     _runstore.write_text(
         proj,
-        f"configs/{name}.yaml",
-        f"config_id: {cid}\ndataset_id: tk_v1\nadapter: echo.py\n{extra}params:\n  provider: echo\n",
+        f"systems/{cid}.yaml",
+        f"system_id: {cid}\nadapter: echo.py\n{extra}params:\n  provider: echo\n",
     )
-    return f"data/configs/{name}.yaml"
+    return cid
 
 
 def metrics_of(prefix):
@@ -76,7 +77,8 @@ def git(path, *args):
 
 
 try:
-    (proj / "data" / "configs").mkdir(parents=True)
+    (proj / "data" / "systems").mkdir(parents=True)
+    _runstore.write_text(proj, _format.NAME, f"format: {_format.FORMAT}\n")
     shutil.copytree(KIT / "tickets", proj / "tickets")
     (proj / "echo.py").write_text(ECHO)
     (proj / "prompts").mkdir()
@@ -96,12 +98,12 @@ try:
         "prompts:\n  summary/user: {file: prompts/user.txt}\n"
         "prompt_root:\n  name: lib\n  path: lib_prompts\n  vary: [sub/b.txt]\n"
     )
-    c1 = config("p1", "p1_v1", declared)
+    c1 = system("p1", "p1_v1", declared)
     # The project committed as a person would before running: data/ tracked, so its new parts show one by one.
     git(proj, "init", "-q")
     git(proj, "-c", "user.email=t@t", "-c", "user.name=t", "add", "-A")
     git(proj, "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init")
-    r = evh("run", "--config", c1)
+    r = evh("run", "--system", c1, "--dataset", "tk_v1")
     m = metrics_of("p1_v1")
     fp = (m[-1].get("fingerprint") or {}) if m else {}
     s = fp.get("settings") or {}
@@ -140,9 +142,9 @@ try:
         )
 
     # The same bytes reuse the version; an edit is a new one; the two runs differ only in that prompt.
-    r = evh("run", "--config", c1)
+    r = evh("run", "--system", c1, "--dataset", "tk_v1")
     (proj / "prompts" / "user.txt").write_text("Summarise in one short line.\n")
-    r2 = evh("run", "--config", c1)
+    r2 = evh("run", "--system", c1, "--dataset", "tk_v1")
     m = metrics_of("p1_v1")
     vers = evh("prompts", "summary/user", "--json")
     vs = (
@@ -168,8 +170,8 @@ try:
     )
 
     # A config with no prompts keeps its fingerprint as it was (no new key).
-    plain = config("plain", "plain_v1")
-    r = evh("run", "--config", plain)
+    plain = system("plain", "plain_v1")
+    r = evh("run", "--system", plain, "--dataset", "tk_v1")
     pm = metrics_of("plain_v1")
     check(
         "a config with no prompts and no code: neither key in its fingerprint",
@@ -181,7 +183,7 @@ try:
     # Eight runs recording the same new bytes at once: one version.
     (proj / "prompts" / "user.txt").write_text("A third wording.\n")
     with ThreadPoolExecutor(8) as ex:
-        codes = list(ex.map(lambda _: evh("run", "--config", c1).returncode, range(8)))
+        codes = list(ex.map(lambda _: evh("run", "--system", c1, "--dataset", "tk_v1").returncode, range(8)))
     vers = evh("prompts", "summary/user", "--json")
     vs = (
         (json.loads(vers.stdout).get("result") or {}).get("values", {}).get("versions", [])
@@ -201,12 +203,12 @@ try:
     git(sysrepo, "init", "-q")
     git(sysrepo, "-c", "user.email=t@t", "-c", "user.name=t", "add", "-A")
     git(sysrepo, "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "one")
-    c2 = config("code", "code_v1", "code: {path: system}\n")
-    r = evh("run", "--config", c2)
+    c2 = system("code", "code_v1", "code: {path: system}\n")
+    r = evh("run", "--system", c2, "--dataset", "tk_v1")
     (sysrepo / "app.py").write_text("x = 2\n")
-    r2 = evh("run", "--config", c2)
+    r2 = evh("run", "--system", c2, "--dataset", "tk_v1")
     git(sysrepo, "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qam", "two")
-    r3 = evh("run", "--config", c2)
+    r3 = evh("run", "--system", c2, "--dataset", "tk_v1")
     cm = metrics_of("code_v1")
     codes3 = [(x["fingerprint"]["deployment"].get("code") or {}) for x in cm]
     check(

@@ -3053,9 +3053,11 @@ for sid_ in ("judge-summ-v1", "judge-summ-v2"):
     arms_ = [{"config_id": c, "family": a["family"]} for c, a in old_summ["per_arm"].items()]
     # The outputs' lengths, as judge-score reads them, for each judge's length bias.
     found_ = {a["config_id"]: a for a in js.discover_arms(sc_["dataset_id"], sc_.get("arms_match", ""))}
+    # the committed summary keeps the ids its arms had; the runs are found under the systems' current ids
+    renamed_ = json.loads((HERE.parent / "data" / "renames.json").read_text())["systems"]
     ids_ = [it["item_id"] for it in man_["items"]]
     words_ = {
-        c: {i: len(t.split()) for i, t in js.read_outputs(found_[c], ids_).items()}
+        c: {i: len(t.split()) for i, t in js.read_outputs(found_[renamed_.get(c, c)], ids_).items()}
         for c in old_summ["per_arm"]
     }
     new_summ = js.summarise(

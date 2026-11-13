@@ -164,9 +164,13 @@
         "report": {
           "type": "object"
         },
-        "config": {
+        "system": {
           "type": "string",
-          "description": "a smoke's arm, by its config id"
+          "description": "a smoke's system, by its id"
+        },
+        "dataset": {
+          "type": "string",
+          "description": "the dataset a smoke ran on"
         },
         "by": {
           "type": "string",

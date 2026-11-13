@@ -21,7 +21,7 @@ HARNESS = Path(__file__).resolve().parents[1]
 HERE = HARNESS / "scripts"
 KIT = HARNESS / "tutorial"
 sys.path.insert(0, str(HARNESS))
-from evaluation_harness import stats  # noqa: E402
+from evaluation_harness import _format, stats  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
@@ -52,7 +52,8 @@ def ok(r, what):
 
 try:
     data = proj / "data"
-    (data / "configs").mkdir(parents=True)
+    (data / "systems").mkdir(parents=True)
+    _runstore.write_text(proj, _format.NAME, f"format: {_format.FORMAT}\n")
     (data / "goals").mkdir()
     shutil.copytree(KIT / "tickets", proj / "tutorial" / "tickets")
     shutil.copytree(KIT / "fields", data / "fields")
@@ -110,10 +111,15 @@ try:
     for arm in ("lead1", "lead2"):
         _runstore.write_text(
             proj,
-            f"configs/{arm}.yaml",
-            (KIT / "configs" / f"tickets_{arm}.yaml").read_text() + "goal: tickets_summary\n",
+            f"systems/tickets_{arm}_v1.yaml",
+            (KIT / "systems" / f"tickets_{arm}_v1.yaml").read_text(),
         )
-        ready = ready and ok(evh("run", "--config", str(data / "configs" / f"{arm}.yaml")), f"run {arm}")
+        ready = ready and ok(
+            evh(
+                "run", "--system", f"tickets_{arm}_v1", "--dataset", "tickets_v1", "--goal", "tickets_summary"
+            ),
+            f"run {arm}",
+        )
     if not ready:
         sys.exit(summary())
 

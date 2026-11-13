@@ -8,7 +8,7 @@ command has a kind; the options that load code or reach outside the project are 
 catalog-serve` in a throwaway tutorial project ($0, offline): no token, a wrong one, another Host and a foreign Origin
 are refused; the token works as a bearer and as the cookie the session route sets; the registry lists reads and jobs;
 a read answers exactly what the command answers with --json (parity); a job asked as a read, an argument the
-registry does not take, and a config id that does not exist are refused before anything runs; a server started
+registry does not take, and a system id that does not exist are refused before anything runs; a server started
 --public or --behind-proxy answers no /api/v1/ call.
 """
 
@@ -33,6 +33,7 @@ from evaluation_harness.cli import COMMANDS  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
 import _runstore  # noqa: E402
+from evaluation_harness import _format  # noqa: E402
 
 reg = _api.registry()
 check(
@@ -63,8 +64,8 @@ check(
     and "json" not in names["leaderboard"],
 )
 check(
-    "kinds: run's config is a name, label-import's sheet an upload, label-sheet's out an artifact; spenders marked",
-    {a["name"]: a["kind"] for a in reg["run"]["arguments"]}.get("config") == "name"
+    "kinds: run's system is a plain value (found by id, not a path), label-import's sheet an upload, label-sheet's out an artifact; spenders marked",
+    {a["name"]: a["kind"] for a in reg["run"]["arguments"]}.get("system") == "value"
     and {a["name"]: a["kind"] for a in reg["label-import"]["arguments"]}.get("sheet") == "upload"
     and {a["name"]: a["kind"] for a in reg["label-sheet"]["arguments"]}.get("out") == "artifact"
     and reg["run"]["spends"]
@@ -131,7 +132,8 @@ def call(port, method, path, body=None, headers=None, host=None):
 
 
 try:
-    (proj / "data" / "configs").mkdir(parents=True)
+    (proj / "data" / "systems").mkdir(parents=True)
+    _runstore.write_text(proj, _format.NAME, f"format: {_format.FORMAT}\n")
     shutil.copytree(KIT / "tickets", proj / "tickets")
     r = evh("dataset-create", "--dataset-id", "tk_v1", "--source-dir", "tickets")
     r = r if r.returncode else evh("dataset-materialize", "--dataset-id", "tk_v1")
@@ -151,10 +153,10 @@ try:
     for cid, n in (("one_v1", 1), ("two_v1", 2)):
         _runstore.write_text(
             proj,
-            f"configs/{cid}.yaml",
-            f"config_id: {cid}\ndataset_id: tk_v1\nparams:\n  provider: echo\n  sentences: {n}\n",
+            f"systems/{cid}.yaml",
+            f"system_id: {cid}\nparams:\n  provider: echo\n  sentences: {n}\n",
         )
-        r = r if r.returncode else evh("run", "--config", f"data/configs/{cid}.yaml")
+        r = r if r.returncode else evh("run", "--system", cid, "--dataset", "tk_v1")
     r = r if r.returncode else evh("catalog")
     check("setup: a project with two arms and its catalog", r.returncode == 0, (r.stdout + r.stderr)[-300:])
 
@@ -222,7 +224,7 @@ try:
         )
         refusals = {
             "a job asked as a read": call(
-                port, "POST", "/api/v1/read/run", {"args": {"config": "one_v1"}}, bearer
+                port, "POST", "/api/v1/read/run", {"args": {"system": "one_v1", "dataset": "tk_v1"}}, bearer
             )[0],
             "an argument it does not take": call(
                 port,
@@ -248,11 +250,11 @@ try:
             refusals,
         )
         try:
-            _api.checked_args("run", {"config": "nope_v1"})
+            _api.checked_args("run", {"system": "nope_v1", "dataset": "tk_v1"})
             ok = False
         except _api.Refused as exc:
-            ok = exc.status == 404 and "no arm config" in str(exc)
-        check("a name that does not exist (a config id) is refused", ok)
+            ok = exc.status == 404 and "no system" in str(exc)
+        check("a name that does not exist (a system id) is refused", ok)
 
         def refused(command: str, args: dict) -> bool:
             try:

@@ -26,6 +26,7 @@ from evaluation_harness._check import check, summary  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
 import _runstore  # noqa: E402
+from evaluation_harness import _format  # noqa: E402
 from evaluation_harness.cli import COMMANDS  # noqa: E402
 from evaluation_harness.mcp_server import AGENT_TOOLS, NOT_TOOLS, READ_TOOLS, tools_for  # noqa: E402
 
@@ -62,7 +63,8 @@ check(
 
 try:
     data = proj / "data"
-    (data / "configs").mkdir(parents=True)
+    (data / "systems").mkdir(parents=True)
+    _runstore.write_text(proj, _format.NAME, f"format: {_format.FORMAT}\n")
     (data / "goals").mkdir()
     shutil.copytree(KIT / "tickets", proj / "tutorial" / "tickets")
     # The tutorial's fields: area and plan are public, deadline is not.
@@ -113,9 +115,10 @@ try:
     _runstore.write_text(
         proj, "goals/tickets_summary.yaml", (KIT / "goals" / "tickets_summary.yaml").read_text()
     )
-    cfg = (KIT / "configs" / "tickets_lead2.yaml").read_text()
-    _runstore.write_text(proj, "configs/lead2.yaml", cfg + "goal: tickets_summary\n")
-    r = evh("run", "--config", str(data / "configs" / "lead2.yaml"))
+    _runstore.write_text(
+        proj, "systems/tickets_lead2_v1.yaml", (KIT / "systems" / "tickets_lead2_v1.yaml").read_text()
+    )
+    r = evh("run", "--system", "tickets_lead2_v1", "--dataset", "tickets_v1", "--goal", "tickets_summary")
     check("setup: one run", r.returncode == 0, r.stderr[-300:])
     said = r.stdout.splitlines()
     wrote = next((n for n, ln in enumerate(said) if ln.startswith("wrote 1 run(s) to ")), -1)
@@ -127,10 +130,11 @@ try:
     # The second arm, through --json: progress on stderr, one envelope on stdout.
     _runstore.write_text(
         proj,
-        "configs/lead1.yaml",
-        (KIT / "configs" / "tickets_lead1.yaml").read_text() + "goal: tickets_summary\n",
+        "systems/tickets_lead1_v1.yaml",
+        (KIT / "systems" / "tickets_lead1_v1.yaml").read_text(),
     )
-    dry = evh("run", "--config", str(data / "configs" / "lead1.yaml"), "--dry-run", "--json")
+    lead1 = ("run", "--system", "tickets_lead1_v1", "--dataset", "tickets_v1", "--goal", "tickets_summary")
+    dry = evh(*lead1, "--dry-run", "--json")
     dry_values = json.loads(dry.stdout)["result"]["values"] if dry.returncode == 0 else {}
     check(
         "run --dry-run --json: the projection as values, nothing written",
@@ -141,14 +145,14 @@ try:
         and not any(n.startswith("tickets_lead1_v1_") for n in _runstore.listdir(proj, "runs")),
         dry.stdout[-300:] + dry.stderr[-300:],
     )
-    r = evh("run", "--config", str(data / "configs" / "lead1.yaml"), "--json")
+    r = evh(*lead1, "--json")
     made = (
         json.loads(r.stdout)["result"]["values"]["runs"]
         if r.returncode == 0 and r.stdout.count("\n") == 1
         else []
     )
     check(
-        "run --json: stdout is one envelope with the run (id, config, dataset, dir, items, cost, cap); progress is on stderr",
+        "run --json: stdout is one envelope with the run (id, system, dataset, dir, items, cost, cap); progress is on stderr",
         len(made) == 1
         and made[0]["run_id"].startswith("tickets_lead1_v1_")
         and (made[0]["config_id"], made[0]["dataset_id"], made[0]["n_items"])

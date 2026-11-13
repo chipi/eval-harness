@@ -29,13 +29,13 @@ git add data/rounds && git commit -qm "tickets_summary r1: open"
 ```
 ```text
 data/rounds/tickets_summary/r1.yaml: round r1 of tickets_summary, open
-  Carried in as they are, their runs already count: tickets_lead1_v1, tickets_lead2_v1, tickets_lead2_noisy_v1 (their configs need no change and they need not run again).
-  A NEW arm names the round in its config (round: r1, beside goal: tickets_summary) and runs; then: evh rounds --goal tickets_summary
+  Carried in as they are, their runs already count: tickets_lead1_v1, tickets_lead2_v1, tickets_lead2_noisy_v1 (they need not run again).
+  A NEW system joins it by running in it: evh run --system <id> --dataset tickets_v1 --goal tickets_summary --round r1; then: evh rounds --goal tickets_summary
   Commit the round file before the runs: an uncommitted file makes them dirty.
 ```
 
-The three arms are carried in as they are: their configs need no `round:` line and they do not
-run again. Only an arm that is new to the round names it in its config (step 4).
+The three arms are carried in as they are: they do not run again. Only a system that is new to the
+round runs in it, naming it with `--round` (step 4).
 
 A round belongs to a goal and one dataset, and is a file beside the goal,
 `data/rounds/<goal>/<round>.yaml`. The commands are its only writers.
@@ -108,25 +108,22 @@ evh round-open --goal tickets_summary --dataset tickets_v1 --from r1 \
 ```
 ```text
 data/rounds/tickets_summary/r2.yaml: round r2 of tickets_summary, open
-  Carried in as they are, their runs already count: tickets_lead2_v1 (their configs need no change and they need not run again).
-  A NEW arm names the round in its config (round: r2, beside goal: tickets_summary) and runs; then: evh rounds --goal tickets_summary
+  Carried in as they are, their runs already count: tickets_lead2_v1 (they need not run again).
+  A NEW system joins it by running in it: evh run --system <id> --dataset tickets_v1 --goal tickets_summary --round r2; then: evh rounds --goal tickets_summary
 ```
 
-A new arm joins a round by naming it in its config, beside its goal:
+A new system joins a round by running in it, naming the round and its goal:
 
 ```bash
-cat > data/configs/tickets_lead2_noisy_v2.yaml <<'EOF'
-config_id: tickets_lead2_noisy_v2
-dataset_id: tickets_v1
+cat > data/systems/tickets_lead2_noisy_v2.yaml <<'EOF'
+system_id: tickets_lead2_noisy_v2
 params:
   provider: echo
   sentences: 2
   noise: 0.05
-goal: tickets_summary
-round: r2
 EOF
 git add -A && git commit -qm "tickets_summary r2: open; lead2_noisy v2"
-evh run --config data/configs/tickets_lead2_noisy_v2.yaml --repeat 3
+evh run --system tickets_lead2_noisy_v2 --dataset tickets_v1 --goal tickets_summary --round r2 --repeat 3
 ```
 <!-- guide-check: varies spread -->
 ```text
@@ -219,10 +216,10 @@ A run naming a closed round is refused before it calls anything, so a round's ev
 grow after its conclusion:
 
 ```bash
-evh run --config data/configs/tickets_lead2_noisy_v2.yaml
+evh run --system tickets_lead2_noisy_v2 --dataset tickets_v1 --goal tickets_summary --round r2
 ```
 ```text
-ERROR (not-allowed): data/configs/tickets_lead2_noisy_v2.yaml: round r2 of tickets_summary is closed; open the next one (evh round-open --from r2)
+ERROR (not-allowed): --round r2: round r2 of tickets_summary is closed; open the next one (evh round-open --from r2)
 ```
 
 `evh validate` (V14) checks the round files; `evh family-test --round r2` tests the round's leader
@@ -263,7 +260,7 @@ no arm has run on it yet
 ```
 
 Nothing measured on `tickets_v1` moves: its runs, references and baseline stay its own. An arm
-measured on `tickets_v2` is a config with `dataset_id: tickets_v2`, and needs a reference for
+measured on `tickets_v2` is a run with `--dataset tickets_v2` (the same systems), and needs a reference for
 `tickets_v2`. Labels follow an item by its bytes, so v1's six tickets already carry the author's labels in
 `tickets_v2`: `evh reference-promote --dataset-id tickets_v2 --labels tickets_v1/author_v1 --tier silver
 --reason "…" --by me` promotes them for it, and the new ticket waits for a label of its own (`evh label-sheet

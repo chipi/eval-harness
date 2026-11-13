@@ -312,7 +312,8 @@ try:
     # ---- a tutorial project: goals, family-test --round, score-preview, overview, inspect ----
     proj = tutorial_proj
     data = proj / "data"
-    (data / "configs").mkdir(parents=True)
+    (data / "systems").mkdir(parents=True)
+    _model_records.stamp(data)
     (data / "goals").mkdir()
     shutil.copytree(KIT / "tickets", proj / "tutorial" / "tickets")
     shutil.copy(KIT / "goals" / "tickets_summary.yaml", data / "goals")
@@ -353,9 +354,18 @@ try:
     )
     check("setup: the kit's dataset and gold", r.returncode == 0, out(r)[-300:])
     for cfg in ("lead1", "lead2", "lead2_noisy"):
-        text = (KIT / "configs" / f"tickets_{cfg}.yaml").read_text() + "goal: tickets_summary\n"
-        (data / "configs" / f"{cfg}.yaml").write_text(text)
-        r = evh(proj, "run", "--config", f"data/configs/{cfg}.yaml")
+        text = (KIT / "systems" / f"tickets_{cfg}_v1.yaml").read_text()
+        (data / "systems" / f"tickets_{cfg}_v1.yaml").write_text(text)
+        r = evh(
+            proj,
+            "run",
+            "--system",
+            f"tickets_{cfg}_v1",
+            "--dataset",
+            "tickets_v1",
+            "--goal",
+            "tickets_summary",
+        )
     check("setup: three arms run", r.returncode == 0, out(r)[-400:])
     r = evh(
         proj,
@@ -576,8 +586,9 @@ try:
         (jp / "src").mkdir()
         for k, f in enumerate(sorted((KIT / "tickets").glob("*.txt")) * 2):
             shutil.copy(f, jp / "src" / f"{k:02d}_{f.name}")
-        for d in ("configs", "scorers"):
+        for d in ("systems", "scorers"):
             (jp / "data" / d).mkdir(parents=True)
+        _model_records.stamp(jp / "data")
         shutil.copy(KIT / "scorers" / "tickets-judge-v1.yaml", jp / "data" / "scorers")
         (jp / "tutorial").mkdir()
         shutil.copy(KIT / "judge_prompt.txt", jp / "tutorial")
@@ -586,10 +597,10 @@ try:
         ]
         steps += [("dataset-materialize", "--dataset-id", "tickets_v1")]
         for cfg in ("lead1", "lead2"):
-            (jp / "data" / "configs" / f"{cfg}.yaml").write_text(
-                (KIT / "configs" / f"tickets_{cfg}.yaml").read_text()
+            (jp / "data" / "systems" / f"tickets_{cfg}_v1.yaml").write_text(
+                (KIT / "systems" / f"tickets_{cfg}_v1.yaml").read_text()
             )
-            steps.append(("run", "--config", f"data/configs/{cfg}.yaml"))
+            steps.append(("run", "--system", f"tickets_{cfg}_v1", "--dataset", "tickets_v1"))
         bad = [out(r)[-300:] for r in (evh(jp, *a) for a in steps) if r.returncode]
         check("setup: a project with 12 items and two arms to judge", not bad, bad)
         # the 25th call prints "25 calls"; the three calls after it are slow, so the process outlives that line

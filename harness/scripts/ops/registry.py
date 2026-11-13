@@ -54,10 +54,10 @@ def _load(dotted: str) -> Callable[..., Any]:
 
 
 def _all() -> dict[str, Op]:
-    from evaluation_harness.ops import goals, models  # noqa: PLC0415
+    from evaluation_harness.ops import goals, models, prompts, systems  # noqa: PLC0415
 
     out: dict[str, Op] = {}
-    for op in (*goals.OPS, *models.OPS):
+    for op in (*goals.OPS, *models.OPS, *systems.OPS, *prompts.OPS):
         if op.kind not in KINDS:
             raise ValueError(f"{op.name}: kind {op.kind!r} is not one of {KINDS}")
         if op.name in out:

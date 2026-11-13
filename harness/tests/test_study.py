@@ -25,6 +25,7 @@ from evaluation_harness._check import check, summary  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
 import _runstore  # noqa: E402
+from evaluation_harness import _format  # noqa: E402
 
 proj = Path(tempfile.mkdtemp(prefix="evh-study-"))
 env = dict(os.environ, EVH_ACTOR="person:test", EVAL_HOME=str(proj), EVAL_BUILD_REF="test-study")
@@ -65,9 +66,9 @@ def values(r):
         return {}
 
 
-def config(name, sentences):
-    _runstore.write_text(proj, f"configs/{name}.yaml",
-                         f"config_id: {name}\ndataset_id: tk_val\ngoal: g\nparams:\n  provider: echo\n  sentences: {sentences}\n")  # fmt: skip
+def system(name, sentences):
+    _runstore.write_text(proj, f"systems/{name}.yaml",
+                         f"system_id: {name}\nparams:\n  provider: echo\n  sentences: {sentences}\n")  # fmt: skip
 
 
 def spec(name, text):
@@ -88,7 +89,8 @@ try:
             ]
             (src / f"t{i:02d}.txt").write_text(" ".join(s) + "\n")
             (gold / f"t{i:02d}.txt").write_text(" ".join(s[:2]) + "\n")
-    (proj / "data" / "configs").mkdir(parents=True)
+    (proj / "data" / "systems").mkdir(parents=True)
+    _runstore.write_text(proj, _format.NAME, f"format: {_format.FORMAT}\n")
     r = None
     for ds, side in (("tk_val", "val"), ("tk_test", "test")):
         for argv in (
@@ -106,13 +108,13 @@ try:
         "success_criteria: {primary: {measure: overlap_f1, direction: higher}}\n"
         "datasets:\n  - {dataset_id: tk_val, role: validation}\n  - {dataset_id: tk_test, role: test}\n",
     )  # fmt: skip
-    config("one_v1", 1)
-    rb = evh("run", "--config", "data/configs/one_v1.yaml")
+    system("one_v1", 1)
+    rb = evh("run", "--system", "one_v1", "--dataset", "tk_val", "--goal", "g")
     check("setup: validation and test sets of 12, their gold, a goal, the one-sentence arm run",
           r is not None and r.returncode == 0 and rb.returncode == 0, ((r.stderr if r else "") + rb.stderr)[-400:])  # fmt: skip
 
     # ── a grid study ──────────────────────────────────────────────────────────────────────────────────────────────
-    grid = spec("grid", "dataset: tk_val\nbaseline: {config: one_v1}\nmeasure: overlap_f1\nsampler: grid\n"
+    grid = spec("grid", "dataset: tk_val\nbaseline: {system: one_v1}\nmeasure: overlap_f1\nsampler: grid\n"
                 "accept: {point: {min_gain: 0}}\nstop: {trials: 5}\n"
                 "space:\n  groups:\n    - {name: length, reason: how much to keep, params: {sentences: [2, 3, 4]}}\n")  # fmt: skip
     dry = evh("study-run", "g/s1", "--spec", grid, "--dry-run")
@@ -145,7 +147,7 @@ try:
     )  # fmt: skip
 
     # ── an agent study ────────────────────────────────────────────────────────────────────────────────────────────
-    agent = spec("agent", "dataset: tk_val\nbaseline: {config: one_v1}\nmeasure: overlap_f1\nsampler: agent\n"
+    agent = spec("agent", "dataset: tk_val\nbaseline: {system: one_v1}\nmeasure: overlap_f1\nsampler: agent\n"
                  "accept: {point: {min_gain: 0}}\nstop: {trials: 10}\ndirections: keep what a reader needs\n")  # fmt: skip
     r = evh("study-run", "g/s2", "--spec", agent)
     a1 = values(evh("study-ask", "g/s2", "--json")).get("ask_id")
@@ -226,7 +228,7 @@ try:
         "    if 'ask' in msg:\n        out = {'params': {'sentences': sent.pop()}, 'hypothesis': 'from a program'} if sent else {'stop': 'done'}\n"
         "    else:\n        out = {}\n    print(json.dumps(out), flush=True)\n"
     )  # fmt: skip
-    cmd = spec("cmd", "dataset: tk_val\nbaseline: {config: one_v1}\nmeasure: overlap_f1\n"
+    cmd = spec("cmd", "dataset: tk_val\nbaseline: {system: one_v1}\nmeasure: overlap_f1\n"
                f"sampler: {{command: '{sys.executable} sampler.py'}}\naccept: {{point: {{min_gain: 0}}}}\nstop: {{trials: 4}}\n")  # fmt: skip
     r = evh("study-run", "g/s3", "--spec", cmd)
     st3 = values(evh("studies", "--study", "g/s3", "--json")).get("study") or {}
@@ -269,10 +271,10 @@ try:
     (lib / "sub").mkdir(parents=True)
     (lib / "sub" / "b.txt").write_text("system v1\n")
     (lib / "a.txt").write_text("fixed\n")
-    _runstore.write_text(proj, "configs/root_v1.yaml", "config_id: root_v1\ndataset_id: tk_val\ngoal: g\n"
+    _runstore.write_text(proj, "systems/root_v1.yaml", "system_id: root_v1\n"
                          "prompt_root: {name: lib, path: lib, vary: [sub/b.txt]}\nparams:\n  provider: echo\n  sentences: 1\n")  # fmt: skip
-    rr = evh("run", "--config", "data/configs/root_v1.yaml")
-    rspec = spec("rootspec", "dataset: tk_val\nbaseline: {config: root_v1}\nmeasure: overlap_f1\nsampler: agent\n"
+    rr = evh("run", "--system", "root_v1", "--dataset", "tk_val", "--goal", "g")
+    rspec = spec("rootspec", "dataset: tk_val\nbaseline: {system: root_v1}\nmeasure: overlap_f1\nsampler: agent\n"
                  "accept: {point: {min_gain: -1}}\nstop: {trials: 3}\n")  # fmt: skip
     evh("study-run", "g/s6", "--spec", rspec)
     a6 = values(evh("study-ask", "g/s6", "--json")).get("ask_id")
@@ -281,8 +283,8 @@ try:
     import yaml
 
     tcfg = (
-        yaml.safe_load(_runstore.read_text(proj, "studies/g/s6/t1.yaml"))
-        if _runstore.exists(proj, "studies/g/s6/t1.yaml")
+        yaml.safe_load(_runstore.read_text(proj, "studies/g/s6/s6-t1.yaml"))
+        if _runstore.exists(proj, "studies/g/s6/s6-t1.yaml")
         else {}
     )
     trial_run = next((n for n in _runstore.listdir(proj, "runs") if n.startswith("s6-t1_")), None)
@@ -306,10 +308,10 @@ try:
         "from evaluation_harness.adapter import call_system as _call\n"
         "def call_system(text, params):\n    time.sleep(float(params.get('sleep', 0)))\n    return _call(text, params)\n"
     )  # fmt: skip
-    _runstore.write_text(proj, "configs/wrap_v1.yaml", "config_id: wrap_v1\ndataset_id: tk_val\ngoal: g\nadapter: wrap.py\n"
+    _runstore.write_text(proj, "systems/wrap_v1.yaml", "system_id: wrap_v1\nadapter: wrap.py\n"
                          "params:\n  provider: echo\n  sentences: 1\n")  # fmt: skip
-    evh("run", "--config", "data/configs/wrap_v1.yaml")
-    wspec = spec("wrapspec", "dataset: tk_val\nbaseline: {config: wrap_v1}\nmeasure: overlap_f1\nsampler: agent\n"
+    evh("run", "--system", "wrap_v1", "--dataset", "tk_val", "--goal", "g")
+    wspec = spec("wrapspec", "dataset: tk_val\nbaseline: {system: wrap_v1}\nmeasure: overlap_f1\nsampler: agent\n"
                  "accept: {point: {min_gain: 0}}\nstop: {trials: 3}\n")  # fmt: skip
     evh("study-run", "g/s7", "--spec", wspec)
     (proj / "wrap.py").write_text((proj / "wrap.py").read_text() + "LIMIT = 3\n")
@@ -322,10 +324,10 @@ try:
     import signal
     import time
 
-    _runstore.write_text(proj, "configs/slow_v1.yaml", "config_id: slow_v1\ndataset_id: tk_val\ngoal: g\nadapter: wrap.py\n"
+    _runstore.write_text(proj, "systems/slow_v1.yaml", "system_id: slow_v1\nadapter: wrap.py\n"
                          "params:\n  provider: echo\n  sentences: 1\n  sleep: 0.4\n")  # fmt: skip
-    evh("run", "--config", "data/configs/slow_v1.yaml")
-    kspec = spec("killspec", "dataset: tk_val\nbaseline: {config: slow_v1}\nmeasure: overlap_f1\nsampler: grid\n"
+    evh("run", "--system", "slow_v1", "--dataset", "tk_val", "--goal", "g")
+    kspec = spec("killspec", "dataset: tk_val\nbaseline: {system: slow_v1}\nmeasure: overlap_f1\nsampler: grid\n"
                  "accept: {point: {min_gain: 0}}\nstop: {trials: 3}\n"
                  "space:\n  groups:\n    - {name: length, reason: how much, params: {sentences: [2, 3]}}\n")  # fmt: skip
     log = proj / "s8.log"
@@ -334,7 +336,7 @@ try:
                               stdout=fh, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, start_new_session=True)  # fmt: skip
     for _ in range(300):
         time.sleep(0.1)
-        if _runstore.exists(proj, "studies/g/s8/t1.yaml") and any(
+        if _runstore.exists(proj, "studies/g/s8/s8-t1.yaml") and any(
             n.startswith("s8-t1_") for n in _runstore.listdir(proj, "runs")
         ):
             break

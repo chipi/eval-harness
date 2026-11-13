@@ -70,12 +70,11 @@ With only the `.env` above (and the judges' own OpenRouter key), its provider ta
   judges can call: openrouter
 ```
 
-## 2. The arm
+## 2. The system
 
 ```yaml
-# data/configs/briefs_mistral_small.yaml
-config_id: briefs_mistral_small_v1
-dataset_id: briefs_v1
+# data/systems/briefs_mistral_small_v1.yaml
+system_id: briefs_mistral_small_v1
 params:
   provider: openrouter
   model: mistralai/mistral-small-3.2-24b-instruct
@@ -84,12 +83,11 @@ params:
   prompt: "Summarise the following news brief in one sentence."
   usd_per_mtok_in: 0.1        # so the run records what it cost
   usd_per_mtok_out: 0.3
-goal: brief_summary
 ```
 
-With a LiteLLM proxy the same arm is `provider: litellm` and `model:` the proxy's name for it
+With a LiteLLM proxy the same system is `provider: litellm` and `model:` the proxy's name for it
 (the newcomer scenario's was `eval-mistral-small`); with Anthropic directly, `provider:
-anthropic` and an Anthropic model id. Prices live in the config, not in code: they change, and a
+anthropic` and an Anthropic model id. Prices live in the system, not in code: they change, and a
 run records the prices it was costed at.
 
 **What a run records as cost.** For each call, the provider's bill when the response carries one
@@ -111,9 +109,9 @@ the two differed by 0.67× to 3.76× per arm.
 
 <!-- guide-check: skip -->
 ```bash
-git add -A && git commit -qm "briefs: the hosted arm"
-evh run --config data/configs/briefs_mistral_small.yaml --dry-run    # calls nothing
-evh run --config data/configs/briefs_mistral_small.yaml --repeat 3
+git add -A && git commit -qm "briefs: the hosted system"
+evh run --system briefs_mistral_small_v1 --dataset briefs_v1 --goal brief_summary --dry-run    # calls nothing
+evh run --system briefs_mistral_small_v1 --dataset briefs_v1 --goal brief_summary --repeat 3
 evh leaderboard --dataset-id briefs_v1
 evh cost-report
 ```
@@ -121,7 +119,7 @@ evh cost-report
 The dry run prints the calls, the estimated cost and the cap. `--repeat 3` measures the arm's own
 noise: a hosted model at temperature 0 is often not deterministic, and a difference smaller than
 its spread is not a difference. If outputs stop at `max_tokens`, `evh run` warns and names
-the items: they are scored as if complete, so raise `max_tokens` in a new `config_id`.
+the items: they are scored as if complete, so raise `max_tokens` in a new `system_id`.
 
 The leaderboard now shows each arm's quality, `total_cost_usd` and `latency_ms`, and its
 **frontier**: the arms no other arm beats on quality, cost and speed together. `evh run`
@@ -144,7 +142,7 @@ exact command to continue it:
 
 <!-- guide-check: skip -->
 ```bash
-evh run --config data/configs/briefs_mistral_small.yaml --resume <run_id>
+evh run --system briefs_mistral_small_v1 --dataset briefs_v1 --goal brief_summary --resume <run_id>
 ```
 
 A resumed pass calls the model only for the items that are missing. Or delete the run directory;

@@ -37,7 +37,7 @@ from evaluation_harness._check import check, summary  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
 import _runstore  # noqa: E402
-from evaluation_harness import _store  # noqa: E402
+from evaluation_harness import _format, _store  # noqa: E402
 
 MARK = {"s": "Shownmarkerword", "h": "Hiddenmarkerword"}
 FIELDSET = """fieldset_id: notes
@@ -77,8 +77,9 @@ def found(root: Path, word: str) -> list[str]:
 
 try:
     data = proj / "data"
-    for d in ("configs", "goals", "fields"):
+    for d in ("systems", "goals", "fields"):
         (data / d).mkdir(parents=True)
+    _runstore.write_text(proj, _format.NAME, f"format: {_format.FORMAT}\n")
     _runstore.write_text(proj, "fields/notes.yaml", FIELDSET)
     for k, word in MARK.items():
         ds = f"tickets_{k}"
@@ -127,14 +128,13 @@ try:
         )
         check(f"setup: {ds}'s gold, imported and promoted", r.returncode == 0, said(r)[-300:])
         for c in ("tickets_lead1", "tickets_lead2"):
-            cfg = data / "configs" / f"{c}_{k}.yaml"
-            text = (KIT / "configs" / f"{c}.yaml").read_text()
+            text = (KIT / "systems" / f"{c}_v1.yaml").read_text()
             _runstore.write_text(
                 proj,
-                f"configs/{c}_{k}.yaml",
-                text.replace("tickets_v1", ds).replace(f"config_id: {c}_v1", f"config_id: {c}_{k}_v1"),
+                f"systems/{c}_{k}_v1.yaml",
+                text.replace(f"system_id: {c}_v1", f"system_id: {c}_{k}_v1"),
             )
-            r = evh("run", "--config", str(cfg))
+            r = evh("run", "--system", f"{c}_{k}_v1", "--dataset", ds)
             check(f"setup: {c} runs on {ds}", r.returncode == 0, said(r)[-300:])
     git("init", "-q")
     git("add", "-A")

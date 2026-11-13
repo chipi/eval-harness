@@ -78,12 +78,11 @@ What a model cannot change (gpt-oss reasons at every setting; `low` is the least
 why, so it is reported and passes rather than failing every check: `accepted: {reasoning: "<why>"}`, on the
 record, or on one deployment for what only that one raises (a hosted gateway has no build to pin).
 
-## 3 · An arm that names it
+## 3 · A system that names it
 
 ```yaml
-# data/configs/tickets_llama.yaml
-config_id: tickets_llama_v1
-dataset_id: tickets_v1
+# data/systems/tickets_llama_v1.yaml
+system_id: tickets_llama_v1
 model_record: llama3.1-8b
 deployment: laptop
 params:
@@ -94,18 +93,18 @@ params:
   max_tokens: 200          # a summary is two sentences; 200 bounds a runaway
 ```
 
-The record supplies the model's own settings; the arm adds the task's (its reply cap, its call limit), with a
-comment saying why. A record refuses those: they would reach every other eval's arms. Commit the record
-and the arm before running, so the run records a clean tree:
+The record supplies the model's own settings; the system adds the task's (its reply cap, its call limit), with a
+comment saying why. A record refuses those: they would reach every other eval's systems. Commit the record
+and the system before running, so the run records a clean tree:
 
 ```bash
-git add -A && git commit -qm "llama3.1-8b, set up; an arm that names it"
+git add -A && git commit -qm "llama3.1-8b, set up; a system that names it"
 ```
 
 ## 4 · Smoke it
 
 ```bash
-evh arm-smoke --config data/configs/tickets_llama.yaml
+evh arm-smoke --system tickets_llama_v1 --dataset tickets_v1
 ```
 ```text
 arm-smoke: tickets_llama_v1 on tickets_v1, 3 item(s)
@@ -140,7 +139,7 @@ A passed smoke makes the model **vetted**: onboarded, and shown to work on a tas
 ## 5 · Run it, and see it
 
 ```bash
-evh run --config data/configs/tickets_llama.yaml
+evh run --system tickets_llama_v1 --dataset tickets_v1
 evh models
 ```
 ```text

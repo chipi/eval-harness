@@ -476,7 +476,7 @@ global test (permutation on within-item ranks): p = 0.0002 -> an arm effect exis
 Nemenyi critical difference = 2.89 rank positions; observed span = 14.44
 pairs distinguishable: 152 of 378
 
-  fn_span_marker_n200_v1   avg rank 8.98   P(1st) = 1.00
+  fn_span_marker_v1   avg rank 8.98   P(1st) = 1.00
 ```
 
 > The critical values come from [`tools/nemenyi_table.py`](../harness/tools/nemenyi_table.py), which solves the
@@ -670,13 +670,13 @@ cd harness
 # The dataset file is committed and frozen; materialize checks the fetched bytes against it.
 make dataset-materialize DATASET_ID=few_nerd_280
 
-for f in ../examples/ner-few-nerd/configs/arm_*_n200.yaml; do
-  python scripts/run.py --config "$f"
+for s in ../examples/ner-few-nerd/systems/*.yaml; do
+  python scripts/run.py --system "$(basename "$s" .yaml)" --dataset few_nerd_280 --goal entities_few_nerd
 done
 
 python tools/extraction_report.py --dataset-id few_nerd_280 --match fn_
-python scripts/family_test.py --dataset-id few_nerd_280 --a fn_span_marker_n200_v1 \
-    --against _n200_v1 --metric f1
+python scripts/family_test.py --dataset-id few_nerd_280 --a fn_span_marker_v1 \
+    --against fn_ --metric f1
 python scripts/holdout_significance.py \
     --dataset-id few_nerd_280 --exclude-dataset few_nerd_56 --metric f1 --match fn_
 python scripts/rank_stability.py \

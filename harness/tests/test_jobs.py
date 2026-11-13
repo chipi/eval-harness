@@ -6,7 +6,7 @@
 Every job command has its locks named. Then a real `evh catalog-serve` in a throwaway tutorial project ($0,
 offline; a slow arm sleeps per item): a run job without `max_cost_usd`, a decision without `by`, a read asked as a
 job and a call without the data header are refused before a job exists; a run job ends `succeeded`, its envelope in
-the result and its actor the job's `by`; a second run of the same config waits (`queued`, naming the lock and the
+the result and its actor the job's `by`; a second run of the same system waits (`queued`, naming the lock and the
 job holding it) and starts when the first is stopped (`cancelled`, its process group gone); a stopped run is resumed
 by a new job; a job whose supervisor is killed reads `running (unsupervised)` while its command lives and `lost`
 after; an artifact (label-sheet's sheet) is fetched from the job; an upload (import-run's scores) reaches the job;
@@ -39,6 +39,7 @@ from evaluation_harness._check import check, summary  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
 import _runstore  # noqa: E402
+from evaluation_harness import _format  # noqa: E402
 
 jobs = {c for c, v in _api.registry().items() if v["served"] == "job"}
 named = set(_jobs.LOCK_RULES) | _jobs.MIGRATIONS | _jobs.PROJECT_ONLY
@@ -122,7 +123,8 @@ def until(job_id, states, seconds=120):
 
 
 try:
-    (proj / "data" / "configs").mkdir(parents=True)
+    (proj / "data" / "systems").mkdir(parents=True)
+    _runstore.write_text(proj, _format.NAME, f"format: {_format.FORMAT}\n")
     shutil.copytree(KIT / "tickets", proj / "tickets")
     (proj / "slow.py").write_text(SLOW)
     r = evh("dataset-create", "--dataset-id", "tk_v1", "--source-dir", "tickets")
@@ -140,13 +142,11 @@ try:
             "--reason", "the kit's summaries, for the jobs test", "--by", "t",
         )
     )  # fmt: skip
-    _runstore.write_text(
-        proj, "configs/fast.yaml", "config_id: fast_v1\ndataset_id: tk_v1\nparams:\n  provider: echo\n"
-    )
+    _runstore.write_text(proj, "systems/fast_v1.yaml", "system_id: fast_v1\nparams:\n  provider: echo\n")
     _runstore.write_text(
         proj,
-        "configs/slow.yaml",
-        "config_id: slow_v1\ndataset_id: tk_v1\nadapter: slow.py\nparams:\n  provider: echo\n  sleep: 1.5\n  cost: 0.01\n",
+        "systems/slow_v1.yaml",
+        "system_id: slow_v1\nadapter: slow.py\nparams:\n  provider: echo\n  sleep: 1.5\n  cost: 0.01\n",
     )
     r = r if r.returncode else evh("catalog")
     check(
@@ -156,7 +156,7 @@ try:
     )
     srv, PORT, TOKEN = serve()
 
-    st, j = job("run", {"config": "fast_v1"}, by="person:ana")
+    st, j = job("run", {"system": "fast_v1", "dataset": "tk_v1"}, by="person:ana")
     st2, _j = job("run-promote", {"run": "x"}, reason="no one named")
     st3, _j = job("leaderboard", {"dataset-id": "tk_v1"})
     st4, _j = call(
@@ -170,7 +170,7 @@ try:
         (st, st2, st3, st4) == (400, 400, 400, 403) and "max_cost_usd" in j.get("error", ""),
         (st, st2, st3, st4, j),
     )
-    st, j = job("run", {"config": "fast_v1"}, by="person:ana", max_cost_usd=1)
+    st, j = job("run", {"system": "fast_v1", "dataset": "tk_v1"}, by="person:ana", max_cost_usd=1)
     done = until(j.get("id"), ("succeeded", "failed")) if st == 202 else {}
     run_id = (done.get("run_id") or "") if done else ""
     m = (
@@ -193,14 +193,14 @@ try:
         lg,
     )
 
-    # Locks: a second run of one config waits for the first.
-    st, a = job("run", {"config": "slow_v1"}, by="person:ana", max_cost_usd=1)
+    # Locks: a second run of one system waits for the first.
+    st, a = job("run", {"system": "slow_v1", "dataset": "tk_v1"}, by="person:ana", max_cost_usd=1)
     until(a["id"], ("running",), 30)
-    st, b = job("run", {"config": "slow_v1"}, by="person:ana", max_cost_usd=1)
+    st, b = job("run", {"system": "slow_v1", "dataset": "tk_v1"}, by="person:ana", max_cost_usd=1)
     time.sleep(1.5)
     _st, bq = call("GET", f"/api/v1/jobs/{b['id']}")
     check(
-        "a second run of the same config waits: queued, naming the lock and the job that holds it",
+        "a second run of the same system waits: queued, naming the lock and the job that holds it",
         bq.get("state") == "queued"
         and (bq.get("waiting_for") or {}).get("job") == a["id"]
         and "slow_v1" in (bq.get("waiting_for") or {}).get("lock", ""),
@@ -312,7 +312,7 @@ try:
         paid > 0 and abs(float(rjob.get("env", {}).get("EVAL_MAX_COST_USD", "nan")) - (1 - paid)) < 1e-6,
         (paid, rjob.get("env")),
     )
-    st, f = job("run", {"config": "slow_v1"}, by="person:ana", max_cost_usd=0.01)
+    st, f = job("run", {"system": "slow_v1", "dataset": "tk_v1"}, by="person:ana", max_cost_usd=0.01)
     fdone = until(f.get("id"), ("succeeded", "failed", "cancelled"), 120) if st == 202 else {}
     st, refusal = call("POST", f"/api/v1/jobs/{f.get('id')}/resume")
     check(
@@ -324,7 +324,7 @@ try:
     )
 
     # A supervisor that dies.
-    st, e = job("run", {"config": "slow_v1"}, by="person:ana", max_cost_usd=1)
+    st, e = job("run", {"system": "slow_v1", "dataset": "tk_v1"}, by="person:ana", max_cost_usd=1)
     run_e = until(e["id"], ("running",), 30)
     os.kill(run_e["supervisor_pid"], signal.SIGKILL)
     time.sleep(0.5)
@@ -376,7 +376,17 @@ try:
 
     # Step 6: the terminal's jobs are the same jobs. Started with jobs-start, listed by the API, stopped by jobs-stop;
     # one the API started, followed by jobs-logs.
-    r = evh("jobs-start", "run", "--arg", "config=slow_v1", "--max-cost-usd", "1", "--json")
+    r = evh(
+        "jobs-start",
+        "run",
+        "--arg",
+        "system=slow_v1",
+        "--arg",
+        "dataset=tk_v1",
+        "--max-cost-usd",
+        "1",
+        "--json",
+    )
     tj = (
         (json.loads(r.stdout).get("result") or {}).get("values", {}).get("job", {})
         if r.returncode == 0
@@ -393,7 +403,7 @@ try:
         and after.get("state") == "cancelled",
         (r.returncode, r.stderr[-300:], listed, tj.get("by"), r2.stderr[-200:], after.get("state")),
     )  # fmt: skip
-    st, aj = job("run", {"config": "fast_v1"}, by="person:ana", max_cost_usd=1)
+    st, aj = job("run", {"system": "fast_v1", "dataset": "tk_v1"}, by="person:ana", max_cost_usd=1)
     r3 = evh("jobs-logs", aj.get("id", "none"), "--follow")
     r4 = evh("jobs-status", aj.get("id", "none"))
     check(

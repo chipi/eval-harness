@@ -8,12 +8,12 @@ that they still answer as they did at a pinned commit. There is no model and no 
 |---|---|
 | `fetch.py` | downloads `chipi-nbgd/signal-fleet-dedup` at `v1` from Hugging Face (sha256-pinned) and restores the capture's records and the dataset's items |
 | `adapter.py` | each signal through `triage.operational_class`, `sources._is_test_signal`, `filing.low_signal`, `filing.normalized_key`; `score()` gives `key_match` and `class_match` against the pinned commit's answers |
-| `configs/dedup_guard.yaml` | the one arm: the fleet's code at the commit `TRIAGE_FLEET_SRC` holds |
+| `systems/dedup_guard_v1.yaml` | the one system: the fleet's code at the commit `TRIAGE_FLEET_SRC` holds |
 | `test_dedup.py` | deterministic, and a planted change to `normalized_key` is caught |
 
 ```bash
 python examples/signal-fleet-dedup/fetch.py
-TRIAGE_FLEET_SRC=/path/to/signal-fleet evh run --config examples/signal-fleet-dedup/configs/dedup_guard.yaml
+TRIAGE_FLEET_SRC=/path/to/signal-fleet evh run --system dedup_guard_v1 --dataset fleet_dedup_v1
 evh leaderboard --dataset-id fleet_dedup_v1
 ```
 

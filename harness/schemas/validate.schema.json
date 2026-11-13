@@ -29,6 +29,6 @@
       "description": "V8: (dataset_id, config_id) pairs allowed to repeat, each one justified.",
       "items": {"type": "array", "items": {"type": "string"}, "minItems": 2, "maxItems": 2}
     },
-    "configs": {"type": "array", "items": {"type": "string"}, "description": "V18: globs, relative to this project's root, of arm configs kept outside data/configs (the examples' arms), so their model_record notes are seen."}
+    "systems": {"type": "array", "items": {"type": "string"}, "description": "Globs, relative to this project's root, of systems kept outside data/systems (the examples'), found by their id and seen by every check of systems (V1's schema, V5, V18, V20)."}
   }
 }

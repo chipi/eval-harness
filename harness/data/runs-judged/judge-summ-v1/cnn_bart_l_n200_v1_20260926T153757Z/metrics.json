@@ -5,7 +5,7 @@
     "ref": "fb7366a0a69479db793d52bd04e310e8a564b9f4",
     "source": "git"
   },
-  "config_id": "cnn_bart_l_n200_v1",
+  "config_id": "cnn_bart_l_v1",
   "created_at": "2026-10-25T13:39:55Z",
   "dataset_id": "cnn_dailymail_200",
   "derived": {
@@ -53,7 +53,7 @@
   },
   "fingerprint": {
     "arm": {
-      "config_id": "cnn_bart_l_n200_v1",
+      "config_id": "cnn_bart_l_v1",
       "labels": {
         "family": "bart",
         "price_tier": "free"

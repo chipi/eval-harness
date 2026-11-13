@@ -30,6 +30,7 @@ os.environ.pop("EVAL_STORE", None)
 for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR"):
     os.environ.pop(k, None)
 from evaluation_harness import (  # noqa: E402
+    _format,
     _outputs,
     _store,
 )
@@ -106,13 +107,14 @@ def body(store: str) -> None:
 
         _outputs.reset()
         _store.rmtree(proj / "data")
-        _store.mkdir(proj / "data" / "configs", parents=True)
+        _store.mkdir(proj / "data" / "systems", parents=True)
+        _format.stamp(data=proj / "data")
         shutil.copytree(KIT / "tickets", proj / "tutorial" / "tickets")
         r1 = evh("dataset-create", "--dataset-id", "tickets_v1", "--source-dir", "tutorial/tickets")
         r1 = r1 if r1.returncode else evh("dataset-materialize", "--dataset-id", "tickets_v1")
-        cfg = proj / "data" / "configs" / "lead1.yaml"
-        _store.write_text(cfg, _store.read_text(KIT / "configs" / "tickets_lead1.yaml"))
-        r1 = r1 if r1.returncode else evh("run", "--config", str(cfg))
+        cfg = proj / "data" / "systems" / "tickets_lead1_v1.yaml"
+        _store.write_text(cfg, _store.read_text(KIT / "systems" / "tickets_lead1_v1.yaml"))
+        r1 = r1 if r1.returncode else evh("run", "--system", "tickets_lead1_v1", "--dataset", "tickets_v1")
         run = next(_store.glob(proj / "data" / "runs", "tickets_lead1_v1_*"), proj / "missing")
         check(
             f"{store}: a run writes its outputs, every item, and no outputs/ folder or row checkpoint",
@@ -138,7 +140,15 @@ def body(store: str) -> None:
         _store.write_text(
             stopped / "run.json", json.dumps({"config_id": "tickets_lead1_v1", "dataset_id": "tickets_v1"})
         )
-        r2 = evh("run", "--config", str(cfg), "--resume", "tickets_lead1_v1_stopped")
+        r2 = evh(
+            "run",
+            "--system",
+            "tickets_lead1_v1",
+            "--dataset",
+            "tickets_v1",
+            "--resume",
+            "tickets_lead1_v1_stopped",
+        )
         new = sorted(_store.glob(proj / "data" / "runs", "tickets_lead1_v1_2*"))[-1]
         check(
             f"{store}: --resume: the two done items replayed, the third called again; the new run's outputs whole",

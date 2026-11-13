@@ -113,12 +113,12 @@ provider served it.
 
 ## 4 · Extend — your model against the field
 
-Copy any hosted config in the eval's `configs/` directory, give it a new
-`config_id` (keep the prefix and suffix, e.g. `sf_mymodel_n200_v1`), and set `model:` to
-any OpenRouter id (`vendor/model`). Then:
+Copy any hosted system in the eval's `systems/` directory to a file of your own, give it a new
+`system_id` (keep the prefix and the version, e.g. `sf_mymodel_v1`, and name the file after it), and
+set `model:` to any OpenRouter id (`vendor/model`). It runs on the eval's dataset and goal. Then:
 
 ```bash
-make reproduce EXP=scifact CONFIG=examples/retrieval-scifact/configs/arm_mymodel_n200.yaml
+make reproduce EXP=scifact SYSTEM=path/to/sf_mymodel_v1.yaml
 make compare   EXP=scifact
 ```
 

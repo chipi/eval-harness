@@ -50,7 +50,7 @@ for a small CRUD page next to the catalog for users to manage their settings and
 
 - As an owner whose project is in a database, I open the data page, find `goals/support_triage.yaml`, change its
   margin, see the check pass, save it, and `evh goals` uses the new margin.
-- As an owner, I add an arm config from the page, and `evh run --config data/configs/<new>.yaml` runs it.
+- As an owner, I add an arm config from the page, and `evh run --system <new> --dataset <id>` runs it.
 - As an owner, I delete a mistaken run from the page, and it is gone from the catalog's next build.
 - As an agent, I do each of these with `evh data-ls`, `data-show`, `data-put` and `data-rm`, and read the same answers.
 

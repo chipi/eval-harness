@@ -4,9 +4,10 @@
     python examples/reproduce.py plan     scifact [--level local|hosted|baselines|all]
     python examples/reproduce.py data     scifact
     python examples/reproduce.py run      scifact  --level local [--arms bm25,e5_base]
+    python examples/reproduce.py run      scifact  --system sf_mine_v1     [or --system path/to/sf_mine_v1.yaml]
     python examples/reproduce.py compare  scifact
 
-(or `make plan|data|reproduce|compare EXP=scifact` from the repository root.)
+(or `make plan|data|reproduce|compare EXP=scifact` from the repository root; `SYSTEM=` is --system.)
 
 plan     what a rerun involves before anything is spent: every arm, what it cost and how
          long it took when it was measured, what is installed, which data is present and
@@ -16,7 +17,12 @@ data     the example's environment (`uv sync`), its public data (`fetch.py`), an
 run      reruns the chosen arms into harness/data/runs-repro/<eval>/ -- gitignored,
          never beside the committed runs, which stay the record. A hosted arm's spend is
          capped at twice what it was billed when measured (EVAL_MAX_COST_USD per run).
-compare  a replication card: each rerun arm against its committed run on the same items,
+         Each arm is `scripts/run.py --system <id> --dataset <the eval's dataset>` on the
+         system in the example's systems/ folder. --system adds a system of your own, on the
+         same items: a system id the harness can find (data/systems/), or a system file
+         (system_id: <prefix><name>_v1, params, adapter; no dataset_id, goal or round),
+         installed as data/systems/<id>.yaml for the length of the run and removed after.
+compare a replication card: each rerun arm against its committed run on the same items,
          and every committed verdict (significant or not) re-tested with your reruns substituted
          in. Written to harness/data/runs-repro/<eval>/REPLICATION.md.
 
@@ -31,8 +37,10 @@ predictions remain the record either way.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import os
+import re
 import shutil
 import statistics as st
 import subprocess
@@ -49,6 +57,7 @@ DATA = HARNESS / "data"
 REPRO = DATA / "runs-repro"
 sys.path.insert(0, str(HERE / "_shared"))
 sys.path.insert(0, str(HARNESS))  # the evaluation_harness package (a link to scripts/)
+from eval_arms import arm_of  # noqa: E402
 from evaluation_harness import _store  # noqa: E402
 
 #: Arms that are not models -- floors that check the scorer. Free and deterministic.
@@ -68,15 +77,20 @@ def _load_dotenv() -> None:
 
 
 # ── what was measured ───────────────────────────────────────────────────────────────────
+def _arm(exp: dict, cid: str) -> str | None:
+    """The arm a system id names, None when it is not a measurement arm of this eval (see eval_arms)."""
+    return arm_of(exp["prefix"], cid)
+
+
 def committed(exp: dict) -> dict:
-    """{arm: {cid, dir, score, kind, cost, minutes, model}} from the committed record."""
+    """{arm: {cid, dir, score, kind, cost, minutes, model, goal}} from the committed record."""
     out = {}
     for f in sorted(_store.glob(DATA / exp["base"], f"{exp['prefix']}*/metrics.json")):
         m = json.loads(_store.read_text(f))
         cid = m.get("config_id", "")
-        if m.get("dataset_id") != exp["dataset"] or not cid.endswith(exp["suffix"]):
+        arm = _arm(exp, cid)
+        if m.get("dataset_id") != exp["dataset"] or arm is None:
             continue
-        arm = cid[len(exp["prefix"]) : -len(exp["suffix"])]
         params = m.get("params") or {}
         kind = (
             "baseline"
@@ -92,11 +106,18 @@ def committed(exp: dict) -> dict:
             "kind": kind,
             "model": params.get("model"),
             "n": m.get("n_items"),
+            "goal": m.get("goal"),
         }
     # Cost and time come from data/runs, where the provider's response was recorded.
     table = json.loads(_store.read_text(HERE / "local_models.json"))
     pins, safe = table["revisions"], table.get("safetensors", {})
-    for _arm, a in out.items():
+    # A run's directory keeps the id it was made under; its metrics.json has the system's present one.
+    made: dict = {}
+    for f in _store.glob(DATA / "runs", f"{exp['prefix']}*/metrics.json"):
+        m = json.loads(_store.read_text(f))
+        if m.get("dataset_id") == exp["dataset"]:
+            made.setdefault(m.get("config_id"), []).append((f, m))
+    for _arm_name, a in out.items():
         a["cost"], a["minutes"] = 0.0, None
         # A rerun loads the safetensors conversion where one was verified to give identical
         # outputs, so it never unpickles a checkpoint; otherwise the revision that was measured.
@@ -106,10 +127,7 @@ def committed(exp: dict) -> dict:
             if a["kind"] == "local"
             else None
         )
-        for f in _store.glob(DATA / "runs", f"{a['cid']}_*/metrics.json"):
-            m = json.loads(_store.read_text(f))
-            if m.get("dataset_id") != exp["dataset"]:
-                continue
+        for f, m in made.get(a["cid"], []):
             from evaluation_harness._runs import item_rows  # noqa: PLC0415 - harness/ is on sys.path above
 
             rows = list(item_rows(f.parent))
@@ -120,13 +138,13 @@ def committed(exp: dict) -> dict:
     return out
 
 
-def configs(exp: dict) -> dict:
-    """{config_id: path} for the example's configs."""
+def systems(exp: dict) -> dict:
+    """{system_id: path} for the example's systems (examples/<task>/systems/, and its subfolders)."""
     out = {}
-    for p in sorted(_store.glob(HERE / exp["example"] / "configs", "*.yaml")):
-        cfg = yaml.safe_load(_store.read_text(p)) or {}
-        if cfg.get("config_id"):
-            out[cfg["config_id"]] = p
+    for p in sorted(_store.glob(HERE / exp["example"] / "systems", "**/*.yaml")):
+        rec = yaml.safe_load(_store.read_text(p)) or {}
+        if rec.get("system_id"):
+            out[rec["system_id"]] = p
     return out
 
 
@@ -242,7 +260,7 @@ def run(exp: dict, level: str, only: str | None, extra: str | None = None) -> in
     _load_dotenv()
     arms = committed(exp)
     chosen = [] if extra and not only else select(arms, level, only)
-    cfgs = configs(exp)
+    known = systems(exp)
     venv = _venv_python(exp)
     if not _store.is_file(venv):
         raise SystemExit(f"no environment for {exp['slug']} yet: make data EXP={exp['slug']}")
@@ -258,48 +276,79 @@ def run(exp: dict, level: str, only: str | None, extra: str | None = None) -> in
     _store.mkdir(out, parents=True, exist_ok=True)
     for a in chosen:
         cid = arms[a]["cid"]
-        if cid not in cfgs:
-            raise SystemExit(f"no config with config_id {cid} under {exp['example']}/configs")
+        if cid not in known:
+            raise SystemExit(f"no system with system_id {cid} under {exp['example']}/systems")
         env = {**os.environ, "EVAL_RUNS_DIR": str(out)}
         if arms[a]["kind"] == "hosted":
             # Twice what it was billed, never less than five cents: room for a dearer
             # provider route, not for a runaway loop.
             env["EVAL_MAX_COST_USD"] = f"{max(0.05, 2 * arms[a]['cost']):.2f}"
         print(f"\n── {a} ({arms[a]['kind']})", flush=True)
-        _run(
-            [str(venv), "scripts/run.py", "--config", str(_pinned(cfgs[cid], arms[a], out))],
-            cwd=HARNESS,
-            env=env,
-        )
+        with _pinned(known[cid], arms[a]) as system_id:
+            _run(_run_cmd(venv, system_id, exp, arms[a]["goal"]), cwd=HARNESS, env=env)
     if extra:
-        _run_new_arm(exp, arms, Path(extra).resolve(), venv, out)
+        _run_new_arm(exp, arms, extra, venv, out)
     print(f"\nreruns are in {out.relative_to(ROOT)}/   next: make compare EXP={exp['slug']}")
     return 0
 
 
-def _pinned(cfg_path: Path, arm: dict, out: Path) -> Path:
-    """The config, pinned to the weights the committed run loaded.
+def _run_cmd(venv: Path, system_id: str, exp: dict, goal: str | None) -> list:
+    """The system on the eval's dataset, for the goal the committed run was measured for (a system names neither)."""
+    return [
+        str(venv),
+        "scripts/run.py",
+        "--system",
+        system_id,
+        "--dataset",
+        exp["dataset"],
+        *(["--goal", goal] if goal else []),
+    ]
 
-    The example configs name a model, not a revision, so a fresh machine downloads whatever
+
+@contextlib.contextmanager
+def _installed(system_id: str, text: str):
+    """The system as data/systems/<id>.yaml for the length of a run, where `run.py --system` finds it; removed after.
+
+    A run finds a system by id in data/systems and in the folders validate.json's `systems` names (the examples'),
+    and a copy elsewhere is not found. When the same id is in both, the harness takes the one in data/systems
+    (checked here, not assumed), so a pinned copy of an example's system wins while it is there. The copy is
+    removed when the run ends, so none is left in the repository."""
+    from evaluation_harness.model.systems import SYSTEM  # noqa: PLC0415 - harness/ is on sys.path above
+
+    dst = DATA / "systems" / f"{system_id}.yaml"
+    _store.mkdir(dst.parent, parents=True, exist_ok=True)
+    if not _store.create_new(dst, text.encode("utf-8")):
+        raise SystemExit(f"{dst.relative_to(ROOT)} is already there: a system of that id is in the project")
+    try:
+        if Path(SYSTEM.path(system_id)).resolve() != dst.resolve():
+            raise SystemExit(f"the harness would not run {dst.relative_to(ROOT)} for {system_id}")
+        yield system_id
+    finally:
+        _store.unlink(dst, missing_ok=True)
+
+
+@contextlib.contextmanager
+def _pinned(system_path: Path, arm: dict):
+    """The system id to run, with its weights pinned to the ones the committed run loaded.
+
+    The example systems name a model, not a revision, so a fresh machine downloads whatever
     Hugging Face serves today -- which may not be what was measured. Every committed local
-    run recorded the snapshot it loaded, so the rerun asks for exactly that one. Written to
-    a copy beside the reruns; the committed config is the record and is not edited.
+    run recorded the snapshot it loaded, so the rerun asks for exactly that one. Run from a copy
+    (see `_installed`); the example's system is the record and is not edited.
     """
+    sid = yaml.safe_load(_store.read_text(system_path))["system_id"]
     if not arm.get("revision"):
-        return cfg_path
-    cfg = yaml.safe_load(_store.read_text(cfg_path))
-    cfg["adapter"] = str((cfg_path.parent / cfg.get("adapter", "")).resolve())
-    cfg.setdefault("params", {})["revision"] = arm["revision"]
-    pinned = out / "configs" / cfg_path.name
-    _store.mkdir(pinned.parent, parents=True, exist_ok=True)
+        yield sid
+        return
+    rec = yaml.safe_load(_store.read_text(system_path))
+    rec["adapter"] = str((system_path.parent / rec.get("adapter", "")).resolve())
+    rec.setdefault("params", {})["revision"] = arm["revision"]
     what = (
         "the verified safetensors conversion of the committed run's weights"
         if arm.get("safetensors")
         else "the committed run's weights"
     )
-    _store.write_text(
-        pinned, f"# {cfg_path.relative_to(ROOT)}, pinned to {what}\n" + yaml.safe_dump(cfg, sort_keys=False)
-    )
+    text = f"# {system_path.relative_to(ROOT)}, pinned to {what}\n" + yaml.safe_dump(rec, sort_keys=False)
     print(
         f"  weights pinned to {arm['revision'][:12]}"
         + (
@@ -308,30 +357,44 @@ def _pinned(cfg_path: Path, arm: dict, out: Path) -> Path:
             else " (the committed revision)"
         )
     )
-    return pinned
+    with _installed(sid, text):
+        yield sid
 
 
-def _run_new_arm(exp: dict, arms: dict, path: Path, venv: Path, out: Path) -> None:
-    """Your own arm, measured on the same items and scored by the same code."""
-    if not _store.is_file(path):
-        raise SystemExit(f"no config at {path}")
-    cfg = yaml.safe_load(_store.read_text(path)) or {}
-    cid, ds = cfg.get("config_id", ""), cfg.get("dataset_id")
-    if ds != exp["dataset"]:
-        raise SystemExit(f"{path.name}: dataset_id must be {exp['dataset']} (got {ds})")
-    if not (cid.startswith(exp["prefix"]) and cid.endswith(exp["suffix"])):
+def _run_new_arm(exp: dict, arms: dict, given: str, venv: Path, out: Path) -> None:
+    """Your own system, measured on the same items and scored by the same code: a system id the harness
+    can find, or a system file (installed under its id for the run)."""
+    path = Path(given).resolve()
+    rec = yaml.safe_load(_store.read_text(path)) if _store.is_file(path) else None
+    if rec is None and not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]*", given):
+        raise SystemExit(f"no system file at {path} (and {given!r} is not a system id)")
+    if rec is not None and not isinstance(rec, dict):
+        raise SystemExit(f"{path.name}: not a system file (a system_id and its params)")
+    if rec is not None and {"config_id", "dataset_id", "goal", "round"} & rec.keys():
         raise SystemExit(
-            f"{path.name}: config_id must look like "
-            f"{exp['prefix']}<name>{exp['suffix']} to join the comparison (got {cid})"
+            f"{path.name}: a system names system_id and its settings, not config_id, dataset_id, goal or round "
+            f"(the dataset is {exp['dataset']}); see docs/REPRODUCE.md"
         )
-    if cid in {a["cid"] for a in arms.values()}:
-        raise SystemExit(f"{cid} is a committed arm; give yours a new name")
+    sid = rec.get("system_id", "") if rec is not None else given
+    if _arm(exp, sid) is None:
+        raise SystemExit(
+            f"{given}: system_id must look like {exp['prefix']}<name>_v1 to join the comparison (got {sid!r})"
+        )
+    if sid in {a["cid"] for a in arms.values()}:
+        raise SystemExit(f"{sid} is a committed arm; give yours a new name")
     env = {**os.environ, "EVAL_RUNS_DIR": str(out)}
     if not env.get("EVAL_MAX_COST_USD"):
         env["EVAL_MAX_COST_USD"] = "1.00"
         print("  EVAL_MAX_COST_USD not set -- capping this arm at $1.00")
-    print(f"\n── {cid[len(exp['prefix']) : -len(exp['suffix'])]} (yours)", flush=True)
-    _run([str(venv), "scripts/run.py", "--config", str(path)], cwd=HARNESS, env=env)
+    print(f"\n── {_arm(exp, sid)} (yours)", flush=True)
+    goal = next((a["goal"] for a in arms.values() if a["goal"]), None)
+    if rec is None:
+        _run(_run_cmd(venv, sid, exp, goal), cwd=HARNESS, env=env)
+        return
+    if rec.get("adapter"):
+        rec["adapter"] = str((path.parent / rec["adapter"]).resolve())
+    with _installed(sid, f"# {path}, run as a copy\n" + yaml.safe_dump(rec, sort_keys=False)):
+        _run(_run_cmd(venv, sid, exp, goal), cwd=HARNESS, env=env)
 
 
 # ── compare ─────────────────────────────────────────────────────────────────────────────
@@ -346,11 +409,13 @@ def _latest_repro(exp: dict) -> dict:
     out: dict = {}
     for f in sorted(_store.glob(REPRO / exp["slug"], f"{exp['prefix']}*/metrics.json")):
         m = json.loads(_store.read_text(f))
-        cid = m.get("config_id", "")
-        if m.get("dataset_id") == exp["dataset"] and cid.endswith(exp["suffix"]):
-            arm = cid[len(exp["prefix"]) : -len(exp["suffix"])]
-            if arm not in out or m.get("created_at", "") >= out[arm][1]:
-                out[arm] = (f.parent, m.get("created_at", ""))
+        arm = _arm(exp, m.get("config_id", ""))
+        if (
+            m.get("dataset_id") == exp["dataset"]
+            and arm is not None
+            and (arm not in out or m.get("created_at", "") >= out[arm][1])
+        ):
+            out[arm] = (f.parent, m.get("created_at", ""))
     return {a: d for a, (d, _) in out.items()}
 
 
@@ -361,9 +426,12 @@ def _paired_p(a: list, b: list, perms: int = 10000, seed: int = 20261014) -> flo
     return sign_flip_p([x - y for x, y in zip(a, b)], permutations=perms, seed=seed)
 
 
-def _family(exp: dict, runs_dir: Path, arm: str | None = None) -> tuple[list, list]:
-    """(not significant, significant) opponents of `arm` (the leader by default), Holm-corrected."""
-    a_cid = f"{exp['prefix']}{arm or exp['leader']}{exp['suffix']}"
+def _family(exp: dict, runs_dir: Path, cids: dict, arm: str | None = None) -> tuple[list, list]:
+    """(not significant, significant) opponents of `arm` (the leader by default), Holm-corrected.
+
+    `cids` is {arm: system id}: the family is the eval's arms, named one by one (the ids no longer share a suffix)."""
+    a_cid = cids[arm or exp["leader"]]
+    by_cid = {c: a for a, c in cids.items()}
     r = subprocess.run(
         [
             sys.executable,
@@ -373,7 +441,7 @@ def _family(exp: dict, runs_dir: Path, arm: str | None = None) -> tuple[list, li
             "--a",
             a_cid,
             "--against",
-            exp["suffix"],
+            ",".join(cids.values()),
             "--metric",
             exp["metric"],
             "--runs-dir",
@@ -388,9 +456,8 @@ def _family(exp: dict, runs_dir: Path, arm: str | None = None) -> tuple[list, li
     level, sep = [], []
     for ln in r.stdout.splitlines():
         parts = ln.split()
-        if parts and parts[0].endswith(exp["suffix"]) and parts[0] != a_cid:
-            arm = parts[0][len(exp["prefix"]) : -len(exp["suffix"])]
-            (level if ln.strip().endswith("--") else sep).append(arm)
+        if parts and parts[0] in by_cid and parts[0] != a_cid:
+            (level if ln.strip().endswith("--") else sep).append(by_cid[parts[0]])
     return level, sep
 
 
@@ -455,8 +522,9 @@ def compare(exp: dict) -> int:
         for a, v in arms.items():
             src = reruns.get(a, v["dir"])
             (merged / src.name).symlink_to(src.resolve(), target_is_directory=True)
-        level_c, sep_c = _family(exp, DATA / exp["base"])
-        level_m, sep_m = _family(exp, merged)
+        cids = {a: v["cid"] for a, v in arms.items()}
+        level_c, sep_c = _family(exp, DATA / exp["base"], cids)
+        level_m, sep_m = _family(exp, merged, cids)
         new = sorted(a for a in reruns if a not in arms)
         placed = {}
         if new:
@@ -467,7 +535,8 @@ def compare(exp: dict) -> int:
                     for _b, v in arms.items():
                         (field / v["dir"].name).symlink_to(v["dir"].resolve(), target_is_directory=True)
                     (field / reruns[a].name).symlink_to(reruns[a].resolve(), target_is_directory=True)
-                    placed[a] = _family(exp, field, a)
+                    rerun_cid = json.loads(_store.read_text(reruns[a] / "metrics.json"))["config_id"]
+                    placed[a] = _family(exp, field, {**cids, a: rerun_cid}, a)
     moved = sorted(set(level_c) ^ set(level_m))
     lines += [
         "",
@@ -531,7 +600,11 @@ def main() -> int:
     ap.add_argument("eval", nargs="?", help=" | ".join(reg))
     ap.add_argument("--level", default="local", choices=("local", "hosted", "baselines", "all"))
     ap.add_argument("--arms", help="comma-separated arm names; overrides --level")
-    ap.add_argument("--config", help="run: also measure YOUR arm from this config")
+    ap.add_argument(
+        "--system",
+        help="run: also measure YOUR system, on the same items: its id (a system the harness finds, e.g. in "
+        "data/systems/) or the path of its system file (system_id, params, adapter; installed under its id for the run)",
+    )
     ap.add_argument(
         "--light",
         action="store_true",
@@ -554,7 +627,7 @@ def main() -> int:
     return {
         "plan": lambda: plan(exp, a.level, a.arms),
         "data": lambda: data(exp, a.light),
-        "run": lambda: run(exp, a.level, a.arms, a.config),
+        "run": lambda: run(exp, a.level, a.arms, a.system),
         "compare": lambda: compare(exp),
     }[a.command]()
 

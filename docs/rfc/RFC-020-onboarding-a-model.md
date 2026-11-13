@@ -103,7 +103,7 @@ the record's settings, override what the task must, and add its own (its reply c
 records `model_record` and `deployment_id`, and its fingerprint's deployment part comes from that deployment
 (RFC-021), so a result can always be traced to the build and the machine it ran on.
 
-### 4. `evh arm-smoke --config <arm> [--items 3]`
+### 4. `evh arm-smoke --system <id> --dataset <id> [--items 3]`
 
 Task-specific, once per arm before its first full run: runs the arm's first items the way `evh run`
 would and writes no run. Every arm gets the general checks, from what every run already produces (the `Result`):

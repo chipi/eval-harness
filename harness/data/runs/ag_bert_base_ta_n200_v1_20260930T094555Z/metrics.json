@@ -10,12 +10,12 @@
     "ref": "4068ea23007d6d8057a61f0abd54b08da3eaba40",
     "source": "git"
   },
-  "config_id": "ag_bert_base_ta_n200_v1",
+  "config_id": "ag_bert_base_ta_v1",
   "created_at": "2026-09-30T09:46:23Z",
   "dataset_id": "ag_news_200",
   "fingerprint": {
     "arm": {
-      "config_id": "ag_bert_base_ta_n200_v1",
+      "config_id": "ag_bert_base_ta_v1",
       "labels": {
         "family": "bert",
         "price_tier": "free"

@@ -86,8 +86,8 @@ def main() -> int:
             # The tutorial's settings put in with data-put, the project's own way in: into its files or its database,
             # whichever store it has (a copy from this process wrote to the disk, where SQLite has no data/ folders).
             puts = [("fields/tickets.yaml", "tutorial/fields/tickets.yaml")] + [
-                (f"configs/{f.name}", f"tutorial/configs/{f.name}")
-                for f in sorted(_store.glob(tmp / "tutorial/configs", "tickets_lead*.yaml"))
+                (f"systems/{f.name}", f"tutorial/systems/{f.name}")
+                for f in sorted(_store.glob(tmp / "tutorial/systems", "tickets_lead*.yaml"))
                 if "noisy" not in f.name
             ]
             for key, src in puts:
@@ -139,11 +139,11 @@ def main() -> int:
                 ),
                 (
                     "evh run lead1 x2",
-                    ["run", "--config", "data/configs/tickets_lead1.yaml", "--repeat", "2"],
+                    ["run", "--system", "tickets_lead1_v1", "--dataset", "tickets_v1", "--repeat", "2"],
                 ),
                 (
                     "evh run lead2 x2",
-                    ["run", "--config", "data/configs/tickets_lead2.yaml", "--repeat", "2"],
+                    ["run", "--system", "tickets_lead2_v1", "--dataset", "tickets_v1", "--repeat", "2"],
                 ),
                 (
                     "pair-test on the recorded primary metric",

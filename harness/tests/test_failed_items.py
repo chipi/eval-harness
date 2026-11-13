@@ -25,6 +25,7 @@ from evaluation_harness._check import check, summary  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
 import _runstore  # noqa: E402
+from evaluation_harness import _format  # noqa: E402
 
 proj = Path(tempfile.mkdtemp(prefix="evh-failed-"))
 env = dict(
@@ -66,8 +67,9 @@ def call_system(text, params):
 
 try:
     data = proj / "data"
+    _runstore.write_text(proj, _format.NAME, f"format: {_format.FORMAT}\n")
     if not _runstore.sqlite():
-        (data / "configs").mkdir(parents=True)
+        (data / "systems").mkdir(parents=True)
     shutil.copytree(KIT / "tickets", proj / "tutorial" / "tickets")
     r = evh("dataset-create", "--dataset-id", "tickets_v1", "--source-dir", "tutorial/tickets")
     r = r if r.returncode else evh("dataset-materialize", "--dataset-id", "tickets_v1")
@@ -100,11 +102,11 @@ try:
     for mode in ("one", "all", "weather"):
         _runstore.write_text(
             proj,
-            f"configs/{mode}.yaml",
-            f"config_id: {mode}_v1\ndataset_id: tickets_v1\nadapter: flaky.py\nparams: {{mode: {mode}}}\n",
+            f"systems/{mode}_v1.yaml",
+            f"system_id: {mode}_v1\nadapter: flaky.py\nparams: {{mode: {mode}}}\n",
         )
 
-    r = evh("run", "--config", str(data / "configs" / "one.yaml"))
+    r = evh("run", "--system", "one_v1", "--dataset", "tickets_v1")
     name = next((n for n in _runstore.listdir(proj, "runs") if n.startswith("one_v1_")), None)
     m = _runstore.read_json(proj, f"runs/{name}/metrics.json") if name else {}
     with _runstore._InProject(proj) as pdata:
@@ -132,13 +134,13 @@ try:
         run is not None and out_bad is None and out_ok is not None,
     )
 
-    r = evh("run", "--config", str(data / "configs" / "all.yaml"))
+    r = evh("run", "--system", "all_v1", "--dataset", "tickets_v1")
     check(
         "every ticket fails: more than 5 and over 20% is the adapter, and the run stops (ERROR (failed))",
         r.returncode != 0 and "ERROR (failed)" in r.stderr and "not the items" in r.stderr,
         (r.stdout + r.stderr)[-400:],
     )
-    r = evh("run", "--config", str(data / "configs" / "weather.yaml"))
+    r = evh("run", "--system", "weather_v1", "--dataset", "tickets_v1")
     check(
         "a transient error past its retries is weather: the run stops with 75, to resume later",
         r.returncode == 75 and "kept failing after its retries" in (r.stdout + r.stderr),

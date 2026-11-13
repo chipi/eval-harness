@@ -114,10 +114,10 @@ try:
         ("reference-promote", "--dataset-id", "tk_v1", "--labels", "g", "--tier", "gold", "--reason", "the kit's summaries, for the goal test", "--by", "t"),
     ):  # fmt: skip
         r = r if r.returncode else evh(*step)
-    (proj / "data" / "configs" / "one_v1.yaml").write_text(
-        "config_id: one_v1\ndataset_id: tk_v1\nparams:\n  provider: echo\n  sentences: 1\n"
+    (proj / "data" / "systems" / "one_v1.yaml").write_text(
+        "system_id: one_v1\nparams:\n  provider: echo\n  sentences: 1\n"
     )
-    r = r if r.returncode else evh("run", "--config", "data/configs/one_v1.yaml")
+    r = r if r.returncode else evh("run", "--system", "one_v1", "--dataset", "tk_v1")
     r = r if r.returncode else evh("catalog")
     check(
         "setup: a project with a dataset, its gold reference, a run and its catalog",

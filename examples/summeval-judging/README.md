@@ -51,7 +51,7 @@ python examples/summeval-judging/fetch.py      # or, from the root: make data EX
 | `bartscore` | log-likelihood of the summary given the article under `facebook/bart-large-cnn` ([Yuan et al. 2021](https://arxiv.org/abs/2106.11520)), pinned to the revision the summarisation eval measured; local, CPU |
 | `length` | the summary's word count: a confound to rule out, not a judge |
 | `random` | seeded random scores: the floor, near τ = 0 |
-| `gemma_l`, `qwen_s`, `random` in pick and pairwise mode | the judges of the summarisation scorer, validated in the other two judging modes ([RFC-005](../../docs/rfc/RFC-005-judge-scorers.md), "Judging modes"): `mode: pick` names the best of the 16 summaries ([prompt_pick.txt](prompt_pick.txt)), scored `top1` beside `top1_chance`; `mode: pairwise` says which of two is better for 8 seeded pairs an article ([prompt_pairwise.txt](prompt_pairwise.txt)), scored `pair_agreement` (with `n_pairs`); the `random` arm in each mode is the floor. Configs `configs/arm_*_pick_n100.yaml` and `arm_*_pairwise_n100.yaml` |
+| `gemma_l`, `qwen_s`, `random` in pick and pairwise mode | the judges of the summarisation scorer, validated in the other two judging modes ([RFC-005](../../docs/rfc/RFC-005-judge-scorers.md), "Judging modes"): `mode: pick` names the best of the 16 summaries ([prompt_pick.txt](prompt_pick.txt)), scored `top1` beside `top1_chance`; `mode: pairwise` says which of two is better for 8 seeded pairs an article ([prompt_pairwise.txt](prompt_pairwise.txt)), scored `pair_agreement` (with `n_pairs`); the `random` arm in each mode is the floor. Systems `systems/se_*_n100_pick_v1.yaml` and `se_*_n100_pairwise_v1.yaml` |
 
 A reference-based metric gives one number per summary; it stands for all four dimensions.
 
@@ -136,7 +136,7 @@ for a in anthropic_s anthropic_m anthropic_l openai_s openai_m openai_l \
          deepseek_s deepseek_m deepseek_l gemma_s gemma_m gemma_l glm_s glm_m glm_l \
          llama_s llama_m llama_l mistral_s mistral_m mistral_l qwen_s qwen_m qwen37max; do
   ../examples/summeval-judging/.venv/bin/python scripts/run.py \
-    --config ../examples/summeval-judging/configs/arm_${a}_n100.yaml; done
+    --system se_${a}_n100_v1 --dataset summeval_100 --goal summary_judge_summeval; done
 make leaderboard DATASET_ID=summeval_100
 ```
 
@@ -145,7 +145,7 @@ The pick and pairwise validations, the same way (the `random` arms call nothing)
 ```bash
 for a in gemma_l qwen_s random; do for m in pick pairwise; do
   ../examples/summeval-judging/.venv/bin/python scripts/run.py \
-    --config ../examples/summeval-judging/configs/arm_${a}_${m}_n100.yaml; done; done
+    --system se_${a}_n100_${m}_v1 --dataset summeval_100 --goal summary_judge_summeval; done; done
 ```
 
 Each arm's primary is its mode's metric (`tau`, `top1` or `pair_agreement`: the adapter's `primary_metric(params)`).

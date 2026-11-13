@@ -8,7 +8,7 @@ what it printed (`make guide-check` runs this page in a fresh project on every c
 You work in a project of your own, as you will for real: a new folder, the harness installed
 as a package, and the tutorial kit copied in. The running example is a support-ticket
 summariser. The kit ([`harness/tutorial/`](../harness/tutorial/README.md) in this repository)
-has six invented tickets, four arm configs and a goal. The "systems" are the harness's offline
+has six invented tickets, four systems and a goal. The "systems" are the harness's offline
 `echo` provider, which returns the first *n* sentences of its input: a stand-in that behaves
 like a model without needing one. A real model, local or hosted, is the
 [tutorials](#where-to-go-next)' subject.
@@ -19,8 +19,8 @@ like a model without needing one. A real model, local or hosted, is the
  sources/ ──dataset-create──▶ datasets/<id>.json ──dataset-materialize──▶ materialized/<id>/
  (your items)                 (item list + sha256)                         (hash-checked copy)
 
- configs/<arm>.yaml ──evh run──▶ runs/<run_id>/   outputs, per-item scores, cost, speed,
- (one system = one arm)                                   fingerprint: data + code + model + build
+ systems/<id>.yaml ──evh run──▶ runs/<run_id>/   outputs, per-item scores, cost, speed,
+ (what you evaluate)   (on a dataset)             fingerprint: data + code + model + build
                                               │
     label-from-run ──▶ labels/<id>/<set>/ ──reference-promote──▶ references/silver/<id>/   (optional)
                                               │
@@ -34,7 +34,7 @@ like a model without needing one. A real model, local or hosted, is the
 | **source** | one input item, any file | `data/sources/` or anywhere | never, once frozen |
 | **dataset** | a frozen list of items with the sha256 of each: the comparison contract | `data/datasets/<id>.json` | never; a change is `_v2` |
 | **materialized** | a hash-checked working copy of the dataset | `data/materialized/<id>/` | derived; delete freely |
-| **arm** | one system under test: a config naming provider, model, prompt, settings | `data/configs/*.yaml` | a change is a new `config_id` |
+| **system** | what you evaluate: provider, model, prompt, settings; no dataset (a run names it) | `data/systems/<system_id>.yaml` | a change is a new `system_id` |
 | **run** | one pass of an arm over a dataset: outputs, scores, fingerprint | `data/runs/<run_id>/` | never |
 | **label** | what is right for one item, and who said it: a person, a model or a rule; in sets | `data/labels/<dataset>/<set>/` | never; a correction is a new set |
 | **reference** | what each item is scored against: labels promoted at **gold** (the yardstick) or **silver** (good for ranking) | `data/references/<tier>/<id>/` | never; a change is a new one |
@@ -60,7 +60,7 @@ evh init --tutorial
 git init -q && git add -A && git commit -qm "Start: the tutorial kit"
 ```
 ```text
-  folders  data/sources, data/configs, data/goals, data/fields
+  folders  data/sources, data/systems, data/goals, data/fields
   wrote    29 file(s), the tutorial kit under tutorial/
 ```
 
@@ -102,37 +102,36 @@ data/materialized/tickets_v1  (6 item(s), all hashes verified)
 A working copy, re-checked against the frozen hashes. If a source changed since the freeze,
 this fails instead of quietly measuring different bytes.
 
-## 3 · Describe your arms
+## 3 · Describe your systems
 
-An arm is a YAML file. Everything that defines the system goes in `params`, so two arms differ
-only where their configs do, and the run's fingerprint will say exactly where.
+A system is a YAML file, named by its id. Everything that defines it goes in `params`, so two
+systems differ only where their files do, and the run's fingerprint will say exactly where. It
+names no dataset: a run puts it on one, and the same system runs on any.
 
 ```yaml
-# data/configs/tickets_lead2.yaml
-config_id: tickets_lead2_v1     # unique, versioned: change the system, bump the id
-dataset_id: tickets_v1          # the contract it is measured on
+# data/systems/tickets_lead2_v1.yaml
+system_id: tickets_lead2_v1     # unique, versioned: change the system, bump the id
 params:
   provider: echo                # your adapter decides what these mean
   sentences: 2
 ```
 
 ```bash
-cp tutorial/configs/tickets_*.yaml data/configs/
+cp tutorial/systems/tickets_*.yaml data/systems/
 ```
 
-The four arms: `lead1` (one sentence), `lead2` (two), `lead2_noisy` (two, with random word
+The four systems: `lead1` (one sentence), `lead2` (two), `lead2_noisy` (two, with random word
 drops: what a model at temperature > 0 looks like), and `author` (three), the most thorough
 system we have, which will write the reference.
 
 **Say what the evaluation is for.** A goal names who uses the output, the decision it informs,
 the measure that decides it and which direction is better, and the datasets it rests on. It is
-optional, and worth the minute: every run that names it records it, and the catalog's goal page
+optional, and worth the minute: every run that names it (`--goal`) records it, and the catalog's goal page
 leads with the decision. Every field a goal file can have, and its allowed values:
 [RUNBOOK §4c](../harness/docs/RUNBOOK.md#4c-the-goal-file-field-by-field).
 
 ```bash
 cp tutorial/goals/tickets_summary.yaml data/goals/
-for f in data/configs/tickets_*.yaml; do echo "goal: tickets_summary" >> "$f"; done
 ```
 
 ## 4 · Run the best arm first
@@ -142,19 +141,19 @@ does not describe what ran, and the run cannot become a reference or a baseline.
 directories themselves never count as dirt.)
 
 ```bash
-git add -A && git commit -qm "tickets_v1: dataset, arms, goal"
+git add -A && git commit -qm "tickets_v1: dataset, systems, goal"
 ```
 
 A dry run calls nothing and shows what a pass will cost:
 
 ```bash
-evh run --config data/configs/tickets_author.yaml --dry-run
+evh run --system tickets_author_v1 --dataset tickets_v1 --goal tickets_summary --dry-run
 ```
 ```text
-  config      tickets_author_v1  (echo)
+  system      tickets_author_v1  (echo)
   dataset     tickets_v1  (6 items)
   API calls   6
-  No price in the config, so no estimate. Add usd_per_mtok_in /
+  No price in the system, so no estimate. Add usd_per_mtok_in /
   usd_per_mtok_out and the run will record what it actually cost.
   cap         NONE — set EVAL_MAX_COST_USD
 ```
@@ -165,7 +164,7 @@ would not run in production, and let its outputs be the answers the others are m
 against:
 
 ```bash
-evh run --config data/configs/tickets_author.yaml
+evh run --system tickets_author_v1 --dataset tickets_v1 --goal tickets_summary
 ```
 ```text
   no reference set for tickets_v1 — quality cannot be scored.
@@ -198,7 +197,7 @@ data/labels/tickets_v1/author_v1: 6 label(s), source model · tickets_author_v1_
 ```
 
 `evh runs-list` prints the run ids. `label-from-run` copies the run's outputs and calls nothing,
-and the labels record the run, its config and its fingerprint. Promoted as **silver**, they are
+and the labels record the run, its system and its fingerprint. Promoted as **silver**, they are
 consistent, cheap, and *not correct*: they encode the author's opinion, mistakes included, good
 enough to rank the other arms by how close they come to it, and every run scored against them
 says so. The step is optional: if you already have answers a person wrote (**gold**), import
@@ -210,7 +209,7 @@ what silver got wrong).
 
 ```bash
 for a in lead1 lead2 lead2_noisy; do
-  evh run --config data/configs/tickets_$a.yaml --repeat 3
+  evh run --system tickets_${a}_v1 --dataset tickets_v1 --goal tickets_summary --repeat 3
 done
 ```
 <!-- guide-check: varies treat -->

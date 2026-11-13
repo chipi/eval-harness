@@ -42,6 +42,7 @@ from evaluation_harness._common import (
     evh_prog,
     how,
     read_json,
+    system_now,
 )
 from evaluation_harness._record import derived_with
 from evaluation_harness._runs import by_arm, direction, mixed_versions, runs_on, warn_on_ambiguous_runs
@@ -537,7 +538,7 @@ def _own_reference(by_config: dict[str, list[dict]]) -> dict[str, str]:
                 continue
             if ref not in authors:
                 mf = REFERENCES / ref / "manifest.json"
-                authors[ref] = read_json(mf).get("authored_by") if _store.is_file(mf) else None
+                authors[ref] = system_now(read_json(mf).get("authored_by")) if _store.is_file(mf) else None
             if authors[ref] == config_id:
                 out[config_id] = ref
     return out

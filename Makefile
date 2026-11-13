@@ -6,7 +6,7 @@
 #   make data      EXP=scifact           environment + public data + hash check
 #   make reproduce EXP=scifact LEVEL=local      (local | baselines | hosted | all)
 #   make compare   EXP=scifact           the replication card: does every finding hold?
-#   make reproduce EXP=scifact CONFIG=path/to/your_arm.yaml    add a model of your own
+#   make reproduce EXP=scifact SYSTEM=path/to/sf_mine_v1.yaml  add a model of your own (a system id or file)
 #   make serve [STORE=sqlite]   the catalog and inspector on 127.0.0.1 (in SQLite, a copy of the data)
 #   make browser-check                   the inspector and the public site in headless Chromium
 #   make guard-check                     the checks can fail: each checker catches its planted defects
@@ -20,7 +20,7 @@ BIN := harness/.venv/bin
 EXP ?=
 LEVEL ?= local
 ARMS ?=
-CONFIG ?=
+SYSTEM ?=
 
 .DEFAULT_GOAL := help
 .PHONY: help setup verify list plan data reproduce compare site docs serve browser-check browser-real-check budget-check guard-check commands-check stores-check \
@@ -54,7 +54,7 @@ data: $(PY)
 
 reproduce: $(PY)
 	$(need_exp)
-	@$(PY) examples/reproduce.py run $(EXP) --level $(LEVEL) $(if $(ARMS),--arms $(ARMS)) $(if $(CONFIG),--config $(CONFIG))
+	@$(PY) examples/reproduce.py run $(EXP) --level $(LEVEL) $(if $(ARMS),--arms $(ARMS)) $(if $(SYSTEM),--system $(SYSTEM))
 
 compare: $(PY)
 	$(need_exp)

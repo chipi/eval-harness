@@ -48,6 +48,10 @@ class Entity:
     links: Callable[[dict[str, Any]], list[dict[str, Any]]] | None = None
     #: A nested entity's field naming the record it is under (a deployment's `model_id`): its id is "<parent>/<own>".
     parent_field: str = ""
+    #: Records also kept outside data/<folder> (a project's systems in the folders validate.json names): {id: file}.
+    finder: Callable[[], dict[str, Path]] | None = None
+    #: The id's pattern, where it is wider than the default (a system id kept from a config id: `se_rougeL_n100_v1`).
+    id_pattern: re.Pattern[str] = ID
 
     def base(self) -> Path:
         """Where its records are: the goals' folder may be moved (EVAL_GOALS_DIR), the others are data/<folder>."""
@@ -56,11 +60,16 @@ class Entity:
     def path(self, rid: str) -> Path:
         """The record's file; an id that is not one is refused before any path is made of it."""
         parts = rid.split("/") if isinstance(rid, str) else []
-        if len(parts) != (2 if self.parent_field else 1) or not all(ID.fullmatch(p) for p in parts):
+        if len(parts) != (2 if self.parent_field else 1) or not all(
+            self.id_pattern.fullmatch(p) for p in parts
+        ):
             shape = "<model>/<id>, each " if self.parent_field else ""
+            letters = "letters" if self.id_pattern is not ID else "lowercase letters"
             raise Problem(
-                f"{rid!r} is not a {self.name} id ({shape}lowercase letters, digits, . _ -)", "bad-argument"
+                f"{rid!r} is not a {self.name} id ({shape}{letters}, digits, . _ -)", "bad-argument"
             )
+        if self.finder and (found := self.finder().get(rid)) is not None:
+            return found
         return self.base().joinpath(*parts[:-1], f"{parts[-1]}{self.suffix}")
 
     def norm(self, rid: str) -> str:
@@ -71,15 +80,15 @@ class Entity:
         """Every record's id, sorted."""
         _format.require()
         base = self.base()
-        if not _store.is_dir(base):
-            return []
         pattern = f"*/*{self.suffix}" if self.parent_field else f"*{self.suffix}"
-        out = []
-        for f in _store.glob(base, pattern):
+        out: list[str] = []
+        for f in _store.glob(base, pattern) if _store.is_dir(base) else []:
             stem = f.name[: -len(self.suffix)]
             rid = f"{f.parent.name}/{stem}" if self.parent_field else stem
-            if f.name not in self.skip and all(ID.fullmatch(p) for p in rid.split("/")):
+            if f.name not in self.skip and all(self.id_pattern.fullmatch(p) for p in rid.split("/")):
                 out.append(rid)
+        if self.finder:
+            out += [i for i in self.finder() if i not in out]
         return sorted(out)
 
     def get(self, rid: str) -> dict[str, Any]:

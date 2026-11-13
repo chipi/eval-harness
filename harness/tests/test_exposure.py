@@ -23,6 +23,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parents[1] / "scripts"
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 KIT = HERE.parent / "tutorial"
+from evaluation_harness import _format  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
@@ -63,10 +64,10 @@ def refused(r, *said):
 
 
 def config(config_id, sentences, hypothesis=None):
-    text = f"config_id: {config_id}\ndataset_id: tk_v1_test\nparams:\n  provider: echo\n  sentences: {sentences}\n"
+    text = f"system_id: {config_id}\nparams:\n  provider: echo\n  sentences: {sentences}\n"
     if hypothesis:
         text += "hypothesis:\n" + "".join(f"  {k}: {json.dumps(v)}\n" for k, v in hypothesis.items())
-    _runstore.write_text(proj, f"configs/{config_id}.yaml", text)
+    _runstore.write_text(proj, f"systems/{config_id}.yaml", text)
 
 
 def register():
@@ -77,7 +78,8 @@ def register():
 
 try:
     git("init", "-q")
-    (proj / "data" / "configs").mkdir(parents=True)
+    (proj / "data" / "systems").mkdir(parents=True)
+    _runstore.write_text(proj, _format.NAME, f"format: {_format.FORMAT}\n")
     shutil.copytree(KIT / "tickets", proj / "tickets")
     _runstore.write_text(
         proj,
@@ -203,7 +205,7 @@ try:
     r = evh(
         "dataset-unseal",
         "tk_v1_test",
-        "--config",
+        "--system",
         "cand_x_v1",
         "--reason",
         "the two-sentence candidate, frozen before the side is read",
@@ -231,8 +233,8 @@ try:
             "o",
         )
     )
-    ra = evh("run", "--config", "data/configs/cand_x_v1.yaml")
-    rb = evh("run", "--config", "data/configs/base_x_v1.yaml")
+    ra = evh("run", "--system", "cand_x_v1", "--dataset", "tk_v1_test")
+    rb = evh("run", "--system", "base_x_v1", "--dataset", "tk_v1_test")
     check(
         "setup: both arms ran on the side",
         r.returncode == ra.returncode == rb.returncode == 0,

@@ -913,6 +913,10 @@ def test_example_scorer_suites_pass() -> None:
             "models and deployments through the model: the command line and the API alike, a deployment's checks its history, accept with why, refusals",
         ),
         (
+            "test_model_systems.py",
+            "systems and prompt versions through the model: a system's own file with no dataset, run on any dataset, refusals, the API alike",
+        ),
+        (
             "test_format.py",
             "the data's format: init stamps it, migrate --check refuses old and newer, steps stamp it, a SQLite backup, the deploy's gate, 0.7.2's frozen project keeps its numbers",
         ),
@@ -1190,7 +1194,7 @@ def test_resume_scores_and_persists() -> None:
     runs = HERE.parent / "data" / "runs-selftest-resume"
     shutil.rmtree(runs, ignore_errors=True)
     env = {"EVAL_RUNS_DIR": str(runs.relative_to(HERE.parent))}
-    r = run("scripts/run.py", "--config", "data/configs/arm_b.yaml", env=env)
+    r = run("scripts/run.py", "--system", "arm_b_v1", "--dataset", "smoke_v1", env=env)
     if r.returncode != 0:
         print("  --   resume: skipped (demo arm did not run)")
         shutil.rmtree(runs, ignore_errors=True)
@@ -1205,7 +1209,7 @@ def test_resume_scores_and_persists() -> None:
     # Simulate a crash: drop all but one output, as if the pass died at item 2.
     kept = _outputs.outputs(runs / src)
     _outputs.write_all(runs / src, {outs[0]: kept[outs[0]]}, outs[:1])
-    r2 = run("scripts/run.py", "--config", "data/configs/arm_b.yaml", "--resume", src, env=env)
+    r2 = run("scripts/run.py", "--system", "arm_b_v1", "--dataset", "smoke_v1", "--resume", src, env=env)
     check("resume: the resumed pass exits 0", r2.returncode == 0, (r2.stderr or "")[-160:])
     newest = max((p for p in runs.iterdir() if p.is_dir()), key=lambda p: p.stat().st_mtime)
     rows = [ln for ln in (_outputs.rows_text(newest) or "").splitlines() if ln.strip()]
@@ -1274,7 +1278,9 @@ def test_resume_scores_and_persists() -> None:
         "run.json must be written before the first item, not after the pass",
     )
 
-    r3 = run("scripts/run.py", "--config", "data/configs/arm_b.yaml", "--resume", "crashed", env=env)
+    r3 = run(
+        "scripts/run.py", "--system", "arm_b_v1", "--dataset", "smoke_v1", "--resume", "crashed", env=env
+    )
     check(
         "resume: an outputs-only crashed run resumes",
         r3.returncode == 0,
@@ -1332,11 +1338,13 @@ def test_resume_scores_and_persists() -> None:
         "        out['old_metric'] = 1.0\n"
         "    return out\n"
     )
-    (fx / "arm_fx.yaml").write_text(
-        "config_id: fx_extra_v1\ndataset_id: smoke_v1\nadapter: fx_adapter.py\nparams:\n  provider: fixture\n"
+    # The fixture system beside the project's own for the test, removed with its runs (a system is found by its id).
+    fx_system = HERE.parent / "data" / "systems" / "fx_extra_v1.yaml"
+    fx_system.write_text(
+        "system_id: fx_extra_v1\nadapter: ../runs-selftest-resume/fixture/fx_adapter.py\nparams:\n  provider: fixture\n"
     )
-    cfg_fx = str((fx / "arm_fx.yaml").relative_to(HERE.parent))
-    rf = run("scripts/run.py", "--config", cfg_fx, "--run-id", "fx_src", env={**env, "FX_PASS": "1"})
+    fx_arm = ("--system", "fx_extra_v1", "--dataset", "smoke_v1")
+    rf = run("scripts/run.py", *fx_arm, "--run-id", "fx_src", env={**env, "FX_PASS": "1"})
     if rf.returncode != 0:
         check(
             "resume: the extra-carrying fixture arm runs",
@@ -1353,8 +1361,7 @@ def test_resume_scores_and_persists() -> None:
         _runstore.drop_rows(runs / "fx_src")
         rr = run(
             "scripts/run.py",
-            "--config",
-            cfg_fx,
+            *fx_arm,
             "--run-id",
             "fx_res",
             "--resume",
@@ -1391,11 +1398,12 @@ def test_resume_scores_and_persists() -> None:
             (fx_m.get("resume") or {}).get("carried_extra_keys") == ["call_flag"],
             f"resume note: {fx_m.get('resume')}",
         )
+    fx_system.unlink(missing_ok=True)
 
     # RESUMING FROM ANOTHER ARM MUST BE REFUSED. `--resume` took a run id and read its
     # outputs; nothing compared the arms, so one mistyped id replayed a different
     # model's answers and recorded them under this one, with a valid fingerprint.
-    other = run("scripts/run.py", "--config", "data/configs/arm_a.yaml", "--resume", src, env=env)
+    other = run("scripts/run.py", "--system", "arm_a_v1", "--dataset", "smoke_v1", "--resume", src, env=env)
     msg = (other.stderr or "") + (other.stdout or "")
     check(
         "resume: another arm's outputs are refused",
@@ -1409,7 +1417,9 @@ def test_resume_scores_and_persists() -> None:
     anon = runs / "anonymous"
     shutil.rmtree(anon, ignore_errors=True)
     _outputs.writer(anon).add("item_01", "from who knows where")
-    r4 = run("scripts/run.py", "--config", "data/configs/arm_a.yaml", "--resume", "anonymous", env=env)
+    r4 = run(
+        "scripts/run.py", "--system", "arm_a_v1", "--dataset", "smoke_v1", "--resume", "anonymous", env=env
+    )
     m4 = (r4.stderr or "") + (r4.stdout or "")
     check(
         "resume: an unidentifiable source is refused, not warned about",
@@ -1724,7 +1734,7 @@ def test_a_run_that_measured_nothing_is_not_a_success() -> None:
     # assertions with nothing measured and FAILED on the control. A test that is green
     # on the author's laptop and red in a fresh clone is the exact shape of bug this
     # review found elsewhere, so it must skip honestly instead.
-    r2 = run("scripts/run.py", "--config", "data/configs/arm_b.yaml", env=env)
+    r2 = run("scripts/run.py", "--system", "arm_b_v1", "--dataset", "smoke_v1", env=env)
     out2 = (r2.stdout or "") + (r2.stderr or "")
     if r2.returncode != 0 and "is not materialized" in out2:
         print("  --   cost cap: skipped (smoke_v1 is not materialized in this checkout)")
@@ -1744,8 +1754,10 @@ def test_a_run_that_measured_nothing_is_not_a_success() -> None:
 
     r = run(
         "scripts/run.py",
-        "--config",
-        "data/configs/arm_b.yaml",
+        "--system",
+        "arm_b_v1",
+        "--dataset",
+        "smoke_v1",
         env={**env, "EVAL_MAX_COST_USD": "0"},
     )
     out = (r.stdout or "") + (r.stderr or "")
@@ -2174,9 +2186,9 @@ def test_the_reports_significance_counts_are_real() -> None:
             "--dataset-id",
             "scifact_200",
             "--a",
-            "sf_glm_s_n200_v1",
+            "sf_glm_s_v1",
             "--against",
-            "_n200_v1",
+            "sf_",
             "--metric",
             "ndcg_10",
             env={"EVAL_RUNS_DIR": str(scope)},
@@ -2659,17 +2671,17 @@ def test_the_reproduction_tables_agree_with_the_configs_and_runs() -> None:
     ex = ROOT.parent / "examples"
     table = json.loads((ex / "models.json").read_text())["aliases"]
     used = set()
-    for cfg in ex.glob("*/configs/*.yaml"):
+    for cfg in ex.glob("*/systems/*.yaml"):
         model = ((yaml.safe_load(cfg.read_text()) or {}).get("params") or {}).get("model", "")
         if str(model).startswith("eval-"):
             used.add(model)
     check(
-        "models.json: every alias a config uses is mapped",
+        "models.json: every alias a system uses is mapped",
         not used - set(table),
         f"unmapped: {sorted(used - set(table))}",
     )
     check(
-        "models.json: maps no alias that no config uses",
+        "models.json: maps no alias that no system uses",
         not set(table) - used,
         f"unused: {sorted(set(table) - used)}",
     )
@@ -2693,17 +2705,17 @@ def test_the_reproduction_tables_agree_with_the_configs_and_runs() -> None:
 
     for e in reg:
         arms = reproduce.committed(e)
-        cfg_ids = set(reproduce.configs(e))
+        system_ids = set(reproduce.systems(e))
         check(
             f"evals.json {e['slug']}: has committed runs and its leader among them",
             bool(arms) and e["leader"] in arms,
             f"{len(arms)} arms",
         )
-        missing = sorted(a for a, v in arms.items() if v["cid"] not in cfg_ids)
+        missing = sorted(a for a, v in arms.items() if v["cid"] not in system_ids)
         check(
-            f"evals.json {e['slug']}: every measured arm has a config to rerun it",
+            f"evals.json {e['slug']}: every measured arm has a system to rerun it",
             not missing,
-            f"no config for {missing}",
+            f"no system for {missing}",
         )
         unknown = [d for d in e["datasets"] if not (ROOT / "data" / "datasets" / f"{d}.json").is_file()]
         check(f"evals.json {e['slug']}: every dataset it fetches is frozen", not unknown, f"{unknown}")
@@ -3256,7 +3268,8 @@ def test_rescore_finds_the_bundled_adapter_from_an_installed_package() -> None:
         proj = tmp / "project"
         data = proj / "data"
         (data / "sources" / "rs_v1").mkdir(parents=True)
-        (data / "configs").mkdir(parents=True)
+        (data / "systems").mkdir(parents=True)
+        (data / "project.yaml").write_text("format: 3\n")  # as evh init stamps it
         for i in ("t1", "t2", "t3"):
             (data / "sources" / "rs_v1" / f"{i}.txt").write_text(
                 f"Ticket {i} cannot log in. It fails twice. The user reset the password. Support replied.\n"
@@ -3264,8 +3277,8 @@ def test_rescore_finds_the_bundled_adapter_from_an_installed_package() -> None:
         # Four arms: silver-calibrate needs three to rank plus the one authoring the silver.
         for n in (1, 2, 3, 4):
             name = "arm_echo" if n == 1 else f"arm_echo{n}"
-            (data / "configs" / f"{name}.yaml").write_text(
-                f"config_id: {name}_v1\ndataset_id: rs_v1\nparams:\n  provider: echo\n  sentences: {n}\n"
+            (data / "systems" / f"{name}_v1.yaml").write_text(
+                f"system_id: {name}_v1\nparams:\n  provider: echo\n  sentences: {n}\n"
             )
         env = {
             **os.environ,
@@ -3285,7 +3298,7 @@ def test_rescore_finds_the_bundled_adapter_from_an_installed_package() -> None:
         steps = [
             evh("dataset-create", "--dataset-id", "rs_v1", "--source-dir", str(data / "sources" / "rs_v1")),
             evh("dataset-materialize", "--dataset-id", "rs_v1"),
-            evh("run", "--config", str(data / "configs" / "arm_echo4.yaml"), "--run-id", "author"),
+            evh("run", "--system", "arm_echo4_v1", "--dataset", "rs_v1", "--run-id", "author"),
         ]
         # silver first, so the runs are scored against it and rescore moves them to gold: arm_echo4's outputs as
         # a model's labels, promoted (RFC-023)
@@ -3304,7 +3317,10 @@ def test_rescore_finds_the_bundled_adapter_from_an_installed_package() -> None:
                 "--by",
                 "self-test",
             ),
-            *(evh("run", "--config", str(c)) for c in sorted((data / "configs").glob("*.yaml"))),
+            *(
+                evh("run", "--system", c.stem, "--dataset", "rs_v1")
+                for c in sorted((data / "systems").glob("*.yaml"))
+            ),
         ]
         check(
             "installed rescore: a run made with the bundled adapter",

@@ -10,7 +10,7 @@
     "ref": "a903fb37b0f19839d11ed3237630a2b1fc9197ae",
     "source": "git"
   },
-  "config_id": "sf_deepseek_m_n200_v1",
+  "config_id": "sf_deepseek_m_v1",
   "created_at": "2026-09-29T20:21:59+02:00",
   "dataset_id": "scifact_200",
   "derived": {
@@ -24,7 +24,7 @@
   },
   "fingerprint": {
     "arm": {
-      "config_id": "sf_deepseek_m_n200_v1",
+      "config_id": "sf_deepseek_m_v1",
       "labels": {
         "family": "deepseek",
         "price_tier": "mid",

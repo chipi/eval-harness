@@ -7,23 +7,23 @@ status: closed
 opened_at: '2026-09-30T14:41:34Z'
 closed_at: '2026-09-30T15:48:17Z'
 retired:
-- config_id: cnn_bart_l_n200_v1
+- config_id: cnn_bart_l_v1
   runs_dir: runs-linux
   reason: a re-timing of the record's config on one Linux machine; data/runs is the record
   at: '2026-09-30T15:48:17Z'
-- config_id: cnn_bart_l_xsum_n200_v1
+- config_id: cnn_bart_l_xsum_v1
   runs_dir: runs-linux
   reason: a re-timing of the record's config on one Linux machine; data/runs is the record
   at: '2026-09-30T15:48:17Z'
-- config_id: cnn_bart_m_n200_v1
+- config_id: cnn_bart_m_v1
   runs_dir: runs-linux
   reason: a re-timing of the record's config on one Linux machine; data/runs is the record
   at: '2026-09-30T15:48:17Z'
-- config_id: cnn_bart_s_n200_v1
+- config_id: cnn_bart_s_v1
   runs_dir: runs-linux
   reason: a re-timing of the record's config on one Linux machine; data/runs is the record
   at: '2026-09-30T15:48:17Z'
-- config_id: cnn_lead3_n200_v1
+- config_id: cnn_lead3_v1
   runs_dir: runs-linux
   reason: a re-timing of the record's config on one Linux machine; data/runs is the record
   at: '2026-09-30T15:48:17Z'

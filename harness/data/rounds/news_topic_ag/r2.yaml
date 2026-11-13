@@ -7,15 +7,15 @@ status: closed
 opened_at: '2026-09-30T14:38:35Z'
 closed_at: '2026-09-30T14:40:24Z'
 retired:
-- config_id: ag_bert_base_fy_n200_v1
+- config_id: ag_bert_base_fy_v1
   runs_dir: runs-linux
   reason: a re-timing of the record's config on one Linux machine; data/runs is the record
   at: '2026-09-30T14:40:24Z'
-- config_id: ag_bert_base_ta_n200_v1
+- config_id: ag_bert_base_ta_v1
   runs_dir: runs-linux
   reason: a re-timing of the record's config on one Linux machine; data/runs is the record
   at: '2026-09-30T14:40:24Z'
-- config_id: ag_bert_mini_n200_v1
+- config_id: ag_bert_mini_v1
   runs_dir: runs-linux
   reason: a re-timing of the record's config on one Linux machine; data/runs is the record
   at: '2026-09-30T14:40:24Z'

@@ -118,15 +118,15 @@ def serve(*extra: str) -> tuple[subprocess.Popen, int, list[str]]:
 try:
     r = evh("init", "--tutorial")
     shutil.copytree(KIT / "tickets", proj / "tickets")
-    (proj / "data" / "configs" / "one_v1.yaml").write_text(
-        "config_id: one_v1\ndataset_id: tk_v1\nparams:\n  provider: echo\n  sentences: 1\n"
+    (proj / "data" / "systems" / "one_v1.yaml").write_text(
+        "system_id: one_v1\nparams:\n  provider: echo\n  sentences: 1\n"
     )
     for step in (
         ("dataset-create", "--dataset-id", "tk_v1", "--source-dir", "tickets"),
         ("dataset-materialize", "--dataset-id", "tk_v1"),
         ("label-import", str(KIT / "gold"), "--dataset-id", "tk_v1", "--set", "g", "--by", "t"),
         ("reference-promote", "--dataset-id", "tk_v1", "--labels", "g", "--tier", "gold", "--reason", "the kit's summaries, for the test", "--by", "t"),
-        ("run", "--config", "data/configs/one_v1.yaml"),
+        ("run", "--system", "one_v1", "--dataset", "tk_v1"),
         ("goal-new", "tickets_summary", "--set", "title=Ticket summaries", "--set", "statement=A one-line summary of a ticket.",
          "--set", "decision=Which system writes it.", "--set", "success_criteria.primary.measure=overlap_f1",
          "--set", "success_criteria.primary.direction=higher", "--set", "datasets.0.dataset_id=tk_v1", "--set", "datasets.0.role=test"),

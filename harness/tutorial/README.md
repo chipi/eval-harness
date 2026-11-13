@@ -1,7 +1,7 @@
 # Tutorial kit
 
 Six invented support tickets (`tickets/`) and a one-line summary of each written by a
-person (`gold/`) — a small golden dataset — with four arm configs (`configs/`), a goal
+person (`gold/`) — a small golden dataset — with four systems (`systems/`), a goal
 (`goals/`), the tickets' fields (`fields/`, `ticket_fields.csv`) and a judge scorer
 (`scorers/`, `judge_prompt.txt`). `evh init --tutorial` copies it into a new project. Nothing
 here is real customer data.

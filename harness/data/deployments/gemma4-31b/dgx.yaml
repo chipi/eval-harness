@@ -38,7 +38,7 @@ checks:
     deterministic: true
     json_valid: true
 - kind: smoke
-  config: triage_local_dgx_gemma4_31b_v2
+  system: triage_local_dgx_gemma4_31b_v2
   status: pass
   at: '2026-10-31T14:29:55Z'
   flags: []

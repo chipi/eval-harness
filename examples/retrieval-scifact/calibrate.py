@@ -42,7 +42,7 @@ TOLERANCE = 0.02
 
 def main() -> int:
     adapter = load_module(HERE / "adapter.py", "sf_adapter")
-    params = yaml.safe_load(_store.read_text(HERE / "configs" / "arm_bm25_n200.yaml"))["params"]
+    params = yaml.safe_load(_store.read_text(HERE / "systems" / "sf_bm25_v1.yaml"))["params"]
     src, gold = DATA / "sources" / DATASET, DATA / "references" / "gold" / DATASET
     queries = sorted(_store.glob(src, "*.txt"))
     if len(queries) != 300:

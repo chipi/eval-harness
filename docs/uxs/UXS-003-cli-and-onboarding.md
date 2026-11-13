@@ -49,9 +49,9 @@ on every change, comparing each quoted output. Its order is the order a newcomer
 | 1 | freeze a dataset | `evh dataset-create --dataset-id tickets_v1 --source-dir tutorial/tickets` |
 | 2 | materialize | `evh dataset-materialize --dataset-id tickets_v1` |
 | 3 | describe the arms, name the goal, commit | copy configs, `goal: tickets_summary` |
-| 4 | run the best arm first (a dry run prices it) | `evh run --config data/configs/tickets_author.yaml [--dry-run]` |
+| 4 | run the best arm first (a dry run prices it) | `evh run --system tickets_author_v1 --dataset tickets_v1 --goal tickets_summary [--dry-run]` |
 | 5 | optional: make its outputs the reference (its outputs become a model's labels, which you promote) | `evh label-from-run --run <run_id> --set author_v1`, then `evh reference-promote --dataset-id tickets_v1 --labels author_v1 --tier silver --reason "…" --by <you>` |
-| 6 | run the other arms, three times each | `evh run --config … --repeat 3` |
+| 6 | run the other arms, three times each | `evh run --system … --dataset … --repeat 3` |
 | 7 | compare | `evh leaderboard`, `evh pair-test`, `evh family-test` |
 | 8 | choose: promote a baseline, then validate | `evh run-promote --run … --reason "…"`, `evh baselines`, `evh validate` |
 
@@ -108,7 +108,7 @@ answer. Where the page has a `make` target in a checkout, it runs the same scrip
 | an arm page: metrics, cost and speed, runs, config, conditions, rounds | `evh arms --arm <arm id or config id>` | `make arms ARM=<id>` |
 | the models page: every model record, its deployments, settings, onboarding, arms (0.6.0, RFC-020) | `evh models [--kind K] [--where self-hosted\|hosted] [--status vetted\|onboarded\|check\|none]` | |
 | a model page: its deployments and their onboarding, settings history, arms | `evh models --model <id>` | |
-| (no page action) onboarding a model's deployment, smoking an arm before its run | `evh model-onboard <id> --deployment <d>`, `evh arm-smoke --config <arm>` | |
+| (no page action) onboarding a model's deployment, smoking an arm before its run | `evh model-onboard <id> --deployment <d>`, `evh arm-smoke --system <id> --dataset <id>` | |
 | reference set pages | `evh references [--reference-id <id>]` | `make references` |
 | the Captures page | `evh captures [--capture ID] [--json]` | |
 | (no page; the Configure page was retired, PRD-017) the project's data: the overview, a folder, find | `evh data-ls [PATH] [--find TEXT]` | |
@@ -125,7 +125,7 @@ answer. Where the page has a `make` target in a checkout, it runs the same scrip
 | the inspector's sheet, its downloads; its selection's commands (0.6.0) | `evh inspect --sheet --dataset-id D --runs A,B … [--csv FILE [--fill label\|pick\|scores]]`; `evh pick --dataset-id D --item … [--for V] [--tag k=v] [--note "…"]` | |
 | (no page action) a sheet filled elsewhere, read back (0.6.0) | `evh sheet-import sheet.csv --dataset-id D --by WHO [--kind person\|model] [--set S] [--scorer S]` | `make sheet-import ARGS="…"` |
 | a dataset page's picks waiting; its selection's command (0.6.0) | `evh picks [--for V] [--tag k=v]`, `evh pick --dataset-id D --item ITEM --drop`; `evh dataset-extend V1 --dataset-id V2 --picks`, `evh dataset-extend V1 --dataset-id V2 --pick ITEM` | |
-| a promoted arm's deploy sheet (0.6.0) | `evh deploy-sheet --config ARM [--capture C]` | |
+| a promoted arm's deploy sheet (0.6.0) | `evh deploy-sheet --system ARM [--capture C]` | |
 | the metrics page | `evh metrics [--dataset-id <id>]` | `make metrics` |
 | a metric page: summary, details, goals, per-dataset strip chart and arms | `evh metrics --metric <metric>` | `make metrics METRIC=<metric>` |
 | inspector: a comparison | `evh inspect --runs a,b [--baseline a] [--metric m]` | `make inspect RUNS=a,b` |

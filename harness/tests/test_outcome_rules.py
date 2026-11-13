@@ -20,6 +20,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parents[1] / "scripts"
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from evaluation_harness import _format  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 from evaluation_harness._outcome_rules import matches  # noqa: E402
 
@@ -69,7 +70,8 @@ def said(r):
 
 try:
     data = proj / "data"
-    (data / "configs").mkdir(parents=True)
+    (data / "systems").mkdir(parents=True)
+    _runstore.write_text(proj, _format.NAME, f"format: {_format.FORMAT}\n")
     (data / "goals").mkdir()
     shutil.copytree(KIT / "tickets", proj / "tutorial" / "tickets")
     evh("dataset-create", "--dataset-id", "tickets_v1", "--source-dir", "tutorial/tickets")
@@ -106,11 +108,8 @@ try:
         proj, "goals/tickets_summary.yaml", (KIT / "goals" / "tickets_summary.yaml").read_bytes()
     )
     for c in ("tickets_lead1", "tickets_lead2"):
-        cfg = data / "configs" / f"{c}.yaml"
-        _runstore.write_text(
-            proj, f"configs/{c}.yaml", (KIT / "configs" / f"{c}.yaml").read_text() + "goal: tickets_summary\n"
-        )
-        r = evh("run", "--config", str(cfg))
+        _runstore.write_text(proj, f"systems/{c}_v1.yaml", (KIT / "systems" / f"{c}_v1.yaml").read_text())
+        r = evh("run", "--system", f"{c}_v1", "--dataset", "tickets_v1", "--goal", "tickets_summary")
         check(f"setup: {c} runs", r.returncode == 0, said(r)[-300:])
 
     items = [it["item_id"] for it in _runstore.read_json(proj, "datasets/tickets_v1.json")["items"]]

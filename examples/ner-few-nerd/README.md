@@ -88,8 +88,9 @@ that relevance is what this example gives up to keep the licence clean.
 
 ```bash
 cd "$(git rev-parse --show-toplevel)/harness"     # from anywhere in the repo
-for f in ../examples/ner-few-nerd/configs/arm_*_n200.yaml; do
-  ../examples/ner-few-nerd/.venv/bin/python scripts/run.py --config "$f"
+for s in ../examples/ner-few-nerd/systems/*.yaml; do
+  ../examples/ner-few-nerd/.venv/bin/python scripts/run.py --system "$(basename "$s" .yaml)" \
+    --dataset few_nerd_280 --goal entities_few_nerd
 done
 ```
 
@@ -100,8 +101,8 @@ Then the analysis — all of it $0, all of it from the stored runs:
 
 ```bash
 python tools/extraction_report.py --dataset-id few_nerd_280 --match fn_
-python scripts/family_test.py --dataset-id few_nerd_280 --a fn_span_marker_n200_v1 \
-    --against _n200_v1 --metric f1
+python scripts/family_test.py --dataset-id few_nerd_280 --a fn_span_marker_v1 \
+    --against fn_ --metric f1
 ```
 
 ---

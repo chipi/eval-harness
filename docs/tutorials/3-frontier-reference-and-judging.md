@@ -14,14 +14,13 @@ which need a key ([tutorial 2](2-hosted-llm.md)).
 
 ## 1. The frontier arm, with a real model
 
-The author is an arm like any other. With a hosted model it is a config such as this one, from
+The author is a system like any other. With a hosted model it is one such as this, from
 the newcomer scenario this release was tried on (a LiteLLM proxy's model name; any provider of
 [tutorial 2](2-hosted-llm.md) works):
 
 ```yaml
-# data/configs/briefs_opus.yaml
-config_id: briefs_opus_v1
-dataset_id: briefs_v1
+# data/systems/briefs_opus_v1.yaml
+system_id: briefs_opus_v1
 params:
   provider: litellm
   model: eval-opus-5
@@ -30,13 +29,12 @@ params:
   prompt: "Summarise the following news brief in one sentence."
   usd_per_mtok_in: 5.0
   usd_per_mtok_out: 25.0
-goal: brief_summary
 ```
 
 <!-- guide-check: skip -->
 ```bash
-evh run --config data/configs/briefs_opus.yaml --dry-run     # price it first
-evh run --config data/configs/briefs_opus.yaml
+evh run --system briefs_opus_v1 --dataset briefs_v1 --goal brief_summary --dry-run     # price it first
+evh run --system briefs_opus_v1 --dataset briefs_v1 --goal brief_summary
 evh label-from-run --run <the briefs_opus_v1 run_id> --set opus_v1
 evh reference-promote --dataset-id briefs_v1 --labels opus_v1 --tier silver \
     --reason "The frontier arm's summaries rank the cheaper arms." --by me
@@ -47,8 +45,8 @@ What `label-from-run` refuses, and why:
 
 - **An empty output, or one that stopped at `max_tokens`.** In the scenario's first run a
   frontier arm at `max_tokens: 80` wrote 19 of 20 summaries cut off mid-sentence; frozen as the
-  reference, every arm would have been graded against fragments. That is why the config above
-  has room to finish. If yours stops at the cap, raise `max_tokens` in a new `config_id`
+  reference, every arm would have been graded against fragments. That is why the system above
+  has room to finish. If yours stops at the cap, raise `max_tokens` in a new `system_id`
   (`briefs_opus_v2`) and run again (`--allow-cut-off` is for outputs that end at the cap by
   design). `evh run`
   already warns, naming the items, when outputs stop at the cap.

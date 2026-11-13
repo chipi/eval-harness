@@ -21,7 +21,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parents[1] / "scripts"
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 KIT = HERE.parent / "tutorial"
-from evaluation_harness import _store  # noqa: E402
+from evaluation_harness import _format, _store  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
@@ -73,7 +73,8 @@ def listed():
 
 
 try:
-    (proj / "data" / "configs").mkdir(parents=True)
+    (proj / "data" / "systems").mkdir(parents=True)
+    _runstore.write_text(proj, _format.NAME, f"format: {_format.FORMAT}\n")
     shutil.copytree(KIT / "tickets", proj / "tickets")
     (proj / "adapter.py").write_text(ADAPTER)
     r = evh("dataset-create", "--dataset-id", "tk_v1", "--source-dir", "tickets")
@@ -94,10 +95,10 @@ try:
     check("setup: a dataset with gold", r.returncode == 0, out(r)[-300:])
     _runstore.write_text(
         proj,
-        "configs/a.yaml",
-        "config_id: a_v1\ndataset_id: tk_v1\nadapter: adapter.py\nparams:\n  provider: echo\n",
+        "systems/a_v1.yaml",
+        "system_id: a_v1\nadapter: adapter.py\nparams:\n  provider: echo\n",
     )
-    r = evh("run", "--config", "data/configs/a.yaml", "--run-id", "a_killed", KILL_AT="3")
+    r = evh("run", "--system", "a_v1", "--dataset", "tk_v1", "--run-id", "a_killed", KILL_AT="3")
     check(
         "a run killed partway is not listed: its metrics.json is written last",
         r.returncode != 0
@@ -105,7 +106,7 @@ try:
         and not _runstore.exists(proj, "runs/a_killed/metrics.json"),
         out(r)[-300:],
     )
-    r = evh("run", "--config", "data/configs/a.yaml", "--run-id", "a_whole")
+    r = evh("run", "--system", "a_v1", "--dataset", "tk_v1", "--run-id", "a_whole")
     check("a run that ends is listed", r.returncode == 0 and "a_whole" in listed(), out(r)[-300:])
     r = evh(
         "rescore",

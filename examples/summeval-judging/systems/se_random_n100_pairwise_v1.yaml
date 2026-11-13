@@ -1,0 +1,9 @@
+# The floor for a pairwise judge: a seeded random winner of each pair; its score is the validation's min_metric.
+system_id: se_random_n100_pairwise_v1
+adapter: ../adapter.py
+params:
+  provider: random
+  seed: 20261015
+  family: baseline
+  price_tier: free
+  mode: pairwise

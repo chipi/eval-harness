@@ -5,8 +5,8 @@
 
 In a throwaway git project ($0, offline): the tutorial's tickets with an `opened` date, split at a time boundary
 (`dataset-split --split-by time --at`) with the test side sealed. Every run, label and reference written onto the sealed
-side is refused; `dataset-unseal` refuses a config with no hypothesis or an uncommitted one, then opens the side to
-the candidate and the config its hypothesis is against (one look, recorded). Another config is still refused.
+side is refused; `dataset-unseal` refuses a system with no hypothesis or an uncommitted one, then opens the side to
+the candidate and the system its hypothesis is against (one look, recorded). Another system is still refused.
 validate holds the seal: the open side changed after sealing fails it.
 """
 
@@ -21,6 +21,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parents[1] / "scripts"
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 KIT = HERE.parent / "tutorial"
+from evaluation_harness import _format  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
@@ -59,13 +60,10 @@ def commit(msg):
 
 
 def config(config_id, sentences, hypothesis=None):
-    text = (
-        f"config_id: {config_id}\ndataset_id: tk_v1_test\n"
-        f"params:\n  provider: echo\n  sentences: {sentences}\n"
-    )
+    text = f"system_id: {config_id}\nparams:\n  provider: echo\n  sentences: {sentences}\n"
     if hypothesis:
         text += "hypothesis:\n" + "".join(f"  {k}: {json.dumps(v)}\n" for k, v in hypothesis.items())
-    _runstore.write_text(proj, f"configs/{config_id}.yaml", text)
+    _runstore.write_text(proj, f"systems/{config_id}.yaml", text)
 
 
 def refused(r, *said):
@@ -74,7 +72,8 @@ def refused(r, *said):
 
 try:
     git("init", "-q")
-    (proj / "data" / "configs").mkdir(parents=True)
+    (proj / "data" / "systems").mkdir(parents=True)
+    _runstore.write_text(proj, _format.NAME, f"format: {_format.FORMAT}\n")
     (proj / "data" / "fields").mkdir()
     shutil.copytree(KIT / "tickets", proj / "tickets")
     _runstore.write_text(
@@ -143,7 +142,7 @@ try:
     config("base_test_v1", 1)
     config("cand_test_v1", 2, HYP)
     config("other_test_v1", 3)
-    r = evh("run", "--config", "data/configs/cand_test_v1.yaml")
+    r = evh("run", "--system", "cand_test_v1", "--dataset", "tk_v1_test")
     check(
         "sealed: a run on it is refused before anything is called, with how to name the candidate",
         refused(
@@ -153,20 +152,20 @@ try:
     )
 
     r = evh(
-        "dataset-unseal", "tk_v1_test", "--config", "base_test_v1", "--reason", "the baseline, to look at it"
+        "dataset-unseal", "tk_v1_test", "--system", "base_test_v1", "--reason", "the baseline, to look at it"
     )
     check(
-        "dataset-unseal: a config with no hypothesis is refused",
+        "dataset-unseal: a system with no hypothesis is refused",
         refused(r, "names no hypothesis"),
         out(r)[-300:],
     )
-    # The files store's configs are in git: an uncommitted hypothesis is refused. The database's are not (RFC-025):
+    # The files store's systems are in git: an uncommitted hypothesis is refused. The database's are not (RFC-025):
     # there the unseal itself is the naming in advance, recorded as such.
     if not _runstore.sqlite():
         r = evh(
             "dataset-unseal",
             "tk_v1_test",
-            "--config",
+            "--system",
             "cand_test_v1",
             "--reason",
             "the two-sentence candidate",
@@ -180,7 +179,7 @@ try:
     r = evh(
         "dataset-unseal",
         "tk_v1_test",
-        "--config",
+        "--system",
         "cand_test_v1",
         "--reason",
         "the two-sentence candidate, frozen",
@@ -213,16 +212,16 @@ try:
         )
     )  # fmt: skip
     check("unsealed: labels and a reference onto it are written", r.returncode == 0, out(r)[-300:])
-    ra = evh("run", "--config", "data/configs/cand_test_v1.yaml")
-    rb = evh("run", "--config", "data/configs/base_test_v1.yaml")
+    ra = evh("run", "--system", "cand_test_v1", "--dataset", "tk_v1_test")
+    rb = evh("run", "--system", "base_test_v1", "--dataset", "tk_v1_test")
     check(
-        "unsealed: the candidate and the config it is against run on it",
+        "unsealed: the candidate and the system it is against run on it",
         ra.returncode == 0 and rb.returncode == 0,
         out(ra)[-300:] + out(rb)[-300:],
     )
-    r = evh("run", "--config", "data/configs/other_test_v1.yaml")
+    r = evh("run", "--system", "other_test_v1", "--dataset", "tk_v1_test")
     check(
-        "unsealed for a candidate: any other config is still refused, naming the ones it is open to",
+        "unsealed for a candidate: any other system is still refused, naming the ones it is open to",
         refused(r, "it is open to base_test_v1, cand_test_v1 only"),
         out(r)[-300:],
     )

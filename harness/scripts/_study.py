@@ -2,8 +2,8 @@
 
     data/studies/<goal>/<study_id>.yaml             the spec, written by a person or an agent
     data/studies/<goal>/<study_id>.events.jsonl     the log: start, ask, trial, end, confirm (one JSON line each)
-    data/studies/<goal>/<study_id>/t<k>.yaml        trial k's config, written once (found like any config)
-    data/studies/<goal>/<study_id>/confirm/...      a confirmation's two configs on the test set, and its item list
+    data/studies/<goal>/<study_id>/<study_id>-t<k>.yaml   trial k's system, written once (found like any system)
+    data/studies/<goal>/<study_id>/confirm/...      a confirmation's item list (its two systems run on the test set)
 
 A study's state (running, stopped, the best so far, what it spent, an open ask) is read from its log, never stored
 apart. Every write to the log is under the study's lock (`study:<goal>/<study_id>`, RFC-026). A study never reads a
@@ -161,8 +161,8 @@ def problems(goal: str, sid: str, s: dict[str, Any]) -> list[str]:
         out.append(
             f"dataset {ds} is a test set: a study runs on validation items; study-confirm reads a test set"
         )
-    if not (s.get("baseline") or {}).get("config"):
-        out.append("baseline: {config: <config_id>} (the arm the study starts from)")
+    if not (s.get("baseline") or {}).get("system"):
+        out.append("baseline: {system: <system_id>} (the system the study starts from)")
     if not s.get("measure"):
         out.append("measure: the goal's metric the study is decided on")
     sampler = s.get("sampler")
@@ -235,7 +235,7 @@ def state(goal: str, sid: str) -> dict[str, Any]:
     }
 
 
-# ── a trial's config ───────────────────────────────────────────────────────────────────────────────────────────────
+# ── a trial's system ───────────────────────────────────────────────────────────────────────────────────────────────
 
 
 def _set_path(d: dict[str, Any], dotted: str, value: Any) -> None:
@@ -257,29 +257,24 @@ def _get_path(d: dict[str, Any], dotted: str) -> Any:
     return cur
 
 
-def config_of(config_id: str) -> tuple[Path, dict[str, Any]]:
-    """An arm config by its id (a trial's included): its file and its content."""
-    from evaluation_harness._hypothesis import config_ids  # noqa: PLC0415
+def system_of(system_id: str) -> tuple[Path, dict[str, Any]]:
+    """A system by its id (a trial's included): its file and its content."""
+    from evaluation_harness._hypothesis import system_ids  # noqa: PLC0415
 
-    p = config_ids().get(config_id)
+    p = system_ids().get(system_id)
     if p is None:
-        _common.die(f"no arm config with config_id {config_id!r}", "not-found")
+        _common.die(f"no system {system_id!r} (evh system-list)", "not-found")
     return p, yaml.safe_load(_store.read_text(p, encoding="utf-8")) or {}
 
 
-def write_trial_config(
-    goal: str, sid: str, k: int, base_cid: str, proposal: dict[str, Any], s: dict[str, Any], rid: str
-) -> str:
-    """Trial k's config: the baseline's (or the best so far's) with the proposal's changes, written once."""
+def write_trial_system(goal: str, sid: str, k: int, base_cid: str, proposal: dict[str, Any]) -> str:
+    """Trial k's system: the baseline's (or the best so far's) with the proposal's changes, written once."""
     from evaluation_harness import _prompts  # noqa: PLC0415
 
-    _p, base = config_of(base_cid)
+    _p, base = system_of(base_cid)
     cfg = copy.deepcopy(base)
     cid = f"{sid}-t{k}"
-    cfg["config_id"] = cid
-    cfg["dataset_id"] = s["dataset"]
-    cfg["goal"] = goal
-    cfg["round"] = rid
+    cfg["system_id"] = cid
     cfg.pop("hypothesis", None)
     params = cfg.setdefault("params", {})
     for path, value in (proposal.get("params") or {}).items():
@@ -310,7 +305,7 @@ def write_trial_config(
             root = cfg["prompt_root"]
         else:
             cfg.setdefault("prompts", {})[str(name)] = {"version": doc["id"]}
-    path = folder(goal, sid) / f"t{k}.yaml"
+    path = folder(goal, sid) / f"{cid}.yaml"
     try:
         _store.create_new(path, yaml.safe_dump(cfg, sort_keys=False).encode("utf-8"))
     except FileExistsError:
@@ -331,19 +326,22 @@ def _evh(argv: list[str], **kw: Any) -> subprocess.CompletedProcess:
     )  # fmt: skip
 
 
-def run_config(cid: str, repeats: int = 1, items: Path | None = None) -> tuple[int, float, list[str]]:
-    """`evh run` of a config as a child, given what is left of the cap (RFC-026): (exit, spent, run ids)."""
+def run_system(
+    cid: str,
+    dataset: str,
+    goal: str | None = None,
+    round_id: str | None = None,
+    repeats: int = 1,
+    items: Path | None = None,
+) -> tuple[int, float, list[str]]:
+    """`evh run` of a system on a dataset as a child, given what is left of the cap (RFC-026): (exit, spent, run
+    ids)."""
     from evaluation_harness import _spend  # noqa: PLC0415
 
-    p, _cfg = config_of(cid)
-    argv = [
-        sys.executable,
-        str(Path(__file__).resolve().parent / "cli.py"),
-        "run",
-        "--config",
-        str(p),
-        "--json",
-    ]
+    argv = [sys.executable, str(Path(__file__).resolve().parent / "cli.py"), "run", "--system", cid]
+    argv += ["--dataset", dataset, "--json"]
+    argv += ["--goal", goal] if goal else []
+    argv += ["--round", round_id] if round_id else []
     argv += ["--repeat", str(repeats)] if repeats > 1 else []
     argv += ["--items", str(items)] if items is not None else []
     r, paid = _spend.run_child(argv, capture_output=True, text=True, stdin=subprocess.DEVNULL)
@@ -441,8 +439,8 @@ def trial(
     s, st = spec(goal, sid), state(goal, sid)
     base_cid = st["baseline"]
     best_cid = (st["best"] or {}).get("config_id") or base_cid
-    cid = write_trial_config(goal, sid, k, best_cid, proposal, s, st["round"])
-    code, paid, runs = run_config(cid, int(s.get("repeats") or 1))
+    cid = write_trial_system(goal, sid, k, best_cid, proposal)
+    code, paid, runs = run_system(cid, s["dataset"], goal, st["round"], int(s.get("repeats") or 1))
     metric = str(s["measure"])
     lower = lower_is_better(goal, metric) or s.get("direction") == "lower"
     line: dict[str, Any] = {
@@ -464,7 +462,7 @@ def trial(
     acc = s.get("accept") or {}
     margin = acc.get("margin") if isinstance(acc, dict) else None
     vs_best = compare(s["dataset"], cid, best_cid, metric, lower)
-    vs_best["mean_b"] = _mean(list(_runs_of(best_cid)), metric)
+    vs_best["mean_b"] = _mean(list(_runs_of(s["dataset"], best_cid)), metric)
     vs_base = (
         compare(s["dataset"], cid, base_cid, metric, lower, margin if margin is not None else None)
         if base_cid != best_cid or margin is not None
@@ -490,10 +488,11 @@ def trial(
     return append(goal, sid, line)
 
 
-def _runs_of(cid: str) -> list[str]:
+def _runs_of(dataset: str, cid: str) -> list[str]:
+    """The system's runs on the study's dataset (a confirmation's runs on the test set are not its trials')."""
     from evaluation_harness import _runs  # noqa: PLC0415
 
-    return [d.name for d, _m in _runs.runs_on(config_id=cid)]
+    return [d.name for d, _m in _runs.runs_on(dataset, config_id=cid)]
 
 
 # ── samplers ───────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -537,7 +536,7 @@ def sampler_state(goal: str, sid: str) -> dict[str, Any]:
 
     s, st = spec(goal, sid), state(goal, sid)
     best_cid = (st["best"] or {}).get("config_id") or st["baseline"]
-    _p, best_cfg = config_of(best_cid)
+    _p, best_cfg = system_of(best_cid)
     return {
         "weakest_items": weakest(goal, sid, best_cid, int(s.get("show_items", 5))),
         "study": f"{goal}/{sid}",
@@ -578,7 +577,7 @@ def grid_next(goal: str, sid: str) -> dict[str, Any] | None:
     `move_on_after` trials without a kept one, or when its values are tried. None: the space is exhausted."""
     s, st = spec(goal, sid), state(goal, sid)
     best_cid = (st["best"] or {}).get("config_id") or st["baseline"]
-    _p, best_cfg = config_of(best_cid)
+    _p, best_cfg = system_of(best_cid)
     params = best_cfg.get("params") or {}
     tried = {(json.dumps(t.get("change", {}).get("params") or {}, sort_keys=True)) for t in st["trials"]}
     for g in (s.get("space") or {}).get("groups") or []:
@@ -659,13 +658,13 @@ class CommandSampler:
 
 
 def scorer_hash(s: dict[str, Any]) -> str:
-    """The scoring code a study's trials are measured by: the harness's code and the baseline config's adapter file,
+    """The scoring code a study's trials are measured by: the harness's code and the baseline system's adapter file,
     by behaviour (_codeid). Checked before every trial: a scorer changed mid-study stops it."""
     from evaluation_harness._adapter import load_adapter  # noqa: PLC0415
     from evaluation_harness._codeid import file_sha256  # noqa: PLC0415
     from evaluation_harness._fingerprint import harness_code_sha256  # noqa: PLC0415
 
-    p, cfg = config_of(s["baseline"]["config"])
+    p, cfg = system_of(s["baseline"]["system"])
     adapter_path = load_adapter(cfg.get("adapter"), p)[3]
     return hashlib.sha256(
         (harness_code_sha256() + ((file_sha256(adapter_path) or "") if adapter_path else "")).encode()
@@ -710,7 +709,7 @@ def open_study(goal: str, sid: str) -> dict[str, Any]:
     found = problems(goal, sid, s)
     if found:
         _common.die(f"study {goal}/{sid}: " + "; ".join(found), "invalid-file")
-    config_of(s["baseline"]["config"])  # refused now when it does not exist
+    system_of(s["baseline"]["system"])  # refused now when it does not exist
     usd = (s.get("stop") or {}).get("usd")
     if usd is not None:
         own = _common.env_float("EVAL_MAX_COST_USD")
@@ -727,7 +726,7 @@ def open_study(goal: str, sid: str) -> dict[str, Any]:
             "baseline": None,
             "budget_usd": None,
             "harness": _rounds.harness_now(),
-            "carried": [s["baseline"]["config"]],
+            "carried": [s["baseline"]["system"]],
             "status": "open",
             "opened_at": _common.now(),
             "study": sid,
@@ -740,7 +739,7 @@ def open_study(goal: str, sid: str) -> dict[str, Any]:
         {
             "event": "start",
             "round": rid,
-            "baseline": s["baseline"]["config"],
+            "baseline": s["baseline"]["system"],
             "spec_sha256": frozen_hash(s, goal, sid),
             "scorer_sha256": scorer_hash(s),
             "references_sha256": _references(s),
@@ -825,16 +824,18 @@ def _tag_group(goal: str, sid: str, k: int, group: str) -> None:
 
 
 def mark_interrupted(goal: str, sid: str) -> list[int]:
-    """On resume: a trial whose config was written but whose line never was (the study stopped mid-trial) gets a line,
+    """On resume: a trial whose system was written but whose line never was (the study stopped mid-trial) gets a line,
     failed and interrupted, so the numbering goes on after it. Returns those trials' numbers."""
     st = state(goal, sid)
     have = {t.get("k") for t in st["trials"]}
     out = []
-    for p in sorted(
-        _store.glob(folder(goal, sid), "t*.yaml"),
-        key=lambda q: int(q.stem[1:]) if q.stem[1:].isdigit() else 0,
-    ):
-        k = int(p.stem[1:]) if p.stem[1:].isdigit() else None
+
+    def number(q: Path) -> int | None:
+        tail = q.stem[len(f"{sid}-t") :]
+        return int(tail) if tail.isdigit() else None
+
+    for p in sorted(_store.glob(folder(goal, sid), f"{sid}-t*.yaml"), key=lambda q: number(q) or 0):
+        k = number(p)
         if k is None or k in have:
             continue
         append(goal, sid, {"event": "trial", "k": k, "config_id": f"{sid}-t{k}", "change": {"params": {}, "prompts": []},

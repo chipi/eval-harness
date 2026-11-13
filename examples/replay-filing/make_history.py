@@ -14,8 +14,8 @@ Everything is synthetic and made here, so the example runs anywhere at $0:
   OUT/gold/              the actions that should have been taken, for a reference set
 
 and, in the project's data: the code record `toy_filing` (data/models/, `kind: code`: the commits and when each ran
-in production), the field set `filing`, the goal, and three configs: production's recorded arm, the replay, and a
-candidate (every decision at the third commit).
+in production), the field set `filing`, the goal, and five systems (data/systems/): production's recorded arm, the replay (plain, and
+with production's own reopens hidden) and the candidate (every decision at the third commit; plain, and hidden).
 It prints the commands that follow.
 """
 
@@ -273,35 +273,35 @@ def main() -> int:
     )
     adapter = rel(HERE / "replay_filing.py")
     replay = (
-        "dataset_id: filing_history_v1\ngoal: filing\nadapter: {adapter}\nmodel_record: toy_filing\n"
+        "adapter: {adapter}\nmodel_record: toy_filing\n"
         "replay: {{order: [ts], time_field: started, support: [replay_world.py]{commit}{hide}}}\n"
         "params:\n  world: {world}\n"
     )
     world = rel(out / "frozen")
     write_data(
-        "configs/filing_replay_v1.yaml",
-        "config_id: filing_replay_v1\n" + replay.format(adapter=adapter, commit="", hide="", world=world),
+        "systems/filing_replay_v1.yaml",
+        "system_id: filing_replay_v1\n" + replay.format(adapter=adapter, commit="", hide="", world=world),
     )
     # RFC-031 P1: production's own reopens inside the replayed window hidden; the replay's own stand in for them.
     hidden = ", hide: {kinds: [reopened]}"
     write_data(
-        "configs/filing_replay_hidden_v1.yaml",
-        "config_id: filing_replay_hidden_v1\n"
+        "systems/filing_replay_hidden_v1.yaml",
+        "system_id: filing_replay_hidden_v1\n"
         + replay.format(adapter=adapter, commit="", hide=hidden, world=world),
     )
     write_data(
-        "configs/filing_candidate_v3_hidden.yaml",
-        "config_id: filing_candidate_v3_hidden\n"
+        "systems/filing_candidate_v3_hidden.yaml",
+        "system_id: filing_candidate_v3_hidden\n"
         + replay.format(adapter=adapter, commit=f", commit: {commits[-1]}", hide=hidden, world=world),
     )
     write_data(
-        "configs/filing_candidate_v3.yaml",
-        "config_id: filing_candidate_v3\n"
+        "systems/filing_candidate_v3.yaml",
+        "system_id: filing_candidate_v3\n"
         + replay.format(adapter=adapter, commit=f", commit: {commits[-1]}", hide="", world=world),
     )
     write_data(
-        "configs/filing_production_v1.yaml",
-        "config_id: filing_production_v1\ndataset_id: filing_history_v1\ngoal: filing\n"
+        "systems/filing_production_v1.yaml",
+        "system_id: filing_production_v1\n"
         f"adapter: {adapter}\nparams:\n  provider: recorded\n  capture: filing_prod\n  field: action\n",
     )
     write_data(
@@ -316,12 +316,12 @@ def main() -> int:
         "  evh dataset-from-capture filing_prod --dataset-id filing_history_v1 --fieldset filing "
         "--field ts --field started --field production_issue\n"
         "  evh dataset-materialize --dataset-id filing_history_v1\n"
-        "  evh run --config data/configs/filing_production_v1.yaml\n"
-        "  evh faithfulness --config data/configs/filing_replay_v1.yaml --production <that run>\n"
+        "  evh run --system filing_production_v1 --dataset filing_history_v1 --goal filing\n"
+        "  evh faithfulness --system filing_replay_v1 --dataset filing_history_v1 --production <that run>\n"
         f"  evh label-import {rel(gold)} --dataset-id filing_history_v1 --set gold --by person:you\n"
         "  evh reference-promote --dataset-id filing_history_v1 --labels gold --tier gold --reason '...' --by person:you\n"
-        "  evh run --config data/configs/filing_replay_v1.yaml\n"
-        "  evh run --config data/configs/filing_candidate_v3.yaml\n"
+        "  evh run --system filing_replay_v1 --dataset filing_history_v1 --goal filing\n"
+        "  evh run --system filing_candidate_v3 --dataset filing_history_v1 --goal filing\n"
         f"  python {rel(HERE / 'mutants.py')} --system {rel(out / 'system')} --production <that run>"
     )
     return 0

@@ -199,7 +199,7 @@ with tempfile.TemporaryDirectory() as td:
             data,
             "two",
             "here",
-            {"kind": "smoke", "config": cid, "status": status, "at": f"2026-11-13T{at}:00:00Z"},
+            {"kind": "smoke", "system": cid, "status": status, "at": f"2026-11-13T{at}:00:00Z"},
         )
     got = _models.find(data, "two") or {}
     checks = yaml.safe_load((data / "deployments" / "two" / "here.yaml").read_text())["checks"]

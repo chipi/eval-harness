@@ -1,0 +1,5 @@
+# A sweep arm. Same dataset_id as its peers, or the leaderboard refuses.
+system_id: arm_c_v1
+params:
+  provider: echo
+  sentences: 3

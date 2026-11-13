@@ -98,7 +98,7 @@ like any arm; seven things are different. (The triage fleet's questions, 2026-11
   *Did it change?* is a regression guard: the same dataset scored against a silver reference made from the
   current code's own run (`evh label-from-run`, `evh reference-promote --tier silver`), and the changed items
   read with `evh inspect --runs A,B --items-out --disagree`. An arm that must give exactly what another gives
-  (the same code at a newer commit) says `expect_identical_to: <config_id>` in its config, and `evh validate`
+  (the same code at a newer commit) says `expect_identical_to: <system_id>` in its system, and `evh validate`
   fails it when it does not (RUNBOOK §4). [`examples/signal-fleet-dedup/`](../../examples/signal-fleet-dedup/README.md)
   is one, on the fleet's real signals.
 - **The item is the unit judged.** `score()` sees one item, and a run's metric is the mean of its items'. A
@@ -200,14 +200,13 @@ in the same file:
 
 ---
 
-## What an "arm" is
+## What a "system" is
 
-A thing you want to compare, expressed as a config file — not a code edit:
+A thing you want to compare, expressed as a file — not a code edit:
 
 ```yaml
-# data/configs/sonnet.yaml
-config_id: sonnet_v1
-dataset_id: my_corpus_v1
+# data/systems/sonnet_v1.yaml
+system_id: sonnet_v1
 params:
   provider: anthropic
   model: claude-sonnet-4-6
@@ -217,23 +216,25 @@ params:
   usd_per_mtok_out: 15.0
 ```
 
-Four models to compare is four of these files, same `dataset_id`. The knobs
-live in the config so an arm is reproducible and diffable; keeping them in code
-means "which settings produced this number?" has no answer.
+Four models to compare is four of these files, each run on the same dataset
+(`evh run --system sonnet_v1 --dataset my_corpus_v1`). The knobs live in the system so it is
+reproducible and diffable; keeping them in code means "which settings produced this number?" has
+no answer. A system run on a dataset is an arm; placed in a round, it is one of the round's arms.
 
-Prices live in the config too, deliberately: they change, and a run should
+Prices live in the system too, deliberately: they change, and a run should
 record the prices it was costed at. They are the fallback: when a provider's response carries
 its bill (`usage.cost`), the run records the bill. Which provider does:
 [RUNBOOK §4](RUNBOOK.md#4-point-the-harness-at-your-system).
 
-A config holds `config_id`, `dataset_id`, `params`, and optionally `adapter` (a project with
-several tasks names one per arm, `adapter: adapters/ner.py`), `goal` (what the evaluation is
-for, `data/goals/<goal_id>.yaml`), `round` (an eval round of that goal, `rN`),
-`format` (the output's shape, one of its goal's `output_contract` formats:
-[RUNBOOK §4c](RUNBOOK.md#4c-the-goal-file-field-by-field)) and `hypothesis` (what the change
-should do against which arm, committed before the run so a test of it counts as named in advance:
-[RUNBOOK §4](RUNBOOK.md#4-point-the-harness-at-your-system); checked by V20). Any other key is
-refused by `evh validate` (V1).
+A system holds `system_id` (its file's name), `params`, and optionally `adapter` (a project with
+several tasks names one per system, `adapter: adapters/ner.py`), `model_record` and `deployment`
+(the model it runs, RUNBOOK §16), `format` (the output's shape, one of its goal's `output_contract`
+formats: [RUNBOOK §4c](RUNBOOK.md#4c-the-goal-file-field-by-field)) and `hypothesis` (what the change
+should do against which system, committed before the run so a test of it counts as named in advance:
+[RUNBOOK §4](RUNBOOK.md#4-point-the-harness-at-your-system); checked by V20); the schema is
+`schemas/system.schema.json`, and any other key is refused by `evh validate` (V1). What a system is
+run for is the run's: `--dataset`, `--goal` (what the evaluation is for, `data/goals/<goal_id>.yaml`)
+and `--round` (an eval round of that goal, `rN`).
 
 ---
 
@@ -244,7 +245,7 @@ dispatches to its `PROVIDERS` (`from evaluation_harness.adapter import PROVIDERS
 call OpenAI or any OpenAI-compatible endpoint (`provider: openai` with a `base_url`), OpenRouter
 (`provider: openrouter`), and a LiteLLM proxy (`provider: litellm`). Each reads its key from the
 environment or the project's `.env` (gitignored by `evh init`); the harness holds none.
-**Which variable each provider reads, and what goes in the arm's `params`:
+**Which variable each provider reads, and what goes in the system's `params`:
 [tutorial 2](../../docs/tutorials/2-hosted-llm.md#1-choose-a-provider).** `evh env-check`
 reports which are set. Judges use the same providers: each judge's `provider:` in the scorer
 decides where its calls go. Judges read their own keys (`EVAL_JUDGE_<VAR>`) or share the arms'
@@ -257,10 +258,10 @@ credentials (`<VAR>`), so you can run judges on separate budgets or the same one
 
 Most projects do not have it. The sequence that works:
 
-1. **Run your best model as an arm**, usually an expensive one you would not run in
+1. **Run your best model as a system**, usually an expensive one you would not run in
    production, read its results, take its outputs as a model's labels, and promote them:
    ```bash
-   evh run --config data/configs/frontier.yaml
+   evh run --system frontier_v1 --dataset my_v1
    evh label-from-run --run <that run_id> --set frontier_v1
    evh reference-promote --dataset-id my_v1 --labels frontier_v1 --tier silver --reason "…" --by <you>
    ```
@@ -503,14 +504,14 @@ evh dataset-materialize --dataset-id pilot_v1
 evh dataset-profile --dataset-id pilot_v1              # what is inside, for its catalog page
 
 $EDITOR adapter.py                            # call_system() -> your code
-git add -A && git commit -m "pilot_v1, adapter, arms"   # a run from a dirty tree cannot become a reference
-evh run --config data/configs/best_model.yaml
+git add -A && git commit -m "pilot_v1, adapter, systems"   # a run from a dirty tree cannot become a reference
+evh run --system best_model_v1 --dataset pilot_v1
 evh label-from-run --run <that run_id> --set best_v1
 evh reference-promote --dataset-id pilot_v1 --labels best_v1 --tier silver --reason "…" --by <you>
 git add data/labels data/references && git commit -m "pilot_v1: silver, best_model's labels"
 
-evh run --config data/configs/arm_a.yaml --repeat 3   # + the noise floor
-evh run --config data/configs/arm_b.yaml
+evh run --system arm_a_v1 --dataset smoke_v1 --repeat 3   # + the noise floor
+evh run --system arm_b_v1 --dataset smoke_v1
 evh run-compare --baseline <a> --candidate <b> --noise <the spread you just measured>
 ```
 

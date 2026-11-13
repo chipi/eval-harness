@@ -30,7 +30,9 @@ def parser(op: Op) -> argparse.ArgumentParser:
         elif t == "boolean":
             ap.add_argument(flag, action="store_true", help=help_)
         else:
-            ap.add_argument(flag, type=int if t == "integer" else str, help=help_)
+            ap.add_argument(
+                flag, type=int if t == "integer" else str, required=name in op.required, help=help_
+            )
     if op.kind != "read":
         from evaluation_harness._actor import add_by  # noqa: PLC0415
 

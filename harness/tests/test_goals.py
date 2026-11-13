@@ -24,7 +24,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the ev
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tests/
 KIT = HERE.parent / "tutorial"
 import _runstore  # noqa: E402
-from evaluation_harness import _store  # noqa: E402
+from evaluation_harness import _format, _store  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 
 proj = Path(tempfile.mkdtemp(prefix="evh-goals-"))
@@ -54,8 +54,9 @@ def validate():
 try:
     data = proj / "data"
     if not _runstore.sqlite():
-        (data / "configs").mkdir(parents=True)
+        (data / "systems").mkdir(parents=True)
         (data / "goals").mkdir()
+    _runstore.write_text(proj, _format.NAME, f"format: {_format.FORMAT}\n")
     shutil.copytree(KIT / "tickets", proj / "tutorial" / "tickets")  # sources live inside the project
     r = evh("dataset-create", "--dataset-id", "tickets_v1", "--source-dir", "tutorial/tickets")
     r = r if r.returncode else evh("dataset-materialize", "--dataset-id", "tickets_v1")
@@ -90,28 +91,26 @@ try:
     check("setup: the kit's gold, imported and promoted", r.returncode == 0, (r.stdout + r.stderr)[-300:])
     _runstore.write_text(proj, GOAL, (KIT / "goals" / "tickets_summary.yaml").read_text())
 
-    cfg = (KIT / "configs" / "tickets_lead2.yaml").read_text()
-    _runstore.write_text(proj, "configs/bad.yaml", cfg + "goal: no_such_goal\n")
-    r = evh("run", "--config", str(data / "configs" / "bad.yaml"))
+    cfg = (KIT / "systems" / "tickets_lead2_v1.yaml").read_text()
+    L2 = "systems/tickets_lead2_v1.yaml"
+    RUN_L2 = ("run", "--system", "tickets_lead2_v1", "--dataset", "tickets_v1")
+    _runstore.write_text(proj, L2, cfg)
+    r = evh(*RUN_L2, "--goal", "no_such_goal")
     check(
-        "run: a config naming an unknown goal is refused before it runs",
+        "run: a run naming an unknown goal is refused before it runs",
         r.returncode != 0 and "no_such_goal" in (r.stdout + r.stderr) and not _runstore.exists(proj, "runs"),
         (r.stdout + r.stderr)[-200:],
     )
-    _runstore.unlink(proj, "configs/bad.yaml")
-    _runstore.write_text(
-        proj, "configs/keyed.yaml", cfg.replace("params:\n", "params:\n  api_key: sk-LITERAL-0001\n", 1)
-    )
-    r = evh("run", "--config", str(data / "configs" / "keyed.yaml"))
+    _runstore.write_text(proj, L2, cfg.replace("params:\n", "params:\n  api_key: sk-LITERAL-0001\n", 1))
+    r = evh(*RUN_L2)
     check(
-        "run: a config with a key written into its params is refused before it runs, and says how instead",
+        "run: a system with a key written into its params is refused before it runs, and says how instead",
         r.returncode != 0 and "api_key_env" in (r.stdout + r.stderr) and not _runstore.exists(proj, "runs"),
         (r.stdout + r.stderr)[-300:],
     )
-    _runstore.unlink(proj, "configs/keyed.yaml")
 
-    _runstore.write_text(proj, "configs/lead2.yaml", cfg + "goal: tickets_summary\nformat: paragraph\n")
-    r = evh("run", "--config", str(data / "configs" / "lead2.yaml"))
+    _runstore.write_text(proj, L2, cfg + "format: paragraph\n")
+    r = evh(*RUN_L2, "--goal", "tickets_summary")
     runs = [
         f"runs/{n}/metrics.json"
         for n in _runstore.listdir(proj, "runs")
@@ -150,21 +149,22 @@ try:
         line,
     )
 
-    _runstore.write_text(proj, "configs/lead2.yaml", cfg + "goal: tickets_summary\nformat: bullets\n")
+    _runstore.write_text(proj, runs[0], json.dumps({**m, "format": "bullets"}))
     r, line = validate()
     check(
-        "V14: fails a format the goal's output contract does not accept",
+        "V14: fails a run whose format the goal's output contract does not accept",
         "FAIL" in line and "bullets" in r.stdout,
         line,
     )
-    _runstore.write_text(proj, "configs/lead2.yaml", cfg + "goal: tickets_summray\n")
+    _runstore.write_text(proj, runs[0], json.dumps(m))
+    _runstore.write_text(proj, runs[0], json.dumps({**m, "goal": "tickets_summray"}))
     r, line = validate()
     check(
-        "V14: fails a config naming a goal that does not exist",
+        "V14: fails a run naming a goal that does not exist",
         "FAIL" in line and "tickets_summray" in r.stdout,
         line,
     )
-    _runstore.write_text(proj, "configs/lead2.yaml", cfg + "goal: tickets_summary\n")
+    _runstore.write_text(proj, runs[0], json.dumps(m))
 
     _runstore.write_text(proj, "goals/renamed.yaml", _runstore.read_text(proj, GOAL))
     r, line = validate()
@@ -305,17 +305,16 @@ try:
     )
 
     # A goal with many arms (evh goals --goal G --arms/--top): the table can be cut down, never the decision.
-    lead1 = (KIT / "configs" / "tickets_lead1.yaml").read_text()
+    lead1 = (KIT / "systems" / "tickets_lead1_v1.yaml").read_text()
     for i in range(1, 7):
         _runstore.write_text(
             proj,
-            f"configs/x{i:02d}.yaml",
+            f"systems/tickets_x{i:02d}_v1.yaml",
             lead1.replace("tickets_lead1_v1", f"tickets_x{i:02d}_v1").replace(
                 "sentences: 1", f"sentences: {1 + i % 3}"
-            )
-            + "goal: tickets_summary\n",
+            ),
         )
-        evh("run", "--config", f"data/configs/x{i:02d}.yaml")
+        evh("run", "--system", f"tickets_x{i:02d}_v1", "--dataset", "tickets_v1", "--goal", "tickets_summary")
     full = evh("goals", "--goal", "tickets_summary")
     rows_full = arm_rows(full.stdout)
     check(
@@ -397,7 +396,7 @@ try:
         r.stderr[-300:],
     )
     for i in range(1, 7):
-        _runstore.unlink(proj, f"configs/x{i:02d}.yaml")
+        _runstore.unlink(proj, f"systems/tickets_x{i:02d}_v1.yaml")
         _runstore.rmtree(
             proj,
             "runs/"

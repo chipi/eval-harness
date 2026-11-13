@@ -61,8 +61,9 @@ def opened_for(doc: dict[str, Any]) -> set[str]:
 
 
 def refuse_if_sealed(dataset_id: str | None, what: str, config_id: str | None = None) -> None:
-    """Refuse `what` on a sealed dataset, unless `config_id` is one an unseal opened it to; with no config (a label
-    or a reference, which every arm is read against), unless it was unsealed at all. Nothing for any other."""
+    """Refuse `what` on a sealed dataset, unless `config_id` (a system's id) is one an unseal opened it to; with no
+    system (a label or a reference, which every system is read against), unless it was unsealed at all. Nothing for any
+    other."""
     doc = record_of(dataset_id)
     if not doc.get("sealed"):
         return
@@ -73,8 +74,8 @@ def refuse_if_sealed(dataset_id: str | None, what: str, config_id: str | None = 
         f"{dataset_id} is sealed (held out at {doc['sealed'].get('at', '?')}): {what} is refused"
         + (f" for {config_id}" if config_id else "")
         + (f"; it is open to {', '.join(named)} only" if named else "")
-        + ". Name the candidate first: commit its config with a hypothesis, then "
-        f'evh dataset-unseal {dataset_id} --config <config_id> --reason "..."',
+        + ". Name the candidate first: commit its system with a hypothesis, then "
+        f'evh dataset-unseal {dataset_id} --system <system_id> --reason "..."',
         "not-allowed",
     )
 

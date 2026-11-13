@@ -41,7 +41,7 @@ checks:
   accepted:
   - 'reasoning: it still reasons with the record''s settings'
 - kind: smoke
-  config: triage_local_mac_gpt_oss_20b_v2
+  system: triage_local_mac_gpt_oss_20b_v2
   status: check
   at: '2026-10-31T14:46:41Z'
   flags:

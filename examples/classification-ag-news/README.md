@@ -112,14 +112,14 @@ accuracy figure here can be said to demonstrate.
 ```bash
 cd ../../harness
 PY=../examples/classification-ag-news/.venv/bin/python
-CFG=../examples/classification-ag-news/configs
+ARM="--system ag_deepseek_m_v1 --dataset ag_news_200 --goal news_topic_ag"
 
-$PY scripts/run.py --config $CFG/arm_deepseek_m_n200.yaml --dry-run
-$PY scripts/run.py --config $CFG/arm_deepseek_m_n200.yaml
+$PY scripts/run.py $ARM --dry-run
+$PY scripts/run.py $ARM
 
 $PY scripts/leaderboard.py --dataset-id ag_news_200
 $PY tools/classification_report.py --dataset-id ag_news_200
-$PY tools/classification_report.py --dataset-id ag_news_200 --arm ag_keyword_n200_v1
+$PY tools/classification_report.py --dataset-id ag_news_200 --arm ag_keyword_v1
 ```
 
 The hosted arms need one `OPENROUTER_API_KEY` in `../../harness/.env` (copy

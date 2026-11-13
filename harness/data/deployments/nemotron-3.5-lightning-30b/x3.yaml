@@ -39,7 +39,7 @@ checks:
     deterministic: true
     json_valid: true
 - kind: smoke
-  config: triage_local_x3_nemotron_35_lightning_30b_v2
+  system: triage_local_x3_nemotron_35_lightning_30b_v2
   status: check
   at: '2026-10-31T14:46:18Z'
   flags:

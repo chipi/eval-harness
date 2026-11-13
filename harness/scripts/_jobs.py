@@ -67,20 +67,17 @@ def _read_json(p: Path) -> dict:
 # ── what each job locks ────────────────────────────────────────────────────────────────────────────────────────────
 
 
-def _config(path: str | None) -> dict:
-    """A config file's fields (config_id, dataset_id, params), {} when it cannot be read."""
-    import yaml  # noqa: PLC0415
-    from evaluation_harness import _store  # noqa: PLC0415
+def _system(system_id: str | None) -> dict:
+    """A system's record (its model), {} when there is none or it cannot be read."""
+    if not system_id:
+        return {}
+    from evaluation_harness.model.entity import Problem  # noqa: PLC0415
+    from evaluation_harness.model.systems import SYSTEM  # noqa: PLC0415
 
-    if not path:
-        return {}
-    p = Path(path)
-    p = p if p.is_absolute() else _common.project_root() / p
     try:
-        doc = yaml.safe_load(_store.read_text(p, encoding="utf-8"))
-    except (OSError, ValueError, yaml.YAMLError):
+        return SYSTEM.get(system_id)
+    except Problem:
         return {}
-    return doc if isinstance(doc, dict) else {}
 
 
 def _run_meta(run_id: str | None) -> dict:
@@ -105,25 +102,20 @@ def _ds(a: dict) -> list[tuple[str, bool]]:
 
 
 def _run_locks(a: dict) -> list[tuple[str, bool]]:
-    c = _config(_first(a.get("config")))
-    out = []
-    if c.get("config_id"):
-        out.append((f"config:{c['config_id']}", True))
-    if c.get("dataset_id"):
-        out.append((f"dataset:{c['dataset_id']}", False))
-    return out
+    s, d = _first(a.get("system")), _first(a.get("dataset"))
+    return [*([(f"system:{s}", True)] if s else []), *([(f"dataset:{d}", False)] if d else [])]
 
 
 def _model_locks(a: dict) -> list[tuple[str, bool]]:
-    c = _config(_first(a.get("config")))
+    c = _system(_first(a.get("system")))
     m = c.get("model_record") or (c.get("params") or {}).get("model")
     return [(f"model:{m}", True)] if m else []
 
 
 def _sweep_locks(a: dict) -> list[tuple[str, bool]]:
     out: list[tuple[str, bool]] = []
-    for f in a.get("configs") or []:
-        out += _run_locks({"config": f})
+    for s in a.get("systems") or []:
+        out += _run_locks({"system": s, "dataset": a.get("dataset")})
     return out
 
 

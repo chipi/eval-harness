@@ -9,7 +9,7 @@
 PYTHON ?= $(shell [ -x .venv/bin/python ] && echo .venv/bin/python || echo python3)
 VENV ?= .venv
 DATASET_ID ?= smoke_v1
-CONFIG ?= data/configs/demo.yaml
+SYSTEM ?= demo_v1
 REPEAT ?= 1
 OUT ?=
 NOISE ?=
@@ -47,9 +47,9 @@ help:
 	@echo "     evh reference-promote --dataset-id my_v1 --labels best_v1 --tier silver --reason \"…\" --by <you>"
 	@echo ""
 	@echo "MEASURE  (dry-run first — it costs nothing and tells you what the sweep will)"
-	@echo "  make run-dry-run CONFIG=data/configs/arm_a.yaml"
-	@echo "  make run     CONFIG=data/configs/arm_a.yaml REPEAT=3"
-	@echo "  make sweep CONFIGS=\"data/configs/arm_*.yaml\" REPEAT=2"
+	@echo "  make run-dry-run SYSTEM=arm_a_v1 DATASET_ID=smoke_v1"
+	@echo "  make run     SYSTEM=arm_a_v1 DATASET_ID=smoke_v1 REPEAT=3"
+	@echo "  make sweep SYSTEMS=\"arm_a_v1 arm_b_v1\" DATASET_ID=smoke_v1 REPEAT=2"
 	@echo ""
 	@echo "TRUST THE REFERENCE?  (free — no API calls)"
 	@echo "  make silver-calibrate DATASET_ID=my_v1 REF_MATCH=_v1 ARM_MATCH=_v2"
@@ -167,7 +167,7 @@ demo:
 	  echo "  make dataset-create DATASET_ID=my_v1"; exit 1; }
 	@$(MAKE) --no-print-directory dataset-create DATASET_ID=$(DATASET_ID) ARGS="--force"
 	@$(MAKE) --no-print-directory dataset-materialize DATASET_ID=$(DATASET_ID)
-	@$(MAKE) --no-print-directory run CONFIG=$(CONFIG) REPEAT=3
+	@$(MAKE) --no-print-directory run SYSTEM=$(SYSTEM) DATASET_ID=$(DATASET_ID) REPEAT=3
 	@$(MAKE) --no-print-directory validate
 	@echo ""
 	@echo "Now: make runs-list, then make leaderboard DATASET_ID=$(DATASET_ID)"
@@ -287,15 +287,15 @@ self-test:
 
 # ── evals ───────────────────────────────────────────────────────────────────
 run-dry-run:
-	$(PYTHON) scripts/run.py --config $(CONFIG) --repeat $(REPEAT) --dry-run
+	$(PYTHON) scripts/run.py --system $(SYSTEM) --dataset $(DATASET_ID) --repeat $(REPEAT) --dry-run
 
 run:
-	$(PYTHON) scripts/run.py --config $(CONFIG) --repeat $(REPEAT) $(ARGS)
+	$(PYTHON) scripts/run.py --system $(SYSTEM) --dataset $(DATASET_ID) --repeat $(REPEAT) $(ARGS)
 
-# CONFIGS is a glob: make sweep CONFIGS="data/configs/arm_*.yaml"
+# SYSTEMS is a list of system ids: make sweep SYSTEMS="arm_a_v1 arm_b_v1" DATASET_ID=smoke_v1
 sweep:
-	@test -n "$(CONFIGS)" || { echo 'CONFIGS="data/configs/arm_*.yaml" is required'; exit 1; }
-	$(PYTHON) scripts/sweep.py --configs $(CONFIGS) --repeat $(REPEAT) $(ARGS)
+	@test -n "$(SYSTEMS)" || { echo 'SYSTEMS="arm_a_v1 arm_b_v1" is required'; exit 1; }
+	$(PYTHON) scripts/sweep.py --systems $(SYSTEMS) --dataset $(DATASET_ID) --repeat $(REPEAT) $(ARGS)
 
 # ── inspect and decide ──────────────────────────────────────────────────────
 runs-list:

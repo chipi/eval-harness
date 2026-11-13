@@ -13,7 +13,7 @@ Every run records three things:
 | input | field | drop it and… |
 | --- | --- | --- |
 | **system under test** | `build.ref` | you cannot tell a code change from an eval change |
-| **instrument** | `config_id` | you cannot tell a config change from a code change |
+| **system** | `config_id` (the system's id) | you cannot tell a change to what was evaluated from a code change |
 | **data** | `dataset_id` | you cannot compare anything to anything |
 
 `evh validate` fails on a run missing any of them. `EVAL_BUILD_REF` sets the
@@ -73,7 +73,7 @@ corrected together: a group is held to a stricter threshold than it would be alo
 ## Measure the arm's own noise before believing any delta
 
 ```bash
-evh run --config ... --repeat 3
+evh run --system ... --dataset ... --repeat 3
 ```
 
 ```text

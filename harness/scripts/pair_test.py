@@ -177,14 +177,14 @@ def _hypothesis_of(args: argparse.Namespace, runs: list) -> dict | None:
     found = _hypothesis.across_runs(a_runs, against=args.b, measure=args.metric)
     if found:
         return found
-    path = _hypothesis.config_ids().get(args.a) if a_runs else None
+    path = _hypothesis.system_ids().get(args.a) if a_runs else None
     cfg = yaml.safe_load(_store.read_text(path, encoding="utf-8")) if path else None
     if same((cfg or {}).get("hypothesis")):
         return {
             **(cfg or {})["hypothesis"],
             "named": False,
             "commit": None,
-            "why": "the config's hypothesis is not on the run: added after it",
+            "why": "the system's hypothesis is not on the run: added after it",
         }
     return None
 

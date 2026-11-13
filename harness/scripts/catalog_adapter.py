@@ -393,6 +393,15 @@ def _dir_label(runs_dir: str) -> str:
     return runs_dir.removeprefix("runs-")
 
 
+def _promoted_from_now(pf: Any) -> Any:
+    """A reference's promoted_from with its system named by the id it has now (the manifest keeps the id it was
+    promoted under: it is part of the hash every run scored against it records, RFC-032 step 3)."""
+    src = (pf or {}).get("source") if isinstance(pf, dict) else None
+    if not isinstance(src, dict) or not src.get("config_id"):
+        return pf
+    return {**pf, "source": {**src, "config_id": _common.system_now(src["config_id"])}}
+
+
 class HarnessAdapter:
     """The harness's own data tree. Arms are configs on a dataset, repeats averaged per item."""
 
@@ -603,6 +612,17 @@ class HarnessAdapter:
         self._index()
         return list(getattr(self, "_stale", {}).get(arm, []))
 
+    def renamed_systems(self) -> dict[str, str]:
+        """{old id: new id} for the systems a migration renamed (data/renames.json, RFC-032 step 3): their old arm
+        pages redirect to the new ones."""
+        f = self.data_dir / "renames.json"
+        if not _store.is_file(f):
+            return {}
+        try:
+            return dict(json.loads(_store.read_text(f, encoding="utf-8")).get("systems") or {})
+        except (ValueError, AttributeError):
+            return {}
+
     @_memo
     def lower_is_better(self, metric: str, dataset: str | None = None) -> bool:
         """Whether a decrease in this metric is an improvement, by the rule every command uses
@@ -705,12 +725,12 @@ class HarnessAdapter:
                             "items": len(list(_store.glob(d, "*.txt"))) if texts else mf.get("n_items"),
                             "fetched": not texts,
                             "source": mf.get("source"),
-                            "author": mf.get("authored_by"),
+                            "author": _common.system_now(mf.get("authored_by")),
                             "from_run": (mf.get("from_run") or {}).get("run_id"),
                             "model": mf.get("model"),
                             "created_at": mf.get("created_at"),
                             "caveat": mf.get("caveat"),
-                            "promoted_from": mf.get("promoted_from"),
+                            "promoted_from": _promoted_from_now(mf.get("promoted_from")),
                             "reason": mf.get("reason"),
                             "promoted_by": mf.get("promoted_by"),
                         }

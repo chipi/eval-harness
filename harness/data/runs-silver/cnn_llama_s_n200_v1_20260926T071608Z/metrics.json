@@ -10,7 +10,7 @@
     "ref": "eval-harness-scenario",
     "source": "EVAL_BUILD_REF"
   },
-  "config_id": "cnn_llama_s_n200_v1",
+  "config_id": "cnn_llama_s_v2",
   "created_at": "2026-10-25T16:49:28Z",
   "dataset_id": "cnn_dailymail_200",
   "derived": {
@@ -25,7 +25,7 @@
   },
   "fingerprint": {
     "arm": {
-      "config_id": "cnn_llama_s_n200_v1",
+      "config_id": "cnn_llama_s_v2",
       "labels": {
         "family": "llama",
         "price_tier": "small",

@@ -64,19 +64,22 @@ SPENDS = {
     "study-confirm",
     "faithfulness",
 }
+#: The arguments that name a system (RFC-032): each refused before a job is made when no system has that id.
+SYSTEM_ARGS = {
+    ("run", "--system"),
+    ("faithfulness", "--system"),
+    ("arm-smoke", "--system"),
+    ("model-onboard", "--system"),
+    ("sweep", "--systems"),
+    ("period-compare", "--system"),
+    ("periods", "--system"),
+    ("deploy-sheet", "--system"),
+}
 #: Every path-typed argument a served command has, and its kind. Absent from this table: never taken.
-NAME = "name"
 UPLOAD = "upload"
 ARTIFACT = "artifact"
 PATH_KINDS: dict[tuple[str, str], str] = {
-    ("run", "--config"): NAME,
-    ("faithfulness", "--config"): NAME,
-    ("arm-smoke", "--config"): NAME,
-    ("model-onboard", "--config"): NAME,
-    ("sweep", "--configs"): NAME,
     ("exposure-add", "--from"): UPLOAD,
-    ("period-compare", "--config"): NAME,
-    ("periods", "--config"): NAME,
     ("exposure-check", "--out"): ARTIFACT,
     ("dataset-create", "--fields"): UPLOAD,
     ("dataset-create", "--manifest"): UPLOAD,
@@ -105,7 +108,6 @@ PATH_KINDS: dict[tuple[str, str], str] = {
 #: Path-typed arguments never taken, each a decision (RFC-026 revision 2): another runs folder or output folder,
 #: a file of the server's, a page's own assets. A path-typed argument in neither table fails a test.
 NEVER_PATHS = {
-    ("arm-from-capture", "--like"),
     ("label-mutants", "--mutants"),  # a Python file it runs: the project's own, on its machine
     ("bootstrap-test", "--items"),
     ("pair-test", "--items"),
@@ -273,8 +275,8 @@ class Refused(ValueError):
 
 
 def checked_args(command: str, arguments: Any) -> dict[str, Any]:
-    """The call's arguments, checked against the registry (names, kinds, types, choices, required) and with each
-    `name` mapped to what the command takes (a config id to its file). Refused before anything runs."""
+    """The call's arguments, checked against the registry (names, kinds, types, choices, required), and each system
+    it names found. Refused before anything runs."""
     reg = registry().get(command)
     if reg is None:
         raise Refused(f"{command}: not a command the API serves", 404)
@@ -297,24 +299,20 @@ def checked_args(command: str, arguments: Any) -> dict[str, Any]:
         rule = VALUE_RULES.get((command, f"--{k}")) or VALUE_RULES.get((command, k))
         if rule and not all(rule[1](str(x)) for x in vals):
             raise Refused(f"{command} {k}: {rule[0]}")
-        if a["kind"] == NAME:
-            vals = [_config_file(str(x)) for x in vals]
-            v = vals if isinstance(v, list) else vals[0]
+        if (command, f"--{k}") in SYSTEM_ARGS:
+            _systems_exist([str(x) for x in vals])
         out[k] = v
     return out
 
 
-def _config_file(config_id: str) -> str:
-    """A config id as the command takes it: its file, relative to the project (refused when no config has it)."""
-    from evaluation_harness._hypothesis import config_ids  # noqa: PLC0415
+def _systems_exist(ids: list[str]) -> None:
+    """Each id names a system of the project, else refused (404) before a job is made."""
+    from evaluation_harness._hypothesis import system_ids  # noqa: PLC0415
 
-    f = config_ids().get(config_id)
-    if f is None:
-        raise Refused(f"no arm config with config_id {config_id!r}", 404)
-    try:
-        return Path(f).resolve().relative_to(_common.project_root().resolve()).as_posix()
-    except ValueError:
-        return str(f)
+    known = system_ids()
+    missing = [i for i in ids if i not in known]
+    if missing:
+        raise Refused(f"no system {', '.join(repr(i) for i in missing)} (evh system-list)", 404)
 
 
 def token_path() -> Path:
@@ -464,7 +462,7 @@ def start_job(
         argv = [f"--{REASON_FLAG[command]}", str(reason), *argv]
     run_id = None
     if command == "run" and "run-id" not in checked:
-        cid = _jobs._config(str(checked.get("config"))).get("config_id") or "run"
+        cid = str(checked.get("system") or "run")
         run_id = f"{cid}_{job_id}"  # the job's id: unique, where a second's timestamp is not (two runs started at once)
         argv = ["--run-id", run_id, *argv]
     elif command == "run":
@@ -503,10 +501,7 @@ def resume_job(job_id: str) -> dict[str, Any]:
             )
         env["EVAL_MAX_COST_USD"] = f"{given - paid:.8f}"
     new_id = _jobs.new_id()
-    cid = (
-        _jobs._config(argv[argv.index("--config") + 1] if "--config" in argv else None).get("config_id")
-        or "run"
-    )
+    cid = argv[argv.index("--system") + 1] if "--system" in argv else "run"
     new_run = f"{cid}_{new_id}"
     argv = ["--run-id", new_run, "--resume", j["run_id"], *argv]
     _jobs.create(

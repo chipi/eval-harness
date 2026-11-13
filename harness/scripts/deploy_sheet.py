@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """What production must match to run what was measured (RFC-023, PRD-005 FR3), and whether a capture says it did.
 
-    evh deploy-sheet --config triage_baseline_pro_v1
-    evh deploy-sheet --config triage_baseline_pro_v1 --capture orrery_2026_11
+    evh deploy-sheet --system triage_baseline_pro_v1
+    evh deploy-sheet --system triage_baseline_pro_v1 --capture orrery_2026_11
 
 The sheet is read from the run the arm was promoted with (the latest baseline whose run is the arm's), else the
 arm's latest run: the model, its record and the deployment (tag, endpoint, server, build), every setting the arm
@@ -64,7 +64,7 @@ def promoted_run(
         return best[1], best[2]
     found = runs_on(config_id=config_id, runs_dir=runs)
     if not found:
-        die(f"--config {config_id}: no run of that config (evh runs-list)", "not-found")
+        die(f"--system {config_id}: no run of that system (evh runs-list)", "not-found")
     return found[-1][0], None
 
 
@@ -103,7 +103,7 @@ def sheet(config_id: str, data_dir: Path | None = None, runs_dir: Path | None = 
     rec_settings = (rec or {}).get("settings") or {}
     weights = dep.get("weights") or {}
     return {
-        "config_id": config_id,
+        "system_id": config_id,
         "run_id": run.name,
         "promoted": None
         if base is None
@@ -176,14 +176,14 @@ def check(s: dict[str, Any], capture_id: str, captures_dir: Path | None = None) 
 def main() -> int:
     """Print the deploy sheet, and the capture check."""
     ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
-    ap.add_argument("--config", required=True, help="the arm's config_id (its promoted run, else its latest)")
+    ap.add_argument("--system", required=True, help="the system: its id (its promoted run, else its latest)")
     ap.add_argument(
         "--capture", help="a capture whose records say what production ran (the adapter's production_ran)"
     )
     ap.add_argument("--json", action="store_true", help="print JSON")
     args = ap.parse_args()
 
-    s = sheet(args.config)
+    s = sheet(args.system)
     c = check(s, args.capture) if args.capture else None
     ok = c is None or (
         bool(c["keys"]) and all(not k["differ"] and not k["missing"] for k in c["keys"].values())
@@ -195,7 +195,7 @@ def main() -> int:
         print(json.dumps(out, indent=2, default=dict))
         return 0 if ok else EXIT_PROBLEMS
     p = s["promoted"]
-    print(f"deploy sheet: {s['config_id']}")
+    print(f"deploy sheet: {s['system_id']}")
     ref = s.get("reference") or {}
     against = f"{ref['id']} ({ref.get('tier') or 'no tier'})" if ref.get("id") else "no reference"
     print(f"  measured by   {s['run_id']} on {s['dataset_id']}, against {against}")

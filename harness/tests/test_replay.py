@@ -85,7 +85,16 @@ try:
         r = evh(*argv)
         if r.returncode:
             break
-    prod = evh("run", "--config", "data/configs/filing_production_v1.yaml", "--json")
+    prod = evh(
+        "run",
+        "--system",
+        "filing_production_v1",
+        "--dataset",
+        "filing_history_v1",
+        "--goal",
+        "filing",
+        "--json",
+    )
     prod_id = run_id(prod)
     check(
         "setup: the example's history made, captured as a dataset with datetime fields, production's recorded arm run",
@@ -102,8 +111,10 @@ try:
     # ── a replay run ──────────────────────────────────────────────────────────────────────────────────────────────
     dry = evh(
         "faithfulness",
-        "--config",
-        "data/configs/filing_replay_v1.yaml",
+        "--system",
+        "filing_replay_v1",
+        "--dataset",
+        "filing_history_v1",
         "--production",
         prod_id,
         "--dry-run",
@@ -119,7 +130,16 @@ try:
     )
     (proj / "two.txt").write_text("d01\nd02\n")
     refused = [
-        evh("run", "--config", "data/configs/filing_replay_v1.yaml", *extra)
+        evh(
+            "run",
+            "--system",
+            "filing_replay_v1",
+            "--dataset",
+            "filing_history_v1",
+            "--goal",
+            "filing",
+            *extra,
+        )
         for extra in (["--resume", "x"], ["--items", "two.txt"], ["--repeat", "2"])
     ]
     check(
@@ -127,7 +147,9 @@ try:
         all(x.returncode != 0 and "a replay run refuses" in x.stderr for x in refused),
         [x.stderr[-200:] for x in refused],
     )
-    rr = evh("run", "--config", "data/configs/filing_replay_v1.yaml", "--json")
+    rr = evh(
+        "run", "--system", "filing_replay_v1", "--dataset", "filing_history_v1", "--goal", "filing", "--json"
+    )
     rep_id = run_id(rr)
     m = metrics(rep_id) if rep_id else {}
     code = ((m.get("fingerprint") or {}).get("deployment") or {}).get("code") or {}
@@ -154,7 +176,14 @@ try:
 
     # ── faithfulness ─────────────────────────────────────────────────────────────────────────────────────────────
     f1 = evh(
-        "faithfulness", "--config", "data/configs/filing_replay_v1.yaml", "--production", prod_id, "--json"
+        "faithfulness",
+        "--system",
+        "filing_replay_v1",
+        "--dataset",
+        "filing_history_v1",
+        "--production",
+        prod_id,
+        "--json",
     )
     rec = values(f1).get("faithfulness") or {}
     order = list(rec.get("commits") or {})  # the commits as first used: v1, v2, v3
@@ -185,8 +214,19 @@ try:
              "--reason", "what each decision should have done", "--by", "person:t"),
         )
     ]  # fmt: skip
-    scored = evh("run", "--config", "data/configs/filing_replay_v1.yaml", "--json")
-    cand = evh("run", "--config", "data/configs/filing_candidate_v3.yaml", "--json")
+    scored = evh(
+        "run", "--system", "filing_replay_v1", "--dataset", "filing_history_v1", "--goal", "filing", "--json"
+    )
+    cand = evh(
+        "run",
+        "--system",
+        "filing_candidate_v3",
+        "--dataset",
+        "filing_history_v1",
+        "--goal",
+        "filing",
+        "--json",
+    )
     ms, mc = (metrics(run_id(x)) if run_id(x) else {} for x in (scored, cand))
     cc = ((mc.get("fingerprint") or {}).get("deployment") or {}).get("code") or {}
     check(
@@ -211,13 +251,22 @@ try:
     shutil.copy(MINE / "replay_world.py", buggy_dir / "replay_world.py")
     text = (MINE / "replay_filing.py").read_text().replace('READ_AT = "started"', 'READ_AT = "ts"')
     (buggy_dir / "replay_filing.py").write_text(text)
-    cfg = _runstore.read_text(proj, "configs/filing_replay_v1.yaml")
+    cfg = _runstore.read_text(proj, "systems/filing_replay_v1.yaml")
     adapter_line = next(x for x in cfg.splitlines() if x.startswith("adapter:"))
     _runstore.write_text(
-        proj, "configs/filing_buggy.yaml",
-        cfg.replace("config_id: filing_replay_v1", "config_id: filing_buggy").replace(adapter_line, "adapter: buggy/replay_filing.py"),
+        proj, "systems/filing_buggy.yaml",
+        cfg.replace("system_id: filing_replay_v1", "system_id: filing_buggy").replace(adapter_line, "adapter: buggy/replay_filing.py"),
     )  # fmt: skip
-    f2 = evh("faithfulness", "--config", "data/configs/filing_buggy.yaml", "--production", prod_id, "--json")
+    f2 = evh(
+        "faithfulness",
+        "--system",
+        "filing_buggy",
+        "--dataset",
+        "filing_history_v1",
+        "--production",
+        prod_id,
+        "--json",
+    )
     rec2 = values(f2).get("faithfulness") or {}
     dis = [d["item_id"] for d in rec2.get("disagreements") or []]
     check(
@@ -229,10 +278,20 @@ try:
         and all(d["production"].startswith("reopen") for d in rec2["disagreements"]),
         (f2.stderr[-500:], rec2.get("disagreements")),
     )
-    no = evh("run", "--config", "data/configs/filing_buggy.yaml")
-    agent = evh("run", "--config", "data/configs/filing_buggy.yaml", "--unfaithful",
+    no = evh("run", "--system", "filing_buggy", "--dataset", "filing_history_v1", "--goal", "filing")
+    agent = evh("run", "--system", "filing_buggy", "--dataset", "filing_history_v1", "--goal", "filing", "--unfaithful",
                 extra={"EVH_ACTOR": "agent:bot", "EVH_FOR": "person:t"})  # fmt: skip
-    yes = evh("run", "--config", "data/configs/filing_buggy.yaml", "--unfaithful", "--json")
+    yes = evh(
+        "run",
+        "--system",
+        "filing_buggy",
+        "--dataset",
+        "filing_history_v1",
+        "--goal",
+        "filing",
+        "--unfaithful",
+        "--json",
+    )
     my = metrics(run_id(yes)) if run_id(yes) else {}
     check(
         "scoring the unfaithful replay is refused; an agent's --unfaithful is refused; a person's scores it, labelled",
@@ -256,7 +315,9 @@ try:
     again = evh(
         "faithfulness-name", "--model", "toy_filing", "--item", dis[0] if dis else "x", "--cause", "twice"
     )
-    ok = evh("run", "--config", "data/configs/filing_buggy.yaml", "--json")
+    ok = evh(
+        "run", "--system", "filing_buggy", "--dataset", "filing_history_v1", "--goal", "filing", "--json"
+    )
     mo = metrics(run_id(ok)) if run_id(ok) else {}
     check(
         "faithfulness-show prints the record; an agent cannot name a disagreement; a person names each (twice is "
@@ -289,12 +350,22 @@ try:
     (flaky_dir / "replay_filing.py").write_text(flaky)
     _runstore.write_text(
         proj,
-        "configs/filing_flaky.yaml",
-        cfg.replace("config_id: filing_replay_v1", "config_id: filing_flaky").replace(
+        "systems/filing_flaky.yaml",
+        cfg.replace("system_id: filing_replay_v1", "system_id: filing_flaky").replace(
             adapter_line, "adapter: flaky/replay_filing.py"
         ),
     )
-    fr = evh("run", "--config", "data/configs/filing_flaky.yaml", "--unfaithful", "--json")
+    fr = evh(
+        "run",
+        "--system",
+        "filing_flaky",
+        "--dataset",
+        "filing_history_v1",
+        "--goal",
+        "filing",
+        "--unfaithful",
+        "--json",
+    )
     mf = metrics(run_id(fr)) if run_id(fr) else {}
     calls = (flaky_dir / "calls.txt").read_text().split() if (flaky_dir / "calls.txt").is_file() else []
     check(
@@ -310,7 +381,7 @@ try:
     # ── the gate closes again when what the record was made with moves ───────────────────────────────────────────
     with (buggy_dir / "replay_world.py").open("a") as fh:
         fh.write("\nEXTRA_RULE = 1\n")
-    moved = evh("run", "--config", "data/configs/filing_buggy.yaml")
+    moved = evh("run", "--system", "filing_buggy", "--dataset", "filing_history_v1", "--goal", "filing")
     import yaml
 
     code_rec = _runstore.read_text(proj, "models/toy_filing.yaml")
@@ -319,7 +390,7 @@ try:
         "2026-10-04T00:00:01+00:00"  # v3 a second later: no item moves
     )
     _runstore.write_text(proj, "models/toy_filing.yaml", yaml.safe_dump(edited, sort_keys=False))
-    moved2 = evh("run", "--config", "data/configs/filing_replay_v1.yaml")
+    moved2 = evh("run", "--system", "filing_replay_v1", "--dataset", "filing_history_v1", "--goal", "filing")
     _runstore.write_text(proj, "models/toy_filing.yaml", code_rec)
     check(
         "a support module edited after the record, or a version's deployed period in the code record, closes the gate "
@@ -330,7 +401,17 @@ try:
         and "other deployed versions in the code record" in moved2.stderr,
         (moved.stderr[-400:], moved2.stderr[-400:]),
     )
-    late = evh("run", "--config", "data/configs/filing_buggy.yaml", "--unfaithful", "--json")
+    late = evh(
+        "run",
+        "--system",
+        "filing_buggy",
+        "--dataset",
+        "filing_history_v1",
+        "--goal",
+        "filing",
+        "--unfaithful",
+        "--json",
+    )
     resc = evh("rescore", "--dataset-id", "filing_history_v1", "--match", "filing_buggy")
     resc_ok = evh(
         "rescore", "--dataset-id", "filing_history_v1", "--match", "filing_buggy", "--unfaithful", "--json"

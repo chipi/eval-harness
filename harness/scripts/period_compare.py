@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """A past period at its own code, beside a candidate on the same items (RFC-031 P2).
 
-    evh period-compare --config data/configs/filing_replay_v1.yaml --candidate filing_candidate_v3 \\
+    evh period-compare --system filing_replay_v1 --dataset filing_history_v1 --candidate filing_candidate_v3 \\
         --production filing_production_v1 --period 2          # or --from T --to T
 
 The code changed ten times in nineteen days on the triage fleet, and a reading over the whole window mixed a fix's
 before and after (the rollup "buried more than it promoted": all six misses came before the fix). A period's fair
 comparison is that period's items: what production recorded, the code that ran then (the replay's run, which must
 agree with production on those items or the report says it does not count), and the candidate on the same items,
-with the paired test between the last two. It reads the latest run of each config on the dataset (run them first:
+with the paired test between the last two. It reads the latest run of each system on the dataset (run them first:
 nothing is called here). A period is a code record's deployed period (`evh periods --model ID`) or --from/--to.
 """
 
@@ -23,10 +23,9 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 import argparse
 import statistics
 import sys
-from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _coderec, _fields, _jsonout, _outputs, _runs, _store
+from evaluation_harness import _coderec, _fields, _jsonout, _outputs, _runs
 from evaluation_harness._adapter import same_of
 from evaluation_harness._common import die, evh_prog, load_dataset
 
@@ -72,17 +71,16 @@ def window_of(rec: dict, period: int | None, start: str | None, end: str | None)
 def main() -> int:
     """Compare a period's production, as-run replay and candidate."""
     ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
-    ap.add_argument(
-        "--config", required=True, type=Path, help="the replay config (production's code as it ran)"
-    )
+    ap.add_argument("--system", required=True, help="the replay system (production's code as it ran): its id")
+    ap.add_argument("--dataset", required=True, help="the dataset the three runs are on")
     ap.add_argument(
         "--candidate",
         required=True,
-        help="the candidate: a run id, or a config_id (its latest run on the dataset)",
+        help="the candidate: a run id, or a system id (its latest run on the dataset)",
     )
     ap.add_argument(
         "--production",
-        help="production's recorded arm (arm-from-capture): a run id, as faithfulness takes, or a config_id",
+        help="production's recorded arm (arm-from-capture): a run id, as faithfulness takes, or a system id",
     )
     ap.add_argument("--period", type=int, help="the code record's deployed period, by number (evh periods)")
     ap.add_argument("--from", dest="start", help="the period's start (ISO, with an offset)")
@@ -95,16 +93,14 @@ def main() -> int:
     )
     args = ap.parse_args()
     with _jsonout.collect("period-compare", args.json, live=sys.stderr):
-        import yaml  # noqa: PLC0415
+        from evaluation_harness.model.systems import arm_of  # noqa: PLC0415
 
-        if not _store.is_file(args.config):
-            die(f"no config at {args.config}", "not-found")
-        cfg = yaml.safe_load(_store.read_text(args.config, encoding="utf-8")) or {}
+        cfg, _path = arm_of(args.system, args.dataset)
         spec = cfg.get("replay") or {}
         tf = spec.get("time_field")
         if not spec or not tf or not cfg.get("model_record"):
             die(
-                f"{args.config}: a replay config with replay.time_field and model_record (RFC-030)",
+                f"{args.system}: a replay system with replay.time_field and model_record (RFC-030)",
                 "invalid-file",
             )
         rec = _coderec.load(str(cfg["model_record"]))

@@ -2,7 +2,7 @@
 """Onboard a model once, for every eval (RFC-020): probe it and write what was found into its record.
 
     evh model-onboard <model_id> --deployment <id>        an LLM: probes through the deployment's endpoint
-    evh model-onboard <model_id> --config <arm.yaml>      an ML model or a baseline: through an arm that runs it
+    evh model-onboard <model_id> --system <id> --dataset <id>   an ML model or a baseline: through a system that runs it
                                                           (--deployment names the deployment it is written to)
 
 An LLM is probed task-independently, through the endpoint its record gives for that deployment (a built-in
@@ -175,7 +175,8 @@ def main() -> int:
     ap.add_argument(
         "--deployment", help="the deployment to probe and write: an `id` in the record's deployments"
     )
-    ap.add_argument("--config", type=Path, help="an arm that runs the model (an ML model or a baseline)")
+    ap.add_argument("--system", help="a system that runs the model (an ML model or a baseline): its id")
+    ap.add_argument("--dataset", help="the dataset whose first items the system runs (with --system)")
     from evaluation_harness._actor import add_by  # noqa: PLC0415
 
     add_by(ap)
@@ -249,17 +250,20 @@ def main() -> int:
             }
             where = dep["where"]
         else:
-            if not args.config:
+            if not args.system or not args.dataset:
                 die(
-                    f"{args.model_id} is {rec.get('kind')}: onboard it through an arm that runs it (--config <arm.yaml>)",
+                    f"{args.model_id} is {rec.get('kind')}: onboard it through a system that runs it "
+                    "(--system <id> --dataset <id>)",
                     "bad-argument",
                 )
 
             cmd = [
                 _sys.executable,
                 str(Path(__file__).with_name("arm_smoke.py")),
-                "--config",
-                str(args.config),
+                "--system",
+                args.system,
+                "--dataset",
+                args.dataset,
                 "--items",
                 "2",
                 "--no-record",
@@ -271,8 +275,8 @@ def main() -> int:
             )  # given what is left of the cap
             print(out.stdout.rstrip())
             flags = [ln.strip()[2:] for ln in out.stdout.splitlines() if ln.startswith("  - ")]
-            report = {"via_arm": str(args.config), "smoke": out.stdout[-4000:]}
-            where = "via " + args.config.stem
+            report = {"via_arm": args.system, "smoke": out.stdout[-4000:]}
+            where = "via " + args.system
             deployments = rec.setdefault("deployments", [])
             dep = _models.deployment_of(rec, args.deployment) if args.deployment else None
             if args.deployment and dep is None:

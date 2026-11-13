@@ -19,6 +19,22 @@ that can move a result is never a patch release without saying so under **Change
   datasets and references the goal names, keeps the file's comments, records who and the goal as it was, and is refused
   while a job writes the goal. The commands, the API routes and the MCP tools are made from one registry of the
   model's operations (`evaluation_harness/ops`); the model reads only data in this release's format.
+- **Systems** (RFC-032 step 3): what is evaluated is a **system**, `data/systems/<system_id>.yaml` (or a folder
+  validate.json's `systems` names): an adapter, its settings and the model it runs, with **no dataset, goal or
+  round**. A run puts it on a dataset: `evh run --system ID --dataset ID [--goal G] [--round R]`; `sweep`,
+  `arm-smoke`, `faithfulness`, `period-compare`, `periods`, `model-onboard`, `deploy-sheet`, `dataset-unseal` and
+  `arm-from-capture` take systems the same way, as do the API's jobs (`{"system", "dataset", ...}`, locks
+  `system:<id>`) and `make run SYSTEM=… DATASET_ID=…`. `evh system-list`, `system-show`, `system-new`, `system-set`,
+  and `/api/v1/systems`; the prompt versions (RFC-028) as `evh prompt-list`, `prompt-show` and `/api/v1/prompts`. "Config" is no longer the name of anything. Format 3 (`m0003_systems`) turns configs into
+  systems: the 146 groups of this repository's examples that differed only in their dataset became one system each
+  (155 ids renamed, `data/renames.json`), every live reference renamed with them, and judging sets, their verdicts
+  and reference manifests kept as they were judged (owner, 2026-11-13: frozen evidence keeps its ids; `judge-score`
+  finds a stored set by the runs it judged, so no verdict is lost or paid for again, and a reference's author is read
+  through the renames). Each view before and after was compared: the leaderboards, rounds, models and every catalog
+  page read the same with the ids renamed, but for the counts of distinct systems (`configs filed` 36 to 29 on the CNN
+  goal; the arms page's 271 to 264), a merged system's rollup row on the arms page, and chart labels that a shorter id
+  lets fit; the old arm pages redirect. A study's trial is `<study>-t<k>.yaml`, its spec names `baseline: {system:
+  …}`, and a confirmation runs the two systems on the test set as they are.
 - **Models and deployments, apart** (RFC-032 step 2): a model's deployments are records of their own,
   `data/deployments/<model>/<deployment>.yaml`, each with its checks as dated history: every onboarding, every arm
   smoke and every acceptance is kept, with who made it; the views read the latest of each, so `evh models`, the

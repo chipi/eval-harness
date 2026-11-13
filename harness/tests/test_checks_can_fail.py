@@ -121,7 +121,7 @@ PLANTS = [
         "research/REPORT_SUMMARIZATION.md",
         "and `bart_s` (460 MB, 0.3276) **3.4 s**",
         "and `bart_s` (460 MB, 0.3276) **1.1 s**",
-        "FAIL re-timed latency: REPORT_SUMMARIZATION.md states 3.4 s for cnn_bart_s_n200_v1",
+        "FAIL re-timed latency: REPORT_SUMMARIZATION.md states 3.4 s for cnn_bart_s_v1",
     ),
     (
         "tools/check_report_claims.py",
@@ -135,7 +135,7 @@ PLANTS = [
             '"recorded_run": "ag_bert_base_ta_n200_v1_20260930T094555Z",\n      "loaded_dtype": null,\n'
             '      "byte_identical": 150,'
         ),
-        "ag_bert_base_ta_n200_v1: 150/200",
+        "ag_bert_base_ta_v1: 150/200",
     ),
     (
         "tools/check_model_facts.py",

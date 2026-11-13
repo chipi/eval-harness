@@ -84,12 +84,12 @@ evh init                                                # folders, .gitignore, A
 evh dataset-create --dataset-id my_v1 --source-dir data/sources/my_v1
 evh dataset-materialize --dataset-id my_v1
 # write adapter.py at the project root -> call_system() talks to YOUR system
-git add -A && git commit -m "dataset and arms"           # a run records the commit it ran from
-evh run --config data/configs/best_model.yaml           # the best system you have
+git add -A && git commit -m "dataset and systems"        # a run records the commit it ran from
+evh run --system best_model_v1 --dataset my_v1          # the best system you have (data/systems/best_model_v1.yaml)
 evh label-from-run --run <its run_id> --set best_v1                  # optional: its outputs as a model's labels
 evh reference-promote --dataset-id my_v1 --labels best_v1 --tier silver \
     --reason "the best system we have ranks the rest" --by me           # ...promoted: the reference set
-evh run --config data/configs/arm_a.yaml --repeat 3      # each arm, with its own noise
+evh run --system <id> --dataset my_v1 --repeat 3         # each system, with its own noise
 evh leaderboard --dataset-id my_v1                                  # the ranking, and whether it is real
 evh family-test --dataset-id my_v1 --a arm_a_v1 --against arm_      # does the winner differ significantly?
 evh run-promote --run <run_id> --reason "what the tests showed"     # the choice, recorded with why

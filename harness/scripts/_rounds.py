@@ -179,28 +179,28 @@ def runs_dir_name(runs_dir: Path | None) -> str:
 
 
 def config_round(cfg: dict[str, Any], config_path: Any) -> dict[str, Any] | None:
-    """The round a config names, checked before a run spends anything: it needs a goal, the round
-    must exist and be open, and its dataset must be the config's. None when it names no round."""
+    """The round a run names (`--round`), checked before it spends anything: it needs a goal, the round
+    must exist and be open, and its dataset must be the run's. None when it names no round."""
     rid = cfg.get("round")
     if not rid:
         return None
     if not cfg.get("goal"):
-        die(f"{config_path}: round {rid!r} needs `goal:` too (a round belongs to a goal)", "invalid-file")
+        die(f"--round {rid}: name its goal too (--goal; a round belongs to a goal)", "bad-argument")
     rnd = find(cfg["goal"], rid)
     if rnd is None:
         die(
-            f"{config_path}: no round {rid!r} for goal {cfg['goal']!r} at {path_of(cfg['goal'], rid)}.\n"
+            f"--round {rid}: no round {rid!r} for goal {cfg['goal']!r} at {path_of(cfg['goal'], rid)}.\n"
             f"  Open it first:  evh round-open --goal {cfg['goal']} --dataset {cfg.get('dataset_id', '<dataset>')}",
             "not-found",
         )
     if rnd.get("status") == "closed":
         die(
-            f"{config_path}: round {rid} of {cfg['goal']} is closed; open the next one (evh round-open --from {rid})",
+            f"--round {rid}: round {rid} of {cfg['goal']} is closed; open the next one (evh round-open --from {rid})",
             "not-allowed",
         )
     if rnd.get("dataset_id") != cfg.get("dataset_id"):
         die(
-            f"{config_path}: round {rid} runs on {rnd.get('dataset_id')!r}, the config on {cfg.get('dataset_id')!r}",
+            f"--round {rid}: round {rid} runs on {rnd.get('dataset_id')!r}, this run on {cfg.get('dataset_id')!r}",
             "mismatch",
         )
     return rnd

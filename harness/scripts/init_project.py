@@ -7,7 +7,7 @@ DIR defaults to the current directory. Nothing that already exists is overwritte
 already there is kept and named, so running it twice, or in a project that has started,
 is safe.
 
-  data/sources/  data/configs/  data/goals/  data/fields/   your inputs, arms, goals and item fields
+  data/sources/  data/systems/  data/goals/  data/fields/   your inputs, systems, goals and item fields
   .gitignore     the harness's derived and private paths (materialized copies, the
                  catalog build, caches, .env, the venv)
   AGENTS.md      how an agent works in the project: the rules, the loop, how to read results
@@ -41,7 +41,7 @@ KIT = next((p for p in (HERE / "tutorial", HERE.parent / "tutorial") if _store.i
 AGENTS = next(
     (p for p in (HERE / "project_kit", HERE.parent / "project_kit") if _store.is_file(p / "AGENTS.md")), None
 )
-FOLDERS = ("data/sources", "data/configs", "data/goals", "data/fields")
+FOLDERS = ("data/sources", "data/systems", "data/goals", "data/fields")
 IGNORE = """\
 # evaluation-harness: derived or private, never committed
 .venv

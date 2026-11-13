@@ -85,7 +85,6 @@ from evaluation_harness import _jsonout, _store
 from evaluation_harness._common import (
     BASELINES,
     CAPTURES,
-    CONFIGS,
     DATA,
     DATASETS,
     EXIT_PROBLEMS,
@@ -106,6 +105,7 @@ from evaluation_harness._common import (
     no_options,
     read_json,
     sha256,
+    system_files,
 )
 from evaluation_harness._runs import recorded_direction
 from evaluation_harness.axes import axes_of
@@ -207,7 +207,7 @@ def v1_schemas() -> None:
             "metrics.schema.json",
         ),
         (_store.glob(BASELINES, "*/*/*.json"), "baseline.schema.json"),
-        (_store.glob(CONFIGS, "*.yaml"), "config.schema.json"),
+        (system_files(), "system.schema.json"),
         (_store.glob(DATA / "scorers", "*.yaml"), "scorer.schema.json"),
         (_store.glob(DATA / "judging-sets", "*.json"), "judging-set.schema.json"),
         (_store.glob(DATA / "judge-verdicts", "*/*/*/*.json"), "verdict.schema.json"),
@@ -488,54 +488,28 @@ def _declared_together(base: Path, configs: set) -> bool:
     return reach == configs
 
 
-def _config_dirs() -> list[Path]:
-    """Where the project keeps its arm configs besides data/configs: config.yaml's `configs:` folders, each inside the
-    project (the fleet's retest: `evh run --config` takes any path, and a guard's declaration there went unseen)."""
-    import yaml  # noqa: PLC0415
-    from evaluation_harness import _common  # noqa: PLC0415
-
-    cfg = _common.ROOT / "config.yaml"
-    try:
-        listed = (
-            (yaml.safe_load(_store.read_text(cfg, encoding="utf-8")) or {}).get("configs")
-            if _store.is_file(cfg)
-            else None
-        )
-    except (yaml.YAMLError, AttributeError):
-        listed = None  # a broken config.yaml is the store's own refusal
-    root = _common.ROOT.resolve()
-    out = []
-    for d in listed if isinstance(listed, list) else []:
-        p = (root / str(d)).resolve()
-        if p.is_relative_to(root) and _store.is_dir(p):
-            out.append(p)
-    return out
-
-
-def _declared_in_configs() -> dict[str, str]:
-    """config_id -> the config it must reproduce, as each config file declares it today (data/configs, and the
-    folders config.yaml names under `configs:`)."""
+def _declared_in_systems() -> dict[str, str]:
+    """system id -> the system it must reproduce, as each system declares it today (every system of the project:
+    data/systems and the folders validate.json's `systems` globs name)."""
     import yaml  # noqa: PLC0415
 
     out: dict[str, str] = {}
-    files = sorted(_store.glob(CONFIGS, "*.yaml")) if _store.is_dir(CONFIGS) else []
-    files += [f for d in _config_dirs() for f in sorted(_store.glob(d, "*.yaml"))]
-    for f in files:
+    for f in system_files():
         try:
             doc = yaml.safe_load(_store.read_text(f, encoding="utf-8"))
         except yaml.YAMLError:
             continue  # V1 reports the file
-        if isinstance(doc, dict) and doc.get("config_id") and isinstance(doc.get("expect_identical_to"), str):
-            out[str(doc["config_id"])] = doc["expect_identical_to"]
+        if isinstance(doc, dict) and doc.get("system_id") and isinstance(doc.get("expect_identical_to"), str):
+            out[str(doc["system_id"])] = doc["expect_identical_to"]
     return out
 
 
 def _guards_in(base: Path) -> list[tuple]:
-    """(config_id, the config it must reproduce, its run directory) for every run in `base` that declares one: the
-    run's own record, else its config's declaration (the fleet's beta: runs made before the config declared it are
+    """(system id, the system it must reproduce, its run directory) for every run in `base` that declares one: the
+    run's own record, else its system's declaration (the fleet's beta: runs made before the system declared it are
     frozen, and the guard holds for them too)."""
     out = []
-    by_config = _declared_in_configs()
+    by_config = _declared_in_systems()
     for run in sorted(_store.iterdir(base)):
         m = run / "metrics.json"
         if _store.is_file(m) and (d := parsed(m)) is not None:
@@ -1268,9 +1242,6 @@ def v14_goals() -> None:
         if fmt and ok and fmt not in ok:
             bad.append(f"{where}: format {fmt!r} is not one goal {gid!r} accepts ({', '.join(sorted(ok))})")
 
-    for f in sorted(_store.glob(CONFIGS, "*.yaml")) if _store.is_dir(CONFIGS) else []:
-        doc = yaml.safe_load(_store.read_text(f, encoding="utf-8"))
-        named(f"configs/{f.name}", doc if isinstance(doc, dict) else {})
     since = str(goal_policy().get("required_from") or "")
     unnamed, n_runs = [], 0
     filed: dict[str, list] = defaultdict(list)
@@ -1577,30 +1548,30 @@ def v19_label_sets() -> None:
 
 
 def v20_hypotheses() -> None:
-    """V20: every `hypothesis:` in an arm config (ADR-0025) has its keys, a direction that is better, worse or
-    no-worse, an `against` that is another config of the project, and a measure that is one of the arm's metrics.
-    The configs are config_files(); evh run refuses the same mistakes before it spends anything."""
+    """V20: every `hypothesis:` in a system (ADR-0025) has its keys, a direction that is better, worse or
+    no-worse, an `against` that is another system of the project, and a measure that is one of the system's metrics.
+    The systems are system_files(); evh run refuses the same mistakes before it spends anything."""
     import yaml  # noqa: PLC0415
     from evaluation_harness import _hypothesis  # noqa: PLC0415
 
     found, bad = 0, []
     ids = None
-    for c in config_files():
+    for c in system_files():
         try:
             cfg = yaml.safe_load(_store.read_text(c, encoding="utf-8")) or {}
         except yaml.YAMLError:
-            continue  # V1 names a config that does not parse
+            continue  # V1 names a system that does not parse
         if not isinstance(cfg, dict) or cfg.get("hypothesis") is None:
             continue
         found += 1
-        ids = ids if ids is not None else _hypothesis.config_ids()
+        ids = ids if ids is not None else _hypothesis.system_ids()
         bad += [f"{c.name}: {p}" for p in _hypothesis.problems(cfg, c, ids)]
     if not found:
         print("  --   V20 hypotheses (none)")
         return
     for b in bad[:10]:
         print(f"       {b}")
-    check(f"V20 hypotheses — {found} config(s) with one, every one sound", not bad, f"{len(bad)} problem(s)")
+    check(f"V20 hypotheses — {found} system(s) with one, every one sound", not bad, f"{len(bad)} problem(s)")
 
 
 def v21_failure_modes() -> None:
@@ -1926,19 +1897,11 @@ def v23_run_outputs() -> None:
     )
 
 
-def config_files() -> list[Path]:
-    """The arm configs V18 reads: data/configs, and the globs `configs` in validate.json names (relative to
-    the project root), for a project that keeps its arms elsewhere (this repository's are in examples/)."""
-    from evaluation_harness._common import arm_config_files  # noqa: PLC0415
-
-    return arm_config_files()
-
-
 def v18_model_records() -> None:
     """V18: the model records (RFC-020, optional; their schema is V1's): each file named by its id, no
-    alias claimed by two records, a deployment id used twice in one record, every config that names a record
+    alias claimed by two records, a deployment id used twice in one record, every system that names a record
     (`model_record:`) naming one that exists, and `deployment:` only beside a `model_record:` that has it. The
-    configs are config_files(): data/configs and the globs validate.json's `configs` adds."""
+    systems are system_files(): data/systems and the globs validate.json's `systems` adds."""
     import yaml  # noqa: PLC0415
     from evaluation_harness import _models  # noqa: PLC0415
 
@@ -1947,7 +1910,7 @@ def v18_model_records() -> None:
         print("  --   V18 model records (none)")
         return
     bad = _models.problems(DATA)
-    for c in config_files():
+    for c in system_files():
         cfg = yaml.safe_load(_store.read_text(c, encoding="utf-8")) or {}
         rid = cfg.get("model_record") if isinstance(cfg, dict) else None
         dep = cfg.get("deployment") if isinstance(cfg, dict) else None
@@ -1961,8 +1924,10 @@ def v18_model_records() -> None:
                 bad.append(f"{c.name}: deployment {dep!r} is not one of {rid}'s deployments")
                 continue
             params = _models.resolve(cfg, DATA).get("params") or {}
-            if cfg.get("config_id") not in (rec.get("smokes") or {}):
-                notes.append(f"{c.name}: never smoked (evh arm-smoke --config {c.name})")
+            if cfg.get("system_id") not in (rec.get("smokes") or {}):
+                notes.append(
+                    f"{c.name}: never smoked (evh arm-smoke --system {cfg.get('system_id')} --dataset <id>)"
+                )
             if (rec.get("capabilities") or {}).get("reasons") and "max_tokens" not in params:
                 notes.append(f"{c.name}: {rid} reasons, and no max_tokens bounds its replies")
     for r in _models.load(DATA):

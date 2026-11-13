@@ -21,6 +21,7 @@ HERE = Path(__file__).resolve().parents[1] / "scripts"
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 KIT = HERE.parent / "tutorial"
+from evaluation_harness import _format  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
@@ -40,13 +41,14 @@ def evh(*args):
 
 try:
     data = proj / "data"
-    (data / "configs").mkdir(parents=True)
+    (data / "systems").mkdir(parents=True)
+    _runstore.write_text(proj, _format.NAME, f"format: {_format.FORMAT}\n")
     shutil.copytree(KIT / "tickets", proj / "tutorial" / "tickets")
     r = evh("dataset-create", "--dataset-id", "tickets_v1", "--source-dir", "tutorial/tickets")
     r = r if r.returncode else evh("dataset-materialize", "--dataset-id", "tickets_v1")
     check("setup: the tutorial dataset", r.returncode == 0, r.stderr[-300:])
     _runstore.write_bytes(
-        proj, "configs/tickets_lead1.yaml", (KIT / "configs" / "tickets_lead1.yaml").read_bytes()
+        proj, "systems/tickets_lead1_v1.yaml", (KIT / "systems" / "tickets_lead1_v1.yaml").read_bytes()
     )
     gold = "references/gold/tickets_v1"
     files = sorted((KIT / "gold").glob("*.txt"))
@@ -74,7 +76,7 @@ try:
     )
     check("setup: gold for two of the items, promoted", r.returncode == 0, (r.stdout + r.stderr)[-300:])
 
-    r = evh("run", "--config", "data/configs/tickets_lead1.yaml", "--run-id", "partial")
+    r = evh("run", "--system", "tickets_lead1_v1", "--dataset", "tickets_v1", "--run-id", "partial")
     out = r.stdout + r.stderr
     m = _runstore.read_json(proj, "runs/partial/metrics.json") if r.returncode == 0 else {}
     check(
@@ -99,7 +101,7 @@ try:
     for n in _runstore.listdir(proj, gold):
         _runstore.unlink(proj, f"{gold}/{n}")
     _runstore.write_text(proj, f"{gold}/not_an_item.txt", "x")
-    r = evh("run", "--config", "data/configs/tickets_lead1.yaml", "--run-id", "none")
+    r = evh("run", "--system", "tickets_lead1_v1", "--dataset", "tickets_v1", "--run-id", "none")
     check(
         "a reference directory with no file for any item is refused before a call",
         r.returncode != 0
@@ -122,11 +124,11 @@ try:
         _runstore.write_bytes(proj, f"{gold}/{f.name}", f.read_bytes())
     _runstore.write_text(
         proj,
-        "configs/own.yaml",
-        "config_id: own_v1\ndataset_id: tickets_v1\nadapter: adapter.py\nparams:\n  provider: echo\n",
+        "systems/own_v1.yaml",
+        "system_id: own_v1\nadapter: adapter.py\nparams:\n  provider: echo\n",
     )
     env["PYTHONPATH"] = str(HERE)
-    r = evh("run", "--config", "data/configs/own.yaml", "--run-id", "own")
+    r = evh("run", "--system", "own_v1", "--dataset", "tickets_v1", "--run-id", "own")
     r2 = evh("rescore", "--dataset-id", "tickets_v1", "--match", "own_v1")
     # where the tool designates a re-score (RFC-022): runs-rescored/<scorer>/<source>/
     resc = next(

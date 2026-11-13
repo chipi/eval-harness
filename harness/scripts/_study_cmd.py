@@ -74,7 +74,7 @@ def run_study(argv: list[str]) -> int:
         sampler = s["sampler"] if isinstance(s["sampler"], str) else "command"
         if a.dry_run:
             stop = s.get("stop") or {}
-            print(f"study {goal}/{sid}: {sampler} sampler on {s['dataset']}, from {s['baseline']['config']}, decided on "
+            print(f"study {goal}/{sid}: {sampler} sampler on {s['dataset']}, from {s['baseline']['system']}, decided on "
                   f"{s['measure']}; at most {stop.get('trials', 'until stopped')} trial(s), "
                   f"${stop.get('usd', 'EVAL_MAX_COST_USD')} in all. Nothing was called.")  # fmt: skip
             _jsonout.values({"study": f"{goal}/{sid}", "sampler": sampler, "dry_run": True})
@@ -414,30 +414,23 @@ def _confirm(a: argparse.Namespace, require_named: Any) -> int:
         _study.append(goal, sid, {"event": "confirm", "phase": "named", "trial": t["k"], "test": a.test, "rule": a.rule,
                                   "margin": margin, "items": len(items), "excluded": excluded, "actor": who,
                                   "look": {x: v for x, v in look.items() if x != "reused"}})  # fmt: skip
-        for cid in (trial_cid, base_cid):
-            _p, cfg = _study.config_of(cid)
-            cfg = {**cfg, "config_id": cid + on, "dataset_id": a.test}
-            cfg.pop("round", None)
-            cfg.pop("hypothesis", None)
-            path = conf / f"{cid}{on}.yaml"
-            if not _store.is_file(path):
-                _store.mkdir(conf, parents=True, exist_ok=True)
-                _store.create_new(path, yaml.safe_dump(cfg, sort_keys=False).encode("utf-8"))
+        # The two systems run on the test set as they are (a system has no dataset, RFC-032).
         if not _store.is_file(ids_file):
+            _store.mkdir(conf, parents=True, exist_ok=True)
             _store.create_new(ids_file, ("\n".join(items) + "\n").encode("utf-8"))
-        _open_sealed(
-            a.test, [trial_cid + on, base_cid + on], look, who, f"study-confirm {goal}/{sid} trial {t['k']}"
-        )
+        _open_sealed(a.test, [trial_cid, base_cid], look, who, f"study-confirm {goal}/{sid} trial {t['k']}")
     runs: dict[str, list[str]] = {}
-    for cid in (trial_cid + on, base_cid + on):
-        code, _paid, rids = _study.run_config(cid, int(s.get("repeats") or 1), items=ids_file)
+    for cid in (trial_cid, base_cid):
+        code, _paid, rids = _study.run_system(
+            cid, a.test, goal, None, int(s.get("repeats") or 1), items=ids_file
+        )
         if code != 0 or not rids:
             die(
                 f"the confirmation's run of {cid} ended with exit {code}: the look stands, unanswered",
                 "failed",
             )
         runs[cid] = rids
-    argv = ["pair-test", "--dataset-id", a.test, "--a", trial_cid + on, "--b", base_cid + on, "--metric", metric,
+    argv = ["pair-test", "--dataset-id", a.test, "--a", trial_cid, "--b", base_cid, "--metric", metric,
             "--look-level", repr(level), "--json", "--asc" if lower else "--desc"]  # fmt: skip
     argv += ["--margin", repr(margin)] if margin is not None else []
     r = _study._evh(argv)
@@ -462,14 +455,14 @@ def _confirm(a: argparse.Namespace, require_named: Any) -> int:
     print(f"  outcome: {outcome} (delta {v.get('delta'):+.4g} on the test items; {vs.get('delta')} on validation, "
           "where it was chosen: the optimizer's curse makes that one larger)")  # fmt: skip
     if outcome in ("better", "non-inferior"):
-        print(f"  suggested (never run): evh run-promote --run {runs[trial_cid + on][-1]} --goal {goal} "
+        print(f"  suggested (never run): evh run-promote --run {runs[trial_cid][-1]} --goal {goal} "
               f"--reason \"confirmed by {goal}/{sid} on {a.test}\"")  # fmt: skip
     _jsonout.values({"confirm": line})
     return 0
 
 
 def _open_sealed(test: str, cids: list[str], look: dict[str, Any], who: dict[str, Any], why: str) -> None:
-    """A sealed set opened to exactly the confirmation's two configs, as this look (its entries carry the look)."""
+    """A sealed set opened to exactly the confirmation's two systems, as this look (its entries carry the look)."""
     from evaluation_harness import _seal  # noqa: PLC0415
     from evaluation_harness._common import DATASETS, load_dataset, now, write_json  # noqa: PLC0415
 

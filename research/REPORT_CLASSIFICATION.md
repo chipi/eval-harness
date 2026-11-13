@@ -710,16 +710,16 @@ uv run fetch.py --n 280 && uv run fetch.py --n 56
 cd ../../harness
 PY=../examples/classification-dbpedia-14/.venv/bin/python
 $PY tools/classification_report.py --dataset-id dbpedia_280
-$PY scripts/family_test.py    --dataset-id dbpedia_280 --a db_qwen_m_n200_v1 --against _n200_v1 --metric correct
-$PY scripts/bootstrap_test.py --dataset-id dbpedia_280 --a db_qwen_m_n200_v1 --against _n200_v1 --metric macro_f1
+$PY scripts/family_test.py    --dataset-id dbpedia_280 --a db_qwen_m_v1 --against db_ --metric correct
+$PY scripts/bootstrap_test.py --dataset-id dbpedia_280 --a db_qwen_m_v1 --against db_ --metric macro_f1
 $PY scripts/rank_stability.py --dataset-id dbpedia_280 --metric correct
-$PY scripts/family_test.py    --dataset-id dbpedia_280 --a db_bert_base_fy_n200_v1 --against _n200_v1 --metric correct
+$PY scripts/family_test.py    --dataset-id dbpedia_280 --a db_bert_base_fy_v1 --against db_ --metric correct
 
 PY=../examples/classification-ag-news/.venv/bin/python
 $PY tools/classification_report.py --dataset-id ag_news_200
-$PY scripts/family_test.py    --dataset-id ag_news_200 --a ag_bert_base_ta_n200_v1 --against _n200_v1 --metric correct
-$PY scripts/family_test.py    --dataset-id ag_news_200 --a ag_bert_mini_n200_v1    --against _n200_v1 --metric correct
-$PY scripts/bootstrap_test.py --dataset-id ag_news_200 --a ag_bert_base_ta_n200_v1 --against _n200_v1 --metric macro_f1
+$PY scripts/family_test.py    --dataset-id ag_news_200 --a ag_bert_base_ta_v1 --against ag_ --metric correct
+$PY scripts/family_test.py    --dataset-id ag_news_200 --a ag_bert_mini_v1    --against ag_ --metric correct
+$PY scripts/bootstrap_test.py --dataset-id ag_news_200 --a ag_bert_base_ta_v1 --against ag_ --metric macro_f1
 $PY scripts/holdout_significance.py --dataset-id ag_news_200 --exclude-dataset ag_news_20 --metric correct
 ```
 

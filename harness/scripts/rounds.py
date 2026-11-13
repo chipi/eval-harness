@@ -200,11 +200,11 @@ def open_round(argv: list[str]) -> int:
         if carried:
             print(
                 f"  Carried in as they are, their runs already count: {', '.join(carried)} "
-                "(their configs need no change and they need not run again)."
+                "(they need not run again)."
             )
         print(
-            f"  A NEW arm names the round in its config (round: {rid}, beside goal: {args.goal}) and runs;"
-            f" then: evh rounds --goal {args.goal}"
+            f"  A NEW system joins it by running in it: evh run --system <id> --dataset {args.dataset} "
+            f"--goal {args.goal} --round {rid}; then: evh rounds --goal {args.goal}"
         )
         print("  Commit the round file before the runs: an uncommitted file makes them dirty.")
         return 0
@@ -429,7 +429,7 @@ def _silver_authors(A, ds: str) -> list[tuple[str, str]]:
     known = set(A.arms())
     for mf in sorted(_store.glob(root, "*/manifest.json")) if _store.is_dir(root) else []:
         m = read_json(mf)
-        cid = (m.get("from_run") or {}).get("config_id") or m.get("authored_by")
+        cid = _common.system_now((m.get("from_run") or {}).get("config_id") or m.get("authored_by"))
         if m.get("dataset_id") == ds and cid and _arm(A, ds, cid) in known:
             out.append((f"silver/{mf.parent.name}", _arm(A, ds, cid)))
     return out

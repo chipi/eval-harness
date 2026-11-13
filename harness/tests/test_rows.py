@@ -30,6 +30,7 @@ from evaluation_harness._check import check, summary  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
 import _runstore  # noqa: E402
+from evaluation_harness import _format  # noqa: E402
 
 
 def _set_output(run, item, text):
@@ -122,7 +123,8 @@ def snapshot():
 
 try:
     data = proj / "data"
-    (data / "configs").mkdir(parents=True)
+    (data / "systems").mkdir(parents=True)
+    _runstore.write_text(proj, _format.NAME, f"format: {_format.FORMAT}\n")
     (data / "fields").mkdir()
     _runstore.write_bytes(proj, "fields/tickets.yaml", (KIT / "fields" / "tickets.yaml").read_bytes())
     shutil.copytree(KIT / "tickets", proj / "tutorial" / "tickets")
@@ -195,10 +197,10 @@ try:
     for arm, by_item in decided.items():
         _runstore.write_text(
             proj,
-            f"configs/tickets_{arm}.yaml",
-            (KIT / "configs" / f"tickets_{arm}.yaml").read_text() + "goal: tickets_summary\n",
+            f"systems/tickets_{arm}_v1.yaml",
+            (KIT / "systems" / f"tickets_{arm}_v1.yaml").read_text(),
         )
-        r = evh("run", "--config", f"data/configs/tickets_{arm}.yaml")
+        r = evh("run", "--system", f"tickets_{arm}_v1", "--dataset", D, "--goal", "tickets_summary")
         check(f"setup: the {arm} arm runs", r.returncode == 0, out(r)[-300:])
         run = next(n for n in _runstore.listdir(proj, "runs") if n.startswith(f"tickets_{arm}_v1_"))
         for item, text in by_item.items():
@@ -381,13 +383,15 @@ try:
     )
     _runstore.write_text(
         proj,
-        "configs/jsonish.yaml",
-        "config_id: jsonish_v1\ndataset_id: tickets_v1\nadapter: jsonish.py\nparams:\n  provider: echo\n",
+        "systems/jsonish_v1.yaml",
+        "system_id: jsonish_v1\nadapter: jsonish.py\nparams:\n  provider: echo\n",
     )
     r = evh(
         "run",
-        "--config",
-        "data/configs/jsonish.yaml",
+        "--system",
+        "jsonish_v1",
+        "--dataset",
+        "tickets_v1",
         "--run-id",
         "jsonish",
         extra={"PYTHONPATH": str(HERE.parent)},
@@ -833,13 +837,15 @@ try:
     )
     _runstore.write_text(
         proj,
-        "configs/tickets_decider.yaml",
-        "config_id: tickets_decider_v1\ndataset_id: tickets_v1\nadapter: decide.py\nparams:\n  provider: echo\n",
+        "systems/tickets_decider_v1.yaml",
+        "system_id: tickets_decider_v1\nadapter: decide.py\nparams:\n  provider: echo\n",
     )
     r = evh(
         "run",
-        "--config",
-        "data/configs/tickets_decider.yaml",
+        "--system",
+        "tickets_decider_v1",
+        "--dataset",
+        "tickets_v1",
         extra={"PYTHONPATH": str(HERE.parent)},
     )
     check("setup: an arm whose adapter has decision()", r.returncode == 0, out(r)[-300:])

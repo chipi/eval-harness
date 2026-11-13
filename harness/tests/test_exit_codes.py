@@ -24,6 +24,7 @@ from evaluation_harness._check import check, summary  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
 import _runstore  # noqa: E402
+from evaluation_harness import _format  # noqa: E402
 
 proj = Path(tempfile.mkdtemp(prefix="evh-exit-"))
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-exit-codes")
@@ -45,7 +46,8 @@ def evh(*args, **extra):
 
 try:
     data = proj / "data"
-    (data / "configs").mkdir(parents=True)
+    _runstore.write_text(proj, _format.NAME, f"format: {_format.FORMAT}\n")
+    (data / "systems").mkdir(parents=True)
     shutil.copytree(KIT / "tickets", proj / "tutorial" / "tickets")
     r = evh("dataset-create", "--dataset-id", "tickets_v1", "--source-dir", "tutorial/tickets")
     r = r if r.returncode else evh("dataset-materialize", "--dataset-id", "tickets_v1")
@@ -56,14 +58,13 @@ try:
         "    return Result(output=text[:80], cost_usd=0.01)\n",
         encoding="utf-8",
     )
-    cfg = data / "configs" / "priced.yaml"
     _runstore.write_text(
         proj,
-        "configs/priced.yaml",
-        "config_id: priced_v1\ndataset_id: tickets_v1\nadapter: priced_adapter.py\nparams: {}\n",
+        "systems/priced_v1.yaml",
+        "system_id: priced_v1\nadapter: priced_adapter.py\nparams: {}\n",
     )
 
-    r = evh("run", "--config", str(cfg), EVAL_MAX_COST_USD="0.025")
+    r = evh("run", "--system", "priced_v1", "--dataset", "tickets_v1", EVAL_MAX_COST_USD="0.025")
     out = r.stdout + r.stderr
     check(
         "the cost cap stops a run after some items: exit 4",
@@ -74,17 +75,17 @@ try:
         "... and says so, keeping the partial results", "COST CAP HIT" in out and "exit 4" in out, out[-300:]
     )
 
-    r = evh("run", "--config", str(cfg), EVAL_MAX_COST_USD="0")
+    r = evh("run", "--system", "priced_v1", "--dataset", "tickets_v1", EVAL_MAX_COST_USD="0")
     check(
         "a cap that stops it before any item: exit 7 (nothing measured)",
         r.returncode == 7,
         f"exit {r.returncode}",
     )
 
-    r = evh("run", "--config", str(cfg), EVAL_MAX_COST_USD="5")
+    r = evh("run", "--system", "priced_v1", "--dataset", "tickets_v1", EVAL_MAX_COST_USD="5")
     check("under the cap: exit 0", r.returncode == 0, (r.stdout + r.stderr)[-300:])
 
-    r = evh("run", "--config", str(cfg), "--no-such-flag")
+    r = evh("run", "--system", "priced_v1", "--dataset", "tickets_v1", "--no-such-flag")
     check("an unknown argument: exit 2", r.returncode == 2 and "usage: evh run" in r.stderr, r.stderr[-200:])
 
     r = evh("datasets", "--dataset-id", "no_such_dataset")

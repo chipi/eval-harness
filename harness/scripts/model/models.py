@@ -48,7 +48,7 @@ def deployment_state(rid: str) -> dict[str, Any]:
 
     d = DEPLOYMENT.get(rid)
     checks = d.get("checks") or []
-    arms = list(dict.fromkeys(c.get("config") for c in checks if c.get("kind") == "smoke"))
+    arms = list(dict.fromkeys(c.get("system") for c in checks if c.get("kind") == "smoke"))
     return {
         "onboarding": _models.latest(checks, "onboarding"),
         "smokes": {cid: _models.latest(checks, "smoke", cid) for cid in arms},

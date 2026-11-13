@@ -49,7 +49,7 @@ The goal and the item fields are the project's own, one copy each: `harness/data
 ```bash
 python examples/triage-fleet/fetch.py                       # needs the revision public, or a token
 evh dataset-materialize --dataset-id orrery_triage_v1_labelled
-TRIAGE_FLEET_SRC=/path/to/signal-fleet evh run --config examples/triage-fleet/configs/<arm>.yaml
+TRIAGE_FLEET_SRC=/path/to/signal-fleet evh run --system <id> --dataset orrery_triage_v1_labelled --goal triage_orrery
 evh goals --goal triage_orrery
 ```
 
@@ -65,7 +65,7 @@ ran 37% on the CPU, swap 16 → 41 GB). So for an arm whose model is over about 
 
 ```bash
 systemctl --user stop ollama-assistant     # before the run; nothing depends on it until the homelab's failover
-evh run --config examples/triage-fleet/configs/local/<arm>.yaml
+evh run --system <id, in systems/local/> --dataset orrery_triage_v1_labelled --goal triage_orrery
 systemctl --user start ollama-assistant    # after; its alert x3-assistant-down fires after 15 minutes stopped
 ```
 

@@ -85,8 +85,8 @@ def project(tmp: Path) -> tuple:
         "tutorial/ticket_fields.csv",
     )
     evh("dataset-materialize", "--dataset-id", "tickets_v1")
-    for f in (proj / "tutorial/configs").glob("tickets_*.yaml"):
-        shutil.copy(f, proj / "data/configs/")
+    for f in (proj / "tutorial/systems").glob("tickets_*.yaml"):
+        shutil.copy(f, proj / "data/systems/")
     evh("label-import", "tutorial/gold", "--dataset-id", "tickets_v1", "--set", "owner_gold", "--by", "owner")
     evh(
         "reference-promote",
@@ -102,7 +102,7 @@ def project(tmp: Path) -> tuple:
         "owner",
     )
     for arm in ("lead1", "lead2", "author"):
-        evh("run", "--config", f"data/configs/tickets_{arm}.yaml")
+        evh("run", "--system", f"tickets_{arm}_v1", "--dataset", "tickets_v1")
     # A goal with an open round: the goal page then carries its suggestions, each with a copy button.
     shutil.copy(proj / "tutorial/goals/tickets_summary.yaml", proj / "data/goals/")
     evh(

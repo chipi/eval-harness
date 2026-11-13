@@ -41,7 +41,7 @@ checks:
   accepted:
   - 'reasoning: it still reasons with the record''s settings'
 - kind: smoke
-  config: triage_hosted_gpt_oss_120b_v2
+  system: triage_hosted_gpt_oss_120b_v2
   status: pass
   at: '2026-10-31T14:45:18Z'
   flags: []

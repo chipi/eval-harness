@@ -20,13 +20,13 @@ evh capture --importer jsonl --query '{"path": "replay-filing/rows.jsonl"}' --ca
 evh dataset-from-capture filing_prod --dataset-id filing_history_v1 --fieldset filing \
     --field ts --field started --field production_issue
 evh dataset-materialize --dataset-id filing_history_v1
-evh run --config data/configs/filing_production_v1.yaml                 # production's arm
-evh faithfulness --config data/configs/filing_replay_v1.yaml --production <that run>
+evh run --system filing_production_v1 --dataset filing_history_v1 --goal filing   # production's arm
+evh faithfulness --system filing_replay_v1 --dataset filing_history_v1 --production <that run>
 evh label-import replay-filing/gold --dataset-id filing_history_v1 --set gold --by person:you
 evh reference-promote --dataset-id filing_history_v1 --labels gold --tier gold \
     --reason "what each decision should have done" --by person:you
-evh run --config data/configs/filing_replay_v1.yaml                     # the replay, scored
-evh run --config data/configs/filing_candidate_v3.yaml                  # every decision at the third commit
+evh run --system filing_replay_v1 --dataset filing_history_v1 --goal filing       # the replay, scored
+evh run --system filing_candidate_v3 --dataset filing_history_v1 --goal filing    # every decision at the third commit
 python examples/replay-filing/mutants.py --system replay-filing/system --production <that run>
 ```
 
@@ -37,7 +37,7 @@ python examples/replay-filing/mutants.py --system replay-filing/system --product
 | file | what it is |
 |---|---|
 | `system/v1..v3/filing.py` | the system under test, three versions: v2 keys alerts without case or numbers, v3 files no info alert and holds a scheduled job's alert until its third failure |
-| `make_history.py` | makes the system's git repository (one commit per version) and production: a day per version, 20 decisions, people closing issues between them, all frozen as `decisions.jsonl` and `issues.jsonl` (each issue's timeline); writes the code record (`data/models/toy_filing.yaml`, `kind: code`), the field set, the configs and the goal |
+| `make_history.py` | makes the system's git repository (one commit per version) and production: a day per version, 20 decisions, people closing issues between them, all frozen as `decisions.jsonl` and `issues.jsonl` (each issue's timeline); writes the code record (`data/models/toy_filing.yaml`, `kind: code`), the field set, the systems and the goal |
 | `replay_world.py` | **R3, the world a replay reads**: the tracker as it stood at any time, from the frozen timelines, with the replay's own writes kept in it so a later decision reads what an earlier one did; a call it does not know is refused |
 | `production_actions.py` | **R4, what production did**: each fleet write joined to the decision whose write window holds it (from the stamp before it to its own, plus a measured clock slack), since a write carries no decision id |
 | `replay_filing.py` | the adapter: imports `filing.py` from the commit each decision ran (`_codeload.use`), sets its two seams (the tracker, the ledger file) again at each switch, reads the tracker when the decision started |
@@ -47,7 +47,7 @@ python examples/replay-filing/mutants.py --system replay-filing/system --product
 
 - **Production's own writes, hidden (RFC-031 P1).** `filing_replay_hidden_v1` hides production's own reopens made inside the
   replayed window (`replay.hide: {kinds: [reopened]}`): the replay's own reopens stand in for them and still agree with
-  production on all 20, which `evh faithfulness` must show for this config before it is scored. `filing_candidate_v3_hidden`
+  production on all 20, which `evh faithfulness` must show for this system before it is scored. `filing_candidate_v3_hidden`
   merges the alert production filed at d05 into an existing issue; a person closed production's issue on day 3, a
   reaction to an action the candidate never took: its history confound, 1 of 20.
 - **Each decision at its commit.** The replay at the recorded commits agrees with production on all 20: the reopen
@@ -65,4 +65,4 @@ python examples/replay-filing/mutants.py --system replay-filing/system --product
 - A real tracker's API, pagination or rate limits; the stand-in answers four calls.
 - Clock skew between machines beyond the slack the join allows; the history's clocks agree.
 - A system with compiled extensions, which the harness cannot switch between versions in one process.
-- Changes to the frozen world or to the config's `params` after a faithfulness record: the gate does not see them.
+- Changes to the frozen world or to the system's `params` after a faithfulness record: the gate does not see them.

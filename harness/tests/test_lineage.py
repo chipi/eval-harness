@@ -21,6 +21,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the ev
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tests/
 KIT = HERE.parent / "tutorial"
 import _runstore  # noqa: E402
+from evaluation_harness import _format  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 
 proj = Path(tempfile.mkdtemp(prefix="evh-lineage-"))
@@ -37,7 +38,8 @@ def evh(*args):
 
 try:
     if not _runstore.sqlite():
-        (proj / "data" / "configs").mkdir(parents=True)
+        (proj / "data" / "systems").mkdir(parents=True)
+    _runstore.write_text(proj, _format.NAME, f"format: {_format.FORMAT}\n")
     v1_src, v2_src = proj / "src_v1", proj / "src_v2"
     shutil.copytree(KIT / "tickets", v1_src)
     shutil.copytree(KIT / "tickets", v2_src)
@@ -80,10 +82,10 @@ try:
 
     # A run on v1 only: v2 has no arm, and still gets a page because it is v1's version.
     _runstore.write_text(
-        proj, "configs/tickets_lead1.yaml", (KIT / "configs" / "tickets_lead1.yaml").read_text()
+        proj, "systems/tickets_lead1_v1.yaml", (KIT / "systems" / "tickets_lead1_v1.yaml").read_text()
     )
     evh("dataset-materialize", "--dataset-id", "tickets_v1")
-    r = evh("run", "--config", "data/configs/tickets_lead1.yaml")
+    r = evh("run", "--system", "tickets_lead1_v1", "--dataset", "tickets_v1")
     check("setup: an arm runs on v1", r.returncode == 0, r.stderr[-300:])
     r = evh("catalog")
     out = proj / ".build" / "catalog"

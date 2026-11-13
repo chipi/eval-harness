@@ -392,7 +392,7 @@ with tempfile.TemporaryDirectory() as td:
         hosted,
     )
     check(
-        "a config that names no deployment, or one the record lacks, falls back below the record",
+        "a system that names no deployment, or one the record lacks, falls back below the record",
         build(params, cfg={"model_record": "gem"}, data_dir=data)["deployment"]["source"] == "params",
     )
 
@@ -820,17 +820,18 @@ def metrics_of(prefix):
     return _runstore.read_json(proj, f"runs/{d}/metrics.json") if d else {}
 
 
-def config(name, extra):
+def system(name, extra):
     _runstore.write_text(
         proj,
-        f"configs/{name}.yaml",
-        f"config_id: {name}_v1\ndataset_id: tickets_v1\nadapter: adapter.py\n{extra}params:\n  max_tokens: 9\n",
+        f"systems/{name}_v1.yaml",
+        f"system_id: {name}_v1\nadapter: adapter.py\n{extra}params:\n  max_tokens: 9\n",
     )
-    return f"data/configs/{name}.yaml"
+    return f"{name}_v1"
 
 
 try:
-    (proj / "data" / "configs").mkdir(parents=True)
+    (proj / "data" / "systems").mkdir(parents=True)
+    _model_records.stamp(proj / "data")
     (proj / "data" / "models").mkdir(parents=True)
     shutil.copytree(KIT / "tickets", proj / "tutorial" / "tickets")
     (proj / "adapter.py").write_text(ADAPTER)
@@ -855,11 +856,13 @@ try:
             ],
         },
     )
-    r = evh("run", "--config", config("named", "model_record: gem\ndeployment: dgx\n"))
+    r = evh(
+        "run", "--system", system("named", "model_record: gem\ndeployment: dgx\n"), "--dataset", "tickets_v1"
+    )
     m = metrics_of("named_v1_")
     d = (m.get("fingerprint") or {}).get("deployment") or {}
     check(
-        "evh run: a config naming a record and a deployment fingerprints the deployment from the record",
+        "evh run: a system naming a record and a deployment fingerprints the deployment from the record",
         r.returncode == 0
         and d.get("source") == "record"
         and d.get("id") == "gem@dgx"
@@ -873,7 +876,9 @@ try:
         {k: m.get(k) for k in ("model_record", "deployment_id")},
     )
     rec = _model_records.view(proj, "gem")
-    r = evh("run", "--config", config("rep0", "model_record: gem\ndeployment: dgx\n"), "--repeat", "2")
+    r = evh(
+        "run", "--system", system("rep0", "model_record: gem\ndeployment: dgx\n"), "--dataset", "tickets_v1", "--repeat", "2"
+    )  # fmt: skip
     check(
         "evh run --repeat: no note while the deployment's own onboarding has not found it deterministic",
         r.returncode == 0 and "expect its" not in r.stdout,
@@ -885,27 +890,29 @@ try:
         "report": {"deterministic": True},
     }
     _model_records.put(proj, rec)
-    r = evh("run", "--config", config("rep", "model_record: gem\ndeployment: dgx\n"), "--repeat", "2")
+    r = evh(
+        "run", "--system", system("rep", "model_record: gem\ndeployment: dgx\n"), "--dataset", "tickets_v1", "--repeat", "2"
+    )  # fmt: skip
     check(
         "evh run --repeat: a model onboarded as deterministic, at temperature 0, is said to give identical passes",
         r.returncode == 0 and "expect its 2 passes to be identical" in r.stdout and "on dgx" in r.stdout,
         r.stdout[-400:],
     )
-    r = evh("run", "--config", config("plain", ""))
+    r = evh("run", "--system", system("plain", ""), "--dataset", "tickets_v1")
     m2 = metrics_of("plain_v1_")
     check(
-        "evh run: a config naming neither is the params source and records no deployment_id",
+        "evh run: a system naming neither is the params source and records no deployment_id",
         r.returncode == 0
         and (m2["fingerprint"]["deployment"]["source"] == "params")
         and "deployment_id" not in m2,
         (r.stdout + r.stderr)[-300:],
     )
     _model_records.put(proj, {"model_id": "lead", "kind": "baseline", "aliases": ["lead-5"]})
-    r = evh("model-onboard", "lead", "--config", config("lead", ""))
+    r = evh("model-onboard", "lead", "--system", system("lead", ""), "--dataset", "tickets_v1")
     lead = _model_records.view(proj, "lead")
     dep = (lead.get("deployments") or [{}])[0]
     check(
-        "model-onboard --config: a baseline (or an ML model) is onboarded through an arm that runs it, end to end",
+        "model-onboard --system: a baseline (or an ML model) is onboarded through an arm that runs it, end to end",
         r.returncode == 0
         and "ONBOARD PASS" in r.stdout
         and dep.get("id") == "local"
@@ -913,28 +920,31 @@ try:
         and "SMOKE PASS" in ((dep.get("onboarding") or {}).get("report") or {}).get("smoke", ""),
         (r.stdout + r.stderr)[-600:],
     )
-    r = evh("run", "--config", config("typo", "model_record: gem\ndeployment: x3\n"))
+    r = evh(
+        "run", "--system", system("typo", "model_record: gem\ndeployment: x3\n"), "--dataset", "tickets_v1"
+    )
     check(
         "evh run: a deployment the record lacks is refused before anything runs",
         r.returncode != 0 and "no such deployment" in r.stdout + r.stderr,
         (r.stdout + r.stderr)[-300:],
     )
-    config("orphan", "deployment: dgx\n")
+    system("orphan", "deployment: dgx\n")
     v = evh("validate")
     check(
         "V18: a deployment the record lacks, and a deployment without a model_record, are named and fail",
         v.returncode != 0
-        and "typo.yaml: deployment 'x3' is not one of gem's deployments" in v.stdout
-        and "orphan.yaml: deployment 'dgx' is used without a model_record" in v.stdout,
+        and "typo_v1.yaml: deployment 'x3' is not one of gem's deployments" in v.stdout
+        and "orphan_v1.yaml: deployment 'dgx' is used without a model_record" in v.stdout,
         v.stdout[-900:],
     )
     (proj / "arms").mkdir()
-    (proj / "arms" / "elsewhere.yaml").write_text("config_id: elsewhere_v1\ndeployment: dgx\n")
-    _runstore.write_text(proj, "validate.json", json.dumps({"configs": ["arms/*.yaml"]}))
+    (proj / "arms" / "elsewhere_v1.yaml").write_text("system_id: elsewhere_v1\ndeployment: dgx\n")
+    _runstore.write_text(proj, "validate.json", json.dumps({"systems": ["arms/*.yaml"]}))
     v = evh("validate")
     check(
-        "V18: a config outside data/configs is read when validate.json's `configs` names it",
-        v.returncode != 0 and "elsewhere.yaml: deployment 'dgx' is used without a model_record" in v.stdout,
+        "V18: a system outside data/systems is read when validate.json's `systems` names it",
+        v.returncode != 0
+        and "elsewhere_v1.yaml: deployment 'dgx' is used without a model_record" in v.stdout,
         v.stdout[-900:],
     )
 finally:

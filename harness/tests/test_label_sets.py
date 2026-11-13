@@ -22,7 +22,11 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parents[1] / "scripts"
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 KIT = HERE.parent / "tutorial"
-from evaluation_harness import _common, _outputs  # noqa: E402
+from evaluation_harness import (  # noqa: E402
+    _common,
+    _format,
+    _outputs,
+)
 from evaluation_harness._check import check, summary  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
@@ -73,7 +77,8 @@ def lab_doc(rel):
 
 try:
     data = proj / "data"
-    (data / "configs").mkdir(parents=True)
+    (data / "systems").mkdir(parents=True)
+    _runstore.write_text(proj, _format.NAME, f"format: {_format.FORMAT}\n")
     shutil.copytree(KIT / "tickets", proj / "tutorial" / "tickets")
     shutil.copytree(KIT / "production", proj / "tutorial" / "production")
     r = evh("dataset-create", "--dataset-id", "tickets_v1", "--source-dir", "tutorial/tickets")
@@ -86,10 +91,12 @@ try:
     for arm in ("lead1", "author"):
         _runstore.write_text(
             proj,
-            f"configs/tickets_{arm}.yaml",
-            (KIT / "configs" / f"tickets_{arm}.yaml").read_text() + "goal: tickets_summary\n",
+            f"systems/tickets_{arm}_v1.yaml",
+            (KIT / "systems" / f"tickets_{arm}_v1.yaml").read_text(),
         )
-        r = evh("run", "--config", f"data/configs/tickets_{arm}.yaml")
+        r = evh(
+            "run", "--system", f"tickets_{arm}_v1", "--dataset", "tickets_v1", "--goal", "tickets_summary"
+        )
         check(f"setup: the {arm} arm runs", r.returncode == 0, out(r)[-300:])
 
     def runs_named(prefix):
@@ -736,7 +743,7 @@ try:
         "--field",
         "channel",
     )
-    cfg_text = _runstore.read_text(proj, "configs/desk_production_v1.yaml") if r.returncode == 0 else ""
+    cfg_text = _runstore.read_text(proj, "systems/desk_production_v1.yaml") if r.returncode == 0 else ""
     rec_run = next((data / "runs" / n for n in runs_named("desk_production_v1_")), None)
     rec_m = _runstore.read_json(proj, f"runs/{rec_run.name}/metrics.json") if rec_run else {}
     cap_recs = {}
@@ -777,7 +784,7 @@ try:
         "a recorded arm needs the adapter's recorded_output or a --field; refused before anything is written",
         r.returncode != 0
         and "recorded_output" in out(r)
-        and not _runstore.exists(proj, "configs/desk_nofield_v1.yaml"),
+        and not _runstore.exists(proj, "systems/desk_nofield_v1.yaml"),
         out(r)[-300:],
     )
 
@@ -869,8 +876,12 @@ try:
             sys.executable,
             str(HERE / "cli.py"),
             "run",
-            "--config",
-            "data/configs/tickets_lead1.yaml",
+            "--system",
+            "tickets_lead1_v1",
+            "--dataset",
+            "tickets_v1",
+            "--goal",
+            "tickets_summary",
             "--labels",
             "author_v1",
         ],

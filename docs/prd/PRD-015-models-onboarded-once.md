@@ -63,7 +63,7 @@ fingerprint that names where a model really ran.
 
 - _As the person running the evals, I onboard a model once (`evh model-onboard <id> --deployment <d>`), so that every arm of
   it inherits settings that were checked._
-- _As the person running the evals, I smoke an arm before its full run (`evh arm-smoke --config <arm>`), so that I know it
+- _As the person running the evals, I smoke an arm before its full run (`evh arm-smoke --system <id> --dataset <id>`), so that I know it
   runs, how long it will take and what it will cost before it spends any of it._
 - _As a reviewer, I see on the Models page which models are vetted, where each runs and with what, and on an
   arm's page which deployment its runs used._
@@ -83,7 +83,7 @@ fingerprint that names where a model really ran.
   A build the server serves differently is flagged, and the record takes it with a history entry for the one
   replaced. An ML model or a baseline is onboarded through an arm (`--config`). `ONBOARD PASS` or `ONBOARD
   CHECK`; the record's settings are never changed by it.
-- **FR3 Arm smoke.** `evh arm-smoke --config <arm>` runs any arm's first items and writes no run: runs, valid
+- **FR3 Arm smoke.** `evh arm-smoke --system <id> --dataset <id>` runs any arm's first items and writes no run: runs, valid
   output for the scorer, a projection of the full run, build pinned, determinism, cost; for an LLM, each model
   call (a provider's `_meta`, or an adapter's `meta["calls"]`): reasoning, slow, long, cut off, no answer, and a
   hosted call served off its pinned route. Written into the record.

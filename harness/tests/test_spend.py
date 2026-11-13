@@ -32,6 +32,7 @@ from evaluation_harness._check import check, summary  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
 import _runstore  # noqa: E402
+from evaluation_harness import _format  # noqa: E402
 
 # ── the provider layer's own net, in this process ──────────────────────────────────────────────────────────────────
 os.environ["EVAL_MAX_COST_USD"] = "0.03"
@@ -118,13 +119,13 @@ def evh(*args, cap=None, background=False):
     return subprocess.run(cmd, cwd=proj, env=e, capture_output=True, text=True, stdin=subprocess.DEVNULL)
 
 
-def config(name, cid, **extra):
-    lines = [f"config_id: {cid}", "dataset_id: tickets_v1", "adapter: pay.py"]
-    lines += [f"{k}: {v}" for k, v in extra.items() if k in ("goal", "round")]
+def system(name, cid, **extra):
+    lines = [f"system_id: {cid}", "adapter: pay.py"]
+    goal_args = [x for k in ("goal", "round") if k in extra for x in (f"--{k}", str(extra[k]))]
     params = {k: v for k, v in extra.items() if k not in ("goal", "round")}
     lines.append("params:\n  provider: echo" + "".join(f"\n  {k}: {v}" for k, v in params.items()))
-    _runstore.write_text(proj, f"configs/{name}.yaml", "\n".join(lines) + "\n")
-    return f"data/configs/{name}.yaml"
+    _runstore.write_text(proj, f"systems/{cid}.yaml", "\n".join(lines) + "\n")
+    return ["--system", cid, "--dataset", "tickets_v1", *goal_args]
 
 
 def spent_of(prefix):
@@ -138,7 +139,8 @@ def spent_of(prefix):
 
 
 try:
-    (proj / "data" / "configs").mkdir(parents=True)
+    _runstore.write_text(proj, _format.NAME, f"format: {_format.FORMAT}\n")
+    (proj / "data" / "systems").mkdir(parents=True)
     shutil.copytree(KIT / "tickets", proj / "tickets")
     (proj / "pay.py").write_text(PAY)
     r = evh("dataset-create", "--dataset-id", "tickets_v1", "--source-dir", "tickets")
@@ -158,8 +160,8 @@ try:
     check("setup: a dataset of 6 items, its gold, the goal", r.returncode == 0, (r.stdout + r.stderr)[-400:])
 
     # ── run --repeat 3: one cap in all ──────────────────────────────────────────────────────────────────────────
-    rep = config("rep", "rep_v1")
-    r = evh("run", "--config", rep, "--repeat", "3", cap=0.08)
+    rep = system("rep", "rep_v1")
+    r = evh("run", *rep, "--repeat", "3", cap=0.08)
     check(
         "run --repeat 3 with a $0.08 cap and $0.06 a pass: $0.08 in all, not $0.18 (exit 4, stopped)",
         r.returncode == _common.EXIT_STOPPED and abs(spent_of("rep_v1") - 0.08) < 1e-9,
@@ -167,7 +169,7 @@ try:
     )
 
     # ── arm-smoke stops at the cap ───────────────────────────────────────────────────────────────────────────────
-    r = evh("arm-smoke", "--config", rep, "--items", "3", "--json", cap=0.015)
+    r = evh("arm-smoke", *rep, "--items", "3", "--json", cap=0.015)
     env_out = json.loads(r.stdout) if r.stdout.strip().startswith("{") else {}
     vals = (env_out.get("result") or {}).get("values") or {}
     check(
@@ -185,8 +187,9 @@ try:
     )
 
     # ── sweep: each arm what the ones before it left ─────────────────────────────────────────────────────────────
-    a, b = config("swa", "swa_v1"), config("swb", "swb_v1")
-    r = evh("sweep", "--configs", a, b, cap=0.08)
+    system("swa", "swa_v1")
+    system("swb", "swb_v1")
+    r = evh("sweep", "--systems", "swa_v1", "swb_v1", "--dataset", "tickets_v1", cap=0.08)
     check(
         "sweep with a $0.08 cap over two $0.06 arms: the first spends $0.06, the second the $0.02 left",
         abs(spent_of("swa_v1") - 0.06) < 1e-9 and abs(spent_of("swb_v1") - 0.02) < 1e-9,
@@ -201,15 +204,15 @@ try:
         r.returncode == 0,
         (r.stdout + r.stderr)[-400:],
     )
-    slow = config("ra", "ra_v1", goal="tickets_summary", round="r1", sleep=1.0)
-    slow_b = config("rb", "rb_v1", goal="tickets_summary", round="r1", sleep=1.0)
-    pa = evh("run", "--config", slow, cap=0.04, background=True)
+    slow = system("ra", "ra_v1", goal="tickets_summary", round="r1", sleep=1.0)
+    slow_b = system("rb", "rb_v1", goal="tickets_summary", round="r1", sleep=1.0)
+    pa = evh("run", *slow, cap=0.04, background=True)
     ledger = proj / ".build" / "rounds" / "tickets_summary" / "r1.json"
     for _ in range(100):
         if ledger.is_file() and json.loads(ledger.read_text()).get("entries"):
             break
         time.sleep(0.1)
-    pb = evh("run", "--config", slow_b, background=True)  # no cap of its own: what the round has left
+    pb = evh("run", *slow_b, background=True)  # no cap of its own: what the round has left
     out_a, _ = pa.communicate(timeout=120)
     out_b, _ = pb.communicate(timeout=120)
     check(
@@ -220,7 +223,7 @@ try:
         and spent_of("rb_v1") <= 0.06 + 1e-9,
         (out_a[-300:], out_b[-300:], spent_of("ra_v1"), spent_of("rb_v1")),
     )
-    r = evh("run", "--config", slow_b)
+    r = evh("run", *slow_b)
     check(
         "the round's budget spent: the next run is refused before its first call (over-budget), nothing written",
         r.returncode != 0 and "ERROR (over-budget)" in r.stderr and spent_of("rb_v1") <= 0.06 + 1e-9,
@@ -232,11 +235,11 @@ try:
     r = r if r.returncode else evh("round-open", "--goal", "tickets_summary", "--dataset", "tickets_v1", "--from", "r1",
             "--hypothesis", "after the kill", "--budget-usd", "0.1")  # fmt: skip
     check("setup: round r2, a $0.10 budget", r.returncode == 0, (r.stdout + r.stderr)[-300:])
-    k = config("rk", "rk_v1", goal="tickets_summary", round="r2", sleep=1.0)
+    k = system("rk", "rk_v1", goal="tickets_summary", round="r2", sleep=1.0)
     log = proj / "killed.log"
     with open(log, "w") as fh:
         e = dict(env)
-        pk = subprocess.Popen([sys.executable, str(HERE / "cli.py"), "run", "--config", k], cwd=proj, env=e,
+        pk = subprocess.Popen([sys.executable, str(HERE / "cli.py"), "run", *k], cwd=proj, env=e,
                               stdout=fh, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, start_new_session=True)  # fmt: skip
     # Killed once two items are paid and written (its progress line says so, in either store).
     for _ in range(600):
@@ -251,8 +254,8 @@ try:
         "left, counting what running or stopped commands hold" in rv.stdout,
         rv.stdout[-600:],
     )
-    nk = config("rn", "rn_v1", goal="tickets_summary", round="r2")
-    r = evh("run", "--config", nk)
+    nk = system("rn", "rn_v1", goal="tickets_summary", round="r2")
+    r = evh("run", *nk)
     reserved = next((ln for ln in r.stdout.splitlines() if "of its budget reserved" in ln), "")
     left = float(reserved.split("$")[1].split()[0]) if "$" in reserved else None
     check(
@@ -269,7 +272,7 @@ try:
                                    "--hypothesis", "as a job", "--budget-usd", "0.1")  # fmt: skip
     r = r if r.returncode else evh("catalog")
     check("setup: round r3 ($0.10) and the catalog", r.returncode == 0, (r.stdout + r.stderr)[-300:])
-    config("rj", "rj_v1", goal="tickets_summary", round="r3", sleep=1.0)
+    system("rj", "rj_v1", goal="tickets_summary", round="r3", sleep=1.0)
     with socket.socket() as so:
         so.bind(("127.0.0.1", 0))
         port = so.getsockname()[1]
@@ -297,15 +300,39 @@ try:
             except urllib.error.HTTPError as exc:
                 return exc.code, json.loads(exc.read() or b"{}")
 
-        st, est = call("POST", "/api/v1/estimate", {"command": "run", "args": {"config": "rj_v1"}})
-        st2, none = call("POST", "/api/v1/estimate", {"command": "arm-smoke", "args": {"config": "rj_v1"}})
+        st, est = call(
+            "POST",
+            "/api/v1/estimate",
+            {
+                "command": "run",
+                "args": {
+                    "system": "rj_v1",
+                    "dataset": "tickets_v1",
+                    "goal": "tickets_summary",
+                    "round": "r3",
+                },
+            },
+        )
+        st2, none = call(
+            "POST",
+            "/api/v1/estimate",
+            {
+                "command": "arm-smoke",
+                "args": {
+                    "system": "rj_v1",
+                    "dataset": "tickets_v1",
+                    "goal": "tickets_summary",
+                    "round": "r3",
+                },
+            },
+        )
         check(
             "the estimate: run's --dry-run, what it would call and its cap; a command with no --dry-run is 404",
             st == 200 and est.get("exit") == 0 and "cap" in est.get("text", "") and st2 == 404
             and "no --dry-run" in none.get("error", ""),
             (st, str(est)[:300], st2, none),
         )  # fmt: skip
-        st, j = call("POST", "/api/v1/jobs", {"command": "run", "args": {"config": "rj_v1"}, "by": "person:ana",
+        st, j = call("POST", "/api/v1/jobs", {"command": "run", "args": {"system": "rj_v1", "dataset": "tickets_v1", "goal": "tickets_summary", "round": "r3"}, "by": "person:ana",
                                               "max_cost_usd": 0.05})  # fmt: skip
         ledger3 = proj / ".build" / "rounds" / "tickets_summary" / "r3.json"
         for _ in range(300):

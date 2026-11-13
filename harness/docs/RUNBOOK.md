@@ -25,9 +25,9 @@ What [Getting started](../../docs/GUIDE.md) walks: a dataset, its reference, run
 | materialize | `evh dataset-materialize --dataset-id …` |
 | a person's labels | `evh label-sheet --dataset-id … --out sheet.csv` · `evh label-import sheet.csv --dataset-id … --set … --by …` (or a folder of `<item_id>.txt`) |
 | a reference (labels you promote) | `evh reference-promote --dataset-id … --labels … --tier gold\|silver --reason "…" --by …` |
-| cost before spending | `evh run --config … --dry-run` |
-| measure (+ own noise) | `evh run --config … --repeat 3` |
-| many arms | `evh sweep --configs "data/configs/arm_*.yaml"` |
+| cost before spending | `evh run --system … --dataset … --dry-run` |
+| measure (+ own noise) | `evh run --system … --dataset … [--goal G] --repeat 3` |
+| many systems | `evh sweep --systems A B … --dataset …` |
 | list runs | `evh runs-list` |
 | rank, with the test | `evh leaderboard --dataset-id …` |
 | two runs | `evh run-compare --baseline … --candidate … --noise …` |
@@ -48,7 +48,7 @@ What [Getting started](../../docs/GUIDE.md) walks: a dataset, its reference, run
 | a new version | `evh dataset-create --dataset-id …_v2 --source-dir … --from …_v1` |
 | fields on an existing dataset | `evh dataset-create --dataset-id … --update-fields --fieldset … --fields …` |
 | validation and test | `evh dataset-split … --test 0.3 --seed 7 [--key F]` |
-| a sealed held-out side | `evh dataset-split … --split-by time --key F --at T --seal [--count-by F,…]` · `evh dataset-unseal …_test --config C --reason "…"` |
+| a sealed held-out side | `evh dataset-split … --split-by time --key F --at T --seal [--count-by F,…]` · `evh dataset-unseal …_test --system S --reason "…"` |
 | who read a held-out item; counts only | `evh exposure-add --dataset-id …_test --item ID --what "…"` · `evh exposure` · `evh exposure-check --dataset-id …_test` · `evh sealed-counts --dataset-id …_test` · `evh dataset-seal-counts --dataset-id …_test --add F --reason "…"` |
 | pick for the next version | `evh pick --dataset-id … --item … --for V` · `evh picks [--for V]` |
 | the next version of a dataset | `evh dataset-extend V1 --dataset-id V2 --picks` (or `--pick ITEM …`) |
@@ -61,7 +61,7 @@ What [Getting started](../../docs/GUIDE.md) walks: a dataset, its reference, run
 | the label sets | `evh labels [--dataset-id …]` |
 | how arms fail (failure modes) | `evh inspect --sheet --dataset-id … --runs A,B --csv tags.csv --fill tags --modes …` · `evh sheet-import tags.csv --dataset-id … --by … --tags … --modes …` · `evh tags [--dataset-id …]` |
 | gold a script builds, promoted | `evh reference-manifest --reference-id gold/… --source … --labelled-by … --reason "…" --by …` |
-| score against labels | `evh rescore --dataset-id … --labels …` · `evh run --config … --labels …` |
+| score against labels | `evh rescore --dataset-id … --labels …` · `evh run --system … --dataset … --labels …` |
 | re-score, $0 | `evh rescore --dataset-id … [--reference-id gold/…] --out …` |
 | re-measure with a judge (optional) | `evh judge-score --dataset-id … --scorer … [--dry-run]` |
 | read the judged runs | `EVAL_RUNS_DIR=data/runs-judged/<scorer> evh leaderboard --dataset-id …` |
@@ -105,10 +105,10 @@ What [Getting started](../../docs/GUIDE.md) walks: a dataset, its reference, run
 | an outcome from another system; relabels that only add | `evh label-from-capture … --outcomes C2 --join F=F --within -1m,+15m` · `… --set s2 --from-set s1` · `evh label-coverage … --from-set s1` |
 | the labeller tested; labels where production is reproduced | `evh label-mutants --dataset-id … --capture c1 --map rules.yaml` · `evh label-from-capture … --reproduced-by REPLAY_RUN --production RUN` |
 | production's own decisions as an arm | `evh arm-from-capture --dataset-id … --capture c1 --as production_v1 [--like CONFIG]` ([§15b](#15b-evaluating-what-production-did)) |
-| what production must match | `evh deploy-sheet --config ARM [--capture C]` |
-| replay the code that ran, item by item | `evh run --config REPLAY` (a config with `replay:` and `model_record:` a `kind: code` record) · `evh models --model …` ([§15c](#15c-replaying-the-code-that-ran)) |
-| is the replay faithful to production | `evh faithfulness --config REPLAY --production RUN` · `evh faithfulness-show --model …` · `evh faithfulness-name --model … --item … --cause "…"` |
-| a past period at its own code, beside a candidate | `evh periods --model …` · `evh period-compare --config REPLAY --candidate C --production P --period N` |
+| what production must match | `evh deploy-sheet --system S [--capture C]` |
+| replay the code that ran, item by item | `evh run --system REPLAY --dataset …` (a system with `replay:` and `model_record:` a `kind: code` record) · `evh models --model …` ([§15c](#15c-replaying-the-code-that-ran)) |
+| is the replay faithful to production | `evh faithfulness --system REPLAY --dataset … --production RUN` · `evh faithfulness-show --model …` · `evh faithfulness-name --model … --item … --cause "…"` |
+| a past period at its own code, beside a candidate | `evh periods --model …` · `evh period-compare --system REPLAY --dataset … --candidate C --production P --period N` |
 
 ### Agents and jobs
 
@@ -330,12 +330,12 @@ def call_system(text, params):
                   tokens_out=out.usage.completion_tokens)
 ```
 
-Then describe each arm in `data/configs/<name>.yaml` — the knobs belong in the
-config, not in code, so an arm is reproducible and diffable:
+Then describe each system in `data/systems/<system_id>.yaml` — the knobs belong in the
+system, not in code, so it is reproducible and diffable. A system names no dataset: a run puts it
+on one (`evh run --system my_system_v1 --dataset my_v1`), and the same system runs on any:
 
 ```yaml
-config_id: my_config_v1
-dataset_id: my_v1
+system_id: my_system_v1
 params:
   provider: anthropic
   model: claude-sonnet-4-6
@@ -350,12 +350,12 @@ Which variable each reads: [tutorial 2](../../docs/tutorials/2-hosted-llm.md#1-c
 Full detail in [INTEGRATION.md](INTEGRATION.md).
 
 **A hypothesis, written before the run (optional).** A paired test is valid uncorrected only for a
-comparison named before the results were read. When an arm is a change you expect to matter, write the
-prediction into its config, beside the change, and commit it before `evh run`:
+comparison named before the results were read. When a system is a change you expect to matter, write the
+prediction into it, beside the change, and commit it before `evh run`:
 
 ```yaml
 hypothesis:
-  against: my_config_v1          # the config_id it is compared with (must exist)
+  against: my_system_v1          # the system it is compared with (must exist)
   measure: false_alarm           # one of the arm's metrics
   direction: better              # better | worse | no-worse (not significantly worse)
   statement: "the shorter prompt lowers false alarms"
@@ -363,7 +363,7 @@ hypothesis:
 ```
 
 `evh validate` (V20) and `evh run` refuse a block with a missing key, an unknown direction, an `against`
-that is no config of the project or a `measure` that is none of the arm's metrics, in words, before
+that is no system of the project or a `measure` that is none of the system's metrics, in words, before
 anything is spent. The run copies the block into `metrics.json` (`hypothesis`) with
 `hypothesis_in_advance`: `named: true` when the commit that last changed the block is an ancestor of the
 run's build commit and was made before the run started, `false` when it is in no such commit, `null` (not
@@ -371,27 +371,27 @@ determinable) outside git, for a build that is not a git commit (`EVAL_BUILD_REF
 It is not part of the fingerprint: a hypothesis does not change what was measured. `evh pair-test --a A
 --b B` prints it when A's run carries a hypothesis against B on the tested metric: `named in advance: yes
 (committed <sha> before the run)`, `no` or `not determinable`, and whether the result agrees with the
-stated direction (`yes`, `no`, `not shown`); a hypothesis found in A's config that its run does not carry
+stated direction (`yes`, `no`, `not shown`); a hypothesis found in A's system that its run does not carry
 reads `no` (added after the run). `evh goals --goal G` shows it in a `hypothesis` column beside the arm.
 [ADR-0025](../../docs/adr/ADR-0025-a-hypothesis-lives-in-the-arm-config.md).
 
-**A regression guard (optional).** An arm that must give exactly what another gives (the same code at a newer
-commit, a refactor, a dependency bump) says so in its config:
+**A regression guard (optional).** A system that must give exactly what another gives (the same code at a newer
+commit, a refactor, a dependency bump) says so:
 
 ```yaml
-expect_identical_to: my_config_v1   # its runs must reproduce that config's, item for item, output for output
+expect_identical_to: my_system_v1   # its runs must reproduce that system's, item for item, output for output
 ```
 
-`evh validate` (V5) otherwise reads two configs with identical outputs as a result that was not measured or a knob
+`evh validate` (V5) otherwise reads two systems with identical outputs as a result that was not measured or a knob
 with no effect; with the declaration it reads them as the agreement asked for, and fails the guard instead when its
-per-item results or its outputs differ from the latest run of the config it names on the same dataset ("must
-reproduce my_config_v1: its outputs differ from …"). The run records the key in `metrics.json`; it is not part of
-the fingerprint. A run made before its config said so (runs are frozen) is held to the config's declaration as it
-stands. The declarations are read from `data/configs/` and from the folders the project's `config.yaml` names under
-`configs:` (for configs kept elsewhere in the project, as `evh run --config` takes any path):
+per-item results or its outputs differ from the latest run of the system it names on the same dataset ("must
+reproduce my_system_v1: its outputs differ from …"). The run records the key in `metrics.json`; it is not part of
+the fingerprint. A run made before its system said so (runs are frozen) is held to the system's declaration as it
+stands. The declarations are read from every system of the project: `data/systems/` and the folders validate.json's
+`systems` globs name (for systems kept elsewhere in the project):
 
-```yaml
-configs: [projects/signal-fleet-dedup/configs]
+```json
+{"systems": ["projects/signal-fleet-dedup/systems/*.yaml"]}
 ```
 
 **What a run records as its cost.** Each call's `cost_usd` is the provider's bill when the
@@ -426,12 +426,12 @@ follow an item by its bytes into any dataset holding it. A **reference** is labe
 with a reason, at the tier you choose: no rule ties the tier to the source, and the reference records
 both ([ADR-0022](../../docs/adr/ADR-0022-references-are-promoted-labels.md)).
 
-Most projects have none. Run the best model you have as an arm (an expensive one you would
+Most projects have none. Run the best model you have as a system (an expensive one you would
 not run in production is the usual choice), read its results, take its outputs as a model's labels,
 and promote them:
 
 ```bash
-evh run --config data/configs/best_model.yaml
+evh run --system best_model_v1 --dataset my_v1
 evh label-from-run --run <that run_id> --set best_v1
 evh reference-promote --dataset-id my_v1 --labels best_v1 --tier silver \
     --reason "The best system we have ranks the rest until a person writes gold." --by <you>
@@ -439,9 +439,9 @@ evh reference-promote --dataset-id my_v1 --labels best_v1 --tier silver \
 
 Promoted as **silver**: a model's answers, consistent rather than correct, enough to rank
 arms against each other; not a claim about truth. `label-from-run` calls nothing, and the set names
-the run, config, fingerprint and build it came from. It refuses a run from a dirty tree or of an
+the run, system, fingerprint and build it came from. It refuses a run from a dirty tree or of an
 unknown build (as `run-promote` does), an unfinished or derived run, and an empty output or one that
-stopped at `max_tokens` (raise `max_tokens` in a new config_id; `--allow-cut-off` for outputs that end
+stopped at `max_tokens` (raise `max_tokens` in a new system_id; `--allow-cut-off` for outputs that end
 at the cap by design). The reference records which set it was promoted from, by whom, when and why.
 Commit both before the next run: an uncommitted reference makes every later run dirty.
 
@@ -576,7 +576,7 @@ after that date name a goal (V14). Without it, goals are optional.
 ## 5. Measure the arm's own noise — **before** you compare anything
 
 ```bash
-evh run --config data/configs/my_config.yaml --repeat 3
+evh run --system my_system_v1 --dataset my_v1 --repeat 3
 ```
 
 Output ends with:
@@ -614,8 +614,8 @@ spent $0.001063 (price table x tokens, or the provider's bill where it sends one
 ## 6. Run the arms you want to compare
 
 ```bash
-evh run --config data/configs/arm_a.yaml
-evh run --config data/configs/arm_b.yaml
+evh run --system arm_a_v1 --dataset smoke_v1
+evh run --system arm_b_v1 --dataset smoke_v1
 evh runs-list
 ```
 
@@ -743,8 +743,8 @@ is the one kind of data `data-rm` deletes, whole:
 ```bash
 evh data-ls [PATH] [--find TEXT]          # the overview, a folder, or every file whose path holds TEXT
 evh data-show goals/x.yaml                # one file: its text, size, sha256, and who writes it
-evh data-show configs/x.yaml --fields     # a setting's fields, one dotted key a line
-evh data-put configs/x.yaml --set params.sentences=2 --unset goal   # the form's Save, a field at a time
+evh data-show systems/x_v1.yaml --fields  # a setting's fields, one dotted key a line
+evh data-put systems/x_v1.yaml --set params.sentences=2 --unset params.noise   # the form's Save, a field at a time
 evh data-put goals/x.yaml x.yaml --check  # a whole file: the check alone
 evh data-put goals/x.yaml x.yaml [--new]  # a whole file saved (- reads stdin); --new refuses a name taken
 evh data-rm runs/<run> --dry-run          # what would go; without --dry-run, a setting or a whole run
@@ -773,11 +773,11 @@ the arms page and in `evh arms` that the goals read its re-score. A round record
 `evh rounds` shows it with each scoring change. A goal whose first round was run as plain runs gets one with
 `evh round-open --goal G --dataset D --adopt`.
 
-**The dry run and the run's output.** `evh run --config C --dry-run` calls nothing. Its `ESTIMATE` counts one
+**The dry run and the run's output.** `evh run --system S --dataset D --dry-run` calls nothing. Its `ESTIMATE` counts one
 call per item (or the adapter's declared `CALLS_PER_ITEM`), each the prompt in and `max_tokens` out; it is
 **not** an upper bound, because an adapter that makes several calls per item, or a conversation that grows
 (each probe turn re-sends it), costs more. Beside it, `MEASURED` shows what the last `evh arm-smoke` of this
-config recorded in its model record (the cost per item, projected over the items and repeats, and when it was
+system recorded in its model record (the cost per item, projected over the items and repeats, and when it was
 measured); with none it says so and names the command. Set `EVAL_MAX_COST_USD` from `MEASURED`, not from the
 estimate. While a run goes it prints one line per finished item,
 `[3/65] <item_id> <ok | error | empty | resumed | the primary metric's value> 4.2s`, with the running cost
@@ -818,7 +818,7 @@ retries, or a server that cannot be reached, exit `75` (resume later); and more 
 20% of the items called, which is the adapter or the configuration, not the items (`ERROR (failed)`).
 
 ```bash
-evh run --config data/configs/arm_a.yaml --resume arm_a_v1_20260929T101500Z
+evh run --system arm_a_v1 --dataset smoke_v1 --resume arm_a_v1_20260929T101500Z
 ```
 
 The run id is the directory under `data/runs/`. It is the config id and the start time to the second; a run never writes into an existing run's directory, so a second run started in the same second takes the next second's id, and a `--run-id` that exists is refused. A run that stops, whatever the cause, prints
@@ -842,8 +842,8 @@ Three things worth knowing:
   own and reads its source's (RFC-024). With the sqlite store the same outputs and rows are rows of
   `data/project.sqlite`, each committed as it is produced (RFC-025).
 - **You cannot resume from a different arm, or from one that cannot be identified.**
-  The source's `config_id` and `dataset_id` are checked against the config you are
-  launching and a mismatch is refused. Identity comes from `run.json`, written **before
+  The source's system (`config_id`) and `dataset_id` are checked against the system and
+  dataset you are launching and a mismatch is refused. Identity comes from `run.json`, written **before
   the first item** precisely so a crashed run can still answer the question
   (`metrics.json`, which a crashed run does not have, could not).
 
@@ -1052,9 +1052,8 @@ What it holds *your* project to is yours to declare, in `data/validate.json` (al
 git-tracked `data/runs*` directory is checked too, so one re-allowed in `.gitignore` is never
 skipped. `floors` makes deleting cited runs fail. `scorer_sources` lets V10 check that derived
 runs carry the current scorer's hash (`module` is a path from the project root). `duplicate_ok`
-names the (dataset, config) pairs allowed to repeat. `configs` adds globs (from the project root)
-of arm configs kept outside `data/configs`, so V18's notes on the arms that name a model record
-see them.
+names the (dataset, system) pairs allowed to repeat. `systems` adds globs (from the project root)
+of systems kept outside `data/systems`, so every check of systems (V1's schema, V5, V18, V20) sees them.
 
 The duplicate-score check catches a specific and nasty failure: two
 independent arms do not agree to full float precision. When they do, one of them
@@ -1282,8 +1281,8 @@ scorer's. The worked example is
 a judge's JSON reply into tau against the experts, and `judge-summ-v1` cites two of its runs. An arm with
 `mode: pick` in its params picks the best of an article's 16 summaries (`prompt_pick.txt`), scored `top1` beside
 `top1_chance`; one with `mode: pairwise` judges seeded pairs (`prompt_pairwise.txt`), scored `pair_agreement` (with
-`n_pairs`); the `random` arm in each mode is the floor `min_metric` names (`configs/arm_*_pick_n100.yaml`,
-`arm_*_pairwise_n100.yaml`). The adapter's `primary_metric(params)` makes each arm's primary its mode's metric
+`n_pairs`); the `random` arm in each mode is the floor `min_metric` names (`systems/se_*_n100_pick_v1.yaml`,
+`se_*_n100_pairwise_v1.yaml`). The adapter's `primary_metric(params)` makes each arm's primary its mode's metric
 ([INTEGRATION](INTEGRATION.md)); `judge-summ-pick-v1` and `judge-summ-pairwise-v1` cite those runs.
 
 **Validate on outputs like the ones you will judge.** In this repository, judges validated
@@ -1501,7 +1500,7 @@ commands, made from their own argument parsers. Every call needs the token the s
 `.build/api-token` (readable by you only): `Authorization: Bearer <token>`, or the cookie `GET
 /api/v1/session?token=<token>` sets; another Host or a foreign Origin is refused, and a call that is not a read needs
 `X-EVH-Data: 1`. `GET /api/v1/commands` lists what it serves: each command as a `read` or a `job`, whether it spends,
-and its arguments with a kind (a value; a `name` that must exist, a config id for `--config`; an `upload`; an
+and its arguments with a kind (a value, a system id checked to exist; an `upload`; an
 `artifact` a job writes); what loads code or names a path of the server's (`--adapter`, `--runs-dir`, output folders)
 is never taken. `POST /api/v1/read/<command>` with `{"args": {...}}` answers exactly what the command answers with
 `--json`. A server started `--public` or `--behind-proxy` answers no `/api/v1/` call: the API is this machine's only.
@@ -1514,10 +1513,10 @@ server restarts, in `.build/jobs/<id>/` (its record, its state, its `log`, its e
 /api/v1/jobs/<id>/files/<name>`. `GET /api/v1/jobs` (`?state=`), `GET /api/v1/jobs/<id>`, `GET
 /api/v1/jobs/<id>/log?from=<byte>`; `POST /api/v1/jobs/<id>/stop` (SIGTERM to its process group, SIGKILL after 10 s:
 `cancelled`) and `.../resume` (a stopped run, continued with `run --resume`; a run job is given its run id up front,
-`<config_id>_<job id>`). The cap is the job's, not each attempt's: the new job is given what the stopped one left of
+`<system_id>_<job id>`). The cap is the job's, not each attempt's: the new job is given what the stopped one left of
 its `max_cost_usd` (the job keeps what it spent as it goes, in `spent.json` in its folder; a call in flight when it
 was killed was never reported and is not counted), and a job that spent it all is not resumed. Two jobs that write the same thing never run at once: each takes a lock per thing it writes
-(a config, a dataset, a goal's baselines, the captures, the catalog; the whole project for a migration), and one
+(a system, a dataset, a goal's baselines, the captures, the catalog; the whole project for a migration), and one
 whose lock is held waits, `queued`, saying which job holds it. The command holds its locks itself, so they outlive
 the supervisor: a job whose supervisor died reads `running (unsupervised)` while its command lives, `lost` after.
 The terminal has the same jobs, no server needed: `evh jobs-start COMMAND --arg NAME=VALUE ...` (names as `GET
@@ -1616,7 +1615,7 @@ opening line as the description); `--card URL` adds the image a shared link show
 for one item) for the inspector, `evh labels` and `evh captures` for the Labels and Captures pages,
 `evh inspect --sheet --dataset-id … --runs …` for a dataset's sheet (the inspector's per-item scores too),
 `evh inspect --runs … --crosstab M1,M2` and `--items-out` for the two per-item reads above,
-`evh picks` for the picks waiting and `evh deploy-sheet --config …` for a goal's deploy sheet.
+`evh picks` for the picks waiting and `evh deploy-sheet --system …` for a goal's deploy sheet.
 
 ---
 
@@ -1725,12 +1724,12 @@ evh dataset-split prod_v1 --test 0.3 --seed 7 --key fingerprint     # prod_v1_va
 - **A held-out side, sealed.** `evh dataset-split prod_v1 --split-by time --key opened --at 2026-11-07T00:00:00Z
   --seal` puts every item at or after the boundary on the test side and seals it: no run, label, label sheet,
   reference, rescore or judging is written onto it, refused before anything is called. Tune on the validation
-  side; when one candidate is ready, write its config for the test side with a hypothesis (`against`, `measure`,
-  `direction`, `statement`, ADR-0025), commit it, and `evh dataset-unseal prod_v1_test --config cand_test_v1
-  --reason "..."`: the side opens to that config and the one its hypothesis is against, and the look is recorded
-  (when, why, the hypothesis, the commit). Every other config is still refused; each unseal is one more look.
+  side; when one candidate is ready, give its system a hypothesis (`against`, `measure`, `direction`, `statement`,
+  ADR-0025), commit it, and `evh dataset-unseal prod_v1_test --system cand_v1 --reason "..."`: the side opens to
+  that system and the one its hypothesis is against, and the look is recorded (when, why, the hypothesis, the
+  commit). Every other system is still refused; each unseal is one more look.
   `validate` (V22) fails when the validation side's items changed after the seal, or a run on the sealed side has
-  no unseal behind it. In the project's database the configs are not in git: there the unseal itself, timestamped
+  no unseal behind it. In the project's database the systems are not in git: there the unseal itself, timestamped
   before any run it allows, is the naming in advance, and the look records the commit as not determinable.
 - **A read of a held-out item is recorded, and the item counts in no score after it**
   ([RFC-031](../../docs/rfc/RFC-031-held-out-discipline-and-outcome-labels.md) H1). A seal refuses runs and labels;
@@ -1760,8 +1759,8 @@ fleet in `examples/triage-fleet/`):
 
 ```bash
 evh arm-from-capture --dataset-id prod_v1 --capture prod_2026_11 --as production_v1 \
-    --like data/configs/deployed.yaml                                  # production's decisions, as an arm
-evh run --config data/configs/deployed.yaml                 # the deployed config, replayed
+    --like deployed_v1                                                 # production's decisions, as a system
+evh run --system deployed_v1 --dataset prod_v1              # the deployed system, run again
 evh label-sheet --dataset-id prod_v1 --items disagree --runs production_v1,deployed_v1 --out sheet.csv
 evh label-import sheet.csv --dataset-id prod_v1 --set owner_2026_11 --by <you>
 evh rescore --dataset-id prod_v1 --labels owner_2026_11                # every arm, against your labels
@@ -1769,7 +1768,7 @@ evh inspect --sheet --dataset-id prod_v1 --runs production_v1,deployed_v1 \
     --wrong-against owner_2026_11 --new-vs governed_v1                  # where production was wrong on something new
 evh pick --dataset-id prod_v1 --item … --for governed_v1 --tag case=…  # worth keeping
 evh dataset-extend governed_v1 --dataset-id governed_v2 --picks        # the next version, from the picks
-evh deploy-sheet --config deployed_v1 --capture prod_2026_11           # did production run what you promoted?
+evh deploy-sheet --system deployed_v1 --capture prod_2026_11           # did production run what you promoted?
 ```
 
 - **Production's recorded arm** (`provider: recorded`): each output is the capture's record of the same
@@ -1858,7 +1857,7 @@ each item at the commit that ran it, and scores the replay only once it is shown
   `--repeat` above 1. It sets `EVH_REPLAY=1`, so a system can refuse real calls under it. Its fingerprint's
   `deployment.code` names the record, the deployments' hash and each commit with its item count.
 - **A candidate**: `replay: {…, commit: <sha>}` runs every item at that commit; the arm a change is measured as.
-- **Faithfulness**: `evh faithfulness --config REPLAY --production RUN` replays every item at the recorded commits and
+- **Faithfulness**: `evh faithfulness --system REPLAY --dataset D --production RUN` replays every item at the recorded commits and
   compares each with production's arm (a recorded arm, §15b) by the adapter's `same(a, b)`. It writes
   `data/faithfulness/<id>/<n>.json` once: the counts, each disagreement with both sides, and the coverage (per
   commit, the functions of the system the replay entered and those it never did: a rule no item reaches is named).
@@ -1870,7 +1869,7 @@ each item at the commit that ran it, and scores the replay only once it is shown
   `evh faithfulness-name --model ID --item I --cause "…"` (a person's decision, kept beside the record). Otherwise a
   person may pass `--unfaithful`: the run, its re-scores and baselines say "unfaithful replay" and who chose it, and
   the catalog marks the arm. An agent is refused both.
-- **Not covered by the gate**: the config's `params` (a system's own setting a candidate may vary) and any data the
+- **Not covered by the gate**: the system's `params` (a system's own setting a candidate may vary) and any data the
   adapter reads that is not one of its `support` files (a frozen world under the project): change those and run
   `evh faithfulness` again yourself. A system with compiled extensions cannot switch versions in one process and is
   refused.
@@ -1890,9 +1889,9 @@ each item at the commit that ran it, and scores the replay only once it is shown
   every score on it say "history confound: N of M". `examples/replay-filing/` shows both (`filing_replay_hidden_v1`,
   `filing_candidate_v3_hidden`).
 - **A past period at its own code** (RFC-031 P2). A window over several deployments mixes a fix's before and after.
-  `evh periods --model ID [--config REPLAY]` numbers the code record's deployed periods (each with how it was dated:
+  `evh periods --model ID [--system REPLAY --dataset D]` numbers the code record's deployed periods (each with how it was dated:
   `dated_by: pull`, or `commit` when the host no longer records the pull, approximate) and counts the items in each;
-  `evh period-compare --config REPLAY --candidate C [--production P] --period N` (or `--from T --to T`) reads the
+  `evh period-compare --system REPLAY --dataset D --candidate C [--production P] --period N` (or `--from T --to T`) reads the
   latest run of each on the period's items: what production recorded, the code that ran then (it must agree with
   production on those items, or the report says it does not count) and the candidate, with the paired test between
   the last two. Nothing is called: run them first.
@@ -1909,7 +1908,7 @@ defaults as much as the models. Settle them before the full run, on purpose, and
 evh model-new gemma4-12b --set kind=llm --set aliases.0=gemma4:12b   # the model's own facts
 evh deployment-new gemma4-12b mac --set where=mac --set tag=gemma4:12b # one per place it runs
 evh model-onboard gemma4-12b --deployment mac   # once per deployment: build, reasoning, JSON, determinism
-evh arm-smoke --config configs/my_arm.yaml       # once per arm, on its own task, before its full run
+evh arm-smoke --system my_system_v1 --dataset my_v1   # once per system, on its own task, before its full run
 evh models                                       # what is onboarded, vetted (an arm smoke passed), where it runs
 ```
 
@@ -1918,10 +1917,10 @@ evh models                                       # what is onboarded, vetted (an
    model runs (`mac`, `dgx`, `x3`, a hosted route with its `provider_routing`). One tag name can name different builds on different
    machines (an MLX build on a Mac, an older pull on another host): compare digests across every deployment
    that will run the arm, and against the registry, before the first run. `evh model-onboard <model>
-   --deployment dgx` probes one deployment and writes its onboarding. An arm names the record and the
+   --deployment dgx` probes one deployment and writes its onboarding. A system names the record and the
    deployment (`model_record: gem`, `deployment: dgx`); its run's fingerprint then takes the weights, server
    and hardware from that entry (`source: record`), and `metrics.json` records `deployment_id`.
-2. **Smoke a few items.** `evh arm-smoke --config <arm>` runs three with the arm's own settings and writes
+2. **Smoke a few items.** `evh arm-smoke --system <id> --dataset <id>` runs three with the system's own settings and writes
    no run: each item's time and output, whether the scorer can read it, a projection of the full run, and
    whether the same item twice gives the same output. For an LLM arm it measures every model call: tokens
    out, whether it reasoned, whether an answer came back, why it ended. An adapter that makes several calls
@@ -1967,7 +1966,7 @@ A project's data has a format: one number, `format` in `data/project.yaml` (RFC-
 release reads one format. `evh migrate --check` compares the two:
 
 ```sh
-evh migrate --check      # data format 2; this release reads 2 (exit 0), or ERROR (old-format) / ERROR (mismatch)
+evh migrate --check      # data format 3; this release reads 3 (exit 0), or ERROR (old-format) / ERROR (mismatch)
 evh migrate --dry-run    # what each step would change; nothing written
 evh migrate              # the steps the data needs, each recorded as it lands
 ```
@@ -2079,9 +2078,9 @@ git SHA, which is right only if the project *is* the system under test.
 Declare it instead. No code edit:
 
 ```bash
-EVAL_BUILD_REF=v2.3.1                evh run --config ...
-EVAL_BUILD_REF=sha256:ab12…          evh run --config ...   # image digest
-EVAL_BUILD_REF=$(git -C ../my-system rev-parse HEAD)   evh run --config ...  # the system's repo
+EVAL_BUILD_REF=v2.3.1                evh run --system ... --dataset ...
+EVAL_BUILD_REF=sha256:ab12…          evh run --system ... --dataset ...   # image digest
+EVAL_BUILD_REF=$(git -C ../my-system rev-parse HEAD)   evh run --system ... --dataset ...  # the system's repo
 ```
 
 **Pin it.** An eval against a moving target measures the target's movement, and

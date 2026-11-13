@@ -59,12 +59,12 @@ def deployments(data_dir: Path, model_id: str) -> list[dict[str, Any]]:
     return sorted(found, key=lambda d: (d.get("order", len(found)), str(d.get("deployment_id"))))
 
 
-def latest(checks: list[dict[str, Any]], kind: str, config: str | None = None) -> dict[str, Any] | None:
-    """The last check of a kind (of one arm, for a smoke), without its kind and config."""
-    hit = [c for c in checks or [] if c.get("kind") == kind and (config is None or c.get("config") == config)]
+def latest(checks: list[dict[str, Any]], kind: str, system: str | None = None) -> dict[str, Any] | None:
+    """The last check of a kind (of one system, for a smoke), without its kind, system and dataset."""
+    hit = [c for c in checks or [] if c.get("kind") == kind and (system is None or c.get("system") == system)]
     if not hit:
         return None
-    return {k: v for k, v in hit[-1].items() if k not in ("kind", "config")}
+    return {k: v for k, v in hit[-1].items() if k not in ("kind", "system", "dataset")}
 
 
 def joined(rec: dict[str, Any], deps: list[dict[str, Any]]) -> dict[str, Any]:
@@ -77,7 +77,7 @@ def joined(rec: dict[str, Any], deps: list[dict[str, Any]]) -> dict[str, Any]:
         if (on := latest(d.get("checks") or [], "onboarding")) is not None:
             v["onboarding"] = on
         view.append(v)
-        for cid in dict.fromkeys(c.get("config") for c in d.get("checks") or [] if c.get("kind") == "smoke"):
+        for cid in dict.fromkeys(c.get("system") for c in d.get("checks") or [] if c.get("kind") == "smoke"):
             smokes[cid] = latest(d["checks"], "smoke", cid)
     if view:
         out["deployments"] = view

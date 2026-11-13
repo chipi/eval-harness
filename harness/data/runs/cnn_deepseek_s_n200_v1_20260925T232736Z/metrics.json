@@ -10,12 +10,12 @@
     "ref": "eval-harness-scenario",
     "source": "EVAL_BUILD_REF"
   },
-  "config_id": "cnn_deepseek_s_n200_v1",
+  "config_id": "cnn_deepseek_s_v2",
   "created_at": "2026-09-25T23:36:50Z",
   "dataset_id": "cnn_dailymail_200",
   "fingerprint": {
     "arm": {
-      "config_id": "cnn_deepseek_s_n200_v1",
+      "config_id": "cnn_deepseek_s_v2",
       "labels": {
         "family": "deepseek",
         "price_tier": "small",

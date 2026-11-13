@@ -100,7 +100,7 @@ joining production's writes to its decisions, and mutants are example code (R3 t
   project's freezer writes (the fleet's actions are derived by joining GitHub writes to decisions by time window: R4).
   Writes production made that no item accounts for (the fleet's "stray" comments) are the freezer's to report: the
   example's join returns them.
-- `evh faithfulness --config <replay config> --production <arm>` runs the replay at the **recorded** versions over
+- `evh faithfulness --system <replay> --dataset <id> --production <arm>` runs the replay at the **recorded** versions over
   **every** item of the dataset (no subset) and compares each with production's arm by the adapter's `same(a, b)`
   (RFC-023; text equality when it has none). It records `data/faithfulness/<id>/<n>.json`, written once: the
   items digest, the record's versions hash, every commit and its count, the adapter-and-support hash, the counts
@@ -139,7 +139,7 @@ joining production's writes to its decisions, and mutants are example code (R3 t
 
 | command | what | served |
 | --- | --- | --- |
-| `evh faithfulness --config C --production ARM [--dry-run]` | replay at the recorded versions, compare, record | job, spends |
+| `evh faithfulness --system S --dataset D --production ARM [--dry-run]` | replay at the recorded versions, compare, record | job, spends |
 | `evh faithfulness-name --model ID --item ITEM --cause "..."` | name a disagreement's outside cause | job, a decision |
 | `evh faithfulness-show --model ID [--n N]` | a recorded result | read |
 | `evh models --model ID` | the code record: its versions, when each ran, its latest faithfulness | read |

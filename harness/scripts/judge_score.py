@@ -576,6 +576,19 @@ def read_outputs(arm: dict[str, Any], item_ids: Sequence[str]) -> dict[str, str]
     return out
 
 
+def as_judged(dataset_id: str, arms: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """The arms under the ids a stored judging set of exactly these runs gave them, when there is one (owner,
+    2026-11-13: a judging set is frozen evidence and keeps the ids it was judged under, RFC-032 step 3). Its arm order
+    and its blocks are made of those ids, so the set rebuilt from them is the stored one and its verdicts are found;
+    a judged run still takes its run's own id (its metrics are its source run's)."""
+    runs = {a["run"] for a in arms}
+    for f in sorted(_store.glob(SETS, f"{dataset_id}-*.json")) if _store.is_dir(SETS) else []:
+        by_run = {x.get("run"): x.get("config_id") for x in read_json(f).get("arms") or []}
+        if set(by_run) == runs and any(by_run[a["run"]] != a["config_id"] for a in arms):
+            return sorted(({**a, "config_id": by_run[a["run"]]} for a in arms), key=lambda a: a["config_id"])
+    return arms
+
+
 def build_manifest(
     sc: dict[str, Any],
     dataset_id: str,
@@ -1697,6 +1710,7 @@ def main() -> int:
                 "judged as two arms. Narrow it with --match _v2 (or the scorer's arms_match) if that "
                 "is not what you mean."
             )
+        arms = as_judged(args.dataset_id, arms)
         outputs = {a["config_id"]: read_outputs(a, item_ids) for a in arms}
         base = prompt_text(sc)
         items_sha = (

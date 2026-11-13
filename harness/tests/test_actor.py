@@ -26,6 +26,7 @@ from evaluation_harness._check import check, summary  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
 import _runstore  # noqa: E402
+from evaluation_harness import _format  # noqa: E402
 
 
 def with_env(**kw):
@@ -94,7 +95,8 @@ def out(r):
 
 
 try:
-    (proj / "data" / "configs").mkdir(parents=True)
+    (proj / "data" / "systems").mkdir(parents=True)
+    _runstore.write_text(proj, _format.NAME, f"format: {_format.FORMAT}\n")
     shutil.copytree(KIT / "tickets", proj / "tickets")
     r = evh("dataset-create", "--dataset-id", "tk_v1", "--source-dir", "tickets", EVH_ACTOR="person:ana")
     r = r if r.returncode else evh("dataset-materialize", "--dataset-id", "tk_v1")
@@ -130,10 +132,12 @@ try:
     )
     _runstore.write_text(
         proj,
-        "configs/lead1.yaml",
-        "config_id: lead1_v1\ndataset_id: tk_v1\nparams:\n  provider: echo\n  sentences: 1\n",
+        "systems/lead1_v1.yaml",
+        "system_id: lead1_v1\nparams:\n  provider: echo\n  sentences: 1\n",
     )
-    r = evh("run", "--config", "data/configs/lead1.yaml", EVH_ACTOR="agent:fleet", EVH_FOR="person:ana")
+    r = evh(
+        "run", "--system", "lead1_v1", "--dataset", "tk_v1", EVH_ACTOR="agent:fleet", EVH_FOR="person:ana"
+    )
     run = next((n for n in _runstore.listdir(proj, "runs") if n.startswith("lead1_v1_")), None)
     m = _runstore.read_json(proj, f"runs/{run}/metrics.json") if run else {}
     check(

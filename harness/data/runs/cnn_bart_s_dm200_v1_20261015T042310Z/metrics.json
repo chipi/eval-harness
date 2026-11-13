@@ -10,12 +10,12 @@
     "ref": "8165bd946c10c0bcbcaeb7d55a3ee5d36b25f31d",
     "source": "git"
   },
-  "config_id": "cnn_bart_s_dm200_v1",
+  "config_id": "cnn_bart_s_v1",
   "created_at": "2026-10-15T04:37:41Z",
   "dataset_id": "cnn_dailymail_dm200",
   "fingerprint": {
     "arm": {
-      "config_id": "cnn_bart_s_dm200_v1",
+      "config_id": "cnn_bart_s_v1",
       "labels": {
         "family": "bart",
         "price_tier": "free"

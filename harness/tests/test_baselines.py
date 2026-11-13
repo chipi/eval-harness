@@ -22,6 +22,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parents[1] / "scripts"
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 KIT = HERE.parent / "tutorial"
+from evaluation_harness import _format  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
@@ -58,7 +59,8 @@ def run_of(cid):
 
 
 try:
-    (proj / "data" / "configs").mkdir(parents=True)
+    (proj / "data" / "systems").mkdir(parents=True)
+    _runstore.write_text(proj, _format.NAME, f"format: {_format.FORMAT}\n")
     (proj / "data" / "goals").mkdir()
     shutil.copytree(KIT / "tickets", proj / "tickets")
     goal = (KIT / "goals" / "tickets_summary.yaml").read_text().replace("tickets_v1", "tk_v1")
@@ -83,11 +85,10 @@ try:
     for cid, n, g in (("one_v1", 1, "g_one"), ("two_v1", 2, "g_one"), ("free_v1", 3, None)):
         _runstore.write_text(
             proj,
-            f"configs/{cid}.yaml",
-            f"config_id: {cid}\ndataset_id: tk_v1\nparams:\n  provider: echo\n  sentences: {n}\n"
-            + (f"goal: {g}\n" if g else ""),
+            f"systems/{cid}.yaml",
+            f"system_id: {cid}\nparams:\n  provider: echo\n  sentences: {n}\n",
         )
-        r = evh("run", "--config", f"data/configs/{cid}.yaml")
+        r = evh("run", "--system", cid, "--dataset", "tk_v1", *(["--goal", g] if g else []))
         check(f"setup: {cid} runs", r.returncode == 0, out(r)[-300:])
 
     r = evh("run-promote", "--run", run_of("one_v1"), "--reason", "the first arm, to start the line")

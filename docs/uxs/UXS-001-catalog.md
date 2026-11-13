@@ -671,7 +671,7 @@ tile opens it grouped by config (`arms.html?group=config`).
   must match (the model and its build, server and its settings, every setting the arm sends, the prompt and its
   hash, the adapter and its version, the dataset and reference it was promoted on), and, for each capture whose
   records say what production ran, "matches" or what differs on how many records. Command:
-  `evh deploy-sheet --config <id> [--capture C]`.
+  `evh deploy-sheet --system <id> [--capture C]`.
 - Command: `evh arms --arm <arm id or config id>`; `evh arms [--dataset-id <id>]` lists them.
 
 ## The models page

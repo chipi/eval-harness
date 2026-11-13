@@ -17,10 +17,10 @@ from typing import Any, NoReturn
 from evaluation_harness import _common, _outputs, _store
 
 #: The settings, by folder: (what one is, its schema, the key that is its id, whether that id must be the file name).
-#: An arm config's config_id is not its file name (data/configs/tickets_lead1.yaml holds tickets_lead1_v1); the others
-#: are found by it (validate checks goals, scorers, models and failure-mode lists; a fieldset is read as <id>.yaml).
+#: Each is found by its id (validate checks systems, goals, scorers, models and failure-mode lists; a fieldset is read
+#: as <id>.yaml).
 SETTINGS: dict[str, tuple[str, str, str, bool]] = {
-    "configs": ("arm config", "config.schema.json", "config_id", False),
+    "systems": ("system", "system.schema.json", "system_id", True),
     "goals": ("goal", "goal.schema.json", "goal_id", True),
     "fields": ("fieldset", "fieldset.schema.json", "fieldset_id", True),
     "scorers": ("judge scorer", "scorer.schema.json", "scorer_id", True),

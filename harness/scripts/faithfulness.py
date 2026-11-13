@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Replay a system at the commits production ran and compare it with production's arm, item by item (RFC-030).
 
-    evh faithfulness --config data/configs/filing_replay_v1.yaml --production production_v1_20261105T120000
-    evh faithfulness --config data/configs/filing_replay_v1.yaml --production <run> --dry-run
+    evh faithfulness --system filing_replay_v1 --dataset filing_history_v1 --production production_v1_20261105T120000
+    evh faithfulness --system filing_replay_v1 --dataset filing_history_v1 --production <run> --dry-run
 
 Every item of the dataset runs, in the replay's order, at the commit its code record says ran it then; each output is
 compared with production's (a recorded arm's run on the same dataset) by the adapter's `same(a, b)`, else as text.
@@ -28,7 +28,6 @@ import sys
 from pathlib import Path
 from typing import Any
 
-import yaml
 from evaluation_harness import (
     _codeload,
     _coderec,
@@ -59,8 +58,9 @@ def main() -> int:
     """Replay at the recorded commits and compare with production."""
     ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
     ap.add_argument(
-        "--config", required=True, type=Path, help="the replay config (replay:, model_record: a code record)"
+        "--system", required=True, help="the replay system (replay:, model_record: a code record): its id"
     )
+    ap.add_argument("--dataset", required=True, help="the dataset it replays, production's arm's")
     ap.add_argument(
         "--production",
         required=True,
@@ -114,16 +114,15 @@ def _faithfulness(args: argparse.Namespace) -> int:
     from evaluation_harness._actor import actor  # noqa: PLC0415
     from evaluation_harness._adapter import load_adapter, same_at  # noqa: PLC0415
     from evaluation_harness._fingerprint import items_digest  # noqa: PLC0415
+    from evaluation_harness.model.systems import arm_of  # noqa: PLC0415
 
-    if not _store.is_file(args.config):
-        die(f"no config at {args.config}", "not-found")
-    cfg = yaml.safe_load(_store.read_text(args.config, encoding="utf-8")) or {}
+    cfg, args.config = arm_of(args.system, args.dataset)
     try:
         cfg = _models.resolve(cfg, DATA)
     except ValueError as exc:
         die(f"{args.config}: {exc}", "invalid-file")
     if not _replay.is_replay(cfg):
-        die(f"{args.config} is not a replay config (it has no replay:)", "invalid-file")
+        die(f"{args.system} is not a replay system (it has no replay:)", "invalid-file")
     call_system, score, adapter_id, adapter_path, warmup, _hook = load_adapter(
         cfg.get("adapter"), args.config
     )
@@ -133,7 +132,7 @@ def _faithfulness(args: argparse.Namespace) -> int:
     if plan.candidate:
         die(
             f"{args.config} runs every item at the candidate {plan.candidate[:12]}: faithfulness replays the commits "
-            "production ran. Use the replay config the candidate was made from.",
+            "production ran. Use the replay system the candidate was made from.",
             "bad-argument",
         )
     production = _production(args.production, ds)

@@ -7,7 +7,7 @@ status: closed
 opened_at: '2026-09-30T09:12:12Z'
 closed_at: '2026-09-30T09:12:12Z'
 retired:
-- config_id: cnn_bart_s_n200_v1
+- config_id: cnn_bart_s_v1
   runs_dir: runs-repeats
   reason: a second run of the record's config; data/runs is the record
   at: '2026-09-30T09:12:12Z'

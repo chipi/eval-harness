@@ -27,6 +27,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parents[1] / "scripts"
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from evaluation_harness import _format  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
@@ -78,7 +79,8 @@ def values(r):
 
 BASE = ("--dataset-id", "tickets_v1", "--map", "rules.yaml")
 try:
-    (proj / "data" / "configs").mkdir(parents=True)
+    (proj / "data" / "systems").mkdir(parents=True)
+    _runstore.write_text(proj, _format.NAME, f"format: {_format.FORMAT}\n")
     shutil.copytree(KIT / "tickets", proj / "tutorial" / "tickets")
     evh("dataset-create", "--dataset-id", "tickets_v1", "--source-dir", "tutorial/tickets")
     evh("dataset-materialize", "--dataset-id", "tickets_v1")
@@ -319,10 +321,10 @@ try:
     )
     _runstore.write_text(
         proj,
-        "configs/echo_v1.yaml",
-        "config_id: echo_v1\ndataset_id: tickets_v1\nparams:\n  provider: echo\n",
+        "systems/echo_v1.yaml",
+        "system_id: echo_v1\nparams:\n  provider: echo\n",
     )
-    r2 = evh("run", "--config", "data/configs/echo_v1.yaml")
+    r2 = evh("run", "--system", "echo_v1", "--dataset", "tickets_v1")
     check(
         "setup: production's arm and an echo variant",
         r.returncode == r2.returncode == 0,
@@ -338,10 +340,10 @@ try:
     )
     _runstore.write_text(
         proj,
-        "configs/echo_l_v1.yaml",
-        "config_id: echo_l_v1\ndataset_id: tickets_v1\nparams:\n  provider: echo\n",
+        "systems/echo_l_v1.yaml",
+        "system_id: echo_l_v1\nparams:\n  provider: echo\n",
     )
-    r = evh("run", "--config", "data/configs/echo_l_v1.yaml", "--labels", "s1")
+    r = evh("run", "--system", "echo_l_v1", "--dataset", "tickets_v1", "--labels", "s1")
     check(
         "run --labels: a variant run says the item it is not scored on, and records it",
         r.returncode == 0 and "1 item(s) not scorable under this variant" in said(r),

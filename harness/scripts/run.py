@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Run one arm config against one dataset; emit a run directory.
+"""Run one system on one dataset; emit a run directory.
 
 A run records THREE things, and is worthless without all of them:
 
-    system under test   which build produced these numbers  (build.ref)
-    instrument          which config was used               (config_id)
+    build               which build produced these numbers  (build.ref)
+    system              what was evaluated                  (config_id: the system's id, RFC-032)
     data                what it was measured on             (dataset_id)
 
 Drop any one and the number cannot be attributed to anything.
@@ -14,8 +14,8 @@ know the arm's own run-to-run spread — otherwise you are promoting noise. A re
 example: one ASR model showed 0.058 WER spread on BYTE-IDENTICAL input, wider
 than most deltas anyone was arguing about.
 
-    python scripts/run.py --config data/configs/demo.yaml
-    python scripts/run.py --config data/configs/demo.yaml --repeat 3
+    evh run --system demo --dataset tickets_v1
+    evh run --system demo --dataset tickets_v1 --repeat 3 --goal tickets_summary --round r2
 
 WIRING YOUR SYSTEM IN: edit `scripts/adapter.py`. Nothing in this file needs to
 change — it times the call, records what it cost, scores the output against the
@@ -84,11 +84,6 @@ from evaluation_harness._record import (
     run_scorer,
 )
 from evaluation_harness._retry import call_with_retries, is_transient
-
-try:
-    import yaml
-except ImportError:  # pragma: no cover
-    die("pyyaml is required — pip install -r requirements.txt", "missing-dependency")
 
 
 class _Resumed:
@@ -218,7 +213,7 @@ def _unreachable(res: Any) -> str | None:
     return None
 
 
-def _say_stopped(run_dir: Path, n_items: int, config: Any, exc: BaseException) -> None:
+def _say_stopped(run_dir: Path, n_items: int, arm: str, exc: BaseException) -> None:
     """What a run that stopped mid-pass left, and the two ways on: resume it, or delete it.
     A crash used to end in the adapter's traceback alone, the run directory stayed with no
     metrics.json, and the next `validate` failed V7 with nothing having said why."""
@@ -230,8 +225,8 @@ def _say_stopped(run_dir: Path, n_items: int, config: Any, exc: BaseException) -
         "  Fix the cause, then either resume it (items already done are not called again):\n"
         "    "
         + how(
-            f"evh run --config {config} --resume {run_dir.name}",
-            f'make run CONFIG={config} ARGS="--resume {run_dir.name}"',
+            f"evh run {arm} --resume {run_dir.name}",
+            f'make run {arm.replace("--system ", "SYSTEM=").replace("--dataset ", "DATASET=")} ARGS="--resume {run_dir.name}"',
         )
         + f"\n  or delete {run_dir} (until one or the other, `validate` fails V7 on it).",
         file=sys.stderr,
@@ -736,7 +731,7 @@ def _dry_run(
 
     print("DRY RUN — nothing was called\n")
     print(
-        f"  config      {cfg['config_id']}  ({params.get('provider', 'echo')}"
+        f"  system      {cfg['config_id']}  ({params.get('provider', 'echo')}"
         + (f" / {params['model']}" if params.get("model") else "")
         + ")"
     )
@@ -759,7 +754,7 @@ def _dry_run(
     pin, pout = params.get("usd_per_mtok_in"), params.get("usd_per_mtok_out")
     est = None
     if pin is None or pout is None:
-        print("\n  No price in the config, so no estimate. Add usd_per_mtok_in /")
+        print("\n  No price in the system, so no estimate. Add usd_per_mtok_in /")
         print("  usd_per_mtok_out and the run will record what it actually cost.")
     else:
         est = (est_in / 1e6 * float(pin) + est_out / 1e6 * float(pout)) * repeat * per_item
@@ -782,11 +777,11 @@ def _dry_run(
             f" (model record {measured['model_record']}); set a cap from this"
         )
     else:
-        where = f" --config {config_path}" if config_path else " --config <this config>"
+        where = f" --system {cfg['config_id']} --dataset {cfg['dataset_id']}"
         print(f"  MEASURED    none for {cfg['config_id']}: no arm-smoke of it is recorded")
         print(
             f"              run `evh arm-smoke{where}` and set a cap from what it measures"
-            + ("" if cfg.get("model_record") else " (it records into a model record; this config names none)")
+            + ("" if cfg.get("model_record") else " (it records into a model record; this system names none)")
         )
     cap = env_float("EVAL_MAX_COST_USD")
     print("  cap         " + (f"${cap:.2f} (EVAL_MAX_COST_USD)" if cap else "NONE — set EVAL_MAX_COST_USD"))
@@ -851,7 +846,7 @@ def _faithfulness_gate(
     if not args.unfaithful:
         die(
             f"{_faith.said(state)}.\n  A replay is scored against a reference only once it reproduces production "
-            f"(RFC-030): evh faithfulness --config {args.config} --production <production's arm>, then name each "
+            f"(RFC-030): evh faithfulness --system {args.system} --production <production's arm>, then name each "
             f"disagreement whose cause is outside the system (evh faithfulness-name --model {plan.model_id} --item "
             "ITEM --cause ...), or score it anyway as a person with --unfaithful.",
             "not-allowed",
@@ -964,16 +959,22 @@ def _resume_source(
 
 
 def main() -> int:
-    """Run an arm config against a dataset."""
+    """Run a system on a dataset."""
     ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
-    ap.add_argument("--config", required=True, type=Path)
+    ap.add_argument("--system", required=True, help="the system to run: its id (evh system-list)")
+    ap.add_argument("--dataset", required=True, help="the dataset it runs on: its id")
+    ap.add_argument("--goal", help="the goal this run is measured for (ADR-0002)")
+    ap.add_argument(
+        "--round",
+        help="the round of its goal the run belongs to (ADR-0004): needs --goal, on the round's dataset",
+    )
     ap.add_argument(
         "--labels",
         metavar="SET",
         help="score against this label set of the dataset (SET or DATASET/SET) instead of its gold or silver (RFC-023)",
     )
     ap.add_argument("--repeat", type=int, default=1, help="run N times to measure the arm's spread")
-    ap.add_argument("--run-id", help="default: <config_id>_<timestamp>")
+    ap.add_argument("--run-id", help="default: <system>_<timestamp>")
     ap.add_argument(
         "--items",
         type=Path,
@@ -1018,9 +1019,9 @@ def main() -> int:
 
 
 def _run(args: argparse.Namespace) -> int:
-    if not _store.is_file(args.config):
-        die(f"no config at {args.config}", "not-found")
-    cfg = yaml.safe_load(_store.read_text(args.config, encoding="utf-8")) or {}
+    from evaluation_harness.model.systems import arm_of  # noqa: PLC0415
+
+    cfg, args.config = arm_of(args.system, args.dataset, args.goal, args.round)
     # A config may name a model record (RFC-020, optional): its settings come from the record, under the
     # config's own params, so every arm of that model runs the way it was onboarded. With `deployment:` it
     # also names where it runs (RFC-021): the fingerprint takes the deployment's facts from the record.
@@ -1038,29 +1039,25 @@ def _run(args: argparse.Namespace) -> int:
         recorded = _recorded_outputs(cfg, adapter_path)
         warmup = None  # nothing is called, so nothing is warmed up
     declared_kinds = metric_kinds(adapter_path)
-    for required in ("config_id", "dataset_id"):
-        if required not in cfg:
-            die(f"{args.config} is missing required key: {required}", "invalid-file")
     # A key written into the config would be copied into every run record (metrics.json), and
     # from there onto pages: refused, with the way that keeps it out.
     secrets = secret_params(dict(cfg.get("params") or {}))
     if secrets:
         die(
-            f"{args.config}: params {', '.join(secrets)} look like a credential written into the config. "
+            f"{args.config}: params {', '.join(secrets)} look like a credential written into the system. "
             "Put the key in the environment (.env) and name the variable with api_key_env, or let the "
-            "provider read its usual variable; a key in a config is copied into every run record.",
+            "provider read its usual variable; a key in a system is copied into every run record.",
             "not-configured",
         )
 
-    # A config names the goal it answers (data/goals/<goal_id>.yaml). Refused before a cent is
+    # A run names the goal it answers (data/goals/<goal_id>.yaml). Refused before a cent is
     # spent when the goal does not exist: a run filed under a typo answers nothing.
     if cfg.get("goal") and _store.is_dir(GOALS) and cfg["goal"] not in load_goals():
         die(
-            f"{args.config}: goal {cfg['goal']!r} is not in {GOALS} "
-            f"(known: {', '.join(sorted(load_goals())) or 'none'})",
+            f"--goal {cfg['goal']!r} is not in {GOALS} (known: {', '.join(sorted(load_goals())) or 'none'})",
             "not-found",
         )
-    # A config may name a round of its goal (ADR-0004, optional): refused before a cent is spent
+    # A run may name a round of its goal (ADR-0004, optional): refused before a cent is spent
     # when the round does not exist, is closed, or runs on another dataset.
     from evaluation_harness._rounds import config_round  # noqa: PLC0415
 
@@ -1363,7 +1360,9 @@ def _run(args: argparse.Namespace) -> int:
                 same=same_at(adapter_path),
             )
         except BaseException as exc:
-            _say_stopped(run_dir, len(ds.get("items") or []), args.config, exc)
+            _say_stopped(
+                run_dir, len(ds.get("items") or []), f"--system {args.system} --dataset {args.dataset}", exc
+            )
             if isinstance(exc, SystematicFailure):
                 die(str(exc), "failed")
             if isinstance(exc, ServerUnreachable):
@@ -1486,8 +1485,8 @@ def _run(args: argparse.Namespace) -> int:
                 f"  Partial results kept. Raise the cap and resume without paying twice:\n"
                 f"    "
                 + how(
-                    f"evh run --config {args.config} --resume {run_id}",
-                    f'make run CONFIG={args.config} ARGS="--resume {run_id}"',
+                    f"evh run --system {args.system} --dataset {args.dataset} --resume {run_id}",
+                    f'make run SYSTEM={args.system} DATASET={args.dataset} ARGS="--resume {run_id}"',
                 )
             )
             break

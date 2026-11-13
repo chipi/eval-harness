@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""Run several arms over one dataset, then rank them.
+"""Run several systems on one dataset, then rank them.
 
 Comparing four models should be one command, not four invocations and six
-pairwise comparisons. This runs each config in turn, keeps going when one arm
-fails — a provider outage on arm 3 should not throw away arms 1 and 2 — and
-ends with the leaderboard.
+pairwise comparisons. This runs each system in turn, keeps going when one
+fails — a provider outage on the third should not throw away the first two —
+and ends with the leaderboard.
 
-    python scripts/sweep.py --configs data/configs/arm_*.yaml --repeat 2
-    python scripts/sweep.py --configs data/configs/arm_*.yaml --dry-run
+    evh sweep --systems arm_a_v1 arm_b_v1 --dataset smoke_v1 --repeat 2
+    evh sweep --systems arm_a_v1 arm_b_v1 --dataset smoke_v1 --dry-run
 
 Always dry-run first. It costs nothing and tells you what the sweep will.
 """
@@ -23,21 +23,20 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 import argparse
 import subprocess
 import sys
-from pathlib import Path
 
-from evaluation_harness import _jsonout, _spend, _store
+from evaluation_harness import _jsonout, _spend
 from evaluation_harness._common import CODE, EXIT_PARTLY, EXIT_STOPPED, ROOT, die, evh_prog
-
-try:
-    import yaml
-except ImportError:  # pragma: no cover
-    die("pyyaml is required — pip install -r requirements.txt", "missing-dependency")
 
 
 def main() -> int:
-    """Generate a parameter sweep configuration."""
+    """Run several systems on one dataset, then rank them."""
     ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
-    ap.add_argument("--configs", nargs="+", required=True, type=Path)
+    ap.add_argument(
+        "--systems", nargs="+", required=True, help="the systems to run: their ids (evh system-list)"
+    )
+    ap.add_argument("--dataset", required=True, help="the one dataset they all run on")
+    ap.add_argument("--goal", help="the goal the runs are measured for")
+    ap.add_argument("--round", help="the round of its goal the runs belong to (needs --goal)")
     ap.add_argument("--repeat", type=int, default=1)
     ap.add_argument("--dry-run", action="store_true", help="cost it without calling anything")
     ap.add_argument("--sort", help="leaderboard metric")
@@ -51,40 +50,43 @@ def main() -> int:
     )
     args = ap.parse_args()
     with _jsonout.collect("sweep", args.json, live=sys.stderr):
-        configs = [c for c in args.configs if _store.is_file(c)]
-        if not configs:
-            die(f"no config files matched: {' '.join(str(c) for c in args.configs)}", "not-found")
+        from evaluation_harness.model.systems import SYSTEM  # noqa: PLC0415
 
-        # Every arm must sit on the SAME dataset, or the leaderboard is a list of
-        # unrelated numbers. Refuse up front rather than producing one.
-        datasets: dict = {}
-        for c in configs:
-            cfg = yaml.safe_load(_store.read_text(c, encoding="utf-8")) or {}
-            datasets.setdefault(cfg.get("dataset_id"), []).append(c.name)
-        if len(datasets) != 1:
-            lines = "\n".join(f"    {d or '(missing)'}: {', '.join(n)}" for d, n in datasets.items())
-            die(
-                "REFUSED — the arms do not share one dataset_id:\n"
-                + lines
-                + "\n  A leaderboard across datasets ranks nothing. Re-run the odd ones out.",
-                "mismatch",
-            )
-        dataset_id = next(iter(datasets))
+        # Every system is known before the first one runs: a typo found after three paid runs wastes them.
+        known = set(SYSTEM.ids())
+        missing = [s for s in args.systems if s not in known]
+        if missing:
+            die(f"no system {', '.join(missing)} (evh system-list)", "not-found")
+        configs = list(dict.fromkeys(args.systems))
+        dataset_id = args.dataset
 
         py = sys.executable
         print(f"sweep: {len(configs)} arm(s) on {dataset_id}, repeat={args.repeat}\n")
 
         failed: list[str] = []
         for i, c in enumerate(configs, 1):
-            print(f"── [{i}/{len(configs)}] {c.name} " + "─" * max(0, 50 - len(c.name)))
-            cmd = [py, str(CODE / "run.py"), "--config", str(c), "--repeat", str(args.repeat)]
+            print(f"── [{i}/{len(configs)}] {c} " + "─" * max(0, 50 - len(c)))
+            cmd = [
+                py,
+                str(CODE / "run.py"),
+                "--system",
+                c,
+                "--dataset",
+                dataset_id,
+                "--repeat",
+                str(args.repeat),
+            ]
+            cmd += [
+                *(["--goal", args.goal] if args.goal else []),
+                *(["--round", args.round] if args.round else []),
+            ]
             if args.dry_run:
                 cmd.append("--dry-run")
             left = _spend.left()
             if not args.dry_run and left is not None and left <= 0:
                 # The sweep's cap is spent (RFC-026 step 5): the arms after this one are not run.
                 print(f"   NOT RUN — the cap is spent (${_spend.spent():.4f} of ${_spend.cap():.4f})")
-                failed.append(c.name)
+                failed.append(c)
                 continue
             if args.dry_run:
                 r = subprocess.run(cmd, cwd=ROOT)
@@ -98,12 +100,12 @@ def main() -> int:
                     )
             if r.returncode == EXIT_STOPPED:
                 # Stopped at the cap (the sweep's, or the round's): its partial run is kept and resumable.
-                failed.append(c.name)
+                failed.append(c)
                 print(f"   ARM STOPPED at the cost cap (exit {r.returncode}) — its partial run is kept")
             elif r.returncode != 0:
                 # Keep going: one provider's outage should not discard the arms
                 # that already succeeded and were paid for.
-                failed.append(c.name)
+                failed.append(c)
                 print(f"   ARM FAILED (exit {r.returncode}) — continuing with the rest")
             print()
 
@@ -119,9 +121,7 @@ def main() -> int:
         if args.sort:
             lb += ["--sort", args.sort]
         subprocess.run(lb, cwd=ROOT)
-        _jsonout.values(
-            {"arms": [c.name for c in configs], "not_finished": failed, "spent_usd": round(_spend.spent(), 8)}
-        )
+        _jsonout.values({"arms": configs, "not_finished": failed, "spent_usd": round(_spend.spent(), 8)})
         return EXIT_PARTLY if failed else 0
 
 

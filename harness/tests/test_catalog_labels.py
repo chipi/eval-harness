@@ -23,6 +23,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parents[1] / "scripts"
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 KIT = HERE.parent / "tutorial"
+from evaluation_harness import _format  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
@@ -56,7 +57,8 @@ def row_of(html, needle):
 
 try:
     data = proj / "data"
-    (data / "configs").mkdir(parents=True)
+    (data / "systems").mkdir(parents=True)
+    _runstore.write_text(proj, _format.NAME, f"format: {_format.FORMAT}\n")
     shutil.copytree(KIT / "tickets", proj / "tutorial" / "tickets")
     r = evh("dataset-create", "--dataset-id", "tickets_v1", "--source-dir", "tutorial/tickets")
     r = r if r.returncode else evh("dataset-materialize", "--dataset-id", "tickets_v1")
@@ -66,9 +68,11 @@ try:
         proj, "goals/tickets_summary.yaml", (KIT / "goals" / "tickets_summary.yaml").read_text()
     )
     for arm in ("lead1", "author"):
-        text = (KIT / "configs" / f"tickets_{arm}.yaml").read_text() + "goal: tickets_summary\n"
-        _runstore.write_text(proj, f"configs/tickets_{arm}.yaml", text)
-        r = evh("run", "--config", f"data/configs/tickets_{arm}.yaml")
+        text = (KIT / "systems" / f"tickets_{arm}_v1.yaml").read_text()
+        _runstore.write_text(proj, f"systems/tickets_{arm}_v1.yaml", text)
+        r = evh(
+            "run", "--system", f"tickets_{arm}_v1", "--dataset", "tickets_v1", "--goal", "tickets_summary"
+        )
         check(f"setup: the {arm} arm runs", r.returncode == 0, out(r)[-300:])
     author = next(n for n in _runstore.listdir(proj, "runs") if n.startswith("tickets_author_v1_"))
     r = evh("label-from-run", "--run", author, "--set", "author_v1")
@@ -95,7 +99,10 @@ try:
         "owner",
     )
     check("setup: the person's set promoted to gold", r.returncode == 0, out(r)[-300:])
-    r = evh("run", "--config", "data/configs/tickets_lead1.yaml", "--labels", "tickets_v1/author_v1")
+    r = evh(
+        "run", "--system", "tickets_lead1_v1", "--dataset", "tickets_v1", "--goal", "tickets_summary",
+        "--labels", "tickets_v1/author_v1",
+    )  # fmt: skip
     check("setup: an arm scored against the model's label set", r.returncode == 0, out(r)[-300:])
     rows = [
         {
@@ -307,7 +314,7 @@ try:
         "a promoted arm's page: its deploy sheet (what was sent, the bookkeeping not sent, the command)",
         'id="deploy-sheet"' in bp
         and "settings sent" in bp
-        and "evh deploy-sheet --config tickets_lead1_v1" in bp
+        and "evh deploy-sheet --system tickets_lead1_v1" in bp
         and "No capture here says what production ran" in bp,
         "",
     )

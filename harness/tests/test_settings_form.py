@@ -106,11 +106,13 @@ def main() -> int:
           F.patch(ours, base, base.replace("[x, y]", "[x, z]")) == "a: 1   # one\nlist: [x, z]\nb: two\n")  # fmt: skip
 
     # Edits that only add or only remove: a key, a list item, a group. Each changes the file by exactly that.
-    src = "# a config\nconfig_id: a_v1   # its id\ndataset_id: d\nparams:\n  provider: echo\n  sentences: 1\n"
+    src = (
+        "# a system\nsystem_id: a_v1   # its id\nmodel_record: d\nparams:\n  provider: echo\n  sentences: 1\n"
+    )
     for what, change, want in (
-        ("a key added alone", lambda d: d.update(goal="g"), src + "goal: g\n"),
+        ("a key added alone", lambda d: d.update(expect_identical_to="g"), src + "expect_identical_to: g\n"),
         ("a key added inside a group", lambda d: d["params"].update(noise=0.5), src + "  noise: 0.5\n"),
-        ("a key removed alone", lambda d: d.pop("dataset_id"), src.replace("dataset_id: d\n", "")),
+        ("a key removed alone", lambda d: d.pop("model_record"), src.replace("model_record: d\n", "")),
         (
             "a group added",
             lambda d: d.update(hypothesis={"against": "b"}),
@@ -119,7 +121,7 @@ def main() -> int:
     ):
         values = yaml.safe_load(src)
         change(values)
-        got = F.text_for("configs/a.yaml", values, src)
+        got = F.text_for("systems/a.yaml", values, src)
         check(f"text_for: {what} changes the file by exactly that, comments kept", got == want, got)
     goal = "goal_id: g\ndatasets:\n  - dataset_id: a   # the first\n"
     values = yaml.safe_load(goal)

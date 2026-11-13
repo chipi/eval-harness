@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """Open a sealed side of a split to one candidate, named in advance (the fleet's feedback 29).
 
-    evh dataset-unseal triage_v1_test --config candidate_test_v1 --reason "the tuned filter, frozen on validation"
+    evh dataset-unseal triage_v1_test --system candidate_test_v1 --reason "the tuned filter, frozen on validation"
 
-The config must run on the sealed dataset and carry a hypothesis (ADR-0025) committed before now: the candidate and
-what it is compared with are named before anything is read from the held-out side. The unseal opens the dataset to
-that config and to the config its hypothesis is against, and records the look: when, why, the hypothesis and the
-commit that named it. Every other config is still refused. Each unseal is one look at the held-out side.
+The system must carry a hypothesis (ADR-0025) committed before now: the candidate and what it is compared with are
+named before anything is read from the held-out side. The unseal opens the dataset to that system and to the system
+its hypothesis is against, and records the look: when, why, the hypothesis and the commit that named it. Every other
+system is still refused. Each unseal is one look at the held-out side.
 """
 
 from __future__ import annotations
@@ -35,10 +35,10 @@ def _head(config_path: Path) -> dict:
 
 
 def main() -> int:
-    """Open a sealed dataset to a candidate config."""
+    """Open a sealed dataset to a candidate system."""
     ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
     ap.add_argument("dataset_id", help="the sealed dataset (a split's test side)")
-    ap.add_argument("--config", required=True, help="the candidate's config_id: it runs on this dataset")
+    ap.add_argument("--system", required=True, help="the candidate system: its id")
     ap.add_argument("--reason", required=True, help="why this candidate, and why now: a sentence")
     ap.add_argument(
         "--confirm-extra-look",
@@ -64,49 +64,47 @@ def main() -> int:
             die(f"{ds_id} is not sealed (dataset-split --seal seals a test side)", "not-allowed")
         if len(args.reason.split()) < 3:
             die("--reason is a sentence: why this candidate, and why now?", "bad-argument")
-        ids = _hypothesis.config_ids()
-        path = ids.get(args.config)
+        ids = _hypothesis.system_ids()
+        path = ids.get(args.system)
         if path is None:
-            die(f"--config {args.config}: no arm config with that config_id", "not-found")
+            die(f"--system {args.system}: no system with that id (evh system-list)", "not-found")
         cfg = yaml.safe_load(_store.read_text(path, encoding="utf-8")) or {}
-        if cfg.get("dataset_id") != ds_id:
-            die(f"{args.config} runs on {cfg.get('dataset_id')}, not on {ds_id}", "mismatch")
         hyp = _hypothesis.of(cfg)
         if not hyp:
             die(
-                f"{args.config} names no hypothesis: write one in its config (against, measure, direction, statement; "
+                f"{args.system} names no hypothesis: write one in it (against, measure, direction, statement; "
                 "ADR-0025) and commit it, so the comparison is named before the held-out side is read",
                 "not-allowed",
             )
         bad = _hypothesis.problems(cfg, path, ids)
         if bad:
-            die(f"{args.config}: " + "; ".join(bad), "invalid-file")
-        # The project's database keeps its configs out of git (RFC-025): no commit can speak for one, so the unseal
+            die(f"{args.system}: " + "; ".join(bad), "invalid-file")
+        # The project's database keeps its systems out of git (RFC-025): no commit can speak for one, so the unseal
         # itself, timestamped before any run it allows, is the naming in advance, and the look says so.
         if _store.sqlite() and _store.rel(path) is not None:
             named = {
                 "named": None,
                 "commit": None,
-                "why": "the config is in the project's database, not in git",
+                "why": "the system is in the project's database, not in git",
             }
         else:
             named = _hypothesis.named_before(path, hyp, _head(path), now())
             if named.get("named") is not True:
                 die(
-                    f"{args.config}'s hypothesis is not committed: {named.get('why')}. Commit the config first.",
+                    f"{args.system}'s hypothesis is not committed: {named.get('why')}. Commit the system first.",
                     "not-allowed",
                 )
-        opened = sorted({args.config, str(hyp["against"])} - _seal.opened_for(doc))
+        opened = sorted({args.system, str(hyp["against"])} - _seal.opened_for(doc))
         # Each unseal is a look at the set (RFC-029): numbered under the set's lock while it is written, its level
         # the look's; the question is the candidate against its hypothesis's arm, on its measure, in its direction.
         from evaluation_harness import _looks  # noqa: PLC0415
 
         rule = "noninferiority" if hyp.get("direction") == "no-worse" else "superiority"
-        k = _looks.key(ds_id, args.config, str(hyp["against"]), hyp.get("measure"), rule)
+        k = _looks.key(ds_id, args.system, str(hyp["against"]), hyp.get("measure"), rule)
         with _looks.taking(ds_id, k, consent=args.confirm_extra_look) as taken:
             doc = load_dataset(ds_id)
             entry = {
-                "config_id": args.config,
+                "config_id": args.system,
                 "at": now(),
                 "reason": args.reason,
                 "hypothesis": hyp,
@@ -119,7 +117,7 @@ def main() -> int:
         n = taken["number"]
         print(f"  look {n}: decisions on it are tested one-sided at {taken['level']:.4%} (evh looks)")
         print(
-            f"data/datasets/{ds_id}.json  unsealed for {args.config} against {hyp['against']} "
+            f"data/datasets/{ds_id}.json  unsealed for {args.system} against {hyp['against']} "
             + (
                 f"(look {n} at this held-out side; hypothesis committed {str(named.get('commit'))[:8]})"
                 if named.get("commit")

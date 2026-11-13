@@ -22,7 +22,11 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parents[1] / "scripts"
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 KIT = HERE.parent / "tutorial"
-from evaluation_harness import _outputs, _store  # noqa: E402
+from evaluation_harness import (  # noqa: E402
+    _format,
+    _outputs,
+    _store,
+)
 from evaluation_harness._check import check, summary  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
@@ -94,7 +98,8 @@ LABELS = "labels/tickets_v1"  # under data/
 try:
     data = proj / "data"
     if not _runstore.sqlite():
-        (data / "configs").mkdir(parents=True)
+        (data / "systems").mkdir(parents=True)
+    _runstore.write_text(proj, _format.NAME, f"format: {_format.FORMAT}\n")
     shutil.copytree(KIT / "tickets", proj / "tutorial" / "tickets")
     r = evh("dataset-create", "--dataset-id", "tickets_v1", "--source-dir", "tutorial/tickets")
     r = r if r.returncode else evh("dataset-materialize", "--dataset-id", "tickets_v1")
@@ -129,9 +134,9 @@ try:
     check("setup: the kit's gold, imported and promoted", r.returncode == 0, (r.stdout + r.stderr)[-300:])
     for arm in ("lead1", "author"):
         _runstore.write_text(
-            proj, f"configs/tickets_{arm}.yaml", (KIT / "configs" / f"tickets_{arm}.yaml").read_text()
+            proj, f"systems/tickets_{arm}_v1.yaml", (KIT / "systems" / f"tickets_{arm}_v1.yaml").read_text()
         )
-        r = evh("run", "--config", f"data/configs/tickets_{arm}.yaml")
+        r = evh("run", "--system", f"tickets_{arm}_v1", "--dataset", "tickets_v1")
         check(f"setup: the {arm} arm runs", r.returncode == 0, out(r)[-300:])
     author = next(n for n in _runstore.listdir(proj, "runs") if n.startswith("tickets_author_v1_"))
 

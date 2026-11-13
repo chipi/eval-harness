@@ -5,7 +5,8 @@
 
 Each mutant is a named edit of `filing.py`, applied to every commit that has the line it edits: its repository is a
 clone of the system's with each commit rewritten, its code record (`data/models/toy_filing_m_<name>.yaml`, kind: code)
-maps each version to the rewritten commit, and `evh faithfulness` replays it against production's arm. A mutant is killed when the replay
+maps each version to the rewritten commit, its system (`data/systems/<replay system>_m_<name>.yaml`, the replay system with that record)
+is replayed by `evh faithfulness --system ... --dataset ...` against production's arm. A mutant is killed when the replay
 disagrees with production somewhere; one that survives is printed with the functions the replay never entered, which
 is usually why (no decision in the history reaches the rule). Exit 1 when a mutant survives that coverage does not
 explain, else 0.
@@ -55,19 +56,23 @@ def mutate(system: Path, dest: Path, old: str, new: str) -> dict[str, str]:
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument(
-        "--system", type=Path, required=True, help="the system's repository (make_history.py's OUT/system)"
+        "--system",
+        type=Path,
+        required=True,
+        help="the filing system's git repository (make_history.py's OUT/system), not a harness system id",
     )
     ap.add_argument("--production", required=True, help="production's arm: the run of filing_production_v1")
     ap.add_argument(
-        "--config", default="data/configs/filing_replay_v1.yaml", help="the replay config mutants copy"
+        "--replay", default="filing_replay_v1", help="the replay system (its id) that mutants copy"
     )
+    ap.add_argument("--dataset", default="filing_history_v1", help="the dataset production's arm ran on")
     ap.add_argument("--evh", default="evh", help="how to call the harness (default: evh)")
     args = ap.parse_args()
     import yaml  # noqa: PLC0415
     from evaluation_harness import _common, _store  # noqa: PLC0415 - the harness only where data is written
 
     root = Path.cwd().resolve()
-    base = yaml.safe_load(_store.read_text(root / args.config))
+    base = yaml.safe_load(_store.read_text(_common.DATA / "systems" / f"{args.replay}.yaml"))
     record = yaml.safe_load(_store.read_text(_common.DATA / "models" / f"{base['model_record']}.yaml"))
     survivors = []
     for name, old, new, explained_by in MUTANTS:
@@ -84,18 +89,18 @@ def main() -> int:
             for v in record["versions"]
         ]
         _store.write_text(_common.DATA / "models" / f"{model_id}.yaml", yaml.safe_dump(rec, sort_keys=False))
-        cfg = {
-            **base,
-            "config_id": f"{base['config_id']}_m_{name.replace('-', '_')}",
-            "model_record": model_id,
-        }
-        cfg_path = repo.parent / f"{name}.yaml"
-        cfg_path.write_text(yaml.safe_dump(cfg, sort_keys=False))
+        system_id = f"{base['system_id']}_m_{name.replace('-', '_')}"
+        mutant = {**base, "system_id": system_id, "model_record": model_id}
+        _store.write_text(
+            _common.DATA / "systems" / f"{system_id}.yaml", yaml.safe_dump(mutant, sort_keys=False)
+        )
         cmd = [
             *shlex.split(args.evh),
             "faithfulness",
-            "--config",
-            str(cfg_path),
+            "--system",
+            system_id,
+            "--dataset",
+            args.dataset,
             "--production",
             args.production,
             "--json",

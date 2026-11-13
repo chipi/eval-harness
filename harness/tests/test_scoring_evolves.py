@@ -21,6 +21,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parents[1] / "scripts"
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 KIT = HERE.parent / "tutorial"
+from evaluation_harness import _format  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
@@ -81,8 +82,9 @@ check("load_module: an edit within the same second, same length, is what runs", 
 try:
     data = proj / "data"
     if not _runstore.sqlite():
-        (data / "configs").mkdir(parents=True)
+        (data / "systems").mkdir(parents=True)
         (data / "goals").mkdir()
+    _runstore.write_text(proj, _format.NAME, f"format: {_format.FORMAT}\n")
     shutil.copytree(KIT / "tickets", proj / "tutorial" / "tickets")
     _runstore.write_text(
         proj, "goals/tickets_summary.yaml", (KIT / "goals" / "tickets_summary.yaml").read_text()
@@ -119,11 +121,13 @@ try:
     check("setup: the kit's gold, imported and promoted", r.returncode == 0, (r.stdout + r.stderr)[-300:])
     set_bonus(0.0)
     for arm in ("lead1", "lead2"):
-        cfg = (KIT / "configs" / f"tickets_{arm}.yaml").read_text()
+        cfg = (KIT / "systems" / f"tickets_{arm}_v1.yaml").read_text()
         _runstore.write_text(
-            proj, f"configs/{arm}.yaml", cfg + "adapter: ../../bonus_adapter.py\ngoal: tickets_summary\n"
+            proj, f"systems/tickets_{arm}_v1.yaml", cfg + "adapter: ../../bonus_adapter.py\n"
         )
-        r = evh("run", "--config", f"data/configs/{arm}.yaml")
+        r = evh(
+            "run", "--system", f"tickets_{arm}_v1", "--dataset", "tickets_v1", "--goal", "tickets_summary"
+        )
     check("setup: two arms run through the project adapter", r.returncode == 0, out(r)[-400:])
 
     # r1 from the runs made before any round was opened
@@ -293,16 +297,26 @@ try:
     for arm, bonus in (("author", 1.0), ("author2", 2.0)):
         set_bonus(bonus)
         cfg = (
-            (KIT / "configs" / "tickets_lead2.yaml")
+            (KIT / "systems" / "tickets_lead2_v1.yaml")
             .read_text()
             .replace("tickets_lead2_v1", f"tickets_{arm}_v1")
         )
         _runstore.write_text(
             proj,
-            f"configs/{arm}.yaml",
-            cfg + "adapter: ../../bonus_adapter.py\ngoal: tickets_summary\nround: r2\n",
+            f"systems/tickets_{arm}_v1.yaml",
+            cfg + "adapter: ../../bonus_adapter.py\n",
         )
-        evh("run", "--config", f"data/configs/{arm}.yaml")
+        evh(
+            "run",
+            "--system",
+            f"tickets_{arm}_v1",
+            "--dataset",
+            "tickets_v1",
+            "--goal",
+            "tickets_summary",
+            "--round",
+            "r2",
+        )
     v = evh("validate")
     check(
         "validate: a round whose arms one adapter scored in two versions is noted, with what to run",

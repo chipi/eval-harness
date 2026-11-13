@@ -73,7 +73,7 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--n", type=int, default=2000)
     args = ap.parse_args()
-    params = yaml.safe_load(_store.read_text(HERE / "configs" / "arm_span_marker_n200.yaml"))["params"]
+    params = yaml.safe_load(_store.read_text(HERE / "systems" / "fn_span_marker_v1.yaml"))["params"]
     from span_marker import SpanMarkerModel  # noqa: PLC0415 - the example's local extra
 
     model = SpanMarkerModel.from_pretrained(params["model"])

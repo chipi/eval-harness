@@ -10,7 +10,7 @@
     "ref": "c40064265b6a2a0265df3f3dfa75e02d8c51bca9",
     "source": "git"
   },
-  "config_id": "fn_mistral_l_n200_v1",
+  "config_id": "fn_mistral_l_v1",
   "created_at": "2026-10-01T16:13:58Z",
   "dataset_id": "few_nerd_280",
   "derived": {
@@ -29,7 +29,7 @@
   },
   "fingerprint": {
     "arm": {
-      "config_id": "fn_mistral_l_n200_v1",
+      "config_id": "fn_mistral_l_v1",
       "labels": {
         "family": "mistral",
         "price_tier": "large",

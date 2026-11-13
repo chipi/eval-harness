@@ -46,12 +46,10 @@ WRITTEN: dict[str, dict[str, str]] = {
 }
 #: Fields that name other data, by kind: a dotted path and the list of the project's values it suggests.
 REFS: dict[str, dict[str, str]] = {
-    "configs": {
-        "dataset_id": "datasets",
-        "goal": "goals",
+    "systems": {
         "model_record": "models",
         "deployment": "deployments",
-        "hypothesis.against": "config_ids",
+        "hypothesis.against": "systems",
     },
     "goals": {
         "datasets.*.dataset_id": "datasets",
@@ -66,7 +64,7 @@ REFS: dict[str, dict[str, str]] = {
 }
 #: A new setting's values, before its id is filled in.
 NEW: dict[str, dict[str, Any]] = {
-    "configs": {"config_id": "", "dataset_id": "", "params": {"provider": ""}},
+    "systems": {"system_id": "", "params": {"provider": ""}},
     "goals": {
         "goal_id": "",
         "title": "",

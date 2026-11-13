@@ -232,7 +232,16 @@ and the Workbench's screens that need it are wired behind it.
    `onboarding`, `smoke` (with its arm's config id) and `approval` (`deployment-accept`); a smoke is placed on the
    deployment its config names, else the model's only one, else refused. The 65 `evh models` views and 64 model pages
    of this repository were compared before and after: none differ.
-3. Prompts and systems (configs become systems; a migration step).
+3. Prompts and systems (configs become systems; a migration step). Built 2026-11-13 as format 3 (`m0003_systems`):
+   451 configs became 299 systems (146 groups that differed only in their dataset merged, 155 ids renamed, listed in
+   `data/renames.json`); a run takes `--system --dataset [--goal --round]`, and inside the run the system on its
+   dataset is still read as one arm, so nothing past that point changed; a run records the system's id under
+   `config_id` until runs become an entity (step 4). Every view was compared before and after: the same, the ids
+   renamed, but for the counts of distinct systems, a merged system's rollup row and chart labels a shorter id lets fit.
+   Judging sets, their verdicts and reference manifests keep the ids they were made under (rule B, above), read through
+   the renames where a live system is matched (`_common.system_now`); `judge-score` finds a stored set by its runs. The
+   prompt versions (RFC-028) have their operations (`prompt-list`, `prompt-show`); a system names its prompt version
+   when runs move (step 4).
 4. Runs and scores (the eight folders; a migration step).
 5. Rounds with their arms and the evidence view; baselines.
 6. Datasets (items, source, profile, versions, the sealed side), fieldsets, label sets, references, picks, captures,
@@ -319,3 +328,21 @@ Quoted from the discussion, typing slips corrected.
   0.8", and "Don't forget that we also have to migrate prod as part of deploy and not just everyone for themselves".
   A project format number, not a version per record, and no down-migrations: "I agree with a and b".
 - **The six questions of the first draft**, as above: "Love the reasoning and answers. I agree with all".
+- **Step 3, systems** (after an inventory: 457 config files, 146 groups that differ only in their dataset, the
+  config id an identity in runs, rounds, smokes and the catalog's arm pages), "I agree on 4 recommendations":
+  - one format step merges the configs into systems and rewrites every reference to an old config id with it (runs'
+    `config_id` values, rounds' carried and retired arms, smokes, faithfulness records, judging sets, validate's
+    pairs); runs and scores apart (step 4) and a round's arm list (step 5) stay their own steps; each view compared
+    before and after, an id renamed the only difference;
+  - a merged system's id drops the dataset token and keeps the highest version of its group
+    (`ag_anthropic_l_n200_v1` and `ag_anthropic_l_v1` become `ag_anthropic_l_v1`; a CNN group of `_v2` and `_v1`
+    becomes `_v2`); the triage `_v1`/`_v2` pairs, which differ in their settings, stay two systems;
+  - the catalog's old arm pages redirect to the new ones;
+  - the prompt file stays a setting (`params.prompt_file`) in this step, and the prompt versions (RFC-028) get their
+    operations; a system names its prompt version when runs move (step 4), where the fingerprint may change under
+    that step's comparison.
+  - **Judging sets keep the ids they were judged under** ("B"): a judging set is content-addressed (its arms sorted
+    by id, a pairwise block's order seeded with the ids, a Bradley-Terry bootstrap seeded with the set's id), so
+    renaming its arms would move its id, its verdicts' place and a judged score recomputed later. A set and its
+    verdicts are frozen evidence, as a run's id is; `judge-score` finds a stored set by the runs it judged and joins
+    a set's arms to runs by run id. Every other reference is rewritten.

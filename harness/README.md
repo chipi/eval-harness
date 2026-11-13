@@ -30,11 +30,11 @@ the best arm's run), compare, choose:
 ```bash
 evh dataset-create --dataset-id my_v1 --source-dir data/sources/my_v1
 evh dataset-materialize --dataset-id my_v1
-evh run --config data/configs/best_model.yaml          # the arm that writes the reference
+evh run --system best_model_v1 --dataset my_v1          # the system that writes the reference
 evh label-from-run --run <its run_id> --set best_v1                 # optional: its outputs as a model's labels
 evh reference-promote --dataset-id my_v1 --labels best_v1 --tier silver \
     --reason "the best system we have ranks the rest" --by me          # ...promoted to silver
-evh run --config data/configs/arm_a.yaml --repeat 3     # + the arm's own noise
+evh run --system <id> --dataset my_v1 --repeat 3        # + its own noise
 evh leaderboard --dataset-id my_v1                                 # the ranking, and whether it is real
 evh family-test --dataset-id my_v1 --a arm_a_v1 --against arm_     # is the winner significantly better?
 evh run-promote --run <run_id> --reason "what the tests showed"    # the choice, with why
@@ -115,7 +115,7 @@ so it can gate CI.
 Every run records three things, and is worthless without all of them:
 
 - **system under test** — `build.ref`, set by `EVAL_BUILD_REF` or the git SHA
-- **instrument** — `config_id`, the arm you ran
+- **system** — `config_id` (the system's id), what you ran
 - **data** — `dataset_id`, what it was measured on
 
 Drop any one and a delta cannot be attributed to anything.
@@ -236,7 +236,7 @@ eval uses it:
 
 ```bash
 evh model-onboard my-model --deployment laptop   # its build, whether it reasons, JSON, determinism, speed
-evh arm-smoke --config data/configs/my_arm.yaml  # a few items with the arm's own settings, before the full run
+evh arm-smoke --system my_system_v1 --dataset my_v1   # a few items with the system's own settings, before the full run
 evh models                                       # which models are onboarded, vetted, and where they run
 ```
 

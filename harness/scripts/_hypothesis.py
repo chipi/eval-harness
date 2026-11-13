@@ -30,23 +30,18 @@ YES, NO, UNDETERMINED = "yes", "no", "not determinable"
 
 
 def of(cfg: dict) -> dict | None:
-    """The config's hypothesis block as written, or None when it has none."""
+    """The system's hypothesis block as written, or None when it has none."""
     return cfg.get("hypothesis") if isinstance(cfg, dict) else None
 
 
-def config_ids() -> dict[str, Path]:
-    """{config_id: file} for every arm config of the project (data/configs and validate.json's globs)."""
-    import yaml  # noqa: PLC0415
-    from evaluation_harness._common import arm_config_files as config_files  # noqa: PLC0415
+def system_ids() -> dict[str, Path]:
+    """{system_id: file} for every system of the project (data/systems and validate.json's globs), by its file's
+    name, which is its id (RFC-032)."""
+    from evaluation_harness._common import system_files  # noqa: PLC0415
 
     out: dict[str, Path] = {}
-    for f in config_files():
-        try:
-            doc = yaml.safe_load(_store.read_text(f, encoding="utf-8"))
-        except (OSError, yaml.YAMLError):
-            continue
-        if isinstance(doc, dict) and doc.get("config_id"):
-            out.setdefault(str(doc["config_id"]), f)
+    for f in system_files():
+        out.setdefault(f.stem, f)
     return out
 
 
@@ -90,8 +85,9 @@ def known_metrics(cfg: dict, config_path: Path | None) -> set[str]:
 
 
 def problems(cfg: dict, config_path: Path | None = None, ids: dict | None = None) -> list[str]:
-    """What is wrong with the config's hypothesis block, each as one sentence; [] when it has none or it is
-    sound. `ids`: config_ids(), when the caller checks many configs and read it once."""
+    """What is wrong with the system's hypothesis block, each as one sentence; [] when it has none or it is
+    sound. `ids`: system_ids(), when the caller checks many systems and read it once. `cfg` is a system's record,
+    or a run's arm (the system on its dataset)."""
     h = of(cfg)
     if h is None:
         return []
@@ -109,11 +105,11 @@ def problems(cfg: dict, config_path: Path | None = None, ids: dict | None = None
         return out
     if h["direction"] not in DIRECTIONS:
         out.append(f"hypothesis.direction: {h['direction']!r} is not one of {', '.join(DIRECTIONS)}")
-    ids = ids if ids is not None else config_ids()
-    if h["against"] == cfg.get("config_id"):
-        out.append("hypothesis.against: the arm cannot be compared with itself")
+    ids = ids if ids is not None else system_ids()
+    if h["against"] == (cfg.get("config_id") or cfg.get("system_id")):
+        out.append("hypothesis.against: the system cannot be compared with itself")
     elif h["against"] not in ids:
-        out.append(f"hypothesis.against: no config with config_id {h['against']!r} (data/configs/*.yaml)")
+        out.append(f"hypothesis.against: no system {h['against']!r} (evh system-list)")
     metrics = known_metrics(cfg, config_path)
     if metrics and h["measure"] not in metrics:
         out.append(
@@ -133,7 +129,7 @@ def problems(cfg: dict, config_path: Path | None = None, ids: dict | None = None
             )
             if not any(_store.is_file(c) for c in cands):
                 out.append(
-                    f"hypothesis.items: no file {h['items']!r} (relative to the config, then the project)"
+                    f"hypothesis.items: no file {h['items']!r} (relative to the system's file, then the project)"
                 )
     return out
 

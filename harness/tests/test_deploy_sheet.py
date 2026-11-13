@@ -27,6 +27,7 @@ from evaluation_harness._check import check, summary  # noqa: E402
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
 import _runstore  # noqa: E402
 from _model_records import put  # noqa: E402
+from evaluation_harness import _format  # noqa: E402
 
 proj = Path(tempfile.mkdtemp(prefix="evh-deploy-"))
 env = dict(
@@ -60,7 +61,8 @@ def snapshot():
 
 try:
     data = proj / "data"
-    for d in ("configs", "models"):
+    _runstore.write_text(proj, _format.NAME, f"format: {_format.FORMAT}\n")
+    for d in ("systems", "models"):
         (data / d).mkdir(parents=True)
     shutil.copytree(KIT / "tickets", proj / "tickets")
     r = evh("dataset-create", "--dataset-id", "tickets_v1", "--source-dir", "tickets")
@@ -94,11 +96,11 @@ try:
     for cid, adapter in (("own_v1", "adapter.py"), ("own2_v1", "adapter.py"), ("plain_v1", "plain.py")):
         _runstore.write_text(
             proj,
-            f"configs/{cid}.yaml",
-            f"config_id: {cid}\ndataset_id: tickets_v1\nadapter: {adapter}\n"
+            f"systems/{cid}.yaml",
+            f"system_id: {cid}\nadapter: {adapter}\n"
             "params:\n  provider: echo\n  model: m-one-alias\n  usd_per_mtok_in: 1.0\n",
         )
-        r = evh("run", "--config", f"data/configs/{cid}.yaml", "--run-id", cid.replace("_v1", ""))
+        r = evh("run", "--system", cid, "--dataset", "tickets_v1", "--run-id", cid.replace("_v1", ""))
         check(f"setup: {cid} runs", r.returncode == 0, out(r)[-300:])
     r = evh("run-promote", "--run", "own", "--reason", "The arm we deploy, for the deploy sheet's test.")
     check("setup: own_v1 is promoted", r.returncode == 0, out(r)[-300:])
@@ -142,7 +144,7 @@ try:
     before = snapshot()
 
     # ── the sheet ────────────────────────────────────────────────────────────────────────────
-    r = evh("deploy-sheet", "--config", "own_v1")
+    r = evh("deploy-sheet", "--system", "own_v1")
     check(
         "the sheet: the promoted run, the model record and its deployment, the dataset and reference",
         r.returncode == 0
@@ -167,13 +169,13 @@ try:
         and "adapter         adapter.py" in r.stdout,
         out(r)[-900:],
     )
-    r = evh("deploy-sheet", "--config", "own2_v1")
+    r = evh("deploy-sheet", "--system", "own2_v1")
     check(
         "an arm not promoted: its latest run, said so",
         r.returncode == 0 and "promoted      no: this is the arm's latest run" in r.stdout,
         out(r)[-400:],
     )
-    r = evh("deploy-sheet", "--config", "own_v1", "--json")
+    r = evh("deploy-sheet", "--system", "own_v1", "--json")
     j = json.loads(r.stdout) if r.returncode == 0 else {}
     check(
         "--json: the same sheet as data",
@@ -187,7 +189,7 @@ try:
     )
 
     # ── the capture check ────────────────────────────────────────────────────────────────────
-    r = evh("deploy-sheet", "--config", "own_v1", "--capture", "prod")
+    r = evh("deploy-sheet", "--system", "own_v1", "--capture", "prod")
     check(
         "--capture: the model matched by record id or alias, what differs and what is not recorded; exit 6",
         r.returncode == 6
@@ -196,7 +198,7 @@ try:
         and "NOT every captured decision was made by the promoted model and prompt" in r.stdout,
         out(r)[-600:],
     )
-    r = evh("deploy-sheet", "--config", "own_v1", "--capture", "prod", "--json")
+    r = evh("deploy-sheet", "--system", "own_v1", "--capture", "prod", "--json")
     j = json.loads(r.stdout) if r.stdout.strip().startswith("{") else {}
     check(
         "--capture --json: the check as data, exit 6 when it differs",
@@ -205,7 +207,7 @@ try:
         and j["capture_check"]["keys"]["model"]["differ"] == {"m-two": 1},
         out(r)[-400:],
     )
-    r = evh("deploy-sheet", "--config", "own_v1", "--capture", "partial")
+    r = evh("deploy-sheet", "--system", "own_v1", "--capture", "partial")
     check(
         "--capture: a record that does not say is not a match (all that say match, still exit 1)",
         r.returncode == 6
@@ -213,28 +215,28 @@ try:
         and "NOT every captured decision" in r.stdout,
         out(r)[-400:],
     )
-    r = evh("deploy-sheet", "--config", "own_v1", "--capture", "good", "--json")
+    r = evh("deploy-sheet", "--system", "own_v1", "--capture", "good", "--json")
     j = json.loads(r.stdout) if r.stdout.strip().startswith("{") else {}
     check(
         "--capture where every record matches: said so, exit 0",
         r.returncode == 0
         and j.get("capture_check", {}).get("ok") is True
         and "every captured decision was made by the promoted model and prompt"
-        in evh("deploy-sheet", "--config", "own_v1", "--capture", "good").stdout,
+        in evh("deploy-sheet", "--system", "own_v1", "--capture", "good").stdout,
         out(r)[-400:],
     )
     check("the sheet writes nothing", snapshot() == before, "files changed")
 
     # ── refusals ─────────────────────────────────────────────────────────────────────────────
-    r = evh("deploy-sheet", "--config", "no_such_v1")
-    check("refused: a config with no run", refused(r, "no run of that config"), out(r)[-200:])
-    r = evh("deploy-sheet", "--config", "plain_v1", "--capture", "prod")
+    r = evh("deploy-sheet", "--system", "no_such_v1")
+    check("refused: a system with no run", refused(r, "no run of that system"), out(r)[-200:])
+    r = evh("deploy-sheet", "--system", "plain_v1", "--capture", "prod")
     check(
         "refused: --capture with an adapter that cannot say what production ran",
         refused(r, "has no production_ran(record)"),
         out(r)[-200:],
     )
-    r = evh("deploy-sheet", "--config", "own_v1", "--capture", "no_such")
+    r = evh("deploy-sheet", "--system", "own_v1", "--capture", "no_such")
     check("refused: an unknown capture", refused(r, "no capture"), out(r)[-200:])
 finally:
     shutil.rmtree(proj, ignore_errors=True)

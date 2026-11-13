@@ -39,7 +39,7 @@ checks:
     deterministic: true
     json_valid: true
 - kind: smoke
-  config: triage_deepseek_41flash_v2
+  system: triage_deepseek_41flash_v2
   status: pass
   at: '2026-10-31T14:43:43Z'
   flags: []

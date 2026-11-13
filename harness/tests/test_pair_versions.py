@@ -21,6 +21,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parents[1] / "scripts"  # the core modules (this file is in tests/)
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
 KIT = HERE.parent / "tutorial"
+from evaluation_harness import _format  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
@@ -63,15 +64,16 @@ def version(ds: str, tickets: Path, gold: Path, arm: str = "lead1") -> subproces
 
 def arm_on(ds: str, arm: str) -> subprocess.CompletedProcess:
     """The tutorial's arm run on this dataset, as tickets_<arm>_<its suffix>."""
-    cfg = (KIT / "configs" / f"tickets_{arm}.yaml").read_text()
-    cfg = cfg.replace("tickets_v1", ds).replace(f"tickets_{arm}_v1", f"tickets_{arm}_{ds.split('_')[-1]}")
-    rel = f"configs/{ds}_{arm}.yaml"
-    _runstore.write_text(proj, rel, cfg + f"goal: {ds}\n")
-    return evh("run", "--config", f"data/{rel}")
+    cfg = (KIT / "systems" / f"tickets_{arm}_v1.yaml").read_text()
+    sid = f"tickets_{arm}_{ds.split('_')[-1]}"
+    cfg = cfg.replace(f"tickets_{arm}_v1", sid)
+    _runstore.write_text(proj, f"systems/{sid}.yaml", cfg)
+    return evh("run", "--system", sid, "--dataset", ds, "--goal", ds)
 
 
 try:
-    (proj / "data" / "configs").mkdir(parents=True)
+    (proj / "data" / "systems").mkdir(parents=True)
+    _runstore.write_text(proj, _format.NAME, f"format: {_format.FORMAT}\n")
     (proj / "data" / "goals").mkdir()
     t1 = proj / "tutorial" / "tickets"
     shutil.copytree(KIT / "tickets", t1)

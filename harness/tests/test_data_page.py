@@ -73,10 +73,11 @@ def setup(store: str) -> tuple[Path, dict]:
     evh("dataset-create", "--dataset-id", "tickets_v1", "--source-dir", "tutorial/tickets", "--fieldset", "tickets",
         "--fields", "tutorial/ticket_fields.csv")  # fmt: skip
     evh("dataset-materialize", "--dataset-id", "tickets_v1")
-    for f in (proj / "tutorial/configs").glob("tickets_*.yaml"):
-        shutil.copy(f, proj / "data/configs/")
+    (proj / "data/systems").mkdir(exist_ok=True)
+    for f in (proj / "tutorial/systems").glob("tickets_*.yaml"):
+        shutil.copy(f, proj / "data/systems/")
     for arm in ("lead1", "lead2"):
-        evh("run", "--config", f"data/configs/tickets_{arm}.yaml")
+        evh("run", "--system", f"tickets_{arm}_v1", "--dataset", "tickets_v1")
     shutil.copy(proj / "tutorial/goals/tickets_summary.yaml", proj / "data/goals/")
     # a page that landed under data/ (a fetched source, a capture record): served, never as this server's own page
     (proj / "data/sources").mkdir(parents=True, exist_ok=True)
@@ -162,17 +163,17 @@ def run_case(store: str) -> None:
             f"{store}: data-ls names the store, the settings folders and the data folders",
             r.returncode == 0
             and f"store: {store}" in r.stdout
-            and "configs" in r.stdout
+            and "systems" in r.stdout
             and "runs" in r.stdout,
             (r.stdout + r.stderr)[-400:],
         )
-        r = cli(proj, env, "data-ls", "configs", "--json")
+        r = cli(proj, env, "data-ls", "systems", "--json")
         names = (
             [e["name"] for e in json.loads(r.stdout)["result"]["values"]["listing"]["entries"]]
             if r.returncode == 0
             else []
         )
-        check(f"{store}: data-ls configs lists the arm configs", "tickets_lead1.yaml" in names, names)
+        check(f"{store}: data-ls systems lists the systems", "tickets_lead1_v1.yaml" in names, names)
         r = cli(proj, env, "data-ls", "scorers", "--json")
         ls = json.loads(r.stdout)["result"]["values"]["listing"] if r.returncode == 0 else {}
         check(
@@ -223,10 +224,14 @@ def run_case(store: str) -> None:
             r.returncode == 1 and "must be the file name" in r.stdout,
             r.stdout,
         )
-        cfg = cli(proj, env, "data-show", "configs/tickets_lead1.yaml", "--text").stdout
-        r = cli(proj, env, "data-put", "configs/tickets_lead1.yaml", "-", "--check", stdin=cfg)
-        check(f"{store}: --check: an arm config's config_id need not be its file name (the tutorial's is not)",
-              r.returncode == 0 and "passes the check: it parses, matches config.schema.json" in r.stdout, r.stdout)  # fmt: skip
+        cfg = cli(proj, env, "data-show", "systems/tickets_lead1_v1.yaml", "--text").stdout
+        r = cli(proj, env, "data-put", "systems/tickets_lead1_v1.yaml", "-", "--check", stdin=cfg)
+        check(f"{store}: --check: a system whose system_id is its file name passes",
+              r.returncode == 0 and "passes the check: it parses, matches system.schema.json" in r.stdout, r.stdout)  # fmt: skip
+        r = cli(proj, env, "data-put", "systems/tickets_lead1_v1.yaml", "-", "--check",
+                stdin=cfg.replace("system_id: tickets_lead1_v1", "system_id: other_v1"))  # fmt: skip
+        check(f"{store}: --check: a system's id that is not the file name (it IS the file name now)",
+              r.returncode == 1 and "must be the file name" in r.stdout, r.stdout)  # fmt: skip
         r = cli(proj, env, "data-put", goal, "-", "--check", stdin="goal_id: tickets_summary\n")
         check(
             f"{store}: --check: the schema's missing keys",
@@ -253,27 +258,27 @@ def run_case(store: str) -> None:
             "ERROR (would-overwrite)" in r.stderr,
             r.stderr[-200:],
         )
-        new_cfg = cli(proj, env, "data-show", "configs/tickets_lead1.yaml", "--text").stdout.replace(
-            "config_id: tickets_lead1_v1", "config_id: tickets_lead3"
+        new_cfg = cli(proj, env, "data-show", "systems/tickets_lead1_v1.yaml", "--text").stdout.replace(
+            "system_id: tickets_lead1_v1", "system_id: tickets_lead3_v1"
         )
-        r = cli(proj, env, "data-put", "configs/tickets_lead3.yaml", "-", "--new", stdin=new_cfg)
-        check(f"{store}: a new arm config is created", r.returncode == 0, (r.stdout + r.stderr)[-300:])
+        r = cli(proj, env, "data-put", "systems/tickets_lead3_v1.yaml", "-", "--new", stdin=new_cfg)
+        check(f"{store}: a new system is created", r.returncode == 0, (r.stdout + r.stderr)[-300:])
         # One field at a time, as the form saves: the comments and every other line kept.
-        lead1 = "configs/tickets_lead1.yaml"
+        lead1 = "systems/tickets_lead1_v1.yaml"
         cfg_before = cli(proj, env, "data-show", lead1, "--text").stdout
         r = cli(proj, env, "data-put", lead1, "--set", "params.sentences=2")
         cfg_after = cli(proj, env, "data-show", lead1, "--text").stdout
         changed = [(a, b) for a, b in zip(cfg_before.splitlines(), cfg_after.splitlines()) if a != b]
         check(f"{store}: data-put --set changes one line, the comments kept",
               r.returncode == 0 and changed == [("  sentences: 1", "  sentences: 2")]
-              and len(cfg_before.splitlines()) == len(cfg_after.splitlines()) and cfg_after.startswith("# Arm"),
+              and len(cfg_before.splitlines()) == len(cfg_after.splitlines()) and cfg_after.startswith("# System"),
               (changed, (r.stdout + r.stderr)[-300:]))  # fmt: skip
         r = cli(proj, env, "data-show", lead1, "--fields")
         check(f"{store}: data-show --fields prints the dotted keys --set takes",
-              r.returncode == 0 and "params.sentences: 2" in r.stdout and "config_id: tickets_lead1_v1" in r.stdout, r.stdout[-300:])  # fmt: skip
-        r = cli(proj, env, "data-put", lead1, "--unset", "dataset_id")
+              r.returncode == 0 and "params.sentences: 2" in r.stdout and "system_id: tickets_lead1_v1" in r.stdout, r.stdout[-300:])  # fmt: skip
+        r = cli(proj, env, "data-put", lead1, "--unset", "system_id")
         check(f"{store}: --unset of a required field is refused at its field; nothing saved",
-              r.returncode == 1 and "dataset_id: required" in r.stdout
+              r.returncode == 1 and "system_id: required" in r.stdout
               and cli(proj, env, "data-show", lead1, "--text").stdout == cfg_after, r.stdout[-300:])  # fmt: skip
         r = cli(proj, env, "data-put", lead1, "--set", "params.sentences=2")
         check(
@@ -281,12 +286,13 @@ def run_case(store: str) -> None:
             r.returncode == 0 and "nothing changed" in r.stdout,
             r.stdout,
         )
-        r = cli(proj, env, "data-put", lead1, "--set", "goal=no_such_goal")
+        r = cli(proj, env, "data-put", lead1, "--set", "hypothesis.against=no_such_v1", "--set", "hypothesis.measure=overlap_f1",
+                "--set", "hypothesis.direction=better", "--set", "hypothesis.statement=a claim")  # fmt: skip
         check(f"{store}: a change the schema allows but evh validate refuses is put back, and says why",
-              r.returncode != 0 and "V14" in r.stderr and "no_such_goal" in r.stderr
+              r.returncode != 0 and "V20" in r.stderr and "no_such_v1" in r.stderr
               and cli(proj, env, "data-show", lead1, "--text").stdout == cfg_after, r.stderr[-400:])  # fmt: skip
         for target, why in ((f"{run}/metrics.json", "written by evh run"), ("datasets/tickets_v1.json", "written by the dataset-* commands"),
-                            ("../config.yaml", "outside the project's data"), ("configs/x.py", "code")):  # fmt: skip
+                            ("../config.yaml", "outside the project's data"), ("systems/x.py", "code")):  # fmt: skip
             r = cli(proj, env, "data-put", target, "-", stdin="x: 1\n")
             check(
                 f"{store}: data-put refuses {target}",
@@ -343,13 +349,14 @@ def run_case(store: str) -> None:
                   sorted(x.name for x in data.iterdir()) == ["project.sqlite"] or all(x.name.startswith("project.sqlite") for x in data.iterdir()),
                   sorted(x.name for x in data.iterdir()))  # fmt: skip
         # The commands' deletes.
-        r = cli(proj, env, "data-rm", "configs/tickets_lead3.yaml", "--dry-run")
+        r = cli(proj, env, "data-rm", "systems/tickets_lead3_v1.yaml", "--dry-run")
         check(f"{store}: data-rm --dry-run deletes nothing", r.returncode == 0 and "would delete" in r.stdout
-              and cli(proj, env, "data-show", "configs/tickets_lead3.yaml").returncode == 0, r.stdout)  # fmt: skip
-        r = cli(proj, env, "data-rm", "configs/tickets_lead3.yaml")
+              and cli(proj, env, "data-show", "systems/tickets_lead3_v1.yaml").returncode == 0, r.stdout)  # fmt: skip
+        r = cli(proj, env, "data-rm", "systems/tickets_lead3_v1.yaml")
         check(
             f"{store}: data-rm deletes a setting",
-            r.returncode == 0 and cli(proj, env, "data-show", "configs/tickets_lead3.yaml").returncode != 0,
+            r.returncode == 0
+            and cli(proj, env, "data-show", "systems/tickets_lead3_v1.yaml").returncode != 0,
             r.stderr[-200:],
         )
         r = cli(proj, env, "data-rm", "datasets/tickets_v1.json", "--dry-run")

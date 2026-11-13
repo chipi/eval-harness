@@ -10,12 +10,12 @@
     "ref": "a81669ca05119522b003047bc54a752a10954e3f",
     "source": "git"
   },
-  "config_id": "cnn_lead3_dm200_v1",
+  "config_id": "cnn_lead3_v1",
   "created_at": "2026-10-14T13:41:51Z",
   "dataset_id": "cnn_dailymail_dm200",
   "fingerprint": {
     "arm": {
-      "config_id": "cnn_lead3_dm200_v1",
+      "config_id": "cnn_lead3_v1",
       "labels": {
         "family": "lead",
         "price_tier": "free"

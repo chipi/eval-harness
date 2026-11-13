@@ -628,6 +628,34 @@ def write(out: Path, rel: str, content: str) -> None:
     _store.write_text(p, content, encoding="utf-8")
 
 
+def write_redirects(A: Adapter, by_ds: dict, out: Path) -> None:
+    """An arm page under a system's old id (a migration renamed it, RFC-032 step 3) sends the reader to the page under
+    its new id: a link someone kept still arrives. Nothing is written over a page that exists."""
+    fn = getattr(A, "renamed_systems", None)
+    renamed = fn() if callable(fn) else {}
+    if not renamed:
+        return
+    olds: dict[str, list[str]] = {}
+    for old, new in renamed.items():
+        olds.setdefault(new, []).append(old)
+    for v in by_ds.values():
+        for a in v["arms"]:
+            prefix, _, cid = a["arm"].rpartition("/")
+            for old in olds.get(cid, []):
+                rel = arm_page(f"{prefix}/{old}")
+                if _store.exists(out / rel):
+                    continue
+                to = arm_page(a["arm"]).split("/", 1)[1]
+                write(
+                    out,
+                    rel,
+                    '<!doctype html><meta charset="utf-8"><meta name="robots" content="noindex">'
+                    f'<link rel="canonical" href="{e(to)}"><meta http-equiv="refresh" content="0; url={e(to)}">'
+                    f"<title>{e(old)} is now {e(cid)}</title>"
+                    f'<p>{e(old)} is now <a href="{e(to)}">{e(cid)}</a>.</p>\n',
+                )
+
+
 def write_periods(A: Adapter, by_ds: dict, out: Path) -> None:
     """periods.js: the periods every page's chips offer, and the first day anything happened."""
     from evaluation_harness import catalog_periods as cp  # noqa: PLC0415
@@ -4113,8 +4141,8 @@ def deploy_sheet_html(sh: dict, up: str) -> str:
         else '<p class="small muted">No capture here says what production ran (the adapter\'s production_ran).</p>'
     )
     return (
-        f'<dl class="kv">{dl}</dl>{caps}<p class="small">Command: <code>evh deploy-sheet --config '
-        f"{e(sh['config_id'])} [--capture C]</code></p>"
+        f'<dl class="kv">{dl}</dl>{caps}<p class="small">Command: <code>evh deploy-sheet --system '
+        f"{e(sh['system_id'])} [--capture C]</code></p>"
     )
 
 
@@ -5049,6 +5077,7 @@ def build(A: Adapter, out: Path, sections: tuple = ()) -> dict:
         render_dataset(A, ds, v, out, nav)
         for a in v["arms"]:
             render_arm(A, a, ds, by_ds, out, nav)
+    write_redirects(A, by_ds, out)
     n_goals = render_goals(A, by_ds, out, nav)
     render_metrics(A, by_ds, out, nav)
     fn = getattr(A, "metric_descriptions", None)
