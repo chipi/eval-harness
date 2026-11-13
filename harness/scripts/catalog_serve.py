@@ -1045,7 +1045,8 @@ API_COOKIE = "evh_token"
 API_MAX_BODY = 64 * 1024
 #: The Workbench's files (PRD-017): beside the package's code when installed, harness/workbench in a checkout.
 WORKBENCH = next(
-    (p for p in (CODE / "workbench", CODE.parent / "workbench") if p.is_dir()), CODE.parent / "workbench"
+    (p for p in (CODE / "workbench", CODE.parent / "workbench") if _store.is_dir(p)),
+    CODE.parent / "workbench",
 )
 WORKBENCH_TYPES = {
     ".html": "text/html; charset=utf-8",
@@ -1648,10 +1649,10 @@ class Handler(SimpleHTTPRequestHandler):
         name = url_path[len("/workbench/") :] or "index.html"
         kind = WORKBENCH_TYPES.get(Path(name).suffix)
         f = WORKBENCH / name
-        if "/" in name or kind is None or not f.is_file():
+        if "/" in name or kind is None or not _store.is_file(f):
             self.send_error(404)
             return
-        data = f.read_bytes()
+        data = _store.read_bytes(f)
         self.send_response(200)
         self.send_header("Content-Type", kind)
         self.send_header("Content-Length", str(len(data)))
