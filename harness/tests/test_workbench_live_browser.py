@@ -2,7 +2,7 @@
 """The Workbench on its server (RFC-032 step 1): catalog-serve serves it under /workbench/, and it reads the project
 through the model's API.
 
-    python tests/test_workbench_live.py
+    python tests/test_workbench_live_browser.py
 
 In a project with a goal, a dataset, its reference and a run: the startup prints the link that signs in; through it the
 home lists the project's goal with the next step its status names; the goal's screen shows its dataset as the API
