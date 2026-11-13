@@ -1042,6 +1042,16 @@ DATA_HEADER = "X-EVH-Data"
 API_TOKEN: list[str] = []
 API_COOKIE = "evh_token"
 API_MAX_BODY = 64 * 1024
+#: A refusal of the model's, as an HTTP status.
+MODEL_STATUS = {
+    "not-found": 404,
+    "bad-argument": 400,
+    "invalid-file": 422,
+    "would-overwrite": 409,
+    "not-allowed": 409,
+    "old-format": 409,
+    "mismatch": 409,
+}
 API_MAX_JOB_BODY = 70 * 1024 * 1024  # 50 MB of files, base64 (RFC-026: owner, 2026-11-08)
 
 
@@ -1395,11 +1405,73 @@ class Handler(SimpleHTTPRequestHandler):
                 return self._json(400, {"error": "the body is a JSON object"}, cache=False)
             code, answer_body = api_estimate(str(body.get("command") or ""), body.get("args", {}))
             return self._json(code, answer_body, cache=False)
+        if self._model_route(method, url):
+            return None
         if self.headers.get(DATA_HEADER) != "1":
             return self._json(
                 403, {"error": f"a call that is not a read needs the {DATA_HEADER}: 1 header"}, cache=False
             )
         return self._json(404, {"error": f"no API route {method} {url.path}"}, cache=False)
+
+    def _model_route(self, method: str, url) -> bool:
+        """The model's resources (RFC-032): the operation whose method and route match the path, run in this process.
+        A read takes its inputs from the query; a write needs the data header, its inputs as a JSON object and `by`
+        (who acted, RFC-027; an agent names `for`, the person it acts for). None when no operation's route matches."""
+        import jsonschema  # noqa: PLC0415
+        from evaluation_harness import ops  # noqa: PLC0415
+        from evaluation_harness._version import __version__  # noqa: PLC0415
+        from evaluation_harness.model.entity import Problem  # noqa: PLC0415
+
+        def say(code: int, body: dict) -> bool:
+            self._json(code, body, cache=False)
+            return True
+
+        parts = url.path[len("/api/v1") :].strip("/").split("/")
+        for op in ops.OPS.values():
+            want = op.route.strip("/").split("/")
+            if op.method != method or len(want) != len(parts):
+                continue
+            if any(w != p for w, p in zip(want, parts, strict=True) if not w.startswith("{")):
+                continue
+            params = {w[1:-1]: p for w, p in zip(want, parts, strict=True) if w.startswith("{")}
+            inputs: dict = {}
+            if op.kind == "read":
+                q = parse_qs(url.query)
+                inputs = {k: v[0] for k, v in q.items() if k in op.inputs}
+            else:
+                if self.headers.get(DATA_HEADER) != "1":
+                    return say(403, {"error": f"a write needs the {DATA_HEADER}: 1 header"})
+                n = int(self.headers.get("Content-Length") or 0)
+                if n > API_MAX_BODY:
+                    return say(413, {"error": f"a write is at most {API_MAX_BODY:,} bytes"})
+                try:
+                    body = json.loads(self.rfile.read(n) or b"{}") if n else {}
+                except ValueError:
+                    body = None
+                if not isinstance(body, dict):
+                    return say(400, {"error": "the body is a JSON object"})
+                by, for_ = body.pop("by", None), body.pop("for", None)
+                if not isinstance(by, str) or not by.strip().startswith(("person:", "agent:")):
+                    return say(400, {"error": "by: who acted, person:NAME or agent:NAME (RFC-027)"})
+                if by.startswith("agent:") and not (isinstance(for_, str) and for_.strip()):
+                    return say(
+                        400, {"error": f"{by} is an agent: name the person it acts for (for: person:NAME)"}
+                    )
+                inputs = body
+                inputs["by"] = by.strip() + (f" for {for_.strip()}" if by.startswith("agent:") else "")
+            try:
+                jsonschema.validate({k: v for k, v in inputs.items() if k != "by"}, op.schema())
+            except jsonschema.ValidationError as exc:
+                return say(400, {"error": f"{op.name}: {exc.message}"})
+            try:
+                result = op.call(**params, **inputs)
+            except Problem as exc:
+                return say(
+                    MODEL_STATUS.get(exc.kind, 400),
+                    {"error": str(exc), "kind": exc.kind, "problems": exc.problems},
+                )
+            return say(200, {"command": op.name, "version": __version__, "result": result})
+        return False
 
     def _jobs_route(self, method: str, url) -> None:
         """The jobs (RFC-026 step 3): list, read, follow the log, fetch an artifact (GET); start, stop, resume (POST,
@@ -1472,6 +1544,13 @@ class Handler(SimpleHTTPRequestHandler):
             return self._json(exc.status, {"error": str(exc)}, cache=False)
         except (FileNotFoundError, ValueError) as exc:
             return self._json(404, {"error": f"no such job: {exc}"}, cache=False)
+
+    def do_PATCH(self):
+        """An edit of the model's records (RFC-032), through the API; nothing else."""
+        if urlparse(self.path).path.startswith("/api/v1/"):
+            self._observed(lambda: self._api("PATCH"))
+            return
+        self._observed(self._no_write)
 
     def do_PUT(self):
         """Nothing is written by PUT (the Configure page's save is retired, PRD-017)."""

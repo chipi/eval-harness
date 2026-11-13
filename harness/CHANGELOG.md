@@ -13,6 +13,12 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Added
 
+- **The goal through the model** (RFC-032 step 1): `evh goal-list`, `goal-show`, `goal-status` (where a goal stands and
+  its next step), `goal-history`, `goal-new` and `goal-set`, and the same operations as the API's resources
+  (`/api/v1/goals`, `PATCH /api/v1/goals/{goal}`, …), giving the same JSON. A save is checked against the schema and the
+  datasets and references the goal names, keeps the file's comments, records who and the goal as it was, and is refused
+  while a job writes the goal. The commands, the API routes and the MCP tools are made from one registry of the
+  model's operations (`evaluation_harness/ops`); the model reads only data in this release's format.
 - **The data's format** (RFC-032): `data/project.yaml` records the format of a project's data, `evh init` writes it,
   and `evh migrate --check` compares it with the release's (`ERROR (old-format)`, a new refusal kind, for older data;
   `ERROR (mismatch)` for data a later release wrote). `evh migrate` runs numbered steps (`migrations/`), records the

@@ -39,6 +39,18 @@ NOT_SERVED = {
         "the terminal's jobs; the API has its own job routes",
     ),
 }
+
+
+def _model_writes() -> dict[str, str]:
+    from evaluation_harness import ops  # noqa: PLC0415
+
+    return dict.fromkeys(
+        (op.name for op in ops.of_kind("edit", "decision", "work")),
+        "served as the model's resource (RFC-032)",
+    )
+
+
+NOT_SERVED.update(_model_writes())
 #: The commands that call models and spend: a job of one must carry max_cost_usd (step 5).
 SPENDS = {
     "run",

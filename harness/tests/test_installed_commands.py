@@ -436,6 +436,13 @@ def main() -> int:
             ("arms", ["--arm", "tickets_lead2_v1"], "ok:scored against"),
             ("arms", ["--arm", "runs/tickets_v1/no_such_v1"], "no arm"),
             ("goals", [], "ok"),
+            # The goal through the model (RFC-032 step 1): the flow is test_model_goals.py.
+            ("goal-list", [], "ok"),
+            ("goal-show", ["no_such_goal"], "no goal 'no_such_goal'"),
+            ("goal-status", ["no_such_goal"], "no goal 'no_such_goal'"),
+            ("goal-history", ["no_such_goal"], "no goal 'no_such_goal'"),
+            ("goal-new", ["no_such_goal"], "goals/no_such_goal.yaml not saved"),
+            ("goal-set", ["no_such_goal", "--set", "title=x"], "no goal 'no_such_goal'"),
             # Model records (RFC-020, optional): installed, each answers in words; the flows are
             # test_model_onboard.py, test_arm_smoke.py and test_catalog_models.py.
             ("models", [], "ok:no model records"),

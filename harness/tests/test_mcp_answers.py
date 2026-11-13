@@ -55,6 +55,10 @@ try:
     # A relative EVAL_HOME, as render.sh passed it (`EVAL_HOME=_release/inspector`, run from the checkout): the
     # commands run inside the project, and from 0.6.2 to 0.7.1 they resolved it there and answered from nothing.
     (tmp / "data" / "goals").mkdir(parents=True)
+    from evaluation_harness import _format
+
+    # A release's data is at this release's format (the deploy's gate, RFC-032): the model's commands read no other.
+    _runstore.write_text(tmp, _format.NAME, f"format: {_format.FORMAT}\n")
     _runstore.write_text(
         tmp,
         "goals/tickets_summary.yaml",

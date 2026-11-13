@@ -42,7 +42,7 @@ HERE = Path(__file__).resolve().parent
 
 #: The commands that are tools: they only read. Every other command is in NOT_TOOLS with the
 #: reason (tests/test_mcp_server.py fails on a command in neither).
-READ_TOOLS = (
+READ_TOOLS: tuple[str, ...] = (
     "overview",
     "datasets",
     "dataset-items",
@@ -84,6 +84,9 @@ READ_TOOLS = (
     "period-compare",
     "label-mutants",
 )
+from evaluation_harness import ops as _ops  # noqa: E402 - the model's operations (RFC-032), no project code
+
+READ_TOOLS = (*READ_TOOLS, *(op.name for op in _ops.of_kind("read")))
 #: Tools that write, for the agent sampler of a study alone (owner, 2026-11-09, RFC-029): offered by a local server
 #: only, never a public one, and named as not read-only. Every other write is the command line's or a job's.
 AGENT_TOOLS = ("study-ask", "study-tell")
@@ -157,6 +160,12 @@ NOT_TOOLS = {
     "self-test": "runs the test suite",
     "mcp": "this server",
 }
+NOT_TOOLS.update(
+    dict.fromkeys(
+        (op.name for op in _ops.of_kind("edit", "decision", "work")),
+        "a write of the model: the command line, or its API resource (RFC-032)",
+    )
+)
 #: The commands that take --json (catalog_views via _jsonout; dataset-items its profile; the statistics
 #: commands, runs-list and rounds hand their key results over by name, under result.values).
 JSON = {
@@ -177,6 +186,7 @@ JSON |= {"label-coverage", "baselines"}
 JSON |= {"dataset-card", "validate", "prompts", "prompt-diff", "looks", "studies"}
 JSON |= {"faithfulness-show", "exposure", "sealed-counts", "periods", "period-compare", "label-mutants"}
 JSON |= set(AGENT_TOOLS)
+JSON |= {op.name for op in _ops.of_kind("read")}
 #: Left out of every schema: the server uses the project's own adapter (an agent must not load an
 #: arbitrary file), and sets --json itself.
 HIDDEN = {"--adapter", "--json", "--help"}
@@ -205,8 +215,14 @@ class _Parser(Exception):
 
 def parser_of(command: str) -> argparse.ArgumentParser:
     """The command's argparse parser, read without running it: its script runs until it parses
-    its arguments, and the parser is handed back there."""
+    its arguments, and the parser is handed back there. A command made from an operation (RFC-032) has its parser
+    made from the operation."""
+    from evaluation_harness import ops  # noqa: PLC0415
     from evaluation_harness.cli import COMMANDS  # noqa: PLC0415
+    from evaluation_harness.ops import cli as ops_cli  # noqa: PLC0415
+
+    if (op := ops.get(command)) is not None:
+        return ops_cli.parser(op)
 
     script = HERE / COMMANDS[command][0]
     real = argparse.ArgumentParser.parse_args

@@ -326,6 +326,11 @@ COMMANDS = {
         "does the installed harness work here? (in a checkout: the full test suite)",
     ),
 }
+# The commands made from the model's operations (RFC-032): one script runs each, told which by EVH_COMMAND. The ops
+# package imports no project code, so reading it here loads no .env early.
+from evaluation_harness import ops as _ops  # noqa: E402
+
+COMMANDS.update({name: ("op_command.py", op.about) for name, op in _ops.OPS.items()})
 
 
 def _usage() -> str:
@@ -363,6 +368,7 @@ def main(argv: list[str] | None = None) -> int:
     sys.argv = [str(script), *rest]
     # The scripts' "next, run this" hints read it: `evh …` here, `make …` in a checkout.
     os.environ["EVAL_VIA_EVH"] = "1"
+    os.environ["EVH_COMMAND"] = name  # which operation op_command.py runs
     from evaluation_harness._common import project_root, stray_home  # noqa: PLC0415
 
     if note := stray_home():

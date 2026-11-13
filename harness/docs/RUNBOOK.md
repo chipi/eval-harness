@@ -1302,6 +1302,44 @@ own outputs.
 
 ---
 
+## 12b. A goal, through the model
+
+The goal is the first record the harness keeps through its model (RFC-032): one schema, one place
+(`data/goals/<goal_id>.yaml`), read and written only by these commands and the API's resources, which give the same
+answers.
+
+```sh
+evh goal-list                                   # every goal: its status, measure and title
+evh goal-show tickets_summary                   # one goal, as stored
+evh goal-status tickets_summary                 # where it stands, and the next step with its command
+evh goal-new tickets_summary --set title="Ticket summaries" --set datasets.0.dataset_id=tickets_v1 ...
+evh goal-set tickets_summary --set status=paused --unset links
+evh goal-history tickets_summary                # its saves, newest first: when, by whom, what it was
+```
+
+A save is checked first: against the goal's schema, its id against its file's name, and every dataset and reference
+it names against the project. A save that does not check writes nothing and names each field
+(`ERROR (invalid-file)`). Only the lines a change touches move, so the file keeps its comments. Each save records who
+made it (`--by`, as RFC-027) and the goal as it was. The project's full check (`evh validate`) is not part of a save:
+run it, or let the Workbench run it as a job. A goal a job is writing is refused, not waited on (`ERROR
+(not-allowed)`, naming the job). `--set` takes a dotted key and a YAML value, as `evh data-put --set` does.
+`evh goals` is still the view of each goal's arms on its datasets; it moves onto the model with the views.
+
+Through the API (`catalog-serve`, its token, RFC-026), the same operations are resources:
+
+| Command | Resource |
+| --- | --- |
+| `goal-list` | `GET /api/v1/goals` |
+| `goal-show` | `GET /api/v1/goals/{goal}` |
+| `goal-status` | `GET /api/v1/goals/{goal}/status` |
+| `goal-history` | `GET /api/v1/goals/{goal}/history` |
+| `goal-new` | `POST /api/v1/goals/{goal}` with `{"set": {...}, "by": "person:NAME"}` |
+| `goal-set` | `PATCH /api/v1/goals/{goal}` with `{"set": {...}, "unset": [...], "by": "person:NAME"}` |
+
+Each answers `{"command", "version", "result"}`, the `result` the command's `--json` gives. A write needs the
+`X-EVH-Data: 1` header and `by` (an agent: `"by": "agent:NAME", "for": "person:NAME"`); a refusal answers its kind
+and, for a goal that does not check, each problem with its field (`422`).
+
 ## 13. Rounds of an eval (optional)
 
 Evals go round on round: try some arms, keep what wins, drop what lost, change something,
