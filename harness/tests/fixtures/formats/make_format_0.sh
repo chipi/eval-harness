@@ -26,7 +26,8 @@ evh reference-promote --dataset-id tickets_v1 --labels kit_gold --tier gold --by
   --reason "the kit's own references" >/dev/null
 evh run --config data/configs/tickets_lead1.yaml >/dev/null
 evh run --config data/configs/tickets_lead2.yaml >/dev/null
-run="$(ls data/runs | grep '^tickets_lead2' | head -1)"
+runs=(data/runs/tickets_lead2*)
+run="$(basename "${runs[0]}")"
 evh run-promote --run "$run" --reason "lead2 covers more of the reference than lead1 on the kit's tickets" >/dev/null
 evh leaderboard --dataset-id tickets_v1 --json > "$work/leaderboard.json"
 rm -rf "$here/0"
