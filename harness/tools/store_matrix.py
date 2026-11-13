@@ -90,6 +90,15 @@ def main() -> int:
     for n in failed:
         if n not in differ:
             print(f"  fails in every store: {n}")
+    # What failed, here: CI keeps no logs, and a failure that does not reproduce elsewhere is read from this alone.
+    for (n, s), c in sorted(got.items()):
+        if c == 0:
+            continue
+        f = log / f"{Path(n).stem}.{s}.log"
+        lines = f.read_text(errors="replace").splitlines() if f.is_file() else []
+        said = [ln for ln in lines if ln.lstrip().startswith("FAIL")][:10]
+        print(f"\n--- {n} ({s}): its failed checks, then its last lines ---")
+        print("\n".join([*said, "  ...", *lines[-15:]]))
     print(f"logs: {log}")
     print("STORE MATRIX: " + ("PASS" if not failed else "FAIL"))
     return 1 if failed else 0
