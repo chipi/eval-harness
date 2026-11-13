@@ -365,6 +365,12 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Fixed
 
+- **The API took a file or code path where the command line does** (RFC-026 says it never does): `capture --importer`,
+  `importer-check`'s importer and `dataset-create --source` given as `path.py:Class` loaded that file's code, `--query
+  @file` of `capture` and `importer-check` read a file of the server's, and `data-put`'s file was read from the server.
+  The API now takes a name for the first three, the query's JSON (not `@file`), and `data-put`'s file as an upload;
+  each needed the server's token. A served argument whose help offers `path.py:Class` or `@file` without a rule fails
+  a test.
 - **The catalog's arms page** (its design critique, 2026-11-12):
   - Sorting a grouped table threw on a group's heading row and did nothing; it sorts inside each group now.
   - A column sorted its cells' text: a cost as "$0.0009", a blank first, every measure in one ranking. It sorts each

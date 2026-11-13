@@ -260,7 +260,7 @@ and the Workbench's screens that need it are wired behind it.
 
 ## The six questions of the first draft
 
-Answered the same day (owner: "Live the reasoning and answers. i agree with all").
+Answered the same day (owner: "Love the reasoning and answers. I agree with all").
 
 1. **How a run starts.** A run is always a system run on a dataset: `evh run --system cnn_bart_l --dataset
    cnn_dailymail_200`, optionally `--round r4`. Running a round is an operation of its own, `evh round-run --goal
@@ -294,9 +294,11 @@ Answered the same day (owner: "Live the reasoning and answers. i agree with all"
 
 ## Decisions (owner, 2026-11-13)
 
-- **The model, and its surfaces.** "Insaid I want this to be api driven orogibally"; "in my mind cli and api are
+Quoted from the discussion, typing slips corrected.
+
+- **The model, and its surfaces.** "I said I want this to be API driven originally"; "in my mind cli and api are
   different surfaces around same model". Asked where the model lives, the API's shape and how to get there:
-  "Recommeded is good on a/b/c": its own package (`model/`, `ops/`); resources and actions; entity by entity, no
+  "Recommended is good on a/b/c": its own package (`model/`, `ops/`); resources and actions; entity by entity, no
   shims, the Workbench behind it.
 - **The entities.** "Initial list looks good."
   - **Model and deployment**: "should be their own things. We might want to deepen that later".
@@ -306,10 +308,10 @@ Answered the same day (owner: "Live the reasoning and answers. i agree with all"
   - **Runs**: one collection, a score apart from its run, the folders migrated ("Yes").
   - **A round's arms**: stored by the round ("I want to keep things pretty straightforward … let's get a
     recommendation"; then "Yes").
-- **Schemas and writes.** "Q3 yes, goodnidea, 4a and 4b also ok": JSON Schema as the source of truth; edits in the
+- **Schemas and writes.** "Q3 yes, good idea, 4a and 4b also ok": JSON Schema as the source of truth; edits in the
   server's process; every write records who and when, a decision also why.
-- **Views, stores, migration.** "Ok on q6 and q7 amd q8. Teally love how with 6 we nring benefit to catalog also."
-  Then: "On q8 we should also think anout data kigratiom in general and how would that work mobing fkrward after
-  0.8", and "Dont fkrhet that we alsonhave to migrate prod as partnof deploy and nkt kust ebryniser for themselves".
-  A project format number, not a version per record, and no down-migrations: "Inagree with a and n".
-- **The six questions of the first draft**, as above: "Live the reasoning and answers. i agree with all".
+- **Views, stores, migration.** "Ok on q6 and q7 and q8. Really love how with 6 we bring benefit to catalog also."
+  Then: "On q8 we should also think about data migration in general and how would that work moving forward after
+  0.8", and "Don't forget that we also have to migrate prod as part of deploy and not just everyone for themselves".
+  A project format number, not a version per record, and no down-migrations: "I agree with a and b".
+- **The six questions of the first draft**, as above: "Love the reasoning and answers. I agree with all".

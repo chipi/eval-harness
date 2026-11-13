@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import argparse
 import functools
+import re
 from pathlib import Path
 from typing import Any
 
@@ -87,6 +88,7 @@ PATH_KINDS: dict[tuple[str, str], str] = {
     ("study-import", "file"): UPLOAD,
     ("prompt-export", "--to"): ARTIFACT,
     ("dataset-card", "--out"): ARTIFACT,
+    ("data-put", "file"): UPLOAD,
 }
 #: Path-typed arguments never taken, each a decision (RFC-026 revision 2): another runs folder or output folder,
 #: a file of the server's, a page's own assets. A path-typed argument in neither table fails a test.
@@ -108,6 +110,48 @@ NEVER_PATHS = {
 TEXT_PATHS = {("round-retire", "--runs-dir"), ("judge", "--config")}
 #: Options never taken from any command: they load code or reach outside the project.
 NEVER = {"--adapter", "--help", "--json", "--runs-dir", "--source-dir", "--data-dir", "--config-dir"}
+_NAME_ONLY = re.compile(r"[a-z0-9][a-z0-9_]*")
+#: Text arguments that the command line also reads as a code file (`path.py:Class`) or a file to read (`@file`):
+#: the API takes their other form only. A served argument whose help offers either and has no rule fails a test.
+VALUE_RULES: dict[tuple[str, str], tuple[str, Any]] = {
+    ("capture", "--importer"): ("a name; a code file (path.py:Class) is never taken", _NAME_ONLY.fullmatch),
+    ("importer-check", "importer"): (
+        "a name; a code file (path.py:Class) is never taken",
+        _NAME_ONLY.fullmatch,
+    ),
+    ("dataset-create", "--source"): (
+        "a name; a code file (path.py:Class) is never taken",
+        _NAME_ONLY.fullmatch,
+    ),
+    ("capture", "--query"): (
+        "the query's JSON; a file (@file) is never taken",
+        lambda v: not v.startswith("@"),
+    ),
+    ("importer-check", "--query"): (
+        "the query's JSON; a file (@file) is never taken",
+        lambda v: not v.startswith("@"),
+    ),
+}
+
+
+def unruled_values() -> list[str]:
+    """Every served value argument whose help offers `path.py:Class` or `@file` with no VALUE_RULES entry: empty, or a
+    test fails."""
+    from evaluation_harness.cli import COMMANDS  # noqa: PLC0415
+    from evaluation_harness.mcp_server import parser_of  # noqa: PLC0415
+
+    out = []
+    for c in sorted(COMMANDS):
+        if served_as(c) is None:
+            continue
+        for a in parser_of(c)._actions:
+            if (
+                kind_of(c, a) == "value"
+                and re.search(r"\.py:|@file", a.help or "")
+                and (c, _key(a)) not in VALUE_RULES
+            ):
+                out.append(f"{c} {_key(a)}")
+    return out
 
 
 def _name(a: argparse.Action) -> str:
@@ -238,6 +282,9 @@ def checked_args(command: str, arguments: Any) -> dict[str, Any]:
             raise Refused(f"{command} {k}: one value, not a list")
         if a["choices"] and any(str(x) not in map(str, a["choices"]) for x in vals):
             raise Refused(f"{command} {k}: one of {', '.join(map(str, a['choices']))}")
+        rule = VALUE_RULES.get((command, f"--{k}")) or VALUE_RULES.get((command, k))
+        if rule and not all(rule[1](str(x)) for x in vals):
+            raise Refused(f"{command} {k}: {rule[0]}")
         if a["kind"] == NAME:
             vals = [_config_file(str(x)) for x in vals]
             v = vals if isinstance(v, list) else vals[0]

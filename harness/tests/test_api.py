@@ -253,6 +253,50 @@ try:
         except _api.Refused as exc:
             ok = exc.status == 404 and "no arm config" in str(exc)
         check("a name that does not exist (a config id) is refused", ok)
+
+        def refused(command: str, args: dict) -> bool:
+            try:
+                _api.checked_args(command, args)
+            except _api.Refused:
+                return True
+            return False
+
+        # Values the command line takes as a file to read or code to load, which the API never takes (RFC-026,
+        # "No argument is a free path"): each was passed to its command as a plain value until 2026-11-13.
+        never = {
+            "capture --importer path.py:Class (code)": refused(
+                "capture", {"importer": "importers/x.py:Importer", "query": "{}", "capture": "c1"}
+            ),
+            "importer-check importer path.py:Class (code)": refused(
+                "importer-check", {"importer": "x.py:Importer"}
+            ),
+            "dataset-create --source path.py:Class (code)": refused(
+                "dataset-create", {"source": "sources/x.py:Source", "dataset-id": "d1"}
+            ),
+            "capture --query @file (a server file)": refused(
+                "capture", {"importer": "jsonl", "query": "@/etc/hostname", "capture": "c1"}
+            ),
+            "importer-check --query @file (a server file)": refused(
+                "importer-check", {"importer": "jsonl", "query": "@/etc/hostname"}
+            ),
+        }
+        check("a code path or an @file is refused before anything runs", all(never.values()), never)
+        kinds = {a["name"]: a["kind"] for a in _api.registry()["data-put"]["arguments"]}
+        check(
+            "data-put's file is an upload, never a path on the server",
+            kinds.get("file") == _api.UPLOAD,
+            kinds,
+        )
+        check(
+            "a name is still taken (capture --importer jsonl, dataset-create --source folder)",
+            not refused("capture", {"importer": "jsonl", "query": "{}", "capture": "c1"})
+            and not refused("dataset-create", {"source": "folder", "dataset-id": "d1"}),
+        )
+        check(
+            "every served argument whose help offers path.py:Class or @file has a rule",
+            _api.unruled_values() == [],
+            _api.unruled_values(),
+        )
     finally:
         srv.terminate()
         srv.wait(timeout=10)

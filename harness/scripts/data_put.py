@@ -36,7 +36,9 @@ def main() -> int:
     ap.add_argument(
         "path", help="the setting, relative to data/ (goals/x.yaml, configs/x.yaml, validate.json, ...)"
     )
-    ap.add_argument("file", nargs="?", help="the file holding its whole new text, or - for standard input")
+    ap.add_argument(
+        "file", nargs="?", type=_Path, help="the file holding its whole new text, or - for standard input"
+    )
     ap.add_argument(
         "--set", action="append", default=[], metavar="KEY=VALUE", help="set one field (repeatable)"
     )
@@ -54,7 +56,7 @@ def main() -> int:
         die("give a FILE, or fields with --set / --unset (not both)", "bad-argument")
     if args.file is None:
         return _fields(args)
-    if args.file == "-":
+    if str(args.file) == "-":
         text = _sys.stdin.read()
     else:
         src = _Path(args.file)
