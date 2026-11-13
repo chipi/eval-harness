@@ -474,6 +474,23 @@ def _alive(pgid: int | None) -> bool:
     return True
 
 
+def _ended(pid: int) -> bool:
+    """The process is gone, or a zombie its parent has not reaped: it holds nothing any more."""
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return True
+    except PermissionError:
+        return False
+    stat = Path(f"/proc/{pid}/stat")
+    if stat.exists():
+        with contextlib.suppress(OSError, IndexError):
+            return stat.read_text().rsplit(")", 1)[1].split()[0] == "Z"
+        return False
+    out = subprocess.run(["ps", "-o", "stat=", "-p", str(pid)], capture_output=True, text=True, check=False)
+    return not out.stdout.strip() or out.stdout.strip().startswith("Z")
+
+
 def read(job_id: str) -> dict[str, Any]:
     """A job: its record and its state, with what the files cannot say by themselves: a `running` or `queued` job
     whose supervisor is gone reads `running (unsupervised)` while its command lives, else `lost`."""
@@ -527,9 +544,16 @@ def stop(job_id: str, grace: float = STOP_GRACE_S) -> dict[str, Any]:
         # and so its locks, go with it.
         with contextlib.suppress(ProcessLookupError, PermissionError):
             os.kill(int(spid), signal.SIGTERM)
+        # Its locks go free while it exits, before it has ended: wait for the process, not only the lock.
         end = time.monotonic() + grace
-        while _held(d / "supervisor.lock") and time.monotonic() < end:
+        while not _ended(int(spid)) and time.monotonic() < end:
             time.sleep(0.05)
+        if not _ended(int(spid)):
+            with contextlib.suppress(ProcessLookupError, PermissionError):
+                os.kill(int(spid), signal.SIGKILL)
+            end = time.monotonic() + grace
+            while not _ended(int(spid)) and time.monotonic() < end:
+                time.sleep(0.05)
         j = read(job_id)  # it may have started the command just before: that is stopped below
     pgid = j.get("pgid")
     if pgid and _alive(pgid):

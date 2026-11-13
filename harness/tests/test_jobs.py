@@ -281,6 +281,25 @@ try:
         stopped_q.get("state") == "cancelled" and sup_gone and first_free,
         (stopped_q.get("state"), sup_gone, first_free),
     )
+    # Stop waits for the supervisor itself, not only its lock: the kernel frees a dying process's locks before it ends
+    # (CI, 2026-11-13: the lock free, the supervisor not yet gone). Ended = gone or a zombie, never a live process.
+    live = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(30)"])
+    dead = subprocess.Popen([sys.executable, "-c", "pass"])
+    end = time.monotonic() + 30
+    while (
+        Path(f"/proc/{dead.pid}/stat").read_text().rsplit(")", 1)[1].split()[0] != "Z"
+        and time.monotonic() < end
+    ):
+        time.sleep(0.05)
+    states = (_jobs._ended(live.pid), _jobs._ended(dead.pid))
+    live.kill()
+    live.wait()
+    dead.wait()
+    check(
+        "a stopped supervisor is waited for until it has ended: a live process is not, a zombie and a reaped one are",
+        states == (False, True) and _jobs._ended(dead.pid),
+        states,
+    )
     # A command that waits for a lock says so (it waited in silence; a review, 2026-11-11), and no script waits mutely.
     held = _jobs.take_locks([("goal:wait_g", True)], "job 2026-the-holder")
     waiter_py = proj / "waiter.py"
