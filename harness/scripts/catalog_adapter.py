@@ -16,7 +16,7 @@ Without one, HarnessAdapter reads the harness's own layout:
     <data>/references/<tier>/<dataset_id>/<item_id>.txt
 
 An ARM is a string id the adapter chooses. HarnessAdapter's is `<runs dir>/<dataset_id>/<config_id>`:
-every repeat of a config on a dataset, averaged per item, exactly as `pair-test` and
+every repeat of a system on a dataset, averaged per item, exactly as `pair-test` and
 `family-test` read them, so the inspector and the command line give the same p.
 
 Item text (outputs, references) is only ever returned by item_view / reference_view. The static
@@ -168,7 +168,7 @@ class Adapter(Protocol):
 
     def references(self) -> list[dict]:
         """[{"id", "tier", "dataset", "task", "archived", "format"}]; optional, for the reference's
-        page: "items", "author" (the config that wrote it), "from_run", "model", "created_at",
+        page: "items", "author" (the system that wrote it), "from_run", "model", "created_at",
         "caveat"."""
 
     def reference_format(self, ref: str) -> str:
@@ -219,7 +219,7 @@ class Adapter(Protocol):
     # [{"version", "dataset", "run", "arm", "reason", "promoted_at", "tier", "goal", "actor", "evidence"}], oldest
     # promotion first; the pages lead with them, the answer so far.
     # def baselines(self) -> list[dict]: ...
-    # Optional: the arm id of a config on a dataset (`evh rounds`, `evh inspect --round` and the
+    # Optional: the arm id of a system on a dataset (`evh rounds`, `evh inspect --round` and the
     # round pages build arm ids with it): `runs/<dataset>/<config_id>` when absent.
     # def arm_of(self, dataset: str, config_id: str) -> str: ...
     # Optional: whether a metric needs no reference (the bill, the clock, token counts), so arms
@@ -256,7 +256,7 @@ class Adapter(Protocol):
     # reparse); the arm page lists them and the home page's activity counts them.
     # def arm_runs(self, arm: str) -> list[dict]: ...
     # Optional: what an arm was asked to do, {"config_id", "params", "adapter", "deployment"}, params
-    # without credentials, "deployment" the model-record deployment its config named ("" for none);
+    # without credentials, "deployment" the model-record deployment its system named ("" for none);
     # the arm page shows it.
     # def arm_config(self, arm: str) -> dict: ...
     # Optional: what was spent and when, [{"at", "usd", "tokens", "kind": "arm" | "judge",
@@ -384,7 +384,7 @@ def _plain_name(name: str) -> bool:
 
 
 def _dir_label(runs_dir: str) -> str:
-    """How an arm's runs directory reads beside its config: "silver", "repeats", "rescored cd35dc1f", "rescored
+    """How an arm's runs directory reads beside its system: "silver", "repeats", "rescored cd35dc1f", "rescored
     cd35dc1f, repeats" (runs-rescored/<scorer>/<source>, RFC-022)."""
     parts = runs_dir.split("/")
     if parts[0] == "runs-rescored" and len(parts) == 3:
@@ -403,7 +403,7 @@ def _promoted_from_now(pf: Any) -> Any:
 
 
 class HarnessAdapter:
-    """The harness's own data tree. Arms are configs on a dataset, repeats averaged per item."""
+    """The harness's own data tree. Arms are systems on a dataset, repeats averaged per item."""
 
     item_word = "item"
     can_rescore = False
@@ -549,7 +549,7 @@ class HarnessAdapter:
             "reference": ref,
             # A judged run keeps its source run's reference_id, but its scores are the judges'.
             "judge": judged or "",
-            # Graded against its own outputs: the arm whose run (or config) wrote the reference.
+            # Graded against its own outputs: the arm whose run (or system) wrote the reference.
             "wrote_reference": bool(author) and not judged and author == m.get("config_id"),
             "reference_author": author or "",
             # Scored against a label set (RFC-023): its source (person, model, rule), for the chip.
@@ -669,7 +669,7 @@ class HarnessAdapter:
         return bool(declared) and all(declared)
 
     def arm_of(self, dataset: str, config_id: str) -> str:
-        """The arm id of a config's runs on a dataset: `<runs dir>/<dataset>/<config_id>`, the
+        """The arm id of a system's runs on a dataset: `<runs dir>/<dataset>/<config_id>`, the
         runs directory as this project names it (EVAL_RUNS_DIR), relative to its data."""
         try:
             base = _common.RUNS.resolve().relative_to(self.data_dir.resolve()).as_posix()
@@ -739,7 +739,7 @@ class HarnessAdapter:
 
     def deploy_sheet(self, arm: str) -> dict | None:
         """What production must match to run this arm (RFC-023, `evh deploy-sheet`), with a check against each capture
-        whose records say what production ran (the arm's adapter's `production_ran`); None when the arm's config was
+        whose records say what production ran (the arm's adapter's `production_ran`); None when the arm's system was
         never promoted, or its sheet cannot be read here."""
         from collections import Counter  # noqa: PLC0415
 
@@ -1035,7 +1035,7 @@ class HarnessAdapter:
     @_memo
     def models(self) -> list[dict]:
         """Each model record (data/models/) with the arms that use it: an arm uses a record when its
-        config names it (`model_record`, as its run recorded) or its run's params.model is one of the
+        system names it (`model_record`, as its run recorded) or its run's params.model is one of the
         record's aliases."""
         from evaluation_harness import _models  # noqa: PLC0415
 
@@ -1055,7 +1055,7 @@ class HarnessAdapter:
     @_memo
     def rounds(self) -> list[dict]:
         """Eval rounds (ADR-0004, optional): each round's record, plus "arms" (the arm ids in
-        play: runs in any runs directory that name it, and the configs carried in, less the retired)
+        play: runs in any runs directory that name it, and the systems carried in, less the retired)
         and "retired_arms" (the arm ids it retired: a retirement names a runs directory, else the
         project's)."""
         import yaml  # noqa: PLC0415
@@ -1176,7 +1176,7 @@ class HarnessAdapter:
         now = items_digest(ds) if isinstance(ds, dict) else None
         return dict(p, stale=bool(now and p.get("items_sha256") and now != p["items_sha256"]))
 
-    # -- runs, configs and spend ---------------------------------------------------------
+    # -- runs, systems and spend ---------------------------------------------------------
     def arm_runs(self, arm: str) -> list[dict]:
         """The arm's runs, oldest first: when each was made, its items, what it cost, and how
         it was derived ("" for a measured run)."""
@@ -1200,7 +1200,7 @@ class HarnessAdapter:
         return sorted(out, key=lambda r: (r["created_at"], r["run_id"]))
 
     def arm_config(self, arm: str) -> dict:
-        """The config behind the arm, as its latest run recorded it; params without credentials
+        """The system behind the arm, as its latest run recorded it; params without credentials
         (`api_key_env` left out, a literal key shown as "(hidden)")."""
         from evaluation_harness._providers import shown_params  # noqa: PLC0415
 
@@ -1223,7 +1223,7 @@ class HarnessAdapter:
             "deployment": m.get("deployment_id") or "",
             # A recorded arm (RFC-023): its outputs are the capture's records, read this way; no model was called.
             "recorded_by": read_by,
-            # Only an arm whose config carried one (ADR-0025): the block, and whether it was committed before the run.
+            # Only an arm whose system carried one (ADR-0025): the block, and whether it was committed before the run.
             **{k: m[k] for k in ("hypothesis", "hypothesis_in_advance") if m.get(k)},
         }
 

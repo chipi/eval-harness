@@ -2,8 +2,8 @@
 """Show one file the project keeps under data/, in either store (UXS-004: the data page's file view).
 
 evh data-show goals/support_triage.yaml          its text, then its size, date, sha256 and kind
-evh data-show configs/x.yaml --text              its text only (to edit and put back)
-evh data-show configs/x.yaml --fields            a setting's fields, one dotted key a line (what --set takes)
+evh data-show systems/x.yaml --text              its text only (to edit and put back)
+evh data-show systems/x.yaml --fields            a setting's fields, one dotted key a line (what --set takes)
 """
 
 from __future__ import annotations
@@ -58,7 +58,7 @@ def main() -> int:
         print(f["text"] if f["text"] is not None else f"binary, {f['size']} bytes")
         print(f"\n{f['path']} · {f['size']} bytes · {f['modified']} · sha256 {f['sha256'][:12]}")
         if f["editable"]:
-            note = f" · {f['runs_made']} run(s) were made with this config" if "runs_made" in f else ""
+            note = f" · {f['runs_made']} run(s) were made with this system" if "runs_made" in f else ""
             print(
                 f"a setting: its fields with --fields; change one with evh data-put {f['path']} --set KEY=VALUE{note}"
             )

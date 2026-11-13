@@ -74,7 +74,7 @@ change one thing — the prompt, the model, a setting — or add one from an onb
 run them all, score them (the goal's scorers; re-scored on the current reference; the goal's judge when it has one),
 see the comparison against the baseline, and decide: keep, retire, promote a baseline, close the round with a
 conclusion.
-*Tasks:* `round-open`, a config per arm, `arm-smoke`, `run --dry-run`, `run` (with `--repeat`), `rescore`,
+*Tasks:* `round-open`, a system per arm, `arm-smoke`, `run --dry-run`, `run` (with `--repeat`), `rescore`,
 `judge-score`, `leaderboard` / `pair-test` / `family-test`, `round-retire`, `run-promote`, `round-close`.
 
 **W2 Review outputs, label and tag.** On a goal's dataset: a sheet of items across the arms that matter; read

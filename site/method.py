@@ -28,7 +28,7 @@ TUTORIAL7 = "docs/tutorials/7-set-up-a-model.md"
 CATALOG_STEP = {
     "dataset": ("datasets.html", "Every dataset, its versions and items"),
     "references": ("references.html", "Every reference, who wrote it, what is scored against it"),
-    "arms": ("arms.html#configs", "Every config, across the datasets it ran on"),
+    "arms": ("arms.html#systems", "Every system, across the datasets it ran on"),
     "runs": ("arms.html", "Every arm, how it was measured, its cost and speed"),
     "baseline": ("goals.html", "Every goal, its promoted baseline and its reason"),
     "remeasure": ("arms.html", "Re-scored and judged arms beside the originals"),
@@ -110,14 +110,14 @@ NODES = [
     (
         "arms",
         "Arms",
-        "one config each",
+        "one system each",
         (
             "One system under test: provider, model, prompt, settings, in a YAML file. Change one "
-            "thing, bump the config_id — the fingerprint will prove what moved. An arm can name a model "
+            "thing, bump the system_id — the fingerprint will prove what moved. An arm can name a model "
             "record, set up once where it runs, and is smoked on a few items before its full run."
         ),
-        "data/configs/*.yaml · data/models/&lt;id&gt;.yaml",
-        "evh arm-smoke --config …",
+        "data/systems/*.yaml · data/models/&lt;id&gt;.yaml",
+        "evh arm-smoke --system …",
         (GUIDE, "3-describe-your-arms"),
     ),
     (
@@ -129,7 +129,7 @@ NODES = [
             "latency, and a fingerprint of instrument, data, deployment and settings. Repeat it to measure noise."
         ),
         "data/runs/&lt;run_id&gt;/",
-        "evh run --config … --repeat 3",
+        "evh run --system … --dataset … --repeat 3",
         (GUIDE, "6-run-the-other-arms-three-times-each"),
     ),
     (
@@ -237,7 +237,7 @@ FLOWS = {
         ("Gold", "decides"),
     ],
     "noise": [
-        ("One arm", "one config"),
+        ("One arm", "one system"),
         ("Three runs", "the same items"),
         ("Its spread", "the noise floor"),
         ("A difference", "only past it"),
@@ -812,7 +812,7 @@ STEPS = [
     (
         "Describe your arms",
         "One YAML per candidate. Change one thing; bump the id.",
-        "cp tutorial/configs/tickets_*.yaml data/configs/",
+        "cp tutorial/systems/tickets_*.yaml data/systems/",
         "",
         GUIDE,
         "3-describe-your-arms",
@@ -828,7 +828,7 @@ STEPS = [
     (
         "Run the best arm; optionally its outputs become the reference set",
         "Your best system answers first; its answers become a model's labels, promoted to silver, and the others are measured by how close they come.",
-        "evh run --config data/configs/tickets_author.yaml\nevh label-from-run --run … --set author_v1\nevh reference-promote --dataset-id tickets_v1 --labels author_v1 --tier silver --reason … --by me",
+        "evh run --system tickets_author_v1 --dataset tickets_v1 --goal tickets_summary\nevh label-from-run --run … --set author_v1\nevh reference-promote --dataset-id tickets_v1 --labels author_v1 --tier silver --reason … --by me",
         "data/references/silver/tickets_v1: 6 of 6 item(s), silver, promoted from tickets_v1/author_v1",
         GUIDE,
         "5-make-its-outputs-the-reference-optional",
@@ -836,7 +836,7 @@ STEPS = [
     (
         "Run the others — three times",
         "The spread is how far an arm disagrees with itself.",
-        "evh run --config data/configs/tickets_lead2_noisy.yaml --repeat 3",
+        "evh run --system tickets_lead2_noisy_v1 --dataset tickets_v1 --goal tickets_summary --repeat 3",
         "overlap_f1     spread=0.029372   treat deltas below 0.029372 as noise",
         GUIDE,
         "6-run-the-other-arms-three-times-each",
@@ -946,7 +946,7 @@ def use_page(H, f: dict) -> str:
 <section class="block" id="patterns" data-nav="Patterns"><div class="wrap">
   <div class="eyebrow"><span class="num">02</span>Patterns</div>
   <h2>Your question is probably one of these.</h2>
-  <p class="lede">Each maps to an eval in this repository you can copy — its adapter, its configs, its scorer — and change the data. The idea underneath all of them — build a private leaderboard for your own application instead of trusting a public one — is Chip Huyen's, from <i>AI Engineering</i> (<a href="docs/INFLUENCES/">influences</a>).</p>
+  <p class="lede">Each maps to an eval in this repository you can copy — its adapter, its systems, its scorer — and change the data. The idea underneath all of them — build a private leaderboard for your own application instead of trusting a public one — is Chip Huyen's, from <i>AI Engineering</i> (<a href="docs/INFLUENCES/">influences</a>).</p>
   <div class="patterns">{cards}</div>
 </div></section>
 
@@ -968,7 +968,7 @@ def use_page(H, f: dict) -> str:
         <div class="t-row" role="listitem"><span class="t-path">scripts/adapter.py</span><span class="t-what"><code>call_system()</code> sends one input to your system; <code>score()</code> compares an output with a reference</span></div>
         <div class="t-row" role="listitem"><span class="t-path">data/sources/</span><span class="t-what">your inputs: real ones, sampled on purpose</span></div>
         <div class="t-row" role="listitem"><span class="t-path">data/labels/</span><span class="t-what">the answers: gold for a slice you can check, silver from a model you trust</span></div>
-        <div class="t-row" role="listitem"><span class="t-path">data/configs/*.yaml</span><span class="t-what">one per candidate: model, prompt, settings, price</span></div>
+        <div class="t-row" role="listitem"><span class="t-path">data/systems/*.yaml</span><span class="t-what">one per candidate: model, prompt, settings, price</span></div>
         <div class="t-row t-last" role="listitem"><span class="t-path">data/goals/*.yaml</span><span class="t-what">what it is for: the measure that decides, limits, how a tie is broken</span></div>
       </div>
     </div>
@@ -993,7 +993,7 @@ def use_page(H, f: dict) -> str:
         <li>Write the question as a goal: <i>can ticket routing move to the cheaper model?</i></li>
         <li>Collect real inputs; freeze them.</li>
         <li>Write gold answers for a slice yourself.</li>
-        <li>Write the adapter; one config per candidate.</li>
+        <li>Write the adapter; one system per candidate.</li>
         <li>Dry-run; set a cost cap.</li>
         <li>Run each arm three times; note its noise.</li>
         <li>Test the comparison you named; promote with a reason; put <code>evh validate</code> in CI.</li>

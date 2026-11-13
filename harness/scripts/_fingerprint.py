@@ -654,7 +654,7 @@ def build_fingerprint(
 ) -> dict[str, Any]:
     """The full fingerprint, with a sha256 per hashed part and one hash over the four. `data_dir` is
     the project's data root (`_common.DATA`, which honours EVAL_DATA_DIR); it defaults to
-    `<root>/data`. `cfg` is the arm's resolved config: the model record and deployment it names
+    `<root>/data`. `cfg` is the arm's resolved system: the model record and deployment it names
     (`model_record`, `deployment`) are where the deployment comes from, best first. `replay` is a replay's plan
     (RFC-030): its code record and commits are `deployment.code`, its settings `settings.replay`, and the adapter's
     hash covers its support modules.
@@ -705,7 +705,7 @@ def build_fingerprint(
         "arm": {"config_id": config_id, "labels": labels_of(params) or None},
     }
     split_declared(fp["deployment"], fp["settings"])
-    if prompt_settings:  # the config's declared prompts (RFC-028): only when declared, so no other run moves
+    if prompt_settings:  # the system's declared prompts (RFC-028): only when declared, so no other run moves
         fp["settings"].update(prompt_settings)
     code = code_of(cfg, fp["deployment"], root)
     if replay is not None:
@@ -720,8 +720,8 @@ def build_fingerprint(
 
 
 def code_of(cfg: dict[str, Any] | None, deployment: dict[str, Any], root: Path) -> dict[str, Any] | None:
-    """`deployment.code` (RFC-028): the config's `code: {path}` read from the checkout, else the adapter hook's
-    `code_ref` (taken out of `declared`); the config's wins, and a hook's that differs is kept as `hook_code_ref`."""
+    """`deployment.code` (RFC-028): the system's `code: {path}` read from the checkout, else the adapter hook's
+    `code_ref` (taken out of `declared`); the system's wins, and a hook's that differs is kept as `hook_code_ref`."""
     declared = deployment.get("declared") or {}
     hook = declared.pop("code_ref", None) if isinstance(declared, dict) else None
     if isinstance(declared, dict):

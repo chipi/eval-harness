@@ -68,7 +68,7 @@ data/runs/*/run.json
 # bytes, describing content that no longer exists -- a worse failure than withholding
 # the file. No MEASUREMENT run is affected; every number in the reports comes from the
 # n=200/280 runs, which are committed. Regenerate these with
-#   make run CONFIG=../examples/summarization-cnn-dailymail/configs/arm_<x>.yaml ARGS="--repeat 3"
+#   make run SYSTEM=<x>_v1 DATASET_ID=<id> ARGS="--repeat 3"
 #
 # THE OUTPUTS LINE BELOW WAS MISSING AND IT MATTERED. These four patterns excluded the
 # pilot runs' metrics and predictions, and then `!data/runs/*/outputs/**` above re-admitted

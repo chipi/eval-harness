@@ -54,7 +54,7 @@
   const PK = window.PICK;
   const pk = { goal: '', ds: '', q: '', dsq: '', f: {}, ticked: new Set(runs()) };
   const armOf = r => PK.arms[r] || PK.arms[r.split('#')[0]];
-  // what an arm is beside its config's others, without the particulars: "judged by X" is judged
+  // what an arm is beside its system's others, without the particulars: "judged by X" is judged
   const howKind = h => /^judged/.test(h) ? 'judged' : /^rescored/.test(h) ? 'rescored' : String(h).split(' (')[0];
   const FACETS = [['w', 'where', a => a.w], ['h', 'how', a => howKind(a.h)], ['s', 'scored against', a => a.s]];
   function picker() { return PK ? pickerFull() : pickerPlain(); }
@@ -138,12 +138,12 @@
     const t = [...pk.ticked].map(r => armOf(r)).filter(Boolean);
     const cfgs = new Set(t.map(a => a.c)), models = new Set(t.map(a => a.m).filter(Boolean));
     const same = mine.filter(([r, a]) => !pk.ticked.has(r) && cfgs.has(a.c));
-    if (same.length) sug.push([`the same config${cfgs.size > 1 ? 's' : ''}, scored other ways (${same.length})`, same.map(([r]) => r)]);
+    if (same.length) sug.push([`the same system${cfgs.size > 1 ? 's' : ''}, scored other ways (${same.length})`, same.map(([r]) => r)]);
     const sib = mine.filter(([r, a]) => !pk.ticked.has(r) && a.m && models.has(a.m) && !cfgs.has(a.c));
-    if (sib.length) sug.push([`the same model${models.size > 1 ? 's' : ''} in other configs (${sib.length})`, sib.map(([r]) => r)]);
+    if (sib.length) sug.push([`the same model${models.size > 1 ? 's' : ''} in other systems (${sib.length})`, sib.map(([r]) => r)]);
     const cap = shown.slice(0, 400), was = box.querySelector('.pk-list'), top = was ? was.scrollTop : 0;
     box.innerHTML =`<span class="pk-n">2</span><div class="pk-main"><h3>Its arms <span class="muted">on <code>${esc(pk.ds)}</code>, ${mine.length}</span></h3>
-      <div class="pk-row"><input id="pk-q" type="search" autocomplete="off" placeholder="filter: config, model, how" value="${esc(pk.q)}" aria-label="filter arms">
+      <div class="pk-row"><input id="pk-q" type="search" autocomplete="off" placeholder="filter: system, model, how" value="${esc(pk.q)}" aria-label="filter arms">
       <button class="btn small" type="button" id="pk-all">${shown.length > PK.max ? `Tick the first ${PK.max} of ${shown.length} shown` : `Tick the ${shown.length} shown`}</button></div>
       ${chips ? `<div class="pk-facets">${chips}</div>` : ''}
       ${sug.length ? `<div class="pk-sug"><span class="muted small">add</span>${sug.map(([l], i) => `<button type="button" class="chip pk-add" data-sug="${i}">+ ${esc(l)}</button>`).join('')}</div>` : ''}
@@ -188,7 +188,7 @@
     pre = names[0].slice(0, pre).search(/[_\/·][^_\/·]*$/) + 1;
     const rev = names.map(x => [...x].reverse().join(''));
     let suf = rev.reduce((n, x) => Math.min(n, cut(rev[0], x)), Infinity);
-    // A shared tail is cut only at a " · " (what they are scored by), never inside the config
+    // A shared tail is cut only at a " · " (what they are scored by), never inside the system
     // id: "_v1" is the arm's version, and it stays when every arm happens to share it.
     const tail = suf ? names[0].slice(names[0].length - suf) : '';
     const at = tail.indexOf(' · ');

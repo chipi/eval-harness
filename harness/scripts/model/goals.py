@@ -117,7 +117,10 @@ def _next(goal_id: str, datasets: list[dict[str, Any]], rounds: list[dict[str, A
                 "command": f"evh reference-promote --dataset-id {ds} ...",
             }
         if not d["runs"]:
-            return {"what": f"run an arm on {ds}", "command": "evh run --config <an arm on it>"}
+            return {
+                "what": f"run an arm on {ds}",
+                "command": f"evh run --system <a system> --dataset {ds} --goal {goal_id}",
+            }
         if not d["baseline"]:
             return {
                 "what": f"promote a baseline on {ds}",

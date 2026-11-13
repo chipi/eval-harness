@@ -89,7 +89,7 @@ def _collect(dataset_id: str, match: str | None) -> dict[str, dict[str, Any]]:
 
 
 def _sets_message(dataset_id: str) -> str:
-    """What --ref-match and --arm-match each take, and an example built from the config ids on this dataset: the
+    """What --ref-match and --arm-match each take, and an example built from the system ids on this dataset: the
     version suffixes it found (`_v1`, `_v2`) and how many arms carry each."""
     ids = sorted({m["config_id"] for _d, m in runs_on(dataset_id)})
     versions: dict[str, set[str]] = defaultdict(set)
@@ -97,8 +97,8 @@ def _sets_message(dataset_id: str) -> str:
         v = re.search(r"_v\d+$", cid)
         if v:
             versions[v.group(0)].add(cid)
-    found = ", ".join(f"{v} ({len(c)} config(s))" for v, c in sorted(versions.items()))
-    # A substring: `_v1` also fits `_v10`, so only a pair that picks disjoint configs is offered.
+    found = ", ".join(f"{v} ({len(c)} system(s))" for v, c in sorted(versions.items()))
+    # A substring: `_v1` also fits `_v10`, so only a pair that picks disjoint systems is offered.
     pair = next(
         (
             (a, b)
@@ -109,15 +109,15 @@ def _sets_message(dataset_id: str) -> str:
         None,
     )
     out = (
-        "  --ref-match takes a substring of config_id: the runs whose outputs are used AS the references.\n"
-        "  --arm-match takes a substring of config_id: the runs scored against them. The two sets must be\n"
+        "  --ref-match takes a substring of the system id: the runs whose outputs are used AS the references.\n"
+        "  --arm-match takes a substring of the system id: the runs scored against them. The two sets must be\n"
         "  different runs (two versions of the arms, or repeats)."
     )
     if pair:
         return f"{out}\n  Found on {dataset_id}: {found}.\n  For example: --ref-match {pair[0]} --arm-match {pair[1]}"
     if versions:
         return f"{out}\n  Found on {dataset_id}: only {found}: run the arms again as a new version (for example _v2) first."
-    return f"{out}\n  No config id on {dataset_id} ends in a version (_v1, _v2): name the substrings that tell your two sets apart."
+    return f"{out}\n  No system id on {dataset_id} ends in a version (_v1, _v2): name the substrings that tell your two sets apart."
 
 
 def main() -> int:
@@ -126,12 +126,12 @@ def main() -> int:
     ap.add_argument("--dataset-id", required=True)
     ap.add_argument(
         "--ref-match",
-        help="substring of config_id: the runs whose outputs are used AS the silver references, e.g. _v1 "
+        help="substring of the system id: the runs whose outputs are used AS the silver references, e.g. _v1 "
         "(with --arm-match, two sets of runs that share none: two versions, or repeats)",
     )
     ap.add_argument(
         "--arm-match",
-        help="substring of config_id: the runs scored against those references, e.g. _v2",
+        help="substring of the system id: the runs scored against those references, e.g. _v2",
     )
     ap.add_argument(
         "--reference-id",

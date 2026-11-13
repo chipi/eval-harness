@@ -248,10 +248,10 @@ evh datasets
 evh datasets --dataset-id tickets_v2
 ```
 ```text
-  dataset     items  arms  configs  reference sets     made from
+  dataset     items  arms  systems  reference sets     made from
   tickets_v1  6      5     5        silver/tickets_v1
   tickets_v2  7      0     0        —                  tickets_v1
-tickets_v2: 7 items, 0 arms from 0 configs (a config rescored against silver or by a judge is an arm of its own)
+tickets_v2: 7 items, 0 arms from 0 systems (a system rescored against silver or by a judge is an arm of its own)
 
 made from tickets_v1: 1 added, 0 removed, 0 changed
   added: t07_reports

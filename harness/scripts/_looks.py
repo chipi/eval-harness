@@ -3,7 +3,7 @@
 A test set is a dataset a goal declares with `role: test`, or the sealed side of a split. A look is a decision written
 on it: a `dataset-unseal`, a `study-confirm`, or a promotion whose evidence was computed on it. Each carries a `look`
 record: {key, number, level, set, harness}. One question is one look, whatever records it: its key is the set's items
-digest, the two configs, the measure and the rule, and a decision whose key is already recorded reuses it.
+digest, the two systems, the measure and the rule, and a decision whose key is already recorded reuses it.
 
 Look k is tested one-sided at α·6/(π²k²) (α = 2.5%; 1.52%, 0.38%, 0.17%, ...; the sum over every look is α). Past the
 protective limit (10, or a goal's `test_looks`), a look needs the person running the command to consent; an agent
@@ -76,7 +76,7 @@ def limit(dataset_id: str) -> int:
 
 
 def key(dataset_id: str, a: str, b: str, measure: str | None, rule: str) -> str:
-    """One question on a set: its digest, the two configs, the measure, the rule."""
+    """One question on a set: its digest, the two systems, the measure, the rule."""
     body = json.dumps([digest(dataset_id), a, b, measure or "", rule], sort_keys=True)
     return hashlib.sha256(body.encode()).hexdigest()[:16]
 

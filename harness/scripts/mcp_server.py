@@ -143,7 +143,7 @@ NOT_TOOLS = {
     "label-from-run": "writes a label set",
     "label-from-capture": "writes a label set",
     "reference-promote": "writes a reference",
-    "arm-from-capture": "writes a config and a run",
+    "arm-from-capture": "writes a system and a run",
     "pick": "writes the pick list",
     "dataset-extend": "writes a dataset",
     "dataset-split": "writes",

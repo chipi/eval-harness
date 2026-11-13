@@ -1,13 +1,13 @@
 """A sealed side of a split (the fleet's feedback 29): held out until a candidate is named in advance.
 
     evh dataset-split triage_v1 --split-by time --key created_at --at 2026-11-07T00:00:00Z --seal
-    evh dataset-unseal triage_v1_test --config candidate_v3 --reason "the tuned filter, frozen"
+    evh dataset-unseal triage_v1_test --system candidate_v3 --reason "the tuned filter, frozen"
 
 `dataset-split --seal` writes `sealed` on the test side's record: when, and a digest of the open (validation) side's
 items as they were then, so `validate` can say the open side was not changed to fit what the sealed one holds. A
 sealed dataset refuses every run, score and label written onto it (run, rescore, judge-score, the label and
-reference commands) unless the config doing it is named by an `unsealed` entry: `dataset-unseal` adds one, only for a
-config whose hypothesis (ADR-0025) is committed, and each entry is one look at the held-out side.
+reference commands) unless the system doing it is named by an `unsealed` entry: `dataset-unseal` adds one, only for a
+system whose hypothesis (ADR-0025) is committed, and each entry is one look at the held-out side.
 """
 
 from __future__ import annotations
@@ -44,7 +44,7 @@ def record_of(dataset_id: str | None) -> dict[str, Any]:
 
 
 def _opened_at(doc: dict[str, Any]) -> dict[str, str]:
-    """{config_id: when it was first opened}: each unseal's candidate and the config its hypothesis is against."""
+    """{config_id: when it was first opened}: each unseal's candidate and the system its hypothesis is against."""
     out: dict[str, str] = {}
     for u in doc.get("unsealed") or []:
         if not isinstance(u, dict):
@@ -56,7 +56,7 @@ def _opened_at(doc: dict[str, Any]) -> dict[str, str]:
 
 
 def opened_for(doc: dict[str, Any]) -> set[str]:
-    """The configs the unseals open a sealed side to: each candidate and what its hypothesis is against."""
+    """The systems the unseals open a sealed side to: each candidate and what its hypothesis is against."""
     return set(_opened_at(doc))
 
 
@@ -99,7 +99,7 @@ def problems(docs: dict[str, dict[str, Any]]) -> list[str]:
 
 
 def runs_on_sealed(docs: dict[str, dict[str, Any]], runs: list[tuple[Any, dict[str, Any]]]) -> list[str]:
-    """validate: a run on a sealed dataset by a config no unseal names, or started before its unseal."""
+    """validate: a run on a sealed dataset by a system no unseal names, or started before its unseal."""
     out = []
     for d, m in runs:
         doc = docs.get(m.get("dataset_id") or "")

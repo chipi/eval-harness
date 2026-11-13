@@ -51,7 +51,7 @@ def log_path(goal: str, sid: str) -> Path:
 
 
 def folder(goal: str, sid: str) -> Path:
-    """A study's own folder: its trials' configs, its confirmations."""
+    """A study's own folder: its trials' systems, its confirmations."""
     return root() / goal / sid
 
 

@@ -135,8 +135,8 @@ try:
     out = tmp / ".build" / "catalog"
     counts = cb.build(A, out)
     check(
-        "build: datasets, arms, configs and references counted",
-        counts == {"goals": 0, "datasets": 2, "arms": 3, "configs": 3, "references": 1},
+        "build: datasets, arms, systems and references counted",
+        counts == {"goals": 0, "datasets": 2, "arms": 3, "systems": 3, "references": 1},
         counts,
     )
     html_pages = list(out.rglob("*.html"))
@@ -294,7 +294,7 @@ try:
     )
     nav = re.findall(r'<nav class="nav">(.*?)</nav>', home)[0]
     check(
-        "nav: Overview, Goals, Data (Datasets, Captures, Labels, Reference sets), Arms (Arms, Configs, Models, Prompts, Metrics), Activity, Inspector; no Configure (a files project)",
+        "nav: Overview, Goals, Data (Datasets, Captures, Labels, Reference sets), Arms (Arms, Systems, Models, Prompts, Metrics), Activity, Inspector; no Configure (a files project)",
         nav.count("<a ") == 13
         and "Configure" not in nav
         and re.findall(r"<summary[^>]*>([^<]+)</summary>", nav) == ["Data", "Arms"]
@@ -306,7 +306,7 @@ try:
                 ">Labels<",
                 ">Reference sets<",
                 ">Arms<",
-                ">Configs<",
+                ">Systems<",
                 ">Models<",
                 ">Prompts<",
                 ">Metrics<",
@@ -324,13 +324,13 @@ try:
         and 'href="labels.html"' in menu,
     )
     check(
-        "the home tiles open their pages: activity, arms, configs grouped by config",
+        "the home tiles open their pages: activity, arms, systems grouped by system",
         all(
             x in home
             for x in (
                 'href="activity.html"',
                 'href="arms.html"',
-                'href="arms.html?group=config"',
+                'href="arms.html?group=system"',
                 'class="legend groups"',
             )
         ),
@@ -484,19 +484,19 @@ try:
     check(
         "arms page: every arm a row, with what the grouping and the filters read",
         len(re.findall(r'<tr[^>]* data-key="runs', arms_html)) == len(rows3)
-        and 'data-config="arm_t"' in arms_html
+        and 'data-system="arm_t"' in arms_html
         and 'data-scored="judge"' in arms_html
         and "judged by sc1" in arms_html,
     )
-    grouped = _view(_cv.arms, ["--by", "config"])
+    grouped = _view(_cv.arms, ["--by", "system"])
     check(
-        "evh arms --by config: a heading per config, its arms under it",
-        "config arm_t (2 arms)" in grouped and "config arm_s (1 arm)" in grouped,
+        "evh arms --by system: a heading per system, its arms under it",
+        "system arm_t (2 arms)" in grouped and "system arm_s (1 arm)" in grouped,
         grouped[:400],
     )
     check(
-        "evh arms --configs: one row per config across its datasets",
-        all(x in _view(_cv.arms, ["--configs"]) for x in ("arm_s", "arm_t", "rank on each goal")),
+        "evh arms --systems: one row per system across its datasets",
+        all(x in _view(_cv.arms, ["--systems"]) for x in ("arm_s", "arm_t", "rank on each goal")),
     )
     act = _view(_cv.activity, ["--period", "all"])
     check(
@@ -1219,12 +1219,12 @@ try:
             if seeded["1"].get(k) != seeded[x].get(k)
         }
     )
-    configs = seeded["1"].get("arms-rows.js", b"").count(b'"c:')
+    systems = seeded["1"].get("arms-rows.js", b"").count(b'"c:')
     check(
         f"evh catalog: the same pages byte for byte under {len(seeds)} hash seeds (only the build minute differs; "
-        f"{configs} configs on the arms page, so their order shows)",
-        len(seeded["1"]) > 10 and configs >= 3 and not seed_differ,
-        (configs, seed_differ[:5]),
+        f"{systems} systems on the arms page, so their order shows)",
+        len(seeded["1"]) > 10 and systems >= 3 and not seed_differ,
+        (systems, seed_differ[:5]),
     )
     # The deployment's options reach EVERY page when the builder runs as a command (the module is
     # __main__ then; arms.html was rendered by a second copy of it with the defaults: "eval

@@ -42,7 +42,7 @@ tickets --fields …`); items that live at a URL come in through `--manifest`
 evh catalog
 ```
 ```text
-catalog: .../my-evals/.build/catalog — 1 goals, 1 datasets, 4 arms, 4 configs, 1 references
+catalog: .../my-evals/.build/catalog — 1 goals, 1 datasets, 4 arms, 4 systems, 1 references
 inspect: evh catalog-serve, then open the address it prints
 ```
 
@@ -67,11 +67,11 @@ when it starts, so after a new run, stop it and start it again.
 |---|---|
 | the home page: the tiles with their trends, goals at a glance, activity and spend, coverage, what was recorded | `evh overview` |
 | the activity page: runs, spend and tokens by dataset, arm and kind | `evh activity` |
-| the arms and configs page: every arm, grouped and filtered; every config with its rank on each goal | `evh arms --by config`, `evh arms --configs` |
+| the arms and systems page: every arm, grouped and filtered; every system with its rank on each goal | `evh arms --by system`, `evh arms --systems` |
 | the catalog's datasets page: every dataset, its items, arms and references | `evh datasets` |
 | a dataset page: its versions, references and every arm with its headline number | `evh datasets --dataset-id tickets_v1` |
 | a dataset page's "what's inside": its items, their lengths and gold, each item's link | `evh dataset-items --dataset-id tickets_v1` (after `evh dataset-profile --dataset-id tickets_v1`) |
-| an arm page: its metrics, runs, config, conditions, rounds | `evh arms --arm tickets_lead1_v1` |
+| an arm page: its metrics, runs, system, conditions, rounds | `evh arms --arm tickets_lead1_v1` |
 | a reference set's page: its tier, the label set it was promoted from, by whom and why, every arm scored against it | `evh references --reference-id silver/tickets_v1` |
 | the labels page, and a dataset page's labels: every label set with its source (person, model, rule), its coverage, what it was promoted to, how often two agree | `evh labels`, `evh labels --dataset-id tickets_v1` |
 | the captures page: what was read from production, when, and the datasets and recorded arm made from it ([tutorial 6](6-datasets-from-production.md)) | `evh captures` |
@@ -122,7 +122,7 @@ with the command that makes one), then what the goal is for, then the arms in gr
 they are scored against: gold, silver, and one group per judge ("scored by judge <scorer>"). A
 judged arm records its judge's score rather than the goal's measure, so its group is read on that
 score, never ranked beside the others. Arms are ranked only within a group, and a group's leader
-is never an arm graded against its own outputs. An arm whose config names this goal is tagged
+is never an arm graded against its own outputs. An arm whose system names this goal is tagged
 "filed under this goal"; the others record the goal's measure on one of its datasets without
 naming it. When the goal has rounds, the page shows them newest first: each with an inspect
 button that opens its arms against its leader, the open round's suggestions each with a copy
@@ -291,11 +291,11 @@ page's "Open its sheet".
 
 - **The catalog** is static pages: a home dashboard with counts, goals at a glance, activity and
   spend charts, and everything recorded; a datasets page and one per dataset with every arm and
-  its headline number; one per arm showing its metrics, runs, config and conditions; a goals
+  its headline number; one per arm showing its metrics, runs, system and conditions; a goals
   page and one per goal; one per reference; a metrics page and one per metric. The datasets
-  page counts the arms and the configs behind them: an arm is one config on one dataset scored
-  one way, so a config rescored against silver or judged is an arm of its own ("N arms on M
-  datasets, from K configs"; `evh datasets` has a `configs` column). Each arm's row says what it is scored
+  page counts the arms and the systems behind them: an arm is one system on one dataset scored
+  one way, so a system rescored against silver or judged is an arm of its own ("N arms on M
+  datasets, from K systems"; `evh datasets` has a `systems` column). Each arm's row says what it is scored
   against; rows scored against silver, by a judge, against a label set (not a reference), or against
   the reference the arm wrote itself are tinted. The dataset page (and `evh datasets --dataset-id`) sorts its arms by what they are
   scored against first, gold, then silver, then each judge, then none, and only then by metric

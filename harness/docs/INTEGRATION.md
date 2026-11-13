@@ -19,7 +19,7 @@ Pin it into your project, and start the project's folders:
 ```bash
 cd /path/to/your-project
 pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.7.2#subdirectory=harness"
-evh init         # data/sources, data/configs, data/goals, data/fields, a .gitignore
+evh init         # data/sources, data/systems, data/goals, data/fields, a .gitignore
 ```
 
 That one install is everything: the hosted-model clients (`openai`, `anthropic`), the judges, the
@@ -46,7 +46,7 @@ measure it.
 adapter, `evaluation_harness/adapter.py`, which also has `score()`;
 `python -c "import evaluation_harness, os; print(os.path.join(evaluation_harness.__path__[0], 'adapter.py'))"`
 prints where it is). It receives one item's text and the
-config's `params`, and returns what your system produced:
+system's `params`, and returns what your system produced:
 
 ```python
 from evaluation_harness.adapter import Result
@@ -115,7 +115,7 @@ like any arm; seven things are different. (The triage fleet's questions, 2026-11
   `versions`: each a `commit`, when it was `deployed` (`from`, `to`), and the `faithfulness` a replay measured
   (`agreed` of `items`, the named `exceptions`). It needs no `aliases`; an arm names it with `model_record` like
   any record, and its Models page and `evh models --model <id>` list the versions instead of an onboarding. A replay
-  (`replay:` in the config, RFC-030) runs each item at the version deployed then, read from `checkout` (a local clone)
+  (`replay:` in the system, RFC-030) runs each item at the version deployed then, read from `checkout` (a local clone)
   or `repo` when it is a path; `evh faithfulness` writes each version's `faithfulness` (RUNBOOK §15c).
 
 ---
@@ -305,7 +305,7 @@ re-authoring what you have.
 | integrity | `evh validate` fails CI on a tree that has drifted |
 | re-measurement | stored outputs scored again for a new reference or scorer at $0, or by validated LLM judges, without re-running an arm |
 | a judge panel | when the cheap metric is biased and you need an LLM to adjudicate |
-| goals | what each evaluation is for, named on every config and checked by `evh validate` |
+| goals | what each evaluation is for, named on every system and checked by `evh validate` |
 | eval rounds (optional) | round on round: what each round tried, what it kept and dropped and why, what it concluded ([tutorial 4](../../docs/tutorials/4-rounds-and-versions.md)) |
 | item fields | the facts you know about each item (typed, declared once in a field set), checked by `evh validate`; items fetched from a pinned URL |
 | a catalog and an inspector | pages over your runs, and a local server that tests any arms against a baseline and shows outputs beside references; every view is also an `evh` command |
@@ -328,7 +328,7 @@ which references exist, what one arm wrote for one item.
 
 - **On the harness's layout, there is nothing to write.** The built-in `HarnessAdapter`
   reads `data/runs*/`, `data/references/`, `data/datasets/` and `data/goals/`, and its arm is
-  one config on one dataset with its repeats averaged per item, exactly as `pair-test` reads
+  one system on one dataset with its repeats averaged per item, exactly as `pair-test` reads
   them, so the inspector gives the same p.
 - **With your own layout, write one adapter** and name it in your project's `config.yaml`:
 

@@ -290,7 +290,10 @@ def _run(args: argparse.Namespace) -> int:
         print(
             "\n  --noise was not given, so nothing was judged against the arm's own\n"
             "  spread. Measure it first:  "
-            + how("evh run --config … --repeat 3", "make run CONFIG=... REPEAT=3")
+            + how(
+                "evh run --system <id> --dataset <id> --repeat 3",
+                "make run SYSTEM=<id> DATASET_ID=<id> REPEAT=3",
+            )
         )
     print(f"\n  {worth} metric(s) moved beyond the stated noise floor")
     return 0

@@ -10,7 +10,7 @@ A reference is made only this way. The labels are the dataset's in the named set
 `DATASET/SET`, made on another holding the same items: labels follow the item by its sha256), all of them or those
 named with --items. They are written to data/references/<tier>/<name>/ (name: the dataset's id by default), the
 layout runs, rescore and goals read, and its manifest records `promoted_from` (the set, its dataset and source), the
-reason, who and when; for a set a model's run made, the run, its config and model too, so a run scored against it
+reason, who and when; for a set a model's run made, the run, its system and model too, so a run scored against it
 is known to be graded against that model's answers. No rule ties the tier to the source: the promotion decides, and
 records the source beside the tier. A reference is never overwritten.
 """

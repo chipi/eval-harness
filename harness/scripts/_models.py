@@ -6,7 +6,7 @@ data/deployments/<model_id>/<deployment_id>.yaml, with the dated history of its 
 smoke, each approval, never overwritten.
 
 `find` and `load` give a model as the commands read it: with its deployments, each with its latest onboarding, and its
-arms' latest smokes (`smokes`, by config id), worked out from the checks. A project that keeps no records has none of
+arms' latest smokes (`smokes`, by system id), worked out from the checks. A project that keeps no records has none of
 this; `facts()` is then empty.
 """
 
@@ -69,7 +69,7 @@ def latest(checks: list[dict[str, Any]], kind: str, system: str | None = None) -
 
 def joined(rec: dict[str, Any], deps: list[dict[str, Any]]) -> dict[str, Any]:
     """A model with its deployments as the commands read them: each with its id and latest onboarding; the arms'
-    latest smokes by config id."""
+    latest smokes by system id."""
     out = dict(rec)
     view, smokes = [], {}
     for d in deps:
@@ -234,10 +234,10 @@ def deployment_of(rec: dict[str, Any], deployment_id: str) -> dict[str, Any] | N
 
 
 def resolve(cfg: dict[str, Any], data_dir: Path) -> dict[str, Any]:
-    """A config with the model record it names (`model_record: <id>`) applied: the record's settings
-    under the config's own params (the config wins), `model` from the record's first alias when the config
+    """A system with the model record it names (`model_record: <id>`) applied: the record's settings
+    under the system's own params (the system wins), `model` from the record's first alias when the system
     gives none, and `model_record` kept so the run records which record it ran with. `deployment: <id>`
-    (kept too) names one of the record's deployments. A config naming no record is returned as it is; one
+    (kept too) names one of the record's deployments. A system naming no record is returned as it is; one
     naming a record or deployment that does not exist, or a deployment without a record, raises ValueError."""
     rid = cfg.get("model_record")
     if not rid:

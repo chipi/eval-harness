@@ -7,7 +7,7 @@
 It calls nothing: the outputs are the run's, so the labels are exactly what you read. It refuses what
 `run-promote` refuses (an unknown build, a dirty tree), an unfinished, derived or partial run, an empty output,
 and outputs that stopped at max_tokens (`--allow-cut-off` for outputs that end at the cap by design). The set's
-source is `model`: the run, its config, fingerprint and build. Labels are not a reference (RFC-023).
+source is `model`: the run, its system, fingerprint and build. Labels are not a reference (RFC-023).
 
 --not-redistributed keeps the texts out of git (the corpus's licence, or the project's choice): the set's directory
 gets a .gitignore for them, and labels.json records that and the command that rebuilds them; the same command on a
@@ -66,7 +66,7 @@ def _refuse_unusable(
             f"REFUSED: {len(cut)} of {len(rows)} output(s) stopped at max_tokens={max_tokens} "
             f"({', '.join(cut[:8])}" + (" ..." if len(cut) > 8 else "") + ").\n"
             "  A reference cut off mid-answer marks every complete answer down. Raise max_tokens\n"
-            f"  in the config (a new config_id) and run it again. {where}\n"
+            f"  in the system (a new system id) and run it again. {where}\n"
             "  (--allow-cut-off freezes them anyway, for outputs that end at the cap by design.)",
             "not-enough",
         )

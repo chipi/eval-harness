@@ -30,7 +30,7 @@ from dataclasses import dataclass, field
 from typing import Any, Callable
 
 # The hosted providers, shared with the judges: one way to call them, read their keys and cost
-# a call (the bill when the response carries one, else the config's prices, else unpriced).
+# a call (the bill when the response carries one, else the system's prices, else unpriced).
 from evaluation_harness import _providers
 
 # A reference with several right answers ({"accept": [...]}) read as its answers: `score` reads references through it.
@@ -60,8 +60,8 @@ class Result:
 def call_system(text: str, params: dict[str, Any]) -> Result:
     """Run YOUR system over one item. Replace the body.
 
-    `params` is whatever the arm's config put under `params:` — model name,
-    temperature, prompt version, thresholds. Keep the knobs in the config, not
+    `params` is whatever the arm's system put under `params:` — model name,
+    temperature, prompt version, thresholds. Keep the knobs in the system, not
     in here, so an arm is a YAML file rather than a code edit.
 
     The default dispatches on `params["provider"]` so the bundled demo and the
@@ -79,7 +79,7 @@ def call_system(text: str, params: dict[str, Any]) -> Result:
         return Result(output=summarise(text, model=params["model"]))
     """
     provider = params.get("provider", "echo")
-    # An unknown provider is an error. It fell back to echo, so a typo in a config recorded
+    # An unknown provider is an error. It fell back to echo, so a typo in a system recorded
     # the echoed input as that model's output.
     if provider not in PROVIDERS:
         from evaluation_harness._common import die  # noqa: PLC0415
@@ -154,7 +154,7 @@ def _echo(text: str, params: dict[str, Any]) -> Result:
     `noise` (0.0 default) makes it genuinely non-deterministic by dropping each word
     with that probability, so repeats differ in both output_words and overlap_f1.
 
-    That parameter had to be added. `data/configs/demo_noisy.yaml` set `noise: 0.05`
+    That parameter had to be added. `data/systems/demo_noisy.yaml` set `noise: 0.05`
     and described itself as showing "a non-zero spread — and `make run-compare` can
     flag a delta as noise", but nothing read the key: measured at REPEAT=3 it reported
     overlap_f1 spread=0.000000, deterministic. The bundled example for the harness's

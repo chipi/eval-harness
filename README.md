@@ -150,7 +150,7 @@ system lives in one file, `adapter.py`, with two functions, `call_system` and `s
 - **A catalog and an inspector.** Pages over your runs, and a local server that tests any arms
   against a baseline with the same paired test and shows outputs beside references. No code
   on the harness's layout; one adapter on yours.
-- **Goals, and rounds if you want them.** Each config names what its evaluation is for, and
+- **Goals, and rounds if you want them.** Each system names what its evaluation is for, and
   validation checks it; an optional round records what each iteration tried, kept, dropped and
   concluded.
 

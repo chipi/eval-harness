@@ -1,10 +1,10 @@
-"""The arms page: every arm, and every config across the datasets it ran on.
+"""The arms page: every arm, and every system across the datasets it ran on.
 
-    arms.html   the table of every arm (grouped by dataset, config, model, provider or what it is
-                scored against; a derived arm under the arm it came from), the configs, what changed
+    arms.html   the table of every arm (grouped by dataset, system, model, provider or what it is
+                scored against; a derived arm under the arm it came from), the systems, what changed
                 in the period, and each goal's arms on its trade-off charts
 
-`evh arms` prints the same rows (`arm_rows`, `config_rows`). The period parts are the shared ones
+`evh arms` prints the same rows (`arm_rows`, `system_rows`). The period parts are the shared ones
 (catalog_periods.py, catalog_assets/period.js); the grouping, facets and comparison are
 catalog_assets/group.js and arms.js.
 """
@@ -14,7 +14,7 @@ from __future__ import annotations
 import html
 
 #: Providers that bill per call over the network. An arm is hosted when it runs through one of
-#: these or its config prices tokens; every other provider runs on the machine that ran the arm.
+#: these or its system prices tokens; every other provider runs on the machine that ran the arm.
 HOSTED_PROVIDERS = ("litellm", "openai", "anthropic", "openrouter", "together", "groq", "mistral", "gemini")
 
 #: How many arms of one dataset re-measured the same way on one day make one line of "what
@@ -28,7 +28,7 @@ TIERS = ("free", "small", "mid", "large")
 GROUPS = (
     ("", "no grouping"),
     ("set", "dataset"),
-    ("config", "config"),
+    ("system", "system"),
     ("model", "model"),
     ("provider", "provider"),
     ("scored", "scored against"),
@@ -47,19 +47,19 @@ def _base(arm: str) -> str:
 
 
 def arm_rows(A, by_ds: dict) -> list[dict]:
-    """One row per arm, by dataset, then config, the config's own measurement first:
-    {"arm", "label", "dataset", "config", "model", "provider", "family", "tier", "local",
+    """One row per arm, by dataset, then system, the system's own measurement first:
+    {"arm", "label", "dataset", "system", "model", "provider", "family", "tier", "local",
     "weights", "record", "smoke", "quality", "scored", "reference", "how", "roles", "goal", "measure", "value", "lower",
     "repeats", "cost", "latency", "first", "last"}. `reference` is the reference set's id ("" when none). `weights` is "open", "proprietary" or "" (unknown: the
     adapter's model_facts does not list the model). `record` is the model record the arm uses ("" when
-    none), `deployment` the deployment of it its config named ("" when none) and `smoke` that record's latest smoke of the arm's config: pass, check or none ("" without a
+    none), `deployment` the deployment of it its system named ("" when none) and `smoke` that record's latest smoke of the arm's system: pass, check or none ("" without a
     record). `quality` is "a contender" when a goal's
     decision makes the arm a contender beside its quality leader (the leader too), "below the leader" when it
     weighs the arm and does not, "" when no decision weighs it. A role "over a limit" is an arm a
     goal leaves out for a limit it breaks; "not eligible" one it leaves out for another reason.
-    `how` says what the arm is beside the config's other arms: measured, rescored against a
+    `how` says what the arm is beside the system's other arms: measured, rescored against a
     reference, judged by a scorer, re-parsed, or run again.
-    `source` and `moved`: for an arm derived from the config's measured arm on the same dataset
+    `source` and `moved`: for an arm derived from the system's measured arm on the same dataset
     (rescored, re-parsed, run again), that arm and how far the deciding measure moved from it; None
     when there is none, or the two are not on the same measure (a judge scores its own)."""
     from evaluation_harness import catalog_build as cb  # noqa: PLC0415
@@ -140,7 +140,7 @@ def arm_rows(A, by_ds: dict) -> list[dict]:
                     "arm": a["arm"],
                     "label": a["label"],
                     "dataset": ds,
-                    "config": cid,
+                    "system": cid,
                     "model": p.get("model") or "",
                     "provider": p.get("provider") or "",
                     "family": p.get("family") or "",
@@ -174,9 +174,9 @@ def arm_rows(A, by_ds: dict) -> list[dict]:
                     "superseded_by": a.get("superseded_by") or "",
                 }
             )
-    measured = {(r["dataset"], r["config"]): r for r in out if r["how"] == "measured"}
+    measured = {(r["dataset"], r["system"]): r for r in out if r["how"] == "measured"}
     for r in out:
-        src = measured.get((r["dataset"], r["config"]))
+        src = measured.get((r["dataset"], r["system"]))
         if r["how"] == "measured" or src is None:
             continue
         r["source"] = src["arm"]
@@ -185,16 +185,16 @@ def arm_rows(A, by_ds: dict) -> list[dict]:
     return out
 
 
-def config_rows(A, by_ds: dict, rows: list[dict], spend: list[dict]) -> list[dict]:
-    """One row per config across every dataset it ran on: {"config", "model", "provider",
+def system_rows(A, by_ds: dict, rows: list[dict], spend: list[dict]) -> list[dict]:
+    """One row per system across every dataset it ran on: {"system", "model", "provider",
     "family", "datasets", "arms", "usd", "ranks": [(goal, dataset, rank, of)]}. A rank is the
-    config's best arm on the goal's deciding measure among the arms the goal's decision weighs."""
+    system's best arm on the goal's deciding measure among the arms the goal's decision weighs."""
     from evaluation_harness import catalog_build as cb  # noqa: PLC0415
 
     by_cfg: dict = {}
     for r in rows:
-        by_cfg.setdefault(r["config"], []).append(r)
-    arm_cfg = {r["arm"]: r["config"] for r in rows}
+        by_cfg.setdefault(r["system"], []).append(r)
+    arm_cfg = {r["arm"]: r["system"] for r in rows}
     usd: dict = {}
     for x in spend:
         if x.get("kind") == "arm" and isinstance(x.get("usd"), (int, float)) and x.get("arm") in arm_cfg:
@@ -204,8 +204,8 @@ def config_rows(A, by_ds: dict, rows: list[dict], spend: list[dict]) -> list[dic
         dec = gr["dec"]
         if not dec:
             continue
-        # One place per config, and no arm a round retired (a re-timing, a second run, a paired side run):
-        # a config run twice took two places, so the catalog read "#8 of 33" where the site reads "5th of 30".
+        # One place per system, and no arm a round retired (a re-timing, a second run, a paired side run):
+        # a system run twice took two places, so the catalog read "#8 of 33" where the site reads "5th of 30".
         retired_in = cb.retired_in_of(A, gr["goal"])
         vals = {
             a: dec["rows"][a]["quality"]["value"] for a in dec["rows"] if not cb.retired_round(retired_in, a)
@@ -222,7 +222,7 @@ def config_rows(A, by_ds: dict, rows: list[dict], spend: list[dict]) -> list[dic
     for cid, rs in sorted(by_cfg.items()):
         out.append(
             {
-                "config": cid,
+                "system": cid,
                 "model": rs[0]["model"],
                 "provider": rs[0]["provider"],
                 "family": rs[0]["family"],
@@ -238,8 +238,8 @@ def config_rows(A, by_ds: dict, rows: list[dict], spend: list[dict]) -> list[dic
 
 
 def period_arms(A, by_ds: dict, rows: list[dict]) -> dict:
-    """{arm id | "c:<config>": row} in the shape catalog_build's period builders give: an arm's or
-    a config's measured runs and what it was billed; new from its first run."""
+    """{arm id | "c:<system>": row} in the shape catalog_build's period builders give: an arm's or
+    a system's measured runs and what it was billed; new from its first run."""
     from evaluation_harness import catalog_build as cb  # noqa: PLC0415
     from evaluation_harness import catalog_periods as cp  # noqa: PLC0415
 
@@ -255,13 +255,13 @@ def period_arms(A, by_ds: dict, rows: list[dict]) -> dict:
             ),
             "made": r["first"],
         }
-    for cid in sorted({r["config"] for r in rows}):  # sorted: a set's order differs per process (hash seed)
-        ids = {r["arm"] for r in rows if r["config"] == cid}
+    for cid in sorted({r["system"] for r in rows}):  # sorted: a set's order differs per process (hash seed)
+        ids = {r["arm"] for r in rows if r["system"] == cid}
         runs = cp.runs_of([by_arm[a] for a in ids], idx)
         out[f"c:{cid}"] = {
             "runs": runs,
             "usd": cp.spend_of(w["spend"], lambda x, ids=ids: x.get("kind") == "arm" and x.get("arm") in ids),
-            # The day its first run was made, any run (a re-parsed one too), as the home page's configs tile dates it.
+            # The day its first run was made, any run (a re-parsed one too), as the home page's systems tile dates it.
             "made": min(
                 (r["created_at"][:10] for a in ids for r in by_arm[a]["run_list"] if r.get("created_at")),
                 default="",
@@ -328,7 +328,7 @@ def render_arms(A, by_ds: dict, out, nav: list, rows: list[dict] | None = None) 
         attrs = {
             "dataset": r["dataset"],
             "set": set_key(r),
-            "config": r["config"],
+            "system": r["system"],
             "model": r["model"] or "—",
             "provider": r["provider"] or "—",
             "scored": r["scored"],
@@ -404,16 +404,16 @@ def render_arms(A, by_ds: dict, out, nav: list, rows: list[dict] | None = None) 
                 ],
             }
         )
-    cfgs = config_rows(A, by_ds, rows, w["spend"])
+    cfgs = system_rows(A, by_ds, rows, w["spend"])
     crs = []
     for c in cfgs:
-        key = f"c:{c['config']}"
+        key = f"c:{c['system']}"
         crs.append(
             {
                 "key": key,
                 "made": period_rows[key]["made"],
                 "cells": [
-                    f'<a href="?group=config&amp;q={e(c["config"])}#every"><code>{e(c["config"])}</code></a>',
+                    f'<a href="?group=system&amp;q={e(c["system"])}#every"><code>{e(c["system"])}</code></a>',
                     (f"<code>{e(c['model'])}</code>" if c["model"] else "—")
                     + f'<br><small class="muted">{e(c["provider"] or "—")}{" · local" if c["local"] else ""}</small>',
                     "<br>".join(cb.dataset_link(d) for d in c["datasets"]),
@@ -459,7 +459,7 @@ def render_arms(A, by_ds: dict, out, nav: list, rows: list[dict] | None = None) 
             match = [
                 r["arm"]
                 for r in rows
-                if r["config"] == x.get("config_id") and r["dataset"] == rnd.get("dataset_id")
+                if r["system"] == x.get("config_id") and r["dataset"] == rnd.get("dataset_id")
             ]
             for arm in match[:1]:
                 feed.append([day, arm, f"retired in {rnd['round_id']}: {x.get('reason', '')}"])
@@ -495,7 +495,7 @@ def render_arms(A, by_ds: dict, out, nav: list, rows: list[dict] | None = None) 
         + '</span><span class="kindgroup"><span class="kind">price</span>'
         + "".join(
             f'<button type="button" class="chip" data-facet="tier" data-value="{e(t)}" aria-pressed="false">{e(t)}</button>'
-            # in their own order, cheapest first; a tier the configs name beyond these after them
+            # in their own order, cheapest first; a tier the systems name beyond these after them
             for t in sorted(
                 {r["tier"] for r in rows if r["tier"]},
                 key=lambda t: (TIERS.index(t) if t in TIERS else len(TIERS), t),
@@ -518,10 +518,10 @@ def render_arms(A, by_ds: dict, out, nav: list, rows: list[dict] | None = None) 
     n_cfg = len(cfgs)
     body = cb.hero(
         "arms",
-        "Arms and configs",
-        f"{len(rows)} arms from {n_cfg} configs on {len(by_ds)} datasets. An arm is one config on one dataset "
+        "Arms and systems",
+        f"{len(rows)} arms from {n_cfg} systems on {len(by_ds)} datasets. An arm is one system on one dataset "
         "scored one way: measured, rescored against another reference, judged, or run again (the how column "
-        "says which; group by config to see them together). Pick arms on one dataset to open them in the inspector.",
+        "says which; group by system to see them together). Pick arms on one dataset to open them in the inspector.",
         cp.bar(w["first"], w["until"]),
     )
     body += cb.block(
@@ -564,14 +564,14 @@ def render_arms(A, by_ds: dict, out, nav: list, rows: list[dict] | None = None) 
     )
     body += cb.block(
         "02",
-        "configs",
-        '<p class="small muted">One row per config, across every dataset it ran on: where it ranks on each '
+        "systems",
+        '<p class="small muted">One row per system, across every dataset it ran on: where it ranks on each '
         "goal is its best arm among the arms the goal's decision weighs.</p>"
-        + cp.row_chips("configs", "configs")
+        + cp.row_chips("systems", "systems")
         + cb.table(
-            "configs",
+            "systems",
             [
-                "config",
+                "system",
                 "model · provider",
                 "datasets",
                 "arms",
@@ -581,10 +581,10 @@ def render_arms(A, by_ds: dict, out, nav: list, rows: list[dict] | None = None) 
                 "spend in period",
             ],
             crs,
-            "filter configs",
+            "filter systems",
             period=True,
         ),
-        "configs",
+        "systems",
     )
     if feed:
         body += cb.block(
@@ -619,7 +619,7 @@ def render_arms(A, by_ds: dict, out, nav: list, rows: list[dict] | None = None) 
             "bygoal",
         )
     # a way past the 690 rows: a keyboard reached the first row after 37 stops and had no way to sections 02-04
-    jump = '<nav class="jump small" aria-label="on this page">On this page: <a href="#every">every arm</a> · <a href="#configs">configs</a>'
+    jump = '<nav class="jump small" aria-label="on this page">On this page: <a href="#every">every arm</a> · <a href="#systems">systems</a>'
     jump += ' · <a href="#changed">what changed</a>' if '"changed"' in body or 'id="changed"' in body else ""
     jump += ' · <a href="#bygoal">cost and quality, by goal</a>' if charts else ""
     body = body.replace(

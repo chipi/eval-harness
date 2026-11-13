@@ -10,7 +10,7 @@ commands from the repository root.
 | **1 · data** | the public data still matches what was measured, byte for byte | network | $0, minutes |
 | **2 · local** | rerun every local model and baseline on your own CPU | disk for models | $0, CPU hours |
 | **3 · hosted** | rerun the hosted LLMs (24 per eval, 12 on SciFact) | one OpenRouter key | what `make plan` says, ≈ $0.58–$7.03 per eval as billed when measured; prices move |
-| **4 · extend** | measure a model of your own against the whole committed field | a config file | your model |
+| **4 · extend** | measure a model of your own against the whole committed field | a system file | your model |
 
 You need `git`, `make`, Python ≥ 3.11 and [uv](https://docs.astral.sh/uv/) (`curl -LsSf
 https://astral.sh/uv/install.sh | sh`). Each worked example has its own uv environment so
@@ -66,7 +66,7 @@ checkpoints (`pytorch_model.bin`), which execute code when loaded and which torc
 refuses; for those a rerun loads the model's **safetensors conversion** instead, pinned by
 commit in `examples/local_models.json`. Each was rerun that way on 2026-10-15 and scored
 identically to its committed run on every item, all 200 or 280 (lab notebook entry 63). The sixth pickle model,
-`bart_s`, has no exact conversion; rerun at the fp32 its config declares, it matches 199 of
+`bart_s`, has no exact conversion; rerun at the fp32 its system declares, it matches 199 of
 200 items on CNN and 187 of 200 on DailyMail. On Linux, `uv` installs the CUDA build of
 PyTorch, about 5 GB; nothing here needs a GPU.
 
@@ -88,7 +88,7 @@ make reproduce EXP=ag-news LEVEL=hosted
 make compare   EXP=ag-news
 ```
 
-The example configs name models by alias (`eval-claude-sonnet`); `examples/models.json`
+The example systems name models by alias (`eval-claude-sonnet`); `examples/models.json`
 maps each alias to the OpenRouter model it named when the runs were made, and the request
 goes straight to OpenRouter. If you run a [LiteLLM](https://docs.litellm.ai/) proxy instead,
 `examples/litellm.config.yaml` serves the same aliases; set `LITELLM_BASE_URL` and
@@ -152,7 +152,7 @@ compare` exits non-zero when a verdict moved or an arm differs.
   hosted arm with the same id is the signature of one.
 - **The provider route.** Open-weight models are served by several providers, sometimes at
   different precisions. Every response records which provider answered; pin one with
-  `provider_routing` in the config if you need to.
+  `provider_routing` in the system if you need to.
 - **Latency.** Hardware- and load-dependent. Reported, never compared.
 
 Found something that does not hold? That is the most useful thing this repository can

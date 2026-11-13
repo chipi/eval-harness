@@ -11,7 +11,7 @@ from typing import Any
 from evaluation_harness import _common, _store
 from evaluation_harness.model.entity import Entity
 
-#: A system id kept from a config id may carry capitals (`se_rougeL_n100_v1`).
+#: A system id kept from a system id may carry capitals (`se_rougeL_n100_v1`).
 SYSTEM_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]*")
 
 
@@ -71,7 +71,7 @@ def arm_of(
         _common.die(str(exc), exc.kind)
     arm = {k: v for k, v in rec.items() if k != "system_id"}
     arm["config_id"] = (
-        system_id  # the run records the system's id where it recorded the config's (until step 4)
+        system_id  # the run records the system's id where it recorded the system's (until step 4)
     )
     arm["dataset_id"] = dataset_id
     if goal:

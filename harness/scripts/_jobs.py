@@ -156,7 +156,7 @@ def _capture_ds_locks(a: dict) -> list[tuple[str, bool]]:
 def _arm_from_capture_locks(a: dict) -> list[tuple[str, bool]]:
     out = [("captures", False), *_ds(a)]
     if a.get("as"):
-        out.append((f"config:{a['as']}", True))
+        out.append((f"system:{a['as']}", True))
     return out
 
 
@@ -166,7 +166,7 @@ def _data_rm_locks(a: dict) -> list[tuple[str, bool]]:
     run = path.split("/")[1] if path.startswith("runs/") and path.count("/") >= 1 else None
     cid = _run_meta(run).get("config_id") if run else None
     if cid:
-        out.append((f"config:{cid}", True))
+        out.append((f"system:{cid}", True))
     return out
 
 

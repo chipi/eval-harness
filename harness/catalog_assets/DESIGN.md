@@ -191,7 +191,7 @@ reading, the monospace for every id, number and control.
 
 ### Hierarchy
 
-- **Page title** (800, clamp 34–72px, 1.0): a list page's name ("Arms and configs").
+- **Page title** (800, clamp 34–72px, 1.0): a list page's name ("Arms and systems").
 - **Item title** (800, clamp 26–38px, 1.1): one goal's, dataset's or arm's page.
 - **Body** (400, 17px, 1.6): a page's one sentence on what it holds.
 - **Table** (400, 15px): table cells; ids in monospace, numbers with tabular figures.

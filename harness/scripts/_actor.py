@@ -1,7 +1,7 @@
 """Who acted (RFC-027 D1): a person, or an agent and the person it acted for, on every record a command writes.
 
     evh run-promote --run R --reason "..." --by person:ana
-    EVH_ACTOR=agent:fleet EVH_FOR=person:ana evh run --config c.yaml
+    EVH_ACTOR=agent:fleet EVH_FOR=person:ana evh run --system c --dataset d
 
 The actor is a recorded claim, not an identity: `from` says where it came from (`flag`, `environment`, `terminal`,
 `migration`). In order: a command's `--by` (`person:NAME`, `agent:NAME`, or a bare name, a person); else `EVH_ACTOR`,

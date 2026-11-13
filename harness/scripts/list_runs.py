@@ -67,7 +67,7 @@ def _runs() -> int:
     if not dirs:
         print(
             "no runs yet — "
-            + how("start with `evh run --config <arm>.yaml` (docs/GUIDE.md)", "try:  make demo")
+            + how("start with `evh run --system <id> --dataset <id>` (docs/GUIDE.md)", "try:  make demo")
         )
         _jsonout.table(_RUN_COLUMNS, [])
         _jsonout.values({"kind": "runs", "count": 0})

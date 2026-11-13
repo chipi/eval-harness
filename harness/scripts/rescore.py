@@ -330,7 +330,7 @@ def _rescored_fingerprint(
 
 #: Where a re-score lands when no --out names a place (RFC-022): data/runs-rescored/<scorer>/<source>/, the scorer
 #: by its code (12 characters of the adapter's sha256), the source the runs directory it read, so a repeat set
-#: never sits beside a first pass of the same config (V8).
+#: never sits beside a first pass of the same system (V8).
 RESCORED = "runs-rescored"
 
 
@@ -382,7 +382,7 @@ def current_scorer(m: dict, adapters: dict[str, Any] | None = None) -> str:
 
 
 def measured_runs(dataset_id: str, configs: set[str] | None = None) -> list[tuple[Path, dict]]:
-    """Every measured (not derived) run on the dataset, of the configs when named, in every runs directory git
+    """Every measured (not derived) run on the dataset, of the systems when named, in every runs directory git
     keeps: what a round's or a goal's arms were first scored from."""
     out: list[tuple[Path, dict]] = []
     for base in sorted(_store.glob(DATA, "runs*")):
@@ -609,12 +609,6 @@ def main() -> int:
         metavar="SET",
         help="score against a label set of the dataset (SET or DATASET/SET), without promoting it; written beside "
         "the runs (default data/runs-labels-<dataset>-<set>/), never where a goal reads a re-score (RFC-023)",
-    )
-    ap.add_argument(
-        "--config-dir",
-        type=Path,
-        help="where to find the arm configs naming the adapter "
-        "(default: alongside each run's recorded adapter path)",
     )
     ap.add_argument("--goal", help="with --round: re-score that round's arms")
     ap.add_argument(

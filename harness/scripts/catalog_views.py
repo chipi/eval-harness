@@ -2,9 +2,9 @@
 
     evh overview   [--period P]                      the home page: tiles with trends, goals at a glance, activity, spend, coverage
     evh datasets   [--dataset-id ID]                 every dataset, or one: arms, references, versions
-    evh arms       [--dataset-id ID] [--arm ID]      every arm, or one: its metrics, runs, config, conditions, rounds
-                   [--by G] [--where W] [--tier T] [--weights K] [--quality Q] [--configs]
-                                                     the arms page: grouped, filtered; the configs
+    evh arms       [--dataset-id ID] [--arm ID]      every arm, or one: its metrics, runs, system, conditions, rounds
+                   [--by G] [--where W] [--tier T] [--weights K] [--quality Q] [--systems]
+                                                     the arms page: grouped, filtered; the systems
     evh models     [--kind K] [--where W] [--status S] [--model ID]
                                                      every model record, or one: deployments, onboarding, history, arms
     evh references [--reference-id ID]               every reference, or one: who wrote it, what is scored against it
@@ -173,7 +173,7 @@ def datasets(argv) -> int:
                 ds,
                 v["items"],
                 len(v["arms"]),
-                cb._n_configs({ds: v}),
+                cb._n_systems({ds: v}),
                 ", ".join(r["id"] for r in v["refs"]) or "—",
                 (v.get("parent") or {}).get("dataset_id", "") or v.get("origin", ""),
                 " ".join(f"{k}={t}" for k, t in sorted((v.get("tags") or {}).items())),
@@ -181,7 +181,7 @@ def datasets(argv) -> int:
             ]
             for ds, v in sorted(by_ds.items())
         ]
-        heads = ["dataset", f"{A.item_word}s", "arms", "configs", "reference sets", "made from", "tags"]
+        heads = ["dataset", f"{A.item_word}s", "arms", "systems", "reference sets", "made from", "tags"]
         _table(heads + (["", *(PERIOD_HEADS[f] for f in flows)] if per else []), rows)
         return 0
     v = by_ds.get(args.dataset_id)
@@ -189,7 +189,7 @@ def datasets(argv) -> int:
         die(f"no dataset {args.dataset_id!r} in the catalog: one of {', '.join(sorted(by_ds))}", "not-found")
     print(
         f"{args.dataset_id}: {v['items']} {A.item_word}s, {len(v['arms'])} arms from "
-        f"{cb._n_configs({args.dataset_id: v})} configs (a config rescored against silver or by a judge is an arm of its own)\n"
+        f"{cb._n_systems({args.dataset_id: v})} systems (a system rescored against silver or by a judge is an arm of its own)\n"
     )
     if v.get("tags"):
         print("tags: " + ", ".join(f"{k}={t}" for k, t in sorted(v["tags"].items())))
@@ -599,7 +599,7 @@ def arms(argv) -> int:
     from evaluation_harness import catalog_arms as ca  # noqa: PLC0415
 
     ap.add_argument("--dataset-id", help="only the arms on this dataset")
-    ap.add_argument("--arm", help="one arm in full: its arm id, or a config id (its arm under runs/)")
+    ap.add_argument("--arm", help="one arm in full: its arm id, or a system id (its arm under runs/)")
     ap.add_argument(
         "--by",
         choices=[*("dataset" if k == "set" else k for k, _ in ca.GROUPS if k), "none"],
@@ -624,9 +624,9 @@ def arms(argv) -> int:
         help="only arms a goal counts as contenders beside its quality leader, or only those it ranks below the leader",
     )
     ap.add_argument(
-        "--configs",
+        "--systems",
         action="store_true",
-        help="one row per config across the datasets it ran on, with its rank on each goal",
+        help="one row per system across the datasets it ran on, with its rank on each goal",
     )
     _period_option(ap)
     ap.add_argument("--adapter", help="path/to/file.py:Class (default: the catalog's)")
@@ -660,21 +660,21 @@ def arms(argv) -> int:
         if line:
             print(line)
         heads_p = ["", *(PERIOD_HEADS[f] for f in flows)] if per else []
-        if args.configs:
+        if args.systems:
             _table(
-                ["config", "model", "provider", "datasets", "arms", "spend", "rank on each goal", *heads_p],
+                ["system", "model", "provider", "datasets", "arms", "spend", "rank on each goal", *heads_p],
                 [
                     [
-                        c["config"],
+                        c["system"],
                         c["model"] or "—",
                         c["provider"] or "—",
                         ", ".join(c["datasets"]),
                         c["arms"],
                         cb.fmt_amount(c["usd"], "usd") if c["usd"] else "—",
                         "; ".join(f"{g['goal_id']} #{i} of {n}" for g, _d, i, n in c["ranks"]) or "—",
-                        *(_pcells(per[f"c:{c['config']}"], flows) if per else []),
+                        *(_pcells(per[f"c:{c['system']}"], flows) if per else []),
                     ]
-                    for c in ca.config_rows(A, by_ds, rows, cb.window(A, by_ds)["spend"])
+                    for c in ca.system_rows(A, by_ds, rows, cb.window(A, by_ds)["spend"])
                 ],
             )
             return 0
@@ -831,7 +831,7 @@ def arms(argv) -> int:
     sib = cb._siblings(by_ds, a, ds)
     if sib:
         tiers = {r["id"]: r["tier"] for r in v["refs"]}
-        print("\nthe same config, scored other ways:")
+        print("\nthe same system, scored other ways:")
         _table(
             ["arm id", "scored against", "headline", "mean", "row"],
             [[x["arm"], _scored(x), x["metric"], _fmt(x["mean"]), _kind(x, tiers)] for x in sib],
@@ -1053,7 +1053,7 @@ def goals(argv) -> int:
         "--arms",
         action="append",
         metavar="PATTERN",
-        help="with --goal: only arms whose arm or config id contains PATTERN (or fits it, as a glob when it has "
+        help="with --goal: only arms whose arm or system id contains PATTERN (or fits it, as a glob when it has "
         "* ? or [); repeatable or comma-separated. The baseline, the leader and the recommended arm stay",
     )
     ap.add_argument(
@@ -1080,14 +1080,14 @@ def goals(argv) -> int:
         if line:
             print(line)
         _table(
-            ["goal", "decides", "datasets", "configs filed", "recommended", "title"]
+            ["goal", "decides", "datasets", "systems filed", "recommended", "title"]
             + (["", *(PERIOD_HEADS[f] for f in flows)] if per else []),
             [
                 [
                     g["goal_id"],
                     ((g.get("success_criteria") or {}).get("primary") or {}).get("measure", ""),
                     ", ".join(d.get("dataset_id", "") for d in g.get("datasets") or []),
-                    cb.configs_filed(by_ds, g),
+                    cb.systems_filed(by_ds, g),
                     "; ".join(
                         r["recommended_label"]
                         + (f" ({' · '.join(r['vs_baseline'])} vs baseline)" if r["vs_baseline"] else "")
@@ -1307,7 +1307,7 @@ def goals(argv) -> int:
 
 
 def _arm_ids(A, tokens: list, from_dir: str) -> list:
-    """Arm ids from what the user typed: a full arm id, or a config id looked up under `from_dir`."""
+    """Arm ids from what the user typed: a full arm id, or a system id looked up under `from_dir`."""
     known = A.arms()
     out = []
     for t in tokens:
@@ -1339,7 +1339,7 @@ def inspect(argv) -> int:
         allow_abbrev=False,
     )
     pick = ap.add_mutually_exclusive_group()
-    pick.add_argument("--runs", help="arms: config ids (looked up under --from) or arm ids, comma-separated")
+    pick.add_argument("--runs", help="arms: system ids (looked up under --from) or arm ids, comma-separated")
     pick.add_argument("--round", help="the arms in play in this round of a goal (rN; ADR-0004)")
     ap.add_argument("--goal", help="the goal --round belongs to, when several goals have one")
     ap.add_argument(
@@ -1351,7 +1351,7 @@ def inspect(argv) -> int:
         "--from",
         dest="from_dir",
         default="runs",
-        help="where config ids are looked up: runs, runs-silver, runs-judged/<scorer> (default: runs)",
+        help="where system ids are looked up: runs, runs-silver, runs-judged/<scorer> (default: runs)",
     )
     ap.add_argument(
         "--where",
@@ -1705,7 +1705,7 @@ def _sheet_view(A, args) -> int:
         die("--sheet: name the dataset with --dataset-id", "bad-argument")
     if args.round:
         die(
-            "--sheet takes --runs (run ids, or config ids: their latest run on the dataset), not --round",
+            "--sheet takes --runs (run ids, or system ids: their latest run on the dataset), not --round",
             "bad-argument",
         )
     for flag, on in (("--item", args.item), ("--analysis", args.analysis), ("--baseline", args.baseline)):

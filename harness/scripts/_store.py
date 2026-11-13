@@ -144,8 +144,8 @@ def _under(key: str) -> tuple[str, str]:
 
 def _disk(path: Any) -> Path:
     """A path the filesystem keeps, as the OS should find it. In the database's store a folder under data/ is only a
-    key, not on disk, so a path that climbs out through one (a config's `adapter: ../../bonus_adapter.py`, from
-    data/configs/) is normalised first instead of walked, which failed (the store matrix, 2026-11-08). On disk, as
+    key, not on disk, so a path that climbs out through one (a system's `adapter: ../../bonus_adapter.py`, from
+    data/systems/) is normalised first instead of walked, which failed (the store matrix, 2026-11-08). On disk, as
     given."""
     p = Path(path)
     return Path(os.path.abspath(p)) if ".." in p.parts and sqlite() else p

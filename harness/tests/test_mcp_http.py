@@ -444,7 +444,7 @@ from evaluation_harness.mcp_server import argv_of, parser_of  # noqa: E402
 ap = parser_of("arms")
 check(
     "the same arguments in another order make the same command line (one cached answer, not two)",
-    argv_of(ap, {"period": "30d", "configs": True}) == argv_of(ap, {"configs": True, "period": "30d"}),
+    argv_of(ap, {"period": "30d", "systems": True}) == argv_of(ap, {"systems": True, "period": "30d"}),
 )
 got = anyio.run(held_open)
 check(

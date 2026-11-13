@@ -69,7 +69,7 @@ def main() -> int:
         print("      create it with the keys your providers read, one NAME=value per line\n")
 
     print(
-        "\nhosted providers (a config's `provider:`): an arm reads <NAME>, a judge EVAL_JUDGE_<NAME>"
+        "\nhosted providers (a system's `provider:`): an arm reads <NAME>, a judge EVAL_JUDGE_<NAME>"
         "\nfirst and the arms' <NAME> when that is not set"
     )
     print(f"  {'provider':11} {'variable':20} {'arms':34} judges")

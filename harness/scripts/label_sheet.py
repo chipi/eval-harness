@@ -13,7 +13,7 @@ needs), fill `label` (or write `yes` to take the proposal) and, where more than 
 right as the label, not "unsure which"), the others in `also right` (separated by `|`); save it as CSV and run `evh
 label-import`. --choices writes the allowed answers into the label column's header (`label [file|dismiss|…]`), and
 label-import refuses any other. Which items: --items unlabelled (the default: no label in any set yet), all, or
-disagree (the runs in --runs decided differently); or exactly those named with --item. A run is a run id or a config
+disagree (the runs in --runs decided differently); or exactly those named with --item. A run is a run id or a system
 id (its latest run on the dataset). Nothing is written but the sheet.
 """
 
@@ -40,7 +40,7 @@ VIEW = 160
 
 
 def run_dir(name: str, dataset_id: str) -> Path:
-    """A run by its id, or a config's latest run on the dataset: in data/runs, else in a label set's runs
+    """A run by its id, or a system's latest run on the dataset: in data/runs, else in a label set's runs
     (data/runs-labels-<dataset>-<set>/, where a run scored against labels lands)."""
     bases = [_common.RUNS, *sorted(_store.glob(_common.DATA, f"runs-labels-{dataset_id}-*"))]
     # An arm id, as the catalog names it (catalog_adapter._index): <runs dir>/<dataset>/<config_id>, the runs dir
@@ -69,7 +69,7 @@ def run_dir(name: str, dataset_id: str) -> Path:
         found = runs_on(dataset_id, runs_dir=base, config_id=name)
         if found:
             return found[-1][0]
-    die(f"--runs {name}: no run with that id, and no run of that config on {dataset_id}", "not-found")
+    die(f"--runs {name}: no run with that id, and no run of that system on {dataset_id}", "not-found")
 
 
 def output(d: Path, item_id: str) -> str | None:
@@ -102,7 +102,7 @@ def main() -> int:
     ap.add_argument("--items", choices=("unlabelled", "all", "disagree"), default="unlabelled")
     ap.add_argument("--item", action="append", default=[], help="exactly this item (repeatable)")
     ap.add_argument(
-        "--runs", default="", help="runs (or configs) whose decisions the sheet shows, comma-separated"
+        "--runs", default="", help="runs (or systems) whose decisions the sheet shows, comma-separated"
     )
     ap.add_argument(
         "--propose", help="a label set (by name, on this dataset) or a run whose answers are proposed"

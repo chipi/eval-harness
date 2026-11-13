@@ -27,17 +27,17 @@ server on this machine. Its state is in the URL, so a file or a folder can be li
 
 ## Principles
 
-- **Settings are edited; data is shown.** A setting is what a person decides (an arm config, a goal). Data is what
+- **Settings are edited; data is shown.** A setting is what a person decides (a system, a goal). Data is what
   the harness wrote (a run, a dataset, a reference set): the page shows it and names the command that writes it.
   Runs are the one kind of data the page deletes, whole.
 - **A form, not a text editor.** A setting is entered in a form built from its kind's schema: one labelled field
   per key, the right control for its type, the schema's description as its help. Nobody types YAML on this page.
-- **Check before save.** A setting is saved only when it matches its schema, and, for every kind but an arm config,
+- **Check before save.** A setting is saved only when it matches its schema, and, for every kind but a system,
   its id is its file name: the same check `evh data-put --check` prints. Then the project's own check runs:
   `evh validate` before the write and after it, and anything it says after that it did not say before (a scorer
-  with judges of one family, a config naming a goal that does not exist) puts the file back as it was and comes
-  back as the save's problems. A setting the page saves is one `validate` passes. An arm config is exempt because
-  its `config_id` is versioned (`data/configs/tickets_lead1.yaml` holds `tickets_lead1_v1`); the other kinds are found
+  with judges of one family, a system naming a goal that does not exist) puts the file back as it was and comes
+  back as the save's problems. A setting the page saves is one `validate` passes. A system is exempt because
+  its `system_id` is versioned (`data/systems/tickets_lead1.yaml` holds `tickets_lead1_v1`); the other kinds are found
   by their id (validate checks goals, scorers, models and failure-mode lists; a fieldset is read as `<id>.yaml`).
   `validate.json` is checked against `schemas/validate.schema.json`, written from what `validate` reads, and the goal
   policy (`goals/policy.yaml`, not a goal) against `schemas/goal-policy.schema.json`; the goals folder offers
@@ -102,7 +102,7 @@ data.**
  Settings  you can edit these
  ┌───────────────┐ ┌───────────────┐ ┌───────────────┐ ┌───────────────┐
  │ 4             │ │ 1             │ │ 1             │ │ 0             │ ...
- │ configs       │ │ goals         │ │ fields        │ │ scorers       │
+ │ systems       │ │ goals         │ │ fields        │ │ scorers       │
  │ ARM CONFIG    │ │ GOAL          │ │ FIELDSET      │ │ JUDGE SCORER  │
  └───────────────┘ └───────────────┘ └───────────────┘ └───────────────┘
 
@@ -121,14 +121,14 @@ data.**
 ## 02 A folder
 
 ```text
- data / configs                                                          [ + New arm config → ]
+ data / systems                                                          [ + New system → ]
  ┌──────────────────────────────┬──────────┬──────────────────────┐
  │ name                         │ what     │ modified             │
  ├──────────────────────────────┼──────────┼──────────────────────┤
  │ tickets_lead1.yaml           │ 259 B    │ 2026-11-06 10:55 UTC │
 ```
 
-- A breadcrumb (`data / configs`), then a table of the folder's entries: sub-folders first (with their file count),
+- A breadcrumb (`data / systems`), then a table of the folder's entries: sub-folders first (with their file count),
   then files, by name.
 - In a settings folder, **+ New <kind>** opens a new setting there.
 - In a runs folder (`runs`, `runs-*`), a run is a row with its dataset, items and when it was made (its record's
@@ -148,7 +148,7 @@ data.**
 ## 04 Editing a setting: the form
 
 ```text
- data / configs / tickets_lead1.yaml   editing
+ data / systems / tickets_lead1.yaml   editing
  config_id *        [ tickets_lead1_v1            ]  The arm's identity; runs are named after it.
  dataset_id *       [ tickets_v1               ▾ ]  (the project's datasets)
  goal               [ tickets_summary          ▾ ]  The goal_id this arm is measured for.
@@ -178,14 +178,14 @@ data.**
   adds a row. An existing value keeps its type.
 - **Suggestions from the project.** A field that names other data offers what exists: a `dataset_id` the project's
   datasets; `goal`, `superseded_by` its goals; `model_record` its model records; `deployment` the deployments of the
-  chosen model record; `hypothesis.against` its arm configs' `config_id`; `supersedes` its scorers; a
+  chosen model record; `hypothesis.against` its systems' `system_id`; `supersedes` its scorers; a
   `reference_id` its reference sets; validate's `committed` its runs folders. A suggestion is not a limit: any value
   may be typed, and the check says if it is wrong.
 - **Written by a command.** A field a command writes is shown read-only with **written by `evh model-onboard`**
   (a model record's `capabilities`, a deployment's `onboarding` and `checked_at`) or **written by `evh arm-smoke`**
   (`smokes`), a group of them folded behind that line; saving keeps it as it is.
-- **The id.** For every kind but an arm config the id is the file name, so an existing setting's id is shown, fixed
-  (renaming is not supported). An arm config's `config_id` is a field like the others.
+- **The id.** For every kind but a system the id is the file name, so an existing setting's id is shown, fixed
+  (renaming is not supported). A system's `system_id` is a field like the others.
 - **Save** checks first. A problem is shown at its field, in red, and all of them are listed above the buttons, each
   a link to its field (**datasets › 1 › dataset id: required**); nothing is written until the check passes. Editing
   any field clears the list (it was the last save's). After a save the file view opens with **Saved. sha256 <first
@@ -195,14 +195,14 @@ data.**
   is written with two-space indents.
 - **Cancel** leaves without saving; if anything changed it asks first, on the page: **Discard your changes?
   [Discard] [Keep editing]**.
-- An arm config whose runs exist: the form says **N runs were made with this config; they keep the settings they
+- A system whose runs exist: the form says **N runs were made with this system; they keep the settings they
   recorded. A change applies to the next run.** (the file view says the first sentence).
 
 ## 05 A new setting
 
 - **+ New <kind>** in a settings folder opens the same form, filled from the kind's template. The id field names the
-  file (`goals/<goal_id>.yaml`); an arm config has a **file name** field of its own above `config_id`. **Create**
-  checks and saves like Save; a name already taken is refused: **configs/x.yaml exists: open it to edit it.** After
+  file (`goals/<goal_id>.yaml`); a system has a **file name** field of its own above `system_id`. **Create**
+  checks and saves like Save; a name already taken is refused: **systems/x.yaml exists: open it to edit it.** After
   it, the file view opens with **Created.**
 
 ## 06 Deleting

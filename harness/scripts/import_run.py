@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Import per-item scores produced OUTSIDE the harness, as a run the harness can test.
 
-    evh import-run --dataset-id my_v1 --config-id arm_a \\
+    evh import-run --dataset-id my_v1 --system-id arm_a \\
         --scores scores.jsonl --primary-metric wer --asc \\
         --build-ref <commit of the system that produced the outputs> \\
         --source path/to/original/run --scorer-id my_scorer --scorer-file path/to/scorer.py
@@ -85,7 +85,7 @@ def main() -> int:
     """Import external scores as a harness run."""
     ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
     ap.add_argument("--dataset-id", required=True)
-    ap.add_argument("--config-id", required=True, help="the arm's name, as tests will refer to it")
+    ap.add_argument("--system-id", required=True, help="the arm's name, as tests will refer to it")
     ap.add_argument("--scores", required=True, type=Path, help="JSONL: item_id + numeric metrics")
     ap.add_argument("--primary-metric", required=True)
     ap.add_argument("--asc", action="store_true", help="lower is better for the primary metric")
@@ -118,7 +118,7 @@ def main() -> int:
         action="store_true",
         help="accept scores for only part of the dataset, recorded as coverage",
     )
-    ap.add_argument("--run-id", help="default: <config-id>_<timestamp>")
+    ap.add_argument("--run-id", help="default: <system-id>_<timestamp>")
     from evaluation_harness._actor import add_by  # noqa: PLC0415
 
     add_by(ap)
@@ -182,7 +182,7 @@ def main() -> int:
             vals = [r[m] for r in rows if m in r]
             scores[m] = round(sum(vals) / len(vals), 6)
 
-        run_id = args.run_id or f"{args.config_id}_{now().replace('-', '').replace(':', '')}"
+        run_id = args.run_id or f"{args.system_id}_{now().replace('-', '').replace(':', '')}"
         run_dir = RUNS / run_id
         if _store.exists(run_dir):
             die(f"{run_dir} already exists", "would-overwrite")
@@ -218,7 +218,7 @@ def main() -> int:
             dataset=dataset,
             reference_id=args.reference_id,
             reference_tier=args.reference_tier,
-            config_id=args.config_id,
+            config_id=args.system_id,
             params=params,
             adapter_id=f"imported:{args.scorer_id}",
             adapter_path=None,
@@ -233,7 +233,7 @@ def main() -> int:
         write_json(
             run_dir / "run.json",
             {
-                "config_id": args.config_id,
+                "config_id": args.system_id,
                 "dataset_id": args.dataset_id,
                 "run_id": run_id,
                 "started_at": now(),
@@ -244,7 +244,7 @@ def main() -> int:
         metrics_doc = run_record(
             run_id=run_id,
             dataset_id=args.dataset_id,
-            config_id=args.config_id,
+            config_id=args.system_id,
             build={"ref": args.build_ref, "dirty": None, "source": "import-run --build-ref"},
             scores=scores,
             n_items=len(rows),

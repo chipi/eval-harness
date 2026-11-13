@@ -91,7 +91,7 @@ anthropic` and an Anthropic model id. Prices live in the system, not in code: th
 run records the prices it was costed at.
 
 **What a run records as cost.** For each call, the provider's bill when the response carries one
-(`usage.cost`), else the config's price table (tokens × `usd_per_mtok_in` / `usd_per_mtok_out`);
+(`usage.cost`), else the system's price table (tokens × `usd_per_mtok_in` / `usd_per_mtok_out`);
 with neither, the cost is unknown, never zero:
 
 | `provider:` | the run's cost |

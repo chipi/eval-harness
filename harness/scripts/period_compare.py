@@ -31,7 +31,7 @@ from evaluation_harness._common import die, evh_prog, load_dataset
 
 
 def _latest(dataset_id: str, name: str) -> tuple[Any, dict]:
-    """A run named by its id, or the latest run of a config named by its config_id (the fleet's beta: `faithfulness
+    """A run named by its id, or the latest run of a system named by its config_id (the fleet's beta: `faithfulness
     --production` takes a run id, and the same id given here was refused)."""
     runs = _runs.runs_on(dataset_id)
     by_id = [(d, m) for d, m in runs if d.name == name]
@@ -40,7 +40,7 @@ def _latest(dataset_id: str, name: str) -> tuple[Any, dict]:
     of_config = [(d, m) for d, m in runs if m.get("config_id") == name]
     if not of_config:
         die(
-            f"no run of {name} on {dataset_id}, by run id or config_id: run it first (evh run --config …)",
+            f"no run of {name} on {dataset_id}, by run id or system id: run it first (evh run --system …)",
             "not-found",
         )
     return of_config[-1]

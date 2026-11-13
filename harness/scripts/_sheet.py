@@ -140,7 +140,7 @@ def _numbers(row: dict) -> dict[str, float]:
 
 
 def _arm_dir(token: str, dataset_id: str, from_dir: str) -> Path:
-    """A run by its id, or a config's latest run on the dataset, under `from_dir` (runs, runs-silver,
+    """A run by its id, or a system's latest run on the dataset, under `from_dir` (runs, runs-silver,
     runs-judged/<scorer>); `runs` is also where label_sheet.run_dir looks (and in the label sets' runs)."""
     if from_dir and from_dir != "runs":
         if ".." in Path(from_dir).parts:
@@ -155,7 +155,7 @@ def _arm_dir(token: str, dataset_id: str, from_dir: str) -> Path:
         found = runs_on(dataset_id, runs_dir=base, config_id=token)
         if found:
             return found[-1][0]
-        die(f"--runs {token}: no run of that config on {dataset_id} under {from_dir}", "not-found")
+        die(f"--runs {token}: no run of that system on {dataset_id} under {from_dir}", "not-found")
     return run_dir(token, dataset_id)
 
 
@@ -312,7 +312,7 @@ def build(
     new_vs: str | None = None,
     items: list[str] | None = None,
 ) -> dict[str, Any]:
-    """The sheet of a dataset over runs (ids, or config ids: their latest run on the dataset; the first stands for
+    """The sheet of a dataset over runs (ids, or system ids: their latest run on the dataset; the first stands for
     production): {dataset_id, arms [{token, run, path, config_id, scores [ref]}], metric (a ref), lower, goal, decl,
     label_cols, ref_cols, winner_cols, metrics (every ref one can be read on), rows}, one row per item of the dataset (or `items`) in its order, each
     {item, text, fields, decisions {token: output}, shown {token: what a view shows}, scores {token: {ref: value}},

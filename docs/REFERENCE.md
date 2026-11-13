@@ -416,8 +416,8 @@ Where the same word means something else:
 - **adapter** is not HELM's *Adapter*, which turns a scenario's instances into requests (prompts) for
   the model. Ours is a project's code that calls the system under test and scores what it returns.
 - **floor** is a trivial baseline: a constant, a random answer or a rule, no model.
-- **config** is an arm's YAML file, not a Hugging Face dataset *config* (a named subset of a dataset,
-  as in `load_dataset("PolyAI/minds14", "fr-FR")`).
+- **system** is what you evaluate, a YAML file under `data/systems/`; a Hugging Face dataset *config* is a named
+  subset of a dataset, as in `load_dataset("PolyAI/minds14", "fr-FR")`.
 - **governed vs production** data is offline vs online evaluation in LangSmith, Langfuse and
   Braintrust: offline scores a fixed dataset before shipping, online scores live production traces.
 - **cluster** is the statistician's word (clustered standard errors), as Miller (2024) uses it for

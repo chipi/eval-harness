@@ -50,7 +50,7 @@ class Entity:
     parent_field: str = ""
     #: Records also kept outside data/<folder> (a project's systems in the folders validate.json names): {id: file}.
     finder: Callable[[], dict[str, Path]] | None = None
-    #: The id's pattern, where it is wider than the default (a system id kept from a config id: `se_rougeL_n100_v1`).
+    #: The id's pattern, where it is wider than the default (a system id kept from a system id: `se_rougeL_n100_v1`).
     id_pattern: re.Pattern[str] = ID
 
     def base(self) -> Path:

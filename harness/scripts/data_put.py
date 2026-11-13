@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 """Create or change a setting under data/, in either store, checked first (UXS-004: the data page's form).
 
-    evh data-put configs/x.yaml --set params.sentences=2       one field, as the form's Save: the file's comments
+    evh data-put systems/x.yaml --set params.sentences=2       one field, as the form's Save: the file's comments
     evh data-put goals/g.yaml --set datasets.0.role=test --unset context   and the rest of it are kept
     evh data-put goals/support_triage.yaml goal.yaml --check   only check a whole file: it parses, matches its
                                                                 schema, its id is its file name
     evh data-put goals/support_triage.yaml goal.yaml           check it, then save it (nothing saved on a problem)
-    evh data-put configs/new_arm.yaml arm.yaml --new           refuse a name already taken
+    evh data-put systems/new_system.yaml arm.yaml --new           refuse a name already taken
 
 KEY is a dotted path (datasets.0.role: a list's item by its number); VALUE is read as YAML (3, 0.5, true, null, or
 text). A missing group or the next item of a list is made.
 
-A setting is an arm config, a goal, a fieldset, a judge scorer, a model record, a failure-mode list or the validate
+A setting is a system, a goal, a fieldset, a judge scorer, a model record, a failure-mode list or the validate
 policy; anything else under data/ is written by the harness's own commands and is refused here. FILE `-` reads the
 text from standard input.
 """
@@ -34,7 +34,7 @@ def main() -> int:
     """Check, then save, one setting of the project."""
     ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
     ap.add_argument(
-        "path", help="the setting, relative to data/ (goals/x.yaml, configs/x.yaml, validate.json, ...)"
+        "path", help="the setting, relative to data/ (goals/x.yaml, systems/x.yaml, validate.json, ...)"
     )
     ap.add_argument(
         "file", nargs="?", type=_Path, help="the file holding its whole new text, or - for standard input"

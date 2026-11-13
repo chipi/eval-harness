@@ -1349,7 +1349,7 @@ billed $2.01 for 100 items"/><circle cx="352.6" cy="74" r="11" class="ring"/><te
 <span class="c"># then the guide walks the six tickets</span></pre></div>
     <div><h3>2 · On your own system</h3>
 <pre class="term"><span class="p">$ </span>evh dataset-create --dataset-id my_v1     --source-dir data/sources
-<span class="p">$ </span>evh run --config data/configs/arm_a.yaml
+<span class="p">$ </span>evh run --system arm_a_v1 --dataset my_v1
 <span class="p">$ </span>evh leaderboard --dataset-id my_v1
 <span class="p">$ </span>evh catalog && evh catalog-serve</pre></div>
     <div><h3>3 · Or the bundled demo</h3>

@@ -79,7 +79,7 @@ def decisions(A, goal: dict) -> dict[str, dict[str, Any]]:
 
 
 def _set_of(arm: str) -> str:
-    """ " (repeats)" for an arm read from a repeat set, so a config's first pass and its later ones stay apart."""
+    """ " (repeats)" for an arm read from a repeat set, so a system's first pass and its later ones stay apart."""
     return " (repeats)" if "repeats" in arm.rsplit("/", 2)[0] else ""
 
 

@@ -42,7 +42,7 @@ and returned nothing, fixed in 0.7.1), 10 needed a guess, about 15 of noise or p
   variable each reads). Put the key in the project's `.env` with `EVAL_MAX_COST_USD=1`, and check
   with `evh env-check`. Add up what each command prints it spent (`evh run`:
   `spent $…`; `judge-score`: `spent this run $…`). What that figure is, the provider's bill
-  or the config's price table, depends on the provider
+  or the system's price table, depends on the provider
   ([RUNBOOK §4](RUNBOOK.md#4-point-the-harness-at-your-system)).
 - **Screenshots and logs outside the project folder.** Keep screenshots and the pip install log outside
   the project's `evh-scenario/` folder (e.g. `~/screenshots/` or `/tmp/`) so they do not end up as
@@ -90,7 +90,7 @@ One per eval in `data/goals/`, `brief_summary` and `intent_routing`
 ([RUNBOOK §4c](RUNBOOK.md#4c-the-goal-file-field-by-field) has every field and its allowed
 values): who uses the output, the decision ("which system runs it, given that a frontier model is
 too expensive to run on every item"), the measure that decides (`rouge_l`; `accuracy`), the
-dataset, the references. Every config names its goal (`goal: …`).
+dataset, the references. Every system names its goal (`goal: …`).
 
 ## 3 · Adapters and arms
 
@@ -99,7 +99,7 @@ dataset, the references. Every config names its goal (`goal: …`).
   `AutoModelForSeq2SeqLM.generate`), and the bundled hosted providers
   (`from evaluation_harness.adapter import PROVIDERS, Result`); `score()` returns `rouge_1`,
   `rouge_l` and `output_words`; `PRIMARY_METRIC = "rouge_l"`; `METRIC_DESCRIPTIONS`.
-- `adapters/intent.py` for the classifier, named by each intents config (`adapter:`): keyword
+- `adapters/intent.py` for the classifier, named by each intents system (`adapter:`): keyword
   rules, and the hosted providers asked to
   answer `label: <intent>` / `reason: <one sentence>`; `score()` reads the label from the output
   and from the reference (gold is a bare label, silver is a model's two lines);
@@ -112,7 +112,7 @@ dataset, the references. Every config names its goal (`goal: …`).
 | cheap hosted | `mistral_small` | `mistral_small`, `llama_scout` |
 | frontier | `opus` (an expensive model you would not run in production) | `opus` |
 
-Every arm's first config id ends `_v1` (the frontier summariser is `briefs_opus_v1`). Give the
+Every arm's first system id ends `_v1` (the frontier summariser is `briefs_opus_v1`). Give the
 frontier arm room to finish: `max_tokens: 300`. Silence the model libraries' progress bars and
 warnings in the adapter as tutorial 1's does, so the run's output is the harness's.
 
@@ -213,7 +213,7 @@ evh round-close --goal brief_summary --round r1 --conclusion "<what r1 showed, a
 git add data/rounds && git commit -qm "brief_summary r1: closed"
 ```
 
-The carried arms need no config change and no new run: `round-open` says so, and their runs
+The carried arms need no system change and no new run: `round-open` says so, and their runs
 already count. Use the commands `evh rounds` suggests (it prints each as the command that makes
 it), and check that its verdicts are `family-test`'s for the same arms against the same leader.
 
@@ -265,7 +265,7 @@ evh catalog && evh catalog-serve
 Screenshot: the home page (the tiles, goals at a glance, activity and spend in USD and in tokens,
 coverage, what was recorded; the period picker and the tiles' trends); the datasets page and each dataset page (its
 baseline with reason, arms grouped by what they are scored against, `briefs_v1` ↔ `briefs_v2`
-linked both ways); an arm page (its metrics table, runs, config, conditions, rounds); the goals
+linked both ways); an arm page (its metrics table, runs, system, conditions, rounds); the goals
 page and each goal's page (its answer, its arms grouped by what they are scored against, each
 group's recommendation with its reasons, the cost and speed columns and the trade-off charts, the
 closed rounds with their conclusions and retired arms; r2's suggestions were captured in step 9,
@@ -314,7 +314,7 @@ no development history;
 `evh env-check` and the `litellm` provider no longer mention `.env.example`; `provider:
 openrouter` reads `OPENROUTER_API_KEY` and calls OpenRouter's address by default; with no
 reference, `experiment-run` (now `evh run`) named `reference-create --from-run` first, and `evh --help`
-described `reference-create` as making references from a run or with a config (both since replaced: a
+described `reference-create` as making references from a run or with a system (both since replaced: a
 reference set is labels you promote, 0.6.0); `leaderboard` prints one
 table per reference and never averages across them; the bundled adapter stores `overlap_f1`
 unrounded, so the rounding note no longer fires for it; `run-promote` prints no `resumed`;
@@ -338,15 +338,15 @@ decimals, `<0.0001`), and `family-test` says whether its p is exact or a seeded 
 labels its column `A wins`; `evh run` prints what it spent and calls the cost and speed
 spread what it is; `judge-score` says its spend is the provider's bill where one is reported,
 else the price table; `silver-calibrate` explains rho and sibling lift; the catalog counts the
-configs behind its arms; "filed" reads "filed under this goal"; the item view says it shows the
+systems behind its arms; "filed" reads "filed under this goal"; the item view says it shows the
 latest of N repeats beside their mean, and `evh inspect --item` prints the run and the same note;
 `evh cost-report` sees the bundled adapter's bills (`_meta.usage.cost`); `evh datasets` counts the
-configs behind the arms; judged arms keep their version in the inspector; a heading
+systems behind the arms; judged arms keep their version in the inspector; a heading
 scrolled to is not hidden under the header; `env-check` names example arms only in a checkout; the
 kit's judge scorer points at tutorial 3. Fixed in the docs: every goal field and its allowed
 values (RUNBOOK §4c); what each provider records as cost (RUNBOOK §4, tutorial 2); which repeat
 to promote; family-test's p against pair-test's above 30 items; tutorial 1's adapter silences the
-model library's bars and warnings; this page's config ids (`_v1` throughout), step 10's data and
+model library's bars and warnings; this page's system ids (`_v1` throughout), step 10's data and
 step 11's screenshots.
 
 After the third run (candidate `80e8f3f5`), fixed in code: `evh rounds` suggests retiring the arm
@@ -392,8 +392,8 @@ fixed in 0.7.1:
   round's leader as such; `silver-calibrate` says what `--ref-match` and `--arm-match` take, with an example
   from your runs; `rescore` ends with a whole sentence and warns about outputs cut off at `max_tokens`;
   `score-preview` says when a goal holds no measured run to re-score.
-- `evh run`'s "spent" says whether it is the provider's bill or the config's price table; no "warmed up in
-  0ms" for arms with nothing to load; the dry run counts the config's prompt; `arm-smoke` prints each reply
+- `evh run`'s "spent" says whether it is the provider's bill or the system's price table; no "warmed up in
+  0ms" for arms with nothing to load; the dry run counts the system's prompt; `arm-smoke` prints each reply
   and what it spent, and the overview and the catalog count smoke spend.
 - Leaderboards fit the terminal (`--wide` for every column), and "dominated" says what it means;
   `cost-report` names each repeat; `evh baselines` shows the repeats' mean; `evh rounds` prints a

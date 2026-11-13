@@ -89,8 +89,8 @@ from evaluation_harness.stats import (  # noqa: E402 -- one implementation of th
 
 
 def _opponents(runs: list, against: str, exclude: str) -> list[str]:
-    """The family: a comma-separated list names its config ids exactly; one value is a substring of
-    every opponent's config id (`--against ag_` for every ag_ arm)."""
+    """The family: a comma-separated list names its system ids exactly; one value is a substring of
+    every opponent's system id (`--against ag_` for every ag_ arm)."""
     names = [x.strip() for x in against.split(",") if x.strip()]
     if len(names) > 1:
         return sorted(
@@ -185,8 +185,8 @@ def _parser() -> argparse.ArgumentParser:
     ap.add_argument("--a", help="config_id of the arm under test (with --round: default its leader)")
     ap.add_argument(
         "--against",
-        help="the opponent family, declared in advance: a substring of their config ids, or a comma-separated "
-        "list of config ids (with --round: default every other arm in play in it)",
+        help="the opponent family, declared in advance: a substring of their system ids, or a comma-separated "
+        "list of system ids (with --round: default every other arm in play in it)",
     )
     ap.add_argument("--metric", help="default: the primary metric the runs recorded")
     ap.add_argument("--runs-dir", type=Path, default=None, help="default: EVAL_RUNS_DIR, else data/runs")

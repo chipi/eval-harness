@@ -61,7 +61,7 @@ def arm_records(A) -> dict[str, dict]:
 
 
 def smoke_of(rec: dict, config_id: str) -> str:
-    """The latest arm smoke of a config that names the record: pass, check or none."""
+    """The latest arm smoke of a system that names the record: pass, check or none."""
     status = ((rec.get("smokes") or {}).get(config_id) or {}).get("status")
     return str(status) if status in ("pass", "check") else "none"
 
@@ -199,15 +199,15 @@ def model_rows(A, by_ds: dict, arms_rows: list[dict] | None = None) -> list[dict
         return []
     arm_rows = {r["arm"]: r for r in (arms_rows if arms_rows is not None else ca.arm_rows(A, by_ds))}
     ranks: dict = {}
-    for c in ca.config_rows(A, by_ds, list(arm_rows.values()), []):
-        ranks[c["config"]] = c["ranks"]
+    for c in ca.system_rows(A, by_ds, list(arm_rows.values()), []):
+        ranks[c["system"]] = c["ranks"]
     out = []
     for x in found:
         rec = x["record"]
         arms = [arm_rows[a] for a in x["arms"] if a in arm_rows]
         best: dict = {}
         # sorted: on a tie the first wins, the same every build (a set's order differs per process)
-        for cid in sorted({r["config"] for r in arms}):
+        for cid in sorted({r["system"] for r in arms}):
             for g, ds, i, n in ranks.get(cid, []):
                 k = (g["goal_id"], ds)
                 if k not in best or i < best[k][2]:
@@ -716,8 +716,8 @@ def render_model(A, r: dict, out, nav: list) -> None:
         cfg = (cfg_fn(a["arm"]) if callable(cfg_fn) else {}) or {}
         params = cfg.get("params") or {}
         over = arm_settings(rec, params)
-        sm = (rec.get("smokes") or {}).get(a["config"])
-        # The arm's deployment: named in its config (`deployment:`), else the machine a self-hosted arm ran on,
+        sm = (rec.get("smokes") or {}).get(a["system"])
+        # The arm's deployment: named in its system (`deployment:`), else the machine a self-hosted arm ran on,
         # else the record's hosted deployment for an arm that called a gateway.
         dep = (
             a.get("deployment")
@@ -749,7 +749,7 @@ def render_model(A, r: dict, out, nav: list) -> None:
         "arms",
         cb.table("modelarms", ["arm", "deployment", "goal", "its settings", "arm smoke", "result"], ars)
         if ars
-        else '<p class="muted">No arm uses this model yet: name it with <code>model_record</code> in a config.</p>',
+        else '<p class="muted">No arm uses this model yet: name it with <code>model_record</code> in a system.</p>',
     )
     cb.write(
         out,

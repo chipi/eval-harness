@@ -8,7 +8,7 @@
 
 A round is a record beside the goal, data/rounds/<goal>/<round>.yaml: what it sets out to learn,
 what changed, the arms it drops and why, the baseline it starts from, its conclusion. Its arms are
-the configs whose runs name it (`round: rN` in the config) and those carried in unchanged
+the systems whose runs name it (`--round rN` on `evh run`) and those carried in unchanged
 (--keep). `evh rounds` reads the evidence the way the inspector does and suggests the next
 decision, each as the command that makes it; the commands are the only writers. A project that
 never opens a round loses nothing.
@@ -73,7 +73,7 @@ def open_round(argv: list[str]) -> int:
     ap.add_argument("--change", action="append", default=[], help="what changed and why (repeatable)")
     ap.add_argument(
         "--keep",
-        help="config ids already run (in an earlier round or in none) carried in unchanged, not run again; "
+        help="system ids already run (in an earlier round or in none) carried in unchanged, not run again; "
         "`all`: every arm of --from",
     )
     ap.add_argument(
@@ -87,12 +87,12 @@ def open_round(argv: list[str]) -> int:
         help="this round is judged by the scorer in this tree, and why (RFC-022): carried arms another scorer "
         "judged are re-scored first ($0)",
     )
-    ap.add_argument("--retire", help="config ids from earlier rounds dropped here")
+    ap.add_argument("--retire", help="system ids from earlier rounds dropped here")
     ap.add_argument("--reason", default="", help="why the --retire arms are dropped")
     ap.add_argument("--budget-usd", type=float, help="what the round may spend")
     ap.add_argument(
         "--baseline",
-        help="the run the round starts from, by its config id (its latest measured run on --dataset) or its run id; "
+        help="the run the round starts from, by its system id (its latest measured run on --dataset) or its run id; "
         "default: the dataset's promoted baseline. What `pair-test --round` and `rounds` read the round's arms against",
     )
     from evaluation_harness._actor import add_by  # noqa: PLC0415
@@ -156,7 +156,7 @@ def open_round(argv: list[str]) -> int:
             )
             if not named:
                 die(
-                    f"--baseline {args.baseline}: no measured run of that config or with that run id on {args.dataset}",
+                    f"--baseline {args.baseline}: no measured run of that system or with that run id on {args.dataset}",
                     "not-found",
                 )
             start = named[-1].name
@@ -249,11 +249,11 @@ def retire(argv: list[str]) -> int:
     ap = argparse.ArgumentParser(prog="evh round-retire", description="Drop an arm from a round.")
     ap.add_argument("--goal", required=True)
     ap.add_argument("--round", required=True)
-    ap.add_argument("--arm", required=True, help="its config id")
+    ap.add_argument("--arm", required=True, help="its system id")
     ap.add_argument(
         "--runs-dir",
-        help="retire only the config's runs in this directory under data/ (runs-linux: a re-timing "
-        "of the same config on another machine); default: the project's runs directory",
+        help="retire only the system's runs in this directory under data/ (runs-linux: a re-timing "
+        "of the same system on another machine); default: the project's runs directory",
     )
     ap.add_argument("--reason", required=True)
     from evaluation_harness._actor import add_by  # noqa: PLC0415
@@ -386,7 +386,7 @@ def _best(A, arms: list[str], metric: str, lower: bool) -> str | None:
 
 
 def _arm(A, dataset: str, config_id: str) -> str:
-    """The adapter's arm id for a config (arm_of), else the harness's layout."""
+    """The adapter's arm id for a system (arm_of), else the harness's layout."""
     fn = getattr(A, "arm_of", None)
     return fn(dataset, config_id) if callable(fn) else f"runs/{dataset}/{config_id}"
 
@@ -577,7 +577,7 @@ def evidence(goal: str, rnd: dict) -> dict:
     out["leader"] = leader
     if not leader:
         out["notes"].append(
-            f"no arm in {rnd['round_id']} records {metric} yet: run them (config: round: {rnd['round_id']})"
+            f"no arm in {rnd['round_id']} records {metric} yet: run them (evh run --system <id> --dataset <id> --goal {rnd['goal']} --round {rnd['round_id']})"
         )
         return out
     # The arm the round started from: the goal's promoted baseline, never suggested for retirement.

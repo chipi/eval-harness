@@ -1706,7 +1706,7 @@ def main() -> int:
         vers = config_versions(arms)
         if len(vers) > 1:
             print(
-                f"WARNING: the arm set mixes config versions {', '.join(vers)}: v1 and v2 of one arm are "
+                f"WARNING: the arm set mixes system versions {', '.join(vers)}: v1 and v2 of one arm are "
                 "judged as two arms. Narrow it with --match _v2 (or the scorer's arms_match) if that "
                 "is not what you mean."
             )

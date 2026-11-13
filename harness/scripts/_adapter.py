@@ -34,7 +34,7 @@ from evaluation_harness._common import (
     resolve_adapter_path,
 )
 
-#: The adapter bundled with the harness, used when a config names none.
+#: The adapter bundled with the harness, used when a system names none.
 BUNDLED = CODE / "adapter.py"
 
 _LOADED: dict[Path, Any] = {}
@@ -292,7 +292,7 @@ def _portable_id(path: Path) -> str:
 
 
 def _find_adapter(spec: str, config_path: Path | None) -> Path:
-    """The file an `adapter:` entry names: relative to the config first, then the project."""
+    """The file an `adapter:` entry names: relative to the system first, then the project."""
     path = Path(spec)
     candidates = [path] if path.is_absolute() else []
     if not path.is_absolute():
@@ -308,14 +308,14 @@ def _find_adapter(spec: str, config_path: Path | None) -> Path:
 def load_adapter(
     spec: str | None, config_path: Path | None = None
 ) -> tuple[Any, Any, str, Path | None, Any, Any]:
-    """``(call_system, score, adapter_id)`` for the adapter a config names.
+    """``(call_system, score, adapter_id)`` for the adapter a system names.
 
-    A config names its adapter:
+    A system names its adapter:
 
         adapter: adapter.py
 
-    relative to the config first, then the project root. An example's arm sits beside its
-    adapter, so the two travel together. A config that names none uses the project's own
+    relative to the system first, then the project root. An example's arm sits beside its
+    adapter, so the two travel together. A system that names none uses the project's own
     ``<project>/adapter.py`` when there is one, else the adapter bundled with the harness
     (``scripts/adapter.py``, token overlap: the worked example's).
 

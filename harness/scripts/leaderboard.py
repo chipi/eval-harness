@@ -599,7 +599,7 @@ def main() -> int:
         "--asc", action="store_true", help="lower is better for the sort metric (default: inferred)"
     )
     ap.add_argument("--desc", action="store_true", help="higher is better, whatever the runs declare")
-    # A dataset accumulates arms across config VERSIONS -- v1 and v2 of the same arm are
+    # A dataset accumulates arms across system VERSIONS -- v1 and v2 of the same arm are
     # different measurements and must not share a row, but they do share a dataset. Without
     # a way to scope the table, the only ways to get a readable leaderboard are to delete
     # the older runs or to read past them. Deleting paid-for results to tidy a table is how
@@ -763,7 +763,7 @@ def _table(args: argparse.Namespace, found: list) -> dict:
             f"        sort order, not by meaning. Pass --sort explicitly, or re-run with\n"
             f"        an adapter that sets PRIMARY_METRIC."
         )
-    # SAY SO when the table mixes config versions. v1 and v2 of one arm are different
+    # SAY SO when the table mixes system versions. v1 and v2 of one arm are different
     # measurements -- often different scorers -- and listing them side by side reads as
     # 48 models. The fix is to scope the view, never to delete the older runs. Only an arm
     # present at two versions is a mix; different arms at different versions are not.
@@ -781,7 +781,7 @@ def _table(args: argparse.Namespace, found: list) -> dict:
 
     rows: list[dict] = []
     for config_id, runs in by_config.items():
-        # EVERY run's tier, not runs[0]'s. Taking the first one meant a config whose
+        # EVERY run's tier, not runs[0]'s. Taking the first one meant a system whose
         # earliest run predated the reference (reference_tier: None) suppressed the
         # SILVER warning below — while the quality column on that very row came only
         # from the silver-scored runs. A model-generated number, printed as if it were
@@ -890,7 +890,7 @@ def _table(args: argparse.Namespace, found: list) -> dict:
         )
     if not any(kinds.get(k) == "cost" for k in show):
         print(
-            "\n  No cost recorded. Add usd_per_mtok_in / usd_per_mtok_out to the configs\n"
+            "\n  No cost recorded. Add usd_per_mtok_in / usd_per_mtok_out to the systems\n"
             "  so the ranking can weigh quality against price."
         )
     return {

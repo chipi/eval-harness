@@ -22,7 +22,7 @@ explains it.
 
 ## Operating Context
 
-- **Catalog pages:** home, goals, datasets, arms and configs, models, metrics, references, labels, captures, activity,
+- **Catalog pages:** home, goals, datasets, arms and systems, models, metrics, references, labels, captures, activity,
   and a page per goal, dataset, arm and metric.
 - **Inspector:** the paired comparison with verdicts, per item; the label sheet; outputs side by side.
 - **How it runs:** a static build from a project's data. Item text appears only through the local server

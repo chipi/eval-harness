@@ -1,4 +1,4 @@
-"""A hypothesis written into an arm's config before its run (ADR-0025).
+"""A hypothesis written into an arm's system before its run (ADR-0025).
 
     hypothesis:
       against: baseline_v1          # the config_id it is compared with
@@ -8,7 +8,7 @@
       items: data/expected_flips.txt   # optional: item ids expected to flip
 
 A paired test is valid uncorrected only when the pair was named before the results were read. The
-config is where the change is, so the prediction sits beside it; a run records it, and whether the
+system is where the change is, so the prediction sits beside it; a run records it, and whether the
 commit that last changed it came before the run. It is never part of the fingerprint: a hypothesis
 does not change what was measured.
 """
@@ -47,7 +47,7 @@ def system_ids() -> dict[str, Path]:
 
 def known_metrics(cfg: dict, config_path: Path | None) -> set[str]:
     """The metrics this arm has: what its adapter declares, what its goal decides on, and what runs of
-    the config recorded. Empty when nothing says (the adapter declares none and the arm never ran)."""
+    the system recorded. Empty when nothing says (the adapter declares none and the arm never ran)."""
     from evaluation_harness import _adapter, _common, _runs  # noqa: PLC0415
 
     spec = cfg.get("adapter")
@@ -139,10 +139,10 @@ def _when(text: str) -> datetime:
 
 
 def named_before(config_path: Path, hyp: dict, build: dict, before: str) -> dict:
-    """Whether the config's hypothesis was committed before the run: the commit that last changed it is an
+    """Whether the system's hypothesis was committed before the run: the commit that last changed it is an
     ancestor of the run's build commit and was made before `before` (the run's start). Returns {"named":
     True | False | None, "commit", "committed_at", "why"}; None outside git, for a build that is not a git
-    commit, and for a dirty tree, where the config on disk may not be the committed one."""
+    commit, and for a dirty tree, where the system on disk may not be the committed one."""
     import yaml  # noqa: PLC0415
     from evaluation_harness import _common  # noqa: PLC0415
     from evaluation_harness._fingerprint import _git, tree_dirt  # noqa: PLC0415
@@ -153,7 +153,7 @@ def named_before(config_path: Path, hyp: dict, build: dict, before: str) -> dict
     path = Path(config_path).resolve()
     top = _git(path.parent, "rev-parse", "--show-toplevel")
     if not top:
-        return out(None, "the config is not in a git repository")
+        return out(None, "the system is not in a git repository")
     if build.get("source") != "git" or not build.get("ref"):
         return out(None, "the build is not a git commit")
     dirt = tree_dirt(Path(top), _common.DATA)
@@ -163,7 +163,7 @@ def named_before(config_path: Path, hyp: dict, build: dict, before: str) -> dict
         return out(None, "the working tree is dirty")
     ref = build["ref"]
     if _git(Path(top), "rev-parse", "--verify", f"{ref}^{{commit}}") is None:
-        return out(None, "the build commit is not in the config's repository")
+        return out(None, "the build commit is not in the system's repository")
     rel = path.relative_to(Path(top).resolve()).as_posix()
     # Walked from the build commit, so every commit seen is one of its ancestors.
     log = _git(Path(top), "log", ref, "--format=%H\t%cI", "--", rel)
@@ -186,7 +186,7 @@ def named_before(config_path: Path, hyp: dict, build: dict, before: str) -> dict
 
 
 def record_for(cfg: dict, config_path: Path, build: dict, before: str) -> dict:
-    """The fields a run records about its config's hypothesis: {} when it has none, else
+    """The fields a run records about its system's hypothesis: {} when it has none, else
     {"hypothesis": the block, "hypothesis_in_advance": named_before(...)}."""
     h = of(cfg)
     if not h:

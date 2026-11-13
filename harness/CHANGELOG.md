@@ -31,10 +31,14 @@ that can move a result is never a patch release without saying so under **Change
   and reference manifests kept as they were judged (owner, 2026-11-13: frozen evidence keeps its ids; `judge-score`
   finds a stored set by the runs it judged, so no verdict is lost or paid for again, and a reference's author is read
   through the renames). Each view before and after was compared: the leaderboards, rounds, models and every catalog
-  page read the same with the ids renamed, but for the counts of distinct systems (`configs filed` 36 to 29 on the CNN
+  page read the same with the ids renamed, but for the counts of distinct systems (`systems filed` 36 to 29 on the CNN
   goal; the arms page's 271 to 264), a merged system's rollup row on the arms page, and chart labels that a shorter id
   lets fit; the old arm pages redirect. A study's trial is `<study>-t<k>.yaml`, its spec names `baseline: {system:
   …}`, and a confirmation runs the two systems on the test set as they are.
+  The words follow: `evh arms --configs` is `--systems` and `evh import-run --config-id` is `--system-id` (no
+  aliases), the catalog says systems everywhere (the arms page's `#systems` and `?group=system`, the home tile, "systems
+  filed" on the goals page and `evh goals`), the commands' hints print `evh run --system … --dataset …`, and
+  `rescore --config-dir`, which was parsed and never read, is gone.
 - **Models and deployments, apart** (RFC-032 step 2): a model's deployments are records of their own,
   `data/deployments/<model>/<deployment>.yaml`, each with its checks as dated history: every onboarding, every arm
   smoke and every acceptance is kept, with who made it; the views read the latest of each, so `evh models`, the

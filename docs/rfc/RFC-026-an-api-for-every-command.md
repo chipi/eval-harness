@@ -79,7 +79,7 @@ served command's path arguments with theirs (a test fails on a `Path` argument w
   is written under `.build/jobs/<id>/` and fetched with `GET /api/v1/jobs/<id>/files/<name>` (owner, 2026-11-09: the
   sheet is offered as a download);
 - not served as a path, so the command's default applies: `judge-score --out` and `rescore --out` (the project's own
-  judged and re-scored runs directories), `rescore --config-dir`, `--source-dir`, `arm-from-capture --like`,
+  judged and re-scored runs directories), `--source-dir`, `arm-from-capture --like`,
   `bootstrap-test --items` (each is left to the command line).
 
 A call's arguments are a JSON object keyed by the argument's name, checked against the registry before anything runs

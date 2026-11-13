@@ -86,7 +86,7 @@ help:
 	@echo "  make catalog | catalog-serve   pages over the runs; the run inspector on 127.0.0.1"
 	@echo "  make serve [STORE=sqlite] [FRESH=1]   the catalog on 127.0.0.1; in SQLite a copy of data/"
 	@echo ""
-	@echo "SCOPING  (a dataset accumulates arms across config versions)"
+	@echo "SCOPING  (a dataset accumulates arms across system versions)"
 	@echo "  make leaderboard DATASET_ID=my_v1 MATCH=_v2   only v2 arms"
 	@echo "  EVAL_RUNS_DIR=<dir>                           run/read elsewhere, e.g. a"
 	@echo "                                                smoke pass or a rescore"
@@ -464,7 +464,7 @@ goals:
 	$(PYTHON) scripts/view_goals.py $(if $(GOAL),--goal $(GOAL),) $(ARGS)
 
 inspect:
-	@test -n "$(RUNS)" || { echo "RUNS=<arm>,<arm>,... is required (config ids, or arm ids from make datasets)"; exit 1; }
+	@test -n "$(RUNS)" || { echo "RUNS=<arm>,<arm>,... is required (system ids, or arm ids from make datasets)"; exit 1; }
 	$(PYTHON) scripts/view_inspect.py --runs $(RUNS) $(if $(BASELINE),--baseline $(BASELINE),) $(ARGS)
 
 # EVAL ROUNDS (ADR-0004), optional: a round of a goal, its decisions as commands.

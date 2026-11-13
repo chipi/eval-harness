@@ -66,7 +66,7 @@ COMMANDS = {
     ),
     "data-ls": ("data_ls.py", "list what the project keeps under data/, in either store (UXS-004)"),
     "data-show": ("data_show.py", "show one file of the project's data"),
-    "data-put": ("data_put.py", "create or change a setting (config, goal, fieldset, ...), checked first"),
+    "data-put": ("data_put.py", "create or change a setting (system, goal, fieldset, ...), checked first"),
     "data-rm": ("data_rm.py", "delete a setting, or a whole run"),
     "dataset-materialize": ("materialize.py", "hash-checked working copy of a dataset"),
     "dataset-profile": (
@@ -129,7 +129,7 @@ COMMANDS = {
     ),
     "dataset-unseal": (
         "dataset_unseal.py",
-        "open a sealed test side to one candidate config whose hypothesis is committed (one look)",
+        "open a sealed test side to one candidate system whose hypothesis is committed (one look)",
     ),
     "capture-restore": (
         "capture_restore.py",
@@ -294,7 +294,7 @@ COMMANDS = {
         "the catalog's home page: goals at a glance, activity, spend, coverage, what was recorded",
     ),
     "datasets": ("view_datasets.py", "every dataset, or one: its versions, reference sets and arms"),
-    "arms": ("view_arms.py", "every arm, or one: its metrics, runs, config, conditions and rounds"),
+    "arms": ("view_arms.py", "every arm, or one: its metrics, runs, system, conditions and rounds"),
     "models": (
         "view_models.py",
         "every model record, or one: its deployments, onboarding, settings history and arms",

@@ -1,7 +1,7 @@
 """Eval rounds (ADR-0004), optional: the records, and which runs belong to which round.
 
 A round is data/rounds/<goal_id>/<round_id>.yaml (schemas/round.schema.json). Its arms are not
-listed in it: they are the configs whose runs name the round (`round:` in the config, recorded on
+listed in it: they are the systems whose runs name the round (`--round` on `evh run`, recorded on
 the run), less the ones retired. A project that never opens a round has none of this.
 """
 
@@ -158,7 +158,7 @@ def how_to_run_on(rnd: dict[str, Any]) -> str:
 
 
 def arms_of(rnd: dict[str, Any], runs_dir: Path | None = None) -> list[str]:
-    """The round's arms still in play: configs whose runs name it, and those carried into it
+    """The round's arms still in play: systems whose runs name it, and those carried into it
     unchanged from an earlier round, less the retired."""
     here = runs_dir_name(runs_dir)
     retired = {

@@ -1,9 +1,9 @@
-"""Prompt versions (RFC-028): the prompt files a config declares, versioned by their content.
+"""Prompt versions (RFC-028): the prompt files a system declares, versioned by their content.
 
     data/prompts/<name>/<sha16>.txt     the bytes as read (sha16: the first 16 hex digits of their sha256)
     data/prompts/<name>/<sha16>.json    id, sha256, parent, note, actor, created_at, source, extension
 
-A config declares `prompts: {name: {file: path}}` and/or `prompt_root: {name, path, include, vary}`. At each run
+A system declares `prompts: {name: {file: path}}` and/or `prompt_root: {name, path, include, vary}`. At each run
 `resolve` hashes every declared file, records a version for bytes not seen before (written once: the name is the
 content's hash, so two runs recording the same bytes write one record), and gives back what the fingerprint and the
 adapter need. A root's varied files are given to the adapter in a per-run copy of the root, so no tracked file is
@@ -179,8 +179,8 @@ def root_digest(root: Path, include: list[str]) -> str:
 
 
 def resolve(cfg: dict[str, Any], config_path: Any, run_label: str) -> dict[str, Any] | None:
-    """The config's declared prompts at this run: every file hashed and its version found or recorded, and (for a
-    root) a per-run copy made. None when the config declares none. Returns {"settings": what the fingerprint's
+    """The system's declared prompts at this run: every file hashed and its version found or recorded, and (for a
+    root) a per-run copy made. None when the system declares none. Returns {"settings": what the fingerprint's
     settings take, "params": what the adapter is given, "copy": the per-run copy to remove after, or None}."""
     prompts = cfg.get("prompts") or {}
     root_spec = cfg.get("prompt_root")

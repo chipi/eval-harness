@@ -32,7 +32,7 @@ harness asked anyone to choose them:
   on another: the planned repeats would have measured nothing, and the fingerprint recorded the laptop that sent
   the requests, not the machine that answered them.
 
-Each was found late, by reading logs. The harness already let a config set `max_tokens` and `reasoning_effort`;
+Each was found late, by reading logs. The harness already let a system set `max_tokens` and `reasoning_effort`;
 what was missing was the step that makes someone choose them, the record that keeps the choice, and a
 fingerprint that names where a model really ran.
 
@@ -87,8 +87,8 @@ fingerprint that names where a model really ran.
   output for the scorer, a projection of the full run, build pinned, determinism, cost; for an LLM, each model
   call (a provider's `_meta`, or an adapter's `meta["calls"]`): reasoning, slow, long, cut off, no answer, and a
   hosted call served off its pinned route. Written into the record.
-- **FR4 Arms name a record.** `model_record:` and `deployment:` in a config; the record's settings (what holds
-  whatever the task: reasoning, an ML model's device and precision) under the config's params, which add the
+- **FR4 Arms name a record.** `model_record:` and `deployment:` in a system; the record's settings (what holds
+  whatever the task: reasoning, an ML model's device and precision) under the system's params, which add the
   task's own (its reply cap, its call limit); the run records both.
 - **FR5 Fingerprint v5.** `instrument`, `data`, `deployment`, `settings`, each hashed, `hash` over the four; the
   runner outside the hash; `evh run-compare` names the part that moved; the inspector's speed warning tells a

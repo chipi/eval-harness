@@ -749,7 +749,7 @@ try:
     r2 = evh("inspect", "--sheet", "--dataset-id", D, "--runs", f"runs-judged/judge_a/other_v1/{T['lead1']}")
     check("refused: a nested arm id on another dataset", refused(r2, f"not an arm on {D}"), out(r2)[-200:])
     r = evh("inspect", "--sheet", "--dataset-id", D, "--runs", T["lead1"], "--from", "runs-judged/no_such")
-    check("refused: a --from that holds no such run", refused(r, "no run of that config"), out(r)[-200:])
+    check("refused: a --from that holds no such run", refused(r, "no run of that system"), out(r)[-200:])
     # A metric an arm has on some rows only: its win rate is over the rows it was scored on, and an arm scored on
     # none has no win rate (it was never compared, not always beaten).
     part: dict[str, tuple] = dict.fromkeys(f1, (None, 2.0, None))

@@ -2,7 +2,7 @@
 """List what the project keeps under data/, in either store (UXS-004: the data page's overview and folders).
 
 evh data-ls                 the store, the settings folders, the other folders, with their file counts
-evh data-ls configs         a folder: its sub-folders (a run with its dataset and items), then its files
+evh data-ls systems         a folder: its sub-folders (a run with its dataset and items), then its files
 evh data-ls --find triage   every file whose path holds the text
 """
 

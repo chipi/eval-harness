@@ -12,7 +12,7 @@ Each check exists because its absence let a real defect through somewhere:
   V5  duplicates     two runs reporting byte-identical scores AND identical
                      per-item results on the same dataset. Agreeing MEANS are not
                      suspicious on a discrete metric; agreeing per item is. A run
-                     whose config says `expect_identical_to: <config>` (a regression
+                     whose system says `expect_identical_to: <system>` (a regression
                      guard) is expected to agree, and fails V5 when it does not
   V6  baselines      a baseline pointing at a run that no longer exists; a version that no longer matches its run, a
                      line whose versions do not run 1..n, or the old one-per-dataset layout (RFC-027)
@@ -24,7 +24,7 @@ Each check exists because its absence let a real defect through somewhere:
   V12 verdicts       a stored judge verdict naming a set, item, pass or block that does not
                      exist, or whose `n` is not that block's size
   V13 judge scorers  a scorer yaml that does not load or fails judge_score's structure checks
-  V14 goals          a goal that breaks its schema; a config, run or baseline naming a goal that
+  V14 goals          a goal that breaks its schema; a system, run or baseline naming a goal that
                      does not exist, or a format its goal does not accept; a run created on or
                      after data/goals/policy.yaml's `required_from` that names no goal
   V15 item fields    a field set that breaks its schema; a dataset naming a field set that does
@@ -38,10 +38,10 @@ Each check exists because its absence let a real defect through somewhere:
   V17 captures       a capture whose record files are partly missing, or whose records differ from the
                      ids and sha256 it recorded (RFC-019)
   V18 model records  a model record not named by its id, an alias claimed twice, a deployment id used
-                     twice, or a config naming a record or deployment that does not exist (RFC-020)
+                     twice, or a system naming a record or deployment that does not exist (RFC-020)
   V19 label sets     a label set whose labels differ from the sha256 it recorded, whose label files are
                      missing, whose dataset does not exist, or whose count is not its labels' (RFC-023)
-  V20 hypotheses     a config whose `hypothesis:` names no config that exists, a measure that is not one
+  V20 hypotheses     a system whose `hypothesis:` names no system that exists, a measure that is not one
                      of the arm's metrics, a direction that is not better, worse or no-worse, or a key
                      it lacks (ADR-0025)
   V21 failure modes  a failure-mode list that breaks its schema, is not named by its id or names a mode
@@ -390,12 +390,12 @@ def v5_duplicate_scores() -> None:
     for x in broken:
         print(f"       {x}")
     check(
-        "V5 no two configs report byte-identical scores"
+        "V5 no two systems report byte-identical scores"
         + (f"; {guards} regression guard(s) reproduce what they must" if guards else ""),
         not dupes and not broken,
         f"{len(dupes)} suspicious group(s) — differing params produced identical output"
         if dupes
-        else f"{len(broken)} regression guard(s) differ from the config they must reproduce",
+        else f"{len(broken)} regression guard(s) differ from the system they must reproduce",
     )
 
 
@@ -411,7 +411,7 @@ def _v5_in(base: Path) -> list[list]:
             key = (d.get("dataset_id"), json.dumps(produced, sort_keys=True))
             by_key[key].append((run, d.get("config_id"), json.dumps(d.get("params") or {}, sort_keys=True)))
     # Identical scores from identical params is not suspicious — it is what a deterministic
-    # arm DOES, and two configs may legitimately request the same thing. What deserves a look
+    # arm DOES, and two systems may legitimately request the same thing. What deserves a look
     # is DIFFERENT params landing on byte-identical output: either a result was not measured,
     # or the knobs that differ are inert.
     dupes: list[list] = []
@@ -456,7 +456,7 @@ def _v5_in(base: Path) -> list[list]:
 
 
 def _one_study(configs: set) -> str | None:
-    """The studies these configs belong to, when every one is a study's trial or the baseline a study started from
+    """The studies these systems belong to, when every one is a study's trial or the baseline a study started from
     (trials of several studies that land on the same settings measure the same too), or None."""
     from evaluation_harness import _study  # noqa: PLC0415
 
@@ -474,7 +474,7 @@ def _one_study(configs: set) -> str | None:
 
 
 def _declared_together(base: Path, configs: set) -> bool:
-    """Whether every config of a V5 group is joined to the others by `expect_identical_to` declarations."""
+    """Whether every system of a V5 group is joined to the others by `expect_identical_to` declarations."""
     if len(configs) < 2:
         return False
     edges = {(c, t) for c, t, _r in _guards_in(base) if c in configs and t in configs}
@@ -520,8 +520,8 @@ def _guards_in(base: Path) -> list[tuple]:
 
 
 def _v5_guards(base: Path) -> tuple[int, list[str]]:
-    """Every regression guard in `base` against the latest run of the config it names on the same dataset: the
-    per-item results and the outputs must be the same. A guard whose config has no run there yet is not counted."""
+    """Every regression guard in `base` against the latest run of the system it names on the same dataset: the
+    per-item results and the outputs must be the same. A guard whose system has no run there yet is not counted."""
     checked, bad = 0, []
     for cfg, target, run in _guards_in(base):
         d = parsed(run / "metrics.json") or {}
@@ -1689,7 +1689,7 @@ def v22_dataset_records() -> None:
                 f"datasets/{i}.json: split.from_version {sp.get('from_version')!r}, but {sp['from']} is "
                 f"{version_of(sp['from'])}"
             )
-    # A sealed side (the fleet's feedback 29): its open side unchanged since the seal, and no run on it by a config
+    # A sealed side (the fleet's feedback 29): its open side unchanged since the seal, and no run on it by a system
     # no unseal named, or from before its unseal.
     from evaluation_harness import _seal  # noqa: PLC0415
 

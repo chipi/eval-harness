@@ -49,6 +49,29 @@ check(
     sorted(jobs - named),
 )
 
+_run_meta, _jobs._run_meta = _jobs._run_meta, lambda run_id: {"config_id": "slow_v1"}
+try:
+    run_key = {
+        k
+        for k, _ex in _jobs.locks_for("run", {"system": "slow_v1", "dataset": "tk_v1"})
+        if k.startswith("system:")
+    }
+    rm_key = {
+        k
+        for k, _ex in _jobs.locks_for("data-rm", {"path": "runs/slow_v1_20261113"})
+        if k.startswith("system:")
+    }
+    capture_key = {
+        k for k, _ex in _jobs.locks_for("arm-from-capture", {"as": "slow_v1"}) if k.startswith("system:")
+    }
+finally:
+    _jobs._run_meta = _run_meta
+check(
+    "a data-rm of a run's folder and an arm-from-capture of a system take the lock a run of that system takes",
+    run_key == rm_key == capture_key == {"system:slow_v1"},
+    (run_key, rm_key, capture_key),
+)
+
 proj = Path(tempfile.mkdtemp(prefix="evh-jobs-"))
 env = dict(os.environ, EVH_ACTOR="person:test", EVAL_HOME=str(proj), EVAL_BUILD_REF="test-jobs")
 for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_MAX_COST_USD", "EVH_FOR"):
@@ -353,7 +376,7 @@ try:
     st, imp = job(
         "import-run",
         {
-            "dataset-id": "tk_v1", "config-id": "imported_v1", "primary-metric": "acc", "source": "a test",
+            "dataset-id": "tk_v1", "system-id": "imported_v1", "primary-metric": "acc", "source": "a test",
             "scorer-id": "test", "build-ref": "test", "scores": {"name": "scores.jsonl", "content_base64": base64.b64encode(scores.encode()).decode()},
         },
         by="person:ana",

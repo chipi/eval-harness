@@ -223,8 +223,8 @@ try:
     flat = " ".join(h.split())
     check(
         "silver-calibrate --help: what --ref-match and --arm-match each match",
-        "substring of config_id: the runs whose outputs are used AS the silver references" in flat
-        and "substring of config_id: the runs scored against those references" in flat,
+        "substring of the system id: the runs whose outputs are used AS the silver references" in flat
+        and "substring of the system id: the runs scored against those references" in flat,
         h,
     )
     saved = sc.runs_on
@@ -241,15 +241,15 @@ try:
         sc.runs_on = saved
     check(
         "silver-calibrate: the message names the sets it found and builds an example from them",
-        "--ref-match takes a substring of config_id" in msg
-        and "--arm-match takes a substring of config_id" in msg
-        and "_v1 (3 config(s)), _v2 (2 config(s))" in msg
+        "--ref-match takes a substring of the system id" in msg
+        and "--arm-match takes a substring of the system id" in msg
+        and "_v1 (3 system(s)), _v2 (2 system(s))" in msg
         and "For example: --ref-match _v1 --arm-match _v2" in msg,
         msg,
     )
     check(
         "silver-calibrate: with one version only, says to run a second; with none, says to name the substrings",
-        "only _v1 (2 config(s))" in one and "No config id on dsx ends in a version" in none,
+        "only _v1 (2 system(s))" in one and "No system id on dsx ends in a version" in none,
         (one, none),
     )
 

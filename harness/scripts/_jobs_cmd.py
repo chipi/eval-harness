@@ -7,7 +7,7 @@
     evh jobs-resume JOB_ID
 
 `--arg` names an argument as the API does (its name without the dashes, as `GET /api/v1/commands` lists it): a
-config by its id, `--arg repeat=3`, a flag as `--arg NAME=true`; repeated, it makes a list; `@FILE` uploads a
+system by its id, `--arg repeat=3`, a flag as `--arg NAME=true`; repeated, it makes a list; `@FILE` uploads a
 file. A job started here is listed by the API and stopped by it, and one the Workbench started is followed here. No
 server is needed.
 """

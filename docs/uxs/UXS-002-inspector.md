@@ -58,13 +58,13 @@ In the catalog `evh catalog` builds (it writes `pick.js`), it has two steps:
    (one with no arms is disabled); at most 60 are shown, then "N more: type to narrow". A goal
    with one dataset picks it.
 2. **Its arms** on the dataset picked (the inspector compares arms on one dataset): a filter box
-   (config, model, how); facet chips, shown where they divide the arms, for **where** (hosted,
+   (system, model, how); facet chips, shown where they divide the arms, for **where** (hosted,
    local), **how** (measured, rescored, judged, run again, re-parsed) and **scored against**
    (the reference's tier, or judge); chips within a facet are alternatives, facets combine.
    **Tick the N shown** ticks every arm shown, the first 40 when more. **add** suggestions: the
-   dataset's baseline, leader and recommended arm, then, from what is ticked, the same config
-   scored other ways and the same model in other configs. Each arm is a row with a checkbox:
-   config (and its roles), model and where, how, its value on the deciding measure.
+   dataset's baseline, leader and recommended arm, then, from what is ticked, the same system
+   scored other ways and the same model in other systems. Each arm is a row with a checkbox:
+   system (and its roles), model and where, how, its value on the deciding measure.
 
 Under them: what is ticked, by name, each chip with × (the first 8, then "+N"), **Clear**, and
 **Inspect N arms** (disabled with nothing ticked or over 40). Inspect opens the ticked arms,
@@ -265,7 +265,7 @@ browser, the same model.
 
 | on the page | in the terminal |
 | --- | --- |
-| choose arms, baseline, metric | `evh inspect --runs a,b [--baseline a] [--metric m]` (config ids are looked up under `--from`, default `runs`) |
+| choose arms, baseline, metric | `evh inspect --runs a,b [--baseline a] [--metric m]` (system ids are looked up under `--from`, default `runs`) |
 | a round's arms (the goal page's **inspect** button on a round) | `evh inspect --round rN [--goal g]`: the goal's measure, against the round's leader; arms with no score on it are named and left out |
 | filter, breakdown | `--where field:value` (repeatable), `--by field` |
 | notes, verdicts, conditions, breakdown | printed in that order (notes as `NOTE:` lines) |

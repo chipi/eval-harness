@@ -14,14 +14,14 @@
 ## Summary
 
 A person can see everything a project keeps under `data/`, and create, change and delete its settings (arm
-configs, goals, fieldsets, judge scorers, model records, failure-mode lists, the validate policy), from a page beside
+systems, goals, fieldsets, judge scorers, model records, failure-mode lists, the validate policy), from a page beside
 the catalog and from `evh` commands that do the same. The page is the Configure menu of a project whose data is in
 its database (RFC-025) and that deploys it (`configure: true`): there it is how the project is managed at all, with
 no files to open in an editor. A files project is edited in its files; its catalog has no Configure part.
 
 ## Background & Context
 
-RFC-025 lets a project keep its data in one SQLite database. Settings a person writes (a goal, an arm config) then
+RFC-025 lets a project keep its data in one SQLite database. Settings a person writes (a goal, a system) then
 have no file to edit; the only way in was `evh data-migrate`, which moves files written elsewhere. The owner asked
 for a small CRUD page next to the catalog for users to manage their settings and data.
 
@@ -43,14 +43,14 @@ for a small CRUD page next to the catalog for users to manage their settings and
 
 ## Personas
 
-- **The project's owner**, on their machine, changing a goal's margin or adding an arm config without opening files.
+- **The project's owner**, on their machine, changing a goal's margin or adding a system without opening files.
 - **An agent** doing the same through the commands.
 
 ## User Stories
 
 - As an owner whose project is in a database, I open the data page, find `goals/support_triage.yaml`, change its
   margin, see the check pass, save it, and `evh goals` uses the new margin.
-- As an owner, I add an arm config from the page, and `evh run --system <new> --dataset <id>` runs it.
+- As an owner, I add a system from the page, and `evh run --system <new> --dataset <id>` runs it.
 - As an owner, I delete a mistaken run from the page, and it is gone from the catalog's next build.
 - As an agent, I do each of these with `evh data-ls`, `data-show`, `data-put` and `data-rm`, and read the same answers.
 
@@ -72,7 +72,7 @@ for a small CRUD page next to the catalog for users to manage their settings and
 
 ## Success Criteria
 
-- A project in its database can be managed end to end without a file: create a config, run it, change a goal,
+- A project in its database can be managed end to end without a file: create a system, run it, change a goal,
   delete a run.
 - Every refusal (a schema error, a write over a public server, a write without the header, a path outside `data/`,
   a write to a harness-written file) has a test.

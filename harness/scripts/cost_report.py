@@ -68,7 +68,7 @@ def billed_and_recorded(run_dir: Path) -> tuple[float, float, int, int]:
 
 
 def _repeat_names(runs: list) -> dict[Path, str]:
-    """{run dir: the name its row carries}: the config id, and for a config that ran more than once the repeat
+    """{run dir: the name its row carries}: the system id, and for a system that ran more than once the repeat
     (r1, r2, r3: the run directory's own _rN, else its place in run order), so no two rows read alike."""
     seen: dict[str, int] = {}
     for _d, m in runs:

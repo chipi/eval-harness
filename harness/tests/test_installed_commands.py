@@ -254,7 +254,7 @@ def main() -> int:
                 [
                     "--dataset-id",
                     "tickets_v1",
-                    "--config-id",
+                    "--system-id",
                     "imported_v1",
                     "--scores",
                     "imported.jsonl",
@@ -425,8 +425,8 @@ def main() -> int:
             ("overview", ["--period", "all"], "ok:all time"),
             ("activity", ["--period", "all"], "ok:by dataset:"),
             ("datasets", ["--period", "30d"], "ok:runs in period"),
-            ("arms", ["--by", "config", "--period", "30d"], "ok:config tickets_lead2_v1"),
-            ("arms", ["--configs"], "ok:rank on each goal"),
+            ("arms", ["--by", "system", "--period", "30d"], "ok:system tickets_lead2_v1"),
+            ("arms", ["--systems"], "ok:rank on each goal"),
             ("arms", ["--quality", "contender"], "ok:no arm matches: only arms a goal's decision weighs"),
             (
                 "arms",

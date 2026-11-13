@@ -3028,7 +3028,7 @@ def test_a_project_elsewhere_imports_runs_and_tests_them() -> None:
             "scripts/import_run.py",
             "--dataset-id",
             "proj_v1",
-            "--config-id",
+            "--system-id",
             arm,
             "--scores",
             str(f),

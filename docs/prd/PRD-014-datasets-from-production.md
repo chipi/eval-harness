@@ -24,7 +24,7 @@ establish references and work in rounds on the datasets you have; deploy what yo
 after many such evaluations, make the **next version** of a key dataset from a few production records that would
 most help, and re-establish its references. The lane reads records from a production system (an importer), keeps
 them (a capture, sampled as they are read when the source is large), and freezes ordinary datasets from them;
-evaluating them scores production's own decisions, the deployed config and candidates against labels, never by
+evaluating them scores production's own decisions, the deployed system and candidates against labels, never by
 making a reference; exploring the results row by row shows what to keep, kept as picks until a version is made.
 
 ## Background & Context
@@ -43,7 +43,7 @@ comment that says what it was.
   rule, each record's id, link and hash; every record inside the window it records.
 - A capture can be a sample of a large source, drawn as the records are read, and drawn again identically.
 - A dataset made from a capture says how its items were chosen, and grows by versions.
-- Production's own decisions are scored like an arm, beside the deployed config re-run and candidates.
+- Production's own decisions are scored like an arm, beside the deployed system re-run and candidates.
 - Labels on new items come from a person, a model or a rule over recorded outcomes; evaluating production never
   creates a reference.
 - The rows that matter (production wrong, arms disagreeing, a gap in the governed dataset's coverage) are easy to
@@ -75,7 +75,7 @@ comment that says what it was.
 - _As an engineer, I capture the last month of my system's decisions, or one in a thousand of them
   (`evh capture … --sample-rate 0.001 --seed 7`), and see what was read and when._
 - _As an engineer, I freeze a dataset from a capture and score production's own decisions on it
-  (`evh arm-from-capture`), beside the deployed config and a candidate._
+  (`evh arm-from-capture`), beside the deployed system and a candidate._
 - _As an engineer, I check that production ran what I promoted (`evh deploy-sheet`)._
 - _As an operator, my close comments become labels through a mapping I can read (`evh label-from-capture`)._
 - _As an engineer, I open the rows where production was wrong on something the governed dataset does not cover
@@ -141,7 +141,7 @@ comment that says what it was.
 ### FR7: Production as an arm, and agreement (0.6.0)
 
 - **FR7.1**: `evh arm-from-capture --dataset-id D --capture C --as NAME [--like CONFIG] [--field F] [--labels SET]`
-  writes the arm's config (`provider: recorded`, the capture) and runs it with `evh run`: each item's output
+  writes the arm's system (`provider: recorded`, the capture) and runs it with `evh run`: each item's output
   is the capture's record of the same id, read by the adapter's `recorded_output(record)` (the deployed arm's
   adapter, from --like) or from the record's field `--field`; no system is called, the cost is 0, the capture's
   sha256 is in the run's settings; scored, tested and compared like any arm. Refused before anything is written
@@ -185,7 +185,7 @@ comment that says what it was.
 
 ## Success Metrics
 
-- The triage example runs end to end: capture, dataset, production as an arm, labels, the deployed config and a
+- The triage example runs end to end: capture, dataset, production as an arm, labels, the deployed system and a
   candidate scored against them, the sheet, picks, a v2, a promoted reference set, live on the fleet.
 - Every existing test passes, and each FR above has its own.
 

@@ -121,7 +121,7 @@ NAV = [
         "arms",
         [
             ("arms", "arms.html", "Arms"),
-            ("configs", "arms.html#configs", "Configs"),
+            ("systems", "arms.html#systems", "Systems"),
             ("models", "models.html", "Models"),
             ("prompts", "prompts.html", "Prompts"),
             ("metrics", "metrics.html", "Metrics"),
@@ -136,7 +136,7 @@ NAV = [
 #: What the harness's own metrics measure; a project describes its own with METRIC_DESCRIPTIONS.
 BUILTIN_METRICS = {
     "cost_usd": "What one item cost, in USD: the provider's bill when the response carries one, "
-    "else the tokens times the config's prices.",
+    "else the tokens times the system's prices.",
     "total_cost_usd": "What the whole run cost, in USD: the sum of cost_usd.",
     "tokens_in": "Prompt tokens per item, as the provider counted them.",
     "tokens_out": "Completion tokens per item, as the provider counted them.",
@@ -171,14 +171,14 @@ BUILTIN_DETAILS = {
     "cost_usd": "Recorded for every item. When the provider's response carries what it billed "
     "(OpenRouter always, a LiteLLM proxy that passes usage.cost through, any OpenAI-compatible "
     "endpoint that returns it), that bill is the cost. Otherwise it is tokens_in × usd_per_mtok_in "
-    "plus tokens_out × usd_per_mtok_out from the arm's config, per million tokens. With neither the "
+    "plus tokens_out × usd_per_mtok_out from the arm's system, per million tokens. With neither the "
     "cost is unknown and left empty, never 0. Lower is better, and it needs no reference, so arms "
     "scored against different references can still be compared on it. evh cost-report shows how "
     "far the bills and the price tables differ.",
     "total_cost_usd": "The run's cost: the sum of cost_usd over its items, not a mean. An arm's "
     "repeats are separate runs, each with its own total.",
     "tokens_in": "Counted by the provider, not the harness: an adapter that reports none leaves it "
-    "empty. Together with the config's prices it is the fallback cost when no bill comes back.",
+    "empty. Together with the system's prices it is the fallback cost when no bill comes back.",
     "tokens_out": "Counted by the provider, not the harness. Most providers bill a reasoning "
     "model's thinking as completion tokens; reasoning_tokens says how many of them it was.",
     "latency_ms": "The wall-clock time of one call. When an adapter reports none, the core times "
@@ -274,7 +274,7 @@ def reference_link(ref: str, up: str = "") -> str:
 
 
 def arm_page(arm: str) -> str:
-    """The arm's page, relative to the catalog root: one per arm id (runs dir, dataset, config)."""
+    """The arm's page, relative to the catalog root: one per arm id (runs dir, dataset, system)."""
     return f"a/{slug(arm)}.html"
 
 
@@ -1061,9 +1061,9 @@ def render_datasets(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
     body = hero(
         "datasets",
         "Every run, by dataset",
-        f"{n_arms} arms on {len(by_ds)} datasets, from {_n_configs(by_ds)} configs. An arm is one config on one "
+        f"{n_arms} arms on {len(by_ds)} datasets, from {_n_systems(by_ds)} systems. An arm is one system on one "
         f"dataset scored one way, its repeats averaged per {e(A.item_word)}, exactly as <code>pair-test</code> reads "
-        "it: a config rescored against silver or by a judge is an arm of its own. "
+        "it: a system rescored against silver or by a judge is an arm of its own. "
         "Open a dataset to compare its arms in the inspector.",
         cp.bar(w["first"], w["until"]),
     )
@@ -1567,7 +1567,7 @@ def home_counts(A: Adapter, by_ds: dict, spend: list[dict]) -> list[tuple]:
     n = {
         "goals": len(A.goals()),
         "datasets": len(by_ds),
-        "configs": _n_configs(by_ds),
+        "systems": _n_systems(by_ds),
         "arms": sum(len(v["arms"]) for v in by_ds.values()),
         "models": len(entries(A)),
         "references": sum(len(v["refs"]) for v in by_ds.values()),
@@ -1615,7 +1615,7 @@ ENTRIES = (
         "data",
         "Every run by dataset, with its references and coverage.",
     ),
-    ("arms", "arms.html", "Arms", "arms", "Every config on every dataset, scored each way it was."),
+    ("arms", "arms.html", "Arms", "arms", "Every system on every dataset, scored each way it was."),
     ("models", "models.html", "Models", "arms", "Each model: where it is deployed, onboarded and vetted."),
     (None, "inspect.html", "Inspector", "work", "Any arms against a baseline, item by item."),
 )
@@ -1856,8 +1856,8 @@ def scored_by_rank(a: dict, tiers: dict) -> int:
     return {"gold": 0, "silver": 1}.get(tiers.get(a.get("reference") or "") or "", 3)
 
 
-def _n_configs(by_ds: dict) -> int:
-    """How many configs are behind the arms: an arm id ends in <dataset>/<config_id>."""
+def _n_systems(by_ds: dict) -> int:
+    """How many systems are behind the arms: an arm id ends in <dataset>/<system id>."""
     return len({tuple(a["arm"].rsplit("/", 2)[-2:]) for v in by_ds.values() for a in v["arms"]})
 
 
@@ -2628,7 +2628,7 @@ def render_goals(A: Adapter, by_ds: dict, out: Path, nav: list) -> int:
     for g in goals:
         made = period_rows[g["goal_id"]]["made"]
         prim = (g.get("success_criteria") or {}).get("primary") or {}
-        filed = configs_filed(by_ds, g)
+        filed = systems_filed(by_ds, g)
         rec = "<br>".join(
             (dataset_link(r["dataset"], wrap=True) + ": " if len(g.get("datasets") or []) > 1 else "")
             + arm_link(r["recommended"], brief(r["recommended_label"]), wrap=True)
@@ -2671,7 +2671,7 @@ def render_goals(A: Adapter, by_ds: dict, out: Path, nav: list) -> int:
     )
     dek = (
         "What each evaluation is for: who uses the output, the decision it informs, and the "
-        "measure that decides. Runs name their goal in their config (<code>goal:</code>)."
+        "measure that decides. Runs name their goal with <code>--goal</code>."
     )
     body = hero("goals", "Goals", dek, cp.bar(w["first"], w["until"]))
     body += block(
@@ -2686,7 +2686,7 @@ def render_goals(A: Adapter, by_ds: dict, out: Path, nav: list) -> int:
                 "decides",
                 "recommended",
                 "datasets",
-                "configs filed",
+                "systems filed",
                 "runs in period",
                 "spend in period",
                 "changes in period",
@@ -2729,8 +2729,8 @@ def render_goals(A: Adapter, by_ds: dict, out: Path, nav: list) -> int:
     return len(goals)
 
 
-def configs_filed(by_ds: dict, g: dict) -> int:
-    """How many configs name this goal: the systems run for it, each counted once however many
+def systems_filed(by_ds: dict, g: dict) -> int:
+    """How many systems were run for this goal, each counted once however many
     ways it was scored (gold, silver, a judge)."""
     return len(
         {a["arm"].rsplit("/", 1)[-1] for v in by_ds.values() for a in v["arms"] if a["goal"] == g["goal_id"]}
@@ -2955,7 +2955,7 @@ def _rounds_block(
                     '<div class="hyp">' + e(r.get("hypothesis", "") or "—") + "</div>",
                     # Arms, best and the comparison in one narrow cell: three columns of mostly "—" took the width
                     # the conclusion needs (owner, 2026-10-31).
-                    # Counted by config, as `evh rounds` counts: a re-score of a run (runs-rescored/...) is that arm.
+                    # Counted by system, as `evh rounds` counts: a re-score of a run (runs-rescored/...) is that arm.
                     f'<div class="armsbest"><span data-v="{n_cfg}">{n_cfg} arms</span>'
                     + (f" <small>({len(r.get('retired') or [])} retired)</small>" if r.get("retired") else "")
                     # The round's arms in the inspector, against its leader: `evh inspect --round`.
@@ -3236,8 +3236,8 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
                 "in groups by what each arm is scored against: numbers from different references, or "
                 "from a judge, are different measurements and are never ranked together. A mean is not a "
                 "verdict: the inspector tests each arm against its group's leader (Holm across them). "
-                "Flagged arms are never the leader. <b>filed</b>: the arm's config names this goal "
-                "(<code>goal:</code>); an arm without it is listed because it records the measure.</p>"
+                "Flagged arms are never the leader. <b>filed</b>: the arm's runs were made for this goal "
+                "(<code>evh run --goal</code>); an arm without it is listed because it records the measure.</p>"
                 if not explained
                 else ""
             )
@@ -3276,7 +3276,7 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
                         else ("leader" if leader and r is leader else "")
                     )
                     tag = (
-                        ' <small class="filed" title="its config names this goal (goal: in the config)">filed</small>'
+                        ' <small class="filed" title="its runs were made for this goal (evh run --goal)">filed</small>'
                         if r["filed"]
                         else ""
                     ) + (' <span class="tag-base">baseline</span>' if r.get("baseline") else "")
@@ -3387,7 +3387,7 @@ def _failure_modes_html(A: Adapter, ds: str, rows: list) -> str:
 
 def retired_in_of(A: Adapter, g: dict) -> dict:
     """{arm id: round_id} for every arm a round of this goal retired. An adapter that gives no
-    arm ids (`retired_arms`) retires by config id: the key is then the config id."""
+    arm ids (`retired_arms`) retires by system id: the key is then the system id."""
     rfn = getattr(A, "rounds", None)
     out: dict = {}
     for r in rfn() if callable(rfn) else []:
@@ -3400,7 +3400,7 @@ def retired_in_of(A: Adapter, g: dict) -> dict:
 
 
 def retired_round(retired_in: dict, arm: str) -> str | None:
-    """The round that retired this arm: by its arm id, else by its config id. An arm read through its re-score
+    """The round that retired this arm: by its arm id, else by its system id. An arm read through its re-score
     (`runs-rescored/<scorer>/<arm>`, RFC-022, the goal's reading of it) is the arm it re-scored: without this, an
     arm a round retired stayed among the goal's contenders whenever it had been re-scored (found 2026-11-01: 25 of
     the triage goal's 76 contenders were round 3's retirements)."""
@@ -3410,7 +3410,7 @@ def retired_round(retired_in: dict, arm: str) -> str | None:
 
 
 def _retired_arms(r: dict) -> set:
-    """The arm ids (or, from an adapter without them, config ids) a round retired."""
+    """The arm ids (or, from an adapter without them, system ids) a round retired."""
     keys = r.get("retired_arms")
     return set(keys if keys is not None else [x.get("config_id") for x in r.get("retired") or []])
 
@@ -4014,7 +4014,7 @@ def render_references(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
 
 
 def _author_link(r: dict, v: dict, up: str) -> str:
-    """The config that wrote a reference, linked to its arm on the reference's dataset when the
+    """The system that wrote a reference, linked to its arm on the reference's dataset when the
     catalog has one (its measured run, not a rescored copy)."""
     author = r.get("author") or ""
     arms = [a for a in v.get("arms", []) if a["arm"].rsplit("/", 1)[-1] == author]
@@ -4023,7 +4023,7 @@ def _author_link(r: dict, v: dict, up: str) -> str:
 
 
 def _config_link(A: Adapter, r: dict, config_id: str) -> str:
-    """A config named in a round, linked to its arm on the round's dataset when it has one."""
+    """A system named in a round, linked to its arm on the round's dataset when it has one."""
     fn = getattr(A, "arm_of", None)
     arm = (
         fn(r.get("dataset_id", ""), config_id)
@@ -4034,7 +4034,7 @@ def _config_link(A: Adapter, r: dict, config_id: str) -> str:
 
 
 def _siblings(by_ds: dict, a: dict, ds: str) -> list:
-    """The same config on the same dataset, scored other ways (gold, silver, a judge)."""
+    """The same system on the same dataset, scored other ways (gold, silver, a judge)."""
     cid = a["arm"].rsplit("/", 1)[-1]
     return [x for x in by_ds[ds]["arms"] if x["arm"] != a["arm"] and x["arm"].rsplit("/", 1)[-1] == cid]
 
@@ -4148,7 +4148,7 @@ def deploy_sheet_html(sh: dict, up: str) -> str:
 
 def render_arm(A: Adapter, a: dict, ds: str, by_ds: dict, out: Path, nav: list) -> None:
     """One arm: what it is scored against and for which goal, every metric it records, its runs,
-    its config, the conditions it ran under, and the same config scored other ways."""
+    its system, the conditions it ran under, and the same system scored other ways."""
     v = by_ds[ds]
     tiers = {r["id"]: r["tier"] for r in v["refs"]}
     goals = {g["goal_id"]: g for g in A.goals()}
@@ -4243,7 +4243,7 @@ def render_arm(A: Adapter, a: dict, ds: str, by_ds: dict, out: Path, nav: list) 
             f"no model was called. Scored like any arm on {dataset_link(ds, '../')}."
         )
         if a.get("recorded")
-        else f"One config on {dataset_link(ds, '../')}, scored one way; its repeats averaged per {e(A.item_word)}.",
+        else f"One system on {dataset_link(ds, '../')}, scored one way; its repeats averaged per {e(A.item_word)}.",
         f'<dl class="kv">{dl}</dl><p class="btns">{"".join(btns)}</p>',
     )
     n = 1
@@ -4313,7 +4313,7 @@ def render_arm(A: Adapter, a: dict, ds: str, by_ds: dict, out: Path, nav: list) 
             )
             if v_
         )
-        body += block(f"{n:02d}", "config", f'<dl class="kv">{kv}</dl>')
+        body += block(f"{n:02d}", "system", f'<dl class="kv">{kv}</dl>')
         n += 1
     elif cfg.get("params"):
         kv = "".join(
@@ -4321,12 +4321,12 @@ def render_arm(A: Adapter, a: dict, ds: str, by_ds: dict, out: Path, nav: list) 
             for k, x in sorted(cfg["params"].items())
         )
         extra = (
-            f'<p class="small muted">config <code>{e(cfg.get("config_id", ""))}</code>'
+            f'<p class="small muted">system <code>{e(cfg.get("config_id", ""))}</code>'
             + (f" · adapter <code>{e(cfg['adapter'])}</code>" if cfg.get("adapter") else "")
             + (f" · deployment <code>{e(cfg['deployment'])}</code>" if cfg.get("deployment") else "")
             + " · credentials are never shown</p>"
         )
-        body += block(f"{n:02d}", "config", extra + f'<dl class="kv">{kv}</dl>')
+        body += block(f"{n:02d}", "system", extra + f'<dl class="kv">{kv}</dl>')
         n += 1
     sheet_fn = getattr(A, "deploy_sheet", None)
     sheet = sheet_fn(a["arm"]) if a.get("baseline") and callable(sheet_fn) else None
@@ -4355,7 +4355,7 @@ def render_arm(A: Adapter, a: dict, ds: str, by_ds: dict, out: Path, nav: list) 
         ]
         body += block(
             f"{n:02d}",
-            "the same config, scored other ways",
+            "the same system, scored other ways",
             ROW_KEY + table("siblings", ["arm", "scored against", "headline", "mean"], srows),
         )
         n += 1
@@ -4778,7 +4778,7 @@ def render_prompts(A: Adapter, out: Path, nav: list) -> None:
         "prompts",
         (table("prompts", ["prompt", "versions", "runs"], rows, "filter prompts") + "".join(sections))
         if rows
-        else '<p class="muted">No prompt versions yet: declare <code>prompts:</code> in an arm config and its next run '
+        else '<p class="muted">No prompt versions yet: declare <code>prompts:</code> in a system and its next run '
         "records them (<code>evh prompts</code>).</p>",
     )
     write(
@@ -4859,7 +4859,7 @@ def render_labels(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
 def write_pick(A: Adapter, by_ds: dict, out: Path, rows: list[dict]) -> None:
     """What the inspector's picker chooses from (assets/inspect.js): each goal with its datasets,
     each dataset with its arm count and goals, and each arm as the arms page describes it
-    (catalog_arms.arm_rows): config, model, model record, hosted or local, how it was scored,
+    (catalog_arms.arm_rows): system, model, model record, hosted or local, how it was scored,
     what against, its roles and its value on the deciding measure. Without this file the
     picker is a plain list of arm names."""
     goals = [
@@ -4877,7 +4877,7 @@ def write_pick(A: Adapter, by_ds: dict, out: Path, rows: list[dict]) -> None:
     arms = {
         r["arm"]: {
             "d": r["dataset"],
-            "c": r["config"],
+            "c": r["system"],
             "m": r["model"],
             "r": r["record"],
             "w": "local" if r["local"] else "hosted",
@@ -5096,7 +5096,7 @@ def build(A: Adapter, out: Path, sections: tuple = ()) -> dict:
         "goals": n_goals,
         "datasets": len(by_ds),
         "arms": sum(len(v["arms"]) for v in by_ds.values()),
-        "configs": _n_configs(by_ds),
+        "systems": _n_systems(by_ds),
         "references": sum(len(v["refs"]) for v in by_ds.values()),
     }
 

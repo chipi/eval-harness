@@ -71,7 +71,7 @@ def prompts(argv: list[str]) -> int:
                     f"{r['name']:<48} {r['versions']:>3} version(s)  {r['runs']:>4} run(s)  latest {r['latest']}"
                 )
             if not rows:
-                print("no prompt versions yet: declare `prompts:` in a config, and its next run records them")
+                print("no prompt versions yet: declare `prompts:` in a system, and its next run records them")
             _jsonout.value("prompts", rows)
             return 0
         vs = _prompts.versions(a.name)
@@ -123,7 +123,7 @@ def diff(argv: list[str]) -> int:
 def version(argv: list[str]) -> int:
     """evh prompt-version: a version recorded from a file or text, with its parent and a note."""
     ap = argparse.ArgumentParser(prog=evh_prog(), description="record a prompt version (RFC-028)")
-    ap.add_argument("name", help="the prompt's name, as configs declare it")
+    ap.add_argument("name", help="the prompt's name, as systems declare it")
     src = ap.add_mutually_exclusive_group(required=True)
     src.add_argument("--from-file", type=Path, help="the version's bytes, from this file")
     src.add_argument("--text", help="the version's text")

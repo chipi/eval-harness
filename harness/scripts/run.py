@@ -328,14 +328,14 @@ def _outcome(res: Any, scored: dict[str, Any], primary: str | None, resumed: boo
 
 def spend_basis(billed_usd: float, priced_usd: float) -> str:
     """Where a spend came from, in the words `evh run` and `evh arm-smoke` share: a Result's cost_usd is the
-    provider's bill when its meta carries one (usage.cost), else tokens x the config's usd_per_mtok_in / _out."""
+    provider's bill when its meta carries one (usage.cost), else tokens x the system's usd_per_mtok_in / _out."""
     if billed_usd > 0 and priced_usd <= 1e-12:
         return "the provider's bill"
     if billed_usd <= 0:
         return (
-            "the config's price table: tokens x usd_per_mtok_in / usd_per_mtok_out, the provider sent no bill"
+            "the system's price table: tokens x usd_per_mtok_in / usd_per_mtok_out, the provider sent no bill"
         )
-    return f"${billed_usd:.6f} the provider's bill, ${priced_usd:.6f} the config's price table"
+    return f"${billed_usd:.6f} the provider's bill, ${priced_usd:.6f} the system's price table"
 
 
 def progress_line(n: int, total: int, item_id: str, outcome: str, seconds: float, spent: float) -> str:
@@ -675,8 +675,8 @@ def _confound(rows: list[dict[str, Any]]) -> dict[str, int] | None:
 
 
 def _smoke_cost(cfg: dict[str, Any]) -> dict[str, Any] | None:
-    """What the last `evh arm-smoke` of this config measured, from its model record: {per_item_usd, items, at,
-    model_record}; None when the config names no record, the record holds no smoke of it, or it priced nothing."""
+    """What the last `evh arm-smoke` of this system measured, from its model record: {per_item_usd, items, at,
+    model_record}; None when the system names no record, the record holds no smoke of it, or it priced nothing."""
     from evaluation_harness import _models  # noqa: PLC0415
 
     if not cfg.get("model_record"):
@@ -703,10 +703,10 @@ def _dry_run(
 ) -> int:
     """Shape and cost the sweep without calling anything.
 
-    The estimate counts what the config alone shows: one call per item (or the adapter's declared
+    The estimate counts what the system alone shows: one call per item (or the adapter's declared
     `CALLS_PER_ITEM`), the prompt in and max_tokens out, each call as large as the first. It is NOT an upper
     bound: an adapter that calls the system several times per item, or whose conversation grows, costs more.
-    What an arm-smoke of this config measured is shown beside it, and is the number to set a cap from.
+    What an arm-smoke of this system measured is shown beside it, and is the number to set a cap from.
     """
     params = dict(cfg.get("params") or {})
     items = ds["items"]
@@ -716,7 +716,7 @@ def _dry_run(
         for i in items
         if _store.is_file(mat / (i.get("source_path") or i["item_id"]))
     )
-    # The prompt the config gives is sent with every item (the bundled adapter sends `prompt`, a blank line, the
+    # The prompt the system gives is sent with every item (the bundled adapter sends `prompt`, a blank line, the
     # item). An adapter that builds its own prompt elsewhere cannot be asked for it, so that part is not counted.
     prompt = params.get("prompt")
     prompt_chars = (len(prompt) + 2) * len(items) if isinstance(prompt, str) else 0
@@ -744,7 +744,7 @@ def _dry_run(
         else "              one per item: an adapter that calls the system several times per item makes more"
     )
     counted = (
-        "item text + the config's prompt; a prompt the adapter adds itself is not counted"
+        "item text + the system's prompt; a prompt the adapter adds itself is not counted"
         if prompt_chars
         else "item text only; a prompt the adapter adds is not counted"
     )
@@ -914,7 +914,7 @@ def _resume_source(
     if ident.get("config_id") and ident["config_id"] != cfg.get("config_id"):
         die(
             f"cannot resume: {resume} is arm {ident['config_id']!r}, "
-            f"this config is {cfg.get('config_id')!r}.\n"
+            f"this system is {cfg.get('config_id')!r}.\n"
             f"  Resuming would replay another arm's answers and record them "
             f"under this one.",
             "mismatch",
@@ -922,7 +922,7 @@ def _resume_source(
     if ident.get("dataset_id") and ident["dataset_id"] != cfg.get("dataset_id"):
         die(
             f"cannot resume: {resume} ran on dataset "
-            f"{ident['dataset_id']!r}, this config is on "
+            f"{ident['dataset_id']!r}, this system is on "
             f"{cfg.get('dataset_id')!r}.",
             "mismatch",
         )
@@ -1022,8 +1022,8 @@ def _run(args: argparse.Namespace) -> int:
     from evaluation_harness.model.systems import arm_of  # noqa: PLC0415
 
     cfg, args.config = arm_of(args.system, args.dataset, args.goal, args.round)
-    # A config may name a model record (RFC-020, optional): its settings come from the record, under the
-    # config's own params, so every arm of that model runs the way it was onboarded. With `deployment:` it
+    # A system may name a model record (RFC-020, optional): its settings come from the record, under the
+    # system's own params, so every arm of that model runs the way it was onboarded. With `deployment:` it
     # also names where it runs (RFC-021): the fingerprint takes the deployment's facts from the record.
     from evaluation_harness import _models  # noqa: PLC0415
 
@@ -1039,7 +1039,7 @@ def _run(args: argparse.Namespace) -> int:
         recorded = _recorded_outputs(cfg, adapter_path)
         warmup = None  # nothing is called, so nothing is warmed up
     declared_kinds = metric_kinds(adapter_path)
-    # A key written into the config would be copied into every run record (metrics.json), and
+    # A key written into the system would be copied into every run record (metrics.json), and
     # from there onto pages: refused, with the way that keeps it out.
     secrets = secret_params(dict(cfg.get("params") or {}))
     if secrets:
@@ -1099,7 +1099,7 @@ def _run(args: argparse.Namespace) -> int:
         ds = {**ds, "items": [it for it in ds["items"] if it["item_id"] in keep]}
         print(f"  --items: {len(ds['items'])} of {len(known_ids)} items of {cfg['dataset_id']}")
     # A SEALED SIDE IS HELD OUT (the fleet's feedback 29): refused before a cent is spent, unless an unseal named
-    # this config in advance.
+    # this system in advance.
     from evaluation_harness import _seal  # noqa: PLC0415
 
     _seal.refuse_if_sealed(cfg["dataset_id"], "a run", cfg["config_id"])
@@ -1178,8 +1178,8 @@ def _run(args: argparse.Namespace) -> int:
     #
     # Once per ARM, not per repeat: REPEAT exists to measure the arm's own jitter, and
     # letting load variance into that measures the wrong thing.
-    # The prompts the config declares (RFC-028): each file's version found or recorded, the adapter given their text
-    # (and a per-run copy of a prompt root), the fingerprint their hashes. The run record keeps the config's params.
+    # The prompts the system declares (RFC-028): each file's version found or recorded, the adapter given their text
+    # (and a per-run copy of a prompt root), the fingerprint their hashes. The run record keeps the system's params.
     from evaluation_harness import _prompts  # noqa: PLC0415
 
     resolved = _prompts.resolve(cfg, args.config, cfg["config_id"])
@@ -1280,13 +1280,13 @@ def _run(args: argparse.Namespace) -> int:
                 f"runs at temperature 0: expect its {args.repeat} passes to be identical. The spread comes from "
                 "other deployments (machines, builds) or a temperature above 0."
             )
-    # Read once, before the first call: what the config says now and whether it was committed already.
+    # Read once, before the first call: what the system says now and whether it was committed already.
     hypothesis = _hypothesis.record_for(cfg, args.config, build, now())
     if hypothesis:
         print(f"  hypothesis  named in advance: {_hypothesis.said(hypothesis['hypothesis_in_advance'])}")
 
-    # A run is never written into another run's directory. The id is the config and the start to the second, so two
-    # runs of one config started in the same second shared a directory, and the second wrote over the first, a
+    # A run is never written into another run's directory. The id is the system and the start to the second, so two
+    # runs of one system started in the same second shared a directory, and the second wrote over the first, a
     # committed run included (2026-11-04). An id already taken: the next second's stamp; a --run-id taken: refused.
     def taken(base: str) -> bool:
         return _store.exists(runs / base) or any(
@@ -1389,11 +1389,11 @@ def _run(args: argparse.Namespace) -> int:
             n_items=len(result["predictions"]),
             # The metrics score_run() computed over the whole run: one number each, no per-item values to test.
             run_metrics=result.get("run_metrics") or None,
-            # The knobs this run ACTUALLY used, not just the config's name. A config_id
+            # The knobs this run ACTUALLY used, not just the system's name. A config_id
             # names a file, and a file can be edited after the run — so without this a run
             # cannot say what produced it, only which YAML was pointed at. It also lets V5
             # tell a deterministic repeat (same params, same scores — expected) from two
-            # different configs landing on byte-identical output (worth a look).
+            # different systems landing on byte-identical output (worth a look).
             params=dict(cfg.get("params") or {}),
             # WHICH scorer produced these numbers. A scorer is half of what a number means,
             # so a run that does not name it cannot be compared to one that used another.

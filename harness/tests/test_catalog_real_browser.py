@@ -10,7 +10,7 @@ With the inspector on a free port, over a built catalog:
 
   - every page a reader reaches from the menu, and a goal, a dataset, an arm and a metric page,
     loads with no console error and no sideways scroll at phone width;
-  - the arms page lists as many arms as it says, groups them into as many configs as it says,
+  - the arms page lists as many arms as it says, groups them into as many systems as it says,
     and its open-weights, proprietary and ties-the-leader filters each keep some arms and only
     arms of that kind;
   - the datasets page groups by goal (one heading per goal at least) and the metrics page by role
@@ -105,16 +105,16 @@ def check_arms_skip_and_address(browser, base: str) -> None:
         f"{fg} on {bg}, focus {page.evaluate('document.activeElement.id')}, url {page.url}",
     )
     page.locator('.facet-chips button[data-value="local"]').click()
-    page.locator("button[data-group-by=config]").first.click()
+    page.locator("button[data-group-by=system]").first.click()
     page.goto(page.url)
-    # a config group with no local arm keeps its heading hidden, and it can be the first row
+    # a system group with no local arm keeps its heading hidden, and it can be the first row
     page.wait_for_selector("#arms tbody tr:not([hidden])", timeout=30000)
     pressed = page.evaluate(
         "[...document.querySelectorAll('[aria-pressed=true]')].map(b => b.textContent.trim())"
     )
     check(
         "arms: a grouping and a facet picked are kept in the address and come back on reload",
-        "config" in pressed and "local" in pressed and page.locator("#arms tr.grouphead").count() > 1,
+        "system" in pressed and "local" in pressed and page.locator("#arms tr.grouphead").count() > 1,
         pressed,
     )
     page.close()
@@ -358,7 +358,7 @@ def drive(cat: Path, base: str) -> None:
         page.goto(base + "arms.html#pall")
         page.wait_for_selector("table#arms")
         hero = page.locator(".hero").first.inner_text()
-        m = re.search(r"(\d+) arms from (\d+) configs", hero)
+        m = re.search(r"(\d+) arms from (\d+) systems", hero)
         n_arms, n_cfg = (int(m.group(1)), int(m.group(2))) if m else (0, 0)
         check(
             f"arms page: the table lists the {n_arms} arms it says",
@@ -366,10 +366,10 @@ def drive(cat: Path, base: str) -> None:
             n_arms > 100 and page.locator("table#arms tbody tr:not(.grouphead)").count() == n_arms,
             f"hero {hero[:80]!r}, rows {page.locator('table#arms tbody tr:not(.grouphead)').count()}",
         )
-        page.click('.group-chips[data-for="arms"] [data-group-by="config"]')
+        page.click('.group-chips[data-for="arms"] [data-group-by="system"]')
         heads = page.locator("table#arms tr.grouphead").count()
         check(
-            f"arms page: grouped by config, one heading per config ({n_cfg})",
+            f"arms page: grouped by system, one heading per system ({n_cfg})",
             heads == n_cfg,
             f"{heads} headings",
         )
@@ -452,14 +452,14 @@ def drive(cat: Path, base: str) -> None:
             rows > 0 and not unnamed,
             f"not named: {unnamed[:5]}",
         )
-        # Every config on the arms page has the day it was first run, as the home page's configs tile counts them:
-        # an undated row (a config whose runs were all re-parsed) never counts as new there.
+        # Every system on the arms page has the day it was first run, as the home page's systems tile counts them:
+        # an undated row (a system whose runs were all re-parsed) never counts as new there.
         ct = (cat / "arms.html").read_text(encoding="utf-8")
-        ct = ct[ct.index('<table id="configs"') :]
+        ct = ct[ct.index('<table id="systems"') :]
         ct = ct[: ct.index("</table>")]
         undated = re.findall(r'<tr data-key="(c:[^"]+)"(?![^>]*data-made)', ct)
         check(
-            "arms page: every config row is dated (its first run, any kind)",
+            "arms page: every system row is dated (its first run, any kind)",
             not undated,
             ", ".join(undated[:5]),
         )
@@ -490,7 +490,7 @@ def drive(cat: Path, base: str) -> None:
         best = re.findall(r"best</small> <a class=\"cell-link\"[^>]*>([a-z0-9_]+)</a>", cnn)
         check(
             "CNN goal page: one recommendation (gold's), and round r1's best is gold's leader, not silver's author",
-            recs == ["cnn_bart_l_n200_v1"] and best[:1] == ["cnn_bart_l_n200_v1"],
+            recs == ["cnn_bart_l_v1"] and best[:1] == ["cnn_bart_l_v1"],
             f"recommended {recs}; best {best[:3]}",
         )
 
@@ -513,7 +513,7 @@ def drive(cat: Path, base: str) -> None:
 
         # Small things read as words: an arm's rounds as sentences, a probe's yes or no (never "reasons False"),
         # what α and MASI mean beside them, and the showcase dataset's "what's inside" filled.
-        arm_p = (cat / "a" / "runs-cnn_dailymail_200-cnn_bart_l_n200_v1.html").read_text(encoding="utf-8")
+        arm_p = (cat / "a" / "runs-cnn_dailymail_200-cnn_bart_l_v1.html").read_text(encoding="utf-8")
         raw = sorted(
             f.name
             for f in (cat / "models").glob("*.html")
@@ -573,7 +573,7 @@ def drive(cat: Path, base: str) -> None:
         cov = (cat / "m" / "coverage.html").read_text(encoding="utf-8")
         check(
             "goal pages' charts: no name over another, no $-1 axis; the coverage strip leaves out silver's author",
-            not crossed and not minus and "Not drawn: cnn_anthropic_l_n200_v1" in cov,
+            not crossed and not minus and "Not drawn: cnn_anthropic_l_v2" in cov,
             f"overlapping names {crossed}; $-1 on {minus}",
         )
 
@@ -659,15 +659,14 @@ def drive(cat: Path, base: str) -> None:
             return ",".join(re.findall(r"#(\d+ of \d+)", row[: row.index("</tr>")])) or "none"
 
         places = {
-            c: place(c)
-            for c in ("ag_anthropic_l_n200_v1", "se_openai_l_n100_v1", "se_gemma_l_pubtext_n100_v1")
+            c: place(c) for c in ("ag_anthropic_l_v1", "se_openai_l_n100_v1", "se_gemma_l_pubtext_n100_v1")
         }
         check(
             "arms page: AG News anthropic_l is 5th of 30 and SummEval openai_l 1st of 33, as on the site; a paired "
             "side run has no place",
             places
             == {
-                "ag_anthropic_l_n200_v1": "5 of 30",
+                "ag_anthropic_l_v1": "5 of 30",
                 "se_openai_l_n100_v1": "1 of 33",
                 "se_gemma_l_pubtext_n100_v1": "none",
             },

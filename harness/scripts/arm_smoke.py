@@ -6,13 +6,13 @@
 Writes no run. For any arm (an LLM, an ML model, a baseline) it checks, from what every run already
 produces: that each item runs and its output is valid for the scorer; the time per item and a projection
 of the full run; that the build is pinned; whether the same item twice gives the same output; and the
-cost (what it spent, and whether that is the provider's bill or the config's price table), and each item's
+cost (what it spent, and whether that is the provider's bill or the system's price table), and each item's
 reply (its first 300 characters, all with --replies). For an arm that calls an LLM it reads each call (a built-in provider's `_meta`, or the calls an
 adapter reports as `meta["calls"]`) and flags reasoning, slow calls, long replies, cut-off replies and
 calls with no answer. An ML adapter's facts (`meta`: device, precision, load time) are printed beside.
 
-SMOKE PASS (exit 0) or SMOKE CHECK with the flags (exit 6). When the config names a model record
-(`model_record:`), the report is kept as a check of the deployment it ran on (RFC-032): the one the config names
+SMOKE PASS (exit 0) or SMOKE CHECK with the flags (exit 6). When the system names a model record
+(`model_record:`), the report is kept as a check of the deployment it ran on (RFC-032): the one the system names
 (`deployment:`), or the model's only one; with several and none named it is not recorded, and says so. With
 `deployment:` the build is checked against that deployment, and a hosted deployment's pinned route
 (`provider_routing`) against the upstream provider each call reports.
@@ -172,7 +172,7 @@ def spend_line(spent: float, billed: float, calls: int, unpriced: int) -> str:
     if unpriced == calls:
         return (
             "spent: unknown (the adapter reported no cost: no bill from the provider and no "
-            "usd_per_mtok_in / usd_per_mtok_out in the config)"
+            "usd_per_mtok_in / usd_per_mtok_out in the system)"
         )
     base = f"spent ${spent:.6f} on {calls} call(s)"
     if spent <= 0:
@@ -397,7 +397,7 @@ def _smoke(args: argparse.Namespace) -> int:
         }
         if accepted:
             smoke["accepted"] = accepted
-        # A smoke is a check of the deployment the arm runs on (RFC-032): the one its config names, or the model's
+        # A smoke is a check of the deployment the arm runs on (RFC-032): the one its system names, or the model's
         # only one; with neither it is not recorded rather than put on a deployment it may not have run on.
         deps = rec.get("deployments") or []
         dep_id = cfg.get("deployment") or (deps[0]["id"] if len(deps) == 1 else None)
@@ -412,8 +412,8 @@ def _smoke(args: argparse.Namespace) -> int:
             print(f"  written into {path.relative_to(DATA.parent) if DATA.parent in path.parents else path}")
         else:
             print(
-                f"  not recorded: {cfg['model_record']} has {len(deps)} deployment(s) and the config names none "
-                "(deployment: <id> in the config records it on that deployment)"
+                f"  not recorded: {cfg['model_record']} has {len(deps)} deployment(s) and the system names none "
+                "(deployment: <id> in the system records it on that deployment)"
             )
     _jsonout.values(
         {

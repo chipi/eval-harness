@@ -6,7 +6,6 @@ project or check the installation, `capture-scrub`, which runs a program it is g
 keeps has a kind:
 
   value      typed as the parser types it (choices, numbers, true/false)
-  name       a thing that must exist: a config id (the server maps it to the config's file), a dataset, a goal
   upload     a file the call carries (at most 50 MB), kept under .build/uploads/<sha256> for the job
   artifact   a file the job writes under .build/jobs/<id>/, fetched from there
 
@@ -123,7 +122,7 @@ NEVER_PATHS = {
 #: Paths the parser types as text, never taken either.
 TEXT_PATHS = {("round-retire", "--runs-dir"), ("judge", "--config")}
 #: Options never taken from any command: they load code or reach outside the project.
-NEVER = {"--adapter", "--help", "--json", "--runs-dir", "--source-dir", "--data-dir", "--config-dir"}
+NEVER = {"--adapter", "--help", "--json", "--runs-dir", "--source-dir", "--data-dir"}
 _NAME_ONLY = re.compile(r"[a-z0-9][a-z0-9_]*")
 #: Text arguments that the command line also reads as a code file (`path.py:Class`) or a file to read (`@file`):
 #: the API takes their other form only. A served argument whose help offers either and has no rule fails a test.

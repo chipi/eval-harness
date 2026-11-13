@@ -114,7 +114,7 @@ arm-smoke: tickets_llama_v1 on tickets_v1, 3 item(s)
       call   2.14 s  out    77 tok  reasoning      0  end stop
   ...  (t02_invoice, t03_export the same way)
   full run: 6 items, about 0.2 min (slowest item x all: 0.2 min), about $0.0
-  spent: unknown (the adapter reported no cost: no bill from the provider and no usd_per_mtok_in / usd_per_mtok_out in the config)
+  spent: unknown (the adapter reported no cost: no bill from the provider and no usd_per_mtok_in / usd_per_mtok_out in the system)
   determinism: item 1 twice gave the same output: repeats on this machine will be identical
 SMOKE PASS
   written into data/models/llama3.1-8b.yaml

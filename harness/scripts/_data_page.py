@@ -1,7 +1,7 @@
 """A project's data, browsed and its settings managed (PRD-016, UXS-004): what the data page and `evh data-*` call.
 
 Every path is relative to data/ and read and written through `_store`, so the same calls work whether the project
-keeps its data as files or in its database (RFC-025). A **setting** (an arm config, a goal, a fieldset, a judge
+keeps its data as files or in its database (RFC-025). A **setting** (a system, a goal, a fieldset, a judge
 scorer, a model record, a failure-mode list, the validate policy) is what a person decides: it can be created,
 changed and deleted, each change checked first. A **run** can be deleted whole. Everything else is what the harness
 wrote, and is shown, never changed; Python is never edited here.
@@ -235,14 +235,14 @@ def _when(ts: float) -> str:
     return datetime.fromtimestamp(ts, tz=timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
 
 
-def runs_of_config(config_id: str) -> int:
-    """How many runs were made with this arm config (their records name it)."""
+def runs_of_system(system_id: str) -> int:
+    """How many runs were made with this system (their records name it)."""
     n = 0
     data = _data()
     for base in _store.glob(data, "runs*"):
         for m in _store.rglob(base, "metrics.json"):
             try:
-                n += json.loads(_store.read_text(m)).get("config_id") == config_id
+                n += json.loads(_store.read_text(m)).get("config_id") == system_id
             except ValueError:
                 continue
     return n
@@ -283,14 +283,14 @@ def show(rel: str) -> dict[str, Any]:
             if norm == GOAL_POLICY
             else SETTINGS[norm.split("/", 1)[0]][0]
         )
-    if k == "setting" and norm.startswith("configs/") and text is not None:
+    if k == "setting" and norm.startswith("systems/") and text is not None:
         import yaml  # noqa: PLC0415
 
         try:
-            cid = (yaml.safe_load(text) or {}).get("config_id")
+            cid = (yaml.safe_load(text) or {}).get("system_id")
         except (yaml.YAMLError, AttributeError):
             cid = None
-        out["runs_made"] = runs_of_config(str(cid)) if cid else 0
+        out["runs_made"] = runs_of_system(str(cid)) if cid else 0
     return out
 
 

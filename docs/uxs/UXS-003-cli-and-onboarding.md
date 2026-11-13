@@ -48,7 +48,7 @@ on every change, comparing each quoted output. Its order is the order a newcomer
 | 0 | set up a project with the tutorial kit | `pip install …`, `evh init --tutorial` |
 | 1 | freeze a dataset | `evh dataset-create --dataset-id tickets_v1 --source-dir tutorial/tickets` |
 | 2 | materialize | `evh dataset-materialize --dataset-id tickets_v1` |
-| 3 | describe the arms, name the goal, commit | copy configs, `goal: tickets_summary` |
+| 3 | describe the arms, name the goal, commit | copy systems, `goal: tickets_summary` |
 | 4 | run the best arm first (a dry run prices it) | `evh run --system tickets_author_v1 --dataset tickets_v1 --goal tickets_summary [--dry-run]` |
 | 5 | optional: make its outputs the reference (its outputs become a model's labels, which you promote) | `evh label-from-run --run <run_id> --set author_v1`, then `evh reference-promote --dataset-id tickets_v1 --labels author_v1 --tier silver --reason "…" --by <you>` |
 | 6 | run the other arms, three times each | `evh run --system … --dataset … --repeat 3` |
@@ -103,9 +103,9 @@ answer. Where the page has a `make` target in a checkout, it runs the same scrip
 | a goal page: the answer so far, arms per dataset and group (a judge's group on its score), retired marks, one line per round | `evh goals --goal <id>` | `make goals GOAL=<id>` |
 | a goal page: its rounds and suggestions (each suggestion's copy button copies its command) | `evh rounds --goal <id> [--round rN]` | `make rounds GOAL=<id>` |
 | a goal page: a round's **inspect** button | `evh inspect --round rN [--goal <id>]` | |
-| the arms page: every arm, grouped, filtered (local / hosted, price tier) | `evh arms [--by dataset\|config\|model\|provider\|scored\|none] [--all] [--where local\|hosted] [--tier T]` (grouped by dataset by default, three a group) | `make arms` |
-| the arms page: the configs, with their rank on each goal | `evh arms --configs` | `make arms ARGS=--configs` |
-| an arm page: metrics, cost and speed, runs, config, conditions, rounds | `evh arms --arm <arm id or config id>` | `make arms ARM=<id>` |
+| the arms page: every arm, grouped, filtered (local / hosted, price tier) | `evh arms [--by dataset\|system\|model\|provider\|scored\|none] [--all] [--where local\|hosted] [--tier T]` (grouped by dataset by default, three a group) | `make arms` |
+| the arms page: the systems, with their rank on each goal | `evh arms --systems` | `make arms ARGS=--systems` |
+| an arm page: metrics, cost and speed, runs, system, conditions, rounds | `evh arms --arm <arm id or system id>` | `make arms ARM=<id>` |
 | the models page: every model record, its deployments, settings, onboarding, arms (0.6.0, RFC-020) | `evh models [--kind K] [--where self-hosted\|hosted] [--status vetted\|onboarded\|check\|none]` | |
 | a model page: its deployments and their onboarding, settings history, arms | `evh models --model <id>` | |
 | (no page action) onboarding a model's deployment, smoking an arm before its run | `evh model-onboard <id> --deployment <d>`, `evh arm-smoke --system <id> --dataset <id>` | |
@@ -135,7 +135,7 @@ answer. Where the page has a `make` target in a checkout, it runs the same scrip
 | inspector: the analysis charts, as numbers | `evh inspect --runs … --analysis [--x <metric>]` | |
 | the catalog's global search | `evh search <text>` | |
 | "promote its run" (a goal page with no decision) | `evh run-promote --run <run_id> --reason "…"` | `make run-promote` |
-| a suggested retirement | `evh round-retire --goal g --round rN --arm <config> --reason "…"` | `make round-retire` |
+| a suggested retirement | `evh round-retire --goal g --round rN --arm <system> --reason "…"` | `make round-retire` |
 | a suggested close | `evh round-close --goal g --round rN --conclusion "…" [--promote <run_id>]` | `make round-close` |
 | (no page action) opening a round | `evh round-open --goal g --dataset d … [--adopt] [--keep all] [--scoring "…"]` | `make round-open` |
 | a round's scorer and its scoring changes (the goal page's round section) | `evh rounds --goal g --round rN` | |
@@ -163,16 +163,16 @@ a round goes:
 evh round-open --goal tickets_summary --dataset tickets_v1 \
     --hypothesis "how many leading sentences summarise a ticket best" \
     --keep tickets_lead1_v1,tickets_lead2_v1 --budget-usd 1
-# add `round: r1` beside `goal:` in each new arm's config, commit, then run them
+# commit the round file, then run each new system in it: evh run --system <id> --dataset tickets_v1 --goal tickets_summary --round r1
 evh rounds --goal tickets_summary
 evh round-retire --goal tickets_summary --round r1 --arm tickets_lead1_v1 --reason "…"
 evh round-close --goal tickets_summary --round r1 --conclusion "…" --promote <run_id>
 ```
 
 - `round-open` prints the round file it wrote, then, when it carried arms in: "Carried in as
-  they are, their runs already count: <arms> (their configs need no change and they need not run
-  again)", then "A NEW arm names the round in its config (round: r1, beside goal:
-  tickets_summary) and runs; then: evh rounds --goal tickets_summary" and "Commit the round file
+  they are, their runs already count: <arms> (their systems need no change and they need not run
+  again)", then "A NEW system joins it by running in it: evh run --system <id> --dataset <dataset>
+  --goal tickets_summary --round r1; then: evh rounds --goal tickets_summary" and "Commit the round file
   before the runs: an uncommitted file makes them dirty."
 - `evh rounds --goal G` prints one line per round, then the open round in full: its hypothesis,
   "on <measure>: n arm(s) in play, leader <arm>", each other arm's verdict against the leader

@@ -1,5 +1,5 @@
 # The tutorial's goal (GUIDE step 3): what the ticket summaries are FOR. Copy it to
-# data/goals/ and name it in each config with `goal: tickets_summary`.
+# data/goals/ and name it in each system with `goal: tickets_summary`.
 goal_id: tickets_summary
 schema_version: "0.1"
 title: One-line support ticket summaries

@@ -13,7 +13,7 @@ WHY A SECOND TEST, WHEN leaderboard.py ALREADY HAS ONE
 
   The honesty condition is that the pair is named in advance. Six pairs picked after
   reading the table are a search, not a test; EVAL_REPORT.md section 3.1b says so about its
-  own six and Holm-corrects them. A `hypothesis:` in A's config (ADR-0025) is the record: when A's run
+  own six and Holm-corrects them. A `hypothesis:` in A's system (ADR-0025) is the record: when A's run
   carries one against B on this metric, the output says whether it was committed before the run and
   whether the result agrees with it. With --round and no --a, A is the table's leader, chosen after
   reading: the test is corrected for the arms in play. --family N applies BONFERRONI (alpha/N) here, which is
@@ -164,7 +164,7 @@ def _round_defaults(args: argparse.Namespace, runs: list, values: Any) -> tuple[
 
 def _hypothesis_of(args: argparse.Namespace, runs: list) -> dict | None:
     """A's hypothesis against B on the tested metric, as its runs recorded it, with whether it was named in
-    advance; or, when the config now carries one its runs do not, that it was added after the run."""
+    advance; or, when the system now carries one its runs do not, that it was added after the run."""
     import yaml  # noqa: PLC0415
     from evaluation_harness import _hypothesis  # noqa: PLC0415
 

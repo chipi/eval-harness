@@ -31,9 +31,9 @@ What [Getting started](../../docs/GUIDE.md) walks: a dataset, its reference, run
 | list runs | `evh runs-list` |
 | rank, with the test | `evh leaderboard --dataset-id …` |
 | two runs | `evh run-compare --baseline … --candidate … --noise …` |
-| a pre-named pair | `evh pair-test --dataset-id … --a … --b …` (or `--round rN`: A its leader, B the baseline it started from; a leader chosen from the table is corrected for the comparisons it could have been, every arm in play but B). A `hypothesis:` committed in A's config before the run is what makes the pair "named in advance" (§4) |
+| a pre-named pair | `evh pair-test --dataset-id … --a … --b …` (or `--round rN`: A its leader, B the baseline it started from; a leader chosen from the table is corrected for the comparisons it could have been, every arm in play but B). A `hypothesis:` committed in A's system before the run is what makes the pair "named in advance" (§4) |
 | a winner claim | `evh family-test --dataset-id … --a … --against …` |
-| what it is for | `data/goals/<goal_id>.yaml` (every field: [§4c](#4c-the-goal-file-field-by-field)), and `goal:` on each config |
+| what it is for | `data/goals/<goal_id>.yaml` (every field: [§4c](#4c-the-goal-file-field-by-field)), and `goal:` on each system |
 | baseline | `evh run-promote --run … --reason "…"` · `evh baselines` · `evh baseline-rollback --goal G --dataset D --to N --reason "…"` |
 | browse and inspect | `evh catalog` · `evh catalog-serve` · `evh dataset-profile` · `evh dataset-items` |
 | consistency | `evh validate` |
@@ -66,7 +66,7 @@ What [Getting started](../../docs/GUIDE.md) walks: a dataset, its reference, run
 | re-measure with a judge (optional) | `evh judge-score --dataset-id … --scorer … [--dry-run]` |
 | read the judged runs | `EVAL_RUNS_DIR=data/runs-judged/<scorer> evh leaderboard --dataset-id …` |
 | is silver good enough | `evh silver-calibrate --dataset-id …` |
-| scores made elsewhere | `evh import-run --dataset-id … --config-id … --scores … --scorer-file …` |
+| scores made elsewhere | `evh import-run --dataset-id … --system-id … --scores … --scorer-file …` |
 | billed cost | `evh cost-report` |
 
 ### Statistics beyond the pair
@@ -82,7 +82,7 @@ What [Getting started](../../docs/GUIDE.md) walks: a dataset, its reference, run
 
 | step | command |
 |---|---|
-| the same, in the terminal | `evh overview [--period P]` · `evh activity` · `evh datasets` · `evh arms` (`--by …`, `--configs`, `--arm …`) · `evh references` · `evh metrics --metric …` · `evh goals` · `evh goals --goal G [--arms PATTERN] [--top N]` (a goal with many arms: only the arms matching, or the first N, always with the baseline, the leader and the recommended arm; each arm's paired test against the leader) · `evh search …` · `evh inspect --runs …` (`--analysis`, `--item …`) · `evh inspect --sheet --dataset-id … --runs …`; every list takes `--period P` |
+| the same, in the terminal | `evh overview [--period P]` · `evh activity` · `evh datasets` · `evh arms` (`--by …`, `--systems`, `--arm …`) · `evh references` · `evh metrics --metric …` · `evh goals` · `evh goals --goal G [--arms PATTERN] [--top N]` (a goal with many arms: only the arms matching, or the first N, always with the baseline, the leader and the recommended arm; each arm's paired test against the leader) · `evh search …` · `evh inspect --runs …` (`--analysis`, `--item …`) · `evh inspect --sheet --dataset-id … --runs …`; every list takes `--period P` |
 | where arms decided differently | `evh inspect --runs A,B --disagree` |
 | the sheet: every item, every arm's output and scores, the labels, the winner, the signals | `evh inspect --sheet --dataset-id … --runs A,B [--wrong-against SET] [--new-vs V] [--csv FILE [--fill label\|pick\|scores]]` |
 | how two per-item scores relate, by a recorded field (a gate that saved a false dismissal, one that cost a false alarm) | `evh inspect --runs A --crosstab M1,M2 [--group _meta.gates [--group-match REGEX]] [--where F:V]` ([§14](#14-browse-the-catalog-and-the-inspector)) |
@@ -115,7 +115,7 @@ What [Getting started](../../docs/GUIDE.md) walks: a dataset, its reference, run
 | step | command |
 |---|---|
 | ask from an agent | `evh mcp` |
-| background jobs (the Workbench's) | `evh jobs-start run --arg config=ID --max-cost-usd N` · `evh jobs-status` · `evh jobs-logs JOB --follow` · `evh jobs-stop JOB` · `evh jobs-resume JOB` |
+| background jobs (the Workbench's) | `evh jobs-start run --arg system=ID --max-cost-usd N` · `evh jobs-status` · `evh jobs-logs JOB --follow` · `evh jobs-stop JOB` · `evh jobs-resume JOB` |
 
 ---
 
@@ -315,9 +315,9 @@ rebuilds it. If something in there cannot be rebuilt, it is in the wrong place.
 ## 4. Point the harness at your system
 
 Write **one function**, `call_system()`, in `adapter.py` at the project root. An arm whose
-config names no `adapter:` uses it (and records `adapter.py`); without one, the adapter
+system names no `adapter:` uses it (and records `adapter.py`); without one, the adapter
 bundled with the harness runs. A project with several tasks names one per arm,
-`adapter: adapters/ner.py`, relative to the config or the project:
+`adapter: adapters/ner.py`, relative to the system or the project:
 
 ```python
 from evaluation_harness.adapter import Result
@@ -395,7 +395,7 @@ stands. The declarations are read from every system of the project: `data/system
 ```
 
 **What a run records as its cost.** Each call's `cost_usd` is the provider's bill when the
-response carries one (`usage.cost`), and otherwise the config's price table, tokens ×
+response carries one (`usage.cost`), and otherwise the system's price table, tokens ×
 `usd_per_mtok_in` / `usd_per_mtok_out`. With no price table and no bill the cost is unknown, not
 zero. Per provider:
 
@@ -458,7 +458,7 @@ best_v1` (or `evh run --labels`): the runs land beside the others, in
 
 Scored against silver, the arm that wrote it is graded against its own outputs: the leaderboard
 marks its row (`arm *`) and leaves it out of the ordering test and the frontier ("The ordering
-test and the frontier leave out <config> (it wrote the reference)"): it is the yardstick, not a
+test and the frontier leave out <system> (it wrote the reference)"): it is the yardstick, not a
 contender. The others are measured by how close they come to it, the usual way to choose a
 cheaper system: pay for the expensive one once, then chase it.
 
@@ -491,7 +491,7 @@ used. Ten items is enough to rank four arms; keep the first pass cheap.
 ## 4c. The goal file, field by field
 
 A goal says what the evaluation is for ([CONCEPTS](CONCEPTS.md#a-goal-says-what-the-evaluation-is-for)).
-It is optional: one YAML file per goal, `data/goals/<goal_id>.yaml`, and each config names it
+It is optional: one YAML file per goal, `data/goals/<goal_id>.yaml`, and each system names it
 with `goal: <goal_id>` (every run and baseline then carries it). The schema is
 [`goal.schema.json`](../schemas/goal.schema.json); `evh validate` checks every goal against it
 (V1, V14). A goal for a classifier:
@@ -552,7 +552,7 @@ references:
 | `superseded_by` | the `goal_id` that replaces this one | nothing (for the reader) |
 | `context.audience`, `context.usage` | any string | `audience` is shown on the goal page |
 | `decision` | the decision an answer informs | the goal page and `evh goals --goal` lead with it |
-| `output_contract[]` | a list of shapes, each `{format}` (required) plus optional `id`, `length`, `structure`, `language` | A config may declare `format:` (any non-empty string); when the goal has a contract, that format must be one of its `format`s (V14 fails it, and the goal page flags the arm "format f not in the contract"). `format` is your own word for a shape (`paragraph`, `label`, `json`): the harness has no list of them. A config without `format:` is not checked |
+| `output_contract[]` | a list of shapes, each `{format}` (required) plus optional `id`, `length`, `structure`, `language` | A system may declare `format:` (any non-empty string); when the goal has a contract, that format must be one of its `format`s (V14 fails it, and the goal page flags the arm "format f not in the contract"). `format` is your own word for a shape (`paragraph`, `label`, `json`): the harness has no list of them. A system without `format:` is not checked |
 | `success_criteria.primary.measure` | a per-item metric as the runs record it (`rouge_l`, `accuracy`, `overlap_f1`) | the goal page, `evh goals --goal`, `evh rounds` and `inspect --round` read the arms on it; an arm that does not record it is not listed (a judged arm is shown in its judge's group, on the judge's score) |
 | `success_criteria.primary.direction` | `higher`, `lower` or `non_inferior` | `higher`/`lower` rank the arms. `non_inferior` is a guard (no significant drop against a baseline) and ranks nothing. V14 fails a direction that contradicts what the runs record, or `higher` on a cost, latency or token count |
 | `success_criteria.primary.threshold` | any value | shown beside the measure on the goal page |
@@ -621,9 +621,9 @@ evh runs-list
 
 A run is only attributable if it knows its build. `runs-list` marks runs from a
 dirty tree with `*` — their `build.ref` does not describe what actually ran.
-**Commit before you measure** — dataset, configs, references — so the runs you keep are
+**Commit before you measure** — dataset, systems, references — so the runs you keep are
 clean the first time. Re-running an arm into `data/runs` after the fact leaves two
-measurements of one config, which `evh validate` refuses (V8); explore in a scratch
+measurements of one system, which `evh validate` refuses (V8); explore in a scratch
 directory instead (`EVAL_RUNS_DIR=data/runs-smoke`).
 
 **Prompt files, and the system's code** (RFC-028). An arm whose system reads its prompts from files declares them,
@@ -657,7 +657,7 @@ code: {path: ../podcast_scraper}  # the system's own checkout
 **Test sets and their looks** (RFC-029). A test set is a goal's dataset with `role: test`, or a split's sealed side.
 Each decision written on it is a look: an unseal (`dataset-unseal`), or a promotion compared with its current
 baseline there. Look k decides one-sided at 2.5%·6/(π²k²): 1.52%, 0.38%, 0.17%, ..., so looking again and again
-cannot manufacture a result. One question (the two configs, the measure, the rule) is one look however often it is
+cannot manufacture a result. One question (the two systems, the measure, the rule) is one look however often it is
 asked: an unseal for a candidate and its later promotion against the same arm share it. Past 10 looks (or a goal's
 `test_looks: K`) a look needs the person's own `--confirm-extra-look` (an agent cannot give it); fresh items are the
 better way out. A promotion whose items could never reach its look's level (5 items reach 1/32 at best, above 1.52%)
@@ -671,7 +671,7 @@ starts from, the measure, the sampler and when to stop:
 
 ```yaml
 dataset: tickets_val
-baseline: {config: lead1_v1}
+baseline: {system: lead1_v1}
 measure: overlap_f1
 sampler: grid                       # or agent, or {command: "python my_sampler.py"}
 accept: {point: {min_gain: 0}}      # or test (separated as better); limits: [{metric, direction, limit}]
@@ -728,14 +728,14 @@ evh data-migrate --to files              # back, byte for byte, after setting st
 
 `data-migrate` refuses while the project's store is not the target, while `data/` holds Python, and
 while a run is still in the layout before 0.8.0 (`evh migrate` first); a move a crash stopped is
-finished by the next one. In SQLite mode a setting you write (a goal, a config) gets in through the
+finished by the next one. In SQLite mode a setting you write (a goal, a system) gets in through the
 `evh data-put` (below), and a folder of files through `data-migrate`. `validate` V23 names a database beside files, or files beside the database; V7 and V9, which
 read git, say why they do not apply. A release reads the database and writes the same files layout
 as a files project, a hidden dataset's text left out.
 
-**The project's data, in either store** (PRD-016): the settings (arm configs, goals, fieldsets, judge scorers,
+**The project's data, in either store** (PRD-016): the settings (systems, goals, fieldsets, judge scorers,
 model records, failure-mode lists, `validate.json`) are created, changed and deleted with these commands; a setting
-is saved only after it passes the check (it matches its schema, and, but for an arm config, its id is its file
+is saved only after it passes the check (it matches its schema, and, but for a system, its id is its file
 name), keeping the file's comments and every line it does not change, and only when `evh validate` passes on the
 project with it (a change validate refuses is put back, its reasons shown). Harness-written data is read-only; a run
 is the one kind of data `data-rm` deletes, whole:
@@ -791,7 +791,7 @@ again, so an adapter that reports less than its calls cost is still stopped at t
 give each child what the ones before it left (a child that is killed before it can say what it spent is counted at
 all it was given); `judge` takes the lower of its config's `cost_cap_usd` and the cap.
 
-**A round's budget is enforced.** A run (or a smoke) of an arm whose config names an open round with `budget_usd`
+**A round's budget is enforced.** A run (or a smoke) of an arm whose system names an open round with `budget_usd`
 reserves, before its first call, the least of its own cap and what the round has left, in the round's ledger
 (`.build/rounds/<goal>/<round>.json`); it spends at most that. What a round has left is its budget, less what its
 runs spent, less what running commands reserved, less what a stopped or killed run's items paid (its run is not
@@ -821,7 +821,7 @@ retries, or a server that cannot be reached, exit `75` (resume later); and more 
 evh run --system arm_a_v1 --dataset smoke_v1 --resume arm_a_v1_20260929T101500Z
 ```
 
-The run id is the directory under `data/runs/`. It is the config id and the start time to the second; a run never writes into an existing run's directory, so a second run started in the same second takes the next second's id, and a `--run-id` that exists is refused. A run that stops, whatever the cause, prints
+The run id is the directory under `data/runs/`. It is the system id and the start time to the second; a run never writes into an existing run's directory, so a second run started in the same second takes the next second's id, and a `--run-id` that exists is refused. A run that stops, whatever the cause, prints
 which run it was, after how many items, and the exact `--resume` command; or delete the
 directory (until one or the other, `validate` fails V7 on it). A resumed pass **re-reads every finished output and scores
 it again**, rather than skipping it — so the new run is complete, not a fragment — and
@@ -944,7 +944,7 @@ reason is under three words. Those refusals exist for the same reason: in six mo
 baseline?"* must have an answer.
 
 **A baseline is a goal's, in versions** (RFC-027). It lives at `data/baselines/<goal>/<dataset>/<n>.json`: the
-run's own goal by default (its config's `goal:`), another of the dataset's goals with `--goal G`, and the dataset's
+run's own goal by default (its system's `goal:`), another of the dataset's goals with `--goal G`, and the dataset's
 own (`_dataset/<dataset>/`, goal null) for a run with no goal or with `--no-goal`, for ad-hoc experiments no goal
 reads. Promoting writes the next version beside the current one, never over it; two promotions at once land as
 n + 1 and n + 2. `evh baseline-rollback --goal G --dataset D --to N --reason "…"` goes back, as one more version
@@ -1018,10 +1018,10 @@ lists whole (`tests/test_write_order.py` checks the three that matter by stoppin
 evh validate
 ```
 
-Twenty-three checks (V1–V23): schema conformance (datasets, runs, baselines, configs, judge
+Twenty-three checks (V1–V23): schema conformance (datasets, runs, baselines, systems, judge
 scorers, judging sets, verdicts, dataset profiles), every run's `dataset_id` resolves, every run
 identifies its build, materialized copies still match their hashes, no two
-configs reporting byte-identical scores and per-item results (two arms with different outputs
+systems reporting byte-identical scores and per-item results (two arms with different outputs
 that are both perfect are two measurements, not a copy), no baseline pointing at a
 deleted run or disagreeing with it, every committed run readable and present on disk, no two runs claiming one
 `config_id`, no derived run naming a scorer that is not the code in this tree, every judging
@@ -1029,8 +1029,8 @@ set matching its stored hash, every judge verdict naming a real set, item, pass 
 every judge scorer yaml loading and well-formed, every goal and round well-formed and named by
 every run that must name one, every item field declared, typed and matching its hash, and every
 reference made by promotion (a manifest saying where it came from) with texts matching its checksums, every capture's
-records matching the hashes it recorded, every model record and the configs naming it consistent, and every label set
-matching its hashes and its dataset, every `hypothesis:` in an arm config sound (V20), and every failure-mode list well formed with every tag set naming its modes and its dataset's items (V21), and every dataset's version the one its lineage gives, its licence
+records matching the hashes it recorded, every model record and the systems naming it consistent, and every label set
+matching its hashes and its dataset, every `hypothesis:` in a system sound (V20), and every failure-mode list well formed with every tag set naming its modes and its dataset's items (V21), and every dataset's version the one its lineage gives, its licence
 on the list, its source block in form and its card's keys Croissant RAI's (V22). Every run's outputs are readable: none left in the layout before 0.8.0, and a derived run finds its source's (V23). V4
 checks only datasets materialized on this machine, and names each one it could not check (a CI
 job without the sources checks none: materialize first where the copy matters).
@@ -1044,7 +1044,7 @@ What it holds *your* project to is yours to declare, in `data/validate.json` (al
   "scorer_sources": [{"dir": "runs-adjudicated", "glob": "*", "path": ["derived", "with", "scorer"],
                       "module": "../my_scorer.py", "callable": "scorer_id"}],
   "duplicate_ok": [["my_v1", "smoke_arm_v1"]],
-  "configs": ["arms/*.yaml"]
+  "systems": ["arms/*.yaml"]
 }
 ```
 
@@ -1158,7 +1158,7 @@ and to the news-summary judge, so neither is an `evh` command.
      is refused, since its fixed phrases would keep saying 16.
    - **Which arms.** Every arm on the dataset (its latest run per `config_id`) unless the
      scorer sets `arms_match` (a `config_id` substring), or `--match …` or `--arms a,b,c`
-     narrows it. A subset is its own judging set. If the arms mix config versions
+     narrows it. A subset is its own judging set. If the arms mix system versions
      (`_v1` and `_v2` of one arm), the pass warns: each version is judged as its own arm.
    - **`prompt.file`** is looked up in this order, first hit wins: an absolute path as
      written; the project root (`EVAL_HOME`; else, in a checkout, the checkout; else the nearest
@@ -1363,13 +1363,13 @@ evh round-open --goal my_goal --dataset my_v1 --from r1 --change "what changed a
     --keep arm_a_v1 --retire arm_c_v1 --reason "why" --budget-usd 0.50
 ```
 
-- **A new arm joins a round** by naming it in its config, `round: r2` beside `goal:`; every run
-  records it. **Carried arms (`--keep`) need no config change and no new run:** their runs
+- **A new arm joins a round** by running in it, `evh run --goal G --round r2`; every run
+  records it. **Carried arms (`--keep`) need no system change and no new run:** their runs
   already count, and `round-open` says so ("Carried in as they are, their runs already count: …
-  (their configs need no change and they need not run again)"). Commit the round file before
+  (their systems need no change and they need not run again)"). Commit the round file before
   the runs.
 - **The run a round starts from** is the dataset's promoted baseline when it has one. Without one (a goal's first
-  rounds, or arms carried in with `--keep`), name it: `--baseline <config_id>` takes that config's latest measured
+  rounds, or arms carried in with `--keep`), name it: `--baseline <system id>` takes that system's latest measured
   run on the dataset, or give a run id. `round-open` says which run the round starts from; `pair-test --round` and
   `evh rounds` read the round's arms against it.
 - **A round records the harness code it opened on** (its version, the project's commit and the hash of the code
@@ -1609,7 +1609,7 @@ opening line as the description); `--card URL` adds the image a shared link show
 `unknown` for a name the server does not have; `args` are argument names, never values.
 
 **In the terminal:** every view has a command. `evh overview [--period P]` for the home page,
-`evh activity` for the activity page, `evh arms` (`--by config`, `--configs`) for the arms page,
+`evh activity` for the activity page, `evh arms` (`--by system`, `--systems`) for the arms page,
 `evh datasets`, `evh arms --arm …`, `evh references`, `evh metrics --metric …` and
 `evh goals --goal …` for the others, `evh inspect --runs …` (`--analysis` for the charts, `--item <id>`
 for one item) for the inspector, `evh labels` and `evh captures` for the Labels and Captures pages,
@@ -1846,7 +1846,7 @@ each item at the commit that ran it, and scores the replay only once it is shown
   its `repo`, `checkout` (a local clone to read versions from, when `repo` is a URL) and `versions`, each a `commit`
   and when it was `deployed` (`[{from, to}]`, date-times with an offset; no two versions at one moment, V18). Each
   commit a replay needs is unpacked once with `git archive` under `.build/code/<id>/<commit>/`.
-- **A replay config** names it, `model_record: <id>`, and adds `replay: {order: [fields], time_field: F,
+- **A replay system** names it, `model_record: <id>`, and adds `replay: {order: [fields], time_field: F,
   version_field: F, support: [modules]}`. Items run in `order` (item fields; `datetime` is a field type), each at the
   version deployed when its `time_field` falls (or the commit its `version_field` names). The adapter gets `params["item"]` (its id
   and fields) and `params["code"]` (`record`, `commit`, `path` of the copy, `changed` on the first item at a new
@@ -1926,7 +1926,7 @@ evh models                                       # what is onboarded, vetted (an
    out, whether it reasoned, whether an answer came back, why it ended. An adapter that makes several calls
    per item reports them as `meta["calls"]` (the triage example does). It prints each reply (its first 300
    characters; `--replies` for all), so you read what the model wrote, and what the smoke spent, saying whether
-   that is the provider's bill or the config's price table; `--json` gives the same as values. SMOKE CHECK
+   that is the provider's bill or the system's price table; `--json` gives the same as values. SMOKE CHECK
    lists what to revisit.
 3. **Choose the settings on purpose.**
    - *Reasoning*: off (`reasoning_effort: none`) unless the task needs it; some models only offer low,
@@ -2022,8 +2022,8 @@ the rest.
 | `not-found` | the dataset, run, arm, goal, file or other thing named does not exist |
 | `bad-argument` | an option is missing, malformed, or not allowed with another |
 | `would-overwrite` | what it would write is already there; it is never overwritten |
-| `mismatch` | two things that must agree do not: datasets, hashes, a run and its config |
-| `invalid-file` | a file the project wrote (a config, a scorer, a sheet, records) is malformed |
+| `mismatch` | two things that must agree do not: datasets, hashes, a run and its system |
+| `invalid-file` | a file the project wrote (a system, a scorer, a sheet, records) is malformed |
 | `not-materialized` | the data is not on this machine: fetch or materialize it first |
 | `not-enough` | too little to work on: too few items, arms or outputs |
 | `not-public` | the text asked for is not shown on a public server or for a hidden dataset |

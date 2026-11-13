@@ -1,6 +1,6 @@
 """Replay runs (RFC-030 R1): the system's real code run over recorded items in order, each at the commit it came from.
 
-A config replays when it has `replay:`; it names the code it runs as any arm names its record, `model_record:` a
+A system replays when it has `replay:`; it names the code it runs as any arm names its record, `model_record:` a
 record of `kind: code` (the fleet's feedback 27), whose versions say which commit ran in production when:
 
     model_record: signal_fleet
@@ -71,7 +71,7 @@ class Plan:
 
 
 def is_replay(cfg: dict[str, Any]) -> bool:
-    """Whether a config replays code (it has `replay:`)."""
+    """Whether a system replays code (it has `replay:`)."""
     return isinstance(cfg.get("replay"), dict)
 
 
@@ -94,7 +94,7 @@ def _sort_key(order: list[str], item: dict[str, Any]) -> tuple:
 def prepare(
     cfg: dict[str, Any], config_path: Path, ds: dict[str, Any], adapter_path: Path | None
 ) -> Plan | None:
-    """The plan for a replay config, or None for any other. Dies on a malformed spec, an unknown field, an item no
+    """The plan for a replay system, or None for any other. Dies on a malformed spec, an unknown field, an item no
     deployment covers, or a commit the checkout does not have."""
     spec = cfg.get("replay")
     if spec is None:

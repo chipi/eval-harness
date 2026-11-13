@@ -11,7 +11,7 @@
 
 The harness answers one question honestly: of the systems I tried on my task, is one really
 better, or did a small sample hand me a lucky order? A user freezes a dataset, describes each
-system under test as an **arm** (one config), runs every arm over the same items, and gets
+system under test as an **arm** (one system), runs every arm over the same items, and gets
 per-item scores, cost and latency, recorded with a fingerprint of everything the numbers depend
 on. Paired tests then say, arm by arm, **significant** or **not significant**, and a baseline is
 promoted only with a written reason.
@@ -88,7 +88,7 @@ the [Runbook](../../harness/docs/RUNBOOK.md); the first evaluation, step by step
 - **FR2.2**: `--dry-run` prints the calls, tokens and estimated cost and calls nothing.
 - **FR2.3**: `--repeat N` runs the arm N times so its own spread can be measured.
 - **FR2.4**: The core times every call (`latency_ms`) for an adapter that does not report its
-  own, and records billed cost when the provider reports it, else tokens times the config's
+  own, and records billed cost when the provider reports it, else tokens times the system's
   prices.
 - **FR2.5**: A cost ceiling (`EVAL_MAX_COST_USD`) stops a run, keeps what it has and prints the
   exact `--resume` command, so nothing is paid for twice.

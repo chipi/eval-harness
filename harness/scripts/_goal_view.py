@@ -19,7 +19,7 @@ def patterns(raw: list[str] | None) -> list[str]:
 
 
 def matches(arm: str, pats: list[str]) -> bool:
-    """Whether the arm id (runs/<dataset>/<config_id>) or its config id fits a pattern: a glob when the
+    """Whether the arm id (runs/<dataset>/<config_id>) or its system id fits a pattern: a glob when the
     pattern has *, ? or [, else a substring."""
     cfg = arm.rsplit("/", 1)[-1]
     return any(

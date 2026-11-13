@@ -99,7 +99,7 @@ data/runs-rescored/  evh rescore        new reference or new code scorer, $0
 data/runs-judged/    evh judge-score    a validated LLM judge, billed and capped
 
 beside them, also optional:
-data/goals/          what each evaluation is for; configs name one with `goal:`
+data/goals/          what each evaluation is for; systems name one with `goal:`
 data/rounds/         eval rounds of a goal: evh round-open / rounds / round-close
 data/fields/         field sets: the typed facts a project's items carry (`--fieldset`)
 data/profiles/       evh dataset-profile   what is inside a dataset, for its page (no text by default)
@@ -125,7 +125,7 @@ Drop any one and a delta cannot be attributed to anything.
 ## Integrating your system
 
 One function, `call_system()`, in `adapter.py` at your project's root. An arm whose
-config names no `adapter:` uses it; a project with several tasks names one per arm
+system names no `adapter:` uses it; a project with several tasks names one per arm
 (`adapter: adapters/ner.py`):
 
 ```python
@@ -142,7 +142,7 @@ def call_system(text, params):
 And one more, `score()`, for what "good" means in your domain. That is the
 whole integration — no refactor, no wrapper, no base class.
 
-Arms are **config files**, not code edits: four models to compare is four YAML
+Arms are **system files**, not code edits: four models to compare is four YAML
 files sharing a `dataset_id`.
 
 → **[docs/INTEGRATION.md](docs/INTEGRATION.md)** — the first hour, concretely.
@@ -305,7 +305,7 @@ wrote it.
 
 ## Scoping a dataset that has grown
 
-A dataset accumulates arms across config versions, and v1 and v2 of one arm are different
+A dataset accumulates arms across system versions, and v1 and v2 of one arm are different
 measurements that must not share a row:
 
 ```
@@ -378,7 +378,7 @@ bundled adapter a pinned project has is `evaluation_harness/adapter.py`.
 | `scripts/promote_baseline.py` | run → baseline, or refuse |
 | `scripts/validate_tree.py` | twenty-three integrity checks (V1–V23) |
 | `scripts/list_runs.py` | what runs and baselines exist |
-| `schemas/` | the contracts: dataset, metrics (a run), baseline, config (an arm), goal, field set, judge scorer, judging set, verdict |
+| `schemas/` | the contracts: dataset, metrics (a run), baseline, system (an arm), goal, field set, judge scorer, judging set, verdict |
 | `scripts/_fields.py`, `scripts/_fetch.py` | item fields (types, checks, the catalog's summary) and items fetched from a pinned URL (ADR-0003) |
 | `scripts/stats.py` | the one paired test: `pair-test`, `family-test` and the inspector all call it |
 | `scripts/rescore.py` | re-score stored outputs for a new reference or scorer, $0 |

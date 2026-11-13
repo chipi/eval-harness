@@ -15,7 +15,7 @@ The key is the item id, or with --key an item field, so all items sharing a valu
 land on one side. Items keep their side in every later version, and new items fall in proportion.
 --split-by time: the newest share by --key (a date or time field) is test, or with --at every item at or after
 that time. --seal holds the test side out (_seal): nothing runs, is scored or labelled on it until
-`evh dataset-unseal` names a candidate config whose hypothesis is committed.
+`evh dataset-unseal` names a candidate system whose hypothesis is committed.
 """
 
 from __future__ import annotations
@@ -62,7 +62,7 @@ def main() -> int:
     ap.add_argument(
         "--seal",
         action="store_true",
-        help="seal the test side: no run, score or label on it until evh dataset-unseal names a candidate config "
+        help="seal the test side: no run, score or label on it until evh dataset-unseal names a candidate system "
         "with a committed hypothesis",
     )
     ap.add_argument(

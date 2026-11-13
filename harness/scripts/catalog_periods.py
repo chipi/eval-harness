@@ -44,7 +44,7 @@ TILES = (
     ("goals", "goals.html", "stock", "goals"),
     ("datasets", "datasets.html", "stock", "data"),
     ("references", "references.html", "stock", "data"),
-    ("configs", "arms.html?group=config", "stock", "arms"),
+    ("systems", "arms.html?group=system", "stock", "arms"),
     ("arms", "arms.html", "stock", "arms"),
     ("models", "models.html", "stock", "arms"),
     ("metrics", "metrics.html", "stock", "arms"),
@@ -142,11 +142,11 @@ def home_data(A, by_ds: dict, spend: list[dict], goals: list[dict], rounds: list
         ds: day_of(made(ds) if callable(made) else "") or earliest(arm_first[a["arm"]] for a in v["arms"])
         for ds, v in by_ds.items()
     }
-    configs: dict = {}
+    systems: dict = {}
     for v in by_ds.values():
         for a in v["arms"]:
             k = tuple(a["arm"].rsplit("/", 2)[-2:])
-            configs[k] = earliest([configs.get(k, ""), arm_first[a["arm"]]])
+            systems[k] = earliest([systems.get(k, ""), arm_first[a["arm"]]])
     # Every metric the metrics page lists (a goal can decide on one no arm records yet: undated).
     metrics: dict = dict.fromkeys(cb.metric_index(A, by_ds), "")
     for v in by_ds.values():
@@ -173,7 +173,7 @@ def home_data(A, by_ds: dict, spend: list[dict], goals: list[dict], rounds: list
         "dates": {
             "goals": goal_dates,
             "datasets": list(ds_dates.values()),
-            "configs": list(configs.values()),
+            "systems": list(systems.values()),
             "arms": list(arm_first.values()),
             "models": models,
             "references": [day_of(r.get("created_at")) for v in by_ds.values() for r in v["refs"]],

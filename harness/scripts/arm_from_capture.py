@@ -78,7 +78,7 @@ def main() -> int:
                 except ValueError:
                     cfg["adapter"] = str(a)
         if not args.field:
-            # Checked before anything is written: a config left behind by a refused run would block the next try.
+            # Checked before anything is written: a system left behind by a refused run would block the next try.
             from evaluation_harness._adapter import _module_or_none  # noqa: PLC0415
 
             spec = cfg.get("adapter")

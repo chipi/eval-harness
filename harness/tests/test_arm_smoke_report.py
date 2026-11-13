@@ -4,10 +4,10 @@
     python tests/test_arm_smoke_report.py
 
 In a throwaway project ($0, offline, stand-in adapters): arm-smoke says what it spent and on what basis (the
-provider's bill or the config's price table), in its text and its --json values, counting the determinism
+provider's bill or the system's price table), in its text and its --json values, counting the determinism
 re-call; it prints each reply (an excerpt, all with --replies); a call's time is the call's real time for an
 adapter that does not time itself; `evh run` says whether "spent" is the bill or the price table, and prints a
-warm-up only when something was warmed; the dry run counts the config's prompt, or says it counts the item text only.
+warm-up only when something was warmed; the dry run counts the system's prompt, or says it counts the item text only.
 """
 
 import json
@@ -101,8 +101,8 @@ try:
     )
     out = r.stdout
     check(
-        "arm-smoke: says what it spent, and that it is the config's price table when no bill came",
-        re.search(r"spent \$0\.008000 on 4 call\(s\) \(the config's price table", out) is not None,
+        "arm-smoke: says what it spent, and that it is the system's price table when no bill came",
+        re.search(r"spent \$0\.008000 on 4 call\(s\) \(the system's price table", out) is not None,
         out[-900:],
     )
     r = evh(
@@ -149,7 +149,7 @@ try:
     r = evh("arm-smoke", "--system", system("twodeps", record="mrec"), "--dataset", "tickets_v1")
     check(
         "arm-smoke: with two deployments and a config naming none, the smoke is not recorded, and it says why",
-        "not recorded: mrec has 2 deployment(s) and the config names none" in r.stdout
+        "not recorded: mrec has 2 deployment(s) and the system names none" in r.stdout
         and not deployment(proj, "mrec", "here").get("checks")
         and not deployment(proj, "mrec", "there").get("checks"),
         r.stdout[-600:],
@@ -194,8 +194,8 @@ try:
     # evh run: spent says its basis; warm-up only when something was warmed
     r = evh("run", "--system", system("run_priced", sleep=0.0), "--dataset", "tickets_v1")
     check(
-        "run: 'spent' says the config's price table when no bill came",
-        re.search(r"spent \$0\.012000 \(the config's price table", r.stdout) is not None,
+        "run: 'spent' says the system's price table when no bill came",
+        re.search(r"spent \$0\.012000 \(the system's price table", r.stdout) is not None,
         r.stdout[-500:],
     )
     r = evh("run", "--system", system("run_billed", sleep=0.0, billed=True), "--dataset", "tickets_v1")
@@ -230,13 +230,13 @@ try:
     d0 = json.loads(r0.stdout)["result"]["values"]["dry_run"]
     d1 = json.loads(r1.stdout)["result"]["values"]["dry_run"]
     check(
-        "dry run: the config's prompt (plus the blank line after it) is counted in the input tokens, per item",
+        "dry run: the system's prompt (plus the blank line after it) is counted in the input tokens, per item",
         abs((d1["input_tokens_per_pass"] - d0["input_tokens_per_pass"]) - 6 * 400 / 4) < 1e-9,
         (d0["input_tokens_per_pass"], d1["input_tokens_per_pass"]),
     )
     check(
         "dry run: the line says what it counts",
-        "item text only" in r0.stderr and "item text + the config's prompt" in r1.stderr,
+        "item text only" in r0.stderr and "item text + the system's prompt" in r1.stderr,
         (r0.stderr[-600:], r1.stderr[-600:]),
     )
 finally:

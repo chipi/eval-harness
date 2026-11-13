@@ -1247,7 +1247,7 @@ def home(f: dict) -> str:
     <div><h3>2 · On your own system</h3>
 <pre class="term"><span class="p">$ </span>evh dataset-create --dataset-id my_v1 \
     --source-dir data/sources
-<span class="p">$ </span>evh run --config data/configs/arm_a.yaml
+<span class="p">$ </span>evh run --system arm_a_v1 --dataset my_v1
 <span class="p">$ </span>evh leaderboard --dataset-id my_v1
 <span class="p">$ </span>evh catalog && evh catalog-serve</pre></div>
     <div><h3>3 · Or the bundled demo</h3>
@@ -1426,7 +1426,7 @@ def landing(f: dict) -> str:
       <li><span class="lvl">01</span><div><h3>Data</h3><p>Fetch the public benchmarks and hash-check every item against what was measured.</p></div><span class="cost">$0</span></li>
       <li><span class="lvl">02</span><div><h3>Local</h3><p>Rerun the {local_n} free arms — local models and baselines — on your CPU, pinned to the same weights.</p></div><span class="cost">$0 · CPU hours</span></li>
       <li><span class="lvl">03</span><div><h3>Hosted</h3><p>Rerun the {hosted_n} LLMs with one OpenRouter key. The test: does every significant difference still hold?</p></div><span class="cost">${billed_all} billed, all {n_exp}</span></li>
-      <li><span class="lvl">04</span><div><h3>Extend</h3><p>Add a model of your own and test it against the whole committed field.</p></div><span class="cost">one config</span></li>
+      <li><span class="lvl">04</span><div><h3>Extend</h3><p>Add a model of your own and test it against the whole committed field.</p></div><span class="cost">one system</span></li>
     </ol>
     <div>
 <pre class="term"><span class="c"># every number, from the committed runs</span>

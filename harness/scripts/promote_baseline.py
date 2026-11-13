@@ -47,7 +47,7 @@ from evaluation_harness._common import (
 
 
 def _repeats(m: dict) -> dict | None:
-    """The repeats of the promoted run's arm (same config, same base run id, `repeat_index` set):
+    """The repeats of the promoted run's arm (same system, same base run id, `repeat_index` set):
     their run ids and the mean of each score over them; None for a run that is not a repeat."""
     import re  # noqa: PLC0415
     import statistics  # noqa: PLC0415

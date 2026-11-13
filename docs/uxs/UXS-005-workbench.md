@@ -424,7 +424,7 @@ this project holds no held-out side, study, prompt version, job or replay yet; e
   - Its results compare each arm's Linux re-run with bart_l's Linux re-run (the pair tests' baseline), so speed and
     coverage are from one machine; each row says which run under the arm's name, and its actions sit beside the name,
     so the table fits a desktop screen. The re-runs (2026-09-30) stand in for r4's runs, and a mockup note says so:
-    in the harness a run counts in a round only when its config names it, and `evh rounds` would read bart_l, carried
+    in the harness a run counts in a round only when its system names it, and `evh rounds` would read bart_l, carried
     in, through its r1 run. bart_l is carried into the round (`round-open --keep`), not run again; the arms part
     counts "5 arms: 4 re-run, bart_l carried", and a closed round's fold "the round's 5 arms".
   - The results open with the round's answer in one line, from the verdicts below it ("No arm was shown ahead of
@@ -450,7 +450,7 @@ this project holds no held-out side, study, prompt version, job or replay yet; e
     error; a clone can be removed before the run. The round's question is fixed once the round has run. The answer's
     source is a quiet line under it.
   - The commands are the ones that make the round: `round-open --keep` carries bart_l, the round file is committed
-    before the runs (as `round-open` says), and each arm's config names the round (`round: r4` beside its `goal:`), so
+    before the runs (as `round-open` says), and each new system runs in it (`--goal` and `--round r4`), so
     its runs count in it (`_rounds.runs_of`). r5's `round-open` keeps bart_l too.
   - Once a round has run its question is its heading (h2), as r1's is; the kicker above it is a line. The close
     confirm keeps Tab between its two buttons.
@@ -628,7 +628,7 @@ erDiagram
 | Dataset | its source, name, fields | items, hashes, version lineage, profile | `datasets/`, `materialized/`, `sources/`, `profiles/` |
 | Model / Deployment | what it is, where it runs, endpoint, settings | onboarding, capabilities, smokes, history | `models/<id>.yaml` |
 | Arm | dataset, deployment, prompt, the settings it varies | its config id, version | `configs/<id>.yaml` |
-| Prompt | its text | its hash | a file named by the config |
+| Prompt | its text | its hash | a file named by the system |
 | Run | — (it is made by running an arm) | outputs, rows, metrics, cost, fingerprint | `runs*/…` |
 | Label set / Reference | labels (in the labelling screen), who and why for a promotion | hashes, counts | `labels/`, `references/` |
 | Scorer / Judge | which judges, prompt, mode | validation numbers, verdicts | `scorers/`, `judge-*/` |

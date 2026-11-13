@@ -799,8 +799,8 @@ REFUSALS = {
     "not-found": "the dataset, run, arm, goal, file or other thing named does not exist",
     "bad-argument": "an option is missing, malformed, or not allowed with another",
     "would-overwrite": "what it would write is already there; it is never overwritten",
-    "mismatch": "two things that must agree do not: datasets, hashes, a run and its config",
-    "invalid-file": "a file the project wrote (a config, a scorer, a sheet, records) is malformed",
+    "mismatch": "two things that must agree do not: datasets, hashes, a run and its system",
+    "invalid-file": "a file the project wrote (a system, a scorer, a sheet, records) is malformed",
     "not-materialized": "the data is not on this machine: fetch or materialize it first",
     "not-enough": "too little to work on: too few items, arms or outputs",
     "not-public": "the text asked for is not shown on a public server or for a hidden dataset",
@@ -824,7 +824,7 @@ def store() -> str:
     root = _paths()["ROOT"]
     # Asked for every path a reader touches (25,000 times a comparison), so the answer is kept for the process: a
     # stat of config.yaml on each call was 8 ms of every inspector answer (budget-check, 2026-11-06), and building the
-    # config's path to compare was most of the 2.4 µs a call still cost (architecture review): the key is the
+    # system's path to compare was most of the 2.4 µs a call still cost (architecture review): the key is the
     # setting and the root object, which _paths keeps until the project moves. A project changes its store with
     # data-migrate, between processes; a test that rewrites config.yaml calls _outputs.reset(), which forgets it.
     if _STORE_SEEN and _STORE_SEEN[0] == env and _STORE_SEEN[1] is root:

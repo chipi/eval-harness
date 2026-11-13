@@ -281,13 +281,13 @@ try:
     )
     goals_page = (proj / ".build/catalog/goals.html").read_text()
     check(
-        "catalog: the goals page counts configs, not scorings, and shows each goal's recommendation",
-        "configs filed" in goals_page and "arms filed" not in goals_page and ">recommended<" in goals_page,
+        "catalog: the goals page counts systems, not scorings, and shows each goal's recommendation",
+        "systems filed" in goals_page and "arms filed" not in goals_page and ">recommended<" in goals_page,
     )
     r = evh("goals")
     check(
-        "evh goals: configs filed and the recommendation",
-        "configs filed" in r.stdout and "recommended" in r.stdout,
+        "evh goals: systems filed and the recommendation",
+        "systems filed" in r.stdout and "recommended" in r.stdout,
         r.stdout,
     )
     cost_page = proj / ".build/catalog/m/cost_usd.html"

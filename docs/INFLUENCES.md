@@ -25,7 +25,7 @@ so each line can be checked.
 | **Sampling, and the population a sample claims to represent** | *Designing ML Systems* ch. 4 (sampling methods) and ch. 8 (data distribution shifts) | The calibration rows that caught this repository's own all-CNN sample, and the DailyMail slice that tested whether findings travel |
 | **Labels are expensive** — start without perfect ones | *Designing ML Systems* ch. 4: hand labels are expensive and slow; alternatives to them | Silver references by default, gold where a person has checked, and the tier stated wherever a number is published |
 | **Baselines** | *Designing ML Systems* ch. 6: evaluation metrics don't mean much without a baseline to compare them to | Floor arms in every eval (lead-3, keyword rules, a constant, random rankings); promoted baselines recorded with their reason |
-| **Track and version every experiment** | *Designing ML Systems* ch. 6: intensive tracking and versioning of experiments, automated by tooling | A fingerprint per run — data, prompt, scorer, upstream model, libraries, commit — and refusals when it cannot be trusted (dirty tree, unknown build, two runs of one config) |
+| **Track and version every experiment** | *Designing ML Systems* ch. 6: intensive tracking and versioning of experiments, automated by tooling | A fingerprint per run — data, prompt, scorer, upstream model, libraries, commit — and refusals when it cannot be trusted (dirty tree, unknown build, two runs of one system) |
 
 ## Other foundations
 
