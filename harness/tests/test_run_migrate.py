@@ -129,10 +129,15 @@ try:
     )
     check("the row checkpoint predictions.jsonl covers is dropped", not (m / _outputs.ROWS).exists())
     a2 = evh("migrate")
+    (proj / "data" / "project.yaml").unlink()  # the steps again, as after a migration stopped half way
+    a2b = evh("migrate")
     check(
-        "a second run changes nothing",
-        a2.returncode == 0 and "already in this format" in a2.stdout,
-        a2.stdout[-200:],
+        "a second run changes nothing: the format says so, and the steps run again change nothing",
+        a2.returncode == 0
+        and "nothing to do" in a2.stdout
+        and a2b.returncode == 0
+        and "already in this format" in a2b.stdout,
+        a2.stdout[-200:] + a2b.stdout[-200:],
     )
     v = evh("validate")
     v23 = [ln for ln in v.stdout.splitlines() if "V23" in ln]
@@ -156,6 +161,7 @@ try:
         "evh migrate" in v.stdout,
         v.stdout[-400:],
     )
+    (proj / "data" / "project.yaml").unlink()  # a run in the old layout: data at format 0 again
     a3 = evh("migrate")
     check(
         "an output that is not UTF-8 is refused, naming it, before its run changes",

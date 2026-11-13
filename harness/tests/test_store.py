@@ -608,6 +608,7 @@ ALLOWED = {
     "harness/scripts/_outputs.py": "its files store is the disk by definition (data-migrate reads the disk through it)",
     "harness/scripts/data_migrate.py": "moves between the disk and the database",
     "harness/scripts/run_migrate.py": "reads the layout before 0.8.0 on disk",
+    "harness/scripts/migrate.py": "copies the database file beside it before a migration, the undo (RFC-032)",
     "harness/scripts/exposure_check.py": "checks the public git checkouts config.yaml names: outside data/, on disk",
     "harness/scripts/_common.py": "finds the project on disk (data/, .env, config.yaml) before any store exists",
     "harness/scripts/stats.py": "standard library only; its p cache is outside data/",

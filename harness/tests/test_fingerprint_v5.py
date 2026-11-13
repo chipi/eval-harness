@@ -615,6 +615,7 @@ with tempfile.TemporaryDirectory() as td:
         json.loads(b.read_text())["fingerprint_hash"] == r1["hash"],
     )
     before_bytes = {p: p.read_bytes() for p in [*data.glob("runs*/*/metrics.json"), b]}
+    (data / "project.yaml").unlink()  # the steps again (the stamp would say "nothing to do")
     second = subprocess.run(cmd, capture_output=True, text=True, env=menv)
     check(
         "migration tool: idempotent, a v5 fingerprint is left as it is",

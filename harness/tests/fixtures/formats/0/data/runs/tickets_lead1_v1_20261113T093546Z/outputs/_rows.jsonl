@@ -1,0 +1,6 @@
+{"_extra": {}, "cost_usd": 0.0, "item_id": "t01_login", "latency_ms": 0.018, "output_words": 9.0, "overlap_f1": 0.0, "resumed": 0.0}
+{"_extra": {}, "cost_usd": 0.0, "item_id": "t02_invoice", "latency_ms": 0.009, "output_words": 9.0, "overlap_f1": 0.28571428571428575, "resumed": 0.0}
+{"_extra": {}, "cost_usd": 0.0, "item_id": "t03_export", "latency_ms": 0.009, "output_words": 18.0, "overlap_f1": 0.1081081081081081, "resumed": 0.0}
+{"_extra": {}, "cost_usd": 0.0, "item_id": "t04_api", "latency_ms": 0.011, "output_words": 32.0, "overlap_f1": 0.19230769230769232, "resumed": 0.0}
+{"_extra": {}, "cost_usd": 0.0, "item_id": "t05_delete", "latency_ms": 0.009, "output_words": 13.0, "overlap_f1": 0.18749999999999997, "resumed": 0.0}
+{"_extra": {}, "cost_usd": 0.0, "item_id": "t06_mobile", "latency_ms": 0.006, "output_words": 15.0, "overlap_f1": 0.43243243243243246, "resumed": 0.0}

@@ -1,0 +1,1 @@
+App 5.2 crashes on launch on an older Android phone; user abroad. Wants the previous version and to know if unsynced receipts survive.

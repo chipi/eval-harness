@@ -1,0 +1,1 @@
+Orders API rate-limits at 50/min since Tuesday's release, not the documented 300; nightly sync fails. Asks if limit is per key or account.

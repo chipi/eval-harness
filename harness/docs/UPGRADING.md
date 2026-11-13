@@ -10,8 +10,11 @@ correctness bugs, not just missing features.
 - **Before the release**, a pin on a commit of the 0.8.0 branch installs `0.8.0.dev0`, the version every commit of it
   carries until the release: moving such a pin from one commit to another takes `pip install --force-reinstall`, as
   pip keeps an installed copy of the same version.
-- **Run `evh migrate` once** (`--dry-run` first shows what each step will do; a second run changes nothing). Its
-  steps, in order:
+- **Run `evh migrate` once** (`--dry-run` first shows what each step will do; a second run changes nothing). It
+  brings the data to format 1 and records it in `data/project.yaml` (RFC-032): from 0.8.0 a project's data has a
+  format, `evh migrate --check` compares it with the release's, and a deploy runs that check (the RUNBOOK's "The
+  data's format"). A SQLite project's database is copied beside it first. Commit `data/project.yaml` with the
+  migrated data. Its steps, in order:
   - *runs* (RFC-024): a run's outputs become one `outputs.jsonl` instead of an `outputs/` folder of `<item>.txt`,
     a derived run whose outputs are byte copies of its source's keeps none of its own, and the leftover row
     checkpoint goes. Each run is checked byte for byte before its folder is removed; nothing in a fingerprint

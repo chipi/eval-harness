@@ -25,6 +25,7 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
 import argparse
+import os
 import sys
 from pathlib import Path
 
@@ -69,9 +70,26 @@ def main() -> int:
     # data/ is a folder on disk in either store: the database lives in it, and a command run from a subfolder finds
     # the project by it. Its folders are folders only in the files store (in the database a folder is a key prefix).
     _store.data_folder(root)
+    # Every write below is the new project's, wherever init runs from: in a SQLite project the store keys a path by the
+    # project it is in, and `evh init elsewhere` run inside another project wrote into that one's database.
+    os.environ["EVAL_HOME"] = str(root)
+    for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_GOALS_DIR"):
+        os.environ.pop(k, None)
+    from evaluation_harness import _outputs  # noqa: PLC0415
+
+    _common.project_root.cache_clear()
+    _common._paths.cache_clear()
+    _outputs.reset()
     for f in FOLDERS:
         _store.mkdir(root / f, parents=True, exist_ok=True)
     in_db = _common.store() == "sqlite"
+    from evaluation_harness import _format  # noqa: PLC0415
+
+    if _store.exists(_format.path(root / "data")):
+        kept.append(f"data/{_format.NAME}")
+    else:
+        _format.stamp(data=root / "data")
+        made.append(f"data/{_format.NAME}")
     gi = root / ".gitignore"
     if _store.exists(gi):
         kept.append(".gitignore")
@@ -106,7 +124,7 @@ def main() -> int:
             made.append(rel.as_posix())
     print(f"project: {root}")
     if in_db:
-        print("  store    sqlite: the project's data goes into data/project.sqlite, made on the first write")
+        print("  store    sqlite: the project's data goes into data/project.sqlite")
     else:
         print(f"  folders  {', '.join(FOLDERS)}")
     if made:

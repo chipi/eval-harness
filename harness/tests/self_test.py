@@ -905,6 +905,10 @@ def test_example_scorer_suites_pass() -> None:
             "evh data-*: list, show, check, put, rm on both stores; no /api/data route (the Configure page retired); 80 concurrent requests",
         ),
         (
+            "test_format.py",
+            "the data's format: init stamps it, migrate --check refuses old and newer, steps stamp it, a SQLite backup, the deploy's gate, 0.7.2's frozen project keeps its numbers",
+        ),
+        (
             "test_run_migrate.py",
             "evh migrate's runs step: outputs/ to outputs.jsonl byte for byte, derived copies dropped, idempotent, non-UTF-8 refused",
         ),

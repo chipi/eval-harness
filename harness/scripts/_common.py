@@ -793,6 +793,7 @@ REFUSALS = {
     "failed": "something outside the command failed: an importer, a server, a hook, the warm-up",
     "missing-dependency": "a package or a part of the installation is missing",
     "over-budget": "a round's budget is spent (what its runs spent and its running commands reserved)",
+    "old-format": "the project's data is in an older format than this release reads: run evh migrate",
 }
 
 

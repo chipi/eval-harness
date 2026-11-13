@@ -60,7 +60,7 @@ the API's path check does not see (`data_put.py:39`, `_api.py:189-208`); it is c
 ### The layers
 
 ```
-        evh (CLI)      HTTP API      MCP (agents)      the Workbench (through the API)
+        the CLI        HTTP API      MCP (agents)      the Workbench (through the API)
               \            |             /
      operations: one registry; typed inputs and outputs (JSON Schema); kind, locks, who
      entities: one schema each, one id each, links by id
@@ -239,7 +239,7 @@ and the Workbench's screens that need it are wired behind it.
 
 ## Testing
 
-- Parity: every view's JSON from `evh <view> --json` equals the API's resource, in both stores.
+- Parity: every view's JSON from the command line (`--json`) equals the API's resource, in both stores.
 - Every migration step: its dry run, then the views before and after equal; every frozen fixture migrates to the
   current format.
 - An operation added without a schema, a kind or a lock entry fails a test, as an unclassified command does today.

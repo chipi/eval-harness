@@ -89,6 +89,9 @@ PY
 # The data the catalog and the inspector read, with nothing a `text: hidden` dataset's text gave
 # (RFC-019) and no text git does not track: _release.py refuses such a release before copying.
 python3 "$OUT/inspector/pkg/evaluation_harness/_release.py" copy-data "$ROOT/harness/data" "$OUT/inspector/data"
+# The data must be in the format this release reads (RFC-032): data committed without `evh migrate` stops the deploy
+# here, before anything is built or moved.
+EVAL_HOME="$OUT/inspector" EVAL_STORE=files python3 "$OUT/inspector/pkg/evaluation_harness/migrate.py" --check
 
 # The documentation, under /docs/ on the site (mkdocs.yml, site_url .../docs/).
 python3 -m mkdocs build --strict --quiet -f "$ROOT/mkdocs.yml" -d "$OUT/sites/$SITE/public/docs"

@@ -161,6 +161,7 @@ try:
         and mp["source"] == m["source"],
         r.stdout[-400:] + json.dumps(m.get("source")),
     )
+    _runstore.unlink(proj, "project.yaml")  # the steps again (the stamp would say "nothing to do")
     r = evh("migrate")
     check(
         "a second run changes nothing",

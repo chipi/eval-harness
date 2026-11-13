@@ -25,7 +25,7 @@ TIER ?= silver
         holdout pair-test rank-stability \
         run-dry-run run sweep \
         runs-list baselines-list run-compare leaderboard run-promote \
-        validate judge judge-score check guide-check browser-install browser-check budget-check browser-real-check guard-check commands-check stores-check coverage ci test smoke-fixture cost-report clean clean-cache \
+        validate format-check judge judge-score check guide-check browser-install browser-check budget-check browser-real-check guard-check commands-check stores-check coverage ci test smoke-fixture cost-report clean clean-cache \
         bootstrap-test family-test import-run rescore silver-calibrate site site-check docs
 
 # ── getting started ─────────────────────────────────────────────────────────
@@ -401,6 +401,10 @@ run-promote:
 validate:
 	$(PYTHON) scripts/validate_tree.py
 
+# The data is in the format this release reads (RFC-032): the deploy's gate (render.sh), met here first.
+format-check:
+	$(PYTHON) scripts/migrate.py --check
+
 # THE CATALOG AND THE RUN INSPECTOR (ADR-0002): static pages over the runs, by dataset, into
 # .build/catalog/ (counts and means only; item text only where a profile publishes it); then a server on 127.0.0.1
 # that tests any arms on one dataset against a baseline with the same paired test as pair-test.
@@ -504,7 +508,7 @@ test: smoke-fixture
 guide-check:
 	$(PYTHON) tests/check_guide.py
 
-check: validate test guide-check
+check: format-check validate test guide-check
 	@echo ""
 	@echo "check: tree valid, self-tests pass, the GUIDE runs as written"
 

@@ -13,6 +13,13 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Added
 
+- **The data's format** (RFC-032): `data/project.yaml` records the format of a project's data, `evh init` writes it,
+  and `evh migrate --check` compares it with the release's (`ERROR (old-format)`, a new refusal kind, for older data;
+  `ERROR (mismatch)` for data a later release wrote). `evh migrate` runs numbered steps (`migrations/`), records the
+  format after each, and copies a SQLite project's database first. This repository's deploy stops on data not in the
+  release's format (`render.sh`), `make check` runs the same check first (CI's reproduce), and CI migrates a project 0.7.2's own code made (`tests/fixtures/formats/0/`) and
+  checks its leaderboard against 0.7.2's. `evh init dir` run inside another SQLite project wrote into that one's
+  database; it writes the project it makes.
 - **Replay the code that ran, and prove the replay faithful** (RFC-030): a config with `replay:` names a `kind: code`
   model record (the fleet's feedback 27: its versions, when each was deployed; `checkout` for a local clone) and runs
   the system's own code over a dataset in order, each item at the version deployed when it happened (unpacked once

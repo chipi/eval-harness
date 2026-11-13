@@ -1914,6 +1914,34 @@ evh models                                       # what is onboarded, vetted (an
    machine every time: a second pass there adds nothing. The spread comes from other machines and other
    builds; a hosted model's repeats do vary.
 
+## The data's format, and migrating it
+
+A project's data has a format: one number, `format` in `data/project.yaml` (RFC-032). `evh init` writes it, and each
+release reads one format. `evh migrate --check` compares the two:
+
+```sh
+evh migrate --check      # data format 1; this release reads 1 (exit 0), or ERROR (old-format) / ERROR (mismatch)
+evh migrate --dry-run    # what each step would change; nothing written
+evh migrate              # the steps the data needs, each recorded as it lands
+```
+
+A project with no `project.yaml` is at format 0: the data releases before 0.8.0 wrote. Data a later release wrote is
+refused (`mismatch`), naming that release. The steps (`evaluation_harness/migrations/`) each bring the data one format
+on, and the format is recorded after each, so a step that fails leaves the project at the last one that held.
+
+Before its first change, `migrate` copies a SQLite project's database beside it
+(`data/project.sqlite.before-format-<n>-<time>`); restoring it is the undo. A files project's undo is git: `migrate`
+names the uncommitted changes under `data/` first. There is no step back down: a release's rollback after a migration
+restores that copy, or git, and loses what was written since.
+
+**A deployed project is migrated by its deploy.** Every deploy runs `evh migrate --check` on the data it ships and
+stops when it fails (this repository's `infra/deploy/render.sh` does, on the release's copy of the data). A deployment
+that keeps data of its own on the server (a database, captures, a Workbench) runs the migration as a deploy step, each a
+gate: check the live data's format against the release's (keep `evh migrate --dry-run --json` with the deploy), stop
+the writers (jobs finish or pause), back up, `evh migrate`, check the numbers its pages show, then switch to the
+release; on a failure, restore the backup and the previous release together. The harness ships the commands; each
+deployment's own scripts call them.
+
 ## Exit codes
 
 Every command, `make` target and `evh` subcommand, for scripts and CI that branch on them:
@@ -1958,6 +1986,7 @@ the rest.
 | `failed` | something outside the command failed: an importer, a server, a hook, the warm-up |
 | `missing-dependency` | a package or a part of the installation is missing |
 | `over-budget` | a round's budget is spent (what its runs spent and its running commands reserved) |
+| `old-format` | the project's data is in an older format than this release reads: run evh migrate |
 
 ## Environment variables
 

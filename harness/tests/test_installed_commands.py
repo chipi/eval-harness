@@ -314,7 +314,7 @@ def main() -> int:
             ("labels", [], "ok:tickets_v1/installed_from_run: model"),
             ("tags", [], "ok:No tag sets yet"),
             ("licences", ["--search", "share"], "ok:CC-BY-SA-4.0"),
-            ("migrate", ["--dry-run"], "ok:fingerprints:"),
+            ("migrate", ["--dry-run"], "ok:this release reads"),
             # the project's own store: data-migrate moves into the store the setting names, and data-ls says it
             ("data-migrate", ["--to", STORE, "--dry-run"], f"ok:would move into the {STORE} store"),
             ("data-ls", [], f"ok:store: {STORE}"),

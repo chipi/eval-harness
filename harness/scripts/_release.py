@@ -53,7 +53,7 @@ COPIED_DIRS = (
     "tags",
     "failure-modes",
 )
-COPIED_FILES: tuple[str, ...] = ()
+COPIED_FILES: tuple[str, ...] = ("project.yaml",)  # the data's format (RFC-032): the deploy checks it
 #: What a hidden dataset's prediction rows keep of `_meta`: what describes the call (its cost, model,
 #: finish), never what the system answered or the parser made of it (`predicted`, `llm_raw`, ...).
 CALL_META = (

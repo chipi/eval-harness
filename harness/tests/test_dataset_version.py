@@ -122,6 +122,7 @@ try:
         r.stdout[-300:],
     )
     r = evh("migrate")
+    _runstore.unlink(proj, "project.yaml")  # the steps again (the stamp would say "nothing to do")
     r2 = evh("migrate")
     check(
         "migrate writes it; a second run changes nothing",
