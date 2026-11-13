@@ -19,6 +19,9 @@ that can move a result is never a patch release without saying so under **Change
   datasets and references the goal names, keeps the file's comments, records who and the goal as it was, and is refused
   while a job writes the goal. The commands, the API routes and the MCP tools are made from one registry of the
   model's operations (`evaluation_harness/ops`); the model reads only data in this release's format.
+- **The Workbench on its server** (PRD-017, RFC-032 step 1): `evh catalog-serve` serves it under `/workbench/` on
+  this machine (never `--public` or `--behind-proxy`) and prints the link that signs in. Its home and a goal's screen
+  read the model's API; a screen not wired yet says so. Opened as files, it is still the mockup.
 - **The data's format** (RFC-032): `data/project.yaml` records the format of a project's data, `evh init` writes it,
   and `evh migrate --check` compares it with the release's (`ERROR (old-format)`, a new refusal kind, for older data;
   `ERROR (mismatch)` for data a later release wrote). `evh migrate` runs numbered steps (`migrations/`), records the

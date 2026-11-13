@@ -1336,6 +1336,11 @@ Through the API (`catalog-serve`, its token, RFC-026), the same operations are r
 | `goal-new` | `POST /api/v1/goals/{goal}` with `{"set": {...}, "by": "person:NAME"}` |
 | `goal-set` | `PATCH /api/v1/goals/{goal}` with `{"set": {...}, "unset": [...], "by": "person:NAME"}` |
 
+The Workbench (PRD-017) is served by `evh catalog-serve` under `/workbench/`, on this machine only, as the API is.
+Its startup prints the link that signs in (`/api/v1/session?token=…&next=/workbench/`: the token once, then a cookie).
+It is wired to the project a workflow at a time: the home (every goal, its next step, what is running) and a goal's
+screen read the model now; a screen not wired yet says so rather than show the mockup's data.
+
 Each answers `{"command", "version", "result"}`, the `result` the command's `--json` gives. A write needs the
 `X-EVH-Data: 1` header and `by` (an agent: `"by": "agent:NAME", "for": "person:NAME"`); a refusal answers its kind
 and, for a goal that does not check, each problem with its field (`422`).

@@ -69,6 +69,7 @@ from evaluation_harness import (  # noqa: E402
     stats,
 )
 from evaluation_harness._common import (  # noqa: E402
+    CODE,
     ROOT,
     SPEED_KEYS,
     die,
@@ -1042,6 +1043,16 @@ DATA_HEADER = "X-EVH-Data"
 API_TOKEN: list[str] = []
 API_COOKIE = "evh_token"
 API_MAX_BODY = 64 * 1024
+#: The Workbench's files (PRD-017): beside the package's code when installed, harness/workbench in a checkout.
+WORKBENCH = next(
+    (p for p in (CODE / "workbench", CODE.parent / "workbench") if p.is_dir()), CODE.parent / "workbench"
+)
+WORKBENCH_TYPES = {
+    ".html": "text/html; charset=utf-8",
+    ".js": "text/javascript; charset=utf-8",
+    ".css": "text/css; charset=utf-8",
+    ".svg": "image/svg+xml",
+}
 #: A refusal of the model's, as an HTTP status.
 MODEL_STATUS = {
     "not-found": 404,
@@ -1142,6 +1153,8 @@ def allowed(path: str, host: str, port: int, prefixes: tuple) -> int:
         return 404 if LIMITS["hosts"] or LIMITS.get("proxy_hosts") or not API_TOKEN else 0
     if p.startswith("/api/"):
         return 0 if p in API_ROUTES else 404
+    if p == "/workbench" or p.startswith("/workbench/"):  # as the API's: this machine's only, with a token
+        return 404 if LIMITS["hosts"] or LIMITS.get("proxy_hosts") or not API_TOKEN else 0
     prefix = next((x for x in prefixes if p.startswith(x)), None)
     if prefix is None:
         return 404
@@ -1591,6 +1604,8 @@ class Handler(SimpleHTTPRequestHandler):
             return
         if url.path == "/api/health":
             return self._json(200, {"ok": True})
+        if url.path == "/workbench" or url.path.startswith("/workbench/"):
+            return self._workbench(url.path)
         if url.path == "/api/sheet" and parse_qs(url.query).get("format") == ["csv"]:
             code, data, ctype = sheet_csv(url.query)
             self.send_response(code)
@@ -1621,6 +1636,29 @@ class Handler(SimpleHTTPRequestHandler):
         if self._from_store(url.path):
             return
         super().do_GET()
+
+    def _workbench(self, url_path: str) -> None:
+        """A file of the Workbench (PRD-017), from the package: a name in its folder, never a path; it reads the
+        project through the API, with the cookie the session route set."""
+        if url_path == "/workbench":
+            self.send_response(301)
+            self.send_header("Location", "/workbench/")
+            self.end_headers()
+            return
+        name = url_path[len("/workbench/") :] or "index.html"
+        kind = WORKBENCH_TYPES.get(Path(name).suffix)
+        f = WORKBENCH / name
+        if "/" in name or kind is None or not f.is_file():
+            self.send_error(404)
+            return
+        data = f.read_bytes()
+        self.send_response(200)
+        self.send_header("Content-Type", kind)
+        self.send_header("Content-Length", str(len(data)))
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.end_headers()
+        self.wfile.write(data)
 
     def _from_store(self, url_path: str) -> bool:
         """With the sqlite store (RFC-025) a file of the data tree is a row of the project's database: served from
@@ -1821,6 +1859,11 @@ def main() -> int:
         print(
             f"  API: http://127.0.0.1:{args.port}/api/v1/  (token in {_api.token_path()}: "
             f"Authorization: Bearer <token>, or GET /api/v1/session?token=<token> for a cookie)",
+            flush=True,
+        )
+        tok = (API_TOKEN or [""])[0]
+        print(
+            f"  Workbench: http://127.0.0.1:{args.port}/api/v1/session?token={tok}&next=/workbench/  (signs in once)",
             flush=True,
         )
         print(f"  the project {ROOT}, on a port of its own", flush=True)

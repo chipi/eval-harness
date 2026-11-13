@@ -735,7 +735,10 @@ success_criteria:
   function render(newScreen) {
     const keep = newScreen ? null : focusKey(document.activeElement);
     const route = (location.hash || "#start").slice(1);
-    const [screen, wire] = ROUTES[route] || ROUTES.start;
+    // a route with a part after it (#goal/<id>, the live Workbench): its first word names the screen
+    const [base, ...rest] = route.split("/");
+    window.WB.param = rest.length ? decodeURIComponent(rest.join("/")) : null;
+    const [screen, wire] = ROUTES[route] || (rest.length && ROUTES[base]) || ROUTES.start;
     document.body.classList.toggle("hide-hints", !S.hints);
     $("#hints").checked = S.hints;
     const html = screen();
