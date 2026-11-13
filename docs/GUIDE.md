@@ -61,10 +61,10 @@ git init -q && git add -A && git commit -qm "Start: the tutorial kit"
 ```
 ```text
   folders  data/sources, data/configs, data/goals, data/fields
-  wrote    28 file(s), the tutorial kit under tutorial/
+  wrote    29 file(s), the tutorial kit under tutorial/
 ```
 
-`data/` is where everything the harness freezes and records will live; `tutorial/` is the
+`data/` is where everything the harness freezes and records will live (`data/project.yaml` records its format); `tutorial/` is the
 kit; `.gitignore` already keeps out what the harness derives (materialized copies, the
 catalog build, caches, your `.env`). `AGENTS.md` (and `CLAUDE.md`, which imports it) tells an
 agent working in the project its rules, the loop and how to read results; edit it to add what is
