@@ -161,9 +161,9 @@ def check_round(browser, base: str) -> None:
     )
     base_row = page.locator("table.r4res tbody tr").filter(has_text="baseline").first.inner_text()
     check(
-        "workbench: r4's results fit the screen, bart_l carried and read through its Linux re-run, the answer in one line",
+        "workbench: r4's results fit the screen, each row a Linux re-run (bart_l carried), the answer in one line",
         over <= 0
-        and "carried · its Linux re-run" in base_row
+        and "carried · Linux re-run" in base_row
         and "6.3 s" in base_row
         and page.locator(".roundanswer").inner_text().startswith("No arm was shown ahead of bart_l")
         and "suggests retiring" in page.locator(".roundanswer").inner_text(),
@@ -225,6 +225,13 @@ def check_round(browser, base: str) -> None:
         and page.get_attribute(".confirm", "role") == "alertdialog"
         and page.evaluate("document.activeElement.id") == "closeok",
         page.locator("button:visible", has_text="Close the round").count(),
+    )
+    page.keyboard.press("Tab")
+    page.keyboard.press("Tab")
+    check(
+        "workbench: Tab stays inside the close confirm",
+        page.evaluate("document.activeElement.id") == "closeok",
+        page.evaluate("document.activeElement.id"),
     )
     page.locator("#closeok").click()
     page.wait_for_timeout(200)
@@ -301,6 +308,29 @@ def check_verdicts_and_reading(browser, base: str) -> None:
         "workbench: r1's table sorts by a column (speed, fastest first)",
         bool(speeds) and page.get_attribute('th:has([data-sort="speed"])', "aria-sort") == "ascending",
         speeds[:4],
+    )
+    page.locator('[data-sort="coverage"]').click()
+    page.wait_for_timeout(200)
+    page.locator("#showall").click()
+    page.wait_for_timeout(200)
+    r1 = page.evaluate(
+        "[...document.querySelectorAll('table.cmp tbody tr[data-arm]')].map(r => r.cells[1].textContent.trim().split(/\\s/)[0] + '|' + r.cells[3].textContent.replace(/\\s+/g, ' ').trim())"
+    )
+    thr = {
+        row.split("|")[0]: float(row.split("threshold ")[1])
+        for row in r1
+        if "threshold " in row and "—" not in row.split("threshold ")[1]
+    }
+    exact = thr.get("mistral_l", 0)
+    lts = [thr[row.split("|")[0]] for row in r1 if "raw p <0.0001" in row]
+    check(
+        "workbench: r1 says 'best first' as descending, its verdicts in r4's words, a '<0.0001' held below an exact 0.0001",
+        page.get_attribute('th:has([data-sort="coverage"])', "aria-sort") == "descending"
+        and not any("significant:" in row for row in r1)
+        and any("significantly worse" in row for row in r1)
+        and bool(lts)
+        and max(lts) < exact,
+        (exact, lts, r1[:3]),
     )
     page.locator("details.cmd > summary").first.click()
     page.locator('[data-sort="arm"]').click()

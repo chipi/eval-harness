@@ -459,7 +459,7 @@ success_criteria:
   }
 
   // ── step 5: the eval ─────────────────────────────────────────────────────
-  const VERD = (a) => (a.rank === 1 ? ["leader", "lead"] : a.verdict === "not significant" ? ["not significantly different", "ns"] : [a.verdict || "—", "worse"]);
+  const VERD = (a) => (a.rank === 1 ? ["leader", "lead"] : a.verdict === "not significant" ? ["not significantly different", "ns"] : [{ "significant: worse": "significantly worse", "significant: better": "significantly ahead" }[a.verdict] || a.verdict || "—", "worse"]);
   function scatter(arms, sel, phone = false) {
     const W = phone ? 360 : 640, Hh = phone ? 280 : 252, l = phone ? 40 : 46, r = phone ? 14 : 16, t = phone ? 30 : 26, b = phone ? 48 : 34;
     const ys = arms.map((a) => a.coverage), y0 = Math.floor(Math.min(...ys) * 50) / 50, y1 = Math.ceil(Math.max(...ys) * 50) / 50;
@@ -493,7 +493,7 @@ success_criteria:
   // The harness's Holm (stats.holm): the raw p's in order, the i-th held to 0.05/(m-i), the step-down stopping at
   // the first over its bar. It reports each raw p and its threshold, never an adjusted p; r1's recorded verdicts
   // all agree with it.
-  const holmOf = (rows) => { const ps = rows.map((r) => ({ id: r.id, p: parseFloat(String(r.p).replace("<", "")) })).sort((x, y) => x.p - y.p);
+  const holmOf = (rows) => { const ps = rows.map((r) => ({ id: r.id, p: parseFloat(String(r.p).replace("<", "")), lt: String(r.p).startsWith("<") })).sort((x, y) => x.p - y.p || y.lt - x.lt);
     const out = {}; let stopped = false;
     ps.forEach((x, k) => { const thr = 0.05 / (ps.length - k), ok = !stopped && x.p <= thr; stopped = stopped || !ok; out[x.id] = { thr, ok }; });
     return out; };
@@ -503,7 +503,9 @@ success_criteria:
     const max = Math.max(...arms.map((a) => a.coverage));
     const srt = S.sort || { col: "rank", dir: 1 }, val = { rank: (a) => a.rank, arm: (a) => a.arm, coverage: (a) => -a.coverage, cost: (a) => a.usd_per_item, speed: (a) => a.p50_ms };
     arms = [...arms].sort((x, y) => { const f = val[srt.col] || val.rank, a = f(x), b = f(y); return (a < b ? -1 : a > b ? 1 : 0) * srt.dir; });
-    const sh = (col, label, cls = "") => `<th class="${cls}" aria-sort="${srt.col === col ? (srt.dir > 0 ? "ascending" : "descending") : "none"}"><button type="button" class="sortbtn" data-sort="${col}">${label}${srt.col === col ? (srt.dir > 0 ? " ↑" : " ↓") : ""}</button></th>`;
+    // coverage sorts best first, its values falling: a screen reader hears "descending", the arrow points down
+    const sh = (col, label, cls = "") => { const up = (srt.dir > 0) !== (col === "coverage");
+      return `<th class="${cls}" aria-sort="${srt.col === col ? (up ? "ascending" : "descending") : "none"}"><button type="button" class="sortbtn" data-sort="${col}">${label}${srt.col === col ? (up ? " ↑" : " ↓") : ""}</button></th>`; };
     const opts = [["rank", "rank"], ["arm", "arm"], ["coverage", "coverage, best first"], ["cost", "cost"], ["speed", "speed"]];
     return `<label class="sortpick">sort by <select id="r1sort">${opts.map(([c, l]) => `<option value="${c}" ${srt.col === c ? "selected" : ""}>${l}</option>`).join("")}</select></label><div class="tablewrap"><table class="cmp"><thead><tr>${sh("rank", "#", "num")}${sh("arm", "arm")}${sh("coverage", "coverage, best first")}<th>vs the leader<small>${w("Holm")} across ${family}: the ${w("raw p")} and its ${w("threshold")}</small></th>${sh("cost", "per 1M articles", "num")}${sh("speed", "per article", "num")}</tr></thead><tbody>
       ${arms.map((a) => { const [v, k] = VERD(a); return `<tr data-arm="${esc(a.config_id)}" class="${a.config_id === sel ? "sel" : ""}"><td class="num">${a.rank}</td>
@@ -587,11 +589,11 @@ success_criteria:
     const H4 = holmOf(inPlay.filter((a) => M.reruns[a.config_id] && M.reruns[a.config_id].p != null).map((a) => ({ id: a.config_id, p: M.reruns[a.config_id].p })));
     const verdictOf = (a) => { const rr = M.reruns[a.config_id], h = H4[a.config_id];
       return !h ? ["not tested", "ns"] : h.ok ? (rr.delta > 0 ? ["significantly ahead", "lead"] : ["significantly worse", "worse"]) : ["not significantly different", "ns"]; };
-    return `<div class="roundhead"><h2 class="kicker">round r4 · ${r4.closed ? `closed ${esc(r4.closedAt || "")} by you` : "open"} · from r1</h2>${r4.closed || ran ? `<p class="question">${esc(r4.question || "")}</p>` : ""}</div>
+    return `<div class="roundhead"><${r4.closed || ran ? "p" : "h2"} class="kicker">round r4 · ${r4.closed ? `closed ${esc(r4.closedAt || "")} by you` : "open"} · from r1</${r4.closed || ran ? "p" : "h2"}>${r4.closed || ran ? `<h2 class="question">${esc(r4.question || "")}</h2>` : ""}</div>
       ${r4.closed || ran ? "" : `<div class="form" style="margin-top:12px">${field("eval.question", `<input type="text" id="r4q" value="${esc(r4.question || "")}" placeholder="e.g. ${esc(H["eval.question"].example)}">`)}</div>`}
       <div class="part" style="margin-top:18px"><div class="parthead"><span class="letter">1</span><h3>Its arms</h3><span class="grow"></span><span class="status">${own.length + 1} arms: ${own.length} re-run, bart_l carried${clones.length ? ` · ${clones.length} cloned` : ""}${hosted.length ? ` · your ${hosted.length} pick${hosted.length === 1 ? "" : "s"} stay in r1` : ""}</span></div>
-        ${r4.closed ? `<details class="adv armsfold"><summary>the round's ${own.length} arms</summary>` : ""}<div class="body">${hosted.length ? `<p class="picks">Your ${hosted.length} pick${hosted.length === 1 ? "" : "s"} from step 4 (${hosted.map((a) => esc(a.arm)).join(", ")}) ha${hosted.length === 1 ? "s" : "ve"} no re-run in the project, so this round re-runs the ${own.length} local arms that have one; ${hosted.length === 1 ? "it stays" : "they stay"} in r1, where ${hosted.length === 1 ? "it was" : "they were"} compared.</p>` : ""}<div class="tablewrap"><table><thead><tr><th>arm</th><th>model</th>${costs ? `<th class="num">${ran ? "cost of 200 items" : "dry run: 200 items"}</th>` : ""}</tr></thead><tbody>
-          <tr><td class="mono">bart_l <span class="tag gold">baseline</span><div class="muted runof">carried from r1 (--keep), read through its Linux re-run</div></td><td class="mono">${esc(base.model)}</td>${costs ? '<td class="num">carried</td>' : ""}</tr>
+        ${r4.closed ? `<details class="adv armsfold"><summary>the round's ${own.length + 1} arms</summary>` : ""}<div class="body">${hosted.length ? `<p class="picks">Your ${hosted.length} pick${hosted.length === 1 ? "" : "s"} from step 4 (${hosted.map((a) => esc(a.arm)).join(", ")}) ha${hosted.length === 1 ? "s" : "ve"} no re-run in the project, so this round re-runs the ${own.length} local arms that have one; ${hosted.length === 1 ? "it stays" : "they stay"} in r1, where ${hosted.length === 1 ? "it was" : "they were"} compared.</p>` : ""}<div class="tablewrap"><table><thead><tr><th>arm</th><th>model</th>${costs ? `<th class="num">${ran ? "cost of 200 items" : "dry run: 200 items"}</th>` : ""}</tr></thead><tbody>
+          <tr><td class="mono">bart_l <span class="tag gold">baseline</span><div class="muted runof">carried from r1 (--keep)</div></td><td class="mono">${esc(base.model)}</td>${costs ? '<td class="num">carried</td>' : ""}</tr>
           ${own.map((a) => `<tr><td class="mono">${esc(a.arm)}</td><td class="mono">${esc(a.model || "—")}</td>${costs ? `<td class="num">${usd(a.usd_per_item * 200, 2)}</td>` : ""}</tr>`).join("")}
           ${clones.map((c, ci) => { const f = M.arms.find((a) => a.config_id === c.from); return `<tr><td class="mono">${esc(f.arm)} · ${esc(c.change)} <span class="tag new">clone</span>${ran || r4.closed ? "" : ` <button class="linkbtn" type="button" data-unclone="${ci}">Remove</button>`}</td><td class="mono">${esc(f.model || "—")}</td>${costs ? `<td class="num">${usd(f.usd_per_item * 200, 2)}</td>` : ""}</tr>`; }).join("")}</tbody></table></div>
           <div class="muted fine">${costs ? "Each estimate is the arm's real r1 cost per item × 200 (a clone's, its source's); a local arm costs nothing but the machine's time." : "Every arm here runs locally: $0 for the 200 items, only the machine's time; bart_l is carried, not run again."}</div>
@@ -611,17 +613,17 @@ success_criteria:
           <p class="muted fine cmpnote">vs bart_l, the round's leader: every arm in play against it, ${w("Holm")} across the ${inPlay.length}, as <code>evh rounds</code> tests them (a retire narrows it). Each row: ${w("Δ")}, the ${w("raw p")} and its ${w("threshold")}.</p>
           <div class="tablewrap"><table class="cmp r4res"><thead><tr><th>arm</th><th><span class="vh">actions</span></th><th>coverage</th><th>vs bart_l</th>${paid ? '<th class="num">per 1M articles</th>' : ""}<th class="num">per article</th></tr></thead><tbody>
           ${results.map((a) => { const [v, k] = VERD(a); const rt = retired[a.config_id]; const isBase = a === base; const rr = a !== base ? M.reruns[a.config_id] : baseRe;
-            const run = rr ? (isBase ? `carried · its Linux re-run, ${esc(rr.created_at.slice(0, 10))}` : `its own run, ${esc(rr.created_at.slice(0, 10))}, Linux`) : "r1's (no re-run)";
+            const run = rr ? `${isBase ? "carried · " : ""}Linux re-run, ${esc(rr.created_at.slice(0, 10))}` : "r1's (no re-run)";
             const act = !r4.closed && rt ? `<button class="linkbtn" type="button" data-unretire="${esc(a.config_id)}">Undo the retire</button>` : r4.closed || rt || isBase ? "" : `<button class="linkbtn" type="button" data-retire="${esc(a.config_id)}" data-name="${esc(a.arm)}">Retire</button>`;
             return `<tr class="${rt ? "retired" : ""}"><td class="mono" data-rowname="${esc(a.config_id)}">${esc(a.arm)} ${isBase ? '<span class="tag gold">baseline</span>' : ""}<div class="muted runof">${run}</div>${rt ? `<div class="muted runof">retired: ${esc(rt)}</div>` : ""}</td><td class="acts">${act}</td><td><div class="cov"><span class="num">${(rr ? rr.coverage : a.coverage).toFixed(3)}</span><i style="width:${(100 * (rr ? rr.coverage : a.coverage)) / covMax}%"></i></div></td>
               <td>${a === leader ? '<span class="muted">the leader</span>' : rt ? '<span class="muted">retired: not tested</span>' : rr ? (() => { const [vv, kk] = verdictOf(a); return `<span class="verdict v-${kk}">${vv}</span><br><small class="muted p">Δ ${rr.delta >= 0 ? "+" : ""}${rr.delta.toFixed(4)} · raw p ${esc(rr.p)} · threshold ${thrTxt(H4[a.config_id])}</small>`; })() : `<span class="verdict v-${k}">${esc(v)}</span>${a.p ? ` <small class="muted">p ${esc(a.p)}</small>` : ""}`}</td>${paid ? `<td class="num">${perM(a.usd_per_item)}</td>` : ""}
               <td class="num">${secs(rr ? rr.p50_ms : a.p50_ms)}</td></tr>`; }).join("")}
           ${clones.map((c) => `<tr><td class="mono">${esc(M.arms.find((a) => a.config_id === c.from).arm)} · ${esc(c.change)} <span class="tag new">clone</span><div class="muted runof">not run</div></td><td></td><td class="num">—</td><td class="muted">no run in the project</td>${paid ? '<td class="num">—</td>' : ""}<td class="num">—</td></tr>`).join("")}</tbody></table></div>
-          ${note("each arm shows its own re-run (the project's Linux re-runs, compared with bart_l's by evh pair-test); a clone has no run, so no scores.")}
+          ${note("the rows are the project's Linux re-runs of 2026-09-30, standing in for r4's runs (a run counts in a round only when its config names it); bart_l's is the re-run the pair tests compared against, where evh rounds would read its r1 run. A clone has no run, so no scores.")}
           ${r4.closed ? `<div class="note"><b>Closed.</b> Its conclusion is part of the answer at the top.</div>` : `<div class="field"><div class="name">The conclusion ${q("eval.close")}</div><div><textarea id="r4c" rows="2" placeholder="what the round showed, and what it decided">${esc(r4.draft || "")}</textarea></div></div>
           <div class="actions" style="margin-top:0"><button class="btn primary" id="closer4" type="button" ${words(r4.draft) >= 3 ? "" : "disabled"}>Close the round</button><span class="muted" style="font-size:13px">the baseline stays bart_l<span id="closehint">${words(r4.draft) >= 3 ? "" : " · write a sentence: what did the round show?"}</span></span></div><div id="closeconfirm"></div>`}</div>` : ""}</div>
       <div class="actions">${r4.closed ? `<a class="btn primary" href="#review">Review the outputs</a>${S.r5 ? "" : `<button class="btn" type="button" id="openr5">Open the next round</button>`}<a class="btn" href="#judge">Score with a judge too</a>` : `<a class="btn" href="#judge">Score with a judge too</a><a class="btn" href="#review">Review the outputs</a>`}</div>
-      ${cmd(`evh round-open --goal ${M.goal.goal_id} --dataset ${ds() || "cnn_dailymail_200"} --from r1 \\\n  --keep ${base.config_id} --hypothesis "${r4.question || "<the question>"}"\n# each arm's config names the round: round: r4, beside its goal:\n${own.map((a) => `evh run --config examples/summarization-cnn-dailymail/configs/arm_${a.arm}_n200.yaml --dry-run`).join("\n")}\n${own.map((a) => `evh run --config examples/summarization-cnn-dailymail/configs/arm_${a.arm}_n200.yaml`).join("\n")}${Object.entries(retired).map(([id, why]) => `\nevh round-retire --goal ${M.goal.goal_id} --round r4 --arm ${id} --reason "${why}"`).join("")}\nevh round-close --goal ${M.goal.goal_id} --round r4 --conclusion "${(r4.conclusion || r4.draft || "<what it showed and decided>").replace(/"/g, "'")}" --by person:<you>`)}`;
+      ${cmd(`evh round-open --goal ${M.goal.goal_id} --dataset ${ds() || "cnn_dailymail_200"} --from r1 \\\n  --keep ${base.config_id} --hypothesis "${r4.question || "<the question>"}"\n# commit the round file before the runs; each arm's config names the round: round: r4, beside its goal:\n${own.map((a) => `evh run --config examples/summarization-cnn-dailymail/configs/arm_${a.arm}_n200.yaml --dry-run`).join("\n")}\n${own.map((a) => `evh run --config examples/summarization-cnn-dailymail/configs/arm_${a.arm}_n200.yaml`).join("\n")}${Object.entries(retired).map(([id, why]) => `\nevh round-retire --goal ${M.goal.goal_id} --round r4 --arm ${id} --reason "${why}"`).join("")}\nevh round-close --goal ${M.goal.goal_id} --round r4 --conclusion "${(r4.conclusion || r4.draft || "<what it showed and decided>").replace(/"/g, "'")}" --by person:<you>`)}`;
   }
   // r5, opened from r4's conclusion: its question and what it would run. The project has no runs past r4's re-runs,
   // so the round stops at its question and says so (a mockup shows only what the project holds).
@@ -630,7 +632,7 @@ success_criteria:
       <p class="muted" style="margin:8px 0 0;max-width:72ch">It starts from r4's conclusion: ${esc(S.r4.conclusion || "")}</p>
       <div class="form" style="margin-top:12px">${field("eval.question", `<input type="text" id="r5q" value="${esc(r5.question || "")}" placeholder="e.g. ${esc(H["eval.question"].example)}">`)}</div>
       ${note("this project has no runs past r4's re-runs, so this walk-through stops at r5's question; its arms, run and results would follow as in r4.")}
-      ${cmd(`evh round-open --goal ${M.goal.goal_id} --dataset ${ds() || "cnn_dailymail_200"} --from r4 \\\n  --hypothesis "${r5.question || "<the question>"}"`)}`;
+      ${cmd(`evh round-open --goal ${M.goal.goal_id} --dataset ${ds() || "cnn_dailymail_200"} --from r4 \\\n  --keep ${M.arms[0].config_id} --hypothesis "${r5.question || "<the question>"}"`)}`;
   }
   function wireEval() {
     main.querySelectorAll("[data-tab]").forEach((b) => {
@@ -677,7 +679,10 @@ success_criteria:
       $("#closeok").focus();
       $("#closeok").addEventListener("click", () => { S.r4.closed = true; S.r4.closedAt = new Date().toLocaleDateString("en-CA"); S.r4.conclusion = text; delete S.r4.draft; focusNext = ".answer"; save(); render(); });
       $("#closeno").addEventListener("click", () => { $("#closeconfirm").innerHTML = ""; e.target.hidden = false; e.target.focus(); });
-      $("#closeconfirm").addEventListener("keydown", (k) => { if (k.key === "Escape") { k.preventDefault(); $("#closeno")?.click(); } });
+      $("#closeconfirm").addEventListener("keydown", (k) => {
+        if (k.key === "Escape") { k.preventDefault(); $("#closeno")?.click(); }
+        if (k.key === "Tab") { k.preventDefault(); (document.activeElement.id === "closeok" ? $("#closeno") : $("#closeok")).focus(); }
+      });
     });
     $("#clonebox")?.addEventListener("toggle", (e) => { S.r4.cloneOpen = e.target.open; save(); });
     main.querySelectorAll("[data-unclone]").forEach((b) => b.addEventListener("click", () => { S.r4.clones = (S.r4.clones || []).filter((_, i) => i !== +b.dataset.unclone); S.r4.cloneOpen = true; focusNext = "#clfrom"; save(); render(); }));

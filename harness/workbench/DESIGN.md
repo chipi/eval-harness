@@ -60,7 +60,33 @@ typography:
     fontWeight: 500
     lineHeight: 1.4
     letterSpacing: "0.14em"
+  control:
+    fontFamily: "Inter, system-ui, -apple-system, Segoe UI, sans-serif"
+    fontSize: "14px"
+    fontWeight: 550
+  caption:
+    fontFamily: "Inter, system-ui, -apple-system, Segoe UI, sans-serif"
+    fontSize: "12px"
+    fontWeight: 400
+    lineHeight: 1.4
+  question:
+    fontFamily: "Inter Tight, Inter, Helvetica Neue, system-ui, -apple-system, Segoe UI, sans-serif"
+    fontSize: "20px"
+    fontWeight: 600
+    lineHeight: 1.3
+  stat:
+    fontFamily: "Inter, system-ui, -apple-system, Segoe UI, sans-serif"
+    fontSize: "17px"
+    fontWeight: 600
+  start-title:
+    fontFamily: "Inter Tight, Inter, Helvetica Neue, system-ui, -apple-system, Segoe UI, sans-serif"
+    fontSize: "38px"
+    fontWeight: 650
+  chart-phone:
+    fontFamily: "ui-monospace, SF Mono, JetBrains Mono, Menlo, Consolas, monospace"
+    fontSize: "12px"
 rounded:
+  mock: "4px"
   tag: "3px"
   control: "6px"
   block: "8px"
@@ -179,7 +205,7 @@ the site's, the sans for fields and hints, monospace for kickers, ids, commands 
 
 - **Screen title** (650, 30px, 1.15): a screen's task ("Set the goal").
 - **Part title** (600, 18px): a lettered part; 15px for a row in a list of steps.
-- **Lead** (400, 16px, Ink Secondary): one or two sentences under the title, at most 62 characters wide.
+- **Lead** (400, 16px, Ink Secondary): one or two sentences under the title, at most 62ch (about 74 characters).
 - **Measure**: running text, notes and captions at most 58ch, about 75 characters (a ch is a digit, wider than the
   average letter); a paragraph wraps without a word alone on its last line.
 - **Body** (400, 15px, 1.55): fields and values.
@@ -213,7 +239,8 @@ app.
 
 ### Named Rules
 
-**The No-Lift Rule.** Selection is a lime ring and hover is a darker border; nothing rises.
+**The No-Lift Rule.** Selection is a lime ring and hover is a darker border; nothing rises. The mockup's own strip and notes have 4px corners, which nothing in the
+app uses.
 
 ## Shapes
 

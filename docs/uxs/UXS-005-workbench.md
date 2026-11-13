@@ -405,7 +405,9 @@ this project holds no held-out side, study, prompt version, job or replay yet; e
     ("r4 added: …") instead of replacing it, and the kicker names the baseline the latest round left (owner,
     2026-11-12).
   - The comparison names its correction (Holm across 28) and shows each arm's raw p and its Holm threshold, the two
-    figures the harness reports (`stats.holm`; it never reports an adjusted p); its verdicts use r4's words ("not significantly different"). On a phone, where the table's head is hidden, a sort
+    figures the harness reports (`stats.holm`; it never reports an adjusted p), a "<0.0001" held below an exact
+    0.0001 as the true p's would be; its verdicts use r4's words ("significantly worse", not the harness's "significant:
+    worse"); "coverage, best first" is a descending sort, and says so to a screen reader ("not significantly different"). On a phone, where the table's head is hidden, a sort
     menu sits above the cards.
   - An arm is opened by its name, a button, and its panel opens as the row under it. The chart's dots are for the
     mouse; the table is the keyboard and screen-reader path (a dot in the tab order would repeat every arm button).
@@ -419,11 +421,12 @@ this project holds no held-out side, study, prompt version, job or replay yet; e
   - Round r4 is built from the local arms the project has re-runs of (owner, 2026-11-12, after the re-critique), so
     every result on it is real. The models picked in step 4 that have no re-run in the project are named in the
     round's arms part, in body text and its status line: they stay in r1, where they were compared.
-  - Its results compare each arm's own Linux re-run with bart_l's own Linux re-run (the pair tests' baseline), so
-    speed and coverage are from one machine; each row says which run under the arm's name, and its actions sit
-    beside the name, so the table fits a desktop screen. bart_l is carried into the round (`round-open --keep`), not
-    run again, and read through its Linux re-run; the arms part says so once, and counts "5 arms: 4 re-run, bart_l
-    carried".
+  - Its results compare each arm's Linux re-run with bart_l's Linux re-run (the pair tests' baseline), so speed and
+    coverage are from one machine; each row says which run under the arm's name, and its actions sit beside the name,
+    so the table fits a desktop screen. The re-runs (2026-09-30) stand in for r4's runs, and a mockup note says so:
+    in the harness a run counts in a round only when its config names it, and `evh rounds` would read bart_l, carried
+    in, through its r1 run. bart_l is carried into the round (`round-open --keep`), not run again; the arms part
+    counts "5 arms: 4 re-run, bart_l carried", and a closed round's fold "the round's 5 arms".
   - The results open with the round's answer in one line, from the verdicts below it ("No arm was shown ahead of
     bart_l: 3 significantly worse (…), which `evh rounds` suggests retiring; 1 not significantly different (…),
     which more items may tell apart. bart_l leads the round and stays the baseline."), then the correction as a note
@@ -446,8 +449,11 @@ this project holds no held-out side, study, prompt version, job or replay yet; e
     sentence until then. A clone keeps its fold open and focus on its Remove once added, and an empty value is an
     error; a clone can be removed before the run. The round's question is fixed once the round has run. The answer's
     source is a quiet line under it.
-  - The commands are the ones that make the round: `round-open --keep` carries bart_l, each arm's config names the
-    round (`round: r4` beside its `goal:`), so its runs count in it (`_rounds.runs_of`).
+  - The commands are the ones that make the round: `round-open --keep` carries bart_l, the round file is committed
+    before the runs (as `round-open` says), and each arm's config names the round (`round: r4` beside its `goal:`), so
+    its runs count in it (`_rounds.runs_of`). r5's `round-open` keeps bart_l too.
+  - Once a round has run its question is its heading (h2), as r1's is; the kicker above it is a line. The close
+    confirm keeps Tab between its two buttons.
   - A cost column every arm of which is $0 gives way to one line in the arms part; a local run's button says "local,
     no API cost"; after the run the Run part is its status line. On a phone an arm's actions sit on their own line at
     its card's foot, and the column is named "actions" for a screen reader.
