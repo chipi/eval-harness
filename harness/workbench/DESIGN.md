@@ -180,6 +180,8 @@ the site's, the sans for fields and hints, monospace for kickers, ids, commands 
 - **Screen title** (650, 30px, 1.15): a screen's task ("Set the goal").
 - **Part title** (600, 18px): a lettered part; 15px for a row in a list of steps.
 - **Lead** (400, 16px, Ink Secondary): one or two sentences under the title, at most 62 characters wide.
+- **Measure**: running text, notes and captions at most 58ch, about 75 characters (a ch is a digit, wider than the
+  average letter); a paragraph wraps without a word alone on its last line.
 - **Body** (400, 15px, 1.55): fields and values.
 - **Hint** (400, 13px, Muted): the line under a field; hidden when hints are off.
 - **Label** (500 monospace, 11–12px, uppercase): kickers ("Step 1 of 5"), the rail's headings, status, commands.
@@ -189,8 +191,9 @@ the site's, the sans for fields and hints, monospace for kickers, ids, commands 
 - **Question** (600 display, 20px): a round's question, read as the round's title.
 - **Stat** (600, 17px): a figure in an arm's panel.
 - **Start title** (display, 38px): the empty project's one question, the only screen without the journey.
-- A chart's words render at 11px or more at the size it is drawn: 12.5 units on a desktop (drawn at ~0.885), 20 on
-  a phone (drawn at ~0.56).
+- A chart's words render at 11px or more at the size it is drawn: 12.5 units on a desktop (drawn at ~0.885). A phone
+  draws the comparison's chart again at its own width (words 12px); another chart there sets 20 units (drawn at
+  ~0.56).
 - **Round answer** (sans, 16px, its lead in bold): the one line that answers a round's question, above its table.
 
 ## Layout

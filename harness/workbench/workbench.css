@@ -103,6 +103,7 @@ input[type=text], textarea, select { width: 100%; background: var(--surface); bo
 textarea { resize: vertical; min-height: 64px; }
 input::placeholder, textarea::placeholder { color: var(--muted); }
 input:focus, textarea:focus, select:focus { border-color: var(--accent); outline: none; }
+input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .idline { font: 500 12px/1.4 var(--mono); color: var(--muted); }
 .choices { display: flex; flex-direction: column; gap: 6px; }
 .choices.row { flex-direction: row; flex-wrap: wrap; gap: 6px 18px; }
@@ -223,7 +224,7 @@ td.clip div { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: v
 .path span { padding: 6px 10px; border: 1px solid var(--hair); border-radius: 999px; }
 .path span:first-child { border-color: var(--accent); color: var(--accent); }
 
-.note { font-size: 13px; color: var(--muted); border-left: 2px solid var(--axis); padding-left: 12px; }
+.note { font-size: 13px; color: var(--muted); border-left: 2px solid var(--axis); padding-left: 12px; max-width: 58ch; }
 .mocknote { font: 500 12px/1.5 var(--mono); color: var(--accent); background: var(--band); border-radius: 4px; padding: 6px 10px; }
 .mocknotes-off .mocknote { display: none; }
 .actions .grow { flex: 1; }
@@ -238,7 +239,7 @@ td.clip div { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: v
 details.smokecard > summary { cursor: pointer; list-style: none; flex-wrap: wrap; }
 details.smokecard > summary::-webkit-details-marker { display: none; }
 .answer { border-left: 3px solid var(--accent); padding: 4px 0 4px 16px; margin-bottom: 24px; }
-.answer p { margin: 6px 0 0; max-width: 72ch; }
+.answer p { margin: 6px 0 0; max-width: 58ch; }
 .tabs { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; border-bottom: 1px solid var(--hair); padding-bottom: 10px; margin-bottom: 12px; }
 .tabs [role=tab] { background: none; border: 1px solid var(--hair); border-radius: 999px; padding: 5px 12px; cursor: pointer; font: 500 12px/1 var(--mono); color: var(--ink-2); }
 .tabs [role=tab][aria-selected=true] { border-color: var(--accent); color: var(--accent); }
@@ -346,10 +347,10 @@ details.refused p { margin: 6px 0 0; color: var(--ink-2); max-width: 46ch; }
 .tabs .tablist { display: flex; flex-wrap: wrap; gap: 6px; }
 .tabs .why-off { margin-left: auto; }
 .tabs .why-off + .btn { margin-left: 0; }
-.part > p { max-width: 72ch; }
+.part > p { max-width: 58ch; }
 /* the replies inside an opened arm: a tone step, not a frame inside a frame */
 .armpanel .reader .pane { border: 0; background: var(--surface-2); }
-.part > p { text-wrap: pretty; }
+.part > p, .part .body p, .note { text-wrap: pretty; }
 details.refused p { white-space: normal; min-width: 28ch; overflow-wrap: anywhere; }
 table.cmp td:last-child { white-space: normal; }
 /* a new screen's title takes focus (for a screen reader's place), never shown as a ring */
@@ -382,8 +383,8 @@ tr.retired td .verdict, tr.retired td .p { text-decoration: line-through; }
 /* the eval screen's third critique (2026-11-12): the standing answer's amendment; step 4's picks said in body text;
    r4's run under each arm's name and its actions beside it, so the table fits; the dry-run note's measure */
 .answer p.amend { margin: 8px 0 0; color: var(--ink-2); }
-.part .body p.picks { margin: 0 0 12px; max-width: 72ch; }
-.muted.fine { font-size: 12px; max-width: 72ch; }
+.part .body p.picks { margin: 0 0 12px; max-width: 58ch; }
+.muted.fine { font-size: 12px; max-width: 58ch; }
 table.r4res .runof { font: 400 12px/1.4 var(--text); margin-top: 2px; }
 table.r4res td.acts { white-space: nowrap; }
 
@@ -394,7 +395,6 @@ table.r4res td.acts { white-space: nowrap; }
 /* the eval screen's fourth critique (2026-11-12): a [hidden] control stays hidden whatever its display; the notes a
    round writes keep a reading measure; the answer's source a quiet line; a field's error in the bad status */
 [hidden] { display: none !important; }
-.part .body p.picks, .part .body .note { max-width: 66ch; }
 .answer p.source { margin: 6px 0 0; font: 400 12px/1.4 var(--mono); color: var(--muted); }
 #actmsg:not(:empty) { color: var(--bad); }
 input[aria-invalid="true"] { border-color: var(--bad); }
@@ -417,13 +417,17 @@ table.cmp thead th > small { white-space: normal; }
 
 /* the sixth review: the round's answer first; the correction a note above the table (a phone hides the head); r1's
    sort menu on a phone; r4's actions on their own line on a phone; chart words 11px or more as drawn (12.5 units at
-   ~0.885 on a desktop, 20 at ~0.56 on a phone); the Δ/p line a 12px caption; the answer at 62ch; the brand on the scale */
-.roundanswer { margin: 0 0 10px; font-size: 16px; }
-.cmpnote { margin: 0 0 8px; }
+   ~0.885 on a desktop, 20 at ~0.56 on a phone); the Δ/p line a 12px caption; running text at 58ch (a ch is a digit, wider than the average letter, so 58ch holds ~75); the brand on the scale */
+.roundanswer { margin: 0 0 10px; font-size: 16px; max-width: 58ch; text-wrap: pretty; }
+.cmpnote { margin: 0 0 8px; max-width: 58ch; }
 .sortpick { display: none; font: 500 12px/1 var(--mono); color: var(--muted); margin: 0 0 8px; }
 @media (max-width: 640px) { .sortpick { display: block; } table.stack.compact.r4res td.acts { order: 99; flex: 1 1 100%; } table.stack.compact.r4res td.acts::before { content: none; } }
 main svg[role="img"] text { font-size: 12.5px; }
-@media (max-width: 640px) { main svg[role="img"] text { font-size: 20px; } }
+@media (max-width: 640px) { main svg[role="img"]:not(.phone) text { font-size: 20px; } main svg.phone text { font-size: 12px; } }
+/* a phone draws its own chart, its viewBox about the width it is drawn at */
+.scatter.phone { display: none; }
+@media (max-width: 640px) { .scatter.desk { display: none; } .scatter.phone { display: block; } }
 small.p { font-size: 12px; }
-.answer p { max-width: 62ch; }
 details.armsfold > summary { font: 500 13px/1.4 var(--mono); color: var(--ink-2); padding: 6px 0; cursor: pointer; }
+/* a sentence in a table's head is a caption, not a label */
+table.cmp th small { font: 400 12px/1.4 var(--text); }

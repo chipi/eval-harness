@@ -292,7 +292,7 @@ window.HELP = {
 
 window.GLOSSARY = {
   "raw p": "How often a gap this large would come up by chance if the two arms were equal, for this one pair, before any correction for the other pairs tested.",
-  "corrected p": "The raw p made stricter for the number of pairs tested together, so that testing many pairs does not find a difference by luck.",
+  threshold: "The bar a raw p must be at or under to count as a difference. Under Holm the smallest p of the pairs tested together is held to 0.05 divided by their number, the next to 0.05 divided by one fewer, and so on, stopping at the first that misses.",
   Holm: "A correction for many pairs tested at once: the smallest p is held to the strictest bar, each next one to a looser one. It needs every pair's p together.",
   Bonferroni: "A correction for one pair tested among n: its p is multiplied by n. Stricter than Holm; it is what a single pair-test can do.",
   "Δ": "The difference in the measure, this arm minus the one it is compared with, averaged over the items both scored.",

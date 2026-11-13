@@ -52,7 +52,7 @@
     if (e.target.closest("[data-close]")) shut();
   });
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") shut();
+    if (e.key === "Escape") { const open = !help.hidden; shut(); if (!open && !e.defaultPrevented) document.querySelector("[data-closearm]")?.click(); }
     // a glossary word is a button: Enter and Space open it (Space no longer scrolls the page)
     if ((e.key === "Enter" || e.key === " ") && e.target.matches("dfn[data-word]")) { e.preventDefault(); openWord(e.target.dataset.word); }
   });
@@ -460,24 +460,24 @@ success_criteria:
 
   // ── step 5: the eval ─────────────────────────────────────────────────────
   const VERD = (a) => (a.rank === 1 ? ["leader", "lead"] : a.verdict === "not significant" ? ["not significantly different", "ns"] : [a.verdict || "—", "worse"]);
-  function scatter(arms, sel) {
-    const W = 640, Hh = 252, l = 46, r = 16, t = 26, b = 34;
+  function scatter(arms, sel, phone = false) {
+    const W = phone ? 360 : 640, Hh = phone ? 280 : 252, l = phone ? 40 : 46, r = phone ? 14 : 16, t = phone ? 30 : 26, b = phone ? 48 : 34;
     const ys = arms.map((a) => a.coverage), y0 = Math.floor(Math.min(...ys) * 50) / 50, y1 = Math.ceil(Math.max(...ys) * 50) / 50;
     const paid = arms.filter((a) => a.usd_per_item > 0).map((a) => a.usd_per_item);
-    const lx0 = Math.log10(Math.min(...paid)) - 0.1, lx1 = Math.log10(Math.max(...paid)) + 0.1, zeroW = 56;
+    const lx0 = Math.log10(Math.min(...paid)) - 0.1, lx1 = Math.log10(Math.max(...paid)) + 0.1, zeroW = phone ? 44 : 56;
     const X = (a) => (a.usd_per_item === 0 ? l + zeroW / 2 : l + zeroW + ((Math.log10(a.usd_per_item) - lx0) / (lx1 - lx0)) * (W - l - r - zeroW));
     const Y = (v) => t + (1 - (v - y0) / (y1 - y0)) * (Hh - t - b);
-    const yt = []; for (let v = y0; v <= y1 + 1e-9; v += 0.02) yt.push(v);
+    const yt = []; for (let v = y0; v <= y1 + 1e-9; v += phone ? 0.04 : 0.02) yt.push(v);
     const xt = [1e-4, 1e-3, 1e-2].filter((v) => Math.log10(v) >= lx0 && Math.log10(v) <= lx1);
     const tx = (s, x, y, anchor = "middle") => `<text x="${x}" y="${y}" fill="var(--muted)" font-size="11" font-family="var(--mono)" text-anchor="${anchor}">${s}</text>`;
-    return `<svg viewBox="0 0 ${W} ${Hh}" role="img" aria-label="coverage against cost per article, one dot per arm" class="scatter">
+    return `<svg viewBox="0 0 ${W} ${Hh}" role="img" aria-label="coverage against cost per article, one dot per arm" class="scatter ${phone ? "phone" : "desk"}">
       ${yt.map((v) => `<line x1="${l}" x2="${W - r}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--hair)"/>${tx(v.toFixed(2), l - 6, Y(v) + 3, "end")}`).join("")}
       <line x1="${l + zeroW}" x2="${l + zeroW}" y1="${t}" y2="${Hh - b}" stroke="var(--axis)" stroke-dasharray="2 3"/>
       ${tx("$0", l + zeroW / 2, Hh - b + 14)}
-      ${xt.map((v) => tx(`$${Math.round(v * 1e6).toLocaleString("en")}`, X({ usd_per_item: v }), Hh - b + 14)).join("")}
-      ${tx("cost per 1M articles (log) →", W - r, Hh - 4, "end")}${tx("coverage ↑", 4, 10, "start")}
+      ${xt.map((v) => { const x = X({ usd_per_item: v }); return tx(`$${Math.round(v * 1e6).toLocaleString("en")}`, x, Hh - b + 14, x > W - r - 30 ? "end" : "middle"); }).join("")}
+      ${tx("cost per 1M articles (log) →", W - r, Hh - 4, "end")}${tx("coverage ↑", 4, phone ? 14 : 10, "start")}
       ${arms.map((a) => { const [, k] = VERD(a); return `<circle cx="${X(a)}" cy="${Y(a.coverage)}" r="${a.config_id === sel ? 7 : 5}" class="dot-${k}" data-arm="${esc(a.config_id)}"><title>${esc(a.arm)} · ${a.coverage.toFixed(3)} · ${perM(a.usd_per_item)} per 1M</title></circle>`; }).join("")}
-      ${arms.filter((a) => a.rank <= 2).map((a) => tx(a.arm, X(a) + 9, Y(a.coverage) - 7, "start")).join("")}
+      ${phone ? "" : arms.filter((a) => a.rank <= 2).map((a) => tx(a.arm, X(a) + 9, Y(a.coverage) - 7, "start")).join("")}
     </svg>`;
   }
   function armPanel(a) {
@@ -490,20 +490,26 @@ success_criteria:
       <div class="body">${a.replies.map((r, i) => `<div class="reader"><div class="pane"><div class="kicker">item ${M.items[i].row + 1} · its summary · coverage ${r.coverage == null ? "—" : r.coverage.toFixed(2)}</div>${esc(r.text)}</div>
         <div class="pane"><div class="kicker">the reference</div>${esc(M.items[i].highlights)}</div></div>`).join("")}</div></section>`;
   }
-  // r1's Holm step-down over every arm's raw p against the leader (the harness's verdicts; all 28 agree with it)
-  const R1HOLM = (() => { const ps = M.arms.filter((a) => a.p != null && a.p !== "").map((a) => ({ id: a.config_id, p: parseFloat(String(a.p).replace("<", "")), lt: String(a.p).startsWith("<") })).sort((x, y) => x.p - y.p);
-    const out = {}; let run = 0; ps.forEach((x, i) => { run = Math.max(run, Math.min(1, (ps.length - i) * x.p)); out[x.id] = `${x.lt ? "<" : ""}${run.toFixed(4)}`; }); return out; })();
+  // The harness's Holm (stats.holm): the raw p's in order, the i-th held to 0.05/(m-i), the step-down stopping at
+  // the first over its bar. It reports each raw p and its threshold, never an adjusted p; r1's recorded verdicts
+  // all agree with it.
+  const holmOf = (rows) => { const ps = rows.map((r) => ({ id: r.id, p: parseFloat(String(r.p).replace("<", "")) })).sort((x, y) => x.p - y.p);
+    const out = {}; let stopped = false;
+    ps.forEach((x, k) => { const thr = 0.05 / (ps.length - k), ok = !stopped && x.p <= thr; stopped = stopped || !ok; out[x.id] = { thr, ok }; });
+    return out; };
+  const thrTxt = (h) => (h ? String(+h.thr.toFixed(4)) : "—");
+  const R1HOLM = holmOf(M.arms.filter((a) => a.p != null && a.p !== "").map((a) => ({ id: a.config_id, p: a.p })));
   function compareTable(arms, sel, family) {
     const max = Math.max(...arms.map((a) => a.coverage));
     const srt = S.sort || { col: "rank", dir: 1 }, val = { rank: (a) => a.rank, arm: (a) => a.arm, coverage: (a) => -a.coverage, cost: (a) => a.usd_per_item, speed: (a) => a.p50_ms };
     arms = [...arms].sort((x, y) => { const f = val[srt.col] || val.rank, a = f(x), b = f(y); return (a < b ? -1 : a > b ? 1 : 0) * srt.dir; });
     const sh = (col, label, cls = "") => `<th class="${cls}" aria-sort="${srt.col === col ? (srt.dir > 0 ? "ascending" : "descending") : "none"}"><button type="button" class="sortbtn" data-sort="${col}">${label}${srt.col === col ? (srt.dir > 0 ? " ↑" : " ↓") : ""}</button></th>`;
     const opts = [["rank", "rank"], ["arm", "arm"], ["coverage", "coverage, best first"], ["cost", "cost"], ["speed", "speed"]];
-    return `<label class="sortpick">sort by <select id="r1sort">${opts.map(([c, l]) => `<option value="${c}" ${srt.col === c ? "selected" : ""}>${l}</option>`).join("")}</select></label><div class="tablewrap"><table class="cmp"><thead><tr>${sh("rank", "#", "num")}${sh("arm", "arm")}${sh("coverage", "coverage, best first")}<th>vs the leader<small>${w("Holm")} across ${family}: the ${w("corrected p")} and the ${w("raw p")}</small></th>${sh("cost", "per 1M articles", "num")}${sh("speed", "per article", "num")}</tr></thead><tbody>
+    return `<label class="sortpick">sort by <select id="r1sort">${opts.map(([c, l]) => `<option value="${c}" ${srt.col === c ? "selected" : ""}>${l}</option>`).join("")}</select></label><div class="tablewrap"><table class="cmp"><thead><tr>${sh("rank", "#", "num")}${sh("arm", "arm")}${sh("coverage", "coverage, best first")}<th>vs the leader<small>${w("Holm")} across ${family}: the ${w("raw p")} and its ${w("threshold")}</small></th>${sh("cost", "per 1M articles", "num")}${sh("speed", "per article", "num")}</tr></thead><tbody>
       ${arms.map((a) => { const [v, k] = VERD(a); return `<tr data-arm="${esc(a.config_id)}" class="${a.config_id === sel ? "sel" : ""}"><td class="num">${a.rank}</td>
         <td><button type="button" class="armbtn mono" data-armbtn="${esc(a.config_id)}" aria-expanded="${a.config_id === sel}">${esc(a.arm)}</button> ${a.baseline ? '<span class="tag gold">baseline</span>' : ""} ${a.recommended ? '<span class="tag rec">recommended</span>' : ""}</td>
         <td><div class="cov"><span class="num">${a.coverage.toFixed(3)}</span><i style="width:${(100 * a.coverage) / max}%"></i></div></td>
-        <td><span class="verdict v-${k}">${esc(v)}</span>${a.p ? `<br><small class="muted num p">p ${esc(R1HOLM[a.config_id] || "")} (raw ${esc(a.p)})</small>` : ""}</td>
+        <td><span class="verdict v-${k}">${esc(v)}</span>${a.p ? `<br><small class="muted num p">raw p ${esc(a.p)} · threshold ${thrTxt(R1HOLM[a.config_id])}</small>` : ""}</td>
         <td class="num">${perM(a.usd_per_item)}</td><td class="num">${secs(a.p50_ms)}</td></tr>${a.config_id === sel ? `<tr class="panelrow"><td colspan="6">${armPanel(a)}</td></tr>` : ""}`; }).join("")}</tbody></table></div>`;
   }
   function screenEval() {
@@ -511,8 +517,7 @@ success_criteria:
     const r4 = S.r4, tab = S.tab || (r4 ? "r4" : "r1");
     // The answer so far is the standing answer (r1's, with its cost guidance); a closed round amends it under it
     // instead of replacing it, and the baseline it names is the one the latest round left (the owner, 2026-11-12).
-    const promotedArm = r4 && r4.closed && r4.promoted ? M.arms.find((a) => a.config_id === r4.promoted) : null;
-    const latest = r4 && r4.closed ? { id: "r4", text: r4.conclusion, base: promotedArm ? promotedArm.arm : "bart_l" } : { id: "r1", text: M.answer, base: "bart_l" };
+    const latest = r4 && r4.closed ? { id: "r4", text: r4.conclusion, base: "bart_l" } : { id: "r1", text: M.answer, base: "bart_l" };
     const tabs = [...M.rounds.map((r) => [r.id, `${r.id} · ${r.status}`]), ...(r4 ? [["r4", `r4 · ${r4.closed ? "closed" : "open"}`]] : []), ...(S.r5 ? [["r5", "r5 · open"]] : [])];
     let body;
     if (tab === "r5" && S.r5) body = roundNext(S.r5);
@@ -525,7 +530,7 @@ success_criteria:
           <h2 class="question">${esc(r.question)}</h2></div>
         ${arms.length ? `
           <div class="parthead" style="margin-top:20px"><h3>The comparison</h3>${q("eval.compare")}<span class="grow"></span><span class="muted" style="font-size:13px">${arms.length} arms · 200 items · scored against gold/${esc(ds() || "cnn_dailymail_200")}</span></div>
-          <div class="cmpgrid"><div>${scatter(arms, S.arm)}<div class="legend"><span><i class="dot-lead"></i>leader</span><span><i class="dot-ns"></i>not significantly different</span><span><i class="dot-worse"></i>significantly worse</span></div></div>
+          <div class="cmpgrid"><div>${scatter(arms, S.arm)}${scatter(arms, S.arm, true)}<div class="legend"><span><i class="dot-lead"></i>leader</span><span><i class="dot-ns"></i>not significantly different</span><span><i class="dot-worse"></i>significantly worse</span></div></div>
             <div class="note"><b>What the goal's rule picks.</b> Balanced: the arms shown no worse than the best by more than 5% of it, then the cheapest. Here none could be shown within the margin, so the leader stands: <b>bart_l</b>.
               <div style="margin-top:8px">${esc(M.detectable)} ${q("eval.detect")}</div></div></div>
           ${compareTable(shown, S.arm, arms.length - 1)}
@@ -553,8 +558,7 @@ success_criteria:
     const reason = (b.reason || "").replace(/\.+$/, "");
     const above = M.answer || "";
     const fresh = reason && !above.startsWith(reason.slice(0, 40));
-    const r4 = S.r4, moved = r4 && r4.closed && r4.promoted;
-    return `<div class="note" style="margin-bottom:16px"><b>The baseline</b> ${q("eval.baseline")} ${moved ? `version ${b.current + 1}, promoted when r4 closed: ${esc((M.arms.find((a) => a.config_id === r4.promoted) || {}).arm || r4.promoted)}, because ${esc(r4.promoteWhy || "")}. Before it, ` : ""}version ${b.current} for this goal on ${esc(b.dataset)}: ${esc((b.promoted_from || "").replace(/_\d{8}T\d{6}Z$/, ""))}, promoted ${esc((b.promoted_at || "").slice(0, 10))}; ${esc(who)}${fresh ? `; its reason: ${esc(reason)}` : "; its reason is the standing answer above"}. Every later promotion is a new version with who and why; an earlier one comes back by rollback, never by editing.
+    return `<div class="note" style="margin-bottom:16px"><b>The baseline</b> ${q("eval.baseline")} version ${b.current} for this goal on ${esc(b.dataset)}: ${esc((b.promoted_from || "").replace(/_\d{8}T\d{6}Z$/, ""))}, promoted ${esc((b.promoted_at || "").slice(0, 10))}; ${esc(who)}${fresh ? `; its reason: ${esc(reason)}` : "; its reason is the standing answer above"}. Every later promotion is a new version with who and why; an earlier one comes back by rollback, never by editing.
       ${cmd(`evh baselines --goal ${esc(b.goal)} --all-versions\nevh baseline-rollback --goal ${esc(b.goal)} --dataset ${esc(b.dataset)} --to <version> --reason "…" --by person:<you>`, "the commands that show and roll it back")}</div>`;
   }
   function roundOpen(r4) {
@@ -566,66 +570,58 @@ success_criteria:
     const clones = r4.clones || [];
     const est = own.reduce((s, a) => s + a.usd_per_item * 200, 0);
     const costs = est > 0 || clones.some((c) => M.arms.find((a) => a.config_id === c.from).usd_per_item > 0);
-    const ran = !!r4.ran, retired = r4.retired || {}, promoted = r4.promoted || null;
+    const ran = !!r4.ran, retired = r4.retired || {};
     const results = ran ? [base, ...own].sort((a, b) => a.rank - b.rank) : [];
     const paid = results.some((a) => a.usd_per_item > 0);
     const covMax = Math.max(...results.map((a) => ((a !== base ? M.reruns[a.config_id] : (M.reruns || {})[base.config_id]) || a).coverage), 0.0001);
     // The baseline's own re-run on the same machine is what the pair tests compared against (its r1 run was a Mac's).
     const baseRe = (M.reruns || {})[base.config_id];
     const CH = { prompt: "the prompt", model: "the model", temperature: "the temperature", max_tokens: "the most it may write" };
-    const runOf = (a) => a.run_id;
-    // `evh rounds` suggests promoting the round's leader only when it is significantly ahead of the baseline it
-    // started from, Bonferroni over the arms in play other than the baseline (rounds._against_family); arms_of leaves
-    // the retired out, so a retire narrows the correction. `round-close --promote` records that test but does not gate.
+    // r4's verdicts are `evh rounds`': every arm in play against the round's leader (the best mean, bart_l carried in
+    // among them), Holm across them (rounds.evidence); arms_of leaves the retired out, so a retire narrows it. The
+    // project's pair tests are each arm against bart_l, so they are the round's while bart_l leads it, as it does on
+    // these re-runs (the Bonferroni test of a leader against the baseline runs only when the two differ).
     const inPlay = own.filter((a) => !retired[a.config_id]);
-    const n = Math.max(inPlay.length, 1);
-    const pnum = (x) => (String(x).startsWith("<") ? parseFloat(String(x).slice(1)) : parseFloat(x));
-    const adj = (a) => { const r = M.reruns[a.config_id]; return r && r.p != null ? { p: Math.min(1, pnum(r.p) * n), lt: String(r.p).startsWith("<") } : { p: 1, lt: false }; };
-    const pTxt = (h) => `${h.lt ? "<" : ""}${h.p < 0.0001 ? "0.0001" : h.p.toFixed(4)}`;
-    const verdictOf = (rr, h) => (h.p < 0.05 ? (rr.delta > 0 ? ["significantly ahead", "lead"] : ["significantly worse", "worse"]) : ["not significantly different", "ns"]);
-    const hold = (a, rr) => !rr
-      ? { why: "It has no run in this round: its scores are its r1 run, made before this round's question.",
-          fix: `Run it in r4 (evh run --config examples/summarization-cnn-dailymail/configs/arm_${a.arm}_n200.yaml), then test it against bart_l.` }
-      : !(rr.delta > 0 && adj(a).p < 0.05)
-        ? { why: `Not shown ahead of bart_l: Δ ${rr.delta >= 0 ? "+" : ""}${rr.delta.toFixed(4)}, p ${pTxt(adj(a))} with Bonferroni across the ${n} arms in play (raw ${rr.p}).`,
-            fix: "The baseline stays bart_l. More items, or this arm's one change in a round of its own, could show it ahead." }
-        : null;
-    return `<div class="roundhead"><h2 class="kicker">round r4 · ${r4.closed ? `closed ${esc(r4.closedAt || "")} by you` : "open"} · from r1</h2>${r4.closed ? `<p class="question">${esc(r4.question || "")}</p>` : ""}</div>
-      ${r4.closed ? "" : `<div class="form" style="margin-top:12px">${field("eval.question", `<input type="text" id="r4q" value="${esc(r4.question || "")}" placeholder="e.g. ${esc(H["eval.question"].example)}">`)}</div>`}
-      <div class="part" style="margin-top:18px"><div class="parthead"><span class="letter">1</span><h3>Its arms</h3><span class="grow"></span><span class="status">${own.length} local arms, each re-run${clones.length ? ` · ${clones.length} cloned` : ""}${hosted.length ? ` · your ${hosted.length} pick${hosted.length === 1 ? "" : "s"} stay in r1` : ""}</span></div>
+    const covOf = (a) => ((a === base ? baseRe : M.reruns[a.config_id]) || a).coverage;
+    const leader = [base, ...inPlay].reduce((x, y) => (covOf(y) > covOf(x) ? y : x));
+    const H4 = holmOf(inPlay.filter((a) => M.reruns[a.config_id] && M.reruns[a.config_id].p != null).map((a) => ({ id: a.config_id, p: M.reruns[a.config_id].p })));
+    const verdictOf = (a) => { const rr = M.reruns[a.config_id], h = H4[a.config_id];
+      return !h ? ["not tested", "ns"] : h.ok ? (rr.delta > 0 ? ["significantly ahead", "lead"] : ["significantly worse", "worse"]) : ["not significantly different", "ns"]; };
+    return `<div class="roundhead"><h2 class="kicker">round r4 · ${r4.closed ? `closed ${esc(r4.closedAt || "")} by you` : "open"} · from r1</h2>${r4.closed || ran ? `<p class="question">${esc(r4.question || "")}</p>` : ""}</div>
+      ${r4.closed || ran ? "" : `<div class="form" style="margin-top:12px">${field("eval.question", `<input type="text" id="r4q" value="${esc(r4.question || "")}" placeholder="e.g. ${esc(H["eval.question"].example)}">`)}</div>`}
+      <div class="part" style="margin-top:18px"><div class="parthead"><span class="letter">1</span><h3>Its arms</h3><span class="grow"></span><span class="status">${own.length + 1} arms: ${own.length} re-run, bart_l carried${clones.length ? ` · ${clones.length} cloned` : ""}${hosted.length ? ` · your ${hosted.length} pick${hosted.length === 1 ? "" : "s"} stay in r1` : ""}</span></div>
         ${r4.closed ? `<details class="adv armsfold"><summary>the round's ${own.length} arms</summary>` : ""}<div class="body">${hosted.length ? `<p class="picks">Your ${hosted.length} pick${hosted.length === 1 ? "" : "s"} from step 4 (${hosted.map((a) => esc(a.arm)).join(", ")}) ha${hosted.length === 1 ? "s" : "ve"} no re-run in the project, so this round re-runs the ${own.length} local arms that have one; ${hosted.length === 1 ? "it stays" : "they stay"} in r1, where ${hosted.length === 1 ? "it was" : "they were"} compared.</p>` : ""}<div class="tablewrap"><table><thead><tr><th>arm</th><th>model</th>${costs ? `<th class="num">${ran ? "cost of 200 items" : "dry run: 200 items"}</th>` : ""}</tr></thead><tbody>
-          <tr><td class="mono">bart_l <span class="tag gold">baseline</span></td><td class="mono">${esc(base.model)}</td>${costs ? '<td class="num">carried, not re-run</td>' : ""}</tr>
+          <tr><td class="mono">bart_l <span class="tag gold">baseline</span><div class="muted runof">carried from r1 (--keep), read through its Linux re-run</div></td><td class="mono">${esc(base.model)}</td>${costs ? '<td class="num">carried</td>' : ""}</tr>
           ${own.map((a) => `<tr><td class="mono">${esc(a.arm)}</td><td class="mono">${esc(a.model || "—")}</td>${costs ? `<td class="num">${usd(a.usd_per_item * 200, 2)}</td>` : ""}</tr>`).join("")}
           ${clones.map((c, ci) => { const f = M.arms.find((a) => a.config_id === c.from); return `<tr><td class="mono">${esc(f.arm)} · ${esc(c.change)} <span class="tag new">clone</span>${ran || r4.closed ? "" : ` <button class="linkbtn" type="button" data-unclone="${ci}">Remove</button>`}</td><td class="mono">${esc(f.model || "—")}</td>${costs ? `<td class="num">${usd(f.usd_per_item * 200, 2)}</td>` : ""}</tr>`; }).join("")}</tbody></table></div>
-          <div class="muted fine">${costs ? "Each estimate is the arm's real r1 cost per item × 200 (a clone's, its source's); a local arm costs nothing but the machine's time." : "Every arm here runs locally: $0 for the 200 items, only the machine's time; bart_l is carried, not re-run."}</div>
-          ${ran || r4.closed ? "" : `<details class="adv"><summary>Clone an arm and change one thing</summary><div class="inline" style="margin-top:10px">
+          <div class="muted fine">${costs ? "Each estimate is the arm's real r1 cost per item × 200 (a clone's, its source's); a local arm costs nothing but the machine's time." : "Every arm here runs locally: $0 for the 200 items, only the machine's time; bart_l is carried, not run again."}</div>
+          ${ran || r4.closed ? "" : `<details class="adv" id="clonebox" ${r4.cloneOpen ? "open" : ""}><summary>Clone an arm and change one thing</summary><div class="inline" style="margin-top:10px">
             <select id="clfrom" aria-label="the arm to clone">${[...own].map((a) => `<option value="${esc(a.config_id)}">${esc(a.arm)}</option>`).join("")}</select>
             <select id="clwhat" aria-label="what changes">${Object.entries(CH).map(([k, v]) => `<option value="${k}">${v}</option>`).join("")}</select>
-            <input type="text" id="clto" placeholder="its new value" style="width:220px"><button class="btn" type="button" id="cladd">Add the clone</button></div>
+            <input type="text" id="clto" placeholder="its new value" aria-describedby="clmsg" style="width:220px"><button class="btn" type="button" id="cladd">Add the clone</button></div><div class="why-off" id="clmsg" role="status"></div>
             <div class="hint" style="margin:6px 0 0">one change, so a difference in its score is that change's; a clone runs once its config is written (not in this mockup)</div></details>`}</div>${r4.closed ? "</details>" : ""}</div>
       <div class="part"><div class="parthead"><span class="letter">2</span><h3>Run</h3><span class="grow"></span>${ran ? `<span class="status ok">${own.length} runs · 200 items each</span>` : ""}</div>
         ${ran ? "" : `<div class="body"><div class="actions" style="margin-top:0"><button class="btn primary" id="runr4" type="button" ${r4.question ? "" : "disabled"}>Run ${own.length} arms · ${est > 0 ? `about ${usd(est, 2)}` : "local, no API cost"}</button><span class="muted" id="r4hint" style="font-size:13px">${r4.question ? "jobs on the server; you can close the page" : "write the round's question first"}</span></div><div id="runjob" role="status" aria-live="polite"></div></div>`}</div>
       <div class="part ${ran ? "" : "off"}"><div class="parthead"><span class="letter">3</span><h3 id="results-h">Results</h3>${q("eval.compare")}</div>
-        ${ran ? `<div class="body">${(() => { const v = inPlay.map((a) => { const rr = M.reruns[a.config_id]; return rr ? verdictOf(rr, adj(a))[0] : ""; });
-            const ahead = v.filter((x) => x === "significantly ahead").length, same = v.filter((x) => x === "not significantly different").length, worse = v.filter((x) => x === "significantly worse").length;
-            const parts = [same && `${same} not significantly different`, worse && `${worse} significantly worse`, ahead && `${ahead} significantly ahead`].filter(Boolean).join(", ");
-            return `<p class="roundanswer"><b>${ahead ? `${ahead} arm${ahead === 1 ? " is" : "s are"} ahead of bart_l` : "No arm was shown ahead of bart_l"}</b>${parts ? `: ${parts}` : ""}. ${promoted ? "" : "bart_l stays the baseline."}</p>`; })()}
-          <p class="muted fine cmpnote">vs bart_l: one pair at a time, ${w("Bonferroni")} across the ${n} arms in play, as <code>evh rounds</code> decides whether to suggest a promotion (a retire narrows it); r1's table, every pair at once, uses ${w("Holm")}. Each row: ${w("Δ")}, the ${w("corrected p")} and the ${w("raw p")}.</p>
+        ${ran ? `<div class="body">${(() => { const by = (x) => inPlay.filter((a) => verdictOf(a)[0] === x).map((a) => a.arm);
+            const ahead = by("significantly ahead"), worse = by("significantly worse"), same = by("not significantly different");
+            const parts = [worse.length && `${worse.length} significantly worse (${worse.join(", ")}), which <code>evh rounds</code> suggests retiring`,
+              same.length && `${same.length} not significantly different (${same.join(", ")}), which more items may tell apart`].filter(Boolean).join("; ");
+            return `<p class="roundanswer"><b>${ahead.length ? `${ahead.join(", ")} ahead of bart_l` : "No arm was shown ahead of bart_l"}</b>${parts ? `: ${parts}` : ""}. ${leader === base ? "bart_l leads the round and stays the baseline." : ""}</p>`; })()}
+          <p class="muted fine cmpnote">vs bart_l, the round's leader: every arm in play against it, ${w("Holm")} across the ${inPlay.length}, as <code>evh rounds</code> tests them (a retire narrows it). Each row: ${w("Δ")}, the ${w("raw p")} and its ${w("threshold")}.</p>
           <div class="tablewrap"><table class="cmp r4res"><thead><tr><th>arm</th><th><span class="vh">actions</span></th><th>coverage</th><th>vs bart_l</th>${paid ? '<th class="num">per 1M articles</th>' : ""}<th class="num">per article</th></tr></thead><tbody>
-          ${results.map((a) => { const [v, k] = VERD(a); const rt = retired[a.config_id]; const isBase = promoted ? promoted === a.config_id : a === base; const rr = a !== base ? M.reruns[a.config_id] : baseRe;
-            const run = rr ? `${a === base ? "its re-run" : "its own run"}, ${esc(rr.created_at.slice(0, 10))}, Linux` : "r1's (no re-run)";
-            const act = !r4.closed && rt ? `<button class="linkbtn" type="button" data-unretire="${esc(a.config_id)}">Undo the retire</button>` : r4.closed || rt || isBase ? "" : `<button class="linkbtn" type="button" data-retire="${esc(a.config_id)}" data-name="${esc(a.arm)}">Retire</button>${hold(a, rr) ? "" : ` <button class="linkbtn" type="button" data-promote="${esc(a.config_id)}" data-name="${esc(a.arm)}">Make baseline</button>`}`;
+          ${results.map((a) => { const [v, k] = VERD(a); const rt = retired[a.config_id]; const isBase = a === base; const rr = a !== base ? M.reruns[a.config_id] : baseRe;
+            const run = rr ? (isBase ? `carried · its Linux re-run, ${esc(rr.created_at.slice(0, 10))}` : `its own run, ${esc(rr.created_at.slice(0, 10))}, Linux`) : "r1's (no re-run)";
+            const act = !r4.closed && rt ? `<button class="linkbtn" type="button" data-unretire="${esc(a.config_id)}">Undo the retire</button>` : r4.closed || rt || isBase ? "" : `<button class="linkbtn" type="button" data-retire="${esc(a.config_id)}" data-name="${esc(a.arm)}">Retire</button>`;
             return `<tr class="${rt ? "retired" : ""}"><td class="mono" data-rowname="${esc(a.config_id)}">${esc(a.arm)} ${isBase ? '<span class="tag gold">baseline</span>' : ""}<div class="muted runof">${run}</div>${rt ? `<div class="muted runof">retired: ${esc(rt)}</div>` : ""}</td><td class="acts">${act}</td><td><div class="cov"><span class="num">${(rr ? rr.coverage : a.coverage).toFixed(3)}</span><i style="width:${(100 * (rr ? rr.coverage : a.coverage)) / covMax}%"></i></div></td>
-              <td>${a === base ? '<span class="muted">the baseline</span>' : rr ? (() => { const h = adj(a), [vv, kk] = verdictOf(rr, h); return `<span class="verdict v-${kk}">${vv}</span><br><small class="muted p">Δ ${rr.delta >= 0 ? "+" : ""}${rr.delta.toFixed(4)} · p ${pTxt(h)} (raw ${esc(rr.p)})</small>`; })() : `<span class="verdict v-${k}">${esc(v)}</span>${a.p ? ` <small class="muted">p ${esc(a.p)}</small>` : ""}`}</td>${paid ? `<td class="num">${perM(a.usd_per_item)}</td>` : ""}
+              <td>${a === leader ? '<span class="muted">the leader</span>' : rt ? '<span class="muted">retired: not tested</span>' : rr ? (() => { const [vv, kk] = verdictOf(a); return `<span class="verdict v-${kk}">${vv}</span><br><small class="muted p">Δ ${rr.delta >= 0 ? "+" : ""}${rr.delta.toFixed(4)} · raw p ${esc(rr.p)} · threshold ${thrTxt(H4[a.config_id])}</small>`; })() : `<span class="verdict v-${k}">${esc(v)}</span>${a.p ? ` <small class="muted">p ${esc(a.p)}</small>` : ""}`}</td>${paid ? `<td class="num">${perM(a.usd_per_item)}</td>` : ""}
               <td class="num">${secs(rr ? rr.p50_ms : a.p50_ms)}</td></tr>`; }).join("")}
           ${clones.map((c) => `<tr><td class="mono">${esc(M.arms.find((a) => a.config_id === c.from).arm)} · ${esc(c.change)} <span class="tag new">clone</span><div class="muted runof">not run</div></td><td></td><td class="num">—</td><td class="muted">no run in the project</td>${paid ? '<td class="num">—</td>' : ""}<td class="num">—</td></tr>`).join("")}</tbody></table></div>
-          ${(() => { const held = inPlay.filter((a) => hold(a, M.reruns[a.config_id])); return !r4.closed && !promoted && held.length && held.length === inPlay.length ? `<div class="note"><b>None of the ${held.length} can be the baseline.</b> None was shown ahead of bart_l once corrected across the ${n} arms in play. More items, or one change in a round of its own, could show an arm ahead.</div>` : ""; })()}
-          ${paid ? "" : `<p class="muted fine">Every arm here runs locally: $0 per article, so no cost column.</p>`}
           ${note("each arm shows its own re-run (the project's Linux re-runs, compared with bart_l's by evh pair-test); a clone has no run, so no scores.")}
-          ${r4.closed ? `<div class="note"><b>Closed.</b> Its conclusion is part of the answer at the top${promoted ? `; the baseline is now ${esc(M.arms.find((a) => a.config_id === promoted).arm)}` : ""}.</div>` : `<div class="field"><div class="name">The conclusion ${q("eval.close")}</div><div><textarea id="r4c" rows="2" placeholder="what the round showed, and what it decided">${esc(r4.draft || "")}</textarea></div></div>
-          <div class="actions" style="margin-top:0"><button class="btn primary" id="closer4" type="button" ${words(r4.draft) >= 3 ? "" : "disabled"}>Close the round</button><span class="muted" style="font-size:13px">${promoted ? `promotes ${esc(M.arms.find((a) => a.config_id === promoted).arm)} as the baseline` : "the baseline stays bart_l"}<span id="closehint">${words(r4.draft) >= 3 ? "" : " · write a sentence: what did the round show?"}</span></span></div><div id="closeconfirm"></div>`}</div>` : ""}</div>
+          ${r4.closed ? `<div class="note"><b>Closed.</b> Its conclusion is part of the answer at the top.</div>` : `<div class="field"><div class="name">The conclusion ${q("eval.close")}</div><div><textarea id="r4c" rows="2" placeholder="what the round showed, and what it decided">${esc(r4.draft || "")}</textarea></div></div>
+          <div class="actions" style="margin-top:0"><button class="btn primary" id="closer4" type="button" ${words(r4.draft) >= 3 ? "" : "disabled"}>Close the round</button><span class="muted" style="font-size:13px">the baseline stays bart_l<span id="closehint">${words(r4.draft) >= 3 ? "" : " · write a sentence: what did the round show?"}</span></span></div><div id="closeconfirm"></div>`}</div>` : ""}</div>
       <div class="actions">${r4.closed ? `<a class="btn primary" href="#review">Review the outputs</a>${S.r5 ? "" : `<button class="btn" type="button" id="openr5">Open the next round</button>`}<a class="btn" href="#judge">Score with a judge too</a>` : `<a class="btn" href="#judge">Score with a judge too</a><a class="btn" href="#review">Review the outputs</a>`}</div>
-      ${cmd(`evh round-open --goal ${M.goal.goal_id} --dataset ${ds() || "cnn_dailymail_200"} --from r1 \\\n  --hypothesis "${r4.question || "<the question>"}"\n${own.map((a) => `evh run --config examples/summarization-cnn-dailymail/configs/arm_${a.arm}_n200.yaml --dry-run`).join("\n")}\n${own.map((a) => `evh run --config examples/summarization-cnn-dailymail/configs/arm_${a.arm}_n200.yaml`).join("\n")}${Object.entries(retired).map(([id, why]) => `\nevh round-retire --goal ${M.goal.goal_id} --round r4 --arm ${id} --reason "${why}"`).join("")}\nevh round-close --goal ${M.goal.goal_id} --round r4 --conclusion "${(r4.conclusion || r4.draft || "<what it showed and decided>").replace(/"/g, "'")}" --by person:<you>${promoted ? ` \\\n  --promote ${runOf(M.arms.find((a) => a.config_id === promoted))}` : ""}`)}`;
+      ${cmd(`evh round-open --goal ${M.goal.goal_id} --dataset ${ds() || "cnn_dailymail_200"} --from r1 \\\n  --keep ${base.config_id} --hypothesis "${r4.question || "<the question>"}"\n# each arm's config names the round: round: r4, beside its goal:\n${own.map((a) => `evh run --config examples/summarization-cnn-dailymail/configs/arm_${a.arm}_n200.yaml --dry-run`).join("\n")}\n${own.map((a) => `evh run --config examples/summarization-cnn-dailymail/configs/arm_${a.arm}_n200.yaml`).join("\n")}${Object.entries(retired).map(([id, why]) => `\nevh round-retire --goal ${M.goal.goal_id} --round r4 --arm ${id} --reason "${why}"`).join("")}\nevh round-close --goal ${M.goal.goal_id} --round r4 --conclusion "${(r4.conclusion || r4.draft || "<what it showed and decided>").replace(/"/g, "'")}" --by person:<you>`)}`;
   }
   // r5, opened from r4's conclusion: its question and what it would run. The project has no runs past r4's re-runs,
   // so the round stops at its question and says so (a mockup shows only what the project holds).
@@ -676,18 +672,20 @@ success_criteria:
     // Closing is recorded and cannot be edited: it is confirmed, restating what it decides.
     $("#closer4")?.addEventListener("click", (e) => {
       const text = $("#r4c").value.trim(); if (words(text) < 3) return;
-      const p = S.r4.promoted && M.arms.find((a) => a.config_id === S.r4.promoted);
       e.target.hidden = true;
-      $("#closeconfirm").innerHTML = `<div class="confirm"><p>Close r4 with the conclusion “${esc(text.replace(/[.\s]+$/, ""))}.” ${p ? `It promotes ${esc(p.arm)} as the baseline, because: ${esc(S.r4.promoteWhy)}.` : "The baseline stays bart_l."} A closed round is kept as it is; a later change is a new round.</p><div class="inline"><button class="btn primary" type="button" id="closeok">Close the round</button><button class="btn" type="button" id="closeno">Back</button></div></div>`;
+      $("#closeconfirm").innerHTML = `<div class="confirm" role="alertdialog" aria-label="Close round r4" aria-describedby="confirmtext"><p id="confirmtext">Close r4 with the conclusion “${esc(text.replace(/[.\s]+$/, ""))}.” The baseline stays bart_l. A closed round is kept as it is; a later change is a new round.</p><div class="inline"><button class="btn primary" type="button" id="closeok">Yes, close r4</button><button class="btn" type="button" id="closeno">Back</button></div></div>`;
       $("#closeok").focus();
       $("#closeok").addEventListener("click", () => { S.r4.closed = true; S.r4.closedAt = new Date().toLocaleDateString("en-CA"); S.r4.conclusion = text; delete S.r4.draft; focusNext = ".answer"; save(); render(); });
       $("#closeno").addEventListener("click", () => { $("#closeconfirm").innerHTML = ""; e.target.hidden = false; e.target.focus(); });
       $("#closeconfirm").addEventListener("keydown", (k) => { if (k.key === "Escape") { k.preventDefault(); $("#closeno")?.click(); } });
     });
-    main.querySelectorAll("[data-unclone]").forEach((b) => b.addEventListener("click", () => { S.r4.clones = (S.r4.clones || []).filter((_, i) => i !== +b.dataset.unclone); focusNext = "#clfrom"; save(); render(); }));
+    $("#clonebox")?.addEventListener("toggle", (e) => { S.r4.cloneOpen = e.target.open; save(); });
+    main.querySelectorAll("[data-unclone]").forEach((b) => b.addEventListener("click", () => { S.r4.clones = (S.r4.clones || []).filter((_, i) => i !== +b.dataset.unclone); S.r4.cloneOpen = true; focusNext = "#clfrom"; save(); render(); }));
     $("#cladd")?.addEventListener("click", () => {
-      const to = $("#clto").value.trim(); if (!to) { $("#clto").focus(); return; }
-      S.r4.clones = [...(S.r4.clones || []), { from: $("#clfrom").value, change: `${$("#clwhat").selectedOptions[0].text}: ${to}` }]; save(); render();
+      const to = $("#clto").value.trim();
+      if (!to) { $("#clmsg").textContent = "Error: write the new value; the clone changes one thing to it."; $("#clto").setAttribute("aria-invalid", "true"); $("#clto").focus(); return; }
+      S.r4.clones = [...(S.r4.clones || []), { from: $("#clfrom").value, change: `${$("#clwhat").selectedOptions[0].text}: ${to}` }];
+      S.r4.cloneOpen = true; focusNext = `[data-unclone="${S.r4.clones.length - 1}"]`; save(); render();
     });
     // The prompt opens under the row it is about, names the arm, and is the only primary action while it is open.
     const ask = (btn, label, then) => {
@@ -699,12 +697,11 @@ success_criteria:
       if (close) close.classList.remove("primary");
       $("#actwhy").focus();
       $("#actwhy").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); $("#actok").click(); } if (e.key === "Escape") { e.preventDefault(); $("#actno").click(); } });
-      $("#actok").addEventListener("click", () => { const why = $("#actwhy").value.trim(); if (!why) { $("#actmsg").textContent = "Error: write the reason; it is recorded with the retire."; $("#actwhy").setAttribute("aria-invalid", "true"); $("#actwhy").focus(); return; } then(why); });
+      $("#actok").addEventListener("click", () => { const why = $("#actwhy").value.trim(); if (words(why) < 3) { $("#actmsg").textContent = "Error: write the reason as a sentence, three words or more; it is recorded with the retire."; $("#actwhy").setAttribute("aria-invalid", "true"); $("#actwhy").focus(); return; } then(why); });
       $("#actno").addEventListener("click", () => { tr.remove(); if (close) close.classList.add("primary"); btn.focus(); });
     };
     main.querySelectorAll("[data-unretire]").forEach((b) => b.addEventListener("click", () => { const r = { ...(S.r4.retired || {}) }; delete r[b.dataset.unretire]; S.r4.retired = r; focusNext = `[data-rowname="${CSS.escape(b.dataset.unretire)}"]`; save(); render(); }));
     main.querySelectorAll("[data-retire]").forEach((b) => b.addEventListener("click", (e) => { e.stopPropagation(); ask(b, `Retire ${b.dataset.name}:`, (why) => { S.r4.retired = { ...(S.r4.retired || {}), [b.dataset.retire]: why }; focusNext = `[data-rowname="${CSS.escape(b.dataset.retire)}"]`; save(); render(); }); }));
-    main.querySelectorAll("[data-promote]").forEach((b) => b.addEventListener("click", (e) => { e.stopPropagation(); ask(b, `Make ${b.dataset.name} the baseline:`, (why) => { S.r4.promoted = b.dataset.promote; S.r4.promoteWhy = why; focusNext = `[data-rowname="${CSS.escape(b.dataset.promote)}"]`; save(); render(); }); }));
   }
 
   // ── the glossary ─────────────────────────────────────────────────────────
@@ -767,7 +764,7 @@ success_criteria:
   // a comparison, or a table to pick rows from (its first column a checkbox), stacks compact: its row's name as the
   // card's title, the other cells on a line or two
   const stackTables = () => main.querySelectorAll("table").forEach((t) => {
-    const heads = [...t.querySelectorAll("thead th")].map((th) => { const c = th.cloneNode(true); c.querySelectorAll("small").forEach((x) => x.remove()); return c.textContent.trim(); });
+    const heads = [...t.querySelectorAll("thead th")].map((th) => { const c = th.cloneNode(true); c.querySelectorAll("small").forEach((x) => x.remove()); return c.textContent.replace(/\s*[↑↓]\s*$/, "").trim(); });
     if (heads.length < 4) return;
     const compact = t.classList.contains("cmp") || heads[0] === "";
     const title = compact ? Math.max(0, heads.findIndex((h) => /^(arm|model|decision|capture)$/i.test(h))) : -1;

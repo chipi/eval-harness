@@ -11,11 +11,13 @@ Served from a static server on a free port, with Chromium:
   - the skip link is the first Tab stop, keeps its ink when hovered, and focuses the screen without changing it;
   - the help panel opens with focus on its close button and gives it back to what opened it; a glossary word opens
     on Space without scrolling the page;
-  - round r4's results fit a desktop screen, each arm on its own Linux re-run (bart_l's too), the round's answer in one
-    line above them, and one statement when no arm can be the baseline;
-  - r4's correction is `evh rounds`': Bonferroni over the arms in play, so a retire narrows it;
-  - a retire's empty reason is an error tied to its field;
-  - Close needs a sentence, as round-close does; Escape backs out of its confirm;
+  - round r4's results fit a desktop screen, each arm on its own Linux re-run (bart_l carried, read through its own),
+    the round's answer in one line above them;
+  - r4's verdicts are `evh rounds`': each arm against the leader, Holm across the arms in play, so a retire narrows
+    it; the commands carry the round (--keep, round: r4);
+  - a retire's reason is a sentence, an empty or one-word one an error tied to its field;
+  - Close needs a sentence, as round-close does; its confirm is an alertdialog, and Escape backs out of it;
+  - an added clone keeps its fold and focus; Escape closes an arm's panel; a phone's chart keeps its words apart;
   - closing the round keeps the standing answer and amends it.
 """
 
@@ -159,12 +161,12 @@ def check_round(browser, base: str) -> None:
     )
     base_row = page.locator("table.r4res tbody tr").filter(has_text="baseline").first.inner_text()
     check(
-        "workbench: r4's results fit the screen, bart_l on its own Linux re-run, one statement that none can be the baseline",
+        "workbench: r4's results fit the screen, bart_l carried and read through its Linux re-run, the answer in one line",
         over <= 0
-        and "its re-run" in base_row
+        and "carried · its Linux re-run" in base_row
         and "6.3 s" in base_row
-        and page.locator(".note", has_text="None of the").count() == 1
-        and page.locator(".roundanswer").inner_text().startswith("No arm was shown ahead of bart_l"),
+        and page.locator(".roundanswer").inner_text().startswith("No arm was shown ahead of bart_l")
+        and "suggests retiring" in page.locator(".roundanswer").inner_text(),
         f"overflow {over}px, baseline row {base_row!r}",
     )
     page.locator("[data-retire]").first.click()
@@ -181,8 +183,21 @@ def check_round(browser, base: str) -> None:
         and msg_colour != page.evaluate("getComputedStyle(document.querySelector('.muted')).color"),
         (msg_colour, bad),
     )
+    page.locator("#actwhy").fill("slow")
+    page.locator("#actok").click()
+    check(
+        "workbench: a one-word retire reason is refused, as round-retire refuses it",
+        page.locator("tr.askrow").count() == 1 and "three words" in page.locator("#actmsg").inner_text(),
+    )
     page.keyboard.press("Escape")
     check("workbench: Escape cancels the retire prompt", page.locator("tr.askrow").count() == 0)
+    page.locator("details.cmd > summary").last.click()
+    cmds = page.locator("details.cmd").last.inner_text()
+    check(
+        "workbench: r4's commands carry the round: bart_l kept, each config naming round r4",
+        "--keep cnn_bart_l_n200_v1" in cmds and "round: r4" in cmds and "--promote" not in cmds,
+        cmds[:300],
+    )
     page.locator("#r4c").fill("bart_l stays")
     short_off = (
         page.locator("#closer4").is_disabled()
@@ -204,8 +219,11 @@ def check_round(browser, base: str) -> None:
     )
     page.locator("#closer4").click()
     check(
-        "workbench: the confirm shows one 'Close the round', not two",
-        page.locator("button:visible", has_text="Close the round").count() == 1,
+        "workbench: the close confirm is an alertdialog that says what it decides, its button 'Yes, close r4'",
+        page.locator("button:visible", has_text="Close the round").count() == 0
+        and page.locator("#closeok").inner_text() == "Yes, close r4"
+        and page.get_attribute(".confirm", "role") == "alertdialog"
+        and page.evaluate("document.activeElement.id") == "closeok",
         page.locator("button:visible", has_text="Close the round").count(),
     )
     page.locator("#closeok").click()
@@ -233,10 +251,11 @@ def check_round(browser, base: str) -> None:
 
 
 def check_verdicts_and_reading(browser, base: str) -> None:
-    """r4's verdicts are the harness's: Bonferroni over the arms in play other than the baseline, as `evh rounds` decides
-    whether to suggest a promotion (a Holm step-down here once called bart_s significantly worse at 0.0316; the harness
-    says 0.0632), and a retire narrows it (bart_s then 3 x 0.0158 = 0.0474). r1 sorts; an opened command stays open; on
-    a phone the rail is one line."""
+    """r4's verdicts are `evh rounds`': every arm in play against the round's leader (bart_l), Holm across them
+    (rounds.evidence; stats.holm reports a raw p and its threshold). bart_s, raw p 0.0158, is third of four and under
+    its 0.025; a Bonferroni reading once shown here called it not significant. Retiring bart_m leaves three, and bart_s's
+    threshold is then 0.05. r1 sorts; an opened command stays open; Escape closes an arm's panel; on a phone the rail is
+    one line and the chart's words do not collide or leave it."""
     state = {
         **STATE,
         "r4": {"question": "Does a smaller local model match bart_l?", "ran": True},
@@ -250,10 +269,10 @@ def check_verdicts_and_reading(browser, base: str) -> None:
     )
     bart_s = next((r for r in rows if r.startswith("bart_s:")), "")
     check(
-        "workbench: r4 gives each arm a verdict with its corrected p, as evh rounds tests it (bart_s: 0.0632, not significant)",
-        "not significantly different" in bart_s
-        and "p 0.0632" in bart_s
-        and any("significantly worse" in r for r in rows),
+        "workbench: r4's verdicts are evh rounds' (bart_s significantly worse: raw p 0.0158 under its Holm threshold 0.025)",
+        "significantly worse" in bart_s
+        and "raw p 0.0158 · threshold 0.025" in bart_s
+        and any("not significantly different" in r for r in rows),
         rows,
     )
     page.locator("table.r4res tbody tr").filter(has_text="bart_m").locator("[data-retire]").click()
@@ -265,10 +284,10 @@ def check_verdicts_and_reading(browser, base: str) -> None:
     )
     bart_s = next((r for r in rows if r.startswith("bart_s:")), "")
     check(
-        "workbench: a retire narrows r4's correction, as evh rounds leaves the retired out (bart_s: 3 x 0.0158 = 0.0474)",
-        "significantly worse" in bart_s
-        and "p 0.0474" in bart_s
-        and "3 arms in play" in page.locator(".cmpnote").inner_text(),
+        "workbench: a retire narrows r4's Holm family, as evh rounds leaves the retired out (bart_s's threshold 0.05)",
+        "threshold 0.05" in bart_s
+        and any(r.startswith("bart_m:") and "retired: not tested" in r for r in rows)
+        and "across the 3" in page.locator(".cmpnote").inner_text(),
         rows,
     )
     page.locator('[data-tab="r1"]').click()
@@ -291,6 +310,40 @@ def check_verdicts_and_reading(browser, base: str) -> None:
         page.evaluate("document.querySelector('details.cmd').open") and not errors,
         errors[:2],
     )
+    page.locator("[data-armbtn]").first.click()
+    page.wait_for_timeout(200)
+    opened_panel = page.locator(".armpanel").count()
+    page.keyboard.press("Escape")
+    page.wait_for_timeout(200)
+    check(
+        "workbench: Escape closes an arm's panel",
+        opened_panel == 1 and page.locator(".armpanel").count() == 0,
+        opened_panel,
+    )
+    page.close()
+    page, errors = seeded(
+        browser,
+        base,
+        {**STATE, "r4": {"question": "Does a smaller local model match bart_l?"}, "tab": "r4"},
+        viewport={"width": 1280, "height": 900},
+    )
+    page.goto(base + "#eval")
+    page.wait_for_timeout(300)
+    page.locator("#clonebox > summary").click()
+    page.locator("#cladd").click()
+    empty_err = page.get_attribute("#clto", "aria-invalid") == "true" and page.locator(
+        "#clmsg"
+    ).inner_text().startswith("Error:")
+    page.locator("#clto").fill("0.7")
+    page.locator("#cladd").click()
+    page.wait_for_timeout(200)
+    check(
+        "workbench: an empty clone is an error; an added one keeps the fold open and focus on its Remove",
+        empty_err
+        and page.evaluate("document.querySelector('#clonebox').open")
+        and page.evaluate("document.activeElement.dataset.unclone") == "0",
+        page.evaluate("document.activeElement.outerHTML.slice(0, 80)"),
+    )
     page.close()
     page, errors = seeded(browser, base, STATE, viewport={"width": 390, "height": 844}, is_mobile=True)
     page.goto(base + "#eval")
@@ -309,6 +362,19 @@ def check_verdicts_and_reading(browser, base: str) -> None:
         and "Step 5 of 5" in page.locator(".railtoggle").inner_text()
         and not errors,
         (folded, opened),
+    )
+    chart = page.evaluate(
+        """(() => { const svg = [...document.querySelectorAll('svg.scatter')].find(s => s.getBoundingClientRect().width);
+          const box = svg.getBoundingClientRect(), r = [...svg.querySelectorAll('text')].map(t => t.getBoundingClientRect());
+          const outside = r.filter(b => b.left < box.left - 0.5 || b.right > box.right + 0.5 || b.top < box.top - 0.5 || b.bottom > box.bottom + 0.5).length;
+          let hits = 0; r.forEach((a, i) => r.slice(i + 1).forEach(b => { if (a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom) hits++; }));
+          const px = Math.min(...[...svg.querySelectorAll('text')].map(t => parseFloat(getComputedStyle(t).fontSize) * box.width / svg.viewBox.baseVal.width));
+          return { cls: svg.getAttribute('class'), outside, hits, px: +px.toFixed(2) }; })()"""
+    )
+    check(
+        "workbench: on a phone r1's chart is the phone's own, its words 11px or more, none leaving it or on another",
+        chart["cls"].endswith("phone") and chart["outside"] == 0 and chart["hits"] == 0 and chart["px"] >= 11,
+        chart,
     )
     page.close()
 
