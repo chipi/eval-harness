@@ -862,6 +862,38 @@ def _faithfulness_gate(
     return {**state, "unfaithful_by": who}
 
 
+def _prompt_versions(
+    adapter_path: Path | None, adapter_id: str, cfg: dict[str, Any], fingerprint: dict[str, Any]
+) -> dict[str, str]:
+    """{name: version id} of the prompts this run sends (RFC-032 step 4b): what the adapter's `prompts(params)`
+    gives, recorded as prompt versions, only when the fingerprint declares a `prompt_sha256` (the adapter sent a
+    prompt) and only a text of that hash (the version is the prompt the fingerprint names). Outside the fingerprint's
+    hash: a run's fingerprint is what it was before runs named their prompt."""
+    from evaluation_harness import _prompts  # noqa: PLC0415
+    from evaluation_harness._adapter import prompts as adapter_prompts  # noqa: PLC0415
+
+    declared = (((fingerprint.get("settings") or {}).get("declared")) or {}).get("prompt_sha256")
+    if not declared:
+        return {}
+    out: dict[str, str] = {}
+    for name, text in sorted(adapter_prompts(adapter_path, dict(cfg.get("params") or {})).items()):
+        data = text.encode("utf-8")
+        if _prompts.sha256(data) != declared:
+            print(
+                f"  note: prompt {name}: not the prompt the fingerprint declares (prompt_sha256): not recorded"
+            )
+            continue
+        _prompts.check_name(name, f"{adapter_id}'s prompts()")
+        rec, _new = _prompts.record(
+            name,
+            data,
+            source={"adapter": adapter_id, "system": cfg.get("config_id")},
+            note=f"sent by a run of {cfg.get('config_id')}",
+        )
+        out[name] = rec["id"]
+    return out
+
+
 def _resume_source(
     resume: str | None, cfg: dict[str, Any], runs: Path = RUNS
 ) -> tuple[Path | None, dict[str, dict[str, Any]]]:
@@ -1244,6 +1276,7 @@ def _run(args: argparse.Namespace) -> int:
         replay=plan,
     )
     print(f"  fingerprint {fingerprint['hash'][:12]}")
+    prompt_versions = {} if args.scratch else _prompt_versions(adapter_path, adapter_id, cfg, fingerprint)
     # A DIRTY TREE IS NOT A VERSION. The fingerprint records it, but a field nobody reads
     # is not a warning: a 72-run sweep completed with `harness.dirty: true` throughout, so
     # its `harness.commit` identified code that was never what ran, and nothing said so
@@ -1454,6 +1487,7 @@ def _run(args: argparse.Namespace) -> int:
             {
                 **_model_runs.run_part(metrics),
                 "started_at": identity["started_at"],
+                **({"prompt_versions": prompt_versions} if prompt_versions else {}),
                 "purpose": args.purpose,
                 "machine": _model_runs.machine_of(metrics.get("fingerprint")),
                 **({"of": args.of} if args.of else {}),

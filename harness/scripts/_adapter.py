@@ -235,6 +235,14 @@ def primary_metric(adapter_path: Path | None, params: dict[str, Any] | None = No
     return value if isinstance(value, str) and value else None
 
 
+def prompts(adapter_path: Path | None, params: dict[str, Any]) -> dict[str, str]:
+    """{name: text} of the prompts the adapter's `prompts(params)` says a call sends (RFC-032 step 4b), the text
+    exactly as the adapter hashes it for its fingerprint's `prompt_sha256`; {} without the hook."""
+    fn = getattr(_module_or_none(adapter_path), "prompts", None)
+    got = fn(dict(params)) if callable(fn) else None
+    return {str(k): str(v) for k, v in got.items()} if isinstance(got, dict) else {}
+
+
 def load_recorded_adapter(spec: str) -> tuple | None:
     """The adapter a finished run recorded, for scoring it again (rescore, silver-calibrate),
     or None if it cannot be found.

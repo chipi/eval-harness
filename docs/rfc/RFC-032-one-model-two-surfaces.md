@@ -249,7 +249,11 @@ and the Workbench's screens that need it are wired behind it.
    reader kept its `(directory, record)` pairs, a score's directory in place of a run's; all 736 records read back
    as they were. The folder flags went, `--label` picks what a command reads. Every view was compared before and
    after: the same numbers; the differences are the copies kept once, the arms' order where it follows their new ids,
-   and the re-scores of runs a round retired, retired with them. The prompt version a run read is step 4b.
+   and the re-scores of runs a round retired, retired with them. 4b, built the same day: a run records the prompts it sent as
+   prompt versions (`run.json` `prompt_versions`, outside the fingerprint's hash), from the adapter's new optional
+   `prompts(params)` hook, only when its fingerprint declares a `prompt_sha256` and only a text of that hash; the
+   examples' six adapters have the hook, and on every committed run that declares one it gives the text hashed
+   (with the fleet code the triage runs used).
 5. Rounds with their arms and the evidence view; baselines.
 6. Datasets (items, source, profile, versions, the sealed side), fieldsets, label sets, references, picks, captures,
    failure modes and tags, exposure.

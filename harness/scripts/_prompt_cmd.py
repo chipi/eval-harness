@@ -23,10 +23,13 @@ def _runs_of() -> dict[tuple[str, str], list[dict[str, Any]]]:
     from evaluation_harness import _runs  # noqa: PLC0415
 
     out: dict[tuple[str, str], list[dict[str, Any]]] = {}
+    full = {}  # a version id -> its sha256, for the versions runs name (RFC-032 step 4b)
     for _d, m in _runs.runs_on():
-        used = (((m.get("fingerprint") or {}).get("settings") or {}).get("prompts")) or {}
-        if not isinstance(used, dict):
-            continue
+        used = dict((((m.get("fingerprint") or {}).get("settings") or {}).get("prompts")) or {})
+        for name, vid in (m.get("prompt_versions") or {}).items():
+            if vid not in full:
+                full[vid] = next((v["sha256"] for v in _prompts.versions(name) if v["id"] == vid), vid)
+            used.setdefault(name, full[vid])
         prim = m.get("primary_metric")
         score = (m.get("scores") or {}).get(prim) if prim else None
         for name, sha in used.items():

@@ -191,6 +191,12 @@ def _fleet() -> Any:
 FLEET_MODULES = ("triage.py", "probes.py", "guards.py", "config.py")
 
 
+def prompts(params: dict[str, Any]) -> dict[str, str]:
+    """The fleet's system prompt, the text this adapter's fingerprint hashes as `prompt_sha256`: the harness records
+    it as a prompt version of the run (RFC-032 step 4b)."""
+    return {"triage-fleet/system": _fleet()._sys()}
+
+
 def fingerprint(params: dict[str, Any]) -> dict[str, Any]:
     """What the replay is, for the run's fingerprint: the fleet's code by content, its commit when
     TRIAGE_FLEET_COMMIT or the arm's `fleet_commit` names it (the checkout's git is not read: a pinned checkout

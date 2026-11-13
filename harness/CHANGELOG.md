@@ -57,6 +57,10 @@ that can move a result is never a patch release without saying so under **Change
   (a round's inspect link, capped, now opens its plain arms where it opened their silver ones), and the re-scores of
   the runs triage round r3 retired, now marked retired with them. `evh validate` fails on a `data/runs-*` folder left
   unmigrated.
+  A run records the prompts it sent (step 4b): an adapter's optional `prompts(params)` gives each prompt's text by
+  name, and a run whose fingerprint declares that text's `prompt_sha256` records it as a prompt version
+  (`run.json` `prompt_versions`; `evh prompt-show` lists the runs that sent it), outside the fingerprint's hash, so
+  no run's fingerprint moves; a scratch pass records none. The examples' adapters have the hook.
 - **Models and deployments, apart** (RFC-032 step 2): a model's deployments are records of their own,
   `data/deployments/<model>/<deployment>.yaml`, each with its checks as dated history: every onboarding, every arm
   smoke and every acceptance is kept, with who made it; the views read the latest of each, so `evh models`, the

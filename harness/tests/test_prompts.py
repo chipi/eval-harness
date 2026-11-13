@@ -282,6 +282,68 @@ try:
         "ok   V24" in ok.stdout and "FAIL V24" in tampered.stdout and "do not hash" in tampered.stdout,
         (next((x for x in ok.stdout.splitlines() if "V24" in x), ""), tampered.stdout[-500:]),
     )
+
+    # RFC-032 step 4b: a run records the prompt its adapter sent, by the adapter's prompts(params), only when its
+    # fingerprint declares that prompt's hash; outside the fingerprint's hash.
+    hooked = """import hashlib
+from evaluation_harness.adapter import Result, score  # noqa: F401
+TEXT = "Say it in one line."
+def call_system(text, params):
+    return Result(output=text.split(".")[0] + ".", cost_usd=0.0)
+def fingerprint(params):
+    return {"prompt_sha256": hashlib.sha256(SENT.encode()).hexdigest()}
+def prompts(params):
+    return {"tickets/line": TEXT}
+"""
+    (proj / "hooked.py").write_text(hooked.replace("SENT", "TEXT"))
+    (proj / "wrong.py").write_text(hooked.replace("SENT", '"another text"'))
+    for cid, adapter in (("hooked_v1", "hooked.py"), ("wrong_v1", "wrong.py")):
+        _runstore.write_text(
+            proj, f"systems/{cid}.yaml", f"system_id: {cid}\nadapter: {adapter}\nparams:\n  provider: echo\n"
+        )
+    runs4b = [evh("run", "--system", "hooked_v1", "--dataset", "tk_v1", "--json") for _ in range(2)]
+    ids = [
+        json.loads(r.stdout)["result"]["values"]["runs"][0]["run_id"] if r.returncode == 0 else None
+        for r in runs4b
+    ]
+    recs = [_runview.record_of(proj, i)[1] if i else {} for i in ids]
+    vids = [(m.get("prompt_versions") or {}).get("tickets/line") for m in recs]
+    import hashlib
+
+    sha = hashlib.sha256(b"Say it in one line.").hexdigest()
+    check(
+        "4b: a run records the prompt its adapter sent, as a version of its name; a second run reuses it",
+        all(r.returncode == 0 for r in runs4b)
+        and vids == [f"tickets/line/{sha[:16]}"] * 2
+        and _runstore.read_text(proj, f"prompts/tickets/line/{sha[:16]}.txt") == "Say it in one line."
+        and len(_runstore.listdir(proj, "prompts/tickets/line")) == 2,
+        ([(r.returncode, r.stdout[:300], r.stderr[-200:]) for r in runs4b], vids),
+    )
+    check(
+        "4b: the version stays outside the fingerprint (its hash is the same with or without it)",
+        all("prompt_versions" not in json.dumps(m.get("fingerprint")) for m in recs)
+        and len({m["fingerprint"]["hash"] for m in recs}) == 1,
+        [m.get("fingerprint", {}).get("hash") for m in recs],
+    )
+    wrong = evh("run", "--system", "wrong_v1", "--dataset", "tk_v1", "--json")
+    wid = json.loads(wrong.stdout)["result"]["values"]["runs"][0]["run_id"] if wrong.returncode == 0 else None
+    scratch = evh("run", "--system", "hooked_v1", "--dataset", "tk_v1", "--scratch")
+    check(
+        "4b: a text that is not the prompt the fingerprint declares is not recorded, and says so; nor a scratch pass",
+        wid is not None
+        and "prompt_versions" not in _runview.record_of(proj, wid)[1]
+        and "not the prompt the fingerprint declares" in (wrong.stdout + wrong.stderr)
+        and scratch.returncode == 0
+        and len(_runstore.listdir(proj, "prompts/tickets/line")) == 2,
+        (wrong.stdout[-300:], scratch.stderr[-300:]),
+    )
+    shown = evh("prompt-show", "--name", "tickets/line", "--json")
+    runs_shown = (json.loads(shown.stdout)["result"]["versions"][0]["runs"]) if shown.returncode == 0 else []
+    check(
+        "4b: prompt-show lists the runs that sent the version",
+        sorted(x["run_id"] for x in runs_shown) == sorted(str(i) for i in ids),
+        (shown.stdout[-400:], shown.stderr[-300:]),
+    )
 finally:
     shutil.rmtree(proj, ignore_errors=True)
 sys.exit(summary())
