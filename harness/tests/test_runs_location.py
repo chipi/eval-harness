@@ -103,7 +103,7 @@ with tempfile.TemporaryDirectory() as tmp:
         env.update(EVAL_HOME=str(root), EVAL_BUILD_REF="test-runs-location")
         (root / "data" / "project.yaml").write_text(f"format: {_format.FORMAT}\n")
         r = subprocess.run(
-            [sys.executable, "-m", "evaluation_harness", "validate"],
+            [sys.executable, str(Path(__file__).resolve().parents[1] / "scripts" / "cli.py"), "validate"],
             cwd=root, env=env, capture_output=True, text=True, stdin=subprocess.DEVNULL, check=False,
         )  # fmt: skip
         return r.stdout + r.stderr
