@@ -240,7 +240,6 @@ PROJECT_ONLY = {
     "importer-check",
     "score-preview",
     "silver-calibrate",
-    "judge",
 }
 
 

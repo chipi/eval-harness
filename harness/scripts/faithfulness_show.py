@@ -17,6 +17,7 @@ import argparse
 
 from evaluation_harness import _coderec, _faith, _jsonout
 from evaluation_harness._common import die, evh_prog
+from evaluation_harness.model import faithfulness as model_faithfulness
 
 
 def main() -> int:
@@ -28,11 +29,11 @@ def main() -> int:
     args = ap.parse_args()
     with _jsonout.collect("faithfulness-show", args.json):
         _coderec.load(args.model)
-        nums = _faith.numbers(args.model)
+        nums = model_faithfulness.numbers(args.model)
         n = args.n or (nums[-1] if nums else None)
         if n is None:
             die(f"no faithfulness record of {args.model}", "not-found")
-        rec = _faith.load(args.model, n)
+        rec = model_faithfulness.load(args.model, n)
         c = rec["counts"]
         named = {e["item_id"]: e for e in rec.get("exceptions") or []}
         print(

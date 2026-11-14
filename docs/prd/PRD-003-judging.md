@@ -41,8 +41,6 @@ and step 10 of the [GUIDE](../GUIDE.md).
   decision ([Concepts](../../harness/docs/CONCEPTS.md#re-measuring-a-frozen-eval)).
 - The gate checks that a validation exists and is current, not that it transfers to the
   user's outputs.
-- Not the older judge **panel** (`evh judge`), which narrows finalists on a cheap metric and
-  judges them pointwise; it stays a triage tool.
 - No human-rating collection tool.
 
 ## Personas

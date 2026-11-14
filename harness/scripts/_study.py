@@ -1,11 +1,7 @@
 """Studies (RFC-029): research by ask/tell over trials on a validation dataset; evidence only from a confirmation.
 
-    data/studies/<goal>/<study_id>.yaml             the spec, written by a person or an agent
-    data/studies/<goal>/<study_id>.events.jsonl     the log: start, ask, trial, end, confirm (one JSON line each)
-    data/studies/<goal>/<study_id>/<study_id>-t<k>.yaml   trial k's system, written once (found like any system)
-    data/studies/<goal>/<study_id>/confirm/...      a confirmation's item list (its two systems run on the test set)
-
-A study's state (running, stopped, the best so far, what it spent, an open ask) is read from its log, never stored
+A study's files (its spec, its log, its trials' systems, its confirmations) are laid out in model/studies, which reads
+them too (`state`, `spec`, `events`); this writes them. A study's state (running, stopped, the best so far, what it spent, an open ask) is read from its log, never stored
 apart. Every write to the log is under the study's lock (`study:<goal>/<study_id>`, RFC-026). A study never reads a
 test set and never suggests a promotion; `study-confirm` is the one step that gives evidence (one look, RFC-029).
 """
@@ -28,74 +24,21 @@ from typing import Any
 import yaml
 from evaluation_harness import _common, _store
 from evaluation_harness.model import runs as _model_runs
+from evaluation_harness.model.studies import (
+    events,
+    log_path,
+    spec,
+    spec_path,
+    state,
+    trial_path,
+    trial_systems,
+)
 
 SAMPLERS = ("grid", "command", "agent")
 STUDY_ID = re.compile(r"[a-z0-9][a-z0-9_-]{0,60}")
 
 
 # ── files ──────────────────────────────────────────────────────────────────────────────────────────────────────────
-
-
-def root() -> Path:
-    """data/studies/."""
-    return _common.DATA / "studies"
-
-
-def spec_path(goal: str, sid: str) -> Path:
-    """A study's spec."""
-    return root() / goal / f"{sid}.yaml"
-
-
-def log_path(goal: str, sid: str) -> Path:
-    """A study's log."""
-    return root() / goal / f"{sid}.events.jsonl"
-
-
-def folder(goal: str, sid: str) -> Path:
-    """A study's own folder: its trials' systems, its confirmations."""
-    return root() / goal / sid
-
-
-def resolve(name: str) -> tuple[str, str]:
-    """`<goal>/<study_id>`, or a study id one goal has, as (goal, study_id); refused otherwise."""
-    if "/" in name:
-        goal, sid = name.split("/", 1)
-        if _store.is_file(spec_path(goal, sid)):
-            return goal, sid
-        _common.die(f"no study {name} (data/studies/{goal}/{sid}.yaml)", "not-found")
-    hits = [p.parent.name for p in _store.glob(root(), f"*/{name}.yaml")] if _store.is_dir(root()) else []
-    if len(hits) == 1:
-        return hits[0], name
-    _common.die(
-        f"study {name}: "
-        + (
-            f"several goals have one ({', '.join(sorted(hits))}): name it <goal>/{name}"
-            if hits
-            else "no such study"
-        ),
-        "not-found",
-    )
-    raise AssertionError  # die exits
-
-
-def spec(goal: str, sid: str) -> dict[str, Any]:
-    """The spec, as written."""
-    doc = yaml.safe_load(_store.read_text(spec_path(goal, sid), encoding="utf-8")) or {}
-    if not isinstance(doc, dict):
-        _common.die(f"{spec_path(goal, sid)}: a mapping", "invalid-file")
-    return doc
-
-
-def events(goal: str, sid: str) -> list[dict[str, Any]]:
-    """The log's events, in order (a torn last line is not an event)."""
-    p = log_path(goal, sid)
-    out = []
-    for line in (_store.read_text(p, encoding="utf-8") if _store.is_file(p) else "").splitlines():
-        with contextlib.suppress(ValueError):
-            ev = json.loads(line)
-            if isinstance(ev, dict):
-                out.append(ev)
-    return out
 
 
 @contextlib.contextmanager
@@ -198,44 +141,6 @@ def frozen_hash(s: dict[str, Any], goal: str | None = None, sid: str | None = No
     return h.hexdigest()
 
 
-# ── state, read from the log ───────────────────────────────────────────────────────────────────────────────────────
-
-
-def state(goal: str, sid: str) -> dict[str, Any]:
-    """The study as its log says: status, round, trials, the best so far, spent, the open ask."""
-    evs = events(goal, sid)
-    start = next((e for e in evs if e.get("event") == "start"), None)
-    groups = {e.get("k"): e.get("group") for e in evs if e.get("event") == "group"}
-    trials = [
-        {**e, "group": groups.get(e.get("k"))} if e.get("k") in groups else e
-        for e in evs
-        if e.get("event") == "trial"
-    ]
-    end = next((e for e in evs if e.get("event") == "end"), None)
-    kept = [t for t in trials if t.get("outcome") == "kept"]
-    asks = [e for e in evs if e.get("event") == "ask"]
-    told = {t.get("ask_id") for t in trials if t.get("ask_id")}
-    open_ask = next((a for a in reversed(asks) if a["ask_id"] not in told), None)
-    status = "not started" if start is None else "ended" if end else "running"
-    if status == "running" and any(e.get("event") == "stop" for e in evs):
-        status = "stopping"
-    return {
-        "goal": goal,
-        "study": sid,
-        "status": status,
-        "round": (start or {}).get("round"),
-        "baseline": (start or {}).get("baseline"),
-        "trials": trials,
-        "best": kept[-1] if kept else None,
-        "start": start,
-        "spent_usd": round(sum(float(t.get("cost_usd") or 0) for t in trials), 8),
-        "open_ask": open_ask,
-        "end": end,
-        "confirms": [e for e in evs if e.get("event") == "confirm"],
-        "started_at": (start or {}).get("at"),
-    }
-
-
 # ── a trial's system ───────────────────────────────────────────────────────────────────────────────────────────────
 
 
@@ -306,7 +211,7 @@ def write_trial_system(goal: str, sid: str, k: int, base_cid: str, proposal: dic
             root = cfg["prompt_root"]
         else:
             cfg.setdefault("prompts", {})[str(name)] = {"version": doc["id"]}
-    path = folder(goal, sid) / f"{cid}.yaml"
+    path = trial_path(goal, sid, k)
     try:
         _store.create_new(path, yaml.safe_dump(cfg, sort_keys=False).encode("utf-8"))
     except FileExistsError:
@@ -848,7 +753,7 @@ def mark_interrupted(goal: str, sid: str) -> list[int]:
         tail = q.stem[len(f"{sid}-t") :]
         return int(tail) if tail.isdigit() else None
 
-    for p in sorted(_store.glob(folder(goal, sid), f"{sid}-t*.yaml"), key=lambda q: number(q) or 0):
+    for p in trial_systems(goal, sid):
         k = number(p)
         if k is None or k in have:
             continue
@@ -862,30 +767,3 @@ def mark_interrupted(goal: str, sid: str) -> list[int]:
 def new_ask_id() -> str:
     """An ask's id."""
     return secrets.token_hex(4)
-
-
-def of_goal(goal: str) -> list[dict[str, Any]]:
-    """A goal's studies as its page and `evh goals` show them: each one's state, its trials in rows, its confirms."""
-    out = []
-    base = root() / goal
-    for p in sorted(_store.glob(base, "*.events.jsonl")) if _store.is_dir(base) else []:
-        sid = p.name[: -len(".events.jsonl")]
-        st = state(goal, sid)
-        rows = []
-        for t in st["trials"]:
-            ch = t.get("change") or {}
-            what = ", ".join(f"{k} = {v!r}" for k, v in (ch.get("params") or {}).items())
-            what = "; ".join(
-                x for x in (what, ", ".join(f"prompt {n}" for n in ch.get("prompts") or [])) if x
-            )
-            rows.append({
-                "k": t.get("k"), "hypothesis": t.get("hypothesis") or "", "change": what or ("imported" if t.get("imported") else ""),
-                "outcome": t.get("outcome"), "reason": t.get("reason") or "",
-                "delta": (t.get("vs_best") or {}).get("delta"), "cost_usd": t.get("cost_usd"),
-            })  # fmt: skip
-        out.append({
-            "study": sid, "status": st["status"], "round": st["round"], "baseline": st["baseline"], "rows": rows,
-            "spent_usd": st["spent_usd"], "end": (st["end"] or {}).get("reason"),
-            "confirms": [c for c in st["confirms"] if c.get("phase") == "verdict"],
-        })  # fmt: skip
-    return out

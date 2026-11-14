@@ -1001,6 +1001,34 @@ def test_example_scorer_suites_pass() -> None:
             "rounds store their arms: format 4's rounds migrated, each arm's label, runs, entry and retirement, a baseline's round, refusals",
         ),
         (
+            "test_model_scorers.py",
+            "judge scorers through both surfaces: list and show with the people's checks, an edit refused once judged, V13's hash check, schemas, the API",
+        ),
+        (
+            "test_scorer_system.py",
+            "a judge that names a system: its settings, fingerprint, judging with the fake provider, refusals",
+        ),
+        (
+            "test_judge_cap.py",
+            "what a judging pass may spend: the smallest of its scorer's cap, EVAL_JUDGE_MAX_COST_USD and EVAL_MAX_COST_USD",
+        ),
+        (
+            "test_as_judged.py",
+            "a judging set's stored arm ids: live arms re-keyed to them, on a fixture and this repository's three sets",
+        ),
+        (
+            "test_cost_judging.py",
+            "cost-report counts judging spend from the verdicts: per scorer, set and judge; the dataset filter; --json",
+        ),
+        (
+            "test_model_studies.py",
+            "studies through the model: layout, state from the log, schema, a copy read through the data root, V27, study-list and study-show on the command line and the API",
+        ),
+        (
+            "test_model_faithfulness.py",
+            "faithfulness records through the model: the newest record answers for a version, the data root, the Models page and evh periods on a copy",
+        ),
+        (
             "test_model_datasets.py",
             "datasets and what belongs to them in the model: ids by their place, a dataset's references by its manifest, its item folder from any directory, the label rule, checked links",
         ),
@@ -1123,7 +1151,7 @@ def test_example_scorer_suites_pass() -> None:
             "the examples' Hub reader through the huggingface source: pages, pinned commit, rows map",
         ),
         ("test_render_data.py", "the deployment copies every part of data/ the catalog reads"),
-        ("test_runs_adapter.py", "run reading, direction, adapter loading, the judge panel"),
+        ("test_runs_adapter.py", "run reading, direction, adapter loading"),
         ("check_report_claims.py", "report claims vs committed runs"),
         ("check_links.py", "markdown links and anchors"),
         ("check_terminology.py", "eval tables use the canonical Task · Dataset labels"),

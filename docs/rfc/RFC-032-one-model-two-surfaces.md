@@ -310,8 +310,9 @@ Answered the same day (owner: "Love the reasoning and answers. I agree with all"
 4. **A judge is a system** (a deployment, a prompt version, settings) that a judge scorer names, with its protocol
    (the mode, how judges combine) and its validation. Today `scorers/judge-summ-v2.yaml` repeats each judge's
    provider, model, family, temperature and prices: a model record's and its deployment's facts, written twice. A
-   judge needs what any system needs (onboarding, a pinned prompt, its cost counted), and its outputs on a judging set
-   are a run of the judge system. The validation stays the scorer's: it validates that protocol with those judges.
+   judge needs what any system needs (onboarding, a pinned prompt, its cost counted). Its outputs on a judging set are
+   its verdicts, not a run: a verdict is per item, pass and block, and a judging set is not a dataset (step 7, owner
+   2026-11-14). The validation stays the scorer's: it validates that protocol with those judges.
 5. **A deployment's checks** (each probe run, smoke and approval) are dated entries kept on the deployment, each with
    its result and the job that made it; approval is a decision (who and why); the deployment's state is read from the
    latest. Today one `onboarding: {status, at}` is overwritten at each check. "Vetted" (ADR-0021) means something only
@@ -424,3 +425,23 @@ Quoted from the discussion, typing slips corrected.
     the catalog reads a deployment's copy through it too; the exposure register checked on the fleet's real reads
     (99, `exposed.tsv`); picks, tag sets, failure-mode lists, sealed sides and splits exist in no project reachable
     here; a dataset made from a version and a capture shows both, on its page and in the list ("C").
+- **Step 7, scorers and judges** (after an inventory: 5 judge scorers, 4 judges, 3 judging sets, 3,280 verdicts, 89
+  judged scores, every stored scorer hash and judge fingerprint matching the files; no studies, faithfulness records
+  or prompt versions in this repository), "build 1-8, A retire (delete), B yes":
+  - a judge scorer is an entity, listed and shown with its judges, its validation and the scores it made; an edit to
+    one that has judged scores is refused (a new version is a new id, with `supersedes`), and validate names a judged
+    score whose scorer is not the one it was made with;
+  - judge spend is counted: `cost-report` reads the verdicts' cost; judging keeps its own budget and keys, never a
+    round's ("I would prefer separate budgets and even support for separate keys"): a pass is capped by its scorer's
+    `cost_cap_usd`, the new `EVAL_JUDGE_MAX_COST_USD` and `EVAL_MAX_COST_USD`, the smallest winning, and its calls
+    read the `EVAL_JUDGE_<NAME>` keys first (ADR-0005);
+  - the people's checks of a judge (`data/judge-validation/`) are a part of its scorer, with a view and a schema, and
+    the tools that write them write to the project's data;
+  - `judged-judge-summ-pick-v1` is guarded as the other judged arms are; `as_judged` gets its test;
+  - a new scorer's judge may name a `system:`, read as that system's settings; the five stored scorers stay as they
+    were made (their hashes are in every verdict); a judge's pass is its verdicts, not a run (Q4 corrected);
+  - code scorers, judge prompts and sheet-import's scorers stay as they are;
+  - the older judge panel (the `judge` command), with its own config format and no stored verdicts, is removed.
+  - studies and faithfulness ("build studies and faithfulness in step 7"): entities of the model, read through its data
+    root as datasets are; a study gets a schema; the faithfulness summary copied into a model record goes, the models
+    page reading the faithfulness records.

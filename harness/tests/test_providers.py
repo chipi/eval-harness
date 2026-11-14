@@ -6,8 +6,7 @@
 Fake `openai` and `anthropic` modules record what each call was built with. Before one layer:
 `provider: openrouter` read OPENAI_API_KEY and called OpenAI's address unless the arm set both
 `base_url` and `api_key_env`; a judge ignored its declared `provider:` and went wherever the
-environment's proxy or OpenRouter key pointed; the judge panel called only Anthropic, priced
-Sonnet in code, and ran its fake judge when the key was missing.
+environment's proxy or OpenRouter key pointed.
 """
 
 import json
@@ -81,7 +80,7 @@ fake_anthropic.Anthropic = _Anthropic  # type: ignore[attr-defined]
 sys.modules["openai"] = fake_openai
 sys.modules["anthropic"] = fake_anthropic
 
-from evaluation_harness import _fingerprint, _providers, adapter, judging, panel_judges  # noqa: E402
+from evaluation_harness import _fingerprint, _providers, adapter, judging  # noqa: E402
 
 VARS = (
     "OPENAI_API_KEY",
@@ -311,41 +310,6 @@ with tempfile.TemporaryDirectory() as td:
         a_fp["hash"] == b_fp["hash"] and "api_key_env" not in json.dumps(b_fp),
         str(b_fp["settings"]),
     )
-
-# ── the judge panel ──────────────────────────────────────────────────────────
-spec = {
-    "id": "j1",
-    "provider": "anthropic",
-    "model": "claude-x",
-    "usd_per_mtok_in": 3.0,
-    "usd_per_mtok_out": 15.0,
-}
-msg = refused(lambda: panel_judges.build_judge(spec))
-check(
-    "panel: a hosted judge with no key stops before any call, never a fake judge in its place",
-    "EVAL_JUDGE_ANTHROPIC_API_KEY or ANTHROPIC_API_KEY" in msg and "--use-fake-judge" in msg,
-    msg,
-)
-check(
-    "panel: --use-fake-judge is the only way to a fake judge",
-    isinstance(panel_judges.build_judge(spec, use_fake=True), panel_judges.FakeJudge),
-)
-check(
-    "panel: a judge named only by a model string is refused (provider and prices are required)",
-    "provider" in refused(lambda: panel_judges.build_judge("claude-sonnet-4-6")),  # type: ignore[arg-type]
-)
-os.environ["EVAL_JUDGE_ANTHROPIC_API_KEY"] = "sk-ant-judging"
-pj = panel_judges.build_judge(spec)
-assert pj is not None
-sc = pj.score(run_id="r", item_id="i", item_content="out", dimensions=["accuracy"])
-check(
-    "panel: a hosted judge goes through the layer on the judge's own key, priced from its spec",
-    seen.get("sdk") == "anthropic"
-    and seen.get("api_key") == "sk-ant-judging"
-    and sc.total_cost_usd == round(10 * 3 / 1e6 + 20 * 15 / 1e6, 8)
-    and sc.per_dimension == {"accuracy": 4},
-    f"{seen} {sc}",
-)
 
 # A key written into a config is never shown, and is named so evh run can refuse it.
 params = {"api_key": "sk-1", "api_key_env": "X", "max_tokens": 300, "authorization": "Bearer x", "model": "m"}

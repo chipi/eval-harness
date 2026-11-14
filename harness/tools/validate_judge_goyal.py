@@ -44,19 +44,17 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
-HERE = Path(__file__).resolve().parents[1] / "scripts"  # the core modules (this file is in tools/)
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tools/
-from evaluation_harness import (  # noqa: E402
+from evaluation_harness import (
     _fetch,
     _store,
 )
-from evaluation_harness import judge_score as js  # noqa: E402
-from evaluation_harness._common import die, write_bytes_atomic, write_text_atomic  # noqa: E402
-from evaluation_harness._retry import call_with_retries  # noqa: E402
-from evaluation_harness.judging import shingles, withheld_reason  # noqa: E402
+from evaluation_harness import judge_score as js
+from evaluation_harness._common import DATA, die, write_bytes_atomic, write_text_atomic
+from evaluation_harness._retry import call_with_retries
+from evaluation_harness.judging import shingles, withheld_reason
 
-DATA = HERE.parent / "data"
 EXT = DATA / "external" / "goyal2022"
 ZIP_PATH = EXT / "human_annotations.zip"
 URL = "https://tagoyal.github.io/zero-shot-explorer/human_annotations.zip"

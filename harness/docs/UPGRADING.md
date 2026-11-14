@@ -349,8 +349,8 @@ so check these before you trust a `validate`:
   each is what the tutorial's scorer uses).
 - **`--resume`** takes a run made by 0.4.0 (rows with `_extra`); `--resume-unverified` is
   gone.
-- **`evh judge`** is the judge panel (it sat beside the package and could not run from a pin);
-  the tutorial kit ships `tutorial/judge_panel.yaml`.
+- **The judge panel** is a command (it sat beside the package and could not run from a pin; removed in 0.8.0,
+  RFC-032 step 7); the tutorial kit shipped its config.
 - **Your adapter**: put it at the project root as `adapter.py` and an arm with no `adapter:`
   uses it. Code that imported `catalog_adapter.load_adapter` imports `load_catalog_adapter`;
   a script that relied on importing the package to read `.env` loads it itself

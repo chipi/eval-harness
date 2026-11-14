@@ -17,12 +17,12 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
 import argparse
-import json
 import os
 import sys
 
-from evaluation_harness import _coderec, _faith, _jsonout, _store
+from evaluation_harness import _coderec, _faith, _jsonout
 from evaluation_harness._common import die, evh_prog, now
+from evaluation_harness.model import faithfulness as model_faithfulness
 
 
 def main() -> int:
@@ -47,11 +47,11 @@ def main() -> int:
             )
         if not args.cause.strip():
             die("--cause: say what outside the system caused the disagreement", "bad-argument")
-        nums = _faith.numbers(args.model)
+        nums = model_faithfulness.numbers(args.model)
         n = args.n or (nums[-1] if nums else None)
         if n is None:
             die(f"no faithfulness record of {args.model}: run evh faithfulness first", "not-found")
-        rec = _faith.load(args.model, n)
+        rec = model_faithfulness.load(args.model, n)
         if args.item not in {d["item_id"] for d in rec.get("disagreements") or []}:
             die(f"{args.item} is not a disagreement of record {args.model}/{n}", "not-found")
         if args.item in {e.get("item_id") for e in rec.get("exceptions") or []}:
@@ -63,13 +63,8 @@ def main() -> int:
         with _jobs.holding(
             [(key, True)], os.environ.get("EVH_JOB") or f"pid {os.getpid()}", _jobs.say_waiting
         ):
-            p = _faith.records_dir(args.model) / f"{n}.exceptions.jsonl"
-            before = _store.read_text(p, encoding="utf-8") if _store.is_file(p) else ""
-            if before and not before.endswith("\n"):
-                before += "\n"
-            _store.write_text(p, before + json.dumps(ev, sort_keys=True) + "\n")
-        now_rec = _faith.load(args.model, n)
-        _coderec.record_faithfulness(args.model, n, now_rec)
+            model_faithfulness.append_exception(args.model, n, ev)
+        now_rec = model_faithfulness.load(args.model, n)
         left = _faith.unnamed(now_rec)
         print(f"named {args.item} in record {args.model}/{n}: {args.cause.strip()}")
         print(f"  {len(left)} disagreement(s) of the record left unnamed")

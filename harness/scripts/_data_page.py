@@ -278,6 +278,18 @@ def show(rel: str) -> dict[str, Any]:
     return out
 
 
+def refuse_used_scorer(norm: str, what: str) -> None:
+    """Refuse to change or delete (`what`) the judge scorer at `norm` when it made judged scores: every one records the
+    scorer as it was, so a new version is a new scorer (a new id, `supersedes`). Anything else passes."""
+    parts = norm.split("/")
+    if len(parts) != 2 or parts[0] != "scorers" or not parts[1].endswith(".yaml"):
+        return
+    from evaluation_harness.model import scorers  # noqa: PLC0415
+
+    if why := scorers.frozen(parts[1][: -len(".yaml")]):
+        raise Refused(f"{norm} is not {what}: {why}", "not-allowed")
+
+
 def check(rel: str, text: str) -> list[str]:
     """What is wrong with this text as the setting at `rel`; [] when it may be saved. The form's own check
     (`_settings_form.problems`) once the text parses."""
@@ -304,6 +316,11 @@ def check(rel: str, text: str) -> list[str]:
             doc = {}
     if not isinstance(doc, dict):
         return ["a setting is a mapping of keys (key: value lines)"]
+    if norm.startswith("scorers/") and _store.is_file(_f):
+        from evaluation_harness.model import scorers  # noqa: PLC0415
+
+        if scorers.content_hash(doc) != scorers.current_sha256(Path(norm).stem):
+            refuse_used_scorer(norm, "changed")
     return [
         f"{'.'.join(map(str, p['path'])) or '(top)'}: {p['message']}"
         for p in _settings_form.problems(norm, _settings_form.plain(doc))
@@ -357,6 +374,7 @@ def deletable(rel: str) -> str:
     norm, f = resolve(rel)
     k = kind_of(norm)
     if k == "setting" and _store.is_file(f):
+        refuse_used_scorer(norm, "deleted")
         return k
     if k == "run":
         return k
@@ -385,6 +403,7 @@ def _remove(rel: str) -> dict[str, Any]:
     if k == "setting":
         if not _store.is_file(f):
             raise Refused(f"No file {norm} in the project's data.", "not-found")
+        refuse_used_scorer(norm, "deleted")
         _store.unlink(f)
         return {"deleted": norm, "kind": "setting"}
     if k == "run":

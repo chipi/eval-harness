@@ -1,8 +1,9 @@
 """Faithfulness records and the gate (RFC-030 R2).
 
-`data/faithfulness/<model_id>/<n>.json` is written once by `evh faithfulness`: a replay at the recorded versions over
-every item, compared with production's arm by the adapter's `same(a, b)`. A disagreement whose cause is outside the
-system is named in `<n>.exceptions.jsonl` beside it (appended, who and when), never edited into the record.
+A faithfulness record is written once by `evh faithfulness`: a replay at the recorded versions over every item,
+compared with production's arm by the adapter's `same(a, b)`. A disagreement whose cause is outside the system is
+named in the exceptions beside it (appended, who and when), never edited into the record. The records and where they
+are (data/faithfulness/) are model/faithfulness.
 
 The gate: a replay, or a candidate from it, is scored against a reference or label set only when the latest record of
 its code record and dataset agrees on every item but those named, and was made with the same items, deployments and
@@ -17,75 +18,10 @@ from pathlib import Path as _Path
 if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
-import json
-from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _common, _store
-
-
-def records_dir(model_id: str) -> Path:
-    """data/faithfulness/<model_id>/."""
-    return _common.DATA / "faithfulness" / model_id
-
-
-def numbers(model_id: str) -> list[int]:
-    """The record numbers written for a code record, ascending."""
-    d = records_dir(model_id)
-    if not _store.is_dir(d):
-        return []
-    return sorted(int(p.stem) for p in _store.iterdir(d) if p.suffix == ".json" and p.stem.isdigit())
-
-
-def load(model_id: str, n: int) -> dict[str, Any]:
-    """Record n, with its named exceptions under `exceptions`."""
-    p = records_dir(model_id) / f"{n}.json"
-    if not _store.is_file(p):
-        _common.die(
-            f"no faithfulness record {model_id}/{n} (made: {numbers(model_id) or 'none'})", "not-found"
-        )
-    rec = _common.read_json(p)
-    rec["exceptions"] = exceptions(model_id, n)
-    return rec
-
-
-def exceptions(model_id: str, n: int) -> list[dict[str, Any]]:
-    """The disagreements named for record n, in the order they were named."""
-    p = records_dir(model_id) / f"{n}.exceptions.jsonl"
-    if not _store.is_file(p):
-        return []
-    out = []
-    for line in _store.read_text(p, encoding="utf-8").splitlines():
-        if line.strip():
-            try:
-                out.append(json.loads(line))
-            except ValueError:
-                continue
-    return out
-
-
-def latest(model_id: str, dataset_id: str, adapter_sha256: Any = ...) -> dict[str, Any] | None:
-    """The newest record of a code record on a dataset (made with this adapter, when one is given), or None."""
-    for n in reversed(numbers(model_id)):
-        rec = _common.read_json(records_dir(model_id) / f"{n}.json")
-        if rec.get("dataset_id") == dataset_id and (
-            adapter_sha256 is ... or rec.get("adapter_sha256") == adapter_sha256
-        ):
-            rec["exceptions"] = exceptions(model_id, n)
-            return rec
-    return None
-
-
-def write(rec: dict[str, Any]) -> int:
-    """Write a new record under the next number (never over one); returns the number."""
-    for _ in range(50):
-        n = (numbers(rec["model_id"]) or [0])[-1] + 1
-        body = {**rec, "n": n}
-        data = (json.dumps(body, indent=2, sort_keys=True) + "\n").encode()
-        if _store.create_new(records_dir(rec["model_id"]) / f"{n}.json", data):
-            return n
-    _common.die(f"faithfulness {rec['model_id']}: could not take a record number", "failed")
-    return 0  # pragma: no cover - die exits
+from evaluation_harness import _common
+from evaluation_harness.model import faithfulness as model_faithfulness
 
 
 def unnamed(rec: dict[str, Any]) -> list[dict[str, Any]]:
@@ -173,9 +109,9 @@ def gate(
     """{faithful, record, counts, unnamed, why}: whether the newest record made with this adapter (its support
     modules included) lets a replay be scored, and why not. Records made with another adapter (a stand-in being fixed,
     a second replay of the same system) never stand in for this one's."""
-    rec = latest(model_id, dataset_id, adapter_sha256)
+    rec = model_faithfulness.latest(model_id, dataset_id, adapter_sha256)
     if rec is None:
-        other = latest(model_id, dataset_id)
+        other = model_faithfulness.latest(model_id, dataset_id)
         why = (
             f"record {model_id}/{other['n']} was made with another adapter or other support modules, and none with these"
             if other is not None

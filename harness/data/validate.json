@@ -21,6 +21,7 @@
   "systems": ["../examples/*/systems/*.yaml", "../examples/*/systems/*/*.yaml", "../examples/*/reference/*.yaml"],
   "committed": ["runs", "pair", "repeats", "linux",
                 "judged-judge-summ-v1", "judged-judge-summ-v2", "judged-judge-summ-pointwise-v1",
+                "judged-judge-summ-pick-v1",
                 "adjudicated", "silver"],
   "floors": {
     "runs": 174,
@@ -30,6 +31,7 @@
     "judged-judge-summ-v1": 29,
     "judged-judge-summ-v2": 29,
     "judged-judge-summ-pointwise-v1": 2,
+    "judged-judge-summ-pick-v1": 29,
     "adjudicated": 30,
     "silver": 29
   },

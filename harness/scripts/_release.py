@@ -11,7 +11,10 @@ repository does not publish:
     in the database, where no git says so, the texts of a reference whose manifest says they are not redistributed;
   - for a dataset marked `text: hidden` (RFC-019 §4): its arms' outputs and their predictions'
     `_meta` beyond the call (CALL_META), its references' texts (their manifests stay), the judge verdicts on it, its
-    profile's text, labels and links, and its items' source URLs and text and URL field values.
+    profile's text, labels and links, and its items' source URLs and text and URL field values; of a study run or
+    confirmed on it, the prose of its spec and log (the instructions, hypotheses and rationales may quote the items
+    shown); of a faithfulness record of a replay on it, what production and the replay answered and the named
+    exceptions' causes (the item, its kind and who named it stay).
 With the sqlite store (RFC-025) the copy's project.sqlite is the project's without a hidden dataset's runs, rebuilt so
 their texts are in none of its pages. Captures are copied as their capture.json only: records never leave the project. Materialized items
 are never copied. render.sh calls this; the hidden-text test calls it directly.
@@ -25,6 +28,7 @@ from pathlib import Path as _Path
 if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
+import contextlib
 import json
 import subprocess
 from pathlib import Path
@@ -32,6 +36,7 @@ from pathlib import Path
 import yaml
 from evaluation_harness import _common, _outputs, _store
 from evaluation_harness._visibility import hidden, public_profile
+from evaluation_harness.model import studies as model_studies
 
 #: The directories of data/ the catalog and the inspector read (tests/test_render_data.py checks it
 #: against catalog_adapter.py), copied besides data/runs.
@@ -56,6 +61,8 @@ COPIED_DIRS = (
     "tags",
     "failure-modes",
     "exposure",
+    "studies",
+    "faithfulness",
 )
 #: The data's format (RFC-032): the deploy checks it; the systems a migration renamed: the catalog redirects them.
 COPIED_FILES: tuple[str, ...] = ("project.yaml", "renames.json")
@@ -204,6 +211,59 @@ def _manifest_dataset(ref_dir: Path) -> str | None:
         return ref_dir.name
 
 
+#: What a person or an agent wrote about a study's trials, which may quote the items it was shown.
+_STUDY_PROSE = ("hypothesis", "rationale", "instruction")
+
+
+def _study_spec_public(text: str) -> str:
+    """A hidden dataset's study spec: its instructions to an agent (what it was told about the items) and note gone."""
+    doc = yaml.safe_load(text)
+    if isinstance(doc, dict):
+        doc = {k: HIDDEN_WHAT if k in ("directions", "note") else v for k, v in doc.items()}
+    return yaml.safe_dump(doc, sort_keys=False)
+
+
+def _study_log_public(text: str) -> str:
+    """A hidden dataset's study log: the prose of each line (its hypothesis, rationale, instruction) a mark; the ids,
+    numbers and reasons the log decides by stay."""
+    out = []
+    for line in text.splitlines():
+        try:
+            ev = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(ev, dict):
+            ev = {k: HIDDEN_WHAT if k in _STUDY_PROSE and v else v for k, v in ev.items()}
+            out.append(json.dumps(ev, sort_keys=True))
+    return "".join(x + "\n" for x in out)
+
+
+def _faithfulness_record_public(doc: dict) -> dict:
+    """A hidden dataset's faithfulness record: each disagreement keeps its item, kind and commit; what production and
+    the replay answered, and the error text, are gone."""
+    return {
+        **doc,
+        "disagreements": [
+            {**d, "production": None, "replay": None, **({"error": HIDDEN_WHAT} if d.get("error") else {})}
+            for d in doc.get("disagreements") or []
+        ],
+    }
+
+
+def _faithfulness_exceptions_public(text: str) -> str:
+    """A hidden dataset's named exceptions: who named which item and when stay; the cause is a person's words about the
+    item, a mark."""
+    out = []
+    for line in text.splitlines():
+        try:
+            ev = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(ev, dict):
+            out.append(json.dumps({**ev, "cause": HIDDEN_WHAT}, sort_keys=True))
+    return "".join(x + "\n" for x in out)
+
+
 def _call_only(row: dict) -> dict:
     """A hidden dataset's prediction row: its scores and the call's description; `_extra` (the
     adapter's numbers) kept, `_meta` cut to CALL_META, every other `_` key gone."""
@@ -236,7 +296,13 @@ def copy_data(src: Path, dst: Path) -> dict:
         )
     _store.mkdir(dst, parents=True, exist_ok=True)
     datasets = src / "datasets"
-    counts = {"hidden_runs": 0, "hidden_refs": 0, "hidden_verdicts": 0}
+    counts = {
+        "hidden_runs": 0,
+        "hidden_refs": 0,
+        "hidden_verdicts": 0,
+        "hidden_studies": 0,
+        "hidden_faithfulness": 0,
+    }
     hidden_runs = {str(d.resolve()) for d in _run_dirs(src) if hidden(_dataset_of_run(d), datasets)}
 
     # Every file of every run, a hidden dataset's run without its outputs; read through the store, so a project in its
@@ -344,6 +410,58 @@ def copy_data(src: Path, dst: Path) -> dict:
                     _store.write_text(dst / name / f.name, text, encoding="utf-8")
                 else:
                     _store.copy_file(f, dst / name / f.name)
+        elif name == "studies":
+            # A study's files whole (its trials' systems and confirmations hold ids, settings and counts); a hidden
+            # dataset's study spec and log without the prose that may quote the items shown.
+            for f in sorted(_store.rglob(d, "*")):
+                if not _store.is_file(f):
+                    continue
+                rel = f.relative_to(d)
+                out = dst / name / rel
+                _store.mkdir(out.parent, parents=True, exist_ok=True)
+                sid = (
+                    f.name.removesuffix(".yaml").removesuffix(".events.jsonl")
+                    if len(rel.parts) == 2
+                    else None
+                )
+                if sid and model_studies.hidden(rel.parts[0], sid, src):
+                    text = _store.read_text(f, encoding="utf-8")
+                    if f.suffix == ".yaml":
+                        counts["hidden_studies"] += 1
+                        _store.write_text(out, _study_spec_public(text), encoding="utf-8")
+                    else:
+                        _store.write_text(out, _study_log_public(text), encoding="utf-8")
+                else:
+                    _store.copy_file(f, out)
+        elif name == "faithfulness":
+            # A replay's disagreements quote what production and the replay answered on an item: a hidden dataset's
+            # records keep the item and its kind; its named exceptions keep who and when.
+            for f in sorted(_store.rglob(d, "*")):
+                if not _store.is_file(f):
+                    continue
+                out = dst / name / f.relative_to(d)
+                _store.mkdir(out.parent, parents=True, exist_ok=True)
+                record = f.with_name(f.name.split(".", 1)[0] + ".json")
+                ds = None
+                if _store.is_file(record):
+                    with contextlib.suppress(ValueError, AttributeError):
+                        ds = json.loads(_store.read_text(record, encoding="utf-8")).get("dataset_id")
+                if f.suffix not in (".json", ".jsonl") or not hidden(ds, datasets):
+                    _store.copy_file(f, out)
+                elif f.suffix == ".json":
+                    counts["hidden_faithfulness"] += 1
+                    doc = json.loads(_store.read_text(f, encoding="utf-8"))
+                    _store.write_text(
+                        out,
+                        json.dumps(_faithfulness_record_public(doc), indent=2, sort_keys=True) + "\n",
+                        encoding="utf-8",
+                    )
+                else:
+                    _store.write_text(
+                        out,
+                        _faithfulness_exceptions_public(_store.read_text(f, encoding="utf-8")),
+                        encoding="utf-8",
+                    )
         elif name == "captures":
             for cap in sorted(_store.glob(d, "*/capture.json")):
                 _store.mkdir(dst / name / cap.parent.name, parents=True, exist_ok=True)
@@ -395,7 +513,8 @@ def main() -> int:
         f"copied {_sys.argv[2]} -> {_sys.argv[3]}"
         + (
             f" (text kept back for hidden datasets: {counts['hidden_runs']} run(s), "
-            f"{counts['hidden_refs']} reference(s), {counts['hidden_verdicts']} verdict set(s))"
+            f"{counts['hidden_refs']} reference(s), {counts['hidden_verdicts']} verdict set(s), "
+            f"{counts['hidden_studies']} study(ies), {counts['hidden_faithfulness']} faithfulness record(s))"
             if any(counts.values())
             else ""
         )

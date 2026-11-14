@@ -61,7 +61,7 @@ git init -q && git add -A && git commit -qm "Start: the tutorial kit"
 ```
 ```text
   folders  data/sources, data/systems, data/goals, data/fields
-  wrote    29 file(s), the tutorial kit under tutorial/
+  wrote    28 file(s), the tutorial kit under tutorial/
 ```
 
 `data/` is where everything the harness freezes and records will live (`data/project.yaml` records its format); `tutorial/` is the

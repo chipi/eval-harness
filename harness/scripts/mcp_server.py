@@ -127,7 +127,6 @@ NOT_TOOLS = {
     "sweep": "runs systems and may spend",
     "rescore": "writes runs",
     "score-preview": "runs the project's own scoring code",
-    "judge": "calls models and spends",
     "judge-score": "calls models and spends",
     "silver-calibrate": "writes",
     "cost-report": "a report tool; not yet a tool",

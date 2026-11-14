@@ -1145,9 +1145,8 @@ def goals(argv) -> int:
     for x in g.get("links") or []:
         if x.get("url"):
             print(f"  link       {x['note'] + ': ' if x.get('note') else ''}{x['url']}")
-    from evaluation_harness import _study  # noqa: PLC0415
-
-    for s in _study.of_goal(g["goal_id"]):
+    studies = getattr(A, "studies", None)
+    for s in (studies(g["goal_id"]) if callable(studies) else []) or []:
         print(f"\nstudy {s['study']}: {s['status']}, from {s['baseline']}, ${s['spent_usd']:.4f} spent"
               + (f"; ended: {s['end']}" if s["end"] else ""))  # fmt: skip
         for r in s["rows"]:

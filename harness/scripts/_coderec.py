@@ -1,11 +1,11 @@
 """The code a replay runs (RFC-030): a model record of `kind: code` (the fleet's feedback 27), read for a replay.
 
 `data/models/<id>.yaml` with `kind: code` names the system's repository (`repo`) and its `versions`, each a `commit`,
-when it was `deployed` in production (`[{from, to}]`, `to` absent while it runs) and the `faithfulness` a replay
-measured. A replay reads each version from a local git checkout: `checkout:` when `repo` is a URL, else `repo` itself.
-It runs each item at the commit deployed when the item happened, from a copy of that commit unpacked with
-`git archive` under `.build/code/<id>/<commit>/`: nothing is written into the checkout, and a copy is clean by
-construction.
+when it was `deployed` in production (`[{from, to}]`, `to` absent while it runs). How faithfully a replay reproduced
+a version is in the faithfulness records (model/faithfulness), not here. A replay reads each version from a local git
+checkout: `checkout:` when `repo` is a URL, else `repo` itself. It runs each item at the commit deployed when the item
+happened, from a copy of that commit unpacked with `git archive` under `.build/code/<id>/<commit>/`: nothing is
+written into the checkout, and a copy is clean by construction.
 """
 
 from __future__ import annotations
@@ -100,7 +100,7 @@ def load(model_id: str) -> dict[str, Any]:
 
 def versions_sha256(rec: dict[str, Any]) -> str:
     """One hash over what says which commit ran when (each version's commit and deployed periods): an edit to a
-    period or a commit moves it; the faithfulness summaries a replay writes into the record do not."""
+    period or a commit moves it."""
     part = [
         {"commit": v.get("commit"), "deployed": v.get("deployed") or []} for v in rec.get("versions") or []
     ]
@@ -195,35 +195,6 @@ def _unpack(rec: dict[str, Any], commit: str, dest: Path) -> None:
     (tmp / ".evh-commit").write_text(commit + "\n")
     shutil.rmtree(dest, ignore_errors=True)
     os.replace(tmp, dest)
-
-
-def record_faithfulness(model_id: str, n: int, rec: dict[str, Any]) -> None:
-    """Each version's `faithfulness` summary in the code record, from faithfulness record n: agreed of the items that
-    ran at it, the named exceptions among them, the record and when. The Models page and `evh models` show it."""
-    from evaluation_harness import _models  # noqa: PLC0415
-
-    named = {e.get("item_id") for e in rec.get("exceptions") or []}
-    differ: dict[str, list[str]] = {}
-    for d in rec.get("disagreements") or []:
-        differ.setdefault(str(d.get("commit")), []).append(d["item_id"])
-    ref = f"{model_id}/{n}"
-
-    def change(doc: dict[str, Any]) -> None:
-        for v in doc.get("versions") or []:
-            full = next((c for c in rec["commits"] if c.startswith(str(v.get("commit")))), None)
-            if full is None:
-                continue
-            items = int(rec["commits"][full])
-            mine = differ.get(full, [])
-            v["faithfulness"] = {
-                "agreed": items - len(mine),
-                "items": items,
-                "exceptions": sorted(i for i in mine if i in named),
-                "run": ref,
-                "at": rec["at"],
-            }
-
-    _models.update_record(_common.DATA, model_id, change)
 
 
 def runs_of(model_id: str) -> list[dict[str, Any]]:

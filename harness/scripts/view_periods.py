@@ -22,6 +22,7 @@ import sys
 
 from evaluation_harness import _coderec, _fields, _jsonout
 from evaluation_harness._common import die, evh_prog, load_dataset
+from evaluation_harness.model import faithfulness as model_faithfulness
 
 
 def main() -> int:
@@ -39,7 +40,7 @@ def main() -> int:
     )
     args = ap.parse_args()
     with _jsonout.collect("periods", args.json, live=sys.stderr):
-        rec = _coderec.load(args.model)
+        rec = model_faithfulness.with_summaries(_coderec.load(args.model))
         spans, bad = _coderec.periods(rec)
         if bad:
             die(f"code record {args.model}: {bad[0]}", "invalid-file")

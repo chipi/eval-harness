@@ -56,6 +56,8 @@ class Entity:
     #: False: its records are written by their own commands (a dataset by dataset-create, a reference by its
     #: promotion), never by an edit; `save` refuses.
     editable: bool = True
+    #: Why a record that exists is not changed now (a scorer that made judged scores): its reason, "" when it may be.
+    frozen: Callable[[str], str] | None = None
     #: Another data directory than the project's (a deployment's copy of it, which the catalog reads): `under`.
     data: Path | None = None
 
@@ -217,6 +219,8 @@ class Entity:
                 old = self.get(rid) if exists else None
                 if old == record:
                     return {"id": rid, "changed": False, "record": record}
+                if exists and self.frozen and (why := self.frozen(rid)):
+                    raise Problem(f"{self.name} {rid!r} is not changed: {why}", "not-allowed")
                 _store.mkdir(f.parent, parents=True, exist_ok=True)
                 _common.write_text_atomic(f, self.text(record, before))
                 self._remember(rid, old, by)

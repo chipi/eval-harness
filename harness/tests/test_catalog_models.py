@@ -569,15 +569,18 @@ fleet = {
         {
             "commit": "9a318e61",
             "deployed": [{"from": "2026-10-20T00:00:00Z"}],
-            "faithfulness": {
-                "agreed": 133,
-                "items": 135,
-                "exceptions": ["clock slack", "a reopen"],
-                "at": "2026-11-05",
-            },
         },
     ],
 }
+FULL = "9a318e61" + "0" * 32  # the commit a replay recorded, which the version names by its start
+#: The records a replay and a person's naming write (RFC-030): 135 items at the second version, two differing, both named.
+FAITHFULNESS = {
+    "n": 1, "model_id": "triage-fleet", "config_id": "fleet_replay_v1", "dataset_id": "ds1", "items_sha256": "a" * 64,
+    "versions_sha256": "a" * 64, "adapter_sha256": None, "commits": {FULL: 135}, "production_run": "prod", "at": "2026-11-05",
+    "counts": {"items": 135, "agree": 133, "differ": 2, "replay_errors": 0, "production_missing": 0}, "coverage": {},
+    "disagreements": [{"item_id": i, "kind": "differ", "commit": FULL} for i in ("clock slack", "a reopen")],
+    "actor": {"type": "person", "name": "t"},
+}  # fmt: skip
 check(
     "code record: valid without aliases", not list(jsonschema.Draft202012Validator(SCHEMA).iter_errors(fleet))
 )
@@ -592,6 +595,15 @@ with tempfile.TemporaryDirectory() as td:
     data = Path(td) / "data"
     (data / "runs").mkdir(parents=True)
     record(data, fleet)
+    (data / "faithfulness" / "triage-fleet").mkdir(parents=True)
+    (data / "faithfulness" / "triage-fleet" / "1.json").write_text(json.dumps(FAITHFULNESS))
+    (data / "faithfulness" / "triage-fleet" / "1.exceptions.jsonl").write_text(
+        "".join(
+            json.dumps({"item_id": i, "cause": "c", "actor": {"type": "person", "name": "t"}, "at": "x"})
+            + "\n"
+            for i in ("clock slack", "a reopen")
+        )
+    )
     run(data, "fleet_guard_v1_20261105", "fleet_guard_v1", {"repo": "signal-fleet"}, record="triage-fleet")
     A = HarnessAdapter(data)
     out = Path(td) / "site"

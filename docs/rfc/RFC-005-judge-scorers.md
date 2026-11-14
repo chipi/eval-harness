@@ -100,7 +100,7 @@ transfers to the outputs being judged.
    `family-test` read them.
 
 `--dry-run` builds the judging set and prints calls, tokens and the estimated cost, calling
-nothing. `evh judge` stays the older pointwise judge panel.
+nothing. The older pointwise judge panel was removed in 0.8.0 (RFC-032 step 7).
 
 ### Judging modes (0.6.0)
 

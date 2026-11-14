@@ -63,6 +63,13 @@ Each check exists because its absence let a real defect through somewhere:
   V23 run outputs    a run still in the old layout (an outputs/ folder, or a data/runs-* folder: `evh migrate`),
                      or a score derived from outputs its run does not have (RFC-024); a project in both stores
                      (RFC-025)
+  V24 prompts        a prompt version whose bytes do not hash to its name, or a run naming one not recorded; a
+                     run's deployment.code incomplete (RFC-028, RFC-030)
+  V25 looks          a look number on a test set taken by two different questions (RFC-029)
+  V26 faithfulness   a faithfulness record off its schema, of no code record, with exceptions that are not its own
+                     disagreements; a code record keeping a summary of its own (RFC-030, RFC-032 step 7)
+  V27 studies        a study's spec off its schema or under no goal, a log event a study does not write, a trial
+                     with no system (RFC-029, RFC-032 step 7)
 
 Exit 1 on any failure, so it can gate.
 
@@ -221,6 +228,8 @@ def v1_schemas() -> None:
         (_store.glob(DATA / "scorers", "*.yaml"), "scorer.schema.json"),
         (_store.glob(DATA / "judging-sets", "*.json"), "judging-set.schema.json"),
         (_store.glob(DATA / "judge-verdicts", "*/*/*/*.json"), "verdict.schema.json"),
+        (_store.glob(DATA / "judge-validation", "*/*/report.json"), "judge-validation-report.schema.json"),
+        (_store.glob(DATA / "judge-validation", "*/*/*/*.json"), "judge-validation-record.schema.json"),
         (_store.glob(DATA / "models", "*.yaml"), "model.schema.json"),
         (_store.glob(DATA / "deployments", "*/*.yaml"), "deployment.schema.json"),
         (_store.glob(DATA / "profiles", "*.json"), "profile.schema.json"),
@@ -497,14 +506,13 @@ def _v5_in(arm: str, scores: list[tuple[Path, dict]]) -> list[list]:
 def _one_study(configs: set) -> str | None:
     """The studies these systems belong to, when every one is a study's trial or the baseline a study started from
     (trials of several studies that land on the same settings measure the same too), or None."""
-    from evaluation_harness import _study  # noqa: PLC0415
+    from evaluation_harness.model import studies as model_studies  # noqa: PLC0415
 
-    root = _study.root()
     found: set[str] = set()
     covered: set = set()
-    for p in _store.glob(root, "*/*.events.jsonl") if _store.is_dir(root) else []:
-        goal, sid = p.parent.name, p.name[: -len(".events.jsonl")]
-        st = _study.state(goal, sid)
+    for rid in model_studies.ids(check_format=False):
+        goal, sid = rid.split("/", 1)
+        st = model_studies.state(goal, sid)
         members = ({t.get("config_id") for t in st["trials"]} | {st["baseline"]}) & configs
         if members - {st["baseline"]}:
             found.add(f"{goal}/{sid}")
@@ -1159,6 +1167,39 @@ def scorer_problems(scorers_dir: Path) -> list[str]:
     return bad
 
 
+def judged_score_problems(scorers_dir: Path) -> list[str]:
+    """Every judged score was made with its scorer as it is: the hash it records is the content hash of the scorer's
+    file now. A scorer changed after it judged is another scorer under the old id, and what it made (its summaries, its
+    scores) no longer says which judges and prompt made it; the change belongs in a new scorer id (`supersedes`)."""
+    import yaml  # noqa: PLC0415
+    from evaluation_harness.model import scorers as _sc  # noqa: PLC0415
+
+    now: dict[str, str | None] = {}
+    bad = []
+    for s in _sc.judged_scores():
+        sid = str(s["scorer"])
+        if sid not in now:
+            f = scorers_dir / f"{sid}.yaml"
+            try:
+                now[sid] = (
+                    _sc.content_hash(yaml.safe_load(_store.read_text(f, encoding="utf-8")) or {})
+                    if _store.is_file(f)
+                    else None
+                )
+            except yaml.YAMLError:
+                now[sid] = None
+        cur = now[sid]
+        where = data_rel(s["dir"])
+        if cur is None:
+            bad.append(f"{where}: made with scorer {sid}, which is not in data/scorers (or does not parse)")
+        elif s["sha256"] != cur:
+            bad.append(
+                f"{where}: made with {sid} {str(s['sha256'] or 'with no hash recorded')[:12]}, "
+                f"the scorer now is {cur[:12]}: restore it, or keep the change as a new scorer id (`supersedes`)"
+            )
+    return bad
+
+
 def _report(bad: list[str], label: str, noun: str) -> None:
     for x in bad[:6]:
         print(f"       {x}")
@@ -1188,10 +1229,10 @@ def v12_verdicts_belong_to_their_set() -> None:
 
 
 def v13_judge_scorers_are_well_formed() -> None:
-    """V13: every judge scorer yaml loads and is structurally valid."""
+    """V13: every judge scorer yaml loads and is structurally valid, and every judged score was made with it as it is."""
     _report(
-        scorer_problems(DATA / "scorers"),
-        "V13 every judge scorer yaml loads and is structurally valid",
+        scorer_problems(DATA / "scorers") + judged_score_problems(DATA / "scorers"),
+        "V13 every judge scorer yaml loads and is structurally valid, and every judged score was made with it as it is",
         "bad scorer(s)",
     )
 
@@ -1851,44 +1892,50 @@ def v25_looks() -> None:
 
 
 def v26_faithfulness() -> None:
-    """V26 (RFC-030): each faithfulness record is valid against its schema, of a code record (a model record of kind:
-    code) that exists, and its exceptions name its own disagreements, once each, with a cause, by a person. A code
+    """V26 (RFC-030, RFC-032 step 7): each faithfulness record is valid against its schema, of a code record (a model
+    record of kind: code) that exists, and its exceptions name its own disagreements, once each, with a cause, by a
+    person; a code record keeps no summary of its own (the records are the source of a version's faithfulness). A code
     record's deployed periods are V18's (no two versions at one moment)."""
     import json  # noqa: PLC0415
 
     import jsonschema  # noqa: PLC0415
-    from evaluation_harness import _common, _faith, _models  # noqa: PLC0415
+    from evaluation_harness import _models  # noqa: PLC0415
+    from evaluation_harness.model import faithfulness as model_faithfulness  # noqa: PLC0415
 
     bad: list[str] = []
-    root = DATA / "faithfulness"
-    schema = json.loads(_store.read_text(_common.SCHEMAS / "faithfulness.schema.json"))
+    schema = model_faithfulness.FAITHFULNESS.schema_doc()
     n = 0
-    for d in sorted(_store.iterdir(root)) if _store.is_dir(root) else []:
-        if (_models.find(DATA, d.name) or {}).get("kind") != "code":
-            bad.append(f"data/faithfulness/{d.name}: no code record {d.name!r} (data/models/, kind: code)")
-        for k in _faith.numbers(d.name):
+    for mid in model_faithfulness.model_ids():
+        if (_models.find(DATA, mid) or {}).get("kind") != "code":
+            bad.append(f"data/faithfulness/{mid}: no code record {mid!r} (data/models/, kind: code)")
+        for k in model_faithfulness.numbers(mid):
             n += 1
-            rec = _common.read_json(d / f"{k}.json")
+            rec = json.loads(_store.read_text(model_faithfulness.record_file(mid, k), encoding="utf-8"))
             try:
                 jsonschema.validate(rec, schema)
             except jsonschema.ValidationError as exc:
-                bad.append(f"{d.name}/{k}: {exc.message}")
+                bad.append(f"{mid}/{k}: {exc.message}")
                 continue
-            if rec["n"] != k or rec["model_id"] != d.name:
-                bad.append(f"{d.name}/{k}: says it is {rec['model_id']}/{rec['n']}")
+            if rec["n"] != k or rec["model_id"] != mid:
+                bad.append(f"{mid}/{k}: says it is {rec['model_id']}/{rec['n']}")
             mine = {x["item_id"] for x in rec["disagreements"]}
             seen: set = set()
-            for e in _faith.exceptions(d.name, k):
+            for e in model_faithfulness.exceptions(mid, k):
                 iid = e.get("item_id")
                 if iid not in mine:
-                    bad.append(f"{d.name}/{k}: an exception names {iid!r}, not one of its disagreements")
+                    bad.append(f"{mid}/{k}: an exception names {iid!r}, not one of its disagreements")
                 elif iid in seen:
-                    bad.append(f"{d.name}/{k}: {iid} is named twice")
+                    bad.append(f"{mid}/{k}: {iid} is named twice")
                 elif not (e.get("cause") and (e.get("actor") or {}).get("type") == "person"):
-                    bad.append(
-                        f"{d.name}/{k}: the exception of {iid} has no cause or was not named by a person"
-                    )
+                    bad.append(f"{mid}/{k}: the exception of {iid} has no cause or was not named by a person")
                 seen.add(iid)
+    for rec in _models.load(DATA):
+        for v in rec.get("versions") or []:
+            if isinstance(v, dict) and "faithfulness" in v:
+                bad.append(
+                    f"{rec.get('model_id')}: version {v.get('commit')} keeps a faithfulness summary; the records "
+                    "(data/faithfulness/) say it, delete the copy"
+                )
     if bad:
         problems.append("V26")
         print(f"  FAIL V26 faithfulness records — {len(bad)} problem(s):")
@@ -1898,6 +1945,44 @@ def v26_faithfulness() -> None:
         print(f"  ok   V26 faithfulness records — {n} record(s)")
     else:
         print("  --   V26 faithfulness records (none)")
+
+
+def v27_studies() -> None:
+    """V27 (RFC-029, RFC-032 step 7): each study's spec is valid against its schema, under a goal that exists, with an id
+    a study may have; its log holds only the events a study writes, and each trial it logged has its system (an imported
+    study's has none)."""
+    from evaluation_harness import _common, _study  # noqa: PLC0415
+    from evaluation_harness.model import studies as model_studies  # noqa: PLC0415
+
+    bad: list[str] = []
+    goals = _common.load_goals()
+    ids = model_studies.ids(check_format=False)
+    for rid in ids:
+        goal, sid = rid.split("/", 1)
+        if goal not in goals:
+            bad.append(f"{rid}: no goal {goal!r} (data/goals/)")
+        if not _study.STUDY_ID.fullmatch(sid):
+            bad.append(f"{rid}: study id {sid!r}: lower-case letters, digits, '_' or '-'")
+        bad += [
+            f"{rid}: {'.'.join(map(str, p['path'])) or '(top)'}: {p['message']}"
+            for p in model_studies.problems(rid)
+        ]
+        for ev in model_studies.events(goal, sid):
+            if ev.get("event") not in model_studies.EVENTS:
+                bad.append(f"{rid}: a log line of event {ev.get('event')!r}")
+            elif ev["event"] == "trial" and ev.get("config_id") and not ev.get("imported"):
+                path = model_studies.trial_path(goal, sid, int(ev.get("k") or 0))
+                if not _store.is_file(path):
+                    bad.append(f"{rid}: trial {ev.get('k')} has no system ({path.name})")
+    if bad:
+        problems.append("V27")
+        print(f"  FAIL V27 studies — {len(bad)} problem(s):")
+        for b in bad[:20]:
+            print(f"       {b}")
+    elif ids:
+        print(f"  ok   V27 studies — {len(ids)} study(ies)")
+    else:
+        print("  --   V27 studies (none)")
 
 
 def v23_run_outputs() -> None:
@@ -2086,6 +2171,7 @@ def main() -> int:
             v24_prompt_versions,
             v25_looks,
             v26_faithfulness,
+            v27_studies,
             note_uncommitted_runs,
             note_round_scorers,
         ):

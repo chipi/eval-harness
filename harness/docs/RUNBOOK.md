@@ -789,7 +789,7 @@ spends, in all: `run --repeat 3` stops at one cap, not three, and `arm-smoke` st
 stopped at the cap`). The commands count what each call reports; the bundled provider layer counts the same calls
 again, so an adapter that reports less than its calls cost is still stopped at the cap. `sweep` and `model-onboard`
 give each child what the ones before it left (a child that is killed before it can say what it spent is counted at
-all it was given); `judge` takes the lower of its config's `cost_cap_usd` and the cap.
+all it was given).
 
 **A round's budget is enforced.** A run (or a smoke) of an arm whose system names an open round with `budget_usd`
 reserves, before its first call, the least of its own cap and what the round has left, in the round's ledger
@@ -892,7 +892,7 @@ into a *finding* is a separate verb: these are the tools behind the numbers in `
 | `evh rank-stability --dataset-id …` | how many items before the ordering stops moving — measured, not assumed from a power table |
 | `evh bootstrap-test --dataset-id … --a … --against …` | a percentile interval for a corpus-level metric that has no per-item value |
 | `evh rescore --dataset-id …` | recompute every score from stored outputs under the current scorer — or, with `--reference-id gold/…`, against a reference set that arrived later. **$0, no API calls** |
-| `evh cost-report` | what each arm actually cost, from the provider's bill (`_meta.usage.cost` in its predictions) against the cost the run recorded; runs with no bill there are listed apart (§4) |
+| `evh cost-report` | what each arm actually cost, from the provider's bill (`_meta.usage.cost` in its predictions) against the cost the run recorded; runs with no bill there are listed apart (§4); then what judging cost, per scorer, judging set and judge, from the verdicts' own cost |
 | `evh silver-calibrate --dataset-id …` | does a model-authored reference rank arms the way the trusted one does |
 
 `pair-test` and `family-test` count the exact p over all 2^n sign patterns when a pair shares 30
@@ -1063,27 +1063,6 @@ Run it in CI. It exits non-zero.
 
 ---
 
-## 10. Optional — the judge panel
-
-When the cheap metric is biased in your domain but you have an expensive judge
-you trust:
-
-```bash
-evh judge --config tutorial/judge_panel.yaml --use-fake-judge   # keyless; the kit's config
-```
-
-Triage on the cheap metric, decide with the judge, cost-capped with a mid-run
-abort that preserves partial results. Each finalist is judged on its stored outputs. Knobs
-in the config (`tutorial/judge_panel.yaml` from `evh init --tutorial`, or
-`config.example.yaml` in a checkout); the reasoning is in the harness README.
-`judging.primary_judge` (and `cross_judge`) is declared as a judge-score judge is: `id`,
-`provider`, `model`, `usd_per_mtok_in`, `usd_per_mtok_out`, and optionally `temperature`,
-`max_tokens`, `base_url`, `api_key_env`; its key is read as `EVAL_JUDGE_<NAME>` first. A judge
-whose key is missing stops the panel before any call; the fake judge runs only with
-`--use-fake-judge`.
-
----
-
 ## 11. Adjudicate disputed gold
 
 When strong arms agree against the gold, the gold may be wrong. Check it, and re-score for
@@ -1117,7 +1096,7 @@ Worked example: `examples/classification-ag-news/adjudication.json`.
 When a better instrument exists than the metric the eval ranks by (SummEval showed
 `coverage` agrees with experts at τ 0.10, a validated LLM judge at 0.52), measure the frozen
 outputs again, billed and capped. Design: [ADR-0001](../../docs/adr/ADR-0001-judge-scorers.md).
-This is not `evh judge`, the older judge panel. **It is optional:** nothing else in the
+**It is optional:** nothing else in the
 harness needs it, and it never changes a committed run. To see the whole pass offline and
 for $0 first, run [tutorial 3, step 5](../../docs/tutorials/3-frontier-reference-and-judging.md#5-re-measure-with-an-llm-judge-optional).
 

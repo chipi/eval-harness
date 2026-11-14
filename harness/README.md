@@ -337,30 +337,6 @@ how 18 arms of paid results were lost during this harness's own development.
 
 ---
 
-## The judge panel
-
-The harness this grew around, and not the same thing as `evh judge-score` above: the
-panel judges finalists one at a time and keeps no verdicts; the judge scorer judges every
-arm, listwise and blind, behind a validation gate, and stores every verdict. Given many
-candidate runs (`runs_from:` reads them where every command does, ranked by their primary
-metric), the panel narrows to finalists (top-K per stratum + floor + global cap), scores
-each finalist's stored outputs with an LLM judge, **aborts mid-run** if a cost cap is hit,
-aggregates to per-dimension means, and flags finalists where two judges disagree.
-
-```bash
-evh judge --config tutorial/judge_panel.yaml --use-fake-judge   # no API key (`evh init --tutorial`)
-ANTHROPIC_API_KEY=... evh judge --config judge_panel.yaml        # your own config
-```
-
-Use it when the cheap metric is known to be biased in your domain but you have
-an expensive judge you trust: cheap metric for triage, judge for the answer.
-
-Cost discipline is a **mid-run abort, not a pre-flight estimate** — estimates
-are usually wrong, and an abort stops the bill the moment the cap is hit, with
-partial results preserved so a blown budget still yields a usable report.
-
----
-
 ## Files
 
 In a checkout of this repository; the package installs `scripts/` as `evaluation_harness`, so the
@@ -391,7 +367,6 @@ bundled adapter a pinned project has is `evaluation_harness/adapter.py`.
 | `tests/test_inspector_browser.py`, `requirements-browser.txt` | the catalog and the inspector in headless Chromium: `make browser-install`, then `make browser-check` |
 | `tests/test_workbench_browser.py` | the Workbench mockup in headless Chromium (every screen, its skip link, help focus, a round's results): part of `make browser-check` |
 | `requirements-dev.txt` | the code-quality tools; from the repository root, `make quality-install`, then `make quality` |
-| `scripts/judge_panel.py`, `scripts/panel_judges.py` | the judge panel (`evh judge`) |
 
 Bundled providers: `echo` (no network), `openai` (OpenAI or any OpenAI-compatible endpoint),
 `openrouter` (`OPENROUTER_API_KEY`, OpenRouter's address), `anthropic` and `litellm` (a LiteLLM

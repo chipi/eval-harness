@@ -228,7 +228,6 @@ def main() -> int:
             ("silver-calibrate", ["--dataset-id", "tickets_v1"], "ok"),
             ("cost-report", ["--dataset-id", "tickets_v1"], "ok"),
             ("leaderboard", ["--dataset-id", "tickets_v1"], "ok"),
-            ("judge", ["--config", "tutorial/judge_panel.yaml", "--use-fake-judge"], "ok:Report written"),
             # No --metric: the default is the runs' recorded primary metric, not another project's.
             (
                 "pair-test",
@@ -519,6 +518,11 @@ def main() -> int:
             ("reference-show", ["gold", "no_such"], "no reference 'gold/no_such'"),
             ("capture-list", [], "ok:captured_v1"),
             ("capture-show", ["no_such"], "no capture 'no_such'"),
+            # Judge scorers through the model (RFC-032 step 7): the flow is test_model_scorers.py.
+            ("scorer-list", [], "ok"),
+            ("scorer-show", ["no_such"], "no scorer 'no_such'"),
+            ("scorer-new", ["no_such"], "scorers/no_such.yaml not saved"),
+            ("scorer-set", ["no_such", "--set", "cost_cap_usd=1"], "no scorer 'no_such'"),
             # The terminal's jobs (RFC-026): installed, each answers in words; the flow is test_jobs.py.
             # Prompt versions (RFC-028): installed, each answers in words; the flow is test_prompts.py.
             ("prompts", [], "ok:no prompt versions yet"),
@@ -526,6 +530,9 @@ def main() -> int:
             # Studies (RFC-029): installed, each answers in words; the flow is test_study.py.
             ("studies", [], "ok:no studies"),
             ("studies", ["--study", "g/no_such"], "no study"),
+            # The studies as resources (RFC-032 step 7): the flow is test_model_studies.py.
+            ("study-list", ["no_such_goal"], "no goal 'no_such_goal'"),
+            ("study-show", ["no_such_goal", "s1"], "no goal 'no_such_goal'"),
             ("periods", ["--model", "no_such"], "no model record 'no_such'"),
             (
                 "period-compare",

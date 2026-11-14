@@ -1,7 +1,7 @@
-"""The run reader (`_runs`), the adapter loader (`_adapter`) and the judge panel's use of both.
+"""The run reader (`_runs`) and the adapter loader (`_adapter`).
 
 Each case is a defect the holistic review found: a direction remembered only by a flag, two
-adapter registries that never saw each other, a panel that judged placeholder text.
+adapter registries that never saw each other.
 """
 
 import contextlib
@@ -150,29 +150,6 @@ with tempfile.TemporaryDirectory() as tmp, _runstore._InProject(tmp) as data:
         "adapter: metric_kinds adds the core's `resumed`",
         _adapter.metric_kinds(adapters[1]).get("resumed") == "descriptive",
     )
-
-    # The judge panel: real runs are judged on their own outputs, found where every command looks.
-    _runstore.put_rows_text(a_dir, '{"item_id": "i1", "f1": 0.9}\n')
-    from evaluation_harness import judge_panel as runner
-
-    cands = runner._candidates_from({"runs_from": "runs", "dataset_id": "ds"})
-    check(
-        "panel: candidates come from the runs, ranked by their primary metric",
-        sorted(c.run_id for c in cands) == ["a", "b_r1", "b_r2"] and all(c.run_dir for c in cands),
-    )
-    a = next(c for c in cands if c.run_id == "a")
-    items = runner._items_of(a, n=20)
-    check(
-        "panel: a real run is judged on its stored output, not placeholder text",
-        items == [{"item_id": "i1", "content": "the first output"}],
-        items,
-    )
-    try:
-        runner._candidates_from({"runs_from": "runs", "dataset_id": "ds", "primary_metric": "latency_ms"})
-        refused = False
-    except SystemExit as exc:
-        refused = "lower-is-better" in str(exc)
-    check("panel: promotion by a lower-is-better metric is refused, not ranked upside down", refused)
 
 # The bundled adapter: an unknown provider fell back to echo, so a typo recorded the echoed
 # input as the model's output; its cost now comes from the bill when there is one.

@@ -332,6 +332,75 @@ try:
         rc == 0 and "tickets_h" in out and MARK["h"] not in out + err,
         (out + err)[-300:],
     )
+    # A study run on each dataset (RFC-029, RFC-032 step 7): the agent's hypotheses, rationales and instructions may quote
+    # the items it was shown; the goal's page and the release copy show a hidden dataset's study without them.
+    _runstore.write_text(
+        proj,
+        "goals/studies_g.yaml",
+        "goal_id: studies_g\ntitle: t\nstatement: s\ndecision: d\n"
+        "success_criteria: {primary: {measure: overlap_f1, direction: higher}}\n"
+        "datasets:\n  - {dataset_id: tickets_s, role: validation}\n  - {dataset_id: tickets_h, role: validation}\n",
+    )
+    for k, word in MARK.items():
+        _runstore.write_text(
+            proj,
+            f"studies/studies_g/study_{k}.yaml",
+            f"dataset: tickets_{k}\nbaseline: {{system: tickets_lead1_{k}_v1}}\nmeasure: overlap_f1\nsampler: agent\n"
+            f"accept: {{point: {{min_gain: 0}}}}\nstop: {{trials: 3}}\ndirections: look at what {word} wrote\n",
+        )
+        events = [
+            {"event": "start", "round": "r1", "baseline": f"tickets_lead1_{k}_v1", "instruction": f"read {word} first"},
+            {"event": "trial", "k": 1, "config_id": f"study_{k}-t1", "outcome": "kept", "reason": "beat the best so far",
+             "hypothesis": f"{word} items are long", "rationale": f"{word} said so", "change": {"params": {"sentences": 2}, "prompts": []},
+             "vs_best": {"delta": 0.2}, "cost_usd": 0, "shown": [{"item_id": item, "sha256": "a" * 64}]},
+            {"event": "end", "reason": "3 trial(s)", "summary": "1 trial(s), 1 kept"},
+        ]  # fmt: skip
+        _runstore.write_text(
+            proj,
+            f"studies/studies_g/study_{k}.events.jsonl",
+            "".join(json.dumps(e) + "\n" for e in events),
+        )
+        _runstore.write_text(
+            proj,
+            f"studies/studies_g/study_{k}/study_{k}-t1.yaml",
+            f"system_id: study_{k}-t1\nparams: {{provider: echo, sentences: 2}}\n",
+        )
+    # A faithfulness record of a replay on each dataset: what production and the replay answered quote the item.
+    for k, word in MARK.items():
+        rec = {"n": 1, "model_id": f"fleet_{k}", "config_id": "replay_v1", "dataset_id": f"tickets_{k}", "items_sha256": "a" * 64,
+               "versions_sha256": "a" * 64, "adapter_sha256": None, "commits": {"c" * 40: 1}, "production_run": "prod",
+               "counts": {"items": 1, "agree": 0, "differ": 1, "replay_errors": 0, "production_missing": 0}, "coverage": {},
+               "disagreements": [{"item_id": item, "kind": "differ", "commit": "c" * 40, "production": f"{word} p", "replay": f"{word} r", "error": f"{word} e"}],
+               "at": "2026-11-14T00:00:00Z", "actor": {"type": "person", "name": "t"}}  # fmt: skip
+        _runstore.write_text(proj, f"faithfulness/fleet_{k}/1.json", json.dumps(rec))
+        _runstore.write_text(
+            proj,
+            f"faithfulness/fleet_{k}/1.exceptions.jsonl",
+            json.dumps(
+                {
+                    "item_id": item,
+                    "cause": f"{word} cause",
+                    "actor": {"type": "person", "name": "t"},
+                    "at": "x",
+                }
+            )
+            + "\n",
+        )
+    cat3 = proj / "cat3"
+    r = evh("catalog", "--out", str(cat3))
+    goal_page = next(iter(cat3.rglob("studies_g.html")), None)
+    text = goal_page.read_text() if goal_page else ""
+    check(
+        "catalog: a study on the shown dataset is on its goal page with its hypothesis; one on the hidden dataset is there, "
+        "its hypothesis never",
+        r.returncode == 0
+        and "study_s" in text
+        and "study_h" in text
+        and f"{MARK['s']} items are long" in text
+        and not found(cat3, MARK["h"])
+        and "kept" in text,
+        (said(r)[-300:], found(cat3, MARK["h"])),
+    )
     # A judging of a hidden run is another score of it (runs/<run>/scores/<judge>@<set>) and its rows carry the source
     # row's `_meta`, which can quote the item: the release cuts them to the call too.
     hrun = next(
@@ -376,6 +445,35 @@ try:
     )
     check("release: the shown dataset's outputs and gold texts are copied", bool(found(rel, MARK["s"])))
     check("release: nothing of the hidden dataset's text", not found(rel, MARK["h"]), found(rel, MARK["h"]))
+    sl, sh = rel / "studies" / "studies_g", rel / "faithfulness"
+    check(
+        "release: a study on the shown dataset is copied whole; one on the hidden dataset keeps its outcomes, reasons and "
+        "counts, its hypotheses, rationales and instructions a mark",
+        MARK["s"] in (sl / "study_s.events.jsonl").read_text()
+        and MARK["s"] in (sl / "study_s.yaml").read_text()
+        and counts["hidden_studies"] == 1
+        and "beat the best so far" in (sl / "study_h.events.jsonl").read_text()
+        and "(not published" in (sl / "study_h.events.jsonl").read_text()
+        and "(not published" in (sl / "study_h.yaml").read_text()
+        and (sl / "study_h" / "study_h-t1.yaml").is_file()
+        and '"vs_best"' in (sl / "study_h.events.jsonl").read_text(),
+        (counts, (sl / "study_h.events.jsonl").read_text()[:400]),
+    )
+    fh, fs = (sh / "fleet_h" / "1.json").read_text(), (sh / "fleet_s" / "1.json").read_text()
+    check(
+        "release: a faithfulness record of a replay on the shown dataset is copied whole; on the hidden dataset it keeps "
+        "the item, its kind and who named it, never what was answered or the cause",
+        MARK["s"] in fs
+        and MARK["s"] in (sh / "fleet_s" / "1.exceptions.jsonl").read_text()
+        and counts["hidden_faithfulness"] == 1
+        and '"item_id"' in fh
+        and '"differ"' in fh
+        and json.loads(fh)["disagreements"][0]["production"] is None
+        and "(not published" in fh
+        and "(not published" in (sh / "fleet_h" / "1.exceptions.jsonl").read_text()
+        and '"person"' in (sh / "fleet_h" / "1.exceptions.jsonl").read_text(),
+        (counts, fh[:400]),
+    )
     check(
         "release: the hidden dataset's runs, reference (manifest only) and profile are there, numbers only",
         counts["hidden_runs"] == 2

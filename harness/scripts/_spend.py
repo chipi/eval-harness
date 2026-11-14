@@ -177,7 +177,8 @@ def _entry_use(e: dict[str, Any]) -> float:
         return max(float(e.get("spent") or 0) - shown, 0.0)
     if _alive(e.get("pid")):
         return max(float(e.get("reserved") or 0) - shown, 0.0)
-    # Gone without closing: what its runs' items say, or (a command that writes no run, judge-score) all it reserved.
+    # Gone without closing: what its runs' items say, or (a command that writes no run) all it reserved. Judging opens
+    # no entry: its spend is capped by its scorer and EVAL_JUDGE_MAX_COST_USD, never a round's budget (owner, 2026-11-14).
     return items if e.get("run_ids") else float(e.get("reserved") or 0)
 
 

@@ -380,6 +380,8 @@ def _save(rel: str, values: dict[str, Any], new: bool) -> dict[str, Any]:
     before = _store.read_text(f) if _store.is_file(f) else None
     if before is not None and values_of(norm) == values:
         return {**_data_page.show(norm), "unchanged": True}
+    if before is not None:
+        _data_page.refuse_used_scorer(norm, "changed")
     guarded_write(norm, f, text_for(norm, values, before))
     return {**_data_page.show(norm), "unchanged": False}
 

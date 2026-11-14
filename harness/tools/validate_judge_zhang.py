@@ -55,6 +55,7 @@ from evaluation_harness import (  # noqa: E402
 )
 from evaluation_harness import judge_score as js  # noqa: E402
 from evaluation_harness._common import (  # noqa: E402
+    DATA,
     ModuleNotLoadable,
     die,
     load_module,
@@ -72,7 +73,6 @@ from evaluation_harness.judging import (  # noqa: E402,F401
     withheld_reason,
 )
 
-DATA = HERE.parent / "data"
 EXT = DATA / "external" / "zhang2023"
 FILE = EXT / "likert_evaluation_results.json"
 #: The repository's commit when the file was fetched (2026-10-21), and the file's sha256.

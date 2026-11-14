@@ -11,8 +11,8 @@ all 20 and its coverage names the rule no decision reaches; a replay is then sco
 candidate at the third commit. An adapter that reads at the decision's stamp (after its own writes) disagrees: scoring
 it is refused, a person's --unfaithful scores it and says so, an agent's is refused, and naming every disagreement
 lets it through. Editing a support module or the deployed versions after the record closes the gate again. The code
-record is a model record of kind: code; each faithfulness run writes its versions' summaries there. Mutants: three
-killed, the fourth survives and coverage names why.
+record is a model record of kind: code; it keeps no summary of a version's faithfulness, the records are read for it.
+Mutants: three killed, the fourth survives and coverage names why.
 """
 
 import json
@@ -435,11 +435,14 @@ try:
     )
     view = evh("models", "--model", "toy_filing")
     versions = yaml.safe_load(_runstore.read_text(proj, "models/toy_filing.yaml"))["versions"]
-    summary_ = [v.get("faithfulness") or {} for v in versions]
+    periods = evh("periods", "--model", "toy_filing", "--json")
+    summary_ = [x.get("faithfulness") or {} for x in values(periods).get("periods") or []]
     check(
-        "the code record carries each version's latest faithfulness (record 2, its named disagreements), and "
-        "evh models shows it",
+        "the code record keeps no summary of a version's faithfulness; the latest (record 2, its named disagreements) "
+        "is read from the records, by `evh periods` and `evh models`",
         view.returncode == 0
+        and not any("faithfulness" in v for v in versions)
+        and len(summary_) == len(versions)
         and all(f.get("run") == "toy_filing/2" for f in summary_)
         and sum(f.get("items", 0) for f in summary_) == 20
         and sorted(x for f in summary_ for x in f.get("exceptions") or []) == sorted(dis)

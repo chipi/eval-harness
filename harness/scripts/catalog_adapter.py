@@ -239,6 +239,9 @@ class Adapter(Protocol):
     # Optional: the model records (data/models/) with the arms that use each, [{"record": {...},
     # "arms": [arm id]}]; the Models page and the arms page's model badge read it.
     # def models(self) -> list[dict]: ...
+    # Optional: a goal's studies (RFC-029), [{"study", "status", "round", "baseline", "rows", "spent_usd", "end",
+    # "confirms"}]; a goal page shows them.
+    # def studies(self, goal: str) -> list[dict]: ...
     # Optional: eval rounds (ADR-0004), each round's record with "arms", the arm ids in play, "retired_arms", the arm ids
     # it retired, and "arm_records", the arms as the round stores them (model/rounds);
     # a goal page shows them as its history.
@@ -1094,8 +1097,9 @@ class HarnessAdapter:
         system names it (`model_record`, as its run recorded) or its run's params.model is one of the
         record's aliases."""
         from evaluation_harness import _models  # noqa: PLC0415
+        from evaluation_harness.model import faithfulness as model_faithfulness  # noqa: PLC0415
 
-        recs = _models.load(self.data_dir)
+        recs = [model_faithfulness.with_summaries(r, self.data_dir) for r in _models.load(self.data_dir)]
         ids = {r.get("model_id") for r in recs}
         alias = {a: r.get("model_id") for r in recs for a in r.get("aliases") or []}
         used: dict = {r.get("model_id"): [] for r in recs}
@@ -1174,6 +1178,12 @@ class HarnessAdapter:
         from evaluation_harness import _baselines  # noqa: PLC0415
 
         return _baselines.versions(goal, dataset, self.data_dir)
+
+    def studies(self, goal: str) -> list[dict]:
+        """A goal's studies (RFC-029), each one's state, trials and confirmations, read from this adapter's data."""
+        from evaluation_harness.model import study_views  # noqa: PLC0415
+
+        return study_views.of_goal(goal, self.data_dir)
 
     def datasets(self) -> list[str]:
         """Every frozen dataset, run or not: a new version has a page before its first run."""

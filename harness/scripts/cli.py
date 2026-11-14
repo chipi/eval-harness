@@ -100,16 +100,12 @@ COMMANDS = {
         "score_preview.py",
         "what the scorer in this tree would move in a goal's decision; writes nothing",
     ),
-    "judge": (
-        "judge_panel.py",
-        "the judge panel: promote finalists on a cheap metric, judge their stored outputs",
-    ),
     "judge-score": (
         "judge_score.py",
         "re-measure frozen outputs with a validated LLM judge (--dry-run first)",
     ),
     "silver-calibrate": ("silver_calibrate.py", "how far silver reference sets drift from gold"),
-    "cost-report": ("cost_report.py", "billed cost per arm, with projections"),
+    "cost-report": ("cost_report.py", "billed cost per arm, and what judging cost"),
     "leaderboard": ("leaderboard.py", "rank arms, with Friedman/Nemenyi before any order"),
     "pair-test": ("pair_test.py", "paired permutation test, two arms"),
     "family-test": ("family_test.py", "one arm against a declared family, Holm-corrected"),

@@ -392,6 +392,13 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Changed
 
+- **Judging spend is counted** (RFC-032 step 7): `evh cost-report` ends with what judging cost, per scorer, judging set
+  and judge, read from the verdicts' own `cost_usd` (`billed` where the provider reported it, `estimated` where the
+  scorer's price table priced it; this repository's 3,280 verdicts: $13.50), the dataset filter applied through each
+  judging set's dataset. Judging keeps its own budget and keys, never a round's budget: a pass is capped by the
+  smallest of its scorer's `cost_cap_usd`, the new `EVAL_JUDGE_MAX_COST_USD` and `EVAL_MAX_COST_USD` (a job's
+  max_cost_usd), and its calls read the `EVAL_JUDGE_<NAME>` keys first, as since 0.4.0 (ADR-0005).
+- **`evh judge` (the older judge panel, its own config format, no stored verdicts) is removed:** judge with a judge scorer (`evh judge-score`).
 - **One `evh migrate` brings a project to 0.8.0's formats**, in four steps (runs, datasets, records, fingerprints),
   idempotent, `--dry-run` first. `fingerprint-migrate` (0.6.0 to 0.7.2) is its fingerprints step; the per-format
   commands built during 0.8.0 were folded into it before the release. `data-migrate` (files and SQLite) stays its

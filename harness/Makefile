@@ -537,16 +537,10 @@ ci: check site-check
 # The judging PASS (ADR-0001): a validated LLM judge re-measures every arm's frozen outputs,
 # listwise and blind, into data/runs-judged/<SCORER>/. Billed, capped (the scorer's
 # cost_cap_usd, EVAL_MAX_COST_USD), resumable. ARGS=--dry-run prices it without calling
-# anything; ARGS=--no-calls re-reads stored verdicts for $0. Not `make judge`, which is the
-# panel below.
+# anything; ARGS=--no-calls re-reads stored verdicts for $0.
 judge-score:
 	@test -n "$(SCORER)" || { echo 'SCORER=<id in data/scorers/> is required'; exit 1; }
 	$(PYTHON) scripts/judge_score.py --dataset-id $(DATASET_ID) --scorer $(SCORER) $(ARGS)
-
-# The judge panel: promote -> judge -> aggregate -> report over candidate runs.
-# Keyless by default (FakeJudge).
-judge:
-	$(PYTHON) scripts/judge_panel.py --config config.example.yaml --use-fake-judge $(ARGS)
 
 # ── housekeeping ────────────────────────────────────────────────────────────
 clean:

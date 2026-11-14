@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "judge scorer",
-  "description": "A judge scorer: data/scorers/<scorer_id>.yaml, what judge-score reads. Its file's sha256 is recorded on every judged run, so an edit is a new scorer in effect. V13 adds the checks a schema cannot make (the prompt renders, judge ids are unique).",
+  "description": "A judge scorer: data/scorers/<scorer_id>.yaml, what judge-score reads. The sha256 of its content (the parsed YAML: a comment changes nothing) is recorded on every judged score, so an edit is a new scorer in effect: one that has made judged scores is not edited, a new version is a new scorer_id with `supersedes`. V13 names a judged score whose recorded hash is not the scorer's now, and adds the checks a schema cannot make (the prompt renders, judge ids are unique, a judge's system exists).",
   "type": "object",
   "required": ["scorer_id", "kind", "dataset_id", "judges", "prompt", "protocol"],
   "additionalProperties": false,
@@ -19,10 +19,12 @@
       "minItems": 1,
       "items": {
         "type": "object",
-        "required": ["id", "params"],
+        "required": ["id"],
+        "oneOf": [{"required": ["params"]}, {"required": ["system"]}],
         "additionalProperties": false,
         "properties": {
           "id": {"type": "string", "minLength": 1},
+          "system": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$", "description": "Instead of params: the system (data/systems/<id>.yaml) this judge is, read as its settings under the record of the model it names, so the judge is called, priced and fingerprinted as the system is. Its settings must carry what params requires (provider, model, both prices) and the family."},
           "params": {
             "type": "object",
             "required": ["provider", "model", "usd_per_mtok_in", "usd_per_mtok_out"],

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Operational commands: init, list-runs, self-check, sweep, judge, cost-report.
+"""Operational commands: init, list-runs, self-check, sweep, cost-report.
 
     python tests/test_ops_commands.py
 
@@ -15,8 +15,6 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
-
-import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tests/
@@ -281,113 +279,6 @@ def test_sweep(tmp: Path) -> None:
     )
 
 
-def test_judge_panel(tmp: Path) -> None:
-    """judge-panel: promotes finalists from runs, judges them, writes a report."""
-    site = _wheel.install(tmp / "site-packages")
-    proj = tmp / "proj_judge"
-    proj.mkdir()
-    env = project_env(proj, site)
-
-    # Setup: init, dataset, materialize, arms, reference
-    evh_run("init", "--tutorial", cwd=proj, env=env)
-    evh_run(
-        "dataset-create",
-        "--dataset-id",
-        "tickets_v1",
-        "--source-dir",
-        "tutorial/tickets",
-        cwd=proj,
-        env=env,
-    )
-    evh_run("dataset-materialize", "--dataset-id", "tickets_v1", cwd=proj, env=env)
-    kit_system(proj, "tickets_lead1_v1.yaml")
-    evh_run(
-        "label-import",
-        "tutorial/gold",
-        "--dataset-id",
-        "tickets_v1",
-        "--set",
-        "owner_gold",
-        "--by",
-        "owner",
-        cwd=proj,
-        env=env,
-    )
-    evh_run(
-        "reference-promote",
-        "--dataset-id",
-        "tickets_v1",
-        "--labels",
-        "owner_gold",
-        "--tier",
-        "gold",
-        "--reason",
-        "The kit's hand-written summaries decide.",
-        "--by",
-        "owner",
-        cwd=proj,
-        env=env,
-    )
-
-    # Run an arm to judge
-    evh_run("run", "--system", "tickets_lead1_v1", "--dataset", "tickets_v1", cwd=proj, env=env)
-
-    # Create a judge panel config
-    # Use output_words as the primary metric (a real metric from runs)
-    judge_cfg = {
-        "runs_from": "runs",
-        "dataset_id": "tickets_v1",
-        "primary_metric": "output_words",
-        "promotion": {
-            "per_stratum_top_k": 1,
-            "floor_fraction": 0.5,
-            "overall_cap": 10,
-            "carte_blanche": [],
-        },
-        "judging": {
-            "primary_judge": {
-                "id": "fake",
-                "provider": "fake",
-                "model": "fake",
-                "usd_per_mtok_in": 0.0,
-                "usd_per_mtok_out": 0.0,
-            },
-            "cross_judge": None,
-            "dimensions": ["quality"],
-            "cost_cap_usd": 100.0,
-            "max_items_per_finalist": 2,
-        },
-        "aggregation": {"contested_threshold": 0.5, "agreement_tolerance": 1},
-        "output_root": "data/reports",
-        "tag": "v1",
-    }
-    cfg_path = proj / "data/configs/judge_panel.yaml"
-    _runstore.write_text(aim(proj), "configs/judge_panel.yaml", yaml.dump(judge_cfg))
-
-    # Run judge with fake judge
-    r = evh_run(
-        "judge",
-        "--config",
-        str(cfg_path),
-        "--use-fake-judge",
-        cwd=proj,
-        env=env,
-        timeout=120,
-    )
-    check(
-        "judge --use-fake-judge: exit 0, produces report",
-        r.returncode == 0 and ("Report written" in r.stderr or "Finalists" in r.stdout),
-        r.stdout[:500] + "\n" + r.stderr[:500],
-    )
-
-    # Check that report was written
-    check(
-        "judge: writes report to output_root/tag",
-        _runstore.exists(aim(proj), "reports/v1") and _runstore.is_file(proj, "reports/v1/report.md"),
-        str(_runstore.listdir(proj, "reports")),
-    )
-
-
 def test_cost_report(tmp: Path) -> None:
     """cost-report: reads billed vs recorded costs from runs."""
     site = _wheel.install(tmp / "site-packages")
@@ -435,7 +326,6 @@ def main() -> int:
         test_list_runs(tmp / "list")
         test_self_check(tmp / "selfcheck")
         test_sweep(tmp / "sweep")
-        test_judge_panel(tmp / "judge")
         test_cost_report(tmp / "cost")
     finally:
         shutil.rmtree(tmp, ignore_errors=True)

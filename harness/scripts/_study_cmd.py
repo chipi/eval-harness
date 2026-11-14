@@ -25,6 +25,7 @@ from typing import Any
 import yaml
 from evaluation_harness import _jsonout, _store, _study
 from evaluation_harness._common import die, evh_prog
+from evaluation_harness.model import studies as model_studies
 
 
 def _ap(desc: str) -> argparse.ArgumentParser:
@@ -58,19 +59,20 @@ def run_study(argv: list[str]) -> int:
         if a.spec is not None:
             if not _store.is_file(a.spec):
                 die(f"--spec {a.spec}: no such file", "not-found")
-            if _store.is_file(_study.spec_path(goal, sid)):
+            if _store.is_file(model_studies.spec_path(goal, sid)):
                 die(
-                    f"{_study.spec_path(goal, sid)} exists: a study's spec is written once", "would-overwrite"
+                    f"{model_studies.spec_path(goal, sid)} exists: a study's spec is written once",
+                    "would-overwrite",
                 )
-            _store.mkdir(_study.spec_path(goal, sid).parent, parents=True, exist_ok=True)
-            _store.write_text(_study.spec_path(goal, sid), _store.read_text(a.spec, encoding="utf-8"))
-        if not _store.is_file(_study.spec_path(goal, sid)):
-            die(f"no spec at {_study.spec_path(goal, sid)} (--spec FILE writes it)", "not-found")
-        s = _study.spec(goal, sid)
+            _store.mkdir(model_studies.spec_path(goal, sid).parent, parents=True, exist_ok=True)
+            _store.write_text(model_studies.spec_path(goal, sid), _store.read_text(a.spec, encoding="utf-8"))
+        if not _store.is_file(model_studies.spec_path(goal, sid)):
+            die(f"no spec at {model_studies.spec_path(goal, sid)} (--spec FILE writes it)", "not-found")
+        s = model_studies.spec(goal, sid)
         found = _study.problems(goal, sid, s)
         if found:
             die(f"study {goal}/{sid}: " + "; ".join(found), "invalid-file")
-        st = _study.state(goal, sid)
+        st = model_studies.state(goal, sid)
         sampler = s["sampler"] if isinstance(s["sampler"], str) else "command"
         if a.dry_run:
             stop = s.get("stop") or {}
@@ -111,7 +113,7 @@ def run_study(argv: list[str]) -> int:
         end = _study.close_study(goal, sid, why)
         print(f"study {goal}/{sid} ended: {why}. {end['summary']}")
         _jsonout.values(
-            {"study": f"{goal}/{sid}", "end": end, "trials": len(_study.state(goal, sid)["trials"])}
+            {"study": f"{goal}/{sid}", "end": end, "trials": len(model_studies.state(goal, sid)["trials"])}
         )
     return 0
 
@@ -123,8 +125,8 @@ def ask(argv: list[str]) -> int:
     _json_flag(ap)
     a = ap.parse_args(argv)
     with _jsonout.collect("study-ask", a.json, live=sys.stderr):
-        goal, sid = _study.resolve(a.study)
-        s, st = _study.spec(goal, sid), _study.state(goal, sid)
+        goal, sid = model_studies.resolve(a.study)
+        s, st = model_studies.spec(goal, sid), model_studies.state(goal, sid)
         if st["status"] != "running":
             die(f"study {goal}/{sid} is {st['status']}: nothing to ask", "not-allowed")
         timeout = float((s.get("stop") or {}).get("ask_timeout_h") or 2) * 3600
@@ -159,7 +161,7 @@ def _age(ev: dict[str, Any]) -> float:
 
 
 def _start_hash(goal: str, sid: str) -> str:
-    return next(e for e in _study.events(goal, sid) if e.get("event") == "start")["spec_sha256"]
+    return next(e for e in model_studies.events(goal, sid) if e.get("event") == "start")["spec_sha256"]
 
 
 def tell(argv: list[str]) -> int:
@@ -181,8 +183,8 @@ def tell(argv: list[str]) -> int:
     a = ap.parse_args(argv)
     with _jsonout.collect("study-tell", a.json, live=sys.stderr):
         require_named("study-tell")
-        goal, sid = _study.resolve(a.study)
-        s, st = _study.spec(goal, sid), _study.state(goal, sid)
+        goal, sid = model_studies.resolve(a.study)
+        s, st = model_studies.spec(goal, sid), model_studies.state(goal, sid)
         timeout = float((s.get("stop") or {}).get("ask_timeout_h") or 2) * 3600
         o = st["open_ask"]
         if not o or o["ask_id"] != a.ask:
@@ -209,7 +211,7 @@ def tell(argv: list[str]) -> int:
                     "not-allowed",
                 )
         with _study.loop_lock(goal, sid):
-            if _study.state(goal, sid)["open_ask"] != o:
+            if model_studies.state(goal, sid)["open_ask"] != o:
                 die(f"ask {a.ask} was told while this call waited: study-ask again", "not-allowed")
             line = _study.trial(
                 goal, sid, len(st["trials"]) + 1, proposal, ask_id=a.ask, shown=o.get("shown")
@@ -229,11 +231,11 @@ def stop(argv: list[str]) -> int:
     add_by(ap)
     a = ap.parse_args(argv)
     with _jsonout.collect("study-stop", a.json, live=sys.stderr):
-        goal, sid = _study.resolve(a.study)
-        st = _study.state(goal, sid)
+        goal, sid = model_studies.resolve(a.study)
+        st = model_studies.state(goal, sid)
         if st["status"] == "ended":
             die(f"study {goal}/{sid} has already ended", "not-allowed")
-        s = _study.spec(goal, sid)
+        s = model_studies.spec(goal, sid)
         if s.get("sampler") == "agent" or st["status"] == "not started":
             end = (
                 _study.close_study(goal, sid, "stopped (study-stop)")
@@ -250,8 +252,8 @@ def stop(argv: list[str]) -> int:
 
 def _one(study: str) -> None:
     """`evh studies --study`: one study, as its log says."""
-    goal, sid = _study.resolve(study)
-    st = _study.state(goal, sid)
+    goal, sid = model_studies.resolve(study)
+    st = model_studies.state(goal, sid)
     print(
         f"study {goal}/{sid}: {st['status']}, round {st['round']}, from {st['baseline']}, ${st['spent_usd']:.4f} spent"
     )
@@ -282,12 +284,9 @@ def studies(argv: list[str]) -> int:
             _one(a.study)
             return 0
         out = []
-        root = _study.root()
-        for p in sorted(_store.glob(root, "*/*.yaml")) if _store.is_dir(root) else []:
-            goal, sid = p.parent.name, p.stem
-            if a.goal and goal != a.goal:
-                continue
-            st = _study.state(goal, sid)
+        for rid in model_studies.ids(a.goal or None):
+            goal, sid = rid.split("/", 1)
+            st = model_studies.state(goal, sid)
             kept = sum(1 for t in st["trials"] if t.get("outcome") == "kept")
             out.append({"goal": goal, "study": sid, "status": st["status"], "trials": len(st["trials"]), "kept": kept,
                         "spent_usd": st["spent_usd"], "confirms": len(st["confirms"])})  # fmt: skip
@@ -342,8 +341,8 @@ def _confirm(a: argparse.Namespace, require_named: Any) -> int:
     from evaluation_harness._common import load_dataset  # noqa: PLC0415
 
     who = require_named("study-confirm")
-    goal, sid = _study.resolve(a.study)
-    s, st = _study.spec(goal, sid), _study.state(goal, sid)
+    goal, sid = model_studies.resolve(a.study)
+    s, st = model_studies.spec(goal, sid), model_studies.state(goal, sid)
     if not _looks.is_test_set(a.test):
         die(
             f"{a.test} is not a test set (a goal's role: test dataset, or a split's sealed side)",
@@ -368,13 +367,7 @@ def _confirm(a: argparse.Namespace, require_named: Any) -> int:
     seen = {it["item_id"] for it in val.get("items") or []} | {
         it.get("source_sha256") for it in val.get("items") or [] if it.get("source_sha256")
     }
-    # Every item shown to a sampler in any study of the goal, by id and by content (a test item with a shown item's
-    # bytes is the same text).
-    shown: set = set()
-    for p in _store.glob(_study.root() / goal, "*.events.jsonl"):
-        for ev in _study.events(goal, p.name[: -len(".events.jsonl")]):
-            for x in ev.get("shown") or []:
-                shown |= {x.get("item_id"), x.get("sha256")} - {None}
+    shown = model_studies.shown(goal)
     items = [it["item_id"] for it in test.get("items") or []
              if not {it["item_id"], it.get("source_sha256")} & (seen | shown)]  # fmt: skip
     excluded = len(test.get("items") or []) - len(items)
@@ -407,8 +400,7 @@ def _confirm(a: argparse.Namespace, require_named: Any) -> int:
             "the test items could never show it: fresh items, or --override-no-evidence (the person; inconclusive)",
             "not-enough",
         )
-    conf = _study.folder(goal, sid) / "confirm"
-    ids_file = conf / f"t{t['k']}{on}.items"
+    ids_file = model_studies.confirm_items(goal, sid, t["k"], a.test)
     with _looks.taking(a.test, k, consent=a.confirm_extra_look) as look:
         # The rule and the items, written before any test item is run: the naming in advance.
         _study.append(goal, sid, {"event": "confirm", "phase": "named", "trial": t["k"], "test": a.test, "rule": a.rule,
@@ -416,7 +408,7 @@ def _confirm(a: argparse.Namespace, require_named: Any) -> int:
                                   "look": {x: v for x, v in look.items() if x != "reused"}})  # fmt: skip
         # The two systems run on the test set as they are (a system has no dataset, RFC-032).
         if not _store.is_file(ids_file):
-            _store.mkdir(conf, parents=True, exist_ok=True)
+            _store.mkdir(ids_file.parent, parents=True, exist_ok=True)
             _store.create_new(ids_file, ("\n".join(items) + "\n").encode("utf-8"))
         _open_sealed(a.test, [trial_cid, base_cid], look, who, f"study-confirm {goal}/{sid} trial {t['k']}")
     runs: dict[str, list[str]] = {}
@@ -500,7 +492,7 @@ def import_tsv(argv: list[str]) -> int:
             die(f"no goal {a.goal!r}", "not-found")
         if not _study.STUDY_ID.fullmatch(a.study):
             die(f"--study {a.study!r}: lower-case letters, digits, '_' or '-'", "bad-argument")
-        if _store.is_file(_study.spec_path(a.goal, a.study)):
+        if _store.is_file(model_studies.spec_path(a.goal, a.study)):
             die(f"study {a.goal}/{a.study} exists", "would-overwrite")
         if not _store.is_file(a.file):
             die(f"{a.file}: no such file", "not-found")
@@ -513,8 +505,8 @@ def import_tsv(argv: list[str]) -> int:
             )
         spec = {"imported": True, "source": str(a.file), "measure": "val_bpb", "direction": "lower",
                 "note": "imported from a results.tsv: one number per trial, not confirmable"}  # fmt: skip
-        _store.mkdir(_study.spec_path(a.goal, a.study).parent, parents=True, exist_ok=True)
-        _store.write_text(_study.spec_path(a.goal, a.study), yaml.safe_dump(spec, sort_keys=False))
+        _store.mkdir(model_studies.spec_path(a.goal, a.study).parent, parents=True, exist_ok=True)
+        _store.write_text(model_studies.spec_path(a.goal, a.study), yaml.safe_dump(spec, sort_keys=False))
         _study.append(
             a.goal,
             a.study,

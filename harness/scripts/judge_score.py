@@ -5,8 +5,7 @@
     make judge-score DATASET_ID=cnn_dailymail_200 SCORER=judge-summ-v1
     make leaderboard DATASET_ID=cnn_dailymail_200 ARGS='--label judged/judge-summ-v1'
 
-`evh judge` is the older judge PANEL (judge_panel.py): pointwise, finalists only, verdicts not
-stored. This is the judging PASS: listwise, every arm, verdicts stored as a frozen record.
+The judging PASS: listwise, every arm, verdicts stored as a frozen record.
 
 THE PASS, IN ORDER
   1. gate       the scorer must name a committed run that validates each judge (or
@@ -116,6 +115,8 @@ from evaluation_harness.judging import (
     withheld_reason,
 )
 from evaluation_harness.model import runs as _model_runs
+from evaluation_harness.model import scorers as _scorers
+from evaluation_harness.model.entity import Problem
 
 try:
     import yaml
@@ -253,6 +254,12 @@ def load_scorer(path: Path) -> dict[str, Any]:
     for k in ("scorer_id", "dataset_id", "judges", "prompt", "protocol"):
         if not sc.get(k):
             die(f"{path.name}: missing {k!r}", "invalid-file")
+    try:
+        _scorers.resolve_judges(sc)
+    except Problem as exc:
+        if exc.kind == "not-found":
+            die(f"{path.name}: {exc}", "not-found")
+        die(f"{path.name}: {exc}", "invalid-file")
     fams = {j["params"].get("family") for j in sc["judges"]}
     if len(sc["judges"]) < 2 or len(fams) < 2:
         die(
@@ -1566,8 +1573,17 @@ def estimate(
 
 
 def effective_cap(sc: dict[str, Any]) -> float | None:
-    """The smaller of the scorer's cost_cap_usd and EVAL_MAX_COST_USD, or None."""
-    caps = [c for c in (sc.get("cost_cap_usd"), env_float("EVAL_MAX_COST_USD")) if c is not None]
+    """The smallest of the scorer's cost_cap_usd, EVAL_JUDGE_MAX_COST_USD (judging's own cap, as its keys are its own)
+    and EVAL_MAX_COST_USD (a command's, a job's max_cost_usd), or None."""
+    caps = [
+        c
+        for c in (
+            sc.get("cost_cap_usd"),
+            env_float("EVAL_JUDGE_MAX_COST_USD"),
+            env_float("EVAL_MAX_COST_USD"),
+        )
+        if c is not None
+    ]
     return min(float(c) for c in caps) if caps else None
 
 
@@ -1783,7 +1799,7 @@ def main() -> int:
             )
         freeze(manifest)
         if call and cap is None:
-            die("no cost cap: set cost_cap_usd in the scorer or EVAL_MAX_COST_USD", "not-configured")
+            die("no cost cap: set cost_cap_usd in the scorer, or EVAL_JUDGE_MAX_COST_USD", "not-configured")
         stats = run_judging(
             manifest, sc, base, articles, outputs, vdir, call, cap, retry_unparsed=args.retry_unparsed
         )

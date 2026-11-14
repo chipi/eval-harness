@@ -3113,18 +3113,17 @@ def _rounds_block(A: Adapter, g: dict, measure: str, above: str = "") -> str:
     )
 
 
-def _studies_block(g: dict) -> str:
+def _studies_block(A: Adapter, g: dict) -> str:
     """A goal's studies (RFC-029): each one's trials as a table (the change, the hypothesis, kept or dropped and why,
     the delta against the best so far, the cost), its stop reason, and its confirmations with their looks."""
-    from evaluation_harness import _study  # noqa: PLC0415
-
+    fn = getattr(A, "studies", None)
     parts = []
-    for s in _study.of_goal(g["goal_id"]):
+    for s in (fn(g["goal_id"]) if callable(fn) else []) or []:
         rows = [
             [
                 f"t{r['k']}",
                 e(r["change"]),
-                e(r["hypothesis"]),
+                '<span class="muted">not shown</span>' if s.get("text_hidden") else e(r["hypothesis"]),
                 f'<b>{e(str(r["outcome"]))}</b><br><small class="muted">{e(r["reason"])}</small>',
                 f"{r['delta']:+.4g}" if isinstance(r["delta"], (int, float)) else "—",
                 f"${r['cost_usd']:.4f}" if isinstance(r["cost_usd"], (int, float)) else "—",
@@ -3141,7 +3140,9 @@ def _studies_block(g: dict) -> str:
             f'<h3 id="study-{e(s["study"])}">{e(s["study"])}</h3>'
             f'<p class="small muted">{e(s["status"])}, from {e(str(s["baseline"]))}, round {e(str(s["round"]))}, '
             f"${s['spent_usd']:.4f} spent" + (f"; ended: {e(str(s['end']))}" if s["end"] else "") + ". Research: its "
-            "p values are nominal; only a confirmation on a test set is evidence.</p>"
+            "p values are nominal; only a confirmation on a test set is evidence."
+            + (" Its hypotheses are not shown: the dataset's text is hidden." if s.get("text_hidden") else "")
+            + "</p>"
             + (table(f"study-{s['study']}", ["trial", "change", "hypothesis", "outcome", "vs best", "cost"], rows) if rows else "")
             + (f"<ul>{conf}</ul>" if conf else "")
         )  # fmt: skip
@@ -3221,7 +3222,7 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
     if rounds_html:
         body += block(f"{n:02d}", "how we got here: rounds", rounds_html, "rounds")
         n += 1
-    studies_html = _studies_block(g)
+    studies_html = _studies_block(A, g)
     if studies_html:
         body += block(f"{n:02d}", "studies: research, then one confirmation", studies_html, "studies")
         n += 1

@@ -93,6 +93,7 @@ def recorded(dataset_id: str) -> list[dict[str, Any]]:
                 }
             )
     from evaluation_harness import _baselines  # noqa: PLC0415
+    from evaluation_harness.model import studies as model_studies  # noqa: PLC0415
 
     for v in _baselines.all_versions():
         look = ((v.get("evidence") or {}).get("look")) if isinstance(v.get("evidence"), dict) else None
@@ -105,7 +106,7 @@ def recorded(dataset_id: str) -> list[dict[str, Any]]:
                     "at": v.get("promoted_at"),
                 }
             )
-    for c in _study_confirms():
+    for c in model_studies.confirms():
         look = c.get("look")
         if isinstance(look, dict) and look.get("set") == d:
             found.append(
@@ -118,19 +119,6 @@ def recorded(dataset_id: str) -> list[dict[str, Any]]:
             )
     found.sort(key=lambda x: (int(x.get("number") or 0), str(x.get("at") or "")))
     return found
-
-
-def _study_confirms() -> list[dict[str, Any]]:
-    """The confirm lines of every study's log (RFC-029's studies; none before they exist)."""
-    root = _common.DATA / "studies"
-    out: list[dict[str, Any]] = []
-    for p in _store.rglob(root, "*.events.jsonl") if _store.is_dir(root) else []:
-        for line in _store.read_text(p, encoding="utf-8").splitlines():
-            with contextlib.suppress(ValueError):
-                ev = json.loads(line)
-                if ev.get("event") == "confirm":
-                    out.append({**ev, "study": p.name[: -len(".events.jsonl")]})
-    return out
 
 
 def prior_use(dataset_id: str) -> int:

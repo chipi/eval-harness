@@ -55,7 +55,6 @@ SPENDS = {
     "run",
     "sweep",
     "arm-smoke",
-    "judge",
     "judge-score",
     "model-onboard",
     "study-run",
@@ -117,8 +116,6 @@ NEVER_PATHS = {
     ("inspect", "--csv"),
     ("inspect", "--rubric"),
 }
-#: Paths the parser types as text, never taken either.
-TEXT_PATHS = {("judge", "--config")}
 #: Options never taken from any command: they load code or reach outside the project.
 NEVER = {"--adapter", "--help", "--json", "--source-dir", "--data-dir"}
 _NAME_ONLY = re.compile(r"[a-z0-9][a-z0-9_]*")
@@ -194,8 +191,6 @@ def kind_of(command: str, a: argparse.Action) -> str | None:
 
     key = _key(a)
     if set(a.option_strings) & NEVER or key in TOOL_HIDDEN.get(command, set()):
-        return None
-    if (command, key) in TEXT_PATHS:
         return None
     if _is_path(a):
         return PATH_KINDS.get((command, key))

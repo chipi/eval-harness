@@ -304,7 +304,6 @@ re-authoring what you have.
 | refusals | cross-dataset comparisons, dirty-tree promotions and unreasoned baselines are blocked, not warned about |
 | integrity | `evh validate` fails CI on a tree that has drifted |
 | re-measurement | stored outputs scored again for a new reference or scorer at $0, or by validated LLM judges, without re-running an arm |
-| a judge panel | when the cheap metric is biased and you need an LLM to adjudicate |
 | goals | what each evaluation is for, named on every system and checked by `evh validate` |
 | eval rounds (optional) | round on round: what each round tried, what it kept and dropped and why, what it concluded ([tutorial 4](../../docs/tutorials/4-rounds-and-versions.md)) |
 | item fields | the facts you know about each item (typed, declared once in a field set), checked by `evh validate`; items fetched from a pinned URL |

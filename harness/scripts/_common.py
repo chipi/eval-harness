@@ -498,10 +498,9 @@ def system_files() -> list[Path]:
     found = (
         set(_store.glob(p["DATA"] / "systems", "*.yaml")) if _store.is_dir(p["DATA"] / "systems") else set()
     )
-    studies = p["DATA"] / "studies"
-    if _store.is_dir(studies):
-        found |= {f for f in _store.glob(studies, "*/*/*-t*.yaml") if _store.is_file(f)}
-        found |= {f for f in _store.glob(studies, "*/*/confirm/*.yaml") if _store.is_file(f)}
+    from evaluation_harness.model import studies as model_studies  # noqa: PLC0415
+
+    found |= set(model_studies.system_files(p["DATA"]))
     policy_file = p["DATA"] / "validate.json"
     for pattern in (read_json(policy_file).get("systems") or []) if _store.is_file(policy_file) else []:
         found |= {f for f in _store.glob(p["ROOT"], pattern) if _store.is_file(f)}
