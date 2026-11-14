@@ -8,6 +8,7 @@ records who made it and when, with the record as it was, so a change can be seen
 
 from __future__ import annotations
 
+import dataclasses
 import datetime as _dt
 import json
 import re
@@ -55,9 +56,19 @@ class Entity:
     #: False: its records are written by their own commands (a dataset by dataset-create, a reference by its
     #: promotion), never by an edit; `save` refuses.
     editable: bool = True
+    #: Another data directory than the project's (a deployment's copy of it, which the catalog reads): `under`.
+    data: Path | None = None
+
+    def under(self, data: Path | None) -> Entity:
+        """The entity read from another data directory (None, or the project's own: this one)."""
+        if data is None or Path(data) == _common.DATA:
+            return self
+        return dataclasses.replace(self, data=Path(data))
 
     def base(self) -> Path:
         """Where its records are: the goals' folder may be moved (EVAL_GOALS_DIR), the others are data/<folder>."""
+        if self.data is not None:
+            return self.data / self.folder
         return _common.GOALS if self.folder == "goals" else _common.DATA / self.folder
 
     def path(self, rid: str) -> Path:

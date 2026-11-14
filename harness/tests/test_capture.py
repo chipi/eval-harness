@@ -686,6 +686,35 @@ check(
     and cb.origin_html({"origin": "version of x"}) == "version of x",
     str(meta),
 )
+# A version made from another and from a capture says both, on its page and in the list (owner, 2026-11-14).
+lin = {"dataset_id": "x_v1", "added": [], "removed": [], "changed": ["i1"]}
+by_ds = {
+    "x_v1": {"parent": None, "children": ["x_v2"]},
+    "x_v2": {"parent": lin, "children": [], "origin": "capture c1, where a:b", "capture": "c1"},
+    "y_v1": {"parent": None, "children": [], "origin": "capture c1, where a:b", "capture": "c1"},
+}
+both, only_cap, only_ver = (cb._version_links(by_ds, d, "../") for d in ("x_v2", "y_v1", "x_v1"))
+check(
+    "catalog: a dataset's page says where it came from, the capture and the version it was made from, each linked",
+    both[0] == "origin and versions" and 'capture <a href="../captures.html#capture-c1">c1</a>' in both[1]
+    and 'Made from <a class="cell-link" href="../d/x_v1.html">' in both[1]
+    and only_cap[0] == "origin" and "c1</a>" in only_cap[1] and "Made from" not in only_cap[1]
+    and only_ver[0] == "versions" and "Made into" in only_ver[1] and "capture" not in only_ver[1],
+    [both, only_cap, only_ver],
+)  # fmt: skip
+import _runfix  # noqa: E402
+
+for d in ("cap_v1", "cap_v2"):
+    _runfix.put_run(proj / "data", {"run_id": f"{d}_run", "config_id": "sys_a", "dataset_id": d, "scores": {"acc": 1.0},
+                                    "primary_metric": "acc"}, [{"item_id": "i1", "acc": 1.0}])  # fmt: skip
+said = {d: evh("datasets", "--dataset-id", d) for d in ("cap_v1", "cap_v2")}
+check(
+    "evh datasets: a capture-made dataset says its capture; one made from a version and a capture says both",
+    all(r.returncode == 0 for r in said.values())
+    and "made from capture c1" in said["cap_v1"].stdout and "made from cap_v1:" in said["cap_v2"].stdout
+    and "from capture c2" in said["cap_v2"].stdout,
+    {d: (r.stdout + r.stderr)[-400:] for d, r in said.items()},
+)  # fmt: skip
 
 # 2026-11-04 (a beta agent): an importer named by a path relative to the project was not found when the
 # command ran from another directory, though a capture records the path as given.

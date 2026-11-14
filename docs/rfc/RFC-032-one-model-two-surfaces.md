@@ -420,3 +420,7 @@ Quoted from the discussion, typing slips corrected.
     tag sets, picks and exposure rows get schemas and validate checks; a dataset's capture is a checked link;
   - kept as they are: the seal's own items digest, unseal entries' `config_id` key (step 3 rewrote their values),
     the ids references and label sets were made under (B); no format step: nothing stored changes shape.
+  - closed before step 7 ("close all items not done or not verified"): the model's layout takes a data root, so
+    the catalog reads a deployment's copy through it too; the exposure register checked on the fleet's real reads
+    (99, `exposed.tsv`); picks, tag sets, failure-mode lists, sealed sides and splits exist in no project reachable
+    here; a dataset made from a version and a capture shows both, on its page and in the list ("C").

@@ -194,8 +194,6 @@ def datasets(argv) -> int:
     )
     if v.get("tags"):
         print("tags: " + ", ".join(f"{k}={t}" for k, t in sorted(v["tags"].items())))
-    if v.get("origin") and not v.get("parent"):
-        print(f"made from {v['origin']}")
     lin = v.get("parent")
     if lin:
         print(
@@ -205,6 +203,8 @@ def datasets(argv) -> int:
         for k in ("added", "removed", "changed"):
             if lin[k]:
                 print(f"  {k}: {', '.join(lin[k])}")
+    if v.get("origin"):
+        print(f"{'from' if lin else 'made from'} {v['origin']}")
     for c in v.get("children") or []:
         cl = by_ds[c]["parent"]
         print(f"made into {c}: " + ", ".join(f"{len(cl[k])} {k}" for k in ("added", "removed", "changed")))

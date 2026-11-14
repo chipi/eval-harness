@@ -352,14 +352,6 @@ def _tokens(tin, tout) -> int | None:
     return int(sum(x for x in vals if x is not None)) if any(x is not None for x in vals) else None
 
 
-def dataset_record_file(data_dir: Path, dataset: str) -> Path:
-    """A dataset's record under `data_dir`: where model/datasets puts it when that is the project's data, else under
-    `data_dir` (another project's data, as the release's copy)."""
-    if Path(data_dir) == _common.DATA:
-        return model_datasets.record_file(dataset)
-    return Path(data_dir) / "datasets" / f"{dataset}.json"
-
-
 def _json(p: Path | None):
     if p is None:
         return None
@@ -417,65 +409,44 @@ class HarnessAdapter:
         # references and goals (evh score-preview reads re-scores it made in a temporary directory, RFC-022).
         self.runs_root = Path(runs_root) if runs_root else self.data_dir / "runs"
 
-    @property
-    def _own(self) -> bool:
-        """Whether this reads the project's own data, whose dataset-family files are where model/datasets puts them;
-        another data directory (the release's copy of it) is read where it is."""
-        return self.data_dir == _common.DATA
+    # The dataset-family files are read through model/datasets, under this adapter's data directory (the project's,
+    # or another, as the release's copy); a tree of another format is read as it is (the catalog reads copies).
 
     def _dataset_file(self, dataset: str) -> Path:
-        return dataset_record_file(self.data_dir, dataset)
+        return model_datasets.record_file(dataset, self.data_dir)
 
     def _labels_file(self, set_id: str) -> Path | None:
         """A label set's labels.json, None for an id that names none (a run's reference id is read as it was written)."""
-        if not self._own:
-            return self.data_dir / "labels" / set_id / "labels.json"
         try:
-            return model_datasets.label_set_dir(set_id) / "labels.json"
+            return model_datasets.label_set_dir(set_id, self.data_dir) / "labels.json"
         except Problem:
             return None
 
     def _label_files(self) -> list[Path]:
         """Every label set's labels.json, sorted by set."""
-        if self._own:
-            return sorted(
-                model_datasets.label_set_dir(i) / "labels.json"
-                for i in model_datasets.LABEL_SET.ids(check_format=False)
-            )
-        return sorted(_store.glob(self.data_dir / "labels", "*/*/labels.json"))
+        ent = model_datasets.LABEL_SET.under(self.data_dir)
+        return sorted(ent.path(i) for i in ent.ids(check_format=False))
 
     def _tag_files(self, dataset: str) -> list[Path]:
         """The dataset's tag sets' tags.json, sorted by set."""
-        if self._own:
-            return [
-                model_datasets.TAG_SET.path(i)
-                for i in model_datasets.TAG_SET.ids(check_format=False)
-                if i.split("/", 1)[0] == dataset
-            ]
-        return sorted(_store.glob(self.data_dir / "tags" / dataset, "*/tags.json"))
+        ent = model_datasets.TAG_SET.under(self.data_dir)
+        return [ent.path(i) for i in ent.ids(check_format=False) if i.split("/", 1)[0] == dataset]
 
     def _reference_dirs(self) -> list[tuple[str, Path]]:
         """(tier, folder) of every reference of the two tiers, gold first, each sorted by name."""
-        if self._own:
-            tiers = (
-                i
-                for i in model_datasets.REFERENCE.ids(check_format=False)
-                if i.split("/", 1)[0] in ("gold", "silver")
-            )
-            return [(i.split("/", 1)[0], model_datasets.reference_dir(i)) for i in tiers]
+        ent = model_datasets.REFERENCE.under(self.data_dir)
+        ids = ent.ids(check_format=False)
         return [
-            (tier, d)
+            (tier, ent.path(i).parent)
             for tier in ("gold", "silver")
-            for d in sorted(_store.glob(self.data_dir / "references" / tier, "*"))
+            for i in ids
+            if i.split("/", 1)[0] == tier
         ]
 
     def _capture_ids(self) -> tuple[Path, list[str]]:
         """The captures' folder and the captures in it."""
-        if self._own:
-            return model_datasets.CAPTURE.base(), model_datasets.CAPTURE.ids(check_format=False)
-        base = self.data_dir / "captures"
-        found = _store.glob(base, "*/capture.json") if _store.is_dir(base) else []
-        return base, sorted(p.parent.name for p in found)
+        ent = model_datasets.CAPTURE.under(self.data_dir)
+        return ent.base(), ent.ids(check_format=False)
 
     # -- arms ---------------------------------------------------------------------------
     @_memo
@@ -981,7 +952,7 @@ class HarnessAdapter:
     def picks_waiting(self, dataset: str) -> list[dict]:
         """The picks waiting for this dataset (data/picks.jsonl, ADR-0023): the items whose latest line is a pick
         naming it as a target. A release does not carry the pick list, so a published catalog shows none."""
-        f = model_datasets.picks_file() if self._own else self.data_dir / "picks.jsonl"
+        f = model_datasets.picks_file(self.data_dir)
         latest: dict = {}
         for line in _store.read_text(f, encoding="utf-8").splitlines() if _store.is_file(f) else []:
             try:
@@ -1065,11 +1036,7 @@ class HarnessAdapter:
         return {"kind": "none"}
 
     def _materialized(self, dataset: str) -> Path:
-        return (
-            model_datasets.materialized_dir(dataset)
-            if self._own
-            else self.data_dir / "materialized" / dataset
-        )
+        return model_datasets.materialized_dir(dataset, self.data_dir)
 
     def item_text(self, dataset: str, item: str) -> dict:
         """The item every arm read, from the dataset's materialized copy (the local inspector
@@ -1210,9 +1177,7 @@ class HarnessAdapter:
 
     def datasets(self) -> list[str]:
         """Every frozen dataset, run or not: a new version has a page before its first run."""
-        if self._own:
-            return model_datasets.DATASET.ids(check_format=False)
-        return sorted(p.stem for p in _store.glob(self.data_dir / "datasets", "*.json"))
+        return model_datasets.DATASET.under(self.data_dir).ids(check_format=False)
 
     def dataset_lineage(self, dataset: str) -> dict | None:
         """The version this dataset was made from (`derived_from`), or None."""
@@ -1256,11 +1221,7 @@ class HarnessAdapter:
     def dataset_profile(self, dataset: str) -> dict | None:
         """data/profiles/<dataset>.json (`evh dataset-profile`), with "stale": True when the dataset's
         items no longer match the version it was computed on; None without one."""
-        p = _json(
-            model_datasets.profile_file(dataset)
-            if self._own
-            else self.data_dir / "profiles" / f"{dataset}.json"
-        )
+        p = _json(model_datasets.profile_file(dataset, self.data_dir))
         if not isinstance(p, dict) or not p.get("rows"):
             return None
         ds = _json(self._dataset_file(dataset))
@@ -1378,11 +1339,7 @@ class HarnessAdapter:
         """Return a dataset's declared fields and items' values."""
         ds = _json(self._dataset_file(dataset)) or {}
         fid = ds.get("fieldset")
-        fs = (
-            load_fieldset(fid, model_datasets.FIELDSET.base() if self._own else self.data_dir / "fields")
-            if fid
-            else None
-        )
+        fs = load_fieldset(fid, model_datasets.FIELDSET.under(self.data_dir).base()) if fid else None
         # A field set that breaks its schema drives no page; validate (V15) names what is wrong.
         return {
             "fieldset": fs if fs and not fieldset_problems(str(fid), fs) else None,

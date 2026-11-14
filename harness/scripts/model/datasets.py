@@ -119,9 +119,14 @@ CAPTURE = Entity(
 )
 
 
-def record_file(dataset_id: str) -> Path:
+def _data(data: Path | None) -> Path:
+    """The data directory read: the project's, or another one given (a deployment's copy of it)."""
+    return _common.DATA if data is None else Path(data)
+
+
+def record_file(dataset_id: str, data: Path | None = None) -> Path:
     """The dataset's record."""
-    return _common.DATASETS / f"{dataset_id}.json"
+    return _data(data) / "datasets" / f"{dataset_id}.json"
 
 
 def source_dir(record: dict[str, Any]) -> Path:
@@ -135,48 +140,49 @@ def source_dir(record: dict[str, Any]) -> Path:
     return p if p.is_absolute() else _common.ROOT / p
 
 
-def rows_file(dataset_id: str) -> Path:
+def rows_file(dataset_id: str, data: Path | None = None) -> Path:
     """The source's row map (each item's row and sha256 in the source it was fetched from)."""
-    return _common.SOURCES / f"{dataset_id}.rows.json"
+    return _data(data) / "sources" / f"{dataset_id}.rows.json"
 
 
-def profile_file(dataset_id: str) -> Path:
+def profile_file(dataset_id: str, data: Path | None = None) -> Path:
     """The dataset's profile."""
-    return _common.DATA / "profiles" / f"{dataset_id}.json"
+    return _data(data) / "profiles" / f"{dataset_id}.json"
 
 
-def materialized_dir(dataset_id: str) -> Path:
+def materialized_dir(dataset_id: str, data: Path | None = None) -> Path:
     """The dataset's materialized copy on this machine."""
-    return _common.MATERIALIZED / dataset_id
+    return _data(data) / "materialized" / dataset_id
 
 
-def exposure_file(dataset_id: str) -> Path:
+def exposure_file(dataset_id: str, data: Path | None = None) -> Path:
     """A sealed side's exposure register."""
-    return _common.DATA / "exposure" / f"{dataset_id}.jsonl"
+    return _data(data) / "exposure" / f"{dataset_id}.jsonl"
 
 
-def picks_file() -> Path:
+def picks_file(data: Path | None = None) -> Path:
     """The project's picks."""
-    return _common.DATA / "picks.jsonl"
+    return _data(data) / "picks.jsonl"
 
 
-def label_set_dir(set_id: str) -> Path:
+def label_set_dir(set_id: str, data: Path | None = None) -> Path:
     """A label set's folder (`<dataset>/<set>`): its labels.json and a text per item."""
-    return LABEL_SET.path(set_id).parent
+    return LABEL_SET.under(data).path(set_id).parent
 
 
-def reference_dir(reference_id: str) -> Path:
+def reference_dir(reference_id: str, data: Path | None = None) -> Path:
     """A reference's folder (`<tier>/<name>`): its manifest and a text per item."""
-    return REFERENCE.path(reference_id).parent
+    return REFERENCE.under(data).path(reference_id).parent
 
 
-def references_of(dataset_id: str) -> list[str]:
+def references_of(dataset_id: str, data: Path | None = None, check_format: bool = True) -> list[str]:
     """The ids of every reference on the dataset, by the dataset its manifest names (a reference promoted under
     another name, `gold/ag_news_200_adj1`, is the dataset's too); sorted."""
+    ref = REFERENCE.under(data)
     out = []
-    for rid in REFERENCE.ids():
+    for rid in ref.ids(check_format=check_format):
         try:
-            man = REFERENCE.get(rid)
+            man = ref.get(rid)
         except Exception:  # noqa: BLE001 — a manifest that does not read is validate's (V16) to say
             continue
         if man.get("dataset_id") == dataset_id:
@@ -184,9 +190,11 @@ def references_of(dataset_id: str) -> list[str]:
     return out
 
 
-def label_sets_of(dataset_id: str) -> list[str]:
+def label_sets_of(dataset_id: str, data: Path | None = None, check_format: bool = True) -> list[str]:
     """The ids of the dataset's label sets (`<dataset>/<set>`), sorted."""
-    return [i for i in LABEL_SET.ids() if i.split("/", 1)[0] == dataset_id]
+    return [
+        i for i in LABEL_SET.under(data).ids(check_format=check_format) if i.split("/", 1)[0] == dataset_id
+    ]
 
 
 #: How a score read against a label set is labelled: `labels-<dataset>-<set>` (`labels.<dataset>.<set>` in the

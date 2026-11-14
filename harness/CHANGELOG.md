@@ -87,7 +87,10 @@ that can move a result is never a patch release without saying so under **Change
   A goal's status missed a reference promoted under another name (`gold/ag_news_200_adj1`). The deployment's copy
   of the data left out the exposure registers, so a deployed catalog scored items a sealed side's readers saw.
   Validate checks label sets, tag sets, picks and exposure rows against new schemas, and a dataset's capture link.
-  `orrery_triage_v1_labelled_v2` records its parent, `orrery_triage_v1_labelled` (version 2.0).
+  `orrery_triage_v1_labelled_v2` records its parent, `orrery_triage_v1_labelled` (version 2.0). A dataset's page says
+  where it came from: the capture its items were taken from and the version it was made from (a capture-made
+  dataset's page named neither); the datasets list and `evh datasets --dataset-id` give both. The catalog reads any
+  data directory (the deployment's copy too) through the model's layout.
 - **Models and deployments, apart** (RFC-032 step 2): a model's deployments are records of their own,
   `data/deployments/<model>/<deployment>.yaml`, each with its checks as dated history: every onboarding, every arm
   smoke and every acceptance is kept, with who made it; the views read the latest of each, so `evh models`, the

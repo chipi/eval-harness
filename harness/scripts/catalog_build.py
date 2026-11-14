@@ -56,11 +56,11 @@ from evaluation_harness.axes import (  # noqa: E402
 )
 from evaluation_harness.catalog_adapter import (  # noqa: E402
     Adapter,
-    dataset_record_file,
     item_fields,
     load_catalog_adapter,
     scores_once,
 )
+from evaluation_harness.model.datasets import record_file as dataset_record_file  # noqa: E402
 from evaluation_harness.model.datasets import source_dir  # noqa: E402
 from evaluation_harness.stats import fmt_p  # noqa: E402
 
@@ -989,10 +989,13 @@ def _versions(A: Adapter, by_ds: dict) -> None:
         )
 
 
-def _version_links(by_ds: dict, ds: str, up: str) -> str:
-    """The dataset's place in its version chain, as links: made from, and made into."""
+def _version_links(by_ds: dict, ds: str, up: str) -> tuple[str, str]:
+    """Where the dataset came from and its place in its version chain, as links: the capture its items were taken
+    from, the version it was made from, and the versions made from it; with the section's title (owner, 2026-11-14:
+    a version made from another and from a capture says both, on its page and in the list)."""
     v = by_ds[ds]
     parts = []
+    origin = f"<p>From {origin_html(v, up)}.</p>" if v.get("origin") else ""
     lin = v.get("parent")
     if lin:
         n = {k: len(lin.get(k) or []) for k in ("added", "removed", "changed")}
@@ -1019,7 +1022,8 @@ def _version_links(by_ds: dict, ds: str, up: str) -> str:
             '<p class="small muted">Runs on different versions measure different items, so they are '
             "never tested against each other; compare each version's arms on its own page.</p>"
         )
-    return "".join(parts)
+    title = "origin and versions" if origin and parts else "origin" if origin else "versions"
+    return title, origin + "".join(parts)
 
 
 def _goals_of(A: Adapter) -> dict:
@@ -1058,8 +1062,16 @@ def render_datasets(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
                 "data": {"goal": its_goals, **{f"tag-{k}": tags.get(k) or f"no {k}" for k in tag_keys}},
                 "cells": [
                     dataset_link(ds, wrap=True)
-                    + (f"<br><small>from {dataset_link(parent, wrap=True)}</small>" if parent else "")
-                    + (f"<br><small>{origin_html(v)}</small>" if v.get("origin") and not parent else ""),
+                    + (
+                        "<br><small>"
+                        + " · ".join(
+                            ([f"from {dataset_link(parent, wrap=True)}"] if parent else [])
+                            + ([origin_html(v)] if v.get("origin") else [])
+                        )
+                        + "</small>"
+                        if parent or v.get("origin")
+                        else ""
+                    ),
                     # A chip per tag: run together as text, five tags and a Hugging Face pin made one tall
                     # unreadable cell (owner, 2026-10-31).
                     "".join(
@@ -2030,9 +2042,10 @@ def render_dataset(A: Adapter, ds: str, v: dict, out: Path, nav: list) -> None:
                 item=A.item_word,
             ),
         )
-    if v.get("versions"):
+    title, versions = v.get("versions") or ("", "")
+    if versions:
         n += 1
-        body += block(f"{n:02d}", "versions", v["versions"], "versions")
+        body += block(f"{n:02d}", title, versions, "versions")
     if refs:
         n += 1
         body += block(f"{n:02d}", "reference sets", f"<ul>{refs}</ul>")
@@ -2292,7 +2305,7 @@ def render_added(A: Adapter, ds: str) -> str:
     sha = {}
     got = getattr(A, "data_dir", None)
     if got is not None:
-        doc = json.loads(_store.read_text(dataset_record_file(Path(got), ds), encoding="utf-8"))
+        doc = json.loads(_store.read_text(dataset_record_file(ds, Path(got)), encoding="utf-8"))
         sha = {it["item_id"]: it.get("source_sha256") for it in doc.get("items") or []}
     rows = [
         {
