@@ -68,6 +68,7 @@ from evaluation_harness.model import dataset_views as model_dataset_views  # noq
 from evaluation_harness.model import datasets as model_datasets  # noqa: E402
 from evaluation_harness.model import goals as model_goals  # noqa: E402
 from evaluation_harness.model import runs as model_runs  # noqa: E402
+from evaluation_harness.model import scorer_views as model_scorer_views  # noqa: E402
 from evaluation_harness.model import spend as model_spend  # noqa: E402
 from evaluation_harness.model.entity import Problem  # noqa: E402
 from evaluation_harness.model.spend import number, token_total  # noqa: E402
@@ -128,8 +129,8 @@ def _replay_of(m: dict) -> dict | None:
 
 class Adapter(Protocol):
     """The questions the catalog and the inspector ask. Every method must be cheap to call
-    twice. The server caches `scores` for as long as it runs, and the built-in adapter its
-    index of runs: restart `catalog-serve` to see runs made after it started."""
+    twice. The server caches `scores`, and the built-in adapter its index of runs, until the data changes: it then
+    calls the adapter's `refresh()` (optional: an adapter that has none keeps what it cached) and rebuilds the pages."""
 
     #: What one item is called on the pages ("item", "episode", "article").
     item_word: str
@@ -398,6 +399,18 @@ class HarnessAdapter:
         """Every capture in the data tree, as `evh captures` lists them (RFC-019): the Captures page reads these."""
         return model_dataset_views.capture_views(self.data_dir, check_format=False)
 
+    @_memo
+    def scorers(self) -> list[dict]:
+        """Every judge scorer in the data tree, as `evh scorer-list` lists them (RFC-032 step 7), whatever its format (the
+        catalog reads copies): the Scorers page reads these."""
+        return model_scorer_views.list_scorers(self.data_dir, check_format=False)
+
+    @_memo
+    def scorer(self, scorer_id: str) -> dict:
+        """One judge scorer, as `evh scorer-show` shows it: its judges, validation, checks, judging sets and the judged
+        scores it made."""
+        return model_scorer_views.show_scorer(scorer_id, self.data_dir, check_format=False)
+
     def __init__(self, data_dir: Path | None = None, runs_root: Path | None = None):
         self.data_dir = Path(data_dir or _common.DATA)
         # The project's goals (EVAL_GOALS_DIR when set) unless a data directory is named.
@@ -435,11 +448,12 @@ class HarnessAdapter:
         skipped = _ignored_runs([r / model_runs.RUN for r in runs])
         refs: dict[Path, str] = {}
         made: dict[Path, str] = {}
-        # What each score's record says, read once; and the label each arm is read under.
-        self._rec: dict[Path, dict] = {}
-        self._label: dict[str, str] = {}
+        # What each score's record says, read once; and the label each arm is read under. Kept on the adapter only
+        # when the index is whole (below): a server that refreshes while a request reads them never shows half.
+        rec: dict[Path, dict] = {}
+        label: dict[str, str] = {}
         # Every score seen, before any is set aside below: what was billed counts the runs behind them all.
-        self._every: list[tuple[str, Path, dict, str]] = []
+        every: list[tuple[str, Path, dict, str]] = []
         for r in runs:
             if r / model_runs.RUN in skipped:
                 continue
@@ -448,9 +462,9 @@ class HarnessAdapter:
                 if not m or not m.get("dataset_id") or not m.get("config_id"):
                     continue
                 arm = model_runs.arm_id(d, m)
-                self._rec[d] = m
-                self._label[arm] = model_runs.label(d, m)
-                self._every.append((m["dataset_id"], d, m, arm))
+                rec[d] = m
+                label[arm] = model_runs.label(d, m)
+                every.append((m["dataset_id"], d, m, arm))
                 out.setdefault(arm, []).append(d)
                 refs[d] = ((m.get("fingerprint") or {}).get("data") or {}).get("reference_id") or ""
                 made[d] = m.get("created_at") or ""
@@ -458,21 +472,30 @@ class HarnessAdapter:
         # ONE REFERENCE PER ARM: the one its latest run was scored against. An arm's runs were
         # averaged whatever they were scored against, so a run on silver and a run on gold read
         # as two repeats of one measurement. Runs on another reference are left out, and said so.
-        self._stale: dict[str, list[str]] = {}
+        stale: dict[str, list[str]] = {}
         for arm, dirs in out.items():
             # Latest by when it was measured, not by its run id (a --run-id can be anything).
-            ref = refs[max(dirs, key=lambda d: (made[d], self._rec[d]["run_id"]))]
+            ref = refs[max(dirs, key=lambda d: (made[d], rec[d]["run_id"]))]
             old = [d for d in dirs if refs[d] != ref]
             if old:
                 out[arm] = [d for d in dirs if refs[d] == ref]
                 was = sorted({refs[d] or "no reference" for d in old})
-                self._stale[arm] = [
+                stale[arm] = [
                     (
                         f"{len(old)} earlier run(s) scored against {', '.join(was)} left out: this arm is read "
                         f"against {ref or 'no reference'}, the reference of its latest run"
                     )
                 ]
+        self._rec, self._label, self._every, self._stale = rec, label, every, stale
         return out
+
+    def refresh(self) -> None:
+        """Forget what this adapter has read: the next question reads the data again. catalog-serve calls it when the
+        data changed (a write through its API, or a change it noticed), so the server never answers from the index of runs
+        it made when it started."""
+        with self.__dict__.setdefault("_memo_lock", threading.RLock()):
+            for slot in [k for k in self.__dict__ if k.startswith("_memo_") and k != "_memo_lock"]:
+                del self.__dict__[slot]
 
     def read_as(self, arm: str) -> str:
         """The label the arm's scores are read under ("" for the plain arm; model.runs.label): what a folder used to
@@ -1256,32 +1279,7 @@ def load_catalog_adapter(spec: str | None = None) -> Adapter:
 def exposure_aware(adapter):
     """The adapter, its `scores` leaving out a held-out side's read items (RFC-031 H1): every page, goal, round and
     inspector answer reads scores through it, a project's own adapter's too, so the read items count in none of them.
-    What it leaves out is counted (`_exposure.LEFT`) for whoever shows the scores to say."""
+    The seal and the register are the adapter's own data directory's (`_exposure.aware`)."""
     from evaluation_harness import _exposure  # noqa: PLC0415
 
-    read = adapter.scores
-
-    def scores(arm, *args, **kw):
-        out = read(arm, *args, **kw)
-        dataset = str(arm).rpartition("/")[0].rpartition("/")[2]
-        if not _exposure.applies(dataset):
-            return out
-        ids = {i for sc in out.values() for i in (sc.get("values") or {})}
-        kept = _exposure.keep(dataset, ids)
-        if kept is None:
-            return out
-        return {
-            k: {
-                **sc,
-                "values": {i: v for i, v in (sc.get("values") or {}).items() if i in kept},
-                **(
-                    {"repeats": {i: v for i, v in sc["repeats"].items() if i in kept}}
-                    if isinstance(sc.get("repeats"), dict)
-                    else {}
-                ),
-            }
-            for k, sc in out.items()
-        }
-
-    adapter.scores = scores
-    return adapter
+    return _exposure.aware(adapter)

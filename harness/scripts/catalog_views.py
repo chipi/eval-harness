@@ -35,6 +35,8 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
 import argparse
+import contextlib
+import io
 import json
 import os
 import re
@@ -45,6 +47,7 @@ from datetime import date
 from pathlib import Path
 
 from evaluation_harness import _goal_view, _jsonout, _outputs, _sheet, _store
+from evaluation_harness import catalog_arms as ca
 from evaluation_harness import catalog_build as cb
 from evaluation_harness import catalog_models as cm
 from evaluation_harness import catalog_periods as cp
@@ -60,11 +63,17 @@ from evaluation_harness.axes import (
     tie_break_of,
 )
 from evaluation_harness.catalog_adapter import load_catalog_adapter, scores_once
+from evaluation_harness.model import activity_views as actviews
+from evaluation_harness.model import arm_views as av
 from evaluation_harness.model import goal_views as gv
+from evaluation_harness.model import metric_views as mviews
+from evaluation_harness.model import overview_views as oviews
+from evaluation_harness.model import period_views
 from evaluation_harness.model import runs as model_runs
+from evaluation_harness.model.entity import Problem
 from evaluation_harness.stats import fmt_p
 
-KINDS = {"t-silver": "silver", "t-judged": "judged", "t-author": "wrote its reference"}
+KINDS = av.KINDS
 
 
 def _table(heads: list, rows: list) -> None:
@@ -88,12 +97,32 @@ def _fmt(v) -> str:
     return "—" if v is None else cb.fmt(v)
 
 
-def _scored(a: dict) -> str:
-    return f"judge {a['judge']}" if a.get("judge") else (a.get("reference") or "—")
+_scored = av.scored
+_kind = av.kind
 
 
-def _kind(a: dict, tiers: dict) -> str:
-    return KINDS.get(cb.row_kind(a, tiers), "")
+def _refused(fn, *args):
+    """What a view's data function gives, its refusal the command's: a thing that is not there, or an input that is
+    wrong (`die` names its kind as a literal)."""
+    try:
+        return fn(*args)
+    except Problem as exc:
+        if exc.kind == "not-found":
+            die(str(exc), "not-found")
+        die(str(exc), "bad-argument")
+
+
+def _read(fn, *args):
+    """A view's data, read as JSON holds it, its refusal the command's."""
+    return _jsonout.plain(_refused(fn, *args))
+
+
+def say(printer, data) -> str:
+    """What a command prints for a view's data, as text (the operation's answer)."""
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        printer(data)
+    return buf.getvalue().rstrip("\n")
 
 
 def _adapter(args):
@@ -115,15 +144,8 @@ def _period_option(ap) -> None:
 def _period(A, by_ds: dict, rows: dict, key: str | None) -> tuple:
     """(each row's period numbers, a line saying the period and what trends compare with), or
     ({}, "") without --period."""
-    if not key:
-        return {}, ""
-    first = cb.window(A, by_ds)["first"]
-    b = cp.bounds(key, date.today(), first)
-    label, against = next((lb, ag) for k, lb, ag in cp.PERIODS if k == key)
-    line = f"{label}, {b['since']} to {b['until']}" + (
-        f"; ▲▼ against {against}, {b['prev'][0]} to {b['prev'][1]}" if b["prev"] else ""
-    )
-    return cp.in_period(rows, key, date.today(), first), line
+    got = period_views.rows_in(A, by_ds, rows, key)
+    return got["rows"], got["line"]
 
 
 def _pcells(p: dict, flows: tuple) -> list:
@@ -365,6 +387,55 @@ def references(argv) -> int:
     return 0
 
 
+def print_metrics(d: dict) -> None:
+    """What each metric measures, one after another (the `metrics` view's data)."""
+    if d["period"]:
+        print(d["period"] + "\n")
+    for m in d["metrics"]:
+        print(
+            f"{m['metric']}  ({m['better']} is better)"
+            if m["better"] != "neutral"
+            else f"{m['metric']}  (neutral: a description)"
+        )
+        print(
+            textwrap.fill(
+                m["description"] or mviews.NOT_DESCRIBED,
+                width=96,
+                initial_indent="    ",
+                subsequent_indent="    ",
+            )
+        )
+        print("    recorded on: " + ", ".join(f"{ds} ({n} arms)" for ds, n in sorted(m["datasets"].items())))
+        if m["decides"]:
+            print("    decides: " + ", ".join(m["decides"]))
+        if m["weighs"]:
+            print("    weighed by: " + ", ".join(m["weighs"]))
+        if m["period"]:
+            p = m["period"]
+            print(
+                f"    in the period: {cp.cell(p['arms'], p['arms_prev'])} arms recording it"
+                + ("  [new]" if p["new"] else "")
+            )
+
+
+def print_metric(d: dict) -> None:
+    """One metric, as its page shows it (the `metric` view's data)."""
+    print(d["metric"])
+    for text in (d["description"] or mviews.NOT_DESCRIBED, d["details"]):
+        if text:
+            print(textwrap.fill(text, width=96, initial_indent="  ", subsequent_indent="  ") + "\n")
+    print(f"  better       {d['better']}")
+    print(f"  kind         {d['kind']}")
+    print("  decides      " + (", ".join(d["decides"]) or "no goal"))
+    print("  weighed by   " + (", ".join(d["weighs"]) or "no goal"))
+    for ds in d["datasets"]:
+        print(f"\non {ds['dataset']}:")
+        _table(
+            ["arm", f"mean {d['metric']}", f"{d['item_word']}s", "scored against", "row"],
+            [[a["arm"], a["shown"], a["n"], a["scored_against"], a["row"]] for a in ds["arms"]],
+        )
+
+
 def metrics(argv) -> int:
     """evh metrics: what each metric measures, which way is better, where it is recorded."""
     ap = argparse.ArgumentParser(
@@ -378,85 +449,115 @@ def metrics(argv) -> int:
     ap.add_argument("--adapter", help="path/to/file.py:Class (default: the catalog's)")
     args = ap.parse_args(argv)
     A, by_ds = _adapter(args)
-    fn = getattr(A, "metric_descriptions", None)
-    project = fn() if callable(fn) else {}
-    idx = cb.metric_index(A, by_ds)
     if args.metric:
-        return _metric(A, by_ds, project, idx, args.metric, args.dataset_id)
-    per, line = _period(A, by_ds, cb.period_metrics(A, by_ds), args.period)
-    if line:
-        print(line + "\n")
-    for m in sorted(idx, key=lambda k: (k.startswith(("total_", "self_family_", "resumed", "failed")), k)):
-        where = idx[m]
-        if args.dataset_id and args.dataset_id not in where["datasets"]:
-            continue
-        lower = any(A.lower_is_better(m, ds) for ds in where["datasets"])
-        better = "lower" if lower else ("neutral" if A.is_neutral(m) else "higher")
-        text = cb.describe_metric(m, project) or "not described: add it to the adapter's METRIC_DESCRIPTIONS"
-        print(f"{m}  ({better} is better)" if better != "neutral" else f"{m}  (neutral: a description)")
-        print(textwrap.fill(text, width=96, initial_indent="    ", subsequent_indent="    "))
-        print(
-            "    recorded on: " + ", ".join(f"{ds} ({n} arms)" for ds, n in sorted(where["datasets"].items()))
-        )
-        if where["goals"]:
-            print("    decides: " + ", ".join(g["goal_id"] for g in where["goals"]))
-        if where["weighs"]:
-            print("    weighed by: " + ", ".join(g["goal_id"] for g in where["weighs"]))
-        if per:
-            p = per[m]
-            print(
-                f"    in the period: {cp.cell(p['arms'], p['arms_prev'])} arms recording it"
-                + ("  [new]" if p["new"] else "")
-            )
+        print_metric(_read(mviews.metric, A, by_ds, args.metric, args.dataset_id))
+    else:
+        print_metrics(_read(mviews.metrics, A, by_ds, args.dataset_id, args.period))
     return 0
 
 
-def _metric(A, by_ds: dict, project: dict, idx: dict, m: str, only: str | None) -> int:
-    """One metric, as its page shows it."""
-    where = idx.get(m)
-    if where is None:
-        die(f"no metric {m!r} is recorded: one of {', '.join(sorted(idx))}", "not-found")
-    lower = any(A.lower_is_better(m, ds) for ds in where["datasets"])
-    better = "lower" if lower else ("neutral: a description" if A.is_neutral(m) else "higher")
-    print(m)
-    for text in (
-        cb.describe_metric(m, project) or "not described: add it to the adapter's METRIC_DESCRIPTIONS",
-        cb.metric_details(m, project),
-    ):
-        if text:
-            print(textwrap.fill(text, width=96, initial_indent="  ", subsequent_indent="  ") + "\n")
-    print(f"  better       {better}")
-    print(f"  kind         {cb._kind_of(A, m, where['datasets'])}")
-    print("  decides      " + (", ".join(g["goal_id"] for g in where["goals"]) or "no goal"))
-    print("  weighed by   " + (", ".join(g["goal_id"] for g in where["weighs"]) or "no goal"))
-    for ds in sorted(where["datasets"]):
-        if only and ds != only:
-            continue
-        v = by_ds[ds]
-        tiers = {r["id"]: r["tier"] for r in v["refs"]}
-        arms = [a for a in v["arms"] if m in a["means"]]
-        arms.sort(
-            key=lambda a: (
-                cb.scored_by_rank(a, tiers),
-                a.get("reference") or "",
-                a["means"][m][0] * (1 if lower else -1),
-            )
-        )
-        print(f"\non {ds}:")
+def print_overview(d: dict) -> None:
+    """The catalog's home page, as `evh overview` prints it (the `overview` view's data)."""
+    p = d["period"]
+    since, until, against = p["since"], p["until"], p["against"]
+    span = f"{p['label']}, {since} to {until}"
+    print(f"{span}" + (f"; trends against {against}, {p['prev'][0]} to {p['prev'][1]}" if p["prev"] else ""))
+    for t in d["tiles"]:
+        if t["kind"] == "stock":
+            line = f"+{t['new']} new" if t["new"] else "none new"
+            value = str(t["value"])
+        else:
+            line = t["trend"]["text"] + (f" vs {against}" if t["trend"]["pct"] is not None else "")
+            value = cb.fmt_amount(t["value"], "usd") if t["what"] == "billed" else f"{round(t['value']):,}"
+        print(f"  {cb.TILE_LABEL.get(t['what'], t['what']):15} {value:>16}  {line}".rstrip())
+    print(
+        "\ngoals at a glance (the leader of the gold group against the baseline, Bonferroni over the arms it was chosen from, threshold 0.05):"
+    )
+    rows = d["goals"]
+    if rows:
         _table(
-            ["arm", f"mean {m}", f"{A.item_word}s", "scored against", "row"],
+            ["goal", "dataset", "decides", "baseline", "leader", "leader vs baseline", "recommended"],
             [
                 [
-                    a["label"],
-                    cb.metric_value(A, m, a["means"][m][0]),
-                    a["means"][m][1],
-                    _scored(a),
-                    _kind(a, tiers),
+                    r["goal"],
+                    r["dataset"],
+                    r["measure"]
+                    + (" (lower)" if r["lower"] else "")
+                    + (f" [no gold: {r['group']}]" if r["group"] and not r["gold"] else ""),
+                    f"{r['baseline_label']} {_fmt(r['baseline_mean'])}" if r["baseline"] else "none promoted",
+                    f"{r['leader_label']} {_fmt(r['leader_mean'])}" if r["leader"] else "—",
+                    r["verdict"],
+                    (
+                        r["recommended_label"]
+                        + (f" ({' · '.join(r['vs_baseline'])} vs baseline)" if r["vs_baseline"] else "")
+                    )
+                    if r["recommended"]
+                    else "none yet",
                 ]
-                for a in arms
+                for r in rows
             ],
         )
-    return 0
+        print(
+            "  recommended: what each goal's strategy picks once its limits and the tie-break (cost, then"
+            " speed, by default) are applied; evh goals --goal G says why."
+        )
+    else:
+        print("  no goals yet")
+    if d["first"]:
+        print(f"\nactivity, {span}: measured runs per day")
+        counts = d["activity"]
+        days = sorted({day for c in counts.values() for day in c})
+        if days:
+            _table(
+                ["day", *sorted(counts), "total"],
+                [
+                    [
+                        day,
+                        *(counts[x].get(day, 0) for x in sorted(counts)),
+                        sum(counts[x].get(day, 0) for x in counts),
+                    ]
+                    for day in days
+                ],
+            )
+        else:
+            print("  none")
+        for unit, per in d["spend"].items():
+            print(f"\nspend in {'USD' if unit == 'usd' else 'tokens'}, {span}:")
+            if not per:
+                print("  none recorded")
+                continue
+            for name, days_ in per.items():
+                print(f"  {name:20} {cb.fmt_amount(sum(days_.values()), unit)}")
+    else:
+        print("\nactivity and spend: nothing is recorded with a date yet")
+    print("\ncoverage:")
+    _table(
+        [
+            "dataset",
+            f"{d['item_word']}s",
+            "arms scored against",
+            "reference sets",
+            "metrics",
+            "goals",
+            "last run",
+        ],
+        [
+            [
+                c["dataset"] + (f" (from {c['parent']})" if c["parent"] else ""),
+                c["items"],
+                " · ".join(f"{k} {n}" for k, n in c["scored"].items()) or "—",
+                ", ".join(c["references"]) or "—",
+                len(c["metrics"]),
+                ", ".join(c["goals"]) or "—",
+                c["last"][:10] or "—",
+            ]
+            for c in d["coverage"]
+        ],
+    )
+    if since:
+        ev = d["events"]
+        print(f"\nrecorded, {span}: {len(ev)}")
+        _table(["when", "what", "kind"], [[x["at"][:16].replace("T", " "), x["what"], x["kind"]] for x in ev])
 
 
 def overview(argv) -> int:
@@ -475,131 +576,194 @@ def overview(argv) -> int:
     ap.add_argument("--adapter", help="path/to/file.py:Class (default: the catalog's)")
     args = ap.parse_args(argv)
     A, by_ds = _adapter(args)
-    w = cb.window(A, by_ds)
-    rounds_fn = getattr(A, "rounds", None)
-    data = cp.home_data(A, by_ds, w["spend"], A.goals(), rounds_fn() if callable(rounds_fn) else [])
-    today = date.today()
-    b = cp.bounds(args.period, today, data["first"])
-    since, until = b["since"], b["until"]
-    label, against = next((lb, ag) for k, lb, ag in cp.PERIODS if k == args.period)
-    span = f"{label}, {since} to {until}"
-    print(f"{span}" + (f"; trends against {against}, {b['prev'][0]} to {b['prev'][1]}" if b["prev"] else ""))
-    for t in cp.tiles(data, args.period, today):
-        if t["kind"] == "stock":
-            line = f"+{t['new']} new" if t["new"] else "none new"
-            value = str(t["value"])
-        else:
-            line = t["trend"]["text"] + (f" vs {against}" if t["trend"]["pct"] is not None else "")
-            value = cb.fmt_amount(t["value"], "usd") if t["what"] == "billed" else f"{round(t['value']):,}"
-        print(f"  {cb.TILE_LABEL.get(t['what'], t['what']):15} {value:>16}  {line}".rstrip())
-    print(
-        "\ngoals at a glance (the leader of the gold group against the baseline, Bonferroni over the arms it was chosen from, threshold 0.05):"
-    )
-    rows = gv.glance(A, by_ds)
-    if rows:
+    print_overview(_read(oviews.overview, A, by_ds, args.period))
+    return 0
+
+
+def print_arms(d: dict, by: str = "dataset", every: bool = False) -> None:
+    """Every arm that fits, grouped as the arms page groups them, or one row a system (the `arms` view's data)."""
+    ca_groups = dict(ca.GROUPS)
+    f, rows = d["filters"], d["arms"]
+    if not rows:
+        why = []
+        if f["weights"]:
+            why.append(
+                "an arm's weights come from the model records (data/models/, the adapter's model_facts)"
+            )
+        if f["quality"]:
+            why.append("only arms a goal's decision weighs have a place against its quality leader")
+        print("no arm matches" + (f": {'; '.join(why)}" if why else ""))
+        return
+    per, line = d["period"]["rows"], d["period"]["line"]
+    flows = ("runs", "usd")
+    if line:
+        print(line)
+    heads_p = ["", *(PERIOD_HEADS[x] for x in flows)] if per else []
+    if f["systems"]:
         _table(
-            ["goal", "dataset", "decides", "baseline", "leader", "leader vs baseline", "recommended"],
+            ["system", "model", "provider", "datasets", "arms", "spend", "rank on each goal", *heads_p],
             [
                 [
-                    r["goal"]["goal_id"],
-                    r["dataset"],
-                    r["measure"]
-                    + (" (lower)" if r["lower"] else "")
-                    + (f" [no gold: {r['group']}]" if r["group"] and not r["gold"] else ""),
-                    f"{r['baseline_label']} {_fmt(r['baseline_mean'])}" if r["baseline"] else "none promoted",
-                    f"{r['leader_label']} {_fmt(r['leader_mean'])}" if r["leader"] else "—",
-                    cb.glance_verdict(r),
-                    (
-                        r["recommended_label"]
-                        + (f" ({' · '.join(r['vs_baseline'])} vs baseline)" if r["vs_baseline"] else "")
-                    )
-                    if r["recommended"]
-                    else "none yet",
+                    c["system"],
+                    c["model"] or "—",
+                    c["provider"] or "—",
+                    ", ".join(c["datasets"]),
+                    c["arms"],
+                    cb.fmt_amount(c["usd"], "usd") if c["usd"] else "—",
+                    "; ".join(f"{r['goal']} #{r['rank']} of {r['of']}" for r in c["ranks"]) or "—",
+                    *(_pcells(per[f"c:{c['system']}"], flows) if per else []),
                 ]
-                for r in rows
+                for c in d["systems"]
             ],
         )
-        print(
-            "  recommended: what each goal's strategy picks once its limits and the tie-break (cost, then"
-            " speed, by default) are applied; evh goals --goal G says why."
-        )
-    else:
-        print("  no goals yet")
-    if data["first"]:
-        print(f"\nactivity, {span}: measured runs per day")
-        counts = {
-            ds: {d: n for d, n in per.items() if d <= until}
-            for ds, per in cb.activity_counts(by_ds, since).items()
-            if any(d <= until for d in per)
-        }
-        days = sorted({d for c in counts.values() for d in c})
-        if days:
-            _table(
-                ["day", *sorted(counts), "total"],
-                [
-                    [
-                        d,
-                        *(counts[x].get(d, 0) for x in sorted(counts)),
-                        sum(counts[x].get(d, 0) for x in counts),
-                    ]
-                    for d in days
-                ],
+        return
+    # "dataset" groups by what can be ranked together, as the page does: a dataset, scored one way, on one measure.
+    key = "" if by == "none" else "set" if by == "dataset" else by
+    # One dataset asked for is that group opened; otherwise a group shows its first three, as the page does.
+    fold = 0 if every or f["dataset"] or not key else 3
+    groups: dict = {}
+    for r in sorted(rows, key=ca._reading_order):
+        groups.setdefault((ca.set_key(r) if key == "set" else r[key]) if key else "", []).append(r)
+    for name in sorted(groups):
+        if key:
+            print(
+                f"\n{ca_groups[key]} {name or '—'} ({len(groups[name])} arm{'' if len(groups[name]) == 1 else 's'})"
             )
-        else:
-            print("  none")
-        for unit in cb.SPEND_UNITS:
-            per = {
-                name: {d: v for d, v in days_.items() if d <= until}
-                for name, days_ in cb.spend_by_day(w["spend"], since, unit).items()
-                if any(d <= until for d in days_)
-            }
-            print(f"\nspend in {'USD' if unit == 'usd' else 'tokens'}, {span}:")
-            if not per:
-                print("  none recorded")
-                continue
-            for name, d in per.items():
-                print(f"  {name:20} {cb.fmt_amount(sum(d.values()), unit)}")
-    else:
-        print("\nactivity and spend: nothing is recorded with a date yet")
-    print("\ncoverage:")
-    _table(
-        [
-            "dataset",
-            f"{A.item_word}s",
-            "arms scored against",
-            "reference sets",
-            "metrics",
-            "goals",
-            "last run",
-        ],
-        [
-            [
-                c["dataset"] + (f" (from {c['parent']})" if c["parent"] else ""),
-                c["items"],
-                " · ".join(f"{k} {n}" for k, n in c["scored"].items()) or "—",
-                ", ".join(c["references"]) or "—",
-                len(c["metrics"]),
-                ", ".join(g["goal_id"] for g in c["goals"]) or "—",
-                c["last"][:10] or "—",
-            ]
-            for c in cb.coverage(A, by_ds)
-        ],
-    )
-    if since:
-        ev = [x for x in w["events"] if x["at"][:10] >= since]
-        print(f"\nrecorded, {span}: {len(ev)}")
         _table(
-            ["when", "what", "kind"],
-            [[x["at"][:16].replace("T", " "), cb.plain(x["html"]), x["kind"]] for x in ev],
+            [
+                "arm id",
+                "how measured",
+                "dataset",
+                "model",
+                "provider",
+                *(["model record"] if d["has_record"] else []),
+                "role",
+                "deciding measure",
+                "cost / item",
+                "latency",
+                *heads_p,
+            ],
+            [
+                [
+                    r["arm"],
+                    r["how"]
+                    + (" (wrote its own reference)" if r["kind"] == "t-author" else "")
+                    + (f" ({r['moved']:+.3f} vs measured)" if r["moved"] is not None else "")
+                    + ("; the goals read its re-score" if r["superseded_by"] else ""),
+                    r["dataset"],
+                    r["model"] or "—",
+                    (r["provider"] or "—") + (" (local)" if r["local"] else ""),
+                    *(
+                        [
+                            f"{r['record']}{'@' + r['deployment'] if r['deployment'] else ''} ({cm.SMOKE_WORDS[r['smoke']]})"
+                            if r["record"]
+                            else "—"
+                        ]
+                        if d["has_record"]
+                        else []
+                    ),
+                    ", ".join(dict.fromkeys(r["roles"])) or "—",
+                    f"{r['measure']} {_fmt(r['value'])} {'↓' if r['lower'] else '↑'}"
+                    if r["measure"]
+                    else "—",
+                    "—" if r["cost"] is None else "$0" if r["cost"] == 0 else f"${r['cost']:.4f}",
+                    "—"
+                    if not r["latency"]
+                    else f"{r['latency'] / 1000:.1f} s"
+                    if r["latency"] >= 1000
+                    else f"{r['latency']:.0f} ms",
+                    *(_pcells(per[r["arm"]], flows) if per else []),
+                ]
+                for r in (groups[name][:fold] if fold else groups[name])
+            ],
         )
-    return 0
+        if fold and len(groups[name]) > fold:
+            ds = groups[name][0]["dataset"]
+            more = (
+                f"evh arms --dataset-id {ds} lists them, with the dataset's other groups "
+                f"({sum(r['dataset'] == ds for r in rows)} arms)"
+                if key == "set"
+                else "evh arms --all"
+            )
+            print(f"  … and {len(groups[name]) - fold} more: {more}")
+    if any(r["roles"] for r in rows):
+        print(
+            "\nroles: leader, first on the goal's deciding measure among the arms its decision weighs (not "
+            "significantly ahead of N: N it cannot be told apart from); recommended, what the goal's rule picks; "
+            "baseline, the arm the goal promoted. ×N after an arm: N runs of it, averaged per item."
+        )
+
+
+def print_arm(d: dict) -> None:
+    """One arm in full, as its page shows it (the `arm` view's data)."""
+    print(d["label"] + ("  [baseline]" if d["baseline"] else ""))
+    for k, x in (
+        ("dataset", d["dataset"]),
+        ("scored against", d["scored_against"]),
+        ("goal", d["goal"] or "—"),
+        ("runs", d["runs"]),
+        ("headline", f"{d['headline']['metric']} {_fmt(d['headline']['mean'])}"),
+        ("last run", d["last"][:16].replace("T", " ") or "—"),
+    ):
+        print(f"  {k:15} {x}")
+    if d["wrote"]:
+        print(
+            "  note            wrote the reference it is scored against: its row measures agreement with itself"
+        )
+    if d["superseded_by"]:
+        print(f"  re-scored       the goals read its re-score, {d['superseded_by']}")
+    if d["cost_speed"]:
+        print("\ncost and speed, per " + d["item_word"] + ":")
+        for c in d["cost_speed"]:
+            print(f"  {c['axis']:16} {c['text']}")
+    print("\nmetrics:")
+    _table(
+        ["metric", "mean", f"{d['item_word']}s", "better"],
+        [[m["metric"], m["shown"], m["n"], m["better"]] for m in d["metrics"]],
+    )
+    if d["run_list"]:
+        print("\nruns:")
+        _table(
+            ["run", "made", f"{d['item_word']}s", "cost", "how"],
+            [
+                [
+                    r["run"],
+                    r["made"][:16].replace("T", " "),
+                    r["items"] if r["items"] is not None else "—",
+                    f"${r['cost_usd']:.6f}" if r["cost_usd"] is not None else "—",
+                    r["how"],
+                ]
+                for r in d["run_list"]
+            ],
+        )
+    cfg = d["config"]
+    if cfg:
+        print(
+            f"\nconfig {cfg.get('config_id') or ''} (adapter {cfg.get('adapter') or '—'}"
+            + (f"; deployment {cfg['deployment']}" if cfg.get("deployment") else "")
+            + "; credentials are never shown):"
+        )
+        for k, x in sorted(cfg["params"].items()):
+            print(f"  {k:20} {x}")
+    if d["conditions"]:
+        print("\nconditions:")
+        for k, x in sorted(d["conditions"].items()):
+            print(f"  {k:28} {x}")
+    if d["siblings"]:
+        print("\nthe same system, scored other ways:")
+        _table(
+            ["arm id", "scored against", "headline", "mean", "row"],
+            [[x["arm"], x["scored_against"], x["metric"], _fmt(x["mean"]), x["row"]] for x in d["siblings"]],
+        )
+    for r in d["rounds"]:
+        print(f"round {r['round']} of {r['goal']}: {'retired' if r['retired'] else 'in play'}, {r['status']}")
+    for note in d["notes"]:
+        print(f"note: {note}")
 
 
 def arms(argv) -> int:
     """evh arms: every arm, or one in full as its page shows it."""
     ap = argparse.ArgumentParser(prog="evh arms", description="Every arm, or one in full.")
-    from evaluation_harness import catalog_arms as ca  # noqa: PLC0415
-
     ap.add_argument("--dataset-id", help="only the arms on this dataset")
     ap.add_argument("--arm", help="one arm in full: its arm id, or a system id (its arm under runs/)")
     ap.add_argument(
@@ -634,220 +798,22 @@ def arms(argv) -> int:
     ap.add_argument("--adapter", help="path/to/file.py:Class (default: the catalog's)")
     args = ap.parse_args(argv)
     A, by_ds = _adapter(args)
-    if not args.arm:
-        rows = [
-            r
-            for r in ca.arm_rows(A, by_ds)
-            if (not args.dataset_id or r["dataset"] == args.dataset_id)
-            and (not args.where or r["local"] == (args.where == "local"))
-            and (not args.tier or r["tier"] == args.tier)
-            and (not args.weights or r["weights"] == args.weights)
-            and (
-                not args.quality
-                or r["quality"] == {"contender": "a contender", "below": "below the leader"}[args.quality]
-            )
-        ]
-        if not rows:
-            why = []
-            if args.weights:
-                why.append(
-                    "an arm's weights come from the model records (data/models/, the adapter's model_facts)"
-                )
-            if args.quality:
-                why.append("only arms a goal's decision weighs have a place against its quality leader")
-            print("no arm matches" + (f": {'; '.join(why)}" if why else ""))
-            return 0
-        per, line = _period(A, by_ds, ca.period_arms(A, by_ds, rows), args.period)
-        flows = ("runs", "usd")
-        if line:
-            print(line)
-        heads_p = ["", *(PERIOD_HEADS[f] for f in flows)] if per else []
-        if args.systems:
-            _table(
-                ["system", "model", "provider", "datasets", "arms", "spend", "rank on each goal", *heads_p],
-                [
-                    [
-                        c["system"],
-                        c["model"] or "—",
-                        c["provider"] or "—",
-                        ", ".join(c["datasets"]),
-                        c["arms"],
-                        cb.fmt_amount(c["usd"], "usd") if c["usd"] else "—",
-                        "; ".join(f"{g['goal_id']} #{i} of {n}" for g, _d, i, n in c["ranks"]) or "—",
-                        *(_pcells(per[f"c:{c['system']}"], flows) if per else []),
-                    ]
-                    for c in ca.system_rows(A, by_ds, rows, cb.window(A, by_ds)["spend"])
-                ],
-            )
-            return 0
-        # "dataset" groups by what can be ranked together, as the page does: a dataset, scored one way, on one measure.
-        key = "" if args.by == "none" else "set" if args.by == "dataset" else args.by
-        # One dataset asked for is that group opened; otherwise a group shows its first three, as the page does.
-        fold = 0 if args.all or args.dataset_id or not key else 3
-        groups: dict = {}
-        for r in sorted(rows, key=ca._reading_order):
-            groups.setdefault((ca.set_key(r) if key == "set" else r[key]) if key else "", []).append(r)
-        has_record = any(r["record"] for r in rows)
-        for name in sorted(groups):
-            if key:
-                print(
-                    f"\n{dict(ca.GROUPS)[key]} {name or '—'} ({len(groups[name])} arm{'' if len(groups[name]) == 1 else 's'})"
-                )
-            _table(
-                [
-                    "arm id",
-                    "how measured",
-                    "dataset",
-                    "model",
-                    "provider",
-                    *(["model record"] if has_record else []),
-                    "role",
-                    "deciding measure",
-                    "cost / item",
-                    "latency",
-                    *heads_p,
-                ],
-                [
-                    [
-                        r["arm"],
-                        r["how"]
-                        + (" (wrote its own reference)" if r["kind"] == "t-author" else "")
-                        + (f" ({r['moved']:+.3f} vs measured)" if r["moved"] is not None else "")
-                        + ("; the goals read its re-score" if r["superseded_by"] else ""),
-                        r["dataset"],
-                        r["model"] or "—",
-                        (r["provider"] or "—") + (" (local)" if r["local"] else ""),
-                        *(
-                            [
-                                f"{r['record']}{'@' + r['deployment'] if r['deployment'] else ''} ({cm.SMOKE_WORDS[r['smoke']]})"
-                                if r["record"]
-                                else "—"
-                            ]
-                            if has_record
-                            else []
-                        ),
-                        ", ".join(dict.fromkeys(r["roles"])) or "—",
-                        f"{r['measure']} {_fmt(r['value'])} {'↓' if r['lower'] else '↑'}"
-                        if r["measure"]
-                        else "—",
-                        "—" if r["cost"] is None else "$0" if r["cost"] == 0 else f"${r['cost']:.4f}",
-                        "—"
-                        if not r["latency"]
-                        else f"{r['latency'] / 1000:.1f} s"
-                        if r["latency"] >= 1000
-                        else f"{r['latency']:.0f} ms",
-                        *(_pcells(per[r["arm"]], flows) if per else []),
-                    ]
-                    for r in (groups[name][:fold] if fold else groups[name])
-                ],
-            )
-            if fold and len(groups[name]) > fold:
-                ds = groups[name][0]["dataset"]
-                more = (
-                    f"evh arms --dataset-id {ds} lists them, with the dataset's other groups "
-                    f"({sum(r['dataset'] == ds for r in rows)} arms)"
-                    if key == "set"
-                    else "evh arms --all"
-                )
-                print(f"  … and {len(groups[name]) - fold} more: {more}")
-        if any(r["roles"] for r in rows):
-            print(
-                "\nroles: leader, first on the goal's deciding measure among the arms its decision weighs (not "
-                "significantly ahead of N: N it cannot be told apart from); recommended, what the goal's rule picks; "
-                "baseline, the arm the goal promoted. ×N after an arm: N runs of it, averaged per item."
-            )
+    if args.arm:
+        print_arm(_read(av.arm, A, by_ds, _arm_ids(A, [args.arm], "runs")[0]))
         return 0
-    want = _arm_ids(A, [args.arm], "runs")[0]
-    hit = next(((ds, a) for ds, v in by_ds.items() for a in v["arms"] if a["arm"] == want), None)
-    if hit is None:
-        die(f"no arm {args.arm!r}: `evh arms` lists them", "not-found")
-    ds, a = hit
-    v = by_ds[ds]
-    goals = {g["goal_id"]: g for g in A.goals()}
-    print(a["label"] + ("  [baseline]" if a.get("baseline") else ""))
-    for k, x in (
-        ("dataset", ds),
-        ("scored against", _scored(a)),
-        ("goal", a.get("goal") or "—"),
-        ("runs", a["runs"]),
-        ("headline", f"{a['metric']} {_fmt(a['mean'])}"),
-        ("last run", a["last"][:16].replace("T", " ") or "—"),
-    ):
-        print(f"  {k:15} {x}")
-    if a.get("wrote"):
-        print(
-            "  note            wrote the reference it is scored against: its row measures agreement with itself"
-        )
-    if a.get("superseded_by"):
-        print(f"  re-scored       the goals read its re-score, {a['superseded_by']}")
-    sc = A.scores(a["arm"])
-    cs = [(ax, cell_of(ax, sc)) for ax in builtin_axes()]
-    if any(c["n"] or (c.get("tokens") or {}).get("n") for _, c in cs):
-        print("\ncost and speed, per " + A.item_word + ":")
-        for ax, c in cs:
-            print(f"  {axis_title(ax):16} {cell_text(ax, c)}")
-    print("\nmetrics:")
-    _table(
-        ["metric", "mean", f"{A.item_word}s", "better"],
-        [
-            [
-                m,
-                cb.metric_value(A, m, mean),
-                k,
-                "lower" if A.lower_is_better(m, ds) else ("neutral" if A.is_neutral(m, ds) else "higher"),
-            ]
-            for m, (mean, k) in sorted(a["means"].items(), key=lambda kv: (kv[0] != a["metric"], kv[0]))
-        ],
+    d = _read(
+        av.arms,
+        A,
+        by_ds,
+        args.dataset_id,
+        args.where,
+        args.tier,
+        args.weights,
+        args.quality,
+        args.systems,
+        args.period,
     )
-    if a["run_list"]:
-        print("\nruns:")
-        _table(
-            ["run", "made", f"{A.item_word}s", "cost", "how"],
-            [
-                [
-                    r["run_id"],
-                    (r.get("created_at") or "")[:16].replace("T", " "),
-                    r.get("items") if r.get("items") is not None else "—",
-                    f"${r['cost_usd']:.6f}" if isinstance(r.get("cost_usd"), (int, float)) else "—",
-                    r.get("derived") or "measured",
-                ]
-                for r in a["run_list"]
-            ],
-        )
-    cfg_fn = getattr(A, "arm_config", None)
-    cfg = cfg_fn(a["arm"]) if callable(cfg_fn) else {}
-    if cfg.get("params"):
-        print(
-            f"\nconfig {cfg.get('config_id', '')} (adapter {cfg.get('adapter') or '—'}"
-            + (f"; deployment {cfg['deployment']}" if cfg.get("deployment") else "")
-            + "; credentials are never shown):"
-        )
-        for k, x in sorted(cfg["params"].items()):
-            print(f"  {k:20} {x}")
-    cond_fn = getattr(A, "conditions", None)
-    cond = cond_fn(a["arm"]) if callable(cond_fn) else {}
-    if cond:
-        print("\nconditions:")
-        for k, x in sorted(cond.items()):
-            print(f"  {k:28} {x}")
-    sib = cb._siblings(by_ds, a, ds)
-    if sib:
-        tiers = {r["id"]: r["tier"] for r in v["refs"]}
-        print("\nthe same system, scored other ways:")
-        _table(
-            ["arm id", "scored against", "headline", "mean", "row"],
-            [[x["arm"], _scored(x), x["metric"], _fmt(x["mean"]), _kind(x, tiers)] for x in sib],
-        )
-    rfn = getattr(A, "rounds", None)
-    for r in rfn() if callable(rfn) else []:
-        retired = a["arm"] in gv.retired_arms(r)
-        if a["arm"] in (r.get("arms") or []) or retired:
-            g = goals.get(r.get("goal", ""), {})
-            print(
-                f"round {r['round_id']} of {g.get('goal_id', r.get('goal', ''))}: {'retired' if retired else 'in play'}, {r.get('status', '')}"
-            )
-    for note in A.notes(a["arm"]):
-        print(f"note: {note}")
+    print_arms(d, args.by, args.all)
     return 0
 
 
@@ -1175,12 +1141,12 @@ def goals(argv) -> int:
             print(textwrap.fill(ans["notes"], width=96, initial_indent="  ", subsequent_indent="  "))
         from evaluation_harness import _looks  # noqa: PLC0415
 
-        looks_line = _looks.said(ds)
+        looks_line = _looks.said(ds, getattr(A, "data_dir", None))
         if looks_line:
             print(f"  {looks_line}")
         from evaluation_harness import _exposure  # noqa: PLC0415
 
-        if read_line := _exposure.line(ds):
+        if read_line := _exposure.line(ds, getattr(A, "data_dir", None)):
             print(f"  {read_line}")
         if not ans["groups"]:
             print(f"  no arm records {prim.get('measure', '')}")
@@ -1300,27 +1266,97 @@ def goals(argv) -> int:
 
 def _arm_ids(A, tokens: list, label: str) -> list:
     """Arm ids from what the user typed: a full arm id, or a system id looked up among the arms read under `label`."""
-    known = A.arms()
-    out = []
-    for t in tokens:
-        if t in known:
-            out.append(t)
-            continue
-        prefix = model_runs.arm_prefix(label)
-        hits = [a for a in known if a.rsplit("/", 1)[-1] == t and a.split("/", 1)[0] == prefix]
-        if len(hits) != 1:
-            near = [a for a in known if a.rsplit("/", 1)[-1] == t]
-            die(
-                f"{t!r}: "
-                + (
-                    f"{len(hits)} arms read as {label or 'the plain label'} match; name the arm id: {', '.join(near)}"
-                    if near
-                    else "no arm with that id; `evh datasets --dataset-id <id>` lists them"
-                ),
-                "not-found",
+    return _refused(av.arm_ids, A, tokens, label)
+
+
+def print_comparison(
+    d: dict, label: dict, item_word: str, what: str = "", by: str = "", analysis: bool = False, xmetric=None
+) -> None:
+    """A comparison's verdicts, the arms with only an average, the conditions that differ and, with `by`, its breakdown
+    (the comparison's data); `label` names each arm, `what` says the baseline is a round's leader."""
+    vals = list((d.get("series") or {}).get(d["baseline"], {}).values())
+    better = "higher" if d.get("higher_is_better") else "lower"
+    print(
+        f"{d['metric']} ({better} is better) · baseline {label.get(d['baseline'], d['baseline'])}{what}: mean {_fmt(statistics.fmean(vals) if vals else None)} · Holm across {d['family_size']}\n"
+    )
+    _table(
+        ["run vs baseline", "verdict", "n", "mean", "Δ", "95% CI of Δ", "wins–losses", "p", "Holm threshold"],
+        [
+            [
+                label.get(r["arm"], r["arm"]),
+                r["verdict"],
+                r["n"],
+                _fmt(r["mean"]),
+                _fmt(r["delta"]),
+                "—" if not r.get("ci") else f"{r['ci'][0]:+.3f} to {r['ci'][1]:+.3f}",
+                f"{r['wins']}–{r['losses']}" + (f" ({r['ties']} ties)" if r.get("ties") else ""),
+                "—" if r.get("p") is None else fmt_p(r["p"]),
+                "—" if not r.get("threshold") else f"{r['threshold']:.4f}",
+            ]
+            for r in sorted(d["rows"], key=lambda r: r.get("p") if r.get("p") is not None else 9)
+        ],
+    )
+    avgs = d.get("averages") or {}
+    if avgs:
+        base_vals = list((d.get("series") or {}).get(d["baseline"], {}).values())
+        base_mean = statistics.fmean(base_vals) if base_vals else None
+        print(f"\nAverage only · {len(avgs)}: no per-{item_word} scores, so no test")
+        _table(
+            ["run", "recorded average", "vs the baseline's mean"],
+            [
+                [label.get(a, a), _fmt(v), "—" if base_mean is None else f"{v - base_mean:+.3f}"]
+                for a, v in sorted(
+                    avgs.items(), key=lambda kv: -kv[1] if d.get("higher_is_better") else kv[1]
+                )
+            ],
+        )
+    c = d.get("conditions")
+    if c and c.get("fields"):
+        if not c["differ"]:
+            print(
+                f"\nSame conditions: all {c['fields']} recorded fields match (machine, libraries, harness, scorer, items, reference bytes)."
             )
-        out.append(hits[0])
-    return out
+        else:
+            print(f"\nConditions: {len(c['differ'])} of {c['fields']} fields differ")
+            for w in c["warnings"]:
+                print(f"  NOTE: {w}")
+            order = list(d["series"])
+            _table(
+                ["field", *[label.get(a, a) for a in order]],
+                [
+                    [f["name"], *[_condition_value(f["values"].get(a, "—")) for a in order]]
+                    for f in c["differ"]
+                ],
+            )
+    if analysis:
+        _analysis(d, label, xmetric)
+    br = d.get("breakdown")
+    if br:
+        print(f"\nby {by} (Holm across {br['family_size']}):")
+        _table(
+            [by, "run vs baseline", "verdict", "n", "Δ", "p"],
+            [
+                [
+                    g["group"],
+                    label.get(r["arm"], r["arm"]),
+                    r["verdict"],
+                    r["n"],
+                    _fmt(r["delta"]),
+                    "—" if r.get("p") is None else fmt_p(r["p"]),
+                ]
+                for g in br["groups"]
+                for r in g["rows"]
+            ],
+        )
+
+
+def print_compared(d: dict) -> None:
+    """What `evh inspect --runs` prints for a comparison's data: its notes, then the comparison unless it is not
+    scorable (the operation's answer)."""
+    for w in d.get("warnings") or []:
+        print(f"NOTE: {w}")
+    if d.get("state") != "not scorable":
+        print_comparison(d, {a["id"]: a["label"] for a in d.get("arms") or []}, d["item_word"])
 
 
 def inspect(argv) -> int:
@@ -1590,8 +1626,6 @@ def inspect(argv) -> int:
     if d.get("state") == "not scorable":
         return 1
     label = {a["id"]: a["label"] for a in d.get("arms") or []} | label
-    vals = list((d.get("series") or {}).get(d["baseline"], {}).values())
-    better = "higher" if d.get("higher_is_better") else "lower"
     # The round's leader stands in as the baseline unless the round started from a promoted one.
     what = ""
     if round_leader and not args.baseline and d["baseline"] == round_leader:
@@ -1599,78 +1633,7 @@ def inspect(argv) -> int:
 
         if not any(model_runs.run_of(x).name == rnd.get("baseline") for x in _dirs(A, round_leader)):
             what = " (the round's leader)"
-    print(
-        f"{d['metric']} ({better} is better) · baseline {label.get(d['baseline'], d['baseline'])}{what}: mean {_fmt(statistics.fmean(vals) if vals else None)} · Holm across {d['family_size']}\n"
-    )
-    _table(
-        ["run vs baseline", "verdict", "n", "mean", "Δ", "95% CI of Δ", "wins–losses", "p", "Holm threshold"],
-        [
-            [
-                label.get(r["arm"], r["arm"]),
-                r["verdict"],
-                r["n"],
-                _fmt(r["mean"]),
-                _fmt(r["delta"]),
-                "—" if not r.get("ci") else f"{r['ci'][0]:+.3f} to {r['ci'][1]:+.3f}",
-                f"{r['wins']}–{r['losses']}" + (f" ({r['ties']} ties)" if r.get("ties") else ""),
-                "—" if r.get("p") is None else fmt_p(r["p"]),
-                "—" if not r.get("threshold") else f"{r['threshold']:.4f}",
-            ]
-            for r in sorted(d["rows"], key=lambda r: r.get("p") if r.get("p") is not None else 9)
-        ],
-    )
-    avgs = d.get("averages") or {}
-    if avgs:
-        base_vals = list((d.get("series") or {}).get(d["baseline"], {}).values())
-        base_mean = statistics.fmean(base_vals) if base_vals else None
-        print(f"\nAverage only · {len(avgs)}: no per-{A.item_word} scores, so no test")
-        _table(
-            ["run", "recorded average", "vs the baseline's mean"],
-            [
-                [label.get(a, a), _fmt(v), "—" if base_mean is None else f"{v - base_mean:+.3f}"]
-                for a, v in sorted(
-                    avgs.items(), key=lambda kv: -kv[1] if d.get("higher_is_better") else kv[1]
-                )
-            ],
-        )
-    c = d.get("conditions")
-    if c and c.get("fields"):
-        if not c["differ"]:
-            print(
-                f"\nSame conditions: all {c['fields']} recorded fields match (machine, libraries, harness, scorer, items, reference bytes)."
-            )
-        else:
-            print(f"\nConditions: {len(c['differ'])} of {c['fields']} fields differ")
-            for w in c["warnings"]:
-                print(f"  NOTE: {w}")
-            order = list(d["series"])
-            _table(
-                ["field", *[label.get(a, a) for a in order]],
-                [
-                    [f["name"], *[_condition_value(f["values"].get(a, "—")) for a in order]]
-                    for f in c["differ"]
-                ],
-            )
-    if args.analysis:
-        _analysis(d, label, args.xmetric)
-    br = d.get("breakdown")
-    if br:
-        print(f"\nby {args.by} (Holm across {br['family_size']}):")
-        _table(
-            [args.by, "run vs baseline", "verdict", "n", "Δ", "p"],
-            [
-                [
-                    g["group"],
-                    label.get(r["arm"], r["arm"]),
-                    r["verdict"],
-                    r["n"],
-                    _fmt(r["delta"]),
-                    "—" if r.get("p") is None else fmt_p(r["p"]),
-                ]
-                for g in br["groups"]
-                for r in g["rows"]
-            ],
-        )
+    print_comparison(d, label, A.item_word, what, args.by or "", args.analysis, args.xmetric)
     return 0
 
 
@@ -2228,6 +2191,31 @@ def _analysis(d: dict, label: dict, xmetric: str | None) -> None:
             _table(["arm", d["metric"], xm, "items"], rows)
 
 
+def print_activity(d: dict) -> None:
+    """The activity page: the period, then by dataset, by arm and by kind (the `activity` view's data)."""
+    print(d["period"])
+    flows = ("runs", "usd", "tokens")
+    print("\nby dataset:")
+    _table(
+        ["dataset", "", *(PERIOD_HEADS[f] for f in flows)],
+        [[r["dataset"], *_pcells(r, flows)] for r in d["by_dataset"]],
+    )
+    arms = d["by_arm"]
+    print(f"\nby arm ({arms['active']} active in the period; the {len(arms['rows'])} that moved most):")
+    if arms["active"]:
+        _table(
+            ["arm", "", *(PERIOD_HEADS[f] for f in flows)],
+            [[r["arm"], *_pcells(r, flows)] for r in arms["rows"]],
+        )
+    else:
+        print("  none")
+    print("\nby kind:")
+    _table(
+        ["what was billed", "", *(PERIOD_HEADS[f] for f in ("usd", "tokens"))],
+        [[r["name"], *_pcells(r, ("usd", "tokens"))] for r in d["by_kind"]],
+    )
+
+
 def activity(argv) -> int:
     """evh activity: the activity page in the terminal."""
     ap = argparse.ArgumentParser(
@@ -2249,47 +2237,7 @@ def activity(argv) -> int:
     ap.add_argument("--adapter", help="path/to/file.py:Class (default: the catalog's)")
     args = ap.parse_args(argv)
     A, by_ds = _adapter(args)
-    rows = cb.period_activity(A, by_ds)
-    per, line = _period(A, by_ds, rows, args.period)
-    print(line)
-    flows = ("runs", "usd", "tokens")
-
-    def busy(prefix: str) -> list:
-        # What moved most against the period before first, up or down (as the page sorts), then the
-        # busiest; for all time, with no period before, the busiest.
-        ks = [k for k in per if k.startswith(prefix)]
-
-        def moved(k: str) -> int:
-            prev = per[k]["runs_prev"]
-            return 0 if prev is None else abs(per[k]["runs"] - prev)
-
-        return sorted(ks, key=lambda k: (-moved(k), -per[k]["runs"], -per[k]["usd"], k))
-
-    print("\nby dataset:")
-    _table(
-        ["dataset", "", *(PERIOD_HEADS[f] for f in flows)],
-        [[k[2:], *_pcells(per[k], flows)] for k in busy("d:")],
-    )
-    active = [k for k in busy("a:") if per[k]["runs"] or per[k]["usd"] or per[k]["tokens"]]
-    print(
-        f"\nby arm ({len(active)} active in the period; the {min(args.arms, len(active))} that moved most):"
-    )
-    if active:
-        _table(
-            ["arm", "", *(PERIOD_HEADS[f] for f in flows)],
-            [[k[2:], *_pcells(per[k], flows)] for k in active[: args.arms]],
-        )
-    else:
-        print("  none")
-    print("\nby kind:")
-    names = dict(cb.SPEND_KINDS)
-    _table(
-        ["what was billed", "", *(PERIOD_HEADS[f] for f in ("usd", "tokens"))],
-        [
-            [names[k[2:]], *_pcells(per[k], ("usd", "tokens"))]
-            for k in sorted(k for k in per if k.startswith("k:"))
-        ],
-    )
+    print_activity(_read(actviews.activity, A, by_ds, args.period, args.arms))
     return 0
 
 

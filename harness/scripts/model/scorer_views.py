@@ -8,11 +8,13 @@ it is) is counted here and the numbers stay in the report."""
 from __future__ import annotations
 
 import json
+from pathlib import Path
 from typing import Any
 
 from evaluation_harness import _store
 from evaluation_harness.model.dataset_views import rel, where
 from evaluation_harness.model.entity import Problem
+from evaluation_harness.model.runs import root as runs_root
 from evaluation_harness.model.scorers import (
     SCORER,
     checks_of,
@@ -25,25 +27,25 @@ from evaluation_harness.model.scorers import (
 )
 
 
-def _loaded(scorer_id: str) -> tuple[dict[str, Any] | None, str | None]:
+def _loaded(scorer_id: str, data: Path | None = None) -> tuple[dict[str, Any] | None, str | None]:
     """The scorer as judge-score reads it (a judge that names a system given that system's settings) and why it does not
     load: one of the two."""
     from evaluation_harness import judge_score as js  # noqa: PLC0415
 
     try:
-        return js.load_scorer(SCORER.path(scorer_id)), None
+        return js.load_scorer(SCORER.under(data).path(scorer_id), data), None
     except SystemExit as exc:
         return None, str(exc.code).partition("): ")[2] or str(exc.code)
 
 
-def _validation(sc: dict[str, Any] | None) -> list[str]:
+def _validation(sc: dict[str, Any] | None, data: Path | None = None) -> list[str]:
     """Why the scorer is not validated (judge-score's gate); empty when it is."""
     from evaluation_harness import judge_score as js  # noqa: PLC0415
 
     if sc is None:
         return ["the scorer does not load"]
     try:
-        return js.validation_problems(sc)
+        return js.validation_problems(sc, runs_dir=runs_root(data=data))
     except SystemExit as exc:
         return [str(exc.code).partition("): ")[2] or str(exc.code)]
 
@@ -81,22 +83,40 @@ def _read(path: Any) -> dict[str, Any] | None:
     return v if isinstance(v, dict) else None
 
 
-def list_scorers() -> list[dict[str, Any]]:
+def _record(scorers: Any, scorer_id: str, check_format: bool) -> dict[str, Any]:
+    """The scorer's record; with `check_format` False a tree of another format is read as it is (the catalog reads
+    copies), a record that is not a mapping refused as Problem."""
+    if check_format:
+        return scorers.get(scorer_id)
+    import yaml  # noqa: PLC0415
+
+    try:
+        doc = yaml.safe_load(_store.read_text(scorers.path(scorer_id), encoding="utf-8"))
+    except (OSError, yaml.YAMLError) as exc:
+        raise Problem(f"{scorer_id}: not readable as YAML ({exc})", "invalid-file") from None
+    if not isinstance(doc, dict):
+        raise Problem(f"{scorer_id}: not a mapping of keys", "invalid-file")
+    return doc
+
+
+def list_scorers(data: Path | None = None, check_format: bool = True) -> list[dict[str, Any]]:
     """Every scorer: its mode, its judges, whether it is validated, how many judged scores it made and how many of those
-    were made with another version of it (a hash other than its file's now)."""
+    were made with another version of it (a hash other than its file's now). `data`: another data directory than the
+    project's (the catalog reads a deployment's copy)."""
     from evaluation_harness import judge_score as js  # noqa: PLC0415
 
+    scorers = SCORER.under(data)
     by: dict[str, list[dict[str, Any]]] = {}
-    for s in judged_scores():
+    for s in judged_scores(data=data):
         by.setdefault(str(s["scorer"]), []).append(s)
     out: list[dict[str, Any]] = []
-    for sid in SCORER.ids():
+    for sid in scorers.ids(check_format=check_format):
         try:
-            rec = SCORER.get(sid)
+            rec = _record(scorers, sid, check_format)
         except Problem as exc:
-            out.append({"scorer": sid, "file": where(SCORER, sid), "problem": str(exc)})
+            out.append({"scorer": sid, "file": where(scorers, sid), "problem": str(exc)})
             continue
-        sc, why = _loaded(sid)
+        sc, why = _loaded(sid, data)
         out.append(
             {
                 "scorer": sid,
@@ -104,23 +124,25 @@ def list_scorers() -> list[dict[str, Any]]:
                 "dataset": rec.get("dataset_id"),
                 "supersedes": rec.get("supersedes"),
                 "judges": _judges(rec, sc),
-                "validated": not _validation(sc),
-                **_made(by.get(sid, []), current_sha256(sid)),
+                "validated": not _validation(sc, data),
+                **_made(by.get(sid, []), current_sha256(sid, data)),
                 "problem": why,
-                "file": where(SCORER, sid),
+                "file": where(scorers, sid),
             }
         )
     return out
 
 
-def _judging_sets(scorer_id: str, made: list[dict[str, Any]], now: str | None) -> list[dict[str, Any]]:
+def _judging_sets(
+    scorer_id: str, made: list[dict[str, Any]], now: str | None, data: Path | None = None
+) -> list[dict[str, Any]]:
     """The judging sets the scorer judged over (it has verdicts, a summary or a judged score of them), each with what
     was stored of its pass counted."""
-    vroot = verdicts_dir(scorer_id)
+    vroot = verdicts_dir(scorer_id, data)
     out: list[dict[str, Any]] = []
-    for sid in sorted({*judging_sets_of(scorer_id), *(str(s["set"]) for s in made)}):
-        ds = _read(judging_set_file(sid)) or {}
-        sf = summary_file(scorer_id, sid)
+    for sid in sorted({*judging_sets_of(scorer_id, data), *(str(s["set"]) for s in made)}):
+        ds = _read(judging_set_file(sid, data)) or {}
+        sf = summary_file(scorer_id, sid, data)
         summ = _read(sf)
         out.append(
             {
@@ -148,25 +170,26 @@ def _judging_sets(scorer_id: str, made: list[dict[str, Any]], now: str | None) -
     return out
 
 
-def show_scorer(scorer_id: str) -> dict[str, Any]:
+def show_scorer(scorer_id: str, data: Path | None = None, check_format: bool = True) -> dict[str, Any]:
     """One scorer: its record, its judges with their fingerprints, its validation (the block, and why it passes the gate
     or not), the judging sets it judged with their verdicts and summaries counted, the runs it judged, and the people's
-    checks of its judges."""
-    rec = SCORER.get(scorer_id)
-    sc, why = _loaded(scorer_id)
-    now = current_sha256(scorer_id)
-    made = judged_scores(scorer_id)
-    problems = _validation(sc)
+    checks of its judges. `data`: another data directory than the project's (the catalog reads a deployment's copy)."""
+    scorers = SCORER.under(data)
+    rec = _record(scorers, scorer_id, check_format)
+    sc, why = _loaded(scorer_id, data)
+    now = current_sha256(scorer_id, data)
+    made = judged_scores(scorer_id, data)
+    problems = _validation(sc, data)
     return {
         "scorer": scorer_id,
-        "file": where(SCORER, scorer_id),
+        "file": where(scorers, scorer_id),
         "record": rec,
         "sha256": now,
         "problem": why,
         "judges": _judges(rec, sc),
         "validation": {"validated": not problems, "problems": problems, "block": rec.get("validation")},
         **_made(made, now),
-        "judging_sets": _judging_sets(scorer_id, made, now),
+        "judging_sets": _judging_sets(scorer_id, made, now, data),
         "runs": [
             {
                 "run": s["run"],
@@ -177,5 +200,5 @@ def show_scorer(scorer_id: str) -> dict[str, Any]:
             }
             for s in made
         ],
-        "checks": checks_of(scorer_id),
+        "checks": checks_of(scorer_id, data),
     }

@@ -166,6 +166,52 @@ def coverage(
     }
 
 
+def show(cov: dict[str, Any], rules: str, items: bool = False) -> None:
+    """What the command prints for a coverage: the classes, the relabel, what the unmatched lack, each rule, and with
+    `items` every item with its class (and maturing date). `rules`: the rules file as it was named."""
+    print(
+        f"{cov['dataset_id']}: {cov['items']} item(s), rules {rules} over capture {cov['capture']}"
+        + (f" (captured {cov['captured_at']})" if cov.get("captured_at") else "")
+    )
+    if not _jsonout.table(["class", "items"], [[SAID[c], cov["counts"][c]] for c in CLASSES]):
+        for c in CLASSES:
+            print(f"  {SAID[c]:20} {cov['counts'][c]}")
+    if cov.get("relabel"):
+        r = cov["relabel"]
+        print(
+            f"  a relabel of {r['from_set']} ({r['in_set']} label(s)) would add {r['would_add']} matured since, "
+            f"change {r['would_change']} (changed after maturing), and {r['no_longer_given']} are no longer given"
+        )
+    if cov["lacking"]:
+        print("  the unmatched lack: " + ", ".join(f"{f} ({n})" for f, n in cov["lacking"].items()))
+    if not _jsonout.table(
+        ["rule", "now", "when mature", "first matures", "last matures"],
+        [
+            [r["text"], r["now"], r["when_mature"], r["first_matures"], r["last_matures"]]
+            for r in cov["rules"]
+        ],
+    ):
+        print("by rule:")
+        for r in cov["rules"]:
+            print(
+                f"  {r['text']}: {r['now']} now"
+                + (
+                    f", {r['when_mature']} when mature ({r['first_matures'][:10]} to {r['last_matures'][:10]})"
+                    if r["when_mature"]
+                    else ""
+                )
+            )
+    if items:
+        for x in cov["by_item"]:
+            extra = (
+                f" rule {x['rule']}, matures {x['matures'][:10]}, today: {x['today'] or 'no label'}"
+                if x["class"] == "not_mature"
+                else (f" rule {x['rule']}" if "rule" in x else "")
+                + (f" lacks {', '.join(x['lacks'])}" if x.get("lacks") else "")
+            )
+            print(f"  {x['item_id']}  {SAID[x['class']]}{extra}")
+
+
 def main() -> int:
     """Report how far an outcome rule set labels a dataset."""
     ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
@@ -191,47 +237,7 @@ def main() -> int:
         cov = coverage(
             args.dataset_id, args.capture, load_rules(args.map), _outcome_join.from_args(args), args.from_set
         )
-        print(
-            f"{args.dataset_id}: {cov['items']} item(s), rules {args.map.as_posix()} over capture {args.capture}"
-            + (f" (captured {cov['captured_at']})" if cov.get("captured_at") else "")
-        )
-        if not _jsonout.table(["class", "items"], [[SAID[c], cov["counts"][c]] for c in CLASSES]):
-            for c in CLASSES:
-                print(f"  {SAID[c]:20} {cov['counts'][c]}")
-        if cov.get("relabel"):
-            r = cov["relabel"]
-            print(
-                f"  a relabel of {r['from_set']} ({r['in_set']} label(s)) would add {r['would_add']} matured since, "
-                f"change {r['would_change']} (changed after maturing), and {r['no_longer_given']} are no longer given"
-            )
-        if cov["lacking"]:
-            print("  the unmatched lack: " + ", ".join(f"{f} ({n})" for f, n in cov["lacking"].items()))
-        if not _jsonout.table(
-            ["rule", "now", "when mature", "first matures", "last matures"],
-            [
-                [r["text"], r["now"], r["when_mature"], r["first_matures"], r["last_matures"]]
-                for r in cov["rules"]
-            ],
-        ):
-            print("by rule:")
-            for r in cov["rules"]:
-                print(
-                    f"  {r['text']}: {r['now']} now"
-                    + (
-                        f", {r['when_mature']} when mature ({r['first_matures'][:10]} to {r['last_matures'][:10]})"
-                        if r["when_mature"]
-                        else ""
-                    )
-                )
-        if args.items and not args.json:
-            for x in cov["by_item"]:
-                extra = (
-                    f" rule {x['rule']}, matures {x['matures'][:10]}, today: {x['today'] or 'no label'}"
-                    if x["class"] == "not_mature"
-                    else (f" rule {x['rule']}" if "rule" in x else "")
-                    + (f" lacks {', '.join(x['lacks'])}" if x.get("lacks") else "")
-                )
-                print(f"  {x['item_id']}  {SAID[x['class']]}{extra}")
+        show(cov, args.map.as_posix(), args.items and not args.json)
         _jsonout.values(cov)
     return 0
 

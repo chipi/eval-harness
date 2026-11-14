@@ -328,8 +328,8 @@ try:
     )
     nav = re.findall(r'<nav class="nav">(.*?)</nav>', home)[0]
     check(
-        "nav: Overview, Goals, Data (Datasets, Captures, Labels, Reference sets), Arms (Arms, Systems, Models, Prompts, Metrics), Activity, Inspector; no Configure (a files project)",
-        nav.count("<a ") == 13
+        "nav: Overview, Goals, Data (Datasets, Captures, Labels, Reference sets), Arms (Arms, Systems, Models, Prompts, Scorers, Metrics), Activity, Inspector; no Configure (a files project)",
+        nav.count("<a ") == 14
         and "Configure" not in nav
         and re.findall(r"<summary[^>]*>([^<]+)</summary>", nav) == ["Data", "Arms"]
         and all(
@@ -343,6 +343,7 @@ try:
                 ">Systems<",
                 ">Models<",
                 ">Prompts<",
+                ">Scorers<",
                 ">Metrics<",
                 ">Activity<",
             )
@@ -352,7 +353,7 @@ try:
     menu = re.findall(r'<nav class="menu-links">(.*?)</nav>', home)[0]
     check(
         "the phone's menu lists every page, a group's under its name",
-        menu.count("<a ") == 13
+        menu.count("<a ") == 14
         and menu.count('class="menu-group"') == 2
         and 'href="captures.html"' in menu
         and 'href="labels.html"' in menu,

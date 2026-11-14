@@ -392,6 +392,15 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Changed
 
+- **The catalog never goes stale** (RFC-032 step 8): `evh catalog-serve` rebuilds the pages as a `catalog` job when
+  the data changes, at once for a write through the API or an edit, on the next read for any other (another terminal,
+  a pull); the pages stay served while it builds and after a failed build, `/api/health` says which, and it no longer
+  says to restart it. A scorers page (each judge scorer, its judges, validation and people's checks), linked from the
+  arms it judged. The catalog's views as API resources: `overview-show`, `arm-list`, `dataset-arm-list`,
+  `arm-show`, `metric-list`, `metric-show`, `activity-show`, `comparison-show` and `label-coverage-show`
+  (`GET /api/v1/overview`, `/arms`, `/metrics`, `/activity`, `/compare`, `/datasets/{dataset}/label-coverage`), each
+  the command's text and JSON; an API read's query inputs are typed by the operation's schema. Exposure registers,
+  seals, looks and prompts read any data directory, so a copy's sealed side uses the copy's register.
 - **A goal's decision is made once** (RFC-032 step 8): the answers, groups, leader, contenders and axes a goal page,
   `evh goals`, the overview and `evh leaderboard` show come from one view in the model, also served as `evh
   goal-leaderboard` (`GET /api/v1/goals/{goal}/leaderboard`); a round's leader follows the goal's rule (never an arm

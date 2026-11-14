@@ -241,8 +241,9 @@ def _canon(obj: Any) -> str:
 
 
 # ── the scorer artifact and the validation gate ──────────────────────────────
-def load_scorer(path: Path) -> dict[str, Any]:
-    """Load and validate a judge scorer YAML file; die on schema or missing judges."""
+def load_scorer(path: Path, data: Path | None = None) -> dict[str, Any]:
+    """Load and validate a judge scorer YAML file; die on schema or missing judges. A judge that names a system is read
+    from `data` when it is another data directory than the project's (the catalog reads a deployment's copy)."""
     if not _store.is_file(path):
         die(f"no such scorer: {path}", "not-found")
     sc = yaml.safe_load(_store.read_text(path, encoding="utf-8")) or {}
@@ -255,7 +256,7 @@ def load_scorer(path: Path) -> dict[str, Any]:
         if not sc.get(k):
             die(f"{path.name}: missing {k!r}", "invalid-file")
     try:
-        _scorers.resolve_judges(sc)
+        _scorers.resolve_judges(sc, data)
     except Problem as exc:
         if exc.kind == "not-found":
             die(f"{path.name}: {exc}", "not-found")

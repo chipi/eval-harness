@@ -129,13 +129,14 @@ def record_file(dataset_id: str, data: Path | None = None) -> Path:
     return _data(data) / "datasets" / f"{dataset_id}.json"
 
 
-def source_dir(record: dict[str, Any]) -> Path:
+def source_dir(record: dict[str, Any], data: Path | None = None) -> Path:
     """Where a dataset's item files are: the folder its record names, relative to the project (as dataset-create
-    records it), else data/sources. The one place this is worked out (seven readers did it, one of them against the
-    directory the command ran in: from a subfolder every item was missing, 2026-11-14)."""
+    records it), else data/sources (of `data`, when another data directory than the project's is read). The one place
+    this is worked out (seven readers did it, one of them against the directory the command ran in: from a subfolder
+    every item was missing, 2026-11-14)."""
     rec = record.get("source_dir") if isinstance(record, dict) else None
     if not rec:
-        return _common.SOURCES
+        return _common.SOURCES if data is None else Path(data) / "sources"
     p = Path(str(rec))
     return p if p.is_absolute() else _common.ROOT / p
 

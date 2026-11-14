@@ -104,10 +104,12 @@ def per_item(
     raw: list[float] | None = None,
     strict: bool = True,
     reduce: str = "mean",
+    data: Path | None = None,
 ) -> dict[str, float]:
     """item_id -> `metric` over the given runs (an arm's repeats), combined by `reduce` (stats.reduce_repeats: the
     mean by default). `keep` restricts the items; `raw` collects every value as stored, before averaging (the
-    leaderboard measures stored precision on it)."""
+    leaderboard measures stored precision on it); `data`: the data directory the runs are of (its exposure register
+    says which items a held-out side leaves out), the project's when none."""
     from evaluation_harness import _exposure  # noqa: PLC0415
 
     acc: dict[str, list[float]] = {}
@@ -138,7 +140,7 @@ def per_item(
     # A held-out side's read items count in no score on it (RFC-031 H1): left out here, where every paired command's
     # scores come from, and counted for the command to say.
     for ds in datasets:
-        kept = _exposure.keep(ds, acc)
+        kept = _exposure.keep(ds, acc, data)
         if kept is not None:
             acc = {i: v for i, v in acc.items() if i in kept}
     if reduce not in ("", "mean"):

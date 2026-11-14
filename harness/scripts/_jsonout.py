@@ -69,6 +69,12 @@ def _clean(v):
     return _plain(v)
 
 
+def plain(v):
+    """A view's data as JSON holds it, which is what its resource gives: NaN and infinities as null, tuples and sets as
+    lists, a date as its text."""
+    return json.loads(json.dumps(_clean(v), default=str))
+
+
 def table(heads: list, rows: list) -> bool:
     """Record a table under --json; False when no collector is in force (print it as text)."""
     if _ACTIVE is None:

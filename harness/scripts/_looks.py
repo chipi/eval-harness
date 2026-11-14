@@ -17,6 +17,7 @@ import hashlib
 import json
 import math
 import os
+from pathlib import Path
 from typing import Any
 
 from evaluation_harness import _common, _store
@@ -31,8 +32,8 @@ def level(k: int) -> float:
     return ALPHA * 6 / (math.pi**2 * k * k)
 
 
-def _record(dataset_id: str) -> dict[str, Any]:
-    p = record_file(dataset_id)
+def _record(dataset_id: str, data: Path | None = None) -> dict[str, Any]:
+    p = record_file(dataset_id, data)
     if not _store.is_file(p):
         return {}
     try:
@@ -42,47 +43,53 @@ def _record(dataset_id: str) -> dict[str, Any]:
     return doc if isinstance(doc, dict) else {}
 
 
-def test_role_goals(dataset_id: str) -> list[dict[str, Any]]:
-    """The goals that declare this dataset with `role: test`."""
+def test_role_goals(dataset_id: str, data: Path | None = None) -> list[dict[str, Any]]:
+    """The goals that declare this dataset with `role: test`, in the project's or in `data`'s."""
+    from evaluation_harness.model import goals as model_goals  # noqa: PLC0415
+
     out = []
-    for g in _common.load_goals().values():
+    for g in _common.load_goals(None if data is None else model_goals.GOAL.under(data).base()).values():
         for d in g.get("datasets") or []:
             if isinstance(d, dict) and d.get("dataset_id") == dataset_id and d.get("role") == "test":
                 out.append(g)
     return out
 
 
-def is_test_set(dataset_id: str | None) -> bool:
+def is_test_set(dataset_id: str | None, data: Path | None = None) -> bool:
     """Whether a dataset is a test set: a goal's `role: test`, or a sealed side of a split."""
     if not dataset_id:
         return False
-    return bool(_record(dataset_id).get("sealed")) or bool(test_role_goals(dataset_id))
+    return bool(_record(dataset_id, data).get("sealed")) or bool(test_role_goals(dataset_id, data))
 
 
-def digest(dataset_id: str) -> str:
+def digest(dataset_id: str, data: Path | None = None) -> str:
     """The set's items digest: what owns its looks (a run on part of it spends the same budget)."""
     from evaluation_harness import _seal  # noqa: PLC0415
 
-    return _seal.items_digest(_record(dataset_id).get("items") or [])
+    return _seal.items_digest(_record(dataset_id, data).get("items") or [])
 
 
-def limit(dataset_id: str) -> int:
+def limit(dataset_id: str, data: Path | None = None) -> int:
     """The protective limit: the smallest `test_looks` of the goals that test on the set, else 10."""
-    ks = [int(g["test_looks"]) for g in test_role_goals(dataset_id) if isinstance(g.get("test_looks"), int)]
+    ks = [
+        int(g["test_looks"])
+        for g in test_role_goals(dataset_id, data)
+        if isinstance(g.get("test_looks"), int)
+    ]
     return min(ks) if ks else LIMIT
 
 
-def key(dataset_id: str, a: str, b: str, measure: str | None, rule: str) -> str:
+def key(dataset_id: str, a: str, b: str, measure: str | None, rule: str, data: Path | None = None) -> str:
     """One question on a set: its digest, the two systems, the measure, the rule."""
-    body = json.dumps([digest(dataset_id), a, b, measure or "", rule], sort_keys=True)
+    body = json.dumps([digest(dataset_id, data), a, b, measure or "", rule], sort_keys=True)
     return hashlib.sha256(body.encode()).hexdigest()[:16]
 
 
-def recorded(dataset_id: str) -> list[dict[str, Any]]:
+def recorded(dataset_id: str, data: Path | None = None) -> list[dict[str, Any]]:
     """Every look recorded on the set, oldest first: from its unseals, the baselines' evidence and studies' confirms."""
-    d = digest(dataset_id)
+    d = digest(dataset_id, data)
     found: list[dict[str, Any]] = []
-    for u in _record(dataset_id).get("unsealed") or []:
+    for u in _record(dataset_id, data).get("unsealed") or []:
         if isinstance(u.get("look"), dict):
             found.append(
                 {
@@ -95,7 +102,7 @@ def recorded(dataset_id: str) -> list[dict[str, Any]]:
     from evaluation_harness import _baselines  # noqa: PLC0415
     from evaluation_harness.model import studies as model_studies  # noqa: PLC0415
 
-    for v in _baselines.all_versions():
+    for v in _baselines.all_versions(data):
         look = ((v.get("evidence") or {}).get("look")) if isinstance(v.get("evidence"), dict) else None
         if isinstance(look, dict) and look.get("set") == d:
             found.append(
@@ -106,7 +113,7 @@ def recorded(dataset_id: str) -> list[dict[str, Any]]:
                     "at": v.get("promoted_at"),
                 }
             )
-    for c in model_studies.confirms():
+    for c in model_studies.confirms(data, check_format=False):
         look = c.get("look")
         if isinstance(look, dict) and look.get("set") == d:
             found.append(
@@ -121,15 +128,17 @@ def recorded(dataset_id: str) -> list[dict[str, Any]]:
     return found
 
 
-def prior_use(dataset_id: str) -> int:
+def prior_use(dataset_id: str, data: Path | None = None) -> int:
     """Unseals made before looks were counted (no `look` record): shown beside the levels, never counted."""
-    return sum(1 for u in _record(dataset_id).get("unsealed") or [] if not isinstance(u.get("look"), dict))
+    return sum(
+        1 for u in _record(dataset_id, data).get("unsealed") or [] if not isinstance(u.get("look"), dict)
+    )
 
 
-def next_number(dataset_id: str, k: str | None = None) -> tuple[int, bool]:
+def next_number(dataset_id: str, k: str | None = None, data: Path | None = None) -> tuple[int, bool]:
     """(the number a look with key `k` takes, whether it reuses a recorded one)."""
     seen: dict[str, int] = {}
-    for x in recorded(dataset_id):
+    for x in recorded(dataset_id, data):
         seen.setdefault(str(x.get("key")), int(x.get("number") or 0))
     if k is not None and k in seen:
         return seen[k], True
@@ -180,34 +189,34 @@ def taking(dataset_id: str, k: str, consent: bool = False):
         }
 
 
-def summary(dataset_id: str) -> dict[str, Any]:
+def summary(dataset_id: str, data: Path | None = None) -> dict[str, Any]:
     """A set's looks: each recorded, the next number and level, the limit, prior use."""
-    looks = recorded(dataset_id)
-    n, _ = next_number(dataset_id)
+    looks = recorded(dataset_id, data)
+    n, _ = next_number(dataset_id, data=data)
     return {
         "dataset_id": dataset_id,
-        "test_set": is_test_set(dataset_id),
+        "test_set": is_test_set(dataset_id, data),
         "looks": looks,
         "next": n,
         "next_level": level(n),
-        "limit": limit(dataset_id),
-        "prior_use": prior_use(dataset_id),
+        "limit": limit(dataset_id, data),
+        "prior_use": prior_use(dataset_id, data),
     }
 
 
-def double_spent(dataset_id: str) -> list[tuple[int, list[str]]]:
+def double_spent(dataset_id: str, data: Path | None = None) -> list[tuple[int, list[str]]]:
     """Numbers two different keys took (two clones deciding at once): what validate V25 reports."""
     by: dict[int, set[str]] = {}
-    for x in recorded(dataset_id):
+    for x in recorded(dataset_id, data):
         by.setdefault(int(x.get("number") or 0), set()).add(str(x.get("key")))
     return [(n, sorted(ks)) for n, ks in sorted(by.items()) if len(ks) > 1]
 
 
-def said(dataset_id: str) -> str | None:
+def said(dataset_id: str, data: Path | None = None) -> str | None:
     """A test set's looks in one line, for its goals' pages and `evh goals`; None for any other dataset."""
-    if not is_test_set(dataset_id):
+    if not is_test_set(dataset_id, data):
         return None
-    s = summary(dataset_id)
+    s = summary(dataset_id, data)
     taken = len({x.get("key") for x in s["looks"]})
     return (
         f"test set: {taken} look(s) of {s['limit']}; a decision here is look {s['next']}, one-sided at "

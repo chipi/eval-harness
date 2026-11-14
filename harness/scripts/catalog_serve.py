@@ -4,9 +4,15 @@
     evh catalog-serve [--port N] [--adapter path/to/file.py:Class]
     make catalog-serve
 
-Builds nothing: run `evh catalog` first. Static files are the built catalog and the data tree
+Builds nothing at start: run `evh catalog` first. Static files are the built catalog and the data tree
 (its "files" links open run folders). Three JSON endpoints feed the inspector page (and GET /api/health says the
 server is up); a local server also answers the API (/api/v1/, RFC-026):
+
+The catalog never goes stale (RFC-032 step 8). A write through the API, or a job it started that wrote, refreshes what
+the server has read and starts a rebuild of the pages (a `catalog` job); any other change to the data (the command
+line in another terminal, an editor, git) is noticed on the next read and does the same. The pages that were there are
+served until the new ones are whole (a read never waits), and a rebuild that fails leaves them and says so: on
+GET /api/health (`catalog`: building or failed, when the pages were built) and in the server's log.
 
   GET /api/compare?runs=<arm|path>,...[&baseline=<arm>][&metric=<name>][&rescore=0]
       [&family=<m>][&threshold=<t>]
@@ -330,8 +336,8 @@ _HITS: defaultdict[str, list] = defaultdict(list)
 
 
 def cache_clear() -> None:
-    """Forget every answer, and the scores and arms they were made from: after the data page writes or deletes, and
-    after a rebuild (the arms are the catalog's), so an answer never outlives what it was made from."""
+    """Forget every answer, and the scores and arms they were made from: when the data changed (`refresh`), after a
+    rebuild (the arms are the catalog's) and after a migration, so an answer never outlives what it was made from."""
     with _CACHE_LOCK:
         _CACHE.clear()
         _cache_size[0] = 0
@@ -341,8 +347,7 @@ def cache_clear() -> None:
 
 def answer(path: str, query: str) -> tuple:
     """(status, the JSON body as bytes) for one API request; every answer cached by its exact
-    question until the data page changes the data or the catalog is rebuilt (`cache_clear`); a run made by another
-    process shows after a restart."""
+    question until the data changes or the catalog is rebuilt (`cache_clear`)."""
     if len(query) > MAX_QUERY:
         return 400, json.dumps({"error": f"the question is over {MAX_QUERY} characters"}).encode()
     key = f"{path}?{'&'.join(sorted(query.split('&')))}"
@@ -445,6 +450,42 @@ def served(build_dir: Path, data_dir: Path, also: tuple = ()) -> tuple:
                 "not-allowed",
             )
     return tuple(out)
+
+
+def query_inputs(schema: dict, query: dict) -> dict:
+    """A read operation's inputs from the query string, each as its schema types it (a query holds only strings): an
+    integer, a number, a boolean (true or false, 1 or 0), a string as it is, an array as the key repeated
+    (`?x=a&x=b`; a comma is part of a value, never a separator), its items typed by `items`. ValueError names the
+    input that is not what the schema says."""
+
+    def one(name: str, value: str, kind: str | None):
+        try:
+            if kind == "integer":
+                return int(value)
+            if kind == "number":
+                return float(value)
+        except ValueError:
+            raise ValueError(
+                f"{name}: {value!r} is not {'an integer' if kind == 'integer' else 'a number'}"
+            ) from None
+        if kind == "boolean":
+            if value.lower() not in ("true", "false", "1", "0"):
+                raise ValueError(f"{name}: {value!r} is not true or false")
+            return value.lower() in ("true", "1")
+        return value
+
+    out: dict = {}
+    for name, values in query.items():
+        spec = schema.get(name)
+        if spec is None:
+            continue
+        kind = spec.get("type")
+        out[name] = (
+            [one(name, v, (spec.get("items") or {}).get("type")) for v in values]
+            if kind == "array"
+            else one(name, values[0], kind)
+        )
+    return out
 
 
 #: The API's endpoints. Anything else under /api/ is 404: it is not a way into the files.
@@ -609,6 +650,248 @@ def watch_migrations() -> None:
         time.sleep(MIGRATION_POLL_S)
 
 
+# ── the catalog never goes stale ────────────────────────────────────────────────────────────────────────────────────
+
+#: Least seconds between two looks at the data's state: a page and the assets a browser asks for with it are one look.
+FRESH_EVERY_S = 0.25
+#: How often a job (a rebuild, or one of the server's writes) is looked at while it runs.
+FRESH_POLL_S = 0.2
+_ENDED = ("succeeded", "failed", "cancelled", "lost")
+#: What the server knows of its pages and of the data under them. `on` only for a server that has pages of its own (not
+#: --public: its pages and data are a deployment's copy, which the deploy rebuilds); `seen` is the data's state last
+#: looked at, `job` the rebuild running, `pending` why one more waits (never more than one), `jobs` the writes of this
+#: server's jobs still running (their end looks at the data once: a long run would otherwise rebuild the pages with
+#: every file it writes), `deferred` that a look found a change while one ran.
+FRESH: dict[str, Any] = {
+    "on": False,
+    "seen": None,
+    "looked": 0.0,
+    "build_dir": None,
+    "adapter": None,
+    "job": None,
+    "since": "",
+    "pending": "",
+    "built_at": "",
+    "failed": None,
+    "jobs": set(),
+    "deferred": False,
+}
+_FRESH_LOCK = threading.Lock()
+_REBUILD_LOCK = threading.RLock()
+
+
+def data_state(first: bool = False) -> tuple[tuple, int]:
+    """(a fingerprint of the data the catalog reads, when it last changed in ns; the latter only when `first`): the
+    adapter's data directory and, when they are elsewhere, its goals (`_store.fingerprint`: ~25 ms for this repository's
+    14,500 entries in the files store, 0.02 ms in the sqlite store)."""
+    root = Path(A.data_dir)
+    roots = [root]
+    goals = getattr(A, "goals_dir", None)
+    if goals and not Path(goals).resolve().is_relative_to(root.resolve()):
+        roots.append(Path(goals))
+    got = [_store.fingerprint(r, newest=first) for r in roots]
+    return tuple(g[:2] for g in got), max(g[2] for g in got)
+
+
+def say(line: str, err: bool = False) -> None:
+    """A line of the server's log."""
+    print(line, file=sys.stderr if err else sys.stdout, flush=True)
+
+
+def refresh() -> None:
+    """The server forgets what it read of the data: the adapter's own caches (its index of runs, its listings), the
+    comparisons and every answer made from them. The p's of the tests are kept by what they were computed from (the
+    paired differences), so none can be out of date; the files' and the database's readers check their own stamps."""
+    fn = getattr(A, "refresh", None)
+    if callable(fn):
+        fn()
+    cache_clear()
+
+
+def catalog_status() -> dict:
+    """What GET /api/health says of the pages: `state` building (a rebuild runs, `since` when), failed (the last
+    rebuild did, `failed` says why, and the pages are the earlier ones) or idle; when the pages were built; whether
+    one more rebuild waits."""
+    with _REBUILD_LOCK:
+        f = FRESH
+        return {
+            "state": "building" if f["job"] else "failed" if f["failed"] else "idle",
+            "built_at": f["built_at"],
+            "building_since": f["since"] if f["job"] else None,
+            "job": f["job"],
+            "queued": bool(f["pending"]),
+            "failed": f["failed"],
+        }
+
+
+def _wait_job(job_id: str) -> dict:
+    """The job as it was when it ended (a job nobody can read any more is `lost`)."""
+    from evaluation_harness import _jobs  # noqa: PLC0415
+
+    while True:
+        try:
+            j = _jobs.read(job_id)
+        except (FileNotFoundError, ValueError, OSError):
+            return {"id": job_id, "state": "lost"}
+        if j["state"] in _ENDED:
+            return j
+        time.sleep(FRESH_POLL_S)
+
+
+def _rebuild_failed(job_id: str | None, why: str) -> None:
+    with _REBUILD_LOCK:
+        FRESH["failed"] = {"job": job_id, "at": _common.now(), "why": why}
+    shown = f" (job {job_id})" if job_id else ""
+    say(
+        f"catalog: the rebuild FAILED{shown}: {why}; the pages built {FRESH['built_at'] or 'earlier'} are served as they were",
+        err=True,
+    )
+
+
+def _start_rebuild(why: str) -> None:
+    """Start the `catalog` job that builds the pages beside the served ones and swaps them in (build_beside), and a
+    thread that waits for it. Called with _REBUILD_LOCK held and no rebuild running."""
+    from evaluation_harness import _jobs  # noqa: PLC0415
+
+    argv = ["--out", str(FRESH["build_dir"]), *(["--adapter", FRESH["adapter"]] if FRESH["adapter"] else [])]
+    try:
+        job_id = _jobs.create("catalog", argv, None, f"catalog-serve: {why}", _jobs.locks_for("catalog", {}))
+        _jobs.start(job_id)
+    except Exception as exc:  # noqa: BLE001 -- a project that cannot start a job (read-only, no space) is said, not fatal
+        _rebuild_failed(None, f"the job could not be started: {type(exc).__name__}: {exc}")
+        return
+    FRESH.update(job=job_id, since=_common.now())
+    say(
+        f"catalog: {why}: rebuilding the pages (job {job_id}); the pages built {FRESH['built_at']} are served until it ends"
+    )
+    threading.Thread(target=_watch_rebuild, args=(job_id,), daemon=True).start()
+
+
+def _watch_rebuild(job_id: str) -> None:
+    j = _wait_job(job_id)
+    with _REBUILD_LOCK:
+        FRESH.update(job=None, since="")
+        if j["state"] == "succeeded":
+            FRESH.update(built_at=_common.now(), failed=None)
+            cache_clear()
+            say(f"catalog: rebuilt (job {job_id}); the pages are built {FRESH['built_at']}")
+        else:
+            from evaluation_harness import _jobs  # noqa: PLC0415
+
+            try:
+                tail = [
+                    x for x in _jobs.log_from(job_id)[0].decode("utf-8", "replace").splitlines() if x.strip()
+                ]
+            except (FileNotFoundError, ValueError, OSError):
+                tail = []
+            raised = re.compile(r"^[\w.]*(Error|Exception)\b")  # a traceback's last line says what broke
+            line = next(
+                (x for x in reversed(tail) if raised.match(x) or x.startswith("ERROR")),
+                tail[-1] if tail else "no output",
+            )
+            _rebuild_failed(job_id, f"the job {j['state']}: {line.strip()}")
+        if FRESH["pending"]:
+            why, FRESH["pending"] = FRESH["pending"], ""
+            _start_rebuild(why)
+
+
+def request_rebuild(why: str) -> None:
+    """A rebuild of the pages now, or, while one runs, one more after it: a write during a rebuild may not be in what it
+    read, and a third write changes nothing about that, so never more than one waits."""
+    with _REBUILD_LOCK:
+        if FRESH["job"]:
+            FRESH["pending"] = why
+        else:
+            _start_rebuild(why)
+
+
+def fresh_check(force: bool = False, why: str = "") -> bool:
+    """Look at the data's state and, when it is not the one last seen, refresh what the server read and rebuild the
+    pages. Called before every request, at most every FRESH_EVERY_S; `force`: now, whatever the last look. While a job
+    of this server writes, a change refreshes and waits for the job's end (`jobs`). True when the data had changed."""
+    if not FRESH["on"] or not _FRESH_LOCK.acquire(blocking=force):
+        return False
+    try:
+        now = time.monotonic()
+        if not force and now - FRESH["looked"] < FRESH_EVERY_S:
+            return False
+        FRESH["looked"] = now
+        state, _newest = data_state()
+        if state == FRESH["seen"] and not (force and FRESH["deferred"]):
+            return False
+        FRESH["seen"] = state
+        refresh()
+        if FRESH["jobs"] and not force:
+            FRESH["deferred"] = True
+            return True
+        FRESH["deferred"] = False
+        request_rebuild(why or "the data changed")
+        return True
+    finally:
+        _FRESH_LOCK.release()
+
+
+def data_changed(why: str) -> None:
+    """A write this server made (an edit of the model through the API): its answer is read from fresh data at once, and
+    the pages are rebuilt."""
+    if not FRESH["on"]:
+        return
+    with _FRESH_LOCK:
+        FRESH["seen"] = data_state()[
+            0
+        ]  # after the write, before the rebuild starts: a later change differs from it
+        FRESH["deferred"] = False
+        refresh()
+        request_rebuild(why)
+
+
+def watch_write_job(job: dict) -> None:
+    """A job this server started (any but the rebuild itself): when it ends, look at the data once and rebuild if it
+    wrote."""
+    if not FRESH["on"] or job.get("command") == "catalog":
+        return
+    FRESH["jobs"].add(job["id"])
+
+    def end() -> None:
+        _wait_job(job["id"])
+        FRESH["jobs"].discard(job["id"])
+        try:
+            fresh_check(force=True, why=f"job {job['id']} ({job.get('command')}) ended")
+        except Exception as exc:  # noqa: BLE001 -- the look failed; the next read looks again
+            say(
+                f"catalog: could not look at the data after job {job['id']}: {type(exc).__name__}: {exc}",
+                err=True,
+            )
+
+    threading.Thread(target=end, daemon=True).start()
+
+
+def _look() -> None:
+    """The look before a request: never fails it."""
+    try:
+        fresh_check()
+    except Exception as exc:  # noqa: BLE001
+        say(f"catalog: could not look at the data: {type(exc).__name__}: {exc}", err=True)
+
+
+def start_fresh(build_dir: Path, adapter: str | None) -> None:
+    """Begin keeping the pages current (a server with pages of its own): note when they were built and what the data is
+    now, and rebuild at once when the data is newer than the pages (changed while no server ran)."""
+    index = build_dir / "index.html"
+    built = _store.stat(index).st_mtime_ns if _store.is_file(index) else 0
+    FRESH.update(
+        on=True,
+        build_dir=build_dir,
+        adapter=adapter,
+        built_at=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(built / 1e9)),
+        looked=time.monotonic(),
+    )
+    state, newest = data_state(first=True)
+    FRESH["seen"] = state
+    if newest > built:
+        request_rebuild("the data is newer than the pages")
+
+
 #: A deployment's hooks (--hooks), or None. The harness calls them and knows nothing of what they
 #: do: error reporting, tracing and metrics belong to the deployment, not to the harness.
 HOOKS = None
@@ -706,6 +989,7 @@ class Handler(SimpleHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(body)
                 return
+            _look()
             serve()
         except Exception as exc:
             if HOOKS is None:
@@ -860,11 +1144,13 @@ class Handler(SimpleHTTPRequestHandler):
                 continue
             if any(w != p for w, p in zip(want, parts, strict=True) if not w.startswith("{")):
                 continue
-            params = {w[1:-1]: p for w, p in zip(want, parts, strict=True) if w.startswith("{")}
+            params = {w[1:-1]: unquote(p) for w, p in zip(want, parts, strict=True) if w.startswith("{")}
             inputs: dict = {}
             if op.kind == "read":
-                q = parse_qs(url.query)
-                inputs = {k: v[0] for k, v in q.items() if k in op.inputs}
+                try:
+                    inputs = query_inputs(op.inputs, parse_qs(url.query))
+                except ValueError as exc:
+                    return say(400, {"error": f"{op.name}: {exc}"})
             else:
                 if self.headers.get(DATA_HEADER) != "1":
                     return say(403, {"error": f"a write needs the {DATA_HEADER}: 1 header"})
@@ -897,6 +1183,8 @@ class Handler(SimpleHTTPRequestHandler):
                     MODEL_STATUS.get(exc.kind, 400),
                     {"error": str(exc), "kind": exc.kind, "problems": exc.problems},
                 )
+            if op.kind != "read":
+                data_changed(f"{op.name} through the API")
             return say(200, {"command": op.name, "version": __version__, "result": result})
         return False
 
@@ -961,11 +1249,14 @@ class Handler(SimpleHTTPRequestHandler):
                     str(body.get("command") or ""), body.get("args", {}), body.get("by"), body.get("reason"),
                     body.get("max_cost_usd"), body.get("for"),
                 )  # fmt: skip
+                watch_write_job(j)
                 return self._json(202, j, cache=False)
             if len(parts) == 2 and parts[1] == "stop":
                 return self._json(200, _jobs.stop(parts[0]), cache=False)
             if len(parts) == 2 and parts[1] == "resume":
-                return self._json(202, _api.resume_job(parts[0]), cache=False)
+                resumed = _api.resume_job(parts[0])
+                watch_write_job(resumed)
+                return self._json(202, resumed, cache=False)
             return self._json(404, {"error": f"no API route POST {url.path}"}, cache=False)
         except _api.Refused as exc:
             return self._json(exc.status, {"error": str(exc)}, cache=False)
@@ -1017,6 +1308,8 @@ class Handler(SimpleHTTPRequestHandler):
         if self._refuse():
             return
         if url.path == "/api/health":
+            if FRESH["on"]:
+                return self._json(200, {"ok": True, "catalog": catalog_status()}, cache=False)
             return self._json(200, {"ok": True})
         if url.path == "/workbench" or url.path.startswith("/workbench/"):
             return self._workbench(url.path)
@@ -1221,6 +1514,7 @@ def main() -> int:
         if not _store.is_file(args.build_dir / "index.html"):
             die(f"no catalog at {args.build_dir}: run `evh catalog` first", "not-found")
         Handler.prefixes = served(args.build_dir, A.data_dir, tuple(getattr(A, "served_dirs", ())))
+        start_fresh(args.build_dir, args.adapter)
     migration_check()
     threading.Thread(target=watch_migrations, daemon=True).start()
     if args.warm:
@@ -1281,7 +1575,10 @@ def main() -> int:
             flush=True,
         )
         print(f"  the project {ROOT}, on a port of its own", flush=True)
-        print("  it reads the runs once: restart it to see runs made after it started", flush=True)
+        print(
+            "  the pages are rebuilt when the data changes: a write through the API at once, any other on the next read",
+            flush=True,
+        )
     try:
         server.serve_forever()
     except KeyboardInterrupt:

@@ -110,7 +110,7 @@ def serve(*extra: str) -> tuple[subprocess.Popen, int, list[str]]:
         return p, port, lines
     while line := p.stdout.readline():  # the startup's lines, up to its last
         lines.append(line.rstrip())
-        if "reads the runs once" in line:
+        if "rebuilt when the data changes" in line:
             break
     return p, port, lines
 

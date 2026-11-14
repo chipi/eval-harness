@@ -96,6 +96,11 @@ def evh(*args):
     )
 
 
+#: Every server this test started: stopped in the end whatever happened (an exception mid-test left them serving a
+#: deleted project for days, 2026-11-15).
+SERVERS: list[subprocess.Popen] = []
+
+
 def serve(*extra):
     with socket.socket() as s:
         s.bind(("127.0.0.1", 0))
@@ -104,6 +109,7 @@ def serve(*extra):
         [sys.executable, str(HERE / "cli.py"), "catalog-serve", "--port", str(port), *extra],
         cwd=proj, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, stdin=subprocess.DEVNULL,
     )  # fmt: skip
+    SERVERS.append(p)
     for _ in range(200):
         try:
             with socket.create_connection(("127.0.0.1", port), timeout=0.2):
@@ -606,5 +612,12 @@ try:
     srv.terminate()
     srv.wait(timeout=10)
 finally:
+    for p in SERVERS:
+        if p.poll() is None:
+            p.terminate()
+            try:
+                p.wait(timeout=10)
+            except subprocess.TimeoutExpired:
+                p.kill()
     shutil.rmtree(proj, ignore_errors=True)
 sys.exit(summary())

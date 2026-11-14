@@ -83,19 +83,19 @@ def current_sha256(scorer_id: str, data: Path | None = None) -> str | None:
         return None
 
 
-def judge_system_params(system_id: str) -> dict[str, Any]:
+def judge_system_params(system_id: str, data: Path | None = None) -> dict[str, Any]:
     """What a judge naming `system: <id>` is called with: the system's params under the record of the model it names,
-    as a run reads them."""
+    as a run reads them (in `data`: another data directory than the project's, a deployment's copy of it)."""
     from evaluation_harness import _models  # noqa: PLC0415
 
-    rec = SYSTEM.get(system_id)
+    rec = SYSTEM.under(data).get(system_id)
     try:
-        return dict(_models.resolve(rec, _common.DATA).get("params") or {})
+        return dict(_models.resolve(rec, _data(data)).get("params") or {})
     except ValueError as exc:
         raise Problem(f"system {system_id!r}: {exc}", "invalid-file") from None
 
 
-def resolve_judges(sc: dict[str, Any]) -> None:
+def resolve_judges(sc: dict[str, Any], data: Path | None = None) -> None:
     """Give each judge that names a system the params it is called with (in place); one that names a system that does
     not exist, or both a system and params, is refused as a Problem naming the judge. The scorer's hash is of the file
     as written, so it is taken before this."""
@@ -105,17 +105,17 @@ def resolve_judges(sc: dict[str, Any]) -> None:
         if "params" in j:
             raise Problem(f"judge {j.get('id')!r}: names a system and params; name one", "invalid-file")
         try:
-            j["params"] = judge_system_params(str(j["system"]))
+            j["params"] = judge_system_params(str(j["system"]), data)
         except Problem as exc:
             raise Problem(f"judge {j.get('id')!r}: {exc}", exc.kind) from None
 
 
-def judged_scores(scorer_id: str | None = None) -> list[dict[str, Any]]:
-    """Every judged score (of one scorer, or of all): {scorer, run, system, set, dir, sha256}, `sha256` the hash of the
-    scorer the score records it was made with (None when it records none)."""
+def judged_scores(scorer_id: str | None = None, data: Path | None = None) -> list[dict[str, Any]]:
+    """Every judged score (of one scorer, or of all) in the project's data or in `data`: {scorer, run, system, set, dir,
+    sha256}, `sha256` the hash of the scorer the score records it was made with (None when it records none)."""
     out = []
-    for rid in _runs.run_ids():
-        for sd in _runs.scores_of(rid):
+    for rid in _runs.run_ids(data):
+        for sd in _runs.scores_of(rid, data):
             m = _runs.meta(sd)
             if not str(m.get("label") or "").startswith(JUDGED) or scorer_id not in (None, m.get("scorer")):
                 continue

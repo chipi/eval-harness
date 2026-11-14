@@ -182,13 +182,16 @@ def _entry_use(e: dict[str, Any]) -> float:
     return items if e.get("run_ids") else float(e.get("reserved") or 0)
 
 
-def round_left(rnd: dict[str, Any]) -> float | None:
-    """What a round with budget_usd has left: the budget, less its runs' spend, less the ledger's (see above)."""
+def round_left(rnd: dict[str, Any], data: Path | None = None) -> float | None:
+    """What a round with budget_usd has left: the budget, less its runs' spend (those under `data`: another data
+    directory than the project's), less the ledger's (see above)."""
     if rnd.get("budget_usd") is None:
         return None
     from evaluation_harness import _rounds  # noqa: PLC0415
 
-    used = sum(float((m.get("scores") or {}).get("total_cost_usd") or 0) for _, m in _rounds.runs_of(rnd))
+    used = sum(
+        float((m.get("scores") or {}).get("total_cost_usd") or 0) for _, m in _rounds.runs_of(rnd, data=data)
+    )
     for e in _read(ledger_path(rnd["goal"], rnd["round_id"])).get("entries", []):
         used += _entry_use(e)
     return float(rnd["budget_usd"]) - used

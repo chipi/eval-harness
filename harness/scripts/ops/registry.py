@@ -54,7 +54,17 @@ def _load(dotted: str) -> Callable[..., Any]:
 
 
 def _all() -> dict[str, Op]:
-    from evaluation_harness.ops import datasets, goals, models, prompts, rounds, scorers, studies, systems  # noqa: PLC0415
+    from evaluation_harness.ops import (  # noqa: PLC0415
+        datasets,
+        goals,
+        models,
+        prompts,
+        rounds,
+        scorers,
+        studies,
+        systems,
+        views,
+    )
 
     out: dict[str, Op] = {}
     for op in (
@@ -63,6 +73,7 @@ def _all() -> dict[str, Op]:
         *models.OPS,
         *rounds.OPS,
         *scorers.OPS,
+        *views.OPS,
         *studies.OPS,
         *systems.OPS,
         *prompts.OPS,

@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from pathlib import Path
 from typing import Any
 
 from evaluation_harness import _store
@@ -27,13 +28,14 @@ def items_digest(items: list[dict[str, Any]]) -> str:
     return hashlib.sha256(json.dumps(body, sort_keys=True).encode()).hexdigest()
 
 
-def record_of(dataset_id: str | None) -> dict[str, Any]:
-    """A dataset's record, {} when there is none (a missing dataset is another command's refusal)."""
+def record_of(dataset_id: str | None, data: Path | None = None) -> dict[str, Any]:
+    """A dataset's record in the project's data, or in `data` (another data directory, a deployment's copy of it); {}
+    when there is none (a missing dataset is another command's refusal)."""
     from evaluation_harness.model.datasets import record_file  # noqa: PLC0415
 
     if not dataset_id:
         return {}
-    path = record_file(dataset_id)
+    path = record_file(dataset_id, data)
     if not _store.is_file(path):
         return {}
     try:

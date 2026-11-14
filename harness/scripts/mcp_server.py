@@ -445,6 +445,7 @@ PUBLIC_DROPPED = {
     "data-ls": "the project's files are this machine's (the data page, UXS-004)",
     "data-show": "a file's text is this machine's: a hidden dataset's items too (the data page, UXS-004)",
     "label-coverage": "it reads a rules file by path and the captures, which are this machine's",
+    "label-coverage-show": "it reads a rules file by path and the captures, which are this machine's",
     "exposure": "a held-out side's reads are the project's own",
     "sealed-counts": "a held-out side's counts are for the project's own safety watch",
     "label-mutants": "it reads a rules file by path and the captures, which are this machine's",
@@ -460,7 +461,7 @@ def tools_for(public: bool) -> tuple:
 
 #: The tools whose answer with no argument depends on today's date (a period counted from today, by default):
 #: never written ahead, since an answer kept past the day would read the wrong period.
-DATED = {"overview", "activity"}
+DATED = {"overview", "activity", "overview-show", "activity-show"}
 #: The tools with no required option that still need one of several to answer (inspect: --runs, --round or
 #: --sheet): asked with none, they refuse, so there is nothing to write ahead.
 NEEDS_ONE_OF = {"inspect"}

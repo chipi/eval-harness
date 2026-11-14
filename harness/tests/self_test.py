@@ -1004,6 +1004,26 @@ def test_example_scorer_suites_pass() -> None:
             "test_model_data_root.py",
             "the model's runs, rounds and goals take a data root, one listing per entity: a copy of a project's data gives the project's evidence, status and listings",
         ),
+        (
+            "test_view_ops.py",
+            "the catalog's views as API resources: overview, arms, metrics, activity, a comparison, label coverage; each the command's text and JSON",
+        ),
+        (
+            "test_data_root_reads.py",
+            "exposure, seals, looks, prompts and spend read any data directory: a copy's register, not the project's",
+        ),
+        (
+            "test_catalog_fresh.py",
+            "the catalog never goes stale: a write refreshes the server and rebuilds the pages, one rebuild waiting at most",
+        ),
+        (
+            "test_catalog_scorers.py",
+            "the scorers page: each judge scorer, its judges, validation and checks, read through the data root, no verdict text",
+        ),
+        (
+            "test_api_query.py",
+            "an API read's query inputs typed by the operation's schema, its path parts decoded",
+        ),
         ("test_promote_hold.py", "a round's leader held for a test with no p says so, never crashes"),
         (
             "test_model_rounds.py",

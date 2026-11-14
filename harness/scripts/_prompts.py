@@ -28,9 +28,9 @@ SKIP_DIRS = {"__pycache__"}
 SKIP_SUFFIXES = (".pyc", ".pyo")
 
 
-def prompts_dir() -> Path:
-    """Where the versions live: data/prompts/ (in either store)."""
-    return _common.DATA / "prompts"
+def prompts_dir(data: Path | None = None) -> Path:
+    """Where the versions live: data/prompts/ (in either store), of the project or of `data` (another data directory)."""
+    return (_common.DATA if data is None else Path(data)) / "prompts"
 
 
 def sha256(data: bytes) -> str:
@@ -111,9 +111,9 @@ def record(
     return doc, True
 
 
-def versions(name: str) -> list[dict[str, Any]]:
+def versions(name: str, data: Path | None = None) -> list[dict[str, Any]]:
     """A name's versions, oldest first, each with its display number `n`."""
-    d = prompts_dir() / name
+    d = prompts_dir(data) / name
     out = []
     for p in _store.glob(d, "*.json") if _store.is_dir(d) else []:
         try:
@@ -126,19 +126,19 @@ def versions(name: str) -> list[dict[str, Any]]:
     return out
 
 
-def names() -> list[str]:
+def names(data: Path | None = None) -> list[str]:
     """Every prompt name that has a version, sorted."""
-    root = prompts_dir()
+    root = prompts_dir(data)
     if not _store.is_dir(root):
         return []
     found = {str(p.parent.relative_to(root).as_posix()) for p in _store.rglob(root, "*.json")}
     return sorted(found)
 
 
-def text_of(vid: str) -> bytes:
+def text_of(vid: str, data: Path | None = None) -> bytes:
     """A version's bytes; FileNotFoundError when it is not recorded."""
     name, sha16 = split_id(vid)
-    p = prompts_dir() / name / f"{sha16}.txt"
+    p = prompts_dir(data) / name / f"{sha16}.txt"
     if not _store.is_file(p):
         raise FileNotFoundError(vid)
     return _store.read_bytes(p)

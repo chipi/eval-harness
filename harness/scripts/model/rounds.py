@@ -358,7 +358,7 @@ def evidence(goal: str, rnd: dict, A: Any = None, data: Path | None = None) -> d
             # stopped run's paid items counted, as the commands count them.
             from evaluation_harness import _spend  # noqa: PLC0415
 
-            left = _spend.round_left(rnd)
+            left = _spend.round_left(rnd, data)
             out["left"] = None if left is None else round(left, 8)
             if left is not None and abs(rnd["budget_usd"] - spent - left) > 1e-9:
                 line += f"; ${max(left, 0):.4f} left, counting what running or stopped commands hold"

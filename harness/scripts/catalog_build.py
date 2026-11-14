@@ -141,6 +141,7 @@ NAV = [
             ("systems", "arms.html#systems", "Systems"),
             ("models", "models.html", "Models"),
             ("prompts", "prompts.html", "Prompts"),
+            ("scorers", "scorers.html", "Scorers"),
             ("metrics", "metrics.html", "Metrics"),
         ],
         "Arms",
@@ -302,6 +303,8 @@ def _label_of(by_ds: dict, ds: str, arm: str) -> str:
 
 #: {arm: capture}: production's recorded arms (RFC-023), filled by collect(); arm_link badges them.
 RECORDED: dict[str, str] = {}
+#: The judge scorers that have a page (scorers/<id>.html), set by `build`: where the catalog names one it links there.
+SCORER_PAGES: set[str] = set()
 
 
 def breakable(text: str) -> str:
@@ -333,6 +336,16 @@ def source_chip(kind: str) -> str:
     """A label set's source as a chip (person, model, rule), never a tier's colours (UXS-001)."""
     k = kind if kind in ("person", "model", "rule") else "unknown"
     return f'<span class="src src-{k}">{e(kind or "unknown")}</span>'
+
+
+def scorer_link(scorer_id: str, up: str = "", code: bool = True) -> str:
+    """A judge scorer's id, linked to its page when the catalog has one (as code, or as plain text)."""
+    text = f'<code class="small">{e(scorer_id)}</code>' if code else e(scorer_id)
+    if scorer_id not in SCORER_PAGES:
+        return text
+    from evaluation_harness.catalog_scorers import scorer_page  # noqa: PLC0415
+
+    return f'<a class="cell-link" href="{up}{scorer_page(scorer_id)}">{text}</a>'
 
 
 def labels_page_anchor(set_id: str) -> str:
@@ -406,7 +419,7 @@ def scored_against(a: dict, up: str) -> str:
     """The table cell that says what an arm was scored against: a judge, a reference with its tier pill, or a label
     set with its source chip (RFC-023), linked."""
     if a.get("judge"):
-        return f'judge <code class="small">{e(a["judge"])}</code>'
+        return f"judge {scorer_link(a['judge'], up)}"
     ref = a.get("reference")
     if not ref:
         return "—"
@@ -1812,7 +1825,8 @@ def render_dataset(A: Adapter, ds: str, v: dict, out: Path, nav: list) -> None:
         e(ds or "(no dataset_id)"),
         f"{v['items']} {e(A.item_word)}s · {len(arms)} arms. Headline: each arm's own "
         "primary metric, mean over its items; arms with different primary metrics are "
-        "not ranked against each other." + (f" {e(read_line)}." if (read_line := _exposure.line(ds)) else ""),
+        "not ranked against each other."
+        + (f" {e(read_line)}." if (read_line := _exposure.line(ds, getattr(A, "data_dir", None))) else ""),
         btn,
     )
     body += block(
@@ -2199,7 +2213,7 @@ def render_inside(
     hide = _visibility.hidden(ds)
     if hide:
         p = _visibility.public_profile(p)
-    elif any(r.get("text") for r in p.get("rows") or []) and not _texts_tracked(ds):
+    elif any(r.get("text") for r in p.get("rows") or []) and not _texts_tracked(A, ds):
         # A profile written --with-text is checked again here: text whose source git no longer
         # tracks is not shown, whatever the profile carries.
         p = {**p, "rows": [{k: v for k, v in r.items() if k != "text"} for r in p["rows"]]}
@@ -2310,15 +2324,17 @@ def render_inside(
     return first, more
 
 
-def _texts_tracked(ds: str) -> bool:
-    """Whether git still tracks every item's source file (what --with-text required when written)."""
+def _texts_tracked(A: Adapter, ds: str) -> bool:
+    """Whether git still tracks every item's source file (what --with-text required when written). The dataset is read
+    from the adapter's data directory, as every other page is."""
     from evaluation_harness import dataset_profile  # noqa: PLC0415
 
+    data = getattr(A, "data_dir", None)
     try:
-        d = _common.load_dataset(ds)
-    except SystemExit:
+        d = json.loads(_store.read_text(dataset_record_file(ds, data), encoding="utf-8"))
+    except (OSError, ValueError):
         return False
-    src = source_dir(d)
+    src = source_dir(d, data)
     if _common.store() == "sqlite":  # RFC-025: the database is the record, as git is for files
         return all(
             _store.is_file(src / (it.get("source_path") or it["item_id"])) for it in d.get("items") or []
@@ -2953,8 +2969,16 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
             + (f" · made from {dataset_link(lin, '../')}" if lin else "")
             + "</p>"
             + (f'<p class="small muted">{e(ans["notes"])}</p>' if ans["notes"] else "")
-            + (f'<p class="small">{e(looks_line)}</p>' if (looks_line := _looks.said(ds)) else "")
-            + (f'<p class="small">{e(read_line)}</p>' if (read_line := _exposure.line(ds)) else "")
+            + (
+                f'<p class="small">{e(looks_line)}</p>'
+                if (looks_line := _looks.said(ds, getattr(A, "data_dir", None)))
+                else ""
+            )
+            + (
+                f'<p class="small">{e(read_line)}</p>'
+                if (read_line := _exposure.line(ds, getattr(A, "data_dir", None)))
+                else ""
+            )
             + (
                 '<p class="small">references: '
                 + ", ".join(
@@ -4264,10 +4288,11 @@ def render_prompts(A: Adapter, out: Path, nav: list) -> None:
 
     show = _prompts.published()
     used = _prompt_cmd._runs_of()
-    names = _prompts.names()
+    data = getattr(A, "data_dir", None)
+    names = _prompts.names(data)
     rows, sections = [], []
     for name in names:
-        vs = _prompts.versions(name)
+        vs = _prompts.versions(name, data)
         n_runs = sum(len(used.get((name, v["sha256"]), [])) for v in vs)
         anchor = "prompt-" + re.sub(r"[^A-Za-z0-9_-]", "-", name)
         rows.append([f'<a class="cell-link" href="#{e(anchor)}">{e(name)}</a>', str(len(vs)), str(n_runs)])
@@ -4278,7 +4303,7 @@ def render_prompts(A: Adapter, out: Path, nav: list) -> None:
             text = ""
             if show:
                 try:
-                    cur = _prompts.text_of(v["id"]).decode("utf-8", "replace")
+                    cur = _prompts.text_of(v["id"], data).decode("utf-8", "replace")
                 except FileNotFoundError:
                     cur = ""
                 if prev is None:
@@ -4604,6 +4629,10 @@ def build(A: Adapter, out: Path, sections: tuple = ()) -> dict:
         _store.rmtree(out)
     copy_assets(out)
     A = scores_once(A)  # one build: each arm's scores read once, not for every page that asks
+    from evaluation_harness.catalog_scorers import page_ids, render_scorers  # noqa: PLC0415
+
+    SCORER_PAGES.clear()
+    SCORER_PAGES.update(page_ids(A))
     by_ds = collect(A)
     write_periods(A, by_ds, out)
     render_home(A, by_ds, out, nav)
@@ -4614,6 +4643,7 @@ def build(A: Adapter, out: Path, sections: tuple = ()) -> dict:
     arms_rows = arm_rows(A, by_ds)
     render_arms(A, by_ds, out, nav, arms_rows)
     render_models(A, by_ds, out, nav, arms_rows)
+    render_scorers(A, by_ds, out, nav)
     render_datasets(A, by_ds, out, nav)
     for ds, v in by_ds.items():
         v["versions"] = _version_links(by_ds, ds, "../")

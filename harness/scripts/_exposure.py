@@ -30,43 +30,46 @@ LEFT: dict[str, set[str]] = {}
 INCLUDE = [False]
 
 
-def path(dataset_id: str) -> Path:
-    """data/exposure/<dataset_id>.jsonl; the id is checked first, so it can never leave data/exposure/."""
+def path(dataset_id: str, data: Path | None = None) -> Path:
+    """data/exposure/<dataset_id>.jsonl, in the project's data or in `data` (another data directory: a deployment's copy
+    of it, whose register is its own); the id is checked first, so it can never leave data/exposure/."""
     from evaluation_harness import _common  # noqa: PLC0415
 
     if not DATASET_ID.match(dataset_id or ""):
         die(f"not a dataset id: {dataset_id!r}", "bad-argument")
-    return _common.DATA / "exposure" / f"{dataset_id}.jsonl"
+    return (_common.DATA if data is None else Path(data)) / "exposure" / f"{dataset_id}.jsonl"
 
 
-_APPLIES: dict[str, bool] = {}
+_APPLIES: dict[tuple[str, str], bool] = {}
 
 
-def applies(dataset_id: str | None) -> bool:
-    """Whether a dataset is a held-out side (sealed now, or sealed and since unsealed); asked once per process."""
-    from evaluation_harness import _seal  # noqa: PLC0415
+def applies(dataset_id: str | None, data: Path | None = None) -> bool:
+    """Whether a dataset is a held-out side (sealed now, or sealed and since unsealed), by the project's record of it or
+    by `data`'s; asked once per process for each data directory."""
+    from evaluation_harness import _common, _seal  # noqa: PLC0415
 
     if not dataset_id:
         return False
-    if dataset_id not in _APPLIES:
-        _APPLIES[dataset_id] = bool(_seal.record_of(dataset_id).get("sealed"))
-    return _APPLIES[dataset_id]
+    key = (str(_common.DATA if data is None else Path(data)), dataset_id)
+    if key not in _APPLIES:
+        _APPLIES[key] = bool(_seal.record_of(dataset_id, data).get("sealed"))
+    return _APPLIES[key]
 
 
-def rows(dataset_id: str) -> list[dict[str, Any]]:
+def rows(dataset_id: str, data: Path | None = None) -> list[dict[str, Any]]:
     """Every row of a dataset's register, oldest first."""
-    p = path(dataset_id)
+    p = path(dataset_id, data)
     if not _store.is_file(p):
         return []
     return [json.loads(x) for x in _store.read_text(p, encoding="utf-8").splitlines() if x.strip()]
 
 
-def exposed(dataset_id: str | None) -> frozenset[str]:
+def exposed(dataset_id: str | None, data: Path | None = None) -> frozenset[str]:
     """The item ids read on a held-out side (none for any other dataset). Read each time: a server that runs for days
     must leave out a read recorded after it started (a register is a few hundred lines)."""
-    if not dataset_id or not applies(dataset_id):
+    if not dataset_id or not applies(dataset_id, data):
         return frozenset()
-    return frozenset(str(r.get("item_id")) for r in rows(dataset_id))
+    return frozenset(str(r.get("item_id")) for r in rows(dataset_id, data))
 
 
 def _who(actor: dict[str, Any]) -> str:
@@ -139,10 +142,10 @@ def read_by_harness(dataset_id: str | None, items: Iterable[str], what: str) -> 
         record(dataset_id, items, what, source="harness")
 
 
-def keep(dataset_id: str | None, item_ids: Iterable[str]) -> set[str] | None:
+def keep(dataset_id: str | None, item_ids: Iterable[str], data: Path | None = None) -> set[str] | None:
     """The items a score on `dataset_id` keeps: every one but the exposed (None: keep all). What it leaves out is
     counted in LEFT for the command to say."""
-    gone = exposed(dataset_id)
+    gone = exposed(dataset_id, data)
     if not gone or INCLUDE[0]:
         return None
     ids = set(item_ids)
@@ -160,14 +163,14 @@ def said() -> list[str]:
     ]
 
 
-def line(dataset_id: str | None) -> str | None:
+def line(dataset_id: str | None, data: Path | None = None) -> str | None:
     """A held-out side's reads in one line, for its pages and `evh goals`; None for any other dataset."""
-    if not dataset_id or not applies(dataset_id):
+    if not dataset_id or not applies(dataset_id, data):
         return None
-    from evaluation_harness._common import load_dataset  # noqa: PLC0415
+    from evaluation_harness import _seal  # noqa: PLC0415
 
-    n = len(load_dataset(dataset_id).get("items") or [])
-    read = len(exposed(dataset_id))
+    n = len(_seal.record_of(dataset_id, data).get("items") or [])
+    read = len(exposed(dataset_id, data))
     return (
         f"held out: {read} of {n} item(s) read (the exposure register); every score here leaves them out "
         "(evh exposure)"
@@ -180,3 +183,38 @@ def say() -> None:
     """Print said() (to stdout, where the scores went)."""
     for line in said():
         print(f"  note: {line}")
+
+
+def aware(adapter):
+    """The adapter, its `scores` leaving out a held-out side's read items (RFC-031 H1): every page, goal, round and
+    inspector answer reads scores through it, a project's own adapter's too, so the read items count in none of them.
+    The seal and the register are the adapter's own data directory's (`data_dir`; the project's when it has none), so a
+    copy of the data with a sealed dataset is read by its own register. What it leaves out is counted (`LEFT`) for
+    whoever shows the scores to say."""
+    read = adapter.scores
+    data = getattr(adapter, "data_dir", None)
+
+    def scores(arm, *args, **kw):
+        out = read(arm, *args, **kw)
+        dataset = str(arm).rpartition("/")[0].rpartition("/")[2]
+        if not applies(dataset, data):
+            return out
+        ids = {i for sc in out.values() for i in (sc.get("values") or {})}
+        kept = keep(dataset, ids, data)
+        if kept is None:
+            return out
+        return {
+            k: {
+                **sc,
+                "values": {i: v for i, v in (sc.get("values") or {}).items() if i in kept},
+                **(
+                    {"repeats": {i: v for i, v in sc["repeats"].items() if i in kept}}
+                    if isinstance(sc.get("repeats"), dict)
+                    else {}
+                ),
+            }
+            for k, sc in out.items()
+        }
+
+    adapter.scores = scores
+    return adapter

@@ -427,6 +427,80 @@ try:
         )
         + "\n",
     )
+    # ── a judge scorer that judged on both datasets (RFC-032 step 8): its pages carry counts, never a reply ──────────
+    shutil.copy(KIT / "judge_prompt.txt", proj / "judge_prompt.txt")
+    judges = (
+        "[{id: ja, params: {provider: fake, model: fake-a, family: vendor_a, usd_per_mtok_in: 0, usd_per_mtok_out: 0}}, "
+        "{id: jb, params: {provider: fake, model: fake-b, family: vendor_b, usd_per_mtok_in: 0, usd_per_mtok_out: 0}}]"
+    )
+    r = evh(
+        "scorer-new", "jx_v1", "--set", "dataset_id=tickets_h", "--set", f"judges={judges}",
+        "--set", "prompt.file=judge_prompt.txt", "--set", "protocol.outputs_per_call=2",
+        "--set", "protocol.position_check_fraction=0.5", "--set", "protocol.noise_check_fraction=0.5",
+    )  # fmt: skip
+    check("setup: a judge scorer", r.returncode == 0, said(r)[-300:])
+    jx_sha = json.loads(evh("scorer-show", "jx_v1", "--json").stdout)["result"]["sha256"]
+    for k in MARK:
+        run_k = next(
+            d
+            for d in _runstore.listdir(proj, "runs")
+            if _runstore.is_file(proj, f"runs/{d}/run.json")
+            and _runstore.read_json(proj, f"runs/{d}/run.json").get("dataset_id") == f"tickets_{k}"
+        )
+        sd = f"runs/{run_k}/scores/jx_v1@js_{k}"
+        _store.mkdir(data / sd, parents=True)
+        _runstore.write_text(
+            proj,
+            f"{sd}/score.json",
+            json.dumps({"scorer": "jx_v1", "reference": f"js_{k}", "label": "judged/jx_v1"}),
+        )
+        _runstore.write_text(
+            proj, f"{sd}/metrics.json",
+            json.dumps({"scores": {"judge_score": 4.0},
+                        "derived": {"kind": "judge", "with": {"scorer_id": "jx_v1", "scorer_sha256": jx_sha}}}),
+        )  # fmt: skip
+        _runstore.write_text(
+            proj, f"judging-sets/js_{k}.json",
+            json.dumps({"judging_set_id": f"js_{k}", "dataset_id": f"tickets_{k}", "arms": [{"config_id": "a"}], "items": [{"item_id": "i1"}]}),
+        )  # fmt: skip
+        for j in ("ja", "jb"):
+            _runstore.write_text(
+                proj,
+                f"judge-verdicts/jx_v1/js_{k}/{j}/i1.primary.b0.json",
+                json.dumps({"reply": f"{MARK[k]} said so"}),
+            )
+        _runstore.write_text(
+            proj, f"judge-summaries/jx_v1@js_{k}.json",
+            json.dumps({"scorer_id": "jx_v1", "scorer_sha256": jx_sha, "label": "unvalidated judge", "validated": False,
+                        "partial": False, "items_scored": 1}),
+        )  # fmt: skip
+        _runstore.write_text(
+            proj,
+            f"judge-validation/jx_v1/src_{k}/ja/a.json",
+            json.dumps({"article_id": "1", "output": f"{MARK[k]} checked"}),
+        )
+    out_j = proj / ".build" / "catalog-judges"
+    r = evh("catalog", "--out", str(out_j))
+    pj = (
+        (out_j / "scorers" / "jx_v1.html").read_text() if (out_j / "scorers" / "jx_v1.html").is_file() else ""
+    )
+    check(
+        "catalog: the Scorers pages build with a scorer that judged a hidden dataset",
+        r.returncode == 0 and bool(pj),
+        said(r)[-400:],
+    )
+    check(
+        "catalog: the scorer's page counts its judging sets on both datasets (the hidden one's verdicts too), and names no reply",
+        all(x in pj for x in ("js_h", "js_s", "tickets_h", "tickets_s", 'data-v="2"'))
+        and not found(out_j, f"{MARK['h']} said") and not found(out_j, f"{MARK['s']} said")
+        and not found(out_j, f"{MARK['h']} checked") and not found(out_j, f"{MARK['s']} checked"),
+        (found(out_j, f"{MARK['h']} said"), found(out_j, f"{MARK['s']} said"), found(out_j, f"{MARK['h']} checked")),
+    )  # fmt: skip
+    check(
+        "catalog: no page, the scorer's included, carries the hidden dataset's text",
+        not found(out_j, MARK["h"]),
+        found(out_j, MARK["h"]),
+    )
     rel = proj / ".release"
     counts = copy_data(data, rel)
     check(
@@ -444,6 +518,26 @@ try:
         t1.read_text()[:300] if t1.is_file() else "no tags.json",
     )
     check("release: the shown dataset's outputs and gold texts are copied", bool(found(rel, MARK["s"])))
+    check(
+        "release: the verdicts of a judging set on the shown dataset are copied, those on the hidden dataset never",
+        (rel / "judge-verdicts" / "jx_v1" / "js_s" / "ja" / "i1.primary.b0.json").is_file()
+        and not (rel / "judge-verdicts" / "jx_v1" / "js_h").exists()
+        and counts["hidden_verdicts"] == 1,
+        counts,
+    )
+    relp = proj / ".release-proj"
+    copy_data(data, relp / "data")
+    shutil.copy(proj / "judge_prompt.txt", relp / "judge_prompt.txt")
+    r = evh(
+        "catalog", "--out", str(relp / "catalog"), extra_env={"EVAL_HOME": str(relp), "EVAL_STORE": "files"}
+    )
+    pr = relp / "catalog" / "scorers" / "jx_v1.html"
+    check(
+        "release: the catalog built from the copy has the scorer's page, the hidden set's verdicts none, the shown set's counted, nothing of the hidden text",
+        r.returncode == 0 and pr.is_file() and "js_h" in pr.read_text() and "js_s" in pr.read_text()
+        and not found(relp / "catalog", MARK["h"]) and not found(relp / "catalog", f"{MARK['s']} said"),
+        (said(r)[-300:], found(relp / "catalog", MARK["h"])),
+    )  # fmt: skip
     check("release: nothing of the hidden dataset's text", not found(rel, MARK["h"]), found(rel, MARK["h"]))
     sl, sh = rel / "studies" / "studies_g", rel / "faithfulness"
     check(

@@ -435,6 +435,35 @@ def main() -> int:
             ("arms", ["--arm", "tickets_lead2_v1"], "ok:scored against"),
             ("arms", ["--arm", "runs/tickets_v1/no_such_v1"], "no arm"),
             ("goals", [], "ok"),
+            # The views as resources (RFC-032 step 8): installed, each says what its command prints; the flow is
+            # test_view_ops.py.
+            ("overview-show", [], "ok:goals at a glance"),
+            ("overview-show", ["--period", "all"], "ok:all time"),
+            ("activity-show", ["--period", "all"], "ok:by dataset:"),
+            ("metric-list", [], "ok:overlap_f1"),
+            ("metric-show", ["overlap_f1"], "ok:on tickets_v1:"),
+            ("metric-show", ["no_such_metric"], "no metric 'no_such_metric'"),
+            ("arm-list", [], "ok:runs/tickets_v1/tickets_lead2_v1"),
+            ("arm-list", ["--systems", "1"], "ok:rank on each goal"),
+            ("dataset-arm-list", ["tickets_v1"], "ok:runs/tickets_v1/tickets_lead2_v1"),
+            ("dataset-arm-list", ["no_such_v1"], "no dataset 'no_such_v1'"),
+            ("arm-show", ["runs", "tickets_v1", "tickets_lead2_v1"], "ok:metrics:"),
+            ("arm-show", ["runs", "tickets_v1", "no_such_v1"], "no arm"),
+            (
+                "comparison-show",
+                ["--runs", "runs/tickets_v1/tickets_lead1_v1,runs/tickets_v1/tickets_lead2_v1"],
+                "ok:0.0938",
+            ),
+            (
+                "comparison-show",
+                ["--runs", "runs/tickets_v1/tickets_lead1_v1,runs/tickets_v1/no_such_v1"],
+                "no arm known to the catalog",
+            ),
+            (
+                "label-coverage-show",
+                ["captured_v1", "--capture", "c1", "--map", "no_such_map.yaml"],
+                "--map: no file",
+            ),
             # The goal through the model (RFC-032 step 1): the flow is test_model_goals.py.
             ("goal-list", [], "ok"),
             # The system through the model (RFC-032 step 3): installed, each answers in words.

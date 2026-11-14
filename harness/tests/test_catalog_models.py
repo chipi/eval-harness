@@ -416,7 +416,7 @@ with tempfile.TemporaryDirectory() as td:
     nav = re.findall(r'<nav class="nav">(.*?)</nav>', home)[0]
     check(
         "nav: Models is under Arms",
-        ">Models<" in nav and nav.count("<a ") == 13,
+        ">Models<" in nav and nav.count("<a ") == 14,
         nav.count("<a "),
     )
 

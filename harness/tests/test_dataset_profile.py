@@ -77,8 +77,15 @@ def item_ids(ds: str) -> list[str]:
     return [it["item_id"] for it in items_of(ds)]
 
 
+# A project as `evh init` makes it carries its data's format: the model's reads (a page's `evh scorer-list`) refuse one
+# that does not.
+from evaluation_harness import _format  # noqa: E402
+
+(proj / "data").mkdir(parents=True, exist_ok=True)
+_runstore.write_text(proj, "project.yaml", f"format: {_format.FORMAT}\n")
+
 try:
-    (proj / "data").mkdir()
+    (proj / "data").mkdir(exist_ok=True)
     dataset(
         "topics",
         {

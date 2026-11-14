@@ -216,6 +216,45 @@ def is_dir(path: Any) -> bool:
     )
 
 
+def fingerprint(top: Any, newest: bool = False) -> tuple[int, int, int]:
+    """(a count, a checksum, the newest modification time in ns) that changes when anything under `top` changes, without
+    opening a file: a server that asks before every request learns that the data moved under it (catalog-serve).
+    The files store: every entry's path, modification time and size under `top`, stat only, so a file added, removed,
+    changed or moved in with an old modification time all change the checksum (~14,500 entries, ~25 ms). The sqlite
+    store's data/: the database's own change counter (`PRAGMA data_version`, which moves when another connection
+    commits, and not for a reader, a checkpoint or this process's own writes on its one connection), and the newest
+    row's time when `newest` asks for it (a scan of the table, for the start of a server)."""
+    top = Path(top)
+    if sqlite() and _is_data_root(top):
+        with _LOCK:
+            conn = connect(create=False)
+            if conn is None:
+                return 0, 0, 0
+            version = conn.execute("PRAGMA data_version").fetchone()[0]
+            latest = conn.execute("SELECT max(mtime_ns) FROM files").fetchone()[0] if newest else 0
+        return 0, version, latest or 0
+    n = acc = latest = 0
+    stack = [str(top)]
+    while stack:
+        try:
+            it = os.scandir(stack.pop())
+        except OSError:
+            continue
+        with it:
+            for entry in it:
+                try:
+                    st = entry.stat(follow_symlinks=False)
+                    is_dir = entry.is_dir(follow_symlinks=False)
+                except OSError:  # gone since it was listed
+                    continue
+                n += 1
+                acc = (acc + hash((entry.path, st.st_mtime_ns, st.st_size))) & ((1 << 63) - 1)
+                latest = max(latest, st.st_mtime_ns)
+                if is_dir:
+                    stack.append(entry.path)
+    return n, acc, latest
+
+
 def _is_data_root(p: Path) -> bool:
     return os.path.abspath(p) == os.path.abspath(_common.DATA)
 

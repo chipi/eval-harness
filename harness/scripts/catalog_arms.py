@@ -337,8 +337,8 @@ def render_arms(A, by_ds: dict, out, nav: list, rows: list[dict] | None = None) 
         }
         against = r["against"] if r["against"] != "—" else "no reference"
         how = (
-            e(r["how"])
-            if r["how"].startswith("judged")
+            "judged by " + cb.scorer_link(r["how"].removeprefix("judged by "), code=False)
+            if r["how"].startswith("judged by ")
             else f"rescored against {against}"
             if r["how"].startswith("rescored against")
             else f"{e(r['how'])} · against {against}"
