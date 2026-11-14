@@ -8,9 +8,10 @@ side because they trade against each other:
     the best output is often the slowest and dearest, and the decision is
     usually "which is good ENOUGH per dollar", not "which scores highest"
 
-Runs are grouped by `config_id`, so repeats of the same arm collapse into one
-row and their spread is shown — an arm whose own spread exceeds the gap to its
-neighbour is not distinguishable from it, and the table says so.
+The tables are the goal's view of the dataset (model/goal_views): one per reference the arms are scored
+against, each arm one row (its runs' repeats collapse into it and their spread is shown — an arm whose own spread
+exceeds the gap to its neighbour is not distinguishable from it, and the table says so), flagged and led as the
+goal page has it.
 
     python scripts/leaderboard.py --dataset-id my_v1
     python scripts/leaderboard.py --dataset-id my_v1 --sort overlap_f1
@@ -35,17 +36,14 @@ from evaluation_harness import _common, _jsonout, _store
 from evaluation_harness._adapter import recorded_metric_kinds
 from evaluation_harness._common import (
     BOOKKEEPING_PREFIXES,
-    REFERENCES,
     classify_metrics,
     die,
     evh_prog,
     how,
     read_json,
-    system_now,
 )
 from evaluation_harness._record import derived_with
-from evaluation_harness._runs import by_arm, direction, mixed_versions, runs_on, warn_on_ambiguous_runs
-from evaluation_harness._runs import matrix as matrix_of
+from evaluation_harness._runs import direction, is_repeat_set, mixed_versions, per_item, runs_on
 from evaluation_harness.stats import kept
 
 # COST_KEYS / SPEED_KEYS / DESCRIPTIVE_KEYS now live in _common, so that
@@ -524,25 +522,6 @@ def _frontier(rows: list[dict], quality: str, kinds: dict[str, str], asc: bool =
     }
 
 
-def _own_reference(by_config: dict[str, list[dict]]) -> dict[str, str]:
-    """config_id -> the reference it is scored against that it wrote itself (its manifest's
-    `authored_by`): that row is graded against its own outputs. A judged run is scored by its
-    judges, whatever reference its source run was measured against, so it is never marked."""
-    authors: dict[str, object] = {}
-    out: dict[str, str] = {}
-    for config_id, runs in by_config.items():
-        for r in runs:
-            ref = ((r.get("fingerprint") or {}).get("data") or {}).get("reference_id")
-            if not ref or derived_with(r, "judge"):
-                continue
-            if ref not in authors:
-                mf = REFERENCES / ref / "manifest.json"
-                authors[ref] = system_now(read_json(mf).get("authored_by")) if _store.is_file(mf) else None
-            if authors[ref] == config_id:
-                out[config_id] = ref
-    return out
-
-
 def _metric_kinds(by_config: dict[str, list[dict]]) -> dict[str, str]:
     """{metric: kind} for these runs: what they recorded, overridden by what their adapters
     declare today; a disagreement no adapter settles is printed as a warning."""
@@ -606,12 +585,17 @@ def main() -> int:
     ap.add_argument("--match", help="only arms whose config_id contains this substring")
     ap.add_argument(
         "--label",
-        default="",
-        help='the arms read under this label: "" (default) the runs\' own scores; "silver", "repeats", "linux", '
-        '"judged/<scorer>", "rescored <scorer>" ... (evh runs-list names those present)',
+        default=None,
+        help='only the arms read under this label: "" the runs\' own scores; "silver", "repeats", "linux", '
+        '"judged/<scorer>", "rescored <scorer>" ... (evh runs-list names those present); default: every arm',
     )
-    ap.add_argument("--round", help="only the arms in play in this round of a goal (rN; ADR-0004)")
-    ap.add_argument("--goal", help="the goal --round belongs to, when several goals have one")
+    ap.add_argument(
+        "--round", help="only the arms this round of a goal compared, under their labels (rN; ADR-0004)"
+    )
+    ap.add_argument(
+        "--goal",
+        help="the goal that reads the dataset (default: the one that names it; with --round, the round's goal)",
+    )
     ap.add_argument(
         "--wide",
         action="store_true",
@@ -628,27 +612,100 @@ def main() -> int:
         return _run(args)
 
 
-def _run(args: argparse.Namespace) -> int:
-    # Each run with its directory, so the significance test can reach its predictions.jsonl.
-    # Per-item scores are what make a PAIRED comparison possible, and a comparison that is
-    # not paired throws away the fact that every arm was graded on the same items.
-    found = runs_on(args.dataset_id, label=args.label, match=args.match)
+def _goal_read(args: argparse.Namespace, A) -> tuple[dict | None, set[str] | None]:
+    """(the goal that reads the dataset, the arms it is limited to): `--goal`, else the goal naming the dataset (the
+    first, when several do), else none, when the dataset is read on each arm's own headline; with `--round`, the
+    round's goal and the arms the round compared, under their labels (its evidence)."""
+    goals = A.goals()
     if args.round:
-        from evaluation_harness._rounds import arms_of, resolve  # noqa: PLC0415
+        from evaluation_harness._rounds import resolve  # noqa: PLC0415
+        from evaluation_harness.model import rounds as model_rounds  # noqa: PLC0415
 
-        keep = set(arms_of(resolve(args.round, args.goal)))
-        found = [(d, m) for d, m in found if m["config_id"] in keep]
+        rnd = resolve(args.round, args.goal)
+        goal = next((g for g in goals if g["goal_id"] == rnd["goal"]), None)
+        return goal, set(model_rounds.evidence(rnd["goal"], rnd, A)["arms"])
+    named = [g for g in goals if any(d.get("dataset_id") == args.dataset_id for d in g.get("datasets") or [])]
+    if args.goal:
+        goal = next((g for g in goals if g["goal_id"] == args.goal), None)
+        if goal is None:
+            die(
+                f"no goal {args.goal!r}: one of {', '.join(g['goal_id'] for g in goals) or '(none)'}",
+                "not-found",
+            )
+        if goal not in named:
+            die(f"goal {args.goal} does not name dataset {args.dataset_id!r}", "bad-argument")
+        return goal, None
+    if len(named) > 1:
+        print(
+            f"  NOTE: {len(named)} goals name this dataset; read as {named[0]['goal_id']} "
+            f"(--goal: {', '.join(g['goal_id'] for g in named)})."
+        )
+    return (named[0] if named else None), None
+
+
+def _name(row: dict, label: str | None) -> str:
+    """The arm's name in a table: its system, and the label it is read under unless the table is of that label."""
+    cid = row["arm"].rsplit("/", 1)[-1]
+    return cid if label is not None or not row["read_as"] else f"{cid} · {row['read_as']}"
+
+
+def _runs_of(A, row: dict, dataset: str) -> list:
+    """The arm's runs with their records: the score directories the adapter read it from."""
+    from evaluation_harness.model import runs as model_runs  # noqa: PLC0415
+
+    dirs = getattr(A, "_dirs", None)
+    if callable(dirs):
+        return [(d, m) for d in dirs(row["arm"]) if (m := model_runs.record(d))]
+    return runs_on(dataset, label=row["read_as"], config_id=row["arm"].rsplit("/", 1)[-1])
+
+
+def _run(args: argparse.Namespace) -> int:
+    # The goal view says which arms are in which table, what flags them and which leads; each arm's runs, with their
+    # directories, stay what the significance test reads its per-item scores from (a PAIRED comparison throws away
+    # nothing: every arm was graded on the same items).
+    from evaluation_harness.catalog_adapter import load_catalog_adapter, scores_once  # noqa: PLC0415
+    from evaluation_harness.model import goal_views  # noqa: PLC0415
+
+    ds = args.dataset_id
+    A = scores_once(load_catalog_adapter(None))
+    goal, keep = _goal_read(args, A)
+    by_ds = goal_views.by_dataset(A, {ds})
     # ONE TABLE PER REFERENCE. Runs scored against silver and against gold were averaged into
     # one row and one ranking (0.90 silver beside 0.24 gold, the table labelled silver): two
     # different measurements read as one. Each reference gets its own table and its own tests;
-    # nothing is averaged across them.
-    groups: dict[str | None, list] = {}
-    for d, m in found:
-        groups.setdefault(_reference_of(m), []).append((d, m))
+    # nothing is averaged across them. An arm is read against the reference of its latest run.
+    groups: dict[str, dict] = {}
+    for grp in goal_views.dataset_groups(A, by_ds, ds, goal):
+        rows = [
+            r
+            for r in grp["rows"]
+            if (args.label is None or r["read_as"] == args.label)
+            and (not args.match or args.match in r["arm"].rsplit("/", 1)[-1])
+            and (keep is None or r["arm"] in keep)
+        ]
+        if rows:
+            groups[grp["key"]] = {**grp, "rows": rows}
     if not groups:
-        groups[None] = []
+        arms = (by_ds.get(ds) or {}).get("arms")
+        measure = ((goal or {}).get("success_criteria") or {}).get("primary", {}).get("measure")
+        die(
+            (
+                f"no arm on dataset {ds!r} records {measure}, which goal {goal['goal_id']} reads"
+                if goal and arms and args.label is None and not args.match and keep is None
+                else f"no runs on dataset {ds!r}"
+                + (f" matching {args.match!r}" if args.match else "")
+                + (f" read as {args.label!r}" if args.label else "")
+                + (f" in round {args.round}" if args.round else "")
+                + ".\n  "
+                + how("evh runs-list", "make runs-list")
+                + "   to see what exists"
+            ),
+            "not-found",
+        )
     rank = {"gold": 0, "silver": 1, "judge": 3}
-    order = sorted(groups, key=lambda r: (rank.get((r or "").split("/")[0].split(" ")[0], 2), r or ""))
+    order = sorted(
+        groups, key=lambda k: (rank.get(k.split("/")[0].split(" ")[0], 2), "" if k == "no reference" else k)
+    )
     if len(order) > 1:
         what = ", ".join(_heading(r) for r in order)
         print(
@@ -656,21 +713,28 @@ def _run(args: argparse.Namespace) -> int:
             "        one table for each, never averaged across them.\n"
         )
     out = []
-    for n, ref in enumerate(order):
+    for n, key in enumerate(order):
         if len(order) > 1:
-            print(("\n" if n else "") + f"=== {_heading(ref)} ===")
-        out.append({"reference": ref, "heading": _heading(ref), **_table(args, groups[ref])})
-    _jsonout.values({"dataset_id": args.dataset_id, "groups": out})
+            print(("\n" if n else "") + f"=== {_heading(key)} ===")
+        out.append(
+            {
+                "reference": None if key == "no reference" else key,
+                "heading": _heading(key),
+                **_table(args, A, groups[key], goal),
+            }
+        )
+    _jsonout.values({"dataset_id": ds, "goal": goal["goal_id"] if goal else None, "groups": out})
     return 0
 
 
-def _judging_summary(found: list) -> None:
+def _judging_summary(found: list, data=None) -> None:
     """The judging pass's own checks (its summary, data/judge-summaries/<judge scorer>@<judging set>.json, named by
     the judged score's key): how far the judges agree, and how much a verdict moves with the order of the
-    outputs (position) and when the same call is repeated (noise). Read them before the ranking."""
+    outputs (position) and when the same call is repeated (noise). Read them before the ranking. `data`: the
+    data directory they are read from (the adapter's), else the project's."""
     seen = set()
     for d, _m in found:
-        f = _common.DATA / "judge-summaries" / f"{d.name}.json"
+        f = (data or _common.DATA) / "judge-summaries" / f"{d.name}.json"
         if f in seen or not _store.is_file(f):
             continue
         seen.add(f)
@@ -697,28 +761,36 @@ def _judging_summary(found: list) -> None:
             )
 
 
-def _reference_of(m: dict) -> str | None:
-    """What a run was scored against: a judge (`judge <scorer>`) for a judged run, whatever its
-    source run's reference; else its reference id, else its tier, else None."""
-    judge = derived_with(m, "judge").get("scorer_id")
-    if judge:
-        return f"judge {judge}"
-    data = (m.get("fingerprint") or {}).get("data") or {}
-    return data.get("reference_id") or m.get("reference_tier") or None
-
-
 def _heading(ref: str | None) -> str:
     if ref and ref.startswith("judge "):
         return f"scored by {ref}"
     return f"scored against {ref or 'no reference'}"
 
 
-def _table(args: argparse.Namespace, found: list) -> dict:
-    """The leaderboard over runs scored against one reference; what it printed, as numbers."""
-    arm_runs = by_arm(found)
-    by_config: dict[str, list[dict]] = {cid: [m for _d, m in rs] for cid, rs in arm_runs.items()}
+def _warn_ambiguous(by_config: dict[str, list[dict]]) -> None:
+    """Say loudly when the runs averaged into one row are not one `--repeat` set: two runs of an arm read against the
+    same reference that nothing says apart (a run another reference scored is not in the row)."""
+    for name, runs in by_config.items():
+        ids = sorted(m["run_id"] for m in runs)
+        if len(ids) > 1 and not is_repeat_set(ids):
+            print(f"  WARNING: {len(ids)} runs claim config_id {name!r} — {', '.join(ids)}.")
+            print(
+                "           They are averaged together below. If they are different "
+                "measurement occasions, give all but one their purpose (repeat, retime, pair) in their run.json."
+            )
 
-    warn_on_ambiguous_runs(args.label, args.dataset_id)
+
+def _table(args: argparse.Namespace, A, group: dict, goal: dict | None) -> dict:
+    """The leaderboard over the arms of one group (the goal view's, scored against one reference); what it printed, as
+    numbers."""
+    view = {_name(r, args.label): r for r in group["rows"]}
+    arm_runs = {n: _runs_of(A, r, args.dataset_id) for n, r in sorted(view.items())}
+    by_config: dict[str, list[dict]] = {n: [m for _d, m in rs] for n, rs in arm_runs.items() if rs}
+    found = [x for n, rs in arm_runs.items() if n in by_config for x in rs]
+    dec = group.get("dec")
+    goal_id = goal["goal_id"] if goal else ""
+
+    _warn_ambiguous(by_config)
     if not by_config:
         die(
             f"no runs on dataset {args.dataset_id!r}"
@@ -754,15 +826,19 @@ def _table(args: argparse.Namespace, found: list) -> dict:
         ),
         None,
     )
+    measure = group.get("measure") if goal else None  # what the goal reads the group on
     sort_key = (
-        args.sort or primary or (quality[0] if quality else (descriptive[0] if descriptive else all_keys[0]))
+        args.sort
+        or (measure if measure in all_keys else None)
+        or primary
+        or (quality[0] if quality else (descriptive[0] if descriptive else all_keys[0]))
     )
     asc = direction(found, sort_key, args.asc, args.desc)
     # SAY SO when the headline metric was picked alphabetically. Runs written before
     # adapters declared PRIMARY_METRIC carry none, so this falls through to whichever
     # quality metric sorts first by name -- for one set of runs here that is `grounding`,
     # an extractiveness measure, silently promoted to the ranking metric.
-    if not args.sort and not primary:
+    if not args.sort and not primary and measure not in all_keys:
         print(
             f"  NOTE: no run declares a primary metric, so {sort_key!r} was chosen by\n"
             f"        sort order, not by meaning. Pass --sort explicitly, or re-run with\n"
@@ -773,7 +849,7 @@ def _table(args: argparse.Namespace, found: list) -> dict:
     # 48 models. The fix is to scope the view, never to delete the older runs. Only an arm
     # present at two versions is a mix; different arms at different versions are not.
     # A round that holds two versions of an arm exists to compare them: no warning there.
-    mixed = {} if args.round else mixed_versions(by_config)
+    mixed = {} if args.round else mixed_versions({r["arm"].rsplit("/", 1)[-1] for r in view.values()})
     if mixed:
         print(
             "  NOTE: this table has more than one version of "
@@ -811,7 +887,7 @@ def _table(args: argparse.Namespace, found: list) -> dict:
     show = [k for k in show if k in all_keys]
     # The text table fits the terminal; the JSON table carries every column in `show`.
     text_cols = _fit_columns(show, rows, kinds, sort_key, args.wide)
-    own = _own_reference(by_config)
+    own = {n: view[n]["reference"] for n in by_config if view[n]["wrote"]}
     w = max(len(r["config_id"]) + (2 if r["config_id"] in own else 0) for r in rows) + 2
     print(f"dataset: {args.dataset_id}   ranked by: {sort_key} ({'lower' if asc else 'higher'} is better)\n")
     if not _jsonout.table(
@@ -837,6 +913,24 @@ def _table(args: argparse.Namespace, found: list) -> dict:
                 )
                 + "\n  All of them: --wide, or --json."
             )
+    if dec:
+        nm = {r["arm"]: n for n, r in view.items()}
+        lead, rec = dec["leader"], dec["recommended"]
+        say = lambda a: nm.get(a) or a.rsplit("/", 1)[-1]  # noqa: E731
+        print(
+            "\n"
+            + _wrap(
+                f"goal {goal_id}: leader {say(lead) if lead else 'none'}"
+                + (
+                    f", recommended {say(rec)}"
+                    if rec
+                    else ", shown, not recommended"
+                    if dec.get("shown_only")
+                    else ""
+                ),
+                2,
+            )
+        )
     # A run scored against references for only some of its items: its quality mean is over those.
     partial = {
         cid: (r["reference_coverage"]["items_with_reference"], r["reference_coverage"]["items"])
@@ -864,13 +958,13 @@ def _table(args: argparse.Namespace, found: list) -> dict:
 
     # The arm that wrote the reference is graded against its own outputs: it is listed, but it
     # is not a contender, so the ordering test and the frontier are over the others.
-    contenders = [(d, m) for d, m in found if m["config_id"] not in own]
+    contenders = {n: rs for n, rs in arm_runs.items() if n in by_config and n not in own}
     if own:
         print(
             f"\n  The ordering test and the frontier leave out {', '.join(sorted(own))} (it wrote the reference)."
         )
     raw: list[float] = []
-    matrix = matrix_of(contenders, sort_key, raw=raw)
+    matrix = {n: items for n, rs in contenders.items() if (items := per_item(rs, sort_key, raw=raw))}
     ordering = significance(matrix, sort_key, asc=asc, raw_values=raw) if matrix else None
     frontier = _frontier([r for r in rows if r["config_id"] not in own], sort_key, kinds, asc=asc)
     judged = sorted(
@@ -887,7 +981,7 @@ def _table(args: argparse.Namespace, found: list) -> dict:
             "  A judge's score is only as good as its validation; an unvalidated one is a\n"
             "  trial run, not a measurement."
         )
-        _judging_summary(found)
+        _judging_summary(found, getattr(A, "data_dir", None))
     if any("silver" in r["tiers"] for r in rows):
         print(
             "\n  Scored against SILVER references (consistent, not correct). Good for ranking\n"
@@ -907,15 +1001,24 @@ def _table(args: argparse.Namespace, found: list) -> dict:
         "arms": [
             {
                 "rank": i,
-                "config_id": r["config_id"],
+                "config_id": view[r["config_id"]]["arm"].rsplit("/", 1)[-1],
+                "arm": view[r["config_id"]]["arm"],
                 "n_runs": r["n_runs"],
                 "tier": r["tier"],
+                "flags": view[r["config_id"]]["flags"],
                 "wrote_reference": own.get(r["config_id"]),
                 "metrics": {k: r[k] for k in show if k in r},
                 "spread": {k: r[f"__spread_{k}"] for k in show if f"__spread_{k}" in r},
             }
             for i, r in enumerate(rows, 1)
         ],
+        "decision": {
+            "goal": goal_id,
+            **{k: dec.get(k) for k in ("leader", "contenders", "recommended")},
+            "shown_only": bool(dec.get("shown_only")),
+        }
+        if dec
+        else None,
         "ordering": ordering,
         "frontier": frontier,
         "mixed_versions": mixed,

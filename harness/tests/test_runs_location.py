@@ -18,6 +18,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from evaluation_harness import _common, _format, catalog_build, validate_tree
 from evaluation_harness._check import check, summary
 from evaluation_harness.init_project import IGNORE
+from evaluation_harness.model import goal_views
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
 import _runstore
@@ -168,7 +169,7 @@ repeat = arm("repeats/x/a_v1", [run("a_v1_T2", "2026-10-31")])
 half = arm("runs/x/b_v1", [run("b_v1_T1", "2026-10-30"), run("b_v1_T2", "2026-10-30")])
 half_re = arm("rescored-current/x/b_v1", [run("b_v1_T1", "2026-10-31", "rescore", "b_v1_T1")])
 by_ds = {"x": {"arms": [measured, rescored, later, silver, repeat, half, half_re]}}
-catalog_build._mark_superseded(by_ds)
+goal_views._mark_superseded(by_ds)
 check(
     "supersede: the measured run gives way to its latest re-score",
     measured.get("superseded_by") == later["arm"],

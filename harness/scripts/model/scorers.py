@@ -147,6 +147,14 @@ def verdicts_dir(scorer_id: str, data: Path | None = None) -> Path:
     return _data(data) / "judge-verdicts" / scorer_id
 
 
+def verdict_files(data: Path | None = None) -> list[tuple[str, str, str, Path]]:
+    """Every stored verdict of every judge scorer, as (scorer, judging set, judge, its file), sorted."""
+    root = _data(data) / "judge-verdicts"
+    if not _store.is_dir(root):
+        return []
+    return [(f.parts[-4], f.parts[-3], f.parts[-2], f) for f in sorted(_store.glob(root, "*/*/*/*.json"))]
+
+
 def summary_file(scorer_id: str, set_id: str, data: Path | None = None) -> Path:
     """What the scorer's pass over a judging set summarised."""
     return _data(data) / "judge-summaries" / f"{scorer_id}@{set_id}.json"

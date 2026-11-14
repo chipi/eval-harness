@@ -997,6 +997,15 @@ def test_example_scorer_suites_pass() -> None:
             "runs and scores: format 3's folders migrated to one runs/ collection, every record read back as it was, a copy kept once, refusals",
         ),
         (
+            "test_goal_views.py",
+            "the goal's decision, made once: one leader rule for rounds and goals, the leader against the baseline corrected, goal-leaderboard",
+        ),
+        (
+            "test_model_data_root.py",
+            "the model's runs, rounds and goals take a data root, one listing per entity: a copy of a project's data gives the project's evidence, status and listings",
+        ),
+        ("test_promote_hold.py", "a round's leader held for a test with no p says so, never crashes"),
+        (
             "test_model_rounds.py",
             "rounds store their arms: format 4's rounds migrated, each arm's label, runs, entry and retirement, a baseline's round, refusals",
         ),

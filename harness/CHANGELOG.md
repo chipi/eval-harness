@@ -392,6 +392,16 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Changed
 
+- **A goal's decision is made once** (RFC-032 step 8): the answers, groups, leader, contenders and axes a goal page,
+  `evh goals`, the overview and `evh leaderboard` show come from one view in the model, also served as `evh
+  goal-leaderboard` (`GET /api/v1/goals/{goal}/leaderboard`); a round's leader follows the goal's rule (never an arm
+  with too few items, the wrong format, or one that wrote its reference). The overview's test of the leader against
+  the baseline is corrected for the arms the leader was chosen from, as a round's is (it was not); the goal page's
+  note on the recommended arm says it is one comparison. `evh leaderboard` shows the goal's arms and groups, every
+  label by default (`--label ""` the plain runs), and `--round` the arms the round compared under their labels (it
+  showed the in-play systems' plain runs). The model's runs, rounds and goal status read any data directory, so the
+  catalog shows a round's evidence from a copy too; one listing per entity (captures, references, label coverage,
+  picks, tags, judge spend, rounds, runs). Fixed: a round's hold reason crashed on a test with no p.
 - **Judging spend is counted** (RFC-032 step 7): `evh cost-report` ends with what judging cost, per scorer, judging set
   and judge, read from the verdicts' own `cost_usd` (`billed` where the provider reported it, `estimated` where the
   scorer's price table priced it; this repository's 3,280 verdicts: $13.50), the dataset filter applied through each

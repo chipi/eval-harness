@@ -47,8 +47,11 @@ HERE = Path(__file__).resolve().parent
 
 from evaluation_harness import (  # noqa: E402
     _common,
+    _label_sets,
     _outputs,
+    _picks,
     _store,
+    _tags,
 )
 from evaluation_harness._common import (  # noqa: E402
     BOOKKEEPING_PREFIXES,
@@ -59,12 +62,15 @@ from evaluation_harness._common import (  # noqa: E402
 )
 from evaluation_harness._fields import fieldset_problems, load_fieldset  # noqa: E402 -- part of the adapter contract
 from evaluation_harness._fingerprint import items_digest  # noqa: E402
-from evaluation_harness._label_sets import compare, label_line  # noqa: E402
 from evaluation_harness._record import derived_with  # noqa: E402
 from evaluation_harness._runs import item_rows, lower_is_better_on, read_metrics, score_of  # noqa: E402
+from evaluation_harness.model import dataset_views as model_dataset_views  # noqa: E402
 from evaluation_harness.model import datasets as model_datasets  # noqa: E402
+from evaluation_harness.model import goals as model_goals  # noqa: E402
 from evaluation_harness.model import runs as model_runs  # noqa: E402
+from evaluation_harness.model import spend as model_spend  # noqa: E402
 from evaluation_harness.model.entity import Problem  # noqa: E402
+from evaluation_harness.model.spend import number, token_total  # noqa: E402
 
 
 def _memo(fn):
@@ -345,16 +351,6 @@ def measured(m: dict, first: bool) -> tuple[bool, str]:
     return True, made
 
 
-def _number(v) -> float | None:
-    return float(v) if isinstance(v, (int, float)) and not isinstance(v, bool) else None
-
-
-def _tokens(tin, tout) -> int | None:
-    """Tokens in plus out, or None when neither was reported (unknown is not 0)."""
-    vals = [_number(x) for x in (tin, tout)]
-    return int(sum(x for x in vals if x is not None)) if any(x is not None for x in vals) else None
-
-
 def _json(p: Path | None):
     if p is None:
         return None
@@ -400,17 +396,15 @@ class HarnessAdapter:
 
     def captures(self) -> list[dict]:
         """Every capture in the data tree, as `evh captures` lists them (RFC-019): the Captures page reads these."""
-        from evaluation_harness.view_captures import listing  # noqa: PLC0415
-
-        return listing(self.data_dir)
+        return model_dataset_views.capture_views(self.data_dir, check_format=False)
 
     def __init__(self, data_dir: Path | None = None, runs_root: Path | None = None):
         self.data_dir = Path(data_dir or _common.DATA)
         # The project's goals (EVAL_GOALS_DIR when set) unless a data directory is named.
-        self.goals_dir = _common.GOALS if data_dir is None else self.data_dir / "goals"
+        self.goals_dir = _common.GOALS if data_dir is None else model_goals.GOAL.under(self.data_dir).base()
         # Where the runs are read from: the data directory's runs, or another directory of runs beside the project's
         # references and goals (evh score-preview reads re-scores it made in a temporary directory, RFC-022).
-        self.runs_root = Path(runs_root) if runs_root else self.data_dir / "runs"
+        self.runs_root = Path(runs_root) if runs_root else model_runs.root(data=self.data_dir)
 
     # The dataset-family files are read through model/datasets, under this adapter's data directory (the project's,
     # or another, as the release's copy); a tree of another format is read as it is (the catalog reads copies).
@@ -421,30 +415,9 @@ class HarnessAdapter:
     def _labels_file(self, set_id: str) -> Path | None:
         """A label set's labels.json, None for an id that names none (a run's reference id is read as it was written)."""
         try:
-            return model_datasets.label_set_dir(set_id, self.data_dir) / "labels.json"
+            return model_datasets.LABEL_SET.under(self.data_dir).path(set_id)
         except Problem:
             return None
-
-    def _label_files(self) -> list[Path]:
-        """Every label set's labels.json, sorted by set."""
-        ent = model_datasets.LABEL_SET.under(self.data_dir)
-        return sorted(ent.path(i) for i in ent.ids(check_format=False))
-
-    def _tag_files(self, dataset: str) -> list[Path]:
-        """The dataset's tag sets' tags.json, sorted by set."""
-        ent = model_datasets.TAG_SET.under(self.data_dir)
-        return [ent.path(i) for i in ent.ids(check_format=False) if i.split("/", 1)[0] == dataset]
-
-    def _reference_dirs(self) -> list[tuple[str, Path]]:
-        """(tier, folder) of every reference of the two tiers, gold first, each sorted by name."""
-        ent = model_datasets.REFERENCE.under(self.data_dir)
-        ids = ent.ids(check_format=False)
-        return [
-            (tier, ent.path(i).parent)
-            for tier in ("gold", "silver")
-            for i in ids
-            if i.split("/", 1)[0] == tier
-        ]
 
     def _capture_ids(self) -> tuple[Path, list[str]]:
         """The captures' folder and the captures in it."""
@@ -458,11 +431,7 @@ class HarnessAdapter:
         its system (model.runs.arm_id). A run git ignores is not read: the local catalog shows what a clone, CI and the
         published one show, never runs that exist on this disk only. Outside a git checkout every run is read."""
         out: dict[str, list[Path]] = {}
-        runs = (
-            sorted(p for p in _store.iterdir(self.runs_root) if _store.is_file(p / model_runs.RUN))
-            if _store.is_dir(self.runs_root)
-            else []
-        )
+        runs = [self.runs_root / rid for rid in model_runs.run_ids(base=self.runs_root)]
         skipped = _ignored_runs([r / model_runs.RUN for r in runs])
         refs: dict[Path, str] = {}
         made: dict[Path, str] = {}
@@ -762,24 +731,25 @@ class HarnessAdapter:
         the set's manifest.json says (reference-promote and reference-manifest write one): author,
         from_run, model, created_at, items, caveat, and "fetched" (its texts are not here: a
         reference the project does not redistribute, listed from its manifest)."""
+        ent = model_datasets.REFERENCE.under(self.data_dir)
+        ids = ent.ids(check_format=False)
         out = []
-        for tier, d in self._reference_dirs():
-            texts = _store.is_dir(d) and any(_store.glob(d, "*.txt"))
-            if _store.is_dir(d) and (texts or _store.is_file(d / "manifest.json")):
-                mf = _json(d / "manifest.json") or {}
+        for tier in ("gold", "silver"):
+            for rid in (i for i in ids if i.split("/", 1)[0] == tier):
+                mf = _json(ent.path(rid)) or {}
                 out.append(
                     {
-                        "id": f"{tier}/{d.name}",
+                        "id": rid,
                         "tier": tier,
                         # The manifest names the dataset; the directory names the reference
                         # (a second gold for one dataset has a name of its own).
-                        "dataset": mf.get("dataset_id") or d.name,
+                        "dataset": mf.get("dataset_id") or rid.split("/", 1)[1],
                         "task": "",
                         "archived": False,
                         "format": "",
-                        "dir": d,
-                        "items": len(list(_store.glob(d, "*.txt"))) if texts else mf.get("n_items"),
-                        "fetched": not texts,
+                        "dir": model_datasets.reference_dir(rid, self.data_dir),
+                        "items": model_datasets.reference_items(mf),
+                        "fetched": not model_datasets.has_reference_texts(rid, self.data_dir),
                         "source": mf.get("source"),
                         "author": _common.system_now(mf.get("authored_by")),
                         "from_run": (mf.get("from_run") or {}).get("run_id"),
@@ -829,145 +799,54 @@ class HarnessAdapter:
     def tag_counts(self, dataset: str, arm: str) -> dict | None:
         """The failure modes tagged on this arm's outputs on `dataset` (PLAN_0.8.0 D1), every tag set summed:
         {"outputs": read, "tagged": with a failure, "modes": {mode: n}}; None when nothing of it was tagged."""
-        from collections import Counter  # noqa: PLC0415
-
-        runs = {self._run_id(d) for d in self._dirs(arm)}
-        outputs = tagged = 0
-        modes: Counter = Counter()
-        for tf in self._tag_files(dataset):
-            doc = _json(tf)
-            for run, by_item in ((doc or {}).get("runs") or {}).items() if isinstance(doc, dict) else []:
-                if run not in runs:
-                    continue
-                for t in by_item.values():
-                    outputs += 1
-                    tagged += bool(t.get("modes"))
-                    modes.update(t.get("modes") or [])
-        return {"outputs": outputs, "tagged": tagged, "modes": dict(modes.most_common())} if outputs else None
+        runs = {self._run_id(d): arm for d in self._dirs(arm)}
+        got = _tags.counts(dataset, runs, self.data_dir).get(arm)
+        if not got or not got["outputs"]:
+            return None
+        return {"outputs": got["outputs"], "tagged": got["tagged"], "modes": got["modes"]}
 
     def label_sets(self) -> list[dict]:
         """Every label set (RFC-023): {dataset, set, id ("<dataset>/<set>"), source, n_items, guideline, created_at,
         items {item: {"item_sha256"}}}, from data/labels/<dataset>/<set>/labels.json; [] when there are none."""
         out = []
-        for lf in self._label_files():
-            doc = _json(lf)
-            if isinstance(doc, dict):
-                out.append(
-                    {
-                        "dataset": str(doc.get("dataset_id") or lf.parent.parent.name),
-                        "set": str(doc.get("set") or lf.parent.name),
-                        "id": f"{lf.parent.parent.name}/{lf.parent.name}",
-                        "source": doc.get("source") or {},
-                        "n_items": doc.get("n_items") or len(doc.get("items") or {}),
-                        "guideline": doc.get("guideline"),
-                        "created_at": doc.get("created_at"),
-                        "items": doc.get("items") or {},
-                        "dir": lf.parent,
-                    }
-                )
+        for doc in _label_sets.sets(self.data_dir):
+            d = Path(doc["_dir"])
+            out.append(
+                {
+                    "dataset": str(doc.get("dataset_id") or d.parent.name),
+                    "set": str(doc.get("set") or d.name),
+                    "id": f"{d.parent.name}/{d.name}",
+                    "source": doc.get("source") or {},
+                    "n_items": doc.get("n_items") or len(doc.get("items") or {}),
+                    "guideline": doc.get("guideline"),
+                    "created_at": doc.get("created_at"),
+                    "items": doc.get("items") or {},
+                    "dir": d,
+                }
+            )
         return out
 
     def label_coverage(self, dataset: str) -> dict:
         """{"sets": [{set..., "covers": [item ids]}], "agreement": [{"a", "b", **_label_sets.compare(...)}]}: the label
         sets covering this dataset's items, matched by the item's sha256 (labels follow the item), and how two compare
-        on the items both label (where the label texts are here; a release keeps only labels.json)."""
-        ds = _json(self._dataset_file(dataset)) or {}
-        by_sha: dict = {}
-        sha_of: dict = {}
-        for it in ds.get("items") or [] if isinstance(ds, dict) else []:
-            if it.get("source_sha256"):
-                by_sha.setdefault(it["source_sha256"], []).append(it["item_id"])
-                sha_of[it["item_id"]] = it["source_sha256"]
-        sets, texts = [], {}
-        for ls in self.label_sets():
-            covers: dict = {}
-            for iid, row in ls["items"].items():
-                for mine in self._label_targets(ls, dataset, iid, row, by_sha, sha_of):
-                    t = ls["dir"] / f"{iid}.txt"
-                    covers[mine] = (
-                        _store.read_text(t, encoding="utf-8").strip() if _store.is_file(t) else None
-                    )
-            if covers:
-                sets.append(
-                    {**{k: v for k, v in ls.items() if k not in ("items", "dir")}, "covers": sorted(covers)}
-                )
-                texts[ls["id"]] = covers
-        agreement = []
-        ids = sorted(texts)
-        for i, a in enumerate(ids):
-            for b in ids[i + 1 :]:
-                both = [
-                    x
-                    for x in texts[a]
-                    if x in texts[b] and texts[a][x] is not None and texts[b][x] is not None
-                ]
-                if both:
-                    agreement.append({"a": a, "b": b, **compare([(texts[a][x], texts[b][x]) for x in both])})
-        return {"sets": sets, "agreement": agreement}
-
-    def _label_targets(self, ls: dict, dataset: str, iid: str, row: Any, by_sha: dict, sha_of: dict) -> list:
-        """The items of `dataset` a set's label of `iid` labels, as _label_sets.labels_for decides: by id on the set's
-        own dataset; by the item's sha256 on another, unless two of the set's items share it with labels that differ
-        or cannot be read here (ambiguous: none)."""
-        sha = (row or {}).get("item_sha256") or ""
-        if ls["dataset"] == dataset:
-            return [iid] if sha and sha_of.get(iid) == sha else []
-        twins = [k for k, r in ls["items"].items() if (r or {}).get("item_sha256") == sha]
-        if len(twins) > 1:
-            seen = set()
-            for k in twins:
-                t = ls["dir"] / f"{k}.txt"
-                seen.add(_store.read_text(t, encoding="utf-8").strip() if _store.is_file(t) else None)
-            if len(seen) != 1 or None in seen:
-                return []
-        return by_sha.get(sha, [])
+        on the items both label (where the label texts are here; a release keeps only labels.json). One decision with
+        `evh labels` (_label_sets.coverage, agreement)."""
+        by_key = {(ls["dataset"], ls["set"]): ls for ls in self.label_sets()}
+        sets = []
+        for c in _label_sets.coverage(dataset, self.data_dir, texts=False):
+            ls = by_key[(c["dataset_id"], c["set"])]
+            sets.append({**{k: v for k, v in ls.items() if k not in ("items", "dir")}, "covers": c["items"]})
+        return {"sets": sets, "agreement": _label_sets.agreement(dataset, self.data_dir)}
 
     def item_labels(self, dataset: str, item: str) -> list[dict]:
         """Every label one item has (RFC-023): {set ("<dataset>/<set>"), kind, by, text} from each set holding an item
         with its bytes (labels follow the item); the text only where it is here (a release keeps labels.json only)."""
-        ds = _json(self._dataset_file(dataset)) or {}
-        sha = (
-            next(
-                (it.get("source_sha256") for it in (ds.get("items") or []) if it.get("item_id") == item), None
-            )
-            if isinstance(ds, dict)
-            else None
-        )
-        out = []
-        for ls in self.label_sets() if sha else []:
-            for iid, row in ls["items"].items():
-                if item in self._label_targets(ls, dataset, iid, row, {sha: [item]}, {item: sha}):
-                    t = ls["dir"] / f"{iid}.txt"
-                    src = ls.get("source") or {}
-                    out.append(
-                        {
-                            "set": ls["id"],
-                            "kind": src.get("kind", ""),
-                            "by": src.get("by") or src.get("config_id") or src.get("capture") or "",
-                            "text": label_line(_store.read_text(t, encoding="utf-8"))
-                            if _store.is_file(t)
-                            else None,
-                            "note": (row or {}).get("note") or "",
-                        }
-                    )
-        return out
+        return _label_sets.item_labels(dataset, item, self.data_dir)
 
     def picks_waiting(self, dataset: str) -> list[dict]:
         """The picks waiting for this dataset (data/picks.jsonl, ADR-0023): the items whose latest line is a pick
         naming it as a target. A release does not carry the pick list, so a published catalog shows none."""
-        f = model_datasets.picks_file(self.data_dir)
-        latest: dict = {}
-        for line in _store.read_text(f, encoding="utf-8").splitlines() if _store.is_file(f) else []:
-            try:
-                r = json.loads(line) if line.strip() else None
-            except ValueError:
-                continue
-            if isinstance(r, dict):
-                latest[(r.get("from"), r.get("item"))] = r
-        return sorted(
-            (r for r in latest.values() if r.get("action") == "pick" and dataset in (r.get("for") or [])),
-            key=lambda r: (str(r.get("from")), str(r.get("item"))),
-        )
+        return _picks.waiting(dataset, data=self.data_dir, strict=False)
 
     @_memo
     def metric_descriptions(self) -> dict[str, str]:
@@ -1033,7 +912,7 @@ class HarnessAdapter:
     def reference_view(self, ref: str, item: str) -> dict:
         """Return one reference's text for one item."""
         r = next((x for x in self.references() if x["id"] == ref), None)
-        f = r["dir"] / f"{item}.txt" if r and _plain_name(item) else None
+        f = model_datasets.reference_text_file(ref, item, self.data_dir) if r and _plain_name(item) else None
         if f and _store.is_file(f):
             return {"kind": "text", "text": _store.read_text(f, encoding="utf-8", errors="replace")}
         return {"kind": "none"}
@@ -1117,30 +996,12 @@ class HarnessAdapter:
         """Eval rounds (ADR-0004, optional): each round's record, plus "arms" (the arm ids in play, as the round
         stores them, those the index has), "arm_records" (the arms as stored) and "retired_arms" (the arm ids it
         retired, and every other arm a retired arm's runs are scored in: a re-score of a retired run is retired
-        with it)."""
-        import yaml  # noqa: PLC0415
+        with it); model.rounds.listing."""
         from evaluation_harness.model import rounds as model_rounds  # noqa: PLC0415
 
-        out = []
-        base = self.data_dir / "rounds"
-        for f in sorted(_store.glob(base, "*/r*.yaml"), key=lambda p: (p.parent.name, int(p.stem[1:] or 0))):
-            doc = yaml.safe_load(_store.read_text(f, encoding="utf-8")) or {}
-            if not isinstance(doc, dict) or not doc.get("round_id"):
-                continue
-            ds = doc.get("dataset_id", "")
-            gone = {a["system"]: set(a.get("runs") or []) for a in model_rounds.arms(doc) if a.get("retired")}
-            retired = set(model_rounds.retired_ids(doc)) | {
-                arm
-                for arm, dirs in self._index().items()
-                if arm.split("/")[-2:-1] == [ds]
-                and gone.get(arm.rsplit("/", 1)[-1])
-                and any(self._run_id(d) in gone[arm.rsplit("/", 1)[-1]] for d in dirs)
-            }
-            in_play = [a for a in model_rounds.arm_ids(doc) if a in self._index()]
-            out.append(
-                dict(doc, arms=in_play, retired_arms=sorted(retired), arm_records=model_rounds.arms(doc))
-            )
-        return out
+        return model_rounds.listing(
+            self.data_dir, {arm: [self._run_id(d) for d in dirs] for arm, dirs in self._index().items()}
+        )
 
     @_memo
     def baselines(self) -> list[dict]:
@@ -1293,14 +1154,15 @@ class HarnessAdapter:
     def spend(self) -> list[dict]:
         """What was spent and when, in USD and in tokens: every measured run, once, by the score it made when it
         ran (a re-score reads stored outputs and calls nothing), and the judges' calls per judging set and day, from the
-        stored verdicts. Either may be None: a local model bills nothing but still counts tokens
-        when its adapter reports them; an unpriced call has tokens and no USD."""
+        stored verdicts (model.spend: what `evh cost-report` counts; `usd` is what the provider billed, `estimated_usd`
+        what the scorer's price table says of the calls it did not bill). Either may be None: a local model bills
+        nothing but still counts tokens when its adapter reports them; an unpriced call has tokens and no USD."""
         self._index()
         out = []
         for ds, d, m, arm in self._every:
             sc = m.get("scores") or {}
-            usd = _number(sc.get("total_cost_usd"))
-            tokens = _tokens(sc.get("total_tokens_in"), sc.get("total_tokens_out"))
+            usd = number(sc.get("total_cost_usd"))
+            tokens = token_total(sc.get("total_tokens_in"), sc.get("total_tokens_out"))
             first = bool(model_runs.meta(d).get("first"))
             _in_place, at = measured(m, first)
             if not first or (usd is None and tokens is None):
@@ -1316,30 +1178,7 @@ class HarnessAdapter:
                     "arm": arm,
                 }
             )
-        sets = self.data_dir / "judging-sets"
-        days: dict[tuple, list] = {}
-        for f in sorted(_store.glob(self.data_dir / "judge-verdicts", "*/*/*/*.json")):
-            v = _json(f) or {}
-            usd = _number(v.get("cost_usd"))
-            tokens = _tokens(v.get("tokens_in"), v.get("tokens_out"))
-            if usd is None and tokens is None:
-                continue
-            key = ((v.get("created_at") or "")[:10], f.parts[-4], f.parts[-3])
-            acc = days.setdefault(key, [None, None])
-            acc[0] = usd if acc[0] is None else acc[0] + (usd or 0.0)
-            acc[1] = tokens if acc[1] is None else acc[1] + (tokens or 0)
-        for (day, scorer, set_id), (usd, tokens) in sorted(days.items()):
-            ds = (_json(sets / f"{set_id}.json") or {}).get("dataset_id", "")
-            out.append(
-                {
-                    "at": day,
-                    "usd": round(usd, 8) if usd is not None else None,
-                    "tokens": tokens,
-                    "kind": "judge",
-                    "dataset": ds,
-                    "what": scorer,
-                }
-            )
+        out += model_spend.judge_spend(self.data_dir)
         out += smoke_spend(self.models())
         return sorted(out, key=lambda x: x["at"])
 
@@ -1365,9 +1204,9 @@ def smoke_spend(models: list[dict]) -> list[dict]:
     for x in models:
         for config_id, sm in ((x.get("record") or {}).get("smokes") or {}).items():
             rep = (sm or {}).get("report") or {}
-            usd = _number(rep.get("spent_usd"))
+            usd = number(rep.get("spent_usd"))
             if usd is None:
-                usd = sum(_number(i.get("cost_usd")) or 0.0 for i in rep.get("items") or [])
+                usd = sum(number(i.get("cost_usd")) or 0.0 for i in rep.get("items") or [])
             if usd:
                 at = str((sm or {}).get("at") or "")[:10]
                 out.append(

@@ -13,6 +13,8 @@ from __future__ import annotations
 
 import html
 
+from evaluation_harness.model import goal_views as gv
+
 #: Providers that bill per call over the network. An arm is hosted when it runs through one of
 #: these or its system prices tokens; every other provider runs on the machine that ran the arm.
 HOSTED_PROVIDERS = ("litellm", "openai", "anthropic", "openrouter", "together", "groq", "mistral", "gemini")
@@ -71,7 +73,7 @@ def arm_rows(A, by_ds: dict) -> list[dict]:
     roles: dict = {}
     quality: dict = {}
     measure_of: dict = {}
-    for r in cb.glance(A, by_ds):
+    for r in gv.glance(A, by_ds):
         g, dec = r["goal"], r["dec"]
         # A leader is named with how far it is from the rest: the arms its lead over is not significant.
         lead = "leader"
@@ -187,8 +189,6 @@ def system_rows(A, by_ds: dict, rows: list[dict], spend: list[dict]) -> list[dic
     """One row per system across every dataset it ran on: {"system", "model", "provider",
     "family", "datasets", "arms", "usd", "ranks": [(goal, dataset, rank, of)]}. A rank is the
     system's best arm on the goal's deciding measure among the arms the goal's decision weighs."""
-    from evaluation_harness import catalog_build as cb  # noqa: PLC0415
-
     by_cfg: dict = {}
     for r in rows:
         by_cfg.setdefault(r["system"], []).append(r)
@@ -198,15 +198,15 @@ def system_rows(A, by_ds: dict, rows: list[dict], spend: list[dict]) -> list[dic
         if x.get("kind") == "arm" and isinstance(x.get("usd"), (int, float)) and x.get("arm") in arm_cfg:
             usd[arm_cfg[x["arm"]]] = usd.get(arm_cfg[x["arm"]], 0.0) + float(x["usd"])
     ranks: dict = {}
-    for gr in cb.glance(A, by_ds):
+    for gr in gv.glance(A, by_ds):
         dec = gr["dec"]
         if not dec:
             continue
         # One place per system, and no arm a round retired (a re-timing, a second run, a paired side run):
         # a system run twice took two places, so the catalog read "#8 of 33" where the site reads "5th of 30".
-        retired_in = cb.retired_in_of(A, gr["goal"])
+        retired_in = gv.retired_in_of(A, gr["goal"])
         vals = {
-            a: dec["rows"][a]["quality"]["value"] for a in dec["rows"] if not cb.retired_round(retired_in, a)
+            a: dec["rows"][a]["quality"]["value"] for a in dec["rows"] if not gv.retired_round(retired_in, a)
         }
         ordered = sorted(
             (a for a in vals if vals[a] is not None), key=lambda a: vals[a], reverse=not gr["lower"]
@@ -467,7 +467,7 @@ def render_arms(A, by_ds: dict, out, nav: list, rows: list[dict] | None = None) 
     # Each goal's arms on its trade-off charts, one goal at a time (the select picks).
     charts: list = []
     options: list = []
-    for gr in cb.glance(A, by_ds):
+    for gr in gv.glance(A, by_ds):
         if not gr["dec"]:
             continue
         svg = cb.tradeoff_charts(gr["dec"], labels, gr["measure"])

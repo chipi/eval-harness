@@ -46,20 +46,19 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
 import argparse
-import json
 import re
 import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 
-from evaluation_harness import _common, _jsonout, _runs, _store  # noqa: E402
+from evaluation_harness import _jsonout, _runs  # noqa: E402
 from evaluation_harness._common import (  # noqa: E402
     die,
     evh_prog,
 )
 from evaluation_harness._runs import runs_on  # noqa: E402
-from evaluation_harness.model import scorers as _scorers  # noqa: E402
+from evaluation_harness.model.spend import judge_costs  # noqa: E402
 
 
 def billed_and_recorded(run_dir: Path) -> tuple[float, float, int, int]:
@@ -74,56 +73,6 @@ def billed_and_recorded(run_dir: Path) -> tuple[float, float, int, int]:
             with_bill += 1
             billed += float(b)
     return billed, recorded, with_bill, total
-
-
-def _json_of(path: Path) -> dict:
-    try:
-        doc = json.loads(_store.read_text(path, encoding="utf-8"))
-    except (OSError, ValueError):
-        return {}
-    return doc if isinstance(doc, dict) else {}
-
-
-def judge_costs(dataset_id: str | None = None) -> list[dict]:
-    """What judging cost, from the stored verdicts: one row per scorer, judging set and judge, sorted,
-    {scorer, set, dataset, judge, verdicts, billed, estimated, estimated_verdicts}. A verdict whose provider reported
-    no cost is counted at the scorer's price table (`cost_known` false): that is `estimated`, never added to `billed`.
-    With `dataset_id`, only the judging sets of that dataset (a set names its dataset); a set no longer on disk has no
-    dataset, so only an unfiltered report counts its verdicts."""
-    root = _common.DATA / "judge-verdicts"
-    datasets: dict[str, str] = {}
-    rows: dict[tuple[str, str, str], dict] = {}
-    for f in sorted(_store.glob(root, "*/*/*/*.json")) if _store.is_dir(root) else []:
-        scorer, set_id, judge = f.parts[-4:-1]
-        if set_id not in datasets:
-            datasets[set_id] = str(_json_of(_scorers.judging_set_file(set_id)).get("dataset_id") or "")
-        if dataset_id and datasets[set_id] != dataset_id:
-            continue
-        v = _json_of(f)
-        row = rows.setdefault(
-            (scorer, set_id, judge),
-            {
-                "scorer": scorer,
-                "set": set_id,
-                "dataset": datasets[set_id],
-                "judge": judge,
-                "verdicts": 0,
-                "billed": 0.0,
-                "estimated": 0.0,
-                "estimated_verdicts": 0,
-            },
-        )
-        row["verdicts"] += 1
-        cost = float(v.get("cost_usd") or 0.0)
-        if v.get("cost_known", True):
-            row["billed"] += cost
-        else:
-            row["estimated"] += cost
-            row["estimated_verdicts"] += 1
-    return [
-        {**r, "billed": round(r["billed"], 8), "estimated": round(r["estimated"], 8)}
-        for _k, r in sorted(rows.items())
-    ]
 
 
 def _print_judging(rows: list[dict]) -> None:

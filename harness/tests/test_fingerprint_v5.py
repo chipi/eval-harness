@@ -983,7 +983,7 @@ finally:
     shutil.rmtree(proj, ignore_errors=True)
 
 # the inspector's speed warning: a deployment that differs, and a runner that differs, say different things
-from evaluation_harness import catalog_serve  # noqa: E402
+from evaluation_harness.model import compare as model_compare  # noqa: E402
 
 
 class _Conds:
@@ -995,8 +995,8 @@ class _Conds:
 
 
 def _warnings(by_arm: dict, metric: str) -> str:
-    catalog_serve.A = _Conds(by_arm)  # type: ignore[assignment]  # a stand-in with only conditions()
-    got = catalog_serve._conditions(["a", "b"], metric) or {}
+    model_compare.A = _Conds(by_arm)  # type: ignore[assignment]  # a stand-in with only conditions()
+    got = model_compare._conditions(["a", "b"], metric) or {}
     return " ".join(got.get("warnings") or [])
 
 

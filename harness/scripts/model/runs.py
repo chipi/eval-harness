@@ -52,14 +52,17 @@ SCORE_KEYS = (
 )
 
 
-def root(scratch: bool = False) -> Path:
-    """data/runs; .build/scratch/runs for a throwaway pass (`evh run --scratch`), which nothing that reads runs sees."""
-    return _common.SCRATCH_RUNS if scratch else _common.RUNS
+def root(scratch: bool = False, data: Path | None = None) -> Path:
+    """data/runs; .build/scratch/runs for a throwaway pass (`evh run --scratch`), which nothing that reads runs sees.
+    `data`: another data directory than the project's (a deployment's copy of it, which the catalog reads)."""
+    if scratch:
+        return _common.SCRATCH_RUNS
+    return _common.RUNS if data is None or Path(data) == _common.DATA else Path(data) / "runs"
 
 
-def run_dir(run_id: str, scratch: bool = False) -> Path:
+def run_dir(run_id: str, scratch: bool = False, data: Path | None = None) -> Path:
     """A run's directory."""
-    return root(scratch) / run_id
+    return root(scratch, data) / run_id
 
 
 def is_score(d: Path) -> bool:
@@ -108,9 +111,9 @@ def _json(path: Path) -> dict[str, Any] | None:
     return v if isinstance(v, dict) else None
 
 
-def run(run_id_or_dir: str | Path) -> dict[str, Any] | None:
+def run(run_id_or_dir: str | Path, data: Path | None = None) -> dict[str, Any] | None:
     """A run's run.json, or None."""
-    d = run_id_or_dir if isinstance(run_id_or_dir, Path) else run_dir(run_id_or_dir)
+    d = run_id_or_dir if isinstance(run_id_or_dir, Path) else run_dir(run_id_or_dir, data=data)
     return _json(Path(d) / RUN)
 
 
@@ -154,17 +157,18 @@ def arm_id(score_dir: Path, rec: dict[str, Any] | None = None) -> str:
     return f"{arm_prefix(label(score_dir, rec))}/{rec.get('dataset_id')}/{rec.get('config_id')}"
 
 
-def run_ids() -> list[str]:
-    """Every run's id, sorted."""
-    base = root()
+def run_ids(data: Path | None = None, base: Path | None = None) -> list[str]:
+    """Every run's id, sorted. `base`: a directory of runs beside the project's data (`evh score-preview` reads the
+    re-scores it made in a temporary one)."""
+    base = Path(base) if base else root(data=data)
     if not _store.is_dir(base):
         return []
     return sorted(d.name for d in _store.iterdir(base) if _store.is_file(d / RUN))
 
 
-def scores_of(run_id_or_dir: str | Path) -> list[Path]:
+def scores_of(run_id_or_dir: str | Path, data: Path | None = None) -> list[Path]:
     """A run's score directories, sorted by key."""
-    d = run_id_or_dir if isinstance(run_id_or_dir, Path) else run_dir(run_id_or_dir)
+    d = run_id_or_dir if isinstance(run_id_or_dir, Path) else run_dir(run_id_or_dir, data=data)
     base = Path(d) / "scores"
     if not _store.is_dir(base):
         return []
@@ -177,12 +181,14 @@ def scored(
     label_is: str | None = "",
     system_id: str | None = None,
     match: str | None = None,
+    data: Path | None = None,
 ) -> list[tuple[Path, dict[str, Any]]]:
     """Every score with its record, by run id then key: optionally on one dataset, read under one label (`""`: the
-    arm a plain run's first score is read in; None: any), of one system or of systems whose id contains `match`."""
+    arm a plain run's first score is read in; None: any), of one system or of systems whose id contains `match`, from
+    the project's runs or another data directory's."""
     out = []
-    for rid in run_ids():
-        for sd in scores_of(rid):
+    for rid in run_ids(data):
+        for sd in scores_of(rid, data):
             rec = record(sd)
             if rec is None or not rec.get("config_id"):
                 continue
@@ -198,15 +204,15 @@ def scored(
     return out
 
 
-def labels() -> list[str]:
+def labels(data: Path | None = None) -> list[str]:
     """Every label a score is read under, "" (plain runs) first."""
-    seen = {label(sd, rec) for sd, rec in scored(label_is=None)}
+    seen = {label(sd, rec) for sd, rec in scored(label_is=None, data=data)}
     return sorted(seen, key=lambda x: (x != "", x))
 
 
-def first_score(run_id_or_dir: str | Path) -> Path | None:
+def first_score(run_id_or_dir: str | Path, data: Path | None = None) -> Path | None:
     """The score a run made when it ran (its score.json says `first`), else None."""
-    for sd in scores_of(run_id_or_dir):
+    for sd in scores_of(run_id_or_dir, data):
         if meta(sd).get("first"):
             return sd
     return None
@@ -264,6 +270,6 @@ def write_run(run_id: str, rec: dict[str, Any], scratch: bool = False) -> Path:
     return d
 
 
-def iter_records() -> Iterator[tuple[Path, dict[str, Any]]]:
+def iter_records(data: Path | None = None) -> Iterator[tuple[Path, dict[str, Any]]]:
     """Every score with its record, any label (for checks that read them all)."""
-    yield from scored(label_is=None)
+    yield from scored(label_is=None, data=data)

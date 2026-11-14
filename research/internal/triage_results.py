@@ -15,6 +15,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parents[1] / "harness"))
 from evaluation_harness import catalog_build as cb  # noqa: E402
+from evaluation_harness.model import goal_views as gv  # noqa: E402
 from evaluation_harness.axes import axis_title  # noqa: E402
 from evaluation_harness.catalog_adapter import load_catalog_adapter  # noqa: E402
 
@@ -58,27 +59,27 @@ def table() -> str:
     A = load_catalog_adapter(None)
     by_ds = cb.collect(A)
     goal = next(g for g in A.goals() if g["goal_id"] == GOAL)
-    ans = next(x for x in cb.goal_answers(goal, by_ds) if x["dataset"] == DATASET)
+    ans = next(x for x in gv.goal_answers(goal, by_ds) if x["dataset"] == DATASET)
     grp = next(g for g in ans["groups"] if g["key"].startswith("gold/"))
     rows = grp["rows"]
     # In or out as the goal's own decision says (its limits, whatever they are), never re-derived here.
     tiers = {r["id"]: r["tier"] for r in (by_ds.get(DATASET) or {}).get("refs", [])}
-    retired_in = cb.retired_in_of(A, goal)
-    dec = cb.group_decision(
+    retired_in = gv.retired_in_of(A, goal)
+    dec = gv.group_decision(
         A,
         goal,
         DATASET,
         rows,
         rows[0].get("measure") or "",
         retired_in,
-        cb.gold_beside(tiers, ans["groups"], grp["key"]),
+        gv.gold_beside(tiers, ans["groups"], grp["key"]),
     )
 
     # An arm a round retired (re-run as _v2 with its model set up) is listed last and says so: as one more row it
     # read as a result beside the re-run that replaced it (round 3, 2026-11-01). The rounds' retired arms, as the
     # catalog reads them.
     def retired(r: dict) -> str:
-        return cb.retired_round(retired_in, r["arm"]) or ""
+        return gv.retired_round(retired_in, r["arm"]) or ""
 
     live = [r for r in rows if not retired(r)]
     ok = [r for r in live if r["arm"] not in dec["out"]]

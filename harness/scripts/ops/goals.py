@@ -22,6 +22,8 @@ OPS = (
        "evaluation_harness.ops.goals:show", "evaluation_harness.ops.goals:say_record"),
     Op("goal-status", "read", "where a goal stands: its datasets, reference, runs, baseline, rounds, what runs now, and the next step",
        "GET", "/goals/{goal}/status", "evaluation_harness.ops.goals:status", "evaluation_harness.ops.goals:say_status"),
+    Op("goal-leaderboard", "read", "where each arm of a goal stands on each of its datasets, per reference scored against: its means on the goal's axes, flags and tests, the leader, the contenders, the recommended arm and the baseline",
+       "GET", "/goals/{goal}/leaderboard", "evaluation_harness.ops.goals:leaderboard", "evaluation_harness.ops.goals:say_leaderboard"),
     Op("goal-history", "read", "a goal's saves, newest first: when, by whom, what it was", "GET", "/goals/{goal}/history",
        "evaluation_harness.ops.goals:history", "evaluation_harness.ops.goals:say_history"),
     Op("goal-new", "edit", "make a goal, checked against its schema and the datasets and references it names", "POST",
@@ -62,6 +64,17 @@ def status(goal: str) -> dict[str, Any]:
     from evaluation_harness.model import goals  # noqa: PLC0415
 
     return goals.status(goal)
+
+
+def leaderboard(goal: str) -> dict[str, Any]:
+    """The goal's decision on each of its datasets (the model's view: what the goal page and `evh goals` show), read
+    with the adapter the server serves when one is set."""
+    from evaluation_harness import catalog_serve  # noqa: PLC0415
+    from evaluation_harness.catalog_adapter import load_catalog_adapter, scores_once  # noqa: PLC0415
+    from evaluation_harness.model import goal_views  # noqa: PLC0415
+
+    A = getattr(catalog_serve, "A", None) or scores_once(load_catalog_adapter(None))
+    return goal_views.leaderboard(A, goal)
 
 
 def history(goal: str) -> dict[str, Any]:
@@ -132,6 +145,63 @@ def say_status(r: dict[str, Any]) -> str:
     for j in r["running"]:
         lines.append(f"  running     {j['command']} ({j['state']}), job {j['job']}")
     lines.append(f"  next        {r['next']['what']}: {r['next']['command']}")
+    return "\n".join(lines)
+
+
+def _p(p: float | None) -> str:
+    from evaluation_harness.stats import fmt_p  # noqa: PLC0415
+
+    return "—" if p is None else fmt_p(p)
+
+
+def _d(v: float | None) -> str:
+    return "—" if v is None else f"{v:+.4f}"
+
+
+def say_leaderboard(r: dict[str, Any]) -> str:
+    """goal-leaderboard's answer as text: per dataset and reference, each arm a line, the leader and the recommended
+    arm marked, then what the baseline is and how the leader and the recommended arm stand against it."""
+    lines = [f"{r['goal']}: {r['measure']} ({r['direction']} is better), strategy {r['strategy']}"]
+    for d in r["datasets"]:
+        base = d["baseline"]
+        lines.append(
+            f"\n{d['dataset']} ({d['role'] or 'dataset'}{'' if d['decides'] else ', does not decide'})"
+            + (
+                f": baseline {str(base['arm']).rsplit('/', 1)[-1]}, promoted {str(base['promoted_at'])[:10]}"
+                if base
+                else ""
+            )
+        )
+        for g in d["groups"]:
+            lines.append(f"  scored against {g['scored_against']}, on {g['measure']}")
+            for a in g["arms"]:
+                mark = " ".join(
+                    w
+                    for w, on in (
+                        ("leader", a["leader"]),
+                        ("recommended", a["recommended"]),
+                        ("contender", a["contender"] and not a["leader"]),
+                        ("baseline", a["baseline"]),
+                    )
+                    if on
+                )
+                lines.append(
+                    f"    {a['label']:<44} {a['mean']:.4f}  n {a['n']:<5} {mark}"
+                    + (f"  [{'; '.join(a['flags'])}]" if a["flags"] else "")
+                )
+            t = g["leader_vs_baseline"]
+            if t:
+                fam = (
+                    f", Bonferroni over {t['family']} arms: {_p(t['p_adjusted'])}" if t["family"] > 1 else ""
+                )
+                lines.append(
+                    f"    leader against the baseline: {t['verdict']}, delta {_d(t['delta'])}, p {_p(t['p'])}{fam}"
+                )
+            if gap := g["baseline_gap"]:
+                lines.append(
+                    f"    recommended against the baseline: {gap['verdict']}, delta {_d(gap['delta'])}, "
+                    f"p {_p(gap['p'])} (one comparison, not corrected)"
+                )
     return "\n".join(lines)
 
 

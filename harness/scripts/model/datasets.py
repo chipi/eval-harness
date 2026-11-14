@@ -175,6 +175,25 @@ def reference_dir(reference_id: str, data: Path | None = None) -> Path:
     return REFERENCE.under(data).path(reference_id).parent
 
 
+def reference_items(manifest: dict[str, Any]) -> int:
+    """How many items a reference holds: what its manifest says (`n_items`), else the checksums it lists. The manifest,
+    not the texts in its folder: a reference a project does not redistribute, or a release's copy, keeps no texts."""
+    n = manifest.get("n_items")
+    return n if isinstance(n, int) and not isinstance(n, bool) else len(manifest.get("items_sha256") or {})
+
+
+def reference_text_file(reference_id: str, item_id: str, data: Path | None = None) -> Path:
+    """One item's text in a reference (it is there when the file is)."""
+    return reference_dir(reference_id, data) / f"{item_id}.txt"
+
+
+def has_reference_texts(reference_id: str, data: Path | None = None) -> bool:
+    """Whether the reference's texts are here (a reference fetched by a script, or a release's copy, holds its manifest
+    only)."""
+    d = reference_dir(reference_id, data)
+    return _store.is_dir(d) and any(_store.glob(d, "*.txt"))
+
+
 def references_of(dataset_id: str, data: Path | None = None, check_format: bool = True) -> list[str]:
     """The ids of every reference on the dataset, by the dataset its manifest names (a reference promoted under
     another name, `gold/ag_news_200_adj1`, is the dataset's too); sorted."""

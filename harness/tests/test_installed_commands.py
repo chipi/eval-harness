@@ -448,6 +448,7 @@ def main() -> int:
             ("goal-show", ["no_such_goal"], "no goal 'no_such_goal'"),
             ("goal-status", ["no_such_goal"], "no goal 'no_such_goal'"),
             ("goal-history", ["no_such_goal"], "no goal 'no_such_goal'"),
+            ("goal-leaderboard", ["no_such_goal"], "no goal 'no_such_goal'"),
             ("goal-new", ["no_such_goal"], "goals/no_such_goal.yaml not saved"),
             ("goal-set", ["no_such_goal", "--set", "title=x"], "no goal 'no_such_goal'"),
             # Models and deployments through the model (RFC-032 step 2): the flow is test_model_ops.py.

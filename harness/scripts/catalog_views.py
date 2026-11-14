@@ -60,6 +60,7 @@ from evaluation_harness.axes import (
     tie_break_of,
 )
 from evaluation_harness.catalog_adapter import load_catalog_adapter, scores_once
+from evaluation_harness.model import goal_views as gv
 from evaluation_harness.model import runs as model_runs
 from evaluation_harness.stats import fmt_p
 
@@ -492,9 +493,9 @@ def overview(argv) -> int:
             value = cb.fmt_amount(t["value"], "usd") if t["what"] == "billed" else f"{round(t['value']):,}"
         print(f"  {cb.TILE_LABEL.get(t['what'], t['what']):15} {value:>16}  {line}".rstrip())
     print(
-        "\ngoals at a glance (the leader of the gold group against the baseline, one test, threshold 0.05):"
+        "\ngoals at a glance (the leader of the gold group against the baseline, Bonferroni over the arms it was chosen from, threshold 0.05):"
     )
-    rows = cb.glance(A, by_ds)
+    rows = gv.glance(A, by_ds)
     if rows:
         _table(
             ["goal", "dataset", "decides", "baseline", "leader", "leader vs baseline", "recommended"],
@@ -839,7 +840,7 @@ def arms(argv) -> int:
         )
     rfn = getattr(A, "rounds", None)
     for r in rfn() if callable(rfn) else []:
-        retired = a["arm"] in cb._retired_arms(r)
+        retired = a["arm"] in gv.retired_arms(r)
         if a["arm"] in (r.get("arms") or []) or retired:
             g = goals.get(r.get("goal", ""), {})
             print(
@@ -1073,7 +1074,7 @@ def goals(argv) -> int:
     A, by_ds = _adapter(args)
     gs = A.goals()
     if not args.goal:
-        seen = cb.glance(A, by_ds)
+        seen = gv.glance(A, by_ds)
         rows_p = cb.period_goals(A, by_ds)
         per, line = _period(A, by_ds, rows_p, args.period)
         flows = ("runs", "usd", "events")
@@ -1087,7 +1088,7 @@ def goals(argv) -> int:
                     g["goal_id"],
                     ((g.get("success_criteria") or {}).get("primary") or {}).get("measure", ""),
                     ", ".join(d.get("dataset_id", "") for d in g.get("datasets") or []),
-                    cb.systems_filed(by_ds, g),
+                    gv.systems_filed(by_ds, g),
                     "; ".join(
                         r["recommended_label"]
                         + (f" ({' · '.join(r['vs_baseline'])} vs baseline)" if r["vs_baseline"] else "")
@@ -1124,7 +1125,7 @@ def goals(argv) -> int:
     prim = (g.get("success_criteria") or {}).get("primary") or {}
     rfn = getattr(A, "rounds", None)
     rounds = [r for r in (rfn() if callable(rfn) else []) if r.get("goal") == g["goal_id"]]
-    retired_in = cb.retired_in_of(A, g)
+    retired_in = gv.retired_in_of(A, g)
     print(f"{g.get('title') or g['goal_id']}\n")
     print(textwrap.fill(g.get("statement", ""), width=96))
     print(
@@ -1166,7 +1167,7 @@ def goals(argv) -> int:
         else:
             print(f'  {ds}: no decision yet (evh run-promote --run <run_id> --reason "...")')
     by_group: list = []  # --json: each table's decision as named values
-    for ans in cb.goal_answers(g, by_ds):
+    for ans in gv.decided(A, g, by_ds):
         ds = ans["dataset"]
         tiers = {r["id"]: r["tier"] for r in (by_ds.get(ds) or {}).get("refs", [])}
         print(f"\n{ds}" + (f" · {ans['role']}" if ans["role"] else ""))
@@ -1185,17 +1186,8 @@ def goals(argv) -> int:
             print(f"  no arm records {prim.get('measure', '')}")
         for grp in ans["groups"]:
             what = grp["key"]
-            gm = (grp["rows"][0].get("measure") if grp["rows"] else None) or prim.get("measure", "")
-            dec = cb.group_decision(
-                A,
-                g,
-                ds,
-                grp["rows"],
-                gm,
-                retired_in,
-                cb.gold_beside(tiers, ans["groups"], what),
-            )
-            shown = cb.shown_axes(dec)
+            gm, dec = grp["measure"], grp["dec"]
+            shown = gv.shown_axes(dec)
             leader = dec["leader"]  # the decision's: never a retired or flagged arm
             base_arm = next((r["arm"] for r in grp["rows"] if r.get("baseline")), None)
             # The decision above was made over every arm; the filter only chooses the rows printed.
@@ -1227,8 +1219,8 @@ def goals(argv) -> int:
                         + (" [baseline]" if r.get("baseline") else "")
                         + (" [recommended]" if dec["recommended"] == r["arm"] else "")
                         + (
-                            f" [retired in {cb.retired_round(retired_in, r['arm'])}]"
-                            if cb.retired_round(retired_in, r["arm"])
+                            f" [retired in {gv.retired_round(retired_in, r['arm'])}]"
+                            if gv.retired_round(retired_in, r["arm"])
                             else ""
                         ),
                         _fmt(r["mean"]),
@@ -1264,7 +1256,7 @@ def goals(argv) -> int:
                     axes=shown,
                     baseline=base_arm,
                     hypotheses=hyps,
-                    retired={r["arm"]: cb.retired_round(retired_in, r["arm"]) for r in on_show},
+                    retired={r["arm"]: gv.retired_round(retired_in, r["arm"]) for r in on_show},
                     arms_filter=arm_pats,
                     top=args.top,
                 )

@@ -15,11 +15,11 @@ from __future__ import annotations
 import html
 from datetime import date, timedelta
 
+from evaluation_harness.model.models import deployments_of, status_of
+
 #: A deployment last checked longer ago than this is shown muted: it may no longer be what runs there.
 STALE_DAYS = 30
 
-#: The onboarding status a record's chip and `evh models --status` name, by the status it records.
-STATUS = {"pass": "vetted", "check": "check"}
 STATUS_WORDS = {
     "vetted": "vetted",
     "onboarded": "onboarded, no arm smoked",
@@ -64,26 +64,6 @@ def smoke_of(rec: dict, config_id: str) -> str:
     """The latest arm smoke of a system that names the record: pass, check or none."""
     status = ((rec.get("smokes") or {}).get(config_id) or {}).get("status")
     return str(status) if status in ("pass", "check") else "none"
-
-
-def deployments_of(rec: dict) -> list[dict]:
-    """A record's deployments, skipping any entry that is not a mapping."""
-    return [d for d in rec.get("deployments") or [] if isinstance(d, dict)]
-
-
-def status_of(rec: dict) -> str:
-    """vetted: every deployment's onboarding passed and an arm that names the record passed its smoke (`evh
-    arm-smoke`, on the task's own items); onboarded: the probes passed and no arm has (the probe is one toy
-    question: it registers a model, it does not vet it); check: an onboarding flagged something; none: no
-    onboarding ran. An arm whose smoke flagged something says so on its own badge: that is the arm's settings,
-    not the model."""
-    seen = [STATUS.get((d.get("onboarding") or {}).get("status", ""), "none") for d in deployments_of(rec)]
-    if "check" in seen:
-        return "check"
-    if seen and all(x == "vetted" for x in seen):
-        smokes = [(x or {}).get("status") for x in (rec.get("smokes") or {}).values() if isinstance(x, dict)]
-        return "vetted" if "pass" in smokes else "onboarded"
-    return "none"
 
 
 def hosting(rec: dict) -> str:

@@ -5,6 +5,7 @@ smokes, accepted flags) are its dated history, added to and never written over."
 from __future__ import annotations
 
 import datetime as _dt
+from pathlib import Path
 from typing import Any
 
 from evaluation_harness import _common, _store
@@ -33,13 +34,37 @@ DEPLOYMENT = Entity(
 )
 
 
-def status(model_id: str) -> str:
+#: The onboarding status a record's chip and `evh models --status` name, by the status it records.
+STATUS = {"pass": "vetted", "check": "check"}
+
+
+def deployments_of(rec: dict[str, Any]) -> list[dict[str, Any]]:
+    """A record's deployments, skipping any entry that is not a mapping."""
+    return [d for d in rec.get("deployments") or [] if isinstance(d, dict)]
+
+
+def status_of(rec: dict[str, Any]) -> str:
+    """vetted: every deployment's onboarding passed and an arm that names the record passed its smoke (`evh
+    arm-smoke`, on the task's own items); onboarded: the probes passed and no arm has (the probe is one toy
+    question: it registers a model, it does not vet it); check: an onboarding flagged something; none: no
+    onboarding ran. An arm whose smoke flagged something says so on its own badge: that is the arm's settings,
+    not the model."""
+    seen = [STATUS.get((d.get("onboarding") or {}).get("status", ""), "none") for d in deployments_of(rec)]
+    if "check" in seen:
+        return "check"
+    if seen and all(x == "vetted" for x in seen):
+        smokes = [(x or {}).get("status") for x in (rec.get("smokes") or {}).values() if isinstance(x, dict)]
+        return "vetted" if "pass" in smokes else "onboarded"
+    return "none"
+
+
+def status(model_id: str, data: Path | None = None) -> str:
     """A model's state as the catalog names it (ADR-0021): vetted, onboarded, check or none, from its deployments'
     latest onboarding and its arms' latest smokes."""
-    from evaluation_harness import _models, catalog_models  # noqa: PLC0415
+    from evaluation_harness import _models  # noqa: PLC0415
 
-    rec = _models.find(_common.DATA, model_id)
-    return catalog_models.status_of(rec) if rec else "none"
+    rec = _models.find(_common.DATA if data is None else Path(data), model_id)
+    return status_of(rec) if rec else "none"
 
 
 def deployment_state(rid: str) -> dict[str, Any]:

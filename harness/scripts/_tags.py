@@ -22,6 +22,7 @@ from typing import Any
 
 from evaluation_harness import _common, _store
 from evaluation_harness._common import die, now, read_json, write_json
+from evaluation_harness.model import datasets as model_datasets
 
 SET_ID = re.compile(r"^[a-z0-9][a-z0-9_.-]{0,99}$")
 #: A sheet's tag columns: `failure_modes: <arm token>`; cells name modes separated by `|` (or `,`). `ok` says the output
@@ -32,12 +33,12 @@ OK = "ok"
 
 def modes_root() -> Path:
     """data/failure-modes/: the project's failure-mode lists."""
-    return _common.DATA / "failure-modes"
+    return model_datasets.FAILURE_MODES.base()
 
 
 def tags_root() -> Path:
     """data/tags/: the tag sets, one folder per dataset and set."""
-    return _common.DATA / "tags"
+    return model_datasets.TAG_SET.base()
 
 
 def load_modes(modes_id: str) -> dict[str, Any]:
@@ -46,7 +47,7 @@ def load_modes(modes_id: str) -> dict[str, Any]:
 
     if not SET_ID.match(modes_id or ""):
         die(f"--modes {modes_id!r}: lowercase letters, digits, _ . - (at most 100)", "bad-argument")
-    f = modes_root() / f"{modes_id}.yaml"
+    f = model_datasets.FAILURE_MODES.path(modes_id)
     if not _store.is_file(f):
         die(
             f"no failure modes {modes_id!r}: write {f.relative_to(_common.ROOT)} first (failure_modes_id, modes)",
@@ -86,7 +87,7 @@ def set_dir(dataset_id: str, name: str) -> Path:
             f"tag set {name!r}: lowercase letters, digits, _ . - (at most 100), starting with a letter or digit",
             "bad-argument",
         )
-    return tags_root() / dataset_id / name
+    return model_datasets.TAG_SET.path(f"{dataset_id}/{name}").parent
 
 
 def write_tags(
@@ -136,24 +137,28 @@ def write_tags(
     return doc
 
 
-def tag_sets(dataset_id: str | None = None) -> list[dict[str, Any]]:
-    """Every tag set (of one dataset), each its record; sorted by dataset, then set."""
-    root = tags_root()
-    pat = f"{dataset_id}/*/tags.json" if dataset_id else "*/*/tags.json"
+def tag_sets(dataset_id: str | None = None, data: Path | None = None) -> list[dict[str, Any]]:
+    """Every tag set (of one dataset), each its record; sorted by dataset, then set. From the project's data or
+    another data directory's (a deployment's copy of it, read as it is)."""
+    ent = model_datasets.TAG_SET.under(data)
     found = []
-    for f in sorted(_store.glob(root, pat)) if _store.is_dir(root) else []:
-        doc = read_json(f)
+    for sid in ent.ids(check_format=False):
+        if dataset_id and sid.split("/", 1)[0] != dataset_id:
+            continue
+        doc = read_json(ent.path(sid))
         if isinstance(doc, dict):
             found.append(doc)
     return found
 
 
-def counts(dataset_id: str, run_config: dict[str, str] | None = None) -> dict[str, Any]:
+def counts(
+    dataset_id: str, run_config: dict[str, str] | None = None, data: Path | None = None
+) -> dict[str, Any]:
     """Per arm (its config_id, when `run_config` maps run ids to them; else the run), how many outputs were tagged and
     how many times each mode was: {arm: {"tagged": n, "outputs": m, "modes": {mode: n}}}, across every tag set of the
     dataset. `outputs` counts the outputs read (`ok` ones included: read and found fine)."""
     out: dict[str, dict[str, Any]] = {}
-    for doc in tag_sets(dataset_id):
+    for doc in tag_sets(dataset_id, data):
         for run, by_item in (doc.get("runs") or {}).items():
             arm = (run_config or {}).get(run, run)
             slot = out.setdefault(arm, {"tagged": 0, "outputs": 0, "modes": Counter()})

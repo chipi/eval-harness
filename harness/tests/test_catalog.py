@@ -31,6 +31,7 @@ from evaluation_harness import catalog_serve as cs  # noqa: E402
 from evaluation_harness import stats  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 from evaluation_harness.catalog_adapter import HarnessAdapter  # noqa: E402
+from evaluation_harness.model import goal_views as gv  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
 import _catalog_fixture as fx  # noqa: E402
@@ -223,9 +224,9 @@ try:
     )
     check(
         "retired_round: by the arm id, else by the system id",
-        cb.retired_round({"runs/ds_v1/arm_v1": "r3"}, "runs/ds_v1/arm_v1") == "r3"
-        and cb.retired_round({"runs/ds_v1/arm_v1": "r3"}, "runs/ds_v1/other_v1") is None
-        and cb.retired_round({"arm_v1": "r3"}, "runs/ds_v1/arm_v1") == "r3",
+        gv.retired_round({"runs/ds_v1/arm_v1": "r3"}, "runs/ds_v1/arm_v1") == "r3"
+        and gv.retired_round({"runs/ds_v1/arm_v1": "r3"}, "runs/ds_v1/other_v1") is None
+        and gv.retired_round({"arm_v1": "r3"}, "runs/ds_v1/arm_v1") == "r3",
     )
     # An arm whose id changed when the runs folders became labels (data/renames.json "arms"): its old page redirects.
     (data8 / "renames.json").write_text(

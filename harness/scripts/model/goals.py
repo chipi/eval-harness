@@ -3,10 +3,12 @@ where it stands, which every surface reads (the Workbench's home and hub, `evh g
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _common, _store
+from evaluation_harness import _store
 from evaluation_harness.model import datasets as _datasets
+from evaluation_harness.model import runs as _model_runs
 from evaluation_harness.model.entity import Entity, Problem
 
 
@@ -23,7 +25,7 @@ def _links(record: dict[str, Any]) -> list[dict[str, Any]]:
     out = []
     for i, d in enumerate(record.get("datasets") or []):
         ds = d.get("dataset_id") if isinstance(d, dict) else None
-        if ds and not _store.is_file(_common.DATASETS / f"{ds}.json"):
+        if ds and not _store.is_file(_datasets.record_file(ds)):
             out.append(
                 {"path": ["datasets", i, "dataset_id"], "message": f"no dataset {ds!r} in this project"}
             )
@@ -50,13 +52,14 @@ GOAL = Entity(
 )
 
 
-def status(goal_id: str) -> dict[str, Any]:
+def status(goal_id: str, data: Path | None = None) -> dict[str, Any]:
     """Where a goal stands: each of its datasets (made, materialized, its reference, its runs and arms, its baseline),
-    its rounds, the jobs working on it, and the next step, with the command that takes it."""
-    from evaluation_harness import _baselines, _jobs, _rounds, _runs  # noqa: PLC0415
+    its rounds, the jobs working on it, and the next step, with the command that takes it. Read from `data` (another
+    data directory than the project's, a deployment's copy of it), else the project's."""
+    from evaluation_harness import _baselines, _jobs, _rounds  # noqa: PLC0415
     from evaluation_harness.model import rounds as model_rounds  # noqa: PLC0415
 
-    g = GOAL.get(goal_id)
+    g = GOAL.under(data).get(goal_id)
     refs = [r.get("reference_id") for r in g.get("references") or [] if isinstance(r, dict)]
     rounds = [
         {
@@ -67,23 +70,23 @@ def status(goal_id: str) -> dict[str, Any]:
             "arms": len(model_rounds.in_play(r)),
             "retired": len(model_rounds.arms(r)) - len(model_rounds.in_play(r)),
         }
-        for r in _rounds.load_rounds(goal_id)
+        for r in _rounds.load_rounds(goal_id, data)
     ]
     datasets, keys = [], {f"goal:{goal_id}"}
     for d in g.get("datasets") or []:
         ds = d.get("dataset_id")
         keys.add(f"dataset:{ds}")
-        runs = _runs.runs_on(ds)
-        base = _baselines.current(goal_id, ds)
+        runs = _model_runs.scored(ds, label_is="", data=data)
+        base = _baselines.current(goal_id, ds, data)
         # by the dataset a manifest names: `gold/ag_news_200_adj1`, promoted under another name, is ag_news_200's
-        on = _datasets.references_of(ds)
+        on = _datasets.references_of(ds, data)
         datasets.append(
             {
                 "dataset": ds,
                 "role": d.get("role"),
                 "decides": d.get("decides", True) is not False,
-                "made": _store.is_file(_common.DATASETS / f"{ds}.json"),
-                "materialized": _store.is_dir(_common.MATERIALIZED / ds),
+                "made": _store.is_file(_datasets.record_file(ds, data)),
+                "materialized": _store.is_dir(_datasets.materialized_dir(ds, data)),
                 "references": sorted(r for r in on if r in refs or r in (f"gold/{ds}", f"silver/{ds}")),
                 "runs": len(runs),
                 "arms": len({m["config_id"] for _, m in runs}),

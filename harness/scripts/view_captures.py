@@ -18,42 +18,8 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 import argparse
 import json
 
-from evaluation_harness import _store
-from evaluation_harness._common import CAPTURES, DATASETS, dataset_id_ok, die, evh_prog, read_json
-
-
-def summary(capture_id: str, made: dict, root: _Path | None = None) -> dict:
-    """One capture, as the view shows it."""
-    doc = read_json((root or CAPTURES) / capture_id / "capture.json")
-    times = sorted(r["created_at"] for r in doc.get("records") or [] if r.get("created_at"))
-    return {
-        "capture": capture_id,
-        "importer": doc.get("importer"),
-        "captured_at": doc.get("captured_at"),
-        "window": doc.get("window") or {},
-        "records": doc.get("n_records"),
-        "first": times[0] if times else None,
-        "last": times[-1] if times else None,
-        "continues": doc.get("continues"),
-        "scrubbed": bool(doc.get("scrubbed")),
-        "sample": doc.get("sample"),
-        "datasets": made.get(capture_id, []),
-        "query": doc.get("query") or {},
-    }
-
-
-def listing(data_dir: _Path | None = None) -> list[dict]:
-    """Every capture under a data tree (default: the project's), with the datasets made from each: what `evh
-    captures` prints and the catalog's Captures page shows."""
-    caps = data_dir / "captures" if data_dir else CAPTURES
-    dsets = data_dir / "datasets" if data_dir else DATASETS
-    made: dict = {}
-    for f in sorted(_store.glob(dsets, "*.json")) if _store.is_dir(dsets) else []:
-        cap = (read_json(f).get("made_from") or {}).get("capture")
-        if cap:
-            made.setdefault(cap, []).append(f.stem)
-    ids = sorted(p.parent.name for p in _store.glob(caps, "*/capture.json")) if _store.is_dir(caps) else []
-    return [summary(i, made, caps) for i in ids]
+from evaluation_harness._common import dataset_id_ok, die, evh_prog
+from evaluation_harness.model.dataset_views import capture_views
 
 
 def main() -> int:
@@ -62,7 +28,7 @@ def main() -> int:
     ap.add_argument("--capture", help="show one capture")
     ap.add_argument("--json", action="store_true", help="print JSON")
     args = ap.parse_args()
-    rows = listing()
+    rows = capture_views(check_format=False)
     if args.capture:
         ids = [c["capture"] for c in rows]
         if dataset_id_ok(args.capture) not in ids:

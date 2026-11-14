@@ -32,16 +32,10 @@ from typing import Any
 
 from evaluation_harness import _store
 from evaluation_harness._common import die, load_dataset, now, read_json, write_json
+from evaluation_harness.model import datasets as model_datasets
 
 SOURCES = ("person", "model", "rule")
 SET_ID = re.compile(r"^[a-z0-9][a-z0-9_.-]{0,99}$")
-
-
-def labels_root() -> Path:
-    """data/labels/ (the project's, resolved when first asked)."""
-    from evaluation_harness import _common  # noqa: PLC0415
-
-    return _common.LABELS
 
 
 def set_dir(dataset_id: str, name: str) -> Path:
@@ -51,7 +45,7 @@ def set_dir(dataset_id: str, name: str) -> Path:
             f"label set {name!r}: lowercase letters, digits, _ . - (at most 100), starting with a letter or digit",
             "bad-argument",
         )
-    return labels_root() / dataset_id / name
+    return model_datasets.label_set_dir(f"{dataset_id}/{name}")
 
 
 def _sha(text: str) -> str:
@@ -332,11 +326,13 @@ def write_set(
     return doc
 
 
-def sets() -> list[dict[str, Any]]:
-    """Every label set in the project, each its record with `_dir`; sorted by dataset, then set."""
-    root = labels_root()
+def sets(data: Path | None = None) -> list[dict[str, Any]]:
+    """Every label set in the project (or in another data directory: a deployment's copy of it, read as it is), each
+    its record with `_dir`; sorted by dataset, then set."""
+    ent = model_datasets.LABEL_SET.under(data)
     found = []
-    for f in sorted(_store.glob(root, "*/*/labels.json")) if _store.is_dir(root) else []:
+    for sid in ent.ids(check_format=False):
+        f = ent.path(sid)
         doc = read_json(f)
         if isinstance(doc, dict):
             doc["_dir"] = f.parent
@@ -350,58 +346,85 @@ def text_of(doc: dict[str, Any], item_id: str) -> str | None:
     return _store.read_text(f, encoding="utf-8").strip() if _store.is_file(f) else None
 
 
-def labels_for(dataset_id: str) -> dict[str, list[dict[str, Any]]]:
-    """{item_id: [{set, dataset_id, source, text}]}: every label any set gives an item of this dataset. A set made on
-    this dataset labels its items by id (while the item's sha256 is still the one labelled); a set made on another
-    follows the item by its sha256, unless two of its items share that text and their labels differ (ambiguous: none
-    is carried). By sha256 alone, two items with the same text (the same alert twice) got each other's labels."""
-    ds = load_dataset(dataset_id)
+def _dataset_items(dataset_id: str, data: Path | None) -> list[dict[str, Any]]:
+    """The dataset's items: of the project (refused when it is not there), or of another data directory's, as it is."""
+    if data is None:
+        return load_dataset(dataset_id).get("items") or []
+    try:
+        doc = json.loads(_store.read_text(model_datasets.record_file(dataset_id, data), encoding="utf-8"))
+    except (OSError, ValueError):
+        return []
+    return (doc.get("items") or []) if isinstance(doc, dict) else []
+
+
+def matches(
+    dataset_id: str, data: Path | None = None, only: str | None = None
+) -> list[tuple[dict[str, Any], str, dict[str, Any], list[str]]]:
+    """Which items of the dataset each label of each set labels, as (set, the set's item, its row, the dataset's items
+    it labels): the one decision every view of labels reads. A set made on this dataset labels its items by id (while
+    the item's sha256 is still the one labelled); a set made on another follows the item by its sha256, unless two of
+    its items share that text and their labels differ or cannot be read here (ambiguous: none is carried). By sha256
+    alone, two items with the same text (the same alert twice) got each other's labels. `only`: the one item asked
+    for."""
     by_sha: dict[str, list[str]] = {}
     sha_of: dict[str, str] = {}
-    for it in ds.get("items") or []:
-        if it.get("source_sha256"):
+    for it in _dataset_items(dataset_id, data):
+        if it.get("source_sha256") and only in (None, it["item_id"]):
             by_sha.setdefault(it["source_sha256"], []).append(it["item_id"])
             sha_of[it["item_id"]] = it["source_sha256"]
-    out: dict[str, list[dict[str, Any]]] = {}
-    for doc in sets():
+    out = []
+    for doc in sets(data) if by_sha else []:
         items = doc.get("items") or {}
         here = doc.get("dataset_id") == dataset_id
-        texts: dict[str, set] = {}
+        twins: dict[str, list[str]] = {}
         if not here:
             for iid, row in items.items():
-                texts.setdefault(row.get("item_sha256") or "", set()).add(text_of(doc, iid))
+                twins.setdefault((row or {}).get("item_sha256") or "", []).append(iid)
         for iid, row in items.items():
-            sha = row.get("item_sha256") or ""
+            sha = (row or {}).get("item_sha256") or ""
             if here:
                 targets = [iid] if sha and sha_of.get(iid) == sha else []
             else:
-                targets = by_sha.get(sha, []) if len(texts.get(sha) or ()) == 1 else []
-            for mine in targets:
-                text = text_of(doc, iid)
-                if text is not None:
-                    out.setdefault(mine, []).append(
-                        {
-                            "set": doc["set"],
-                            "dataset_id": doc["dataset_id"],
-                            "source": doc.get("source") or {},
-                            "text": text,
-                        }
-                    )
+                same = twins.get(sha) or []
+                texts = {text_of(doc, k) for k in same} if len(same) > 1 else set()
+                targets = [] if texts and (len(texts) != 1 or None in texts) else by_sha.get(sha, [])
+            out.append((doc, iid, row, targets))
     return out
 
 
-def coverage(dataset_id: str) -> list[dict[str, Any]]:
+def labels_for(
+    dataset_id: str, data: Path | None = None, texts: bool = True
+) -> dict[str, list[dict[str, Any]]]:
+    """{item_id: [{set, dataset_id, source, text}]}: every label any set gives an item of this dataset (`matches`). With
+    `texts` False the labels whose text is not here (a release keeps only labels.json) are listed too, their text None."""
+    out: dict[str, list[dict[str, Any]]] = {}
+    for doc, iid, _row, targets in matches(dataset_id, data):
+        for mine in targets:
+            text = text_of(doc, iid)
+            if text is not None or not texts:
+                out.setdefault(mine, []).append(
+                    {
+                        "set": doc["set"],
+                        "dataset_id": doc["dataset_id"],
+                        "source": doc.get("source") or {},
+                        "text": text,
+                    }
+                )
+    return out
+
+
+def coverage(dataset_id: str, data: Path | None = None, texts: bool = True) -> list[dict[str, Any]]:
     """Per set covering this dataset's items (by hash): the set, its dataset, source, guideline, created, and the
-    dataset's items it labels."""
+    dataset's items it labels. With `texts` False the items whose label text is not here count too."""
     per: dict[tuple[str, str], dict[str, Any]] = {}
-    for iid, rows in labels_for(dataset_id).items():
+    for iid, rows in labels_for(dataset_id, data, texts).items():
         for r in rows:
             k = (r["dataset_id"], r["set"])
             per.setdefault(
                 k, {"set": r["set"], "dataset_id": r["dataset_id"], "source": r["source"], "items": set()}
             )
             per[k]["items"].add(iid)
-    docs = {(d["dataset_id"], d["set"]): d for d in sets()}
+    docs = {(d["dataset_id"], d["set"]): d for d in sets(data)}
     out = []
     for k, v in sorted(per.items()):
         d = docs.get(k) or {}
@@ -416,9 +439,29 @@ def coverage(dataset_id: str) -> list[dict[str, Any]]:
     return out
 
 
-def agreement(dataset_id: str) -> list[dict[str, Any]]:
+def item_labels(dataset_id: str, item: str, data: Path | None = None) -> list[dict[str, Any]]:
+    """Every label one item has: {set ("<dataset>/<set>"), kind, by, text, note} from each set holding an item with its
+    bytes (labels follow the item); the text only where it is here (a release keeps labels.json only)."""
+    out = []
+    for doc, iid, row, targets in matches(dataset_id, data, only=item):
+        if item in targets:
+            t = Path(doc["_dir"]) / f"{iid}.txt"
+            src = doc.get("source") or {}
+            out.append(
+                {
+                    "set": f"{doc['dataset_id']}/{doc['set']}",
+                    "kind": src.get("kind", ""),
+                    "by": src.get("by") or src.get("config_id") or src.get("capture") or "",
+                    "text": label_line(_store.read_text(t, encoding="utf-8")) if _store.is_file(t) else None,
+                    "note": (row or {}).get("note") or "",
+                }
+            )
+    return out
+
+
+def agreement(dataset_id: str, data: Path | None = None) -> list[dict[str, Any]]:
     """For each pair of sets covering this dataset that both label an item: {a, b, **compare(...)}."""
-    per_item = labels_for(dataset_id)
+    per_item = labels_for(dataset_id, data, texts=False)
     names = sorted({(r["dataset_id"], r["set"]) for rows in per_item.values() for r in rows})
     out = []
     for i, a in enumerate(names):
@@ -450,9 +493,7 @@ def contested(dataset_id: str, tier: str = "gold") -> dict[str, Any] | None:
     goal scores one reference, and this shows where people disagree with it. A label agrees when it shares an answer
     with the reference's. The set the reference was promoted from is left out (it agrees by construction).
     None when the dataset has no reference of this tier or no person set labels its items."""
-    from evaluation_harness import _common  # noqa: PLC0415
-
-    root = _common.REFERENCES / tier / dataset_id
+    root = model_datasets.reference_dir(f"{tier}/{dataset_id}")
     if not _store.is_dir(root):
         return None
     manifest = root / "manifest.json"

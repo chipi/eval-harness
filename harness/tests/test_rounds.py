@@ -13,6 +13,7 @@ a project without them is unchanged (every other test).
 
 import json
 import os
+import re
 import shutil
 import socket
 import subprocess
@@ -567,6 +568,15 @@ try:
         "validate: V14 reads the arms' runs against their system, dataset and label",
         "FAIL V14" not in evh("validate").stdout,
         evh("validate").stdout[-600:],
+    )
+    r = evh("leaderboard", "--dataset-id", "tickets_v1", "--round", "r2")
+    lines = [ln for ln in r.stdout.splitlines() if cfg_id in ln]
+    check(
+        "leaderboard --round: the arms the round compared, under their labels (the re-timing is a row of its own)",
+        r.returncode == 0
+        and any(ln.lstrip().startswith(f"{cfg_id} · linux ") for ln in lines)
+        and any(re.match(rf"\s+{cfg_id}\s+\d", ln) for ln in lines),
+        out(r)[-700:],
     )
     r = evh(
         "round-retire", "--goal", "tickets_summary", "--round", "r2", "--arm", cfg_id, "--label", "linux",

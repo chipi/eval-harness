@@ -5,6 +5,7 @@ capture's records, a tag set's tags): it carries their count."""
 
 from __future__ import annotations
 
+import json
 from collections import Counter
 from pathlib import Path
 from typing import Any
@@ -21,6 +22,7 @@ from evaluation_harness.model.datasets import (
     exposure_file,
     materialized_dir,
     profile_file,
+    reference_items,
     rows_file,
     source_dir,
 )
@@ -89,7 +91,7 @@ def reference_row(rid: str, man: dict[str, Any]) -> dict[str, Any]:
         "reference": rid,
         "tier": man.get("tier"),
         "dataset": man.get("dataset_id"),
-        "items": man.get("n_items"),
+        "items": reference_items(man),
         "label_set": _label_set_of(man),
         "kind": src.get("kind"),
         "promoted_by": man.get("promoted_by"),
@@ -115,14 +117,30 @@ def tag_set_row(set_id: str, rec: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _records(entity: Entity) -> list[tuple[str, dict[str, Any]]]:
-    """Every record of the entity that reads, by id; one that does not is `evh validate`'s to name, as in references_of."""
+def _plain_json(path: Path) -> dict[str, Any] | None:
+    try:
+        doc = json.loads(_store.read_text(path, encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    return doc if isinstance(doc, dict) else None
+
+
+def _records(
+    entity: Entity, data: Path | None = None, check_format: bool = True
+) -> list[tuple[str, dict[str, Any]]]:
+    """Every record of the entity that reads, by id; one that does not is `evh validate`'s to name, as in references_of.
+    `data`: another data directory than the project's (a deployment's copy of it); `check_format` False reads a tree of
+    another format as it is (the catalog reads copies), through the JSON a record is."""
+    ent = entity.under(data)
     out = []
-    for rid in entity.ids():
-        try:
-            out.append((rid, entity.get(rid)))
-        except Problem:
-            continue
+    for rid in ent.ids(check_format=check_format):
+        if check_format:
+            try:
+                out.append((rid, ent.get(rid)))
+            except Problem:
+                continue
+        elif (doc := _plain_json(ent.path(rid))) is not None:
+            out.append((rid, doc))
     return out
 
 
@@ -311,7 +329,7 @@ def show_reference(tier: str, name: str) -> dict[str, Any]:
     man = REFERENCE.get(rid)
     return {
         "reference": rid,
-        "items": man.get("n_items", len(man.get("items_sha256") or {})),
+        "items": reference_items(man),
         "label_set": _label_set_of(man),
         "record": _without(man, "items_sha256"),
         "folder": rel(REFERENCE.path(rid).parent),
@@ -339,10 +357,39 @@ def _capture_row(
     }
 
 
-def list_captures() -> list[dict[str, Any]]:
+def _capture_view(
+    cid: str, doc: dict[str, Any], datasets: list[tuple[str, dict[str, Any]]]
+) -> dict[str, Any]:
+    """A capture as `evh captures` and the catalog's Captures page show it: what it read and when (the first and last
+    of its records), whether it continues one, was sampled or scrubbed, and the datasets made from it."""
+    times = sorted(r["created_at"] for r in doc.get("records") or [] if r.get("created_at"))
+    return {
+        "capture": cid,
+        "importer": doc.get("importer"),
+        "captured_at": doc.get("captured_at"),
+        "window": doc.get("window") or {},
+        "records": doc.get("n_records", len(doc.get("records") or [])),
+        "first": times[0] if times else None,
+        "last": times[-1] if times else None,
+        "continues": doc.get("continues"),
+        "scrubbed": bool(doc.get("scrubbed")),
+        "sample": doc.get("sample"),
+        "datasets": _made_from(cid, datasets),
+        "query": doc.get("query") or {},
+    }
+
+
+def list_captures(data: Path | None = None, check_format: bool = True) -> list[dict[str, Any]]:
     """Every capture: what read it, when, how many records, and the datasets and label sets made from it."""
-    datasets, sets = _records(DATASET), _records(LABEL_SET)
-    return [_capture_row(i, c, datasets, sets) for i, c in _records(CAPTURE)]
+    datasets, sets = _records(DATASET, data, check_format), _records(LABEL_SET, data, check_format)
+    return [_capture_row(i, c, datasets, sets) for i, c in _records(CAPTURE, data, check_format)]
+
+
+def capture_views(data: Path | None = None, check_format: bool = True) -> list[dict[str, Any]]:
+    """Every capture as `evh captures` and the catalog's Captures page show it: the one listing of captures
+    (`list_captures` is the same captures, as the operations list them)."""
+    datasets = _records(DATASET, data, check_format)
+    return [_capture_view(i, c, datasets) for i, c in _records(CAPTURE, data, check_format)]
 
 
 def show_capture(capture: str) -> dict[str, Any]:

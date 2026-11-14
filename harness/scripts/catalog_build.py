@@ -60,8 +60,18 @@ from evaluation_harness.catalog_adapter import (  # noqa: E402
     load_catalog_adapter,
     scores_once,
 )
+from evaluation_harness.model import goal_views  # noqa: E402
 from evaluation_harness.model.datasets import record_file as dataset_record_file  # noqa: E402
 from evaluation_harness.model.datasets import source_dir  # noqa: E402
+from evaluation_harness.model.goal_views import (  # noqa: E402
+    decided,
+    glance,
+    retired_arms,
+    retired_in_of,
+    retired_round,
+    shown_axes,
+    systems_filed,
+)
 from evaluation_harness.stats import fmt_p  # noqa: E402
 
 #: The front-end files every page loads: installed beside the package, or in a checkout.
@@ -847,65 +857,9 @@ def fmt(v) -> str:
 # -- the harness's own pages -------------------------------------------------------------------
 def collect(A: Adapter) -> dict:
     """{dataset: {"arms": [row], "refs": [ref], "items": n}}: what every page needs, read once."""
-    by_ds: dict = {}
-    runs_of = getattr(A, "arm_runs", None)
-    read_as = getattr(A, "read_as", None)
+    by_ds = goal_views.by_dataset(A)
     RECORDED.clear()
-    for arm in A.arms():
-        d = A.describe(arm)
-        if d.get("recorded"):
-            RECORDED[arm] = d["recorded"]
-        sc = A.scores(arm)
-        runs = runs_of(arm) if callable(runs_of) else []
-        head = d.get("primary") or d.get("task") or ""
-        values = (sc.get(head) or {}).get("values") or {}
-        by_ds.setdefault(d["dataset"], {"arms": [], "refs": [], "items": 0})["arms"].append(
-            {
-                "arm": arm,
-                "label": d["label"],
-                "read_as": read_as(arm) if callable(read_as) else "",
-                "runs": d.get("runs", 1),
-                "metric": head,
-                "mean": statistics.fmean(values.values()) if values else None,
-                "n": len(values) or max((len(v["values"]) for v in sc.values()), default=0),
-                "lower": A.lower_is_better(head, d["dataset"]) if head else False,
-                "reference": d.get("reference", ""),
-                "judge": d.get("judge", ""),
-                "wrote": bool(d.get("wrote_reference")),
-                "labels_source": d.get("labels_source", ""),
-                "recorded": d.get("recorded", ""),
-                "replay": d.get("replay"),
-                "machine": _machine(A, arm),
-                "goal": d.get("goal", ""),
-                "format": d.get("format", ""),
-                "run_list": runs,
-                "last": max((r.get("created_at") or "" for r in runs), default=""),
-                # every metric's mean and item count, for the goal pages (numbers only)
-                "means": {
-                    k: (statistics.fmean(v["values"].values()), len(v["values"]))
-                    for k, v in sc.items()
-                    if v["values"]
-                },
-            }
-        )
-    for r in A.references():
-        by_ds.setdefault(r["dataset"], {"arms": [], "refs": [], "items": 0})["refs"].append(r)
-    _mark_superseded(by_ds)
-    bl = getattr(A, "baselines", None)
-    for b in bl() if callable(bl) else []:
-        v = by_ds.get(b["dataset"])
-        if v is None:
-            continue
-        v.setdefault("baselines", []).append(b)
-        for a in v["arms"]:
-            if a["arm"] == b["arm"]:
-                a["baseline"] = b
-        # A baseline whose arm is read from its re-score is the re-score's (RFC-022): the goal reads that one.
-        for a in v["arms"]:
-            if a.get("baseline") and a.get("superseded_by"):
-                for t in v["arms"]:
-                    if t["arm"] == a["superseded_by"]:
-                        t["baseline"] = a["baseline"]
+    RECORDED.update({a["arm"]: a["recorded"] for v in by_ds.values() for a in v["arms"] if a["recorded"]})
     _versions(A, by_ds)
     # The dataset's own size, from the ADAPTER: the harness's DATASETS path is not where a
     # project with its own layout keeps them. An adapter that cannot say falls back to the
@@ -922,45 +876,6 @@ def collect(A: Adapter) -> dict:
             m.get("capture") or "",
         )
     return by_ds
-
-
-def _mark_superseded(by_ds: dict) -> None:
-    """An arm every run of which was re-scored (`evh rescore`) against the same reference gets
-    "superseded_by": the arm holding the latest re-score. A scorer that changes after runs were measured
-    leaves their scores stale, and the re-score is the same outputs read by the current scorer; showing
-    both ranks one arm twice (and an old score may lack the goal's measure entirely). The goal pages read
-    the re-score; the measured arm keeps its page as the record of what was first scored."""
-    for v in by_ds.values():
-        latest: dict = {}
-        for a in v["arms"]:
-            for r in a["run_list"]:
-                if r.get("derived") == "rescore" and r.get("from"):
-                    key = (a["reference"], r["from"])
-                    if key not in latest or (r["created_at"], a["arm"]) > latest[key][0]:
-                        latest[key] = ((r["created_at"], a["arm"]), a["arm"])
-        for a in v["arms"]:
-            ids = [r["run_id"] for r in a["run_list"]]
-            by = {latest.get((a["reference"], i), (None, None))[1] for i in ids}
-            if ids and len(by) == 1 and None not in by and a["arm"] not in by:
-                a["superseded_by"] = by.pop()
-
-
-def _machine(A: Adapter, arm: str) -> str:
-    """Where an arm's time was spent, in one form: "served on <machine>" when its deployment names the machine
-    that served the model, else "run on [<label> · ]<platform>, <n> CPUs" for the runner (the label is
-    EVAL_HOST_LABEL, when set). Four forms in one table ("mac-dev", "Darwin/x86_64 · 12 CPUs", "x3") read as four
-    kinds of thing; a runner without a label is never guessed to be a labelled one."""
-    fn = getattr(A, "conditions", None)
-    c = fn(arm) if callable(fn) else {}
-    if c.get("deployment.machine"):
-        return f"served on {c['deployment.machine']}"
-    hw = ", ".join(
-        b
-        for b in (c.get("machine.platform"), c.get("machine.cpu_count") and f"{c['machine.cpu_count']} CPUs")
-        if b
-    )
-    name = " · ".join(b for b in (c.get("machine.label"), hw) if b)
-    return f"run on {name}" if name else ""
 
 
 def _versions(A: Adapter, by_ds: dict) -> None:
@@ -1272,117 +1187,16 @@ def fmt_amount(v: float, unit: str) -> str:
     return f"${v:.4f}" if v < 1 else f"${v:.2f}"
 
 
-def ref_tier(tiers: dict, key: str) -> str:
-    """A group's reference tier: as the references listing says, else from its id (gold/<dataset>,
-    silver/<dataset>), for a reference this checkout does not hold (gold not redistributed)."""
-    return tiers.get(key) or (key.split("/", 1)[0] if key.startswith(("gold/", "silver/")) else "")
-
-
-def baseline_read(v: dict, goal_id: str) -> tuple[list, str | None]:
-    """A dataset's baselines for a goal, and the arm the goal reads for the latest one: its latest re-score when
-    it was re-scored (RFC-022), as the goal page reads it, else the promoted arm itself."""
-    bl = [x for x in v.get("baselines", []) if x.get("goal") == goal_id]
-    base = bl[-1]["arm"] if bl and bl[-1].get("arm") else None
-    moved = next((a.get("superseded_by") for a in v.get("arms", []) if base and a["arm"] == base), None)
-    return bl, moved or base
-
-
-def glance(A: Adapter, by_ds: dict) -> list[dict]:
-    """Per goal and dataset: the deciding measure, the promoted baseline, the leader of the gold
-    group, the paired test of the leader against the baseline (one test, threshold 0.05), and what
-    the goal's strategy recommends with its cost and speed against the baseline."""
-    from evaluation_harness import stats  # noqa: PLC0415
-
-    rows = []
-    for g in A.goals():
-        prim = (g.get("success_criteria") or {}).get("primary") or {}
-        measure = prim.get("measure", "")
-        lower = prim.get("direction") == "lower"
-        retired_in = retired_in_of(A, g)
-        for ans in goal_answers(g, by_ds):
-            ds = ans["dataset"]
-            if not decides_on(g, ds):
-                continue  # a pilot slice or a generalization check: on the goal page, not the glance
-            v = by_ds.get(ds) or {}
-            bl, base = baseline_read(v, g["goal_id"])
-            # The gold group decides; without one, the first group scored against a reference,
-            # named in the row so it is never read as gold.
-            tiers = {r["id"]: r["tier"] for r in v.get("refs", [])}
-
-            plain = [x for x in ans["groups"] if not x["key"].startswith("judge ")]
-            grp = next((x for x in plain if ref_tier(tiers, x["key"]) == "gold"), plain[0] if plain else None)
-            dec = (
-                group_decision(
-                    A,
-                    g,
-                    ds,
-                    grp["rows"],
-                    measure,
-                    retired_in,
-                )
-                if grp
-                else None
-            )
-            # The decision's leader: the best arm it may recommend, so never a retired or flagged one.
-            leader = (
-                next((r for r in grp["rows"] if dec and r["arm"] == dec["leader"]), None) if grp else None
-            )
-            label = {x["arm"]: x["label"] for x in v.get("arms", [])}
-            test = None
-            if leader and base and leader["arm"] != base:
-                cmp = stats.compare(
-                    {
-                        leader["arm"]: (A.scores(leader["arm"]).get(measure) or {}).get("values") or {},
-                        base: (A.scores(base).get(measure) or {}).get("values") or {},
-                    },
-                    base,
-                    higher_is_better=not lower,
-                    family=1,
-                    clusters=goal_clusters(A, g, ds)[0],
-                )
-                test = (cmp.get("rows") or [None])[0]
-            rec = dec["recommended"] if dec else None
-            rows.append(
-                {
-                    "goal": g,
-                    "dataset": ds,
-                    "measure": measure,
-                    "lower": lower,
-                    "baseline": base,
-                    "baseline_label": label.get(base, base) if base else "",
-                    "baseline_reason": bl[-1].get("reason", "") if bl else "",
-                    "baseline_mean": _mean(v, base, measure) if base else None,
-                    "leader": leader["arm"] if leader else None,
-                    "leader_label": leader["label"] if leader else "",
-                    "leader_mean": leader["mean"] if leader else None,
-                    "test": test,
-                    "group": grp["key"] if grp else "",
-                    "gold": grp is not None and ref_tier(tiers, grp["key"]) == "gold",
-                    "recommended": rec,
-                    "recommended_label": label.get(rec, rec) if rec else "",
-                    "strategy": strategy_of(dec["goal"]) if dec else strategy_of(g),
-                    # The recommendation against the baseline on cost, speed and the goal's own axes.
-                    "vs_baseline": axis_ratios(dec, rec, base) if dec and rec and base else [],
-                    # The decision's reasons, as the goal page lists them.
-                    "why": list(dec["why"]) if dec else [],
-                    # The decision itself (the arms page reads its eligible arms and draws its trade-off).
-                    "dec": dec,
-                    "retired": retired_in,
-                }
-            )
-    return rows
-
-
-def _mean(v: dict, arm: str, measure: str):
-    a = next((x for x in v.get("arms", []) if x["arm"] == arm), None)
-    return a["means"][measure][0] if a and measure in a["means"] else None
-
-
 def glance_verdict(r: dict) -> str:
     """A glance row's verdict in words: the test, or why there is none."""
     t = r["test"]
     if t and t.get("p") is not None:
-        return f"{t.get('verdict', '')} · Δ {t['delta']:+.3f} · p {fmt_p(t['p'])}"
+        fam = (
+            f" · Bonferroni over {t['family']} arms: {fmt_p(t['p_adjusted'])}"
+            if t.get("family", 1) > 1 and t.get("p_adjusted") is not None
+            else ""
+        )
+        return f"{t.get('verdict', '')} · Δ {t['delta']:+.3f} · p {fmt_p(t['p'])}{fam}"
     if r["leader"] and r["baseline"] and r["leader"] == r["baseline"]:
         return "the baseline leads"
     if not r["baseline"]:
@@ -1531,8 +1345,8 @@ def _glance(A: Adapter, by_ds: dict) -> str:
         return '<p class="muted">No goals yet: a goal says what an evaluation is for (<code>data/goals/</code>).</p>'
     return (
         '<p class="small muted">The leader is the best arm the goal may recommend (not flagged, over a limit or retired), scored against the gold group\'s '
-        "reference; the test is the leader against the baseline alone (threshold 0.05). The goal "
-        "page tests every arm, Holm across them. <b>recommended</b> is what the goal's strategy picks "
+        "reference; the test is the leader against the baseline, Bonferroni over the arms it was chosen from (threshold 0.05). "
+        "The goal page tests every arm against the leader, Holm across them. <b>recommended</b> is what the goal's strategy picks "
         "once limits and the tie-break on cost and speed are applied; its ratios are against the "
         "baseline (0.5× costs half).</p>"
         + table(
@@ -2559,99 +2373,6 @@ def render_fields(A: Adapter, ds: str) -> str:
     return intro + table("fields", ["field", "type", "filled", "description", "values"], rows)
 
 
-def _group_key(a: dict) -> str:
-    """What an arm's numbers are measured against: a judge, a reference, or nothing."""
-    return f"judge {a['judge']}" if a.get("judge") else (a.get("reference") or "no reference")
-
-
-def goal_answers(goal: dict, by_ds: dict) -> list:
-    """[{"dataset", "role", "notes", "groups": [{"key", "rows", "leader"}]}] for one goal: on each
-    of its datasets, every arm that records the goal's primary measure, grouped by what it is
-    scored against (gold first, then silver, then judges), best first within a group. Arms are
-    ranked only against arms on the same dataset scored against the same thing, and a group's
-    leader is never a flagged arm: fewer items than min_items, a format the goal does not accept,
-    or the arm that wrote the reference it is scored against."""
-    crit = goal.get("success_criteria") or {}
-    lower = (crit.get("primary") or {}).get("direction") == "lower"
-    out = []
-    for ds, role, notes, rows in _goal_rows(goal, by_ds):
-        groups: dict = {}
-        for r in rows:
-            groups.setdefault(_group_key(r), []).append(r)
-        ordered = sorted(
-            groups.items(), key=lambda kv: (kv[0].startswith("judge "), not kv[0].startswith("gold/"), kv[0])
-        )
-        out.append(
-            {
-                "dataset": ds,
-                "role": role,
-                "notes": notes,
-                "groups": [
-                    {
-                        "key": k,
-                        "rows": sorted(
-                            g,
-                            key=lambda r: (bool(r["flags"]), r["mean"] if lower else -r["mean"], r["label"]),
-                        ),
-                        "leader": next(
-                            (
-                                r
-                                for r in sorted(g, key=lambda r: r["mean"] if lower else -r["mean"])
-                                if not r["flags"]
-                            ),
-                            None,
-                        ),
-                    }
-                    for k, g in ordered
-                ],
-            }
-        )
-    return out
-
-
-def _goal_rows(goal: dict, by_ds: dict) -> list:
-    """[(dataset, role, notes, rows)]: the arms on each of the goal's datasets that record its
-    measure, each with its mean, items, whether it names the goal, and its flags."""
-    crit = goal.get("success_criteria") or {}
-    measure = (crit.get("primary") or {}).get("measure", "")
-    need = crit.get("min_items")
-    formats = {c.get("format") for c in goal.get("output_contract") or [] if c.get("format")}
-    out = []
-    for d in goal.get("datasets") or []:
-        ds = d.get("dataset_id", "")
-        rows = []
-        arms = (by_ds.get(ds) or {}).get("arms", [])
-        # the measured arms read through a re-score (an older re-score superseded by a newer one is not another)
-        moved = [
-            a for a in arms if a.get("superseded_by") and not any(r.get("derived") for r in a["run_list"])
-        ]
-        notes = d.get("notes", "")
-        if moved:
-            notes = (notes.rstrip(". ") + ". " if notes else "") + (
-                f"{len(moved)} arm(s) are read from their re-score with the current scorer, not their first "
-                "score (the measured run keeps its own page)."
-            )
-        for a in arms:
-            if a.get("superseded_by"):
-                continue
-            # A judged arm records its judge's score, not the goal's measure: it is shown in its
-            # judge's group, read on that score (never ranked with the reference-scored groups).
-            use = measure if measure in a["means"] else (a["metric"] if a.get("judge") else None)
-            if not use or use not in a["means"]:
-                continue
-            mean, n = a["means"][use]
-            flags = []
-            if need and n < need:
-                flags.append(f"n {n} < min_items {need}")
-            if a["format"] and formats and a["format"] not in formats:
-                flags.append(f"format {a['format']} not in the contract")
-            if a["wrote"]:
-                flags.append("wrote the reference it is scored against")
-            rows.append(dict(a, mean=mean, n=n, measure=use, filed=a["goal"] == goal["goal_id"], flags=flags))
-        out.append((ds, d.get("role", ""), notes, rows))
-    return out
-
-
 def render_goals(A: Adapter, by_ds: dict, out: Path, nav: list) -> int:
     """Render the goals page and one page per goal; return the number rendered."""
     from evaluation_harness import catalog_periods as cp  # noqa: PLC0415
@@ -2763,14 +2484,6 @@ def render_goals(A: Adapter, by_ds: dict, out: Path, nav: list) -> int:
         ),
     )
     return len(goals)
-
-
-def systems_filed(by_ds: dict, g: dict) -> int:
-    """How many systems were run for this goal, each counted once however many
-    ways it was scored (gold, silver, a judge)."""
-    return len(
-        {a["arm"].rsplit("/", 1)[-1] for v in by_ds.values() for a in v["arms"] if a["goal"] == g["goal_id"]}
-    )
 
 
 def _when(stamp: str) -> str:
@@ -2926,10 +2639,8 @@ def _rounds_block(A: Adapter, g: dict, measure: str, above: str = "") -> str:
     rounds = [r for r in (fn() if callable(fn) else []) if r.get("goal") == g["goal_id"]]
     if not rounds:
         return ""
-    # The evidence reads the project's data (references, runs, the compare): the catalog's own adapter only.
-    live = getattr(A, "data_dir", None) == _common.DATA
     evidence: dict = {}
-    for r in rounds if live else []:
+    for r in rounds:
         try:
             evidence[r["round_id"]] = model_rounds.evidence(
                 g["goal_id"], dict(r, arms=r.get("arm_records") or []), A
@@ -3231,7 +2942,7 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
         False  # how to read the groups, said once on the page, not under each dataset (CNN: three times)
     )
     said: set = set()  # the strategy paragraphs the page's decisions have printed
-    for ans in goal_answers(g, by_ds):
+    for ans in decided(A, g, by_ds):
         ds, v = ans["dataset"], by_ds.get(ans["dataset"]) or {}
         tiers = {r["id"]: r["tier"] for r in v.get("refs", [])}
         lin = (v.get("parent") or {}).get("dataset_id")
@@ -3272,16 +2983,7 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
             explained = True
             for gi, grp in enumerate(ans["groups"]):
                 rows = grp["rows"]
-                gm = rows[0].get("measure", measure) if rows else measure  # a judge's group: its score
-                dec = group_decision(
-                    A,
-                    g,
-                    ds,
-                    rows,
-                    gm,
-                    retired_in,
-                    gold_beside(tiers, ans["groups"], grp["key"]),
-                )
+                gm, dec = grp["measure"], grp["dec"]  # a judge's group reads on its score
                 # The decision's leader, as the glance has it: never a retired or flagged arm, so the
                 # table, its "test vs leader" links and the decision box name the same arm.
                 leader = next((r for r in rows if r["arm"] == dec["leader"]), None)
@@ -3413,204 +3115,23 @@ def _failure_modes_html(A: Adapter, ds: str, rows: list) -> str:
     )
 
 
-def retired_in_of(A: Adapter, g: dict) -> dict:
-    """{arm id: round_id} for every arm a round of this goal retired (its `retired_arms`)."""
-    rfn = getattr(A, "rounds", None)
-    out: dict = {}
-    for r in rfn() if callable(rfn) else []:
-        if r.get("goal") != g["goal_id"]:
-            continue
-        for k in r.get("retired_arms") or []:
-            out[k] = r["round_id"]
-    return out
-
-
-def retired_round(retired_in: dict, arm: str) -> str | None:
-    """The round that retired this arm: by its arm id, else by its system id. A retirement names runs, and every arm
-    a retired run is scored in (its re-scores, RFC-022, the goal's reading of it) is retired with it: otherwise an
-    arm a round retired stayed among the goal's contenders whenever it had been re-scored (found 2026-11-01: 25 of
-    the triage goal's 76 contenders were round 3's retirements)."""
-    return retired_in.get(arm) or retired_in.get(arm.rsplit("/", 1)[-1])
-
-
-def _retired_arms(r: dict) -> set:
-    """The arm ids a round retired."""
-    return set(r.get("retired_arms") or [])
-
-
-def axis_ratios(dec: dict, arm: str, base: str) -> list[str]:
-    """The arm against the baseline on each axis beside quality, as ratios ("cost 0.1×"). An axis
-    either has no number for is left out; two zeros read "same"."""
-    out: list[str] = []
-    if arm == base or arm not in dec["rows"] or base not in dec["rows"]:
-        return out
-    for ax in shown_axes(dec):
-        a, b = dec["rows"][arm][ax["name"]]["value"], dec["rows"][base][ax["name"]]["value"]
-        stat = "" if ax["stat"] == "mean" else f" {ax['stat']}"
-        if a is None or b is None:
-            continue
-        if b == 0:
-            out.append(f"{ax['name']}{stat} same" if a == 0 else f"{ax['name']}{stat} from 0")
-        else:
-            r = a / b
-            out.append(f"{ax['name']}{stat} {r:,.0f}×" if r >= 10 else f"{ax['name']}{stat} {r:.2g}×")
-    return out
-
-
-def goal_clusters(A: Adapter, g: dict, ds: str) -> tuple[dict | None, str | None]:
-    """({item: cluster key}, field) when the goal's entry for `ds` names `cluster: FIELD`, else (None, None).
-    Items with no value for the field are clusters of their own (stats.clustered)."""
-    field = next((d.get("cluster") for d in g.get("datasets") or [] if d.get("dataset_id") == ds), None)
-    if not field:
-        return None, None
-    values = item_fields(A, ds).get("values") or {}
-    return {i: v[field] for i, v in values.items() if v.get(field) not in (None, "")}, field
-
-
-def group_decision(
-    A: Adapter,
-    g: dict,
-    ds: str,
-    rows: list,
-    gm: str,
-    retired_in: dict,
-    gold: str | None = None,
-) -> dict:
-    """The goal's decision over one group of arms on one dataset (axes.decide): its axes, limits,
-    the quality leader, the contenders and the tie-break. A judge's group decides on the judge's score;
-    an arm a round retired is shown, never recommended. `gold`: this group is scored against
-    silver and that gold reference's group is on the same dataset, so gold decides and this group
-    only shows its leader; so does a group measured by unvalidated judges."""
-    from evaluation_harness import axes  # noqa: PLC0415
-
-    crit = g.get("success_criteria") or {}
-    goal = g
-    if gm != (crit.get("primary") or {}).get("measure"):
-        own = {k: v for k, v in (crit.get("axes") or {}).items() if k != "quality"}
-        goal = {
-            **g,
-            "success_criteria": {**crit, "primary": {"measure": gm, "direction": "higher"}, "axes": own},
-        }
-    arms = {
-        r["arm"]: {
-            "label": r["label"],
-            "flags": list(r["flags"]) + (["retired"] if retired_round(retired_in, r["arm"]) else []),
-            "scores": A.scores(r["arm"]),
-        }
-        for r in rows
-    }
-    machines = {r["arm"]: r.get("machine", "") for r in rows}
-    baseline = next((r["arm"] for r in rows if r.get("baseline")), None)
-    clusters, cluster_by = goal_clusters(A, g, ds)
-    dec = axes.decide(
-        goal,
-        arms,
-        lambda m: "lower" if A.lower_is_better(m, ds) else None,
-        machines,
-        baseline=baseline,
-        clusters=clusters,
-        cluster_by=cluster_by,
-    ) | {"goal": goal, "dataset": ds}
-    if not decides_on(g, ds):
-        # The goal never decides here (a pilot slice, a generalization check): the leader stands, the
-        # recommendation does not.
-        role = next((d.get("role") for d in g.get("datasets") or [] if d.get("dataset_id") == ds), "") or ""
-        dec["recommended"] = None
-        dec["shown_only"] = True
-        dec["why"] = [
-            *[w for w in dec["why"] if not w.startswith(("Recommended:", "Still undecided"))],
-            f"The goal does not decide on {ds}"
-            + (f" ({role})" if role else "")
-            + ": shown, not recommended.",
-        ]
-    elif gold:
-        dec["recommended"] = None
-        dec["shown_only"] = True
-        dec["why"] = [
-            *[w for w in dec["why"] if not w.startswith(("Recommended:", "Still undecided"))],
-            (
-                f"Scored against silver, beside {gold}: gold decides on {ds}; this group is shown, not "
-                "recommended. Silver is not what the goal decides on: a model's opinion (its author's "
-                "family ranks higher on it) or what production recorded afterwards; its caveat says which."
-            ),
-        ]
-    elif gm != (crit.get("primary") or {}).get("measure") and not gm.endswith("_unvalidated"):
-        # A re-measurement (a judge's grade, pick or pairwise, or a scorer's other metric): the goal recommends from
-        # the group it decides on, its own measure; this one shows its leader beside it (owner, 2026-11-03).
-        dec["recommended"] = None
-        dec["shown_only"] = True
-        dec["why"] = [
-            *[w for w in dec["why"] if not w.startswith(("Recommended:", "Still undecided"))],
-            (
-                f"Read on {gm}: the goal decides on {(crit.get('primary') or {}).get('measure')}; this group is "
-                "shown, not recommended."
-            ),
-        ]
-    elif gm.endswith("_unvalidated"):
-        dec["recommended"] = None
-        dec["shown_only"] = True
-        dec["why"] = [
-            *[w for w in dec["why"] if not w.startswith(("Recommended:", "Still undecided"))],
-            (
-                f"{gm}: judges never compared with people for this use, a trial rather than a "
-                "measurement; this group is shown, not recommended."
-            ),
-        ]
-    return dec
-
-
-def gold_beside(tiers: dict, groups: list, key: str) -> str | None:
-    """The gold reference a silver-scored group sits beside on its dataset, or None: a silver group
-    with a gold one next to it never recommends (group_decision's `gold`)."""
-    if ref_tier(tiers, key) != "silver":
-        return None
-    return next((x["key"] for x in groups if ref_tier(tiers, x["key"]) == "gold"), None)
-
-
-def decides_on(g: dict, ds: str) -> bool:
-    """Whether the goal decides on this dataset (`decides: false` on a goal dataset: never)."""
-    return next((d.get("decides", True) for d in g.get("datasets") or [] if d.get("dataset_id") == ds), True)
-
-
 def baseline_gap(A: Adapter, dec: dict, rows: list, gm: str) -> str:
     """When the rule recommends another arm than the promoted baseline in this group: by how much
-    the recommended arm differs on quality, and whether the paired test finds the difference significant. Both can
-    be right: the rule follows the strategy, the baseline is a person's decision."""
-    from evaluation_harness import stats  # noqa: PLC0415
-
-    rec = dec["recommended"]
-    base = next((r for r in rows if r.get("baseline")), None)
-    if not rec or base is None or base["arm"] == rec:
+    the recommended arm differs on quality, and whether the paired test finds the difference significant (one
+    comparison, not corrected for the arms). Both can be right: the rule follows the strategy, the baseline is a
+    person's decision."""
+    gap = goal_views.baseline_gap(A, dec, rows, gm)
+    if not gap:
         return ""
     # as the page's other reasons name them: the scorer most arms are read through is named once, not after each
     labels = shown_labels({r["arm"]: r["label"] for r in rows})[0]
-    higher = dec["axes"][0]["direction"] == "higher"
-    series = {a: (A.scores(a).get(gm) or {}).get("values") or {} for a in (rec, base["arm"])}
-    clusters = goal_clusters(A, dec.get("goal") or {}, dec.get("dataset") or "")[0]
-    row = (
-        stats.compare(series, base["arm"], higher_is_better=higher, family=1, clusters=clusters).get("rows")
-        or [None]
-    )[0]
-    if not row or row.get("p") is None:
-        return ""
     return (
-        f"Differs from the promoted baseline, {labels[base['arm']]}: {labels[rec]} is "
-        f"{row['delta']:+.3f} on {gm} against it, {row.get('verdict', '')} (p {fmt_p(row['p'])}). "
+        f"Differs from the promoted baseline, {labels[gap['baseline']]}: {labels[gap['recommended']]} is "
+        f"{gap['delta']:+.3f} on {gm} against it, {gap['verdict']} (p {fmt_p(gap['p'])}, one comparison, not "
+        "corrected). "
         "The rule recommends by the goal's strategy; the baseline is a person's decision "
         "(evh run-promote)."
     )
-
-
-def shown_axes(dec: dict) -> list:
-    """The axes beside quality that some arm in the group records (cost counts its tokens too)."""
-    return [
-        ax
-        for ax in dec["axes"][1:]
-        if any(
-            row[ax["name"]]["n"] or (row[ax["name"]].get("tokens") or {}).get("n")
-            for row in dec["rows"].values()
-        )
-    ]
 
 
 def axis_cell(ax: dict, cell: dict) -> str:
@@ -4386,7 +3907,7 @@ def render_arm(A: Adapter, a: dict, ds: str, by_ds: dict, out: Path, nav: list) 
     rnds = [
         r
         for r in (rfn() if callable(rfn) else [])
-        if a["arm"] in (r.get("arms") or []) or a["arm"] in _retired_arms(r)
+        if a["arm"] in (r.get("arms") or []) or a["arm"] in retired_arms(r)
     ]
     if rnds:
         # A sentence, not "r1 of … · in play · closed": what the round was and what it did with this arm.
@@ -4394,7 +3915,7 @@ def render_arm(A: Adapter, a: dict, ds: str, by_ds: dict, out: Path, nav: list) 
             f"<li>Round <b>{e(r['round_id'])}</b> of "
             f"{goal_link(goals[r['goal']], '../') if r.get('goal') in goals else e(r.get('goal', ''))}"
             + (f", {e(r['status'])}" if r.get("status") else "")
-            + (": <b>retired</b> in it" if a["arm"] in _retired_arms(r) else ": one of its arms")
+            + (": <b>retired</b> in it" if a["arm"] in retired_arms(r) else ": one of its arms")
             + ".</li>"
             for r in rnds
         )

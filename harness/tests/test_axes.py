@@ -333,7 +333,7 @@ check(
 )
 
 # The home page's glance: the recommendation against the baseline, as ratios.
-from evaluation_harness.catalog_build import axis_ratios  # noqa: E402
+from evaluation_harness.model.goal_views import axis_ratios  # noqa: E402
 
 d = axes.decide(GOAL, {"a": arm("A", top, 0.01, 200), "b": arm("B", top, 0.001, 100)})
 check(
@@ -387,7 +387,7 @@ check(
 
 # A judge's group decides on the judge's own score: the goal's quality margin (written for its own
 # measure's scale) does not apply there.
-from evaluation_harness.catalog_build import group_decision  # noqa: E402
+from evaluation_harness.model.goal_views import group_decision  # noqa: E402
 
 
 class Judged(Scores):
@@ -423,7 +423,7 @@ check(
 )
 
 # A silver group beside a gold one shows its leader and never recommends: gold decides.
-from evaluation_harness.catalog_build import gold_beside  # noqa: E402
+from evaluation_harness.model.goal_views import gold_beside  # noqa: E402
 
 tiers = {"gold/ds": "gold", "silver/ds": "silver"}
 groups = [{"key": "gold/ds"}, {"key": "silver/ds"}]
@@ -449,7 +449,7 @@ check(
 )
 
 # The glance's group tier: the references listing first, else the reference id's own prefix.
-from evaluation_harness.catalog_build import ref_tier  # noqa: E402
+from evaluation_harness.model.goal_views import ref_tier  # noqa: E402
 
 check(
     "ref tier: listed tier wins; an unlisted gold/ or silver/ id names its tier; anything else has none",
@@ -460,7 +460,7 @@ check(
 )
 
 # The glance's baseline is the one the goal reads (RFC-022): its latest re-score when it has one.
-from evaluation_harness.catalog_build import baseline_read  # noqa: E402
+from evaluation_harness.model.goal_views import baseline_read  # noqa: E402
 
 v_bl = {
     "baselines": [{"arm": "runs/ds/old_v1"}, {"arm": "runs/ds/b_v1", "goal": "g1"}],

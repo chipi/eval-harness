@@ -22,6 +22,7 @@ from typing import Any
 from evaluation_harness import _common, _store
 from evaluation_harness._common import die
 from evaluation_harness._runs import runs_on
+from evaluation_harness.model.entity import Problem
 
 try:
     import yaml
@@ -29,23 +30,39 @@ except ImportError:  # pragma: no cover
     yaml = None  # type: ignore[assignment]
 
 
-def path_of(goal: str, round_id: str) -> Path:
-    """Where a round's record lives."""
-    return _common.ROUNDS / goal / f"{round_id}.yaml"
+def _entity(data: Path | None = None):
+    from evaluation_harness.model import rounds as model_rounds  # noqa: PLC0415
+
+    return model_rounds.ROUND.under(data)
 
 
-def load_rounds(goal: str | None = None) -> list[dict[str, Any]]:
-    """Every round (of one goal, when named), in goal then round order."""
-    base = _common.ROUNDS
-    if not _store.is_dir(base) or yaml is None:
+def path_of(goal: str, round_id: str, data: Path | None = None) -> Path:
+    """Where a round's record lives. An id the model refuses reaches no file: it is only named, in a message."""
+    ent = _entity(data)
+    try:
+        return ent.path(f"{goal}/{round_id}")
+    except Problem:
+        return ent.base() / str(goal) / f"{round_id}.yaml"
+
+
+def load_rounds(goal: str | None = None, data: Path | None = None) -> list[dict[str, Any]]:
+    """Every round (of one goal, when named), in goal then round order; from the project's data or another data
+    directory's (a deployment's copy of it, read as it is)."""
+    if yaml is None:
         return []
     # A goal is a plain name: `..`, a path separator or a glob character would reach (or probe for)
     # files outside data/rounds, and an agent can pass any string as --goal.
     if goal is not None and not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]*", goal):
         return []
+    ent = _entity(data)
+    ids = [
+        i
+        for i in ent.ids(check_format=False)
+        if i.split("/")[1].startswith("r") and (goal is None or i.split("/")[0] == goal)
+    ]
     out = []
-    for f in sorted(_store.glob(base, f"{goal or '*'}/r*.yaml"), key=lambda p: (p.parent.name, _num(p.stem))):
-        doc = yaml.safe_load(_store.read_text(f, encoding="utf-8")) or {}
+    for rid in sorted(ids, key=lambda i: (i.split("/")[0], _num(i.split("/")[1]))):
+        doc = yaml.safe_load(_store.read_text(ent.path(rid), encoding="utf-8")) or {}
         if isinstance(doc, dict):
             out.append(doc)
     return out
@@ -56,9 +73,9 @@ def _num(round_id: str) -> int:
     return int(m.group(1)) if m else 0
 
 
-def find(goal: str, round_id: str) -> dict[str, Any] | None:
+def find(goal: str, round_id: str, data: Path | None = None) -> dict[str, Any] | None:
     """One round, or None."""
-    return next((r for r in load_rounds(goal) if r.get("round_id") == round_id), None)
+    return next((r for r in load_rounds(goal, data) if r.get("round_id") == round_id), None)
 
 
 def resolve(round_id: str, goal: str | None = None) -> dict[str, Any]:
@@ -116,11 +133,13 @@ def save(doc: dict[str, Any]) -> Path:
     return p
 
 
-def runs_of(rnd: dict[str, Any], label: str = "") -> list[tuple[Path, dict]]:
+def runs_of(rnd: dict[str, Any], label: str = "", data: Path | None = None) -> list[tuple[Path, dict]]:
     """The scores of runs that name this round (and its goal), read under `label` ("": the plain runs)."""
+    from evaluation_harness.model import runs as model_runs  # noqa: PLC0415
+
     return [
         (d, m)
-        for d, m in runs_on(rnd.get("dataset_id"), label=label)
+        for d, m in model_runs.scored(rnd.get("dataset_id"), label_is=label, data=data)
         if m.get("round") == rnd["round_id"] and m.get("goal") == rnd["goal"]
     ]
 
@@ -134,7 +153,7 @@ def harness_now() -> dict[str, Any]:
     return {k: h.get(k) for k in ("version", "commit", "code_sha256", "installed")}
 
 
-def off_harness(rnd: dict[str, Any], label: str = "") -> list[tuple[str, dict]]:
+def off_harness(rnd: dict[str, Any], label: str = "", data: Path | None = None) -> list[tuple[str, dict]]:
     """The round's runs that ran on other harness code than it opened on (the fleet's feedback 17: code taken
     mid-round splits the round's instrument), as (run id, the harness it recorded). Empty for a round
     opened before rounds recorded it."""
@@ -142,7 +161,7 @@ def off_harness(rnd: dict[str, Any], label: str = "") -> list[tuple[str, dict]]:
     if not want:
         return []
     out = []
-    for _d, m in runs_of(rnd, label):
+    for _d, m in runs_of(rnd, label, data):
         h = ((m.get("fingerprint") or {}).get("instrument") or {}).get("harness") or {}
         if h.get("code_sha256") and h["code_sha256"] != want:
             out.append((m["run_id"], h))
@@ -301,7 +320,7 @@ def config_round(cfg: dict[str, Any], config_path: Any) -> dict[str, Any] | None
     return rnd
 
 
-def _arm_problems(rel: str, rnd: dict[str, Any]) -> list[str]:
+def _arm_problems(rel: str, rnd: dict[str, Any], data: Path | None = None) -> list[str]:
     """An arm names runs that are not runs of its system on the round's dataset, or not scored under its label."""
     from evaluation_harness.model import rounds as model_rounds  # noqa: PLC0415
     from evaluation_harness.model import runs as model_runs  # noqa: PLC0415
@@ -312,29 +331,32 @@ def _arm_problems(rel: str, rnd: dict[str, Any]) -> list[str]:
         lbl = str(a.get("label") or "")
         arm = f"{model_runs.arm_prefix(lbl)}/{ds}/{a['system']}"
         for rid in a.get("runs") or []:
-            run = model_runs.run(str(rid))
+            run = model_runs.run(str(rid), data)
             if run is None or run.get("config_id") != a["system"] or run.get("dataset_id") != ds:
                 out.append(f"rounds/{rel}: arm {arm}: {rid} is not a run of {a['system']} on {ds}")
-            elif not any(model_runs.label(sd) == lbl for sd in model_runs.scores_of(str(rid))):
+            elif not any(model_runs.label(sd) == lbl for sd in model_runs.scores_of(str(rid), data)):
                 out.append(f"rounds/{rel}: arm {arm}: {rid} is not scored under {lbl or 'the plain runs'!r}")
     return out
 
 
-def problems() -> list[str]:
+def problems(data: Path | None = None) -> list[str]:
     """What validate reports about rounds: unreadable or misnamed records, a goal or dataset that
     does not resolve, a `from` that does not exist, a closed round without a conclusion, and a run
     naming a round that does not exist."""
-    out: list[str] = []
-    base = _common.ROUNDS
-    if not _store.is_dir(base):
-        return out
     from evaluation_harness._common import load_goals  # noqa: PLC0415
+    from evaluation_harness.model import datasets as model_datasets  # noqa: PLC0415
+    from evaluation_harness.model import runs as model_runs  # noqa: PLC0415
 
-    goals = set(load_goals())
-    datasets = {p.stem for p in _store.glob(_common.DATASETS, "*.json")}
+    out: list[str] = []
+    ent = _entity(data)
+    if not _store.is_dir(ent.base()):
+        return out
+    files = [(rid, ent.path(rid)) for rid in ent.ids(check_format=False)]
+    goals = set(load_goals(None if data is None else Path(data) / "goals"))
+    datasets = set(model_datasets.DATASET.under(data).ids(check_format=False))
     known = set()
-    for f in sorted(_store.glob(base, "*/*.yaml")):
-        rel = f.relative_to(base).as_posix()
+    for rid, f in files:
+        rel = f"{rid}.yaml"
         try:
             doc = yaml.safe_load(_store.read_text(f, encoding="utf-8")) or {} if yaml else {}
         except Exception as exc:  # noqa: BLE001 - reported, not raised
@@ -358,13 +380,13 @@ def problems() -> list[str]:
             out.append(f"rounds/{rel}: dataset {doc.get('dataset_id')!r} does not exist")
         if doc.get("status") == "closed" and not (doc.get("conclusion") or {}).get("text"):
             out.append(f"rounds/{rel}: closed without a conclusion")
-        out += _arm_problems(rel, doc)
+        out += _arm_problems(rel, doc, data)
         known.add((doc.get("goal"), doc.get("round_id")))
-    for f in sorted(_store.glob(base, "*/*.yaml")):
+    for rid, f in files:
         doc = yaml.safe_load(_store.read_text(f, encoding="utf-8")) or {} if yaml else {}
         if doc.get("from") and (doc.get("goal"), doc["from"]) not in known:
-            out.append(f"rounds/{f.relative_to(base).as_posix()}: from {doc['from']!r}, which does not exist")
-    for _d, m in runs_on():
+            out.append(f"rounds/{rid}.yaml: from {doc['from']!r}, which does not exist")
+    for _d, m in model_runs.scored(label_is="", data=data):
         if m.get("round") and (m.get("goal"), m["round"]) not in known:
             out.append(
                 f"run {m['run_id']} names round {m['round']!r} of {m.get('goal')!r}, which does not exist"

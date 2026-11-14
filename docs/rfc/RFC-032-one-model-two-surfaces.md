@@ -445,3 +445,21 @@ Quoted from the discussion, typing slips corrected.
   - studies and faithfulness ("build studies and faithfulness in step 7"): entities of the model, read through its data
     root as datasets are; a study gets a schema; the faithfulness summary copied into a model record goes, the models
     page reading the faithfulness records.
+- **Step 8, the catalog onto the views** (after an inventory, each recommendation checked against the code: most
+  numbers come from functions the catalog and `evh` share, not from model views; where a model view exists it is a
+  second implementation; all agreed on this repository's data), "build/fix all of those issues":
+  - one goal decision in the model (answers, groups, leader, contenders, axes), read by the goal pages, `evh goals`,
+    the overview, `leaderboard` and `GET /goals/{id}/leaderboard`; one leader rule for rounds and goals (the round's
+    left in arms with too few items or the wrong format, which a goal never recommends);
+  - the overview's leader-against-baseline test is corrected for the arms the leader was chosen from, as the round
+    evidence's is (it used family 1); the goal page's note on the recommended arm says it is one comparison;
+  - `leaderboard --round` reads the arms the round compared (it read the in-play systems' plain runs);
+  - the model's runs, rounds and baselines take the data root; one listing per entity (captures, references, label
+    coverage, picks, tags, judge spend, rounds, the run index); the comparison and a model's state live in the model;
+  - the catalog never goes stale: a write through the API or an edit refreshes the server and starts a catalog
+    rebuild job at once, any other write on the server's next read; a scorers page; API resources for the views
+    reached only by process (overview, arms, metrics, activity, inspect, a comparison, label coverage);
+  - a run's `config_id` names its system (all 305): a format step renames it `system_id` in stored records, the
+    fingerprint and judging sets kept (they are hashed);
+  - dropped after the check: goal status and the goal page list different references by design (the goal's against
+    the dataset's); a deployed catalog does show round evidence (render.sh builds with the copy as the project).

@@ -6,9 +6,12 @@
 In a throwaway project built from the tutorial ($0, offline, the echo provider): an arm runs
 before any reference, against a silver reference made from the author's run, and against gold.
 The leaderboard printed them as one ranking (a silver 0.90 beside a gold 0.24, the table called
-silver); each reference now has its own table, gold first, and a row never mixes them.
+silver); each reference now has its own table, gold first, and a row never mixes them. The tables are the goal
+view's (model/goal_views): an arm is in the one table of the reference its latest run was scored against, as the
+catalog and the inspector read it.
 """
 
+import json
 import os
 import re
 import shutil
@@ -94,6 +97,17 @@ try:
         "tickets_lead1_v1_silver",
     )
     check("setup: lead1 runs against silver", r.returncode == 0, (r.stdout + r.stderr)[-400:])
+    time.sleep(1.1)
+    r = evh(
+        "run",
+        "--system",
+        "tickets_author_v1",
+        "--dataset",
+        "tickets_v1",
+        "--run-id",
+        "tickets_author_v1_silver",
+    )
+    check("setup: the author runs against its own silver", r.returncode == 0, (r.stdout + r.stderr)[-400:])
     r = evh(
         "label-import",
         str(KIT / "gold"),
@@ -133,14 +147,29 @@ try:
     heads = re.findall(r"^=== scored against (.+) ===$", out, re.M)
     check(
         "one table per reference, gold first",
-        r.returncode == 0 and heads[:2] == ["gold/tickets_v1", "silver/tickets_v1"] and len(heads) == 3,
+        r.returncode == 0 and heads == ["gold/tickets_v1", "silver/tickets_v1"],
         out[-1500:] + r.stderr[-300:],
     )
-    gold_part = out.split("=== scored against silver/tickets_v1 ===")[0]
+    gold_part, silver_part = out.split("=== scored against silver/tickets_v1 ===")
+
+    def rows(part):  # the table's rows (a warning above it names every run of the dataset)
+        return [ln.split()[0] for ln in part.splitlines() if re.match(r"^  tickets_\S+( \*)?\s+\d+\s", ln)]
+
     check(
         "the gold table holds only the gold-scored run (one run of lead1, not three averaged)",
-        re.search(r"tickets_lead1_v1\s+1\s", gold_part) is not None and "tickets_author_v1" not in gold_part,
+        rows(gold_part) == ["tickets_lead1_v1"]
+        and re.search(r"tickets_lead1_v1\s+1\s", gold_part) is not None,
         gold_part[-800:],
+    )
+    check(
+        "an arm is in the one table of its latest run's reference: lead1 is not also in silver's",
+        rows(silver_part) == ["tickets_author_v1"],
+        silver_part[-800:],
+    )
+    check(
+        "the arm that wrote the silver reference is marked, and says why",
+        "* tickets_author_v1 wrote the reference silver/tickets_v1" in silver_part,
+        silver_part[-800:],
     )
     check("it says the tables are never averaged across references", "never averaged across them" in out)
 
@@ -168,32 +197,72 @@ try:
     check(
         "rounds: read against one reference; an arm scored against another is named",
         r.returncode == 0
-        and "read against gold/tickets_v1; not compared: tickets_author_v1 (scored against no reference)"
+        and "read against gold/tickets_v1; not compared: tickets_author_v1 (scored against silver/tickets_v1)"
         in rs.stdout,
         (r.stdout + r.stderr)[-300:] + rs.stdout[-800:],
+    )
+
+    # With the goal that names the dataset the tables are the goal's: its decision under each, its flags in the data.
+    r = evh("leaderboard", "--dataset-id", "tickets_v1", "--json")
+    doc = json.loads(r.stdout) if r.returncode == 0 else {}
+    vals = (doc.get("result") or {}).get("values") or {}
+    gold_g: dict = next((g for g in vals.get("groups", []) if g["reference"] == "gold/tickets_v1"), {})
+    check(
+        "leaderboard: the goal that names the dataset reads it; its decision is in the data, an arm's flags in its row",
+        vals.get("goal") == "tickets_summary"
+        and (gold_g.get("decision") or {}).get("goal") == "tickets_summary"
+        and gold_g["decision"]["leader"] == "runs/tickets_v1/tickets_lead1_v1"
+        and gold_g["arms"][0]["arm"] == "runs/tickets_v1/tickets_lead1_v1"
+        and gold_g["arms"][0]["flags"] == [],
+        r.stdout[-700:] + r.stderr[-300:],
+    )
+    r = evh("leaderboard", "--dataset-id", "tickets_v1")
+    check(
+        "leaderboard: under a table, what the goal makes of it",
+        "goal tickets_summary: leader tickets_lead1_v1" in r.stdout,
+        r.stdout[-600:],
+    )
+    r = evh("leaderboard", "--dataset-id", "tickets_v1", "--goal", "no_such_goal")
+    check(
+        "leaderboard --goal: a goal that does not exist is refused, naming those there are",
+        r.returncode != 0 and "no goal 'no_such_goal': one of tickets_summary" in r.stderr,
+        r.stdout[-300:] + r.stderr[-300:],
+    )
+    r = evh("leaderboard", "--dataset-id", "tickets_v1", "--label", "silver")
+    check(
+        "leaderboard --label: only the arms read under it; none is refused with the label named",
+        r.returncode != 0 and "read as 'silver'" in r.stderr,
+        r.stdout[-300:] + r.stderr[-300:],
+    )
+    r = evh("goal-leaderboard", "tickets_summary", "--json")
+    ops = json.loads(r.stdout)["result"] if r.returncode == 0 else {}
+    first = ((ops.get("datasets") or [{}])[0].get("groups") or [{}])[0]
+    check(
+        "goal-leaderboard: the goal's tables through the operation, the same leader as `evh leaderboard`",
+        first.get("scored_against") == "gold/tickets_v1"
+        and first.get("leader") == "runs/tickets_v1/tickets_lead1_v1",
+        r.stdout[-500:] + r.stderr[-300:],
     )
 finally:
     shutil.rmtree(proj, ignore_errors=True)
 
 # A judged run is scored by its judge, not by its source run's reference: one group per judge.
 from evaluation_harness import leaderboard as lb  # noqa: E402
+from evaluation_harness.model import goal_views as gv  # noqa: E402
 
-judged_on_silver = {
-    "derived": {"kind": "judge", "with": {"scorer_id": "j1"}},
-    "fingerprint": {"data": {"reference_id": "silver/x"}},
-}
-judged_on_none = {"derived": {"kind": "judge", "with": {"scorer_id": "j1"}}, "fingerprint": {"data": {}}}
+judged_on_silver = {"judge": "j1", "reference": "silver/x"}
+judged_on_none = {"judge": "j1", "reference": ""}
 check(
-    "a judged run is grouped by its judge, whatever its source run was scored against",
-    lb._reference_of(judged_on_silver) == lb._reference_of(judged_on_none) == "judge j1",
+    "a judged arm is grouped by its judge, whatever its source run was scored against",
+    gv._group_key(judged_on_silver) == gv._group_key(judged_on_none) == "judge j1",
 )
+check("an arm with no reference is in the group of none", gv._group_key({"reference": ""}) == "no reference")
 check("a judged table is headed as scored by the judge", lb._heading("judge j1") == "scored by judge j1")
 check("runs with no reference are not called a reference", lb._heading(None) == "scored against no reference")
 
 # The judging pass's summary can hold checks that did not run (None): printed as —, never a crash.
 import contextlib  # noqa: E402
 import io  # noqa: E402
-import json  # noqa: E402
 
 with tempfile.TemporaryDirectory() as td:
     key = "judge-summ-v1@set_a"
