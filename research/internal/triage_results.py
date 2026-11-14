@@ -15,9 +15,9 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parents[1] / "harness"))
 from evaluation_harness import catalog_build as cb  # noqa: E402
-from evaluation_harness.model import goal_views as gv  # noqa: E402
 from evaluation_harness.axes import axis_title  # noqa: E402
 from evaluation_harness.catalog_adapter import load_catalog_adapter  # noqa: E402
+from evaluation_harness.model import goal_views as gv  # noqa: E402
 
 DOC = HERE / "TRIAGE_RESULTS_LIVE.md"
 GOAL, DATASET = "triage_orrery", "orrery_triage_v1_labelled"
