@@ -1,0 +1,64 @@
+{
+  "derived": {
+    "at": "2026-10-01T16:13:36Z",
+    "from": "fn_anthropic_l_n200_v1_20260928T084918Z",
+    "kind": "rescore",
+    "with": {
+      "adapter": "examples/ner-few-nerd/adapter.py",
+      "scorer": {
+        "normalizer_sha256": "9664fa3cb17f6df87ffc7de387cb9ec20d6fa4988d6a3a400dadf0f415d0552d",
+        "parser_sha256": "23058c218b1c50eb679099082cd2df8150b0e33d8f707b38479caa4173f88769",
+        "scorer_sha256": "f3cf13af2b8fd609528a547c391b23422b5e3490304be0a7811f1faa6d9ba334"
+      },
+      "sha256": "6124a5a879fdbbe0adea4b2819864f1be8acb5f6902a60ae5e8ca8a4b59b1e3c"
+    }
+  },
+  "metric_kinds": {
+    "confidence": "descriptive",
+    "f1": "quality",
+    "fn": "descriptive",
+    "fp": "descriptive",
+    "n_gold": "descriptive",
+    "n_predicted": "descriptive",
+    "parsed": "quality",
+    "precision": "quality",
+    "reasoning_tokens": "descriptive",
+    "recall": "quality",
+    "resumed": "descriptive",
+    "tp": "descriptive",
+    "truncated": "descriptive",
+    "type_penalty": "descriptive",
+    "untyped_f1": "quality",
+    "untyped_fn": "descriptive",
+    "untyped_fp": "descriptive",
+    "untyped_tp": "descriptive"
+  },
+  "primary_metric": "f1",
+  "reference_tier": "gold",
+  "scores": {
+    "cost_usd": 0.0024631071,
+    "f1": 0.6798215701,
+    "fn": 0.7285714286,
+    "fp": 0.9607142857,
+    "latency_ms": 2758.9739071429,
+    "n_gold": 2.7357142857,
+    "n_predicted": 2.9678571429,
+    "parsed": 1.0,
+    "precision": 0.6744776206,
+    "reasoning_tokens": 0.0,
+    "recall": 0.7067524093,
+    "tokens_in": 168.2821428571,
+    "tokens_out": 64.8678571429,
+    "total_cost_usd": 0.68967,
+    "total_tokens_in": 47119.0,
+    "total_tokens_out": 18163.0,
+    "tp": 2.0071428571,
+    "truncated": 0.0,
+    "type_penalty": 0.1021396934,
+    "untyped_f1": 0.7819612635,
+    "untyped_fn": 0.4357142857,
+    "untyped_fp": 0.6678571429,
+    "untyped_tp": 2.3
+  },
+  "source_created_at": "2026-09-28T09:02:14Z"
+}

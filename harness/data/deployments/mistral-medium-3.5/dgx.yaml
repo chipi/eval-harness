@@ -1,0 +1,38 @@
+model_id: mistral-medium-3.5
+deployment_id: dgx
+order: 1
+where: dgx
+tag: mistral-medium-3.5:128b
+endpoint:
+  provider: openai
+  base_url: http://100.69.49.126:11434/v1
+  model: mistral-medium-3.5:128b
+digest: 0341632adb051badc332bd814779ab931ab78619750bebe3b7c7b1401e9d70df
+checked_at: '2026-10-31T14:10:38Z'
+server: ollama 0.40.13
+checks:
+- kind: onboarding
+  status: pass
+  at: '2026-10-31T14:10:38Z'
+  where: dgx
+  flags: []
+  report:
+    endpoint:
+      provider: openai
+      base_url: http://100.69.49.126:11434/v1
+      model: mistral-medium-3.5:128b
+    digest_found: 0341632adb051badc332bd814779ab931ab78619750bebe3b7c7b1401e9d70df
+    default:
+      s: 29.51
+      tokens_out: 25
+      reasoned: false
+      finish: stop
+    chosen:
+      s: 8.7
+      tokens_out: 25
+      reasoned: false
+      finish: stop
+      settings: {}
+    tokens_per_s: 2.9
+    deterministic: true
+    json_valid: true

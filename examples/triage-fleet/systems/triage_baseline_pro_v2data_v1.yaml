@@ -1,0 +1,10 @@
+# The baseline arm (triage_baseline_pro_v1: production's model and settings, the fleet at f07efa9, prompt c2ece738)
+# on v2 of the labelled set: everything as on v1 but the items, so v1 against v2 measures the hindsight fix alone.
+system_id: triage_baseline_pro_v2data_v1
+adapter: ../adapter.py
+params:
+  provider: gateway
+  model: eval-fleet-triage-pro
+  usd_per_mtok_in: 0.816
+  usd_per_mtok_out: 1.632
+  fleet_commit: f07efa9

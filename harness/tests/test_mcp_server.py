@@ -23,8 +23,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 KIT = HERE.parent / "tutorial"
 from evaluation_harness._check import check, summary  # noqa: E402
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runstore  # noqa: E402
+from evaluation_harness import _format  # noqa: E402
 from evaluation_harness.cli import COMMANDS  # noqa: E402
-from evaluation_harness.mcp_server import NOT_TOOLS, READ_TOOLS, tools_for  # noqa: E402
+from evaluation_harness.mcp_server import AGENT_TOOLS, NOT_TOOLS, READ_TOOLS, tools_for  # noqa: E402
 
 try:
     import anyio
@@ -37,9 +41,8 @@ except ImportError as exc:  # the package depends on mcp; a checkout's venv may 
     sys.exit(1)
 
 proj = Path(tempfile.mkdtemp(prefix="evh-mcp-"))
-env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-mcp")
+env = dict(os.environ, EVH_ACTOR="person:test", EVAL_HOME=str(proj), EVAL_BUILD_REF="test-mcp")
 env.pop("EVAL_DATA_DIR", None)
-env.pop("EVAL_RUNS_DIR", None)
 
 
 def evh(*args):
@@ -48,20 +51,25 @@ def evh(*args):
     )
 
 
+TOOLS = set(READ_TOOLS) | set(AGENT_TOOLS)
 check(
-    "every evh command is a tool or not one, with a reason; none is both",
-    set(READ_TOOLS) | set(NOT_TOOLS) == set(COMMANDS) and not set(READ_TOOLS) & set(NOT_TOOLS),
-    f"neither: {sorted(set(COMMANDS) - set(READ_TOOLS) - set(NOT_TOOLS))}; "
-    f"unknown: {sorted((set(READ_TOOLS) | set(NOT_TOOLS)) - set(COMMANDS))}",
+    "every evh command is a tool (a read, or the agent sampler's two) or not one, with a reason; none is both",
+    TOOLS | set(NOT_TOOLS) == set(COMMANDS)
+    and not TOOLS & set(NOT_TOOLS)
+    and not set(READ_TOOLS) & set(AGENT_TOOLS),
+    f"neither: {sorted(set(COMMANDS) - TOOLS - set(NOT_TOOLS))}; unknown: {sorted((TOOLS | set(NOT_TOOLS)) - set(COMMANDS))}",
 )
 
 try:
     data = proj / "data"
-    (data / "configs").mkdir(parents=True)
+    (data / "systems").mkdir(parents=True)
+    _runstore.write_text(proj, _format.NAME, f"format: {_format.FORMAT}\n")
     (data / "goals").mkdir()
     shutil.copytree(KIT / "tickets", proj / "tutorial" / "tickets")
     # The tutorial's fields: area and plan are public, deadline is not.
-    shutil.copytree(KIT / "fields", data / "fields")
+    (data / "fields").mkdir()
+    for f in sorted((KIT / "fields").iterdir()):
+        _runstore.write_text(proj, f"fields/{f.name}", f.read_text())
     r = evh(
         "dataset-create",
         "--dataset-id",
@@ -103,10 +111,13 @@ try:
         )
     )
     check("setup: the kit's gold, imported and promoted", r.returncode == 0, (r.stdout + r.stderr)[-300:])
-    shutil.copy(KIT / "goals" / "tickets_summary.yaml", data / "goals")
-    cfg = (KIT / "configs" / "tickets_lead2.yaml").read_text()
-    (data / "configs" / "lead2.yaml").write_text(cfg + "goal: tickets_summary\n")
-    r = evh("run", "--config", str(data / "configs" / "lead2.yaml"))
+    _runstore.write_text(
+        proj, "goals/tickets_summary.yaml", (KIT / "goals" / "tickets_summary.yaml").read_text()
+    )
+    _runstore.write_text(
+        proj, "systems/tickets_lead2_v1.yaml", (KIT / "systems" / "tickets_lead2_v1.yaml").read_text()
+    )
+    r = evh("run", "--system", "tickets_lead2_v1", "--dataset", "tickets_v1", "--goal", "tickets_summary")
     check("setup: one run", r.returncode == 0, r.stderr[-300:])
     said = r.stdout.splitlines()
     wrote = next((n for n, ln in enumerate(said) if ln.startswith("wrote 1 run(s) to ")), -1)
@@ -116,10 +127,13 @@ try:
         r.stdout[-300:],
     )
     # The second arm, through --json: progress on stderr, one envelope on stdout.
-    (data / "configs" / "lead1.yaml").write_text(
-        (KIT / "configs" / "tickets_lead1.yaml").read_text() + "goal: tickets_summary\n"
+    _runstore.write_text(
+        proj,
+        "systems/tickets_lead1_v1.yaml",
+        (KIT / "systems" / "tickets_lead1_v1.yaml").read_text(),
     )
-    dry = evh("run", "--config", str(data / "configs" / "lead1.yaml"), "--dry-run", "--json")
+    lead1 = ("run", "--system", "tickets_lead1_v1", "--dataset", "tickets_v1", "--goal", "tickets_summary")
+    dry = evh(*lead1, "--dry-run", "--json")
     dry_values = json.loads(dry.stdout)["result"]["values"] if dry.returncode == 0 else {}
     check(
         "run --dry-run --json: the projection as values, nothing written",
@@ -127,24 +141,24 @@ try:
         and dry_values["dry_run"]["api_calls"] == 6
         and dry_values["dry_run"]["config_id"] == "tickets_lead1_v1"
         and "runs" not in dry_values
-        and len(list((data / "runs").glob("tickets_lead1_v1_*"))) == 0,
+        and not any(n.startswith("tickets_lead1_v1_") for n in _runstore.listdir(proj, "runs")),
         dry.stdout[-300:] + dry.stderr[-300:],
     )
-    r = evh("run", "--config", str(data / "configs" / "lead1.yaml"), "--json")
+    r = evh(*lead1, "--json")
     made = (
         json.loads(r.stdout)["result"]["values"]["runs"]
         if r.returncode == 0 and r.stdout.count("\n") == 1
         else []
     )
     check(
-        "run --json: stdout is one envelope with the run (id, config, dataset, dir, items, cost, cap); progress is on stderr",
+        "run --json: stdout is one envelope with the run (id, system, dataset, dir, items, cost, cap); progress is on stderr",
         len(made) == 1
         and made[0]["run_id"].startswith("tickets_lead1_v1_")
         and (made[0]["config_id"], made[0]["dataset_id"], made[0]["n_items"])
         == ("tickets_lead1_v1", "tickets_v1", 6)
         and made[0]["total_cost_usd"] in (0, 0.0, None)
         and made[0]["capped_at"] is None
-        and Path(made[0]["dir"]).is_dir()
+        and _runstore.exists(proj, Path(made[0]["dir"]).relative_to(proj / "data").as_posix())
         and "wrote 1 run(s) to" in r.stderr
         and f"  run {made[0]['run_id']}" in r.stderr,
         r.stdout[-300:] + r.stderr[-300:],
@@ -190,10 +204,18 @@ try:
             await s.initialize()
             tools = (await s.list_tools()).tools
             by = {t.name: t for t in tools}
-            check("tools: exactly the read commands", sorted(by) == sorted(READ_TOOLS), sorted(by))
             check(
-                "tools: each read-only, not destructive",
-                all(t.annotations.read_only_hint and not t.annotations.destructive_hint for t in tools),
+                "tools: the read commands, and the agent sampler's study-ask and study-tell (a local server)",
+                sorted(by) == sorted(TOOLS),
+                sorted(by),
+            )
+            check(
+                "tools: each read-only but the agent sampler's two (RFC-029), none destructive",
+                all(
+                    bool(t.annotations.read_only_hint) == (t.name not in AGENT_TOOLS)
+                    and not t.annotations.destructive_hint
+                    for t in tools
+                ),
             )
             check(
                 "tools: no schema takes --adapter or --json",
@@ -236,7 +258,7 @@ try:
                     "unlabelled",
                     "scores-only",
                     "metric",
-                    "from",
+                    "label",
                 }
                 <= props
                 and not {"csv", "fill", "choices", "seed", "rubric", "scale", "rows", "items"} & props,

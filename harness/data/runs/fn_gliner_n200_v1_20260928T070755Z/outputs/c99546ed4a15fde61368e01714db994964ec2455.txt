@@ -1,1 +1,0 @@
-[{"text": "1921", "type": "event"}, {"text": "South Liverpool", "type": "location"}]

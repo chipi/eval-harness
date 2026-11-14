@@ -19,8 +19,13 @@ import traceback
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
+from evaluation_harness import _common
 from evaluation_harness._check import check, summary
 from evaluation_harness.stats import EXACT_UP_TO, fmt_p
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runfix
+import _runstore
 
 ROOT = Path(__file__).resolve().parents[1]
 PY = sys.executable
@@ -39,6 +44,12 @@ def run_script(*args: str, env: dict | None = None, cwd: Path | None = None) -> 
     return subprocess.run([PY, *resolved_args], cwd=cwd or ROOT, capture_output=True, text=True, env=e)
 
 
+def project(meta: dict) -> Path:
+    """The test project a fixture goes into. _runstore aims at one project per process: forget the last one's root."""
+    _common.project_root.cache_clear()
+    return meta["tmp"]
+
+
 def setup_runs_tree(tmp: Path) -> dict:
     """Build a temp directory tree with runs, references, materialized, etc.
     Returns metadata dict with the paths and config for assertions."""
@@ -49,8 +60,9 @@ def setup_runs_tree(tmp: Path) -> dict:
         "refs": tmp / "data" / "references",
         "mat": tmp / "data" / "materialized",
     }
-    meta["refs"].mkdir(parents=True, exist_ok=True)
-    meta["mat"].mkdir(parents=True, exist_ok=True)
+    if not _runstore.sqlite():
+        meta["refs"].mkdir(parents=True, exist_ok=True)
+        meta["mat"].mkdir(parents=True, exist_ok=True)
     return meta
 
 
@@ -63,13 +75,9 @@ def write_run(
     outputs: dict | None = None,
     ref_id: str | None = None,
     adapter: str | None = None,
+    extra: dict | None = None,
 ) -> None:
-    """Write a single run with metrics.json and predictions.jsonl."""
-    run_dir = meta["runs"] / run_id
-    run_dir.mkdir(parents=True, exist_ok=True)
-    (run_dir / "outputs").mkdir(exist_ok=True)
-
-    # metrics.json with scores
+    """Write a single run: its run.json, and a score of it with metrics.json and predictions.jsonl."""
     metrics = {
         "run_id": run_id,
         "dataset_id": dataset_id,
@@ -86,25 +94,24 @@ def write_run(
     }
     if adapter:
         metrics["adapter"] = adapter
-    (run_dir / "metrics.json").write_text(json.dumps(metrics))
+    metrics.update(extra or {})
 
     # predictions.jsonl with per-item scores
     pred_rows = []
     for item_id, item_scores in (outputs or {}).items():
         row = {"item_id": item_id, **item_scores}
         pred_rows.append(json.dumps(row))
-    if pred_rows:
-        (run_dir / "predictions.jsonl").write_text("\n".join(pred_rows) + "\n")
-    else:
-        (run_dir / "predictions.jsonl").write_text("")
+    with _runstore._InProject(project(meta)) as data:
+        _runfix.put_run(data, metrics, "\n".join(pred_rows) + "\n" if pred_rows else "")
 
 
 def write_reference(meta: dict, ref_type: str, dataset_id: str, items: dict) -> None:
     """Write reference texts for a dataset. items: {item_id: text}."""
     ref_dir = meta["refs"] / ref_type / dataset_id
-    ref_dir.mkdir(parents=True, exist_ok=True)
+    if not _runstore.sqlite():
+        ref_dir.mkdir(parents=True, exist_ok=True)
     for item_id, text in items.items():
-        (ref_dir / f"{item_id}.txt").write_text(text)
+        _runstore.write_text(project(meta), f"references/{ref_type}/{dataset_id}/{item_id}.txt", text)
 
     # For silver, write manifest
     if ref_type.startswith("silver"):
@@ -114,15 +121,18 @@ def write_reference(meta: dict, ref_type: str, dataset_id: str, items: dict) -> 
             "model": "test-model",
             "tier": "silver",
         }
-        (ref_dir / "manifest.json").write_text(json.dumps(manifest))
+        _runstore.write_text(
+            project(meta), f"references/{ref_type}/{dataset_id}/manifest.json", json.dumps(manifest)
+        )
 
 
 def write_materialized(meta: dict, dataset_id: str, items: dict) -> None:
     """Write materialized source texts."""
     mat_dir = meta["mat"] / dataset_id
-    mat_dir.mkdir(parents=True, exist_ok=True)
+    if not _runstore.sqlite():
+        mat_dir.mkdir(parents=True, exist_ok=True)
     for item_id, text in items.items():
-        (mat_dir / f"{item_id}.txt").write_text(text)
+        _runstore.write_text(project(meta), f"materialized/{dataset_id}/{item_id}.txt", text)
 
 
 def test_compare_runs_identical_builds() -> int:
@@ -131,15 +141,9 @@ def test_compare_runs_identical_builds() -> int:
     meta = setup_runs_tree(tmp)
 
     # Two runs, identical build, different scores
-    write_run(meta, "run_a", "ds1", "arm_a", {"f1": 0.850, "precision": 0.880})
-    write_run(meta, "run_b", "ds1", "arm_a", {"f1": 0.855, "precision": 0.875})
-
-    # Force both to have identical build hash
-    for run_id in ["run_a", "run_b"]:
-        mj = meta["runs"] / run_id / "metrics.json"
-        m = json.loads(mj.read_text())
-        m["build"]["ref"] = "same_build_hash_xyz"
-        mj.write_text(json.dumps(m))
+    same = {"build": {"ref": "same_build_hash_xyz"}}  # both on one build
+    write_run(meta, "run_a", "ds1", "arm_a", {"f1": 0.850, "precision": 0.880}, extra=same)
+    write_run(meta, "run_b", "ds1", "arm_a", {"f1": 0.855, "precision": 0.875}, extra=same)
 
     env = {"EVAL_HOME": str(tmp)}
     result = run_script(
@@ -671,12 +675,11 @@ def json_tree() -> tuple[Path, dict, dict]:
     ):
         rows = {i: {"acc": 1.0 if n < wins else 0.0} for n, i in enumerate(ids)}
         scores = {"acc": wins / 40, "total_cost_usd": cost, "latency_ms": latency}
-        write_run(meta, f"run_{arm}", "dsj", arm, scores, outputs=rows)
-        mj = meta["runs"] / f"run_{arm}" / "metrics.json"
-        m = json.loads(mj.read_text())
-        m["metric_kinds"] = {"acc": "quality", "total_cost_usd": "cost", "latency_ms": "speed"}
-        m["created_at"] = "2026-11-01T10:00:00Z"
-        mj.write_text(json.dumps(m))
+        extra = {
+            "metric_kinds": {"acc": "quality", "total_cost_usd": "cost", "latency_ms": "speed"},
+            "created_at": "2026-11-01T10:00:00Z",
+        }
+        write_run(meta, f"run_{arm}", "dsj", arm, scores, outputs=rows, extra=extra)
     return tmp, meta, {"EVAL_HOME": str(tmp), "EVAL_NO_CACHE": "1"}
 
 
@@ -944,10 +947,10 @@ def test_json_run_compare() -> int:
         and wide["result"]["values"]["moved_beyond_noise"] == 0,
         wide["result"]["values"],
     )
-    mj = meta["runs"] / "run_arm_b" / "metrics.json"
-    m = json.loads(mj.read_text())
+    rel = "runs/run_arm_b/run.json"
+    m = _runstore.read_json(project(meta), rel)
     del m["fingerprint"]
-    mj.write_text(json.dumps(m))
+    _runstore.write_text(project(meta), rel, json.dumps(m))
     old = parsed(run_script(*base, "--json", env=env, cwd=tmp))["result"]["values"]
     check(
         "run-compare --json: a run that predates fingerprinting is not comparable, and says why",
@@ -1057,18 +1060,21 @@ def test_json_runs_list() -> int:
         all(r["run_id"] in text.stdout for r in rows) and len(rows) == len(rows_of_text(text.stdout)),
         text.stdout,
     )
-    none = parsed(run_script("scripts/list_runs.py", "--baselines", "--json", env=env, cwd=tmp))
+    none = parsed(run_script("scripts/view_baselines.py", "--json", env=env, cwd=tmp))
     check(
-        "runs-list --baselines --json: no baselines is an empty table and a count of 0",
-        none["result"]["values"] == {"kind": "baselines", "count": 0}
-        and table_rows(none, "baseline_id") == [],
+        "evh baselines --json: no baselines is an empty list",
+        none == {"schema": "evh-baselines/1", "baselines": []},
         none,
     )
-    (meta["data"] / "baselines").mkdir()
-    (meta["data"] / "baselines" / "dsj_baseline.json").write_text(
+    if not _runstore.sqlite():
+        (meta["data"] / "baselines" / "_dataset" / "dsj").mkdir(parents=True)
+    _runstore.write_text(
+        project(meta),
+        "baselines/_dataset/dsj/1.json",
         json.dumps(
             {
-                "baseline_id": "dsj_baseline",
+                "version": 1,
+                "goal": None,
                 "dataset_id": "dsj",
                 "promoted_from": "run_arm_a",
                 "build": {"ref": "abc123def456"},
@@ -1077,14 +1083,14 @@ def test_json_runs_list() -> int:
                 "reason": "the best of four",
                 "scores": {"acc": 1.0, "n_items": 40},
             }
-        )
+        ),
     )
-    bl = parsed(run_script("scripts/list_runs.py", "--baselines", "--json", env=env, cwd=tmp))
-    brow = table_rows(bl, "baseline_id")
-    bl_text = run_script("scripts/list_runs.py", "--baselines", env=env, cwd=tmp).stdout
+    bl = parsed(run_script("scripts/view_baselines.py", "--json", env=env, cwd=tmp))
+    brow = bl["baselines"]
+    bl_text = run_script("scripts/view_baselines.py", env=env, cwd=tmp).stdout
     check(
-        "runs-list --baselines --json: a row per baseline, its scores as numbers, the text unchanged",
-        bl["result"]["values"] == {"kind": "baselines", "count": 1}
+        "evh baselines --json: one entry per baseline, its scores as numbers; the text says the same",
+        len(brow) == 1
         and (brow[0]["promoted_from"], brow[0]["reason"], brow[0]["scores"]["acc"])
         == ("run_arm_a", "the best of four", 1.0)
         and "why      the best of four" in bl_text

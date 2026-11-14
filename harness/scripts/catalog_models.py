@@ -28,7 +28,8 @@ STATUS_WORDS = {
 }
 #: How an arm that uses a record says whether it was smoked (`evh arm-smoke`): pass, check or none.
 SMOKE_WORDS = {"pass": "smoked", "check": "smoke: check", "none": "not smoked"}
-SMOKE_BADGE = {k: f'<span class="role">{v}</span>' for k, v in SMOKE_WORDS.items()}
+# a smoke's result is a check, not a role: its own outlined badge
+SMOKE_BADGE = {k: f'<span class="smoke">{v}</span>' for k, v in SMOKE_WORDS.items()}
 
 
 def e(s) -> str:
@@ -60,7 +61,7 @@ def arm_records(A) -> dict[str, dict]:
 
 
 def smoke_of(rec: dict, config_id: str) -> str:
-    """The latest arm smoke of a config that names the record: pass, check or none."""
+    """The latest arm smoke of a system that names the record: pass, check or none."""
     status = ((rec.get("smokes") or {}).get(config_id) or {}).get("status")
     return str(status) if status in ("pass", "check") else "none"
 
@@ -198,14 +199,15 @@ def model_rows(A, by_ds: dict, arms_rows: list[dict] | None = None) -> list[dict
         return []
     arm_rows = {r["arm"]: r for r in (arms_rows if arms_rows is not None else ca.arm_rows(A, by_ds))}
     ranks: dict = {}
-    for c in ca.config_rows(A, by_ds, list(arm_rows.values()), []):
-        ranks[c["config"]] = c["ranks"]
+    for c in ca.system_rows(A, by_ds, list(arm_rows.values()), []):
+        ranks[c["system"]] = c["ranks"]
     out = []
     for x in found:
         rec = x["record"]
         arms = [arm_rows[a] for a in x["arms"] if a in arm_rows]
         best: dict = {}
-        for cid in {r["config"] for r in arms}:
+        # sorted: on a tie the first wins, the same every build (a set's order differs per process)
+        for cid in sorted({r["system"] for r in arms}):
             for g, ds, i, n in ranks.get(cid, []):
                 k = (g["goal_id"], ds)
                 if k not in best or i < best[k][2]:
@@ -232,7 +234,12 @@ def model_rows(A, by_ds: dict, arms_rows: list[dict] | None = None) -> list[dict
                 "flags": [
                     (f"{d['id']}: {f}" if len(deps) > 1 else f) for d, o in onbs for f in o.get("flags") or []
                 ],
-                "build": list(dict.fromkeys(build_text(b) for b in deps)),
+                "build": (
+                    [str(vs[-1].get("commit"))[:12]]
+                    if rec.get("kind") == "code"
+                    and (vs := [v for v in rec.get("versions") or [] if isinstance(v, dict)])
+                    else list(dict.fromkeys(build_text(b) for b in deps))
+                ),
                 "deployments": deps,
                 "diffs": diffs,
                 "differs": any(diffs),
@@ -275,7 +282,12 @@ def changes(rows: list[dict]) -> list[tuple]:
 
 
 def onboarding_cell(r: dict) -> str:
-    """The models table's onboarding cell: pass, check or not onboarded, with its date."""
+    """The models table's onboarding cell: pass, check or not onboarded, with its date; for code under test, its
+    versions and how many a replay has checked (it is not onboarded: it is replayed)."""
+    if r["kind"] == "code":
+        vs = [v for v in r["record"].get("versions") or [] if isinstance(v, dict)]
+        checked = sum(1 for v in vs if (v.get("faithfulness") or {}).get("items"))
+        return f'{len(vs)} version(s)<br><small class="muted">{checked} checked for faithfulness</small>'
     if r["status"] == "none":
         return '<span class="muted">not onboarded</span>'
     word = {"vetted": "pass", "onboarded": "probed"}.get(r["status"], "check")
@@ -488,6 +500,46 @@ def yes_no(v: bool) -> str:
     return "yes" if v else "no"
 
 
+def version_rows(rec: dict) -> list[list[str]]:
+    """A code record's versions, newest first, as text: the commit, when it ran in production, what changed, and
+    how faithfully a replay reproduced it (R; "not checked" until a replay has run). The page and `evh models
+    --model` both read these."""
+    rows = []
+    for v in reversed([v for v in rec.get("versions") or [] if isinstance(v, dict)]):
+        ran = "; ".join(
+            f"{day(p.get('from'))} to {day(p.get('to')) if p.get('to') else 'now'}"
+            for p in v.get("deployed") or []
+            if isinstance(p, dict)
+        )
+        f = v.get("faithfulness") or {}
+        faith = (
+            f"{f.get('agreed')} of {f.get('items')} agreed"
+            + (f", {len(f['exceptions'])} named" if f.get("exceptions") else "")
+            + (f", {f['run']}" if f.get("run") else "")
+            + (f" ({day(f.get('at'))})" if f.get("at") else "")
+            if f.get("items")
+            else "not checked"
+        )
+        rows.append([str(v.get("commit"))[:12], ran or "—", v.get("note") or "—", faith])
+    return rows
+
+
+def code_versions(rec: dict) -> str:
+    """A code record's versions on its page (version_rows)."""
+    from evaluation_harness import catalog_build as cb  # noqa: PLC0415
+
+    rows = version_rows(rec)
+    if not rows:
+        return (
+            '<p class="muted">No version is recorded yet: list its commits under <code>versions</code>.</p>'
+        )
+    return cb.table(
+        "versions",
+        ["version", "in production", "what changed", "faithfulness"],
+        [[f"<code>{e(a)}</code>", e(b), e(n), e(f)] for a, b, n, f in rows],
+    )
+
+
 def render_model(A, r: dict, out, nav: list) -> None:
     """Write one model's page."""
     from evaluation_harness import catalog_build as cb  # noqa: PLC0415
@@ -502,10 +554,13 @@ def render_model(A, r: dict, out, nav: list) -> None:
         ("weights", e(r["weights"]) if r["weights"] else ""),
         ("licence", e(r["licence"])),
         ("aliases", " ".join(f"<code>{e(a)}</code>" for a in rec.get("aliases") or [])),
+        ("repository", f"<code>{e(rec['repo'])}</code>" if rec.get("repo") else ""),
         ("settings", settings or "defaults"),
         (
             "onboarding",
-            f"{STATUS_WORDS[r['status']]}"
+            ""
+            if rec.get("kind") == "code"
+            else f"{STATUS_WORDS[r['status']]}"
             + (f' <small class="muted">{e(r["onboarded"])}</small>' if r["onboarded"] else "")
             if r["status"] != "none"
             else "not onboarded: <code>evh model-onboard</code>",
@@ -522,7 +577,9 @@ def render_model(A, r: dict, out, nav: list) -> None:
     body = cb.hero(
         "model",
         e(r["name"]) + f' <span class="tag-base">{e(r["kind"])}</span>',
-        "A model record: onboarded once for the project and used by any eval's arms.",
+        "Code under test: its versions, when each ran in production, and how faithfully a replay reproduces it."
+        if rec.get("kind") == "code"
+        else "A model record: onboarded once for the project and used by any eval's arms.",
         f'<dl class="kv">{dl}</dl><p class="btns"><a class="btn" href="../models.html">Every model</a></p>',
     )
     # One section, one block per deployment: where it runs and its build in the summary line, and inside, the
@@ -622,12 +679,15 @@ def render_model(A, r: dict, out, nav: list) -> None:
         inner += (
             f'<p class="small muted">What it can do, across its deployments: {e(kv(rec["capabilities"]))}</p>'
         )
-    if not r["deployments"]:
-        inner = (
-            '<p class="muted">No deployment is recorded for this model. Not onboarded yet: '
-            f"<code>evh model-onboard {e(r['id'])}</code>.</p>"
-        )
-    body += cb.block("01", "deployments and their onboarding", inner)
+    if rec.get("kind") == "code":
+        body += cb.block("01", "versions", code_versions(rec))
+    else:
+        if not r["deployments"]:
+            inner = (
+                '<p class="muted">No deployment is recorded for this model. Not onboarded yet: '
+                f"<code>evh model-onboard {e(r['id'])}</code>.</p>"
+            )
+        body += cb.block("01", "deployments and their onboarding", inner)
     hist = [
         [
             f'<span data-v="{e(day(h.get("at")))}">{e(day(h.get("at")))}</span>',
@@ -656,8 +716,8 @@ def render_model(A, r: dict, out, nav: list) -> None:
         cfg = (cfg_fn(a["arm"]) if callable(cfg_fn) else {}) or {}
         params = cfg.get("params") or {}
         over = arm_settings(rec, params)
-        sm = (rec.get("smokes") or {}).get(a["config"])
-        # The arm's deployment: named in its config (`deployment:`), else the machine a self-hosted arm ran on,
+        sm = (rec.get("smokes") or {}).get(a["system"])
+        # The arm's deployment: named in its system (`deployment:`), else the machine a self-hosted arm ran on,
         # else the record's hosted deployment for an arm that called a gateway.
         dep = (
             a.get("deployment")
@@ -689,7 +749,7 @@ def render_model(A, r: dict, out, nav: list) -> None:
         "arms",
         cb.table("modelarms", ["arm", "deployment", "goal", "its settings", "arm smoke", "result"], ars)
         if ars
-        else '<p class="muted">No arm uses this model yet: name it with <code>model_record</code> in a config.</p>',
+        else '<p class="muted">No arm uses this model yet: name it with <code>model_record</code> in a system.</p>',
     )
     cb.write(
         out,

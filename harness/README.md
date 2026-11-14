@@ -30,11 +30,11 @@ the best arm's run), compare, choose:
 ```bash
 evh dataset-create --dataset-id my_v1 --source-dir data/sources/my_v1
 evh dataset-materialize --dataset-id my_v1
-evh run --config data/configs/best_model.yaml          # the arm that writes the reference
+evh run --system best_model_v1 --dataset my_v1          # the system that writes the reference
 evh label-from-run --run <its run_id> --set best_v1                 # optional: its outputs as a model's labels
 evh reference-promote --dataset-id my_v1 --labels best_v1 --tier silver \
     --reason "the best system we have ranks the rest" --by me          # ...promoted to silver
-evh run --config data/configs/arm_a.yaml --repeat 3     # + the arm's own noise
+evh run --system <id> --dataset my_v1 --repeat 3        # + its own noise
 evh leaderboard --dataset-id my_v1                                 # the ranking, and whether it is real
 evh family-test --dataset-id my_v1 --a arm_a_v1 --against arm_     # is the winner significantly better?
 evh run-promote --run <run_id> --reason "what the tests showed"    # the choice, with why
@@ -99,7 +99,7 @@ data/runs-rescored/  evh rescore        new reference or new code scorer, $0
 data/runs-judged/    evh judge-score    a validated LLM judge, billed and capped
 
 beside them, also optional:
-data/goals/          what each evaluation is for; configs name one with `goal:`
+data/goals/          what each evaluation is for; systems name one with `goal:`
 data/rounds/         eval rounds of a goal: evh round-open / rounds / round-close
 data/fields/         field sets: the typed facts a project's items carry (`--fieldset`)
 data/profiles/       evh dataset-profile   what is inside a dataset, for its page (no text by default)
@@ -107,7 +107,7 @@ data/profiles/       evh dataset-profile   what is inside a dataset, for its pag
 (an agent)           evh mcp            the read commands as MCP tools
 ```
 
-`evh validate` checks the whole tree — twenty integrity rules (V1–V20), exits non-zero,
+`evh validate` checks the whole tree — twenty-three integrity rules (V1–V23), exits non-zero,
 so it can gate CI.
 
 ### The three inputs
@@ -115,7 +115,7 @@ so it can gate CI.
 Every run records three things, and is worthless without all of them:
 
 - **system under test** — `build.ref`, set by `EVAL_BUILD_REF` or the git SHA
-- **instrument** — `config_id`, the arm you ran
+- **system** — `config_id` (the system's id), what you ran
 - **data** — `dataset_id`, what it was measured on
 
 Drop any one and a delta cannot be attributed to anything.
@@ -125,7 +125,7 @@ Drop any one and a delta cannot be attributed to anything.
 ## Integrating your system
 
 One function, `call_system()`, in `adapter.py` at your project's root. An arm whose
-config names no `adapter:` uses it; a project with several tasks names one per arm
+system names no `adapter:` uses it; a project with several tasks names one per arm
 (`adapter: adapters/ner.py`):
 
 ```python
@@ -142,7 +142,7 @@ def call_system(text, params):
 And one more, `score()`, for what "good" means in your domain. That is the
 whole integration — no refactor, no wrapper, no base class.
 
-Arms are **config files**, not code edits: four models to compare is four YAML
+Arms are **system files**, not code edits: four models to compare is four YAML
 files sharing a `dataset_id`.
 
 → **[docs/INTEGRATION.md](docs/INTEGRATION.md)** — the first hour, concretely.
@@ -236,7 +236,7 @@ eval uses it:
 
 ```bash
 evh model-onboard my-model --deployment laptop   # its build, whether it reasons, JSON, determinism, speed
-evh arm-smoke --config data/configs/my_arm.yaml  # a few items with the arm's own settings, before the full run
+evh arm-smoke --system my_system_v1 --dataset my_v1   # a few items with the system's own settings, before the full run
 evh models                                       # which models are onboarded, vetted, and where they run
 ```
 
@@ -305,7 +305,7 @@ wrote it.
 
 ## Scoping a dataset that has grown
 
-A dataset accumulates arms across config versions, and v1 and v2 of one arm are different
+A dataset accumulates arms across system versions, and v1 and v2 of one arm are different
 measurements that must not share a row:
 
 ```
@@ -337,30 +337,6 @@ how 18 arms of paid results were lost during this harness's own development.
 
 ---
 
-## The judge panel
-
-The harness this grew around, and not the same thing as `evh judge-score` above: the
-panel judges finalists one at a time and keeps no verdicts; the judge scorer judges every
-arm, listwise and blind, behind a validation gate, and stores every verdict. Given many
-candidate runs (`runs_from:` reads them where every command does, ranked by their primary
-metric), the panel narrows to finalists (top-K per stratum + floor + global cap), scores
-each finalist's stored outputs with an LLM judge, **aborts mid-run** if a cost cap is hit,
-aggregates to per-dimension means, and flags finalists where two judges disagree.
-
-```bash
-evh judge --config tutorial/judge_panel.yaml --use-fake-judge   # no API key (`evh init --tutorial`)
-ANTHROPIC_API_KEY=... evh judge --config judge_panel.yaml        # your own config
-```
-
-Use it when the cheap metric is known to be biased in your domain but you have
-an expensive judge you trust: cheap metric for triage, judge for the answer.
-
-Cost discipline is a **mid-run abort, not a pre-flight estimate** — estimates
-are usually wrong, and an abort stops the bill the moment the cap is hit, with
-partial results preserved so a blown budget still yields a usable report.
-
----
-
 ## Files
 
 In a checkout of this repository; the package installs `scripts/` as `evaluation_harness`, so the
@@ -376,9 +352,9 @@ bundled adapter a pinned project has is `evaluation_harness/adapter.py`.
 | `scripts/run.py` | run an arm → scores, cost, speed, provenance |
 | `scripts/compare_runs.py` | compare two runs, or refuse |
 | `scripts/promote_baseline.py` | run → baseline, or refuse |
-| `scripts/validate_tree.py` | twenty integrity checks (V1–V20) |
+| `scripts/validate_tree.py` | twenty-three integrity checks (V1–V23) |
 | `scripts/list_runs.py` | what runs and baselines exist |
-| `schemas/` | the contracts: dataset, metrics (a run), baseline, config (an arm), goal, field set, judge scorer, judging set, verdict |
+| `schemas/` | the contracts: dataset, metrics (a run), baseline, system (an arm), goal, field set, judge scorer, judging set, verdict |
 | `scripts/_fields.py`, `scripts/_fetch.py` | item fields (types, checks, the catalog's summary) and items fetched from a pinned URL (ADR-0003) |
 | `scripts/stats.py` | the one paired test: `pair-test`, `family-test` and the inspector all call it |
 | `scripts/rescore.py` | re-score stored outputs for a new reference or scorer, $0 |
@@ -389,8 +365,8 @@ bundled adapter a pinned project has is `evaluation_harness/adapter.py`.
 | `tests/` | this repository's tests (`make test`, `tests/self_test.py`) and the GUIDE and the offline tutorials run in a fresh project (`make guide-check`); not in the package. The ones that run `evh` install the real wheel (`tools/_wheel.py`, which the deploy uses too). `scripts/test_stats.py` ships: `evh self-test` runs it |
 | `tools/` | this repository's report checks (`check_report_claims.py` and friends), judge validations and `*_report.py` tables; not in the package |
 | `tests/test_inspector_browser.py`, `requirements-browser.txt` | the catalog and the inspector in headless Chromium: `make browser-install`, then `make browser-check` |
+| `tests/test_workbench_browser.py` | the Workbench mockup in headless Chromium (every screen, its skip link, help focus, a round's results): part of `make browser-check` |
 | `requirements-dev.txt` | the code-quality tools; from the repository root, `make quality-install`, then `make quality` |
-| `scripts/judge_panel.py`, `scripts/panel_judges.py` | the judge panel (`evh judge`) |
 
 Bundled providers: `echo` (no network), `openai` (OpenAI or any OpenAI-compatible endpoint),
 `openrouter` (`OPENROUTER_API_KEY`, OpenRouter's address), `anthropic` and `litellm` (a LiteLLM

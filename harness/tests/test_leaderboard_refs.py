@@ -24,9 +24,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 KIT = HERE.parent / "tutorial"
 from evaluation_harness._check import check, summary  # noqa: E402
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runstore  # noqa: E402
+from evaluation_harness import _format, _store  # noqa: E402
+
 proj = Path(tempfile.mkdtemp(prefix="evh-lbrefs-"))
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-lbrefs")
-for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_MAX_COST_USD", "EVAL_GOALS_DIR"):
+for k in ("EVAL_DATA_DIR", "EVAL_MAX_COST_USD", "EVAL_GOALS_DIR"):
     env.pop(k, None)
 
 
@@ -38,24 +42,29 @@ def evh(*args):
 
 try:
     data = proj / "data"
-    (data / "configs").mkdir(parents=True)
+    (data / "systems").mkdir(parents=True)
+    _runstore.write_text(proj, _format.NAME, f"format: {_format.FORMAT}\n")
     shutil.copytree(KIT / "tickets", proj / "tutorial" / "tickets")
     r = evh("dataset-create", "--dataset-id", "tickets_v1", "--source-dir", "tutorial/tickets")
     r = r if r.returncode else evh("dataset-materialize", "--dataset-id", "tickets_v1")
     check("setup: the tutorial dataset", r.returncode == 0, r.stderr[-300:])
     for arm in ("lead1", "author"):
-        shutil.copy(KIT / "configs" / f"tickets_{arm}.yaml", data / "configs")
+        _runstore.write_bytes(
+            proj, f"systems/tickets_{arm}_v1.yaml", (KIT / "systems" / f"tickets_{arm}_v1.yaml").read_bytes()
+        )
     for cfg in ("lead1", "author"):  # no reference yet
         r = evh(
             "run",
-            "--config",
-            f"data/configs/tickets_{cfg}.yaml",
+            "--system",
+            f"tickets_{cfg}_v1",
+            "--dataset",
+            "tickets_v1",
             "--run-id",
             f"tickets_{cfg}_v1_none",
         )
         check(f"setup: {cfg} runs with no reference", r.returncode == 0, (r.stdout + r.stderr)[-400:])
-    author = next((data / "runs").glob("tickets_author_v1_*"))
-    r = evh("label-from-run", "--run", author.name, "--set", "author_labels")
+    author = next(n for n in _runstore.listdir(proj, "runs") if n.startswith("tickets_author_v1_"))
+    r = evh("label-from-run", "--run", author, "--set", "author_labels")
     r = (
         r
         if r.returncode
@@ -75,7 +84,15 @@ try:
     )
     check("setup: a silver reference from the author's run", r.returncode == 0, (r.stdout + r.stderr)[-300:])
     time.sleep(1.1)  # created_at has whole seconds: each run is measured after the last
-    r = evh("run", "--config", "data/configs/tickets_lead1.yaml", "--run-id", "tickets_lead1_v1_silver")
+    r = evh(
+        "run",
+        "--system",
+        "tickets_lead1_v1",
+        "--dataset",
+        "tickets_v1",
+        "--run-id",
+        "tickets_lead1_v1_silver",
+    )
     check("setup: lead1 runs against silver", r.returncode == 0, (r.stdout + r.stderr)[-400:])
     r = evh(
         "label-import",
@@ -106,7 +123,9 @@ try:
     )
     check("setup: the kit's gold, imported and promoted", r.returncode == 0, (r.stdout + r.stderr)[-300:])
     time.sleep(1.1)
-    r = evh("run", "--config", "data/configs/tickets_lead1.yaml", "--run-id", "tickets_lead1_v1_gold")
+    r = evh(
+        "run", "--system", "tickets_lead1_v1", "--dataset", "tickets_v1", "--run-id", "tickets_lead1_v1_gold"
+    )
     check("setup: lead1 runs against gold", r.returncode == 0, (r.stdout + r.stderr)[-400:])
 
     r = evh("leaderboard", "--dataset-id", "tickets_v1")
@@ -138,7 +157,9 @@ try:
     # A round whose arms are scored against different references is read against one of them;
     # the others are named, never silently dropped or compared across references.
     (data / "goals").mkdir(exist_ok=True)
-    shutil.copy(KIT / "goals" / "tickets_summary.yaml", data / "goals")
+    _runstore.write_bytes(
+        proj, "goals/tickets_summary.yaml", (KIT / "goals" / "tickets_summary.yaml").read_bytes()
+    )
     r = evh(
         "round-open", "--goal", "tickets_summary", "--dataset", "tickets_v1",
         "--hypothesis", "mixed references", "--keep", "tickets_lead1_v1,tickets_author_v1",
@@ -175,22 +196,20 @@ import io  # noqa: E402
 import json  # noqa: E402
 
 with tempfile.TemporaryDirectory() as td:
-    run = Path(td) / "arm_a_1"
-    run.mkdir()
-    (Path(td) / "summary.json").write_text(
-        json.dumps(
-            {
-                "items_scored": 3,
-                "items_total": 3,
-                "label": "unvalidated judge",
-                "judge_agreement": {"a~b": {"mean_item_tau": None, "arm_mean_spearman": None}},
-                "controls": {"a": {"position": {"mean_tau": None}, "noise": {}}},
-            }
-        )
-    )
+    key = "judge-summ-v1@set_a"
+    run = Path(td) / "runs" / "arm_a_1" / "scores" / key
+    summary_doc = {
+        "items_scored": 3,
+        "items_total": 3,
+        "label": "unvalidated judge",
+        "judge_agreement": {"a~b": {"mean_item_tau": None, "arm_mean_spearman": None}},
+        "controls": {"a": {"position": {"mean_tau": None}, "noise": {}}},
+    }
     buf = io.StringIO()
     try:
-        with contextlib.redirect_stdout(buf):
+        with contextlib.redirect_stdout(buf), _runstore._InProject(td) as data:
+            # in the suite's store: the summary is the project's data (its database in the sqlite store)
+            _store.write_text(data / "judge-summaries" / f"{key}.json", json.dumps(summary_doc))
             lb._judging_summary([(run, {})])
         ok = True
     except Exception as exc:  # noqa: BLE001

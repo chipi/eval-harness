@@ -100,10 +100,23 @@ def get(p: int, path: str, host: str = "localhost") -> tuple:
         return e.code, e.read()
 
 
-def stop(proc) -> str:
+def stop(proc, wait_for: str | None = None) -> str:
+    """Stop the server and return what it printed. `wait_for`: text a request's hook prints after the response has gone
+    (the request hook runs once the answer is sent), waited for up to 10 s first; CI stopped the server before it."""
+    import select  # noqa: PLC0415
+
+    seen = ""
+    deadline = time.monotonic() + 10
+    while wait_for and wait_for not in seen and time.monotonic() < deadline:
+        ready, _, _ = select.select([proc.stdout], [], [], 0.2)
+        if ready:
+            chunk = os.read(proc.stdout.fileno(), 65536).decode(errors="replace")
+            if not chunk:
+                break
+            seen += chunk
     proc.terminate()
     out, _ = proc.communicate(timeout=10)
-    return out
+    return seen + out
 
 
 def main() -> int:
@@ -116,6 +129,12 @@ def main() -> int:
     ping = get(p, "/x/ping?a=1", host="10.0.0.9:8080")  # not a served Host: a hook route still answers
     boom = get(p, "/x/boom")
     other = get(p, "/x/ping", host="evil.example")
+    # The request hook runs once each answer has gone: wait for the four before stopping the server.
+    deadline = time.monotonic() + 10
+    while time.monotonic() < deadline and (
+        not log.exists() or log.read_text().count('"kind": "request"') < 4
+    ):
+        time.sleep(0.05)
     stop(proc)
     calls = [json.loads(x) for x in log.read_text().splitlines()]
     starts = [c for c in calls if c["kind"] == "start"]
@@ -151,7 +170,7 @@ def main() -> int:
     log.unlink()
     proc, p = serve(tmp, hooks=True, HOOKS_RAISE="1")
     first, second = get(p, "/api/health"), get(p, "/api/health")
-    out = stop(proc)
+    out = stop(proc, wait_for="hooks.request failed: RuntimeError")
     check(
         "a hook that raises breaks nothing: the request is answered, the failure printed",
         first[0] == 200 and second[0] == 200 and "hooks.request failed: RuntimeError" in out,

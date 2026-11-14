@@ -81,6 +81,10 @@ FATAL: tuple[str, ...] = (
 
 def is_transient(exc: BaseException, extra: Iterable[str] = ()) -> bool:
     """Whether this failure is worth another attempt."""
+    if (
+        type(exc).__name__ == "CostCapExceeded"
+    ):  # the cap (RFC-026 step 5): its dollar figures are not status codes
+        return False
     msg = f"{type(exc).__name__}: {exc}".lower()
     if any(m in msg for m in FATAL):
         return False

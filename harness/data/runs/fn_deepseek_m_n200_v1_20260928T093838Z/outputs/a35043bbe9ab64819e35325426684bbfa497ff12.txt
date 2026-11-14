@@ -1,8 +1,0 @@
-```json
-[
-  {"text": "2024 Summer Olympics", "type": "event"},
-  {"text": "the Games of the XXXIII Olympiad", "type": "event"},
-  {"text": "27 July 2024", "type": "other"},
-  {"text": "12 August 2024", "type": "other"}
-]
-```

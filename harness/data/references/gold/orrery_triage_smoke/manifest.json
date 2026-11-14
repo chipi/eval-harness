@@ -1,5 +1,10 @@
 {
-  "caveat": "GOLD: promoted as gold from orrery_triage_smoke/gold_orrery_triage_smoke (person · owner): the answers a decision rests on.",
+  "actor": {
+    "from": "migration",
+    "name": "before 0.8.0",
+    "type": "unknown"
+  },
+  "caveat": "GOLD: promoted as gold from orrery_triage_smoke/gold_orrery_triage_smoke (person \u00b7 owner): the answers a decision rests on.",
   "created_at": "2026-10-30T12:33:32Z",
   "dataset_id": "orrery_triage_smoke",
   "items_sha256": {

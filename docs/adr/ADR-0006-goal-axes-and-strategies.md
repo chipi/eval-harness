@@ -38,7 +38,7 @@ set is not evidence that they are equally good.
   arm a round retired are shown and never recommended.
 - **The leader** is the best eligible arm on quality; among equal values the first by label,
   so the order the arms come in never decides.
-- **A strategy says who the contenders are** beside the quality leader (`success_criteria.strategy`):
+- **A strategy says who the contenders are** beside the quality leader (`success_criteria.strategy`). *Replaced in 0.8.0 by [ADR-0026](ADR-0026-contenders-by-non-inferiority.md): a contender is shown no worse than the leader by more than the margin, and a strategy is a default margin (balanced 5%, frugal 10%).* The rules as 0.4.0 to 0.7 applied them:
   - `balanced` (the default): not significantly different from the leader by the paired test AND within the quality margin
     (`axes.quality.margin`; by default 2% of the leader's mean, so it means the same on a 0-1
     rate and a 1-5 score, and 2% of the group's range when the leader is 0, where a share of

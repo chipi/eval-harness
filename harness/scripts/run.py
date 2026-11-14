@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Run one arm config against one dataset; emit a run directory.
+"""Run one system on one dataset; emit a run directory.
 
 A run records THREE things, and is worthless without all of them:
 
-    system under test   which build produced these numbers  (build.ref)
-    instrument          which config was used               (config_id)
+    build               which build produced these numbers  (build.ref)
+    system              what was evaluated                  (config_id: the system's id, RFC-032)
     data                what it was measured on             (dataset_id)
 
 Drop any one and the number cannot be attributed to anything.
@@ -14,8 +14,8 @@ know the arm's own run-to-run spread — otherwise you are promoting noise. A re
 example: one ASR model showed 0.058 WER spread on BYTE-IDENTICAL input, wider
 than most deltas anyone was arguing about.
 
-    python scripts/run.py --config data/configs/demo.yaml
-    python scripts/run.py --config data/configs/demo.yaml --repeat 3
+    evh run --system demo --dataset tickets_v1
+    evh run --system demo --dataset tickets_v1 --repeat 3 --goal tickets_summary --round r2
 
 WIRING YOUR SYSTEM IN: edit `scripts/adapter.py`. Nothing in this file needs to
 change — it times the call, records what it cost, scores the output against the
@@ -33,13 +33,12 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 
 import argparse
 import json
-import os
 import sys
 import time
 from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _jsonout
+from evaluation_harness import _common, _jsonout, _outputs, _spend, _store
 from evaluation_harness._adapter import (
     calls_per_item,
     load_adapter,
@@ -47,13 +46,18 @@ from evaluation_harness._adapter import (
     metric_directions,
     metric_kinds,
     primary_metric,
+    same_at,
     score_wants_source,
     transient_markers,
 )
 from evaluation_harness._common import (
     BOOKKEEPING_PREFIXES,
     DATA,
+    EXIT_NOTHING,
+    EXIT_STOPPED,
+    EXIT_TRY_LATER,
     GOALS,
+    LABELS_PREFIX,
     MATERIALIZED,
     REFERENCES,
     ROOT,
@@ -62,24 +66,25 @@ from evaluation_harness._common import (
     classify_metrics,
     die,
     env_float,
+    evh_prog,
     how,
     load_dataset,
     load_goals,
     now,
-    read_json,
     warn_if_ignored,
-    write_json,
-    write_text_atomic,
 )
 from evaluation_harness._fingerprint import build_fingerprint
 from evaluation_harness._providers import secret_params
-from evaluation_harness._record import aggregate_scores, cut_off_items, run_record
-from evaluation_harness._retry import call_with_retries
-
-try:
-    import yaml
-except ImportError:  # pragma: no cover
-    die("pyyaml is required — pip install -r requirements.txt")
+from evaluation_harness._record import (
+    aggregate_scores,
+    cut_off_items,
+    run_level_scores,
+    run_record,
+    run_scorer,
+)
+from evaluation_harness._retry import call_with_retries, is_transient
+from evaluation_harness.model import datasets as _datasets
+from evaluation_harness.model import runs as _model_runs
 
 
 class _Resumed:
@@ -143,7 +148,7 @@ class _Resumed:
         # extras under `_extra` (empty when it has none), and exactly that is carried.
         self.extra: dict[str, float] = {
             k: float(v)
-            for k, v in prior["_extra"].items()
+            for k, v in (prior.get("_extra") or {}).items()  # none when the run resumed from kept no rows
             if isinstance(v, (int, float)) and not isinstance(v, bool)
         }
         self.meta: dict[str, Any] = dict(prior.get("_meta") or {})
@@ -186,6 +191,15 @@ class ServerUnreachable(RuntimeError):
     """An item's every model call failed because the server could not be reached."""
 
 
+class SystematicFailure(RuntimeError):
+    """Most items failed: an adapter or configuration error, not unlucky items, so the pass stops."""
+
+
+#: A failed item is scored and the pass goes on (A5, owner 2026-11-05), until failures are this many AND this share
+#: of the items called: then it is the adapter, not the items, and zeros would hide it.
+FAILED_STOP_COUNT, FAILED_STOP_SHARE = 5, 0.2
+
+
 def _unreachable(res: Any) -> str | None:
     """The error, when every call an adapter reports (`meta["calls"]`) failed reaching its server.
 
@@ -200,11 +214,11 @@ def _unreachable(res: Any) -> str | None:
     return None
 
 
-def _say_stopped(run_dir: Path, n_items: int, config: Any, exc: BaseException) -> None:
+def _say_stopped(run_dir: Path, n_items: int, arm: str, exc: BaseException) -> None:
     """What a run that stopped mid-pass left, and the two ways on: resume it, or delete it.
     A crash used to end in the adapter's traceback alone, the run directory stayed with no
     metrics.json, and the next `validate` failed V7 with nothing having said why."""
-    done = len(list((run_dir / "outputs").glob("*.txt"))) if (run_dir / "outputs").is_dir() else 0
+    done = _outputs.count(run_dir)
     what = "interrupted" if isinstance(exc, KeyboardInterrupt) else f"{type(exc).__name__}: {str(exc)[:160]}"
     print(
         f"\nSTOPPED: run {run_dir.name} stopped after {done} of {n_items} item(s) ({what}).\n"
@@ -212,8 +226,8 @@ def _say_stopped(run_dir: Path, n_items: int, config: Any, exc: BaseException) -
         "  Fix the cause, then either resume it (items already done are not called again):\n"
         "    "
         + how(
-            f"evh run --config {config} --resume {run_dir.name}",
-            f'make run CONFIG={config} ARGS="--resume {run_dir.name}"',
+            f"evh run {arm} --resume {run_dir.name}",
+            f'make run {arm.replace("--system ", "SYSTEM=").replace("--dataset ", "DATASET=")} ARGS="--resume {run_dir.name}"',
         )
         + f"\n  or delete {run_dir} (until one or the other, `validate` fails V7 on it).",
         file=sys.stderr,
@@ -228,9 +242,16 @@ def _reference_for(dataset_id: str) -> tuple[Path | None, str | None]:
     """
     for tier in ("gold", "silver"):
         d = REFERENCES / tier / dataset_id
-        if d.is_dir():
+        if _store.is_dir(d):
             return d, tier
     return None, None
+
+
+def _score_failure_of(adapter_path: Path | None) -> Any:
+    """The adapter's score_failure(reference), when it defines one (A5): what a failed item scores."""
+    from evaluation_harness._adapter import _module_or_none  # noqa: PLC0415
+
+    return getattr(_module_or_none(adapter_path), "score_failure", None)
 
 
 def _recorded_outputs(cfg: dict[str, Any], adapter_path: Path | None) -> dict[str, str]:
@@ -247,7 +268,8 @@ def _recorded_outputs(cfg: dict[str, Any], adapter_path: Path | None) -> dict[st
     cap = params.get("capture")
     if not cap:
         die(
-            f"{cfg.get('config_id')}: provider recorded needs params.capture, the capture its outputs come from"
+            f"{cfg.get('config_id')}: provider recorded needs params.capture, the capture its outputs come from",
+            "bad-argument",
         )
     _doc, recs = load_capture(cap)
     by_id = {r["id"]: r for r in recs}
@@ -257,7 +279,8 @@ def _recorded_outputs(cfg: dict[str, Any], adapter_path: Path | None) -> dict[st
     if not callable(hook) and not field:
         die(
             f"{cfg.get('config_id')}: a recorded arm reads each output with the adapter's recorded_output(record), "
-            "or from the record's field named by params.field; it has neither"
+            "or from the record's field named by params.field; it has neither",
+            "invalid-file",
         )
     out: dict[str, str] = {}
     missing = []
@@ -269,11 +292,12 @@ def _recorded_outputs(cfg: dict[str, Any], adapter_path: Path | None) -> dict[st
         out[it["item_id"]] = str(hook(rec) if callable(hook) else (rec.get("fields") or {}).get(field, ""))
     if missing:
         die(
-            f"capture {cap} has no record for {len(missing)} item(s) of {cfg['dataset_id']}: {', '.join(missing[:8])}"
+            f"capture {cap} has no record for {len(missing)} item(s) of {cfg['dataset_id']}: {', '.join(missing[:8])}",
+            "not-found",
         )
     from evaluation_harness._common import CAPTURES  # noqa: PLC0415
 
-    params["capture_sha256"] = hashlib.sha256((CAPTURES / cap / "capture.json").read_bytes()).hexdigest()
+    params["capture_sha256"] = hashlib.sha256(_store.read_bytes(CAPTURES / cap / "capture.json")).hexdigest()
     print(f"  a recorded arm: {len(out)} output(s) read from the capture {cap}, no system called")
     return out
 
@@ -305,14 +329,14 @@ def _outcome(res: Any, scored: dict[str, Any], primary: str | None, resumed: boo
 
 def spend_basis(billed_usd: float, priced_usd: float) -> str:
     """Where a spend came from, in the words `evh run` and `evh arm-smoke` share: a Result's cost_usd is the
-    provider's bill when its meta carries one (usage.cost), else tokens x the config's usd_per_mtok_in / _out."""
+    provider's bill when its meta carries one (usage.cost), else tokens x the system's usd_per_mtok_in / _out."""
     if billed_usd > 0 and priced_usd <= 1e-12:
         return "the provider's bill"
     if billed_usd <= 0:
         return (
-            "the config's price table: tokens x usd_per_mtok_in / usd_per_mtok_out, the provider sent no bill"
+            "the system's price table: tokens x usd_per_mtok_in / usd_per_mtok_out, the provider sent no bill"
         )
-    return f"${billed_usd:.6f} the provider's bill, ${priced_usd:.6f} the config's price table"
+    return f"${billed_usd:.6f} the provider's bill, ${priced_usd:.6f} the system's price table"
 
 
 def progress_line(n: int, total: int, item_id: str, outcome: str, seconds: float, spent: float) -> str:
@@ -335,32 +359,53 @@ def one_pass(
     scored_against: tuple[Path | None, str | None] | None = None,
     recorded: dict[str, str] | None = None,
     primary: str | None = None,
+    score_failure: Any = None,
+    score_run: Any = None,
+    per_item: Any = None,
+    once: bool = False,
+    same: Any = None,
 ) -> dict[str, Any]:
-    """One pass over the dataset. ``scored_against`` is (the folder, its tier) the caller chose: a label set with
+    """One pass over the dataset. ``score_failure`` is the adapter's optional score_failure(reference): what an item
+    whose call failed scores (A5); without it, an empty answer's score. ``scored_against`` is (the folder, its tier) the caller chose: a label set with
     --labels; by default the dataset's gold, else its silver. ``recorded`` ({item_id: output}) is a recorded arm's
     outputs, read from a capture: no system is called for them (RFC-023). ``call_system``/``score`` are INJECTED rather than
     imported at module scope, because which adapter runs is a property of the arm now. ``primary`` names the metric
-    each item's progress line shows."""
+    each item's progress line shows. ``per_item(item)`` gives params added to an item's call (a replay's item and code,
+    RFC-030); with ``once`` each item is called exactly once, a failure recorded and never retried (a retry would
+    repeat a replay's side effects)."""
     mat = MATERIALIZED / ds["dataset_id"]
-    if not mat.is_dir():
+    if not _store.is_dir(mat):
         die(
             f"{ds['dataset_id']} is not materialized.\n"
             f"  "
             + how(
                 f"evh dataset-materialize --dataset-id {ds['dataset_id']}",
                 f"make dataset-materialize DATASET_ID={ds['dataset_id']}",
-            )
+            ),
+            "not-materialized",
         )
     params = dict(cfg.get("params") or {})
     params.setdefault("seed", idx)
     ref_dir, ref_tier = scored_against or _reference_for(ds["dataset_id"])
+    # Labels that hold only under production's action (RFC-031 L3): where this run acted otherwise it has no observed
+    # outcome of its own, so the item is not scored (counted: "not scorable under this variant").
+    from evaluation_harness._label_sets import action_bound  # noqa: PLC0415
+
+    bound = action_bound(ref_dir)
+    not_scorable: list[str] = []
 
     predictions: list[dict[str, Any]] = []
     outputs: dict[str, str] = {}
+    by_run = score_run
+    run_items: list[dict[str, Any]] = []
     spent = 0.0
-    cap = env_float("EVAL_MAX_COST_USD")
+    # What this process may still spend (RFC-026 step 5): EVAL_MAX_COST_USD, or what the round left it, less what the
+    # passes before this one spent, so `--repeat 3` stops at one cap in total, not three.
+    cap = _spend.left()
     capped_at: str | None = None
     n_replayed = 0
+    failed_items: list[dict[str, str]] = []
+    n_called = 0
     carried_keys: set = set()
 
     # WRITE EACH OUTPUT THE MOMENT IT EXISTS, not at the end of the pass.
@@ -371,10 +416,13 @@ def one_pass(
     # this directory, so the feature meant to rescue you had nothing to read: the two
     # failures compounded into "a crash costs you the entire arm".
     #
-    # The cost of writing incrementally is one small file per item. The cost of not
+    # The cost of writing incrementally is one synced line per item (RFC-024). The cost of not
     # doing it was measured in dollars.
     if live_dir is not None:
-        live_dir.mkdir(parents=True, exist_ok=True)
+        _store.mkdir(live_dir, parents=True, exist_ok=True)
+    live = _outputs.writer(live_dir) if live_dir is not None else None
+    # The previous attempt's outputs (RFC-024: its outputs.jsonl), read once.
+    prior_out = _outputs.outputs(resume_dir) if resume_dir is not None else {}
 
     n_items = len(ds["items"])
     every = progress_every(n_items)
@@ -390,8 +438,7 @@ def one_pass(
         # produced no prediction row and no score. A fully-resumed run therefore emitted
         # an empty `predictions.jsonl` and a metrics file with no scores in it, while
         # reporting success. The outputs were all present and none of them counted.
-        done = resume_dir / f"{item['item_id']}.txt" if resume_dir else None
-        resumed = done is not None and done.is_file()
+        resumed = item["item_id"] in prior_out
 
         if not resumed and cap is not None and spent >= cap:
             # Check BEFORE the call: the cap is a ceiling on spend, not a report of
@@ -401,11 +448,11 @@ def one_pass(
 
         rel = item.get("source_path") or item["item_id"]
         src = mat / rel
-        source_text = src.read_text(encoding="utf-8", errors="replace")
+        source_text = _store.read_text(src, encoding="utf-8", errors="replace")
 
+        commit_here: str | None = None  # a replay's commit for this item (RFC-030), on its row
         if resumed:
-            assert done is not None  # resumed means it is on disk
-            res: Any = _Resumed(done.read_text(encoding="utf-8"), (prior_rows or {}).get(item["item_id"]))
+            res: Any = _Resumed(prior_out[item["item_id"]], (prior_rows or {}).get(item["item_id"]))
         elif recorded is not None:
             from evaluation_harness.adapter import Result  # noqa: PLC0415
 
@@ -415,40 +462,95 @@ def one_pass(
             # to be the adapter's business, and one adapter simply had none -- so a
             # single upstream 429 discarded an arm mid-sweep along with the items
             # already paid for.
-            res = call_with_retries(
-                _timed(call_system),
-                (source_text, params),
-                extra_transient=extra_transient,
-                label=f"item {item['item_id'][:8]}",
-            )
+            n_called += 1
+            try:
+                call_params = {**params, **per_item(item)} if per_item is not None else params
+                commit_here = (call_params.get("code") or {}).get("commit") if per_item is not None else None
+                res = (
+                    _timed(call_system)(source_text, call_params)
+                    if once
+                    else call_with_retries(
+                        _timed(call_system),
+                        (source_text, call_params),
+                        extra_transient=extra_transient,
+                        label=f"item {item['item_id'][:8]}",
+                    )
+                )
+            except SystemExit:
+                raise
+            except _common.CostCapExceeded:
+                # The provider layer's own count reached the cap (an adapter that reported less than it paid):
+                # stopped as at the cap, before this item's output is written, so --resume calls it again.
+                capped_at = item["item_id"]
+                break
+            except Exception as exc:  # an item's failure is recorded, not raised (A5)
+                if not once and is_transient(exc, extra_transient):
+                    # The provider kept failing past every retry: weather, not this item. Stop, as for an
+                    # unreachable server, so --resume calls it again later.
+                    raise ServerUnreachable(
+                        f"item {item['item_id']}: the provider kept failing after its retries: {type(exc).__name__}: {exc}"
+                    ) from exc
+                failed_items.append(
+                    {"item_id": item["item_id"], "error": f"{type(exc).__name__}: {str(exc)[:300]}"}
+                )
+                print(f"      FAILED item {item['item_id'][:8]}: {type(exc).__name__}: {str(exc)[:160]}")
+                if len(failed_items) > FAILED_STOP_COUNT and len(failed_items) > FAILED_STOP_SHARE * n_called:
+                    raise SystematicFailure(
+                        f"{len(failed_items)} of the {n_called} items called failed (the last: "
+                        f"{failed_items[-1]['error']}): an adapter or configuration error, not the items"
+                    ) from exc
+                from evaluation_harness.adapter import Result  # noqa: PLC0415
+
+                res = Result(output="", cost_usd=None)
             if res.cost_usd:
                 spent += res.cost_usd
+                _spend.add(res.cost_usd)
             unreachable = _unreachable(res)
             if unreachable:
                 # Before the output is written, so `--resume` calls this item again.
                 raise ServerUnreachable(f"item {item['item_id']}: every model call failed: {unreachable}")
+        failed = bool(failed_items) and failed_items[-1]["item_id"] == item["item_id"]
         outputs[item["item_id"]] = res.output
-        if live_dir is not None and not resumed:
-            # Atomic: `--resume` treats the presence of this file as proof the item is
-            # done, so a half-written one is replayed as the model's answer and scored.
-            write_text_atomic(live_dir / f"{item['item_id']}.txt", res.output)
+        # A failed item's output is not written: --resume calls it again.
+        if live is not None and not resumed and not failed:
+            # One synced line per item: `--resume` treats a complete line as proof the item is done, and a torn
+            # last line (a kill mid-append) as not done, so a half-written output is never replayed and scored.
+            live.add(item["item_id"], res.output)
 
         reference = None
         if ref_dir is not None:
             rf = ref_dir / f"{item['item_id']}.txt"
-            if rf.is_file():
-                reference = rf.read_text(encoding="utf-8", errors="replace")
+            if _store.is_file(rf):
+                reference = _store.read_text(rf, encoding="utf-8", errors="replace")
 
         # Pass the SOURCE when the scorer wants it. Facets that compare the output to the
         # INPUT — grounding, compression — cannot be computed from output+reference alone,
         # and a scorer asking for a third argument used to get None silently: the
         # hallucination check simply never ran and nothing said so.
-        scored = (
-            score(res.output, reference, source_text)
-            if score_wants_source(score)
-            else score(res.output, reference)
-        )
+        # A failed item scores as an empty answer (0 on most measures), or as the adapter's score_failure(reference)
+        # says when it has one: a failure never makes an arm look better.
+        if (
+            item["item_id"] in bound
+            and not failed
+            and not (same or (lambda a, b: a.strip() == b.strip()))(res.output, bound[item["item_id"]])
+        ):
+            scored = {}
+            not_scorable.append(item["item_id"])
+        elif failed and score_failure is not None:
+            scored = score_failure(reference)
+        else:
+            scored = (
+                score(res.output, reference, source_text)
+                if score_wants_source(score)
+                else score(res.output, reference)
+            )
         row: dict[str, Any] = {"item_id": item["item_id"], **scored}
+        if by_run is not None:
+            run_items.append(
+                {"item_id": item["item_id"], "output": res.output, "reference": reference, "scores": scored}
+            )
+        # 0/1 on every row: its mean is the share of the pass that failed.
+        row["failed"] = 1.0 if failed else 0.0
         # On EVERY row, not just the resumed ones: the aggregate averages only the rows
         # that carry a key, so a flag set on resumed items alone would report 1.0
         # whether one item was replayed or all of them. As 0/1 on every row its mean is
@@ -476,12 +578,16 @@ def one_pass(
         # loop trying to average it.
         if res.meta:
             row["_meta"] = res.meta
+        if commit_here:
+            row["_commit"] = (
+                commit_here  # the commit this item ran at: what a label's reproduction is dated by (X2)
+            )
         predictions.append(row)
 
         # THE ROW GOES TO DISK NOW, NOT AT THE END OF THE PASS.
         #
         # `predictions.jsonl` is written after one_pass RETURNS, so a crashed run has
-        # outputs/ and nothing else. Round 2 taught the resume path to carry each
+        # its outputs and nothing else. Round 2 taught the resume path to carry each
         # replayed item's cost, tokens and _meta forward -- from predictions.jsonl,
         # which by construction does not exist in the one case resume is for. So the
         # fix worked for a tidy re-run and not for a crash, and RUNBOOK said "a
@@ -491,10 +597,7 @@ def one_pass(
         # Appended per item, so a kill at item k leaves k rows. Not atomic-per-file
         # because it is an append, but a torn final line is discarded on read.
         if live_dir is not None and not resumed:
-            with (live_dir / "_rows.jsonl").open("a", encoding="utf-8") as fh:
-                fh.write(json.dumps(row, sort_keys=True) + "\n")
-                fh.flush()
-                os.fsync(fh.fileno())
+            _outputs.append_partial(live_dir, row)
 
         if n % every == 0 or n == n_items:
             print(
@@ -509,7 +612,18 @@ def one_pass(
                 flush=True,
             )
 
+    # A replay's history confound (RFC-031 P1) is counted over every item of the run, as its note says: an adapter
+    # may mark only the items where production acted, and the mean over those alone said 5 of 34 where the note said
+    # 5 of 287 (the fleet's beta). An unmarked item met no reaction to an action the variant did not take.
+    if any("history_confound" in r for r in predictions):
+        for r in predictions:
+            r.setdefault("history_confound", 0.0)
     scores = aggregate_scores(predictions, digits=6)
+    run_metrics: list[str] = []
+    if by_run is not None and run_items:
+        whole = run_level_scores(by_run, run_items, scores)
+        scores.update(whole)
+        run_metrics = sorted(whole)
     # WAS THIS ARM ONE SYSTEM? A gateway can serve the same model from several hosts and
     # switch between calls. If it did, the arm's 20 items were not produced by one system
     # and its mean mixes two -- which is exactly the confound the fingerprint exists to
@@ -541,18 +655,29 @@ def one_pass(
     return {
         "predictions": predictions,
         "scores": scores,
+        "run_metrics": run_metrics,
         "resume": resume_note,
         "providers_seen": providers,
         "outputs": outputs,
         "reference_tier": ref_tier,
         "capped_at": capped_at,
         "spent_usd": round(spent, 8),
+        "failed_items": failed_items,
+        "not_scorable": not_scorable,
     }
 
 
+def _confound(rows: list[dict[str, Any]]) -> dict[str, int] | None:
+    """A replay's history confound (RFC-031 P1): how many rows its adapter marked, of how many; None when it marks none."""
+    marked = [r for r in rows if "history_confound" in r]
+    if not marked:
+        return None
+    return {"items": sum(1 for r in marked if r.get("history_confound") == 1.0), "of": len(rows)}
+
+
 def _smoke_cost(cfg: dict[str, Any]) -> dict[str, Any] | None:
-    """What the last `evh arm-smoke` of this config measured, from its model record: {per_item_usd, items, at,
-    model_record}; None when the config names no record, the record holds no smoke of it, or it priced nothing."""
+    """What the last `evh arm-smoke` of this system measured, from its model record: {per_item_usd, items, at,
+    model_record}; None when the system names no record, the record holds no smoke of it, or it priced nothing."""
     from evaluation_harness import _models  # noqa: PLC0415
 
     if not cfg.get("model_record"):
@@ -579,20 +704,20 @@ def _dry_run(
 ) -> int:
     """Shape and cost the sweep without calling anything.
 
-    The estimate counts what the config alone shows: one call per item (or the adapter's declared
+    The estimate counts what the system alone shows: one call per item (or the adapter's declared
     `CALLS_PER_ITEM`), the prompt in and max_tokens out, each call as large as the first. It is NOT an upper
     bound: an adapter that calls the system several times per item, or whose conversation grows, costs more.
-    What an arm-smoke of this config measured is shown beside it, and is the number to set a cap from.
+    What an arm-smoke of this system measured is shown beside it, and is the number to set a cap from.
     """
     params = dict(cfg.get("params") or {})
     items = ds["items"]
     mat = MATERIALIZED / ds["dataset_id"]
     item_chars = sum(
-        len((mat / (i.get("source_path") or i["item_id"])).read_text(errors="replace"))
+        len(_store.read_text(mat / (i.get("source_path") or i["item_id"]), errors="replace"))
         for i in items
-        if (mat / (i.get("source_path") or i["item_id"])).is_file()
+        if _store.is_file(mat / (i.get("source_path") or i["item_id"]))
     )
-    # The prompt the config gives is sent with every item (the bundled adapter sends `prompt`, a blank line, the
+    # The prompt the system gives is sent with every item (the bundled adapter sends `prompt`, a blank line, the
     # item). An adapter that builds its own prompt elsewhere cannot be asked for it, so that part is not counted.
     prompt = params.get("prompt")
     prompt_chars = (len(prompt) + 2) * len(items) if isinstance(prompt, str) else 0
@@ -607,7 +732,7 @@ def _dry_run(
 
     print("DRY RUN — nothing was called\n")
     print(
-        f"  config      {cfg['config_id']}  ({params.get('provider', 'echo')}"
+        f"  system      {cfg['config_id']}  ({params.get('provider', 'echo')}"
         + (f" / {params['model']}" if params.get("model") else "")
         + ")"
     )
@@ -620,7 +745,7 @@ def _dry_run(
         else "              one per item: an adapter that calls the system several times per item makes more"
     )
     counted = (
-        "item text + the config's prompt; a prompt the adapter adds itself is not counted"
+        "item text + the system's prompt; a prompt the adapter adds itself is not counted"
         if prompt_chars
         else "item text only; a prompt the adapter adds is not counted"
     )
@@ -630,7 +755,7 @@ def _dry_run(
     pin, pout = params.get("usd_per_mtok_in"), params.get("usd_per_mtok_out")
     est = None
     if pin is None or pout is None:
-        print("\n  No price in the config, so no estimate. Add usd_per_mtok_in /")
+        print("\n  No price in the system, so no estimate. Add usd_per_mtok_in /")
         print("  usd_per_mtok_out and the run will record what it actually cost.")
     else:
         est = (est_in / 1e6 * float(pin) + est_out / 1e6 * float(pout)) * repeat * per_item
@@ -653,11 +778,11 @@ def _dry_run(
             f" (model record {measured['model_record']}); set a cap from this"
         )
     else:
-        where = f" --config {config_path}" if config_path else " --config <this config>"
+        where = f" --system {cfg['config_id']} --dataset {cfg['dataset_id']}"
         print(f"  MEASURED    none for {cfg['config_id']}: no arm-smoke of it is recorded")
         print(
             f"              run `evh arm-smoke{where}` and set a cap from what it measures"
-            + ("" if cfg.get("model_record") else " (it records into a model record; this config names none)")
+            + ("" if cfg.get("model_record") else " (it records into a model record; this system names none)")
         )
     cap = env_float("EVAL_MAX_COST_USD")
     print("  cap         " + (f"${cap:.2f} (EVAL_MAX_COST_USD)" if cap else "NONE — set EVAL_MAX_COST_USD"))
@@ -696,20 +821,96 @@ def _dry_run(
     return 0
 
 
+def _faithfulness_gate(
+    plan: Any, ds: dict[str, Any], adapter_id: str, adapter_path: Path | None, ref_tier: str | None, args: Any
+) -> dict[str, Any]:
+    """A replay's faithfulness (RFC-030), as the run records it: refused when it is scored (a reference or a label
+    set) and the latest record does not let it be, unless a person passes --unfaithful."""
+    from evaluation_harness import _coderec, _faith, _replay  # noqa: PLC0415
+    from evaluation_harness._fingerprint import items_digest  # noqa: PLC0415
+
+    state = _faith.gate(
+        plan.model_id,
+        ds["dataset_id"],
+        items_digest(ds),
+        _coderec.versions_sha256(plan.record),
+        _replay.adapter_identity(adapter_id, adapter_path, plan)["sha256"],
+    )
+    commits = plan.commits()
+    print(
+        f"  replay of {plan.model_id}: {len(plan.items)} items at "
+        + (f"the candidate {plan.candidate[:12]}" if plan.candidate else f"{len(commits)} recorded commit(s)")
+    )
+    print(f"  {_faith.said(state)}")
+    if state["faithful"] or not ref_tier or args.dry_run:
+        return state
+    if not args.unfaithful:
+        die(
+            f"{_faith.said(state)}.\n  A replay is scored against a reference only once it reproduces production "
+            f"(RFC-030): evh faithfulness --system {args.system} --production <production's arm>, then name each "
+            f"disagreement whose cause is outside the system (evh faithfulness-name --model {plan.model_id} --item "
+            "ITEM --cause ...), or score it anyway as a person with --unfaithful.",
+            "not-allowed",
+        )
+    from evaluation_harness._actor import require_named  # noqa: PLC0415
+
+    who = require_named("scoring an unfaithful replay")
+    if who["type"] != "person":
+        die(
+            "an agent cannot score an unfaithful replay; a person passes --unfaithful (RFC-030)",
+            "not-allowed",
+        )
+    print("  WARNING: scored with --unfaithful: this run and every page showing it say so")
+    return {**state, "unfaithful_by": who}
+
+
+def _prompt_versions(
+    adapter_path: Path | None, adapter_id: str, cfg: dict[str, Any], fingerprint: dict[str, Any]
+) -> dict[str, str]:
+    """{name: version id} of the prompts this run sends (RFC-032 step 4b): what the adapter's `prompts(params)`
+    gives, recorded as prompt versions, only when the fingerprint declares a `prompt_sha256` (the adapter sent a
+    prompt) and only a text of that hash (the version is the prompt the fingerprint names). Outside the fingerprint's
+    hash: a run's fingerprint is what it was before runs named their prompt."""
+    from evaluation_harness import _prompts  # noqa: PLC0415
+    from evaluation_harness._adapter import prompts as adapter_prompts  # noqa: PLC0415
+
+    declared = (((fingerprint.get("settings") or {}).get("declared")) or {}).get("prompt_sha256")
+    if not declared:
+        return {}
+    out: dict[str, str] = {}
+    for name, text in sorted(adapter_prompts(adapter_path, dict(cfg.get("params") or {})).items()):
+        data = text.encode("utf-8")
+        if _prompts.sha256(data) != declared:
+            print(
+                f"  note: prompt {name}: not the prompt the fingerprint declares (prompt_sha256): not recorded"
+            )
+            continue
+        _prompts.check_name(name, f"{adapter_id}'s prompts()")
+        rec, _new = _prompts.record(
+            name,
+            data,
+            source={"adapter": adapter_id, "system": cfg.get("config_id")},
+            note=f"sent by a run of {cfg.get('config_id')}",
+        )
+        out[name] = rec["id"]
+    return out
+
+
 def _resume_source(
     resume: str | None, cfg: dict[str, Any], runs: Path = RUNS
 ) -> tuple[Path | None, dict[str, dict[str, Any]]]:
-    """For `--resume <run_id>`: (its outputs directory, {item_id: its row}); (None, {}) without. The run is looked
-    for in `runs` (the runs directory, or a label set's). Dies when the run cannot be resumed as this arm."""
+    """For `--resume <run_id>`: (its run directory, {item_id: its row}); (None, {}) without. The run is looked
+    for in `runs` (data/runs, or the scratch runs of a --scratch pass). Dies when the run cannot be resumed as this
+    arm."""
     if not resume:
         return None, {}
-    resume_dir = runs / resume / "outputs"
-    if not resume_dir.is_dir():
-        die(f"cannot resume: no outputs under {resume_dir}")
+    resume_dir = runs / resume
+    if not _outputs.own(resume_dir):
+        die(f"cannot resume: no outputs in {resume_dir} (the {_common.store()} store)", "not-found")
 
     # RESUMING FROM ANOTHER ARM'S OUTPUTS WAS ACCEPTED WITHOUT A WORD.
     #
-    # `--resume` took a run id and read its outputs/ directory. Nothing compared that
+    # `--resume` took a run id and read its outputs. Nothing compared that
     # run's arm to the one being launched, so
     #   make run CONFIG=arm_glm_s.yaml ARGS="--resume <a qwen_s run>"
     # replayed qwen_s's answers, scored them, and recorded the whole thing as glm_s --
@@ -727,39 +928,44 @@ def _resume_source(
     # tidy case and not the crash, which is the only case resume exists for.
     #
     # `run.json` is now written BEFORE the first item, so identity survives a kill.
-    src_id = runs / resume / "run.json"
-    src_metrics = runs / resume / "metrics.json"
-    ident = (
-        read_json(src_id) if src_id.is_file() else read_json(src_metrics) if src_metrics.is_file() else None
-    )
+    ident = _model_runs.run(runs / resume)
     if ident is None:
         die(
-            f"cannot resume: {resume} has neither run.json nor metrics.json, so the "
+            f"cannot resume: {resume} has no run.json, so the "
             f"arm that produced those outputs cannot be identified.\n"
             f"  Resuming anyway would replay whatever is in that directory and record it "
-            f"under {cfg.get('config_id')!r}."
+            f"under {cfg.get('config_id')!r}.",
+            "not-found",
         )
     if ident.get("config_id") and ident["config_id"] != cfg.get("config_id"):
         die(
             f"cannot resume: {resume} is arm {ident['config_id']!r}, "
-            f"this config is {cfg.get('config_id')!r}.\n"
+            f"this system is {cfg.get('config_id')!r}.\n"
             f"  Resuming would replay another arm's answers and record them "
-            f"under this one."
+            f"under this one.",
+            "mismatch",
         )
     if ident.get("dataset_id") and ident["dataset_id"] != cfg.get("dataset_id"):
         die(
             f"cannot resume: {resume} ran on dataset "
-            f"{ident['dataset_id']!r}, this config is on "
-            f"{cfg.get('dataset_id')!r}."
+            f"{ident['dataset_id']!r}, this system is on "
+            f"{cfg.get('dataset_id')!r}.",
+            "mismatch",
         )
 
     # THE PRIOR ROWS, so a replayed item keeps the cost, tokens, latency and _meta
-    # measured for it. `outputs/_rows.jsonl` is appended DURING the pass and so
+    # measured for it. The row checkpoint is appended DURING the pass and so
     # survives a crash; predictions.jsonl is the tidy-exit copy of the same thing.
-    for src in (runs / resume / "outputs" / "_rows.jsonl", runs / resume / "predictions.jsonl"):
-        if not src.is_file():
+    first = _model_runs.first_score(runs / resume)
+    for partial in (True, False):
+        at = runs / resume if partial else first
+        if at is None:
             continue
-        for line in src.read_text(encoding="utf-8").splitlines():
+        text = _outputs.rows_text(at, partial=partial)
+        if text is None:
+            continue
+        src = at / (_outputs.ROWS if partial else _outputs.PREDICTIONS)
+        for line in text.splitlines():
             if not line.strip():
                 continue
             try:
@@ -770,7 +976,8 @@ def _resume_source(
                 if not isinstance(r.get("_extra"), dict):
                     die(
                         f"cannot resume: {src} has rows without `_extra`; it was not written "
-                        f"by this version of the harness"
+                        f"by this version of the harness",
+                        "invalid-file",
                     )
                 prior_rows.setdefault(r["item_id"], r)
     if not prior_rows:
@@ -782,16 +989,44 @@ def _resume_source(
 
 
 def main() -> int:
-    """Run an arm config against a dataset."""
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--config", required=True, type=Path)
+    """Run a system on a dataset."""
+    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
+    ap.add_argument("--system", required=True, help="the system to run: its id (evh system-list)")
+    ap.add_argument("--dataset", required=True, help="the dataset it runs on: its id")
+    ap.add_argument("--goal", help="the goal this run is measured for (ADR-0002)")
+    ap.add_argument(
+        "--round",
+        help="the round of its goal the run belongs to (ADR-0004): needs --goal, on the round's dataset",
+    )
     ap.add_argument(
         "--labels",
         metavar="SET",
         help="score against this label set of the dataset (SET or DATASET/SET) instead of its gold or silver (RFC-023)",
     )
     ap.add_argument("--repeat", type=int, default=1, help="run N times to measure the arm's spread")
-    ap.add_argument("--run-id", help="default: <config_id>_<timestamp>")
+    ap.add_argument(
+        "--purpose",
+        choices=_model_runs.PURPOSES,
+        default="run",
+        help="what the run is for (RFC-032): run (default), repeat (another measurement of a system's run), retime "
+        "(the same on another machine), pair (a run for a paired test); a re-run is read as an arm of its own",
+    )
+    ap.add_argument(
+        "--of", metavar="RUN_ID", help="the run a re-run (--purpose repeat, retime, pair) re-does"
+    )
+    ap.add_argument(
+        "--scratch",
+        action="store_true",
+        help="a throwaway pass: written under .build/scratch/runs, where nothing that reads runs looks",
+    )
+    ap.add_argument("--run-id", help="default: <system>_<timestamp>")
+    ap.add_argument(
+        "--items",
+        type=Path,
+        metavar="FILE",
+        help="run only these item ids (one per line) of the dataset: a study's confirmation leaves out the items its "
+        "study saw (RFC-029). The fingerprint's items are then these; a test set's looks are still the whole set's",
+    )
     ap.add_argument(
         "--dry-run",
         action="store_true",
@@ -809,6 +1044,15 @@ def main() -> int:
         "run written (run_id, config_id, dataset_id, dir, n_items, total_cost_usd, capped_at); with "
         "--dry-run, result.values.dry_run. Exit codes as without it (1: nothing measured, 2: cost cap)",
     )
+    ap.add_argument(
+        "--unfaithful",
+        action="store_true",
+        help="a replay (RFC-030) whose faithfulness record does not agree with production is scored anyway, by a "
+        "person (an agent is refused); the run and every page showing it say so",
+    )
+    from evaluation_harness._actor import add_by  # noqa: PLC0415
+
+    add_by(ap)
     args = ap.parse_args()
     # Redirected to a log, stdout is block-buffered and a watcher saw nothing for minutes (stderr, where --json sends
     # the progress, can be as well): a line is written when it is printed, whatever the stream is.
@@ -820,18 +1064,18 @@ def main() -> int:
 
 
 def _run(args: argparse.Namespace) -> int:
-    if not args.config.is_file():
-        die(f"no config at {args.config}")
-    cfg = yaml.safe_load(args.config.read_text(encoding="utf-8")) or {}
-    # A config may name a model record (RFC-020, optional): its settings come from the record, under the
-    # config's own params, so every arm of that model runs the way it was onboarded. With `deployment:` it
+    from evaluation_harness.model.systems import arm_of  # noqa: PLC0415
+
+    cfg, args.config = arm_of(args.system, args.dataset, args.goal, args.round)
+    # A system may name a model record (RFC-020, optional): its settings come from the record, under the
+    # system's own params, so every arm of that model runs the way it was onboarded. With `deployment:` it
     # also names where it runs (RFC-021): the fingerprint takes the deployment's facts from the record.
     from evaluation_harness import _models  # noqa: PLC0415
 
     try:
         cfg = _models.resolve(cfg, DATA)
     except ValueError as exc:
-        die(f"{args.config}: {exc}")
+        die(f"{args.config}: {exc}", "invalid-file")
     call_system, score, adapter_id, adapter_path, warmup, model_fingerprint = load_adapter(
         cfg.get("adapter"), Path(args.config)
     )
@@ -840,38 +1084,70 @@ def _run(args: argparse.Namespace) -> int:
         recorded = _recorded_outputs(cfg, adapter_path)
         warmup = None  # nothing is called, so nothing is warmed up
     declared_kinds = metric_kinds(adapter_path)
-    for required in ("config_id", "dataset_id"):
-        if required not in cfg:
-            die(f"{args.config} is missing required key: {required}")
-    # A key written into the config would be copied into every run record (metrics.json), and
+    # A key written into the system would be copied into every run record (metrics.json), and
     # from there onto pages: refused, with the way that keeps it out.
     secrets = secret_params(dict(cfg.get("params") or {}))
     if secrets:
         die(
-            f"{args.config}: params {', '.join(secrets)} look like a credential written into the config. "
+            f"{args.config}: params {', '.join(secrets)} look like a credential written into the system. "
             "Put the key in the environment (.env) and name the variable with api_key_env, or let the "
-            "provider read its usual variable; a key in a config is copied into every run record."
+            "provider read its usual variable; a key in a system is copied into every run record.",
+            "not-configured",
         )
 
-    # A config names the goal it answers (data/goals/<goal_id>.yaml). Refused before a cent is
+    # A run names the goal it answers (data/goals/<goal_id>.yaml). Refused before a cent is
     # spent when the goal does not exist: a run filed under a typo answers nothing.
-    if cfg.get("goal") and GOALS.is_dir() and cfg["goal"] not in load_goals():
+    if cfg.get("goal") and _store.is_dir(GOALS) and cfg["goal"] not in load_goals():
         die(
-            f"{args.config}: goal {cfg['goal']!r} is not in {GOALS} "
-            f"(known: {', '.join(sorted(load_goals())) or 'none'})"
+            f"--goal {cfg['goal']!r} is not in {GOALS} (known: {', '.join(sorted(load_goals())) or 'none'})",
+            "not-found",
         )
-    # A config may name a round of its goal (ADR-0004, optional): refused before a cent is spent
+    # A run may name a round of its goal (ADR-0004, optional): refused before a cent is spent
     # when the round does not exist, is closed, or runs on another dataset.
-    from evaluation_harness._rounds import config_round  # noqa: PLC0415
+    from evaluation_harness import _rounds  # noqa: PLC0415
 
-    config_round(cfg, args.config)
+    rnd = _rounds.config_round(cfg, args.config)
     # A hypothesis (ADR-0025, optional) is refused with the same words validate V20 uses.
     from evaluation_harness import _hypothesis  # noqa: PLC0415
 
     bad_hypothesis = _hypothesis.problems(cfg, args.config)
     if bad_hypothesis:
-        die(f"{args.config}: " + "; ".join(bad_hypothesis))
+        die(f"{args.config}: " + "; ".join(bad_hypothesis), "invalid-file")
     ds = load_dataset(cfg["dataset_id"])
+    # A replay (RFC-030): the system's own code at the commit each item came from, items in order, each called once.
+    from evaluation_harness import _replay  # noqa: PLC0415
+
+    if _replay.is_replay(cfg):
+        _replay.refuse_flags(args)
+        if recorded is not None:
+            die(
+                f"{args.config}: a replay calls the system's code; provider recorded calls nothing",
+                "invalid-file",
+            )
+    plan = _replay.prepare(cfg, args.config, ds, adapter_path)
+    if args.items is not None:
+        if not _store.is_file(args.items):
+            die(f"--items {args.items}: no such file", "not-found")
+        wanted = [
+            ln.strip() for ln in _store.read_text(args.items, encoding="utf-8").splitlines() if ln.strip()
+        ]
+        known_ids = {it["item_id"] for it in ds.get("items") or []}
+        missing = sorted(set(wanted) - known_ids)
+        if missing:
+            die(
+                f"--items: {len(missing)} id(s) not in {cfg['dataset_id']}: {', '.join(missing[:5])}",
+                "not-found",
+            )
+        if not wanted:
+            die(f"--items {args.items}: no item ids in it", "not-enough")
+        keep = set(wanted)
+        ds = {**ds, "items": [it for it in ds["items"] if it["item_id"] in keep]}
+        print(f"  --items: {len(ds['items'])} of {len(known_ids)} items of {cfg['dataset_id']}")
+    # A SEALED SIDE IS HELD OUT (the fleet's feedback 29): refused before a cent is spent, unless an unseal named
+    # this system in advance.
+    from evaluation_harness import _seal  # noqa: PLC0415
+
+    _seal.refuse_if_sealed(cfg["dataset_id"], "a run", cfg["config_id"])
     stamp = now().replace(":", "").replace("-", "")
     base_id = args.run_id or f"{cfg['config_id']}_{stamp}"
     build = build_info()
@@ -882,12 +1158,14 @@ def _run(args: argparse.Namespace) -> int:
 
         ref_id = labels_reference(args.labels, cfg["dataset_id"])
         ref_dir, ref_tier = scored_against_dir(ref_id), LABELS_TIER
-    # A run scored against a label set lands beside the runs, as a re-score against one does: an arm of its own.
-    runs = (
-        DATA / f"runs-labels-{cfg['dataset_id']}-{ref_id.rsplit('/', 1)[1]}"
-        if args.labels and ref_id
-        else RUNS
-    )
+    # A run scored against a label set is a run like any other; its score is read as an arm of its own, as a
+    # re-score against one is (its label names the set).
+    runs = _model_runs.root(args.scratch)
+    label_as = _datasets.label_of(ref_id.removeprefix(LABELS_PREFIX)) if args.labels and ref_id else ""
+    if args.of and not _model_runs.run(args.of):
+        die(f"--of {args.of}: no run of that id in {runs}", "not-found")
+    if args.purpose == "run" and args.of:
+        die("--of names the run a re-run re-does: give its --purpose (repeat, retime, pair)", "bad-argument")
     # HOW MANY ITEMS HAVE A REFERENCE, counted before any call. A metric scored against a
     # missing reference is not computed, so with gold for 20 of 200 items the run's mean is a
     # mean over 20, recorded as a 200-item gold run. None is a refusal (nothing would be
@@ -895,13 +1173,14 @@ def _run(args: argparse.Namespace) -> int:
     coverage = None
     if ref_tier and ref_dir is not None:
         ids = [it["item_id"] for it in ds.get("items") or []]
-        have = sum(1 for i in ids if (ref_dir / f"{i}.txt").is_file())
+        have = sum(1 for i in ids if _store.is_file(ref_dir / f"{i}.txt"))
         coverage = {"items_with_reference": have, "items": len(ids)}
         if have == 0:
             die(
                 f"{ref_tier} references for {cfg['dataset_id']} are at {ref_dir}, but none of its "
                 f"{len(ids)} items has a file there (<item_id>.txt): nothing would be scored.\n"
-                "  Check the file names against the dataset's item ids."
+                "  Check the file names against the dataset's item ids.",
+                "mismatch",
             )
         if have < len(ids):
             print(
@@ -927,6 +1206,9 @@ def _run(args: argparse.Namespace) -> int:
         )
     if build["ref"] == "unknown":
         print("  WARNING: could not identify the build — this run is not attributable")
+    faith = (
+        _faithfulness_gate(plan, ds, adapter_id, adapter_path, ref_tier, args) if plan is not None else None
+    )
 
     if args.dry_run:
         return _dry_run(ds, cfg, args.repeat, adapter_path, args.config)
@@ -943,6 +1225,18 @@ def _run(args: argparse.Namespace) -> int:
     #
     # Once per ARM, not per repeat: REPEAT exists to measure the arm's own jitter, and
     # letting load variance into that measures the wrong thing.
+    # The prompts the system declares (RFC-028): each file's version found or recorded, the adapter given their text
+    # (and a per-run copy of a prompt root), the fingerprint their hashes. The run record keeps the system's params.
+    from evaluation_harness import _prompts  # noqa: PLC0415
+
+    resolved = _prompts.resolve(cfg, args.config, cfg["config_id"])
+    if resolved is not None:
+        import atexit  # noqa: PLC0415
+
+        atexit.register(_prompts.remove_copy, resolved)
+    call_cfg = {**cfg, "params": {**dict(cfg.get("params") or {}), **(resolved or {}).get("params", {})}}
+    if plan is not None:
+        _replay.environment()
     warmup_ms: float | None = None
     if warmup is not None:
         started = time.perf_counter()
@@ -952,14 +1246,15 @@ def _run(args: argparse.Namespace) -> int:
             # invents a new way to lose a run is not a safety check.
             call_with_retries(
                 warmup,
-                (dict(cfg.get("params") or {}),),
+                (dict(call_cfg["params"]),),
                 label="warm-up",
                 extra_transient=transient_markers(adapter_path),
             )
         except Exception as exc:  # noqa: BLE001 - fail before spending, with the reason
             die(
                 f"warm-up failed for {cfg['config_id']}: {type(exc).__name__}: {exc}\n"
-                "  nothing was run and nothing was spent."
+                "  nothing was run and nothing was spent.",
+                "failed",
             )
         warmup_ms = round((time.perf_counter() - started) * 1000, 3)
         if warmup_ms < WARMUP_NOTHING_MS:
@@ -979,8 +1274,11 @@ def _run(args: argparse.Namespace) -> int:
         adapter_path=adapter_path,
         model_hook=model_fingerprint,
         cfg=cfg,
+        prompt_settings=(resolved or {}).get("settings"),
+        replay=plan,
     )
     print(f"  fingerprint {fingerprint['hash'][:12]}")
+    prompt_versions = {} if args.scratch else _prompt_versions(adapter_path, adapter_id, cfg, fingerprint)
     # A DIRTY TREE IS NOT A VERSION. The fingerprint records it, but a field nobody reads
     # is not a warning: a 72-run sweep completed with `harness.dirty: true` throughout, so
     # its `harness.commit` identified code that was never what ran, and nothing said so
@@ -1006,11 +1304,13 @@ def _run(args: argparse.Namespace) -> int:
             "  --repeat N asks for N INDEPENDENT passes; --resume says replay what is\n"
             "  already on disk. Together, every repeat after the first replays the same\n"
             "  outputs and re-counts their cost.\n"
-            "  Resume the interrupted pass with --repeat 1, then run the rest."
+            "  Resume the interrupted pass with --repeat 1, then run the rest.",
+            "bad-argument",
         )
 
     resume_dir, prior_rows = _resume_source(args.resume, cfg, runs)
-    warn_if_ignored(runs)
+    if not args.scratch:
+        warn_if_ignored(runs)
 
     made: list[Path] = []
     written: list[dict[str, Any]] = []
@@ -1029,21 +1329,24 @@ def _run(args: argparse.Namespace) -> int:
                 f"runs at temperature 0: expect its {args.repeat} passes to be identical. The spread comes from "
                 "other deployments (machines, builds) or a temperature above 0."
             )
-    # Read once, before the first call: what the config says now and whether it was committed already.
+    # Read once, before the first call: what the system says now and whether it was committed already.
     hypothesis = _hypothesis.record_for(cfg, args.config, build, now())
     if hypothesis:
         print(f"  hypothesis  named in advance: {_hypothesis.said(hypothesis['hypothesis_in_advance'])}")
 
-    # A run is never written into another run's directory. The id is the config and the start to the second, so two
-    # runs of one config started in the same second shared a directory, and the second wrote over the first, a
+    # A run is never written into another run's directory. The id is the system and the start to the second, so two
+    # runs of one system started in the same second shared a directory, and the second wrote over the first, a
     # committed run included (2026-11-04). An id already taken: the next second's stamp; a --run-id taken: refused.
     def taken(base: str) -> bool:
-        return (runs / base).exists() or any((runs / f"{base}_r{i + 1}").exists() for i in range(args.repeat))
+        return _store.exists(runs / base) or any(
+            _store.exists(runs / f"{base}_r{i + 1}") for i in range(args.repeat)
+        )
 
     if args.run_id:
         if taken(base_id):
             die(
-                f"--run-id {base_id}: {runs / base_id} exists: a run is never written into another; name a new id"
+                f"--run-id {base_id}: {runs / base_id} exists: a run is never written into another; name a new id",
+                "would-overwrite",
             )
     else:
         for _ in range(30):
@@ -1052,10 +1355,20 @@ def _run(args: argparse.Namespace) -> int:
             time.sleep(1.0)
             base_id = f"{cfg['config_id']}_{now().replace(':', '').replace('-', '')}"
         else:
-            die(f"{runs}: every run id for {cfg['config_id']} in the last 30 seconds is taken; run again")
+            die(
+                f"{runs}: every run id for {cfg['config_id']} in the last 30 seconds is taken; run again",
+                "failed",
+            )
+    if rnd is not None and recorded is None:
+        # A round with a budget (RFC-026 step 5): what it has left, reserved before the first call; refused when
+        # nothing is left. Two arms started at once share what is left, never both all of it.
+        share = _spend.reserve(rnd, "run")
+        if share is not None:
+            print(f"  round {rnd['round_id']}: ${share:.4f} of its budget reserved for this run")
     for i in range(args.repeat):
         run_id = base_id if args.repeat == 1 else f"{base_id}_r{i + 1}"
         run_dir = runs / run_id
+        _spend.add_run(run_id)
         # The output directory exists BEFORE the pass starts, so each item lands on disk
         # as it is produced and a crash leaves something to resume from.
         #
@@ -1063,51 +1376,55 @@ def _run(args: argparse.Namespace) -> int:
         # returns, so a crashed run could not say which arm produced its outputs --
         # which made `--resume`'s arm guard unenforceable in the one case resume is
         # for. This is small, written first, and never rewritten.
-        (run_dir / "outputs").mkdir(parents=True, exist_ok=True)
-        write_json(
-            run_dir / "run.json",
-            {
-                "config_id": cfg.get("config_id"),
-                "dataset_id": cfg.get("dataset_id"),
-                "started_at": now(),
-                "run_id": run_id,
-                "note": "written before the first item so a crashed run can still be "
-                "identified; metrics.json is written only on a clean exit",
-            },
-        )
+        _store.mkdir(run_dir, parents=True, exist_ok=True)
+        identity = {
+            "config_id": cfg.get("config_id"),
+            "dataset_id": cfg.get("dataset_id"),
+            "started_at": now(),
+            "run_id": run_id,
+            "purpose": args.purpose,
+            **({"of": args.of} if args.of else {}),
+        }
+        _model_runs.write_run(run_id, identity, scratch=args.scratch)
         try:
             result = one_pass(
-                ds,
-                cfg,
+                {**ds, "items": plan.items} if plan is not None else ds,
+                call_cfg,
                 i,
                 resume_dir=resume_dir,
                 prior_rows=prior_rows,
-                live_dir=run_dir / "outputs",
+                live_dir=run_dir,
                 call_system=call_system,
                 score=score,
                 extra_transient=transient_markers(adapter_path),
+                score_failure=_score_failure_of(adapter_path),
+                score_run=run_scorer(adapter_path),
                 scored_against=(ref_dir, ref_tier),
                 recorded=recorded,
                 primary=primary_metric(adapter_path, cfg.get("params") or {}),
+                per_item=_replay.item_params(plan) if plan is not None else None,
+                once=plan is not None,
+                same=same_at(adapter_path),
             )
         except BaseException as exc:
-            _say_stopped(run_dir, len(ds.get("items") or []), args.config, exc)
+            _say_stopped(
+                run_dir, len(ds.get("items") or []), f"--system {args.system} --dataset {args.dataset}", exc
+            )
+            if isinstance(exc, SystematicFailure):
+                die(str(exc), "failed")
             if isinstance(exc, ServerUnreachable):
-                sys.exit(1)  # said above in full; a traceback adds nothing
+                sys.exit(EXIT_TRY_LATER)  # said above in full; a traceback adds nothing
             raise
-        run_dir.mkdir(parents=True, exist_ok=True)
-        write_text_atomic(
-            run_dir / "predictions.jsonl",
-            "".join(json.dumps(p, sort_keys=True) + "\n" for p in result["predictions"]),
+        _store.mkdir(run_dir, parents=True, exist_ok=True)
+        # The outputs were appended as produced; the finished file is every output in dataset order, a resumed
+        # item's included (it came from the PREVIOUS run, and this one must be self-contained), a failed item's
+        # left out (not done: --resume calls it again). The row checkpoint goes: predictions.jsonl has the rows.
+        failed_ids = {f["item_id"] for f in result.get("failed_items") or []}
+        _outputs.finish(
+            run_dir,
+            {k: v for k, v in result["outputs"].items() if k not in failed_ids},
+            [it["item_id"] for it in ds.get("items") or []],
         )
-        # Outputs are already on disk -- written per item by `one_pass`. Rewriting them
-        # here only matters for a resumed pass, whose outputs came from the PREVIOUS
-        # run's directory and must be copied into this one so the run is self-contained.
-        (run_dir / "outputs").mkdir(parents=True, exist_ok=True)
-        for item_id, text in result["outputs"].items():
-            dest = run_dir / "outputs" / f"{item_id}.txt"
-            if not dest.is_file():
-                write_text_atomic(dest, text)
 
         metrics = run_record(
             run_id=run_id,
@@ -1116,11 +1433,13 @@ def _run(args: argparse.Namespace) -> int:
             build=build,
             scores=result["scores"],
             n_items=len(result["predictions"]),
-            # The knobs this run ACTUALLY used, not just the config's name. A config_id
+            # The metrics score_run() computed over the whole run: one number each, no per-item values to test.
+            run_metrics=result.get("run_metrics") or None,
+            # The knobs this run ACTUALLY used, not just the system's name. A config_id
             # names a file, and a file can be edited after the run — so without this a run
             # cannot say what produced it, only which YAML was pointed at. It also lets V5
             # tell a deterministic repeat (same params, same scores — expected) from two
-            # different configs landing on byte-identical output (worth a look).
+            # different systems landing on byte-identical output (worth a look).
             params=dict(cfg.get("params") or {}),
             # WHICH scorer produced these numbers. A scorer is half of what a number means,
             # so a run that does not name it cannot be compared to one that used another.
@@ -1147,6 +1466,7 @@ def _run(args: argparse.Namespace) -> int:
             model_record=cfg.get("model_record") or None,
             deployment_id=cfg.get("deployment") or None,
             format=cfg.get("format") or None,
+            expect_identical_to=cfg.get("expect_identical_to") or None,
             **hypothesis,
             reference_tier=result["reference_tier"] or None,
             reference_coverage=coverage
@@ -1156,10 +1476,69 @@ def _run(args: argparse.Namespace) -> int:
             # than only in the terminal: which extras came forward, and for how many
             # replayed items nothing could.
             resume=result.get("resume") or None,
+            failed_items=result.get("failed_items") or None,
+            not_scorable=result.get("not_scorable") or None,
+            history_confound=_confound(result["predictions"]),
             repeat_index=(i + 1) if args.repeat > 1 else None,
+            faithfulness=faith,
         )
-        write_json(run_dir / "metrics.json", metrics)
-        made.append(run_dir)
+        # The pass (run.json: what ran, on what, how) and the score it made (scores/<scorer>@<reference>/), its rows
+        # beside it (RFC-032 step 4).
+        _model_runs.write_run(
+            run_id,
+            {
+                **_model_runs.run_part(metrics),
+                "started_at": identity["started_at"],
+                **({"prompt_versions": prompt_versions} if prompt_versions else {}),
+                "purpose": args.purpose,
+                "machine": _model_runs.machine_of(metrics.get("fingerprint")),
+                **({"of": args.of} if args.of else {}),
+            },
+            scratch=args.scratch,
+        )
+        score_dir = _model_runs.write_score(
+            run_id,
+            _model_runs.scorer_of(metrics),
+            ref_id,
+            metrics,
+            label_as=label_as,
+            first=True,
+            scratch=args.scratch,
+        )
+        _outputs.write_rows(score_dir, result["predictions"])
+        if (metrics.get("history_confound") or {}).get("items"):
+            hc = metrics["history_confound"]
+            print(
+                f"  note: history confound: {hc['items']} of {hc['of']} item(s) met a human reaction recorded after "
+                "an action production took and this variant did not (RFC-031): its score there reads that reaction"
+            )
+            from evaluation_harness import _exposure  # noqa: PLC0415
+
+            if not _exposure.applies(
+                cfg["dataset_id"]
+            ):  # a held-out side's ids stay off the record: a count only
+                ids = [r["item_id"] for r in result["predictions"] if r.get("history_confound") == 1.0]
+                _store.write_text(
+                    run_dir / "confound.jsonl", "".join(json.dumps({"item_id": i}) + "\n" for i in ids)
+                )
+        made.append(score_dir)
+        if rnd is not None and not args.scratch:
+            # The run joins its system's arm in the round (RFC-032 step 5), read under the label of its own score.
+            from evaluation_harness import _actor  # noqa: PLC0415
+
+            joined = _rounds.join(
+                rnd["goal"],
+                rnd["round_id"],
+                cfg["config_id"],
+                run_id,
+                _model_runs.label(score_dir),
+                _actor.actor(),
+            )
+            if joined is None:
+                print(
+                    f"  note: {rnd['round_id']} reads {cfg['config_id']} under a re-score this run is not yet: it is "
+                    f"read in the round once re-scored (evh rescore --goal {rnd['goal']} --round {rnd['round_id']})"
+                )
         written.append(
             {
                 "run_id": run_id,
@@ -1172,6 +1551,11 @@ def _run(args: argparse.Namespace) -> int:
             }
         )
         per_repeat.append(result["scores"])
+        if result.get("not_scorable"):
+            print(
+                f"  note: {len(result['not_scorable'])} item(s) not scorable under this variant: their label holds "
+                "only under production's action, and this run acted otherwise (RFC-031); left out of its scores"
+            )
         print(
             f"  {run_id}  "
             + "  ".join(
@@ -1182,12 +1566,13 @@ def _run(args: argparse.Namespace) -> int:
             capped = True
             print(
                 f"\n  COST CAP HIT at item {result['capped_at']} — "
-                f"spent ${result['spent_usd']:.4f} of EVAL_MAX_COST_USD.\n"
+                f"spent ${result['spent_usd']:.4f} this pass, ${_spend.spent():.4f} in all, of the cap "
+                f"(${_spend.cap() or 0:.4f}: EVAL_MAX_COST_USD, or what the round left this run).\n"
                 f"  Partial results kept. Raise the cap and resume without paying twice:\n"
                 f"    "
                 + how(
-                    f"evh run --config {args.config} --resume {run_id}",
-                    f'make run CONFIG={args.config} ARGS="--resume {run_id}"',
+                    f"evh run --system {args.system} --dataset {args.dataset} --resume {run_id}",
+                    f'make run SYSTEM={args.system} DATASET={args.dataset} ARGS="--resume {run_id}"',
                 )
             )
             break
@@ -1197,7 +1582,7 @@ def _run(args: argparse.Namespace) -> int:
         shown = sorted(k for k in per_repeat[0] if not k.startswith(BOOKKEEPING_PREFIXES))
         w = max(len(k) for k in shown)
         kinds = classify_metrics(
-            read_json(made[-1] / "metrics.json").get("metric_kinds") or {} if made else {}
+            (_model_runs.record(made[-1]) or {}).get("metric_kinds") or {} if made else {}
         )
         for k in shown:
             vals = [r[k] for r in per_repeat if k in r]
@@ -1209,14 +1594,25 @@ def _run(args: argparse.Namespace) -> int:
             else:
                 verdict = "deterministic" if spread == 0 else f"treat deltas below {spread:.6f} as noise"
             print(f"    {k:{w}} spread={spread:.6f}   {verdict}")
+        # The arm-level spread can be 0 while items move (or move while the mean stays): say how many ITEMS
+        # every repeat scored the same, so k repeats are read as k samples only when they are (feedback 33).
+        from evaluation_harness._runs import repeat_agreement, say_agreement  # noqa: PLC0415
+
+        prim = (_model_runs.record(made[-1]) or {}).get("primary_metric") if made else None
+        ag = repeat_agreement([(d, {}) for d in made], prim) if prim else None
+        if ag:
+            print(
+                f"    {say_agreement(f'per item, on {prim}', ag)}; read {ag['items']} items, "
+                f"not {ag['item_runs']} item-runs (pair-test counts each item once)"
+            )
 
     print(f"\nwrote {len(made)} run(s) to {runs}")
     for d in made:
-        print(f"  run {d.name}")
+        print(f"  run {_model_runs.run_of(d).name}")
     _jsonout.value("runs", written)
     # What this command spent, so nobody adds up total_cost_usd by hand across repeats.
     spent = sum(
-        float((read_json(d / "metrics.json").get("scores") or {}).get("total_cost_usd") or 0) for d in made
+        float(((_model_runs.record(d) or {}).get("scores") or {}).get("total_cost_usd") or 0) for d in made
     )
     if spent:
         from evaluation_harness.cost_report import billed_and_recorded  # noqa: PLC0415
@@ -1236,19 +1632,20 @@ def _run(args: argparse.Namespace) -> int:
     # of the design was deliberate and is not changed. What changes is that the caller is
     # told, because "the cap stopped me after 3 of 200 items" and "I measured 200 items"
     # must not both be exit 0.
-    empty = [d for d in made if not (read_json(d / "metrics.json").get("scores") or {})]
+    empty = [d for d in made if not ((_model_runs.record(d) or {}).get("scores") or {})]
     if empty:
         print(f"\n  FAILED: {len(empty)} run(s) scored NO items and carry empty scores:")
         for d in empty:
-            print(f"    {d.name}")
+            print(f"    {_model_runs.run_of(d).name}")
         print("  Nothing was measured. Raise EVAL_MAX_COST_USD, or check the adapter.")
-        return 1
+        return EXIT_NOTHING
     if capped:
-        # Distinct from 1 (nothing measured) so a caller can tell "stopped early with
-        # usable partial results" from "produced nothing".
-        print("\n  Stopped early by the cost cap — exit 2. Partial results above are kept.")
-        return 2
-    warn_if_ignored(runs)
+        # Distinct from EXIT_NOTHING so a caller can tell "stopped early with usable partial
+        # results" from "produced nothing".
+        print(f"\n  Stopped early by the cost cap — exit {EXIT_STOPPED}. Partial results above are kept.")
+        return EXIT_STOPPED
+    if not args.scratch:
+        warn_if_ignored(runs)
     return 0
 
 

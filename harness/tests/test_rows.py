@@ -25,7 +25,27 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parents[1] / "scripts"
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 KIT = HERE.parent / "tutorial"
+from evaluation_harness import _outputs, _store  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runfix  # noqa: E402
+import _runstore  # noqa: E402
+import _runview  # noqa: E402
+from evaluation_harness import _format  # noqa: E402
+from evaluation_harness.model import runs as _R  # noqa: E402
+
+
+def _set_output(run, item, text):
+    """Change one output of a run in place (None removes it), as a hand edit of its outputs.jsonl would."""
+    with _runstore._InProject(proj) as data:
+        d = data / "runs" / run
+        texts = _outputs.outputs(d)
+        texts.pop(item, None)
+        if text is not None:
+            texts[item] = text
+        _outputs.write_all(d, texts, list(texts))
+
 
 proj = Path(tempfile.mkdtemp(prefix="evh-rows-"))
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-rows")
@@ -85,14 +105,31 @@ def n_signals(row):
 
 
 def snapshot():
-    return {str(p.relative_to(proj)): p.stat().st_mtime_ns for p in proj.rglob("*") if p.is_file()}
+    """Every file of the project with its mtime; the sqlite store's database changes on any write, so its files are
+    compared by content instead."""
+    db = _runstore.sqlite()
+    snap = {
+        str(p.relative_to(proj)): p.stat().st_mtime_ns
+        for p in proj.rglob("*")
+        if p.is_file() and not (db and p.name.startswith("project.sqlite"))
+    }
+    if db:
+        snap.update({f"data/{f}": _runstore.read_bytes(proj, f) for f in _runstore.files_under(proj)})
+        # a run's outputs and rows are rows of the database, not files: they are compared too
+        with _runstore._InProject(proj) as data:
+            for run in sorted({p.parent for p in _store.rglob(data, "metrics.json")}):
+                key = run.relative_to(data).as_posix()
+                snap[f"outputs:{key}"] = json.dumps(_outputs.outputs(run), sort_keys=True).encode()
+                snap[f"rows:{key}"] = (_outputs.rows_text(run) or "").encode()
+    return snap
 
 
 try:
     data = proj / "data"
-    (data / "configs").mkdir(parents=True)
+    (data / "systems").mkdir(parents=True)
+    _runstore.write_text(proj, _format.NAME, f"format: {_format.FORMAT}\n")
     (data / "fields").mkdir()
-    shutil.copy(KIT / "fields" / "tickets.yaml", data / "fields")
+    _runstore.write_bytes(proj, "fields/tickets.yaml", (KIT / "fields" / "tickets.yaml").read_bytes())
     shutil.copytree(KIT / "tickets", proj / "tutorial" / "tickets")
     r = evh(
         "dataset-create",
@@ -128,7 +165,9 @@ try:
     )
     check("setup: the governed dataset (three tickets)", r.returncode == 0, out(r)[-300:])
     (data / "goals").mkdir()
-    shutil.copy(KIT / "goals" / "tickets_summary.yaml", data / "goals")
+    _runstore.write_bytes(
+        proj, "goals/tickets_summary.yaml", (KIT / "goals" / "tickets_summary.yaml").read_bytes()
+    )
     # What each run decided, set per item (the first run stands for production; None: no output), so that every
     # signal has an item only it marks: t02 and t03 disagree with one candidate each (split), t04 with both (not
     # split), t06 with the one candidate that answered (not split).
@@ -159,15 +198,16 @@ try:
         },
     }
     for arm, by_item in decided.items():
-        cfg = data / "configs" / f"tickets_{arm}.yaml"
-        cfg.write_text((KIT / "configs" / f"tickets_{arm}.yaml").read_text() + "goal: tickets_summary\n")
-        r = evh("run", "--config", f"data/configs/tickets_{arm}.yaml")
+        _runstore.write_text(
+            proj,
+            f"systems/tickets_{arm}_v1.yaml",
+            (KIT / "systems" / f"tickets_{arm}_v1.yaml").read_text(),
+        )
+        r = evh("run", "--system", f"tickets_{arm}_v1", "--dataset", D, "--goal", "tickets_summary")
         check(f"setup: the {arm} arm runs", r.returncode == 0, out(r)[-300:])
-        run = next(p for p in (data / "runs").glob(f"tickets_{arm}_v1_*"))
+        run = next(n for n in _runstore.listdir(proj, "runs") if n.startswith(f"tickets_{arm}_v1_"))
         for item, text in by_item.items():
-            (run / "outputs" / f"{item}.txt").unlink(missing_ok=True)
-            if text is not None:
-                (run / "outputs" / f"{item}.txt").write_text(text + "\n")
+            _set_output(run, item, None if text is None else text + "\n")
     RUNS = "tickets_lead1_v1,tickets_author_v1,tickets_lead2_noisy_v1"
     every = sorted(decided["lead1"])
     # A person labels three tickets: production right on t01 and t03, wrong on t02.
@@ -251,7 +291,7 @@ try:
         and sorted(ids(rs)) == want,
         out(r)[-200:] + out(amb)[-300:],
     )
-    shutil.rmtree(data / "labels" / "tickets_gov")
+    _runstore.rmtree(proj, "labels/tickets_gov")
     (proj / "gov.csv").unlink()
     # A label accepting both answers on t02: production's A is one of them, so not wrong; the rows show both.
     (proj / "two.csv").write_text("item_id,label,also right\nt02_invoice,B,A\n")
@@ -267,7 +307,7 @@ try:
         and label_col(t02, "owner_two") == "A or B",
         out(r)[-200:] + out(r2)[-300:] + str(t02)[:300],
     )
-    shutil.rmtree(proj / "data" / "labels" / D / "owner_two")
+    _runstore.rmtree(proj, f"labels/{D}/owner_two")
     (proj / "two.csv").unlink()  # the view-writes-nothing check compares the project to before
     r, rs = rows("--new-vs", "tickets_gov")
     by = {x["item_id"]: x for x in rs}
@@ -344,21 +384,24 @@ try:
         "def same(a, b):\n"
         "    return json.loads(a)['disposition'] == json.loads(b)['disposition']\n"
     )
-    (data / "configs" / "jsonish.yaml").write_text(
-        "config_id: jsonish_v1\ndataset_id: tickets_v1\nadapter: jsonish.py\nparams:\n  provider: echo\n"
+    _runstore.write_text(
+        proj,
+        "systems/jsonish_v1.yaml",
+        "system_id: jsonish_v1\nadapter: jsonish.py\nparams:\n  provider: echo\n",
     )
     r = evh(
         "run",
-        "--config",
-        "data/configs/jsonish.yaml",
+        "--system",
+        "jsonish_v1",
+        "--dataset",
+        "tickets_v1",
         "--run-id",
         "jsonish",
         extra={"PYTHONPATH": str(HERE.parent)},
     )
-    jout = {
-        p.stem: json.loads(p.read_text())["disposition"]
-        for p in (data / "runs" / "jsonish" / "outputs").glob("t*.txt")
-    }
+    with _runstore._InProject(proj) as data_:
+        jsonish_out = _outputs.outputs(data_ / "runs" / "jsonish")
+    jout = {k: json.loads(v)["disposition"] for k, v in jsonish_out.items() if k.startswith("t")}
     # Right on two, wrong on one, by construction: the label is the output's disposition, or the other one.
     flip = {"file": "dismiss", "dismiss": "file"}
     bare = {
@@ -407,14 +450,16 @@ try:
         "t05_delete": (10, 20, 5),
         "t06_mobile": (10, 20, 30),
     }
-    run_dirs = {k: next((data / "runs").glob(f"{T[k]}_*")) for k in T}
-    for n, k in enumerate(T):
-        lines = []
-        for line in (run_dirs[k] / "predictions.jsonl").read_text().splitlines():
-            row = json.loads(line)
-            row["overlap_f1"], row["latency_ms"] = f1[row["item_id"]][n], lat[row["item_id"]][n]
-            lines.append(json.dumps(row, sort_keys=True))
-        (run_dirs[k] / "predictions.jsonl").write_text("\n".join(lines) + "\n")
+    run_names = {k: next(n for n in _runstore.listdir(proj, "runs") if n.startswith(f"{T[k]}_")) for k in T}
+    with _runstore._InProject(proj) as data_:
+        for n, k in enumerate(T):
+            run_dir = _R.first_score(run_names[k])
+            assert run_dir is not None, f"{run_names[k]} has no first score"
+            lines = []
+            for row in _runstore.rows(run_dir):
+                row["overlap_f1"], row["latency_ms"] = f1[row["item_id"]][n], lat[row["item_id"]][n]
+                lines.append(json.dumps(row, sort_keys=True))
+            _runstore.put_rows_text(run_dir, "\n".join(lines) + "\n")
 
     def footer_label(r, start):
         table = next((b for b in blocks_of(r) if b.get("columns", [""])[0] == "per arm"), {"rows": []})
@@ -489,10 +534,11 @@ try:
         == ["contender", "contender", "leader"],
         json.dumps(foot["verdict"]),
     )
-    goal_file = data / "goals" / "tickets_summary.yaml"
-    shutil.move(goal_file, proj / "goal_aside.yaml")
+    goal_rel = "goals/tickets_summary.yaml"
+    goal_aside = _runstore.read_bytes(proj, goal_rel)
+    _runstore.unlink(proj, goal_rel)
     r, rs, foot = sheet_of()
-    shutil.move(proj / "goal_aside.yaml", goal_file)
+    _runstore.write_bytes(proj, goal_rel, goal_aside)
     check(
         "footer verdict with no goal: the paired test of each arm against the leader (the best mean)",
         r.returncode == 0
@@ -511,23 +557,28 @@ try:
 
     # ── judged runs: the judge's scores in the cells, a winner per pick/pairwise scorer ─────────────
     def judged(scorer, metric, values):
-        for k, d in run_dirs.items():
-            jd = data / "runs-judged" / scorer / d.name
-            jd.mkdir(parents=True)
-            m = json.loads((d / "metrics.json").read_text())
+        for k, name in run_names.items():
+            _, m = _runview.record_of(proj, name)
             m["derived"] = {
                 "kind": "judge",
-                "from": d.name,
+                "from": name,
                 "at": m["created_at"],
                 "with": {"scorer_id": scorer},
             }
             m["primary_metric"] = metric
-            (jd / "metrics.json").write_text(json.dumps(m))
-            (jd / "predictions.jsonl").write_text(
-                "".join(
-                    json.dumps({"item_id": i, metric: v[list(T).index(k)]}) + "\n" for i, v in values.items()
+            with _runstore._InProject(proj) as data_:
+                _runfix.put_run(
+                    data_,
+                    m,
+                    "".join(
+                        json.dumps({"item_id": i, metric: v[list(T).index(k)]}) + "\n"
+                        for i, v in values.items()
+                    ),
+                    label=f"judged/{scorer}",
+                    scorer=scorer,
+                    reference="set1",
+                    first=False,
                 )
-            )
 
     grade = {i: (n % 5 + 1.0, (n * 2) % 5 + 1.0, (n * 3) % 5 + 1.0) for n, i in enumerate(f1)}
     judged("judge_a", "judge_score", grade)
@@ -584,7 +635,7 @@ try:
         and abs(jr.get(T["author"], 0) - 2 / 6) < 1e-9,
         json.dumps(jr) + str(by.get("t06_mobile", {}).get("winner: judge_b")),
     )
-    r, rs, foot = sheet_of("--from", "runs-judged/judge_b", runs=two_shown)
+    r, rs, foot = sheet_of("--label", "judged/judge_b", runs=two_shown)
     by = {x["item_id"]: x for x in rs}
     jr = foot.get("win rate · winner: judge_won", {})
     check(
@@ -682,9 +733,9 @@ try:
     check("refused: --seed without a blind fill", refused(r, "--fill pick or scores"), out(r)[-200:])
     for made in ("out.csv", "lab.csv", "sc.csv"):
         (proj / made).unlink(missing_ok=True)
-    r, rs, foot = sheet_of("--from", "runs-judged/judge_a", runs=T["lead1"])
+    r, rs, foot = sheet_of("--label", "judged/judge_a", runs=T["lead1"])
     check(
-        "--from DIR looks the config ids up there: a judging pass read as the run itself, its score the primary",
+        "--label LABEL looks the config ids up there: a judging pass read as the run itself, its score the primary",
         r.returncode == 0
         and rs
         and "mean judge_score" in foot
@@ -692,19 +743,19 @@ try:
         and f"{T['lead1']}: overlap_f1" not in rs[0],
         out(r)[-300:],
     )
-    r2, rs2, foot2 = sheet_of(runs=f"runs-judged/judge_a/{D}/{T['lead1']}")
+    r2, rs2, foot2 = sheet_of(runs=f"judged-judge-a/{D}/{T['lead1']}")
     check(
-        "an arm id as the catalog names it, under a nested folder (runs-judged/<scorer>/<dataset>/<config>): the same sheet as --from",
+        "an arm id as the catalog names it (judged-<scorer>/<dataset>/<config>): the same sheet as --label",
         r2.returncode == 0
         and rs2
         and "mean judge_score" in foot2
         and [x["item_id"] for x in rs2] == [x["item_id"] for x in rs],
         out(r2)[-300:],
     )
-    r2 = evh("inspect", "--sheet", "--dataset-id", D, "--runs", f"runs-judged/judge_a/other_v1/{T['lead1']}")
+    r2 = evh("inspect", "--sheet", "--dataset-id", D, "--runs", f"judged-judge-a/other_v1/{T['lead1']}")
     check("refused: a nested arm id on another dataset", refused(r2, f"not an arm on {D}"), out(r2)[-200:])
-    r = evh("inspect", "--sheet", "--dataset-id", D, "--runs", T["lead1"], "--from", "runs-judged/no_such")
-    check("refused: a --from that holds no such run", refused(r, "no run of that config"), out(r)[-200:])
+    r = evh("inspect", "--sheet", "--dataset-id", D, "--runs", T["lead1"], "--label", "judged/no_such")
+    check("refused: a --label that holds no such run", refused(r, "no run of that system"), out(r)[-200:])
     # A metric an arm has on some rows only: its win rate is over the rows it was scored on, and an arm scored on
     # none has no win rate (it was never compared, not always beaten).
     part: dict[str, tuple] = dict.fromkeys(f1, (None, 2.0, None))
@@ -734,7 +785,10 @@ try:
         "nothing to compare" in str(vr.get(T["lead1"], "")) and "recommended" not in json.dumps(vr),
         json.dumps(vr),
     )
-    shutil.rmtree(data / "runs-judged")
+    for name in run_names.values():
+        for key, lbl, _rec in _runview.scores_of(proj, name):
+            if lbl.startswith("judged/"):
+                _runstore.rmtree(proj, f"runs/{name}/scores/{key}")
 
     # ── refusals ─────────────────────────────────────────────────────────────────────────────
     two = "tickets_lead1_v1,tickets_author_v1"
@@ -790,13 +844,17 @@ try:
         "def title(item):\n"
         "    return 'TITLE ' + item.split()[0]\n"
     )
-    (data / "configs" / "tickets_decider.yaml").write_text(
-        "config_id: tickets_decider_v1\ndataset_id: tickets_v1\nadapter: decide.py\nparams:\n  provider: echo\n"
+    _runstore.write_text(
+        proj,
+        "systems/tickets_decider_v1.yaml",
+        "system_id: tickets_decider_v1\nadapter: decide.py\nparams:\n  provider: echo\n",
     )
     r = evh(
         "run",
-        "--config",
-        "data/configs/tickets_decider.yaml",
+        "--system",
+        "tickets_decider_v1",
+        "--dataset",
+        "tickets_v1",
         extra={"PYTHONPATH": str(HERE.parent)},
     )
     check("setup: an arm whose adapter has decision()", r.returncode == 0, out(r)[-300:])

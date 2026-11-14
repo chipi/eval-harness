@@ -75,11 +75,11 @@ belonged together, why one was dropped, or what a round concluded. The newcomer 
   rather than measured on a dataset). Optional: `context` (its audience), `output_contract`,
   `references`, `measures`, `min_items` (in `success_criteria`), `links` (shown on the goal
   page and by `evh goals --goal`: a web address as a link, a project path as text), `status`.
-- **FR1.2**: A config names its goal (`goal:`) and may declare its `format`; `evh run`
+- **FR1.2**: A system names its goal (`goal:`) and may declare its `format`; `evh run`
   refuses an unknown goal before it spends anything. The run records both outside the
   fingerprint; `run-promote` carries both onto the baseline.
 - **FR1.3**: `evh validate` V14 fails a goal that breaks its schema or whose `goal_id` is not its
-  file name, a config, run or baseline naming a goal that does not exist or a format the goal
+  file name, a system, run or baseline naming a goal that does not exist or a format the goal
   does not accept, and a goal whose direction contradicts its runs; a dataset smaller than
   `min_items` gets a note.
 - **FR1.4**: `required_from: YYYY-MM-DD` in `data/goals/policy.yaml` makes every run created
@@ -111,9 +111,8 @@ belonged together, why one was dropped, or what a round concluded. The newcomer 
 - **FR2.2**: `evh round-open --goal G --dataset D` opens the next round; it refuses while
   another round of the goal is open. `--from rN`, `--hypothesis`, `--change` (repeatable),
   `--keep` (carried in, not run again), `--retire … --reason "…"`, `--budget-usd`.
-- **FR2.3**: An arm joins a round by naming it in its config (`round: rN`, beside `goal:`);
-  `evh run` refuses a config naming a round that does not exist, is closed, or is on
-  another dataset.
+- **FR2.3**: An arm joins a round by running in it (`evh run --round rN`, with `--goal`);
+  `evh run` refuses a round that does not exist, is closed, or is on another dataset.
 - **FR2.4**: `evh rounds --goal G [--round rN]` shows each round and, for the open one, the
   arms against its leader, its leader against the previous round's best, the baseline it started
   from and the arm that wrote a silver reference of the dataset, its spend against the budget and
@@ -135,13 +134,13 @@ belonged together, why one was dropped, or what a round concluded. The newcomer 
 
 ### FR3: The deploy sheet (0.6.0)
 
-- **FR3.1**: `evh deploy-sheet --config ARM` prints what production must match to run what was measured: the model
+- **FR3.1**: `evh deploy-sheet --system ARM` prints what production must match to run what was measured: the model
   and its build (the model record's deployment: tag, digest, server and its settings), every setting the arm
   sends, the prompt and its hash, the adapter and its version, and the dataset and reference it was promoted on.
   It reads the run the arm was promoted with (the latest baseline whose run is the arm's), else the arm's latest
   run, and says which; it notes a model record's setting the arm did not send. The promoted arm's page and the
   goal page beside its baseline (folded) show the same, with what each capture says production ran.
-- **FR3.2**: `evh deploy-sheet --config ARM --capture C` checks a capture whose records say what production ran (for
+- **FR3.2**: `evh deploy-sheet --system ARM --capture C` checks a capture whose records say what production ran (for
   triage: the ledger's `model`, `prompt_ver`, `prompt_sha`, through the adapter): "every captured decision was made
   by the promoted model and prompt", or what differs and on how many records. Each record's account comes from
   the adapter's `production_ran(record)`; a key is matched against what the run's own items reported (`_meta`), the

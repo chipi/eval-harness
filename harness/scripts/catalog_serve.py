@@ -5,7 +5,8 @@
     make catalog-serve
 
 Builds nothing: run `evh catalog` first. Static files are the built catalog and the data tree
-(its "files" links open run folders). Two JSON endpoints feed the inspector page:
+(its "files" links open run folders). Three JSON endpoints feed the inspector page (and GET /api/health says the
+server is up); a local server also answers the API (/api/v1/, RFC-026):
 
   GET /api/compare?runs=<arm|path>,...[&baseline=<arm>][&metric=<name>][&rescore=0]
       [&family=<m>][&threshold=<t>]
@@ -55,12 +56,24 @@ from collections import Counter, OrderedDict, defaultdict
 from functools import lru_cache, partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from typing import Any
 from urllib.parse import parse_qs, unquote, urlparse
 
 HERE = Path(__file__).resolve().parent
 
-from evaluation_harness import _fields, _visibility, stats  # noqa: E402
-from evaluation_harness._common import ROOT, SPEED_KEYS  # noqa: E402
+from evaluation_harness import (  # noqa: E402
+    _common,
+    _fields,
+    _store,
+    _visibility,
+    stats,
+)
+from evaluation_harness._common import (  # noqa: E402
+    CODE,
+    ROOT,
+    SPEED_KEYS,
+    die,
+)
 from evaluation_harness.catalog_adapter import Adapter, item_fields, load_catalog_adapter  # noqa: E402
 
 #: Every comparison ends in one of these, so a page can always say what it shows and why.
@@ -96,7 +109,7 @@ def _arms_known(path: str) -> list:
 @lru_cache(maxsize=4096)
 def _scores(arm: str, rescore: bool) -> dict:
     # Re-scoring can be the slow part, and a baseline page asks for every arm on its dataset.
-    # Restart the server to see new runs.
+    # Forgotten by cache_clear (a data page write, a rebuild); a run another process makes shows after a restart.
     return A.scores(arm, rescore=rescore)
 
 
@@ -417,6 +430,24 @@ def _disagreeing(series: dict, baseline: str) -> dict:
     return {a: {i: v for i, v in vals.items() if i in keep} for a, vals in series.items()}
 
 
+def _goal_cluster_on(dataset: str) -> str | None:
+    """The one field every goal that names `cluster:` for this dataset names, so the inspector tests
+    as the goal pages do (ADR-0002); None when no goal does, or goals disagree (then only `cluster=` does)."""
+    from evaluation_harness._common import goal_cluster, load_goals  # noqa: PLC0415
+
+    named = {goal_cluster(g, dataset) for g in load_goals().values()} - {None}
+    return next(iter(named)) if len(named) == 1 else None
+
+
+def goal_clusters_on(dataset: str) -> tuple[dict | None, str | None]:
+    """({item: cluster key}, field) for the goals' cluster field on `dataset` (_goal_cluster_on), else (None, None)."""
+    field = _goal_cluster_on(dataset) if dataset else None
+    if not field:
+        return None, None
+    every = (item_fields(A, dataset) or {}).get("values") or {}
+    return {i: v[field] for i, v in every.items() if v.get(field) not in (None, "")}, field
+
+
 def compare(params: dict) -> dict:
     """Compare arms: parse query params, get scores, run paired tests, return result."""
     runs = [r.strip("/") for r in params.get("runs", [""])[0].split(",") if r.strip()]
@@ -436,8 +467,21 @@ def compare(params: dict) -> dict:
     counts = Counter(k for s in per_arm.values() for k in s)
     notes = [n.rstrip(".") + "." for n in dict.fromkeys(n for a in arms for n in A.notes(a))]
     metric = params.get("metric", [""])[0]
+    instead = None
     if metric not in counts:
+        # A metric asked for by name that no arm scores per item (a run-level one, score_run()'s, or one these runs
+        # do not record) cannot be the one compared: said, with the values the arms record for it, never swapped
+        # in silence.
+        if metric:
+            had = {a: v for a in arms if (v := A.recorded_means(a).get(metric)) is not None}
+            instead = f"{metric} has no score per {A.item_word} for these runs, so it cannot be tested" + (
+                ": recorded per run as " + ", ".join(f"{_label(a)} {v:.4g}" for a, v in had.items())
+                if had
+                else ": no arm records it"
+            )
         metric = _default_metric(counts, per_arm, arms, asked, dataset) if counts else ""
+        if instead:
+            instead += f". Compared on {metric} instead."
     if not counts or (metric in A.shape_metrics and not params.get("metric", [""])[0]):
         return {
             "state": "not scorable",
@@ -455,8 +499,14 @@ def compare(params: dict) -> dict:
     # With no baseline named, a promoted baseline is the natural reference point.
     # The arm of a promoted baseline when one is selected, else the first.
     bfn = getattr(A, "baselines", None)
-    promoted = {b.get("arm") for b in (bfn() if callable(bfn) else []) if b.get("arm")}
-    fallback = next((a for a in series if a in promoted or a.startswith("baselines/")), next(iter(series)))
+    current_bl = [b for b in (bfn() if callable(bfn) else []) if b.get("arm")]
+    # The dataset's own baseline first (arms that answer no goal), then any goal's (RFC-027).
+    own = {b["arm"] for b in current_bl if not b.get("goal")}
+    promoted = {b["arm"] for b in current_bl}
+    fallback = next(
+        (a for a in series if a in own),
+        next((a for a in series if a in promoted or a.startswith("baselines/")), next(iter(series))),
+    )
     baseline = asked if asked in series else fallback
     other_ref = _other_reference(series, baseline, metric, rescore, dataset)
     for a in other_ref:
@@ -469,6 +519,17 @@ def compare(params: dict) -> dict:
     disagree = params.get("disagree", [""])[0] == "1"
     if disagree:
         series = _disagreeing(series, baseline)
+    # Items that share a value of the cluster field count as one in every test (stats.clustered). Asked for by
+    # name it must be a field this deployment shows; a goal's own field is used as the goal pages use it.
+    cluster = params.get("cluster", [""])[0]
+    if cluster and cluster not in decl:
+        return {"error": f"cluster by a field of {dataset}, not {cluster!r}"}
+    clusters: dict | None
+    if cluster:
+        every = (item_fields(A, dataset) or {}).get("values") or {}
+        clusters = {i: v[cluster] for i, v in every.items() if v.get(cluster) not in (None, "")}
+    else:
+        clusters, cluster = goal_clusters_on(dataset)
     higher, neutral = not A.lower_is_better(metric, dataset), A.is_neutral(metric, dataset or None)
     # A family and a threshold come from the URL, so they are checked, not trusted: a family
     # smaller than the arms tested here, or a threshold above alpha (or below what the family
@@ -491,13 +552,16 @@ def compare(params: dict) -> dict:
         neutral=neutral,
         family=family,
         threshold=threshold,
+        clusters=clusters,
     )
     by, breakdown, ungrouped = params.get("by", [""])[0], None, 0
     if by:
         if by not in decl or decl[by]["type"] not in _fields.GROUPABLE:
             return {"error": f"break a comparison down by a choice or yes/no field, not {by!r}"}
         groups, ungrouped = _groups(decl[by], by, fvalues, series.get(baseline, {}))
-        breakdown = stats.compare_by(series, baseline, groups, higher_is_better=higher, neutral=neutral)
+        breakdown = stats.compare_by(
+            series, baseline, groups, higher_is_better=higher, neutral=neutral, clusters=clusters
+        )
     averages, repeats = _averages(arms, series, metric)
     swapped = bool(asked) and asked != baseline
     ctx = {
@@ -536,7 +600,21 @@ def compare(params: dict) -> dict:
         "averages": averages,
         "repeats": repeats,
         "state": _state(result["rows"], averages, swapped),
-        "warnings": _warnings(ctx),
+        "warnings": [
+            *(
+                [
+                    (
+                        f"Tested by {cluster}: {A.item_word}s that share a {cluster} count as one in every test "
+                        f"({max((r.get('clusters') or 0 for r in result['rows']), default=0)} clusters)."
+                    )
+                ]
+                if clusters is not None
+                else []
+            ),
+            *([instead] if instead else []),
+            *_warnings(ctx),
+        ],
+        "cluster": cluster or None,
         "fields": _field_list(decl),
         "where": wheres,
         "disagree": disagree,
@@ -624,7 +702,7 @@ def item(params: dict) -> dict:
     if alone:
         from evaluation_harness._common import DATASETS  # noqa: PLC0415
 
-        if not plain_item(alone) or not (DATASETS / f"{alone}.json").is_file():
+        if not plain_item(alone) or not _store.is_file(DATASETS / f"{alone}.json"):
             return {"error": "need dataset=<a dataset id>"}
     if not it or (not arms and not alone) or any(not _arms_known(a) for a in arms):
         return {"error": "need arms=<arm>,... known to the catalog and item=<item_id>"}
@@ -640,6 +718,12 @@ def item(params: dict) -> dict:
     if not _visibility.text_shown(dataset, public=public):
         # `text: hidden` (RFC-019): nothing that comes from this dataset's text, whatever is published.
         published = ()
+    if not public or "outputs" in published:
+        from evaluation_harness import _exposure  # noqa: PLC0415
+
+        _exposure.read_by_harness(
+            dataset, [it], "the inspector's item view" + (" (served)" if public else "")
+        )
     if public and "outputs" not in published:
         withheld = {
             "kind": "none",
@@ -691,14 +775,14 @@ def _sheet_rows(params: dict) -> tuple[dict, list, list]:
     from evaluation_harness._common import DATASETS  # noqa: PLC0415
 
     ds = params.get("dataset", [""])[0]
-    if not ds or not plain_item(ds) or not (DATASETS / f"{ds}.json").is_file():
-        raise SystemExit("need dataset=<a dataset id>")
+    if not ds or not plain_item(ds) or not _store.is_file(DATASETS / f"{ds}.json"):
+        die("need dataset=<a dataset id>", "bad-argument")
     runs = [r.strip("/") for r in params.get("runs", [""])[0].split(",") if r.strip()]
     if len(runs) > LIMITS["max_arms"]:
-        raise SystemExit(f"{len(runs)} arms asked for; at most {LIMITS['max_arms']}")
+        die(f"{len(runs)} arms asked for; at most {LIMITS['max_arms']}", "bad-argument")
     only = params.get("only", [])
     if bad := [x for x in only if x not in _sheet.SIGNALS]:
-        raise SystemExit(f"no signal {bad[0]!r}: one of {', '.join(_sheet.SIGNALS)}")
+        die(f"no signal {bad[0]!r}: one of {', '.join(_sheet.SIGNALS)}", "not-found")
     items = [i for i in params.get("item", []) if plain_item(i)] if "item" in params else None
     model = _sheet.build(
         ds,
@@ -714,7 +798,7 @@ def _sheet_rows(params: dict) -> tuple[dict, list, list]:
 
 
 def _error(exc: SystemExit) -> dict:
-    return {"error": str(exc).removeprefix("ERROR: ").splitlines()[0]}
+    return {"error": re.sub(r"^ERROR( \([a-z-]+\))?: ", "", str(exc)).splitlines()[0]}
 
 
 def sheet_csv(query: str) -> tuple[int, bytes, str]:
@@ -765,6 +849,9 @@ def sheet(params: dict) -> dict:
         return one if len(one) <= 160 else one[:159] + "…"
 
     tokens = [a["token"] for a in model["arms"]]
+    from evaluation_harness import _exposure  # noqa: PLC0415
+
+    _exposure.read_by_harness(ds, [r["item"] for r in shown], "the inspector's sheet")
     out_rows = []
     for r in shown:
         p = state.get((ds, r["item"])) or {}
@@ -785,6 +872,7 @@ def sheet(params: dict) -> dict:
                 "winners": r["winners"],
                 "picked": (p.get("for") or ["no target yet"]) if p.get("action") == "pick" else [],
                 "signals": r["signals"],
+                "tags": r.get("tags", {}),
             }
         )
     return {
@@ -805,7 +893,7 @@ def sheet(params: dict) -> dict:
         "total": len(found),
         "counts": _sheet.counts(found),
         "sets": [c["key"] for c in model["label_cols"]],
-        "datasets": sorted(p.stem for p in DATASETS.glob("*.json") if p.stem != ds),
+        "datasets": sorted(p.stem for p in _store.glob(DATASETS, "*.json") if p.stem != ds),
         "fields": _field_list(model["decl"]),
         "wrong": params.get("wrong", [""])[0],
         "new": params.get("new", [""])[0],
@@ -813,7 +901,7 @@ def sheet(params: dict) -> dict:
 
 
 #: Set by main(): the public mode's limits. max_arms applies locally too (a URL is not a query).
-LIMITS: dict = {"max_arms": 40, "rate": 0, "hosts": ()}
+LIMITS: dict = {"max_arms": 40, "rate": 0, "hosts": (), "proxy_hosts": ()}
 #: Each answer kept as the bytes it is sent as, bounded by their total: a 40-arm comparison is
 #: ~1.8 MB, so a count bound (1024) let a hundred distinct questions take a 256 MiB container
 #: past its limit (an independent review, 2026-10-29). Least recently used out first.
@@ -829,15 +917,19 @@ _HITS: defaultdict[str, list] = defaultdict(list)
 
 
 def cache_clear() -> None:
-    """Forget every answer (the tests; a server restarts instead)."""
+    """Forget every answer, and the scores and arms they were made from: after the data page writes or deletes, and
+    after a rebuild (the arms are the catalog's), so an answer never outlives what it was made from."""
     with _CACHE_LOCK:
         _CACHE.clear()
         _cache_size[0] = 0
+    _scores.cache_clear()
+    _known.cache_clear()
 
 
 def answer(path: str, query: str) -> tuple:
     """(status, the JSON body as bytes) for one API request; every answer cached by its exact
-    question (the data under a running server does not change: restart it to see new runs)."""
+    question until the data page changes the data or the catalog is rebuilt (`cache_clear`); a run made by another
+    process shows after a restart."""
     if len(query) > MAX_QUERY:
         return 400, json.dumps({"error": f"the question is over {MAX_QUERY} characters"}).encode()
     key = f"{path}?{'&'.join(sorted(query.split('&')))}"
@@ -906,8 +998,10 @@ def warm(build_dir: Path) -> int:
     """Answer, once, every comparison the built catalog links to: the pages' own links then
     come from the cache. Returns how many."""
     links = set()
-    for page in sorted(build_dir.rglob("*.html")):
-        for href in re.findall(r'href="(?:\.\./)*inspect\.html\?([^"]+)"', page.read_text(encoding="utf-8")):
+    for page in sorted(_store.rglob(build_dir, "*.html")):
+        for href in re.findall(
+            r'href="(?:\.\./)*inspect\.html\?([^"]+)"', _store.read_text(page, encoding="utf-8")
+        ):
             links.add(href.replace("&amp;", "&"))
     done = 0
     for q in sorted(links):
@@ -931,16 +1025,112 @@ def served(build_dir: Path, data_dir: Path, also: tuple = ()) -> tuple:
         except ValueError:
             # The server's document root is the project: it serves the catalog and the data
             # tree from inside it, and nothing outside, so a directory elsewhere has no URL.
-            raise SystemExit(
+            die(
                 f"{p} is not inside the project ({ROOT}): the inspector serves the catalog "
                 "and the data tree from inside the project only. Build the catalog there "
-                "(the default, .build/catalog), or run from the project that holds it."
-            ) from None
+                "(the default, .build/catalog), or run from the project that holds it.",
+                "not-allowed",
+            )
     return tuple(out)
 
 
 #: The API's endpoints. Anything else under /api/ is 404: it is not a way into the files.
 API_ROUTES = ("/api/health", "/api/compare", "/api/item", "/api/sheet")
+#: The header every API call that is not a read must carry: a page from another origin cannot send it without a CORS
+#: preflight, which this server never grants (ADR-0027).
+DATA_HEADER = "X-EVH-Data"
+#: The API's token (RFC-026), made when a local server starts; empty: the API answers nothing.
+API_TOKEN: list[str] = []
+API_COOKIE = "evh_token"
+API_MAX_BODY = 64 * 1024
+#: The Workbench's files (PRD-017): beside the package's code when installed, harness/workbench in a checkout.
+WORKBENCH = next(
+    (p for p in (CODE / "workbench", CODE.parent / "workbench") if _store.is_dir(p)),
+    CODE.parent / "workbench",
+)
+WORKBENCH_TYPES = {
+    ".html": "text/html; charset=utf-8",
+    ".js": "text/javascript; charset=utf-8",
+    ".css": "text/css; charset=utf-8",
+    ".svg": "image/svg+xml",
+}
+#: A refusal of the model's, as an HTTP status.
+MODEL_STATUS = {
+    "not-found": 404,
+    "bad-argument": 400,
+    "invalid-file": 422,
+    "would-overwrite": 409,
+    "not-allowed": 409,
+    "old-format": 409,
+    "mismatch": 409,
+}
+API_MAX_JOB_BODY = 70 * 1024 * 1024  # 50 MB of files, base64 (RFC-026: owner, 2026-11-08)
+
+
+def api_read(command: str, arguments: Any) -> tuple[int, dict]:
+    """POST /api/v1/read/<command>: the read command run as the MCP server runs a tool call, its envelope back (or
+    its text, for the read commands with no --json yet)."""
+    from evaluation_harness import _api  # noqa: PLC0415
+    from evaluation_harness import mcp_server as ms  # noqa: PLC0415
+
+    try:
+        reg = _api.registry().get(command)
+        if reg is None or reg["served"] != "read":
+            raise _api.Refused(
+                f"{command}: not a read command the API serves (a job: POST /api/v1/jobs)", 404
+            )
+        checked = _api.checked_args(command, arguments)
+        argv = ms.argv_of(ms.parser_of(command), checked)
+    except _api.Refused as exc:
+        return exc.status, {"error": str(exc)}
+    except ValueError as exc:
+        return 400, {"error": str(exc)}
+    code, out, err = ms.run_command(ROOT, command, argv)
+    if code != 0:
+        lines = [ln for ln in (err or out).splitlines() if ln.strip()]
+        msg = next((ln for ln in reversed(lines) if ln.startswith("ERROR")), lines[-1] if lines else "")
+        return (400 if code in (1, 2) else 500), {"error": msg, "exit": code}
+    if command in ms.JSON:
+        try:
+            return 200, json.loads(out)
+        except ValueError:
+            return 500, {"error": f"{command} --json printed no JSON"}
+    from evaluation_harness._version import __version__  # noqa: PLC0415
+
+    return 200, {"command": command, "version": __version__, "text": out}
+
+
+def api_estimate(command: str, arguments: Any) -> tuple[int, dict]:
+    """POST /api/v1/estimate: a job command's own --dry-run, run now as a read (it calls nothing and writes nothing),
+    and what it printed: what the job would do and, for a command that spends, cost (RFC-026 step 5)."""
+    from evaluation_harness import _api  # noqa: PLC0415
+    from evaluation_harness import mcp_server as ms  # noqa: PLC0415
+
+    try:
+        reg = _api.registry().get(command)
+        if reg is None or reg["served"] != "job":
+            raise _api.Refused(f"{command}: not a job command the API serves", 404)
+        parser = ms.parser_of(command)
+        if not any("--dry-run" in a.option_strings for a in parser._actions):
+            raise _api.Refused(
+                f"{command} has no --dry-run: there is nothing to estimate (a spending job shows its cap)",
+                404,
+            )
+        checked = _api.checked_args(command, {k: v for k, v in (arguments or {}).items() if k != "dry-run"})
+        argv = [*ms.argv_of(parser, checked), "--dry-run"]
+    except _api.Refused as exc:
+        return exc.status, {"error": str(exc)}
+    except (ValueError, AttributeError) as exc:
+        return 400, {"error": str(exc)}
+    code, out, err = ms.run_command(ROOT, command, argv)
+    from evaluation_harness._version import __version__  # noqa: PLC0415
+
+    return (200 if code == 0 else 400), {
+        "command": command,
+        "version": __version__,
+        "exit": code,
+        "text": out + err,
+    }
 
 
 def allowed(path: str, host: str, port: int, prefixes: tuple) -> int:
@@ -953,19 +1143,57 @@ def allowed(path: str, host: str, port: int, prefixes: tuple) -> int:
     from the project root, keys included.
     """
     local = (f"127.0.0.1:{port}", f"localhost:{port}", "127.0.0.1", "localhost")
-    if host not in (LIMITS["hosts"] or local):
+    if host not in (LIMITS["hosts"] or (*local, *LIMITS.get("proxy_hosts", ()))):
         return 403
     p = unquote(urlparse(path).path)
     if ".." in p.split("/"):
         return 404
+    if p.startswith(
+        "/api/v1/"
+    ):  # RFC-026: this machine's only, never behind a proxy or public (owner, 2026-11-09)
+        return 404 if LIMITS["hosts"] or LIMITS.get("proxy_hosts") or not API_TOKEN else 0
     if p.startswith("/api/"):
         return 0 if p in API_ROUTES else 404
+    if p == "/workbench" or p.startswith("/workbench/"):  # as the API's: this machine's only, with a token
+        return 404 if LIMITS["hosts"] or LIMITS.get("proxy_hosts") or not API_TOKEN else 0
     prefix = next((x for x in prefixes if p.startswith(x)), None)
     if prefix is None:
         return 404
     if any(seg.startswith(".") for seg in p[len(prefix) :].split("/")):
         return 404
     return 0
+
+
+#: Whether a migration holds the whole project (RFC-026 step 4): every call is answered 503 until it ends.
+MIGRATING: list[bool] = [False]
+MIGRATION_POLL_S = 0.5
+_MIGRATION_SEEN: list = []  # the migration mark last acted on (unset until the first look)
+_MIGRATION_LOCK = threading.Lock()
+
+
+def migration_check() -> bool:
+    """Whether a migration holds the project now. A migration that began (or ended) since the last look closes this
+    server's hold on the store and makes it read the store again: `data-migrate` finds the database free, and an answer
+    after the move reads the new store. Asked before every call and every half second (watch_migrations)."""
+    from evaluation_harness import _jobs, _outputs  # noqa: PLC0415
+
+    with _MIGRATION_LOCK:
+        now, mark = _jobs.migrating(), _jobs.migration_mark()
+        if not _MIGRATION_SEEN:
+            _MIGRATION_SEEN.append(mark)
+        # A short move can begin and end between two looks: the mark says one did.
+        if now != MIGRATING[0] or mark != _MIGRATION_SEEN[0]:
+            MIGRATING[0], _MIGRATION_SEEN[0] = now, mark
+            _outputs.reset()
+            cache_clear()
+        return now
+
+
+def watch_migrations() -> None:
+    """migration_check every half second, so a server nobody asks anything still lets go of the database."""
+    while True:
+        migration_check()
+        time.sleep(MIGRATION_POLL_S)
 
 
 #: A deployment's hooks (--hooks), or None. The harness calls them and knows nothing of what they
@@ -990,19 +1218,19 @@ def load_hooks(spec: str):
     target, _, name = spec.partition(":")
     if target.endswith(".py"):
         path = Path(target).resolve()
-        if not path.is_file():
-            raise SystemExit(f"--hooks: no file {target}")
+        if not _store.is_file(path):
+            die(f"--hooks: no file {target}", "not-found")
         from evaluation_harness._common import ModuleNotLoadable, load_module  # noqa: PLC0415
 
         try:
             mod = load_module(path, f"evh_hooks_{path.stem}")
-        except ModuleNotLoadable as exc:
-            raise SystemExit(f"--hooks: cannot load {target}") from exc
+        except ModuleNotLoadable:
+            die(f"--hooks: cannot load {target}", "failed")
     else:
         try:
             mod = importlib.import_module(target)
         except ImportError as exc:
-            raise SystemExit(f"--hooks: cannot import {target}: {exc}") from exc
+            die(f"--hooks: cannot import {target}: {exc}", "failed")
     obj = getattr(mod, name) if name else mod
     return obj() if isinstance(obj, type) else obj
 
@@ -1031,6 +1259,14 @@ def _route(path: str) -> str:
     return "/api/other" if path.startswith("/api/") else "static"
 
 
+def _data_url_prefix() -> str | None:
+    """The URL path the project's data tree is served under (/data/), None when it is outside the project."""
+    try:
+        return "/" + _common.DATA.resolve().relative_to(ROOT.resolve()).as_posix().strip("/") + "/"
+    except ValueError:  # a data directory outside the project has no URL (served() says so at start)
+        return None
+
+
 class Handler(SimpleHTTPRequestHandler):
     """HTTP request handler for catalog serving and API endpoints."""
 
@@ -1047,6 +1283,16 @@ class Handler(SimpleHTTPRequestHandler):
         t0, self._status = time.monotonic(), 0
         path = urlparse(self.path).path
         try:
+            if migration_check():
+                self.send_response(503)
+                self.send_header("Retry-After", "5")
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Cache-Control", "no-store")
+                body = json.dumps({"error": "a migration holds the project; try again when it ends"}).encode()
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+                return
             serve()
         except Exception as exc:
             if HOOKS is None:
@@ -1087,6 +1333,251 @@ class Handler(SimpleHTTPRequestHandler):
             return True
         return False
 
+    def do_POST(self):
+        """The API's calls (RFC-026), observed by the hooks; nothing else is written to."""
+        if urlparse(self.path).path.startswith("/api/v1/"):
+            self._observed(lambda: self._api("POST"))
+            return
+        self._observed(self._no_write)
+
+    def _api_authorized(self) -> bool:
+        """The token, from `Authorization: Bearer` or the cookie the session route sets (RFC-026)."""
+        import hmac  # noqa: PLC0415
+
+        auth = self.headers.get("Authorization") or ""
+        given = auth[len("Bearer ") :].strip() if auth.startswith("Bearer ") else None
+        if given is None:
+            for part in (self.headers.get("Cookie") or "").split(";"):
+                k, _, v = part.strip().partition("=")
+                if k == API_COOKIE:
+                    given = v
+        return bool(given and API_TOKEN and hmac.compare_digest(given, API_TOKEN[0]))
+
+    def _api(self, method: str) -> None:
+        """/api/v1/: the token on every call, this machine's Host (`_refuse`), no foreign Origin, and the data header on
+        every call that is not a read (RFC-026, Who may call)."""
+        from evaluation_harness import _api  # noqa: PLC0415
+
+        url = urlparse(self.path)
+        if self._refuse():
+            return
+        port = int(self.server.server_address[1])  # type: ignore[index]  # an AF_INET (host, port)
+        origin = self.headers.get("Origin")
+        if origin is not None and origin not in (f"http://127.0.0.1:{port}", f"http://localhost:{port}"):
+            return self._json(403, {"error": "a call from another origin is refused"}, cache=False)
+        if method == "GET" and url.path == "/api/v1/session":
+            # The Workbench's first load trades the token in its address for a cookie (HttpOnly, SameSite=Strict).
+            import hmac  # noqa: PLC0415
+
+            tok = (parse_qs(url.query).get("token") or [""])[0]
+            if not (tok and API_TOKEN and hmac.compare_digest(tok, API_TOKEN[0])):
+                return self._json(401, {"error": "no valid token"}, cache=False)
+            nxt = (parse_qs(url.query).get("next") or [""])[0]
+            local_page = nxt.startswith("/") and not nxt.startswith("//") and "\\" not in nxt
+            self.send_response(303 if local_page else 204)
+            # The printed Configure link: the cookie, then the page itself (this server's only).
+            if local_page:
+                self.send_header("Location", nxt)
+            self.send_header("Set-Cookie", f"{API_COOKIE}={tok}; HttpOnly; SameSite=Strict; Path=/api/")
+            self.send_header("Cache-Control", "no-store")
+            self.end_headers()
+            return
+        if not self._api_authorized():
+            return self._json(
+                401, {"error": "the API needs the server's token (.build/api-token)"}, cache=False
+            )
+        if method == "GET" and url.path == "/api/v1/commands":
+            return self._json(200, {"commands": _api.registry()}, cache=False)
+        if method == "POST" and url.path.startswith("/api/v1/read/"):
+            n = int(self.headers.get("Content-Length") or 0)
+            if n > API_MAX_BODY:
+                return self._json(
+                    413, {"error": f"a read call is at most {API_MAX_BODY:,} bytes"}, cache=False
+                )
+            try:
+                body = json.loads(self.rfile.read(n) or b"{}") if n else {}
+            except ValueError:
+                return self._json(400, {"error": 'the body is a JSON object: {"args": {...}}'}, cache=False)
+            args = body.get("args", {}) if isinstance(body, dict) else None
+            code, answer_body = api_read(url.path[len("/api/v1/read/") :], args)
+            return self._json(code, answer_body, cache=False)
+        if url.path == "/api/v1/jobs" or url.path.startswith("/api/v1/jobs/"):
+            return self._jobs_route(method, url)
+        if method == "POST" and url.path == "/api/v1/estimate":
+            n = int(self.headers.get("Content-Length") or 0)
+            if n > API_MAX_BODY:
+                return self._json(
+                    413, {"error": f"an estimate is at most {API_MAX_BODY:,} bytes"}, cache=False
+                )
+            try:
+                body = json.loads(self.rfile.read(n) or b"{}") if n else {}
+            except ValueError:
+                return self._json(
+                    400, {"error": 'the body is a JSON object: {"command": ..., "args": {...}}'}, cache=False
+                )
+            if not isinstance(body, dict):
+                return self._json(400, {"error": "the body is a JSON object"}, cache=False)
+            code, answer_body = api_estimate(str(body.get("command") or ""), body.get("args", {}))
+            return self._json(code, answer_body, cache=False)
+        if self._model_route(method, url):
+            return None
+        if self.headers.get(DATA_HEADER) != "1":
+            return self._json(
+                403, {"error": f"a call that is not a read needs the {DATA_HEADER}: 1 header"}, cache=False
+            )
+        return self._json(404, {"error": f"no API route {method} {url.path}"}, cache=False)
+
+    def _model_route(self, method: str, url) -> bool:
+        """The model's resources (RFC-032): the operation whose method and route match the path, run in this process.
+        A read takes its inputs from the query; a write needs the data header, its inputs as a JSON object and `by`
+        (who acted, RFC-027; an agent names `for`, the person it acts for). None when no operation's route matches."""
+        import jsonschema  # noqa: PLC0415
+        from evaluation_harness import ops  # noqa: PLC0415
+        from evaluation_harness._version import __version__  # noqa: PLC0415
+        from evaluation_harness.model.entity import Problem  # noqa: PLC0415
+
+        def say(code: int, body: dict) -> bool:
+            self._json(code, body, cache=False)
+            return True
+
+        parts = url.path[len("/api/v1") :].strip("/").split("/")
+        for op in ops.OPS.values():
+            want = op.route.strip("/").split("/")
+            if op.method != method or len(want) != len(parts):
+                continue
+            if any(w != p for w, p in zip(want, parts, strict=True) if not w.startswith("{")):
+                continue
+            params = {w[1:-1]: p for w, p in zip(want, parts, strict=True) if w.startswith("{")}
+            inputs: dict = {}
+            if op.kind == "read":
+                q = parse_qs(url.query)
+                inputs = {k: v[0] for k, v in q.items() if k in op.inputs}
+            else:
+                if self.headers.get(DATA_HEADER) != "1":
+                    return say(403, {"error": f"a write needs the {DATA_HEADER}: 1 header"})
+                n = int(self.headers.get("Content-Length") or 0)
+                if n > API_MAX_BODY:
+                    return say(413, {"error": f"a write is at most {API_MAX_BODY:,} bytes"})
+                try:
+                    body = json.loads(self.rfile.read(n) or b"{}") if n else {}
+                except ValueError:
+                    body = None
+                if not isinstance(body, dict):
+                    return say(400, {"error": "the body is a JSON object"})
+                by, for_ = body.pop("by", None), body.pop("for", None)
+                if not isinstance(by, str) or not by.strip().startswith(("person:", "agent:")):
+                    return say(400, {"error": "by: who acted, person:NAME or agent:NAME (RFC-027)"})
+                if by.startswith("agent:") and not (isinstance(for_, str) and for_.strip()):
+                    return say(
+                        400, {"error": f"{by} is an agent: name the person it acts for (for: person:NAME)"}
+                    )
+                inputs = body
+                inputs["by"] = by.strip() + (f" for {for_.strip()}" if by.startswith("agent:") else "")
+            try:
+                jsonschema.validate({k: v for k, v in inputs.items() if k != "by"}, op.schema())
+            except jsonschema.ValidationError as exc:
+                return say(400, {"error": f"{op.name}: {exc.message}"})
+            try:
+                result = op.call(**params, **inputs)
+            except Problem as exc:
+                return say(
+                    MODEL_STATUS.get(exc.kind, 400),
+                    {"error": str(exc), "kind": exc.kind, "problems": exc.problems},
+                )
+            return say(200, {"command": op.name, "version": __version__, "result": result})
+        return False
+
+    def _jobs_route(self, method: str, url) -> None:
+        """The jobs (RFC-026 step 3): list, read, follow the log, fetch an artifact (GET); start, stop, resume (POST,
+        with the data header)."""
+        from evaluation_harness import _api, _jobs  # noqa: PLC0415
+
+        parts = url.path[len("/api/v1/jobs") :].strip("/").split("/") if url.path != "/api/v1/jobs" else []
+        q = parse_qs(url.query)
+        try:
+            if method == "GET":
+                if not parts:
+                    state = (q.get("state") or [None])[0]
+                    return self._json(200, {"jobs": _jobs.list_jobs(state)}, cache=False)
+                job_id = parts[0]
+                if len(parts) == 1:
+                    return self._json(200, _jobs.read(job_id), cache=False)
+                if parts[1:] == ["log"]:
+                    data, nxt = _jobs.log_from(job_id, int((q.get("from") or ["0"])[0]))
+                    return self._json(200, {"log": data.decode("utf-8", "replace"), "next": nxt}, cache=False)
+                if len(parts) == 3 and parts[1] == "files":
+                    f = _jobs.job_dir(job_id) / _api._safe_name(parts[2])
+                    if parts[2] in (
+                        "job.json",
+                        "state.json",
+                        "supervisor.lock",
+                        "supervisor.pid",
+                    ) or not _store.is_file(f):
+                        return self._json(
+                            404, {"error": f"no file {parts[2]!r} in job {job_id}"}, cache=False
+                        )
+                    body = _store.read_bytes(f)
+                    self.send_response(200)
+                    self.send_header("Content-Type", "application/octet-stream")
+                    self.send_header("Content-Disposition", f'attachment; filename="{f.name}"')
+                    self.send_header("Content-Length", str(len(body)))
+                    self.send_header("Cache-Control", "no-store")
+                    self.end_headers()
+                    self.wfile.write(body)
+                    return None
+                return self._json(404, {"error": f"no API route GET {url.path}"}, cache=False)
+            if self.headers.get(DATA_HEADER) != "1":
+                return self._json(
+                    403,
+                    {"error": f"a call that is not a read needs the {DATA_HEADER}: 1 header"},
+                    cache=False,
+                )
+            if not parts:
+                n = int(self.headers.get("Content-Length") or 0)
+                if n > API_MAX_JOB_BODY:
+                    return self._json(
+                        413, {"error": "a job call carries at most 50 MB of files"}, cache=False
+                    )
+                try:
+                    body = json.loads(self.rfile.read(n) or b"{}") if n else {}
+                except ValueError:
+                    return self._json(400, {"error": "the body is a JSON object"}, cache=False)
+                if not isinstance(body, dict):
+                    return self._json(400, {"error": "the body is a JSON object"}, cache=False)
+                j = _api.start_job(
+                    str(body.get("command") or ""), body.get("args", {}), body.get("by"), body.get("reason"),
+                    body.get("max_cost_usd"), body.get("for"),
+                )  # fmt: skip
+                return self._json(202, j, cache=False)
+            if len(parts) == 2 and parts[1] == "stop":
+                return self._json(200, _jobs.stop(parts[0]), cache=False)
+            if len(parts) == 2 and parts[1] == "resume":
+                return self._json(202, _api.resume_job(parts[0]), cache=False)
+            return self._json(404, {"error": f"no API route POST {url.path}"}, cache=False)
+        except _api.Refused as exc:
+            return self._json(exc.status, {"error": str(exc)}, cache=False)
+        except (FileNotFoundError, ValueError) as exc:
+            return self._json(404, {"error": f"no such job: {exc}"}, cache=False)
+
+    def do_PATCH(self):
+        """An edit of the model's records (RFC-032), through the API; nothing else."""
+        if urlparse(self.path).path.startswith("/api/v1/"):
+            self._observed(lambda: self._api("PATCH"))
+            return
+        self._observed(self._no_write)
+
+    def do_PUT(self):
+        """Nothing is written by PUT (the Configure page's save is retired, PRD-017)."""
+        self._observed(self._no_write)
+
+    def do_DELETE(self):
+        """Nothing is deleted by DELETE (the Configure page's delete is retired, PRD-017; `evh data-rm` deletes)."""
+        self._observed(self._no_write)
+
+    def _no_write(self) -> None:
+        if not self._refuse():
+            self.send_error(404)
+
     def do_HEAD(self):
         """Handle HEAD requests with access checks."""
         if not self._refuse():
@@ -1098,6 +1589,8 @@ class Handler(SimpleHTTPRequestHandler):
 
     def _get(self):
         url = urlparse(self.path)
+        if url.path.startswith("/api/v1/"):
+            return self._api("GET")
         hook_route = _hook_routes().get(url.path)
         if hook_route is not None:
             code, ctype, data = hook_route(url.query)
@@ -1112,6 +1605,8 @@ class Handler(SimpleHTTPRequestHandler):
             return
         if url.path == "/api/health":
             return self._json(200, {"ok": True})
+        if url.path == "/workbench" or url.path.startswith("/workbench/"):
+            return self._workbench(url.path)
         if url.path == "/api/sheet" and parse_qs(url.query).get("format") == ["csv"]:
             code, data, ctype = sheet_csv(url.query)
             self.send_response(code)
@@ -1139,14 +1634,74 @@ class Handler(SimpleHTTPRequestHandler):
         if not self.prefixes:  # public mode: the API only, never a file
             self.send_error(404)
             return
+        if self._from_store(url.path):
+            return
         super().do_GET()
 
-    def _json(self, code: int, body) -> None:
+    def _workbench(self, url_path: str) -> None:
+        """A file of the Workbench (PRD-017), from the package: a name in its folder, never a path; it reads the
+        project through the API, with the cookie the session route set."""
+        if url_path == "/workbench":
+            self.send_response(301)
+            self.send_header("Location", "/workbench/")
+            self.end_headers()
+            return
+        name = url_path[len("/workbench/") :] or "index.html"
+        kind = WORKBENCH_TYPES.get(Path(name).suffix)
+        f = WORKBENCH / name
+        if "/" in name or kind is None or not _store.is_file(f):
+            self.send_error(404)
+            return
+        data = _store.read_bytes(f)
+        self.send_response(200)
+        self.send_header("Content-Type", kind)
+        self.send_header("Content-Length", str(len(data)))
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.end_headers()
+        self.wfile.write(data)
+
+    def _from_store(self, url_path: str) -> bool:
+        """With the sqlite store (RFC-025) a file of the data tree is a row of the project's database: served from
+        it, through the same prefix and path checks as a file on disk. False for anything else."""
+        if _common.store() != "sqlite":
+            return False
+        data = _common.DATA
+        data_prefix = _data_url_prefix()
+        if not data_prefix or not url_path.startswith(data_prefix):
+            return False
+        rel = Path(unquote(url_path[len(data_prefix) :]))
+        if ".." in rel.parts or rel.is_absolute():
+            self.send_error(404)
+            return True
+        f = data / rel
+        if not _store.is_file(f):
+            self.send_error(404)
+            return True
+        body = _store.read_bytes(f)
+        self.send_response(200)
+        self.send_header("Content-Type", self.guess_type(str(f)))
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+        return True
+
+    def end_headers(self) -> None:
+        """A file of the project's data is shown, never run as one of this server's pages: an .html or .svg under
+        data/ (a fetched source page, a capture record) could otherwise call the Configure page's write API from this
+        origin (advisor review, 2026-11-06). sandbox gives it an origin of its own; nosniff keeps its type."""
+        prefix = _data_url_prefix()
+        if prefix and urlparse(self.path).path.startswith(prefix):
+            self.send_header("X-Content-Type-Options", "nosniff")
+            self.send_header("Content-Security-Policy", "sandbox")
+        super().end_headers()
+
+    def _json(self, code: int, body, cache: bool = True) -> None:
         data = body if isinstance(body, bytes) else json.dumps(body).encode()
         self.send_response(code)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(data)))
-        self.send_header("Cache-Control", "no-store" if code >= 400 else "public, max-age=300")
+        self.send_header("Cache-Control", "no-store" if code >= 400 or not cache else "public, max-age=300")
         self.end_headers()
         self.wfile.write(data)
 
@@ -1182,6 +1737,13 @@ def main() -> int:
         help="serve the API only, to these Host names, behind a reverse proxy",
     )
     ap.add_argument(
+        "--behind-proxy",
+        metavar="HOST[,HOST]",
+        help="the whole local inspector (pages, items, outputs, references) for these Host names too, behind a "
+        "private proxy (a tailnet's Caddy); with --bind 0.0.0.0 in a container. No rate limit and nothing withheld, "
+        "unlike --public; the data page's writes stay this machine's own",
+    )
+    ap.add_argument(
         "--bind",
         default="127.0.0.1",
         help="address to listen on (0.0.0.0 inside a container whose port is published on loopback)",
@@ -1213,6 +1775,8 @@ def main() -> int:
         help="answer every comparison this built catalog links to, in the background",
     )
     args = ap.parse_args()
+    if args.public and args.behind_proxy:
+        die("--public and --behind-proxy are two deployments: one at a time", "bad-argument")
     if args.port is None:
         from evaluation_harness._common import project_port  # noqa: PLC0415
 
@@ -1228,27 +1792,50 @@ def main() -> int:
         LIMITS["publish"] = tuple(x.strip() for x in args.publish.split(",") if x.strip())
         bad = set(LIMITS["publish"]) - {"outputs", "references"}
         if bad:
-            raise SystemExit(f"--publish takes outputs and/or references, not {', '.join(sorted(bad))}")
+            die(f"--publish takes outputs and/or references, not {', '.join(sorted(bad))}", "bad-argument")
         Handler.prefixes = ()
     else:
-        if args.bind != "127.0.0.1":
-            raise SystemExit("--bind other than 127.0.0.1 needs --public (and a proxy in front)")
-        if not (args.build_dir / "index.html").is_file():
-            raise SystemExit(f"no catalog at {args.build_dir}: run `evh catalog` first")
+        if args.behind_proxy:
+            # The homelab fleet's private catalog (2026-11-05): Caddy on the tailnet in front, no published port.
+            LIMITS["proxy_hosts"] = tuple(h.strip() for h in args.behind_proxy.split(",") if h.strip())
+            if not LIMITS["proxy_hosts"]:
+                die("--behind-proxy needs at least one Host name", "bad-argument")
+        elif args.bind != "127.0.0.1":
+            die(
+                "--bind other than 127.0.0.1 needs --public or --behind-proxy (and a proxy in front)",
+                "not-allowed",
+            )
+        if not _store.is_file(args.build_dir / "index.html"):
+            die(f"no catalog at {args.build_dir}: run `evh catalog` first", "not-found")
         Handler.prefixes = served(args.build_dir, A.data_dir, tuple(getattr(A, "served_dirs", ())))
+    migration_check()
+    threading.Thread(target=watch_migrations, daemon=True).start()
     if args.warm:
         threading.Thread(
             target=lambda: print(f"warm: {warm(args.warm)} comparison(s) cached", flush=True), daemon=True
         ).start()
+    # Bound, then the token written, then listening: a client that waits for the port to open and reads
+    # .build/api-token then reads this server's token. Listening first left a moment in which it read the previous
+    # server's (a 401; test_jobs met it under load). A port that cannot be bound leaves a running server's token as is.
+    server = ThreadingHTTPServer(
+        (args.bind, args.port), partial(Handler, directory=str(ROOT)), bind_and_activate=False
+    )
     try:
-        server = ThreadingHTTPServer((args.bind, args.port), partial(Handler, directory=str(ROOT)))
+        server.server_bind()
+        local = not args.public and not LIMITS.get("proxy_hosts")
+        if local:
+            from evaluation_harness import _api  # noqa: PLC0415
+
+            API_TOKEN[:] = [_api.new_token()]
+        server.server_activate()
     except OSError as exc:
+        server.server_close()
         why = (
             f"port {args.port} is in use. Stop what holds it, or pass --port N."
             if exc.errno == errno.EADDRINUSE
             else f"{exc.strerror}. Pass --port N, or check --bind."
         )
-        raise SystemExit(f"cannot listen on {args.bind}:{args.port}: {why}") from exc
+        die(f"cannot listen on {args.bind}:{args.port}: {why}", "failed")
     from evaluation_harness._version import __version__  # noqa: PLC0415
 
     _hook(
@@ -1260,8 +1847,26 @@ def main() -> int:
             f"({LIMITS['rate']}/min per client, {LIMITS['max_arms']} arms max)",
             flush=True,
         )
+    elif LIMITS.get("proxy_hosts"):
+        print(
+            f"catalog on {args.bind}:{args.port} for {', '.join(LIMITS['proxy_hosts'])} (behind a proxy) and this "
+            f"machine, at {Handler.prefixes[0]}; the data page's writes are not served",
+            flush=True,
+        )
     else:
+        from evaluation_harness import _api  # noqa: PLC0415
+
         print(f"catalog: http://127.0.0.1:{args.port}{Handler.prefixes[0]}   (Ctrl-C to stop)", flush=True)
+        print(
+            f"  API: http://127.0.0.1:{args.port}/api/v1/  (token in {_api.token_path()}: "
+            f"Authorization: Bearer <token>, or GET /api/v1/session?token=<token> for a cookie)",
+            flush=True,
+        )
+        tok = (API_TOKEN or [""])[0]
+        print(
+            f"  Workbench: http://127.0.0.1:{args.port}/api/v1/session?token={tok}&next=/workbench/  (signs in once)",
+            flush=True,
+        )
         print(f"  the project {ROOT}, on a port of its own", flush=True)
         print("  it reads the runs once: restart it to see runs made after it started", flush=True)
     try:

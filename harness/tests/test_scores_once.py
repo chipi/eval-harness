@@ -11,10 +11,14 @@ build, the adapter's own methods included (a wrapper around it missed those: arm
 
 import contextlib
 import io
+import os
 import sys
 import tempfile
 from collections import Counter
 from pathlib import Path
+
+# reads this repository's own committed runs (harness/data), which are files by definition
+os.environ["EVAL_STORE"] = "files"
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from evaluation_harness import catalog_build as cb

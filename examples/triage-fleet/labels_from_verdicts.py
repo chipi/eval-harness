@@ -24,6 +24,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parents[1] / "harness"))
+from evaluation_harness import _store  # noqa: E402
 from evaluation_harness._common import die, load_dataset  # noqa: E402
 from evaluation_harness._label_sets import label_text  # noqa: E402
 
@@ -40,24 +41,29 @@ def main() -> int:
     ap.add_argument("--source", choices=tuple(SOURCES), default="owner")
     ap.add_argument("--out", type=Path, required=True, help="the folder to write, for evh label-import")
     args = ap.parse_args()
-    if args.out.exists():
-        die(f"{args.out} exists: write the labels to a new folder")
+    if _store.exists(args.out):
+        die(f"{args.out} exists: write the labels to a new folder", "would-overwrite")
     ds = load_dataset(args.dataset_id)
     want = SOURCES[args.source]
     label: dict[str, str] = {}
-    for r in (json.loads(x) for x in args.verdicts.read_text(encoding="utf-8").splitlines() if x.strip()):
+    for r in (
+        json.loads(x) for x in _store.read_text(args.verdicts, encoding="utf-8").splitlines() if x.strip()
+    ):
         if r["source"] in want:
             if r["id"] in label and label[r["id"]] != r["label"]:
-                die(f"{r['id']}: two labels from {args.source} ({label[r['id']]}, {r['label']})")
+                die(
+                    f"{r['id']}: two labels from {args.source} ({label[r['id']]}, {r['label']})",
+                    "invalid-file",
+                )
             label[r["id"]] = r["label"]
     items = [it["item_id"] for it in ds["items"]]
     hit = [i for i in items if i in label]
     if not hit:
-        die(f"no item of {args.dataset_id} has a {args.source} label")
-    args.out.mkdir(parents=True)
+        die(f"no item of {args.dataset_id} has a {args.source} label", "not-enough")
+    _store.mkdir(args.out, parents=True)
     for i in hit:
-        (args.out / f"{i}.txt").write_text(
-            label_text(ACCEPT.get(label[i], [label[i]])) + "\n", encoding="utf-8"
+        _store.write_text(
+            args.out / f"{i}.txt", label_text(ACCEPT.get(label[i], [label[i]])) + "\n", encoding="utf-8"
         )
     counts: dict[str, int] = {}
     for i in hit:

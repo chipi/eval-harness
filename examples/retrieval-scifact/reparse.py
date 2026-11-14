@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Rebuild each reranking run's ranking from its stored LLM replies. $0, no network.
 
-    python examples/retrieval-scifact/reparse.py --out data/runs-reparsed
+    python examples/retrieval-scifact/reparse.py [--label reparsed]
 
 WHY `rescore.py` CANNOT DO THIS
 
@@ -33,14 +33,15 @@ WHY THE RESULT IS TRUSTWORTHY, AND HOW THAT WAS ESTABLISHED
   affected and that llama_l "diverged for a reason that is not the parser". Both were
   artifacts of the round-2 parser, which this tool's own fix removed -- under the
   shipped parser llama_l and llama_s are unchanged and only qwen_s moves. The tool that
-  produces runs-reparsed was documenting the version of events its own output disproves.
+  produces the reparsed scores was documenting the version of events its own output disproves.
   Found by external review, which is the fourth time a correction reached the reports
   and not one of the places that generates them.
 
 WHAT THIS IS NOT
 
-  Not a measurement. These runs are DERIVED from stored replies and are marked as such:
-  `reparsed_from`, `reparsed_at`, `parser_sha256`, and a null `fingerprint.hash` with
+  Not a measurement. These scores are DERIVED from stored replies and are marked as such
+  (`derived`: kind reparse, the run they were rebuilt from, the parser's and the scorer's
+  hash), written under each run, read as their own arm, and a null `fingerprint.hash` with
   `hash_invalid_because`. An arm whose run carries no `_meta.first_stage` -- the
   encoder-only and baseline arms, which have no LLM stage -- is copied through
   unchanged, because there is nothing to re-parse.
@@ -58,49 +59,53 @@ ROOT = HERE.parents[1]
 sys.path.insert(0, str(ROOT / "examples" / "_shared"))
 sys.path.insert(0, str(ROOT / "harness"))  # the evaluation_harness package (a link to scripts/)
 
+from evaluation_harness import (  # noqa: E402
+    _outputs,
+    _store,
+)
 from evaluation_harness._fingerprint import seal  # noqa: E402
 from evaluation_harness._record import derived_record  # noqa: E402
+from evaluation_harness._runs import item_rows  # noqa: E402
+from evaluation_harness.model import runs as model_runs  # noqa: E402
 from retrieval import parse_ranking, score_ranking, scorer_sha256  # noqa: E402
 
 
 def qrels_for(refs: Path, item_id: str):
     f = refs / f"{item_id}.txt"
-    if not f.is_file():
+    if not _store.is_file(f):
         return None
     return {
         str(x["doc_id"]): int(x.get("score", 1))
-        for x in json.loads(f.read_text(encoding="utf-8"))
+        for x in json.loads(_store.read_text(f, encoding="utf-8"))
         if isinstance(x, dict) and x.get("doc_id") is not None
     }
 
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--runs", type=Path, default=ROOT / "harness/data/runs")
-    ap.add_argument("--out", type=Path, default=ROOT / "harness/data/runs-reparsed")
+    ap.add_argument(
+        "--label", default="reparsed", help="the label the reparsed scores are read under (default: reparsed)"
+    )
     ap.add_argument("--dataset-id", default="scifact_200")
     ap.add_argument("--refs", type=Path, default=ROOT / "harness/data/references/gold/scifact_200")
     args = ap.parse_args()
 
-    if not args.refs.is_dir() or not any(args.refs.glob("*.txt")):
+    if not _store.is_dir(args.refs) or not any(_store.glob(args.refs, "*.txt")):
         sys.exit(
             f"no references under {args.refs}.\n"
             f"  The corpus is gitignored; rebuild it first:\n"
             f"    python examples/retrieval-scifact/fetch.py"
         )
 
-    args.out.mkdir(parents=True, exist_ok=True)
     changed_arms = 0
-    for d in sorted(args.runs.glob("*")):
-        mj = d / "metrics.json"
-        pj = d / "predictions.jsonl"
-        if not (mj.is_file() and pj.is_file()):
-            continue
-        m = json.loads(mj.read_text(encoding="utf-8"))
-        if m.get("dataset_id") != args.dataset_id:
+    for run_id in model_runs.run_ids():
+        # Each run as the score it made when it ran: its rows carry the stored replies.
+        d = model_runs.first_score(run_id)
+        m = model_runs.record(d) if d else None
+        if m is None or not _outputs.has_rows(d) or m.get("dataset_id") != args.dataset_id:
             continue
 
-        rows = [json.loads(ln) for ln in pj.read_text(encoding="utf-8").splitlines() if ln.strip()]
+        rows = list(item_rows(d))
         if not rows:
             continue
         has_llm = (rows[0].get("_meta") or {}).get("first_stage") is not None
@@ -155,16 +160,16 @@ def main() -> int:
             if vals:
                 scores[f"total_{k}"] = round(sum(vals), 8)
 
-        run_dir = args.out / d.name
-        run_dir.mkdir(parents=True, exist_ok=True)
-        (run_dir / "predictions.jsonl").write_text(
-            "".join(json.dumps(r, sort_keys=True) + "\n" for r in new_rows), encoding="utf-8"
-        )
         new = derived_record(
             m,
             kind="reparse",
-            source_dir=d.name,
-            with_={"parser": "examples/_shared/retrieval.parse_ranking", "scorer_sha256": scorer_sha256()},
+            source_dir=run_id,
+            with_={
+                "parser": "examples/_shared/retrieval.parse_ranking",
+                "scorer_sha256": scorer_sha256(),
+                # What the score is keyed by (model.runs.scorer_of): the whole scoring rule, parser included.
+                "sha256": scorer_sha256(),
+            },
             scores=scores,
             n_items=len(new_rows),
         )
@@ -176,18 +181,26 @@ def main() -> int:
                 "fingerprint does not describe; see derived.with"
             )
             new["fingerprint"] = fp
-        (run_dir / "metrics.json").write_text(
-            json.dumps(new, indent=2, sort_keys=True) + "\n", encoding="utf-8"
-        )
+        reference = ((new.get("fingerprint") or {}).get("data") or {}).get("reference_id")
+        key = model_runs.key(model_runs.scorer_of(new), reference)
+        held = model_runs.run_dir(run_id) / "scores" / key
+        text = "".join(_outputs.row_line(r) for r in new_rows)
+        if model_runs.record(held) is not None:
+            if _outputs.rows_text(held) != text:
+                sys.exit(f"{run_id} is already scored by {key} with other rows: a score is not written over")
+            print(f"  {run_id}  already scored by {key}")
+            continue
+        sd = model_runs.write_score(run_id, model_runs.scorer_of(new), reference, new, label_as=args.label)
+        _outputs.write_rows(sd, new_rows)
         if moved:
             changed_arms += 1
         print(
-            f"  {d.name}  {f'{moved:3d} items reordered' if moved else 'unchanged'}"
+            f"  {run_id}  {f'{moved:3d} items reordered' if moved else 'unchanged'}"
             f"   ndcg_10 {m['scores'].get('ndcg_10', 0):.4f} -> {scores.get('ndcg_10', 0):.4f}"
         )
 
-    print(f"\n  {changed_arms} arm(s) changed. Written to {args.out}")
-    print(f"  EVAL_RUNS_DIR={args.out} make leaderboard DATASET_ID={args.dataset_id}")
+    print(f"\n  {changed_arms} arm(s) changed. Written as scores read as {args.label!r}")
+    print(f"  evh leaderboard --dataset-id {args.dataset_id} --label {args.label}")
     return 0
 
 

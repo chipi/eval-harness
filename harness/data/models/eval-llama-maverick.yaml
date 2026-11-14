@@ -4,3 +4,7 @@ aliases:
 - eval-llama-maverick
 weights: open
 licence: Llama, gated
+actor:
+  type: unknown
+  name: before 0.8.0
+  from: migration

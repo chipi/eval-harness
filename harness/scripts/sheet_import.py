@@ -4,6 +4,7 @@
     evh sheet-import sheet.csv --dataset-id tickets_v1 --by owner --set owner_2026_11
     evh sheet-import sheet.csv --dataset-id tickets_v1 --by claude --kind model --set claude_labels
     evh sheet-import sheet.csv --dataset-id tickets_v1 --by owner --scorer owner_picks
+    evh sheet-import sheet.csv --dataset-id tickets_v1 --by owner --tags first --modes summaries
 
 A person, or any AI tool, fills the empty columns of a sheet `evh inspect --sheet … --csv sheet.csv --fill …` wrote,
 and one command reads back whatever was filled. The records stay two kinds, because they mean different things: a
@@ -13,10 +14,13 @@ best and cannot score an arm added next week.
 - a filled `label` column (with `also right` and `note`, as label-import reads them) becomes a label set, `--set`; its
   source is `person`, or `model` with `--kind model` (`--by` then names the tool);
 - a filled `pick` column (the letter of the best output; `A|B` for a tie, each then taking half) or `score: X` columns
-  (a number on the rubric's scale) become judged runs under data/runs-judged/<scorer>/, `--scorer`: one run per arm,
-  `judge_won_unvalidated` (1 for the pick, 0 for the others, split on a tie) or `judge_score_unvalidated` per item,
-  mapped back through the key (`sheet.key.json`, beside the sheet; `--key` names another). Such runs are
-  unvalidated, labelled so as judge-score's `--unvalidated` runs are, until the same judge is validated as any is.
+  (a number on the rubric's scale) become judged scores, `--scorer`: a score under each arm's run (read as
+  judged/<scorer>), `judge_won_unvalidated` (1 for the pick, 0 for the others, split on a tie) or `judge_score_unvalidated` per item,
+  mapped back through the key (`sheet.key.json`, beside the sheet; `--key` names another). Such scores are
+  unvalidated, labelled so as judge-score's `--unvalidated` scores are, until the same judge is validated as any is;
+- filled `failure_modes: X` columns (modes of a failure-mode list, `mode|mode` for several, `ok` for an output read
+  and found fine; a blank cell was not read) become a tag set under data/tags/<dataset>/<name>/, `--tags`, checked
+  against its key and the list `--modes` names. A tag says what went wrong in that arm's output; it scores nothing.
 
 The sheet's blind columns are checked against the key first: a row the key does not have, a column whose text is not
 the one the key recorded (another sheet, or an edited output), a pick naming a letter that is not on its row, a score
@@ -36,20 +40,19 @@ import argparse
 import hashlib
 import json
 import re
-import shutil
+import sys
 from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _common
+from evaluation_harness import _jsonout, _outputs, _store, _tags
 from evaluation_harness._codeid import file_sha256
 from evaluation_harness._common import (
     BOOKKEEPING_PREFIXES,
+    DATA,
     classify_metrics,
     die,
+    evh_prog,
     load_dataset,
-    read_json,
-    write_json,
-    write_text_atomic,
 )
 from evaluation_harness._fingerprint import seal
 from evaluation_harness._label_sets import set_dir, write_set
@@ -59,6 +62,7 @@ from evaluation_harness._sheet import NOT_AN_ITEM, key_path, read_key, text_sha2
 from evaluation_harness._sheets import read_csv
 from evaluation_harness.label_import import labels_from_rows
 from evaluation_harness.label_sheet import run_dir
+from evaluation_harness.model import runs as _model_runs
 
 NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$")
 #: What describes the call that made an arm's output, not how it was judged: carried across, as judge-score carries
@@ -69,16 +73,26 @@ SUFFIX = "_unvalidated"
 
 def main() -> int:
     """Read a filled sheet back as a label set, or as judged runs."""
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
     ap.add_argument("sheet", type=Path, help="the filled sheet (.csv)")
     ap.add_argument("--dataset-id", required=True)
-    ap.add_argument("--by", required=True, help="who filled it: a person, or the tool")
+    from evaluation_harness._actor import add_by  # noqa: PLC0415
+
+    add_by(ap, required=True, help="who filled it: a person, or the tool; also who acted")
     ap.add_argument(
         "--kind", choices=("person", "model"), default="person", help="who filled it (default: person)"
     )
     ap.add_argument("--set", dest="name", help="the label set's name, for a filled `label` column")
     ap.add_argument(
-        "--scorer", help="the name of the judged runs (data/runs-judged/<scorer>/), for `pick`/`score:`"
+        "--scorer",
+        help="the name of the judged scores (read as judged/<scorer>; key <scorer>@none under each arm's run), for "
+        "`pick`/`score:`",
+    )
+    ap.add_argument(
+        "--tags", help="the tag set's name, for filled `failure_modes:` columns (data/tags/<dataset>/<name>/)"
+    )
+    ap.add_argument(
+        "--modes", help="with --tags: the failure-mode list the tags name (data/failure-modes/<id>.yaml)"
     )
     ap.add_argument("--key", type=Path, help="the sheet's key (default: sheet.key.json beside it)")
     ap.add_argument(
@@ -86,61 +100,119 @@ def main() -> int:
         type=Path,
         help="with --set, a file: the instructions the labeller followed (its path and sha256 are recorded)",
     )
+    ap.add_argument(
+        "--json",
+        action="store_true",
+        help="one JSON object on stdout when done (the text goes to stderr as it is printed): the envelope every --json command gives (result.blocks, result.values)",
+    )
     args = ap.parse_args()
-
-    if not args.sheet.is_file():
-        die(f"no sheet {args.sheet}")
-    load_dataset(args.dataset_id)
-    rows, choices = read_csv(args.sheet)
-    if not rows or "item_id" not in rows[0]:
-        die(f"{args.sheet}: a sheet has the column item_id (evh inspect --sheet … --csv writes one)")
-    head = list(rows[0])
-    rows = [r for r in rows if not r["item_id"].startswith(NOT_AN_ITEM)]
-    sha = hashlib.sha256(args.sheet.read_bytes()).hexdigest()
-
-    def filled(col: str) -> bool:
-        return any((r.get(col) or "").strip() for r in rows)
-
-    score_cols = [h for h in head if h.startswith("score: ")]
-    has_label = "label" in head and filled("label")
-    has_pick = "pick" in head and filled("pick")
-    has_scores = any(filled(h) for h in score_cols)
-    if not (has_label or has_pick or has_scores):
-        die(f"{args.sheet}: nothing filled: no `label`, `pick` or `score:` cell has an answer")
-    if has_pick and has_scores:
-        die(f"{args.sheet}: both `pick` and `score:` are filled: a sheet is judged one way")
-    if has_label and not args.name:
-        die("the sheet has labels: name the label set with --set")
-    if (has_pick or has_scores) and not args.scorer:
-        die("the sheet has judgements: name the judged runs with --scorer (data/runs-judged/<scorer>/)")
-
-    labels: dict[str, str] = {}
-    notes: dict[str, str] = {}
-    if has_label:
-        labels, notes = labels_from_rows(rows, choices)
-        out = set_dir(args.dataset_id, args.name)
-        if out.exists() and any(out.iterdir()):
-            die(f"{out} exists: a label set is never edited. A correction is a new set: name another.")
-    judged: dict[str, Any] | None = None
-    if has_pick or has_scores:
-        if not NAME.match(args.scorer):
+    with _jsonout.collect("sheet-import", args.json, live=sys.stderr):
+        if not _store.is_file(args.sheet):
+            die(f"no sheet {args.sheet}", "not-found")
+        load_dataset(args.dataset_id)
+        rows, choices = read_csv(args.sheet)
+        if not rows or "item_id" not in rows[0]:
             die(
-                f"--scorer {args.scorer!r}: letters, digits, _ . - (at most 100), starting with a letter or digit"
+                f"{args.sheet}: a sheet has the column item_id (evh inspect --sheet … --csv writes one)",
+                "invalid-file",
             )
-        target = _common.DATA / "runs-judged" / args.scorer
-        if target.exists() and any(target.iterdir()):
-            die(f"{target} exists: judged runs are never overwritten. Name another --scorer.")
-        judged = _judgements(args, rows, has_pick)
+        head = list(rows[0])
+        rows = [r for r in rows if not r["item_id"].startswith(NOT_AN_ITEM)]
+        sha = hashlib.sha256(_store.read_bytes(args.sheet)).hexdigest()
 
-    if has_label:
-        source = {"kind": args.kind, "by": args.by, "sheet": args.sheet.name, "sheet_sha256": sha}
-        doc = write_set(args.dataset_id, args.name, labels, source, args.guideline, notes)
-        print(
-            f"data/labels/{args.dataset_id}/{args.name}: {doc['n_items']} label(s) of {len(rows)} row(s), "
-            f"source {args.kind} · {args.by}"
+        def filled(col: str) -> bool:
+            return any((r.get(col) or "").strip() for r in rows)
+
+        score_cols = [h for h in head if h.startswith("score: ")]
+        has_label = "label" in head and filled("label")
+        has_pick = "pick" in head and filled("pick")
+        has_scores = any(filled(h) for h in score_cols)
+        if any(h.startswith(_tags.COLUMN) for h in head):
+            return _import_tags(args, rows, sha, any(filled(h) for h in head if h.startswith(_tags.COLUMN)))
+        if args.tags or args.modes:
+            die(
+                f"{args.sheet}: --tags and --modes read `failure_modes:` columns, and the sheet has none",
+                "bad-argument",
+            )
+        if not (has_label or has_pick or has_scores):
+            die(
+                f"{args.sheet}: nothing filled: no `label`, `pick` or `score:` cell has an answer",
+                "not-enough",
+            )
+        if has_pick and has_scores:
+            die(
+                f"{args.sheet}: both `pick` and `score:` are filled: a sheet is judged one way",
+                "invalid-file",
+            )
+        if has_label and not args.name:
+            die("the sheet has labels: name the label set with --set", "bad-argument")
+        if (has_pick or has_scores) and not args.scorer:
+            die(
+                "the sheet has judgements: name the judging scorer with --scorer (its scores are read as judged/<scorer>)",
+                "bad-argument",
+            )
+
+        labels: dict[str, str] = {}
+        notes: dict[str, str] = {}
+        if has_label:
+            labels, notes = labels_from_rows(rows, choices)
+            out = set_dir(args.dataset_id, args.name)
+            if _store.exists(out) and any(_store.iterdir(out)):
+                die(
+                    f"{out} exists: a label set is never edited. A correction is a new set: name another.",
+                    "would-overwrite",
+                )
+        judged: dict[str, Any] | None = None
+        if has_pick or has_scores:
+            if not NAME.match(args.scorer):
+                die(
+                    f"--scorer {args.scorer!r}: letters, digits, _ . - (at most 100), starting with a letter or digit",
+                    "bad-argument",
+                )
+            judged = _judgements(args, rows, has_pick)
+
+        if has_label:
+            source = {"kind": args.kind, "by": args.by, "sheet": args.sheet.name, "sheet_sha256": sha}
+            doc = write_set(args.dataset_id, args.name, labels, source, args.guideline, notes)
+            print(
+                f"data/labels/{args.dataset_id}/{args.name}: {doc['n_items']} label(s) of {len(rows)} row(s), "
+                f"source {args.kind} · {args.by}"
+            )
+        if judged is not None:
+            _write(args, judged, sha)
+        return 0
+
+
+def _import_tags(
+    args: argparse.Namespace, rows: list[dict[str, str]], sheet_sha: str, any_filled: bool
+) -> int:
+    """A filled tag sheet read back as a tag set, after its key and the failure-mode list are checked."""
+    if not (args.tags and args.modes):
+        die(
+            "the sheet has `failure_modes:` columns: name the tag set with --tags and its list with --modes",
+            "bad-argument",
         )
-    if judged is not None:
-        _write(args, judged, sha)
+    if not any_filled:
+        die(f"{args.sheet}: nothing filled: no `failure_modes:` cell has an answer", "not-enough")
+    key = read_key(args.key or key_path(args.sheet))
+    if key["dataset_id"] != args.dataset_id:
+        die(f"the key is for {key['dataset_id']}, not {args.dataset_id}", "mismatch")
+    if key["fill"] != "tags":
+        die(f"the key is for a sheet made with --fill {key['fill']}, not --fill tags", "mismatch")
+    if key.get("failure_modes") != args.modes:
+        die(
+            f"the sheet was written for the modes of {key.get('failure_modes')}, not {args.modes}", "mismatch"
+        )
+    tags = _tags.tags_from_sheet(rows, key)
+    if not tags:
+        die("nothing filled in the failure_modes columns", "not-enough")
+    source = {"kind": args.kind, "by": args.by, "sheet": args.sheet.name, "sheet_sha256": sheet_sha}
+    doc = _tags.write_tags(args.dataset_id, args.tags, args.modes, tags, source)
+    print(
+        f"data/tags/{args.dataset_id}/{args.tags}: {doc['n_tagged']} output(s) read in {len(tags)} run(s), "
+        f"modes of {args.modes} · {args.kind} {args.by}"
+    )
+    print(f"  the counts: evh tags --dataset-id {args.dataset_id}")
     return 0
 
 
@@ -148,15 +220,16 @@ def _judgements(args: argparse.Namespace, rows: list[dict[str, str]], pick: bool
     """The key checked against the sheet, and what was judged: {key, metric, values {arm index: {item: value}}}."""
     key = read_key(args.key or key_path(args.sheet))
     if key["dataset_id"] != args.dataset_id:
-        die(f"the key is for {key['dataset_id']}, not {args.dataset_id}")
+        die(f"the key is for {key['dataset_id']}, not {args.dataset_id}", "mismatch")
     if key["fill"] != ("pick" if pick else "scores"):
         die(
-            f"the key is for a sheet made with --fill {key['fill']}, but the sheet has {'picks' if pick else 'scores'}"
+            f"the key is for a sheet made with --fill {key['fill']}, but the sheet has {'picks' if pick else 'scores'}",
+            "mismatch",
         )
     letters: list[str] = key["letters"]
     unknown = [r["item_id"] for r in rows if r["item_id"] not in key["rows"]]
     if unknown:
-        die(f"{len(unknown)} row(s) not in the key (another sheet's): {', '.join(unknown[:8])}")
+        die(f"{len(unknown)} row(s) not in the key (another sheet's): {', '.join(unknown[:8])}", "mismatch")
     changed = [
         r["item_id"]
         for r in rows
@@ -168,7 +241,8 @@ def _judgements(args: argparse.Namespace, rows: list[dict[str, str]], pick: bool
     if changed:
         die(
             f"{len(changed)} row(s) whose outputs are not the key's (an edited sheet, or another key): "
-            f"{', '.join(changed[:8])}"
+            f"{', '.join(changed[:8])}",
+            "mismatch",
         )
     values: dict[int, dict[str, float]] = {}
     bad: list[str] = []
@@ -206,10 +280,11 @@ def _judgements(args: argparse.Namespace, rows: list[dict[str, str]], pick: bool
         die(
             f"{len(bad)} answer(s) refused, nothing written: "
             + "; ".join(bad[:8])
-            + (" ..." if len(bad) > 8 else "")
+            + (" ..." if len(bad) > 8 else ""),
+            "invalid-file",
         )
     if not values:
-        die("nothing filled in the blind columns")
+        die("nothing filled in the blind columns", "not-enough")
     return {
         "key": key,
         "metric": ("judge_won" if pick else "judge_score") + SUFFIX,
@@ -218,17 +293,27 @@ def _judgements(args: argparse.Namespace, rows: list[dict[str, str]], pick: bool
 
 
 def _write(args: argparse.Namespace, judged: dict[str, Any], sheet_sha: str) -> None:
-    """One run per arm under data/runs-judged/<scorer>/, named as its source run, shaped as judge-score's."""
+    """One score per arm under its run (key <scorer>@none, read as judged/<scorer>), shaped as judge-score's."""
     key, metric, values = judged["key"], judged["metric"], judged["values"]
-    root = _common.DATA / "runs-judged" / args.scorer
     kinds_known = classify_metrics()
-    written = 0
+    held = _model_runs.key(args.scorer, None)
+    sources = []
     for k, per_item in sorted(values.items()):
         arm = key["arms"][k]
-        src = _common.DATA / arm["path"] if arm.get("path") else None
-        if src is None or not (src / "metrics.json").is_file():
+        src = DATA / arm["path"] if arm.get("path") else None
+        if src is None or _model_runs.record(src) is None:
             src = run_dir(arm["run"], args.dataset_id)
-        m = read_json(src / "metrics.json")
+        sources.append((per_item, src, _model_runs.run_of(src).name))
+    taken = [rid for _p, _s, rid in sources if _store.is_dir(_model_runs.run_dir(rid) / "scores" / held)]
+    if taken:
+        die(
+            f"{held} already scores {', '.join(taken[:6])}{' ...' if len(taken) > 6 else ''}: judged scores are "
+            "never overwritten. Name another --scorer.",
+            "would-overwrite",
+        )
+    written = 0
+    for per_item, src, rid in sources:
+        m = _model_runs.record(src) or {}
         old = {r["item_id"]: r for r in item_rows(src, strict=False)}
         recs = []
         for item in sorted(per_item):
@@ -248,7 +333,7 @@ def _write(args: argparse.Namespace, judged: dict[str, Any], sheet_sha: str) -> 
         new = derived_record(
             m,
             kind="judge",
-            source_dir=src.name,
+            source_dir=rid,
             scores=aggregate_scores(recs),
             n_items=len(recs),
             drop=("reference_tier",),
@@ -282,18 +367,12 @@ def _write(args: argparse.Namespace, judged: dict[str, Any], sheet_sha: str) -> 
                 "see derived.with"
             )
             new["fingerprint"] = fp
-        out = root / src.name
-        (out / "outputs").mkdir(parents=True, exist_ok=True)
-        for f in (src / "outputs").glob("*.txt"):
-            shutil.copy2(f, out / "outputs" / f.name)
-        write_text_atomic(
-            out / "predictions.jsonl", "".join(json.dumps(r, sort_keys=True) + "\n" for r in recs)
-        )
-        write_json(out / "metrics.json", new)
+        sd = _model_runs.write_score(rid, args.scorer, None, new, label_as=f"judged/{args.scorer}")
+        _outputs.write_rows(sd, recs)  # no outputs of its own: they are its run's (RFC-024)
         written += 1
     n = sum(len(v) for v in values.values())
     print(
-        f"data/runs-judged/{args.scorer}: {written} run(s), {n} judgement(s), {metric}, unvalidated · {args.kind} {args.by}"
+        f"judged/{args.scorer}: {written} score(s), {n} judgement(s), {metric}, unvalidated · {args.kind} {args.by}"
     )
     print(
         f"  look at it: evh inspect --sheet --dataset-id {args.dataset_id} --runs {','.join(a['arm'] for a in key['arms'])}"

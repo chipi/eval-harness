@@ -7,7 +7,7 @@ skipped it, one counted a boolean as 1.0 where another dropped it. The inspector
 agreed with pair-test's because the committed data is clean, not because the code was
 shared. It is now: every reader goes through these functions.
 
-    runs = runs_on("ag_news_200", match="_v2")            # [(run dir, metrics.json)], sorted
+    runs = runs_on("ag_news_200", match="_v2")            # [(score dir, its record)], by run id
     M = matrix(runs, "accuracy")                           # config_id -> item_id -> mean
     lower = lower_is_better_on(runs, "wer")                # the direction the runs declare
 """
@@ -27,46 +27,29 @@ import sys
 from collections.abc import Iterable, Iterator
 from pathlib import Path
 
-from evaluation_harness import _common
+from evaluation_harness import _common, _outputs
 from evaluation_harness._common import lower_is_better
+from evaluation_harness.model import runs as _model_runs
 
 Run = tuple[Path, dict]
 
 
-def read_metrics(run_dir: Path) -> dict | None:
-    """A run's metrics.json, or None when it is missing, unreadable or not an object."""
-    mj = run_dir / "metrics.json"
-    try:
-        m = json.loads(mj.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return None
-    return m if isinstance(m, dict) else None
+def read_metrics(score_dir: Path) -> dict | None:
+    """A score's record (the run's facts with the score's over them: model/runs), or None when it is missing or
+    unreadable."""
+    return _model_runs.record(score_dir)
 
 
 def runs_on(
     dataset_id: str | None = None,
     *,
-    runs_dir: Path | None = None,
+    label: str | None = "",
     match: str | None = None,
     config_id: str | None = None,
 ) -> list[Run]:
-    """Every run in `runs_dir` (default: the runs directory) with a readable metrics.json and
-    a config_id, in directory-name order; optionally only one dataset, config_ids containing
-    `match`, or exactly `config_id`."""
-    base = runs_dir or _common.RUNS
-    out: list[Run] = []
-    for d in sorted(base.iterdir()) if base.is_dir() else []:
-        m = read_metrics(d) if d.is_dir() else None
-        if m is None or not m.get("config_id"):
-            continue
-        if dataset_id is not None and m.get("dataset_id") != dataset_id:
-            continue
-        if match and match not in m["config_id"]:
-            continue
-        if config_id is not None and m["config_id"] != config_id:
-            continue
-        out.append((d, m))
-    return out
+    """Every score read under `label` ("": a plain run's own score, the arm a goal reads; None: any) with its
+    record, by run id; optionally only one dataset, config_ids containing `match`, or exactly `config_id`."""
+    return _model_runs.scored(dataset_id, label_is=label, system_id=config_id, match=match)
 
 
 def by_arm(runs: Iterable[Run]) -> dict[str, list[Run]]:
@@ -78,15 +61,14 @@ def by_arm(runs: Iterable[Run]) -> dict[str, list[Run]]:
 
 
 def item_rows(run_dir: Path, strict: bool = True) -> Iterator[dict]:
-    """The rows of a run's predictions.jsonl that name an item. A malformed line raises
-    (naming the file and line) unless `strict` is False, when it is skipped: a statistical
+    """The rows of a run (its predictions.jsonl, or the sqlite store's) that name an item. A malformed line raises
+    (naming the run and line) unless `strict` is False, when it is skipped: a statistical
     test must not quietly drop an item, a page that shows a run may."""
-    pj = run_dir / "predictions.jsonl"
-    if not pj.is_file():
+    text = _outputs.rows_text(run_dir, errors="strict" if strict else "replace")
+    if text is None:
         return
-    for n, line in enumerate(
-        pj.read_text(encoding="utf-8", errors="strict" if strict else "replace").splitlines(), 1
-    ):
+    pj = Path(run_dir) / _outputs.PREDICTIONS
+    for n, line in enumerate(text.splitlines(), 1):
         if not line.strip():
             continue
         try:
@@ -107,6 +89,13 @@ def score_of(row: dict, metric: str) -> float | None:
     return float(v)
 
 
+#: Items each arm's runs left unscored this process: its action differed from production's, under which their labels
+#: hold (RFC-031 L3). {config_id: item ids}; the command says it (`_jsonout`).
+NOT_SCORABLE: dict[str, set[str]] = {}
+#: A replay arm's history confound (RFC-031 P1): {config_id: {items, of}}, said by the command.
+CONFOUND: dict[str, dict[str, int]] = {}
+
+
 def per_item(
     runs: Iterable[Run],
     metric: str,
@@ -114,20 +103,97 @@ def per_item(
     keep: set[str] | None = None,
     raw: list[float] | None = None,
     strict: bool = True,
+    reduce: str = "mean",
 ) -> dict[str, float]:
-    """item_id -> the mean of `metric` over the given runs (an arm's repeats). `keep`
-    restricts the items; `raw` collects every value as stored, before averaging (the
+    """item_id -> `metric` over the given runs (an arm's repeats), combined by `reduce` (stats.reduce_repeats: the
+    mean by default). `keep` restricts the items; `raw` collects every value as stored, before averaging (the
     leaderboard measures stored precision on it)."""
+    from evaluation_harness import _exposure  # noqa: PLC0415
+
     acc: dict[str, list[float]] = {}
-    for d, _m in runs:
+    datasets: set[str] = set()
+    for d, m in runs:
+        datasets.add(str((m or {}).get("dataset_id") or ""))
+        if (m or {}).get("not_scorable"):  # RFC-031 L3: said by the command (_jsonout)
+            NOT_SCORABLE.setdefault(str(m.get("config_id")), set()).update(m["not_scorable"])
+        # RFC-031 P1, said by the command: counted over the items this command reads (a period's, under `keep`), not
+        # the whole run's (the fleet's beta: "5 of 287" beside a comparison of 52).
+        confounded = ((m or {}).get("history_confound") or {}).get("items")
+        hit: set[str] = set()
+        seen: set[str] = set()
         for row in item_rows(d, strict=strict):
+            if keep is not None and row["item_id"] not in keep:
+                continue
+            seen.add(row["item_id"])
+            if row.get("history_confound") == 1.0:
+                hit.add(row["item_id"])
             v = score_of(row, metric)
-            if v is None or (keep is not None and row["item_id"] not in keep):
+            if v is None:
                 continue
             acc.setdefault(row["item_id"], []).append(v)
             if raw is not None:
                 raw.append(v)
+        if confounded and hit:
+            CONFOUND[str(m.get("config_id"))] = {"items": len(hit), "of": len(seen)}
+    # A held-out side's read items count in no score on it (RFC-031 H1): left out here, where every paired command's
+    # scores come from, and counted for the command to say.
+    for ds in datasets:
+        kept = _exposure.keep(ds, acc)
+        if kept is not None:
+            acc = {i: v for i, v in acc.items() if i in kept}
+    if reduce not in ("", "mean"):
+        from evaluation_harness.stats import reduce_repeats  # noqa: PLC0415
+
+        return {i: reduce_repeats(v, reduce) for i, v in acc.items() if v}
     return {i: statistics.fmean(v) for i, v in acc.items() if v}
+
+
+def refuse_run_level(runs: Iterable[Run], metric: str | None, command: str) -> None:
+    """Refuse a per-item test of a run-level metric (the adapter's score_run(): one number per run), by name,
+    instead of finding no items and saying "nothing to test"."""
+    from evaluation_harness._record import run_level_names  # noqa: PLC0415
+
+    if metric and any(metric in run_level_names(m) for _d, m in runs):
+        _common.die(
+            f"{metric} is a run-level metric (the adapter's score_run(): one number for each run, no per-item "
+            f"values), so {command} cannot test it item by item. The leaderboard shows it per arm, with its spread "
+            "over the arm's runs; name a per-item metric with --metric to test.",
+            "bad-argument",
+        )
+
+
+def repeat_agreement(runs: Iterable[Run], metric: str, items: Iterable[str] | None = None) -> dict | None:
+    """How far an arm's runs (its repeats) agree, item by item (the fleet's feedback 33: three runs of a
+    temperature-0 model gave 23 gate firings on 9 distinct items). {"runs", "items", "same", "item_runs"}: the
+    items scored in two runs or more, how many of them got the same score in every run, and the item-runs
+    behind them. None below two runs, or when no item was scored twice."""
+    runs = list(runs)
+    if len(runs) < 2:
+        return None
+    keep = set(items) if items is not None else None
+    acc: dict[str, list[float]] = {}
+    for d, _m in runs:
+        for row in item_rows(d, strict=False):
+            v = score_of(row, metric)
+            if v is not None and (keep is None or row["item_id"] in keep):
+                acc.setdefault(row["item_id"], []).append(v)
+    twice = {i: v for i, v in acc.items() if len(v) > 1}
+    if not twice:
+        return None
+    return {
+        "runs": len(runs),
+        "items": len(twice),
+        "same": sum(1 for v in twice.values() if len(set(v)) == 1),
+        "item_runs": sum(len(v) for v in twice.values()),
+    }
+
+
+def say_agreement(label: str, ag: dict) -> str:
+    """One arm's repeat agreement in words, with the unit it implies."""
+    near = ag["same"] >= 0.9 * ag["items"]
+    return f"{label}: {ag['runs']} runs, the same score on {ag['same']} of {ag['items']} items" + (
+        " (near-copies, not independent samples)" if near else ""
+    )
 
 
 def matrix(
@@ -145,7 +211,7 @@ def recorded_direction(runs: Iterable[Run], metric: str) -> str | None:
     for d, m in runs:
         declared = (m.get("metric_directions") or {}).get(metric)
         if declared in ("lower", "higher"):
-            said.setdefault(str(declared), d.name)
+            said.setdefault(str(declared), str(m.get("run_id") or d))
     if len(said) > 1:
         # Two runs, two answers: name them rather than take whichever was listed first.
         print(
@@ -188,7 +254,9 @@ def direction(runs: Iterable[Run], metric: str, asc: bool = False, desc: bool = 
     passed one, else `lower_is_better_on`. Every command that counts wins or ranks arms asks
     this, so "A wins 180/200" on latency means A was faster without anyone remembering --asc."""
     if asc and desc:
-        raise SystemExit("ERROR: --asc and --desc contradict each other")
+        from evaluation_harness._common import die  # noqa: PLC0415
+
+        die("--asc and --desc contradict each other", "bad-argument")
     if asc or desc:
         return asc
     return lower_is_better_on(runs, metric)
@@ -224,7 +292,7 @@ class AmbiguousRuns(Exception):
     """Two runs claim the same config_id and nothing says which one to read."""
 
 
-def default_metric(dataset_id: str, match: str | None = None, runs_dir: Path | None = None) -> str:
+def default_metric(dataset_id: str, match: str | None = None, label: str | None = "") -> str:
     """The metric a command reads when none is named: the primary metric the matching runs
     on this dataset recorded, the most common one. It used to be `coverage`, the
     summarisation example's metric, hard-coded: every other project got "no arms" or a
@@ -233,7 +301,7 @@ def default_metric(dataset_id: str, match: str | None = None, runs_dir: Path | N
 
     primary: Counter = Counter()
     seen: set = set()
-    for _d, m in runs_on(dataset_id, runs_dir=runs_dir, match=match):
+    for _d, m in runs_on(dataset_id, label=label, match=match):
         if m.get("primary_metric"):
             primary[m["primary_metric"]] += 1
         seen |= set((m.get("scores") or {}).keys())
@@ -245,14 +313,17 @@ def default_metric(dataset_id: str, match: str | None = None, runs_dir: Path | N
                 file=sys.stderr,
             )
         return primary.most_common(1)[0][0]
-    raise SystemExit(
-        f"ERROR: no run on {dataset_id} records a primary metric: pass --metric"
-        + (f" (recorded: {', '.join(sorted(seen))})" if seen else "")
+    from evaluation_harness._common import die  # noqa: PLC0415
+
+    die(
+        f"no run on {dataset_id} records a primary metric: pass --metric"
+        + (f" (recorded: {', '.join(sorted(seen))})" if seen else ""),
+        "not-found",
     )
 
 
-def runs_by_arm(base: Path, dataset_id: str, prefix: str = "", strip: str = "") -> dict[str, list[Path]]:
-    """config_id -> the run directories that produced it, deterministically ordered.
+def runs_by_arm(label: str, dataset_id: str, prefix: str = "", strip: str = "") -> dict[str, list[Path]]:
+    """config_id -> the score directories read under `label` that produced it, by run id.
 
     WHY THIS EXISTS RATHER THAN A GLOB AT EACH CALL SITE.
 
@@ -268,33 +339,33 @@ def runs_by_arm(base: Path, dataset_id: str, prefix: str = "", strip: str = "") 
     ELSE sharing a config_id is two different measurement occasions wearing one name,
     and this raises rather than picking one, because there is no correct pick.
     """
-    groups: dict[str, list[Path]] = {}
-    for d, m in runs_on(dataset_id, runs_dir=base):
+    groups: dict[str, list[tuple[str, Path]]] = {}
+    for d, m in runs_on(dataset_id, label=label):
         cid = m["config_id"]
         if prefix and not cid.startswith(prefix):
             continue
         key = cid[len(prefix) :] if prefix else cid
         if strip and key.endswith(strip):
             key = key[: -len(strip)]
-        groups.setdefault(key, []).append(d)
+        groups.setdefault(key, []).append((m["run_id"], d))
 
-    for key, dirs in groups.items():
-        if len(dirs) < 2:
+    for key, found in groups.items():
+        if len(found) < 2:
             continue
-        if is_repeat_set([d.name for d in dirs]):
+        if is_repeat_set([rid for rid, _d in found]):
             continue
         raise AmbiguousRuns(
-            f"{len(dirs)} runs under {base.name}/ claim config_id {key!r} on "
-            f"{dataset_id}: {sorted(d.name for d in dirs)}.\n"
+            f"{len(found)} runs read as {label or 'runs'} claim config_id {key!r} on "
+            f"{dataset_id}: {sorted(rid for rid, _d in found)}.\n"
             f"  These are different measurement occasions sharing one name, so any "
-            f"tool reading them picks one by filesystem order.\n"
-            f"  Move the ones that are not the record out of this directory "
-            f"(data/runs-repeats/ is where the SciFact re-runs live)."
+            f"tool reading them picks one by run id.\n"
+            f"  A run that is not the record is a re-run: its run.json's purpose says which "
+            f"(repeat, retime, pair), as the SciFact re-runs' do."
         )
-    return {k: sorted(v) for k, v in sorted(groups.items())}
+    return {k: [d for _rid, d in sorted(v)] for k, v in sorted(groups.items())}
 
 
-def warn_on_ambiguous_runs(base: Path, dataset_id: str | None = None, label: str = "") -> int:
+def warn_on_ambiguous_runs(read_as: str = "", dataset_id: str | None = None, label: str = "") -> int:
     """Say loudly when two runs share a config_id for reasons other than --repeat.
 
     Every loader in this repo groups runs by `config_id` and then averages or picks --
@@ -312,8 +383,8 @@ def warn_on_ambiguous_runs(base: Path, dataset_id: str | None = None, label: str
     ambiguous; averaging those is the point.
     """
     groups: dict[str, list[str]] = {}
-    for d, m in runs_on(dataset_id or None, runs_dir=base):
-        groups.setdefault(m["config_id"], []).append(d.name)
+    for _d, m in runs_on(dataset_id or None, label=read_as):
+        groups.setdefault(m["config_id"], []).append(m["run_id"])
     bad = []
     for cid, names in sorted(groups.items()):
         if len(names) < 2:
@@ -327,7 +398,7 @@ def warn_on_ambiguous_runs(base: Path, dataset_id: str | None = None, label: str
             f"{' in ' + label if label else ''} — {', '.join(names)}."
         )
         print(
-            f"           They are averaged together below. If they are different "
-            f"measurement occasions, move all but one out of {base.name}/."
+            "           They are averaged together below. If they are different "
+            "measurement occasions, give all but one their purpose (repeat, retime, pair) in their run.json."
         )
     return len(bad)

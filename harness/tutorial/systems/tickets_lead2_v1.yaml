@@ -1,0 +1,5 @@
+# System "lead2": the candidate we hope is better -- two sentences instead of one.
+system_id: tickets_lead2_v1
+params:
+  provider: echo
+  sentences: 2

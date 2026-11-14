@@ -9,7 +9,7 @@ In a throwaway project built from the tutorial ($0, offline), three arms on the 
   `--kind model`), `also right` joined, the allowed answers enforced, the `#` rows left out;
 - `--fill pick`: the outputs as blind columns A, B, C…, shuffled per row by the seed (the same seed the same
   order), no arm named in the sheet, the rubric as its first row, the key beside it; the filled sheet becomes judged
-  runs under data/runs-judged/<scorer>/, `judge_won_unvalidated` mapped back through the key (a shared pick split),
+  scores under each arm's run (read as judged/<scorer>), `judge_won_unvalidated` mapped back through the key (a shared pick split),
   unvalidated, with who filled it and the rubric's sha256; the inspector's sheet then shows them;
 - `--fill scores`: `score: X` columns on the rubric's scale, the same way;
 - every refusal, each writing nothing: no key, a key that is not the sheet's, an edited output, a row the key
@@ -31,7 +31,12 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parents[1] / "scripts"
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 KIT = HERE.parent / "tutorial"
+from evaluation_harness import _format  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runstore  # noqa: E402
+import _runview  # noqa: E402
 
 proj = Path(tempfile.mkdtemp(prefix="evh-sheet-import-"))
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-sheet-import")
@@ -71,9 +76,34 @@ def write(name, head, rows):
 
 
 def tree():
+    """Every file of every score read as judged/<scorer>, by path under data/."""
     return sorted(
-        str(p.relative_to(proj)) for p in proj.rglob("*") if p.is_file() and "runs-judged" in str(p)
+        f"data/{p}"
+        for rid in _runstore.listdir(proj, "runs")
+        for k, lb, _rec in _runview.scores_of(proj, rid)
+        if lb.startswith("judged/")
+        for p in _runstore.files_under(proj, f"runs/{rid}/scores/{k}")
     )
+
+
+def judged(scorer, cid):
+    """The judged score of a run of the system, as its path under data/, or None."""
+    for rid in _runstore.listdir(proj, "runs"):
+        if rid.startswith(f"{cid}_"):
+            for k, lb, _rec in _runview.scores_of(proj, rid):
+                if lb == f"judged/{scorer}":
+                    return f"runs/{rid}/scores/{k}"
+    return None
+
+
+def scored_by(scorer):
+    """Whether any run has a score by this scorer."""
+    return any(f"/scores/{scorer}@" in f"/{p}" for p in _runstore.files_under(proj, "runs"))
+
+
+def judged_rows(d):
+    with _runstore._InProject(proj) as data:
+        return _runstore.rows(data / d)
 
 
 def sha(b):
@@ -112,9 +142,10 @@ def letter_of(key_row, key, arm_token):
 
 try:
     data = proj / "data"
-    (data / "configs").mkdir(parents=True)
+    (data / "systems").mkdir(parents=True)
+    _runstore.write_text(proj, _format.NAME, f"format: {_format.FORMAT}\n")
     (data / "fields").mkdir()
-    shutil.copy(KIT / "fields" / "tickets.yaml", data / "fields")
+    _runstore.write_text(proj, "fields/tickets.yaml", (KIT / "fields" / "tickets.yaml").read_text())
     shutil.copytree(KIT / "tickets", proj / "tutorial" / "tickets")
     r = evh(
         "dataset-create", "--dataset-id", D, "--source-dir", "tutorial/tickets", "--fieldset", "tickets",
@@ -123,12 +154,14 @@ try:
     r = r if r.returncode else evh("dataset-materialize", "--dataset-id", D)
     check("setup: the tutorial dataset, materialized", r.returncode == 0, out(r)[-300:])
     for arm in ARMS:
-        shutil.copy(KIT / "configs" / f"tickets_{arm}.yaml", data / "configs")
-        r = evh("run", "--config", f"data/configs/tickets_{arm}.yaml")
+        _runstore.write_text(
+            proj, f"systems/tickets_{arm}_v1.yaml", (KIT / "systems" / f"tickets_{arm}_v1.yaml").read_text()
+        )
+        r = evh("run", "--system", f"tickets_{arm}_v1", "--dataset", D)
         check(f"setup: the {arm} arm runs", r.returncode == 0, out(r)[-300:])
-    items = sorted(p.stem for p in (data / "materialized" / D).glob("*.txt")) or sorted(
-        p.stem for p in (KIT / "tickets").glob("*.txt")
-    )
+    items = sorted(
+        n[:-4] for n in _runstore.listdir(proj, f"materialized/{D}") if n.endswith(".txt")
+    ) or sorted(p.stem for p in (KIT / "tickets").glob("*.txt"))
     check("setup: six tickets", len(items) == 6, str(items))
 
     # ── labels: --fill label, then sheet-import --set ────────────────────────────────────────
@@ -151,11 +184,17 @@ try:
     mine.append({"item_id": "#a footer", col: "dismiss"})
     write("lab_f.csv", head, mine)
     r = evh("sheet-import", "lab_f.csv", "--dataset-id", D, "--by", "owner", "--set", "owner_sheet")
-    labels_dir = data / "labels" / D / "owner_sheet"
+    labels_dir = f"labels/{D}/owner_sheet"
     doc = (
-        json.loads((labels_dir / "labels.json").read_text()) if (labels_dir / "labels.json").is_file() else {}
+        _runstore.read_json(proj, f"{labels_dir}/labels.json")
+        if _runstore.is_file(proj, f"{labels_dir}/labels.json")
+        else {}
     )
-    got = {p.stem: p.read_text().strip() for p in labels_dir.glob("*.txt")}
+    got = {
+        n[:-4]: _runstore.read_text(proj, f"{labels_dir}/{n}").strip()
+        for n in _runstore.listdir(proj, labels_dir)
+        if n.endswith(".txt")
+    }
     check(
         "sheet-import: a filled label column becomes a person's label set (also right joined, an empty row and the # rows left out)",
         r.returncode == 0
@@ -180,7 +219,7 @@ try:
         "--set",
         "claude_sheet",
     )
-    doc = json.loads((data / "labels" / D / "claude_sheet" / "labels.json").read_text())
+    doc = _runstore.read_json(proj, f"labels/{D}/claude_sheet/labels.json")
     check(
         "sheet-import --kind model: the same sheet as a model's label set, the tool named",
         r.returncode == 0 and doc["source"]["kind"] == "model" and doc["source"]["by"] == "claude",
@@ -191,7 +230,7 @@ try:
     r = evh("sheet-import", "lab_bad.csv", "--dataset-id", D, "--by", "owner", "--set", "never")
     check(
         "refused: an answer outside the sheet's choices, nothing written",
-        refused(r, "not among the sheet's choices") and not (data / "labels" / D / "never").exists(),
+        refused(r, "not among the sheet's choices") and not _runstore.exists(proj, f"labels/{D}/never"),
         out(r)[-300:],
     )
     r = evh("sheet-import", "lab_f.csv", "--dataset-id", D, "--by", "owner")
@@ -269,23 +308,20 @@ try:
     filled("pick", pick_author)
     r = evh("sheet-import", "pick_f.csv", "--dataset-id", D, "--by", "owner", "--scorer", "owner_picks")
     after_import = tree()
-    jroot = data / "runs-judged" / "owner_picks"
     recs = {}
     metrics = {}
     for arm, cid in ARMS.items():
-        d = next(iter(jroot.glob(f"{cid}_*")), None)
+        d = judged("owner_picks", cid)
         if d is not None:
-            recs[arm] = {
-                json.loads(ln)["item_id"]: json.loads(ln)
-                for ln in (d / "predictions.jsonl").read_text().splitlines()
-            }
-            metrics[arm] = json.loads((d / "metrics.json").read_text())
+            recs[arm] = {x["item_id"]: x for x in judged_rows(d)}
+            metrics[arm] = _runstore.read_json(proj, f"{d}/metrics.json")
     check(
-        "sheet-import pick: judged runs under data/runs-judged/<scorer>/, one per arm, named as the source run",
+        "sheet-import pick: a judged score under each arm's run (judged/<scorer>), one per arm",
         r.returncode == 0
         and sorted(recs) == sorted(ARMS)
         and all(
-            m["derived"]["from"] == next((data / "runs").glob(f"{ARMS[a]}_*")).name
+            m["derived"]["from"]
+            == next(n for n in _runstore.listdir(proj, "runs") if n.startswith(f"{ARMS[a]}_"))
             for a, m in metrics.items()
         ),
         out(r)[-400:],
@@ -338,7 +374,7 @@ try:
         out(r)[-300:] + str(table["columns"]),
     )
     r = evh("sheet-import", "pick_f.csv", "--dataset-id", D, "--by", "owner", "--scorer", "owner_picks")
-    check("refused: judged runs are never overwritten", refused(r, "never overwritten"), out(r)[-200:])
+    check("refused: judged scores are never overwritten", refused(r, "never overwritten"), out(r)[-200:])
     r = evh("sheet-import", "pick_f.csv", "--dataset-id", D, "--by", "owner")
     check("refused: judgements without --scorer", refused(r, "--scorer"), out(r)[-200:])
     check("refusing wrote nothing more", tree() == after_import and after_import != [], str(tree()))
@@ -354,7 +390,7 @@ try:
         r_ = evh("sheet-import", "bad.csv", "--dataset-id", D, "--by", "owner", "--scorer", scorer)
         check(
             f"refused: {what}, nothing written",
-            refused(r_, text) and not (data / "runs-judged" / scorer).exists(),
+            refused(r_, text) and not scored_by(scorer),
             out(r_)[-300:],
         )
 
@@ -432,17 +468,13 @@ try:
         "--scorer",
         "claude_scores",
     )
-    sroot = data / "runs-judged" / "claude_scores"
     srecs = {}
     smet = {}
     for arm, cid in ARMS.items():
-        d = next(iter(sroot.glob(f"{cid}_*")), None)
+        d = judged("claude_scores", cid)
         if d is not None:
-            srecs[arm] = {
-                json.loads(ln)["item_id"]: json.loads(ln)["judge_score_unvalidated"]
-                for ln in (d / "predictions.jsonl").read_text().splitlines()
-            }
-            smet[arm] = json.loads((d / "metrics.json").read_text())
+            srecs[arm] = {x["item_id"]: x["judge_score_unvalidated"] for x in judged_rows(d)}
+            smet[arm] = _runstore.read_json(proj, f"{d}/metrics.json")
     check(
         "sheet-import scores: judge_score_unvalidated per arm per item, mapped back through the shuffle; a comma decimal read; an empty cell skipped",
         r.returncode == 0
@@ -474,7 +506,7 @@ try:
         r_ = evh("sheet-import", "bad2.csv", "--dataset-id", D, "--by", "owner", "--scorer", scorer)
         check(
             f"refused: {what}, nothing written",
-            refused(r_, text) and not (data / "runs-judged" / scorer).exists(),
+            refused(r_, text) and not scored_by(scorer),
             out(r_)[-300:],
         )
 
@@ -501,7 +533,7 @@ try:
     )
     check(
         "refused: picks with a scores key (the key says which fill made the sheet)",
-        refused(r, "--fill scores") and not (data / "runs-judged" / "mixed").exists(),
+        refused(r, "--fill scores") and not scored_by("mixed"),
         out(r)[-300:],
     )
     r = evh("sheet-import", "sc_f.csv", "--dataset-id", "no_such_dataset", "--by", "owner", "--scorer", "s9")

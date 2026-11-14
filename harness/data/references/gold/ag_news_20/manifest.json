@@ -1,5 +1,10 @@
 {
-  "caveat": "GOLD: promoted as gold from the labels its script fetches (person · the dataset's authors): the answers a decision rests on.",
+  "actor": {
+    "from": "migration",
+    "name": "before 0.8.0",
+    "type": "unknown"
+  },
+  "caveat": "GOLD: promoted as gold from the labels its script fetches (person \u00b7 the dataset's authors): the answers a decision rests on.",
   "created_at": "2026-09-27T08:02:32Z",
   "dataset_id": "ag_news_20",
   "items_sha256": {

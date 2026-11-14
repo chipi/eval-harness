@@ -1,7 +1,0 @@
-```json
-[
-  {"text": "The Plain Dealer", "type": "other"},
-  {"text": "Brown", "type": "person"},
-  {"text": "Republicans", "type": "organization"}
-]
-```

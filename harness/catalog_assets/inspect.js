@@ -2,6 +2,12 @@
    server (catalog_serve.py) for per-item scores, verdicts and item outputs. What an item is
    called comes from <body data-item>, the command that starts the server from <body data-serve>. */
 (function () {
+  // The least and the greatest of a list, by a loop: Math.min(...xs) passes every value as an argument, and at
+  // 10,000 items and 40 arms (400,000 values) that overflows the call stack and the page never draws.
+  // The per-item table offers "show all" up to this many items (each a row of every arm's cell).
+  const SHOW_ALL = 1000;
+  const minOf = xs => { let m = Infinity; for (const v of xs) if (v < m) m = v; return m; };
+  const maxOf = xs => { let m = -Infinity; for (const v of xs) if (v > m) m = v; return m; };
   // Where the API answers: the page says (catalog_build --api), /api/ under evh catalog-serve.
   const API = document.body.dataset.api || '/api/';
   const ITEM = document.body.dataset.item || 'item', ITEMS = ITEM + 's';
@@ -48,7 +54,7 @@
   const PK = window.PICK;
   const pk = { goal: '', ds: '', q: '', dsq: '', f: {}, ticked: new Set(runs()) };
   const armOf = r => PK.arms[r] || PK.arms[r.split('#')[0]];
-  // what an arm is beside its config's others, without the particulars: "judged by X" is judged
+  // what an arm is beside its system's others, without the particulars: "judged by X" is judged
   const howKind = h => /^judged/.test(h) ? 'judged' : /^rescored/.test(h) ? 'rescored' : String(h).split(' (')[0];
   const FACETS = [['w', 'where', a => a.w], ['h', 'how', a => howKind(a.h)], ['s', 'scored against', a => a.s]];
   function picker() { return PK ? pickerFull() : pickerPlain(); }
@@ -132,12 +138,12 @@
     const t = [...pk.ticked].map(r => armOf(r)).filter(Boolean);
     const cfgs = new Set(t.map(a => a.c)), models = new Set(t.map(a => a.m).filter(Boolean));
     const same = mine.filter(([r, a]) => !pk.ticked.has(r) && cfgs.has(a.c));
-    if (same.length) sug.push([`the same config${cfgs.size > 1 ? 's' : ''}, scored other ways (${same.length})`, same.map(([r]) => r)]);
+    if (same.length) sug.push([`the same system${cfgs.size > 1 ? 's' : ''}, scored other ways (${same.length})`, same.map(([r]) => r)]);
     const sib = mine.filter(([r, a]) => !pk.ticked.has(r) && a.m && models.has(a.m) && !cfgs.has(a.c));
-    if (sib.length) sug.push([`the same model${models.size > 1 ? 's' : ''} in other configs (${sib.length})`, sib.map(([r]) => r)]);
+    if (sib.length) sug.push([`the same model${models.size > 1 ? 's' : ''} in other systems (${sib.length})`, sib.map(([r]) => r)]);
     const cap = shown.slice(0, 400), was = box.querySelector('.pk-list'), top = was ? was.scrollTop : 0;
     box.innerHTML =`<span class="pk-n">2</span><div class="pk-main"><h3>Its arms <span class="muted">on <code>${esc(pk.ds)}</code>, ${mine.length}</span></h3>
-      <div class="pk-row"><input id="pk-q" type="search" autocomplete="off" placeholder="filter: config, model, how" value="${esc(pk.q)}" aria-label="filter arms">
+      <div class="pk-row"><input id="pk-q" type="search" autocomplete="off" placeholder="filter: system, model, how" value="${esc(pk.q)}" aria-label="filter arms">
       <button class="btn small" type="button" id="pk-all">${shown.length > PK.max ? `Tick the first ${PK.max} of ${shown.length} shown` : `Tick the ${shown.length} shown`}</button></div>
       ${chips ? `<div class="pk-facets">${chips}</div>` : ''}
       ${sug.length ? `<div class="pk-sug"><span class="muted small">add</span>${sug.map(([l], i) => `<button type="button" class="chip pk-add" data-sug="${i}">+ ${esc(l)}</button>`).join('')}</div>` : ''}
@@ -182,7 +188,7 @@
     pre = names[0].slice(0, pre).search(/[_\/·][^_\/·]*$/) + 1;
     const rev = names.map(x => [...x].reverse().join(''));
     let suf = rev.reduce((n, x) => Math.min(n, cut(rev[0], x)), Infinity);
-    // A shared tail is cut only at a " · " (what they are scored by), never inside the config
+    // A shared tail is cut only at a " · " (what they are scored by), never inside the system
     // id: "_v1" is the arm's version, and it stays when every arm happens to share it.
     const tail = suf ? names[0].slice(names[0].length - suf) : '';
     const at = tail.indexOf(' · ');
@@ -256,13 +262,16 @@
 
     const arms = Object.keys(d.series), better = d.higher_is_better ? 1 : -1;
     const head = arms.map(a => `<th class="${a === d.baseline ? 'isbase' : ''}">${esc(label[a] || a)}${a === d.baseline ? '<br><small>baseline</small>' : ''}</th>`).join('');
-    const body = d.items.map(ep => `<tr data-ep="${esc(ep)}" class="eprow" tabindex="0" aria-label="open ${ITEM} ${esc(ep)}"><td class="mono" title="${esc(ep)}">${esc(ep)}</td>${arms.map(a => {
+    const rowOf = ep => `<tr data-ep="${esc(ep)}" class="eprow" tabindex="0" aria-label="open ${ITEM} ${esc(ep)}"><td class="mono" title="${esc(ep)}">${esc(ep)}</td>${arms.map(a => {
       const v = d.series[a][ep], b = d.series[d.baseline][ep];
       if (v == null) return '<td class="num muted">—</td>';
       let mark = '';
       if (a !== d.baseline && b != null && v !== b) mark = (v - b) * better > 0 ? ' <span class="up">▲</span>' : ' <span class="down">▼</span>';
-      return `<td class="num">${fmt(v)}${mark}</td>`; }).join('')}</tr>`).join('');
-    const eps = `<div class="scroll-x"><table class="data eps"><thead><tr><th>${ITEM}</th>${head}</tr></thead><tbody>${body}</tbody></table></div>
+      return `<td class="num">${fmt(v)}${mark}</td>`; }).join('')}</tr>`;
+    // Only the rows shown are drawn (10 at first, as the catalog's pager shows them): at 10,000 items and 40 arms the
+    // whole table was 3.2 million elements. "show all" is offered up to SHOW_ALL items; past that, a thousand more.
+    const eps = `<div class="scroll-x"><table class="data eps" data-nopage><thead><tr><th>${ITEM}</th>${head}</tr></thead><tbody></tbody></table></div>
+      <p class="pager small muted" id="eps-pager"></p>
       <p class="small muted">▲ better / ▼ worse than the baseline on that ${ITEM}. Click a row to see the outputs.</p><div id="drill"></div>`;
 
     // Runs that recorded only a run-level average: listed, never tested.
@@ -290,13 +299,31 @@
     if (rs) rs.onchange = ev => { ev.target.checked ? P.delete('rescore') : P.set('rescore', '0'); go(); };
     // The reference the metric names ("<metric> vs <reference>"), else the one the baseline was scored against.
     const ref = (d.metric.split(' vs ')[1] || '').trim() || ((d.arms || []).find(a => a.id === d.baseline) || {}).reference || '';
-    app.querySelectorAll('tr.eprow').forEach(tr => {
-      tr.onclick = () => drill(tr.dataset.ep, arms, d.baseline, label, ref, tr, {metric: d.metric, series: d.series});
-      tr.onkeydown = ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); tr.onclick(); } };
-    });
-    // ?item=<id>: a dataset page's "inspect" link opens that item (when the arms share it).
+    const tb = app.querySelector('table.eps tbody'), pager = document.getElementById('eps-pager');
+    let drawn = 0;
+    const draw = upto => {
+      upto = Math.min(upto, d.items.length);
+      if (upto > drawn) {
+        tb.insertAdjacentHTML('beforeend', d.items.slice(drawn, upto).map(rowOf).join(''));
+        [...tb.rows].slice(drawn).forEach(tr => {
+          tr.onclick = () => drill(tr.dataset.ep, arms, d.baseline, label, ref, tr, {metric: d.metric, series: d.series});
+          tr.onkeydown = ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); tr.onclick(); } };
+        });
+        drawn = upto;
+      }
+      const n = d.items.length, more = n <= SHOW_ALL ? n - drawn : Math.min(1000, n - drawn);
+      pager.hidden = n <= 10;
+      pager.innerHTML = `Showing ${drawn} of ${n}` + (drawn < n ? ` <button type="button" class="btn small" data-more>show ${Math.min(10, n - drawn)} more</button>`
+        + `<button type="button" class="btn small" data-bulk>${n <= SHOW_ALL ? 'show all' : 'show ' + more + ' more'}</button>` : '');
+    };
+    pager.onclick = ev => { const b = ev.target.closest('button'); if (!b) return;
+      draw('more' in b.dataset ? drawn + 10 : n_bulk()); };
+    const n_bulk = () => d.items.length <= SHOW_ALL ? d.items.length : drawn + 1000;
+    // ?item=<id>: a dataset page's "inspect" link opens that item (when the arms share it): drawn down to it.
     const want = P.get('item');
-    const hit = want && [...app.querySelectorAll('tr.eprow')].find(tr => tr.dataset.ep === want);
+    const at = want ? d.items.indexOf(want) : -1;
+    draw(Math.max(10, at + 1));
+    const hit = at >= 0 && [...tb.rows].find(tr => tr.dataset.ep === want);
     if (hit) hit.onclick();
     else if (want) document.getElementById('drill').innerHTML = `<p class="note">${esc(ITEM)} ${esc(want)} is not among the ${ITEMS} these arms share.</p>`;
   }
@@ -443,6 +470,19 @@
   const dot = (cx, cy, color, tip, r = 4.5) =>
     `<circle class="dot" cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${r}" fill="${color}" data-tip="${esc(tip)}"><title>${esc(tip)}</title></circle>`;
   const mean = xs => xs.reduce((a, b) => a + b, 0) / xs.length;
+  // Past DOTS_MAX values a row draws BINS shaded bins instead of a dot each (PLAN_0.8.0 S3, charts from bins): at
+  // 10,000 items and 40 arms the three charts were 1.2 million dots, each with its tooltip.
+  const DOTS_MAX = 500, BINS = 60;
+  function binRow(values, x, lo, hi, y, color, what) {
+    const w = (hi - lo) / BINS, counts = new Array(BINS).fill(0);
+    for (const v of values) counts[Math.min(BINS - 1, Math.max(0, Math.floor((v - lo) / w)))]++;
+    const most = maxOf(counts) || 1;
+    return counts.map((c, i) => !c ? '' : `<rect class="bin" x="${x(lo + i * w).toFixed(1)}" y="${(y - 9).toFixed(1)}" `
+      + `width="${Math.max(1, x(lo + (i + 1) * w) - x(lo + i * w)).toFixed(1)}" height="18" fill="${color}" `
+      + `fill-opacity="${(0.12 + 0.88 * c / most).toFixed(2)}"><title>${esc(what)}: ${c} ${c === 1 ? ITEM : ITEMS} `
+      + `from ${tfmt(lo + i * w)} to ${tfmt(lo + (i + 1) * w)}</title></rect>`).join('');
+  }
+  const binNote = `; past ${DOTS_MAX} ${ITEMS} a run, shaded bins instead of dots: the darker, the more ${ITEMS}`;
   // deterministic vertical jitter so tied scores stay visible
   const jit = (ep, k) => { let h = 0; for (const c of ep + k) h = (h * 31 + c.charCodeAt(0)) % 997; return (h / 997 - 0.5) * 12; };
 
@@ -453,7 +493,7 @@
     const arms = [d.baseline, ...others];
     const vals = arms.flatMap(a => Object.values(d.series[a]));
     if (!vals.length) return '';
-    let lo = Math.min(...vals), hi = Math.max(...vals); const pad = (hi - lo) * 0.06 || 0.05; lo -= pad; hi += pad;
+    let lo = minOf(vals), hi = maxOf(vals); const pad = (hi - lo) * 0.06 || 0.05; lo -= pad; hi += pad;
     const RH = ROW, top = NARROW ? 30 : 14, H = top + arms.length * RH + 30, x = scale(lo, hi, LEFT, W - RIGHT - (NARROW ? 0 : 80));
     const bm = mean(Object.values(d.series[d.baseline]));
     let g = axis(x, lo, hi, top - 6, top + arms.length * RH);
@@ -461,11 +501,12 @@
     arms.forEach((a, i) => {
       const y = top + i * RH + RH / 2, v = d.series[a], ys = Object.values(v);
       g += rowLabel(y, label[a] || a, a, col[a]);
-      g += Object.entries(v).map(([ep, s]) => dot(x(s), y + jit(ep, a), col[a], `${label[a] || a} · ${ep}: ${tfmt(s)}`)).join('');
+      g += ys.length > DOTS_MAX ? binRow(ys, x, lo, hi, y, col[a], label[a] || a)
+        : Object.entries(v).map(([ep, s]) => dot(x(s), y + jit(ep, a), col[a], `${label[a] || a} · ${ep}: ${tfmt(s)}`)).join('');
       if (ys.length) g += `<line class="meanmark" x1="${x(mean(ys))}" x2="${x(mean(ys))}" y1="${y - 11}" y2="${y + 11}" data-tip="${esc((label[a] || a) + ' mean ' + tfmt(mean(ys)))}"/>`
         + rowValue(y, W - RIGHT - 66, tfmt(mean(ys)));
     });
-    return `<figure class="chart"><figcaption><b>Spread per run</b> · every ${ITEM}'s ${esc(d.metric)}, one row per run, baseline first, then best mean first; the bar and the number are the run's mean, the dashed line the baseline's mean.</figcaption>
+    return `<figure class="chart"><figcaption><b>Spread per run</b> · every ${ITEM}'s ${esc(d.metric)}, one row per run, baseline first, then best mean first; the bar and the number are the run's mean, the dashed line the baseline's mean${binNote}.</figcaption>
       <div class="scroll-x"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Spread of per-${ITEM} scores per run">${g}</svg></div></figure>`;
   }
 
@@ -475,7 +516,7 @@
     if (!rows.length) return '';
     const md = r => mean(r[1].map(z => z[1]));
     rows.sort((p, q) => (d.higher_is_better || d.neutral ? md(q) - md(p) : md(p) - md(q)));
-    const m = Math.max(...rows.flatMap(r => r[1].map(x => Math.abs(x[1])))) * 1.08 || 1;
+    const m = maxOf(rows.flatMap(r => r[1].map(x => Math.abs(x[1])))) * 1.08 || 1;
     const RH = ROW, top = NARROW ? 30 : 14, H = top + rows.length * RH + 30, x = scale(-m, m, LEFT, W - RIGHT - (NARROW ? 0 : 160));
     const verdict = Object.fromEntries(d.rows.map(r => [r.arm, r]));
     let g = axis(x, -m, m, top - 6, top + rows.length * RH);
@@ -483,7 +524,8 @@
     rows.forEach(([a, ds], i) => {
       const y = top + i * RH + RH / 2, mu = mean(ds.map(z => z[1])), r = verdict[a] || {};
       g += rowLabel(y, label[a] || a, a, col[a]);
-      g += ds.map(([ep, z]) => dot(x(z), y + jit(ep, a), col[a], `${label[a] || a} · ${ep}: ${z >= 0 ? '+' : ''}${tfmt(z)} vs baseline`)).join('');
+      g += ds.length > DOTS_MAX ? binRow(ds.map(z => z[1]), x, -m, m, y, col[a], `${label[a] || a} vs baseline`)
+        : ds.map(([ep, z]) => dot(x(z), y + jit(ep, a), col[a], `${label[a] || a} · ${ep}: ${z >= 0 ? '+' : ''}${tfmt(z)} vs baseline`)).join('');
       g += `<line class="meanmark" x1="${x(mu)}" x2="${x(mu)}" y1="${y - 11}" y2="${y + 11}"/>`;
       // Words, not arrows: for a lower-is-better metric an up-arrow beside a negative number reads wrong.
       const v = r.verdict || '';
@@ -491,7 +533,7 @@
       g += rowValue(y, W - RIGHT - 150, `${mu >= 0 ? '+' : ''}${tfmt(mu)} ${r.wins != null ? r.wins + '–' + r.losses : ''} ${word}`);
     });
     const side = d.neutral ? '← lower · higher →' : d.higher_is_better ? '← worse · better →' : '← better · worse →';
-    return `<figure class="chart"><figcaption><b>Difference from the baseline</b> · each ${ITEM}'s ${esc(d.metric)} minus the baseline's (${esc(label[d.baseline] || d.baseline)}); bar = mean difference; right column: mean difference, wins–losses, and ✓ better / ✗ worse when significant after Holm. <span class="muted">${side}</span></figcaption>
+    return `<figure class="chart"><figcaption><b>Difference from the baseline</b> · each ${ITEM}'s ${esc(d.metric)} minus the baseline's (${esc(label[d.baseline] || d.baseline)}); bar = mean difference; right column: mean difference, wins–losses, and ✓ better / ✗ worse when significant after Holm${binNote}. <span class="muted">${side}</span></figcaption>
       <div class="scroll-x"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Per-${ITEM} difference from the baseline">${g}</svg></div></figure>`;
   }
 
@@ -500,12 +542,21 @@
     const pts = []; Object.keys(d.series).forEach(a => Object.entries(d.series[a]).forEach(([ep, y]) => { const v = (xs[a] || {})[ep]; if (v != null) pts.push([a, ep, v, y]); }));
     if (pts.length < 3) return '';
     const H = NARROW ? 330 : 420, top = 14, bottom = H - 40, L = NARROW ? 46 : 70;
-    let x0 = Math.min(...pts.map(p => p[2])), x1 = Math.max(...pts.map(p => p[2])), y0 = Math.min(...pts.map(p => p[3])), y1 = Math.max(...pts.map(p => p[3]));
+    let x0 = minOf(pts.map(p => p[2])), x1 = maxOf(pts.map(p => p[2])), y0 = minOf(pts.map(p => p[3])), y1 = maxOf(pts.map(p => p[3]));
     const px = (x1 - x0) * 0.05 || 1, py = (y1 - y0) * 0.06 || 0.05; x0 = Math.max(0, x0 - px); x1 += px; y0 -= py; y1 += py;
     const x = scale(x0, x1, L, W - RIGHT), y = scale(y0, y1, bottom, top);
     let g = ticks(x0, x1).map(t => `<line class="grid" x1="${x(t)}" x2="${x(t)}" y1="${top}" y2="${bottom}"/><text class="tick" x="${x(t)}" y="${bottom + 16}" text-anchor="middle">${tfmt(t)}</text>`).join('');
     g += ticks(y0, y1).map(t => `<line class="grid" x1="${L}" x2="${W - RIGHT}" y1="${y(t)}" y2="${y(t)}"/><text class="tick" x="${L - 8}" y="${y(t) + 4}" text-anchor="end">${tfmt(t)}</text>`).join('');
-    g += '<g class="faded">' + pts.map(([a, ep, xv, yv]) => dot(x(xv), y(yv), col[a], `${label[a] || a} · ${ep}: ${tfmt(yv)} at ${tfmt(xv)} ${esc(xm)}`, 5)).join('') + '</g>';
+    if (pts.length > DOTS_MAX * 4) {
+      // Too many to draw one by one: a grid of cells, shaded by how many items of all the runs fall in each.
+      const GX = 60, GY = 30, cw = (x1 - x0) / GX, ch = (y1 - y0) / GY, grid = new Map();
+      for (const p of pts) { const k = Math.min(GX - 1, Math.floor((p[2] - x0) / cw)) * GY + Math.min(GY - 1, Math.floor((p[3] - y0) / ch)); grid.set(k, (grid.get(k) || 0) + 1); }
+      const most = maxOf(grid.values()) || 1;
+      g += '<g class="faded">' + [...grid].map(([k, c]) => { const i = Math.floor(k / GY), j = k % GY;
+        return `<rect class="bin" x="${x(x0 + i * cw).toFixed(1)}" y="${y(y0 + (j + 1) * ch).toFixed(1)}" width="${(x(x0 + (i + 1) * cw) - x(x0 + i * cw)).toFixed(1)}" `
+          + `height="${(y(y0 + j * ch) - y(y0 + (j + 1) * ch)).toFixed(1)}" fill="${col[d.baseline]}" fill-opacity="${(0.12 + 0.88 * c / most).toFixed(2)}">`
+          + `<title>${c} ${c === 1 ? ITEM : ITEMS} of all runs</title></rect>`; }).join('') + '</g>';
+    } else g += '<g class="faded">' + pts.map(([a, ep, xv, yv]) => dot(x(xv), y(yv), col[a], `${label[a] || a} · ${ep}: ${tfmt(yv)} at ${tfmt(xv)} ${esc(xm)}`, 5)).join('') + '</g>';
     // Each run's average position: its trade-off (length, speed, cost) against the score.
     Object.keys(d.series).forEach(a => {
       const mine = pts.filter(p => p[0] === a); if (!mine.length) return;
@@ -527,7 +578,7 @@
   function charts(d, label) {
     const col = colorOf(d), keys = Object.keys(d.shape || {});
     const xm = keys[0];
-    const sc = xm ? `<figure class="chart"><figcaption><b>${esc(d.metric)} against <select id="xmetric">${keys.map(k => `<option ${k === xm ? 'selected' : ''}>${esc(k)}</option>`).join('')}</select></b> · faded dots: one per run per ${ITEM}; cross: each run's average, its trade-off between the two.</figcaption><div id="scatterbox">${scatter(d, label, col, xm)}</div></figure>` : '';
+    const sc = xm ? `<figure class="chart"><figcaption><b>${esc(d.metric)} against <select id="xmetric">${keys.map(k => `<option ${k === xm ? 'selected' : ''}>${esc(k)}</option>`).join('')}</select></b> · faded dots: one per run per ${ITEM} (past ${DOTS_MAX * 4} in all, shaded cells: the darker, the more); cross: each run's average, its trade-off between the two.</figcaption><div id="scatterbox">${scatter(d, label, col, xm)}</div></figure>` : '';
     return legend(d, label, col) + spread(d, label, col) + deltas(d, label, col) + sc;
   }
 
@@ -648,7 +699,7 @@
     const arms = d.arms;
     const heads = [['sel', '<input type="checkbox" id="sall" aria-label="select all shown">'], ['item', ITEM], ['start', 'the start'], ['', 'signals']];
     // An arm by what sets it apart from the others shown (shorten: "baseline_pro_v1", not
-    // "runs-rescored/5f2c057cdaa5/runs/orrery_triage_v1_labelled/triage_baseline_pro_v1"), the whole id in its title.
+    // "rescored-5f2c057c/orrery_triage_v1_labelled/triage_baseline_pro_v1"), the whole id in its title.
     // A break is offered after each '/' of what is left.
     const named = shorten(Object.fromEntries(arms.map(a => [a.token, short(a.token)])));
     const armHead = t => `<span title="${esc(t)}">${esc(named[t] || short(t)).replace(/\//g, '/<wbr>')}</span>`;
@@ -665,21 +716,26 @@
     heads.push(['', 'picked'], ['', 'fields']);
     const fieldsOf = r => Object.entries(r.fields).map(([k, v]) => `${k}=${v}`).join(', ');
     const win = (r, t, ref) => ref === d.metric && (r.winners['winner: ' + d.metric] || []).includes(t) ? ' win' : '';
-    const body = rs => rs.map(r => `<tr class="eprow" data-ep="${esc(r.item)}" tabindex="0">
-      <td class="sel"><input type="checkbox" class="ssel" value="${esc(r.item)}" aria-label="select ${esc(r.item)}"></td>
-      <td class="item mono" title="${esc(r.item)}">${esc(r.item.length > 28 ? r.item.slice(0, 27) + '…' : r.item)}</td>
-      <td class="small start" title="${esc(r.text)}">${esc(r.text.length > 60 ? r.text.slice(0, 59) + '…' : r.text)}</td>
-      <td>${Object.entries(r.signals).map(([s, x]) => `<span class="chip sig sig-${s}" title="${esc(x)}">${s}</span>`).join(' ')}</td>
-      ${arms.map(a => {
-        const c = r.cells[a.token];
-        return `<td class="small outc">${c.output == null ? '<span class="muted">—</span>' : esc(c.output)}</td>`
-          + a.scores.map(ref => `<td class="num scc${win(r, a.token, ref)}">${fmt(c.scores[ref])}</td>`).join('');
-      }).join('')}
-      ${d.label_cols.map(c => `<td class="small">${r.labels[c.key] == null ? '<span class="muted">—</span>' : esc(r.labels[c.key])}</td>`).join('')}
-      ${d.ref_cols.map(c => `<td class="small">${r.references[c.key] == null ? '<span class="muted">—</span>' : esc(r.references[c.key])}</td>`).join('')}
-      ${d.winner_cols.map(w => `<td class="small">${esc((r.winners[w.key] || []).map(t => named[t] || short(t)).join(' = '))}</td>`).join('')}
-      <td class="small">${esc(r.picked.join(', '))}</td>
-      <td class="small"><div class="clamp2" title="${esc(fieldsOf(r))}">${esc(fieldsOf(r))}</div></td></tr>`).join('');
+    // Each column as [its cell, the text a sort reads], in the order of `heads`: the sort works on the data, so only the
+    // rows shown are drawn (at 10,000 items and 40 arms the whole sheet was 940,000 elements and a 262 MB heap).
+    const dash = v => v == null ? '<span class="muted">—</span>' : esc(v);
+    const cols = [
+      [r => `<td class="sel"><input type="checkbox" class="ssel" value="${esc(r.item)}" aria-label="select ${esc(r.item)}"${picked.has(r.item) ? ' checked' : ''}></td>`, () => ''],
+      [r => `<td class="item mono" title="${esc(r.item)}">${esc(r.item.length > 28 ? r.item.slice(0, 27) + '…' : r.item)}</td>`, r => r.item],
+      [r => `<td class="small start" title="${esc(r.text)}">${esc(r.text.length > 60 ? r.text.slice(0, 59) + '…' : r.text)}</td>`, r => r.text],
+      [r => `<td>${Object.entries(r.signals).map(([s, x]) => `<span class="chip sig sig-${s}" title="${esc(x)}">${s}</span>`).join(' ')}</td>`, r => Object.keys(r.signals).join(' ')],
+      ...arms.flatMap(a => [
+        [r => `<td class="small outc">${dash(r.cells[a.token].output)}</td>`, r => r.cells[a.token].output ?? ''],
+        ...a.scores.map(ref => [r => `<td class="num scc${win(r, a.token, ref)}">${fmt(r.cells[a.token].scores[ref])}</td>`, r => fmt(r.cells[a.token].scores[ref])]),
+      ]),
+      ...d.label_cols.map(c => [r => `<td class="small">${dash(r.labels[c.key])}</td>`, r => r.labels[c.key] ?? '']),
+      ...d.ref_cols.map(c => [r => `<td class="small">${dash(r.references[c.key])}</td>`, r => r.references[c.key] ?? '']),
+      ...d.winner_cols.map(w => { const who = r => (r.winners[w.key] || []).map(t => named[t] || short(t)).join(' = '); return [r => `<td class="small">${esc(who(r))}</td>`, who]; }),
+      [r => `<td class="small">${esc(r.picked.join(', '))}</td>`, r => r.picked.join(', ')],
+      [r => `<td class="small"><div class="clamp2" title="${esc(fieldsOf(r))}">${esc(fieldsOf(r))}</div></td>`, fieldsOf],
+    ];
+    const picked = new Set(), order = [...d.rows];
+    const body = rs => rs.map(r => `<tr class="eprow" data-ep="${esc(r.item)}" tabindex="0">${cols.map(c => c[0](r)).join('')}</tr>`).join('');
     // The footer, per arm: under the arm's columns. Its cells span the arm's columns (the output's too, unless hidden).
     const f = d.footer, before = 4, after = d.label_cols.length + d.ref_cols.length + d.winner_cols.length + 2;
     const line = (label, cell) => `<tr><th colspan="${before}" class="small">${label}</th>${arms.map(a =>
@@ -691,7 +747,7 @@
       + d.winner_cols.map(w => line(`win rate · ${esc(w.header)}`, t => pct(f.win_rate[w.key][t]))).join('')
       + line('verdict' + (f.decided ? ` <small>(${esc(f.decided)})</small>` : ''), t => verdictCell(f.verdict[t]))
       + '</tfoot>';
-    const table = `<div class="scroll-x"><table class="data sheet${scoresOnly ? ' scores-only' : ''}" id="sheettable"><thead><tr>${heads.map(([c, h], i) => `<th class="${c}" data-col="${i}">${h}</th>`).join('')}</tr></thead><tbody>${body(d.rows)}</tbody>${foot}</table></div>`;
+    const table = `<div class="scroll-x"><table class="data sheet${scoresOnly ? ' scores-only' : ''}" id="sheettable"><thead><tr>${heads.map(([c, h], i) => `<th class="${c}" data-col="${i}">${h}</th>`).join('')}</tr></thead><tbody></tbody>${foot}</table></div><p class="pager small muted" id="sheet-pager"></p>`;
     const panel = `<div class="cmdpanel" id="spanel" hidden><p class="small"><b><span id="sn">0</span> selected.</b> The page writes nothing; run these.</p>
       <div class="controls"><label>for <input id="sfor" placeholder="a governed dataset" list="sdsl"></label><datalist id="sdsl">${d.datasets.map(x => `<option value="${esc(x)}">`).join('')}</datalist>
       <label>tags <input id="stags" placeholder="case=oom kind=missed"></label><label>note <input id="snote" placeholder="why it is worth keeping"></label></div>
@@ -714,7 +770,7 @@
     // The footer's cells span their arm's columns: the output's too, unless "scores only" hides it.
     const span = () => t.querySelectorAll('td.foot').forEach(c => { c.colSpan = Math.max(1, +c.dataset.n + (t.classList.contains('scores-only') ? 0 : 1)); });
     span();
-    if (window.paginate) window.paginate(t);
+    t.dataset.nopage = '';  // drawn on demand below, not paged by hiding rows
     document.getElementById('swrong').onchange = ev => { ev.target.value ? P.set('wrong', ev.target.value) : P.delete('wrong'); go(); };
     document.getElementById('snew').onchange = ev => { ev.target.value ? P.set('new', ev.target.value) : P.delete('new'); go(); };
     const sm = document.getElementById('smetric');
@@ -731,7 +787,7 @@
       return API + 'sheet?' + qs;
     };
     const upd = () => {
-      const sel = [...app.querySelectorAll('input.ssel:checked')].map(i => i.value);
+      const sel = order.map(r => r.item).filter(i => picked.has(i));
       document.getElementById('spanel').hidden = !sel.length;
       document.getElementById('sn').textContent = sel.length;
       const items = sel.map(i => '--item ' + i).join(' ');
@@ -753,28 +809,47 @@
       history.replaceState(null, '', '?' + P);
       span(); upd(); };
     document.getElementById('sfill').onchange = upd;
-    app.querySelectorAll('input.ssel').forEach(c => c.onchange = upd);
     for (const id of ['sfor', 'stags', 'snote']) document.getElementById(id).oninput = upd;
     upd();
+    const label = Object.fromEntries(d.runs.map(r => [r, short(r)]));
+    const tb = t.tBodies[0], pager = document.getElementById('sheet-pager');
+    let drawn = 0;
+    const draw = upto => {
+      upto = Math.min(upto, order.length);
+      if (upto > drawn) {
+        tb.insertAdjacentHTML('beforeend', body(order.slice(drawn, upto)));
+        [...tb.rows].slice(drawn).forEach(tr => {
+          tr.onclick = ev => { if (ev.target.closest('input')) return; drill(tr.dataset.ep, d.runs, first, label, '', tr); };
+          tr.onkeydown = ev => { if (ev.key === 'Enter') tr.onclick(ev); };
+          const box = tr.querySelector('input.ssel');
+          box.onchange = () => { box.checked ? picked.add(box.value) : picked.delete(box.value); upd(); };
+        });
+        drawn = upto;
+      }
+      const n = order.length, more = n <= SHOW_ALL ? n - drawn : Math.min(1000, n - drawn);
+      pager.hidden = n <= 10;
+      pager.innerHTML = `Showing ${drawn} of ${n}` + (drawn < n ? ` <button type="button" class="btn small" data-more>show ${Math.min(10, n - drawn)} more</button>`
+        + `<button type="button" class="btn small" data-bulk>${n <= SHOW_ALL ? 'show all' : 'show ' + more + ' more'}</button>` : '');
+    };
+    pager.onclick = ev => { const b = ev.target.closest('button'); if (!b) return;
+      draw('more' in b.dataset ? drawn + 10 : order.length <= SHOW_ALL ? order.length : drawn + 1000); };
+    // Select all: every row of this sheet (the signals' "only" boxes already chose them), drawn or not.
     document.getElementById('sall').onchange = ev => {
-      [...t.tBodies[0].rows].filter(r => !r.hidden && r.style.display !== 'none').forEach(r => { r.querySelector('input.ssel').checked = ev.target.checked; });
+      order.forEach(r => ev.target.checked ? picked.add(r.item) : picked.delete(r.item));
+      tb.querySelectorAll('input.ssel').forEach(c => { c.checked = ev.target.checked; });
       upd(); };
     // A sort by any column (a header that is not the select-all box): numbers as numbers, text as shown.
     t.tHead.querySelectorAll('th').forEach(th => th.onclick = ev => {
       if (ev.target.closest('input')) return;
       const i = th.cellIndex, dir = th.dataset.dir === 'asc' ? 'desc' : 'asc';
       t.querySelectorAll('th').forEach(x => delete x.dataset.dir); th.dataset.dir = dir;
-      const tb = t.tBodies[0];
-      [...tb.rows].sort((a, b) => { const x = a.cells[i].textContent.trim(), y = b.cells[i].textContent.trim();
-        return x.localeCompare(y, undefined, {numeric: true}) * (dir === 'asc' ? 1 : -1); }).forEach(r => tb.appendChild(r));
-      if (t._repage) t._repage(); });
-    const label = Object.fromEntries(d.runs.map(r => [r, short(r)]));
-    app.querySelectorAll('tr.eprow').forEach(tr => {
-      tr.onclick = ev => { if (ev.target.closest('input')) return; drill(tr.dataset.ep, d.runs, first, label, '', tr); };
-      tr.onkeydown = ev => { if (ev.key === 'Enter') tr.onclick(ev); };
-    });
+      const key = cols[i][1];
+      order.sort((a, b) => String(key(a)).trim().localeCompare(String(key(b)).trim(), undefined, {numeric: true}) * (dir === 'asc' ? 1 : -1));
+      const had = drawn; tb.innerHTML = ''; drawn = 0; draw(Math.max(10, had)); });
     const want = P.get('item');
-    const hit = want && [...app.querySelectorAll('tr.eprow')].find(tr => tr.dataset.ep === want);
+    const at = want ? order.findIndex(r => r.item === want) : -1;
+    draw(Math.max(10, at + 1));
+    const hit = at >= 0 && [...tb.rows].find(tr => tr.dataset.ep === want);
     if (hit) drill(want, d.runs, first, label, '', hit);
   }
 

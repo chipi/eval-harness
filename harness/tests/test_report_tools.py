@@ -32,13 +32,20 @@ from pathlib import Path
 
 HARNESS = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(HARNESS))
+from evaluation_harness import _common  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runfix  # noqa: E402
+import _runstore  # noqa: E402
 
 
 def tool(script: str, data: Path | None, *args: str) -> subprocess.CompletedProcess:
-    env = {k: v for k, v in os.environ.items() if k not in ("EVAL_HOME", "EVAL_DATA_DIR", "EVAL_RUNS_DIR")}
+    env = {k: v for k, v in os.environ.items() if k not in ("EVAL_HOME", "EVAL_DATA_DIR")}
     if data is not None:
         env["EVAL_DATA_DIR"] = str(data)
+    else:
+        env["EVAL_STORE"] = "files"  # no data dir given: this repository's own data, which is files
     return subprocess.run(
         [sys.executable, str(HARNESS / "tools" / script), *args],
         cwd=HARNESS,
@@ -51,24 +58,27 @@ def tool(script: str, data: Path | None, *args: str) -> subprocess.CompletedProc
 def write_run(
     data: Path, run_id: str, dataset: str, config: str, rows: list, scores: dict | None = None
 ) -> None:
-    d = data / "runs" / run_id
-    d.mkdir(parents=True)
-    (d / "metrics.json").write_text(
-        json.dumps({"run_id": run_id, "dataset_id": dataset, "config_id": config, "scores": scores or {}}),
-        encoding="utf-8",
-    )
-    (d / "predictions.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8")
+    _common.project_root.cache_clear()  # _runstore aims at one project per process: forget the last one's
+    proj = data.parent
+    with _runstore._InProject(proj) as pdata:
+        _runfix.put_run(
+            pdata,
+            {"run_id": run_id, "dataset_id": dataset, "config_id": config, "scores": scores or {}},
+            "".join(json.dumps(r) + "\n" for r in rows),
+        )
 
 
 def fetched_gold(data: Path, dataset: str, items: dict, redistributed: bool = True) -> None:
     """Gold a script fetches: its texts, promoted by `evh reference-manifest` as a fetch script's are."""
-    g = data / "references" / "gold" / dataset
-    g.mkdir(parents=True)
+    _common.project_root.cache_clear()  # as in write_run
+    ref = f"references/gold/{dataset}"
+    if not _runstore.sqlite():
+        (data / ref).mkdir(parents=True)
     for item, value in items.items():
-        (g / f"{item}.txt").write_text(
-            value if isinstance(value, str) else json.dumps(value), encoding="utf-8"
+        _runstore.write_text(
+            data.parent, f"{ref}/{item}.txt", value if isinstance(value, str) else json.dumps(value)
         )
-    env = {k: v for k, v in os.environ.items() if k not in ("EVAL_HOME", "EVAL_DATA_DIR", "EVAL_RUNS_DIR")}
+    env = {k: v for k, v in os.environ.items() if k not in ("EVAL_HOME", "EVAL_DATA_DIR")}
     r = subprocess.run(
         [
             sys.executable,
@@ -90,7 +100,7 @@ def fetched_gold(data: Path, dataset: str, items: dict, redistributed: bool = Tr
         text=True,
         env={**env, "EVAL_DATA_DIR": str(data)},
     )
-    if r.returncode or not (g / "manifest.json").is_file():
+    if r.returncode or not _runstore.is_file(data.parent, f"{ref}/manifest.json"):
         raise SystemExit(f"setup: reference-manifest gold/{dataset} failed\n{r.stdout}{r.stderr}")
 
 
@@ -105,7 +115,7 @@ def close(a: float, b: float) -> bool:
 
 
 def test_extraction(tmp: Path) -> None:
-    data = tmp / "ner"
+    data = tmp / "ner" / "data"
     fetched_gold(
         data,
         "fx_ner",
@@ -156,7 +166,7 @@ def test_extraction(tmp: Path) -> None:
 
 def test_extraction_arm(tmp: Path) -> None:
     """--arm on the half arm: per type, the organization it missed scores 0, the rest 1."""
-    r = tool("extraction_report.py", tmp / "ner", "--dataset-id", "fx_ner", "--arm", "fx_half_v1")
+    r = tool("extraction_report.py", tmp / "ner" / "data", "--dataset-id", "fx_ner", "--arm", "fx_half_v1")
     per = {}
     for ln in r.stdout[r.stdout.find("PER TYPE") :].splitlines()[2:5]:
         parts = ln.split()
@@ -170,7 +180,7 @@ def test_extraction_arm(tmp: Path) -> None:
 
 
 def test_retrieval(tmp: Path) -> None:
-    data = tmp / "ret"
+    data = tmp / "ret" / "data"
     fetched_gold(data, "fx_ret", {"q1": [{"doc_id": "d1", "score": 1}, {"doc_id": "d2", "score": 1}]})
     write_run(
         data,
@@ -219,7 +229,7 @@ def test_retrieval(tmp: Path) -> None:
 
 
 def test_classification(tmp: Path) -> None:
-    data = tmp / "cls"
+    data = tmp / "cls" / "data"
     fetched_gold(data, "fx_cls", {"i1": "A", "i2": "A", "i3": "B", "i4": "B"})
     preds = {"i1": "A", "i2": "B", "i3": "B", "i4": "B"}
     write_run(
@@ -273,7 +283,7 @@ def test_classification(tmp: Path) -> None:
 
 def test_manifest_only(tmp: Path) -> None:
     """A fresh checkout: the gold directory holds its manifest only. Each tool refuses."""
-    data = tmp / "fresh"
+    data = tmp / "fresh" / "data"
     for script, ds in (
         ("extraction_report.py", "fx_ner"),
         ("retrieval_report.py", "fx_ret"),
@@ -281,8 +291,9 @@ def test_manifest_only(tmp: Path) -> None:
     ):
         # the committed manifest of gold a script fetches, without its texts
         fetched_gold(data, ds, {"a": "A"}, redistributed=False)
-        for f in (data / "references" / "gold" / ds).glob("*.txt"):
-            f.unlink()
+        for n in _runstore.listdir(data.parent, f"references/gold/{ds}"):
+            if n.endswith(".txt"):
+                _runstore.unlink(data.parent, f"references/gold/{ds}/{n}")
         write_run(
             data, f"r_{ds}", ds, f"{ds}_v1", [{"item_id": "a", "_meta": {"predicted": "A"}}], {"ndcg_10": 0.1}
         )
@@ -309,7 +320,8 @@ def test_goal_decisions() -> None:
         bool(goals) and {x.get("goal_id") for x in rows} == goals,
         sorted({x.get("goal_id") for x in rows} ^ goals),
     )
-    env = {k: v for k, v in os.environ.items() if k not in ("EVAL_HOME", "EVAL_DATA_DIR", "EVAL_RUNS_DIR")}
+    env = {k: v for k, v in os.environ.items() if k not in ("EVAL_HOME", "EVAL_DATA_DIR")}
+    env["EVAL_STORE"] = "files"  # this repository's own data, which is files
     g = subprocess.run(
         [sys.executable, "-m", "evaluation_harness", "goals"],
         cwd=HARNESS,
@@ -321,18 +333,24 @@ def test_goal_decisions() -> None:
     lines = [re.split(r"\s{2,}", ln.strip()) for ln in g.stdout.splitlines()]
     head = next((c for c in lines if c[:1] == ["goal"]), [])
     col = head.index("recommended") if "recommended" in head else -1
-    # An arm run more than once is labelled with its pass count (" ×3", catalog_adapter's label); the arm is the same.
-    cli = {
-        c[0]: re.sub(r" ×\d+$", "", c[col])
-        for c in lines
-        if col >= 0 and len(c) == len(head) and c[0] in goals
-    }
+
+    # A cell names one recommendation per deciding dataset ("A; B"), each as its label: the pass count of an arm run
+    # more than once (" ×3"), a re-score (" · rescored 5f2c057c") and how it compares with the baseline ("(cost same ·
+    # speed p95 9.6× vs baseline)") are said beside the arm, which is the same arm.
+    def names(cell: str) -> list:
+        out = []
+        for part in cell.split("; "):
+            part = re.sub(r" \([^()]* vs baseline\)$", "", part.strip())
+            part = re.sub(r" · rescored [0-9a-f]+$", "", part)
+            out.append(re.sub(r" ×\d+$", "", part))
+        return out
+
+    cli = {c[0]: names(c[col]) for c in lines if col >= 0 and len(c) == len(head) and c[0] in goals}
     by_goal: dict = {}
     for x in rows:
         by_goal.setdefault(x["goal_id"], set()).add((x.get("recommended") or "none yet").rsplit("/", 1)[-1])
-    # The CLI names one recommendation per goal (its deciding dataset's); it must be one of the
-    # goal's rows here.
-    differ = [gid for gid, rec in cli.items() if rec not in by_goal.get(gid, set())]
+    # Every recommendation the CLI names must be one of the goal's rows here.
+    differ = [gid for gid, recs in cli.items() if any(r not in by_goal.get(gid, set()) for r in recs)]
     check(
         "goal_decisions: each goal's recommendation is the one `evh goals` prints",
         bool(cli) and not differ,

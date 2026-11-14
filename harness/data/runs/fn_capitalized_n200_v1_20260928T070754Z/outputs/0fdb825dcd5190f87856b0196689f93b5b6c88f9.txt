@@ -1,1 +1,0 @@
-[{"text": "Grebler", "type": "location"}, {"text": "Jenga", "type": "location"}, {"text": "Leslie Scott", "type": "location"}]

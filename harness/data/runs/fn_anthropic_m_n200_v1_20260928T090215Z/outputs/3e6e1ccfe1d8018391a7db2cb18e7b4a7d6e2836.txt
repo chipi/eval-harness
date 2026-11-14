@@ -1,6 +1,0 @@
-```json
-[
-  {"text": "Berry Plastics", "type": "organization"},
-  {"text": "Rexam SBC", "type": "organization"}
-]
-```

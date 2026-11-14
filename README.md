@@ -84,12 +84,12 @@ evh init                                                # folders, .gitignore, A
 evh dataset-create --dataset-id my_v1 --source-dir data/sources/my_v1
 evh dataset-materialize --dataset-id my_v1
 # write adapter.py at the project root -> call_system() talks to YOUR system
-git add -A && git commit -m "dataset and arms"           # a run records the commit it ran from
-evh run --config data/configs/best_model.yaml           # the best system you have
+git add -A && git commit -m "dataset and systems"        # a run records the commit it ran from
+evh run --system best_model_v1 --dataset my_v1          # the best system you have (data/systems/best_model_v1.yaml)
 evh label-from-run --run <its run_id> --set best_v1                  # optional: its outputs as a model's labels
 evh reference-promote --dataset-id my_v1 --labels best_v1 --tier silver \
     --reason "the best system we have ranks the rest" --by me           # ...promoted: the reference set
-evh run --config data/configs/arm_a.yaml --repeat 3      # each arm, with its own noise
+evh run --system <id> --dataset my_v1 --repeat 3         # each system, with its own noise
 evh leaderboard --dataset-id my_v1                                  # the ranking, and whether it is real
 evh family-test --dataset-id my_v1 --a arm_a_v1 --against arm_      # does the winner differ significantly?
 evh run-promote --run <run_id> --reason "what the tests showed"     # the choice, recorded with why
@@ -116,7 +116,7 @@ offline, with the real output of every command. The tutorials take it further:
 | `evh holdout --dataset-id my_v1 --exclude-dataset …` | the same test minus items a smaller dataset already contained |
 | `evh rank-stability --dataset-id my_v1` | how many items before the ordering stops moving: measured, not assumed |
 | `evh silver-calibrate --dataset-id my_v1` | is a silver reference usable? How far it drifts from gold, read against the ceiling it prints |
-| `evh rescore --dataset-id my_v1 --out data/runs-rescored` | recompute scores from stored outputs, no API calls |
+| `evh rescore --dataset-id my_v1` | recompute scores from stored outputs, no API calls |
 | `evh judge-score --dataset-id my_v1 --scorer …` | optional: re-measure stored outputs with LLM judges that grade each output, pick the best or compare two (the scorer's `mode`), refused until they are validated against people in that mode ([tutorial 3](docs/tutorials/3-frontier-reference-and-judging.md)) |
 | `evh inspect --sheet --dataset-id my_v1 --runs …` | one sheet: every item, what each arm wrote and its scores, the labels, the winner and a footer per arm; `--csv FILE --fill label\|pick\|scores` for a person or a tool to fill, `evh sheet-import` to read it back |
 | `evh catalog-serve` | browse every run and test any arms against a baseline, item by item; every view is also a command ([tutorial 5](docs/tutorials/5-catalog-and-inspector.md)) |
@@ -150,7 +150,7 @@ system lives in one file, `adapter.py`, with two functions, `call_system` and `s
 - **A catalog and an inspector.** Pages over your runs, and a local server that tests any arms
   against a baseline with the same paired test and shows outputs beside references. No code
   on the harness's layout; one adapter on yours.
-- **Goals, and rounds if you want them.** Each config names what its evaluation is for, and
+- **Goals, and rounds if you want them.** Each system names what its evaluation is for, and
   validation checks it; an optional round records what each iteration tried, kept, dropped and
   concluded.
 

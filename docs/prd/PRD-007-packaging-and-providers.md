@@ -94,12 +94,12 @@ a walkthrough in the user's own project, not inside a checkout of this repositor
 ### FR3: The system under test
 
 - **FR3.1**: `adapter.py` at the project root is the default adapter for an arm with no
-  `adapter:`; a config may name another; without either, the bundled adapter runs.
+  `adapter:`; a system may name another; without either, the bundled adapter runs.
 - **FR3.2**: The bundled adapter's providers are `echo` (offline), `openai`, `openrouter`,
   `anthropic` and `litellm`; an unknown `provider:` is refused. Judges use the same providers
   (plus `fake` offline), with `provider:` declared on each judge in the scorer.
 - **FR3.3**: Keys come from the environment (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`,
-  `OPENROUTER_API_KEY`, `LITELLM_API_KEY` with `LITELLM_BASE_URL`); a config can name another
+  `OPENROUTER_API_KEY`, `LITELLM_API_KEY` with `LITELLM_BASE_URL`); a system can name another
   variable (`api_key_env`) and endpoint (`base_url`). Judges read `EVAL_JUDGE_<VAR>` first
   (for their own keys and budgets), then fall back to `<VAR>` to share the arms' credentials.
 - **FR3.4**: `evh env-check` reports which keys are set by length and shape only, never the

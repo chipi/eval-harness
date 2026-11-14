@@ -36,11 +36,13 @@ from collections import OrderedDict
 from pathlib import Path
 from typing import Any
 
+from evaluation_harness import _store
+
 HERE = Path(__file__).resolve().parent
 
 #: The commands that are tools: they only read. Every other command is in NOT_TOOLS with the
 #: reason (tests/test_mcp_server.py fails on a command in neither).
-READ_TOOLS = (
+READ_TOOLS: tuple[str, ...] = (
     "overview",
     "datasets",
     "dataset-items",
@@ -62,10 +64,56 @@ READ_TOOLS = (
     "validate",
     "captures",
     "labels",
+    "tags",
+    "licences",
+    "dataset-card",
     "picks",
+    "label-coverage",
+    "baselines",
     "deploy-sheet",
+    "data-ls",
+    "data-show",
+    "prompts",
+    "prompt-diff",
+    "looks",
+    "studies",
+    "faithfulness-show",
+    "exposure",
+    "sealed-counts",
+    "periods",
+    "period-compare",
+    "label-mutants",
 )
+from evaluation_harness import ops as _ops  # noqa: E402 - the model's operations (RFC-032), no project code
+
+READ_TOOLS = (*READ_TOOLS, *(op.name for op in _ops.of_kind("read")))
+#: Tools that write, for the agent sampler of a study alone (owner, 2026-11-09, RFC-029): offered by a local server
+#: only, never a public one, and named as not read-only. Every other write is the command line's or a job's.
+AGENT_TOOLS = ("study-ask", "study-tell")
 NOT_TOOLS = {
+    "study-run": "runs a study's loop and spends: a job (the agent sampler's own steps are tools)",
+    "study-stop": "stops a study",
+    "study-confirm": "a decision that spends a look and money: a person's command or a job",
+    "study-import": "writes a study",
+    "prompt-version": "records a prompt version",
+    "faithfulness": "replays a system's code and spends: a job",
+    "faithfulness-name": "a decision that lets a replay be scored: a person's command or a job",
+    "exposure-add": "writes a held-out side's exposure register",
+    "exposure-check": "reads the project's git checkouts and can write a file: a job",
+    "dataset-seal-counts": "a person's decision on what a held-out side's counts show",
+    "prompt-export": "writes a file",
+    "jobs-start": "starts a job: the agents act through the command line or the API (RFC-026)",
+    "jobs-status": "the jobs of this machine's project, not its data",
+    "jobs-logs": "a job's log, which can hold anything its command printed",
+    "jobs-stop": "stops a job",
+    "jobs-resume": "starts a job",
+    "migrate": "rewrites the project's data to this release's formats",
+    "data-migrate": "moves the project's data between files and its database",
+    "data-put": "writes a setting",
+    "data-rm": "deletes a setting or a run",
+    "dataset-publish": "writes to an outside service (a new Hub repo)",
+    "fieldset-propose": "reads a source (it can fetch from the network) and can write a field set",
+    "dataset-describe": "writes a dataset record",
     "init": "writes a project",
     "skills-install": "writes the skills into a project",
     "env-check": "reads the environment and keys, not the project",
@@ -76,11 +124,9 @@ NOT_TOOLS = {
     "run": "runs a system and may spend",
     "arm-smoke": "runs a system on a few items, may spend, and writes the model record",
     "model-onboard": "calls a model and writes the model record",
-    "fingerprint-migrate": "rewrites the committed runs' fingerprints",
     "sweep": "runs systems and may spend",
     "rescore": "writes runs",
     "score-preview": "runs the project's own scoring code",
-    "judge": "calls models and spends",
     "judge-score": "calls models and spends",
     "silver-calibrate": "writes",
     "cost-report": "a report tool; not yet a tool",
@@ -96,21 +142,30 @@ NOT_TOOLS = {
     "label-from-run": "writes a label set",
     "label-from-capture": "writes a label set",
     "reference-promote": "writes a reference",
-    "arm-from-capture": "writes a config and a run",
+    "arm-from-capture": "writes a system and a run",
     "pick": "writes the pick list",
     "dataset-extend": "writes a dataset",
     "dataset-split": "writes",
+    "dataset-unseal": "a decision, recorded with who acted",
     "capture-scrub": "runs a project's command and writes",
     "capture-restore": "reads a source and writes records and item files",
-    "run-promote": "a decision: a person's",
-    "round-open": "a decision: a person's",
-    "round-retire": "a decision: a person's",
-    "round-close": "a decision: a person's",
+    "run-promote": "a decision, recorded with who acted",
+    "baseline-rollback": "a decision, recorded with who acted",
+    "round-open": "a decision, recorded with who acted",
+    "round-carry": "a decision, recorded with who acted",
+    "round-retire": "a decision, recorded with who acted",
+    "round-close": "a decision, recorded with who acted",
     "catalog": "writes the pages",
     "catalog-serve": "never returns",
     "self-test": "runs the test suite",
     "mcp": "this server",
 }
+NOT_TOOLS.update(
+    dict.fromkeys(
+        (op.name for op in _ops.of_kind("edit", "decision", "work")),
+        "a write of the model: the command line, or its API resource (RFC-032)",
+    )
+)
 #: The commands that take --json (catalog_views via _jsonout; dataset-items its profile; the statistics
 #: commands, runs-list and rounds hand their key results over by name, under result.values).
 JSON = {
@@ -125,8 +180,13 @@ JSON = {
     "search",
     "inspect",
 }
-JSON |= {"dataset-items", "captures", "labels", "picks", "deploy-sheet"}
+JSON |= {"dataset-items", "captures", "labels", "tags", "licences", "picks", "deploy-sheet"}
 JSON |= {"runs-list", "rounds", "leaderboard", "pair-test", "family-test", "rank-stability", "run-compare"}
+JSON |= {"label-coverage", "baselines"}
+JSON |= {"dataset-card", "validate", "prompts", "prompt-diff", "looks", "studies"}
+JSON |= {"faithfulness-show", "exposure", "sealed-counts", "periods", "period-compare", "label-mutants"}
+JSON |= set(AGENT_TOOLS)
+JSON |= {op.name for op in _ops.of_kind("read")}
 #: Left out of every schema: the server uses the project's own adapter (an agent must not load an
 #: arbitrary file), and sets --json itself.
 HIDDEN = {"--adapter", "--json", "--help"}
@@ -155,8 +215,14 @@ class _Parser(Exception):
 
 def parser_of(command: str) -> argparse.ArgumentParser:
     """The command's argparse parser, read without running it: its script runs until it parses
-    its arguments, and the parser is handed back there."""
+    its arguments, and the parser is handed back there. A command made from an operation (RFC-032) has its parser
+    made from the operation."""
+    from evaluation_harness import ops  # noqa: PLC0415
     from evaluation_harness.cli import COMMANDS  # noqa: PLC0415
+    from evaluation_harness.ops import cli as ops_cli  # noqa: PLC0415
+
+    if (op := ops.get(command)) is not None:
+        return ops_cli.parser(op)
 
     script = HERE / COMMANDS[command][0]
     real = argparse.ArgumentParser.parse_args
@@ -278,17 +344,23 @@ def public_error(text: str, project: Path) -> str:
     return re.sub(r"/(?:[\w.-]+/)+", "", msg)[:2000]
 
 
-#: The environment variables that name a path from where a command stands (EVAL_DATA_DIR and EVAL_RUNS_DIR are
-#: relative to the project root, _common._paths, so they stay as they are).
+#: The environment variables that name a path from where a command stands (EVAL_DATA_DIR is relative to
+#: the project root, _common._paths, so it stays as it is).
 PATH_VARS = ("EVAL_HOME", "EVH_P_CACHE")
 
 
 def run_command(
-    project: Path, command: str, argv: list[str], timeout: float = TIMEOUT_S, public: bool = False
+    project: Path,
+    command: str,
+    argv: list[str],
+    timeout: float = TIMEOUT_S,
+    public: bool = False,
+    started: list[subprocess.Popen] | None = None,
 ) -> tuple[int, str, str]:
     """`evh <command> <argv>` in the project, in its own process group, stdin closed, with a timeout
     that kills the group. `public`: the command runs as a public server's would (EVH_PUBLIC), so it
-    sees only the fields marked public."""
+    sees only the fields marked public. `started` receives the process, for a caller that may have
+    to stop it (a cancelled call, kill_group)."""
     cmd = [sys.executable, str(HERE / "cli.py"), command, *(["--json"] if command in JSON else []), *argv]
     # The goals' tests are the slow part of a view (~50 s for this repository's runs); each call is a
     # fresh process, so they are kept on disk (stats.EVH_P_CACHE), in the project's ignored .cache/
@@ -314,21 +386,32 @@ def run_command(
         text=True,
         start_new_session=True,
     )
+    if started is not None:
+        started.append(p)
     try:
         out, err = p.communicate(timeout=timeout)
     except subprocess.TimeoutExpired:
-        os.killpg(p.pid, signal.SIGKILL)
+        kill_group(p)
         out, err = p.communicate()
         return 124, out, err + f"\n(stopped after {timeout:g} s)"
     return p.returncode, out, err
 
 
+def kill_group(p: subprocess.Popen) -> None:
+    """Stop a command and everything it started (its own process group); one already gone is fine."""
+    with contextlib.suppress(ProcessLookupError, PermissionError):
+        os.killpg(p.pid, signal.SIGKILL)
+
+
 #: Options no tool offers: they write a file (the sheet's CSV and its key), and a tool writes nothing.
 TOOL_HIDDEN = {
     "inspect": {"--csv", "--fill", "--choices", "--seed", "--rubric", "--scale"},
-    # Both name a path of the server's: another runs folder, a file of item ids.
-    "pair-test": {"--runs-dir", "--items"},
-    "family-test": {"--runs-dir", "--items"},
+    # A file of item ids: a path of the server's.
+    "pair-test": {"--items"},
+    "study-tell": {"--proposal"},  # a path of the server's: a call sends --proposal-json
+    "family-test": {"--items"},
+    "exposure": {"--ids"},  # a held-out side's ids: a person's command
+    "label-mutants": {"--mutants"},  # a Python file it runs: never from a tool call
 }
 #: In --public mode, the options that would answer with an item's text, an arm's output or a label (the
 #: sheet): a public server answers with numbers and ids only, as catalog-serve --public does without
@@ -357,25 +440,39 @@ PUBLIC_HIDDEN = {
 }
 #: In --public mode, the tools left out, and why: a public server serves a copy of the data, not a
 #: whole project (no corpora, no example code), so validate would only ever report what is not there.
-PUBLIC_DROPPED = {"validate": "a public copy is not a whole project: validate fails by design"}
+PUBLIC_DROPPED = {
+    "validate": "a public copy is not a whole project: validate fails by design",
+    "data-ls": "the project's files are this machine's (the data page, UXS-004)",
+    "data-show": "a file's text is this machine's: a hidden dataset's items too (the data page, UXS-004)",
+    "label-coverage": "it reads a rules file by path and the captures, which are this machine's",
+    "exposure": "a held-out side's reads are the project's own",
+    "sealed-counts": "a held-out side's counts are for the project's own safety watch",
+    "label-mutants": "it reads a rules file by path and the captures, which are this machine's",
+}
 
 
 def tools_for(public: bool) -> tuple:
     """The tools this server offers."""
-    return tuple(c for c in READ_TOOLS if not (public and c in PUBLIC_DROPPED))
+    return tuple(c for c in READ_TOOLS if not (public and c in PUBLIC_DROPPED)) + (
+        () if public else AGENT_TOOLS
+    )
 
 
 #: The tools whose answer with no argument depends on today's date (a period counted from today, by default):
 #: never written ahead, since an answer kept past the day would read the wrong period.
 DATED = {"overview", "activity"}
+#: The tools with no required option that still need one of several to answer (inspect: --runs, --round or
+#: --sheet): asked with none, they refuse, so there is nothing to write ahead.
+NEEDS_ONE_OF = {"inspect"}
 
 
 def answerable_ahead(public: bool) -> list[str]:
     """The tools whose answer can be written ahead for a release that never changes (--write-answers): each one
-    that takes no required argument, but those whose default depends on the date (DATED)."""
+    that takes no required argument, but those whose default depends on the date (DATED) and those that need one
+    of several options (NEEDS_ONE_OF)."""
     out = []
     for c in tools_for(public):
-        if c in DATED:
+        if c in DATED or c in NEEDS_ONE_OF or c in AGENT_TOOLS:
             continue
         try:
             argv_of(parser_of(c), {})
@@ -415,8 +512,8 @@ def write_answers(project: Path, path: Path, public: bool, timeout: float = TIME
                 )
             continue
         lines.append(json.dumps({"tool": c, "argv": argv, "out": out, "harness": __version__}))
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text("".join(x + "\n" for x in lines), encoding="utf-8")
+    _store.mkdir(path.parent, parents=True, exist_ok=True)
+    _store.write_text(path, "".join(x + "\n" for x in lines), encoding="utf-8")
     print(
         f"{path}: {len(lines)} answer(s) written ahead"
         + (f"; left out: {', '.join(left)}" if left else "")
@@ -433,7 +530,7 @@ BY_DATASET = ("leaderboard",)
 
 def dataset_ids(project: Path) -> list[str]:
     """The project's dataset ids (data/datasets/*.json), sorted."""
-    return sorted(p.stem for p in (project / "data" / "datasets").glob("*.json"))
+    return sorted(p.stem for p in _store.glob(project / "data" / "datasets", "*.json"))
 
 
 def _answer(types, name: str, out: str, public: bool):
@@ -558,7 +655,7 @@ def build_server(
 
     parsers = {c: parser_of(c) for c in tools_for(public)}
     if public and answers_file is not None:
-        for line in answers_file.read_text(encoding="utf-8").splitlines():
+        for line in _store.read_text(answers_file, encoding="utf-8").splitlines():
             try:
                 rec = json.loads(line)
             except ValueError:
@@ -589,7 +686,10 @@ def build_server(
             + (f" {parsers[c].description}" if parsers[c].description else ""),
             input_schema=input_schema(parsers[c]),
             annotations=types.ToolAnnotations(
-                read_only_hint=True, destructive_hint=False, idempotent_hint=True, open_world_hint=False
+                read_only_hint=c not in AGENT_TOOLS,
+                destructive_hint=False,
+                idempotent_hint=c not in AGENT_TOOLS,
+                open_world_hint=False,
             ),
         )
         for c in tools_for(public)
@@ -675,10 +775,19 @@ def build_server(
                     await slots.acquire()
                 if waited.cancelled_caught:
                     return refuse("the server is busy: try again in a minute", {**info, "refused": "busy"})
+                started: list[subprocess.Popen] = []
                 try:
+                    # A cancelled call (notifications/cancelled, or the client gone) stops its command:
+                    # waiting on the thread instead kept the process running to its timeout, holding a slot.
                     code, out, err = await anyio.to_thread.run_sync(
-                        run_command, project, name, argv, timeout, public
+                        lambda: run_command(project, name, argv, timeout, public, started),
+                        abandon_on_cancel=True,
                     )
+                except anyio.get_cancelled_exc_class():
+                    for p in started:
+                        kill_group(p)
+                    _log(**{k: v for k, v in info.items() if k not in PRIVATE}, cancelled=True)
+                    raise
                 finally:
                     slots.release()
             finally:
@@ -824,7 +933,9 @@ def main(argv: list[str] | None = None) -> int:
     if args.write_answers:
         return write_answers(args.project.resolve(), args.write_answers, args.public, args.timeout)
     if args.answers and not args.public:
-        raise SystemExit("--answers serves a release that never changes: it needs --public")
+        from evaluation_harness._common import die  # noqa: PLC0415
+
+        die("--answers serves a release that never changes: it needs --public", "not-allowed")
     if args.http and args.port is None:
         from evaluation_harness._common import project_port  # noqa: PLC0415
 
@@ -833,9 +944,12 @@ def main(argv: list[str] | None = None) -> int:
 
     project = args.project.resolve()
     if args.http and args.bind not in LOOPBACK and not args.allowed_host:
-        raise SystemExit(
+        from evaluation_harness._common import die  # noqa: PLC0415
+
+        die(
             f"--bind {args.bind} reaches beyond this machine: name the Host it answers with --allowed-host "
-            "(the server checks it against DNS rebinding)"
+            "(the server checks it against DNS rebinding)",
+            "not-allowed",
         )
     hooks = Hooks()
     if args.hooks:

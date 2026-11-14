@@ -19,6 +19,7 @@ import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))  # the evaluation_harness package
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+from evaluation_harness import _store
 from evaluation_harness._common import no_options
 
 no_options(__doc__)  # --help prints this; anything else is refused
@@ -29,7 +30,7 @@ no_options(__doc__)  # --help prints this; anything else is refused
 # in a commit message as having "earned itself twice". It had checked nothing.
 root = pathlib.Path(__file__).resolve().parents[2]
 
-files = [f for f in root.rglob("*.md") if ".venv" not in str(f) and "/data/" not in str(f)]
+files = [f for f in _store.rglob(root, "*.md") if ".venv" not in str(f) and "/data/" not in str(f)]
 if not files:
     # A check that cannot find its inputs must FAIL, not pass. This is the assertion
     # that would have caught the hardcoded path immediately.
@@ -45,13 +46,15 @@ bad = []
 with_table = []
 cells = 0
 for f in files:
-    lines = f.read_text().split("\n")
+    lines = _store.read_text(f).split("\n")
     in_exp = False
     seen_here = False
     for i, line in enumerate(lines, 1):
         # `experiment` was this column's name before 0.6.0; the lab notes in research/internal/
         # keep it, and their tables are checked all the same.
-        if re.match(r"^\| *(eval|experiment) *\|", line, re.I):
+        # a header row is one the separator row follows: a glossary's `| eval | its meaning |` row is not one
+        nxt = lines[i] if i < len(lines) else ""
+        if re.match(r"^\| *(eval|experiment) *\|", line, re.I) and re.match(r"^\|[-: |]+\|$", nxt):
             in_exp = True
             seen_here = True
             continue

@@ -184,6 +184,47 @@ with tempfile.TemporaryDirectory() as tmp:
         st["calls"] == 1 and vs[0]["scores"] is not None and vt.reply_problems(vs[0]) == [],
     )
 
+# A judge that runs out on every reply is stopped after its first EARLY_CUTOFF calls, not after the whole pass
+# (the 0.7.1 newcomer run: a thinking judge at max_tokens 400 was found only after paying for every call).
+MANY = [f"item{k}" for k in range(6)]
+ARTS6 = {i: ARTICLES["itemA"] + i for i in MANY}
+OUTS6 = {c: {i: f"{v['itemA']} {i}" for i in MANY} for c, v in OUTPUTS.items()}
+M6 = js.build_manifest(SC, "ds", "j" * 64, MANY, ARMS, ARTS6, OUTS6, BASE)
+
+
+def run6(td, call):
+    logs: list[str] = []
+    st = js.run_judging(M6, SC, BASE, ARTS6, OUTS6, Path(td), call, None, log=logs.append)
+    return st, logs
+
+
+with tempfile.TemporaryDirectory() as tmp:
+    st, logs = run6(tmp, judge("", "length", 400))
+    check(
+        f"a judge empty at the token limit on its first {js.EARLY_CUTOFF} replies: the pass stops there, kept, hinted",
+        st["calls"] == js.EARLY_CUTOFF
+        and st.get("aborted")
+        and any("STOPPED EARLY" in x for x in logs)
+        and any("HINT" in x and "max_tokens" in x for x in logs)
+        and len(list(Path(tmp).glob("ja/*.json"))) == js.EARLY_CUTOFF,
+        (st.get("calls"), logs[-3:]),
+    )
+replies = iter([good] + [""] * 20)
+
+
+def first_good(message, params):
+    out = next(replies)
+    return judge(out, "stop" if out else "length", 20 if out else 400)(message, params)
+
+
+with tempfile.TemporaryDirectory() as tmp:
+    st, logs = run6(tmp, first_good)
+    check(
+        "a judge whose first reply parsed is not stopped early: the pass runs to the end",
+        st["calls"] == len(MANY) and not st.get("cut_off_early"),
+        (st.get("calls"), st.get("cut_off_early")),
+    )
+
 # The V12 failure names the command that fixes it.
 msg = vt.reply_problems(
     {"output": "", "output_sha256": "x"}, fix="evh judge-score --dataset-id ds --scorer s --retry-unparsed"

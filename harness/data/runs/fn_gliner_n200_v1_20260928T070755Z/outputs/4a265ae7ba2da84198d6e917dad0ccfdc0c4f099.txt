@@ -1,1 +1,0 @@
-[{"text": "air-to air combat", "type": "event"}]

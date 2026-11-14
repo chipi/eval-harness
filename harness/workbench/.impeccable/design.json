@@ -1,0 +1,529 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-12T23:31:58Z",
+  "title": "Design System: evh workbench",
+  "extensions": {
+    "colorMeta": {
+      "ink-black": {
+        "role": "neutral",
+        "displayName": "Ink Black",
+        "canonical": "#0b0b0a",
+        "tonalRamp": [
+          "#272725",
+          "#464641",
+          "#65655c",
+          "#848478",
+          "#9f9f97",
+          "#bbbbb5",
+          "#d6d6d4",
+          "#f3f3f2"
+        ]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Surface",
+        "canonical": "#141413",
+        "tonalRamp": [
+          "#272726",
+          "#454542",
+          "#63635e",
+          "#81817a",
+          "#9d9d99",
+          "#b9b9b7",
+          "#d6d6d4",
+          "#f2f2f2"
+        ]
+      },
+      "surface-raised": {
+        "role": "neutral",
+        "displayName": "Surface Raised",
+        "canonical": "#1c1c1a",
+        "tonalRamp": [
+          "#272725",
+          "#454541",
+          "#64645d",
+          "#828279",
+          "#9e9e97",
+          "#babab6",
+          "#d6d6d4",
+          "#f3f3f2"
+        ]
+      },
+      "paper-ink": {
+        "role": "neutral",
+        "displayName": "Paper Ink",
+        "canonical": "#f0efec",
+        "tonalRamp": [
+          "#292823",
+          "#4a473d",
+          "#6b6656",
+          "#8c856f",
+          "#a5a090",
+          "#bfbbb1",
+          "#d9d7d2",
+          "#f3f3f1"
+        ]
+      },
+      "ink-secondary": {
+        "role": "neutral",
+        "displayName": "Ink Secondary",
+        "canonical": "#b9b7ad",
+        "tonalRamp": [
+          "#282824",
+          "#48463f",
+          "#67655a",
+          "#888474",
+          "#a2a094",
+          "#bcbbb3",
+          "#d7d7d3",
+          "#f3f3f2"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Muted",
+        "canonical": "#8a8880",
+        "tonalRamp": [
+          "#272725",
+          "#464541",
+          "#64635d",
+          "#838179",
+          "#9f9d97",
+          "#bab9b6",
+          "#d6d6d4",
+          "#f3f2f2"
+        ]
+      },
+      "hairline": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "#2a2a27",
+        "tonalRamp": [
+          "#272725",
+          "#454541",
+          "#64645d",
+          "#828279",
+          "#9e9e97",
+          "#babab6",
+          "#d6d6d4",
+          "#f3f3f2"
+        ]
+      },
+      "axis": {
+        "role": "neutral",
+        "displayName": "Axis",
+        "canonical": "#3a3a36",
+        "tonalRamp": [
+          "#272725",
+          "#454541",
+          "#64645d",
+          "#828279",
+          "#9e9e98",
+          "#babab6",
+          "#d6d6d4",
+          "#f3f3f2"
+        ]
+      },
+      "highlighter-lime": {
+        "role": "primary",
+        "displayName": "Highlighter Lime",
+        "canonical": "#c8ff3d",
+        "tonalRamp": [
+          "#32400c",
+          "#5a780e",
+          "#86b70b",
+          "#b4fb01",
+          "#c2f540",
+          "#d1f17f",
+          "#e2f2b8",
+          "#f6faeb"
+        ]
+      },
+      "status-ok": {
+        "role": "secondary",
+        "displayName": "Status OK",
+        "canonical": "#199e70",
+        "tonalRamp": [
+          "#13392c",
+          "#1d6a4f",
+          "#229f74",
+          "#23d89a",
+          "#59ddaf",
+          "#8fe1c5",
+          "#c0eadc",
+          "#edf8f4"
+        ]
+      },
+      "status-warn": {
+        "role": "secondary",
+        "displayName": "Status Warn",
+        "canonical": "#d9a326",
+        "tonalRamp": [
+          "#392e14",
+          "#69521e",
+          "#9d7824",
+          "#d5a026",
+          "#dab45b",
+          "#e0c890",
+          "#eaddc1",
+          "#f8f4ed"
+        ]
+      },
+      "status-bad": {
+        "role": "secondary",
+        "displayName": "Status Bad",
+        "canonical": "#e0533d",
+        "tonalRamp": [
+          "#391813",
+          "#6a271d",
+          "#9f3322",
+          "#d83c23",
+          "#dc6b59",
+          "#e19a8f",
+          "#eac6c0",
+          "#f8eeed"
+        ]
+      },
+      "paper-light": {
+        "role": "neutral",
+        "displayName": "Paper Light",
+        "canonical": "#f6f5f1",
+        "tonalRamp": [
+          "#2c2a21",
+          "#4f4a38",
+          "#736c4e",
+          "#998e63",
+          "#aea787",
+          "#c4bfac",
+          "#dbd9cf",
+          "#f4f3f1"
+        ]
+      },
+      "surface-light": {
+        "role": "neutral",
+        "displayName": "Surface Light",
+        "canonical": "#fcfcfb",
+        "tonalRamp": [
+          "#2a2a23",
+          "#4b4b3c",
+          "#6d6d54",
+          "#90906c",
+          "#a8a88e",
+          "#c0c0b0",
+          "#d9d9d1",
+          "#f3f3f1"
+        ]
+      },
+      "ink-light": {
+        "role": "neutral",
+        "displayName": "Ink Light",
+        "canonical": "#0b0b0b",
+        "tonalRamp": [
+          "#262626",
+          "#434343",
+          "#616161",
+          "#7e7e7e",
+          "#9b9b9b",
+          "#b8b8b8",
+          "#d5d5d5",
+          "#f2f2f2"
+        ]
+      },
+      "muted-light": {
+        "role": "neutral",
+        "displayName": "Muted Light",
+        "canonical": "#66645e",
+        "tonalRamp": [
+          "#272725",
+          "#464441",
+          "#64625d",
+          "#838079",
+          "#9f9d97",
+          "#bab9b6",
+          "#d6d6d4",
+          "#f3f2f2"
+        ]
+      },
+      "hairline-light": {
+        "role": "neutral",
+        "displayName": "Hairline Light",
+        "canonical": "#dddbd3",
+        "tonalRamp": [
+          "#2a2823",
+          "#4a473d",
+          "#6c6756",
+          "#8e876e",
+          "#a6a28f",
+          "#bfbcb1",
+          "#d9d7d1",
+          "#f3f3f1"
+        ]
+      },
+      "highlighter-olive-light": {
+        "role": "primary",
+        "displayName": "Highlighter Olive (light theme)",
+        "canonical": "#3d5c00",
+        "tonalRamp": [
+          "#2f400c",
+          "#55780e",
+          "#7db70b",
+          "#a6fb01",
+          "#b8f540",
+          "#cbf17f",
+          "#dff2b8",
+          "#f5faeb"
+        ]
+      },
+      "status-ok-light": {
+        "role": "secondary",
+        "displayName": "Status OK (light theme)",
+        "canonical": "#0f7550",
+        "tonalRamp": [
+          "#123a2c",
+          "#1a6c4f",
+          "#1ea373",
+          "#1dde98",
+          "#55e1ae",
+          "#8ce4c4",
+          "#bfecdb",
+          "#ecf8f4"
+        ]
+      },
+      "status-warn-light": {
+        "role": "secondary",
+        "displayName": "Status Warn (light theme)",
+        "canonical": "#9a6b00",
+        "tonalRamp": [
+          "#40300c",
+          "#78580e",
+          "#b7820b",
+          "#fbae01",
+          "#f5be40",
+          "#f1ce7f",
+          "#f2e0b8",
+          "#faf5eb"
+        ]
+      },
+      "status-bad-light": {
+        "role": "secondary",
+        "displayName": "Status Bad (light theme)",
+        "canonical": "#b23a26",
+        "tonalRamp": [
+          "#371a15",
+          "#662b21",
+          "#983929",
+          "#cf442d",
+          "#d57160",
+          "#dd9e93",
+          "#e8c8c2",
+          "#f7efed"
+        ]
+      },
+      "gold-tier-bg": {
+        "role": "neutral",
+        "displayName": "Gold Tier Bg",
+        "canonical": "#4a3a0c",
+        "tonalRamp": [
+          "#392f13",
+          "#6a561d",
+          "#9f7f23",
+          "#d8a924",
+          "#dcba5a",
+          "#e1cc8f",
+          "#eadfc0",
+          "#f8f5ed"
+        ]
+      },
+      "gold-tier-ink": {
+        "role": "neutral",
+        "displayName": "Gold Tier Ink",
+        "canonical": "#f3d77a",
+        "tonalRamp": [
+          "#3c3210",
+          "#705b17",
+          "#a88719",
+          "#e6b615",
+          "#e6c34f",
+          "#e7d188",
+          "#eee2bd",
+          "#f9f6ec"
+        ]
+      },
+      "gold-tier-bg-light": {
+        "role": "neutral",
+        "displayName": "Gold Tier Bg Light",
+        "canonical": "#f6e3a1",
+        "tonalRamp": [
+          "#3c3211",
+          "#6f5c18",
+          "#a7881a",
+          "#e5b717",
+          "#e6c450",
+          "#e7d289",
+          "#ede2bd",
+          "#f9f6ec"
+        ]
+      },
+      "gold-tier-ink-light": {
+        "role": "neutral",
+        "displayName": "Gold Tier Ink Light",
+        "canonical": "#5c4300",
+        "tonalRamp": [
+          "#40320c",
+          "#785c0e",
+          "#b7880b",
+          "#fbb701",
+          "#f5c440",
+          "#f1d27f",
+          "#f2e2b8",
+          "#faf6eb"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "screen-title": {
+        "displayName": "Screen title",
+        "purpose": "A screen's task."
+      },
+      "part-title": {
+        "displayName": "Part title",
+        "purpose": "A lettered part of a screen."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Fields and values."
+      },
+      "lead": {
+        "displayName": "Lead",
+        "purpose": "One or two sentences under the title."
+      },
+      "hint": {
+        "displayName": "Hint",
+        "purpose": "The line under a field; hidden when hints are off."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Kickers, the rail's headings, status, commands."
+      }
+    },
+    "shadows": [],
+    "motion": [],
+    "breakpoints": [
+      {
+        "name": "stack",
+        "value": "640px",
+        "purpose": "A form to one column; tables of four or more columns to cards."
+      },
+      {
+        "name": "phone-bar",
+        "value": "720px",
+        "purpose": "The navigation folds behind Menu."
+      },
+      {
+        "name": "rail",
+        "value": "900px",
+        "purpose": "The rail becomes a row; the help panel a bottom sheet."
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one action a screen asks for.",
+      "html": "<button class=\"ds-btn ds-primary\" type=\"button\">Save the goal and continue</button>",
+      "css": ".ds-btn { display: inline-flex; gap: 8px; align-items: center; padding: 9px 16px; border-radius: 6px; border: 1px solid var(--hair, #2a2a27); background: var(--surface, #141413); color: var(--ink, #f0efec); cursor: pointer; font: 550 14px/1.2 Inter, system-ui, sans-serif; } .ds-btn:hover { border-color: var(--ink-2, #b9b7ad); } .ds-primary { background: var(--accent, #c8ff3d); color: var(--accent-ink, #0b0b0a); border-color: var(--accent, #c8ff3d); } .ds-primary:hover { filter: brightness(1.08); } .ds-btn:focus-visible { outline: 2px solid var(--accent, #c8ff3d); outline-offset: 2px; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button",
+      "description": "Every other action.",
+      "html": "<button class=\"ds-btn2\" type=\"button\">Open</button>",
+      "css": ".ds-btn2 { display: inline-flex; padding: 9px 16px; border-radius: 6px; border: 1px solid var(--hair, #2a2a27); background: var(--surface, #141413); color: var(--ink, #f0efec); cursor: pointer; font: 550 14px/1.2 Inter, system-ui, sans-serif; } .ds-btn2:hover { border-color: var(--ink-2, #b9b7ad); } .ds-btn2:focus-visible { outline: 2px solid var(--accent, #c8ff3d); outline-offset: 2px; }"
+    },
+    {
+      "name": "Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "A label with its ?, the input, the hint under it.",
+      "html": "<div class=\"ds-field\"><label for=\"ds-t\">What is it? <span class=\"ds-q\">?</span></label><div><input id=\"ds-t\" type=\"text\" placeholder=\"e.g. Short news summaries (CNN)\"><small>A short title, as you'd say it to a colleague.</small></div></div>",
+      "css": ".ds-field { display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: 4px 20px; font: 15px/1.55 Inter, system-ui, sans-serif; color: var(--ink, #f0efec); max-width: 620px; } .ds-field label { padding-top: 9px; font-weight: 550; } .ds-field input { width: 100%; background: var(--surface, #141413); border: 1px solid var(--hair, #2a2a27); border-radius: 6px; padding: 8px 10px; color: inherit; font: inherit; } .ds-field input:focus { border-color: var(--accent, #c8ff3d); outline: none; } .ds-field small { display: block; margin-top: 4px; font-size: 13px; color: var(--muted, #7d7b74); } .ds-q { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; border: 1px solid var(--axis, #3a3a36); font: 600 11px/1 ui-monospace, Menlo, monospace; color: var(--ink-2, #b9b7ad); }"
+    },
+    {
+      "name": "Rail Step",
+      "kind": "nav",
+      "refersTo": "step-done",
+      "description": "The journey rail: done is a lime dot, current a lime ring.",
+      "html": "<nav class=\"ds-rail\"><a class=\"ds-step done\" href=\"#\"><i>\u2713</i>Dataset</a><a class=\"ds-step now\" href=\"#\" aria-current=\"page\"><i>4</i>Models</a><a class=\"ds-step\" href=\"#\"><i>5</i>Eval</a></nav>",
+      "css": ".ds-rail { display: flex; flex-direction: column; gap: 4px; width: 200px; } .ds-step { display: grid; grid-template-columns: 24px 1fr; gap: 8px; align-items: center; padding: 8px; border-radius: 6px; text-decoration: none; color: var(--ink-2, #b9b7ad); font: 14px/1.3 Inter, system-ui, sans-serif; } .ds-step:hover { background: var(--surface, #141413); color: var(--ink, #f0efec); } .ds-step[aria-current=\"page\"] { background: var(--surface-2, #1c1c1a); color: var(--ink, #f0efec); } .ds-step i { width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--axis, #3a3a36); display: grid; place-items: center; font: normal 600 11px/1 ui-monospace, Menlo, monospace; color: var(--muted, #7d7b74); } .ds-step.done i { background: var(--accent, #c8ff3d); border-color: var(--accent, #c8ff3d); color: var(--accent-ink, #0b0b0a); } .ds-step.now i { border-color: var(--accent, #c8ff3d); color: var(--accent, #c8ff3d); }"
+    },
+    {
+      "name": "Part",
+      "kind": "card",
+      "refersTo": "part",
+      "description": "A lettered part of a screen with its title, ? and status.",
+      "html": "<section class=\"ds-part\"><div class=\"ds-head\"><span class=\"ds-l\">a</span><h2>Pick the models</h2><span class=\"ds-s\">2 checked</span></div><p>Models already in this project are ready to use.</p></section>",
+      "css": ".ds-part { border: 1px solid var(--hair, #2a2a27); border-radius: 8px; padding: 18px; background: var(--surface, #141413); color: var(--ink, #f0efec); max-width: 620px; } .ds-head { display: flex; gap: 10px; align-items: center; } .ds-head h2 { margin: 0; flex: 1; font: 600 18px/1.3 'Inter Tight', Inter, system-ui, sans-serif; } .ds-l { width: 18px; font: 600 12px/1 ui-monospace, Menlo, monospace; color: var(--muted, #7d7b74); } .ds-s { font: 500 12px/1.4 ui-monospace, Menlo, monospace; color: var(--ok, #199e70); } .ds-part p { margin: 8px 0 0 28px; font: 13px/1.5 Inter, system-ui, sans-serif; color: var(--muted, #7d7b74); }"
+    },
+    {
+      "name": "Folded Command",
+      "kind": "custom",
+      "refersTo": "",
+      "description": "The evh lines a screen runs, folded at its foot.",
+      "html": "<details class=\"ds-cmd\" open><summary>the command this runs</summary><pre>evh run --config data/configs/news_bart_l.yaml</pre></details>",
+      "css": ".ds-cmd { border-top: 1px solid var(--hair, #2a2a27); padding-top: 12px; max-width: 620px; } .ds-cmd summary { cursor: pointer; font: 500 12px/1.4 ui-monospace, Menlo, monospace; color: var(--muted, #7d7b74); } .ds-cmd pre { margin: 10px 0 0; padding: 12px; background: var(--surface, #141413); border: 1px solid var(--hair, #2a2a27); border-radius: 6px; overflow-x: auto; font: 12.5px/1.6 ui-monospace, Menlo, monospace; color: var(--ink-2, #b9b7ad); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Lab Bench",
+    "overview": "The Workbench is where the notebook's experiments are set up and run. It is a working tool, not a page to read: one guided step at a time, every instrument labelled, every run's cost shown before it starts, and the command each step writes kept at the foot of the screen. It shares the site's and the catalog's foundation (the same tokens, Highlighter Lime, the heavy grotesk, monospace for everything exact) at an app's scale: titles are 30px, text is 15px, corners are small, and the screen is organised around a journey rail on the left and a help panel that opens on the right.\n\nThe voice stays confident and plain, and it explains. Each field has a one-line hint under it and a \"?\" that opens more; the rare settings and the command are folded away; hints can be turned off. Lime marks what is done or current and the one action a screen asks for; three status colours say how a check came out.\n\n- A journey rail: each step a dot, filled lime when done, a lime ring when current. - Lettered parts on a screen, each a hairline block with its own title, \"?\" and status. - Forms on a label column (180px) beside the field, with a hint under each. - Status colours (ok, warn, bad) kept apart from the accent and from the catalog's data colours. - The command a screen runs, folded at its foot; every view also an `evh` command.",
+    "keyCharacteristics": [
+      "A journey rail: each step a dot, filled lime when done, a lime ring when current.",
+      "Lettered parts on a screen, each a hairline block with its own title, \"?\" and status.",
+      "Forms on a label column (180px) beside the field, with a hint under each.",
+      "Status colours (ok, warn, bad) kept apart from the accent and from the catalog's data colours.",
+      "The command a screen runs, folded at its foot; every view also an `evh` command."
+    ],
+    "rules": [
+      {
+        "name": "The Done Is Lime Rule",
+        "body": "Lime says a step is done or current, or names the one action to take; a check's result is always a status colour.",
+        "section": "colors"
+      },
+      {
+        "name": "The Status Is Not Data Rule",
+        "body": "Green, amber and red say how a check came out, never what kind of model an arm is (the catalog's colours do that). A comparison's leader and an arm the goal recommends are results: the ok status, not lime.",
+        "section": "colors"
+      },
+      {
+        "name": "The Gold Tier Rule",
+        "body": "A baseline's or reference's gold is the catalog's gold tier (`gold-tier-bg`, `gold-tier-ink`), never a colour of its own.",
+        "section": "colors"
+      },
+      {
+        "name": "The Two Rules Rule",
+        "body": "Two blocks carry a left rule, and only these: the answer so far, 3px in lime (what to read), and a note, 2px in Axis (an aside). No other card, row or callout has one.",
+        "section": "colors"
+      },
+      {
+        "name": "The No-Lift Rule",
+        "body": "Selection is a lime ring and hover is a darker border; nothing rises.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** give each screen one primary action, in lime.",
+      "**Do** put a one-line hint under each field and the rest behind its \"?\".",
+      "**Do** show a run's cost before it starts and the command each step writes.",
+      "**Do** keep status colours for a check's result and lime for done, current and the next action."
+    ],
+    "donts": [
+      "**Don't** use a status colour for a model's kind, or lime for a check's result.",
+      "**Don't** lift a selected card or block with a shadow; use the lime ring.",
+      "**Don't** put every key of a file in a form: ask only what a person decides at that step.",
+      "**Don't** show a value the harness did not compute; a mockup's pretended value is labelled."
+    ]
+  }
+}

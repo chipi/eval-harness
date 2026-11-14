@@ -33,7 +33,9 @@ import yaml
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent / "_shared"))
+sys.path.insert(0, str(HERE.parents[1] / "harness"))  # the evaluation_harness package: its store reads data/
 import calibration as cal  # noqa: E402
+from evaluation_harness import _store  # noqa: E402
 
 DATASET, CONFIG, SPLIT_ROWS = "DFKI-SLT/few-nerd", "supervised", 37648
 PUBLISHED = {
@@ -71,7 +73,7 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--n", type=int, default=2000)
     args = ap.parse_args()
-    params = yaml.safe_load((HERE / "configs" / "arm_span_marker_n200.yaml").read_text())["params"]
+    params = yaml.safe_load(_store.read_text(HERE / "systems" / "fn_span_marker_v1.yaml"))["params"]
     from span_marker import SpanMarkerModel  # noqa: PLC0415 - the example's local extra
 
     model = SpanMarkerModel.from_pretrained(params["model"])

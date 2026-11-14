@@ -19,6 +19,9 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
+# named in advance asks git for the commit that last changed the config file; nothing in the sqlite store is in git (RFC-025)
+os.environ["EVAL_STORE"] = "files"
+
 HERE = Path(__file__).resolve().parents[1] / "scripts"  # the core modules (this file is in tests/)
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
 KIT = HERE.parent / "tutorial"
@@ -29,8 +32,9 @@ for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_MAX_COST_USD", "EVAL_GOALS_DIR
     os.environ.pop(k, None)
 env = dict(os.environ)
 
-from evaluation_harness import _hypothesis  # noqa: E402
+from evaluation_harness import _format, _hypothesis  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
+from evaluation_harness.model import runs as _R  # noqa: E402
 
 
 def evh(*args, extra_env=None):
@@ -58,18 +62,16 @@ def commit(msg):
 
 
 def metrics_of(config_id):
-    found = sorted((proj / "data" / "runs").glob(f"{config_id}_*/metrics.json"))
-    return json.loads(found[-1].read_text()) if found else {}
+    ids = sorted(rid for rid in _R.run_ids() if rid.startswith(f"{config_id}_"))
+    first = _R.first_score(ids[-1]) if ids else None
+    return (_R.record(first) if first else None) or {}
 
 
-def write_cfg(name, config_id, sentences, hypothesis=None, goal=True):
-    text = (
-        f"config_id: {config_id}\ndataset_id: tickets_v1\n"
-        f"params:\n  provider: echo\n  sentences: {sentences}\n" + ("goal: tickets_summary\n" if goal else "")
-    )
+def write_system(system_id, sentences, hypothesis=None):
+    text = f"system_id: {system_id}\nparams:\n  provider: echo\n  sentences: {sentences}\n"
     if hypothesis:
         text += "hypothesis:\n" + "".join(f"  {k}: {json.dumps(v)}\n" for k, v in hypothesis.items())
-    (proj / "data" / "configs" / name).write_text(text)
+    (proj / "data" / "systems" / f"{system_id}.yaml").write_text(text)
 
 
 HYP = {
@@ -81,7 +83,8 @@ HYP = {
 
 try:
     data = proj / "data"
-    (data / "configs").mkdir(parents=True)
+    (data / "systems").mkdir(parents=True)
+    (data / _format.NAME).write_text(f"format: {_format.FORMAT}\n")
     (data / "goals").mkdir()
     shutil.copytree(KIT / "tickets", proj / "tutorial" / "tickets")
     shutil.copy(KIT / "goals" / "tickets_summary.yaml", data / "goals")
@@ -102,13 +105,119 @@ try:
         )
     )  # fmt: skip
     check("setup: the tutorial dataset and its gold", r.returncode == 0, out(r)[-300:])
-    write_cfg("lead1.yaml", "tickets_lead1_v1", 1)
-    r = evh("run", "--config", "data/configs/lead1.yaml", extra_env={"EVAL_BUILD_REF": "no-git-test"})
+    write_system("tickets_lead1_v1", 1)
+    r = evh(
+        "run",
+        "--system",
+        "tickets_lead1_v1",
+        "--dataset",
+        "tickets_v1",
+        "--goal",
+        "tickets_summary",
+        extra_env={"EVAL_BUILD_REF": "no-git-test"},
+    )
     check("setup: the arm it is compared with has run", r.returncode == 0, out(r)[-300:])
 
+    # ── a regression guard (fleet feedback 28): the same settings under another config id, expected identical ──
+    write_system("tickets_guard_v1", 1)
+    cfgs = proj / "data" / "systems"
+    (cfgs / "tickets_guard_v1.yaml").write_text(
+        (cfgs / "tickets_guard_v1.yaml").read_text() + "expect_identical_to: tickets_lead1_v1\n"
+    )
+    r = evh(
+        "run",
+        "--system",
+        "tickets_guard_v1",
+        "--dataset",
+        "tickets_v1",
+        "--goal",
+        "tickets_summary",
+        extra_env={"EVAL_BUILD_REF": "no-git-test"},
+    )
+    v = evh("validate")
+    check(
+        "run: expect_identical_to is recorded on the run; validate V5 reads the pair as a guard that holds",
+        r.returncode == 0
+        and metrics_of("tickets_guard_v1").get("expect_identical_to") == "tickets_lead1_v1"
+        and "1 regression guard(s) reproduce what they must" in v.stdout,
+        out(r)[-300:] + v.stdout[-600:],
+    )
+    for f in (proj / "data" / "runs").glob("tickets_guard_v1_*"):
+        shutil.rmtree(f)
+    (cfgs / "tickets_guard_v1.yaml").unlink()
+
+    # The fleet's beta (F2): a guard's runs made before 0.8.0 do not carry the declaration, and runs are frozen. The
+    # config's own `expect_identical_to` declares it for them: V5 reads the pair as the guard, not as a copied result.
+    (cfgs / "tickets_oldguard_v1.yaml").write_text(
+        "system_id: tickets_oldguard_v1\nparams:\n  provider: echo\n  sentences: 1\n  commit: 8213775\n"
+    )
+    r = evh(
+        "run",
+        "--system",
+        "tickets_oldguard_v1",
+        "--dataset",
+        "tickets_v1",
+        "--goal",
+        "tickets_summary",
+        extra_env={"EVAL_BUILD_REF": "no-git-test"},
+    )
+    v = evh("validate")
+    check(
+        "setup: an undeclared pair with other params and the same outputs is V5's copied result",
+        r.returncode == 0 and "FAIL V5" in v.stdout and "tickets_oldguard_v1" in v.stdout,
+        out(r)[-300:] + v.stdout[-600:],
+    )
+    (cfgs / "tickets_oldguard_v1.yaml").write_text(
+        (cfgs / "tickets_oldguard_v1.yaml").read_text() + "expect_identical_to: tickets_lead1_v1\n"
+    )
+    v = evh("validate")
+    check(
+        "validate: a config's expect_identical_to declares the guard for its runs made before it (frozen, unchanged)",
+        "FAIL V5" not in v.stdout
+        and "1 regression guard(s) reproduce what they must" in v.stdout
+        and metrics_of("tickets_oldguard_v1").get("expect_identical_to") is None,
+        v.stdout[-600:],
+    )
+    # The fleet's retest (F10): a project keeps its systems in a folder of its own (this repository's are in examples/);
+    # the declaration there was not seen. The project's data/validate.json names such folders under `systems:`.
+    own = proj / "projects" / "dedup" / "systems"
+    own.mkdir(parents=True)
+    (cfgs / "tickets_oldguard_v1.yaml").rename(own / "tickets_oldguard_v1.yaml")
+    v = evh("validate")
+    check(
+        "setup: a declaration in a folder the project has not named is not seen",
+        "FAIL V5" in v.stdout,
+        v.stdout[-400:],
+    )
+    proj_cfg = data / "validate.json"
+    before = proj_cfg.read_text() if proj_cfg.exists() else None
+    proj_cfg.write_text(json.dumps({"systems": ["projects/dedup/systems/*.yaml"]}))
+    v = evh("validate")
+    check(
+        "validate: validate.json's systems: names where the project keeps its systems; their declarations count",
+        "FAIL V5" not in v.stdout and "1 regression guard(s) reproduce what they must" in v.stdout,
+        v.stdout[-600:],
+    )
+    if before is None:
+        proj_cfg.unlink()
+    else:
+        proj_cfg.write_text(before)
+    for f in (proj / "data" / "runs").glob("tickets_oldguard_v1_*"):
+        shutil.rmtree(f)
+    (own / "tickets_oldguard_v1.yaml").unlink()
+
     # ── outside git: not determinable ─────────────────────────────────────────────────────────────────
-    write_cfg("nogit.yaml", "tickets_nogit_v1", 2, HYP)
-    r = evh("run", "--config", "data/configs/nogit.yaml", extra_env={"EVAL_BUILD_REF": "no-git-test"})
+    write_system("tickets_nogit_v1", 2, HYP)
+    r = evh(
+        "run",
+        "--system",
+        "tickets_nogit_v1",
+        "--dataset",
+        "tickets_v1",
+        "--goal",
+        "tickets_summary",
+        extra_env={"EVAL_BUILD_REF": "no-git-test"},
+    )
     m = metrics_of("tickets_nogit_v1")
     adv = m.get("hypothesis_in_advance") or {}
     check(
@@ -125,10 +234,10 @@ try:
 
     # ── committed before the run: yes ──────────────────────────────────────────────────────────────────
     git("init", "-q")
-    write_cfg("lead2.yaml", "tickets_lead2_v1", 2, HYP)
+    write_system("tickets_lead2_v1", 2, HYP)
     commit("setup, lead2 with its hypothesis")
-    sha = git("log", "-1", "--format=%H", "--", "data/configs/lead2.yaml")
-    r = evh("run", "--config", "data/configs/lead2.yaml")
+    sha = git("log", "-1", "--format=%H", "--", "data/systems/tickets_lead2_v1.yaml")
+    r = evh("run", "--system", "tickets_lead2_v1", "--dataset", "tickets_v1", "--goal", "tickets_summary")
     m = metrics_of("tickets_lead2_v1")
     adv = m.get("hypothesis_in_advance") or {}
     check(
@@ -227,14 +336,14 @@ try:
     )
 
     # ── added to the config after the run: no ──────────────────────────────────────────────────────────
-    write_cfg("late.yaml", "tickets_late_v1", 2)
+    write_system("tickets_late_v1", 2)
     commit("late arm, no hypothesis yet")
-    evh("run", "--config", "data/configs/late.yaml")
+    evh("run", "--system", "tickets_late_v1", "--dataset", "tickets_v1", "--goal", "tickets_summary")
     check(
         "the run of an arm without a hypothesis records none",
         "hypothesis" not in metrics_of("tickets_late_v1"),
     )
-    write_cfg("late.yaml", "tickets_late_v1", 2, HYP)
+    write_system("tickets_late_v1", 2, HYP)
     commit("late arm: hypothesis written after the results")
     r = evh("pair-test", "--dataset-id", "tickets_v1", "--a", "tickets_late_v1", "--b", "tickets_lead1_v1")
     check(
@@ -245,7 +354,7 @@ try:
     )  # fmt: skip
     # Final review 2026-11-04 (medium): the arm run again AFTER the hypothesis was committed read "yes ... valid
     # because the hypothesis was committed before the run", while the test averaged in the run made before it.
-    evh("run", "--config", "data/configs/late.yaml")
+    evh("run", "--system", "tickets_late_v1", "--dataset", "tickets_v1", "--goal", "tickets_summary")
     r = evh("pair-test", "--dataset-id", "tickets_v1", "--a", "tickets_late_v1", "--b", "tickets_lead1_v1")
     check(
         "pair-test: an arm with a run from before its hypothesis is not named in advance, though a later run is",
@@ -271,7 +380,7 @@ try:
 
     # ── the commit's time against the run's start ──────────────────────────────────────────────────────
     named = _hypothesis.named_before(
-        data / "configs" / "lead2.yaml",
+        data / "systems" / "tickets_lead2_v1.yaml",
         HYP,
         {"ref": git("rev-parse", "HEAD"), "source": "git"},
         "2000-01-01T00:00:00Z",
@@ -282,14 +391,14 @@ try:
         named,
     )
     old = _hypothesis.named_before(
-        data / "configs" / "lead2.yaml",
+        data / "systems" / "tickets_lead2_v1.yaml",
         HYP,
         {"ref": git("rev-parse", "HEAD"), "source": "git"},
         "2999-01-01T00:00:00Z",
     )
     check("... and before a later start, yes", old["named"] is True and old["commit"] == sha, old)
     changed = _hypothesis.named_before(
-        data / "configs" / "lead2.yaml",
+        data / "systems" / "tickets_lead2_v1.yaml",
         {**HYP, "direction": "worse"},
         {"ref": git("rev-parse", "HEAD"), "source": "git"},
         "2999-01-01T00:00:00Z",
@@ -301,11 +410,11 @@ try:
     )
 
     # ── a dirty tree: not determinable ─────────────────────────────────────────────────────────────────
-    write_cfg("dirty.yaml", "tickets_dirty_v1", 2, HYP)
+    write_system("tickets_dirty_v1", 2, HYP)
     commit("dirty arm")
     goal_file = data / "goals" / "tickets_summary.yaml"
     goal_file.write_text(goal_file.read_text() + "# edited, not committed\n")
-    r = evh("run", "--config", "data/configs/dirty.yaml")
+    r = evh("run", "--system", "tickets_dirty_v1", "--dataset", "tickets_v1", "--goal", "tickets_summary")
     adv = metrics_of("tickets_dirty_v1").get("hypothesis_in_advance") or {}
     check(
         "run: on a dirty tree whether it was named in advance is not determinable",
@@ -319,7 +428,7 @@ try:
     line = next((ln for ln in r.stdout.splitlines() if "V20" in ln), "")
     check(
         "validate V20: passes with sound hypotheses",
-        "ok" in line and "FAIL" not in r.stdout and "config(s) with one" in line,
+        "ok" in line and "FAIL" not in r.stdout and "system(s) with one" in line,
         (line, out(r)[-400:]),
     )
     bad_cases = {
@@ -329,7 +438,7 @@ try:
         ),
         "against": (
             {**HYP, "against": "tickets_nope_v1"},
-            "hypothesis.against: no config with config_id 'tickets_nope_v1'",
+            "hypothesis.against: no system 'tickets_nope_v1'",
         ),
         "measure": (
             {**HYP, "measure": "overlap_f9"},
@@ -339,11 +448,11 @@ try:
         "items": ({**HYP, "items": "no/such/file.txt"}, "hypothesis.items: no file 'no/such/file.txt'"),
     }
     for what, (h, words) in bad_cases.items():
-        write_cfg("bad.yaml", "tickets_bad_v1", 2, h)
+        write_system("tickets_bad_v1", 2, h)
         v = evh("validate")
         line = next((ln for ln in v.stdout.splitlines() if "V20" in ln), "")
         run_dirs = len(list((data / "runs").glob("tickets_bad_v1_*")))
-        rr = evh("run", "--config", "data/configs/bad.yaml")
+        rr = evh("run", "--system", "tickets_bad_v1", "--dataset", "tickets_v1", "--goal", "tickets_summary")
         check(
             f"validate V20 refuses a hypothesis with a bad {what}, in words",
             v.returncode != 0 and "FAIL" in line and words in v.stdout,
@@ -356,7 +465,7 @@ try:
             and len(list((data / "runs").glob("tickets_bad_v1_*"))) == run_dirs == 0,
             out(rr)[-300:],
         )
-    (data / "configs" / "bad.yaml").unlink()
+    (data / "systems" / "tickets_bad_v1.yaml").unlink()
 
     # ── pair-test --round: the selection is corrected for; --family below 1 is refused ──────────────────
     r = evh(

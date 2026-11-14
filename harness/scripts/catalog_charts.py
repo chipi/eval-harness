@@ -245,6 +245,7 @@ def scatter(
     y_limit: float | None = None,
     fmt_x=None,
     width: int = W,
+    log_x: bool = False,
 ) -> str:
     """One dot per (x, y, label, tooltip): quality against a cost or a speed, the frontier (no arm
     better on both) drawn and named, a limit as a dashed line. The better corner is said."""
@@ -254,7 +255,9 @@ def scatter(
     h, left, bottom = 260, 70, 40
     xs = [p[0] for p in points] + ([x_limit] if x_limit is not None else [])
     ys = [p[1] for p in points] + ([y_limit] if y_limit is not None else [])
-    x_lo, x_hi, y_lo, y_hi = min(xs), max(xs), min(ys), max(ys)
+    raw_lo, raw_hi = min(xs), max(xs)
+    xt = math.log10 if log_x else (lambda v: v)
+    x_lo, x_hi, y_lo, y_hi = xt(raw_lo), xt(raw_hi), min(ys), max(ys)
     if x_hi == x_lo:
         x_lo, x_hi = x_lo - 1, x_hi + 1
     if y_hi == y_lo:
@@ -262,7 +265,7 @@ def scatter(
     pad_x, pad_y = (x_hi - x_lo) * 0.06, (y_hi - y_lo) * 0.08
 
     def x_of(v: float) -> float:
-        return left + (width - left - RIGHT) * (v - x_lo + pad_x) / (x_hi - x_lo + 2 * pad_x)
+        return left + (width - left - RIGHT) * (xt(v) - x_lo + pad_x) / (x_hi - x_lo + 2 * pad_x)
 
     def y_of(v: float) -> float:
         return TOP + (h - TOP - bottom) * (1 - (v - y_lo + pad_y) / (y_hi - y_lo + 2 * pad_y))
@@ -282,7 +285,7 @@ def scatter(
     line = sorted((points[i] for i in front), key=lambda p: p[0])
     if len(line) > 1:
         marks.append(
-            '<polyline fill="none" stroke="var(--accent)" stroke-width="1.5" points="'
+            '<polyline fill="none" stroke="var(--ink-2)" stroke-width="1.5" points="'
             + " ".join(f"{x_of(p[0]):.1f},{y_of(p[1]):.1f}" for p in line)
             + '"/>'
         )
@@ -293,7 +296,7 @@ def scatter(
         on = i in front
         marks.append(
             f'<circle cx="{x_of(x):.1f}" cy="{y_of(y):.1f}" r="{5 if on else 4}" '
-            f'fill="{"var(--s1)" if on else "var(--muted)"}"><title>{_e(tip)}</title></circle>'
+            f'fill="{"var(--ink)" if on else "var(--muted)"}"><title>{_e(tip)}</title></circle>'
         )
         if on:
             # Named beside the dot on the side the name fits inside the plot (never cut off, never over
@@ -308,19 +311,21 @@ def scatter(
             tx = x_of(x) + (-7 if right else 7)
             x0, x1 = (tx - LABEL_W * len(lab), tx) if right else (tx, tx + LABEL_W * len(lab))
             ty = label_y(y_of(y) - 6, x0, x1, placed, TOP + 10, h - bottom - 4)
-            placed.append((x0, x1, ty))
-            names.append(
-                f'<text x="{tx:.1f}" y="{ty:.1f}" class="tick name"'
-                f"{' text-anchor=end' if right else ''}>{_e(lab)}</text>"
-            )
+            if ty is not None:  # no clear line: the dot stays, its tooltip and the points table name it
+                placed.append((x0, x1, ty))
+                names.append(
+                    f'<text x="{tx:.1f}" y="{ty:.1f}" class="tick name"'
+                    f"{' text-anchor=end' if right else ''}>{_e(lab)}</text>"
+                )
     marks.extend(names)
     corner = ("left" if lower_x else "right") + (" top" if higher_y else " bottom")
     frame = (
-        f'<line x1="{left}" x2="{width - RIGHT}" y1="{h - bottom}" y2="{h - bottom}" stroke="var(--axis)"/>'
-        f'<line x1="{left}" x2="{left}" y1="{TOP}" y2="{h - bottom}" stroke="var(--axis)"/>'
-        f'<text x="{x_of(x_lo):.1f}" y="{h - bottom + 16}" text-anchor="middle" class="tick">{_e(fmt_x(x_lo))}</text>'
-        f'<text x="{x_of(x_hi):.1f}" y="{h - bottom + 16}" text-anchor="middle" class="tick">{_e(fmt_x(x_hi))}</text>'
-        f'<text x="{(left + width) / 2:.0f}" y="{h - 6}" text-anchor="middle" class="tick">{_e(x_label)}</text>'
+        # the axes in Muted: Axis was 1.6-1.75:1 on the card, under the 3:1 a graphic needs
+        f'<line x1="{left}" x2="{width - RIGHT}" y1="{h - bottom}" y2="{h - bottom}" stroke="var(--muted)"/>'
+        f'<line x1="{left}" x2="{left}" y1="{TOP}" y2="{h - bottom}" stroke="var(--muted)"/>'
+        f'<text x="{x_of(raw_lo):.1f}" y="{h - bottom + 16}" text-anchor="middle" class="tick">{_e(fmt_x(raw_lo))}</text>'
+        f'<text x="{x_of(raw_hi):.1f}" y="{h - bottom + 16}" text-anchor="middle" class="tick">{_e(fmt_x(raw_hi))}</text>'
+        f'<text x="{(left + width) / 2:.0f}" y="{h - 6}" text-anchor="middle" class="tick">{_e(x_label)}{" (log)" if log_x else ""}</text>'
         f'<text x="{left - 6}" y="{y_of(y_hi) + 4:.1f}" text-anchor="end" class="tick">{_e(_num(y_hi))}</text>'
         f'<text x="{left - 6}" y="{y_of(y_lo) + 4:.1f}" text-anchor="end" class="tick">{_e(_num(y_lo))}</text>'
     )
@@ -332,15 +337,17 @@ def scatter(
     )
 
 
-#: About one character of a tick label, in viewBox units: enough to tell when two names overlap.
-LABEL_W = 6.6
+#: About one character of a tick label (12.5 units, so it renders at 11px or more), in viewBox units: enough to tell
+#: when two names overlap.
+LABEL_W = 7.8
 #: The height of one label line.
-LABEL_H = 14.0
+LABEL_H = 16.0
 
 
-def label_y(want: float, x0: float, x1: float, placed: list, top: float, bottom: float) -> float:
+def label_y(want: float, x0: float, x1: float, placed: list, top: float, bottom: float) -> float | None:
     """Where a label spanning x0..x1 goes: at `want` if no label already placed covers it, else the
-    nearest line above or below that is clear, within top..bottom."""
+    nearest line above or below that is clear, within top..bottom; None when no line is clear (the label is
+    left off rather than drawn over another)."""
 
     def clear(y: float) -> bool:
         return all(abs(y - py) >= LABEL_H or x1 <= px0 or x0 >= px1 for px0, px1, py in placed)
@@ -349,7 +356,7 @@ def label_y(want: float, x0: float, x1: float, placed: list, top: float, bottom:
         for y in (want,) if k == 0 else (want + k * LABEL_H, want - k * LABEL_H):
             if top <= y <= bottom and clear(y):
                 return y
-    return want
+    return None
 
 
 def _running(xs: list[float]) -> list[float]:

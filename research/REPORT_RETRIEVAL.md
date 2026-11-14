@@ -196,7 +196,7 @@ significantly different from 6 of 18; ahead on the point estimate against 18 of 
 encoder running on a laptop CPU is not shown different from any of the twelve hosted LLM
 rerankers: with `e5_base` as arm A, the sign-flip p against the twelve is 0.27–0.97 (it
 trails `glm_s` by 0.0246, p 0.27); with `bge_small`, 0.12–0.97 (0.0340 behind `glm_s`, p
-0.13) — `family_test.py --a sf_e5_base_n200_v1`, uncorrected
+0.13) — `family_test.py --a sf_e5_base_v1`, uncorrected
 per pair. That is not "equal": n = 200 cannot resolve gaps of 0.02–0.03. The twelve or
 thirteen span 0.7437–0.7017 by point estimate, and "not significant" is not transitive.
 
@@ -205,6 +205,17 @@ monotonically 0.409 → 0.748, so the *ordering* is real, while **P(same winner)
 — with twelve or thirteen arms that cannot be told apart at this n, which one crowns a random half is
 close to a coin toss. Both statements are true at once, and reading either alone would
 mislead.
+
+#### What the goal recommends under 0.8.0's contender rule (2026-11-05)
+
+From 0.8.0 a contender must be *shown* no worse than the leader by more than the margin, a one-sided
+non-inferiority test with Holm across the candidates, not merely "not significantly different"
+([ADR-0026](../docs/adr/ADR-0026-contenders-by-non-inferiority.md)). The goal is `frugal`: a margin of 10% of the
+leader's 0.7437, so 0.0744. Of the 18 arms tested against glm_s, 8 are shown within it, and the cheapest of those,
+deepseek_s (0.7378, about $300 per 1M queries), is what the goal recommends. e5_base retrieval alone (0.7191, $0,
+the promoted baseline) is within the margin on its own test (p 0.0105 at a one-sided 0.0125) but not once the 18
+compared arms are corrected for (its Holm threshold is 0.0016). Testing each arm on its own would recommend it,
+and would recommend a too-weak arm far more often than the 2.5% the test stands for when many arms are compared.
 
 ### 3.3 Adding a reranker and swapping the retriever are comparable; together they stack
 
@@ -435,7 +446,7 @@ reads true before any of it is believed.
   the empty string, and the pipeline then falls back to BM25's ordering.
 - **A reranking arm's stored output is the pipeline's 100-document ranking**, which is what
   is scored. The model's own reply is in `_meta.llm_raw`.
-- **One run carries `harness.dirty: true`**: `sf_llama_s_n200_v1`, because
+- **One run carries `harness.dirty: true`**: `sf_llama_s_v1`, because
   `retrieval_report.py` was written while the sweep ran. All 19 main arms share one
   `adapter.sha256` (`cedb9f962a`), which is what determines the instrument.
 
@@ -506,15 +517,15 @@ cd harness
 # The dataset file is committed and frozen; materialize checks the fetched bytes against it.
 make dataset-materialize DATASET_ID=scifact_200
 
-for f in ../examples/retrieval-scifact/configs/arm_*_n200.yaml; do
-  python scripts/run.py --config "$f"
+for s in ../examples/retrieval-scifact/systems/*.yaml; do
+  python scripts/run.py --system "$(basename "$s" .yaml)" --dataset scifact_200 --goal scientific_retrieval_scifact
 done
 
 # The committed runs are scored with the current parser (recorded in each run's `derived`
 # block); a fresh run parses with it directly.
 python tools/retrieval_report.py --dataset-id scifact_200 --match sf_
-python scripts/family_test.py --dataset-id scifact_200 --a sf_glm_s_n200_v1 \
-    --against _n200_v1 --metric ndcg_10
+python scripts/family_test.py --dataset-id scifact_200 --a sf_glm_s_v1 \
+    --against sf_ --metric ndcg_10
 python scripts/holdout_significance.py --dataset-id scifact_200 \
     --exclude-dataset scifact_40 --metric ndcg_10 --match sf_
 python scripts/rank_stability.py --dataset-id scifact_200 --metric ndcg_10 --match sf_
@@ -523,7 +534,7 @@ python scripts/rank_stability.py --dataset-id scifact_200 --metric ndcg_10 --mat
 # one directory holding both (copy the runs; the config_ids differ, so nothing collides):
 mkdir -p /tmp/sf_all && cp -r data/runs/sf_* data/runs-pair/sf_* /tmp/sf_all/
 python scripts/family_test.py --dataset-id scifact_200 --a sf_glm_s_e5first_n200_v1 \
-    --against _n200_v1 --metric ndcg_10 --runs-dir /tmp/sf_all
+    --against sf_ --metric ndcg_10 --runs-dir /tmp/sf_all
 python scripts/pair_test.py --dataset-id scifact_200 --a sf_glm_s_e5first_n200_v1 \
     --b sf_glm_s_bm25first_n200_v1 --metric ndcg_10 --runs-dir /tmp/sf_all
 ```

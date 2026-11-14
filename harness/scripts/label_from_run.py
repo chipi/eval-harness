@@ -7,7 +7,7 @@
 It calls nothing: the outputs are the run's, so the labels are exactly what you read. It refuses what
 `run-promote` refuses (an unknown build, a dirty tree), an unfinished, derived or partial run, an empty output,
 and outputs that stopped at max_tokens (`--allow-cut-off` for outputs that end at the cap by design). The set's
-source is `model`: the run, its config, fingerprint and build. Labels are not a reference (RFC-023).
+source is `model`: the run, its system, fingerprint and build. Labels are not a reference (RFC-023).
 
 --not-redistributed keeps the texts out of git (the corpus's licence, or the project's choice): the set's directory
 gets a .gitignore for them, and labels.json records that and the command that rebuilds them; the same command on a
@@ -24,11 +24,13 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 
 import argparse
 import hashlib
-import json
+import sys
 from pathlib import Path
 
-from evaluation_harness._common import RUNS, die, load_dataset, read_json
+from evaluation_harness import _jsonout, _outputs, _runs, _store
+from evaluation_harness._common import die, evh_prog, load_dataset, read_json
 from evaluation_harness._label_sets import set_dir, write_set
+from evaluation_harness.model import runs as _model_runs
 
 
 def _unusable(rows: list[tuple[str, str, object]], max_tokens: object) -> tuple[list[str], list[str]]:
@@ -57,16 +59,28 @@ def _refuse_unusable(
         die(
             f"REFUSED: {len(empty)} empty output(s) ({', '.join(empty[:8])}"
             + (" ..." if len(empty) > 8 else "")
-            + f").\n  An empty reference is never the right answer. {where}"
+            + f").\n  An empty reference is never the right answer. {where}",
+            "not-enough",
         )
     if cut and not allow_cut_off:
         die(
             f"REFUSED: {len(cut)} of {len(rows)} output(s) stopped at max_tokens={max_tokens} "
             f"({', '.join(cut[:8])}" + (" ..." if len(cut) > 8 else "") + ").\n"
             "  A reference cut off mid-answer marks every complete answer down. Raise max_tokens\n"
-            f"  in the config (a new config_id) and run it again. {where}\n"
-            "  (--allow-cut-off freezes them anyway, for outputs that end at the cap by design.)"
+            f"  in the system (a new system id) and run it again. {where}\n"
+            "  (--allow-cut-off freezes them anyway, for outputs that end at the cap by design.)",
+            "not-enough",
         )
+
+
+def _finished(run_id: str) -> tuple[Path, dict]:
+    """The score a finished run made when it ran, and its record; refused for a run that has none."""
+    run_dir = _model_runs.first_score(run_id)
+    m = _model_runs.record(run_dir) if run_dir else None
+    if run_dir is None or m is None:
+        hint = " (it has no score: it did not finish)" if _store.is_dir(_model_runs.run_dir(run_id)) else ""
+        die(f"no finished run {run_id!r} under data/runs{hint}", "not-found")
+    return run_dir, m
 
 
 def _from_run(run_id: str, dataset_id: str, items: list[dict], args: argparse.Namespace) -> tuple[list, dict]:
@@ -75,49 +89,45 @@ def _from_run(run_id: str, dataset_id: str, items: list[dict], args: argparse.Na
     The refusals are run-promote's: a reference is a decision every later score depends on,
     so it must name the code and the system that produced it.
     """
-    run_dir = RUNS / run_id
-    if not (run_dir / "metrics.json").is_file():
-        hint = " (it has no metrics.json: it did not finish)" if run_dir.is_dir() else ""
-        die(f"no finished run {run_id!r} under {RUNS}{hint}")
-    m = read_json(run_dir / "metrics.json")
+    run_dir, m = _finished(run_id)
     if m.get("dataset_id") != dataset_id:
-        die(f"REFUSED: run {run_id} is on {m.get('dataset_id')!r}, not {dataset_id!r}")
+        die(f"REFUSED: run {run_id} is on {m.get('dataset_id')!r}, not {dataset_id!r}", "mismatch")
     if (m.get("derived") or {}).get("kind"):
         die(
             f"REFUSED: run {run_id} is {m['derived']['kind']}d from {m['derived'].get('from')}; "
-            "make the reference from the run that produced the outputs"
+            "make the reference from the run that produced the outputs",
+            "not-allowed",
         )
     build = m.get("build") or {}
     if build.get("ref", "unknown") == "unknown" and not args.allow_unknown_build:
         die(
             f"REFUSED: run {run_id} does not identify its build, so the reference could not say\n"
             "  which system wrote it. Set EVAL_BUILD_REF and run the arm again\n"
-            "  (--allow-unknown-build overrides)."
+            "  (--allow-unknown-build overrides).",
+            "not-configured",
         )
     if build.get("dirty") and not args.allow_dirty:
         die(
             f"REFUSED: run {run_id} was produced by a dirty tree; build.ref={str(build.get('ref', '?'))[:12]}\n"
             "  does not describe what ran. Commit, run the arm again, and use that run\n"
-            "  (--allow-dirty overrides)."
+            "  (--allow-dirty overrides).",
+            "not-allowed",
         )
     tokens: dict[str, object] = {}
-    pred = run_dir / "predictions.jsonl"
-    if pred.is_file():
-        for line in pred.read_text(encoding="utf-8").splitlines():
-            if line.strip():
-                row = json.loads(line)
-                tokens[row.get("item_id")] = row.get("tokens_out")
+    for row in _runs.item_rows(run_dir):
+        tokens[row["item_id"]] = row.get("tokens_out")
     rows, missing = [], []
     for item in items:
-        f = run_dir / "outputs" / f"{item['item_id']}.txt"
-        if not f.is_file():
+        text = _outputs.output(run_dir, item["item_id"])
+        if text is None:
             missing.append(item["item_id"])
             continue
-        rows.append((item["item_id"], f.read_text(encoding="utf-8"), tokens.get(item["item_id"])))
+        rows.append((item["item_id"], text, tokens.get(item["item_id"])))
     if missing:
         die(
             f"REFUSED: run {run_id} has no output for {len(missing)} item(s) "
-            f"({', '.join(missing[:8])}" + (" ..." if len(missing) > 8 else "") + ")"
+            f"({', '.join(missing[:8])}" + (" ..." if len(missing) > 8 else "") + ")",
+            "not-enough",
         )
     params = dict(m.get("params") or {})
     _refuse_unusable(rows, params.get("max_tokens"), args.allow_cut_off, f"Run {run_id}.")
@@ -146,7 +156,7 @@ def _rebuild(dataset_id: str, name: str, rows: list) -> bool:
     against the set's checksums. False when this is not that case."""
     d = set_dir(dataset_id, name)
     lj = d / "labels.json"
-    if not lj.is_file() or any(d.glob("*.txt")):
+    if not _store.is_file(lj) or any(_store.glob(d, "*.txt")):
         return False
     doc = read_json(lj)
     if doc.get("redistributed") is not False:
@@ -157,17 +167,18 @@ def _rebuild(dataset_id: str, name: str, rows: list) -> bool:
     if bad:
         die(
             f"REFUSED: the texts rebuilt from the run do not match {lj}'s checksums ({len(bad)} of {len(want)} differ):"
-            " the run's outputs changed since the set was made. Nothing was written."
+            " the run's outputs changed since the set was made. Nothing was written.",
+            "mismatch",
         )
     for iid, text in texts.items():
-        (d / f"{iid}.txt").write_text(text, encoding="utf-8")
+        _store.write_text(d / f"{iid}.txt", text, encoding="utf-8")
     print(f"{d}: {len(texts)} label text(s) rebuilt from the run, matching the set (no calls)")
     return True
 
 
 def main() -> int:
     """Take a finished run's outputs as a model's label set."""
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
     ap.add_argument("--run", required=True, help="the run whose outputs become the labels")
     ap.add_argument("--set", required=True, dest="name", help="the label set's name (lowercase, _ . -)")
     ap.add_argument(
@@ -183,36 +194,41 @@ def main() -> int:
         action="store_true",
         help="keep the texts out of git (a .gitignore beside them); labels.json says how to rebuild them",
     )
-    args = ap.parse_args()
+    from evaluation_harness._actor import add_by  # noqa: PLC0415
 
-    m = RUNS / args.run / "metrics.json"
-    if not m.is_file():
-        die(f"no finished run {args.run!r} under {RUNS}")
-    dataset_id = read_json(m).get("dataset_id")
-    if not dataset_id:
-        die(f"run {args.run} names no dataset")
-    rows, meta = _from_run(args.run, dataset_id, load_dataset(dataset_id)["items"], args)
-    if _rebuild(dataset_id, args.name, rows):
+    add_by(ap)
+    ap.add_argument(
+        "--json",
+        action="store_true",
+        help="one JSON object on stdout when done (the text goes to stderr as it is printed): the envelope every --json command gives (result.blocks, result.values)",
+    )
+    args = ap.parse_args()
+    with _jsonout.collect("label-from-run", args.json, live=sys.stderr):
+        dataset_id = _finished(args.run)[1].get("dataset_id")
+        if not dataset_id:
+            die(f"run {args.run} names no dataset", "invalid-file")
+        rows, meta = _from_run(args.run, dataset_id, load_dataset(dataset_id)["items"], args)
+        if _rebuild(dataset_id, args.name, rows):
+            return 0
+        source = {"kind": "model", **meta["from_run"], "model": meta.get("model")}
+        rebuild = (
+            f"evh label-from-run --run {args.run} --set {args.name} --not-redistributed"
+            if args.not_redistributed
+            else None
+        )
+        doc = write_set(
+            dataset_id,
+            args.name,
+            {item: text for item, text, _ in rows},
+            source,
+            args.guideline,
+            rebuild=rebuild,
+        )
+        print(f"data/labels/{dataset_id}/{args.name}: {doc['n_items']} label(s), source model · {args.run}")
+        if rebuild:
+            print(f"  its texts are kept out of git; commit labels.json. They are rebuilt with: {rebuild}")
+        print(f"  every set on it: evh labels --dataset-id {dataset_id}")
         return 0
-    source = {"kind": "model", **meta["from_run"], "model": meta.get("model")}
-    rebuild = (
-        f"evh label-from-run --run {args.run} --set {args.name} --not-redistributed"
-        if args.not_redistributed
-        else None
-    )
-    doc = write_set(
-        dataset_id,
-        args.name,
-        {item: text for item, text, _ in rows},
-        source,
-        args.guideline,
-        rebuild=rebuild,
-    )
-    print(f"data/labels/{dataset_id}/{args.name}: {doc['n_items']} label(s), source model · {args.run}")
-    if rebuild:
-        print(f"  its texts are kept out of git; commit labels.json. They are rebuilt with: {rebuild}")
-    print(f"  every set on it: evh labels --dataset-id {dataset_id}")
-    return 0
 
 
 if __name__ == "__main__":

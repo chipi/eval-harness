@@ -20,14 +20,14 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 import argparse
 import json
 
-from evaluation_harness._common import die
+from evaluation_harness._common import die, evh_prog
 from evaluation_harness._label_sets import label_line, labels_for, source_line
 from evaluation_harness._picks import waiting
 
 
 def main() -> int:
     """List the picks waiting."""
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
     ap.add_argument("--for", dest="target", help="only the picks for this dataset")
     ap.add_argument(
         "--tag", action="append", default=[], help="KEY=VALUE: only picks with this tag (repeatable)"
@@ -39,7 +39,7 @@ def main() -> int:
     for t in args.tag:
         k, sep, v = t.partition("=")
         if not sep:
-            die(f"--tag {t!r}: KEY=VALUE")
+            die(f"--tag {t!r}: KEY=VALUE", "bad-argument")
         tags[k] = v
     rows = waiting(args.target, tags or None)
     labels_by_ds: dict = {}

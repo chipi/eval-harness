@@ -1,0 +1,6 @@
+# System "lead1": a terse system. The bundled `echo` provider stands in for a real model
+# (no network, no key): it returns the first `sentences` sentences of the ticket.
+system_id: tickets_lead1_v1
+params:
+  provider: echo
+  sentences: 1

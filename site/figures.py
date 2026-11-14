@@ -20,12 +20,22 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 HARNESS = ROOT / "harness"
 DATA = HARNESS / "data"
+sys.path.insert(
+    0, str(HARNESS)
+)  # the evaluation_harness package: every read of the data goes through its store
+from evaluation_harness import _store  # noqa: E402
+from evaluation_harness._runs import read_metrics, runs_on  # noqa: E402
+from evaluation_harness.model import runs as model_runs  # noqa: E402
+
+sys.path.insert(0, str(ROOT / "examples" / "_shared"))
+from eval_arms import arm_of  # noqa: E402
+from evaluation_harness._common import system_now  # noqa: E402
 
 #: The test slices on the site, from the registry `make reproduce` uses too -- so the site
-#: and a stranger's rerun cannot mean different evals. `base` is the directory the
-#: REPORT is computed from; billed cost always comes from data/runs, where the provider's
-#: response was recorded.
-EVALS = [e for e in json.loads((ROOT / "examples" / "evals.json").read_text())["evals"] if e.get("site")]
+#: and a stranger's rerun cannot mean different evals. `base` is the arm prefix (model.runs.arm_prefix) of
+#: the label the REPORT is computed from; billed cost always comes from the plain label's runs, where the
+#: provider's response was recorded.
+EVALS = [e for e in json.loads(_store.read_text(ROOT / "examples" / "evals.json"))["evals"] if e.get("site")]
 
 #: Arms that are not models at all — calibration floors for the scorer. On SummEval that
 #: is every free scorer but BARTScore and UniEval: ROUGE, `coverage` and length are rules, not models.
@@ -47,19 +57,35 @@ BASELINES = {
 }
 
 
-def _runs(base: str, dataset: str, prefix: str, suffix: str) -> dict:
-    """{arm: run_dir} for one slice. Two runs sharing an arm is an error, as in V8."""
+def label_of(base: str) -> str:
+    """The label whose arm prefix is `base` ("runs": the plain label, a run's own score)."""
+    for lbl in model_runs.labels():
+        if model_runs.arm_prefix(lbl) == base:
+            return lbl
+    raise SystemExit(f"no scores read under {base!r}")
+
+
+def _runs(base: str, dataset: str, prefix: str) -> dict:
+    """{arm: score dir} for one slice: the scores read under `base`'s label of the runs whose id starts with
+    `prefix`. Two runs sharing an arm is an error, as in V8."""
     out: dict = {}
-    for f in sorted((DATA / base).glob(f"{prefix}*/metrics.json")):
-        m = json.loads(f.read_text())
-        cid = m.get("config_id", "")
-        if m.get("dataset_id") != dataset or not cid.endswith(suffix):
+    for d, m in runs_on(dataset, label=label_of(base)):
+        if not m["run_id"].startswith(prefix):
             continue
-        arm = cid[len(prefix) : -len(suffix)]
+        arm = arm_of(prefix, m["config_id"])
+        if arm is None:
+            continue
         if arm in out:
-            raise SystemExit(f"two runs for {cid} under {base}: {out[arm].name}, {f.parent.name}")
-        out[arm] = f.parent
+            raise SystemExit(
+                f"two runs for {m['config_id']} under {base}: {m['run_id']}, {model_runs.run_of(out[arm]).name}"
+            )
+        out[arm] = d
     return out
+
+
+def system_id(exp: dict, arm: str) -> str:
+    """The id of the system behind an arm of an eval, as its run records it."""
+    return read_metrics(_runs(exp["base"], exp["dataset"], exp["prefix"])[arm])["config_id"]
 
 
 def _billed(run_dir: Path) -> float:
@@ -72,7 +98,7 @@ def _billed(run_dir: Path) -> float:
 
 def _weights() -> dict:
     """arm -> 'open' | 'proprietary', from REFERENCE.md's hosted table."""
-    ref = (ROOT / "docs" / "REFERENCE.md").read_text()
+    ref = _store.read_text(ROOT / "docs" / "REFERENCE.md")
     out = {}
     for arm, w in re.findall(
         r"^\| `([a-z]+_[sml])` \| `eval-[^`]+` \| .*\| (\*\*open\*\*|proprietary)", ref, re.M
@@ -89,6 +115,11 @@ def _weights() -> dict:
 
 def _not_significant(exp: dict) -> list:
     """Opponents the leader's Holm family test finds not significantly different."""
+    cids = {
+        read_metrics(d)["config_id"]: arm
+        for arm, d in _runs(exp["base"], exp["dataset"], exp["prefix"]).items()
+    }
+    leader = next(c for c, arm in cids.items() if arm == exp["leader"])
     r = subprocess.run(
         [
             sys.executable,
@@ -96,13 +127,13 @@ def _not_significant(exp: dict) -> list:
             "--dataset-id",
             exp["dataset"],
             "--a",
-            f"{exp['prefix']}{exp['leader']}{exp['suffix']}",
+            leader,
             "--against",
-            exp["suffix"],
+            ",".join(cids),
             "--metric",
             exp["metric"],
-            "--runs-dir",
-            str(DATA / exp["base"]),
+            "--label",
+            label_of(exp["base"]),
         ],
         capture_output=True,
         text=True,
@@ -111,18 +142,18 @@ def _not_significant(exp: dict) -> list:
     if r.returncode != 0:
         raise SystemExit(f"family test failed for {exp['slug']}:\n{r.stderr[-800:]}")
     return [
-        ln.split()[0][len(exp["prefix"]) : -len(exp["suffix"])]
+        cids[ln.split()[0]]
         for ln in r.stdout.splitlines()
-        if ln.strip().endswith("--") and ln.split()[0].endswith(exp["suffix"])
+        if ln.strip().endswith("--") and ln.split()[0] in cids and ln.split()[0] != leader
     ]
 
 
 def eval_figures(exp: dict, weights: dict) -> dict:
-    scored = _runs(exp["base"], exp["dataset"], exp["prefix"], exp["suffix"])
-    billed = _runs("runs", exp["dataset"], exp["prefix"], exp["suffix"])
+    scored = _runs(exp["base"], exp["dataset"], exp["prefix"])
+    billed = _runs("runs", exp["dataset"], exp["prefix"])
     arms = []
     for arm, d in scored.items():
-        m = json.loads((d / "metrics.json").read_text())
+        m = read_metrics(d)
         provider = (m.get("params") or {}).get("provider")
         kind = "baseline" if arm in BASELINES else "hosted" if provider in ("litellm", "rerank") else "local"
         arms.append(
@@ -145,7 +176,7 @@ def eval_figures(exp: dict, weights: dict) -> dict:
     contenders_paid = [a for a in hosted if a["arm"] in contenders]
     cheapest_contender = min(contenders_paid, key=lambda a: a["cost"]) if contenders_paid else None
     leader = next(a for a in arms if a["arm"] == exp["leader"])
-    n_items = json.loads((next(iter(scored.values())) / "metrics.json").read_text())["n_items"]
+    n_items = read_metrics(next(iter(scored.values())))["n_items"]
     return {
         **exp,
         "n_items": n_items,
@@ -171,7 +202,7 @@ def calibration() -> list:
     """One row per calibration figure, in percentage points, for the forest plot."""
     cal = ROOT / "docs" / "evidence" / "calibration"
     rows = []
-    s = json.loads((cal / "summarization.json").read_text())
+    s = json.loads(_store.read_text(cal / "summarization.json"))
     ft, pub = s["full_test"], s["published"]["lead3"]
     rows.append(
         {
@@ -192,7 +223,7 @@ def calibration() -> list:
         "summeval": "SummEval",
     }
     for exp, label in names.items():
-        c = json.loads((cal / f"{exp}.json").read_text())
+        c = json.loads(_store.read_text(cal / f"{exp}.json"))
         for arm, r in c["arms"].items():
             rows.append(
                 {
@@ -215,11 +246,11 @@ def hardware() -> list:
     """The machines behind the evals (docs/evidence/hardware.json), each with the
     committed runs whose fingerprint names it. Every run must match exactly one machine,
     or the build stops: a run measured somewhere undocumented is a gap, not a footnote."""
-    hw = json.loads((ROOT / "docs" / "evidence" / "hardware.json").read_text())["machines"]
+    hw = json.loads(_store.read_text(ROOT / "docs" / "evidence" / "hardware.json"))["machines"]
     machines = [{**m, "hosted": 0, "local": 0} for m in hw]
     for exp in EVALS:
-        for _arm, d in _runs("runs", exp["dataset"], exp["prefix"], exp["suffix"]).items():
-            fp = json.loads((d / "metrics.json").read_text()).get("fingerprint") or {}
+        for _arm, d in _runs("runs", exp["dataset"], exp["prefix"]).items():
+            fp = read_metrics(d).get("fingerprint") or {}
             host = fp.get("runner") or {}
             hits = [
                 m
@@ -230,10 +261,10 @@ def hardware() -> list:
             ]
             if len(hits) != 1:
                 raise SystemExit(
-                    f"{d.name}: host {host.get('platform')}/{host.get('cpu_count')} "
+                    f"{model_runs.run_of(d).name}: host {host.get('platform')}/{host.get('cpu_count')} "
                     f"matches {len(hits)} machines in docs/evidence/hardware.json"
                 )
-            prov = (json.loads((d / "metrics.json").read_text()).get("params") or {}).get("provider")
+            prov = (read_metrics(d).get("params") or {}).get("provider")
             hits[0]["hosted" if prov in ("litellm", "rerank") else "local"] += 1
     return machines
 
@@ -241,11 +272,11 @@ def hardware() -> list:
 def dailymail() -> list:
     """The five local summarisation arms on the CNN slice and on the DailyMail slice."""
     out = []
-    cnn = _runs("runs", "cnn_dailymail_200", "cnn_", "_n200_v1")
-    dm = _runs("runs", "cnn_dailymail_dm200", "cnn_", "_dm200_v1")
+    cnn = _runs("runs", "cnn_dailymail_200", "cnn_")
+    dm = _runs("runs", "cnn_dailymail_dm200", "cnn_")
     for arm in ("bart_l", "bart_m", "bart_s", "lead3", "bart_l_xsum"):
-        c = json.loads((cnn[arm] / "metrics.json").read_text())["scores"]["coverage"]
-        d = json.loads((dm[arm] / "metrics.json").read_text())["scores"]["coverage"]
+        c = read_metrics(cnn[arm])["scores"]["coverage"]
+        d = read_metrics(dm[arm])["scores"]["coverage"]
         out.append({"arm": arm, "cnn": c, "dm": d})
     return out
 
@@ -261,11 +292,14 @@ def adjudicated(slug: str, exps: list) -> dict:
     verdict replaces its gold, every other item keeps the correctness the run recorded. The
     same rule check_report_claims verifies the report's table with."""
     x = next(e for e in exps if e["slug"] == slug)
-    adj = json.loads((ROOT / "examples" / x["example"] / "adjudication.json").read_text())
+    adj = json.loads(_store.read_text(ROOT / "examples" / x["example"] / "adjudication.json"))
     verdict = {i["item_id"]: i["adjudicated"] for i in adj["items"]}
+    sys.path.insert(0, str(HARNESS))  # the evaluation_harness package
+    from evaluation_harness._runs import item_rows  # noqa: PLC0415
+
     v1, v2 = {}, {}
-    for arm, d in _runs(x["base"], x["dataset"], x["prefix"], x["suffix"]).items():
-        rows = [json.loads(line) for line in (d / "predictions.jsonl").open() if line.strip()]
+    for arm, d in _runs(x["base"], x["dataset"], x["prefix"]).items():
+        rows = list(item_rows(d))
         v1[arm] = sum(r["correct"] for r in rows) / len(rows)
         v2[arm] = sum(
             (r["_meta"].get("predicted") == verdict[r["item_id"]])
@@ -298,24 +332,22 @@ def judged_summarisation(exps: list, scorer: str = "") -> dict:
 
     scorer = scorer or jf.SCORER
     jfig = jf.compute(scorer)
-    m = json.loads(jf.grading_set().read_text())
+    m = json.loads(_store.read_text(jf.grading_set()))
     sc = js.load_scorer(DATA / "scorers" / f"{scorer}.yaml")
     vdir = DATA / "judge-verdicts" / scorer / m["judging_set_id"]
     ids = [i["item_id"] for i in m["items"]]
     scores = js.load_scores(m, sc, vdir)
     proj = js.project(sc, scores, ids)
     summ = js.summarise(m, sc, m["arms"], scores, proj, {}, "recomputed", True, vdir)
-    files = [json.loads(p.read_text()) for p in vdir.glob("*/*.json")]
+    files = [json.loads(_store.read_text(p)) for p in _store.glob(vdir, "*/*.json")]
     hc = json.loads(
-        (ROOT / "examples" / "summarization-cnn-dailymail" / "human_check_judge.json").read_text()
+        _store.read_text(ROOT / "examples" / "summarization-cnn-dailymail" / "human_check_judge.json")
     )
     pairs = [p for p in hc["pairs"] if p["item_id"] in proj]
     ctrl = summ["controls"]
     x = next(e for e in exps if e["slug"] == "summarization")
     judged = {
-        a["config_id"][len(x["prefix"]) : -len(x["suffix"])]: sum(
-            proj[i][a["config_id"]]["_mean"] for i in proj
-        )
+        arm_of(x["prefix"], system_now(a["config_id"])): sum(proj[i][a["config_id"]]["_mean"] for i in proj)
         / len(proj)
         for a in m["arms"]
     }
@@ -368,8 +400,8 @@ def judged_summarisation(exps: list, scorer: str = "") -> dict:
 def validation_spend() -> float:
     """Billed for checking the judges against published human ratings (Goyal et al., Zhang et
     al.), from the committed records: spent beside the re-measurement, not part of it."""
-    files = list((DATA / "judge-validation").glob("*/*/*/*.json"))
-    return round(sum(json.loads(p.read_text()).get("cost_usd") or 0.0 for p in files), 4)
+    files = list(_store.glob(DATA / "judge-validation", "*/*/*/*.json"))
+    return round(sum(json.loads(_store.read_text(p)).get("cost_usd") or 0.0 for p in files), 4)
 
 
 def zhang_figures() -> dict:
@@ -424,7 +456,7 @@ def goal_decisions(exps: list) -> None:
 
         def short(arm, x=x):
             config = (arm or "").rsplit("/", 1)[-1]
-            return config[len(x["prefix"]) : -len(x["suffix"])] if config.startswith(x["prefix"]) else config
+            return arm_of(x["prefix"], config) or config
 
         x["goal"] = {
             **r,

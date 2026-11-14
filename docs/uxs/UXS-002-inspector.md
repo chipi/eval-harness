@@ -58,13 +58,13 @@ In the catalog `evh catalog` builds (it writes `pick.js`), it has two steps:
    (one with no arms is disabled); at most 60 are shown, then "N more: type to narrow". A goal
    with one dataset picks it.
 2. **Its arms** on the dataset picked (the inspector compares arms on one dataset): a filter box
-   (config, model, how); facet chips, shown where they divide the arms, for **where** (hosted,
+   (system, model, how); facet chips, shown where they divide the arms, for **where** (hosted,
    local), **how** (measured, rescored, judged, run again, re-parsed) and **scored against**
    (the reference's tier, or judge); chips within a facet are alternatives, facets combine.
    **Tick the N shown** ticks every arm shown, the first 40 when more. **add** suggestions: the
-   dataset's baseline, leader and recommended arm, then, from what is ticked, the same config
-   scored other ways and the same model in other configs. Each arm is a row with a checkbox:
-   config (and its roles), model and where, how, its value on the deciding measure.
+   dataset's baseline, leader and recommended arm, then, from what is ticked, the same system
+   scored other ways and the same model in other systems. Each arm is a row with a checkbox:
+   system (and its roles), model and where, how, its value on the deciding measure.
 
 Under them: what is ticked, by name, each chip with × (the first 8, then "+N"), **Clear**, and
 **Inspect N arms** (disabled with nothing ticked or over 40). Inspect opens the ticked arms,
@@ -182,13 +182,17 @@ muted; the baseline `--baseline`) on every chart, never a colour by rank. A lege
   quality–cost or quality–tokens trade-off.
 
 Hovering a dot shows its arm, item and value. Below 700px the charts switch to a narrow layout
-(labels above each row) rather than scroll.
+(labels above each row) rather than scroll. Past 500 items a run, a row draws 60 shaded bins instead of a dot each (the
+darker, the more items; hovering one says how many, between what values), and past 2,000 points in all the scatter
+is a shaded grid with the averages' crosses on it (PLAN_0.8.0 S3: at 10,000 items and 40 arms the dots were 1.2
+million).
 
 ## 03 per item
 
 "per item · n": one row per item, one column per arm (the baseline's marked), each cell the
 score with ▲ or ▼ where it beats or trails the baseline on that item. Paged 10 at a time like
-every catalog table. A row opens on click, Enter or Space.
+every catalog table, and only the rows shown are drawn: "show 10 more", and "show all" up to 1,000 items (past that,
+"show 1000 more"); a link to an item (`?item=`) draws down to it. A row opens on click, Enter or Space.
 
 ## 04 the item view
 
@@ -245,8 +249,10 @@ browser, the same model.
   `evh pick --dataset-id <id> --item … --item … --for <dataset> --tag <key=value> --note "…"` (the target, tags
   and note typed in the panel fill the command) and `evh label-sheet --dataset-id <id> --item … --out sheet.csv`,
   with "download these rows (CSV)" beside it.
-- Paged 10 at a time like every catalog table; the counts above the table ("412 items · 9 wrong · 31 disagree ·
-  4 new") and the metric it is read on.
+- Paged 10 at a time like every catalog table, and only the rows shown are drawn: "show 10 more", and "show all" up
+  to 1,000 rows (past that, "show 1000 more"); a sort orders every row, and "select all shown" takes every row of the
+  sheet, drawn or not. The counts above the table ("412 items · 9 wrong · 31 disagree · 4 new") and the metric it is
+  read on.
 
 ## Checklist for a change to the inspector
 
@@ -259,7 +265,7 @@ browser, the same model.
 
 | on the page | in the terminal |
 | --- | --- |
-| choose arms, baseline, metric | `evh inspect --runs a,b [--baseline a] [--metric m]` (config ids are looked up under `--from`, default `runs`) |
+| choose arms, baseline, metric | `evh inspect --runs a,b [--baseline a] [--metric m]` (system ids are looked up under `--from`, default `runs`) |
 | a round's arms (the goal page's **inspect** button on a round) | `evh inspect --round rN [--goal g]`: the goal's measure, against the round's leader; arms with no score on it are named and left out |
 | filter, breakdown | `--where field:value` (repeatable), `--by field` |
 | notes, verdicts, conditions, breakdown | printed in that order (notes as `NOTE:` lines) |

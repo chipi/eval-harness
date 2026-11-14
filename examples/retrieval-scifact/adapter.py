@@ -55,6 +55,8 @@ from typing import Any, Dict, List, Optional, Tuple
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1] / "harness"
 sys.path.insert(0, str(HERE.parent / "_shared"))
+sys.path.insert(0, str(HERE.parents[1] / "harness"))  # the evaluation_harness package: its store reads data/
+from evaluation_harness import _store  # noqa: E402
 import gateway  # noqa: E402
 
 from retrieval import (  # noqa: E402
@@ -66,7 +68,7 @@ from retrieval import (  # noqa: E402
     scorer_sha256,
 )
 
-__all__ = ["call_system", "score", "warmup", "fingerprint", "scorer_id",
+__all__ = ["call_system", "prompts", "score", "warmup", "fingerprint", "scorer_id",
            "PRIMARY_METRIC", "METRIC_KINDS", "TRANSIENT_MARKERS"]
 
 #: Copied from the other three adapters: substrings that mark a provider-side error as
@@ -108,15 +110,15 @@ def _corpus(corpus_id: str) -> Tuple[List[dict], str]:
         return _CORPUS[corpus_id]
     base = ROOT / "data" / "corpora" / corpus_id
     docs_f, man_f = base / "corpus.jsonl", base / "manifest.json"
-    if not docs_f.is_file():
+    if not _store.is_file(docs_f):
         raise SystemExit(
             f"no corpus at {docs_f} — run examples/retrieval-scifact/fetch.py first")
-    if not man_f.is_file():
+    if not _store.is_file(man_f):
         raise SystemExit(
             f"{base} has documents but no manifest.json, so the corpus cannot be "
             f"identified in the fingerprint. Re-run fetch.py rather than guessing.")
-    docs = [json.loads(l) for l in docs_f.read_text(encoding="utf-8").splitlines() if l.strip()]
-    sha = json.loads(man_f.read_text(encoding="utf-8"))["corpus_sha256"]
+    docs = [json.loads(l) for l in _store.read_text(docs_f, encoding="utf-8").splitlines() if l.strip()]
+    sha = json.loads(_store.read_text(man_f, encoding="utf-8"))["corpus_sha256"]
     _CORPUS[corpus_id] = (docs, sha)
     return docs, sha
 
@@ -197,7 +199,7 @@ def _dense_index(corpus_id: str, model_id: str, device: str, batch: int,
     model = apply_precision(
         SentenceTransformer(model_id, device=device,
                             **({"revision": revision} if revision else {})), precision)
-    if cache.is_file():
+    if _store.is_file(cache):
         emb = np.load(cache)
         if emb.shape[0] == len(ids):
             _BUILT_THIS_PROCESS[key] = False
@@ -211,7 +213,7 @@ def _dense_index(corpus_id: str, model_id: str, device: str, batch: int,
     emb = model.encode([f"{doc_prefix}{_doc_text(d)}" for d in docs], batch_size=batch,
                        convert_to_numpy=True, normalize_embeddings=True,
                        show_progress_bar=False)
-    cache.parent.mkdir(parents=True, exist_ok=True)
+    _store.mkdir(cache.parent, parents=True, exist_ok=True)
     np.save(cache, emb)
     _BUILT_THIS_PROCESS[key] = True
     _INDEX[key] = (model, emb, ids)
@@ -276,7 +278,7 @@ _PROMPT_CACHE: Dict[str, str] = {}
 def _prompt(params: Dict[str, Any]) -> str:
     name = params.get("prompt_file", "prompt.txt")
     if name not in _PROMPT_CACHE:
-        _PROMPT_CACHE[name] = (HERE / name).read_text(encoding="utf-8")
+        _PROMPT_CACHE[name] = _store.read_text(HERE / name, encoding="utf-8")
     return _PROMPT_CACHE[name]
 
 
@@ -562,6 +564,12 @@ def _tokenizer_sha256() -> str:
 def scorer_id() -> Dict[str, str]:
     """Hashes identifying the scoring rule. No params, no network — `rescore.py` calls it."""
     return {"scorer_sha256": scorer_sha256(), "tokenizer_sha256": _tokenizer_sha256()}
+
+
+def prompts(params: Dict[str, Any]) -> Dict[str, str]:
+    """The prompt a call sends, by name (`<example>/<prompt file>`), the text this adapter's fingerprint hashes as
+    `prompt_sha256`: the harness records it as a prompt version of the run (RFC-032 step 4b)."""
+    return {f"{HERE.name}/{Path(str(params.get('prompt_file') or 'prompt.txt')).stem}": _prompt(params)}
 
 
 def fingerprint(params: Dict[str, Any]) -> Dict[str, Any]:

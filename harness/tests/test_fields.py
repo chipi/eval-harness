@@ -26,10 +26,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the ev
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tests/
 from evaluation_harness._check import check, summary  # noqa: E402
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runstore  # noqa: E402
+
 proj = Path(tempfile.mkdtemp(prefix="evh-fields-"))
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-fields")
 env.pop("EVAL_DATA_DIR", None)
-env.pop("EVAL_RUNS_DIR", None)
 
 
 def evh(*args):
@@ -88,6 +90,23 @@ try:
             check(f"parse: {name} = {raw!r} is refused", False, "accepted")
         except ValueError:
             check(f"parse: {name} = {raw!r} is refused", True)
+    moment = {"name": "at", "type": "datetime"}
+    dt_good = ("2026-10-02T09:00:00Z", "2026-10-02T09:00:00.800+00:00", "2026-10-02T11:00+02:00")
+    dt_bad = ("2026-10-02", "2026-10-02T09:00:00", "2026-10-02 09:00:00Z", "2026-13-02T09:00:00Z")
+    refused = []
+    for raw in dt_bad:
+        try:
+            _fields.parse(moment, raw)
+        except ValueError:
+            refused.append(raw)
+    check(
+        "parse: a datetime (RFC-030) is a date and time with its offset, kept as written; no offset, no time or no "
+        "such date is refused",
+        all(_fields.parse(moment, x) == x for x in dt_good)
+        and refused == list(dt_bad)
+        and _fields.moment(dt_good[0]) == _fields.moment("2026-10-02T11:00:00+02:00"),
+        refused,
+    )
     check(
         "matches: a number range, either end open",
         _fields.matches(F["wait"], 150, "100..")
@@ -103,6 +122,7 @@ try:
         (src / f"{i}.txt").write_text(f"Ticket {i}. The user cannot log in. Support replied.\n")
     (data / "fields").mkdir(parents=True)
     (data / "fields" / "tickets.yaml").write_text(FIELDSET)
+    _runstore.migrate_in(proj)
     good = (
         "item_id,product,priority,opened,wait,escalated\n"
         "t1,login,1,2026-10-01,1:00:00,no\n"
@@ -126,7 +146,7 @@ try:
         )
         check(
             f"create: refused — {label}",
-            r.returncode != 0 and expect in out(r) and not (data / "datasets" / "bad_v1.json").exists(),
+            r.returncode != 0 and expect in out(r) and not _runstore.exists(proj, "datasets/bad_v1.json"),
             out(r)[-300:],
         )
 
@@ -170,7 +190,7 @@ try:
         "fields.csv",
     )
     check("create: a dataset with typed fields", r.returncode == 0, out(r)[-300:])
-    ds = json.loads((data / "datasets" / "tk_v1.json").read_text())
+    ds = _runstore.read_json(proj, "datasets/tk_v1.json")
     by = {it["item_id"]: it for it in ds["items"]}
     check(
         "create: values are typed, empty cells absent",
@@ -192,7 +212,7 @@ try:
     before_id, before_fields, before_at = items_digest(ds), ds["fields_sha256"], ds["created_at"]
     (proj / "fix.csv").write_text("item_id,product,priority\nt3,export,3\n")
     r = evh("dataset-create", "--dataset-id", "tk_v1", "--update-fields", "--fields", "fix.csv")
-    ds2 = json.loads((data / "datasets" / "tk_v1.json").read_text())
+    ds2 = _runstore.read_json(proj, "datasets/tk_v1.json")
     check(
         "update-fields: replaces the values",
         r.returncode == 0
@@ -216,9 +236,31 @@ try:
         out(r)[-200:],
     )
 
+    # The record's other keys are not the fields: an update that rewrites the record keeps every one of them
+    # (it kept only the description, source, licence and lineage, so a card, tags, a hidden-text flag or a
+    # split block vanished on the first field fix).
+    rec = _runstore.read_json(proj, "datasets/tk_v1.json")
+    kept = {
+        "tags": {"purpose": "tuning"},
+        "text": "hidden",
+        "card": {"summary": "the tutorial's tickets"},
+        "made_from": {"capture": "c1"},
+    }
+    _runstore.write_text(proj, "datasets/tk_v1.json", json.dumps({**rec, **kept}))
+    (proj / "fix2.csv").write_text("item_id,product,priority\nt3,export,2\n")
+    r = evh("dataset-create", "--dataset-id", "tk_v1", "--update-fields", "--fields", "fix2.csv")
+    ds_k = _runstore.read_json(proj, "datasets/tk_v1.json")
+    check(
+        "update-fields: the record's other keys (tags, text, card, made_from) are kept",
+        r.returncode == 0 and all(ds_k.get(k) == v for k, v in kept.items()),
+        (out(r)[-200:], {k: ds_k.get(k) for k in kept}),
+    )
+    _runstore.write_text(
+        proj, "datasets/tk_v1.json", json.dumps({k: v for k, v in ds_k.items() if k not in kept})
+    )
     (proj / "clear.csv").write_text("item_id,opened,priority\nt1,,1\n")
     r = evh("dataset-create", "--dataset-id", "tk_v1", "--update-fields", "--fields", "clear.csv")
-    ds3 = json.loads((data / "datasets" / "tk_v1.json").read_text())
+    ds3 = _runstore.read_json(proj, "datasets/tk_v1.json")
     t1 = {i["item_id"]: i.get("fields") for i in ds3["items"]}["t1"]
     check(
         "update-fields: an empty cell clears that value; the item's other values stay",
@@ -234,30 +276,32 @@ try:
     )
 
     # ── V15 ───────────────────────────────────────────────────────────────────────────
-    path = data / "datasets" / "tk_v1.json"
-    keep = path.read_text()
+    def put(text):
+        _runstore.write_text(proj, "datasets/tk_v1.json", text)
+
+    keep = _runstore.read_text(proj, "datasets/tk_v1.json")
     edited = json.loads(keep)
     edited["items"][0]["fields"]["priority"] = 9
-    path.write_text(json.dumps(edited))
+    put(json.dumps(edited))
     line, o = v15()
     check("V15: a value edited by hand fails (fields_sha256)", "FAIL" in line and "fields_sha256" in o, line)
     edited = json.loads(keep)
     edited["items"][0]["fields"]["colour"] = "red"
     edited["fields_sha256"] = _fields.digest(edited["items"])
-    path.write_text(json.dumps(edited))
+    put(json.dumps(edited))
     line, o = v15()
     check("V15: an undeclared field fails", "FAIL" in line and "colour" in o, line)
     edited = json.loads(keep)
     edited["fieldset"] = "gone"
-    path.write_text(json.dumps(edited))
+    put(json.dumps(edited))
     line, o = v15()
     check("V15: a field set that does not exist fails", "FAIL" in line and "does not exist" in o, line)
     edited = json.loads(keep)
     del edited["fieldset"], edited["fields_sha256"]
-    path.write_text(json.dumps(edited))
+    put(json.dumps(edited))
     line, o = v15()
     check("V15: fields with no field set fail", "FAIL" in line and "names no fieldset" in o, line)
-    path.write_text(keep)
+    put(keep)
 
     # ── URL items ─────────────────────────────────────────────────────────────────────
     served = proj / "served"
@@ -311,7 +355,7 @@ try:
     r = evh(
         "dataset-create", "--dataset-id", "urls_v1", "--manifest", "manifest.csv", "--fieldset", "tickets"
     )
-    dsu = json.loads((data / "datasets" / "urls_v1.json").read_text()) if r.returncode == 0 else {}
+    dsu = _runstore.read_json(proj, "datasets/urls_v1.json") if r.returncode == 0 else {}
     u = {i["item_id"]: i for i in dsu.get("items", [])}
     check(
         "manifest: URL items, one pinned by its hash, one fetched and pinned now",
@@ -323,10 +367,9 @@ try:
         out(r)[-300:],
     )
     r = evh("dataset-materialize", "--dataset-id", "urls_v1")
-    mat = data / "materialized" / "urls_v1"
     check(
         "materialize: fetches each URL item and checks its hash",
-        r.returncode == 0 and (mat / "ep_a.mp3").read_bytes() == b"ID3 audio a",
+        r.returncode == 0 and _runstore.read_bytes(proj, "materialized/urls_v1/ep_a.mp3") == b"ID3 audio a",
         out(r)[-300:],
     )
     check("materialize: the bytes are cached by their hash", (proj / ".cache" / "items" / sha_a).is_file())
@@ -357,7 +400,7 @@ try:
     )
     env["EVAL_FETCH_HEADERS"] = json.dumps({"127.0.0.1": {"Authorization": "Bearer t0k"}})
     r = evh("dataset-create", "--dataset-id", "private_v1", "--manifest", "auth_manifest.csv")
-    stored = (data / "datasets" / "private_v1.json").read_text() if r.returncode == 0 else ""
+    stored = _runstore.read_text(proj, "datasets/private_v1.json") if r.returncode == 0 else ""
     check(
         "fetch: EVAL_FETCH_HEADERS sends the project's header to its host",
         r.returncode == 0 and hashlib.sha256(b"ID3 private").hexdigest() in stored,

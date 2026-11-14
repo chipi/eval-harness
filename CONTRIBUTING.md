@@ -21,8 +21,8 @@ It needs:
   and which way each one points.
 - **`fetch.py`** — a download recipe. **Never commit a third-party corpus.** Redistributing
   one is a licence question nobody should inherit by cloning a repo.
-- **configs** — one YAML per arm. Hold everything constant except the one thing you vary,
-  and say in the config why the varying thing varies.
+- **systems** — one YAML per arm. Hold everything constant except the one thing you vary,
+  and say in the system why the varying thing varies.
 
 ## Rules the harness enforces, and why
 

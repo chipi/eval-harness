@@ -24,15 +24,7 @@
     "items_sha256": {"type": ["string", "null"]},
     "made_at": {"type": "string", "description": "UTC, when the profile was written"},
     "harness": {"type": "string", "description": "the harness version that wrote it"},
-    "source": {
-      "type": ["object", "null"],
-      "description": "where the dataset comes from, when a fetcher or import step recorded it",
-      "properties": {
-        "name": {"type": "string"}, "url": {"type": "string"},
-        "config": {"type": "string"}, "split": {"type": "string"}
-      },
-      "required": ["name", "url"]
-    },
+    "source": {"anyOf": [{"type": "null"}, {"type": "object", "description": "the dataset's source block (E1), copied when the profile is made", "required": ["provider"], "additionalProperties": false, "properties": {"provider": {"type": "string"}, "ref": {"type": ["string", "null"]}, "url": {"type": ["string", "null"], "pattern": "^https?://"}, "revision": {"type": ["string", "null"]}, "config": {"type": ["string", "null"]}, "split": {"type": ["string", "null"]}, "gated": {"type": ["boolean", "null"]}, "description_sha256": {"type": ["string", "null"], "pattern": "^[0-9a-f]{64}$"}, "item_url": {"type": ["string", "null"], "pattern": "^https?://"}}}]},
     "items": {
       "type": "object",
       "required": ["n", "kind", "words"],

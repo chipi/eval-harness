@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "tag set",
+  "description": "A tag set (PLAN_0.8.0 D1, RFC-032 step 6): data/tags/<dataset_id>/<set>/tags.json. The failure modes tagged on arms' outputs for a dataset's items, from one failure-mode list; never edited once written. Its id is `<dataset_id>/<set>`.",
+  "type": "object",
+  "required": ["kind", "dataset_id", "set", "failure_modes", "created_at", "runs"],
+  "properties": {
+    "kind": {"const": "tag-set"},
+    "dataset_id": {"type": "string", "description": "Equals the folder above the set's."},
+    "set": {"type": "string", "pattern": "^[a-z0-9][a-z0-9_.-]{0,99}$", "description": "Equals its folder's name."},
+    "failure_modes": {"type": "string", "description": "The failure-mode list the tags are named from (data/failure-modes/<id>.yaml)."},
+    "source": {"type": "object"},
+    "created_at": {"type": "string"},
+    "n_tagged": {"type": "integer", "minimum": 0},
+    "runs": {
+      "type": "object",
+      "description": "{run_id: {item_id: {modes: [...], note?}}}.",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": {
+          "type": "object",
+          "required": ["modes"],
+          "properties": {"modes": {"type": "array", "items": {"type": "string"}}, "note": {"type": "string"}}
+        }
+      }
+    },
+    "actor": {"type": "object"}
+  }
+}

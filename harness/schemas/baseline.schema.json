@@ -1,32 +1,203 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "baseline",
-  "description": "A promoted run. Never edited: promoting another run replaces it, and git keeps the one it replaced.",
+  "description": "A baseline version (RFC-027): data/baselines/<goal_id>/<dataset_id>/<n>.json, or _dataset/<dataset_id>/<n>.json for a run with no goal. Written once: a promotion or a rollback writes the next version.",
   "type": "object",
-  "required": ["baseline_id", "dataset_id", "promoted_from", "promoted_at", "scores", "build"],
+  "required": [
+    "dataset_id",
+    "goal",
+    "version",
+    "promoted_from",
+    "promoted_at",
+    "scores",
+    "build",
+    "actor"
+  ],
   "additionalProperties": false,
   "properties": {
-    "baseline_id": {"type": "string"},
-    "dataset_id": {"type": "string"},
-    "promoted_from": {"type": "string", "description": "run_id this was promoted from"},
-    "promoted_at": {"type": "string"},
-    "reason": {"type": "string", "description": "Why this run earned promotion. Required by the runbook, not by the schema."},
-    "scores": {"type": "object", "additionalProperties": {"type": "number"}},
-    "build": {"type": "object"},
-    "goal": {"type": "string", "description": "The goal this answers, carried from the run: data/goals/<goal_id>.yaml (validate V14)."},
-    "format": {"type": "string", "description": "The output format the run was asked for, carried from the run (validate V14)."},
-    "reference_tier": {"enum": ["gold", "silver"], "description": "The tier of references the run was scored against, carried from it (validate V6)."},
-    "adapter": {"type": "string", "description": "The adapter that scored the run, as the run records it (validate V6)."},
-    "fingerprint_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$", "description": "The run's fingerprint hash: what the number depended on (validate V6)."},
+    "actor": {
+      "type": "object",
+      "description": "Who acted (RFC-027): a person, or an agent and the person it acted for. A recorded claim, not an identity.",
+      "required": [
+        "type",
+        "name"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "enum": [
+            "person",
+            "agent",
+            "unknown"
+          ]
+        },
+        "name": {
+          "type": "string"
+        },
+        "for": {
+          "type": "string",
+          "description": "the person an agent acted for"
+        },
+        "from": {
+          "enum": [
+            "flag",
+            "environment",
+            "terminal",
+            "migration"
+          ]
+        }
+      }
+    },
+    "dataset_id": {
+      "type": "string"
+    },
+    "promoted_from": {
+      "type": "string",
+      "description": "run_id this was promoted from"
+    },
+    "promoted_at": {
+      "type": "string"
+    },
+    "reason": {
+      "type": "string",
+      "description": "Why this run earned promotion. Required by the runbook, not by the schema."
+    },
+    "scores": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "number"
+      }
+    },
+    "build": {
+      "type": "object"
+    },
+    "goal": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "The goal it is the baseline of; null for the dataset's own (a run with no goal)."
+    },
+    "format": {
+      "type": "string",
+      "description": "The output format the run was asked for, carried from the run (validate V14)."
+    },
+    "reference_tier": {
+      "enum": [
+        "gold",
+        "silver"
+      ],
+      "description": "The tier of references the run was scored against, carried from it (validate V6)."
+    },
+    "adapter": {
+      "type": "string",
+      "description": "The adapter that scored the run, as the run records it (validate V6)."
+    },
+    "fingerprint_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "The run's fingerprint hash: what the number depended on (validate V6)."
+    },
     "repeats": {
       "type": "object",
       "description": "When the promoted run is one of an arm's repeats (--repeat): every repeat's run id and the mean of each score over them, the number the catalog, the inspector and the tests read.",
-      "required": ["runs", "mean_scores"],
+      "required": [
+        "runs",
+        "mean_scores"
+      ],
       "additionalProperties": false,
       "properties": {
-        "runs": {"type": "array", "items": {"type": "string"}, "minItems": 2},
-        "mean_scores": {"type": "object", "additionalProperties": {"type": "number"}}
+        "runs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 2
+        },
+        "mean_scores": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "number"
+          }
+        }
       }
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Its number in the line: the file's name."
+    },
+    "round": {"type": "string", "pattern": "^r[0-9]+$", "description": "The round that promoted this version (RFC-032 step 5): round-close --promote, its goal's round."},
+    "arm": {"type": "string", "description": "The system of that round's arm the promoted run is read in."},
+    "replaces": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "The version current when it was written (none for the first)."
+    },
+    "restores": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "A rollback: the earlier version whose run it restores."
+    },
+    "migrated": {
+      "type": "boolean",
+      "description": "Promoted before 0.8.0: its evidence was not recorded."
+    },
+    "faithfulness": {"type": "object", "description": "A replay's faithfulness when it was promoted (RFC-030): the record, whether it agreed with production, and who promoted it anyway with --unfaithful."},
+    "evidence": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "The comparison that justified it, frozen at promotion: pair-test's answer for its arm against the version it replaced (RFC-027 D3). Null when migrated.",
+      "properties": {
+        "compared_to": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "measure": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "look": {"type": "object", "description": "A look at a test set (RFC-029): its question's key, its number and one-sided level, the set's items digest, the harness version; on a promotion, its verdict and p.", "required": ["key", "number", "level", "set"], "properties": {"key": {"type": "string"}, "number": {"type": "integer", "minimum": 1}, "level": {"type": "number"}, "set": {"type": "string"}, "dataset_id": {"type": "string"}, "harness": {"type": "string"}, "beyond_limit": {"type": "boolean"}, "verdict": {"type": ["string", "null"]}, "p_one_sided": {"type": ["number", "null"]}, "attainable_p": {"type": ["number", "null"]}}},
+        "round": {
+          "type": "string"
+        },
+        "n": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "items_sha256": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "verdict": {
+          "type": [
+            "object",
+            "null"
+          ]
+        },
+        "not_comparable": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "computed_with": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
     }
   }
 }

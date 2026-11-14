@@ -21,7 +21,7 @@ arms' with no setting at all. A credential is where a call is billed, not what w
 measured: `api_key_env` is left out of every identity hash (`identity_params`).
 
 COST. What the provider billed when the response carries it (`usage.cost`), else the
-config's prices (`usd_per_mtok_in` / `usd_per_mtok_out`) times the tokens, else unknown
+system's prices (`usd_per_mtok_in` / `usd_per_mtok_out`) times the tokens, else unknown
 (None), never zero.
 """
 
@@ -107,7 +107,7 @@ _SECRET_NAME = re.compile(
 
 
 def secret_params(params: dict[str, Any]) -> list[str]:
-    """The params that look like a credential written into the config (a literal key), not the
+    """The params that look like a credential written into the system (a literal key), not the
     name of the variable that holds one (`api_key_env`)."""
     return sorted(
         k
@@ -241,7 +241,7 @@ def billed(usage: Any) -> float | None:
 
 
 def price(params: dict[str, Any], tin: int | None, tout: int | None) -> float | None:
-    """Cost from the per-million-token prices a config declares; None when anything is
+    """Cost from the per-million-token prices a system declares; None when anything is
     missing (unpriced, never free). The fallback for a call the provider did not bill."""
     pin, pout = params.get("usd_per_mtok_in"), params.get("usd_per_mtok_out")
     if pin is None or pout is None or tin is None or tout is None:
@@ -378,9 +378,19 @@ def complete(prompt: str, params: dict[str, Any], *, role: str, max_tokens: int)
         raise ValueError(f"role {role!r} is not one of {ROLES}")
     found = problems(params, role)
     if found:
-        raise SystemExit(
+        from evaluation_harness._common import die  # noqa: PLC0415
+
+        die(
             "; ".join(found) + ". Set it in the project's .env or the environment; `evh env-check` "
-            "shows what each role reads."
+            "shows what each role reads.",
+            "not-configured",
         )
     params = {**params, "max_tokens": params.get("max_tokens", max_tokens)}
-    return _SHAPES[SPECS[params["provider"]].shape](prompt, params, route(params, role))
+    from evaluation_harness import _spend  # noqa: PLC0415
+
+    # A second net under the command's own cap (RFC-026 step 5): counted here too, so an adapter that reports less
+    # than its calls cost is stopped at the cap all the same (CostCapExceeded before the call).
+    _spend.net_check()
+    done = _SHAPES[SPECS[params["provider"]].shape](prompt, params, route(params, role))
+    _spend.net(done.cost_usd)
+    return done

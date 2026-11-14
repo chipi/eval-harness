@@ -5,6 +5,119 @@ change the pin, then check what it says can move. **If you copied `harness/` int
 repository** before October 2026, read the rest of this page first: your copy has
 correctness bugs, not just missing features.
 
+## From 0.7.2 to 0.8.0 (unreleased)
+
+- **Before the release**, a pin on a commit of the 0.8.0 branch installs `0.8.0.dev0`, the version every commit of it
+  carries until the release: moving such a pin from one commit to another takes `pip install --force-reinstall`, as
+  pip keeps an installed copy of the same version.
+- **Run `evh migrate` once** (`--dry-run` first shows what each step will do; a second run changes nothing). It
+  brings the data to format 5 and records it in `data/project.yaml` (RFC-032): from 0.8.0 a project's data has a
+  format, `evh migrate --check` compares it with the release's, and a deploy runs that check (the RUNBOOK's "The
+  data's format"). A SQLite project's database is copied beside it first. Commit `data/project.yaml` with the
+  migrated data. Its steps, in order:
+  - *runs* (RFC-024): a run's outputs become one `outputs.jsonl` instead of an `outputs/` folder of `<item>.txt`,
+    a derived run whose outputs are byte copies of its source's keeps none of its own, and the leftover row
+    checkpoint goes. Each run is checked byte for byte before its folder is removed; nothing in a fingerprint
+    moves. Then let git see the new files: a `.gitignore` that re-admits `outputs/**` in a run directory needs
+    `!…/outputs.jsonl` instead (this repository's `harness/.gitignore` shows the pattern). The old layout is not
+    read after the upgrade.
+  - *datasets* (E3): each dataset record's `version` is recomputed from its lineage and a record without a
+    `source` block gets the one its committed profile recorded; `validate` V22 then holds the records to the
+    0.8.0 format. Item ids and hashes do not change, so no run or fingerprint moves.
+  - *records* (RFC-027): each `data/baselines/<dataset>_baseline.json` becomes version 1 of the goal it names
+    (`data/baselines/<goal>/<dataset>/1.json`), or of the dataset's own (`_dataset/`) when it names none, marked
+    "promoted before 0.8.0, evidence not recorded"; every record without an actor gets `before 0.8.0`; a split
+    side's `split.by` becomes `split.split_by`. No fingerprint moves.
+  - *fingerprints* (RFC-021): a run still at version 4 moves to 5 (none left once `fingerprint-migrate` ran on 0.6.0).
+  - *deployments* (RFC-032 step 2, format 2): each model record's `deployments` become
+    `data/deployments/<model>/<deployment>.yaml`, in the order the record listed them, each with its onboarding as
+    its first check; each of the record's `smokes` becomes a check of the deployment its arm's config names (or the
+    model's only deployment). A smoke whose deployment is neither is refused before anything is written, naming the
+    config: set its `deployment:` and migrate again. The model record keeps its comments and loses only those two
+    keys. `evh models` and the catalog's model pages read the same as before.
+  - *systems* (RFC-032 step 3, format 3): each config becomes a system, `<folder>/<system_id>.yaml` (a folder named
+    `configs` becomes `systems`: `data/systems/`, and the folders validate.json's `systems` globs name, which were its
+    `configs` globs; config.yaml's `configs:` folders are added to them), with `system_id` and without `dataset_id`,
+    `goal` or `round`, its comments kept. Configs in one folder whose ids differ only by a dataset token (`_n200`,
+    `_n100`, `_dm200`) and their version, on different datasets and alike in every other key, become one system
+    whose id drops the token and keeps the highest version; any other group is left as it is, and a group on different
+    datasets that differs in another key is refused, naming the key. Every live reference to a renamed id is renamed
+    with it (runs' `config_id`, rounds' carried and retired arms, smoke checks, which name `system:` now, a sealed
+    dataset's unseals, study specs, whose `baseline.config` becomes `baseline.system`, faithfulness records,
+    validate.json); judging sets with their verdicts, and reference manifests, keep the ids they were made with (a
+    judging set's id and a run's reference hash are made of them). `data/renames.json` lists each renamed id; the
+    catalog redirects an old arm page to its new one. Then change your commands: `evh run --system ID --dataset ID
+    [--goal G] [--round R]` (a run names its goal and round now), `evh sweep --systems … --dataset …`, `arm-smoke`,
+    `faithfulness`, `period-compare`, `periods` and `model-onboard` take `--system`/`--dataset`, `deploy-sheet` and
+    `dataset-unseal` take `--system`, `arm-from-capture --like` takes a system id, `make run SYSTEM=… DATASET_ID=…`.
+  - *runs and scores* (RFC-032 step 4, format 4): every pass of a system over a dataset is one run in
+    `data/runs/<run_id>/` (`run.json`, `outputs.jsonl`) and every score of it sits under it, in
+    `scores/<scorer>@<reference>/` (`score.json`, `metrics.json`, `predictions.jsonl`). The folders `runs-linux`,
+    `runs-pair` and `runs-repeats` become a run's `purpose` (`retime`, `pair`, `repeat`, with `machine` and, when
+    there is exactly one other run of the system on the dataset, `of`); `runs-silver`, `runs-adjudicated`,
+    `runs-rescored/<scorer>/<folder>`, `runs-judged/<scorer>` and `runs-labels-*` become scores of the runs they
+    re-scored, each read under the label its folder gave it ("silver", "rescored cd35dc1f", "judged/<scorer>"). A
+    judging pass's `summary.json` moves to `data/judge-summaries/`. A record reads back exactly as its metrics.json
+    did; a re-score by the scorer a run already had, with the same rows, is the same measurement and is kept once. A
+    round's retirement names its runs instead of a folder; validate.json's `committed`, `floors` and
+    `scorer_sources` name arms by label (`runs`, `linux`, `silver`, `judged-<scorer>`), `scorer_sources[].dir`
+    becomes `arms`. A pass in a folder whose purpose is not one of those is refused before anything is written:
+    move it into one, or delete it, and migrate again. `data/renames.json` lists each arm whose id changed, and the
+    catalog redirects its old page. Then: a `.gitignore` that re-admits run files names the new ones (this
+    repository's `harness/.gitignore` shows the pattern), and change your commands: `EVAL_RUNS_DIR` is gone (a
+    throwaway pass is `evh run --scratch`; a re-run is `evh run --purpose repeat|retime|pair [--of RUN_ID]`),
+    `--runs-dir` (pair-test, family-test) and `inspect --from` are `--label`, `round-retire --runs-dir` is `--label`
+    (below), and `rescore`/`judge-score` write under the runs they score (no `--out`; `rescore --label` names what its
+    scores are read as).
+  - *rounds* (RFC-032 step 5, format 5): a round stores its arms, `arms:` in its record, each a system, the label it
+    is read under, the runs it is read through, how and when it entered (`ran` in the round, or `carried` from an
+    earlier one) and its retirement (when, why, who); `carried` and `retired` go. Each round's arms are what it read
+    before: the systems whose plain runs name it and those it carried, less the retired, read under the re-score its
+    `scoring` last wrote; a retirement of a re-timing, a repeat or a pair run is an arm read under that label,
+    retired. A retirement naming some but not all of a system's runs is refused before anything is written. A
+    baseline version a round promoted names the round and the arm. Then: `round-retire` retires an arm whole, every
+    arm of the system in play or the one `--label` names (`--runs` is gone), `evh round-carry` carries an arm of an
+    earlier round into the open one, and `evh rounds --json` gives a round's `arms`. A run made with `--round` joins
+    its system's arm, so the round's file changes with every run: commit it with the runs.
+
+  `run-migrate`, `dataset-migrate` and `baselines-migrate` (built during 0.8.0, never released) and
+  `fingerprint-migrate` (0.6.0 to 0.7.2) are this one command now. Moving the data into SQLite is
+  `data-migrate`, not a format step.
+- **Three new dependencies** install with the package: `ruamel.yaml` (a setting saved keeps its comments),
+  `pyarrow` (tables and Hugging Face parquet) and `huggingface_hub` (Hub datasets in and out). `pip install` of the
+  new pin brings them; nothing to enable.
+- **Every `evh` command keeps the paired tests' p's** in `<project>/.cache/evh-p.jsonl`, as `evh mcp` already did:
+  keep `.cache/` ignored (`evh init`'s `.gitignore` does). `EVH_P_CACHE=` (empty) turns it off; set it to another
+  file to keep them elsewhere.
+- **Scripts reading a paired test's JSON:** from 10,000 items (or clusters) its p is the normal limit (ADR-0028):
+  `pair-test`'s `method` is `"normal limit"` (was `"sampled"`) and `permutations` is `null`; `family-test`'s
+  `method` can be `"normal limit"` or `"mixed"` and its rows have a `p_method`. Such a p can be `0.0`. Below 10,000
+  every p is what it was.
+- **A project's data can live in SQLite** (RFC-025), if you want it: nothing changes unless `config.yaml` says
+  `store: sqlite` (or `EVAL_STORE=sqlite`). Then `evh data-migrate --to sqlite` moves everything under `data/` into
+  `data/project.sqlite`; `--to files` moves it back. Python under `data/` moves out first (it is never in the
+  database).
+- **A goal's recommendation can move.** Contenders are now the arms shown no worse than the leader by more than
+  the margin (ADR-0026), and the default margins are 5% (`balanced`) and 10% (`frugal`) of the leader. Read
+  `evh goals --goal G` after upgrading. A goal that wants its old breadth back sets `axes.quality.margin` in the
+  measure's units; one on fewer than 100 items with a continuous measure now recommends its leader and says
+  "too few items to call a tie". `evh validate` notes every goal on a default margin. No run, score or
+  fingerprint changes.
+- **A run with one failing item now finishes** and scores that item 0 (`failed_items` in metrics.json, `failed`
+  on its row): a script that expected the run to stop reads those instead. A provider error that outlasts its
+  retries exits `75`.
+- **Scripts and CI that branch on exit codes:** the cost cap is `4` (was `2`), nothing measured `7` (was `1`), an
+  unreachable server `75` (was `1`), and a check that found problems `6` (was `1`) for `validate`, `self-test`,
+  `env-check`, `importer-check`, `arm-smoke`, `model-onboard` and `deploy-sheet --capture`; a partly failed
+  `sweep` is `5`. A check for "non-zero" needs no change. The table: RUNBOOK, Exit codes.
+- **Who acted** (RFC-027), after `evh migrate`'s records step: a
+  promotion, `round-close` and `dataset-unseal` need a named actor off a terminal (`--by person:NAME`, or
+  `EVH_ACTOR`; an agent `EVH_ACTOR=agent:NAME` with `EVH_FOR=person:NAME`); `runs-list --baselines` is now
+  `evh baselines`; `dataset-split --by hash|time` is `--split-by`.
+- **Scripts matching a refusal's text:** the line is `ERROR (<kind>): <why>` (was `ERROR: <why>`). Match the
+  kind (RUNBOOK, Refusals), not the wording. A project's `AGENTS.md` written by `evh init` before 0.8.0 lacks
+  the "When a command stops" section; copy it from a new `evh init` if your agents read the file.
+
 ## From 0.7.1 to 0.7.2
 
 Change the pin to `@v0.7.2`. Nothing to migrate and no result moves. A deployment that serves `evh mcp --public
@@ -70,8 +183,8 @@ Change the pin to `@v0.6.0`. Two formats change, and both are migrated by a scri
 - **Fingerprints are version 5** (RFC-021): `instrument`, `data`, `deployment`, `settings`, each hashed, and the
   machine `evh` ran on as `runner`, outside the hash. A run made with 0.6.0 compares with a v4 run on no hash. Move
   your committed runs once, from your project's root:
-  `evh fingerprint-migrate` (`--dry-run` counts first; it is idempotent and prints its counts; a
-  baseline's `fingerprint_hash` follows its run). Code that read `fingerprint.host` reads `fingerprint.runner`;
+  `fingerprint-migrate` in 0.6.0 to 0.7.2, the fingerprints step of `evh migrate` from 0.8.0 (`--dry-run`
+  counts first; it is idempotent and prints its counts; a baseline's `fingerprint_hash` follows its run). Code that read `fingerprint.host` reads `fingerprint.runner`;
   `fingerprint.system_under_test.model` is `fingerprint.deployment` (an adapter's `fingerprint(params)` hook keeps
   its vocabulary; what it declares about the prompt is now `settings.declared`).
 - **`data/models.yaml` is replaced by `data/models/<model_id>.yaml`** (RFC-020): one record per model, its key in
@@ -236,8 +349,8 @@ so check these before you trust a `validate`:
   each is what the tutorial's scorer uses).
 - **`--resume`** takes a run made by 0.4.0 (rows with `_extra`); `--resume-unverified` is
   gone.
-- **`evh judge`** is the judge panel (it sat beside the package and could not run from a pin);
-  the tutorial kit ships `tutorial/judge_panel.yaml`.
+- **The judge panel** is a command (it sat beside the package and could not run from a pin; removed in 0.8.0,
+  RFC-032 step 7); the tutorial kit shipped its config.
 - **Your adapter**: put it at the project root as `adapter.py` and an arm with no `adapter:`
   uses it. Code that imported `catalog_adapter.load_adapter` imports `load_catalog_adapter`;
   a script that relied on importing the package to read `.env` loads it itself

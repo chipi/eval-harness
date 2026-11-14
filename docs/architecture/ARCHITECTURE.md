@@ -11,7 +11,7 @@ and the key decisions, a few lines each, in the [ADRs](../adr/index.md).
 
 The harness is a Python package, `evaluation-harness`, with one command, `evh` (in a checkout,
 the same scripts run through `make`). It holds **code and schemas only**. A project's data, its
-datasets, configs, runs, references and goals, lives in the project and is found through
+datasets, systems, runs, references and goals, lives in the project and is found through
 `EVAL_HOME` and `EVAL_DATA_DIR`, so an upgrade changes code and never touches results.
 
 This repository is the package plus six worked evals run with it, the public site that
@@ -24,13 +24,13 @@ Each layer freezes what it produces, so the next one can be redone without redoi
 | layer | what it records | commands | what it refuses |
 |---|---|---|---|
 | **1. Data** | a dataset: every item and the sha256 of its bytes, from a file or a pinned URL, and the typed fields a project declares for it | `dataset-create`, `dataset-materialize` | a working copy whose bytes differ from the frozen hashes; a field nobody declared |
-| **2. Arms and runs** | a config per arm; per run its outputs, scores, cost, latency and a fingerprint of the system, the instrument and the data | `evh run`, `sweep`, `import-run` | a run missing any of the three inputs; an unknown goal |
+| **2. Arms and runs** | a system per arm; per run its outputs, scores, cost, latency and a fingerprint of the system, the instrument and the data | `evh run`, `sweep`, `import-run` | a run missing any of the three inputs; an unknown goal |
 | **3. Scoring** | scores are arithmetic over stored outputs, so they can be redone | `rescore` ($0), `judge-score` (billed, optional) | an `--out` that is a directory it reads runs from; a judge that is not validated |
 | **4. Decisions** | paired tests, rankings, baselines with a reason | `pair-test`, `family-test`, `leaderboard`, `run-promote` | comparing runs on two different `dataset_id`s |
-| **5. Goals** | what an evaluation is for and the measure that decides | `goal:` on configs, validate V14 | a config or run naming a goal that does not exist |
+| **5. Goals** | what an evaluation is for and the measure that decides | `goal:` on systems, validate V14 | a system or run naming a goal that does not exist |
 | **6. Looking** | the catalog (static pages), the run inspector (a local server), and the same read commands as MCP tools for an agent | `catalog`, `catalog-serve`, `mcp` | item text in the static pages or a public server's answers; mixed datasets in one comparison |
 
-Under all of them, `validate` (V1–V20) checks the tree in CI and exits non-zero, and
+Under all of them, `validate` (V1–V23) checks the tree in CI and exits non-zero, and
 `self-test` checks the harness itself. The tests that run `evh` install the package from its
 real wheel, the GUIDE is run in a fresh project on every change (`guide-check`), and the
 catalog and the inspector are driven in headless Chromium (`browser-check`).

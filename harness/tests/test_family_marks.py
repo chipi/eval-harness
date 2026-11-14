@@ -22,28 +22,27 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the ev
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from evaluation_harness._check import check, summary  # noqa: E402
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runfix  # noqa: E402
+import _runstore  # noqa: E402
+
 proj = Path(tempfile.mkdtemp(prefix="evh-family-"))
-env = {k: v for k, v in os.environ.items() if not k.startswith("EVAL_")}
+env = {k: v for k, v in os.environ.items() if not k.startswith("EVAL_") or k == "EVAL_STORE"}
 env.update(EVAL_HOME=str(proj))
 
 
 def run(config, items):
-    d = proj / "data" / "runs" / f"{config}_1"
-    d.mkdir(parents=True)
     rng = random.Random(config)
-    (d / "metrics.json").write_text(
-        json.dumps(
-            {
-                "run_id": d.name,
-                "dataset_id": "ds",
-                "config_id": config,
-                "primary_metric": "acc",
-                "scores": {"acc": 0.5},
-            }
-        )
-    )
-    (d / "predictions.jsonl").write_text(
-        "".join(json.dumps({"item_id": f"i{i:03d}", "acc": rng.random()}) + "\n" for i in range(items))
+    _runfix.put_run(
+        proj / "data",
+        {
+            "run_id": f"{config}_1",
+            "dataset_id": "ds",
+            "config_id": config,
+            "primary_metric": "acc",
+            "scores": {"acc": 0.5},
+        },
+        "".join(json.dumps({"item_id": f"i{i:03d}", "acc": rng.random()}) + "\n" for i in range(items)),
     )
 
 
@@ -102,22 +101,19 @@ try:
         got == "lower" and "disagree on which way acc" in err.getvalue(),
         err.getvalue(),
     )
-    d = proj / "data" / "runs" / "arm_b_1"
-    d.mkdir(parents=True)
-    (d / "metrics.json").write_text(
-        json.dumps(
-            {
-                "run_id": "arm_b_1",
-                "dataset_id": "ds",
-                "config_id": "arm_b",
-                "primary_metric": "f1",
-                "scores": {"f1": 0.5},
-            }
-        )
+    _runfix.put_run(
+        proj / "data",
+        {
+            "run_id": "arm_b_1",
+            "dataset_id": "ds",
+            "config_id": "arm_b",
+            "primary_metric": "f1",
+            "scores": {"f1": 0.5},
+        },
     )
     err = io.StringIO()
-    with contextlib.redirect_stderr(err):
-        _runs.default_metric("ds", runs_dir=proj / "data" / "runs")
+    with contextlib.redirect_stderr(err), _runstore._InProject(proj):
+        _runs.default_metric("ds")
     check(
         "runs that declare different primary metrics are named",
         "different primary metrics" in err.getvalue(),

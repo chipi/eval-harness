@@ -1,6 +1,0 @@
-```json
-[
-  {"text": "Territory of Hawaiʻi", "type": "location"},
-  {"text": "Delegate to Congress", "type": "organization"}
-]
-```

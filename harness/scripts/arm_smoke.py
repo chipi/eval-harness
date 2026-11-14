@@ -1,18 +1,19 @@
 #!/usr/bin/env python3
-"""Smoke an arm before its full run (RFC-020): a few items, the way evh run would run them.
+"""Smoke a system on a dataset before its full run (RFC-020): a few items, the way evh run would run them.
 
-    evh arm-smoke --config configs/<arm>.yaml [--items 3] [--replies] [--json]
+    evh arm-smoke --system <id> --dataset <id> [--items 3] [--replies] [--json]
 
 Writes no run. For any arm (an LLM, an ML model, a baseline) it checks, from what every run already
 produces: that each item runs and its output is valid for the scorer; the time per item and a projection
 of the full run; that the build is pinned; whether the same item twice gives the same output; and the
-cost (what it spent, and whether that is the provider's bill or the config's price table), and each item's
+cost (what it spent, and whether that is the provider's bill or the system's price table), and each item's
 reply (its first 300 characters, all with --replies). For an arm that calls an LLM it reads each call (a built-in provider's `_meta`, or the calls an
 adapter reports as `meta["calls"]`) and flags reasoning, slow calls, long replies, cut-off replies and
 calls with no answer. An ML adapter's facts (`meta`: device, precision, load time) are printed beside.
 
-SMOKE PASS (exit 0) or SMOKE CHECK with the flags (exit 1). When the config names a model record
-(`model_record:`), the report is written into the record's `smokes` under the config's id. With
+SMOKE PASS (exit 0) or SMOKE CHECK with the flags (exit 6). When the system names a model record
+(`model_record:`), the report is kept as a check of the deployment it ran on (RFC-032): the one the system names
+(`deployment:`), or the model's only one; with several and none named it is not recorded, and says so. With
 `deployment:` the build is checked against that deployment, and a hosted deployment's pinned route
 (`provider_routing`) against the upstream provider each call reports.
 """
@@ -29,12 +30,11 @@ import argparse
 import statistics
 import sys
 import time
-from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _jsonout, _models
+from evaluation_harness import _common, _jsonout, _models, _store
 from evaluation_harness._adapter import load_adapter, score_wants_source
-from evaluation_harness._common import DATA, MATERIALIZED, die, load_dataset, now
+from evaluation_harness._common import DATA, EXIT_PROBLEMS, MATERIALIZED, die, evh_prog, load_dataset, now
 
 #: A reply is long when it is this many times the arm's median reply (RFC-020: "far longer than the arm's
 #: normal ones"), over at least LONG_FLOOR tokens, among at least LONG_MIN_CALLS calls. A fixed count was a
@@ -172,7 +172,7 @@ def spend_line(spent: float, billed: float, calls: int, unpriced: int) -> str:
     if unpriced == calls:
         return (
             "spent: unknown (the adapter reported no cost: no bill from the provider and no "
-            "usd_per_mtok_in / usd_per_mtok_out in the config)"
+            "usd_per_mtok_in / usd_per_mtok_out in the system)"
         )
     base = f"spent ${spent:.6f} on {calls} call(s)"
     if spent <= 0:
@@ -197,9 +197,14 @@ def projection(items: list[dict[str, Any]], n_items: int) -> dict[str, Any]:
 
 
 def main() -> int:
-    """Smoke one arm; exit 0 on SMOKE PASS, 1 on SMOKE CHECK."""
-    ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    ap.add_argument("--config", type=Path, required=True)
+    """Smoke one arm; exit 0 on SMOKE PASS, 6 (EXIT_PROBLEMS) on SMOKE CHECK."""
+    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.split("\n\n")[0])
+    ap.add_argument("--system", required=True, help="the system to smoke: its id (evh system-list)")
+    ap.add_argument("--dataset", required=True, help="the dataset whose first items it runs")
+    ap.add_argument("--goal", help="the goal its full run is for")
+    ap.add_argument(
+        "--round", help="the round its full run is in: the smoke spends on the round (needs --goal)"
+    )
     ap.add_argument("--items", type=int, default=3, help="how many of the dataset's first items (default 3)")
     ap.add_argument("--no-record", action="store_true", help="do not write the report into the model record")
     ap.add_argument(
@@ -213,23 +218,33 @@ def main() -> int:
         help="one JSON object on stdout when done (the text goes to stderr): result.values has status, flags, "
         "spent_usd, cost_basis (bill, price, mixed or none), calls, projection and items (with each reply)",
     )
+    from evaluation_harness._actor import add_by  # noqa: PLC0415
+
+    add_by(ap)
     args = ap.parse_args()
     with _jsonout.collect("arm-smoke", args.json, live=sys.stderr):
         return _smoke(args)
 
 
 def _smoke(args: argparse.Namespace) -> int:
-    if not args.config.is_file():
-        die(f"no config at {args.config}")
-    import yaml  # noqa: PLC0415
+    from evaluation_harness.model.systems import arm_of  # noqa: PLC0415
 
-    cfg = yaml.safe_load(args.config.read_text(encoding="utf-8")) or {}
+    cfg, args.config = arm_of(args.system, args.dataset, args.goal, args.round)
     try:
         cfg = _models.resolve(cfg, DATA)
     except ValueError as exc:
-        die(f"{args.config}: {exc}")
+        die(f"{args.config}: {exc}", "invalid-file")
     call_system, score, *_ = load_adapter(cfg.get("adapter"), args.config)
     ds = load_dataset(cfg["dataset_id"])
+    from evaluation_harness import _seal  # noqa: PLC0415
+
+    _seal.refuse_if_sealed(cfg["dataset_id"], "a smoke test", cfg.get("config_id"))
+    from evaluation_harness import _rounds, _spend  # noqa: PLC0415
+
+    # A smoke of a round's arm spends on the round (RFC-026 step 5): its budget's share reserved before the first call.
+    rnd = _rounds.find(cfg["goal"], cfg["round"]) if cfg.get("round") and cfg.get("goal") else None
+    if rnd is not None and rnd.get("status") != "closed":
+        _spend.reserve(rnd, "arm-smoke")
     mat = MATERIALIZED / ds["dataset_id"]
     params = dict(cfg.get("params") or {})
     rec = _models.find(DATA, cfg["model_record"]) if cfg.get("model_record") else None
@@ -276,18 +291,29 @@ def _smoke(args: argparse.Namespace) -> int:
             unpriced += 1
             return
         spent += cost
+        _spend.add(cost)
         bill = bill_of(res)
         billed += min(bill, cost) if bill is not None else 0.0
 
+    capped = None
     for n, item in enumerate(ds["items"][: args.items]):
-        text = (mat / (item.get("source_path") or item["item_id"])).read_text(
-            encoding="utf-8", errors="replace"
+        text = _store.read_text(
+            mat / (item.get("source_path") or item["item_id"]), encoding="utf-8", errors="replace"
         )
         row: dict[str, Any] = {"item": item["item_id"]}
+        left = _spend.left()
+        if (
+            left is not None and left <= 0
+        ):  # the cap (EVAL_MAX_COST_USD, or the round's share): no further call
+            capped = item["item_id"]
+            break
         t0 = time.perf_counter()
         try:
             res = call_system(text, params)
             wall = time.perf_counter() - t0
+        except _common.CostCapExceeded:  # the provider layer's own count reached the cap
+            capped = item["item_id"]
+            break
         except Exception as exc:  # noqa: BLE001  (a smoke reports a failure, it does not stop on it)
             row.update(s=round(time.perf_counter() - t0, 2), error=f"{type(exc).__name__}: {exc}")
             items.append(row)
@@ -299,8 +325,8 @@ def _smoke(args: argparse.Namespace) -> int:
         row["output_chars"] = len(res.output or "")
         row["cost_usd"] = getattr(res, "cost_usd", None)
         ref = None
-        if ref_dir is not None and (ref_dir / f"{item['item_id']}.txt").is_file():
-            ref = (ref_dir / f"{item['item_id']}.txt").read_text(encoding="utf-8", errors="replace")
+        if ref_dir is not None and _store.is_file(ref_dir / f"{item['item_id']}.txt"):
+            ref = _store.read_text(ref_dir / f"{item['item_id']}.txt", encoding="utf-8", errors="replace")
         try:
             scored = score(res.output, ref, text) if score_wants_source(score) else score(res.output, ref)
             row["scored"] = bool(scored)
@@ -311,7 +337,10 @@ def _smoke(args: argparse.Namespace) -> int:
         facts = {k: v for k, v in (getattr(res, "meta", None) or {}).items() if k in ML_FACTS}
         if n == 0:
             first_output = res.output
+            left = _spend.left()
             try:
+                if left is not None and left <= 0:
+                    raise _common.CostCapExceeded("the cap is reached: item 1 is not called twice")
                 again = call_system(text, params)
                 pay(again)
                 row["deterministic"] = again.output == res.output
@@ -343,6 +372,11 @@ def _smoke(args: argparse.Namespace) -> int:
     flags, accepted = _models.split_accepted(
         rec, flags_for(items, calls, params_for_flags), cfg.get("deployment")
     )
+    if capped:
+        print(
+            f"  COST CAP: stopped before item {capped} (${_spend.spent():.4f} spent of ${_spend.cap() or 0:.4f})"
+        )
+        flags.append(f"cost: stopped at the cap before item {capped}; the smoke saw {len(items)} item(s)")
     status = "pass" if not flags else "check"
     basis = "none" if spent <= 0 else "bill" if billed >= spent else "price" if billed <= 0 else "mixed"
     cost = {"spent_usd": round(spent, 8), "cost_basis": basis, "calls": n_calls, "calls_unpriced": unpriced}
@@ -363,13 +397,24 @@ def _smoke(args: argparse.Namespace) -> int:
         }
         if accepted:
             smoke["accepted"] = accepted
-        _models.update_record(
-            DATA,
-            cfg["model_record"],
-            lambda doc: doc.setdefault("smokes", {}).__setitem__(cfg["config_id"], smoke),
-        )
-        path = _models.records_dir(DATA) / f"{cfg['model_record']}.yaml"
-        print(f"  written into {path.relative_to(DATA.parent) if DATA.parent in path.parents else path}")
+        # A smoke is a check of the deployment the arm runs on (RFC-032): the one its system names, or the model's
+        # only one; with neither it is not recorded rather than put on a deployment it may not have run on.
+        deps = rec.get("deployments") or []
+        dep_id = cfg.get("deployment") or (deps[0]["id"] if len(deps) == 1 else None)
+        if dep_id:
+            _models.add_check(
+                DATA,
+                cfg["model_record"],
+                dep_id,
+                {"kind": "smoke", "system": cfg["config_id"], "dataset": cfg["dataset_id"], **smoke},
+            )
+            path = _models.deployments_dir(DATA, cfg["model_record"]) / f"{dep_id}.yaml"
+            print(f"  written into {path.relative_to(DATA.parent) if DATA.parent in path.parents else path}")
+        else:
+            print(
+                f"  not recorded: {cfg['model_record']} has {len(deps)} deployment(s) and the system names none "
+                "(deployment: <id> in the system records it on that deployment)"
+            )
     _jsonout.values(
         {
             "status": status,
@@ -387,7 +432,7 @@ def _smoke(args: argparse.Namespace) -> int:
             ],
         }
     )
-    return 0 if not flags else 1
+    return 0 if not flags else EXIT_PROBLEMS
 
 
 if __name__ == "__main__":

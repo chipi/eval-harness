@@ -26,7 +26,7 @@
 > `bart_l_xsum`) reproduce the recorded outputs on torch 2.2.2, the original Mac's torch;
 > `bart_s`'s is fp16 and does not run there.
 
-`cnn_bart_m_n200_v1`, `cnn_bart_s_n200_v1` and `cnn_bart_l_xsum_n200_v1` cannot run on
+`cnn_bart_m_v1`, `cnn_bart_s_v1` and `cnn_bart_l_xsum_v1` cannot run on
 x86_64 macOS. Everything else in this example can, and already has. This document is how
 to produce those three runs somewhere else and bring them back so they join the same
 leaderboard as the other 26 arms.
@@ -114,12 +114,12 @@ whatever you just downloaded, which destroys the check you just ran.
 PY=../examples/summarization-cnn-dailymail/.venv/bin/python
 for c in bart_m bart_s bart_l_xsum; do
   $PY -u scripts/run.py \
-     --config ../examples/summarization-cnn-dailymail/configs/arm_${c}_n200.yaml
+     --system cnn_${c}_v1 --dataset cnn_dailymail_200 --goal news_summary_cnn
 done
 ```
 
 Dry-run one first if you want the shape without the wait:
-`$PY scripts/run.py --config .../arm_bart_m_n200.yaml --dry-run`
+`$PY scripts/run.py --system cnn_bart_m_v1 --dataset cnn_dailymail_200 --dry-run`
 
 **Commit before you run**, or every run records `harness.dirty: true` and cannot be
 reproduced from its own fingerprint. The runner warns when the tree is dirty; the warning
@@ -163,7 +163,7 @@ Unpack into `harness/data/runs/` on the other side. Each directory carries its o
 
 ```bash
 make leaderboard DATASET_ID=cnn_dailymail_200
-make family-test DATASET_ID=cnn_dailymail_200 A=cnn_bart_l_n200_v1 AGAINST=_n200_v1
+make family-test DATASET_ID=cnn_dailymail_200 A=cnn_bart_l_v1 AGAINST=cnn_
 ```
 
 Three things are worth looking at before any ranking:
@@ -173,7 +173,7 @@ Three things are worth looking at before any ranking:
    tokenisation and is a bug, not a finding.
 2. **`bart_s`'s `weight_files` sizes** in `metrics.json`. Its checkpoint is 460MB against
    `bart_m`'s 1.22GB, which the layer counts do not fully explain — it is stored at half
-   precision (the note at the top of this page; `arm_bart_s_n200.yaml` records it too).
+   precision (the note at the top of this page; `systems/cnn_bart_s_v1.yaml` records it too).
 3. **`bart_l_xsum`'s `summary_words` and `length_vs_reference`.** It is decoded at
    `max_length: 62` because that is what XSum trained it to produce. If it scores badly on
    `coverage`, length is at least as plausible an explanation as training distribution, and
@@ -184,7 +184,7 @@ Three things are worth looking at before any ranking:
 Re-run `bart_l` there too:
 
 ```bash
-$PY scripts/run.py --config ../examples/summarization-cnn-dailymail/configs/arm_bart_l_n200.yaml
+$PY scripts/run.py --system cnn_bart_l_v1 --dataset cnn_dailymail_200 --goal news_summary_cnn
 ```
 
 Its numbers are already known from the Intel Mac (`coverage` 0.346121, `grounding`

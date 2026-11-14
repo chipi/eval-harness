@@ -5,9 +5,12 @@
 python tests/test_triage_results_doc.py
 """
 
+import os
 import subprocess
 import sys
 from pathlib import Path
+
+os.environ["EVAL_STORE"] = "files"  # reads this repository's committed data, which is files
 
 HERE = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(HERE))

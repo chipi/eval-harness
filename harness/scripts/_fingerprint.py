@@ -51,6 +51,7 @@ import subprocess
 from pathlib import Path
 from typing import Any, Callable
 
+from evaluation_harness import _store
 from evaluation_harness._providers import PROVIDERS, identity_params
 
 VERSION = 5
@@ -103,38 +104,69 @@ def _installed_versions() -> dict[str, str]:
     return out
 
 
-def _git(root: Path, *args: str) -> str | None:
-    """A git command's stdout, or None when git/repo is absent. Never raises."""
+def _git(root: Path, *args: str, strip: bool = True) -> str | None:
+    """A git command's stdout, or None when git/repo is absent. Never raises. `strip=False` for `status
+    --porcelain`, whose first line starts with a space that is part of its two-letter status: stripped, its path
+    lost a letter (" M app.py" read as "pp.py")."""
     try:
         r = subprocess.run(["git", *args], cwd=root, capture_output=True, text=True, timeout=10)
     except (OSError, subprocess.SubprocessError):
         return None
-    return r.stdout.strip() if r.returncode == 0 else None
+    if r.returncode != 0:
+        return None
+    return r.stdout.strip() if strip else r.stdout
+
+
+CODE_KEYS = ("repo", "commit", "dirty", "path")
+
+
+def _strip_credentials(url: str | None) -> str | None:
+    """A remote's address without a user or token in it (https://user:token@host/... -> https://host/...)."""
+    import re  # noqa: PLC0415
+
+    return re.sub(r"^([a-z+]+://)[^/@]+@", r"\1", url) if url else url
+
+
+def code_ref_of(path: Path) -> dict[str, Any]:
+    """The code a system runs (RFC-028), read from its checkout: its remote (no credentials), commit, the files that
+    differ from it, and the path (provenance, outside the hash)."""
+    status = _git(path, "status", "--porcelain", strip=False)
+    return {
+        "repo": _strip_credentials(_git(path, "remote", "get-url", "origin")),
+        "commit": _git(path, "rev-parse", "HEAD"),
+        "dirty": sorted(line[3:].strip() for line in (status or "").splitlines())
+        if status is not None
+        else None,
+        "path": str(path),
+    }
 
 
 def filter_dirt(status: str, data_rel: str | None) -> list:
     """`git status --porcelain` lines that make a tree dirty, minus untracked run output.
 
     EVERY RUN AFTER THE FIRST WAS RECORDED DIRTY. A finished run directory under
-    `data/runs*/` is an untracked file until someone commits it, and any untracked file
+    `data/runs/` is an untracked file until someone commits it, and any untracked file
     used to count -- so the second run on a machine always said `dirty: true` about code
     byte-identical to the recorded commit, and "commit before you run" really meant
     "commit after every run". All six local ML arms of 2026-09-30 needed
-    `EVAL_RUNS_DIR` pointed outside the tree to get an honest flag.
+    their runs written outside the tree to get an honest flag.
 
-    Run output is not code. An UNTRACKED path under `<data_rel>runs*` is ignored;
-    anything else still counts -- a modified tracked file anywhere (a committed run
-    included), and untracked files outside the runs directories, which could be code.
+    Run output is not code. An UNTRACKED path under `<data_rel>runs/` is ignored, and under
+    `<data_rel>judge-summaries/` (a judging pass's summary) and `<data_rel>prompts/` (the prompt versions runs
+    record, RFC-028); and a round's record under `<data_rel>rounds/`, new or changed: a run made in a round joins its
+    arm there (RFC-032 step 5), so the round file changes with every run of it, and it says which arms a round
+    holds, not how anything is measured. Anything else still counts -- a modified tracked file anywhere else (a
+    committed run included), and untracked files outside those, which could be code. A throwaway pass
+    (`evh run --scratch`) is under `.build/`, which git ignores.
     Pure, so the rule is tested without a git tree.
     """
     dirt = []
     for line in (status or "").splitlines():
         path = line[3:].strip().strip('"')
-        if (
-            line.startswith("?? ")
-            and data_rel
-            and path.startswith(data_rel)
-            and path[len(data_rel) :].startswith("runs")
+        under = path[len(data_rel) :] if data_rel and path.startswith(data_rel) else None
+        if under is not None and (
+            under.startswith("rounds/")
+            or (line.startswith("?? ") and under.startswith(("runs/", "judge-summaries/", "prompts/")))
         ):
             continue
         dirt.append(line)
@@ -145,7 +177,7 @@ def tree_dirt(root: Path, data_dir: Path | None = None) -> list | None:
     """The lines that make `root`'s git tree dirty, or None when git cannot say. Untracked
     run output under `data_dir` (the project's data root, `EVAL_DATA_DIR`; default
     `<root>/data`) does not count."""
-    status = _git(root, "status", "--porcelain")
+    status = _git(root, "status", "--porcelain", strip=False)
     if status is None:
         return None
     top = _git(root, "rev-parse", "--show-toplevel")
@@ -194,10 +226,10 @@ def measuring_modules(here: Path | None = None, producers: tuple[str, ...] = _PR
     while todo:
         name = todo.pop()
         p = here / name
-        if name in seen or not p.is_file():
+        if name in seen or not _store.is_file(p):
             continue
         seen.add(name)
-        for node in ast.walk(ast.parse(p.read_text(encoding="utf-8"))):
+        for node in ast.walk(ast.parse(_store.read_text(p, encoding="utf-8"))):
             # The package's own modules, as they import each other: `from evaluation_harness._x
             # import ...`, `from evaluation_harness import x`, `import evaluation_harness.x`.
             mods = []
@@ -207,7 +239,7 @@ def measuring_modules(here: Path | None = None, producers: tuple[str, ...] = _PR
                 mods = [a.name for a in node.names]
             elif isinstance(node, ast.ImportFrom) and (node.module or "").startswith(_PACKAGE + "."):
                 mods = [(node.module or "").split(".")[1]]
-            todo += [f"{m}.py" for m in mods if (here / f"{m}.py").is_file()]
+            todo += [f"{m}.py" for m in mods if _store.is_file(here / f"{m}.py")]
     return sorted(here / n for n in seen)
 
 
@@ -249,7 +281,7 @@ def _harness_identity(root: Path, data_dir: Path | None = None) -> dict[str, Any
         "dirty": bool(dirt) if dirt is not None else None,
         "version": __version__,
         "code_sha256": harness_code_sha256(),
-        "installed": not (here.parent / "Makefile").is_file(),
+        "installed": not _store.is_file(here.parent / "Makefile"),
     }
 
 
@@ -257,7 +289,7 @@ def sha256_file(path: Path) -> str | None:
     """Content hash of one file, or None if unreadable."""
     try:
         h = hashlib.sha256()
-        with path.open("rb") as fh:
+        with _store.open_file(path, "rb") as fh:
             for chunk in iter(lambda: fh.read(1 << 20), b""):
                 h.update(chunk)
         return h.hexdigest()
@@ -578,6 +610,9 @@ def hashed_view(part: str, value: Any) -> Any:
     `code_sha256` and the adapter's `sha256`. The commit, a dirty tree, the version string, an installed
     copy and the adapter's path are provenance, recorded beside it: two runs of the same code made on
     different days are the same instrument. Every other part is hashed whole."""
+    if part == "deployment" and isinstance(value, dict) and isinstance(value.get("code"), dict):
+        # The system's code is its repository, commit and changes; where its checkout sits is provenance (RFC-028).
+        return {**value, "code": {k: v for k, v in value["code"].items() if k != "path"}}
     if part != "instrument" or not isinstance(value, dict):
         return value
     harness = value.get("harness") or {}
@@ -616,11 +651,15 @@ def build_fingerprint(
     data_dir: Path | None = None,
     adapter_sha256: str | None = None,
     cfg: dict[str, Any] | None = None,
+    prompt_settings: dict[str, Any] | None = None,
+    replay: Any = None,
 ) -> dict[str, Any]:
     """The full fingerprint, with a sha256 per hashed part and one hash over the four. `data_dir` is
     the project's data root (`_common.DATA`, which honours EVAL_DATA_DIR); it defaults to
-    `<root>/data`. `cfg` is the arm's resolved config: the model record and deployment it names
-    (`model_record`, `deployment`) are where the deployment comes from, best first.
+    `<root>/data`. `cfg` is the arm's resolved system: the model record and deployment it names
+    (`model_record`, `deployment`) are where the deployment comes from, best first. `replay` is a replay's plan
+    (RFC-030): its code record and commits are `deployment.code`, its settings `settings.replay`, and the adapter's
+    hash covers its support modules.
 
     The hash is the point: comparing two runs field by field is work nobody does, and a
     single differing hash answers "did anything else move?" at a glance. If it matches,
@@ -668,7 +707,37 @@ def build_fingerprint(
         "arm": {"config_id": config_id, "labels": labels_of(params) or None},
     }
     split_declared(fp["deployment"], fp["settings"])
+    if prompt_settings:  # the system's declared prompts (RFC-028): only when declared, so no other run moves
+        fp["settings"].update(prompt_settings)
+    code = code_of(cfg, fp["deployment"], root)
+    if replay is not None:
+        from evaluation_harness import _replay  # noqa: PLC0415
+
+        code = _replay.code_part(replay)
+        fp["settings"]["replay"] = replay.settings
+        fp["instrument"]["adapter"] = _replay.adapter_identity(adapter_id, adapter_path, replay)
+    if code is not None:
+        fp["deployment"]["code"] = code
     return seal(fp)
+
+
+def code_of(cfg: dict[str, Any] | None, deployment: dict[str, Any], root: Path) -> dict[str, Any] | None:
+    """`deployment.code` (RFC-028): the system's `code: {path}` read from the checkout, else the adapter hook's
+    `code_ref` (taken out of `declared`); the system's wins, and a hook's that differs is kept as `hook_code_ref`."""
+    declared = deployment.get("declared") or {}
+    hook = declared.pop("code_ref", None) if isinstance(declared, dict) else None
+    if isinstance(declared, dict):
+        deployment["declared"] = declared or None
+    spec = (cfg or {}).get("code")
+    if isinstance(spec, dict) and spec.get("path"):
+        p = Path(str(spec["path"]))
+        found = code_ref_of(p if p.is_absolute() else root / p)
+        if isinstance(hook, dict) and hook.get("commit") not in (None, found.get("commit")):
+            found["hook_code_ref"] = {k: hook.get(k) for k in CODE_KEYS}
+        return found
+    if isinstance(hook, dict):
+        return {k: hook.get(k) for k in CODE_KEYS}
+    return None
 
 
 #: The manifest fields a reference's identity depends on: who (or what) authored its texts.
@@ -692,7 +761,7 @@ def references_digest(root: Path, reference_id: str | None, data_dir: Path | Non
         if reference_id.startswith("labels/")
         else base / "references" / reference_id
     )
-    if not ref_dir.is_dir():
+    if not _store.is_dir(ref_dir):
         return None
     # EVERY FILE, not just *.txt. A silver reference directory also carries
     # manifest.json, which records WHICH MODEL authored those references and whether
@@ -706,8 +775,8 @@ def references_digest(root: Path, reference_id: str | None, data_dir: Path | Non
     # count) or the directory's own name (dataset, tier). A gold manifest then adds nothing, and
     # rewording, re-dating or re-fetching a reference never moves a run's hash.
     h = hashlib.sha256()
-    for f in sorted(x for x in ref_dir.iterdir() if x.is_file()):
-        data = f.read_bytes()
+    for f in sorted(x for x in _store.iterdir(ref_dir) if _store.is_file(x)):
+        data = _store.read_bytes(f)
         if f.name == "manifest.json":
             try:
                 doc = {k: v for k, v in json.loads(data).items() if k in AUTHORSHIP}
@@ -717,6 +786,16 @@ def references_digest(root: Path, reference_id: str | None, data_dir: Path | Non
                 continue
             if doc is not None:
                 data = json.dumps(doc, sort_keys=True).encode()
+        elif f.name == "labels.json" and b'"actor"' in data:
+            # Who acted (RFC-027) is outside every fingerprint: hashed as the set was written before it had one
+            # (write_json's bytes), so recording the actor moves no run's hash.
+            try:
+                doc = json.loads(data)
+            except ValueError:
+                doc = None
+            if isinstance(doc, dict) and "actor" in doc:
+                rest = {k: v for k, v in doc.items() if k != "actor"}
+                data = (json.dumps(rest, indent=2, sort_keys=True) + "\n").encode()
         h.update(f.name.encode())
         h.update(b"\x00")
         h.update(data)

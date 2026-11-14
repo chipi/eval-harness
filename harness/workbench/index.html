@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Workbench mockup</title>
+<link rel="stylesheet" href="workbench.css">
+</head>
+<body>
+  <a class="skip" href="#main">Skip to the screen</a>
+<div class="mockbar" role="note">
+  <span><b>Mockup, round 5</b> · static: the data is read from this project, nothing is saved to it</span>
+  <span class="grow"></span>
+  <label class="toggle"><input type="checkbox" id="mocknotes" checked> mockup notes</label>
+  <button type="button" id="reset">start over</button>
+</div>
+<header class="bar">
+  <a class="brand" href="#start"><i></i>evh <span>workbench</span></a>
+  <span class="project">project: harness</span>
+  <span class="grow"></span>
+  <button type="button" class="menubtn" id="menubtn" aria-expanded="false" aria-controls="nav">Menu</button>
+  <nav id="nav">
+    <a href="#home">Home</a>
+    <a href="#model-new" class="hide-sm">Models</a>
+    <a href="#jobs" class="hide-sm">Jobs</a>
+    <a href="#settings" class="hide-sm">Settings</a>
+    <a href="#glossary" class="hide-sm">Words</a>
+    <a href="#catalog" class="hide-sm">Catalog ↗</a>
+    <label class="toggle"><input type="checkbox" id="hints" checked> hints</label>
+    <button type="button" class="round" id="theme" aria-label="Switch light or dark">◐</button>
+  </nav>
+</header>
+<div class="layout" id="layout">
+  <aside class="rail" id="rail" aria-label="The goal's steps"></aside>
+  <main id="main" tabindex="-1"></main>
+  <aside class="help" id="help" hidden aria-label="Help"></aside>
+</div>
+<script src="mock.js"></script>
+<script src="help.js"></script>
+<script src="workbench.js"></script>
+<script src="workflows.js"></script>
+<script src="round5.js"></script>
+<script src="live.js"></script>
+</body>
+</html>

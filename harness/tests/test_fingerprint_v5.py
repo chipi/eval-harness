@@ -17,12 +17,16 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(HERE))
-import yaml  # noqa: E402
 from evaluation_harness import _fingerprint as fpmod  # noqa: E402
 from evaluation_harness import _models, compare_runs  # noqa: E402
 from evaluation_harness import fingerprint_migrate as mig  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 from evaluation_harness.catalog_adapter import _flat_conditions  # noqa: E402
+from evaluation_harness.model import runs as model_runs  # noqa: E402
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _model_records  # noqa: E402
+import _runstore  # noqa: E402
 
 DATASET = {"dataset_id": "d1", "items": [{"item_id": "i1", "source_sha256": "aaa"}]}
 
@@ -110,16 +114,14 @@ check(
     priced["arm"],
 )
 with tempfile.TemporaryDirectory() as rd:
-    (Path(rd) / "models").mkdir()
-    (Path(rd) / "models" / "gem.yaml").write_text(
-        yaml.safe_dump(
-            {
-                "model_id": "gem",
-                "kind": "llm",
-                "aliases": ["m:1b"],
-                "deployments": [{"id": "dgx", "where": "dgx"}],
-            }
-        )
+    _model_records.write(
+        Path(rd),
+        {
+            "model_id": "gem",
+            "kind": "llm",
+            "aliases": ["m:1b"],
+            "deployments": [{"id": "dgx", "where": "dgx"}],
+        },
     )
     rec_fp = build(
         base_params,
@@ -329,34 +331,32 @@ check(
 
 with tempfile.TemporaryDirectory() as td:
     data = Path(td) / "data"
-    (data / "models").mkdir(parents=True)
-    (data / "models" / "gem.yaml").write_text(
-        yaml.safe_dump(
-            {
-                "model_id": "gem",
-                "kind": "llm",
-                "aliases": ["gem:1b"],
-                "deployments": [
-                    {
-                        "id": "dgx",
-                        "where": "dgx",
-                        "backend": "cuda",
-                        "server": "ollama 0.40.13",
-                        "server_settings": {"context_length": 32768},
-                        "tag": "gem:1b",
-                        "digest": "d" * 64,
-                        "quantization": "Q4_K_M",
-                    },
-                    {"id": "mac", "where": "mac", "backend": "metal", "tag": "gem:1b", "digest": "e" * 64},
-                    {
-                        "id": "or-nebius",
-                        "where": "openrouter",
-                        "provider_id": "vendor/gem",
-                        "provider_routing": ["nebius"],
-                    },
-                ],
-            }
-        )
+    _model_records.write(
+        data,
+        {
+            "model_id": "gem",
+            "kind": "llm",
+            "aliases": ["gem:1b"],
+            "deployments": [
+                {
+                    "id": "dgx",
+                    "where": "dgx",
+                    "backend": "cuda",
+                    "server": "ollama 0.40.13",
+                    "server_settings": {"context_length": 32768},
+                    "tag": "gem:1b",
+                    "digest": "d" * 64,
+                    "quantization": "Q4_K_M",
+                },
+                {"id": "mac", "where": "mac", "backend": "metal", "tag": "gem:1b", "digest": "e" * 64},
+                {
+                    "id": "or-nebius",
+                    "where": "openrouter",
+                    "provider_id": "vendor/gem",
+                    "provider_routing": ["nebius"],
+                },
+            ],
+        },
     )
     cfg = {"model_record": "gem", "deployment": "dgx"}
     params = {"model": "gem:1b", "base_url": "http://tunnel/v1", "max_tokens": 64}
@@ -393,7 +393,7 @@ with tempfile.TemporaryDirectory() as td:
         hosted,
     )
     check(
-        "a config that names no deployment, or one the record lacks, falls back below the record",
+        "a system that names no deployment, or one the record lacks, falls back below the record",
         build(params, cfg={"model_record": "gem"}, data_dir=data)["deployment"]["source"] == "params",
     )
 
@@ -537,7 +537,8 @@ check(
     and mig.migrate_fingerprint(older_local)["deployment"]["in_process"] is False,
 )
 
-# the tool, over a small tree: counts, the baseline's hash, idempotence, derived runs take their source's parts
+# the tool, over a small tree of the layout before step 4 (the migration runs its steps in order, so the runs end in
+# data/runs with their scores): counts, the baseline's hash, idempotence, derived runs take their source's parts
 with tempfile.TemporaryDirectory() as td:
     data = Path(td) / "data"
 
@@ -547,46 +548,63 @@ with tempfile.TemporaryDirectory() as td:
         f.write_text(json.dumps(doc, indent=2, sort_keys=True) + "\n")
         return f
 
+    ident = {"dataset_id": "d1", "build": {"ref": "x", "dirty": False}, "scores": {}}
     put(
         "runs/r1",
-        {"run_id": "r1", "params": {"model": "org/span"}, "fingerprint": v4(declared, {"model": "org/span"})},
+        {
+            **ident,
+            "run_id": "r1",
+            "config_id": "c1",
+            "params": {"model": "org/span"},
+            "fingerprint": v4(declared, {"model": "org/span"}),
+        },
     )
     put(
         "runs/r2",
         {
+            **ident,
             "run_id": "r2",
+            "config_id": "c2",
             "params": {"model": "gw"},
             "fingerprint": v4({"identity_declared": False}, {"model": "gw"}),
         },
     )
     put(
-        "runs-rescored/r1",
+        "runs-rescored/abcdef0123456789/runs/r1",
         {
+            **ident,
             "run_id": "r1",
-            "derived": {"kind": "rescore", "from": "r1"},
+            "config_id": "c1",
+            "derived": {"kind": "rescore", "from": "r1", "with": {"sha256": "t" * 64}},
             "params": {"model": "org/span"},
             "fingerprint": v4(declared, {"model": "org/span"}, derived=True),
         },
     )
-    (data / "baselines").mkdir()
-    b = data / "baselines" / "b.json"
+    (data / "baselines" / "_dataset" / "d").mkdir(parents=True)
+    b = data / "baselines" / "_dataset" / "d" / "1.json"
     b.write_text(
         json.dumps(
-            {"baseline_id": "b", "promoted_from": "r1", "fingerprint_hash": "0" * 64},
+            {"version": 1, "goal": None, "promoted_from": "r1", "fingerprint_hash": "0" * 64},
             indent=2,
             sort_keys=True,
         )
         + "\n"
     )
-    cmd = [sys.executable, str(HERE / "scripts" / "fingerprint_migrate.py"), "--data-dir", str(data)]
-    first = subprocess.run(cmd, capture_output=True, text=True)
+    cmd = [sys.executable, str(HERE / "scripts" / "migrate.py")]
+    # the fixture is a files project, whatever store the suite runs in
+    menv = {**os.environ, "EVAL_HOME": td, "EVAL_DATA_DIR": "data", "EVAL_STORE": "files"}
+    first = subprocess.run(cmd, capture_output=True, text=True, env=menv)
+    # a score as the project now reads it: <run>/<label>, its record (the run's facts with the score's over them)
     docs = {
-        p.parent.name + "/" + p.parent.parent.name: json.loads(p.read_text())
-        for p in data.glob("runs*/*/metrics.json")
+        f"{rd.name}/{model_runs.label(sd, rec) or 'runs'}": rec
+        for rd in sorted((data / "runs").glob("*"))
+        for sd in model_runs.scores_of(rd)
+        if (rec := model_runs.record(sd))
     }
     check(
         "migration tool: prints before and after, the runs migrated and the deployment sources",
-        "before: 3 v4" in first.stdout
+        first.returncode == 0
+        and "before: 3 v4" in first.stdout
         and "after:  3 v5" in first.stdout
         and "runs migrated: 3" in first.stdout
         and "deployment source adapter: 2" in first.stdout
@@ -601,19 +619,26 @@ with tempfile.TemporaryDirectory() as td:
     )
     check(
         "migration tool: a derived run carries its source run's deployment and settings, and its hash stays null",
-        docs["r1/runs-rescored"]["fingerprint"]["deployment"] == r1["deployment"]
-        and docs["r1/runs-rescored"]["fingerprint"]["settings"] == r1["settings"]
-        and docs["r1/runs-rescored"]["fingerprint"]["hash"] is None,
+        docs["r1/rescored abcdef01"]["fingerprint"]["deployment"] == r1["deployment"]
+        and docs["r1/rescored abcdef01"]["fingerprint"]["settings"] == r1["settings"]
+        and docs["r1/rescored abcdef01"]["fingerprint"]["hash"] is None,
     )
     check(
         "migration tool: the baseline carries the run's new hash",
         json.loads(b.read_text())["fingerprint_hash"] == r1["hash"],
     )
-    before_bytes = {p: p.read_bytes() for p in [*data.glob("runs*/*/metrics.json"), b]}
-    second = subprocess.run(cmd, capture_output=True, text=True)
+
+    def tree_bytes() -> dict:
+        return {
+            p: p.read_bytes() for p in sorted(data.rglob("*")) if p.is_file() and p.name != "project.yaml"
+        }
+
+    before_bytes = tree_bytes()
+    (data / "project.yaml").unlink()  # the steps again (the stamp would say "nothing to do")
+    second = subprocess.run(cmd, capture_output=True, text=True, env=menv)
     check(
         "migration tool: idempotent, a v5 fingerprint is left as it is",
-        "runs migrated: 0" in second.stdout and before_bytes == {p: p.read_bytes() for p in before_bytes},
+        "runs migrated: 0" in second.stdout and before_bytes == tree_bytes(),
         second.stdout,
     )
 
@@ -683,21 +708,43 @@ check(
     "versions differ" in report(legacy, on_dgx),
 )
 
+
+def put_in(project, rel, text):
+    """A file of another project's data/ than this process's, in its store: project_root is kept per process, so it is
+    forgotten around the write (the library checks above have already asked it)."""
+    from evaluation_harness import _common  # noqa: PLC0415
+
+    _common.project_root.cache_clear()
+    try:
+        _runstore.write_text(project, rel, text)
+    finally:
+        _common.project_root.cache_clear()
+
+
 with tempfile.TemporaryDirectory() as td:
-    runs = Path(td) / "data" / "runs"
     for rid, f in (("run_a", on_dgx), ("run_b", on_mac)):
-        (runs / rid).mkdir(parents=True)
-        (runs / rid / "metrics.json").write_text(
+        (Path(td) / "data" / "runs" / rid).mkdir(parents=True, exist_ok=True)
+        put_in(
+            td,
+            f"runs/{rid}/run.json",
             json.dumps(
                 {
                     "run_id": rid,
                     "dataset_id": "d1",
+                    "config_id": "c1",
                     "build": {"ref": rid, "dirty": False},
-                    "scores": {"f1": 0.5},
+                    "n_items": 1,
+                    "created_at": "2026-11-13T00:00:00Z",
                     "fingerprint": f,
                 }
-            )
+            ),
         )
+        put_in(
+            td,
+            f"runs/{rid}/scores/s@none/score.json",
+            json.dumps({"scorer": "s", "reference": None, "label": "", "first": True}),
+        )
+        put_in(td, f"runs/{rid}/scores/s@none/metrics.json", json.dumps({"scores": {"f1": 0.5}}))
     run = subprocess.run(
         [
             sys.executable,
@@ -773,7 +820,7 @@ import shutil  # noqa: E402
 KIT = HERE / "tutorial"
 proj = Path(tempfile.mkdtemp(prefix="evh-fp5-"))
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-fp5", EVAL_MAX_RETRIES="0")
-for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_MAX_COST_USD"):
+for k in ("EVAL_DATA_DIR", "EVAL_MAX_COST_USD"):
     env.pop(k, None)
 ADAPTER = """
 from types import SimpleNamespace
@@ -798,47 +845,56 @@ def evh(*args):
     )
 
 
-def config(name, extra):
-    f = proj / "data" / "configs" / f"{name}.yaml"
-    f.write_text(
-        f"config_id: {name}_v1\ndataset_id: tickets_v1\nadapter: adapter.py\n{extra}params:\n  max_tokens: 9\n"
+def metrics_of(prefix):
+    """The record of the first run in data/runs whose name starts with `prefix` (its run.json with its first score's
+    metrics over it), or {}."""
+    d = next((n for n in _runstore.listdir(proj, "runs") if n.startswith(prefix)), None)
+    return _runstore.record_of(proj, d) if d else {}
+
+
+def system(name, extra):
+    _runstore.write_text(
+        proj,
+        f"systems/{name}_v1.yaml",
+        f"system_id: {name}_v1\nadapter: adapter.py\n{extra}params:\n  max_tokens: 9\n",
     )
-    return f"data/configs/{name}.yaml"
+    return f"{name}_v1"
 
 
 try:
-    (proj / "data" / "configs").mkdir(parents=True)
+    (proj / "data" / "systems").mkdir(parents=True)
+    _model_records.stamp(proj / "data")
     (proj / "data" / "models").mkdir(parents=True)
     shutil.copytree(KIT / "tickets", proj / "tutorial" / "tickets")
     (proj / "adapter.py").write_text(ADAPTER)
     r = evh("dataset-create", "--dataset-id", "tickets_v1", "--source-dir", "tutorial/tickets")
     r = r if r.returncode else evh("dataset-materialize", "--dataset-id", "tickets_v1")
     check("setup: the tutorial dataset is frozen and materialized", r.returncode == 0, r.stderr[-300:])
-    (proj / "data" / "models" / "gem.yaml").write_text(
-        yaml.safe_dump(
-            {
-                "model_id": "gem",
-                "kind": "llm",
-                "aliases": ["gem:1b"],
-                "deployments": [
-                    {
-                        "id": "dgx",
-                        "where": "dgx",
-                        "backend": "cuda",
-                        "server": "ollama 0.40",
-                        "tag": "gem:1b",
-                        "digest": "d" * 64,
-                    }
-                ],
-            }
-        )
+    _model_records.put(
+        proj,
+        {
+            "model_id": "gem",
+            "kind": "llm",
+            "aliases": ["gem:1b"],
+            "deployments": [
+                {
+                    "id": "dgx",
+                    "where": "dgx",
+                    "backend": "cuda",
+                    "server": "ollama 0.40",
+                    "tag": "gem:1b",
+                    "digest": "d" * 64,
+                }
+            ],
+        },
     )
-    r = evh("run", "--config", config("named", "model_record: gem\ndeployment: dgx\n"))
-    run_dir = next((proj / "data" / "runs").glob("named_v1_*"), None)
-    m = json.loads((run_dir / "metrics.json").read_text()) if run_dir else {}
+    r = evh(
+        "run", "--system", system("named", "model_record: gem\ndeployment: dgx\n"), "--dataset", "tickets_v1"
+    )
+    m = metrics_of("named_v1_")
     d = (m.get("fingerprint") or {}).get("deployment") or {}
     check(
-        "evh run: a config naming a record and a deployment fingerprints the deployment from the record",
+        "evh run: a system naming a record and a deployment fingerprints the deployment from the record",
         r.returncode == 0
         and d.get("source") == "record"
         and d.get("id") == "gem@dgx"
@@ -847,12 +903,14 @@ try:
         (r.stdout + r.stderr)[-500:],
     )
     check(
-        "evh run: metrics.json records model_record and deployment_id",
+        "evh run: the run's record has model_record and deployment_id",
         m.get("model_record") == "gem" and m.get("deployment_id") == "dgx",
         {k: m.get(k) for k in ("model_record", "deployment_id")},
     )
-    rec = yaml.safe_load((proj / "data" / "models" / "gem.yaml").read_text())
-    r = evh("run", "--config", config("rep0", "model_record: gem\ndeployment: dgx\n"), "--repeat", "2")
+    rec = _model_records.view(proj, "gem")
+    r = evh(
+        "run", "--system", system("rep0", "model_record: gem\ndeployment: dgx\n"), "--dataset", "tickets_v1", "--repeat", "2"
+    )  # fmt: skip
     check(
         "evh run --repeat: no note while the deployment's own onboarding has not found it deterministic",
         r.returncode == 0 and "expect its" not in r.stdout,
@@ -863,31 +921,30 @@ try:
         "at": "2026-10-31",
         "report": {"deterministic": True},
     }
-    (proj / "data" / "models" / "gem.yaml").write_text(yaml.safe_dump(rec))
-    r = evh("run", "--config", config("rep", "model_record: gem\ndeployment: dgx\n"), "--repeat", "2")
+    _model_records.put(proj, rec)
+    r = evh(
+        "run", "--system", system("rep", "model_record: gem\ndeployment: dgx\n"), "--dataset", "tickets_v1", "--repeat", "2"
+    )  # fmt: skip
     check(
         "evh run --repeat: a model onboarded as deterministic, at temperature 0, is said to give identical passes",
         r.returncode == 0 and "expect its 2 passes to be identical" in r.stdout and "on dgx" in r.stdout,
         r.stdout[-400:],
     )
-    r = evh("run", "--config", config("plain", ""))
-    run_dir = next((proj / "data" / "runs").glob("plain_v1_*"), None)
-    m2 = json.loads((run_dir / "metrics.json").read_text()) if run_dir else {}
+    r = evh("run", "--system", system("plain", ""), "--dataset", "tickets_v1")
+    m2 = metrics_of("plain_v1_")
     check(
-        "evh run: a config naming neither is the params source and records no deployment_id",
+        "evh run: a system naming neither is the params source and records no deployment_id",
         r.returncode == 0
         and (m2["fingerprint"]["deployment"]["source"] == "params")
         and "deployment_id" not in m2,
         (r.stdout + r.stderr)[-300:],
     )
-    (proj / "data" / "models" / "lead.yaml").write_text(
-        yaml.safe_dump({"model_id": "lead", "kind": "baseline", "aliases": ["lead-5"]})
-    )
-    r = evh("model-onboard", "lead", "--config", config("lead", ""))
-    lead = yaml.safe_load((proj / "data" / "models" / "lead.yaml").read_text())
+    _model_records.put(proj, {"model_id": "lead", "kind": "baseline", "aliases": ["lead-5"]})
+    r = evh("model-onboard", "lead", "--system", system("lead", ""), "--dataset", "tickets_v1")
+    lead = _model_records.view(proj, "lead")
     dep = (lead.get("deployments") or [{}])[0]
     check(
-        "model-onboard --config: a baseline (or an ML model) is onboarded through an arm that runs it, end to end",
+        "model-onboard --system: a baseline (or an ML model) is onboarded through an arm that runs it, end to end",
         r.returncode == 0
         and "ONBOARD PASS" in r.stdout
         and dep.get("id") == "local"
@@ -895,28 +952,31 @@ try:
         and "SMOKE PASS" in ((dep.get("onboarding") or {}).get("report") or {}).get("smoke", ""),
         (r.stdout + r.stderr)[-600:],
     )
-    r = evh("run", "--config", config("typo", "model_record: gem\ndeployment: x3\n"))
+    r = evh(
+        "run", "--system", system("typo", "model_record: gem\ndeployment: x3\n"), "--dataset", "tickets_v1"
+    )
     check(
         "evh run: a deployment the record lacks is refused before anything runs",
         r.returncode != 0 and "no such deployment" in r.stdout + r.stderr,
         (r.stdout + r.stderr)[-300:],
     )
-    config("orphan", "deployment: dgx\n")
+    system("orphan", "deployment: dgx\n")
     v = evh("validate")
     check(
         "V18: a deployment the record lacks, and a deployment without a model_record, are named and fail",
         v.returncode != 0
-        and "typo.yaml: deployment 'x3' is not one of gem's deployments" in v.stdout
-        and "orphan.yaml: deployment 'dgx' is used without a model_record" in v.stdout,
+        and "typo_v1.yaml: deployment 'x3' is not one of gem's deployments" in v.stdout
+        and "orphan_v1.yaml: deployment 'dgx' is used without a model_record" in v.stdout,
         v.stdout[-900:],
     )
     (proj / "arms").mkdir()
-    (proj / "arms" / "elsewhere.yaml").write_text("config_id: elsewhere_v1\ndeployment: dgx\n")
-    (proj / "data" / "validate.json").write_text(json.dumps({"configs": ["arms/*.yaml"]}))
+    (proj / "arms" / "elsewhere_v1.yaml").write_text("system_id: elsewhere_v1\ndeployment: dgx\n")
+    _runstore.write_text(proj, "validate.json", json.dumps({"systems": ["arms/*.yaml"]}))
     v = evh("validate")
     check(
-        "V18: a config outside data/configs is read when validate.json's `configs` names it",
-        v.returncode != 0 and "elsewhere.yaml: deployment 'dgx' is used without a model_record" in v.stdout,
+        "V18: a system outside data/systems is read when validate.json's `systems` names it",
+        v.returncode != 0
+        and "elsewhere_v1.yaml: deployment 'dgx' is used without a model_record" in v.stdout,
         v.stdout[-900:],
     )
 finally:

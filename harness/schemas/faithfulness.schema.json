@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "A faithfulness record (RFC-030): data/faithfulness/<model_id>/<n>.json, a replay at the recorded versions compared item by item with production's arm; written once",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["n", "model_id", "config_id", "dataset_id", "items_sha256", "versions_sha256", "adapter_sha256", "commits", "production_run", "counts", "disagreements", "coverage", "at", "actor"],
+  "properties": {
+    "n": {"type": "integer", "minimum": 1},
+    "model_id": {"type": "string", "description": "The code record (a model record of kind: code)."},
+    "config_id": {"type": "string"},
+    "dataset_id": {"type": "string"},
+    "items_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "versions_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$", "description": "Each version's commit and deployed periods, hashed."},
+    "adapter_sha256": {"type": ["string", "null"], "description": "The adapter and its replay.support modules, hashed together."},
+    "commits": {"type": "object", "additionalProperties": {"type": "integer"}, "description": "Each commit replayed and how many items ran at it."},
+    "production_run": {"type": "string", "description": "The run holding production's outputs (a recorded arm)."},
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["items", "agree", "differ", "replay_errors", "production_missing"],
+      "properties": {
+        "items": {"type": "integer"}, "agree": {"type": "integer"}, "differ": {"type": "integer"},
+        "replay_errors": {"type": "integer"}, "production_missing": {"type": "integer"}
+      }
+    },
+    "disagreements": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["item_id", "kind"],
+        "properties": {
+          "item_id": {"type": "string"},
+          "kind": {"enum": ["differ", "replay-error", "production-missing"]},
+          "commit": {"type": ["string", "null"]},
+          "production": {"type": ["string", "null"]},
+          "replay": {"type": ["string", "null"]},
+          "error": {"type": "string"}
+        }
+      }
+    },
+    "coverage": {"type": "object", "description": "Per commit: functions defined in the copy, how many the replay entered, and those never entered."},
+    "at": {"type": "string"},
+    "actor": {"type": "object"}
+  }
+}

@@ -1,0 +1,116 @@
+{
+  "actor": {
+    "from": "migration",
+    "name": "before 0.8.0",
+    "type": "unknown"
+  },
+  "adapter": "examples/triage-fleet/adapter.py",
+  "build": {
+    "dirty": false,
+    "ref": "a2ab8c9277e3b164df2c6d1a144ca7f31913eba2",
+    "source": "git"
+  },
+  "config_id": "triage_prompt_own_code_loads_v1",
+  "created_at": "2026-11-04T15:08:13Z",
+  "dataset_id": "orrery_triage_v1_labelled_v2",
+  "fingerprint": {
+    "arm": {
+      "config_id": "triage_prompt_own_code_loads_v1",
+      "labels": {
+        "usd_per_mtok_in": 0.816,
+        "usd_per_mtok_out": 1.632
+      }
+    },
+    "data": {
+      "dataset_id": "orrery_triage_v1_labelled_v2",
+      "items_sha256": "2104636f181693dbcef28657449f651f58861a28ad1ca70736ed7dee8a01d5e9",
+      "n_items": 65,
+      "reference_id": "gold/orrery_triage_v1_labelled_v2",
+      "reference_tier": "gold",
+      "references_sha256": "f828e63bb2ddf0fe43d0223112530e4ab02d2871eed992c5ef66a75f47931582"
+    },
+    "data_sha256": "33d2875c64791cac7c8c21b4bbb5834770a0765edbabd475711f2311ac243269",
+    "deployment": {
+      "declared": {
+        "fleet_code_sha256": "068fe5020c44c6f1b9639a49e350009fc3956f66e0fedf6de65ced7d1000cbca",
+        "fleet_commit": "8f4c4ee"
+      },
+      "hosted": {
+        "provider": "gateway",
+        "provider_id": null,
+        "route": null
+      },
+      "id": "eval-fleet-triage-pro",
+      "in_process": false,
+      "libraries": null,
+      "model": "eval-fleet-triage-pro",
+      "provider": "gateway",
+      "server": null,
+      "source": "adapter",
+      "weights": {
+        "digest": null,
+        "file_hash": null,
+        "precision": null,
+        "quantization": null,
+        "revision": null,
+        "revision_source": "unavailable"
+      },
+      "where": {
+        "backend": null,
+        "device": null,
+        "machine": null
+      }
+    },
+    "deployment_sha256": "10a6ebb02d03ca157ab8e54061d9f00e7347280e5af03bad533c7d0500f3bfc7",
+    "hash": "93dff3cd36fb61f13a2e4327ba4489c15d4718f03ff66afa5107f38345ec5233",
+    "instrument": {
+      "adapter": {
+        "id": "examples/triage-fleet/adapter.py",
+        "sha256": "eff7e86addd6a9916edbef8ae80c3e70738657d9130799e3b8c3ec3760927d26"
+      },
+      "harness": {
+        "code_sha256": "658ac2f7c94adca7370e72dca1192745a8f9d7c7fa1cb74cda61802f52024213",
+        "commit": "a2ab8c9277e3",
+        "dirty": false,
+        "installed": false,
+        "version": "0.6.2"
+      }
+    },
+    "instrument_sha256": "8ca110b44084bc0fe2d4f7b02e8bfcabd07c7712c77745b7aa71a8b33a9d2ae4",
+    "runner": {
+      "cpu_count": 32,
+      "label": null,
+      "libraries": {
+        "anthropic": "2.4.0",
+        "openai": "3.45.0"
+      },
+      "platform": "Linux/x86_64",
+      "processor": null,
+      "python": "3.12.14",
+      "release": "7.2.5-3-omarchy"
+    },
+    "settings": {
+      "declared": {
+        "prompt_sha256": "67c0c59c4c9080ae0a9525397fe79022b04f99aea0f6e4cf7a705c2b0046239f"
+      },
+      "fleet_commit": "8f4c4ee"
+    },
+    "settings_sha256": "3eda94095ca37f0c5c97ad008552a4dd0b41cf500124f1bbe4f472d5b56df8e8",
+    "version": 5
+  },
+  "goal": "triage_orrery",
+  "n_items": 65,
+  "params": {
+    "fleet_commit": "8f4c4ee",
+    "model": "eval-fleet-triage-pro",
+    "provider": "gateway",
+    "usd_per_mtok_in": 0.816,
+    "usd_per_mtok_out": 1.632
+  },
+  "providers_seen": {},
+  "repeat_index": 1,
+  "round": "r4",
+  "run_id": "triage_prompt_own_code_loads_v1_20261104T144618Z_r1",
+  "purpose": "run",
+  "machine": "linux"
+}

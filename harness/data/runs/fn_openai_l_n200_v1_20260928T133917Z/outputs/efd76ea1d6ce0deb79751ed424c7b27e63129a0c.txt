@@ -1,1 +1,0 @@
-[{"text":"Chelsea","type":"organization"}]

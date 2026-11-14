@@ -6,7 +6,7 @@
   --surface-2: #1c1c1a;
   --ink: #f0efec;
   --ink-2: #b9b7ad;
-  --muted: #7d7b74;
+  --muted: #8a8880;
   --hair: #2a2a27;
   --axis: #3a3a36;
   --accent: #c8ff3d;          /* editorial highlight, never data */
@@ -15,7 +15,7 @@
   --local: #d95926;           /* slot 2 */
   --open: #199e70;            /* slot 3 */
   --baseline: #6f6d66;
-  --band: rgba(200, 255, 61, 0.09);
+  --band: rgba(240, 239, 236, 0.09);
   --grid-line: rgba(240, 239, 236, 0.035);
   --display: "Inter Tight", "Inter", "Helvetica Neue", system-ui, -apple-system, "Segoe UI", sans-serif;
   --text: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -25,20 +25,20 @@
   :root:not([data-theme="dark"]) {
     color-scheme: light;
     --page: #f6f5f1; --surface: #fcfcfb; --surface-2: #efeee9;
-    --ink: #0b0b0b; --ink-2: #4a4945; --muted: #7a7872; --hair: #dddbd3; --axis: #c3c2b7;
+    --ink: #0b0b0b; --ink-2: #4a4945; --muted: #66645e; --hair: #dddbd3; --axis: #c3c2b7;
     --accent: #3d5c00; --accent-ink: #f6f5f1;
-    --proprietary: #2a78d6; --local: #eb6834; --open: #1baf7a; --baseline: #9a988f;
-    --band: rgba(61, 92, 0, 0.16);
+    --proprietary: #2a78d6; --local: #de4f16; --open: #179568; --baseline: #858278;
+    --band: rgba(11, 11, 11, 0.08);
     --grid-line: rgba(11, 11, 11, 0.045);
   }
 }
 :root[data-theme="light"] {
   color-scheme: light;
   --page: #f6f5f1; --surface: #fcfcfb; --surface-2: #efeee9;
-  --ink: #0b0b0b; --ink-2: #4a4945; --muted: #7a7872; --hair: #dddbd3; --axis: #c3c2b7;
+  --ink: #0b0b0b; --ink-2: #4a4945; --muted: #66645e; --hair: #dddbd3; --axis: #c3c2b7;
   --accent: #3d5c00; --accent-ink: #f6f5f1;
-  --proprietary: #2a78d6; --local: #eb6834; --open: #1baf7a; --baseline: #9a988f;
-  --band: rgba(61, 92, 0, 0.16);
+  --proprietary: #2a78d6; --local: #de4f16; --open: #179568; --baseline: #858278;
+  --band: rgba(11, 11, 11, 0.08);
   --grid-line: rgba(11, 11, 11, 0.045);
 }
 
@@ -102,7 +102,7 @@ h1, h2, h3 { font-family: var(--display); letter-spacing: -0.035em; margin: 0; }
 .sketch-key .ring-i { background: transparent; border: 2px solid var(--ink); width: 12px; height: 12px; }
 .dek { font-size: clamp(18px, 2vw, 22px); line-height: 1.5; color: var(--ink-2); max-width: 44rem; margin: 0; }
 /* The notes under a lede share its width: at 66ch of their smaller type they ran a narrow, tall column. */
-.dek-note { font-size: 15px; line-height: 1.5; color: var(--muted); max-width: 44rem; margin: 14px 0 0; }
+.dek-note { font-size: 15px; line-height: 1.5; color: var(--muted); max-width: 66ch; margin: 14px 0 0; }
 .dek + .dek, .dek-note + .dek { margin-top: 14px; }
 .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; margin-top: 72px; border-top: 1px solid var(--hair); }
 .stat { padding: 22px 20px 0 0; border-right: 1px solid var(--hair); margin-right: 20px; }
@@ -142,7 +142,7 @@ figure { margin: 0; }
 .chart svg .t-head { font-family: var(--display); font-weight: 700; fill: var(--ink); letter-spacing: -0.01em; }
 .chart svg .grid { stroke: var(--hair); stroke-width: 1; }
 .chart svg .axis { stroke: var(--axis); stroke-width: 1; }
-.chart svg .band { fill: var(--band); }
+.chart svg .band { fill: var(--band); stroke: color-mix(in srgb, var(--ink) 50%, transparent); stroke-width: 1; }
 .chart svg .accent { fill: var(--accent); }
 .chart svg .k-proprietary { fill: var(--proprietary); }
 .chart svg .k-open { fill: var(--open); }
@@ -161,7 +161,7 @@ figcaption { margin-top: 14px; font-size: 13px; color: var(--muted); line-height
 .legend span { display: inline-flex; align-items: center; gap: 7px; }
 .legend i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
 .legend .read { margin-left: auto; color: var(--muted); }
-.legend .sw-band { width: 16px; height: 10px; border-radius: 2px; background: var(--band); outline: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); }
+.legend .sw-band { width: 16px; height: 10px; border-radius: 2px; background: var(--band); outline: 1px solid color-mix(in srgb, var(--ink) 30%, transparent); }
 #tip { position: fixed; pointer-events: none; z-index: 50; background: var(--ink); color: var(--page);
   font: 500 12px/1.4 var(--mono); padding: 7px 9px; border-radius: 6px; opacity: 0; transform: translateY(4px);
   transition: opacity .12s, transform .12s; max-width: 280px; white-space: pre-line; }
@@ -445,7 +445,7 @@ body:has(.onpage) section[id], body:has(.onpage) .chapter { scroll-margin-top: 1
   .stats { margin-top: 36px; }
   .facts { grid-template-columns: 1fr 1fr; grid-auto-flow: row dense; }
   .facts .fact:nth-child(1), .facts .fact:nth-child(3), .facts .fact:nth-child(4), .facts .fact:nth-child(5) { grid-column: 1 / -1; }
-  pre.term { font-size: 12.5px; padding: 14px; white-space: pre-wrap; overflow-wrap: anywhere; }
+  pre.term { font-size: 12.5px; padding: 14px; }
   .card { min-height: 0; padding: 20px; }
   .doors .card { min-height: 0; }
   .habit-card { padding: 16px 18px 18px; }
@@ -547,3 +547,48 @@ footer .wrap.foot { display: block; }
 /* MCP, the switcher's fourth entry, leaves the bar on phones: four entries no longer fit 390 px beside
    the search, GitHub and theme buttons (the home page's "For agents" section links it still). */
 @media (max-width: 560px) { .bar .sections a[href$="#mcp"] { display: none; } }
+
+/* the home page's critique (2026-11-12): the question and the chart that answers it on the first screen; the notes
+   about the site below them */
+.hero-cols { display: grid; gap: 40px; }
+.hero-more { margin-top: 40px; max-width: 44rem; }
+@media (min-width: 900px) {
+  .hero-cols { grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); align-items: center; gap: 56px; }
+  .hero-cols h1 { font-size: clamp(44px, 5.2vw, 80px); max-width: 12ch; }
+  .hero-cols .hero-chart { margin-top: 0; }
+  .hero-cols .vw { display: none; }
+  .hero-cols .vn { display: block; }
+}
+
+/* the site's left-out critique items (2026-11-12): the skip link; the arm key under section 01's lede */
+.skip { position: absolute; left: 8px; top: -48px; z-index: 50; padding: 8px 12px; border-radius: 6px; background: var(--accent);
+  color: var(--accent-ink); font: 600 13px/1 var(--mono); text-decoration: none; }
+.skip:focus { top: 72px; }
+.skip:hover { color: var(--accent-ink); }
+main:focus { outline: none; }
+.lede-note { color: var(--ink-2); font-size: 15px; max-width: 66ch; margin: -32px 0 48px; }
+.lede-note dfn { font-style: normal; font-weight: 600; color: var(--ink); }
+
+
+/* the home page's author: one line above the footer (the fourth critique: the page ended on a pitch) */
+.author-line { padding-block: 28px; }
+.author-line p { margin: 0; color: var(--muted); font-size: 15px; }
+
+/* the hero on a phone: its chart right after the question, before the paragraph and the buttons (the fourth critique:
+   it started below the first screen) */
+@media (max-width: 899px) {
+  .hero-cols { display: flex; flex-direction: column; gap: 24px; }
+  .hero-text { display: contents; }
+  .hero-text .kicker { order: 1; }
+  .hero-text h1 { order: 2; }
+  .hero-cols .hero-chart { order: 5; margin-top: 0; }
+  .hero-text .dek { order: 3; }
+  .hero-text .btns { order: 4; }
+}
+
+/* the closing band's three paths, side by side on a desktop, stacked on a phone */
+.paths { display: grid; gap: 20px; margin-top: 32px; }
+@media (min-width: 900px) { .paths { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.paths h3 { font: 600 13px/1.4 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+.paths pre.term { min-height: 0; }
+.paths > div { min-width: 0; }

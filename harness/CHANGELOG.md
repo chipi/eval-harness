@@ -9,6 +9,631 @@ The version lives in `scripts/_version.py`; a release is the git tag `v<version>
 release workflow refuses a tag that disagrees with that file or has no section here. A change
 that can move a result is never a patch release without saying so under **Changed**.
 
+## 0.8.0 — unreleased
+
+### Added
+
+- **The goal through the model** (RFC-032 step 1): `evh goal-list`, `goal-show`, `goal-status` (where a goal stands and
+  its next step), `goal-history`, `goal-new` and `goal-set`, and the same operations as the API's resources
+  (`/api/v1/goals`, `PATCH /api/v1/goals/{goal}`, …), giving the same JSON. A save is checked against the schema and the
+  datasets and references the goal names, keeps the file's comments, records who and the goal as it was, and is refused
+  while a job writes the goal. The commands, the API routes and the MCP tools are made from one registry of the
+  model's operations (`evaluation_harness/ops`); the model reads only data in this release's format.
+- **Systems** (RFC-032 step 3): what is evaluated is a **system**, `data/systems/<system_id>.yaml` (or a folder
+  validate.json's `systems` names): an adapter, its settings and the model it runs, with **no dataset, goal or
+  round**. A run puts it on a dataset: `evh run --system ID --dataset ID [--goal G] [--round R]`; `sweep`,
+  `arm-smoke`, `faithfulness`, `period-compare`, `periods`, `model-onboard`, `deploy-sheet`, `dataset-unseal` and
+  `arm-from-capture` take systems the same way, as do the API's jobs (`{"system", "dataset", ...}`, locks
+  `system:<id>`) and `make run SYSTEM=… DATASET_ID=…`. `evh system-list`, `system-show`, `system-new`, `system-set`,
+  and `/api/v1/systems`; the prompt versions (RFC-028) as `evh prompt-list`, `prompt-show` and `/api/v1/prompts`. "Config" is no longer the name of anything. Format 3 (`m0003_systems`) turns configs into
+  systems: the 146 groups of this repository's examples that differed only in their dataset became one system each
+  (155 ids renamed, `data/renames.json`), every live reference renamed with them, and judging sets, their verdicts
+  and reference manifests kept as they were judged (owner, 2026-11-13: frozen evidence keeps its ids; `judge-score`
+  finds a stored set by the runs it judged, so no verdict is lost or paid for again, and a reference's author is read
+  through the renames). Each view before and after was compared: the leaderboards, rounds, models and every catalog
+  page read the same with the ids renamed, but for the counts of distinct systems (`systems filed` 36 to 29 on the CNN
+  goal; the arms page's 271 to 264), a merged system's rollup row on the arms page, and chart labels that a shorter id
+  lets fit; the old arm pages redirect. A study's trial is `<study>-t<k>.yaml`, its spec names `baseline: {system:
+  …}`, and a confirmation runs the two systems on the test set as they are.
+  The words follow: `evh arms --configs` is `--systems` and `evh import-run --config-id` is `--system-id` (no
+  aliases), the catalog says systems everywhere (the arms page's `#systems` and `?group=system`, the home tile, "systems
+  filed" on the goals page and `evh goals`), the commands' hints print `evh run --system … --dataset …`, and
+  `rescore --config-dir`, which was parsed and never read, is gone.
+- **Runs and scores** (RFC-032 step 4): every pass of a system over a dataset is one run in `data/runs/<run_id>/`
+  (`run.json`, its outputs), and every score of it sits under it, `scores/<scorer>@<reference>/`. What the
+  `runs-linux`, `runs-pair`, `runs-repeats`, `runs-silver`, `runs-adjudicated`, `runs-rescored`, `runs-judged` and
+  `runs-labels-*` folders meant is a field now: a run's `purpose` (`run`, `repeat`, `retime`, `pair`, with `machine`
+  and `of`) and a score's label ("silver", "rescored cd35dc1f", "judged/<scorer>"). Format 4 (`m0004_runs`) moves the
+  data: every record reads back exactly as its metrics.json did (checked on all 736 of this repository's), a judging
+  pass's summary goes to `data/judge-summaries/`, a retirement names its runs, validate.json names arms by label. A
+  re-score by the scorer a run already had, with the same rows, is the same measurement: the 25 triage copies a round's
+  scoring made are kept once (owner, 2026-11-13), and `rescore` writes no copy from now on. The folder flags are gone,
+  no aliases: `EVAL_RUNS_DIR` (a throwaway pass is `evh run --scratch`, a re-run `evh run --purpose repeat|retime|pair
+  [--of RUN_ID]`), `--runs-dir` and `inspect --from` (now `--label`, as on `leaderboard`, `runs-list` and
+  `family-test`), `round-retire --runs-dir` (now `--runs`), `rescore --out` and `judge-score --out` (they write under
+  the runs they score; `rescore --label` names what its scores are read as). Every view was compared before and after:
+  the same numbers, the arm ids renamed (`silver/…`, `rescored-cd35dc1f/…`; the plain arms keep `runs/…`, and the old
+  pages redirect), but for the 25 copies kept once (690 arms are 665), the arms' order where it follows their ids
+  (a round's inspect link, capped, now opens its plain arms where it opened their silver ones), and the re-scores of
+  the runs triage round r3 retired, now marked retired with them. `evh validate` fails on a `data/runs-*` folder left
+  unmigrated.
+  A run records the prompts it sent (step 4b): an adapter's optional `prompts(params)` gives each prompt's text by
+  name, and a run whose fingerprint declares that text's `prompt_sha256` records it as a prompt version
+  (`run.json` `prompt_versions`; `evh prompt-show` lists the runs that sent it), outside the fingerprint's hash, so
+  no run's fingerprint moves; a scratch pass records none. The examples' adapters have the hook.
+- **Rounds store their arms** (RFC-032 step 5): each arm in a round's record is a system read under one label, the
+  runs it is read through, how and when it entered (ran in the round, or carried from an earlier one) and its
+  retirement; a run made with `--round` joins its arm (a run the round would read under a re-score is told to
+  re-score the round), and the round's file is not dirt in a run's fingerprint. One evidence computation
+  (`model/rounds.evidence`) is read by `evh rounds`, the goal page for every round, `inspect --round`, pair-test's
+  and family-test's `--round` and the API (`evh round-list`, `round-show`, `round-evidence`; `/api/v1/goals/{goal}/
+  rounds…`), its leader read as a goal decides (gold first, no judged arm, no arm that wrote its reference). New:
+  `evh round-carry`; `round-retire` retires an arm whole, or the one `--label` names (no `--runs`). A baseline
+  version names the round and arm that promoted it. Format 5 (`m0005_rounds`) writes every round's arms from what it
+  read before: all 17 rounds of this repository give the same evidence (arms, leader, every test) before and after.
+  Views that move, by the decision that an arm is a system read under one label: the catalog's count of a round's
+  arms (CNN r1 87 to 29, AG r1 60 to 30, triage r3 80 to 53), AG r1's best on the goal page (an adjudicated copy
+  scored against another reference before; the round's own arm now), triage r4's "vs r3's best" (another dataset:
+  no comparison), and which arm pages list a round (the arms the round stores, under their label).
+- **Datasets and what belongs to them in the model** (RFC-032 step 6): datasets, fieldsets, failure-mode lists, label
+  sets, tag sets, references and captures are entities of `model/datasets`, with one table of where each part of a
+  dataset is (nothing moved). New: `evh dataset-list`/`dataset-show` (its parts, lineage, label sets, references),
+  `fieldset-*` and `failure-modes-*` (list, show, new, set: checked, comments kept), `label-set-list`/`-show`,
+  `tag-set-list`/`-show`, `reference-list`/`-show`, `capture-list`/`-show`, and their resources under `/api/v1`.
+  Fixed: `dataset-materialize` read a dataset's items against the directory it ran in (from a subfolder every item
+  was missing) and cleared the old copy before reading, so a failed run deleted it or left an empty copy the next
+  run took as done: it now builds the copy and then replaces the old one. `dataset-create --source-dir` outside the
+  project recorded the folder's bare name, which nothing could read: it copies the items into `data/sources/<id>/`.
+  A goal's status missed a reference promoted under another name (`gold/ag_news_200_adj1`). The deployment's copy
+  of the data left out the exposure registers, so a deployed catalog scored items a sealed side's readers saw.
+  Validate checks label sets, tag sets, picks and exposure rows against new schemas, and a dataset's capture link.
+  `orrery_triage_v1_labelled_v2` records its parent, `orrery_triage_v1_labelled` (version 2.0). A dataset's page says
+  where it came from: the capture its items were taken from and the version it was made from (a capture-made
+  dataset's page named neither); the datasets list and `evh datasets --dataset-id` give both. The catalog reads any
+  data directory (the deployment's copy too) through the model's layout.
+- **Models and deployments, apart** (RFC-032 step 2): a model's deployments are records of their own,
+  `data/deployments/<model>/<deployment>.yaml`, each with its checks as dated history: every onboarding, every arm
+  smoke and every acceptance is kept, with who made it; the views read the latest of each, so `evh models`, the
+  Models page and a model's page say what they said. `evh model-list`, `model-show`, `model-new`, `model-set`,
+  `deployment-show`, `deployment-history`, `deployment-new`, `deployment-set` and `deployment-accept` (with why, a
+  sentence), and the same as the API's resources under `/api/v1/models`. A deployment's checks are refused as an edit:
+  onboard it, smoke an arm, or accept a flag. An arm smoke is recorded on the deployment the arm names, or the model's
+  only one; with several and none named it says it is not recorded. `validate` checks each deployment against
+  `deployment.schema.json` and names one under no model or not named by its folder and file.
+- **The Workbench on its server** (PRD-017, RFC-032 step 1): `evh catalog-serve` serves it under `/workbench/` on
+  this machine (never `--public` or `--behind-proxy`) and prints the link that signs in. Its home and a goal's screen
+  read the model's API; a screen not wired yet says so. Opened as files, it is still the mockup. Its models (step 2, W5): the project's models and their state, a model's page with each deployment's checks,
+  "Run the probes" (`model-onboard` as a job, with the most it may spend, followed on the page), accepting a flag with
+  why, adding a deployment, and bringing a model in; every change names who made it, asked once and kept in the browser.
+  A deployment's record names no actor of its own: each of its checks names who made it (`by`), so a deployment
+  `model-onboard` wrote is saved again through the model. `model-onboard` and `arm-smoke` exit 6 on a CHECK, as their
+  help now says (it said 1).
+- **The data's format** (RFC-032): `data/project.yaml` records the format of a project's data, `evh init` writes it,
+  and `evh migrate --check` compares it with the release's (format 2 in 0.8.0; `ERROR (old-format)`, a new refusal kind, for older data;
+  `ERROR (mismatch)` for data a later release wrote). `evh migrate` runs numbered steps (`migrations/`), records the
+  format after each, and copies a SQLite project's database first. This repository's deploy stops on data not in the
+  release's format (`render.sh`), `make check` runs the same check first (CI's reproduce), and CI migrates a project 0.7.2's own code made (`tests/fixtures/formats/0/`) and
+  checks its leaderboard against 0.7.2's. `evh init dir` run inside another SQLite project wrote into that one's
+  database; it writes the project it makes.
+- **Replay the code that ran, and prove the replay faithful** (RFC-030): a config with `replay:` names a `kind: code`
+  model record (the fleet's feedback 27: its versions, when each was deployed; `checkout` for a local clone) and runs
+  the system's own code over a dataset in order, each item at the version deployed when it happened (unpacked once
+  with `git archive` under `.build/code/`), each call made once, `--resume`/`--items`/`--repeat` refused; a candidate
+  (`replay.commit`) runs every item at one commit. `evh faithfulness` replays the recorded versions and compares each
+  item with production's recorded arm by the adapter's `same()`, recording the disagreements and the coverage (the
+  functions no item reached), and writes each version's summary into the code record. A replay is scored against a
+  reference (`run`, `rescore`, `run-promote`) only when the newest record made with its adapter and support modules
+  agrees, its disagreements named by a person (`faithfulness-name`), or a person's `--unfaithful`, said everywhere.
+  `faithfulness-show`, V26, overlapping deployed periods refused (V18), and a `datetime` field type. `examples/replay-filing/`: a filing system with three commits, its frozen history, the stand-in world, the
+  write join that makes production's arm, and mutants (three killed, one survivor explained by coverage).
+- **Studies** (RFC-029): a study is research on a validation set, a spec and an append-only log under
+  `data/studies/<goal>/`. `evh study-run` opens its round and runs ask/tell over trials: a grid over the spec's space,
+  a program speaking JSON lines (`sampler: {command: ...}`, Optuna's ask/tell plugs in), or the calling agent
+  (`study-ask`, `study-tell`, also MCP tools: the only tools that write). Each trial's config is written once and found
+  like any config; it is kept or dropped by the spec's rule against the best so far, its limits against the baseline,
+  every p labelled nominal. Stop rules: trials, dollars, wall time, patience, a changed spec. `evh study-confirm` is
+  the one step to evidence: the trial and the baseline on a test set's items no study saw (`run --items`), one look
+  at the set's next level, the rule given first. `study-stop`, `studies` (`--study` for one), and `study-import` for
+  Karpathy's `results.tsv`. A sampler is shown the best's weakest validation items (recorded; a confirmation leaves
+  them out); a trial may change a prompt root's varied files; a changed scorer stops a study; `study-run --resume`
+  after a crash; each goal's page shows its studies' trials.
+- **Test-set looks** (RFC-029, its first part): a goal's `role: test` dataset or a sealed split side is a test set,
+  and each decision written on it (a `dataset-unseal`, a `run-promote` compared on it) is a look, keyed by its question
+  (the configs, the measure, the rule) so asking again reuses it. Look k decides one-sided at 2.5%·6/(π²k²) (1.52%,
+  0.38%, ...); past the limit (10, or a goal's `test_looks`) only the person's `--confirm-extra-look` allows another,
+  never an agent's. A promotion whose items could never reach its look's level is refused unless the person passes
+  `--override-no-evidence` (recorded inconclusive). `pair-test --look-level`; `pair-test` on a test set says
+  "nominal, not a look"; `evh looks`; V25 reports a look number two questions took. A goal's page and `evh goals`
+  say each test set's looks and the next one's level; `round-close --promote` passes `--confirm-extra-look` and
+  `--override-no-evidence` to the promotion.
+- **Prompt versions, and the code a system runs** (RFC-028): a config declares `prompts:` (files, wherever they live)
+  or a `prompt_root:`; each run records the version it used in `data/prompts/` and its hash in the fingerprint's
+  settings, and gives the adapter the text and a per-run copy of the root. `code:` records the system's checkout
+  (remote, commit, changed files) as `deployment.code`; a hook's `code_ref` lands there too. `evh prompts`,
+  `prompt-diff`, `prompt-version`, `prompt-export`; a Prompts page (the text only when published); V24.
+- **Every command the API serves answers `--json`** (RFC-026 step 7): the 43 job commands that wrote or reported only in text
+  (`dataset-create`, `catalog`, the label, reference, round and migration commands, `bootstrap-test`, `holdout`,
+  `cost-report`, ...) and `validate` and `dataset-card`; text to stderr as it goes, the envelope on stdout. A job's
+  result is its envelope.
+- **The jobs from the terminal** (RFC-026 step 6): `evh jobs-start`, `jobs-status`, `jobs-logs [--follow]`,
+  `jobs-stop`, `jobs-resume`, over the same jobs as the API, with no server. A resumed run job is given what the
+  stopped one left of its cap, not the cap again; one that spent it all is not resumed.
+- **What a command may spend, and a round's budget enforced** (RFC-026 step 5): `EVAL_MAX_COST_USD` caps the
+  whole command (`run --repeat 3` stops at one cap, not three); `arm-smoke` stops at it; the bundled provider layer
+  counts the calls too, a second net under an adapter that reports less; `sweep` and `model-onboard` give each child
+  what is left; `judge` takes the lower of its config's cap and this one. A run or smoke of a round with
+  `budget_usd` reserves its share in the round's ledger before its first call and is refused (`over-budget`, a new
+  refusal kind) when nothing is left; a stopped or killed run's paid items count; `evh rounds` shows what is left.
+  `POST /api/v1/estimate` answers a job command's `--dry-run`.
+- **A migration holds the server too** (RFC-026 step 4): while a migration holds the project the server answers
+  `503` with `Retry-After` and lets go of the database, so `data-migrate` runs as a job with the server up, and the
+  server reads the new store after.
+- **Jobs** (RFC-026 step 3): `POST /api/v1/jobs` runs one command as a detached job with a supervisor, its state, log
+  and envelope in `.build/jobs/<id>/`; listed, read, followed from a byte offset, stopped (its process group,
+  `cancelled`) and, for a run, resumed. Locks per thing written (`.build/locks/`, taken in key order, held by the
+  command itself): a second writer of the same thing waits `queued`, naming the job it waits for; a migration takes
+  the whole project. A spending job needs `max_cost_usd`, a decision `by` (the command's actor). Uploads (50 MB a
+  call) and artifacts (files a job writes, fetched from it). A job outlives the server; one whose supervisor died
+  reads `running (unsupervised)`, then `lost`.
+- **The API, its read side** (RFC-026 step 2): a local `catalog-serve` answers `/api/v1/` behind a token written to
+  `.build/api-token` (bearer, or a cookie from `/api/v1/session`), this machine's Host and no foreign Origin. `GET
+  /api/v1/commands` is the registry, made from the commands' own parsers: each served as a read or a job, its
+  arguments with a kind, the ones that load code or name a server path never taken (a test fails on a path argument
+  given no kind). `POST /api/v1/read/<command>` answers what the command's `--json` answers. Not served under
+  `--public` or `--behind-proxy`.
+- **Baselines per goal, in versions, with their evidence** (RFC-027 D2-D4): a baseline is a goal's on a dataset
+  (`data/baselines/<goal>/<dataset>/<n>.json`), or a dataset's own for a run with no goal (`_dataset/`). Promoting
+  writes the next version, never over the last (exclusively: two at once both land), with the paired test against
+  the version it replaces frozen in, as `pair-test` answers it (`pair-test --json` now also gives `items_sha256`,
+  `reduce` and the run ids it pooled). `evh baseline-rollback` restores an earlier version as a new one. `evh
+  baselines` lists each line with who promoted it, why, the evidence, how to reproduce it (the deploy sheet's block)
+  and the history; `--json` is the export, the same bytes until a promotion. `evh migrate` brings 0.7
+  records over; this repository's are migrated. V6 holds each line's chain.
+- **Who acted, on every record** (RFC-027 D1): runs, references, label sets, rounds, picks, dataset and model records
+  and baselines carry `actor`: a person, or an agent and the person it acted for (`EVH_ACTOR`, `EVH_FOR`), from
+  `--by` (on every command that writes a record), the environment or the terminal's login, with where it came from. A
+  decision (`run-promote`, `round-close`, `dataset-unseal`) refuses an `unknown` actor; everything else records it.
+  A label set keeps who labelled (`source.by`) beside it. Agents: the project's AGENTS.md says to name themselves.
+- **"If your system is plain code"** (INTEGRATION, the fleet's feedback 19 and 26): what an item holds for code that
+  reads external state (its world at decision time), why one run is enough, a correctness goal beside a regression
+  guard, the item as the unit judged, links between items folded into an outcome, and outcomes joined by time and
+  order rather than by a key the outcome may not carry.
+- **Code under test as a record of its own** (the fleet's feedback 27): a model record with `kind: code` holds its
+  repository and its versions (commit, deployed windows, the faithfulness a replay measured), with no aliases. Its
+  Models page row shows its latest commit and how many versions were checked, never "not onboarded"; its page and
+  `evh models --model` list the versions. Validate V18 names a version listed twice.
+- **A private inspector behind a proxy** (homelab, 2026-11-05): `evh catalog-serve --behind-proxy HOST[,HOST]`
+  serves the whole local inspector (pages, items, outputs, references) to the named Hosts as well as this machine,
+  with `--bind 0.0.0.0` in a container behind a team's own proxy; no rate limit and nothing withheld, unlike
+  `--public`.
+- **A sealed held-out side** (the fleet's feedback 29): `evh dataset-split D --split-by time --key F --at T --seal` splits
+  at a time boundary and seals the test side: runs, labels, label sheets, references, rescores and judging onto it
+  are refused until `evh dataset-unseal D_test --config C --reason "..."` names a candidate whose hypothesis is
+  committed; it opens to that config and the one it is against, and records the look. `validate` (V22) fails when
+  the open side changed after the seal or a run on the sealed side has no unseal. The look budget comes with the
+  test-set looks (plan 4.4).
+- **A metric of the whole run** (the fleet's feedback 20): an adapter's optional `score_run(items)`, called once
+  with every item's output, reference and scores, returns named numbers (pairwise precision and recall of a grouping,
+  say) that no mean of items can be. They are recorded in `scores` and named in `run_metrics`; the leaderboard shows
+  them, `rescore` recomputes them, the comparison shows each arm's value untested, and `pair-test`/`family-test`
+  refuse them by name.
+- **How far outcome rules label a dataset** (the fleet's feedback 31): `evh label-coverage --dataset-id D --capture
+  C --map rules.yaml` applies `label-from-capture`'s rules without writing: labelled now, skipped by design, not yet
+  mature (with each item's maturing date), matched by no rule (with the outcome fields they lack), not in the
+  capture; per rule, the items it takes now and when mature. A read tool on the local MCP server.
+- **Items, not item-runs** (the fleet's feedback 33): `run --repeat` ends with how many items every repeat scored the
+  same on the primary metric, named near-copies when nearly all are, and the items to read against the item-runs;
+  `pair-test` names each arm's runs and their per-item agreement (`repeats`, in JSON too) and says each item counts
+  once.
+- **A dataset already cited gains its lineage** (the fleet's feedback 16): `evh dataset-create --dataset-id D
+  --from P --lineage-only` records the dataset D was made from and what changed, recomputing its version, with its
+  items and the rest of its record untouched; a second parent, a split side and a loop are refused.
+- **A round records its harness code** (the fleet's feedback 17): `round-open` records the harness version, commit
+  and measuring-code hash it opened on and says so; `evh rounds` shows it and names each run of the round that ran on
+  other harness code, with how to run it on the round's (a worktree at its commit, or its version pinned).
+- **A round's baseline can be named** (the fleet's feedback 22): `evh round-open … --baseline <config_id or run id>`
+  records the run the round starts from when the dataset has no promoted baseline (arms carried in with `--keep`), so
+  `pair-test --round` and `evh rounds` read its arms against it instead of refusing ("records no other baseline
+  run"). `round-open` says which run the round starts from.
+- **A regression guard** (the fleet's feedback 28): `expect_identical_to: <config_id>` in an arm's config says its
+  runs must reproduce that config's, item for item and output for output (the same code at another commit).
+  `evh validate` V5 reads such a pair as the agreement asked for, not as an inert knob, and fails the guard when they
+  differ. Recorded on the run, outside the fingerprint.
+- **A project's data in SQLite, a project's choice** (RFC-025). Files stay the default; `store: sqlite` in
+  `config.yaml`, or `EVAL_STORE=sqlite`, keeps everything under `data/` in one database, `data/project.sqlite`
+  (write-ahead logged; a run's outputs and rows committed as they are produced), and nothing under `data/` on disk
+  but it. Every command, the catalog and the inspector read and write through one module (`_store`); a test fails on
+  path I/O anywhere else. `evh data-migrate --to sqlite|files` moves a project either way, every file read back by
+  its sha256; on this repository's data the round trip gives back every file byte for byte. `validate` V23 names a
+  project in both. Python code is never in the database.
+- **A project's data from the terminal** (PRD-016): `evh data-ls`, `data-show [--fields]`, `data-put [--set
+  KEY=VALUE] [--unset KEY] [--new] [--check]`, `data-rm [--dry-run]`, in either store. A setting is saved only after
+  it passes the check (its schema; its id is its file name, but for an arm config), keeping the file's comments and
+  every line it does not change (every setting in this repository written back unchanged is the same file, and
+  5,159 one-value edits kept every comment), and only when `evh validate` passes with it; harness-written data is
+  refused, and a run is deleted whole. In SQLite mode it is how a person's settings get into the database without
+  `data-migrate`. New dependency: `ruamel.yaml` (owner yes, 2026-11-06), which writes a setting back with its
+  comments. A catalog page for the same (the Configure page) was built during 0.8.0 and retired before the
+  release (PRD-017 decision 4): the Workbench takes its place.
+- **`schemas/validate.schema.json`** and **`schemas/goal-policy.schema.json`**: the validate policy's keys and the goal
+  policy's `required_from`, written from what `validate` and `goal_policy` read; `data-put` checks a setting against
+  them. A judge's `params.family`, which `judge_score` requires two of, is in the scorer schema.
+- **Tests that know when items are related.** `--cluster FIELD` on `pair-test`, `family-test` and
+  `bootstrap-test`, and `cluster: FIELD` on a goal's dataset (used by the goal page, `evh goals`, the inspector,
+  rounds and `--round`): items that share a value of the field (one thread's comments, one incident's decisions)
+  count as one. The sign-flip test flips one sign per cluster, the interval is cluster-robust above 30 clusters,
+  the bootstrap draws whole clusters. Tested items one by one, related items made p too small: in a simulation
+  of 12 clusters of 5 with no real difference, the item test called 45% of them significant, the cluster test
+  4%. `validate` (V14) refuses a goal whose cluster field no item carries.
+- **The contender test is shown.** `evh goals` has a column "contender test (within the margin)" (p, its Holm
+  threshold, shown or not, or "too few"), `--json` carries it per arm (`noninferior`), the goal page's cell says it,
+  and `evh pair-test --margin M` runs it for any one pair.
+- **What a goal can detect.** Its decision says the smallest margin a contender could be shown within, with its
+  number of candidates and items or clusters (80% power): on ag_news, 29 candidates on 200 items need about 0.10,
+  so its 5% (0.048) admits nobody. `axes.quality.reference: baseline` tests contenders against the promoted
+  baseline ("no worse than what runs now") instead of the leader.
+- **How repeats combine, named.** `success_criteria.primary.reduce` on a goal, and `--reduce` on `pair-test` and
+  `family-test`: `mean` (the default, as before), `majority` or `at_least_K` for 0/1 scores (`at_least_1` is
+  pass@k's question). The catalog keeps each item's repeats beside their mean.
+- **Agreement over every label set, and where people disagree with the reference.** `evh labels --dataset-id D`
+  gives Krippendorff's alpha over all the sets together (three or more), with a 95% bootstrap interval (it is
+  Krippendorff's 0.743 on his 2011 example); `--contested` lists, per item, how many people's sets agree with the
+  gold reference. The pairwise alpha now counts labels in one pass (it compared every pair of labels, 4 × 10^8 at
+  10,000 items).
+- **Judges: length bias, a 0/1 start, and why a rubric changed.** A judging's `summary.json` gives each judge's
+  `length_bias`, Spearman's rho of its score with the output's length in words (the committed judge-summ-v1: 0.23
+  and 0.29; judge-summ-v2: 0.02 and 0.21; both summaries re-summarised from their verdicts, $0, nothing else
+  changed). The RUNBOOK recommends `scale: [0, 1]` to start a project's own judge. A scorer that replaces another
+  says so: `supersedes:` and `why:`, checked by `validate` (V13) and printed by `judge-score`.
+- **How an arm fails: failure modes and tags.** A project names its failure modes once
+  (`data/failure-modes/<id>.yaml`); `evh inspect --sheet … --fill tags --modes <id>` writes a sheet with a
+  `failure_modes:` cell beside each arm's output, `evh sheet-import … --tags <name> --modes <id>` reads it back as a
+  tag set (checked against its key, never edited); `evh tags` and the goal page count each arm's modes, and the
+  sheet shows each item's in an `<arm>: failure modes` column. `ok`
+  marks an output read and found fine; a blank cell was not read. `validate` V21 checks the lists and the sets.
+
+- **A dataset can name its licence.** Optional: `dataset-create --licence ID`, or `evh dataset-describe
+  --dataset-id D --licence ID` later (a licence or description change is no new version). `evh licences` lists the
+  SPDX ids a line each (`--search`, `--json`, an MCP tool); `unknown` and `LicenseRef-<name>` are allowed;
+  `validate` V22 refuses others. The committed Hub datasets carry the licence their Hub page states (2026-11-05):
+  ag_news unknown, cnn_dailymail Apache-2.0, dbpedia_14 CC-BY-SA-3.0, few-nerd and scifact CC-BY-SA-4.0, summeval MIT.
+
+- **Where the items came from, the same for every source.** A dataset record has a `source` block: `provider`, `ref`,
+  `url`, `revision` (the source's own version), `config`, `split`, `gated`, `description_sha256` and `item_url` (one
+  item's page, with `{row}` or `{item_id}`); each item its `source_row`. `dataset-create` reads it from a fetcher's
+  `data/sources/<id>.rows.json`; the profile and the catalog link items from the record, no longer from that file.
+  `validate` V22 checks it. The committed Hub datasets and their profiles were migrated by `evh migrate`
+  from what their profiles recorded; `revision` and `gated` were never recorded for them and are null.
+
+- **A dataset card.** The datasheet questions, answered in a `card` block under Croissant RAI 1.0's property names
+  (`dataUseCases`, `dataCollection`, `dataAnnotationProtocol`, `dataBiases`, `dataLimitations`, …, twenty in all):
+  `evh dataset-describe --card-template` prints them with their questions, `--card FILE` records the answers. No new
+  version; `validate` V22 checks the keys.
+
+- **Dataset sources: one interface for every place items come from.** `evh dataset-create --source NAME --query
+  JSON` reads a source: a class with `describe(query)` (source block, licence, description, card, features) and
+  `items(query)`, found as importers are (built-in `folder` and `manifest`, a project's `data/dataset_sources/NAME.py`,
+  or `path.py:Class`). Its items are written to `data/sources/<id>/`, never over files already there.
+
+- **A dataset as Croissant 1.1.** `evh dataset-card --dataset-id D --format croissant` writes the record as
+  Croissant JSON-LD (licence, version, source url, parent, the card as `rai:` properties, its files with their
+  sha256, the items as a record set with typed fields); without `--format` it prints the card as text (also an MCP
+  tool). A required property the record cannot give is named, never invented. Not run through `mlcroissant`.
+  `--format hf-readme` writes the card as a Hugging Face dataset README.
+
+- **A dataset from a Croissant description.** `--source croissant` reads any Croissant file or URL whose record set is
+  columns of one parquet, CSV, JSON or JSON-lines file (its sha256 checked), with the description's licence, version
+  (as `source.revision`) and `rai:` card. A FileSet is refused, naming its format: Hugging Face's descriptions keep
+  their parquet in one, whose files only the Hub can list.
+- **pyarrow is a dependency** (owner, 2026-11-05), to read parquet: `pyarrow>=15`, installed with the harness.
+
+- **A field set proposed from a source.** `evh fieldset-propose --source NAME --query JSON --fieldset-id ID` turns
+  the features a source describes into a field set (types mapped, few-valued text proposed as a choice from a
+  sample), printed for a person to read; `--write` writes it, never over one that exists.
+
+- **A dataset from the Hugging Face Hub, pinned.** `--source huggingface --query '{"ref", "split", "text", …}'` reads
+  the Hub's parquet conversion of a split at one commit (`source.revision`), each file checked against the Hub's
+  sha256, with the card's licence and metadata, and each row's viewer page as its link.
+
+- **Publishing a dataset to the Hugging Face Hub.** `evh dataset-publish --to huggingface --query '{"repo": …}'`
+  writes a new repo, private by default (items as parquet, the record, the card as README), reads it back by sha256,
+  and records where it went on the dataset. Hidden datasets are never published. `huggingface_hub>=0.26` is a new
+  dependency (owner, 2026-11-05). Checked live: a private repo published, read back and deleted.
+
+- **Datasets from Zenodo and OpenML.** `--source zenodo` reads a record's table file (md5 checked, the record id as
+  revision); `--source openml` reads a dataset's parquet copy with its version and typed features.
+
+- **Datasets from Kaggle, without kagglehub.** `--source kaggle` reads a table file of a dataset's zip at a version
+  through Kaggle's own API (public datasets need no credentials), with its licence mapped from Kaggle's name.
+
+- **The examples fetch through the huggingface source.** Their shared reader (`examples/_shared/hf_rows.py`) reads
+  each split's parquet conversion at a commit pinned once a fetch, each file sha256-checked, instead of the
+  datasets-server's `/rows` (whose 2026-11-02 outage held back a release); the retry ladder, the parquet fallback
+  and the fetchers' `--delay` are gone. The rows were checked equal to `/rows` at 21 places across the 8 splits the
+  fetchers read, and the 12 committed Hub datasets fetched fresh match every frozen hash and gold checksum. The
+  examples cap pyarrow below 26, which refuses the NumPy 1.x they pin on Intel macOS (18.1 to 25.0 checked).
+
+- **A held-out side's reads, recorded, and its counts for safety only** (RFC-031 H1, H2; the triage fleet's 78 of
+  91 held-out items read before anyone noticed): `evh exposure-add` records a read (by hand or a TSV), the harness
+  records its own when it shows a held-out item's text, an output or a label, and every score on the side leaves the
+  read items out and says how many (`pair-test --include-exposed` shows the full number beside it, marked);
+  `evh exposure` counts the reads; `evh exposure-check` searches the project's public repos for held-out ids named
+  after their time and exits 6 on one the register lacks. `dataset-split --seal --count-by` fixes what a held-out
+  side's counts may be grouped by, `evh sealed-counts` counts by those fields per day (a capture's newer records too),
+  and `evh dataset-seal-counts` lets a person add one.
+
+- **Labels from what happened later, in other systems** (RFC-031 L1-L3, X3): `label-from-capture` and
+  `label-coverage` join an outcome from another capture (`--outcomes C --join F=F --within -1m,+15m`, `--outcomes-as`
+  one name across later captures), with an identity check and a "gone from the source, or its id reused" class that is
+  never labelled; each label keeps when its outcome happened and when it became knowable, and the set its `as_of`; a
+  relabel (`--from-set`) keeps the earlier labels, adds what matured and marks what changed after maturing, and never
+  drops a label silently; a rule's `under: action` keeps production's action, and a run or rescore against the set
+  leaves out an item where the variant acted otherwise ("not scorable under this variant", recorded). Several outside
+  systems in one label run: `--outcomes` again, each with its own options, read under its own name; the set records
+  each (`source.outcomes`, a list) and `label-mutants` mutates each join (the fleet's beta).
+
+- **Replays with production's own writes hidden, and the history confound** (RFC-031 P1): `replay.hide: {kinds:
+  [...]}` hands the adapter what to hide (production's own writes of those kinds inside the replayed window), as part
+  of its identity, so only a faithfulness record made with it lets the replay be scored; an adapter marks the items
+  where a variant met a person's reaction to an action it did not take, and the run and every score on it say how
+  many (`history_confound`, the ids in `confound.jsonl`, never a held-out side's). The replay example shows both.
+
+- **A past period at its own code, beside a candidate** (RFC-031 P2): `evh periods --model ID` numbers a code
+  record's deployed periods (with how each was dated, `dated_by: pull | commit`) and counts a replay's items in each;
+  `evh period-compare` reads a period's production, its code as it ran and a candidate, refuses to count when the
+  replay disagrees with production there, and gives the paired test on that period's items only.
+
+- **The labeller mutation-tested, and labels kept only where production is reproduced** (RFC-031 X1, X2): `evh
+  label-mutants` labels again with each named change to the rules or the join (built in, and a project's own) and
+  exits 6 on a mutant that moves no label; `label-from-capture --reproduced-by REPLAY_RUN --production RUN` keeps a
+  label only where the replay at the recorded versions reproduces production's decision, and counts one at a version
+  dated by commit time (`dated_by: commit` on a code record's deployment) as approximate. A replay run records each
+  item's commit on its row (`_commit`).
+
+### Changed
+
+- **Judging spend is counted** (RFC-032 step 7): `evh cost-report` ends with what judging cost, per scorer, judging set
+  and judge, read from the verdicts' own `cost_usd` (`billed` where the provider reported it, `estimated` where the
+  scorer's price table priced it; this repository's 3,280 verdicts: $13.50), the dataset filter applied through each
+  judging set's dataset. Judging keeps its own budget and keys, never a round's budget: a pass is capped by the
+  smallest of its scorer's `cost_cap_usd`, the new `EVAL_JUDGE_MAX_COST_USD` and `EVAL_MAX_COST_USD` (a job's
+  max_cost_usd), and its calls read the `EVAL_JUDGE_<NAME>` keys first, as since 0.4.0 (ADR-0005).
+- **`evh judge` (the older judge panel, its own config format, no stored verdicts) is removed:** judge with a judge scorer (`evh judge-score`).
+- **One `evh migrate` brings a project to 0.8.0's formats**, in four steps (runs, datasets, records, fingerprints),
+  idempotent, `--dry-run` first. `fingerprint-migrate` (0.6.0 to 0.7.2) is its fingerprints step; the per-format
+  commands built during 0.8.0 were folded into it before the release. `data-migrate` (files and SQLite) stays its
+  own command.
+- **`runs-list --baselines` is now `evh baselines`** (RFC-027); `run-promote --baseline-id` is gone (a baseline is
+  named by goal, dataset and version); `round-close --promote` promotes into the round's goal, read as the round
+  reads its arms. A goal page reads only its own baselines, no longer a dataset baseline with no goal.
+- **`dataset-split --by hash|time` is now `--split-by`** (and a split side records `split.split_by`), so `--by` means
+  who acted on every command that writes (RFC-027).
+- **The paired tests take their normal limit from 10,000 units** (ADR-0028). From 10,000 items (or clusters) the
+  sign-flip p is erfc(|z|/sqrt 2) with z = sum d / sqrt(sum d^2), and the contender test's bootstrap-t p is
+  1 - Phi(T), instead of 20,000 permutations and 9,999 resamples; a simulation over seven kinds of data
+  (`tools/large_sample_check.py`) found them within the resampling's own Monte Carlo error there, and not at 1,000
+  to 5,000 for heavy-tailed or sparse data, so below 10,000 nothing changes and no committed result moves.
+  `pair-test` and `family-test` say which (`method`: `exact`, `sampled`, `normal limit`, in the text and `--json`;
+  `family-test` a `p_method` per row). A p from the limit can be 0.0 (it prints `<0.0001`). A family that mixes
+  sizes keeps its other opponents' p's: the one random stream moves past a large opponent as if it were drawn.
+- **Every `evh` command keeps the p's it draws** in `<project>/.cache/evh-p.jsonl` (`EVH_P_CACHE`; an empty value
+  turns it off), as `evh mcp` did: `goals` right after `catalog` reads them instead of drawing them again (142 s to
+  0.4 s on a 1,000-item, 50-arm project).
+- **Resampled tests are drawn at once in child processes**: a catalog's, a goal's and a comparison's bootstrap-t's
+  and sign-flips are found first, drawn in parallel, and read back, the same p's bit for bit (each is seeded by its
+  data or its seed). The 1,000-item, 50-arm project's catalog took 16.3 s instead of 150.4 s, `goals --goal --json`
+  12.5 s instead of 147.7 s, with the same JSON and the same pages. Small projects are drawn as before, and so is
+  everything in a container under one whole CPU (the quota is read, as `cpus: 0.5` hides it from the core count);
+  `EVH_WORKERS` sets the number, `1` turns it off.
+- **A dataset page lists 200 items a page**, the rest on pages beside it (`d/<dataset>~items-2.html`, ...): the
+  10,000-item page was 13.8 MB, now 0.32 MB. The page's filter reads its own page; `evh dataset-items` lists all.
+- **The agent skills put a setting in with `evh data-put` and read one with `evh data-show --text`**, in a
+  temporary folder, so they work in either store and never touch a folder of the project's own.
+- **A run's outputs are one file** (RFC-024). `outputs.jsonl`, a line per item (`item_id`, `text`, `sha256`),
+  appended as each output is produced and rewritten in dataset order when the run completes, replaces the `outputs/`
+  folder of one file per item. Re-scores, judgings and sheet imports no longer copy their source's outputs: they read
+  them through `derived.from`. Every module reads outputs through one function. `evh migrate` moves a project's
+  runs (`--dry-run` first); in this repository it turned 94,796 files into 305 (`harness/data/` from 106,492 files
+  to 12,001), every output and V5 signature checked equal before and after. A derived run records its source's
+  directory (`derived.from_dir`) and reads only that run; `validate` V23 names a run left in the old layout or a
+  derived run whose source is gone. A resume from a run that kept no row checkpoint no longer crashes (`_Resumed`
+  read `_extra` from an empty row).
+
+- **A dataset's version means something.** `version` is MAJOR.MINOR, two integers (1.10 follows 1.9), computed from
+  the lineage when the dataset is made: 1.0 for a first dataset and for each side of a split (which names its
+  parent's version, `split.from_version`); from a parent (`--from`, `dataset-extend`), MINOR + 1 when items were only
+  added, MAJOR + 1 and MINOR 0 when any was removed or changed. A licence or description change is no new version.
+  `validate` (V22) recomputes it; `evh migrate` writes it for records made before (every committed dataset
+  is 1.0 by the rule, as it was). Neither key is in a run's fingerprint: no run moves.
+
+- **One failed item no longer stops a run** (owner, 2026-11-05). An item whose call fails (not transiently) is
+  scored as an empty answer (0 on most measures, or the adapter's `score_failure(reference)`), marked `failed` on its
+  row, listed in metrics.json's `failed_items`, and called again by `--resume`; the run goes on. A 429 or a timeout
+  that outlasts the retries now stops the run with `75` like an unreachable server (it used to end in a traceback),
+  and more than 5 failures that are also over 20% of the items called stop it with `ERROR (failed)`.
+- **A contender is shown no worse than the leader** ([ADR-0026](../docs/adr/ADR-0026-contenders-by-non-inferiority.md)).
+  It had to be "not significantly different", which more arms are the fewer items there are, and `frugal` then
+  recommended the cheapest. Now a one-sided non-inferiority test against the leader decides, Holm across the
+  candidates: Tango's score test for 0/1 scores at any size, the bootstrap-t from 100 items or clusters for other
+  scores, "too few items to call a tie" below. A strategy is a default margin: `balanced` 5% of the leader (was 2%,
+  with the old test), `frugal` 10% (had none), `quality_first` the same quality; a goal's `axes.quality.margin`
+  wins, and `validate` notes each goal on a default. **Recommendations move** on goals whose contenders the old
+  rule over- or under-counted: on this repository's 7 goals, scifact recommends deepseek_s (was the free e5_base, not
+  shown within 10% once 18 arms are corrected for), ag_news bert_base_ta and triage its leader (both were undecided).
+- **Each exit code has one meaning** ([RUNBOOK, Exit codes](docs/RUNBOOK.md#exit-codes)). The cost cap that stops
+  `evh run` or `judge-score` early exits `4` (was `2`, which is also a usage error); a run that measured nothing
+  exits `7` (was `1`, which is also a refusal); a server that could not be reached exits `75` (was `1`); a check
+  that ran and found problems exits `6` (was `1`): `validate`, `self-test`, `env-check`, `importer-check`,
+  `arm-smoke`, `model-onboard`, `deploy-sheet --capture`; a `sweep` in which some runs failed exits `5` (was `1`).
+  `evh` exits `70` for an error nothing caught (a traceback) and `130` on Ctrl-C, without a traceback.
+- **Every refusal names its kind:** `ERROR (<kind>): <why>`, the kind one of twelve
+  ([RUNBOOK, Refusals](docs/RUNBOOK.md#refusals)): `not-found`, `bad-argument`, `would-overwrite`, `mismatch`,
+  `invalid-file`, `not-materialized`, `not-enough`, `not-public`, `not-allowed`, `not-configured`, `failed`,
+  `missing-dependency`. A script or an agent reads the kind, which stays when a message is reworded. The
+  project's `AGENTS.md` (`evh init`) says what to do for each exit code and the common kinds.
+
+### Fixed
+
+- **The API took a file or code path where the command line does** (RFC-026 says it never does): `capture --importer`,
+  `importer-check`'s importer and `dataset-create --source` given as `path.py:Class` loaded that file's code, `--query
+  @file` of `capture` and `importer-check` read a file of the server's, and `data-put`'s file was read from the server.
+  The API now takes a name for the first three, the query's JSON (not `@file`), and `data-put`'s file as an upload;
+  each needed the server's token. A served argument whose help offers `path.py:Class` or `@file` without a rule fails
+  a test.
+- **The catalog's arms page** (its design critique, 2026-11-12):
+  - Sorting a grouped table threw on a group's heading row and did nothing; it sorts inside each group now.
+  - A column sorted its cells' text: a cost as "$0.0009", a blank first, every measure in one ranking. It sorts each
+    cell's value now, blanks last, a measure among its own.
+  - No row said what it was measured against. Each is tinted by its kind, under the row key, and "measured" names
+    its reference and tier.
+  - A free arm's cost read "—". It reads "$0".
+  - The picked arms' bar hid under the header.
+  - Sections are headings, and a column head keeps its meaning around its sort button.
+  - "leader" did not say whether the lead was real. It says how many eligible arms it is not significantly
+    ahead of, or that it is significantly ahead.
+  - The role badges looked alike: a result is set solid, an arm left out drawn as an outline.
+  - The trade-off charts did not name their reference; they do. Speed's ticks read "57.5 s", not "57500.0".
+    The frontier is no longer drawn in the accent.
+  - A grouping or a facet picked was lost on reload; both are in the address now.
+  - Every catalog page has a skip link to its content.
+  - The page opened on 690 arms in alphabetical order, no leader in sight. It opens grouped by dataset, the arms a
+    goal decided on first, three a group with "show N more" (owner, 2026-11-12); a group's count follows the
+    filter.
+  - A filter that matched nothing left bare column heads. It says so, with a button that clears it.
+  - A judged row was tinted in a model kind's colour and a silver row in a grey like a label set's: a judge's is the
+    model source's colour, silver's the silver tier's, a label set's rule is thin. A baseline badge is plain.
+  - `evh arms` opens as the page does: grouped by dataset, the arms a goal decided on first, three a group with the
+    command that shows the rest; `--all` shows every row, `--by none` none grouped, `--dataset-id` one dataset in full.
+  - A dataset's group mixed references and measures (gold and adjudicated gold; coverage and a judge's score) and read
+    as one ranking. A group is now one dataset scored one way on one measure, its direction named; the page and `evh
+    arms` say "dataset ag_news_200 · against gold/ag_news_200 · correct ↑". The deciding measure's first sort is best
+    first. The table fits 1280. Each trade-off chart lists its points as a table, and its words are readable on a
+    phone. The light theme's series colours are 3:1 or more on every light surface (amber was 1.9:1).
+  - An arm scored against the reference it wrote led its group (coverage 1.000), told by colour alone: it says so in
+    words, on the page and in `evh arms`, and is read last. Columns no longer overlap at 1280; a folded group opens ten
+    at a time; the footer's command is the view's; a config's rank sorts by its number.
+  - The rest of the arms page's review: heads that stay in view; a key to the role badges and the only chips labelled
+    by kind; a group no goal decides says so; on a phone the controls and keys fold (the first arm from 1,135px down to
+    769px); the period in the address (`?period=`, `#p` links still read); config ids linked; chart axes in Muted
+    (they were 1.6:1).
+  - The sixth review: "no goal decides here" showed under groups a goal decides, and a configs chip showed at an equal
+    count (a display rule beat [hidden]; the catalog keeps hidden hidden now, which also showed the home page's
+    period chips were found by a duplicate id: period.js finds them by place). Every grouping ranks like with like.
+    Keyboard focus clears the sticky heads. The footer's command follows the period's "more…". Picks and the sort
+    are in the address. A jump to the page's sections; cells name their group. Role pills padded; a sans note 12px;
+    chart words 11px or more. `evh arms` says "1 arm", shows cost and latency, keys its roles.
+- **`dataset-from-capture` deleted what sat in its items' folder**: `data/sources/<dataset>/` was emptied before the
+  items were written, and a capture's own export kept there was deleted without a word (the fleet's beta). A file
+  there that the dataset's record does not name is now refused (`would-overwrite`), and stays.
+- **`pair-test --round` gave one reason for three**: a round whose only arm is its baseline, or whose leader is its
+  baseline, was said to "record no other baseline run". Each is now named; `--a` naming the baseline itself is said
+  as that, whatever else the round holds (the fleet's beta and retest).
+- **`label-mutants` reported a join mutant it could not apply as SURVIVED**: a project's join mutant with a key the
+  join does not read (`item_field`) ran the unchanged join. It is refused now, the key named (the fleet's beta).
+- **A regression guard could not cover runs made before it was declared**: V5 read `expect_identical_to` only from a
+  run's `metrics.json`, which a frozen run never gains. It now also reads the config's own declaration, so a guard
+  pair from before 0.8.0 is checked as the guard, not flagged as a copied result. A config kept outside
+  `data/configs/` is read from the folders `config.yaml` names under `configs:` (the fleet's beta and retest).
+- **A history confound had two denominators**: the run's note counted every item (5 of 287), while its score's mean
+  counted only the items the adapter marked (5 of 34, 0.147). An unmarked item now counts as 0, so both read 5 of
+  287. A command reading part of a run (`period-compare`'s period) counts the confound over the items it reads
+  (the fleet's beta).
+- **`period-compare --production` took only a config id**, where `faithfulness --production` takes a run id; the run
+  id was refused with "no run of". `--production` and `--candidate` now take either (the fleet's beta).
+- **A code record's misplaced key was ignored**: `dated_by` on a version, instead of on its deployment, dated
+  nothing and said nothing. A replay's code record is now held to its schema when it is read, and the refusal says
+  where `dated_by` goes (the fleet's beta).
+- **`validate` V24 failed every replay run**: it required a run's `deployment.code` to be one checkout (repo, commit,
+  dirty, path), and a replay's (RFC-030) is its code record, the record's versions' hash and the commits it ran. The
+  replay test read only V26's line of `validate`; it now holds V24 too.
+- **`budget-check`'s cached answer timed recomputes**: the warm-up stops at 3/4 of the cache's 32 MB (151 of this
+  repository's 2,931 catalog links), so most sampled links were computed on the request, and the median followed the
+  runner's speed (26 to 53 ms against 50). Each link is now asked once and then timed (0.5 ms); the check prints how
+  many links the warm-up cached, and an answer the cache does not hold stays the cold budget's. The inspector also reads
+  each arm's `metrics.json` once instead of on every answer (an uncached answer 25.7 → 21.8 ms here; `--warm`'s peak
+  116 → 128 MB).
+- **An agent could not act through the API, and the server's own actor reached every job** (RFC-026, RFC-027; an
+  independent review): a job had no `for`, so an agent's job failed when its command first recorded who acted (a run:
+  after its last item, its cap spent), and every job inherited the server's `EVH_ACTOR` / `EVH_FOR`. A job call now
+  carries `for: person:NAME`, refused before a job exists for an agent without it; a job's actor is its own alone.
+- **Stopping a queued job left its supervisor holding the locks it had taken**, behind a job that read `cancelled`:
+  the supervisor is now ended with it.
+- **A command waiting for a lock a job held waited in silence** (`run-promote` on a test set, a run in a budgeted
+  round, a study's log, `faithfulness-name`): it now says which lock and who holds it.
+- **The pick list could lose lines, and a new SQLite project's database could fail to open, under writers at once**:
+  the list is one per project, but `pick` locked per dataset and `dataset-extend` not at all, and in the SQLite store
+  an append is a read and a rewrite (eight writers kept 21 of 200 lines); and setting a new database's journal mode
+  while another process did raised "database is locked". The list now has one project-wide lock, and a database is
+  set up by one process at a time.
+- **The contender test raised on whole-number scores passed to `stats` directly** (an int has no `.hex()`); `evh`
+  reads every score as a float, so no command met it. Its look-ahead dropped them too.
+- **Test files left their temporary projects in /tmp** (6,762 of them, filling its inodes on a shared machine): the
+  self-test and the store matrix give each test file a temporary folder of its own, removed when it ends.
+- **A client could read the previous server's API token** (RFC-026): `catalog-serve` listened before it wrote
+  `.build/api-token`, so a script that waited for the port and read the file at once got the old token and a 401
+  (the store matrix met it under load), and the file was truncated and then written, so it could read it empty. The
+  port is now bound, the token written (beside and renamed into place), then listened on; a port that cannot be bound
+  leaves a running server's token alone.
+- **`family-test`'s first run below 10,000 units took 37.6 s at 1,000 items** (49 opponents): its opponents share
+  one random stream, so they were summed one after another. They are now summed in child processes, each from the
+  stream state its opponent starts at, and each sum is exact on integers: 6.7 s on the same project, every p bit for
+  bit what it was (the S2 bench, PLAN_0.8.0). Under one CPU it is drawn in order as before, still faster.
+- **Items with the same text got each other's labels**: labels follow an item by its text's hash, so on one dataset
+  every item with the same text (the same alert twice) took the label of the last of them, and a reference promoted
+  from the set held that label for all. Found by RFC-030's example, where 13 of 20 decisions share their text with
+  another: its faithful replay scored 0.6 against gold instead of 0.95. A label made on the item's own dataset now
+  follows its id; on another dataset a text its set labels two ways carries neither. The catalog's label views read
+  the same way.
+- **`fieldset-propose` proposed `date` for a timestamp**, whose values `dataset-create` then refused; a date or
+  datetime type is proposed only when every sampled value reads as it, else text.
+- **A round opened with `round-open` lost its actor**: `_rounds.save` writes a fixed list of fields and `actor`
+  (RFC-027) was not among them. Found building studies; `test_actor` now checks a round.
+- **`evh catalog` emptied the served folder before building** (RFC-026 step 4): a server showed missing pages for the
+  whole build, and a failed build left none. It now builds beside the folder and swaps it in.
+- **A job just started read `lost`** until its supervisor took its lock (found building step 4): it reads `queued`
+  while the supervisor process it started is alive.
+- **A file could be read cut short while it was written over** (RFC-026 step 1): `_store` wrote a file on disk by
+  truncating it and writing again, so a second reader (another terminal, the catalog server) could see half of it.
+  Every write is now a new file renamed into place. And `reference-promote` wrote its texts before its manifest:
+  it now builds the reference in a hidden folder and moves it in whole, as label sets already were. The RUNBOOK's
+  "What another reader sees while a command writes" lists each command's order.
+- **The comparison swapped an asked metric in silence**: `inspect --metric M` (and the inspector's `metric=`) on
+  runs with no per-item score of `M` compared another metric and did not say so. It now says `M` cannot be tested,
+  gives each arm's recorded value, and names the metric compared instead.
+- **`dataset-create --update-fields` kept only part of the record**: it rewrote the dataset with its items,
+  description, source, licence and lineage, and dropped its card, tags, split block, hidden-text flag,
+  `extended_from` and `made_from`. Every key it does not set is now kept.
+- **A judge that runs out of `max_tokens` is stopped after 3 calls, not after the whole pass.** A reasoning judge
+  that spends its tokens thinking replies with nothing, every time; judge-score said so only at the end, after every
+  call was paid for (the 0.7.1 newcomer run: tutorial 3's judge at 400 tokens). Now a judge whose first 3 replies all
+  come back empty at the token limit stops the pass (`STOPPED EARLY`), keeps what it stored, and prints the hint.
+- **The newcomer scenario and tutorial 3 commit what judging writes** (`data/runs-silver`, `data/judging-sets`,
+  `data/judge-verdicts`, `data/runs-judged`), which they left untracked.
+- **The inspector opens on large comparisons.** At 10,000 items and 40 arms it never showed its verdicts: its charts
+  took the least and greatest of 400,000 values with `Math.min(...values)`, which overflows the call stack. Past
+  500 items a run its charts now draw shaded bins instead of a dot each (they were 1.2 million dots), and its
+  per-item table draws only the rows it shows (10, then more on request; "show all" up to 1,000 items), where it
+  drew all of them and hid the rest (3.2 million elements). Found measuring S3 in a browser.
+- **The catalog's pages are the same whatever the process's hash seed.** The arms page's per-config rows came out in
+  another order every build, and on the models page a model's best rank, when two of its configs tied, could come
+  from either: both iterated a set. Found comparing two builds of one project; a test now builds under six seeds.
+- **A goal's dataset notes with a comma were cut short.** `notes: first 200 test rows, all CNN; ...` inside a
+  `{...}` entry is YAML for `notes: first 200 test rows` and a stray key; seven goals (the tutorial's among them)
+  showed half a note on their pages. The notes are quoted, and the goal schema now refuses a key a dataset entry
+  does not have (`validate` V14 names it). Found by the data page's round trip.
+- **A release cuts a hidden dataset's judged and re-scored runs too.** The deployment's copy decided "hidden" for
+  each folder directly under `data/runs*`, so a run a level deeper (`runs-judged/<scorer>/<run>`,
+  `runs-rescored/<scorer>/<source>/<run>`) on a hidden dataset was copied whole, its rows' `_meta` (which a judging
+  carries over from the source row) included. Each run is now decided by its own dataset. This repository has no
+  hidden dataset, so its published catalog never carried any.
+- **`evh <command> --help` names the command.** 43 of the 67 commands printed the script behind them
+  (`evh run-promote --help` said `usage: promote_baseline.py`).
+- **`evh validate` survives a file that does not parse.** A dataset, run, baseline or capture that is not valid
+  JSON is named by V1, and every later check runs; before, the first check to read it ended `validate` in a
+  traceback. A reference manifest, capture record or label set that does not parse is named by its own check.
+- **A cancelled MCP call stops its command.** The server waited for the command to finish, so a call a client
+  gave up on kept running to its timeout and held one of the server's slots.
+
 ## 0.7.2 — 2026-11-04
 
 The public MCP server's answers written ahead were empty. From 0.6.2 to 0.7.1 its `goals`, `datasets`, `arms`,

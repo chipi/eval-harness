@@ -273,7 +273,7 @@ best and cannot score an arm added next week. Mixing them would let a judgement 
 
 ### The deploy sheet
 
-After you promote an arm, `evh deploy-sheet --config <arm>` (and the arm's page) prints everything production must
+After you promote an arm, `evh deploy-sheet --system <arm>` (and the arm's page) prints everything production must
 match to run what you measured: the model and its build (the model record's deployment: tag, digest, server and
 its settings), every setting the arm sends, the prompt and its hash, the adapter and its version, and the dataset
 and reference it was promoted on. A capture whose records carry what production ran (for triage, the ledger's
@@ -330,7 +330,7 @@ The docs and the site say so and imply neither.
 | `evh sheet-import sheet.csv --dataset-id D --by WHO [--kind person\|model] [--set S] [--scorer S]` | a filled sheet read back: labels as a label set, picks or scores as unvalidated judged runs | — |
 | `evh pick`, `evh picks`, `evh pick … --drop` | mark an item for datasets (targets, tags, note), list what waits, drop one | — |
 | `evh dataset-extend V1 --dataset-id V2 --picks` (or `--pick ITEM …`) | the next version: v1's items and the chosen picks, with their lineage | — |
-| `evh deploy-sheet --config ARM` | what production must match; checked against a capture | — |
+| `evh deploy-sheet --system ARM` | what production must match; checked against a capture | — |
 
 The catalog and the inspector do the same where they can; every view or action has its command.
 

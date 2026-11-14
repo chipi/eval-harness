@@ -19,6 +19,9 @@ import tempfile
 from pathlib import Path
 from types import SimpleNamespace
 
+# Reads this repository's committed data (scorers, runs, verdicts), which is files.
+os.environ["EVAL_STORE"] = "files"
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tests/
 sys.path.insert(1, str(Path(__file__).resolve().parents[1] / "tools"))  # validate_judge_*
@@ -26,10 +29,16 @@ import functools
 import operator
 
 from evaluation_harness import judge_score as js
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runfix
+import _runstore
 from evaluation_harness import judging
 from evaluation_harness._common import load_module
+from evaluation_harness.model import runs as model_runs
 
 HERE = Path(__file__).resolve().parents[1] / "scripts"  # the core modules (this file is in tests/)
+from evaluation_harness import _outputs  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 
 
@@ -620,10 +629,10 @@ with tempfile.TemporaryDirectory() as tmp:
 real_runs = HERE.parent / "data" / "runs"
 check(
     "the committed scorer passes the gate against the committed SummEval runs",
-    js.validation_problems(real, real_runs) == [],
+    js.validation_problems(real) == [],
 )
 no_val = {k: v for k, v in real.items() if k != "validation"}
-check("no validation block: refused", js.validation_problems(no_val, real_runs) != [])
+check("no validation block: refused", js.validation_problems(no_val) != [])
 ghost = dict(
     real,
     validation=dict(
@@ -632,14 +641,14 @@ ghost = dict(
 )
 check(
     "a validation that names no committed run: refused",
-    any("is not in" in p for p in js.validation_problems(ghost, real_runs)),
+    any("is not in" in p for p in js.validation_problems(ghost)),
 )
 wrong = dict(
     real, validation=dict(real["validation"], runs=[dict(r, value=0.9) for r in real["validation"]["runs"]])
 )
 check(
     "a claimed value that the committed run does not have: refused",
-    any("claims" in p for p in js.validation_problems(wrong, real_runs)),
+    any("claims" in p for p in js.validation_problems(wrong)),
 )
 swap = dict(
     real,
@@ -653,20 +662,18 @@ swap = dict(
 )
 check(
     "a run that measured a different model than the judge: refused",
-    any("measured model" in p for p in js.validation_problems(swap, real_runs)),
+    any("measured model" in p for p in js.validation_problems(swap)),
 )
 partial = dict(real, validation=dict(real["validation"], runs=real["validation"]["runs"][:1]))
 check(
     "a judge no validation run names: refused",
-    any("no validation run names it" in p for p in js.validation_problems(partial, real_runs)),
+    any("no validation run names it" in p for p in js.validation_problems(partial)),
 )
 check(
     "a prompt that is not the validated one: refused",
     any(
         "sha256_at_16" in p
-        for p in js.validation_problems(
-            dict(real, prompt=dict(real["prompt"], sha256_at_16="0" * 64)), real_runs
-        )
+        for p in js.validation_problems(dict(real, prompt=dict(real["prompt"], sha256_at_16="0" * 64)))
     ),
 )
 for k_, v_, what_ in (
@@ -682,12 +689,12 @@ for k_, v_, what_ in (
     )
     check(
         f"gate: a scorer whose judge differs from the validated run in {what_}: refused",
-        any(f"{k_}=" in p for p in js.validation_problems(changed, real_runs)),
+        any(f"{k_}=" in p for p in js.validation_problems(changed)),
     )
 no_sha = dict(real, prompt={k: v for k, v in real["prompt"].items() if k != "sha256_at_16"})
 check(
     "gate: a validation block without prompt.sha256_at_16: refused",
-    any("required" in p for p in js.validation_problems(no_sha, real_runs)),
+    any("required" in p for p in js.validation_problems(no_sha)),
 )
 with tempfile.TemporaryDirectory() as tmp:
     td = Path(tmp)
@@ -702,7 +709,6 @@ with tempfile.TemporaryDirectory() as tmp:
             "prompt file" in p
             for p in js.validation_problems(
                 dict(real, prompt=dict(real["prompt"], file="examples/summeval-judging/other.txt")),
-                real_runs,
                 Path(td),
             )
         ),
@@ -713,7 +719,7 @@ floor = dict(
 )
 check(
     "gate: a judge whose validation metric is below min_metric: refused",
-    sum("below the scorer's min_metric" in p for p in js.validation_problems(floor, real_runs)) == 2,
+    sum("below the scorer's min_metric" in p for p in js.validation_problems(floor)) == 2,
 )
 check(
     "the committed scorer sets min_metric on every judge",
@@ -729,19 +735,19 @@ with tempfile.TemporaryDirectory() as tmp:
     rd = Path(td) / "runs"
     for r_ in real["validation"]["runs"]:
         shutil.copytree(real_runs / r_["run"], rd / r_["run"])
-    mf = rd / real["validation"]["runs"][0]["run"] / "metrics.json"
+    mf = rd / real["validation"]["runs"][0]["run"] / "run.json"
     mj_ = json.loads(mf.read_text())
     mj_["fingerprint"]["settings"]["declared"]["prompt_sha256"] = "0" * 64
     mf.write_text(json.dumps(mj_))
     check(
         "gate: a validation run that used a different prompt: refused",
-        any("used prompt" in p for p in js.validation_problems(real, rd)),
+        any("used prompt" in p for p in js.validation_problems(real, runs_dir=rd)),
     )
     del mj_["fingerprint"]["settings"]["declared"]["prompt_sha256"]
     mf.write_text(json.dumps(mj_))
     check(
         "gate: a validation run that recorded no prompt sha: refused",
-        any("records no prompt sha256" in p for p in js.validation_problems(real, rd)),
+        any("records no prompt sha256" in p for p in js.validation_problems(real, runs_dir=rd)),
     )
 
 one_family = dict(real, judges=[real["judges"][0], real["judges"][0]])
@@ -803,27 +809,27 @@ with tempfile.TemporaryDirectory() as tmp:
 # ── scored runs: shape, provenance, originals untouched, readable by the leaderboard ──
 with tempfile.TemporaryDirectory() as tmp:
     td = Path(tmp)
-    runs = td / "runs"
-    arms = []
-    for a in ARMS:
-        d = runs / a["run"]
-        (d / "outputs").mkdir(parents=True)
-        rows = []
-        for i in ITEMS:
-            (d / "outputs" / f"{i}.txt").write_text(OUTPUTS[a["config_id"]][i])
-            rows.append(
-                {
-                    "item_id": i,
-                    "coverage": 0.3,
-                    "cost_usd": 0.001,
-                    "latency_ms": 5.0,
-                    "tokens_in": 10.0,
-                    "_meta": {"usage": {"cost": 0.001}},
-                }
-            )
-        (d / "predictions.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rows))
-        (d / "metrics.json").write_text(
-            json.dumps(
+    # a throwaway project of its own: model.runs reads and writes the process's project, which is this one for the block
+    with _runstore._InProject(td / "proj") as data_dir:
+        runs = data_dir / "runs"
+        arms = []
+        for a in ARMS:
+            d = runs / a["run"]
+            rows = []
+            for i in ITEMS:
+                _outputs.writer(d).add(i, OUTPUTS[a["config_id"]][i])
+                rows.append(
+                    {
+                        "item_id": i,
+                        "coverage": 0.3,
+                        "cost_usd": 0.001,
+                        "latency_ms": 5.0,
+                        "tokens_in": 10.0,
+                        "_meta": {"usage": {"cost": 0.001}},
+                    }
+                )
+            sd = _runfix.put_run(
+                data_dir,
                 {
                     "config_id": a["config_id"],
                     "run_id": a["run"],
@@ -838,76 +844,94 @@ with tempfile.TemporaryDirectory() as tmp:
                         "instrument": {"adapter": {"id": "old"}},
                         "arm": {"config_id": a["config_id"]},
                     },
-                }
+                },
+                rows,
             )
+            arms.append(dict(a, dir=sd))
+        found = js.discover_arms("ds", "_v1")
+        check(
+            "discover_arms finds one primary run per arm",
+            [a["config_id"] for a in found] == sorted(a["config_id"] for a in ARMS),
         )
-        arms.append(dict(a, dir=d))
-    found = js.discover_arms("ds", "_v1", runs)
-    check(
-        "discover_arms finds one primary run per arm",
-        [a["config_id"] for a in found] == sorted(a["config_id"] for a in ARMS),
-    )
-    before = {p: p.read_bytes() for p in runs.rglob("*") if p.is_file()}
-    sc = scorer()
-    vdir = td / "v"
-    run_all(vdir, call=fake_judge())
-    proj = js.project(sc, js.load_scores(m1, sc, vdir), ITEMS)
-    out = td / "judged" / sc["scorer_id"]
-    js.write_scored_runs(m1, sc, arms, proj, out, "validated judge", True)
-    r0 = out / arms[0]["run"]
-    check(
-        "scored runs land in a separate dir, one per original run, same name",
-        sorted(p.name for p in out.iterdir()) == sorted(a["run"] for a in ARMS),
-    )
-    check("the originals are untouched (byte for byte)", all(p.read_bytes() == b for p, b in before.items()))
-    pr = [json.loads(x) for x in (r0 / "predictions.jsonl").read_text().splitlines()]
-    mj = json.loads((r0 / "metrics.json").read_text())
-    check(
-        "predictions carry the primary, per-judge columns and the CARRY fields",
-        len(pr) == 3
-        and {"judge_score", "judge_ja", "judge_jb", "cost_usd", "latency_ms"} <= set(pr[0])
-        and pr[0]["cost_usd"] == 0.001
-        and "coverage" not in pr[0],
-    )
-    check(
-        "metrics.json: primary_metric, scores, provenance, fingerprint hash invalidated",
-        mj["primary_metric"] == "judge_score"
-        and abs(mj["scores"]["judge_score"] - (expected_a(0) + expected_b(0)) / 2) < 1e-9
-        and mj["derived"]["kind"] == "judge"
-        and mj["derived"]["from"] == arms[0]["run"]
-        and mj["derived"]["with"]["judging_set_id"] == m1["judging_set_id"]
-        and mj["fingerprint"]["hash"] is None
-        and "coverage" not in mj["scores"],
-    )
-    check("metrics.json: kinds mark judge columns quality", mj["metric_kinds"]["judge_score"] == "quality")
-    check(
-        "metrics.json: the source's cost and speed keep their kinds (the judged leaderboard has a frontier)",
-        mj["metric_kinds"].get("cost_usd") == "cost" and mj["metric_kinds"].get("latency_ms") == "speed",
-        str(mj["metric_kinds"]),
-    )
-    js.write_scored_runs(m1, sc, arms, proj, td / "unval", "unvalidated judge", False)
-    mu = json.loads((td / "unval" / arms[0]["run"] / "metrics.json").read_text())
-    check(
-        "--unvalidated: the primary metric and the label say so",
-        mu["primary_metric"] == "judge_score_unvalidated"
-        and mu["derived"]["with"]["label"] == "unvalidated judge"
-        and mu["derived"]["with"]["validated"] is False,
-    )
-    # Python of the running interpreter: the same one that ran these assertions.
-    env = dict(os.environ, EVAL_RUNS_DIR=str(out))
-    lb_run = subprocess.run(
-        [sys.executable, str(HERE / "leaderboard.py"), "--dataset-id", "ds"],
-        cwd=HERE.parent,
-        env=env,
-        capture_output=True,
-        text=True,
-    )
-    check(
-        "leaderboard reads the scored runs with EVAL_RUNS_DIR (exit 0, shows judge_score)",
-        lb_run.returncode == 0 and "judge_score" in lb_run.stdout,
-    )
-    if lb_run.returncode != 0:
-        print((lb_run.stdout + lb_run.stderr)[-600:])
+        before = {p: p.read_bytes() for p in runs.rglob("*") if p.is_file()}
+        sc = scorer()
+        vdir = td / "v"
+        run_all(vdir, call=fake_judge())
+        proj = js.project(sc, js.load_scores(m1, sc, vdir), ITEMS)
+        written = js.write_scored_runs(m1, sc, arms, proj, "validated judge", True)
+        r0 = next(sd for sd in written if model_runs.run_of(sd).name == arms[0]["run"])
+        check(
+            "scored runs land under their runs, one each, keyed <scorer>@<judging set> and read as judged/<scorer>",
+            sorted(model_runs.run_of(sd).name for sd in written) == sorted(a["run"] for a in ARMS)
+            and all(sd.name == f"{sc['scorer_id']}@{m1['judging_set_id']}" for sd in written)
+            and all(model_runs.label(sd) == f"judged/{sc['scorer_id']}" for sd in written),
+        )
+        check(
+            "the originals are untouched (byte for byte)", all(p.read_bytes() == b for p, b in before.items())
+        )
+        mtimes = {p: p.stat().st_mtime_ns for p in r0.rglob("*") if p.is_file()}
+        js.write_scored_runs(m1, sc, arms, proj, "validated judge", True)
+        check(
+            "the same pass again writes nothing (the score has those rows)",
+            mtimes == {p: p.stat().st_mtime_ns for p in r0.rglob("*") if p.is_file()},
+        )
+        pr = _runstore.rows(r0)
+        mj = json.loads((r0 / "metrics.json").read_text())
+        check(
+            "predictions carry the primary, per-judge columns and the CARRY fields",
+            len(pr) == 3
+            and {"judge_score", "judge_ja", "judge_jb", "cost_usd", "latency_ms"} <= set(pr[0])
+            and pr[0]["cost_usd"] == 0.001
+            and "coverage" not in pr[0],
+        )
+        check(
+            "metrics.json: primary_metric, scores, provenance, fingerprint hash invalidated",
+            mj["primary_metric"] == "judge_score"
+            and abs(mj["scores"]["judge_score"] - (expected_a(0) + expected_b(0)) / 2) < 1e-9
+            and mj["derived"]["kind"] == "judge"
+            and mj["derived"]["from"] == arms[0]["run"]
+            and mj["derived"]["with"]["judging_set_id"] == m1["judging_set_id"]
+            and mj["fingerprint"]["hash"] is None
+            and "coverage" not in mj["scores"],
+        )
+        check(
+            "metrics.json: kinds mark judge columns quality", mj["metric_kinds"]["judge_score"] == "quality"
+        )
+        check(
+            "metrics.json: the source's cost and speed keep their kinds (the judged leaderboard has a frontier)",
+            mj["metric_kinds"].get("cost_usd") == "cost" and mj["metric_kinds"].get("latency_ms") == "speed",
+            str(mj["metric_kinds"]),
+        )
+        # Python of the running interpreter: the same one that ran these assertions.
+        lb_run = subprocess.run(
+            [
+                sys.executable,
+                str(HERE / "leaderboard.py"),
+                "--dataset-id",
+                "ds",
+                "--label",
+                f"judged/{sc['scorer_id']}",
+            ],
+            cwd=HERE.parent,
+            env=dict(os.environ),
+            capture_output=True,
+            text=True,
+        )
+        check(
+            "leaderboard reads the judged scores with --label judged/<scorer> (exit 0, shows judge_score)",
+            lb_run.returncode == 0 and "judge_score" in lb_run.stdout,
+        )
+        if lb_run.returncode != 0:
+            print((lb_run.stdout + lb_run.stderr)[-600:])
+        # An unvalidated pass of the same set is the same key: it replaces the score, as the pass run again does.
+        js.write_scored_runs(m1, sc, arms, proj, "unvalidated judge", False)
+        mu = json.loads((r0 / "metrics.json").read_text())
+        check(
+            "--unvalidated: the primary metric and the label say so",
+            mu["primary_metric"] == "judge_score_unvalidated"
+            and mu["derived"]["with"]["label"] == "unvalidated judge"
+            and mu["derived"]["with"]["validated"] is False,
+        )
 
 
 # ── one summary per call (the pointwise eval) ────────────────────────────────
@@ -1025,7 +1049,7 @@ check(
 )
 check(
     "pointwise scorer: no validation block, so the gate refuses it",
-    "validation" not in pw and js.validation_problems(pw, real_runs) != [],
+    "validation" not in pw and js.validation_problems(pw) != [],
 )
 argv0 = sys.argv
 sys.argv = ["judge_score.py", "--dataset-id", pw["dataset_id"], "--scorer", pw["scorer_id"]]
@@ -1504,8 +1528,8 @@ fake_sc = scorer(
 )
 check(
     "a provider: fake scorer can never pass the gate, validation block or not",
-    js.validation_problems({**fake_sc, "validation": real["validation"]}, real_runs) != []
-    and all("fake" in p_ for p_ in js.validation_problems(fake_sc, real_runs)),
+    js.validation_problems({**fake_sc, "validation": real["validation"]}) != []
+    and all("fake" in p_ for p_ in js.validation_problems(fake_sc)),
 )
 msg_ = js.build_message(BASE, "An article.", ["one", "two", "three"])
 r1, r2 = (
@@ -1852,8 +1876,7 @@ check(
 
 # The default arm set: every config on the dataset, latest run per config; another dataset's
 # runs are not in it; a mix of config versions is reported.
-with tempfile.TemporaryDirectory() as td_:
-    rd = Path(td_)
+with tempfile.TemporaryDirectory() as td_, _runstore._InProject(Path(td_) / "proj") as rd:
     for name, cid, ds, at in (
         ("a_v1_r1", "a_v1", "ds", "2026-01-01"),
         ("a_v1_r2", "a_v1", "ds", "2026-01-02"),
@@ -1861,11 +1884,17 @@ with tempfile.TemporaryDirectory() as td_:
         ("a_v2_r1", "a_v2", "ds", "2026-01-03"),
         ("c_v1_r1", "c_v1", "other", "2026-01-01"),
     ):
-        (rd / name).mkdir()
-        (rd / name / "metrics.json").write_text(
-            json.dumps({"config_id": cid, "dataset_id": ds, "created_at": at, "params": {"family": "x"}})
+        _runfix.put_run(
+            rd,
+            {
+                "config_id": cid,
+                "run_id": name,
+                "dataset_id": ds,
+                "created_at": at,
+                "params": {"family": "x"},
+            },
         )
-    found = js.discover_arms("ds", "", rd)
+    found = js.discover_arms("ds", "")
     check(
         "default arms: every config on the dataset, none from another dataset",
         [a["config_id"] for a in found] == ["a_v1", "a_v2", "b_v1"],
@@ -2912,22 +2941,15 @@ with tempfile.TemporaryDirectory() as tmp:
     vdir = td / "v"
     mrun(vdir, sc, man)
     proj = mproj(sc, man, vdir)
-    runs = td / "runs"
-    arms_d = []
-    for a in MARMS:
-        d = runs / a["run"]
-        (d / "outputs").mkdir(parents=True)
-        outs = m_outputs()
-        for i in MITEMS:
-            (d / "outputs" / f"{i}.txt").write_text(outs[a["config_id"]][i])
-        (d / "predictions.jsonl").write_text(
-            "".join(
-                json.dumps({"item_id": i, "coverage": 0.3, "cost_usd": 0.001, "latency_ms": 5.0}) + "\n"
-                for i in MITEMS
-            )
-        )
-        (d / "metrics.json").write_text(
-            json.dumps(
+    with _runstore._InProject(td / "proj") as data_dir:
+        arms_d = []
+        for a in MARMS:
+            d = data_dir / "runs" / a["run"]
+            outs = m_outputs()
+            for i in MITEMS:
+                _outputs.writer(d).add(i, outs[a["config_id"]][i])
+            sd = _runfix.put_run(
+                data_dir,
                 {
                     "config_id": a["config_id"],
                     "run_id": a["run"],
@@ -2942,55 +2964,68 @@ with tempfile.TemporaryDirectory() as tmp:
                         "instrument": {"adapter": {"id": "old"}},
                         "arm": {"config_id": a["config_id"]},
                     },
-                }
+                },
+                [{"item_id": i, "coverage": 0.3, "cost_usd": 0.001, "latency_ms": 5.0} for i in MITEMS],
             )
+            arms_d.append(dict(a, dir=sd))
+        written = js.write_scored_runs(man, sc, arms_d, proj, "unvalidated judge", False)
+        win_dir = next(sd for sd in written if model_runs.run_of(sd).name == MARMS[3]["run"])
+        rows = _runstore.rows(win_dir)
+        mj = json.loads((win_dir / "metrics.json").read_text())
+        check(
+            "pick judged runs: the primary is judge_won (judge_won_unvalidated while unvalidated), with per-judge columns",
+            mj["primary_metric"] == "judge_won_unvalidated"
+            and rows[0]["judge_won_unvalidated"] == 1.0
+            and {"judge_ja_unvalidated", "judge_jb_unvalidated", "cost_usd"} <= set(rows[0])
+            and "judge_score_unvalidated" not in rows[0]
+            and mj["scores"]["judge_won_unvalidated"] == 1.0
+            and mj["derived"]["with"]["mode"] == "pick",
         )
-        arms_d.append(dict(a, dir=d))
-    out = td / "judged" / sc["scorer_id"]
-    js.write_scored_runs(man, sc, arms_d, proj, out, "unvalidated judge", False)
-    win_dir = out / MARMS[3]["run"]
-    rows = [json.loads(x) for x in (win_dir / "predictions.jsonl").read_text().splitlines()]
-    mj = json.loads((win_dir / "metrics.json").read_text())
-    check(
-        "pick judged runs: the primary is judge_won (judge_won_unvalidated while unvalidated), with per-judge columns",
-        mj["primary_metric"] == "judge_won_unvalidated"
-        and rows[0]["judge_won_unvalidated"] == 1.0
-        and {"judge_ja_unvalidated", "judge_jb_unvalidated", "cost_usd"} <= set(rows[0])
-        and "judge_score_unvalidated" not in rows[0]
-        and mj["scores"]["judge_won_unvalidated"] == 1.0
-        and mj["derived"]["with"]["mode"] == "pick",
-    )
-    js.write_scored_runs(man, sc, arms_d, proj, td / "judged2", "validated judge", True)
-    mv = json.loads((td / "judged2" / MARMS[0]["run"] / "metrics.json").read_text())
-    check(
-        "pick judged runs: validated, the primary is judge_won and a quality metric; a loser scores 0",
-        mv["primary_metric"] == "judge_won"
-        and mv["scores"]["judge_won"] == 0.0
-        and mv["metric_kinds"]["judge_won"] == "quality"
-        and mv["metric_kinds"]["judge_ja"] == "quality",
-    )
-    env_ = dict(os.environ, EVAL_RUNS_DIR=str(td / "judged2"))
-    lb_pick = subprocess.run(
-        [sys.executable, str(HERE / "leaderboard.py"), "--dataset-id", "ds"],
-        cwd=HERE.parent,
-        env=env_,
-        capture_output=True,
-        text=True,
-    )
-    check(
-        "pick judged runs: the leaderboard reads them (exit 0, shows judge_won)",
-        lb_pick.returncode == 0 and "judge_won" in lb_pick.stdout,
-        (lb_pick.stdout + lb_pick.stderr)[-300:],
-    )
-    # a grade scorer's judged run carries no mode in its provenance
-    gsc = mscorer("grade")
-    del gsc["mode"]
-    gman = mmanifest(gsc)
-    gv = td / "gv"
-    mrun(gv, gsc, gman, outputs=m_outputs())
-    gproj = js.project(gsc, js.load_scores(gman, gsc, gv), MITEMS)
-    js.write_scored_runs(gman, gsc, arms_d, gproj, td / "gjudged", "validated judge", True)
-    gm = json.loads((td / "gjudged" / MARMS[0]["run"] / "metrics.json").read_text())
+        written = js.write_scored_runs(man, sc, arms_d, proj, "validated judge", True)
+        mv = json.loads(
+            next(sd for sd in written if model_runs.run_of(sd).name == MARMS[0]["run"])
+            .joinpath("metrics.json")
+            .read_text()
+        )
+        check(
+            "pick judged runs: validated, the primary is judge_won and a quality metric; a loser scores 0",
+            mv["primary_metric"] == "judge_won"
+            and mv["scores"]["judge_won"] == 0.0
+            and mv["metric_kinds"]["judge_won"] == "quality"
+            and mv["metric_kinds"]["judge_ja"] == "quality",
+        )
+        lb_pick = subprocess.run(
+            [
+                sys.executable,
+                str(HERE / "leaderboard.py"),
+                "--dataset-id",
+                "ds",
+                "--label",
+                f"judged/{sc['scorer_id']}",
+            ],
+            cwd=HERE.parent,
+            env=dict(os.environ),
+            capture_output=True,
+            text=True,
+        )
+        check(
+            "pick judged runs: the leaderboard reads them (exit 0, shows judge_won)",
+            lb_pick.returncode == 0 and "judge_won" in lb_pick.stdout,
+            (lb_pick.stdout + lb_pick.stderr)[-300:],
+        )
+        # a grade scorer's judged run carries no mode in its provenance
+        gsc = mscorer("grade")
+        del gsc["mode"]
+        gman = mmanifest(gsc)
+        gv = td / "gv"
+        mrun(gv, gsc, gman, outputs=m_outputs())
+        gproj = js.project(gsc, js.load_scores(gman, gsc, gv), MITEMS)
+        gwritten = js.write_scored_runs(gman, gsc, arms_d, gproj, "validated judge", True)
+        gm = json.loads(
+            next(sd for sd in gwritten if model_runs.run_of(sd).name == MARMS[0]["run"])
+            .joinpath("metrics.json")
+            .read_text()
+        )
     check(
         "grade judged runs are as before: primary judge_score, no mode in their provenance",
         gm["primary_metric"] == "judge_score" and "mode" not in gm["derived"]["with"],
@@ -3033,7 +3068,9 @@ for sid_ in ("judge-summ-v1", "judge-summ-v2"):
     sc_ = js.load_scorer(HERE.parent / "data" / "scorers" / f"{sid_}.yaml")
     sdir_ = next((HERE.parent / "data" / "judge-verdicts" / sid_).iterdir())
     man_ = json.loads((HERE.parent / "data" / "judging-sets" / f"{sdir_.name}.json").read_text())
-    old_summ = json.loads((HERE.parent / "data" / "runs-judged" / sid_ / "summary.json").read_text())
+    old_summ = json.loads(
+        (HERE.parent / "data" / "judge-summaries" / f"{sid_}@{sdir_.name}.json").read_text()
+    )
     st_ = js.run_judging(man_, sc_, js.prompt_text(sc_), {}, {}, sdir_, None, None, log=lambda *_: None)
     got_ = js.load_scores(man_, sc_, sdir_)
     proj_ = js.project(sc_, got_, [it["item_id"] for it in man_["items"]])
@@ -3043,8 +3080,26 @@ for sid_ in ("judge-summ-v1", "judge-summ-v2"):
         str(st_),
     )
     arms_ = [{"config_id": c, "family": a["family"]} for c, a in old_summ["per_arm"].items()]
+    # The outputs' lengths, as judge-score reads them, for each judge's length bias.
+    found_ = {a["config_id"]: a for a in js.discover_arms(sc_["dataset_id"], sc_.get("arms_match", ""))}
+    # the committed summary keeps the ids its arms had; the runs are found under the systems' current ids
+    renamed_ = json.loads((HERE.parent / "data" / "renames.json").read_text())["systems"]
+    ids_ = [it["item_id"] for it in man_["items"]]
+    words_ = {
+        c: {i: len(t.split()) for i, t in js.read_outputs(found_[renamed_.get(c, c)], ids_).items()}
+        for c in old_summ["per_arm"]
+    }
     new_summ = js.summarise(
-        man_, sc_, arms_, got_, proj_, old_summ["cost"], old_summ["label"], old_summ["validated"], sdir_
+        man_,
+        sc_,
+        arms_,
+        got_,
+        proj_,
+        old_summ["cost"],
+        old_summ["label"],
+        old_summ["validated"],
+        sdir_,
+        lengths=words_,
     )
     check(
         f"{sid_}: re-summarising the committed verdicts gives the committed summary.json, key for key",

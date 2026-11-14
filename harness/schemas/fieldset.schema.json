@@ -17,7 +17,7 @@
         "additionalProperties": false,
         "properties": {
           "name": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
-          "type": {"enum": ["text", "number", "integer", "boolean", "date", "duration", "url", "choice"]},
+          "type": {"enum": ["text", "number", "integer", "boolean", "date", "datetime", "duration", "url", "choice"]},
           "label": {"type": "string"},
           "description": {"type": "string"},
           "unit": {"type": "string", "description": "for number and integer fields; a duration is always in seconds"},

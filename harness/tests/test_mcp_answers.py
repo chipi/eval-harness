@@ -26,6 +26,9 @@ HERE = Path(__file__).resolve().parents[1] / "scripts"
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from evaluation_harness._check import check, summary  # noqa: E402
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runstore  # noqa: E402
+
 try:
     import anyio
     from mcp import ClientSession
@@ -52,9 +55,14 @@ try:
     # A relative EVAL_HOME, as render.sh passed it (`EVAL_HOME=_release/inspector`, run from the checkout): the
     # commands run inside the project, and from 0.6.2 to 0.7.1 they resolved it there and answered from nothing.
     (tmp / "data" / "goals").mkdir(parents=True)
-    shutil.copy(
-        Path(__file__).resolve().parents[1] / "tutorial" / "goals" / "tickets_summary.yaml",
-        tmp / "data" / "goals",
+    from evaluation_harness import _format
+
+    # A release's data is at this release's format (the deploy's gate, RFC-032): the model's commands read no other.
+    _runstore.write_text(tmp, _format.NAME, f"format: {_format.FORMAT}\n")
+    _runstore.write_text(
+        tmp,
+        "goals/tickets_summary.yaml",
+        (Path(__file__).resolve().parents[1] / "tutorial" / "goals" / "tickets_summary.yaml").read_text(),
     )
     rel_env = dict(env, EVAL_HOME=tmp.name)
     r = subprocess.run(
@@ -85,7 +93,7 @@ try:
         (r.stderr[-300:], goal_rows),
     )
     (tmp / "rel.jsonl").unlink(missing_ok=True)
-    shutil.rmtree(tmp / "data" / "goals")
+    _runstore.rmtree(tmp, "goals")
 
     r = evh("mcp", "--public", "--write-answers", str(answers))
     lines = [json.loads(x) for x in answers.read_text().splitlines()] if answers.exists() else []
@@ -94,7 +102,8 @@ try:
         "--write-answers: every tool that takes no argument, none whose default is dated or that needs an argument",
         r.returncode == 0
         and {"datasets", "goals", "arms", "metrics"} <= tools
-        and not tools & {"overview", "activity", "search", "dataset-items", "deploy-sheet"},
+        and not tools & {"overview", "activity", "search", "dataset-items", "deploy-sheet", "inspect"}
+        and "left out" not in r.stdout,
         f"exit {r.returncode}: {sorted(tools)} {r.stdout[-200:]}{r.stderr[-300:]}",
     )
     version = next((x["harness"] for x in lines), "")
@@ -102,7 +111,7 @@ try:
     # Per dataset: the writer asks leaderboard once for each dataset, with the argv a call builds.
     from evaluation_harness import mcp_server as ms
 
-    (tmp / "data" / "datasets" / "toy_v1.json").write_text("{}")
+    _runstore.write_text(tmp, "datasets/toy_v1.json", "{}")
     asked: list = []
 
     def fake_run(project, c, argv, timeout, public):
@@ -112,7 +121,8 @@ try:
     real_run = ms.run_command
     ms.run_command = fake_run  # type: ignore[assignment]  # a stand-in for the test
     try:
-        ms.write_answers(tmp, tmp / "ahead.jsonl", True)
+        with _runstore._InProject(tmp):
+            ms.write_answers(tmp, tmp / "ahead.jsonl", True)
     finally:
         ms.run_command = real_run
     want = ms.argv_of(ms.parser_of("leaderboard"), {"dataset-id": "toy_v1"})

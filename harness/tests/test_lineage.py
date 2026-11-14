@@ -9,7 +9,6 @@ dataset whose parent is gone; the catalog links the versions both ways, and a ve
 has run on yet still gets a page.
 """
 
-import json
 import os
 import shutil
 import subprocess
@@ -21,11 +20,13 @@ HERE = Path(__file__).resolve().parents[1] / "scripts"  # the core modules (this
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tests/
 KIT = HERE.parent / "tutorial"
+import _runstore  # noqa: E402
+from evaluation_harness import _format  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 
 proj = Path(tempfile.mkdtemp(prefix="evh-lineage-"))
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-lineage")
-for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_MAX_COST_USD"):
+for k in ("EVAL_DATA_DIR", "EVAL_MAX_COST_USD"):
     env.pop(k, None)
 
 
@@ -36,8 +37,9 @@ def evh(*args):
 
 
 try:
-    data = proj / "data"
-    (data / "configs").mkdir(parents=True)
+    if not _runstore.sqlite():
+        (proj / "data" / "systems").mkdir(parents=True)
+    _runstore.write_text(proj, _format.NAME, f"format: {_format.FORMAT}\n")
     v1_src, v2_src = proj / "src_v1", proj / "src_v2"
     shutil.copytree(KIT / "tickets", v1_src)
     shutil.copytree(KIT / "tickets", v2_src)
@@ -58,7 +60,7 @@ try:
     )
 
     r = evh("dataset-create", "--dataset-id", "tickets_v2", "--source-dir", "src_v2", "--from", "tickets_v1")
-    doc = json.loads((data / "datasets" / "tickets_v2.json").read_text()) if r.returncode == 0 else {}
+    doc = _runstore.read_json(proj, "datasets/tickets_v2.json") if r.returncode == 0 else {}
     check(
         "--from records the parent and the item ids added, removed and changed",
         doc.get("derived_from")
@@ -79,9 +81,11 @@ try:
     )
 
     # A run on v1 only: v2 has no arm, and still gets a page because it is v1's version.
-    shutil.copy(KIT / "configs" / "tickets_lead1.yaml", data / "configs")
+    _runstore.write_text(
+        proj, "systems/tickets_lead1_v1.yaml", (KIT / "systems" / "tickets_lead1_v1.yaml").read_text()
+    )
     evh("dataset-materialize", "--dataset-id", "tickets_v1")
-    r = evh("run", "--config", "data/configs/tickets_lead1.yaml")
+    r = evh("run", "--system", "tickets_lead1_v1", "--dataset", "tickets_v1")
     check("setup: an arm runs on v1", r.returncode == 0, r.stderr[-300:])
     r = evh("catalog")
     out = proj / ".build" / "catalog"
@@ -101,7 +105,7 @@ try:
         and 'from <a class="cell-link" href="d/tickets_v1.html">' in home,
     )
 
-    (data / "datasets" / "tickets_v1.json").unlink()
+    _runstore.unlink(proj, "datasets/tickets_v1.json")
     r = evh("validate")
     check(
         "validate: V2 fails a dataset whose parent is gone",

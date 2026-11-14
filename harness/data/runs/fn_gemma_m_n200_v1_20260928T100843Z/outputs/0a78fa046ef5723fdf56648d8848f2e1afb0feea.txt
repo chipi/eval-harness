@@ -1,6 +1,0 @@
-[
-  {
-    "text": "Aleš Hemský",
-    "type": "person"
-  }
-]

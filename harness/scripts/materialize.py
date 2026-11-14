@@ -21,38 +21,60 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
 import argparse
-import shutil
+import sys
 from pathlib import Path
 
-from evaluation_harness import _fetch
+from evaluation_harness import _fetch, _jsonout, _store
 from evaluation_harness._common import (
-    MATERIALIZED,
     die,
+    evh_prog,
     load_dataset,
     now,
     sha256,
     write_json,
 )
+from evaluation_harness.model import datasets as _datasets
 
 
 def main() -> int:
     """Materialize a dataset from sources and verify hashes."""
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
     ap.add_argument("--dataset-id", required=True)
     ap.add_argument("--force", action="store_true", help="rebuild even if it exists")
+    from evaluation_harness._actor import add_by  # noqa: PLC0415
+
+    add_by(ap)
+    ap.add_argument(
+        "--json",
+        action="store_true",
+        help="one JSON object on stdout when done (the text goes to stderr as it is printed): the envelope every --json command gives (result.blocks, result.values)",
+    )
     args = ap.parse_args()
+    with _jsonout.collect("dataset-materialize", args.json, live=sys.stderr):
+        ds = load_dataset(args.dataset_id)
+        out = _datasets.materialized_dir(args.dataset_id)
 
-    ds = load_dataset(args.dataset_id)
-    src_root = Path(ds.get("source_dir", "data/sources"))
-    out = MATERIALIZED / args.dataset_id
-
-    if out.exists() and not args.force:
-        print(f"{out} exists — nothing to do (--force to rebuild)")
+        if _store.exists(out) and not args.force:
+            print(f"{out} exists — nothing to do (--force to rebuild)")
+            return 0
+        # Built beside the old copy and put in its place only when every item is verified: a failed run leaves what was
+        # there (a --force that failed deleted the good copy; one without it left an empty folder that `exists` then
+        # took for a copy).
+        stage = _store.staging(out, f".{args.dataset_id}.")
+        try:
+            _build(ds, _datasets.source_dir(ds), stage)
+            if _store.exists(out):
+                _store.rmtree(out)
+            _store.adopt(stage, out)
+        finally:
+            _store.rmtree(stage, ignore_errors=True)
+        print(f"{out}  ({len(ds['items'])} item(s), all hashes verified)")
         return 0
-    if out.exists():
-        shutil.rmtree(out)
-    out.mkdir(parents=True)
 
+
+def _build(ds: dict, src_root: Path, stage: Path) -> None:
+    """Every item of `ds` read from `src_root`, hash-checked and copied into `stage`, with its meta.json; dies (exit 1,
+    each item that failed named) when any is missing, changed or not fetched as pinned."""
     drifted, missing, unfetched = [], [], []
     for item in ds["items"]:
         rel = item.get("source_path") or item["item_id"]
@@ -65,21 +87,21 @@ def main() -> int:
             except _fetch.FetchError as exc:
                 unfetched.append((rel, str(exc)))
                 continue
-            dst = out / rel
-            dst.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(src, dst)
+            dst = stage / rel
+            _store.mkdir(dst.parent, parents=True, exist_ok=True)
+            _store.copy_file(src, dst)
             continue
         src = src_root / rel
-        if not src.is_file():
+        if not _store.is_file(src):
             missing.append(rel)
             continue
         actual = sha256(src)
         if actual != item["source_sha256"]:
             drifted.append((rel, item["source_sha256"][:12], actual[:12]))
             continue
-        dst = out / rel
-        dst.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(src, dst)
+        dst = stage / rel
+        _store.mkdir(dst.parent, parents=True, exist_ok=True)
+        _store.copy_file(src, dst)
 
     if missing or drifted or unfetched:
         for rel in missing:
@@ -92,20 +114,19 @@ def main() -> int:
             f"{len(missing)} missing, {len(drifted)} changed, {len(unfetched)} not fetched as pinned "
             "since the dataset was frozen.\n"
             "  sources/ is immutable. If an input genuinely changed, that is a NEW\n"
-            "  dataset (_v2) — every number already published was measured on the old bytes."
+            "  dataset (_v2) — every number already published was measured on the old bytes.",
+            "not-materialized",
         )
 
     write_json(
-        out / "meta.json",
+        stage / "meta.json",
         {
-            "dataset_id": args.dataset_id,
+            "dataset_id": ds["dataset_id"],
             "materialized_at": now(),
             "n_items": len(ds["items"]),
             "verified": "every item matched its frozen sha256",
         },
     )
-    print(f"{out}  ({len(ds['items'])} item(s), all hashes verified)")
-    return 0
 
 
 if __name__ == "__main__":

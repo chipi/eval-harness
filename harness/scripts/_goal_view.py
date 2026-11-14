@@ -18,7 +18,7 @@ def patterns(raw: list[str] | None) -> list[str]:
 
 
 def matches(arm: str, pats: list[str]) -> bool:
-    """Whether the arm id (runs/<dataset>/<config_id>) or its config id fits a pattern: a glob when the
+    """Whether the arm id (runs/<dataset>/<config_id>) or its system id fits a pattern: a glob when the
     pattern has *, ? or [, else a substring."""
     cfg = arm.rsplit("/", 1)[-1]
     return any(
@@ -43,6 +43,30 @@ def vs_text(v: dict | None) -> str:
     delta = "—" if v.get("delta") is None else f"{v['delta']:+.3f}"
     p = "" if v.get("p") is None else f", p {fmt_p(v['p'])}"
     return f"{delta}{p}, {v.get('verdict') or '—'}"
+
+
+def ni_text(t: dict | None) -> str:
+    """The contender test in a cell (ADR-0026): 'within 0.074: p 0.0105, Holm 0.0016, not shown' or 'too few (65)'."""
+    if not t:
+        return "—"
+    if t.get("verdict") == "too few":
+        need = t.get("floor")
+        unit = (
+            "effective units"
+            if t.get("effective") is not None and t.get("units") != t.get("effective")
+            else "units"
+        )
+        return f"too few ({t.get('effective') or t.get('units')} {unit}" + (
+            f", needs {need})" if need else ")"
+        )
+    if t.get("verdict") == "untestable":
+        return "untestable"
+    head = f"within {t['margin']:.4g}"
+    if t.get("p") is None:
+        return f"{head}: {t.get('verdict')}"
+    thr = t.get("holm_threshold")
+    shown = "shown" if t.get("holm") else "not shown"
+    return f"{head}: p {fmt_p(t['p'])}" + (f", Holm {fmt_p(thr)}" if thr is not None else "") + f", {shown}"
 
 
 def hypothesis_of(A, arm: str) -> dict | None:
@@ -74,16 +98,11 @@ def hypothesis_of(A, arm: str) -> dict | None:
     }
 
 
-def _metrics_json(run_dir) -> dict | None:
-    """A run directory's metrics.json, or None when it has none or it does not parse."""
-    import json  # noqa: PLC0415
-    from pathlib import Path  # noqa: PLC0415
+def _metrics_json(score_dir) -> dict | None:
+    """A score's record, or None when it has none or it does not parse."""
+    from evaluation_harness.model import runs as model_runs  # noqa: PLC0415
 
-    f = Path(run_dir) / "metrics.json"
-    try:
-        return json.loads(f.read_text(encoding="utf-8")) if f.is_file() else None
-    except (OSError, ValueError):
-        return None
+    return model_runs.record(score_dir)
 
 
 def hypothesis_text(h: dict | None) -> str:
@@ -147,6 +166,8 @@ def group_values(
                 "retired_in": retired.get(r["arm"]) or None,
                 "flags": list(r["flags"]) + dec["out"].get(r["arm"], []),
                 "vs_leader": vs[r["arm"]],
+                # The contender test (ADR-0026): verdict, method, p, its level and Holm threshold, the margin.
+                "noninferior": (dec["rows"][r["arm"]].get("quality") or {}).get("noninferior"),
                 "axes": {ax["name"]: dec["rows"][r["arm"]][ax["name"]] for ax in axes},
                 "hypothesis": hypotheses.get(r["arm"]),
             }

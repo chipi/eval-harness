@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "pick",
+  "description": "One line of data/picks.jsonl (RFC-023, ADR-0023, RFC-032 step 6): an action on one item of one dataset, appended, never rewritten. The latest line for an item wins. `pick` marks a production item as a candidate for governed datasets, `drop` takes it off the waiting list, `used` says a new version took it.",
+  "type": "object",
+  "required": ["action", "item", "from", "at"],
+  "properties": {
+    "action": {"enum": ["pick", "drop", "used"]},
+    "item": {"type": "string", "minLength": 1, "description": "The item's id in `from`."},
+    "from": {"type": "string", "minLength": 1, "description": "The dataset the item is of."},
+    "at": {"type": "string", "description": "When the line was written (UTC, ISO 8601)."},
+    "sha256": {"type": ["string", "null"], "description": "pick: the item's bytes' sha256."},
+    "capture": {"type": ["string", "null"], "description": "pick: the capture the dataset was made from."},
+    "for": {"type": "array", "items": {"type": "string"}, "description": "pick: the datasets it may join."},
+    "tags": {"type": "object", "additionalProperties": {"type": "string"}, "description": "pick: KEY=VALUE groups."},
+    "note": {"type": ["string", "null"]},
+    "by": {"type": ["string", "null"], "description": "Who picked or dropped it, as they said."},
+    "into": {"type": "string", "minLength": 1, "description": "used: the dataset that took it."},
+    "actor": {"type": "object", "description": "Who ran the command that wrote it (RFC-027)."}
+  },
+  "allOf": [
+    {"if": {"properties": {"action": {"const": "used"}}}, "then": {"required": ["into"]}},
+    {"if": {"properties": {"action": {"const": "pick"}}}, "then": {"required": ["for"]}}
+  ]
+}

@@ -883,7 +883,12 @@
   ],
   "source": {
     "config": "default",
-    "name": "mteb/summeval",
+    "description_sha256": null,
+    "gated": null,
+    "item_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row={row}",
+    "provider": "huggingface",
+    "ref": "mteb/summeval",
+    "revision": null,
     "split": "test",
     "url": "https://huggingface.co/datasets/mteb/summeval"
   }

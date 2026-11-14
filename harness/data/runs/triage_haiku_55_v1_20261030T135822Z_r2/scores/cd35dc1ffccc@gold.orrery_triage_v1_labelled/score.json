@@ -1,0 +1,8 @@
+{
+  "scorer": "cd35dc1ffccc",
+  "reference": "gold.orrery_triage_v1_labelled",
+  "label": "rescored cd35dc1f",
+  "unset": [
+    "actor"
+  ]
+}

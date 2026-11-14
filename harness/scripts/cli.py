@@ -8,7 +8,6 @@ nothing of theirs goes on sys.path and a project's own `stats.py` stays the proj
 Where the data lives is the PROJECT's business, not the package's:
   EVAL_HOME       the project root (default: the nearest directory up from here with data/)
   EVAL_DATA_DIR   the data root, relative to EVAL_HOME (default: data)
-  EVAL_RUNS_DIR   runs only, for a throwaway pass (default: <data>/runs)
 """
 
 from __future__ import annotations
@@ -22,6 +21,7 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 import os
 import runpy
 import sys
+import traceback
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -38,6 +38,35 @@ COMMANDS = {
     ),
     "env-check": ("env_check.py", "check the Python environment and keys"),
     "dataset-create": ("dataset_create.py", "freeze a dataset: item list + per-item sha256"),
+    "dataset-describe": (
+        "dataset_describe.py",
+        "change a dataset's licence or description, never its items or version",
+    ),
+    "fieldset-propose": (
+        "fieldset_propose.py",
+        "a field set proposed from a dataset source's features, for a person to accept (--write)",
+    ),
+    "dataset-publish": (
+        "dataset_publish.py",
+        "publish a dataset to a new repo (Hugging Face), private first, read back and checked by sha256",
+    ),
+    "dataset-card": (
+        "dataset_card.py",
+        "a dataset's card: what, where from, the datasheet's answers; or it as Croissant 1.1",
+    ),
+    "licences": ("view_licences.py", "the licences a dataset can name (SPDX ids), a line each"),
+    "migrate": (
+        "migrate.py",
+        "bring the project's data to this release's formats: runs, datasets, records, fingerprints, once (idempotent)",
+    ),
+    "data-migrate": (
+        "data_migrate.py",
+        "move the project's data/ into its SQLite database or back (RFC-025)",
+    ),
+    "data-ls": ("data_ls.py", "list what the project keeps under data/, in either store (UXS-004)"),
+    "data-show": ("data_show.py", "show one file of the project's data"),
+    "data-put": ("data_put.py", "create or change a setting (system, goal, fieldset, ...), checked first"),
+    "data-rm": ("data_rm.py", "delete a setting, or a whole run"),
     "dataset-materialize": ("materialize.py", "hash-checked working copy of a dataset"),
     "dataset-profile": (
         "dataset_profile.py",
@@ -64,27 +93,19 @@ COMMANDS = {
         "model_onboard.py",
         "onboard a model once: probe a deployment, write what was found into its record",
     ),
-    "fingerprint-migrate": (
-        "fingerprint_migrate.py",
-        "migrate the committed runs' fingerprints to version 5, once (idempotent)",
-    ),
     "sweep": ("sweep.py", "run several arms, then the leaderboard"),
-    "runs-list": ("list_runs.py", "list runs (or baselines)"),
+    "runs-list": ("list_runs.py", "list runs (the baselines: evh baselines)"),
     "rescore": ("rescore.py", "re-score stored outputs, a round's or a dataset's, for $0"),
     "score-preview": (
         "score_preview.py",
         "what the scorer in this tree would move in a goal's decision; writes nothing",
-    ),
-    "judge": (
-        "judge_panel.py",
-        "the judge panel: promote finalists on a cheap metric, judge their stored outputs",
     ),
     "judge-score": (
         "judge_score.py",
         "re-measure frozen outputs with a validated LLM judge (--dry-run first)",
     ),
     "silver-calibrate": ("silver_calibrate.py", "how far silver reference sets drift from gold"),
-    "cost-report": ("cost_report.py", "billed cost per arm, with projections"),
+    "cost-report": ("cost_report.py", "billed cost per arm, and what judging cost"),
     "leaderboard": ("leaderboard.py", "rank arms, with Friedman/Nemenyi before any order"),
     "pair-test": ("pair_test.py", "paired permutation test, two arms"),
     "family-test": ("family_test.py", "one arm against a declared family, Holm-corrected"),
@@ -101,6 +122,10 @@ COMMANDS = {
         "dataset_split.py",
         "split a dataset into <id>_validation and <id>_test, stable across versions",
     ),
+    "dataset-unseal": (
+        "dataset_unseal.py",
+        "open a sealed test side to one candidate system whose hypothesis is committed (one look)",
+    ),
     "capture-restore": (
         "capture_restore.py",
         "read a capture's records again from its source, and the items of the datasets made from it, every hash checked",
@@ -113,6 +138,10 @@ COMMANDS = {
     "labels": (
         "view_labels.py",
         "every label set, or a dataset's: source, coverage, guideline, how often two agree",
+    ),
+    "tags": (
+        "view_tags.py",
+        "the failure modes tagged on outputs: every tag set, or per arm on a dataset how often each mode was",
     ),
     "label-sheet": (
         "label_sheet.py",
@@ -131,7 +160,40 @@ COMMANDS = {
         "label_from_capture.py",
         "rules over a capture's recorded outcomes as a rule label set",
     ),
+    "label-coverage": (
+        "label_coverage.py",
+        "how far an outcome rule set labels a dataset now: labelled, skipped, not yet mature (and when), unmatched",
+    ),
     "pick": ("pick.py", "pick production items for the next version of governed datasets, or drop a pick"),
+    "exposure-add": (
+        "exposure_add.py",
+        "record reads of a held-out side's items: each is left out of every later score on it (RFC-031)",
+    ),
+    "exposure": ("view_exposure.py", "a held-out side's exposure register, in counts (RFC-031)"),
+    "label-mutants": (
+        "label_mutants.py",
+        "mutation-test a labeller: each named change to the rules or the join must move some labels (RFC-031)",
+    ),
+    "periods": (
+        "view_periods.py",
+        "a code record's deployed periods, numbered, dated, with their faithfulness (RFC-031)",
+    ),
+    "period-compare": (
+        "period_compare.py",
+        "a past period's items: production, the code that ran then, and a candidate, with the paired test (RFC-031)",
+    ),
+    "exposure-check": (
+        "exposure_check.py",
+        "search the project's public repos for a held-out side's item ids: leaks the register lacks (RFC-031)",
+    ),
+    "sealed-counts": (
+        "sealed_counts.py",
+        "counts over a held-out side by the fields it was sealed with: for safety, never to judge effect (RFC-031)",
+    ),
+    "dataset-seal-counts": (
+        "dataset_seal_counts.py",
+        "allow one more field in a held-out side's counts: a person's decision, recorded (RFC-031)",
+    ),
     "picks": (
         "view_picks.py",
         "the picks waiting: per target, where each came from, its labels, tags and note",
@@ -153,20 +215,82 @@ COMMANDS = {
         "make a dataset version from a capture: choose records, freeze their bodies as items",
     ),
     "run-compare": ("compare_runs.py", "diff two runs, fingerprint first"),
+    "baselines": (
+        "view_baselines.py",
+        "the baselines: each goal's on each dataset, and each dataset's own, with evidence and history (--json: the export)",
+    ),
+    "baseline-rollback": (
+        "baseline_rollback.py",
+        "roll a baseline back to an earlier version, as a new version with its own evidence",
+    ),
     "run-promote": ("promote_baseline.py", "promote a run to a baseline, with a reason"),
     "round-open": (
         "round_open.py",
         "open a round of a goal (optional): its hypothesis, changes, arms kept or dropped",
     ),
+    "round-carry": ("round_carry.py", "carry an arm of an earlier round into the open round, unchanged"),
     "round-retire": ("round_retire.py", "drop an arm from the open round, with the reason"),
     "round-close": ("round_close.py", "close a round with its conclusion, promoting the run it chose"),
     "rounds": ("round_status.py", "a goal's rounds, and what the evidence suggests next"),
+    "studies": (
+        "view_studies.py",
+        "every study, by goal: its status, trials, what it kept and spent; --study one, trial by trial (RFC-029)",
+    ),
+    "study-run": (
+        "study_run.py",
+        "open a study and run its loop on validation items: research, never evidence",
+    ),
+    "study-ask": ("study_ask.py", "a study's state for the agent sampler, with an ask id"),
+    "study-tell": ("study_tell.py", "the agent sampler's proposal, run as the study's next trial"),
+    "study-stop": ("study_stop.py", "stop a study after its current trial"),
+    "study-confirm": (
+        "study_confirm.py",
+        "a study's best trial against its baseline on a test set: one look, the evidence",
+    ),
+    "study-import": ("study_import.py", "a past loop's results.tsv as a closed study (not confirmable)"),
+    "looks": (
+        "view_looks.py",
+        "the looks each test set allows: its looks so far, the next one's level, its limit",
+    ),
+    "faithfulness": (
+        "faithfulness.py",
+        "replay a system at the commits production ran and compare it with production's arm, item by item",
+    ),
+    "faithfulness-name": (
+        "faithfulness_name.py",
+        "name a replay's disagreement whose cause is outside the system (a person's decision)",
+    ),
+    "faithfulness-show": (
+        "faithfulness_show.py",
+        "a faithfulness record: counts, disagreements and who named which, coverage",
+    ),
+    "prompts": (
+        "view_prompts.py",
+        "prompt versions: every name, or one's versions, lineage and the runs that used each",
+    ),
+    "prompt-diff": (
+        "prompt_diff.py",
+        "two prompt versions compared: their text as a diff, and the runs of each",
+    ),
+    "prompt-version": (
+        "prompt_version.py",
+        "record a prompt version from a file or text, with its parent and a note",
+    ),
+    "prompt-export": ("prompt_export.py", "write a prompt version out, for a person to commit"),
+    "jobs-start": (
+        "jobs_start.py",
+        "start a command as a job: detached, with its locks, log and state (RFC-026)",
+    ),
+    "jobs-status": ("jobs_status.py", "the jobs, or one job: its state, what it waits for, how it ended"),
+    "jobs-logs": ("jobs_logs.py", "a job's log, from a byte on, or followed until it ends"),
+    "jobs-stop": ("jobs_stop.py", "stop a job: its process group, cancelled"),
+    "jobs-resume": ("jobs_resume.py", "resume a stopped or lost run job, as a new job"),
     "overview": (
         "view_overview.py",
         "the catalog's home page: goals at a glance, activity, spend, coverage, what was recorded",
     ),
     "datasets": ("view_datasets.py", "every dataset, or one: its versions, reference sets and arms"),
-    "arms": ("view_arms.py", "every arm, or one: its metrics, runs, config, conditions and rounds"),
+    "arms": ("view_arms.py", "every arm, or one: its metrics, runs, system, conditions and rounds"),
     "models": (
         "view_models.py",
         "every model record, or one: its deployments, onboarding, settings history and arms",
@@ -198,6 +322,11 @@ COMMANDS = {
         "does the installed harness work here? (in a checkout: the full test suite)",
     ),
 }
+# The commands made from the model's operations (RFC-032): one script runs each, told which by EVH_COMMAND. The ops
+# package imports no project code, so reading it here loads no .env early.
+from evaluation_harness import ops as _ops  # noqa: E402
+
+COMMANDS.update({name: ("op_command.py", op.about) for name, op in _ops.OPS.items()})
 
 
 def _usage() -> str:
@@ -235,10 +364,17 @@ def main(argv: list[str] | None = None) -> int:
     sys.argv = [str(script), *rest]
     # The scripts' "next, run this" hints read it: `evh …` here, `make …` in a checkout.
     os.environ["EVAL_VIA_EVH"] = "1"
-    from evaluation_harness._common import stray_home  # noqa: PLC0415
+    os.environ["EVH_COMMAND"] = name  # which operation op_command.py runs
+    from evaluation_harness._common import project_root, stray_home  # noqa: PLC0415
 
     if note := stray_home():
         print(note, file=sys.stderr)
+    # Every estimated p kept in the project's ignored .cache/, as `evh mcp` keeps them: each command is a new
+    # process, and without it `goals` right after `catalog` drew every test again (PLAN_0.8.0 S1, 142 s at 1,000
+    # items). EVH_P_CACHE names another file; an empty value turns it off.
+    os.environ.setdefault("EVH_P_CACHE", str(project_root() / ".cache" / "evh-p.jsonl"))
+    from evaluation_harness._common import EXIT_INTERNAL, EXIT_INTERRUPTED, EXIT_REFUSED  # noqa: PLC0415
+
     try:
         runpy.run_path(str(script), run_name="__main__")
     except SystemExit as exc:
@@ -248,7 +384,18 @@ def main(argv: list[str] | None = None) -> int:
         if isinstance(code, int):
             return code
         print(code, file=sys.stderr)
-        return 1
+        return EXIT_REFUSED
+    except KeyboardInterrupt:
+        print("\ninterrupted", file=sys.stderr)
+        return EXIT_INTERRUPTED
+    except Exception:  # noqa: BLE001 -- anything uncaught, told apart from a refusal (1) by its number
+        traceback.print_exc()
+        print(
+            f"evh {name}: stopped by an error nothing caught (exit {EXIT_INTERNAL}); the traceback above says "
+            "where: the harness, or the project's own code (an adapter, a scorer)",
+            file=sys.stderr,
+        )
+        return EXIT_INTERNAL
     return 0
 
 

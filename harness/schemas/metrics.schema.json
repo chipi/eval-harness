@@ -7,6 +7,12 @@
   "required": ["run_id", "dataset_id", "config_id", "build", "created_at", "scores", "n_items"],
   "properties": {
     "run_id": {"type": "string"},
+    "purpose": {"enum": ["run", "repeat", "pair", "retime"], "description": "What the pass was for (RFC-032 step 4): the run, a repeat of it, a pair-test side, or a re-timing on another machine. Absent: a run."},
+    "started_at": {"type": "string", "description": "When the pass started: written before its first item, so a stopped run still says when (run.json)."},
+    "prompt_versions": {"type": "object", "additionalProperties": {"type": "string"}, "description": "The prompt versions the run sent, by name (RFC-032 step 4b): what the adapter's prompts(params) gave, of the prompt_sha256 its fingerprint declares."},
+    "machine": {"type": "string", "description": "The operating system a pass ran on, from its fingerprint's runner (named by a re-timing's label)."},
+    "of": {"type": "string", "description": "The run a repeat, pair or retime is of, when exactly one other run of the system on the dataset exists."},
+    "actor": {"type": "object", "description": "Who acted (RFC-027): a person, or an agent and the person it acted for. A recorded claim, not an identity.", "required": ["type", "name"], "additionalProperties": false, "properties": {"type": {"enum": ["person", "agent", "unknown"]}, "name": {"type": "string"}, "for": {"type": "string", "description": "the person an agent acted for"}, "from": {"enum": ["flag", "environment", "terminal", "migration"]}}},
     "dataset_id": {"type": "string"},
     "config_id": {"type": "string"},
     "created_at": {"type": "string", "description": "When this record's scores were computed: the measurement, or for a derived run the derivation."},
@@ -69,6 +75,9 @@
     "warmup_ms": {"type": ["number", "null"], "description": "The adapter's warm-up, kept out of the per-item latency."},
     "providers_seen": {"type": "object", "description": "Which upstream providers answered, and how often."},
     "resume": {"type": "object", "description": "What a resumed run replayed from the pass it resumed."},
+    "history_confound": {"type": "object", "required": ["items", "of"], "properties": {"items": {"type": "integer"}, "of": {"type": "integer"}}, "description": "A replay's items where the variant met a human reaction recorded after an action production took and it did not (RFC-031 P1): its score there partly reads a reaction to another decision. The ids are in confound.jsonl beside it, never for a held-out side."},
+    "not_scorable": {"type": "array", "items": {"type": "string"}, "description": "Items left unscored because their label holds only under production's action and this run acted otherwise (RFC-031 L3): no observed outcome of its own."},
+    "failed_items": {"type": "array", "items": {"type": "object", "required": ["item_id", "error"], "properties": {"item_id": {"type": "string"}, "error": {"type": "string"}}}, "description": "Items whose call failed (not transiently): scored as an empty answer or the adapter's score_failure, the pass went on (A5)."},
     "imported": {"type": "object", "description": "import-run: the source file and its coverage of the dataset."},
     "rescore_dropped_metrics": {"type": "array", "items": {"type": "string"}, "description": "rescore: metrics the source recorded and the current scorer no longer emits."},
     "source_created_at": {"type": "string", "description": "A derived run: when the run it was derived from was measured."},
@@ -79,6 +88,7 @@
       "properties": {
         "kind": {"enum": ["rescore", "judge", "reparse"]},
         "from": {"type": "string", "description": "The source run's directory name."},
+        "from_dir": {"type": "string", "description": "The source run's directory under the data directory (RFC-024): a derived run reads its outputs from there, and from no other run of the same name."},
         "at": {"type": "string"},
         "with": {"type": "object", "description": "What computed it: the adapter and scorer hashes (rescore), the judge scorer (judge), the parser (reparse)."},
         "source": {"type": "object", "description": "The source's own derived block, when it was itself derived."}
@@ -89,6 +99,8 @@
     "model_record": {"type": "string", "description": "The model record its config named (RFC-020, optional): data/models/<id>.yaml, whose settings it ran with."},
     "deployment_id": {"type": "string", "description": "The deployment of that record its config named (RFC-021, optional): an id in the record's `deployments`."},
     "format": {"type": "string", "description": "The output format the config asked for; must be one the goal's output_contract accepts (validate V14)."},
+    "expect_identical_to": {"type": "string", "description": "The config this run must reproduce item for item, from its config (a regression guard): validate V5 checks it does."},
+    "run_metrics": {"type": "array", "items": {"type": "string"}, "description": "The metrics in scores that the adapter's score_run() computed over the whole run (one number each, no per-item values): shown by the leaderboard and compare, never tested item by item."},
     "hypothesis": {"type": "object", "description": "The hypothesis block of the run's config (ADR-0025): what the arm was expected to do against which config on which measure. Outside the fingerprint."},
     "hypothesis_in_advance": {
       "type": "object",
@@ -99,6 +111,20 @@
         "commit": {"type": ["string", "null"]},
         "committed_at": {"type": ["string", "null"]},
         "why": {"type": "string"}
+      }
+    },
+    "faithfulness": {
+      "type": "object",
+      "description": "A replay's faithfulness when it ran (RFC-030): the latest record of its code record on its dataset, whether it lets the replay be scored, and who scored it anyway with --unfaithful.",
+      "required": ["faithful", "record"],
+      "properties": {
+        "faithful": {"type": "boolean"},
+        "record": {"type": ["string", "null"], "description": "<code_id>/<n>, or null when none was made"},
+        "counts": {"type": ["object", "null"]},
+        "unnamed": {"type": "integer"},
+        "named": {"type": "integer"},
+        "why": {"type": "string"},
+        "unfaithful_by": {"type": "object"}
       }
     },
     "repeat_index": {"type": "integer", "description": "Which repetition this is, when measuring an arm's own variance."}

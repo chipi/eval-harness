@@ -43,7 +43,7 @@ evh reference-promote --dataset-id briefs_v1 --labels my_gold --tier gold \
 
 ## 2. Your adapter
 
-`adapter.py` at the project root is the integration seam: an arm whose config names no
+`adapter.py` at the project root is the integration seam: an arm whose system names no
 `adapter:` uses it. Two functions: `call_system` runs your system on one item, `score` says how
 good one output is. This one has a **baseline** that uses no model (the brief's first sentence)
 and a seq2seq model through `transformers`; the hosted providers bundled with the harness are
@@ -132,20 +132,18 @@ transformers 5.20.2 and huggingface_hub 2.3.0.)
 The whole contract, and how to wrap a system that is not a Python function:
 [INTEGRATION](../../harness/docs/INTEGRATION.md).
 
-## 3. The arms
+## 3. The systems
 
 ```yaml
-# data/configs/briefs_lead1.yaml: the baseline, no model
-config_id: briefs_lead1_v1
-dataset_id: briefs_v1
+# data/systems/briefs_lead1_v1.yaml: the baseline, no model
+system_id: briefs_lead1_v1
 params:
   provider: lead
 ```
 
 ```yaml
-# data/configs/briefs_t5_small.yaml
-config_id: briefs_t5_small_v1
-dataset_id: briefs_v1
+# data/systems/briefs_t5_small_v1.yaml
+system_id: briefs_t5_small_v1
 params:
   provider: hf
   model: t5-small
@@ -153,9 +151,8 @@ params:
 ```
 
 ```yaml
-# data/configs/briefs_flan_t5_small.yaml
-config_id: briefs_flan_t5_small_v1
-dataset_id: briefs_v1
+# data/systems/briefs_flan_t5_small_v1.yaml
+system_id: briefs_flan_t5_small_v1
 params:
   provider: hf
   model: google/flan-t5-small
@@ -163,8 +160,8 @@ params:
 ```
 
 Add a goal (`data/goals/brief_summary.yaml`, the shape of the tutorial kit's
-`tutorial/goals/tickets_summary.yaml`, with `rouge_l` as its measure) and name it in each config
-(`goal: brief_summary`): it says what the summaries are for, and the catalog's goal page leads
+`tutorial/goals/tickets_summary.yaml`, with `rouge_l` as its measure) and name it in each run
+(`--goal brief_summary`): it says what the summaries are for, and the catalog's goal page leads
 with its answer. Every field and its allowed values (`output_contract`, `datasets[].role`,
 `references[].format`, `measures[].validity`, `success_criteria`):
 [RUNBOOK §4c](../../harness/docs/RUNBOOK.md#4c-the-goal-file-field-by-field).
@@ -173,10 +170,10 @@ with its answer. Every field and its allowed values (`output_contract`, `dataset
 
 <!-- guide-check: skip -->
 ```bash
-git add -A && git commit -qm "briefs_v1: dataset, gold, adapter, arms"
-evh run --config data/configs/briefs_lead1.yaml
-evh run --config data/configs/briefs_t5_small.yaml --repeat 3
-evh run --config data/configs/briefs_flan_t5_small.yaml --repeat 3
+git add -A && git commit -qm "briefs_v1: dataset, gold, adapter, systems"
+evh run --system briefs_lead1_v1 --dataset briefs_v1 --goal brief_summary
+evh run --system briefs_t5_small_v1 --dataset briefs_v1 --goal brief_summary --repeat 3
+evh run --system briefs_flan_t5_small_v1 --dataset briefs_v1 --goal brief_summary --repeat 3
 evh leaderboard --dataset-id briefs_v1
 ```
 

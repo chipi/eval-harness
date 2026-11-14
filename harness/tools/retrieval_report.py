@@ -36,20 +36,24 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the ev
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tools/
 sys.path.insert(0, str(HERE.parents[1] / "examples" / "_shared"))
 
-from evaluation_harness._common import REFERENCES, RUNS, die, read_json, reference_texts  # noqa: E402
-from evaluation_harness._runs import warn_on_ambiguous_runs  # noqa: E402
+from evaluation_harness import (  # noqa: E402
+    _outputs,
+    _store,
+)
+from evaluation_harness._common import REFERENCES, die, reference_texts  # noqa: E402
+from evaluation_harness._runs import item_rows, runs_on, warn_on_ambiguous_runs  # noqa: E402
 
 try:
     from retrieval import NDCG_AT, dcg
 except ImportError:  # pragma: no cover
-    die("examples/_shared/retrieval.py not importable — run from the harness root")
+    die("examples/_shared/retrieval.py not importable — run from the harness root", "missing-dependency")
 
 
 def qrels(dataset_id: str) -> dict:
     """Load gold relevance judgments for a dataset; die if not found."""
     out = {}
     for p in reference_texts(REFERENCES / "gold" / dataset_id, dataset_id):
-        judged = json.loads(p.read_text(encoding="utf-8"))
+        judged = json.loads(_store.read_text(p, encoding="utf-8"))
         out[p.stem] = {str(j["doc_id"]): int(j.get("score", 1)) for j in judged}
     return out
 
@@ -57,21 +61,11 @@ def qrels(dataset_id: str) -> dict:
 def runs(dataset_id: str, match: str | None) -> dict:
     """All runs on this dataset; optionally filtered by config_id substring."""
     out: dict = {}
-    for d in sorted(RUNS.glob("*")):
-        mj, pj = d / "metrics.json", d / "predictions.jsonl"
-        if not (mj.is_file() and pj.is_file()):
+    for d, m in runs_on(dataset_id, match=match):
+        if not _outputs.has_rows(d):
             continue
-        m = read_json(mj)
-        cid = m.get("config_id")
-        if m.get("dataset_id") != dataset_id or not cid:
-            continue
-        if match and match not in cid:
-            continue
-        rows = {}
-        for line in pj.read_text(encoding="utf-8").splitlines():
-            if line.strip():
-                r = json.loads(line)
-                rows[r["item_id"]] = r
+        cid = m["config_id"]
+        rows = {r["item_id"]: r for r in item_rows(d)}
         out[cid] = (m, rows)
     return out
 
@@ -95,12 +89,12 @@ def main() -> int:
     args = ap.parse_args()
     # Two runs sharing a config_id are averaged together below without
     # saying so. See _runs.warn_on_ambiguous_runs.
-    warn_on_ambiguous_runs(RUNS, args.dataset_id, label=RUNS.name)
+    warn_on_ambiguous_runs("", args.dataset_id)
 
     gold = qrels(args.dataset_id)
     R = runs(args.dataset_id, args.match)
     if not R:
-        die(f"no runs on {args.dataset_id!r}")
+        die(f"no runs on {args.dataset_id!r}", "not-found")
 
     print(f"\n  {args.dataset_id}: {len(gold)} queries, {len(R)} arm(s)\n")
     print(f"  {'arm':<26} {'nDCG@10':>8} {'ceiling':>8} {'gap':>7} {'used':>7} {'llm_ok':>7} {'invented':>9}")
@@ -147,7 +141,7 @@ def main() -> int:
 
     if args.arm:
         if args.arm not in R:
-            die(f"{args.arm!r} not among {sorted(R)}")
+            die(f"{args.arm!r} not among {sorted(R)}", "not-found")
         m, rows = R[args.arm]
         moved: Counter = Counter()
         for item, rel in gold.items():

@@ -2,7 +2,7 @@
 name: evh-compare-and-read
 description: Read eval-harness (evh) results as data and say what they support — which arm leads, whether the lead is real, where two arms differ item by item, and what a goal recommends — with the paired tests behind each claim. Use when asked "which is better", "did the change help", "is it significant", "what does the goal recommend", or before reporting any evh result.
 metadata:
-  harness-version: "0.7.2"
+  harness-version: "0.8.0.dev0"
 ---
 
 # Compare arms and read the results

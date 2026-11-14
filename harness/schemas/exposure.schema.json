@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "exposure row",
+  "description": "One line of data/exposure/<dataset_id>.jsonl (RFC-031 H1, RFC-032 step 6): a read of one held-out item, by a person or an agent. Appended, never rewritten; once read, always read. The register belongs to a sealed side.",
+  "type": "object",
+  "required": ["item_id", "what", "at", "by", "recorded_at", "recorded_by", "source"],
+  "properties": {
+    "item_id": {"type": "string", "minLength": 1},
+    "what": {"type": "string", "minLength": 1, "description": "What was read (a comparison, a sheet, a public repo naming it)."},
+    "at": {"type": "string", "description": "When it was read."},
+    "by": {"type": "string", "minLength": 1, "description": "The reader: person:NAME or agent:NAME (with ` for person:NAME`)."},
+    "recorded_at": {"type": "string"},
+    "recorded_by": {"type": "string", "minLength": 1},
+    "source": {"enum": ["hand", "harness"], "description": "`hand`: evh exposure-add; `harness`: a command that showed the item."}
+  }
+}

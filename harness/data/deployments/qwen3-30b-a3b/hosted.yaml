@@ -1,0 +1,36 @@
+model_id: qwen3-30b-a3b
+deployment_id: hosted
+order: 4
+where: homelab LiteLLM (the fleet's gateway)
+tag: eval-qwen3-30b-a3b
+endpoint:
+  provider: litellm
+  base_url: http://homelab:4001/v1
+  model: eval-qwen3-30b-a3b
+checked_at: '2026-10-31T13:56:31Z'
+checks:
+- kind: onboarding
+  status: pass
+  at: '2026-10-31T13:56:31Z'
+  where: homelab LiteLLM (the fleet's gateway)
+  flags: []
+  report:
+    endpoint:
+      provider: litellm
+      base_url: http://homelab:4001/v1
+      model: eval-qwen3-30b-a3b
+    digest_found: null
+    default:
+      s: 2.18
+      tokens_out: 22
+      reasoned: false
+      finish: stop
+    chosen:
+      s: 0.47
+      tokens_out: 25
+      reasoned: false
+      finish: stop
+      settings: {}
+    tokens_per_s: 53.4
+    deterministic: false
+    json_valid: true

@@ -10,12 +10,12 @@ checking it would have cost another one.
     evh rescore --dataset-id my_v1 [--match _v2]
     evh rescore --goal my_goal --round r1 --why "what changed in the scoring, and why"
 
-Rescored runs are written to a SEPARATE directory, never over the originals. Two reasons:
-the originals are the record of what was actually measured and paid for, and a rescored
-run grouped under the same `config_id` as its source would average two different metrics
-into one row. Without --out the directory is the one the tool designates (RFC-022),
-data/runs-rescored/<scorer>/<source>/, which the catalog, the goals and the rounds read in
-place of the runs it re-read; EVAL_RUNS_DIR points the leaderboard at one of them.
+A re-score is a SCORE under the run it re-reads (data/runs/<run>/scores/<scorer>@<reference>/), never over the
+first one. Two reasons: that first score is the record of what was actually measured and paid for, and a re-score
+read in the same arm as its source would average two different metrics into one row, so it is read under a label of
+its own (default "rescored <8 characters of the scorer>", "silver" against a silver reference, --label to choose)
+which the catalog, the goals and the rounds read in place of the runs it re-read. A scorer that has already scored
+a run against the same reference with the same rows is not written again.
 
 What is recomputed: everything `score()` returns. What is carried across untouched:
 latency, cost, token counts and the raw provider `_meta` — those are properties of the
@@ -34,11 +34,12 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 import argparse
 import inspect
 import json
-import shutil
 import sys
+import textwrap
 from pathlib import Path
 from typing import Any
 
+from evaluation_harness import _jsonout, _outputs, _runs, _store
 from evaluation_harness._adapter import load_recorded_adapter, score_wants_source
 from evaluation_harness._common import (
     DATA,
@@ -51,18 +52,23 @@ from evaluation_harness._common import (
     adapter_search_dirs,
     dataset_id_ok,
     die,
+    evh_prog,
     how,
-    ignored_by_git,
     labels_reference,
     now,
     read_json,
     scored_against_dir,
-    warn_if_ignored,
-    write_json,
 )
 from evaluation_harness._fingerprint import references_digest, seal
-from evaluation_harness._record import aggregate_scores, cut_off_items, derived_record
-from evaluation_harness._runs import runs_on
+from evaluation_harness._record import (
+    aggregate_scores,
+    cut_off_items,
+    derived_record,
+    run_level_scores,
+    run_scorer,
+)
+from evaluation_harness.model import datasets as _datasets
+from evaluation_harness.model import runs as _model_runs
 
 #: Carried across from the original run rather than recomputed: these describe the CALL,
 #: not the measurement. A rescore that recomputed a latency would be reporting a number
@@ -72,8 +78,9 @@ from evaluation_harness._runs import runs_on
 #: new scorer does not produce is carried too — `truncated` and `reasoning_tokens` come
 #: from the adapter's `Result.extra` at call time and are unrecoverable afterwards, and a
 #: fixed list silently dropped them on the first run of this script.
-# `resumed` records whether the item was replayed from a stopped run: a fact about the call.
-CARRY = ("latency_ms", "tokens_in", "tokens_out", "cost_usd", "resumed")
+# `resumed` records whether the item was replayed from a stopped run, `failed` whether its call failed (A5): facts
+# about the call, not scores.
+CARRY = ("latency_ms", "tokens_in", "tokens_out", "cost_usd", "resumed", "failed")
 
 
 def _item_sources(dataset_id: str) -> dict[str, str]:
@@ -87,7 +94,7 @@ def _item_sources(dataset_id: str) -> dict[str, str]:
     otherwise the source text arrived as None: silently, because a scorer that wanted the
     source then measured nothing rather than failing."""
     ds_file = DATASETS / f"{dataset_id_ok(dataset_id)}.json"
-    items = read_json(ds_file).get("items") or [] if ds_file.is_file() else []
+    items = read_json(ds_file).get("items") or [] if _store.is_file(ds_file) else []
     return {it["item_id"]: it["source_path"] for it in items if it.get("item_id") and it.get("source_path")}
 
 
@@ -115,21 +122,22 @@ def _rescore_row(
     score: Any,
     wants_source: bool,
     extra_keys: set[str],
+    unscorable: Any = None,
 ) -> tuple[dict[str, Any], bool, bool]:
     """One stored prediction row, scored again from its stored output: (the new row, whether
     a reference was found for it, whether its cost was re-read from the bill)."""
     had_ref = False
     recosted = False
     item_id = old["item_id"]
-    out_f = d / "outputs" / f"{item_id}.txt"
-    if not out_f.is_file():
-        die(f"{d.name}: no stored output for {item_id} — cannot rescore")
-    output = out_f.read_text(encoding="utf-8")
+    stored = _outputs.output(d, item_id)
+    if stored is None:
+        die(f"{_model_runs.run_of(d).name}: no stored output for {item_id} — cannot rescore", "not-enough")
+    output = stored
     reference = None
     if ref_dir:
         rf = ref_dir / f"{item_id}.txt"
-        if rf.is_file():
-            reference = rf.read_text(encoding="utf-8", errors="replace")
+        if _store.is_file(rf):
+            reference = _store.read_text(rf, encoding="utf-8", errors="replace")
             had_ref = True
     source_text = None
     # `source_path` is the dataset's own name for the file; it only happens to
@@ -138,10 +146,15 @@ def _rescore_row(
     # source then measures nothing, quietly.
     rel = item_source.get(item_id) or old.get("source_path") or f"{item_id}.txt"
     for cand in (mat / rel, mat / f"{item_id}.txt", mat / item_id):
-        if cand.is_file():
-            source_text = cand.read_text(encoding="utf-8", errors="replace")
+        if _store.is_file(cand):
+            source_text = _store.read_text(cand, encoding="utf-8", errors="replace")
             break
-    scored = score(output, reference, source_text) if wants_source else score(output, reference)
+    if unscorable is not None and unscorable(item_id, output):
+        scored: dict[
+            str, Any
+        ] = {}  # RFC-031 L3: its label holds only under production's action, and this run's differs
+    else:
+        scored = score(output, reference, source_text) if wants_source else score(output, reference)
     row: dict[str, Any] = {"item_id": item_id, **scored}
     for k, v in old.items():
         if k == "item_id" or k in scored:
@@ -176,10 +189,11 @@ def _rescore_row(
             fresh = _mod.reparse_meta(output)
         except Exception as exc:  # noqa: BLE001
             die(
-                f"{d.name}: the adapter's reparse_meta() raised on item "
+                f"{_model_runs.run_of(d).name}: the adapter's reparse_meta() raised on item "
                 f"{item_id}: {type(exc).__name__}: {exc}\n"
                 f"  A rescored run must not carry a parse the current parser "
-                f"did not produce, so this is a failure rather than a carry."
+                f"did not produce, so this is a failure rather than a carry.",
+                "failed",
             )
         if isinstance(fresh, dict):
             row["_meta"] = {**row["_meta"], **fresh}
@@ -230,7 +244,7 @@ def _check_references(
     if ref_dir and rows:
         if refs_found == 0:
             die(
-                f"{d.name}: reference_id {m['fingerprint']['data']['reference_id']!r} "
+                f"{m['run_id']}: reference_id {m['fingerprint']['data']['reference_id']!r} "
                 f"is declared but NOT ONE of its {len(rows)} reference files exists "
                 f"under {ref_dir}.\n"
                 f"  Scoring would silently treat every gold set as empty and report a "
@@ -242,7 +256,8 @@ def _check_references(
                 + how(
                     f"evh dataset-create --dataset-id {m.get('dataset_id')} --source-dir …",
                     f"make dataset-create DATASET_ID={m.get('dataset_id')}",
-                )
+                ),
+                "not-materialized",
             )
         if refs_found < len(rows):
             print(
@@ -311,43 +326,38 @@ def _rescored_fingerprint(
     return fp
 
 
-#: Where a re-score lands when no --out names a place (RFC-022): data/runs-rescored/<scorer>/<source>/, the scorer
-#: by its code (12 characters of the adapter's sha256), the source the runs directory it read, so a repeat set
-#: never sits beside a first pass of the same config (V8).
-RESCORED = "runs-rescored"
-
-
-def designated_dir(scorer: str, source_dir: Path) -> Path:
-    """data/runs-rescored/<scorer>/<source>/ for runs read from `source_dir`."""
-    try:
-        rel = source_dir.resolve().relative_to(DATA.resolve()).as_posix()
-    except ValueError:
-        rel = source_dir.name
-    return DATA / RESCORED / scorer[:12] / rel
-
-
 def scorer_of(m: dict) -> str:
-    """The scorer that judged a run (RFC-022), 12 characters: a derived run's `derived.with.sha256`, a measured
-    run's instrument adapter `sha256` (RFC-021 hashes the instrument by its code); "" when it records neither."""
-    with_ = (m.get("derived") or {}).get("with") or {}
-    sha = with_.get("sha256") or (
-        ((m.get("fingerprint") or {}).get("instrument") or {}).get("adapter") or {}
-    ).get("sha256")
-    return str(sha or "")[:12]
+    """The scorer that judged a run (RFC-022), 12 characters; "" when the record names none (model.runs)."""
+    return _model_runs.scorer_of(m)
+
+
+def label_for(scorer: str, reference_id: str | None) -> str:
+    """The label a re-score is read under when none is named: `silver` against a silver reference, `labels-<dataset>-
+    <set>` against a label set, else `rescored <8 characters of the scorer>`."""
+    if reference_id and reference_id.startswith("silver/"):
+        return "silver"
+    if reference_id and reference_id.startswith(LABELS_PREFIX):
+        return _datasets.label_of(reference_id.removeprefix(LABELS_PREFIX))
+    return f"rescored {scorer[:8]}"
 
 
 def latest_scoring(d: Path, m: dict) -> tuple[str, Path | None]:
-    """(the scorer the run is read with now, the re-score it is read from or None): its latest re-score in
-    data/runs-rescored, else the run's own scorer."""
-    found = [
-        (read_json(x).get("created_at") or "", x.parent)
-        for x in (DATA / RESCORED).glob(f"*/*/{d.name}/metrics.json")
-        if ((read_json(x).get("derived") or {}).get("from")) == d.name
-    ]
+    """(the scorer the run is read with now, the re-score it is read from or None): the run's latest re-score (a score
+    of the run read as "rescored ..."), else the run's own scorer."""
+    found = []
+    for sd in _model_runs.scores_of(_model_runs.run_of(d)):
+        rec = _model_runs.record(sd)
+        if rec and (rec.get("derived") or {}).get("kind") == "rescore" and _is_rescored(sd):
+            found.append((rec.get("created_at") or "", sd.name, sd, rec))
     if not found:
         return scorer_of(m), None
-    _at, latest = max(found)
-    return scorer_of(read_json(latest / "metrics.json")), latest
+    _at, _key, latest, rec = max(found, key=lambda t: t[:2])
+    return scorer_of(rec), latest
+
+
+def _is_rescored(sd: Path) -> bool:
+    """Whether a score is a `rescore`'s own label (rescored <scorer>), not a silver, adjudicated or label-set one."""
+    return str(_model_runs.meta(sd).get("label") or "").startswith("rescored ")
 
 
 def current_scorer(m: dict, adapters: dict[str, Any] | None = None) -> str:
@@ -365,16 +375,23 @@ def current_scorer(m: dict, adapters: dict[str, Any] | None = None) -> str:
 
 
 def measured_runs(dataset_id: str, configs: set[str] | None = None) -> list[tuple[Path, dict]]:
-    """Every measured (not derived) run on the dataset, of the configs when named, in every runs directory git
-    keeps: what a round's or a goal's arms were first scored from."""
+    """Every measured run on the dataset (the score it made when it ran, its record not a derived one), of the systems
+    when named: what a round's or a goal's arms were first scored from."""
     out: list[tuple[Path, dict]] = []
-    for base in sorted(DATA.glob("runs*")):
-        if not base.is_dir() or base.name in (RESCORED, "runs-judged") or ignored_by_git(base):
+    for rid in _model_runs.run_ids():
+        run = _model_runs.run(rid)
+        if not run or run.get("dataset_id") != dataset_id:
             continue
-        for d, m in runs_on(dataset_id, runs_dir=base):
-            if m.get("derived") or (configs is not None and m.get("config_id") not in configs):
-                continue
-            out.append((d, m))
+        sd = _model_runs.first_score(rid)
+        rec = _model_runs.record(sd) if sd else None
+        if (
+            sd is None
+            or rec is None
+            or rec.get("derived")
+            or (configs is not None and rec.get("config_id") not in configs)
+        ):
+            continue
+        out.append((sd, rec))
     return out
 
 
@@ -382,18 +399,24 @@ def rescore_one(
     d: Path,
     m: dict,
     *,
-    out_dir: Path | None = None,
+    label_as: str | None = None,
     reference_id: str | None = None,
     adapters: dict[str, Any] | None = None,
     quiet: bool = False,
+    faith: dict[str, Any] | None = None,
+    preview: bool = False,
 ) -> tuple[Path, dict] | None:
-    """Re-score one finished run into `out_dir` (default: designated_dir for the adapter it recorded), writing a
-    derived record beside a copy of its outputs; (the new run's directory, its metrics), or None when the run
-    records no adapter."""
+    """Re-score one finished run (`d`: the score it is re-read from, `m` its record) from its stored outputs, writing a
+    score under the run read as `label_as` (default `label_for`); (the score's directory, its record), or None when
+    the run records no adapter. A score of the same scorer against the same reference that the run already has, with
+    the same rows, is the same measurement: nothing is written ("already scored"); with other rows it is refused.
+    A `preview` writes the run and the score, read as the plain arm, into the scratch root (the caller's to point
+    somewhere throwaway) and nothing into the project."""
     adapters = {} if adapters is None else adapters
+    rid = m["run_id"]
     spec = m.get("adapter")
     if not spec:
-        print(f"  SKIP {d.name}: the run records no adapter")
+        print(f"  SKIP {rid}: the run records no adapter")
         return None
     if spec not in adapters:
         # The id the run recorded, resolved under the project (and in a checkout the
@@ -402,20 +425,13 @@ def rescore_one(
         found = load_recorded_adapter(spec)
         if found is None:
             die(
-                f"adapter not found for {d.name}: {spec!r} is under none of "
-                f"{', '.join(str(x) for x in adapter_search_dirs())}"
+                f"adapter not found for {rid}: {spec!r} is under none of "
+                f"{', '.join(str(x) for x in adapter_search_dirs())}",
+                "not-found",
             )
         adapters[spec] = found
     _call, score, adapter_id, adapter_path, _warm, _fp = adapters[spec]
     wants_source = score_wants_source(score)
-    out_dir = out_dir or designated_dir(_sha(adapter_path), d.parent)
-    # A rescored run is its own record, derived from the run it reads: written into that run's
-    # directory it would overwrite the measurement (it died copying a file onto itself).
-    if out_dir.resolve() == d.parent.resolve():
-        die(
-            f"--out {out_dir} is where the runs being rescored are read from; a rescore writes "
-            "new records beside them, so give it another directory (or none: the tool designates one)"
-        )
     ref_dir, tier = _references_for(m, reference_id)
     mat = MATERIALIZED / m["dataset_id"]
     item_source = _item_sources(m["dataset_id"])
@@ -428,12 +444,22 @@ def rescore_one(
     extra_keys = set(m.get("metric_kinds", {})) & {"truncated", "reasoning_tokens"}
     extra_keys |= {"truncated", "reasoning_tokens"}
     dropped: set = set()
-    for line in (d / "predictions.jsonl").read_text(encoding="utf-8").splitlines():
-        if not line.strip():
-            continue
-        old = json.loads(line)
+    from evaluation_harness._adapter import same_of  # noqa: PLC0415
+    from evaluation_harness._label_sets import action_bound  # noqa: PLC0415
+
+    bound = action_bound(ref_dir)
+    same = same_of(m.get("adapter"))
+    not_scorable: list[str] = []
+
+    def unscorable(iid: str, output: str) -> bool:
+        if iid in bound and not same(output, bound[iid]):
+            not_scorable.append(iid)
+            return True
+        return False
+
+    for old in _runs.item_rows(d):
         row, had_ref, recost = _rescore_row(
-            old, d, ref_dir, mat, item_source, score, wants_source, extra_keys
+            old, d, ref_dir, mat, item_source, score, wants_source, extra_keys, unscorable if bound else None
         )
         refs_found += had_ref
         recosted += recost
@@ -446,14 +472,29 @@ def rescore_one(
     _check_references(d, m, ref_dir, rows, refs_found)
 
     scores = aggregate_scores(rows)
+    # The adapter's score_run(), over the stored outputs and the references read again: a run-level metric is
+    # recomputed like every per-item one, never carried from the source.
+    by_run = run_scorer(adapter_path)
+    run_metrics: list[str] = []
+    if by_run is not None and rows:
+        items = []
+        for row in rows:
+            iid = row["item_id"]
+            rf = ref_dir / f"{iid}.txt" if ref_dir else None
+            items.append(
+                {
+                    "item_id": iid,
+                    "output": _outputs.output(d, iid),
+                    "reference": _store.read_text(rf, encoding="utf-8", errors="replace")
+                    if rf is not None and _store.is_file(rf)
+                    else None,
+                    "scores": {k: v for k, v in row.items() if k != "item_id" and not k.startswith("_")},
+                }
+            )
+        whole = run_level_scores(by_run, items, scores)
+        scores.update(whole)
+        run_metrics = sorted(whole)
 
-    run_dir = out_dir / d.name
-    (run_dir / "outputs").mkdir(parents=True, exist_ok=True)
-    for f in (d / "outputs").glob("*.txt"):
-        shutil.copy2(f, run_dir / "outputs" / f.name)
-    (run_dir / "predictions.jsonl").write_text(
-        "".join(json.dumps(r, sort_keys=True) + "\n" for r in rows), encoding="utf-8"
-    )
     # Provenance of the RESCORE itself: which run it came from, and which scorer
     # produced these numbers. Without this a rescored run is indistinguishable from
     # a measured one, which is the whole risk of having this script at all.
@@ -468,7 +509,7 @@ def rescore_one(
     new = derived_record(
         m,
         kind="rescore",
-        source_dir=d.name,
+        source_dir=rid,
         with_=provenance,
         scores=scores,
         n_items=len(rows),
@@ -478,52 +519,96 @@ def rescore_one(
         metric_directions=_directions(adapter_path) or m.get("metric_directions"),
         reference_tier=tier if reference_id else None,
     )
+    if faith is not None:
+        new["faithfulness"] = faith  # a replay's (RFC-030), as the records stood when it was re-scored
+    if not_scorable:
+        new["not_scorable"] = not_scorable
+        print(
+            f"  note: {rid}: {len(not_scorable)} item(s) not scorable under this variant: their label holds only "
+            "under production's action, and this run acted otherwise (RFC-031); left out of its scores"
+        )
+    else:
+        new.pop("not_scorable", None)
+    if run_metrics:
+        new["run_metrics"] = run_metrics
+    else:
+        new.pop("run_metrics", None)  # the source's: this scorer computed none of them
     if isinstance(new.get("fingerprint"), dict):
         new["fingerprint"] = _rescored_fingerprint(
-            new["fingerprint"], adapter_id, adapter_path, reference_id, tier, d.name
+            new["fingerprint"], adapter_id, adapter_path, reference_id, tier, rid
         )
     if dropped:
         new["rescore_dropped_metrics"] = sorted(dropped)
-    write_json(run_dir / "metrics.json", new)
+    scorer = scorer_of(new)
+    if not scorer:
+        die(
+            f"{rid}: the adapter {adapter_id} has no file to hash, so the score has no scorer to be keyed by",
+            "not-found",
+        )
+    reference = ((new.get("fingerprint") or {}).get("data") or {}).get("reference_id")
+    if preview:
+        _model_runs.write_run(rid, _model_runs.run(rid) or {}, scratch=True)
+        sd = _model_runs.write_score(rid, scorer, reference, new, first=True, scratch=True)
+        _outputs.write_rows(sd, rows)
+        return sd, new
+    label_as = label_for(scorer, reference) if label_as is None else label_as
+    key = _model_runs.key(scorer, reference)
+    text = "".join(_outputs.row_line(r) for r in rows)
+    held = _model_runs.run_dir(rid) / "scores" / key
+    if _model_runs.record(held) is not None:
+        if _outputs.rows_text(held) != text:
+            die(
+                f"{rid} is already scored by {key}, with other rows than this re-score gives (its references or "
+                "outputs changed under the same scorer): a score is not written over, so nothing is. Read it as "
+                "it is, or score with a scorer that differs.",
+                "would-overwrite",
+            )
+        if not quiet:
+            print(f"  {rid}  already scored by {key}: not written again")
+        return held, _model_runs.record(held) or new
+    sd = _model_runs.write_score(rid, scorer, reference, new, label_as=label_as)
+    _outputs.write_rows(sd, rows)  # no outputs of its own: they are its run's (RFC-024)
     if not quiet:
         note = f", {recosted} re-costed from the bill" if recosted else ""
-        print(
-            f"  {d.name}  -> {len(rows)} item(s){note}  ({run_dir.parent.relative_to(DATA) if run_dir.parent.is_relative_to(DATA) else run_dir.parent})"
-        )
-    return run_dir, new
+        print(f"  {rid}  -> {len(rows)} item(s){note}  ({label_as})")
+    return sd, new
 
 
 def rescore_runs(
     todo: list[tuple[Path, dict]],
     *,
-    out: Path | None = None,
+    label_as: str | None = None,
     reference_id: str | None = None,
     quiet: bool = False,
+    faith: dict[str, Any] | None = None,
 ) -> list[tuple[Path, dict]]:
-    """Re-score each run (rescore_one), warning once per directory written that git will not keep."""
+    """Re-score each run (rescore_one); the scores written, or found already there, with their records."""
     adapters: dict[str, Any] = {}
     done = []
-    warned: set[Path] = set()
-    for d, m in sorted(todo, key=lambda t: t[0].name):
-        got = rescore_one(d, m, out_dir=out, reference_id=reference_id, adapters=adapters, quiet=quiet)
-        if got is None:
-            continue
-        done.append(got)
-        if not quiet and got[0].parent not in warned:
-            warned.add(got[0].parent)
-            warn_if_ignored(got[0].parent)
+    for d, m in sorted(todo, key=lambda t: (t[1]["run_id"], t[0].name)):
+        got = rescore_one(
+            d,
+            m,
+            label_as=label_as,
+            reference_id=reference_id,
+            adapters=adapters,
+            quiet=quiet,
+            faith=(faith or {}).get(m["run_id"]),
+        )
+        if got is not None:
+            done.append(got)
     return done
 
 
 def main() -> int:
     """Re-score finished runs from their stored outputs: no API calls, no money."""
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
     ap.add_argument("--dataset-id", help="the dataset whose runs to re-score (or --goal and --round)")
     ap.add_argument("--match", help="only runs whose config_id contains this substring")
     ap.add_argument(
-        "--out",
-        type=Path,
-        help="where to write (default: data/runs-rescored/<scorer>/<source>/, the place the tool designates)",
+        "--label",
+        help="the label the scores are read under (default: 'rescored <8 characters of the scorer>'; 'silver' with "
+        "--reference-id silver/...; 'labels-<dataset>-<set>' with --labels)",
     )
     ap.add_argument(
         "--reference-id",
@@ -533,108 +618,113 @@ def main() -> int:
     ap.add_argument(
         "--labels",
         metavar="SET",
-        help="score against a label set of the dataset (SET or DATASET/SET), without promoting it; written beside "
-        "the runs (default data/runs-labels-<dataset>-<set>/), never where a goal reads a re-score (RFC-023)",
-    )
-    ap.add_argument(
-        "--config-dir",
-        type=Path,
-        help="where to find the arm configs naming the adapter "
-        "(default: alongside each run's recorded adapter path)",
+        help="score against a label set of the dataset (SET or DATASET/SET), without promoting it; read under its own "
+        "label (labels-<dataset>-<set>), never where a goal reads a re-score (RFC-023)",
     )
     ap.add_argument("--goal", help="with --round: re-score that round's arms")
     ap.add_argument(
         "--round", dest="round_id", help="the round whose arms (its own and those it carried) to re-score"
     )
     ap.add_argument("--why", default="", help="with --round: why the scoring changed, recorded on the round")
+    ap.add_argument(
+        "--unfaithful",
+        action="store_true",
+        help="re-score a replay (RFC-030) whose faithfulness record does not agree with production, as a person (an "
+        "agent is refused); the record says so",
+    )
+    from evaluation_harness._actor import add_by  # noqa: PLC0415
+
+    add_by(ap)
+    ap.add_argument(
+        "--json",
+        action="store_true",
+        help="one JSON object on stdout when done (the text goes to stderr as it is printed): the envelope every --json command gives (result.blocks, result.values)",
+    )
     args = ap.parse_args()
-    if args.labels:
-        if args.reference_id or args.round_id:
-            die("--labels is its own target: not with --reference-id or --round")
-        if not args.dataset_id:
-            die("--labels needs --dataset-id")
-        args.reference_id = labels_reference(args.labels, args.dataset_id)
-        if args.out is None:
-            args.out = DATA / f"runs-labels-{args.dataset_id}-{args.reference_id.rsplit('/', 1)[1]}"
-    elif args.reference_id and not (REFERENCES / args.reference_id).is_dir():
-        die(f"no reference set at data/references/{args.reference_id}")
-    rnd = None
-    if args.round_id:
-        if not args.goal:
-            die("--round needs --goal")
-        if len(args.why.split()) < 3:
-            die("--round needs --why, a sentence: what changed in the scoring, and why?")
-        from evaluation_harness import _rounds  # noqa: PLC0415
+    with _jsonout.collect("rescore", args.json, live=sys.stderr):
+        if args.labels:
+            if args.reference_id or args.round_id:
+                die("--labels is its own target: not with --reference-id or --round", "bad-argument")
+            if not args.dataset_id:
+                die("--labels needs --dataset-id", "bad-argument")
+            args.reference_id = labels_reference(args.labels, args.dataset_id)
+        elif args.reference_id and not _store.is_dir(REFERENCES / args.reference_id):
+            die(f"no reference set at data/references/{args.reference_id}", "not-found")
+        rnd = None
+        if args.round_id:
+            if not args.goal:
+                die("--round needs --goal", "bad-argument")
+            if len(args.why.split()) < 3:
+                die("--round needs --why, a sentence: what changed in the scoring, and why?", "bad-argument")
+            from evaluation_harness import _rounds  # noqa: PLC0415
 
-        rnd = _rounds.find(args.goal, args.round_id)
-        if rnd is None:
-            die(f"no round {args.round_id} of {args.goal}")
-        args.dataset_id = rnd["dataset_id"]
-        todo = measured_runs(args.dataset_id, set(_rounds.arms_of(rnd)))
-    elif not args.dataset_id:
-        die("--dataset-id, or --goal with --round")
-    elif args.out is None:
-        todo = [
-            (d, m)
-            for d, m in measured_runs(args.dataset_id)
-            if not args.match or args.match in m["config_id"]
-        ]
-    else:
-        todo = runs_on(args.dataset_id, match=args.match)
-    if not todo:
-        die(f"no runs on {args.dataset_id!r}" + (f" matching {args.match!r}" if args.match else ""))
-    # Refused before anything is written, whatever the runs record (rescore_one checks each run again).
-    if args.out and any(d.parent.resolve() == args.out.resolve() for d, _m in todo):
-        die(
-            f"--out {args.out} is where the runs being rescored are read from; a rescore writes "
-            "new records beside them, so give it another directory (or none: the tool designates one)"
-        )
-    print(f"rescoring {len(todo)} run(s)" + (f" -> {args.out}" if args.out else ""))
-    if args.out:
-        args.out.mkdir(parents=True, exist_ok=True)
-    done = rescore_runs(todo, out=args.out, reference_id=args.reference_id)
-    dirs = sorted(
-        {str(d.parent.relative_to(DATA)) if d.parent.is_relative_to(DATA) else str(d.parent) for d, _ in done}
-    )
-    print(f"\n{len(done)} run(s) rescored into {', '.join(dirs)}")
-    if rnd is not None and done:
-        from evaluation_harness import _rounds  # noqa: PLC0415
+            rnd = _rounds.find(args.goal, args.round_id)
+            if rnd is None:
+                die(f"no round {args.round_id} of {args.goal}", "not-found")
+            args.dataset_id = rnd["dataset_id"]
+            todo = measured_runs(args.dataset_id, set(_rounds.arms_of(rnd)))
+        elif not args.dataset_id:
+            die("--dataset-id, or --goal with --round", "bad-argument")
+        else:
+            todo = [
+                (d, m)
+                for d, m in measured_runs(args.dataset_id)
+                if not args.match or args.match in m["config_id"]
+            ]
+        if not todo:
+            die(
+                f"no runs on {args.dataset_id!r}" + (f" matching {args.match!r}" if args.match else ""),
+                "not-found",
+            )
+        # A replay is scored only once it reproduces production (RFC-030): every run checked before any is written.
+        from evaluation_harness import _faith  # noqa: PLC0415
 
-        sha = (done[0][1].get("derived") or {}).get("with", {}).get("sha256", "")
-        rnd.setdefault("scoring", []).append(
-            {"at": now(), "scorer": sha[:12], "why": args.why, "written": dirs, "runs": len(done)}
+        faith = {m["run_id"]: _faith.allow_scoring(m, "re-scoring", args.unfaithful) for d, m in todo}
+        print(f"rescoring {len(todo)} run(s)")
+        done = rescore_runs(todo, label_as=args.label, reference_id=args.reference_id, faith=faith)
+        labels = sorted({str(_model_runs.meta(d).get("label") or "") for d, _ in done})
+        print(f"\n{len(done)} run(s) rescored, read as {', '.join(repr(x) for x in labels)}")
+        _jsonout.values({"rescored": [str(d) for d, _ in done], "labels": labels})
+        if rnd is not None and done:
+            from evaluation_harness import _rounds  # noqa: PLC0415
+
+            sha = (done[0][1].get("derived") or {}).get("with", {}).get("sha256", "")
+            rnd.setdefault("scoring", []).append(
+                {"at": now(), "scorer": sha[:12], "why": args.why, "written": labels, "runs": len(done)}
+            )
+            src_ref = {m["run_id"]: _reference_of(m) for _d, m in todo}
+            _rounds.read_under_rescore(
+                rnd,
+                done,
+                frozenset(m["config_id"] for _d, m in done if src_ref.get(m["run_id"]) != _reference_of(m)),
+            )
+            _rounds.save(rnd)
+            print(f"  round {rnd['round_id']} of {rnd['goal']} records the scoring: {args.why}")
+        for line in cut_off_lines(todo, done):
+            print(line)
+        next_cmd = f"evh goals --goal {rnd['goal']}" if rnd else "evh goals"
+        src_ref = {m["run_id"]: _reference_of(m) for d, m in todo}
+        print(
+            closing_line([(src_ref.get(m["run_id"]), _reference_of(m)) for d, m in done])
+            + how(next_cmd, "make catalog")
         )
-        _rounds.save(rnd)
-        print(f"  round {rnd['round_id']} of {rnd['goal']} records the scoring: {args.why}")
-    for line in cut_off_lines(todo, done):
-        print(line)
-    next_cmd = f"evh goals --goal {rnd['goal']}" if rnd else "evh goals"
-    src_ref = {d.name: _reference_of(m) for d, m in todo}
-    print(
-        closing_line([(src_ref.get(d.name), _reference_of(m)) for d, m in done])
-        + how(next_cmd, "make catalog")
-    )
-    return 0
+        return 0
 
 
 def cut_off_lines(todo: list[tuple[Path, dict]], done: list[tuple[Path, dict]]) -> list[str]:
     """A warning for each re-scored run whose stored outputs stopped at max_tokens, as `evh run` gives it: a re-score
     reads those outputs again and scores them as if complete."""
-    rescored = {d.name for d, _ in done}
+    rescored = {m["run_id"] for _d, m in done}
     lines = []
-    for d, m in sorted(todo, key=lambda t: t[0].name):
-        if d.name not in rescored:
+    for d, m in sorted(todo, key=lambda t: t[1]["run_id"]):
+        if m["run_id"] not in rescored:
             continue
-        rows = [
-            json.loads(x)
-            for x in (d / "predictions.jsonl").read_text(encoding="utf-8").splitlines()
-            if x.strip()
-        ]
+        rows = list(_runs.item_rows(d))
         cap = (m.get("params") or {}).get("max_tokens")
         cut = cut_off_items(rows, cap)
         if cut:
             lines.append(
-                f"  WARNING: {d.name}: {len(cut)} of {len(rows)} output(s) stopped at max_tokens"
+                f"  WARNING: {m['run_id']}: {len(cut)} of {len(rows)} output(s) stopped at max_tokens"
                 f"{'' if cap is None else f'={cap}'} ({', '.join(cut[:6])}{' ...' if len(cut) > 6 else ''}).\n"
                 "    A re-score reads them as they are and scores them as if complete. Raise max_tokens "
                 "(a new config_id) and run again."
@@ -653,19 +743,30 @@ def closing_line(pairs: list[tuple[str | None, str]]) -> str:
     reference is a table of its own beside the run's, and the run's table is as it was."""
     apart = sorted({(old, new) for old, new in pairs if old != new}, key=str)
     text = (
-        "  the goals, the rounds and the catalog read an arm's re-score in place of its runs when every run of the "
+        "the goals, the rounds and the catalog read an arm's re-score in place of its runs when every run of the "
         "arm was re-scored against the reference it was measured on."
     )
     if not apart:
-        return text + " See it with: "
+        return _wrap(text + " See it with:") + " "
     moved = "; ".join(
         f"{sum(1 for p in pairs if p == (old, new))} run(s) against {new}, measured against {old}"
         for old, new in apart
     )
     return (
-        f"{text}\n  Not in place: {moved}. The goals show those as a table of their own, scored against "
-        "the new reference;\n  the table scored against the old one stays as it was. See them with: "
+        _wrap(text)
+        + "\n"
+        + _wrap(
+            f"Not in place: {moved}. The goals show those as a table of their own, scored against the new reference; "
+            "the table scored against the old one stays as it was. See them with:"
+        )
+        + " "
     )
+
+
+def _wrap(text: str) -> str:
+    """A paragraph of the closing lines, wrapped to 100 columns and indented (one run's list of references ran past
+    230 on one line)."""
+    return textwrap.fill(text, 100, initial_indent="  ", subsequent_indent="  ")
 
 
 def _kinds(path):

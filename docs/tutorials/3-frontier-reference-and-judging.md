@@ -14,14 +14,13 @@ which need a key ([tutorial 2](2-hosted-llm.md)).
 
 ## 1. The frontier arm, with a real model
 
-The author is an arm like any other. With a hosted model it is a config such as this one, from
+The author is a system like any other. With a hosted model it is one such as this, from
 the newcomer scenario this release was tried on (a LiteLLM proxy's model name; any provider of
 [tutorial 2](2-hosted-llm.md) works):
 
 ```yaml
-# data/configs/briefs_opus.yaml
-config_id: briefs_opus_v1
-dataset_id: briefs_v1
+# data/systems/briefs_opus_v1.yaml
+system_id: briefs_opus_v1
 params:
   provider: litellm
   model: eval-opus-5
@@ -30,13 +29,12 @@ params:
   prompt: "Summarise the following news brief in one sentence."
   usd_per_mtok_in: 5.0
   usd_per_mtok_out: 25.0
-goal: brief_summary
 ```
 
 <!-- guide-check: skip -->
 ```bash
-evh run --config data/configs/briefs_opus.yaml --dry-run     # price it first
-evh run --config data/configs/briefs_opus.yaml
+evh run --system briefs_opus_v1 --dataset briefs_v1 --goal brief_summary --dry-run     # price it first
+evh run --system briefs_opus_v1 --dataset briefs_v1 --goal brief_summary
 evh label-from-run --run <the briefs_opus_v1 run_id> --set opus_v1
 evh reference-promote --dataset-id briefs_v1 --labels opus_v1 --tier silver \
     --reason "The frontier arm's summaries rank the cheaper arms." --by me
@@ -47,8 +45,8 @@ What `label-from-run` refuses, and why:
 
 - **An empty output, or one that stopped at `max_tokens`.** In the scenario's first run a
   frontier arm at `max_tokens: 80` wrote 19 of 20 summaries cut off mid-sentence; frozen as the
-  reference, every arm would have been graded against fragments. That is why the config above
-  has room to finish. If yours stops at the cap, raise `max_tokens` in a new `config_id`
+  reference, every arm would have been graded against fragments. That is why the system above
+  has room to finish. If yours stops at the cap, raise `max_tokens` in a new `system_id`
   (`briefs_opus_v2`) and run again (`--allow-cut-off` is for outputs that end at the cap by
   design). `evh run`
   already warns, naming the items, when outputs stop at the cap.
@@ -82,8 +80,8 @@ wins over silver, and the run records which it used). The runs you already have 
 paid for again: their outputs are stored, so re-scoring is arithmetic.
 
 ```bash
-evh rescore --dataset-id tickets_v1 --reference-id gold/tickets_v1 --out data/runs-gold
-EVAL_RUNS_DIR=data/runs-gold evh leaderboard --dataset-id tickets_v1
+evh rescore --dataset-id tickets_v1 --reference-id gold/tickets_v1 --label gold
+evh leaderboard --dataset-id tickets_v1 --label gold
 ```
 <!-- guide-check: varies lead2_noisy author global distinguishable sorted ordering -->
 ```text
@@ -138,7 +136,7 @@ rank by silver, check it against a gold slice. How big a gold set must be is a m
 
 ```bash
 evh family-test --dataset-id tickets_v1 --a tickets_lead2_v1 --against tickets_ \
-    --runs-dir data/runs-gold
+    --label gold
 ```
 <!-- guide-check: varies tickets_lead1_v1 tickets_author_v1 lead2_noisy ahead -->
 ```text
@@ -269,11 +267,11 @@ verdict?) and a repeat on half (the **noise** check: does the judge agree with i
 
 ```bash
 evh judge-score --dataset-id tickets_v1 --scorer tickets-judge-v1 --unvalidated
-EVAL_RUNS_DIR=data/runs-judged/tickets-judge-v1 evh leaderboard --dataset-id tickets_v1 --wide
+evh leaderboard --dataset-id tickets_v1 --label "judged/tickets-judge-v1" --wide
 ```
 <!-- guide-check: varies tickets_ global FRONTIER agree reshuffled -->
 ```text
-4 scored run(s) -> .../data/runs-judged/tickets-judge-v1  (6/6 items, unvalidated judge)
+4 scored run(s) -> .../data/runs (6/6 items, unvalidated judge)
   calls 24, spent this run $0.0000, stored total $0.0000  (the provider's bill where it reports one, else the price table)
   ...
 dataset: tickets_v1   ranked by: judge_score_unvalidated (higher is better)
@@ -291,7 +289,7 @@ dataset: tickets_v1   ranked by: judge_score_unvalidated (higher is better)
   ...
   Scored by an LLM judge, not against references: tickets-judge-v1, unvalidated judge.
   ...
-  The judging pass (tickets-judge-v1, 6/6 items, unvalidated judge), from summary.json:
+  The judging pass (tickets-judge-v1, 6/6 items, unvalidated judge), from data/judge-summaries:
     judges judge_a and judge_b agree: item tau 0.040, arm order spearman 0.400
     judge_a: reshuffled outputs tau 1.000 (position), the same call repeated tau 1.000 (noise)
   ...
@@ -313,6 +311,12 @@ nothing, and `--no-calls` rebuilds the scored runs from the stored verdicts for 
 runs read like any others: `leaderboard`, `pair-test` and `family-test` work on them unchanged,
 through `EVAL_RUNS_DIR`. The fake judges' numbers mean nothing, and the test says so: no
 detectable arm effect.
+
+Commit what the judging wrote, as everything under `data/`:
+
+```bash
+git add data/judging-sets data/judge-verdicts data/runs data/judge-summaries && git commit -qm "tickets_v1: judged by tickets-judge-v1"
+```
 
 **When a real judge's scores disagree with your primary metric**, nothing changes until you
 decide it should. The primary metric stays what it was; making a judge's score primary is a
@@ -361,7 +365,8 @@ the log line names that file: read it before you retry, to see why the reply fai
 judges above set `reasoning: {enabled: false}`. In the fifth newcomer run, a judge without it at
 `max_tokens: 400` returned empty replies, and 1 item of 20 parsed. Each unparsed line says why
 ("empty, cut off at the token limit (finish_reason length)"), and the pass ends with a `HINT` line when
-it happens. Fix it in a new scorer version (a new `scorer_id`): turn the judge's reasoning off, or raise
+it happens. A judge whose first 3 replies all come back that way stops the pass there (`STOPPED EARLY`),
+so the rest is not paid for; what it stored is kept. Fix it in a new scorer version (a new `scorer_id`): turn the judge's reasoning off, or raise
 its `max_tokens`. Either changes the judge, so the old verdicts are not mixed with the new. The
 `reasoning` key is sent for `provider: openai`, `openrouter` and `litellm`; `provider: anthropic`
 refuses it. A tree with such verdicts from before 0.7.1 fails `evh validate`'s V12, and the message

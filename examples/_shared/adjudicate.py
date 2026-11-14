@@ -17,24 +17,25 @@ against it, $0:
         --reason "the adjudicated labels sit beside the dataset's own, never deciding alone" --by <you>
 
     evh rescore --dataset-id ag_news_200 \\
-        --reference-id gold/ag_news_200_adj1 --out data/runs-adjudicated
+        --reference-id gold/ag_news_200_adj1 --label adjudicated
 """
 
 from __future__ import annotations
 
 import json
-import shutil
 import sys
 from pathlib import Path
 
 REFS = Path(__file__).resolve().parents[2] / "harness" / "data" / "references"
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "harness"))  # evaluation_harness: its store
+from evaluation_harness import _store  # noqa: E402
 
 
 def main() -> int:
     if len(sys.argv) != 2:
         print(__doc__)
         return 2
-    adj = json.loads(Path(sys.argv[1]).read_text())
+    adj = json.loads(_store.read_text(Path(sys.argv[1])))
     base, dest = REFS / adj["base_reference"], REFS / adj["reference_id"]
     if adj["reference_id"] == adj["base_reference"] or dest.resolve() == base.resolve():
         print(
@@ -42,28 +43,28 @@ def main() -> int:
             "refusing, because the copy would delete the gold set it copies from"
         )
         return 1
-    if not base.is_dir():
+    if not _store.is_dir(base):
         print(f"no gold reference set at {base}: run the eval's fetch.py first")
         return 1
-    if dest.exists():
-        shutil.rmtree(dest)
-    shutil.copytree(base, dest)
+    if _store.exists(dest):
+        _store.rmtree(dest)
+    _store.copy_tree(base, dest)
     # The base set's manifest describes the base set's texts, not these: it goes, and the
     # printed command writes this set's own.
-    (dest / "manifest.json").unlink(missing_ok=True)
+    _store.unlink(dest / "manifest.json", missing_ok=True)
     changed = 0
     for it in adj["items"]:
         f = dest / f"{it['item_id']}.txt"
-        if not f.is_file():
+        if not _store.is_file(f):
             print(f"item {it['item_id']} is not in {base}")
             return 1
-        if f.read_text().strip() != it["gold"]:
+        if _store.read_text(f).strip() != it["gold"]:
             print(
-                f"item {it['item_id']}: local gold is {f.read_text().strip()!r}, "
+                f"item {it['item_id']}: local gold is {_store.read_text(f).strip()!r}, "
                 f"the adjudication file says {it['gold']!r}"
             )
             return 1
-        f.write_text(it["adjudicated"])
+        _store.write_text(f, it["adjudicated"])
         changed += it["adjudicated"] != it["gold"]
     print(f"{dest.relative_to(REFS)}: {len(adj['items'])} adjudicated, {changed} changed")
     print(

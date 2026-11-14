@@ -31,16 +31,17 @@ import shutil
 import statistics
 import textwrap
 
-from evaluation_harness import _jsonout
+from evaluation_harness import _common, _jsonout, _store
 from evaluation_harness._adapter import recorded_metric_kinds
 from evaluation_harness._common import (
     BOOKKEEPING_PREFIXES,
     REFERENCES,
-    RUNS,
     classify_metrics,
     die,
+    evh_prog,
     how,
     read_json,
+    system_now,
 )
 from evaluation_harness._record import derived_with
 from evaluation_harness._runs import by_arm, direction, mixed_versions, runs_on, warn_on_ambiguous_runs
@@ -421,11 +422,16 @@ def _cell(v: float | None, kind: str | None) -> str:
 def _fit_columns(
     show: list[str], rows: list[dict], kinds: dict[str, str], sort_key: str, wide: bool
 ) -> list[str]:
-    """The metric columns the text table has room for, in the order they matter: the ranking metric, the cost and
-    the speed the frontier reads, the other quality metrics, then the rest. The first always stays."""
+    """The metric columns the text table has room for, in the order they matter: the ranking metric and the quality
+    metrics of its family (its first word: a judged table's `judge_score_…` and each judge's `judge_<id>_…`), the
+    cost and the speed the frontier reads, the other quality metrics, then the rest. The first always stays."""
     if wide:
         return show
+    family = sort_key.split("_", 1)[0] + "_"
     first = [k for k in show if k == sort_key]
+    first += [
+        k for k in show if k != sort_key and k.startswith(family) and kinds.get(k, "quality") == "quality"
+    ]
     frontier = [
         next((k for k in show if kinds.get(k) == "cost" and k.startswith("total_")), None)
         or next((k for k in show if kinds.get(k) == "cost"), None),
@@ -531,7 +537,7 @@ def _own_reference(by_config: dict[str, list[dict]]) -> dict[str, str]:
                 continue
             if ref not in authors:
                 mf = REFERENCES / ref / "manifest.json"
-                authors[ref] = read_json(mf).get("authored_by") if mf.is_file() else None
+                authors[ref] = system_now(read_json(mf).get("authored_by")) if _store.is_file(mf) else None
             if authors[ref] == config_id:
                 out[config_id] = ref
     return out
@@ -585,19 +591,25 @@ def _metric_kinds(by_config: dict[str, list[dict]]) -> dict[str, str]:
 
 def main() -> int:
     """Generate a leaderboard from run results."""
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
     ap.add_argument("--dataset-id", required=True)
     ap.add_argument("--sort", help="metric to rank by (default: the first quality metric)")
     ap.add_argument(
         "--asc", action="store_true", help="lower is better for the sort metric (default: inferred)"
     )
     ap.add_argument("--desc", action="store_true", help="higher is better, whatever the runs declare")
-    # A dataset accumulates arms across config VERSIONS -- v1 and v2 of the same arm are
+    # A dataset accumulates arms across system VERSIONS -- v1 and v2 of the same arm are
     # different measurements and must not share a row, but they do share a dataset. Without
     # a way to scope the table, the only ways to get a readable leaderboard are to delete
     # the older runs or to read past them. Deleting paid-for results to tidy a table is how
     # 18 arms were lost once; this is the alternative.
     ap.add_argument("--match", help="only arms whose config_id contains this substring")
+    ap.add_argument(
+        "--label",
+        default="",
+        help='the arms read under this label: "" (default) the runs\' own scores; "silver", "repeats", "linux", '
+        '"judged/<scorer>", "rescored <scorer>" ... (evh runs-list names those present)',
+    )
     ap.add_argument("--round", help="only the arms in play in this round of a goal (rN; ADR-0004)")
     ap.add_argument("--goal", help="the goal --round belongs to, when several goals have one")
     ap.add_argument(
@@ -620,7 +632,7 @@ def _run(args: argparse.Namespace) -> int:
     # Each run with its directory, so the significance test can reach its predictions.jsonl.
     # Per-item scores are what make a PAIRED comparison possible, and a comparison that is
     # not paired throws away the fact that every arm was graded on the same items.
-    found = runs_on(args.dataset_id, match=args.match)
+    found = runs_on(args.dataset_id, label=args.label, match=args.match)
     if args.round:
         from evaluation_harness._rounds import arms_of, resolve  # noqa: PLC0415
 
@@ -653,19 +665,19 @@ def _run(args: argparse.Namespace) -> int:
 
 
 def _judging_summary(found: list) -> None:
-    """The judging pass's own checks (its summary.json, beside the judged runs): how far the
-    judges agree, and how much a verdict moves with the order of the outputs (position) and
-    when the same call is repeated (noise). Read them before the ranking."""
+    """The judging pass's own checks (its summary, data/judge-summaries/<judge scorer>@<judging set>.json, named by
+    the judged score's key): how far the judges agree, and how much a verdict moves with the order of the
+    outputs (position) and when the same call is repeated (noise). Read them before the ranking."""
     seen = set()
     for d, _m in found:
-        f = d.parent / "summary.json"
-        if f in seen or not f.is_file():
+        f = _common.DATA / "judge-summaries" / f"{d.name}.json"
+        if f in seen or not _store.is_file(f):
             continue
         seen.add(f)
         s = read_json(f)
         print(
-            f"\n  The judging pass ({f.parent.name}, {s.get('items_scored')}/{s.get('items_total')} items, "
-            f"{s.get('label', '')}), from {f.name}:"
+            f"\n  The judging pass ({d.name.split('@', 1)[0]}, {s.get('items_scored')}/{s.get('items_total')} items, "
+            f"{s.get('label', '')}), from data/judge-summaries:"
         )
 
         def num(v: object) -> str:
@@ -706,14 +718,15 @@ def _table(args: argparse.Namespace, found: list) -> dict:
     arm_runs = by_arm(found)
     by_config: dict[str, list[dict]] = {cid: [m for _d, m in rs] for cid, rs in arm_runs.items()}
 
-    warn_on_ambiguous_runs(RUNS, args.dataset_id, label=RUNS.name)
+    warn_on_ambiguous_runs(args.label, args.dataset_id)
     if not by_config:
         die(
             f"no runs on dataset {args.dataset_id!r}"
             + (f" matching {args.match!r}" if args.match else "")
             + ".\n  "
             + how("evh runs-list", "make runs-list")
-            + "   to see what exists"
+            + "   to see what exists",
+            "not-found",
         )
 
     all_keys = sorted(
@@ -755,7 +768,7 @@ def _table(args: argparse.Namespace, found: list) -> dict:
             f"        sort order, not by meaning. Pass --sort explicitly, or re-run with\n"
             f"        an adapter that sets PRIMARY_METRIC."
         )
-    # SAY SO when the table mixes config versions. v1 and v2 of one arm are different
+    # SAY SO when the table mixes system versions. v1 and v2 of one arm are different
     # measurements -- often different scorers -- and listing them side by side reads as
     # 48 models. The fix is to scope the view, never to delete the older runs. Only an arm
     # present at two versions is a mix; different arms at different versions are not.
@@ -769,11 +782,11 @@ def _table(args: argparse.Namespace, found: list) -> dict:
         )
     ranking_on_descriptive = kinds.get(sort_key) == "descriptive"
     if sort_key not in all_keys:
-        die(f"no metric {sort_key!r} on these runs. Available: {', '.join(all_keys)}")
+        die(f"no metric {sort_key!r} on these runs. Available: {', '.join(all_keys)}", "not-found")
 
     rows: list[dict] = []
     for config_id, runs in by_config.items():
-        # EVERY run's tier, not runs[0]'s. Taking the first one meant a config whose
+        # EVERY run's tier, not runs[0]'s. Taking the first one meant a system whose
         # earliest run predated the reference (reference_tier: None) suppressed the
         # SILVER warning below — while the quality column on that very row came only
         # from the silver-scored runs. A model-generated number, printed as if it were
@@ -882,7 +895,7 @@ def _table(args: argparse.Namespace, found: list) -> dict:
         )
     if not any(kinds.get(k) == "cost" for k in show):
         print(
-            "\n  No cost recorded. Add usd_per_mtok_in / usd_per_mtok_out to the configs\n"
+            "\n  No cost recorded. Add usd_per_mtok_in / usd_per_mtok_out to the systems\n"
             "  so the ranking can weigh quality against price."
         )
     return {

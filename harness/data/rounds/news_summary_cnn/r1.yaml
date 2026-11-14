@@ -3,9 +3,304 @@ goal: news_summary_cnn
 dataset_id: cnn_dailymail_200
 hypothesis: Which of 24 hosted LLMs (8 vendors × 3 price tiers) and local BART summarisers covers a CNN
   article's gold highlights best, and at what cost?
+arms:
+- system: cnn_anthropic_l_v2
+  runs:
+  - cnn_anthropic_l_n200_v1_20260926T063645Z
+  entered:
+    how: ran
+    at: '2026-09-25T23:26:25Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: cnn_anthropic_m_v2
+  runs:
+  - cnn_anthropic_m_n200_v1_20260926T002220Z
+  entered:
+    how: ran
+    at: '2026-09-25T23:26:25Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: cnn_anthropic_s_v2
+  runs:
+  - cnn_anthropic_s_n200_v1_20260926T064810Z
+  entered:
+    how: ran
+    at: '2026-09-25T23:26:25Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: cnn_bart_l_v1
+  runs:
+  - cnn_bart_l_n200_v1_20260926T153757Z
+  entered:
+    how: ran
+    at: '2026-09-25T23:26:25Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: cnn_bart_l_xsum_v1
+  runs:
+  - cnn_bart_l_xsum_n200_v1_20260930T092945Z
+  entered:
+    how: ran
+    at: '2026-09-25T23:26:25Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: cnn_bart_m_v1
+  runs:
+  - cnn_bart_m_n200_v1_20260930T083949Z
+  entered:
+    how: ran
+    at: '2026-09-25T23:26:25Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: cnn_bart_s_v1
+  runs:
+  - cnn_bart_s_n200_v1_20260930T091438Z
+  entered:
+    how: ran
+    at: '2026-09-25T23:26:25Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: cnn_deepseek_l_v2
+  runs:
+  - cnn_deepseek_l_n200_v1_20260925T234213Z
+  entered:
+    how: ran
+    at: '2026-09-25T23:26:25Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: cnn_deepseek_m_v2
+  runs:
+  - cnn_deepseek_m_n200_v1_20260925T233650Z
+  entered:
+    how: ran
+    at: '2026-09-25T23:26:25Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: cnn_deepseek_s_v2
+  runs:
+  - cnn_deepseek_s_n200_v1_20260925T232736Z
+  entered:
+    how: ran
+    at: '2026-09-25T23:26:25Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: cnn_gemma_l_v2
+  runs:
+  - cnn_gemma_l_n200_v1_20260926T072408Z
+  entered:
+    how: ran
+    at: '2026-09-25T23:26:25Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: cnn_gemma_m_v2
+  runs:
+  - cnn_gemma_m_n200_v1_20260926T073250Z
+  entered:
+    how: ran
+    at: '2026-09-25T23:26:25Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: cnn_gemma_s_v2
+  runs:
+  - cnn_gemma_s_n200_v1_20260926T073908Z
+  entered:
+    how: ran
+    at: '2026-09-25T23:26:25Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: cnn_glm_l_v2
+  runs:
+  - cnn_glm_l_n200_v1_20260926T095351Z
+  entered:
+    how: ran
+    at: '2026-09-25T23:26:25Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: cnn_glm_m_v2
+  runs:
+  - cnn_glm_m_n200_v1_20260926T101254Z
+  entered:
+    how: ran
+    at: '2026-09-25T23:26:25Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: cnn_glm_s_v2
+  runs:
+  - cnn_glm_s_n200_v1_20260926T102344Z
+  entered:
+    how: ran
+    at: '2026-09-25T23:26:25Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: cnn_lead3_v1
+  runs:
+  - cnn_lead3_n200_v1_20260926T153351Z
+  entered:
+    how: ran
+    at: '2026-09-25T23:26:25Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: cnn_llama_l_v2
+  runs:
+  - cnn_llama_l_n200_v1_20260926T000443Z
+  entered:
+    how: ran
+    at: '2026-09-25T23:26:25Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: cnn_llama_m_v2
+  runs:
+  - cnn_llama_m_n200_v1_20260925T235110Z
+  entered:
+    how: ran
+    at: '2026-09-25T23:26:25Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: cnn_llama_s_v2
+  runs:
+  - cnn_llama_s_n200_v1_20260926T071608Z
+  entered:
+    how: ran
+    at: '2026-09-25T23:26:25Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: cnn_mistral_l_v2
+  runs:
+  - cnn_mistral_l_n200_v1_20260926T102910Z
+  entered:
+    how: ran
+    at: '2026-09-25T23:26:25Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: cnn_mistral_m_v2
+  runs:
+  - cnn_mistral_m_n200_v1_20260926T111007Z
+  entered:
+    how: ran
+    at: '2026-09-25T23:26:25Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: cnn_mistral_s_v2
+  runs:
+  - cnn_mistral_s_n200_v1_20260926T111901Z
+  entered:
+    how: ran
+    at: '2026-09-25T23:26:25Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: cnn_openai_l_v2
+  runs:
+  - cnn_openai_l_n200_v1_20260926T001621Z
+  entered:
+    how: ran
+    at: '2026-09-25T23:26:25Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: cnn_openai_m_v2
+  runs:
+  - cnn_openai_m_n200_v1_20260926T065459Z
+  entered:
+    how: ran
+    at: '2026-09-25T23:26:25Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: cnn_openai_s_v2
+  runs:
+  - cnn_openai_s_n200_v1_20260926T070053Z
+  entered:
+    how: ran
+    at: '2026-09-25T23:26:25Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: cnn_qwen_l_v2
+  runs:
+  - cnn_qwen_l_n200_v1_20260926T080222Z
+  entered:
+    how: ran
+    at: '2026-09-25T23:26:25Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: cnn_qwen_m_v2
+  runs:
+  - cnn_qwen_m_n200_v1_20260925T232115Z
+  entered:
+    how: ran
+    at: '2026-09-25T23:26:25Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: cnn_qwen_s_v2
+  runs:
+  - cnn_qwen_s_n200_v1_20260926T081215Z
+  entered:
+    how: ran
+    at: '2026-09-25T23:26:25Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
 status: closed
 opened_at: '2026-09-25T23:26:25Z'
 closed_at: '2026-09-30T09:45:18Z'
+actor:
+  type: unknown
+  name: before 0.8.0
+  from: migration
 conclusion:
   text: 'On coverage, bart_l (BART-large-CNN, $0, 11.0 s per article on a 12-core Mac CPU) scores 0.3461
     and the best hosted arm, deepseek_m ($191 per 1M articles, 1.6 s), 0.3460: not significant (p = 0.99).

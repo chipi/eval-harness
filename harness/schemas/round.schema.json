@@ -1,34 +1,53 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "round",
-  "description": "One round of an eval (ADR-0004), optional: what it set out to learn, what changed against the round before, the arms it dropped and why, the baseline it started from, and what it concluded. data/rounds/<goal_id>/<round_id>.yaml, written by evh round-open / round-retire / round-close. Its arms are the configs whose runs name it (`round:` in the config, recorded on the run).",
+  "description": "One round of an eval (ADR-0004), optional: what it set out to learn, what changed against the round before, the arms it dropped and why, the baseline it started from, and what it concluded. data/rounds/<goal_id>/<round_id>.yaml, written by evh round-open / round-retire / round-close. It stores its arms (RFC-032 step 5): a run made with `--round` names the round and joins its system's arm.",
   "type": "object",
   "required": ["round_id", "goal", "dataset_id", "status", "opened_at"],
   "additionalProperties": false,
   "properties": {
     "round_id": {"type": "string", "pattern": "^r[0-9]+$", "description": "r1, r2, ...: equals the file name."},
+    "study": {"type": "string", "description": "The study this round belongs to (RFC-029): opened by study-run, closed when the study ends, never by hand; it does not count against the one open round of a goal."},
+    "actor": {"type": "object", "description": "Who acted (RFC-027): a person, or an agent and the person it acted for. A recorded claim, not an identity.", "required": ["type", "name"], "additionalProperties": false, "properties": {"type": {"enum": ["person", "agent", "unknown"]}, "name": {"type": "string"}, "for": {"type": "string", "description": "the person an agent acted for"}, "from": {"enum": ["flag", "environment", "terminal", "migration"]}}},
     "goal": {"type": "string", "description": "The goal_id it answers."},
     "dataset_id": {"type": "string", "description": "The dataset its arms run on."},
     "from": {"type": "string", "pattern": "^r[0-9]+$", "description": "The round it continues."},
     "hypothesis": {"type": "string", "description": "What the round sets out to learn, in a sentence."},
     "changes": {"type": "array", "items": {"type": "string"}, "description": "What changed against `from`, and why, one line each."},
     "baseline": {"type": ["string", "null"], "description": "The run it starts from and is measured against: the dataset's promoted baseline when it opened."},
-    "carried": {"type": "array", "items": {"type": "string"}, "description": "Config ids from earlier rounds kept in this one unchanged, compared without being run again."},
-    "retired": {
+    "arms": {
       "type": "array",
+      "description": "The round's arms (RFC-032 step 5): each a system placed in the round, read under one label, through the runs named; a retired arm stays, with when, why and who.",
       "items": {
         "type": "object",
-        "required": ["config_id", "reason", "at"],
+        "required": ["system", "runs", "entered"],
         "additionalProperties": false,
         "properties": {
-          "config_id": {"type": "string"},
-          "runs_dir": {"type": "string", "description": "The runs directory, relative to data/, whose copy of the config is retired (runs-linux: a re-timing of the same config on another machine). Absent: the project's runs directory."},
-          "reason": {"type": "string"},
-          "at": {"type": "string"}
+          "system": {"type": "string", "description": "The system's id."},
+          "label": {"type": "string", "description": "What its scores are read under (\"rescored 5f2c057c\", \"linux\", \"silver\"); absent: the plain runs."},
+          "runs": {"type": "array", "items": {"type": "string"}, "description": "The runs the arm is read through (run ids)."},
+          "entered": {
+            "type": "object",
+            "required": ["how", "at"],
+            "additionalProperties": false,
+            "properties": {
+              "how": {"enum": ["ran", "carried"], "description": "ran: a run of it named the round; carried: kept from an earlier round (round-open --keep, --adopt), compared without being run again."},
+              "at": {"type": ["string", "null"]},
+              "from": {"type": "string", "pattern": "^r[0-9]+$", "description": "The round it was carried from."},
+              "actor": {"$ref": "#/properties/actor"}
+            }
+          },
+          "retired": {
+            "type": "object",
+            "required": ["at", "reason"],
+            "additionalProperties": false,
+            "properties": {"at": {"type": ["string", "null"]}, "reason": {"type": "string"}, "actor": {"$ref": "#/properties/actor"}}
+          }
         }
       }
     },
     "budget_usd": {"type": "number", "minimum": 0, "description": "What the round may spend; its billed cost is shown against it."},
+    "harness": {"type": "object", "additionalProperties": false, "description": "The harness code the round was opened on (round-open): a run of the round recording other code (instrument.harness.code_sha256) is named by evh rounds, with how to run it on this code.", "properties": {"version": {"type": ["string", "null"]}, "commit": {"type": ["string", "null"], "description": "The project's commit; in a checkout of the harness, the harness's own."}, "code_sha256": {"type": ["string", "null"], "description": "The hash of the harness code that can change a measurement, as runs record it."}, "installed": {"type": ["boolean", "null"], "description": "True when the harness is an installed dependency, not a checkout."}}},
     "scorer": {"type": "string", "description": "The scorer the round is judged by (RFC-022): 12 characters of its code's sha256, recorded by round-open --scoring."},
     "scoring": {
       "type": "array",
@@ -41,7 +60,7 @@
           "at": {"type": "string"},
           "scorer": {"type": "string"},
           "why": {"type": "string"},
-          "written": {"type": "array", "items": {"type": "string"}, "description": "The directories the re-scores were written to, relative to data/."},
+          "written": {"type": "array", "items": {"type": "string"}, "description": "The labels the re-scores are read under (\"rescored 5f2c057c\")."},
           "runs": {"type": "integer", "minimum": 0, "description": "How many runs were re-scored."}
         }
       }
@@ -53,7 +72,7 @@
       "type": "object",
       "required": ["text"],
       "additionalProperties": false,
-      "properties": {"text": {"type": "string"}, "promoted_run": {"type": ["string", "null"]}}
+      "properties": {"text": {"type": "string"}, "promoted_run": {"type": ["string", "null"]}, "actor": {"$ref": "#/properties/actor"}}
     }
   }
 }

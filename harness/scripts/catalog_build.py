@@ -34,7 +34,6 @@ import argparse
 import html
 import json
 import re
-import shutil
 import statistics
 import sys
 from datetime import datetime, timezone
@@ -43,8 +42,8 @@ from urllib.parse import quote
 
 HERE = Path(__file__).resolve().parent
 
-from evaluation_harness import _common, _fields, _visibility  # noqa: E402
-from evaluation_harness._common import ROOT  # noqa: E402
+from evaluation_harness import _common, _exposure, _fields, _jsonout, _looks, _store, _visibility  # noqa: E402
+from evaluation_harness._common import ROOT, die  # noqa: E402
 from evaluation_harness.axes import (  # noqa: E402
     STRATEGIES,
     axes_of,
@@ -55,11 +54,18 @@ from evaluation_harness.axes import (  # noqa: E402
     strategy_of,
     tie_break_of,
 )
-from evaluation_harness.catalog_adapter import Adapter, item_fields, load_catalog_adapter, scores_once  # noqa: E402
+from evaluation_harness.catalog_adapter import (  # noqa: E402
+    Adapter,
+    item_fields,
+    load_catalog_adapter,
+    scores_once,
+)
+from evaluation_harness.model.datasets import record_file as dataset_record_file  # noqa: E402
+from evaluation_harness.model.datasets import source_dir  # noqa: E402
 from evaluation_harness.stats import fmt_p  # noqa: E402
 
 #: The front-end files every page loads: installed beside the package, or in a checkout.
-ASSET_DIR = next(p for p in (HERE / "catalog_assets", HERE.parent / "catalog_assets") if p.is_dir())
+ASSET_DIR = next(p for p in (HERE / "catalog_assets", HERE.parent / "catalog_assets") if _store.is_dir(p))
 # forest.js draws a baseline's answers chart; no page of the harness's own uses it, a project's
 # builder does (podcast_scraper's baseline pages), so it ships with the assets.
 ASSETS = (
@@ -76,6 +82,9 @@ ASSETS = (
 )
 #: Links that would put more arms than this in one inspector URL go to the picker instead.
 INSPECT_MAX = 40
+#: A dataset page's items, at most this many a page: the rest on pages of their own beside it. One page held them all,
+#: 13.8 MB at 10,000 items (S1), each row with an inspect link naming the arms.
+ITEMS_PER_PAGE = 200
 
 #: The theme is applied before first paint by assets/head.js, a file rather than an inline
 #: script, so the pages need no 'unsafe-inline' in a Content-Security-Policy.
@@ -119,8 +128,9 @@ NAV = [
         "arms",
         [
             ("arms", "arms.html", "Arms"),
-            ("configs", "arms.html#configs", "Configs"),
+            ("systems", "arms.html#systems", "Systems"),
             ("models", "models.html", "Models"),
+            ("prompts", "prompts.html", "Prompts"),
             ("metrics", "metrics.html", "Metrics"),
         ],
         "Arms",
@@ -129,10 +139,11 @@ NAV = [
     ("inspect", "inspect.html", "Inspector"),
 ]
 
+
 #: What the harness's own metrics measure; a project describes its own with METRIC_DESCRIPTIONS.
 BUILTIN_METRICS = {
     "cost_usd": "What one item cost, in USD: the provider's bill when the response carries one, "
-    "else the tokens times the config's prices.",
+    "else the tokens times the system's prices.",
     "total_cost_usd": "What the whole run cost, in USD: the sum of cost_usd.",
     "tokens_in": "Prompt tokens per item, as the provider counted them.",
     "tokens_out": "Completion tokens per item, as the provider counted them.",
@@ -153,6 +164,8 @@ BUILTIN_METRICS = {
     "overlap_f1": "Token-overlap F1 against the reference: the bundled adapter's placeholder, "
     "enough to run the loop, not to defend a decision.",
     "output_words": "How many words the output has: a description of the output, not a quality.",
+    "failed": "1 when the item's call failed (not transiently) and it was scored as an empty answer; the run "
+    "listed it in failed_items and went on. Its mean is the share of the run that failed.",
     "resumed": "1 when the item was replayed from a stopped run's stored output (--resume), "
     "else 0: bookkeeping, not a score.",
     "reasoning_tokens": "Tokens a reasoning model spent thinking before it answered, as the provider "
@@ -165,14 +178,14 @@ BUILTIN_DETAILS = {
     "cost_usd": "Recorded for every item. When the provider's response carries what it billed "
     "(OpenRouter always, a LiteLLM proxy that passes usage.cost through, any OpenAI-compatible "
     "endpoint that returns it), that bill is the cost. Otherwise it is tokens_in × usd_per_mtok_in "
-    "plus tokens_out × usd_per_mtok_out from the arm's config, per million tokens. With neither the "
+    "plus tokens_out × usd_per_mtok_out from the arm's system, per million tokens. With neither the "
     "cost is unknown and left empty, never 0. Lower is better, and it needs no reference, so arms "
     "scored against different references can still be compared on it. evh cost-report shows how "
     "far the bills and the price tables differ.",
     "total_cost_usd": "The run's cost: the sum of cost_usd over its items, not a mean. An arm's "
     "repeats are separate runs, each with its own total.",
     "tokens_in": "Counted by the provider, not the harness: an adapter that reports none leaves it "
-    "empty. Together with the config's prices it is the fallback cost when no bill comes back.",
+    "empty. Together with the system's prices it is the fallback cost when no bill comes back.",
     "tokens_out": "Counted by the provider, not the harness. Most providers bill a reasoning "
     "model's thinking as completion tokens; reasoning_tokens says how many of them it was.",
     "latency_ms": "The wall-clock time of one call. When an adapter reports none, the core times "
@@ -268,7 +281,7 @@ def reference_link(ref: str, up: str = "") -> str:
 
 
 def arm_page(arm: str) -> str:
-    """The arm's page, relative to the catalog root: one per arm id (runs dir, dataset, config)."""
+    """The arm's page, relative to the catalog root: one per arm id (runs dir, dataset, system)."""
     return f"a/{slug(arm)}.html"
 
 
@@ -508,6 +521,7 @@ def page(
 <link rel="icon" href="{up}assets/icon.svg" type="image/svg+xml">
 {HEAD}</head>
 <body data-up="{up}" data-item="{e(item)}" data-serve="{e(serve)}" data-api="{e(API)}">
+<a class="skip" href="#main">Skip to the page</a>
 <header class="bar"><div class="wrap">
   <a class="brand" href="{logo_href}" aria-label="{e(parts[0][0] if parts else brand)}"><img class="mark"
     src="{up}assets/icon.svg" alt="" width="28" height="28">{brand_text}</a>{sections}
@@ -518,7 +532,7 @@ def page(
   <button class="hbtn search-btn" type="button" aria-label="Search" aria-expanded="false" aria-controls="q">{ICON["search"]}</button>
   <button id="theme" class="theme hbtn" aria-label="Toggle light and dark">{ICON["theme"]}</button>
 </div></header>
-<main>
+<main id="main" tabindex="-1">
 {body}
 </main>
 <footer><div class="wrap"><p>{foot}</p>{elsewhere_line(elsewhere)}</div></footer>
@@ -543,26 +557,35 @@ def block(num: str, eyebrow: str, inner: str, anchor: str = "") -> str:
     """Build a block section with a number, eyebrow text, and inner HTML."""
     aid = f' id="{anchor}"' if anchor else ""
     return (
-        f'<section class="block tight"{aid}><div class="wrap"><p class="eyebrow">'
-        f'<span class="num">{num}</span>{e(eyebrow)}</p>{inner}</div></section>'
+        f'<section class="block tight"{aid}><div class="wrap"><h2 class="eyebrow">'
+        f'<span class="num">{num}</span>{e(eyebrow)}</h2>{inner}</div></section>'
     )
 
 
 PROSE = re.compile(r"[A-Za-z]{2,}(?=\s)")
 
 
-def table(tid: str, heads: list, rows: list, filt: str = "", period: bool = False, noun: str = "") -> str:
+def table(
+    tid: str,
+    heads: list,
+    rows: list,
+    filt: str = "",
+    period: bool = False,
+    noun: str = "",
+    attrs: dict | None = None,
+) -> str:
     """Build an HTML table with optional search filter. A row is a list of cells, or
     {"cells": [...], "cls": "...", "id": "...", "key": "...", "made": "...", "data": {...}} for a
     row with a class, an anchor, a place in the period (`period`: catalog_assets/period.js reads
     the row's key and the day it was made, and fills its `data-flow` cells), or attributes
-    group.js groups and filters on (`data`; `noun` names a row in a group's heading)."""
+    group.js groups and filters on (`data`; `noun` names a row in a group's heading). `attrs` are the table's own
+    data- attributes (group.js reads default-group and fold)."""
     th = "".join(f"<th>{h}</th>" for h in heads)
     f = ""
     if filt:
         f = (
             f'<div class="filter"><input type="search" data-filter="{tid}" placeholder="{e(filt)}" '
-            f'aria-label="{e(filt)}"><span class="muted small"><span data-count="{tid}">{len(rows)}</span>'
+            f'aria-label="{e(filt)}"><span class="muted small" aria-live="polite"><span data-count="{tid}">{len(rows)}</span>'
             f" shown</span></div>"
         )
 
@@ -584,7 +607,9 @@ def table(tid: str, heads: list, rows: list, filt: str = "", period: bool = Fals
     body = "".join(tr(r) for r in rows)
     return (
         f'{f}<div class="scroll-x"><table id="{tid}" class="data sortable"{" data-period-rows" if period else ""}'
-        f"{f' data-noun={chr(34)}{e(noun)}{chr(34)}' if noun else ''}><thead><tr>{th}</tr>"
+        f"{f' data-noun={chr(34)}{e(noun)}{chr(34)}' if noun else ''}"
+        + "".join(f' data-{k}="{e(v)}"' for k, v in (attrs or {}).items())
+        + f"><thead><tr>{th}</tr>"
         f"</thead><tbody>{body}</tbody></table></div>"
     )
 
@@ -606,8 +631,50 @@ def group_chips(tid: str, groups: tuple) -> str:
 def write(out: Path, rel: str, content: str) -> None:
     """Write content to a relative path within output directory."""
     p = out / rel
-    p.parent.mkdir(parents=True, exist_ok=True)
-    p.write_text(content, encoding="utf-8")
+    _store.mkdir(p.parent, parents=True, exist_ok=True)
+    _store.write_text(p, content, encoding="utf-8")
+
+
+def _redirect(out: Path, rel: str, to: str, was: str, now: str) -> None:
+    """A page at `rel` that sends the reader to `to`; nothing is written over a page that exists."""
+    if _store.exists(out / rel):
+        return
+    write(
+        out,
+        rel,
+        '<!doctype html><meta charset="utf-8"><meta name="robots" content="noindex">'
+        f'<link rel="canonical" href="{e(to)}"><meta http-equiv="refresh" content="0; url={e(to)}">'
+        f"<title>{e(was)} is now {e(now)}</title>"
+        f'<p>{e(was)} is now <a href="{e(to)}">{e(now)}</a>.</p>\n',
+    )
+
+
+def write_redirects(A: Adapter, by_ds: dict, out: Path) -> None:
+    """An arm page under an old id sends the reader to the page under its new id, so a link someone kept still
+    arrives: a system a migration renamed (RFC-032 step 3), and an arm whose id changed when the runs folders became
+    labels (RFC-032 step 4, `renamed_arms`: the copies kept once go to the run's own arm)."""
+    fn = getattr(A, "renamed_systems", None)
+    renamed = fn() if callable(fn) else {}
+    olds: dict[str, list[str]] = {}
+    for old, new in renamed.items():
+        olds.setdefault(new, []).append(old)
+    fn = getattr(A, "renamed_arms", None)
+    moved = fn() if callable(fn) else {}
+    for v in by_ds.values():
+        for a in v["arms"]:
+            prefix, _, cid = a["arm"].rpartition("/")
+            to = arm_page(a["arm"]).split("/", 1)[1]
+            for old in olds.get(cid, []):
+                _redirect(out, arm_page(f"{prefix}/{old}"), to, old, cid)
+    here = {a["arm"]: a for v in by_ds.values() for a in v["arms"]}
+    for old, new in moved.items():
+        if new in here:
+            to = arm_page(new).split("/", 1)[1]
+            _redirect(out, arm_page(old), to, old, here[new]["label"])
+            # A page under both old names (the old folder, the system's id before step 3) arrives too.
+            old_prefix, _, cid = old.rpartition("/")
+            for o in olds.get(cid, []):
+                _redirect(out, arm_page(f"{old_prefix}/{o}"), to, f"{old_prefix}/{o}", here[new]["label"])
 
 
 def write_periods(A: Adapter, by_ds: dict, out: Path) -> None:
@@ -677,7 +744,7 @@ def period_goals(A: Adapter, by_ds: dict) -> dict:
                 [bl["promoted_at"][:10], "baseline " + arm_link(bl["arm"], _label_of(by_ds, d, bl["arm"]))]
                 for d in on
                 for bl in (by_ds.get(d) or {}).get("baselines") or []
-                if bl.get("promoted_at") and bl.get("arm")
+                if bl.get("promoted_at") and bl.get("arm") and bl.get("goal") == g["goal_id"]
             ]
             + [
                 [r[stamp][:10], f"round {e(r['round_id'])} {verb}"]
@@ -764,10 +831,10 @@ def inspect_url(arms: list, up: str = "", **params) -> str:
 
 def copy_assets(out: Path) -> None:
     """Copy CSS, JS, and SVG assets to output directory."""
-    (out / "assets").mkdir(parents=True, exist_ok=True)
+    _store.mkdir(out / "assets", parents=True, exist_ok=True)
     for a in ASSETS:
-        shutil.copy(ASSET_DIR / a, out / "assets" / a)
-    (out / "assets" / "head.js").write_text(HEAD_JS_SRC, encoding="utf-8")
+        _store.copy_file(ASSET_DIR / a, out / "assets" / a)
+    _store.write_text(out / "assets" / "head.js", HEAD_JS_SRC, encoding="utf-8")
 
 
 def fmt(v) -> str:
@@ -782,6 +849,7 @@ def collect(A: Adapter) -> dict:
     """{dataset: {"arms": [row], "refs": [ref], "items": n}}: what every page needs, read once."""
     by_ds: dict = {}
     runs_of = getattr(A, "arm_runs", None)
+    read_as = getattr(A, "read_as", None)
     RECORDED.clear()
     for arm in A.arms():
         d = A.describe(arm)
@@ -795,6 +863,7 @@ def collect(A: Adapter) -> dict:
             {
                 "arm": arm,
                 "label": d["label"],
+                "read_as": read_as(arm) if callable(read_as) else "",
                 "runs": d.get("runs", 1),
                 "metric": head,
                 "mean": statistics.fmean(values.values()) if values else None,
@@ -805,6 +874,7 @@ def collect(A: Adapter) -> dict:
                 "wrote": bool(d.get("wrote_reference")),
                 "labels_source": d.get("labels_source", ""),
                 "recorded": d.get("recorded", ""),
+                "replay": d.get("replay"),
                 "machine": _machine(A, arm),
                 "goal": d.get("goal", ""),
                 "format": d.get("format", ""),
@@ -919,10 +989,13 @@ def _versions(A: Adapter, by_ds: dict) -> None:
         )
 
 
-def _version_links(by_ds: dict, ds: str, up: str) -> str:
-    """The dataset's place in its version chain, as links: made from, and made into."""
+def _version_links(by_ds: dict, ds: str, up: str) -> tuple[str, str]:
+    """Where the dataset came from and its place in its version chain, as links: the capture its items were taken
+    from, the version it was made from, and the versions made from it; with the section's title (owner, 2026-11-14:
+    a version made from another and from a capture says both, on its page and in the list)."""
     v = by_ds[ds]
     parts = []
+    origin = f"<p>From {origin_html(v, up)}.</p>" if v.get("origin") else ""
     lin = v.get("parent")
     if lin:
         n = {k: len(lin.get(k) or []) for k in ("added", "removed", "changed")}
@@ -949,7 +1022,8 @@ def _version_links(by_ds: dict, ds: str, up: str) -> str:
             '<p class="small muted">Runs on different versions measure different items, so they are '
             "never tested against each other; compare each version's arms on its own page.</p>"
         )
-    return "".join(parts)
+    title = "origin and versions" if origin and parts else "origin" if origin else "versions"
+    return title, origin + "".join(parts)
 
 
 def _goals_of(A: Adapter) -> dict:
@@ -988,8 +1062,16 @@ def render_datasets(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
                 "data": {"goal": its_goals, **{f"tag-{k}": tags.get(k) or f"no {k}" for k in tag_keys}},
                 "cells": [
                     dataset_link(ds, wrap=True)
-                    + (f"<br><small>from {dataset_link(parent, wrap=True)}</small>" if parent else "")
-                    + (f"<br><small>{origin_html(v)}</small>" if v.get("origin") and not parent else ""),
+                    + (
+                        "<br><small>"
+                        + " · ".join(
+                            ([f"from {dataset_link(parent, wrap=True)}"] if parent else [])
+                            + ([origin_html(v)] if v.get("origin") else [])
+                        )
+                        + "</small>"
+                        if parent or v.get("origin")
+                        else ""
+                    ),
                     # A chip per tag: run together as text, five tags and a Hugging Face pin made one tall
                     # unreadable cell (owner, 2026-10-31).
                     "".join(
@@ -1014,9 +1096,9 @@ def render_datasets(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
     body = hero(
         "datasets",
         "Every run, by dataset",
-        f"{n_arms} arms on {len(by_ds)} datasets, from {_n_configs(by_ds)} configs. An arm is one config on one "
+        f"{n_arms} arms on {len(by_ds)} datasets, from {_n_systems(by_ds)} systems. An arm is one system on one "
         f"dataset scored one way, its repeats averaged per {e(A.item_word)}, exactly as <code>pair-test</code> reads "
-        "it: a config rescored against silver or by a judge is an arm of its own. "
+        "it: a system rescored against silver or by a judge is an arm of its own. "
         "Open a dataset to compare its arms in the inspector.",
         cp.bar(w["first"], w["until"]),
     )
@@ -1199,7 +1281,7 @@ def ref_tier(tiers: dict, key: str) -> str:
 def baseline_read(v: dict, goal_id: str) -> tuple[list, str | None]:
     """A dataset's baselines for a goal, and the arm the goal reads for the latest one: its latest re-score when
     it was re-scored (RFC-022), as the goal page reads it, else the promoted arm itself."""
-    bl = [x for x in v.get("baselines", []) if not x.get("goal") or x.get("goal") == goal_id]
+    bl = [x for x in v.get("baselines", []) if x.get("goal") == goal_id]
     base = bl[-1]["arm"] if bl and bl[-1].get("arm") else None
     moved = next((a.get("superseded_by") for a in v.get("arms", []) if base and a["arm"] == base), None)
     return bl, moved or base
@@ -1256,6 +1338,7 @@ def glance(A: Adapter, by_ds: dict) -> list[dict]:
                     base,
                     higher_is_better=not lower,
                     family=1,
+                    clusters=goal_clusters(A, g, ds)[0],
                 )
                 test = (cmp.get("rows") or [None])[0]
             rec = dec["recommended"] if dec else None
@@ -1338,7 +1421,7 @@ def coverage(A: Adapter, by_ds: dict) -> list[dict]:
                         m
                         for a in v["arms"]
                         for m in a["means"]
-                        if not m.startswith(("self_family_", "resumed", "total_"))
+                        if not m.startswith(("self_family_", "resumed", "failed", "total_"))
                     }
                 ),
                 "goals": goals.get(ds, []),
@@ -1519,7 +1602,7 @@ def home_counts(A: Adapter, by_ds: dict, spend: list[dict]) -> list[tuple]:
     n = {
         "goals": len(A.goals()),
         "datasets": len(by_ds),
-        "configs": _n_configs(by_ds),
+        "systems": _n_systems(by_ds),
         "arms": sum(len(v["arms"]) for v in by_ds.values()),
         "models": len(entries(A)),
         "references": sum(len(v["refs"]) for v in by_ds.values()),
@@ -1567,7 +1650,7 @@ ENTRIES = (
         "data",
         "Every run by dataset, with its references and coverage.",
     ),
-    ("arms", "arms.html", "Arms", "arms", "Every config on every dataset, scored each way it was."),
+    ("arms", "arms.html", "Arms", "arms", "Every system on every dataset, scored each way it was."),
     ("models", "models.html", "Models", "arms", "Each model: where it is deployed, onboarded and vetted."),
     (None, "inspect.html", "Inspector", "work", "Any arms against a baseline, item by item."),
 )
@@ -1808,8 +1891,8 @@ def scored_by_rank(a: dict, tiers: dict) -> int:
     return {"gold": 0, "silver": 1}.get(tiers.get(a.get("reference") or "") or "", 3)
 
 
-def _n_configs(by_ds: dict) -> int:
-    """How many configs are behind the arms: an arm id ends in <dataset>/<config_id>."""
+def _n_systems(by_ds: dict) -> int:
+    """How many systems are behind the arms: an arm id ends in <dataset>/<system id>."""
     return len({tuple(a["arm"].rsplit("/", 2)[-2:]) for v in by_ds.values() for a in v["arms"]})
 
 
@@ -1892,11 +1975,13 @@ def render_dataset(A: Adapter, ds: str, v: dict, out: Path, nav: list) -> None:
     q = f"dataset={quote(ds, safe='')}&sheet=1" + (f"&runs={quote(','.join(rec), safe=',/')}" if rec else "")
     btns.append(f'<a class="btn" href="../inspect.html?{q}">Open its sheet</a>')
     btn = f'<p class="btns">{"".join(btns)}</p>' if btns else ""
-    for b in v.get("baselines", [])[-1:]:
+    for b in v.get("baselines", []):
         label = next((a["label"] for a in arms if a["arm"] == b.get("arm")), b["run"])
         who = arm_link(b["arm"], label, "../") if b.get("arm") else e(label)
+        of = f"{b['goal']}'s baseline" if b.get("goal") else "the dataset's own baseline"
         btn = (
-            f'<div class="answer"><p class="small muted">baseline, promoted {e((b["promoted_at"] or "")[:10])}</p>'
+            f'<div class="answer"><p class="small muted">{e(of)}, version {e(b.get("version"))}, promoted '
+            f"{e((b['promoted_at'] or '')[:10])}</p>"
             f'<p class="lead"><b>{who}</b></p><p>{e(b["reason"])}</p></div>'
         ) + btn
     goals = _goals_of(A).get(ds, [])
@@ -1913,7 +1998,7 @@ def render_dataset(A: Adapter, ds: str, v: dict, out: Path, nav: list) -> None:
         e(ds or "(no dataset_id)"),
         f"{v['items']} {e(A.item_word)}s · {len(arms)} arms. Headline: each arm's own "
         "primary metric, mean over its items; arms with different primary metrics are "
-        "not ranked against each other.",
+        "not ranked against each other." + (f" {e(read_line)}." if (read_line := _exposure.line(ds)) else ""),
         btn,
     )
     body += block(
@@ -1942,10 +2027,25 @@ def render_dataset(A: Adapter, ds: str, v: dict, out: Path, nav: list) -> None:
         key=lambda x: len(x[1]),
         default=("", []),
     )
-    body += block("02", "what's inside", render_inside(A, ds, biggest[1][:INSPECT_MAX], biggest[0]), "inside")
-    if v.get("versions"):
+    inside, item_pages = render_inside(A, ds, biggest[1][:INSPECT_MAX], biggest[0])
+    body += block("02", "what's inside", inside, "inside")
+    for rel, items_body in item_pages:  # the rest of the items, a page each, beside the dataset's page
+        write(
+            out,
+            rel,
+            page(
+                f"{ds}: {A.item_word}s",
+                block("02", "what's inside", items_body, "inside"),
+                1,
+                "",
+                nav=nav,
+                item=A.item_word,
+            ),
+        )
+    title, versions = v.get("versions") or ("", "")
+    if versions:
         n += 1
-        body += block(f"{n:02d}", "versions", v["versions"], "versions")
+        body += block(f"{n:02d}", title, versions, "versions")
     if refs:
         n += 1
         body += block(f"{n:02d}", "reference sets", f"<ul>{refs}</ul>")
@@ -2205,7 +2305,7 @@ def render_added(A: Adapter, ds: str) -> str:
     sha = {}
     got = getattr(A, "data_dir", None)
     if got is not None:
-        doc = json.loads((Path(got) / "datasets" / f"{ds}.json").read_text(encoding="utf-8"))
+        doc = json.loads(_store.read_text(dataset_record_file(ds, Path(got)), encoding="utf-8"))
         sha = {it["item_id"]: it.get("source_sha256") for it in doc.get("items") or []}
     rows = [
         {
@@ -2264,11 +2364,14 @@ def _web(url) -> bool:
     return isinstance(url, str) and url.lower().startswith(("https://", "http://"))
 
 
-def render_inside(A: Adapter, ds: str, inspect_arms: list[str], metric: str) -> str:
+def render_inside(
+    A: Adapter, ds: str, inspect_arms: list[str], metric: str
+) -> tuple[str, list[tuple[str, str]]]:
     """What is inside the dataset (data/profiles/<ds>.json): how many items and how long, the gold's
     shape, then one row per item with its length, its gold and where it can be read at its source.
     No item text unless the profile carries it, which `evh dataset-profile --with-text` allows only
-    for text git already tracks."""
+    for text git already tracks. More than ITEMS_PER_PAGE items: the first on the dataset's page, the rest on
+    pages of their own, returned as (path under the catalog, the body) for the caller to write."""
     from evaluation_harness import catalog_charts as ch  # noqa: PLC0415
 
     fn = getattr(A, "dataset_profile", None)
@@ -2278,7 +2381,7 @@ def render_inside(A: Adapter, ds: str, inspect_arms: list[str], metric: str) -> 
             f'<p class="muted">No profile yet. Where the dataset is materialized, '
             f"<code>evh dataset-profile --dataset-id {e(ds)}</code> writes one: its {e(A.item_word)}s, how long "
             f"they are, the gold's shape and where each can be read.</p>"
-        )
+        ), []
     hide = _visibility.hidden(ds)
     if hide:
         p = _visibility.public_profile(p)
@@ -2296,7 +2399,7 @@ def render_inside(A: Adapter, ds: str, inspect_arms: list[str], metric: str) -> 
         )
     ]
     if src:
-        name = e(src.get("name") or "the source")
+        name = e(src.get("ref") or src.get("provider") or "the source")
         lines.append(
             (
                 f'Source: <a href="{e(src["url"])}" rel="noopener">{name}</a>'
@@ -2351,15 +2454,46 @@ def render_inside(A: Adapter, ds: str, inspect_arms: list[str], metric: str) -> 
             )
         rows.append(cells)
     heads = [f"{e(A.item_word)}", *(["text"] if has_text else []), "words", "gold", "open"]
-    return (
+    foot = (
+        '<p class="small muted">Each row is the profile <code>evh dataset-items --dataset-id '
+        f"{e(ds)}</code> prints; <b>inspect</b> opens the {e(A.item_word)} in the inspector with the dataset's "
+        "largest group of comparable arms, and its text where the inspector runs on a machine that has it.</p>"
+    )
+    per = ITEMS_PER_PAGE
+    chunks = [rows[i : i + per] for i in range(0, len(rows), per)] or [[]]
+    names = [f"{slug(ds or 'none')}.html"] + [
+        f"{slug(ds or 'none')}~items-{k}.html" for k in range(2, len(chunks) + 1)
+    ]
+
+    def pager(k: int) -> str:
+        if len(chunks) == 1:
+            return ""
+        lo, hi = (k - 1) * per + 1, min(k * per, len(rows))
+        links = " ".join(
+            f"<b>{j}</b>" if j == k else f'<a href="{names[j - 1]}#inside">{j}</a>'
+            for j in range(1, len(chunks) + 1)
+        )
+        return (
+            f'<p class="small">{e(A.item_word)}s {lo}–{hi} of {len(rows)}, {per} a page: {links}. The filter reads '
+            f"this page's {e(A.item_word)}s; <code>evh dataset-items --dataset-id {e(ds)}</code> lists them all.</p>"
+        )
+
+    first = (
         head
         + chart
         + (f'<p class="eyebrow small">the gold</p>{golds}' if golds else "")
-        + table("inside-items", heads, rows, f"filter {A.item_word}s")
-        + '<p class="small muted">Each row is the profile <code>evh dataset-items --dataset-id '
-        + f"{e(ds)}</code> prints; <b>inspect</b> opens the {e(A.item_word)} in the inspector with the dataset's "
-        + "largest group of comparable arms, and its text where the inspector runs on a machine that has it.</p>"
+        + pager(1)
+        + table("inside-items", heads, chunks[0], f"filter {A.item_word}s")
+        + foot
     )
+    more = [
+        (
+            f"d/{names[k - 1]}",
+            pager(k) + table("inside-items", heads, chunks[k - 1], f"filter {A.item_word}s") + foot,
+        )
+        for k in range(2, len(chunks) + 1)
+    ]
+    return first, more
 
 
 def _texts_tracked(ds: str) -> bool:
@@ -2370,7 +2504,11 @@ def _texts_tracked(ds: str) -> bool:
         d = _common.load_dataset(ds)
     except SystemExit:
         return False
-    src = ROOT / d.get("source_dir", "data/sources")
+    src = source_dir(d)
+    if _common.store() == "sqlite":  # RFC-025: the database is the record, as git is for files
+        return all(
+            _store.is_file(src / (it.get("source_path") or it["item_id"])) for it in d.get("items") or []
+        )
     return not dataset_profile.tracked(
         [src / (it.get("source_path") or it["item_id"]) for it in d.get("items") or []]
     )
@@ -2526,7 +2664,7 @@ def render_goals(A: Adapter, by_ds: dict, out: Path, nav: list) -> int:
     for g in goals:
         made = period_rows[g["goal_id"]]["made"]
         prim = (g.get("success_criteria") or {}).get("primary") or {}
-        filed = configs_filed(by_ds, g)
+        filed = systems_filed(by_ds, g)
         rec = "<br>".join(
             (dataset_link(r["dataset"], wrap=True) + ": " if len(g.get("datasets") or []) > 1 else "")
             + arm_link(r["recommended"], brief(r["recommended_label"]), wrap=True)
@@ -2569,7 +2707,7 @@ def render_goals(A: Adapter, by_ds: dict, out: Path, nav: list) -> int:
     )
     dek = (
         "What each evaluation is for: who uses the output, the decision it informs, and the "
-        "measure that decides. Runs name their goal in their config (<code>goal:</code>)."
+        "measure that decides. Runs name their goal with <code>--goal</code>."
     )
     body = hero("goals", "Goals", dek, cp.bar(w["first"], w["until"]))
     body += block(
@@ -2584,7 +2722,7 @@ def render_goals(A: Adapter, by_ds: dict, out: Path, nav: list) -> int:
                 "decides",
                 "recommended",
                 "datasets",
-                "configs filed",
+                "systems filed",
                 "runs in period",
                 "spend in period",
                 "changes in period",
@@ -2627,8 +2765,8 @@ def render_goals(A: Adapter, by_ds: dict, out: Path, nav: list) -> int:
     return len(goals)
 
 
-def configs_filed(by_ds: dict, g: dict) -> int:
-    """How many configs name this goal: the systems run for it, each counted once however many
+def systems_filed(by_ds: dict, g: dict) -> int:
+    """How many systems were run for this goal, each counted once however many
     ways it was scored (gold, silver, a judge)."""
     return len(
         {a["arm"].rsplit("/", 1)[-1] for v in by_ds.values() for a in v["arms"] if a["goal"] == g["goal_id"]}
@@ -2675,7 +2813,7 @@ def _answer(A: Adapter, g: dict, by_ds: dict, measure: str) -> str:
     for d in g.get("datasets") or []:
         ds = d.get("dataset_id", "")
         v = by_ds.get(ds) or {}
-        bl = [b for b in v.get("baselines", []) if not b.get("goal") or b.get("goal") == g["goal_id"]]
+        bl = [b for b in v.get("baselines", []) if b.get("goal") == g["goal_id"]]
         label = {a["arm"]: a["label"] for a in v.get("arms", [])}
         head = dataset_link(ds, "../")
         if bl and latest and str(latest.get("closed_at") or "") > str(bl[-1].get("promoted_at") or ""):
@@ -2689,6 +2827,7 @@ def _answer(A: Adapter, g: dict, by_ds: dict, measure: str) -> str:
                 f'<p class="small">baseline: <b>{who}</b>, promoted {e(_when(b["promoted_at"]))}'
                 + (f" · scored against {tier_pill(b['tier'])}" if b.get("tier") else "")
                 + f'</p><details class="inline small"><summary>why it was promoted</summary>{e(b["reason"])}</details>'
+                + _baseline_facts(A, b)
                 + _sheet_fold(A, b)
                 + (
                     f'<p><a class="btn small" href="{inspect_url([b["arm"]], "../", metric=measure)}">inspect it</a></p>'
@@ -2705,6 +2844,7 @@ def _answer(A: Adapter, g: dict, by_ds: dict, measure: str) -> str:
                 f'<div class="answer"><p class="small muted">{head} · baseline promoted {e(_when(b["promoted_at"]))}'
                 + (f" · scored against {tier_pill(b['tier'])}" if b.get("tier") else "")
                 + f'</p><p class="lead"><b>{who}</b></p><p>{e(b["reason"])}</p>'
+                + _baseline_facts(A, b)
                 + _sheet_fold(A, b)
                 + (
                     f'<p><a class="btn small" href="{inspect_url([b["arm"]], "../", metric=measure)}">inspect it</a></p>'
@@ -2722,6 +2862,48 @@ def _answer(A: Adapter, g: dict, by_ds: dict, measure: str) -> str:
     return "".join(parts) or '<p class="muted">The goal names no dataset.</p>'
 
 
+def _baseline_facts(A: Adapter, b: dict) -> str:
+    """What a baseline version says beyond its run (RFC-027): its number, who promoted it, the evidence frozen in
+    at promotion, and the line's history, folded."""
+    who = b.get("actor") or {}
+    by = (e(who.get("name") or "") + (f" for {e(who['for'])}" if who.get("for") else "")) if who else ""
+    ev = b.get("evidence") or {}
+    vd = ev.get("verdict")
+    if b.get("migrated"):
+        said = "promoted before 0.8.0: its evidence was not recorded"
+    elif ev.get("compared_to") is None:
+        said = "the first version: nothing to compare with"
+    elif vd:
+        said = (
+            f"against version {e(ev['compared_to'])}: {e(vd.get('outcome'))}, Δ {vd.get('delta', 0):+.4f}, "
+            f"p {fmt_p(vd.get('p'))} on {e(ev.get('measure'))} (n={e(ev.get('n'))})"
+        )
+    else:
+        said = f"against version {e(ev['compared_to'])}: no test ({e('; '.join(ev.get('not_comparable') or []))})"
+    fn = getattr(A, "baseline_versions", None)
+    older = [
+        v
+        for v in (fn(b.get("goal"), b["dataset"]) if callable(fn) else [])
+        if v.get("version") != b.get("version")
+    ]
+    hist = "".join(
+        f"<li>v{e(v['version'])} · {e(str(v.get('promoted_at') or '')[:10])} · <code>{e(v.get('promoted_from'))}</code>"
+        + (f" (restores {e(v['restores'])})" if v.get("restores") else "")
+        + f": {e(v.get('reason') or '')}</li>"
+        for v in reversed(older)
+    )
+    return (
+        f'<p class="small">version {e(b.get("version"))}'
+        + (f", promoted by {by}" if by else "")
+        + f" · {said}</p>"
+        + (
+            f'<details class="inline small"><summary>history ({len(older)})</summary><ul>{hist}</ul></details>'
+            if older
+            else ""
+        )
+    )
+
+
 def _fold(text: str, at: int = 200) -> str:
     """A suggestion as one line: past `at` characters (45 arms named one by one), its opening words up to
     the list, with the whole text folded under them."""
@@ -2731,65 +2913,56 @@ def _fold(text: str, at: int = 200) -> str:
     return f'<details class="inline"><summary>{e(head)}</summary><small>{e(text)}</small></details>'
 
 
-def _rounds_block(
-    A: Adapter, g: dict, measure: str, lower: bool, by_ds: dict | None = None, above: str = ""
-) -> str:
+def _rounds_block(A: Adapter, g: dict, measure: str, above: str = "") -> str:
     """A goal's rounds (ADR-0004), newest first: what each set out to learn, what changed, its arms
     in play and those retired (with why), its best arm and how it compares with the previous
-    round's best, its conclusion; for the open round, what the evidence suggests next, each as the
-    command that does it. Empty when the goal has no rounds (they are optional). `above`: the page's answer
-    so far; a conclusion it already prints is folded here, not printed twice."""
+    round's best (both read from the round's evidence, model/rounds: one computation, read everywhere), its
+    conclusion; for the open round, what the evidence suggests next, each as the command that does it. Empty when
+    the goal has no rounds (they are optional). `above`: the page's answer so far; a conclusion it already prints
+    is folded here, not printed twice."""
+    from evaluation_harness.model import rounds as model_rounds  # noqa: PLC0415
+
     fn = getattr(A, "rounds", None)
     rounds = [r for r in (fn() if callable(fn) else []) if r.get("goal") == g["goal_id"]]
     if not rounds:
         return ""
-    by_id = {r["round_id"]: r for r in rounds}
-    # As the goal reads them (RFC-022): an arm every run of which was re-scored is read from its latest re-score.
-    instead = {
-        a["arm"]: a["superseded_by"]
-        for v in (by_ds if by_ds is not None else collect(A)).values()
-        for a in v["arms"]
-        if a.get("superseded_by")
-    }
-    for r in rounds:
-        r["arms"] = [instead.get(a, a) for a in r.get("arms") or []]
+    # The evidence reads the project's data (references, runs, the compare): the catalog's own adapter only.
+    live = getattr(A, "data_dir", None) == _common.DATA
+    evidence: dict = {}
+    for r in rounds if live else []:
+        try:
+            evidence[r["round_id"]] = model_rounds.evidence(
+                g["goal_id"], dict(r, arms=r.get("arm_records") or []), A
+            )
+        except SystemExit:
+            pass
 
-    info = {a["arm"]: a for v in (by_ds if by_ds is not None else collect(A)).values() for a in v["arms"]}
-
-    def comparable(r) -> list:
-        """The round's arms its best is read from: as the goal decides, on gold where the dataset has a gold
-        group, never a judged copy, never the arm that wrote the reference it is scored against (it scores 1.0)."""
-        arms = [
-            a
-            for a in r.get("arms") or []
-            if not (info.get(a) or {}).get("judge") and not (info.get(a) or {}).get("wrote")
-        ]
-        gold = [a for a in arms if str((info.get(a) or {}).get("reference") or "").startswith("gold/")]
-        return gold or arms
-
-    def best(r):
-        means = {}
-        for a in comparable(r):
-            vals = (A.scores(a).get(measure) or {}).get("values") or {}
-            if vals:
-                means[a] = statistics.fmean(vals.values())
-        if not means:
-            return None, None
-        a = (min if lower else max)(means, key=lambda x: means[x])
-        return a, means[a]
+    def best(r) -> tuple:
+        """The round's leader and its mean: the evidence's."""
+        arm = (evidence.get(r["round_id"]) or {}).get("leader")
+        vals = (A.scores(arm).get(measure) or {}).get("values") if arm else None
+        return (arm, statistics.fmean(vals.values())) if vals else (None, None)
 
     rows, details = [], []
     for r in sorted(rounds, key=lambda r: -int(r["round_id"][1:] or 0)):
         arm, mean = best(r)
-        n_cfg = len({a.rsplit("/", 1)[-1] for a in r.get("arms") or []})
-        prev = by_id.get(r.get("from") or "")
-        prev_best, _ = best(prev) if prev else (None, None)
+        n_cfg = len(r.get("arms") or [])
+        prev_id = r.get("from") or ""
+        prev_best = next(
+            (
+                v["other"]
+                for v in (evidence.get(r["round_id"]) or {}).get("against", [])
+                if v["label"] == f"{prev_id}'s best"
+            ),
+            None,
+        )
         vs = (
-            f'<a class="btn small" href="{inspect_url([prev_best, arm], "../", baseline=prev_best, metric=measure)}">vs {e((prev or {}).get("round_id", ""))}\'s best</a>'
-            if arm and prev_best and prev_best != arm
+            f'<a class="btn small" href="{inspect_url([prev_best, arm], "../", baseline=prev_best, metric=measure)}">vs {e(prev_id)}\'s best</a>'
+            if arm and prev_best
             else "—"
         )
         label = arm.rsplit("/", 1)[-1] if arm else "—"
+        n_retired = len([x for x in r.get("arm_records") or [] if x.get("retired")])
         concl = (r.get("conclusion") or {}).get("text", "")
         rows.append(
             {
@@ -2809,9 +2982,9 @@ def _rounds_block(
                     '<div class="hyp">' + e(r.get("hypothesis", "") or "—") + "</div>",
                     # Arms, best and the comparison in one narrow cell: three columns of mostly "—" took the width
                     # the conclusion needs (owner, 2026-10-31).
-                    # Counted by config, as `evh rounds` counts: a re-score of a run (runs-rescored/...) is that arm.
+                    # The arms in play and the arms retired, as the round stores them.
                     f'<div class="armsbest"><span data-v="{n_cfg}">{n_cfg} arms</span>'
-                    + (f" <small>({len(r.get('retired') or [])} retired)</small>" if r.get("retired") else "")
+                    + (f" <small>({n_retired} retired)</small>" if n_retired else "")
                     # The round's arms in the inspector, against its leader: `evh inspect --round`.
                     + (
                         f' <a class="btn small" title="evh inspect --round {e(r["round_id"])} --goal {e(g["goal_id"])}" '
@@ -2833,9 +3006,14 @@ def _rounds_block(
         # data tossed in (owner, 2026-10-31).
         changed = [f"<li>{e(c)}</li>" for c in r.get("changes") or []]
         by_reason: dict = {}
-        for x in r.get("retired") or []:
-            by_reason.setdefault(x["reason"], []).append(x["config_id"])
-        carried = r.get("carried") or []
+        for x in r.get("arm_records") or []:
+            if x.get("retired"):
+                by_reason.setdefault(x["retired"].get("reason", ""), []).append(x["system"])
+        carried = [
+            x["system"]
+            for x in r.get("arm_records") or []
+            if (x.get("entered") or {}).get("how") == "carried" and not x.get("retired")
+        ]
         arms_li = [
             f"<li><b>retired {len(cs)}</b>: {e(why)}<br><small>{', '.join(_config_link(A, r, c) for c in cs)}</small></li>"
             for why, cs in by_reason.items()
@@ -2857,29 +3035,24 @@ def _rounds_block(
         ]
         evidence_li: list = []
         sugg, notes = "", ""
-        if r.get("status") == "open" and getattr(A, "data_dir", None) == _common.DATA:
-            try:
-                from evaluation_harness.rounds import evidence  # noqa: PLC0415
-
-                ev = evidence(g["goal_id"], r)
-                evidence_li = [
-                    f"<li>the leader against {e(v['label'])} (<code>{e(v['other'].rsplit('/', 1)[-1])}</code>): "
-                    f"{e(v['verdict'])}, Δ {v['delta']:+.4f}, p {fmt_p(v['p'])}</li>"
-                    for v in ev["against"]
-                ]
-                sugg = "".join(
-                    f"<li>{_fold(what)}"
-                    + (
-                        f'<br><code class="cmd">{e(cmd)}</code> <button type="button" class="btn small copy" data-copy="{e(cmd)}">copy</button>'
-                        if cmd
-                        else ""
-                    )
-                    + "</li>"
-                    for what, cmd in ev["suggest"]
+        ev = evidence.get(r["round_id"])
+        if r.get("status") == "open" and ev:
+            evidence_li = [
+                f"<li>the leader against {e(v['label'])} (<code>{e(v['other'].rsplit('/', 1)[-1])}</code>): "
+                f"{e(v['verdict'])}, Δ {v['delta']:+.4f}, p {fmt_p(v['p'])}</li>"
+                for v in ev["against"]
+            ]
+            sugg = "".join(
+                f"<li>{_fold(what)}"
+                + (
+                    f'<br><code class="cmd">{e(cmd)}</code> <button type="button" class="btn small copy" data-copy="{e(cmd)}">copy</button>'
+                    if cmd
+                    else ""
                 )
-                notes = "".join(f"<li>{e(n)}</li>" for n in ev["notes"])
-            except SystemExit:
-                sugg = notes = ""
+                + "</li>"
+                for what, cmd in ev["suggest"]
+            )
+            notes = "".join(f"<li>{e(n)}</li>" for n in ev["notes"])
         # One section per round: its header is the row the rounds table had, its body the detail that sat in a
         # second list below the table; one place per round, folded until opened (owner, 2026-10-31).
         cells = rows[-1]["cells"]
@@ -2887,7 +3060,7 @@ def _rounds_block(
             x
             for x in (
                 f"{len(r.get('changes') or [])} change(s)" if r.get("changes") else "",
-                f"{len(r.get('retired') or [])} retired" if r.get("retired") else "",
+                f"{n_retired} retired" if n_retired else "",
                 f"{len(carried)} carried" if carried else "",
                 f"judged by {e(str(r['scorer'])[:12])}" if r.get("scorer") else "",
                 "suggested next" if sugg else "",
@@ -2938,6 +3111,42 @@ def _rounds_block(
         + "".join(details)
         + "</div>"
     )
+
+
+def _studies_block(A: Adapter, g: dict) -> str:
+    """A goal's studies (RFC-029): each one's trials as a table (the change, the hypothesis, kept or dropped and why,
+    the delta against the best so far, the cost), its stop reason, and its confirmations with their looks."""
+    fn = getattr(A, "studies", None)
+    parts = []
+    for s in (fn(g["goal_id"]) if callable(fn) else []) or []:
+        rows = [
+            [
+                f"t{r['k']}",
+                e(r["change"]),
+                '<span class="muted">not shown</span>' if s.get("text_hidden") else e(r["hypothesis"]),
+                f'<b>{e(str(r["outcome"]))}</b><br><small class="muted">{e(r["reason"])}</small>',
+                f"{r['delta']:+.4g}" if isinstance(r["delta"], (int, float)) else "—",
+                f"${r['cost_usd']:.4f}" if isinstance(r["cost_usd"], (int, float)) else "—",
+            ]
+            for r in s["rows"]
+        ]
+        conf = "".join(
+            f"<li>confirmed on {e(str(c.get('test')))}: <b>{e(str(c.get('outcome')))}</b> ({e(str(c.get('rule')))}, look "
+            f"{(c.get('look') or {}).get('number')} at {float((c.get('look') or {}).get('level') or 0):.4%}; delta "
+            f"{c.get('delta')} on the test items, {c.get('validation_delta')} on validation)</li>"
+            for c in s["confirms"]
+        )
+        parts.append(
+            f'<h3 id="study-{e(s["study"])}">{e(s["study"])}</h3>'
+            f'<p class="small muted">{e(s["status"])}, from {e(str(s["baseline"]))}, round {e(str(s["round"]))}, '
+            f"${s['spent_usd']:.4f} spent" + (f"; ended: {e(str(s['end']))}" if s["end"] else "") + ". Research: its "
+            "p values are nominal; only a confirmation on a test set is evidence."
+            + (" Its hypotheses are not shown: the dataset's text is hidden." if s.get("text_hidden") else "")
+            + "</p>"
+            + (table(f"study-{s['study']}", ["trial", "change", "hypothesis", "outcome", "vs best", "cost"], rows) if rows else "")
+            + (f"<ul>{conf}</ul>" if conf else "")
+        )  # fmt: skip
+    return "".join(parts)
 
 
 def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
@@ -3009,9 +3218,13 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
     answer = _answer(A, g, by_ds, measure)
     body += block("02", "the answer so far", answer)
     n = 3
-    rounds_html = _rounds_block(A, g, measure, prim.get("direction") == "lower", by_ds, answer)
+    rounds_html = _rounds_block(A, g, measure, answer)
     if rounds_html:
         body += block(f"{n:02d}", "how we got here: rounds", rounds_html, "rounds")
+        n += 1
+    studies_html = _studies_block(A, g)
+    if studies_html:
+        body += block(f"{n:02d}", "studies: research, then one confirmation", studies_html, "studies")
         n += 1
     retired_in = retired_in_of(A, g)
     explained = (
@@ -3029,6 +3242,8 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
             + (f" · made from {dataset_link(lin, '../')}" if lin else "")
             + "</p>"
             + (f'<p class="small muted">{e(ans["notes"])}</p>' if ans["notes"] else "")
+            + (f'<p class="small">{e(looks_line)}</p>' if (looks_line := _looks.said(ds)) else "")
+            + (f'<p class="small">{e(read_line)}</p>' if (read_line := _exposure.line(ds)) else "")
             + (
                 '<p class="small">references: '
                 + ", ".join(
@@ -3049,8 +3264,8 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
                 "in groups by what each arm is scored against: numbers from different references, or "
                 "from a judge, are different measurements and are never ranked together. A mean is not a "
                 "verdict: the inspector tests each arm against its group's leader (Holm across them). "
-                "Flagged arms are never the leader. <b>filed</b>: the arm's config names this goal "
-                "(<code>goal:</code>); an arm without it is listed because it records the measure.</p>"
+                "Flagged arms are never the leader. <b>filed</b>: the arm's runs were made for this goal "
+                "(<code>evh run --goal</code>); an arm without it is listed because it records the measure.</p>"
                 if not explained
                 else ""
             )
@@ -3089,7 +3304,7 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
                         else ("leader" if leader and r is leader else "")
                     )
                     tag = (
-                        ' <small class="filed" title="its config names this goal (goal: in the config)">filed</small>'
+                        ' <small class="filed" title="its runs were made for this goal (evh run --goal)">filed</small>'
                         if r["filed"]
                         else ""
                     ) + (' <span class="tag-base">baseline</span>' if r.get("baseline") else "")
@@ -3158,6 +3373,7 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
                     trs,
                 )
                 inner += tradeoff_charts(dec, named, gm)
+        inner += _failure_modes_html(A, ds, v.get("arms") or [])
         body += block(f"{n:02d}", f"{ds}{' · ' + ans['role'] if ans['role'] else ''}", inner)
         n += 1
     write(
@@ -3175,34 +3391,51 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
     )
 
 
+def _failure_modes_html(A: Adapter, ds: str, rows: list) -> str:
+    """How the dataset's arms fail, from the tags on their outputs (PLAN_0.8.0 D1): per tagged arm the outputs read, how
+    many had a failure and each mode's count. A tag needs no measure, so every arm of the dataset is listed, not only
+    those of a group. Empty when none was tagged (or the adapter has no tags)."""
+    fn = getattr(A, "tag_counts", None)
+    got = [(r, fn(ds, r["arm"])) for r in rows] if callable(fn) else []
+    got = [(r, c) for r, c in got if c]
+    if not got:
+        return ""
+    named, _scorer = shown_labels({r["arm"]: r["label"] for r, _ in got})
+    lis = "".join(
+        f"<li>{arm_link(r['arm'], named[r['arm']], '../')}: {c['tagged']} of {c['outputs']} output(s) read have a failure"
+        + (": " + ", ".join(f"{e(m)} {n}" for m, n in c["modes"].items()) if c["modes"] else "")
+        + "</li>"
+        for r, c in got
+    )
+    return (
+        '<p class="small"><b>failure modes</b> <small class="muted">(tagged by hand on outputs read; '
+        f'<code>evh tags --dataset-id {e(ds)}</code>)</small></p><ul class="small">{lis}</ul>'
+    )
+
+
 def retired_in_of(A: Adapter, g: dict) -> dict:
-    """{arm id: round_id} for every arm a round of this goal retired. An adapter that gives no
-    arm ids (`retired_arms`) retires by config id: the key is then the config id."""
+    """{arm id: round_id} for every arm a round of this goal retired (its `retired_arms`)."""
     rfn = getattr(A, "rounds", None)
     out: dict = {}
     for r in rfn() if callable(rfn) else []:
         if r.get("goal") != g["goal_id"]:
             continue
-        keys = r.get("retired_arms")
-        for k in keys if keys is not None else [x.get("config_id") for x in r.get("retired") or []]:
+        for k in r.get("retired_arms") or []:
             out[k] = r["round_id"]
     return out
 
 
 def retired_round(retired_in: dict, arm: str) -> str | None:
-    """The round that retired this arm: by its arm id, else by its config id. An arm read through its re-score
-    (`runs-rescored/<scorer>/<arm>`, RFC-022, the goal's reading of it) is the arm it re-scored: without this, an
+    """The round that retired this arm: by its arm id, else by its system id. A retirement names runs, and every arm
+    a retired run is scored in (its re-scores, RFC-022, the goal's reading of it) is retired with it: otherwise an
     arm a round retired stayed among the goal's contenders whenever it had been re-scored (found 2026-11-01: 25 of
     the triage goal's 76 contenders were round 3's retirements)."""
-    if arm.startswith("runs-rescored/") and arm.count("/") >= 3:
-        arm = arm.split("/", 2)[2]
     return retired_in.get(arm) or retired_in.get(arm.rsplit("/", 1)[-1])
 
 
 def _retired_arms(r: dict) -> set:
-    """The arm ids (or, from an adapter without them, config ids) a round retired."""
-    keys = r.get("retired_arms")
-    return set(keys if keys is not None else [x.get("config_id") for x in r.get("retired") or []])
+    """The arm ids a round retired."""
+    return set(r.get("retired_arms") or [])
 
 
 def axis_ratios(dec: dict, arm: str, base: str) -> list[str]:
@@ -3222,6 +3455,16 @@ def axis_ratios(dec: dict, arm: str, base: str) -> list[str]:
             r = a / b
             out.append(f"{ax['name']}{stat} {r:,.0f}×" if r >= 10 else f"{ax['name']}{stat} {r:.2g}×")
     return out
+
+
+def goal_clusters(A: Adapter, g: dict, ds: str) -> tuple[dict | None, str | None]:
+    """({item: cluster key}, field) when the goal's entry for `ds` names `cluster: FIELD`, else (None, None).
+    Items with no value for the field are clusters of their own (stats.clustered)."""
+    field = next((d.get("cluster") for d in g.get("datasets") or [] if d.get("dataset_id") == ds), None)
+    if not field:
+        return None, None
+    values = item_fields(A, ds).get("values") or {}
+    return {i: v[field] for i, v in values.items() if v.get(field) not in (None, "")}, field
 
 
 def group_decision(
@@ -3258,9 +3501,16 @@ def group_decision(
     }
     machines = {r["arm"]: r.get("machine", "") for r in rows}
     baseline = next((r["arm"] for r in rows if r.get("baseline")), None)
+    clusters, cluster_by = goal_clusters(A, g, ds)
     dec = axes.decide(
-        goal, arms, lambda m: "lower" if A.lower_is_better(m, ds) else None, machines, baseline=baseline
-    ) | {"goal": goal}
+        goal,
+        arms,
+        lambda m: "lower" if A.lower_is_better(m, ds) else None,
+        machines,
+        baseline=baseline,
+        clusters=clusters,
+        cluster_by=cluster_by,
+    ) | {"goal": goal, "dataset": ds}
     if not decides_on(g, ds):
         # The goal never decides here (a pilot slice, a generalization check): the leader stands, the
         # recommendation does not.
@@ -3332,10 +3582,15 @@ def baseline_gap(A: Adapter, dec: dict, rows: list, gm: str) -> str:
     base = next((r for r in rows if r.get("baseline")), None)
     if not rec or base is None or base["arm"] == rec:
         return ""
-    labels = {r["arm"]: r["label"] for r in rows}
+    # as the page's other reasons name them: the scorer most arms are read through is named once, not after each
+    labels = shown_labels({r["arm"]: r["label"] for r in rows})[0]
     higher = dec["axes"][0]["direction"] == "higher"
     series = {a: (A.scores(a).get(gm) or {}).get("values") or {} for a in (rec, base["arm"])}
-    row = (stats.compare(series, base["arm"], higher_is_better=higher, family=1).get("rows") or [None])[0]
+    clusters = goal_clusters(A, dec.get("goal") or {}, dec.get("dataset") or "")[0]
+    row = (
+        stats.compare(series, base["arm"], higher_is_better=higher, family=1, clusters=clusters).get("rows")
+        or [None]
+    )[0]
     if not row or row.get("p") is None:
         return ""
     return (
@@ -3360,10 +3615,17 @@ def shown_axes(dec: dict) -> list:
 
 def axis_cell(ax: dict, cell: dict) -> str:
     """A table cell for one arm on one axis, sortable by its value, marked when past the limit."""
+    from evaluation_harness import _goal_view  # noqa: PLC0415
+
     v = cell.get("value")
     over = cell.get("within") is False
     vs = (cell.get("vs_leader") or {}).get("verdict")
-    title = (f"vs the quality leader: {vs}" if vs else "") + ("; past the limit" if over else "")
+    ni = cell.get("noninferior")
+    title = (
+        (f"vs the quality leader: {vs}" if vs else "")
+        + (f"; contender test: {_goal_view.ni_text(ni)}" if ni else "")
+        + ("; past the limit" if over else "")
+    )
     attrs = f'data-v="{v if v is not None else ""}"' + (' class="over"' if over else "")
     attrs += f' title="{e(title)}"' if title else ""
     return f"<span {attrs}>{e(cell_text(ax, cell))}</span>"
@@ -3478,6 +3740,15 @@ def decision_html(dec: dict, labels: dict, g: dict, up: str, gap: str = "", said
     return f'<div class="decision"><p class="lead">{head}</p><ul class="small">{why}</ul>{rule}</div>'
 
 
+def axis_fmt(ax: dict):
+    """How an axis's value reads: dollars to four places for cost, ms or s for milliseconds, else fmt."""
+    if ax["name"] == "cost" and ax["measure"] == "cost_usd":
+        return lambda v: "$0" if v == 0 else f"${v:.4f}"
+    if ax.get("unit") == "ms":
+        return lambda v: f"{v / 1000:.1f} s" if v >= 1000 else f"{v:.0f} ms"
+    return fmt
+
+
 def tradeoff_charts(dec: dict, labels: dict, quality_name: str) -> str:
     """Quality against each other axis, for the eligible arms, the frontier drawn: the trade-off at
     a glance. Two to a row."""
@@ -3497,7 +3768,7 @@ def tradeoff_charts(dec: dict, labels: dict, quality_name: str) -> str:
                 labels[a],
                 (
                     f"{labels[a]}: {quality_name} {fmt(dec['rows'][a]['quality']['value'])}, {ax['name']} "
-                    f"{fmt(dec['rows'][a][ax['name']]['value'])}"
+                    f"{axis_fmt(ax)(dec['rows'][a][ax['name']]['value'])}"
                 ),
             )
             for a in eligible
@@ -3505,7 +3776,9 @@ def tradeoff_charts(dec: dict, labels: dict, quality_name: str) -> str:
             and dec["rows"][a]["quality"]["value"] is not None
         ]
         stat = "" if ax["stat"] == "mean" else f" {ax['stat']}"
-        unit = f" ({ax['unit']})" if ax.get("unit") else ""
+        ms = ax.get("unit") == "ms"
+        # milliseconds read as ms or s on the ticks, so the unit is on each tick, not the title
+        unit = f" ({ax['unit']})" if ax.get("unit") and not ms else ""
         if len(pts) > 1 and len({p[0] for p in pts}) == 1:
             # Every arm the same on this axis (all free): no trade-off to draw, and the drawn one had a "$-1" axis.
             usd = ax["name"] == "cost" and ax["measure"] == "cost_usd"
@@ -3521,11 +3794,39 @@ def tradeoff_charts(dec: dict, labels: dict, quality_name: str) -> str:
             # a number draws its line; the baseline limit is a paired test, not a line
             x_limit=ax.get("limit") if isinstance(ax.get("limit"), (int, float)) else None,
             y_limit=q.get("limit") if isinstance(q.get("limit"), (int, float)) else None,
-            fmt_x=(lambda v: f"${v:.4f}") if ax["name"] == "cost" and ax["measure"] == "cost_usd" else None,
+            fmt_x=(lambda v: f"${v:.4f}")
+            if ax["name"] == "cost" and ax["measure"] == "cost_usd"
+            else (lambda v: f"{v / 1000:.1f} s" if v >= 1000 else f"{v:.0f} ms")
+            if ms
+            else None,
             width=HALF,
+            # a speed spanning more than 100x (0.06 ms to 57 s) crowds every point at one end on a linear axis
+            log_x=ms
+            and len(pts) > 1
+            and min(p[0] for p in pts) > 0
+            and max(p[0] for p in pts) / min(p[0] for p in pts) > 100,
         )
         if svg:
-            charts.append(f"<div>{svg}</div>")
+            # The chart's points as a table: what a dot's tooltip says, for a keyboard and a screen reader too.
+            fx = axis_fmt(ax)
+            front = {
+                pts[i][2]
+                for i in ch.frontier(
+                    [(p[0], p[1]) for p in pts], ax["direction"] == "lower", q["direction"] == "higher"
+                )
+            }
+            rows = "".join(
+                f'<tr><td>{e(lab)}</td><td class="num">{fmt(y)}</td><td class="num">{e(fx(x))}</td><td>{"yes" if lab in front else ""}</td></tr>'
+                for x, y, lab, _tip in sorted(
+                    pts, key=lambda p: -p[1] if q["direction"] == "higher" else p[1]
+                )
+            )
+            table = (
+                f'<details class="chart-table"><summary>the {len(pts)} points as a table</summary><div class="scroll-x">'
+                f'<table class="data" data-nopage><thead><tr><th>arm</th><th>{e(quality_name)}</th><th>{e(ax["name"])}{e(stat)}</th><th>on the frontier</th></tr></thead>'
+                f"<tbody>{rows}</tbody></table></div></details>"
+            )
+            charts.append(f"<div>{svg}{table}</div>")
     note = f'<p class="small muted">{e("; ".join(notes))}.</p>' if notes else ""
     return (f'<div class="duo">{"".join(charts)}</div>' if charts else "") + note
 
@@ -3563,7 +3864,7 @@ def render_metrics(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
     idx = metric_index(A, by_ds)
     w = window(A, by_ds)
     rows, period_rows = [], period_metrics(A, by_ds)
-    for m in sorted(idx, key=lambda k: (k.startswith(("total_", "self_family_", "resumed")), k)):
+    for m in sorted(idx, key=lambda k: (k.startswith(("total_", "self_family_", "resumed", "failed")), k)):
         where = idx[m]
         lower = any(A.lower_is_better(m, ds) for ds in where["datasets"]) if where["datasets"] else False
         # Direction first: cost, tokens and latency are "neutral" to the tests but lower is better.
@@ -3736,7 +4037,7 @@ def render_references(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
 
 
 def _author_link(r: dict, v: dict, up: str) -> str:
-    """The config that wrote a reference, linked to its arm on the reference's dataset when the
+    """The system that wrote a reference, linked to its arm on the reference's dataset when the
     catalog has one (its measured run, not a rescored copy)."""
     author = r.get("author") or ""
     arms = [a for a in v.get("arms", []) if a["arm"].rsplit("/", 1)[-1] == author]
@@ -3745,7 +4046,7 @@ def _author_link(r: dict, v: dict, up: str) -> str:
 
 
 def _config_link(A: Adapter, r: dict, config_id: str) -> str:
-    """A config named in a round, linked to its arm on the round's dataset when it has one."""
+    """A system named in a round, linked to its arm on the round's dataset when it has one."""
     fn = getattr(A, "arm_of", None)
     arm = (
         fn(r.get("dataset_id", ""), config_id)
@@ -3756,7 +4057,7 @@ def _config_link(A: Adapter, r: dict, config_id: str) -> str:
 
 
 def _siblings(by_ds: dict, a: dict, ds: str) -> list:
-    """The same config on the same dataset, scored other ways (gold, silver, a judge)."""
+    """The same system on the same dataset, scored other ways (gold, silver, a judge)."""
     cid = a["arm"].rsplit("/", 1)[-1]
     return [x for x in by_ds[ds]["arms"] if x["arm"] != a["arm"] and x["arm"].rsplit("/", 1)[-1] == cid]
 
@@ -3863,14 +4164,14 @@ def deploy_sheet_html(sh: dict, up: str) -> str:
         else '<p class="small muted">No capture here says what production ran (the adapter\'s production_ran).</p>'
     )
     return (
-        f'<dl class="kv">{dl}</dl>{caps}<p class="small">Command: <code>evh deploy-sheet --config '
-        f"{e(sh['config_id'])} [--capture C]</code></p>"
+        f'<dl class="kv">{dl}</dl>{caps}<p class="small">Command: <code>evh deploy-sheet --system '
+        f"{e(sh['system_id'])} [--capture C]</code></p>"
     )
 
 
 def render_arm(A: Adapter, a: dict, ds: str, by_ds: dict, out: Path, nav: list) -> None:
     """One arm: what it is scored against and for which goal, every metric it records, its runs,
-    its config, the conditions it ran under, and the same config scored other ways."""
+    its system, the conditions it ran under, and the same system scored other ways."""
     v = by_ds[ds]
     tiers = {r["id"]: r["tier"] for r in v["refs"]}
     goals = {g["goal_id"]: g for g in A.goals()}
@@ -3889,6 +4190,38 @@ def render_arm(A: Adapter, a: dict, ds: str, by_ds: dict, out: Path, nav: list) 
         facts.append(
             ("note", "wrote the reference it is scored against: its row measures agreement with itself")
         )
+    rp = a.get("replay")
+    if rp:
+        from evaluation_harness import _faith  # noqa: PLC0415
+        from evaluation_harness.catalog_models import model_link  # noqa: PLC0415
+
+        state = rp.get("faithfulness") or {}
+        by = (state.get("unfaithful_by") or {}).get("name")
+        facts.append(
+            (
+                "replay",
+                model_link(rp["record"], up="../")
+                + " "
+                + (
+                    f"at the candidate <code>{e(str(rp['candidate'])[:12])}</code>"
+                    if rp.get("candidate")
+                    else f"at the {rp['commits']} commit(s) production ran"
+                )
+                + f"; {e(_faith.said(state) or 'no faithfulness recorded')}"
+                + (f" <b>scored anyway by {e(by)} (--unfaithful)</b>" if by else ""),
+            )
+        )
+        hc = rp.get("history_confound") or {}
+        if hc.get("items"):  # RFC-031 P1
+            facts.append(
+                (
+                    "history confound",
+                    (
+                        f"{hc['items']} of {hc['of']} item(s) met a person's reaction to an action production took and this "
+                        "variant did not: its score there reads that reaction"
+                    ),
+                )
+            )
     if a.get("superseded_by"):
         facts.append(
             (
@@ -3897,7 +4230,10 @@ def render_arm(A: Adapter, a: dict, ds: str, by_ds: dict, out: Path, nav: list) 
             )
         )
     dl = "".join(f"<dt>{e(k)}</dt><dd>{x}</dd>" for k, x in facts if x)
-    base = (v.get("baselines") or [None])[-1]
+    # The baseline of the arm's own goal (RFC-027), else the dataset's own.
+    base = next(
+        (b for b in reversed(v.get("baselines") or []) if b.get("goal") == (a.get("goal") or None)), None
+    )
     btns = [f'<a class="btn" href="{inspect_url([a["arm"]], "../")}">Inspect it</a>']
     group = [
         x["arm"]
@@ -3918,14 +4254,19 @@ def render_arm(A: Adapter, a: dict, ds: str, by_ds: dict, out: Path, nav: list) 
         "arm",
         e(a["label"])
         + (' <span class="tag-base">baseline</span>' if a.get("baseline") else "")
-        + (' <span class="badge recorded">recorded</span>' if a.get("recorded") else ""),
+        + (' <span class="badge recorded">recorded</span>' if a.get("recorded") else "")
+        + (
+            ' <span class="badge unfaithful">unfaithful replay</span>'
+            if a.get("replay") and not ((a["replay"].get("faithfulness") or {}).get("faithful"))
+            else ""
+        ),
         (
             f"Production's decisions, from the capture "
             f'<a class="cell-link" href="../captures.html#capture-{e(a["recorded"])}">{e(a["recorded"])}</a>; '
             f"no model was called. Scored like any arm on {dataset_link(ds, '../')}."
         )
         if a.get("recorded")
-        else f"One config on {dataset_link(ds, '../')}, scored one way; its repeats averaged per {e(A.item_word)}.",
+        else f"One system on {dataset_link(ds, '../')}, scored one way; its repeats averaged per {e(A.item_word)}.",
         f'<dl class="kv">{dl}</dl><p class="btns">{"".join(btns)}</p>',
     )
     n = 1
@@ -3995,7 +4336,7 @@ def render_arm(A: Adapter, a: dict, ds: str, by_ds: dict, out: Path, nav: list) 
             )
             if v_
         )
-        body += block(f"{n:02d}", "config", f'<dl class="kv">{kv}</dl>')
+        body += block(f"{n:02d}", "system", f'<dl class="kv">{kv}</dl>')
         n += 1
     elif cfg.get("params"):
         kv = "".join(
@@ -4003,12 +4344,12 @@ def render_arm(A: Adapter, a: dict, ds: str, by_ds: dict, out: Path, nav: list) 
             for k, x in sorted(cfg["params"].items())
         )
         extra = (
-            f'<p class="small muted">config <code>{e(cfg.get("config_id", ""))}</code>'
+            f'<p class="small muted">system <code>{e(cfg.get("config_id", ""))}</code>'
             + (f" · adapter <code>{e(cfg['adapter'])}</code>" if cfg.get("adapter") else "")
             + (f" · deployment <code>{e(cfg['deployment'])}</code>" if cfg.get("deployment") else "")
             + " · credentials are never shown</p>"
         )
-        body += block(f"{n:02d}", "config", extra + f'<dl class="kv">{kv}</dl>')
+        body += block(f"{n:02d}", "system", extra + f'<dl class="kv">{kv}</dl>')
         n += 1
     sheet_fn = getattr(A, "deploy_sheet", None)
     sheet = sheet_fn(a["arm"]) if a.get("baseline") and callable(sheet_fn) else None
@@ -4037,16 +4378,15 @@ def render_arm(A: Adapter, a: dict, ds: str, by_ds: dict, out: Path, nav: list) 
         ]
         body += block(
             f"{n:02d}",
-            "the same config, scored other ways",
+            "the same system, scored other ways",
             ROW_KEY + table("siblings", ["arm", "scored against", "headline", "mean"], srows),
         )
         n += 1
     rfn = getattr(A, "rounds", None)
-    cid = a["arm"].rsplit("/", 1)[-1]
     rnds = [
         r
         for r in (rfn() if callable(rfn) else [])
-        if a["arm"] in (r.get("arms") or []) or {a["arm"], cid} & _retired_arms(r)
+        if a["arm"] in (r.get("arms") or []) or a["arm"] in _retired_arms(r)
     ]
     if rnds:
         # A sentence, not "r1 of … · in play · closed": what the round was and what it did with this arm.
@@ -4054,7 +4394,7 @@ def render_arm(A: Adapter, a: dict, ds: str, by_ds: dict, out: Path, nav: list) 
             f"<li>Round <b>{e(r['round_id'])}</b> of "
             f"{goal_link(goals[r['goal']], '../') if r.get('goal') in goals else e(r.get('goal', ''))}"
             + (f", {e(r['status'])}" if r.get("status") else "")
-            + (": <b>retired</b> in it" if {a["arm"], cid} & _retired_arms(r) else ": one of its arms")
+            + (": <b>retired</b> in it" if a["arm"] in _retired_arms(r) else ": one of its arms")
             + ".</li>"
             for r in rnds
         )
@@ -4393,6 +4733,83 @@ def render_captures(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
     )
 
 
+def render_prompts(A: Adapter, out: Path, nav: list) -> None:
+    """prompts.html (RFC-028): every prompt name with its versions (lineage, notes, who made each) and the runs that
+    used each, with their score. The text and the diffs only when the project publishes them
+    (`catalog: {publish: [prompts]}`); otherwise hashes and sizes, and `evh prompt-diff` shows the text."""
+    import difflib  # noqa: PLC0415
+
+    from evaluation_harness import _prompt_cmd, _prompts  # noqa: PLC0415
+
+    show = _prompts.published()
+    used = _prompt_cmd._runs_of()
+    names = _prompts.names()
+    rows, sections = [], []
+    for name in names:
+        vs = _prompts.versions(name)
+        n_runs = sum(len(used.get((name, v["sha256"]), [])) for v in vs)
+        anchor = "prompt-" + re.sub(r"[^A-Za-z0-9_-]", "-", name)
+        rows.append([f'<a class="cell-link" href="#{e(anchor)}">{e(name)}</a>', str(len(vs)), str(n_runs)])
+        items, prev = [], None
+        for v in vs:
+            runs = used.get((name, v["sha256"]), [])
+            who = (v.get("actor") or {}).get("name") or "?"
+            text = ""
+            if show:
+                try:
+                    cur = _prompts.text_of(v["id"]).decode("utf-8", "replace")
+                except FileNotFoundError:
+                    cur = ""
+                if prev is None:
+                    text = f"<details><summary>text</summary><pre>{e(cur)}</pre></details>"
+                else:
+                    diff = "".join(
+                        difflib.unified_diff(prev.splitlines(True), cur.splitlines(True), "before", "after")
+                    )
+                    text = f"<details><summary>the change from v{v['n'] - 1}</summary><pre>{e(diff)}</pre></details>"
+                prev = cur
+            run_list = ", ".join(
+                f"{arm_link('runs/' + r['dataset_id'] + '/' + r['config_id'], r['config_id']) if r.get('dataset_id') else e(r['run_id'])}"
+                + (
+                    f' <small class="muted">{e(str(r["metric"]))} {e(str(r["score"]))}</small>'
+                    if r.get("score") is not None
+                    else ""
+                )
+                for r in runs
+            )
+            items.append(
+                f'<li><b>v{v["n"]}</b> <code>{e(v["id"])}</code> <small class="muted">{e(str(v.get("created_at")))} by '
+                f"{e(who)}, {int(v.get('bytes') or 0)} bytes"
+                + (f", from <code>{e(str(v['parent']))}</code>" if v.get("parent") else "")
+                + f"</small><br>{e(str(v.get('note') or ''))}"
+                + (f"<br><small>runs: {run_list}</small>" if run_list else "")
+                + text
+                + "</li>"
+            )
+        sections.append(f'<h3 id="{e(anchor)}">{e(name)}</h3><ul class="plain">{"".join(items)}</ul>')
+    body = hero(
+        "prompts",
+        "Prompts",
+        "The prompt files the arms declare, each version kept by its content, with who made it, from which, and the runs "
+        "that used it. "
+        + ("" if show else "The text is not published here: <code>evh prompt-diff</code> shows it, and "
+           "<code>catalog: {publish: [prompts]}</code> in config.yaml puts it on these pages."),
+    )  # fmt: skip
+    body += block(
+        "01",
+        "prompts",
+        (table("prompts", ["prompt", "versions", "runs"], rows, "filter prompts") + "".join(sections))
+        if rows
+        else '<p class="muted">No prompt versions yet: declare <code>prompts:</code> in a system and its next run '
+        "records them (<code>evh prompts</code>).</p>",
+    )
+    write(
+        out,
+        "prompts.html",
+        page("Prompts", body, 0, "prompts", nav=nav, item=A.item_word, elsewhere=(("prompts", {}),)),
+    )
+
+
 def _sets_on(A: Adapter, ds: str) -> str:
     """The label sets made on a dataset, as source chips with their names, under it."""
     sets = [x for x in _label_sets_of(A) if x["dataset"] == ds]
@@ -4464,7 +4881,7 @@ def render_labels(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
 def write_pick(A: Adapter, by_ds: dict, out: Path, rows: list[dict]) -> None:
     """What the inspector's picker chooses from (assets/inspect.js): each goal with its datasets,
     each dataset with its arm count and goals, and each arm as the arms page describes it
-    (catalog_arms.arm_rows): config, model, model record, hosted or local, how it was scored,
+    (catalog_arms.arm_rows): system, model, model record, hosted or local, how it was scored,
     what against, its roles and its value on the deciding measure. Without this file the
     picker is a plain list of arm names."""
     goals = [
@@ -4482,7 +4899,7 @@ def write_pick(A: Adapter, by_ds: dict, out: Path, rows: list[dict]) -> None:
     arms = {
         r["arm"]: {
             "d": r["dataset"],
-            "c": r["config"],
+            "c": r["system"],
             "m": r["model"],
             "r": r["record"],
             "w": "local" if r["local"] else "hosted",
@@ -4662,8 +5079,8 @@ def build(A: Adapter, out: Path, sections: tuple = ()) -> dict:
     global SECTIONS
     SECTIONS = tuple(sections)
     nav = NAV
-    if out.exists():
-        shutil.rmtree(out)
+    if _store.exists(out):
+        _store.rmtree(out)
     copy_assets(out)
     A = scores_once(A)  # one build: each arm's scores read once, not for every page that asks
     by_ds = collect(A)
@@ -4682,6 +5099,7 @@ def build(A: Adapter, out: Path, sections: tuple = ()) -> dict:
         render_dataset(A, ds, v, out, nav)
         for a in v["arms"]:
             render_arm(A, a, ds, by_ds, out, nav)
+    write_redirects(A, by_ds, out)
     n_goals = render_goals(A, by_ds, out, nav)
     render_metrics(A, by_ds, out, nav)
     fn = getattr(A, "metric_descriptions", None)
@@ -4690,6 +5108,7 @@ def build(A: Adapter, out: Path, sections: tuple = ()) -> dict:
         render_metric(A, m, where, by_ds, project, out, nav)
     render_references(A, by_ds, out, nav)
     render_captures(A, by_ds, out, nav)
+    render_prompts(A, out, nav)
     render_labels(A, by_ds, out, nav)
     render_reference_index(A, by_ds, out, nav)
     write_search(A, by_ds, out)
@@ -4699,7 +5118,7 @@ def build(A: Adapter, out: Path, sections: tuple = ()) -> dict:
         "goals": n_goals,
         "datasets": len(by_ds),
         "arms": sum(len(v["arms"]) for v in by_ds.values()),
-        "configs": _n_configs(by_ds),
+        "systems": _n_systems(by_ds),
         "references": sum(len(v["refs"]) for v in by_ds.values()),
     }
 
@@ -4745,6 +5164,51 @@ def _common_prog() -> str | None:
     from evaluation_harness._common import evh_prog  # noqa: PLC0415
 
     return evh_prog()
+
+
+def _exchange(a: Path, b: Path) -> bool:
+    """Swap two directories in one system call, so no reader ever finds `b` absent: Linux's renameat2 with
+    RENAME_EXCHANGE, macOS's renamex_np with RENAME_SWAP (both through ctypes, the standard library). False where
+    neither exists or the call fails (an older kernel, another filesystem): the caller then renames twice."""
+    import ctypes  # noqa: PLC0415
+    import ctypes.util  # noqa: PLC0415
+    import sys as _s  # noqa: PLC0415
+
+    try:
+        libc = ctypes.CDLL(ctypes.util.find_library("c"), use_errno=True)
+        if _s.platform.startswith("linux") and hasattr(libc, "renameat2"):
+            at_fdcwd, rename_exchange = -100, 2
+            return libc.renameat2(at_fdcwd, bytes(a), at_fdcwd, bytes(b), rename_exchange) == 0
+        if _s.platform == "darwin" and hasattr(libc, "renamex_np"):
+            rename_swap = 0x2
+            return libc.renamex_np(bytes(a), bytes(b), rename_swap) == 0
+    except (OSError, AttributeError, TypeError):
+        return False
+    return False
+
+
+def build_beside(A: Adapter, out: Path, sections: tuple = ()) -> dict:
+    """`build` into a folder beside `out`, then swapped in (RFC-026 step 4): a server serving `out` keeps serving the
+    old pages until the new ones are whole, a failed build leaves them as they were, and two builds at once never
+    empty each other's folder (each has its own). The swap is one system call where the platform has one (Linux,
+    macOS), so `out` is never absent; elsewhere it is two renames, absent for the time between them."""
+    import os  # noqa: PLC0415
+
+    tag = f"{os.getpid()}"
+    nxt, old = out.with_name(f"{out.name}.next-{tag}"), out.with_name(f"{out.name}.old-{tag}")
+    try:
+        counts = build(A, nxt, sections)
+    except BaseException:
+        _store.rmtree(nxt, ignore_errors=True)
+        raise
+    if _store.exists(out) and _exchange(nxt, out):
+        _store.rmtree(nxt, ignore_errors=True)  # the old pages, swapped out
+        return counts
+    if _store.exists(out):
+        _store.replace(out, old)
+    _store.replace(nxt, out)
+    _store.rmtree(old, ignore_errors=True)
+    return counts
 
 
 def main() -> int:
@@ -4807,45 +5271,54 @@ def main() -> int:
         metavar="URL",
         help="--mcp: where to read how to connect an agent (default: the harness's INTEGRATION guide)",
     )
+    ap.add_argument(
+        "--json",
+        action="store_true",
+        help="one JSON object on stdout when done (the text goes to stderr as it is printed): the envelope every --json command gives (result.blocks, result.values)",
+    )
     args = ap.parse_args()
-    for flag, url in (("--mcp", args.mcp), ("--mcp-howto", args.mcp_howto), ("--card", args.card)):
-        if url and not url.startswith(("https://", "http://")):
-            raise SystemExit(f"{flag} {url!r}: expected https://...")
-    MCP = args.mcp or ""
-    CARD = args.card or ""
-    MCP_HOWTO = args.mcp_howto or MCP_HOWTO
-    if not args.api.startswith("/") or not args.api.endswith("/"):
-        raise SystemExit(
-            f"--api {args.api!r}: expected a path that starts and ends with /, e.g. /catalog/api/"
-        )
-    API = args.api
-    BRAND = args.brand
-    if args.head:
-        if not args.head.is_file():
-            raise SystemExit(f"--head {args.head}: no such file")
-        HEAD = args.head.read_text(encoding="utf-8").strip() + "\n"
-    if args.repo:
-        if not args.repo.startswith(("https://", "http://")):
-            raise SystemExit(
-                f"--repo {args.repo!r}: expected https://..., where the project's files can be read"
+    with _jsonout.collect("catalog", args.json, live=sys.stderr):
+        for flag, url in (("--mcp", args.mcp), ("--mcp-howto", args.mcp_howto), ("--card", args.card)):
+            if url and not url.startswith(("https://", "http://")):
+                die(f"{flag} {url!r}: expected https://...", "bad-argument")
+        MCP = args.mcp or ""
+        CARD = args.card or ""
+        MCP_HOWTO = args.mcp_howto or MCP_HOWTO
+        if not args.api.startswith("/") or not args.api.endswith("/"):
+            die(
+                f"--api {args.api!r}: expected a path that starts and ends with /, e.g. /catalog/api/",
+                "bad-argument",
             )
-        REPO = args.repo if args.repo.endswith("/") else args.repo + "/"
-    if args.about:
-        if not args.about.is_file():
-            raise SystemExit(f"--about {args.about}: no such file")
-        ABOUT = args.about.read_text(encoding="utf-8").strip()
-    sections = []
-    for spec in args.link:
-        label, _, url = spec.partition("=")
-        if not label or not (url == "." or url.startswith(("https://", "http://"))):
-            raise SystemExit(f"--link {spec!r}: expected LABEL=https://... or LABEL=. for the catalog")
-        sections.append((label, url))
-    if sections and not any(u == "." for _, u in sections):
-        sections.insert(0, ("Catalog", "."))
-    counts = build(load_catalog_adapter(args.adapter), args.out, tuple(sections))
-    print(f"catalog: {args.out} — " + ", ".join(f"{v} {k}" for k, v in counts.items()))
-    print("inspect: evh catalog-serve, then open the address it prints")
-    return 0
+        API = args.api
+        BRAND = args.brand
+        if args.head:
+            if not _store.is_file(args.head):
+                die(f"--head {args.head}: no such file", "not-found")
+            HEAD = _store.read_text(args.head, encoding="utf-8").strip() + "\n"
+        if args.repo:
+            if not args.repo.startswith(("https://", "http://")):
+                die(
+                    f"--repo {args.repo!r}: expected https://..., where the project's files can be read",
+                    "bad-argument",
+                )
+            REPO = args.repo if args.repo.endswith("/") else args.repo + "/"
+        if args.about:
+            if not _store.is_file(args.about):
+                die(f"--about {args.about}: no such file", "not-found")
+            ABOUT = _store.read_text(args.about, encoding="utf-8").strip()
+        sections = []
+        for spec in args.link:
+            label, _, url = spec.partition("=")
+            if not label or not (url == "." or url.startswith(("https://", "http://"))):
+                die(f"--link {spec!r}: expected LABEL=https://... or LABEL=. for the catalog", "bad-argument")
+            sections.append((label, url))
+        if sections and not any(u == "." for _, u in sections):
+            sections.insert(0, ("Catalog", "."))
+        counts = build_beside(load_catalog_adapter(args.adapter), args.out, tuple(sections))
+        print(f"catalog: {args.out} — " + ", ".join(f"{v} {k}" for k, v in counts.items()))
+        _jsonout.values({"out": str(args.out), "counts": counts})
+        print("inspect: evh catalog-serve, then open the address it prints")
+        return 0
 
 
 if __name__ == "__main__":

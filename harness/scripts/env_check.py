@@ -19,8 +19,16 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 import argparse
 import os
 
-from evaluation_harness import _providers
-from evaluation_harness._common import DOTENV_LOADED, ROOT, env_float, env_int, in_checkout
+from evaluation_harness import _providers, _store
+from evaluation_harness._common import (
+    DOTENV_LOADED,
+    EXIT_PROBLEMS,
+    ROOT,
+    env_float,
+    env_int,
+    evh_prog,
+    in_checkout,
+)
 
 
 def _state(raw: str, secret: bool) -> str:
@@ -48,20 +56,20 @@ def _probe(base: str) -> str:
 
 def main() -> int:
     """Report configured environment variables before a sweep."""
-    argparse.ArgumentParser(description=__doc__.splitlines()[0]).parse_args()
+    argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0]).parse_args()
     env_file = ROOT / ".env"
     # DOTENV_LOADED is the count from the FIRST load, at import. Calling
     # load_dotenv() again here would report 0 — everything is already in the
     # environment by then — which read as "your .env did nothing".
     print(
-        f".env: {'loaded ' + str(DOTENV_LOADED) + ' var(s)' if env_file.is_file() else 'NOT PRESENT'}"
+        f".env: {'loaded ' + str(DOTENV_LOADED) + ' var(s)' if _store.is_file(env_file) else 'NOT PRESENT'}"
         f"   ({env_file})"
     )
-    if not env_file.is_file():
+    if not _store.is_file(env_file):
         print("      create it with the keys your providers read, one NAME=value per line\n")
 
     print(
-        "\nhosted providers (a config's `provider:`): an arm reads <NAME>, a judge EVAL_JUDGE_<NAME>"
+        "\nhosted providers (a system's `provider:`): an arm reads <NAME>, a judge EVAL_JUDGE_<NAME>"
         "\nfirst and the arms' <NAME> when that is not set"
     )
     print(f"  {'provider':11} {'variable':20} {'arms':34} judges")
@@ -150,7 +158,7 @@ def main() -> int:
         # failing there would train people to ignore this command.
         print("\n  A provider key is set and EVAL_MAX_COST_USD is NOT.")
         print("  The cap is the only thing between a wrong price and an unbounded bill.")
-        return 1
+        return EXIT_PROBLEMS
     return 0
 
 

@@ -38,7 +38,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 
 from evaluation_harness import _jsonout  # noqa: E402
-from evaluation_harness._common import RUNS, die  # noqa: E402
+from evaluation_harness._common import die, evh_prog  # noqa: E402
 from evaluation_harness._runs import default_metric, direction, matrix, runs_on, warn_on_ambiguous_runs  # noqa: E402  # noqa: E402
 from evaluation_harness.stats import spearman  # noqa: E402 - midranks of midranks are the midranks: same rho
 
@@ -101,7 +101,7 @@ def tied_at_top(M, arms, items) -> int:
 
 def main() -> int:
     """Measure how many items it takes before the ranking stops moving."""
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
     ap.add_argument("--dataset-id", required=True)
     ap.add_argument("--metric", help="default: the primary metric the runs recorded")
     ap.add_argument("--match")
@@ -123,7 +123,7 @@ def main() -> int:
 def _run(args: argparse.Namespace) -> int:
     # Two runs sharing a config_id are averaged together below without
     # saying so. See _runs.warn_on_ambiguous_runs.
-    warn_on_ambiguous_runs(RUNS, args.dataset_id, label=RUNS.name)
+    warn_on_ambiguous_runs("", args.dataset_id)
 
     args.metric = args.metric or default_metric(args.dataset_id, args.match)
     M = load(args.dataset_id, args.metric, args.match)
@@ -133,7 +133,10 @@ def _run(args: argparse.Namespace) -> int:
         M = {a: {i: -v for i, v in s.items()} for a, s in M.items()}
     arms = sorted(M)
     if len(arms) < 3:
-        die(f"{len(arms)} arm(s) with per-item '{args.metric}' on {args.dataset_id}: need at least 3 to rank")
+        die(
+            f"{len(arms)} arm(s) with per-item '{args.metric}' on {args.dataset_id}: need at least 3 to rank",
+            "not-enough",
+        )
     items = sorted(set.intersection(*(set(M[a]) for a in arms)))
     if 2 * SIZES[0] > len(items):
         too_few = (
@@ -141,7 +144,7 @@ def _run(args: argparse.Namespace) -> int:
             f"{SIZES[0]}, the smallest size measured. Rank stability needs at least {2 * SIZES[0]}."
         )
         if args.json:  # a refusal: its message on stderr, nothing on stdout
-            die(too_few.strip())
+            die(too_few.strip(), "not-enough")
         print(too_few)
         return 1
     print(f"  {len(arms)} arms, {len(items)} items, metric={args.metric}, {args.draws} draws per size\n")

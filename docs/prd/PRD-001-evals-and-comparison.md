@@ -11,7 +11,7 @@
 
 The harness answers one question honestly: of the systems I tried on my task, is one really
 better, or did a small sample hand me a lucky order? A user freezes a dataset, describes each
-system under test as an **arm** (one config), runs every arm over the same items, and gets
+system under test as an **arm** (one system), runs every arm over the same items, and gets
 per-item scores, cost and latency, recorded with a fingerprint of everything the numbers depend
 on. Paired tests then say, arm by arm, **significant** or **not significant**, and a baseline is
 promoted only with a written reason.
@@ -82,13 +82,13 @@ the [Runbook](../../harness/docs/RUNBOOK.md); the first evaluation, step by step
 
 ### FR2: Runs
 
-- **FR2.1**: `evh run --config …` runs one arm over the dataset and writes a run
+- **FR2.1**: `evh run --system … --dataset …` runs one arm over the dataset and writes a run
   directory: per-item outputs, per-item scores, the run record (`metrics.json`) and a
   fingerprint (RFC-001).
 - **FR2.2**: `--dry-run` prints the calls, tokens and estimated cost and calls nothing.
 - **FR2.3**: `--repeat N` runs the arm N times so its own spread can be measured.
 - **FR2.4**: The core times every call (`latency_ms`) for an adapter that does not report its
-  own, and records billed cost when the provider reports it, else tokens times the config's
+  own, and records billed cost when the provider reports it, else tokens times the system's
   prices.
 - **FR2.5**: A cost ceiling (`EVAL_MAX_COST_USD`) stops a run, keeps what it has and prints the
   exact `--resume` command, so nothing is paid for twice.
@@ -114,8 +114,8 @@ the [Runbook](../../harness/docs/RUNBOOK.md); the first evaluation, step by step
   down).
 - **FR3.5**: `evh rank-stability`, `evh holdout` and `evh bootstrap-test` answer how many items a
   ranking needs, what holds outside a pilot slice, and intervals for corpus-level metrics.
-- **FR3.6**: Every refusal (two datasets, another reference, a missing run) is an `ERROR: …`
-  line on stderr with exit 1.
+- **FR3.6**: Every refusal (two datasets, another reference, a missing run) is an
+  `ERROR (<kind>): …` line on stderr with exit 1; the kind is one of a fixed list (Runbook: Refusals).
 
 ### FR4: Decisions
 
@@ -124,7 +124,7 @@ the [Runbook](../../harness/docs/RUNBOOK.md); the first evaluation, step by step
   (`--allow-dirty`, `--allow-unknown-build`).
 - **FR4.2**: The baseline records the run's reference tier, adapter and fingerprint hash, and
   `evh validate` (V6) fails a baseline that no longer matches its run.
-- **FR4.3**: `evh validate` checks the whole data tree (V1–V20) and exits non-zero, so CI can
+- **FR4.3**: `evh validate` checks the whole data tree (V1–V23) and exits non-zero, so CI can
   hold it.
 
 ## Success Criteria

@@ -4,3 +4,7 @@ aliases:
 - eval-llama-70b
 weights: open
 licence: Llama 3.3, gated
+actor:
+  type: unknown
+  name: before 0.8.0
+  from: migration

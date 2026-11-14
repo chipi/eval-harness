@@ -1,4 +1,5 @@
-"""The run record (metrics.json): one constructor for a measured run, one for a derived one.
+"""The record of a scored run (the run's run.json and its score's metrics.json): one constructor for a measured run,
+one for a derived one.
 
 Four writers built the record by hand: evh run and import-run field by field, rescore
 and judge-score by copying the source run and patching it, each with its own provenance
@@ -25,9 +26,11 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 
 import json
 import statistics
+from pathlib import Path
 from typing import Any
 
 from evaluation_harness._common import now
+from evaluation_harness.model.runs import RUN_ONLY
 
 #: The kinds of derivation, and what each one's `with` names.
 DERIVED_KINDS = ("rescore", "judge", "reparse")
@@ -45,6 +48,58 @@ def aggregate_scores(rows: list[dict[str, Any]], digits: int = 10) -> dict[str, 
         if vals:
             scores[f"total_{k}"] = round(sum(vals), 8)
     return scores
+
+
+def run_scorer(adapter_path: Path | None) -> Any:
+    """The adapter's optional `score_run(items)`, beside its `score()` (the fleet's feedback 20): a metric of the
+    run as a whole, such as precision and recall over the pairs a grouping makes, which no mean of per-item scores
+    can be. Read from the adapter's own module (its `score` may be the default one, imported). None when it has
+    none."""
+    from evaluation_harness._adapter import _module_or_none  # noqa: PLC0415
+
+    fn = getattr(_module_or_none(adapter_path), "score_run", None)
+    return fn if callable(fn) else None
+
+
+def run_level_scores(fn: Any, items: list[dict[str, Any]], per_item: dict[str, float]) -> dict[str, float]:
+    """`score_run(items)` called once over every item ({item_id, output, reference, scores}), checked: a dict of
+    finite numbers whose names are new (a per-item metric's name would be overwritten by a number of another
+    kind). Refused, naming what is wrong, otherwise."""
+    import math  # noqa: PLC0415
+
+    from evaluation_harness._common import die  # noqa: PLC0415
+
+    try:
+        got = fn(items)
+    except Exception as exc:  # noqa: BLE001
+        die(f"the adapter's score_run() raised: {type(exc).__name__}: {exc}", "failed")
+    if not isinstance(got, dict):
+        die(f"the adapter's score_run() returned {type(got).__name__}, not a dict of named numbers", "failed")
+    bad = [
+        k
+        for k, v in got.items()
+        if not isinstance(k, str)
+        or k.startswith("_")
+        or isinstance(v, bool)
+        or not isinstance(v, (int, float))
+        or not math.isfinite(v)
+    ]
+    if bad:
+        die(f"score_run(): not a name and a finite number: {', '.join(map(str, bad))}", "failed")
+    clash = sorted(set(got) & set(per_item))
+    if clash:
+        die(
+            f"score_run(): {', '.join(clash)} is also a per-item metric of score(); a run-level metric needs its own "
+            "name",
+            "failed",
+        )
+    return {k: round(float(v), 10) for k, v in got.items()}
+
+
+def run_level_names(m: dict[str, Any]) -> list[str]:
+    """The metrics a run's record holds as one number for the whole run (`run_metrics`), not a mean of items."""
+    names = m.get("run_metrics")
+    return [str(x) for x in names] if isinstance(names, list) else []
 
 
 def cut_off_items(predictions: list[dict[str, Any]], cap: Any) -> list[str]:
@@ -75,6 +130,9 @@ def run_record(
     """A measured run's record. `fields` are the optional core fields (params, adapter,
     metric_kinds, metric_directions, primary_metric, fingerprint, reference_tier, goal,
     format, ...); one passed as None is left out rather than recorded as null."""
+    from evaluation_harness import _seal  # noqa: PLC0415
+
+    _seal.refuse_if_sealed(dataset_id, "a run record", config_id)
     record: dict[str, Any] = {
         "run_id": run_id,
         "dataset_id": dataset_id,
@@ -85,6 +143,9 @@ def run_record(
         "n_items": n_items,
     }
     record.update({k: v for k, v in fields.items() if v is not None})
+    from evaluation_harness._actor import actor  # noqa: PLC0415
+
+    record["actor"] = actor()  # who ran it (RFC-027): outside the fingerprint, as goal and round are
     return record
 
 
@@ -104,14 +165,25 @@ def derived_record(
     `with_` naming what computed it. Its own created_at is the derivation's; the source's is
     kept as source_created_at. A source that was itself derived keeps its block, nested as
     `derived.source`. `drop` removes source fields that do not describe the new scores;
-    `changes` sets fields (metric_kinds, primary_metric, fingerprint, ...)."""
+    `changes` sets fields (metric_kinds, primary_metric, fingerprint, ...). `source_dir` is the run the score is of:
+    `derived.from_dir` names it, `runs/<id>`. The fields a run holds for what a folder used to mean (purpose,
+    machine, of) are the run's, not the score's: left off."""
     if kind not in DERIVED_KINDS:
         raise ValueError(f"unknown derivation {kind!r}; one of {', '.join(DERIVED_KINDS)}")
+    from evaluation_harness import _seal  # noqa: PLC0415
+
+    _seal.refuse_if_sealed(source.get("dataset_id"), f"a {kind}", source.get("config_id"))
     when = at or now()
     record = json.loads(json.dumps(source))
-    for key in drop:
+    for key in (*drop, *RUN_ONLY):
         record.pop(key, None)
-    block: dict[str, Any] = {"kind": kind, "from": source_dir, "at": when, "with": with_}
+    block: dict[str, Any] = {
+        "kind": kind,
+        "from": source_dir,
+        "at": when,
+        "with": with_,
+        "from_dir": f"runs/{source_dir}",
+    }
     if isinstance(source.get("derived"), dict):
         block["source"] = source["derived"]
     record.update(
@@ -124,6 +196,11 @@ def derived_record(
         }
     )
     record.update({k: v for k, v in changes.items() if v is not None})
+    from evaluation_harness._actor import actor  # noqa: PLC0415
+
+    record["actor"] = (
+        actor()
+    )  # who derived it, not who ran the source (that stays in the source's own record)
     return record
 
 

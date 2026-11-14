@@ -34,7 +34,7 @@ TOLERANCE = 0.005
 
 def main() -> int:
     adapter = load_module(HERE / "adapter.py", "db_adapter")
-    params = yaml.safe_load((HERE / "configs" / "arm_bert_base_fy_n200.yaml").read_text())["params"]
+    params = yaml.safe_load((HERE / "systems" / "db_bert_base_fy_v1.yaml").read_text())["params"]
     labels = params["label_order"]
     offsets = sorted(random.Random(SEED).sample(range(0, SPLIT_ROWS, 100), PAGES))
     sample = [r for o in offsets for r in cal.page("fancyzhx/dbpedia_14", "dbpedia_14", "test", o)]

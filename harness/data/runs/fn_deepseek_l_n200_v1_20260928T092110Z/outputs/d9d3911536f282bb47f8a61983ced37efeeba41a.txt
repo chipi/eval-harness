@@ -1,6 +1,0 @@
-[
-  {
-    "text": "6.72 million",
-    "type": "other"
-  }
-]

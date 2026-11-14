@@ -19,10 +19,12 @@ from pathlib import Path as _Path
 if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
+import contextlib
 import json
 from pathlib import Path
 from typing import Any
 
+from evaluation_harness import _store
 from evaluation_harness._common import now
 
 
@@ -36,16 +38,30 @@ def picks_path() -> Path:
 def lines() -> list[dict[str, Any]]:
     """Every line of the pick list, oldest first."""
     p = picks_path()
-    if not p.is_file():
+    if not _store.is_file(p):
         return []
-    return [json.loads(x) for x in p.read_text(encoding="utf-8").splitlines() if x.strip()]
+    return [json.loads(x) for x in _store.read_text(p, encoding="utf-8").splitlines() if x.strip()]
 
 
 def append(rows: list[dict[str, Any]]) -> None:
-    """Add lines to the pick list (it is never rewritten)."""
+    """Add lines to the pick list (it is never rewritten), under the project's `picks` lock: the list is one per
+    project, and in the SQLite store an append is a read and a rewrite, so two writers at once kept 21 of 200 lines
+    (2026-11-11). A job holding the lock already (EVH_LOCKS) writes under its own."""
+    import os  # noqa: PLC0415
+
+    from evaluation_harness import _jobs  # noqa: PLC0415
+
     p = picks_path()
-    p.parent.mkdir(parents=True, exist_ok=True)
-    with p.open("a", encoding="utf-8") as f:
+    _store.mkdir(p.parent, parents=True, exist_ok=True)
+    held = "picks" in (os.environ.get("EVH_LOCKS") or "").split(",")
+    ctx = (
+        contextlib.nullcontext()
+        if held
+        else _jobs.holding(
+            [("picks", True)], os.environ.get("EVH_JOB") or f"pid {os.getpid()}", _jobs.say_waiting
+        )
+    )
+    with ctx, _store.open_file(p, "a", encoding="utf-8") as f:
         for r in rows:
             f.write(json.dumps({**r, "at": r.get("at") or now()}, ensure_ascii=False, sort_keys=True) + "\n")
 

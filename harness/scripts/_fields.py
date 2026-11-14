@@ -25,12 +25,14 @@ import statistics
 from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _common
+from evaluation_harness import _common, _store
 
-TYPES = ("text", "number", "integer", "boolean", "date", "duration", "url", "choice")
+TYPES = ("text", "number", "integer", "boolean", "date", "datetime", "duration", "url", "choice")
 #: Types a comparison can be broken down by: a handful of named groups, never a continuum.
 GROUPABLE = ("choice", "boolean")
 _DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+#: A moment (RFC-030): an ISO 8601 date and time of day with its offset (Z or +hh:mm), seconds and fractions optional.
+_DATETIME = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:\d{2})$")
 _CLOCK = re.compile(r"^(?:(\d+):)?(\d{1,2}):(\d{1,2}(?:\.\d+)?)$")
 _TRUE, _FALSE = {"true", "yes", "1", "y"}, {"false", "no", "0", "n"}
 
@@ -45,9 +47,9 @@ def load_fieldset(fieldset_id: str, fields_dir: Path | None = None) -> dict[str,
     import yaml  # noqa: PLC0415
 
     p = fieldset_path(fieldset_id, fields_dir)
-    if not p.is_file():
+    if not _store.is_file(p):
         return None
-    doc = yaml.safe_load(p.read_text(encoding="utf-8"))
+    doc = yaml.safe_load(_store.read_text(p, encoding="utf-8"))
     return doc if isinstance(doc, dict) else {}
 
 
@@ -65,7 +67,7 @@ def fieldset_problems(fieldset_id: str, fs: dict[str, Any]) -> list[str]:
     import json  # noqa: PLC0415
 
     try:
-        jsonschema.validate(fs, json.loads((_common.SCHEMAS / "fieldset.schema.json").read_text()))
+        jsonschema.validate(fs, json.loads(_store.read_text(_common.SCHEMAS / "fieldset.schema.json")))
     except jsonschema.ValidationError as exc:
         out.append(exc.message)
     return out
@@ -103,6 +105,12 @@ def parse(field: dict[str, Any], raw: Any) -> Any:
         if not (isinstance(s, str) and _DATE.match(s)):
             raise ValueError(f"{raw!r} is not a date (YYYY-MM-DD)")
         return s
+    if t == "datetime":
+        if not (isinstance(s, str) and _DATETIME.match(s) and moment(s) is not None):
+            raise ValueError(
+                f"{raw!r} is not a date and time with its offset (YYYY-MM-DDThh:mm:ss+hh:mm, or Z)"
+            )
+        return s
     if t == "duration":
         if isinstance(s, (int, float)) and not isinstance(s, bool):
             v = float(s)
@@ -123,6 +131,21 @@ def parse(field: dict[str, Any], raw: Any) -> Any:
     raise ValueError(f"unknown type {t!r}")
 
 
+def moment(value: str) -> Any:
+    """A `datetime` field's value as an aware datetime, None when it is not one (Python 3.10 reads no `Z`)."""
+    import datetime as dt  # noqa: PLC0415
+
+    try:
+        t = dt.datetime.fromisoformat(str(value).strip().replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return t if t.tzinfo is not None else None
+
+
+def _moment_key(value: str) -> Any:
+    return moment(value)
+
+
 def problems(fieldset: dict[str, Any], item_id: str, values: dict[str, Any]) -> list[str]:
     """What is wrong with one item's stored fields: undeclared, mistyped, or a required one missing."""
     out, fields = [], declared(fieldset)
@@ -134,7 +157,8 @@ def problems(fieldset: dict[str, Any], item_id: str, values: dict[str, Any]) -> 
             continue
         try:
             if parse(fields[name], v) != v or (
-                fields[name]["type"] in ("text", "date", "url", "choice") and not isinstance(v, str)
+                fields[name]["type"] in ("text", "date", "datetime", "url", "choice")
+                and not isinstance(v, str)
             ):
                 out.append(f"{item_id}: {name} = {v!r} is not stored as a {fields[name]['type']}")
         except (ValueError, TypeError) as exc:
@@ -159,8 +183,10 @@ def digest(items: list[dict[str, Any]]) -> str:
 def read_rows(path: Path) -> list[dict[str, Any]]:
     """Rows of a .csv (header row) or .jsonl file, as dicts."""
     if path.suffix.lower() == ".jsonl":
-        return [json.loads(x) for x in path.read_text(encoding="utf-8").splitlines() if x.strip()]
-    with path.open(newline="", encoding="utf-8-sig") as fh:  # a spreadsheet's CSV may begin with a BOM
+        return [json.loads(x) for x in _store.read_text(path, encoding="utf-8").splitlines() if x.strip()]
+    with _store.open_file(
+        path, newline="", encoding="utf-8-sig"
+    ) as fh:  # a spreadsheet's CSV may begin with a BOM
         return list(csv.DictReader(fh))
 
 
@@ -215,6 +241,8 @@ def summary(fieldset: dict[str, Any], items: list[dict[str, Any]]) -> list[dict[
                 row["min"], row["median"], row["max"] = min(vals), statistics.median(vals), max(vals)
             elif f["type"] == "date":
                 row["min"], row["max"] = min(vals), max(vals)
+            elif f["type"] == "datetime":
+                row["min"], row["max"] = min(vals, key=_moment_key), max(vals, key=_moment_key)
             else:
                 row["distinct"] = len(set(vals))
         out.append(row)

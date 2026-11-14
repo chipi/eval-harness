@@ -1,0 +1,123 @@
+{
+  "actor": {
+    "from": "migration",
+    "name": "before 0.8.0",
+    "type": "unknown"
+  },
+  "adapter": "examples/summarization-cnn-dailymail/adapter.py",
+  "build": {
+    "dirty": false,
+    "ref": "8165bd946c10c0bcbcaeb7d55a3ee5d36b25f31d",
+    "source": "git"
+  },
+  "config_id": "cnn_bart_s_v1",
+  "created_at": "2026-10-15T04:37:41Z",
+  "dataset_id": "cnn_dailymail_dm200",
+  "fingerprint": {
+    "arm": {
+      "config_id": "cnn_bart_s_v1",
+      "labels": {
+        "family": "bart",
+        "price_tier": "free"
+      }
+    },
+    "data": {
+      "dataset_id": "cnn_dailymail_dm200",
+      "items_sha256": "0cf85d1eb3b9176ac6e49f3ab83761e271aeb0f87b18709f230815a4e213865b",
+      "n_items": 200,
+      "reference_id": "gold/cnn_dailymail_dm200",
+      "reference_tier": "gold",
+      "references_sha256": "7fc293bc2d9661e3b23d2bb1af8981f5e4bab10e4ab3c83b36e03f571fcef8cc"
+    },
+    "data_sha256": "b6cad540b3ebb8d82b0209949ddb828fb5383da16aa8c58ce0c1053d69c0d225",
+    "deployment": {
+      "declared": {
+        "loaded_dtype": "float32",
+        "loaded_revision": "d2fde4ca965ba893255479612e4b801aa6500029",
+        "weight_files": [
+          "pytorch_model.bin:460021128"
+        ]
+      },
+      "hosted": null,
+      "id": "sshleifer/distilbart-cnn-6-6",
+      "in_process": true,
+      "libraries": {
+        "numpy": "2.4.6",
+        "openai": "3.19.2",
+        "rouge-score": "0.1.2",
+        "torch": "2.14.0",
+        "transformers": "4.55.4"
+      },
+      "model": "sshleifer/distilbart-cnn-6-6",
+      "provider": "hf_local",
+      "server": null,
+      "source": "adapter",
+      "weights": {
+        "digest": null,
+        "file_hash": null,
+        "precision": "fp32",
+        "quantization": null,
+        "revision": "d2fde4ca965ba893255479612e4b801aa6500029",
+        "revision_source": "loaded-model"
+      },
+      "where": {
+        "backend": null,
+        "device": "cpu",
+        "machine": null
+      }
+    },
+    "deployment_sha256": "d2241ba44640e9369527468681e4bbef06b10c083738bd876386a5029a36f330",
+    "hash": "4ed85948d7255906ca6295c7850aabd79e337f4adca93b708dedfc7915080ff0",
+    "instrument": {
+      "adapter": {
+        "id": "examples/summarization-cnn-dailymail/adapter.py",
+        "sha256": "e366d078c93f9d703819c1409790cb64d08f1353a396aaebf24f850a2171604e"
+      },
+      "harness": {
+        "commit": "8165bd946c10",
+        "dirty": false
+      }
+    },
+    "instrument_sha256": "1cab055b0dc0a06f23465223b990e6ad06f10cad298a899578cc6d5069e6f466",
+    "runner": {
+      "cpu_count": 4,
+      "label": null,
+      "libraries": null,
+      "platform": "Linux/x86_64",
+      "processor": "x86_64",
+      "python": "3.11.15",
+      "release": "6.18.44-fc-v114"
+    },
+    "settings": {
+      "early_stopping": true,
+      "length_penalty": 2.0,
+      "max_length": 142,
+      "min_length": 56,
+      "no_repeat_ngram_size": 3,
+      "num_beams": 4
+    },
+    "settings_sha256": "656435dcd94a2e6c1a0f2804bc3184adf0e955e8cf36a710519ed655ba6ac508",
+    "version": 5
+  },
+  "goal": "news_summary_cnn",
+  "n_items": 200,
+  "params": {
+    "device": "cpu",
+    "early_stopping": true,
+    "family": "bart",
+    "length_penalty": 2.0,
+    "max_length": 142,
+    "min_length": 56,
+    "model": "sshleifer/distilbart-cnn-6-6",
+    "no_repeat_ngram_size": 3,
+    "num_beams": 4,
+    "precision": "fp32",
+    "price_tier": "free",
+    "provider": "hf_local"
+  },
+  "providers_seen": {},
+  "run_id": "cnn_bart_s_dm200_v1_20261015T042310Z",
+  "warmup_ms": 7979.765,
+  "purpose": "run",
+  "machine": "linux"
+}

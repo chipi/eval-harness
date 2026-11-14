@@ -1,3 +1,0 @@
-[
-    {"text": "High and Late Middle Ages", "type": "other"}
-]

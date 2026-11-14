@@ -53,8 +53,8 @@ run concludes success, which is what the deploy and the release read. Chromium a
   the same code (2026-10-27, 0.4.2). The browser, budget and guard tests are not in that figure.
   The least reached (measured before their `--arm` views got checks): `tools/extraction_report.py` 44% (its consensus pass needs three learned
   arms), `tools/classification_report.py` 60%, `tools/nemenyi_table.py` 66%, then `cli.py`,
-  `check_links.py`, `env_check.py`, `catalog_serve.py` (public mode's edge cases), `list_runs.py`
-  and `judge_panel.py` at 71-78%. A first measurement read 81% with the commands at 22-45%: it
+  `check_links.py`, `env_check.py`, `catalog_serve.py` (public mode's edge cases), and
+  `list_runs.py` at 71-78%. A first measurement read 81% with the commands at 22-45%: it
   counted only the checkout's `scripts/`, so everything the installed-package tests ran (where
   `evh` runs each command's file) read as never run.
 - **Prod's inspector** (0.4.1, 2026-10-27, cAdvisor on VictoriaMetrics): a peak of 145 MiB

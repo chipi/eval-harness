@@ -1,6 +1,0 @@
-[
-  {
-    "text": "Claudia Häusler",
-    "type": "person"
-  }
-]

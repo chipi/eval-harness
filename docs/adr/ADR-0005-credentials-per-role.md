@@ -13,7 +13,7 @@ The harness called hosted models three ways. The bundled adapter dispatched on a
 `provider:` (`openai`, `anthropic`, `openrouter`, `litellm`). Judge-score's judges ignored the
 `provider:` their scorer declared: a judge went to a LiteLLM proxy when `LITELLM_BASE_URL` was
 set, else to OpenRouter with its model looked up in a `models.json` alias table, while its
-records named the declared provider. The judge panel (`evh judge`) called only Anthropic, priced
+records named the declared provider. The judge panel (since removed) called only Anthropic, priced
 every call at Sonnet's prices written in the code, and ran its fake judge when
 `ANTHROPIC_API_KEY` was missing.
 

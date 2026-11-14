@@ -291,6 +291,15 @@ compute: `bert_mini` 61×–1,078× faster than the hosted field, timed on the s
 bert-base fine-tunes roughly 5×–100×, timed on a Linux machine, a cross-machine ratio good to
 about a factor of two) — with the qualification in §3.4 about *what* they are better at.
 
+#### What the goal recommends under 0.8.0's contender rule (2026-11-05)
+
+From 0.8.0 a contender must be *shown* no worse than the leader by more than the margin, not merely "not
+significantly different" ([ADR-0026](../docs/adr/ADR-0026-contenders-by-non-inferiority.md)). The goal is
+`balanced`: a margin of 5% of bert_base_ta's 0.960. With 29 arms compared on 200 items, none is shown within it
+(bert_mini, at 0.945, has p 0.042 against a Holm threshold of 0.0009), so the goal recommends the leader,
+bert_base_ta, where 0.7 left three arms tied and recommended none. The leader is the best of 29 measured on the same
+items, which makes every arm look a little worse against it than it is; that is why so few can be shown close.
+
 ### 3.2 DBpedia-14 — no winner: the leader is not significantly different from 19 of the 27 others
 
 ```
@@ -701,16 +710,16 @@ uv run fetch.py --n 280 && uv run fetch.py --n 56
 cd ../../harness
 PY=../examples/classification-dbpedia-14/.venv/bin/python
 $PY tools/classification_report.py --dataset-id dbpedia_280
-$PY scripts/family_test.py    --dataset-id dbpedia_280 --a db_qwen_m_n200_v1 --against _n200_v1 --metric correct
-$PY scripts/bootstrap_test.py --dataset-id dbpedia_280 --a db_qwen_m_n200_v1 --against _n200_v1 --metric macro_f1
+$PY scripts/family_test.py    --dataset-id dbpedia_280 --a db_qwen_m_v1 --against db_ --metric correct
+$PY scripts/bootstrap_test.py --dataset-id dbpedia_280 --a db_qwen_m_v1 --against db_ --metric macro_f1
 $PY scripts/rank_stability.py --dataset-id dbpedia_280 --metric correct
-$PY scripts/family_test.py    --dataset-id dbpedia_280 --a db_bert_base_fy_n200_v1 --against _n200_v1 --metric correct
+$PY scripts/family_test.py    --dataset-id dbpedia_280 --a db_bert_base_fy_v1 --against db_ --metric correct
 
 PY=../examples/classification-ag-news/.venv/bin/python
 $PY tools/classification_report.py --dataset-id ag_news_200
-$PY scripts/family_test.py    --dataset-id ag_news_200 --a ag_bert_base_ta_n200_v1 --against _n200_v1 --metric correct
-$PY scripts/family_test.py    --dataset-id ag_news_200 --a ag_bert_mini_n200_v1    --against _n200_v1 --metric correct
-$PY scripts/bootstrap_test.py --dataset-id ag_news_200 --a ag_bert_base_ta_n200_v1 --against _n200_v1 --metric macro_f1
+$PY scripts/family_test.py    --dataset-id ag_news_200 --a ag_bert_base_ta_v1 --against ag_ --metric correct
+$PY scripts/family_test.py    --dataset-id ag_news_200 --a ag_bert_mini_v1    --against ag_ --metric correct
+$PY scripts/bootstrap_test.py --dataset-id ag_news_200 --a ag_bert_base_ta_v1 --against ag_ --metric macro_f1
 $PY scripts/holdout_significance.py --dataset-id ag_news_200 --exclude-dataset ag_news_20 --metric correct
 ```
 

@@ -109,6 +109,33 @@ class _Tee:
         self.live.flush()
 
 
+def _say_exposed() -> None:
+    """After a command's body: the held-out items its scores left out (RFC-031 H1), said once, wherever it printed,
+    and under result.values.left_out_exposed. Every score that leaves them out says so, whichever command."""
+    from evaluation_harness import _exposure, _runs  # noqa: PLC0415
+
+    if _runs.NOT_SCORABLE:
+        for cid, ids in sorted(_runs.NOT_SCORABLE.items()):
+            print(
+                f"  note: {cid}: {len(ids)} item(s) not scorable under this variant (its action differs from "
+                "production's, under which their labels hold; RFC-031)"
+            )
+        if _ACTIVE is not None:
+            _ACTIVE.values["not_scorable"] = {c: len(ids) for c, ids in sorted(_runs.NOT_SCORABLE.items())}
+    for cid, hc in sorted(_runs.CONFOUND.items()):
+        print(
+            f"  note: {cid}: history confound: {hc['items']} of {hc['of']} item(s) met a human reaction to an action "
+            "production took and this variant did not (RFC-031)"
+        )
+    if _runs.CONFOUND and _ACTIVE is not None:
+        _ACTIVE.values["history_confound"] = dict(sorted(_runs.CONFOUND.items()))
+    if not _exposure.LEFT:
+        return
+    _exposure.say()
+    if _ACTIVE is not None:
+        _ACTIVE.values["left_out_exposed"] = {ds: len(ids) for ds, ids in sorted(_exposure.LEFT.items())}
+
+
 @contextlib.contextmanager
 def collect(command: str, enabled: bool = True, live=None) -> Iterator[None]:
     """Run the body with its printing collected, then print the envelope. A refusal raises through
@@ -119,6 +146,7 @@ def collect(command: str, enabled: bool = True, live=None) -> Iterator[None]:
     global _ACTIVE
     if not enabled:
         yield
+        _say_exposed()
         return
     c = _Collector()
     _ACTIVE = c
@@ -134,6 +162,7 @@ def collect(command: str, enabled: bool = True, live=None) -> Iterator[None]:
     try:
         with contextlib.redirect_stdout(c.buf if live is None else _Tee(c.buf, live)):
             yield
+            _say_exposed()
     finally:
         _ACTIVE = None
         if saved_fd is not None:

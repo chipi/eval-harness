@@ -27,6 +27,7 @@ from pathlib import Path
 from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "harness"))
+from evaluation_harness import _store  # noqa: E402
 from evaluation_harness.adapter import Result  # noqa: E402
 
 PRIMARY_METRIC = "key_match"
@@ -49,7 +50,7 @@ def _fleet() -> tuple:
         return _FLEET["filing"], _FLEET["sources"], _FLEET["triage"]
     src = os.environ.get("TRIAGE_FLEET_SRC", "")
     mvp = Path(src) / "mvp" if src else None
-    if mvp is None or not (mvp / "filing.py").is_file():
+    if mvp is None or not _store.is_file(mvp / "filing.py"):
         raise RuntimeError(f"TRIAGE_FLEET_SRC must name the fleet's signal-fleet folder; got {src!r}")
     os.environ["SF_OBSERV_DISABLED"] = "1"
     os.environ.setdefault("OPENROUTER_API_KEY", "unset")

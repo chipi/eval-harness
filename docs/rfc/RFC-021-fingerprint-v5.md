@@ -112,7 +112,7 @@ migration rewrites each committed run's `fingerprint`:
   how it asked; the labels go to `arm.labels`.
 - The hashes are recomputed; `version: 5`.
 
-The migration is `evh fingerprint-migrate` (`scripts/fingerprint_migrate.py`, packaged so a pinned project can run it), idempotent; this repository's counts are committed beside the tools
+The migration is `fingerprint-migrate` (`scripts/fingerprint_migrate.py`, packaged so a pinned project can run it; from 0.8.0 the fingerprints step of `evh migrate`), idempotent; this repository's counts are committed beside the tools
 (`migrate_fingerprint_v5.out.txt`: 344 tracked runs and 37 local ones, 304 from an adapter and 77 from params, 85 in
 process; 5 baselines' `fingerprint_hash` follow). Derived runs (rescored, judged) take their source run's
 deployment, settings and runner and keep `hash: null`. *Not done as first written:* filling the triage runs' digests
@@ -139,7 +139,7 @@ Everything under "What changes" is built. Found during the build, and changed:
   `server` always null, so a self-hosted run lost its Ollama or vLLM address; the 130 triage runs were backfilled
   with the fleet they replayed (`tools/backfill_triage_fleet.py`) and re-sealed.
 - **A system with no hook that ran in the harness's own process is in process.** A deployment taken from the
-  params was always `in_process: false`; `evh fingerprint-migrate` brings v5 fingerprints to the rule when it has
+  params was always `in_process: false`; `fingerprint-migrate` brings v5 fingerprints to the rule when it has
   the run's params (11 runs here).
 - **A record's deployment names no address, by design.** It is identified by the record's deployment id, digest
   and server version; the address the arm called (an ssh tunnel to the Mac, or the machine directly) reaches the

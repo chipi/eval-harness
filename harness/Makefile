@@ -9,23 +9,23 @@
 PYTHON ?= $(shell [ -x .venv/bin/python ] && echo .venv/bin/python || echo python3)
 VENV ?= .venv
 DATASET_ID ?= smoke_v1
-CONFIG ?= data/configs/demo.yaml
+SYSTEM ?= demo_v1
 REPEAT ?= 1
 OUT ?=
 NOISE ?=
 TIER ?= silver
 
-.PHONY: help demo init env-check install venv-init catalog catalog-serve \
-        overview activity datasets arms references metrics goals inspect round-open round-retire round-close rounds \
+.PHONY: help demo init env-check install venv-init catalog catalog-serve serve \
+        overview activity datasets arms references metrics goals inspect round-open round-carry round-retire round-close rounds \
         dataset-create dataset-materialize dataset-profile dataset-items reference-manifest \
         mcp search self-test \
-        reference-promote arm-smoke model-onboard fingerprint-migrate score-preview importer-check capture \
+        reference-promote arm-smoke model-onboard score-preview importer-check capture \
         dataset-split capture-scrub captures labels label-sheet label-import sheet-import label-from-run label-from-capture pick \
         picks dataset-extend deploy-sheet arm-from-capture dataset-from-capture models \
         holdout pair-test rank-stability \
         run-dry-run run sweep \
         runs-list baselines-list run-compare leaderboard run-promote \
-        validate judge judge-score check guide-check browser-install browser-check budget-check browser-real-check guard-check commands-check coverage ci test smoke-fixture cost-report clean clean-cache \
+        validate format-check judge judge-score check guide-check browser-install browser-check budget-check browser-real-check guard-check commands-check stores-check coverage ci test smoke-fixture cost-report clean clean-cache \
         bootstrap-test family-test import-run rescore silver-calibrate site site-check docs
 
 # ── getting started ─────────────────────────────────────────────────────────
@@ -47,9 +47,9 @@ help:
 	@echo "     evh reference-promote --dataset-id my_v1 --labels best_v1 --tier silver --reason \"…\" --by <you>"
 	@echo ""
 	@echo "MEASURE  (dry-run first — it costs nothing and tells you what the sweep will)"
-	@echo "  make run-dry-run CONFIG=data/configs/arm_a.yaml"
-	@echo "  make run     CONFIG=data/configs/arm_a.yaml REPEAT=3"
-	@echo "  make sweep CONFIGS=\"data/configs/arm_*.yaml\" REPEAT=2"
+	@echo "  make run-dry-run SYSTEM=arm_a_v1 DATASET_ID=smoke_v1"
+	@echo "  make run     SYSTEM=arm_a_v1 DATASET_ID=smoke_v1 REPEAT=3"
+	@echo "  make sweep SYSTEMS=\"arm_a_v1 arm_b_v1\" DATASET_ID=smoke_v1 REPEAT=2"
 	@echo ""
 	@echo "TRUST THE REFERENCE?  (free — no API calls)"
 	@echo "  make silver-calibrate DATASET_ID=my_v1 REF_MATCH=_v1 ARM_MATCH=_v2"
@@ -84,8 +84,9 @@ help:
 	@echo "INSPECT / GATE"
 	@echo "  make runs-list | baselines-list | validate | judge (the panel)"
 	@echo "  make catalog | catalog-serve   pages over the runs; the run inspector on 127.0.0.1"
+	@echo "  make serve [STORE=sqlite] [FRESH=1]   the catalog on 127.0.0.1; in SQLite a copy of data/"
 	@echo ""
-	@echo "SCOPING  (a dataset accumulates arms across config versions)"
+	@echo "SCOPING  (a dataset accumulates arms across system versions)"
 	@echo "  make leaderboard DATASET_ID=my_v1 MATCH=_v2   only v2 arms"
 	@echo "  EVAL_RUNS_DIR=<dir>                           run/read elsewhere, e.g. a"
 	@echo "                                                smoke pass or a rescore"
@@ -114,6 +115,8 @@ budget-check:
 
 browser-check:
 	$(PYTHON) tests/test_inspector_browser.py
+	$(PYTHON) tests/test_workbench_browser.py
+	$(PYTHON) tests/test_workbench_live_browser.py
 
 # The catalog of this repository's own runs in Chromium (tests/test_catalog_real_browser.py): the
 # pages at the size the deployment serves. Reuses budget-check's catalog, else builds it.
@@ -133,6 +136,11 @@ guard-check:
 commands-check:
 	$(PYTHON) tests/test_report_tools.py
 	$(PYTHON) tests/test_ops_commands.py
+
+# Every test file on the sqlite store (RFC-025), each in its own process: the self-test runs them on files, and the
+# store's other mode is exactly as safe as the tests that run on it (architecture review, 2026-11-06).
+stores-check:
+	$(PYTHON) tools/store_matrix.py --store sqlite --jobs 4
 
 # Line coverage under the whole self-test and commands-check, subprocesses included (pyproject.toml's
 # [tool.coverage.*]): which code no test runs. Needs `coverage` (requirements-dev.txt). Measured on
@@ -159,7 +167,7 @@ demo:
 	  echo "  make dataset-create DATASET_ID=my_v1"; exit 1; }
 	@$(MAKE) --no-print-directory dataset-create DATASET_ID=$(DATASET_ID) ARGS="--force"
 	@$(MAKE) --no-print-directory dataset-materialize DATASET_ID=$(DATASET_ID)
-	@$(MAKE) --no-print-directory run CONFIG=$(CONFIG) REPEAT=3
+	@$(MAKE) --no-print-directory run SYSTEM=$(SYSTEM) DATASET_ID=$(DATASET_ID) REPEAT=3
 	@$(MAKE) --no-print-directory validate
 	@echo ""
 	@echo "Now: make runs-list, then make leaderboard DATASET_ID=$(DATASET_ID)"
@@ -195,10 +203,6 @@ arm-smoke:
 # onboard a model once: probe a deployment, write what was found into its record
 model-onboard:
 	$(PYTHON) scripts/model_onboard.py $(ARGS)
-
-# migrate the committed runs' fingerprints to version 5, once (idempotent)
-fingerprint-migrate:
-	$(PYTHON) scripts/fingerprint_migrate.py $(ARGS)
 
 # what the scorer in this tree would move in a goal's decision; writes nothing
 score-preview:
@@ -283,15 +287,15 @@ self-test:
 
 # ── evals ───────────────────────────────────────────────────────────────────
 run-dry-run:
-	$(PYTHON) scripts/run.py --config $(CONFIG) --repeat $(REPEAT) --dry-run
+	$(PYTHON) scripts/run.py --system $(SYSTEM) --dataset $(DATASET_ID) --repeat $(REPEAT) --dry-run
 
 run:
-	$(PYTHON) scripts/run.py --config $(CONFIG) --repeat $(REPEAT) $(ARGS)
+	$(PYTHON) scripts/run.py --system $(SYSTEM) --dataset $(DATASET_ID) --repeat $(REPEAT) $(ARGS)
 
-# CONFIGS is a glob: make sweep CONFIGS="data/configs/arm_*.yaml"
+# SYSTEMS is a list of system ids: make sweep SYSTEMS="arm_a_v1 arm_b_v1" DATASET_ID=smoke_v1
 sweep:
-	@test -n "$(CONFIGS)" || { echo 'CONFIGS="data/configs/arm_*.yaml" is required'; exit 1; }
-	$(PYTHON) scripts/sweep.py --configs $(CONFIGS) --repeat $(REPEAT) $(ARGS)
+	@test -n "$(SYSTEMS)" || { echo 'SYSTEMS="arm_a_v1 arm_b_v1" is required'; exit 1; }
+	$(PYTHON) scripts/sweep.py --systems $(SYSTEMS) --dataset $(DATASET_ID) --repeat $(REPEAT) $(ARGS)
 
 # ── inspect and decide ──────────────────────────────────────────────────────
 runs-list:
@@ -398,6 +402,10 @@ run-promote:
 validate:
 	$(PYTHON) scripts/validate_tree.py
 
+# The data is in the format this release reads (RFC-032): the deploy's gate (render.sh), met here first.
+format-check:
+	$(PYTHON) scripts/migrate.py --check
+
 # THE CATALOG AND THE RUN INSPECTOR (ADR-0002): static pages over the runs, by dataset, into
 # .build/catalog/ (counts and means only; item text only where a profile publishes it); then a server on 127.0.0.1
 # that tests any arms on one dataset against a baseline with the same paired test as pair-test.
@@ -406,6 +414,22 @@ catalog:
 
 catalog-serve: catalog
 	$(PYTHON) scripts/catalog_serve.py $(ARGS)
+
+# The whole thing on 127.0.0.1, to try it: the catalog and the run inspector over this project's data. STORE=sqlite
+# serves a SQLite copy of data/ (.build/serve-sqlite/data/project.sqlite, made once by data-migrate; FRESH=1 makes it
+# again), so trying it never touches the tracked files.
+SERVE_COPY := .build/serve-sqlite
+serve:
+ifeq ($(STORE),sqlite)
+	@if [ -n "$(FRESH)" ] || [ ! -f $(SERVE_COPY)/data/project.sqlite ]; then \
+	  rm -rf $(SERVE_COPY) && mkdir -p $(SERVE_COPY) && cp -r data $(SERVE_COPY)/data && \
+	  EVAL_DATA_DIR=$(SERVE_COPY)/data EVAL_STORE=sqlite $(PYTHON) scripts/data_migrate.py --to sqlite; fi
+	EVAL_DATA_DIR=$(SERVE_COPY)/data EVAL_STORE=sqlite $(PYTHON) scripts/catalog_build.py --out $(SERVE_COPY)/catalog
+	EVAL_DATA_DIR=$(SERVE_COPY)/data EVAL_STORE=sqlite $(PYTHON) scripts/catalog_serve.py --build-dir $(SERVE_COPY)/catalog $(ARGS)
+else
+	$(PYTHON) scripts/catalog_build.py
+	$(PYTHON) scripts/catalog_serve.py $(ARGS)
+endif
 
 # The read commands as MCP tools, for an agent (RFC-018): stdio, or ARGS="--http ..." for a team.
 mcp:
@@ -440,7 +464,7 @@ goals:
 	$(PYTHON) scripts/view_goals.py $(if $(GOAL),--goal $(GOAL),) $(ARGS)
 
 inspect:
-	@test -n "$(RUNS)" || { echo "RUNS=<arm>,<arm>,... is required (config ids, or arm ids from make datasets)"; exit 1; }
+	@test -n "$(RUNS)" || { echo "RUNS=<arm>,<arm>,... is required (system ids, or arm ids from make datasets)"; exit 1; }
 	$(PYTHON) scripts/view_inspect.py --runs $(RUNS) $(if $(BASELINE),--baseline $(BASELINE),) $(ARGS)
 
 # EVAL ROUNDS (ADR-0004), optional: a round of a goal, its decisions as commands.
@@ -448,6 +472,9 @@ inspect:
 round-open:
 	@test -n "$(GOAL)" -a -n "$(DATASET_ID)" || { echo "GOAL=<goal_id> DATASET_ID=<dataset> are required"; exit 1; }
 	$(PYTHON) scripts/round_open.py --goal $(GOAL) --dataset $(DATASET_ID) $(ARGS)
+
+round-carry:
+	$(PYTHON) scripts/round_carry.py --goal $(GOAL) --round $(ROUND) $(ARGS)
 
 round-retire:
 	$(PYTHON) scripts/round_retire.py --goal $(GOAL) --round $(ROUND) $(ARGS)
@@ -485,7 +512,7 @@ test: smoke-fixture
 guide-check:
 	$(PYTHON) tests/check_guide.py
 
-check: validate test guide-check
+check: format-check validate test guide-check
 	@echo ""
 	@echo "check: tree valid, self-tests pass, the GUIDE runs as written"
 
@@ -510,16 +537,10 @@ ci: check site-check
 # The judging PASS (ADR-0001): a validated LLM judge re-measures every arm's frozen outputs,
 # listwise and blind, into data/runs-judged/<SCORER>/. Billed, capped (the scorer's
 # cost_cap_usd, EVAL_MAX_COST_USD), resumable. ARGS=--dry-run prices it without calling
-# anything; ARGS=--no-calls re-reads stored verdicts for $0. Not `make judge`, which is the
-# panel below.
+# anything; ARGS=--no-calls re-reads stored verdicts for $0.
 judge-score:
 	@test -n "$(SCORER)" || { echo 'SCORER=<id in data/scorers/> is required'; exit 1; }
 	$(PYTHON) scripts/judge_score.py --dataset-id $(DATASET_ID) --scorer $(SCORER) $(ARGS)
-
-# The judge panel: promote -> judge -> aggregate -> report over candidate runs.
-# Keyless by default (FakeJudge).
-judge:
-	$(PYTHON) scripts/judge_panel.py --config config.example.yaml --use-fake-judge $(ARGS)
 
 # ── housekeeping ────────────────────────────────────────────────────────────
 clean:

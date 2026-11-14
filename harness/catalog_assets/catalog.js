@@ -35,13 +35,19 @@ document.querySelectorAll('input[data-filter]').forEach(inp=>{const t=document.g
 inp.addEventListener('input',()=>{const w=inp.value.toLowerCase().split(/\s+/).filter(Boolean);let n=0;
 t.querySelectorAll('tbody tr').forEach(r=>{if(r.classList.contains('grouphead'))return;const ok=w.every(x=>r.textContent.toLowerCase().includes(x));const show=ok&&!r.classList.contains('pout')&&!r.classList.contains('fout');r.hidden=!show;n+=show;});
 const c=document.querySelector(`[data-count="${inp.dataset.filter}"]`);if(c)c.textContent=n;});});
-/* sort: a header is a button (click, or Enter/Space from the keyboard), and says how its column is sorted (aria-sort) */
-document.querySelectorAll('table.sortable th').forEach(th=>{th.tabIndex=0;th.setAttribute('role','button');th.setAttribute('aria-sort','none');
-th.addEventListener('keydown',ev=>{if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();th.click();}});
-th.addEventListener('click',ev=>{if(ev.target.closest('input'))return;const tb=th.closest('table').tBodies[0],i=th.cellIndex;
-const dir=th.dataset.dir==='asc'?'desc':'asc';th.closest('tr').querySelectorAll('th').forEach(x=>{delete x.dataset.dir;x.setAttribute('aria-sort','none');});th.dataset.dir=dir;th.setAttribute('aria-sort',dir==='asc'?'ascending':'descending');
-const key=r=>{const c=r.cells[i];const v=c.dataset.v??c.textContent.trim();const n=parseFloat(v);return isNaN(n)?v.toLowerCase():n;};
-[...tb.rows].sort((a,b)=>{const x=key(a),y=key(b);return (x>y?1:x<y?-1:0)*(dir==='asc'?1:-1);}).forEach(r=>tb.appendChild(r));});});
+/* sort: a header holds a button (a column head keeps its meaning), and says how its column is sorted (aria-sort).
+   A cell's value is its own data-v, else its first [data-v]'s; a blank (none, or —) sorts last both ways; a value
+   with data-g (a measure's name) sorts among its own group's; group headings stay out (group.js regroups after). */
+document.querySelectorAll('table.sortable th').forEach(th=>{th.setAttribute('aria-sort','none');
+if(!th.querySelector('input,button,.vh')&&th.textContent.trim()){const b=document.createElement('button');b.type='button';b.className='sortbtn';
+while(th.firstChild)b.appendChild(th.firstChild);th.appendChild(b);}
+th.addEventListener('click',ev=>{if(ev.target.closest('input')||!th.querySelector('.sortbtn'))return;const tb=th.closest('table').tBodies[0],i=th.cellIndex;
+const dir=th.dataset.dir?(th.dataset.dir==='asc'?'desc':'asc'):((th.querySelector('[data-first]')||{dataset:{}}).dataset.first||'asc');th.closest('tr').querySelectorAll('th').forEach(x=>{delete x.dataset.dir;x.setAttribute('aria-sort','none');});th.dataset.dir=dir;th.setAttribute('aria-sort',dir==='asc'?'ascending':'descending');
+const key=r=>{const c=r.cells[i];if(!c)return{blank:true,g:''};const s=c.dataset.v!=null?c:c.querySelector('[data-v]');
+const raw=(s?s.dataset.v:c.textContent).trim(),g=(s&&s.dataset.g)||'';if(raw===''||/^—/.test(raw))return{blank:true,g};
+const n=parseFloat(raw),down=s&&s.dataset.better==='lower';return{g,v:isNaN(n)?raw.toLowerCase():down?-n:n};};
+const cmp=(x,y)=>x.blank||y.blank?(x.blank&&y.blank?0:x.blank?1:-1):x.g!==y.g?(x.g<y.g?-1:1):(x.v>y.v?1:x.v<y.v?-1:0)*(dir==='asc'?1:-1);
+[...tb.rows].filter(r=>!r.classList.contains('grouphead')).sort((a,b)=>cmp(key(a),key(b))).forEach(r=>tb.appendChild(r));});});
 /* paging: a long table shows 10 rows at a time, "show 10 more" and "show all" below it. It pages
    the rows the filter leaves (r.hidden), so filter and sort work over every row; a link to a row
    (#anchor) opens the table at it. window.paginate(table) for tables drawn later (the inspector). */
@@ -50,11 +56,13 @@ let shown=step;const bar=document.createElement('p');bar.className='pager small 
 (t.closest('.scroll-x')||t).after(bar);
 const id=decodeURIComponent(location.hash.slice(1));
 if(id){const at=[...t.tBodies[0].rows].findIndex(r=>r.id===id);if(at>=step)shown=Infinity;}
-t._repage=function(){const live=[...t.tBodies[0].rows].filter(r=>!r.hidden&&!r.classList.contains('grouphead'));
-live.forEach((r,i)=>r.classList.toggle('paged-out',i>=shown));
-[...t.tBodies[0].rows].filter(r=>r.hidden).forEach(r=>r.classList.remove('paged-out'));
-const n=live.length,vis=Math.min(n,shown);
-if(n<=step){bar.hidden=true;return;}bar.hidden=false;
+/* a grouped table is not paged: each group folds its own rows (group.js), and a folded row is not on the page */
+t._repage=function(){const lim='grouped' in t.dataset?Infinity:shown;
+const live=[...t.tBodies[0].rows].filter(r=>!r.hidden&&!r.classList.contains('grouphead')&&!r.classList.contains('gfold'));
+live.forEach((r,i)=>r.classList.toggle('paged-out',i>=lim));
+[...t.tBodies[0].rows].filter(r=>r.hidden||r.classList.contains('gfold')).forEach(r=>r.classList.remove('paged-out'));
+const n=live.length,vis=Math.min(n,lim);
+if(n<=step||'grouped' in t.dataset){bar.hidden=true;return;}bar.hidden=false;
 bar.innerHTML=`Showing ${vis} of ${n}`+(vis<n?` <button type="button" class="btn small" data-more>show ${Math.min(step,n-vis)} more</button><button type="button" class="btn small" data-all>show all</button>`:` <button type="button" class="btn small" data-less>show ${step}</button>`);};
 bar.addEventListener('click',ev=>{const b=ev.target.closest('button');if(!b)return;
 shown='more' in b.dataset?shown+step:'all' in b.dataset?Infinity:step;t._repage();});
@@ -83,3 +91,25 @@ const all=box.querySelector('input.cmdall');
 if(all)all.addEventListener('change',()=>{box.querySelectorAll('input.cmdsel').forEach(i=>{const tr=i.closest('tr');
 if(!tr||!tr.hidden&&tr.style.display!=='none')i.checked=all.checked;});upd();});
 box.addEventListener('change',ev=>{if(ev.target.classList.contains('cmdsel'))upd();});upd();});
+/* the data page's link (UXS-004): shown only when a local catalog-serve answers its API (never on a deployment or
+   a page opened from disk) */
+{const api=document.body.dataset.api||'/api/';
+if(location.protocol.startsWith('http')&&document.querySelector('.local-only'))fetch(api+'data/store',{cache:'no-store'})
+.then(r=>{if(r.ok||r.status===401)document.body.classList.add('local-data');}).catch(()=>{});}
+/* phones (catalog.css, max 640 px): a table of four or more columns stacks, one card per row, its first cell the
+   card's title and every other cell named by its column. The headers are hidden there, so a sortable table gets a
+   "sort by" menu that clicks them. Tables drawn later (the inspector) are stacked as they appear; the label sheet
+   stays a sheet: its item column stays put while it scrolls across the arms. */
+(function(){const name=th=>{const c=th.cloneNode(true);c.querySelectorAll('small,input,select,button:not(.sortbtn)').forEach(x=>x.remove());return c.textContent.trim();};
+const stack=t=>{const hr=t.tHead&&t.tHead.rows[t.tHead.rows.length-1];if(!hr||hr.cells.length<4)return;const hs=[...hr.cells].map(name);
+t.classList.add('stack');
+for(const b of t.tBodies)for(const r of b.rows){if('stacked' in r.dataset)continue;r.dataset.stacked='';let i=0;
+for(const c of r.cells){if(c.colSpan===1&&hs[i])c.dataset.label=hs[i];i+=c.colSpan;}}
+if(!t.classList.contains('sortable')||t._sortsel)return;
+const sel=document.createElement('select');sel.className='sortsel';sel.setAttribute('aria-label','sort by');
+const opt=(v,txt)=>{const o=document.createElement('option');o.value=v;o.textContent=txt;sel.appendChild(o);};
+opt('','sort by …');hs.forEach((h,i)=>{const c=hr.cells[i];if(h&&c.querySelector('.sortbtn')&&getComputedStyle(c).display!=='none'){opt(i+':asc',h+', low first');opt(i+':desc',h+', high first');}});
+sel.addEventListener('change',()=>{if(!sel.value)return;const [i,d]=sel.value.split(':'),th=hr.cells[+i];th.dataset.dir=d==='asc'?'desc':'asc';th.click();});
+(t.closest('.scroll-x')||t).before(sel);t._sortsel=sel;};
+const all=()=>document.querySelectorAll('main table:not(.sheet)').forEach(stack);all();
+let due=false;new MutationObserver(()=>{if(due)return;due=true;requestAnimationFrame(()=>{due=false;all();});}).observe(document.body,{childList:true,subtree:true});})();

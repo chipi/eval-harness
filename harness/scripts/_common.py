@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import sys as _sys
+from collections import OrderedDict
 from pathlib import Path as _Path
 
 if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
@@ -79,7 +80,7 @@ def project_port(kind: str, root: Path | None = None) -> int:
             except OSError:
                 continue
             return port
-    raise SystemExit(f"no free port in {base}-{base + 999}: pass --port N")
+    die(f"no free port in {base}-{base + 999}: pass --port N", "failed")
 
 
 def stray_home() -> str:
@@ -150,7 +151,7 @@ def env_float(name: str, default: float | None = None) -> float | None:
     try:
         return float(raw)
     except ValueError:
-        raise SystemExit(f"ERROR: {name}={raw!r} is not a number") from None
+        die(f"{name}={raw!r} is not a number", "not-configured")
 
 
 def env_int(name: str, default: int) -> int:
@@ -167,16 +168,9 @@ def _paths() -> dict[str, Path]:
     # the project root). Everything below is derived from it.
     data_override = os.environ.get("EVAL_DATA_DIR", "").strip()
     data = (root / Path(data_override).expanduser()).resolve() if data_override else root / "data"
-    # Where run artifacts land. Redirectable via EVAL_RUNS_DIR so a throwaway pass -- a
-    # smoke check after a harness change -- cannot add repeats to the arms of a real sweep
-    # and silently move numbers that have already been reported. ONLY runs are redirected:
-    # sources, datasets and references stay shared, so a smoke run is scored against the
-    # same references as the real thing and is therefore actually a check of the real path.
-    # Relative to the PROJECT root, as EVAL_DATA_DIR is.
-    runs_override = os.environ.get("EVAL_RUNS_DIR", "").strip()
     # Goals can live outside the data root: a project whose harness records sit in a
     # subdirectory keeps one copy of its goals where the rest of its tooling reads them.
-    # Relative to the project root, as EVAL_RUNS_DIR is.
+    # Relative to the project root, as EVAL_DATA_DIR is.
     goals_override = os.environ.get("EVAL_GOALS_DIR", "").strip()
     return {
         "ROOT": root,
@@ -184,8 +178,11 @@ def _paths() -> dict[str, Path]:
         "SOURCES": data / "sources",
         "DATASETS": data / "datasets",
         "MATERIALIZED": data / "materialized",
-        "CONFIGS": data / "configs",
-        "RUNS": root / Path(runs_override).expanduser() if runs_override else data / "runs",
+        "SYSTEMS": data / "systems",
+        # Every run, each score of it under it (RFC-032 step 4: model/runs).
+        "RUNS": data / "runs",
+        # A throwaway pass (`evh run --scratch`): the same layout, outside the data, read by nothing that reads runs.
+        "SCRATCH_RUNS": root / ".build" / "scratch" / "runs",
         "BASELINES": data / "baselines",
         "REFERENCES": data / "references",
         # What each evaluation is FOR (ADR-0002): one <goal_id>.yaml per goal, plus policy.yaml.
@@ -204,14 +201,15 @@ def _paths() -> dict[str, Path]:
 
 
 # The project's paths, read as module attributes (`_common.DATA`, `from _common import DATA`)
-# and resolved on the first read, after `.env` has had its say on EVAL_DATA_DIR/EVAL_RUNS_DIR.
+# and resolved on the first read, after `.env` has had its say on EVAL_DATA_DIR.
 ROOT: Path
 DATA: Path
 SOURCES: Path
 DATASETS: Path
 MATERIALIZED: Path
-CONFIGS: Path
+SYSTEMS: Path
 RUNS: Path
+SCRATCH_RUNS: Path
 BASELINES: Path
 REFERENCES: Path
 GOALS: Path
@@ -246,6 +244,28 @@ def data_rel(path: Path) -> str:
         return str(Path(path).resolve())
 
 
+def _report_spent() -> None:
+    from evaluation_harness import _spend  # noqa: PLC0415
+
+    _spend._report()
+
+
+#: Where this process writes what it spent at exit, when a command that runs others (sweep, model-onboard) asked;
+#: taken out of the environment so a process this one starts does not write over it.
+SPENT_TO = os.environ.pop("EVH_SPENT_TO", "")
+if SPENT_TO:
+    # Said however the command ends, a refusal before any call included (RFC-026 step 5): 0 then, not all it was
+    # given.
+    import atexit
+
+    atexit.register(_report_spent)
+
+#: Where a job's command keeps what it has spent so far, rewritten at each counted call: a job stopped by a signal says
+#: nothing at exit, and `jobs-resume` gives the next job what this one left (RFC-026 step 5). Taken out of the
+#: environment like EVH_SPENT_TO: a sweep's arms report to the sweep, which counts them here.
+SPENT_LIVE = os.environ.pop("EVH_SPENT_LIVE", "")
+
+
 class CostCapExceeded(RuntimeError):
     """Raised mid-run when EVAL_MAX_COST_USD is reached.
 
@@ -261,10 +281,16 @@ def ignored_by_git(path: Path) -> bool:
     published catalog, which copies only what git tracks, will not show them. False outside a checkout."""
     import subprocess  # noqa: PLC0415
 
-    # A run's metrics file, not the directory: the re-allow blocks admit `<dir>/<run>/metrics.json`
-    # under a denied `data/runs-*/`, so only that path answers the question. Absolute, because `-C`
-    # moves git's working directory and a relative probe would then name some other file.
-    probe = Path(path).resolve() / "_probe_run" / "metrics.json"
+    # A run's record, not the directory: the re-allow block admits `data/runs/<run>/run.json` under a denied
+    # `data/runs/*/*`, so only that path answers the question. Absolute, because `-C` moves git's working
+    # directory and a relative probe would then name some other file.
+    target = Path(path).resolve()
+    # In the database a run's place is its key under data/, wherever the database file is (a copy under .build/,
+    # make serve STORE=sqlite): asked as the project's own data/<key>, a copy shows what the project shows.
+    data = _paths()["DATA"].resolve()
+    if store() == "sqlite" and target.is_relative_to(data):
+        target = _paths()["ROOT"].resolve() / "data" / target.relative_to(data)
+    probe = target / "_probe_run" / "run.json"
     anchor = next((p for p in probe.parents if p.exists()), Path.cwd())
     try:
         r = subprocess.run(
@@ -275,31 +301,45 @@ def ignored_by_git(path: Path) -> bool:
     return r.returncode == 0
 
 
-#: Directory names that are throwaway by convention (.gitignore denies them by glob): writing there is the point.
-THROWAWAY_RUNS = ("runs-smoke", "runs-tune")
+def ignored_paths(paths: list[Path]) -> set[Path]:
+    """Of these files (runs' run.json, say), the ones git ignores: one question to git for all of them; none outside a
+    checkout. Asked from the first folder of theirs that exists on disk, so a project other than this process's own
+    answers with its own .gitignore."""
+    import subprocess  # noqa: PLC0415
+
+    if not paths:
+        return set()
+    # In the database a file's place is its key under data/, wherever the database file is (a copy under .build/):
+    # asked as the project's own data/<key>, a copy shows what the project shows (as `ignored_by_git`).
+    data = _paths()["DATA"].resolve()
+    asked: dict[str, Path] = {}
+    for f in paths:
+        t = Path(f).resolve()
+        if store() == "sqlite" and t.is_relative_to(data):
+            t = _paths()["ROOT"].resolve() / "data" / t.relative_to(data)
+        asked[str(t)] = f
+    anchor = next((q for q in Path(next(iter(asked))).parents if q.exists()), Path.cwd())
+    try:
+        r = subprocess.run(
+            ["git", "-C", str(anchor), "check-ignore", "-z", "--stdin"],
+            input="\0".join(asked).encode(),
+            capture_output=True,
+            timeout=60,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return set()
+    if r.returncode not in (0, 1):  # 128: not a git checkout
+        return set()
+    return {asked[x] for x in r.stdout.decode().split("\0") if x in asked}
 
 
-def warn_if_ignored(runs_dir: Path, data_dir: Path | None = None) -> None:
-    """Say, loudly, when runs are about to land where they will not be kept or read: a directory git ignores, or
-    one outside the project's data (`data_dir`, default the project's). Silent for the throwaway directories
-    (runs-smoke*, runs-tune*), where not keeping them is the intent."""
-    runs_dir = Path(runs_dir)
-    if runs_dir.name.startswith(THROWAWAY_RUNS):
+def warn_if_ignored(run_dir: Path) -> None:
+    """Say, loudly, when a run is about to land where git will not keep it (the project ignores data/runs)."""
+    if not ignored_by_git(Path(run_dir)):
         return
-    where = Path(data_dir) if data_dir else _paths()["DATA"]
-    outside = not runs_dir.resolve().is_relative_to(where.resolve())
-    if not outside and not ignored_by_git(runs_dir):
-        return
-    why = (
-        f"is outside the project's data ({where}): no catalog, goal or validate reads it"
-        if outside
-        else "is ignored by git: its runs are not committed, so no clone, CI run or catalog (this one included) has them"
-    )
     print(
-        f"  WARNING: {runs_dir} {why}. Measured runs go in data/runs (the default: leave EVAL_RUNS_DIR unset). "
-        "A derived set (re-scored, re-judged) keeps the measured runs' config_ids, so it needs its own "
-        "data/runs-<name> directory, re-allowed in .gitignore beside the others under '--- re-allowed'. Throwaway "
-        "passes go in data/runs-smoke*."
+        f"  WARNING: {run_dir} is ignored by git: its runs are not committed, so no clone, CI run or catalog (this one "
+        "included) has them. A throwaway pass is `evh run --scratch`, which writes under .build/."
     )
 
 
@@ -310,8 +350,10 @@ def now() -> str:
 
 def sha256(path: Path) -> str:
     """Return the SHA-256 digest of a file's contents."""
+    from evaluation_harness import _store  # noqa: PLC0415
+
     h = hashlib.sha256()
-    with path.open("rb") as fh:
+    with _store.open_file(path, "rb") as fh:
         for chunk in iter(lambda: fh.read(1 << 20), b""):
             h.update(chunk)
     return h.hexdigest()
@@ -319,7 +361,9 @@ def sha256(path: Path) -> str:
 
 def read_json(path: Path) -> Any:
     """Parse and return the JSON object from a file."""
-    return json.loads(path.read_text(encoding="utf-8"))
+    from evaluation_harness import _store  # noqa: PLC0415
+
+    return json.loads(_store.read_text(path, encoding="utf-8"))
 
 
 def write_text_atomic(path: Path, text: str) -> None:
@@ -345,6 +389,13 @@ def write_bytes_atomic(path: Path, data: bytes) -> None:
 
 
 def _write_atomic(path: Path, data: str | bytes, mode: str) -> None:
+    from evaluation_harness import _store  # noqa: PLC0415
+
+    if (
+        _store.rel(path) is not None
+    ):  # RFC-025: the sqlite store writes one committed statement, atomic already
+        _store.write_bytes(path, data.encode("utf-8") if isinstance(data, str) else data)
+        return
     path.parent.mkdir(parents=True, exist_ok=True)
     fd, tmp = tempfile.mkstemp(dir=str(path.parent), prefix=f".{path.name}.", suffix=".tmp")
     try:
@@ -421,33 +472,72 @@ def build_info() -> dict[str, Any]:
     }
 
 
-def arm_config_files() -> list[Path]:
-    """Every arm config of the project: data/configs, and the globs `configs` in <data>/validate.json names
-    (relative to the project root), for a project that keeps its arms elsewhere (this repository's are in
-    examples/). Here, not in validate_tree, because measuring code reads it (a hypothesis's `against`) and
-    the validator is not part of what a run's code hash covers."""
+def system_now(system_id: Any) -> Any:
+    """The id a system has now, for an id a frozen record keeps (a reference's author, a judging set's arm): the
+    systems a migration renamed (data/renames.json, RFC-032 step 3) by their new id, any other as it is."""
+    from evaluation_harness import _store  # noqa: PLC0415
+
+    if not isinstance(system_id, str):
+        return system_id
+    f = _paths()["DATA"] / "renames.json"
+    try:
+        renamed = (read_json(f).get("systems") or {}) if _store.is_file(f) else {}
+    except (OSError, ValueError):
+        renamed = {}
+    return renamed.get(system_id, system_id)
+
+
+def system_files() -> list[Path]:
+    """Every system of the project (RFC-032): data/systems, a study's trials, and the globs `systems` in
+    <data>/validate.json names (relative to the project root), for a project that keeps its systems elsewhere (this
+    repository's are in examples/). Here, not in validate_tree, because measuring code reads it (a hypothesis's
+    `against`) and the validator is not part of what a run's code hash covers."""
+    from evaluation_harness import _store  # noqa: PLC0415
+
     p = _paths()
-    found = set(p["CONFIGS"].glob("*.yaml"))
+    found = (
+        set(_store.glob(p["DATA"] / "systems", "*.yaml")) if _store.is_dir(p["DATA"] / "systems") else set()
+    )
+    from evaluation_harness.model import studies as model_studies  # noqa: PLC0415
+
+    found |= set(model_studies.system_files(p["DATA"]))
     policy_file = p["DATA"] / "validate.json"
-    for pattern in (read_json(policy_file).get("configs") or []) if policy_file.is_file() else []:
-        found |= {f for f in p["ROOT"].glob(pattern) if f.is_file()}
+    for pattern in (read_json(policy_file).get("systems") or []) if _store.is_file(policy_file) else []:
+        found |= {f for f in _store.glob(p["ROOT"], pattern) if _store.is_file(f)}
     return sorted(found)
+
+
+#: {goals dir: (each goal file's (name, mtime_ns, size), the goals)}: the inspector asks for the goals on every
+#: comparison (a goal's cluster field, ADR-0002), and parsing every goal's YAML each time was 32 ms of each answer
+#: (budget-check, 2026-11-06). Read again when a goal file is added, removed or changed.
+_GOALS_READ: dict[str, tuple[tuple, dict[str, dict[str, Any]]]] = {}
 
 
 def load_goals(goals_dir: Path | None = None) -> dict[str, dict[str, Any]]:
     """{goal_id: goal} from <data>/goals/*.yaml (policy.yaml is the policy, not a goal), keyed
     by the goal's `goal_id`, the file stem when it names none. The catalog keyed them that way
     and this by stem alone; V14 requires the two to agree."""
-    import yaml  # noqa: PLC0415
+    import copy  # noqa: PLC0415
 
-    out: dict[str, dict[str, Any]] = {}
+    import yaml  # noqa: PLC0415
+    from evaluation_harness import _store  # noqa: PLC0415
+
     base = goals_dir or _paths()["GOALS"]
-    for f in sorted(base.glob("*.yaml")) if base.is_dir() else []:
-        if f.name != "policy.yaml":
-            doc = yaml.safe_load(f.read_text(encoding="utf-8"))
+    files = (
+        [f for f in sorted(_store.glob(base, "*.yaml")) if f.name != "policy.yaml"]
+        if _store.is_dir(base)
+        else []
+    )
+    stamps = tuple((f.name, _store.stat(f).st_mtime_ns, _store.stat(f).st_size) for f in files)
+    hit = _GOALS_READ.get(str(base))
+    if hit is None or hit[0] != stamps:
+        out: dict[str, dict[str, Any]] = {}
+        for f in files:
+            doc = yaml.safe_load(_store.read_text(f, encoding="utf-8"))
             doc = doc if isinstance(doc, dict) else {}
             out[str(doc.get("goal_id") or f.stem)] = doc
-    return out
+        hit = _GOALS_READ[str(base)] = (stamps, out)
+    return copy.deepcopy(hit[1])
 
 
 def goal_policy() -> dict[str, Any]:
@@ -455,9 +545,10 @@ def goal_policy() -> dict[str, Any]:
     name a goal. Absent, goals stay optional: a project upgrading changes nothing until it
     sets the date."""
     import yaml  # noqa: PLC0415
+    from evaluation_harness import _store  # noqa: PLC0415
 
     f = _paths()["GOALS"] / "policy.yaml"
-    doc = yaml.safe_load(f.read_text(encoding="utf-8")) if f.is_file() else None
+    doc = yaml.safe_load(_store.read_text(f, encoding="utf-8")) if _store.is_file(f) else None
     return doc if isinstance(doc, dict) else {}
 
 
@@ -468,24 +559,50 @@ DATASET_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*")
 def dataset_id_ok(dataset_id: str) -> str:
     """The id, or SystemExit when it is not a plain name (a path would leave data/)."""
     if not DATASET_ID.fullmatch(dataset_id or "") or ".." in dataset_id:
-        raise SystemExit(f"not a dataset id: {dataset_id[:60]!r} (letters, digits, '.', '_', '-')")
+        die(f"not a dataset id: {dataset_id[:60]!r} (letters, digits, '.', '_', '-')", "bad-argument")
     return dataset_id
 
 
 def load_dataset(dataset_id: str) -> dict[str, Any]:
     """Load a dataset by id from data/datasets, or raise SystemExit."""
+    from evaluation_harness import _store  # noqa: PLC0415
+
     path = _paths()["DATASETS"] / f"{dataset_id_ok(dataset_id)}.json"
-    if not path.is_file():
-        raise SystemExit(
+    if not _store.is_file(path):
+        die(
             f"no such dataset: {dataset_id}\n"
             f"  expected {path}\n"
             f"  create one with: "
             + how(
                 f"evh dataset-create --dataset-id {dataset_id} --source-dir …",
                 f"make dataset-create DATASET_ID={dataset_id}",
-            )
+            ),
+            "not-found",
         )
     return read_json(path)
+
+
+def goal_cluster(goal: dict, dataset_id: str) -> str | None:
+    """The item field a goal clusters this dataset's tests by (`datasets[].cluster`), or None."""
+    return next(
+        (d.get("cluster") for d in goal.get("datasets") or [] if d.get("dataset_id") == dataset_id), None
+    )
+
+
+def item_clusters(dataset_id: str, field: str) -> dict:
+    """{item_id: cluster key}: each item's value of `field`, for the clustered paired test
+    (stats.clustered). Refused when no item carries the field: a typo would test item by item."""
+    keys = {
+        it["item_id"]: (it.get("fields") or {}).get(field)
+        for it in load_dataset(dataset_id).get("items") or []
+    }
+    keys = {i: v for i, v in keys.items() if v not in (None, "")}
+    if not keys:
+        die(
+            f"--cluster {field}: no item of {dataset_id} carries that field (evh dataset-profile lists them)",
+            "not-found",
+        )
+    return keys
 
 
 def dataset_item_ids(dataset_id: str) -> set:
@@ -500,7 +617,9 @@ def dataset_item_ids(dataset_id: str) -> set:
 
 def read_item_ids(path: Path) -> set[str]:
     """The item ids an `--items` file lists, one per line (blank lines ignored)."""
-    return {ln.strip() for ln in path.read_text(encoding="utf-8").splitlines() if ln.strip()}
+    from evaluation_harness import _store  # noqa: PLC0415
+
+    return {ln.strip() for ln in _store.read_text(path, encoding="utf-8").splitlines() if ln.strip()}
 
 
 def item_selection(exclude_dataset: str | None, items_file: Path | None) -> tuple[set[str], set[str] | None]:
@@ -529,33 +648,71 @@ def scored_against_dir(reference_id: str | None) -> Path | None:
 def labels_reference(spec: str, dataset_id: str) -> str:
     """The reference_id a run scored against labels records, from `SET` or `DATASET/SET`; refused when the set is on
     another dataset (its item ids are that dataset's) or does not exist."""
+    from evaluation_harness import _store  # noqa: PLC0415
+
     set_ds, _, name = spec.rpartition("/")
     set_ds = set_ds or dataset_id
     if set_ds != dataset_id:
         die(
             f"--labels {spec}: a set on {set_ds}, not {dataset_id}. Scoring reads labels by this dataset's item ids: "
-            f"promote them (evh reference-promote --dataset-id {dataset_id} --labels {spec} …) or label this dataset"
+            f"promote them (evh reference-promote --dataset-id {dataset_id} --labels {spec} …) or label this dataset",
+            "mismatch",
         )
     rid = f"{LABELS_PREFIX}{dataset_id}/{name}"
     d = scored_against_dir(rid)
-    if d is None or not (d / "labels.json").is_file():
+    if d is None or not _store.is_file(d / "labels.json"):
         die(
-            f"--labels {spec}: no label set at data/labels/{dataset_id}/{name} (evh labels --dataset-id {dataset_id})"
+            f"--labels {spec}: no label set at data/labels/{dataset_id}/{name} (evh labels --dataset-id {dataset_id})",
+            "not-found",
         )
     return rid
 
 
-def item_path(dataset_id: str, item_id: str) -> Path | None:
-    """Where an item's materialized copy is, or None when it is not materialized here."""
+#: Each dataset's items by id ({item_id: its file under materialized/<dataset>/}), kept while its record is unchanged
+#: (path, mtime, size): a sheet asks for every item, and reading the record each time was quadratic (S1: 1,002 loads
+#: of a 1,000-item record for one sheet). A few datasets at a time.
+_ITEM_INDEX: OrderedDict[str, tuple[tuple, dict[str, str]]] = OrderedDict()
+_ITEM_INDEX_MAX = 16
+
+
+def _item_index(dataset_id: str) -> dict[str, str] | None:
+    from evaluation_harness import _store  # noqa: PLC0415
+
+    try:
+        path = _paths()["DATASETS"] / f"{dataset_id_ok(dataset_id)}.json"
+    except SystemExit:
+        return None
+    if not _store.is_file(path):
+        return None
+    st = _store.stat(path)
+    stamp = (str(path), st.st_mtime_ns, st.st_size)
+    hit = _ITEM_INDEX.get(dataset_id)
+    if hit is not None and hit[0] == stamp:
+        _ITEM_INDEX.move_to_end(dataset_id)
+        return hit[1]
     try:
         ds = load_dataset(dataset_id)
     except SystemExit:
         return None
-    it = next((x for x in ds.get("items") or [] if x.get("item_id") == item_id), None)
-    if it is None:
+    index: dict[str, str] = {}
+    for x in ds.get("items") or []:
+        if x.get("item_id"):  # the first item with an id, as the search over the items found it
+            index.setdefault(x["item_id"], x.get("source_path") or x["item_id"])
+    _ITEM_INDEX[dataset_id] = (stamp, index)
+    while len(_ITEM_INDEX) > _ITEM_INDEX_MAX:
+        _ITEM_INDEX.popitem(last=False)
+    return index
+
+
+def item_path(dataset_id: str, item_id: str) -> Path | None:
+    """Where an item's materialized copy is, or None when it is not materialized here."""
+    from evaluation_harness import _store  # noqa: PLC0415
+
+    index = _item_index(dataset_id)
+    if index is None or item_id not in index:
         return None
-    p = _paths()["MATERIALIZED"] / dataset_id / (it.get("source_path") or item_id)
-    return p if p.is_file() else None
+    p = _paths()["MATERIALIZED"] / dataset_id / index[item_id]
+    return p if _store.is_file(p) else None
 
 
 #: The id a run records when it used the adapter bundled with the harness.
@@ -630,10 +787,90 @@ def load_module(path: Path, name: str) -> Any:
     return mod
 
 
-def die(msg: str) -> NoReturn:
-    """Refuse: `ERROR: msg` on stderr, exit 1. Every command refuses this way; four printed
-    their refusal to stdout instead, where a caller reading stderr saw nothing."""
-    raise SystemExit(f"ERROR: {msg}")
+#: Exit codes, one meaning each (RUNBOOK "Exit codes"), so a caller branches on the number and never
+#: has to read the text: 2 was both a usage error and the cost cap, 1 both a refusal and "validate
+#: found problems".
+EXIT_OK = 0
+EXIT_REFUSED = 1  # refused: `ERROR: <why>` on stderr, nothing done
+EXIT_USAGE = 2  # an unknown command or argument; the usage is printed
+EXIT_UNVALIDATED = 3  # a judge scorer that is not validated (--unvalidated runs it, labelled)
+EXIT_STOPPED = 4  # stopped early (the cost cap, a failing judge call): partial results kept, resumable
+EXIT_PARTLY = 5  # some of several runs failed (sweep); the others are kept
+EXIT_PROBLEMS = 6  # the command's checks ran and some failed (validate, importer-check, arm-smoke, ...)
+EXIT_NOTHING = 7  # it ran and measured nothing
+EXIT_INTERNAL = 70  # an error nothing caught, in the harness or the project's code: a traceback on stderr
+EXIT_TRY_LATER = 75  # a server could not be reached: run the same command again later, it resumes
+EXIT_INTERRUPTED = 130  # Ctrl-C
+
+
+#: What kind of refusal it is (RUNBOOK, Refusals): the word in `ERROR (<kind>): ...`, which a script or an
+#: agent reads instead of the message, so a message can be reworded without breaking it.
+REFUSALS = {
+    "not-found": "the dataset, run, arm, goal, file or other thing named does not exist",
+    "bad-argument": "an option is missing, malformed, or not allowed with another",
+    "would-overwrite": "what it would write is already there; it is never overwritten",
+    "mismatch": "two things that must agree do not: datasets, hashes, a run and its system",
+    "invalid-file": "a file the project wrote (a system, a scorer, a sheet, records) is malformed",
+    "not-materialized": "the data is not on this machine: fetch or materialize it first",
+    "not-enough": "too little to work on: too few items, arms or outputs",
+    "not-public": "the text asked for is not shown on a public server or for a hidden dataset",
+    "not-allowed": "a rule refuses it: a dirty build, a closed round, a bind beyond this machine",
+    "not-configured": "a key, a cost cap, a build ref or an endpoint is not set",
+    "failed": "something outside the command failed: an importer, a server, a hook, the warm-up",
+    "missing-dependency": "a package or a part of the installation is missing",
+    "over-budget": "a round's budget is spent (what its runs spent and its running commands reserved)",
+    "old-format": "the project's data is in an older format than this release reads: run evh migrate",
+}
+
+
+#: Where a project keeps its data (RFC-025): `files` (the default) or `sqlite` (everything under data/ in one database).
+STORES = ("files", "sqlite")
+_STORE_SEEN: list[Any] = []
+
+
+def store() -> str:
+    """The project's store: `EVAL_STORE`, else `store` in its config.yaml, else `files`."""
+    env = os.environ.get("EVAL_STORE", "").strip()
+    root = _paths()["ROOT"]
+    # Asked for every path a reader touches (25,000 times a comparison), so the answer is kept for the process: a
+    # stat of config.yaml on each call was 8 ms of every inspector answer (budget-check, 2026-11-06), and building the
+    # system's path to compare was most of the 2.4 µs a call still cost (architecture review): the key is the
+    # setting and the root object, which _paths keeps until the project moves. A project changes its store with
+    # data-migrate, between processes; a test that rewrites config.yaml calls _outputs.reset(), which forgets it.
+    if _STORE_SEEN and _STORE_SEEN[0] == env and _STORE_SEEN[1] is root:
+        return str(_STORE_SEEN[2])
+    cfg = root / "config.yaml"
+    try:
+        mtime = cfg.stat().st_mtime_ns if not env else None
+    except OSError:
+        mtime = None
+    if env:
+        chosen, where = env, "EVAL_STORE"
+    else:
+        chosen, where = "files", f"store in {cfg}"
+        if mtime is not None:
+            import yaml  # noqa: PLC0415
+
+            try:
+                doc = yaml.safe_load(cfg.read_text(encoding="utf-8")) or {}
+            except yaml.YAMLError:
+                doc = {}
+            chosen = str((doc.get("store") if isinstance(doc, dict) else None) or "files")
+    if chosen not in STORES:
+        said = f"{where}: {chosen!r} is not a store, one of {', '.join(STORES)}"
+        if env:
+            die(said, "bad-argument")
+        die(said, "invalid-file")
+    _STORE_SEEN[:] = [env, root, chosen]
+    return chosen
+
+
+def die(msg: str, kind: str) -> NoReturn:
+    """Refuse: `ERROR (<kind>): msg` on stderr, exit 1, `kind` one of REFUSALS. Every command refuses
+    this way; four printed their refusal to stdout instead, where a caller reading stderr saw nothing."""
+    if kind not in REFUSALS:
+        raise ValueError(f"no refusal kind {kind!r}: one of {', '.join(REFUSALS)}")
+    raise SystemExit(f"ERROR ({kind}): {msg}")
 
 
 def reference_texts(root: Path, dataset_id: str, tier: str = "gold") -> list[Path]:
@@ -641,14 +878,17 @@ def reference_texts(root: Path, dataset_id: str, tier: str = "gold") -> list[Pat
     only its manifest.json: a repository may commit a reference's checksums and not its texts
     (V16), which come with the public data. Read as empty, every arm matched nothing and the
     report tools printed zeros as if they were results."""
-    if not root.is_dir():
-        die(f"no {tier} references at {root}")
-    files = sorted(root.glob("*.txt"))
-    if not files and (root / "manifest.json").is_file():
+    from evaluation_harness import _store  # noqa: PLC0415
+
+    if not _store.is_dir(root):
+        die(f"no {tier} references at {root}", "not-found")
+    files = sorted(_store.glob(root, "*.txt"))
+    if not files and _store.is_file(root / "manifest.json"):
         die(
             f"the {tier} references for {dataset_id} are not on this machine: {root} holds their "
             "checksums only (manifest.json). Fetch the dataset first, as the eval's README and "
-            "docs/REPRODUCE.md say (`make data EXP=<eval>`, or the example's fetch.py)."
+            "docs/REPRODUCE.md say (`make data EXP=<eval>`, or the example's fetch.py).",
+            "not-materialized",
         )
     return files
 
@@ -717,7 +957,7 @@ DESCRIPTIVE_KEYS = ("output_words", "output_chars", "lines", "chars", "n_items",
 #: whether each judge shares the judged arm's model family (`self_family_<judge>`), and
 #: evh run whether an item was replayed by --resume (`resumed`, whose mean is the share
 #: replayed). They stay in the record; no table, menu or spread lists them as metrics.
-BOOKKEEPING_PREFIXES = ("self_family_", "resumed")
+BOOKKEEPING_PREFIXES = ("self_family_", "resumed", "failed")
 
 
 def lower_is_better(metric: str) -> bool:

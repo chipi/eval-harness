@@ -13,7 +13,7 @@ Every run records three things:
 | input | field | drop it and… |
 | --- | --- | --- |
 | **system under test** | `build.ref` | you cannot tell a code change from an eval change |
-| **instrument** | `config_id` | you cannot tell a config change from a code change |
+| **system** | `config_id` (the system's id) | you cannot tell a change to what was evaluated from a code change |
 | **data** | `dataset_id` | you cannot compare anything to anything |
 
 `evh validate` fails on a run missing any of them. `EVAL_BUILD_REF` sets the
@@ -73,7 +73,7 @@ corrected together: a group is held to a stricter threshold than it would be alo
 ## Measure the arm's own noise before believing any delta
 
 ```bash
-evh run --config ... --repeat 3
+evh run --system ... --dataset ... --repeat 3
 ```
 
 ```text
@@ -157,8 +157,8 @@ B scores higher and costs 4× per item" are different findings, and only one of
 them is a decision.
 
 A call's cost is the provider's bill when its response carries one (OpenRouter, and a LiteLLM
-proxy that passes `usage.cost` through), and otherwise the config's prices × tokens. Prices live
-in the arm's config, not in code, so a run records the prices it was costed at. A figure
+proxy that passes `usage.cost` through), and otherwise the system's prices × tokens. Prices live
+in the arm's system, not in code, so a run records the prices it was costed at. A figure
 computed from today's price list is not comparable to one from last quarter without saying so.
 Which provider records which: [RUNBOOK §4](RUNBOOK.md#4-point-the-harness-at-your-system).
 
@@ -188,11 +188,11 @@ before the answer was seen. Pick the best of eighty arms after reading the table
 is a search: some pair will look different. So the harness corrects what it chose itself
 (`pair-test --round` tests the round's leader corrected for the arms in play), and leaves the
 uncorrected test to the comparison that was named in advance. Nothing used to record the naming;
-the `hypothesis:` block in an arm's config does. It sits beside the change it predicts (against
-which config, on which measure, in which direction, and why), and a run copies it into its record
+the `hypothesis:` block in an arm's system does. It sits beside the change it predicts (against
+which system, on which measure, in which direction, and why), and a run copies it into its record
 together with whether the commit that last changed it came before the run. `pair-test` then says
 "named in advance: yes (committed 1a2b3c4d before the run)", `no`, or `not determinable` (outside
-git, or on a dirty tree, where the config on disk may not be the committed one), and whether the
+git, or on a dirty tree, where the system on disk may not be the committed one), and whether the
 result agrees with the stated direction. A hypothesis does not change what was measured, so it is
 not in the fingerprint. It is a record, not a proof: it shows the prediction was committed before
 the run, not what its author had already read when they wrote it.
@@ -203,7 +203,7 @@ the run, not what its author had already read when they wrote it.
 
 A number answers a question only if someone wrote the question down. A goal names who uses the
 output, the decision it informs, the measure that decides it and which way is better, and the
-datasets it rests on; each config names its goal, and every run records it. It is optional until
+datasets it rests on; each system names its goal, and every run records it. It is optional until
 a project sets a date from which every run must name one (`required_from`). The catalog's goal
 page says first what the goal is for, then its answer (the latest round's conclusion, the promoted
 baseline and why, or "no decision yet"), then how it got there, round by round. Every field of a
@@ -285,8 +285,10 @@ promotion's reason says who asked and why, so the record shows whose decision it
 round fixes its evidence, and anything past the cap spends what was not agreed: those stay the
 operator's, and the agent hands over the exact command. `evh mcp` writes no project data: its tools read. (What a call does write is
 computed answers in the project's ignored `.cache/`: the paired tests' p values and `family-test`'s results.)
-Consent recorded by the harness itself, rather than by the operator's instruction, is 0.8.0's to
-design.
+Every record also says who acted (RFC-027): a person, or an agent and the person it acted for
+(`EVH_ACTOR=agent:NAME`, `EVH_FOR=person:NAME`, or `--by`). It is a recorded claim, not an
+identity, and the harness records rather than asks for consent: a decision (promoting, closing a
+round, unsealing) only needs a named actor, never an `unknown` one.
 
 A shared server answers anyone who can reach it, so `--public` holds back what a project may not
 redistribute (an item's text), and the rates bound what a script can cost the machine.
@@ -295,7 +297,7 @@ redistribute (an item's text), and the rates bound what a script can cost the ma
 
 ## Two arms cannot agree to full precision
 
-`evh validate` fails when two different configs report byte-identical scores and per-item results on
+`evh validate` fails when two different systems report byte-identical scores and per-item results on
 the same dataset. Independent arms do not agree to seventeen significant
 figures; when they do, one of them is not its own measurement — a copied number,
 a mis-wired arm, a cached result. Two arms that are both perfect on a binary metric agree on

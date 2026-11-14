@@ -1,7 +1,0 @@
-```json
-[
-  {"text": "Congress", "type": "organization"},
-  {"text": "Ley de Punto Final", "type": "other"},
-  {"text": "dictatorship", "type": "other"}
-]
-```

@@ -1,0 +1,150 @@
+{
+  "actor": {
+    "from": "migration",
+    "name": "before 0.8.0",
+    "type": "unknown"
+  },
+  "adapter": "examples/summarization-cnn-dailymail/adapter.py",
+  "build": {
+    "dirty": null,
+    "ref": "eval-harness-scenario",
+    "source": "EVAL_BUILD_REF"
+  },
+  "config_id": "cnn_gemma_m_v2",
+  "created_at": "2026-09-26T07:39:07Z",
+  "dataset_id": "cnn_dailymail_200",
+  "fingerprint": {
+    "arm": {
+      "config_id": "cnn_gemma_m_v2",
+      "labels": {
+        "family": "gemma",
+        "price_tier": "mid",
+        "usd_per_mtok_in": 0.07,
+        "usd_per_mtok_out": 0.15
+      }
+    },
+    "data": {
+      "dataset_id": "cnn_dailymail_200",
+      "items_sha256": "257feda902391b934b8cde940c15e91201096dbe96ec5a81337e9da007ce3ec7",
+      "n_items": 200,
+      "reference_id": "gold/cnn_dailymail_200",
+      "reference_tier": "gold",
+      "references_sha256": "5d0b02c3798017535572d24dd3ce0592332938a0c91e93684d163963a60a7cd9"
+    },
+    "data_sha256": "a9b234845c4f4d69a498556c1f6324f5839721e805795a1f3d5946301307a0e8",
+    "deployment": {
+      "declared": {
+        "alias": "eval-gemma-26b",
+        "endpoint": "http://127.0.0.1:4001",
+        "id": "openrouter/google/gemma-4-26b-a4b-it",
+        "id_source": "proxy-model-info",
+        "provider_routing": null
+      },
+      "hosted": {
+        "provider": "litellm",
+        "provider_id": "openrouter/google/gemma-4-26b-a4b-it",
+        "route": null
+      },
+      "id": "eval-gemma-26b",
+      "in_process": false,
+      "libraries": null,
+      "model": "eval-gemma-26b",
+      "provider": "litellm",
+      "server": null,
+      "source": "adapter",
+      "weights": {
+        "digest": null,
+        "file_hash": null,
+        "precision": null,
+        "quantization": null,
+        "revision": null,
+        "revision_source": "api-model-string"
+      },
+      "where": {
+        "backend": null,
+        "device": null,
+        "machine": null
+      }
+    },
+    "deployment_sha256": "a9f187a4f8e832eac5b39d4ff96b71fafc5926f420cab1abf95ed5d0b5bb1847",
+    "hash": "b9d14a85dbf57bf80123e7b75cb117e6769212622b64382c1a48bf6a784d752e",
+    "instrument": {
+      "adapter": {
+        "id": "examples/summarization-cnn-dailymail/adapter.py",
+        "sha256": "2fd5227d666d5a1c3110afab4df0df63b3f3bf7f42dab7f5db7c16473efd191f"
+      },
+      "harness": {
+        "commit": "e0810991f3fb",
+        "dirty": true
+      }
+    },
+    "instrument_sha256": "48b0995cdbe59571df2f99a5aed38fdb0ea553e3d8286b0a822f609585f9aede",
+    "runner": {
+      "cpu_count": 12,
+      "label": null,
+      "libraries": {
+        "numpy": "2.4.6",
+        "openai": "3.19.2",
+        "rouge-score": "0.1.2"
+      },
+      "platform": "Darwin/x86_64",
+      "processor": "i386",
+      "python": "3.11.8",
+      "release": "24.6.0"
+    },
+    "settings": {
+      "declared": {
+        "prompt_sha256": "d98ecfbd4054a47476257c2a48ab9f9fc8731098afe4bc1093c69e89c0cbe2f0",
+        "reasoning": {
+          "enabled": false
+        },
+        "temperature": 0.0
+      },
+      "max_tokens": 1200,
+      "prompt_file": "prompt.txt",
+      "reasoning": {
+        "enabled": false
+      },
+      "temperature": 0.0
+    },
+    "settings_sha256": "3a1994b513b8640a68e264b318c09dda581082a53ddb3403a465b6399b9eba7e",
+    "version": 5
+  },
+  "goal": "news_summary_cnn",
+  "n_items": 200,
+  "params": {
+    "family": "gemma",
+    "max_tokens": 1200,
+    "model": "eval-gemma-26b",
+    "price_tier": "mid",
+    "prompt_file": "prompt.txt",
+    "provider": "litellm",
+    "reasoning": {
+      "enabled": false
+    },
+    "temperature": 0.0,
+    "usd_per_mtok_in": 0.07,
+    "usd_per_mtok_out": 0.15
+  },
+  "providers_seen": {
+    "Cloudflare": 12,
+    "CoreWeave": 13,
+    "Darkbloom": 44,
+    "DeepInfra": 22,
+    "DekaLLM": 18,
+    "Google": 3,
+    "Io Net": 5,
+    "Makora": 19,
+    "NextBit": 19,
+    "Novita": 3,
+    "Parasail": 7,
+    "Reka": 19,
+    "SiliconFlow": 9,
+    "Venice": 7
+  },
+  "round": "r1",
+  "run_id": "cnn_gemma_m_n200_v1_20260926T073250Z",
+  "warmup_ms": 1600.594,
+  "purpose": "run",
+  "machine": "darwin"
+}

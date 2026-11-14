@@ -12,7 +12,8 @@ middle: two halves of at most 2^15 sums each, so it is instant). Before 0.4.0 th
 estimated it by Monte Carlo at every n, and near a threshold the estimate can land on either
 side: one pair is p 0.0254 exactly (26 of 1024 patterns, not significant at a 0.025 Holm
 step) against a 20,000-permutation estimate of 0.0237 (significant). Above 30 items it is the
-seeded estimate, unchanged: p = (hits + 1) / (permutations + 1).
+seeded estimate, unchanged: p = (hits + 1) / (permutations + 1). From LARGE_SAMPLE (10,000) units
+it is the permutation distribution's normal limit (ADR-0028), not a count over draws: it can be 0.0.
 
 Standard library only.
 """
@@ -26,12 +27,15 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
 import bisect
+import copy
 import hashlib
 import json
 import math
 import os
 import random
 import statistics
+import subprocess
+import sys
 from collections import OrderedDict
 from collections.abc import Callable
 from itertools import chain, compress
@@ -41,6 +45,11 @@ PERMUTATIONS = 20000
 SEED = 20260926
 ALPHA = 0.05
 EXACT_UP_TO = 30
+#: From this many units (items, or clusters when clustered) a test's p is its normal limit, not resampled
+#: (ADR-0028, PLAN_0.8.0 S2): tools/large_sample_check.py found the limit within the resampling's own Monte Carlo
+#: error for every kind of data at 10,000, and off for heavy-tailed or sparse data at 1,000 to 5,000. At 10,000 items
+#: a resampled p took 8 s (sign-flip) and 23 s (bootstrap-t), in pure Python.
+LARGE_SAMPLE = 10_000
 _EPS = 1e-12
 
 
@@ -113,21 +122,38 @@ def exact_p(deltas: list) -> float:
     return hits / 2**n
 
 
+def p_method(units: int) -> str:
+    """How sign_flip_p finds the p for this many units: "exact", "sampled" (the seeded estimate) or "normal limit"."""
+    return "exact" if units <= EXACT_UP_TO else "sampled" if units < LARGE_SAMPLE else "normal limit"
+
+
 def sign_flip_p(
     deltas: list,
     permutations: int = PERMUTATIONS,
     seed: int = SEED,
     rng: random.Random | None = None,
+    advance: bool = True,
 ) -> float:
-    """Two-sided paired sign-flip p: exact up to EXACT_UP_TO items, else a seeded estimate.
+    """Two-sided paired sign-flip p: exact up to EXACT_UP_TO items, a seeded estimate below LARGE_SAMPLE, and from
+    LARGE_SAMPLE items the permutation distribution's normal limit (z = sum d / sqrt(sum d^2)).
 
     rng: a generator shared across calls, for callers whose published estimates drew every
     opponent from one stream (family_test.py); otherwise a fresh one seeded with `seed`.
+    advance: with rng, from LARGE_SAMPLE items, move the stream on as if the signs were drawn (about 2 s at
+    10,000 items); a caller with no resampled opponent after this one passes False.
     """
     if not deltas:
         return 1.0
     if len(deltas) <= EXACT_UP_TO:
         return exact_p(deltas)
+    if len(deltas) >= LARGE_SAMPLE:
+        if rng is not None and advance:
+            # The shared stream moves on as if the signs were drawn, so the opponents after this one draw what
+            # they drew before the limit (ADR-0028): a family that mixes sizes keeps its other p's.
+            for _ in range(permutations):
+                _draw(rng, len(deltas))
+        q = math.fsum(d * d for d in deltas)
+        return 1.0 if q == 0 else math.erfc(abs(math.fsum(deltas)) / math.sqrt(q) / math.sqrt(2))
     obs = statistics.fmean(deltas)
     if rng is None:
         # A fresh generator seeded with `seed` draws the same signs for every call with as many
@@ -140,15 +166,17 @@ def sign_flip_p(
             _P.move_to_end(key)
             return _P[key]
         stored = _stored_p(key)
+        if stored is None and _COLLECT:
+
+            def hold(v: float, key: tuple = key) -> None:
+                _store_p(key, v)
+                _P[key] = v
+
+            job = {"kind": "sf", "d": [float(d).hex() for d in deltas], "n": permutations, "s": seed}
+            _COLLECT[-1].append((_disk_key(key), len(deltas) * permutations, job, hold))
+            return 1.0  # a stand-in: prefetch() throws away what it collects with
         if stored is None:
-            n, a = len(deltas), abs(obs)
-            neg = [-d for d in deltas]
-            hits = sum(
-                1
-                for keep in _signs(n, permutations, seed)
-                if abs(math.fsum(chain(compress(deltas, keep), compress(neg, keep.translate(_FLIP)))) / n)
-                >= a
-            )
+            hits = _count_hits(deltas, abs(obs), _signs(len(deltas), permutations, seed))
             stored = (hits + 1) / (permutations + 1)
             _store_p(key, stored)
         _P[key] = stored
@@ -158,14 +186,169 @@ def sign_flip_p(
     # The shared stream: the signs fmean(d if rng.random() < 0.5 else -d ...) drew, from _draw,
     # summed as above (fmean is fsum / n). The same p, and the same generator state after, so the
     # next opponent's draws are unchanged too.
-    n, a = len(deltas), abs(obs)
-    neg = [-d for d in deltas]
-    hits = 0
-    for _ in range(permutations):
-        keep = _draw(rng, n)
-        if abs(math.fsum(chain(compress(deltas, keep), compress(neg, keep.translate(_FLIP)))) / n) >= a:
-            hits += 1
+    n = len(deltas)
+    hits = _count_hits(deltas, abs(obs), (_draw(rng, n) for _ in range(permutations)))
     return (hits + 1) / (permutations + 1)
+
+
+def _count_hits(deltas: list, a: float, signs: Any) -> int:
+    """How many sign patterns give a mean at least as far from 0 as `a`: for each pattern (1 keeps an item's delta, 0
+    flips it), `abs(fsum(the kept deltas and the flipped ones negated) / n) >= a`, bit for bit.
+
+    Every finite float is an integer over a power of two, so with every delta over the largest denominator the sum of a
+    pattern is the integer 2·(the kept ones) − (all of them), exact; an int divided by an int is correctly rounded, as
+    fsum is, so (that integer / the denominator) is the float fsum gave. One C-level sum of small ints a pattern, no
+    chain of two compresses into fsum: about four times faster (PLAN_0.8.0, family-test). A delta that is not finite
+    is summed the old way."""
+    n = len(deltas)
+    try:
+        ratios = [d.as_integer_ratio() for d in deltas]
+    except (OverflowError, ValueError):
+        neg = [-d for d in deltas]
+        return sum(
+            1
+            for keep in signs
+            if abs(math.fsum(chain(compress(deltas, keep), compress(neg, keep.translate(_FLIP)))) / n) >= a
+        )
+    den = max(q for _, q in ratios)
+    ints = [num * (den // q) for num, q in ratios]
+    total = sum(ints)
+    return sum(1 for keep in signs if abs(((2 * sum(compress(ints, keep)) - total) / den) / n) >= a)
+
+
+def sign_flip_family(units: list, permutations: int = PERMUTATIONS, seed: int = SEED) -> list[float]:
+    """Each list's p as `sign_flip_p(units[j], rng=r, advance=...)` gives it in order with one `r = Random(seed)` shared
+    by the family (family_test.py), bit for bit, the sampled ones summed in child processes at once.
+
+    The stream is one, so opponent j draws where opponent j-1 stopped. Walking the stream is cheap next to the sums
+    (0.11 s against 0.6 s an opponent of 1,000 items at 20,000 draws): here the stream is walked past each sampled
+    opponent, the state it starts at handed to a child at once, and the children, started first, sum while the walk
+    goes on. 49 opponents at 1,000 items took 44 s one after another. With fewer than two workers, below
+    PARALLEL_FROM, or for an opponent whose child failed, it is summed here."""
+    sampled = [j for j, u in enumerate(units) if p_method(len(u)) == "sampled"]
+    work = sum(len(units[j]) for j in sampled) * permutations
+    pool = (
+        _Feed(min(workers_allowed(), len(sampled))) if work >= PARALLEL_FROM and len(sampled) >= 2 else None
+    )
+    if pool is not None and len(pool.procs) < 2:  # no children to speak of: drawn here, in order
+        for proc in pool.procs:
+            proc.kill()
+            proc.wait()
+        pool = None
+    rng = random.Random(seed)
+    out: list[float | None] = [None] * len(units)
+    starts: dict[int, Any] = {}
+    for j, u in enumerate(units):
+        if (
+            pool is None or p_method(len(u)) != "sampled"
+        ):  # drawn here, in order, as family_test always drew them
+            later = any(p_method(len(x)) == "sampled" for x in units[j + 1 :])
+            out[j] = sign_flip_p(u, permutations=permutations, rng=rng, advance=later)
+            continue
+        starts[j] = rng.getstate()
+        if pool is not None:
+            pool.send(
+                j,
+                {"kind": "sfr", "d": [float(d).hex() for d in u], "n": permutations, "state": starts[j]},
+                len(u),
+            )
+        for _ in range(permutations):  # the words _draw takes, in its order; their signs are the child's
+            rng.getrandbits(64 * len(u))
+    got = pool.results() if pool is not None else {}
+    for j, state in starts.items():
+        v = got.get(j)
+        out[j] = v if v is not None else _sampled_from_state(units[j], permutations, state)
+    return [float(x) for x in out]  # type: ignore[arg-type]
+
+
+class _Feed:
+    """Child processes started at once (`--family-worker`), each sent jobs as they are known (one JSON line each) and
+    answering one line each, "<id> <p as hex>". A child reads its input on a thread of its own, so a parent writing to
+    a busy child never waits for it."""
+
+    def __init__(self, workers: int) -> None:
+        here = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        env = dict(
+            os.environ, PYTHONPATH=os.pathsep.join(x for x in (here, os.environ.get("PYTHONPATH")) if x)
+        )
+        env["EVH_P_CACHE"] = ""
+        self.procs: list[Any] = []
+        self.load: list[int] = []
+        for _ in range(max(0, workers)):
+            try:
+                self.procs.append(
+                    subprocess.Popen(
+                        [sys.executable, "-m", "evaluation_harness.stats", "--family-worker"],
+                        stdin=subprocess.PIPE,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.DEVNULL,
+                        env=env,
+                    )
+                )
+                self.load.append(0)
+            except OSError:
+                break
+
+    def send(self, key: int, job: dict, weight: int) -> None:
+        while self.procs:
+            w = self.load.index(min(self.load))
+            try:
+                self.procs[w].stdin.write((json.dumps({"id": key, **job}) + "\n").encode())
+                self.procs[w].stdin.flush()
+                self.load[w] += weight
+                return
+            except (
+                OSError
+            ):  # a child that died: the rest share its work; this job is summed by the caller if none is left
+                self.procs[w].kill()
+                del self.procs[w], self.load[w]
+
+    def results(self) -> dict[int, float]:
+        got: dict[int, float] = {}
+        for p in self.procs:
+            try:
+                p.stdin.close()
+                for line in p.stdout:
+                    key, hexp = line.decode().split()
+                    got[int(key)] = float.fromhex(hexp)
+            except (OSError, ValueError):
+                pass  # what it did not answer is summed by the caller
+            p.wait()
+        return got
+
+
+def _family_worker() -> int:
+    """`python -m evaluation_harness.stats --family-worker`: sign_flip_family's jobs, one JSON line each on stdin, read
+    on a thread as they come; one "<id> <p hex>" line each on stdout, as each is summed."""
+    import queue  # noqa: PLC0415
+    import threading  # noqa: PLC0415
+
+    lines: queue.Queue = queue.Queue()
+
+    def read() -> None:
+        for line in sys.stdin.buffer:
+            lines.put(line)
+        lines.put(None)
+
+    threading.Thread(target=read, daemon=True).start()
+    while (line := lines.get()) is not None:
+        c = json.loads(line)
+        v = _sampled_from_state([float.fromhex(d) for d in c["d"]], c["n"], c["state"])
+        sys.stdout.write(f"{c['id']} {v.hex()}\n")
+        sys.stdout.flush()
+    return 0
+
+
+def _sampled_from_state(units: list, permutations: int, state: Any) -> float:
+    r = random.Random()
+    r.setstate(_as_state(state))
+    return sign_flip_p(list(units), permutations=permutations, rng=r)
+
+
+def _as_state(state: Any) -> tuple:
+    """A generator state back from JSON (lists for its tuples)."""
+    version, words, gauss = state
+    return (version, tuple(words), gauss)
 
 
 #: Estimated p by (deltas, permutations, seed): a page and the glance test the same pairs.
@@ -230,11 +413,27 @@ def kept(algo: str, data: str, compute: Callable[[], Any]) -> Any:
     setting that changes its result (permutations, seed), `data` is its input exactly (floats as float.hex);
     a change to either is a new key."""
     k = hashlib.sha256(f"{algo}:".encode() + data.encode()).hexdigest()
+    # Kept in the process too, as the sign-flip p's are (_P): a catalog build decides each goal twice (the glance
+    # and its page), and without EVH_P_CACHE every bootstrap-t was drawn again, 9,999 resamples each time.
+    if k in _KEPT:
+        _KEPT.move_to_end(k)
+        return copy.deepcopy(_KEPT[k])
     if os.environ.get("EVH_P_CACHE") and (v := _disk().get(k)) is not None:
-        return v
+        _remember(k, v)
+        return copy.deepcopy(v)
     v = compute()
     _keep(k, v)
-    return v
+    _remember(k, v)
+    return copy.deepcopy(v)
+
+
+_KEPT: OrderedDict = OrderedDict()
+
+
+def _remember(k: str, v: Any) -> None:
+    _KEPT[k] = copy.deepcopy(v)
+    while len(_KEPT) > _P_MAX:
+        _KEPT.popitem(last=False)
 
 
 def _keep(k: str, v: Any) -> None:
@@ -292,7 +491,8 @@ def _signs(n: int, permutations: int, seed: int) -> list:
 
 def fmt_p(p: float) -> str:
     """A p-value as every command prints it: four decimals, and "<0.0001" for what would print
-    as 0.0000 (a p is never zero). Every other value prints exactly as it always has."""
+    as 0.0000 (a resampled p is never zero; one from the normal limit can be, ADR-0028). Every other value prints
+    exactly as it always has."""
     s = f"{p:.4f}"
     return "<0.0001" if s == "0.0000" else s
 
@@ -317,28 +517,122 @@ def min_attainable_p(n: int) -> float:
     return 2 / 2**n if n else 1.0
 
 
+def exact_p_one_sided(deltas: list) -> float:
+    """Exact one-sided sign-flip p (RFC-029): the share of the 2^n sign patterns whose sum is at least the observed
+    one, the deltas taken in the better direction (positive: the arm is better). Computed directly, not by halving
+    the two-sided p, which differs from it when the observed sum is negative or the distribution has ties."""
+    n = len(deltas)
+    if n == 0:
+        return 1.0
+    total = math.fsum(deltas)
+    obs = total - _EPS * max(1.0, abs(total))
+    half = n // 2
+    left = _signed_sums(deltas[:half])
+    right = sorted(_signed_sums(deltas[half:]))
+    hits = sum(len(right) - bisect.bisect_left(right, obs - x) for x in left)
+    return hits / 2**n
+
+
+def sign_flip_p_one_sided(deltas: list, permutations: int = PERMUTATIONS, seed: int = SEED) -> float:
+    """One-sided paired sign-flip p, H1: the mean difference is above 0 (RFC-029's looks decide one-sided): exact up
+    to EXACT_UP_TO items, a seeded estimate below LARGE_SAMPLE, the normal limit from LARGE_SAMPLE."""
+    if not deltas:
+        return 1.0
+    if len(deltas) <= EXACT_UP_TO:
+        return exact_p_one_sided(deltas)
+    q = math.fsum(d * d for d in deltas)
+    if len(deltas) >= LARGE_SAMPLE:
+        return 1.0 if q == 0 else 0.5 * math.erfc(math.fsum(deltas) / math.sqrt(q) / math.sqrt(2))
+    n, obs = len(deltas), math.fsum(deltas) / len(deltas)
+    neg = [-d for d in deltas]
+    hits = sum(
+        1
+        for keep in _signs(n, permutations, seed)
+        if math.fsum(chain(compress(deltas, keep), compress(neg, keep.translate(_FLIP)))) / n >= obs - _EPS
+    )
+    return (hits + 1) / (permutations + 1)
+
+
+def min_attainable_p_one_sided(
+    deltas: list | None = None,
+    n: int | None = None,
+    rule: str = "superiority",
+    binary: bool = False,
+    margin: float = 0.0,
+) -> float | None:
+    """The smallest p a look's one-sided test can reach on these items (RFC-029): before any run, from `n` (every
+    item may differ); after, from the paired `deltas`. Superiority: 1/2^n' over the non-zero differences.
+    Non-inferiority on 0/1: Tango's p with every discordant item favouring the arm. Non-inferiority on a continuous
+    measure: None below NONINF_MIN_UNITS items ("too few": the contender test does not answer there)."""
+    if deltas is not None:
+        nonzero = sum(1 for d in deltas if d != 0)
+        total = len(deltas)
+    else:
+        nonzero = total = int(n or 0)
+    if rule == "superiority":
+        return 1 / 2**nonzero if nonzero else 1.0
+    if binary:
+        return tango_p(nonzero, 0, total, margin)
+    return None if total < NONINF_MIN_UNITS else 1 / (NONINF_DRAWS + 1)
+
+
 def exact_ci(deltas: list, alpha: float = ALPHA):
-    """A 95% interval for the mean paired difference.
+    """A 95% interval for the mean paired difference: `cluster_ci` with every item its own cluster.
 
     Up to EXACT_UP_TO items it agrees with the paired test: the set of shifts d for which the
     sign-flip test on (delta - d) does not reject at alpha, found by bisection on each side of
     the mean. Above that it is a t interval, which is close to the test but not derived from it. None when no shift can be rejected at all (n=5 and below:
     the smallest attainable p is over alpha), so there is no interval to draw.
     """
-    n = len(deltas)
-    if n < 2 or min_attainable_p(n) > alpha:
+    return cluster_ci(list(deltas), [1] * len(deltas), alpha)
+
+
+def clustered(deltas: dict, clusters: dict) -> tuple[list[float], list[int]]:
+    """Per cluster, the sum of its items' paired differences and how many items it has, in a fixed order.
+
+    deltas: {item_id: difference}; clusters: {item_id: cluster key}. An item with no key is a cluster of
+    its own. Items that share a source (one thread's comments, one document's questions) are not
+    independent: testing them one by one counts the same evidence several times and makes p and the
+    interval too small (Miller 2024, "Adding error bars to evals"). The test then flips one sign per
+    cluster, which is valid when the clusters, not the items, are independent."""
+    totals: dict = {}
+    sizes: dict = {}
+    for item in sorted(deltas):
+        key = clusters.get(item)
+        key = ("item", item) if key is None or key == "" else ("cluster", str(key))
+        totals[key] = totals.get(key, 0.0) + deltas[item]
+        sizes[key] = sizes.get(key, 0) + 1
+    keys = sorted(totals)
+    return [totals[k] for k in keys], [sizes[k] for k in keys]
+
+
+def cluster_ci(totals: list, sizes: list, alpha: float = ALPHA):
+    """A 95% interval for the mean per-item difference when items come in clusters.
+
+    totals, sizes: per cluster, its summed difference and its number of items (`clustered`). Up to
+    EXACT_UP_TO clusters it inverts the cluster sign-flip test: the shifts d for which the test on
+    (total - d * size) does not reject at alpha. Above that it is the cluster-robust t interval (CR1:
+    the clusters' residuals, G/(G-1), G-1 degrees of freedom). With one item per cluster both are the
+    item-level interval exactly. None below 2 clusters, or when no shift can be rejected (5 clusters
+    and fewer, where the smallest attainable p is over alpha)."""
+    g, n = len(totals), sum(sizes)
+    if g < 2 or min_attainable_p(g) > alpha:
         return None
-    mean = statistics.fmean(deltas)
-    if n > EXACT_UP_TO:
-        sd = statistics.stdev(deltas)
+    mean = math.fsum(totals) / n
+    if g > EXACT_UP_TO:
+        resid = [t - m * mean for t, m in zip(totals, sizes, strict=True)]
+        var = g / (g - 1) * math.fsum(r * r for r in resid) / n**2
         z = 1.959964
-        t = z + (z**3 + z) / (4 * (n - 1))  # Cornish-Fisher: t quantile without scipy
-        half = t * sd / math.sqrt(n)
+        t = z + (z**3 + z) / (4 * (g - 1))  # Cornish-Fisher: t quantile without scipy
+        half = t * math.sqrt(var)
         return [mean - half, mean + half]
-    span = (max(deltas) - min(deltas)) or abs(mean) or 1.0
+    ratios = [t / m for t, m in zip(totals, sizes, strict=True)]
+    span = (max(ratios) - min(ratios)) or abs(mean) or 1.0
 
     def rejected(d):
-        return exact_p([x - d for x in deltas]) <= alpha
+        return exact_p([t - d * m for t, m in zip(totals, sizes, strict=True)]) <= alpha
+
+    lo_start, hi_start = min(ratios) - span, max(ratios) + span
 
     def bound(outer):
         inner = mean  # never rejected: the shifted sum is 0
@@ -347,7 +641,362 @@ def exact_ci(deltas: list, alpha: float = ALPHA):
             inner, outer = (inner, mid) if rejected(mid) else (mid, outer)
         return inner
 
-    return [bound(min(deltas) - span), bound(max(deltas) + span)]
+    return [bound(lo_start), bound(hi_start)]
+
+
+#: The one-sided level of a non-inferiority test, and the fewest items (or clusters) a continuous measure needs
+#: before one is run (RFC-015, research/internal/stats-0.8.0: below 100 the bootstrap-t did not hold its level).
+NONINF_LEVEL = 0.025
+NONINF_MIN_UNITS = 100
+#: The floor when clusters differ in size, on their effective number: sizes 1-20 with a heavy tail of cluster losses
+#: erred 0.033 at 147 effective clusters and 0.026 at 236 (1500 and 1000 simulations, nominal 0.025).
+NONINF_MIN_UNEQUAL = 250
+NONINF_DRAWS = 9999
+_Z975 = 1.959963984540054
+
+
+def is_binary(*series: dict) -> bool:
+    """Every value of every series is 0 or 1 (right/wrong per item)."""
+    return all(v in (0, 1, 0.0, 1.0, True, False) for x in series for v in x.values())
+
+
+def tango_p(x12: int, x21: int, n: int, margin: float) -> float:
+    """One-sided p of Tango's score test (1998) for paired 0/1 outcomes, H0: difference <= -margin.
+
+    x12: items the arm got right and the reference wrong; x21: the reverse; n: all paired items. Valid with
+    zero discordant items, where McNemar-type tests are not; at or below its level on every grid simulated
+    (research/internal/stats-0.8.0/tango_binary.py)."""
+    if n == 0:
+        return 1.0
+    d0 = -margin
+    a = 2 * n
+    b = -x12 - x21 + (2 * n - x12 + x21) * d0
+    c = -x21 * d0 * (1 - d0)
+    q21 = (math.sqrt(max(b * b - 4 * a * c, 0.0)) - b) / (2 * a)
+    var = n * (2 * q21 + d0 * (1 - d0))
+    num = x12 - x21 - n * d0
+    if var <= 0:
+        return 0.0 if num > 0 else 1.0
+    return 0.5 * math.erfc(num / math.sqrt(var) / math.sqrt(2))
+
+
+def _mean_se(totals: list, sizes: list) -> tuple[float, float]:
+    """The mean per item and its (cluster-robust, CR1) standard error; with one item per cluster s/sqrt(n)."""
+    g, n = len(totals), sum(sizes)
+    m = math.fsum(totals) / n
+    ss = math.fsum((t - k * m) ** 2 for t, k in zip(totals, sizes, strict=True))
+    return m, math.sqrt(g / (g - 1) * ss) / n
+
+
+def bootstrap_t_p(totals: list, sizes: list, margin: float, draws: int = NONINF_DRAWS) -> float | None:
+    """One-sided p of the studentized bootstrap for H0: mean difference <= -margin (RFC-015's specification,
+    resampling clusters when there are clusters). T = (m + margin)/se; t* = (m* - m)/se* over resamples, those
+    with se* = 0 dropped; p = (1 + #{t* >= T})/(kept + 1). None when every unit's difference is the same (no
+    test is possible). Seeded by the data, so the same comparison always gives the same p. From LARGE_SAMPLE units,
+    1 - Phi(T): the limit the resamples estimate (ADR-0028)."""
+    g = len(totals)
+    m, se = _mean_se(totals, sizes)
+    if se == 0:
+        return None
+    t_obs = (m + margin) / se
+    if g >= LARGE_SAMPLE:
+        return 0.5 * math.erfc(t_obs / math.sqrt(2))
+    data = _bootstrap_data(totals, sizes, margin)
+    algo = f"bootstrap-t-1:{draws}"
+    if _COLLECT and not _known(algo, data):
+        k = hashlib.sha256(f"{algo}:".encode() + data.encode()).hexdigest()
+        job = {
+            "kind": "bt",
+            "t": [float(t).hex() for t in totals],
+            "k": list(sizes),
+            "m": float(margin).hex(),
+            "d": draws,
+        }
+
+        def keep(v: float) -> None:
+            _keep(k, v)
+            _remember(k, v)
+
+        _COLLECT[-1].append((k, g * draws, job, keep))
+        return 1.0  # a stand-in: prefetch() throws away what it collects with
+    return kept(algo, data, lambda: _bootstrap_draw(totals, sizes, margin, draws))
+
+
+def _bootstrap_data(totals: list, sizes: list, margin: float) -> str:
+    """A bootstrap-t's input exactly (floats as float.hex): its cache key and its generator's seed."""
+    # float(t): an adapter's whole-number scores are ints (a 1-5 rating); t.hex() raised on them, and the contender
+    # test with it. A float's key and seed are unchanged.
+    return (
+        ",".join(f"{float(t).hex()}/{k}" for t, k in zip(totals, sizes, strict=True))
+        + f"|{float(margin).hex()}"
+    )
+
+
+def _bootstrap_draw(totals: list, sizes: list, margin: float, draws: int) -> float:
+    """bootstrap_t_p's resampled p, drawn: the same in a child process as here (prefetch)."""
+    g = len(totals)
+    m, se = _mean_se(totals, sizes)
+    t_obs = (m + margin) / se
+    rng = random.Random(
+        int(hashlib.sha256(_bootstrap_data(totals, sizes, margin).encode()).hexdigest()[:16], 16)
+    )
+    kept = beyond = 0
+    for _ in range(draws):
+        pick = [rng.randrange(g) for _ in range(g)]
+        ms, ses = _mean_se([totals[i] for i in pick], [sizes[i] for i in pick])
+        if ses == 0:
+            continue
+        kept += 1
+        beyond += (ms - m) / ses >= t_obs
+    return (1 + beyond) / (kept + 1)
+
+
+#: While prefetch() runs its calls: one list of the tests they would draw that are not yet kept, each (its key, its
+#: work in units x draws, its job for a child, how to keep its p).
+_COLLECT: list[list] = []
+#: Below this much resampling (units x draws, summed) the tests are drawn here, one after another: a child process
+#: costs about a second to start and import, a 1,000-item bootstrap-t about 2 s, a sign-flip about 0.6 s.
+PARALLEL_FROM = 20_000_000
+
+
+def _known(algo: str, data: str) -> bool:
+    k = hashlib.sha256(f"{algo}:".encode() + data.encode()).hexdigest()
+    return k in _KEPT or (bool(os.environ.get("EVH_P_CACHE")) and k in _disk())
+
+
+def workers_allowed() -> int:
+    """How many child processes prefetch may start: `EVH_WORKERS` when set (1 turns it off), else the CPUs this process
+    may run on, capped by its container's CPU quota (cgroup v2 `cpu.max`, v1 `cpu.cfs_quota_us`). A quota is not seen
+    by sched_getaffinity, which counts the host's cores: the deployment's inspector and MCP server run at `cpus: 0.5`
+    and `mem_limit: 384m`, where a worker per host core (about 20 MB each) would gain nothing and could overrun the
+    limit; under one whole CPU nothing is drawn in parallel."""
+    env = os.environ.get("EVH_WORKERS", "").strip()
+    if env:
+        try:
+            return max(1, int(env))
+        except ValueError:
+            pass
+    try:
+        n = len(os.sched_getaffinity(0))
+    except AttributeError:
+        n = os.cpu_count() or 1
+    v2 = _read("/sys/fs/cgroup/cpu.max").split()  # "50000 100000", or "max 100000"
+    v1 = [
+        _read("/sys/fs/cgroup/cpu/cpu.cfs_quota_us").strip(),
+        _read("/sys/fs/cgroup/cpu/cpu.cfs_period_us").strip(),
+    ]
+    quota, period = v2 if len(v2) == 2 else v1
+    if quota.isdigit() and period.isdigit() and int(period) > 0:
+        n = min(n, int(quota) // int(period))
+    return max(1, n)
+
+
+def _read(path: str) -> str:
+    try:
+        with open(path, encoding="ascii") as fh:
+            return fh.read()
+    except OSError:
+        return ""
+
+
+def prefetch(calls: Callable[[], Any]) -> int:
+    """Run `calls` once to learn which resampled tests it draws (bootstrap-t's, and sign-flips from a fresh
+    generator), then draw those not yet kept in child processes at once, and keep them: `calls` run again afterwards
+    reads every p back, the same p bit for bit (each is seeded by its data, or by its seed). What the first run
+    returns is thrown away (each p in it a stand-in). Nothing is drawn in parallel below PARALLEL_FROM, with one test,
+    or when a child fails: those are drawn as before, when asked. Returns how many were drawn in parallel.
+    PLAN_0.8.0 S2: a 50-arm catalog at 1,000 items drew 47 bootstrap-t's and 96 sign-flips one after another."""
+    if _COLLECT:  # inside another prefetch: its calls are collected there
+        calls()
+        return 0
+    _COLLECT.append([])
+    try:
+        calls()
+    except (Exception, SystemExit):  # noqa: BLE001 - a look ahead with stand-in p's never stops its caller:
+        pass  # what it collected is drawn, and the real run that follows meets the same error, if it is one
+    finally:
+        cases = list({c[0]: c for c in _COLLECT.pop()}.values())
+    if len(cases) < 2 or sum(c[1] for c in cases) < PARALLEL_FROM:
+        return 0
+    got = _in_children([c[2] for c in cases], [c[1] for c in cases])
+    done = 0
+    for c, v in zip(cases, got, strict=False):
+        if v is not None:
+            c[3](v)
+            done += 1
+    return done
+
+
+def _in_children(jobs: list[dict], weights: list[int]) -> list[float | None]:
+    """Each job's p, drawn in child processes at once (the worker's kinds), None for a job whose child failed; [] when
+    fewer than two workers are allowed or there are fewer than two jobs (the caller draws them itself)."""
+    workers = min(workers_allowed(), len(jobs))
+    if workers < 2:
+        return []
+    # The longest first, each to the child with the least work so far: the children end about together.
+    chunks: list[list[int]] = [[] for _ in range(workers)]
+    load = [0] * workers
+    for i in sorted(range(len(jobs)), key=lambda i: -weights[i]):
+        w = load.index(min(load))
+        chunks[w].append(i)
+        load[w] += weights[i]
+    here = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    env = dict(os.environ, PYTHONPATH=os.pathsep.join(x for x in (here, os.environ.get("PYTHONPATH")) if x))
+    env["EVH_P_CACHE"] = ""  # the children only draw; this process keeps
+    procs = []
+    for chunk in chunks:
+        job = [jobs[i] for i in chunk]
+        p = None
+        try:
+            p = subprocess.Popen(
+                [sys.executable, "-m", "evaluation_harness.stats", "--bootstrap-worker"],
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.DEVNULL,
+                env=env,
+            )
+            # Every child gets its input before any is read from, or they would run one after another.
+            p.stdin.write(json.dumps(job).encode())  # type: ignore[union-attr]
+            p.stdin.close()  # type: ignore[union-attr]
+        except OSError:
+            if p is not None:
+                p.kill()
+                p.wait()
+            continue  # this chunk is drawn here when asked
+        procs.append((p, chunk))
+    got: list[float | None] = [None] * len(jobs)
+    for p, chunk in procs:
+        try:
+            out = p.stdout.read()  # type: ignore[union-attr]
+            ps = [float.fromhex(x) for x in json.loads(out)] if p.wait() == 0 else []
+        except (OSError, ValueError):
+            ps = []
+        if len(ps) != len(chunk):
+            continue  # drawn by the caller, as without children
+        for i, v in zip(chunk, ps, strict=True):
+            got[i] = v
+    return got
+
+
+def _bootstrap_worker() -> int:
+    """`python -m evaluation_harness.stats --bootstrap-worker`: prefetch's tests from stdin (JSON, floats as hex),
+    their p's to stdout in order: a bootstrap-t ("bt") or a sign-flip from a fresh generator ("sf")."""
+    out = []
+    for c in json.load(sys.stdin):
+        if c["kind"] == "bt":
+            v = _bootstrap_draw([float.fromhex(t) for t in c["t"]], c["k"], float.fromhex(c["m"]), c["d"])
+        elif c["kind"] == "sfr":  # one opponent of a family, from the stream state it starts at
+            v = _sampled_from_state([float.fromhex(d) for d in c["d"]], c["n"], c["state"])
+        else:
+            v = sign_flip_p([float.fromhex(d) for d in c["d"]], permutations=c["n"], seed=c["s"])
+        out.append(v.hex())
+    json.dump(out, sys.stdout)
+    return 0
+
+
+REDUCERS = ("mean", "majority", "at_least_K")
+
+
+def reduce_repeats(values: list, how: str = "mean") -> float:
+    """One item's score from its repeats (inspect_ai's epochs reducers, under our word "repeat"): `mean` (the
+    default), `majority` (1 when more than half of 0/1 repeats are 1, else 0) or `at_least_K` (1 when at least K
+    of them are 1: pass@k's question, "did any of K tries work", is at_least_1). The last two are for 0/1 scores and
+    refuse others."""
+    if how in ("", "mean"):
+        return statistics.fmean(values)
+    if any(v not in (0, 1, 0.0, 1.0, True, False) for v in values):
+        raise ValueError(f"reduce {how!r} is for 0/1 scores; these repeats are not")
+    ones = sum(1 for v in values if v)
+    if how == "majority":
+        return 1.0 if ones * 2 > len(values) else 0.0
+    if how.startswith("at_least_") and how[len("at_least_") :].isdigit():
+        return 1.0 if ones >= int(how[len("at_least_") :]) else 0.0
+    raise ValueError(f"reduce {how!r}: one of mean, majority, at_least_K (e.g. at_least_2)")
+
+
+def paired_se(arm: dict, reference: dict, clusters: dict | None = None) -> float | None:
+    """The standard error of the mean paired difference arm - reference over their shared items (cluster-robust
+    with clusters); None below 2 units."""
+    shared = sorted(set(arm) & set(reference))
+    d = {i: arm[i] - reference[i] for i in shared}
+    totals, sizes = clustered(d, clusters) if clusters is not None else (list(d.values()), [1] * len(d))
+    if len(totals) < 2:
+        return None
+    return _mean_se(totals, sizes)[1]
+
+
+def detectable_margin(se: float, candidates: int, power: float = 0.8, level: float = NONINF_LEVEL) -> float:
+    """The smallest margin a truly equal arm can be shown within, with probability `power`, when `candidates` arms are
+    tested together (Holm's first step, level / candidates, one-sided): (z_(1 - level/k) + z_power) * se. Miller 2024's
+    recommendation 5 (power before running), for the contender test. A margin under it will rarely admit anyone, so
+    a goal with many arms on few items says so."""
+    z = statistics.NormalDist()
+    return (z.inv_cdf(1 - level / max(candidates, 1)) + z.inv_cdf(power)) * se
+
+
+def noninferior(
+    arm: dict,
+    reference: dict,
+    margin: float,
+    higher_is_better: bool = True,
+    clusters: dict | None = None,
+    level: float = NONINF_LEVEL,
+) -> dict:
+    """Is `arm` no worse than `reference` by more than `margin` (in the measure's units)? A one-sided test
+    of H0: difference <= -margin, the difference taken in the measure's better direction.
+
+    0/1 per item and no clusters: Tango's score test at `level`, at any size. Anything else (a continuous
+    measure, repeats averaged, or clusters): the bootstrap-t at half the level, from NONINF_MIN_UNITS items or
+    clusters; below that the answer is "too few", never a guess. Returns {"verdict": "non-inferior" |
+    "not shown" | "too few" | "untestable", "method", "p", "level", "n", "units", "delta"}."""
+    shared = sorted(set(arm) & set(reference))
+    sign = 1 if higher_is_better else -1
+    d = {i: (arm[i] - reference[i]) * sign for i in shared}
+    out: dict = {"n": len(shared), "delta": math.fsum(d.values()) / len(d) if d else None, "margin": margin}
+    if len(shared) < 2:
+        return {
+            **out,
+            "verdict": "untestable",
+            "method": None,
+            "p": None,
+            "level": level,
+            "units": len(shared),
+        }
+    if clusters is None and is_binary({i: arm[i] for i in shared}, {i: reference[i] for i in shared}):
+        x12 = sum(1 for v in d.values() if v > 0)
+        x21 = sum(1 for v in d.values() if v < 0)
+        p = tango_p(x12, x21, len(shared), margin)
+        return {
+            **out,
+            "verdict": "non-inferior" if p <= level else "not shown",
+            "method": "tango",
+            "p": p,
+            "level": level,
+            "units": len(shared),
+        }
+    totals, sizes = clustered(d, clusters) if clusters is not None else (list(d.values()), [1] * len(d))
+    if clusters is not None and all(k == 1 for k in sizes):
+        # Every cluster one item: the item-level test exactly, Tango included, as compare() promises.
+        return noninferior(arm, reference, margin, higher_is_better, None, level)
+    # The units a bootstrap counts: clusters of very unequal size carry less information than their number, so the
+    # floor is on the effective number (sum k)^2 / sum k^2, equal to the count only when sizes are equal. With sizes
+    # 1-20 and a heavy tail of cluster losses, 100 clusters (about 60 effective) erred 0.043 at a nominal 0.025.
+    effective = sum(sizes) ** 2 / sum(k * k for k in sizes)
+    base = {
+        **out,
+        "method": "bootstrap-t",
+        "level": level / 2,
+        "units": len(totals),
+        "effective": round(effective, 1),
+    }
+    floor = NONINF_MIN_UNITS if len(set(sizes)) == 1 else NONINF_MIN_UNEQUAL
+    base["floor"] = floor
+    if effective < floor:
+        return {**base, "verdict": "too few", "p": None}
+    bp = bootstrap_t_p(totals, sizes, margin)
+    if bp is None:  # every unit differs by the same amount: decided by that amount alone
+        return {**base, "verdict": "non-inferior" if out["delta"] > -margin else "not shown", "p": None}
+    return {**base, "verdict": "non-inferior" if bp <= level / 2 else "not shown", "p": bp}
 
 
 def compare(
@@ -357,20 +1006,36 @@ def compare(
     neutral: bool = False,
     family: int | None = None,
     threshold: float | None = None,
+    clusters: dict | None = None,
 ) -> dict:
     """Test every arm against `baseline` on the items both scored; Holm across the family.
 
-    arms: {arm_id: {item_id: float}}. Returns {"items": [...], "rows": [...]} where each row
-    has n (shared items), mean, baseline_mean, delta (arm - baseline), wins/losses/ties
-    (by direction), p, threshold, verdict.
+    arms: {arm_id: {item_id: float}}. clusters: {item_id: cluster key}, when items come in related
+    groups: p and the interval then come from one sign per cluster (`clustered`), and each row says how
+    many clusters it had. Returns {"items": [...], "rows": [...]} where each row has n (shared items),
+    mean, baseline_mean, delta (arm - baseline), wins/losses/ties (by direction), p, ci, threshold,
+    verdict, and with clusters "clusters".
     """
     base = arms.get(baseline) or {}
+    # The pairs' sign-flips drawn at once in child processes first, the same p's; only when one of them resamples
+    # (with clusters a pair's units can be fewer than its items, so any pair above EXACT_UP_TO items counts).
+    if not _COLLECT and any(
+        (k := len(set(s) & set(base))) > EXACT_UP_TO and (clusters is not None or k < LARGE_SAMPLE)
+        for a, s in arms.items()
+        if a != baseline
+    ):
+        prefetch(lambda: compare(arms, baseline, higher_is_better, neutral, family, threshold, clusters))
     rows, pvals = [], {}
     for arm, scores in arms.items():
         if arm == baseline:
             continue
         shared = sorted(set(scores) & set(base))
         deltas = [scores[i] - base[i] for i in shared]
+        # The unit the test counts: an item, or with clusters a cluster's summed difference.
+        if clusters is not None:
+            units, sizes = clustered(dict(zip(shared, deltas, strict=True)), clusters)
+        else:
+            units, sizes = deltas, [1] * len(deltas)
         sign = 1 if higher_is_better else -1
         row = {
             "arm": arm,
@@ -381,11 +1046,13 @@ def compare(
             "wins": sum(1 for d in deltas if d * sign > 0),
             "losses": sum(1 for d in deltas if d * sign < 0),
             "ties": sum(1 for d in deltas if d == 0),
-            "min_p": min_attainable_p(len(shared)),
-            "ci": exact_ci(deltas),
+            "min_p": min_attainable_p(len(units)),
+            "ci": cluster_ci(units, sizes),
         }
-        if len(shared) >= 2 and any(deltas):
-            row["p"] = sign_flip_p(deltas)
+        if clusters is not None:
+            row["clusters"] = len(units)
+        if len(units) >= 2 and any(deltas):
+            row["p"] = sign_flip_p(units)
             pvals[arm] = row["p"]
         else:
             row["p"] = None
@@ -405,7 +1072,7 @@ def compare(
 def _set_verdict(row: dict, thr, ok: bool, higher_is_better: bool, neutral: bool) -> None:
     row["threshold"] = thr
     if row["p"] is None:
-        row["verdict"] = "untestable" if row["n"] < 2 else "identical"
+        row["verdict"] = "untestable" if row.get("clusters", row["n"]) < 2 else "identical"
     elif ok and neutral:  # a measurement with no better direction (length, counts)
         row["verdict"] = "significant: higher" if row["delta"] > 0 else "significant: lower"
     elif ok:
@@ -422,6 +1089,7 @@ def compare_by(
     higher_is_better: bool = True,
     neutral: bool = False,
     family: int | None = None,
+    clusters: dict | None = None,
 ) -> dict:
     """`compare` within each group of items, with ONE Holm correction over every (group, arm)
     test. Breaking a comparison into k groups makes k times the chances of a false
@@ -433,7 +1101,7 @@ def compare_by(
     out, pvals = [], {}
     for g, members in groups.items():
         sub = {a: {i: v for i, v in s.items() if i in members} for a, s in arms.items()}
-        res = compare(sub, baseline, higher_is_better, neutral)
+        res = compare(sub, baseline, higher_is_better, neutral, clusters=clusters)
         for row in res["rows"]:
             if row["p"] is not None:
                 pvals[(g, row["arm"])] = row["p"]
@@ -444,3 +1112,9 @@ def compare_by(
             thr, ok = verdicts.get((grp["group"], row["arm"]), (None, False))
             _set_verdict(row, thr, ok, higher_is_better, neutral)
     return {"groups": out, "family_size": max(len(pvals), family or 0)}
+
+
+if __name__ == "__main__" and sys.argv[1:] == ["--family-worker"]:
+    sys.exit(_family_worker())
+if __name__ == "__main__" and sys.argv[1:] == ["--bootstrap-worker"]:
+    sys.exit(_bootstrap_worker())

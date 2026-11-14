@@ -72,8 +72,9 @@ every parameter. Nothing else would tell them apart, and the corpus is where the
 
 ```bash
 cd "$(git rev-parse --show-toplevel)/harness"     # from anywhere in the repo
-for f in ../examples/retrieval-scifact/configs/arm_*_n200.yaml; do
-  ../examples/retrieval-scifact/.venv/bin/python scripts/run.py --config "$f"
+for s in ../examples/retrieval-scifact/systems/*.yaml; do
+  ../examples/retrieval-scifact/.venv/bin/python scripts/run.py --system "$(basename "$s" .yaml)" \
+    --dataset scifact_200 --goal scientific_retrieval_scifact
 done
 ```
 

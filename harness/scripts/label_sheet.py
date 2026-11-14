@@ -13,7 +13,7 @@ needs), fill `label` (or write `yes` to take the proposal) and, where more than 
 right as the label, not "unsure which"), the others in `also right` (separated by `|`); save it as CSV and run `evh
 label-import`. --choices writes the allowed answers into the label column's header (`label [file|dismiss|…]`), and
 label-import refuses any other. Which items: --items unlabelled (the default: no label in any set yet), all, or
-disagree (the runs in --runs decided differently); or exactly those named with --item. A run is a run id or a config
+disagree (the runs in --runs decided differently); or exactly those named with --item. A run is a run id or a system
 id (its latest run on the dataset). Nothing is written but the sheet.
 """
 
@@ -27,49 +27,59 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 
 import argparse
 import json
+import sys
 from pathlib import Path
 
-from evaluation_harness import _common
-from evaluation_harness._common import die, item_path, load_dataset, read_json
+from evaluation_harness import _jsonout, _outputs, _store
+from evaluation_harness._common import die, evh_prog, item_path, load_dataset
 from evaluation_harness._label_sets import labels_for, sets, text_of
 from evaluation_harness._runs import runs_on
 from evaluation_harness._sheets import ALSO, NOTE, label_header, write_csv
+from evaluation_harness.model import datasets as _datasets
+from evaluation_harness.model import runs as _model_runs
 
 VIEW = 160
 
 
-def run_dir(name: str, dataset_id: str) -> Path:
-    """A run by its id, or a config's latest run on the dataset: in data/runs, else in a label set's runs
-    (data/runs-labels-<dataset>-<set>/, where a run scored against labels lands)."""
-    bases = [_common.RUNS, *sorted(_common.DATA.glob(f"runs-labels-{dataset_id}-*"))]
-    # An arm id, as the catalog names it (catalog_adapter._index): <runs dir>/<dataset>/<config_id>, the runs dir
-    # nested for a judging or a re-scoring pass (runs-judged/<scorer>, runs-rescored/<scoring>/runs).
+def run_dir(name: str, dataset_id: str, label: str = "") -> Path:
+    """The score a run id, or a system's latest run on the dataset, is read as under `label` ("": a plain run's own
+    score, else that of a run scored against a label set of the dataset, where a run scored against labels lands).
+    An arm id, as the catalog names it (<prefix>/<dataset>/<system>, model.runs.arm_id), is that arm's latest run."""
+    scores = runs_on(dataset_id, label=None)
     if name.count("/") >= 2:
-        where, ds, config_id = name.rsplit("/", 2)
-        base = _common.RUNS if where == "runs" else _common.DATA / where
-        if ds != dataset_id or not where.startswith("runs") or ".." in where.split("/") or not base.is_dir():
-            die(f"--runs {name}: not an arm on {dataset_id}")
-        found = runs_on(dataset_id, runs_dir=base, config_id=config_id)
+        _prefix, ds, _config_id = name.rsplit("/", 2)
+        if ds != dataset_id:
+            die(f"--runs {name}: not an arm on {dataset_id}", "not-found")
+        found = [d for d, m in scores if _model_runs.arm_id(d, m) == name]
         if not found:
-            die(f"--runs {name}: no run of that arm")
-        return found[-1][0]
-    for base in bases:
-        d = base / name
-        if (d / "metrics.json").is_file():
-            if read_json(d / "metrics.json").get("dataset_id") != dataset_id:
-                die(f"--runs {name}: that run is not on {dataset_id}")
-            return d
-    for base in bases:
-        found = runs_on(dataset_id, runs_dir=base, config_id=name)
+            die(f"--runs {name}: no run of that arm", "not-found")
+        return found[-1]
+    # In the order they are looked up: the label asked for, then (for the plain one) the label sets' own.
+    own = [(d, m) for d, m in scores if _model_runs.label(d, m) == label]
+    sets_ = (
+        [(d, m) for d, m in scores if _datasets.is_label_of(_model_runs.label(d, m), dataset_id)]
+        if not label
+        else []
+    )
+    for group in (own, sets_):
+        for d, m in group:
+            if m["run_id"] == name:
+                return d
+    for group in (own, sets_):
+        found = [d for d, m in group if m["config_id"] == name]
         if found:
-            return found[-1][0]
-    die(f"--runs {name}: no run with that id, and no run of that config on {dataset_id}")
+            return found[-1]
+    if any(m["run_id"] == name for _d, m in runs_on(label=None)) and not any(
+        m["run_id"] == name and m.get("dataset_id") == dataset_id for _d, m in scores
+    ):
+        die(f"--runs {name}: that run is not on {dataset_id}", "mismatch")
+    die(f"--runs {name}: no run with that id, and no run of that system on {dataset_id}", "not-found")
 
 
 def output(d: Path, item_id: str) -> str | None:
     """A run's output for one item (what it decided), or None when it has none."""
-    f = d / "outputs" / f"{item_id}.txt"
-    return f.read_text(encoding="utf-8").strip() if f.is_file() else None
+    text = _outputs.output(d, item_id)
+    return text.strip() if text is not None else None
 
 
 def view(dataset_id: str, item_id: str, limit: int | None = VIEW) -> str:
@@ -78,7 +88,7 @@ def view(dataset_id: str, item_id: str, limit: int | None = VIEW) -> str:
     p = item_path(dataset_id, item_id)
     if p is None:
         return ""
-    text = p.read_text(encoding="utf-8", errors="replace")
+    text = _store.read_text(p, encoding="utf-8", errors="replace")
     if p.suffix == ".json":
         try:
             text = json.dumps(json.loads(text), ensure_ascii=False)
@@ -90,13 +100,13 @@ def view(dataset_id: str, item_id: str, limit: int | None = VIEW) -> str:
 
 def main() -> int:
     """Write a sheet of items to label."""
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
     ap.add_argument("--dataset-id", required=True)
     ap.add_argument("--out", required=True, type=Path, help="the sheet to write (.csv)")
     ap.add_argument("--items", choices=("unlabelled", "all", "disagree"), default="unlabelled")
     ap.add_argument("--item", action="append", default=[], help="exactly this item (repeatable)")
     ap.add_argument(
-        "--runs", default="", help="runs (or configs) whose decisions the sheet shows, comma-separated"
+        "--runs", default="", help="runs (or systems) whose decisions the sheet shows, comma-separated"
     )
     ap.add_argument(
         "--propose", help="a label set (by name, on this dataset) or a run whose answers are proposed"
@@ -106,18 +116,35 @@ def main() -> int:
         help="the allowed answers, comma-separated (e.g. file,dismiss,escalate): written into the label column's "
         "header; label-import refuses any other",
     )
-    args = ap.parse_args()
-    if args.out.exists():
-        die(f"{args.out} exists: a sheet is not overwritten (you may have filled it)")
-    choices = [c.strip() for c in (args.choices or "").split(",") if c.strip()] or None
-    header, rows, n = build(args.dataset_id, args.items, args.item, args.runs, args.propose, choices)
-    write_csv(header, rows, args.out)
-    print(f"{args.out}: {len(rows)} item(s) of {n} to label")
-    print(
-        "  fill `label` (or `yes` for the proposal; answers just as right in `also right`, separated by |), "
-        f"then: evh label-import {args.out} --dataset-id {args.dataset_id} --set <name> --by <you>"
+    ap.add_argument(
+        "--json",
+        action="store_true",
+        help="one JSON object on stdout when done (the text goes to stderr as it is printed): the envelope every --json command gives (result.blocks, result.values)",
     )
-    return 0
+    args = ap.parse_args()
+    with _jsonout.collect("label-sheet", args.json, live=sys.stderr):
+        if _store.exists(args.out):
+            die(f"{args.out} exists: a sheet is not overwritten (you may have filled it)", "would-overwrite")
+        choices = [c.strip() for c in (args.choices or "").split(",") if c.strip()] or None
+        from evaluation_harness import _seal  # noqa: PLC0415
+
+        _seal.refuse_if_sealed(args.dataset_id, "a label sheet")
+        header, rows, n = build(args.dataset_id, args.items, args.item, args.runs, args.propose, choices)
+        write_csv(header, rows, args.out)
+        from evaluation_harness import _exposure  # noqa: PLC0415
+
+        at = header.index("item_id")
+        _exposure.read_by_harness(
+            args.dataset_id,
+            [r[at] if isinstance(r, (list, tuple)) else r["item_id"] for r in rows],
+            "a label sheet",
+        )
+        print(f"{args.out}: {len(rows)} item(s) of {n} to label")
+        print(
+            "  fill `label` (or `yes` for the proposal; answers just as right in `also right`, separated by |), "
+            f"then: evh label-import {args.out} --dataset-id {args.dataset_id} --set <name> --by <you>"
+        )
+        return 0
 
 
 def build(
@@ -135,7 +162,7 @@ def build(
     names = [x.strip() for x in runs.split(",") if x.strip()]
     dirs = {n: run_dir(n, dataset_id) for n in names}
     if items == "disagree" and len(dirs) < 2:
-        die("--items disagree needs two runs or more in --runs")
+        die("--items disagree needs two runs or more in --runs", "bad-argument")
     proposal: dict[str, str] = {}
     if propose:
         doc = next((d for d in sets() if d["dataset_id"] == dataset_id and d["set"] == propose), None)
@@ -147,7 +174,7 @@ def build(
     if item:
         unknown = sorted(set(item) - set(ids))
         if unknown:
-            die(f"--item: not in {dataset_id}: {', '.join(unknown[:8])}")
+            die(f"--item: not in {dataset_id}: {', '.join(unknown[:8])}", "not-found")
         chosen = [i for i in ids if i in set(item)]
     elif items == "unlabelled":
         have = labels_for(dataset_id)
@@ -156,7 +183,7 @@ def build(
         from evaluation_harness._adapter import same_of  # noqa: PLC0415
 
         first = next(iter(dirs.values()))
-        same = same_of(read_json(first / "metrics.json").get("adapter"))
+        same = same_of((_model_runs.record(first) or {}).get("adapter"))
         chosen = []
         for i in ids:
             outs = [o for d in dirs.values() if (o := output(d, i)) is not None]

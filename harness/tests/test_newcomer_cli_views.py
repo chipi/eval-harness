@@ -23,10 +23,18 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parents[1] / "scripts"
 KIT = HERE.parent / "tutorial"
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from evaluation_harness import _format, _store  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _model_records  # noqa: E402
+import _runfix  # noqa: E402
+import _runstore  # noqa: E402
+
 PY = sys.executable
-KEEP = {k: v for k, v in os.environ.items() if not k.startswith("EVAL_") and k != "COLUMNS"}
+KEEP = {
+    k: v for k, v in os.environ.items() if (not k.startswith("EVAL_") or k == "EVAL_STORE") and k != "COLUMNS"
+}
 
 
 def evh(proj: Path, *args: str, **env: str) -> subprocess.CompletedProcess:
@@ -38,9 +46,7 @@ def out(r: subprocess.CompletedProcess) -> str:
     return r.stdout + r.stderr
 
 
-def write_run(proj: Path, name: str, config: str, scores: dict, extra: dict | None = None) -> None:
-    d = proj / "data" / "runs" / name
-    d.mkdir(parents=True)
+def write_run(proj: Path, name: str, config: str, scores: dict, extra: dict | None = None) -> Path:
     m = {
         "run_id": name,
         "dataset_id": "dsv",
@@ -55,11 +61,12 @@ def write_run(proj: Path, name: str, config: str, scores: dict, extra: dict | No
         "created_at": "2026-11-01T10:00:00Z",
         **(extra or {}),
     }
-    (d / "metrics.json").write_text(json.dumps(m))
-    (d / "predictions.jsonl").write_text(
+    return _runfix.put_run(
+        proj / "data",
+        m,
         "".join(
             json.dumps({"item_id": f"i{i}", "acc": scores["acc"], "cost_usd": 0.001}) + "\n" for i in range(4)
-        )
+        ),
     )
 
 
@@ -74,17 +81,23 @@ try:
         ("rep_x_r3", "arm_rep_v1"),
         ("single", "arm_one_v1"),
     ):
-        write_run(syn, name, cfg, {"acc": 0.5, "total_cost_usd": 0.004})
-        pj = syn / "data" / "runs" / name / "predictions.jsonl"
-        pj.write_text(
-            "".join(
-                json.dumps(
-                    {"item_id": f"i{i}", "acc": 0.5, "cost_usd": 0.001, "_meta": {"usage": {"cost": 0.001}}}
-                )
-                + "\n"
-                for i in range(4)
+        sd = write_run(syn, name, cfg, {"acc": 0.5, "total_cost_usd": 0.004})
+        with _runstore._InProject(syn):  # in the suite's store, as `evh` reads it
+            _runstore.put_rows_text(
+                sd,
+                "".join(
+                    json.dumps(
+                        {
+                            "item_id": f"i{i}",
+                            "acc": 0.5,
+                            "cost_usd": 0.001,
+                            "_meta": {"usage": {"cost": 0.001}},
+                        }
+                    )
+                    + "\n"
+                    for i in range(4)
+                ),
             )
-        )
     r = evh(syn, "cost-report", "--dataset-id", "dsv")
     rows = [ln.split()[0:2] for ln in r.stdout.splitlines() if ln.strip().startswith("arm_")]
     check(
@@ -159,12 +172,14 @@ try:
         lb.stdout[-900:],
     )
 
-    # runs-list --baselines: the mean over the baseline's repeats, as the other views show it
-    (syn / "data" / "baselines").mkdir(parents=True)
-    (syn / "data" / "baselines" / "dsv_baseline.json").write_text(
+    # evh baselines: the mean over the baseline's repeats, as the other views show it
+    _runstore.write_text(
+        syn,
+        "baselines/_dataset/dsv/1.json",
         json.dumps(
             {
-                "baseline_id": "dsv_baseline",
+                "version": 1,
+                "goal": None,
                 "dataset_id": "dsv",
                 "promoted_from": "rep_x_r1",
                 "build": {"ref": "abc123def456"},
@@ -175,18 +190,18 @@ try:
                     "mean_scores": {"acc": 0.6, "cost_usd": 0.002},
                 },
             }
-        )
+        ),
     )
-    bl = evh(syn, "runs-list", "--baselines")
+    bl = evh(syn, "baselines")
     check(
-        "runs-list --baselines: the scores are the mean over the repeats, and the line says it is one",
+        "evh baselines: the scores are the mean over the repeats, and the line says it is one",
         re.search(r"scores \(mean of 3 repeats\)\s+acc=0\.6\s+cost_usd=0\.002", bl.stdout) is not None,
         bl.stdout,
     )
-    blj = json.loads(evh(syn, "runs-list", "--baselines", "--json").stdout)["result"]
-    row = blj["blocks"][0]["rows"][0]
+    blj = json.loads(evh(syn, "baselines", "--json").stdout)
+    row = blj["baselines"][0]
     check(
-        "runs-list --baselines --json: the same mean, and the number of repeats beside it",
+        "evh baselines --json: the same mean, and the number of repeats beside it",
         row.get("scores", {}).get("acc") == 0.6 and row.get("repeats") == 3,
         blj,
     )
@@ -194,11 +209,18 @@ try:
     # rounds --goal: each round's conclusion in the list is whole, not cut at 70 characters
     import yaml
 
+    # the repository's own rounds, copied into the synthetic project so the store under test is the one that reads them
+    rounds_src = HERE.parent / "data" / "rounds" / "triage_orrery"
+    for f in sorted(rounds_src.glob("*.yaml")):
+        _runstore.write_text(syn, f"rounds/triage_orrery/{f.name}", f.read_text())
+    goal_src = HERE.parent / "data" / "goals" / "triage_orrery.yaml"
+    if goal_src.is_file():
+        _runstore.write_text(syn, "goals/triage_orrery.yaml", goal_src.read_text())
     texts = [
         (yaml.safe_load(f.read_text()).get("conclusion") or {}).get("text", "")
-        for f in sorted((HERE.parent / "data" / "rounds" / "triage_orrery").glob("r*.yaml"))
+        for f in sorted(rounds_src.glob("r*.yaml"))
     ]
-    rl = evh(HERE.parent, "rounds", "--goal", "triage_orrery")
+    rl = evh(syn, "rounds", "--goal", "triage_orrery")
     flat_rl = " ".join(rl.stdout.split())
     check(
         "rounds --goal triage_orrery: every earlier round's conclusion is in the list whole",
@@ -217,8 +239,8 @@ try:
     flat = " ".join(h.split())
     check(
         "silver-calibrate --help: what --ref-match and --arm-match each match",
-        "substring of config_id: the runs whose outputs are used AS the silver references" in flat
-        and "substring of config_id: the runs scored against those references" in flat,
+        "substring of the system id: the runs whose outputs are used AS the silver references" in flat
+        and "substring of the system id: the runs scored against those references" in flat,
         h,
     )
     saved = sc.runs_on
@@ -235,19 +257,19 @@ try:
         sc.runs_on = saved
     check(
         "silver-calibrate: the message names the sets it found and builds an example from them",
-        "--ref-match takes a substring of config_id" in msg
-        and "--arm-match takes a substring of config_id" in msg
-        and "_v1 (3 config(s)), _v2 (2 config(s))" in msg
+        "--ref-match takes a substring of the system id" in msg
+        and "--arm-match takes a substring of the system id" in msg
+        and "_v1 (3 system(s)), _v2 (2 system(s))" in msg
         and "For example: --ref-match _v1 --arm-match _v2" in msg,
         msg,
     )
     check(
         "silver-calibrate: with one version only, says to run a second; with none, says to name the substrings",
-        "only _v1 (2 config(s))" in one and "No config id on dsx ends in a version" in none,
+        "only _v1 (2 system(s))" in one and "No system id on dsx ends in a version" in none,
         (one, none),
     )
 
-    line = rs.closing_line([("gold/x", "gold/x")]) + "evh goals"
+    line = " ".join((rs.closing_line([("gold/x", "gold/x")]) + "evh goals").split())
     check(
         "rescore: the closing line is a whole sentence ending with the command, for a re-score on the run's reference",
         "in place of its runs when every run of the arm was re-scored against the reference it was measured on."
@@ -256,13 +278,22 @@ try:
         and "Not in place" not in line,
         line,
     )
-    line = rs.closing_line([("gold/x", "silver/x"), ("gold/x", "silver/x")]) + "evh goals"
+    line = " ".join((rs.closing_line([("gold/x", "silver/x"), ("gold/x", "silver/x")]) + "evh goals").split())
     check(
         "rescore: a re-score on another reference says it is a table of its own and the old table is unchanged",
         "Not in place: 2 run(s) against silver/x, measured against gold/x." in line
         and "the table scored against the old one stays as it was" in line
         and line.endswith("evh goals"),
         line,
+    )
+    many: list[tuple[str | None, str]] = [
+        (f"gold/set_{i}_with_a_long_name", f"silver/set_{i}_with_a_long_name") for i in range(4)
+    ]
+    widths = [len(x) for x in rs.closing_line(many).splitlines()]
+    check(
+        "rescore: the closing lines are wrapped to 100 columns, however many references they name",
+        max(widths) <= 100 and len(widths) > 3,
+        widths,
     )
 
     check(
@@ -296,11 +327,11 @@ try:
 
     # ---- a tutorial project: goals, family-test --round, score-preview, overview, inspect ----
     proj = tutorial_proj
-    data = proj / "data"
-    (data / "configs").mkdir(parents=True)
-    (data / "goals").mkdir()
+    _runstore.write_text(proj, _format.NAME, f"format: {_format.FORMAT}\n")
+    _runstore.write_text(
+        proj, "goals/tickets_summary.yaml", (KIT / "goals" / "tickets_summary.yaml").read_text()
+    )
     shutil.copytree(KIT / "tickets", proj / "tutorial" / "tickets")
-    shutil.copy(KIT / "goals" / "tickets_summary.yaml", data / "goals")
     r = evh(proj, "dataset-create", "--dataset-id", "tickets_v1", "--source-dir", "tutorial/tickets")
     r = r if r.returncode else evh(proj, "dataset-materialize", "--dataset-id", "tickets_v1")
     r = (
@@ -338,9 +369,18 @@ try:
     )
     check("setup: the kit's dataset and gold", r.returncode == 0, out(r)[-300:])
     for cfg in ("lead1", "lead2", "lead2_noisy"):
-        text = (KIT / "configs" / f"tickets_{cfg}.yaml").read_text() + "goal: tickets_summary\n"
-        (data / "configs" / f"{cfg}.yaml").write_text(text)
-        r = evh(proj, "run", "--config", f"data/configs/{cfg}.yaml")
+        text = (KIT / "systems" / f"tickets_{cfg}_v1.yaml").read_text()
+        _runstore.write_text(proj, f"systems/tickets_{cfg}_v1.yaml", text)
+        r = evh(
+            proj,
+            "run",
+            "--system",
+            f"tickets_{cfg}_v1",
+            "--dataset",
+            "tickets_v1",
+            "--goal",
+            "tickets_summary",
+        )
     check("setup: three arms run", r.returncode == 0, out(r)[-400:])
     r = evh(
         proj,
@@ -429,10 +469,10 @@ try:
 
     # inspect conditions: the model name whole
     for cfg, model in (("tickets_lead1_v1", "eval-mistral-small"), ("tickets_lead2_v1", "eval-opus-5")):
-        mj = next((data / "runs").glob(f"{cfg}_*/metrics.json"))
-        m = json.loads(mj.read_text())
+        rj = f"runs/{next(n for n in _runstore.listdir(proj, 'runs') if n.startswith(cfg + '_'))}/run.json"
+        m = _runstore.read_json(proj, rj)
         m.setdefault("fingerprint", {}).setdefault("deployment", {})["model"] = model
-        mj.write_text(json.dumps(m))
+        _runstore.write_text(proj, rj, json.dumps(m))
     ins = evh(proj, "inspect", "--runs", "runs/tickets_v1/tickets_lead1_v1,runs/tickets_v1/tickets_lead2_v1")
     check(
         "inspect: the conditions table shows eval-mistral-small whole",
@@ -454,15 +494,27 @@ try:
     )
 
     # overview: arm-smoke spend beside the billed figure
-    (data / "models").mkdir(exist_ok=True)
     now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-    rec = (
-        "model_id: smoked-model\nsmokes:\n  smoked_arm_v1:\n    status: pass\n    at: '"
-        + now
-        + "'\n    flags: []\n"
-        "    report:\n      items:\n      - {item: a, cost_usd: 0.25, scored: true}\n      - {item: b, cost_usd: 0.5, scored: true}\n"
+    _model_records.put(
+        proj,
+        {
+            "model_id": "smoked-model",
+            "deployments": [{"id": "here", "where": "here"}],
+            "smokes": {
+                "smoked_arm_v1": {
+                    "status": "pass",
+                    "at": now,
+                    "flags": [],
+                    "report": {
+                        "items": [
+                            {"item": "a", "cost_usd": 0.25, "scored": True},
+                            {"item": "b", "cost_usd": 0.5, "scored": True},
+                        ]
+                    },
+                }
+            },
+        },
     )
-    (data / "models" / "smoked-model.yaml").write_text(rec)
     ov = evh(proj, "overview")
     billed = next((ln for ln in ov.stdout.splitlines() if ln.strip().startswith("billed")), "")
     check(
@@ -477,21 +529,35 @@ try:
     )
 
     # rescore: outputs the stored runs ended at max_tokens are named, as evh run names them
-    clean = evh(proj, "rescore", "--dataset-id", "tickets_v1", "--out", str(proj / "rs_clean"))
+    clean = evh(proj, "rescore", "--dataset-id", "tickets_v1")
     check(
         "rescore: no cut-off output, no cut-off warning",
         clean.returncode == 0 and "stopped at max_tokens" not in clean.stdout,
         out(clean)[-500:],
     )
-    cut_run = next((data / "runs").glob("tickets_lead1_v1_*"))
-    preds = [json.loads(x) for x in (cut_run / "predictions.jsonl").read_text().splitlines()]
-    preds[0].setdefault("_meta", {})["finish_reason"] = "length"
-    preds[1]["tokens_out"] = 99
-    cm = json.loads((cut_run / "metrics.json").read_text())
-    cm.setdefault("params", {})["max_tokens"] = 99
-    (cut_run / "metrics.json").write_text(json.dumps(cm))
-    (cut_run / "predictions.jsonl").write_text("".join(json.dumps(x) + "\n" for x in preds))
-    cutr = evh(proj, "rescore", "--dataset-id", "tickets_v1", "--out", str(proj / "rs_cut"))
+    with _runstore._InProject(proj) as data:
+        cut_run = next(_store.glob(data / "runs", "tickets_lead1_v1_*"))
+        first = next(
+            sd
+            for sd in sorted(_store.iterdir(cut_run / "scores"))
+            if json.loads(_store.read_text(sd / "score.json")).get("first")
+        )
+        preds = _runstore.rows(first)
+        preds[0].setdefault("_meta", {})["finish_reason"] = "length"
+        preds[1]["tokens_out"] = 99
+        cm = json.loads(_store.read_text(cut_run / "run.json"))
+        cm.setdefault("params", {})["max_tokens"] = 99
+        _store.write_text(cut_run / "run.json", json.dumps(cm))
+        # Measured by another scorer than the tree's now: a re-score is a new score, never one written over the first.
+        older = first.with_name("0" * 12 + "@" + first.name.split("@", 1)[1])
+        _store.copy_tree(first, older, files_only=True)  # its rows are put below
+        _store.rmtree(first)
+        _store.write_text(
+            older / "score.json",
+            json.dumps({**json.loads(_store.read_text(older / "score.json")), "scorer": "0" * 12}),
+        )
+        _runstore.put_rows_text(older, "".join(json.dumps(x) + "\n" for x in preds))
+    cutr = evh(proj, "rescore", "--dataset-id", "tickets_v1")
     flat_cut = " ".join(cutr.stdout.split())
     check(
         "rescore: 2 of the stored outputs stopped at max_tokens: it says so, names them, and the closing line stays last",
@@ -504,8 +570,6 @@ try:
         < flat_cut.index("the goals, the rounds and the catalog"),
         out(cutr)[-900:],
     )
-    shutil.rmtree(proj / "rs_clean", ignore_errors=True)
-    shutil.rmtree(proj / "rs_cut", ignore_errors=True)
 
     # score-preview with only re-scores
     rsr = evh(proj, "rescore", "--dataset-id", "tickets_v1")
@@ -513,7 +577,7 @@ try:
         "rescore: ends with a whole sentence and the command, for the reference the runs were measured on",
         rsr.returncode == 0
         and "in place of its runs when every run of the arm was re-scored against the reference it was measured on."
-        in rsr.stdout
+        in " ".join(rsr.stdout.split())
         and rsr.stdout.rstrip().endswith(("See it with: evh goals", "See it with: make catalog")),
         rsr.stdout[-500:],
     )
@@ -523,15 +587,17 @@ try:
         sp.returncode == 0 and "nothing written" in sp.stdout and "no measured run" not in sp.stdout,
         out(sp)[-500:],
     )
-    shutil.rmtree(data / "runs")
-    (data / "runs").mkdir()
+    # only the re-scores are left: no run holds its measured score
+    with _runstore._InProject(proj) as data:
+        for sd in list(_store.glob(data / "runs", "*/scores/*")):
+            if json.loads(_store.read_text(sd / "score.json")).get("first"):
+                _store.rmtree(sd)
     sp = evh(proj, "score-preview", "--goal", "tickets_summary")
     check(
-        "score-preview: no measured run says so, that the runs are re-scores, and how to check them",
+        "score-preview: no measured run says so, and that the runs are re-scores",
         sp.returncode == 0
         and "no measured run to re-score" in sp.stdout
-        and "are themselves re-scores" in sp.stdout
-        and "evh rescore --dataset-id tickets_v1 --out" in sp.stdout,
+        and "are themselves re-scores" in sp.stdout,
         out(sp),
     )
     check(
@@ -549,9 +615,10 @@ try:
         (jp / "src").mkdir()
         for k, f in enumerate(sorted((KIT / "tickets").glob("*.txt")) * 2):
             shutil.copy(f, jp / "src" / f"{k:02d}_{f.name}")
-        for d in ("configs", "scorers"):
-            (jp / "data" / d).mkdir(parents=True)
-        shutil.copy(KIT / "scorers" / "tickets-judge-v1.yaml", jp / "data" / "scorers")
+        _runstore.write_text(jp, _format.NAME, f"format: {_format.FORMAT}\n")
+        _runstore.write_text(
+            jp, "scorers/tickets-judge-v1.yaml", (KIT / "scorers" / "tickets-judge-v1.yaml").read_text()
+        )
         (jp / "tutorial").mkdir()
         shutil.copy(KIT / "judge_prompt.txt", jp / "tutorial")
         steps: list[tuple[str, ...]] = [
@@ -559,10 +626,10 @@ try:
         ]
         steps += [("dataset-materialize", "--dataset-id", "tickets_v1")]
         for cfg in ("lead1", "lead2"):
-            (jp / "data" / "configs" / f"{cfg}.yaml").write_text(
-                (KIT / "configs" / f"tickets_{cfg}.yaml").read_text()
+            _runstore.write_text(
+                jp, f"systems/tickets_{cfg}_v1.yaml", (KIT / "systems" / f"tickets_{cfg}_v1.yaml").read_text()
             )
-            steps.append(("run", "--config", f"data/configs/{cfg}.yaml"))
+            steps.append(("run", "--system", f"tickets_{cfg}_v1", "--dataset", "tickets_v1"))
         bad = [out(r)[-300:] for r in (evh(jp, *a) for a in steps) if r.returncode]
         check("setup: a project with 12 items and two arms to judge", not bad, bad)
         # the 25th call prints "25 calls"; the three calls after it are slow, so the process outlives that line
@@ -605,5 +672,27 @@ try:
 finally:
     shutil.rmtree(syn, ignore_errors=True)
     shutil.rmtree(tutorial_proj, ignore_errors=True)
+
+# A judged table at 120 columns: each judge's own score stays beside the panel's, ahead of cost and speed (0.7.1
+# printed the panel's score, latency and cost, and named the judges "Not shown").
+from evaluation_harness import leaderboard as lbm  # noqa: E402
+
+os.environ["COLUMNS"] = "120"
+show = [
+    "judge_judge_a_unvalidated",
+    "judge_judge_b_unvalidated",
+    "judge_score_unvalidated",
+    "cost_usd",
+    "latency_ms",
+    "total_cost_usd",
+]
+kinds = {"cost_usd": "cost", "total_cost_usd": "cost", "latency_ms": "speed"}
+judged_rows = [{"config_id": f"tickets_arm{i}_v1", **dict.fromkeys(show, 3.25)} for i in range(4)]
+kept = lbm._fit_columns(show, judged_rows, kinds, "judge_score_unvalidated", False)
+check(
+    "leaderboard: a judged table keeps each judge's score beside the panel's, ahead of cost and speed",
+    {"judge_judge_a_unvalidated", "judge_judge_b_unvalidated", "judge_score_unvalidated"} <= set(kept),
+    kept,
+)
 
 sys.exit(summary())

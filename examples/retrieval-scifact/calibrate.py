@@ -28,7 +28,9 @@ import yaml
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent / "_shared"))
+sys.path.insert(0, str(HERE.parents[1] / "harness"))  # the evaluation_harness package: its store reads data/
 import calibration as cal  # noqa: E402
+from evaluation_harness import _store  # noqa: E402
 from modules import load_module  # noqa: E402
 
 DATA = cal.ROOT / "harness" / "data"
@@ -40,9 +42,9 @@ TOLERANCE = 0.02
 
 def main() -> int:
     adapter = load_module(HERE / "adapter.py", "sf_adapter")
-    params = yaml.safe_load((HERE / "configs" / "arm_bm25_n200.yaml").read_text())["params"]
+    params = yaml.safe_load(_store.read_text(HERE / "systems" / "sf_bm25_v1.yaml"))["params"]
     src, gold = DATA / "sources" / DATASET, DATA / "references" / "gold" / DATASET
-    queries = sorted(src.glob("*.txt"))
+    queries = sorted(_store.glob(src, "*.txt"))
     if len(queries) != 300:
         sys.exit(
             f"expected 300 queries under {src}, found {len(queries)} — run fetch.py "
@@ -51,8 +53,8 @@ def main() -> int:
     adapter.warmup(params)
     ndcg = []
     for q in queries:
-        out = adapter.call_system(q.read_text(encoding="utf-8"), params).output
-        ndcg.append(adapter.score(out, (gold / q.name).read_text(encoding="utf-8"))["ndcg_10"])
+        out = adapter.call_system(_store.read_text(q, encoding="utf-8"), params).output
+        ndcg.append(adapter.score(out, _store.read_text(gold / q.name, encoding="utf-8"))["ndcg_10"])
     n = len(ndcg)
     res = {
         "n": n,

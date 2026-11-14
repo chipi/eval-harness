@@ -43,7 +43,7 @@ against the books in [LABELS_ANALYSIS_0.6.0](https://github.com/chipi/eval-harne
   different label sets.
 - A label always says who gave it (`person`, `model`, `rule`), when, and the guideline it followed.
 - A reference is made only by promoting labels, with a reason, and says which set it came from and its source.
-- A run's outputs can become labels without a second paid pass, recording the run, its config and fingerprint.
+- A run's outputs can become labels without a second paid pass, recording the run, its system and fingerprint.
 - Labels follow an item by its content, into later versions and other datasets with the same item.
 - Changing the reference costs nothing: stored outputs are re-scored, never regenerated.
 - How far silver drifts from gold can be measured once gold exists.
@@ -91,7 +91,7 @@ against the books in [LABELS_ANALYSIS_0.6.0](https://github.com/chipi/eval-harne
 - **FR2.1**: A label set is `data/labels/<dataset>/<set>/`: one `<item_id>.txt` per labelled item and
   `labels.json` (the dataset, the set, its source, when, each item's sha256, an optional note per item, and the
   guideline's hash when one is given).
-- **FR2.2**: The source is `person` (`--by`), `model` (the run, its config and fingerprint) or `rule` (the rule file's
+- **FR2.2**: The source is `person` (`--by`), `model` (the run, its system and fingerprint) or `rule` (the rule file's
   hash).
 - **FR2.3**: `evh label-sheet` writes a sheet of the chosen items (`--items unlabelled|all|disagree`, `--item`), with
   what production or an arm decided and an optional proposal; `evh label-import` makes a `person` set of the
@@ -124,7 +124,7 @@ against the books in [LABELS_ANALYSIS_0.6.0](https://github.com/chipi/eval-harne
 - **FR3.1**: `evh reference-promote --dataset-id D --labels S [--items …] --tier gold|silver --by WHO --reason "…"`
   copies the chosen labels (the set on this dataset, or `DATASET/SET` on another with the same items) into
   `references/<tier>/<name>/`; the manifest records `promoted_from` (the set, its dataset, its source), the reason,
-  who and when, and for a `model` set who authored the texts (its config, model and run). A reason must be a
+  who and when, and for a `model` set who authored the texts (its system, model and run). A reason must be a
   sentence; a reference set is never overwritten.
 - **FR3.2** (0.6.0): `reference-create` and `reference-from-outcomes` are removed; `label-from-run` keeps their
   refusals and `--not-redistributed`, `label-from-capture` their rule language.
@@ -142,8 +142,8 @@ against the books in [LABELS_ANALYSIS_0.6.0](https://github.com/chipi/eval-harne
 
 ### FR5: Changing the reference
 
-- **FR5.1**: `evh rescore --dataset-id … --reference-id gold/… --out data/runs-gold` re-scores every run's stored
-  outputs against another reference, $0, into a separate directory; the originals are never touched (RFC-002).
+- **FR5.1**: `evh rescore --dataset-id … --reference-id gold/…` re-scores every run's stored
+  outputs against another reference, $0; the originals are never touched (RFC-002).
 - **FR5.2**: A re-scored run records the reference it was first measured against (`reference_id_at_measurement`).
 - **FR5.3**: `evh silver-calibrate --dataset-id …` reports how far silver references drift from gold.
 - **FR5.4**: The inspector, on a metric scored against a reference, does not test an arm scored against another
@@ -151,11 +151,11 @@ against the books in [LABELS_ANALYSIS_0.6.0](https://github.com/chipi/eval-harne
 
 ### FR6: Scoring against labels (0.6.0)
 
-- **FR6.1**: `evh rescore --dataset-id D --labels SET` and `evh run --config C --labels SET` score against
+- **FR6.1**: `evh rescore --dataset-id D --labels SET` and `evh run --system S --dataset D --labels SET` score against
   a label set of the run's own dataset without promoting it (a set on another dataset is refused: promote it, or
   label this one). The run records `reference_id: labels/<dataset>/<set>` and `reference_tier: labels`, and its
   fingerprint hashes the set's files. A run scored against a set, measured or re-scored, is written beside the
-  runs, `data/runs-labels-<dataset>-<set>/`: an arm of its own, never one more run of the config's arm on gold or
+  runs, `data/runs-labels-<dataset>-<set>/`: an arm of its own, never one more run of the system's arm on gold or
   silver, and never where a goal reads a re-score in place of a run.
 - **FR6.2** (0.6.0): Every view names it by its source (the set's source chip and name, made by whom and when on
   the labels page), never as a reference or with a tier; arms against different sets are never compared, as for references

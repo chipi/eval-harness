@@ -475,7 +475,7 @@ arm finished") names `deepseek_m` > `anthropic_l`. The Holm over four covers the
 the choosing of them.
 
 In the wider family — `deepseek_m` against all 28 other arms, Holm over 28
-(`python scripts/family_test.py --dataset-id cnn_dailymail_200 --a cnn_deepseek_m_n200_v1
+(`python scripts/family_test.py --dataset-id cnn_dailymail_200 --a cnn_deepseek_m_v2
 --against cnn_ --metric coverage`) — `anthropic_l` (p = 0.0000) and `anthropic_m` (p = 0.0003)
 differ significantly; `openai_l` does not (p = 0.0049 against a threshold of 0.0045), and 17 of the
 28 differ significantly, so 11 do not.
@@ -538,7 +538,7 @@ even the point-estimate part of this report depends on the sample.
 
 At n=200, from the stored outputs ($0): every one of the 29 arms used in turn as the silver
 author, its own row excluded, ranking the other 28 by `coverage` against its outputs
-(`evh silver-calibrate --dataset-id cnn_dailymail_200 --ref-match _n200_v1 --arm-match _n200_v1`):
+(`evh silver-calibrate --dataset-id cnn_dailymail_200 --ref-match cnn_ --arm-match cnn_`):
 
 | quantity | value |
 |---|---|
@@ -668,9 +668,9 @@ than §3.1's 28-arm family, where `bart_s` is not significant.)*
 
 **What this does not test: the hosted arms.** Whether `bart_l` is still not significantly different from `deepseek_m`,
 whether 15 arms are still not significantly different from the leader, whether the dearest arm still trails — every
-comparison involving a paid model — is unmeasured outside CNN. Configs for the four
-hosted arms in the CNN top six are committed beside the local ones
-(`configs/arm_{deepseek_m,llama_l,llama_m,llama_s}_dm200.yaml`); they need an
+comparison involving a paid model — is unmeasured outside CNN. The four hosted arms in
+the CNN top six are committed systems (`cnn_deepseek_m_v2`, `cnn_llama_l_v2`, `cnn_llama_m_v2`,
+`cnn_llama_s_v2`) that run on this slice as they are (`--dataset cnn_dailymail_dm200`); they need an
 OpenAI-compatible endpoint, which the environment that ran this slice did not have.
 
 **And a calibration aside.** `bart_l` is the published `facebook/bart-large-cnn`, reported
@@ -960,17 +960,18 @@ cp .env.example .env                      # point at a proxy
 # The dataset file is committed and frozen; materialize checks the fetched bytes against it.
 make dataset-materialize DATASET_ID=cnn_dailymail_200
 make sweep PYTHON=../examples/summarization-cnn-dailymail/.venv/bin/python \
-     CONFIGS="../examples/summarization-cnn-dailymail/configs/arm_*_n200.yaml" REPEAT=1
+     SYSTEMS="$(ls ../examples/summarization-cnn-dailymail/systems | sed 's/\.yaml$//' | tr '\n' ' ')" \
+     DATASET_ID=cnn_dailymail_200 REPEAT=1
 make leaderboard DATASET_ID=cnn_dailymail_200
 
 # the two questions the leaderboard cannot answer on its own
 make holdout   DATASET_ID=cnn_dailymail_200 EXCLUDE=cnn_dailymail_20
-make pair-test DATASET_ID=cnn_dailymail_200 A=cnn_deepseek_m_n200_v1 B=cnn_anthropic_l_n200_v1 FAMILY=4
+make pair-test DATASET_ID=cnn_dailymail_200 A=cnn_deepseek_m_v2 B=cnn_anthropic_l_v2 FAMILY=4
 python scripts/rank_stability.py --dataset-id cnn_dailymail_200
 
 # the local arms (bart_m, bart_s, bart_l_xsum need torch >= 2.6: uv sync --extra local)
-python scripts/family_test.py --dataset-id cnn_dailymail_200 --a cnn_bart_l_n200_v1 --against _n200_v1 --metric coverage
-python scripts/family_test.py --dataset-id cnn_dailymail_200 --a cnn_bart_l_xsum_n200_v1 --against _n200_v1 --metric coverage
+python scripts/family_test.py --dataset-id cnn_dailymail_200 --a cnn_bart_l_v1 --against cnn_ --metric coverage
+python scripts/family_test.py --dataset-id cnn_dailymail_200 --a cnn_bart_l_xsum_v1 --against cnn_ --metric coverage
 ```
 
 The three 2026-09-30 BART arms load `main`'s `pytorch_model.bin`; each checkpoint also has

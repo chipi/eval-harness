@@ -1,4 +1,0 @@
-[
-    {"text": "War of Independence", "type": "event"},
-    {"text": "Israeli army", "type": "organization"}
-]

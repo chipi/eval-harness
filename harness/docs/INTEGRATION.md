@@ -19,7 +19,7 @@ Pin it into your project, and start the project's folders:
 ```bash
 cd /path/to/your-project
 pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.7.2#subdirectory=harness"
-evh init         # data/sources, data/configs, data/goals, data/fields, a .gitignore
+evh init         # data/sources, data/systems, data/goals, data/fields, a .gitignore
 ```
 
 That one install is everything: the hosted-model clients (`openai`, `anthropic`), the judges, the
@@ -28,7 +28,7 @@ no extra to add. It needs Python 3.10 or later.
 
 Keep `data/materialized/` out of git (derived; the `.gitignore` `evh init` writes already
 does this) and decide whether to commit runs: keep each run's `metrics.json`,
-`predictions.jsonl` and `outputs/` so scores can be recomputed. A project whose own layout
+`predictions.jsonl` and `outputs.jsonl` so scores can be recomputed. A project whose own layout
 puts the harness's records elsewhere sets `EVAL_DATA_DIR`.
 
 Your project **does not depend on it at runtime**, and it has no dependency on your
@@ -46,7 +46,7 @@ measure it.
 adapter, `evaluation_harness/adapter.py`, which also has `score()`;
 `python -c "import evaluation_harness, os; print(os.path.join(evaluation_harness.__path__[0], 'adapter.py'))"`
 prints where it is). It receives one item's text and the
-config's `params`, and returns what your system produced:
+system's `params`, and returns what your system produced:
 
 ```python
 from evaluation_harness.adapter import Result
@@ -79,6 +79,44 @@ harness records what arrives and skips what does not.
 If calling one stage in isolation turns out to be hard, that is worth knowing
 on its own. A stage you cannot invoke without booting everything is a stage you
 cannot measure, and that is a design finding, not an eval problem.
+
+### If your system is plain code
+
+A filter, a router, a de-duplicator, a scheduler: code that decides, with no model in it. It is evaluated
+like any arm; seven things are different. (The triage fleet's questions, 2026-11-05; its log is the worked case.)
+
+- **The item holds the world the code read when it decided.** Code that reads external state (an issue
+  tracker, a database, the clock) is measured on what it saw then, not what is there now. Freeze it into the
+  item's body (one canonical JSON document per item, hashed like any item), and let the adapter answer the
+  code's reads from it. Keys you filter or split by go in the item's fields (a field set, ADR-0003), not in
+  the body.
+- **One run is enough.** Deterministic code gives the same output every time, so k=1: `--repeat` adds
+  nothing. (A temperature-0 model is not deterministic enough to skip repeats, but its repeats are not
+  independent either: read the distinct items, not the item-runs; `run --repeat` and `pair-test` say how many
+  items the repeats scored the same.)
+- **Two goals, two questions.** *Is it right?* is a goal against gold (labels from outcomes, below).
+  *Did it change?* is a regression guard: the same dataset scored against a silver reference made from the
+  current code's own run (`evh label-from-run`, `evh reference-promote --tier silver`), and the changed items
+  read with `evh inspect --runs A,B --items-out --disagree`. An arm that must give exactly what another gives
+  (the same code at a newer commit) says `expect_identical_to: <system_id>` in its system, and `evh validate`
+  fails it when it does not (RUNBOOK §4). [`examples/signal-fleet-dedup/`](../../examples/signal-fleet-dedup/README.md)
+  is one, on the fleet's real signals.
+- **The item is the unit judged.** `score()` sees one item, and a run's metric is the mean of its items'. A
+  decision that depends on the ones before it (filing a signal into an issue opened by an earlier one) is
+  one item whose body is the whole history, replayed in order, so the order effects are inside the item.
+- **Links between items go into an outcome.** `evh label-from-capture` labels an item from its own record, so
+  "A is a duplicate of B" is written into the item's outcome (B's id, or the group it joined), not as a label
+  spanning two items.
+- **Outcomes are joined by time and order, not by a key the outcome may not carry.** Match what production
+  wrote to the decision that wrote it by the window between the cycle's previous decision and this one: a
+  reopened issue need not name the fingerprint that reopened it. Measure the clock slack between the hosts
+  involved before trusting a timestamp join: the fleet's host ran 1.6 s behind GitHub's for an hour.
+- **The code is a record of its own.** `data/models/<id>.yaml` with `kind: code` holds its `repo` and its
+  `versions`: each a `commit`, when it was `deployed` (`from`, `to`), and the `faithfulness` a replay measured
+  (`agreed` of `items`, the named `exceptions`). It needs no `aliases`; an arm names it with `model_record` like
+  any record, and its Models page and `evh models --model <id>` list the versions instead of an onboarding. A replay
+  (`replay:` in the system, RFC-030) runs each item at the version deployed then, read from `checkout` (a local clone)
+  or `repo` when it is a path; `evh faithfulness` writes each version's `faithfulness` (RUNBOOK §15c).
 
 ---
 
@@ -130,6 +168,25 @@ estimate; without it the dry run counts one per item, and says so. It does not m
 (a conversation that grows costs more than four first calls), so set a cost cap from what `evh arm-smoke`
 measured. The adapter file is hashed into a run's fingerprint: adding the line is an edit like any other.
 
+**A metric of the whole run**, which no mean of per-item scores can be (precision and recall over the pairs a
+grouping makes, a calibration error, a coverage of distinct answers): define `score_run(items)` beside `score()`.
+It is called once, after every item is scored, with each item's `item_id`, `output`, `reference` (or None) and
+`scores` (what `score()` returned for it), and returns named numbers:
+
+```python
+def score_run(items: list[dict]) -> dict[str, float]:
+    pairs = same_group_pairs(items)  # yours: which items the outputs put together, against the references
+    return {"pair_precision": pairs.precision, "pair_recall": pairs.recall}
+```
+
+They go into the run's `scores` beside the means, and the record names them in `run_metrics`. A name must be its
+own (not one `score()` returns), every value a finite number; a `score_run` that raises fails the run. `METRIC_KINDS`,
+`METRIC_DIRECTIONS` and `METRIC_DESCRIPTIONS` describe them like any metric. The leaderboard shows them, with
+their spread over an arm's runs; `evh rescore` computes them again from the stored outputs; `inspect` and the
+comparison show each arm's recorded value but never test one, and `pair-test` and `family-test` refuse them by
+name: with one number per run there is no item to pair. To test an arm against another on one, run each arm
+several times and read the spread.
+
 **Optional, for evaluating what production did** (RFC-023, [RUNBOOK §15b](RUNBOOK.md#15b-evaluating-what-production-did)),
 in the same file:
 
@@ -143,14 +200,13 @@ in the same file:
 
 ---
 
-## What an "arm" is
+## What a "system" is
 
-A thing you want to compare, expressed as a config file — not a code edit:
+A thing you want to compare, expressed as a file — not a code edit:
 
 ```yaml
-# data/configs/sonnet.yaml
-config_id: sonnet_v1
-dataset_id: my_corpus_v1
+# data/systems/sonnet_v1.yaml
+system_id: sonnet_v1
 params:
   provider: anthropic
   model: claude-sonnet-4-6
@@ -160,23 +216,25 @@ params:
   usd_per_mtok_out: 15.0
 ```
 
-Four models to compare is four of these files, same `dataset_id`. The knobs
-live in the config so an arm is reproducible and diffable; keeping them in code
-means "which settings produced this number?" has no answer.
+Four models to compare is four of these files, each run on the same dataset
+(`evh run --system sonnet_v1 --dataset my_corpus_v1`). The knobs live in the system so it is
+reproducible and diffable; keeping them in code means "which settings produced this number?" has
+no answer. A system run on a dataset is an arm; placed in a round, it is one of the round's arms.
 
-Prices live in the config too, deliberately: they change, and a run should
+Prices live in the system too, deliberately: they change, and a run should
 record the prices it was costed at. They are the fallback: when a provider's response carries
 its bill (`usage.cost`), the run records the bill. Which provider does:
 [RUNBOOK §4](RUNBOOK.md#4-point-the-harness-at-your-system).
 
-A config holds `config_id`, `dataset_id`, `params`, and optionally `adapter` (a project with
-several tasks names one per arm, `adapter: adapters/ner.py`), `goal` (what the evaluation is
-for, `data/goals/<goal_id>.yaml`), `round` (an eval round of that goal, `rN`),
-`format` (the output's shape, one of its goal's `output_contract` formats:
-[RUNBOOK §4c](RUNBOOK.md#4c-the-goal-file-field-by-field)) and `hypothesis` (what the change
-should do against which arm, committed before the run so a test of it counts as named in advance:
-[RUNBOOK §4](RUNBOOK.md#4-point-the-harness-at-your-system); checked by V20). Any other key is
-refused by `evh validate` (V1).
+A system holds `system_id` (its file's name), `params`, and optionally `adapter` (a project with
+several tasks names one per system, `adapter: adapters/ner.py`), `model_record` and `deployment`
+(the model it runs, RUNBOOK §16), `format` (the output's shape, one of its goal's `output_contract`
+formats: [RUNBOOK §4c](RUNBOOK.md#4c-the-goal-file-field-by-field)) and `hypothesis` (what the change
+should do against which system, committed before the run so a test of it counts as named in advance:
+[RUNBOOK §4](RUNBOOK.md#4-point-the-harness-at-your-system); checked by V20); the schema is
+`schemas/system.schema.json`, and any other key is refused by `evh validate` (V1). What a system is
+run for is the run's: `--dataset`, `--goal` (what the evaluation is for, `data/goals/<goal_id>.yaml`)
+and `--round` (an eval round of that goal, `rN`).
 
 ---
 
@@ -187,7 +245,7 @@ dispatches to its `PROVIDERS` (`from evaluation_harness.adapter import PROVIDERS
 call OpenAI or any OpenAI-compatible endpoint (`provider: openai` with a `base_url`), OpenRouter
 (`provider: openrouter`), and a LiteLLM proxy (`provider: litellm`). Each reads its key from the
 environment or the project's `.env` (gitignored by `evh init`); the harness holds none.
-**Which variable each provider reads, and what goes in the arm's `params`:
+**Which variable each provider reads, and what goes in the system's `params`:
 [tutorial 2](../../docs/tutorials/2-hosted-llm.md#1-choose-a-provider).** `evh env-check`
 reports which are set. Judges use the same providers: each judge's `provider:` in the scorer
 decides where its calls go. Judges read their own keys (`EVAL_JUDGE_<VAR>`) or share the arms'
@@ -200,10 +258,10 @@ credentials (`<VAR>`), so you can run judges on separate budgets or the same one
 
 Most projects do not have it. The sequence that works:
 
-1. **Run your best model as an arm**, usually an expensive one you would not run in
+1. **Run your best model as a system**, usually an expensive one you would not run in
    production, read its results, take its outputs as a model's labels, and promote them:
    ```bash
-   evh run --config data/configs/frontier.yaml
+   evh run --system frontier_v1 --dataset my_v1
    evh label-from-run --run <that run_id> --set frontier_v1
    evh reference-promote --dataset-id my_v1 --labels frontier_v1 --tier silver --reason "…" --by <you>
    ```
@@ -246,8 +304,7 @@ re-authoring what you have.
 | refusals | cross-dataset comparisons, dirty-tree promotions and unreasoned baselines are blocked, not warned about |
 | integrity | `evh validate` fails CI on a tree that has drifted |
 | re-measurement | stored outputs scored again for a new reference or scorer at $0, or by validated LLM judges, without re-running an arm |
-| a judge panel | when the cheap metric is biased and you need an LLM to adjudicate |
-| goals | what each evaluation is for, named on every config and checked by `evh validate` |
+| goals | what each evaluation is for, named on every system and checked by `evh validate` |
 | eval rounds (optional) | round on round: what each round tried, what it kept and dropped and why, what it concluded ([tutorial 4](../../docs/tutorials/4-rounds-and-versions.md)) |
 | item fields | the facts you know about each item (typed, declared once in a field set), checked by `evh validate`; items fetched from a pinned URL |
 | a catalog and an inspector | pages over your runs, and a local server that tests any arms against a baseline and shows outputs beside references; every view is also an `evh` command |
@@ -270,7 +327,7 @@ which references exist, what one arm wrote for one item.
 
 - **On the harness's layout, there is nothing to write.** The built-in `HarnessAdapter`
   reads `data/runs*/`, `data/references/`, `data/datasets/` and `data/goals/`, and its arm is
-  one config on one dataset with its repeats averaged per item, exactly as `pair-test` reads
+  one system on one dataset with its repeats averaged per item, exactly as `pair-test` reads
   them, so the inspector gives the same p.
 - **With your own layout, write one adapter** and name it in your project's `config.yaml`:
 
@@ -327,6 +384,13 @@ which references exist, what one arm wrote for one item.
   and a reference can be text a project may not redistribute, so a public deployment publishes
   neither until it says so.
 
+  A private deployment for a team behind its own proxy (a tailnet's Caddy, a VPN) is the local
+  inspector, not a public one: `evh catalog-serve --behind-proxy HOST[,HOST] --bind 0.0.0.0` in a
+  container serves the pages, the data tree and every item, output and reference, to requests
+  whose Host is one it names (and to this machine's, for a health check), with no rate limit and
+  nothing withheld. Everyone who can reach the proxy reads everything, so put it behind what
+  already decides who that is. Nothing is written through it.
+
   `item_fields` is optional: without it the pages show no fields. With it, the dataset page
   lists each field and its coverage, and summarises the values of a field marked `public`
   only; the local inspector shows every value, filters a comparison by a field and breaks it
@@ -363,11 +427,13 @@ project (the rules, the loop, what it may do: [CONCEPTS](CONCEPTS.md#an-agent-wo
 a team sharing one project.
 
 `evh mcp` serves the project's read commands to an agent over MCP (the official SDK): the
-catalog's views (`overview`, `datasets`, `dataset-items`, `arms`, `models`, `goals`, `references`, `metrics`,
-`activity`, `search`, `captures`, `labels`, `picks`, `deploy-sheet`), the inspector in the terminal (`inspect`, its
+catalog's views (`overview`, `datasets`, `dataset-items`, `dataset-card`, `licences`, `arms`, `models`, `goals`,
+`references`, `metrics`, `activity`, `search`, `captures`, `labels`, `tags`, `picks`, `label-coverage`,
+`deploy-sheet`), the project's
+files as `data-ls` and `data-show` list and show them, the inspector in the terminal (`inspect`, its
 sheet included, without the options that write a file: `--csv`, `--fill` and theirs), the ranking
 and the tests (`leaderboard`, `pair-test`, `family-test`, `rank-stability`, `run-compare`), `rounds`,
-`runs-list` and `validate`: 23 tools. Each call runs the command as a person would, with `--json`,
+`runs-list` and `validate`: 28 tools. Each call runs the command as a person would, with `--json`,
 so the agent sees the same numbers you do. No tool writes project data, spends or runs a model:
 running arms, promoting a baseline and closing a round stay commands. (What a call does write is
 computed answers in the project's ignored `.cache/`: the paired tests' p values and
@@ -413,7 +479,7 @@ evh mcp --http --bind 0.0.0.0 --port 8766 --allowed-host evals.team.example [--p
 
 `--allowed-host` is required beyond the loopback (the server checks the Host against DNS
 rebinding); `--public` leaves out the options that answer with an item's text (an item, the sheet), and the
-`validate` tool (22 tools), and the options that set how long a test runs (`--permutations`, `--draws`); `--rate` (per
+`validate`, `data-ls` and `data-show` tools (25 tools), and the options that set how long a test runs (`--permutations`, `--draws`); `--rate` (per
 caller), `--rate-total` (everyone together), `--concurrent` and `--timeout` bound the load, and a
 caller has one call running at a time; `--client-header` names the header your proxy sets for the
 caller's address (trust it only if nothing else can reach the port); `--hooks FILE` adds your error reporting, tracing
@@ -437,14 +503,14 @@ evh dataset-materialize --dataset-id pilot_v1
 evh dataset-profile --dataset-id pilot_v1              # what is inside, for its catalog page
 
 $EDITOR adapter.py                            # call_system() -> your code
-git add -A && git commit -m "pilot_v1, adapter, arms"   # a run from a dirty tree cannot become a reference
-evh run --config data/configs/best_model.yaml
+git add -A && git commit -m "pilot_v1, adapter, systems"   # a run from a dirty tree cannot become a reference
+evh run --system best_model_v1 --dataset pilot_v1
 evh label-from-run --run <that run_id> --set best_v1
 evh reference-promote --dataset-id pilot_v1 --labels best_v1 --tier silver --reason "…" --by <you>
 git add data/labels data/references && git commit -m "pilot_v1: silver, best_model's labels"
 
-evh run --config data/configs/arm_a.yaml --repeat 3   # + the noise floor
-evh run --config data/configs/arm_b.yaml
+evh run --system arm_a_v1 --dataset smoke_v1 --repeat 3   # + the noise floor
+evh run --system arm_b_v1 --dataset smoke_v1
 evh run-compare --baseline <a> --candidate <b> --noise <the spread you just measured>
 ```
 

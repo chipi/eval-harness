@@ -1190,7 +1190,7 @@ cd harness
 python scripts/leaderboard.py --dataset-id few_nerd_280        # and the other five
 # §2 — significance
 python scripts/family_test.py --dataset-id few_nerd_280 \
-    --a fn_span_marker_n200_v1 --against _n200_v1 --metric f1
+    --a fn_span_marker_v1 --against fn_ --metric f1
 # §4 — pilot vs full, and holdout
 python scripts/holdout_significance.py --dataset-id few_nerd_280 \
     --exclude-dataset few_nerd_56 --metric f1 --match fn_

@@ -5,11 +5,14 @@ and a round's leader tested against its baseline as one of the round's arms (Hol
 
 from __future__ import annotations
 
+import os
+
+os.environ["EVAL_STORE"] = "files"  # reads this repository's committed runs, which are files
+
 import contextlib
 import io
 import json
 import math
-import os
 import shutil
 import subprocess
 import sys
@@ -19,14 +22,19 @@ from pathlib import Path
 HARNESS = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(HARNESS))  # the evaluation_harness package
 from evaluation_harness import _jsonout  # noqa: E402
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runstore  # noqa: E402
+from evaluation_harness import _outputs  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
+from evaluation_harness.model import runs as model_runs  # noqa: E402
 
 RUNS = HARNESS / "data" / "runs"
 CLI = HARNESS / "scripts" / "cli.py"
 
 
-def evh(*args: str, cwd: Path = HARNESS) -> subprocess.CompletedProcess:
-    env = {**os.environ, "EVAL_NO_CACHE": "1"}
+def evh(*args: str, cwd: Path = HARNESS, **env_over: str) -> subprocess.CompletedProcess:
+    env = {**os.environ, "EVAL_NO_CACHE": "1", **env_over}
     env.pop("EVH_P_CACHE", None)
     return subprocess.run(
         [sys.executable, str(CLI), *args], cwd=cwd, env=env, capture_output=True, text=True, timeout=600
@@ -68,7 +76,9 @@ def main() -> int:
     )
 
     # M1: --against as a comma-separated list names the family exactly; one value stays a substring.
-    a, b, c = "ag_anthropic_l_n200_v1", "ag_anthropic_m_n200_v1", "ag_anthropic_s_n200_v1"
+    a, b, c = "ag_anthropic_l_v1", "ag_anthropic_m_v1", "ag_anthropic_s_v1"
+    # a run's directory keeps the id it was made under (data/renames.json: systems)
+    dirs = {x: x.replace("_v1", "_n200_v1") for x in (a, b, c)}
     r = evh("family-test", "--dataset-id", "ag_news_200", "--a", a, "--against", f"{b},{c}", "--json")
     v = json.loads(r.stdout)["result"]["values"] if r.returncode == 0 else {}
     check("family-test: --against B,C is the family {B, C}", v.get("family_size") == 2, r.stderr[-300:] or v)
@@ -80,10 +90,11 @@ def main() -> int:
     tmp = Path(tempfile.mkdtemp(prefix="evh-family-"))
     try:
         for cid in (a, b, c):
-            shutil.copytree(run_of(cid), tmp / run_of(cid).name)
-        short = tmp / run_of(c).name / "predictions.jsonl"
-        short.write_text(
-            "".join(short.read_text(encoding="utf-8").splitlines(keepends=True)[:40]), encoding="utf-8"
+            _runstore.copy_run(run_of(dirs[cid]), tmp / "runs" / run_of(dirs[cid]).name)
+        short = model_runs.first_score(tmp / "runs" / run_of(dirs[c]).name)
+        assert short is not None, "the copied run has no first score"
+        _runstore.put_rows_text(
+            short, "".join((_outputs.rows_text(short) or "").splitlines(keepends=True)[:40])
         )
         r = evh(
             "family-test",
@@ -93,9 +104,8 @@ def main() -> int:
             a,
             "--against",
             "ag_anthropic_",
-            "--runs-dir",
-            str(tmp),
             "--json",
+            EVAL_DATA_DIR=str(tmp),
         )
         v = json.loads(r.stdout)["result"]["values"] if r.returncode == 0 else {}
         t = evh(
@@ -106,8 +116,7 @@ def main() -> int:
             a,
             "--against",
             "ag_anthropic_",
-            "--runs-dir",
-            str(tmp),
+            EVAL_DATA_DIR=str(tmp),
         )
         check(
             "family-test: a family on 40 and 200 shared items has no single n, and the header gives the range",
@@ -121,7 +130,7 @@ def main() -> int:
     # the baseline can gate a promotion: Bonferroni over the round's arms. A raw p of 0.02 among four
     # arms is 0.08 corrected, not significant; among one it stands.
     sys.argv = ["rounds"]
-    from evaluation_harness import rounds  # noqa: PLC0415
+    from evaluation_harness.model import rounds  # noqa: PLC0415
 
     raw = {
         "label": "the baseline it started from",

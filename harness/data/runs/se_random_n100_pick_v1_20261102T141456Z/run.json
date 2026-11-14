@@ -1,0 +1,112 @@
+{
+  "actor": {
+    "from": "migration",
+    "name": "before 0.8.0",
+    "type": "unknown"
+  },
+  "adapter": "examples/summeval-judging/adapter.py",
+  "build": {
+    "dirty": true,
+    "ref": "72bbce15fb5f781157c856672a8c2b3a3c2cdd68",
+    "source": "git"
+  },
+  "config_id": "se_random_n100_pick_v1",
+  "created_at": "2026-11-02T14:14:57Z",
+  "dataset_id": "summeval_100",
+  "fingerprint": {
+    "arm": {
+      "config_id": "se_random_n100_pick_v1",
+      "labels": {
+        "family": "baseline",
+        "price_tier": "free"
+      }
+    },
+    "data": {
+      "dataset_id": "summeval_100",
+      "items_sha256": "b59999b281b2cbe87c57e4af34cc475c01ba1d531c7b77cb93a136665119c613",
+      "n_items": 100,
+      "reference_id": "gold/summeval_100",
+      "reference_tier": "gold",
+      "references_sha256": "7b5e618e23b7f2b222665d83e99006eb0e9a51066e63e2e5ff8c51ae3c696c21"
+    },
+    "data_sha256": "4f1989f81af5313fc011c02f9a294432742ea188c8c6a1c517bc198565d69e29",
+    "deployment": {
+      "declared": {
+        "code_sha256": "51e48b74e078a069c52f51cf42024a195d08566b846b7c1bc52c3cdd4030eb65",
+        "kind": "deterministic metric, no model and no network",
+        "mode": "pick",
+        "provider": "random"
+      },
+      "hosted": null,
+      "id": "random",
+      "in_process": true,
+      "libraries": {
+        "anthropic": "2.3.0",
+        "numpy": "2.5.4",
+        "openai": "3.41.0",
+        "rouge-score": "0.1.2"
+      },
+      "model": "random",
+      "provider": "random",
+      "server": null,
+      "source": "params",
+      "weights": {
+        "digest": null,
+        "file_hash": null,
+        "precision": null,
+        "quantization": null,
+        "revision": null,
+        "revision_source": "not-a-model"
+      },
+      "where": {
+        "backend": null,
+        "device": null,
+        "machine": null
+      }
+    },
+    "deployment_sha256": "743dcf814831d9176bca130c7e78d5c74c5729b1f766b600c525e241b26a2a77",
+    "hash": "67692225cee77fa97fa0e003940512618ffa04fd44710e54b91823d7b755010e",
+    "instrument": {
+      "adapter": {
+        "id": "examples/summeval-judging/adapter.py",
+        "sha256": "a886b5eac50f8ec28731d68262b01bd5d289715fa745f274d6823e1c3e932ac5"
+      },
+      "harness": {
+        "code_sha256": "b009ef6f326416a083541a1c55f6bac169410d4cfcc49b9266dcf9df1d336bb5",
+        "commit": "72bbce15fb5f",
+        "dirty": true,
+        "installed": false,
+        "version": "0.5.0"
+      }
+    },
+    "instrument_sha256": "4456655880705c74c02a9e1aaba372d1e47c467df8f284513dd0bf1d8a64dcef",
+    "runner": {
+      "cpu_count": 32,
+      "label": null,
+      "libraries": null,
+      "platform": "Linux/x86_64",
+      "processor": null,
+      "python": "3.14.7",
+      "release": "7.2.5-3-omarchy"
+    },
+    "settings": {
+      "mode": "pick",
+      "seed": 20261015
+    },
+    "settings_sha256": "c99aa4a9493115e82f087132edb498c51bed39e96f6e5a60fc5d7a4c1a573f93",
+    "version": 5
+  },
+  "n_items": 100,
+  "params": {
+    "family": "baseline",
+    "mode": "pick",
+    "price_tier": "free",
+    "provider": "random",
+    "seed": 20261015
+  },
+  "providers_seen": {},
+  "run_id": "se_random_n100_pick_v1_20261102T141456Z",
+  "warmup_ms": 0.329,
+  "purpose": "run",
+  "machine": "linux"
+}

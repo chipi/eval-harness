@@ -59,13 +59,17 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the ev
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tools/
 sys.path.insert(0, str(HERE.parents[1] / "examples" / "_shared"))
 
-from evaluation_harness._common import REFERENCES, RUNS, die, item_path, read_json, reference_texts  # noqa: E402
-from evaluation_harness._runs import warn_on_ambiguous_runs  # noqa: E402
+from evaluation_harness import (  # noqa: E402
+    _outputs,
+    _store,
+)
+from evaluation_harness._common import REFERENCES, die, item_path, reference_texts  # noqa: E402
+from evaluation_harness._runs import item_rows, runs_on, warn_on_ambiguous_runs  # noqa: E402
 
 try:
     from extraction import as_members, match_one_to_one, normalize
 except ImportError:  # pragma: no cover
-    die("examples/_shared/extraction.py not importable — run from the harness root")
+    die("examples/_shared/extraction.py not importable — run from the harness root", "missing-dependency")
 
 #: Arms whose job is to be a floor or a ceiling, not to be right. Excluded from the
 #: consensus pass only; they still appear in the ranking, which is what they are for.
@@ -77,9 +81,9 @@ def gold_sets(dataset_id: str) -> dict:
     out = {}
     for p in reference_texts(REFERENCES / "gold" / dataset_id, dataset_id):
         try:
-            out[p.stem] = json.loads(p.read_text(encoding="utf-8"))
+            out[p.stem] = json.loads(_store.read_text(p, encoding="utf-8"))
         except ValueError:
-            die(f"gold reference {p.name} is not JSON — is this a set-valued dataset?")
+            die(f"gold reference {p.name} is not JSON — is this a set-valued dataset?", "invalid-file")
     return out
 
 
@@ -90,22 +94,12 @@ def predictions(dataset_id: str, match: str | None) -> dict:
     apart: an arm that could not be read did not predict the empty set.
     """
     out: dict = defaultdict(dict)
-    for d in sorted(RUNS.glob("*")):
-        mj, pj = d / "metrics.json", d / "predictions.jsonl"
-        if not (mj.is_file() and pj.is_file()):
+    for d, m in runs_on(dataset_id, match=match):
+        if not _outputs.has_rows(d):
             continue
-        m = read_json(mj)
-        cid = m.get("config_id")
-        if m.get("dataset_id") != dataset_id or not cid:
-            continue
-        if match and match not in cid:
-            continue
-        for line in pj.read_text(encoding="utf-8").splitlines():
-            if not line.strip():
-                continue
-            row = json.loads(line)
-            if row.get("item_id"):
-                out[cid][row["item_id"]] = (row.get("_meta") or {}).get("predicted")
+        cid = m["config_id"]
+        for row in item_rows(d):
+            out[cid][row["item_id"]] = (row.get("_meta") or {}).get("predicted")
     return out
 
 
@@ -198,7 +192,7 @@ def _consensus(preds: dict, gold: dict, threshold: float, top: int, dataset_id: 
 
     def snippet(item: str) -> str:
         f = item_path(dataset_id, item)
-        return " ".join(f.read_text(encoding="utf-8").split())[:150] if f is not None else ""
+        return " ".join(_store.read_text(f, encoding="utf-8").split())[:150] if f is not None else ""
 
     # ARMS, not occurrences. Counting occurrences let one arm that emitted the same span
     # twice contribute two votes, and the report printed "25/17" -- a consensus figure
@@ -316,12 +310,15 @@ def main() -> int:
     args = ap.parse_args()
     # Two runs sharing a config_id are averaged together below without
     # saying so. See _runs.warn_on_ambiguous_runs.
-    warn_on_ambiguous_runs(RUNS, args.dataset_id, label=RUNS.name)
+    warn_on_ambiguous_runs("", args.dataset_id)
 
     gold = gold_sets(args.dataset_id)
     preds = predictions(args.dataset_id, args.match)
     if not preds:
-        die(f"no runs on {args.dataset_id!r}" + (f" matching {args.match!r}" if args.match else ""))
+        die(
+            f"no runs on {args.dataset_id!r}" + (f" matching {args.match!r}" if args.match else ""),
+            "not-found",
+        )
 
     n_ent = sum(len(v) for v in gold.values())
     empty = sum(1 for v in gold.values() if not v)
@@ -375,7 +372,7 @@ def main() -> int:
 
     if args.arm:
         if args.arm not in preds:
-            die(f"{args.arm!r} not among {sorted(preds)}")
+            die(f"{args.arm!r} not among {sorted(preds)}", "not-found")
         by_item = preds[args.arm]
         print(f"\n  PER TYPE — {args.arm}")
         print(f"    {'type':<16} {'P':>7} {'R':>7} {'F1':>7} {'support':>8}")

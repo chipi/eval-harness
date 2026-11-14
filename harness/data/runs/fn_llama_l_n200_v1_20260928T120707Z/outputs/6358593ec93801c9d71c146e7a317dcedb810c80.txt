@@ -1,7 +1,0 @@
-[
-  {"text": "RAF Horsham St Faith", "type": "location"},
-  {"text": "RAF Coltishall", "type": "location"},
-  {"text": "Legion of Merit", "type": "organization"},
-  {"text": "President of the United States", "type": "person"},
-  {"text": "United States", "type": "location"}
-]

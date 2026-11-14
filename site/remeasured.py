@@ -403,7 +403,7 @@ def judging_page(H, f: dict) -> str:
 <span class="c"># judge, capped and resumable; refused until validated</span>
 <span class="p">$ </span>evh judge-score --dataset-id my_v1 --scorer my-judge
 <span class="c"># rank and test on the judged scores</span>
-<span class="p">$ </span>EVAL_RUNS_DIR=data/runs-judged/my-judge evh leaderboard --dataset-id my_v1</pre></div>
+<span class="p">$ </span>evh leaderboard --dataset-id my_v1 --label judged/my-judge</pre></div>
 </div></section>
 {H.author("judging")}"""
     return H.page(

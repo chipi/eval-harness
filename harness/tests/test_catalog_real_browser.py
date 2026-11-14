@@ -10,7 +10,7 @@ With the inspector on a free port, over a built catalog:
 
   - every page a reader reaches from the menu, and a goal, a dataset, an arm and a metric page,
     loads with no console error and no sideways scroll at phone width;
-  - the arms page lists as many arms as it says, groups them into as many configs as it says,
+  - the arms page lists as many arms as it says, groups them into as many systems as it says,
     and its open-weights, proprietary and ties-the-leader filters each keep some arms and only
     arms of that kind;
   - the datasets page groups by goal (one heading per goal at least) and the metrics page by role
@@ -83,6 +83,137 @@ def visible_rows(page, tid: str) -> int:
         f"""[...document.querySelectorAll('table#{tid} tbody tr')].filter(r=>!r.classList.contains('grouphead')
         &&!r.hidden&&!r.classList.contains('fout')&&!r.classList.contains('pout')).length"""
     )
+
+
+def check_arms_skip_and_address(browser, base: str) -> None:
+    """The arms page's second critique (2026-11-12): the skip link drew accent text on the accent when hovered, and
+    a grouping or facet picked was lost on reload."""
+    page = browser.new_page(viewport={"width": 1280, "height": 900})
+    page.goto(base + "arms.html")
+    page.wait_for_selector("#arms tbody tr", timeout=30000)
+    page.keyboard.press("Tab")
+    page.locator("a.skip").hover()
+    fg, bg = page.evaluate(
+        "(() => { const s = getComputedStyle(document.querySelector('a.skip')); return [s.color, s.backgroundColor]; })()"
+    )
+    page.keyboard.press("Enter")
+    check(
+        "arms: the skip link is the first stop, keeps its ink when hovered, and focuses the page without leaving it",
+        fg != bg
+        and page.evaluate("document.activeElement.id") == "main"
+        and page.url.split("#")[0].endswith("arms.html"),
+        f"{fg} on {bg}, focus {page.evaluate('document.activeElement.id')}, url {page.url}",
+    )
+    page.locator('.facet-chips button[data-value="local"]').click()
+    page.locator("button[data-group-by=system]").first.click()
+    page.goto(page.url)
+    # a system group with no local arm keeps its heading hidden, and it can be the first row
+    page.wait_for_selector("#arms tbody tr:not([hidden])", timeout=30000)
+    pressed = page.evaluate(
+        "[...document.querySelectorAll('[aria-pressed=true]')].map(b => b.textContent.trim())"
+    )
+    check(
+        "arms: a grouping and a facet picked are kept in the address and come back on reload",
+        "system" in pressed and "local" in pressed and page.locator("#arms tr.grouphead").count() > 1,
+        pressed,
+    )
+    page.close()
+
+
+def check_arms_default_view(browser, base: str) -> None:
+    """The arms page's third critique (owner, 2026-11-12): it opened on every arm alphabetically, no leader in sight,
+    and a filter that matched nothing left bare column heads. It opens grouped by dataset, the arms a goal decided on
+    first, three a group; nothing left says so, with a way back."""
+    page = browser.new_page(viewport={"width": 1280, "height": 900})
+    errors: list = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+    page.goto(base + "arms.html")
+    page.wait_for_selector("#arms tbody tr", timeout=30000)
+    page.wait_for_timeout(300)
+    # Each visible row: a group's heading, an arm a goal decided on (leader, recommended, baseline), or another arm.
+    rows = page.evaluate(
+        "[...document.querySelectorAll('#arms tbody tr')].filter(r => r.offsetParent !== null).map(r =>"
+        " r.classList.contains('grouphead') ? 'head' : [...r.querySelectorAll('.role')].some(b =>"
+        " b.classList.contains('role-result') || b.textContent.trim() === 'baseline') ? 'decided' : 'arm')"
+    )
+    groups: list = []
+    for x in rows:
+        if x == "head":
+            groups.append([])
+        elif groups:
+            groups[-1].append(x)
+    check(
+        "arms: opens grouped by dataset, each group at most three rows, a decided arm never after an undecided one",
+        rows[:1] == ["head"]
+        and all(len(g) <= 3 for g in groups)
+        and not any(a == "arm" and b == "decided" for g in groups for a, b in zip(g, g[1:]))
+        and any("decided" in g for g in groups),
+        groups[:6],
+    )
+    page.fill("input[data-filter=arms]", "zzzz-no-arm")
+    page.wait_for_timeout(200)
+    empty = page.locator("#arms tr.emptyrow")
+    check(
+        "arms: a filter that matches nothing says so, and its button clears it",
+        empty.count() == 1 and "No arm matches" in empty.inner_text(),
+        empty.inner_text() if empty.count() else "no empty row",
+    )
+    page.locator("#arms [data-clearall]").click()
+    page.wait_for_timeout(200)
+    check(
+        "arms: ... and after clearing, the rows are back",
+        page.locator("#arms tr.emptyrow").count() == 0
+        and page.input_value("input[data-filter=arms]") == ""
+        and not errors,
+        errors[:2],
+    )
+    page.close()
+
+
+def check_arms_sort_and_kinds(browser, base: str) -> None:
+    """The arms page's critique (2026-11-12): sorting a grouped table threw on a group's heading row; a cost sorted as
+    text, blanks first; no row said what it was scored against."""
+    page = browser.new_page(viewport={"width": 1280, "height": 900})
+    errors: list = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+    page.goto(base + "arms.html")
+    page.wait_for_selector("#arms tbody tr", timeout=30000)
+    page.locator("button[data-group-by=set]").first.click()
+    page.locator("#arms th .sortbtn", has_text="cost").click()
+    page.wait_for_timeout(300)
+    check(
+        "arms: a grouped table sorts by a column without an error, its groups kept",
+        not errors and page.locator("#arms tr.grouphead").count() > 1,
+        errors[:2],
+    )
+    page.goto(base + "arms.html?group=none")  # the page opens grouped by dataset; this is the ungrouped sort
+    page.wait_for_selector("#arms tbody tr", timeout=30000)
+    head = page.locator("#arms th .sortbtn", has_text="cost")
+    head.click()
+    head.click()  # descending: a blank must still come last
+    page.wait_for_timeout(300)
+    vals = page.evaluate(
+        "[...document.querySelectorAll('#arms tbody tr')].filter(r => !r.hidden).map(r => (r.cells[7].querySelector('[data-v]') || {dataset: {v: ''}}).dataset.v)"
+    )
+    shown = [v for v in vals if v != ""]
+    check(
+        "arms: cost sorts by its value, descending, every blank after every number",
+        bool(shown)
+        and all(float(a) >= float(b) for a, b in zip(shown, shown[1:]))
+        and "" not in vals[: len(shown)],
+        vals[:12],
+    )
+    kinds = page.evaluate(
+        "['t-judged','t-silver'].map(k => document.querySelectorAll('#arms tbody tr.' + k).length)"
+    )
+    check(
+        "arms: every row says what it is measured against (the row key, judged and silver rows tinted, the reference named)",
+        page.locator(".rowkey").count() == 1
+        and all(n > 0 for n in kinds)
+        and page.locator("#arms tbody td", has_text="measured · against").count() > 0,
+        kinds,
+    )
+    page.close()
 
 
 def check_home_tiles(browser, base: str) -> None:
@@ -158,6 +289,9 @@ def drive(cat: Path, base: str) -> None:
         )
 
         check_home_tiles(browser, base)
+        check_arms_sort_and_kinds(browser, base)
+        check_arms_default_view(browser, base)
+        check_arms_skip_and_address(browser, base)
 
         page = browser.new_page(viewport={"width": 1280, "height": 900})
         page.on("console", lambda m: errors.append(m.text) if m.type == "error" else None)
@@ -224,17 +358,18 @@ def drive(cat: Path, base: str) -> None:
         page.goto(base + "arms.html#pall")
         page.wait_for_selector("table#arms")
         hero = page.locator(".hero").first.inner_text()
-        m = re.search(r"(\d+) arms from (\d+) configs", hero)
+        m = re.search(r"(\d+) arms from (\d+) systems", hero)
         n_arms, n_cfg = (int(m.group(1)), int(m.group(2))) if m else (0, 0)
         check(
             f"arms page: the table lists the {n_arms} arms it says",
-            n_arms > 100 and page.locator("table#arms tbody tr").count() == n_arms,
-            f"hero {hero[:80]!r}, rows {page.locator('table#arms tbody tr').count()}",
+            # the page opens grouped by dataset: a group's heading is a row of the table, not an arm
+            n_arms > 100 and page.locator("table#arms tbody tr:not(.grouphead)").count() == n_arms,
+            f"hero {hero[:80]!r}, rows {page.locator('table#arms tbody tr:not(.grouphead)').count()}",
         )
-        page.click('.group-chips[data-for="arms"] [data-group-by="config"]')
+        page.click('.group-chips[data-for="arms"] [data-group-by="system"]')
         heads = page.locator("table#arms tr.grouphead").count()
         check(
-            f"arms page: grouped by config, one heading per config ({n_cfg})",
+            f"arms page: grouped by system, one heading per system ({n_cfg})",
             heads == n_cfg,
             f"{heads} headings",
         )
@@ -317,14 +452,14 @@ def drive(cat: Path, base: str) -> None:
             rows > 0 and not unnamed,
             f"not named: {unnamed[:5]}",
         )
-        # Every config on the arms page has the day it was first run, as the home page's configs tile counts them:
-        # an undated row (a config whose runs were all re-parsed) never counts as new there.
+        # Every system on the arms page has the day it was first run, as the home page's systems tile counts them:
+        # an undated row (a system whose runs were all re-parsed) never counts as new there.
         ct = (cat / "arms.html").read_text(encoding="utf-8")
-        ct = ct[ct.index('<table id="configs"') :]
+        ct = ct[ct.index('<table id="systems"') :]
         ct = ct[: ct.index("</table>")]
         undated = re.findall(r'<tr data-key="(c:[^"]+)"(?![^>]*data-made)', ct)
         check(
-            "arms page: every config row is dated (its first run, any kind)",
+            "arms page: every system row is dated (its first run, any kind)",
             not undated,
             ", ".join(undated[:5]),
         )
@@ -355,27 +490,30 @@ def drive(cat: Path, base: str) -> None:
         best = re.findall(r"best</small> <a class=\"cell-link\"[^>]*>([a-z0-9_]+)</a>", cnn)
         check(
             "CNN goal page: one recommendation (gold's), and round r1's best is gold's leader, not silver's author",
-            recs == ["cnn_bart_l_n200_v1"] and best[:1] == ["cnn_bart_l_n200_v1"],
+            recs == ["cnn_bart_l_v1"] and best[:1] == ["cnn_bart_l_v1"],
             f"recommended {recs}; best {best[:3]}",
         )
 
-        # The triage goal page names its scorer once, not after each of 80 arms, gives its 51 contenders as a count
-        # (the same list again as "still undecided" was a screen at phone width), and prints the r3 conclusion once.
+        # The triage goal page names its scorer once, not after each of 80 arms (the baseline's gap sentence too), and
+        # prints the r3 conclusion once. It once listed 51 contenders twice; at 65 items the non-inferiority test now
+        # admits none ("too few ... needs 100"), so the page says none, and the folding of a long list is checked on a
+        # decision made for it (test_why_lines.py).
         page.goto(base + "g/triage_orrery.html")
         seen = page.locator("main").inner_text()
         concl = "Onboarding was the fix round 1 needed"
         check(
-            "triage goal page: the scorer named once, the contenders counted, round r3's conclusion shown once",
+            "triage goal page: the scorer named once, no contenders said as none, round r3's conclusion shown once",
             "rescored 5f2c057c" not in seen
             and "re-score by scorer 5f2c057c" in seen
-            and "Still undecided after the tie-break: all " in seen
+            and "Contenders beside it" in seen
+            and "): none." in seen
             and seen.count(concl) == 1,
             f"per-arm hashes {seen.count('rescored 5f2c057c')}, conclusion shown {seen.count(concl)}×",
         )
 
         # Small things read as words: an arm's rounds as sentences, a probe's yes or no (never "reasons False"),
         # what α and MASI mean beside them, and the showcase dataset's "what's inside" filled.
-        arm_p = (cat / "a" / "runs-cnn_dailymail_200-cnn_bart_l_n200_v1.html").read_text(encoding="utf-8")
+        arm_p = (cat / "a" / "runs-cnn_dailymail_200-cnn_bart_l_v1.html").read_text(encoding="utf-8")
         raw = sorted(
             f.name
             for f in (cat / "models").glob("*.html")
@@ -435,7 +573,7 @@ def drive(cat: Path, base: str) -> None:
         cov = (cat / "m" / "coverage.html").read_text(encoding="utf-8")
         check(
             "goal pages' charts: no name over another, no $-1 axis; the coverage strip leaves out silver's author",
-            not crossed and not minus and "Not drawn: cnn_anthropic_l_n200_v1" in cov,
+            not crossed and not minus and "Not drawn: cnn_anthropic_l_v2" in cov,
             f"overlapping names {crossed}; $-1 on {minus}",
         )
 
@@ -521,15 +659,14 @@ def drive(cat: Path, base: str) -> None:
             return ",".join(re.findall(r"#(\d+ of \d+)", row[: row.index("</tr>")])) or "none"
 
         places = {
-            c: place(c)
-            for c in ("ag_anthropic_l_n200_v1", "se_openai_l_n100_v1", "se_gemma_l_pubtext_n100_v1")
+            c: place(c) for c in ("ag_anthropic_l_v1", "se_openai_l_n100_v1", "se_gemma_l_pubtext_n100_v1")
         }
         check(
             "arms page: AG News anthropic_l is 5th of 30 and SummEval openai_l 1st of 33, as on the site; a paired "
             "side run has no place",
             places
             == {
-                "ag_anthropic_l_n200_v1": "5 of 30",
+                "ag_anthropic_l_v1": "5 of 30",
                 "se_openai_l_n100_v1": "1 of 33",
                 "se_gemma_l_pubtext_n100_v1": "none",
             },
@@ -598,7 +735,7 @@ def drive(cat: Path, base: str) -> None:
         # The triage sheet's rows stay short: an item's fields in two lines, winners and arms named by what sets them
         # apart (listed whole, a row was 187 px tall).
         pair = ",".join(
-            f"runs-rescored/5f2c057cdaa5/runs/orrery_triage_v1_labelled/{c}"
+            f"rescored-5f2c057c/orrery_triage_v1_labelled/{c}"
             for c in ("triage_baseline_pro_v1", "triage_local_dgx_gpt_oss_120b_v2")
         )
         page.goto(f"{base}inspect.html?dataset=orrery_triage_v1_labelled&sheet=1&runs={pair}")
@@ -610,11 +747,11 @@ def drive(cat: Path, base: str) -> None:
             "sheet: the triage sheet's rows stay under 100 px", tallest < 100, f"tallest row {tallest:.0f} px"
         )
 
-        # The sheet of a judging pass's arms, as a dataset page names them (runs-judged/<scorer>/<dataset>/<config>).
-        judged = sorted(q for q in links if "runs=runs-judged/" in q)
+        # The sheet of a judging pass's arms, as a dataset page names them (judged-<scorer>/<dataset>/<system>).
+        judged = sorted(q for q in links if "runs=judged-" in q)
         if judged:
             q = max(judged, key=lambda x: x.count(","))
-            ds = q.split("runs=runs-judged/", 1)[1].split("/")[1]
+            ds = q.split("runs=judged-", 1)[1].split("/")[1]
             arms = q.split("runs=", 1)[1].split("&", 1)[0].split(",")[:3]
             page.goto(f"{base}inspect.html?dataset={ds}&sheet=1&runs={','.join(arms)}")
             page.wait_for_selector("#sheettable, .callout, p.err", timeout=60000)
@@ -631,7 +768,7 @@ def drive(cat: Path, base: str) -> None:
         # Against a silver reference the inspector names its author and marks that arm's row, so a "better 1.000" is
         # read as the author scored against its own output; an item's cards lead with the item's score.
         silver = sorted(
-            (q for q in links if "runs=runs-silver/" in q and "baseline=" in q), key=lambda x: -x.count(",")
+            (q for q in links if "runs=silver/" in q and "baseline=" in q), key=lambda x: -x.count(",")
         )
         for q in silver:
             page.goto(base + "inspect.html?" + q)

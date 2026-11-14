@@ -1,7 +1,6 @@
 # The ceiling, not an arm
 
-These two configs are kept OUT of `configs/`, so `make sweep CONFIGS="configs/arm_*.yaml"`
-cannot pick them up.
+These two systems are kept OUT of `systems/`, so a sweep over that folder cannot pick them up.
 
 They are reference-grade models. Their job is to be the ceiling you measure toward, and to
 author a **silver** reference set where no human one exists. An arm is something you might
@@ -27,6 +26,6 @@ Two concrete reasons, and the second is a correctness one:
 
 To use one as a reference-set author: run it as an arm, take its outputs as a model's labels, and promote them:
 
-    evh run --config examples/summarization-cnn-dailymail/reference/arm_anthropic_opus.yaml
+    evh run --system cnn_anthropic_opus_v1 --dataset <id>
     evh label-from-run --run <that run> --set opus_silver --not-redistributed
     evh reference-promote --dataset-id <id> --labels opus_silver --tier silver --reason "…" --by <you>

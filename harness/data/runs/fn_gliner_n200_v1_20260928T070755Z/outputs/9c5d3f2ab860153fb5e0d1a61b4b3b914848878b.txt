@@ -1,1 +1,0 @@
-[{"text": "The University of New Zealand", "type": "organization"}, {"text": "Act", "type": "event"}]

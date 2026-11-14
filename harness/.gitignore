@@ -14,7 +14,7 @@ data/materialized/*
 #   metrics.json      1.0 MB total — every leaderboard, cost and headline figure
 #   predictions.jsonl  39 MB total — per-item scores, so every significance test,
 #                                    rank-stability curve and holdout can be rerun
-#   outputs/           COMMITTED, 7.3 MB — see below
+#   outputs.jsonl      COMMITTED: the run's outputs, one line per item (RFC-024) — see below
 #
 # Checked before committing: predictions.jsonl carries no article text. `_meta` holds
 # provider metadata, a predicted label, a list of document ids, or Few-NERD entity
@@ -41,28 +41,24 @@ data/materialized/*
 # most useful thing this harness does, and was the largest remaining reproducibility
 # hole. To reverse just this one, add: data/runs/cnn_*/outputs/
 data/runs/*/*
-!data/runs/*/metrics.json
-!data/runs/*/predictions.jsonl
-!data/runs/*/outputs
-!data/runs/*/outputs/**
+!data/runs/*/run.json
+!data/runs/*/outputs.jsonl
+!data/runs/*/scores/
+data/runs/*/scores/*/*
+!data/runs/*/scores/*/score.json
+!data/runs/*/scores/*/metrics.json
+!data/runs/*/scores/*/predictions.jsonl
 !data/runs/README.md
 
-# ...but NOT these two, which exist for crash recovery and are redundant once a run
-# exits cleanly:
-#   _rows.jsonl  the per-item rows, appended during the pass so a crash leaves them.
-#                predictions.jsonl is the same data, written on a clean exit.
-#   run.json     the run's identity, written before the first item so a crashed run
-#                can still say which arm produced its outputs. metrics.json carries
-#                the same fields and more.
-# Committing either would duplicate every prediction row for no reader.
-data/runs/*/outputs/_rows.jsonl
-data/runs/*/run.json
+# ...but NOT the pass's checkpoint: rows.partial.jsonl, the per-item rows appended during the pass so a crash
+# leaves them, is redundant once its score's predictions.jsonl is written on a clean exit. Committing it would
+# duplicate every prediction row for no reader. (run.json was ignored here too while it was only the identity
+# written before the first item; since RFC-032 step 4 it is the run's record, and is committed.)
+data/runs/*/rows.partial.jsonl
 
 # And the temp files `write_text_atomic` creates next to their target. A crash between
 # mkstemp and os.replace leaves one behind, and `!data/runs/*/outputs/**` above would
 # otherwise commit it. Found by external review.
-data/runs/*/outputs/*.tmp
-data/runs/*/outputs/.*.tmp
 
 # EXCEPT the 72 summarisation DEV runs (cnn_dailymail_20, three repeats each). They
 # predate `_portable_id` and record an absolute adapter path containing a username and
@@ -71,7 +67,7 @@ data/runs/*/outputs/.*.tmp
 # bytes, describing content that no longer exists -- a worse failure than withholding
 # the file. No MEASUREMENT run is affected; every number in the reports comes from the
 # n=200/280 runs, which are committed. Regenerate these with
-#   make run CONFIG=../examples/summarization-cnn-dailymail/configs/arm_<x>.yaml ARGS="--repeat 3"
+#   make run SYSTEM=<x>_v1 DATASET_ID=<id> ARGS="--repeat 3"
 #
 # THE OUTPUTS LINE BELOW WAS MISSING AND IT MATTERED. These four patterns excluded the
 # pilot runs' metrics and predictions, and then `!data/runs/*/outputs/**` above re-admitted
@@ -147,136 +143,10 @@ data/sources/summeval_*/
 data/references/gold/summeval_*/*
 data/references/silver/summeval_*/*
 
-# EVERY OTHER runs directory stays out, BY DEFAULT RATHER THAN BY NAME. Smoke passes,
-# tuning sweeps, superseded runs, self-test fixtures, one-off scopes: working
-# artifacts, not the record.
-#
-# This used to list them one per line, which is default-ALLOW wearing a deny's clothes:
-# any directory nobody thought to add was tracked. `data/runs-resumesrc/` -- a fixture
-# a self-test creates and deletes -- was committed that way, 7 files of it, because it
-# happened to exist when someone ran `git add -A`. I then did the same thing to myself
-# while fixing it, sweeping an in-progress re-run into a commit. Found by external
-# review.
-#
-# So: deny the whole shape FIRST, then name the two that genuinely ship. Order is the
-# whole trick: in gitignore the LAST matching rule wins, so the re-allows have to sit
-# below the deny. My first version put them above it, which left the deny winning --
-# the two directories stayed tracked only because git ignores nothing already tracked,
-# and adding any NEW file to either (this README, for one) silently failed.
+# Every run is in data/runs since RFC-032 step 4: a re-run's purpose (repeat, retime, pair) and a score's label
+# (silver, rescored, judged) are fields, not folders. A throwaway pass is `evh run --scratch`, under .build/. A
+# data/runs-* folder is format 3 data that `evh migrate` has not moved yet: never committed as it is.
 data/runs-*/
-
-# --- re-allowed, and only these ---------------------------------------------------
-
-# data/runs-repeats/ — second runs of an arm already measured. They live apart from
-# data/runs because two runs sharing a config_id make every loader pick one by
-# filesystem order: `check_report_claims` answered 29/29 on APFS and 28/29 on ext4 off
-# exactly that, and `leaderboard` silently printed the MEAN of the two as though it
-# were a measurement. Kept, because they are the only evidence this repo has about
-# between-run variance. Found by external review.
-!data/runs-repeats/
-data/runs-repeats/*/*
-!data/runs-repeats/*/metrics.json
-!data/runs-repeats/*/predictions.jsonl
-!data/runs-repeats/*/outputs
-!data/runs-repeats/*/outputs/**
-data/runs-repeats/*/outputs/_rows.jsonl
-!data/runs-repeats/README.md
-
-# data/runs-linux/ — every local arm re-run on ONE machine, back to back, idle. The
-# record in data/runs/ mixes two hosts (a 12-core Intel Mac for the original arms, a
-# 4-core Linux container for the six added on 2026-09-30), so latencies across that
-# boundary are not comparable; these are. Same config_ids as data/runs, which is why they
-# cannot live there. Point EVAL_RUNS_DIR here to compare local arms' speed.
-!data/runs-linux/
-data/runs-linux/*/*
-!data/runs-linux/*/metrics.json
-!data/runs-linux/*/predictions.jsonl
-!data/runs-linux/*/outputs
-!data/runs-linux/*/outputs/**
-data/runs-linux/*/outputs/_rows.jsonl
-!data/runs-linux/README.md
-
-# data/runs-adjudicated/ — AG News re-scored ($0) against gold/ag_news_200_adj1, the gold with
-# 17 labels changed by one reader (examples/classification-ag-news/adjudication.json, the
-# committed record): the report's main caveat, as a group on the goal page.
-!data/runs-adjudicated/
-data/runs-adjudicated/*/*
-!data/runs-adjudicated/*/metrics.json
-!data/runs-adjudicated/*/predictions.jsonl
-!data/runs-adjudicated/*/outputs
-!data/runs-adjudicated/*/outputs/**
-data/runs-adjudicated/*/outputs/_rows.jsonl
-
-# data/runs-rescored/<scorer>/<source>/ — re-scores (evh rescore, RFC-022): the stored outputs read again by
-# another scorer, $0, the scorer by its code, the source the runs directory read. The one place the tool
-# designates, so a new scorer never needs a block of its own here.
-!data/runs-rescored/
-data/runs-rescored/*/*/*/*
-!data/runs-rescored/*/*/*/metrics.json
-!data/runs-rescored/*/*/*/predictions.jsonl
-!data/runs-rescored/*/*/*/outputs
-!data/runs-rescored/*/*/*/outputs/**
-data/runs-rescored/*/*/*/outputs/_rows.jsonl
-
-# data/runs-labels-<dataset>-<set>/ — runs scored against a label set (RFC-023: `rescore --labels`,
-# `evh run --labels`, a recorded arm with `--labels`): arms of their own, never one more run of the config's
-# arm on a reference. Kept as the other run folders are: the catalog reads only what git keeps.
-!data/runs-labels-*/
-data/runs-labels-*/*/*
-!data/runs-labels-*/*/metrics.json
-!data/runs-labels-*/*/predictions.jsonl
-!data/runs-labels-*/*/outputs
-!data/runs-labels-*/*/outputs/**
-data/runs-labels-*/*/outputs/_rows.jsonl
-
-# data/runs-silver/ — the CNN arms re-scored ($0) against silver/cnn_dailymail_200, the frontier
-# arm's summaries: a silver group beside gold on the goal page, where silver's family bias shows.
-# Their outputs are the same bytes as the measured runs' in data/runs.
-!data/runs-silver/
-data/runs-silver/*/*
-!data/runs-silver/*/metrics.json
-!data/runs-silver/*/predictions.jsonl
-!data/runs-silver/*/outputs
-!data/runs-silver/*/outputs/**
-data/runs-silver/*/outputs/_rows.jsonl
-
-# data/runs-judged/<scorer>/ — the CNN summaries re-measured by LLM judges (ADR-0001), each run
-# projected from the stored verdicts in data/judge-verdicts/ by `judge-score --no-calls` ($0).
-# Committed so the catalog shows a judge's group beside gold; rebuilt byte for byte from the
-# verdicts, which are the evidence.
-!data/runs-judged/
-data/runs-judged/*/*/*
-!data/runs-judged/*/*/metrics.json
-!data/runs-judged/*/*/predictions.jsonl
-!data/runs-judged/*/*/outputs
-!data/runs-judged/*/*/outputs/**
-data/runs-judged/*/*/outputs/_rows.jsonl
-
-# EXCEPT data/runs-pair/, WHICH WAS NEVER A WORKING ARTIFACT. It holds the four runs
-# behind the pre-registered prediction -- the single most-advertised result in this
-# repo, that swapping only the first stage would move the pipeline from 0.74 to
-# 0.786-0.797, which came back at 0.7891. I filed it under "the first-stage pair" as
-# scratch and ignored the whole directory, so the one number a reader is most likely to
-# want to check was the one number with no committed evidence. Found by external review.
-!data/runs-pair/
-data/runs-pair/*/*
-!data/runs-pair/*/metrics.json
-!data/runs-pair/*/predictions.jsonl
-!data/runs-pair/*/outputs
-!data/runs-pair/*/outputs/**
-data/runs-pair/*/outputs/_rows.jsonl
-
-# Any other EVAL_RUNS_DIR: smoke passes, timing probes, throwaway scopes. Ignored for the
-# same reason, plus one the last sweep learned the hard way -- an untracked directory under
-# the harness makes the tree DIRTY, and every run launched beside it records
-# `harness.dirty: true` and cannot be reproduced from its own fingerprint.
-data/runs-smoke*/
-data/runs-tune*/
-# GLOBBED, not enumerated, for the reason the corpus rules above are: a rule that needs
-# someone to remember a new line is one forgotten line away from committing 240 run
-# artifacts. `data/runs-tune/` was exactly that -- the comment above already said "any
-# other EVAL_RUNS_DIR" and only `runs-smoke*` was actually listed.
-!data/runs/
 
 # BEIR SciFact. CC BY-SA 4.0, and still not ours to redistribute. Same rule, same timing:
 # in before the first fetch.
@@ -333,3 +203,6 @@ data/sources/orrery_triage_v2.hf/
 data/captures/*/records/
 data/sources/fleet_dedup_*/
 data/sources/fleet_dedup_v1.hf/
+
+# The sqlite store (RFC-025, store: sqlite): the project's data in one database, not in git; never committed here.
+data/project.sqlite*

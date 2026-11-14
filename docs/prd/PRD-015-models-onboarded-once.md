@@ -32,7 +32,7 @@ harness asked anyone to choose them:
   on another: the planned repeats would have measured nothing, and the fingerprint recorded the laptop that sent
   the requests, not the machine that answered them.
 
-Each was found late, by reading logs. The harness already let a config set `max_tokens` and `reasoning_effort`;
+Each was found late, by reading logs. The harness already let a system set `max_tokens` and `reasoning_effort`;
 what was missing was the step that makes someone choose them, the record that keeps the choice, and a
 fingerprint that names where a model really ran.
 
@@ -63,7 +63,7 @@ fingerprint that names where a model really ran.
 
 - _As the person running the evals, I onboard a model once (`evh model-onboard <id> --deployment <d>`), so that every arm of
   it inherits settings that were checked._
-- _As the person running the evals, I smoke an arm before its full run (`evh arm-smoke --config <arm>`), so that I know it
+- _As the person running the evals, I smoke an arm before its full run (`evh arm-smoke --system <id> --dataset <id>`), so that I know it
   runs, how long it will take and what it will cost before it spends any of it._
 - _As a reviewer, I see on the Models page which models are vetted, where each runs and with what, and on an
   arm's page which deployment its runs used._
@@ -83,16 +83,16 @@ fingerprint that names where a model really ran.
   A build the server serves differently is flagged, and the record takes it with a history entry for the one
   replaced. An ML model or a baseline is onboarded through an arm (`--config`). `ONBOARD PASS` or `ONBOARD
   CHECK`; the record's settings are never changed by it.
-- **FR3 Arm smoke.** `evh arm-smoke --config <arm>` runs any arm's first items and writes no run: runs, valid
+- **FR3 Arm smoke.** `evh arm-smoke --system <id> --dataset <id>` runs any arm's first items and writes no run: runs, valid
   output for the scorer, a projection of the full run, build pinned, determinism, cost; for an LLM, each model
   call (a provider's `_meta`, or an adapter's `meta["calls"]`): reasoning, slow, long, cut off, no answer, and a
   hosted call served off its pinned route. Written into the record.
-- **FR4 Arms name a record.** `model_record:` and `deployment:` in a config; the record's settings (what holds
-  whatever the task: reasoning, an ML model's device and precision) under the config's params, which add the
+- **FR4 Arms name a record.** `model_record:` and `deployment:` in a system; the record's settings (what holds
+  whatever the task: reasoning, an ML model's device and precision) under the system's params, which add the
   task's own (its reply cap, its call limit); the run records both.
 - **FR5 Fingerprint v5.** `instrument`, `data`, `deployment`, `settings`, each hashed, `hash` over the four; the
   runner outside the hash; `evh run-compare` names the part that moved; the inspector's speed warning tells a
-  deployment from a runner. `evh fingerprint-migrate` moves a project's committed runs, once.
+  deployment from a runner. `fingerprint-migrate` moves a project's committed runs, once (from 0.8.0 the fingerprints step of `evh migrate`).
 - **FR6 The catalog.** The Models page, a page per model with its deployments and their onboarding, a smoke badge
   on the arms page, a models tile; `evh models` the same (and over `evh mcp`). A model is *vetted* only when an
   arm that names it passed its smoke; its onboarding alone makes it *onboarded*.

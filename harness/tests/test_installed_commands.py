@@ -31,9 +31,21 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the ev
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tests/
 REPO = HERE.parent.parent  # the checkout (infra/ is not part of the package)
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))  # _wheel, shared with the deploy
+import _runstore  # noqa: E402
+
+STORE = "sqlite" if _runstore.sqlite() else "files"
 import _wheel  # noqa: E402
+from evaluation_harness import _common, _store  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 from evaluation_harness.cli import COMMANDS  # noqa: E402
+
+
+def put(proj: Path, rel: str, content: bytes) -> None:
+    """A fixture file in the project's data/ (rel as under data/), in its store, its folder made where one exists."""
+    _common.project_root.cache_clear()  # this process resolved its own project on import; _runstore aims by EVAL_HOME
+    with _runstore._InProject(proj) as data:
+        _store.mkdir((data / rel).parent, parents=True, exist_ok=True)
+        _store.write_bytes(data / rel, content)
 
 
 def main() -> int:
@@ -44,6 +56,7 @@ def main() -> int:
         proj.mkdir()
         env = {
             **os.environ,
+            "EVH_ACTOR": "person:test",
             "PYTHONPATH": str(site),
             "PYTHONDONTWRITEBYTECODE": "1",
             "EVAL_BUILD_REF": "test-commands",
@@ -52,7 +65,7 @@ def main() -> int:
             "GIT_COMMITTER_NAME": "t",
             "GIT_COMMITTER_EMAIL": "t@example.invalid",
         }
-        for k in ("EVAL_HOME", "EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_MAX_COST_USD"):
+        for k in ("EVAL_HOME", "EVAL_DATA_DIR", "EVAL_MAX_COST_USD"):
             env.pop(k, None)
 
         def evh(*args: str, timeout: int = 600, cwd: Path | None = None) -> subprocess.CompletedProcess:
@@ -104,8 +117,8 @@ def main() -> int:
             "2",
         )
         setup("dataset-materialize", "--dataset-id", "tickets_v1")
-        for f in (proj / "tutorial/configs").glob("tickets_*.yaml"):
-            shutil.copy(f, proj / "data/configs/")
+        for f in sorted((proj / "tutorial/systems").glob("tickets_*.yaml")):
+            put(proj, f"systems/{f.name}", f.read_bytes())
         setup(
             "label-import",
             "tutorial/gold",
@@ -130,21 +143,21 @@ def main() -> int:
             "owner",
         )
         # gold a script builds, for reference-manifest below: the texts where a fetch script would put them
-        fetched = proj / "data/references/gold/tickets_pilot_v1"
-        fetched.mkdir(parents=True)
         for f in sorted((proj / "tutorial/gold").glob("*.txt"))[:2]:
-            shutil.copy(f, fetched / f.name)
+            put(proj, f"references/gold/tickets_pilot_v1/{f.name}", f.read_bytes())
         for arm in ("lead1", "lead2", "lead2_noisy", "author"):
-            setup("run", "--config", f"data/configs/tickets_{arm}.yaml", "--repeat", "2")
-        shutil.copytree(proj / "tutorial/scorers", proj / "data/scorers")
-        run_id = sorted(p.name for p in (proj / "data/runs").glob("tickets_lead2_v1_*"))[0]
-        base_id = sorted(p.name for p in (proj / "data/runs").glob("tickets_lead1_v1_*"))[0]
+            setup("run", "--system", f"tickets_{arm}_v1", "--dataset", "tickets_v1", "--repeat", "2")
+        for f in sorted((proj / "tutorial/scorers").rglob("*")):
+            if f.is_file():
+                put(proj, f"scorers/{f.relative_to(proj / 'tutorial/scorers').as_posix()}", f.read_bytes())
+        run_names = _runstore.listdir(proj, "runs")
+        run_id = sorted(n for n in run_names if n.startswith("tickets_lead2_v1_"))[0]
+        base_id = sorted(n for n in run_names if n.startswith("tickets_lead1_v1_"))[0]
         (proj / "imported.jsonl").write_text(
             "".join(
                 json.dumps({"item_id": i, "acc": 1.0}) + "\n"
                 for i in (
-                    it["item_id"]
-                    for it in json.loads((proj / "data/datasets/tickets_v1.json").read_text())["items"]
+                    it["item_id"] for it in _runstore.read_json(proj, "datasets/tickets_v1.json")["items"]
                 )
             )
         )
@@ -183,13 +196,15 @@ def main() -> int:
                 ],
                 "ok:2 item(s), gold, promoted from person",
             ),
-            ("run", ["--config", "data/configs/tickets_lead1.yaml", "--dry-run"], "ok"),
+            ("run", ["--system", "tickets_lead1_v1", "--dataset", "tickets_v1", "--dry-run"], "ok"),
             (
                 "sweep",
                 [
-                    "--configs",
-                    "data/configs/tickets_lead1.yaml",
-                    "data/configs/tickets_lead2.yaml",
+                    "--systems",
+                    "tickets_lead1_v1",
+                    "tickets_lead2_v1",
+                    "--dataset",
+                    "tickets_v1",
                     "--dry-run",
                 ],
                 "ok",
@@ -202,8 +217,6 @@ def main() -> int:
                     "tickets_v1",
                     "--reference-id",
                     "gold/tickets_v1",
-                    "--out",
-                    "data/runs-gold",
                 ],
                 "ok",
             ),
@@ -215,7 +228,6 @@ def main() -> int:
             ("silver-calibrate", ["--dataset-id", "tickets_v1"], "ok"),
             ("cost-report", ["--dataset-id", "tickets_v1"], "ok"),
             ("leaderboard", ["--dataset-id", "tickets_v1"], "ok"),
-            ("judge", ["--config", "tutorial/judge_panel.yaml", "--use-fake-judge"], "ok:Report written"),
             # No --metric: the default is the runs' recorded primary metric, not another project's.
             (
                 "pair-test",
@@ -239,7 +251,7 @@ def main() -> int:
                 [
                     "--dataset-id",
                     "tickets_v1",
-                    "--config-id",
+                    "--system-id",
                     "imported_v1",
                     "--scores",
                     "imported.jsonl",
@@ -274,11 +286,64 @@ def main() -> int:
             ),
             ("capture-scrub", ["c1", "--command", "true {records}"], "ok:0 of"),
             ("dataset-split", ["tickets_v1", "--test", "0.5", "--seed", "3"], "ok:tickets_v1_test"),
+            (
+                "dataset-unseal",
+                ["tickets_v1_test", "--system", "nope_v1", "--reason", "only to read the arguments"],
+                "is not sealed",
+            ),
+            ("baselines", [], "ok:no baselines yet"),
+            (
+                "baseline-rollback",
+                [
+                    "--goal",
+                    "nope",
+                    "--dataset",
+                    "tickets_v1",
+                    "--to",
+                    "1",
+                    "--reason",
+                    "only to read the arguments",
+                ],
+                "no versions",
+            ),
             ("captures", ["--capture", "c1"], "ok:c1:"),
             ("dataset-from-capture", ["c1", "--dataset-id", "captured_v1"], "ok:records kept"),
             ("capture-restore", ["--capture", "c1"], "ok:records restored"),
             # Labels (RFC-023): installed and reading their arguments; the flow is tests/test_label_sets.py.
             ("labels", [], "ok:tickets_v1/installed_from_run: model"),
+            ("tags", [], "ok:No tag sets yet"),
+            ("licences", ["--search", "share"], "ok:CC-BY-SA-4.0"),
+            ("migrate", ["--dry-run"], "ok:this release reads"),
+            # the project's own store: data-migrate moves into the store the setting names, and data-ls says it
+            ("data-migrate", ["--to", STORE, "--dry-run"], f"ok:would move into the {STORE} store"),
+            ("data-ls", [], f"ok:store: {STORE}"),
+            ("data-show", ["datasets/tickets_v1.json"], "ok:written by the dataset-* commands"),
+            (
+                "data-put",
+                ["datasets/tickets_v1.json", "--set", "x=1"],
+                "is written by the dataset-* commands",
+            ),
+            ("data-rm", ["datasets/tickets_v1.json", "--dry-run"], "is written by the dataset-* commands"),
+            ("dataset-publish", ["--dataset-id", "tickets_v1", "--to", "folder"], "cannot publish"),
+            (
+                "fieldset-propose",
+                ["--source", "folder", "--query", '{"path": "tutorial/tickets"}', "--fieldset-id", "x"],
+                "describes no features",
+            ),
+            ("dataset-card", ["--dataset-id", "tickets_v1", "--format", "croissant"], "ok:croissant/1.1"),
+            (
+                "dataset-create",
+                [
+                    "--dataset-id",
+                    "installed_src",
+                    "--source",
+                    "folder",
+                    "--query",
+                    '{"path": "tutorial/tickets"}',
+                ],
+                "ok:item(s) from folder",
+            ),
+            ("dataset-describe", ["--dataset-id", "tickets_v1", "--licence", "nope"], "not on the list"),
             (
                 "label-sheet",
                 ["--dataset-id", "tickets_v1", "--items", "all", "--out", "installed_sheet.csv"],
@@ -296,7 +361,7 @@ def main() -> int:
             ),
             ("label-from-run", ["--run", "no_such_run", "--set", "installed_v1"], "no finished run"),
             ("picks", [], "ok:No picks waiting"),
-            ("deploy-sheet", ["--config", "no_such_v1"], "no run of that config"),
+            ("deploy-sheet", ["--system", "no_such_v1"], "no run of that system"),
             ("pick", ["--dataset-id", "tickets_v1", "--item", "no_such_item"], "not in tickets_v1"),
             ("dataset-extend", ["tickets_v1", "--dataset-id", "tickets_v9", "--picks"], "no pick is waiting"),
             (
@@ -336,6 +401,11 @@ def main() -> int:
                 ],
                 "--map: no file",
             ),
+            (
+                "label-coverage",
+                ["--dataset-id", "captured_v1", "--capture", "c1", "--map", "no_such_map.yaml"],
+                "--map: no file",
+            ),
             ("run-compare", ["--baseline", base_id, "--candidate", run_id], "ok"),
             (
                 "run-promote",
@@ -352,8 +422,8 @@ def main() -> int:
             ("overview", ["--period", "all"], "ok:all time"),
             ("activity", ["--period", "all"], "ok:by dataset:"),
             ("datasets", ["--period", "30d"], "ok:runs in period"),
-            ("arms", ["--by", "config", "--period", "30d"], "ok:config tickets_lead2_v1"),
-            ("arms", ["--configs"], "ok:rank on each goal"),
+            ("arms", ["--by", "system", "--period", "30d"], "ok:system tickets_lead2_v1"),
+            ("arms", ["--systems"], "ok:rank on each goal"),
             ("arms", ["--quality", "contender"], "ok:no arm matches: only arms a goal's decision weighs"),
             (
                 "arms",
@@ -365,12 +435,44 @@ def main() -> int:
             ("arms", ["--arm", "tickets_lead2_v1"], "ok:scored against"),
             ("arms", ["--arm", "runs/tickets_v1/no_such_v1"], "no arm"),
             ("goals", [], "ok"),
+            # The goal through the model (RFC-032 step 1): the flow is test_model_goals.py.
+            ("goal-list", [], "ok"),
+            # The system through the model (RFC-032 step 3): installed, each answers in words.
+            ("prompt-list", [], "ok:no prompt versions yet"),
+            ("prompt-show", ["--name", "no/such"], "no prompt 'no/such'"),
+            ("system-list", [], "ok:tickets_lead1_v1"),
+            ("system-show", ["tickets_lead1_v1"], "ok:tickets_lead1_v1"),
+            ("system-show", ["no_such_v1"], "no system 'no_such_v1'"),
+            ("system-new", ["tickets_lead1_v1"], "system 'tickets_lead1_v1' exists"),
+            ("system-set", ["no_such_v1", "--set", "params.a=1"], "no system 'no_such_v1'"),
+            ("goal-show", ["no_such_goal"], "no goal 'no_such_goal'"),
+            ("goal-status", ["no_such_goal"], "no goal 'no_such_goal'"),
+            ("goal-history", ["no_such_goal"], "no goal 'no_such_goal'"),
+            ("goal-new", ["no_such_goal"], "goals/no_such_goal.yaml not saved"),
+            ("goal-set", ["no_such_goal", "--set", "title=x"], "no goal 'no_such_goal'"),
+            # Models and deployments through the model (RFC-032 step 2): the flow is test_model_ops.py.
+            ("model-list", [], "ok:no model records yet"),
+            ("model-show", ["no_such_model"], "no model 'no_such_model'"),
+            ("model-new", ["no_such_model", "--set", "kind=llm"], "models/no_such_model.yaml not saved"),
+            ("model-set", ["no_such_model", "--set", "kind=llm"], "no model 'no_such_model'"),
+            ("deployment-show", ["no_such_model", "x"], "no deployment 'no_such_model/x'"),
+            ("deployment-history", ["no_such_model", "x"], "no deployment 'no_such_model/x'"),
+            (
+                "deployment-new",
+                ["no_such_model", "x", "--set", "where=x"],
+                "no model 'no_such_model' in this project",
+            ),
+            ("deployment-set", ["no_such_model", "x", "--set", "where=x"], "no deployment 'no_such_model/x'"),
+            (
+                "deployment-accept",
+                ["no_such_model", "x", "--flag", "where it ran", "--why", "a gateway has no build"],
+                "no deployment 'no_such_model/x'",
+            ),
             # Model records (RFC-020, optional): installed, each answers in words; the flows are
             # test_model_onboard.py, test_arm_smoke.py and test_catalog_models.py.
             ("models", [], "ok:no model records"),
             ("model-onboard", ["no_such_model"], "no model record 'no_such_model'"),
-            ("arm-smoke", ["--config", "no_such.yaml"], "no config at no_such.yaml"),
-            ("fingerprint-migrate", ["--dry-run"], "ok:after:"),
+            ("arm-smoke", ["--system", "no_such_v1", "--dataset", "tickets_v1"], "no system 'no_such_v1'"),
             # Scoring that evolves (RFC-022): the flow is test_scoring_evolves.py.
             ("score-preview", ["--goal", "no_such_goal"], "no goal 'no_such_goal'"),
             ("search", ["lead2"], "ok:evh inspect --runs runs/tickets_v1/tickets_lead2_v1"),
@@ -391,8 +493,101 @@ def main() -> int:
             # Rounds (optional; the flow is test_rounds.py): installed, each answers in words.
             ("rounds", ["--goal", "no_such_goal"], "no goal 'no_such_goal'"),
             ("round-open", ["--goal", "no_such_goal", "--dataset", "tickets_v1"], "no goal 'no_such_goal'"),
+            ("round-carry", ["--goal", "g", "--round", "r1", "--arm", "a"], "no round"),
             ("round-retire", ["--goal", "g", "--round", "r1", "--arm", "a", "--reason", "x y z"], "no round"),
+            ("round-list", ["no_such_goal"], "no goal 'no_such_goal'"),
+            ("round-show", ["no_such_goal", "r1"], "no goal 'no_such_goal'"),
+            ("round-evidence", ["no_such_goal", "r1"], "no goal 'no_such_goal'"),
             ("round-close", ["--goal", "g", "--round", "r1", "--conclusion", "x y z"], "no round"),
+            # Datasets and what hangs on them through the model (RFC-032 step 6): the flow is test_model_datasets_ops.py.
+            ("dataset-list", [], "ok:tickets_v1"),
+            ("dataset-show", ["no_such_v1"], "no dataset 'no_such_v1'"),
+            ("fieldset-list", [], "ok"),
+            ("fieldset-show", ["no_such"], "no fieldset 'no_such'"),
+            ("fieldset-new", ["no_such"], "fields/no_such.yaml not saved"),
+            ("fieldset-set", ["no_such", "--set", "description=x"], "no fieldset 'no_such'"),
+            ("failure-modes-list", [], "ok:no failure-mode lists yet"),
+            ("failure-modes-show", ["no_such"], "no failure-mode list 'no_such'"),
+            ("failure-modes-new", ["no_such"], "failure-modes/no_such.yaml not saved"),
+            ("failure-modes-set", ["no_such", "--set", "description=x"], "no failure-mode list 'no_such'"),
+            ("label-set-list", ["no_such_v1"], "no dataset 'no_such_v1'"),
+            ("label-set-show", ["tickets_v1", "no_such"], "no label set 'tickets_v1/no_such'"),
+            ("tag-set-list", ["no_such_v1"], "no dataset 'no_such_v1'"),
+            ("tag-set-show", ["tickets_v1", "no_such"], "no tag set 'tickets_v1/no_such'"),
+            ("reference-list", [], "ok"),
+            ("reference-show", ["gold", "no_such"], "no reference 'gold/no_such'"),
+            ("capture-list", [], "ok:captured_v1"),
+            ("capture-show", ["no_such"], "no capture 'no_such'"),
+            # Judge scorers through the model (RFC-032 step 7): the flow is test_model_scorers.py.
+            ("scorer-list", [], "ok"),
+            ("scorer-show", ["no_such"], "no scorer 'no_such'"),
+            ("scorer-new", ["no_such"], "scorers/no_such.yaml not saved"),
+            ("scorer-set", ["no_such", "--set", "cost_cap_usd=1"], "no scorer 'no_such'"),
+            # The terminal's jobs (RFC-026): installed, each answers in words; the flow is test_jobs.py.
+            # Prompt versions (RFC-028): installed, each answers in words; the flow is test_prompts.py.
+            ("prompts", [], "ok:no prompt versions yet"),
+            ("looks", ["--dataset", "no_such_v1"], "not a test set"),
+            # Studies (RFC-029): installed, each answers in words; the flow is test_study.py.
+            ("studies", [], "ok:no studies"),
+            ("studies", ["--study", "g/no_such"], "no study"),
+            # The studies as resources (RFC-032 step 7): the flow is test_model_studies.py.
+            ("study-list", ["no_such_goal"], "no goal 'no_such_goal'"),
+            ("study-show", ["no_such_goal", "s1"], "no goal 'no_such_goal'"),
+            ("periods", ["--model", "no_such"], "no model record 'no_such'"),
+            (
+                "period-compare",
+                ["--system", "no_v1", "--dataset", "tickets_v1", "--candidate", "x", "--period", "1"],
+                "no system 'no_v1'",
+            ),
+            (
+                "label-mutants",
+                ["--dataset-id", "tickets_v1", "--capture", "no_such", "--map", "no.yaml"],
+                "--map: no file no.yaml",
+            ),
+            # Held-out discipline (RFC-031): installed, each answers in words; the flow is test_exposure.py.
+            ("exposure", [], "ok:No held-out sides"),
+            (
+                "exposure-add",
+                ["--dataset-id", "tickets_v1", "--item", "x", "--what", "a read"],
+                "not a held-out side",
+            ),
+            ("exposure-check", ["--dataset-id", "tickets_v1"], "not a held-out side"),
+            ("sealed-counts", ["--dataset-id", "tickets_v1"], "not a held-out side"),
+            (
+                "dataset-seal-counts",
+                ["--dataset-id", "tickets_v1", "--add", "x", "--reason", "only to read the arguments"],
+                "not a held-out side",
+            ),
+            ("study-run", ["g/no_such"], "no spec at"),
+            ("study-ask", ["g/no_such"], "no study"),
+            ("study-tell", ["g/no_such", "--ask", "x", "--proposal-json", "{}"], "no study"),
+            ("study-stop", ["g/no_such"], "no study"),
+            (
+                "study-confirm",
+                ["g/no_such", "--test", "x", "--rule", "superiority", "--by", "person:t"],
+                "no study",
+            ),
+            ("study-import", ["no_such.tsv", "--goal", "no_such_goal", "--study", "s"], "no goal"),
+            ("prompt-diff", ["a/0123456789abcdef", "b/0123456789abcdef"], "no prompt version"),
+            ("prompt-version", ["bad name!", "--text", "x", "--note", "n"], "prompt name"),
+            ("prompt-export", ["a/0123456789abcdef", "--to", "x.txt"], "no prompt version"),
+            # Replay and faithfulness (RFC-030): installed, each answers in words; the flow is test_replay.py.
+            (
+                "faithfulness",
+                ["--system", "no_such_v1", "--dataset", "tickets_v1", "--production", "x"],
+                "no system 'no_such_v1'",
+            ),
+            (
+                "faithfulness-name",
+                ["--model", "no_such", "--item", "x", "--cause", "c"],
+                "no model record 'no_such'",
+            ),
+            ("faithfulness-show", ["--model", "no_such"], "no model record 'no_such'"),
+            ("jobs-status", [], "ok:no jobs"),
+            ("jobs-start", ["datasets"], "not a job"),
+            ("jobs-logs", ["20990101T000000-abcdef"], "no job"),
+            ("jobs-stop", ["20990101T000000-abcdef"], "no job"),
+            ("jobs-resume", ["20990101T000000-abcdef"], "no job"),
             ("catalog", [], "ok"),
             ("catalog-serve", [], "ok"),  # started, its address read, stopped
             # A stdio server: --help here; tests/test_mcp_server.py talks to it through the SDK.
@@ -558,10 +753,21 @@ def main() -> int:
                 (r.stdout, r.stderr[-300:]),
             )
         # `evh run` names the runs it wrote, and with --json says so as data, its progress on stderr.
-        env_ids = {**env, "EVAL_RUNS_DIR": str(proj / "data" / "runs-smoke-ids")}
-        cfg1 = str(proj / "data/configs/tickets_lead1.yaml")
+        env_ids = env
         r = subprocess.run(
-            [sys.executable, "-m", "evaluation_harness", "run", "--config", cfg1, "--run-id", "ids_probe"],
+            [
+                sys.executable,
+                "-m",
+                "evaluation_harness",
+                "run",
+                "--system",
+                "tickets_lead1_v1",
+                "--dataset",
+                "tickets_v1",
+                "--run-id",
+                "ids_probe",
+                "--scratch",
+            ],
             cwd=proj,
             env=env_ids,
             capture_output=True,
@@ -583,10 +789,13 @@ def main() -> int:
                 "-m",
                 "evaluation_harness",
                 "run",
-                "--config",
-                cfg1,
+                "--system",
+                "tickets_lead1_v1",
+                "--dataset",
+                "tickets_v1",
                 "--run-id",
                 "ids_json",
+                "--scratch",
                 "--json",
             ],
             cwd=proj,
@@ -604,7 +813,7 @@ def main() -> int:
             and "fingerprint" in r.stderr,
             r.stdout[-300:] + r.stderr[-300:],
         )
-        shutil.rmtree(proj / "data" / "runs-smoke-ids", ignore_errors=True)
+        shutil.rmtree(proj / ".build" / "scratch", ignore_errors=True)
 
         # From a subfolder of the project, a command finds the project (the nearest directory
         # up with data/): from the current directory it read an empty project.

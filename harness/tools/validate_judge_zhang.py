@@ -49,9 +49,13 @@ from typing import Any
 HERE = Path(__file__).resolve().parents[1] / "scripts"  # the core modules (this file is in tools/)
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tools/
-from evaluation_harness import _fetch  # noqa: E402
+from evaluation_harness import (  # noqa: E402
+    _fetch,
+    _store,
+)
 from evaluation_harness import judge_score as js  # noqa: E402
 from evaluation_harness._common import (  # noqa: E402
+    DATA,
     ModuleNotLoadable,
     die,
     load_module,
@@ -69,7 +73,6 @@ from evaluation_harness.judging import (  # noqa: E402,F401
     withheld_reason,
 )
 
-DATA = HERE.parent / "data"
 EXT = DATA / "external" / "zhang2023"
 FILE = EXT / "likert_evaluation_results.json"
 #: The repository's commit when the file was fetched (2026-10-21), and the file's sha256.
@@ -87,16 +90,16 @@ def _sha(b: bytes) -> str:
 def load() -> dict[str, dict]:
     """{article_id: {"article": text, "systems": {model: {"summary", "ratings": [{dim: v}x3]}}}},
     CNN/DailyMail only. Downloads the pinned file if it is not present."""
-    if not FILE.is_file():
+    if not _store.is_file(FILE):
         try:
             src, _ = _fetch.fetch(URL, PINNED)  # retried, checked against the pin
         except _fetch.FetchError as exc:
-            die(str(exc))
-        EXT.mkdir(parents=True, exist_ok=True)
-        write_bytes_atomic(FILE, src.read_bytes())
-    raw = FILE.read_bytes()
+            die(str(exc), "failed")
+        _store.mkdir(EXT, parents=True, exist_ok=True)
+        write_bytes_atomic(FILE, _store.read_bytes(src))
+    raw = _store.read_bytes(FILE)
     if _sha(raw) != PINNED:
-        die(f"{FILE} has sha256 {_sha(raw)}, not the pinned {PINNED}; refusing to use it")
+        die(f"{FILE} has sha256 {_sha(raw)}, not the pinned {PINNED}; refusing to use it", "mismatch")
     out: dict[str, dict] = {}
     for r in json.loads(raw):
         if r["dataset"] != "cnndm":
@@ -336,7 +339,7 @@ def build_report(
             ok = True
             src = shingles([a["article"], *(a["systems"][m]["summary"] for m in systems)])
             for b, ms in enumerate(blocks(aid, systems, per_call)):
-                raw = record_path(vroot / j["id"], aid, b).read_text()
+                raw = _store.read_text(record_path(vroot / j["id"], aid, b))
                 rec = json.loads(raw)
                 want = js._sha(js.build_message(base, a["article"], [a["systems"][m]["summary"] for m in ms]))
                 if rec.get("judge_fp") != fp or rec.get("prompt_sha") != want or rec.get("order") != ms:
@@ -355,7 +358,7 @@ def build_report(
                 s[aid] = merged
         scores[j["id"]] = s
     if problems:
-        die("stored records refused:\n  " + "\n  ".join(problems[:20]))
+        die("stored records refused:\n  " + "\n  ".join(problems[:20]), "invalid-file")
 
     nonref = [m for m in systems if m != REFERENCE]
     hum19, refs19 = human_and_refs(data, systems)
@@ -382,7 +385,7 @@ def build_report(
     }
     for j in sc["judges"]:
         jid = j["id"]
-        recs = [json.loads(f.read_text()) for f in (vroot / jid).glob("*.json")]
+        recs = [json.loads(_store.read_text(f)) for f in _store.glob(vroot / jid, "*.json")]
         report["judges"][jid] = {
             "articles_scored": len(scores[jid]),
             "calls": len(recs),
@@ -456,7 +459,7 @@ def main() -> int:
     data = load()
     systems = sorted(next(iter(data.values()))["systems"])
     if any(sorted(a["systems"]) != systems for a in data.values()):
-        die("not every article has the same systems")
+        die("not every article has the same systems", "invalid-file")
     vroot = DATA / "judge-validation" / args.scorer / "zhang2023-cnndm"
     cap = js.effective_cap(sc)
 
@@ -465,7 +468,7 @@ def main() -> int:
         for aid in data:
             for b, ms in enumerate(blocks(aid, systems, per_call)):
                 tasks.append((j, aid, b, ms))
-    missing = [t for t in tasks if not record_path(vroot / t[0]["id"], t[1], t[2]).is_file()]
+    missing = [t for t in tasks if not _store.is_file(record_path(vroot / t[0]["id"], t[1], t[2]))]
     if args.dry_run:
         est = 0.0
         for j, aid, _b, ms in missing:
@@ -485,11 +488,13 @@ def main() -> int:
         )
         return 0
     if missing and args.no_calls:
-        die(f"--no-calls but {len(missing)} record(s) are missing")
+        die(f"--no-calls but {len(missing)} record(s) are missing", "not-found")
     if missing and cap is None:
-        die("no cost cap: set cost_cap_usd in the scorer or EVAL_MAX_COST_USD")
+        die("no cost cap: set cost_cap_usd in the scorer or EVAL_MAX_COST_USD", "not-configured")
 
-    spent = sum(float(json.loads(f.read_text()).get("cost_usd") or 0.0) for f in vroot.glob("*/*.json"))
+    spent = sum(
+        float(json.loads(_store.read_text(f)).get("cost_usd") or 0.0) for f in _store.glob(vroot, "*/*.json")
+    )
     stopped = None
     for j, aid, b, ms in missing:
         if stopped:
@@ -526,7 +531,7 @@ def main() -> int:
             "prompt_sha": js._sha(msg),
         }
         f = record_path(vroot / j["id"], aid, b)
-        f.parent.mkdir(parents=True, exist_ok=True)
+        _store.mkdir(f.parent, parents=True, exist_ok=True)
         write_text_atomic(f, json.dumps(rec))
         spent += rec["cost_usd"]
         if cost is None:

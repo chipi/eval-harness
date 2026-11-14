@@ -1,0 +1,190 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "deployment",
+  "description": "Where and how a model runs (RFC-032): data/deployments/<model_id>/<deployment_id>.yaml, a record of its own, with the dated history of its checks.",
+  "type": "object",
+  "required": [
+    "model_id",
+    "deployment_id",
+    "where"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "model_id": {
+      "type": "string",
+      "description": "The model this deployment runs (models/<model_id>.yaml)."
+    },
+    "deployment_id": {
+      "type": "string",
+      "description": "Its id among the model's deployments (the file's name)."
+    },
+    "order": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Its place among its model's deployments, as the model listed them (the first is the default)."
+    },
+    "where": {
+      "type": "string",
+      "description": "A machine (x3, dgx, mac) or a host (openrouter, a gateway)."
+    },
+    "backend": {
+      "anyOf": [
+        {
+          "enum": [
+            "cuda",
+            "rocm",
+            "metal",
+            "cpu",
+            "hosted"
+          ]
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "description": "What computes it: cuda, rocm, metal, cpu or hosted, or another name."
+    },
+    "server": {
+      "type": "string",
+      "description": "What serves it there, with its version: \"ollama 0.40.13\", \"vllm 26.05\"."
+    },
+    "server_settings": {
+      "type": "object",
+      "description": "The server's settings that change the model's behaviour: context length, KV cache, flash attention."
+    },
+    "device": {
+      "type": "string"
+    },
+    "tag": {
+      "type": "string"
+    },
+    "digest": {
+      "type": "string"
+    },
+    "revision": {
+      "type": "string"
+    },
+    "file_hash": {
+      "type": "string"
+    },
+    "quantization": {
+      "type": "string"
+    },
+    "provider_id": {
+      "type": "string",
+      "description": "A hosted model's id at its provider."
+    },
+    "provider_routing": {
+      "type": [
+        "array",
+        "object"
+      ],
+      "description": "A hosted deployment's pinned route: the upstream providers it may be served by (a list), or the provider's routing object."
+    },
+    "endpoint": {
+      "type": "object",
+      "description": "How to reach this deployment for onboarding: a built-in provider (openai for an OpenAI-shaped server such as Ollama or vLLM, litellm, openrouter, anthropic), its base_url, the model name there, and api_key_env when it needs a key.",
+      "additionalProperties": false,
+      "properties": {
+        "provider": {
+          "type": "string"
+        },
+        "base_url": {
+          "type": "string"
+        },
+        "model": {
+          "type": "string"
+        },
+        "api_key_env": {
+          "type": "string"
+        }
+      }
+    },
+    "checked_at": {
+      "type": "string",
+      "description": "When the deployment was last checked (ISO date or time)."
+    },
+    "accepted": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "Flag kinds accepted as this deployment's own nature, each with why (a hosted gateway: no build to pin, repeats vary); the record's `accepted` holds the model's."
+    },
+    "checks": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/check"
+      },
+      "description": "Every check of this deployment, oldest first, never overwritten: each onboarding run (evh model-onboard), each arm smoke (evh arm-smoke) and each approval. Its state is read from the latest."
+    }
+  },
+  "$defs": {
+    "check": {
+      "type": "object",
+      "required": [
+        "kind",
+        "at"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "onboarding",
+            "smoke",
+            "approval"
+          ],
+          "description": "what kind of check it was"
+        },
+        "status": {
+          "enum": [
+            "pass",
+            "check"
+          ]
+        },
+        "at": {
+          "type": "string"
+        },
+        "where": {
+          "type": "string"
+        },
+        "flags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "accepted": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Flags the record's `accepted` names: reported, not counted against the status."
+        },
+        "report": {
+          "type": "object"
+        },
+        "system": {
+          "type": "string",
+          "description": "a smoke's system, by its id"
+        },
+        "dataset": {
+          "type": "string",
+          "description": "the dataset a smoke ran on"
+        },
+        "by": {
+          "type": "string",
+          "description": "who made it (RFC-027): person:NAME or agent:NAME for person:NAME"
+        },
+        "why": {
+          "type": "string",
+          "description": "an approval's reason"
+        },
+        "job": {
+          "type": "string",
+          "description": "the job that ran it, when one did"
+        }
+      }
+    }
+  }
+}

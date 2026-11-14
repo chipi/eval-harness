@@ -21,12 +21,12 @@
 
 `evh catalog` builds static pages over a project's runs into `.build/catalog/`: a home page with
 the whole project at a glance, an activity page, a datasets page and a page per dataset, an arms
-and configs page and a page per arm, a goals page and a page per goal, a reference sets page and a
+and systems page and a page per arm, a goals page and a page per goal, a reference sets page and a
 page per reference set, a metrics page and a page per metric, and the shell of the inspector. Every
 page is read-only and carries counts and means only, so the pages can be published. The pages a
 home tile opens carry the same period and trends as the tile ([the period](#the-period-every-listing-page)).
 This spec describes the pages as built at 0.5.0 (0.5.0 added each dataset page's "what's inside" and the footer's commands), checked by building the catalog on this
-repository's data (6 goals, 13 datasets, 313 arms, 181 configs, 15 references) and on a tutorial
+repository's data (6 goals, 13 datasets, 313 arms, 181 systems, 15 references) and on a tutorial
 project with gold, silver and an open round.
 
 ## Principles
@@ -210,7 +210,7 @@ show the same period, and the home tiles open those pages at the period picked.
   the number, its trend as **▲ 12%**, **▼ 31%**, **▲ from 0** (nothing the period before) or
   nothing when both are zero, and under the runs a line of runs per day. A filter that leaves
   nothing says so ("Nothing new in the last 30 days.").
-- **New** means: a dataset on its `created_at` (else its first run); an arm, a config or a metric
+- **New** means: a dataset on its `created_at` (else its first run); an arm, a system or a metric
   on its first run; a reference on its `created_at`; a goal on its first round or the first day
   of its datasets.
 - **Without a script:** the chips stay hidden, the line says the page shows all time, and the
@@ -232,10 +232,10 @@ The whole project at a glance, for the period picked ([the period](#the-period-e
   none) and one line on what its page holds, in the subject colours below.
 - `01 at a glance`: the period bar and the **tiles**, in four subjects, one colour each (a band on
   top, its trend badge, its line), named in a legend under them: **goals** (goals); **data**
-  (datasets, references); **arms** (configs, arms, models, metrics); **work and spend**
+  (datasets, references); **arms** (systems, arms, models, metrics); **work and spend**
   (measured runs, billed in USD, tokens). The colour says what a tile is about and nothing
   more. Each tile opens its page at the period picked: goals, datasets, references and metrics
-  their pages; arms the arms page; models the models page; configs the arms page grouped by config; measured runs,
+  their pages; arms the arms page; models the models page; systems the arms page grouped by system; measured runs,
   billed and tokens the activity page.
   - A **stock** tile (goals to metrics) shows the total so far, "+N new" in the period (or "none
     new") and a line of the total growing over the period. A model is new from its first onboarding, history
@@ -290,10 +290,10 @@ tiles open it.
 
 ## The datasets page
 
-- Hero: kicker `datasets`, "Every run, by dataset", and "N arms on M datasets, from K configs. An
-  arm is one config on one dataset scored one way, its repeats averaged per item, exactly as
-  `pair-test` reads it: a config rescored against silver or by a judge is an arm of its own."
-  `evh catalog` prints the same counts, and `evh datasets` has a `configs` column beside `arms`.
+- Hero: kicker `datasets`, "Every run, by dataset", and "N arms on M datasets, from K systems. An
+  arm is one system on one dataset scored one way, its repeats averaged per item, exactly as
+  `pair-test` reads it: a system rescored against silver or by a judge is an arm of its own."
+  `evh catalog` prints the same counts, and `evh datasets` has a `systems` column beside `arms`.
 - The period bar in the hero.
 - `01 datasets`: **group by** chips (no grouping, goal: a dataset under several goals is a group
   named after all of them, one under none is "no goal"; then one chip per **tag key** any dataset
@@ -371,17 +371,17 @@ tiles open it.
   **description**, **values**: for a `public` field a summary (counts per value for a choice or
   yes/no field; min – max and median for numbers and durations; the range for dates; the number
   of distinct values for text and URLs), for any other field "not public".
-- Command: `evh datasets --dataset-id <id>` ("<id>: N items, M arms from K configs (a config
+- Command: `evh datasets --dataset-id <id>` ("<id>: N items, M arms from K systems (a system
   rescored against silver or by a judge is an arm of its own)").
 
 ## The goals page
 
 - Hero: kicker `goals`, "What each evaluation is for: who uses the output, the decision it
-  informs, and the measure that decides. Runs name their goal in their config (`goal:`)."
+  informs, and the measure that decides. Runs name their goal in their system (`goal:`)."
 - The period bar in the hero.
 - `01 goals`: the all / new / active chips, then **goal** (linked; the new badge), **statement**
   (a column wide enough that a row stays two or three lines), **decides** ("<measure>
-  (<direction>)"), **datasets**, **configs filed** (configs that name the goal, each counted once
+  (<direction>)"), **datasets**, **systems filed** (systems that name the goal, each counted once
   however many ways it was scored), **runs in period** (with its line), **spend in period**,
   **changes in period** (a count: baselines promoted, rounds opened or closed), **recommended**
   (per dataset, the arm the goal's strategy picks, with its cost and speed against the baseline,
@@ -427,12 +427,12 @@ The page explains the goal, then answers, then shows how it got there and the ev
      retired · k carried · judged by <scorer> · suggested next"). The open round carries the
      `--accent` edge (`t-open`). Under 760 px the header stacks into one column;
    - inside, a heading per part, each shown only when it has something (owner, 2026-10-31: one list read as
-     data tossed in): **what changed** (each change); **arms** ("**retired k**: <reason>" with the configs
-     under it, one line per reason; "**carried in unchanged k**" folded over its configs); **scoring** ("judged
+     data tossed in): **what changed** (each change); **arms** ("**retired k**: <reason>" with the systems
+     under it, one line per reason; "**carried in unchanged k**" folded over its systems); **scoring** ("judged
      by `<scorer>`" and each "<date>: <why> (`<scorer>`, N run(s) re-scored into <dirs>)", RFC-022; its arms
      read from their re-scores, as the goal reads them); and, for the open round, **evidence** (the leader
      against the previous round's best, the baseline it started from and the arm that wrote a silver reference
-     of the dataset: "the leader against <which> (`<config>`): <verdict>, Δ, p"), **suggested next** ("each as
+     of the dataset: "the leader against <which> (`<system>`): <verdict>, Δ, p"), **suggested next** ("each as
      the command that does it; the catalog only reads": each suggestion with its command in a code chip that
      selects whole on one click and a **copy** button beside it, which reads "copied" for a moment, or
      "selected" with the chip selected where the browser refuses the clipboard; a suggestion past 200
@@ -464,7 +464,7 @@ The page explains the goal, then answers, then shows how it got there and the ev
      rouge_l against it, not significant (p 0.1246)…"): the rule follows the strategy, the baseline
      is a person's decision. A muted footer names the strategy and its rule, what the goal weighs,
      the tie-break order, and that promoting is `evh run-promote`.
-   - the table: **arm** (linked to its page; tags: `filed` when its config names the goal, said
+   - the table: **arm** (linked to its page; tags: `filed` when its system names the goal, said
      in words in the note above the tables and in the tooltip, `baseline`, `recommended`,
      "retired in rN" in `--local` capitals; a retired arm's whole row is greyed out,
      `t-retired`), **mean <measure>**, **items**, then one column per axis that some arm in the
@@ -524,26 +524,69 @@ over the project's data; with a project adapter the rounds table and details sti
   Filterable.
 - Command: `evh metrics [--dataset-id <id>] [--period P]`.
 
-## The arms and configs page
+## The arms and systems page
 
-Every arm, and every config across the datasets it ran on. The arms tile opens it; the configs
-tile opens it grouped by config (`arms.html?group=config`).
+Every arm, and every system across the datasets it ran on. The arms tile opens it; the systems
+tile opens it grouped by system (`arms.html?group=system`).
 
-- Hero: kicker `arms`, "Arms and configs", "N arms from K configs on M datasets. An arm is one
-  config on one dataset scored one way: measured, rescored against another reference, judged, or
-  run again (the how column says which; group by config to see them together). Pick arms on one
+- Hero: kicker `arms`, "Arms and systems", "N arms from K systems on M datasets. An arm is one
+  system on one dataset scored one way: measured, rescored against another reference, judged, or
+  run again (the how column says which; group by system to see them together). Pick arms on one
   dataset to open them in the inspector.", then the period bar.
 - `01 every arm`:
-  - **group by** chips: no grouping, dataset, config, model, provider, scored against. A group
-    has a heading row with its name and arm count; a column's sort holds inside each group.
+  - **group by** chips: no grouping, dataset, system, model, provider, scored against. The page opens grouped by
+    dataset (owner, 2026-11-12), each dataset's arms in reading order: what a goal decided on first (recommended,
+    leader, baseline, then a contender), then best on the deciding measure; each group shows three rows and its
+    heading offers "show N more". A heading names the group and counts the arms the filter and chips leave; a
+    group with none left loses its heading. A grouped table is not paged; a column's sort holds inside each group.
+    "no grouping" is kept in the address as `?group=none`.
+  - The dataset chip groups by what can be ranked together (the fourth critique: one group held gold and adjudicated
+    gold, coverage and a judge's score): one dataset, scored one way (against one reference, or by one judge), on one
+    measure, its heading "dataset ag_news_200 · against gold/ag_news_200 · correct ↑" (`?group=set`). While grouped
+    so, the dataset column leaves (the heading names it) and the arm and how-measured columns wrap, so the table fits
+    1280. A heading is a header cell for its rows (`scope=rowgroup`).
+  - **deciding measure** carries its direction (↑ higher is better, ↓ lower); its first sort is best first, a
+    lower-is-better measure included. **latency** reads in s past a second, as the charts do.
+  - A model record's smoke badge ("smoked", "smoke: check") is outlined, not a role pill.
+  - An arm scored against the reference it wrote says so in words ("wrote its own reference", and the same in `evh
+    arms`), not by its tint alone, and is read after the others in its group: its score is its own outputs.
+  - A folded group opens ten rows at a time ("show 10 more", "show all N", "show 3"). Long ids and references break
+    inside their cell. The footer's command is the view's (`evh arms --by system --where local --period 30d`): the
+    grouping, one chip of a kind (the CLI takes one) and the period. A system's rank sorts by its best place as a
+    share of its field. A system's id links to its arms grouped by system.
+  - Under the row key, a key to the role badges (leader, "not significantly ahead of N", recommended, baseline, a
+    contender, below the leader). The only chips are labelled by kind (runs, price, against the leader, weights) and
+    say how they combine ("any in a kind, every kind at once"). A group no goal decides says so under its heading
+    ("no goal decides here: listed best first, not tested against a leader").
+  - When the table fits its box, its column heads and each group's heading stay in view under the bar as it scrolls.
+  - On a phone the grouping, the filters, the keys and the all / new / active chips fold behind one line ("group,
+    filter and key · N on"); every chip row wraps. When new and active count the same, one chip says both.
+  - The period is kept in the address beside the grouping (`?period=30d`); an older link's `#p30d` still opens it.
+    The picks (`?pick=`) and the sort (`?sort=<column>:<asc|desc>`) are kept there too; a shared link opens them.
+  - Every grouping keeps what ranks together together: inside a system, model, provider or "scored against" group the
+    rows cluster by dataset, reference and measure, and the deciding measure sorts within that set; with no grouping
+    it sorts within each set too. The undecided note sits on its heading's line. "no reference" names an arm scored
+    against none, as `evh arms` says it. The price chips run free, small, mid, large.
+  - "On this page" under the hero jumps to every arm, systems, what changed and the charts. Each cell names its
+    group's heading and its column (`headers`). Keyboard focus lands below the bar, the column heads and a group's
+    heading (scroll padding), not under them.
+  - The footer's command follows every way the period changes, and says when it left a chip out (the terminal takes
+    one of a kind). On a phone the fold counts only what was picked, and the sort menu says "low first" / "high
+    first" and offers only the columns shown.
+  - A chart's points table marks the arms on the frontier; a free cost reads $0 there. A speed axis spanning more than
+    100× is drawn on a log scale. A frontier name with no clear line is left off the drawing (its dot stays, its
+    tooltip and the table name it); on a phone the names are left off and the table carries them.
+  - `evh arms` says "1 arm", names how many of a group are folded and how to list them, shows cost and latency, and
+    keys its roles.
   - **only** chips: local, hosted (hosted when it runs through a provider that bills per call,
-    litellm, openai, anthropic and the like, or its config prices tokens), then each price tier
-    the configs declare (free, small, mid, large); a contender, below the leader (the arm's
+    litellm, openai, anthropic and the like, or its system prices tokens), then each price tier
+    the systems declare (free, small, mid, large); a contender, below the leader (the arm's
     place in a goal's decision: a contender beside its quality leader, the leader included, or weighed and
     not a contender; an arm no decision weighs is in neither); open weights, proprietary (the model's
     weights, from the model records in `data/models/`; an unlisted model is in neither; the chips
     show only when the file lists a model an arm ran). Within one kind any chip picked keeps a
-    row; across kinds all must.
+    row; across kinds all must. When the filter and the chips leave no arm, one row says so ("No arm matches
+    “…” with only: local") with a button that clears both.
   - the all / new / active chips; a compare bar once an arm is ticked: "N picked", **open in the
     inspector** (only when the picked arms share a dataset, else "the inspector compares arms on
     one dataset: pick arms of one"), **clear**.
@@ -551,7 +594,7 @@ tile opens it grouped by config (`arms.html?group=config`).
     baseline, leader, recommended, retired in a round, over a limit (a goal leaves it out for a
     limit it breaks), not eligible (left out for another reason)), **how measured** (measured;
     rescored against `<reference>`; judged by `<scorer>`; re-parsed; run again (`<runs dir>`);
-    under a derived arm, how its deciding measure moved from the config's measured arm, "0.712 →
+    under a derived arm, how its deciding measure moved from the system's measured arm, "0.712 →
     0.745 (+0.033) vs measured", when both are on the same measure: a judge scores its own; under
     a measured arm every run of which was re-scored against the same reference, "the goals read
     its re-score", and `evh arms` says the same),
@@ -559,8 +602,24 @@ tile opens it grouped by config (`arms.html?group=config`).
     one), **deciding measure** (the goal's measure and the arm's mean on it, else its own
     headline), **repeats**, **cost / item**, **latency**, **runs in period** (with its line),
     **spend in period**. Filterable. An arm measured several ways is several rows, one per way,
-    said by **how measured**; group by config to read them together. No nesting.
-- `02 configs`: the all / new / active chips, then one row per config: **config**, **model ·
+    said by **how measured**; group by system to read them together. No nesting.
+  - What each row is measured against (the page's critique, 2026-11-12; the rule every arms table keeps): the row
+    key above the table; each row tinted by its kind (scored against silver, in the silver tier's ink; by a judge, in
+    the model source's colour; by the arm that wrote the reference; against a label set, Muted with a thin rule),
+    never in a model kind's data colour; **how measured** names the reference with its tier pill ("measured · against
+    gold/ag_news_200 GOLD", "rescored against …"), or "no reference".
+  - Sorting: each column head holds a button (the head keeps its meaning); a value sorts by its number, a blank (—)
+    last both ways, and **deciding measure** among its own measure's arms; a grouped table sorts inside each group.
+    A free arm's **cost / item** is "$0", not a blank.
+  - The compare bar floats at the screen's foot while an arm is picked, its count announced; a pick the filter, the
+    chips or a folded group hides stays picked and the bar says so ("2 picked, 1 of them not shown here"). The pick
+    column's head is named "pick" for a screen reader.
+  - **role** badges: a result (leader, recommended) set solid, an arm left out (over a limit, not eligible,
+    retired) drawn as an outline, a baseline plain; none in a status colour. A leader says how far it is from the
+    rest: "leader, not significantly ahead of N" (the eligible arms whose test against it is not significant),
+    "leader, significantly ahead", or "leader" alone when it is the only eligible arm.
+  - The group and facet chips follow the address (`?group=dataset&only=where:local`), so a view can be shared.
+- `02 systems`: the all / new / active chips, then one row per system: **system**, **model ·
   provider**, **datasets** (each linked), **arms**, **spend**, **rank on each goal** (its best
   arm's place among the arms the goal's decision weighs, "#3 of 33"), **runs in period**,
   **spend in period**. Filterable.
@@ -569,15 +628,20 @@ tile opens it grouped by config (`arms.html?group=config`).
   one dataset re-measured the same way on one day (a rescore of every arm) are one line, "N arms
   on `<dataset>`", so they do not bury the rest.
 - `04 cost and quality, by goal`: a goal list; the goal's trade-off charts (its quality against
-  cost and against speed, the frontier drawn), as on its goal page, one goal at a time.
-- Command: `evh arms [--dataset-id <id>] [--by dataset|config|model|provider|scored]
+  cost and against speed, the frontier drawn), as on its goal page, one goal at a time, under the reference it is
+  scored against. The frontier is drawn in ink (its dots) and the secondary ink (its line), never the accent or a
+  group colour; speed's ticks read in ms or s. Under each chart, "the N points as a table" (folded): each arm, its
+  quality and its value on the axis, best first, what a dot's tooltip says, for a keyboard and a screen reader too. On
+  a phone a chart's words stay near 11px as the drawing scales down.
+- Command: `evh arms [--dataset-id <id>] [--by dataset|system|model|provider|scored|none] [--all]
   [--where local|hosted] [--tier <tier>] [--weights open|proprietary] [--quality contender|below]
-  [--period P]`, and `evh arms --configs` for `02`. A derived arm's **how measured** carries its
-  move, "(+0.033 vs measured)".
+  [--period P]`, and `evh arms --systems` for `02`. It opens as the page does: grouped by dataset, in reading order,
+  three a group with "… and N more: evh arms --dataset-id <id>"; `--all` shows every row, `--by none` none grouped,
+  and `--dataset-id` that dataset in full. A derived arm's **how measured** carries its move, "(+0.033 vs measured)".
 
 ## The arm page
 
-- Hero: kicker `arm`, the arm's label (with the baseline tag when promoted), "One config on
+- Hero: kicker `arm`, the arm's label (with the baseline tag when promoted), "One system on
   `<dataset>`, scored one way; its repeats averaged per item.", then its facts: **dataset**,
   **scored against** (the reference, or the judge), **goal**, **runs**, **headline** (its primary
   metric and mean), **last run**, and when it applies "wrote the reference it is scored against",
@@ -591,24 +655,24 @@ tile opens it grouped by config (`arms.html?group=config`).
   sections after it shift by one when it is absent.
 - `03 runs`: **run**, **made**, **items**, **cost**, **how** (measured, or how it was derived:
   rescore, judge, reparse).
-- `04 config`: the config id, the adapter, and the params; credentials are never shown
+- `04 system`: the system id, the adapter, and the params; credentials are never shown
   (`api_key_env` is left out; a param named like a key, token, secret or password reads
-  "(hidden)", and `evh run` refuses such a config in the first place).
+  "(hidden)", and `evh run` refuses such a system in the first place).
 - `05 conditions`: what its runs were measured under (machine, libraries, harness, scorer, item
   and reference checksums).
-- `06 the same config, scored other ways`: the same config on the same dataset scored against
+- `06 the same system, scored other ways`: the same system on the same dataset scored against
   another reference or by a judge, tinted as everywhere.
 - `07 rounds`: each round it was in, in play or retired, and the round's status.
 - Notes, when the adapter has any (runs left out, and why).
 - **A recorded arm** (0.6.0): the `recorded` badge in the hero, "production's decisions, from the capture
-  `<id>`; no model was called", its capture linked; `04 config` shows the capture, the recorded arm's name and the
+  `<id>`; no model was called", its capture linked; `04 system` shows the capture, the recorded arm's name and the
   adapter hook that read the outputs, in place of params.
 - **The deploy sheet** (0.6.0), on a promoted arm's page: a section `deploy sheet` with what production
   must match (the model and its build, server and its settings, every setting the arm sends, the prompt and its
   hash, the adapter and its version, the dataset and reference it was promoted on), and, for each capture whose
   records say what production ran, "matches" or what differs on how many records. Command:
-  `evh deploy-sheet --config <id> [--capture C]`.
-- Command: `evh arms --arm <arm id or config id>`; `evh arms [--dataset-id <id>]` lists them.
+  `evh deploy-sheet --system <id> [--capture C]`.
+- Command: `evh arms --arm <arm id or system id>`; `evh arms [--dataset-id <id>]` lists them.
 
 ## The models page
 
@@ -671,7 +735,7 @@ is used. A models tile on the home page opens it, beside arms.
 - `02 settings history`: **when**, **what changed** (from, to), **why**, newest first.
 - `03 arms`: every arm that uses it, by `model_record` or by an alias, one row per arm the goals read (an arm a
   re-score stands in for shows as the re-score, as on the goal pages): **arm** (linked), **deployment** (the one
-  its config names, else the machine a self-hosted arm ran on, else the hosted deployment; linked to its
+  its system names, else the machine a self-hosted arm ran on, else the hosted deployment; linked to its
   section above), **goal**, **its settings**
   (the record settings it overrides, then the task's own: its reply cap, call limit, temperature; `evh models
   --model` shows the same column), **arm smoke** (pass / check / none, date, flags
@@ -684,9 +748,10 @@ models page lists records only: an arm's model with no record is not a row of it
 onboarded" chip for it.
 
 On the arms page each arm that uses a record gets it under the model column, linked, with the deployment its
-config named after it ("@ dgx"), and a badge: "smoked", "smoke: check", or "not smoked" (the record's latest
-arm smoke of the arm's config). `evh arms` shows the same in a "model record" column ("gem@dgx (smoked)"),
-when any arm has a record. An arm's page names the deployment beside its config, and its conditions list the
+system named after it ("@ dgx"), and a badge when an arm smoke ran: "smoked" or "smoke: check" (the record's
+latest arm smoke of the arm's system); none when it did not ("not smoked" was on 568 of 646 rows, so it said
+nothing). `evh arms` names all three in a "model record" column ("gem@dgx (smoked)", "(not smoked)"), when any
+arm has a record. An arm's page names the deployment beside its system, and its conditions list the
 runner (`machine.*`, `library.*`: where `evh` ran, outside the fingerprint's hash) and where the system under
 test ran (`deployment.machine`, `deployment.backend`, `deployment.server`).
 
@@ -745,7 +810,7 @@ test ran (`deployment.machine`, `deployment.backend`, `deployment.server`).
 ### Links everywhere
 
 Every arm, metric, dataset, reference and goal named on a page links to its page: in every table,
-in the answers and the facts, a reference's author to its arm, a round's configs to their arms,
+in the answers and the facts, a reference's author to its arm, a round's systems to their arms,
 and in the search box. In the inspector (when the catalog was built by `evh catalog`), the arm
 names and the verdicts' metric open their pages.
 
@@ -761,6 +826,7 @@ names and the verdicts' metric open their pages.
 
 - The page still carries counts and means only.
 - Every arms table keeps the row key and the tints.
+- Every catalog page opens with a skip link to its content, the first stop of the Tab key.
 - The same view is still a command, with the same numbers (`evh datasets`, `goals`,
   `references`, `metrics`, `arms`, `activity`), or the command gains it in the same change; a
   page's period numbers come from its builder in `catalog_build.py` (`period_*`), never computed

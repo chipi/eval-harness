@@ -1,0 +1,38 @@
+model_id: qwen3-30b-a3b
+deployment_id: dgx-vllm
+order: 3
+where: dgx
+server: vllm (production's, :8003)
+tag: NVFP4/Qwen3-30B-A3B-Instruct-2507-FP4
+endpoint:
+  provider: openai
+  base_url: http://100.69.49.126:8003/v1
+  model: NVFP4/Qwen3-30B-A3B-Instruct-2507-FP4
+  api_key_env: VLLM_API_KEY
+checked_at: '2026-10-31T14:05:25Z'
+checks:
+- kind: onboarding
+  status: pass
+  at: '2026-10-31T14:05:25Z'
+  where: dgx
+  flags: []
+  report:
+    endpoint:
+      provider: openai
+      base_url: http://100.69.49.126:8003/v1
+      model: NVFP4/Qwen3-30B-A3B-Instruct-2507-FP4
+    digest_found: null
+    default:
+      s: 0.83
+      tokens_out: 23
+      reasoned: false
+      finish: stop
+    chosen:
+      s: 0.35
+      tokens_out: 23
+      reasoned: false
+      finish: stop
+      settings: {}
+    tokens_per_s: 65.0
+    deterministic: true
+    json_valid: true

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Operational commands: init, list-runs, self-check, sweep, judge, cost-report.
+"""Operational commands: init, list-runs, self-check, sweep, cost-report.
 
     python tests/test_ops_commands.py
 
@@ -16,13 +16,33 @@ import sys
 import tempfile
 from pathlib import Path
 
-import yaml
-
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tests/
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))  # _wheel
+import _runstore
 import _wheel
+from evaluation_harness import _common
 from evaluation_harness._check import check, summary
+
+
+def aim(proj: Path) -> Path:
+    """The project, for _runstore: this process caches the project it resolved first, and this test has several."""
+    _common.project_root.cache_clear()
+    return proj
+
+
+def kit_system(proj: Path, name: str) -> None:
+    """A tutorial system copied from the project's kit into its systems."""
+    _runstore.write_text(aim(proj), f"systems/{name}", (proj / "tutorial/systems" / name).read_text())
+
+
+def system_ids(proj: Path) -> list[str]:
+    """The ids of the tickets_lead* systems of the project."""
+    return sorted(
+        n.removesuffix(".yaml")
+        for n in _runstore.listdir(aim(proj), "systems")
+        if n.startswith("tickets_lead") and n.endswith(".yaml")
+    )
 
 
 def evh_run(
@@ -43,6 +63,7 @@ def project_env(proj: Path, site: Path) -> dict:
     """Environment for evh in a project (installed from wheel)."""
     env = {
         **os.environ,
+        "EVH_ACTOR": "person:test",
         "PYTHONPATH": str(site),
         "PYTHONDONTWRITEBYTECODE": "1",
         "EVAL_BUILD_REF": "test-ops",
@@ -51,7 +72,7 @@ def project_env(proj: Path, site: Path) -> dict:
         "GIT_COMMITTER_NAME": "t",
         "GIT_COMMITTER_EMAIL": "t@example.invalid",
     }
-    for k in ("EVAL_HOME", "EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_MAX_COST_USD"):
+    for k in ("EVAL_HOME", "EVAL_DATA_DIR", "EVAL_MAX_COST_USD"):
         env.pop(k, None)
     return env
 
@@ -65,14 +86,27 @@ def test_init(tmp: Path) -> None:
 
     # Basic init
     r = evh_run("init", cwd=proj, env=env)
+    if _runstore.sqlite():
+        # In the database a directory is the files it holds: init makes data/ (where the database will be, and how a
+        # command run in the project finds it) and says the store, never folders it did not make.
+        made = "store    sqlite" in r.stdout and "folders" not in r.stdout
+    else:
+        made = (proj / "data/sources").is_dir() and (proj / "data/systems").is_dir()
     check(
-        "init (no args): exit 0, creates folders",
+        "init (no args): exit 0, makes data/ and the store's folders",
         r.returncode == 0
         and "project:" in r.stdout
-        and (proj / "data/sources").is_dir()
-        and (proj / "data/configs").is_dir()
+        and (proj / "data").is_dir()
+        and made
         and (proj / ".gitignore").is_file(),
         r.stdout[:200],
+    )
+    found = evh_run("data-ls", cwd=proj, env=env)
+    store_now = "sqlite" if _runstore.sqlite() else "files"
+    check(
+        "after init, a command run in the project finds it (its data/ folder), in its store",
+        found.returncode == 0 and f"store: {store_now}" in found.stdout,
+        (found.stdout + found.stderr)[-300:],
     )
 
     # Init with --tutorial
@@ -85,7 +119,7 @@ def test_init(tmp: Path) -> None:
         r.returncode == 0
         and "tutorial" in r.stdout
         and (proj_tut / "tutorial/tickets").is_dir()
-        and (proj_tut / "tutorial/configs").is_dir(),
+        and (proj_tut / "tutorial/systems").is_dir(),
         r.stdout[:200],
     )
 
@@ -115,9 +149,9 @@ def test_list_runs(tmp: Path) -> None:
     )
 
     # No baselines yet
-    r = evh_run("runs-list", "--baselines", cwd=proj, env=env)
+    r = evh_run("baselines", cwd=proj, env=env)
     check(
-        "runs-list --baselines (none): exit 0, says 'no baselines yet'",
+        "evh baselines (none): exit 0, says 'no baselines yet'",
         r.returncode == 0 and "no baselines" in r.stdout,
         r.stdout[:200],
     )
@@ -133,8 +167,8 @@ def test_list_runs(tmp: Path) -> None:
         env=env,
     )
     r = evh_run("dataset-materialize", "--dataset-id", "tickets_v1", cwd=proj, env=env)
-    shutil.copy(proj / "tutorial/configs/tickets_lead1.yaml", proj / "data/configs/")
-    r = evh_run("run", "--config", "data/configs/tickets_lead1.yaml", cwd=proj, env=env)
+    kit_system(proj, "tickets_lead1_v1.yaml")
+    r = evh_run("run", "--system", "tickets_lead1_v1", "--dataset", "tickets_v1", cwd=proj, env=env)
     check("evh run: succeeds", r.returncode == 0, r.stderr[:200])
 
     # Now list the run
@@ -155,7 +189,7 @@ def test_self_check(tmp: Path) -> None:
         "PYTHONDONTWRITEBYTECODE": "1",
         "EVAL_BUILD_REF": "test-ops-selftest",
     }
-    for k in ("EVAL_HOME", "EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_MAX_COST_USD"):
+    for k in ("EVAL_HOME", "EVAL_DATA_DIR", "EVAL_MAX_COST_USD"):
         env.pop(k, None)
 
     # From an empty folder: `python -m` puts the working directory first on sys.path, and run from
@@ -201,14 +235,16 @@ def test_sweep(tmp: Path) -> None:
     )
     evh_run("dataset-materialize", "--dataset-id", "tickets_v1", cwd=proj, env=env)
     for arm in ("lead1", "lead2"):
-        shutil.copy(proj / f"tutorial/configs/tickets_{arm}.yaml", proj / "data/configs/")
+        kit_system(proj, f"tickets_{arm}_v1.yaml")
 
     # Dry run: costs nothing
-    config_files = sorted(str(p) for p in (proj / "data/configs").glob("tickets_lead*.yaml"))
+    system_list = system_ids(proj)
     r = evh_run(
         "sweep",
-        "--configs",
-        *config_files,
+        "--systems",
+        *system_list,
+        "--dataset",
+        "tickets_v1",
         "--dry-run",
         cwd=proj,
         env=env,
@@ -220,11 +256,13 @@ def test_sweep(tmp: Path) -> None:
     )
 
     # Real sweep
-    config_files = sorted(str(p) for p in (proj / "data/configs").glob("tickets_lead*.yaml"))
+    system_list = system_ids(proj)
     r = evh_run(
         "sweep",
-        "--configs",
-        *config_files,
+        "--systems",
+        *system_list,
+        "--dataset",
+        "tickets_v1",
         "--repeat",
         "1",
         cwd=proj,
@@ -238,113 +276,6 @@ def test_sweep(tmp: Path) -> None:
         and "[2/" in r.stdout
         and ("FRONTIER" in r.stdout or "arm" in r.stdout),
         r.stdout[-500:],
-    )
-
-
-def test_judge_panel(tmp: Path) -> None:
-    """judge-panel: promotes finalists from runs, judges them, writes a report."""
-    site = _wheel.install(tmp / "site-packages")
-    proj = tmp / "proj_judge"
-    proj.mkdir()
-    env = project_env(proj, site)
-
-    # Setup: init, dataset, materialize, arms, reference
-    evh_run("init", "--tutorial", cwd=proj, env=env)
-    evh_run(
-        "dataset-create",
-        "--dataset-id",
-        "tickets_v1",
-        "--source-dir",
-        "tutorial/tickets",
-        cwd=proj,
-        env=env,
-    )
-    evh_run("dataset-materialize", "--dataset-id", "tickets_v1", cwd=proj, env=env)
-    shutil.copy(proj / "tutorial/configs/tickets_lead1.yaml", proj / "data/configs/")
-    evh_run(
-        "label-import",
-        "tutorial/gold",
-        "--dataset-id",
-        "tickets_v1",
-        "--set",
-        "owner_gold",
-        "--by",
-        "owner",
-        cwd=proj,
-        env=env,
-    )
-    evh_run(
-        "reference-promote",
-        "--dataset-id",
-        "tickets_v1",
-        "--labels",
-        "owner_gold",
-        "--tier",
-        "gold",
-        "--reason",
-        "The kit's hand-written summaries decide.",
-        "--by",
-        "owner",
-        cwd=proj,
-        env=env,
-    )
-
-    # Run an arm to judge
-    evh_run("run", "--config", "data/configs/tickets_lead1.yaml", cwd=proj, env=env)
-
-    # Create a judge panel config
-    # Use output_words as the primary metric (a real metric from runs)
-    judge_cfg = {
-        "runs_from": "runs",
-        "dataset_id": "tickets_v1",
-        "primary_metric": "output_words",
-        "promotion": {
-            "per_stratum_top_k": 1,
-            "floor_fraction": 0.5,
-            "overall_cap": 10,
-            "carte_blanche": [],
-        },
-        "judging": {
-            "primary_judge": {
-                "id": "fake",
-                "provider": "fake",
-                "model": "fake",
-                "usd_per_mtok_in": 0.0,
-                "usd_per_mtok_out": 0.0,
-            },
-            "cross_judge": None,
-            "dimensions": ["quality"],
-            "cost_cap_usd": 100.0,
-            "max_items_per_finalist": 2,
-        },
-        "aggregation": {"contested_threshold": 0.5, "agreement_tolerance": 1},
-        "output_root": "data/reports",
-        "tag": "v1",
-    }
-    cfg_path = proj / "data/configs/judge_panel.yaml"
-    cfg_path.write_text(yaml.dump(judge_cfg))
-
-    # Run judge with fake judge
-    r = evh_run(
-        "judge",
-        "--config",
-        str(cfg_path),
-        "--use-fake-judge",
-        cwd=proj,
-        env=env,
-        timeout=120,
-    )
-    check(
-        "judge --use-fake-judge: exit 0, produces report",
-        r.returncode == 0 and ("Report written" in r.stderr or "Finalists" in r.stdout),
-        r.stdout[:500] + "\n" + r.stderr[:500],
-    )
-
-    # Check that report was written
-    check(
-        "judge: writes report to output_root/tag",
-        (proj / "data/reports/v1").is_dir() and (proj / "data/reports/v1/report.md").is_file(),
-        str(list((proj / "data/reports").glob("*")) if (proj / "data/reports").is_dir() else []),
     )
 
 
@@ -367,8 +298,8 @@ def test_cost_report(tmp: Path) -> None:
         env=env,
     )
     evh_run("dataset-materialize", "--dataset-id", "tickets_v1", cwd=proj, env=env)
-    shutil.copy(proj / "tutorial/configs/tickets_lead1.yaml", proj / "data/configs/")
-    evh_run("run", "--config", "data/configs/tickets_lead1.yaml", cwd=proj, env=env)
+    kit_system(proj, "tickets_lead1_v1.yaml")
+    evh_run("run", "--system", "tickets_lead1_v1", "--dataset", "tickets_v1", cwd=proj, env=env)
 
     # cost-report with no runs (nothing billed yet)
     r = evh_run("cost-report", "--dataset-id", "tickets_v1", cwd=proj, env=env)
@@ -395,7 +326,6 @@ def main() -> int:
         test_list_runs(tmp / "list")
         test_self_check(tmp / "selfcheck")
         test_sweep(tmp / "sweep")
-        test_judge_panel(tmp / "judge")
         test_cost_report(tmp / "cost")
     finally:
         shutil.rmtree(tmp, ignore_errors=True)

@@ -476,6 +476,12 @@ def warmup(params: Dict[str, Any]) -> None:
 
 
 # ── fingerprint ──────────────────────────────────────────────────────────────
+def prompts(params: Dict[str, Any]) -> Dict[str, str]:
+    """The prompt a call sends, by name (`<example>/<prompt file>`), the text this adapter's fingerprint hashes as
+    `prompt_sha256`: the harness records it as a prompt version of the run (RFC-032 step 4b)."""
+    return {f"{Path(__file__).resolve().parent.name}/{Path(str(params.get('prompt_file') or 'prompt.txt')).stem}": _prompt(params)}
+
+
 def fingerprint(params: Dict[str, Any]) -> Dict[str, Any]:
     """What this arm's system under test IS. The core asks; it does not inspect.
 

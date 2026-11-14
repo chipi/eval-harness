@@ -1,4 +1,4 @@
-"""A hypothesis written into an arm's config before its run (ADR-0025).
+"""A hypothesis written into an arm's system before its run (ADR-0025).
 
     hypothesis:
       against: baseline_v1          # the config_id it is compared with
@@ -8,7 +8,7 @@
       items: data/expected_flips.txt   # optional: item ids expected to flip
 
 A paired test is valid uncorrected only when the pair was named before the results were read. The
-config is where the change is, so the prediction sits beside it; a run records it, and whether the
+system is where the change is, so the prediction sits beside it; a run records it, and whether the
 commit that last changed it came before the run. It is never part of the fingerprint: a hypothesis
 does not change what was measured.
 """
@@ -19,6 +19,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from evaluation_harness import _store
+
 DIRECTIONS = ("better", "worse", "no-worse")
 KEYS = ("against", "measure", "direction", "statement", "items")
 REQUIRED = ("against", "measure", "direction", "statement")
@@ -28,29 +30,24 @@ YES, NO, UNDETERMINED = "yes", "no", "not determinable"
 
 
 def of(cfg: dict) -> dict | None:
-    """The config's hypothesis block as written, or None when it has none."""
+    """The system's hypothesis block as written, or None when it has none."""
     return cfg.get("hypothesis") if isinstance(cfg, dict) else None
 
 
-def config_ids() -> dict[str, Path]:
-    """{config_id: file} for every arm config of the project (data/configs and validate.json's globs)."""
-    import yaml  # noqa: PLC0415
-    from evaluation_harness._common import arm_config_files as config_files  # noqa: PLC0415
+def system_ids() -> dict[str, Path]:
+    """{system_id: file} for every system of the project (data/systems and validate.json's globs), by its file's
+    name, which is its id (RFC-032)."""
+    from evaluation_harness._common import system_files  # noqa: PLC0415
 
     out: dict[str, Path] = {}
-    for f in config_files():
-        try:
-            doc = yaml.safe_load(f.read_text(encoding="utf-8"))
-        except (OSError, yaml.YAMLError):
-            continue
-        if isinstance(doc, dict) and doc.get("config_id"):
-            out.setdefault(str(doc["config_id"]), f)
+    for f in system_files():
+        out.setdefault(f.stem, f)
     return out
 
 
 def known_metrics(cfg: dict, config_path: Path | None) -> set[str]:
     """The metrics this arm has: what its adapter declares, what its goal decides on, and what runs of
-    the config recorded. Empty when nothing says (the adapter declares none and the arm never ran)."""
+    the system recorded. Empty when nothing says (the adapter declares none and the arm never ran)."""
     from evaluation_harness import _adapter, _common, _runs  # noqa: PLC0415
 
     spec = cfg.get("adapter")
@@ -62,10 +59,10 @@ def known_metrics(cfg: dict, config_path: Path | None) -> set[str]:
             if p.is_absolute()
             else [*([config_path.resolve().parent / p] if config_path else []), _common.ROOT / p]
         ):
-            if cand.is_file():
+            if _store.is_file(cand):
                 path = cand
                 break
-    elif (_common.ROOT / "adapter.py").is_file():
+    elif _store.is_file(_common.ROOT / "adapter.py"):
         path = _common.ROOT / "adapter.py"
     params = dict(cfg.get("params") or {})
     names: set[str] = set(_adapter.metric_kinds(path)) | set(_adapter.metric_directions(path))
@@ -88,8 +85,9 @@ def known_metrics(cfg: dict, config_path: Path | None) -> set[str]:
 
 
 def problems(cfg: dict, config_path: Path | None = None, ids: dict | None = None) -> list[str]:
-    """What is wrong with the config's hypothesis block, each as one sentence; [] when it has none or it is
-    sound. `ids`: config_ids(), when the caller checks many configs and read it once."""
+    """What is wrong with the system's hypothesis block, each as one sentence; [] when it has none or it is
+    sound. `ids`: system_ids(), when the caller checks many systems and read it once. `cfg` is a system's record,
+    or a run's arm (the system on its dataset)."""
     h = of(cfg)
     if h is None:
         return []
@@ -107,11 +105,11 @@ def problems(cfg: dict, config_path: Path | None = None, ids: dict | None = None
         return out
     if h["direction"] not in DIRECTIONS:
         out.append(f"hypothesis.direction: {h['direction']!r} is not one of {', '.join(DIRECTIONS)}")
-    ids = ids if ids is not None else config_ids()
-    if h["against"] == cfg.get("config_id"):
-        out.append("hypothesis.against: the arm cannot be compared with itself")
+    ids = ids if ids is not None else system_ids()
+    if h["against"] == (cfg.get("config_id") or cfg.get("system_id")):
+        out.append("hypothesis.against: the system cannot be compared with itself")
     elif h["against"] not in ids:
-        out.append(f"hypothesis.against: no config with config_id {h['against']!r} (data/configs/*.yaml)")
+        out.append(f"hypothesis.against: no system {h['against']!r} (evh system-list)")
     metrics = known_metrics(cfg, config_path)
     if metrics and h["measure"] not in metrics:
         out.append(
@@ -129,9 +127,9 @@ def problems(cfg: dict, config_path: Path | None = None, ids: dict | None = None
                 if p.is_absolute()
                 else [*([config_path.resolve().parent / p] if config_path else []), _common.ROOT / p]
             )
-            if not any(c.is_file() for c in cands):
+            if not any(_store.is_file(c) for c in cands):
                 out.append(
-                    f"hypothesis.items: no file {h['items']!r} (relative to the config, then the project)"
+                    f"hypothesis.items: no file {h['items']!r} (relative to the system's file, then the project)"
                 )
     return out
 
@@ -141,10 +139,10 @@ def _when(text: str) -> datetime:
 
 
 def named_before(config_path: Path, hyp: dict, build: dict, before: str) -> dict:
-    """Whether the config's hypothesis was committed before the run: the commit that last changed it is an
+    """Whether the system's hypothesis was committed before the run: the commit that last changed it is an
     ancestor of the run's build commit and was made before `before` (the run's start). Returns {"named":
     True | False | None, "commit", "committed_at", "why"}; None outside git, for a build that is not a git
-    commit, and for a dirty tree, where the config on disk may not be the committed one."""
+    commit, and for a dirty tree, where the system on disk may not be the committed one."""
     import yaml  # noqa: PLC0415
     from evaluation_harness import _common  # noqa: PLC0415
     from evaluation_harness._fingerprint import _git, tree_dirt  # noqa: PLC0415
@@ -155,7 +153,7 @@ def named_before(config_path: Path, hyp: dict, build: dict, before: str) -> dict
     path = Path(config_path).resolve()
     top = _git(path.parent, "rev-parse", "--show-toplevel")
     if not top:
-        return out(None, "the config is not in a git repository")
+        return out(None, "the system is not in a git repository")
     if build.get("source") != "git" or not build.get("ref"):
         return out(None, "the build is not a git commit")
     dirt = tree_dirt(Path(top), _common.DATA)
@@ -165,7 +163,7 @@ def named_before(config_path: Path, hyp: dict, build: dict, before: str) -> dict
         return out(None, "the working tree is dirty")
     ref = build["ref"]
     if _git(Path(top), "rev-parse", "--verify", f"{ref}^{{commit}}") is None:
-        return out(None, "the build commit is not in the config's repository")
+        return out(None, "the build commit is not in the system's repository")
     rel = path.relative_to(Path(top).resolve()).as_posix()
     # Walked from the build commit, so every commit seen is one of its ancestors.
     log = _git(Path(top), "log", ref, "--format=%H\t%cI", "--", rel)
@@ -188,7 +186,7 @@ def named_before(config_path: Path, hyp: dict, build: dict, before: str) -> dict
 
 
 def record_for(cfg: dict, config_path: Path, build: dict, before: str) -> dict:
-    """The fields a run records about its config's hypothesis: {} when it has none, else
+    """The fields a run records about its system's hypothesis: {} when it has none, else
     {"hypothesis": the block, "hypothesis_in_advance": named_before(...)}."""
     h = of(cfg)
     if not h:
@@ -220,7 +218,7 @@ def agreement(direction: str, delta: float, lower: bool, significant: bool) -> s
 
 
 def across_runs(runs: list[dict], against: str | None = None, measure: str | None = None) -> dict | None:
-    """An arm's hypothesis as all its runs (their metrics.json) give it, or None when none carries one. Named
+    """An arm's hypothesis as all its runs (their records) give it, or None when none carries one. Named
     in advance only when EVERY run carries it and each was named in advance: a test averages all of an arm's runs,
     so one run made before the hypothesis (or carrying another) means part of the evidence predates the
     prediction, whatever a later run records. `against`/`measure` keep only the hypothesis a comparison tests."""

@@ -1,1 +1,0 @@
-[{"text": "Music", "type": "location"}, {"text": "Saraswati Devi", "type": "location"}, {"text": "Bombay Talkies", "type": "location"}]

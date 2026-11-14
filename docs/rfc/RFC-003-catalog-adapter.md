@@ -78,7 +78,7 @@ notes, and so does `evh inspect`.
 
 ### `HarnessAdapter`
 
-Reads `<data>/runs*/<run_id>/{metrics.json, predictions.jsonl, outputs/}`,
+Reads `<data>/runs*/<run_id>/{metrics.json, predictions.jsonl, outputs.jsonl}` (RFC-024),
 `<data>/runs-judged/<scorer_id>/`, `<data>/references/<tier>/<dataset_id>/`, `<data>/datasets/`,
 `<data>/goals/`, `<data>/baselines/` and `<data>/rounds/`. An arm id is
 `<runs dir>/<dataset_id>/<config_id>`: every repeat of a config on a dataset, averaged per item,

@@ -1,0 +1,64 @@
+{
+  "derived": {
+    "at": "2026-10-01T16:13:44Z",
+    "from": "fn_deepseek_s_n200_v1_20260928T094424Z",
+    "kind": "rescore",
+    "with": {
+      "adapter": "examples/ner-few-nerd/adapter.py",
+      "scorer": {
+        "normalizer_sha256": "9664fa3cb17f6df87ffc7de387cb9ec20d6fa4988d6a3a400dadf0f415d0552d",
+        "parser_sha256": "23058c218b1c50eb679099082cd2df8150b0e33d8f707b38479caa4173f88769",
+        "scorer_sha256": "f3cf13af2b8fd609528a547c391b23422b5e3490304be0a7811f1faa6d9ba334"
+      },
+      "sha256": "6124a5a879fdbbe0adea4b2819864f1be8acb5f6902a60ae5e8ca8a4b59b1e3c"
+    }
+  },
+  "metric_kinds": {
+    "confidence": "descriptive",
+    "f1": "quality",
+    "fn": "descriptive",
+    "fp": "descriptive",
+    "n_gold": "descriptive",
+    "n_predicted": "descriptive",
+    "parsed": "quality",
+    "precision": "quality",
+    "reasoning_tokens": "descriptive",
+    "recall": "quality",
+    "resumed": "descriptive",
+    "tp": "descriptive",
+    "truncated": "descriptive",
+    "type_penalty": "descriptive",
+    "untyped_f1": "quality",
+    "untyped_fn": "descriptive",
+    "untyped_fp": "descriptive",
+    "untyped_tp": "descriptive"
+  },
+  "primary_metric": "f1",
+  "reference_tier": "gold",
+  "scores": {
+    "cost_usd": 3.24152e-05,
+    "f1": 0.5756123012,
+    "fn": 0.9035714286,
+    "fp": 1.5785714286,
+    "latency_ms": 2277.0926678571,
+    "n_gold": 2.7357142857,
+    "n_predicted": 3.4107142857,
+    "parsed": 1.0,
+    "precision": 0.5478818156,
+    "reasoning_tokens": 0.0,
+    "recall": 0.6387418782,
+    "tokens_in": 114.4285714286,
+    "tokens_out": 61.4535714286,
+    "total_cost_usd": 0.00907626,
+    "total_tokens_in": 32040.0,
+    "total_tokens_out": 17207.0,
+    "tp": 1.8321428571,
+    "truncated": 0.0,
+    "type_penalty": 0.1239460425,
+    "untyped_f1": 0.6995583437,
+    "untyped_fn": 0.4857142857,
+    "untyped_fp": 1.1607142857,
+    "untyped_tp": 2.25
+  },
+  "source_created_at": "2026-09-28T09:55:05Z"
+}

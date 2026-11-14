@@ -1,0 +1,106 @@
+{
+  "adapter": "scripts/adapter.py",
+  "build": {
+    "dirty": null,
+    "ref": "format-0-fixture",
+    "source": "EVAL_BUILD_REF"
+  },
+  "config_id": "tickets_lead1_v1",
+  "created_at": "2026-11-13T09:35:46Z",
+  "dataset_id": "tickets_v1",
+  "fingerprint": {
+    "arm": {
+      "config_id": "tickets_lead1_v1",
+      "labels": null
+    },
+    "data": {
+      "dataset_id": "tickets_v1",
+      "items_sha256": "6b6875d7b9b168a602222cb1692b503f0398ad65930eb5c1a2aeb435f92d02bc",
+      "n_items": 6,
+      "reference_id": "gold/tickets_v1",
+      "reference_tier": "gold",
+      "references_sha256": "c47735f808e91b6c3f05c16aa0d751839897b5da97e48659b7a5b3043c2aeaca"
+    },
+    "data_sha256": "1877cd5001b53d1695beaf0b12bb9869f5c567a44242497663d11d3566bba3cc",
+    "deployment": {
+      "declared": null,
+      "hosted": null,
+      "id": null,
+      "in_process": true,
+      "libraries": {
+        "anthropic": "2.5.0",
+        "numpy": "2.5.4",
+        "openai": "3.46.0",
+        "rouge-score": "0.1.2"
+      },
+      "model": null,
+      "provider": "echo",
+      "server": null,
+      "source": "params",
+      "weights": {
+        "digest": null,
+        "file_hash": null,
+        "precision": null,
+        "quantization": null,
+        "revision": null,
+        "revision_source": null
+      },
+      "where": {
+        "backend": null,
+        "device": null,
+        "machine": null
+      }
+    },
+    "deployment_sha256": "4eee30325b45c7557ca9f9d892d4ad076ab47becb39f3b3bc47b9b67eeceff68",
+    "hash": "479dd09f9ea90c87bff0bb96553837edd17ecaf11beeced757323a86b418039b",
+    "instrument": {
+      "adapter": {
+        "id": "scripts/adapter.py",
+        "sha256": "ec124feaa6e694eddd5767f541caf16ae79c41d2555994e49f29eea850c58b2c"
+      },
+      "harness": {
+        "code_sha256": "256540fffa07e100e3199d04152be2015871eb8b8c3561fdfa7266ec367d45e7",
+        "commit": "ee88454c90c8",
+        "dirty": true,
+        "installed": false,
+        "version": "0.7.2"
+      }
+    },
+    "instrument_sha256": "0e37b6501d9d3646d4d664829e897b2a75539dcee110e68498216220230db651",
+    "runner": {
+      "cpu_count": 32,
+      "label": null,
+      "libraries": null,
+      "platform": "Linux/x86_64",
+      "processor": null,
+      "python": "3.14.7",
+      "release": "7.2.5-3-omarchy"
+    },
+    "settings": {
+      "sentences": 1
+    },
+    "settings_sha256": "8e18ba7d5ad60542aa0b088c7d44f3d3031db903457845a6a1d6532b5259342a",
+    "version": 5
+  },
+  "metric_directions": {},
+  "metric_kinds": {
+    "resumed": "descriptive"
+  },
+  "n_items": 6,
+  "params": {
+    "provider": "echo",
+    "sentences": 1
+  },
+  "primary_metric": "overlap_f1",
+  "providers_seen": {},
+  "reference_tier": "gold",
+  "run_id": "tickets_lead1_v1_20261113T093546Z",
+  "scores": {
+    "cost_usd": 0.0,
+    "latency_ms": 0.010333,
+    "output_words": 16.0,
+    "overlap_f1": 0.20101,
+    "resumed": 0.0,
+    "total_cost_usd": 0.0
+  }
+}

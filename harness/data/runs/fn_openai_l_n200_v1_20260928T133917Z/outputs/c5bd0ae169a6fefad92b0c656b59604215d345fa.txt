@@ -1,1 +1,0 @@
-[{"text":"Helena Mary Molony","type":"person"},{"text":"Irish","type":"other"}]

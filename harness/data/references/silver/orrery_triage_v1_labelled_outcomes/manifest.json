@@ -1,4 +1,9 @@
 {
+  "actor": {
+    "from": "migration",
+    "name": "before 0.8.0",
+    "type": "unknown"
+  },
   "caveat": "SILVER: promoted as silver from orrery_triage_v1_labelled/silver_orrery_triage_v1_labelled_outcomes (rule \u00b7 orrery_2026_10): consistent, not a claim that any arm is right. Good enough to RANK arms against each other; say so wherever a number scored against it is published.",
   "created_at": "2026-11-02T08:17:27Z",
   "dataset_id": "orrery_triage_v1_labelled",

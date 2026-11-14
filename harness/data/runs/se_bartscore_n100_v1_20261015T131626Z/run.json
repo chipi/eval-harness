@@ -1,0 +1,112 @@
+{
+  "actor": {
+    "from": "migration",
+    "name": "before 0.8.0",
+    "type": "unknown"
+  },
+  "adapter": "examples/summeval-judging/adapter.py",
+  "build": {
+    "dirty": false,
+    "ref": "aff6d81278578747f8d9b26c5d7f45a967351ee3",
+    "source": "git"
+  },
+  "config_id": "se_bartscore_n100_v1",
+  "created_at": "2026-10-15T13:42:43Z",
+  "dataset_id": "summeval_100",
+  "fingerprint": {
+    "arm": {
+      "config_id": "se_bartscore_n100_v1",
+      "labels": {
+        "family": "bart",
+        "price_tier": "free"
+      }
+    },
+    "data": {
+      "dataset_id": "summeval_100",
+      "items_sha256": "b59999b281b2cbe87c57e4af34cc475c01ba1d531c7b77cb93a136665119c613",
+      "n_items": 100,
+      "reference_id": "gold/summeval_100",
+      "reference_tier": "gold",
+      "references_sha256": "7b5e618e23b7f2b222665d83e99006eb0e9a51066e63e2e5ff8c51ae3c696c21"
+    },
+    "data_sha256": "4f1989f81af5313fc011c02f9a294432742ea188c8c6a1c517bc198565d69e29",
+    "deployment": {
+      "declared": {
+        "code_sha256": "2ff2c767f25374a6895d1f2e2d27d03f3f5bae42e325447bcc02277e436f8a05",
+        "loaded_dtype": "float32",
+        "loaded_revision": "37f520fa929c961707657b28798b30c003dd100b",
+        "pin_satisfied": true,
+        "weight_files": [
+          "model.safetensors:1625222120"
+        ]
+      },
+      "hosted": null,
+      "id": "facebook/bart-large-cnn",
+      "in_process": true,
+      "libraries": {
+        "numpy": "1.26.4",
+        "openai": "3.31.0",
+        "rouge-score": "0.1.2",
+        "torch": "2.14.1",
+        "transformers": "4.55.4"
+      },
+      "model": "facebook/bart-large-cnn",
+      "provider": "bartscore",
+      "server": null,
+      "source": "adapter",
+      "weights": {
+        "digest": null,
+        "file_hash": null,
+        "precision": "fp32",
+        "quantization": null,
+        "revision": "37f520fa929c961707657b28798b30c003dd100b",
+        "revision_source": "hf-snapshot"
+      },
+      "where": {
+        "backend": null,
+        "device": "cpu",
+        "machine": null
+      }
+    },
+    "deployment_sha256": "0dbef56c61cf883573108eeabeb7e461559ea681a1b63dc467bc7ab1ae7143c2",
+    "hash": "ea3f9ac0cc667e872c3c4fe9266f17e530bd683aa3a632c26a730f89521b9c1f",
+    "instrument": {
+      "adapter": {
+        "id": "examples/summeval-judging/adapter.py",
+        "sha256": "b757ca07e3388b96f6eeefc7033c421ca6b74ae836785f683787dd9edc870473"
+      },
+      "harness": {
+        "commit": "aff6d8127857",
+        "dirty": false
+      }
+    },
+    "instrument_sha256": "e6437e0946ecf508a329ab2c33c286e0448540e7def56433a515aa168eecc221",
+    "runner": {
+      "cpu_count": 4,
+      "label": null,
+      "libraries": null,
+      "platform": "Linux/x86_64",
+      "processor": "x86_64",
+      "python": "3.11.15",
+      "release": "6.18.44-fc-v114"
+    },
+    "settings": {},
+    "settings_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+    "version": 5
+  },
+  "goal": "summary_judge_summeval",
+  "n_items": 100,
+  "params": {
+    "family": "bart",
+    "model": "facebook/bart-large-cnn",
+    "price_tier": "free",
+    "provider": "bartscore",
+    "revision": "37f520fa929c961707657b28798b30c003dd100b"
+  },
+  "providers_seen": {},
+  "round": "r1",
+  "run_id": "se_bartscore_n100_v1_20261015T131626Z",
+  "warmup_ms": 10184.924,
+  "purpose": "run",
+  "machine": "linux"
+}

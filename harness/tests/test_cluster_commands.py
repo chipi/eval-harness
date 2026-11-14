@@ -1,0 +1,279 @@
+#!/usr/bin/env python3
+"""`--cluster FIELD` and a goal's `cluster:`, through the commands (A1 of PLAN_0.8.0).
+
+    python tests/test_cluster_commands.py
+
+In a throwaway project with the tutorial's six tickets, its gold and two arms: the tickets' `area` has five
+values (two tickets are about `account`). pair-test and family-test with `--cluster area` test five units, and
+pair-test's p is the sign-flip p of the five clusters' summed differences; a goal naming `cluster: area` says
+so in `evh goals`; validate refuses a goal whose cluster field no item carries; an unknown field is refused.
+"""
+
+import json
+import os
+import shutil
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+
+HARNESS = Path(__file__).resolve().parents[1]
+HERE = HARNESS / "scripts"
+KIT = HARNESS / "tutorial"
+sys.path.insert(0, str(HARNESS))
+from evaluation_harness import _format, stats  # noqa: E402
+from evaluation_harness._check import check, summary  # noqa: E402
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runstore  # noqa: E402
+
+proj = Path(tempfile.mkdtemp(prefix="evh-cluster-"))
+env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-cluster")
+env.pop("EVAL_DATA_DIR", None)
+
+
+def evh(*args):
+    return subprocess.run(
+        [sys.executable, str(HERE / "cli.py"), *args],
+        cwd=proj,
+        env=env,
+        capture_output=True,
+        text=True,
+        stdin=subprocess.DEVNULL,
+        timeout=300,
+    )
+
+
+def ok(r, what):
+    check(f"setup: {what}", r.returncode == 0, (r.stdout + r.stderr)[-400:])
+    return r.returncode == 0
+
+
+try:
+    data = proj / "data"
+    (data / "systems").mkdir(parents=True)
+    _runstore.write_text(proj, _format.NAME, f"format: {_format.FORMAT}\n")
+    (data / "goals").mkdir()
+    shutil.copytree(KIT / "tickets", proj / "tutorial" / "tickets")
+    shutil.copytree(KIT / "fields", data / "fields")
+    _runstore.migrate_in(proj)
+    ready = ok(
+        evh(
+            "dataset-create",
+            "--dataset-id",
+            "tickets_v1",
+            "--source-dir",
+            "tutorial/tickets",
+            "--fieldset",
+            "tickets",
+            "--fields",
+            str(KIT / "ticket_fields.csv"),
+        ),
+        "the dataset",
+    )
+    ready = ready and ok(evh("dataset-materialize", "--dataset-id", "tickets_v1"), "materialized")
+    ready = ready and ok(
+        evh(
+            "label-import",
+            str(KIT / "gold"),
+            "--dataset-id",
+            "tickets_v1",
+            "--set",
+            "owner_gold",
+            "--by",
+            "owner",
+        ),
+        "gold labels",
+    )
+    ready = ready and ok(
+        evh(
+            "reference-promote",
+            "--dataset-id",
+            "tickets_v1",
+            "--labels",
+            "owner_gold",
+            "--tier",
+            "gold",
+            "--reason",
+            "The kit's hand-written summaries decide.",
+            "--by",
+            "owner",
+        ),
+        "gold promoted",
+    )
+    goal = (KIT / "goals" / "tickets_summary.yaml").read_text()
+    goal = goal.replace(
+        "{dataset_id: tickets_v1, role: validation,",
+        "{dataset_id: tickets_v1, cluster: area, role: validation,",
+    )
+    _runstore.write_text(proj, "goals/tickets_summary.yaml", goal)
+    for arm in ("lead1", "lead2"):
+        _runstore.write_text(
+            proj,
+            f"systems/tickets_{arm}_v1.yaml",
+            (KIT / "systems" / f"tickets_{arm}_v1.yaml").read_text(),
+        )
+        ready = ready and ok(
+            evh(
+                "run", "--system", f"tickets_{arm}_v1", "--dataset", "tickets_v1", "--goal", "tickets_summary"
+            ),
+            f"run {arm}",
+        )
+    if not ready:
+        sys.exit(summary())
+
+    r = evh(
+        "pair-test",
+        "--dataset-id",
+        "tickets_v1",
+        "--a",
+        "tickets_lead2_v1",
+        "--b",
+        "tickets_lead1_v1",
+        "--cluster",
+        "area",
+        "--json",
+    )
+    v = json.loads(r.stdout)["result"]["values"] if r.returncode == 0 else {}
+    # The expected p from the runs' own per-item scores: summed per area, five units.
+    per = {}
+    for arm in ("tickets_lead1_v1", "tickets_lead2_v1"):
+        run = data / "runs" / next(n for n in _runstore.listdir(proj, "runs") if n.startswith(f"{arm}_"))
+        with _runstore._InProject(proj):
+            rows = _runstore.run_rows(run)
+        per[arm] = {x["item_id"]: x[v.get("metric", "overlap_f1")] for x in rows}
+    area = {
+        "t01_login": "account",
+        "t02_invoice": "billing",
+        "t03_export": "data",
+        "t04_api": "api",
+        "t05_delete": "account",
+        "t06_mobile": "mobile",
+    }
+    diffs = {i: per["tickets_lead2_v1"][i] - per["tickets_lead1_v1"][i] for i in per["tickets_lead1_v1"]}
+    totals, _ = stats.clustered(diffs, area)
+    check(
+        "pair-test --cluster area: 5 clusters of 6 items, p the sign-flip p of their sums",
+        v.get("clusters") == 5
+        and v.get("n") == 6
+        and v.get("cluster") == "area"
+        and v.get("p") == stats.sign_flip_p(totals),
+        (r.stdout + r.stderr)[-400:],
+    )
+    r = evh(
+        "pair-test",
+        "--dataset-id",
+        "tickets_v1",
+        "--a",
+        "tickets_lead2_v1",
+        "--b",
+        "tickets_lead1_v1",
+        "--cluster",
+        "area",
+    )
+    check(
+        "pair-test prints the clusters it tested", "clusters           5 by area" in r.stdout, r.stdout[-400:]
+    )
+    r = evh(
+        "pair-test",
+        "--dataset-id",
+        "tickets_v1",
+        "--a",
+        "tickets_lead2_v1",
+        "--b",
+        "tickets_lead1_v1",
+        "--margin",
+        "0.05",
+        "--json",
+    )
+    ni = (json.loads(r.stdout)["result"]["values"].get("noninferior") or {}) if r.returncode == 0 else {}
+    check(
+        "pair-test --margin runs the goals' contender test: 6 items of a continuous score are too few",
+        ni.get("verdict") == "too few" and ni.get("method") == "bootstrap-t" and ni.get("margin") == 0.05,
+        (r.stdout + r.stderr)[-400:],
+    )
+
+    r = evh(
+        "family-test",
+        "--dataset-id",
+        "tickets_v1",
+        "--a",
+        "tickets_lead2_v1",
+        "--against",
+        "lead1",
+        "--cluster",
+        "area",
+        "--json",
+    )
+    fv = json.loads(r.stdout)["result"]["values"] if r.returncode == 0 else {}
+    r = evh("inspect", "--runs", "tickets_lead1_v1,tickets_lead2_v1", "--json")
+    check(
+        "the inspector tests by the goal's cluster too, and says so",
+        r.returncode == 0 and "Tested by area" in r.stdout and "(5 clusters)" in r.stdout,
+        (r.stdout + r.stderr)[-400:],
+    )
+    check(
+        "family-test --cluster area: recorded in its answer",
+        fv.get("cluster") == "area",
+        (r.stdout + r.stderr)[-300:],
+    )
+
+    r = evh("goals", "--goal", "tickets_summary", "--json")
+    check(
+        "a goal naming cluster: area says its tests are by area",
+        r.returncode == 0 and "Tested by area" in r.stdout,
+        (r.stdout + r.stderr)[-400:],
+    )
+
+    r = evh(
+        "pair-test",
+        "--dataset-id",
+        "tickets_v1",
+        "--a",
+        "tickets_lead2_v1",
+        "--b",
+        "tickets_lead1_v1",
+        "--cluster",
+        "no_such_field",
+    )
+    check(
+        "an unknown cluster field is refused (not-found)",
+        r.returncode == 1 and "ERROR (not-found)" in r.stderr,
+        r.stderr[-200:],
+    )
+
+    # B2: a second person labels the tickets, disagreeing with the gold on two of them.
+    second = proj / "second_labels"
+    second.mkdir()
+    for f in sorted((KIT / "gold").glob("*.txt")):
+        text = f.read_text()
+        if f.stem in ("t02_invoice", "t04_api"):
+            text = "something else entirely."
+        (second / f.name).write_text(text)
+    ok(
+        evh("label-import", str(second), "--dataset-id", "tickets_v1", "--set", "second", "--by", "reviewer"),
+        "a second person's labels",
+    )
+    r = evh("labels", "--dataset-id", "tickets_v1", "--contested", "--json")
+    cont = (json.loads(r.stdout).get("contested") or {}) if r.returncode == 0 else {}
+    worst = {x["item_id"]: (x["agree"], x["people"]) for x in cont.get("rows") or []}
+    check(
+        "labels --contested: the two items the second person labelled otherwise, the gold's own set left out",
+        cont.get("contested") == 2
+        and worst.get("t02_invoice") == (0, 1)
+        and worst.get("t01_login") == (1, 1),
+        (r.stdout + r.stderr)[-500:],
+    )
+    _runstore.write_text(proj, "goals/tickets_summary.yaml", goal.replace("cluster: area", "cluster: araa"))
+    r = evh("validate")
+    check(
+        "validate: a goal whose cluster field no item carries fails V14",
+        r.returncode == 6 and "cluster 'araa' on tickets_v1: no item carries that field" in r.stdout,
+        r.stdout[-400:],
+    )
+finally:
+    if not os.environ.get("EVH_TEST_KEEP"):
+        shutil.rmtree(proj, ignore_errors=True)
+    else:
+        print("kept", proj)
+sys.exit(summary())

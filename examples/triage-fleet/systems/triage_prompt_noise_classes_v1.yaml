@@ -1,0 +1,12 @@
+# A fleet change, not a model: the baseline arm (production's model and settings) on the fleet at
+# agentic-ai-homelab 13856f9, whose brief names the client noise the operator closes as not our
+# defect: injected extension code, a browser too old for the bundle, a bundle mirrored on a host that is not
+# ours (prompt fb78ec9c). Hypothesis in that commit's message, recorded before this run.
+system_id: triage_prompt_noise_classes_v1
+adapter: ../adapter.py
+params:
+  provider: gateway
+  model: eval-fleet-triage-pro
+  usd_per_mtok_in: 0.816
+  usd_per_mtok_out: 1.632
+  fleet_commit: 13856f9

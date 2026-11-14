@@ -25,11 +25,12 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
 import os
-import shutil
 import subprocess
 import sys
 import tempfile
 from pathlib import Path
+
+from evaluation_harness import _store
 
 HERE = Path(__file__).resolve().parent
 
@@ -37,15 +38,15 @@ HERE = Path(__file__).resolve().parent
 def in_checkout() -> bool:
     """Check whether we are running in an eval-harness checkout."""
     return (
-        (HERE.parent / "Makefile").is_file()
-        and (HERE.parent / "pyproject.toml").is_file()
-        and (HERE.parent / "tests" / "self_test.py").is_file()
+        _store.is_file(HERE.parent / "Makefile")
+        and _store.is_file(HERE.parent / "pyproject.toml")
+        and _store.is_file(HERE.parent / "tests" / "self_test.py")
     )
 
 
 def main() -> int:
     """Run a self-test of the installed harness."""
-    from evaluation_harness._common import no_options  # noqa: PLC0415
+    from evaluation_harness._common import EXIT_PROBLEMS, no_options  # noqa: PLC0415
 
     no_options(__doc__)
     if in_checkout():
@@ -72,9 +73,8 @@ def main() -> int:
             "EVAL_BUILD_REF": "self-check",
             "EVAL_MAX_COST_USD": "",
         }
-        for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR"):
-            env.pop(k, None)
-        evh = [sys.executable, "-m", "evaluation_harness"]
+        env.pop("EVAL_DATA_DIR", None)
+        evh = [sys.executable, str(HERE / "cli.py")]  # by path: an uninstalled checkout has no module to -m
         step(
             "the paired test's own suite (test_stats.py)",
             [sys.executable, str(HERE / "test_stats.py")],
@@ -82,10 +82,15 @@ def main() -> int:
             env,
         )
         if step("init --tutorial", [*evh, "init", "--tutorial"], tmp, env):
-            shutil.copy(tmp / "tutorial/fields/tickets.yaml", tmp / "data/fields/")
-            for f in (tmp / "tutorial/configs").glob("tickets_lead*.yaml"):
-                if "noisy" not in f.name:
-                    shutil.copy(f, tmp / "data/configs/")
+            # The tutorial's settings put in with data-put, the project's own way in: into its files or its database,
+            # whichever store it has (a copy from this process wrote to the disk, where SQLite has no data/ folders).
+            puts = [("fields/tickets.yaml", "tutorial/fields/tickets.yaml")] + [
+                (f"systems/{f.name}", f"tutorial/systems/{f.name}")
+                for f in sorted(_store.glob(tmp / "tutorial/systems", "tickets_lead*.yaml"))
+                if "noisy" not in f.name
+            ]
+            for key, src in puts:
+                step(f"data-put {key}", [*evh, "data-put", key, src], tmp, env)
             steps = [
                 (
                     "dataset-create with fields",
@@ -133,11 +138,11 @@ def main() -> int:
                 ),
                 (
                     "evh run lead1 x2",
-                    ["run", "--config", "data/configs/tickets_lead1.yaml", "--repeat", "2"],
+                    ["run", "--system", "tickets_lead1_v1", "--dataset", "tickets_v1", "--repeat", "2"],
                 ),
                 (
                     "evh run lead2 x2",
-                    ["run", "--config", "data/configs/tickets_lead2.yaml", "--repeat", "2"],
+                    ["run", "--system", "tickets_lead2_v1", "--dataset", "tickets_v1", "--repeat", "2"],
                 ),
                 (
                     "pair-test on the recorded primary metric",
@@ -159,8 +164,6 @@ def main() -> int:
                         "tickets_v1",
                         "--reference-id",
                         "gold/tickets_v1",
-                        "--out",
-                        "data/runs-gold",
                     ],
                 ),
                 ("validate", ["validate"]),
@@ -170,13 +173,13 @@ def main() -> int:
                 if not step(label, evh + args, tmp, env):
                     break
     finally:
-        shutil.rmtree(tmp, ignore_errors=True)
+        _store.rmtree(tmp, ignore_errors=True)
     failed = results.count(False)
     print(
         f"\nself-check: {len(results) - failed}/{len(results)} passed"
         + ("" if not failed else " — the harness does not work as installed here; the lines above say where")
     )
-    return 1 if failed else 0
+    return EXIT_PROBLEMS if failed else 0
 
 
 if __name__ == "__main__":

@@ -1,0 +1,131 @@
+{
+  "actor": {
+    "from": "migration",
+    "name": "before 0.8.0",
+    "type": "unknown"
+  },
+  "adapter": "examples/classification-dbpedia-14/adapter.py",
+  "build": {
+    "dirty": false,
+    "ref": "73604a08b84a7def4f4569102514bdc9e9ec0238",
+    "source": "git"
+  },
+  "config_id": "db_bart_mnli_v1",
+  "created_at": "2026-09-27T18:29:50Z",
+  "dataset_id": "dbpedia_280",
+  "fingerprint": {
+    "arm": {
+      "config_id": "db_bart_mnli_v1",
+      "labels": {
+        "family": "bart",
+        "price_tier": "free"
+      }
+    },
+    "data": {
+      "dataset_id": "dbpedia_280",
+      "items_sha256": "a7419dc6a5876490c3ed1f96eae9398969a2f8b794e744d45ace5790bc0146f2",
+      "n_items": 280,
+      "reference_id": "gold/dbpedia_280",
+      "reference_tier": "gold",
+      "references_sha256": "e0564fe65fb011e37717e037a6ad662f44e796b7d7de8e62ed2344ba56fa7a8a"
+    },
+    "data_sha256": "ba266b3e1c4e465a922638baee9aea990c34420aa92c1b6ab2f97610c3e981e1",
+    "deployment": {
+      "declared": {
+        "hypothesis_template": "This text is about {}.",
+        "labels": [
+          "Company",
+          "EducationalInstitution",
+          "Artist",
+          "Athlete",
+          "OfficeHolder",
+          "MeanOfTransportation",
+          "Building",
+          "NaturalPlace",
+          "Village",
+          "Animal",
+          "Plant",
+          "Album",
+          "Film",
+          "WrittenWork"
+        ],
+        "labels_sha256": "d3a33437c1e2b2fe45fdb7a425b14796d89d31a0d8919d899149e27f5c6f899d",
+        "parser_sha256": "6cc7cbce25ef74dbcdaa7f18763cfaaf8ea7b2a0e0cc0222e4d70f9b92cf2fc6",
+        "provider": "hf_zeroshot",
+        "weight_files": [
+          "model.safetensors:1629437147"
+        ]
+      },
+      "hosted": null,
+      "id": "facebook/bart-large-mnli",
+      "in_process": true,
+      "libraries": {
+        "numpy": "1.26.4",
+        "openai": "3.19.2",
+        "torch": "2.2.2",
+        "transformers": "4.55.4"
+      },
+      "model": "facebook/bart-large-mnli",
+      "provider": "hf_zeroshot",
+      "server": null,
+      "source": "adapter",
+      "weights": {
+        "digest": null,
+        "file_hash": null,
+        "precision": "fp32",
+        "quantization": null,
+        "revision": "d7645e127eaf1aefc7862fd59a17a5aa8558b8ce",
+        "revision_source": "hf-snapshot"
+      },
+      "where": {
+        "backend": null,
+        "device": "cpu",
+        "machine": null
+      }
+    },
+    "deployment_sha256": "6893fa8fb25520c4a803f8384220ffacd66c756cbe364785442ea4cefbdeb61b",
+    "hash": "a60387551ea7a0d2335b95304f3a7b8c17f26b7b6d5fa610c30fe6adf6ca37c7",
+    "instrument": {
+      "adapter": {
+        "id": "examples/classification-dbpedia-14/adapter.py",
+        "sha256": "58b55c964f8bb40746c359621beb25bfd0a071fca079961bdf15be1e7c0a77a8"
+      },
+      "harness": {
+        "commit": "73604a08b84a",
+        "dirty": false
+      }
+    },
+    "instrument_sha256": "3ac66c0eb0bb12f6e2ec8d73eccee9dd3614f0bc92c1a01be4a50c6a614bd18f",
+    "runner": {
+      "cpu_count": 12,
+      "label": "mac-dev",
+      "libraries": null,
+      "platform": "Darwin/x86_64",
+      "processor": "i386",
+      "python": "3.11.8",
+      "release": "24.6.0"
+    },
+    "settings": {
+      "hypothesis_template": "This text is about {}."
+    },
+    "settings_sha256": "20db8dad23a90d7bd900db2cce6a2023fccc94a7f4ba43c38bd61d5034e20659",
+    "version": 5
+  },
+  "goal": "entity_topic_dbpedia",
+  "n_items": 280,
+  "params": {
+    "device": "cpu",
+    "family": "bart",
+    "hypothesis_template": "This text is about {}.",
+    "model": "facebook/bart-large-mnli",
+    "precision": "fp32",
+    "price_tier": "free",
+    "provider": "hf_zeroshot"
+  },
+  "providers_seen": {},
+  "round": "r1",
+  "run_id": "db_bart_mnli_n200_v1_20260927T180303Z",
+  "warmup_ms": 5062.245,
+  "purpose": "run",
+  "machine": "darwin"
+}

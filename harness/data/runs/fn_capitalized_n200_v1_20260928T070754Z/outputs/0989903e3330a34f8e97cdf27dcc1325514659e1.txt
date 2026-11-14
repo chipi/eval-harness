@@ -1,1 +1,0 @@
-[{"text": "From September", "type": "location"}, {"text": "Winnemem Wintu", "type": "location"}]

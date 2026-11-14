@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "validate policy",
+  "description": "What `validate` holds this project to: data/validate.json, read by scripts/validate_tree.py (policy()). A project without the file has its git-tracked runs checked, no floors, no scorer sources and only the bundled demo's duplicate exception.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "_comment": {"type": "array", "items": {"type": "string"}, "description": "Notes for a person reading the file; validate ignores them."},
+    "committed": {"type": "array", "items": {"type": "string"}, "description": "The arms reports cite, each an arm label's prefix (`runs`, `pair`, `repeats`, `linux`, `silver`, `adjudicated`, `judged-judge-summ-v1`, ...): V7 (every run has a first score), V8 (no duplicate config_id) and V9 (every tracked file on disk)."},
+    "floors": {"type": "object", "additionalProperties": {"type": "integer", "minimum": 0}, "description": "V9: each arm (a label's prefix) must keep at least this many scores, so deleting evidence fails; raising one is a deliberate edit."},
+    "scorer_sources": {
+      "type": "array",
+      "description": "V10: scores that claim the current scorer, and the code that says what the current scorer is.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["arms", "glob", "path", "module", "callable"],
+        "properties": {
+          "arms": {"type": "string", "description": "The arm, by its label's prefix (`runs`, `pair`, ...)."},
+          "glob": {"type": "string", "description": "Which of its scores, by their run's id."},
+          "path": {"type": "array", "items": {"type": "string"}, "description": "Where in a score's record the scorer it claims is."},
+          "module": {"type": "string", "description": "A .py path relative to this project's root."},
+          "callable": {"type": "string", "description": "Returns a hash, or a dict of named hashes."}
+        }
+      }
+    },
+    "duplicate_ok": {
+      "type": "array",
+      "description": "V8: (dataset_id, config_id) pairs allowed to repeat, each one justified.",
+      "items": {"type": "array", "items": {"type": "string"}, "minItems": 2, "maxItems": 2}
+    },
+    "systems": {"type": "array", "items": {"type": "string"}, "description": "Globs, relative to this project's root, of systems kept outside data/systems (the examples'), found by their id and seen by every check of systems (V1's schema, V5, V18, V20)."}
+  }
+}

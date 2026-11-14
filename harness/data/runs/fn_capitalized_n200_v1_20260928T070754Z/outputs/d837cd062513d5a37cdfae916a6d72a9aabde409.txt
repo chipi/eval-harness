@@ -1,1 +1,0 @@
-[{"text": "To", "type": "location"}, {"text": "Wii Shop Channel", "type": "location"}]

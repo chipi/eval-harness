@@ -25,7 +25,7 @@ so each line can be checked.
 | **Sampling, and the population a sample claims to represent** | *Designing ML Systems* ch. 4 (sampling methods) and ch. 8 (data distribution shifts) | The calibration rows that caught this repository's own all-CNN sample, and the DailyMail slice that tested whether findings travel |
 | **Labels are expensive** — start without perfect ones | *Designing ML Systems* ch. 4: hand labels are expensive and slow; alternatives to them | Silver references by default, gold where a person has checked, and the tier stated wherever a number is published |
 | **Baselines** | *Designing ML Systems* ch. 6: evaluation metrics don't mean much without a baseline to compare them to | Floor arms in every eval (lead-3, keyword rules, a constant, random rankings); promoted baselines recorded with their reason |
-| **Track and version every experiment** | *Designing ML Systems* ch. 6: intensive tracking and versioning of experiments, automated by tooling | A fingerprint per run — data, prompt, scorer, upstream model, libraries, commit — and refusals when it cannot be trusted (dirty tree, unknown build, two runs of one config) |
+| **Track and version every experiment** | *Designing ML Systems* ch. 6: intensive tracking and versioning of experiments, automated by tooling | A fingerprint per run — data, prompt, scorer, upstream model, libraries, commit — and refusals when it cannot be trusted (dirty tree, unknown build, two runs of one system) |
 
 ## Other foundations
 
@@ -41,5 +41,34 @@ so each line can be checked.
   models and infrastructure.
 - **Offline gains are not real gains** — Bernardi et al., *150 Successful Machine Learning
   Models* (KDD 2019, Booking.com).
+- **Error bars on evals** — Evan Miller, *Adding Error Bars to Evals: A Statistical Approach to Language Model
+  Evaluations* (2024, arXiv:2411.00640): paired differences, clustered errors when items share a source,
+  repeats reduced per item, a failure counted as a failure. The source of `--cluster`, the paired tests'
+  framing and how a failed item scores.
+- **People disagree, and that is data** — Barbara Plank, *The "Problem" of Human Label Variation* (EMNLP
+  2022): label variation is signal, not only noise. Why a label can accept several answers, why agreement
+  is reported over every label set, and why contested items are listed rather than voted away.
+- **"No worse than" is its own test** — Daniël Lakens, *Equivalence Tests: A Practical Primer* (Social
+  Psychological and Personality Science, 2017): absence of a significant difference is not equivalence; test
+  against a margin. The source of contenders by non-inferiority ([ADR-0026](adr/ADR-0026-contenders-by-non-inferiority.md)).
+- **Judges need validating, and criteria drift** — Shankar et al., *Who Validates the Validators?* (UIST 2024,
+  arXiv:2404.12272): an LLM judge is graded against people, and the criteria change as people read outputs.
+  Why a judge is validated before its scores count, and why a changed rubric names the one it supersedes.
+- **Error analysis before metrics** — Hamel Husain's writing on evals (hamel.dev): read outputs, write open
+  notes, then name the failure modes and count them. The source of failure modes and tags (`evh tags`).
+- **Datasets are documented** — Gebru et al., *Datasheets for Datasets* (CACM 2021), Pushkarna et al., *Data
+  Cards* (FAccT 2022), and MLCommons' Croissant 1.1 with its RAI vocabulary: what a dataset is for, how it was
+  collected and labelled, its limits. The card asks those questions in Croissant's words, and a dataset
+  exports as Croissant.
+
+Two choices that differ from those sources, on purpose:
+
+- **The checksum proves the selection, not a file.** A dataset's identity is each item's id and the sha256
+  of its bytes, not a hash of an archive: the same items fetched again, from any mirror, prove to be the same
+  selection, and a changed item is named, where a file hash only says something differs.
+- **One reference is scored at a time.** A run is scored against one reference set (gold preferred over silver)
+  or one label set it names (`--labels`), never a blend: numbers from two references are two measurements, and the
+  goal page never ranks them together. Several right answers live inside one reference (`accept`), not across
+  several.
 
 More, curated by Chip Huyen: [huyenchip.com/mlops](https://huyenchip.com/mlops/).

@@ -1,1 +1,0 @@
-[{"text": "Its", "type": "location"}]

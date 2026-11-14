@@ -3,3 +3,7 @@ kind: llm
 aliases:
 - eval-gpt-6sol
 weights: proprietary
+actor:
+  type: unknown
+  name: before 0.8.0
+  from: migration

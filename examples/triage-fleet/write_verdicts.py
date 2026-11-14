@@ -26,6 +26,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parents[1] / "harness"))
+from evaluation_harness import _store  # noqa: E402
 from evaluation_harness._outcome_rules import load_rules, matches  # noqa: E402
 from importer import _t, close_comments, issue_verdicts, outcome_fields, own_issue, resolved  # noqa: E402
 
@@ -34,7 +35,7 @@ LABELS = ("file", "dismiss", "escalate", "cleanup", "file-or-escalate")
 
 
 def _csv(p: Path) -> list[dict]:
-    return list(csv.DictReader(p.open(encoding="utf-8-sig")))
+    return list(csv.DictReader(_store.open_file(p, encoding="utf-8-sig")))
 
 
 def owner_issue_rows(rows: list[dict], answers: list[dict]) -> list[dict]:
@@ -146,10 +147,10 @@ def main() -> int:
     ap.add_argument("--rules", type=Path, default=HERE / "outcomes.yaml")
     ap.add_argument("--out", type=Path, required=True)
     args = ap.parse_args()
-    rows = [json.loads(x) for x in args.items.read_text(encoding="utf-8").splitlines() if x.strip()]
+    rows = [json.loads(x) for x in _store.read_text(args.items, encoding="utf-8").splitlines() if x.strip()]
     rows = [r for r in rows if not r.get("is_test_signal")]
     part_b = args.sheet / "items_model.csv"
-    if not part_b.is_file():
+    if not _store.is_file(part_b):
         raise SystemExit(f"{part_b} is missing: run label_with_model.py, and answer its disagreements, first")
     a = owner_issue_rows(rows, _csv(args.sheet / "issues.csv"))
     b = owner_item_rows(_csv(part_b))
@@ -160,8 +161,10 @@ def main() -> int:
     if unanswered:
         raise SystemExit(f"{len(unanswered)} part B row(s) have no label yet, e.g. {unanswered[:3]}")
     allrows = a + b + other_rows(rows, args.rules)
-    args.out.write_text(
-        "".join(json.dumps(x, sort_keys=True, ensure_ascii=False) + "\n" for x in allrows), encoding="utf-8"
+    _store.write_text(
+        args.out,
+        "".join(json.dumps(x, sort_keys=True, ensure_ascii=False) + "\n" for x in allrows),
+        encoding="utf-8",
     )
     by: dict[str, dict[str, int]] = {}
     for x in allrows:

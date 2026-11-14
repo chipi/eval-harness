@@ -1,1 +1,0 @@
-[{"text": "Navajo", "type": "person"}, {"text": "US Federal Government", "type": "organization"}, {"text": "June 1 , 1868", "type": "event"}]

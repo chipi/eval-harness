@@ -16,7 +16,7 @@ import statistics
 import sys
 from pathlib import Path
 
-from evaluation_harness import stats
+from evaluation_harness import _store, stats
 from evaluation_harness._check import check, summary
 
 
@@ -91,7 +91,7 @@ _here = Path(__file__).resolve().parent
 for _script in ("family_test.py", "bootstrap_test.py"):
     check(
         f"holm: {_script} uses stats.holm, so it cannot disagree with the inspector",
-        "holm(" in (_here / _script).read_text() and "/ (m - i)" not in (_here / _script).read_text(),
+        "holm(" in _store.read_text(_here / _script) and "/ (m - i)" not in _store.read_text(_here / _script),
     )
 
 arms = {

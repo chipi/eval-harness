@@ -4,3 +4,7 @@ aliases:
 - facebook/bart-large-mnli
 weights: open
 licence: MIT
+actor:
+  type: unknown
+  name: before 0.8.0
+  from: migration

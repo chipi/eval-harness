@@ -3,3 +3,7 @@ kind: ml
 aliases:
 - sshleifer/distilbart-cnn-12-6
 weights: open
+actor:
+  type: unknown
+  name: before 0.8.0
+  from: migration

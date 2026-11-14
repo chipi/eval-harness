@@ -13,21 +13,24 @@ Each entry is (report, label, claimed value, run, metric). A claim that drifts f
 here rather than in a reader's head.
 """
 
-import glob
 import json
 import re
 import statistics
 import sys
 from pathlib import Path
+from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tools/
+from evaluation_harness import _outputs, _store
 from evaluation_harness import stats as _stats
 from evaluation_harness._common import (
     no_options,
 )
-from evaluation_harness._runs import AmbiguousRuns, runs_by_arm
+from evaluation_harness._common import system_now as _system_now
+from evaluation_harness._runs import AmbiguousRuns, item_rows, read_metrics, runs_by_arm, runs_on
 from evaluation_harness.cost_report import billed_and_recorded
+from evaluation_harness.model import runs as _model_runs
 
 _ARGS = no_options(__doc__, "--print-judge-figures")  # --help prints this; anything else is refused
 
@@ -42,51 +45,65 @@ if _ARGS.print_judge_figures:
         _j0.pop("best_pick_per_article", None)
     print(json.dumps(_f0, indent=1))
     raise SystemExit(0)
-DATA = HERE.parent / "data" / "runs"
+#: Where the runs are read from is a LABEL now (model.runs): the plain runs' own scores are "", and the
+#: one-machine re-timing is "linux".
+DATA = ""
 #: The pre-registered first-stage prediction. Its four runs lived in an ignored
 #: directory until round 2, so the most-advertised number in the repo -- 0.7891 -- was
 #: the one number no reader could check.
-PAIR = HERE.parent / "data" / "runs-pair"
+PAIR = "pair"
 
-#: (label, runs-dir, config_id, metric, claimed). NER reads the rescored directory,
+#: The evals, from the one registry reproduce.py and the site read
+#: (examples/evals.json). These tables restated it by hand, so a renamed dataset or
+#: a moved base directory had to be changed in two places and nothing checked they agreed.
+_EVALS = [
+    e
+    for e in json.loads(_store.read_text(HERE.parents[1] / "examples" / "evals.json", encoding="utf-8"))[
+        "evals"
+    ]
+    if e.get("site")
+]
+
+#: (label, the label the runs are read under, config_id, metric, claimed). NER reads the rescored runs,
 #: because that is the instrument its report states -- the un-rescored copies carry the
 #: pre-fix glm_l and comparing against them would pass for the wrong reason.
-CLAIMS = [
-    ("NER span_marker f1", DATA, "fn_span_marker_n200_v1", "f1", 0.7674),
-    ("NER openai_m f1", DATA, "fn_openai_m_n200_v1", "f1", 0.6864),
-    ("NER gliner f1", DATA, "fn_gliner_n200_v1", "f1", 0.4540),
+#: (label, runs dir, system id, metric, claimed[, dataset]): the dataset when the id ran on more than one.
+CLAIMS: list[tuple[Any, ...]] = [
+    ("NER span_marker f1", DATA, "fn_span_marker_v1", "f1", 0.7674),
+    ("NER openai_m f1", DATA, "fn_openai_m_v1", "f1", 0.6864),
+    ("NER gliner f1", DATA, "fn_gliner_v1", "f1", 0.4540),
     # The arm that was blocked for five review rounds, measured 2026-10-01. Pinned
     # because adding it moved every Holm threshold in the NER family from 26 to 27.
-    ("NER mistral_l f1", DATA, "fn_mistral_l_n200_v1", "f1", 0.5979),
-    ("NER capitalized typed", DATA, "fn_capitalized_n200_v1", "f1", 0.1913),
-    ("NER capitalized untyped", DATA, "fn_capitalized_n200_v1", "untyped_f1", 0.6191),
-    ("NER nothing = the floor", DATA, "fn_nothing_n200_v1", "f1", 0.1250),
-    ("NER glm_l parsed", DATA, "fn_glm_l_n200_v1", "parsed", 0.8893),
+    ("NER mistral_l f1", DATA, "fn_mistral_l_v1", "f1", 0.5979),
+    ("NER capitalized typed", DATA, "fn_capitalized_v1", "f1", 0.1913),
+    ("NER capitalized untyped", DATA, "fn_capitalized_v1", "untyped_f1", 0.6191),
+    ("NER nothing = the floor", DATA, "fn_nothing_v1", "f1", 0.1250),
+    ("NER glm_l parsed", DATA, "fn_glm_l_v1", "parsed", 0.8893),
     # SciFact reads DATA, which is the instrument REPORT_RETRIEVAL states. These
     # four pointed at data/runs, which is harmless only because no claimed arm moved
     # under the parser fix -- a claim about qwen_s would have been verified against
     # 0.7338 rather than the report's 0.7183. Found by external review.
-    ("SciFact glm_s ndcg@10", DATA, "sf_glm_s_n200_v1", "ndcg_10", 0.7437),
-    ("SciFact e5_base ndcg@10", DATA, "sf_e5_base_n200_v1", "ndcg_10", 0.7191),
-    ("SciFact bm25 ndcg@10", DATA, "sf_bm25_n200_v1", "ndcg_10", 0.6451),
-    ("SciFact rerank recall@100", DATA, "sf_glm_s_n200_v1", "recall_100", 0.8586),
-    ("AG News bert_mini", DATA, "ag_bert_mini_n200_v1", "correct", 0.9450),
-    ("DBpedia qwen_m", DATA, "db_qwen_m_n200_v1", "correct", 0.9929),
-    ("Summarisation bart_l", DATA, "cnn_bart_l_n200_v1", "coverage", 0.3461),
+    ("SciFact glm_s ndcg@10", DATA, "sf_glm_s_v1", "ndcg_10", 0.7437),
+    ("SciFact e5_base ndcg@10", DATA, "sf_e5_base_v1", "ndcg_10", 0.7191),
+    ("SciFact bm25 ndcg@10", DATA, "sf_bm25_v1", "ndcg_10", 0.6451),
+    ("SciFact rerank recall@100", DATA, "sf_glm_s_v1", "recall_100", 0.8586),
+    ("AG News bert_mini", DATA, "ag_bert_mini_v1", "correct", 0.9450),
+    ("DBpedia qwen_m", DATA, "db_qwen_m_v1", "correct", 0.9929),
+    ("Summarisation bart_l", DATA, "cnn_bart_l_v1", "coverage", 0.3461),
     # The six local arms added 2026-09-30.
-    ("AG News bert_base_ta", DATA, "ag_bert_base_ta_n200_v1", "correct", 0.9600),
-    ("AG News bert_base_fy", DATA, "ag_bert_base_fy_n200_v1", "correct", 0.9500),
-    ("DBpedia bert_base_fy", DATA, "db_bert_base_fy_n200_v1", "correct", 0.9857),
-    ("Summarisation bart_m", DATA, "cnn_bart_m_n200_v1", "coverage", 0.3367),
-    ("Summarisation bart_s", DATA, "cnn_bart_s_n200_v1", "coverage", 0.3276),
-    ("Summarisation bart_l_xsum", DATA, "cnn_bart_l_xsum_n200_v1", "coverage", 0.2071),
+    ("AG News bert_base_ta", DATA, "ag_bert_base_ta_v1", "correct", 0.9600),
+    ("AG News bert_base_fy", DATA, "ag_bert_base_fy_v1", "correct", 0.9500),
+    ("DBpedia bert_base_fy", DATA, "db_bert_base_fy_v1", "correct", 0.9857),
+    ("Summarisation bart_m", DATA, "cnn_bart_m_v1", "coverage", 0.3367),
+    ("Summarisation bart_s", DATA, "cnn_bart_s_v1", "coverage", 0.3276),
+    ("Summarisation bart_l_xsum", DATA, "cnn_bart_l_xsum_v1", "coverage", 0.2071),
     # The DailyMail slice (2026-10-14): the summarisation sample was all CNN, so the five
     # local arms re-ran on 200 DailyMail articles. REPORT_SUMMARIZATION §3.7 quotes these.
-    ("DailyMail bart_l", DATA, "cnn_bart_l_dm200_v1", "coverage", 0.4430),
-    ("DailyMail bart_m", DATA, "cnn_bart_m_dm200_v1", "coverage", 0.4430),
-    ("DailyMail bart_s", DATA, "cnn_bart_s_dm200_v1", "coverage", 0.4048),
-    ("DailyMail lead3", DATA, "cnn_lead3_dm200_v1", "coverage", 0.3697),
-    ("DailyMail bart_l_xsum", DATA, "cnn_bart_l_xsum_dm200_v1", "coverage", 0.1522),
+    ("DailyMail bart_l", DATA, "cnn_bart_l_v1", "coverage", 0.4430, "cnn_dailymail_dm200"),
+    ("DailyMail bart_m", DATA, "cnn_bart_m_v1", "coverage", 0.4430, "cnn_dailymail_dm200"),
+    ("DailyMail bart_s", DATA, "cnn_bart_s_v1", "coverage", 0.4048, "cnn_dailymail_dm200"),
+    ("DailyMail lead3", DATA, "cnn_lead3_v1", "coverage", 0.3697, "cnn_dailymail_dm200"),
+    ("DailyMail bart_l_xsum", DATA, "cnn_bart_l_xsum_v1", "coverage", 0.1522, "cnn_dailymail_dm200"),
     # SummEval judging (2026-10-18): tau against the expert means, REPORT_SUMMEVAL §3.1.
     ("SummEval openai_l tau", DATA, "se_openai_l_n100_v1", "tau", 0.5398),
     ("SummEval gemma_l tau", DATA, "se_gemma_l_n100_v1", "tau", 0.5384),
@@ -130,14 +147,14 @@ DELTAS = [
     (
         "NER fine-tuning is worth +0.3134",
         0.3134,
-        (DATA, "fn_span_marker_n200_v1", "f1"),
-        (DATA, "fn_gliner_n200_v1", "f1"),
+        (DATA, "fn_span_marker_v1", "f1"),
+        (DATA, "fn_gliner_v1", "f1"),
     ),
     (
         "SciFact BM25 -> e5_base = +0.0740",
         0.0740,
-        (DATA, "sf_e5_base_n200_v1", "ndcg_10"),
-        (DATA, "sf_bm25_n200_v1", "ndcg_10"),
+        (DATA, "sf_e5_base_v1", "ndcg_10"),
+        (DATA, "sf_bm25_v1", "ndcg_10"),
     ),
     (
         "SciFact prediction: glm_s gains +0.0469 from the first stage alone",
@@ -148,32 +165,32 @@ DELTAS = [
     (
         "SciFact worst -> best reranker = +0.0420",
         0.0420,
-        (DATA, "sf_glm_s_n200_v1", "ndcg_10"),
-        (DATA, "sf_gemma_s_n200_v1", "ndcg_10"),
+        (DATA, "sf_glm_s_v1", "ndcg_10"),
+        (DATA, "sf_gemma_s_v1", "ndcg_10"),
     ),
     (
         "SciFact BM25 -> best reranker (glm_s) = +0.0986",
         0.0986,
-        (DATA, "sf_glm_s_n200_v1", "ndcg_10"),
-        (DATA, "sf_bm25_n200_v1", "ndcg_10"),
+        (DATA, "sf_glm_s_v1", "ndcg_10"),
+        (DATA, "sf_bm25_v1", "ndcg_10"),
     ),
     (
         "SciFact BM25 -> worst reranker (gemma_s) = +0.0566",
         0.0566,
-        (DATA, "sf_gemma_s_n200_v1", "ndcg_10"),
-        (DATA, "sf_bm25_n200_v1", "ndcg_10"),
+        (DATA, "sf_gemma_s_v1", "ndcg_10"),
+        (DATA, "sf_bm25_v1", "ndcg_10"),
     ),
     (
         "SciFact glm_s on e5_base over main-table BM25 = +0.1441",
         0.1441,
         (PAIR, "sf_glm_s_e5first_n200_v1", "ndcg_10"),
-        (DATA, "sf_bm25_n200_v1", "ndcg_10"),
+        (DATA, "sf_bm25_v1", "ndcg_10"),
     ),
     (
         "SciFact glm_s on e5_base over e5_base alone = +0.0700",
         0.0700,
         (PAIR, "sf_glm_s_e5first_n200_v1", "ndcg_10"),
-        (DATA, "sf_e5_base_n200_v1", "ndcg_10"),
+        (DATA, "sf_e5_base_v1", "ndcg_10"),
     ),
 ]
 
@@ -193,18 +210,93 @@ def check(label: str, cond: object, detail: str = "") -> None:
     print(f"  {'ok  ' if cond else 'FAIL'} {label}{('   ' + detail) if detail and not cond else ''}")
 
 
-def score(base: Path, cid: str, metric: str):
-    """Retrieve a metric score from a run by config_id."""
-    for d in sorted(glob.glob(str(base / f"{cid}_*"))):
-        m = json.loads(Path(Path(d) / "metrics.json").read_text(encoding="utf-8"))
-        if m.get("config_id") == cid:
-            return m["scores"].get(metric)
+#: {label: [(score dir, record)]}: the scores read under a label, by run id. A record carries the system's present
+#: id (RFC-032 step 3, data/renames.json), so a run is found by what its record says.
+_RUNS_READ: dict = {}
+_DATASET_OF_PREFIX = {e["prefix"]: e["dataset"] for e in _EVALS}
+
+
+def _runs_in(label: str) -> list:
+    """Every score read under a label with its record, by run id."""
+    if label not in _RUNS_READ:
+        _RUNS_READ[label] = runs_on(label=label)
+    return _RUNS_READ[label]
+
+
+def _record(score_dir: Path) -> dict:
+    """A score's record; a claim is checked against a record that exists."""
+    rec = read_metrics(score_dir)
+    if rec is None:
+        raise SystemExit(f"no readable record in {score_dir}")
+    return rec
+
+
+def _prefixed(label: str, prefix: str) -> list:
+    """The scores read under a label of the runs whose id starts with `prefix` (a system's family of ids)."""
+    return [(d, m) for d, m in _runs_in(label) if m["run_id"].startswith(prefix)]
+
+
+def _label_of(base: str) -> str:
+    """The label whose arm prefix is `base` (an eval's `base` in examples/evals.json: "runs" is the plain label)."""
+    for lbl in _model_runs.labels():
+        if _model_runs.arm_prefix(lbl) == base:
+            return lbl
+    raise SystemExit(f"no scores read under {base!r}")
+
+
+def _family_on(dataset_id, held, argv):
+    """family_test's stdout (None on failure) over runs held in a temporary project: `held` is
+    [(system id, run id, rows)], each a run of its own with one score of those rows, read under the plain label."""
+    import os as _os  # noqa: PLC0415
+    import subprocess as _sp  # noqa: PLC0415
+    import tempfile as _tf  # noqa: PLC0415
+
+    with _tf.TemporaryDirectory() as td:
+        for cid, rid, rows in held:
+            rd = Path(td) / "data" / "runs" / rid
+            sd = rd / "scores" / "t@none"
+            _store.mkdir(sd, parents=True)
+            _store.write_text(
+                rd / "run.json",
+                json.dumps({"run_id": rid, "config_id": cid, "dataset_id": dataset_id, "purpose": "run"}),
+            )
+            _store.write_text(
+                sd / "score.json", json.dumps({"scorer": "t", "reference": None, "label": "", "first": True})
+            )
+            _store.write_text(sd / "metrics.json", "{}")
+            _outputs.write_rows(sd, rows)
+        env = {k: v for k, v in _os.environ.items() if not k.startswith("EVAL_")} | {"EVAL_HOME": td}
+        r = _sp.run(
+            [sys.executable, str(HERE / "family_test.py"), "--dataset-id", dataset_id, *argv],
+            capture_output=True,
+            text=True,
+            env=env,
+        )
+    return r.stdout if r.returncode == 0 else None
+
+
+def _runs_of(base: str, cid: str, dataset: str | None = None) -> list:
+    """The (run dir, metrics) of one system, in directory order, on one dataset: a system serves every dataset of
+    its example, so the same id has runs on the 200-article slice and on the DailyMail one. Default: the eval of the
+    id's prefix."""
+    ds = dataset or _DATASET_OF_PREFIX.get(cid.split("_", 1)[0] + "_")
+    return [
+        (d, m)
+        for d, m in _runs_in(base)
+        if m.get("config_id") == cid and (ds is None or m.get("dataset_id") == ds)
+    ]
+
+
+def score(base: str, cid: str, metric: str, dataset: str | None = None):
+    """Retrieve a metric score from a run by system id (and dataset)."""
+    for _d, m in _runs_of(base, cid, dataset):
+        return m["scores"].get(metric)
     return None
 
 
 missing = 0
-for label, base, cid, metric, claimed in CLAIMS:
-    got = score(base, cid, metric)
+for label, base, cid, metric, claimed, *_on in CLAIMS:
+    got = score(base, cid, metric, *_on)
     if got is None:
         missing += 1
         print(f"  --   {label}: run not present ({cid}) — skipped")
@@ -212,10 +304,10 @@ for label, base, cid, metric, claimed in CLAIMS:
     check(label, abs(got - claimed) <= TOL, f"claimed {claimed}, run says {got:.6f}")
 
 _absent = []
-for label, _claim_base, cid, _claim_metric, claimed in CLAIMS:
+for label, _claim_base, cid, _claim_metric, claimed, *_claim_ds in CLAIMS:
     rep = next((r for p, r in CLAIM_REPORT.items() if cid.startswith(p)), None)
     # 4 decimals, or 3 where the report's column is 3dp (NER's parse rate: 0.886).
-    _txt = (ROOT / "research" / rep).read_text() if rep else ""
+    _txt = _store.read_text(ROOT / "research" / rep) if rep else ""
     if rep and f"{claimed:.4f}" not in _txt and f"{claimed:.3f}" not in _txt:
         _absent.append(f"{label}: {claimed:.4f} not in {rep}")
 check(
@@ -241,23 +333,14 @@ for label, claimed, (b1, c1, m1), (b2, c2, m2) in DELTAS:
 # Every per-arm "$" cell in a report must equal what the provider BILLED, summed from
 # `_meta.usage.cost` in that run's predictions. The price table is the fallback for an
 # arm with no bill and must never be what a report quotes.
-import glob as _glob  # noqa: E402
 
-#: The evals, from the one registry reproduce.py and the site read
-#: (examples/evals.json). These tables restated it by hand, so a renamed dataset or
-#: a moved base directory had to be changed in two places and nothing checked they agreed.
-_EVALS = [
-    e
-    for e in json.loads((HERE.parents[1] / "examples" / "evals.json").read_text(encoding="utf-8"))["evals"]
-    if e.get("site")
-]
 COST_REPORTS = {e["report"]: (e["prefix"], e["dataset"]) for e in _EVALS if e.get("costs")}
 
-#: The size suffix every config_id ends with. It was a literal "_n200_v1" at each call
-#: site, which is right for the five 200-item datasets and silently wrong for SummEval's
-#: 100 articles: "se_openai_l_n100_v1" kept its suffix, matched no arm name, and every
-#: SummEval row would have been skipped rather than checked.
-_SIZE_SUFFIX = re.compile(r"_n\d+_v1$")
+#: The suffix every system id ends with: a version, and on the ids no merge touched (SummEval's) the size token before
+#: it. It was a literal "_n200_v1" at each call site, which is right for the five 200-item datasets and silently
+#: wrong for SummEval's 100 articles: "se_openai_l_n100_v1" kept its suffix, matched no arm name, and every SummEval
+#: row would have been skipped rather than checked.
+_SIZE_SUFFIX = re.compile(r"(?:_n\d+)?_v\d+$")
 
 
 def _arm_name(config_id, prefix):
@@ -271,11 +354,10 @@ def _first_arm_cell(cells):
 
 def _billed_and_recorded(prefix, dataset_id):
     out = {}
-    for f in sorted(_glob.glob(str(DATA / f"{prefix}*" / "metrics.json"))):
-        m = json.loads(Path(f).read_text(encoding="utf-8"))
-        if m.get("dataset_id") != dataset_id or not (Path(f).parent / "predictions.jsonl").is_file():
+    for d, m in _prefixed(DATA, prefix):
+        if m.get("dataset_id") != dataset_id or not _outputs.has_rows(d):
             continue
-        bil, rec, _, _ = billed_and_recorded(Path(f).parent)
+        bil, rec, _, _ = billed_and_recorded(d)
         out[_arm_name(m["config_id"], prefix)] = (bil, rec)
     return out
 
@@ -283,7 +365,7 @@ def _billed_and_recorded(prefix, dataset_id):
 _stale_cost = []
 _checked_cost = 0
 for _rep, (_pref, _ds) in COST_REPORTS.items():
-    _text = (ROOT / "research" / _rep).read_text()
+    _text = _store.read_text(ROOT / "research" / _rep)
     _data = _billed_and_recorded(_pref, _ds)
     for _line in _text.splitlines():
         if not _line.startswith("|"):
@@ -361,9 +443,7 @@ for _rep, (_pref, _ds) in COST_REPORTS.items():
 # record `correct`), `_vals` came back empty and 0 classification rows were checked for a
 # week, while the aggregate floor of 40 was cleared by the other three reports. Found by
 # external review. The floor per report below still catches a metric that matches nothing.
-PRIMARY_BY_DATASET = {
-    e["dataset"]: (e["prefix"], e["metric"], HERE.parent / "data" / e["base"]) for e in _EVALS
-}
+PRIMARY_BY_DATASET = {e["dataset"]: (e["prefix"], e["metric"], _label_of(e["base"])) for e in _EVALS}
 REPORT_DATASETS: dict[str, list[str]] = {}
 for _e in _EVALS:
     REPORT_DATASETS.setdefault(_e["report"], []).append(_e["dataset"])
@@ -381,12 +461,15 @@ def _runs_for(base, dataset_id, prefix):
     `make ci` was called green for a week on the only machine anyone ran it on.
     """
     try:
-        return runs_by_arm(
-            base, dataset_id, prefix=prefix, strip="_n100_v1" if dataset_id == "summeval_100" else "_n200_v1"
-        )
+        got = runs_by_arm(base, dataset_id, prefix=prefix)
     except AmbiguousRuns as exc:
         print(f"FAIL  {exc}")
         sys.exit(1)
+    arms = {_SIZE_SUFFIX.sub("", key): dirs for key, dirs in got.items()}
+    if len(arms) != len(got):
+        print(f"FAIL  two systems of {dataset_id} differ only by their version: {sorted(got)}")
+        sys.exit(1)
+    return arms
 
 
 def _billed_of(run_dir):
@@ -411,14 +494,13 @@ _stale_rows = []
 _rows_checked = 0
 _rows_per_report: dict = {}
 for _rep, _dss in REPORT_DATASETS.items():
-    _lines = (ROOT / "research" / _rep).read_text().splitlines()
+    _lines = _store.read_text(ROOT / "research" / _rep).splitlines()
     for _ds in _dss:
         _pref, _metric, _base = PRIMARY_BY_DATASET[_ds]
         _vals = {}
-        for f in _glob.glob(str(_base / f"{_pref}*" / "metrics.json")):
-            if "20260929" in Path(f).parent.name:
+        for _d, _m in _prefixed(_base, _pref):
+            if "20260929" in _m["run_id"]:
                 continue
-            _m = json.loads(Path(f).read_text(encoding="utf-8"))
             if _m.get("dataset_id") != _ds:
                 continue
             _v = (_m.get("scores") or {}).get(_metric)
@@ -479,14 +561,14 @@ _DATASET_IN_HEADING = {
 _METRIC_COLUMN = {"correct": "accuracy", "f1": "f1", "ndcg_10": "ndcg", "coverage": "coverage", "tau": "τ"}
 
 for _rep, _dss in REPORT_DATASETS.items():
-    _lines = (ROOT / "research" / _rep).read_text().splitlines()
+    _lines = _store.read_text(ROOT / "research" / _rep).splitlines()
     _single = len(_dss) == 1  # a one-dataset report needs no heading match
     for _ds in _dss:
         _pref, _metric, _base = PRIMARY_BY_DATASET[_ds]
         _vals, _bills = {}, {}
         for _arm, _dirs in _runs_for(_base, _ds, _pref).items():
-            _m = json.loads(Path(_dirs[0] / "metrics.json").read_text(encoding="utf-8"))
-            _v = (_m.get("scores") or {}).get(_metric)
+            _score_rec = _record(_dirs[0])
+            _v = (_score_rec.get("scores") or {}).get(_metric)
             if _v is not None:
                 _vals[_arm] = _v
             _bills[_arm] = _billed_of(_dirs[0])
@@ -609,14 +691,12 @@ _prose_bad, _prose_checked = [], 0
 for _rep, _dss in REPORT_DATASETS.items():
     if _rep == "REPORT_SYNTHESIS.md":
         continue  # keyed by eval, and spans five datasets
-    _lines = (ROOT / "research" / _rep).read_text().splitlines()
+    _lines = _store.read_text(ROOT / "research" / _rep).splitlines()
     for _ds in _dss:
         _pref, _metric, _base = PRIMARY_BY_DATASET[_ds]
         _vals = {}
         for _arm, _dirs in _runs_for(_base, _ds, _pref).items():
-            _v = (
-                json.loads(Path(_dirs[0] / "metrics.json").read_text(encoding="utf-8")).get("scores") or {}
-            ).get(_metric)
+            _v = (_record(_dirs[0]).get("scores") or {}).get(_metric)
             if _v is not None:
                 _vals[_arm] = _v
         _fenced = False
@@ -677,13 +757,12 @@ check(
 def _arm_costs(prefix, dataset_id):
     """Billed cost per arm, excluding the 2026-09-29 re-runs (which duplicate arms)."""
     out = {}
-    for f in sorted(_glob.glob(str(DATA / f"{prefix}*" / "metrics.json"))):
-        if "20260929" in Path(f).parent.name:
+    for d, m in _prefixed(DATA, prefix):
+        if "20260929" in m["run_id"]:
             continue
-        m = json.loads(Path(f).read_text(encoding="utf-8"))
-        if m.get("dataset_id") != dataset_id or not (Path(f).parent / "predictions.jsonl").is_file():
+        if m.get("dataset_id") != dataset_id or not _outputs.has_rows(d):
             continue
-        bil, rec, _, _ = billed_and_recorded(Path(f).parent)
+        bil, rec, _, _ = billed_and_recorded(d)
         out[_arm_name(m["config_id"], prefix)] = bil or rec
     return out
 
@@ -728,8 +807,8 @@ CHEAPNESS = [
 # checker comparing its own constants to the data verifies the checker. I fixed it
 # there and reintroduced it here within the hour, and only caught it by reverting a
 # report number and watching this pass 28/28.
-SYNTH = (ROOT / "research" / "REPORT_SYNTHESIS.md").read_text()
-SUMM = (ROOT / "research" / "REPORT_SUMMARIZATION.md").read_text()
+SYNTH = _store.read_text(ROOT / "research" / "REPORT_SYNTHESIS.md")
+SUMM = _store.read_text(ROOT / "research" / "REPORT_SUMMARIZATION.md")
 
 
 def _claimed_ratio(text, row_key, pattern=r"\*\*([0-9,.]+)× cheaper\*\*"):
@@ -769,18 +848,33 @@ for label, pref, ds, cheap, row_key in CHEAPNESS:
 #: compare all three to what the synthesis row says. (leader, runs dir, dataset, metric,
 #: prefix, the row's first cell)
 TIE_GROUPS = [
-    ("cnn_bart_l_n200_v1", DATA, "cnn_dailymail_200", "coverage", "cnn_", "| Summarisation · CNN/DM |"),
-    ("db_qwen_m_n200_v1", DATA, "dbpedia_280", "correct", "db_", "| Classification · DBpedia |"),
-    ("ag_bert_base_ta_n200_v1", DATA, "ag_news_200", "correct", "ag_", "| Classification · AG News |"),
+    ("cnn_bart_l_v1", DATA, "cnn_dailymail_200", "coverage", "cnn_", "| Summarisation · CNN/DM |"),
+    ("db_qwen_m_v1", DATA, "dbpedia_280", "correct", "db_", "| Classification · DBpedia |"),
+    ("ag_bert_base_ta_v1", DATA, "ag_news_200", "correct", "ag_", "| Classification · AG News |"),
     ("se_openai_l_n100_v1", DATA, "summeval_100", "tau", "se_", "| Judging · SummEval |"),
 ]
+
+
+def _family_ids(runs_dir, dataset_id, prefix):
+    """The ids of the arms of one eval: the systems with runs on the dataset under the prefix, named one by one (the
+    ids no longer share a suffix: `cnn_bart_l_v1` beside `cnn_glm_l_v2`). One with a size token inside it
+    (`se_gemma_l_n100_pairwise_v1`) is a variant of an arm, no member of the family."""
+    return sorted(
+        {
+            m["config_id"]
+            for _d, m in _runs_in(runs_dir)
+            if m.get("dataset_id") == dataset_id
+            and m["config_id"].startswith(prefix)
+            and not re.search(r"_n\d+_(?!v\d+$)", m["config_id"])
+        }
+    )
 
 
 def _not_significant(leader, runs_dir, dataset_id, metric):
     """Opponents the leader's Holm family test finds not significantly different, or None."""
     import subprocess  # noqa: PLC0415
 
-    suffix = _SIZE_SUFFIX.search(leader).group(0)
+    family = _family_ids(runs_dir, dataset_id, leader.split("_", 1)[0] + "_")
     r = subprocess.run(
         [
             sys.executable,
@@ -790,11 +884,11 @@ def _not_significant(leader, runs_dir, dataset_id, metric):
             "--a",
             leader,
             "--against",
-            suffix,
+            ",".join(family),
             "--metric",
             metric,
-            "--runs-dir",
-            str(runs_dir),
+            "--label",
+            runs_dir,
         ],
         capture_output=True,
         text=True,
@@ -802,17 +896,15 @@ def _not_significant(leader, runs_dir, dataset_id, metric):
     if r.returncode != 0:
         return None
     return [
-        ln.split()[0]
-        for ln in r.stdout.splitlines()
-        if ln.strip().endswith("--") and ln.split()[0].endswith(suffix)
+        ln.split()[0] for ln in r.stdout.splitlines() if ln.strip().endswith("--") and ln.split()[0] in family
     ]
 
 
-def _provider(runs_dir, config_id):
-    for f in sorted(glob.glob(str(runs_dir / f"{config_id}_2*" / "metrics.json"))):
-        if "20260929" in Path(f).parent.name:
+def _provider(runs_dir, config_id, dataset_id):
+    for _d, m in _runs_of(runs_dir, config_id, dataset_id):
+        if "20260929" in m["run_id"]:
             continue
-        return (json.loads(Path(f).read_text(encoding="utf-8")).get("params") or {}).get("provider")
+        return (m.get("params") or {}).get("provider")
     return None
 
 
@@ -830,7 +922,7 @@ for leader, rdir, ds, metric, pref, cell in TIE_GROUPS:
         missing += 1
         print(f"  --   tie group {cell.strip('| ')}: family test did not run — skipped")
         continue
-    paid_arms = [a for a in level if _provider(rdir, a) == "litellm"]
+    paid_arms = [a for a in level if _provider(rdir, a, ds) == "litellm"]
     costs = _arm_costs(pref, ds)
     cheapest = (
         min(paid_arms, key=lambda a: costs.get(_arm_name(a, pref), float("inf"))) if paid_arms else None
@@ -853,12 +945,12 @@ for leader, rdir, ds, metric, pref, cell in TIE_GROUPS:
 # fails here instead of surviving on the tie-group row alone.
 import math as _math  # noqa: E402
 
-_CLS = " ".join((ROOT / "research" / "REPORT_CLASSIFICATION.md").read_text().split())
+_CLS = " ".join(_store.read_text(ROOT / "research" / "REPORT_CLASSIFICATION.md").split())
 _AG_FAMILY = 29
 for _arm, _name in (
-    ("ag_bert_base_ta_n200_v1", "bert_base_ta"),
-    ("ag_bert_base_fy_n200_v1", "bert_base_fy"),
-    ("ag_bert_mini_n200_v1", "bert_mini"),
+    ("ag_bert_base_ta_v1", "bert_base_ta"),
+    ("ag_bert_base_fy_v1", "bert_base_fy"),
+    ("ag_bert_mini_v1", "bert_mini"),
 ):
     _tied = _not_significant(_arm, DATA, "ag_news_200", "correct")
     if _tied is None:
@@ -875,15 +967,13 @@ for _arm, _name in (
     )
 
 
-def _cls_correct(prefix, ds_glob_suffix="_n200_v1"):
+def _cls_correct(prefix):
     out = {}
-    for _d in sorted(DATA.glob(f"{prefix}_*{ds_glob_suffix}_2*")):
-        _arm = _d.name.rsplit("_2026", 1)[0][len(prefix) + 1 : -len(ds_glob_suffix)]
-        out[_arm] = {
-            (_r := json.loads(_l))["item_id"]: _r
-            for _l in (_d / "predictions.jsonl").read_text().splitlines()
-            if _l.strip()
-        }
+    for _d, _m in _runs_in(DATA):
+        if _m.get("dataset_id") == _DATASET_OF_PREFIX[f"{prefix}_"] and _m["config_id"].startswith(
+            f"{prefix}_"
+        ):
+            out[_arm_name(_m["config_id"], f"{prefix}_")] = {_r["item_id"]: _r for _r in item_rows(_d)}
     return out
 
 
@@ -973,7 +1063,7 @@ import subprocess as _clsp  # noqa: E402
 def _cl_pilot(runs, dev_file, drop=()):
     _ids = {
         (_i if isinstance(_i, str) else (_i.get("item_id") or _i.get("id")))
-        for _i in json.loads((ROOT / "harness" / "data" / "datasets" / dev_file).read_text())["items"]
+        for _i in json.loads(_store.read_text(ROOT / "harness" / "data" / "datasets" / dev_file))["items"]
     }
     _arms = sorted(a for a in runs if a not in drop)
     _dev = [statistics.fmean(runs[a][i]["correct"] for i in _ids) for a in _arms]
@@ -987,7 +1077,7 @@ def _cl_runner_up(runs, dev_file):
     """How many arms share the pilot slice's second-best accuracy."""
     _ids = {
         (_i if isinstance(_i, str) else (_i.get("item_id") or _i.get("id")))
-        for _i in json.loads((ROOT / "harness" / "data" / "datasets" / dev_file).read_text())["items"]
+        for _i in json.loads(_store.read_text(ROOT / "harness" / "data" / "datasets" / dev_file))["items"]
     }
     _acc = {a: statistics.fmean(runs[a][i]["correct"] for i in _ids) for a in runs}
     _second = sorted(set(_acc.values()), reverse=True)[1]
@@ -1011,7 +1101,7 @@ if "bert_mini" in _AG and "qwen_m" in _DB:
     )
 
     # AG News: the best paid arm's own family test, not the leader's.
-    _am = _not_significant("ag_anthropic_m_n200_v1", DATA, "ag_news_200", "correct")
+    _am = _not_significant("ag_anthropic_m_v1", DATA, "ag_news_200", "correct")
     if _am is None or len(_HOSTED) != 24:
         missing += 1
         print("  --   classification: anthropic_m family test did not run — skipped")
@@ -1045,13 +1135,13 @@ if "bert_mini" in _AG and "qwen_m" in _DB:
             "--dataset-id",
             "dbpedia_280",
             "--a",
-            "db_qwen_m_n200_v1",
+            "db_qwen_m_v1",
             "--against",
-            "_n200_v1",
+            ",".join(_family_ids(DATA, "dbpedia_280", "db_")),
             "--metric",
             "correct",
-            "--runs-dir",
-            str(DATA),
+            "--label",
+            DATA,
         ],
         capture_output=True,
         text=True,
@@ -1067,7 +1157,7 @@ if "bert_mini" in _AG and "qwen_m" in _DB:
     else:
         _lo_sep = min(abs(float(r[1])) for r in _rows_f if r[-1] == "SIGNIFICANT")
         _hi_ns = max(
-            abs(float(r[1])) for r in _rows_f if r[-1] == "--" and r[0] not in ("db_bert_base_fy_n200_v1",)
+            abs(float(r[1])) for r in _rows_f if r[-1] == "--" and r[0] not in ("db_bert_base_fy_v1",)
         )
         check(
             "classification: DBpedia, no gap under 10 items significant; 8 items are not",
@@ -1086,11 +1176,11 @@ if "bert_mini" in _AG and "qwen_m" in _DB:
 #: (gitignored: rescore copies the outputs): an item's verdict replaces its gold, every
 #: other item keeps the correctness the run recorded.
 def _adjudicated_acc(exp, dataset_id, prefix):
-    adj = json.loads((ROOT / "examples" / exp / "adjudication.json").read_text())
+    adj = json.loads(_store.read_text(ROOT / "examples" / exp / "adjudication.json"))
     verdict = {i["item_id"]: i["adjudicated"] for i in adj["items"]}
     v1, v2 = {}, {}
     for arm, dirs in _runs_for(DATA, dataset_id, prefix).items():
-        rows = [json.loads(line) for line in (dirs[0] / "predictions.jsonl").open()]
+        rows = list(item_rows(dirs[0]))
         v1[arm] = sum(r["correct"] for r in rows) / len(rows)
         v2[arm] = sum(
             (r["_meta"].get("predicted") == verdict[r["item_id"]])
@@ -1155,58 +1245,32 @@ def _v2_family(exp, dataset_id, prefix, leader, metric="correct"):
     """The leader's Holm family test on adjudicated gold: a runs dir built in a temp dir
     from the committed predictions, each adjudicated item's correctness replaced by the
     verdict (the same rule as _adjudicated_acc). Returns the test's stdout, or None."""
-    import tempfile as _tf  # noqa: PLC0415
-
-    adj = json.loads((ROOT / "examples" / exp / "adjudication.json").read_text())
+    adj = json.loads(_store.read_text(ROOT / "examples" / exp / "adjudication.json"))
     verdict = {i["item_id"]: i["adjudicated"] for i in adj["items"]}
-    with _tf.TemporaryDirectory() as td:
-        for dirs in _runs_for(DATA, dataset_id, prefix).values():
-            d = dirs[0]
-            m = json.loads((d / "metrics.json").read_text())
-            out = Path(td) / d.name
-            out.mkdir()
-            (out / "metrics.json").write_text(
-                json.dumps({"config_id": m["config_id"], "dataset_id": dataset_id})
-            )
-            rows = [json.loads(line) for line in (d / "predictions.jsonl").open()]
-            (out / "predictions.jsonl").write_text(
-                "".join(
-                    json.dumps(
-                        {
-                            "item_id": r["item_id"],
-                            "correct": float(
-                                (r["_meta"].get("predicted") == verdict[r["item_id"]])
-                                if r["item_id"] in verdict
-                                else r["correct"]
-                            ),
-                        }
-                    )
-                    + "\n"
-                    for r in rows
-                )
-            )
-        r = _clsp.run(
-            [
-                sys.executable,
-                str(HERE / "family_test.py"),
-                "--dataset-id",
-                dataset_id,
-                "--a",
-                leader,
-                "--against",
-                "_n200_v1",
-                "--metric",
-                metric,
-                "--runs-dir",
-                td,
-            ],
-            capture_output=True,
-            text=True,
-        )
-    return r.stdout if r.returncode == 0 else None
+    held = []
+    for dirs in _runs_for(DATA, dataset_id, prefix).values():
+        d = dirs[0]
+        m = read_metrics(d)
+        rows = [
+            {
+                "item_id": r["item_id"],
+                "correct": float(
+                    (r["_meta"].get("predicted") == verdict[r["item_id"]])
+                    if r["item_id"] in verdict
+                    else r["correct"]
+                ),
+            }
+            for r in item_rows(d)
+        ]
+        held.append((m["config_id"], m["run_id"], rows))
+    return _family_on(
+        dataset_id,
+        held,
+        ["--a", leader, "--against", ",".join(_family_ids(DATA, dataset_id, prefix)), "--metric", metric],
+    )
 
 
-_fo2 = _v2_family("classification-ag-news", "ag_news_200", "ag_", "ag_anthropic_l_n200_v1")
+_fo2 = _v2_family("classification-ag-news", "ag_news_200", "ag_", "ag_anthropic_l_v1")
 _rows2 = [
     ln.split()
     for ln in (_fo2 or "").splitlines()
@@ -1217,7 +1281,7 @@ if not _rows2:
     print("  --   classification: AG News v2 family test did not run — skipped")
 else:
     _sep2 = {r[0] for r in _rows2 if r[-1] == "SIGNIFICANT"}
-    _fts = ("ag_bert_mini_n200_v1", "ag_bert_base_ta_n200_v1", "ag_bert_base_fy_n200_v1")
+    _fts = ("ag_bert_mini_v1", "ag_bert_base_ta_v1", "ag_bert_base_fy_v1")
     _p_ft = [_pf(r[3]) for r in _rows2 if r[0] in _fts]
     _ns2 = [r[0] for r in _rows2 if r[-1] == "--"]
     check(
@@ -1239,7 +1303,7 @@ else:
         f"fine-tune v2 {[round(_v2_ag[a], 4) for a in ('bert_mini', 'bert_base_ta', 'bert_base_fy')]}",
     )
 
-_fo3 = _v2_family("classification-dbpedia-14", "dbpedia_280", "db_", "db_gemma_m_n200_v1")
+_fo3 = _v2_family("classification-dbpedia-14", "dbpedia_280", "db_", "db_gemma_m_v1")
 _rows3 = [
     ln.split()
     for ln in (_fo3 or "").splitlines()
@@ -1266,7 +1330,7 @@ else:
 import judge_figures as _jfm  # noqa: E402
 
 JUDGE_FIGURES = _jfm.compute()
-_SUMM = " ".join((ROOT / "research" / "REPORT_SUMMARIZATION.md").read_text().split())
+_SUMM = " ".join(_store.read_text(ROOT / "research" / "REPORT_SUMMARIZATION.md").split())
 _JF = JUDGE_FIGURES
 
 
@@ -1389,9 +1453,9 @@ check(
 )
 if _G["source"].startswith("recomputed"):
     _rep = json.loads(
-        (
+        _store.read_text(
             HERE.parent / "data" / "judge-validation" / "judge-summ-v1" / "goyal2022-cnn" / "report.json"
-        ).read_text()
+        )
     )
     _same = (
         all(
@@ -1419,9 +1483,9 @@ else:
     # The claim count is embedded in the site, so it must not depend on whether this
     # machine has the optional Goyal download: check what the committed report can show.
     _rep = json.loads(
-        (
+        _store.read_text(
             HERE.parent / "data" / "judge-validation" / "judge-summ-v1" / "goyal2022-cnn" / "report.json"
-        ).read_text()
+        )
     )
     _cons = (
         all(
@@ -1465,49 +1529,25 @@ def _judged_family(scorer, a):
     from the committed judging-set manifest and stored verdicts (data/runs-judged is
     gitignored, and --no-calls would need the gitignored article texts; the projection does
     not). Returns the family test's stdout."""
-    import tempfile as _tf  # noqa: PLC0415
-
     from evaluation_harness import judge_score as _js  # noqa: PLC0415
 
-    _m = json.loads(_jfm.grading_set().read_text())
+    _m = json.loads(_store.read_text(_jfm.grading_set()))
     _sc = _js.load_scorer(HERE.parent / "data" / "scorers" / f"{scorer}.yaml")
     _vd = HERE.parent / "data" / "judge-verdicts" / scorer / _m["judging_set_id"]
     _ids = [i["item_id"] for i in _m["items"]]
     _pj = _js.project(_sc, _js.load_scores(_m, _sc, _vd), _ids)
-    with _tf.TemporaryDirectory() as td:
-        for arm in _m["arms"]:
-            out = Path(td) / arm["run"]
-            out.mkdir()
-            (out / "metrics.json").write_text(
-                json.dumps({"config_id": arm["config_id"], "dataset_id": "cnn_dailymail_200"})
-            )
-            (out / "predictions.jsonl").write_text(
-                "".join(
-                    json.dumps({"item_id": i, "judge_score": _pj[i][arm["config_id"]]["_mean"]}) + "\n"
-                    for i in _ids
-                    if i in _pj
-                )
-            )
-        r = _clsp.run(
-            [
-                sys.executable,
-                str(HERE / "family_test.py"),
-                "--dataset-id",
-                "cnn_dailymail_200",
-                "--a",
-                a,
-                "--against",
-                "_n200_v1",
-                "--metric",
-                "judge_score",
-                "--runs-dir",
-                td,
-            ],
-            capture_output=True,
-            text=True,
-            cwd=HERE.parent,
+    held = [
+        (
+            arm["config_id"],
+            arm["run"],
+            [{"item_id": i, "judge_score": _pj[i][arm["config_id"]]["_mean"]} for i in _ids if i in _pj],
         )
-        return r.stdout
+        for arm in _m["arms"]
+    ]
+    return (
+        _family_on("cnn_dailymail_200", held, ["--a", a, "--against", "_n200_v1", "--metric", "judge_score"])
+        or ""
+    )
 
 
 def _significant_from(stdout):
@@ -1573,7 +1613,7 @@ check(
 def _arm_means(scorer):
     from evaluation_harness import judge_score as _js  # noqa: PLC0415
 
-    _m = json.loads(_jfm.grading_set().read_text())
+    _m = json.loads(_store.read_text(_jfm.grading_set()))
     _sc = _js.load_scorer(HERE.parent / "data" / "scorers" / f"{scorer}.yaml")
     _vd = HERE.parent / "data" / "judge-verdicts" / scorer / _m["judging_set_id"]
     _pj = _js.project(_sc, _js.load_scores(_m, _sc, _vd), [i["item_id"] for i in _m["items"]])
@@ -1619,7 +1659,7 @@ check(
 def _self_gap(scorer):
     from evaluation_harness import judge_score as _js  # noqa: PLC0415
 
-    _m = json.loads(_jfm.grading_set().read_text())
+    _m = json.loads(_store.read_text(_jfm.grading_set()))
     _sc = _js.load_scorer(HERE.parent / "data" / "scorers" / f"{scorer}.yaml")
     _vd = HERE.parent / "data" / "judge-verdicts" / scorer / _m["judging_set_id"]
     _s = _js.load_scores(_m, _sc, _vd)
@@ -1730,13 +1770,12 @@ for dear, cheap in (("anthropic_m", "deepseek_m"), ("openai_l", "deepseek_m")):
 
 # Pareto frontier over the 24 HOSTED summarisation arms: quality, cost, latency.
 _cnn_q = {}
-for f in sorted(_glob.glob(str(DATA / "cnn_*" / "metrics.json"))):
-    if "20260929" in Path(f).parent.name:
+for _, m in _prefixed(DATA, "cnn_"):
+    if "20260929" in m["run_id"]:
         continue
-    m = json.loads(Path(f).read_text(encoding="utf-8"))
     if m.get("dataset_id") != "cnn_dailymail_200":
         continue
-    arm = m["config_id"].replace("cnn_", "").replace("_n200_v1", "")
+    arm = _arm_name(m["config_id"], "cnn_")
     sc = m.get("scores") or {}
     # Hosted = what the run says it called, not a list of names to leave out. The list
     # was ("bart_l", "lead3"); three more local arms arrived and every one of them would
@@ -1811,10 +1850,7 @@ if len(_hq) == 24 and all(CNN.get(_a) for _a in _hq):
     _prov = {}
     for _a, _dirs in _runs_for(DATA, "cnn_dailymail_200", "cnn_").items():
         if _a in _hq:
-            _prov[_a] = len(
-                json.loads(Path(_dirs[0] / "metrics.json").read_text(encoding="utf-8")).get("providers_seen")
-                or {}
-            )
+            _prov[_a] = len(_record(_dirs[0]).get("providers_seen") or {})
     _multi = [_a for _a in _prov if _prov[_a] > 1]
     _one = [_a for _a in _prov if _prov[_a] == 1]
     _dear7 = sorted(_hq, key=lambda a: -CNN[a])[:7]
@@ -1849,19 +1885,15 @@ if len(_hq) == 24 and all(CNN.get(_a) for _a in _hq):
     )
 
     _d20f = ROOT / "harness" / "data" / "datasets" / "cnn_dailymail_20.json"
-    if _d20f.is_file():
+    if _store.is_file(_d20f):
         _ids20 = {
             (_i if isinstance(_i, str) else (_i.get("item_id") or _i.get("id")))
-            for _i in json.loads(_d20f.read_text())["items"]
+            for _i in json.loads(_store.read_text(_d20f))["items"]
         }
         _pi = {}
         for _a, _dirs in _runs_for(DATA, "cnn_dailymail_200", "cnn_").items():
             if _a in _hq:
-                _pi[_a] = {
-                    (_row := json.loads(_l))["item_id"]: float(_row["coverage"])
-                    for _l in (_dirs[0] / "predictions.jsonl").read_text().splitlines()
-                    if _l.strip()
-                }
+                _pi[_a] = {_row["item_id"]: float(_row["coverage"]) for _row in item_rows(_dirs[0])}
         _m20 = [statistics.fmean(_pi[_a][_i] for _i in _ids20) for _a in _pn]
         _m180 = [statistics.fmean(v for _i, v in _pi[_a].items() if _i not in _ids20) for _a in _pn]
         _m200 = [statistics.fmean(_pi[_a].values()) for _a in _pn]
@@ -1892,7 +1924,7 @@ else:
 #
 # MEDIANS, not means: a local arm's first one to three items pay a one-off
 # initialisation the warm-up does not absorb, which is why the reports quote medians.
-_LINUX = ROOT / "harness" / "data" / "runs-linux"
+_LINUX = "linux"
 #: (config_id, the report that quotes it, the unit, decimals). The figure itself is
 #: DERIVED from the runs and then looked for in the report -- it is deliberately not
 #: written here. A literal here would make this check compare the runs to the checker,
@@ -1905,16 +1937,16 @@ _LINUX = ROOT / "harness" / "data" / "runs-linux"
 #: per report -- but it becomes so the day a second paragraph repeats a number, which
 #: is a check that works until it matters. Round 5, R5-L4.
 _LATENCY = [
-    ("cnn_bart_l_n200_v1", "bart_l", "REPORT_SUMMARIZATION.md", "s", 1000.0, 1),
-    ("cnn_bart_m_n200_v1", "bart_m", "REPORT_SUMMARIZATION.md", "s", 1000.0, 1),
-    ("cnn_bart_s_n200_v1", "bart_s", "REPORT_SUMMARIZATION.md", "s", 1000.0, 1),
-    ("ag_bert_base_ta_n200_v1", "bert_base_ta", "REPORT_CLASSIFICATION.md", "ms", 1.0, 0),
-    ("ag_bert_base_fy_n200_v1", "bert_base_fy", "REPORT_CLASSIFICATION.md", "ms", 1.0, 0),
-    ("ag_bert_mini_n200_v1", "bert_mini", "REPORT_CLASSIFICATION.md", "ms", 1.0, 1),
+    ("cnn_bart_l_v1", "bart_l", "REPORT_SUMMARIZATION.md", "s", 1000.0, 1),
+    ("cnn_bart_m_v1", "bart_m", "REPORT_SUMMARIZATION.md", "s", 1000.0, 1),
+    ("cnn_bart_s_v1", "bart_s", "REPORT_SUMMARIZATION.md", "s", 1000.0, 1),
+    ("ag_bert_base_ta_v1", "bert_base_ta", "REPORT_CLASSIFICATION.md", "ms", 1.0, 0),
+    ("ag_bert_base_fy_v1", "bert_base_fy", "REPORT_CLASSIFICATION.md", "ms", 1.0, 0),
+    ("ag_bert_mini_v1", "bert_mini", "REPORT_CLASSIFICATION.md", "ms", 1.0, 1),
 ]
-if not _LINUX.is_dir():
+if not _runs_in(_LINUX):
     missing += 1
-    print("  --   re-timed latency: data/runs-linux is absent — skipped")
+    print("  --   re-timed latency: no scores read as linux — skipped")
 else:
     # LAST WRITE WINS WAS THE BUG. This built `_medians[config_id]` over a sorted glob,
     # so a second run of one arm overwrote the first or did not, purely by how the two
@@ -1922,9 +1954,11 @@ else:
     # refuse. V8 now also covers `runs-linux`, and this refuses independently, because
     # a checker that silently picks one of two measurements is the thing being fixed.
     _medians, _dupes = {}, []
-    for _d in sorted(_LINUX.glob("*/predictions.jsonl")):
-        _cid = json.loads(Path(_d.parent / "metrics.json").read_text(encoding="utf-8")).get("config_id")
-        _lat = [json.loads(_l)["latency_ms"] for _l in _d.read_text().splitlines() if _l.strip()]
+    for _d, _lm in _runs_in(_LINUX):
+        if not _outputs.has_rows(_d):
+            continue
+        _cid = _lm.get("config_id")
+        _lat = [_r["latency_ms"] for _r in item_rows(_d)]
         if not _lat:
             continue
         if _cid in _medians:
@@ -1941,7 +1975,7 @@ else:
             print(f"  --   re-timed latency {_cid}: not in runs-linux — skipped")
             continue
         _want = f"{_medians[_cid] / _div:.{_places}f}"
-        _text = (ROOT / "research" / _rep).read_text()
+        _text = _store.read_text(ROOT / "research" / _rep)
         # ONLY the lines that cite `runs-linux`, for every unit. Searching the whole
         # file made this an EXISTENCE check: planting "9.9 s" on the line that cites
         # the directory still passed, because an unrelated sentence elsewhere also
@@ -1976,26 +2010,30 @@ else:
     # They compare `data/runs` (the 12-core Mac) to `runs-linux` (the 4-core Linux
     # box), so they are derived from BOTH trees. Found by external review, round 5.
     _mac = {}
-    for _d in sorted(DATA.glob("cnn_bart_*/predictions.jsonl")):
-        _cid = json.loads(Path(_d.parent / "metrics.json").read_text(encoding="utf-8")).get("config_id")
-        _lat = [json.loads(_l)["latency_ms"] for _l in _d.read_text().splitlines() if _l.strip()]
+    for _d, _met in _prefixed(DATA, "cnn_bart_"):
+        if not _outputs.has_rows(_d):
+            continue
+        _cid = _met.get("config_id")
+        if _met.get("dataset_id") != "cnn_dailymail_200":  # bart_l is also a system of the DailyMail slice
+            continue
+        _lat = [_r["latency_ms"] for _r in item_rows(_d)]
         if _lat:
             _mac[_cid] = (statistics.fmean(_lat), statistics.median(_lat))
-    if "cnn_bart_l_n200_v1" in _mac and "cnn_bart_l_n200_v1" in _medians:
-        _ratio = _mac["cnn_bart_l_n200_v1"][1] / _medians["cnn_bart_l_n200_v1"]
+    if "cnn_bart_l_v1" in _mac and "cnn_bart_l_v1" in _medians:
+        _ratio = _mac["cnn_bart_l_v1"][1] / _medians["cnn_bart_l_v1"]
         _ratio_s = f"{_ratio:.1f}"
         for _rep in ("REPORT_SUMMARIZATION.md", "REPORT_SYNTHESIS.md"):
-            _t = (ROOT / "research" / _rep).read_text()
+            _t = _store.read_text(ROOT / "research" / _rep)
             check(
                 f"cross-machine: {_rep} says the Linux box ran bart_l {_ratio_s}x faster",
                 re.search(rf"{re.escape(_ratio_s)}\u00d7 (?:\*)?faster", _t) is not None,
-                f"median/median is {_mac['cnn_bart_l_n200_v1'][1]:.1f} / "
-                f"{_medians['cnn_bart_l_n200_v1']:.1f} = {_ratio_s}x; the report says "
+                f"median/median is {_mac['cnn_bart_l_v1'][1]:.1f} / "
+                f"{_medians['cnn_bart_l_v1']:.1f} = {_ratio_s}x; the report says "
                 f"something else",
             )
-    if "cnn_bart_s_n200_v1" in _mac:
-        _mean, _med = _mac["cnn_bart_s_n200_v1"]
-        _summ = (ROOT / "research" / "REPORT_SUMMARIZATION.md").read_text()
+    if "cnn_bart_s_v1" in _mac:
+        _mean, _med = _mac["cnn_bart_s_v1"]
+        _summ = _store.read_text(ROOT / "research" / "REPORT_SUMMARIZATION.md")
         check(
             f"contaminated run: the report states bart_s's recorded mean {_mean:.0f} ms",
             re.search(rf"(?<![\d,]){_mean:.0f}(?![\d])", _summ) is not None,
@@ -2010,10 +2048,10 @@ else:
 
     # And the two RATIOS the summarisation report draws from the same table, likewise
     # derived here and then looked for in the prose.
-    if {"cnn_bart_l_n200_v1", "cnn_bart_m_n200_v1", "cnn_bart_s_n200_v1"} <= set(_medians):
-        _bl = _medians["cnn_bart_l_n200_v1"]
-        _sum = (ROOT / "research" / "REPORT_SUMMARIZATION.md").read_text()
-        for _cid, _name in (("cnn_bart_m_n200_v1", "bart_m"), ("cnn_bart_s_n200_v1", "bart_s")):
+    if {"cnn_bart_l_v1", "cnn_bart_m_v1", "cnn_bart_s_v1"} <= set(_medians):
+        _bl = _medians["cnn_bart_l_v1"]
+        _sum = _store.read_text(ROOT / "research" / "REPORT_SUMMARIZATION.md")
+        for _cid, _name in (("cnn_bart_m_v1", "bart_m"), ("cnn_bart_s_v1", "bart_s")):
             _got_s = f"{_medians[_cid] / _bl:.2f}"
             check(
                 f"re-timed latency: the report states {_name} at {_got_s}x bart_l",
@@ -2030,12 +2068,12 @@ else:
 # fails until the headline is updated.
 _SLICES = ("cnn_dailymail_200", "ag_news_200", "dbpedia_280", "few_nerd_280", "scifact_200", "summeval_100")
 _arm_n, _billed = 0, 0.0
-for _d in sorted(DATA.glob("*/metrics.json")):
-    if json.loads(Path(_d).read_text(encoding="utf-8")).get("dataset_id") not in _SLICES:
+for _d, _dm in _runs_in(DATA):
+    if _dm.get("dataset_id") not in _SLICES:
         continue
     _arm_n += 1
-    _billed += _billed_of(_d.parent)
-_syn = (ROOT / "research" / "REPORT_SYNTHESIS.md").read_text()
+    _billed += _billed_of(_d)
+_syn = _store.read_text(ROOT / "research" / "REPORT_SYNTHESIS.md")
 # EVERY statement of each, not the first. The synthesis says "N measured arms" twice --
 # the headline and the executive summary -- and an `in` test passed with the headline
 # reverted because the other copy still matched. That is the existence-check defect
@@ -2072,12 +2110,14 @@ check(
 # round 5. Each assertion below is DERIVED from the capture and then looked for in the
 # report, never compared to a literal here.
 _CPR = ROOT / "docs" / "evidence" / "conversion_pr_check.json"
-if not _CPR.is_file():
+if not _store.is_file(_CPR):
     missing += 1
     print("  --   conversion PRs: the capture is absent — skipped")
 else:
-    _cpr = json.loads(_CPR.read_text())
-    _arms = _cpr.get("arms") or {}
+    _cpr = json.loads(_store.read_text(_CPR))
+    _arms = {
+        _system_now(k): v for k, v in (_cpr.get("arms") or {}).items()
+    }  # a capture keeps the ids it was made with
     _repro = {k: v for k, v in _arms.items() if v.get("error") is None}
     _failed = {k: v for k, v in _arms.items() if v.get("error") is not None}
     check(
@@ -2100,10 +2140,10 @@ else:
     # they give.
     check(
         "conversion PRs: exactly one arm failed to load, and it is bart_s",
-        sorted(_failed) == ["cnn_bart_s_n200_v1"],
+        sorted(_failed) == ["cnn_bart_s_v1"],
         f"the capture says {sorted(_failed)}; the reports say bart_s alone",
     )
-    _bs = _arms.get("cnn_bart_s_n200_v1") or {}
+    _bs = _arms.get("cnn_bart_s_v1") or {}
     check(
         "conversion PRs: bart_s failed on fp16 LayerNorm, as the reports state",
         "LayerNormKernelImpl" in str(_bs.get("error")) and _bs.get("loaded_dtype") == "torch.float16",
@@ -2122,7 +2162,7 @@ else:
     # And the reports must state the figure the capture supports.
     _n_bart = sorted({v.get("items_checked") for k, v in _repro.items() if k.startswith("cnn_")})
     if len(_n_bart) == 1:
-        _summ = (ROOT / "research" / "REPORT_SUMMARIZATION.md").read_text()
+        _summ = _store.read_text(ROOT / "research" / "REPORT_SUMMARIZATION.md")
         check(
             f"conversion PRs: REPORT_SUMMARIZATION states {_n_bart[0]} of "
             f"{_n_bart[0]} items for the BART arms",
@@ -2130,7 +2170,7 @@ else:
             f"the capture checked {_n_bart[0]} items per BART arm",
         )
     # The torch version the whole story rests on.
-    _ki = (ROOT / "research" / "internal" / "KNOWN_ISSUES.md").read_text()
+    _ki = _store.read_text(ROOT / "research" / "internal" / "KNOWN_ISSUES.md")
     _tv = str(_cpr.get("torch", "")).split("+")[0]
     check(
         f"conversion PRs: the capture ran on torch {_tv}, as the reports say",
@@ -2147,18 +2187,20 @@ else:
 # A MISSING CAPTURE IS A FAILURE, not a skip: these files are committed, and a check that
 # vanishes when its evidence does is the defect round 5 found in V10.
 _CAL = ROOT / "docs" / "evidence" / "calibration"
-_proto = (ROOT / "docs" / "PROTOCOL.md").read_text() if (ROOT / "docs" / "PROTOCOL.md").is_file() else ""
+_proto = (
+    _store.read_text(ROOT / "docs" / "PROTOCOL.md") if _store.is_file(ROOT / "docs" / "PROTOCOL.md") else ""
+)
 _proto_rows = [ln for ln in _proto.splitlines() if ln.startswith("|")]
 for _exp in ("summarization", "ag_news", "dbpedia", "few_nerd", "scifact", "summeval"):
     _f = _CAL / f"{_exp}.json"
-    if not _f.is_file():
+    if not _store.is_file(_f):
         check(
             f"calibration {_exp}: the capture exists",
             False,
             f"{_f.relative_to(ROOT)} is missing; PROTOCOL.md quotes it",
         )
         continue
-    _c = json.loads(_f.read_text())
+    _c = json.loads(_store.read_text(_f))
     if _exp == "summarization":
         _ft, _pub = _c["full_test"], _c["published"]["lead3"]
         _want_l = [
@@ -2205,8 +2247,8 @@ import subprocess as _subp  # noqa: E402
 import summeval_analysis as _sea  # noqa: E402
 
 _SE = _sea.compute()
-_SEV = (ROOT / "research" / "REPORT_SUMMEVAL.md").read_text()
-_SER = (ROOT / "examples" / "summeval-judging" / "README.md").read_text()
+_SEV = _store.read_text(ROOT / "research" / "REPORT_SUMMEVAL.md")
+_SER = _store.read_text(ROOT / "examples" / "summeval-judging" / "README.md")
 _MINUS = "−"
 
 
@@ -2285,8 +2327,8 @@ _ft = _subp.run(
         "_n100_v1",
         "--metric",
         "tau",
-        "--runs-dir",
-        str(DATA),
+        "--label",
+        DATA,
     ],
     capture_output=True,
     text=True,
@@ -2323,8 +2365,8 @@ _bft = _subp.run(
         "_n100_v1",
         "--metric",
         "tau",
-        "--runs-dir",
-        str(DATA),
+        "--label",
+        DATA,
     ],
     capture_output=True,
     text=True,
@@ -2365,8 +2407,8 @@ for _u in ("unievalpub", "unieval"):
             "_n100_v1",
             "--metric",
             "tau",
-            "--runs-dir",
-            str(DATA),
+            "--label",
+            DATA,
         ],
         capture_output=True,
         text=True,
@@ -2432,7 +2474,7 @@ check(
     "; ".join(_bad_free[:4]),
 )
 
-_cal_se = json.loads((_CAL / "summeval.json").read_text())
+_cal_se = json.loads(_store.read_text(_CAL / "summeval.json"))
 _r1 = _cal_se["arms"]["rouge1"]
 _combo = _cal_se["rouge1_reference_combination"]
 check(
@@ -2460,7 +2502,7 @@ check(
 # refuses to write it unless the experts' means reproduce the gold and every arm re-scores
 # to its committed tau -- so those two flags are part of the claim, not decoration.
 _hc_path = ROOT / "docs" / "evidence" / "summeval_human_ceiling.json"
-_hc = json.loads(_hc_path.read_text()) if _hc_path.is_file() else {}
+_hc = json.loads(_store.read_text(_hc_path)) if _store.is_file(_hc_path) else {}
 check(
     "SummEval human ceiling: the evidence exists, reproduced the gold and re-scored every arm",
     bool(_hc)
@@ -2520,11 +2562,11 @@ if _hc:
     _stale_copy = [
         f
         for f, t in _copies.items()
-        if " ".join(t.split()) not in " ".join((ROOT / f).read_text().split())
-        or not re.findall(r"UniEval,? (\d+)%", " ".join((ROOT / f).read_text().split()))
+        if " ".join(t.split()) not in " ".join(_store.read_text(ROOT / f).split())
+        or not re.findall(r"UniEval,? (\d+)%", " ".join(_store.read_text(ROOT / f).split()))
         or any(
             int(x) not in (_ue_pub_p, _ue_p)
-            for x in re.findall(r"UniEval,? (\d+)%", " ".join((ROOT / f).read_text().split()))
+            for x in re.findall(r"UniEval,? (\d+)%", " ".join(_store.read_text(ROOT / f).split()))
         )
     ]
     check(
@@ -2568,7 +2610,7 @@ if _hc:
 
 # UniEval's derived figures (REPORT_SUMMEVAL §3.3, §5; the synthesis' tables), each computed
 # here from the runs, the family tests above and the evidence, so a copied figure cannot drift.
-_SYN = " ".join((ROOT / "research" / "REPORT_SYNTHESIS.md").read_text().split())
+_SYN = " ".join(_store.read_text(ROOT / "research" / "REPORT_SYNTHESIS.md").split())
 _SEVn = " ".join(_SEV.split())
 _tau = {a: v["scores"]["tau"] for a, v in _se_arms.items()}
 _order = sorted(_tau, key=lambda a: -_tau[a])
@@ -2724,7 +2766,7 @@ check(
 
 # NER: how often each arm emitted the `other` type. The report rests its reading of gliner's
 # 0.0000 on `other` on this count, and it needs no gold, so it runs wherever the runs do.
-_NERT = " ".join((ROOT / "research" / "REPORT_NER.md").read_text().split())
+_NERT = " ".join(_store.read_text(ROOT / "research" / "REPORT_NER.md").split())
 
 # NER's pilot rho, the way the classification ones are derived: pilot-slice mean f1 against the
 # full 280-item mean over every committed arm, midranks for ties. The few_nerd_56 pilot runs
@@ -2733,7 +2775,7 @@ _FN = _cls_correct("fn")
 if len(_FN) == 28 and "span_marker" in _FN:
     _fn_dev = {
         (_i if isinstance(_i, str) else (_i.get("item_id") or _i.get("id")))
-        for _i in json.loads((ROOT / "harness" / "data" / "datasets" / "few_nerd_56.json").read_text())[
+        for _i in json.loads(_store.read_text(ROOT / "harness" / "data" / "datasets" / "few_nerd_56.json"))[
             "items"
         ]
     }
@@ -2755,13 +2797,12 @@ else:
     print("  --   NER: pilot rho skipped (the 28 Few-NERD runs are not all here)")
 _oth = {}
 for _a in ("gliner", "openai_m", "anthropic_l", "span_marker"):
-    _found = glob.glob(str(DATA / f"fn_{_a}_n200_v1_*"))
+    _found = [str(_d) for _d, _m in _runs_of(DATA, f"fn_{_a}_v1")]
     _oth[_a] = (
         sum(
             1
-            for _ln in (Path(_found[0]) / "predictions.jsonl").read_text(encoding="utf-8").splitlines()
-            if _ln.strip()
-            for _e in (json.loads(_ln).get("_meta", {}).get("predicted") or [])
+            for _row in item_rows(Path(_found[0]))
+            for _e in (_row.get("_meta", {}).get("predicted") or [])
             if (_e.get("type") or "").lower() == "other"
         )
         if _found
@@ -2821,9 +2862,7 @@ for _key, _pref, _ds, _metric, _base in _SLOPE_EXPS:
     _x, _y = [], []
     for _arm, _dirs in _runs_for(_base, _ds, _pref).items():
         _bill = _billed_of(_dirs[0])
-        _v = (
-            json.loads(Path(_dirs[0] / "metrics.json").read_text(encoding="utf-8")).get("scores") or {}
-        ).get(_metric)
+        _v = (_record(_dirs[0]).get("scores") or {}).get(_metric)
         if _bill > 0 and _v is not None:
             _x.append(_math.log10(_bill))
             _y.append(_v)
@@ -2879,7 +2918,7 @@ if len(_fits) == len(_SLOPE_EXPS):
     )
 
     _ner = _fits["few_nerd_280"]
-    _spm = score(DATA, "fn_span_marker_n200_v1", "f1")
+    _spm = score(DATA, "fn_span_marker_v1", "f1")
     _z, _se = _math.atanh(_ner["r"]), 1 / _math.sqrt(_ner["n"] - 3)
     _ner_say = (
         f"{_sx(_ner['slope'], 4)} F1 per 10× in cost (r = {_r2(_ner['r'])}, 95% Fisher "
@@ -2912,7 +2951,7 @@ if len(_fits) == len(_SLOPE_EXPS):
     )
     check(
         "price slope, retrieval report: slope, r, n and p",
-        _sf_say in " ".join((ROOT / "research" / "REPORT_RETRIEVAL.md").read_text().split()),
+        _sf_say in " ".join(_store.read_text(ROOT / "research" / "REPORT_RETRIEVAL.md").split()),
         f"derived: {_sf_say}",
     )
 
@@ -2926,11 +2965,11 @@ _hosted_by_exp: dict = {}
 for _key, _pref, _ds, _metric, _base in _SLOPE_EXPS:
     _hosted_by_exp[_ds] = {}
     for _arm, _dirs in _runs_for(_base, _ds, _pref).items():
-        _m = json.loads(Path(_dirs[0] / "metrics.json").read_text(encoding="utf-8"))
-        if (_m.get("params") or {}).get("provider") in ("litellm", "rerank") and (_m.get("scores") or {}).get(
-            _metric
-        ) is not None:
-            _hosted_by_exp[_ds][_arm] = _m["scores"][_metric]
+        _score_rec = _record(_dirs[0])
+        if (_score_rec.get("params") or {}).get("provider") in ("litellm", "rerank") and (
+            _score_rec.get("scores") or {}
+        ).get(_metric) is not None:
+            _hosted_by_exp[_ds][_arm] = _score_rec["scores"][_metric]
 _common = set.intersection(*[set(v) for v in _hosted_by_exp.values()])
 
 

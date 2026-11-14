@@ -81,6 +81,15 @@ def flags_of(script: Path) -> frozenset:
     return frozenset(re.findall(r"(--[a-z][a-z0-9-]*)", r.stdout + r.stderr)) | {"--help"}
 
 
+def evh_flags(name: str) -> frozenset:
+    """Extract all --flags from `evh <name> --help`: a command made from an operation of the model (RFC-032) shares
+    its script with the others, and only evh tells it which it is."""
+    r = subprocess.run(
+        [sys.executable, str(HERE / "cli.py"), name, "--help"], capture_output=True, text=True, timeout=120
+    )
+    return frozenset(re.findall(r"(--[a-z][a-z0-9-]*)", r.stdout + r.stderr)) | {"--help"}
+
+
 def commands_in(text: str) -> list:
     """Shell-ish command lines from fenced blocks (continuations joined) and inline spans."""
     out, lines, fence = [], text.splitlines(), None
@@ -173,7 +182,7 @@ def check_line(cmd: str) -> list:
             if name not in COMMANDS:
                 problems.append(f"`evh {name}`: no such command")
                 continue
-            ok = flags_of(HERE / COMMANDS[name][0])
+            ok = evh_flags(name)
             problems += [
                 f"`evh {name} {w}`: {COMMANDS[name][0]} has no {w}"
                 for w in words[2:]

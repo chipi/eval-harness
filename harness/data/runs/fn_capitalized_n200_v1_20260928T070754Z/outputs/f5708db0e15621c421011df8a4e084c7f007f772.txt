@@ -1,1 +1,0 @@
-[{"text": "Sealey", "type": "location"}, {"text": "Coventry City", "type": "location"}, {"text": "April", "type": "location"}, {"text": "Queens Park Rangers", "type": "location"}]

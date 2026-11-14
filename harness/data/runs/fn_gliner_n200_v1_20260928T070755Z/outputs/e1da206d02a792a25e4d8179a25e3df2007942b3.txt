@@ -1,1 +1,0 @@
-[{"text": "Pettigrew", "type": "person"}, {"text": "Robert Wood Johnson Foundation", "type": "organization"}, {"text": "RWJF", "type": "organization"}]

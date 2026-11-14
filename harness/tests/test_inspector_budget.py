@@ -11,7 +11,7 @@ done, then asks comparisons the catalog links to. Fails when
 
   - the peak passes MEMORY_MB (prod's limit is 256 MiB; the 0.4.0 inspector peaked at 259 MB on
     this warm-up and was OOM-killed every ~5 minutes, 2026-10-26/27);
-  - the median cached answer passes CACHED_MS, or the slowest cold one COLD_S (a cold answer
+  - the median cached answer (a link asked a second time) passes CACHED_MS, or the slowest cold one COLD_S (a cold answer
     computes a paired test per arm; the limits leave room for a slow CI runner).
 
 --hooks adds a deployment's hooks (infra/inspector/hooks.py with its SDKs on PYTHONPATH) to
@@ -31,6 +31,9 @@ import threading
 import time
 import urllib.request
 from pathlib import Path
+
+# It measures this repository's own runs, its committed data, which is files.
+os.environ["EVAL_STORE"] = "files"
 
 HARNESS = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(HARNESS))
@@ -160,12 +163,19 @@ def main() -> int:
             "(prod's container limit is 256 MiB)",
             0 < peak < MEMORY_MB,
         )
+        # The warm-up stops at 3/4 of the cache's bytes (a 40-arm answer is ~2 MB), so most links are not in it:
+        # each sampled link is asked once, then timed. Timing the first ask measured a recompute (26-53 ms by the
+        # runner's speed, 2026-11-11) under this check's name; an answer the cache does not hold is COLD_S's.
+        said = next((x for x in lines if x.startswith("warm:")), "")
+        print(f"  note: {said.strip() or 'warm: ?'} of the {len(links)} the catalog links to")
         sample = sorted(links)[:: max(1, len(links) // 40)][:40]
+        first = [ask(port, q) for q in sample]
         cached = [ask(port, q) for q in sample]
         med_ms = statistics.median(s for _, s in cached) * 1000 if cached else 0
         check(
-            f"a cached answer: median {med_ms:.1f} ms over {len(cached)} of the catalog's links, under {CACHED_MS} ms",
-            cached and all(c == 200 for c, _ in cached) and med_ms < CACHED_MS,
+            f"a cached answer: median {med_ms:.1f} ms over {len(cached)} of the catalog's links (each asked once "
+            f"before; the first asks' median {statistics.median(s for _, s in first) * 1000:.1f} ms), under {CACHED_MS} ms",
+            cached and all(c == 200 for c, _ in first + cached) and med_ms < CACHED_MS,
         )
     finally:
         stop(proc)

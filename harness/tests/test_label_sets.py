@@ -22,9 +22,31 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parents[1] / "scripts"
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 KIT = HERE.parent / "tutorial"
+from evaluation_harness import (  # noqa: E402
+    _common,
+    _format,
+    _outputs,
+)
 from evaluation_harness._check import check, summary  # noqa: E402
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runstore  # noqa: E402
+import _runview  # noqa: E402
+from evaluation_harness.model import runs as _R  # noqa: E402
+
+
+def _set_output(d, item, text):
+    """Change one output of a run in place (None removes it), as a hand edit of its outputs.jsonl would."""
+    with _runstore._InProject(proj):
+        texts = _outputs.outputs(d)
+        texts.pop(item, None)
+        if text is not None:
+            texts[item] = text
+        _outputs.write_all(d, texts, list(texts))
+
+
 proj = Path(tempfile.mkdtemp(prefix="evh-labels-"))
+_common.project_root.cache_clear()  # _runstore aims at the project by EVAL_HOME; this process may have resolved its own
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-labels")
 for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_MAX_COST_USD"):
     env.pop(k, None)
@@ -44,34 +66,53 @@ def refused(r, text):
     return r.returncode != 0 and "Traceback" not in out(r) and text in out(r)
 
 
-LABELS = proj / "data" / "labels"
+LABELS = "labels"  # under data/
+
+
+def lab_text(rel):
+    return _runstore.read_text(proj, f"{LABELS}/{rel}")
+
+
+def lab_doc(rel):
+    return _runstore.read_json(proj, f"{LABELS}/{rel}")
+
 
 try:
     data = proj / "data"
-    (data / "configs").mkdir(parents=True)
+    (data / "systems").mkdir(parents=True)
+    _runstore.write_text(proj, _format.NAME, f"format: {_format.FORMAT}\n")
     shutil.copytree(KIT / "tickets", proj / "tutorial" / "tickets")
     shutil.copytree(KIT / "production", proj / "tutorial" / "production")
     r = evh("dataset-create", "--dataset-id", "tickets_v1", "--source-dir", "tutorial/tickets")
     r = r if r.returncode else evh("dataset-materialize", "--dataset-id", "tickets_v1")
     check("setup: the tutorial dataset", r.returncode == 0, out(r)[-300:])
     (data / "goals").mkdir()
-    shutil.copy(KIT / "goals" / "tickets_summary.yaml", data / "goals")
+    _runstore.write_text(
+        proj, "goals/tickets_summary.yaml", (KIT / "goals" / "tickets_summary.yaml").read_text()
+    )
     for arm in ("lead1", "author"):
-        cfg = data / "configs" / f"tickets_{arm}.yaml"
-        cfg.write_text((KIT / "configs" / f"tickets_{arm}.yaml").read_text() + "goal: tickets_summary\n")
-        r = evh("run", "--config", f"data/configs/tickets_{arm}.yaml")
+        _runstore.write_text(
+            proj,
+            f"systems/tickets_{arm}_v1.yaml",
+            (KIT / "systems" / f"tickets_{arm}_v1.yaml").read_text(),
+        )
+        r = evh(
+            "run", "--system", f"tickets_{arm}_v1", "--dataset", "tickets_v1", "--goal", "tickets_summary"
+        )
         check(f"setup: the {arm} arm runs", r.returncode == 0, out(r)[-300:])
-    author = next(p.name for p in (data / "runs").glob("tickets_author_v1_*"))
-    lead = next(p.name for p in (data / "runs").glob("tickets_lead1_v1_*"))
+
+    def runs_named(prefix):
+        return [n for n in _runstore.listdir(proj, "runs") if n.startswith(prefix)]
+
+    author = runs_named("tickets_author_v1_")[0]
+    lead = runs_named("tickets_lead1_v1_")[0]
 
     # ── label-from-run ──────────────────────────────────────────────────────────────────────
     (proj / "author_prompt.txt").write_text("Summarise the ticket for the support lead.\n")
     r = evh("label-from-run", "--run", author, "--set", "author_v1", "--guideline", "author_prompt.txt")
-    doc = (
-        json.loads((LABELS / "tickets_v1" / "author_v1" / "labels.json").read_text())
-        if r.returncode == 0
-        else {}
-    )
+    doc = lab_doc("tickets_v1/author_v1/labels.json") if r.returncode == 0 else {}
+    with _runstore._InProject(proj):
+        author_t01 = _outputs.output(data / "runs" / author, "t01_login")
     check(
         "label-from-run: the run's outputs as a model set, its source the run, its guideline hashed",
         doc.get("n_items") == 6
@@ -80,8 +121,7 @@ try:
         and doc["guideline"]["path"] == "author_prompt.txt"
         and len(doc["guideline"]["sha256"]) == 64
         and all(len(v["item_sha256"]) == 64 for v in doc["items"].values())
-        and (LABELS / "tickets_v1" / "author_v1" / "t01_login.txt").read_text()
-        == (data / "runs" / author / "outputs" / "t01_login.txt").read_text().strip() + "\n",
+        and lab_text("tickets_v1/author_v1/t01_login.txt") == (author_t01 or "").strip() + "\n",
         out(r)[-300:],
     )
     r = evh("label-from-run", "--run", author, "--set", "author_v1")
@@ -110,14 +150,14 @@ try:
         len(rows) == 6
         and rows[0]["item"]
         and rows[0][f"decided: {lead}"]
-        and rows[0]["proposal"]
-        == (LABELS / "tickets_v1" / "author_v1" / f"{rows[0]['item_id']}.txt").read_text().strip()
+        and rows[0]["proposal"] == lab_text(f"tickets_v1/author_v1/{rows[0]['item_id']}.txt").strip()
         and rows[0]["label"] == "",
         out(r)[-300:],
     )
     r, rows = sheet("s_dis.csv", "--items", "disagree", "--runs", f"{lead},{author}")
-    lo = {p.stem: p.read_text().strip() for p in (data / "runs" / lead / "outputs").glob("*.txt")}
-    au = {p.stem: p.read_text().strip() for p in (data / "runs" / author / "outputs").glob("*.txt")}
+    with _runstore._InProject(proj):
+        lo = {k: v.strip() for k, v in _outputs.outputs(data / "runs" / lead).items()}
+        au = {k: v.strip() for k, v in _outputs.outputs(data / "runs" / author).items()}
     check(
         "label-sheet --items disagree: exactly the items the two runs decided differently",
         r.returncode == 0
@@ -147,11 +187,7 @@ try:
         w.writeheader()
         w.writerows(rows)
     r = evh("label-import", "filled.csv", "--dataset-id", "tickets_v1", "--set", "owner_v1", "--by", "owner")
-    doc = (
-        json.loads((LABELS / "tickets_v1" / "owner_v1" / "labels.json").read_text())
-        if r.returncode == 0
-        else {}
-    )
+    doc = lab_doc("tickets_v1/owner_v1/labels.json") if r.returncode == 0 else {}
     check(
         "label-import: the filled rows as a person set; `yes` takes the proposal; a note kept; empty rows left out",
         doc.get("n_items") == 3
@@ -162,8 +198,7 @@ try:
             "sheet": "filled.csv",
             "sheet_sha256": doc["source"].get("sheet_sha256"),
         }
-        and (LABELS / "tickets_v1" / "owner_v1" / f"{rows[1]['item_id']}.txt").read_text().strip()
-        == rows[1]["proposal"]
+        and lab_text(f"tickets_v1/owner_v1/{rows[1]['item_id']}.txt").strip() == rows[1]["proposal"]
         and doc.get("notes") == {rows[0]["item_id"]: "a real bug"},
         out(r)[-300:],
     )
@@ -172,19 +207,14 @@ try:
     (answers / "t01_login.txt").write_text("Login fails after SSO change.\n")
     (answers / "t04_api.txt").write_text("Rate limit lower than documented.\n")
     r = evh("label-import", "answers", "--dataset-id", "tickets_v1", "--set", "owner_files", "--by", "owner")
-    fdoc = (
-        json.loads((LABELS / "tickets_v1" / "owner_files" / "labels.json").read_text())
-        if r.returncode == 0
-        else {}
-    )
+    fdoc = lab_doc("tickets_v1/owner_files/labels.json") if r.returncode == 0 else {}
     check(
         "label-import: a folder of <item_id>.txt as a person set, its files hashed",
         fdoc.get("n_items") == 2
         and fdoc["source"].get("kind") == "person"
         and fdoc["source"].get("folder") == "answers"
         and len(fdoc["source"].get("folder_sha256", "")) == 64
-        and (LABELS / "tickets_v1" / "owner_files" / "t04_api.txt").read_text()
-        == "Rate limit lower than documented.\n",
+        and lab_text("tickets_v1/owner_files/t04_api.txt") == "Rate limit lower than documented.\n",
         out(r)[-300:],
     )
     # 2026-11-04 (a beta agent): a refusal found late (a --guideline file that does not exist) left the set's
@@ -193,13 +223,13 @@ try:
         "label-import", "answers", "--dataset-id", "tickets_v1", "--set", "half_set", "--by", "owner",
         "--guideline", "no_such_guideline.md",
     )  # fmt: skip
-    half = LABELS / "tickets_v1" / "half_set"
+    half = f"{LABELS}/tickets_v1/half_set"
     check(
         "label-import: a refusal writes nothing, so the name stays free",
         r.returncode != 0
         and "--guideline" in out(r)
-        and not (half.exists() and any(half.iterdir()))
-        and not any(p.name.startswith(".half_set") for p in (LABELS / "tickets_v1").iterdir()),
+        and not (_runstore.exists(proj, half) and any(_runstore.listdir(proj, half)))
+        and not any(n.startswith(".half_set") for n in _runstore.listdir(proj, f"{LABELS}/tickets_v1")),
         out(r)[-300:],
     )
     (proj / "guide.md").write_text("Summarise the ticket's problem in one sentence.\n")
@@ -209,10 +239,12 @@ try:
     )  # fmt: skip
     check(
         "label-import: after a refusal, the same name imports",
-        r.returncode == 0 and (half / "labels.json").is_file() and (half / "t01_login.txt").is_file(),
+        r.returncode == 0
+        and _runstore.is_file(proj, f"{half}/labels.json")
+        and _runstore.is_file(proj, f"{half}/t01_login.txt"),
         out(r)[-300:],
     )
-    shutil.rmtree(half)  # this throwaway set is not one the checks below count
+    _runstore.rmtree(proj, half)  # this throwaway set is not one the checks below count
     (proj / "empty").mkdir()
     r = evh("label-import", "empty", "--dataset-id", "tickets_v1", "--set", "none_v1", "--by", "owner")
     check("label-import: an empty folder is refused", refused(r, "no <item_id>.txt"), out(r)[-200:])
@@ -247,9 +279,8 @@ try:
     check(
         "label-import: Excel's own CSV (the mark, `;`, CRLF) reads back, also right included",
         r.returncode == 0
-        and (LABELS / "tickets_v1" / "excel_v1" / "t01_login.txt").read_text()
-        == '{"accept": ["escalate", "file"]}\n'
-        and (LABELS / "tickets_v1" / "excel_v1" / "t02_invoice.txt").read_text() == "dismiss\n",
+        and lab_text("tickets_v1/excel_v1/t01_login.txt") == '{"accept": ["escalate", "file"]}\n'
+        and lab_text("tickets_v1/excel_v1/t02_invoice.txt") == "dismiss\n",
         out(r)[-300:],
     )
     (proj / "excel_typo.csv").write_bytes(
@@ -260,7 +291,7 @@ try:
     )
     check(
         "label-import: an answer not among the sheet's choices is refused, naming the row; nothing is written",
-        refused(r, "t01_login: 'dismis'") and not (LABELS / "tickets_v1" / "typo_v1").exists(),
+        refused(r, "t01_login: 'dismis'") and not _runstore.exists(proj, f"{LABELS}/tickets_v1/typo_v1"),
         out(r)[-300:],
     )
     (proj / "book.xlsx").write_bytes(b"PK\x03\x04 a workbook")
@@ -270,7 +301,8 @@ try:
         refused(r, "Save As > CSV UTF-8"),
         out(r)[-300:],
     )
-    shutil.rmtree(LABELS / "tickets_v1" / "excel_v1", ignore_errors=True)
+    if _runstore.exists(proj, f"{LABELS}/tickets_v1/excel_v1"):
+        _runstore.rmtree(proj, f"{LABELS}/tickets_v1/excel_v1")
 
     # ── an item with more than one right answer (owner, 2026-11-02: a label can accept several) ───────────────────
     (proj / "several.csv").write_text(
@@ -279,12 +311,12 @@ try:
     r = evh(
         "label-import", "several.csv", "--dataset-id", "tickets_v1", "--set", "several_v1", "--by", "owner"
     )
-    several = LABELS / "tickets_v1" / "several_v1"
+    several = "tickets_v1/several_v1"
     check(
         "label-import: `also right` adds the other right answers; one meaning, one text (sorted, no repeats)",
         r.returncode == 0
-        and (several / "t01_login.txt").read_text() == '{"accept": ["escalate", "file"]}\n'
-        and (several / "t02_invoice.txt").read_text() == "dismiss\n",
+        and lab_text(f"{several}/t01_login.txt") == '{"accept": ["escalate", "file"]}\n'
+        and lab_text(f"{several}/t02_invoice.txt") == "dismiss\n",
         out(r)[-300:],
     )
     (answers / "t01_login.txt").write_text('{"accept": ["file", "escalate", "file"]}\n')
@@ -295,8 +327,7 @@ try:
     check(
         "label-import: a folder's {\"accept\": [...]} is the same label as the sheet's",
         r.returncode == 0
-        and (LABELS / "tickets_v1" / "several_files" / "t01_login.txt").read_text()
-        == (several / "t01_login.txt").read_text(),
+        and lab_text("tickets_v1/several_files/t01_login.txt") == lab_text(f"{several}/t01_login.txt"),
         out(r)[-300:],
     )
     (proj / "notalist.csv").write_text('item_id,label\nt01_login,"{""accept"": ""file""}"\n')
@@ -305,7 +336,7 @@ try:
     )
     check(
         'label-import: {"accept": ...} that is not a list of answers is refused, saying how to write one',
-        refused(r, "not a list of answers") and not (LABELS / "tickets_v1" / "bad_accept").exists(),
+        refused(r, "not a list of answers") and not _runstore.exists(proj, f"{LABELS}/tickets_v1/bad_accept"),
         out(r)[-300:],
     )
     (proj / "one.csv").write_text("item_id,label\nt01_login,escalate\nt02_invoice,file\n")
@@ -396,10 +427,13 @@ try:
         r.returncode == 0 and "1 label(s) accept more than one answer (escalate or file: 1)" in out(r),
         out(r)[-400:],
     )
-    shutil.rmtree(proj / "data" / "references" / "silver" / "several_check", ignore_errors=True)
+    if _runstore.exists(proj, "references/silver/several_check"):
+        _runstore.rmtree(proj, "references/silver/several_check")
     for s in ("several_v1", "several_files", "one_v1"):
-        shutil.rmtree(LABELS / "tickets_v1" / s)
-    shutil.rmtree(LABELS / "tickets_v1" / "owner_files")  # the later checks count the sets on tickets_v1
+        _runstore.rmtree(proj, f"{LABELS}/tickets_v1/{s}")
+    _runstore.rmtree(
+        proj, f"{LABELS}/tickets_v1/owner_files"
+    )  # the later checks count the sets on tickets_v1
     (proj / "bad.csv").write_text("id,answer\nt01_login,x\n")
     r = evh("label-import", "bad.csv", "--dataset-id", "tickets_v1", "--set", "bad_v1", "--by", "owner")
     check(
@@ -504,11 +538,7 @@ try:
             "outcomes_c1",
         )
     )
-    doc = (
-        json.loads((LABELS / "desk_v1" / "outcomes_c1" / "labels.json").read_text())
-        if r.returncode == 0
-        else {}
-    )
+    doc = lab_doc("desk_v1/outcomes_c1/labels.json") if r.returncode == 0 else {}
     check(
         "label-from-capture: the mapping's labels as a rule set, the capture and the mapping hashed, the counts",
         doc.get("n_items") == 5
@@ -521,7 +551,13 @@ try:
     )
 
     # ── reference-promote (step 3): a reference set is labels you promote ─────────────────────────
-    REF = proj / "data" / "references"
+    REF = "references"  # under data/
+
+    def ref_stems(rel):
+        return sorted(
+            n.removesuffix(".txt") for n in _runstore.listdir(proj, f"{REF}/{rel}") if n.endswith(".txt")
+        )
+
     reason = "the owner's labels of three tickets, for this test"
     r = evh(
         "reference-promote",
@@ -536,11 +572,11 @@ try:
         "--reason",
         reason,
     )
-    m = json.loads((REF / "gold" / "tickets_v1" / "manifest.json").read_text()) if r.returncode == 0 else {}
-    owner_ids = sorted(json.loads((LABELS / "tickets_v1" / "owner_v1" / "labels.json").read_text())["items"])
+    m = _runstore.read_json(proj, f"{REF}/gold/tickets_v1/manifest.json") if r.returncode == 0 else {}
+    owner_ids = sorted(lab_doc("tickets_v1/owner_v1/labels.json")["items"])
     check(
         "reference-promote: the set's labels as the dataset's gold, recording the set, its source, the reason and who",
-        sorted(p.stem for p in (REF / "gold" / "tickets_v1").glob("*.txt")) == owner_ids
+        ref_stems("gold/tickets_v1") == owner_ids
         and m.get("tier") == "gold"
         and m["promoted_from"]
         == {"labels": "owner_v1", "dataset_id": "tickets_v1", "source": m["promoted_from"]["source"]}
@@ -640,7 +676,7 @@ try:
         "the author model's answers, to rank the arms",
     )
     m = (
-        json.loads((REF / "silver" / "tickets_v1_author" / "manifest.json").read_text())
+        _runstore.read_json(proj, f"{REF}/silver/tickets_v1_author/manifest.json")
         if r.returncode == 0
         else {}
     )
@@ -655,20 +691,8 @@ try:
         "tickets_v1",
         "--reference-id",
         "silver/tickets_v1_author",
-        "--out",
-        "data/runs-author",
     )
-    r = (
-        r
-        if r.returncode
-        else subprocess.run(
-            [sys.executable, str(HERE / "cli.py"), "leaderboard", "--dataset-id", "tickets_v1"],
-            cwd=proj,
-            env={**env, "EVAL_RUNS_DIR": "data/runs-author"},
-            capture_output=True,
-            text=True,
-        )
-    )
+    r = r if r.returncode else evh("leaderboard", "--dataset-id", "tickets_v1", "--label", "silver")
     check(
         "scored against it, the author arm is marked as graded against its own answers",
         r.returncode == 0
@@ -692,8 +716,7 @@ try:
     )
     check(
         "reference-promote from a set on another dataset: labels follow the item",
-        r.returncode == 0
-        and sorted(p.stem for p in (REF / "gold" / "tickets_v2").glob("*.txt")) == owner_ids,
+        r.returncode == 0 and ref_stems("gold/tickets_v2") == owner_ids,
         out(r)[-300:],
     )
 
@@ -710,21 +733,21 @@ try:
         "--field",
         "channel",
     )
-    cfg_text = (data / "configs" / "desk_production_v1.yaml").read_text() if r.returncode == 0 else ""
-    rec_run = next((p for p in (data / "runs").glob("desk_production_v1_*")), None)
-    rec_m = json.loads((rec_run / "metrics.json").read_text()) if rec_run else {}
-    cap_recs = {
-        json.loads(p.read_text())["id"]: json.loads(p.read_text())
-        for p in (data / "captures" / "desk_c1" / "records").glob("*.json")
-    }
+    cfg_text = _runstore.read_text(proj, "systems/desk_production_v1.yaml") if r.returncode == 0 else ""
+    rec_run = next((data / "runs" / n for n in runs_named("desk_production_v1_")), None)
+    rec_m = _runview.record_of(proj, rec_run.name)[1] if rec_run else {}
+    cap_recs = {}
+    for n in _runstore.listdir(proj, "captures/desk_c1/records"):
+        if n.endswith(".json"):
+            rec = _runstore.read_json(proj, f"captures/desk_c1/records/{n}")
+            cap_recs[rec["id"]] = rec
+    with _runstore._InProject(proj):
+        rec_outs = {i: _outputs.output(rec_run, i) for i in cap_recs} if rec_run else {}
     check(
         "arm-from-capture: a config with provider recorded, run: each output the record's field, no call, no cost",
         "provider: recorded" in cfg_text
         and rec_run is not None
-        and all(
-            (rec_run / "outputs" / f"{i}.txt").read_text() == str(cap_recs[i]["fields"]["channel"])
-            for i in cap_recs
-        )
+        and all(rec_outs[i] == str(cap_recs[i]["fields"]["channel"]) for i in cap_recs)
         and not (rec_m.get("scores") or {}).get("total_cost_usd")
         and len(rec_m["fingerprint"]["settings"].get("capture_sha256", "")) == 64
         and "no system called" in out(r),
@@ -751,22 +774,31 @@ try:
         "a recorded arm needs the adapter's recorded_output or a --field; refused before anything is written",
         r.returncode != 0
         and "recorded_output" in out(r)
-        and not (data / "configs" / "desk_nofield_v1.yaml").exists(),
+        and not _runstore.exists(proj, "systems/desk_nofield_v1.yaml"),
         out(r)[-300:],
     )
 
     # ── agreement: --disagree keeps the items the arms decided differently (step 5) ──────────────
-    alt = data / "runs-alt" / lead
-    shutil.copytree(data / "runs" / lead, alt)
-    changed = sorted(p.stem for p in (alt / "outputs").glob("*.txt"))[:2]
+    # the same run once more, as a repeat of it (its own arm): two of one system that decided differently
+    alt_id = lead + "_alt"
+    alt = data / "runs" / alt_id
+    with _runstore._InProject(proj):
+        src_first = _R.first_score(data / "runs" / lead)
+        assert src_first is not None, f"{lead} has no first score"
+        _runstore.copy_run(data / "runs" / lead, alt)
+        _runstore.copy_run(src_first, alt / "scores" / src_first.name)
+        alt_rec = _R.run(alt)
+        assert alt_rec is not None, f"{alt_id} was not copied"
+        _R.write_run(alt_id, {**alt_rec, "run_id": alt_id, "purpose": "repeat", "of": lead})
+        changed = sorted(_outputs.outputs(alt))[:2]
     for i in changed:
-        (alt / "outputs" / f"{i}.txt").write_text("a different decision")
+        _set_output(alt, i, "a different decision")
 
     def inspected(*extra):
         r = evh(
             "inspect",
             "--runs",
-            "tickets_lead1_v1,runs-alt/tickets_v1/tickets_lead1_v1",
+            "tickets_lead1_v1,repeats/tickets_v1/tickets_lead1_v1",
             "--metric",
             "output_words",
             "--json",
@@ -797,18 +829,24 @@ try:
         "same(a, b): the adapter's when it has one, else the same text",
         _adapter.same_of(None)("a decision ", "a decision") and not _adapter.same_of(None)("a", "b"),
     )
-    shutil.rmtree(data / "runs-alt")
+    _runstore.rmtree(proj, f"runs/{alt_id}")
 
     # ── scoring against labels (step 4) ───────────────────────────────────────────────────
     r = evh("rescore", "--dataset-id", "tickets_v1", "--labels", "author_v1")
-    lab_dir = data / "runs-labels-tickets_v1-author_v1"
-    ms = (
-        [json.loads(p.read_text()) for p in sorted(lab_dir.glob("*/metrics.json"))]
-        if r.returncode == 0
-        else []
-    )
+    lab_label = "labels-tickets_v1-author_v1"
+
+    def lab_scores():
+        """[(run id, record)] of the scores read as the label set's own arm."""
+        return [
+            (rid, rec)
+            for rid in _runstore.listdir(proj, "runs")
+            for _k, lb, rec in _runview.scores_of(proj, rid)
+            if lb == lab_label
+        ]
+
+    ms = [rec for _rid, rec in lab_scores()] if r.returncode == 0 else []
     check(
-        "rescore --labels: every run scored against the set, beside the runs, never in the re-score goals read",
+        "rescore --labels: every run scored against the set, read as an arm of its own, never in the re-score goals read",
         len(ms) == 2
         and all(
             m["fingerprint"]["data"]["reference_id"] == "labels/tickets_v1/author_v1"
@@ -816,7 +854,11 @@ try:
             and len(m["fingerprint"]["data"]["references_sha256"] or "") == 64
             for m in ms
         )
-        and not (data / "runs-rescored").exists(),
+        and not any(
+            lb.startswith("rescored ")
+            for rid in _runstore.listdir(proj, "runs")
+            for _k, lb, _rec in _runview.scores_of(proj, rid)
+        ),
         out(r)[-300:],
     )
     r = evh("rescore", "--dataset-id", "tickets_v1", "--labels", "tickets_v2/owner_v1")
@@ -827,15 +869,31 @@ try:
     )
     r = evh("rescore", "--dataset-id", "tickets_v1", "--labels", "no_such_set")
     check("rescore --labels: an unknown set is refused", refused(r, "no label set at"), out(r)[-200:])
-    before_lab = set((data / "runs-labels-tickets_v1-author_v1").glob("tickets_lead1_v1_*"))
-    before_runs = sorted((data / "runs").glob("tickets_lead1_v1_*"))
+
+    def plain_runs():
+        """The runs of the system whose first score is read as its plain arm."""
+        return sorted(
+            n
+            for n in runs_named("tickets_lead1_v1_")
+            if any(lb == "" for _k, lb, _rec in _runview.scores_of(proj, n))
+        )
+
+    def lab_runs():
+        return {n for n in runs_named("tickets_lead1_v1_") if n not in plain_runs()}
+
+    before_lab = lab_runs()
+    before_runs = plain_runs()
     r = subprocess.run(
         [
             sys.executable,
             str(HERE / "cli.py"),
             "run",
-            "--config",
-            "data/configs/tickets_lead1.yaml",
+            "--system",
+            "tickets_lead1_v1",
+            "--dataset",
+            "tickets_v1",
+            "--goal",
+            "tickets_summary",
             "--labels",
             "author_v1",
         ],
@@ -844,20 +902,21 @@ try:
         capture_output=True,
         text=True,
     )
-    made = sorted(set((data / "runs-labels-tickets_v1-author_v1").glob("tickets_lead1_v1_*")) - before_lab)
-    run_m: dict = json.loads((made[-1] / "metrics.json").read_text()) if made else {}
+    made = sorted(lab_runs() - before_lab)
+    run_m: dict = _runview.record_of(proj, made[-1])[1] if made else {}
     check(
-        "evh run --labels: an arm of its own, beside the runs (data/runs-labels-<dataset>-<set>/), never one more"
-        " run of the config's arm in data/runs; the run records the set",
+        "evh run --labels: an arm of its own (labels-<dataset>-<set>), never one more run of the config's plain arm;"
+        " the run records the set",
         r.returncode == 0
         and "the label set labels/tickets_v1/author_v1" in out(r)
         and run_m.get("reference_tier") == "labels"
         and run_m["fingerprint"]["data"]["reference_id"] == "labels/tickets_v1/author_v1"
-        and sorted((data / "runs").glob("tickets_lead1_v1_*")) == before_runs,
+        and plain_runs() == before_runs
+        and len(made) == 1,
         out(r)[-300:],
     )
     for d in made:
-        shutil.rmtree(d, ignore_errors=True)
+        _runstore.rmtree(proj, f"runs/{d}")
     r = evh("goals", "--goal", "tickets_summary")
     group = (
         out(r).split("labels/tickets_v1/author_v1", 1)[1] if "labels/tickets_v1/author_v1" in out(r) else ""
@@ -890,15 +949,49 @@ try:
     )
     check(
         "validate V1: a run scored against a label set (reference_tier labels) is a valid run",
-        "FAIL V1 " not in out(r) and any(data.glob("runs-labels-*/*/metrics.json")),
+        "FAIL V1 " not in out(r) and bool(lab_scores()),
         out(r)[-600:],
     )
-    (LABELS / "tickets_v1" / "owner_v1" / f"{rows[0]['item_id']}.txt").write_text("edited by hand\n")
+    _runstore.write_text(proj, f"{LABELS}/tickets_v1/owner_v1/{rows[0]['item_id']}.txt", "edited by hand\n")
     r = evh("validate")
     check(
         "validate V19: an edited label fails",
         r.returncode != 0 and "FAIL V19" in out(r) and "never edited" in out(r),
         out(r)[-400:],
+    )
+
+    # ── two items with the same text (the same alert twice): each keeps its own label ─────────────────────────────
+    # labels_for matched labels to items by their text's sha256 alone, so twins got each other's labels and the
+    # reference promoted from them held the last one twice (found by RFC-030's replay example, 2026-11-11).
+    for side in ("twins", "twins2"):
+        (proj / side).mkdir()
+        for name, text in (("a", "the same alert\n"), ("b", "the same alert\n"), ("c", "another alert\n")):
+            (proj / side / f"{name}.txt").write_text(text)
+    (proj / "twin_labels").mkdir()
+    for name, text in (("a", "create\n"), ("b", "comment\n"), ("c", "none\n")):
+        (proj / "twin_labels" / f"{name}.txt").write_text(text)
+    steps = [
+        ("dataset-create", "--dataset-id", "twins_v1", "--source-dir", "twins"),
+        ("dataset-materialize", "--dataset-id", "twins_v1"),
+        ("dataset-create", "--dataset-id", "twins_v2", "--source-dir", "twins2"),
+        ("dataset-materialize", "--dataset-id", "twins_v2"),
+        ("label-import", "twin_labels", "--dataset-id", "twins_v1", "--set", "s", "--by", "person:t"),
+        ("reference-promote", "--dataset-id", "twins_v1", "--labels", "s", "--tier", "gold",
+         "--reason", "each twin has its own answer", "--by", "person:t"),
+        ("reference-promote", "--dataset-id", "twins_v2", "--labels", "twins_v1/s", "--tier", "gold",
+         "--reason", "carried by the items' text", "--by", "person:t"),
+    ]  # fmt: skip
+    got = [evh(*argv) for argv in steps]
+    ref1 = {n: _runstore.read_text(proj, f"references/gold/twins_v1/{n}.txt").strip() for n in ("a", "b", "c")
+            if _runstore.is_file(proj, f"references/gold/twins_v1/{n}.txt")}  # fmt: skip
+    ref2 = sorted(n for n in ("a", "b", "c") if _runstore.is_file(proj, f"references/gold/twins_v2/{n}.txt"))
+    check(
+        "two items with the same text keep their own labels on their dataset; on another dataset a text two labels "
+        "disagree on carries neither (ambiguous), and one with one label carries it",
+        all(x.returncode == 0 for x in got)
+        and ref1 == {"a": "create", "b": "comment", "c": "none"}
+        and ref2 == ["c"],
+        ([out(x)[-200:] for x in got if x.returncode], ref1, ref2),
     )
 finally:
     shutil.rmtree(proj, ignore_errors=True)

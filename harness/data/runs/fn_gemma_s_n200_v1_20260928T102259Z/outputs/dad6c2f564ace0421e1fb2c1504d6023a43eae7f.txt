@@ -1,7 +1,0 @@
-```json
-[
-  {"text": "Claymore", "type": "ship"},
-  {"text": "French Navy", "type": "organization"},
-  {"text": "20th century", "type": "other"}
-]
-```

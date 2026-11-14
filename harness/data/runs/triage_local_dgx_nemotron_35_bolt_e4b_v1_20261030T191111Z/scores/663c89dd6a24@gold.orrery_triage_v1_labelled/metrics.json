@@ -1,0 +1,47 @@
+{
+  "metric_directions": {
+    "escalated": "lower",
+    "false_alarm": "lower",
+    "false_dismiss": "lower",
+    "model_escalated": "lower",
+    "model_false_alarm": "lower",
+    "model_false_dismiss": "lower",
+    "model_triage_cost": "lower",
+    "no_decision": "lower",
+    "silent_drop": "lower",
+    "table_miss": "lower",
+    "triage_cost": "lower",
+    "triage_cost_p10": "lower",
+    "triage_cost_p3": "lower"
+  },
+  "metric_kinds": {
+    "resumed": "descriptive"
+  },
+  "primary_metric": "triage_cost",
+  "reference_tier": "gold",
+  "scores": {
+    "correct": 0.6,
+    "cost_usd": 0.0,
+    "escalated": 0.430769,
+    "false_alarm": 0.612903,
+    "false_dismiss": 0.088235,
+    "latency_ms": 15258.825491,
+    "model_correct": 0.6,
+    "model_escalated": 0.138462,
+    "model_false_alarm": 0.354839,
+    "model_false_dismiss": 0.411765,
+    "model_triage_cost": 1.246154,
+    "n_probes": 2.384615,
+    "no_decision": 0.0,
+    "resumed": 0.0,
+    "table_miss": 0.0,
+    "tokens_in": 4845.246154,
+    "tokens_out": 1449.292308,
+    "total_cost_usd": 0.0,
+    "total_tokens_in": 314941.0,
+    "total_tokens_out": 94204.0,
+    "triage_cost": 0.523077,
+    "triage_cost_p10": 0.753846,
+    "triage_cost_p3": 0.430769
+  }
+}

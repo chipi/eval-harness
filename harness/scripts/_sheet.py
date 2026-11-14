@@ -4,7 +4,7 @@
         --wrong-against owner_2026_11 --new-vs triage_v1
 
 The items down, a column per arm across: what each wrote, every score it has on that item (its run's metrics, the
-primary first, and the judge's, where a judging pass under data/runs-judged/<scorer>/ covered that run), a column
+primary first, and the judge's, where a judging pass, a score of that run read as judged/<scorer>, covered it), a column
 per label set or reference set, the winner per row, the signals, and a footer per arm. The inspector's page, the
 terminal and the CSV are this model, flattened three ways.
 
@@ -46,7 +46,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _common
+from evaluation_harness import _common, _outputs, _store
 from evaluation_harness._common import (
     BOOKKEEPING_PREFIXES,
     LABELS_PREFIX,
@@ -58,9 +58,10 @@ from evaluation_harness._common import (
     scored_against_dir,
 )
 from evaluation_harness._label_sets import answers, label_line, labels_for, sets, source_line
-from evaluation_harness._runs import item_rows, lower_is_better_on, read_metrics, runs_on
+from evaluation_harness._runs import item_rows, lower_is_better_on, read_metrics
 from evaluation_harness._sheets import ALSO, NOTE, label_header
-from evaluation_harness.label_sheet import output, run_dir, view
+from evaluation_harness.label_sheet import run_dir, view
+from evaluation_harness.model import runs as _model_runs
 
 SIGNALS = ("wrong", "disagree", "split", "new", "unlabelled")
 #: --new-vs compares a field only when the governed dataset has at most this many values for it (a choice, an
@@ -72,7 +73,7 @@ VIEW_TITLE = 160
 #: unvalidated judging pass names them with a `_unvalidated` ending (judge_score.write_scored_runs).
 WON = ("judge_won", "judge_won_unvalidated")
 GRADE = ("judge_score", "judge_score_unvalidated")
-FILLS = ("label", "pick", "scores")
+FILLS = ("label", "pick", "scores", "tags")
 #: The marker of a row that is not an item (the rubric, a footer): sheet-import leaves out every item_id starting so.
 NOT_AN_ITEM = "#"
 KEY_SUFFIX = ".key.json"
@@ -83,7 +84,7 @@ def _set_named(name: str, dataset_id: str) -> None:
     """Refuse a label set no dataset has, and a bare name that two datasets' sets on this dataset's items share
     (labels follow an item by its bytes into every dataset holding it): which one the row read was a guess."""
     if not any(name in (d["set"], f"{d['dataset_id']}/{d['set']}") for d in sets()):
-        die(f"--wrong-against {name}: no such label set (evh labels lists them)")
+        die(f"--wrong-against {name}: no such label set (evh labels lists them)", "not-found")
     if "/" not in name:
         same = sorted(
             {
@@ -95,7 +96,8 @@ def _set_named(name: str, dataset_id: str) -> None:
         )
         if len(same) > 1:
             die(
-                f"--wrong-against {name}: {len(same)} label sets are named so ({', '.join(same)}); name one as DATASET/SET"
+                f"--wrong-against {name}: {len(same)} label sets are named so ({', '.join(same)}); name one as DATASET/SET",
+                "bad-argument",
             )
 
 
@@ -138,60 +140,49 @@ def _numbers(row: dict) -> dict[str, float]:
     }
 
 
-def _arm_dir(token: str, dataset_id: str, from_dir: str) -> Path:
-    """A run by its id, or a config's latest run on the dataset, under `from_dir` (runs, runs-silver,
-    runs-judged/<scorer>); `runs` is also where label_sheet.run_dir looks (and in the label sets' runs)."""
-    if from_dir and from_dir != "runs":
-        if ".." in Path(from_dir).parts:
-            die(f"--from {from_dir}: a folder under data/")
-        base = _common.DATA / from_dir
-        d = base / token
-        m = read_metrics(d) if d.is_dir() else None
-        if m is not None:
-            if m.get("dataset_id") != dataset_id:
-                die(f"--runs {token}: that run is not on {dataset_id}")
-            return d
-        found = runs_on(dataset_id, runs_dir=base, config_id=token)
-        if found:
-            return found[-1][0]
-        die(f"--runs {token}: no run of that config on {dataset_id} under {from_dir}")
-    return run_dir(token, dataset_id)
+def _arm_dir(token: str, dataset_id: str, label: str) -> Path:
+    """The score a run id, or a system's latest run on the dataset, is read as under `label` (runs: a plain run's own
+    score); label_sheet.run_dir, which is also where an arm id as the catalog names it is found."""
+    return run_dir(token, dataset_id, label)
 
 
 def _judged(d: Path, dataset_id: str) -> list[dict[str, Any]]:
-    """The judging passes that covered run `d`: data/runs-judged/<scorer>/<same run folder>, each {scorer, dir,
-    metrics, per_item {item: {metric: value}}, names (the judge's metrics a cell shows)}."""
-    root = _common.DATA / "runs-judged"
-    out = []
-    for sd in sorted(root.iterdir()) if root.is_dir() else []:
-        jd = sd / d.name
-        if not sd.is_dir() or sd == d.parent or not jd.is_dir():
-            continue
-        jm = read_metrics(jd)
+    """The judging passes that covered the run `d` is a score of: its other scores read as judged/<scorer> (the
+    latest, when a scorer judged more than one set), each {scorer, dir, metrics, per_item {item: {metric: value}},
+    names (the judge's metrics a cell shows)}."""
+    latest: dict[str, tuple[Path, dict[str, Any]]] = {}
+    for jd in _model_runs.scores_of(_model_runs.run_of(d)):
+        lbl = str(_model_runs.meta(jd).get("label") or "")
+        jm = read_metrics(jd) if jd != d and lbl.startswith("judged/") else None
         if (
             jm is None
             or jm.get("dataset_id") != dataset_id
             or (jm.get("derived") or {}).get("kind") != "judge"
         ):
             continue
+        scorer = lbl.removeprefix("judged/")
+        if scorer not in latest or (jm.get("created_at") or "") > (latest[scorer][1].get("created_at") or ""):
+            latest[scorer] = (jd, jm)
+    out = []
+    for scorer, (jd, jm) in sorted(latest.items()):
         per = {r["item_id"]: _numbers(r) for r in item_rows(jd, strict=False)}
         have = {k for r in per.values() for k in r}
         names = [n for n in dict.fromkeys([jm.get("primary_metric"), *WON, *GRADE]) if n and n in have]
         if names:
-            out.append({"scorer": sd.name, "dir": jd, "metrics": jm, "per_item": per, "names": names})
+            out.append({"scorer": scorer, "dir": jd, "metrics": jm, "per_item": per, "names": names})
     return out
 
 
 def _under_data(d: Path) -> str:
-    """A run folder as a path under data/ (where the key finds it again), else as it is."""
+    """A score's directory as a path under data/ (where the key finds it again), else as it is."""
     try:
         return d.resolve().relative_to(_common.DATA.resolve()).as_posix()
     except ValueError:
         return str(d)
 
 
-def _arm(token: str, dataset_id: str, from_dir: str) -> dict[str, Any]:
-    d = _arm_dir(token, dataset_id, from_dir)
+def _arm(token: str, dataset_id: str, label: str) -> dict[str, Any]:
+    d = _arm_dir(token, dataset_id, label)
     return {
         "token": token,
         "dir": d,
@@ -257,9 +248,15 @@ def _resolve_metric(arms: list[dict[str, Any]], spec: str | None, goal: dict | N
         if got:
             return got
         if len(judged.get(spec, ())) > 1:
-            die(f"--metric {spec}: judged by {', '.join(sorted(judged[spec]))}; name one (SCORER/{spec})")
+            die(
+                f"--metric {spec}: judged by {', '.join(sorted(judged[spec]))}; name one (SCORER/{spec})",
+                "bad-argument",
+            )
         known = sorted(own | {f"{s}/{k}" for k, ss in judged.items() for s in ss})
-        die(f"--metric {spec}: no run in --runs records it (recorded: {', '.join(known) or 'none'})")
+        die(
+            f"--metric {spec}: no run in --runs records it (recorded: {', '.join(known) or 'none'})",
+            "not-found",
+        )
     measure = ((goal or {}).get("success_criteria") or {}).get("primary", {}).get("measure")
     if measure and find(measure):
         return find(measure)
@@ -270,7 +267,7 @@ def _resolve_metric(arms: list[dict[str, Any]], spec: str | None, goal: dict | N
     if arms and own:
         return sorted(own)[0]
     if arms:
-        die("no run in --runs records a per-item metric: nothing to read the sheet on")
+        die("no run in --runs records a per-item metric: nothing to read the sheet on", "not-enough")
     return None
 
 
@@ -300,13 +297,13 @@ def build(
     fields_of,
     *,
     metric: str | None = None,
-    from_dir: str = "runs",
+    label: str = "",
     wrong_against: str | None = None,
     new_vs: str | None = None,
     items: list[str] | None = None,
 ) -> dict[str, Any]:
-    """The sheet of a dataset over runs (ids, or config ids: their latest run on the dataset; the first stands for
-    production): {dataset_id, arms [{token, run, path, config_id, scores [ref]}], metric (a ref), lower, goal, decl,
+    """The sheet of a dataset over runs (ids, or system ids: their latest run on the dataset, read under `label`; the
+    first stands for production): {dataset_id, arms [{token, run, path, config_id, scores [ref]}], metric (a ref), lower, goal, decl,
     label_cols, ref_cols, winner_cols, metrics (every ref one can be read on), rows}, one row per item of the dataset (or `items`) in its order, each
     {item, text, fields, decisions {token: output}, shown {token: what a view shows}, scores {token: {ref: value}},
     labels [{set, dataset_id, source, text}], label_text {key: line}, references {id: text}, winners {key: [token]},
@@ -316,8 +313,8 @@ def build(
 
     ds = load_dataset(dataset_id)
     if len(set(tokens)) != len(tokens):
-        die("--runs names an arm twice")
-    arms = [_arm(t, dataset_id, from_dir) for t in tokens]
+        die("--runs names an arm twice", "bad-argument")
+    arms = [_arm(t, dataset_id, label) for t in tokens]
     found_goal = _goal_for(dataset_id, arms)
     ref = _resolve_metric(arms, metric, found_goal[1] if found_goal else None)
     lower = bool(ref) and lower_is_better_on(_runs_of(arms, str(ref)), str(ref).rpartition("/")[2])
@@ -380,7 +377,7 @@ def build(
             "metrics"
         ].get("reference_id")
         d = scored_against_dir(rid) if rid and not str(rid).startswith(LABELS_PREFIX) else None
-        if rid and d is not None and d.is_dir():
+        if rid and d is not None and _store.is_dir(d):
             refs.setdefault(str(rid), d)
     ref_cols = [{"key": rid, "header": f"reference: {rid}"} for rid in refs]
 
@@ -414,13 +411,21 @@ def build(
     if ref and not chosen_is_won:
         winner_cols.append({"key": f"winner: {ref}", "header": f"winner: {ref}", "metric": ref})
 
+    from evaluation_harness import _tags  # noqa: PLC0415
+
+    tagged = _tags.by_run(dataset_id)
+    run_of = {a["token"]: _model_runs.run_of(a["dir"]).name for a in arms}
+    tag_arms = [a["token"] for a in arms if run_of[a["token"]] in tagged]
     wanted = set(items) if items is not None else None
     out = []
+    # Each arm's outputs read once, not once an item: 50 arms on 10,000 items were 500,000 lookups, each finding the
+    # run's source again (in the SQLite store, 4 path resolutions a lookup: 121 of a 146 s sheet, PLAN_0.8.0 S3).
+    texts = {a["token"]: _outputs.outputs(a["dir"]) for a in arms}
     for it in ds.get("items") or []:
         i = it["item_id"]
         if wanted is not None and i not in wanted:
             continue
-        dec = {a["token"]: output(a["dir"], i) for a in arms}
+        dec = {t: (txt.strip() if (txt := texts[t].get(i)) is not None else None) for t in texts}
         mine = labels.get(i, [])
         sig: dict[str, str] = {}
         outs = [(n, o) for n, o in dec.items() if o is not None]
@@ -484,20 +489,28 @@ def build(
                 "references": {
                     rid: txt
                     for rid, d in refs.items()
-                    if (f := d / f"{i}.txt").is_file() and (txt := f.read_text(encoding="utf-8").strip())
+                    if _store.is_file(f := d / f"{i}.txt")
+                    and (txt := _store.read_text(f, encoding="utf-8").strip())
                 },
                 "winners": winners,
                 "judged_on": judged_on,
                 "scored_on": scored_on,
                 "signals": sig,
+                # The failure modes tagged on each arm's output (PLAN_0.8.0 D1): [] read and fine; absent not read.
+                "tags": {
+                    a["token"]: tagged[run_of[a["token"]]][i]
+                    for a in arms
+                    if i in tagged.get(run_of[a["token"]], {})
+                },
             }
         )
     return {
         "dataset_id": dataset_id,
+        "tag_arms": tag_arms,
         "arms": [
             {
                 "token": a["token"],
-                "run": a["dir"].name,
+                "run": _model_runs.run_of(a["dir"]).name,
                 "path": _under_data(a["dir"]),
                 "config_id": a["metrics"].get("config_id", ""),
                 "scores": score_refs[a["token"]],
@@ -527,11 +540,11 @@ def by_where(model: dict[str, Any], where: list[str]) -> list[dict[str, Any]]:
     for w in where:
         name, _, want = w.partition(":")
         if name not in model["decl"]:
-            die(f"--where {w}: no field {name!r} on {model['dataset_id']}")
+            die(f"--where {w}: no field {name!r} on {model['dataset_id']}", "not-found")
         try:
             found = [r for r in found if _fields.matches(model["decl"][name], r["fields"].get(name), want)]
         except ValueError as exc:
-            die(f"--where {w}: {exc}")
+            die(f"--where {w}: {exc}", "bad-argument")
     return found
 
 
@@ -591,7 +604,14 @@ def _verdicts(model: dict[str, Any], sub: dict[str, dict[str, float]]) -> tuple[
             }
             for t in sub
         }
-        dec = axes.decide(goal, arms_, lambda m: "lower" if lower_is_better_on(model["_runs"], m) else None)
+        field = _common.goal_cluster(goal, model["dataset_id"])
+        dec = axes.decide(
+            goal,
+            arms_,
+            lambda m: "lower" if lower_is_better_on(model["_runs"], m) else None,
+            clusters=_common.item_clusters(model["dataset_id"], field) if field else None,
+            cluster_by=field,
+        )
         if dec["leader"] is not None:
             out = {}
             for t in sub:
@@ -705,6 +725,9 @@ def flat(
     def winner_of(key: str) -> Callable[[dict], Any]:
         return lambda r: " = ".join(r["winners"].get(key) or [])
 
+    def tags_of(t: str) -> Callable[[dict], Any]:
+        return lambda r: "" if t not in r.get("tags", {}) else "|".join(r["tags"][t]) or "ok"
+
     def field_of(name: str) -> Callable[[dict], Any]:
         return lambda r: _blank(r["fields"].get(name))
 
@@ -723,6 +746,8 @@ def flat(
             if k == model["metric"]:
                 at = len(cols)
             cols.append((f"{t}: {k}", score_of(t, k)))
+        if t in model.get("tag_arms", []):
+            cols.append((f"{t}: failure modes", tags_of(t)))
         if len(cols) > first:
             anchors[t] = {"first": first, "metric": at}
     cols += [(c["header"], label_of(c["key"])) for c in model["label_cols"]]
@@ -814,9 +839,9 @@ def blind(
         raise ValueError(fill)
     n = len(model["arms"])
     if n > len(LETTERS):
-        die(f"--fill {fill}: at most {len(LETTERS)} arms")
+        die(f"--fill {fill}: at most {len(LETTERS)} arms", "bad-argument")
     if fill == "pick" and n < 2:
-        die("--fill pick needs two runs or more in --runs")
+        die("--fill pick needs two runs or more in --runs", "bad-argument")
     letters = list(LETTERS[:n])
     head = [
         "item_id",
@@ -875,12 +900,12 @@ def key_path(sheet: Path) -> Path:
 
 def read_key(path: Path) -> dict[str, Any]:
     """A sheet's key; refused when missing or not a key."""
-    if not path.is_file():
-        die(f"no key at {path}: `--fill` writes it beside the sheet (name another with --key)")
+    if not _store.is_file(path):
+        die(f"no key at {path}: `--fill` writes it beside the sheet (name another with --key)", "not-found")
     try:
         key = read_json(path)
     except ValueError:
-        die(f"{path}: not JSON")
+        die(f"{path}: not JSON", "invalid-file")
     if not isinstance(key, dict) or key.get("kind") != "sheet-key" or not key.get("rows"):
-        die(f"{path}: not a sheet key")
+        die(f"{path}: not a sheet key", "invalid-file")
     return key

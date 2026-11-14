@@ -3,7 +3,8 @@
 
     python examples/ner-few-nerd/fetch.py --n 280
 
-STDLIB ONLY, like the other fetchers: the HuggingFace datasets-server rows API over HTTPS.
+It reads the split through the harness's `huggingface` source (examples/_shared/hf_rows.py): the Hub's
+parquet conversion at one pinned commit, each file checked against the sha256 the Hub lists.
 
 WHY THE DRAW IS A PLAIN RANDOM SAMPLE AND NOT STRATIFIED
   The two classification fetchers stratify by class, because there an item HAS a class.
@@ -85,7 +86,7 @@ ROOT = Path(__file__).resolve().parents[2] / "harness"
 DATASET = "DFKI-SLT/few-nerd"
 CONFIG = "supervised"
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "_shared"))
-from hf_rows import DEFAULT_DELAY, Sources  # noqa: E402
+from hf_rows import Sources  # noqa: E402
 from hf_rows import page as _rows_page  # noqa: E402 - the one retry/pacing schedule
 
 SPLIT_ROWS = 37648  # `supervised` test split; re-checked at fetch time
@@ -94,8 +95,8 @@ SPLIT_ROWS = 37648  # `supervised` test split; re-checked at fetch time
 COARSE = ["O", "art", "building", "event", "location", "organization", "other", "person", "product"]
 
 
-def _get(offset: int, length: int, delay: float = DEFAULT_DELAY) -> list[dict]:
-    return _rows_page(DATASET, CONFIG, "test", offset, length, delay=delay)
+def _get(offset: int, length: int) -> list[dict]:
+    return _rows_page(DATASET, CONFIG, "test", offset, length)
 
 
 def entities(tokens: list, tags: list) -> list:
@@ -131,12 +132,6 @@ def main() -> int:
         "--seed", type=int, default=20260928, help="draw seed; same --n and --seed reproduce the same items"
     )
     ap.add_argument(
-        "--delay",
-        type=float,
-        default=DEFAULT_DELAY,
-        help=f"seconds between requests (default: {DEFAULT_DELAY})",
-    )
-    ap.add_argument(
         "--min-tokens",
         type=int,
         default=3,
@@ -164,7 +159,7 @@ def main() -> int:
     while len(rows) < args.n and cursor < len(permutation):
         off = permutation[cursor]
         cursor += 1
-        got = _get(off, 1, args.delay)
+        got = _get(off, 1)
         if not got:
             sys.exit(f"no row at offset {off} — the split is smaller than {SPLIT_ROWS}")
         row = got[0]
