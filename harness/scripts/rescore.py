@@ -67,6 +67,7 @@ from evaluation_harness._record import (
     run_level_scores,
     run_scorer,
 )
+from evaluation_harness.model import datasets as _datasets
 from evaluation_harness.model import runs as _model_runs
 
 #: Carried across from the original run rather than recomputed: these describe the CALL,
@@ -336,7 +337,7 @@ def label_for(scorer: str, reference_id: str | None) -> str:
     if reference_id and reference_id.startswith("silver/"):
         return "silver"
     if reference_id and reference_id.startswith(LABELS_PREFIX):
-        return "labels-" + reference_id.removeprefix(LABELS_PREFIX).replace("/", "-")
+        return _datasets.label_of(reference_id.removeprefix(LABELS_PREFIX))
     return f"rescored {scorer[:8]}"
 
 

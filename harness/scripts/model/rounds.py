@@ -13,9 +13,10 @@ import statistics
 from collections.abc import Sequence
 from typing import Any
 
-from evaluation_harness import _common, _rounds, _store
+from evaluation_harness import _common, _rounds
 from evaluation_harness import catalog_serve as cs
 from evaluation_harness._common import load_goals, read_json
+from evaluation_harness.model import datasets as model_datasets
 from evaluation_harness.model import runs as model_runs
 from evaluation_harness.stats import fmt_p
 
@@ -178,13 +179,14 @@ def _silver_authors(A, ds: str) -> list[tuple[str, str]]:
     """(reference id, arm) for each silver reference of this dataset whose author is a run here:
     the frontier arm whose outputs became the reference, read from its manifest."""
     out = []
-    root = _common.REFERENCES / "silver"
     known = set(A.arms())
-    for mf in sorted(_store.glob(root, "*/manifest.json")) if _store.is_dir(root) else []:
-        m = read_json(mf)
+    for rid in model_datasets.REFERENCE.ids(check_format=False):
+        if not rid.startswith("silver/"):
+            continue
+        m = read_json(model_datasets.reference_dir(rid) / "manifest.json")
         cid = _common.system_now((m.get("from_run") or {}).get("config_id") or m.get("authored_by"))
         if m.get("dataset_id") == ds and cid and _arm(A, ds, cid) in known:
-            out.append((f"silver/{mf.parent.name}", _arm(A, ds, cid)))
+            out.append((rid, _arm(A, ds, cid)))
     return out
 
 

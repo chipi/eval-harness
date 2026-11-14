@@ -57,6 +57,7 @@ from evaluation_harness._common import (
     EXIT_STOPPED,
     EXIT_TRY_LATER,
     GOALS,
+    LABELS_PREFIX,
     MATERIALIZED,
     REFERENCES,
     ROOT,
@@ -82,6 +83,7 @@ from evaluation_harness._record import (
     run_scorer,
 )
 from evaluation_harness._retry import call_with_retries, is_transient
+from evaluation_harness.model import datasets as _datasets
 from evaluation_harness.model import runs as _model_runs
 
 
@@ -1159,7 +1161,7 @@ def _run(args: argparse.Namespace) -> int:
     # A run scored against a label set is a run like any other; its score is read as an arm of its own, as a
     # re-score against one is (its label names the set).
     runs = _model_runs.root(args.scratch)
-    label_as = f"labels-{cfg['dataset_id']}-{ref_id.rsplit('/', 1)[1]}" if args.labels and ref_id else ""
+    label_as = _datasets.label_of(ref_id.removeprefix(LABELS_PREFIX)) if args.labels and ref_id else ""
     if args.of and not _model_runs.run(args.of):
         die(f"--of {args.of}: no run of that id in {runs}", "not-found")
     if args.purpose == "run" and args.of:

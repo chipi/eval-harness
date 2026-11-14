@@ -35,6 +35,8 @@ from evaluation_harness._visibility import hidden, public_profile
 
 #: The directories of data/ the catalog and the inspector read (tests/test_render_data.py checks it
 #: against catalog_adapter.py), copied besides data/runs.
+#: An exposure row's `what` on a hidden dataset, in the deployment's copy.
+HIDDEN_WHAT = "(not published: the dataset's text is hidden)"
 COPIED_DIRS = (
     "references",
     "datasets",
@@ -53,6 +55,7 @@ COPIED_DIRS = (
     "labels",
     "tags",
     "failure-modes",
+    "exposure",
 )
 #: The data's format (RFC-032): the deploy checks it; the systems a migration renamed: the catalog redirects them.
 COPIED_FILES: tuple[str, ...] = ("project.yaml", "renames.json")
@@ -328,6 +331,19 @@ def copy_data(src: Path, dst: Path) -> dict:
                     _store.write_text(out / "tags.json", json.dumps(doc, indent=1) + "\n", encoding="utf-8")
                 else:
                     _store.copy_file(rec, out / "tags.json")
+        elif name == "exposure":
+            # Which items were read and by whom; what a person wrote of a hidden dataset's item may be its text: kept
+            # as a mark (the register's rows name what was read).
+            _store.mkdir(dst / name, parents=True, exist_ok=True)
+            for f in sorted(_store.glob(d, "*.jsonl")):
+                if hidden(f.stem, datasets):
+                    rows = [
+                        json.loads(x) for x in _store.read_text(f, encoding="utf-8").splitlines() if x.strip()
+                    ]
+                    text = "".join(json.dumps({**r, "what": HIDDEN_WHAT}) + "\n" for r in rows)
+                    _store.write_text(dst / name / f.name, text, encoding="utf-8")
+                else:
+                    _store.copy_file(f, dst / name / f.name)
         elif name == "captures":
             for cap in sorted(_store.glob(d, "*/capture.json")):
                 _store.mkdir(dst / name / cap.parent.name, parents=True, exist_ok=True)

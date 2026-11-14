@@ -52,6 +52,9 @@ class Entity:
     finder: Callable[[], dict[str, Path]] | None = None
     #: The id's pattern, where it is wider than the default (a system id kept from a system id: `se_rougeL_n100_v1`).
     id_pattern: re.Pattern[str] = ID
+    #: False: its records are written by their own commands (a dataset by dataset-create, a reference by its
+    #: promotion), never by an edit; `save` refuses.
+    editable: bool = True
 
     def base(self) -> Path:
         """Where its records are: the goals' folder may be moved (EVAL_GOALS_DIR), the others are data/<folder>."""
@@ -76,15 +79,18 @@ class Entity:
         """The record's place as the settings code names it (its schema, its key order)."""
         return f"{self.folder}/{rid}{self.suffix}"
 
-    def ids(self) -> list[str]:
-        """Every record's id, sorted."""
-        _format.require()
+    def ids(self, check_format: bool = True) -> list[str]:
+        """Every record's id, sorted. `check_format=False`: the ids as the tree holds them, a tree of another format too
+        (the catalog reads a copy of a project's data as it is)."""
+        if check_format:
+            _format.require()
         base = self.base()
         pattern = f"*/*{self.suffix}" if self.parent_field else f"*{self.suffix}"
         out: list[str] = []
         for f in _store.glob(base, pattern) if _store.is_dir(base) else []:
-            stem = f.name[: -len(self.suffix)]
-            rid = f"{f.parent.name}/{stem}" if self.parent_field else stem
+            # The id is the file's place under the folder, less the suffix: `<id>.yaml`, `<model>/<id>.yaml`, a record
+            # that is a folder's file (`<id>/capture.json`, `<dataset>/<set>/labels.json`).
+            rid = f.relative_to(base).as_posix()[: -len(self.suffix)]
             if f.name not in self.skip and all(self.id_pattern.fullmatch(p) for p in rid.split("/")):
                 out.append(rid)
         if self.finder:
@@ -134,7 +140,7 @@ class Entity:
             return [{"path": [], "message": f"a {self.name} is a mapping of keys"}]
         parts = rid.split("/")
         out: list[dict[str, Any]] = []
-        if record.get(self.id_field) != parts[-1]:
+        if self.id_field and record.get(self.id_field) != parts[-1]:
             out.append(
                 {
                     "path": [self.id_field],
@@ -176,6 +182,8 @@ class Entity:
         from evaluation_harness import _jobs  # noqa: PLC0415
 
         _format.require()
+        if not self.editable:
+            raise Problem(f"a {self.name} is written by its own commands, not edited", "not-allowed")
         f = self.path(rid)
         try:
             with _jobs.holding([(f"{self.name}:{rid}", True)], f"{self.name}-save"):

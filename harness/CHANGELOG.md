@@ -75,6 +75,19 @@ that can move a result is never a patch release without saying so under **Change
   arms (CNN r1 87 to 29, AG r1 60 to 30, triage r3 80 to 53), AG r1's best on the goal page (an adjudicated copy
   scored against another reference before; the round's own arm now), triage r4's "vs r3's best" (another dataset:
   no comparison), and which arm pages list a round (the arms the round stores, under their label).
+- **Datasets and what belongs to them in the model** (RFC-032 step 6): datasets, fieldsets, failure-mode lists, label
+  sets, tag sets, references and captures are entities of `model/datasets`, with one table of where each part of a
+  dataset is (nothing moved). New: `evh dataset-list`/`dataset-show` (its parts, lineage, label sets, references),
+  `fieldset-*` and `failure-modes-*` (list, show, new, set: checked, comments kept), `label-set-list`/`-show`,
+  `tag-set-list`/`-show`, `reference-list`/`-show`, `capture-list`/`-show`, and their resources under `/api/v1`.
+  Fixed: `dataset-materialize` read a dataset's items against the directory it ran in (from a subfolder every item
+  was missing) and cleared the old copy before reading, so a failed run deleted it or left an empty copy the next
+  run took as done: it now builds the copy and then replaces the old one. `dataset-create --source-dir` outside the
+  project recorded the folder's bare name, which nothing could read: it copies the items into `data/sources/<id>/`.
+  A goal's status missed a reference promoted under another name (`gold/ag_news_200_adj1`). The deployment's copy
+  of the data left out the exposure registers, so a deployed catalog scored items a sealed side's readers saw.
+  Validate checks label sets, tag sets, picks and exposure rows against new schemas, and a dataset's capture link.
+  `orrery_triage_v1_labelled_v2` records its parent, `orrery_triage_v1_labelled` (version 2.0).
 - **Models and deployments, apart** (RFC-032 step 2): a model's deployments are records of their own,
   `data/deployments/<model>/<deployment>.yaml`, each with its checks as dated history: every onboarding, every arm
   smoke and every acceptance is kept, with who made it; the views read the latest of each, so `evh models`, the

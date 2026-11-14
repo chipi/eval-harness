@@ -17,7 +17,7 @@ import os
 from pathlib import Path
 
 from evaluation_harness import _store
-from evaluation_harness._common import DATASETS
+from evaluation_harness.model.datasets import record_file
 
 _CACHE: dict[str, tuple[float, bool]] = {}
 
@@ -27,7 +27,7 @@ def hidden(dataset_id: str | None, datasets_dir: Path | None = None) -> bool:
     is not hidden (nothing of its text is here to show)."""
     if not dataset_id:
         return False
-    f = (datasets_dir or DATASETS) / f"{dataset_id}.json"
+    f = datasets_dir / f"{dataset_id}.json" if datasets_dir else record_file(dataset_id)
     try:
         mtime = _store.stat(f).st_mtime
     except OSError:

@@ -6,7 +6,16 @@ from __future__ import annotations
 from typing import Any
 
 from evaluation_harness import _common, _store
-from evaluation_harness.model.entity import Entity
+from evaluation_harness.model import datasets as _datasets
+from evaluation_harness.model.entity import Entity, Problem
+
+
+def _reference_there(ref: str) -> bool:
+    """Whether the reference `<tier>/<name>` has its folder."""
+    try:
+        return _store.is_dir(_datasets.reference_dir(ref))
+    except Problem:  # not a reference id
+        return False
 
 
 def _links(record: dict[str, Any]) -> list[dict[str, Any]]:
@@ -20,7 +29,7 @@ def _links(record: dict[str, Any]) -> list[dict[str, Any]]:
             )
     for i, r in enumerate(record.get("references") or []):
         ref = r.get("reference_id") if isinstance(r, dict) else None
-        if ref and ("/" not in ref or not _store.is_dir(_common.REFERENCES / ref)):
+        if ref and not _reference_there(ref):
             out.append(
                 {
                     "path": ["references", i, "reference_id"],
@@ -66,6 +75,8 @@ def status(goal_id: str) -> dict[str, Any]:
         keys.add(f"dataset:{ds}")
         runs = _runs.runs_on(ds)
         base = _baselines.current(goal_id, ds)
+        # by the dataset a manifest names: `gold/ag_news_200_adj1`, promoted under another name, is ag_news_200's
+        on = _datasets.references_of(ds)
         datasets.append(
             {
                 "dataset": ds,
@@ -73,14 +84,7 @@ def status(goal_id: str) -> dict[str, Any]:
                 "decides": d.get("decides", True) is not False,
                 "made": _store.is_file(_common.DATASETS / f"{ds}.json"),
                 "materialized": _store.is_dir(_common.MATERIALIZED / ds),
-                "references": sorted(
-                    {r for r in refs if r and r.endswith(f"/{ds}") and _store.is_dir(_common.REFERENCES / r)}
-                    | {
-                        f"{tier}/{ds}"
-                        for tier in ("gold", "silver")
-                        if _store.is_dir(_common.REFERENCES / tier / ds)
-                    }
-                ),
+                "references": sorted(r for r in on if r in refs or r in (f"gold/{ds}", f"silver/{ds}")),
                 "runs": len(runs),
                 "arms": len({m["config_id"] for _, m in runs}),
                 "baseline": {"version": base.get("version"), "run": base.get("promoted_from")}

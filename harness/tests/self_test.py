@@ -1001,6 +1001,30 @@ def test_example_scorer_suites_pass() -> None:
             "rounds store their arms: format 4's rounds migrated, each arm's label, runs, entry and retirement, a baseline's round, refusals",
         ),
         (
+            "test_model_datasets.py",
+            "datasets and what belongs to them in the model: ids by their place, a dataset's references by its manifest, its item folder from any directory, the label rule, checked links",
+        ),
+        (
+            "test_model_datasets_ops.py",
+            "datasets and what hangs on them through both surfaces: lists and shows with parts and lineage, fieldsets and failure-mode lists made and changed, refusals, the API equal to the command line",
+        ),
+        (
+            "test_dataset_source.py",
+            "where a dataset's item files are (one reader), a failed materialize leaves what was there, an outside folder is copied into data/sources",
+        ),
+        (
+            "test_goal_references.py",
+            "a goal's status lists a dataset's references by the dataset their manifest names",
+        ),
+        (
+            "test_release_exposure.py",
+            "the deployment's data copy carries a sealed side's exposure register, a hidden dataset's notes not published",
+        ),
+        (
+            "test_validate_records.py",
+            "validate: V2 capture link, V19/V21 schemas, V22 exposure and pick-list schemas, each bad record named",
+        ),
+        (
             "test_format.py",
             "the data's format: init stamps it, migrate --check refuses old and newer, steps stamp it, a SQLite backup, the deploy's gate, 0.7.2's frozen project keeps its numbers",
         ),

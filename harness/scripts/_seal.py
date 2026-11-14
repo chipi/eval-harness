@@ -29,11 +29,11 @@ def items_digest(items: list[dict[str, Any]]) -> str:
 
 def record_of(dataset_id: str | None) -> dict[str, Any]:
     """A dataset's record, {} when there is none (a missing dataset is another command's refusal)."""
-    from evaluation_harness._common import _paths  # noqa: PLC0415
+    from evaluation_harness.model.datasets import record_file  # noqa: PLC0415
 
     if not dataset_id:
         return {}
-    path = _paths()["DATASETS"] / f"{dataset_id}.json"
+    path = record_file(dataset_id)
     if not _store.is_file(path):
         return {}
     try:

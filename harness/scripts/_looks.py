@@ -20,6 +20,7 @@ import os
 from typing import Any
 
 from evaluation_harness import _common, _store
+from evaluation_harness.model.datasets import record_file
 
 ALPHA = 0.025
 LIMIT = 10
@@ -30,12 +31,8 @@ def level(k: int) -> float:
     return ALPHA * 6 / (math.pi**2 * k * k)
 
 
-def _datasets_dir():
-    return _common._paths()["DATASETS"]
-
-
 def _record(dataset_id: str) -> dict[str, Any]:
-    p = _datasets_dir() / f"{dataset_id}.json"
+    p = record_file(dataset_id)
     if not _store.is_file(p):
         return {}
     try:

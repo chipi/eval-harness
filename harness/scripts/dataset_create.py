@@ -76,6 +76,39 @@ def _relative_source_dir(source_dir: Path) -> str:
         return source_dir.name
 
 
+def _recorded_source_dir(source_dir: Path, dataset_id: str, rels: list[str]) -> str:
+    """The `source_dir` a dataset records: the folder, relative to the project, when it lies inside it. A folder outside
+    it has the item files `rels` copied into data/sources/<id>/, byte for byte, and that is recorded: a bare folder
+    name read nothing anywhere else, so the dataset could not be materialized. Refused, before anything is written,
+    when data/sources/<id>/ already holds other content."""
+    try:
+        source_dir.resolve().relative_to(ROOT)
+        return _relative_source_dir(source_dir)
+    except ValueError:
+        pass
+    if not rels:
+        return ""
+    dest = SOURCES / dataset_id
+    have = {p.relative_to(dest).as_posix() for p in _store.rglob(dest, "*") if _store.is_file(p)}
+    if have and (
+        have != set(rels)
+        or any(_store.read_bytes(dest / r) != _store.read_bytes(source_dir / r) for r in rels)
+    ):
+        die(
+            f"{dest} already holds other content than the {len(rels)} item file(s) of {source_dir}: items copied "
+            "from a folder outside the project go there. Move it, or name the dataset differently.",
+            "would-overwrite",
+        )
+    for r in rels:
+        _store.mkdir((dest / r).parent, parents=True, exist_ok=True)
+        _store.write_bytes(dest / r, _store.read_bytes(source_dir / r))
+    where = dest.relative_to(ROOT).as_posix()
+    print(
+        f"  copied {len(rels)} item file(s) from {source_dir.resolve()} to {where}/ (the dataset reads them there)"
+    )
+    return where
+
+
 def _identity(items: list) -> list:
     """What freezes a dataset: each item's id, bytes and where they come from. Not its fields."""
     keys = ("item_id", "source_path", "source_url", "source_sha256")
@@ -608,7 +641,13 @@ def main() -> int:
                 previous,
                 fieldset,
                 desc,
-                _relative_source_dir(args.source_dir) if _store.is_dir(args.source_dir) else "",
+                _recorded_source_dir(
+                    args.source_dir,
+                    args.dataset_id,
+                    [it["source_path"] for it in items if not it.get("source_url")],
+                )
+                if _store.is_dir(args.source_dir)
+                else "",
                 lineage,
                 licence=licence,
             )
@@ -671,12 +710,12 @@ def main() -> int:
             previous,
             fieldset,
             args.description or f"{len(items)} item(s) from {args.source_dir.name}/",
-            # Relative to the harness root when it sits inside it. `as_posix()` on the
-            # resolved arg wrote an ABSOLUTE path into a committed file — every dataset in
-            # this repo carries "/Users/<name>/projects/..." today. That leaks whoever ran
-            # it into a public repo, and makes the file describe a machine rather than a
-            # selection. The item hashes are what freeze a dataset; this field is a label.
-            _relative_source_dir(args.source_dir),
+            # Relative to the project when it sits inside it, else the folder's items copied into data/sources/<id>.
+            # Never an absolute path: that wrote "/Users/<name>/projects/..." into every committed dataset, a
+            # machine's name in a public repo.
+            _recorded_source_dir(
+                args.source_dir, args.dataset_id, [p.relative_to(args.source_dir).as_posix() for p in files]
+            ),
             lineage,
             licence=licence,
         )

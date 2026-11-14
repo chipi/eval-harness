@@ -39,13 +39,13 @@ from evaluation_harness import _importers, _jsonout, _store
 from evaluation_harness._common import (
     CAPTURES,
     DATASETS,
-    ROOT,
     dataset_id_ok,
     die,
     evh_prog,
     read_json,
     write_json,
 )
+from evaluation_harness.model import datasets as _datasets
 
 
 def overrides(pairs: list[str]) -> dict:
@@ -96,7 +96,7 @@ def dataset_files(capture_id: str, recs: dict) -> tuple[list[tuple[Path, bytes]]
             continue
         if not isinstance(doc, dict) or (doc.get("made_from") or {}).get("capture") != capture_id:
             continue
-        src = ROOT / doc["source_dir"]
+        src = _datasets.source_dir(doc)
         here = other = 0
         for it in doc.get("items") or []:
             rec = recs.get(it["item_id"])

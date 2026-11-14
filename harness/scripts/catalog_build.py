@@ -54,7 +54,14 @@ from evaluation_harness.axes import (  # noqa: E402
     strategy_of,
     tie_break_of,
 )
-from evaluation_harness.catalog_adapter import Adapter, item_fields, load_catalog_adapter, scores_once  # noqa: E402
+from evaluation_harness.catalog_adapter import (  # noqa: E402
+    Adapter,
+    dataset_record_file,
+    item_fields,
+    load_catalog_adapter,
+    scores_once,
+)
+from evaluation_harness.model.datasets import source_dir  # noqa: E402
 from evaluation_harness.stats import fmt_p  # noqa: E402
 
 #: The front-end files every page loads: installed beside the package, or in a checkout.
@@ -2285,7 +2292,7 @@ def render_added(A: Adapter, ds: str) -> str:
     sha = {}
     got = getattr(A, "data_dir", None)
     if got is not None:
-        doc = json.loads(_store.read_text(Path(got) / "datasets" / f"{ds}.json", encoding="utf-8"))
+        doc = json.loads(_store.read_text(dataset_record_file(Path(got), ds), encoding="utf-8"))
         sha = {it["item_id"]: it.get("source_sha256") for it in doc.get("items") or []}
     rows = [
         {
@@ -2484,7 +2491,7 @@ def _texts_tracked(ds: str) -> bool:
         d = _common.load_dataset(ds)
     except SystemExit:
         return False
-    src = ROOT / d.get("source_dir", "data/sources")
+    src = source_dir(d)
     if _common.store() == "sqlite":  # RFC-025: the database is the record, as git is for files
         return all(
             _store.is_file(src / (it.get("source_path") or it["item_id"])) for it in d.get("items") or []

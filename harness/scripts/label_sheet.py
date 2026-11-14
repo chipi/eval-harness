@@ -35,6 +35,7 @@ from evaluation_harness._common import die, evh_prog, item_path, load_dataset
 from evaluation_harness._label_sets import labels_for, sets, text_of
 from evaluation_harness._runs import runs_on
 from evaluation_harness._sheets import ALSO, NOTE, label_header, write_csv
+from evaluation_harness.model import datasets as _datasets
 from evaluation_harness.model import runs as _model_runs
 
 VIEW = 160
@@ -56,7 +57,7 @@ def run_dir(name: str, dataset_id: str, label: str = "") -> Path:
     # In the order they are looked up: the label asked for, then (for the plain one) the label sets' own.
     own = [(d, m) for d, m in scores if _model_runs.label(d, m) == label]
     sets_ = (
-        [(d, m) for d, m in scores if _model_runs.label(d, m).startswith(f"labels-{dataset_id}-")]
+        [(d, m) for d, m in scores if _datasets.is_label_of(_model_runs.label(d, m), dataset_id)]
         if not label
         else []
     )

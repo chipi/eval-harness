@@ -400,3 +400,23 @@ Quoted from the discussion, typing slips corrected.
   - a baseline version names the round and arm that promoted it; the seven an r1 promoted get the link from the
     round's `conclusion.promoted_run` (their `evidence` stays null); rounds get their operations (`round-list`,
     `round-show`, open, close, retire, carry) and the API's resources under `/goals/{id}/rounds`.
+- **Step 6, datasets and what belongs to them** (after an inventory: 19 datasets, 2 fieldsets, 7 label sets, 21
+  references, 3 captures, no picks, exposure, tag sets or sealed sides in this repository; about 47 modules
+  building these paths themselves), each recommendation checked against the code first ("take all new
+  recommendations"; five of the first fifteen were dropped as solving no problem the code has):
+  - entities in `model/datasets`: dataset (its JSON record, written by its own commands), fieldset and failure-mode
+    list (settings, edited), label set and tag set (`<dataset>/<set>`, never edited), reference (`<tier>/<name>`),
+    capture; one layout table names where each part is, nothing is moved;
+  - a dataset's `source_dir` stays as recorded and is resolved in one place (`materialize` read it against the
+    directory it ran in: from a subfolder every item was missing); `materialize` builds the new copy before it
+    replaces the old one; `dataset-create --source-dir` outside the project copies the items into
+    `data/sources/<id>/` ("1": a dataset is pinned bytes, and its record never names a host's path);
+  - the profile stays a stored part (it needs texts git does not hold); its gold-only references are by design;
+  - lineage keeps `derived_from` as the one parent link; `orrery_triage_v1_labelled_v2` records it ("same dataset,
+    just 2 versions"), with the command that exists for it (`dataset-create --lineage-only`);
+  - goal status finds a dataset's references by the dataset their manifest names (`gold/ag_news_200_adj1` was
+    missed); a label set's score label is built and read by one function;
+  - the deployment copies exposure (a deployed catalog would score items a sealed side's readers saw); label sets,
+    tag sets, picks and exposure rows get schemas and validate checks; a dataset's capture is a checked link;
+  - kept as they are: the seal's own items digest, unseal entries' `config_id` key (step 3 rewrote their values),
+    the ids references and label sets were made under (B); no format step: nothing stored changes shape.

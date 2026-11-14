@@ -62,7 +62,9 @@ from evaluation_harness._fingerprint import items_digest  # noqa: E402
 from evaluation_harness._label_sets import compare, label_line  # noqa: E402
 from evaluation_harness._record import derived_with  # noqa: E402
 from evaluation_harness._runs import item_rows, lower_is_better_on, read_metrics, score_of  # noqa: E402
+from evaluation_harness.model import datasets as model_datasets  # noqa: E402
 from evaluation_harness.model import runs as model_runs  # noqa: E402
+from evaluation_harness.model.entity import Problem  # noqa: E402
 
 
 def _memo(fn):
@@ -350,7 +352,17 @@ def _tokens(tin, tout) -> int | None:
     return int(sum(x for x in vals if x is not None)) if any(x is not None for x in vals) else None
 
 
-def _json(p: Path):
+def dataset_record_file(data_dir: Path, dataset: str) -> Path:
+    """A dataset's record under `data_dir`: where model/datasets puts it when that is the project's data, else under
+    `data_dir` (another project's data, as the release's copy)."""
+    if Path(data_dir) == _common.DATA:
+        return model_datasets.record_file(dataset)
+    return Path(data_dir) / "datasets" / f"{dataset}.json"
+
+
+def _json(p: Path | None):
+    if p is None:
+        return None
     try:
         return json.loads(_store.read_text(p, encoding="utf-8"))
     except (OSError, ValueError):
@@ -404,6 +416,66 @@ class HarnessAdapter:
         # Where the runs are read from: the data directory's runs, or another directory of runs beside the project's
         # references and goals (evh score-preview reads re-scores it made in a temporary directory, RFC-022).
         self.runs_root = Path(runs_root) if runs_root else self.data_dir / "runs"
+
+    @property
+    def _own(self) -> bool:
+        """Whether this reads the project's own data, whose dataset-family files are where model/datasets puts them;
+        another data directory (the release's copy of it) is read where it is."""
+        return self.data_dir == _common.DATA
+
+    def _dataset_file(self, dataset: str) -> Path:
+        return dataset_record_file(self.data_dir, dataset)
+
+    def _labels_file(self, set_id: str) -> Path | None:
+        """A label set's labels.json, None for an id that names none (a run's reference id is read as it was written)."""
+        if not self._own:
+            return self.data_dir / "labels" / set_id / "labels.json"
+        try:
+            return model_datasets.label_set_dir(set_id) / "labels.json"
+        except Problem:
+            return None
+
+    def _label_files(self) -> list[Path]:
+        """Every label set's labels.json, sorted by set."""
+        if self._own:
+            return sorted(
+                model_datasets.label_set_dir(i) / "labels.json"
+                for i in model_datasets.LABEL_SET.ids(check_format=False)
+            )
+        return sorted(_store.glob(self.data_dir / "labels", "*/*/labels.json"))
+
+    def _tag_files(self, dataset: str) -> list[Path]:
+        """The dataset's tag sets' tags.json, sorted by set."""
+        if self._own:
+            return [
+                model_datasets.TAG_SET.path(i)
+                for i in model_datasets.TAG_SET.ids(check_format=False)
+                if i.split("/", 1)[0] == dataset
+            ]
+        return sorted(_store.glob(self.data_dir / "tags" / dataset, "*/tags.json"))
+
+    def _reference_dirs(self) -> list[tuple[str, Path]]:
+        """(tier, folder) of every reference of the two tiers, gold first, each sorted by name."""
+        if self._own:
+            tiers = (
+                i
+                for i in model_datasets.REFERENCE.ids(check_format=False)
+                if i.split("/", 1)[0] in ("gold", "silver")
+            )
+            return [(i.split("/", 1)[0], model_datasets.reference_dir(i)) for i in tiers]
+        return [
+            (tier, d)
+            for tier in ("gold", "silver")
+            for d in sorted(_store.glob(self.data_dir / "references" / tier, "*"))
+        ]
+
+    def _capture_ids(self) -> tuple[Path, list[str]]:
+        """The captures' folder and the captures in it."""
+        if self._own:
+            return model_datasets.CAPTURE.base(), model_datasets.CAPTURE.ids(check_format=False)
+        base = self.data_dir / "captures"
+        found = _store.glob(base, "*/capture.json") if _store.is_dir(base) else []
+        return base, sorted(p.parent.name for p in found)
 
     # -- arms ---------------------------------------------------------------------------
     @_memo
@@ -532,10 +604,9 @@ class HarnessAdapter:
         ref = ((m.get("fingerprint") or {}).get("data") or {}).get("reference_id", "")
         if (ref or "").startswith(_common.LABELS_PREFIX):
             # A label set a model's run made (RFC-023): its arm scored against it is graded against its own outputs.
-            src = (
-                _json(self.data_dir / "labels" / ref.removeprefix(_common.LABELS_PREFIX) / "labels.json")
-                or {}
-            ).get("source") or {}
+            src = (_json(self._labels_file(ref.removeprefix(_common.LABELS_PREFIX))) or {}).get(
+                "source"
+            ) or {}
             author = src.get("config_id") if src.get("kind") == "model" else None
             labels_source = str(src.get("kind") or "")
         else:
@@ -718,35 +789,34 @@ class HarnessAdapter:
         from_run, model, created_at, items, caveat, and "fetched" (its texts are not here: a
         reference the project does not redistribute, listed from its manifest)."""
         out = []
-        for tier in ("gold", "silver"):
-            for d in sorted(_store.glob(self.data_dir / "references" / tier, "*")):
-                texts = _store.is_dir(d) and any(_store.glob(d, "*.txt"))
-                if _store.is_dir(d) and (texts or _store.is_file(d / "manifest.json")):
-                    mf = _json(d / "manifest.json") or {}
-                    out.append(
-                        {
-                            "id": f"{tier}/{d.name}",
-                            "tier": tier,
-                            # The manifest names the dataset; the directory names the reference
-                            # (a second gold for one dataset has a name of its own).
-                            "dataset": mf.get("dataset_id") or d.name,
-                            "task": "",
-                            "archived": False,
-                            "format": "",
-                            "dir": d,
-                            "items": len(list(_store.glob(d, "*.txt"))) if texts else mf.get("n_items"),
-                            "fetched": not texts,
-                            "source": mf.get("source"),
-                            "author": _common.system_now(mf.get("authored_by")),
-                            "from_run": (mf.get("from_run") or {}).get("run_id"),
-                            "model": mf.get("model"),
-                            "created_at": mf.get("created_at"),
-                            "caveat": mf.get("caveat"),
-                            "promoted_from": _promoted_from_now(mf.get("promoted_from")),
-                            "reason": mf.get("reason"),
-                            "promoted_by": mf.get("promoted_by"),
-                        }
-                    )
+        for tier, d in self._reference_dirs():
+            texts = _store.is_dir(d) and any(_store.glob(d, "*.txt"))
+            if _store.is_dir(d) and (texts or _store.is_file(d / "manifest.json")):
+                mf = _json(d / "manifest.json") or {}
+                out.append(
+                    {
+                        "id": f"{tier}/{d.name}",
+                        "tier": tier,
+                        # The manifest names the dataset; the directory names the reference
+                        # (a second gold for one dataset has a name of its own).
+                        "dataset": mf.get("dataset_id") or d.name,
+                        "task": "",
+                        "archived": False,
+                        "format": "",
+                        "dir": d,
+                        "items": len(list(_store.glob(d, "*.txt"))) if texts else mf.get("n_items"),
+                        "fetched": not texts,
+                        "source": mf.get("source"),
+                        "author": _common.system_now(mf.get("authored_by")),
+                        "from_run": (mf.get("from_run") or {}).get("run_id"),
+                        "model": mf.get("model"),
+                        "created_at": mf.get("created_at"),
+                        "caveat": mf.get("caveat"),
+                        "promoted_from": _promoted_from_now(mf.get("promoted_from")),
+                        "reason": mf.get("reason"),
+                        "promoted_by": mf.get("promoted_by"),
+                    }
+                )
         return out
 
     def deploy_sheet(self, arm: str) -> dict | None:
@@ -768,11 +838,11 @@ class HarnessAdapter:
         if not sh.get("promoted"):
             return None
         checks = []
-        caps = self.data_dir / "captures"
+        caps, capture_ids = self._capture_ids()
         if callable(getattr(adapter_module(sh["_adapter_spec"]), "production_ran", None)):
-            for c in sorted(_store.glob(caps, "*/capture.json")) if _store.is_dir(caps) else []:
+            for cap in capture_ids:
                 try:
-                    got = dsh.check(sh, c.parent.name, caps)
+                    got = dsh.check(sh, cap, caps)
                 except SystemExit:  # a record changed since it was captured: that capture says nothing here
                     continue
                 if any(k["match"] or k["differ"] for k in got["keys"].values()):
@@ -790,7 +860,7 @@ class HarnessAdapter:
         runs = {self._run_id(d) for d in self._dirs(arm)}
         outputs = tagged = 0
         modes: Counter = Counter()
-        for tf in sorted(_store.glob(self.data_dir / "tags" / dataset, "*/tags.json")):
+        for tf in self._tag_files(dataset):
             doc = _json(tf)
             for run, by_item in ((doc or {}).get("runs") or {}).items() if isinstance(doc, dict) else []:
                 if run not in runs:
@@ -805,7 +875,7 @@ class HarnessAdapter:
         """Every label set (RFC-023): {dataset, set, id ("<dataset>/<set>"), source, n_items, guideline, created_at,
         items {item: {"item_sha256"}}}, from data/labels/<dataset>/<set>/labels.json; [] when there are none."""
         out = []
-        for lf in sorted(_store.glob(self.data_dir / "labels", "*/*/labels.json")):
+        for lf in self._label_files():
             doc = _json(lf)
             if isinstance(doc, dict):
                 out.append(
@@ -827,7 +897,7 @@ class HarnessAdapter:
         """{"sets": [{set..., "covers": [item ids]}], "agreement": [{"a", "b", **_label_sets.compare(...)}]}: the label
         sets covering this dataset's items, matched by the item's sha256 (labels follow the item), and how two compare
         on the items both label (where the label texts are here; a release keeps only labels.json)."""
-        ds = _json(self.data_dir / "datasets" / f"{dataset}.json") or {}
+        ds = _json(self._dataset_file(dataset)) or {}
         by_sha: dict = {}
         sha_of: dict = {}
         for it in ds.get("items") or [] if isinstance(ds, dict) else []:
@@ -881,7 +951,7 @@ class HarnessAdapter:
     def item_labels(self, dataset: str, item: str) -> list[dict]:
         """Every label one item has (RFC-023): {set ("<dataset>/<set>"), kind, by, text} from each set holding an item
         with its bytes (labels follow the item); the text only where it is here (a release keeps labels.json only)."""
-        ds = _json(self.data_dir / "datasets" / f"{dataset}.json") or {}
+        ds = _json(self._dataset_file(dataset)) or {}
         sha = (
             next(
                 (it.get("source_sha256") for it in (ds.get("items") or []) if it.get("item_id") == item), None
@@ -911,7 +981,7 @@ class HarnessAdapter:
     def picks_waiting(self, dataset: str) -> list[dict]:
         """The picks waiting for this dataset (data/picks.jsonl, ADR-0023): the items whose latest line is a pick
         naming it as a target. A release does not carry the pick list, so a published catalog shows none."""
-        f = self.data_dir / "picks.jsonl"
+        f = model_datasets.picks_file() if self._own else self.data_dir / "picks.jsonl"
         latest: dict = {}
         for line in _store.read_text(f, encoding="utf-8").splitlines() if _store.is_file(f) else []:
             try:
@@ -994,15 +1064,22 @@ class HarnessAdapter:
             return {"kind": "text", "text": _store.read_text(f, encoding="utf-8", errors="replace")}
         return {"kind": "none"}
 
+    def _materialized(self, dataset: str) -> Path:
+        return (
+            model_datasets.materialized_dir(dataset)
+            if self._own
+            else self.data_dir / "materialized" / dataset
+        )
+
     def item_text(self, dataset: str, item: str) -> dict:
         """The item every arm read, from the dataset's materialized copy (the local inspector
         only shows it)."""
-        ds = _json(self.data_dir / "datasets" / f"{dataset}.json") or {}
+        ds = _json(self._dataset_file(dataset)) or {}
         rel = next(
             (it.get("source_path") or it["item_id"] for it in ds.get("items") or [] if it["item_id"] == item),
             None,
         )
-        f = self.data_dir / "materialized" / dataset / rel if rel else None
+        f = self._materialized(dataset) / rel if rel else None
         if f and _store.is_file(f):
             return {"kind": "text", "text": _store.read_text(f, encoding="utf-8", errors="replace")}
         return {
@@ -1018,7 +1095,7 @@ class HarnessAdapter:
 
     def dataset_items(self, dataset: str) -> int | None:
         """Return how many items a dataset has, or None if not recorded."""
-        ds = _json(self.data_dir / "datasets" / f"{dataset}.json")
+        ds = _json(self._dataset_file(dataset))
         return len(ds.get("items") or []) if isinstance(ds, dict) else None
 
     @_memo
@@ -1133,17 +1210,19 @@ class HarnessAdapter:
 
     def datasets(self) -> list[str]:
         """Every frozen dataset, run or not: a new version has a page before its first run."""
+        if self._own:
+            return model_datasets.DATASET.ids(check_format=False)
         return sorted(p.stem for p in _store.glob(self.data_dir / "datasets", "*.json"))
 
     def dataset_lineage(self, dataset: str) -> dict | None:
         """The version this dataset was made from (`derived_from`), or None."""
-        ds = _json(self.data_dir / "datasets" / f"{dataset}.json")
+        ds = _json(self._dataset_file(dataset))
         got = ds.get("derived_from") if isinstance(ds, dict) else None
         return got if isinstance(got, dict) and got.get("dataset_id") else None
 
     def dataset_created(self, dataset: str) -> str:
         """When the dataset was frozen (`created_at`), or "" when its file does not say."""
-        ds = _json(self.data_dir / "datasets" / f"{dataset}.json")
+        ds = _json(self._dataset_file(dataset))
         got = ds.get("created_at") if isinstance(ds, dict) else None
         return got if isinstance(got, str) else ""
 
@@ -1151,7 +1230,7 @@ class HarnessAdapter:
         """The dataset's `tags`, and its origin in a few words: a capture it was made from (with the
         selection; `capture` names it, for the link to it), or the version it was derived from; {} when its file
         says neither."""
-        got = _json(self.data_dir / "datasets" / f"{dataset}.json")
+        got = _json(self._dataset_file(dataset))
         if not isinstance(got, dict):
             return {}
         ds: dict = got
@@ -1177,10 +1256,14 @@ class HarnessAdapter:
     def dataset_profile(self, dataset: str) -> dict | None:
         """data/profiles/<dataset>.json (`evh dataset-profile`), with "stale": True when the dataset's
         items no longer match the version it was computed on; None without one."""
-        p = _json(self.data_dir / "profiles" / f"{dataset}.json")
+        p = _json(
+            model_datasets.profile_file(dataset)
+            if self._own
+            else self.data_dir / "profiles" / f"{dataset}.json"
+        )
         if not isinstance(p, dict) or not p.get("rows"):
             return None
-        ds = _json(self.data_dir / "datasets" / f"{dataset}.json")
+        ds = _json(self._dataset_file(dataset))
         now = items_digest(ds) if isinstance(ds, dict) else None
         return dict(p, stale=bool(now and p.get("items_sha256") and now != p["items_sha256"]))
 
@@ -1293,9 +1376,13 @@ class HarnessAdapter:
     @_memo
     def item_fields(self, dataset: str) -> dict:
         """Return a dataset's declared fields and items' values."""
-        ds = _json(self.data_dir / "datasets" / f"{dataset}.json") or {}
+        ds = _json(self._dataset_file(dataset)) or {}
         fid = ds.get("fieldset")
-        fs = load_fieldset(fid, self.data_dir / "fields") if fid else None
+        fs = (
+            load_fieldset(fid, model_datasets.FIELDSET.base() if self._own else self.data_dir / "fields")
+            if fid
+            else None
+        )
         # A field set that breaks its schema drives no page; validate (V15) names what is wrong.
         return {
             "fieldset": fs if fs and not fieldset_problems(str(fid), fs) else None,

@@ -5,7 +5,8 @@ Each check exists because its absence let a real defect through somewhere:
 
   V1  schemas        a document that violates its own contract
   V2  dataset_id     a run citing a dataset that does not exist — the number
-                     cannot be attributed to any data
+                     cannot be attributed to any data; a dataset made from a capture or a version that
+                     does not exist
   V3  provenance     a run with no build ref — the number cannot be attributed
                      to any code
   V4  materialized   a dataset whose materialized copy drifted from its hashes
@@ -39,22 +40,25 @@ Each check exists because its absence let a real defect through somewhere:
                      ids and sha256 it recorded (RFC-019)
   V18 model records  a model record not named by its id, an alias claimed twice, a deployment id used
                      twice, or a system naming a record or deployment that does not exist (RFC-020)
-  V19 label sets     a label set whose labels differ from the sha256 it recorded, whose label files are
-                     missing, whose dataset does not exist, or whose count is not its labels' (RFC-023)
+  V19 label sets     a label set that breaks its schema, whose labels differ from the sha256 it recorded,
+                     whose label files are missing, whose dataset does not exist, or whose count is not its
+                     labels' (RFC-023)
   V20 hypotheses     a system whose `hypothesis:` names no system that exists, a measure that is not one
                      of the arm's metrics, a direction that is not better, worse or no-worse, or a key
                      it lacks (ADR-0025)
   V21 failure modes  a failure-mode list that breaks its schema, is not named by its id or names a mode
-                     twice (or `ok`, which a sheet reads as "nothing wrong"); a tag set whose dataset or
-                     list does not exist, that names a mode not in its list or an item not in its
-                     dataset, or whose count is not its tags' (PLAN_0.8.0 D1)
+                     twice (or `ok`, which a sheet reads as "nothing wrong"); a tag set that breaks its
+                     schema, whose dataset or list does not exist, that names a mode not in its list or an
+                     item not in its dataset, or whose count is not its tags' (PLAN_0.8.0 D1)
   V22 dataset records a dataset whose stored version is not the one its lineage gives (MAJOR.MINOR:
                      1.0 from nothing or a split, MINOR + 1 for added items, MAJOR + 1 for removed or
                      changed ones), a split side naming a parent version that is not its parent's, or
                      a licence not on evh licences' list (E2), a source block with a key or value
                      outside its form, item rows without an item_url to fill (E1), or a card key
                      that is not one of Croissant RAI's (E4); a sealed side whose open side changed
-                     since it was sealed, or a run on it no unseal named (the fleet's feedback 29)
+                     since it was sealed, or a run on it no unseal named (the fleet's feedback 29); an
+                     exposure register that breaks its row schema or is of a dataset that is not a sealed
+                     side (RFC-031); a line of the pick list that breaks its schema (RFC-023)
                      (PLAN_0.8.0 E3; `evh migrate` brings old records to the format)
   V23 run outputs    a run still in the old layout (an outputs/ folder, or a data/runs-* folder: `evh migrate`),
                      or a score derived from outputs its run does not have (RFC-024); a project in both stores
@@ -273,7 +277,10 @@ def v1_schemas() -> None:
 
 def v2_dataset_ids() -> None:
     """V2: every run's dataset_id resolves to an existing dataset, and so does every dataset's
-    `derived_from` (the version it was made from)."""
+    `derived_from` (the version it was made from) and `made_from.capture` (the capture it was made from)."""
+    from evaluation_harness.model import datasets as _datasets  # noqa: PLC0415
+    from evaluation_harness.model.entity import Problem  # noqa: PLC0415
+
     known = {p.stem for p in _store.glob(DATASETS, "*.json")}
     dangling = []
     for rid in _mr.run_ids():
@@ -282,11 +289,20 @@ def v2_dataset_ids() -> None:
             dangling.append(f"{rid} -> {did}")
     for p in sorted(_store.glob(DATASETS, "*.json")):
         try:
-            parent = (read_json(p).get("derived_from") or {}).get("dataset_id")
+            doc = read_json(p)
         except ValueError:
             continue  # V1 names a file that does not parse
+        parent = (doc.get("derived_from") or {}).get("dataset_id")
         if parent and parent not in known:
             dangling.append(f"dataset {p.stem} derived from {parent}, which does not exist")
+        cap = (doc.get("made_from") or {}).get("capture")
+        if cap:
+            try:
+                there = _store.is_file(_datasets.CAPTURE.path(str(cap)))
+            except Problem:  # not a capture id
+                there = False
+            if not there:
+                dangling.append(f"dataset {p.stem} made from capture {cap}, which does not exist")
     for d in dangling:
         print(f"       {d}")
     check(
@@ -1493,6 +1509,11 @@ def v19_label_sets() -> None:
     if not found:
         print("  --   V19 label sets (none)")
         return
+    schema = (
+        jsonschema.Draft202012Validator(json.loads(_store.read_text(SCHEMAS / "label-set.schema.json")))
+        if jsonschema
+        else None
+    )
     bad: list[str] = []
     n = 0
     for lj in found:
@@ -1500,6 +1521,9 @@ def v19_label_sets() -> None:
         rel = f"{lj.parent.parent.name}/{lj.parent.name}"
         if not isinstance(doc, dict):
             bad.append(f"{rel}: labels.json does not parse")
+            continue
+        if schema is not None and (err := next(iter(schema.iter_errors(doc)), None)):
+            bad.append(f"{rel}: {err.message[:90]}")
             continue
         if not _store.is_file(_common.DATASETS / f"{doc.get('dataset_id')}.json"):
             bad.append(f"{rel}: its dataset {doc.get('dataset_id')!r} does not exist")
@@ -1566,6 +1590,11 @@ def v21_failure_modes() -> None:
         print("  --   V21 failure modes (none)")
         return
     schema = json.loads(_store.read_text(SCHEMAS / "failure-modes.schema.json")) if jsonschema else None
+    tag_schema = (
+        jsonschema.Draft202012Validator(json.loads(_store.read_text(SCHEMAS / "tag-set.schema.json")))
+        if jsonschema
+        else None
+    )
     bad: list[str] = []
     known: dict[str, set[str]] = {}
     for f in lists:
@@ -1600,6 +1629,9 @@ def v21_failure_modes() -> None:
         if not isinstance(doc, dict):
             bad.append(f"{rel}: tags.json does not parse")
             continue
+        if tag_schema is not None and (err := next(iter(tag_schema.iter_errors(doc)), None)):
+            bad.append(f"{rel}: {err.message[:90]}")
+            continue
         ds = parsed(DATASETS / f"{doc.get('dataset_id')}.json")
         if not isinstance(ds, dict):
             bad.append(f"{rel}: its dataset {doc.get('dataset_id')!r} does not exist")
@@ -1630,6 +1662,46 @@ def v21_failure_modes() -> None:
     )
 
 
+def _lines_problems(f: Path, rel: str, schema: Any) -> list[str]:
+    """What is wrong with each line of the JSON-lines file `f` against `schema` (named `rel`); [] when it is sound."""
+    out = []
+    for n, line in enumerate(_store.read_text(f, encoding="utf-8").splitlines(), 1):
+        if not line.strip():
+            continue
+        try:
+            row = json.loads(line)
+        except ValueError:
+            out.append(f"{rel}: line {n} does not parse")
+            continue
+        if schema is not None and (err := next(iter(schema.iter_errors(row)), None)):
+            out.append(f"{rel}: line {n}: {err.message[:90]}")
+    return out
+
+
+def _side_problems(docs: dict[str, dict]) -> list[str]:
+    """V22's: each exposure register (data/exposure/<dataset>.jsonl) is of a sealed side and its rows fit their schema
+    (RFC-031), and each line of the pick list (data/picks.jsonl) fits its own (RFC-023)."""
+    schemas = {
+        name: jsonschema.Draft202012Validator(json.loads(_store.read_text(SCHEMAS / f"{name}.schema.json")))
+        if jsonschema
+        else None
+        for name in ("exposure", "pick")
+    }
+    out: list[str] = []
+    reg = DATA / "exposure"
+    for f in sorted(_store.glob(reg, "*.jsonl")) if _store.is_dir(reg) else []:
+        rel = f"exposure/{f.name}"
+        if not (docs.get(f.stem) or {}).get("sealed"):
+            out.append(
+                f"{rel}: {f.stem} is not a sealed side (a register is of a dataset dataset-split --seal made)"
+            )
+        out += _lines_problems(f, rel, schemas["exposure"])
+    picks = DATA / "picks.jsonl"
+    if _store.is_file(picks):
+        out += _lines_problems(picks, "picks.jsonl", schemas["pick"])
+    return out
+
+
 def v22_dataset_records() -> None:
     """V22: each dataset's stored version is the one its lineage gives (PLAN_0.8.0 E3), so a hand-edited or
     pre-0.8.0 version is caught; `evh migrate` writes the right ones."""
@@ -1641,7 +1713,8 @@ def v22_dataset_records() -> None:
         else {}
     )
     docs = {k: v for k, v in docs.items() if isinstance(v, dict)}  # V1 names one that does not parse
-    if not docs:
+    side = _side_problems(docs)
+    if not docs and not side:
         print("  --   V22 dataset records (none)")
         return
 
@@ -1677,10 +1750,10 @@ def v22_dataset_records() -> None:
     if any(d.get("sealed") for d in docs.values()):
         runs = [(_mr.run_dir(rid), m) for rid in _mr.run_ids() if isinstance(m := _mr.run(rid), dict)]
         sealed += _seal.runs_on_sealed(docs, runs)
-    bad += sealed
+    bad += sealed + side
     for b in bad[:10]:
         print(f"       {b}")
-    if bad and len(bad) > len(sealed):
+    if bad and len(bad) > len(sealed) + len(side):
         print("       evh migrate writes the versions the lineage gives (--dry-run shows them first)")
     check(
         f"V22 dataset records — {len(docs)} dataset(s), each version its lineage's"

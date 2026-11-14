@@ -40,6 +40,7 @@ from evaluation_harness._common import die, read_json, write_json
 from evaluation_harness._fingerprint import items_digest
 from evaluation_harness._version import __version__
 from evaluation_harness.catalog_adapter import HarnessAdapter
+from evaluation_harness.model import datasets as _datasets
 
 #: A gold reference reads as labels when it takes at most this many distinct values, each short.
 MAX_LABELS = 30
@@ -187,7 +188,7 @@ def profile(dataset_id: str, with_text: bool) -> dict:
     if with_text and ds.get("text") == "hidden":
         die(f"{dataset_id} is `text: hidden`: its profile carries no text (RFC-019)", "not-public")
     if with_text:
-        src_dir = _common.ROOT / ds.get("source_dir", "data/sources")
+        src_dir = _datasets.source_dir(ds)
         files = [src_dir / (it.get("source_path") or it["item_id"]) for it in items]
         missing = tracked(files)
         if missing:

@@ -35,7 +35,6 @@ from evaluation_harness import _fields, _importers, _jsonout, _store
 from evaluation_harness._common import (
     CAPTURES,
     DATASETS,
-    ROOT,
     SOURCES,
     dataset_id_ok,
     die,
@@ -46,6 +45,7 @@ from evaluation_harness._common import (
     sha256,
 )
 from evaluation_harness.dataset_create import _fieldset, _lineage, _relative_source_dir, _say_lineage, _write
+from evaluation_harness.model import datasets as _datasets
 
 
 def dig(fields: dict, path: str):
@@ -218,9 +218,7 @@ def main() -> int:
         items, bad = [], []
         if args.from_:
             prev = load_dataset(args.from_)
-            prev_src = _Path(prev.get("source_dir") or SOURCES)
-            if not prev_src.is_absolute():
-                prev_src = ROOT / prev_src
+            prev_src = _datasets.source_dir(prev)
             for it in prev.get("items") or []:
                 p = prev_src / it.get("source_path", it["item_id"])
                 if not _store.is_file(p):

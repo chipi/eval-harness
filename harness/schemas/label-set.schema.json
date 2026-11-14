@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "label set",
+  "description": "A label set (RFC-023, RFC-032 step 6): data/labels/<dataset_id>/<set>/labels.json beside a text per item. The answers someone (a person, a model, a rule) gave for a dataset's items; never edited once written. Its id is `<dataset_id>/<set>`. A score against it is read under the label `labels-<dataset_id>-<set>`.",
+  "type": "object",
+  "required": ["dataset_id", "set", "source", "created_at", "n_items", "items"],
+  "properties": {
+    "dataset_id": {"type": "string", "description": "The dataset it labels; equals the folder above the set's."},
+    "set": {"type": "string", "pattern": "^[a-z0-9][a-z0-9_.-]{0,99}$", "description": "Equals its folder's name."},
+    "source": {
+      "type": "object",
+      "description": "Who or what gave the labels: a person (`by`), a model (the system and run), or a rule over a capture.",
+      "required": ["kind"],
+      "properties": {"kind": {"enum": ["person", "model", "rule"]}}
+    },
+    "created_at": {"type": "string"},
+    "guideline": {"type": ["object", "null"], "description": "The guideline the labellers followed: its path and sha256."},
+    "n_items": {"type": "integer", "minimum": 0},
+    "items": {
+      "type": "object",
+      "description": "{item_id: the label text's sha256 and the item's}: a label follows its item by the item's sha256.",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["sha256"],
+        "properties": {"sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "item_sha256": {"type": "string"}}
+      }
+    },
+    "note": {"type": "string"},
+    "actor": {"type": "object", "description": "Who ran the command that wrote it (RFC-027)."}
+  }
+}

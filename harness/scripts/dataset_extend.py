@@ -24,12 +24,10 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 
 import argparse
 import sys
-from pathlib import Path
 
 from evaluation_harness import _jsonout, _store
 from evaluation_harness._common import (
     DATASETS,
-    ROOT,
     SOURCES,
     dataset_id_ok,
     die,
@@ -40,12 +38,7 @@ from evaluation_harness._common import (
 )
 from evaluation_harness._picks import append, waiting
 from evaluation_harness.dataset_create import _fieldset, _lineage, _relative_source_dir, _say_lineage, _write
-
-
-def source_dir(ds: dict) -> Path:
-    """Where a dataset's item files are."""
-    p = Path(ds.get("source_dir") or SOURCES / ds["dataset_id"])
-    return p if p.is_absolute() else ROOT / p
+from evaluation_harness.model import datasets as _datasets
 
 
 def main() -> int:
@@ -99,7 +92,7 @@ def main() -> int:
                 chosen.append(hits[0])
         v1_items = {it["item_id"]: it for it in v1.get("items") or []}
         _store.mkdir(src, parents=True, exist_ok=True)
-        v1_src = source_dir(v1)
+        v1_src = _datasets.source_dir(v1)
         items: list[dict] = []
         for it in v1.get("items") or []:
             p = v1_src / it.get("source_path", it["item_id"])
@@ -121,7 +114,7 @@ def main() -> int:
                     print(f"  {p['item']} is already in {args.dataset}: kept once")
                     continue
                 die(f"{p['item']} is in {args.dataset} with other content: an id names one item", "mismatch")
-            f = source_dir(ds) / it.get("source_path", it["item_id"])
+            f = _datasets.source_dir(ds) / it.get("source_path", it["item_id"])
             if not _store.is_file(f) or sha256(f) != p.get("sha256"):
                 die(
                     f"{p['from']}/{p['item']}: its file is not the one picked (missing, or changed since)",
