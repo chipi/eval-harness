@@ -331,7 +331,7 @@ def load_adapter(
     summarisation scores ROUGE, classification macro-F1, and neither is the bundled overlap.
 
     The returned id is recorded on the run. It has to be: a scorer is half of what a number
-    means, so two runs sharing a config_id but scored by different adapters are no more
+    means, so two runs sharing a system_id but scored by different adapters are no more
     comparable than two runs on different datasets. run-compare refuses across it.
     """
     if spec:

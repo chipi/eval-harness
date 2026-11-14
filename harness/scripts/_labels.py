@@ -44,10 +44,10 @@ def label_parser(adapter_spec: str | None):
 
 
 def predictions(dataset_id: str, match: str | None) -> dict:
-    """config_id -> {item_id: predicted label}, over every matching run on disk."""
+    """system_id -> {item_id: predicted label}, over every matching run on disk."""
     out: dict = defaultdict(dict)
     for d, m in runs_on(dataset_id, match=match):
-        cid = m["config_id"]
+        cid = m["system_id"]
         parse = label_parser(m.get("adapter"))
         for row in item_rows(d):
             item = row["item_id"]

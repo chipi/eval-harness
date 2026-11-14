@@ -133,14 +133,14 @@ def _from_run(run_id: str, dataset_id: str, items: list[dict], args: argparse.Na
     _refuse_unusable(rows, params.get("max_tokens"), args.allow_cut_off, f"Run {run_id}.")
     source = {
         "run_id": run_id,
-        "config_id": m.get("config_id"),
+        "config_id": m.get("system_id"),  # hashed: a label set whole, a reference through from_run
         "fingerprint_hash": (m.get("fingerprint") or {}).get("hash"),
         "build": build,
         "reference_tier": m.get("reference_tier"),
         "cost_usd": (m.get("scores") or {}).get("total_cost_usd"),
     }
     meta = {
-        "authored_by": m.get("config_id"),
+        "authored_by": m.get("system_id"),
         "authored_with": m.get("adapter"),
         "model": params.get("model", params.get("provider", "unknown")),
         "system_under_test": (m.get("fingerprint") or {}).get("deployment"),

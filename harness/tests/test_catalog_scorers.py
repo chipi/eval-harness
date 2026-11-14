@@ -75,7 +75,7 @@ def judged(scorer: str, run: str, sha: str, set_id: str = "set1") -> None:
     """A run with a judged score of it, as judge-score writes one."""
     _runfix.put_run(
         proj / "data",
-        {"run_id": run, "config_id": f"{run}_arm", "dataset_id": "ds", "scores": {"judge_score": 4.0},
+        {"run_id": run, "system_id": f"{run}_arm", "dataset_id": "ds", "scores": {"judge_score": 4.0},
          "derived": {"kind": "judge", "with": {"scorer_id": scorer, "scorer_sha256": sha}}},
         scorer=scorer, reference=set_id, label=f"judged/{scorer}",
     )  # fmt: skip
@@ -132,7 +132,7 @@ try:
     for j in ("ja", "jb"):
         _runfix.put_run(
             proj / "data",
-            {"run_id": f"val_{j}", "config_id": f"val_{j}_arm", "dataset_id": "valds", "scores": {"tau": 0.5},
+            {"run_id": f"val_{j}", "system_id": f"val_{j}_arm", "dataset_id": "valds", "scores": {"tau": 0.5},
              "params": {**vj, "model": f"m-{j}", "prompt_file": "judge_prompt.txt"},
              "fingerprint": {"settings": {"declared": {"prompt_sha256": want}}}},
         )  # fmt: skip

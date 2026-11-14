@@ -34,7 +34,7 @@ proj = Path(tempfile.mkdtemp(prefix="evh-runs-"))
 os.environ["EVAL_HOME"] = str(proj)
 for k in ("EVAL_DATA_DIR", "EVAL_GOALS_DIR"):
     os.environ.pop(k, None)
-from evaluation_harness import _outputs, _store  # noqa: E402
+from evaluation_harness import _format, _outputs, _store  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 from evaluation_harness.model import runs as R  # noqa: E402
 
@@ -93,10 +93,17 @@ def rescore_of(run_id: str, folder: str, sha: str, ref: str = "gold/ds_v1", kind
             "with": {"adapter": "adapter.py", "sha256": sha}}  # fmt: skip
 
 
+def systems() -> None:
+    """The systems the runs name: the last step refuses a run whose system the project does not have."""
+    for s in ("sys_a", "sys_b", "sys_c", "sys_d", "sys_e"):
+        _store.write_text(DATA / "systems" / f"{s}.yaml", f"system_id: {s}\n")
+
+
 try:
     r = evh("init")
     check("setup: a project", r.returncode == 0, r.stderr[-300:])
     _store.write_text(DATA / "project.yaml", "format: 3\n")
+    systems()
     _outputs.reset()
     base = put("runs", "sys_a_1", record("sys_a_1", "sys_a"), outputs=True)
     put("runs", "sys_b_1", record("sys_b_1", "sys_b", platform="Darwin/x86_64", score=0.25), outputs=True)
@@ -135,7 +142,7 @@ try:
     )
     m = evh("migrate")
     _outputs.reset()
-    check("evh migrate brings it to format 5", m.returncode == 0 and "format: 5" in _store.read_text(DATA / "project.yaml"), (m.stdout + m.stderr)[-500:])  # fmt: skip
+    check("evh migrate brings it to the release's format", m.returncode == 0 and f"format: {_format.FORMAT}" in _store.read_text(DATA / "project.yaml"), (m.stdout + m.stderr)[-500:])  # fmt: skip
 
     def score(run_id: str, key: str) -> Path:
         return R.run_dir(run_id) / "scores" / key
@@ -150,7 +157,9 @@ try:
     }
     same, rows_same = [], []
     for key, sd in where.items():
-        want = dict(old[key])
+        want = {
+            ("system_id" if k == "config_id" else k): v for k, v in old[key].items()
+        }  # step 8 renamed the key
         if (want.get("derived") or {}).get("from_dir"):
             want["derived"] = {**want["derived"], "from_dir": f"runs/{want['derived']['from']}"}
         got = {x: v for x, v in (R.record(sd) or {}).items() if x not in R.RUN_ONLY}
@@ -248,6 +257,7 @@ try:
         proj.mkdir()
         evh("init")
         _store.write_text(DATA / "project.yaml", "format: 3\n")
+        systems()
         _outputs.reset()
         setup()
         before = sorted(str(p) for p in _store.rglob(DATA, "*"))

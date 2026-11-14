@@ -42,7 +42,7 @@ def main() -> int:
     ap.add_argument("--dataset-id", required=True)
     ap.add_argument("--exclude-dataset", help="drop every item this dataset also contains")
     ap.add_argument("--metric", help="default: the primary metric the runs recorded")
-    ap.add_argument("--match", help="only config_ids containing this substring")
+    ap.add_argument("--match", help="only system_ids containing this substring")
     ap.add_argument("--asc", action="store_true", help="lower is better (default: inferred)")
     ap.add_argument("--desc", action="store_true", help="higher is better, whatever the runs declare")
     ap.add_argument(
@@ -52,7 +52,7 @@ def main() -> int:
     )
     args = ap.parse_args()
     with _jsonout.collect("holdout", args.json, live=sys.stderr):
-        # Two runs sharing a config_id are averaged together below without
+        # Two runs sharing a system_id are averaged together below without
         # saying so. See _runs.warn_on_ambiguous_runs.
         warn_on_ambiguous_runs("", args.dataset_id)
 

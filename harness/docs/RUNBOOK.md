@@ -699,7 +699,7 @@ Two kinds of directory sit beside `data/runs` on purpose:
 
 - **throwaway** (`data/runs-smoke*`, `data/runs-tune*`): smoke passes and sweeps, never committed;
 - **derived sets** (`data/runs-repeats`, `data/runs-rescored/<scorer>/<source>`, `data/runs-judged/<scorer>` …):
-  re-scored or repeated runs that keep the measured runs' `config_id`s, so they cannot share
+  re-scored or repeated runs that keep the measured runs' `system_id`s, so they cannot share
   `data/runs` (V8).
 
 The `.gitignore` `evh init` writes ignores only the throwaway directories, so a project commits
@@ -842,7 +842,7 @@ Three things worth knowing:
   own and reads its source's (RFC-024). With the sqlite store the same outputs and rows are rows of
   `data/project.sqlite`, each committed as it is produced (RFC-025).
 - **You cannot resume from a different arm, or from one that cannot be identified.**
-  The source's system (`config_id`) and `dataset_id` are checked against the system and
+  The source's system (`system_id`) and `dataset_id` are checked against the system and
   dataset you are launching and a mismatch is refused. Identity comes from `run.json`, written **before
   the first item** precisely so a crashed run can still answer the question
   (`metrics.json`, which a crashed run does not have, could not).
@@ -1024,7 +1024,7 @@ identifies its build, materialized copies still match their hashes, no two
 systems reporting byte-identical scores and per-item results (two arms with different outputs
 that are both perfect are two measurements, not a copy), no baseline pointing at a
 deleted run or disagreeing with it, every committed run readable and present on disk, no two runs claiming one
-`config_id`, no derived run naming a scorer that is not the code in this tree, every judging
+`system_id`, no derived run naming a scorer that is not the code in this tree, every judging
 set matching its stored hash, every judge verdict naming a real set, item, pass and block,
 every judge scorer yaml loading and well-formed, every goal and round well-formed and named by
 every run that must name one, every item field declared, typed and matching its hash, and every
@@ -1135,8 +1135,8 @@ and to the news-summary judge, so neither is an `evh` command.
      must ask for JSON with one list of n numbers per dimension. A prompt without `{n}` is
      taken to be SummEval's, whose own count phrases are rewritten instead; a prompt with both
      is refused, since its fixed phrases would keep saying 16.
-   - **Which arms.** Every arm on the dataset (its latest run per `config_id`) unless the
-     scorer sets `arms_match` (a `config_id` substring), or `--match …` or `--arms a,b,c`
+   - **Which arms.** Every arm on the dataset (its latest run per `system_id`) unless the
+     scorer sets `arms_match` (a `system_id` substring), or `--match …` or `--arms a,b,c`
      narrows it. A subset is its own judging set. If the arms mix system versions
      (`_v1` and `_v2` of one arm), the pass warns: each version is judged as its own arm.
    - **`prompt.file`** is looked up in this order, first hit wins: an absolute path as
@@ -1422,7 +1422,7 @@ command prints, each table as `columns` and `rows` with its raw numbers (NaN as 
 `family-test`'s rows with `p_holm`, the Holm-adjusted p; `runs-list`'s `count`). A refusal prints its
 message on stderr, nothing on stdout, and exits non-zero. `evh run` prints `  run <run_id>` for each
 run it wrote; with `--json` its progress goes to stderr and `values.runs` lists each run's
-`run_id`, `config_id`, `dataset_id`, `dir`, `n_items`, `total_cost_usd` and `capped_at` (`--dry-run
+`run_id`, `system_id`, `dataset_id`, `dir`, `n_items`, `total_cost_usd` and `capped_at` (`--dry-run
 --json`: `values.dry_run`, the projection). The text output without `--json` is unchanged.
 
 **For an agent without one**, `evh mcp` serves the same read commands as MCP tools; how to connect

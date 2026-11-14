@@ -81,7 +81,7 @@ with tempfile.TemporaryDirectory() as td:
         "settings": {"reasoning_effort": "none"},
     }
     put(td, rec)
-    env = {**os.environ, "EVAL_DATA_DIR": str(data), "OPENAI_API_KEY": "local"}
+    env = {**os.environ, "EVAL_HOME": td, "EVAL_DATA_DIR": str(data), "OPENAI_API_KEY": "local"}
     run = subprocess.run(
         [sys.executable, str(HERE / "scripts" / "model_onboard.py"), "fake-1b", "--deployment", "here"],
         capture_output=True,

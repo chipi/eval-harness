@@ -739,7 +739,7 @@ def print_arm(d: dict) -> None:
     cfg = d["config"]
     if cfg:
         print(
-            f"\nconfig {cfg.get('config_id') or ''} (adapter {cfg.get('adapter') or '—'}"
+            f"\nsystem {cfg.get('system_id') or ''} (adapter {cfg.get('adapter') or '—'}"
             + (f"; deployment {cfg['deployment']}" if cfg.get("deployment") else "")
             + "; credentials are never shown):"
         )

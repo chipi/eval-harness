@@ -18,7 +18,7 @@ Each check exists because its absence let a real defect through somewhere:
   V6  baselines      a baseline pointing at a run that no longer exists; a version that no longer matches its run, a
                      line whose versions do not run 1..n, or the old one-per-dataset layout (RFC-027)
   V7  readable       a committed run that stopped before its first score (a run.json, nothing measured)
-  V8  config_ids     two runs of one arm claiming the same (dataset_id, config_id)
+  V8  system_ids     two runs of one arm claiming the same (dataset_id, system_id)
   V9  present        a committed run or score file deleted from disk, or an arm below its floor
   V10 scorer drift   a DERIVED score naming a scorer that is not the code in this tree
   V11 judging sets   a frozen judging set whose stored hash is not its content's hash
@@ -457,7 +457,7 @@ def _v5_in(arm: str, scores: list[tuple[Path, dict]]) -> list[list]:
         # for slip through.
         produced = {k: v for k, v in (d.get("scores") or {}).items() if k not in _V5_RUN_PROPERTIES}
         key = (d.get("dataset_id"), json.dumps(produced, sort_keys=True))
-        by_key[key].append((run, d.get("config_id"), json.dumps(d.get("params") or {}, sort_keys=True)))
+        by_key[key].append((run, d.get("system_id"), json.dumps(d.get("params") or {}, sort_keys=True)))
     # Identical scores from identical params is not suspicious — it is what a deterministic
     # arm DOES, and two systems may legitimately request the same thing. What deserves a look
     # is DIFFERENT params landing on byte-identical output: either a result was not measured,
@@ -513,7 +513,7 @@ def _one_study(configs: set) -> str | None:
     for rid in model_studies.ids(check_format=False):
         goal, sid = rid.split("/", 1)
         st = model_studies.state(goal, sid)
-        members = ({t.get("config_id") for t in st["trials"]} | {st["baseline"]}) & configs
+        members = ({t.get("system_id") for t in st["trials"]} | {st["baseline"]}) & configs
         if members - {st["baseline"]}:
             found.add(f"{goal}/{sid}")
             covered |= members
@@ -569,9 +569,9 @@ def _guards_in(scores: list[tuple[Path, dict]]) -> list[tuple]:
     out = []
     by_config = _declared_in_systems()
     for run, d in scores:
-        target = d.get("expect_identical_to") or by_config.get(str(d.get("config_id")))
+        target = d.get("expect_identical_to") or by_config.get(str(d.get("system_id")))
         if target:
-            out.append((d.get("config_id"), target, run))
+            out.append((d.get("system_id"), target, run))
     return out
 
 
@@ -583,7 +583,7 @@ def _v5_guards(arm: str, scores: list[tuple[Path, dict]]) -> tuple[int, list[str
         d = _mr.record(run) or {}
         theirs = sorted(
             r for r, m in scores
-            if m.get("config_id") == target and m.get("dataset_id") == d.get("dataset_id")
+            if m.get("system_id") == target and m.get("dataset_id") == d.get("dataset_id")
         )  # fmt: skip
         if not theirs:
             continue
@@ -953,8 +953,8 @@ def v10_derived_runs_carry_the_current_scorer() -> None:
         )
 
 
-def v8_no_duplicate_config_ids() -> None:
-    """No two runs of one arm may claim the same (dataset_id, config_id).
+def v8_no_duplicate_system_ids() -> None:
+    """No two runs of one arm may claim the same (dataset_id, system_id).
 
     This is the round-3 ext4 failure made structural. `check_report_claims.py` globs
     for a run in SIX places and only one of them goes through `runs_by_arm`, which is
@@ -974,7 +974,7 @@ def v8_no_duplicate_config_ids() -> None:
 
     #: The arms whose runs back a report. A throwaway pass (`evh run --scratch`) is outside the data.
     # The `linux` arm was omitted when it was added, so the sixth committed arm was the one place a duplicate
-    # config_id could still land -- and the latency claims read it by filesystem order, so a duplicate changed the
+    # system_id could still land -- and the latency claims read it by filesystem order, so a duplicate changed the
     # answer depending on how the names sorted. That is the round-3 ext4 defect in the sixth arm. Round 5.
     COMMITTED = committed_arms()
     #: The bundled demo, plus the project's own `duplicate_ok`: named, never scoped away
@@ -986,7 +986,7 @@ def v8_no_duplicate_config_ids() -> None:
     for arm in COMMITTED:
         groups: dict = {}
         for sd, m in by_arm.get(arm, []):
-            key = (m.get("dataset_id"), m.get("config_id"))
+            key = (m.get("dataset_id"), m.get("system_id"))
             rid = _mr.run_of(sd).name
             if key[1] and rid not in groups.setdefault(key, []):
                 groups[key].append(rid)
@@ -1008,9 +1008,9 @@ def v8_no_duplicate_config_ids() -> None:
     if len(bad) > 6:
         print(f"       ... and {len(bad) - 6} more")
     check(
-        "V8 no two runs share a config_id (outside a --repeat set)",
+        "V8 no two runs share a system_id (outside a --repeat set)",
         not bad,
-        f"{len(bad)} ambiguous config_id(s)",
+        f"{len(bad)} ambiguous system_id(s)",
     )
 
 
@@ -1970,7 +1970,7 @@ def v27_studies() -> None:
         for ev in model_studies.events(goal, sid):
             if ev.get("event") not in model_studies.EVENTS:
                 bad.append(f"{rid}: a log line of event {ev.get('event')!r}")
-            elif ev["event"] == "trial" and ev.get("config_id") and not ev.get("imported"):
+            elif ev["event"] == "trial" and ev.get("system_id") and not ev.get("imported"):
                 path = model_studies.trial_path(goal, sid, int(ev.get("k") or 0))
                 if not _store.is_file(path):
                     bad.append(f"{rid}: trial {ev.get('k')} has no system ({path.name})")
@@ -2118,7 +2118,7 @@ def note_round_scorers() -> None:
         for d, m in rs.measured_runs(rnd["dataset_id"], set(_rounds.arms_of(rnd))):
             scorer, _from = rs.latest_scoring(d, m)
             by_adapter.setdefault(m.get("adapter") or "?", {}).setdefault(scorer or "?", set()).add(
-                m["config_id"]
+                m["system_id"]
             )
         for adapter, seen in sorted(by_adapter.items()):
             if len(seen) > 1:
@@ -2152,7 +2152,7 @@ def main() -> int:
             v5_duplicate_scores,
             v6_baselines,
             v7_committed_runs_are_readable,
-            v8_no_duplicate_config_ids,
+            v8_no_duplicate_system_ids,
             v9_no_committed_evidence_is_missing,
             v10_derived_runs_carry_the_current_scorer,
             v11_judging_sets_match_their_hash,

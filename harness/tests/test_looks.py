@@ -311,7 +311,7 @@ try:
     ok = evh("validate")
     doc = _runstore.read_json(proj, "datasets/tk_v1_test.json")
     forged = json.loads(json.dumps(doc["unsealed"][-1]))
-    forged["config_id"] = "cand2_v1"
+    forged["system_id"] = "cand2_v1"
     forged["look"] = {**forged["look"], "number": 2, "key": "0000000000000000"}
     doc["unsealed"].append(forged)
     _runstore.write_text(proj, "datasets/tk_v1_test.json", json.dumps(doc, indent=2) + "\n")

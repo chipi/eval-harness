@@ -80,7 +80,7 @@ def summarisation_hosted(n: int = 20) -> dict:
         if (m.get("params") or {}).get("provider") != "litellm":
             continue
         rows = {r["item_id"]: r["coverage"] for r in item_rows(d)}
-        scores[m["config_id"]] = rows
+        scores[m["system_id"]] = rows
     items = sorted(next(iter(scores.values())))
     return {"n_arms": len(scores), **split_half(scores, items, n, random.Random(SEED))}
 
@@ -106,9 +106,9 @@ def load() -> dict:
     for d, m in runs_on(DATASET):
         if not re.fullmatch(rf"{PREFIX}.*{SUFFIX}_.*", m["run_id"]):
             continue
-        arm = m["config_id"][len(PREFIX) : -len(SUFFIX)]
+        arm = m["system_id"][len(PREFIX) : -len(SUFFIX)]
         if arm in arms:
-            raise SystemExit(f"two runs for {m['config_id']}: cannot pick one")
+            raise SystemExit(f"two runs for {m['system_id']}: cannot pick one")
         rows, billed = {}, 0.0
         for r in item_rows(d):
             rows[r["item_id"]] = r

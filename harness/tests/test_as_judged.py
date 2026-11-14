@@ -43,7 +43,7 @@ check(
 
 def live(ids, runs):
     return [
-        {"config_id": i, "run": r, "dir": f"/runs/{r}", "family": f"fam{k}"}
+        {"system_id": i, "run": r, "dir": f"/runs/{r}", "family": f"fam{k}"}
         for k, (i, r) in enumerate(zip(ids, runs))
     ]
 
@@ -71,7 +71,7 @@ with tempfile.TemporaryDirectory(prefix="evh-as-judged-") as td:
         got = js.as_judged("ds", arms)
         check(
             "a set of exactly these runs: the arms carry the stored ids",
-            [a["config_id"] for a in got] == OLD,
+            [a["system_id"] for a in got] == OLD,
             got,
         )
         check(
@@ -86,7 +86,7 @@ with tempfile.TemporaryDirectory(prefix="evh-as-judged-") as td:
         swapped = live(NEW[::-1], RUNS[::-1])
         check(
             "the result is in the stored ids' order, whatever order the live arms came in",
-            [a["config_id"] for a in js.as_judged("ds", swapped)] == sorted(OLD),
+            [a["system_id"] for a in js.as_judged("ds", swapped)] == sorted(OLD),
         )
 
         check(
@@ -106,7 +106,7 @@ with tempfile.TemporaryDirectory(prefix="evh-as-judged-") as td:
         stored(sets / "ds-1arm-0000.json", "ds", OLD[:1], RUNS[:1])
         check(
             "among several sets of the dataset, the one of exactly these runs is found",
-            [a["config_id"] for a in js.as_judged("ds", arms)] == OLD,
+            [a["system_id"] for a in js.as_judged("ds", arms)] == OLD,
         )
     finally:
         js.SETS = real_sets
@@ -124,23 +124,23 @@ for f in files:
     check(
         f"{f.name}: every arm's run is a live arm, under the id the migration renamed it to",
         set(by_run) <= set(found)
-        and all(found[r]["config_id"] == _common.system_now(c) for r, c in by_run.items()),
+        and all(found[r]["system_id"] == _common.system_now(c) for r, c in by_run.items()),
         {
-            r: (found.get(r, {}).get("config_id"), _common.system_now(c))
+            r: (found.get(r, {}).get("system_id"), _common.system_now(c))
             for r, c in by_run.items()
-            if r not in found or found[r]["config_id"] != _common.system_now(c)
+            if r not in found or found[r]["system_id"] != _common.system_now(c)
         },
     )
     arms = [found[r] for r in by_run if r in found]
     check(
         f"{f.name}: some live arm has an id other than the stored one (the re-keying is exercised)",
-        any(found[r]["config_id"] != c for r, c in by_run.items()),
+        any(found[r]["system_id"] != c for r, c in by_run.items()),
     )
     got = js.as_judged(ds, arms)
     check(
         f"{f.name}: the live arms are re-keyed to the stored ids",
-        {a["run"]: a["config_id"] for a in got} == by_run
-        and [a["config_id"] for a in got] == sorted(by_run.values()),
+        {a["run"]: a["system_id"] for a in got} == by_run
+        and [a["system_id"] for a in got] == sorted(by_run.values()),
     )
 
 sys.exit(summary())

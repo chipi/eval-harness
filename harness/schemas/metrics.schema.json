@@ -4,7 +4,7 @@
   "description": "One run's result (metrics.json), as scripts/_record.py builds it. dataset_id and build are REQUIRED: a number without the data it measured and the build that produced it cannot be compared to anything. Every field the harness writes is declared here, and nothing else is accepted: a field from another version would otherwise pass silently while nothing reads it.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["run_id", "dataset_id", "config_id", "build", "created_at", "scores", "n_items"],
+  "required": ["run_id", "dataset_id", "system_id", "build", "created_at", "scores", "n_items"],
   "properties": {
     "run_id": {"type": "string"},
     "purpose": {"enum": ["run", "repeat", "pair", "retime"], "description": "What the pass was for (RFC-032 step 4): the run, a repeat of it, a pair-test side, or a re-timing on another machine. Absent: a run."},
@@ -14,7 +14,7 @@
     "of": {"type": "string", "description": "The run a repeat, pair or retime is of, when exactly one other run of the system on the dataset exists."},
     "actor": {"type": "object", "description": "Who acted (RFC-027): a person, or an agent and the person it acted for. A recorded claim, not an identity.", "required": ["type", "name"], "additionalProperties": false, "properties": {"type": {"enum": ["person", "agent", "unknown"]}, "name": {"type": "string"}, "for": {"type": "string", "description": "the person an agent acted for"}, "from": {"enum": ["flag", "environment", "terminal", "migration"]}}},
     "dataset_id": {"type": "string"},
-    "config_id": {"type": "string"},
+    "system_id": {"type": "string"},
     "created_at": {"type": "string", "description": "When this record's scores were computed: the measurement, or for a derived run the derivation."},
     "build": {
       "type": "object",

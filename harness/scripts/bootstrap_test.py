@@ -105,7 +105,7 @@ def main() -> int:
     """Run bootstrap resampling test."""
     ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
     ap.add_argument("--dataset-id", required=True)
-    ap.add_argument("--a", required=True, help="config_id of the arm under test")
+    ap.add_argument("--a", required=True, help="system_id of the arm under test")
     ap.add_argument(
         "--against", required=True, help="substring selecting the opponent family, declared in advance"
     )
@@ -127,7 +127,7 @@ def main() -> int:
     )
     args = ap.parse_args()
     with _jsonout.collect("bootstrap-test", args.json, live=sys.stderr):
-        # Two runs sharing a config_id are averaged together below without
+        # Two runs sharing a system_id are averaged together below without
         # saying so. See _runs.warn_on_ambiguous_runs.
         warn_on_ambiguous_runs("", args.dataset_id)
 

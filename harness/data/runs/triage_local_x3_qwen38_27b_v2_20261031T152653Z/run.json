@@ -10,7 +10,7 @@
     "ref": "969eb3130234c454f2f94e8926935505fd17b607",
     "source": "git"
   },
-  "config_id": "triage_local_x3_qwen38_27b_v2",
+  "system_id": "triage_local_x3_qwen38_27b_v2",
   "created_at": "2026-10-31T15:49:16Z",
   "dataset_id": "orrery_triage_v1_labelled",
   "deployment_id": "x3",

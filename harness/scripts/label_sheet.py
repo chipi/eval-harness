@@ -47,7 +47,7 @@ def run_dir(name: str, dataset_id: str, label: str = "") -> Path:
     An arm id, as the catalog names it (<prefix>/<dataset>/<system>, model.runs.arm_id), is that arm's latest run."""
     scores = runs_on(dataset_id, label=None)
     if name.count("/") >= 2:
-        _prefix, ds, _config_id = name.rsplit("/", 2)
+        _prefix, ds, _system_id = name.rsplit("/", 2)
         if ds != dataset_id:
             die(f"--runs {name}: not an arm on {dataset_id}", "not-found")
         found = [d for d, m in scores if _model_runs.arm_id(d, m) == name]
@@ -66,7 +66,7 @@ def run_dir(name: str, dataset_id: str, label: str = "") -> Path:
             if m["run_id"] == name:
                 return d
     for group in (own, sets_):
-        found = [d for d, m in group if m["config_id"] == name]
+        found = [d for d, m in group if m["system_id"] == name]
         if found:
             return found[-1]
     if any(m["run_id"] == name for _d, m in runs_on(label=None)) and not any(

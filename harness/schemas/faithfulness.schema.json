@@ -3,11 +3,11 @@
   "title": "A faithfulness record (RFC-030): data/faithfulness/<model_id>/<n>.json, a replay at the recorded versions compared item by item with production's arm; written once",
   "type": "object",
   "additionalProperties": false,
-  "required": ["n", "model_id", "config_id", "dataset_id", "items_sha256", "versions_sha256", "adapter_sha256", "commits", "production_run", "counts", "disagreements", "coverage", "at", "actor"],
+  "required": ["n", "model_id", "system_id", "dataset_id", "items_sha256", "versions_sha256", "adapter_sha256", "commits", "production_run", "counts", "disagreements", "coverage", "at", "actor"],
   "properties": {
     "n": {"type": "integer", "minimum": 1},
     "model_id": {"type": "string", "description": "The code record (a model record of kind: code)."},
-    "config_id": {"type": "string"},
+    "system_id": {"type": "string"},
     "dataset_id": {"type": "string"},
     "items_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
     "versions_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$", "description": "Each version's commit and deployed periods, hashed."},

@@ -3,7 +3,7 @@
 One directory per run, the pass of one system over one dataset. A run's scores sit under it.
 
 ```
-runs/<run_id>/run.json                        the pass: system (config_id), dataset, purpose, machine,
+runs/<run_id>/run.json                        the pass: system (system_id), dataset, purpose, machine,
                                               settings, fingerprint, cost, latency
 runs/<run_id>/outputs.jsonl                   what the system answered, per item
 runs/<run_id>/scores/<scorer>@<reference>/
@@ -17,7 +17,7 @@ scored against: `gold.<dataset>`, `silver.<dataset>`, `labels.<dataset>.<set>`, 
 judging pass's own summary is `data/judge-summaries/<judge scorer>@<judging set>.json`.
 
 `run.json` and a score's `metrics.json` together carry the three things that make a number mean something:
-`dataset_id` (what it measured), `config_id` (the instrument), and `build` (the system under test). A run missing any
+`dataset_id` (what it measured), `system_id` (the instrument), and `build` (the system under test). A run missing any
 of them cannot be attributed, and `make validate` fails on it. Reading a score gives the run's facts with the
 score's over them, as one record.
 
@@ -46,7 +46,7 @@ committed. See [What is committed here](#what-is-committed-here-and-what-is-not)
 
 `evh run --purpose repeat --of RUN_ID` runs a system again to see how far two runs of it disagree. **A repeat is not
 the record**: the plain run is. It is a run of its own, read under the label `repeats`, because two runs sharing a
-`config_id` in one arm make every loader pick one, and none of them said so:
+`system_id` in one arm make every loader pick one, and none of them said so:
 
 - `check_report_claims.py` globbed in five places, three taking the last hit and two the first, so its verdict
   depended on filesystem order: **29/29 on APFS, 28/29 on ext4**, and the ext4 answer was the right one, two cost
@@ -58,7 +58,7 @@ the record**: the plain run is. It is a run of its own, read under the label `re
 
 `runs_by_arm()` in `scripts/_runs.py` raises on this for two runs of one arm. A `--repeat N` set (`<id>_r1.._rN`) is
 one arm measured N times and still loads normally: that distinction is pinned by
-`test_two_runs_sharing_a_config_id_are_refused`.
+`test_two_runs_sharing_a_system_id_are_refused`.
 
 Three SciFact arms were re-run on 2026-09-29 to check the parser fix against a fresh measurement; they are evidence
 for between-run variance:
@@ -150,7 +150,7 @@ builds, or the local arms of NER and retrieval, which were not re-run. Hosted ar
 like this: 47 of 480 article outputs (9.8%) were byte-identical across three repeats in the earlier CNN/DailyMail
 sweep, and 13–78 of 200 across two runs of five SciFact arms (`REPORT_RETRIEVAL.md`, *Between-run variance*).
 
-To re-derive the tables, compare each retime with the run of the same `config_id` that its `of` names (or, where it
+To re-derive the tables, compare each retime with the run of the same `system_id` that its `of` names (or, where it
 names none, the plain run of that system): `latency_ms` from the score's `predictions.jsonl`, and `outputs.jsonl`
 item by item.
 

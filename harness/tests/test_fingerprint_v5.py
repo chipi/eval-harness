@@ -37,7 +37,7 @@ def build(params=None, **over):
         "dataset": DATASET,
         "reference_id": None,
         "reference_tier": None,
-        "config_id": "c1",
+        "system_id": "c1",
         "adapter_id": "scripts/adapter.py",
         "adapter_path": HERE / "scripts" / "adapter.py",
     }
@@ -213,7 +213,7 @@ check(
 )
 check(
     "a config id is a name: it moves no hash",
-    moved(fp, build(base_params, config_id="renamed")) == [],
+    moved(fp, build(base_params, system_id="renamed")) == [],
 )
 check("moved_parts names the parts", fpmod.moved_parts(fp, other_dep) == ["deployment"])
 
@@ -590,6 +590,9 @@ with tempfile.TemporaryDirectory() as td:
         )
         + "\n"
     )
+    (data / "systems").mkdir()
+    for s in ("c1", "c2"):  # the last step refuses a run whose system the project lacks
+        (data / "systems" / f"{s}.yaml").write_text(f"system_id: {s}\n")
     cmd = [sys.executable, str(HERE / "scripts" / "migrate.py")]
     # the fixture is a files project, whatever store the suite runs in
     menv = {**os.environ, "EVAL_HOME": td, "EVAL_DATA_DIR": "data", "EVAL_STORE": "files"}
@@ -731,7 +734,7 @@ with tempfile.TemporaryDirectory() as td:
                 {
                     "run_id": rid,
                     "dataset_id": "d1",
-                    "config_id": "c1",
+                    "system_id": "c1",
                     "build": {"ref": rid, "dirty": False},
                     "n_items": 1,
                     "created_at": "2026-11-13T00:00:00Z",

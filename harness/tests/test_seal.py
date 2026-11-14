@@ -59,11 +59,11 @@ def commit(msg):
     git("-c", "user.name=t", "-c", "user.email=t@example.com", "commit", "-q", "-m", msg)
 
 
-def config(config_id, sentences, hypothesis=None):
-    text = f"system_id: {config_id}\nparams:\n  provider: echo\n  sentences: {sentences}\n"
+def config(system_id, sentences, hypothesis=None):
+    text = f"system_id: {system_id}\nparams:\n  provider: echo\n  sentences: {sentences}\n"
     if hypothesis:
         text += "hypothesis:\n" + "".join(f"  {k}: {json.dumps(v)}\n" for k, v in hypothesis.items())
-    _runstore.write_text(proj, f"systems/{config_id}.yaml", text)
+    _runstore.write_text(proj, f"systems/{system_id}.yaml", text)
 
 
 def refused(r, *said):
@@ -192,7 +192,7 @@ try:
     check(
         "dataset-unseal: opened to the candidate and what its hypothesis is against; the look recorded",
         len(looks) == 1
-        and looks[0]["config_id"] == "cand_test_v1"
+        and looks[0]["system_id"] == "cand_test_v1"
         and looks[0]["hypothesis"]["against"] == "base_test_v1"
         and (looks[0]["commit"] == "not determinable" if _runstore.sqlite() else len(looks[0]["commit"]) >= 7)
         and "look 1" in r.stdout,

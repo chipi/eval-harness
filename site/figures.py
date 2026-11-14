@@ -72,12 +72,12 @@ def _runs(base: str, dataset: str, prefix: str) -> dict:
     for d, m in runs_on(dataset, label=label_of(base)):
         if not m["run_id"].startswith(prefix):
             continue
-        arm = arm_of(prefix, m["config_id"])
+        arm = arm_of(prefix, m["system_id"])
         if arm is None:
             continue
         if arm in out:
             raise SystemExit(
-                f"two runs for {m['config_id']} under {base}: {m['run_id']}, {model_runs.run_of(out[arm]).name}"
+                f"two runs for {m['system_id']} under {base}: {m['run_id']}, {model_runs.run_of(out[arm]).name}"
             )
         out[arm] = d
     return out
@@ -85,7 +85,7 @@ def _runs(base: str, dataset: str, prefix: str) -> dict:
 
 def system_id(exp: dict, arm: str) -> str:
     """The id of the system behind an arm of an eval, as its run records it."""
-    return read_metrics(_runs(exp["base"], exp["dataset"], exp["prefix"])[arm])["config_id"]
+    return read_metrics(_runs(exp["base"], exp["dataset"], exp["prefix"])[arm])["system_id"]
 
 
 def _billed(run_dir: Path) -> float:
@@ -116,7 +116,7 @@ def _weights() -> dict:
 def _not_significant(exp: dict) -> list:
     """Opponents the leader's Holm family test finds not significantly different."""
     cids = {
-        read_metrics(d)["config_id"]: arm
+        read_metrics(d)["system_id"]: arm
         for arm, d in _runs(exp["base"], exp["dataset"], exp["prefix"]).items()
     }
     leader = next(c for c, arm in cids.items() if arm == exp["leader"])
@@ -338,7 +338,7 @@ def judged_summarisation(exps: list, scorer: str = "") -> dict:
     ids = [i["item_id"] for i in m["items"]]
     scores = js.load_scores(m, sc, vdir)
     proj = js.project(sc, scores, ids)
-    summ = js.summarise(m, sc, m["arms"], scores, proj, {}, "recomputed", True, vdir)
+    summ = js.summarise(m, sc, js.set_arms(m), scores, proj, {}, "recomputed", True, vdir)
     files = [json.loads(_store.read_text(p)) for p in _store.glob(vdir, "*/*.json")]
     hc = json.loads(
         _store.read_text(ROOT / "examples" / "summarization-cnn-dailymail" / "human_check_judge.json")

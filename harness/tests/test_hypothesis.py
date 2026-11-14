@@ -61,8 +61,8 @@ def commit(msg):
     git("-c", "user.name=t", "-c", "user.email=t@example.com", "commit", "-q", "-m", msg)
 
 
-def metrics_of(config_id):
-    ids = sorted(rid for rid in _R.run_ids() if rid.startswith(f"{config_id}_"))
+def metrics_of(system_id):
+    ids = sorted(rid for rid in _R.run_ids() if rid.startswith(f"{system_id}_"))
     first = _R.first_score(ids[-1]) if ids else None
     return (_R.record(first) if first else None) or {}
 
@@ -265,15 +265,15 @@ try:
         "dataset": _common.load_dataset("tickets_v1"),
         "reference_id": None,
         "reference_tier": None,
-        "config_id": "tickets_lead2_v1",
+        "system_id": "tickets_lead2_v1",
         "params": {"provider": "echo", "sentences": 2},
         "adapter_id": "scripts/adapter.py",
         "adapter_path": None,
     }
-    plain = build_fingerprint(cfg={"config_id": "tickets_lead2_v1"}, **common)
-    with_h = build_fingerprint(cfg={"config_id": "tickets_lead2_v1", "hypothesis": HYP}, **common)
+    plain = build_fingerprint(cfg={"system_id": "tickets_lead2_v1"}, **common)
+    with_h = build_fingerprint(cfg={"system_id": "tickets_lead2_v1", "hypothesis": HYP}, **common)
     other = build_fingerprint(
-        cfg={"config_id": "tickets_lead2_v1"}, **{**common, "params": {"provider": "echo", "sentences": 1}}
+        cfg={"system_id": "tickets_lead2_v1"}, **{**common, "params": {"provider": "echo", "sentences": 1}}
     )
     check(
         "fingerprint: the same hash with a hypothesis in the config and without (a prediction is not a measurement)",

@@ -139,7 +139,7 @@ try:
         "run --dry-run --json: the projection as values, nothing written",
         (dry_values.get("dry_run") or {}).get("items") == 6
         and dry_values["dry_run"]["api_calls"] == 6
-        and dry_values["dry_run"]["config_id"] == "tickets_lead1_v1"
+        and dry_values["dry_run"]["system_id"] == "tickets_lead1_v1"
         and "runs" not in dry_values
         and not any(n.startswith("tickets_lead1_v1_") for n in _runstore.listdir(proj, "runs")),
         dry.stdout[-300:] + dry.stderr[-300:],
@@ -154,7 +154,7 @@ try:
         "run --json: stdout is one envelope with the run (id, system, dataset, dir, items, cost, cap); progress is on stderr",
         len(made) == 1
         and made[0]["run_id"].startswith("tickets_lead1_v1_")
-        and (made[0]["config_id"], made[0]["dataset_id"], made[0]["n_items"])
+        and (made[0]["system_id"], made[0]["dataset_id"], made[0]["n_items"])
         == ("tickets_lead1_v1", "tickets_v1", 6)
         and made[0]["total_cost_usd"] in (0, 0.0, None)
         and made[0]["capped_at"] is None
@@ -281,7 +281,7 @@ try:
             )
             # The statistics and the runs: tools that answer with the command's own --json.
             ids = {
-                row["config_id"]: row["run_id"]
+                row["system_id"]: row["run_id"]
                 for b in json.loads(evh("runs-list", "--json").stdout)["result"]["blocks"]
                 for row in b.get("rows", [])
             }

@@ -262,7 +262,7 @@ def _one(study: str) -> None:
             f"  t{t['k']}  {t.get('outcome'):<9} {t.get('hypothesis') or t.get('change')}  — {t.get('reason')}"
         )
     best = st["best"]
-    print(f"  best so far: {best['config_id'] if best else st['baseline'] + ' (the baseline)'}")
+    print(f"  best so far: {best['system_id'] if best else st['baseline'] + ' (the baseline)'}")
     for c in st["confirms"]:
         print(
             f"  confirm on {c.get('test')}: {c.get('outcome', 'started')} (look {(c.get('look') or {}).get('number')})"
@@ -376,7 +376,7 @@ def _confirm(a: argparse.Namespace, require_named: Any) -> int:
             f"every item of {a.test} is in the validation set or was shown to a sampler: none left",
             "not-enough",
         )
-    trial_cid, base_cid = t["config_id"], st["baseline"]
+    trial_cid, base_cid = t["system_id"], st["baseline"]
     on = f"-on-{a.test}"
     k = _looks.key(a.test, trial_cid + on, base_cid + on, metric, a.rule)
     reach = stats.min_attainable_p_one_sided(n=len(items), rule=a.rule, margin=margin or 0.0)
@@ -466,7 +466,7 @@ def _open_sealed(test: str, cids: list[str], look: dict[str, Any], who: dict[str
         if cid in opened:
             continue
         doc["unsealed"] = [*(doc.get("unsealed") or []), {
-            "config_id": cid, "at": now(), "reason": why,
+            "system_id": cid, "at": now(), "reason": why,
             "hypothesis": {"against": cids[1], "named": "the study's confirm line, written before any test item ran"},
             "commit": "not determinable", "actor": who, "look": {x: v for x, v in look.items() if x != "reused"},
         }]  # fmt: skip
@@ -519,7 +519,7 @@ def import_tsv(argv: list[str]) -> int:
             except (TypeError, ValueError):
                 val = None
             _study.append(a.goal, a.study, {
-                "event": "trial", "k": k, "imported": True, "config_id": None, "commit": row.get("commit"),
+                "event": "trial", "k": k, "imported": True, "system_id": None, "commit": row.get("commit"),
                 "val_bpb": val, "memory_gb": row.get("memory_gb"), "outcome": status_map.get(str(row.get("status")).strip(), "dropped"),
                 "hypothesis": row.get("description"), "reason": f"imported: {row.get('status')}", "cost_usd": 0,
             })  # fmt: skip

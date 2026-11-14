@@ -69,10 +69,7 @@ def arm_of(
         path = SYSTEM.path(system_id)
     except Problem as exc:
         _common.die(str(exc), exc.kind)
-    arm = {k: v for k, v in rec.items() if k != "system_id"}
-    arm["config_id"] = (
-        system_id  # the run records the system's id where it recorded the system's (until step 4)
-    )
+    arm = {**rec, "system_id": system_id}
     arm["dataset_id"] = dataset_id
     if goal:
         arm["goal"] = goal

@@ -38,7 +38,7 @@ def run(config, items):
         {
             "run_id": f"{config}_1",
             "dataset_id": "ds",
-            "config_id": config,
+            "system_id": config,
             "primary_metric": "acc",
             "scores": {"acc": 0.5},
         },
@@ -106,7 +106,7 @@ try:
         {
             "run_id": "arm_b_1",
             "dataset_id": "ds",
-            "config_id": "arm_b",
+            "system_id": "arm_b",
             "primary_metric": "f1",
             "scores": {"f1": 0.5},
         },

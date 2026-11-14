@@ -42,7 +42,7 @@ FEW = 3
 
 
 def promoted_run(
-    config_id: str, data_dir: Path | None = None, runs_dir: Path | None = None
+    system_id: str, data_dir: Path | None = None, runs_dir: Path | None = None
 ) -> tuple[Path, dict[str, Any] | None]:
     """(the run as the score it made when it ran, the baseline it was promoted as, or None): of the current baselines
     of every goal and every dataset's own (RFC-027), the latest whose run is this arm's, else the arm's latest run.
@@ -58,7 +58,7 @@ def promoted_run(
             b.get("promoted_from")
             and first is not None
             and rec is not None
-            and rec.get("config_id") == config_id
+            and rec.get("system_id") == system_id
             and (best is None or str(b.get("promoted_at")) > best[0])
         ):
             best = (str(b.get("promoted_at")), first, b)
@@ -70,10 +70,10 @@ def promoted_run(
         rec = _model_runs.record(first) if first else None
         if first is None or rec is None:
             continue
-        if rec.get("config_id") == config_id and _model_runs.label(first, rec) == "":
+        if rec.get("system_id") == system_id and _model_runs.label(first, rec) == "":
             found.append(first)
     if not found:
-        die(f"--system {config_id}: no run of that system (evh runs-list)", "not-found")
+        die(f"--system {system_id}: no run of that system (evh runs-list)", "not-found")
     return found[-1], None
 
 
@@ -88,9 +88,9 @@ def reported(run: Path) -> dict[str, list[str]]:
     return {k: sorted(v) for k, v in sorted(seen.items()) if len(v) <= FEW}
 
 
-def sheet(config_id: str, data_dir: Path | None = None, runs_dir: Path | None = None) -> dict[str, Any]:
+def sheet(system_id: str, data_dir: Path | None = None, runs_dir: Path | None = None) -> dict[str, Any]:
     """Everything production must match, as a dict."""
-    run, base = promoted_run(config_id, data_dir, runs_dir)
+    run, base = promoted_run(system_id, data_dir, runs_dir)
     data_root = data_dir or DATA
     m = _model_runs.record(run) or {}
     fp = m.get("fingerprint") or {}
@@ -112,7 +112,7 @@ def sheet(config_id: str, data_dir: Path | None = None, runs_dir: Path | None = 
     rec_settings = (rec or {}).get("settings") or {}
     weights = dep.get("weights") or {}
     return {
-        "system_id": config_id,
+        "system_id": system_id,
         "run_id": m.get("run_id"),
         "promoted": None
         if base is None

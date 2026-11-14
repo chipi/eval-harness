@@ -230,7 +230,7 @@ def _when(ts: float) -> str:
 
 def runs_of_system(system_id: str) -> int:
     """How many runs were made with this system (their records name it)."""
-    return sum(1 for rid in model_runs.run_ids() if (model_runs.run(rid) or {}).get("config_id") == system_id)
+    return sum(1 for rid in model_runs.run_ids() if (model_runs.run(rid) or {}).get("system_id") == system_id)
 
 
 def show(rel: str) -> dict[str, Any]:

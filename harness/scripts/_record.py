@@ -120,7 +120,7 @@ def run_record(
     *,
     run_id: str,
     dataset_id: str,
-    config_id: str,
+    system_id: str,
     build: dict[str, Any],
     scores: dict[str, float],
     n_items: int,
@@ -132,11 +132,11 @@ def run_record(
     format, ...); one passed as None is left out rather than recorded as null."""
     from evaluation_harness import _seal  # noqa: PLC0415
 
-    _seal.refuse_if_sealed(dataset_id, "a run record", config_id)
+    _seal.refuse_if_sealed(dataset_id, "a run record", system_id)
     record: dict[str, Any] = {
         "run_id": run_id,
         "dataset_id": dataset_id,
-        "config_id": config_id,
+        "system_id": system_id,
         "created_at": created_at or now(),
         "build": build,
         "scores": scores,
@@ -172,7 +172,7 @@ def derived_record(
         raise ValueError(f"unknown derivation {kind!r}; one of {', '.join(DERIVED_KINDS)}")
     from evaluation_harness import _seal  # noqa: PLC0415
 
-    _seal.refuse_if_sealed(source.get("dataset_id"), f"a {kind}", source.get("config_id"))
+    _seal.refuse_if_sealed(source.get("dataset_id"), f"a {kind}", source.get("system_id"))
     when = at or now()
     record = json.loads(json.dumps(source))
     for key in (*drop, *RUN_ONLY):

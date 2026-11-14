@@ -64,7 +64,7 @@ _EVALS = [
     if e.get("site")
 ]
 
-#: (label, the label the runs are read under, config_id, metric, claimed). NER reads the rescored runs,
+#: (label, the label the runs are read under, system_id, metric, claimed). NER reads the rescored runs,
 #: because that is the instrument its report states -- the un-rescored copies carry the
 #: pre-fix glm_l and comparing against them would pass for the wrong reason.
 #: (label, runs dir, system id, metric, claimed[, dataset]): the dataset when the id ran on more than one.
@@ -258,7 +258,7 @@ def _family_on(dataset_id, held, argv):
             _store.mkdir(sd, parents=True)
             _store.write_text(
                 rd / "run.json",
-                json.dumps({"run_id": rid, "config_id": cid, "dataset_id": dataset_id, "purpose": "run"}),
+                json.dumps({"run_id": rid, "system_id": cid, "dataset_id": dataset_id, "purpose": "run"}),
             )
             _store.write_text(
                 sd / "score.json", json.dumps({"scorer": "t", "reference": None, "label": "", "first": True})
@@ -283,7 +283,7 @@ def _runs_of(base: str, cid: str, dataset: str | None = None) -> list:
     return [
         (d, m)
         for d, m in _runs_in(base)
-        if m.get("config_id") == cid and (ds is None or m.get("dataset_id") == ds)
+        if m.get("system_id") == cid and (ds is None or m.get("dataset_id") == ds)
     ]
 
 
@@ -343,8 +343,8 @@ COST_REPORTS = {e["report"]: (e["prefix"], e["dataset"]) for e in _EVALS if e.ge
 _SIZE_SUFFIX = re.compile(r"(?:_n\d+)?_v\d+$")
 
 
-def _arm_name(config_id, prefix):
-    return _SIZE_SUFFIX.sub("", config_id.replace(prefix, "", 1))
+def _arm_name(system_id, prefix):
+    return _SIZE_SUFFIX.sub("", system_id.replace(prefix, "", 1))
 
 
 def _first_arm_cell(cells):
@@ -358,7 +358,7 @@ def _billed_and_recorded(prefix, dataset_id):
         if m.get("dataset_id") != dataset_id or not _outputs.has_rows(d):
             continue
         bil, rec, _, _ = billed_and_recorded(d)
-        out[_arm_name(m["config_id"], prefix)] = (bil, rec)
+        out[_arm_name(m["system_id"], prefix)] = (bil, rec)
     return out
 
 
@@ -457,7 +457,7 @@ def _runs_for(base, dataset_id, prefix):
 
     Every lookup in this file used to be its own glob -- three took the last hit, two
     the first, one had a different exclusion rule -- so with two runs sharing a
-    config_id the answer depended on filesystem order. Green on APFS, red on ext4, and
+    system_id the answer depended on filesystem order. Green on APFS, red on ext4, and
     `make ci` was called green for a week on the only machine anyone ran it on.
     """
     try:
@@ -505,7 +505,7 @@ for _rep, _dss in REPORT_DATASETS.items():
                 continue
             _v = (_m.get("scores") or {}).get(_metric)
             if _v is not None:
-                _vals[_arm_name(_m["config_id"], _pref)] = _v
+                _vals[_arm_name(_m["system_id"], _pref)] = _v
         _col = None
         for _i, _line in enumerate(_lines):
             if not _line.startswith("|"):
@@ -763,7 +763,7 @@ def _arm_costs(prefix, dataset_id):
         if m.get("dataset_id") != dataset_id or not _outputs.has_rows(d):
             continue
         bil, rec, _, _ = billed_and_recorded(d)
-        out[_arm_name(m["config_id"], prefix)] = bil or rec
+        out[_arm_name(m["system_id"], prefix)] = bil or rec
     return out
 
 
@@ -861,11 +861,11 @@ def _family_ids(runs_dir, dataset_id, prefix):
     (`se_gemma_l_n100_pairwise_v1`) is a variant of an arm, no member of the family."""
     return sorted(
         {
-            m["config_id"]
+            m["system_id"]
             for _d, m in _runs_in(runs_dir)
             if m.get("dataset_id") == dataset_id
-            and m["config_id"].startswith(prefix)
-            and not re.search(r"_n\d+_(?!v\d+$)", m["config_id"])
+            and m["system_id"].startswith(prefix)
+            and not re.search(r"_n\d+_(?!v\d+$)", m["system_id"])
         }
     )
 
@@ -900,8 +900,8 @@ def _not_significant(leader, runs_dir, dataset_id, metric):
     ]
 
 
-def _provider(runs_dir, config_id, dataset_id):
-    for _d, m in _runs_of(runs_dir, config_id, dataset_id):
+def _provider(runs_dir, system_id, dataset_id):
+    for _d, m in _runs_of(runs_dir, system_id, dataset_id):
         if "20260929" in m["run_id"]:
             continue
         return (m.get("params") or {}).get("provider")
@@ -970,10 +970,10 @@ for _arm, _name in (
 def _cls_correct(prefix):
     out = {}
     for _d, _m in _runs_in(DATA):
-        if _m.get("dataset_id") == _DATASET_OF_PREFIX[f"{prefix}_"] and _m["config_id"].startswith(
+        if _m.get("dataset_id") == _DATASET_OF_PREFIX[f"{prefix}_"] and _m["system_id"].startswith(
             f"{prefix}_"
         ):
-            out[_arm_name(_m["config_id"], f"{prefix}_")] = {_r["item_id"]: _r for _r in item_rows(_d)}
+            out[_arm_name(_m["system_id"], f"{prefix}_")] = {_r["item_id"]: _r for _r in item_rows(_d)}
     return out
 
 
@@ -1262,7 +1262,7 @@ def _v2_family(exp, dataset_id, prefix, leader, metric="correct"):
             }
             for r in item_rows(d)
         ]
-        held.append((m["config_id"], m["run_id"], rows))
+        held.append((m["system_id"], m["run_id"], rows))
     return _family_on(
         dataset_id,
         held,
@@ -1664,7 +1664,7 @@ def _self_gap(scorer):
     _vd = HERE.parent / "data" / "judge-verdicts" / scorer / _m["judging_set_id"]
     _s = _js.load_scores(_m, _sc, _vd)
     _pj = _js.project(_sc, _s, [i["item_id"] for i in _m["items"]])
-    _sm = _js.summarise(_m, _sc, _m["arms"], _s, _pj, {}, "recomputed", True, _vd)
+    _sm = _js.summarise(_m, _sc, _js.set_arms(_m), _s, _pj, {}, "recomputed", True, _vd)
     return {j: v["own_minus_others"] for j, v in _sm["self_family_gap"].items()}
 
 
@@ -1775,7 +1775,7 @@ for _, m in _prefixed(DATA, "cnn_"):
         continue
     if m.get("dataset_id") != "cnn_dailymail_200":
         continue
-    arm = _arm_name(m["config_id"], "cnn_")
+    arm = _arm_name(m["system_id"], "cnn_")
     sc = m.get("scores") or {}
     # Hosted = what the run says it called, not a list of names to leave out. The list
     # was ("bart_l", "lead3"); three more local arms arrived and every one of them would
@@ -1925,7 +1925,7 @@ else:
 # MEDIANS, not means: a local arm's first one to three items pay a one-off
 # initialisation the warm-up does not absorb, which is why the reports quote medians.
 _LINUX = "linux"
-#: (config_id, the report that quotes it, the unit, decimals). The figure itself is
+#: (system_id, the report that quotes it, the unit, decimals). The figure itself is
 #: DERIVED from the runs and then looked for in the report -- it is deliberately not
 #: written here. A literal here would make this check compare the runs to the checker,
 #: which is round-3 M9: the check passes while the report says something else. I made
@@ -1948,7 +1948,7 @@ if not _runs_in(_LINUX):
     missing += 1
     print("  --   re-timed latency: no scores read as linux — skipped")
 else:
-    # LAST WRITE WINS WAS THE BUG. This built `_medians[config_id]` over a sorted glob,
+    # LAST WRITE WINS WAS THE BUG. This built `_medians[system_id]` over a sorted glob,
     # so a second run of one arm overwrote the first or did not, purely by how the two
     # directory names sorted -- the round-3 ext4 defect, which `runs_by_arm` exists to
     # refuse. V8 now also covers `runs-linux`, and this refuses independently, because
@@ -1957,7 +1957,7 @@ else:
     for _d, _lm in _runs_in(_LINUX):
         if not _outputs.has_rows(_d):
             continue
-        _cid = _lm.get("config_id")
+        _cid = _lm.get("system_id")
         _lat = [_r["latency_ms"] for _r in item_rows(_d)]
         if not _lat:
             continue
@@ -2013,7 +2013,7 @@ else:
     for _d, _met in _prefixed(DATA, "cnn_bart_"):
         if not _outputs.has_rows(_d):
             continue
-        _cid = _met.get("config_id")
+        _cid = _met.get("system_id")
         if _met.get("dataset_id") != "cnn_dailymail_200":  # bart_l is also a system of the DailyMail slice
             continue
         _lat = [_r["latency_ms"] for _r in item_rows(_d)]

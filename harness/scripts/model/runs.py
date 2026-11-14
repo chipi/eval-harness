@@ -154,7 +154,7 @@ def arm_prefix(lbl: str) -> str:
 def arm_id(score_dir: Path, rec: dict[str, Any] | None = None) -> str:
     """`<prefix>/<dataset>/<system>`: the arm a score is read in."""
     rec = rec if rec is not None else record(score_dir) or {}
-    return f"{arm_prefix(label(score_dir, rec))}/{rec.get('dataset_id')}/{rec.get('config_id')}"
+    return f"{arm_prefix(label(score_dir, rec))}/{rec.get('dataset_id')}/{rec.get('system_id')}"
 
 
 def run_ids(data: Path | None = None, base: Path | None = None) -> list[str]:
@@ -190,13 +190,13 @@ def scored(
     for rid in run_ids(data):
         for sd in scores_of(rid, data):
             rec = record(sd)
-            if rec is None or not rec.get("config_id"):
+            if rec is None or not rec.get("system_id"):
                 continue
             if dataset_id is not None and rec.get("dataset_id") != dataset_id:
                 continue
-            if system_id is not None and rec.get("config_id") != system_id:
+            if system_id is not None and rec.get("system_id") != system_id:
                 continue
-            if match and match not in str(rec["config_id"]):
+            if match and match not in str(rec["system_id"]):
                 continue
             if label_is is not None and label(sd, rec) != label_is:
                 continue

@@ -298,7 +298,7 @@ def sheet(params: dict) -> dict:
         "dataset": ds,
         "runs": tokens,
         "arms": [
-            {"token": a["token"], "config_id": a["config_id"], "scores": a["scores"]} for a in model["arms"]
+            {"token": a["token"], "system_id": a["system_id"], "scores": a["scores"]} for a in model["arms"]
         ],
         "metric": model["metric"],
         "lower_is_better": model["lower"],

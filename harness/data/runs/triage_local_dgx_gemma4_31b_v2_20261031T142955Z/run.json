@@ -10,7 +10,7 @@
     "ref": "9305d8271e432969a81efa908fca69f4bc539f9f",
     "source": "git"
   },
-  "config_id": "triage_local_dgx_gemma4_31b_v2",
+  "system_id": "triage_local_dgx_gemma4_31b_v2",
   "created_at": "2026-10-31T14:44:04Z",
   "dataset_id": "orrery_triage_v1_labelled",
   "deployment_id": "dgx",

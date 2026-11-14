@@ -191,10 +191,10 @@ def _best(A, arms: list[str], metric: str, lower: bool, goal: dict | None = None
     return goal_views.leader(A, goal, arms, metric, lower)
 
 
-def _arm(A, dataset: str, config_id: str) -> str:
+def _arm(A, dataset: str, system_id: str) -> str:
     """The adapter's arm id for a system (arm_of), else the harness's layout."""
     fn = getattr(A, "arm_of", None)
-    return fn(dataset, config_id) if callable(fn) else f"runs/{dataset}/{config_id}"
+    return fn(dataset, system_id) if callable(fn) else f"runs/{dataset}/{system_id}"
 
 
 def _dirs(A, arm: str) -> list:

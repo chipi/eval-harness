@@ -154,7 +154,7 @@ def tag_sets(dataset_id: str | None = None, data: Path | None = None) -> list[di
 def counts(
     dataset_id: str, run_config: dict[str, str] | None = None, data: Path | None = None
 ) -> dict[str, Any]:
-    """Per arm (its config_id, when `run_config` maps run ids to them; else the run), how many outputs were tagged and
+    """Per arm (its system_id, when `run_config` maps run ids to them; else the run), how many outputs were tagged and
     how many times each mode was: {arm: {"tagged": n, "outputs": m, "modes": {mode: n}}}, across every tag set of the
     dataset. `outputs` counts the outputs read (`ok` ones included: read and found fine)."""
     out: dict[str, dict[str, Any]] = {}
@@ -219,7 +219,7 @@ def tag_sheet(
         "fill": "tags",
         "failure_modes": modes["failure_modes_id"],
         "arms": [
-            {"arm": a["token"], "run": a["run"], "path": a["path"], "config_id": a["config_id"]} for a in arms
+            {"arm": a["token"], "run": a["run"], "path": a["path"], "system_id": a["system_id"]} for a in arms
         ],
         "rows": key_rows,
     }

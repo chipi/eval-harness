@@ -73,9 +73,9 @@ def system(name, **params):
     return ["--system", f"{name}_v1", "--dataset", "tickets_v1"]
 
 
-def run_dir(config_id):
+def run_dir(system_id):
     """The newest run directory of an arm, or None."""
-    names = [n for n in _runstore.listdir(proj, "runs") if n.startswith(config_id + "_")]
+    names = [n for n in _runstore.listdir(proj, "runs") if n.startswith(system_id + "_")]
     return proj / "data" / "runs" / names[-1] if names else None
 
 

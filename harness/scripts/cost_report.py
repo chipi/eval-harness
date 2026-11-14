@@ -107,11 +107,11 @@ def _repeat_names(runs: list) -> dict[Path, str]:
     (r1, r2, r3: the run id's own _rN, else its place in run order), so no two rows read alike."""
     seen: dict[str, int] = {}
     for _d, m in runs:
-        seen[m["config_id"]] = seen.get(m["config_id"], 0) + 1
+        seen[m["system_id"]] = seen.get(m["system_id"], 0) + 1
     nth: dict[str, int] = {}
     out = {}
     for d, m in runs:
-        cid = m["config_id"]
+        cid = m["system_id"]
         nth[cid] = nth.get(cid, 0) + 1
         own = re.search(r"_(r\d+)$", m["run_id"])
         out[d] = f"{cid} {own.group(1) if own else f'r{nth[cid]}'}" if seen[cid] > 1 else cid
@@ -124,7 +124,7 @@ def main() -> int:
     ap.add_argument("--dataset-id", help="only this dataset; default every dataset")
     ap.add_argument(
         "--match",
-        help="only runs whose config_id contains this (judging, which is not by arm, is then left out)",
+        help="only runs whose system_id contains this (judging, which is not by arm, is then left out)",
     )
     ap.add_argument(
         "--json",

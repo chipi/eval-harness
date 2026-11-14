@@ -47,7 +47,7 @@ SIZES = (10, 20, 50, 100)
 
 
 def load(dataset_id: str, metric: str, match: str | None):
-    """All arms' per-item scores on this dataset; optionally filtered by config_id substring."""
+    """All arms' per-item scores on this dataset; optionally filtered by system_id substring."""
     return matrix(runs_on(dataset_id, match=match), metric)
 
 
@@ -121,7 +121,7 @@ def main() -> int:
 
 
 def _run(args: argparse.Namespace) -> int:
-    # Two runs sharing a config_id are averaged together below without
+    # Two runs sharing a system_id are averaged together below without
     # saying so. See _runs.warn_on_ambiguous_runs.
     warn_on_ambiguous_runs("", args.dataset_id)
 

@@ -83,7 +83,7 @@ try:
         proj / "data",
         "r1",
         {
-            "run_id": "r1", "dataset_id": "ds", "config_id": "sys_a", "primary_metric": "a b/c",
+            "run_id": "r1", "dataset_id": "ds", "system_id": "sys_a", "primary_metric": "a b/c",
             "metric_kinds": {"a b/c": "quality"}, "fingerprint": {"data": {"reference_id": "gold/ds"}},
             "created_at": "2026-11-14T10:00:00Z",
         },

@@ -160,7 +160,7 @@ def _data_rm_locks(a: dict) -> list[tuple[str, bool]]:
     out = [("settings", True)]
     path = str(_first(a.get("path")) or "")
     run = path.split("/")[1] if path.startswith("runs/") and path.count("/") >= 1 else None
-    cid = _run_meta(run).get("config_id") if run else None
+    cid = _run_meta(run).get("system_id") if run else None
     if cid:
         out.append((f"system:{cid}", True))
     return out

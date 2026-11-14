@@ -50,7 +50,7 @@ def write_run(proj: Path, name: str, config: str, scores: dict, extra: dict | No
     m = {
         "run_id": name,
         "dataset_id": "dsv",
-        "config_id": config,
+        "system_id": config,
         "scores": scores,
         "metric_kinds": {
             **dict.fromkeys(scores, "quality"),
@@ -246,12 +246,12 @@ try:
     saved = sc.runs_on
     try:
         sc.runs_on = lambda ds, **kw: [
-            (Path("d"), {"config_id": c}) for c in ("a_v1", "b_v1", "a_v2", "b_v2", "c_v1")
+            (Path("d"), {"system_id": c}) for c in ("a_v1", "b_v1", "a_v2", "b_v2", "c_v1")
         ]
         msg = sc._sets_message("dsx")
-        sc.runs_on = lambda ds, **kw: [(Path("d"), {"config_id": c}) for c in ("a_v1", "b_v1")]
+        sc.runs_on = lambda ds, **kw: [(Path("d"), {"system_id": c}) for c in ("a_v1", "b_v1")]
         one = sc._sets_message("dsx")
-        sc.runs_on = lambda ds, **kw: [(Path("d"), {"config_id": c}) for c in ("a", "b")]
+        sc.runs_on = lambda ds, **kw: [(Path("d"), {"system_id": c}) for c in ("a", "b")]
         none = sc._sets_message("dsx")
     finally:
         sc.runs_on = saved
@@ -564,7 +564,7 @@ try:
         cutr.returncode == 0
         and f"WARNING: {cut_run.name}: 2 of 6 output(s) stopped at max_tokens=99" in flat_cut
         and f"({preds[0]['item_id']}, {preds[1]['item_id']})" in flat_cut
-        and "A re-score reads them as they are and scores them as if complete. Raise max_tokens (a new config_id) and run again."
+        and "A re-score reads them as they are and scores them as if complete. Raise max_tokens (a new system_id) and run again."
         in flat_cut
         and flat_cut.index("WARNING: tickets_lead1")
         < flat_cut.index("the goals, the rounds and the catalog"),
@@ -687,7 +687,7 @@ show = [
     "total_cost_usd",
 ]
 kinds = {"cost_usd": "cost", "total_cost_usd": "cost", "latency_ms": "speed"}
-judged_rows = [{"config_id": f"tickets_arm{i}_v1", **dict.fromkeys(show, 3.25)} for i in range(4)]
+judged_rows = [{"system_id": f"tickets_arm{i}_v1", **dict.fromkeys(show, 3.25)} for i in range(4)]
 kept = lbm._fit_columns(show, judged_rows, kinds, "judge_score_unvalidated", False)
 check(
     "leaderboard: a judged table keeps each judge's score beside the panel's, ahead of cost and speed",

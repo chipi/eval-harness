@@ -69,6 +69,10 @@ try:
     (data / "datasets" / "ds1.json").write_text(
         json.dumps({"dataset_id": "ds1", "items": [{"item_id": i} for i in ITEMS]})
     )
+    (data / "systems").mkdir()
+    (data / "systems" / "arm_v1.yaml").write_text(
+        "system_id: arm_v1\n"
+    )  # the last step refuses a run of no system
     m = data / "runs" / "arm_v1_20261101T000000Z"
     adapter = {"fingerprint": {"instrument": {"adapter": {"sha256": "a" * 64}}}}
     old_run(m, OUT, {"run_id": m.name, "dataset_id": "ds1", "config_id": "arm_v1", **adapter}, rows=True)

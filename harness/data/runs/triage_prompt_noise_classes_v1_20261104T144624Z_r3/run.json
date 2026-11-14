@@ -10,7 +10,7 @@
     "ref": "a2ab8c9277e3b164df2c6d1a144ca7f31913eba2",
     "source": "git"
   },
-  "config_id": "triage_prompt_noise_classes_v1",
+  "system_id": "triage_prompt_noise_classes_v1",
   "created_at": "2026-11-04T15:55:46Z",
   "dataset_id": "orrery_triage_v1_labelled_v2",
   "fingerprint": {

@@ -22,11 +22,11 @@ from evaluation_harness._check import check, summary
 
 ITEMS = ["itemA"]
 ARMS: list[dict[str, Any]] = [
-    {"config_id": f"arm{k}_v1", "run": f"arm{k}_v1_2026", "dir": None, "family": "x"} for k in range(3)
+    {"system_id": f"arm{k}_v1", "run": f"arm{k}_v1_2026", "dir": None, "family": "x"} for k in range(3)
 ]
 ARTICLES = {"itemA": "Article text for itemA. It is long enough to be an article."}
 OUTPUTS: dict[str, dict[str, str]] = {
-    str(a["config_id"]): {"itemA": f"summary {k} about itemA"} for k, a in enumerate(ARMS)
+    str(a["system_id"]): {"itemA": f"summary {k} about itemA"} for k, a in enumerate(ARMS)
 }
 
 

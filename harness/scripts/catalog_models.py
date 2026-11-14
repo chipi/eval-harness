@@ -60,9 +60,9 @@ def arm_records(A) -> dict[str, dict]:
     return {arm: x["record"] for x in entries(A) for arm in x["arms"]}
 
 
-def smoke_of(rec: dict, config_id: str) -> str:
+def smoke_of(rec: dict, system_id: str) -> str:
     """The latest arm smoke of a system that names the record: pass, check or none."""
-    status = ((rec.get("smokes") or {}).get(config_id) or {}).get("status")
+    status = ((rec.get("smokes") or {}).get(system_id) or {}).get("status")
     return str(status) if status in ("pass", "check") else "none"
 
 

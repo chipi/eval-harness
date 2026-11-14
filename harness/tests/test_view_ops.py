@@ -93,7 +93,7 @@ def run(run_id: str, dataset: str, config: str, scores: list[float], **extra) ->
         {
             "run_id": run_id,
             "dataset_id": dataset,
-            "config_id": config,
+            "system_id": config,
             "primary_metric": "acc",
             "metric_kinds": {"acc": "quality", "words": "descriptive"},
             "fingerprint": {"data": {"reference_id": f"gold/{dataset}"}},

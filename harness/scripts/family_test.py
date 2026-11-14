@@ -94,10 +94,10 @@ def _opponents(runs: list, against: str, exclude: str) -> list[str]:
     names = [x.strip() for x in against.split(",") if x.strip()]
     if len(names) > 1:
         return sorted(
-            {m["config_id"] for _d, m in runs if m["config_id"] != exclude and m["config_id"] in names}
+            {m["system_id"] for _d, m in runs if m["system_id"] != exclude and m["system_id"] in names}
         )
     return sorted(
-        {m["config_id"] for _d, m in runs if m["config_id"] != exclude and against in m["config_id"]}
+        {m["system_id"] for _d, m in runs if m["system_id"] != exclude and against in m["system_id"]}
     )
 
 
@@ -185,7 +185,7 @@ def main() -> int:
 def _parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
     ap.add_argument("--dataset-id", required=True)
-    ap.add_argument("--a", help="config_id of the arm under test (with --round: default its leader)")
+    ap.add_argument("--a", help="system_id of the arm under test (with --round: default its leader)")
     ap.add_argument(
         "--against",
         help="the opponent family, declared in advance: a substring of their system ids, or a comma-separated "
@@ -235,7 +235,7 @@ def _parser() -> argparse.ArgumentParser:
 
 def _round_defaults(args, runs: list) -> Any:
     """--round: the round's goal measure, its leader as A and every other arm in play as the family, each as the
-    round reads the arm (a re-score stands in for its run, as pair-test --round reads it). Returns values(config_id,
+    round reads the arm (a re-score stands in for its run, as pair-test --round reads it). Returns values(system_id,
     metric) -> {item_id: value}. The family is the round's own list of arms, fixed before any p-value is computed."""
     from evaluation_harness import _common  # noqa: PLC0415
     from evaluation_harness._rounds import arms_of, resolve  # noqa: PLC0415
@@ -278,7 +278,7 @@ def _round_defaults(args, runs: list) -> Any:
 
 
 def _run(args) -> int:
-    # Two runs sharing a config_id are averaged together below without
+    # Two runs sharing a system_id are averaged together below without
     # saying so. See _runs.warn_on_ambiguous_runs.
     warn_on_ambiguous_runs(args.label, args.dataset_id)
     args.metric = args.metric or default_metric(args.dataset_id, label=args.label)
@@ -290,13 +290,13 @@ def _run(args) -> int:
 
         values = _round_defaults(args, runs)
         keep_arms = set(arms_of(resolve(args.round, args.goal))) | {args.a}
-        runs = [(d, m) for d, m in runs if m["config_id"] in keep_arms]
+        runs = [(d, m) for d, m in runs if m["system_id"] in keep_arms]
     lower = direction(runs, args.metric, args.asc, args.desc)
     if values is not None:
         A = values(args.a, args.metric)
     else:
         A = per_item(
-            [r for r in runs if r[1]["config_id"] == args.a], args.metric, reduce=args.reduce or "mean"
+            [r for r in runs if r[1]["system_id"] == args.a], args.metric, reduce=args.reduce or "mean"
         )
     if not A:
         die(f"no runs for {args.a} on {args.dataset_id}", "not-found")
@@ -310,7 +310,7 @@ def _run(args) -> int:
             values(opp, args.metric)
             if values is not None
             else per_item(
-                [r for r in runs if r[1]["config_id"] == opp], args.metric, reduce=args.reduce or "mean"
+                [r for r in runs if r[1]["system_id"] == opp], args.metric, reduce=args.reduce or "mean"
             )
         )
         items = sorted(set(A) & set(B) - drop)

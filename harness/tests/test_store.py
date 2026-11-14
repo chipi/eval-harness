@@ -369,7 +369,7 @@ try:
     run = data / "runs" / "arm_v1_x"
     run.mkdir(parents=True)
     score_of(run).mkdir(parents=True)
-    (run / "run.json").write_text(json.dumps({"run_id": run.name, "dataset_id": "ds", "config_id": "arm_v1"}))
+    (run / "run.json").write_text(json.dumps({"run_id": run.name, "dataset_id": "ds", "system_id": "arm_v1"}))
     (score_of(run) / "score.json").write_text(
         json.dumps({"scorer": "s1", "reference": "gold/ds", "label": ""})
     )

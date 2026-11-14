@@ -10,7 +10,7 @@
     "ref": "c89004bcdc06e90aef1659d09cf80bb115bddd03",
     "source": "git"
   },
-  "config_id": "triage_local_dgx_gpt_oss_20b_v2",
+  "system_id": "triage_local_dgx_gpt_oss_20b_v2",
   "created_at": "2026-10-31T16:05:41Z",
   "dataset_id": "orrery_triage_v1_labelled",
   "deployment_id": "dgx",

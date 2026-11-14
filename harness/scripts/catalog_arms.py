@@ -120,7 +120,7 @@ def arm_rows(A, by_ds: dict) -> list[dict]:
         for a in arms:
             c = cfg(a["arm"]) if callable(cfg) else {}
             p = (c or {}).get("params") or {}
-            cid = (c or {}).get("config_id") or a["arm"].rsplit("/", 1)[-1]
+            cid = (c or {}).get("system_id") or a["arm"].rsplit("/", 1)[-1]
             derived = next((r.get("derived") for r in a["run_list"] if r.get("derived")), "")
             if a["judge"]:
                 how = f"judged by {a['judge']}"

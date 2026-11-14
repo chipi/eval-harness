@@ -10,7 +10,7 @@
     "ref": "eval-harness-scenario",
     "source": "EVAL_BUILD_REF"
   },
-  "config_id": "cnn_deepseek_l_v2",
+  "system_id": "cnn_deepseek_l_v2",
   "created_at": "2026-09-25T23:51:10Z",
   "dataset_id": "cnn_dailymail_200",
   "fingerprint": {

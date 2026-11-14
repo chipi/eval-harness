@@ -10,7 +10,7 @@
     "ref": "a81669ca05119522b003047bc54a752a10954e3f",
     "source": "git"
   },
-  "config_id": "cnn_bart_m_v1",
+  "system_id": "cnn_bart_m_v1",
   "created_at": "2026-10-14T14:40:01Z",
   "dataset_id": "cnn_dailymail_dm200",
   "fingerprint": {

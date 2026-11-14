@@ -68,7 +68,7 @@ def _repeats(m: dict) -> dict | None:
     sibs = []
     for d in sorted(_store.glob(RUNS, f"{base}_r*")):
         mm = run_record(d.name) or {}
-        if mm.get("config_id") == m["config_id"] and mm.get("repeat_index"):
+        if mm.get("system_id") == m["system_id"] and mm.get("repeat_index"):
             sibs.append(mm)
     if len(sibs) < 2:
         return None
@@ -97,7 +97,7 @@ def carried(m: dict) -> dict:
 
 
 def _config_of(run_id: str) -> str | None:
-    return (run_record(run_id) or {}).get("config_id")
+    return (run_record(run_id) or {}).get("system_id")
 
 
 def evidence(
@@ -111,7 +111,7 @@ def evidence(
     out: dict[str, Any] = {"compared_to": cur["version"]}
     if round_id:
         out["round"] = round_id
-    a, b = m["config_id"], _config_of(cur["promoted_from"])
+    a, b = m["system_id"], _config_of(cur["promoted_from"])
     prim = ((goal or {}).get("success_criteria") or {}).get("primary") or {}
     measure = prim.get("measure") or m.get("primary_metric")
     out["measure"] = measure
@@ -348,10 +348,10 @@ def main() -> int:
 
         cur = _baselines.current(goal_id, m["dataset_id"])
         b_cfg = _config_of(cur["promoted_from"]) if cur else None
-        if cur and b_cfg and b_cfg != m["config_id"] and _looks.is_test_set(m["dataset_id"]):
+        if cur and b_cfg and b_cfg != m["system_id"] and _looks.is_test_set(m["dataset_id"]):
             prim = ((goal or {}).get("success_criteria") or {}).get("primary") or {}
             measure = prim.get("measure") or m.get("primary_metric")
-            k = _looks.key(m["dataset_id"], m["config_id"], b_cfg, measure, "superiority")
+            k = _looks.key(m["dataset_id"], m["system_id"], b_cfg, measure, "superiority")
             with _looks.taking(m["dataset_id"], k, consent=args.confirm_extra_look) as look:
                 look_ctx["look"] = {**look, "override": args.override_no_evidence}
                 print(
@@ -389,7 +389,7 @@ def main() -> int:
         shown = {k: v for k, v in m["scores"].items() if not k.startswith(BOOKKEEPING_PREFIXES)}
         if repeats:
             print(
-                f"  NOTE: {m['config_id']} has {len(repeats['runs'])} repeats; the catalog, the inspector and the tests read"
+                f"  NOTE: {m['system_id']} has {len(repeats['runs'])} repeats; the catalog, the inspector and the tests read"
                 f" their mean.\n        The baseline records this run's own scores and, under `repeats`, the mean:"
             )
             w0 = max([len(k) for k in shown] + [6])

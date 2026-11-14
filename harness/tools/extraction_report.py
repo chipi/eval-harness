@@ -88,7 +88,7 @@ def gold_sets(dataset_id: str) -> dict:
 
 
 def predictions(dataset_id: str, match: str | None) -> dict:
-    """config_id -> {item_id: predicted list or None}. None means unreadable output.
+    """system_id -> {item_id: predicted list or None}. None means unreadable output.
 
     None and `[]` are kept apart here for the same reason the scorer now keeps them
     apart: an arm that could not be read did not predict the empty set.
@@ -97,7 +97,7 @@ def predictions(dataset_id: str, match: str | None) -> dict:
     for d, m in runs_on(dataset_id, match=match):
         if not _outputs.has_rows(d):
             continue
-        cid = m["config_id"]
+        cid = m["system_id"]
         for row in item_rows(d):
             out[cid][row["item_id"]] = (row.get("_meta") or {}).get("predicted")
     return out
@@ -298,7 +298,7 @@ def main() -> int:
     """Report extraction task metrics and analysis."""
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--dataset-id", required=True)
-    ap.add_argument("--match", help="only config_ids containing this substring")
+    ap.add_argument("--match", help="only system_ids containing this substring")
     ap.add_argument("--arm", help="print this arm's per-type table and type confusion")
     ap.add_argument(
         "--miss-threshold",
@@ -308,7 +308,7 @@ def main() -> int:
     )
     ap.add_argument("--top", type=int, default=10, help="rows per consensus section")
     args = ap.parse_args()
-    # Two runs sharing a config_id are averaged together below without
+    # Two runs sharing a system_id are averaged together below without
     # saying so. See _runs.warn_on_ambiguous_runs.
     warn_on_ambiguous_runs("", args.dataset_id)
 

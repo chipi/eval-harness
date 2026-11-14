@@ -336,7 +336,7 @@ def main() -> int:
             check("validate: V1 checks the schema of a score of a pair run", "FAIL V1" in out)
             check("validate: V2 names the pair run's dangling dataset", "FAIL V2" in out and pair in out)
             check("validate: V3 names the pair run with no build ref", "FAIL V3" in out and pair in out)
-            check("validate: V8 refuses a duplicate config_id in the linux arm", "FAIL V8" in out)
+            check("validate: V8 refuses a duplicate system_id in the linux arm", "FAIL V8" in out)
             check("validate: V9 refuses an empty predictions.jsonl", "is empty" in out)
             check("validate: V9 refuses fewer rows than n_items", "prediction rows" in out)
             # The NER parser and the extraction scorer plants land on the same 28 runs: all

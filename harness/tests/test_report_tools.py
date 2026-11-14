@@ -63,7 +63,7 @@ def write_run(
     with _runstore._InProject(proj) as pdata:
         _runfix.put_run(
             pdata,
-            {"run_id": run_id, "dataset_id": dataset, "config_id": config, "scores": scores or {}},
+            {"run_id": run_id, "dataset_id": dataset, "system_id": config, "scores": scores or {}},
             "".join(json.dumps(r) + "\n" for r in rows),
         )
 

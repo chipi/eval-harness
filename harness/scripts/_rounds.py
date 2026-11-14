@@ -218,7 +218,7 @@ def read_under_rescore(
 
     labels: dict[str, set[str]] = {}
     for d, m in done:
-        labels.setdefault(m["config_id"], set()).add(model_runs.label(d))
+        labels.setdefault(m["system_id"], set()).add(model_runs.label(d))
     for arm in model_rounds.in_play(rnd):
         got = labels.get(arm["system"])
         if not got or len(got) != 1 or arm["system"] in apart:
@@ -226,7 +226,7 @@ def read_under_rescore(
         lbl = next(iter(got))
         arm["label"] = lbl
         arm["runs"] = sorted(
-            m["run_id"] for _d, m in runs_on(rnd.get("dataset_id"), label=lbl, config_id=arm["system"])
+            m["run_id"] for _d, m in runs_on(rnd.get("dataset_id"), label=lbl, system_id=arm["system"])
         )
 
 
@@ -332,7 +332,7 @@ def _arm_problems(rel: str, rnd: dict[str, Any], data: Path | None = None) -> li
         arm = f"{model_runs.arm_prefix(lbl)}/{ds}/{a['system']}"
         for rid in a.get("runs") or []:
             run = model_runs.run(str(rid), data)
-            if run is None or run.get("config_id") != a["system"] or run.get("dataset_id") != ds:
+            if run is None or run.get("system_id") != a["system"] or run.get("dataset_id") != ds:
                 out.append(f"rounds/{rel}: arm {arm}: {rid} is not a run of {a['system']} on {ds}")
             elif not any(model_runs.label(sd) == lbl for sd in model_runs.scores_of(str(rid), data)):
                 out.append(f"rounds/{rel}: arm {arm}: {rid} is not scored under {lbl or 'the plain runs'!r}")

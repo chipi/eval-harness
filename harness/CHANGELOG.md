@@ -392,6 +392,22 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Changed
 
+- **A run's `config_id` is its `system_id`** (RFC-032 step 8): a run names its system, so the stored key is
+  `system_id` and "config" is no longer the name of anything. Format 6 (`m0006_system_id`) renames it in every stored
+  record whose key is not hashed: `run.json` (all 305 of this repository's), a score's `metrics.json` and the `unset`
+  list of its `score.json`, faithfulness records, a study log's trial lines and a sealed dataset's unseals, each file
+  written as it was with only the key changed. Kept, because the key is inside a hash (renaming it would move every
+  stored hash): the fingerprint's `arm.config_id` (305 run records, 406 score records here), a judging set's
+  `arms[].config_id` (60 arms in 3 sets), a label set's `source.config_id` (a set is hashed whole into the fingerprint
+  of every run scored against it; 2 here) and a reference manifest's `from_run.config_id` and
+  `promoted_from.source.config_id` (`from_run` is hashed with the reference; 2 and 3 here). A record with both keys,
+  or a `config_id` that is not the id of a system of the project, is refused before anything is written. Writers write
+  `system_id` and readers read it only; the schemas (`metrics`, `faithfulness`, `dataset`) say it. The JSON answers
+  that named it change their key: `evh leaderboard --json` (its rows and its column list), `runs-list --json`, `run
+  --json` (the dry run and the run written), `baselines`, `prompt-show`, the key file `inspect --sheet` writes, an
+  arm's `config` block and the compare answer of `catalog-serve`; the text headers follow (`system_id`), and `evh
+  arm-show` says `system` where it said `config`. Before and after, every view and every catalog page read the same
+  but for those keys.
 - **The catalog never goes stale** (RFC-032 step 8): `evh catalog-serve` rebuilds the pages as a `catalog` job when
   the data changes, at once for a write through the API or an edit, on the next read for any other (another terminal,
   a pull); the pages stay served while it builds and after a failed build, `/api/health` says which, and it no longer

@@ -11,7 +11,7 @@ correctness bugs, not just missing features.
   carries until the release: moving such a pin from one commit to another takes `pip install --force-reinstall`, as
   pip keeps an installed copy of the same version.
 - **Run `evh migrate` once** (`--dry-run` first shows what each step will do; a second run changes nothing). It
-  brings the data to format 5 and records it in `data/project.yaml` (RFC-032): from 0.8.0 a project's data has a
+  brings the data to format 6 and records it in `data/project.yaml` (RFC-032): from 0.8.0 a project's data has a
   format, `evh migrate --check` compares it with the release's, and a deploy runs that check (the RUNBOOK's "The
   data's format"). A SQLite project's database is copied beside it first. Commit `data/project.yaml` with the
   migrated data. Its steps, in order:
@@ -79,6 +79,20 @@ correctness bugs, not just missing features.
     arm of the system in play or the one `--label` names (`--runs` is gone), `evh round-carry` carries an arm of an
     earlier round into the open one, and `evh rounds --json` gives a round's `arms`. A run made with `--round` joins
     its system's arm, so the round's file changes with every run: commit it with the runs.
+  - *system_id* (RFC-032 step 8, format 6): a run's `config_id` named its system, so the stored key is `system_id`
+    ("config" is no longer the name of anything): in `run.json`, a score's `metrics.json` (and the `unset` list of its
+    `score.json`), a faithfulness record, a study log's trial lines and a sealed dataset's unseals. Each file is written
+    as it was, only the key changed. The keys inside a hash keep their name, so no hash moves: the fingerprint's
+    `arm.config_id` (a run's hash), a judging set's `arms[].config_id` (the set's id), a label set's `source.config_id`
+    (a set is hashed whole into every fingerprint of a run scored against it) and a reference manifest's
+    `from_run.config_id` and `promoted_from.source.config_id`. A record holding both keys, or a `config_id` that is not
+    the id of a system of the project, is refused before anything is written, naming it: add the system (or delete the
+    run) and migrate again. Then change what reads the JSON answers: `system_id` replaces `config_id` in `evh leaderboard
+    --json` (its rows and its column list), `evh runs-list --json`, `evh run --json` (the dry run and the run written),
+    `evh baselines`, `evh prompt-show --json`'s runs, an arm's `config` block (`evh arm-show --json`), the compare answer
+    of `catalog-serve`, the key file `evh inspect --sheet` writes and, for a catalog adapter, the `{"system_id", ...}`
+    its `arm_config(arm)` returns; the table headers follow, and `evh arm-show` says `system` where it said `config`.
+    `evh validate`'s V8 is "no two runs share a system_id".
 
   `run-migrate`, `dataset-migrate` and `baselines-migrate` (built during 0.8.0, never released) and
   `fingerprint-migrate` (0.6.0 to 0.7.2) are this one command now. Moving the data into SQLite is

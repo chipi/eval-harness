@@ -115,7 +115,7 @@ so it can gate CI.
 Every run records three things, and is worthless without all of them:
 
 - **system under test** — `build.ref`, set by `EVAL_BUILD_REF` or the git SHA
-- **system** — `config_id` (the system's id), what you ran
+- **system** — `system_id` (the system's id), what you ran
 - **data** — `dataset_id`, what it was measured on
 
 Drop any one and a delta cannot be attributed to anything.

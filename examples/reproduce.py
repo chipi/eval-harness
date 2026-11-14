@@ -90,7 +90,7 @@ def committed(exp: dict) -> dict:
     made when it ran, read under the label `base` names ("runs": a plain run's own)."""
     out = {}
     for d, m in runs_on(exp["dataset"], label="" if exp["base"] == "runs" else exp["base"]):
-        cid = m.get("config_id", "")
+        cid = m.get("system_id", "")
         arm = _arm(exp, cid) if cid.startswith(exp["prefix"]) else None
         if arm is None:
             continue
@@ -116,7 +116,7 @@ def committed(exp: dict) -> dict:
     pins, safe = table["revisions"], table.get("safetensors", {})
     made: dict = {}
     for d, m in runs_on(exp["dataset"]):
-        made.setdefault(m.get("config_id"), []).append((d, m))
+        made.setdefault(m.get("system_id"), []).append((d, m))
     for _arm_name, a in out.items():
         a["cost"], a["minutes"] = 0.0, None
         # A rerun loads the safetensors conversion where one was verified to give identical
@@ -413,9 +413,9 @@ def _latest_repro(exp: dict) -> dict:
     for run in sorted(_store.iterdir(root)) if _store.is_dir(root) else []:
         first = model_runs.first_score(run)
         m = model_runs.record(first) if first else None
-        if m is None or not m.get("config_id", "").startswith(exp["prefix"]):
+        if m is None or not m.get("system_id", "").startswith(exp["prefix"]):
             continue
-        arm = _arm(exp, m["config_id"])
+        arm = _arm(exp, m["system_id"])
         if (
             m.get("dataset_id") == exp["dataset"]
             and arm is not None
@@ -542,7 +542,7 @@ def compare(exp: dict) -> int:
     # Each new arm against the committed field only -- one family per new arm.
     for a in new:
         field = [of(v["dir"]) for v in arms.values()] + [of(reruns[a])]
-        rerun_cid = (model_runs.record(reruns[a]) or {})["config_id"]
+        rerun_cid = (model_runs.record(reruns[a]) or {})["system_id"]
         placed[a] = _family(exp, field, {**cids, a: rerun_cid}, a)
     moved = sorted(set(level_c) ^ set(level_m))
     lines += [

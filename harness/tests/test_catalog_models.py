@@ -37,7 +37,7 @@ def run(data, run_id, config, params, record=None, deployment=None):
     m = {
         "run_id": run_id,
         "dataset_id": "ds1",
-        "config_id": config,
+        "system_id": config,
         "primary_metric": "acc",
         "metric_kinds": {"acc": "quality"},
         "fingerprint": {"data": {"reference_id": "gold/ds1"}},
@@ -575,7 +575,7 @@ fleet = {
 FULL = "9a318e61" + "0" * 32  # the commit a replay recorded, which the version names by its start
 #: The records a replay and a person's naming write (RFC-030): 135 items at the second version, two differing, both named.
 FAITHFULNESS = {
-    "n": 1, "model_id": "triage-fleet", "config_id": "fleet_replay_v1", "dataset_id": "ds1", "items_sha256": "a" * 64,
+    "n": 1, "model_id": "triage-fleet", "system_id": "fleet_replay_v1", "dataset_id": "ds1", "items_sha256": "a" * 64,
     "versions_sha256": "a" * 64, "adapter_sha256": None, "commits": {FULL: 135}, "production_run": "prod", "at": "2026-11-05",
     "counts": {"items": 135, "agree": 133, "differ": 2, "replay_errors": 0, "production_missing": 0}, "coverage": {},
     "disagreements": [{"item_id": i, "kind": "differ", "commit": FULL} for i in ("clock slack", "a reopen")],

@@ -10,7 +10,7 @@
     "ref": "63868c7f300c553edea552128b9f2bc94c44d098",
     "source": "git"
   },
-  "config_id": "triage_local_dgx_nemotron_35_super_120b_v2",
+  "system_id": "triage_local_dgx_nemotron_35_super_120b_v2",
   "created_at": "2026-10-31T15:51:20Z",
   "dataset_id": "orrery_triage_v1_labelled",
   "deployment_id": "dgx",

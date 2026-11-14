@@ -104,7 +104,7 @@ def main() -> int:
         with _looks.taking(ds_id, k, consent=args.confirm_extra_look) as taken:
             doc = load_dataset(ds_id)
             entry = {
-                "config_id": args.system,
+                "system_id": args.system,
                 "at": now(),
                 "reason": args.reason,
                 "hypothesis": hyp,

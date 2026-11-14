@@ -345,7 +345,7 @@ def trial(
     the line."""
     s, st = spec(goal, sid), state(goal, sid)
     base_cid = st["baseline"]
-    best_cid = (st["best"] or {}).get("config_id") or base_cid
+    best_cid = (st["best"] or {}).get("system_id") or base_cid
     cid = write_trial_system(goal, sid, k, best_cid, proposal)
     code, paid, runs = run_system(cid, s["dataset"], goal, st["round"], int(s.get("repeats") or 1))
     metric = str(s["measure"])
@@ -353,7 +353,7 @@ def trial(
     line: dict[str, Any] = {
         "event": "trial",
         "k": k,
-        "config_id": cid,
+        "system_id": cid,
         "from": best_cid,
         "change": {"params": proposal.get("params") or {}, "prompts": sorted(proposal.get("prompts") or {})},
         "hypothesis": proposal.get("hypothesis"),
@@ -399,7 +399,7 @@ def _runs_of(dataset: str, cid: str) -> list[str]:
     """The system's runs on the study's dataset (a confirmation's runs on the test set are not its trials')."""
     from evaluation_harness import _runs  # noqa: PLC0415
 
-    return [m["run_id"] for _d, m in _runs.runs_on(dataset, config_id=cid)]
+    return [m["run_id"] for _d, m in _runs.runs_on(dataset, system_id=cid)]
 
 
 # ── samplers ───────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -416,7 +416,7 @@ def weakest(goal: str, sid: str, best_cid: str, n: int) -> list[dict[str, Any]]:
     s = spec(goal, sid)
     metric = str(s["measure"])
     lower = lower_is_better(goal, metric) or s.get("direction") == "lower"
-    runs = _runs.runs_on(s["dataset"], config_id=best_cid)
+    runs = _runs.runs_on(s["dataset"], system_id=best_cid)
     if not runs:
         return []
     scores: dict[str, list[float]] = {}
@@ -442,7 +442,7 @@ def sampler_state(goal: str, sid: str) -> dict[str, Any]:
     from evaluation_harness import _spend  # noqa: PLC0415
 
     s, st = spec(goal, sid), state(goal, sid)
-    best_cid = (st["best"] or {}).get("config_id") or st["baseline"]
+    best_cid = (st["best"] or {}).get("system_id") or st["baseline"]
     _p, best_cfg = system_of(best_cid)
     return {
         "weakest_items": weakest(goal, sid, best_cid, int(s.get("show_items", 5))),
@@ -450,7 +450,7 @@ def sampler_state(goal: str, sid: str) -> dict[str, Any]:
         "measure": s.get("measure"),
         "baseline": st["baseline"],
         "best": {
-            "config_id": best_cid,
+            "system_id": best_cid,
             "params": best_cfg.get("params") or {},
             "prompts": {
                 n: (_prompt_text(v) if isinstance(v, dict) else None)
@@ -483,7 +483,7 @@ def grid_next(goal: str, sid: str) -> dict[str, Any] | None:
     """The grid sampler: the space's groups in order, one value at a time from the best so far; a group ends after
     `move_on_after` trials without a kept one, or when its values are tried. None: the space is exhausted."""
     s, st = spec(goal, sid), state(goal, sid)
-    best_cid = (st["best"] or {}).get("config_id") or st["baseline"]
+    best_cid = (st["best"] or {}).get("system_id") or st["baseline"]
     _p, best_cfg = system_of(best_cid)
     params = best_cfg.get("params") or {}
     tried = {(json.dumps(t.get("change", {}).get("params") or {}, sort_keys=True)) for t in st["trials"]}
@@ -645,7 +645,7 @@ def open_study(goal: str, sid: str) -> dict[str, Any]:
         rnd,
         base,
         "",
-        sorted(m["run_id"] for _d, m in runs_on(s["dataset"], label="", config_id=base)),
+        sorted(m["run_id"] for _d, m in runs_on(s["dataset"], label="", system_id=base)),
         None,
         None,
     )
@@ -682,7 +682,7 @@ def close_study(goal: str, sid: str, reason: str) -> dict[str, Any]:
     summary = (
         f"{len(st['trials'])} trial(s), {len(kept)} kept; "
         + (
-            f"best: {kept[-1]['config_id']} ({kept[-1].get('hypothesis')})"
+            f"best: {kept[-1]['system_id']} ({kept[-1].get('hypothesis')})"
             if kept
             else "nothing beat the baseline"
         )
@@ -698,7 +698,7 @@ def close_study(goal: str, sid: str, reason: str) -> dict[str, Any]:
         for t in st["trials"]:
             if t.get("outcome") != "kept":
                 model_rounds.retire(
-                    rnd, t["config_id"], str(t.get("reason") or t.get("outcome") or "dropped"), None
+                    rnd, t["system_id"], str(t.get("reason") or t.get("outcome") or "dropped"), None
                 )
         rnd["status"] = "closed"
         rnd["closed_at"] = _common.now()
@@ -757,7 +757,7 @@ def mark_interrupted(goal: str, sid: str) -> list[int]:
         k = number(p)
         if k is None or k in have:
             continue
-        append(goal, sid, {"event": "trial", "k": k, "config_id": f"{sid}-t{k}", "change": {"params": {}, "prompts": []},
+        append(goal, sid, {"event": "trial", "k": k, "system_id": f"{sid}-t{k}", "change": {"params": {}, "prompts": []},
                            "outcome": "failed", "reason": "interrupted: the study stopped during this trial", "runs": [],
                            "cost_usd": 0, "shown": []})  # fmt: skip
         out.append(k)

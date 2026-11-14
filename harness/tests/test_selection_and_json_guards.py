@@ -41,8 +41,8 @@ def evh(*args: str, cwd: Path = HARNESS, **env_over: str) -> subprocess.Complete
     )
 
 
-def run_of(config_id: str) -> Path:
-    return next(p for p in sorted(RUNS.iterdir()) if p.name.startswith(config_id + "_2"))
+def run_of(system_id: str) -> Path:
+    return next(p for p in sorted(RUNS.iterdir()) if p.name.startswith(system_id + "_2"))
 
 
 def main() -> int:

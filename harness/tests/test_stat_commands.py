@@ -70,7 +70,7 @@ def write_run(
     meta: dict,
     run_id: str,
     dataset_id: str,
-    config_id: str,
+    system_id: str,
     scores: dict,
     outputs: dict | None = None,
     ref_id: str | None = None,
@@ -81,7 +81,7 @@ def write_run(
     metrics = {
         "run_id": run_id,
         "dataset_id": dataset_id,
-        "config_id": config_id,
+        "system_id": system_id,
         "build": {"ref": "abc123def456"},
         "scores": scores,
         "metric_kinds": dict.fromkeys(scores, "quality"),
@@ -348,17 +348,17 @@ def test_silver_calibrate_basic() -> int:
     }
 
     # Write two versions of each arm (ref and arm sides)
-    # Use config_id with the version suffix so --ref-match and --arm-match work
+    # Use system_id with the version suffix so --ref-match and --arm-match work
     for arm_name, scores in arm_scores.items():
         for version in ["_v1", "_v2"]:
             run_id = f"{arm_name}{version}"
-            config_id = f"{arm_name}{version}"
+            system_id = f"{arm_name}{version}"
             outputs = {f"i{i:02d}": {"metric": s} for i, s in enumerate(scores)}
             write_run(
                 meta,
                 run_id,
                 dataset_id,
-                config_id,
+                system_id,
                 {"overlap_f1": sum(scores) / len(scores)},
                 outputs=outputs,
                 ref_id=f"gold/{dataset_id}",
@@ -401,13 +401,13 @@ def test_silver_calibrate_refuses_too_few_arms() -> int:
     for arm_name in ["arm_a", "arm_b", "arm_c"]:
         for version in ["_v1", "_v2"]:
             run_id = f"{arm_name}{version}"
-            config_id = f"{arm_name}{version}"
+            system_id = f"{arm_name}{version}"
             outputs = {f"i{i:02d}": {"metric": 0.8} for i in range(10)}
             write_run(
                 meta,
                 run_id,
                 dataset_id,
-                config_id,
+                system_id,
                 {"overlap_f1": 0.8},
                 outputs=outputs,
                 ref_id=f"gold/{dataset_id}",
@@ -539,13 +539,13 @@ def mutation_test_silver_calibrate() -> int:
     for arm_name, scores in arm_scores.items():
         for version in ["_v1", "_v2"]:
             run_id = f"{arm_name}{version}"
-            config_id = f"{arm_name}{version}"
+            system_id = f"{arm_name}{version}"
             outputs = {f"i{i:02d}": {"metric": s} for i, s in enumerate(scores)}
             write_run(
                 meta,
                 run_id,
                 dataset_id,
-                config_id,
+                system_id,
                 {"overlap_f1": sum(scores) / len(scores)},
                 outputs=outputs,
                 ref_id=f"gold/{dataset_id}",
@@ -849,16 +849,16 @@ def test_json_leaderboard() -> int:
     arms = g["arms"]
     check(
         "leaderboard --json: arms in rank order, with runs and acc as numbers",
-        [a["config_id"] for a in arms] == ["arm_a", "arm_b", "arm_c", "arm_d"]
+        [a["system_id"] for a in arms] == ["arm_a", "arm_b", "arm_c", "arm_d"]
         and [a["metrics"]["acc"] for a in arms] == [1.0, 0.75, 0.5, 0.25]
         and [a["n_runs"] for a in arms] == [1, 1, 1, 1]
         and (g["sort_by"], g["direction"]) == ("acc", "higher"),
         arms,
     )
-    rows = table_rows(e, "config_id")
+    rows = table_rows(e, "system_id")
     check(
         "leaderboard --json: the table's rows are the text's, raw (a number, not 16 characters of it)",
-        [r["config_id"] for r in rows] == [a["config_id"] for a in arms]
+        [r["system_id"] for r in rows] == [a["system_id"] for a in arms]
         and all(f"{r['acc']:.4f}" in text.stdout for r in rows)
         and all(isinstance(r["acc"], float) for r in rows),
         rows,
@@ -1048,8 +1048,8 @@ def test_json_runs_list() -> int:
     )
     a = next(r for r in rows if r["run_id"] == "run_arm_a")
     check(
-        "runs-list --json: run_id, config_id, dataset_id, created_at, build, directory and the scores as numbers",
-        (a["config_id"], a["dataset_id"], a["created_at"], a["build_ref"], a["dirty"])
+        "runs-list --json: run_id, system_id, dataset_id, created_at, build, directory and the scores as numbers",
+        (a["system_id"], a["dataset_id"], a["created_at"], a["build_ref"], a["dirty"])
         == ("arm_a", "dsj", "2026-11-01T10:00:00Z", "abc123def456", False)
         and a["directory"] == "data/runs/run_arm_a"
         and a["scores"] == {"acc": 1.0, "latency_ms": 400.0, "total_cost_usd": 4.0},

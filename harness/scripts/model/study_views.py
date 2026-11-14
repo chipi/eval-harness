@@ -96,7 +96,7 @@ def show_study(goal: str, sid: str, data: Path | None = None) -> dict[str, Any]:
         "baseline": st["baseline"],
         "spent_usd": st["spent_usd"],
         "rows": _rows(st["trials"]),
-        "best": (st["best"] or {}).get("config_id"),
+        "best": (st["best"] or {}).get("system_id"),
         "open_ask": (st["open_ask"] or {}).get("ask_id"),
         "end": (st["end"] or {}).get("reason"),
         "summary": (st["end"] or {}).get("summary"),

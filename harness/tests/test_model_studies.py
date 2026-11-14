@@ -126,7 +126,7 @@ START = {
 
 
 def trial(k: int, outcome: str, delta: float, **more) -> dict:
-    return {"event": "trial", "k": k, "config_id": f"s1-t{k}", "from": "one_v1", "outcome": outcome, "cost_usd": 0.01,
+    return {"event": "trial", "k": k, "system_id": f"s1-t{k}", "from": "one_v1", "outcome": outcome, "cost_usd": 0.01,
             "reason": f"decided {outcome}", "hypothesis": f"sentences = {k + 1}", "runs": [f"s1-t{k}_r"],
             "change": {"params": {"sentences": k + 1}, "prompts": []}, "vs_best": {"delta": delta, "p": 0.01},
             "at": f"2026-11-12T14:0{k}:00Z", **more}  # fmt: skip
@@ -220,7 +220,7 @@ try:
         and st["round"] == "r1"
         and st["baseline"] == "one_v1"
         and len(st["trials"]) == 2
-        and (st["best"] or {}).get("config_id") == "s1-t1"
+        and (st["best"] or {}).get("system_id") == "s1-t1"
         and st["spent_usd"] == 0.02
         and len(st["confirms"]) == 2
         and st["trials"][0].get("group") == "length",

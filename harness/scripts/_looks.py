@@ -94,7 +94,7 @@ def recorded(dataset_id: str, data: Path | None = None) -> list[dict[str, Any]]:
             found.append(
                 {
                     **u["look"],
-                    "what": f"dataset-unseal {u.get('config_id')}",
+                    "what": f"dataset-unseal {u.get('system_id')}",
                     "actor": u.get("actor"),
                     "at": u.get("at"),
                 }

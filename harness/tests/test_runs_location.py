@@ -24,7 +24,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
 import _runstore
 
 RUN = "arm_v1_20261031T000000Z"
-REC = {"dataset_id": "x", "config_id": "arm_v1", "created_at": "2026-10-31", "n_items": 1}
+REC = {"dataset_id": "x", "system_id": "arm_v1", "created_at": "2026-10-31", "n_items": 1}
 
 
 def project(root: Path, ignore: str) -> Path:
@@ -125,7 +125,7 @@ with tempfile.TemporaryDirectory() as tmp:
     _runstore.make_run(
         kept / "runs",
         "local_v1_20261031T000000Z",
-        {**REC, "config_id": "local_v1"},
+        {**REC, "system_id": "local_v1"},
         scores=[
             {"scorer": "s1", "reference": "gold/x", "first": True, "rows": [{"item_id": "i1", "acc": 1.0}]}
         ],
@@ -187,7 +187,7 @@ check("supersede: an arm with a run nobody re-scored stays", "superseded_by" not
 with tempfile.TemporaryDirectory() as tmp:
     data = Path(tmp) / "data"
     ref = {"fingerprint": {"data": {"reference_id": "gold/x"}}}
-    meta: dict = {"dataset_id": "x", "config_id": "a_v1", "created_at": "2026-10-31", **ref}
+    meta: dict = {"dataset_id": "x", "system_id": "a_v1", "created_at": "2026-10-31", **ref}
     rows = [{"item_id": "i1", "acc": 1.0}]
     _runstore.make_run(
         data / "runs",

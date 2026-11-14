@@ -217,7 +217,7 @@ def main() -> int:
             dataset=dataset,
             reference_id=args.reference_id,
             reference_tier=args.reference_tier,
-            config_id=args.system_id,
+            system_id=args.system_id,
             params=params,
             adapter_id=f"imported:{args.scorer_id}",
             adapter_path=None,
@@ -231,7 +231,7 @@ def main() -> int:
         metrics_doc = run_record(
             run_id=run_id,
             dataset_id=args.dataset_id,
-            config_id=args.system_id,
+            system_id=args.system_id,
             build={"ref": args.build_ref, "dirty": None, "source": "import-run --build-ref"},
             scores=scores,
             n_items=len(rows),

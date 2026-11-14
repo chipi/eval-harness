@@ -173,10 +173,11 @@ try:
     # this release's format, and its views give the numbers that release gave.
     import json
 
-    def board(doc: dict) -> dict:
-        """A leaderboard's numbers per arm: its quality and its length."""
+    def board(doc: dict, key: str = "system_id") -> dict:
+        """A leaderboard's numbers per arm: its quality and its length. `key` names an arm in the document: 0.7.2's
+        answer (frozen) says `config_id`, this release's says `system_id`."""
         return {
-            a["config_id"]: {k: a["metrics"].get(k) for k in ("overlap_f1", "output_words")}
+            a[key]: {k: a["metrics"].get(k) for k in ("overlap_f1", "output_words")}
             for g in doc["result"]["values"]["groups"]
             for a in g["arms"]
         }
@@ -190,7 +191,9 @@ try:
         after = evh(proj, "migrate", "--check")
         evh(proj, "dataset-materialize", "--dataset-id", "tickets_v1")
         lb = evh(proj, "leaderboard", "--dataset-id", "tickets_v1", "--json")
-        want = board(json.loads((fx / "leaderboard-0.7.2.json").read_text())) if old == 0 else None
+        want = (
+            board(json.loads((fx / "leaderboard-0.7.2.json").read_text()), "config_id") if old == 0 else None
+        )
         got = board(json.loads(lb.stdout)) if lb.returncode == 0 else None
         # step 4: every run in data/runs with its record, each with a first score; no folder of the old layout left
         runs = sorted((proj / "data" / "runs").glob("*")) if (proj / "data" / "runs").is_dir() else []

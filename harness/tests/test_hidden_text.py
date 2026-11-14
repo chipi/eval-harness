@@ -350,7 +350,7 @@ try:
         )
         events = [
             {"event": "start", "round": "r1", "baseline": f"tickets_lead1_{k}_v1", "instruction": f"read {word} first"},
-            {"event": "trial", "k": 1, "config_id": f"study_{k}-t1", "outcome": "kept", "reason": "beat the best so far",
+            {"event": "trial", "k": 1, "system_id": f"study_{k}-t1", "outcome": "kept", "reason": "beat the best so far",
              "hypothesis": f"{word} items are long", "rationale": f"{word} said so", "change": {"params": {"sentences": 2}, "prompts": []},
              "vs_best": {"delta": 0.2}, "cost_usd": 0, "shown": [{"item_id": item, "sha256": "a" * 64}]},
             {"event": "end", "reason": "3 trial(s)", "summary": "1 trial(s), 1 kept"},
@@ -367,7 +367,7 @@ try:
         )
     # A faithfulness record of a replay on each dataset: what production and the replay answered quote the item.
     for k, word in MARK.items():
-        rec = {"n": 1, "model_id": f"fleet_{k}", "config_id": "replay_v1", "dataset_id": f"tickets_{k}", "items_sha256": "a" * 64,
+        rec = {"n": 1, "model_id": f"fleet_{k}", "system_id": "replay_v1", "dataset_id": f"tickets_{k}", "items_sha256": "a" * 64,
                "versions_sha256": "a" * 64, "adapter_sha256": None, "commits": {"c" * 40: 1}, "production_run": "prod",
                "counts": {"items": 1, "agree": 0, "differ": 1, "replay_errors": 0, "production_missing": 0}, "coverage": {},
                "disagreements": [{"item_id": item, "kind": "differ", "commit": "c" * 40, "production": f"{word} p", "replay": f"{word} r", "error": f"{word} e"}],

@@ -10,7 +10,7 @@
     "ref": "669ac7d4701117e10c3615404152cec2c67b1024",
     "source": "git"
   },
-  "config_id": "triage_local_x3_nemotron_35_bolt_e4b_v1",
+  "system_id": "triage_local_x3_nemotron_35_bolt_e4b_v1",
   "created_at": "2026-10-30T19:53:13Z",
   "dataset_id": "orrery_triage_v1_labelled",
   "fingerprint": {

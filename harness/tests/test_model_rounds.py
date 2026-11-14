@@ -35,7 +35,7 @@ for k in ("EVAL_DATA_DIR", "EVAL_GOALS_DIR"):
 import _runfix  # noqa: E402
 import _runstore  # noqa: E402
 import yaml  # noqa: E402
-from evaluation_harness import _outputs, _store  # noqa: E402
+from evaluation_harness import _format, _outputs, _store  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 
 env = dict(os.environ, EVH_ACTOR="person:tester", EVAL_BUILD_REF="test-model-rounds")
@@ -70,6 +70,8 @@ def fresh() -> None:
     proj.mkdir()
     evh("init")
     _runstore.write_text(proj, "project.yaml", "format: 4\n")
+    for s in ("sys_a", "sys_b", "sys_c"):  # the last step refuses a run of a system the project lacks
+        _runstore.write_text(proj, f"systems/{s}.yaml", f"system_id: {s}\n")
     _outputs.reset()
 
 
@@ -102,7 +104,7 @@ try:
     m = evh("migrate")
     _outputs.reset()
     rounds = {r: yaml.safe_load(_runstore.read_text(proj, f"rounds/g1/{r}.yaml")) for r in ("r1", "r2", "r3")}
-    check("evh migrate brings it to format 5", m.returncode == 0 and "format: 5" in _runstore.read_text(proj, "project.yaml"), (m.stdout + m.stderr)[-400:])  # fmt: skip
+    check("evh migrate brings it to the release's format", m.returncode == 0 and f"format: {_format.FORMAT}" in _runstore.read_text(proj, "project.yaml"), (m.stdout + m.stderr)[-400:])  # fmt: skip
 
     def arm(rid: str, system: str) -> dict:
         return next((a for a in rounds[rid].get("arms") or [] if a["system"] == system), {})

@@ -49,7 +49,7 @@ check(
     sorted(jobs - named),
 )
 
-_run_meta, _jobs._run_meta = _jobs._run_meta, lambda run_id: {"config_id": "slow_v1"}
+_run_meta, _jobs._run_meta = _jobs._run_meta, lambda run_id: {"system_id": "slow_v1"}
 try:
     run_key = {
         k

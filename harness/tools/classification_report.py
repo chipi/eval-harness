@@ -100,7 +100,7 @@ def main() -> int:
     """Report classification metrics and analysis."""
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--dataset-id", required=True)
-    ap.add_argument("--match", help="only config_ids containing this substring")
+    ap.add_argument("--match", help="only system_ids containing this substring")
     ap.add_argument("--arm", help="print this arm's full confusion matrix")
     ap.add_argument("--sort", default="macro_f1", choices=("macro_f1", "accuracy"))
     ap.add_argument(
@@ -110,7 +110,7 @@ def main() -> int:
         help="flag items missed by at least this share of learned arms",
     )
     args = ap.parse_args()
-    # Two runs sharing a config_id are averaged together below without
+    # Two runs sharing a system_id are averaged together below without
     # saying so. See _runs.warn_on_ambiguous_runs.
     warn_on_ambiguous_runs("", args.dataset_id)
 

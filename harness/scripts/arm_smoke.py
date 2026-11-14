@@ -238,7 +238,7 @@ def _smoke(args: argparse.Namespace) -> int:
     ds = load_dataset(cfg["dataset_id"])
     from evaluation_harness import _seal  # noqa: PLC0415
 
-    _seal.refuse_if_sealed(cfg["dataset_id"], "a smoke test", cfg.get("config_id"))
+    _seal.refuse_if_sealed(cfg["dataset_id"], "a smoke test", cfg.get("system_id"))
     from evaluation_harness import _rounds, _spend  # noqa: PLC0415
 
     # A smoke of a round's arm spends on the round (RFC-026 step 5): its budget's share reserved before the first call.
@@ -260,7 +260,7 @@ def _smoke(args: argparse.Namespace) -> int:
     from evaluation_harness.run import _reference_for  # noqa: PLC0415
 
     ref_dir, _tier = _reference_for(ds["dataset_id"])
-    print(f"arm-smoke: {cfg['config_id']} on {ds['dataset_id']}, {args.items} item(s)")
+    print(f"arm-smoke: {cfg['system_id']} on {ds['dataset_id']}, {args.items} item(s)")
     shown = {
         k: params[k]
         for k in (
@@ -406,7 +406,7 @@ def _smoke(args: argparse.Namespace) -> int:
                 DATA,
                 cfg["model_record"],
                 dep_id,
-                {"kind": "smoke", "system": cfg["config_id"], "dataset": cfg["dataset_id"], **smoke},
+                {"kind": "smoke", "system": cfg["system_id"], "dataset": cfg["dataset_id"], **smoke},
             )
             path = _models.deployments_dir(DATA, cfg["model_record"]) / f"{dep_id}.yaml"
             print(f"  written into {path.relative_to(DATA.parent) if DATA.parent in path.parents else path}")

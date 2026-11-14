@@ -181,7 +181,7 @@ def compute(scorer: str = SCORER) -> dict[str, Any]:
     item_ids = [i["item_id"] for i in m["items"]]
     scores = js.load_scores(m, sc, vdir)
     proj = js.project(sc, scores, item_ids)
-    summ = js.summarise(m, sc, m["arms"], scores, proj, {}, "recomputed", True, vdir)
+    summ = js.summarise(m, sc, js.set_arms(m), scores, proj, {}, "recomputed", True, vdir)
 
     files = [json.loads(_store.read_text(f)) for f in _store.glob(vdir, "*/*.json")]
     hosted = []

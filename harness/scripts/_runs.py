@@ -2,13 +2,13 @@
 
 Every command that reads runs used to walk the runs directory itself, about fifteen times,
 with different filters and orderings: some sorted and some not, some fell back to the
-directory name for a missing config_id, one crashed on a malformed line where another
+directory name for a missing system_id, one crashed on a malformed line where another
 skipped it, one counted a boolean as 1.0 where another dropped it. The inspector's p
 agreed with pair-test's because the committed data is clean, not because the code was
 shared. It is now: every reader goes through these functions.
 
     runs = runs_on("ag_news_200", match="_v2")            # [(score dir, its record)], by run id
-    M = matrix(runs, "accuracy")                           # config_id -> item_id -> mean
+    M = matrix(runs, "accuracy")                           # system_id -> item_id -> mean
     lower = lower_is_better_on(runs, "wer")                # the direction the runs declare
 """
 
@@ -45,18 +45,18 @@ def runs_on(
     *,
     label: str | None = "",
     match: str | None = None,
-    config_id: str | None = None,
+    system_id: str | None = None,
 ) -> list[Run]:
     """Every score read under `label` ("": a plain run's own score, the arm a goal reads; None: any) with its
-    record, by run id; optionally only one dataset, config_ids containing `match`, or exactly `config_id`."""
-    return _model_runs.scored(dataset_id, label_is=label, system_id=config_id, match=match)
+    record, by run id; optionally only one dataset, system_ids containing `match`, or exactly `system_id`."""
+    return _model_runs.scored(dataset_id, label_is=label, system_id=system_id, match=match)
 
 
 def by_arm(runs: Iterable[Run]) -> dict[str, list[Run]]:
-    """config_id -> its runs (repeats, or anything else sharing the id), in sorted order."""
+    """system_id -> its runs (repeats, or anything else sharing the id), in sorted order."""
     out: dict[str, list[Run]] = {}
     for d, m in runs:
-        out.setdefault(m["config_id"], []).append((d, m))
+        out.setdefault(m["system_id"], []).append((d, m))
     return dict(sorted(out.items()))
 
 
@@ -90,9 +90,9 @@ def score_of(row: dict, metric: str) -> float | None:
 
 
 #: Items each arm's runs left unscored this process: its action differed from production's, under which their labels
-#: hold (RFC-031 L3). {config_id: item ids}; the command says it (`_jsonout`).
+#: hold (RFC-031 L3). {system_id: item ids}; the command says it (`_jsonout`).
 NOT_SCORABLE: dict[str, set[str]] = {}
-#: A replay arm's history confound (RFC-031 P1): {config_id: {items, of}}, said by the command.
+#: A replay arm's history confound (RFC-031 P1): {system_id: {items, of}}, said by the command.
 CONFOUND: dict[str, dict[str, int]] = {}
 
 
@@ -117,7 +117,7 @@ def per_item(
     for d, m in runs:
         datasets.add(str((m or {}).get("dataset_id") or ""))
         if (m or {}).get("not_scorable"):  # RFC-031 L3: said by the command (_jsonout)
-            NOT_SCORABLE.setdefault(str(m.get("config_id")), set()).update(m["not_scorable"])
+            NOT_SCORABLE.setdefault(str(m.get("system_id")), set()).update(m["not_scorable"])
         # RFC-031 P1, said by the command: counted over the items this command reads (a period's, under `keep`), not
         # the whole run's (the fleet's beta: "5 of 287" beside a comparison of 52).
         confounded = ((m or {}).get("history_confound") or {}).get("items")
@@ -136,7 +136,7 @@ def per_item(
             if raw is not None:
                 raw.append(v)
         if confounded and hit:
-            CONFOUND[str(m.get("config_id"))] = {"items": len(hit), "of": len(seen)}
+            CONFOUND[str(m.get("system_id"))] = {"items": len(hit), "of": len(seen)}
     # A held-out side's read items count in no score on it (RFC-031 H1): left out here, where every paired command's
     # scores come from, and counted for the command to say.
     for ds in datasets:
@@ -201,7 +201,7 @@ def say_agreement(label: str, ag: dict) -> str:
 def matrix(
     runs: Iterable[Run], metric: str, *, keep: set[str] | None = None, raw: list[float] | None = None
 ) -> dict[str, dict[str, float]]:
-    """config_id -> item_id -> mean `metric`; arms with no value for it are left out."""
+    """system_id -> item_id -> mean `metric`; arms with no value for it are left out."""
     out = {cid: per_item(rs, metric, keep=keep, raw=raw) for cid, rs in by_arm(runs).items()}
     return {cid: items for cid, items in out.items() if items}
 
@@ -268,12 +268,12 @@ def direction(runs: Iterable[Run], metric: str, asc: bool = False, desc: bool = 
 _REPEAT = re.compile(r"_r\d+$")
 
 
-def mixed_versions(config_ids: Iterable[str]) -> dict[str, list[str]]:
+def mixed_versions(system_ids: Iterable[str]) -> dict[str, list[str]]:
     """{arm: its `_vN` endings} for each arm present at more than one version: v1 and v2 of one
     arm are two measurements side by side. Different arms at different versions (opus_v2 beside
     mistral_v1) are not a mix."""
     seen: dict[str, set[str]] = {}
-    for c in config_ids:
+    for c in system_ids:
         m = re.search(r"_v\d+$", c)
         if m:
             seen.setdefault(c[: m.start()], set()).add(m.group(0))
@@ -291,7 +291,7 @@ def is_repeat_set(run_names: list[str]) -> bool:
 
 
 class AmbiguousRuns(Exception):
-    """Two runs claim the same config_id and nothing says which one to read."""
+    """Two runs claim the same system_id and nothing says which one to read."""
 
 
 def default_metric(dataset_id: str, match: str | None = None, label: str | None = "") -> str:
@@ -325,25 +325,25 @@ def default_metric(dataset_id: str, match: str | None = None, label: str | None 
 
 
 def runs_by_arm(label: str, dataset_id: str, prefix: str = "", strip: str = "") -> dict[str, list[Path]]:
-    """config_id -> the score directories read under `label` that produced it, by run id.
+    """system_id -> the score directories read under `label` that produced it, by run id.
 
     WHY THIS EXISTS RATHER THAN A GLOB AT EACH CALL SITE.
 
     Five places in `check_report_claims.py` globbed for a run and took whichever came
     back -- three took the last hit, two the first, and one of them had a different
-    exclusion rule from the others. That is fine while every config_id is unique. Three
+    exclusion rule from the others. That is fine while every system_id is unique. Three
     SciFact arms were re-run, so three were not, and the checker's answer then depended
     on the order the filesystem returned directories in: green on APFS, red on ext4.
     `make ci` was reported green for a week on the only machine anyone had run it on.
 
     REPEATS ARE NOT AMBIGUITY. `--repeat 3` writes `<id>_r1.._r3`, all one measurement
     of one arm, and averaging them is the point. Those come back together. Anything
-    ELSE sharing a config_id is two different measurement occasions wearing one name,
+    ELSE sharing a system_id is two different measurement occasions wearing one name,
     and this raises rather than picking one, because there is no correct pick.
     """
     groups: dict[str, list[tuple[str, Path]]] = {}
     for d, m in runs_on(dataset_id, label=label):
-        cid = m["config_id"]
+        cid = m["system_id"]
         if prefix and not cid.startswith(prefix):
             continue
         key = cid[len(prefix) :] if prefix else cid
@@ -357,7 +357,7 @@ def runs_by_arm(label: str, dataset_id: str, prefix: str = "", strip: str = "") 
         if is_repeat_set([rid for rid, _d in found]):
             continue
         raise AmbiguousRuns(
-            f"{len(found)} runs read as {label or 'runs'} claim config_id {key!r} on "
+            f"{len(found)} runs read as {label or 'runs'} claim system_id {key!r} on "
             f"{dataset_id}: {sorted(rid for rid, _d in found)}.\n"
             f"  These are different measurement occasions sharing one name, so any "
             f"tool reading them picks one by run id.\n"
@@ -368,9 +368,9 @@ def runs_by_arm(label: str, dataset_id: str, prefix: str = "", strip: str = "") 
 
 
 def warn_on_ambiguous_runs(read_as: str = "", dataset_id: str | None = None, label: str = "") -> int:
-    """Say loudly when two runs share a config_id for reasons other than --repeat.
+    """Say loudly when two runs share a system_id for reasons other than --repeat.
 
-    Every loader in this repo groups runs by `config_id` and then averages or picks --
+    Every loader in this repo groups runs by `system_id` and then averages or picks --
     `leaderboard` printed `sf_llama_l_n200_v1 runs=2 0.683350`, the mean of 0.7281 and
     0.6386, a number in no run and no report; `pair_test`, `family_test`,
     `rank_stability` and `holdout_significance` averaged per item across both; the
@@ -386,7 +386,7 @@ def warn_on_ambiguous_runs(read_as: str = "", dataset_id: str | None = None, lab
     """
     groups: dict[str, list[str]] = {}
     for _d, m in runs_on(dataset_id or None, label=read_as):
-        groups.setdefault(m["config_id"], []).append(m["run_id"])
+        groups.setdefault(m["system_id"], []).append(m["run_id"])
     bad = []
     for cid, names in sorted(groups.items()):
         if len(names) < 2:
@@ -396,7 +396,7 @@ def warn_on_ambiguous_runs(read_as: str = "", dataset_id: str | None = None, lab
         bad.append((cid, sorted(names)))
     for cid, names in bad:
         print(
-            f"  WARNING: {len(names)} runs claim config_id {cid!r}"
+            f"  WARNING: {len(names)} runs claim system_id {cid!r}"
             f"{' in ' + label if label else ''} — {', '.join(names)}."
         )
         print(

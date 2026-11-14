@@ -10,7 +10,7 @@
     "ref": "80048ccb9078ffd6cf7d5017c23c7ffb524b5e12",
     "source": "git"
   },
-  "config_id": "triage_local_x3_gemma4_31b_v2",
+  "system_id": "triage_local_x3_gemma4_31b_v2",
   "created_at": "2026-10-31T15:05:53Z",
   "dataset_id": "orrery_triage_v1_labelled",
   "deployment_id": "x3",

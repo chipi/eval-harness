@@ -11,7 +11,7 @@ newer replay of two of the versions, with a disagreement a person named), writte
 - a version's faithfulness is read from the newest record that replayed its commit, never from the model record: an
   older record answers for a commit only it replayed, a version no replay ran has none, a copy of a summary stored in
   the model record is not shown;
-- a record is checked against its schema, and the id it is written under (`config_id` as recorded);
+- a record is checked against its schema, and the id it is written under (`system_id` as recorded);
 - the records are read from the data directory asked for: the catalog's adapter, on a deployment's copy of the data,
   gives the Models page the copy's summaries, and a record written after the copy is not in them;
 - the copy holds the records whole, byte for byte, for a dataset that is not hidden.
@@ -50,7 +50,7 @@ def put(rel: str, text: str) -> None:
 def record(n: int, commits: dict[str, int], disagreements: list[dict], at: str, **more) -> dict:
     agree = sum(commits.values()) - len(disagreements)
     return {
-        "n": n, "model_id": "code1", "config_id": "replay_v1", "dataset_id": "history", "items_sha256": SHA,
+        "n": n, "model_id": "code1", "system_id": "replay_v1", "dataset_id": "history", "items_sha256": SHA,
         "versions_sha256": SHA, "adapter_sha256": SHA, "commits": commits, "production_run": "prod_run",
         "counts": {"items": sum(commits.values()), "agree": agree, "differ": len(disagreements), "replay_errors": 0,
                    "production_missing": 0},
@@ -213,17 +213,17 @@ try:
     # ── the schema ────────────────────────────────────────────────────────────────────────────────────────────────
     good = mf.load("code1", 1)
     good.pop("exceptions")
-    short = {k: v for k, v in good.items() if k != "config_id"}
+    short = {k: v for k, v in good.items() if k != "system_id"}
     try:
         mf.FAITHFULNESS.save("code1/1", good, "person:t")
         refused = ""
     except Problem as exc:
         refused = exc.kind
     check(
-        "a record is checked against its schema: as written it holds; without its `config_id` (as recorded) or under "
+        "a record is checked against its schema: as written it holds; without its `system_id` (as recorded) or under "
         "another model's folder it does not; a record is written by `evh faithfulness`, never edited",
         mf.FAITHFULNESS.problems("code1/1", good) == []
-        and any(p["path"] == ["config_id"] for p in mf.FAITHFULNESS.problems("code1/1", short))
+        and any(p["path"] == ["system_id"] for p in mf.FAITHFULNESS.problems("code1/1", short))
         and mf.FAITHFULNESS.problems("other/1", good)[0]["path"] == ["model_id"]
         and refused == "not-allowed",
         (mf.FAITHFULNESS.problems("code1/1", good), mf.FAITHFULNESS.problems("code1/1", short), refused),

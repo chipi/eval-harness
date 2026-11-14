@@ -643,7 +643,7 @@ def build_fingerprint(
     dataset: dict[str, Any],
     reference_id: str | None,
     reference_tier: str | None,
-    config_id: str,
+    system_id: str,
     params: dict[str, Any],
     adapter_id: str,
     adapter_path: Path | None,
@@ -704,7 +704,8 @@ def build_fingerprint(
         "deployment": deployment,
         "settings": settings_of(params),
         "runner": _runner_identity(None if deployment["in_process"] else libraries),
-        "arm": {"config_id": config_id, "labels": labels_of(params) or None},
+        # `config_id` is inside the hashed fingerprint: renaming it would move every stored hash
+        "arm": {"config_id": system_id, "labels": labels_of(params) or None},
     }
     split_declared(fp["deployment"], fp["settings"])
     if prompt_settings:  # the system's declared prompts (RFC-028): only when declared, so no other run moves

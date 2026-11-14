@@ -10,7 +10,7 @@
     "ref": "ec562c6d0a5fcbffaabc0ab521e5e6f0ec06e449",
     "source": "git"
   },
-  "config_id": "triage_local_mac_llama31_8b_v1",
+  "system_id": "triage_local_mac_llama31_8b_v1",
   "created_at": "2026-10-30T19:57:28Z",
   "dataset_id": "orrery_triage_v1_labelled",
   "fingerprint": {

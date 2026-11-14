@@ -46,12 +46,12 @@ def record_of(dataset_id: str | None, data: Path | None = None) -> dict[str, Any
 
 
 def _opened_at(doc: dict[str, Any]) -> dict[str, str]:
-    """{config_id: when it was first opened}: each unseal's candidate and the system its hypothesis is against."""
+    """{system_id: when it was first opened}: each unseal's candidate and the system its hypothesis is against."""
     out: dict[str, str] = {}
     for u in doc.get("unsealed") or []:
         if not isinstance(u, dict):
             continue
-        for c in (u.get("config_id"), (u.get("hypothesis") or {}).get("against")):
+        for c in (u.get("system_id"), (u.get("hypothesis") or {}).get("against")):
             if c:
                 out.setdefault(str(c), str(u.get("at") or ""))
     return out
@@ -62,19 +62,19 @@ def opened_for(doc: dict[str, Any]) -> set[str]:
     return set(_opened_at(doc))
 
 
-def refuse_if_sealed(dataset_id: str | None, what: str, config_id: str | None = None) -> None:
-    """Refuse `what` on a sealed dataset, unless `config_id` (a system's id) is one an unseal opened it to; with no
+def refuse_if_sealed(dataset_id: str | None, what: str, system_id: str | None = None) -> None:
+    """Refuse `what` on a sealed dataset, unless `system_id` (a system's id) is one an unseal opened it to; with no
     system (a label or a reference, which every system is read against), unless it was unsealed at all. Nothing for any
     other."""
     doc = record_of(dataset_id)
     if not doc.get("sealed"):
         return
-    if (config_id and config_id in opened_for(doc)) or (not config_id and opened_for(doc)):
+    if (system_id and system_id in opened_for(doc)) or (not system_id and opened_for(doc)):
         return
     named = sorted(opened_for(doc))
     die(
         f"{dataset_id} is sealed (held out at {doc['sealed'].get('at', '?')}): {what} is refused"
-        + (f" for {config_id}" if config_id else "")
+        + (f" for {system_id}" if system_id else "")
         + (f"; it is open to {', '.join(named)} only" if named else "")
         + ". Name the candidate first: commit its system with a hypothesis, then "
         f'evh dataset-unseal {dataset_id} --system <system_id> --reason "..."',
@@ -108,7 +108,7 @@ def runs_on_sealed(docs: dict[str, dict[str, Any]], runs: list[tuple[Any, dict[s
         if not doc or not doc.get("sealed"):
             continue
         when = _opened_at(doc)
-        cid = m.get("config_id")
+        cid = m.get("system_id")
         rid = m.get("run_id") or getattr(d, "name", d)
         if cid not in when:
             out.append(f"{rid}: a run of {cid} on sealed {m.get('dataset_id')}, which no unseal names")

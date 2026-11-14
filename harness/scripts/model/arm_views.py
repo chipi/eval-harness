@@ -191,7 +191,7 @@ def arm(A, by_ds: dict, arm_id: str) -> dict[str, Any]:
             }
             for r in a["run_list"]
         ],
-        "config": {k: cfg.get(k) for k in ("config_id", "adapter", "deployment", "params")}
+        "config": {k: cfg.get(k) for k in ("system_id", "adapter", "deployment", "params")}
         if cfg.get("params")
         else None,
         "conditions": (cond_fn(a["arm"]) if callable(cond_fn) else {}) or {},

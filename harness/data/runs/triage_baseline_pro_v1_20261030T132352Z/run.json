@@ -10,7 +10,7 @@
     "ref": "44863aeef2ff57677b352b8b571230c560ff6fd2",
     "source": "git"
   },
-  "config_id": "triage_baseline_pro_v1",
+  "system_id": "triage_baseline_pro_v1",
   "created_at": "2026-10-30T13:25:51Z",
   "dataset_id": "orrery_triage_v1_labelled",
   "fingerprint": {

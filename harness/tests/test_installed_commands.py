@@ -752,7 +752,7 @@ def main() -> int:
         groups = values_of(e).get("groups") or [{}]
         check(
             "leaderboard --json: a ranking with a row per arm, and the ordering test",
-            {"tickets_lead1_v1", "tickets_lead2_v1"} <= {a["config_id"] for a in groups[0].get("arms", [])}
+            {"tickets_lead1_v1", "tickets_lead2_v1"} <= {a["system_id"] for a in groups[0].get("arms", [])}
             and (groups[0].get("ordering") or {}).get("global_p") is not None,
             r.stdout[-300:] + r.stderr[-300:],
         )
@@ -838,7 +838,7 @@ def main() -> int:
             "run --json: the run as data on stdout (one object), the progress on stderr",
             r.stdout.count("\n") == 1
             and len(made) == 1
-            and (made[0]["run_id"], made[0]["config_id"], made[0]["n_items"])
+            and (made[0]["run_id"], made[0]["system_id"], made[0]["n_items"])
             == ("ids_json", "tickets_lead1_v1", 6)
             and "fingerprint" in r.stderr,
             r.stdout[-300:] + r.stderr[-300:],

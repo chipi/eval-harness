@@ -548,7 +548,7 @@ try:
     m = _runstore.read_json(proj, f"runs/{linux_id}/run.json")
     m.update(run_id=linux_id, round="r2", purpose="retime", machine="linux", of=run.name)
     _runstore.write_text(proj, f"runs/{linux_id}/run.json", json.dumps(m))
-    cfg_id = m["config_id"]
+    cfg_id = m["system_id"]
     with _runstore._InProject(proj):
         _rounds.join("tickets_summary", "r2", cfg_id, linux_id, "linux", {"type": "person", "name": "test"})
     arms2 = (yaml.safe_load(_runstore.read_text(proj, "rounds/tickets_summary/r2.yaml")) or {}).get(

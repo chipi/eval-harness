@@ -69,7 +69,7 @@ def run_dir(arm: str) -> Path:
     from evaluation_harness import _outputs  # noqa: PLC0415
     from evaluation_harness._runs import runs_on  # noqa: PLC0415
 
-    hits = [d for d, _m in runs_on("summeval_100", config_id=f"se_{arm}_n100_v1") if _outputs.has_rows(d)]
+    hits = [d for d, _m in runs_on("summeval_100", system_id=f"se_{arm}_n100_v1") if _outputs.has_rows(d)]
     if len(hits) != 1:
         raise SystemExit(f"expected one committed run for se_{arm}_n100_v1, found {len(hits)}")
     return hits[0]

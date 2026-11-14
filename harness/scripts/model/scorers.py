@@ -124,7 +124,7 @@ def judged_scores(scorer_id: str | None = None, data: Path | None = None) -> lis
                 {
                     "scorer": m.get("scorer"),
                     "run": rid,
-                    "system": rec.get("config_id"),
+                    "system": rec.get("system_id"),
                     "set": m.get("reference"),
                     "dir": sd,
                     "sha256": ((rec.get("derived") or {}).get("with") or {}).get("scorer_sha256"),

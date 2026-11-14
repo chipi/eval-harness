@@ -36,7 +36,7 @@ def _runs_of() -> dict[tuple[str, str], list[dict[str, Any]]]:
             out.setdefault((name, str(sha)), []).append(
                 {
                     "run_id": m["run_id"],
-                    "config_id": m.get("config_id"),
+                    "system_id": m.get("system_id"),
                     "dataset_id": m.get("dataset_id"),
                     "metric": prim,
                     "score": score,

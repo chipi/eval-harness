@@ -529,13 +529,13 @@ def pick_subset(item_ids: Sequence[str], frac: float, seed: Any, salt: str) -> l
 
 # ── arms and the judging set ─────────────────────────────────────────────────
 def discover_arms(dataset_id: str, match: str) -> list[dict[str, Any]]:
-    """The primary run of every arm on the dataset: config_id contains `match`, latest wins. `dir` is the score the
+    """The primary run of every arm on the dataset: system_id contains `match`, latest wins. `dir` is the score the
     run made, whose outputs and rows are read."""
     latest: dict[str, tuple[str, Path, dict[str, Any]]] = {}
     # One run per arm, the latest, on purpose: judging scores an arm's outputs, so repeats
     # are not averaged as they are everywhere else (_runs.per_item).
     for d, m in runs_on(dataset_id, match=match or None):
-        cid = m["config_id"]
+        cid = m["system_id"]
         key = m.get("created_at", "") + m["run_id"]
         if cid not in latest or key > latest[cid][0]:
             latest[cid] = (key, d, m)
@@ -543,7 +543,7 @@ def discover_arms(dataset_id: str, match: str) -> list[dict[str, Any]]:
     for cid, (_k, d, m) in sorted(latest.items()):
         arms.append(
             {
-                "config_id": cid,
+                "system_id": cid,
                 "run": m["run_id"],
                 "dir": d,
                 "family": (m.get("params") or {}).get("family")
@@ -556,20 +556,20 @@ def discover_arms(dataset_id: str, match: str) -> list[dict[str, Any]]:
 def config_versions(arms: Sequence[dict[str, Any]]) -> list[str]:
     """The `_vN` endings of each arm present at more than one version (`_runs.mixed_versions`,
     the leaderboard's rule): v1 and v2 of one arm, judged as two. [] when there is no such arm."""
-    return sorted({v for vs in mixed_versions(a["config_id"] for a in arms).values() for v in vs})
+    return sorted({v for vs in mixed_versions(a["system_id"] for a in arms).values() for v in vs})
 
 
 def select_arms(arms: Sequence[dict[str, Any]], spec: str) -> list[dict[str, Any]]:
-    """Restrict to the comma-separated tokens: an exact config_id, else a substring of one.
+    """Restrict to the comma-separated tokens: an exact system_id, else a substring of one.
     A token that matches nothing is an error, not a smaller set."""
     keep: list[dict[str, Any]] = []
     for tok in [t.strip() for t in spec.split(",") if t.strip()]:
-        exact = [a for a in arms if a["config_id"] == tok]
-        hit = exact or [a for a in arms if tok in a["config_id"]]
+        exact = [a for a in arms if a["system_id"] == tok]
+        hit = exact or [a for a in arms if tok in a["system_id"]]
         if not hit:
             die(f"--arms {tok!r} matches none of the {len(arms)} discovered arms", "not-found")
         keep += [a for a in hit if a not in keep]
-    return sorted(keep, key=lambda a: a["config_id"])
+    return sorted(keep, key=lambda a: a["system_id"])
 
 
 def read_outputs(arm: dict[str, Any], item_ids: Sequence[str]) -> dict[str, str]:
@@ -594,10 +594,20 @@ def as_judged(dataset_id: str, arms: list[dict[str, Any]]) -> list[dict[str, Any
     a judged run still takes its run's own id (its metrics are its source run's)."""
     runs = {a["run"] for a in arms}
     for f in sorted(_store.glob(SETS, f"{dataset_id}-*.json")) if _store.is_dir(SETS) else []:
+        # a stored set names an arm by config_id (its id hashes the key); a system id is read from it
         by_run = {x.get("run"): x.get("config_id") for x in read_json(f).get("arms") or []}
-        if set(by_run) == runs and any(by_run[a["run"]] != a["config_id"] for a in arms):
-            return sorted(({**a, "config_id": by_run[a["run"]]} for a in arms), key=lambda a: a["config_id"])
+        if set(by_run) == runs and any(by_run[a["run"]] != a["system_id"] for a in arms):
+            return sorted(({**a, "system_id": by_run[a["run"]]} for a in arms), key=lambda a: a["system_id"])
     return arms
+
+
+def set_arms(manifest: dict[str, Any]) -> list[dict[str, Any]]:
+    """A stored judging set's arms as the rest of the harness reads an arm: the `config_id` the set keeps (its id
+    hashes the key) is the arm's `system_id`."""
+    return [
+        {**{k: v for k, v in a.items() if k != "config_id"}, "system_id": a["config_id"]}
+        for a in manifest["arms"]
+    ]
 
 
 def build_manifest(
@@ -610,10 +620,10 @@ def build_manifest(
     outputs: dict[str, dict[str, str]],
     base_prompt: str,
 ) -> dict[str, Any]:
-    """The frozen judging set. `outputs[config_id][item_id]` is that arm's text."""
+    """The frozen judging set. `outputs[system_id][item_id]` is that arm's text."""
     pr = sc["protocol"]
     seed, per_call = pr.get("order_seed", 0), int(pr["outputs_per_call"])
-    arm_ids = [a["config_id"] for a in arms]
+    arm_ids = [a["system_id"] for a in arms]
     if len(arm_ids) < 2:
         die("a judging set needs at least two arms", "not-enough")
     mode = mode_of(sc)
@@ -640,10 +650,10 @@ def build_manifest(
         "dataset_items_sha256": items_sha256,
         "arms": [
             {
-                "config_id": a["config_id"],
+                "config_id": a["system_id"],  # the set id hashes this key: stored sets keep its name
                 "run": a["run"],
                 "family": a.get("family"),
-                "outputs_sha256": _sha(_canon([[i, _sha(outputs[a["config_id"]][i])] for i in item_ids])),
+                "outputs_sha256": _sha(_canon([[i, _sha(outputs[a["system_id"]][i])] for i in item_ids])),
             }
             for a in arms
         ],
@@ -1235,7 +1245,7 @@ def summarise(
     vdir: Path,
     lengths: dict[str, dict[str, int]] | None = None,
 ) -> dict[str, Any]:
-    """Summarize the judging: per-arm scores, judge agreement, controls, and cost. `lengths` ({config_id: {item:
+    """Summarize the judging: per-arm scores, judge agreement, controls, and cost. `lengths` ({system_id: {item:
     words}}) gives each judge's length bias: how far its score follows how long an output is. For pick and
     pairwise the per-arm number is the win rate (mean `won`), with Bradley-Terry strengths beside
     it, and the controls are how often the position and noise checks kept the verdict."""
@@ -1248,7 +1258,7 @@ def summarise(
     thr = float(sc["protocol"].get("contested_threshold", 0.5 if graded else 0.25))
     per_arm: dict = {}
     for a in arms:
-        cid = a["config_id"]
+        cid = a["system_id"]
         col = {j: _mean([proj[i][cid][j] for i in proj]) for j in jids}
         pm = _mean([proj[i][cid]["_mean"] for i in proj])
         vals = [v for v in col.values() if v is not None]
@@ -1438,7 +1448,7 @@ def write_scored_runs(
     fam = {j["id"]: j["params"].get("family") for j in sc["judges"]}
     written = []
     for a in arms:
-        cid, src = a["config_id"], Path(a["dir"])
+        cid, src = a["system_id"], Path(a["dir"])
         m = _model_runs.record(src) or {}
         old_rows = {r["item_id"]: r for r in _runs.item_rows(src)}
         rows = []
@@ -1659,11 +1669,11 @@ def main() -> int:
     )
     ap.add_argument(
         "--match",
-        help="arm set: config_id substring (default: the scorer's arms_match, else every arm on the dataset)",
+        help="arm set: system_id substring (default: the scorer's arms_match, else every arm on the dataset)",
     )
     ap.add_argument(
         "--arms",
-        help="comma-separated config_ids or substrings: judge only these "
+        help="comma-separated system_ids or substrings: judge only these "
         "arms (a subset is its own judging set id)",
     )
     from evaluation_harness._actor import add_by  # noqa: PLC0415
@@ -1735,7 +1745,7 @@ def main() -> int:
                 "is not what you mean."
             )
         arms = as_judged(args.dataset_id, arms)
-        outputs = {a["config_id"]: read_outputs(a, item_ids) for a in arms}
+        outputs = {a["system_id"]: read_outputs(a, item_ids) for a in arms}
         base = prompt_text(sc)
         items_sha = (
             (_model_runs.record(Path(arms[0]["dir"])) or {})

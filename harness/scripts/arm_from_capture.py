@@ -36,7 +36,7 @@ def main() -> int:
     ap.add_argument("--dataset-id", required=True)
     ap.add_argument("--capture", required=True, help="the capture whose records hold production's decisions")
     ap.add_argument(
-        "--as", required=True, dest="config_id", help="the system's id (e.g. production_2026_11_v1)"
+        "--as", required=True, dest="system_id", help="the system's id (e.g. production_2026_11_v1)"
     )
     ap.add_argument("--like", help="the deployed system, by its id: its adapter is taken")
     ap.add_argument(
@@ -59,13 +59,13 @@ def main() -> int:
             die(f"no capture {args.capture} (evh captures)", "not-found")
         from evaluation_harness.model.systems import SYSTEM  # noqa: PLC0415
 
-        out = DATA / "systems" / f"{dataset_id_ok(args.config_id)}.yaml"
-        if args.config_id in SYSTEM.ids():
+        out = DATA / "systems" / f"{dataset_id_ok(args.system_id)}.yaml"
+        if args.system_id in SYSTEM.ids():
             die(
-                f"system {args.config_id} exists: a system is not overwritten. Name it another way (--as).",
+                f"system {args.system_id} exists: a system is not overwritten. Name it another way (--as).",
                 "would-overwrite",
             )
-        cfg: dict = {"system_id": args.config_id}
+        cfg: dict = {"system_id": args.system_id}
         if args.like:
             from evaluation_harness.model.systems import arm_of  # noqa: PLC0415
 
@@ -104,14 +104,14 @@ def main() -> int:
             + yaml.safe_dump(cfg, sort_keys=False),
             encoding="utf-8",
         )
-        print(f"{out}: the recorded system {args.config_id}, from the capture {args.capture}")
+        print(f"{out}: the recorded system {args.system_id}, from the capture {args.capture}")
         from evaluation_harness.cli import main as evh  # noqa: PLC0415
 
         return evh(
             [
                 "run",
                 "--system",
-                args.config_id,
+                args.system_id,
                 "--dataset",
                 args.dataset_id,
                 *(["--goal", args.goal] if args.goal else []),

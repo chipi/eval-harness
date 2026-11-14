@@ -10,7 +10,7 @@
     "ref": "927bc6d80bd0de0f9b2e0cb05025ee0a56787f8e",
     "source": "git"
   },
-  "config_id": "triage_haiku_55_v1",
+  "system_id": "triage_haiku_55_v1",
   "created_at": "2026-10-30T13:04:41Z",
   "dataset_id": "orrery_triage_v1_labelled",
   "fingerprint": {

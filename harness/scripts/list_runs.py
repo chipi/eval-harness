@@ -39,7 +39,7 @@ def _shown(scores: dict) -> dict:
 
 _RUN_COLUMNS = [
     "run_id",
-    "config_id",
+    "system_id",
     "dataset_id",
     "created_at",
     "build_ref",
@@ -83,7 +83,7 @@ def _runs(label: str) -> int:
         [
             [
                 m["run_id"],
-                m.get("config_id"),
+                m.get("system_id"),
                 m["dataset_id"],
                 m.get("created_at"),
                 m["build"].get("ref"),

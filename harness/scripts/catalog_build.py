@@ -3590,15 +3590,15 @@ def _author_link(r: dict, v: dict, up: str) -> str:
     return arm_link(arms[0]["arm"], author, up) if arms else f"<code>{e(author)}</code>"
 
 
-def _config_link(A: Adapter, r: dict, config_id: str) -> str:
+def _config_link(A: Adapter, r: dict, system_id: str) -> str:
     """A system named in a round, linked to its arm on the round's dataset when it has one."""
     fn = getattr(A, "arm_of", None)
     arm = (
-        fn(r.get("dataset_id", ""), config_id)
+        fn(r.get("dataset_id", ""), system_id)
         if callable(fn)
-        else f"runs/{r.get('dataset_id', '')}/{config_id}"
+        else f"runs/{r.get('dataset_id', '')}/{system_id}"
     )
-    return arm_link(arm, config_id, "../") if arm in set(A.arms()) else f"<code>{e(config_id)}</code>"
+    return arm_link(arm, system_id, "../") if arm in set(A.arms()) else f"<code>{e(system_id)}</code>"
 
 
 def _siblings(by_ds: dict, a: dict, ds: str) -> list:
@@ -3875,7 +3875,7 @@ def render_arm(A: Adapter, a: dict, ds: str, by_ds: dict, out: Path, nav: list) 
                     "capture",
                     f'<a class="cell-link" href="../captures.html#capture-{e(a["recorded"])}">{e(a["recorded"])}</a>',
                 ),
-                ("recorded arm", f"<code>{e(cfg.get('config_id', ''))}</code>"),
+                ("recorded arm", f"<code>{e(cfg.get('system_id', ''))}</code>"),
                 ("outputs read by", e(cfg.get("recorded_by") or "")),
                 ("adapter", f"<code>{e(cfg.get('adapter') or '')}</code>"),
             )
@@ -3889,7 +3889,7 @@ def render_arm(A: Adapter, a: dict, ds: str, by_ds: dict, out: Path, nav: list) 
             for k, x in sorted(cfg["params"].items())
         )
         extra = (
-            f'<p class="small muted">system <code>{e(cfg.get("config_id", ""))}</code>'
+            f'<p class="small muted">system <code>{e(cfg.get("system_id", ""))}</code>'
             + (f" · adapter <code>{e(cfg['adapter'])}</code>" if cfg.get("adapter") else "")
             + (f" · deployment <code>{e(cfg['deployment'])}</code>" if cfg.get("deployment") else "")
             + " · credentials are never shown</p>"
@@ -4315,7 +4315,7 @@ def render_prompts(A: Adapter, out: Path, nav: list) -> None:
                     text = f"<details><summary>the change from v{v['n'] - 1}</summary><pre>{e(diff)}</pre></details>"
                 prev = cur
             run_list = ", ".join(
-                f"{arm_link('runs/' + r['dataset_id'] + '/' + r['config_id'], r['config_id']) if r.get('dataset_id') else e(r['run_id'])}"
+                f"{arm_link('runs/' + r['dataset_id'] + '/' + r['system_id'], r['system_id']) if r.get('dataset_id') else e(r['run_id'])}"
                 + (
                     f' <small class="muted">{e(str(r["metric"]))} {e(str(r["score"]))}</small>'
                     if r.get("score") is not None

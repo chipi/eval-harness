@@ -86,7 +86,7 @@ try:
         syn / "data",
         {
             "run_id": "one_1",
-            "config_id": "arm_one_v1",
+            "system_id": "arm_one_v1",
             "dataset_id": "dsv",
             "scores": {"acc": 0.5, "total_cost_usd": 0.004},
             "metric_kinds": {"acc": "quality", "total_cost_usd": "cost"},
@@ -211,7 +211,7 @@ try:
             empty / "data",
             {
                 "run_id": "one_1",
-                "config_id": "arm_one_v1",
+                "system_id": "arm_one_v1",
                 "dataset_id": "dsv",
                 "scores": {"acc": 0.5},
                 "primary_metric": "acc",

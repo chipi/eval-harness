@@ -1,7 +1,7 @@
 """A hypothesis written into an arm's system before its run (ADR-0025).
 
     hypothesis:
-      against: baseline_v1          # the config_id it is compared with
+      against: baseline_v1          # the system_id it is compared with
       measure: false_alarm          # one of the arm's metrics
       direction: better             # better | worse | no-worse
       statement: "the shorter prompt lowers false alarms"
@@ -78,7 +78,7 @@ def known_metrics(cfg: dict, config_path: Path | None) -> set[str]:
         for a in (goal.get("axes") or {}).values()
         if isinstance(a, dict) and a.get("measure")
     }
-    for _d, m in _runs.runs_on(config_id=cfg.get("config_id")):
+    for _d, m in _runs.runs_on(system_id=cfg.get("system_id")):
         names |= set(m.get("scores") or {})
     names.discard(None)
     return names
@@ -106,7 +106,7 @@ def problems(cfg: dict, config_path: Path | None = None, ids: dict | None = None
     if h["direction"] not in DIRECTIONS:
         out.append(f"hypothesis.direction: {h['direction']!r} is not one of {', '.join(DIRECTIONS)}")
     ids = ids if ids is not None else system_ids()
-    if h["against"] == (cfg.get("config_id") or cfg.get("system_id")):
+    if h["against"] == cfg.get("system_id"):
         out.append("hypothesis.against: the system cannot be compared with itself")
     elif h["against"] not in ids:
         out.append(f"hypothesis.against: no system {h['against']!r} (evh system-list)")

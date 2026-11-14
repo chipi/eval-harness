@@ -59,12 +59,12 @@ def qrels(dataset_id: str) -> dict:
 
 
 def runs(dataset_id: str, match: str | None) -> dict:
-    """All runs on this dataset; optionally filtered by config_id substring."""
+    """All runs on this dataset; optionally filtered by system_id substring."""
     out: dict = {}
     for d, m in runs_on(dataset_id, match=match):
         if not _outputs.has_rows(d):
             continue
-        cid = m["config_id"]
+        cid = m["system_id"]
         rows = {r["item_id"]: r for r in item_rows(d)}
         out[cid] = (m, rows)
     return out
@@ -87,7 +87,7 @@ def main() -> int:
     ap.add_argument("--arm", help="print this arm's rank-movement detail")
     ap.add_argument("--top", type=int, default=10)
     args = ap.parse_args()
-    # Two runs sharing a config_id are averaged together below without
+    # Two runs sharing a system_id are averaged together below without
     # saying so. See _runs.warn_on_ambiguous_runs.
     warn_on_ambiguous_runs("", args.dataset_id)
 

@@ -130,7 +130,7 @@ try:
         "a grid study: sentences 2 kept, 3 and 4 dropped (measured against the best so far), the space exhausted",
         dry.returncode == 0 and "Nothing was called" in dry.stdout and r.returncode == 0
         and outs == {2: "kept", 3: "dropped", 4: "dropped"} and st.get("status") == "ended"
-        and (st.get("best") or {}).get("config_id") == "s1-t1",
+        and (st.get("best") or {}).get("system_id") == "s1-t1",
         (dry.stderr[-200:], r.stderr[-600:], outs, st.get("status")),
     )  # fmt: skip
     import yaml

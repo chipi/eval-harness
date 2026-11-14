@@ -697,7 +697,7 @@ def test_fingerprint_hash_changes_when_anything_does() -> None:
         "dataset": ds,
         "reference_id": None,
         "reference_tier": None,
-        "config_id": "c1",
+        "system_id": "c1",
         "adapter_id": "scripts/adapter.py",
         "adapter_path": HERE / "adapter.py",
         "model_hook": None,
@@ -1026,6 +1026,10 @@ def test_example_scorer_suites_pass() -> None:
         ),
         ("test_promote_hold.py", "a round's leader held for a test with no p says so, never crashes"),
         (
+            "test_model_system_id.py",
+            "a run's config_id is its system_id: format 6 renames every stored record that is not hashed, keeps the hashed keys and their hashes, refuses both keys and a value that is no system",
+        ),
+        (
             "test_model_rounds.py",
             "rounds store their arms: format 4's rounds migrated, each arm's label, runs, entry and retirement, a baseline's round, refusals",
         ),
@@ -1245,7 +1249,7 @@ def test_fingerprint_version_is_read_somewhere() -> None:
         dataset={"dataset_id": "d", "items": []},
         reference_id=None,
         reference_tier=None,
-        config_id="c",
+        system_id="c",
         params={},
         adapter_id="a",
         adapter_path=None,
@@ -1319,7 +1323,7 @@ def test_fingerprint_covers_reference_bytes() -> None:
             "dataset": ds,
             "reference_id": "gold/t1",
             "reference_tier": "gold",
-            "config_id": "c",
+            "system_id": "c",
             "params": {},
             "adapter_id": "a",
             "adapter_path": None,
@@ -1760,7 +1764,7 @@ def test_rescore_rehashes_the_references_it_actually_read() -> None:
             "--dataset-id",
             str(j.get("dataset_id")),
             "--match",
-            j["config_id"],
+            j["system_id"],
             env={"EVAL_DATA_DIR": str(data)},
         )
         added = [p for p in model_runs.scores_of(dst) if p.name not in before]
@@ -2116,7 +2120,7 @@ def test_a_rescored_run_carries_the_current_parse() -> None:
         checked += 1
         want = m["scores"]["f1"]
         if abs(got - want) > 0.0002:
-            stale.append(f"{m['config_id']}: stored {want:.4f}, its own _meta parses to {got:.4f}")
+            stale.append(f"{m['system_id']}: stored {want:.4f}, its own _meta parses to {got:.4f}")
     if not checked:
         print("  --   rescored parse: no run records _meta.predicted — skipped")
         return
@@ -2296,10 +2300,10 @@ def test_nemenyi_table_is_computed_not_copied() -> None:
     )
 
 
-def test_two_runs_sharing_a_config_id_are_refused() -> None:
+def test_two_runs_sharing_a_system_id_are_refused() -> None:
     """A second run of the same arm must stop the tools, not be picked by luck.
 
-    Three SciFact arms were re-run, so three config_ids existed twice in data/runs.
+    Three SciFact arms were re-run, so three system_ids existed twice in data/runs.
     `check_report_claims.py` globbed for a run in five places -- three took the last
     hit, two the first, and one had a different exclusion rule -- so its answer depended
     on the order the filesystem returned directories in. 29/29 on APFS, 28/29 on ext4,
@@ -2334,7 +2338,7 @@ def test_two_runs_sharing_a_config_id_are_refused() -> None:
         f"    got = runs_by_arm('', {ds!r}, prefix='sf_', strip='_n200_v1')\n"
         "    print(json.dumps({'raised': False, 'runs': sum(len(v) for v in got.values()), 'got': str(got)}))\n"
         "except AmbiguousRuns as exc:\n"
-        "    print(json.dumps({'raised': 'claim config_id' in str(exc), 'runs': 0, 'got': str(exc)}))\n"
+        "    print(json.dumps({'raised': 'claim system_id' in str(exc), 'runs': 0, 'got': str(exc)}))\n"
     )
 
     def asked(names: list[str]) -> dict:
@@ -2350,12 +2354,12 @@ def test_two_runs_sharing_a_config_id_are_refused() -> None:
 
     got = asked([src.name, src.name.replace("2026", "2027", 1)])
     check(
-        "duplicate runs: two runs sharing a config_id are refused, not picked",
+        "duplicate runs: two runs sharing a system_id are refused, not picked",
         got["raised"],
         "runs_by_arm returned a winner instead of raising: " + got["got"][:150],
     )
 
-    # The control: a --repeat set shares a config_id BY DESIGN and must still load.
+    # The control: a --repeat set shares a system_id BY DESIGN and must still load.
     got = asked([f"{src.name}_r{i}" for i in (1, 2, 3)])
     check(
         "duplicate runs: but a --repeat set still loads as one arm",
@@ -2557,7 +2561,7 @@ def test_rescore_refuses_a_missing_reference_set() -> None:
             "--dataset-id",
             str(m.get("dataset_id")),
             "--match",
-            m["config_id"],
+            m["system_id"],
             env={"EVAL_DATA_DIR": str(data)},
         )
         check(
@@ -2637,7 +2641,7 @@ def test_rank_stability_ranks_the_right_way_up() -> None:
             _runstore.make_run(
                 tmp / "data" / "runs",
                 f"{arm}_run",
-                {"dataset_id": "rd_v1", "config_id": arm},
+                {"dataset_id": "rd_v1", "system_id": arm},
                 scores=[
                     {
                         "scorer": "s",
@@ -2691,7 +2695,7 @@ def test_v5_tells_a_tie_from_a_copy() -> None:
                 root,
                 name,
                 {
-                    "config_id": name,
+                    "system_id": name,
                     "dataset_id": "ds_v1",
                     "params": {"model": model},
                     "build": {"ref": "test"},
@@ -3092,7 +3096,7 @@ def test_family_test_cache_never_serves_a_stale_answer() -> None:
         _runstore.make_run(
             runs,
             f"{cid}_20260101T000000Z",
-            {"config_id": cid, "dataset_id": "tds", **extra},
+            {"system_id": cid, "dataset_id": "tds", **extra},
             scores=[
                 {
                     "scorer": "s",
@@ -3746,7 +3750,7 @@ def test_judge_score_runs_from_an_installed_package() -> None:
                 data / "runs",
                 f"{arm}_20260101T000000Z",
                 {
-                    "config_id": arm,
+                    "system_id": arm,
                     "dataset_id": "jds_v1",
                     "created_at": "2026-01-01T00:00:00Z",
                     "params": {"family": fam},
@@ -3987,7 +3991,7 @@ def main() -> int:
         test_v4_neither_skips_a_missing_file_nor_hides_what_it_did_not_check,
         test_v10_fails_when_a_derived_run_states_no_scorer,
         test_nemenyi_table_is_computed_not_copied,
-        test_two_runs_sharing_a_config_id_are_refused,
+        test_two_runs_sharing_a_system_id_are_refused,
         test_the_reports_significance_counts_are_real,
         test_promote_reads_its_reason_from_the_env,
         test_rescore_refuses_a_missing_reference_set,

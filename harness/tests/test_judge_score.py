@@ -64,11 +64,11 @@ N_ARMS = 20
 ITEMS = ["itemA", "itemB", "itemC"]
 FAMILIES = ["gemma", "qwen", "other", "other"]
 ARMS: list[dict] = [
-    {"config_id": f"arm{k:02d}_v1", "run": f"arm{k:02d}_v1_2026", "dir": None, "family": FAMILIES[k % 4]}
+    {"system_id": f"arm{k:02d}_v1", "run": f"arm{k:02d}_v1_2026", "dir": None, "family": FAMILIES[k % 4]}
     for k in range(N_ARMS)
 ]
 ARTICLES = {i: f"Article text for {i}. It is long enough to be an article." for i in ITEMS}
-OUTPUTS = {a["config_id"]: {i: f"summary q{k:02d} about {i}" for i in ITEMS} for k, a in enumerate(ARMS)}
+OUTPUTS = {a["system_id"]: {i: f"summary q{k:02d} about {i}" for i in ITEMS} for k, a in enumerate(ARMS)}
 
 
 def scorer(**over):
@@ -268,7 +268,7 @@ check(
     != m1["judging_set_id"],
 )
 bumped = {a: dict(o) for a, o in OUTPUTS.items()}
-bumped[ARMS[3]["config_id"]]["itemB"] += " changed"
+bumped[ARMS[3]["system_id"]]["itemB"] += " changed"
 check(
     "one changed output is a different set",
     manifest_for(outputs=bumped)["judging_set_id"] != m1["judging_set_id"],
@@ -280,7 +280,7 @@ check(
 check(
     "every arm sits in exactly one block per item, in every pass",
     all(
-        sorted(functools.reduce(operator.iadd, it[k], [])) == sorted(a["config_id"] for a in ARMS)
+        sorted(functools.reduce(operator.iadd, it[k], [])) == sorted(a["system_id"] for a in ARMS)
         for it in m1["items"]
         for k in ("primary", "position")
     ),
@@ -321,7 +321,7 @@ msgs = [
     for p in ("primary", "position")
     for b in range(2)
 ]
-names = [a["config_id"] for a in ARMS] + [a["run"] for a in ARMS] + ["gemma", "qwen"]
+names = [a["system_id"] for a in ARMS] + [a["run"] for a in ARMS] + ["gemma", "qwen"]
 check("no arm id, run name or family appears in any prompt", not any(n in m for m in msgs for n in names))
 check(
     "summaries are numbered by position only",
@@ -358,7 +358,7 @@ with tempfile.TemporaryDirectory() as tmp:
     sc = scorer()
     scores = js.load_scores(m1, sc, Path(td))
     proj = js.project(sc, scores, ITEMS)
-    k_of = {a["config_id"]: k for k, a in enumerate(ARMS)}
+    k_of = {a["system_id"]: k for k, a in enumerate(ARMS)}
     check(
         "projection: judge A's score for an arm is the mean of its four dimensions",
         all(abs(proj[i][c]["ja"] - expected_a(k)) < 1e-9 for i in ITEMS for c, k in k_of.items()),
@@ -817,7 +817,7 @@ with tempfile.TemporaryDirectory() as tmp:
             d = runs / a["run"]
             rows = []
             for i in ITEMS:
-                _outputs.writer(d).add(i, OUTPUTS[a["config_id"]][i])
+                _outputs.writer(d).add(i, OUTPUTS[a["system_id"]][i])
                 rows.append(
                     {
                         "item_id": i,
@@ -831,7 +831,7 @@ with tempfile.TemporaryDirectory() as tmp:
             sd = _runfix.put_run(
                 data_dir,
                 {
-                    "config_id": a["config_id"],
+                    "system_id": a["system_id"],
                     "run_id": a["run"],
                     "dataset_id": "ds",
                     "created_at": "2026",
@@ -842,7 +842,7 @@ with tempfile.TemporaryDirectory() as tmp:
                     "fingerprint": {
                         "hash": "abc",
                         "instrument": {"adapter": {"id": "old"}},
-                        "arm": {"config_id": a["config_id"]},
+                        "arm": {"config_id": a["system_id"]},
                     },
                 },
                 rows,
@@ -851,7 +851,7 @@ with tempfile.TemporaryDirectory() as tmp:
         found = js.discover_arms("ds", "_v1")
         check(
             "discover_arms finds one primary run per arm",
-            [a["config_id"] for a in found] == sorted(a["config_id"] for a in ARMS),
+            [a["system_id"] for a in found] == sorted(a["system_id"] for a in ARMS),
         )
         before = {p: p.read_bytes() for p in runs.rglob("*") if p.is_file()}
         sc = scorer()
@@ -972,7 +972,7 @@ with tempfile.TemporaryDirectory() as tmp:
     check(
         "N=1: a fake judge's pointwise verdicts parse and project for both arms",
         st["calls"] == 2 * len(js.tasks(m_one))
-        and sorted(pr1["itemA"]) == sorted(a["config_id"] for a in ARMS[:2])
+        and sorted(pr1["itemA"]) == sorted(a["system_id"] for a in ARMS[:2])
         and abs(pr1["itemA"]["arm00_v1"]["ja"] - expected_a(0)) < 1e-9,
     )
 
@@ -980,11 +980,11 @@ with tempfile.TemporaryDirectory() as tmp:
 sub = js.select_arms(ARMS, "arm03_v1,arm07")
 check(
     "--arms: an exact id and a substring both select",
-    [a["config_id"] for a in sub] == ["arm03_v1", "arm07_v1"],
+    [a["system_id"] for a in sub] == ["arm03_v1", "arm07_v1"],
 )
 check(
     "--arms: an exact id wins over substrings that also match",
-    [a["config_id"] for a in js.select_arms([*ARMS, dict(ARMS[0], config_id="arm00_v1_x")], "arm00_v1")]
+    [a["system_id"] for a in js.select_arms([*ARMS, dict(ARMS[0], system_id="arm00_v1_x")], "arm00_v1")]
     == ["arm00_v1"],
 )
 check(
@@ -1887,7 +1887,7 @@ with tempfile.TemporaryDirectory() as td_, _runstore._InProject(Path(td_) / "pro
         _runfix.put_run(
             rd,
             {
-                "config_id": cid,
+                "system_id": cid,
                 "run_id": name,
                 "dataset_id": ds,
                 "created_at": at,
@@ -1897,18 +1897,18 @@ with tempfile.TemporaryDirectory() as td_, _runstore._InProject(Path(td_) / "pro
     found = js.discover_arms("ds", "")
     check(
         "default arms: every config on the dataset, none from another dataset",
-        [a["config_id"] for a in found] == ["a_v1", "a_v2", "b_v1"],
+        [a["system_id"] for a in found] == ["a_v1", "a_v2", "b_v1"],
     )
     check(
         "default arms: repeat runs of one config are one arm, the latest",
-        next(a for a in found if a["config_id"] == "a_v1")["run"] == "a_v1_r2",
+        next(a for a in found if a["system_id"] == "a_v1")["run"] == "a_v1_r2",
     )
     check(
         "default arms: a mix of config versions is reported",
         js.config_versions(found) == ["_v1", "_v2"]
-        and js.config_versions([a for a in found if a["config_id"] != "a_v2"]) == []
+        and js.config_versions([a for a in found if a["system_id"] != "a_v2"]) == []
         # different arms at different versions are not a mix (the newcomer trial's opus_v2 beside mistral_v1)
-        and js.config_versions([{"config_id": "opus_v2"}, {"config_id": "mistral_v1"}]) == [],
+        and js.config_versions([{"system_id": "opus_v2"}, {"system_id": "mistral_v1"}]) == [],
     )
 
 # A real judge is never handed the fake judge's task, whatever run_judging does.
@@ -2045,7 +2045,7 @@ import yaml  # noqa: E402
 SCHEMAS = HERE.parent / "schemas"
 EXAMPLE = HERE.parents[1] / "examples" / "summeval-judging"
 MARMS = ARMS[:4]
-MIDS = [a["config_id"] for a in MARMS]
+MIDS = [a["system_id"] for a in MARMS]
 MITEMS = [f"it{n}" for n in range(6)]
 MARTICLES = {i: f"Article {i}. It is long enough to be an article." for i in MITEMS}
 
@@ -2053,7 +2053,7 @@ MARTICLES = {i: f"Article {i}. It is long enough to be an article." for i in MIT
 def m_outputs(extra=None):
     """arm k's text is 'summary' plus k + 1 w's; `extra` maps arm index -> w's, to make ties."""
     w = {k: k + 1 for k in range(4)} | (extra or {})
-    return {a["config_id"]: {i: f"summary {'w' * w[k]} {i}" for i in MITEMS} for k, a in enumerate(MARMS)}
+    return {a["system_id"]: {i: f"summary {'w' * w[k]} {i}" for i in MITEMS} for k, a in enumerate(MARMS)}
 
 
 PICK_BASE = (EXAMPLE / "prompt_pick.txt").read_text(encoding="utf-8").strip()
@@ -2947,11 +2947,11 @@ with tempfile.TemporaryDirectory() as tmp:
             d = data_dir / "runs" / a["run"]
             outs = m_outputs()
             for i in MITEMS:
-                _outputs.writer(d).add(i, outs[a["config_id"]][i])
+                _outputs.writer(d).add(i, outs[a["system_id"]][i])
             sd = _runfix.put_run(
                 data_dir,
                 {
-                    "config_id": a["config_id"],
+                    "system_id": a["system_id"],
                     "run_id": a["run"],
                     "dataset_id": "ds",
                     "created_at": "2026",
@@ -2962,7 +2962,7 @@ with tempfile.TemporaryDirectory() as tmp:
                     "fingerprint": {
                         "hash": "abc",
                         "instrument": {"adapter": {"id": "old"}},
-                        "arm": {"config_id": a["config_id"]},
+                        "arm": {"config_id": a["system_id"]},
                     },
                 },
                 [{"item_id": i, "coverage": 0.3, "cost_usd": 0.001, "latency_ms": 5.0} for i in MITEMS],
@@ -3079,9 +3079,9 @@ for sid_ in ("judge-summ-v1", "judge-summ-v2"):
         st_["calls"] == 0 and st_["missing"] == 0 and len(proj_) == old_summ["items_scored"],
         str(st_),
     )
-    arms_ = [{"config_id": c, "family": a["family"]} for c, a in old_summ["per_arm"].items()]
+    arms_ = [{"system_id": c, "family": a["family"]} for c, a in old_summ["per_arm"].items()]
     # The outputs' lengths, as judge-score reads them, for each judge's length bias.
-    found_ = {a["config_id"]: a for a in js.discover_arms(sc_["dataset_id"], sc_.get("arms_match", ""))}
+    found_ = {a["system_id"]: a for a in js.discover_arms(sc_["dataset_id"], sc_.get("arms_match", ""))}
     # the committed summary keeps the ids its arms had; the runs are found under the systems' current ids
     renamed_ = json.loads((HERE.parent / "data" / "renames.json").read_text())["systems"]
     ids_ = [it["item_id"] for it in man_["items"]]

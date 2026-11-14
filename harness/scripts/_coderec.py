@@ -198,7 +198,7 @@ def _unpack(rec: dict[str, Any], commit: str, dest: Path) -> None:
 
 
 def runs_of(model_id: str) -> list[dict[str, Any]]:
-    """The runs whose fingerprint names this record (`deployment.code.record`): run_id, config_id, commits."""
+    """The runs whose fingerprint names this record (`deployment.code.record`): run_id, system_id, commits."""
     from evaluation_harness.model import runs as _model_runs  # noqa: PLC0415
 
     out: list[dict[str, Any]] = []
@@ -211,7 +211,7 @@ def runs_of(model_id: str) -> list[dict[str, Any]]:
             out.append(
                 {
                     "run_id": rec.get("run_id"),
-                    "config_id": rec.get("config_id"),
+                    "system_id": rec.get("system_id"),
                     "commits": code.get("commits"),
                     "faithfulness": rec.get("faithfulness"),
                 }

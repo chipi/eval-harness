@@ -37,7 +37,7 @@ def main() -> int:
         c = rec["counts"]
         named = {e["item_id"]: e for e in rec.get("exceptions") or []}
         print(
-            f"{args.model}/{n}: replay of {rec['config_id']} on {rec['dataset_id']} at {len(rec['commits'])} commit(s), "
+            f"{args.model}/{n}: replay of {rec['system_id']} on {rec['dataset_id']} at {len(rec['commits'])} commit(s), "
             f"against {rec['production_run']}, {rec['at']} by {(rec.get('actor') or {}).get('name', '?')}"
         )
         print(

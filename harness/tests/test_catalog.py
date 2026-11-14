@@ -59,7 +59,7 @@ def run(label, run_id, dataset, config, scores, text=SECRET, kinds=None, ref=Non
         {
             "run_id": run_id,
             "dataset_id": dataset,
-            "config_id": config,
+            "system_id": config,
             "primary_metric": "acc",
             "metric_kinds": kinds or {"acc": "quality", "words": "descriptive"},
             "fingerprint": {"data": {"reference_id": ref or f"gold/{dataset}"}},
@@ -1172,7 +1172,7 @@ try:
             {
                 "run_id": f"{arm}_1",
                 "dataset_id": "ds1",
-                "config_id": arm,
+                "system_id": arm,
                 "fingerprint": {"data": {"reference_id": "gold/ds1"}},
             },
             "".join(
@@ -1362,7 +1362,7 @@ try:
         {
             "run_id": "z_1",
             "dataset_id": "ds6",
-            "config_id": "arm_z",
+            "system_id": "arm_z",
             "primary_metric": "acc",
             "scores": {"acc": 0.9},
         },

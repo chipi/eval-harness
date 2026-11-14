@@ -297,7 +297,7 @@ with tempfile.TemporaryDirectory() as td:
         "dataset": {"dataset_id": "d", "items": []},
         "reference_id": None,
         "reference_tier": None,
-        "config_id": "c",
+        "system_id": "c",
         "adapter_id": "bundled",
         "adapter_path": None,
     }

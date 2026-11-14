@@ -128,7 +128,7 @@ def open_round(argv: list[str]) -> int:
                     "bad-argument",
                 )
             carried = sorted(
-                {m["config_id"] for _d, m in rs.measured_runs(args.dataset) if m.get("goal") == args.goal}
+                {m["system_id"] for _d, m in rs.measured_runs(args.dataset) if m.get("goal") == args.goal}
             )
             if not carried:
                 die(f"--adopt: no run on {args.dataset} names goal {args.goal}", "not-found")
@@ -160,7 +160,7 @@ def open_round(argv: list[str]) -> int:
             # `pair-test --round` then refused ("records no other baseline run").
             runs = rs.measured_runs(args.dataset)
             named = [m["run_id"] for _d, m in runs if m["run_id"] == args.baseline] or sorted(
-                m["run_id"] for _d, m in runs if m.get("config_id") == args.baseline
+                m["run_id"] for _d, m in runs if m.get("system_id") == args.baseline
             )
             if not named:
                 die(
@@ -232,7 +232,7 @@ def _carry_in(doc: dict, systems: list[str], frm: dict | None) -> None:
                 doc, c, src.get("label") or "", list(src.get("runs") or []), frm["round_id"], actor()
             )
             continue
-        runs = sorted(m["run_id"] for _d, m in runs_on(doc["dataset_id"], label="", config_id=c))
+        runs = sorted(m["run_id"] for _d, m in runs_on(doc["dataset_id"], label="", system_id=c))
         if not runs:
             die(f"{c!r}: no run of it on {doc['dataset_id']} to carry in", "not-found")
         model_rounds.carry(doc, c, "", runs, None, actor())
@@ -269,7 +269,7 @@ def _adopt_scoring(doc: dict, why: str, rs) -> None:
         before = (old.get("scores") or {}).get(measure)
         after = (new.get("scores") or {}).get(measure)
         fmt = lambda v: "—" if v is None else f"{v:.4g}"  # noqa: E731
-        print(f"    {m['config_id']:52} {measure} {fmt(before)} -> {fmt(after)}  ({m['run_id']})")
+        print(f"    {m['system_id']:52} {measure} {fmt(before)} -> {fmt(after)}  ({m['run_id']})")
     written = sorted({str(model_runs.meta(x).get("label") or "") for x, _ in done})
     _rounds.read_under_rescore(doc, done)
     doc["scoring"] = [{"at": now(), "scorer": scorer, "why": why, "written": written, "runs": len(done)}]

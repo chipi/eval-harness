@@ -10,7 +10,7 @@
     "ref": "95fa9eabcde014300b4a8b4e84fef8249c7622ce",
     "source": "git"
   },
-  "config_id": "triage_hosted_gpt_oss_120b_v1",
+  "system_id": "triage_hosted_gpt_oss_120b_v1",
   "created_at": "2026-10-30T14:51:11Z",
   "dataset_id": "orrery_triage_v1_labelled",
   "fingerprint": {

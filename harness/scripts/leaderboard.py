@@ -438,7 +438,7 @@ def _fit_columns(
     order = first + [k for k in frontier if k and k not in first]
     order += [k for k in show if kinds.get(k, "quality") == "quality" and k not in order]
     order += [k for k in show if k not in order]
-    arm_w = max(len(r["config_id"]) + 2 for r in rows) + 2
+    arm_w = max(len(r["system_id"]) + 2 for r in rows) + 2
     used = 2 + arm_w + 1 + 4 + 2
     keep: set[str] = set()
     for k in order:
@@ -473,7 +473,7 @@ def _frontier(rows: list[dict], quality: str, kinds: dict[str, str], asc: bool =
     if not (cost and speed):
         print("\n  No frontier: needs a cost and a speed metric alongside quality.")
         return None
-    pts: dict[str, tuple] = {r["config_id"]: (r.get(quality), r.get(cost), r.get(speed)) for r in rows}
+    pts: dict[str, tuple] = {r["system_id"]: (r.get(quality), r.get(cost), r.get(speed)) for r in rows}
     pts = {a: v for a, v in pts.items() if None not in v}
     if len(pts) < 2:
         return None
@@ -582,7 +582,7 @@ def main() -> int:
     # a way to scope the table, the only ways to get a readable leaderboard are to delete
     # the older runs or to read past them. Deleting paid-for results to tidy a table is how
     # 18 arms were lost once; this is the alternative.
-    ap.add_argument("--match", help="only arms whose config_id contains this substring")
+    ap.add_argument("--match", help="only arms whose system_id contains this substring")
     ap.add_argument(
         "--label",
         default=None,
@@ -656,7 +656,7 @@ def _runs_of(A, row: dict, dataset: str) -> list:
     dirs = getattr(A, "_dirs", None)
     if callable(dirs):
         return [(d, m) for d in dirs(row["arm"]) if (m := model_runs.record(d))]
-    return runs_on(dataset, label=row["read_as"], config_id=row["arm"].rsplit("/", 1)[-1])
+    return runs_on(dataset, label=row["read_as"], system_id=row["arm"].rsplit("/", 1)[-1])
 
 
 def _run(args: argparse.Namespace) -> int:
@@ -773,7 +773,7 @@ def _warn_ambiguous(by_config: dict[str, list[dict]]) -> None:
     for name, runs in by_config.items():
         ids = sorted(m["run_id"] for m in runs)
         if len(ids) > 1 and not is_repeat_set(ids):
-            print(f"  WARNING: {len(ids)} runs claim config_id {name!r} — {', '.join(ids)}.")
+            print(f"  WARNING: {len(ids)} runs claim system_id {name!r} — {', '.join(ids)}.")
             print(
                 "           They are averaged together below. If they are different "
                 "measurement occasions, give all but one their purpose (repeat, retime, pair) in their run.json."
@@ -861,7 +861,7 @@ def _table(args: argparse.Namespace, A, group: dict, goal: dict | None) -> dict:
         die(f"no metric {sort_key!r} on these runs. Available: {', '.join(all_keys)}", "not-found")
 
     rows: list[dict] = []
-    for config_id, runs in by_config.items():
+    for system_id, runs in by_config.items():
         # EVERY run's tier, not runs[0]'s. Taking the first one meant a system whose
         # earliest run predated the reference (reference_tier: None) suppressed the
         # SILVER warning below — while the quality column on that very row came only
@@ -869,7 +869,7 @@ def _table(args: argparse.Namespace, A, group: dict, goal: dict | None) -> dict:
         # ground truth, which is the one thing this table must never do.
         tiers: set[str] = {r["reference_tier"] for r in runs if r.get("reference_tier")}
         row = {
-            "config_id": config_id,
+            "system_id": system_id,
             "n_runs": len(runs),
             "tier": "+".join(sorted(tiers)) if tiers else "—",
             "tiers": tiers,
@@ -888,11 +888,11 @@ def _table(args: argparse.Namespace, A, group: dict, goal: dict | None) -> dict:
     # The text table fits the terminal; the JSON table carries every column in `show`.
     text_cols = _fit_columns(show, rows, kinds, sort_key, args.wide)
     own = {n: view[n]["reference"] for n in by_config if view[n]["wrote"]}
-    w = max(len(r["config_id"]) + (2 if r["config_id"] in own else 0) for r in rows) + 2
+    w = max(len(r["system_id"]) + (2 if r["system_id"] in own else 0) for r in rows) + 2
     print(f"dataset: {args.dataset_id}   ranked by: {sort_key} ({'lower' if asc else 'higher'} is better)\n")
     if not _jsonout.table(
-        ["config_id", "n_runs", "tier", *show],
-        [[r["config_id"], r["n_runs"], r["tier"], *[r.get(k) for k in show]] for r in rows],
+        ["system_id", "n_runs", "tier", *show],
+        [[r["system_id"], r["n_runs"], r["tier"], *[r.get(k) for k in show]] for r in rows],
     ):
         cells = {k: [_cell(r.get(k), kinds.get(k)) for r in rows] for k in text_cols}
         cw = {k: max(len(k), *(len(c) for c in cells[k])) for k in text_cols}
@@ -901,7 +901,7 @@ def _table(args: argparse.Namespace, A, group: dict, goal: dict | None) -> dict:
         print("  " + "-" * (len(header) - 2))
         for i, r in enumerate(rows):
             line = "  ".join(f"{cells[k][i]:>{cw[k]}}" for k in text_cols)
-            name = r["config_id"] + (" *" if r["config_id"] in own else "")
+            name = r["system_id"] + (" *" if r["system_id"] in own else "")
             print(f"  {name:{w}} {r['n_runs']:>4}  {line}")
         if len(text_cols) < len(show):
             left = [k for k in show if k not in text_cols]
@@ -942,9 +942,9 @@ def _table(args: argparse.Namespace, A, group: dict, goal: dict | None) -> dict:
         print(
             f"\n  NOTE: {cid} had a reference for {k} of {n} items: its quality columns are means over {k}."
         )
-    for config_id, ref in sorted(own.items()):
+    for system_id, ref in sorted(own.items()):
         print(
-            f"\n  * {config_id} wrote the reference {ref}: it is graded against its own outputs,\n"
+            f"\n  * {system_id} wrote the reference {ref}: it is graded against its own outputs,\n"
             "    so its row measures agreement with itself, not quality. Compare the others to it."
         )
 
@@ -966,7 +966,7 @@ def _table(args: argparse.Namespace, A, group: dict, goal: dict | None) -> dict:
     raw: list[float] = []
     matrix = {n: items for n, rs in contenders.items() if (items := per_item(rs, sort_key, raw=raw))}
     ordering = significance(matrix, sort_key, asc=asc, raw_values=raw) if matrix else None
-    frontier = _frontier([r for r in rows if r["config_id"] not in own], sort_key, kinds, asc=asc)
+    frontier = _frontier([r for r in rows if r["system_id"] not in own], sort_key, kinds, asc=asc)
     judged = sorted(
         {
             f"{derived_with(r, 'judge').get('scorer_id')}, {derived_with(r, 'judge').get('label')}"
@@ -1001,12 +1001,12 @@ def _table(args: argparse.Namespace, A, group: dict, goal: dict | None) -> dict:
         "arms": [
             {
                 "rank": i,
-                "config_id": view[r["config_id"]]["arm"].rsplit("/", 1)[-1],
-                "arm": view[r["config_id"]]["arm"],
+                "system_id": view[r["system_id"]]["arm"].rsplit("/", 1)[-1],
+                "arm": view[r["system_id"]]["arm"],
                 "n_runs": r["n_runs"],
                 "tier": r["tier"],
-                "flags": view[r["config_id"]]["flags"],
-                "wrote_reference": own.get(r["config_id"]),
+                "flags": view[r["system_id"]]["flags"],
+                "wrote_reference": own.get(r["system_id"]),
                 "metrics": {k: r[k] for k in show if k in r},
                 "spread": {k: r[f"__spread_{k}"] for k in show if f"__spread_{k}" in r},
             }

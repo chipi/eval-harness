@@ -31,13 +31,13 @@ from evaluation_harness._common import die, evh_prog, load_dataset
 
 
 def _latest(dataset_id: str, name: str) -> tuple[Any, dict]:
-    """A run named by its id, or the latest run of a system named by its config_id (the fleet's beta: `faithfulness
+    """A run named by its id, or the latest run of a system named by its system_id (the fleet's beta: `faithfulness
     --production` takes a run id, and the same id given here was refused)."""
     runs = _runs.runs_on(dataset_id)
     by_id = [(d, m) for d, m in runs if m["run_id"] == name]
     if by_id:
         return by_id[0]
-    of_config = [(d, m) for d, m in runs if m.get("config_id") == name]
+    of_config = [(d, m) for d, m in runs if m.get("system_id") == name]
     if not of_config:
         die(
             f"no run of {name} on {dataset_id}, by run id or system id: run it first (evh run --system …)",
@@ -115,12 +115,12 @@ def main() -> int:
         ]
         if not items:
             die(f"no item of {ds['dataset_id']} falls in {called}", "not-enough")
-        rd, rm = _latest(ds["dataset_id"], cfg["config_id"])
+        rd, rm = _latest(ds["dataset_id"], cfg["system_id"])
         cd, cm = _latest(ds["dataset_id"], args.candidate)
         metric = (
             args.metric
             or rm.get("primary_metric")
-            or _runs.default_metric(ds["dataset_id"], match=cfg["config_id"])
+            or _runs.default_metric(ds["dataset_id"], match=cfg["system_id"])
         )
         if not metric:
             die("--metric: the replay run names no primary metric", "bad-argument")
@@ -149,7 +149,7 @@ def main() -> int:
         print(f"{ds['dataset_id']}, {called}: {len(items)} item(s) whose {tf} falls in it; {metric}")
         rows = [
             ("production (recorded)", args.production or "-", mean(prod) if args.production else None),
-            ("the code that ran then (replay)", cfg["config_id"], mean(asrun)),
+            ("the code that ran then (replay)", cfg["system_id"], mean(asrun)),
             ("the candidate", args.candidate, mean(cand)),
         ]
         for what, cid, v in rows:

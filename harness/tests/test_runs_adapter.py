@@ -35,39 +35,39 @@ def _run(data: Path, name: str, metrics: dict, rows: list, outputs: dict | None 
 
 with tempfile.TemporaryDirectory() as tmp, _runstore._InProject(tmp) as data:
     m = {"dataset_id": "ds", "scores": {"f1": 0.5}, "primary_metric": "f1"}
-    _run(data, "b_r2", {**m, "config_id": "b", "run_id": "b_r2"}, [{"item_id": "i1", "f1": 0.4}])
-    _run(data, "b_r1", {**m, "config_id": "b", "run_id": "b_r1"}, [{"item_id": "i1", "f1": 0.2}])
+    _run(data, "b_r2", {**m, "system_id": "b", "run_id": "b_r2"}, [{"item_id": "i1", "f1": 0.4}])
+    _run(data, "b_r1", {**m, "system_id": "b", "run_id": "b_r1"}, [{"item_id": "i1", "f1": 0.2}])
     a_dir = _run(
         data,
         "a",
-        {**m, "config_id": "a", "run_id": "a"},
+        {**m, "system_id": "a", "run_id": "a"},
         [{"item_id": "i1", "f1": 0.9}, {"item_id": "i2", "f1": True}],
         outputs={"i1": "the first output"},
     )
-    _run(data, "other", {**m, "dataset_id": "elsewhere", "config_id": "c", "run_id": "c"}, [])
+    _run(data, "other", {**m, "dataset_id": "elsewhere", "system_id": "c", "run_id": "c"}, [])
     _run(data, "no_config", {"dataset_id": "ds", "run_id": "no_config"}, [])
     base = data / "runs"
 
     runs = runs_on("ds")
     check(
-        "runs_on: sorted by run id, one dataset, a run needs a config_id",
+        "runs_on: sorted by run id, one dataset, a run needs a system_id",
         [m["run_id"] for _, m in runs] == ["a", "b_r1", "b_r2"],
         [m["run_id"] for _, m in runs],
     )
     check(
-        "runs_on: match filters config_ids",
-        [m["config_id"] for _, m in runs_on("ds", match="b")] == ["b", "b"],
+        "runs_on: match filters system_ids",
+        [m["system_id"] for _, m in runs_on("ds", match="b")] == ["b", "b"],
     )
     check(
         "per_item: repeats are averaged",
-        abs(per_item([r for r in runs if r[1]["config_id"] == "b"], "f1")["i1"] - 0.3) < 1e-12,
+        abs(per_item([r for r in runs if r[1]["system_id"] == "b"], "f1")["i1"] - 0.3) < 1e-12,
     )
     check(
         "per_item: a boolean is not a score",
         per_item(runs[:1], "f1") == {"i1": 0.9},
         per_item(runs[:1], "f1"),
     )
-    check("matrix: config_id -> item -> mean", set(matrix(runs, "f1")) == {"a", "b"})
+    check("matrix: system_id -> item -> mean", set(matrix(runs, "f1")) == {"a", "b"})
 
     _runstore.put_rows_text(a_dir, '{"item_id": "i1", "f1": 0.9}\nnot json\n')
     try:
@@ -278,15 +278,15 @@ check("checkout: `evh self-test` finds the full suite in tests/", self_check.in_
 from evaluation_harness._runs import lower_is_better_on  # noqa: E402
 
 wer_goal = {"g": {"success_criteria": {"primary": {"measure": "wer", "direction": "lower"}}}}
-plain = [(Path("."), {"config_id": "a", "goal": "g"})]
+plain = [(Path("."), {"system_id": "a", "goal": "g"})]
 check("direction: the goal the runs name decides (wer, lower)", lower_is_better_on(plain, "wer", wer_goal))
 check(
     "direction: without a goal or a declaration, wer is not known to go down",
     not lower_is_better_on(plain, "wer", {}),
 )
-declared = [(Path("."), {"config_id": "a", "metric_directions": {"wer": "lower"}})]
+declared = [(Path("."), {"system_id": "a", "metric_directions": {"wer": "lower"}})]
 check("direction: the adapter's declaration, recorded on the run", lower_is_better_on(declared, "wer", {}))
-both = [(Path("."), {"config_id": "a", "goal": "g", "metric_directions": {"wer": "higher"}})]
+both = [(Path("."), {"system_id": "a", "goal": "g", "metric_directions": {"wer": "higher"}})]
 check("direction: the goal outranks the recorded declaration", lower_is_better_on(both, "wer", wer_goal))
 check("direction: a flag outranks the goal", not direction(both, "wer", desc=True))
 with tempfile.TemporaryDirectory() as tmp:
@@ -317,7 +317,7 @@ with tempfile.TemporaryDirectory() as tmp:
         "r1",
         {
             "run_id": "r1",
-            "config_id": "c",
+            "system_id": "c",
             "dataset_id": "few_nerd_280",
             "goal": "g1",
             "created_at": "2026-10-23",
@@ -401,7 +401,7 @@ with tempfile.TemporaryDirectory() as tmp:
         "r1",
         {
             "run_id": "r1",
-            "config_id": "c",
+            "system_id": "c",
             "dataset_id": "d",
             "created_at": "2026-10-23",
             "build": {"ref": "abc", "dirty": False},
@@ -459,7 +459,7 @@ with tempfile.TemporaryDirectory() as tmp:
     fx.put(
         Path(tmp) / "data",
         "r1",
-        {"run_id": "r1", "config_id": "c", "dataset_id": "d", "scores": {}},
+        {"run_id": "r1", "system_id": "c", "dataset_id": "d", "scores": {}},
         '{"item_id": "i1"}\n',
     )
     _runstore.migrate_in(tmp)
@@ -487,7 +487,7 @@ with tempfile.TemporaryDirectory() as tmp:
 # data root, and V14 reads them there.
 record = {
     "run_id": "r1",
-    "config_id": "c",
+    "system_id": "c",
     "dataset_id": "d",
     "goal": "g1",
     "created_at": "2026-10-23",

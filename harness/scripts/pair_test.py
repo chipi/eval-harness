@@ -83,7 +83,7 @@ from evaluation_harness.stats import noninferior as stats_noninferior  # noqa: E
 
 
 def _round_values(dataset_id: str, args: Any = None) -> Any:
-    """values(config_id, metric) -> {item_id: value} as the round reads the arm: the arm the round stores for the
+    """values(system_id, metric) -> {item_id: value} as the round reads the arm: the arm the round stores for the
     system (its label says whether a re-score stands in for its runs), else the plain runs. Read from data/runs
     alone, an arm scored before a measure existed had none, and a test the round itself had run (production's run
     on triage_cost) found 0 shared items."""
@@ -95,12 +95,12 @@ def _round_values(dataset_id: str, args: Any = None) -> Any:
     ca = load_catalog_adapter(None)
     rnd = resolve(args.round, args.goal) if getattr(args, "round", None) else None
 
-    def read(dataset: str, config_id: str) -> str:
-        held = model_rounds.find_arm(rnd, config_id) if rnd else None
-        return model_rounds.arm_id(rnd, held) if rnd and held else rd._arm(ca, dataset, config_id)
+    def read(dataset: str, system_id: str) -> str:
+        held = model_rounds.find_arm(rnd, system_id) if rnd else None
+        return model_rounds.arm_id(rnd, held) if rnd and held else rd._arm(ca, dataset, system_id)
 
-    def values(config_id: str, metric: str) -> dict:
-        arm = read(dataset_id, config_id)
+    def values(system_id: str, metric: str) -> dict:
+        arm = read(dataset_id, system_id)
         sc = (ca.scores(arm).get(metric) or {}) if arm else {}
         reduce = getattr(args, "reduce", None)
         if reduce and reduce != "mean":
@@ -143,7 +143,7 @@ def _round_defaults(args: argparse.Namespace, runs: list, values: Any) -> tuple[
         args.a = leader.rsplit("/", 1)[-1]
     if not args.b:
         base = rnd.get("baseline")
-        args.b = next((m["config_id"] for d, m in runs if m["run_id"] == base), None)
+        args.b = next((m["system_id"] for d, m in runs if m["run_id"] == base), None)
         if not args.b:
             die(f"round {args.round} records no baseline run: name --b", "not-enough")
         if args.b == args.a:
@@ -171,7 +171,7 @@ def _hypothesis_of(args: argparse.Namespace, runs: list) -> dict | None:
     import yaml  # noqa: PLC0415
     from evaluation_harness import _hypothesis  # noqa: PLC0415
 
-    a_runs = [m for _d, m in runs if m["config_id"] == args.a]
+    a_runs = [m for _d, m in runs if m["system_id"] == args.a]
 
     def same(h: Any) -> bool:
         return isinstance(h, dict) and h.get("against") == args.b and h.get("measure") == args.metric
@@ -199,12 +199,12 @@ _DOES_NOT = "tell the two apart, or speak for items only one version has"
 _NAMED = 5
 
 
-def _reference_ids(runs: list, config_id: str) -> set[str]:
+def _reference_ids(runs: list, system_id: str) -> set[str]:
     """The reference ids an arm's runs were scored against (the fingerprint's data.reference_id)."""
     return {
         str(((m.get("fingerprint") or {}).get("data") or {}).get("reference_id") or "")
         for _d, m in runs
-        if m["config_id"] == config_id
+        if m["system_id"] == system_id
     }
 
 
@@ -275,9 +275,9 @@ def main() -> int:
     """Test a pre-registered pair with sign-flip permutation."""
     ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
     ap.add_argument("--dataset-id", required=True)
-    ap.add_argument("--a", help="config_id of the arm under test (with --round: default its leader)")
+    ap.add_argument("--a", help="system_id of the arm under test (with --round: default its leader)")
     ap.add_argument(
-        "--b", help="config_id it is compared against (with --round: default the baseline it started from)"
+        "--b", help="system_id it is compared against (with --round: default the baseline it started from)"
     )
     ap.add_argument(
         "--b-dataset",
@@ -368,7 +368,7 @@ def main() -> int:
 
 
 def _run(args: argparse.Namespace, ap: argparse.ArgumentParser) -> int:
-    # Two runs sharing a config_id are averaged together below without
+    # Two runs sharing a system_id are averaged together below without
     # saying so. See _runs.warn_on_ambiguous_runs.
     warn_on_ambiguous_runs(args.label, args.dataset_id)
     runs = runs_on(args.dataset_id, label=args.label)
@@ -405,8 +405,8 @@ def _run(args: argparse.Namespace, ap: argparse.ArgumentParser) -> int:
                 "mismatch",
             )
     if cross:
-        arm_a = [r for r in runs if r[1]["config_id"] == args.a]
-        arm_b = [r for r in runs_b if r[1]["config_id"] == args.b]
+        arm_a = [r for r in runs if r[1]["system_id"] == args.a]
+        arm_b = [r for r in runs_b if r[1]["system_id"] == args.b]
         lower = direction(arm_a, args.metric, args.asc, args.desc)
         lower_b = direction(arm_b, args.metric, args.asc, args.desc)
         if lower != lower_b:
@@ -443,12 +443,12 @@ def _run(args: argparse.Namespace, ap: argparse.ArgumentParser) -> int:
                 return values(args.a, args.metric), values(args.b, args.metric)
             return (
                 per_item(
-                    [r for r in runs if r[1]["config_id"] == args.a],
+                    [r for r in runs if r[1]["system_id"] == args.a],
                     args.metric,
                     reduce=args.reduce or "mean",
                 ),
                 per_item(
-                    [r for r in runs if r[1]["config_id"] == args.b],
+                    [r for r in runs if r[1]["system_id"] == args.b],
                     args.metric,
                     reduce=args.reduce or "mean",
                 ),
@@ -544,7 +544,7 @@ def _run(args: argparse.Namespace, ap: argparse.ArgumentParser) -> int:
         (args.a, args.a, arm_a if cross else runs),
         (args.b, args.b, arm_b if cross else runs),
     ):
-        ag = repeat_agreement([r for r in pool if r[1]["config_id"] == cid], args.metric, items)
+        ag = repeat_agreement([r for r in pool if r[1]["system_id"] == cid], args.metric, items)
         if ag:
             agree[label] = ag
     if agree:
@@ -697,8 +697,8 @@ def _run(args: argparse.Namespace, ap: argparse.ArgumentParser) -> int:
                 {}
                 if cross
                 else {
-                    "run_ids_a": sorted(m["run_id"] for _d, m in runs if m.get("config_id") == args.a),
-                    "run_ids_b": sorted(m["run_id"] for _d, m in runs if m.get("config_id") == args.b),
+                    "run_ids_a": sorted(m["run_id"] for _d, m in runs if m.get("system_id") == args.a),
+                    "run_ids_b": sorted(m["run_id"] for _d, m in runs if m.get("system_id") == args.b),
                 }
             ),
             "repeats": agree or None,

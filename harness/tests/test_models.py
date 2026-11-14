@@ -58,7 +58,7 @@ with tempfile.TemporaryDirectory() as td:
         {"model_id": "set", "kind": "llm", "aliases": ["set:1b"], "settings": {"reasoning_effort": "none"}},
     )
     got = _models.resolve(
-        {"config_id": "a", "model_record": "set", "params": {"reasoning_effort": "low", "max_tokens": 2048}},
+        {"system_id": "a", "model_record": "set", "params": {"reasoning_effort": "low", "max_tokens": 2048}},
         data,
     )
     check(
@@ -105,7 +105,7 @@ with tempfile.TemporaryDirectory() as td:
     )
     check("deployment_of: by id", (_models.deployment_of(rec, "dgx") or {}).get("where") == "dgx")
     check("deployment_of: an id the record lacks is None", _models.deployment_of(rec, "x3") is None)
-    got = _models.resolve({"config_id": "a", "model_record": "dep", "deployment": "mac", "params": {}}, data)
+    got = _models.resolve({"system_id": "a", "model_record": "dep", "deployment": "mac", "params": {}}, data)
     check(
         "resolve: a config naming a deployment keeps both, and takes the record's settings",
         got["model_record"] == "dep"

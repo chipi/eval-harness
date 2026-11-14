@@ -153,9 +153,9 @@ def _faithfulness(args: argparse.Namespace) -> int:
             },
         )
         return 0
-    _seal.refuse_if_sealed(cfg["dataset_id"], "a faithfulness replay", cfg["config_id"])
+    _seal.refuse_if_sealed(cfg["dataset_id"], "a faithfulness replay", cfg["system_id"])
     _replay.environment()
-    resolved = _prompts.resolve(cfg, args.config, cfg["config_id"])
+    resolved = _prompts.resolve(cfg, args.config, cfg["system_id"])
     if resolved is not None:
         import atexit  # noqa: PLC0415
 
@@ -203,7 +203,7 @@ def _faithfulness(args: argparse.Namespace) -> int:
 
     rec = {
         "model_id": plan.model_id,
-        "config_id": cfg["config_id"],
+        "system_id": cfg["system_id"],
         "dataset_id": ds["dataset_id"],
         "items_sha256": items_digest(ds),
         "versions_sha256": _coderec.versions_sha256(plan.record),

@@ -89,7 +89,7 @@ def status(goal_id: str, data: Path | None = None) -> dict[str, Any]:
                 "materialized": _store.is_dir(_datasets.materialized_dir(ds, data)),
                 "references": sorted(r for r in on if r in refs or r in (f"gold/{ds}", f"silver/{ds}")),
                 "runs": len(runs),
-                "arms": len({m["config_id"] for _, m in runs}),
+                "arms": len({m["system_id"] for _, m in runs}),
                 "baseline": {"version": base.get("version"), "run": base.get("promoted_from")}
                 if base
                 else None,

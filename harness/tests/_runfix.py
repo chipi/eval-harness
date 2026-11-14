@@ -1,6 +1,6 @@
 """Run fixtures in the format 4 layout (RFC-032 step 4): a run, and a score of it, written into a test project's data/.
 
-    _runfix.put_run(proj / "data", {"run_id": "a_1", "config_id": "a", "dataset_id": "ds", "scores": {"acc": 0.5}}, rows)
+    _runfix.put_run(proj / "data", {"run_id": "a_1", "system_id": "a", "dataset_id": "ds", "scores": {"acc": 0.5}}, rows)
 
 `rec` is a run's whole record as `model.runs.record` reads it back: what belongs to the pass goes to run.json, what the
 score measured (model.runs.SCORE_KEYS) to the score's metrics.json, its rows to the score's predictions.

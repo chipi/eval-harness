@@ -146,7 +146,7 @@ try:
         "a run takes the system by its id, on any dataset: one system, two datasets, its id on both runs",
         len(ran) == 2
         and {x["dataset_id"] for x in ran} == {"tk_v1", "tk_small_v1"}
-        and {x["config_id"] for x in ran} == {"lead1_v1"},
+        and {x["system_id"] for x in ran} == {"lead1_v1"},
         [x.stderr[-200:] for x in runs],
     )
     nope = evh("run", "--system", "no_such_v1", "--dataset", "tk_v1")

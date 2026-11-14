@@ -38,13 +38,13 @@ def _reproduce(run_id: str) -> dict[str, Any] | None:
     if rec is None:
         return None
     try:
-        s = sheet(str(rec.get("config_id")))
+        s = sheet(str(rec.get("system_id")))
     except SystemExit:  # the sheet refused (its run unreadable): the baseline still lists, without it
         return None
     if (
         s.get("run_id") != run_id
     ):  # the arm's sheet names another of its runs: describe this one by its record
-        return {"run_id": run_id, "config_id": rec.get("config_id")}
+        return {"run_id": run_id, "system_id": rec.get("system_id")}
     return {k: v for k, v in s.items() if k != "promoted"}
 
 

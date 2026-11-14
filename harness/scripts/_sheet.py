@@ -303,7 +303,7 @@ def build(
     items: list[str] | None = None,
 ) -> dict[str, Any]:
     """The sheet of a dataset over runs (ids, or system ids: their latest run on the dataset, read under `label`; the
-    first stands for production): {dataset_id, arms [{token, run, path, config_id, scores [ref]}], metric (a ref), lower, goal, decl,
+    first stands for production): {dataset_id, arms [{token, run, path, system_id, scores [ref]}], metric (a ref), lower, goal, decl,
     label_cols, ref_cols, winner_cols, metrics (every ref one can be read on), rows}, one row per item of the dataset (or `items`) in its order, each
     {item, text, fields, decisions {token: output}, shown {token: what a view shows}, scores {token: {ref: value}},
     labels [{set, dataset_id, source, text}], label_text {key: line}, references {id: text}, winners {key: [token]},
@@ -512,7 +512,7 @@ def build(
                 "token": a["token"],
                 "run": _model_runs.run_of(a["dir"]).name,
                 "path": _under_data(a["dir"]),
-                "config_id": a["metrics"].get("config_id", ""),
+                "system_id": a["metrics"].get("system_id", ""),
                 "scores": score_refs[a["token"]],
             }
             for a in arms
@@ -881,7 +881,7 @@ def blind(
         "fill": fill,
         "seed": seed,
         "arms": [
-            {"arm": a["token"], "run": a["run"], "path": a["path"], "config_id": a["config_id"]}
+            {"arm": a["token"], "run": a["run"], "path": a["path"], "system_id": a["system_id"]}
             for a in model["arms"]
         ],
         "letters": letters,

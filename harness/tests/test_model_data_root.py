@@ -90,7 +90,7 @@ def putj(data: Path, rel: str, doc: object) -> None:
 def make_run(data: Path, system: str, scores: list[int], in_round: bool = True) -> None:
     rid = f"{system[-1]}_1"
     putj(data, f"runs/{rid}/run.json", {
-        "run_id": rid, "config_id": system, "dataset_id": "ds_v1", "purpose": "run",
+        "run_id": rid, "system_id": system, "dataset_id": "ds_v1", "purpose": "run",
         **({"round": "r1", "goal": "g1"} if in_round else {}),
         "fingerprint": {"data": {"reference_id": "gold/ds_v1"}}, "created_at": "2026-11-01T10:00:00Z",
     })  # fmt: skip

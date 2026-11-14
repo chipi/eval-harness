@@ -76,7 +76,7 @@ def body(store: str) -> None:
             and _outputs.rows_text(a, partial=True) is None,
             rows,
         )
-        R.write_run(a.name, {"run_id": a.name, "config_id": "arm_a_v1", "dataset_id": "d"})
+        R.write_run(a.name, {"run_id": a.name, "system_id": "arm_a_v1", "dataset_id": "d"})
         j = R.write_score(a.name, "judge1", "set1", {"run_id": a.name}, label_as="judged/judge1")
         r = R.write_score(a.name, "abcdefabcdef", "gold/d", {"run_id": a.name}, label_as="rescored abcdefab")
         check(
@@ -135,7 +135,7 @@ def body(store: str) -> None:
             lines = [json.dumps(r, ensure_ascii=False) for r in done]
             _store.write_text(stopped / _outputs.FILE, "\n".join(lines[:2]) + "\n" + lines[2][:20])
         _store.write_text(
-            stopped / "run.json", json.dumps({"config_id": "tickets_lead1_v1", "dataset_id": "tickets_v1"})
+            stopped / "run.json", json.dumps({"system_id": "tickets_lead1_v1", "dataset_id": "tickets_v1"})
         )
         r2 = evh(
             "run",

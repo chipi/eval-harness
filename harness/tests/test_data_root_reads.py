@@ -75,7 +75,7 @@ def register(data: Path, items: list[str]) -> None:
 def make_run(data: Path, system: str, scores: list[int]) -> None:
     rid = f"{system[-1]}_1"
     putj(data, f"runs/{rid}/run.json", {
-        "run_id": rid, "config_id": system, "dataset_id": "ds_v1", "purpose": "run", "round": "r1", "goal": "g1",
+        "run_id": rid, "system_id": system, "dataset_id": "ds_v1", "purpose": "run", "round": "r1", "goal": "g1",
         "fingerprint": {"data": {"reference_id": "gold/ds_v1"}}, "created_at": "2026-11-01T10:00:00Z",
     })  # fmt: skip
     key = "0" * 12 + "@gold.ds_v1"
@@ -153,7 +153,7 @@ try:
                 "dataset_id": "ds_sealed_here",
                 "items": [{"item_id": "x1"}, {"item_id": "x2"}],
                 "sealed": {"at": "x"},
-                "unsealed": [{"config_id": "c1", "at": "y", "look": {"key": "uk", "number": 1, "set": "z"}}],
+                "unsealed": [{"system_id": "c1", "at": "y", "look": {"key": "uk", "number": 1, "set": "z"}}],
             }
         )
     )

@@ -68,7 +68,7 @@ def _collect(dataset_id: str, match: str | None) -> dict[str, dict[str, Any]]:
     # repeat the directory happened to list first. A result that changes when you copy the
     # directory is not a result.
     for d, m in runs_on(dataset_id, match=match):
-        cid = m["config_id"]
+        cid = m["system_id"]
         # Strip ANY numeric version suffix, not a hardcoded three: `_v10` was kept while
         # `_v1` was stripped, so the same arm appeared twice under different names.
         arm = re.sub(r"_v\d+$", "", cid)
@@ -90,7 +90,7 @@ def _collect(dataset_id: str, match: str | None) -> dict[str, dict[str, Any]]:
 def _sets_message(dataset_id: str) -> str:
     """What --ref-match and --arm-match each take, and an example built from the system ids on this dataset: the
     version suffixes it found (`_v1`, `_v2`) and how many arms carry each."""
-    ids = sorted({m["config_id"] for _d, m in runs_on(dataset_id)})
+    ids = sorted({m["system_id"] for _d, m in runs_on(dataset_id)})
     versions: dict[str, set[str]] = defaultdict(set)
     for cid in ids:
         v = re.search(r"_v\d+$", cid)
@@ -148,7 +148,7 @@ def main() -> int:
     )
     args = ap.parse_args()
     with _jsonout.collect("silver-calibrate", args.json, live=sys.stderr):
-        # Two runs sharing a config_id are averaged together below without
+        # Two runs sharing a system_id are averaged together below without
         # saying so. See _runs.warn_on_ambiguous_runs.
         warn_on_ambiguous_runs("", args.dataset_id)
 

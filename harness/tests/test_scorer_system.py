@@ -129,9 +129,9 @@ try:
 
     # -- judged with the fake provider
     items = ["i1", "i2"]
-    arms = [{"config_id": f"{k}_v1", "run": f"{k}_v1_r", "dir": None, "family": k} for k in ("a", "b")]
+    arms = [{"system_id": f"{k}_v1", "run": f"{k}_v1_r", "dir": None, "family": k} for k in ("a", "b")]
     articles = {i: f"Ticket {i}: the customer cannot log in." for i in items}
-    outputs = {x["config_id"]: {i: f"{x['config_id']} summary of {i}" for i in items} for x in arms}
+    outputs = {x["system_id"]: {i: f"{x['system_id']} summary of {i}" for i in items} for x in arms}
     got_s = verdict_fps("by_system_v1", items, arms, articles, outputs)
     got_i = verdict_fps("inline_v1", items, arms, articles, outputs)
     check(

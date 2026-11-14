@@ -234,8 +234,8 @@ class Adapter(Protocol):
     # promotion first; the pages lead with them, the answer so far.
     # def baselines(self) -> list[dict]: ...
     # Optional: the arm id of a system on a dataset (`evh rounds`, `evh inspect --round` and the
-    # round pages build arm ids with it): `runs/<dataset>/<config_id>` when absent.
-    # def arm_of(self, dataset: str, config_id: str) -> str: ...
+    # round pages build arm ids with it): `runs/<dataset>/<system_id>` when absent.
+    # def arm_of(self, dataset: str, system_id: str) -> str: ...
     # Optional: whether a metric needs no reference (the bill, the clock, token counts), so arms
     # scored against different references can still be compared on it. When absent, a metric
     # whose name contains cost, latency or tokens is taken to need none.
@@ -273,7 +273,7 @@ class Adapter(Protocol):
     # "derived"}] ("derived": "" for a measured run, else how it was made: rescore, judge,
     # reparse); the arm page lists them and the home page's activity counts them.
     # def arm_runs(self, arm: str) -> list[dict]: ...
-    # Optional: what an arm was asked to do, {"config_id", "params", "adapter", "deployment"}, params
+    # Optional: what an arm was asked to do, {"system_id", "params", "adapter", "deployment"}, params
     # without credentials, "deployment" the model-record deployment its system named ("" for none);
     # the arm page shows it.
     # def arm_config(self, arm: str) -> dict: ...
@@ -459,7 +459,7 @@ class HarnessAdapter:
                 continue
             for d in model_runs.scores_of(r):
                 m = model_runs.record(d)
-                if not m or not m.get("dataset_id") or not m.get("config_id"):
+                if not m or not m.get("dataset_id") or not m.get("system_id"):
                     continue
                 arm = model_runs.arm_id(d, m)
                 rec[d] = m
@@ -592,7 +592,7 @@ class HarnessAdapter:
             # A judged run keeps its source run's reference_id, but its scores are the judges'.
             "judge": judged or "",
             # Graded against its own outputs: the arm whose run (or system) wrote the reference.
-            "wrote_reference": bool(author) and not judged and author == m.get("config_id"),
+            "wrote_reference": bool(author) and not judged and author == m.get("system_id"),
             "reference_author": author or "",
             # Scored against a label set (RFC-023): its source (person, model, rule), for the chip.
             "labels_source": labels_source,
@@ -721,10 +721,10 @@ class HarnessAdapter:
         declared = [seen[metric] for seen in by_ds.values() if metric in seen]
         return bool(declared) and all(declared)
 
-    def arm_of(self, dataset: str, config_id: str) -> str:
+    def arm_of(self, dataset: str, system_id: str) -> str:
         """The arm id of a system's runs on a dataset, read as a goal reads them (the plain label):
         `runs/<dataset>/<system id>`."""
-        return f"{model_runs.arm_prefix('')}/{dataset}/{config_id}"
+        return f"{model_runs.arm_prefix('')}/{dataset}/{system_id}"
 
     @_memo
     def _kinds(self) -> dict:
@@ -795,7 +795,7 @@ class HarnessAdapter:
         from evaluation_harness import deploy_sheet as dsh  # noqa: PLC0415
         from evaluation_harness._adapter import adapter_module  # noqa: PLC0415
 
-        cid = self._metrics(arm).get("config_id")
+        cid = self._metrics(arm).get("system_id")
         if not cid:
             return None
         try:
@@ -1163,7 +1163,7 @@ class HarnessAdapter:
                 else f"the record's field {params.get('field')}"
             )
         return {
-            "config_id": m.get("config_id") or arm.rsplit("/", 1)[-1],
+            "system_id": m.get("system_id") or arm.rsplit("/", 1)[-1],
             "params": shown_params(params),
             "adapter": m.get("adapter") or "",
             "deployment": m.get("deployment_id") or "",
@@ -1225,7 +1225,7 @@ def smoke_spend(models: list[dict]) -> list[dict]:
     items' cost_usd, summed. A smoke belongs to no dataset's spend."""
     out = []
     for x in models:
-        for config_id, sm in ((x.get("record") or {}).get("smokes") or {}).items():
+        for system_id, sm in ((x.get("record") or {}).get("smokes") or {}).items():
             rep = (sm or {}).get("report") or {}
             usd = number(rep.get("spent_usd"))
             if usd is None:
@@ -1233,7 +1233,7 @@ def smoke_spend(models: list[dict]) -> list[dict]:
             if usd:
                 at = str((sm or {}).get("at") or "")[:10]
                 out.append(
-                    {"at": at, "usd": usd, "tokens": None, "kind": "smoke", "dataset": "", "what": config_id}
+                    {"at": at, "usd": usd, "tokens": None, "kind": "smoke", "dataset": "", "what": system_id}
                 )
     return out
 

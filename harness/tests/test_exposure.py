@@ -63,11 +63,11 @@ def refused(r, *said):
     return r.returncode != 0 and "Traceback" not in out(r) and all(s in out(r) for s in said)
 
 
-def config(config_id, sentences, hypothesis=None):
-    text = f"system_id: {config_id}\nparams:\n  provider: echo\n  sentences: {sentences}\n"
+def config(system_id, sentences, hypothesis=None):
+    text = f"system_id: {system_id}\nparams:\n  provider: echo\n  sentences: {sentences}\n"
     if hypothesis:
         text += "hypothesis:\n" + "".join(f"  {k}: {json.dumps(v)}\n" for k, v in hypothesis.items())
-    _runstore.write_text(proj, f"systems/{config_id}.yaml", text)
+    _runstore.write_text(proj, f"systems/{system_id}.yaml", text)
 
 
 def register():

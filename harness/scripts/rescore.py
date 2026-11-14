@@ -388,7 +388,7 @@ def measured_runs(dataset_id: str, configs: set[str] | None = None) -> list[tupl
             sd is None
             or rec is None
             or rec.get("derived")
-            or (configs is not None and rec.get("config_id") not in configs)
+            or (configs is not None and rec.get("system_id") not in configs)
         ):
             continue
         out.append((sd, rec))
@@ -604,7 +604,7 @@ def main() -> int:
     """Re-score finished runs from their stored outputs: no API calls, no money."""
     ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
     ap.add_argument("--dataset-id", help="the dataset whose runs to re-score (or --goal and --round)")
-    ap.add_argument("--match", help="only runs whose config_id contains this substring")
+    ap.add_argument("--match", help="only runs whose system_id contains this substring")
     ap.add_argument(
         "--label",
         help="the label the scores are read under (default: 'rescored <8 characters of the scorer>'; 'silver' with "
@@ -669,7 +669,7 @@ def main() -> int:
             todo = [
                 (d, m)
                 for d, m in measured_runs(args.dataset_id)
-                if not args.match or args.match in m["config_id"]
+                if not args.match or args.match in m["system_id"]
             ]
         if not todo:
             die(
@@ -696,7 +696,7 @@ def main() -> int:
             _rounds.read_under_rescore(
                 rnd,
                 done,
-                frozenset(m["config_id"] for _d, m in done if src_ref.get(m["run_id"]) != _reference_of(m)),
+                frozenset(m["system_id"] for _d, m in done if src_ref.get(m["run_id"]) != _reference_of(m)),
             )
             _rounds.save(rnd)
             print(f"  round {rnd['round_id']} of {rnd['goal']} records the scoring: {args.why}")
@@ -727,7 +727,7 @@ def cut_off_lines(todo: list[tuple[Path, dict]], done: list[tuple[Path, dict]]) 
                 f"  WARNING: {m['run_id']}: {len(cut)} of {len(rows)} output(s) stopped at max_tokens"
                 f"{'' if cap is None else f'={cap}'} ({', '.join(cut[:6])}{' ...' if len(cut) > 6 else ''}).\n"
                 "    A re-score reads them as they are and scores them as if complete. Raise max_tokens "
-                "(a new config_id) and run again."
+                "(a new system_id) and run again."
             )
     return lines
 

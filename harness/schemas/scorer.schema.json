@@ -9,7 +9,7 @@
     "scorer_id": {"type": "string", "minLength": 1, "description": "Equals the file name."},
     "kind": {"const": "judge"},
     "dataset_id": {"type": "string", "minLength": 1},
-    "arms_match": {"type": "string", "description": "The default arm set: a config_id substring."},
+    "arms_match": {"type": "string", "description": "The default arm set: a system_id substring."},
     "cost_cap_usd": {"type": "number", "exclusiveMinimum": 0},
     "supersedes": {"type": "string", "minLength": 1, "description": "The scorer this one replaces: a changed rubric, prompt or judges is a new scorer (a frozen judging set is never rewritten), and this says which it follows (criteria drift, Shankar et al. 2024)."},
     "why": {"type": "string", "description": "With supersedes: a sentence, what changed and why (which outputs led to it), carried like a promotion's reason."},

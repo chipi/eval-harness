@@ -10,7 +10,7 @@
     "ref": "a4325c2d9ab13fd49f0b8c382c966eaabfae9f03",
     "source": "git"
   },
-  "config_id": "triage_local_mac_qwen3_30b_a3b_v1",
+  "system_id": "triage_local_mac_qwen3_30b_a3b_v1",
   "created_at": "2026-10-31T08:08:35Z",
   "dataset_id": "orrery_triage_v1_labelled",
   "fingerprint": {

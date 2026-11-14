@@ -4,7 +4,7 @@
 A run records THREE things, and is worthless without all of them:
 
     build               which build produced these numbers  (build.ref)
-    system              what was evaluated                  (config_id: the system's id, RFC-032)
+    system              what was evaluated                  (system_id: the system's id, RFC-032)
     data                what it was measured on             (dataset_id)
 
 Drop any one and the number cannot be attributed to anything.
@@ -268,7 +268,7 @@ def _recorded_outputs(cfg: dict[str, Any], adapter_path: Path | None) -> dict[st
     cap = params.get("capture")
     if not cap:
         die(
-            f"{cfg.get('config_id')}: provider recorded needs params.capture, the capture its outputs come from",
+            f"{cfg.get('system_id')}: provider recorded needs params.capture, the capture its outputs come from",
             "bad-argument",
         )
     _doc, recs = load_capture(cap)
@@ -278,7 +278,7 @@ def _recorded_outputs(cfg: dict[str, Any], adapter_path: Path | None) -> dict[st
     field = params.get("field")
     if not callable(hook) and not field:
         die(
-            f"{cfg.get('config_id')}: a recorded arm reads each output with the adapter's recorded_output(record), "
+            f"{cfg.get('system_id')}: a recorded arm reads each output with the adapter's recorded_output(record), "
             "or from the record's field named by params.field; it has neither",
             "invalid-file",
         )
@@ -644,7 +644,7 @@ def one_pass(
         print(
             f"  WARNING: {len(cut)} of {len(predictions)} output(s) stopped at max_tokens={cap} "
             f"({', '.join(cut[:6])}{' ...' if len(cut) > 6 else ''}).\n"
-            "    They are scored as if complete. Raise max_tokens (a new config_id) and run again."
+            "    They are scored as if complete. Raise max_tokens (a new system_id) and run again."
         )
     resume_note = None
     if n_replayed:
@@ -682,7 +682,7 @@ def _smoke_cost(cfg: dict[str, Any]) -> dict[str, Any] | None:
 
     if not cfg.get("model_record"):
         return None
-    smoke = ((_models.find(DATA, cfg["model_record"]) or {}).get("smokes") or {}).get(cfg["config_id"]) or {}
+    smoke = ((_models.find(DATA, cfg["model_record"]) or {}).get("smokes") or {}).get(cfg["system_id"]) or {}
     report = smoke.get("report") or {}
     costs = [i["cost_usd"] for i in report.get("items") or [] if i.get("cost_usd") is not None]
     if not costs:
@@ -732,7 +732,7 @@ def _dry_run(
 
     print("DRY RUN — nothing was called\n")
     print(
-        f"  system      {cfg['config_id']}  ({params.get('provider', 'echo')}"
+        f"  system      {cfg['system_id']}  ({params.get('provider', 'echo')}"
         + (f" / {params['model']}" if params.get("model") else "")
         + ")"
     )
@@ -778,8 +778,8 @@ def _dry_run(
             f" (model record {measured['model_record']}); set a cap from this"
         )
     else:
-        where = f" --system {cfg['config_id']} --dataset {cfg['dataset_id']}"
-        print(f"  MEASURED    none for {cfg['config_id']}: no arm-smoke of it is recorded")
+        where = f" --system {cfg['system_id']} --dataset {cfg['dataset_id']}"
+        print(f"  MEASURED    none for {cfg['system_id']}: no arm-smoke of it is recorded")
         print(
             f"              run `evh arm-smoke{where}` and set a cap from what it measures"
             + ("" if cfg.get("model_record") else " (it records into a model record; this system names none)")
@@ -789,7 +789,7 @@ def _dry_run(
     _jsonout.value(
         "dry_run",
         {
-            "config_id": cfg["config_id"],
+            "system_id": cfg["system_id"],
             "dataset_id": ds["dataset_id"],
             "provider": params.get("provider", "echo"),
             "model": params.get("model"),
@@ -889,8 +889,8 @@ def _prompt_versions(
         rec, _new = _prompts.record(
             name,
             data,
-            source={"adapter": adapter_id, "system": cfg.get("config_id")},
-            note=f"sent by a run of {cfg.get('config_id')}",
+            source={"adapter": adapter_id, "system": cfg.get("system_id")},
+            note=f"sent by a run of {cfg.get('system_id')}",
         )
         out[name] = rec["id"]
     return out
@@ -934,13 +934,13 @@ def _resume_source(
             f"cannot resume: {resume} has no run.json, so the "
             f"arm that produced those outputs cannot be identified.\n"
             f"  Resuming anyway would replay whatever is in that directory and record it "
-            f"under {cfg.get('config_id')!r}.",
+            f"under {cfg.get('system_id')!r}.",
             "not-found",
         )
-    if ident.get("config_id") and ident["config_id"] != cfg.get("config_id"):
+    if ident.get("system_id") and ident["system_id"] != cfg.get("system_id"):
         die(
-            f"cannot resume: {resume} is arm {ident['config_id']!r}, "
-            f"this system is {cfg.get('config_id')!r}.\n"
+            f"cannot resume: {resume} is arm {ident['system_id']!r}, "
+            f"this system is {cfg.get('system_id')!r}.\n"
             f"  Resuming would replay another arm's answers and record them "
             f"under this one.",
             "mismatch",
@@ -1041,7 +1041,7 @@ def main() -> int:
         "--json",
         action="store_true",
         help="progress on stderr, and one JSON object on stdout when done: result.values.runs, one entry per "
-        "run written (run_id, config_id, dataset_id, dir, n_items, total_cost_usd, capped_at); with "
+        "run written (run_id, system_id, dataset_id, dir, n_items, total_cost_usd, capped_at); with "
         "--dry-run, result.values.dry_run. Exit codes as without it (1: nothing measured, 2: cost cap)",
     )
     ap.add_argument(
@@ -1147,9 +1147,9 @@ def _run(args: argparse.Namespace) -> int:
     # this system in advance.
     from evaluation_harness import _seal  # noqa: PLC0415
 
-    _seal.refuse_if_sealed(cfg["dataset_id"], "a run", cfg["config_id"])
+    _seal.refuse_if_sealed(cfg["dataset_id"], "a run", cfg["system_id"])
     stamp = now().replace(":", "").replace("-", "")
-    base_id = args.run_id or f"{cfg['config_id']}_{stamp}"
+    base_id = args.run_id or f"{cfg['system_id']}_{stamp}"
     build = build_info()
     ref_dir, ref_tier = _reference_for(cfg["dataset_id"])
     ref_id = str(ref_dir.relative_to(REFERENCES)) if ref_dir else None
@@ -1229,7 +1229,7 @@ def _run(args: argparse.Namespace) -> int:
     # (and a per-run copy of a prompt root), the fingerprint their hashes. The run record keeps the system's params.
     from evaluation_harness import _prompts  # noqa: PLC0415
 
-    resolved = _prompts.resolve(cfg, args.config, cfg["config_id"])
+    resolved = _prompts.resolve(cfg, args.config, cfg["system_id"])
     if resolved is not None:
         import atexit  # noqa: PLC0415
 
@@ -1252,7 +1252,7 @@ def _run(args: argparse.Namespace) -> int:
             )
         except Exception as exc:  # noqa: BLE001 - fail before spending, with the reason
             die(
-                f"warm-up failed for {cfg['config_id']}: {type(exc).__name__}: {exc}\n"
+                f"warm-up failed for {cfg['system_id']}: {type(exc).__name__}: {exc}\n"
                 "  nothing was run and nothing was spent.",
                 "failed",
             )
@@ -1268,7 +1268,7 @@ def _run(args: argparse.Namespace) -> int:
         dataset=ds,
         reference_id=ref_id,
         reference_tier=ref_tier,
-        config_id=cfg["config_id"],
+        system_id=cfg["system_id"],
         params=dict(cfg.get("params") or {}),
         adapter_id=adapter_id,
         adapter_path=adapter_path,
@@ -1353,10 +1353,10 @@ def _run(args: argparse.Namespace) -> int:
             if not taken(base_id):
                 break
             time.sleep(1.0)
-            base_id = f"{cfg['config_id']}_{now().replace(':', '').replace('-', '')}"
+            base_id = f"{cfg['system_id']}_{now().replace(':', '').replace('-', '')}"
         else:
             die(
-                f"{runs}: every run id for {cfg['config_id']} in the last 30 seconds is taken; run again",
+                f"{runs}: every run id for {cfg['system_id']} in the last 30 seconds is taken; run again",
                 "failed",
             )
     if rnd is not None and recorded is None:
@@ -1378,7 +1378,7 @@ def _run(args: argparse.Namespace) -> int:
         # for. This is small, written first, and never rewritten.
         _store.mkdir(run_dir, parents=True, exist_ok=True)
         identity = {
-            "config_id": cfg.get("config_id"),
+            "system_id": cfg.get("system_id"),
             "dataset_id": cfg.get("dataset_id"),
             "started_at": now(),
             "run_id": run_id,
@@ -1429,13 +1429,13 @@ def _run(args: argparse.Namespace) -> int:
         metrics = run_record(
             run_id=run_id,
             dataset_id=cfg["dataset_id"],
-            config_id=cfg["config_id"],
+            system_id=cfg["system_id"],
             build=build,
             scores=result["scores"],
             n_items=len(result["predictions"]),
             # The metrics score_run() computed over the whole run: one number each, no per-item values to test.
             run_metrics=result.get("run_metrics") or None,
-            # The knobs this run ACTUALLY used, not just the system's name. A config_id
+            # The knobs this run ACTUALLY used, not just the system's name. A system_id
             # names a file, and a file can be edited after the run — so without this a run
             # cannot say what produced it, only which YAML was pointed at. It also lets V5
             # tell a deterministic repeat (same params, same scores — expected) from two
@@ -1529,20 +1529,20 @@ def _run(args: argparse.Namespace) -> int:
             joined = _rounds.join(
                 rnd["goal"],
                 rnd["round_id"],
-                cfg["config_id"],
+                cfg["system_id"],
                 run_id,
                 _model_runs.label(score_dir),
                 _actor.actor(),
             )
             if joined is None:
                 print(
-                    f"  note: {rnd['round_id']} reads {cfg['config_id']} under a re-score this run is not yet: it is "
+                    f"  note: {rnd['round_id']} reads {cfg['system_id']} under a re-score this run is not yet: it is "
                     f"read in the round once re-scored (evh rescore --goal {rnd['goal']} --round {rnd['round_id']})"
                 )
         written.append(
             {
                 "run_id": run_id,
-                "config_id": cfg["config_id"],
+                "system_id": cfg["system_id"],
                 "dataset_id": cfg["dataset_id"],
                 "dir": str(run_dir),
                 "n_items": metrics["n_items"],

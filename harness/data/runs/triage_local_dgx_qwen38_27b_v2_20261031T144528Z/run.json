@@ -10,7 +10,7 @@
     "ref": "0da6ee344177ca048df57a29e65f6daa14b70292",
     "source": "git"
   },
-  "config_id": "triage_local_dgx_qwen38_27b_v2",
+  "system_id": "triage_local_dgx_qwen38_27b_v2",
   "created_at": "2026-10-31T15:03:27Z",
   "dataset_id": "orrery_triage_v1_labelled",
   "deployment_id": "dgx",

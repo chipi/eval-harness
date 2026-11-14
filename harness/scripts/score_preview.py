@@ -36,7 +36,7 @@ from evaluation_harness.model import goal_views as gv
 
 
 def decisions(A, goal: dict) -> dict[str, dict[str, Any]]:
-    """{dataset: {"rows": {config_id: {"arm", "label", "mean", "out"}}, "leader", "contenders", "recommended"}}: the
+    """{dataset: {"rows": {system_id: {"arm", "label", "mean", "out"}}, "leader", "contenders", "recommended"}}: the
     goal's decision on each dataset's gold group (else its first group), as `evh goals` reads it."""
     by_ds = cb.collect(A)
     retired_in = gv.retired_in_of(A, goal)

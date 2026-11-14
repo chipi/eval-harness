@@ -705,7 +705,7 @@ check(
 import _runfix  # noqa: E402
 
 for d in ("cap_v1", "cap_v2"):
-    _runfix.put_run(proj / "data", {"run_id": f"{d}_run", "config_id": "sys_a", "dataset_id": d, "scores": {"acc": 1.0},
+    _runfix.put_run(proj / "data", {"run_id": f"{d}_run", "system_id": "sys_a", "dataset_id": d, "scores": {"acc": 1.0},
                                     "primary_metric": "acc"}, [{"item_id": "i1", "acc": 1.0}])  # fmt: skip
 said = {d: evh("datasets", "--dataset-id", d) for d in ("cap_v1", "cap_v2")}
 check(

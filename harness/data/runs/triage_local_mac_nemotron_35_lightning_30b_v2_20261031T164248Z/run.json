@@ -10,7 +10,7 @@
     "ref": "36cb22f3e8c7d10187463fa93561bd11fc5661ac",
     "source": "git"
   },
-  "config_id": "triage_local_mac_nemotron_35_lightning_30b_v2",
+  "system_id": "triage_local_mac_nemotron_35_lightning_30b_v2",
   "created_at": "2026-10-31T16:54:50Z",
   "dataset_id": "orrery_triage_v1_labelled",
   "deployment_id": "mac",

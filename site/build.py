@@ -1883,7 +1883,7 @@ def catalog_inspect(x: dict) -> str:
         require(
             any(
                 m["run_id"].startswith(x["prefix"])
-                for _d, m in runs_on(x["dataset"], label=figures.label_of(x["base"]), config_id=cid)
+                for _d, m in runs_on(x["dataset"], label=figures.label_of(x["base"]), system_id=cid)
             ),
             f"{x['slug']}: a committed run of {cid} on {x['dataset']} for the inspector link",
         )

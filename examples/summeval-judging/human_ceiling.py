@@ -163,7 +163,7 @@ def main() -> int:
     for run, m in runs_on("summeval_100"):
         if not fnmatch.fnmatch(m["run_id"], "se_*_n100_v1_*"):
             continue
-        arm = m["config_id"][len("se_") : -len("_n100_v1")]
+        arm = m["system_id"][len("se_") : -len("_n100_v1")]
         full, loo, loo_by_item = [], [], {}
         for stem, it in items.items():
             out = _outputs.output(run, stem)
