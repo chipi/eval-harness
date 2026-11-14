@@ -74,7 +74,7 @@ def main() -> int:
             "EVAL_MAX_COST_USD": "",
         }
         env.pop("EVAL_DATA_DIR", None)
-        evh = [sys.executable, "-m", "evaluation_harness"]
+        evh = [sys.executable, str(HERE / "cli.py")]  # by path: an uninstalled checkout has no module to -m
         step(
             "the paired test's own suite (test_stats.py)",
             [sys.executable, str(HERE / "test_stats.py")],

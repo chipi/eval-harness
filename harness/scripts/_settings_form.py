@@ -18,7 +18,7 @@ import os
 import re
 import threading
 from collections.abc import Sequence
-from pathlib import PurePosixPath
+from pathlib import Path, PurePosixPath
 from typing import Any
 
 from evaluation_harness import _common, _data_page, _store
@@ -500,8 +500,10 @@ def project_check() -> dict[str, list[str]]:
     import sys  # noqa: PLC0415
 
     try:
+        # The package's own cli.py by its path, not `-m evaluation_harness`: a checkout that was never installed has
+        # no importable module (CI's stores job), and every save it checked was refused.
         r = subprocess.run(  # nosec B603
-            [sys.executable, "-m", "evaluation_harness", "validate"],
+            [sys.executable, str(Path(__file__).resolve().parent / "cli.py"), "validate"],
             cwd=_common.ROOT, capture_output=True, text=True, stdin=subprocess.DEVNULL, env=dict(os.environ),
             check=False, timeout=VALIDATE_TIMEOUT_S,
         )  # fmt: skip
