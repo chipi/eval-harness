@@ -243,15 +243,16 @@ evh leaderboard --dataset-id tickets_v1
 ```
 <!-- guide-check: varies lead2_noisy global distinguishable -->
 ```text
-  NOTE: these runs are scored 2 different ways (scored against silver/tickets_v1, scored against no reference);
-        one table for each, never averaged across them.
+dataset: tickets_v1   ranked by: overlap_f1 (higher is better)
 
-=== scored against silver/tickets_v1 ===
   arm                      runs  overlap_f1  output_words  cost_usd  latency_ms  total_cost_usd
-  tickets_lead2_v1            3      0.9001       28.5000  0.000000         0.0        0.000000
-  tickets_lead2_noisy_v1      3      0.7909       22.2222  0.000000         0.0        0.000000
-  tickets_lead1_v1            3      0.6409       16.0000  0.000000         0.0        0.000000
   ...
+  tickets_lead2_v1            3      0.9001       28.5000  0.000000         0.0        0.000000
+  tickets_lead2_noisy_v1      3      0.8009       22.9444  0.000000         0.0        0.000000
+  tickets_lead1_v1            3      0.6409       16.0000  0.000000         0.0        0.000000
+
+  goal tickets_summary: leader tickets_lead2_v1, recommended tickets_lead2_v1
+
   IS THE ORDERING REAL?   metric=overlap_f1  k=3 arms  N=6 items
     global test (permutation on within-item ranks): p = 0.0002  ->  an arm effect exists
     ...
@@ -259,19 +260,14 @@ evh leaderboard --dataset-id tickets_v1
   ...
   Scored against SILVER references (consistent, not correct). Good for ranking
   these arms against each other; not a claim that any of them is correct.
-
-=== scored against no reference ===
-  ...
-  arm                 runs  output_words  cost_usd  latency_ms  total_cost_usd
-  tickets_author_v1      1       35.1667  0.000000         0.0        0.000000
-  ...
 ```
 
 The leaderboard *sorts*; the block underneath says how much of the order is real. Read that
-block, not the row numbers. Runs scored against different references are never ranked
-together: the leaderboard prints one table for each way of scoring. The `author` run was made
-before there was a reference, so it sits alone under "no reference", with no quality score. The
-table also carries each arm's cost and speed (all zero here: `echo` is free and instant).
+block, not the row numbers. It ranks the arms as the goal does, and names the goal's leader and
+the arm it recommends. Runs scored against different references are never ranked together: each
+reference gets its own table. The `author` run wrote the silver reference and has no quality
+score, so it is not ranked. The table also carries each arm's cost and speed (all zero here:
+`echo` is free and instant).
 
 **One pair you named in advance**, tested item by item:
 
