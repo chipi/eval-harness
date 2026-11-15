@@ -455,11 +455,10 @@ try:
         for n, k in enumerate(T):
             run_dir = _R.first_score(run_names[k])
             assert run_dir is not None, f"{run_names[k]} has no first score"
-            lines = []
-            for row in _runstore.rows(run_dir):
+            edited = _runstore.rows(run_dir)
+            for row in edited:
                 row["overlap_f1"], row["latency_ms"] = f1[row["item_id"]][n], lat[row["item_id"]][n]
-                lines.append(json.dumps(row, sort_keys=True))
-            _runstore.put_rows_text(run_dir, "\n".join(lines) + "\n")
+            _runstore.put_rows(run_dir, edited)
 
     def footer_label(r, start):
         table = next((b for b in blocks_of(r) if b.get("columns", [""])[0] == "per arm"), {"rows": []})

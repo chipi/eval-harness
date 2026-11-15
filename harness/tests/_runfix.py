@@ -52,9 +52,7 @@ def _put_run(
         sd / R.METRICS, json.dumps({k: v for k, v in rec.items() if k in R.SCORE_KEYS}, indent=2) + "\n"
     )
     if rows is not None:
-        if not isinstance(rows, str):
-            rows = "".join(json.dumps(r) + "\n" for r in rows)
-        _runstore.put_rows_text(sd, rows)
+        _runstore.put_rows(sd, _runstore.rows_of_text(rows) if isinstance(rows, str) else rows)
     return sd
 
 

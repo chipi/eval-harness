@@ -12,13 +12,15 @@ keys below are frozen copies of `model/results.py`'s as they are written here; t
 - Usage. `_meta.usage` keeps `cost`, `prompt_tokens`, `completion_tokens`, and when nonzero `cached_tokens` and
   `cache_write_tokens` (both read from `prompt_tokens_details`); a `usage` that is not an object is left as it is.
   A usage with no `cost` gets none.
-- Rows canonical: `json.dumps(row, sort_keys=True)` and a newline. A line that is not a JSON object is left as it is.
-  A score whose rows come out as they went in is not written again.
-- A SQLite project: for this step the rows text in today's `rows` table is rewritten in place, through the same text
-  API the files use. The tables RFC-033 adds (score sets, metrics, per-item values, the call's facts) are step d's: it
+- Rows canonical: `json.dumps(row, sort_keys=True)` and a newline. A score whose rows come out as they went in is not
+  written again.
+- A SQLite project: for this step the rows in today's `rows` table are rewritten in place, through the same rows API
+  the files use (`stored_text` reads them as they were written; `put_rows` writes dicts). The tables RFC-033 adds (score sets, metrics, per-item values, the call's facts) are step d's: it
   extends this step to fill them from that text.
 
-`--dry-run` prints each count; nothing is written. Refused, writing nothing: a run.json whose `call` is not an object, and rows that are not UTF-8.
+`--dry-run` prints each count; nothing is written. Refused, writing nothing: a run.json whose `call` is not an object,
+rows that are not UTF-8, and a line of a score's rows that is not a JSON object with an `item_id` (the store refuses to
+write one: correct the file first).
 """
 
 from __future__ import annotations
@@ -116,12 +118,24 @@ def plan() -> dict[str, Any]:
         sdir = run / "scores"
         for sd in sorted(_store.iterdir(sdir)) if _store.is_dir(sdir) else []:
             try:
-                text = store.rows_text(sd)
+                text = store.stored_text(sd)
             except UnicodeDecodeError as exc:
                 refused.append(f"{_rel(sd)}: its rows are not UTF-8 ({exc.reason})")
                 continue
             if text is not None:
-                sets.append((sd, _lines(text)))
+                lines = _lines(text)
+                bad = [
+                    n
+                    for n, (_l, row) in enumerate(lines, 1)
+                    if row is None or not isinstance(row.get("item_id"), str)
+                ]
+                if bad:
+                    refused.append(
+                        f"{_rel(sd)}: line {bad[0]}{f' (and {len(bad) - 1} more)' if len(bad) > 1 else ''} is not a "
+                        "JSON object with an item_id"
+                    )
+                    continue
+                sets.append((sd, lines))
         # a setting is the run's when every row of every score holds one value for it
         new_call = dict(call)
         if doc is not None:
@@ -220,5 +234,6 @@ def run(dry_run: bool) -> None:
     for path, text, row_sets in p["changes"]:
         if text is not None:  # run.json first: a score's rows only lose a setting once the run holds it
             _common.write_text_atomic(path, text)
-        for sd, rows in row_sets:
+        for sd, text in row_sets:
+            rows, _skipped = _outputs.parse_rows(text, _rel(sd))
             store.put_rows(sd, rows)

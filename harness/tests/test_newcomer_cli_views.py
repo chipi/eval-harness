@@ -83,20 +83,12 @@ try:
     ):
         sd = write_run(syn, name, cfg, {"acc": 0.5, "total_cost_usd": 0.004})
         with _runstore._InProject(syn):  # in the suite's store, as `evh` reads it
-            _runstore.put_rows_text(
+            _runstore.put_rows(
                 sd,
-                "".join(
-                    json.dumps(
-                        {
-                            "item_id": f"i{i}",
-                            "acc": 0.5,
-                            "cost_usd": 0.001,
-                            "_meta": {"usage": {"cost": 0.001}},
-                        }
-                    )
-                    + "\n"
+                [
+                    {"item_id": f"i{i}", "acc": 0.5, "cost_usd": 0.001, "_meta": {"usage": {"cost": 0.001}}}
                     for i in range(4)
-                ),
+                ],
             )
     r = evh(syn, "cost-report", "--dataset-id", "dsv")
     rows = [ln.split()[0:2] for ln in r.stdout.splitlines() if ln.strip().startswith("arm_")]
@@ -556,7 +548,7 @@ try:
             older / "score.json",
             json.dumps({**json.loads(_store.read_text(older / "score.json")), "scorer": "0" * 12}),
         )
-        _runstore.put_rows_text(older, "".join(json.dumps(x) + "\n" for x in preds))
+        _runstore.put_rows(older, preds)
     cutr = evh(proj, "rescore", "--dataset-id", "tickets_v1")
     flat_cut = " ".join(cutr.stdout.split())
     check(

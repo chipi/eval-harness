@@ -328,20 +328,23 @@ def copy_data(src: Path, dst: Path) -> dict:
                 run,
                 *_score_dirs(run),
             ):  # the pass's checkpoint is the run's, a score's rows its own
-                for partial in (False, True):
-                    text = st.rows_text(held, partial)
-                    if text is not None:
-                        files.put_rows(dst / held.relative_to(src), text, partial)
+                at = dst / held.relative_to(src)
+                got = st.rows(held)
+                if got is not None:
+                    files.put_rows(at, got)
+                text = st.rows_text(held, partial=True)
+                if text is not None:
+                    files.put_partial(at, text)
     for hidden_run in sorted(hidden_runs):
         out = dst / Path(hidden_run).relative_to(src.resolve())
         counts["hidden_runs"] += 1
         for held in (out, *_score_dirs(out)):
-            for partial in (False, True):
-                text = files.rows_text(held, partial)
-                if text is not None:
-                    files.put_rows(
-                        held, "".join(_call_only_line(x) for x in text.splitlines() if x.strip()), partial
-                    )
+            got = files.rows(held)
+            if got is not None:
+                files.put_rows(held, [_call_only(r) for r in got])
+            text = files.rows_text(held, partial=True)
+            if text is not None:
+                files.put_partial(held, "".join(_call_only_line(x) for x in text.splitlines() if x.strip()))
     for name in COPIED_DIRS:
         d = src / name
         if not _store.is_dir(d):

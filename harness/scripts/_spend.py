@@ -156,11 +156,10 @@ def _run_spend(run_id: str) -> tuple[bool, float]:
     doc = _model_runs.record(first) if first else None
     if doc is not None:
         return not scratch, float((doc.get("scores") or {}).get("total_cost_usd") or 0)
-    text = _outputs.store().rows_text(d, partial=True, errors="replace") or ""
     total = 0.0
-    for line in text.splitlines():
-        with contextlib.suppress(ValueError, TypeError, AttributeError):
-            total += float(json.loads(line).get("cost_usd") or 0)
+    for row in _outputs.rows(d, partial=True, errors="replace") or ():
+        with contextlib.suppress(ValueError, TypeError):
+            total += float(row.get("cost_usd") or 0)
     return False, total
 
 

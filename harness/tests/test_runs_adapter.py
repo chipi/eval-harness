@@ -69,17 +69,20 @@ with tempfile.TemporaryDirectory() as tmp, _runstore._InProject(tmp) as data:
     )
     check("matrix: system_id -> item -> mean", set(matrix(runs, "f1")) == {"a", "b"})
 
-    _runstore.put_rows_text(a_dir, '{"item_id": "i1", "f1": 0.9}\nnot json\n')
-    try:
-        list(item_rows(a_dir))
-        raised = False
-    except ValueError as exc:
-        raised = "predictions.jsonl:2" in str(exc)
-    check("item_rows: a malformed line names its file and line", raised)
-    check(
-        "item_rows: strict=False skips it (a page may, a test may not)",
-        len(list(item_rows(a_dir, strict=False))) == 1,
-    )
+    if not _runstore.sqlite():  # a malformed line is a hand-edited file: the sqlite store refuses to hold one
+        _runstore.put_raw_rows(a_dir, '{"item_id": "i1", "f1": 0.9}\nnot json\n')
+        try:
+            list(item_rows(a_dir))
+            raised = False
+        except ValueError as exc:
+            raised = "predictions.jsonl:2" in str(exc)
+        check("item_rows: a malformed line names its file and line", raised)
+        check(
+            "item_rows: strict=False skips it (a page may, a test may not)",
+            len(list(item_rows(a_dir, strict=False))) == 1,
+        )
+    else:
+        _runstore.put_rows(a_dir, [{"item_id": "i1", "f1": 0.9}])
 
     check("direction: a cost metric is lower-is-better without a flag", direction(runs, "cost_usd"))
     check("direction: a quality metric is higher-is-better", not direction(runs, "f1"))

@@ -26,7 +26,7 @@ def put(
     data: Path | str,
     run_id: str,
     rec: dict[str, Any],
-    rows_text: str | None = None,
+    rows: str | list[dict[str, Any]] | None = None,
     *,
     label: str = "",
     purpose: str = "run",
@@ -68,8 +68,8 @@ def put(
         meta["unset"] = unset
     _store.write_text(sd / model_runs.SCORE, json.dumps(meta, indent=2) + "\n")
     _store.write_text(sd / model_runs.METRICS, json.dumps(own, indent=2) + "\n")
-    if rows_text is not None:
-        _runstore.put_rows_text(sd, rows_text)
+    if rows is not None:
+        _runstore.put_rows(sd, _runstore.rows_of_text(rows) if isinstance(rows, str) else rows)
     return sd
 
 

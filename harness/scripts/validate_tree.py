@@ -408,13 +408,10 @@ def _per_item_signature(score: Path) -> str:
 
     rows = []
     try:
-        text = _outputs.rows_text(score)
-        if text is None:
+        got = _outputs.rows(score)
+        if got is None:
             return f"<no-predictions:{score}>"
-        for line in text.splitlines():
-            if not line.strip():
-                continue
-            row = json.loads(line)
+        for row in got:
             scored = {k: v for k, v in row.items() if k not in _V5_RUN_PROPERTIES and k != "_meta"}
             rows.append(json.dumps(scored, sort_keys=True))
     except (OSError, ValueError):
@@ -788,14 +785,14 @@ def v9_no_committed_evidence_is_missing() -> None:
             continue
         sd = DATA / key
         try:
-            _text = _outputs.rows_text(sd)
+            _held = _outputs.rows(sd)
         except (OSError, ValueError):
             incomplete.append(f"{key} predictions.jsonl is unreadable")
             continue
-        if _text is None or not _store.is_file(sd / _mr.METRICS):
+        if _held is None or not _store.is_file(sd / _mr.METRICS):
             continue  # already counted as missing above
         try:
-            _rows = sum(1 for _l in _text.splitlines() if _l.strip())
+            _rows = len(_held)
             _want = int((_mr.record(sd) or {}).get("n_items") or 0)
         except (OSError, ValueError, TypeError):
             incomplete.append(f"{key} predictions.jsonl is unreadable")
@@ -1992,30 +1989,28 @@ def v27_studies() -> None:
 
 def v28_rows_in_format_7() -> None:
     """V28: no stored row holds what format 7 moved (RFC-033): a run setting equal to its run's `call`, or a `usage`
-    key outside the kept set. The rows are read as stored, not through `item_rows`."""
+    key outside the kept set; and every stored line is a row, a JSON object with an `item_id` (the writers refuse
+    anything else; the reader skips what a hand-edited file holds)."""
     from evaluation_harness import _outputs  # noqa: PLC0415
     from evaluation_harness.model import results as _results  # noqa: PLC0415
 
     bad: list[str] = []
     n = 0
-    needles = ("usage", *_results.RUN_SETTINGS)
     for rid in _mr.run_ids():
         call = (_mr.run(rid) or {}).get("call")
         call = call if isinstance(call, dict) else None
         for sd in _mr.scores_of(rid):
-            text = _outputs.rows_text(sd, errors="replace")
-            if text is None:
+            got = _outputs.rows(sd, errors="replace")
+            if got is None:
                 continue
             n += 1
-            for line_no, line in enumerate(text.splitlines(), 1):
-                if not any(k in line for k in needles):  # a row can hold none of them without the word
-                    continue
-                try:
-                    row = json.loads(line)
-                except ValueError:
-                    continue
+            bad += [
+                f"{data_rel(sd)} line {line_no}: not a JSON object with an item_id"
+                for line_no in _outputs.malformed(sd)
+            ]
+            for row_no, row in enumerate(got, 1):
                 for p in _results.problems(row, call):
-                    bad.append(f"{data_rel(sd)} line {line_no}: {p}")
+                    bad.append(f"{data_rel(sd)} row {row_no}: {p}")
     if not n:
         print("  --   V28 rows (no scores)")
         return
@@ -2024,9 +2019,9 @@ def v28_rows_in_format_7() -> None:
     if len(bad) > 10:
         print(f"       ... and {len(bad) - 10} more")
     check(
-        f"V28 rows — {n} score set(s), none holding its run's settings or a usage key format 7 drops",
+        f"V28 rows — {n} score set(s), every line a row, none holding its run's settings or a usage key format 7 drops",
         not bad,
-        f"{len(bad)} problem(s): evh migrate",
+        f"{len(bad)} problem(s): evh migrate moves the settings and usage; a line that is no row is for the file's owner to correct",
     )
 
 

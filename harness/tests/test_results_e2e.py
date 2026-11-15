@@ -197,7 +197,7 @@ class Project:
         with _runstore._InProject(self.dir):
             sd = model_runs.first_score(self.run_dir(run_id))
             assert sd is not None
-            _runstore.put_rows_text(sd, "".join(_outputs.row_line(r) for r in rows))
+            _runstore.put_rows(sd, rows)
 
     def v28(self):
         vt.problems.clear()

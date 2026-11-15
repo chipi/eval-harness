@@ -1,13 +1,14 @@
 """Run fixtures in the store the suite runs in (RFC-025): EVAL_STORE, files by default.
 
-What a test needs beyond `_outputs` and `_runs.item_rows`: raw rows text (a malformed line, an emptied file), every
-line parsed, a run made with its scores, and a run copied with its outputs and scores' rows, in whichever store the
-project is. A score's rows are in its directory (`runs/<id>/scores/<key>/`, model/runs), the run's outputs and its
+What a test needs beyond `_outputs` and `_runs.item_rows`: rows put as dicts, a hand-edited predictions.jsonl (a
+malformed line: files store only, the store refuses to write one), a checkpoint's text, every row read as a copy, a run
+made with its scores, and a run copied with its outputs and scores' rows, in whichever store the project is. A score's rows are in its directory (`runs/<id>/scores/<key>/`, model/runs), the run's outputs and its
 checkpoint in the run's.
 """
 
 from __future__ import annotations
 
+import copy
 import json
 import os
 from pathlib import Path
@@ -22,17 +23,37 @@ def sqlite() -> bool:
     return os.environ.get("EVAL_STORE", "").strip() == "sqlite"
 
 
-def put_rows_text(run_dir: Path, text: str, partial: bool = False) -> None:
-    """A score's rows (a run's checkpoint with `partial`) exactly as given, malformed lines included (a test of a
-    reader's refusals)."""
+def put_rows(run_dir: Path, rows: list[dict[str, Any]]) -> None:
+    """A score's rows, as the store writes them (a row with no item id is refused)."""
     _store.mkdir(run_dir, parents=True, exist_ok=True)
-    _outputs.store().put_rows(Path(run_dir), text, partial)
+    _outputs.store().put_rows(Path(run_dir), rows)
+
+
+def rows_of_text(text: str) -> list[dict[str, Any]]:
+    """The rows of a text of JSON lines (a fixture written as literal lines)."""
+    return [json.loads(x) for x in text.splitlines() if x.strip()]
+
+
+def put_partial_text(run_dir: Path, text: str) -> None:
+    """A run's checkpoint exactly as given: verbatim, a torn last line allowed."""
+    _store.mkdir(run_dir, parents=True, exist_ok=True)
+    _outputs.store().put_partial(Path(run_dir), text)
+
+
+def put_raw_rows(score_dir: Path, text: str) -> None:
+    """A score's predictions.jsonl exactly as given, malformed lines included: a hand-edited file. The files store only
+    (the sqlite store refuses to write such a line: test that it does)."""
+    assert not sqlite(), "a hand-edited predictions.jsonl is a file: run this test in the files store"
+    _outputs.reset()  # the cache keys a file by its mtime and size
+    _store.mkdir(score_dir, parents=True, exist_ok=True)
+    (Path(score_dir) / _outputs.PREDICTIONS).write_text(text, encoding="utf-8")
+    _outputs.reset()
 
 
 def rows(run_dir: Path, partial: bool = False) -> list[dict[str, Any]]:
-    """A score's rows, each non-blank line parsed (a row without an item id included)."""
-    text = _outputs.rows_text(Path(run_dir), partial) or ""
-    return [json.loads(x) for x in text.splitlines() if x.strip()]
+    """A score's rows (a run's checkpoint's with `partial`) as copies, a test may change them; a row without an item id
+    included."""
+    return copy.deepcopy(_outputs.rows(Path(run_dir), partial) or [])
 
 
 def run_rows(run_dir: Path) -> list[dict[str, Any]]:
@@ -84,13 +105,15 @@ def copy_run(src: Path, dst: Path) -> None:
     if outs:
         st.write_all(Path(dst), {o["item_id"]: o["text"] for o in outs}, [o["item_id"] for o in outs])
     for sd in model_runs.scores_of(Path(src)):
-        for partial in (False, True):
-            text = st.rows_text(sd, partial)
-            if text is not None:
-                st.put_rows(Path(dst) / "scores" / sd.name, text, partial)
-    text = st.rows_text(Path(src), True)
+        got = st.rows(sd)
+        if got is not None:
+            st.put_rows(Path(dst) / "scores" / sd.name, got)
+        text = st.rows_text(sd, partial=True)
+        if text is not None:
+            st.put_partial(Path(dst) / "scores" / sd.name, text)
+    text = st.rows_text(Path(src), partial=True)
     if text is not None:
-        st.put_rows(Path(dst), text, True)
+        st.put_partial(Path(dst), text)
 
 
 # ── a test project's data, read and written in its store ──────────────────────────────────────────────────────────

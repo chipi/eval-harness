@@ -38,10 +38,10 @@ def evh(proj: Path, *args: str, **env: str) -> subprocess.CompletedProcess:
     return subprocess.run([PY, str(HERE / "cli.py"), *args], cwd=proj, env=e, capture_output=True, text=True)
 
 
-def rows_into(proj: Path, score_dir: Path, text: str) -> None:
+def rows_into(proj: Path, score_dir: Path, rows: list[dict]) -> None:
     """A score's rows, in the suite's store as `evh` reads the project."""
     with _runstore._InProject(proj):
-        _runstore.put_rows_text(score_dir, text)
+        _runstore.put_rows(score_dir, rows)
 
 
 def verdict(
@@ -97,13 +97,10 @@ try:
     rows_into(
         syn,
         sd,
-        "".join(
-            json.dumps(
-                {"item_id": f"i{i}", "acc": 0.5, "cost_usd": 0.001, "_meta": {"usage": {"cost": 0.001}}}
-            )
-            + "\n"
+        [
+            {"item_id": f"i{i}", "acc": 0.5, "cost_usd": 0.001, "_meta": {"usage": {"cost": 0.001}}}
             for i in range(4)
-        ),
+        ],
     )
     judging_set(syn, "dsv-2arms-aaaa", "dsv")
     judging_set(syn, "other-2arms-bbbb", "other")
@@ -221,8 +218,7 @@ try:
         rows_into(
             empty,
             sd2,
-            json.dumps({"item_id": "i0", "acc": 0.5, "cost_usd": 0.001, "_meta": {"usage": {"cost": 0.001}}})
-            + "\n",
+            [{"item_id": "i0", "acc": 0.5, "cost_usd": 0.001, "_meta": {"usage": {"cost": 0.001}}}],
         )
         r = evh(empty, "cost-report")
         check(

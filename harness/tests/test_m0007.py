@@ -61,6 +61,14 @@ COUNTS = {
 }
 
 
+# data-migrate writes a score's rows as canonical lines, so a row that was not in key order is already canonical in the
+# database: the step has no canonicalizing of it left to count there.
+COUNTS_SQLITE = {
+    **{k: v for k, v in COUNTS.items() if k != "rows made canonical"},
+    "score sets rewritten": COUNTS["score sets rewritten"] - 1,
+}
+
+
 def evh(proj, store, *args):
     env = {k: v for k, v in os.environ.items() if k not in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR")}
     env.update(EVAL_HOME=str(proj), EVAL_STORE=store, EVAL_BUILD_REF="test-m0007")
@@ -138,6 +146,22 @@ try:
     )
     check("--dry-run: nothing written", tree(files / "data") == pre)
 
+    # A line that is no row (a hand-edited file) is refused, writing nothing: the stores refuse to write one.
+    junk = base / "junk"
+    shutil.copytree(FIXTURE, junk / "data")
+    zp = junk / "data" / "runs/zeta_20261101T000000Z/scores/aaaaaaaaaaaa@gold.ds/predictions.jsonl"
+    zl_ = zp.read_text().splitlines()
+    zp.write_text("\n".join([*zl_[:2], "not a json row", *zl_[2:]]) + "\n")
+    held = tree(junk / "data")
+    r = evh(junk, "files", "migrate")
+    check(
+        "a line that is not a row: migrate refuses, naming the score set and the line, and writes nothing",
+        r.returncode != 0
+        and "aaaaaaaaaaaa@gold.ds: line 3 is not a JSON object with an item_id" in r.stderr
+        and tree(junk / "data") == held,
+        r.stdout + r.stderr[-400:],
+    )
+
     r = evh(files, "files", "migrate")
     after = tree(files / "data")
     check(
@@ -160,7 +184,7 @@ try:
     r = evh(files, "files", "validate")
     check(
         "validate: a score's rows put back as format 6 wrote them, beside the run's call, fail V28, naming the score and the line",
-        "FAIL V28" in r.stdout and "aaaaaaaaaaaa@gold.ds line 1" in r.stdout,
+        "FAIL V28" in r.stdout and "aaaaaaaaaaaa@gold.ds row 1" in r.stdout,
         r.stdout[-800:],
     )
     (files / "data" / held_key).write_bytes(after[held_key])
@@ -258,9 +282,9 @@ try:
     zk = "runs/zeta_20261101T000000Z/scores/aaaaaaaaaaaa@gold.ds/predictions.jsonl"
     zl = after[zk].decode().splitlines()
     check(
-        "rows: one not in key order is made canonical; a line that is not a row is left as it is; a score with no rows stays empty",
+        "rows: one not in key order is made canonical; a score with no rows stays empty",
         zl[1] == '{"_extra": {}, "a": 2, "b": 1, "item_id": "z2"}'
-        and zl[2] == "not a json row"
+        and len(zl) == 3
         and after["runs/zeta_20261101T000000Z/scores/bbbbbbbbbbbb@gold.ds/predictions.jsonl"] == b"",
         zl,
     )
@@ -321,20 +345,20 @@ try:
     r = evh(sql, "sqlite", "data-migrate", "--to", "sqlite")
     check(
         "setup: the fixture project moved into its database",
-        r.returncode == 0 and "23 row(s)" in r.stdout,
+        r.returncode == 0 and "22 row(s)" in r.stdout,
         r.stdout + r.stderr[-300:],
     )
     r = evh(sql, "sqlite", "migrate", "--dry-run")
     check(
-        "sqlite --dry-run: the same counts",
-        r.returncode == 0 and counts(r.stdout) == COUNTS,
+        "sqlite --dry-run: the same counts, but for the row data-migrate made canonical on the way in",
+        r.returncode == 0 and counts(r.stdout) == COUNTS_SQLITE,
         r.stdout + r.stderr[-300:],
     )
     r = evh(sql, "sqlite", "migrate")
     check(
-        "sqlite migrate: the same counts, backed up first, at format 7",
+        "sqlite migrate: the same counts (less that row), backed up first, at format 7",
         r.returncode == 0
-        and counts(r.stdout) == COUNTS
+        and counts(r.stdout) == COUNTS_SQLITE
         and "backup:" in r.stdout
         and "brought the data to format 7" in r.stdout,
         r.stdout + r.stderr[-300:],

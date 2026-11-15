@@ -3,11 +3,11 @@
 
     evh data-migrate --to sqlite --dry-run   what would move
     evh data-migrate --to sqlite             everything under data/ into data/project.sqlite (store: sqlite first)
-    evh data-migrate --to files              back, byte for byte (store: files first)
+    evh data-migrate --to files              back (store: files first)
 
 A project is files or its database, never both. Each file is written to the target, read back and compared (a file's
-sha256; a run's outputs by item, text, sha256 and order; its checkpoint's rows and each of its scores' rows by their
-exact text) before the old copy is removed;
+sha256; a run's outputs by item, text, sha256 and order; its checkpoint's rows by their exact text, each of its scores'
+rows by their canonical text, `row_line` of each) before the old copy is removed;
 any difference stops the move with that file in its old place. A move a crash stopped is finished by the next one.
 Refused while the project's store (`store` in config.yaml, or EVAL_STORE) is not the target, while data/ holds Python
 (code is never in the database: keep it outside data/ and name it by path), and while a run is still in the layout
@@ -135,8 +135,12 @@ def to_sqlite(dry_run: bool) -> dict[str, int]:
                 f"{d.relative_to(data)}: output(s) whose text does not match its sha256: {', '.join(bad[:5])}",
                 "mismatch",
             )
-        rows = {pt: disk.rows_text(d, pt) for pt in (False, True)}
-        n["rows"] += sum(len(t.splitlines()) for t in rows.values() if t)
+        try:
+            scored = disk.rows(d)
+        except ValueError as exc:
+            die(f"{exc}; a score's rows are JSON objects, one per line", "invalid-file")
+        partial = disk.rows_text(d, partial=True)
+        n["rows"] += len(scored or ()) + len((partial or "").splitlines())
         if dry_run:
             continue
         if texts and not st.has(d):
@@ -146,14 +150,20 @@ def to_sqlite(dry_run: bool) -> dict[str, int]:
                 f"{d.relative_to(data)}: its outputs read back from the database differ; they stay files",
                 "mismatch",
             )
-        for pt, text in rows.items():
-            if text is None:
-                continue
-            if st.rows_text(d, pt) is None:
-                st.put_rows(d, text, pt)
-            if st.rows_text(d, pt) != text:
+        if scored is not None:
+            if st.rows(d) is None:
+                st.put_rows(d, scored)
+            if st.rows_text(d) != disk.rows_text(d):
                 die(
                     f"{d.relative_to(data)}: its rows read back from the database differ; they stay files",
+                    "mismatch",
+                )
+        if partial is not None:
+            if st.rows_text(d, partial=True) is None:
+                st.put_partial(d, partial)
+            if st.rows_text(d, partial=True) != partial:
+                die(
+                    f"{d.relative_to(data)}: its checkpoint read back from the database differs; it stays a file",
                     "mismatch",
                 )
         for name in PER_ITEM:
@@ -250,10 +260,20 @@ def to_files(dry_run: bool) -> dict[str, int]:
             if [(o["item_id"], o["text"], o["sha256"]) for o in disk.lines(d)] != [tuple(o) for o in outs]:
                 die(f"{key}: its outputs written back differ", "mismatch")
         for pt, text in rows.items():
-            if text is not None:
-                disk.put_rows(d, text, pt)
-                if disk.rows_text(d, pt) != text:
+            if text is None:
+                continue
+            if pt:
+                disk.put_partial(d, text)
+                if disk.rows_text(d, partial=True) != text:
                     die(f"{key}: its rows written back differ", "mismatch")
+                continue
+            try:
+                back, _skipped = _outputs.parse_rows(text, f"{key}/{_outputs.PREDICTIONS}")
+            except ValueError as exc:
+                die(f"{exc}; a score's rows are JSON objects, one per line", "invalid-file")
+            disk.put_rows(d, back)
+            if disk.rows_text(d) != "".join(_outputs.row_line(r) for r in back):
+                die(f"{key}: its rows written back differ", "mismatch")
     conn.close()
     if not dry_run:
         _store.close()

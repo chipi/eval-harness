@@ -8,7 +8,6 @@ keeps beside each mean; and `_runs.per_item(reduce=)`, which pair-test and famil
 number is what it was: the mean.
 """
 
-import json
 import sys
 import tempfile
 from pathlib import Path
@@ -71,7 +70,7 @@ with tempfile.TemporaryDirectory() as tmp:
         d = Path(tmp) / f"arm_r{k}"
         d.mkdir()
         rows = [{"item_id": f"x{j}", "correct": v} for j, v in enumerate(vals)]
-        _runstore.put_rows_text(d, "".join(json.dumps(x) + "\n" for x in rows))
+        _runstore.put_rows(d, rows)
         runs.append((d, {}))
     m = per_item(runs, "correct")
     ag = repeat_agreement(runs, "correct")

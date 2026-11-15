@@ -491,6 +491,17 @@ that can move a result is never a patch release without saying so under **Change
   the slim) that the release's hidden-dataset filter reads too. `evh validate` V28 reports a stored row holding its
   run's setting or a `usage` key outside the kept set. `Result.meta` stays free-form: a usage object an adapter returns
   is slimmed when it is written.
+- **A score's rows are written and read as rows** (RFC-033 step c; both stores). The store takes a score's rows as
+  dicts (`put_rows`), keeps their canonical lines, and gives them back parsed (`_outputs.rows`; `item_rows` reads them),
+  with the text derived (`rows_text`). A line that is not a JSON object with an `item_id` string is **refused at write**
+  (`ERROR (invalid-file)`, naming the file and the row), by `evh run`, `rescore`, `judge-score`, `sheet-import`,
+  `import-run`, `evh data-migrate` and `evh migrate`; the crash checkpoint (`rows.partial.jsonl`) is exempt: kept
+  verbatim, a torn last line allowed. A hand-edited `predictions.jsonl` in the files store is still read (a strict reader
+  raises on a line that is not JSON, naming the line; a page skips it) and `evh validate` V28 names each line that is no
+  row. `data-migrate` writes a score's rows as canonical lines in either direction, so a row that was not in key order
+  is canonical on the other side; a project whose file holds a line that is no row is refused until it is corrected.
+  `evh migrate` to format 7 refuses such a score set too, writing nothing. The rows the cache keeps are shared dicts:
+  code that reads them and changes one copies it first.
 - **The API's description, made from the operations** (RFC-032 step 9): `GET /api/v1/openapi.json` (OpenAPI 3.1,
   with the token) and `evh openapi` give every operation's route, inputs, body, refusals and the job routes. Gone:
   `POST /api/v1/read/<command>` (a read run as a process) and `GET /api/v1/commands`; the operations' resources

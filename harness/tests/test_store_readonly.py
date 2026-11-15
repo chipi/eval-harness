@@ -34,7 +34,8 @@ data = proj / "data"
 db = data / _store.DB
 RUN = data / "runs" / "r1"
 SCORE = RUN / "scores" / "s1@gold.ds"
-ROWS = '{"item_id": "i1", "correct": 1}\n'
+ROW = {"item_id": "i1", "correct": 1}
+ROWS = '{"correct": 1, "item_id": "i1"}\n'  # its canonical text, which is what the store keeps
 
 
 def sha() -> str:
@@ -76,7 +77,7 @@ def make_project() -> None:
     _store.write_text(RUN / "run.json", "{}\n")
     st = sqlite_store()
     st.write_all(RUN, {"i1": "text one", "i2": "text two"}, ["i1", "i2"])
-    st.put_rows(SCORE, ROWS)
+    st.put_rows(SCORE, [ROW])
     reopen()
     _release_store.seal(db)
 
@@ -171,7 +172,7 @@ try:
             "outputs add": lambda: st.add(RUN, "i3", "text"),
             "outputs write_all": lambda: st.write_all(RUN, {"i1": "x"}, ["i1"]),
             "outputs delete": lambda: st.delete(RUN),
-            "rows put": lambda: st.put_rows(SCORE, ROWS),
+            "rows put": lambda: st.put_rows(SCORE, [ROW]),
             "rows append": lambda: st.append_row(SCORE, ROWS),
             "rows drop": lambda: st.drop_rows(SCORE),
             "Writer.add": lambda: _outputs.writer(RUN).add("i3", "text"),

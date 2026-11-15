@@ -464,27 +464,27 @@ PRIMARY_METRIC = "words"
     with _runstore._InProject(proj):
         sd = model_runs.first_score(runs / "const_run")
         assert sd is not None
-        good = _outputs.rows_text(sd) or ""
+        good = _runstore.rows(sd)
         planted = {
             "a setting equal to its run's call": lambda r: r["_meta"].update(encoder_window=512),
             "a usage key outside the kept set": lambda r: r["_meta"]["usage"].update(total_tokens=9),
         }
         for what, plant in planted.items():
-            lines = [json.loads(x) for x in good.splitlines()]
+            lines = copy.deepcopy(good)
             plant(lines[2])
-            _runstore.put_rows_text(sd, "".join(json.dumps(x, sort_keys=True) + "\n" for x in lines))
+            _runstore.put_rows(sd, lines)
             bad, out = v28()
             check(
-                f"V28: {what} fails, naming the score set and the line",
-                bool(bad) and "line 3" in out and "const_run" in out,
+                f"V28: {what} fails, naming the score set and the row",
+                bool(bad) and "row 3" in out and "const_run" in out,
                 out,
             )
-        lines = [json.loads(x) for x in good.splitlines()]
+        lines = copy.deepcopy(good)
         lines[2]["_meta"]["encoder_window"] = 1024
-        _runstore.put_rows_text(sd, "".join(json.dumps(x, sort_keys=True) + "\n" for x in lines))
+        _runstore.put_rows(sd, lines)
         bad, out = v28()
         check("V28: a setting that differs from the run's is the row's own, not a finding", not bad, out)
-        _runstore.put_rows_text(sd, good)
+        _runstore.put_rows(sd, good)
 finally:
     _outputs.reset()
     shutil.rmtree(proj, ignore_errors=True)

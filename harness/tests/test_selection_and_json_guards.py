@@ -25,7 +25,6 @@ from evaluation_harness import _jsonout  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
 import _runstore  # noqa: E402
-from evaluation_harness import _outputs  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 from evaluation_harness.model import runs as model_runs  # noqa: E402
 
@@ -93,9 +92,7 @@ def main() -> int:
             _runstore.copy_run(run_of(dirs[cid]), tmp / "runs" / run_of(dirs[cid]).name)
         short = model_runs.first_score(tmp / "runs" / run_of(dirs[c]).name)
         assert short is not None, "the copied run has no first score"
-        _runstore.put_rows_text(
-            short, "".join((_outputs.rows_text(short) or "").splitlines(keepends=True)[:40])
-        )
+        _runstore.put_rows(short, _runstore.rows(short)[:40])
         r = evh(
             "family-test",
             "--dataset-id",

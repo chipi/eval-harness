@@ -906,6 +906,10 @@ def test_example_scorer_suites_pass() -> None:
             "a run's outputs in one file (RFC-024): append, a torn line, finish, resume, a derived run reads its source's; both stores",
         ),
         (
+            "test_rows_api.py",
+            "a score's rows as dicts in both stores (RFC-033 step c): canonical text derived, a line that is no row refused, the checkpoint exempt, the files reader tolerant and V28 reporting it, the cache keeping dicts and text together",
+        ),
+        (
             "test_store.py",
             "the project's store (RFC-025): the setting, _store on both, data-migrate there and back, never both (V23), concurrent writers, the release, the path-I/O guard",
         ),
@@ -1512,9 +1516,7 @@ def _resume_scores_and_persists(runs: Path, fixture: Path) -> None:
     _runstore.copy_run(runs / src, crash)
     # What the pass had appended when it died: its rows (a finished run drops the checkpoint; a real stop keeps it,
     # test_run_reports.py).
-    _runstore.put_rows_text(
-        crash, "".join(f"{_json.dumps(x)}\n" for x in _runstore.run_rows(crash)), partial=True
-    )
+    _runstore.put_partial_text(crash, "".join(f"{_json.dumps(x)}\n" for x in _runstore.run_rows(crash)))
     shutil.rmtree(crash / "scores", ignore_errors=True)
     rec = _json.loads((crash / "run.json").read_text())
     (crash / "run.json").write_text(_json.dumps({**rec, "run_id": crash.name}))
@@ -1602,8 +1604,8 @@ def _resume_scores_and_persists(runs: Path, fixture: Path) -> None:
             fx_first = sorted(fx_texts)[0]
             _outputs.write_all(fx_src, {fx_first: fx_texts[fx_first]}, [fx_first])
             # What the pass had appended when it died: its rows (a finished run drops the checkpoint).
-            _runstore.put_rows_text(
-                fx_src, "".join(f"{_json.dumps(x)}\n" for x in _runstore.run_rows(fx_src)), partial=True
+            _runstore.put_partial_text(
+                fx_src, "".join(f"{_json.dumps(x)}\n" for x in _runstore.run_rows(fx_src))
             )
             shutil.rmtree(fx_src / "scores", ignore_errors=True)
             rr = run(

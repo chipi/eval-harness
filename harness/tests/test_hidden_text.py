@@ -420,12 +420,9 @@ try:
     _runstore.write_text(
         proj, f"{jrel}/metrics.json", json.dumps({"derived": {"kind": "judge", "from": hrun}})
     )
-    _runstore.put_rows_text(
+    _runstore.put_rows(
         jdir,
-        json.dumps(
-            {"item_id": item, "judge_x": 1.0, "_meta": {"usage": {"t": 1}, "prompt": f"quoting {MARK['h']}"}}
-        )
-        + "\n",
+        [{"item_id": item, "judge_x": 1.0, "_meta": {"usage": {"t": 1}, "prompt": f"quoting {MARK['h']}"}}],
     )
     # ── a judge scorer that judged on both datasets (RFC-032 step 8): its pages carry counts, never a reply ──────────
     shutil.copy(KIT / "judge_prompt.txt", proj / "judge_prompt.txt")

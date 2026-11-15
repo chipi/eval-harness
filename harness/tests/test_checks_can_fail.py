@@ -35,7 +35,7 @@ from evaluation_harness._check import check, summary  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
 import _runstore  # noqa: E402
-from evaluation_harness import _outputs, _store  # noqa: E402
+from evaluation_harness import _store  # noqa: E402
 
 #: (checker, the defect, file, anchor, what it becomes, what the checker's output must say)
 #: An anchor that no longer matches exactly once is a failure, not a skip.
@@ -284,11 +284,9 @@ def plant_runs_linux(shadow: Path) -> None:
     replace(twin / "run.json", json.dumps({**rec, "run_id": twin.name}))
     # Rows are replaced through the store: a new file (never the hard-linked one) or the shadow's own database.
     emptied = runs_of(shadow, "retime", "ag_bert_base_fy_")[0]
-    _runstore.put_rows_text(sorted((emptied / "scores").glob("*"))[0], "")
+    _runstore.put_rows(sorted((emptied / "scores").glob("*"))[0], [])
     partial = sorted((runs_of(shadow, "retime", "cnn_bart_m_")[0] / "scores").glob("*"))[0]
-    _runstore.put_rows_text(
-        partial, "".join((_outputs.rows_text(partial) or "").splitlines(keepends=True)[:-3])
-    )
+    _runstore.put_rows(partial, _runstore.rows(partial)[:-3])
 
 
 def plant_runs_pair(shadow: Path) -> str:

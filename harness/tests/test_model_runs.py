@@ -81,7 +81,7 @@ def put(folder: str, run_id: str, rec: dict, *, outputs: bool | dict = False, ro
     d = DATA / folder / run_id
     _store.mkdir(d, parents=True, exist_ok=True)
     _store.write_text(d / "metrics.json", json.dumps(rec, indent=2) + "\n")
-    _outputs.store().put_rows(d, rows)
+    _outputs.store().put_rows(d, [json.loads(x) for x in rows.splitlines()])
     if outputs:
         outs = outputs if isinstance(outputs, dict) else OUTS
         _outputs.store().write_all(d, outs, list(outs))

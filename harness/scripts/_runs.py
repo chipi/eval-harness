@@ -20,7 +20,6 @@ from pathlib import Path as _Path
 if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
-import json
 import re
 import statistics
 import sys
@@ -63,21 +62,10 @@ def by_arm(runs: Iterable[Run]) -> dict[str, list[Run]]:
 def item_rows(run_dir: Path, strict: bool = True) -> Iterator[dict]:
     """The rows of a run (its predictions.jsonl, or the sqlite store's) that name an item. A malformed line raises
     (naming the run and line) unless `strict` is False, when it is skipped: a statistical
-    test must not quietly drop an item, a page that shows a run may."""
-    text = _outputs.rows_text(run_dir, errors="strict" if strict else "replace")
-    if text is None:
-        return
-    pj = Path(run_dir) / _outputs.PREDICTIONS
-    for n, line in enumerate(text.splitlines(), 1):
-        if not line.strip():
-            continue
-        try:
-            row = json.loads(line)
-        except ValueError as exc:
-            if strict:
-                raise ValueError(f"{pj}:{n}: not JSON ({exc})") from exc
-            continue
-        if isinstance(row, dict) and "item_id" in row:
+    test must not quietly drop an item, a page that shows a run may. The rows are the store's own, shared: a caller
+    that changes one copies it first."""
+    for row in _outputs.rows(run_dir, errors="strict" if strict else "replace") or ():
+        if "item_id" in row:
             yield row
 
 

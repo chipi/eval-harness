@@ -967,17 +967,13 @@ def _resume_source(
         at = runs / resume if partial else first
         if at is None:
             continue
-        text = _outputs.rows_text(at, partial=partial)
-        if text is None:
+        got = _outputs.rows(
+            at, partial=partial, errors="replace"
+        )  # a torn final line from a kill mid-append is skipped
+        if got is None:
             continue
         src = at / (_outputs.ROWS if partial else _outputs.PREDICTIONS)
-        for line in text.splitlines():
-            if not line.strip():
-                continue
-            try:
-                r = json.loads(line)
-            except ValueError:
-                continue  # a torn final line from a kill mid-append
+        for r in got:
             if r.get("item_id"):
                 if not isinstance(r.get("_extra"), dict):
                     die(

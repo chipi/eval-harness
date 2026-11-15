@@ -164,7 +164,7 @@ try:
         rows = _runstore.rows(sd)
         for row in rows[:2]:
             row["tokens_out"] = 40
-        _runstore.put_rows_text(sd, "".join(json.dumps(x) + "\n" for x in rows))
+        _runstore.put_rows(sd, rows)
 
     for name, edit, text in (
         ("unfinished", unfinished, "no finished run"),

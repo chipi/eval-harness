@@ -15,11 +15,16 @@ so that item is called again. `finish` rewrites them in dataset order when the r
 module reads outputs through this one: a test fails on an `outputs/` path built anywhere else.
 
 A score's rows (one JSON object per item: its scores, cost, tokens, `_meta`) are its `predictions.jsonl` in the files
-store and table `rows (run, partial, n, item_id, row)` in the sqlite one, keyed by the score's directory, each line's
-exact text kept, so `rows_text` is the same bytes in either. `partial` rows are the pass's checkpoint
-(`rows.partial.jsonl`, keyed by the run's directory), appended per item and dropped by `finish`. `_runs.item_rows` and `write_rows` are how every module reads and writes them; a test fails on a
-`predictions.jsonl` path built anywhere else. A row is written as `model.results.prepare` leaves it (RFC-033): its usage
-slimmed, the run settings its run's run.json `call` holds taken off; `put_rows` and `append_row` take text and keep it.
+store and table `rows (run, partial, n, item_id, row)` in the sqlite one, keyed by the score's directory. `rows` reads
+them as parsed dicts and `put_rows` writes dicts (RFC-033 step c): the stores keep canonical lines (`row_line`), and
+`rows_text` is those lines derived from the dicts. A line that is not a JSON object with an `item_id` is refused at
+write (`invalid-file`), in both stores; the files store's reader stays tolerant of a hand-edited file and `malformed`
+names its lines. `partial` rows are the pass's checkpoint (`rows.partial.jsonl`, keyed by the run's directory), kept
+verbatim text, a torn last line allowed: appended per item (`append_partial`) and dropped by `finish`.
+`_runs.item_rows` and `write_rows` are how every module reads and writes them; a test fails on a `predictions.jsonl`
+path built anywhere else. A row is written as `model.results.prepare` leaves it (RFC-033): its usage slimmed, the run
+settings its run's run.json `call` holds taken off. The dicts `rows` returns are the cache's own, shared: a caller that
+changes a row copies it first.
 """
 
 from __future__ import annotations
@@ -45,26 +50,72 @@ ROWS = "rows.partial.jsonl"
 PREDICTIONS = "predictions.jsonl"
 SCHEMA_VERSION = "1"
 _CACHE: dict[str, tuple[float, dict[str, str]]] = {}
-#: How much rows text a process keeps read, per cache: the runs read last, by the size of their rows (one run's are
-#: a few kilobytes or a few megabytes). Unbounded, a warm catalog-serve kept every committed run's rows (94,650 of
-#: them) after reading each once, 48 MB more under --warm; bounded at 128 runs, still 29 MB (budget-check,
-#: 2026-11-06). At 8 MB its RSS and cached answers are the base's again.
+#: How much rows a process keeps read, per cache: the runs read last, by what they hold (a run's rows are a few
+#: kilobytes or a few megabytes of text, and their parsed dicts weigh DICT_FACTOR times that). Unbounded, a warm
+#: catalog-serve kept every committed run's rows (94,650 of them) after reading each once; bounded, its RSS and cached
+#: answers are the base's again (budget-check, RFC-033 step c).
 ROWS_KEPT_BYTES = 8_000_000
+#: What the parsed dicts of a rows text weigh, in times its length: measured with tracemalloc over a seventh of this
+#: repository's score sets (13,295 rows, 9.1 MB of text, 44.0 MB of dicts: 4.85x), 2026-11-15.
+DICT_FACTOR = 5
 
 
-def _text_size(value: Any) -> int:
-    """The rows text an entry holds: (stamp, text), (text, index), or text."""
-    if isinstance(value, tuple):
-        value = next((x for x in value if isinstance(x, str)), "")
-    return len(value) if isinstance(value, str) else 0
+class _Held:
+    """A run's rows as the cache keeps them: the parsed dicts and the text derived from them, together (so what is
+    indexed by one stays valid for the other). `rows` is None for a checkpoint, which is only text, kept verbatim."""
+
+    __slots__ = ("_text", "lossy", "rows", "size", "stamp")
+
+    def __init__(
+        self,
+        rows: list[dict[str, Any]] | None,
+        size: int,
+        stamp: Any = None,
+        text: str | None = None,
+        lossy: bool = False,
+    ) -> None:
+        self.rows = rows
+        self.size = size  # the length of the text the rows were parsed from
+        self.stamp = stamp
+        self._text = text
+        self.lossy = lossy  # read past bytes that are not UTF-8 or lines that are no row: only a tolerant read may use it
+
+    def text(self) -> str:
+        """The rows' canonical text (a checkpoint's: verbatim), made once."""
+        if self._text is None:
+            assert self.rows is not None
+            self._text = "".join(row_line(r) for r in self.rows)
+        return self._text
+
+    def weight(self) -> int:
+        """What this holds, in bytes: the dicts (their text's size times DICT_FACTOR), and the text if made."""
+        w = self.size * DICT_FACTOR if self.rows is not None else 0
+        if self._text is not None:
+            w += len(self._text)
+        return w
+
+
+class _Index:
+    """One run's item index: the line of each item's first row, valid while the file is as it was (its stamp)."""
+
+    __slots__ = ("lines", "size", "stamp")
+
+    def __init__(self, lines: dict[str, str], size: int, stamp: Any) -> None:
+        self.lines = lines
+        self.size = size  # the length of the text the lines were cut from: they copy it once
+        self.stamp = stamp
+
+    def weight(self) -> int:
+        return self.size
 
 
 class _Kept(OrderedDict):
-    """A dict that keeps the entries read or written last, up to `ROWS_KEPT_BYTES` of rows text."""
+    """A dict that keeps the entries read or written last, up to `ROWS_KEPT_BYTES` of what they hold (`_Held.weight`)."""
 
     def __init__(self) -> None:
         super().__init__()
         self.bytes = 0
+        self._w: dict[Any, int] = {}
 
     def get(self, key: Any, default: Any = None) -> Any:
         if key in self:
@@ -72,18 +123,30 @@ class _Kept(OrderedDict):
             return self[key]
         return default
 
+    def _evict(self) -> None:
+        while self.bytes > ROWS_KEPT_BYTES and len(self) > 1:
+            k, _old = self.popitem(last=False)
+            self.bytes -= self._w.pop(k)
+
     def __setitem__(self, key: Any, value: Any) -> None:
         if key in self:
-            self.bytes -= _text_size(self[key])
+            self.bytes -= self._w.pop(key)
         super().__setitem__(key, value)
-        self.bytes += _text_size(value)
+        self._w[key] = value.weight()
+        self.bytes += self._w[key]
         self.move_to_end(key)
-        while self.bytes > ROWS_KEPT_BYTES and len(self) > 1:
-            _k, old = self.popitem(last=False)
-            self.bytes -= _text_size(old)
+        self._evict()
+
+    def reweigh(self, key: Any) -> None:
+        """The entry at `key` grew (its text or index was made after it was kept)."""
+        if key in self:
+            w = self[key].weight()
+            self.bytes += w - self._w[key]
+            self._w[key] = w
+            self._evict()
 
     def __delitem__(self, key: Any) -> None:
-        self.bytes -= _text_size(self[key])
+        self.bytes -= self._w.pop(key)
         super().__delitem__(key)
 
     def pop(self, key: Any, *default: Any) -> Any:
@@ -98,10 +161,15 @@ class _Kept(OrderedDict):
     def clear(self) -> None:
         super().clear()
         self.bytes = 0
+        self._w.clear()
 
 
-_ROWS_CACHE: _Kept = _Kept()  # {(rows path, errors): ((mtime_ns, size), its text)}
-#: {run dir: (its rows text, {item_id: its first row line})}, valid while rows_text returns that same text.
+_ROWS_CACHE: _Kept = (
+    _Kept()
+)  # {rows path: its _Held, valid while the file's (mtime_ns, size) is the held stamp}
+#: {rows path: its _Index}: apart from the rows, which weigh DICT_FACTOR times their text and so go sooner than an index
+#: (one item asked of every run of a comparison, item after item, must not read every run again each time: 29 runs, 200
+#: items, 14 s against 3.5 s with the index among the rows at 8 MB).
 _ROWS_INDEX: _Kept = _Kept()
 
 
@@ -115,8 +183,8 @@ def _line(item_id: str, text: str) -> str:
 
 
 def _forget_rows(path: Path) -> None:
-    for k in [k for k in _ROWS_CACHE if k[0] == str(path)]:
-        _ROWS_CACHE.pop(k, None)
+    _ROWS_CACHE.pop(str(path), None)
+    _ROWS_INDEX.pop(str(path), None)
 
 
 def _item_of(line: str) -> str | None:
@@ -126,6 +194,68 @@ def _item_of(line: str) -> str | None:
     except ValueError:
         return None
     return str(row["item_id"]) if isinstance(row, dict) and row.get("item_id") is not None else None
+
+
+def is_row(row: Any) -> bool:
+    """Whether `row` is what a score set's line is: a JSON object with an `item_id`."""
+    return isinstance(row, dict) and isinstance(row.get("item_id"), str)
+
+
+def parse_rows(text: str, where: str, strict: bool = True) -> tuple[list[dict[str, Any]], int]:
+    """(the JSON objects of a rows text, how many lines it skipped). A line that is not JSON raises ValueError naming
+    `where` and the line unless `strict` is False, when it is skipped with the lines that are JSON but no object (a
+    torn last line, a hand-edited file: a statistical test must not quietly drop an item, a page that shows a run may)."""
+    out: list[dict[str, Any]] = []
+    skipped = 0
+    for n, line in enumerate(text.splitlines(), 1):
+        if not line.strip():
+            continue
+        try:
+            row = json.loads(line)
+        except ValueError as exc:
+            if strict:
+                raise ValueError(f"{where}:{n}: not JSON ({exc})") from exc
+            skipped += 1
+            continue
+        if isinstance(row, dict):
+            out.append(row)
+        else:
+            skipped += 1
+    return out, skipped
+
+
+def _lines_of(run_dir: Path, rows: Iterable[dict[str, Any]]) -> list[str]:
+    """The canonical lines of a score set's rows; a row that is no JSON object with an `item_id` refused."""
+    out = []
+    for n, row in enumerate(rows, 1):
+        if not is_row(row):
+            _common.die(
+                f"{Path(run_dir) / PREDICTIONS}: row {n} is not a JSON object with an item_id; a score set's rows are "
+                "objects, one per item, each naming its item",
+                "invalid-file",
+            )
+        out.append(row_line(row))
+    return out
+
+
+_ABSENT = _Held(None, 0)  # kept for a run that has no rows: asked again, the database is not
+
+
+def _rows_of(held: _Held, where: Path) -> list[dict[str, Any]]:
+    """The dicts of a held entry: a score's rows (a list of its own, the dicts shared), a checkpoint's parsed, a torn
+    line skipped."""
+    if held.rows is None:
+        return parse_rows(held.text(), str(where), strict=False)[0]
+    return list(held.rows)
+
+
+def _text_of(cache: _Kept, key: Any, held: _Held) -> str:
+    """The text of a held entry, kept with it from now on (and weighed)."""
+    made = held._text is None
+    text = held.text()
+    if made:
+        cache.reweigh(key)
+    return text
 
 
 class Store(Protocol):
@@ -157,17 +287,40 @@ class Store(Protocol):
         """The run's outputs gone from here."""
         ...
 
+    def rows(
+        self, run_dir: Path, partial: bool = False, errors: str = "strict"
+    ) -> list[dict[str, Any]] | None:
+        """A score's rows as parsed dicts, in order (the checkpoint's, a torn line skipped, with `partial`); None when it
+        has none. A line that is not JSON raises ValueError, bytes that are not UTF-8 UnicodeDecodeError, unless
+        `errors` says `replace`: then they are skipped. The dicts are shared: copy a row before changing it."""
+        ...
+
     def rows_text(self, run_dir: Path, partial: bool = False, errors: str = "strict") -> str | None:
-        """The run's rows exactly as written (the checkpoint's with `partial`); None when it has none. Bytes that
-        are not UTF-8 raise, unless `errors` says otherwise (`replace`)."""
+        """A score's rows as canonical lines, derived from the dicts (the checkpoint's: verbatim, with `partial`);
+        None when it has none."""
         ...
 
-    def put_rows(self, run_dir: Path, text: str, partial: bool = False) -> None:
-        """The run's rows replaced by `text` at once, atomically."""
+    def has_rows(self, run_dir: Path) -> bool:
+        """Whether the run has its rows (not the checkpoint's), without reading them."""
         ...
 
-    def append_row(self, run_dir: Path, line: str, partial: bool = True) -> None:
-        """One row line (its newline included) added, on disk before this returns."""
+    def stored_text(self, run_dir: Path, errors: str = "strict") -> str | None:
+        """A score's rows as the store holds them, line by line as they were written: what a migration or a check of
+        the stored data reads; None when it has none."""
+        ...
+
+    def put_rows(self, run_dir: Path, rows: Iterable[dict[str, Any]]) -> None:
+        """A score's rows replaced by `rows` at once, atomically, as canonical lines. A row that is not a JSON object
+        with an `item_id` is refused (`invalid-file`), writing nothing."""
+        ...
+
+    def put_partial(self, run_dir: Path, text: str) -> None:
+        """The run's checkpoint replaced by `text`, verbatim, at once, atomically."""
+        ...
+
+    def append_row(self, run_dir: Path, line: str) -> None:
+        """One line (its newline included) added to the run's checkpoint, on disk before this returns. Verbatim: the
+        checkpoint is the one place a torn last line is allowed."""
         ...
 
     def drop_rows(self, run_dir: Path, partial: bool = False) -> None:
@@ -250,35 +403,101 @@ class FileStore:
     def _rows_path(run_dir: Path, partial: bool) -> Path:
         return Path(run_dir) / (ROWS if partial else PREDICTIONS)
 
-    def rows_text(self, run_dir: Path, partial: bool = False, errors: str = "strict") -> str | None:
-        """The run's rows exactly as written (the checkpoint's with `partial`); None when it has none."""
+    def _held(self, run_dir: Path, partial: bool, errors: str) -> _Held | None:
         path = self._rows_path(run_dir, partial)
         try:
             st = path.stat()
         except OSError:
             return None
-        key, stamp = (str(path), errors), (st.st_mtime_ns, st.st_size)
+        key, stamp = str(path), (st.st_mtime_ns, st.st_size)
         hit = _ROWS_CACHE.get(key)
-        if hit and hit[0] == stamp:
-            return hit[1]
-        text = path.read_bytes().decode("utf-8", errors=errors)
-        _ROWS_CACHE[key] = (stamp, text)
-        return text
+        if hit is not None and hit.stamp == stamp and (errors != "strict" or not hit.lossy):
+            return hit
+        raw = path.read_bytes()
+        lossy = False
+        try:
+            text = raw.decode("utf-8")
+        except UnicodeDecodeError:
+            if errors == "strict":
+                raise
+            text, lossy = raw.decode("utf-8", errors=errors), True
+        if partial:
+            held = _Held(None, len(text), stamp, text=text, lossy=lossy)
+        else:
+            rows, skipped = parse_rows(text, str(path), strict=errors == "strict")
+            held = _Held(rows, len(text), stamp, lossy=lossy or skipped > 0)
+        _ROWS_CACHE[key] = held
+        return held
 
-    def put_rows(self, run_dir: Path, text: str, partial: bool = False) -> None:
-        """The run's rows replaced by `text` at once, atomically."""
-        path = self._rows_path(run_dir, partial)
+    def rows(
+        self, run_dir: Path, partial: bool = False, errors: str = "strict"
+    ) -> list[dict[str, Any]] | None:
+        """A score's rows as parsed dicts, in order (the checkpoint's, a torn line skipped, with `partial`); None when it
+        has none. A line that is not JSON raises ValueError, bytes that are not UTF-8 UnicodeDecodeError, unless
+        `errors` says `replace`: then they are skipped. The dicts are shared: copy a row before changing it."""
+        held = self._held(run_dir, partial, errors)
+        return None if held is None else _rows_of(held, self._rows_path(run_dir, partial))
+
+    def rows_text(self, run_dir: Path, partial: bool = False, errors: str = "strict") -> str | None:
+        """A score's rows as canonical lines, derived from the dicts (the checkpoint's: verbatim, with `partial`);
+        None when it has none."""
+        held = self._held(run_dir, partial, errors)
+        return None if held is None else _text_of(_ROWS_CACHE, str(self._rows_path(run_dir, partial)), held)
+
+    def has_rows(self, run_dir: Path) -> bool:
+        """Whether the run has its rows (not the checkpoint's), without reading them."""
+        return self._rows_path(run_dir, False).is_file()
+
+    def _index(self, run_dir: Path) -> _Index | None:
+        """The line of each item's first row, made once per state of the file (a hand-edited file's lines that are no
+        row are left out); None when the run has no rows."""
+        path = self._rows_path(run_dir, False)
+        try:
+            st = path.stat()
+        except OSError:
+            return None
+        key, stamp = str(path), (st.st_mtime_ns, st.st_size)
+        hit = _ROWS_INDEX.get(key)
+        if hit is None or hit.stamp != stamp:
+            text = path.read_bytes().decode("utf-8", errors="replace")
+            lines: dict[str, str] = {}
+            for line in text.splitlines():
+                i = _item_of(line)
+                if i is not None:
+                    lines.setdefault(i, line)
+            hit = _ROWS_INDEX[key] = _Index(lines, len(text), stamp)
+        return hit
+
+    def stored_text(self, run_dir: Path, errors: str = "strict") -> str | None:
+        """A score's rows as the file holds them, line by line as they were written; None when it has none."""
+        try:
+            return self._rows_path(run_dir, False).read_bytes().decode("utf-8", errors=errors)
+        except OSError:
+            return None
+
+    def put_rows(self, run_dir: Path, rows: Iterable[dict[str, Any]]) -> None:
+        """A score's rows replaced by `rows` at once, atomically, as canonical lines. A row that is not a JSON object
+        with an `item_id` is refused (`invalid-file`), writing nothing."""
+        path = self._rows_path(run_dir, False)
+        _common.write_text_atomic(path, "".join(_lines_of(run_dir, rows)))
+        _forget_rows(path)
+
+    def put_partial(self, run_dir: Path, text: str) -> None:
+        """The run's checkpoint replaced by `text`, verbatim, at once, atomically."""
+        path = self._rows_path(run_dir, True)
         _common.write_text_atomic(path, text)
         _forget_rows(path)
 
-    def append_row(self, run_dir: Path, line: str, partial: bool = True) -> None:
-        """One row line (its newline included) added, on disk before this returns."""
-        path = self._rows_path(run_dir, partial)
+    def append_row(self, run_dir: Path, line: str) -> None:
+        """One line (its newline included) added to the run's checkpoint, on disk before this returns. Verbatim: the
+        checkpoint is the one place a torn last line is allowed."""
+        path = self._rows_path(run_dir, True)
         path.parent.mkdir(parents=True, exist_ok=True)
         with path.open("a", encoding="utf-8") as fh:
             fh.write(line)
             fh.flush()
             os.fsync(fh.fileno())
+        _forget_rows(path)
 
     def drop_rows(self, run_dir: Path, partial: bool = False) -> None:
         """The run's rows (or its checkpoint) gone from here."""
@@ -471,35 +690,90 @@ class SqliteStore:
             self._cache.pop(k, None)
             _store.wrote()
 
+    def _held(self, run_dir: Path, partial: bool, errors: str) -> _Held | None:
+        """The run's rows as kept, read from the database when not (the caller holds the lock and has made it fresh)."""
+        conn = self._db(create=False)
+        if conn is None:
+            return None
+        self._fresh(conn)
+        ck = (self.key(run_dir), partial)
+        hit = self._rows.get(ck)
+        if hit is None or (errors == "strict" and hit.lossy):
+            got = conn.execute(
+                "SELECT row FROM rows WHERE run = ? AND partial = ? ORDER BY n", (ck[0], int(partial))
+            ).fetchall()
+            if not got:
+                hit = _ABSENT
+            else:
+                text = "".join(r[0] for r in got)
+                if partial:
+                    hit = _Held(None, len(text), text=text)
+                else:
+                    where = str(Path(run_dir) / PREDICTIONS)
+                    rows, skipped = parse_rows(text, where, strict=errors == "strict")
+                    hit = _Held(rows, len(text), lossy=skipped > 0)
+            self._rows[ck] = hit
+        return None if hit is _ABSENT else hit
+
+    def rows(
+        self, run_dir: Path, partial: bool = False, errors: str = "strict"
+    ) -> list[dict[str, Any]] | None:
+        """A score's rows as parsed dicts, in order (the checkpoint's, a torn line skipped, with `partial`); None when it
+        has none. A line that is not JSON raises ValueError unless `errors` says `replace`: then it is skipped. The
+        dicts are shared: copy a row before changing it."""
+        if _store.rel(run_dir) is None:  # outside data/: the disk's
+            return _FILES.rows(run_dir, partial, errors)
+        with self._lock:
+            held = self._held(run_dir, partial, errors)
+            return (
+                None if held is None else _rows_of(held, Path(run_dir) / (ROWS if partial else PREDICTIONS))
+            )
+
     def rows_text(self, run_dir: Path, partial: bool = False, errors: str = "strict") -> str | None:
-        """The run's rows exactly as written (the checkpoint's with `partial`); None when it has none."""
+        """A score's rows as canonical lines, derived from the dicts (the checkpoint's: verbatim, with `partial`);
+        None when it has none."""
         if _store.rel(run_dir) is None:  # outside data/: the disk's
             return _FILES.rows_text(run_dir, partial, errors)
+        with self._lock:
+            held = self._held(run_dir, partial, errors)
+            return None if held is None else _text_of(self._rows, (self.key(run_dir), partial), held)
+
+    def has_rows(self, run_dir: Path) -> bool:
+        """Whether the run has its rows (not the checkpoint's), without reading them."""
+        if _store.rel(run_dir) is None:  # outside data/: the disk's
+            return _FILES.has_rows(run_dir)
+        with self._lock:
+            conn = self._db(create=False)
+            if conn is None:
+                return False
+            self._fresh(conn)
+            k = self.key(run_dir)
+            hit = self._rows.get((k, False))
+            if hit is not None:
+                return hit is not _ABSENT
+            return (
+                conn.execute("SELECT 1 FROM rows WHERE run = ? AND partial = 0 LIMIT 1", (k,)).fetchone()
+                is not None
+            )
+
+    def stored_text(self, run_dir: Path, errors: str = "strict") -> str | None:
+        """A score's rows as the database holds them, line by line as they were written; None when it has none."""
+        if _store.rel(run_dir) is None:  # outside data/: the disk's
+            return _FILES.stored_text(run_dir, errors)
         with self._lock:
             conn = self._db(create=False)
             if conn is None:
                 return None
-            self._fresh(conn)
-            ck = (self.key(run_dir), partial)
-            if ck not in self._rows:
-                got = conn.execute(
-                    "SELECT row FROM rows WHERE run = ? AND partial = ? ORDER BY n", (ck[0], int(partial))
-                ).fetchall()
-                self._rows[ck] = "".join(r[0] for r in got) if got else None
-            return self._rows[ck]
+            got = conn.execute(
+                "SELECT row FROM rows WHERE run = ? AND partial = 0 ORDER BY n", (self.key(run_dir),)
+            ).fetchall()
+            return "".join(r[0] for r in got) if got else None
 
-    def put_rows(self, run_dir: Path, text: str, partial: bool = False) -> None:
-        """The run's rows replaced by `text` at once, atomically."""
-        if _store.rel(run_dir) is None:  # outside data/: the disk's
-            return _FILES.put_rows(run_dir, text, partial)
+    def _replace(self, run_dir: Path, partial: bool, vals: list[tuple[Any, ...]]) -> None:
         with self._lock:
             conn = self._db(create=True)
             assert conn is not None
             k = self.key(run_dir)
-            lines = text.splitlines(keepends=True)
-            vals = [(k, int(partial), 0, None, "")] + [
-                (k, int(partial), n, _item_of(line), line) for n, line in enumerate(lines, 1)
-            ]
             conn.execute("BEGIN IMMEDIATE")
             try:
                 conn.execute("DELETE FROM rows WHERE run = ? AND partial = ?", (k, int(partial)))
@@ -514,20 +788,48 @@ class SqliteStore:
             self._rows.pop((k, partial), None)
             _store.wrote()
 
-    def append_row(self, run_dir: Path, line: str, partial: bool = True) -> None:
-        """One row line (its newline included) added, on disk before this returns."""
+    def put_rows(self, run_dir: Path, rows: Iterable[dict[str, Any]]) -> None:
+        """A score's rows replaced by `rows` at once, atomically, as canonical lines. A row that is not a JSON object
+        with an `item_id` is refused (`invalid-file`), writing nothing."""
         if _store.rel(run_dir) is None:  # outside data/: the disk's
-            return _FILES.append_row(run_dir, line, partial)
+            return _FILES.put_rows(run_dir, rows)
+        rows = list(rows)
+        lines = _lines_of(run_dir, rows)
+        k = self.key(run_dir)
+        self._replace(
+            run_dir,
+            False,
+            [(k, 0, 0, None, "")]
+            + [(k, 0, n, r["item_id"], ln) for n, (r, ln) in enumerate(zip(rows, lines, strict=True), 1)],
+        )
+
+    def put_partial(self, run_dir: Path, text: str) -> None:
+        """The run's checkpoint replaced by `text`, verbatim, at once, atomically."""
+        if _store.rel(run_dir) is None:  # outside data/: the disk's
+            return _FILES.put_partial(run_dir, text)
+        k = self.key(run_dir)
+        self._replace(
+            run_dir,
+            True,
+            [(k, 1, 0, None, "")]
+            + [(k, 1, n, _item_of(ln), ln) for n, ln in enumerate(text.splitlines(keepends=True), 1)],
+        )
+
+    def append_row(self, run_dir: Path, line: str) -> None:
+        """One line (its newline included) added to the run's checkpoint, on disk before this returns. Verbatim: the
+        checkpoint is the one place a torn last line is allowed."""
+        if _store.rel(run_dir) is None:  # outside data/: the disk's
+            return _FILES.append_row(run_dir, line)
         with self._lock:
             conn = self._db(create=True)
             assert conn is not None
             k = self.key(run_dir)
             conn.execute("BEGIN IMMEDIATE")
             try:
-                conn.execute("INSERT OR IGNORE INTO rows VALUES (?, ?, 0, NULL, '')", (k, int(partial)))
+                conn.execute("INSERT OR IGNORE INTO rows VALUES (?, 1, 0, NULL, '')", (k,))
                 conn.execute(
-                    "INSERT INTO rows SELECT ?, ?, MAX(n) + 1, ?, ? FROM rows WHERE run = ? AND partial = ?",
-                    (k, int(partial), _item_of(line), line, k, int(partial)),
+                    "INSERT INTO rows SELECT ?, 1, MAX(n) + 1, ?, ? FROM rows WHERE run = ? AND partial = 1",
+                    (k, _item_of(line), line, k),
                 )
                 conn.execute("COMMIT")
             except BaseException:
@@ -536,7 +838,7 @@ class SqliteStore:
                 ):  # a failed COMMIT too: never leave the shared connection in a transaction
                     conn.execute("ROLLBACK")
                 raise
-            self._rows.pop((k, partial), None)
+            self._rows.pop((k, True), None)
             _store.wrote()
 
     def drop_rows(self, run_dir: Path, partial: bool = False) -> None:
@@ -693,15 +995,41 @@ def row_line(row: dict[str, Any]) -> str:
     return json.dumps(row, sort_keys=True) + "\n"
 
 
+def rows(run_dir: Path, partial: bool = False, errors: str = "strict") -> list[dict[str, Any]] | None:
+    """A score's rows as parsed dicts, in order (with `partial`, the checkpoint's, a torn line skipped); None when it has
+    none. A line that is not JSON raises ValueError naming the file and the line, bytes that are not UTF-8
+    UnicodeDecodeError, unless `errors` is `replace` (a page that shows a run may): then they are skipped. The dicts
+    are the cache's own: copy a row before changing it."""
+    return store().rows(Path(run_dir), partial, errors)
+
+
 def rows_text(run_dir: Path, partial: bool = False, errors: str = "strict") -> str | None:
-    """A run's rows exactly as written (with `partial`, its checkpoint's); None when it has none. Bytes that are not
-    UTF-8 raise UnicodeDecodeError unless `errors` is `replace` (a page that shows a run may)."""
+    """A score's rows as canonical lines (`row_line` of each dict `rows` gives; the checkpoint's, with `partial`:
+    verbatim); None when it has none. For a caller that wants text: a cache key, a comparison with what a write
+    would leave (`rows_as_written`)."""
     return store().rows_text(Path(run_dir), partial, errors)
+
+
+def malformed(run_dir: Path) -> list[int]:
+    """The numbers of the lines of a score's stored rows that are not a JSON object with an `item_id`: what a
+    hand-edited file in the files store holds (a write refuses them, the reader skips them)."""
+    text = store().stored_text(Path(run_dir), errors="replace")
+    out = []
+    for n, line in enumerate((text or "").splitlines(), 1):
+        if not line.strip():
+            continue
+        try:
+            ok = is_row(json.loads(line))
+        except ValueError:
+            ok = False
+        if not ok:
+            out.append(n)
+    return out
 
 
 def has_rows(run_dir: Path) -> bool:
     """Whether a run has its rows (a finished pass, or a derived run's)."""
-    return rows_text(run_dir) is not None
+    return store().has_rows(Path(run_dir))
 
 
 def _call_of(score_dir: Path) -> dict[str, Any] | None:
@@ -718,51 +1046,53 @@ def _call_of(score_dir: Path) -> dict[str, Any] | None:
     return call if isinstance(call, dict) else None
 
 
+def prepared(score_dir: Path, rows: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
+    """`rows` as `write_rows` writes them in the score at `score_dir`: usage slimmed, the run's settings taken off."""
+    call = _call_of(score_dir)
+    return [
+        _results.prepare(r, call) if isinstance(r, dict) else r for r in rows
+    ]  # a non-row is the store's refusal
+
+
 def rows_as_written(score_dir: Path, rows: Iterable[dict[str, Any]]) -> str:
     """The text `write_rows` writes for `rows` in the score at `score_dir`: what a caller compares with what is held."""
-    call = _call_of(score_dir)
-    return "".join(row_line(_results.prepare(r, call)) for r in rows)
+    return "".join(row_line(r) for r in prepared(score_dir, rows))
 
 
 def write_rows(run_dir: Path, rows: Iterable[dict[str, Any]]) -> None:
     """A score's rows, all at once, atomically."""
-    store().put_rows(Path(run_dir), rows_as_written(run_dir, rows))
+    store().put_rows(Path(run_dir), prepared(run_dir, rows))
 
 
 def append_partial(run_dir: Path, row: dict[str, Any]) -> None:
     """One row added to the run's checkpoint, on disk before the next item. Its usage is slimmed; the run settings stay,
     the run's `call` not being known until the pass ends."""
-    store().append_row(Path(run_dir), row_line(_results.slim_row(row)), partial=True)
+    store().append_row(Path(run_dir), row_line(_results.slim_row(row)))
 
 
 def item_across(run_dirs: Iterable[Path], item_id: str) -> dict[Path, dict[str, Any]]:
-    """{run_dir: its row for this item} over many runs: one query in the sqlite store, each run's rows read in the
-    files store. A run without a row for the item is left out."""
+    """{run_dir: its row for this item} over many runs: one query in the sqlite store, each run's rows indexed once in
+    the files store (the index kept apart from the rows: `_ROWS_INDEX`). A run without a row for the item is left out."""
     dirs = [Path(d) for d in run_dirs]
     st = store()
-    lines: dict[Path, str] = {}
-    if isinstance(st, SqliteStore):
-        lines = st.item_across(dirs, item_id)
-        dirs = [d for d in dirs if _store.rel(d) is None]  # outside data/: the disk's
-    if dirs:
-        for d in dirs:
-            text = _FILES.rows_text(d) or ""
-            hit = _ROWS_INDEX.get(str(d))
-            if hit is None or hit[0] is not text:
-                index: dict[str, str] = {}
-                for line in text.splitlines():
-                    i = _item_of(line)
-                    if i is not None:
-                        index.setdefault(i, line)
-                hit = _ROWS_INDEX[str(d)] = (text, index)
-            if item_id in hit[1]:
-                lines[d] = hit[1][item_id]
     out: dict[Path, dict[str, Any]] = {}
-    for d, line in lines.items():
-        try:
-            row = json.loads(line)
-        except ValueError:
-            continue
-        if isinstance(row, dict):
-            out[d] = row
+    if isinstance(st, SqliteStore):
+        for d, line in st.item_across(dirs, item_id).items():
+            try:
+                row = json.loads(line)
+            except ValueError:
+                continue
+            if isinstance(row, dict):
+                out[d] = row
+        dirs = [d for d in dirs if _store.rel(d) is None]  # outside data/: the disk's
+    for d in dirs:
+        index = _FILES._index(d)
+        found = None if index is None else index.lines.get(item_id)
+        if found is not None:
+            try:
+                row = json.loads(found)
+            except ValueError:
+                continue
+            if isinstance(row, dict):
+                out[d] = row
     return out
