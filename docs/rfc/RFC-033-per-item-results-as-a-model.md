@@ -1,8 +1,9 @@
 # RFC-033: Per-item results as a model, in both stores
 
-- **Status**: Draft, revision 2 (owner, 2026-11-15: "goal is a model that can be queried, so we need to build both
+- **Status**: Draft, revision 3 (owner, 2026-11-15: "goal is a model that can be queried, so we need to build both
   layers"; after the second review: "fix all blockers and high and other issues, we need clean work"). Revision 2
-  answers every finding of the second review; it is checked again before the build.
+  answers every finding of the second review, revision 3 the re-review's four (ids, `json_group_object`,
+  text-only callers, `_meta: {}`): ready to build.
 - **Authors**: Marko Dragoljevic
 - **Related**: [RFC-024](RFC-024-run-outputs-in-one-file.md) (outputs and rows in one place),
   [RFC-025](RFC-025-runs-in-sqlite.md) (both stores; this RFC replaces its "byte-for-byte mirror" for per-item rows),
@@ -157,11 +158,16 @@ rows_partial (run TEXT NOT NULL, n INTEGER NOT NULL, line TEXT NOT NULL, PRIMARY
 CREATE INDEX score_rows_item ON score_rows (item_id)
 ```
 
-**Ids.** `score_sets.id` = the first 31 bits of the key's sha256 (a collision is refused at write and names both keys);
-`score_rows.id` = `score_set * 2^20 + n` (a set over 2^20 rows is refused). Ids do not depend on which other score sets
-exist, so a new run does not renumber the others; the B-tree still orders by id, so how much a release delta shrinks is
-measured, not assumed (step e). The release is sealed with `page_size = 16384` (measured: −27.1 MB, and the one-new-run
-delta from 20.2 MB to 1.1 MB when the run sorts last).
+**Ids.** `score_sets.id` = the first 43 bits of the key's sha256; on a collision, the next free id upward, wrapping at 2^43 (linear
+probing). Probing makes an id depend on insertion order only for colliding keys, so keys are always inserted sorted
+(`data-migrate`, `m0007`, the release), and two builds of one data still give one database. Odds of any collision: about
+n²/2^44, 3e-8 at this repository's 711 sets, 6e-4 at 100,000 (31 bits, the first revision's, gave 90% there, with no
+way out). `score_rows.id` = `score_set * 2^20 + n`: under 2^63; a set over 2^20 rows is refused. Ids do not depend on
+which other score sets exist, so a new run does not renumber the others; the B-tree still orders by id, so how much a
+release delta shrinks is measured, not assumed (step e). The release is sealed with `page_size = 16384` (measured on
+today's layout: −27.1 MB, and the one-new-run delta from 20.2 MB to 1.1 MB when the run sorts last; to be measured again
+on this layout). Wide ids cost size: the review's prototype gave per-item results 73.1 MiB with them against 64.0 with
+sequential ids (`score_values`' key carries the 7-byte row id).
 
 **What goes where** (one rule, tested case by case):
 
@@ -171,7 +177,8 @@ delta from 20.2 MB to 1.1 MB when the run sorts last).
   text, which Python's `json` reads back), integers beyond int64, strings, lists, dicts, and other `_` keys (`_commit`).
 - `_meta`: absent → `meta` NULL, `facts` 0. Present → its call-fact keys compared with `call_facts[run, item]`: inserted
   if the pair has none; if the row's call facts equal the stored ones, `facts` = 1 and they leave `meta`; otherwise
-  `facts` = 0 and the row's whole `_meta` stays in `meta`. `{}` stays `{}`.
+  `facts` = 0 and the row's whole `_meta` stays in `meta`. `{}` stays `{}`, and a row whose `_meta` held only call
+  facts (or only run settings, now on the run) keeps `_meta: {}`: `meta` = `'{}'` in SQLite, `"_meta": {}` in its file.
 - `_extra`: absent → NULL, `{}` → `'{}'`.
 
 The pair's `run` is the score set's run (`runs/<run>/scores/<key>` → `runs/<run>`). A score set whose folder is not
@@ -184,7 +191,10 @@ allowed). The files store's reader stays tolerant of a hand-edited file (as toda
 
 **Reading** a score set: its `score_rows` by id range, its `score_values` by `row BETWEEN`, its run's `call_facts`, each
 dict assembled with keys sorted. `rows_text` is derived (`row_line` of each dict); the kept-rows cache keeps the parsed
-dicts and the text together, sized by text length as today, so `item_across` on the files path keeps its index.
+dicts and the text together (the same text object, so `item_across` on the files path keeps its index), and is sized by
+what it holds now, dicts being 2-3 times their text: budget-check in step c sets the bound. The callers that only want
+text pay for the derivation and are measured in step c: `family_test.py:124` (a cache key), `_data_page.py:367` (line
+counts), `validate_tree.py:408` and `:788` (V5, V9).
 
 **Deleting** (`rmtree`, `forget_under`, `_store._per_item_tables` / `_per_item_under`, `_store.py:689-715`): a score
 set's rows go through `score_sets.key` (a subselect); a run's `call_facts` with its last score set; metric names stay.
@@ -202,7 +212,11 @@ same rows from the new tables, 0.97 s (+49%), before key sorting. The gate is `t
 ±10% of step a on both stores. Planned in the build, measured in order until the gate holds: (1) assemble per score set
 in one query (`score_values` grouped by row, `json_group_object` in SQL) instead of per row in Python; (2) keep
 assembled dicts in the view cache (P1) so a warm view reads none; (3) skip `rest`/`meta` decoding for views that read
-values only. A step does not land above the gate.
+values only. A step does not land above the gate. Step (1)'s limits, tested by the review on SQLite 3.53.4: `1` stays
+`1`, `1.0` stays `1.0`, 17-digit doubles and int64 are exact, but `-0.0` comes out `0.0` and keys follow metric-id
+order. So if (1) is used, a `-0.0` value is stored in `rest` (as `bool`/NaN are), the dict is sorted after assembly, and
+a round-trip test runs against the deploy image's SQLite version (step a records it), since `json_group_object`'s
+number formatting is version-dependent.
 
 ### Validation: V9 in SQLite
 
@@ -237,7 +251,7 @@ aggregation in views (the files store could not share it); modelling `outputs` o
 | a | Baseline | `view_bench` both stores; dbstat per table; files `runs/` size; `cost-report` totals; `check_report_claims` 200/200; the deploy image's `sqlite3` version |
 | b | `model/results.py`; format 7 in both stores (`m0007`, frozen); `run.json` `call` (schema, `RUN_ONLY`); writes (run.py in memory, `_outputs` slim, later score sets) | `migrate --dry-run`: 14 runs / 31 score sets / 3 keys hoisted, 53,720 usage objects slimmed; every score set's rows equal before/after except those keys; `cost-report` identical; V1 passes with `call`; no `unset: ["call"]`; V5 and outputs signatures unchanged; the new check passes; files `runs/` about 42 MiB smaller |
 | c | `_outputs` API: dicts as the primitive, `rows_text` derived, malformed lines refused (checkpoint exempt), the cache keeping dicts and text; the 15 test files (16 `put_rows_text` calls) moved to rows, the few that write malformed lines to raw-file tests | `make check`; `make stores-check`; budget-check |
-| d | SQLite tables, ids, the type rule, `facts`, deletes, `data-migrate`, `m0007`'s SQLite part; V9 in SQLite | data-migrate there and back: every score set's canonical text equal; dbstat per table (expected per-item results ~64 MiB; database ~141 MiB, measured by the review's prototype); `view_bench` within ±10%; each type case (bool, None, NaN, ±inf, int64 bounds, -0.0, 1 vs 1.0, `_meta` absent / `{}`, `_extra` absent / `{}`) round-trips; V9 failures planted |
+| d | SQLite tables, ids, the type rule, `facts`, deletes, `data-migrate`, `m0007`'s SQLite part; V9 in SQLite | data-migrate there and back: every score set's canonical text equal; dbstat per table (expected per-item results ~73 MiB with the wide ids, database ~150 MiB at 4 KiB pages: the review's prototype); `view_bench` within ±10%; each type case (bool, None, NaN, ±inf, int64 bounds, -0.0, 1 vs 1.0, `_meta` absent / `{}`, `_extra` absent / `{}`) round-trips; V9 failures planted |
 | e | Release: 16 KiB pages | P1b's proof (catalog, 2,905 comparisons, 38 MCP calls, same bytes from both stores); two renders, one sha256; rsync bytes for no change and one new run first / middle / last, against today's 219 B / 228 / 122 / 20 MB |
 | f | Fleet data repository, own PR | on a scratch copy first: `evh migrate --dry-run` with its own counts (formats 1-7 at once: it is unstamped, format 0, old layout), then the migrate; its gate is `evh validate` and `make catalog` (it has no CI); pin bumped to the pushed harness commit (pushing there needs the owner's approval) |
 | g | Docs | RFC-025 "As built" amended; ADR-0030 (the results model); UPGRADING (format 7); RUNBOOK (tables, the read path, data-migrate's equality); `docs/DATA.md`; `harness/docs/INTEGRATION.md` (`Result.meta`: usage slimmed at write); `harness/skills/evh-compare-and-read/SKILL.md:75` (`_meta.gates`); CHANGELOG |
