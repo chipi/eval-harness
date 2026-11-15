@@ -294,6 +294,9 @@ def drive(cat: Path, base: str) -> None:
         check_arms_skip_and_address(browser, base)
 
         page = browser.new_page(viewport={"width": 1280, "height": 900})
+        # The pages count their default period (the last 14 days) from the viewer's date, so the data's own dates age
+        # out of it: pinned to a day the committed runs were inside it, or the figures below move with the calendar.
+        page.clock.set_fixed_time("2026-11-15T12:00:00Z")
         page.on("console", lambda m: errors.append(m.text) if m.type == "error" else None)
         page.on("pageerror", lambda e: errors.append(str(e)))
 

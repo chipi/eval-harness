@@ -528,6 +528,18 @@ that can move a result is never a patch release without saying so under **Change
   faster than with the lines (`tools/view_bench.py`, medians of three interleaved runs). The suite runs with
   `EVH_FREEZE_ROWS=1`: the rows the cache shares are frozen, and a view or command that changes one fails at the line
   that does.
+- **A SQLite release is sealed at 16 KiB pages** (RFC-033 step e). `_release_store.seal` asks for `page_size = 16384`
+  before its `VACUUM INTO` (SQLite takes the copy's page size from the connection, not from the file, and only outside
+  write-ahead logging), `PRAGMA page_size` on the release says 16384, and render.sh's release check (`_release.py check`)
+  refuses a release at another size. On this repository's data the release database went from 142,020,608 bytes at
+  4 KiB to 136,265,728 (two renders from two checkouts a few minutes apart: one sha256). What a deploy's rsync sends for
+  `inspector/data/` (the flags of `deploy-prod.yml`, delta transfer on): nothing when the data did not change (103 B),
+  and for one new run of 5 items 86.9 MB when its key sorts first, 61.4 MB in the middle, 10.1 MB last (the same tables at
+  4 KiB: 93.3 / 68.8 / 25.5 MB; format 6's `rows` table at 4 KiB: 228 / 122 / 20 MB). A run sorting first still renumbers
+  the rows of `outputs` and the ids of the metrics, so every page of those and of `score_values` is new. Release
+  and serving, in compose.yml's limits (inspector 384m, MCP server 512m): the catalog's 2,905 comparisons and the MCP's 38
+  calls give the same bytes from a files release and a SQLite release. A hidden dataset's run.json `call` holding anything
+  but the three run settings is refused with the rest of the release (`_release.plan_problems`): run.json is copied whole.
 - **The API's description, made from the operations** (RFC-032 step 9): `GET /api/v1/openapi.json` (OpenAPI 3.1,
   with the token) and `evh openapi` give every operation's route, inputs, body, refusals and the job routes. Gone:
   `POST /api/v1/read/<command>` (a read run as a process) and `GET /api/v1/commands`; the operations' resources

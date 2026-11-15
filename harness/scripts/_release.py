@@ -16,15 +16,17 @@ repository does not publish:
     confirmed on it, the prose of its spec and log (the instructions, hypotheses and rationales may quote the items
     shown); of a faithfulness record of a replay on it, what production and the replay answered and the named
     exceptions' causes (the item, its kind and who named it stay).
+A hidden dataset's run.json is copied whole, so one whose `call` holds more than the run settings (RUN_SETTINGS) is
+refused with the rest.
 With the sqlite store (RFC-025) the copy's project.sqlite is the project's without a hidden dataset's runs, rebuilt so
 their texts are in none of its pages. Captures are copied as their capture.json only: records never leave the project. Materialized items
 are never copied. Judge validations are copied as their reports and their records without the judges' replies.
 The copy is files; with `--store sqlite` it is then made one database (data/project.sqlite, moved by `data-migrate`).
 The release's config.yaml names its store either way (a project with none is refused). With sqlite a release never changes, so the database is sealed (checkpointed,
-out of write-ahead logging) and holds the only file under data/, which every reader opens read-only (`_store.readonly`).
+out of write-ahead logging, written again whole at 16 KiB pages) and holds the only file under data/, which every reader opens read-only (`_store.readonly`).
 `check` is render.sh's last word on a rendered release, read through the release's own store: no reference text git
 does not track, no materialized item, the MCP answers written from the release's goals, the goals' tests kept, and a
-sealed database holding the only file.
+sealed database (16 KiB pages) holding the only file.
 render.sh calls this; the hidden-text test calls it directly.
 """
 
@@ -48,7 +50,7 @@ import yaml
 from evaluation_harness import _common, _outputs, _release_store, _store
 from evaluation_harness._visibility import hidden, public_profile
 from evaluation_harness.model import studies as model_studies
-from evaluation_harness.model.results import CALL_META
+from evaluation_harness.model.results import CALL_META, RUN_SETTINGS
 
 #: The directories of data/ the catalog and the inspector read (tests/test_render_data.py checks it
 #: against catalog_adapter.py), copied besides data/runs.
@@ -144,12 +146,20 @@ def plan_problems(src: Path) -> list[str]:
                 bad.append(f"reference text git does not track: {f.relative_to(src)}")
     for run in _run_dirs(src):
         f = run / _outputs.FILE
-        if (
-            _store.is_file(f)
-            and not hidden(_dataset_of_run(run), src / "datasets")
-            and str(f.relative_to(src)) not in tracked
-        ):
+        is_hidden = hidden(_dataset_of_run(run), src / "datasets")
+        if _store.is_file(f) and not is_hidden and str(f.relative_to(src)) not in tracked:
             bad.append(f"run output git does not track: {f.relative_to(src)}")
+        if is_hidden:
+            # run.json is copied whole, so its `call` is published as it stands: the run settings, nothing else
+            call = json.loads(_store.read_text(run / "run.json", encoding="utf-8")).get("call")
+            extra = sorted(k for k in call if k not in RUN_SETTINGS) if isinstance(call, dict) else []
+            if call is not None and not isinstance(call, dict):
+                extra = ["(not an object)"]
+            if extra:
+                bad.append(
+                    f"hidden run's run.json call holds {', '.join(extra)}, not just the run settings: "
+                    f"{(run / 'run.json').relative_to(src)}"
+                )
     return bad
 
 

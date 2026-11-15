@@ -14,6 +14,10 @@ files and, migrated, a SQLite database:
   config.yaml says `store: sqlite`; a files release has neither.
 - The same data makes the same bytes: a second build of it, its files a checkout later, is the same database byte for
   byte, and every file in it has the one release modification time.
+- The database is sealed at 16 KiB pages (RFC-033), whatever page size the one it was made from had: `PRAGMA page_size`
+  says it, `check` refuses a release at another size, and the bytes stay the same for the same data.
+- A hidden dataset's run.json `call` holds the run settings only: one with another key is refused before anything is
+  written, in each store.
 - `_release.py check`, render.sh's last word, on each store: passes on a good release, and fails on each planted
   leak (a reference text git does not track, a materialized item, a goal the MCP answers do not cover, a missing p
   cache); on a SQLite release also a stray -wal, setup lock or file, and a database still in write-ahead logging.
@@ -96,7 +100,8 @@ def build_source(src: Path) -> None:
             scores=[{"scorer": "s1", "reference": "gold.ds1", "first": True, "metrics": {"correct": 0.5}, "rows": rows}],
         )  # fmt: skip
         _runstore.make_run(
-            src / "data" / "runs", "rh", {"dataset_id": "dsh"}, outputs={"a": "HIDDEN output"},
+            src / "data" / "runs", "rh", {"dataset_id": "dsh", "call": {"generation_config": {"temperature": 0}}},
+            outputs={"a": "HIDDEN output"},
             scores=[{"scorer": "s1", "reference": "gold.dsh", "first": True, "metrics": {}, "rows": [
                 {"item_id": "a", "correct": 1.0, "_meta": {"usage": {"n": 1}, "predicted": "HIDDEN guess"}}]}],
         )  # fmt: skip
@@ -306,10 +311,29 @@ try:
 
     from evaluation_harness import _release_store
 
+    for label, root in (
+        ("of a files project", fs),
+        ("of a sqlite project", ss),
+        ("a build later", again / "inspector"),
+    ):
+        db = root / "data" / "project.sqlite"
+        c = sqlite3.connect(f"file:{db}?mode=ro&immutable=1", uri=True)
+        pragma = c.execute("PRAGMA page_size").fetchone()[0]
+        pages = c.execute("PRAGMA page_count").fetchone()[0]
+        c.close()
+        check(
+            f"a SQLite release {label} has 16 KiB pages: PRAGMA page_size, the header, and the file's length",
+            pragma == 16384 == _release_store.RELEASE_PAGE_SIZE
+            and int.from_bytes(db.read_bytes()[16:18], "big") == 16384
+            and db.stat().st_size == pages * 16384,
+            (pragma, pages, db.stat().st_size),
+        )
+
     sealed = []
     for name, commits in (("one", 1), ("many", 7)):  # the same rows, in one transaction and in seven
         db = tmp / f"seal-{name}.sqlite"
         c = sqlite3.connect(str(db), isolation_level=None)
+        c.execute("PRAGMA page_size=4096")  # sealing takes a database of any page size to the release's
         c.execute("PRAGMA journal_mode=WAL")
         c.execute(f"PRAGMA wal_autocheckpoint={1000 if commits == 1 else 3}")
         c.execute("CREATE TABLE files (path TEXT PRIMARY KEY, data BLOB, sha256 TEXT, mtime_ns INTEGER)")
@@ -325,11 +349,12 @@ try:
     check(
         "a sealed database's bytes do not depend on how it was written (its file change counter, its page layout)",
         sealed[0] == sealed[1]
-        and len(sealed[0]) > 4096
+        and len(sealed[0]) > 16384
         and all(
             int.from_bytes(b[24:28], "big") == 1 for b in sealed
-        ),  # written whole once: the change counter is 1
-        [(len(b), int.from_bytes(b[24:28], "big")) for b in sealed],
+        )  # written whole once: the change counter is 1
+        and all(int.from_bytes(b[16:18], "big") == 16384 and len(b) % 16384 == 0 for b in sealed),
+        [(len(b), int.from_bytes(b[24:28], "big"), int.from_bytes(b[16:18], "big")) for b in sealed],
     )
 
     # ── the refusals, in each store, before anything is written ──────────────────────────────────────────────────
@@ -345,6 +370,32 @@ try:
         said(r),
     )  # fmt: skip
     (files_src / "data" / "references" / "gold" / "ds1" / "x.txt").unlink()
+    # a hidden run's run.json is copied whole: its `call` holds the run settings and nothing else
+    hidden_run_json = files_src / "data" / "runs" / "rh" / "run.json"
+    good_text = hidden_run_json.read_text()
+    good_doc = json.loads(good_text)
+    for planted in (
+        {"provider": "p"},
+        {"generation_config": {"temperature": 0}, "predicted": "HIDDEN guess"},
+        "HIDDEN",
+    ):
+        hidden_run_json.write_text(json.dumps({**good_doc, "call": planted}))
+        rs = [
+            make_release(files_src, store, tmp / f"refused-call-{store}" / "inspector", "files")
+            for store in ("files", "sqlite")
+        ]
+        check(
+            f"a hidden run's call holding {str(planted)[:40]} is refused for each store, nothing written",
+            all(r.returncode == 1 and "not just the run settings" in r.stderr for r in rs)
+            and not any((tmp / f"refused-call-{s}").exists() for s in ("files", "sqlite"))
+            and "HIDDEN" not in "".join(r.stdout for r in rs),
+            said(rs[0]),
+        )  # fmt: skip
+    hidden_run_json.write_text(good_text)
+    check(
+        "a hidden run's call of run settings only is released",
+        make_release(files_src, "sqlite", tmp / "ok-call" / "inspector", "files").returncode == 0,
+    )
     os.environ["EVAL_STORE"] = "sqlite"  # the fixture is written where this project keeps its data
     try:
         with _runstore._InProject(sqlite_src):
@@ -466,6 +517,14 @@ try:
                     (root / "data" / f"project.sqlite{s}").unlink(missing_ok=True)
 
             case("a database left in write-ahead logging fails check", wal, "still in write-ahead logging")
+
+            def small_pages(root):
+                c = sqlite3.connect(str(root / "data" / "project.sqlite"), isolation_level=None)
+                c.execute("PRAGMA page_size=4096")
+                c.execute("VACUUM")
+                c.close()
+
+            case("a database at another page size fails check", small_pages, "4096-byte pages")
             case(
                 "a file of the release's data/ left on disk beside the database fails check",
                 lambda root: (root / "data" / "references.txt").write_text("a leak"),
