@@ -421,6 +421,14 @@ try:
         and "brought the data to format 7" in r.stdout,
         r.stdout + r.stderr[-300:],
     )
+    vc = sqlite3.connect(f"file:{sql / 'data' / 'project.sqlite'}?mode=ro", uri=True)
+    free = vc.execute("PRAGMA freelist_count").fetchone()[0]
+    vc.close()
+    check(
+        "sqlite migrate: the pages `rows` held are given back (vacuumed, no free page left)",
+        "vacuumed the database:" in r.stdout and free == 0,
+        (free, [x for x in r.stdout.splitlines() if "vacuum" in x]),
+    )
     got = dump(sql)
     check(
         "sqlite migrate: table `rows` is gone, the results tables hold every score set (an empty one too)",

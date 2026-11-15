@@ -411,6 +411,22 @@ def _fill(conn: Any, texts: dict[str, str]) -> None:
                 conn.execute("ROLLBACK")
             raise
     _store.wrote()
+    _vacuum(conn)
+
+
+def _vacuum(conn: Any) -> None:
+    """Give back the pages `rows` held (measured: a format-6 database of 241.8 MB stood at 327.7 MB after the move,
+    150 MB of them free, until vacuumed). After the move's commit, so a VACUUM that cannot run (it needs about the
+    database's size free on disk) leaves the data moved and only says so."""
+    path = _store.db_path()
+    before = _store.stat(path).st_size
+    try:
+        with _store._LOCK:
+            conn.execute("VACUUM")
+    except Exception as exc:  # noqa: BLE001 - the move is done; the space is what VACUUM would have given back
+        print(f"  note: the database was not vacuumed ({exc}); it keeps {before / 1e6:.1f} MB until it is")
+        return
+    print(f"  vacuumed the database: {before / 1e6:.1f} MB -> {_store.stat(path).st_size / 1e6:.1f} MB")
 
 
 def run(dry_run: bool) -> None:

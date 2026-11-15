@@ -517,8 +517,9 @@ that can move a result is never a patch release without saying so under **Change
   moves a SQLite project of format 6 into the tables in one transaction (14 runs, 31 score sets, 3 settings hoisted,
   53,720 usage objects slimmed, 93,025 rows in 711 score sets, 5 s on this repository's data) and drops `rows`; a SQLite
   project that is at format 7 already with the old table (an early build of format 7) is finished by `evh migrate`
-  too, and `evh migrate --check` and every command refuse it until then (`ERROR (old-format)`). The database file keeps
-  the freed pages of `rows` until it is vacuumed. `evh data-migrate` moves a project either way with every score set's
+  too, and `evh migrate --check` and every command refuse it until then (`ERROR (old-format)`). It then vacuums the
+  database, giving back the pages `rows` held (a format-6 database of 241.8 MB stood at 327.7 MB after the move
+  until vacuumed); a VACUUM that cannot run, short of free disk about the database's size, only says so. `evh data-migrate` moves a project either way with every score set's
   canonical text compared (on this repository's data: 711 score sets equal, files to SQLite to files byte for byte,
   13,022 files), and `evh validate` V9 reads a SQLite project's database: every score set with a record has rows, as
   many as its `n_items`, and each committed arm meets its floor. Reading a score set's rows costs more than parsing
