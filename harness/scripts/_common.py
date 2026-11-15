@@ -53,6 +53,20 @@ def project_root() -> Path:
     return next((d for d in (here, *here.parents) if (d / "data").is_dir()), here)
 
 
+def p_cache_path(project: Path | None = None) -> str:
+    """The file the paired tests' estimated p's are kept in between processes (stats' EVH_P_CACHE): the project's
+    ignored .cache/."""
+    return str((project or project_root()) / ".cache" / "evh-p.jsonl")
+
+
+def use_p_cache() -> None:
+    """Keep the estimated p's in the project's .cache/ in this process, unless EVH_P_CACHE names another file (an empty
+    value turns it off). What every process that computes views calls once: a command (`evh`), the server's own reads
+    (catalog-serve: a view takes ~10 s of tests once per data change, and every restart redrew them), the MCP
+    server."""
+    os.environ.setdefault("EVH_P_CACHE", p_cache_path())
+
+
 #: Where a project's own ports start (ADR-0024): catalog-serve in 18000-18999, mcp --http in 19000-19999, the same
 #: offset in each, so a project's two servers read as a pair.
 PORT_BASE = {"catalog": 18000, "mcp": 19000}

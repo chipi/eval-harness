@@ -373,7 +373,9 @@ def run_command(
     for k in PATH_VARS:
         if env.get(k) and not os.path.isabs(env[k]):
             env[k] = os.path.abspath(env[k])
-    env.setdefault("EVH_P_CACHE", str(project / ".cache" / "evh-p.jsonl"))
+    from evaluation_harness._common import p_cache_path  # noqa: PLC0415
+
+    env.setdefault("EVH_P_CACHE", p_cache_path(project))
     env.pop("EVH_PUBLIC", None)
     if public:
         env["EVH_PUBLIC"] = "1"

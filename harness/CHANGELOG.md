@@ -392,6 +392,22 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Changed
 
+- **A view is kept, not read again** (RFC-032 step 9, "the next deploy goes on SQLite; the solutions reusable for both"):
+  a process that answers more than one view (catalog-serve's API, and the MCP server once it runs views in its own
+  process) read every arm's scores, and indexed every run, for each question: 2 s of a 2 s view, in either store. The
+  model (`model/view_cache`) now keeps them, once per process: the adapter and each arm's scores (`scores_once(...,
+  held=True)`, bounded by `EVH_VIEW_CACHE_VALUES`, 2 million per-item scores by default, ~100 MB of this repository's
+  1.4 million), and the answers of `overview-show`, `arm-list`, `dataset-arm-list`, `goal-leaderboard`, `metric-list`,
+  `activity-show`, `dataset-list` and `dataset-show` (kept pickled, so a caller never changes what is kept). What is
+  kept is valid for the data root, the store, the code's version, `_store.generation()` (every write through the
+  store, either store, bumps it: a write in this process clears it at once) and the data's fingerprint (another
+  process's write, looked at when an operation or a view starts; the project's config.yaml and .gitignore too). Same
+  answers with and without it, on both stores (`tests/test_view_cache_views.py`): on this repository's data a second
+  call in the same process is 2.0 s (files) and 2.5 s (SQLite) before, 0.00 s for the kept answers and 0.3 s for
+  `goals`. `catalog-serve` keeps the goals' tests (`EVH_P_CACHE`) as `evh` does, which it did not, and decides a
+  dataset's arms on that dataset alone (`dataset-arm-list` with an empty p cache: 11 to 4 s). The SQLite store
+  resolves its database's path once per project instead of once per call and builds a path's key from strings, not
+  pathlib: a view 2.4 s to 2.1 s (files 2.0 s). `tools/view_bench.py` measures any of it, in both stores.
 - **A run's `config_id` is its `system_id`** (RFC-032 step 8): a run names its system, so the stored key is
   `system_id` and "config" is no longer the name of anything. Format 6 (`m0006_system_id`) renames it in every stored
   record whose key is not hashed: `run.json` (all 305 of this repository's), a score's `metrics.json` and the `unset`

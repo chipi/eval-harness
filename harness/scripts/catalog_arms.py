@@ -47,7 +47,7 @@ def _base(arm: str) -> str:
     return arm.split("/", 1)[0]
 
 
-def arm_rows(A, by_ds: dict) -> list[dict]:
+def arm_rows(A, by_ds: dict, only: str | None = None) -> list[dict]:
     """One row per arm, by dataset, then system, the system's own measurement first:
     {"arm", "label", "dataset", "system", "model", "provider", "family", "tier", "local",
     "weights", "record", "smoke", "quality", "scored", "reference", "how", "roles", "goal", "measure", "value", "lower",
@@ -62,10 +62,14 @@ def arm_rows(A, by_ds: dict) -> list[dict]:
     reference, judged by a scorer, re-parsed, or run again.
     `source` and `moved`: for an arm derived from the system's measured arm on the same dataset
     (rescored, re-parsed, run again), that arm and how far the deciding measure moved from it; None
-    when there is none, or the two are not on the same measure (a judge scores its own)."""
+    when there is none, or the two are not on the same measure (a judge scores its own). `only`: the rows of this
+    dataset and no other, and the goals' decisions (their paired tests) on it alone: a decision reads one dataset's
+    arms, so each row is what it is among all of them."""
     from evaluation_harness import catalog_build as cb  # noqa: PLC0415
     from evaluation_harness import catalog_models as cm  # noqa: PLC0415
 
+    if only is not None:
+        by_ds = {only: by_ds[only]} if only in by_ds else {}
     cfg = getattr(A, "arm_config", None)
     fn = getattr(A, "model_facts", None)
     facts = (fn() if callable(fn) else None) or {}

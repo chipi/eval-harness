@@ -77,8 +77,9 @@ from evaluation_harness._common import (  # noqa: E402
     ROOT,
     die,
 )
-from evaluation_harness.catalog_adapter import Adapter, load_catalog_adapter  # noqa: E402
+from evaluation_harness.catalog_adapter import Adapter, load_catalog_adapter, scores_once  # noqa: E402
 from evaluation_harness.model import compare as _compare  # noqa: E402
+from evaluation_harness.model import view_cache  # noqa: E402
 from evaluation_harness.model.compare import (  # noqa: E402, F401 -- compare and goal_clusters_on stay importable here
     STATES,
     _arms_known,
@@ -345,6 +346,7 @@ def cache_clear() -> None:
         _cache_size[0] = 0
     _scores.cache_clear()
     _known.cache_clear()
+    view_cache.clear()
 
 
 def answer(path: str, query: str) -> tuple:
@@ -1434,7 +1436,10 @@ def main() -> int:
         args.port = 8765 if args.public else project_port("catalog")
     global HOOKS
     HOOKS = load_hooks(args.hooks) if args.hooks else None
-    set_adapter(load_catalog_adapter(args.adapter))
+    _common.use_p_cache()  # the API's views draw the goals' tests in this process; keep them as `evh` does
+    # The API's views read every arm's scores: kept (and dropped when the data changes: refresh -> cache_clear), not
+    # read again for each request.
+    set_adapter(scores_once(load_catalog_adapter(args.adapter), held=True))
     LIMITS["max_arms"] = args.max_arms
     if args.public:
         LIMITS["hosts"] = tuple(h.strip() for h in args.public.split(",") if h.strip())

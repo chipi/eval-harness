@@ -176,9 +176,9 @@ def _period(value: str | None) -> str | None:
 def _adapter() -> Any:
     """The adapter the server serves when one is set (its scores read once), else the project's catalog adapter."""
     from evaluation_harness import catalog_serve  # noqa: PLC0415
-    from evaluation_harness.catalog_adapter import load_catalog_adapter, scores_once  # noqa: PLC0415
+    from evaluation_harness.catalog_adapter import shared_adapter  # noqa: PLC0415
 
-    return getattr(catalog_serve, "A", None) or scores_once(load_catalog_adapter(None))
+    return getattr(catalog_serve, "A", None) or shared_adapter()
 
 
 def _view() -> tuple[Any, dict]:

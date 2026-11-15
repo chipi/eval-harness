@@ -33,8 +33,16 @@ class Op:
         return [p[1:-1] for p in self.route.split("/") if p.startswith("{") and p.endswith("}")]
 
     def call(self, **kwargs: Any) -> dict[str, Any]:
-        """Run it."""
-        return _load(self.run)(**kwargs)
+        """Run it. A read in CACHED_READS is answered from what the view cache kept of it, when the data is what it was
+        computed from and the views read the harness's own layout."""
+        from evaluation_harness import catalog_adapter  # noqa: PLC0415
+        from evaluation_harness.model import view_cache  # noqa: PLC0415
+
+        # Whatever a view kept is looked at against the data, once, before it is used.
+        with view_cache.operation():
+            if self.name in CACHED_READS and catalog_adapter.harness_own():
+                return view_cache.result(self.name, kwargs, lambda: _load(self.run)(**kwargs))
+            return _load(self.run)(**kwargs)
 
     def say(self, result: dict[str, Any]) -> str:
         """Its answer as the command prints it."""
@@ -48,6 +56,16 @@ class Op:
             "required": list(self.required),
             "additionalProperties": False,
         }
+
+
+#: The reads whose answers the view cache keeps (model/view_cache.result): the views computed from every arm's scores
+#: and the listings of the data's records, ~0.1 to 2.5 s a call, which read nothing but the project's data/ and today's
+#: date. A read not named here is computed every time; a new one is named only with a test that its answer is the same
+#: with and without the cache (tests/test_view_cache_views.py).
+CACHED_READS = frozenset({
+    "overview-show", "arm-list", "dataset-arm-list", "goal-leaderboard", "metric-list", "activity-show", "dataset-list",
+    "dataset-show",
+})  # fmt: skip
 
 
 def _load(dotted: str) -> Callable[..., Any]:
@@ -89,6 +107,8 @@ def _all() -> dict[str, Op]:
 
 
 OPS: dict[str, Op] = _all()
+if bad := sorted(n for n in CACHED_READS if n not in OPS or OPS[n].kind != "read"):
+    raise ValueError(f"CACHED_READS names operations that are not reads: {', '.join(bad)}")
 
 
 def get(name: str) -> Op | None:

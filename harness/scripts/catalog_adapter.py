@@ -34,6 +34,7 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 
 import hashlib
 import importlib.util
+import itertools
 import json
 import re
 import statistics
@@ -70,6 +71,7 @@ from evaluation_harness.model import goals as model_goals  # noqa: E402
 from evaluation_harness.model import runs as model_runs  # noqa: E402
 from evaluation_harness.model import scorer_views as model_scorer_views  # noqa: E402
 from evaluation_harness.model import spend as model_spend  # noqa: E402
+from evaluation_harness.model import view_cache  # noqa: E402
 from evaluation_harness.model.entity import Problem  # noqa: E402
 from evaluation_harness.model.spend import number, token_total  # noqa: E402
 
@@ -94,13 +96,37 @@ def _memo(fn):
     return wrapper
 
 
-def scores_once(adapter):
+_TOKENS = itertools.count(1)
+
+
+def _values_in(sc: dict) -> int:
+    """What one arm's scores weigh in the view cache: the per-item values (and repeats) they hold."""
+    return sum(
+        len(m.get("values") or ())
+        + (sum(map(len, r.values())) if isinstance(r := m.get("repeats"), dict) else 0)
+        for m in sc.values()
+    )
+
+
+def scores_once(adapter, held: bool = False):
     """The adapter, its `scores` read once per arm from now on: for a process that answers once and exits (a view,
     a build). `evh goals` read 1,054 arms' scores for 686 arms (the collect, the goals' groups and the adapter's own
     `describe` asking again): 79% of its CPU. Set on the instance, so the adapter's own `self.scores` reads it too.
-    Never for catalog-serve's adapter, which runs for days and caches scores itself, bounded: this keeps every arm.
-    Callers only read what `scores` returns (every caller gets the same dict)."""
+    Callers only read what `scores` returns (every caller gets the same dict).
+    `held`: for a process that answers again and again (catalog-serve, the MCP server, a notebook): the scores are
+    kept by the model's view cache (model/view_cache), bounded, and dropped when the data changes; under a token of
+    this adapter, which its `refresh()` replaces. Without it every arm is kept, for as long as the adapter lives."""
     read = adapter.scores
+    if held:
+
+        def held_scores(arm, rescore=False):
+            token = adapter.__dict__.setdefault("_view_token", next(_TOKENS))
+            return view_cache.get(
+                ("scores", token, arm, bool(rescore)), lambda: read(arm, rescore), weigh=_values_in
+            )
+
+        adapter.scores = held_scores
+        return adapter
     kept: dict = {}
 
     def scores(arm, rescore=False):
@@ -496,6 +522,8 @@ class HarnessAdapter:
         with self.__dict__.setdefault("_memo_lock", threading.RLock()):
             for slot in [k for k in self.__dict__ if k.startswith("_memo_") and k != "_memo_lock"]:
                 del self.__dict__[slot]
+            # the scores the view cache holds for it are another adapter's now
+            self.__dict__.pop("_view_token", None)
 
     def read_as(self, arm: str) -> str:
         """The label the arm's scores are read under ("" for the plain arm; model.runs.label): what a folder used to
@@ -1238,18 +1266,23 @@ def smoke_spend(models: list[dict]) -> list[dict]:
     return out
 
 
+def configured_spec() -> str | None:
+    """The adapter the project's config.yaml names (`catalog.adapter`), None for the harness's own."""
+    cfg = _common.ROOT / "config.yaml"
+    if not _store.is_file(cfg):
+        return None
+    import yaml  # noqa: PLC0415
+
+    doc = yaml.safe_load(_store.read_text(cfg, encoding="utf-8")) or {}
+    spec: str | None = (doc.get("catalog") or {}).get("adapter")
+    return spec
+
+
 def load_catalog_adapter(spec: str | None = None) -> Adapter:
     """`path/to/file.py:Class` or `module:Class`, relative to the project root; else the
     project's config.yaml `catalog.adapter`; else HarnessAdapter."""
     root = _common.ROOT
-    if not spec:
-        cfg = root / "config.yaml"
-        if _store.is_file(cfg):
-            import yaml  # noqa: PLC0415
-
-            spec = ((yaml.safe_load(_store.read_text(cfg, encoding="utf-8")) or {}).get("catalog") or {}).get(
-                "adapter"
-            )
+    spec = spec or configured_spec()
     if not spec:
         return exposure_aware(HarnessAdapter())
     target, _, cls = spec.rpartition(":")
@@ -1274,6 +1307,32 @@ def load_catalog_adapter(spec: str | None = None) -> Adapter:
     else:
         mod = importlib.import_module(target)
     return exposure_aware(getattr(mod, cls)())
+
+
+def shared_adapter(spec: str | None = None, load=None):
+    """The project's catalog adapter for a view, its scores read once per arm, and kept (model/view_cache) for as long
+    as the data is what they were read from: a process that answers many views builds the adapter, indexes the runs
+    and reads each arm's scores once, not for every view. A new one after any write, this process's or another's.
+    `spec`: an adapter named on the command line is that adapter's own, as before (one view, one process). `load`: the
+    loader a caller reads the adapter with when it is not `load_catalog_adapter` itself (a test's stand-in): its adapter
+    is its own, never shared."""
+    view_cache.begin()  # a view starts: the data is looked at before anything kept is reused
+    if spec or (load is not None and load is not load_catalog_adapter) or not harness_own():
+        return scores_once((load or load_catalog_adapter)(spec))
+    return view_cache.get(("adapter",), lambda: scores_once(load_catalog_adapter(None), held=True))
+
+
+def harness_own() -> bool:
+    """Whether the views read the harness's own layout: no adapter named in config.yaml, and the server's, when it has
+    one, is the harness's. What the view cache's key covers is the project's data/ (the data root and the goals); a
+    project's own adapter may read anywhere, so nothing is kept of a view it answers (the server keeps its scores
+    as it always has: until its own `refresh()`)."""
+    from evaluation_harness import catalog_serve  # noqa: PLC0415
+
+    served = getattr(catalog_serve, "A", None)
+    if served is not None:
+        return type(served) is HarnessAdapter
+    return not view_cache.get(("spec",), configured_spec)
 
 
 def exposure_aware(adapter):

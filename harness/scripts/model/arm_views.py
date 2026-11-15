@@ -75,7 +75,7 @@ def arms(
     proprietary, `quality` contender or below."""
     rows = [
         r
-        for r in ca.arm_rows(A, by_ds)
+        for r in ca.arm_rows(A, by_ds, dataset or None)
         if (not dataset or r["dataset"] == dataset)
         and (not where or r["local"] == (where == "local"))
         and (not tier or r["tier"] == tier)

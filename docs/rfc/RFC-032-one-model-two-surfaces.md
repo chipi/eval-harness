@@ -477,3 +477,16 @@ Quoted from the discussion, typing slips corrected.
   - performance is measured before it is designed ("performance is a problem with or without MCP"): where a view's
     time goes, cold and warm, under prod's limits; then a cache keyed by what a view is computed from;
   - ADR-0029 records the model and amends ADR-0027; RFC-026's status names what it keeps.
+  - measured (2026-11-15, this repository, files and a SQLite copy): a view computed from every arm's scores costs
+    about 2 s a call in either store (2.4 to 3.2 s on SQLite, the store layer's own path-to-key work and connections,
+    0.15 s of SQL); the goals' paired tests about 10 s once per data change (the p cache, outside the store); a process
+    per call 2.3 s; memory under 180 MB. Agreed, for both stores alike ("the next deploy goes on SQLite; the solutions
+    reusable for both; no over-investing in files"): a view cache keyed by the data's fingerprint, the p cache wherever
+    views are computed, MCP in the server's process, no paired tests where a view does not show them; for SQLite only,
+    the store layer's keys and connection kept; measured on both, SQLite first.
+  - built (P1, `tools/view_bench.py`): a second call in the same process 2.0 s (files) and 2.5 s (SQLite) to 0.00 to
+    0.04 s, `goals` 0.3 s; a fresh process's first call 2.1 s on either store (SQLite was 2.4); catalog-serve keeps the
+    p cache, which it did not; `dataset-arm-list` decides its own dataset only (11 s to 4 s with an empty p cache).
+    `arm-list`, `goals` and the overview show who is a contender and the leader's lead, which are the tests: they keep
+    them. MCP in the server's process is P2. Read through the store, a SQLite release on the box's read-only mount
+    fails (the open sets the database up): the SQLite release is still to build.

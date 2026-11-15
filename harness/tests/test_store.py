@@ -647,6 +647,7 @@ ALLOWED = {
     "harness/scripts/importers/*.py": "an importer reads the file a person names to it",
     "harness/tools/_wheel.py": "packaging: copies the harness's own files",
     "harness/tools/store_matrix.py": "writes the test runs' logs under .build/, never data/",
+    "harness/tools/view_bench.py": "copies a project's data/ into a scratch directory outside any project, and reads its goals' folder",
     "site/*.py": "the public site's own build and checks: its pages and the docs, never a project's data",
     "examples/*/fetch.py": "an example's fetch writes its sources as files; in SQLite data-migrate moves them in (RFC-025)",
     "examples/*/adapter.py": "an adapter reads its prompt file beside its code",

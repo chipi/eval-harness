@@ -47,7 +47,31 @@ def _locked(fn: Any) -> Any:
     return run
 
 
+#: Counts the writes made through this module, in either store: what a view cache (model/view_cache) compares to know
+#: that this process changed the data. The sqlite store's own change counter does not move for the writing process's
+#: connection, and a write the files store's stat fingerprint has not been asked about yet is not seen either. Bumped
+#: after the write, not before it: a reader that looks between the two must not keep what it read as the new state. A
+#: bare `+= 1`: two threads racing lose a count, never the change (the number still differs from what a reader saw).
+_WRITES = [0]
+
+
+def generation() -> int:
+    """How many writes this process has made through the store."""
+    return _WRITES[0]
+
+
+def wrote() -> None:
+    """A write was made (what the functions below call; `_outputs` for its tables in the same database)."""
+    _WRITES[0] += 1
+
+
 _CONN: dict[str, sqlite3.Connection] = {}
+#: [(the `_common.DATA` object a connection was found for, its key in `_CONN`)]: asked for on every read, so the database's
+#: path is resolved once per project, not once per call (`Path.resolve` was 0.33 s of a 2.4 s view: 7,258 calls). One
+#: tuple in one slot, so a reader on another thread sees a whole pair; the connection itself is still `_CONN`'s. The one connection per process (below) is kept:
+#: it is what makes `PRAGMA data_version` mean "another process committed" (a connection per thread would also see its
+#: own process's other threads) and what `_LOCK` serialises.
+_CUR: list[Any] = [None]
 
 
 def sqlite() -> bool:
@@ -64,11 +88,16 @@ def connect(create: bool = True) -> sqlite3.Connection | None:
     """The project's database, opened once per process (write-ahead logged, every commit synced); None when it does
     not exist and `create` is False. Its tables: `files` (everything under data/ that is not per item) and, from
     `_outputs`, `outputs` and `rows`."""
+    data = _common.DATA
+    cur = _CUR[0]
+    if cur is not None and cur[0] is data and (conn := _CONN.get(cur[1])) is not None:
+        return conn
     path = db_path()
     key = str(path.resolve())
     with _LOCK:
         conn = _CONN.get(key)
         if conn is not None:
+            _CUR[0] = (data, key)
             return conn
         if not create and not path.is_file():
             return None
@@ -94,15 +123,18 @@ def connect(create: bool = True) -> sqlite3.Connection | None:
             finally:
                 fcntl.flock(fh, fcntl.LOCK_UN)
         _CONN[key] = conn
+        _CUR[0] = (data, key)
         return conn
 
 
 def close() -> None:
     """Every open database closed (a test that changes project, a migration done)."""
     with _LOCK:
+        _CUR[0] = None
         for conn in _CONN.values():
             conn.close()
         _CONN.clear()
+        wrote()
 
 
 def _pathlike(x: Any) -> bool:
@@ -123,14 +155,20 @@ def _data_abs() -> str:
 
 def rel(path: Any) -> str | None:
     """A path's key in the database (its place under data/, `/`-separated) when the store is the database and the
-    path is under data/; None for a path the filesystem keeps."""
+    path is under data/; None for a path the filesystem keeps. Strings, not pathlib: a Path built for each of the
+    12,583 calls of one view was 1.1 s of its 2.4 s. (Keeping the answers per path was tried and measured: no
+    faster, the 4 µs left are the store setting's and the data root's lookups.)"""
     if not sqlite() or not _pathlike(path):
         return None
-    try:
-        key = Path(os.path.abspath(path)).relative_to(_data_abs()).as_posix()
-    except ValueError:
+    absolute = os.path.abspath(path)
+    base = _data_abs()
+    prefix = base if base.endswith(os.sep) else base + os.sep
+    if not absolute.startswith(prefix):
         return None
-    if key in ("", ".") or key == DB or key.startswith(DB + "-"):
+    key = absolute[len(prefix) :]
+    if os.sep != "/":
+        key = key.replace(os.sep, "/")
+    if key == DB or key.startswith(DB + "-"):
         return None
     return key
 
@@ -392,6 +430,7 @@ def _put(key: str, data: bytes, mtime_ns: int | None = None) -> None:
         "INSERT OR REPLACE INTO files VALUES (?, ?, ?, ?)",
         (key, sqlite3.Binary(data), hashlib.sha256(data).hexdigest(), mtime_ns or time.time_ns()),
     )
+    wrote()
 
 
 def create_new(path: Any, data: bytes) -> bool:
@@ -407,6 +446,7 @@ def create_new(path: Any, data: bytes) -> bool:
             return False
         with os.fdopen(fd, "wb") as fh:
             fh.write(bytes(data))
+        wrote()
         return True
     with _LOCK:
         conn = connect()
@@ -418,6 +458,7 @@ def create_new(path: Any, data: bytes) -> bool:
             )
         except sqlite3.IntegrityError:
             return False
+    wrote()
     return True
 
 
@@ -460,6 +501,7 @@ def write_bytes(path: Any, data: bytes, mtime_ns: int | None = None) -> None:
         _replace(Path(path), bytes(data))
         if mtime_ns:
             os.utime(path, ns=(mtime_ns, mtime_ns))
+        wrote()
         return
     with _LOCK:
         _put(key, bytes(data), mtime_ns)
@@ -482,6 +524,7 @@ def mkdir(path: Any, parents: bool = False, exist_ok: bool = False) -> None:
         return
     if rel(path) is None and not (sqlite() and _is_data_root(Path(path))):
         Path(path).mkdir(parents=parents, exist_ok=exist_ok)
+        wrote()
 
 
 def data_folder(project: Any) -> None:
@@ -499,9 +542,12 @@ def unlink(path: Any, missing_ok: bool = False) -> None:
     key = rel(path)
     if key is None:
         Path(path).unlink(missing_ok=missing_ok)
+        wrote()
         return
     conn = connect(create=False)
     gone = conn.execute("DELETE FROM files WHERE path = ?", (key,)).rowcount if conn else 0
+    if gone:
+        wrote()
     if not gone and not missing_ok:
         raise _missing(path)
 
@@ -516,7 +562,10 @@ def rmtree(path: Any, ignore_errors: bool = False) -> None:
     """The directory and everything under it removed; in the database a run's outputs and rows go with it."""
     key = rel(path)
     if key is None:
-        shutil.rmtree(path, ignore_errors=ignore_errors)
+        try:
+            shutil.rmtree(path, ignore_errors=ignore_errors)
+        finally:
+            wrote()
         return
     conn = connect(create=False)
     if conn is None:
@@ -534,6 +583,7 @@ def rmtree(path: Any, ignore_errors: bool = False) -> None:
             if conn.in_transaction:  # a failed COMMIT too: never leave the shared connection in a transaction
                 conn.execute("ROLLBACK")
             raise
+    wrote()
     for hook in ON_REMOVE:
         hook(key)
     if not n and not ignore_errors:
@@ -569,6 +619,7 @@ def adopt(src: Path, dst: Any) -> None:
         if Path(dst).is_dir():
             Path(dst).rmdir()  # empty: the rename needs the name free
         Path(src).rename(dst)
+        wrote()
         return
     files = sorted(p for p in Path(src).rglob("*") if p.is_file())
     with _LOCK:
@@ -583,6 +634,7 @@ def adopt(src: Path, dst: Any) -> None:
             if conn.in_transaction:
                 conn.execute("ROLLBACK")
             raise
+    wrote()
     shutil.rmtree(src)
 
 
@@ -625,6 +677,7 @@ def replace(src: Any, dst: Any) -> None:
     ks, kd = rel(src), rel(dst)
     if ks is None and kd is None:
         os.replace(src, dst)
+        wrote()
         return
     if ks is not None and not is_file(src) and is_dir(src):
         _refuse_per_item(src, "moving it")
@@ -640,6 +693,7 @@ def copy_file(src: Any, dst: Any) -> None:
     """shutil.copy2: a file copied, in or out of the database (into `dst` when it is a directory)."""
     if rel(src) is None and rel(dst) is None:
         shutil.copy2(src, dst)
+        wrote()
         return
     if is_dir(dst) or str(dst).endswith(("/", os.sep)):
         dst = Path(dst) / Path(src).name
@@ -652,7 +706,10 @@ def copy_tree(src: Any, dst: Any, files_only: bool = False) -> None:
     """shutil.copytree (into an existing tree too): every file under `src`, in or out of the database. A run's
     outputs and rows are not files: copying a run is refused unless `files_only` says the caller copies them itself."""
     if rel(src) is None and rel(dst) is None:
-        shutil.copytree(src, dst, dirs_exist_ok=True)
+        try:
+            shutil.copytree(src, dst, dirs_exist_ok=True)
+        finally:
+            wrote()
         return
     if not files_only:
         _refuse_per_item(src, "copying it")
@@ -675,6 +732,36 @@ class _Writer(io.BytesIO):
         super().close()
 
 
+class _Counted:
+    """A file on disk open for writing, counted as a write when it is closed (`wrote`): what a reader of the data checks
+    is the count, and a write is only a write once its bytes are in."""
+
+    def __init__(self, fh: IO[Any]) -> None:
+        self._fh = fh
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self._fh, name)
+
+    def __iter__(self) -> Iterator[Any]:
+        return iter(self._fh)
+
+    def __enter__(self) -> _Counted:
+        self._fh.__enter__()
+        return self
+
+    def __exit__(self, *exc: Any) -> Any:
+        try:
+            return self._fh.__exit__(*exc)
+        finally:
+            wrote()
+
+    def close(self) -> None:
+        try:
+            self._fh.close()
+        finally:
+            wrote()
+
+
 def open_file(
     path: Any,
     mode: str = "r",
@@ -691,7 +778,8 @@ def open_file(
             else path.open(mode)
         )
     if rel(path) is None:
-        return open(_disk(path), mode, buffering, encoding, errors, newline)
+        fh = open(_disk(path), mode, buffering, encoding, errors, newline)  # noqa: SIM115 -- the caller closes it
+        return fh if mode.startswith("r") and "+" not in mode else _Counted(fh)  # type: ignore[return-value]
     if "+" in mode or "x" in mode or mode[:1] not in ("r", "w", "a"):
         raise ValueError(
             f"{path}: mode {mode!r} is not kept in the project's database: read (r), write (w) or append (a) only"

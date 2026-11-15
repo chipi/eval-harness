@@ -62,7 +62,7 @@ from evaluation_harness.axes import (
     strategy_of,
     tie_break_of,
 )
-from evaluation_harness.catalog_adapter import load_catalog_adapter, scores_once
+from evaluation_harness.catalog_adapter import load_catalog_adapter, shared_adapter
 from evaluation_harness.model import activity_views as actviews
 from evaluation_harness.model import arm_views as av
 from evaluation_harness.model import goal_views as gv
@@ -126,8 +126,8 @@ def say(printer, data) -> str:
 
 
 def _adapter(args):
-    # One view, one process: each arm's scores read once.
-    A = scores_once(load_catalog_adapter(getattr(args, "adapter", None)))
+    # Each arm's scores read once, and kept for the next view when this process answers more than one.
+    A = shared_adapter(getattr(args, "adapter", None), load_catalog_adapter)
     return A, cb.collect(A)
 
 

@@ -420,6 +420,7 @@ class SqliteStore:
                 "INSERT OR REPLACE INTO outputs VALUES (?, ?, ?, ?)", (k, item_id, text, sha256(text))
             )
             self._cache.pop(k, None)
+            _store.wrote()
 
     def write_all(self, run_dir: Path, texts: dict[str, str], order: Iterable[str]) -> None:
         """The run's whole outputs at once, in `order`, atomically; items not in `texts` left out."""
@@ -442,6 +443,7 @@ class SqliteStore:
                     conn.execute("ROLLBACK")
                 raise
             self._cache.pop(k, None)
+            _store.wrote()
 
     def delete(self, run_dir: Path) -> None:
         """The run's outputs gone from here."""
@@ -454,6 +456,7 @@ class SqliteStore:
             k = self.key(run_dir)
             conn.execute("DELETE FROM outputs WHERE run = ?", (k,))
             self._cache.pop(k, None)
+            _store.wrote()
 
     def rows_text(self, run_dir: Path, partial: bool = False, errors: str = "strict") -> str | None:
         """The run's rows exactly as written (the checkpoint's with `partial`); None when it has none."""
@@ -496,6 +499,7 @@ class SqliteStore:
                     conn.execute("ROLLBACK")
                 raise
             self._rows.pop((k, partial), None)
+            _store.wrote()
 
     def append_row(self, run_dir: Path, line: str, partial: bool = True) -> None:
         """One row line (its newline included) added, on disk before this returns."""
@@ -520,6 +524,7 @@ class SqliteStore:
                     conn.execute("ROLLBACK")
                 raise
             self._rows.pop((k, partial), None)
+            _store.wrote()
 
     def drop_rows(self, run_dir: Path, partial: bool = False) -> None:
         """The run's rows (or its checkpoint) gone from here."""
@@ -532,6 +537,7 @@ class SqliteStore:
             k = self.key(run_dir)
             conn.execute("DELETE FROM rows WHERE run = ? AND partial = ?", (k, int(partial)))
             self._rows.pop((k, partial), None)
+            _store.wrote()
 
     def item_across(self, run_dirs: list[Path], item_id: str) -> dict[Path, str]:
         """{run_dir: its row line} for one item, in one query."""

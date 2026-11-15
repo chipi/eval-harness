@@ -70,10 +70,10 @@ def leaderboard(goal: str) -> dict[str, Any]:
     """The goal's decision on each of its datasets (the model's view: what the goal page and `evh goals` show), read
     with the adapter the server serves when one is set."""
     from evaluation_harness import catalog_serve  # noqa: PLC0415
-    from evaluation_harness.catalog_adapter import load_catalog_adapter, scores_once  # noqa: PLC0415
+    from evaluation_harness.catalog_adapter import shared_adapter  # noqa: PLC0415
     from evaluation_harness.model import goal_views  # noqa: PLC0415
 
-    A = getattr(catalog_serve, "A", None) or scores_once(load_catalog_adapter(None))
+    A = getattr(catalog_serve, "A", None) or shared_adapter()
     return goal_views.leaderboard(A, goal)
 
 

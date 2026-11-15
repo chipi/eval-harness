@@ -1050,6 +1050,13 @@ def test_example_scorer_suites_pass() -> None:
             "what a judging pass may spend: the smallest of its scorer's cap, EVAL_JUDGE_MAX_COST_USD and EVAL_MAX_COST_USD",
         ),
         (
+            "test_view_cache.py",
+            "the view cache: kept, cleared by any write, another process's write seen, bounded",
+        ),
+        ("test_view_cache_views.py", "every view with the cache on and off, in either store"),
+        ("test_p_cache_serve.py", "catalog-serve keeps the paired tests' p cache"),
+        ("test_view_bench.py", "tools/view_bench.py: what a view costs in both stores"),
+        (
             "test_as_judged.py",
             "a judging set's stored arm ids: live arms re-keyed to them, on a fixture and this repository's three sets",
         ),

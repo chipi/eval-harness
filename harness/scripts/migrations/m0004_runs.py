@@ -305,6 +305,7 @@ def _move_keys(table: str, old: str, new: str, partial: int | None = None) -> No
             f"UPDATE {table} SET run = ? WHERE run = ?{where}",  # noqa: S608 - a fixed table name  # nosec B608
             (new, old, *([partial] if partial is not None else [])),
         )
+    _store.wrote()
 
 
 def _rounds(runs: dict[str, dict], run_src: dict[str, Path]) -> list[tuple[Path, str]]:
