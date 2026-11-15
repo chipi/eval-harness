@@ -56,7 +56,8 @@ prune() {
 # 0a. Only the live release and this one stay: what an earlier failed deploy or dry run left goes,
 # before the room is measured, so a box short of room frees what a prune can.
 prune
-# 0b. Room: a release is ~400 MB and ~69k files (fewer, once unchanged files are hard-linked).
+# 0b. Room: a release is ~400 MB and ~69k files (fewer, once unchanged files are hard-linked). With its data in one
+# SQLite file (render.sh's default) it is ~320 MB and the data is one file: the floors below hold for either.
 free_kb="$(df --output=avail -k "$BASE" | tail -1 | tr -d ' ')"
 free_inodes="$(df --output=iavail "$BASE" | tail -1 | tr -d ' ')"
 [ "$free_kb" -ge 2097152 ] || { echo "::error::$BASE has $((free_kb / 1024)) MB free, under 2 GB: refusing to deploy"; exit 1; }

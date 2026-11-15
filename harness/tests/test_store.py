@@ -626,6 +626,7 @@ finally:
 #: path from the repository root; a `*` matches one name. Any other file must go through _store.
 ALLOWED = {
     "harness/scripts/_store.py": "the store",
+    "harness/scripts/_release_store.py": "a release's database file and its folder, on disk: what seals it and what checks it is sealed",
     "harness/scripts/_outputs.py": "its files store is the disk by definition (data-migrate reads the disk through it)",
     "harness/scripts/data_migrate.py": "moves between the disk and the database",
     "harness/scripts/run_migrate.py": "reads the layout before 0.8.0 on disk",

@@ -49,7 +49,8 @@ services:
     # catalog_serve.py in --public mode. The stock Python image runs the release's copy of the
     # package (installed from its wheel by render.sh, with PyYAML's pure-Python package beside it
     # for the goals) from the read-only mount: nothing is built or installed on the box.
-    # It reads the release's copy of the runs and references; it calls out to nothing.
+    # It reads the release's copy of the runs and references, in the store the release's own config.yaml names (a
+    # SQLite release is one read-only file, opened immutable: its folder is not writable); it calls out to nothing.
     image: python:3.12.14-alpine3.23@sha256:d339953547bb5bc57eb5c1ff3224c40890ce56e494b13a52a574658e5a0f888a
     container_name: evals-inspector
     user: "65534:65534"
@@ -65,6 +66,9 @@ services:
       PYTHONUNBUFFERED: "1"
       # The observability SDKs render.sh vendored for hooks.py (not the harness's dependencies).
       PYTHONPATH: /srv/evals/current/inspector/vendor
+      # The goals' tests, precomputed by render.sh as the MCP server's are: the server's own default is a file under
+      # the release's .cache/, which the read-only mount cannot hold, so every restart drew them again (~10 s).
+      EVH_P_CACHE: /srv/evals/current/inspector/cache/evh-p.jsonl
     # ADR-0010 (agentic-ai-homelab): the identity every collector copies.
     labels:
       telemetry.service: evals-inspector

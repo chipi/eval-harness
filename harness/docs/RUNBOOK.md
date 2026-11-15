@@ -730,8 +730,11 @@ evh data-migrate --to files              # back, byte for byte, after setting st
 while a run is still in the layout before 0.8.0 (`evh migrate` first); a move a crash stopped is
 finished by the next one. In SQLite mode a setting you write (a goal, a system) gets in through the
 `evh data-put` (below), and a folder of files through `data-migrate`. `validate` V23 names a database beside files, or files beside the database; V7 and V9, which
-read git, say why they do not apply. A release reads the database and writes the same files layout
-as a files project, a hidden dataset's text left out.
+read git, say why they do not apply. A release (`_release.py copy-data`, what a deployment ships) is files, or with
+`--store sqlite` one sealed database (`data/project.sqlite` alone, out of write-ahead logging, and a `config.yaml` saying
+`store: sqlite`), a hidden dataset's text left out either way. A database nothing may write, a release on a read-only
+mount, is opened read-only when `EVAL_STORE_READONLY=1` or its folder is not writable (SQLite's `immutable` mode: no lock
+file, no journal, nothing created): every read works, and every write refuses as `ERROR (not-allowed)`.
 
 **The project's data, in either store** (PRD-016): the settings (systems, goals, fieldsets, judge scorers,
 model records, failure-mode lists, `validate.json`) are created, changed and deleted with these commands; a setting
@@ -2031,6 +2034,7 @@ notebook) reads no `.env`, and the project's paths are resolved on first use, so
 | `EVH_FOR` | `person:NAME`: the operator an agent acts for (required with `EVH_ACTOR=agent:…`) |
 | `EVAL_DATA_DIR` | the data root, when it is not `<project>/data` |
 | `EVAL_STORE` | `files` or `sqlite`: the project's store, over its `config.yaml`'s `store:` (RFC-025; above) |
+| `EVAL_STORE_READONLY` | `1`: open the project's database read-only (a release is; a folder that is not writable does it without this); a write is refused, never made |
 | `EVAL_RUNS_DIR` | read and write runs here instead of `data/runs` (`validate` too) |
 | `EVAL_GOALS_DIR` | read goals here instead of `<data>/goals`, relative to the project (for goals kept outside the data root) |
 | `EVAL_MAX_COST_USD` | the most one command spends, every pass of `--repeat` together; the run stops, keeps its results, resumes |

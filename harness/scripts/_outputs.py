@@ -285,6 +285,21 @@ class FileStore:
         _forget_rows(path)
 
 
+def ensure_tables(conn: sqlite3.Connection) -> None:
+    """The per-item tables in the project's database (a release is sealed with them, so a read-only open finds them)."""
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS outputs (run TEXT NOT NULL, item_id TEXT NOT NULL, text TEXT NOT NULL,"
+        " sha256 TEXT NOT NULL, PRIMARY KEY (run, item_id))"
+    )
+    # n = 0 is the marker that the rows were written (an empty predictions.jsonl is a run's rows too);
+    # every line, its newline included, from n = 1 in order.
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS rows (run TEXT NOT NULL, partial INTEGER NOT NULL, n INTEGER NOT NULL,"
+        " item_id TEXT, row TEXT NOT NULL, PRIMARY KEY (run, partial, n))"
+    )
+    conn.execute("CREATE INDEX IF NOT EXISTS rows_item ON rows (item_id, run) WHERE partial = 0")
+
+
 class SqliteStore:
     """A project's outputs and rows in its one database (`_store`: data/project.sqlite), write-ahead logged: readers
     never block the writer, and a crash keeps every committed output. One committed insert per output and row;
@@ -298,7 +313,7 @@ class SqliteStore:
         self._cache: dict[str, dict[str, str]] = {}
         self._rows: _Kept = _Kept()  # {(run key, partial): its rows text}
         self._version: int | None = None
-        self._ready: set[int] = set()
+        self._ready: dict[int, bool] = {}  # {id(connection): whether it has the tables}
 
     @staticmethod
     def key(run_dir: Path) -> str:
@@ -314,19 +329,14 @@ class SqliteStore:
     def _db(self, create: bool) -> sqlite3.Connection | None:
         conn = _store.connect(create=create)
         if conn is not None and id(conn) not in self._ready:
-            conn.execute(
-                "CREATE TABLE IF NOT EXISTS outputs (run TEXT NOT NULL, item_id TEXT NOT NULL, text TEXT NOT NULL,"
-                " sha256 TEXT NOT NULL, PRIMARY KEY (run, item_id))"
-            )
-            # n = 0 is the marker that the rows were written (an empty predictions.jsonl is a run's rows too);
-            # every line, its newline included, from n = 1 in order.
-            conn.execute(
-                "CREATE TABLE IF NOT EXISTS rows (run TEXT NOT NULL, partial INTEGER NOT NULL, n INTEGER NOT NULL,"
-                " item_id TEXT, row TEXT NOT NULL, PRIMARY KEY (run, partial, n))"
-            )
-            conn.execute("CREATE INDEX IF NOT EXISTS rows_item ON rows (item_id, run) WHERE partial = 0")
-            self._ready.add(id(conn))
-        return conn
+            # Read-only, nothing is created: a release made without runs has no such tables, and no outputs.
+            if _store.readonly():
+                have = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type = 'table'")}
+                self._ready[id(conn)] = {"outputs", "rows"} <= have
+            else:
+                ensure_tables(conn)
+                self._ready[id(conn)] = True
+        return conn if conn is not None and self._ready[id(conn)] else None
 
     def _fresh(self, conn: sqlite3.Connection) -> None:
         """Drop the cache when another connection (another process) has committed since it was filled."""
@@ -449,6 +459,7 @@ class SqliteStore:
         """The run's outputs gone from here."""
         if _store.rel(run_dir) is None:  # outside data/: the disk's
             return _FILES.delete(run_dir)
+        _store.require_writable()
         with self._lock:
             conn = self._db(create=False)
             if conn is None:
@@ -530,6 +541,7 @@ class SqliteStore:
         """The run's rows (or its checkpoint) gone from here."""
         if _store.rel(run_dir) is None:  # outside data/: the disk's
             return _FILES.drop_rows(run_dir, partial)
+        _store.require_writable()
         with self._lock:
             conn = self._db(create=False)
             if conn is None:

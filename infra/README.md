@@ -141,7 +141,13 @@ infra/
 
 Any failure in 3 or 4 rolls back to the previous release: the symlink, the containers (the MCP
 server removed when the previous release had none) and
-the config. Then the Alloy drop-in and the Caddy vhosts are installed, each validated with
+the config. The release's data is in the store its own `inspector/config.yaml` names, so a
+rollback may cross from a SQLite release to a files one and back: `render.sh` makes the SQLite
+release by default (`inspector/data/project.sqlite` alone, sealed, with `store: sqlite`;
+`EVALS_STORE=files` makes the files layout), both services open it read-only from the read-only
+mount (`EVAL_STORE_READONLY`, or a folder that is not writable: no lock file, nothing created),
+and the inspector keeps the goals' tests in the release's `inspector/cache/evh-p.jsonl` as the
+MCP server does. Then the Alloy drop-in and the Caddy vhosts are installed, each validated with
 the whole shared set and restored on failure.
 
 Verified before the first deploy: the release rendered, then deploy.sh steps 1–4 run on a

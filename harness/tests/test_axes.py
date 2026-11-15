@@ -566,5 +566,17 @@ check(
     "limit baseline: the axis title says what the limit is",
     "no worse than the baseline (paired test)" in axes.axis_title(axes.axes_of(BL)[-1]),
 )
+_ids = [f"item-{n:03d}" for n in range(60)]
+_tpi = axes.tokens_per_item(
+    {
+        "tokens_in": {"values": dict.fromkeys(_ids[::2], 1)},
+        "tokens_out": {"values": dict.fromkeys(_ids[1::2], 2)},
+    }
+)
+check(
+    "tokens per item: in the items' order, whatever the hash seed (an API answer's bytes never depend on it)",
+    list(_tpi) == sorted(_ids) and _tpi["item-001"] == 2.0,
+    list(_tpi)[:5],
+)
 
 sys.exit(summary())

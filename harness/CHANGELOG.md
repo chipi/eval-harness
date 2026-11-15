@@ -392,6 +392,31 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Changed
 
+- **A deployment's data is one SQLite file, opened read-only** (RFC-032 step 9, "the next deploy goes on SQLite"): a SQLite
+  release served from the box's read-only mount failed on its first request (`/api/health` 200, every comparison 500:
+  `OSError: [Errno 30] Read-only file system: .../project.sqlite-setup-lock`), because every open wrote: a lock file,
+  `PRAGMA journal_mode=WAL`, `CREATE TABLE`. A project's database whose folder is not writable, or with
+  `EVAL_STORE_READONLY=1`, is now opened as SQLite's `mode=ro&immutable=1`: no lock file, no journal, nothing created;
+  every read works, a file that is not a project's database is `ERROR (invalid-file)`, and every write, through the store
+  or the outputs, is `ERROR (not-allowed)`, never a sqlite error (`_store.readonly`, `require_writable`). The release
+  build makes the SQLite release (`_release.py copy-data --store sqlite`: the filtered copy, every refusal and hidden-text
+  rule unchanged, moved by `data-migrate` into `data/project.sqlite`, checkpointed and out of write-ahead logging so
+  `data/` holds that file alone, and a `config.yaml` saying `store: sqlite`); `render.sh` makes it by default and
+  `EVALS_STORE=files` makes the files release as before. Both services read the store the release's own config.yaml
+  names, so a rollback may cross from one store to the other. Every check of render.sh reads the release through its
+  own store (`_release.py check`: no reference text git does not track, no materialized item, the MCP answers cover every
+  goal, the goals' tests kept, the one sealed database; and `evh migrate --check`), each failing on a leak planted in
+  either store (`tests/test_release_store.py`, `tests/test_store_readonly.py`); the build after the copy runs read-only
+  and fails if it changes the database. The inspector keeps the goals' tests in the release's `cache/evh-p.jsonl`, as the
+  MCP server does (its default is a folder the mount cannot write). Measured on a render of a clean checkout of HEAD (the
+  gold reference texts git does not track are not in it), the two stores side by side: the release 4,481 files against
+  12,174 (its data one 241.5 MB file against 7,695 files of 176 MB; 160 s to render against 126 s); the catalog's 1,904
+  files and the site's 2,083 equal but for the build-time footer; each of the 2,905 comparisons the catalog links to
+  (2,888 with arms) and 38 MCP tool calls answered by the same bytes from both, with the inspector and the MCP server in
+  compose.yml's container limits (384 MB, half a CPU, read-only root and mount) on python:3.12.14-alpine; the inspector's
+  peak resident memory after every view 208.6 MB on SQLite (206.7 MB files), `docker stats` 191.1 MiB, 49.8% of the limit
+  deploy.sh holds to 80% (files 49.5%); the container's cache of the database file brings its cgroup peak to the limit
+  (reclaimed, no kill, no restart).
 - **A deployment shows the people's checks of a judge scorer**: the release copies `data/judge-validation` (each
   source's report, each record without the judge's reply, its hash kept), so a judge scorer's page and `scorer-show`
   on the deployed site list the same checks as the project's (this repository: two sources per scorer, 1,200 records,

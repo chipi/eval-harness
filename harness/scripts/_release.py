@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """A deployment's copy of a project's data: what the catalog reads, and nothing it must not publish.
 
-    python harness/scripts/_release.py copy-data harness/data <release>/inspector/data
+    python harness/scripts/_release.py copy-data harness/data <release>/inspector/data [--store sqlite]
+    EVAL_HOME=<release>/inspector python harness/scripts/_release.py check <release>/inspector <tracked-refs-file>
 
 Copies data/runs whole (each run with its scores) and the data the catalog and the inspector read (COPIED_DIRS,
 COPIED_FILES), and refuses, before anything is written, a release that would carry text the
@@ -18,6 +19,12 @@ repository does not publish:
 With the sqlite store (RFC-025) the copy's project.sqlite is the project's without a hidden dataset's runs, rebuilt so
 their texts are in none of its pages. Captures are copied as their capture.json only: records never leave the project. Materialized items
 are never copied. Judge validations are copied as their reports and their records without the judges' replies.
+The copy is files; with `--store sqlite` it is then made one database (data/project.sqlite, moved by `data-migrate`)
+and the release's config.yaml says `store: sqlite`: a release never changes, so the database is sealed (checkpointed,
+out of write-ahead logging) and holds the only file under data/, which every reader opens read-only (`_store.readonly`).
+`check` is render.sh's last word on a rendered release, read through the release's own store: no reference text git
+does not track, no materialized item, the MCP answers written from the release's goals, the goals' tests kept, and a
+sealed database holding the only file.
 render.sh calls this; the hidden-text test calls it directly.
 """
 
@@ -29,14 +36,16 @@ from pathlib import Path as _Path
 if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
+import argparse
 import contextlib
 import hashlib
 import json
+import os
 import subprocess
 from pathlib import Path
 
 import yaml
-from evaluation_harness import _common, _outputs, _store
+from evaluation_harness import _common, _outputs, _release_store, _store
 from evaluation_harness._visibility import hidden, public_profile
 from evaluation_harness.model import studies as model_studies
 
@@ -521,14 +530,78 @@ def copy_data(src: Path, dst: Path) -> dict:
     return counts
 
 
+def _answered_goals(answers: Path) -> tuple[int, int]:
+    """(how many goals the MCP `goals` answer written ahead lists, how many leaderboards were written ahead)."""
+    recs = [json.loads(x) for x in _store.read_text(answers, encoding="utf-8").splitlines() if x.strip()]
+    goals = next((r for r in recs if r.get("tool") == "goals" and not r.get("argv")), None)
+    rows = sum(len(b.get("rows") or []) for b in json.loads(goals["out"])["result"]["blocks"]) if goals else 0
+    return rows, sum(r.get("tool") == "leaderboard" for r in recs)
+
+
+def check(root: Path, tracked: set[str]) -> list[str]:
+    """What is wrong with a rendered release (the project at `root`, EVAL_HOME of this process), read through its
+    own store, never by looking at files a database release does not have; [] when nothing. `tracked` is what git
+    tracks under harness/data, relative to it: a reference text outside it is not public."""
+    if _common.project_root().resolve() != root.resolve():
+        _common.die(f"{root} is not this process's project: run it with EVAL_HOME={root}", "bad-argument")
+    data = _common.DATA
+    bad = []
+    refs = _store.rglob(data / "references", "*") if _store.is_dir(data / "references") else []
+    leaked = sorted(
+        str(f.relative_to(data))
+        for f in refs
+        if _store.is_file(f) and f.name != "manifest.json" and str(f.relative_to(data)) not in tracked
+    )
+    if leaked:
+        bad.append(
+            f"{len(leaked)} reference text(s) git does not track in the release (not public), e.g.: "
+            + ", ".join(leaked[:3])
+        )
+    if _store.exists(data / "materialized"):
+        bad.append("materialized items in the release")
+    cache = root / "cache"
+    if not _store.is_file(cache / "evh-p.jsonl") or not _store.stat(cache / "evh-p.jsonl").st_size:
+        bad.append(
+            "the p cache (inspector/cache/evh-p.jsonl) is missing or empty: each MCP view takes ~50 s without it"
+        )
+    answers = cache / "mcp-answers.jsonl"
+    rows, boards = _answered_goals(answers) if _store.is_file(answers) else (0, 0)
+    want = len(_store.glob_str(str(data / "goals" / "*.yaml")))
+    if rows != want or not boards:
+        bad.append(
+            f"the MCP answers (inspector/cache/mcp-answers.jsonl): goals answers {rows} of the release's {want}, "
+            f"{boards} leaderboard(s) written ahead"
+        )
+    return bad + _release_store.layout_problems(data)
+
+
 def main() -> int:
-    """copy-data SRC DST."""
-    if len(_sys.argv) != 4 or _sys.argv[1] != "copy-data":
-        print(__doc__)
-        return 2
-    counts = copy_data(Path(_sys.argv[2]), Path(_sys.argv[3]))
+    """copy-data SRC DST [--store sqlite]; check ROOT TRACKED."""
+    ap = argparse.ArgumentParser(prog="_release.py", description=__doc__.splitlines()[0])
+    sub = ap.add_subparsers(dest="cmd", required=True)
+    cp = sub.add_parser("copy-data", help="a project's data/ into a release")
+    cp.add_argument("src")
+    cp.add_argument("dst")
+    cp.add_argument("--store", choices=_common.STORES, default="files", help="the store the release is in")
+    ck = sub.add_parser("check", help="a rendered release's last checks")
+    ck.add_argument("root", help="the release's project (EVAL_HOME): its data/, config.yaml and cache/")
+    ck.add_argument(
+        "tracked", help="a file of the paths git tracks under harness/data/references, one a line"
+    )
+    args = ap.parse_args()
+    if args.cmd == "check":
+        os.environ.pop("EVAL_STORE", None)  # the release says which store it is (its config.yaml)
+        os.environ["EVAL_STORE_READONLY"] = "1"  # checking changes nothing in what it checks
+        tracked = {x for x in _store.read_text(Path(args.tracked), encoding="utf-8").splitlines() if x}
+        problems = check(Path(args.root), tracked)
+        for p in problems:
+            print(f"::error::{p}")
+        return 1 if problems else 0
+    counts = copy_data(Path(args.src), Path(args.dst))
+    if args.store == "sqlite":
+        _release_store.to_sqlite(Path(args.dst))
     print(
-        f"copied {_sys.argv[2]} -> {_sys.argv[3]}"
+        f"copied {args.src} -> {args.dst} ({args.store})"
         + (
             f" (text kept back for hidden datasets: {counts['hidden_runs']} run(s), "
             f"{counts['hidden_refs']} reference(s), {counts['hidden_verdicts']} verdict set(s), "

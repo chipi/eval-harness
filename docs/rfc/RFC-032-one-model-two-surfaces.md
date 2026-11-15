@@ -490,3 +490,11 @@ Quoted from the discussion, typing slips corrected.
     `arm-list`, `goals` and the overview show who is a contender and the leader's lead, which are the tests: they keep
     them. MCP in the server's process is P2. Read through the store, a SQLite release on the box's read-only mount
     fails (the open sets the database up): the SQLite release is still to build.
+  - built (P1b, "the next deploy runs on the SQLite store"): a database whose folder is not writable, or with
+    `EVAL_STORE_READONLY=1`, opens as `mode=ro&immutable=1` (no lock file, nothing created; a write is `not-allowed`); the
+    release is made by `_release.py copy-data --store sqlite` (the filtered copy moved by `data-migrate`, sealed out of
+    WAL, `config.yaml` `store: sqlite`; `render.sh`'s default, `EVALS_STORE=files` keeps the files release) and every
+    render check reads the release through its own store. Measured on a render of a clean HEAD, both stores in
+    compose.yml's container limits: 4,481 files against 12,174, the catalog and 2,905 comparisons and 38 MCP calls the
+    same bytes from both, the inspector's peak resident memory 208.6 MB on SQLite (206.7 files), 49.8% of 384 MiB by
+    `docker stats`. A first request on the old code: `/api/health` 200, a comparison 500.

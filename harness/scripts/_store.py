@@ -21,6 +21,7 @@ import shutil
 import sqlite3
 import threading
 import time
+import urllib.parse
 from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
@@ -84,10 +85,48 @@ def db_path() -> Path:
     return _common.DATA / DB
 
 
+def readonly() -> bool:
+    """Whether the project's database is read-only: `EVAL_STORE_READONLY=1`, or the folder it is in is not writable
+    (a release on the deployment's read-only mount). Such a database is opened immutable: no lock file, no journal,
+    nothing set up, and a write is refused. Decided when the database is opened; `close()` and open again after the
+    folder's mode changes."""
+    if os.environ.get("EVAL_STORE_READONLY", "").strip() == "1":
+        return True
+    folder = db_path().parent
+    return folder.is_dir() and not os.access(folder, os.W_OK)
+
+
+def require_writable() -> None:
+    """Refuse a write to a database that is read-only (a release is never written in place)."""
+    if readonly():
+        _common.die(
+            f"{db_path()} is read-only (EVAL_STORE_READONLY=1, or its folder is not writable: a release is never"
+            " written in place); nothing was changed",
+            "not-allowed",
+        )
+
+
+def _open_readonly(path: Path) -> sqlite3.Connection:
+    """The database as a file nothing writes: SQLite's `immutable` mode takes no lock and reads no `-wal`, so a
+    database that is mid-write elsewhere would be read stale; a release is never that."""
+    uri = f"file:{urllib.parse.quote(str(path))}?mode=ro&immutable=1"
+    conn = sqlite3.connect(uri, uri=True, timeout=60, isolation_level=None, check_same_thread=False)
+    try:
+        if not conn.execute("SELECT 1 FROM sqlite_master WHERE name = 'files'").fetchone():
+            raise sqlite3.DatabaseError("no files table")
+    except sqlite3.DatabaseError:
+        conn.close()
+        _common.die(f"{path} is not a project's database (it has no files table)", "invalid-file")
+    return conn
+
+
 def connect(create: bool = True) -> sqlite3.Connection | None:
     """The project's database, opened once per process (write-ahead logged, every commit synced); None when it does
     not exist and `create` is False. Its tables: `files` (everything under data/ that is not per item) and, from
-    `_outputs`, `outputs` and `rows`."""
+    `_outputs`, `outputs` and `rows`. A read-only database (`readonly`) is opened as it is, and `create` (a write) is
+    refused."""
+    if create:
+        require_writable()
     data = _common.DATA
     cur = _CUR[0]
     if cur is not None and cur[0] is data and (conn := _CONN.get(cur[1])) is not None:
@@ -101,6 +140,11 @@ def connect(create: bool = True) -> sqlite3.Connection | None:
             return conn
         if not create and not path.is_file():
             return None
+        if readonly():
+            conn = _open_readonly(path)
+            _CONN[key] = conn
+            _CUR[0] = (data, key)
+            return conn
         path.parent.mkdir(parents=True, exist_ok=True)
         conn = sqlite3.connect(str(path), timeout=60, isolation_level=None, check_same_thread=False)
         # One process at a time sets the database up: SQLite answers "database is locked" at once, without waiting
@@ -544,6 +588,7 @@ def unlink(path: Any, missing_ok: bool = False) -> None:
         Path(path).unlink(missing_ok=missing_ok)
         wrote()
         return
+    require_writable()
     conn = connect(create=False)
     gone = conn.execute("DELETE FROM files WHERE path = ?", (key,)).rowcount if conn else 0
     if gone:
@@ -567,6 +612,7 @@ def rmtree(path: Any, ignore_errors: bool = False) -> None:
         finally:
             wrote()
         return
+    require_writable()
     conn = connect(create=False)
     if conn is None:
         if not ignore_errors:
@@ -786,6 +832,8 @@ def open_file(
         )
     text = "b" not in mode
     enc = encoding or "utf-8"
+    if not mode.startswith("r"):
+        require_writable()  # refused at the open, not when the file is closed
     if mode.startswith("r"):
         data = read_bytes(path)
         return io.StringIO(data.decode(enc, errors or "strict")) if text else io.BytesIO(data)

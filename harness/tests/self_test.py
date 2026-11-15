@@ -905,6 +905,14 @@ def test_example_scorer_suites_pass() -> None:
             "the project's store (RFC-025): the setting, _store on both, data-migrate there and back, never both (V23), concurrent writers, the release, the path-I/O guard",
         ),
         (
+            "test_store_readonly.py",
+            "a database nothing may write (RFC-032 step 9): read-only open, every read works, every write refuses as not-allowed",
+        ),
+        (
+            "test_release_store.py",
+            "a release in either store (RFC-032 step 9): built and sealed, the same data, every render check failing on its planted leak",
+        ),
+        (
             "test_actor.py",
             "who acted (RFC-027): --by, EVH_ACTOR, EVH_FOR, the terminal user; decisions need a name",
         ),

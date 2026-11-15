@@ -13,13 +13,17 @@
 #   inspector/data/                               runs*, references, datasets, goals, profiles,
 #                                                 models.yaml: what the catalog and inspector read
 #                                                 (no corpora, no materialized text;
-#                                                 harness/tests/test_render_data.py checks the list)
+#                                                 harness/tests/test_render_data.py checks the list); with
+#                                                 EVALS_STORE=sqlite (the default) one file, project.sqlite,
+#                                                 and inspector/config.yaml saying `store: sqlite`
 #   nginx/  caddy/  observability/  deploy/  compose.yml  RELEASE
 #
 # Env:
 #   EVALS_PORT       loopback port of evals-nginx      (default 8096)
 #   INSPECTOR_PORT   loopback port of evals-inspector  (default 8097)
 #   MCP_PORT         loopback port of evals-mcp        (default 8098)
+#   EVALS_STORE      the release's store, `sqlite` (default) or `files`: both the inspector and the MCP server read
+#                    whichever the release's own config.yaml names, so a rollback may cross from one to the other
 # Template: chipi/humancopilot.eu infra/deploy/render.sh.
 set -euo pipefail
 
@@ -28,12 +32,16 @@ SHA="${2:?usage: render.sh <out-dir> <release-sha>}"
 PORT="${EVALS_PORT:-8096}"
 IPORT="${INSPECTOR_PORT:-8097}"
 MPORT="${MCP_PORT:-8098}"
+STORE="${EVALS_STORE:-sqlite}"
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 RELEASE_DIR="/srv/evals/releases/${SHA}"
 SITE=evals.humancopilot.eu
 
 [[ "$SHA" =~ ^[0-9a-f]{7,40}$ ]] || { echo "::error::release sha must be hex: $SHA"; exit 1; }
 [[ "$PORT" =~ ^[0-9]+$ && "$IPORT" =~ ^[0-9]+$ && "$MPORT" =~ ^[0-9]+$ ]] || { echo "::error::ports must be numeric"; exit 1; }
+[[ "$STORE" =~ ^(files|sqlite)$ ]] || { echo "::error::EVALS_STORE must be files or sqlite: $STORE"; exit 1; }
+# The release says which store it is (its config.yaml), never this shell.
+unset EVAL_STORE EVAL_STORE_READONLY EVAL_DATA_DIR EVAL_GOALS_DIR
 
 rm -rf "$OUT"
 mkdir -p "$OUT"/{sites,nginx,caddy,observability,deploy,inspector/pkg,inspector/data}
@@ -87,11 +95,17 @@ import json, sys
 print(json.dumps({"website_id": json.load(open(sys.argv[1])).get("website_id") or ""}))
 PY
 # The data the catalog and the inspector read, with nothing a `text: hidden` dataset's text gave
-# (RFC-019) and no text git does not track: _release.py refuses such a release before copying.
-python3 "$OUT/inspector/pkg/evaluation_harness/_release.py" copy-data "$ROOT/harness/data" "$OUT/inspector/data"
+# (RFC-019) and no text git does not track: _release.py refuses such a release before copying. In SQLite it is then
+# made one sealed database (data-migrate, journal out of WAL) beside a config.yaml saying so.
+python3 "$OUT/inspector/pkg/evaluation_harness/_release.py" copy-data "$ROOT/harness/data" "$OUT/inspector/data" --store "$STORE"
+# From here the release is read, never written: the box mounts it read-only, so everything below reads it as the box
+# does (a database opened immutable, no lock file, nothing set up), and a build that writes to it fails here.
+export EVAL_STORE_READONLY=1
+sealed=""
+[ "$STORE" != sqlite ] || sealed="$(sha256sum "$OUT/inspector/data/project.sqlite")"
 # The data must be in the format this release reads (RFC-032): data committed without `evh migrate` stops the deploy
 # here, before anything is built or moved.
-EVAL_HOME="$OUT/inspector" EVAL_STORE=files python3 "$OUT/inspector/pkg/evaluation_harness/migrate.py" --check
+EVAL_HOME="$OUT/inspector" python3 "$OUT/inspector/pkg/evaluation_harness/migrate.py" --check
 
 # The documentation, under /docs/ on the site (mkdocs.yml, site_url .../docs/).
 python3 -m mkdocs build --strict --quiet -f "$ROOT/mkdocs.yml" -d "$OUT/sites/$SITE/public/docs"
@@ -177,34 +191,17 @@ sed -i "s#__RELEASE__#sha-${SHA:0:7}#g" "$OUT/compose.yml"
 if left="$(grep -rnoE --exclude='*.js' --exclude='*.map' '__[A-Z][A-Z0-9_]+__' "$OUT/nginx" "$OUT/caddy" "$OUT/sites" "$OUT/compose.yml" 2>/dev/null | grep -v '__pycache__')"; then
   echo "::error::unrendered tokens in the release:"; echo "$left"; exit 1
 fi
-# What a release must never carry, whatever the checkout it was rendered from holds: reference texts
-# git does not track (a gold reference is not committed; a working copy may have fetched it) and
-# materialized items. The tracked ones (the synthetic smoke_v1 silver) are public already. The
-# list is built whole, never cut by `head` in the pipe: under pipefail that killed `find` with
-# SIGPIPE, the assignment failed, and the check passed with 1,657 texts in the release (an
-# independent review, 2026-10-29).
+# What a release must never carry, whatever the checkout it was rendered from holds: reference texts git does not
+# track (a gold reference is not committed; a working copy may have fetched it) and materialized items; and what it
+# must carry: the goals' tests and the MCP answers written ahead from the release's own goals (they were once written
+# from an empty project, and the public server said there were no goals), and, in SQLite, the one sealed database. The
+# tracked references (the synthetic smoke_v1 silver) are public already. The checks read the release through its own
+# store (_release.py check), so they hold in files and in SQLite alike; the list is built whole, never cut by `head`
+# in a pipe (under pipefail that once killed `find` with SIGPIPE and the check passed with 1,657 texts in the release,
+# an independent review, 2026-10-29).
 tracked_refs="$(git -C "$ROOT" ls-files -- harness/data/references | sed 's#^harness/data/##' | sort)"
-leaked="$( (cd "$OUT/inspector/data" 2>/dev/null && find references -type f ! -name manifest.json | sort) | comm -23 - <(printf '%s\n' "$tracked_refs") || true)"
-if [ -n "$leaked" ]; then
-  echo "::error::$(wc -l <<<"$leaked") reference text(s) git does not track in the release (not public), e.g.:"
-  sed -n '1,3p' <<<"$leaked"; exit 1
-fi
-[ ! -e "$OUT/inspector/data/materialized" ] || { echo "::error::materialized items in the release"; exit 1; }
-# The MCP server's precomputed goals' tests: without them each view takes ~50 s.
-[ -s "$OUT/inspector/cache/evh-p.jsonl" ] || { echo "::error::the p cache (inspector/cache/evh-p.jsonl) is missing or empty"; exit 1; }
-# And its answers written ahead: without them the first call to each tool waits for a fresh process. Not only
-# present but answered from the release's data: from 0.6.2 to 0.7.1 they were written from an empty project (a
-# relative EVAL_HOME read from inside it), and the public server said there were no goals.
-python3 - "$OUT/inspector/cache/mcp-answers.jsonl" "$OUT/inspector/data/goals" <<'PY' || exit 1
-import json, pathlib, sys
-recs = [json.loads(x) for x in open(sys.argv[1], encoding="utf-8")] if pathlib.Path(sys.argv[1]).is_file() else []
-goals = next((r for r in recs if r.get("tool") == "goals" and not r.get("argv")), None)
-rows = sum(len(b.get("rows") or []) for b in json.loads(goals["out"])["result"]["blocks"]) if goals else 0
-want = len(list(pathlib.Path(sys.argv[2]).glob("*.yaml")))
-boards = sum(r.get("tool") == "leaderboard" for r in recs)
-if rows != want or not boards:
-    print(f"::error::the MCP answers (inspector/cache/mcp-answers.jsonl): goals answers {rows} of the release's {want}, "
-          f"{boards} leaderboard(s) written ahead")
-    sys.exit(1)
-PY
-echo "rendered release $SHA into $OUT (nginx $PORT, inspector $IPORT, mcp $MPORT)"
+EVAL_HOME="$OUT/inspector" python3 "$OUT/inspector/pkg/evaluation_harness/_release.py" check "$OUT/inspector" \
+  <(printf '%s\n' "$tracked_refs") || exit 1
+[ -z "$sealed" ] || [ "$(sha256sum "$OUT/inspector/data/project.sqlite")" = "$sealed" ] \
+  || { echo "::error::the build changed the release's database"; exit 1; }
+echo "rendered release $SHA into $OUT ($STORE store; nginx $PORT, inspector $IPORT, mcp $MPORT)"

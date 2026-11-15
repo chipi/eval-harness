@@ -157,7 +157,7 @@ def tokens_per_item(scores: dict[str, dict]) -> dict[str, float]:
     """{item: tokens in + out}, for the items that report either."""
     tin = (scores.get("tokens_in") or {}).get("values") or {}
     tout = (scores.get("tokens_out") or {}).get("values") or {}
-    return {i: float(tin.get(i, 0.0)) + float(tout.get(i, 0.0)) for i in set(tin) | set(tout)}
+    return {i: float(tin.get(i, 0.0)) + float(tout.get(i, 0.0)) for i in sorted(set(tin) | set(tout))}
 
 
 def builtin_axes() -> list[dict]:
