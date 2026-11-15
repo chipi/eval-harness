@@ -63,6 +63,7 @@ jobs:
         run: |
           python -m venv /tmp/clean
           /tmp/clean/bin/pip install dist/*.whl
+          /tmp/clean/bin/evh init --store files /tmp/proj
           mkdir -p /tmp/proj/data/sources && cd /tmp/proj
           git init -q && git -c user.email=ci@ci -c user.name=ci commit -q --allow-empty -m init
           for n in 1 2 3; do echo "item $n" > data/sources/item_$n.txt; done
