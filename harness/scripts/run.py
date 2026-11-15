@@ -84,6 +84,7 @@ from evaluation_harness._record import (
 )
 from evaluation_harness._retry import call_with_retries, is_transient
 from evaluation_harness.model import datasets as _datasets
+from evaluation_harness.model import results as _results
 from evaluation_harness.model import runs as _model_runs
 
 
@@ -1483,13 +1484,17 @@ def _run(args: argparse.Namespace) -> int:
             faithfulness=faith,
         )
         # The pass (run.json: what ran, on what, how) and the score it made (scores/<scorer>@<reference>/), its rows
-        # beside it (RFC-032 step 4).
+        # beside it (RFC-032 step 4). The settings every row holds (RFC-033) are the run's, in run.json, and not in the
+        # rows: worked out here, in memory, so the rows are written once.
+        call = _results.run_call(result["predictions"])
+        rows = [_results.strip_call(r, call) for r in result["predictions"]]
         _model_runs.write_run(
             run_id,
             {
                 **_model_runs.run_part(metrics),
                 "started_at": identity["started_at"],
                 **({"prompt_versions": prompt_versions} if prompt_versions else {}),
+                **({"call": call} if call else {}),
                 "purpose": args.purpose,
                 "machine": _model_runs.machine_of(metrics.get("fingerprint")),
                 **({"of": args.of} if args.of else {}),
@@ -1505,7 +1510,7 @@ def _run(args: argparse.Namespace) -> int:
             first=True,
             scratch=args.scratch,
         )
-        _outputs.write_rows(score_dir, result["predictions"])
+        _outputs.write_rows(score_dir, rows)
         if (metrics.get("history_confound") or {}).get("items"):
             hc = metrics["history_confound"]
             print(

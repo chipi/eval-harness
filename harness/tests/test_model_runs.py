@@ -72,7 +72,7 @@ def record(run_id: str, system: str, *, platform: str = "Linux/x86_64", sha: str
     return r
 
 
-ROWS = '{"item_id": "i1", "acc": 1.0}\n{"item_id": "i2", "acc": 0.0}\n'
+ROWS = '{"acc": 1.0, "item_id": "i1"}\n{"acc": 0.0, "item_id": "i2"}\n'  # canonical, as every release wrote them: format 7 makes rows so
 OUTS = {"i1": "one", "i2": "two"}
 
 

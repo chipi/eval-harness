@@ -1122,6 +1122,14 @@ def test_example_scorer_suites_pass() -> None:
             "evh migrate's runs steps: outputs/ to outputs.jsonl byte for byte, then every run and score into data/runs, an orphan refused, idempotent, non-UTF-8 refused",
         ),
         (
+            "test_results.py",
+            "per-item results as a model (RFC-033): the usage slim, the run settings a run's rows share, rows written without them (first and later scores), run.json `call` and its schema, validate V28",
+        ),
+        (
+            "test_m0007.py",
+            "evh migrate's format 7 step: settings hoisted to run.json `call`, usage slimmed, rows canonical, an interrupted run resumed, refusals, the SQLite store equal to files",
+        ),
+        (
             "test_tags.py",
             "failure modes: a tag sheet from inspect, its import as a tag set, evh tags counts per arm; refusals",
         ),

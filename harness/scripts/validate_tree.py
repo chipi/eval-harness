@@ -70,6 +70,9 @@ Each check exists because its absence let a real defect through somewhere:
                      disagreements; a code record keeping a summary of its own (RFC-030, RFC-032 step 7)
   V27 studies        a study's spec off its schema or under no goal, a log event a study does not write, a trial
                      with no system (RFC-029, RFC-032 step 7)
+  V28 rows           a stored row holding a run setting (generation_config, generation_requested,
+                     encoder_window) equal to its run's `call`, or a usage key outside the kept set
+                     (format 7, RFC-033)
 
 Exit 1 on any failure, so it can gate.
 
@@ -1985,6 +1988,46 @@ def v27_studies() -> None:
         print("  --   V27 studies (none)")
 
 
+def v28_rows_in_format_7() -> None:
+    """V28: no stored row holds what format 7 moved (RFC-033): a run setting equal to its run's `call`, or a `usage`
+    key outside the kept set. The rows are read as stored, not through `item_rows`."""
+    from evaluation_harness import _outputs  # noqa: PLC0415
+    from evaluation_harness.model import results as _results  # noqa: PLC0415
+
+    bad: list[str] = []
+    n = 0
+    needles = ("usage", *_results.RUN_SETTINGS)
+    for rid in _mr.run_ids():
+        call = (_mr.run(rid) or {}).get("call")
+        call = call if isinstance(call, dict) else None
+        for sd in _mr.scores_of(rid):
+            text = _outputs.rows_text(sd, errors="replace")
+            if text is None:
+                continue
+            n += 1
+            for line_no, line in enumerate(text.splitlines(), 1):
+                if not any(k in line for k in needles):  # a row can hold none of them without the word
+                    continue
+                try:
+                    row = json.loads(line)
+                except ValueError:
+                    continue
+                for p in _results.problems(row, call):
+                    bad.append(f"{data_rel(sd)} line {line_no}: {p}")
+    if not n:
+        print("  --   V28 rows (no scores)")
+        return
+    for b in bad[:10]:
+        print(f"       {b}")
+    if len(bad) > 10:
+        print(f"       ... and {len(bad) - 10} more")
+    check(
+        f"V28 rows — {n} score set(s), none holding its run's settings or a usage key format 7 drops",
+        not bad,
+        f"{len(bad)} problem(s): evh migrate",
+    )
+
+
 def v23_run_outputs() -> None:
     """V23: every run's outputs can be read (RFC-024): none is left in the old layout (an outputs/ folder), and a
     score derived from them has them. And the project is files or its database, never both
@@ -2172,6 +2215,7 @@ def main() -> int:
             v25_looks,
             v26_faithfulness,
             v27_studies,
+            v28_rows_in_format_7,
             note_uncommitted_runs,
             note_round_scorers,
         ):

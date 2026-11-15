@@ -114,7 +114,7 @@ run-setting keys, the slim function and the kept usage keys, and imports nothing
 2. **Usage slimmed.** `_meta.usage` keeps `cost`, `prompt_tokens`, `completion_tokens`, and when nonzero
    `cached_tokens` (from `prompt_tokens_details.cached_tokens`) and `cache_write_tokens`; everything else goes.
    `None` and non-dict values pass through unchanged; the function is idempotent. Expected: 53,720 objects, 31.8 → 5.6
-   MiB; 11 have no `cost` (kept as they are).
+   MiB; 11 have no `cost`: slimmed like the rest, none is invented.
 3. **Rows canonical** (already so here; the migration counts any it rewrites).
 4. **SQLite projects**: the new tables are filled from the old `rows` table by raw SQL, in the same order `data-migrate`
    uses (below); `rows` is dropped.

@@ -48,6 +48,7 @@ import yaml
 from evaluation_harness import _common, _outputs, _release_store, _store
 from evaluation_harness._visibility import hidden, public_profile
 from evaluation_harness.model import studies as model_studies
+from evaluation_harness.model.results import CALL_META
 
 #: The directories of data/ the catalog and the inspector read (tests/test_render_data.py checks it
 #: against catalog_adapter.py), copied besides data/runs.
@@ -78,20 +79,6 @@ COPIED_DIRS = (
 )
 #: The data's format (RFC-032): the deploy checks it; the systems a migration renamed: the catalog redirects them.
 COPIED_FILES: tuple[str, ...] = ("project.yaml", "renames.json")
-#: What a hidden dataset's prediction rows keep of `_meta`: what describes the call (its cost, model,
-#: finish), never what the system answered or the parser made of it (`predicted`, `llm_raw`, ...).
-CALL_META = (
-    "provider",
-    "response_model",
-    "usage",
-    "finish_reason",
-    "reasoning_tokens_reported",
-    "system_fingerprint",
-    "generation_config",
-    "generation_requested",
-    "encoder_window",
-    "resumed_from_disk",
-)
 
 
 def _tracked(src: Path) -> set[str] | None:

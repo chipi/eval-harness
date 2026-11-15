@@ -36,8 +36,8 @@ PURPOSES = ("run", "repeat", "pair", "retime")
 #: What a run's purpose adds to the label of the arm it is read in (a re-timing is named by its machine).
 PURPOSE_LABEL = {"run": "", "repeat": "repeats", "pair": "pair"}
 #: Run fields that the record of a scored run did not hold before step 4 (what a folder meant, when the pass
-#: started, the prompt versions it sent): facts of the pass, never a score's to unset.
-RUN_ONLY = ("purpose", "machine", "of", "started_at", "prompt_versions")
+#: started, the prompt versions it sent, the settings its rows share): facts of the pass, never a score's to unset.
+RUN_ONLY = ("purpose", "machine", "of", "started_at", "prompt_versions", "call")
 #: Of a measured run's first record, what belongs to the score it made rather than to the pass.
 SCORE_KEYS = (
     "scores",

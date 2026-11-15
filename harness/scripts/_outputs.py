@@ -18,7 +18,8 @@ A score's rows (one JSON object per item: its scores, cost, tokens, `_meta`) are
 store and table `rows (run, partial, n, item_id, row)` in the sqlite one, keyed by the score's directory, each line's
 exact text kept, so `rows_text` is the same bytes in either. `partial` rows are the pass's checkpoint
 (`rows.partial.jsonl`, keyed by the run's directory), appended per item and dropped by `finish`. `_runs.item_rows` and `write_rows` are how every module reads and writes them; a test fails on a
-`predictions.jsonl` path built anywhere else.
+`predictions.jsonl` path built anywhere else. A row is written as `model.results.prepare` leaves it (RFC-033): its usage
+slimmed, the run settings its run's run.json `call` holds taken off; `put_rows` and `append_row` take text and keep it.
 """
 
 from __future__ import annotations
@@ -33,6 +34,7 @@ from pathlib import Path
 from typing import Any, Protocol
 
 from evaluation_harness import _common, _store
+from evaluation_harness.model import results as _results
 
 FILE = "outputs.jsonl"
 #: The folder of <item>.txt a run had before 0.8.0 (`evh migrate` moves it into FILE).
@@ -702,14 +704,35 @@ def has_rows(run_dir: Path) -> bool:
     return rows_text(run_dir) is not None
 
 
+def _call_of(score_dir: Path) -> dict[str, Any] | None:
+    """The run settings of the run a score is of (run.json `call`); None for a directory that is no score's, or a run
+    that holds none."""
+    d = Path(score_dir)
+    if d.parent.name != "scores":
+        return None
+    try:
+        rec = json.loads(_store.read_text(d.parent.parent / "run.json", encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    call = rec.get("call") if isinstance(rec, dict) else None
+    return call if isinstance(call, dict) else None
+
+
+def rows_as_written(score_dir: Path, rows: Iterable[dict[str, Any]]) -> str:
+    """The text `write_rows` writes for `rows` in the score at `score_dir`: what a caller compares with what is held."""
+    call = _call_of(score_dir)
+    return "".join(row_line(_results.prepare(r, call)) for r in rows)
+
+
 def write_rows(run_dir: Path, rows: Iterable[dict[str, Any]]) -> None:
-    """A run's rows, all at once, atomically."""
-    store().put_rows(Path(run_dir), "".join(row_line(r) for r in rows))
+    """A score's rows, all at once, atomically."""
+    store().put_rows(Path(run_dir), rows_as_written(run_dir, rows))
 
 
 def append_partial(run_dir: Path, row: dict[str, Any]) -> None:
-    """One row added to the run's checkpoint, on disk before the next item."""
-    store().append_row(Path(run_dir), row_line(row), partial=True)
+    """One row added to the run's checkpoint, on disk before the next item. Its usage is slimmed; the run settings stay,
+    the run's `call` not being known until the pass ends."""
+    store().append_row(Path(run_dir), row_line(_results.slim_row(row)), partial=True)
 
 
 def item_across(run_dirs: Iterable[Path], item_id: str) -> dict[Path, dict[str, Any]]:

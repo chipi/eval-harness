@@ -43,7 +43,7 @@ from evaluation_harness.model import runs as R  # noqa: E402
 
 env = dict(os.environ, EVH_ACTOR="person:tester", EVAL_BUILD_REF="test-model-system-id")
 DATA = proj / "data"
-ROWS = [{"item_id": "i1", "acc": 1.0}]
+ROWS = [{"acc": 1.0, "item_id": "i1"}]  # canonical, as every release wrote them: format 7 makes rows so
 FP = {"version": 5, "arm": {"config_id": "sys_a", "labels": None}, "hash": "f" * 64}
 
 

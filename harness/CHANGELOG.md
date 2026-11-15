@@ -474,6 +474,23 @@ that can move a result is never a patch release without saying so under **Change
   arm's `config` block and the compare answer of `catalog-serve`; the text headers follow (`system_id`), and `evh
   arm-show` says `system` where it said `config`. Before and after, every view and every catalog page read the same
   but for those keys.
+- **A run's settings are stored once, and the provider's billing object is kept to what is read** (RFC-033, format 7,
+  `m0007_results`; both stores). `generation_config`, `generation_requested` and `encoder_window` were copied into
+  every row's `_meta`; a setting that every row of every score of a run holds with one value now sits once in
+  `run.json`'s `call` (the schema and `RUN_ONLY` name it, so a score neither unsets it nor carries it into a derived
+  record) and leaves the rows; a run whose rows differ keeps it in them. `_meta.usage` keeps `cost`, `prompt_tokens`,
+  `completion_tokens` and, when nonzero, `cached_tokens` and `cache_write_tokens` (from `prompt_tokens_details`); the
+  rest of the provider's object (`total_tokens`, `cost_details`, `is_byok`, the token details) is dropped, and a `usage`
+  that is `null` or not an object is left as it is. Rows are canonical text. On this repository's data: 14 runs, 31
+  score sets and 3 settings hoisted (6,000 rows each), 53,720 usage objects slimmed (11 had no `cost`: none is
+  invented), 295 `predictions.jsonl` rewritten, `data/runs` 153,465,935 to 112,483,047 bytes; every other number
+  (the cost report, the 200 report claims, V5's signatures) reads the same. Writes keep it so: `evh run` works out
+  `call` in memory and writes the rows once without it, every write of a score's rows slims the usage (the crash
+  checkpoint too), and a score added to a run later (`rescore`, `judge-score`, `sheet-import`) drops a setting equal to
+  its run's `call` and keeps one that differs. `model/results.py` is the one definition (`CALL_META`, `RUN_SETTINGS`,
+  the slim) that the release's hidden-dataset filter reads too. `evh validate` V28 reports a stored row holding its
+  run's setting or a `usage` key outside the kept set. `Result.meta` stays free-form: a usage object an adapter returns
+  is slimmed when it is written.
 - **The API's description, made from the operations** (RFC-032 step 9): `GET /api/v1/openapi.json` (OpenAPI 3.1,
   with the token) and `evh openapi` give every operation's route, inputs, body, refusals and the job routes. Gone:
   `POST /api/v1/read/<command>` (a read run as a process) and `GET /api/v1/commands`; the operations' resources

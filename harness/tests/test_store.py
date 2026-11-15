@@ -606,7 +606,7 @@ try:
         _store.write_text(score_of(d) / "metrics.json", json.dumps({"scores": {}}))
         _outputs.writer(d).add("x1", text)
         _outputs.write_rows(
-            score_of(d), [{"item_id": "x1", "score": 0.25, "_meta": {"usage": {"t": 3}, "prompt": text}}]
+            score_of(d), [{"item_id": "x1", "score": 0.25, "_meta": {"usage": {"cost": 3}, "prompt": text}}]
         )
     _store.write_text(data / "datasets" / "h.json", json.dumps({"dataset_id": "h", "text": "hidden"}))
     _store.write_text(data / "datasets" / "s.json", json.dumps({"dataset_id": "s"}))
@@ -623,7 +623,7 @@ try:
         and b"HIDDEN-MARK-7781" not in blob
         and (rel / "runs" / "rel_s" / "outputs.jsonl").is_file()
         and not (rel / "runs" / "rel_h" / "outputs.jsonl").exists()
-        and hid == [{"item_id": "x1", "score": 0.25, "_meta": {"usage": {"t": 3}}}]
+        and hid == [{"item_id": "x1", "score": 0.25, "_meta": {"usage": {"cost": 3}}}]
         and not (rel / _store.DB).exists(),
         (hid, sorted(str(p.relative_to(rel)) for p in rel.rglob("*") if p.is_file())[:20]),
     )

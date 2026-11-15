@@ -1530,7 +1530,7 @@ def write_scored_runs(
             new["fingerprint"] = fp
         key = _model_runs.key(sc["scorer_id"], manifest["judging_set_id"])
         held = _model_runs.run_dir(a["run"]) / "scores" / key
-        text = "".join(_outputs.row_line(r) for r in rows)
+        text = _outputs.rows_as_written(held, rows)
         if _model_runs.record(held) is None or _outputs.rows_text(held) != text:
             held = _model_runs.write_score(
                 a["run"],

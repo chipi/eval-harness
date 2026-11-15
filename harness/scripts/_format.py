@@ -20,7 +20,7 @@ from evaluation_harness import _common, _store
 from evaluation_harness._version import __version__
 
 #: The format this release reads and writes.
-FORMAT = 6
+FORMAT = 7
 NAME = "project.yaml"
 
 

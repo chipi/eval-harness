@@ -184,7 +184,7 @@ def main() -> int:
         reference = ((new.get("fingerprint") or {}).get("data") or {}).get("reference_id")
         key = model_runs.key(model_runs.scorer_of(new), reference)
         held = model_runs.run_dir(run_id) / "scores" / key
-        text = "".join(_outputs.row_line(r) for r in new_rows)
+        text = _outputs.rows_as_written(held, new_rows)
         if model_runs.record(held) is not None:
             if _outputs.rows_text(held) != text:
                 sys.exit(f"{run_id} is already scored by {key} with other rows: a score is not written over")

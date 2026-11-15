@@ -553,8 +553,8 @@ def rescore_one(
         return sd, new
     label_as = label_for(scorer, reference) if label_as is None else label_as
     key = _model_runs.key(scorer, reference)
-    text = "".join(_outputs.row_line(r) for r in rows)
     held = _model_runs.run_dir(rid) / "scores" / key
+    text = _outputs.rows_as_written(held, rows)
     if _model_runs.record(held) is not None:
         if _outputs.rows_text(held) != text:
             die(
