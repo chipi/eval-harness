@@ -392,6 +392,10 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Changed
 
+- **A deployment shows the people's checks of a judge scorer**: the release copies `data/judge-validation` (each
+  source's report, each record without the judge's reply, its hash kept), so a judge scorer's page and `scorer-show`
+  on the deployed site list the same checks as the project's (this repository: two sources per scorer, 1,200 records,
+  4.8 MB). Before, the copy left them out and every judge read as never checked by people.
 - **A view is kept, not read again** (RFC-032 step 9, "the next deploy goes on SQLite; the solutions reusable for both"):
   a process that answers more than one view (catalog-serve's API, and the MCP server once it runs views in its own
   process) read every arm's scores, and indexed every run, for each question: 2 s of a 2 s view, in either store. The

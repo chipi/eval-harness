@@ -8,7 +8,8 @@
 `evh scorer-list` and `evh scorer-show` answer the same (model/scorer_views, read through the adapter's data
 directory: a deployment's copy of the data has no other). Counts only: a page never carries a judge's reply, a
 verdict or an item's text, so a judge's outputs on a dataset marked `text: hidden` are on no page, and a deployment's
-copy, which holds no verdicts of a hidden dataset and no people's checks, shows what it holds.
+copy, which holds no verdicts of a hidden dataset and the people's checks without the judges' replies, shows what it
+holds.
 """
 
 from __future__ import annotations
@@ -150,10 +151,7 @@ def _checks(v: dict) -> str:
     from evaluation_harness import catalog_build as cb  # noqa: PLC0415
 
     if not v["checks"]:
-        return (
-            '<p class="muted">No check of the judges by people is kept in this data (a deployment\'s copy of the '
-            "data does not carry them).</p>"
-        )
+        return '<p class="muted">No check of the judges by people is kept in this data.</p>'
     rows = [
         [
             f"<code>{e(c['source'])}</code>",

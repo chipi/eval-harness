@@ -539,6 +539,21 @@ try:
         (said(r)[-300:], found(relp / "catalog", MARK["h"])),
     )  # fmt: skip
     check("release: nothing of the hidden dataset's text", not found(rel, MARK["h"]), found(rel, MARK["h"]))
+    jv = sorted((rel / "judge-validation").rglob("*.json")) if (rel / "judge-validation").is_dir() else []
+    jrecs = [json.loads(p.read_text()) for p in jv]
+    check(
+        "release: the people's checks are copied, every record without the judge's reply, its hash kept",
+        len(jv) == 2
+        and all("output" not in r and r.get("output_withheld") is True and len(r.get("output_sha256", "")) == 64 for r in jrecs)
+        and not found(rel / "judge-validation", MARK["s"]),
+        [str(p.relative_to(rel)) for p in jv],
+    )  # fmt: skip
+    check(
+        "release: the scorer's page built from the copy lists the same checks as the project's (sources, judges)",
+        all(x in pr.read_text() and x in pj for x in ("<code>src_h</code>", "<code>src_s</code>", "<code>ja</code>"))
+        and "No check of the judges" not in pr.read_text(),
+        pr.read_text()[:0],
+    )  # fmt: skip
     sl, sh = rel / "studies" / "studies_g", rel / "faithfulness"
     check(
         "release: a study on the shown dataset is copied whole; one on the hidden dataset keeps its outcomes, reasons and "

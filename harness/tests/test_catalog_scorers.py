@@ -287,14 +287,16 @@ try:
     )
     rp1 = rp.get("scorers/s_v1.html", "")
     check(
-        "from the copy: the scorer's page has its judges, judging set and verdict count; the people's checks, which a copy does not carry, are said to be absent",
-        in_page(rp1, "<code>ja</code>", "<code>set1</code>", 'data-v="2"', "a deployment's copy of the data does not carry them")
-        and "goyal" not in rp1,
+        "from the copy: the scorer's page has its judges, judging set and verdict count, and the people's checks as the project's page lists them",
+        in_page(rp1, "<code>ja</code>", "<code>set1</code>", 'data-v="2"', "<code>goyal</code>", "Someone et al. 2022", "<code>ja</code>, <code>jb</code>")
+        and "No check of the judges" not in rp1,
         rp1[rp1.find("the people") :][:500],
     )  # fmt: skip
     check(
-        "nor does any page of the copy carry a reply",
-        not [n for n, t in rp.items() if REPLY in t] and bool(counts),
+        "nor does any page of the copy carry a reply, nor the copy's records",
+        not [n for n, t in rp.items() if REPLY in t]
+        and not [p for p in (rel / "data" / "judge-validation").rglob("*.json") if REPLY in p.read_text()]
+        and bool(counts),
     )
 finally:
     _store.close()

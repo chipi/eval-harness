@@ -17,7 +17,8 @@ repository does not publish:
     exceptions' causes (the item, its kind and who named it stay).
 With the sqlite store (RFC-025) the copy's project.sqlite is the project's without a hidden dataset's runs, rebuilt so
 their texts are in none of its pages. Captures are copied as their capture.json only: records never leave the project. Materialized items
-are never copied. render.sh calls this; the hidden-text test calls it directly.
+are never copied. Judge validations are copied as their reports and their records without the judges' replies.
+render.sh calls this; the hidden-text test calls it directly.
 """
 
 from __future__ import annotations
@@ -29,6 +30,7 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
 import contextlib
+import hashlib
 import json
 import subprocess
 from pathlib import Path
@@ -53,6 +55,7 @@ COPIED_DIRS = (
     "judging-sets",
     "judge-verdicts",
     "judge-summaries",
+    "judge-validation",
     "profiles",
     "fields",
     "captures",
@@ -372,6 +375,21 @@ def copy_data(src: Path, dst: Path) -> dict:
                     counts["hidden_verdicts"] += 1
                     continue
                 _store.copy_tree(vdir, dst / name / vdir.relative_to(d))
+        elif name == "judge-validation":
+            # The people's checks of a scorer's judges: each source's report whole, each record without the judge's
+            # reply (its hash stays, as a withheld reply's does): the scorer's page counts them, never quotes them.
+            for f in sorted(_store.glob(d, "*/*/report.json")) + sorted(_store.glob(d, "*/*/*/*.json")):
+                out = dst / name / f.relative_to(d)
+                _store.mkdir(out.parent, parents=True, exist_ok=True)
+                if f.name == "report.json":
+                    _store.copy_file(f, out)
+                    continue
+                rec = json.loads(_store.read_text(f, encoding="utf-8"))
+                if "output" in rec:
+                    said = rec.pop("output") or ""
+                    rec.setdefault("output_sha256", hashlib.sha256(said.encode()).hexdigest())
+                    rec["output_withheld"] = True
+                _store.write_text(out, json.dumps(rec, indent=1) + "\n", encoding="utf-8")
         elif name == "labels":
             # As captures: the record (source, counts, hashes: what the catalog reads), never a label's text.
             for rec in sorted(_store.glob(d, "*/*/labels.json")):
