@@ -10,8 +10,12 @@ whose `call` an interrupted migration began, its rows cleaned of the value it ho
 every usage is slimmed (full, zero cache counts, no cost, `null`, not an object, already slim), a row not in key order
 is made canonical, a line that is not a row and a score with no rows are left as they are, a run with no setting to
 hoist is not written; project.yaml says format 7; a second `migrate` has nothing to do; the same step run on data that
-still says format 6 (an interrupted migration) changes nothing. In the SQLite project the same counts, and, moved back
-to files, every file byte-identical to the files store's.
+still says format 6 (an interrupted migration) changes nothing. In a SQLite project the same counts, the rows
+moved from table `rows` (format 6's) into the results tables, in one transaction; those tables, made from the lines
+raw by the step's own frozen code, equal cell for cell the ones `data-migrate` makes from files (the live code);
+moved back to files, every file byte-identical to the files store's. A project at format 7 that still holds `rows`
+(the first build of this step kept the lines there) is finished by `migrate`, which `--check` and the store itself
+refuse until then.
 """
 
 import copy
@@ -20,6 +24,7 @@ import json
 import os
 import re
 import shutil
+import sqlite3
 import subprocess
 import sys
 import tempfile
@@ -61,12 +66,47 @@ COUNTS = {
 }
 
 
-# data-migrate writes a score's rows as canonical lines, so a row that was not in key order is already canonical in the
-# database: the step has no canonicalizing of it left to count there.
-COUNTS_SQLITE = {
-    **{k: v for k, v in COUNTS.items() if k != "rows made canonical"},
-    "score sets rewritten": COUNTS["score sets rewritten"] - 1,
-}
+def legacy_db(src_data, proj, extra=None):
+    """proj/data/project.sqlite as a project of format 6 kept `src_data`'s files: every file a row of `files`, each score's
+    `predictions.jsonl` the lines of table `rows` (with its n = 0 marker), a checkpoint's partial = 1; written here by
+    raw SQL, by no code of the harness. `extra` is {(key, partial): text} more of them."""
+    (proj / "data").mkdir(parents=True)
+    c = sqlite3.connect(proj / "data" / "project.sqlite")
+    c.execute("PRAGMA journal_mode=WAL")
+    c.execute(
+        "CREATE TABLE files (path TEXT PRIMARY KEY, data BLOB NOT NULL, sha256 TEXT NOT NULL, mtime_ns INTEGER NOT NULL)"
+    )
+    c.execute("CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT)")
+    c.execute("INSERT INTO meta VALUES ('schema_version', '1')")
+    c.execute(
+        "CREATE TABLE outputs (run TEXT NOT NULL, item_id TEXT NOT NULL, text TEXT NOT NULL, sha256 TEXT NOT NULL, PRIMARY KEY (run, item_id))"
+    )
+    c.execute(
+        "CREATE TABLE rows (run TEXT NOT NULL, partial INTEGER NOT NULL, n INTEGER NOT NULL, item_id TEXT, row TEXT NOT NULL,"
+        " PRIMARY KEY (run, partial, n))"
+    )
+    c.execute("CREATE INDEX rows_item ON rows (item_id, run) WHERE partial = 0")
+    lines = {}
+    for p in sorted(src_data.rglob("*")):
+        if not p.is_file():
+            continue
+        rel = p.relative_to(src_data)
+        if p.name in ("predictions.jsonl", "rows.partial.jsonl"):
+            lines[(rel.parent.as_posix(), int(p.name == "rows.partial.jsonl"))] = p.read_text()
+        else:
+            b = p.read_bytes()
+            c.execute(
+                "INSERT INTO files VALUES (?, ?, ?, ?)", (rel.as_posix(), b, hashlib.sha256(b).hexdigest(), 1)
+            )
+    lines.update(extra or {})
+    for (key, partial), text in lines.items():
+        c.execute("INSERT INTO rows VALUES (?, ?, 0, NULL, '')", (key, partial))
+        c.executemany(
+            "INSERT INTO rows VALUES (?, ?, ?, NULL, ?)",
+            [(key, partial, n, ln) for n, ln in enumerate(text.splitlines(keepends=True), 1)],
+        )
+    c.commit()
+    c.close()
 
 
 def evh(proj, store, *args):
@@ -339,33 +379,72 @@ try:
         r.stdout + r.stderr[-300:],
     )
 
-    # ── the SQLite store ────────────────────────────────────────────────────────────────────────────────────────────
+    # ── the SQLite store: a project as format 6 kept it, its rows the lines of table `rows` ─────────────────────────
+    def dump(proj):
+        """Every table the rows live in, cell for cell, by the order each is read in."""
+        c = sqlite3.connect(proj / "data" / "project.sqlite")
+        try:
+            out = {
+                t: c.execute(f"SELECT * FROM {t} ORDER BY 1, 2").fetchall()  # noqa: S608  # nosec B608 - fixed table names
+                for t in ("score_sets", "metrics", "call_facts", "score_rows", "score_values", "rows_partial")
+            }
+            out["tables"] = sorted(
+                r[0] for r in c.execute("SELECT name FROM sqlite_master WHERE type = 'table'")
+            )
+        finally:
+            c.close()
+        return out
+
     sql = base / "sql"
-    shutil.copytree(FIXTURE, sql / "data")
-    r = evh(sql, "sqlite", "data-migrate", "--to", "sqlite")
-    check(
-        "setup: the fixture project moved into its database",
-        r.returncode == 0 and "22 row(s)" in r.stdout,
-        r.stdout + r.stderr[-300:],
-    )
+    legacy_db(FIXTURE, sql)
+    held = (sql / "data" / "project.sqlite").read_bytes()
     r = evh(sql, "sqlite", "migrate", "--dry-run")
+    n_sets = sum(1 for k in after if k.endswith("/predictions.jsonl"))
+    n_rows = sum(v.count(b"\n") for k, v in after.items() if k.endswith("/predictions.jsonl"))
+    moved = {
+        "score sets moved into the results tables": n_sets,
+        "rows moved into the results tables": n_rows,
+        "checkpoint lines moved": 0,
+    }
     check(
-        "sqlite --dry-run: the same counts, but for the row data-migrate made canonical on the way in",
-        r.returncode == 0 and counts(r.stdout) == COUNTS_SQLITE,
+        "sqlite --dry-run: the files store's counts, and the score sets and rows it would move into the results tables",
+        r.returncode == 0 and counts(r.stdout) == {**COUNTS, **moved},
         r.stdout + r.stderr[-300:],
     )
+    check("sqlite --dry-run: nothing written", (sql / "data" / "project.sqlite").read_bytes() == held)
     r = evh(sql, "sqlite", "migrate")
     check(
-        "sqlite migrate: the same counts (less that row), backed up first, at format 7",
+        "sqlite migrate: the same counts, backed up first, at format 7",
         r.returncode == 0
-        and counts(r.stdout) == COUNTS_SQLITE
+        and counts(r.stdout) == {**COUNTS, **moved}
         and "backup:" in r.stdout
         and "brought the data to format 7" in r.stdout,
         r.stdout + r.stderr[-300:],
     )
+    got = dump(sql)
+    check(
+        "sqlite migrate: table `rows` is gone, the results tables hold every score set (an empty one too)",
+        "rows" not in got["tables"]
+        and len(got["score_sets"]) == n_sets
+        and len(got["score_rows"]) == n_rows - 0,
+        (got["tables"], len(got["score_sets"]), len(got["score_rows"])),
+    )
     check(
         "sqlite migrate: a second run has nothing to do",
         evh(sql, "sqlite", "migrate").stdout.strip().endswith("nothing to do"),
+    )
+    live = base / "live"
+    shutil.copytree(files / "data", live / "data")
+    r = evh(live, "sqlite", "data-migrate", "--to", "sqlite")
+    check(
+        "the files store's migrated data moved into SQLite by data-migrate",
+        r.returncode == 0,
+        r.stdout + r.stderr[-300:],
+    )
+    check(
+        "the step's frozen code and data-migrate's live code make the same tables, cell for cell",
+        dump(live) == got,
+        [t for t in got if dump(live)[t] != got[t]],
     )
     r = evh(sql, "files", "data-migrate", "--to", "files")
     check("the migrated database moved back to files", r.returncode == 0, r.stdout + r.stderr[-300:])
@@ -374,6 +453,125 @@ try:
         "both stores: every file of the data, byte for byte, as the files store's migration left it",
         back == after,
         sorted(k for k in set(back) | set(after) if back.get(k) != after.get(k)),
+    )
+
+    # ── a SQLite project of the first build of this step: at format 7, its rows still the lines of table `rows` ─────
+    early = base / "early"
+    legacy_db(files / "data", early)
+    r = evh(early, "sqlite", "migrate", "--check")
+    check(
+        "format 7 with table `rows`: --check refuses it (the step is not finished), naming the step",
+        r.returncode != 0 and "step 7 is not finished" in r.stdout + r.stderr,
+        r.stdout + r.stderr[-300:],
+    )
+    r = evh(early, "files", "data-migrate", "--to", "files", "--dry-run")
+    check(
+        "format 7 with table `rows`: the store refuses it (migrate first)",
+        r.returncode != 0 and "evh migrate first" in r.stdout + r.stderr,
+        r.stdout + r.stderr[-300:],
+    )
+    r = evh(early, "sqlite", "arm-list", "--json")
+    check(
+        "format 7 with table `rows`: a command that reads rows refuses it too, from the store (ERROR (old-format))",
+        r.returncode != 0
+        and "ERROR (old-format)" in r.stdout + r.stderr
+        and "table `rows`" in r.stdout + r.stderr,
+        r.stdout[-200:] + r.stderr[-300:],
+    )
+    r = evh(early, "sqlite", "migrate", "--dry-run")
+    check(
+        "format 7 with table `rows`: --dry-run says what it moves and changes nothing else (no setting hoisted, no usage slimmed)",
+        r.returncode == 0
+        and counts(r.stdout) == {**moved, "usage objects without a cost (kept without one)": 1},
+        r.stdout + r.stderr[-300:],
+    )
+    r = evh(early, "sqlite", "migrate")
+    check(
+        "format 7 with table `rows`: migrate moves the rows, and the tables are those an uninterrupted migration makes",
+        r.returncode == 0
+        and dump(early) == got
+        and evh(early, "sqlite", "migrate").stdout.strip().endswith("nothing to do"),
+        r.stdout + r.stderr[-300:],
+    )
+    check(
+        "format 7 with the tables: --check passes", evh(early, "sqlite", "migrate", "--check").returncode == 0
+    )
+
+    # ── a crash while the rows move: the move is one transaction ───────────────────────────────────────────────────
+    crash2 = base / "crash2"
+    legacy_db(FIXTURE, crash2)
+    helper2 = base / "crash_fill.py"
+    helper2.write_text(
+        "import sys\n"
+        f"sys.path.insert(0, {str(HARNESS)!r})\n"
+        "from evaluation_harness.migrations import m0007_results as m\n"
+        "real = m._write_set\n"
+        "calls = []\n"
+        "def crashing(conn, key, rows):\n"
+        "    calls.append(key)\n"
+        "    if len(calls) == 4:\n"
+        "        raise RuntimeError('crash while the rows move')\n"
+        "    return real(conn, key, rows)\n"
+        "m._write_set = crashing\n"
+        "m.run(False)\n"
+    )
+    c = sqlite3.connect(crash2 / "data" / "project.sqlite")
+    n_before = c.execute("SELECT count(*) FROM rows").fetchone()[0]
+    c.close()
+    env = {k: v for k, v in os.environ.items() if k not in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR")}
+    env.update(EVAL_HOME=str(crash2), EVAL_STORE="sqlite")
+    r = subprocess.run(
+        [sys.executable, str(helper2)], cwd=crash2, env=env, capture_output=True, text=True, stdin=subprocess.DEVNULL,
+        timeout=300,
+    )  # fmt: skip
+    c = sqlite3.connect(crash2 / "data" / "project.sqlite")
+    tables = {r_[0] for r_ in c.execute("SELECT name FROM sqlite_master WHERE type = 'table'")}
+    n_after = c.execute("SELECT count(*) FROM rows").fetchone()[0]
+    c.close()
+    check(
+        "a crash on the fourth score set: nothing of the move is kept (table `rows` whole, no results table)",
+        r.returncode != 0
+        and "crash while the rows move" in r.stderr
+        and "rows" in tables
+        and not ({"score_sets", "score_rows", "score_values", "call_facts", "rows_partial"} & tables)
+        and n_after == n_before,
+        (r.stderr[-200:], sorted(tables), n_before, n_after),
+    )
+    r = evh(crash2, "sqlite", "migrate")
+    check(
+        "the next migrate finishes it: the tables an uninterrupted migration makes",
+        r.returncode == 0 and dump(crash2) == got,
+        r.stdout + r.stderr[-300:],
+    )
+
+    # ── a checkpoint and a score set that is not a run's: kept as they are ──────────────────────────────────────────
+    odd = base / "odd"
+    legacy_db(
+        FIXTURE,
+        odd,
+        extra={
+            ("scratch/x", 1): '{"item_id": "p1", "acc": 1}\n{"item_id": "p2"',
+            ("scratch/s", 0): '{"item_id": "s1", "_meta": {"provider": "p"}}\n',
+        },
+    )
+    r = evh(odd, "sqlite", "migrate")
+    c = sqlite3.connect(odd / "data" / "project.sqlite")
+    parts = c.execute("SELECT run, n, line FROM rows_partial ORDER BY n").fetchall()
+    sets = {k for (k,) in c.execute("SELECT key FROM score_sets")}
+    facts = c.execute("SELECT count(*) FROM call_facts WHERE run NOT LIKE 'runs/%'").fetchone()[0]
+    c.close()
+    check(
+        "sqlite migrate: a checkpoint is copied as it is (a torn last line too), a score set outside runs/ moves with no call facts",
+        r.returncode == 0
+        and parts
+        == [
+            ("scratch/x", 0, ""),
+            ("scratch/x", 1, '{"item_id": "p1", "acc": 1}\n'),
+            ("scratch/x", 2, '{"item_id": "p2"'),
+        ]
+        and "scratch/s" in sets
+        and facts == 0,
+        (r.stdout + r.stderr[-300:], parts, facts),
     )
 
     # ── a crash between a run's run.json and its rows ───────────────────────────────────────────────────────────────

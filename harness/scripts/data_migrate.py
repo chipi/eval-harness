@@ -102,7 +102,12 @@ def to_sqlite(dry_run: bool) -> dict[str, int]:
     n = {"files": 0, "runs": 0, "outputs": 0, "rows": 0, "bytes": 0}
     st = _outputs.store_named("sqlite")
     disk = _outputs.store_named("files")
-    runs = sorted({p.parent for p in files if p.name in PER_ITEM and _is_run(p.parent)})
+    # By key text, the order the database is built in: a score set's id depends on it only when two keys' hashes collide,
+    # and the metrics' ids follow the order the names are first met, so one data always gives one database.
+    runs = sorted(
+        {p.parent for p in files if p.name in PER_ITEM and _is_run(p.parent)},
+        key=lambda d: d.relative_to(data).as_posix(),
+    )
     run_set = set(runs)
     per_item = {p for p in files if p.name in PER_ITEM and p.parent in run_set}
     for p in files:
@@ -190,7 +195,9 @@ def _held_elsewhere() -> bool:
 
 
 def to_files(dry_run: bool) -> dict[str, int]:
-    """Everything in the database back to files, byte for byte; counts of what moved."""
+    """Everything in the database back to files; counts of what moved. A file, an output and a checkpoint come back
+    byte for byte; a score's rows are written as canonical lines (`row_line` of each row the database gives back) and
+    compared with the database's as canonical text, so a file that was not canonical comes back canonical."""
     data = _common.DATA
     path = data / _store.DB
     n = {"files": 0, "runs": 0, "outputs": 0, "rows": 0, "bytes": 0}
@@ -204,6 +211,11 @@ def to_files(dry_run: bool) -> dict[str, int]:
         )
     conn = sqlite3.connect(str(path), timeout=60)
     have = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type = 'table'")}
+    if "rows" in have:
+        die(
+            f"{path.name} still holds the per-item rows of an older format (table `rows`): evh migrate first",
+            "old-format",
+        )
     disk = _outputs.store_named("files")
     for key, blob, sha, mtime_ns in conn.execute(
         "SELECT path, data, sha256, mtime_ns FROM files ORDER BY path"
@@ -225,11 +237,18 @@ def to_files(dry_run: bool) -> dict[str, int]:
         os.replace(tmp, f)
         if f.read_bytes() != b:
             die(f"{key}: written back, the file differs", "mismatch")
-    runs: set[str] = set()
+    # The project's store is files while this runs (config first), so the database is read here as a database: the rows
+    # as `_outputs.read_set` assembles them, the checkpoint's lines as they are.
+    names: dict[int, str] = {}
+    sets = {r[0] for r in conn.execute("SELECT key FROM score_sets")} if "score_sets" in have else set()
+    marked = (
+        {r[0] for r in conn.execute("SELECT DISTINCT run FROM rows_partial")}
+        if "rows_partial" in have
+        else set()
+    )
+    runs: set[str] = sets | marked
     if "outputs" in have:
         runs |= {r[0] for r in conn.execute("SELECT DISTINCT run FROM outputs")}
-    if "rows" in have:
-        runs |= {r[0] for r in conn.execute("SELECT DISTINCT run FROM rows")}
     for key in sorted(runs):
         d = data / key
         n["runs"] += Path(key).parent.name != "scores"
@@ -241,17 +260,16 @@ def to_files(dry_run: bool) -> dict[str, int]:
             else []
         )
         n["outputs"] += len(outs)
-        rows = {}
-        for pt in (0, 1):
-            got = (
-                conn.execute(
-                    "SELECT row FROM rows WHERE run = ? AND partial = ? ORDER BY n", (key, pt)
-                ).fetchall()
-                if "rows" in have
-                else []
+        made = _outputs.read_set(conn, key, names) if key in sets else None
+        scored = None if made is None else made[0]
+        partial = (
+            "".join(
+                r[0] for r in conn.execute("SELECT line FROM rows_partial WHERE run = ? ORDER BY n", (key,))
             )
-            rows[bool(pt)] = "".join(r[0] for r in got) if got else None
-        n["rows"] += sum(len(t.splitlines()) for t in rows.values() if t)
+            if key in marked
+            else None
+        )
+        n["rows"] += len(scored or ()) + len((partial or "").splitlines())
         if dry_run:
             continue
         d.mkdir(parents=True, exist_ok=True)
@@ -259,20 +277,13 @@ def to_files(dry_run: bool) -> dict[str, int]:
             disk.write_all(d, {i: t for i, t, _ in outs}, [i for i, _, _ in outs])
             if [(o["item_id"], o["text"], o["sha256"]) for o in disk.lines(d)] != [tuple(o) for o in outs]:
                 die(f"{key}: its outputs written back differ", "mismatch")
-        for pt, text in rows.items():
-            if text is None:
-                continue
-            if pt:
-                disk.put_partial(d, text)
-                if disk.rows_text(d, partial=True) != text:
-                    die(f"{key}: its rows written back differ", "mismatch")
-                continue
-            try:
-                back, _skipped = _outputs.parse_rows(text, f"{key}/{_outputs.PREDICTIONS}")
-            except ValueError as exc:
-                die(f"{exc}; a score's rows are JSON objects, one per line", "invalid-file")
-            disk.put_rows(d, back)
-            if disk.rows_text(d) != "".join(_outputs.row_line(r) for r in back):
+        if partial is not None:
+            disk.put_partial(d, partial)
+            if disk.rows_text(d, partial=True) != partial:
+                die(f"{key}: its checkpoint written back differs", "mismatch")
+        if scored is not None:
+            disk.put_rows(d, scored)
+            if disk.rows_text(d) != "".join(_outputs.row_line(r) for r in scored):
                 die(f"{key}: its rows written back differ", "mismatch")
     conn.close()
     if not dry_run:

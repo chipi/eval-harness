@@ -87,10 +87,21 @@ def main() -> int:
         have = _format.data_format()
         _jsonout.values({"format": have, "release_format": _format.FORMAT})
         print(f"data format {have}; this release reads {_format.FORMAT}")
+        # A step may be `unfinished` for data already stamped with its number (format 7 of an early build kept a SQLite
+        # project's rows where the final one does not): it runs again for that project, and only that.
+        todo = [
+            m
+            for m in migrations.steps()
+            if have < m.NUMBER or (have == m.NUMBER and getattr(m, "unfinished", lambda: False)())
+        ]
         if args.check or have > _format.FORMAT:
             _format.require()
+            if args.check and todo:
+                _common.die(
+                    f"step {todo[0].NUMBER} is not finished for this project ({todo[0].ABOUT}): run evh migrate",
+                    "old-format",
+                )
             return 0
-        todo = [m for m in migrations.steps() if have < m.NUMBER]
         if not todo:
             print("nothing to do")
             return 0

@@ -15,26 +15,33 @@ so that item is called again. `finish` rewrites them in dataset order when the r
 module reads outputs through this one: a test fails on an `outputs/` path built anywhere else.
 
 A score's rows (one JSON object per item: its scores, cost, tokens, `_meta`) are its `predictions.jsonl` in the files
-store and table `rows (run, partial, n, item_id, row)` in the sqlite one, keyed by the score's directory. `rows` reads
-them as parsed dicts and `put_rows` writes dicts (RFC-033 step c): the stores keep canonical lines (`row_line`), and
-`rows_text` is those lines derived from the dicts. A line that is not a JSON object with an `item_id` is refused at
-write (`invalid-file`), in both stores; the files store's reader stays tolerant of a hand-edited file and `malformed`
-names its lines. `partial` rows are the pass's checkpoint (`rows.partial.jsonl`, keyed by the run's directory), kept
-verbatim text, a torn last line allowed: appended per item (`append_partial`) and dropped by `finish`.
-`_runs.item_rows` and `write_rows` are how every module reads and writes them; a test fails on a `predictions.jsonl`
-path built anywhere else. A row is written as `model.results.prepare` leaves it (RFC-033): its usage slimmed, the run
-settings its run's run.json `call` holds taken off. The dicts `rows` returns are the cache's own, shared: a caller that
-changes a row copies it first.
+store, canonical lines (`row_line`); in the sqlite one they are a model of tables (RFC-033 step d), keyed by the score
+set's directory: `score_sets`, `score_rows` (the item, its `_meta` and `_extra`, and the fields that are not numbers),
+`score_values` (every numeric field, one row each, its metric named in `metrics`) and `call_facts` (what a run's call to
+one item was, held once for every score set of the run). `rows` reads them as parsed dicts and `put_rows` writes dicts: a
+row read back is the row written (the same dict, keys sorted), and `rows_text` is its canonical lines derived from the
+dicts, so both stores give one text. A line that is not a JSON object with an `item_id` is refused at write
+(`invalid-file`), in both stores; the files store's reader stays tolerant of a hand-edited file and `malformed` names its
+lines. `partial` rows are the pass's checkpoint (`rows.partial.jsonl`, in sqlite table `rows_partial`, keyed by the
+run's directory), kept verbatim text, a torn last line allowed: appended per item (`append_partial`) and dropped by
+`finish`. `_runs.item_rows` and `write_rows` are how every module reads and writes them; a test fails on a
+`predictions.jsonl` path built anywhere else. A row is written as `model.results.prepare` leaves it (RFC-033): its usage
+slimmed, the run settings its run's run.json `call` holds taken off. The dicts `rows` returns are the cache's own,
+shared: a caller that changes a row copies it first (`EVH_FREEZE_ROWS=1` makes a test fail on one that does not).
 """
 
 from __future__ import annotations
 
+import copy
 import hashlib
 import json
+import math
 import os
 import sqlite3
 from collections import OrderedDict
 from collections.abc import Iterable
+from itertools import groupby
+from operator import itemgetter
 from pathlib import Path
 from typing import Any, Protocol
 
@@ -53,18 +60,79 @@ _CACHE: dict[str, tuple[float, dict[str, str]]] = {}
 #: How much rows a process keeps read, per cache: the runs read last, by what they hold (a run's rows are a few
 #: kilobytes or a few megabytes of text, and their parsed dicts weigh DICT_FACTOR times that). Unbounded, a warm
 #: catalog-serve kept every committed run's rows (94,650 of them) after reading each once; bounded, its RSS and cached
-#: answers are the base's again (budget-check, RFC-033 step c).
+#: answers are the base's again (budget-check, RFC-033 step c). Measured again on the tables (step d), at 2, 8, 32 and
+#: 128 MB, `make budget-check`'s peak was 95, 101, 125 and 138 MB on files and 102, 99, 109 and 110 on sqlite, and
+#: neither the cold answers (0.26-0.47 s) nor the cached ones (0.4-0.7 ms) moved: a command or a request reads a set once
+#: (711 reads of 711 sets in `arm-list`), so a larger bound only holds memory. 8 MB keeps what one command reads twice.
 ROWS_KEPT_BYTES = 8_000_000
 #: What the parsed dicts of a rows text weigh, in times its length: measured with tracemalloc over a seventh of this
-#: repository's score sets (13,295 rows, 9.1 MB of text, 44.0 MB of dicts: 4.85x), 2026-11-15.
+#: repository's score sets (13,295 rows, 9.1 MB of text, 44.0 MB of dicts: 4.85x), 2026-11-15. The sqlite store has no
+#: text to measure: its estimate of one is 0.96x the real (`read_set`), and the dicts it builds weigh 3.84x the estimate
+#: with `_meta` and `_extra`, 1.97x without (`meta=False`), measured the same way.
 DICT_FACTOR = 5
+SQLITE_DICT_FACTOR = 4
+SQLITE_LIGHT_FACTOR = 2
+
+
+#: Set to `1` (the suite does: tests/self_test.py, tools/store_matrix.py), every row the cache holds is frozen: a change
+#: to it raises a TypeError where it is made, so a view or a command that changes a row it shares with every other
+#: reader fails its test, at its own line. A copy of a frozen row (`copy.deepcopy`, `dict(row)`, `{**row}`) is a plain
+#: dict. The one a caller finds out about late, in a server that lives on, is the one this catches (RFC-033 step d).
+FREEZE_ENV = "EVH_FREEZE_ROWS"
+_FROZEN = f"a row the cache shares was changed ({FREEZE_ENV}=1): copy it (copy.deepcopy) before changing it"
+
+
+def _no(self: Any, *args: Any, **kwargs: Any) -> Any:
+    raise TypeError(_FROZEN)
+
+
+class _FrozenDict(dict):
+    """A cached row, or a dict in one, as `FREEZE_ENV` keeps it."""
+
+    __slots__ = ()
+    __setitem__ = __delitem__ = clear = pop = popitem = setdefault = update = __ior__ = _no
+
+    def __copy__(self) -> dict[Any, Any]:
+        return dict(self)
+
+    def __deepcopy__(self, memo: dict[int, Any]) -> dict[Any, Any]:
+        return {k: copy.deepcopy(v, memo) for k, v in self.items()}
+
+    def __reduce__(self) -> tuple[Any, ...]:
+        return dict, (dict(self),)
+
+
+class _FrozenList(list):
+    """A list in a cached row, as `FREEZE_ENV` keeps it."""
+
+    __slots__ = ()
+    __setitem__ = __delitem__ = __iadd__ = __imul__ = _no
+    append = extend = insert = remove = pop = clear = sort = reverse = _no
+
+    def __copy__(self) -> list[Any]:
+        return list(self)
+
+    def __deepcopy__(self, memo: dict[int, Any]) -> list[Any]:
+        return [copy.deepcopy(v, memo) for v in self]
+
+    def __reduce__(self) -> tuple[Any, ...]:
+        return list, (list(self),)
+
+
+def _freeze(value: Any) -> Any:
+    """`value` (a row, a dict or a list in one) as frozen dicts and lists all the way down."""
+    if isinstance(value, dict):
+        return _FrozenDict({k: _freeze(v) for k, v in value.items()})
+    if isinstance(value, list):
+        return _FrozenList([_freeze(v) for v in value])
+    return value
 
 
 class _Held:
     """A run's rows as the cache keeps them: the parsed dicts and the text derived from them, together (so what is
     indexed by one stays valid for the other). `rows` is None for a checkpoint, which is only text, kept verbatim."""
 
-    __slots__ = ("_text", "lossy", "rows", "size", "stamp")
+    __slots__ = ("_text", "factor", "light", "lossy", "rows", "size", "stamp")
 
     def __init__(
         self,
@@ -73,12 +141,18 @@ class _Held:
         stamp: Any = None,
         text: str | None = None,
         lossy: bool = False,
+        light: bool = False,
+        factor: int | None = None,
     ) -> None:
-        self.rows = rows
-        self.size = size  # the length of the text the rows were parsed from
+        self.rows = (
+            [_freeze(r) for r in rows] if rows is not None and os.environ.get(FREEZE_ENV) == "1" else rows
+        )
+        self.size = size  # the length of the text the rows were parsed from (or, in sqlite, would make)
         self.stamp = stamp
         self._text = text
         self.lossy = lossy  # read past bytes that are not UTF-8 or lines that are no row: only a tolerant read may use it
+        self.light = light  # the rows lack `_meta` and `_extra` (`read_set(meta=False)`): only a read that asked so may use it
+        self.factor = factor  # what the dicts weigh in times `size`: DICT_FACTOR, or the sqlite store's own
 
     def text(self) -> str:
         """The rows' canonical text (a checkpoint's: verbatim), made once."""
@@ -88,8 +162,8 @@ class _Held:
         return self._text
 
     def weight(self) -> int:
-        """What this holds, in bytes: the dicts (their text's size times DICT_FACTOR), and the text if made."""
-        w = self.size * DICT_FACTOR if self.rows is not None else 0
+        """What this holds, in bytes: the dicts (their text's size times their factor), and the text if made."""
+        w = self.size * (self.factor or DICT_FACTOR) if self.rows is not None else 0
         if self._text is not None:
             w += len(self._text)
         return w
@@ -226,16 +300,9 @@ def parse_rows(text: str, where: str, strict: bool = True) -> tuple[list[dict[st
 
 def _lines_of(run_dir: Path, rows: Iterable[dict[str, Any]]) -> list[str]:
     """The canonical lines of a score set's rows; a row that is no JSON object with an `item_id` refused."""
-    out = []
-    for n, row in enumerate(rows, 1):
-        if not is_row(row):
-            _common.die(
-                f"{Path(run_dir) / PREDICTIONS}: row {n} is not a JSON object with an item_id; a score set's rows are "
-                "objects, one per item, each naming its item",
-                "invalid-file",
-            )
-        out.append(row_line(row))
-    return out
+    rows = list(rows)
+    _check_rows(run_dir, rows)
+    return [row_line(r) for r in rows]
 
 
 _ABSENT = _Held(None, 0)  # kept for a run that has no rows: asked again, the database is not
@@ -256,6 +323,243 @@ def _text_of(cache: _Kept, key: Any, held: _Held) -> str:
     if made:
         cache.reweigh(key)
     return text
+
+
+#: A score set's id is the first SET_BITS bits of its key's sha256; a row's id is `score_set * ROWS_PER_SET + n`, under 2^63.
+SET_BITS = 43
+ROW_BITS = 20
+ROWS_PER_SET = 1 << ROW_BITS
+#: What a call's facts are (RFC-033): `CALL_META` less the run's own settings. `call_facts` holds them once per run and
+#: item; a row whose own are equal to the held ones keeps them out of its `meta`.
+CALL_FACTS = tuple(k for k in _results.CALL_META if k not in _results.RUN_SETTINGS)
+_KEPT_OUT = ("item_id", "_meta", "_extra")
+INT64 = 1 << 63
+
+
+def _canon(value: Any) -> str:
+    """The text the tables keep a JSON value as: keys sorted, as a row's line is."""
+    return json.dumps(value, sort_keys=True)
+
+
+def _set_hash(key: str) -> int:
+    """The id a score set's key starts from: its sha256's first SET_BITS bits."""
+    return int.from_bytes(hashlib.sha256(key.encode("utf-8")).digest()[:8], "big") >> (64 - SET_BITS)
+
+
+def _is_value(v: Any) -> bool:
+    """Whether a top-level field is kept as a number in `score_values`: an int within int64 or a finite float, never a
+    bool. Everything else (a bool, None, NaN, an infinity, a larger integer, text, a list) is JSON in `rest`."""
+    if isinstance(v, bool):
+        return False
+    if isinstance(v, int):
+        return -INT64 <= v < INT64
+    return isinstance(v, float) and math.isfinite(v)
+
+
+def _run_of(key: str) -> str | None:
+    m = _store.SCORE_SET.fullmatch(key)
+    return m.group(1) if m else None
+
+
+def _check_rows(run_dir: Path, rows: list[Any]) -> None:
+    """A score set's rows refused (`invalid-file`) when one is no JSON object with an `item_id`, or there are more than
+    a row id can number."""
+    for n, row in enumerate(rows, 1):
+        if not is_row(row):
+            _common.die(
+                f"{Path(run_dir) / PREDICTIONS}: row {n} is not a JSON object with an item_id; a score set's rows are "
+                "objects, one per item, each naming its item",
+                "invalid-file",
+            )
+    if len(rows) > ROWS_PER_SET:
+        _common.die(
+            f"{Path(run_dir) / PREDICTIONS}: {len(rows):,} rows; a score set holds at most {ROWS_PER_SET:,}",
+            "invalid-file",
+        )
+
+
+def _rollback(conn: sqlite3.Connection) -> None:
+    if conn.in_transaction:  # a failed COMMIT too: never leave the shared connection in a transaction
+        conn.execute("ROLLBACK")
+
+
+def _set_id(conn: sqlite3.Connection, key: str) -> int | None:
+    got = conn.execute("SELECT id FROM score_sets WHERE key = ?", (key,)).fetchone()
+    return None if got is None else int(got[0])
+
+
+def _add_set(conn: sqlite3.Connection, key: str) -> int:
+    """A new score set: its key's hash, or the next free id upward (wrapping) when another key holds it."""
+    sid = _set_hash(key)
+    while conn.execute("SELECT 1 FROM score_sets WHERE id = ?", (sid,)).fetchone():
+        sid = (sid + 1) % (1 << SET_BITS)
+    conn.execute("INSERT INTO score_sets VALUES (?, ?)", (sid, key))
+    return sid
+
+
+def _forget_set(conn: sqlite3.Connection, sid: int) -> None:
+    """A score set's rows and values deleted (its id and key stay)."""
+    lo = sid << ROW_BITS
+    conn.execute("DELETE FROM score_values WHERE row BETWEEN ? AND ?", (lo, lo + ROWS_PER_SET - 1))
+    conn.execute("DELETE FROM score_rows WHERE id BETWEEN ? AND ?", (lo, lo + ROWS_PER_SET - 1))
+
+
+def drop_call_facts(conn: sqlite3.Connection, run: str) -> None:
+    """A run's call facts gone once no score set of it is left."""
+    conn.execute(
+        "DELETE FROM call_facts WHERE run = ? AND NOT EXISTS (SELECT 1 FROM score_sets WHERE key >= ? AND key < ?)",
+        (run, run + "/scores/", run + "/scores0"),
+    )
+
+
+def write_set(conn: sqlite3.Connection, key: str, rows: list[dict[str, Any]]) -> None:
+    """A score set's rows replaced by `rows`, in the transaction the caller holds (RFC-033). Per row: `item_id`; every
+    numeric field in `score_values` (its metric's id from `metrics`, names added in sorted order); `_meta` apart from
+    the call facts the run already holds for this item in `meta` (`facts` says they are there); `_extra`; and the rest
+    as JSON. Call facts are inserted by the first row of a run's item that has some; a row's own differing facts keep
+    its whole `_meta` in `meta`."""
+    sid = _set_id(conn, key)
+    if sid is None:
+        sid = _add_set(conn, key)
+    else:
+        _forget_set(conn, sid)
+    base = sid << ROW_BITS
+    run = _run_of(key)
+    held: dict[str, str] = (
+        dict(conn.execute("SELECT item_id, meta FROM call_facts WHERE run = ?", (run,))) if run else {}
+    )
+    split: list[tuple[list[tuple[str, Any]], dict[str, Any]]] = []
+    names: set[str] = set()
+    for row in rows:
+        vals: list[tuple[str, Any]] = []
+        rest: dict[str, Any] = {}
+        for k, v in row.items():
+            if k in _KEPT_OUT:
+                continue
+            if _is_value(v):
+                vals.append((k, v))
+                names.add(k)
+            else:
+                rest[k] = v
+        split.append((vals, rest))
+    metric = dict(conn.execute("SELECT name, id FROM metrics"))
+    for name in sorted(names - metric.keys()):
+        metric[name] = conn.execute("INSERT INTO metrics (name) VALUES (?)", (name,)).lastrowid
+    facts_rows: list[tuple[str, str, str]] = []
+    row_out: list[tuple[Any, ...]] = []
+    val_out: list[tuple[int, int, Any]] = []
+    for n, (row, (vals, rest)) in enumerate(zip(rows, split, strict=True)):
+        rid = base + n
+        item = row["item_id"]
+        facts = 0
+        meta: str | None = None
+        if "_meta" in row:
+            m = row["_meta"]
+            if run and isinstance(m, dict):
+                have = {k: m[k] for k in CALL_FACTS if k in m}
+                if have:
+                    text = _canon(have)
+                    if item not in held:
+                        held[item] = text
+                        facts_rows.append((run, item, text))
+                    if held[item] == text:
+                        facts = 1
+                        m = {k: v for k, v in m.items() if k not in have}
+            meta = _canon(m)
+        extra = _canon(row["_extra"]) if "_extra" in row else None
+        row_out.append((rid, sid, n, item, facts, meta, extra, _canon(rest) if rest else None))
+        val_out += [(rid, metric[k], v) for k, v in sorted(vals, key=lambda kv: metric[kv[0]])]
+    conn.executemany("INSERT INTO call_facts VALUES (?, ?, ?)", facts_rows)
+    conn.executemany("INSERT INTO score_rows VALUES (?, ?, ?, ?, ?, ?, ?, ?)", row_out)
+    conn.executemany("INSERT INTO score_values VALUES (?, ?, ?)", val_out)
+
+
+_scan = json.JSONDecoder().scan_once  # type: ignore[attr-defined]  # the C scanner, not in the stubs
+
+
+def _loads(text: str) -> Any:
+    """`json.loads` of a text this module wrote (no whitespace around it, one JSON value): the decoder's scanner itself."""
+    return _scan(text, 0)[0]
+
+
+def _assemble(
+    row: dict[str, Any], item: str, facts: str | None, meta: str | None, extra: str | None, rest: str | None
+) -> dict[str, Any]:
+    """One row from its numeric fields (`row`, a dict this takes over) and what the tables hold of the rest
+    (`write_set` undone), keys sorted. `facts` is the item's call facts as held when the row says they are its own; the
+    row's own `_meta` keys win over them."""
+    row["item_id"] = item
+    if rest is not None:
+        row.update(_loads(rest))
+    if meta is not None:
+        m = _loads(meta)
+        if facts is not None:
+            m = dict(sorted({**_loads(facts), **m}.items()))
+        row["_meta"] = m
+    if extra is not None:
+        row["_extra"] = _loads(extra)
+    return {k: row[k] for k in sorted(row)}
+
+
+def _values(conn: sqlite3.Connection, vals: list[Any], names: dict[int, str]) -> dict[int, dict[str, Any]]:
+    """{row id: its numeric fields} from `score_values` rows (row, metric, value) in key order; `names` is the metric
+    ids' names, filled from `metrics` for an id it lacks."""
+    try:
+        return {rid: {names[m]: v for _r, m, v in g} for rid, g in groupby(vals, itemgetter(0))}
+    except KeyError:
+        names.update(conn.execute("SELECT id, name FROM metrics"))
+        return {rid: {names[m]: v for _r, m, v in g} for rid, g in groupby(vals, itemgetter(0))}
+
+
+def read_set(
+    conn: sqlite3.Connection, key: str, names: dict[int, str], meta: bool = True
+) -> tuple[list[dict[str, Any]], int] | None:
+    """A score set's rows assembled, and the length their text would have (what the cache weighs); None when the set has
+    none. `names` is the metric ids' names, kept by the caller and filled from `metrics` for an id it lacks. Without
+    `meta` the rows have no `_meta` and no `_extra` (and the call facts are not read): the numbers, the item and the
+    fields kept as JSON, for a reader that reads no more (RFC-033 performance plan, step 3)."""
+    sid = _set_id(conn, key)
+    if sid is None:
+        return None
+    lo = sid << ROW_BITS
+    hi = lo + ROWS_PER_SET - 1
+    if meta:
+        got = conn.execute(
+            "SELECT id, item_id, facts, meta, extra, rest, length(item_id) + coalesce(length(meta), 0)"
+            " + coalesce(length(extra), 0) + coalesce(length(rest), 0) FROM score_rows WHERE id BETWEEN ? AND ?"
+            " ORDER BY id",
+            (lo, hi),
+        ).fetchall()
+    else:
+        got = [
+            (rid, item, 0, None, None, rest, len(item) + len(rest or ""))
+            for rid, item, rest in conn.execute(
+                "SELECT id, item_id, rest FROM score_rows WHERE id BETWEEN ? AND ? ORDER BY id", (lo, hi)
+            )
+        ]
+    run = _run_of(key)
+    held: dict[str, str] = {}
+    if run and any(r[2] for r in got):
+        held = dict(conn.execute("SELECT item_id, meta FROM call_facts WHERE run = ?", (run,)))
+    vals = conn.execute(
+        "SELECT row, metric, value FROM score_values WHERE row BETWEEN ? AND ? ORDER BY row, metric", (lo, hi)
+    ).fetchall()
+    by_row = _values(conn, vals, names)
+    out: list[dict[str, Any]] = []
+    for rid, item, facts, m, extra, rest, _w in got:
+        if facts and item not in held:
+            raise ValueError(
+                f"{key}: the row of {item} has its run's call facts, and the run holds none for it"
+            )
+        out.append(_assemble(by_row.get(rid) or {}, item, held[item] if facts else None, m, extra, rest))
+    return out, sum(r[6] for r in got) + ROW_TEXT * len(got) + VALUE_TEXT * len(vals)
+
+
+#: What a row's text holds that the tables keep apart, on average: one numeric field (`"name": 0.853, `) and the row's
+#: own braces, its `item_id` key and its call facts. The cache weighs a score set by the text its rows would make, as the
+#: files store's cache does (calibrated against this repository's rows, step d).
+VALUE_TEXT = 28
+ROW_TEXT = 24
 
 
 class Store(Protocol):
@@ -288,11 +592,13 @@ class Store(Protocol):
         ...
 
     def rows(
-        self, run_dir: Path, partial: bool = False, errors: str = "strict"
+        self, run_dir: Path, partial: bool = False, errors: str = "strict", meta: bool = True
     ) -> list[dict[str, Any]] | None:
         """A score's rows as parsed dicts, in order (the checkpoint's, a torn line skipped, with `partial`); None when it
         has none. A line that is not JSON raises ValueError, bytes that are not UTF-8 UnicodeDecodeError, unless
-        `errors` says `replace`: then they are skipped. The dicts are shared: copy a row before changing it."""
+        `errors` says `replace`: then they are skipped. With `meta` False a store may leave out each row's `_meta` and
+        `_extra` (the sqlite store does, not decoding them): for a reader of the numbers. The dicts are shared: copy a
+        row before changing it."""
         ...
 
     def rows_text(self, run_dir: Path, partial: bool = False, errors: str = "strict") -> str | None:
@@ -305,8 +611,9 @@ class Store(Protocol):
         ...
 
     def stored_text(self, run_dir: Path, errors: str = "strict") -> str | None:
-        """A score's rows as the store holds them, line by line as they were written: what a migration or a check of
-        the stored data reads; None when it has none."""
+        """A score's rows as the store holds them: the files store's file, line by line as it was written; the sqlite
+        store's canonical lines of the rows it gives back (it keeps no text). What a migration or a check of the stored
+        data reads; None when it has none."""
         ...
 
     def put_rows(self, run_dir: Path, rows: Iterable[dict[str, Any]]) -> None:
@@ -430,11 +737,12 @@ class FileStore:
         return held
 
     def rows(
-        self, run_dir: Path, partial: bool = False, errors: str = "strict"
+        self, run_dir: Path, partial: bool = False, errors: str = "strict", meta: bool = True
     ) -> list[dict[str, Any]] | None:
         """A score's rows as parsed dicts, in order (the checkpoint's, a torn line skipped, with `partial`); None when it
         has none. A line that is not JSON raises ValueError, bytes that are not UTF-8 UnicodeDecodeError, unless
-        `errors` says `replace`: then they are skipped. The dicts are shared: copy a row before changing it."""
+        `errors` says `replace`: then they are skipped. The line is parsed whole, so `meta` changes nothing here. The
+        dicts are shared: copy a row before changing it."""
         held = self._held(run_dir, partial, errors)
         return None if held is None else _rows_of(held, self._rows_path(run_dir, partial))
 
@@ -512,19 +820,42 @@ def ensure_tables(conn: sqlite3.Connection) -> None:
         "CREATE TABLE IF NOT EXISTS outputs (run TEXT NOT NULL, item_id TEXT NOT NULL, text TEXT NOT NULL,"
         " sha256 TEXT NOT NULL, PRIMARY KEY (run, item_id))"
     )
-    # n = 0 is the marker that the rows were written (an empty predictions.jsonl is a run's rows too);
-    # every line, its newline included, from n = 1 in order.
-    conn.execute(
-        "CREATE TABLE IF NOT EXISTS rows (run TEXT NOT NULL, partial INTEGER NOT NULL, n INTEGER NOT NULL,"
-        " item_id TEXT, row TEXT NOT NULL, PRIMARY KEY (run, partial, n))"
-    )
-    conn.execute("CREATE INDEX IF NOT EXISTS rows_item ON rows (item_id, run) WHERE partial = 0")
+    for stmt in RESULTS_DDL:
+        conn.execute(stmt)
+
+
+#: A score's per-item results (RFC-033), the tables `write_set` and `read_set` keep. The score set's id is its key's
+#: hash, never its insertion order; a row's id is `score_set * 2^20 + n`, so a score set's rows are one id range (read,
+#: replaced and deleted by that range); `value` has no type affinity, so an integer stays an integer and a float a float.
+RESULTS_DDL = (
+    "CREATE TABLE IF NOT EXISTS score_sets (id INTEGER PRIMARY KEY, key TEXT NOT NULL UNIQUE)",
+    "CREATE TABLE IF NOT EXISTS metrics (id INTEGER PRIMARY KEY, name TEXT NOT NULL UNIQUE)",
+    (
+        "CREATE TABLE IF NOT EXISTS call_facts (run TEXT NOT NULL, item_id TEXT NOT NULL, meta TEXT NOT NULL,"
+        " PRIMARY KEY (run, item_id)) WITHOUT ROWID"
+    ),
+    (
+        "CREATE TABLE IF NOT EXISTS score_rows (id INTEGER PRIMARY KEY, score_set INTEGER NOT NULL, n INTEGER NOT NULL,"
+        " item_id TEXT NOT NULL, facts INTEGER NOT NULL, meta TEXT, extra TEXT, rest TEXT, UNIQUE (score_set, n))"
+    ),
+    (
+        "CREATE TABLE IF NOT EXISTS score_values (row INTEGER NOT NULL, metric INTEGER NOT NULL, value NOT NULL,"
+        " PRIMARY KEY (row, metric)) WITHOUT ROWID"
+    ),
+    # n = 0 is the marker that a checkpoint exists (an empty one is one too); its lines, newline included, follow from n = 1.
+    (
+        "CREATE TABLE IF NOT EXISTS rows_partial (run TEXT NOT NULL, n INTEGER NOT NULL, line TEXT NOT NULL,"
+        " PRIMARY KEY (run, n))"
+    ),
+    "CREATE INDEX IF NOT EXISTS score_rows_item ON score_rows (item_id)",
+)
+TABLES = ("outputs", "score_sets", "metrics", "call_facts", "score_rows", "score_values", "rows_partial")
 
 
 class SqliteStore:
     """A project's outputs and rows in its one database (`_store`: data/project.sqlite), write-ahead logged: readers
-    never block the writer, and a crash keeps every committed output. One committed insert per output and row;
-    insertion order is the order they are read in. A run is its key, its directory under data/; `_store.rmtree` of
+    never block the writer, and a crash keeps every committed output. One committed insert per output; a score set's
+    rows are written in one transaction (`write_set`). A run is its key, its directory under data/; `_store.rmtree` of
     that directory removes them with its files."""
 
     name = "sqlite"
@@ -532,9 +863,10 @@ class SqliteStore:
     def __init__(self) -> None:
         self._lock = _store._LOCK  # the one connection's lock (_store)
         self._cache: dict[str, dict[str, str]] = {}
-        self._rows: _Kept = _Kept()  # {(run key, partial): its rows text}
+        self._rows: _Kept = _Kept()  # {(run key, partial): its rows}
         self._version: int | None = None
         self._ready: dict[int, bool] = {}  # {id(connection): whether it has the tables}
+        self._names: dict[int, str] = {}  # {metric id: its name}
 
     @staticmethod
     def key(run_dir: Path) -> str:
@@ -550,10 +882,15 @@ class SqliteStore:
     def _db(self, create: bool) -> sqlite3.Connection | None:
         conn = _store.connect(create=create)
         if conn is not None and id(conn) not in self._ready:
+            have = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type = 'table'")}
+            if "rows" in have:  # format 6's table: `evh migrate` (m0007) moves it into the tables above
+                _common.die(
+                    f"{_store.db_path()} still holds the per-item rows of an older format (table `rows`): run evh migrate",
+                    "old-format",
+                )
             # Read-only, nothing is created: a release made without runs has no such tables, and no outputs.
             if _store.readonly():
-                have = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type = 'table'")}
-                self._ready[id(conn)] = {"outputs", "rows"} <= have
+                self._ready[id(conn)] = set(TABLES) <= have
             else:
                 ensure_tables(conn)
                 self._ready[id(conn)] = True
@@ -631,13 +968,14 @@ class SqliteStore:
             return [r[0] for r in conn.execute("SELECT DISTINCT run FROM outputs ORDER BY run")]
 
     def row_runs(self) -> list[tuple[str, bool]]:
-        """Every (run, partial) the database holds rows for."""
+        """Every (run, partial) the database holds rows for: each score set, and each run with a checkpoint."""
         with self._lock:
             conn = self._db(create=False)
             if conn is None:
                 return []
-            got = conn.execute("SELECT DISTINCT run, partial FROM rows ORDER BY run, partial").fetchall()
-            return [(r, bool(pt)) for r, pt in got]
+            sets = [(r[0], False) for r in conn.execute("SELECT key FROM score_sets")]
+            marks = [(r[0], True) for r in conn.execute("SELECT DISTINCT run FROM rows_partial")]
+            return sorted(sets + marks)
 
     def add(self, run_dir: Path, item_id: str, text: str) -> None:
         """One item's output, on disk before this returns."""
@@ -690,41 +1028,48 @@ class SqliteStore:
             self._cache.pop(k, None)
             _store.wrote()
 
-    def _held(self, run_dir: Path, partial: bool, errors: str) -> _Held | None:
-        """The run's rows as kept, read from the database when not (the caller holds the lock and has made it fresh)."""
+    def _held(self, run_dir: Path, partial: bool, meta: bool = True) -> _Held | None:
+        """The run's rows as kept, read from the database when not (the caller holds the lock and has made it fresh). A
+        set kept without its `_meta` and `_extra` is read again for a reader that wants them."""
         conn = self._db(create=False)
         if conn is None:
             return None
         self._fresh(conn)
         ck = (self.key(run_dir), partial)
         hit = self._rows.get(ck)
-        if hit is None or (errors == "strict" and hit.lossy):
-            got = conn.execute(
-                "SELECT row FROM rows WHERE run = ? AND partial = ? ORDER BY n", (ck[0], int(partial))
-            ).fetchall()
-            if not got:
-                hit = _ABSENT
-            else:
+        if hit is None or (meta and hit.light):
+            if partial:
+                got = conn.execute(
+                    "SELECT line FROM rows_partial WHERE run = ? ORDER BY n", (ck[0],)
+                ).fetchall()
                 text = "".join(r[0] for r in got)
-                if partial:
-                    hit = _Held(None, len(text), text=text)
-                else:
-                    where = str(Path(run_dir) / PREDICTIONS)
-                    rows, skipped = parse_rows(text, where, strict=errors == "strict")
-                    hit = _Held(rows, len(text), lossy=skipped > 0)
+                hit = _Held(None, len(text), text=text) if got else _ABSENT
+            else:
+                made = read_set(conn, ck[0], self._names, meta)
+                hit = (
+                    _ABSENT
+                    if made is None
+                    else _Held(
+                        made[0],
+                        made[1],
+                        light=not meta,
+                        factor=SQLITE_DICT_FACTOR if meta else SQLITE_LIGHT_FACTOR,
+                    )
+                )
             self._rows[ck] = hit
         return None if hit is _ABSENT else hit
 
     def rows(
-        self, run_dir: Path, partial: bool = False, errors: str = "strict"
+        self, run_dir: Path, partial: bool = False, errors: str = "strict", meta: bool = True
     ) -> list[dict[str, Any]] | None:
         """A score's rows as parsed dicts, in order (the checkpoint's, a torn line skipped, with `partial`); None when it
-        has none. A line that is not JSON raises ValueError unless `errors` says `replace`: then it is skipped. The
-        dicts are shared: copy a row before changing it."""
+        has none. The database holds no line a read would raise on, so `errors` changes nothing. Without `meta` the rows
+        have no `_meta` and no `_extra`: they are not decoded (what a reader of the numbers saves). The dicts are
+        shared: copy a row before changing it."""
         if _store.rel(run_dir) is None:  # outside data/: the disk's
-            return _FILES.rows(run_dir, partial, errors)
+            return _FILES.rows(run_dir, partial, errors, meta)
         with self._lock:
-            held = self._held(run_dir, partial, errors)
+            held = self._held(run_dir, partial, meta)
             return (
                 None if held is None else _rows_of(held, Path(run_dir) / (ROWS if partial else PREDICTIONS))
             )
@@ -735,7 +1080,7 @@ class SqliteStore:
         if _store.rel(run_dir) is None:  # outside data/: the disk's
             return _FILES.rows_text(run_dir, partial, errors)
         with self._lock:
-            held = self._held(run_dir, partial, errors)
+            held = self._held(run_dir, partial)
             return None if held is None else _text_of(self._rows, (self.key(run_dir), partial), held)
 
     def has_rows(self, run_dir: Path) -> bool:
@@ -751,69 +1096,55 @@ class SqliteStore:
             hit = self._rows.get((k, False))
             if hit is not None:
                 return hit is not _ABSENT
-            return (
-                conn.execute("SELECT 1 FROM rows WHERE run = ? AND partial = 0 LIMIT 1", (k,)).fetchone()
-                is not None
-            )
+            return _set_id(conn, k) is not None
 
     def stored_text(self, run_dir: Path, errors: str = "strict") -> str | None:
-        """A score's rows as the database holds them, line by line as they were written; None when it has none."""
-        if _store.rel(run_dir) is None:  # outside data/: the disk's
-            return _FILES.stored_text(run_dir, errors)
-        with self._lock:
-            conn = self._db(create=False)
-            if conn is None:
-                return None
-            got = conn.execute(
-                "SELECT row FROM rows WHERE run = ? AND partial = 0 ORDER BY n", (self.key(run_dir),)
-            ).fetchall()
-            return "".join(r[0] for r in got) if got else None
-
-    def _replace(self, run_dir: Path, partial: bool, vals: list[tuple[Any, ...]]) -> None:
-        with self._lock:
-            conn = self._db(create=True)
-            assert conn is not None
-            k = self.key(run_dir)
-            conn.execute("BEGIN IMMEDIATE")
-            try:
-                conn.execute("DELETE FROM rows WHERE run = ? AND partial = ?", (k, int(partial)))
-                conn.executemany("INSERT INTO rows VALUES (?, ?, ?, ?, ?)", vals)
-                conn.execute("COMMIT")
-            except BaseException:
-                if (
-                    conn.in_transaction
-                ):  # a failed COMMIT too: never leave the shared connection in a transaction
-                    conn.execute("ROLLBACK")
-                raise
-            self._rows.pop((k, partial), None)
-            _store.wrote()
+        """A score's rows as canonical lines of what the database holds (it keeps no text of a row: these are the lines
+        `put_rows` would make of the dicts read back); None when it has none."""
+        return self.rows_text(run_dir)
 
     def put_rows(self, run_dir: Path, rows: Iterable[dict[str, Any]]) -> None:
-        """A score's rows replaced by `rows` at once, atomically, as canonical lines. A row that is not a JSON object
-        with an `item_id` is refused (`invalid-file`), writing nothing."""
+        """A score's rows replaced by `rows` at once, atomically (one transaction: the set's rows and values deleted, then
+        written). A row that is not a JSON object with an `item_id` is refused (`invalid-file`), writing nothing."""
         if _store.rel(run_dir) is None:  # outside data/: the disk's
             return _FILES.put_rows(run_dir, rows)
         rows = list(rows)
-        lines = _lines_of(run_dir, rows)
+        _check_rows(run_dir, rows)
         k = self.key(run_dir)
-        self._replace(
-            run_dir,
-            False,
-            [(k, 0, 0, None, "")]
-            + [(k, 0, n, r["item_id"], ln) for n, (r, ln) in enumerate(zip(rows, lines, strict=True), 1)],
-        )
+        with self._lock:
+            conn = self._db(create=True)
+            assert conn is not None
+            conn.execute("BEGIN IMMEDIATE")
+            try:
+                write_set(conn, k, rows)
+                conn.execute("COMMIT")
+            except BaseException:
+                _rollback(conn)
+                raise
+            self._rows.pop((k, False), None)
+            _store.wrote()
 
     def put_partial(self, run_dir: Path, text: str) -> None:
         """The run's checkpoint replaced by `text`, verbatim, at once, atomically."""
         if _store.rel(run_dir) is None:  # outside data/: the disk's
             return _FILES.put_partial(run_dir, text)
         k = self.key(run_dir)
-        self._replace(
-            run_dir,
-            True,
-            [(k, 1, 0, None, "")]
-            + [(k, 1, n, _item_of(ln), ln) for n, ln in enumerate(text.splitlines(keepends=True), 1)],
-        )
+        with self._lock:
+            conn = self._db(create=True)
+            assert conn is not None
+            conn.execute("BEGIN IMMEDIATE")
+            try:
+                conn.execute("DELETE FROM rows_partial WHERE run = ?", (k,))
+                conn.executemany(
+                    "INSERT INTO rows_partial VALUES (?, ?, ?)",
+                    [(k, 0, ""), *[(k, n, ln) for n, ln in enumerate(text.splitlines(keepends=True), 1)]],
+                )
+                conn.execute("COMMIT")
+            except BaseException:
+                _rollback(conn)
+                raise
+            self._rows.pop((k, True), None)
+            _store.wrote()
 
     def append_row(self, run_dir: Path, line: str) -> None:
         """One line (its newline included) added to the run's checkpoint, on disk before this returns. Verbatim: the
@@ -826,23 +1157,20 @@ class SqliteStore:
             k = self.key(run_dir)
             conn.execute("BEGIN IMMEDIATE")
             try:
-                conn.execute("INSERT OR IGNORE INTO rows VALUES (?, 1, 0, NULL, '')", (k,))
+                conn.execute("INSERT OR IGNORE INTO rows_partial VALUES (?, 0, '')", (k,))
                 conn.execute(
-                    "INSERT INTO rows SELECT ?, 1, MAX(n) + 1, ?, ? FROM rows WHERE run = ? AND partial = 1",
-                    (k, _item_of(line), line, k),
+                    "INSERT INTO rows_partial SELECT ?, MAX(n) + 1, ? FROM rows_partial WHERE run = ?",
+                    (k, line, k),
                 )
                 conn.execute("COMMIT")
             except BaseException:
-                if (
-                    conn.in_transaction
-                ):  # a failed COMMIT too: never leave the shared connection in a transaction
-                    conn.execute("ROLLBACK")
+                _rollback(conn)
                 raise
             self._rows.pop((k, True), None)
             _store.wrote()
 
     def drop_rows(self, run_dir: Path, partial: bool = False) -> None:
-        """The run's rows (or its checkpoint) gone from here."""
+        """The run's rows (or its checkpoint) gone from here; a run's call facts go with its last score set."""
         if _store.rel(run_dir) is None:  # outside data/: the disk's
             return _FILES.drop_rows(run_dir, partial)
         _store.require_writable()
@@ -851,23 +1179,59 @@ class SqliteStore:
             if conn is None:
                 return
             k = self.key(run_dir)
-            conn.execute("DELETE FROM rows WHERE run = ? AND partial = ?", (k, int(partial)))
+            conn.execute("BEGIN IMMEDIATE")
+            try:
+                if partial:
+                    conn.execute("DELETE FROM rows_partial WHERE run = ?", (k,))
+                elif (sid := _set_id(conn, k)) is not None:
+                    _forget_set(conn, sid)
+                    conn.execute("DELETE FROM score_sets WHERE id = ?", (sid,))
+                    if run := _run_of(k):
+                        drop_call_facts(conn, run)
+                conn.execute("COMMIT")
+            except BaseException:
+                _rollback(conn)
+                raise
             self._rows.pop((k, partial), None)
             _store.wrote()
 
-    def item_across(self, run_dirs: list[Path], item_id: str) -> dict[Path, str]:
-        """{run_dir: its row line} for one item, in one query."""
+    def item_across(self, run_dirs: list[Path], item_id: str) -> dict[Path, dict[str, Any]]:
+        """{run_dir: its row for the item} (the set's first row of it), one query for the item's rows and one per row found."""
         with self._lock:
             conn = self._db(create=False)
             if conn is None:
                 return {}
             keys = {self.key(d): Path(d) for d in run_dirs if _store.rel(d) is not None}  # the rest: files
-            out: dict[Path, str] = {}
-            for k, line in conn.execute(
-                "SELECT run, row FROM rows WHERE item_id = ? AND partial = 0 ORDER BY run, n", (item_id,)
-            ):
-                if k in keys and keys[k] not in out:
-                    out[keys[k]] = line
+            out: dict[Path, dict[str, Any]] = {}
+            found = conn.execute(
+                "SELECT s.key, r.id, r.facts, r.meta, r.extra, r.rest FROM score_rows r JOIN score_sets s ON"
+                " s.id = r.score_set WHERE r.item_id = ? ORDER BY s.key, r.n",
+                (item_id,),
+            ).fetchall()
+            for k, rid, facts, meta, extra, rest in found:
+                if k not in keys or keys[k] in out:
+                    continue
+                vals = _values(
+                    conn,
+                    [
+                        (rid, m, v)
+                        for m, v in conn.execute(
+                            "SELECT metric, value FROM score_values WHERE row = ?", (rid,)
+                        )
+                    ],
+                    self._names,
+                ).get(rid, {})
+                fact = None
+                if facts:
+                    got = conn.execute(
+                        "SELECT meta FROM call_facts WHERE run = ? AND item_id = ?", (_run_of(k), item_id)
+                    ).fetchone()
+                    if got is None:
+                        raise ValueError(
+                            f"{k}: the row of {item_id} has its run's call facts, and the run holds none"
+                        )
+                    fact = got[0]
+                out[keys[k]] = _assemble(dict(vals), item_id, fact, meta, extra, rest)
             return out
 
     def close(self) -> None:
@@ -877,6 +1241,7 @@ class SqliteStore:
             self._rows.clear()
             self._version = None
             self._ready.clear()
+            self._names.clear()
 
 
 _FILES = FileStore()
@@ -995,12 +1360,16 @@ def row_line(row: dict[str, Any]) -> str:
     return json.dumps(row, sort_keys=True) + "\n"
 
 
-def rows(run_dir: Path, partial: bool = False, errors: str = "strict") -> list[dict[str, Any]] | None:
+def rows(
+    run_dir: Path, partial: bool = False, errors: str = "strict", meta: bool = True
+) -> list[dict[str, Any]] | None:
     """A score's rows as parsed dicts, in order (with `partial`, the checkpoint's, a torn line skipped); None when it has
     none. A line that is not JSON raises ValueError naming the file and the line, bytes that are not UTF-8
-    UnicodeDecodeError, unless `errors` is `replace` (a page that shows a run may): then they are skipped. The dicts
+    UnicodeDecodeError, unless `errors` is `replace` (a page that shows a run may): then they are skipped. `meta=False`
+    is for a caller that reads the item and the numbers and nothing of `_meta` or `_extra`: the sqlite store does not
+    decode them (a third of a read), and the rows it gives may lack them; the files store gives them whole. The dicts
     are the cache's own: copy a row before changing it."""
-    return store().rows(Path(run_dir), partial, errors)
+    return store().rows(Path(run_dir), partial, errors, meta)
 
 
 def rows_text(run_dir: Path, partial: bool = False, errors: str = "strict") -> str | None:
@@ -1077,13 +1446,7 @@ def item_across(run_dirs: Iterable[Path], item_id: str) -> dict[Path, dict[str, 
     st = store()
     out: dict[Path, dict[str, Any]] = {}
     if isinstance(st, SqliteStore):
-        for d, line in st.item_across(dirs, item_id).items():
-            try:
-                row = json.loads(line)
-            except ValueError:
-                continue
-            if isinstance(row, dict):
-                out[d] = row
+        out.update(st.item_across(dirs, item_id))
         dirs = [d for d in dirs if _store.rel(d) is None]  # outside data/: the disk's
     for d in dirs:
         index = _FILES._index(d)

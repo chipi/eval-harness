@@ -364,7 +364,7 @@ def put(rel: str, text: str, new: bool = False) -> dict[str, Any]:
 
 def _run_counts(d: Path) -> tuple[int, int]:
     """A run's outputs, and the rows of all its scores."""
-    rows = sum(len(_outputs.rows(sd, errors="replace") or ()) for sd in model_runs.scores_of(d))
+    rows = sum(len(_outputs.rows(sd, errors="replace", meta=False) or ()) for sd in model_runs.scores_of(d))
     return len(_outputs.lines(d)), rows
 
 

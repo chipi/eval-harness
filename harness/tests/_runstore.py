@@ -29,6 +29,35 @@ def put_rows(run_dir: Path, rows: list[dict[str, Any]]) -> None:
     _outputs.store().put_rows(Path(run_dir), rows)
 
 
+#: What a SQLite project kept its per-item rows in before format 7: the lines of each score and checkpoint (RFC-033).
+LEGACY_ROWS = (
+    "CREATE TABLE IF NOT EXISTS rows (run TEXT NOT NULL, partial INTEGER NOT NULL, n INTEGER NOT NULL, item_id TEXT,"
+    " row TEXT NOT NULL, PRIMARY KEY (run, partial, n))"
+)
+
+
+def put_legacy_rows(run_dir: Path, text: str, partial: bool = False) -> None:
+    """A score's rows (or a checkpoint's) as a project before format 7 kept them: a file in the files store, the lines
+    in table `rows` in the sqlite store, written as they are given and by no code of the model (a migration's input).
+    Write the run's outputs first: once `rows` is there the store refuses a connection it has not opened yet."""
+    run_dir = Path(run_dir)
+    key = _store.rel(run_dir)
+    if key is None:
+        _store.mkdir(run_dir, parents=True, exist_ok=True)
+        _store.write_text(run_dir / (_outputs.ROWS if partial else _outputs.PREDICTIONS), text)
+        return
+    conn = _store.connect()
+    assert conn is not None
+    conn.execute(LEGACY_ROWS)
+    conn.execute("DELETE FROM rows WHERE run = ? AND partial = ?", (key, int(partial)))
+    lines = text.splitlines(keepends=True)
+    conn.executemany(
+        "INSERT INTO rows VALUES (?, ?, ?, NULL, ?)",
+        [(key, int(partial), 0, ""), *[(key, int(partial), n, ln) for n, ln in enumerate(lines, 1)]],
+    )
+    _store.wrote()
+
+
 def rows_of_text(text: str) -> list[dict[str, Any]]:
     """The rows of a text of JSON lines (a fixture written as literal lines)."""
     return [json.loads(x) for x in text.splitlines() if x.strip()]

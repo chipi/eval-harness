@@ -59,12 +59,13 @@ def by_arm(runs: Iterable[Run]) -> dict[str, list[Run]]:
     return dict(sorted(out.items()))
 
 
-def item_rows(run_dir: Path, strict: bool = True) -> Iterator[dict]:
+def item_rows(run_dir: Path, strict: bool = True, meta: bool = True) -> Iterator[dict]:
     """The rows of a run (its predictions.jsonl, or the sqlite store's) that name an item. A malformed line raises
     (naming the run and line) unless `strict` is False, when it is skipped: a statistical
-    test must not quietly drop an item, a page that shows a run may. The rows are the store's own, shared: a caller
-    that changes one copies it first."""
-    for row in _outputs.rows(run_dir, errors="strict" if strict else "replace") or ():
+    test must not quietly drop an item, a page that shows a run may. `meta=False`: the caller reads the item and the
+    numbers, and not a row's `_meta` or `_extra`, which the sqlite store then does not decode (and may leave out of the
+    row). The rows are the store's own, shared: a caller that changes one copies it first."""
+    for row in _outputs.rows(run_dir, errors="strict" if strict else "replace", meta=meta) or ():
         if "item_id" in row:
             yield row
 
@@ -111,7 +112,7 @@ def per_item(
         confounded = ((m or {}).get("history_confound") or {}).get("items")
         hit: set[str] = set()
         seen: set[str] = set()
-        for row in item_rows(d, strict=strict):
+        for row in item_rows(d, strict=strict, meta=False):
             if keep is not None and row["item_id"] not in keep:
                 continue
             seen.add(row["item_id"])
@@ -163,7 +164,7 @@ def repeat_agreement(runs: Iterable[Run], metric: str, items: Iterable[str] | No
     keep = set(items) if items is not None else None
     acc: dict[str, list[float]] = {}
     for d, _m in runs:
-        for row in item_rows(d, strict=False):
+        for row in item_rows(d, strict=False, meta=False):
             v = score_of(row, metric)
             if v is not None and (keep is None or row["item_id"] in keep):
                 acc.setdefault(row["item_id"], []).append(v)

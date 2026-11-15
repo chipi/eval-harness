@@ -17,6 +17,7 @@ import functools
 import hashlib
 import io
 import os
+import re
 import shutil
 import sqlite3
 import threading
@@ -31,6 +32,9 @@ from evaluation_harness import _common
 
 DB = "project.sqlite"
 SCHEMA_VERSION = "1"
+#: A score set's key, `runs/<run>/scores/<key>`: group 1 is its run's. Call facts are held per run (`_outputs`), so a
+#: score set anywhere else has none, and deleting the last score set of a run deletes them.
+SCORE_SET = re.compile(r"(runs/[^/]+)/scores/[^/]+")
 #: One lock for the one connection: a server answers requests on several threads at once, and a sqlite3
 #: connection used by two threads at once can crash the process (catalog-serve died that way, 2026-11-06).
 #: `_outputs` takes the same lock for its tables in the same database.
@@ -123,7 +127,7 @@ def _open_readonly(path: Path) -> sqlite3.Connection:
 def connect(create: bool = True) -> sqlite3.Connection | None:
     """The project's database, opened once per process (write-ahead logged, every commit synced); None when it does
     not exist and `create` is False. Its tables: `files` (everything under data/ that is not per item) and, from
-    `_outputs`, `outputs` and `rows`. A read-only database (`readonly`) is opened as it is, and `create` (a write) is
+    `_outputs`, `outputs`, `rows_partial` and the score sets' tables. A read-only database (`readonly`) is opened as it is, and `create` (a write) is
     refused."""
     if create:
         require_writable()
@@ -624,8 +628,7 @@ def rmtree(path: Any, ignore_errors: bool = False) -> None:
         conn.execute("BEGIN IMMEDIATE")
         try:
             n = conn.execute("DELETE FROM files WHERE path >= ? AND path < ?", _under(key)).rowcount
-            for table in _per_item_tables(conn):
-                conn.execute(table[0], (key, *_under(key)))
+            _delete_per_item(conn, key)
             conn.execute("COMMIT")
         except BaseException:
             if conn.in_transaction:  # a failed COMMIT too: never leave the shared connection in a transaction
@@ -686,14 +689,47 @@ def adopt(src: Path, dst: Any) -> None:
     shutil.rmtree(src)
 
 
-def _per_item_tables(conn: sqlite3.Connection) -> list[tuple[str]]:
-    """The DELETE statements for the per-item tables that exist (`_outputs` creates them on first use)."""
-    have = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type = 'table'")}
-    stmts = {
-        "outputs": "DELETE FROM outputs WHERE run = ? OR (run >= ? AND run < ?)",
-        "rows": "DELETE FROM rows WHERE run = ? OR (run >= ? AND run < ?)",
-    }
-    return [(stmts[t],) for t in stmts if t in have]
+def _tables(conn: sqlite3.Connection) -> set[str]:
+    return {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type = 'table'")}
+
+
+def _sets_under(conn: sqlite3.Connection, key: str) -> list[tuple[int, str]]:
+    """The score sets (id, key) at `key` or under it."""
+    return [
+        (r[0], r[1])
+        for r in conn.execute(
+            "SELECT id, key FROM score_sets WHERE key = ? OR (key >= ? AND key < ?)", (key, *_under(key))
+        )
+    ]
+
+
+def _delete_per_item(conn: sqlite3.Connection, key: str) -> None:
+    """The per-item tables' rows for the run, score set or folder `key` and everything under it deleted, in the
+    transaction the caller holds (`_outputs` creates the tables on first use): outputs and the checkpoint by run; a score
+    set's rows and values through `score_sets.key` (one id range each); a run's call facts with its last score set, and
+    those of every run under `key`."""
+    have = _tables(conn)
+    args = (key, *_under(key))
+    if "outputs" in have:
+        conn.execute("DELETE FROM outputs WHERE run = ? OR (run >= ? AND run < ?)", args)
+    if "rows" in have:  # a database not yet at format 7 (evh migrate) still keeps its rows here
+        conn.execute("DELETE FROM rows WHERE run = ? OR (run >= ? AND run < ?)", args)
+    if "rows_partial" in have:
+        conn.execute("DELETE FROM rows_partial WHERE run = ? OR (run >= ? AND run < ?)", args)
+    if "score_sets" not in have:
+        return
+    gone = _sets_under(conn, key)
+    for sid, _k in gone:
+        lo = sid << 20
+        conn.execute("DELETE FROM score_values WHERE row BETWEEN ? AND ?", (lo, lo + (1 << 20) - 1))
+        conn.execute("DELETE FROM score_rows WHERE id BETWEEN ? AND ?", (lo, lo + (1 << 20) - 1))
+        conn.execute("DELETE FROM score_sets WHERE id = ?", (sid,))
+    conn.execute("DELETE FROM call_facts WHERE run = ? OR (run >= ? AND run < ?)", args)
+    for run in {m.group(1) for _sid, k in gone if (m := SCORE_SET.fullmatch(k))}:
+        conn.execute(
+            "DELETE FROM call_facts WHERE run = ? AND NOT EXISTS (SELECT 1 FROM score_sets WHERE key >= ? AND key < ?)",
+            (run, run + "/scores/", run + "/scores0"),
+        )
 
 
 @_locked
@@ -702,12 +738,23 @@ def _per_item_under(key: str) -> int:
     conn = connect(create=False)
     if conn is None:
         return 0
-    have = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type = 'table'")}
-    count = {
-        "outputs": "SELECT count(*) FROM outputs WHERE run = ? OR (run >= ? AND run < ?)",
-        "rows": "SELECT count(*) FROM rows WHERE run = ? OR (run >= ? AND run < ?)",
-    }
-    return sum(conn.execute(count[t], (key, *_under(key))).fetchone()[0] for t in count if t in have)
+    have = _tables(conn)
+    args = (key, *_under(key))
+    n = 0
+    for t, sql in (
+        ("outputs", "SELECT count(*) FROM outputs WHERE run = ? OR (run >= ? AND run < ?)"),
+        ("rows", "SELECT count(*) FROM rows WHERE run = ? OR (run >= ? AND run < ?)"),
+        ("rows_partial", "SELECT count(*) FROM rows_partial WHERE run = ? OR (run >= ? AND run < ?)"),
+    ):
+        if t in have:
+            n += conn.execute(sql, args).fetchone()[0]
+    if "score_sets" in have:
+        n += conn.execute(
+            "SELECT count(*) FROM score_rows WHERE score_set IN"
+            " (SELECT id FROM score_sets WHERE key = ? OR (key >= ? AND key < ?))",
+            args,
+        ).fetchone()[0]
+    return n
 
 
 def _refuse_per_item(src: Any, what: str) -> None:

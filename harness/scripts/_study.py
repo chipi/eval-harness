@@ -421,7 +421,7 @@ def weakest(goal: str, sid: str, best_cid: str, n: int) -> list[dict[str, Any]]:
         return []
     scores: dict[str, list[float]] = {}
     for d, _m in runs:
-        for row in _runs.item_rows(d, strict=False):
+        for row in _runs.item_rows(d, strict=False, meta=False):
             v = row.get(metric)
             if isinstance(v, (int, float)):
                 scores.setdefault(row["item_id"], []).append(float(v))

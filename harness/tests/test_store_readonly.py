@@ -274,7 +274,8 @@ try:
     c.close()
     check(
         "sealing a database made without runs: the per-item tables are there, the journal is out of WAL, one file",
-        {"files", "outputs", "rows"} <= have
+        {"files", *_outputs.TABLES} <= have
+        and "rows" not in have
         and db.read_bytes()[18:20] == b"\x01\x01"
         and beside() == [_store.DB],
         (have, beside()),

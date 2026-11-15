@@ -47,6 +47,9 @@ def at(script: str) -> str:
 # A project a test makes with a temporary folder and EVAL_HOME has no config.yaml, and a project that names no store is
 # refused: the tests run in files, as the store matrix (tools/store_matrix.py) runs them in sqlite.
 os.environ.setdefault("EVAL_STORE", "files")
+# The rows the cache shares are frozen for the whole suite (every test runs under it, in this process and in the ones it
+# starts): a view or a command that changes one fails where it does (RFC-033 step d, `_outputs.FREEZE_ENV`).
+os.environ.setdefault("EVH_FREEZE_ROWS", "1")
 
 from evaluation_harness import _outputs  # noqa: E402
 from evaluation_harness._check import check, results  # noqa: E402
@@ -910,6 +913,14 @@ def test_example_scorer_suites_pass() -> None:
             "a score's rows as dicts in both stores (RFC-033 step c): canonical text derived, a line that is no row refused, the checkpoint exempt, the files reader tolerant and V28 reporting it, the cache keeping dicts and text together",
         ),
         (
+            "test_results_tables.py",
+            "a score's per-item results as SQLite tables (RFC-033 step d): the schema, every type round-tripped (int and float, -0.0, bool, None, NaN, infinities, past int64), `_meta` and call facts, ids and probing, one transaction, deletes, the item index, V9 in SQLite with each failure planted, data-migrate there and back",
+        ),
+        (
+            "test_rows_frozen.py",
+            "the safeguard for the rows the cache shares (EVH_FREEZE_ROWS=1): every kind of change raises at its line, copies are plain, both stores",
+        ),
+        (
             "test_store.py",
             "the project's store (RFC-025): the setting, _store on both, data-migrate there and back, never both (V23), concurrent writers, the release, the path-I/O guard",
         ),
@@ -1135,7 +1146,7 @@ def test_example_scorer_suites_pass() -> None:
         ),
         (
             "test_m0007.py",
-            "evh migrate's format 7 step: settings hoisted to run.json `call`, usage slimmed, rows canonical, an interrupted run resumed, refusals, the SQLite store equal to files",
+            "evh migrate's format 7 step: settings hoisted to run.json `call`, usage slimmed, rows canonical, an interrupted run resumed, refusals; a SQLite project of format 6 (or of an early format 7, table `rows`) moved into the results tables in one transaction, equal to what data-migrate makes",
         ),
         (
             "test_tags.py",

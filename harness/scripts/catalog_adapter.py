@@ -636,7 +636,7 @@ class HarnessAdapter:
         acc: dict[str, dict[str, list]] = {}
         for d in self._dirs(arm):
             # A page may show a run with a corrupt line; a statistical test may not (strict).
-            for r in item_rows(d, strict=False):
+            for r in item_rows(d, strict=False, meta=False):
                 for k, v in _numeric(r).items():
                     acc.setdefault(k, {}).setdefault(r["item_id"], []).append(v)
         n = len(self._dirs(arm))

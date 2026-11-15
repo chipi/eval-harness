@@ -719,12 +719,12 @@ def v9_no_committed_evidence_is_missing() -> None:
 
     Floors as well as presence: an arm could be emptied one score at a time and each
     individual absence explained away.
+
+    In the SQLite store nothing under data/ is in git: the database is the record, so the check is of what it holds
+    (every score set with a metrics.json has rows, as many as its `n_items`), and the floors.
     """
     from evaluation_harness import _common as _c  # noqa: PLC0415
 
-    if _c.store() == "sqlite":  # RFC-025: nothing under data/ is in git; the database is the record
-        print("  --   V9 committed run files (the sqlite store: nothing under data/ is in git)")
-        return
     #: What each committed arm must contain. Raising one of these is a deliberate edit; lowering one should need an
     #: argument.
     #: The `linux` arm (the re-timed runs) is here because it was NOT, and nothing else reached it either: the
@@ -735,6 +735,20 @@ def v9_no_committed_evidence_is_missing() -> None:
     # evidence, not about the harness. They are read from <data>/validate.json (`policy`); a project without them has
     # no floors (V9's missing-file and empty-rows checks still apply).
     FLOORS = policy().get("floors") or {}
+
+    if _c.store() == "sqlite":  # RFC-025: nothing under data/ is in git; the database is the record (RFC-033)
+        incomplete = _v9_sqlite_incomplete()
+        for x in incomplete[:5]:
+            print(f"       {x}")
+        if len(incomplete) > 5:
+            print(f"       ... and {len(incomplete) - 5} more")
+        check(
+            "V9 every score set with a record has its rows, as many as the record says",
+            not incomplete,
+            f"{len(incomplete)} score set(s) incomplete",
+        )
+        _v9_floors(FLOORS)
+        return
 
     listed = subprocess.run(
         ["git", "ls-files", data_rel(RUNS)],
@@ -814,15 +828,45 @@ def v9_no_committed_evidence_is_missing() -> None:
             f"{len(missing)} tracked file(s) missing, {len(incomplete)} run(s) incomplete",
         )
 
+    _v9_floors(FLOORS)
+
+
+def _v9_floors(floors: dict) -> None:
+    """Each committed arm keeps at least as many scores as the project's policy says."""
     short = []
     by_arm = arms()
-    for name, floor in sorted(FLOORS.items()):
+    for name, floor in sorted(floors.items()):
         n = len(by_arm.get(name, []))
         if n < floor:
             short.append(f"{name}: {n} scores, expected at least {floor}")
     for x in short:
         print(f"       {x}")
     check("V9 each committed arm meets its floor", not short, "; ".join(short))
+
+
+def _v9_sqlite_incomplete() -> list[str]:
+    """What V9's git listing is, in the database: every score set that has a metrics.json has rows, and as many as its
+    record's `n_items` (a score whose rows are gone is deleted, whatever the files say)."""
+    from evaluation_harness import _outputs  # noqa: PLC0415
+
+    incomplete = []
+    for rid in _mr.run_ids():
+        for sd in _mr.scores_of(rid):
+            key = data_rel(sd)
+            try:
+                held = _outputs.rows(sd)
+                want = (_mr.record(sd) or {}).get("n_items")
+                want = None if want is None else int(want)
+            except (OSError, ValueError, TypeError):
+                incomplete.append(f"{key} rows or record are unreadable")
+                continue
+            if held is None:
+                incomplete.append(f"{key} has no rows")
+            elif not held:
+                incomplete.append(f"{key} has no rows (an empty score set)")
+            elif want is not None and len(held) != want:
+                incomplete.append(f"{key} has {len(held)} rows, its record says n_items={want}")
+    return incomplete
 
 
 def v10_derived_runs_carry_the_current_scorer() -> None:

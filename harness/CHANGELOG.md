@@ -502,6 +502,31 @@ that can move a result is never a patch release without saying so under **Change
   is canonical on the other side; a project whose file holds a line that is no row is refused until it is corrected.
   `evh migrate` to format 7 refuses such a score set too, writing nothing. The rows the cache keeps are shared dicts:
   code that reads them and changes one copies it first.
+- **A score's per-item results are tables in the SQLite store** (RFC-033 step d, format 7, `m0007_results`).
+  Table `rows` (one text value per line, 168.7 MiB on this repository's data) is replaced by `score_sets`,
+  `score_rows` (the item, its `_meta` and `_extra`, and the fields that are not numbers), `score_values` (every field
+  that is a number, one row each, its metric named in `metrics`), `call_facts` (what a run's call to one item was,
+  held once for every score set of the run) and `rows_partial` (the crash checkpoint, verbatim): 82.0 MiB, indexes
+  included, and the project's database 190.6 MiB (the lines of format 7) to 159.2 MiB. A row comes back as it was
+  written: an integer stays an integer and a float a float (`1` and `1.0`, `-0.0`, int64's bounds), a bool, `null`,
+  NaN, the infinities and an integer past int64 come back as they were, keys sorted; `_meta` absent, `{}`, its call
+  facts equal to the run's or different, and `_extra` absent or `{}` each round-trip. A score set's id is its key's
+  hash (the next free one upward on a collision), its rows are one id range, written in one transaction and deleted
+  through the key: dropping a score set, or `rmtree` of it or of a run, takes its rows, and a run's call facts go with
+  its last score set. `evh migrate`
+  moves a SQLite project of format 6 into the tables in one transaction (14 runs, 31 score sets, 3 settings hoisted,
+  53,720 usage objects slimmed, 93,025 rows in 711 score sets, 5 s on this repository's data) and drops `rows`; a SQLite
+  project that is at format 7 already with the old table (an early build of format 7) is finished by `evh migrate`
+  too, and `evh migrate --check` and every command refuse it until then (`ERROR (old-format)`). The database file keeps
+  the freed pages of `rows` until it is vacuumed. `evh data-migrate` moves a project either way with every score set's
+  canonical text compared (on this repository's data: 711 score sets equal, files to SQLite to files byte for byte,
+  13,022 files), and `evh validate` V9 reads a SQLite project's database: every score set with a record has rows, as
+  many as its `n_items`, and each committed arm meets its floor. Reading a score set's rows costs more than parsing
+  its lines did; a reader of the numbers (`item_rows(meta=False)`: the leaderboards, the arms and goals pages, the
+  paired tests) is not given `_meta` and `_extra` and does not decode them, which leaves the one-pass views 10-19%
+  faster than with the lines (`tools/view_bench.py`, medians of three interleaved runs). The suite runs with
+  `EVH_FREEZE_ROWS=1`: the rows the cache shares are frozen, and a view or command that changes one fails at the line
+  that does.
 - **The API's description, made from the operations** (RFC-032 step 9): `GET /api/v1/openapi.json` (OpenAPI 3.1,
   with the token) and `evh openapi` give every operation's route, inputs, body, refusals and the job routes. Gone:
   `POST /api/v1/read/<command>` (a read run as a process) and `GET /api/v1/commands`; the operations' resources

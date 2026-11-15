@@ -180,7 +180,7 @@ class Project:
             with contextlib.closing(sqlite3.connect(self.dir / "data" / _store.DB)) as db:
                 db.execute("CREATE TABLE IF NOT EXISTS _inserted (run TEXT)")
                 db.execute(
-                    "CREATE TRIGGER IF NOT EXISTS _count AFTER INSERT ON rows BEGIN INSERT INTO _inserted VALUES (NEW.run); END"
+                    "CREATE TRIGGER IF NOT EXISTS _count AFTER INSERT ON score_rows BEGIN INSERT INTO _inserted VALUES (NEW.item_id); END"
                 )
                 db.commit()
 

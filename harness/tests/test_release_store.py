@@ -137,10 +137,13 @@ def read_release(root: Path) -> dict:
             "SELECT run, item_id, text, sha256 FROM outputs ORDER BY rowid"
         ):
             outs.setdefault(run_key, []).append((item, text, sha))
-        for run_key, partial, _n, line in c.execute(
-            "SELECT run, partial, n, row FROM rows WHERE n > 0 ORDER BY run, partial, n"
-        ):
-            rows[(run_key, bool(partial))] = rows.get((run_key, bool(partial)), "") + line
+        # a score's rows are tables: assembled by the package's own reader, then their canonical lines
+        names: dict[int, str] = {}
+        for (key,) in c.execute("SELECT key FROM score_sets ORDER BY key").fetchall():
+            made = _outputs.read_set(c, key, names)
+            rows[(key, False)] = "".join(_outputs.row_line(r) for r in made[0]) if made else ""
+        for run_key, line in c.execute("SELECT run, line FROM rows_partial WHERE n > 0 ORDER BY run, n"):
+            rows[(run_key, True)] = rows.get((run_key, True), "") + line
         c.close()
         return {"files": files, "outputs": outs, "rows": rows}
     for p in sorted(data.rglob("*")):
@@ -273,7 +276,7 @@ try:
     c.close()
     check(
         "a SQLite release has the per-item tables (a read-only open creates none)",
-        {"files", "outputs", "rows"} <= have,
+        {"files", *_outputs.TABLES} <= have and "rows" not in have,
         have,
     )
     check(

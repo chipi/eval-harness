@@ -165,10 +165,16 @@ def body(store: str) -> None:
         small = cache.bytes
         _outputs.rows_text(sd)
         big = cache.bytes
+        # the files store knows the text the dicts came from; the database's weight is its estimate of that text's length
+        # (`read_set`: the lengths of the stored JSON, plus a fixed part per row and per numeric field)
+        conn, key = _store.connect(), _store.rel(sd)
+        made = _outputs.read_set(conn, key, {}) if conn is not None and key is not None else None
+        held = len(CANON) if not sq else (made[1] if made else -1)
         check(
             f"{store}: the cache weighs the dicts (their text's length times DICT_FACTOR), and the text once it is made",
-            small == len(CANON) * _outputs.DICT_FACTOR and big == small + len(CANON),
-            (weight_before, small, big),
+            small == held * (_outputs.DICT_FACTOR if not sq else _outputs.SQLITE_DICT_FACTOR)
+            and big == small + len(CANON),
+            (weight_before, small, big, held),
         )
         across = _outputs.item_across([sd], "i2")
         again = _outputs.item_across([sd], "i2")

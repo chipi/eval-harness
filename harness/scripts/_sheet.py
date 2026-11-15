@@ -165,7 +165,7 @@ def _judged(d: Path, dataset_id: str) -> list[dict[str, Any]]:
             latest[scorer] = (jd, jm)
     out = []
     for scorer, (jd, jm) in sorted(latest.items()):
-        per = {r["item_id"]: _numbers(r) for r in item_rows(jd, strict=False)}
+        per = {r["item_id"]: _numbers(r) for r in item_rows(jd, strict=False, meta=False)}
         have = {k for r in per.values() for k in r}
         names = [n for n in dict.fromkeys([jm.get("primary_metric"), *WON, *GRADE]) if n and n in have]
         if names:
@@ -187,7 +187,7 @@ def _arm(token: str, dataset_id: str, label: str) -> dict[str, Any]:
         "token": token,
         "dir": d,
         "metrics": read_metrics(d) or {},
-        "per_item": {r["item_id"]: _numbers(r) for r in item_rows(d, strict=False)},
+        "per_item": {r["item_id"]: _numbers(r) for r in item_rows(d, strict=False, meta=False)},
         "judged": _judged(d, dataset_id),
     }
 

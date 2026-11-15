@@ -32,6 +32,9 @@ def run(test: Path, store: str, log: Path) -> tuple[str, str, int, float]:
     """One test file in one store, its output kept in `log`: (file, store, exit code, seconds)."""
     env = {k: v for k, v in os.environ.items() if k != "EVAL_STORE"}
     env["EVAL_STORE"] = store
+    env.setdefault(
+        "EVH_FREEZE_ROWS", "1"
+    )  # the rows the cache shares are frozen: a test that changes one fails (_outputs)
     # A TMPDIR of its own, removed after, whatever the test leaves (leaked test projects filled /tmp's inodes, shared by
     # every session, 2026-11-11): on the main disk and outside any git checkout (a project inside one reads only the runs
     # git keeps); a short name, since a test's Unix sockets live under it.
