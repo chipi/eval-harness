@@ -12,6 +12,8 @@ files and, migrated, a SQLite database:
   anything is written, in each store.
 - A SQLite release is one sealed file: `data/` holds `project.sqlite` alone, out of write-ahead logging, its
   config.yaml says `store: sqlite`; a files release has neither.
+- The same data makes the same bytes: a second build of it, its files a checkout later, is the same database byte for
+  byte, and every file in it has the one release modification time.
 - `_release.py check`, render.sh's last word, on each store: passes on a good release, and fails on each planted
   leak (a reference text git does not track, a materialized item, a goal the MCP answers do not cover, a missing p
   cache); on a SQLite release also a stray -wal, setup lock or file, and a database still in write-ahead logging.
@@ -280,6 +282,53 @@ try:
         and (ff / "config.yaml").read_text() == "store: files\n",
     )
 
+    # ── the same data makes the same bytes (rsync re-sends a deploy's database unless it does) ───────────────────
+    later = 1_900_000_000
+    for p in files_src.joinpath("data").rglob("*"):
+        if p.is_file():
+            os.utime(p, (later, later))  # a later checkout of the same commit: every file's time differs
+    again = tmp / "again"
+    r = make_release(files_src, "sqlite", again / "inspector", "files")
+    check(
+        "a second build of the same data, its files a checkout later, is the same database, byte for byte",
+        r.returncode == 0
+        and (again / "inspector" / "data" / "project.sqlite").read_bytes()
+        == (fs / "data" / "project.sqlite").read_bytes(),
+        said(r),
+    )
+    c = sqlite3.connect(f"file:{fs / 'data' / 'project.sqlite'}?mode=ro&immutable=1", uri=True)
+    stamps = {r[0] for r in c.execute("SELECT mtime_ns FROM files")}
+    c.close()
+    check("every file in a SQLite release has the one release time", stamps == {946_684_800 * 10**9}, stamps)
+
+    from evaluation_harness import _release_store
+
+    sealed = []
+    for name, commits in (("one", 1), ("many", 7)):  # the same rows, in one transaction and in seven
+        db = tmp / f"seal-{name}.sqlite"
+        c = sqlite3.connect(str(db), isolation_level=None)
+        c.execute("PRAGMA journal_mode=WAL")
+        c.execute(f"PRAGMA wal_autocheckpoint={1000 if commits == 1 else 3}")
+        c.execute("CREATE TABLE files (path TEXT PRIMARY KEY, data BLOB, sha256 TEXT, mtime_ns INTEGER)")
+        for i in range(70):
+            if i % (70 // commits) == 0:
+                c.execute("BEGIN")
+            c.execute("INSERT INTO files VALUES (?, ?, 'x', 1)", (f"f{i:03}", b"d" * 900))
+            if i % (70 // commits) == 70 // commits - 1:
+                c.execute("COMMIT")
+        c.close()
+        _release_store.seal(db)
+        sealed.append(db.read_bytes())
+    check(
+        "a sealed database's bytes do not depend on how it was written (its file change counter, its page layout)",
+        sealed[0] == sealed[1]
+        and len(sealed[0]) > 4096
+        and all(
+            int.from_bytes(b[24:28], "big") == 1 for b in sealed
+        ),  # written whole once: the change counter is 1
+        [(len(b), int.from_bytes(b[24:28], "big")) for b in sealed],
+    )
+
     # ── the refusals, in each store, before anything is written ──────────────────────────────────────────────────
     (files_src / "data" / "references" / "gold" / "ds1" / "x.txt").write_text(
         "a gold text git does not track\n"
@@ -440,6 +489,35 @@ try:
         r.returncode == 1 and "ERROR (bad-argument)" in r.stderr,
         said(r),
     )
+    # render.sh runs from the repository's root, which names no store: copy-data reads the source through the project
+    # EVAL_HOME names, or it is refused (the deploy failed this way when the files default went, 2026-11-15).
+    # Run as render.sh runs it: the package copied out of the checkout (so the checkout's harness/ is not its project).
+    bare = tmp / "repo-root"
+    pkg = tmp / "pkg" / "evaluation_harness"
+    shutil.copytree(HERE, pkg, ignore=shutil.ignore_patterns("__pycache__"))
+    bare.mkdir()
+    r = run(
+        [pkg / "_release.py", "copy-data", files_src / "data", tmp / "r1" / "data", "--store", "sqlite"],
+        cwd=bare,
+    )
+    check(
+        "copy-data from a folder that names no store, without EVAL_HOME, is refused (not-configured)",
+        r.returncode == 1 and "ERROR (not-configured)" in r.stderr,
+        said(r),
+    )
+    (files_src / "config.yaml").write_text(
+        "store: files\n"
+    )  # as this repository's harness/config.yaml names it
+    r = run(
+        [pkg / "_release.py", "copy-data", files_src / "data", tmp / "r2" / "data", "--store", "sqlite"],
+        env={"EVAL_HOME": files_src},
+        cwd=bare,
+    )
+    check(
+        "copy-data from that folder with EVAL_HOME naming the source project makes the release",
+        r.returncode == 0 and (tmp / "r2" / "data" / "project.sqlite").is_file(),
+        said(r),
+    )
 
     # ── what render.sh and compose.yml say ───────────────────────────────────────────────────────────────────────
     render = ROOT / "infra" / "deploy" / "render.sh"
@@ -456,6 +534,13 @@ try:
             "export EVAL_STORE_READONLY=1" in sh and "_release.py\" check" in sh and "find references" not in sh
             and "data/goals/*.yaml" not in sh and "EVAL_STORE=files" not in sh,
         )  # fmt: skip
+        check(
+            "render.sh: copy-data reads the source through harness/ (its config.yaml names the store); the check writes no .pyc",
+            'EVAL_HOME="$ROOT/harness" python3 "$OUT/inspector/pkg/evaluation_harness/_release.py" copy-data'
+            in sh
+            and 'PYTHONDONTWRITEBYTECODE=1 python3 "$OUT/inspector/pkg/evaluation_harness/_release.py" check'
+            in sh,
+        )
         inspector = compose.split("  inspector:")[1].split("\n  mcp:")[0]
         mcp = compose.split("\n  mcp:")[1]
         check(

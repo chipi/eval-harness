@@ -498,3 +498,8 @@ Quoted from the discussion, typing slips corrected.
     compose.yml's container limits: 4,481 files against 12,174, the catalog and 2,905 comparisons and 38 MCP calls the
     same bytes from both, the inspector's peak resident memory 208.6 MB on SQLite (206.7 files), 49.8% of 384 MiB by
     `docker stats`. A first request on the old code: `/api/health` 200, a comparison 500.
+  - built (P1b, deterministic release): the same data makes the same database, byte for byte (each file goes in with one
+    modification time, the seal writes the database again whole); two builds from two checkouts of one commit are one
+    sha256 (they were 2,624 of 58,965 pages apart). Deploy transfer by `rsync --checksum --link-dest`, delta on: no data
+    change 215 bytes; one new run 20 to 228 MB by where its id sorts (the files release 486 KB), because pages after an
+    insertion are packed anew (a run that sorts first: 6.7% of the new pages occur in the old database; in the middle, 53%).

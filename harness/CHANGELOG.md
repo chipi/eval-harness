@@ -428,6 +428,16 @@ that can move a result is never a patch release without saying so under **Change
   peak resident memory after every view 208.6 MB on SQLite (206.7 MB files), `docker stats` 191.1 MiB, 49.8% of the limit
   deploy.sh holds to 80% (files 49.5%); the container's cache of the database file brings its cgroup peak to the limit
   (reclaimed, no kill, no restart).
+- **The same data makes the same SQLite release, byte for byte** (RFC-032 step 9): two releases built from two checkouts
+  of one commit were different databases (2,624 of 58,965 pages, and the file change counter 3 or 5), because the
+  `files` table kept each file's checkout time and the database's header kept how many transactions and checkpoints the
+  move had made. Every file of a release now goes into the database with one modification time (2000-01-01 UTC,
+  `RELEASE_MTIME_NS`: nothing reads it from a release), and the seal writes the database again whole (`VACUUM INTO`,
+  which also takes 3.7 MB off: 237.8 MB), so the bytes depend on the data alone. The project's own database is
+  unchanged. Measured with `rsync --checksum --delete --link-dest` (what deploy-prod.yml runs; delta transfer on, as
+  over ssh) of `inspector/`: no data change 215 bytes sent (was 12.5 MB, 241.6 MB with a whole-file copy), where the files release sends 476 KB (its
+  7,696-file list); one new run 20 MB, 122 MB or 228 MB sent by where its id sorts (last, in the middle, first),
+  against 486 KB for the files release. `tests/test_release_store.py` builds the same data twice, a checkout apart.
 - **A deployment shows the people's checks of a judge scorer**: the release copies `data/judge-validation` (each
   source's report, each record without the judge's reply, its hash kept), so a judge scorer's page and `scorer-show`
   on the deployed site list the same checks as the project's (this repository: two sources per scorer, 1,200 records,

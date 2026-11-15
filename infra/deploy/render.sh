@@ -97,7 +97,7 @@ PY
 # The data the catalog and the inspector read, with nothing a `text: hidden` dataset's text gave
 # (RFC-019) and no text git does not track: _release.py refuses such a release before copying. In SQLite it is then
 # made one sealed database (data-migrate, journal out of WAL) beside a config.yaml saying so.
-python3 "$OUT/inspector/pkg/evaluation_harness/_release.py" copy-data "$ROOT/harness/data" "$OUT/inspector/data" --store "$STORE"
+EVAL_HOME="$ROOT/harness" python3 "$OUT/inspector/pkg/evaluation_harness/_release.py" copy-data "$ROOT/harness/data" "$OUT/inspector/data" --store "$STORE"
 # From here the release is read, never written: the box mounts it read-only, so everything below reads it as the box
 # does (a database opened immutable, no lock file, nothing set up), and a build that writes to it fails here.
 export EVAL_STORE_READONLY=1
@@ -200,7 +200,7 @@ fi
 # in a pipe (under pipefail that once killed `find` with SIGPIPE and the check passed with 1,657 texts in the release,
 # an independent review, 2026-10-29).
 tracked_refs="$(git -C "$ROOT" ls-files -- harness/data/references | sed 's#^harness/data/##' | sort)"
-EVAL_HOME="$OUT/inspector" python3 "$OUT/inspector/pkg/evaluation_harness/_release.py" check "$OUT/inspector" \
+EVAL_HOME="$OUT/inspector" PYTHONDONTWRITEBYTECODE=1 python3 "$OUT/inspector/pkg/evaluation_harness/_release.py" check "$OUT/inspector" \
   <(printf '%s\n' "$tracked_refs") || exit 1
 [ -z "$sealed" ] || [ "$(sha256sum "$OUT/inspector/data/project.sqlite")" = "$sealed" ] \
   || { echo "::error::the build changed the release's database"; exit 1; }

@@ -16,6 +16,11 @@ from pathlib import Path
 
 from evaluation_harness import _common, _outputs, _store
 
+#: The modification time every file of a release carries (2000-01-01 UTC) when it goes into the database. The files
+#: table keeps it, so a file's checkout time made the release's bytes differ on every render, and rsync re-sent ~230 MB
+#: a deploy for data that had not changed. Nothing reads it from a release, which never changes after the seal.
+RELEASE_MTIME_NS = 946_684_800 * 10**9
+
 
 def _release_root(data: Path) -> Path:
     """The project a release's data/ belongs to (its config.yaml and its caches are beside it)."""
@@ -27,16 +32,24 @@ def _release_root(data: Path) -> Path:
 def seal(db: Path) -> None:
     """A release's database made the one file a release holds: the per-item tables in it (a read-only open creates
     none), every page checkpointed, the journal out of write-ahead logging (so no `-wal` or `-shm` is ever made beside
-    it), the setup lock gone."""
+    it), the setup lock gone. Then written again whole (`VACUUM INTO`, replacing the file): the pages of a database that
+    was written to carry how it was written (the file change counter in its header moved with the number of
+    checkpoints the move happened to make, 3 or 5), so two builds of the same data differed; the copy's bytes depend
+    on the tables' contents alone, and rsync sends a deploy's database only when its data changed."""
     conn = sqlite3.connect(str(db), isolation_level=None)
+    fresh = Path(f"{db}-sealing")
+    fresh.unlink(missing_ok=True)
     try:
         _outputs.ensure_tables(conn)
         conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
         mode = conn.execute("PRAGMA journal_mode=DELETE").fetchone()[0]
+        if mode == "delete":
+            conn.execute("VACUUM INTO ?", (str(fresh),))
     finally:
         conn.close()
     if mode != "delete":
         _common.die(f"{db}: could not switch the database out of write-ahead logging ({mode})", "failed")
+    os.replace(fresh, db)
     for suffix in ("-wal", "-shm", "-setup-lock"):
         Path(f"{db}{suffix}").unlink(missing_ok=True)
 
@@ -48,9 +61,15 @@ def name_store(data: Path, store: str) -> None:
 
 def to_sqlite(data: Path) -> None:
     """The release's data/, as `copy_data` wrote it (files), made one database and sealed. Moved by `data-migrate`, in
-    a process of its own: the project it moves is the release, not this process's."""
+    a process of its own: the project it moves is the release, not this process's. Every file first gets one
+    modification time, so the same data makes the same bytes."""
     root = _release_root(data)
     name_store(data, "sqlite")
+    for dirpath, _dirs, names in os.walk(data):
+        for name in names:
+            os.utime(
+                os.path.join(dirpath, name), ns=(RELEASE_MTIME_NS, RELEASE_MTIME_NS), follow_symlinks=False
+            )
     env = {
         k: v
         for k, v in os.environ.items()
