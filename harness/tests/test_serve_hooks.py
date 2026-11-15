@@ -129,10 +129,17 @@ def main() -> int:
     ping = get(p, "/x/ping?a=1", host="10.0.0.9:8080")  # not a served Host: a hook route still answers
     boom = get(p, "/x/boom")
     other = get(p, "/x/ping", host="evil.example")
-    # The request hook runs once each answer has gone: wait for the four before stopping the server.
+
+    # The request hook runs once each answer has gone, in no fixed order: wait for all five (serve()'s readiness
+    # health, then the four above) and for the 500's own entry, before stopping the server. Waiting for any four
+    # stopped it before /x/boom's entry was written on CI's runner (2026-11-15).
+    def logged_requests() -> list[dict]:
+        lines = log.read_text().splitlines() if log.exists() else []
+        return [c["info"] for c in map(json.loads, filter(None, lines)) if c.get("kind") == "request"]
+
     deadline = time.monotonic() + 10
-    while time.monotonic() < deadline and (
-        not log.exists() or log.read_text().count('"kind": "request"') < 4
+    while time.monotonic() < deadline and not (
+        len(got := logged_requests()) >= 5 and any(r.get("route") == "/x/boom" for r in got)
     ):
         time.sleep(0.05)
     stop(proc)
