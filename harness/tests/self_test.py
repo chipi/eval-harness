@@ -1026,6 +1026,10 @@ def test_example_scorer_suites_pass() -> None:
         ),
         ("test_promote_hold.py", "a round's leader held for a test with no p says so, never crashes"),
         (
+            "test_openapi.py",
+            "the API's OpenAPI description, made from the operations: every route, its inputs and refusals, the token; the removed read routes answer 404",
+        ),
+        (
             "test_model_system_id.py",
             "a run's config_id is its system_id: format 6 renames every stored record that is not hashed, keeps the hashed keys and their hashes, refuses both keys and a value that is no system",
         ),

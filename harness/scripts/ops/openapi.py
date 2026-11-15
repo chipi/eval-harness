@@ -1,0 +1,522 @@
+"""The API's OpenAPI 3.1 description (RFC-032), made from the operations: `GET /api/v1/openapi.json` and `evh openapi`
+print the same document. Every operation is a path and a method; its route's parts are path parameters, a read's inputs
+query parameters, an edit's or a decision's inputs a JSON body, with `by` (RFC-027) and the data header. The job routes
+and the few routes that are not an operation are described here, by what `catalog_serve` does with them.
+
+OpenAPI 3.1 takes JSON Schema 2020-12 as is, which is what the operations' inputs are written in."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from typing import Any
+
+from evaluation_harness.ops.registry import OPS, Op
+
+#: A refusal of the model's, as an HTTP status (the kinds are `_common.REFUSALS`).
+REFUSAL_STATUS = {
+    "not-found": 404,
+    "bad-argument": 400,
+    "invalid-file": 422,
+    "would-overwrite": 409,
+    "not-allowed": 409,
+    "old-format": 409,
+    "mismatch": 409,
+}
+DIALECT = "https://json-schema.org/draft/2020-12/schema"
+PREFIX = "/api/v1"
+
+_ERROR = "#/components/schemas/Error"
+_JOB = "#/components/schemas/Job"
+
+
+def _kinds(status: int) -> str:
+    return ", ".join(k for k, s in REFUSAL_STATUS.items() if s == status)
+
+
+def _responses() -> dict[str, Any]:
+    def err(description: str) -> dict[str, Any]:
+        return {
+            "description": description,
+            "content": {"application/json": {"schema": {"$ref": _ERROR}}},
+        }
+
+    return {
+        "BadRequest": err(f"an input that is not what the schema says, or a refusal of kind {_kinds(400)}"),
+        "Unauthorized": err("no token, or a wrong one"),
+        "Forbidden": err("another Host or a foreign Origin; a call that is not a read without X-EVH-Data: 1"),
+        "NotFound": err(f"no such route, or a refusal of kind {_kinds(404)}"),
+        "Conflict": err(f"a refusal of kind {_kinds(409)}"),
+        "TooLarge": err("a body over the most the route takes"),
+        "Invalid": err(
+            f"a refusal of kind {_kinds(422)}: the record does not check, each problem with its field"
+        ),
+        "Migrating": err("a migration holds the project; try again when it ends (Retry-After)"),
+    }
+
+
+def _ref(name: str) -> dict[str, Any]:
+    return {"$ref": f"#/components/responses/{name}"}
+
+
+def _errors(*names: str) -> dict[str, Any]:
+    codes = {
+        "BadRequest": "400",
+        "Unauthorized": "401",
+        "Forbidden": "403",
+        "NotFound": "404",
+        "Conflict": "409",
+        "TooLarge": "413",
+        "Invalid": "422",
+        "Migrating": "503",
+    }
+    return {codes[n]: _ref(n) for n in names}
+
+
+def _json_body(schema: dict[str, Any], required: bool = True) -> dict[str, Any]:
+    return {"required": required, "content": {"application/json": {"schema": schema}}}
+
+
+def _data_header() -> dict[str, Any]:
+    return {
+        "name": "X-EVH-Data",
+        "in": "header",
+        "required": True,
+        "description": "a call that is not a read carries it (a page of another origin cannot send it, ADR-0027)",
+        "schema": {"type": "string", "const": "1"},
+    }
+
+
+def _path(path: str) -> list[dict[str, Any]]:
+    return [
+        {
+            "name": p[1:-1],
+            "in": "path",
+            "required": True,
+            "description": f"the {p[1:-1].replace('_', ' ')}'s id",
+            "schema": {"type": "string"},
+        }
+        for p in path.split("/")
+        if p.startswith("{") and p.endswith("}")
+    ]
+
+
+def _write_body(op: Op) -> dict[str, Any]:
+    return {
+        "type": "object",
+        "properties": {
+            **op.inputs,
+            "by": {
+                "type": "string",
+                "pattern": "^(person|agent):",
+                "description": "who acted, person:NAME or agent:NAME (RFC-027)",
+            },
+            "for": {
+                "type": "string",
+                "description": "the person an agent acts for, person:NAME: needed when by is an agent",
+            },
+        },
+        "required": [*op.required, "by"],
+        "additionalProperties": False,
+    }
+
+
+def _operation(op: Op) -> dict[str, Any]:
+    result = op.output or {"type": "object"}
+    envelope = {
+        "type": "object",
+        "properties": {
+            "command": {"type": "string", "const": op.name},
+            "version": {"type": "string", "description": "the harness's version"},
+            "result": result,
+        },
+        "required": ["command", "version", "result"],
+    }
+    out: dict[str, Any] = {
+        "operationId": op.name,
+        "summary": op.about,
+        "tags": [op.route.strip("/").split("/")[0]],
+        "x-evh-kind": op.kind,
+        "parameters": _path(op.route),
+    }
+    if op.kind == "read":
+        out["parameters"] += [
+            {
+                "name": name,
+                "in": "query",
+                "required": name in op.required,
+                "description": spec.get("description", ""),
+                "schema": spec,
+            }
+            for name, spec in op.inputs.items()
+        ]
+        names: tuple[str, ...] = (
+            "BadRequest",
+            "Unauthorized",
+            "Forbidden",
+            "NotFound",
+            "Conflict",
+            "Invalid",
+            "Migrating",
+        )
+    else:
+        out["parameters"].append(_data_header())
+        out["requestBody"] = _json_body(_write_body(op))
+        names = (
+            "BadRequest", "Unauthorized", "Forbidden", "NotFound", "Conflict", "TooLarge", "Invalid", "Migrating",
+        )  # fmt: skip
+    out["responses"] = {
+        "200": {
+            "description": "the operation's answer",
+            "content": {"application/json": {"schema": envelope}},
+        },
+        **_errors(*names),
+    }
+    return out
+
+
+def _job_paths() -> dict[str, Any]:
+    job_id = {
+        "name": "id",
+        "in": "path",
+        "required": True,
+        "description": "the job's id",
+        "schema": {"type": "string"},
+    }
+    job = {"application/json": {"schema": {"$ref": _JOB}}}
+    read = ("Unauthorized", "Forbidden", "NotFound", "Migrating")
+    write = ("BadRequest", "Unauthorized", "Forbidden", "NotFound", "Conflict", "Migrating")
+    return {
+        f"{PREFIX}/jobs": {
+            "get": {
+                "operationId": "jobs-list",
+                "summary": "the jobs, newest first",
+                "tags": ["jobs"],
+                "parameters": [
+                    {
+                        "name": "state",
+                        "in": "query",
+                        "required": False,
+                        "description": "only the jobs in this state",
+                        "schema": {"type": "string"},
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "the jobs",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {"jobs": {"type": "array", "items": {"$ref": _JOB}}},
+                                    "required": ["jobs"],
+                                }
+                            }
+                        },
+                    },
+                    **_errors(*read),
+                },
+            },
+            "post": {
+                "operationId": "jobs-start",
+                "summary": "start a command as a job: checked, written, started; refused before a job exists when it "
+                "cannot run",
+                "tags": ["jobs"],
+                "parameters": [_data_header()],
+                "requestBody": _json_body(
+                    {
+                        "type": "object",
+                        "properties": {
+                            "command": {
+                                "type": "string",
+                                "description": "the command to run (a work command)",
+                            },
+                            "args": {
+                                "type": "object",
+                                "description": "the command's arguments by name, without the dashes; a file as "
+                                "base64 where the command takes an upload",
+                                "additionalProperties": True,
+                            },
+                            "by": {
+                                "type": "string",
+                                "description": "who started it, person:NAME or agent:NAME",
+                            },
+                            "for": {"type": "string", "description": "the person an agent acts for"},
+                            "reason": {"type": "string", "description": "why, for a decision"},
+                            "max_cost_usd": {
+                                "type": "number",
+                                "exclusiveMinimum": 0,
+                                "description": "the most a spending job may spend; required for one",
+                            },
+                        },
+                        "required": ["command"],
+                    }
+                ),
+                "responses": {
+                    "202": {"description": "the job, started", "content": job},
+                    **_errors("BadRequest", "Unauthorized", "Forbidden", "NotFound", "TooLarge", "Migrating"),
+                },
+            },
+        },
+        f"{PREFIX}/jobs/{{id}}": {
+            "get": {
+                "operationId": "jobs-show",
+                "summary": "one job: its state, what it waits for, how it ended",
+                "tags": ["jobs"],
+                "parameters": [job_id],
+                "responses": {"200": {"description": "the job", "content": job}, **_errors(*read)},
+            }
+        },
+        f"{PREFIX}/jobs/{{id}}/log": {
+            "get": {
+                "operationId": "jobs-log",
+                "summary": "a job's log from a byte on",
+                "tags": ["jobs"],
+                "parameters": [
+                    job_id,
+                    {
+                        "name": "from",
+                        "in": "query",
+                        "required": False,
+                        "description": "the byte to start at (default 0)",
+                        "schema": {"type": "integer", "minimum": 0},
+                    },
+                ],
+                "responses": {
+                    "200": {
+                        "description": "the log text and the byte to ask from next",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {"log": {"type": "string"}, "next": {"type": "integer"}},
+                                    "required": ["log", "next"],
+                                }
+                            }
+                        },
+                    },
+                    **_errors(*read),
+                },
+            }
+        },
+        f"{PREFIX}/jobs/{{id}}/files/{{name}}": {
+            "get": {
+                "operationId": "jobs-file",
+                "summary": "a file the job wrote in its folder (not its own state files)",
+                "tags": ["jobs"],
+                "parameters": [
+                    job_id,
+                    {
+                        "name": "name",
+                        "in": "path",
+                        "required": True,
+                        "description": "the file's name",
+                        "schema": {"type": "string"},
+                    },
+                ],
+                "responses": {
+                    "200": {
+                        "description": "the file",
+                        "content": {
+                            "application/octet-stream": {"schema": {"type": "string", "format": "binary"}}
+                        },
+                    },
+                    **_errors(*read),
+                },
+            }
+        },
+        f"{PREFIX}/jobs/{{id}}/stop": {
+            "post": {
+                "operationId": "jobs-stop",
+                "summary": "stop a job: its process group, cancelled",
+                "tags": ["jobs"],
+                "parameters": [job_id, _data_header()],
+                "responses": {"200": {"description": "the job, stopped", "content": job}, **_errors(*write)},
+            }
+        },
+        f"{PREFIX}/jobs/{{id}}/resume": {
+            "post": {
+                "operationId": "jobs-resume",
+                "summary": "resume a stopped or lost run, as a new job with what the first left of its cap",
+                "tags": ["jobs"],
+                "parameters": [job_id, _data_header()],
+                "responses": {
+                    "202": {"description": "the new job, started", "content": job},
+                    **_errors(*write),
+                },
+            }
+        },
+    }
+
+
+def _other_paths() -> dict[str, Any]:
+    plain = {"application/json": {"schema": {"type": "object"}}}
+    return {
+        f"{PREFIX}/openapi.json": {
+            "get": {
+                "operationId": "openapi-show",
+                "summary": "this description (`evh openapi` prints the same)",
+                "tags": ["api"],
+                "responses": {
+                    "200": {"description": "an OpenAPI 3.1 document", "content": plain},
+                    **_errors("Unauthorized", "Forbidden", "Migrating"),
+                },
+            }
+        },
+        f"{PREFIX}/estimate": {
+            "post": {
+                "operationId": "jobs-estimate",
+                "summary": "a work command's own --dry-run, run now (it calls nothing and writes nothing): what the "
+                "job would do and, for a command that spends, its cost",
+                "tags": ["jobs"],
+                "parameters": [_data_header()],
+                "requestBody": _json_body(
+                    {
+                        "type": "object",
+                        "properties": {
+                            "command": {"type": "string", "description": "the work command"},
+                            "args": {"type": "object", "additionalProperties": True},
+                        },
+                        "required": ["command"],
+                    }
+                ),
+                "responses": {
+                    "200": {
+                        "description": "what the dry run printed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "command": {"type": "string"},
+                                        "version": {"type": "string"},
+                                        "exit": {"type": "integer"},
+                                        "text": {"type": "string"},
+                                    },
+                                    "required": ["command", "version", "exit", "text"],
+                                }
+                            }
+                        },
+                    },
+                    **_errors("BadRequest", "Unauthorized", "Forbidden", "NotFound", "TooLarge", "Migrating"),
+                },
+            }
+        },
+        f"{PREFIX}/session": {
+            "get": {
+                "operationId": "session-open",
+                "summary": "trade the token for the cookie (HttpOnly, SameSite=Strict); with next, a redirect to a "
+                "page of this server",
+                "tags": ["api"],
+                "security": [],
+                "parameters": [
+                    {
+                        "name": "token",
+                        "in": "query",
+                        "required": True,
+                        "description": "the server's token",
+                        "schema": {"type": "string"},
+                    },
+                    {
+                        "name": "next",
+                        "in": "query",
+                        "required": False,
+                        "description": "a path of this server to go on to",
+                        "schema": {"type": "string", "pattern": "^/"},
+                    },
+                ],
+                "responses": {
+                    "204": {"description": "the cookie is set"},
+                    "303": {"description": "the cookie is set; on to next"},
+                    **_errors("Unauthorized", "Forbidden"),
+                },
+            }
+        },
+    }
+
+
+def document() -> dict[str, Any]:
+    """The OpenAPI 3.1 document of the API, made from the operations."""
+    from evaluation_harness._version import __version__  # noqa: PLC0415
+
+    paths: dict[str, Any] = {}
+    for op in OPS.values():
+        item = paths.setdefault(f"{PREFIX}{op.route}", {})
+        if op.method.lower() in item:
+            raise ValueError(f"{op.method} {op.route} is declared twice")
+        item[op.method.lower()] = _operation(op)
+    for path, item in {**_job_paths(), **_other_paths()}.items():
+        paths.setdefault(path, {}).update(item)
+    return {
+        "openapi": "3.1.0",
+        "jsonSchemaDialect": DIALECT,
+        "info": {
+            "title": "Eval harness API",
+            "version": __version__,
+            "description": "The model's entities as resources and its operations as actions, on this machine only. "
+            "Every call carries the server's token (.build/api-token) as a bearer or as the cookie "
+            "GET /api/v1/session sets, to a 127.0.0.1 or localhost Host and no foreign Origin; a call "
+            "that is not a read carries X-EVH-Data: 1. A server started --public or behind a proxy "
+            "answers none of it.",
+        },
+        "security": [{"bearerAuth": []}, {"cookieAuth": []}],
+        "paths": paths,
+        "components": {
+            "securitySchemes": {
+                "bearerAuth": {
+                    "type": "http",
+                    "scheme": "bearer",
+                    "description": "Authorization: Bearer <token>",
+                },
+                "cookieAuth": {
+                    "type": "apiKey",
+                    "in": "cookie",
+                    "name": "evh_token",
+                    "description": "the cookie GET /api/v1/session sets",
+                },
+            },
+            "schemas": {
+                "Error": {
+                    "type": "object",
+                    "properties": {
+                        "error": {"type": "string"},
+                        "kind": {"type": "string", "enum": [*REFUSAL_STATUS]},
+                        "problems": {
+                            "type": "array",
+                            "items": {"type": "object"},
+                            "description": "for a record that does not check, each problem with the field it is at",
+                        },
+                    },
+                    "required": ["error"],
+                },
+                "Job": {
+                    "type": "object",
+                    "description": "a job (RFC-026): its id, command, state, who started it, its locks and how it ended",
+                    "properties": {
+                        "id": {"type": "string"},
+                        "command": {"type": "string"},
+                        "state": {"type": "string"},
+                    },
+                    "required": ["id", "command", "state"],
+                    "additionalProperties": True,
+                },
+            },
+            "responses": _responses(),
+        },
+    }
+
+
+def main(argv: list[str] | None = None) -> int:
+    """evh openapi: the document, as JSON."""
+    from evaluation_harness._common import evh_prog  # noqa: PLC0415
+
+    argparse.ArgumentParser(
+        prog=evh_prog(), description="the API's OpenAPI 3.1 description, made from the operations, as JSON"
+    ).parse_args(argv)
+    print(json.dumps(document(), ensure_ascii=False, indent=2))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

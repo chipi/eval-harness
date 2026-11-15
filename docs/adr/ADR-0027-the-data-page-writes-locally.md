@@ -2,7 +2,9 @@
 
 **Status:** Accepted (owner, 2026-11-06); the page it governs was retired before 0.8.0's release ([PRD-017](../prd/PRD-017-workbench.md)
 decision 4, 2026-11-11). Its rules for a write (this machine only, the `X-EVH-Data` header, no other origin) govern
-the API's calls instead ([RFC-026](../rfc/RFC-026-an-api-for-every-command.md)); the Workbench's ADR amends it.
+the API's calls instead ([RFC-026](../rfc/RFC-026-an-api-for-every-command.md)). Amended by
+[ADR-0029](ADR-0029-one-model-two-surfaces.md): the server writes edits itself, in either store, gated by the API's token
+and `X-EVH-Data`, not by `configure: true`.
 **Date:** 2026-11-06
 **Detail:** [PRD-016](../prd/PRD-016-managing-project-data.md), [UXS-004](../uxs/UXS-004-data-page.md),
 [RFC-025](../rfc/RFC-025-runs-in-sqlite.md)

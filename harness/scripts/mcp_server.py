@@ -159,6 +159,7 @@ NOT_TOOLS = {
     "catalog-serve": "never returns",
     "self-test": "runs the test suite",
     "mcp": "this server",
+    "openapi": "the API's own description, made from the operations (RFC-032)",
 }
 NOT_TOOLS.update(
     dict.fromkeys(

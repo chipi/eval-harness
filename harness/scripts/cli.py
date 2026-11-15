@@ -285,6 +285,7 @@ COMMANDS = {
     "jobs-logs": ("jobs_logs.py", "a job's log, from a byte on, or followed until it ends"),
     "jobs-stop": ("jobs_stop.py", "stop a job: its process group, cancelled"),
     "jobs-resume": ("jobs_resume.py", "resume a stopped or lost run job, as a new job"),
+    "openapi": ("openapi_doc.py", "the API's OpenAPI 3.1 description, made from the operations, as JSON"),
     "overview": (
         "view_overview.py",
         "the catalog's home page: goals at a glance, activity, spend, coverage, what was recorded",

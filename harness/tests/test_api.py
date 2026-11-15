@@ -6,10 +6,11 @@
 The registry on its own: every command is served or named as not served; every path-typed argument of a served
 command has a kind; the options that load code or reach outside the project are never taken. Then a real `evh
 catalog-serve` in a throwaway tutorial project ($0, offline): no token, a wrong one, another Host and a foreign Origin
-are refused; the token works as a bearer and as the cookie the session route sets; the registry lists reads and jobs;
-a read answers exactly what the command answers with --json (parity); a job asked as a read, an argument the
-registry does not take, and a system id that does not exist are refused before anything runs; a server started
---public or --behind-proxy answers no /api/v1/ call.
+are refused (on a read resource of the model, GET /api/v1/goals); the token works as a bearer and as the cookie the
+session route sets; the operations that list datasets and arms and compare arms answer, through the API, exactly what
+their command answers with --json (parity); a system id that does not exist is refused before anything runs; a
+server started --public or --behind-proxy answers no /api/v1/ call. (RFC-032 step 9 removed POST /api/v1/read/<command>
+and GET /api/v1/commands: test_openapi.py checks they answer 404.)
 """
 
 import json
@@ -170,28 +171,18 @@ try:
             oct(tok_file.stat().st_mode & 0o777) if tok_file.exists() else "missing",
         )
         bearer = {"Authorization": f"Bearer {token}"}
-        st, _b, _h = call(port, "GET", "/api/v1/commands")
-        st2, _b, _h = call(port, "GET", "/api/v1/commands", headers={"Authorization": "Bearer nope"})
-        st3, _b, _h = call(port, "GET", "/api/v1/commands", headers=bearer, host="evil.example")
-        st4, _b, _h = call(
-            port, "GET", "/api/v1/commands", headers={**bearer, "Origin": "http://evil.example"}
-        )
+        st, _b, _h = call(port, "GET", "/api/v1/goals")
+        st2, _b, _h = call(port, "GET", "/api/v1/goals", headers={"Authorization": "Bearer nope"})
+        st3, _b, _h = call(port, "GET", "/api/v1/goals", headers=bearer, host="evil.example")
+        st4, _b, _h = call(port, "GET", "/api/v1/goals", headers={**bearer, "Origin": "http://evil.example"})
         check(
             "refused: no token (401), a wrong one (401), another Host (403), a foreign Origin (403)",
             (st, st2, st3, st4) == (401, 401, 403, 403),
             (st, st2, st3, st4),
         )
-        st, body, _h = call(port, "GET", "/api/v1/commands", headers=bearer)
-        cmds = json.loads(body).get("commands", {}) if st == 200 else {}
-        check(
-            "GET /api/v1/commands: the registry, reads and jobs",
-            cmds.get("leaderboard", {}).get("served") == "read"
-            and cmds.get("run", {}).get("served") == "job",
-            (st, body[:200]),
-        )
         st, _b, hd = call(port, "GET", f"/api/v1/session?token={token}")
         cookie = (hd.get("Set-Cookie") or "").split(";")[0]
-        st2, _b, _h = call(port, "GET", "/api/v1/commands", headers={"Cookie": cookie})
+        st2, _b, _h = call(port, "GET", "/api/v1/goals", headers={"Cookie": cookie})
         check(
             "the session route trades the token for an HttpOnly, SameSite=Strict cookie, which then works",
             st == 204
@@ -200,54 +191,36 @@ try:
             and st2 == 200,
             (st, hd.get("Set-Cookie"), st2),
         )
-        parity = {}
-        for c, a in (
-            ("datasets", {}),
-            ("arms", {}),
-            ("leaderboard", {"dataset-id": "tk_v1"}),
-            ("pair-test", {"dataset-id": "tk_v1", "a": "two_v1", "b": "one_v1"}),
+
+        def arm_ids(node):
+            """The ids of the arms an arm-list answer holds."""
+            if isinstance(node, dict):
+                yield from ([node["arm"]] if isinstance(node.get("arm"), str) else [])
+                for v in node.values():
+                    yield from arm_ids(v)
+            elif isinstance(node, list):
+                for v in node:
+                    yield from arm_ids(v)
+
+        arms = sorted(set(arm_ids(json.loads(evh("arm-list", "--json").stdout))))
+        parity = {"two arms to compare": len(arms) == 2}
+        for op, route, argv in (
+            ("dataset-list", "/api/v1/datasets", []),
+            ("arm-list", "/api/v1/arms", []),
+            ("arm-list", "/api/v1/arms?dataset=tk_v1", ["--dataset", "tk_v1"]),
+            (
+                "comparison-show",
+                f"/api/v1/compare?runs={','.join(arms)}&baseline={arms[0]}",
+                ["--runs", ",".join(arms), "--baseline", arms[0]],
+            ),
         ):
-            st, body, _h = call(port, "POST", f"/api/v1/read/{c}", {"args": a}, bearer)
-            argv = [x for k, v in a.items() for x in (f"--{k}", v)]
-            cli = evh(c, *argv, "--json")
-            parity[c] = (st, cli.returncode) == (200, 0) and json.loads(body) == json.loads(cli.stdout)
+            st, body, _h = call(port, "GET", route, headers=bearer)
+            cli = evh(op, *argv, "--json")
+            parity[route] = (st, cli.returncode) == (200, 0) and json.loads(body) == json.loads(cli.stdout)
         check(
-            "parity: a read through the API answers exactly the command's --json",
+            "parity: an operation through the API answers exactly the command's --json (dataset-list, arm-list, comparison-show)",
             all(parity.values()),
             parity,
-        )
-        st, body, _h = call(port, "POST", "/api/v1/read/validate", {"args": {}}, bearer)
-        check(
-            "validate through the API: its envelope, with whether it passed",
-            st == 200 and json.loads(body).get("result", {}).get("values", {}).get("passed") is True,
-            body[:300],
-        )
-        refusals = {
-            "a job asked as a read": call(
-                port, "POST", "/api/v1/read/run", {"args": {"system": "one_v1", "dataset": "tk_v1"}}, bearer
-            )[0],
-            "an argument it does not take": call(
-                port,
-                "POST",
-                "/api/v1/read/pair-test",
-                {"args": {"dataset-id": "tk_v1", "runs-dir": "/etc"}},
-                bearer,
-            )[0],
-            "a value starting with -": call(
-                port, "POST", "/api/v1/read/leaderboard", {"args": {"dataset-id": "--adapter=x"}}, bearer
-            )[0],
-            "not a command": call(port, "POST", "/api/v1/read/nope", {"args": {}}, bearer)[0],
-        }
-        check(
-            "refused before anything runs: a job as a read, an argument it does not take, a value like an option, no such command",
-            refusals
-            == {
-                "a job asked as a read": 404,
-                "an argument it does not take": 400,
-                "a value starting with -": 400,
-                "not a command": 404,
-            },
-            refusals,
         )
         try:
             _api.checked_args("run", {"system": "nope_v1", "dataset": "tk_v1"})
@@ -307,9 +280,7 @@ try:
         srv, port = serve(*mode, *(("--bind", "0.0.0.0") if mode[0] == "--behind-proxy" else ()))  # noqa: S104 - a mode under test  # nosec B104
         try:
             host = mode[1]
-            st, _b, _h = call(
-                port, "GET", "/api/v1/commands", headers={"Authorization": "Bearer x"}, host=host
-            )
+            st, _b, _h = call(port, "GET", "/api/v1/goals", headers={"Authorization": "Bearer x"}, host=host)
             check(f"a server started {mode[0]} answers no /api/v1/ call", st == 404, st)
         finally:
             srv.terminate()

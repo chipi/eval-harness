@@ -1,6 +1,10 @@
 # RFC-026: An API for every command, long ones as jobs
 
-- **Status**: Accepted (owner, 2026-11-08: "update rfc26 to approved"; revision 2 accepted 2026-11-09: "mark both as accepted"); building: steps 1 to 7 built (2026-11-09). On 2026-11-11 the Configure page was retired (PRD-017 decision 4) and
+- **Status**: Partly superseded by [RFC-032](RFC-032-one-model-two-surfaces.md) and
+  [ADR-0029](../adr/ADR-0029-one-model-two-surfaces.md): the registry made from the commands' parsers, reads by process,
+  jobs as command lines and "the server writes nothing itself" give way to one registry of operations, reads in the
+  server's process and edits the server makes; its token, cookie, Host and Origin rules, uploads, jobs, caps, the round
+  ledger and the estimate stay. Accepted (owner, 2026-11-08: "update rfc26 to approved"; revision 2 accepted 2026-11-09: "mark both as accepted"); building: steps 1 to 7 built (2026-11-09). On 2026-11-11 the Configure page was retired (PRD-017 decision 4) and
   with it the server's own data writes in step 4 (its `/api/data/` routes): the server writes nothing itself; jobs do. An
   agent's job names the person it acts for (`for`), as below; that was built after an independent review. Owner, 2026-11-06: "next RFC is
   for this API" (S0b); the Workbench (PRD-017) is its first user. Its four open questions decided by the owner the same

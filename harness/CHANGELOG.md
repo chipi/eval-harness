@@ -408,6 +408,10 @@ that can move a result is never a patch release without saying so under **Change
   arm's `config` block and the compare answer of `catalog-serve`; the text headers follow (`system_id`), and `evh
   arm-show` says `system` where it said `config`. Before and after, every view and every catalog page read the same
   but for those keys.
+- **The API's description, made from the operations** (RFC-032 step 9): `GET /api/v1/openapi.json` (OpenAPI 3.1,
+  with the token) and `evh openapi` give every operation's route, inputs, body, refusals and the job routes. Gone:
+  `POST /api/v1/read/<command>` (a read run as a process) and `GET /api/v1/commands`; the operations' resources
+  answer the reads. ADR-0029 records the model.
 - **The catalog never goes stale** (RFC-032 step 8): `evh catalog-serve` rebuilds the pages as a `catalog` job when
   the data changes, at once for a write through the API or an edit, on the next read for any other (another terminal,
   a pull); the pages stay served while it builds and after a failed build, `/api/health` says which, and it no longer

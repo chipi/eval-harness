@@ -463,3 +463,17 @@ Quoted from the discussion, typing slips corrected.
     fingerprint and judging sets kept (they are hashed);
   - dropped after the check: goal status and the goal page list different references by design (the goal's against
     the dataset's); a deployed catalog does show round evidence (render.sh builds with the copy as the project).
+- **Step 9, what RFC-026 built that this replaces** (after an inventory: 43 read, 14 edit and 1 decision operation, no
+  work operation; 40 MCP and API reads that are commands run as processes, 23 of them with no operation; every job a
+  command line checked by a registry made from the parsers), "this is a new project and I don't want many legacy
+  commands or tools, we just move forwards":
+  - `POST /api/v1/read/<command>` and `GET /api/v1/commands` go (only tests used them); an OpenAPI description is
+    made from the operations (`GET /api/v1/openapi.json`, `evh openapi`);
+  - every legacy read becomes an operation or goes, no old name kept as an alias: the 8 an operation already answers
+    are removed, the 9 it answers in part get what they lack, the 23 with none become operations; MCP serves the
+    registry's reads in the server's process, their answers the operations' results;
+  - every command that runs as a job becomes a work or decision operation with its locks declared (58); a job names
+    an operation and its inputs; the registry made from the parsers goes;
+  - performance is measured before it is designed ("performance is a problem with or without MCP"): where a view's
+    time goes, cold and warm, under prod's limits; then a cache keyed by what a view is computed from;
+  - ADR-0029 records the model and amends ADR-0027; RFC-026's status names what it keeps.

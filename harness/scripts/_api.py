@@ -33,6 +33,7 @@ NOT_SERVED = {
     "env-check": "the server's own environment",
     "self-test": "checks the installed package",
     "capture-scrub": "runs a program it is given",
+    "openapi": "the API's own description: GET /api/v1/openapi.json",
     **dict.fromkeys(
         ("jobs-start", "jobs-status", "jobs-logs", "jobs-stop", "jobs-resume"),
         "the terminal's jobs; the API has its own job routes",
@@ -400,7 +401,7 @@ def job_argv(command: str, arguments: Any, job_id: str) -> tuple[list[str], dict
     if reg is None:
         raise Refused(f"{command}: not a command the API serves", 404)
     if reg["served"] != "job":
-        raise Refused(f"{command}: a read (POST /api/v1/read/{command}), not a job")
+        raise Refused(f"{command}: a read, not a job")
     if not isinstance(arguments, dict):
         raise Refused("args: a JSON object keyed by the argument's name")
     files = {a["name"]: a["kind"] for a in reg["arguments"] if a["kind"] in (UPLOAD, ARTIFACT)}

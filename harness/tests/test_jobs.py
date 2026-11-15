@@ -530,7 +530,7 @@ try:
     (proj / "slow_start.py").write_text("import time\n\ndef start(info):\n    time.sleep(1.5)\n")
     (proj / ".build" / "api-token").write_text("the-previous-servers-token\n")
     srv, PORT, TOKEN = serve("--hooks", "slow_start.py")
-    first, _ = call("GET", "/api/v1/commands")
+    first, _ = call("GET", "/api/v1/goals")
     srv.terminate()
     srv.wait(timeout=10)
     check(
@@ -576,7 +576,7 @@ try:
     env.pop("EVAL_STORE", None)
     (proj / "config.yaml").write_text(f"store: {cur}\n")
     srv, PORT, TOKEN = serve()
-    st, before = call("POST", "/api/v1/read/datasets", {"args": {}})
+    st, before = call("GET", "/api/v1/datasets")
 
     def served_file():  # the server itself reads it (from the database, in a sqlite project): it holds the store
         try:
@@ -591,12 +591,12 @@ try:
     mjd = until(mj.get("id"), ("succeeded", "failed", "lost"), 180) if st2 == 202 else {}
     after = {}
     for _ in range(40):
-        st3, after = call("POST", "/api/v1/read/datasets", {"args": {}})
+        st3, after = call("GET", "/api/v1/datasets")
         if st3 == 200:
             break
         time.sleep(0.25)
     ids = lambda b: sorted(  # noqa: E731
-        r.get("dataset") for blk in (b.get("result") or {}).get("blocks", []) for r in blk.get("rows", [])
+        r.get("dataset") for r in (b.get("result") or {}).get("datasets", [])
     )
     file_after = served_file()
     check(

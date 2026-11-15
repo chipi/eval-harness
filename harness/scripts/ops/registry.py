@@ -14,7 +14,8 @@ KINDS = ("read", "edit", "decision", "work")
 class Op:
     """One operation: `name` is its command (`evh goal-show`); `route` its resource, `{goal}` a part of the path and a
     positional of the command; `inputs` the rest, as JSON Schema properties; `run` a dotted `module:function` taking
-    the inputs (and `by`, for a write), loaded only when called; `text` how the command prints its answer."""
+    the inputs (and `by`, for a write), loaded only when called; `text` how the command prints its answer; `output`,
+    when declared, the result's JSON Schema, which the API's description gives as the 200's."""
 
     name: str
     kind: str
@@ -25,6 +26,7 @@ class Op:
     text: str
     inputs: dict[str, Any] = field(default_factory=dict)
     required: tuple[str, ...] = ()
+    output: dict[str, Any] = field(default_factory=dict)
 
     def path_params(self) -> list[str]:
         """The parts of the route the call names, in order."""

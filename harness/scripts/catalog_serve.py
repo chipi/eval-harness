@@ -91,6 +91,8 @@ from evaluation_harness.model.compare import (  # noqa: E402, F401 -- compare an
     compare,
     goal_clusters_on,
 )
+from evaluation_harness.ops import openapi  # noqa: E402
+from evaluation_harness.ops.openapi import REFUSAL_STATUS  # noqa: E402
 
 A: Adapter = None  # type: ignore[assignment]  # set by main() or set_adapter()
 
@@ -508,50 +510,7 @@ WORKBENCH_TYPES = {
     ".css": "text/css; charset=utf-8",
     ".svg": "image/svg+xml",
 }
-#: A refusal of the model's, as an HTTP status.
-MODEL_STATUS = {
-    "not-found": 404,
-    "bad-argument": 400,
-    "invalid-file": 422,
-    "would-overwrite": 409,
-    "not-allowed": 409,
-    "old-format": 409,
-    "mismatch": 409,
-}
 API_MAX_JOB_BODY = 70 * 1024 * 1024  # 50 MB of files, base64 (RFC-026: owner, 2026-11-08)
-
-
-def api_read(command: str, arguments: Any) -> tuple[int, dict]:
-    """POST /api/v1/read/<command>: the read command run as the MCP server runs a tool call, its envelope back (or
-    its text, for the read commands with no --json yet)."""
-    from evaluation_harness import _api  # noqa: PLC0415
-    from evaluation_harness import mcp_server as ms  # noqa: PLC0415
-
-    try:
-        reg = _api.registry().get(command)
-        if reg is None or reg["served"] != "read":
-            raise _api.Refused(
-                f"{command}: not a read command the API serves (a job: POST /api/v1/jobs)", 404
-            )
-        checked = _api.checked_args(command, arguments)
-        argv = ms.argv_of(ms.parser_of(command), checked)
-    except _api.Refused as exc:
-        return exc.status, {"error": str(exc)}
-    except ValueError as exc:
-        return 400, {"error": str(exc)}
-    code, out, err = ms.run_command(ROOT, command, argv)
-    if code != 0:
-        lines = [ln for ln in (err or out).splitlines() if ln.strip()]
-        msg = next((ln for ln in reversed(lines) if ln.startswith("ERROR")), lines[-1] if lines else "")
-        return (400 if code in (1, 2) else 500), {"error": msg, "exit": code}
-    if command in ms.JSON:
-        try:
-            return 200, json.loads(out)
-        except ValueError:
-            return 500, {"error": f"{command} --json printed no JSON"}
-    from evaluation_harness._version import __version__  # noqa: PLC0415
-
-    return 200, {"command": command, "version": __version__, "text": out}
 
 
 def api_estimate(command: str, arguments: Any) -> tuple[int, dict]:
@@ -1053,7 +1012,6 @@ class Handler(SimpleHTTPRequestHandler):
     def _api(self, method: str) -> None:
         """/api/v1/: the token on every call, this machine's Host (`_refuse`), no foreign Origin, and the data header on
         every call that is not a read (RFC-026, Who may call)."""
-        from evaluation_harness import _api  # noqa: PLC0415
 
         url = urlparse(self.path)
         if self._refuse():
@@ -1083,21 +1041,8 @@ class Handler(SimpleHTTPRequestHandler):
             return self._json(
                 401, {"error": "the API needs the server's token (.build/api-token)"}, cache=False
             )
-        if method == "GET" and url.path == "/api/v1/commands":
-            return self._json(200, {"commands": _api.registry()}, cache=False)
-        if method == "POST" and url.path.startswith("/api/v1/read/"):
-            n = int(self.headers.get("Content-Length") or 0)
-            if n > API_MAX_BODY:
-                return self._json(
-                    413, {"error": f"a read call is at most {API_MAX_BODY:,} bytes"}, cache=False
-                )
-            try:
-                body = json.loads(self.rfile.read(n) or b"{}") if n else {}
-            except ValueError:
-                return self._json(400, {"error": 'the body is a JSON object: {"args": {...}}'}, cache=False)
-            args = body.get("args", {}) if isinstance(body, dict) else None
-            code, answer_body = api_read(url.path[len("/api/v1/read/") :], args)
-            return self._json(code, answer_body, cache=False)
+        if method == "GET" and url.path == "/api/v1/openapi.json":
+            return self._json(200, openapi.document(), cache=False)
         if url.path == "/api/v1/jobs" or url.path.startswith("/api/v1/jobs/"):
             return self._jobs_route(method, url)
         if method == "POST" and url.path == "/api/v1/estimate":
@@ -1118,7 +1063,7 @@ class Handler(SimpleHTTPRequestHandler):
             return self._json(code, answer_body, cache=False)
         if self._model_route(method, url):
             return None
-        if self.headers.get(DATA_HEADER) != "1":
+        if method != "GET" and self.headers.get(DATA_HEADER) != "1":
             return self._json(
                 403, {"error": f"a call that is not a read needs the {DATA_HEADER}: 1 header"}, cache=False
             )
@@ -1180,7 +1125,7 @@ class Handler(SimpleHTTPRequestHandler):
                 result = op.call(**params, **inputs)
             except Problem as exc:
                 return say(
-                    MODEL_STATUS.get(exc.kind, 400),
+                    REFUSAL_STATUS.get(exc.kind, 400),
                     {"error": str(exc), "kind": exc.kind, "problems": exc.problems},
                 )
             if op.kind != "read":

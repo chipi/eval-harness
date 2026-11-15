@@ -618,6 +618,7 @@ def main() -> int:
             ("jobs-logs", ["20990101T000000-abcdef"], "no job"),
             ("jobs-stop", ["20990101T000000-abcdef"], "no job"),
             ("jobs-resume", ["20990101T000000-abcdef"], "no job"),
+            ("openapi", [], 'ok:"openapi": "3.1.0"'),
             ("catalog", [], "ok"),
             ("catalog-serve", [], "ok"),  # started, its address read, stopped
             # A stdio server: --help here; tests/test_mcp_server.py talks to it through the SDK.

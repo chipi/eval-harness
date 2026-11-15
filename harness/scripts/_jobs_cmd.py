@@ -6,7 +6,7 @@
     evh jobs-stop JOB_ID
     evh jobs-resume JOB_ID
 
-`--arg` names an argument as the API does (its name without the dashes, as `GET /api/v1/commands` lists it): a
+`--arg` names an argument as the API does (its name without the dashes, as `evh COMMAND --help` shows it): a
 system by its id, `--arg repeat=3`, a flag as `--arg NAME=true`; repeated, it makes a list; `@FILE` uploads a
 file. A job started here is listed by the API and stopped by it, and one the Workbench started is followed here. No
 server is needed.
@@ -48,7 +48,7 @@ def args_of(pairs: list[str]) -> dict[str, Any]:
         name, sep, raw = pair.partition("=")
         if not sep or not name:
             die(
-                f"--arg {pair!r}: expected NAME=VALUE (the name as GET /api/v1/commands lists it)",
+                f"--arg {pair!r}: expected NAME=VALUE (the name as `evh COMMAND --help` shows it, without the dashes)",
                 "bad-argument",
             )
         v = _value(raw)
@@ -96,7 +96,10 @@ def _line(j: dict[str, Any]) -> str:
 def start(argv: list[str]) -> int:
     """evh jobs-start: a command started as a job, checked as the API checks it."""
     ap = argparse.ArgumentParser(prog=evh_prog(), description="start a command as a job (RFC-026)")
-    ap.add_argument("command", help="the command, as GET /api/v1/commands names it (served: job)")
+    ap.add_argument(
+        "command",
+        help="the command, as `evh --help` names it (a command that works on the project, not a read)",
+    )
     ap.add_argument(
         "--arg", action="append", default=[], metavar="NAME=VALUE", help="an argument (repeatable)"
     )
