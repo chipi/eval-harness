@@ -1,7 +1,8 @@
 # RFC-033: Per-item results as a model, in both stores
 
-- **Status**: Draft for review (owner, 2026-11-15: "goal is a model that can be queried, so we need to build both
-  layers"; plan first, then a second review before the build)
+- **Status**: Draft, revision 2 (owner, 2026-11-15: "goal is a model that can be queried, so we need to build both
+  layers"; after the second review: "fix all blockers and high and other issues, we need clean work"). Revision 2
+  answers every finding of the second review; it is checked again before the build.
 - **Authors**: Marko Dragoljevic
 - **Related**: [RFC-024](RFC-024-run-outputs-in-one-file.md) (outputs and rows in one place),
   [RFC-025](RFC-025-runs-in-sqlite.md) (both stores; this RFC replaces its "byte-for-byte mirror" for per-item rows),
@@ -11,202 +12,247 @@
 ## Abstract
 
 A score set's per-item results (`predictions.jsonl`, one JSON line per item) are stored verbatim in both stores: as a
-file, and in SQLite as one text value per line. 73% of those bytes are repeated key names and punctuation, a quarter
-of `_meta` is copied between the score sets of one run, and two `_meta` fields (the provider's whole billing object,
-and generation settings that are the run's) are 41% of the rest. This RFC gives the results a model: **format 7**
-(both stores) moves what belongs to the run onto the run and keeps of the billing object what is read; the **SQLite
-store** stores the results in tables (score sets, metric names, one row per item, one value per metric, a call's facts
-once per item) instead of text, so they can be queried and each name is stored once. Readers keep getting the same
-row dicts. The files store stays JSONL.
+file, and in SQLite as one text value per line. 56% of those bytes are repeated key names and 16% punctuation; 37% of
+`_meta` is copied between the score sets of one run; the provider's whole billing object and three run settings are a
+further 42 MiB. This RFC gives the results a model. **Format 7** (both stores) moves the run's settings onto the run and
+keeps of the billing object what is read. The **SQLite store** keeps the results in tables (score sets, metric names,
+one row per item, one value per metric, a call's facts once per run and item) instead of text, so they can be queried
+and each name is stored once. Readers keep getting the same row dicts. The files store stays JSONL.
 
 ## Decisions (owner, 2026-11-15)
 
-1. "Goal is model that can be queried, so we need to build both layers." Not compression (measured 9.6 MB, but rows
+1. "Goal is model that can be queried, so we need to build both layers." Not compression (measured 9.6 MiB, rows
    opaque); not both.
-2. The provider's billing detail is slimmed ("slim it"): lossy, accepted.
-3. The files store stays JSONL with full rows ("stays jsonl"); no calls file per run.
-4. Metric values in a long table (queryable), not a per-row array.
-5. What moves to the run: any `_meta` field constant over the run (a generic rule), not a named list.
-6. The fleet's data repository migrates in this release, in the same step. (Read from "yes on suggestion"; the owner
-   confirms in the review.)
-7. Plan first, then a second review, then build.
+2. The provider's billing detail is slimmed: kept `cost`, `prompt_tokens`, `completion_tokens`, `cached_tokens`,
+   `cache_write_tokens` (owner: "3 ok" to keeping the last).
+3. The files store stays JSONL with full rows; no new file per run.
+4. Metric values in a long table (queryable).
+5. What moves to the run: the three run settings `generation_config`, `generation_requested`, `encoder_window`
+   (owner, "2 do it", after the review showed the generic "any constant `_meta` key" rule also moves parser output —
+   `predicted`, `ranking`, `gates` — into `run.json`, which a release copies whole, so a hidden dataset's score-level
+   data would leak; and moves coincidences such as a run whose rows all end `finish_reason: stop`).
+6. The fleet's data repository (`chipi/fleet-eval-data`) migrates within this release, as its own PR: its whole move to
+   0.8 (formats 1-7), after this repository's commit is pushed and its pin bumped.
+7. The SQLite table of a call's facts is `call_facts` (not `calls`, which is already a `_meta` key: the judge adapter's
+   per-pair records, 4,425 rows).
+8. V9 checks a SQLite project in this release (today it skips everything there).
+9. The release database uses 16 KiB pages and score-set ids that do not depend on where a key sorts.
+10. The MCP container's memory: 512m (done, 6a91f51db).
 
 Binding from before: one database for everything under `data/`, no Python in it, nothing invented beyond the scope
-(RFC-025, 2026-11-06); no default store (2026-11-15); no backward compatibility, committed data migrated, no shims; both
-stores equal and solutions reusable for both; keep the vocabulary.
+(RFC-025); no default store; no backward compatibility, committed data migrated, no shims; both stores equal and
+solutions reusable for both; keep the vocabulary.
 
 ## What exists (measured 2026-11-15)
 
-Measured on a full SQLite copy of this repository's data (`~/.cache/evh-view-bench/sqlite/data/project.sqlite`, 246
-MB; the files layout of the same data 208 MB; a clean-HEAD SQLite release 241.5 MB against 7,695 files of 176 MB):
+On a full SQLite copy of this repository's data (`~/.cache/evh-view-bench/sqlite/data/project.sqlite`, 246 MB; the
+files layout 208 MiB by `du -sh`; a clean-HEAD SQLite release 237.8 MB after e86f3c004, files release 160.7 MB). Sizes
+in MiB unless said:
 
 | Table (dbstat) | On disk | Holds |
 |---|---|---|
-| `rows` + its PK index + `rows_item` | 143 + 10 + 14 MB | 93,736 lines (711 of them the `n = 0` "rows exist" marker), 101.8 MB of JSON |
-| `outputs` + PK index | 43 + 4 MB | 46,800 output texts, 32 MB (2.5 MB of it duplicated across runs) |
-| `files` | 28 MB | every other record: corpora 8.0, run/score JSON 3.7, verdicts 3.2, sources 3.0, materialized 2.8 |
+| `rows` + PK index + `rows_item` | 143.6 + 10.5 + 14.6 | 93,736 lines (711 of them the `n = 0` "rows exist" marker): 93,025 rows, 101.8 MiB of JSON |
+| `outputs` + PK index | 43 + 4 | 46,800 output texts, 30.6 MiB |
+| `files` | 28 MB | every other record: corpora 8.0, run/score JSON 3.7, verdicts 3.2, sources 3.0, materialized 2.8 (decimal MB) |
 
-The 101.8 MB of row JSON: key names 57.2 MB (56%), punctuation and spacing 16.7 MB, null/0/false 4.6 MB, values 23.2
-MB. By field: `_meta` 65.7 MB, of which `usage` 32.3 MB (the provider's whole object; code reads only `usage.cost`:
-`cost_report.py:71`, `rescore.py:215`, `arm_smoke.py:57`, `tools/summeval_analysis.py:115`, `examples/.../reproduce.py:134`)
-and `generation_config` 9.9 MB (31 score sets, 6,000 items, 31 distinct values: one per set). 24.6 MB of `_meta`
-(minified) is a verbatim copy of the same run and item's `_meta` in another score set (rescore and judge_score carry
-`_` keys over). Top-level fields: 102 names, 1,045,954 values, all numeric; only `item_id` is on every row.
+The 101.8 MiB of row JSON: key names 57.2 MiB (56%), punctuation and spacing 16.7, null/0/false 4.6, values 23.2.
+`_meta` 64.9 MiB; 24.6 MiB of it (37% of `_meta`, 24% of row bytes) is a verbatim copy of the same run and item's
+`_meta` in another score set (rescore and judge_score carry `_` keys over: `rescore.py:170`, `judge_score.py:1465-1468`).
+`_meta.usage`: 53,720 objects, 31.8 MiB; slimmed, 5.6 MiB. The three run settings: 10.8 MiB, in 14 runs (31 score
+sets), each constant over its run. Top-level fields: 102 names, 1,432,836 values, all numeric (104 of them integers:
+`cost_usd`, `concision`, `coverage`, `rougeLsum`); only `item_id` is on every row; `_extra` absent on 65k rows, `{}` on 405.
+All 93,025 rows are canonical (`json.dumps(sort_keys=True)`).
 
-How the rows are written and read today:
+Code facts this design rests on (each checked):
 
-- Written through `_outputs` only: `put_rows(run_dir, text)` (whole set), `append_row`/`append_partial` (the crash
-  checkpoint `rows.partial.jsonl`), `write_rows(run_dir, rows)`, `row_line(row)` (canonical: `json.dumps(sort_keys=True)`).
-  `run.py:580` puts an adapter's `Result.meta` under `_meta`; `rescore.py:199` and `judge_score.py:1368` add to it.
-- Read through `_outputs.rows_text` (20 call sites) and `_runs.item_rows` (the parsing reader most code uses),
-  `_outputs.item_across` (one item across runs, the `rows_item` index), `_outputs.lines`.
-- No stored hash covers prediction rows: the fingerprint hashes instrument, data, deployment and settings
-  (`_fingerprint.py`), judging sets hash output texts (`judge_score.py:656`), every other `_sha` in `judge_score.py`
-  hashes prompts, articles, manifests and ids. V5's per-item signature is computed at validate time from parsed rows
-  minus `_meta`.
-- `validate`'s V9 file listing comes from `git ls-files` (`validate_tree.py:762`), which does not apply in SQLite mode.
-- A hidden dataset's rows keep only `CALL_META` of `_meta` in a release (`_release.py:83-94`: provider,
-  response_model, usage, finish_reason, reasoning_tokens_reported, system_fingerprint, generation_config,
-  generation_requested, encoder_window, resumed_from_disk).
-- The deploy image's SQLite is 3.53.4 (P1b, `python:3.12.14-alpine3.23`).
+- Rows are written through `_outputs` (`put_rows`, `write_rows`, `append_partial`/`append_row` for the crash checkpoint,
+  `row_line`), and outside it by `import_run.py:264`, `sheet_import.py:371` and `tools/check_report_claims.py:268`
+  (through `_outputs` too). `run.py:580` puts an adapter's `Result.meta` under `_meta`; `run.py:1487-1507` writes
+  `run.json`, the first score, then the rows; `rescore.py:199` adds to `_meta`.
+- Rows are read through `_runs.item_rows` (most readers), `_outputs.rows_text` (16 call sites outside `_outputs`),
+  `_outputs.item_across` (one item across runs: only `catalog_views._items_out`, `evh inspect --items-out`, which is not
+  served publicly), `_outputs.lines`.
+- No stored hash covers prediction rows: the fingerprint (`_fingerprint.py`), judging sets (`judge_score.py:656`, over
+  output texts), prompts, articles, manifests and ids. `family_test.py:124` hashes rows text for a cache key only.
+- Nothing reads the three run settings from rows: they are named only in the release's filter (`_release.py:83-94`).
+  Code reads only `usage.cost` from stored rows (`cost_report.py:71`, `rescore.py:215`, `tools/summeval_analysis.py:115`,
+  `examples/.../reproduce.py:134`).
+- `run.json` keys reach every score's record: `model/runs.py:224` (`split`) records a run key missing from the score's
+  record as `unset`, except `RUN_ONLY` (`model/runs.py:40`); V1 validates the merged record against
+  `schemas/metrics.schema.json` (`additionalProperties: false`).
+- A migration "works on the stored data, never through the current model's code" (`migrations/__init__.py:8`).
+- V9 skips a SQLite project entirely (`validate_tree.py:725-727`), its row counts and floors included.
+- Resuming a run reads the prior score's rows and refuses rows without an `_extra` dict (`run.py:976`); the crash
+  checkpoint may end in a torn line, which readers skip (`run.py:594-598`).
+- SQLite: the local library is 3.53.4; the deploy image's is to be checked in step a.
 
 ## The model
 
-Four things the rows mix today, each given its place:
-
 | Concept | What it is | Files store (format 7) | SQLite store |
 |---|---|---|---|
-| **run-level call settings** | `_meta` fields constant over the run (here `generation_config`, `generation_requested`, `encoder_window`) | `run.json` → `call` | the run's `run.json` in `files` |
-| **call facts** | per item, what the call was: the `CALL_META` keys (provider, model, usage, finish, ...) | in each row's `_meta`, as today | `calls(run, item)`, once per run and item |
-| **score-level meta** | per item and score set, what the parser made of the answer (`predicted`, `ranking`, `llm_raw`, `gates`, ...) | in each row's `_meta` | `score_rows.meta` |
-| **values** | per item and score set, every numeric top-level field (the metrics, latency, cost, tokens, flags) | top-level fields of the row | `score_values(row, metric, value)` |
+| **run settings** | `generation_config`, `generation_requested`, `encoder_window`: the run's, not an item's | `run.json` → `call` | `run.json` (in `files`) |
+| **call facts** | per run and item, what the call was: `CALL_META` less the run settings (provider, response_model, usage, finish_reason, reasoning_tokens_reported, system_fingerprint, resumed_from_disk) | each row's `_meta`, as today | `call_facts`, once per run and item |
+| **score-level meta** | per item and score set, what the parser made of the answer (`predicted`, `ranking`, `llm_raw`, `gates`, `calls`, ...) | each row's `_meta` | `score_rows.meta` |
+| **values** | per item and score set, every numeric top-level field | top-level fields | `score_values` |
 
-`CALL_META` moves from `_release.py` to the model (`model/results.py`, new) and is the one definition of "call facts":
-the release filter, the SQLite split and the docs read it there.
+`CALL_META` and `RUN_SETTINGS` move from `_release.py` to the model (`model/results.py`, new): the one definition the
+release filter, the split, the slim and the docs read.
 
-A **row dict** (what `item_rows` yields) is unchanged in shape: `{"item_id": …, <values>, "_meta": {<call settings>,
-<call facts>, <score-level meta>}, "_extra": …}`. Every reader gets the same dict it gets today, from either store.
+**A row dict** (what `item_rows` yields) keeps its shape: `{"item_id", <values>, "_meta": {<call facts>, <score-level
+meta>}, "_extra", <other `_` keys>}`, keys sorted. It no longer carries the run settings (nothing reads them there);
+`run.json`'s `call` does. A row's own key always wins over one assembled from `call_facts`.
 
 ### Format 7 (both stores)
 
-`migrations/m0007_results.py`, applied by `evh migrate` as m0001-m0006 are:
+`migrations/m0007_results.py`. Self-contained, as the migration rule requires: it carries frozen copies of the three
+run-setting keys, the slim function and the kept usage keys, and imports nothing from `model/`:
 
-1. **Run-level call settings.** For each run with at least two rows over its score sets: every `_meta` key whose value
-   (canonical JSON) is identical on every row of every score set of the run, and that is a `CALL_META` key, goes into
-   `run.json` as `call: {<key>: <value>}` and leaves the rows. (Restricted to `CALL_META` so a parser field that happens
-   to be constant, e.g. a `model` name the parser echoes, is not hoisted; the generic rule decided by the owner
-   applies within the call facts. The review checks this narrowing.) Expected here: 31 runs, three keys.
-2. **Usage slimmed.** `_meta.usage` keeps `cost`, `prompt_tokens`, `completion_tokens`, and when present
-   `reasoning_tokens` and `cached_tokens` (lifted from `completion_tokens_details` / `prompt_tokens_details`); every
-   other key goes. Applied at write too (below), so an adapter keeps returning what it likes. Expected: 53,720 objects.
-3. **Rows canonical.** Every stored line is `row_line(row)` (sorted keys, `json.dumps` defaults). Committed rows
-   already are (checked on a sample; the migration counts any it rewrites).
-4. `project.yaml` `format: 7`; `migrate --dry-run` prints the counts per change.
+1. **Run settings.** For each run: if every row of every score set of the run holds the same value (canonical JSON) for
+   a run-setting key, the key goes to `run.json` `call` and leaves the rows. Expected here: 14 runs, 31 score sets, the
+   three keys (10.8 MiB). A run where the values differ keeps them in its rows (none here).
+2. **Usage slimmed.** `_meta.usage` keeps `cost`, `prompt_tokens`, `completion_tokens`, and when nonzero
+   `cached_tokens` (from `prompt_tokens_details.cached_tokens`) and `cache_write_tokens`; everything else goes.
+   `None` and non-dict values pass through unchanged; the function is idempotent. Expected: 53,720 objects, 31.8 → 5.6
+   MiB; 11 have no `cost` (kept as they are).
+3. **Rows canonical** (already so here; the migration counts any it rewrites).
+4. **SQLite projects**: the new tables are filled from the old `rows` table by raw SQL, in the same order `data-migrate`
+   uses (below); `rows` is dropped.
+5. `project.yaml` `format: 7`. `migrate --dry-run` prints each count.
 
-The write path keeps it so, in `_outputs` (both stores), generically: a row written for a score set under
-`runs/<id>/scores/<key>/` loses the `_meta` keys equal to its run's `call`, and its `usage` is slimmed; `run.py` computes
-`call` when the run finishes (the same rule as the migration) and rewrites the run's rows once. The read path adds
-`call` back under `_meta`. So rescore and judge_score, which copy a row's `_` keys into a new score set, write what
-format 7 stores.
+`run.json` `call`: added to `schemas/metrics.schema.json` (an object) and to `RUN_ONLY` (`model/runs.py:40`), so a score
+neither unsets it nor carries it into a derived record (`_record.py:178`). A test checks V1 passes with it and the first
+score has no `unset: ["call"]`.
 
-**Validation**: a new check (V-number at build) reports a row holding a `call` key with the run's value, or a `usage`
-key outside the kept set.
+**Writes keep it so**, in both stores:
+
+- `run.py` computes `call` from `result["predictions"]` in memory before `write_run` (`run.py:1487`), strips those keys
+  from the rows, and writes the rows once. No second write, so no crash window between two.
+- `_outputs` slims `usage` on every write (rows of any score set), so an adapter keeps returning what it likes and
+  rescore/judge_score carry slimmed values.
+- A score set added to a run later (rescore, judge_score, `sheet_import`): its rows are written as they come; a
+  run-setting key equal to the run's `call` is stripped, one that differs stays in the row.
+
+**Validation** (raw reads, not `item_rows`): a new check reports a stored row holding a run-setting key equal to its
+run's `call`, or a `usage` key outside the kept set. Files: reads `predictions.jsonl` lines; SQLite: reads `call_facts`
+and `score_rows.meta`.
 
 ### SQLite tables (replace `rows`)
 
 ```sql
-score_sets   (id INTEGER PRIMARY KEY, key TEXT NOT NULL UNIQUE)          -- runs/<run>/scores/<key>
-metrics      (id INTEGER PRIMARY KEY, name TEXT NOT NULL UNIQUE)         -- every numeric top-level field name
-calls        (run TEXT NOT NULL, item_id TEXT NOT NULL, meta TEXT NOT NULL, -- call facts, JSON, once per run and item
+score_sets   (id INTEGER PRIMARY KEY,               -- from the key's sha256 (below), not from insertion order
+              key TEXT NOT NULL UNIQUE)             -- the score set's folder, data/-relative
+metrics      (id INTEGER PRIMARY KEY, name TEXT NOT NULL UNIQUE)
+call_facts   (run TEXT NOT NULL, item_id TEXT NOT NULL, meta TEXT NOT NULL,      -- JSON object
               PRIMARY KEY (run, item_id)) WITHOUT ROWID
-score_rows   (id INTEGER PRIMARY KEY, score_set INTEGER NOT NULL, n INTEGER NOT NULL, item_id TEXT NOT NULL,
-              meta TEXT,          -- score-level meta and any call fact that differs from calls.meta, JSON
-              extra TEXT,         -- `_extra`, JSON
-              rest TEXT,          -- any other `_` key or non-numeric top-level field, JSON; usually NULL
+score_rows   (id INTEGER PRIMARY KEY,               -- score_set * 2^20 + n
+              score_set INTEGER NOT NULL, n INTEGER NOT NULL, item_id TEXT NOT NULL,
+              facts INTEGER NOT NULL,               -- 1: its call facts are call_facts[run, item]; 0: none
+              meta TEXT,                            -- JSON: score-level meta (+ any call fact that differs); NULL: no `_meta`
+              extra TEXT,                           -- JSON `_extra`; NULL: absent
+              rest TEXT,                            -- JSON of every field not stored above; NULL: none
               UNIQUE (score_set, n))
-score_values (row INTEGER NOT NULL, metric INTEGER NOT NULL, value NOT NULL,  -- no affinity: 1 stays 1, 1.0 stays 1.0
+score_values (row INTEGER NOT NULL, metric INTEGER NOT NULL, value NOT NULL,     -- no type affinity
               PRIMARY KEY (row, metric)) WITHOUT ROWID
-rows_partial (run TEXT NOT NULL, n INTEGER NOT NULL, row TEXT NOT NULL, PRIMARY KEY (run, n))  -- the crash checkpoint, verbatim
+rows_partial (run TEXT NOT NULL, n INTEGER NOT NULL, line TEXT NOT NULL, PRIMARY KEY (run, n))  -- the crash checkpoint, verbatim
 CREATE INDEX score_rows_item ON score_rows (item_id)
 ```
 
-- **A score set with no rows** keeps its `score_sets` entry (today's `n = 0` marker).
-- **Writing a score set** (`put_rows`, `write_rows`): one transaction: the set's rows deleted, then per row its values,
-  its call facts compared with `calls[run, item]` (inserted if absent; a differing key stays in the row's `meta`), its
-  score-level meta, `_extra` and the rest. Metric ids for new names inserted. A line that is not a JSON object with an
-  `item_id` is refused (`invalid-file`): today the strict reader already raises on it.
-- **Reading a score set**: `score_rows WHERE score_set = ? ORDER BY n`, its values by `row BETWEEN min AND max` (a set's
-  rows are inserted together), `calls` for the run; each dict assembled, `call` from `run.json` added under `_meta`.
-  `item_across`: `score_rows WHERE item_id = ?`.
-- **Deterministic ids** (the release's bytes, RFC-032 step 9): a migration and `data-migrate` insert score sets sorted
-  by key, metric names sorted, items in stored order; the release's `seal` already rebuilds with `VACUUM INTO`.
-- **`rows_text`** becomes derived: the canonical lines of the assembled dicts. Its callers that compare text
-  (`rescore.py:559`, `judge_score.py:1534`, `examples/retrieval-scifact/reparse.py:189`) compare canonical text on both
-  sides, as they do now.
-- **Kept rows** (`_Kept`, 8 MB by text length) re-keyed by row count or serialized size.
-- **Deleting** a run or score set (`rmtree` cascade, `forget_under`, `_store._per_item_tables`) learns the new tables;
-  `calls` rows go with their run.
-- **`data-migrate`** files ⇄ sqlite compares every score set as rows (canonical text of the assembled dicts), not raw
-  bytes; going to files writes canonical lines.
+**Ids.** `score_sets.id` = the first 31 bits of the key's sha256 (a collision is refused at write and names both keys);
+`score_rows.id` = `score_set * 2^20 + n` (a set over 2^20 rows is refused). Ids do not depend on which other score sets
+exist, so a new run does not renumber the others; the B-tree still orders by id, so how much a release delta shrinks is
+measured, not assumed (step e). The release is sealed with `page_size = 16384` (measured: −27.1 MB, and the one-new-run
+delta from 20.2 MB to 1.1 MB when the run sorts last).
 
-Estimated sizes (arithmetic on the measured parts, not a built prototype; step d measures them): `score_values` ~16 MB
-(15 B × 1.05 M), `score_rows` ~6 MB + score-level meta ~14 MB + `_extra` 1.4 MB, `calls` ~20 MB (call facts once per run
-and item, usage slimmed), indexes ~10 MB: per-item results ~65-70 MB against 167 MB today; the database ~135-145 MB
-against 246; the files layout ~165 MB against 208 (format 7 alone).
+**What goes where** (one rule, tested case by case):
+
+- `score_values`: every top-level field whose value is an `int` or `float`, not `bool`, finite, and within int64.
+  An integer stays an integer, a float a float (no affinity; `-0.0` and `1.0` round-trip).
+- `rest`: every other top-level field except `item_id`, `_meta` and `_extra`: `bool`, `None`, NaN, ±inf (as their JSON
+  text, which Python's `json` reads back), integers beyond int64, strings, lists, dicts, and other `_` keys (`_commit`).
+- `_meta`: absent → `meta` NULL, `facts` 0. Present → its call-fact keys compared with `call_facts[run, item]`: inserted
+  if the pair has none; if the row's call facts equal the stored ones, `facts` = 1 and they leave `meta`; otherwise
+  `facts` = 0 and the row's whole `_meta` stays in `meta`. `{}` stays `{}`.
+- `_extra`: absent → NULL, `{}` → `'{}'`.
+
+The pair's `run` is the score set's run (`runs/<run>/scores/<key>` → `runs/<run>`). A score set whose folder is not
+under a run (tests, scratch) gets no `call_facts`: its rows keep their `_meta` whole (`facts` 0).
+
+**Writing** a score set: one transaction (the set's rows and values deleted, then inserted), metric names added sorted.
+**A line that is not a JSON object with an `item_id` is refused** (`invalid-file`) for a score set, in both stores, so the
+stores stay equal; the strict reader already raises on it. The crash checkpoint is exempt (verbatim, a torn last line
+allowed). The files store's reader stays tolerant of a hand-edited file (as today, `_runs.py:80`), and validate reports it.
+
+**Reading** a score set: its `score_rows` by id range, its `score_values` by `row BETWEEN`, its run's `call_facts`, each
+dict assembled with keys sorted. `rows_text` is derived (`row_line` of each dict); the kept-rows cache keeps the parsed
+dicts and the text together, sized by text length as today, so `item_across` on the files path keeps its index.
+
+**Deleting** (`rmtree`, `forget_under`, `_store._per_item_tables` / `_per_item_under`, `_store.py:689-715`): a score
+set's rows go through `score_sets.key` (a subselect); a run's `call_facts` with its last score set; metric names stay.
+`SqliteStore._ready` (`_outputs.py:335`) checks the new tables; `ensure_tables` stops creating `rows`; `runs()` and
+`row_runs()` read `score_sets`.
+
+**`data-migrate`** files ⇄ sqlite compares every score set as canonical row text (`row_line` of the assembled dicts),
+not raw bytes; to files it writes canonical lines. The sentences that promise "byte for byte" (`data_migrate.py:6`,
+`RUNBOOK.md` §files-or-sqlite, `_outputs.py:19`) are rewritten.
+
+### Performance
+
+A prototype on this data (second review): reading every row from today's table and parsing it, 0.65 s; assembling the
+same rows from the new tables, 0.97 s (+49%), before key sorting. The gate is `tools/view_bench.py` cold and warm within
+±10% of step a on both stores. Planned in the build, measured in order until the gate holds: (1) assemble per score set
+in one query (`score_values` grouped by row, `json_group_object` in SQL) instead of per row in Python; (2) keep
+assembled dicts in the view cache (P1) so a warm view reads none; (3) skip `rest`/`meta` decoding for views that read
+values only. A step does not land above the gate.
+
+### Validation: V9 in SQLite
+
+V9's file listing stays a git check for the files store. In SQLite it now checks what the database is the record of:
+every score set with a `metrics.json` has rows; its row count equals `n_items`; every committed arm meets its floor
+(`FLOORS`). Tests plant each failure in a SQLite project.
 
 ### The release and hidden datasets
 
-`_release.copy_data` stays a files copy followed by `data-migrate` to SQLite (P1b), so the release follows. A hidden
-dataset's rows keep the call facts and the run's `call`, never score-level meta (`predicted`, `llm_raw`, `ranking`, ...)
-nor `_extra`: the same rule as `_call_only` today, now read from `CALL_META` in the model. `test_hidden_text.py` and
-`test_release_store.py` check it on both stores. Two renders of one commit give one `project.sqlite` sha256.
+`_release.copy_data` stays a files copy followed by `data-migrate` (P1b), sealed with `VACUUM INTO` at 16 KiB pages. A
+hidden dataset's rows keep the call facts and never score-level meta, `_extra` or `rest`'s non-numeric fields; its runs'
+`run.json` `call` holds settings only (checked in `plan_problems`). `test_hidden_text.py` and `test_release_store.py`
+check both stores; two renders of one commit give one sha256 (as now). Whether `CALL_META` should also name call-level
+keys some adapters put in `_meta` (`model`, `prompt_sha`, triage-fleet's `gates`) is a leak-policy question for
+RFC-019 §4, out of this RFC: today's list is kept.
 
 ### Not changed
 
 `files` and `outputs` tables; output texts and their hashes; the fingerprint; judging sets; `metrics.json` means;
-adapters (`Result.meta` stays free-form); the row dict readers see; the files store's layout (no new file).
+adapters (`Result.meta` stays free-form); the row dicts readers see, except the three run settings (now on the run); the
+files store's layout.
 
 ### Not done (decided)
 
-Compression; JSONB (SQLite 3.53 has it; text JSON stays readable and the gain is small); a schema for adapter `_meta`;
-integer item ids; SQL aggregation in views (the files store could not share it); modelling `outputs` or `files`;
-history or export mechanisms.
+Compression; JSONB (text JSON stays readable; small gain); a schema for adapter `_meta`; integer item ids; SQL
+aggregation in views (the files store could not share it); modelling `outputs` or `files`; history or export.
 
 ## Build order, each step with its proof
 
-| Step | What | Proof (each a command and its output, before/after) |
+| Step | What | Proof |
 |---|---|---|
-| a | Baseline | `tools/view_bench.py` both stores; dbstat per table; files `runs/` size; `cost-report` totals; `check_report_claims` |
-| b | `model/results.py` (`CALL_META`, the split, slim, hoist rule) + format 7 migration + write/read path in `_outputs` for both stores | `migrate --dry-run` counts (expect 31 runs hoisted, 53,720 usage objects slimmed); every score set's assembled rows equal before/after except the slimmed keys; `cost-report` totals identical; V5 and outputs signatures unchanged; files `runs/` size |
-| c | `_outputs` API: rows as the primitive, `rows_text` derived, malformed lines refused, `_Kept` re-keyed; the ~30 tests writing raw row text moved to rows (or to the files store where the test is about a malformed file) | `make check`, `make stores-check` |
-| d | SQLite tables, `put_rows`/`rows`/`item_across`, `ensure_tables`, cascade, `data-migrate` by rows, m0007 rebuilding the tables in a SQLite project | `data-migrate` there and back on this repository: every score set equal; dbstat per table against the estimates; `view_bench` cold/warm within ±10% of a; one `item_across` over 30 arms timed |
-| e | Release | P1b's proof again: catalog, 2,905 comparisons and 38 MCP calls the same bytes from both stores; two renders, one sha256; inspector RSS under the limit |
-| f | Fleet data repository (`chipi/fleet-eval-data`) | `evh migrate` there with the same counts reported; its CI green |
-| g | Docs | RFC-025 "As built" amended; ADR-0030 (the results model); UPGRADING (format 7); RUNBOOK (the tables, the read path); CHANGELOG |
+| a | Baseline | `view_bench` both stores; dbstat per table; files `runs/` size; `cost-report` totals; `check_report_claims` 200/200; the deploy image's `sqlite3` version |
+| b | `model/results.py`; format 7 in both stores (`m0007`, frozen); `run.json` `call` (schema, `RUN_ONLY`); writes (run.py in memory, `_outputs` slim, later score sets) | `migrate --dry-run`: 14 runs / 31 score sets / 3 keys hoisted, 53,720 usage objects slimmed; every score set's rows equal before/after except those keys; `cost-report` identical; V1 passes with `call`; no `unset: ["call"]`; V5 and outputs signatures unchanged; the new check passes; files `runs/` about 42 MiB smaller |
+| c | `_outputs` API: dicts as the primitive, `rows_text` derived, malformed lines refused (checkpoint exempt), the cache keeping dicts and text; the 15 test files (16 `put_rows_text` calls) moved to rows, the few that write malformed lines to raw-file tests | `make check`; `make stores-check`; budget-check |
+| d | SQLite tables, ids, the type rule, `facts`, deletes, `data-migrate`, `m0007`'s SQLite part; V9 in SQLite | data-migrate there and back: every score set's canonical text equal; dbstat per table (expected per-item results ~64 MiB; database ~141 MiB, measured by the review's prototype); `view_bench` within ±10%; each type case (bool, None, NaN, ±inf, int64 bounds, -0.0, 1 vs 1.0, `_meta` absent / `{}`, `_extra` absent / `{}`) round-trips; V9 failures planted |
+| e | Release: 16 KiB pages | P1b's proof (catalog, 2,905 comparisons, 38 MCP calls, same bytes from both stores); two renders, one sha256; rsync bytes for no change and one new run first / middle / last, against today's 219 B / 228 / 122 / 20 MB |
+| f | Fleet data repository, own PR | on a scratch copy first: `evh migrate --dry-run` with its own counts (formats 1-7 at once: it is unstamped, format 0, old layout), then the migrate; its gate is `evh validate` and `make catalog` (it has no CI); pin bumped to the pushed harness commit (pushing there needs the owner's approval) |
+| g | Docs | RFC-025 "As built" amended; ADR-0030 (the results model); UPGRADING (format 7); RUNBOOK (tables, the read path, data-migrate's equality); `docs/DATA.md`; `harness/docs/INTEGRATION.md` (`Result.meta`: usage slimmed at write); `harness/skills/evh-compare-and-read/SKILL.md:75` (`_meta.gates`); CHANGELOG |
+
+Test fixtures: a format-6 fixture project for `m0007` (beside `tests/fixtures/formats/0`), holding each case above.
 
 Every step: all gates (`make quality`; `make check`, `stores-check`, `budget-check`, `browser-check`,
-`browser-real-check`, `commands-check`, `guard-check`, `site-check`; `mkdocs build --strict`), mutation checks on its
-new guards, commit, push, `ci-watch` green.
-
-This is not a speed fix: step 9 measured a fresh view's 2 s as store-layer work (0.15 s of SQL). Assembling 1 M values
-may cost what parsing 102 MB of JSON costs now; `view_bench` within ±10% is the gate, and a regression is fixed
-before the step lands.
+`browser-real-check`, `commands-check`, `guard-check`, `site-check`; `mkdocs build --strict`), mutation checks on its new
+guards, commit, push, `ci-watch` green.
 
 ## Risks
 
-- **Git diff**: format 7 rewrites every committed `predictions.jsonl`: a diff of about 100 MB in `harness/data`.
-- **Lossy slim**: the dropped billing detail can only come back from the provider.
-- **Type fidelity**: `score_values.value` has no type affinity so an integer stays an integer; a test checks a row's
-  canonical text round-trips.
-- **Tests writing raw text**: 30 test files call `put_rows`/`put_rows_text`; how many write non-JSON lines is counted
-  in step c.
-- **Call facts that differ between score sets** of one run and item: kept in the row's `meta`, so nothing is lost;
-  step d counts them (expected 0).
-
-## Questions for the review
-
-1. The run.json field's name (`call` proposed) and its place.
-2. Hoisting restricted to `CALL_META` keys (proposed) or any `_meta` key constant over the run.
-3. The kept `usage` keys.
-4. Refusing a malformed row at write (proposed) against storing it.
-5. The fleet data repository in the same step (decision 6, as read).
+- **Git diff**: format 7 rewrites every committed `predictions.jsonl` that holds `usage` or the run settings (about 42
+  MiB less): a large diff in `harness/data`; gitleaks and GitHub's diff limits are checked on it before push.
+- **Lossy slim**: dropped billing detail only comes back from the provider.
+- **Assembly speed**: +49% before tuning (above); the gate decides.
+- **Release delta**: B-trees order by id, so a new run still moves later pages; measured in step e.
+- **Fleet repo**: its rows are unread here (NaN, strings, `_commit`?); its scratch migrate in step f reports them.
