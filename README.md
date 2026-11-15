@@ -80,7 +80,7 @@ model provider you use is your choice, with your own key.
 cd your-project
 python3 -m venv .venv && . .venv/bin/activate
 pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.7.2#subdirectory=harness"
-evh init                                                # folders, .gitignore, AGENTS.md
+evh init --store files                                  # folders, config.yaml, .gitignore, AGENTS.md; --store sqlite is its equal
 evh dataset-create --dataset-id my_v1 --source-dir data/sources/my_v1
 evh dataset-materialize --dataset-id my_v1
 # write adapter.py at the project root -> call_system() talks to YOUR system
@@ -95,7 +95,7 @@ evh family-test --dataset-id my_v1 --a arm_a_v1 --against arm_      # does the w
 evh run-promote --run <run_id> --reason "what the tests showed"     # the choice, recorded with why
 ```
 
-**[Getting started](docs/GUIDE.md)** walks it once on a six-ticket kit (`evh init --tutorial`),
+**[Getting started](docs/GUIDE.md)** walks it once on a six-ticket kit (`evh init --store files --tutorial`),
 offline, with the real output of every command. The tutorials take it further:
 [a local model against a baseline](docs/tutorials/1-local-model.md),
 [a hosted LLM with your own key](docs/tutorials/2-hosted-llm.md),

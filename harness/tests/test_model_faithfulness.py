@@ -35,7 +35,7 @@ os.environ["EVAL_HOME"] = str(proj)
 for k in ("EVAL_DATA_DIR", "EVAL_GOALS_DIR"):
     os.environ.pop(k, None)
 import _runstore  # noqa: E402
-from evaluation_harness._check import check, summary  # noqa: E402
+from evaluation_harness._check import check, store_under_test, summary  # noqa: E402
 
 env = dict(os.environ, EVH_ACTOR="person:tester", EVAL_BUILD_REF="test-model-faithfulness")
 release = Path(tempfile.mkdtemp(prefix="evh-faith-release-"))
@@ -94,7 +94,7 @@ def dies(fn, *args) -> str:
 
 
 try:
-    r = subprocess.run([sys.executable, str(HARNESS / "scripts" / "cli.py"), "init"], cwd=proj, env=env,
+    r = subprocess.run([sys.executable, str(HARNESS / "scripts" / "cli.py"), "init", "--store", store_under_test()], cwd=proj, env=env,
                        capture_output=True, text=True, stdin=subprocess.DEVNULL, timeout=600)  # fmt: skip
     r = (
         r

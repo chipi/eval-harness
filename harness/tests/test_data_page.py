@@ -68,7 +68,7 @@ def setup(store: str) -> tuple[Path, dict]:
         if r.returncode:
             raise SystemExit(f"setup: evh {' '.join(args)} failed:\n{r.stdout}{r.stderr}")
 
-    evh("init", "--tutorial")
+    evh("init", "--store", "files", "--tutorial")
     shutil.copy(proj / "tutorial/fields/tickets.yaml", proj / "data/fields/")
     evh("dataset-create", "--dataset-id", "tickets_v1", "--source-dir", "tutorial/tickets", "--fieldset", "tickets",
         "--fields", "tutorial/ticket_fields.csv")  # fmt: skip

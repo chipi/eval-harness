@@ -1,6 +1,6 @@
 """A run's outputs and rows, read and written only here (RFC-024), in the project's store (RFC-025).
 
-The files store (the default) keeps one file per run, `outputs.jsonl`:
+The files store keeps one file per run, `outputs.jsonl`:
 
     {"item_id": "t00042", "text": "...the output, exactly...", "sha256": "<sha256 of the text's UTF-8 bytes>"}
 

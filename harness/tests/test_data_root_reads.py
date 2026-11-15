@@ -35,7 +35,7 @@ for k in ("EVAL_DATA_DIR", "EVAL_GOALS_DIR"):
 import _runstore  # noqa: E402
 import yaml  # noqa: E402
 from evaluation_harness import _exposure, _looks, _outputs, _prompts, _rounds, _runs, _spend, _store  # noqa: E402
-from evaluation_harness._check import check, summary  # noqa: E402
+from evaluation_harness._check import check, store_under_test, summary  # noqa: E402
 from evaluation_harness.catalog_adapter import HarnessAdapter  # noqa: E402
 from evaluation_harness.model import rounds as model_rounds  # noqa: E402
 from evaluation_harness.model import runs as model_runs  # noqa: E402
@@ -111,7 +111,7 @@ def build(data: Path) -> None:
 
 
 try:
-    evh("init")
+    evh("init", "--store", store_under_test())
     build(DATA)
     shutil.copytree(DATA, copy / "data", ignore=shutil.ignore_patterns("project.sqlite*"))
     CD = copy / "data"

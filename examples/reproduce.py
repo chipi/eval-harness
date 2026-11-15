@@ -444,6 +444,7 @@ def _family(exp: dict, runs: list, cids: dict, arm: str | None = None) -> tuple[
     with tempfile.TemporaryDirectory(prefix="evh-reproduce-") as tmp:
         home = Path(tmp)
         (home / "data" / "runs").mkdir(parents=True)
+        (home / "config.yaml").write_text("store: files\n", encoding="utf-8")
         for entry in sorted(_store.iterdir(DATA)):
             if entry.name != "runs":
                 (home / "data" / entry.name).symlink_to(entry.resolve(), target_is_directory=entry.is_dir())

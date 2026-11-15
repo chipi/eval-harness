@@ -44,7 +44,7 @@ os.environ["EVAL_HOME"] = str(proj)
 for k in ("EVAL_DATA_DIR", "EVAL_GOALS_DIR"):
     os.environ.pop(k, None)
 import _runstore  # noqa: E402
-from evaluation_harness._check import check, summary  # noqa: E402
+from evaluation_harness._check import check, store_under_test, summary  # noqa: E402
 
 env = dict(os.environ, EVH_ACTOR="person:tester", EVAL_BUILD_REF="test-model-studies")
 release = Path(tempfile.mkdtemp(prefix="evh-studies-release-"))
@@ -145,7 +145,7 @@ EVENTS = [
 ]  # fmt: skip
 
 try:
-    r = evh("init")
+    r = evh("init", "--store", store_under_test())
     r = (
         r
         if r.returncode

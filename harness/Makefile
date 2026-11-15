@@ -153,7 +153,7 @@ coverage:
 	HARNESS=$(CURDIR) COVERAGE_FILE=$(CURDIR)/.build/coverage/data $(PYTHON) -m coverage combine -q
 	HARNESS=$(CURDIR) COVERAGE_FILE=$(CURDIR)/.build/coverage/data $(PYTHON) -m coverage report
 
-# A new project beside this checkout: make init DIR=../my-evals ARGS=--tutorial
+# A new project beside this checkout: make init DIR=../my-evals ARGS="--store files --tutorial" (--store files|sqlite is required)
 init:
 	$(PYTHON) scripts/init_project.py $(DIR) $(ARGS)
 

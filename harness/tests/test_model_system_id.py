@@ -38,7 +38,7 @@ for k in ("EVAL_DATA_DIR", "EVAL_GOALS_DIR"):
 import _runfix  # noqa: E402
 import _runstore  # noqa: E402
 from evaluation_harness import _fingerprint, _format, _outputs, _store, judge_score  # noqa: E402
-from evaluation_harness._check import check, summary  # noqa: E402
+from evaluation_harness._check import check, store_under_test, summary  # noqa: E402
 from evaluation_harness.model import runs as R  # noqa: E402
 
 env = dict(os.environ, EVH_ACTOR="person:tester", EVAL_BUILD_REF="test-model-system-id")
@@ -73,7 +73,7 @@ def build() -> None:
     _store.close()
     shutil.rmtree(proj, ignore_errors=True)
     proj.mkdir()
-    evh("init")
+    evh("init", "--store", store_under_test())
     _runstore.write_text(proj, "project.yaml", "format: 5\n")
     for s in ("sys_a", "sys_b"):
         _runstore.write_text(proj, f"systems/{s}.yaml", f"system_id: {s}\n")

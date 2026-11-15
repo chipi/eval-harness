@@ -46,7 +46,7 @@ def run(*args: str, home: Path | None = None) -> subprocess.CompletedProcess:
 
 
 init = subprocess.run(
-    [sys.executable, str(HARNESS / "scripts" / "cli.py"), "init"], cwd=proj, env=env, capture_output=True, text=True,
+    [sys.executable, str(HARNESS / "scripts" / "cli.py"), "init", "--store", "files"], cwd=proj, env=env, capture_output=True, text=True,
     stdin=subprocess.DEVNULL, timeout=300,
 )  # fmt: skip
 check(

@@ -392,6 +392,17 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Changed
 
+- **A project names its store: `evh init --store files|sqlite` is required, and there is no default** (owner decision,
+  2026-11-15). The two are equal choices: `files` keeps every run, label and score as a file under `data/`, in git
+  (review in a pull request, history in git log); `sqlite` keeps the project's data in one database file,
+  `data/project.sqlite`, which `.gitignore` leaves out of git (one file to copy and deploy). `evh init` without
+  `--store` is `ERROR (bad-argument)` and changes nothing; with it, it writes `store: <choice>` into the project's
+  `config.yaml`. A project whose `config.yaml` names no store is refused by every command that reads or writes its data
+  (`ERROR (not-configured)`, with the same two-line explanation); it was read as `files`. `EVAL_STORE` still overrides
+  the file, and a command that touches no project data (`--version`, `--help`, `init`, `env-check`, `skills-install`) runs
+  as before. A project made before this release: add `store: files` (or `store: sqlite`, which it already names) to its
+  `config.yaml`. `evh data-migrate` switches a project's store later. A release made by `_release.py copy-data` names its
+  store too (`--store` is now required there, and a `files` release gets `store: files`).
 - **A deployment's data is one SQLite file, opened read-only** (RFC-032 step 9, "the next deploy goes on SQLite"): a SQLite
   release served from the box's read-only mount failed on its first request (`/api/health` 200, every comparison 500:
   `OSError: [Errno 30] Read-only file system: .../project.sqlite-setup-lock`), because every open wrote: a lock file,

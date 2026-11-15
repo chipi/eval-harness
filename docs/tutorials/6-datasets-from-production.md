@@ -10,7 +10,7 @@ tickets, with when each arrived, its channel, where the desk's router sent it, a
 every command is in the [RUNBOOK §15](../../harness/docs/RUNBOOK.md#15-datasets-from-production-the-capture-lane)
 and [§15b](../../harness/docs/RUNBOOK.md#15b-evaluating-what-production-did).
 
-Start from a project with the kit, under version control: `evh init --tutorial`, then `git init -q && git add -A
+Start from a project with the kit, under version control: `evh init --store files --tutorial`, then `git init -q && git add -A
 && git commit -qm kit`.
 
 ## 1 · Capture

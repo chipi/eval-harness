@@ -19,7 +19,7 @@ What [Getting started](../../docs/GUIDE.md) walks: a dataset, its reference, run
 
 | step | command |
 |---|---|
-| start a project | `evh init [--tutorial]` |
+| start a project | `evh init --store files\|sqlite [--tutorial]` |
 | what is configured | `evh env-check` |
 | freeze | `evh dataset-create --dataset-id … --source-dir … [--licence ID]` |
 | materialize | `evh dataset-materialize --dataset-id …` |
@@ -706,12 +706,12 @@ The `.gitignore` `evh init` writes ignores only the throwaway directories, so a 
 its derived sets like its measured runs. This repository's own `.gitignore` is stricter: it
 ignores every `data/runs-*` directory and re-allows each derived set by name.
 
-**Files or SQLite** (RFC-025). A project keeps its data as files under `data/` by default: git can
-diff and review them. One key in its `config.yaml` puts everything under `data/` in one SQLite
-database instead, `data/project.sqlite`:
+**Files or SQLite** (RFC-025). A project names its store; there is no default (`evh init --store files|sqlite` writes
+it, and a project whose `config.yaml` names none is refused, `not-configured`). The files store keeps everything under
+`data/` as files git can diff and review; the SQLite store keeps it in one database, `data/project.sqlite`:
 
 ```yaml
-store: sqlite        # files (the default) or sqlite
+store: sqlite        # files or sqlite: required
 ```
 
 or `EVAL_STORE=sqlite`, which wins over the file. A project is either files or its database, never
@@ -2010,7 +2010,7 @@ the rest.
 | `not-enough` | too little to work on: too few items, arms or outputs |
 | `not-public` | the text asked for is not shown on a public server or for a hidden dataset |
 | `not-allowed` | a rule refuses it: a dirty build, a closed round, a bind beyond this machine |
-| `not-configured` | a key, a cost cap, a build ref or an endpoint is not set |
+| `not-configured` | a key, a cost cap, a build ref, an endpoint or the project's store is not set |
 | `failed` | something outside the command failed: an importer, a server, a hook, the warm-up |
 | `missing-dependency` | a package or a part of the installation is missing |
 | `over-budget` | a round's budget is spent (what its runs spent and its running commands reserved) |

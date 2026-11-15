@@ -67,7 +67,16 @@ try:
     check("setup: in the project the item is read", got.get("exposed") == 1, (r.stdout + r.stderr)[-300:])
 
     copy = dest / "data"
-    r = run(sys.executable, str(HERE / "_release.py"), "copy-data", str(proj / "data"), str(copy), e=env)
+    r = run(
+        sys.executable,
+        str(HERE / "_release.py"),
+        "copy-data",
+        str(proj / "data"),
+        str(copy),
+        "--store",
+        "files",
+        e=env,
+    )
     check("copy-data", r.returncode == 0, (r.stdout + r.stderr)[-300:])
     check(
         "the copy holds the register, row for row",

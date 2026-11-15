@@ -53,15 +53,15 @@ python3 -m venv .venv && . .venv/bin/activate
 pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.7.2#subdirectory=harness"
 ```
 
-Then the project's folders and the tutorial kit, under version control from the start:
+Then the project's folders and the tutorial kit, under version control from the start. `--store` is required and has no default: `files` keeps every run, label and score as a file under `data/`, in git; `sqlite` keeps the data in one database file, `data/project.sqlite`, out of git. They are equal choices (this guide uses `files`; `evh data-migrate` switches later).
 
 ```bash
-evh init --tutorial
+evh init --store files --tutorial
 git init -q && git add -A && git commit -qm "Start: the tutorial kit"
 ```
 ```text
   folders  data/sources, data/systems, data/goals, data/fields
-  wrote    28 file(s), the tutorial kit under tutorial/
+  wrote    29 file(s), the tutorial kit under tutorial/
 ```
 
 `data/` is where everything the harness freezes and records will live (`data/project.yaml` records its format); `tutorial/` is the

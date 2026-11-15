@@ -45,7 +45,7 @@ on every change, comparing each quoted output. Its order is the order a newcomer
 
 | step | what the user does | commands |
 | --- | --- | --- |
-| 0 | set up a project with the tutorial kit | `pip install …`, `evh init --tutorial` |
+| 0 | set up a project with the tutorial kit | `pip install …`, `evh init --store files --tutorial` |
 | 1 | freeze a dataset | `evh dataset-create --dataset-id tickets_v1 --source-dir tutorial/tickets` |
 | 2 | materialize | `evh dataset-materialize --dataset-id tickets_v1` |
 | 3 | describe the arms, name the goal, commit | copy systems, `goal: tickets_summary` |

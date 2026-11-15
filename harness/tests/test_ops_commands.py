@@ -22,7 +22,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))  # _wheel
 import _runstore
 import _wheel
 from evaluation_harness import _common
-from evaluation_harness._check import check, summary
+from evaluation_harness._check import check, store_under_test, summary
 
 
 def aim(proj: Path) -> Path:
@@ -85,7 +85,7 @@ def test_init(tmp: Path) -> None:
     env = project_env(proj, site)
 
     # Basic init
-    r = evh_run("init", cwd=proj, env=env)
+    r = evh_run("init", "--store", store_under_test(), cwd=proj, env=env)
     if _runstore.sqlite():
         # In the database a directory is the files it holds: init makes data/ (where the database will be, and how a
         # command run in the project finds it) and says the store, never folders it did not make.
@@ -113,7 +113,7 @@ def test_init(tmp: Path) -> None:
     proj_tut = tmp / "proj_tut"
     proj_tut.mkdir()
     env_tut = project_env(proj_tut, site)
-    r = evh_run("init", "--tutorial", cwd=proj_tut, env=env_tut)
+    r = evh_run("init", "--store", store_under_test(), "--tutorial", cwd=proj_tut, env=env_tut)
     check(
         "init --tutorial: exit 0, copies tutorial kit",
         r.returncode == 0
@@ -124,7 +124,7 @@ def test_init(tmp: Path) -> None:
     )
 
     # Init twice: no overwrite
-    r = evh_run("init", cwd=proj, env=env)
+    r = evh_run("init", "--store", store_under_test(), cwd=proj, env=env)
     check(
         "init twice: exit 0, keeps existing files",
         r.returncode == 0 and "kept" in r.stdout and ".gitignore" in r.stdout,
@@ -140,7 +140,7 @@ def test_list_runs(tmp: Path) -> None:
     env = project_env(proj, site)
 
     # No runs yet
-    r = evh_run("init", "--tutorial", cwd=proj, env=env)
+    r = evh_run("init", "--store", store_under_test(), "--tutorial", cwd=proj, env=env)
     r = evh_run("runs-list", cwd=proj, env=env)
     check(
         "runs-list (no runs): exit 0, says 'no runs yet'",
@@ -223,7 +223,7 @@ def test_sweep(tmp: Path) -> None:
     env = project_env(proj, site)
 
     # Setup: init, dataset, materialize, arms
-    evh_run("init", "--tutorial", cwd=proj, env=env)
+    evh_run("init", "--store", store_under_test(), "--tutorial", cwd=proj, env=env)
     evh_run(
         "dataset-create",
         "--dataset-id",
@@ -287,7 +287,7 @@ def test_cost_report(tmp: Path) -> None:
     env = project_env(proj, site)
 
     # Setup: init, dataset, run with cost
-    evh_run("init", "--tutorial", cwd=proj, env=env)
+    evh_run("init", "--store", store_under_test(), "--tutorial", cwd=proj, env=env)
     evh_run(
         "dataset-create",
         "--dataset-id",

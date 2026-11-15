@@ -105,7 +105,7 @@ SETS = [
 ]  # fmt: skip
 
 try:
-    r = evh("init", "--tutorial")
+    r = evh("init", "--store", "files", "--tutorial")
     shutil.copytree(KIT / "tickets", proj / "tickets")
     for step in (
         ("dataset-create", "--dataset-id", "tk_v1", "--source-dir", "tickets"),

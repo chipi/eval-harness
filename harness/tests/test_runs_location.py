@@ -31,6 +31,7 @@ def project(root: Path, ignore: str) -> Path:
     """A git checkout with `ignore` as its .gitignore and one finished run in data/runs."""
     subprocess.run(["git", "init", "-q", str(root)], check=True)
     (root / ".gitignore").write_text(ignore, encoding="utf-8")
+    (root / "config.yaml").write_text("store: files\n", encoding="utf-8")
     first = {"scorer": "s1", "reference": "gold/x", "first": True, "metrics": {"scores": {"acc": 1.0}}}
     _runstore.make_run(
         root / "data" / "runs", RUN, REC, outputs={"i1": "a"}, scores=[{**first, "rows": [{"item_id": "i1"}]}]

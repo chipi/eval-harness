@@ -48,7 +48,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
 import _runstore  # noqa: E402
 from evaluation_harness import _store  # noqa: E402
 from evaluation_harness import catalog_serve as cs  # noqa: E402
-from evaluation_harness._check import check, summary  # noqa: E402
+from evaluation_harness._check import check, store_under_test, summary  # noqa: E402
 from evaluation_harness.catalog_adapter import load_catalog_adapter  # noqa: E402
 
 GOAL = "tickets_summary"
@@ -127,7 +127,7 @@ def patch_title(port, title):
 
 
 try:
-    r = evh("init", "--tutorial")
+    r = evh("init", "--store", store_under_test(), "--tutorial")
     shutil.copytree(KIT / "tickets", proj / "tickets")
     for step in (
         ("dataset-create", "--dataset-id", "tk_v1", "--source-dir", "tickets"),

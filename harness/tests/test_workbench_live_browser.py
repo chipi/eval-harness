@@ -116,7 +116,7 @@ def serve(*extra: str) -> tuple[subprocess.Popen, int, list[str]]:
 
 
 try:
-    r = evh("init", "--tutorial")
+    r = evh("init", "--store", "files", "--tutorial")
     shutil.copytree(KIT / "tickets", proj / "tickets")
     (proj / "data" / "systems" / "one_v1.yaml").write_text(
         "system_id: one_v1\nparams:\n  provider: echo\n  sentences: 1\n"

@@ -38,7 +38,7 @@ import _runfix  # noqa: E402
 import _runstore  # noqa: E402
 import jsonschema  # noqa: E402
 import yaml  # noqa: E402
-from evaluation_harness._check import check, summary  # noqa: E402
+from evaluation_harness._check import check, store_under_test, summary  # noqa: E402
 from evaluation_harness._codeid import content_sha256  # noqa: E402
 
 env = dict(os.environ, EVH_ACTOR="person:tester", EVAL_BUILD_REF="test-model-scorers")
@@ -129,7 +129,7 @@ def call(port: int, method: str, path: str, body: dict | None = None) -> tuple[i
 
 
 try:
-    r = evh("init")
+    r = evh("init", "--store", store_under_test())
     r = r if r.returncode else evh("catalog")
     shutil.copy(HARNESS / "tutorial" / "judge_prompt.txt", proj / "judge_prompt.txt")
     check("setup: a project", r.returncode == 0, (r.stdout + r.stderr)[-300:])

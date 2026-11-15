@@ -21,7 +21,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parents[1] / "scripts"
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from evaluation_harness import _common, _models  # noqa: E402
-from evaluation_harness._check import check, summary  # noqa: E402
+from evaluation_harness._check import check, store_under_test, summary  # noqa: E402
 
 top = Path(tempfile.mkdtemp(prefix="evh-parallel-"))
 env = {k: v for k, v in os.environ.items() if not k.startswith("EVAL_")}
@@ -43,7 +43,7 @@ projects = {}
 for name in ("alpha", "beta"):
     p = top / name
     p.mkdir()
-    r = evh(p, "init", "--tutorial")
+    r = evh(p, "init", "--store", store_under_test(), "--tutorial")
     check(f"init {name}", r.returncode == 0, (r.stdout + r.stderr)[-300:])
     r = evh(p, "catalog")
     check(f"catalog {name}", r.returncode == 0, (r.stdout + r.stderr)[-300:])

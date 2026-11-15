@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """Start a project that uses the harness: its folders, a .gitignore, AGENTS.md, and the GUIDE's kit with --tutorial.
 
-    evh init [DIR] [--tutorial]
+    evh init --store files|sqlite [DIR] [--tutorial]
 
-DIR defaults to the current directory. Nothing that already exists is overwritten: a file
+--store is required: a project keeps its data in files or in one database, two equal choices (below), written into
+the project's config.yaml. DIR defaults to the current directory. Nothing that already exists is overwritten: a file
 already there is kept and named, so running it twice, or in a project that has started,
 is safe.
 
+  config.yaml    `store: files` or `store: sqlite`, the choice
   data/sources/  data/systems/  data/goals/  data/fields/   your inputs, systems, goals and item fields
   .gitignore     the harness's derived and private paths (materialized copies, the
                  catalog build, caches, .env, the venv)
@@ -33,14 +35,26 @@ from evaluation_harness import _common, _store
 from evaluation_harness._common import die, evh_prog
 
 HERE = Path(__file__).resolve().parent
-#: The kit is package data in an install (evaluation_harness/tutorial) and a sibling of
-#: scripts/ in a checkout (harness/tutorial).
-KIT = next((p for p in (HERE / "tutorial", HERE.parent / "tutorial") if _store.is_dir(p / "tickets")), None)
-#: AGENTS.md for a new project: package data in an install (evaluation_harness/project_kit), a
-#: sibling of scripts/ in a checkout (harness/project_kit).
-AGENTS = next(
-    (p for p in (HERE / "project_kit", HERE.parent / "project_kit") if _store.is_file(p / "AGENTS.md")), None
-)
+
+
+# Looked up in main, after the store is named: `_store` asks for it, and a package file is read the same in either.
+def _kit() -> Path | None:
+    """The tutorial kit: package data in an install (evaluation_harness/tutorial), a sibling of scripts/ in a
+    checkout (harness/tutorial)."""
+    return next(
+        (p for p in (HERE / "tutorial", HERE.parent / "tutorial") if _store.is_dir(p / "tickets")), None
+    )
+
+
+def _agents() -> Path | None:
+    """The folder of AGENTS.md for a new project: package data in an install (evaluation_harness/project_kit), a
+    sibling of scripts/ in a checkout (harness/project_kit)."""
+    return next(
+        (p for p in (HERE / "project_kit", HERE.parent / "project_kit") if _store.is_file(p / "AGENTS.md")),
+        None,
+    )
+
+
 FOLDERS = ("data/sources", "data/systems", "data/goals", "data/fields")
 IGNORE = """\
 # evaluation-harness: derived or private, never committed
@@ -65,13 +79,50 @@ data/project.sqlite*
 """
 
 
+STORE_LINE = {
+    "files": "store: files  # every run, label and score a file under data/, in git (evh data-migrate switches)",
+    "sqlite": "store: sqlite  # the data in one database, data/project.sqlite, out of git (evh data-migrate switches)",
+}
+
+
+def _named_store(cfg: Path) -> str | None:
+    """The `store` a config.yaml names, None when it names none."""
+    import yaml  # noqa: PLC0415
+
+    try:
+        doc = yaml.safe_load(_store.read_text(cfg, encoding="utf-8")) or {}
+    except yaml.YAMLError:
+        die(f"{cfg} is not valid YAML", "invalid-file")
+    named = doc.get("store") if isinstance(doc, dict) else None
+    return str(named) if named else None
+
+
 def main() -> int:
     """Initialize a new eval project."""
-    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
+    ap = argparse.ArgumentParser(
+        prog=evh_prog(),
+        description=f"{__doc__.splitlines()[0]}\n\n--store is required: {_common.STORE_CHOICE}",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
     ap.add_argument("dir", nargs="?", default=".", help="the project directory (default: here)")
+    ap.add_argument("--store", help="where the project's data lives: files or sqlite (required, no default)")
     ap.add_argument("--tutorial", action="store_true", help="add the GUIDE's kit under tutorial/")
     args = ap.parse_args()
+    if args.store is None:
+        die(f"--store is required.\n{_common.STORE_CHOICE}", "bad-argument")
+    if args.store not in _common.STORES:
+        die(f"--store {args.store!r} is not a store.\n{_common.STORE_CHOICE}", "bad-argument")
+    # The new project's store, for everything init does below (a package file is read through `_store` too).
+    os.environ["EVAL_STORE"] = args.store
     root = Path(args.dir).resolve()
+    cfg = root / "config.yaml"
+    if _store.exists(cfg):
+        named = _named_store(cfg)
+        if named not in (None, args.store):
+            die(
+                f"{cfg} names `store: {named}`, not {args.store}; `evh data-migrate` moves the data, init does not",
+                "mismatch",
+            )
     _store.mkdir(root, parents=True, exist_ok=True)
     made, kept = [], []
     # data/ is a folder on disk in either store: the database lives in it, and a command run from a subfolder finds
@@ -89,7 +140,7 @@ def main() -> int:
     _outputs.reset()
     for f in FOLDERS:
         _store.mkdir(root / f, parents=True, exist_ok=True)
-    in_db = _common.store() == "sqlite"
+    in_db = args.store == "sqlite"
     from evaluation_harness import _format  # noqa: PLC0415
 
     if _store.exists(_format.path(root / "data")):
@@ -97,16 +148,26 @@ def main() -> int:
     else:
         _format.stamp(data=root / "data")
         made.append(f"data/{_format.NAME}")
+    if _store.exists(cfg) and _named_store(cfg) == args.store:
+        kept.append("config.yaml")
+    else:
+        # A config.yaml that names no store keeps what it has (the catalog's adapter, say) and gains the line.
+        had = _store.read_text(cfg, encoding="utf-8") if _store.exists(cfg) else ""
+        if had and not had.endswith("\n"):
+            had += "\n"
+        _store.write_text(cfg, f"{had}{STORE_LINE[args.store]}\n", encoding="utf-8")
+        made.append("config.yaml")
     gi = root / ".gitignore"
     if _store.exists(gi):
         kept.append(".gitignore")
     else:
         _store.write_text(gi, IGNORE, encoding="utf-8")
         made.append(".gitignore")
-    if AGENTS is None:
+    agents = _agents()
+    if agents is None:
         die("AGENTS.md is not in this installation", "missing-dependency")
     for name, text in (
-        ("AGENTS.md", _store.read_text(AGENTS / "AGENTS.md", encoding="utf-8")),
+        ("AGENTS.md", _store.read_text(agents / "AGENTS.md", encoding="utf-8")),
         ("CLAUDE.md", "@AGENTS.md\n"),
     ):
         dst = root / name
@@ -116,12 +177,13 @@ def main() -> int:
             _store.write_text(dst, text, encoding="utf-8")
             made.append(name)
     if args.tutorial:
-        if KIT is None:
+        kit = _kit()
+        if kit is None:
             die("the tutorial kit is not in this installation", "missing-dependency")
         for src in sorted(
-            p for p in _store.rglob(KIT, "*") if _store.is_file(p) and "__pycache__" not in p.parts
+            p for p in _store.rglob(kit, "*") if _store.is_file(p) and "__pycache__" not in p.parts
         ):
-            rel = Path("tutorial") / src.relative_to(KIT)
+            rel = Path("tutorial") / src.relative_to(kit)
             dst = root / rel
             if _store.exists(dst):
                 kept.append(rel.as_posix())

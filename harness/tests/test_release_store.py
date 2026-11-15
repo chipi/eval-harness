@@ -275,8 +275,9 @@ try:
         have,
     )
     check(
-        "a files release has no database and no config.yaml",
-        not (ff / "data" / "project.sqlite").exists() and not (ff / "config.yaml").exists(),
+        "a files release has no database and its config.yaml says `store: files`",
+        not (ff / "data" / "project.sqlite").exists()
+        and (ff / "config.yaml").read_text() == "store: files\n",
     )
 
     # ── the refusals, in each store, before anything is written ──────────────────────────────────────────────────

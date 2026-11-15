@@ -16,7 +16,7 @@ with `evh data-put <path under data/> <file>` and read one with `evh data-show -
 with `cp` or `cat` on `data/`: those work in both stores, and they check a setting before it is
 kept. Edit a copy outside `data/` (here in a fresh temporary folder, `$D`), then put it in.
 
-The blocks below run as written on the tutorial kit (`evh init --tutorial`: six support tickets,
+The blocks below run as written on the tutorial kit (`evh init --store files --tutorial`: six support tickets,
 offline arms); use your own names in a real project. Every command takes `--help`.
 
 ## 0. Before anything

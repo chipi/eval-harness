@@ -55,7 +55,7 @@ and returned nothing, fixed in 0.7.1), 10 needed a guess, about 15 of noise or p
 mkdir evh-scenario && cd evh-scenario && git init -q
 python3 -m venv .venv && . .venv/bin/activate        # or: uv venv --seed --python 3.11 (--seed adds pip)
 pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@<candidate sha>#subdirectory=harness"
-evh init
+evh init --store files
 pip install torch --index-url https://download.pytorch.org/whl/cpu    # the small models' runtime
 pip install transformers sentencepiece rouge-score
 ```

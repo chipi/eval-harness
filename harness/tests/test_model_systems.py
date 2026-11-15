@@ -96,7 +96,7 @@ def call(port: int, method: str, path: str, body: dict | None = None) -> tuple[i
 
 SYSTEM = proj / "data" / "systems" / "lead1_v1.yaml"
 try:
-    r = evh("init")
+    r = evh("init", "--store", "files")
     shutil.copytree(KIT / "tickets", proj / "tickets")
     for step in (
         ("dataset-create", "--dataset-id", "tk_v1", "--source-dir", "tickets"),

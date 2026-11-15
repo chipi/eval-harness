@@ -26,6 +26,7 @@ import hashlib
 import io
 import json
 import os
+import re
 import shutil
 import subprocess  # nosec B404 - this interpreter, the project's own commands
 import sys
@@ -139,7 +140,8 @@ def prepare(
                 shutil.copy2(source / name, proj / name)
         if store == "sqlite":
             cfg = proj / "config.yaml"
-            cfg.write_text((cfg.read_text() if cfg.is_file() else "") + "\nstore: sqlite\n")
+            kept = re.sub(r"(?m)^store:.*\n?", "", cfg.read_text()) if cfg.is_file() else ""
+            cfg.write_text(f"{kept}store: sqlite\n")
             r = _run(
                 proj, [sys.executable, str(code / "scripts" / "cli.py"), "data-migrate", "--to", "sqlite"]
             )

@@ -37,7 +37,7 @@ import yaml  # noqa: E402
 from evaluation_harness import _release, _store  # noqa: E402
 from evaluation_harness import catalog_build as cb  # noqa: E402
 from evaluation_harness import catalog_scorers as cs  # noqa: E402
-from evaluation_harness._check import check, summary  # noqa: E402
+from evaluation_harness._check import check, store_under_test, summary  # noqa: E402
 from evaluation_harness._codeid import content_sha256  # noqa: E402
 from evaluation_harness.catalog_adapter import HarnessAdapter  # noqa: E402
 
@@ -94,7 +94,7 @@ def in_page(text: str, *needles: str) -> bool:
 
 
 try:
-    r = evh("init")
+    r = evh("init", "--store", store_under_test())
     shutil.copy(HARNESS / "tutorial" / "judge_prompt.txt", proj / "judge_prompt.txt")
     r = r if r.returncode else evh("scorer-new", "s_v1", *NEW)
     check("setup: a project and a scorer", r.returncode == 0, (r.stdout + r.stderr)[-300:])

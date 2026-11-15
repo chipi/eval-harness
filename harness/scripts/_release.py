@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """A deployment's copy of a project's data: what the catalog reads, and nothing it must not publish.
 
-    python harness/scripts/_release.py copy-data harness/data <release>/inspector/data [--store sqlite]
+    python harness/scripts/_release.py copy-data harness/data <release>/inspector/data --store files|sqlite
     EVAL_HOME=<release>/inspector python harness/scripts/_release.py check <release>/inspector <tracked-refs-file>
 
 Copies data/runs whole (each run with its scores) and the data the catalog and the inspector read (COPIED_DIRS,
@@ -19,8 +19,8 @@ repository does not publish:
 With the sqlite store (RFC-025) the copy's project.sqlite is the project's without a hidden dataset's runs, rebuilt so
 their texts are in none of its pages. Captures are copied as their capture.json only: records never leave the project. Materialized items
 are never copied. Judge validations are copied as their reports and their records without the judges' replies.
-The copy is files; with `--store sqlite` it is then made one database (data/project.sqlite, moved by `data-migrate`)
-and the release's config.yaml says `store: sqlite`: a release never changes, so the database is sealed (checkpointed,
+The copy is files; with `--store sqlite` it is then made one database (data/project.sqlite, moved by `data-migrate`).
+The release's config.yaml names its store either way (a project with none is refused). With sqlite a release never changes, so the database is sealed (checkpointed,
 out of write-ahead logging) and holds the only file under data/, which every reader opens read-only (`_store.readonly`).
 `check` is render.sh's last word on a rendered release, read through the release's own store: no reference text git
 does not track, no materialized item, the MCP answers written from the release's goals, the goals' tests kept, and a
@@ -576,13 +576,13 @@ def check(root: Path, tracked: set[str]) -> list[str]:
 
 
 def main() -> int:
-    """copy-data SRC DST [--store sqlite]; check ROOT TRACKED."""
+    """copy-data SRC DST --store files|sqlite; check ROOT TRACKED."""
     ap = argparse.ArgumentParser(prog="_release.py", description=__doc__.splitlines()[0])
     sub = ap.add_subparsers(dest="cmd", required=True)
     cp = sub.add_parser("copy-data", help="a project's data/ into a release")
     cp.add_argument("src")
     cp.add_argument("dst")
-    cp.add_argument("--store", choices=_common.STORES, default="files", help="the store the release is in")
+    cp.add_argument("--store", choices=_common.STORES, required=True, help="the store the release is in")
     ck = sub.add_parser("check", help="a rendered release's last checks")
     ck.add_argument("root", help="the release's project (EVAL_HOME): its data/, config.yaml and cache/")
     ck.add_argument(
@@ -600,6 +600,8 @@ def main() -> int:
     counts = copy_data(Path(args.src), Path(args.dst))
     if args.store == "sqlite":
         _release_store.to_sqlite(Path(args.dst))
+    else:
+        _release_store.name_store(Path(args.dst), args.store)
     print(
         f"copied {args.src} -> {args.dst} ({args.store})"
         + (

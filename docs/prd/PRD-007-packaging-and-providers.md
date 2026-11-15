@@ -48,7 +48,7 @@ a walkthrough in the user's own project, not inside a checkout of this repositor
 
 ## User Stories
 
-- _As a newcomer, I can install the package, run `evh init --tutorial`, and follow the GUIDE
+- _As a newcomer, I can install the package, run `evh init --store files --tutorial`, and follow the GUIDE
   with no API key._
 - _As an engineer, I can put `adapter.py` at my project root and every arm that names no
   adapter uses it._
@@ -73,8 +73,8 @@ a walkthrough in the user's own project, not inside a checkout of this repositor
 
 ### FR2: The project
 
-- **FR2.1**: `evh init [--tutorial]` creates the data folders and a `.gitignore`; `--tutorial`
-  adds the GUIDE's kit.
+- **FR2.1**: `evh init --store files|sqlite [--tutorial]` creates the data folders, a `config.yaml` naming the
+  store (required, no default) and a `.gitignore`; `--tutorial` adds the GUIDE's kit.
 - **FR2.2**: The project root is `EVAL_HOME`, else the nearest directory up with a `data/`
   folder; `EVAL_DATA_DIR`, `EVAL_RUNS_DIR` and `EVAL_GOALS_DIR` move the data, the runs and the
   goals.

@@ -40,7 +40,7 @@ def evh(proj: Path, *args: str, store: str = "files") -> subprocess.CompletedPro
 
 try:
     files = base / "files"
-    r = evh(base, "init", str(files))
+    r = evh(base, "init", str(files), "--store", "files")
     stamp = files / "data" / _format.NAME
     check(
         "evh init stamps a new project at this release's format",
@@ -56,7 +56,7 @@ try:
 
     # A runs-* folder is format 3 data (RFC-032 step 4): validate names it (V23), and the command that moves it.
     f3 = base / "format3"
-    evh(base, "init", str(f3))
+    evh(base, "init", str(f3), "--store", "files")
     (f3 / "data" / _format.NAME).write_text("format: 3\nwritten_by: 0.8.0\n")
     (f3 / "data" / "runs-linux").mkdir()
     r = evh(f3, "validate")
@@ -85,7 +85,7 @@ try:
         if not stamped:
             stamp.rename(base / "kept.yaml")
         cp = subprocess.run(
-            [sys.executable, str(HERE / "_release.py"), "copy-data", str(files / "data"), str(rel / "data")],
+            [sys.executable, str(HERE / "_release.py"), "copy-data", str(files / "data"), str(rel / "data"), "--store", "files"],
             cwd=files, env=dict(os.environ, EVAL_HOME=str(files), EVAL_STORE="files"), capture_output=True,
             text=True, timeout=300,
         )  # fmt: skip
@@ -139,7 +139,7 @@ try:
     )
 
     db = base / "db"
-    r = evh(base, "init", str(db), store="sqlite")
+    r = evh(base, "init", str(db), "--store", "sqlite", store="sqlite")
     r = evh(db, "migrate", "--check", store="sqlite")
     check(
         "in a SQLite project the stamp is in the database and --check holds",

@@ -31,7 +31,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 KIT = HERE.parent / "tutorial"
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
 import _runstore  # noqa: E402
-from evaluation_harness._check import check, summary  # noqa: E402
+from evaluation_harness._check import check, store_under_test, summary  # noqa: E402
 from evaluation_harness.catalog_adapter import HarnessAdapter  # noqa: E402
 from evaluation_harness.model import view_cache as vc  # noqa: E402
 from evaluation_harness.ops import registry  # noqa: E402
@@ -102,7 +102,7 @@ def counting(self: HarnessAdapter, arm: str, rescore: bool = False) -> dict:
 
 
 try:
-    r = evh("init", "--tutorial")
+    r = evh("init", "--store", store_under_test(), "--tutorial")
     shutil.copytree(KIT / "tickets", proj / "tickets")
     for step in (
         ("dataset-create", "--dataset-id", DS, "--source-dir", "tickets"),

@@ -3,7 +3,7 @@
 
     python tests/test_store.py
 
-The setting: files with no key, `store: sqlite` in config.yaml, EVAL_STORE winning over it, any other value refused.
+The setting: no key refused (no default), `store: files` or `store: sqlite` in config.yaml, EVAL_STORE winning over it, any other value refused.
 `_store` on both stores: write, read, exists, a directory as the files it holds, glob, rglob, iterdir, stat, open for
 reading, writing and appending, copy into a directory, copy a tree, replace, unlink, and rmtree, which in the
 database removes a run's outputs and its scores' rows too (a run made again at the same path never reads the old
@@ -96,7 +96,19 @@ def disk_files():
 
 
 try:
-    check("no key: the files store", setting() == "files")
+    none = setting()
+    check(
+        "no config.yaml: refused as not-configured, not read as files",
+        none.startswith("ERROR (not-configured)"),
+        none,
+    )
+    none = setting(config="catalog: {}\n")
+    check(
+        "a config.yaml with no store key: refused as not-configured",
+        none.startswith("ERROR (not-configured)"),
+        none,
+    )
+    check("store: files in config.yaml", setting(config="store: files\n") == "files")
     check("store: sqlite in config.yaml", setting(config="store: sqlite\n") == "sqlite")
     check("EVAL_STORE wins over the file", setting("files", config="store: sqlite\n") == "files")
     bad = setting("postgres")

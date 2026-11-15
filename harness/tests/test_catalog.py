@@ -1209,6 +1209,7 @@ try:
     # the command line: evh catalog builds into the project
     env_root = tmp / "proj"
     shutil.copytree(data, env_root / "data")
+    (env_root / "config.yaml").write_text("store: files\n")
     proc = subprocess.run(
         [sys.executable, str(HERE / "cli.py"), "catalog"],
         cwd=env_root,

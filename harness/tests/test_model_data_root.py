@@ -48,7 +48,7 @@ import _runstore  # noqa: E402
 import yaml  # noqa: E402
 from evaluation_harness import _common, _label_sets, _outputs, _picks, _rounds, _store, _tags, catalog_models  # noqa: E402
 from evaluation_harness import catalog_serve as cs  # noqa: E402
-from evaluation_harness._check import check, summary  # noqa: E402
+from evaluation_harness._check import check, store_under_test, summary  # noqa: E402
 from evaluation_harness.catalog_adapter import HarnessAdapter  # noqa: E402
 from evaluation_harness.model import compare as model_compare  # noqa: E402
 from evaluation_harness.model import dataset_views  # noqa: E402
@@ -213,7 +213,7 @@ def evidence(A: HarnessAdapter, data: Path | None) -> dict:
 
 
 try:
-    evh("init")
+    evh("init", "--store", store_under_test())
     build(DATA)
     shutil.copytree(DATA, copy / "data", ignore=shutil.ignore_patterns("project.sqlite*"))
     _runstore.migrate_in(proj)

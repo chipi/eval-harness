@@ -43,6 +43,7 @@ def project(name: str) -> tuple[Path, dict]:
     p = OUT / "projects" / name
     shutil.rmtree(p, ignore_errors=True)
     (p / "data" / "configs").mkdir(parents=True)
+    (p / "config.yaml").write_text("store: files\n")
     env = dict(os.environ, EVAL_HOME=str(p), EVH_ACTOR="person:owner", EVAL_BUILD_REF="workbench-round5")
     env["PYTHONPATH"] = str(H) + os.pathsep + env.get("PYTHONPATH", "")
     for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_MAX_COST_USD", "EVH_FOR", "EVAL_STORE"):

@@ -1243,7 +1243,7 @@ def home(f: dict) -> str:
     <div><h3>1 · Try the whole loop</h3>
 <pre class="term"><span class="p">$ </span>pip install \
   "evaluation-harness @ git+{REPO}@v{VERSION}#subdirectory=harness"
-<span class="p">$ </span>evh init --tutorial
+<span class="p">$ </span>evh init --store files --tutorial
 <span class="c"># then the guide walks the six tickets</span></pre></div>
     <div><h3>2 · On your own system</h3>
 <pre class="term"><span class="p">$ </span>evh dataset-create --dataset-id my_v1 \

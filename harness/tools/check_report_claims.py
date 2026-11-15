@@ -252,6 +252,7 @@ def _family_on(dataset_id, held, argv):
     import tempfile as _tf  # noqa: PLC0415
 
     with _tf.TemporaryDirectory() as td:
+        _store.write_text(Path(td) / "config.yaml", "store: files\n", encoding="utf-8")
         for cid, rid, rows in held:
             rd = Path(td) / "data" / "runs" / rid
             sd = rd / "scores" / "t@none"

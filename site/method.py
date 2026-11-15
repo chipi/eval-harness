@@ -796,8 +796,8 @@ STEPS = [
     (
         "Set up",
         "A new folder, the harness pinned to a release, and the tutorial kit copied in.",
-        'pip install "evaluation-harness @ git+{repo}@v{version}#subdirectory=harness"\nevh init --tutorial',
-        "wrote    26 file(s), the tutorial kit under tutorial/",
+        'pip install "evaluation-harness @ git+{repo}@v{version}#subdirectory=harness"\nevh init --store files --tutorial',
+        "wrote    29 file(s), the tutorial kit under tutorial/",
         GUIDE,
         "0-set-up",
     ),

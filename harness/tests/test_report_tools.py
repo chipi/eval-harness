@@ -32,6 +32,8 @@ from pathlib import Path
 
 HARNESS = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(HARNESS))
+# The data trees below are made without `evh init`, so they name no store: files, as the store matrix sets sqlite.
+os.environ.setdefault("EVAL_STORE", "files")
 from evaluation_harness import _common  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 

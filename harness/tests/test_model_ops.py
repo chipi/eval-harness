@@ -102,7 +102,7 @@ def stored(p: Path) -> dict:
 
 
 try:
-    r = evh("init")
+    r = evh("init", "--store", "files")
     r = r if r.returncode else evh("catalog")
     check("setup: a project and its catalog", r.returncode == 0, (r.stdout + r.stderr)[-300:])
 

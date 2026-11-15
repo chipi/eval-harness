@@ -33,7 +33,7 @@ os.environ["EVAL_HOME"] = str(proj)
 for k in ("EVAL_DATA_DIR", "EVAL_GOALS_DIR"):
     os.environ.pop(k, None)
 import _runstore  # noqa: E402
-from evaluation_harness._check import check, summary  # noqa: E402
+from evaluation_harness._check import check, store_under_test, summary  # noqa: E402
 
 env = dict(os.environ, EVH_ACTOR="person:tester", EVAL_BUILD_REF="test-model-datasets")
 SHA = "a" * 64
@@ -51,7 +51,7 @@ def put(rel: str, doc: dict) -> None:
 
 
 try:
-    evh("init")
+    evh("init", "--store", store_under_test())
     item = {"item_id": "i1", "source_path": "i1.txt", "source_sha256": SHA}
     put("datasets/ds_v1.json", {"dataset_id": "ds_v1", "version": "1.0", "created_at": "2026-11-14T00:00:00Z",
                                 "items": [item], "source_dir": "data/sources/ds_v1", "fieldset": "f1"})  # fmt: skip

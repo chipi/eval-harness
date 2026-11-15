@@ -43,7 +43,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in test
 HARNESS = HERE.parent
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))  # _wheel, shared with the deploy
 import _wheel  # noqa: E402
-from evaluation_harness._check import check, summary  # noqa: E402
+from evaluation_harness._check import check, store_under_test, summary  # noqa: E402
 
 
 def project(tmp: Path) -> tuple:
@@ -71,7 +71,7 @@ def project(tmp: Path) -> tuple:
         if r.returncode:
             raise SystemExit(f"setup: evh {' '.join(args)} failed:\n{r.stdout}{r.stderr}")
 
-    evh("init", "--tutorial")
+    evh("init", "--store", store_under_test(), "--tutorial")
     shutil.copy(proj / "tutorial/fields/tickets.yaml", proj / "data/fields/")
     evh(
         "dataset-create",

@@ -1,6 +1,6 @@
 """Everything under a project's data/, read and written only here (RFC-025): files, or one SQLite database.
 
-The project's store is `store: sqlite` in its config.yaml, or EVAL_STORE (which wins), else `files`. Every function
+The project's store is `store: files` or `store: sqlite` in its config.yaml, or EVAL_STORE (which wins); a project that names none is refused. Every function
 takes a path. In the files store, and for any path outside data/ in either store, it is the filesystem, as pathlib
 would do it. In the sqlite store a path under data/ is a row of `data/project.sqlite`, addressed by its path relative
 to data/: directories are the paths' prefixes, so a directory exists while it holds a file, and removing one removes
@@ -202,12 +202,14 @@ def rel(path: Any) -> str | None:
     path is under data/; None for a path the filesystem keeps. Strings, not pathlib: a Path built for each of the
     12,583 calls of one view was 1.1 s of its 2.4 s. (Keeping the answers per path was tried and measured: no
     faster, the 4 µs left are the store setting's and the data root's lookups.)"""
-    if not sqlite() or not _pathlike(path):
+    if not _pathlike(path):
         return None
     absolute = os.path.abspath(path)
     base = _data_abs()
     prefix = base if base.endswith(os.sep) else base + os.sep
-    if not absolute.startswith(prefix):
+    # The store is asked only for a path under data/: a project that names none refuses there, and a path outside it
+    # (a package file, a target folder) is read the same in either, in a directory that is no project too.
+    if not absolute.startswith(prefix) or not sqlite():
         return None
     key = absolute[len(prefix) :]
     if os.sep != "/":
@@ -290,7 +292,7 @@ def is_dir(path: Any) -> bool:
     key = rel(path)
     if key is None:
         p = _disk(path)
-        return p.is_dir() or (sqlite() and _is_data_root(p))
+        return p.is_dir() or (_is_data_root(p) and sqlite())
     conn = connect(create=False)
     return bool(
         conn
@@ -307,7 +309,7 @@ def fingerprint(top: Any, newest: bool = False) -> tuple[int, int, int]:
     commits, and not for a reader, a checkpoint or this process's own writes on its one connection), and the newest
     row's time when `newest` asks for it (a scan of the table, for the start of a server)."""
     top = Path(top)
-    if sqlite() and _is_data_root(top):
+    if _is_data_root(top) and sqlite():
         with _LOCK:
             conn = connect(create=False)
             if conn is None:
@@ -395,7 +397,7 @@ def _keys_under(key: str) -> list[str]:
 
 def _root_key(path: Any) -> str | None:
     """The key of a directory path (data/ itself is the empty key) in the sqlite store; None for the filesystem."""
-    if sqlite() and _is_data_root(Path(path)):
+    if _is_data_root(Path(path)) and sqlite():
         return ""
     return rel(path)
 
@@ -566,7 +568,7 @@ def mkdir(path: Any, parents: bool = False, exist_ok: bool = False) -> None:
     if not _pathlike(path):
         path.mkdir(parents=parents, exist_ok=exist_ok)
         return
-    if rel(path) is None and not (sqlite() and _is_data_root(Path(path))):
+    if rel(path) is None and not (_is_data_root(Path(path)) and sqlite()):
         Path(path).mkdir(parents=parents, exist_ok=exist_ok)
         wrote()
 
@@ -882,7 +884,7 @@ def glob_str(pattern: str) -> list[str]:
     parts = Path(pattern).parts
     lit = next((i for i, x in enumerate(parts) if any(c in x for c in "*?[")), len(parts))
     base = Path(*parts[:lit]) if lit else Path(".")
-    if rel(base) is None and not (sqlite() and _is_data_root(base)):
+    if rel(base) is None and not (_is_data_root(base) and sqlite()):
         return _glob.glob(pattern)
     rest = "/".join(parts[lit:])
     if not rest:

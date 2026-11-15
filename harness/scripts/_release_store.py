@@ -41,11 +41,16 @@ def seal(db: Path) -> None:
         Path(f"{db}{suffix}").unlink(missing_ok=True)
 
 
+def name_store(data: Path, store: str) -> None:
+    """The release's config.yaml names its store: a project with none is refused, a release included."""
+    (_release_root(data) / "config.yaml").write_text(f"store: {store}\n", encoding="utf-8")
+
+
 def to_sqlite(data: Path) -> None:
     """The release's data/, as `copy_data` wrote it (files), made one database and sealed. Moved by `data-migrate`, in
     a process of its own: the project it moves is the release, not this process's."""
     root = _release_root(data)
-    (root / "config.yaml").write_text("store: sqlite\n", encoding="utf-8")
+    name_store(data, "sqlite")
     env = {
         k: v
         for k, v in os.environ.items()

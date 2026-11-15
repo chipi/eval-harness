@@ -12,6 +12,7 @@ are tested rather than asserted in a README.
 from __future__ import annotations
 
 import json
+import os
 import pathlib
 import re
 import subprocess
@@ -42,6 +43,10 @@ def at(script: str) -> str:
             return f"{d}/{script}"
     return f"scripts/{script}"
 
+
+# A project a test makes with a temporary folder and EVAL_HOME has no config.yaml, and a project that names no store is
+# refused: the tests run in files, as the store matrix (tools/store_matrix.py) runs them in sqlite.
+os.environ.setdefault("EVAL_STORE", "files")
 
 from evaluation_harness import _outputs  # noqa: E402
 from evaluation_harness._check import check, results  # noqa: E402
@@ -903,6 +908,10 @@ def test_example_scorer_suites_pass() -> None:
         (
             "test_store.py",
             "the project's store (RFC-025): the setting, _store on both, data-migrate there and back, never both (V23), concurrent writers, the release, the path-I/O guard",
+        ),
+        (
+            "test_store_choice.py",
+            "a project names its store, no default: init --store required and explained, config.yaml, a project with none refused, EVAL_STORE, no project needed for help",
         ),
         (
             "test_store_readonly.py",

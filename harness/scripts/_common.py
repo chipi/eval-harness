@@ -829,7 +829,7 @@ REFUSALS = {
     "not-enough": "too little to work on: too few items, arms or outputs",
     "not-public": "the text asked for is not shown on a public server or for a hidden dataset",
     "not-allowed": "a rule refuses it: a dirty build, a closed round, a bind beyond this machine",
-    "not-configured": "a key, a cost cap, a build ref or an endpoint is not set",
+    "not-configured": "a key, a cost cap, a build ref, an endpoint or the project's store is not set",
     "failed": "something outside the command failed: an importer, a server, a hook, the warm-up",
     "missing-dependency": "a package or a part of the installation is missing",
     "over-budget": "a round's budget is spent (what its runs spent and its running commands reserved)",
@@ -837,13 +837,22 @@ REFUSALS = {
 }
 
 
-#: Where a project keeps its data (RFC-025): `files` (the default) or `sqlite` (everything under data/ in one database).
+#: Where a project keeps its data (RFC-025): `files` or `sqlite` (everything under data/ in one database). Two equal
+#: choices and no default: a project names one (`evh init --store`, `store:` in config.yaml).
 STORES = ("files", "sqlite")
+STORE_CHOICE = """\
+a project keeps its data in one of two stores, and has to name one:
+  files   every run, label and score is a file under data/.
+          They are kept in git: review in a pull request, history in git log.
+  sqlite  the project's data is in one database file, data/project.sqlite.
+          .gitignore leaves it out of git: one file to copy and deploy.
+Name it with `evh init --store files|sqlite` for a new project, or `store: files` / `store: sqlite` in the project's
+config.yaml. `evh data-migrate` moves a project's data from one to the other later."""
 _STORE_SEEN: list[Any] = []
 
 
 def store() -> str:
-    """The project's store: `EVAL_STORE`, else `store` in its config.yaml, else `files`."""
+    """The project's store: `EVAL_STORE`, else `store` in its config.yaml; a project that names none is refused."""
     env = os.environ.get("EVAL_STORE", "").strip()
     root = _paths()["ROOT"]
     # Asked for every path a reader touches (25,000 times a comparison), so the answer is kept for the process: a
@@ -861,7 +870,7 @@ def store() -> str:
     if env:
         chosen, where = env, "EVAL_STORE"
     else:
-        chosen, where = "files", f"store in {cfg}"
+        named, where = None, f"store in {cfg}"
         if mtime is not None:
             import yaml  # noqa: PLC0415
 
@@ -869,7 +878,10 @@ def store() -> str:
                 doc = yaml.safe_load(cfg.read_text(encoding="utf-8")) or {}
             except yaml.YAMLError:
                 doc = {}
-            chosen = str((doc.get("store") if isinstance(doc, dict) else None) or "files")
+            named = doc.get("store") if isinstance(doc, dict) else None
+        if not named:
+            die(f"{cfg} names no store.\n{STORE_CHOICE}", "not-configured")
+        chosen = str(named)
     if chosen not in STORES:
         said = f"{where}: {chosen!r} is not a store, one of {', '.join(STORES)}"
         if env:

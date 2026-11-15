@@ -36,7 +36,7 @@ import _runstore  # noqa: E402
 STORE = "sqlite" if _runstore.sqlite() else "files"
 import _wheel  # noqa: E402
 from evaluation_harness import _common, _store  # noqa: E402
-from evaluation_harness._check import check, summary  # noqa: E402
+from evaluation_harness._check import check, store_under_test, summary  # noqa: E402
 from evaluation_harness.cli import COMMANDS  # noqa: E402
 
 
@@ -105,7 +105,7 @@ def main() -> int:
             if r.returncode:
                 raise SystemExit(f"setup: evh {' '.join(args)}\n{r.stdout}{r.stderr}")
 
-        setup("init", "--tutorial")
+        setup("init", "--store", store_under_test(), "--tutorial")
         setup("dataset-create", "--dataset-id", "tickets_v1", "--source-dir", "tutorial/tickets")
         setup(
             "dataset-create",

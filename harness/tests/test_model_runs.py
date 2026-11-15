@@ -35,7 +35,7 @@ os.environ["EVAL_HOME"] = str(proj)
 for k in ("EVAL_DATA_DIR", "EVAL_GOALS_DIR"):
     os.environ.pop(k, None)
 from evaluation_harness import _format, _outputs, _store  # noqa: E402
-from evaluation_harness._check import check, summary  # noqa: E402
+from evaluation_harness._check import check, store_under_test, summary  # noqa: E402
 from evaluation_harness.model import runs as R  # noqa: E402
 
 env = dict(os.environ, EVH_ACTOR="person:tester", EVAL_BUILD_REF="test-model-runs")
@@ -100,7 +100,7 @@ def systems() -> None:
 
 
 try:
-    r = evh("init")
+    r = evh("init", "--store", store_under_test())
     check("setup: a project", r.returncode == 0, r.stderr[-300:])
     _store.write_text(DATA / "project.yaml", "format: 3\n")
     systems()
@@ -255,7 +255,7 @@ try:
         _store.close()
         shutil.rmtree(proj)
         proj.mkdir()
-        evh("init")
+        evh("init", "--store", store_under_test())
         _store.write_text(DATA / "project.yaml", "format: 3\n")
         systems()
         _outputs.reset()

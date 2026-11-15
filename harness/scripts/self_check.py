@@ -81,7 +81,12 @@ def main() -> int:
             tmp,
             env,
         )
-        if step("init --tutorial", [*evh, "init", "--tutorial"], tmp, env):
+        if step(
+            "init --tutorial",
+            [*evh, "init", "--store", os.environ.get("EVAL_STORE") or "files", "--tutorial"],
+            tmp,
+            env,
+        ):
             # The tutorial's settings put in with data-put, the project's own way in: into its files or its database,
             # whichever store it has (a copy from this process wrote to the disk, where SQLite has no data/ folders).
             puts = [("fields/tickets.yaml", "tutorial/fields/tickets.yaml")] + [
