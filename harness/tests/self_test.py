@@ -1126,6 +1126,10 @@ def test_example_scorer_suites_pass() -> None:
             "per-item results as a model (RFC-033): the usage slim, the run settings a run's rows share, rows written without them (first and later scores), run.json `call` and its schema, validate V28",
         ),
         (
+            "test_results_e2e.py",
+            "format 7 end to end, both stores: a run that died and was resumed (and a finished one resumed) gives an uninterrupted run's rows and `call`; rescore, judge-score and sheet-import add score sets without the run's settings, 'already scored' on a second run",
+        ),
+        (
             "test_m0007.py",
             "evh migrate's format 7 step: settings hoisted to run.json `call`, usage slimmed, rows canonical, an interrupted run resumed, refusals, the SQLite store equal to files",
         ),

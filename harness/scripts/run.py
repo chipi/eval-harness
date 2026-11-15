@@ -176,7 +176,12 @@ def _timed(call_system: Any) -> Any:
 
 
 #: A warm-up that returns faster than this loaded nothing (a no-op warmup(), a hosted arm): it is not reported as work.
-WARMUP_NOTHING_MS = 5.0
+#: The window is wall time, and a process that is descheduled inside it counts the wait. Measured for a warm-up that
+#: does nothing: 0.04 ms idle, but with the machine at 2x its cores and the test suite's own runs competing, 4 of 160
+#: runs read 5.0 to 11.4 ms (a 5 ms threshold said "warmed up in 6ms"); 100,000 bare windows at 4x its cores: p99.9
+#: 9 ms, 5 over 25 ms, 1 over 50 ms. 25 ms is twice the worst of the runs. A model load and a call to a hosted model
+#: take longer; a call to a model already loaded on the same machine can be faster, and is then reported as nothing.
+WARMUP_NOTHING_MS = 25.0
 
 UNREACHABLE = (
     "Connection refused",
@@ -980,7 +985,11 @@ def _resume_source(
                         f"by this version of the harness",
                         "invalid-file",
                     )
-                prior_rows.setdefault(r["item_id"], r)
+                # A finished run's rows have the run's settings taken off (RFC-033): put back, or the resumed run that
+                # replays them holds rows without them and has no `call` to hoist.
+                prior_rows.setdefault(
+                    r["item_id"], r if partial else _results.restore_call(r, ident.get("call"))
+                )
     if not prior_rows:
         print(
             f"  WARNING: {resume} carries no per-item rows — replayed items "
@@ -1384,6 +1393,7 @@ def _run(args: argparse.Namespace) -> int:
             "started_at": now(),
             "run_id": run_id,
             "purpose": args.purpose,
+            "build": build,  # a crashed run still says which build made it (V3)
             **({"of": args.of} if args.of else {}),
         }
         _model_runs.write_run(run_id, identity, scratch=args.scratch)

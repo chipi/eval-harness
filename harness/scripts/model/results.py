@@ -97,6 +97,16 @@ def strip_call(row: dict[str, Any], call: dict[str, Any] | None) -> dict[str, An
     return {**row, "_meta": {k: v for k, v in meta.items() if k not in same}}
 
 
+def restore_call(row: dict[str, Any], call: dict[str, Any] | None) -> dict[str, Any]:
+    """The row with the run settings it lacks put back from the run's `call` (`strip_call` undone); one it holds
+    with another value is its own and stays."""
+    meta = row.get("_meta")
+    if not call or not isinstance(meta, dict):
+        return row
+    missing = {k: call[k] for k in RUN_SETTINGS if k in call and k not in meta}
+    return {**row, "_meta": {**meta, **missing}} if missing else row
+
+
 def prepare(row: dict[str, Any], call: dict[str, Any] | None = None) -> dict[str, Any]:
     """A row as it is written: usage slimmed, the run settings the run holds taken off."""
     return strip_call(slim_row(row), call)

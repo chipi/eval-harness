@@ -1180,6 +1180,8 @@ def judged_score_problems(scorers_dir: Path) -> list[str]:
     now: dict[str, str | None] = {}
     bad = []
     for s in _sc.judged_scores():
+        if s.get("source") == "sheet":
+            continue  # a person's judgements, entered through a sheet: no judge scorer made them
         sid = str(s["scorer"])
         if sid not in now:
             f = scorers_dir / f"{sid}.yaml"

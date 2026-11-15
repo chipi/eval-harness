@@ -120,6 +120,7 @@ def judged_scores(scorer_id: str | None = None, data: Path | None = None) -> lis
             if not str(m.get("label") or "").startswith(JUDGED) or scorer_id not in (None, m.get("scorer")):
                 continue
             rec = _runs.record(sd) or {}
+            made = (rec.get("derived") or {}).get("with") or {}
             out.append(
                 {
                     "scorer": m.get("scorer"),
@@ -127,7 +128,9 @@ def judged_scores(scorer_id: str | None = None, data: Path | None = None) -> lis
                     "system": rec.get("system_id"),
                     "set": m.get("reference"),
                     "dir": sd,
-                    "sha256": ((rec.get("derived") or {}).get("with") or {}).get("scorer_sha256"),
+                    "sha256": made.get("scorer_sha256"),
+                    # "sheet": judgements a person entered (sheet-import), made by no scorer file
+                    "source": made.get("source"),
                 }
             )
     return out

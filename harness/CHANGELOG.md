@@ -596,6 +596,15 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Fixed
 
+- **A crashed run names its build**: the run.json a run writes before its first item now holds `build`, so a run that
+  was killed (and is kept to resume) no longer fails V3 "every run identifies its build".
+- **Scores entered through a sheet pass V13**: `sheet-import`'s judged scores are a person's judgements
+  (`derived.with.source: sheet`), not a judge scorer's, and V13 no longer asks for a scorer file under `data/scorers`
+  for them.
+- **"Warm-up: nothing to load" under load**: a warm-up that did nothing was reported as "warmed up in 6ms" when the
+  machine was busy (the window is wall time and counts a descheduled process's wait). The threshold is 25 ms, from the
+  measured distribution (a no-op window reached 11 ms with the machine at twice its cores); a model load or a hosted
+  call takes longer, a call to a model already loaded on the same machine may now read as nothing to load.
 - **The API took a file or code path where the command line does** (RFC-026 says it never does): `capture --importer`,
   `importer-check`'s importer and `dataset-create --source` given as `path.py:Class` loaded that file's code, `--query
   @file` of `capture` and `importer-check` read a file of the server's, and `data-put`'s file was read from the server.

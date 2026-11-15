@@ -203,6 +203,22 @@ check(
     and R.strip_call(src, {}) is src
     and R.strip_call({"item_id": "a"}, ALL) == {"item_id": "a"},
 )
+stripped = R.strip_call(src, ALL)
+mixed = R.strip_call(row("a", **{**ALL, "encoder_window": 1024}), ALL)
+check(
+    "restore_call: strip_call undone (`_meta` equal again), a setting the row holds with another value is its own, "
+    "the row is not changed in place",
+    R.restore_call(stripped, ALL) == src
+    and R.restore_call(mixed, ALL)["_meta"] == {"provider": "p", **ALL, "encoder_window": 1024}
+    and stripped["_meta"] == {"provider": "p", "usage": RICH},
+    R.restore_call(stripped, ALL),
+)
+check(
+    "restore_call: no call, an empty call, no `_meta`: the row itself",
+    R.restore_call(stripped, None) is stripped
+    and R.restore_call(stripped, {}) is stripped
+    and R.restore_call({"item_id": "a"}, ALL) == {"item_id": "a"},
+)
 check(
     "prepare: the usage slimmed and the settings off, at once",
     R.prepare(src, ALL)["_meta"] == {"provider": "p", "usage": SLIM_RICH} and src == frozen,
