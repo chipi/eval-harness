@@ -184,7 +184,7 @@ services:
       - "65536"
       - --max-connections
       - "64"
-      # Two commands at once at most: each is a process of up to ~60 MB, inside mem_limit.
+      # Two commands at once at most: each is a process of up to ~160 MiB (measured 2026-11-15), inside mem_limit.
       - --concurrent
       - "2"
       - --timeout
@@ -205,8 +205,9 @@ services:
       - /tmp:size=16m,nr_inodes=4096,uid=65534,gid=65534,mode=0700
     cap_drop: [ALL]
     security_opt: ["no-new-privileges:true"]
-    # A hard limit (the box has no swap and a nightly pipeline): the server and two commands.
-    mem_limit: 384m
+    # A hard limit (the box has no swap and a nightly pipeline): the server (~70 MiB) and two commands (~160 MiB
+    # each). Measured 2026-11-15 in these limits: two at once peaked at 365-371 MiB, too close to 384m.
+    mem_limit: 512m
     cpus: 0.5
     pids_limit: 64
     restart: unless-stopped
