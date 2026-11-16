@@ -745,11 +745,14 @@ def _rebuild_failed(job_id: str | None, why: str) -> None:
 def _start_rebuild(why: str) -> None:
     """Start the `catalog` job that builds the pages beside the served ones and swaps them in (build_beside), and a
     thread that waits for it. Called with _REBUILD_LOCK held and no rebuild running."""
-    from evaluation_harness import _jobs  # noqa: PLC0415
+    from evaluation_harness import _jobs, ops  # noqa: PLC0415
+    from evaluation_harness.ops import locks as op_locks  # noqa: PLC0415
 
-    argv = ["--out", str(FRESH["build_dir"]), *(["--adapter", FRESH["adapter"]] if FRESH["adapter"] else [])]
+    inputs = {"out": str(FRESH["build_dir"]), **({"adapter": FRESH["adapter"]} if FRESH["adapter"] else {})}
     try:
-        job_id = _jobs.create("catalog", argv, None, f"catalog-serve: {why}", _jobs.locks_for("catalog", {}))
+        job_id = _jobs.create_operation(
+            "catalog", inputs, None, op_locks.locks_for(ops.OPS["catalog"], inputs)
+        )
         _jobs.start(job_id)
     except Exception as exc:  # noqa: BLE001 -- a project that cannot start a job (read-only, no space) is said, not fatal
         _rebuild_failed(None, f"the job could not be started: {type(exc).__name__}: {exc}")

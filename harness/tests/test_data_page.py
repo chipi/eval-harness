@@ -203,7 +203,15 @@ def run_case(store: str) -> None:
 
         # Checks: nothing saved on a problem.
         r = cli(
-            proj, env, "data-put", goal, "-", "--check", stdin="goal_id: tickets_summary\ntitle: [unclosed\n"
+            proj,
+            env,
+            "data-put",
+            "--path",
+            goal,
+            "--file",
+            "-",
+            "--check",
+            stdin="goal_id: tickets_summary\ntitle: [unclosed\n",
         )
         check(
             f"{store}: --check: a YAML error with its line",
@@ -214,7 +222,9 @@ def run_case(store: str) -> None:
             proj,
             env,
             "data-put",
+            "--path",
             goal,
+            "--file",
             "-",
             "--check",
             stdin=before.replace("goal_id: tickets_summary", "goal_id: other"),
@@ -225,25 +235,45 @@ def run_case(store: str) -> None:
             r.stdout,
         )
         cfg = cli(proj, env, "data-show", "systems/tickets_lead1_v1.yaml", "--text").stdout
-        r = cli(proj, env, "data-put", "systems/tickets_lead1_v1.yaml", "-", "--check", stdin=cfg)
+        r = cli(
+            proj,
+            env,
+            "data-put",
+            "--path",
+            "systems/tickets_lead1_v1.yaml",
+            "--file",
+            "-",
+            "--check",
+            stdin=cfg,
+        )
         check(f"{store}: --check: a system whose system_id is its file name passes",
               r.returncode == 0 and "passes the check: it parses, matches system.schema.json" in r.stdout, r.stdout)  # fmt: skip
-        r = cli(proj, env, "data-put", "systems/tickets_lead1_v1.yaml", "-", "--check",
+        r = cli(proj, env, "data-put", "--path", "systems/tickets_lead1_v1.yaml", "--file", "-", "--check",
                 stdin=cfg.replace("system_id: tickets_lead1_v1", "system_id: other_v1"))  # fmt: skip
         check(f"{store}: --check: a system's id that is not the file name (it IS the file name now)",
               r.returncode == 1 and "must be the file name" in r.stdout, r.stdout)  # fmt: skip
-        r = cli(proj, env, "data-put", goal, "-", "--check", stdin="goal_id: tickets_summary\n")
+        r = cli(
+            proj,
+            env,
+            "data-put",
+            "--path",
+            goal,
+            "--file",
+            "-",
+            "--check",
+            stdin="goal_id: tickets_summary\n",
+        )
         check(
             f"{store}: --check: the schema's missing keys",
             r.returncode == 1 and "title: required" in r.stdout,
             r.stdout[-300:],
         )
-        r = cli(proj, env, "data-put", goal, "-", stdin="goal_id: tickets_summary\n")
+        r = cli(proj, env, "data-put", "--path", goal, "--file", "-", stdin="goal_id: tickets_summary\n")
         same = cli(proj, env, "data-show", goal, "--text").stdout
         check(f"{store}: a failing put is refused and saves nothing", r.returncode != 0 and "ERROR (invalid-file)" in r.stderr
               and same == before, r.stderr[-300:])  # fmt: skip
         # A valid change, saved and read back.
-        r = cli(proj, env, "data-put", goal, "-", stdin=GOOD_GOAL_EDIT + before)
+        r = cli(proj, env, "data-put", "--path", goal, "--file", "-", stdin=GOOD_GOAL_EDIT + before)
         check(f"{store}: a valid change is saved and reads back", r.returncode == 0 and "saved goals/tickets_summary.yaml" in r.stdout
               and cli(proj, env, "data-show", goal, "--text").stdout == GOOD_GOAL_EDIT + before, (r.stdout + r.stderr)[-300:])  # fmt: skip
         r = cli(proj, env, "goal-list")
@@ -252,7 +282,7 @@ def run_case(store: str) -> None:
             r.returncode == 0 and "tickets_summary" in r.stdout,
             r.stderr[-300:],
         )
-        r = cli(proj, env, "data-put", goal, "-", "--new", stdin=before)
+        r = cli(proj, env, "data-put", "--path", goal, "--file", "-", "--new", stdin=before)
         check(
             f"{store}: --new refuses a name already taken",
             "ERROR (would-overwrite)" in r.stderr,
@@ -261,12 +291,22 @@ def run_case(store: str) -> None:
         new_cfg = cli(proj, env, "data-show", "systems/tickets_lead1_v1.yaml", "--text").stdout.replace(
             "system_id: tickets_lead1_v1", "system_id: tickets_lead3_v1"
         )
-        r = cli(proj, env, "data-put", "systems/tickets_lead3_v1.yaml", "-", "--new", stdin=new_cfg)
+        r = cli(
+            proj,
+            env,
+            "data-put",
+            "--path",
+            "systems/tickets_lead3_v1.yaml",
+            "--file",
+            "-",
+            "--new",
+            stdin=new_cfg,
+        )
         check(f"{store}: a new system is created", r.returncode == 0, (r.stdout + r.stderr)[-300:])
         # One field at a time, as the form saves: the comments and every other line kept.
         lead1 = "systems/tickets_lead1_v1.yaml"
         cfg_before = cli(proj, env, "data-show", lead1, "--text").stdout
-        r = cli(proj, env, "data-put", lead1, "--set", "params.sentences=2")
+        r = cli(proj, env, "data-put", "--path", lead1, "--set", "params.sentences=2")
         cfg_after = cli(proj, env, "data-show", lead1, "--text").stdout
         changed = [(a, b) for a, b in zip(cfg_before.splitlines(), cfg_after.splitlines()) if a != b]
         check(f"{store}: data-put --set changes one line, the comments kept",
@@ -276,24 +316,24 @@ def run_case(store: str) -> None:
         r = cli(proj, env, "data-show", lead1, "--fields")
         check(f"{store}: data-show --fields prints the dotted keys --set takes",
               r.returncode == 0 and "params.sentences: 2" in r.stdout and "system_id: tickets_lead1_v1" in r.stdout, r.stdout[-300:])  # fmt: skip
-        r = cli(proj, env, "data-put", lead1, "--unset", "system_id")
+        r = cli(proj, env, "data-put", "--path", lead1, "--unset", "system_id")
         check(f"{store}: --unset of a required field is refused at its field; nothing saved",
               r.returncode == 1 and "system_id: required" in r.stdout
               and cli(proj, env, "data-show", lead1, "--text").stdout == cfg_after, r.stdout[-300:])  # fmt: skip
-        r = cli(proj, env, "data-put", lead1, "--set", "params.sentences=2")
+        r = cli(proj, env, "data-put", "--path", lead1, "--set", "params.sentences=2")
         check(
             f"{store}: a --set that changes nothing writes nothing",
             r.returncode == 0 and "nothing changed" in r.stdout,
             r.stdout,
         )
-        r = cli(proj, env, "data-put", lead1, "--set", "hypothesis.against=no_such_v1", "--set", "hypothesis.measure=overlap_f1",
+        r = cli(proj, env, "data-put", "--path", lead1, "--set", "hypothesis.against=no_such_v1", "--set", "hypothesis.measure=overlap_f1",
                 "--set", "hypothesis.direction=better", "--set", "hypothesis.statement=a claim")  # fmt: skip
         check(f"{store}: a change the schema allows but evh validate refuses is put back, and says why",
               r.returncode != 0 and "V20" in r.stderr and "no_such_v1" in r.stderr
               and cli(proj, env, "data-show", lead1, "--text").stdout == cfg_after, r.stderr[-400:])  # fmt: skip
         for target, why in ((f"{run}/run.json", "written by evh run"), ("datasets/tickets_v1.json", "written by the dataset-* commands"),
                             ("../config.yaml", "outside the project's data"), ("systems/x.py", "code")):  # fmt: skip
-            r = cli(proj, env, "data-put", target, "-", stdin="x: 1\n")
+            r = cli(proj, env, "data-put", "--path", target, "--file", "-", stdin="x: 1\n")
             check(
                 f"{store}: data-put refuses {target}",
                 r.returncode != 0 and "ERROR (not-allowed)" in r.stderr and why in r.stderr,
@@ -351,28 +391,28 @@ def run_case(store: str) -> None:
                   sorted(x.name for x in data.iterdir()) == ["project.sqlite"] or all(x.name.startswith("project.sqlite") for x in data.iterdir()),
                   sorted(x.name for x in data.iterdir()))  # fmt: skip
         # The commands' deletes.
-        r = cli(proj, env, "data-rm", "systems/tickets_lead3_v1.yaml", "--dry-run")
+        r = cli(proj, env, "data-rm", "--path", "systems/tickets_lead3_v1.yaml", "--dry-run")
         check(f"{store}: data-rm --dry-run deletes nothing", r.returncode == 0 and "would delete" in r.stdout
               and cli(proj, env, "data-show", "systems/tickets_lead3_v1.yaml").returncode == 0, r.stdout)  # fmt: skip
-        r = cli(proj, env, "data-rm", "systems/tickets_lead3_v1.yaml")
+        r = cli(proj, env, "data-rm", "--path", "systems/tickets_lead3_v1.yaml")
         check(
             f"{store}: data-rm deletes a setting",
             r.returncode == 0
             and cli(proj, env, "data-show", "systems/tickets_lead3_v1.yaml").returncode != 0,
             r.stderr[-200:],
         )
-        r = cli(proj, env, "data-rm", "datasets/tickets_v1.json", "--dry-run")
+        r = cli(proj, env, "data-rm", "--path", "datasets/tickets_v1.json", "--dry-run")
         check(
             f"{store}: data-rm --dry-run refuses a dataset as data-rm would",
             "ERROR (not-allowed)" in r.stderr,
             r.stderr[-200:],
         )
         # A run is deleted whole: its record, its outputs, and every score under it with its rows.
-        r = cli(proj, env, "data-rm", run, "--dry-run")
+        r = cli(proj, env, "data-rm", "--path", run, "--dry-run")
         check(f"{store}: data-rm --dry-run names what a run takes, its score's rows with its outputs",
               r.returncode == 0 and "would delete the run" in r.stdout and "6 output(s), 6 row(s)" in r.stdout
               and cli(proj, env, "data-show", f"{run}/run.json").returncode == 0, r.stdout + r.stderr[-200:])  # fmt: skip
-        r = cli(proj, env, "data-rm", run)
+        r = cli(proj, env, "data-rm", "--path", run)
         left = [
             e for e in json.loads(cli(proj, env, "data-ls", "runs", "--json").stdout)["result"]["listing"]["entries"]
             if e["path"] == run

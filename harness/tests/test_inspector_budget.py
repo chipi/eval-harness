@@ -78,7 +78,7 @@ def main() -> int:
         cat = HARNESS / ".build" / "budget-catalog"
         t0 = time.monotonic()
         subprocess.run(
-            [sys.executable, str(HARNESS / "scripts" / "catalog_build.py"), "--out", str(cat)],
+            [sys.executable, str(HARNESS / "scripts" / "cli.py"), "catalog", "--out", str(cat)],
             check=True,
             capture_output=True,
         )

@@ -61,8 +61,11 @@ check(
     stale_args,
 )
 
-_run_meta, _jobs._run_meta = _jobs._run_meta, lambda run_id: {"system_id": "slow_v1"}
-try:
+from unittest import mock  # noqa: E402
+
+from evaluation_harness.model import runs as _model_runs  # noqa: E402
+
+with mock.patch.object(_model_runs, "run", lambda *_a, **_k: {"system_id": "slow_v1"}):
     run_key = {
         k
         for k, _ex in op_locks.locks_for(ops.OPS["run"], {"system": "slow_v1", "dataset": "tk_v1"})
@@ -70,7 +73,7 @@ try:
     }
     rm_key = {
         k
-        for k, _ex in _jobs.locks_for("data-rm", {"path": "runs/slow_v1_20261113"})
+        for k, _ex in op_locks.locks_for(ops.OPS["data-rm"], {"path": "runs/slow_v1_20261113"})
         if k.startswith("system:")
     }
     capture_key = {
@@ -80,8 +83,6 @@ try:
         )
         if k.startswith("system:")
     }
-finally:
-    _jobs._run_meta = _run_meta
 check(
     "a data-rm of a run's folder and an arm-from-capture of a system take the lock a run of that system takes",
     run_key == rm_key == capture_key == {"system:slow_v1"},
@@ -509,7 +510,7 @@ try:
     )
 
     # Step 4: a catalog job builds beside the served folder and swaps it in; the pages are served throughout.
-    st, cj = job("catalog", {}, by="person:ana")
+    st, cj = op_job("catalog", {}, by="person:ana")
     check("a job just started reads queued, not lost, before its supervisor takes its lock",
           st == 202 and cj.get("state") in ("queued", "running"), (st, cj.get("state")))  # fmt: skip
     codes = []
@@ -627,7 +628,7 @@ try:
 
     file_before = served_file()
     (proj / "config.yaml").write_text(f"store: {target}\n")
-    st2, mj = job("data-migrate", {"to": target}, by="person:ana")
+    st2, mj = op_job("data-migrate", {"to": target}, by="person:ana")
     mjd = until(mj.get("id"), ("succeeded", "failed", "lost"), 180) if st2 == 202 else {}
     after = {}
     for _ in range(40):

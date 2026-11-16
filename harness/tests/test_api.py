@@ -28,7 +28,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parents[1] / "scripts"
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 KIT = HERE.parent / "tutorial"
-from evaluation_harness import _api  # noqa: E402
+from evaluation_harness import _api, ops  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 from evaluation_harness.cli import COMMANDS  # noqa: E402
 
@@ -285,11 +285,11 @@ try:
             ),
         }
         check("a code path or an @file is refused before anything runs", all(never.values()), never)
-        kinds = {a["name"]: a["kind"] for a in _api.registry()["data-put"]["arguments"]}
+        put_file = ops.OPS["data-put"].inputs["file"]
         check(
             "data-put's file is an upload, never a path on the server",
-            kinds.get("file") == _api.UPLOAD,
-            kinds,
+            put_file.get("x-file") == "upload",
+            put_file,
         )
         check(
             "a name is still taken (capture --importer jsonl, dataset-create --source folder)",

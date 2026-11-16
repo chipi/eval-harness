@@ -27,7 +27,6 @@ from pathlib import Path as _Path
 if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
-import argparse
 import os
 import shutil
 import subprocess  # nosec B404 - git status, read-only; this command again on the scratch copy
@@ -38,7 +37,10 @@ from pathlib import Path
 from typing import Any
 
 from evaluation_harness import _common, _format, _jsonout, _store, migrations
-from evaluation_harness._common import evh_prog
+from evaluation_harness.ops import legacy
+
+#: Set by a dry run to its scratch copy (EVAL_HOME of the child): what lets this file run the steps there.
+SCRATCH_MARK = "EVH_MIGRATE_SCRATCH_COPY"
 
 
 def _backup() -> None:
@@ -142,9 +144,10 @@ def _dry_run(todo: list[Any]) -> None:
             "EVAL_HOME": str(scratch),
             "EVAL_DATA_DIR": str(rel),
             "EVAL_STORE": _common.store(),
+            SCRATCH_MARK: str(scratch),
         }
         done = subprocess.run(  # nosec B603 - this script again, fixed arguments, on the copy
-            [sys.executable, str(_Path(__file__).resolve()), "--scratch-copy"],
+            [sys.executable, str(_Path(__file__).resolve())],
             env=env,
             cwd=scratch,
             capture_output=True,
@@ -169,58 +172,48 @@ def _dry_run(todo: list[Any]) -> None:
                 pass
 
 
-def main() -> int:
+def body(**inputs: Any) -> int:
     """Check the format, or run the steps the data needs."""
-    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
-    how = ap.add_mutually_exclusive_group()
-    how.add_argument(
-        "--check", action="store_true", help="only compare the data's format with this release's"
-    )
-    how.add_argument("--dry-run", action="store_true", help="say what each step would change; write nothing")
-    from evaluation_harness._actor import add_by  # noqa: PLC0415
+    args = legacy.namespace(inputs, "migrate")
+    have = _format.data_format()
+    _jsonout.values({"format": have, "release_format": _format.FORMAT})
+    print(f"data format {have}; this release reads {_format.FORMAT}")
+    todo = _todo(have)
+    if args.check or have > _format.FORMAT:
+        _format.require()
+        if args.check and todo:
+            _common.die(
+                f"step {todo[0].NUMBER} is not finished for this project ({todo[0].ABOUT}): run evh migrate",
+                "old-format",
+            )
+        return 0
+    if not todo:
+        print("nothing to do")
+        return 0
+    if args.dry_run:
+        _dry_run(todo)
+        return 0
+    _backup()
+    for m in todo:
+        print(f"{m.NUMBER}: {m.ABOUT}")
+        m.run(False)
+        _format.stamp(m.NUMBER)
+    print(f"brought the data to format {todo[-1].NUMBER}")
+    return 0
 
-    add_by(ap)
-    ap.add_argument("--scratch-copy", action="store_true", help=argparse.SUPPRESS)  # --dry-run's child
-    ap.add_argument(
-        "--json",
-        action="store_true",
-        help="one JSON object on stdout when done (the text goes to stderr as it is printed): the envelope every --json command gives (result.blocks, result.values)",
-    )
-    args = ap.parse_args()
-    if args.scratch_copy:  # the steps for real, on the copy --dry-run made: no header, no backup
-        have = _format.data_format()
-        for m in _todo(have):
-            print(f"{m.NUMBER}: {m.ABOUT}")
-            m.run(False)
-            _format.stamp(m.NUMBER)
-        return 0
-    with _jsonout.collect("migrate", args.json, live=sys.stderr):
-        have = _format.data_format()
-        _jsonout.values({"format": have, "release_format": _format.FORMAT})
-        print(f"data format {have}; this release reads {_format.FORMAT}")
-        todo = _todo(have)
-        if args.check or have > _format.FORMAT:
-            _format.require()
-            if args.check and todo:
-                _common.die(
-                    f"step {todo[0].NUMBER} is not finished for this project ({todo[0].ABOUT}): run evh migrate",
-                    "old-format",
-                )
-            return 0
-        if not todo:
-            print("nothing to do")
-            return 0
-        if args.dry_run:
-            _dry_run(todo)
-            return 0
-        _backup()
-        for m in todo:
-            print(f"{m.NUMBER}: {m.ABOUT}")
-            m.run(False)
-            _format.stamp(m.NUMBER)
-        print(f"brought the data to format {todo[-1].NUMBER}")
-        return 0
+
+def _steps_on_copy() -> int:
+    """The steps for real, on the copy a dry run made (this file run by it): no header, no backup. Refused unless the
+    dry run named this project as its copy, so the file run by hand never writes a project without its backup."""
+    if not os.environ.get(SCRATCH_MARK) or os.environ.get(SCRATCH_MARK) != os.environ.get("EVAL_HOME"):
+        _common.die("this file is the dry run's own: run `evh migrate`", "not-allowed")
+    have = _format.data_format()
+    for m in _todo(have):
+        print(f"{m.NUMBER}: {m.ABOUT}")
+        m.run(False)
+        _format.stamp(m.NUMBER)
+    return 0
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    raise SystemExit(_steps_on_copy())

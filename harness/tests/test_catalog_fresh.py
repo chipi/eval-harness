@@ -102,7 +102,7 @@ def catalog_jobs() -> list[str]:
     out = []
     for d in sorted(root.iterdir()) if root.is_dir() else []:
         try:
-            if json.loads((d / "job.json").read_text())["command"] == "catalog":
+            if json.loads((d / "job.json").read_text()).get("operation") == "catalog":
                 out.append(d.name)
         except (OSError, ValueError, KeyError):
             pass

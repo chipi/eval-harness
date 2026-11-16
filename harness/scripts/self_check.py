@@ -95,7 +95,7 @@ def main() -> int:
                 if "noisy" not in f.name
             ]
             for key, src in puts:
-                step(f"data-put {key}", [*evh, "data-put", key, src], tmp, env)
+                step(f"data-put {key}", [*evh, "data-put", "--path", key, "--file", src], tmp, env)
             steps = [
                 (
                     "dataset-create with fields",

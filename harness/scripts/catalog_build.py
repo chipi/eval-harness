@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Build the catalog: static pages over a project's runs, plus the run inspector's shell.
 
     evh catalog [--out .build/catalog] [--adapter path/to/file.py:Class]
@@ -16,28 +15,13 @@ outputs and references leave the data tree only through the inspector server (AD
 
 from __future__ import annotations
 
-import sys as _sys
-from pathlib import Path as _Path
-
-if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
-    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
-if __name__ == "__main__":
-    # Run as a command (evh catalog runs this file as __main__), this module IS
-    # evaluation_harness.catalog_build: the renderers that import it by name (catalog_arms) must
-    # see the options main() sets (--brand, --link, --head, --api, --about), not a second copy
-    # with the defaults. arms.html was built by such a copy, as "eval catalog" with no switcher.
-    _sys.modules["evaluation_harness.catalog_build"] = _sys.modules[__name__]
-    if "evaluation_harness" in _sys.modules:  # imported already: its attribute names this module too
-        vars(_sys.modules["evaluation_harness"])["catalog_build"] = _sys.modules[__name__]
-
-import argparse
 import html
 import json
 import re
 import statistics
-import sys
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 from urllib.parse import quote
 
 HERE = Path(__file__).resolve().parent
@@ -4721,13 +4705,6 @@ def project_path(text: str) -> str:
     return f'<a href="{e(REPO + text)}"><code>{e(text)}</code></a>' if REPO else f"<code>{e(text)}</code>"
 
 
-def _common_prog() -> str | None:
-    """`evh <command>` for --help (see _common.evh_prog)."""
-    from evaluation_harness._common import evh_prog  # noqa: PLC0415
-
-    return evh_prog()
-
-
 def _exchange(a: Path, b: Path) -> bool:
     """Swap two directories in one system call, so no reader ever finds `b` absent: Linux's renameat2 with
     RENAME_EXCHANGE, macOS's renamex_np with RENAME_SWAP (both through ctypes, the standard library). False where
@@ -4773,115 +4750,51 @@ def build_beside(A: Adapter, out: Path, sections: tuple = ()) -> dict:
     return counts
 
 
-def main() -> int:
+def body(**inputs: Any) -> int:
     """Build the catalog and write static pages to output directory."""
     global API, HEAD, BRAND, ABOUT, REPO, MCP, MCP_HOWTO, CARD
-    ap = argparse.ArgumentParser(prog=_common_prog(), description=__doc__.splitlines()[0])
-    ap.add_argument("--out", type=Path, default=ROOT / ".build" / "catalog")
-    ap.add_argument(
-        "--adapter",
-        help="path/to/file.py:Class (default: config.yaml catalog.adapter, else the harness's own layout)",
-    )
-    ap.add_argument(
-        "--link",
-        action="append",
-        default=[],
-        metavar="LABEL=URL",
-        help="a part of the publication the catalog belongs to, for the header's switcher, in order "
-        "(repeatable); URL . is the catalog itself, else it comes first as Catalog. "
-        "E.g. --link Site=https://evals.example.org/ --link Catalog=. --link Docs=https://evals.example.org/docs/",
-    )
-    ap.add_argument("--brand", default=BRAND, help='the name beside the logo (default: "eval catalog")')
-    ap.add_argument(
-        "--api",
-        default=API,
-        help="where the inspector's API answers, for pages served under a path (default: /api/)",
-    )
-    ap.add_argument(
-        "--head",
-        type=Path,
-        metavar="FILE",
-        help="HTML added to every page's <head>, for a deployment's own analytics or tags (none by default)",
-    )
-    ap.add_argument(
-        "--about",
-        type=Path,
-        metavar="FILE",
-        help="HTML shown on the overview, under its description: which project this catalog shows, "
-        "and where its findings are (none by default)",
-    )
-    ap.add_argument(
-        "--repo",
-        metavar="URL",
-        help="where the project's files can be read, e.g. https://github.com/o/r/blob/main/: a project "
-        "path in a goal's links or a guardrail's source links there (named as text by default)",
-    )
-    ap.add_argument(
-        "--mcp",
-        metavar="URL",
-        help="the deployment's MCP server (evh mcp --http): every page's footer names its tool call beside "
-        "its terminal command (only the command by default)",
-    )
-    ap.add_argument(
-        "--card",
-        metavar="URL",
-        help="the image a shared link's card shows (https://..., 1200x630; none by default): the pages stay "
-        "noindex, a card is for a person pasting a link",
-    )
-    ap.add_argument(
-        "--mcp-howto",
-        metavar="URL",
-        help="--mcp: where to read how to connect an agent (default: the harness's INTEGRATION guide)",
-    )
-    ap.add_argument(
-        "--json",
-        action="store_true",
-        help="one JSON object on stdout when done (the text goes to stderr as it is printed): the envelope every --json command gives (result.blocks, result.values)",
-    )
-    args = ap.parse_args()
-    with _jsonout.collect("catalog", args.json, live=sys.stderr):
-        for flag, url in (("--mcp", args.mcp), ("--mcp-howto", args.mcp_howto), ("--card", args.card)):
-            if url and not url.startswith(("https://", "http://")):
-                die(f"{flag} {url!r}: expected https://...", "bad-argument")
-        MCP = args.mcp or ""
-        CARD = args.card or ""
-        MCP_HOWTO = args.mcp_howto or MCP_HOWTO
-        if not args.api.startswith("/") or not args.api.endswith("/"):
+    from evaluation_harness.ops import legacy  # noqa: PLC0415
+
+    args = legacy.namespace(inputs, "catalog")
+    out = Path(args.out) if args.out else ROOT / ".build" / "catalog"
+    for flag, url in (("--mcp", args.mcp), ("--mcp-howto", args.mcp_howto), ("--card", args.card)):
+        if url and not url.startswith(("https://", "http://")):
+            die(f"{flag} {url!r}: expected https://...", "bad-argument")
+    MCP = args.mcp or ""
+    CARD = args.card or ""
+    MCP_HOWTO = args.mcp_howto or MCP_HOWTO
+    if not args.api.startswith("/") or not args.api.endswith("/"):
+        die(
+            f"--api {args.api!r}: expected a path that starts and ends with /, e.g. /catalog/api/",
+            "bad-argument",
+        )
+    API = args.api
+    BRAND = args.brand
+    if args.head:
+        if not _store.is_file(args.head):
+            die(f"--head {args.head}: no such file", "not-found")
+        HEAD = _store.read_text(args.head, encoding="utf-8").strip() + "\n"
+    if args.repo:
+        if not args.repo.startswith(("https://", "http://")):
             die(
-                f"--api {args.api!r}: expected a path that starts and ends with /, e.g. /catalog/api/",
+                f"--repo {args.repo!r}: expected https://..., where the project's files can be read",
                 "bad-argument",
             )
-        API = args.api
-        BRAND = args.brand
-        if args.head:
-            if not _store.is_file(args.head):
-                die(f"--head {args.head}: no such file", "not-found")
-            HEAD = _store.read_text(args.head, encoding="utf-8").strip() + "\n"
-        if args.repo:
-            if not args.repo.startswith(("https://", "http://")):
-                die(
-                    f"--repo {args.repo!r}: expected https://..., where the project's files can be read",
-                    "bad-argument",
-                )
-            REPO = args.repo if args.repo.endswith("/") else args.repo + "/"
-        if args.about:
-            if not _store.is_file(args.about):
-                die(f"--about {args.about}: no such file", "not-found")
-            ABOUT = _store.read_text(args.about, encoding="utf-8").strip()
-        sections = []
-        for spec in args.link:
-            label, _, url = spec.partition("=")
-            if not label or not (url == "." or url.startswith(("https://", "http://"))):
-                die(f"--link {spec!r}: expected LABEL=https://... or LABEL=. for the catalog", "bad-argument")
-            sections.append((label, url))
-        if sections and not any(u == "." for _, u in sections):
-            sections.insert(0, ("Catalog", "."))
-        counts = build_beside(load_catalog_adapter(args.adapter), args.out, tuple(sections))
-        print(f"catalog: {args.out} — " + ", ".join(f"{v} {k}" for k, v in counts.items()))
-        _jsonout.values({"out": str(args.out), "counts": counts})
-        print("inspect: evh catalog-serve, then open the address it prints")
-        return 0
-
-
-if __name__ == "__main__":
-    sys.exit(main())
+        REPO = args.repo if args.repo.endswith("/") else args.repo + "/"
+    if args.about:
+        if not _store.is_file(args.about):
+            die(f"--about {args.about}: no such file", "not-found")
+        ABOUT = _store.read_text(args.about, encoding="utf-8").strip()
+    sections = []
+    for spec in args.link:
+        label, _, url = spec.partition("=")
+        if not label or not (url == "." or url.startswith(("https://", "http://"))):
+            die(f"--link {spec!r}: expected LABEL=https://... or LABEL=. for the catalog", "bad-argument")
+        sections.append((label, url))
+    if sections and not any(u == "." for _, u in sections):
+        sections.insert(0, ("Catalog", "."))
+    counts = build_beside(load_catalog_adapter(args.adapter), out, tuple(sections))
+    print(f"catalog: {out} — " + ", ".join(f"{v} {k}" for k, v in counts.items()))
+    _jsonout.values({"out": str(out), "counts": counts})
+    print("inspect: evh catalog-serve, then open the address it prints")
+    return 0

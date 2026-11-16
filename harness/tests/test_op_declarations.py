@@ -604,6 +604,24 @@ DECIDED = {
     ): "the reason is an input of the call, and `make "
     'run-promote` passes it as one quoted word (`--reason "$$EVAL_PROMOTE_REASON"`), so the shell never re-parses it',
     ("run-promote", "('--reason',): required False -> True"): "a decision's reason is required (Op.why)",
+    (
+        "catalog",
+        "('--api',): default None -> '/api/'",
+    ): "the old parser's default was catalog_build.API, '/api/' "
+    "(the code at 91852a66f); the fixture has none for it, and the operation says the default the command used",
+    (
+        "data-put",
+        "('--file',): nargs '?' -> None",
+    ): "the old positional FILE was optional (nargs ?); a part is a "
+    "named option, and --file is one of --file, --set, --unset (Op.one_of)",
+    (
+        "data-put",
+        "('--file',): required True -> False",
+    ): "the same: the table reads a positional as required; FILE was optional and is",
+    (
+        "migrate",
+        "('--scratch-copy',): in the old parser only",
+    ): "a dry run's child, never a person's option: the dry run runs migrate.py itself on its scratch copy",
 }
 moved = [c for c in OLD if (op := OPS.get(c)) is not None and op.is_job()]
 diffs = {c: same(OLD[c], table(cli.parser(OPS[c]))) for c in moved}

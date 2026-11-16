@@ -254,9 +254,9 @@ try:
     refused = [
         evh("scorer-set", "s_v1", "--set", "cost_cap_usd=5"),
         evh("scorer-set", "s_v1", "--set", "protocol.order_seed=3"),
-        evh("data-put", "scorers/s_v1.yaml", "--set", "cost_cap_usd=5"),
-        evh("data-rm", "scorers/s_v1.yaml"),
-        evh("data-rm", "scorers/s_v1.yaml", "--dry-run"),
+        evh("data-put", "--path", "scorers/s_v1.yaml", "--set", "cost_cap_usd=5"),
+        evh("data-rm", "--path", "scorers/s_v1.yaml"),
+        evh("data-rm", "--path", "scorers/s_v1.yaml", "--dry-run"),
     ]
     check(
         "a scorer that made judged scores is not changed or deleted: scorer-set, data-put and data-rm refuse, nothing written",
@@ -268,10 +268,10 @@ try:
     )  # fmt: skip
     whole = proj / "whole.yaml"
     whole.write_text(before + "cost_cap_usd: 9\n")
-    changed = evh("data-put", "scorers/s_v1.yaml", str(whole))
-    checked = evh("data-put", "scorers/s_v1.yaml", str(whole), "--check")
+    changed = evh("data-put", "--path", "scorers/s_v1.yaml", "--file", str(whole))
+    checked = evh("data-put", "--path", "scorers/s_v1.yaml", "--file", str(whole), "--check")
     whole.write_text("# only a comment changes\n" + before)
-    comment = evh("data-put", "scorers/s_v1.yaml", str(whole), "--check")
+    comment = evh("data-put", "--path", "scorers/s_v1.yaml", "--file", str(whole), "--check")
     check(
         "data-put of a whole file: a changed one is refused (saving or checking), one whose content is the same passes",
         changed.returncode == 1 and "not-allowed" in changed.stderr and checked.returncode == 1 and "not-allowed" in checked.stderr
@@ -296,7 +296,7 @@ try:
         (two.stdout + two.stderr)[-300:],
     )
     changed2 = evh("scorer-set", "s_v2", "--set", "cost_cap_usd=3")
-    put2 = evh("data-put", "scorers/s_v2.yaml", "--set", "cost_cap_usd=4")
+    put2 = evh("data-put", "--path", "scorers/s_v2.yaml", "--set", "cost_cap_usd=4")
     same = evh("scorer-set", "s_v2", "--set", "cost_cap_usd=4")
     check(
         "a scorer with no judged score is changed: scorer-set and data-put save, the same value saves nothing",
@@ -304,7 +304,7 @@ try:
         and same.returncode == 0 and "unchanged" in same.stdout,
         (changed2.stderr[-160:], put2.stderr[-160:], same.stdout[-100:]),
     )  # fmt: skip
-    rm2 = evh("data-rm", "scorers/s_v2.yaml")
+    rm2 = evh("data-rm", "--path", "scorers/s_v2.yaml")
     check(
         "a scorer with no judged score is deleted",
         rm2.returncode == 0 and not stored("scorers/s_v2.yaml"),

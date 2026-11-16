@@ -152,6 +152,24 @@ try:
         done.returncode == 0 and "nothing to do" in done.stdout and not (real_p / ".build").exists(),
         done.stdout[-200:],
     )
+
+    # migrate.py run as a file is the dry run's child: by hand (no mark, or a mark that is not this project) it refuses,
+    # and the format-0 project is not written.
+    hand = project("by_hand")
+    hand_before = tree(hand)
+    env = {k: v for k, v in os.environ.items() if k not in ("EVAL_DATA_DIR", "EVH_MIGRATE_SCRATCH_COPY")}
+    env.update(EVAL_HOME=str(hand), EVAL_STORE="files")
+    runs = [
+        subprocess.run([sys.executable, str(HERE / "migrate.py")], cwd=hand, env={**env, **extra}, capture_output=True,
+                       text=True, stdin=subprocess.DEVNULL, timeout=120)
+        for extra in ({}, {"EVH_MIGRATE_SCRATCH_COPY": str(base / "elsewhere")})
+    ]  # fmt: skip
+    check(
+        "migrate.py run by hand refuses (not the dry run's copy), and the project is not written",
+        all(r.returncode == 1 and "ERROR (not-allowed)" in r.stderr for r in runs)
+        and tree(hand) == hand_before,
+        [(r.returncode, r.stderr[-200:]) for r in runs],
+    )
 finally:
     shutil.rmtree(base, ignore_errors=True)
 sys.exit(summary())

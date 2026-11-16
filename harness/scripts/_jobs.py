@@ -94,25 +94,11 @@ def _first(v: Any) -> Any:
     return v[0] if isinstance(v, list) and v else v
 
 
-def _data_rm_locks(a: dict) -> list[tuple[str, bool]]:
-    out = [("settings", True)]
-    path = str(_first(a.get("path")) or "")
-    run = path.split("/")[1] if path.startswith("runs/") and path.count("/") >= 1 else None
-    cid = _run_meta(run).get("system_id") if run else None
-    if cid:
-        out.append((f"system:{cid}", True))
-    return out
-
-
 #: command -> its locks from the call's arguments (names as the API takes them). `project` shared is added to every
 #: job; a migration takes it exclusive. A job command in neither this nor PROJECT_ONLY fails a test.
-LOCK_RULES: dict[str, Callable[[dict], list[tuple[str, bool]]]] = {
-    "catalog": lambda a: [("catalog", True)],
-    "data-put": lambda a: [("settings", True)],
-    "data-rm": _data_rm_locks,
-}
+LOCK_RULES: dict[str, Callable[[dict], list[tuple[str, bool]]]] = {}
 #: Migrations: the whole project, exclusive (every other job holds it shared, so each waits for the other).
-MIGRATIONS = {"data-migrate", "migrate"}
+MIGRATIONS: frozenset[str] = frozenset()
 #: Job commands that write nothing another job writes (reports, checks, estimates): `project` shared only.
 PROJECT_ONLY: frozenset[str] = frozenset()
 

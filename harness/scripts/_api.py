@@ -58,7 +58,6 @@ UPLOAD = "upload"
 ARTIFACT = "artifact"
 PATH_KINDS: dict[tuple[str, str], str] = {
     ("label-mutants", "--map"): UPLOAD,
-    ("data-put", "file"): UPLOAD,
 }
 #: Path-typed arguments never taken, each a decision (RFC-026 revision 2): an output folder,
 #: a file of the server's, a page's own assets. A path-typed argument in neither table fails a test.
@@ -66,9 +65,6 @@ NEVER_PATHS = {
     ("label-mutants", "--mutants"),  # a Python file it runs: the project's own, on its machine
     ("pair-test", "--items"),
     ("family-test", "--items"),
-    ("catalog", "--out"),
-    ("catalog", "--head"),
-    ("catalog", "--about"),
 }
 #: Options never taken from any command: they load code or reach outside the project.
 NEVER = {"--adapter", "--help", "--json", "--source-dir", "--data-dir"}

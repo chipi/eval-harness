@@ -83,8 +83,8 @@ def to_sqlite(data: Path) -> None:
         if k not in ("EVAL_DATA_DIR", "EVAL_GOALS_DIR", "EVAL_STORE_READONLY")
     }
     env.update(EVAL_HOME=str(root), EVAL_STORE="sqlite")
-    done = subprocess.run(  # nosec B603 - this interpreter, a script of this package
-        [sys.executable, str(Path(__file__).with_name("data_migrate.py")), "--to", "sqlite"],
+    done = subprocess.run(  # nosec B603 - this interpreter, this package's command line
+        [sys.executable, str(Path(__file__).with_name("cli.py")), "data-migrate", "--to", "sqlite"],
         env=env,
         capture_output=True,
         text=True,

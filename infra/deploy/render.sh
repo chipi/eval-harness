@@ -7,7 +7,7 @@
 # rsynced to /srv/evals/releases/<sha>/ on the box:
 #
 #   sites/evals.humancopilot.eu/public/           the findings site (site/public, committed)
-#   sites/evals.humancopilot.eu/catalog/public/   the catalog, built here by catalog_build.py
+#   sites/evals.humancopilot.eu/catalog/public/   the catalog, built here by evh catalog
 #   inspector/pkg/                                the harness package, installed from its wheel
 #   inspector/hooks.py, inspector/vendor/         the observability layer and its SDKs (infra/inspector/)
 #   inspector/data/                               runs*, references, datasets, goals, profiles,
@@ -106,7 +106,7 @@ sealed=""
 [ "$STORE" != sqlite ] || sealed="$(sha256sum "$OUT/inspector/data/project.sqlite")"
 # The data must be in the format this release reads (RFC-032): data committed without `evh migrate` stops the deploy
 # here, before anything is built or moved.
-EVAL_HOME="$OUT/inspector" python3 "$OUT/inspector/pkg/evaluation_harness/migrate.py" --check
+EVAL_HOME="$OUT/inspector" python3 "$OUT/inspector/pkg/evaluation_harness/cli.py" migrate --check
 
 # The documentation, under /docs/ on the site (mkdocs.yml, site_url .../docs/).
 python3 -m mkdocs build --strict --quiet -f "$ROOT/mkdocs.yml" -d "$OUT/sites/$SITE/public/docs"
@@ -129,7 +129,7 @@ PY
 # release, read-only on the box.
 mkdir -p "$OUT/inspector/cache"
 EVH_P_CACHE="$OUT/inspector/cache/evh-p.jsonl" \
-  EVAL_HOME="$OUT/inspector" python3 "$OUT/inspector/pkg/evaluation_harness/catalog_build.py" \
+  EVAL_HOME="$OUT/inspector" python3 "$OUT/inspector/pkg/evaluation_harness/cli.py" catalog \
   --out "$OUT/sites/$SITE/public/catalog" \
   --link "Harness=https://$SITE/" --link "Catalog=." --link "Docs=https://$SITE/docs/" --link "MCP=https://$SITE/#mcp" \
   --mcp "https://$SITE/mcp" --card "https://$SITE/assets/social.png" --mcp-howto "https://$SITE/docs/harness/INTEGRATION/#for-an-agent-evh-mcp" --brand eval-harness --api /catalog/api/ \

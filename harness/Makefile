@@ -121,7 +121,7 @@ browser-check:
 # The catalog of this repository's own runs in Chromium (tests/test_catalog_real_browser.py): the
 # pages at the size the deployment serves. Reuses budget-check's catalog, else builds it.
 browser-real-check:
-	@test -f .build/budget-catalog/index.html || $(PYTHON) scripts/catalog_build.py --out .build/budget-catalog
+	@test -f .build/budget-catalog/index.html || $(PYTHON) scripts/cli.py catalog --out .build/budget-catalog
 	$(PYTHON) tests/test_catalog_real_browser.py --catalog .build/budget-catalog
 
 # The checks can fail: every checker, run once over a copy of the repository with all its planted
@@ -393,13 +393,13 @@ validate:
 
 # The data is in the format this release reads (RFC-032): the deploy's gate (render.sh), met here first.
 format-check:
-	$(PYTHON) scripts/migrate.py --check
+	$(PYTHON) scripts/cli.py migrate --check
 
 # THE CATALOG AND THE RUN INSPECTOR (ADR-0002): static pages over the runs, by dataset, into
 # .build/catalog/ (counts and means only; item text only where a profile publishes it); then a server on 127.0.0.1
 # that tests any arms on one dataset against a baseline with the same paired test as pair-test.
 catalog:
-	$(PYTHON) scripts/catalog_build.py $(ARGS)
+	$(PYTHON) scripts/cli.py catalog $(ARGS)
 
 catalog-serve: catalog
 	$(PYTHON) scripts/catalog_serve.py $(ARGS)
@@ -412,11 +412,11 @@ serve:
 ifeq ($(STORE),sqlite)
 	@if [ -n "$(FRESH)" ] || [ ! -f $(SERVE_COPY)/data/project.sqlite ]; then \
 	  rm -rf $(SERVE_COPY) && mkdir -p $(SERVE_COPY) && cp -r data $(SERVE_COPY)/data && \
-	  EVAL_DATA_DIR=$(SERVE_COPY)/data EVAL_STORE=sqlite $(PYTHON) scripts/data_migrate.py --to sqlite; fi
-	EVAL_DATA_DIR=$(SERVE_COPY)/data EVAL_STORE=sqlite $(PYTHON) scripts/catalog_build.py --out $(SERVE_COPY)/catalog
+	  EVAL_DATA_DIR=$(SERVE_COPY)/data EVAL_STORE=sqlite $(PYTHON) scripts/cli.py data-migrate --to sqlite; fi
+	EVAL_DATA_DIR=$(SERVE_COPY)/data EVAL_STORE=sqlite $(PYTHON) scripts/cli.py catalog --out $(SERVE_COPY)/catalog
 	EVAL_DATA_DIR=$(SERVE_COPY)/data EVAL_STORE=sqlite $(PYTHON) scripts/catalog_serve.py --build-dir $(SERVE_COPY)/catalog $(ARGS)
 else
-	$(PYTHON) scripts/catalog_build.py
+	$(PYTHON) scripts/cli.py catalog
 	$(PYTHON) scripts/catalog_serve.py $(ARGS)
 endif
 

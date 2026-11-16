@@ -332,10 +332,14 @@ def main() -> int:
             ("data-show", ["datasets/tickets_v1.json"], "ok:written by the dataset-* commands"),
             (
                 "data-put",
-                ["datasets/tickets_v1.json", "--set", "x=1"],
+                ["--path", "datasets/tickets_v1.json", "--set", "x=1"],
                 "is written by the dataset-* commands",
             ),
-            ("data-rm", ["datasets/tickets_v1.json", "--dry-run"], "is written by the dataset-* commands"),
+            (
+                "data-rm",
+                ["--path", "datasets/tickets_v1.json", "--dry-run"],
+                "is written by the dataset-* commands",
+            ),
             ("dataset-publish", ["--dataset-id", "tickets_v1", "--to", "folder"], "cannot publish"),
             (
                 "fieldset-propose",

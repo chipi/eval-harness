@@ -37,16 +37,6 @@ COMMANDS = {
         "copy the agent skills (evaluate, compare, promote) into .claude/skills/ or --target",
     ),
     "env-check": ("env_check.py", "check the Python environment and keys"),
-    "migrate": (
-        "migrate.py",
-        "bring the project's data to this release's formats: runs, datasets, records, fingerprints, once (idempotent)",
-    ),
-    "data-migrate": (
-        "data_migrate.py",
-        "move the project's data/ into its SQLite database or back (RFC-025)",
-    ),
-    "data-put": ("data_put.py", "create or change a setting (system, goal, fieldset, ...), checked first"),
-    "data-rm": ("data_rm.py", "delete a setting, or a whole run"),
     "capture-scrub": (
         "capture_scrub.py",
         "run the project's own scrubber over a capture's records, and record it",
@@ -64,7 +54,6 @@ COMMANDS = {
     "jobs-stop": ("jobs_stop.py", "stop a job: its process group, cancelled"),
     "jobs-resume": ("jobs_resume.py", "resume a stopped or lost run job, as a new job"),
     "openapi": ("openapi_doc.py", "the API's OpenAPI 3.1 description, made from the operations, as JSON"),
-    "catalog": ("catalog_build.py", "build the catalog: static pages over the runs, by dataset"),
     "catalog-serve": ("catalog_serve.py", "serve the catalog and the run inspector on 127.0.0.1"),
     "mcp": (
         "mcp_server.py",

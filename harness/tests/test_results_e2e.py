@@ -305,7 +305,7 @@ def resumed(store: str) -> None:
                 and "ok   V3 every run identifies its build" in v3.stdout,
                 (p.run_json(c).get("build"), [x for x in v3.stdout.splitlines() if "V3" in x]),
             )
-            d = p.evh("data-rm", f"runs/{c}")
+            d = p.evh("data-rm", "--path", f"runs/{c}")
             check(f"{store}: {label}: the crashed run, resumed, is discarded", d.returncode == 0, tail(d))
         bad, out = p.v28()
         v = p.validate()

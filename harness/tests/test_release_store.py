@@ -123,7 +123,9 @@ def tracked_refs(src: Path) -> str:
 def migrate_source(files_src: Path, dst: Path) -> None:
     """The same project with its data in the database (what `evh data-migrate --to sqlite` makes)."""
     shutil.copytree(files_src, dst, ignore=shutil.ignore_patterns(".git"))
-    r = run([HERE / "data_migrate.py", "--to", "sqlite"], env={"EVAL_HOME": dst, "EVAL_STORE": "sqlite"})
+    r = run(
+        [HERE / "cli.py", "data-migrate", "--to", "sqlite"], env={"EVAL_HOME": dst, "EVAL_STORE": "sqlite"}
+    )
     assert r.returncode == 0, r.stdout + r.stderr
 
 
@@ -200,7 +202,9 @@ def run_check(root: Path, tracked: Path):
 
 
 def run_format(root: Path):
-    return run([HERE / "migrate.py", "--check"], env={"EVAL_HOME": root, "EVAL_STORE_READONLY": "1"}, cwd=tmp)
+    return run(
+        [HERE / "cli.py", "migrate", "--check"], env={"EVAL_HOME": root, "EVAL_STORE_READONLY": "1"}, cwd=tmp
+    )
 
 
 def plant(root: Path, store: str, key: str, data: bytes) -> None:

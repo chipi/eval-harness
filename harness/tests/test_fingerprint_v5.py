@@ -593,7 +593,7 @@ with tempfile.TemporaryDirectory() as td:
     (data / "systems").mkdir()
     for s in ("c1", "c2"):  # the last step refuses a run whose system the project lacks
         (data / "systems" / f"{s}.yaml").write_text(f"system_id: {s}\n")
-    cmd = [sys.executable, str(HERE / "scripts" / "migrate.py")]
+    cmd = [sys.executable, str(HERE / "scripts" / "cli.py"), "migrate"]
     # the fixture is a files project, whatever store the suite runs in
     menv = {**os.environ, "EVAL_HOME": td, "EVAL_DATA_DIR": "data", "EVAL_STORE": "files"}
     first = subprocess.run(cmd, capture_output=True, text=True, env=menv)

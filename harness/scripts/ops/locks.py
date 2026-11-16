@@ -109,3 +109,16 @@ def rescore_locks(inputs: dict[str, Any]) -> list[tuple[str, bool]]:
             if rnd.get("dataset_id"):
                 out.append((f"dataset:{rnd['dataset_id']}", True))
     return out
+
+
+def data_rm_locks(inputs: dict[str, Any]) -> list[tuple[str, bool]]:
+    """A setting deleted is the settings', exclusive; a run deleted is also its system's (a run of it may be writing)."""
+    from evaluation_harness.model import runs as model_runs  # noqa: PLC0415
+
+    out = [("settings", True)]
+    path = str(_first(inputs.get("path")) or "")
+    run = path.split("/")[1] if path.startswith("runs/") and path.count("/") >= 1 else None
+    cid = ((model_runs.run(run) or {}) if run else {}).get("system_id")
+    if cid:
+        out.append((f"system:{cid}", True))
+    return out

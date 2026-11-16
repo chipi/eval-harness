@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Move a project's data between files and its database (RFC-025), the whole of data/ at once.
 
     evh data-migrate --to sqlite --dry-run   what would move
@@ -19,23 +18,17 @@ before 0.8.0 (`evh migrate` first).
 
 from __future__ import annotations
 
-import sys as _sys
-from pathlib import Path as _Path
-
-if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
-    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
-
-import argparse
 import datetime
 import hashlib
 import json
 import os
 import sqlite3
-import sys
 from pathlib import Path
+from typing import Any
 
-from evaluation_harness import _common, _jsonout, _outputs, _store
-from evaluation_harness._common import die, evh_prog
+from evaluation_harness import _common, _outputs, _store
+from evaluation_harness._common import die
+from evaluation_harness.ops import legacy
 
 #: The per-item files of a run (its outputs, its checkpoint) and of each of its scores (their rows): kept in the
 #: database's per-item tables, not as files.
@@ -347,39 +340,21 @@ def to_files(dry_run: bool) -> dict[str, int]:
     return n
 
 
-def main() -> int:
+def body(**inputs: Any) -> int:
     """Move every file under data/ into the project's database, or back."""
-    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
-    ap.add_argument(
-        "--to", required=True, choices=_common.STORES, help="the store to move the project's data into"
-    )
-    ap.add_argument("--dry-run", action="store_true", help="count what would move; move nothing")
-    from evaluation_harness._actor import add_by  # noqa: PLC0415
-
-    add_by(ap)
-    ap.add_argument(
-        "--json",
-        action="store_true",
-        help="one JSON object on stdout when done (the text goes to stderr as it is printed): the envelope every --json command gives (result.blocks, result.values)",
-    )
-    args = ap.parse_args()
-    with _jsonout.collect("data-migrate", args.json, live=sys.stderr):
-        configured = _common.store()
-        if configured != args.to:
-            die(
-                f"the project's store is {configured}: set `store: {args.to}` in config.yaml (or EVAL_STORE={args.to})"
-                " first, so nothing writes to the old place after the move",
-                "not-allowed",
-            )
-        n = to_sqlite(args.dry_run) if args.to == "sqlite" else to_files(args.dry_run)
-        _outputs.reset()
-        verb = "would move" if args.dry_run else "moved"
-        print(
-            f"{n['files']} file(s) ({n['bytes']:,} bytes) and {n['runs']} run(s)' {n['outputs']} output(s) and "
-            f"{n['rows']} row(s) {verb} into the {args.to} store"
+    args = legacy.namespace(inputs, "data-migrate")
+    configured = _common.store()
+    if configured != args.to:
+        die(
+            f"the project's store is {configured}: set `store: {args.to}` in config.yaml (or EVAL_STORE={args.to})"
+            " first, so nothing writes to the old place after the move",
+            "not-allowed",
         )
-        return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())
+    n = to_sqlite(args.dry_run) if args.to == "sqlite" else to_files(args.dry_run)
+    _outputs.reset()
+    verb = "would move" if args.dry_run else "moved"
+    print(
+        f"{n['files']} file(s) ({n['bytes']:,} bytes) and {n['runs']} run(s)' {n['outputs']} output(s) and "
+        f"{n['rows']} row(s) {verb} into the {args.to} store"
+    )
+    return 0

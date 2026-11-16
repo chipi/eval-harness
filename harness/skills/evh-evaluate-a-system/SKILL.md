@@ -12,7 +12,7 @@ under `data/` that are frozen once written; a change is a new id. The project's 
 (written by `evh init`) holds the rules; read it first. This skill is the procedure.
 
 A project keeps `data/` as files, or in one database (`store: sqlite`, RFC-025). Put a setting in
-with `evh data-put <path under data/> <file>` and read one with `evh data-show --text <path>`, never
+with `evh data-put --path <path under data/> --file <file>` and read one with `evh data-show --text <path>`, never
 with `cp` or `cat` on `data/`: those work in both stores, and they check a setting before it is
 kept. Edit a copy outside `data/` (here in a fresh temporary folder, `$D`), then put it in.
 
@@ -75,7 +75,7 @@ hypothesis:
   direction: better
   statement: "two leading sentences recover more of a ticket's gold summary than one"
 EOF
-for f in "$D"/tickets_*.yaml; do evh data-put "systems/$(basename "$f")" "$f"; done
+for f in "$D"/tickets_*.yaml; do evh data-put --path "systems/$(basename "$f")" --file "$f"; done
 rm -r "$D"
 git add -A && git commit -qm "tickets_v1: dataset and systems" --allow-empty
 ```
@@ -168,7 +168,7 @@ the baseline was measured (the same dataset, reference and repeats) and test it 
 The same on the tutorial kit, with `tickets_lead1_v1` standing as the baseline:
 
 ```evh
-evh data-put goals/tickets_summary.yaml tutorial/goals/tickets_summary.yaml
+evh data-put --path goals/tickets_summary.yaml --file tutorial/goals/tickets_summary.yaml
 evh goal-leaderboard tickets_summary --json
 D=$(mktemp -d)
 evh data-show --text systems/tickets_lead1_v1.yaml | sed -e 's/tickets_lead1_v1/tickets_lead3_v1/' -e 's/sentences: 1/sentences: 3/' > "$D"/tickets_lead3_v1.yaml
@@ -179,7 +179,7 @@ hypothesis:
   direction: better
   statement: "three leading sentences recover more of the gold summary than one"
 EOF
-evh data-put systems/tickets_lead3_v1.yaml "$D"/tickets_lead3_v1.yaml && rm -r "$D"
+evh data-put --path systems/tickets_lead3_v1.yaml --file "$D"/tickets_lead3_v1.yaml && rm -r "$D"
 git add -A && git commit -qm "tickets_lead3_v1: one change against lead1, its hypothesis" --allow-empty
 evh run --system tickets_lead3_v1 --dataset tickets_v1 --dry-run
 evh arm-smoke --system tickets_lead3_v1 --dataset tickets_v1
