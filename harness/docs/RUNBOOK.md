@@ -1949,13 +1949,17 @@ release reads one format. `evh migrate --check` compares the two:
 
 ```sh
 evh migrate --check      # data format 3; this release reads 3 (exit 0), or ERROR (old-format) / ERROR (mismatch)
-evh migrate --dry-run    # what each step would change; nothing written
+evh migrate --dry-run    # what each step would change, from the real steps on a scratch copy of the data; the project is not written
 evh migrate              # the steps the data needs, each recorded as it lands
 ```
 
 A project with no `project.yaml` is at format 0: the data releases before 0.8.0 wrote. Data a later release wrote is
 refused (`mismatch`), naming that release. The steps (`evaluation_harness/migrations/`) each bring the data one format
 on, and the format is recorded after each, so a step that fails leaves the project at the last one that held.
+
+A dry run needs disk: it copies the data (and config.yaml and the config folders it names) into the project's ignored
+`.build/`, runs every step on the copy so that each reads what the one before wrote, prints each step's counts from it and
+deletes it. The copy is as large as the data while the dry run lasts; the project itself is never written.
 
 Before its first change, `migrate` copies a SQLite project's database beside it
 (`data/project.sqlite.before-format-<n>-<time>`); restoring it is the undo. A files project's undo is git: `migrate`

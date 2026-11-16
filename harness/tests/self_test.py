@@ -1137,6 +1137,18 @@ def test_example_scorer_suites_pass() -> None:
             "the data's format: init stamps it, migrate --check refuses old and newer, steps stamp it, a SQLite backup, the deploy's gate, 0.7.2's frozen project keeps its numbers",
         ),
         (
+            "test_m0002.py",
+            "evh migrate's format 2 step finds a config in a folder config.yaml's `configs:` names, so its smoke becomes a check of the deployment the config names; a smoke whose config names none is still refused",
+        ),
+        (
+            "test_m0003.py",
+            "evh migrate's format 3 step: configs only in a config.yaml folder and no validate.json: validate.json is written with the `systems` globs of the folders they moved to, the later steps find them; an existing validate.json keeps its keys",
+        ),
+        (
+            "test_migrate_dry_run.py",
+            "evh migrate --dry-run of a format-0 project runs the real steps on a scratch copy: every step's counts are the real migration's, the project byte-identical after it (no .build/ left), a refusal is the migration's",
+        ),
+        (
             "test_run_migrate.py",
             "evh migrate's runs steps: outputs/ to outputs.jsonl byte for byte, then every run and score into data/runs, an orphan refused, idempotent, non-UTF-8 refused",
         ),

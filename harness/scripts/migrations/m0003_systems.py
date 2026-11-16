@@ -13,7 +13,8 @@ and confirmations, the globs validate.json's `configs` names and the folders con
 - Renamed: runs' `config_id` and fingerprint arm, a hypothesis's `against`, `expect_identical_to`, rounds' carried
   and retired arms, deployments' smoke checks (their `config` field becomes `system`), a sealed dataset's unseals, study
   specs (`baseline.config` becomes `baseline.system`) and logs, faithfulness records, validate.json (`configs` becomes
-  `systems`), and a data README's mention. Kept: judging sets and their verdicts, reference manifests and looks, which
+  `systems`, config.yaml's folders added to its globs, the file written when there is none), and a data README's
+  mention. Kept: judging sets and their verdicts, reference manifests and looks, which
   are content-addressed (a set's id and a run's reference hash are made of them).
 - data/renames.json records each renamed id, for the catalog's redirects and for a person reading old notes.
 """
@@ -249,19 +250,23 @@ def _validate_policy(text: str) -> str:
         ("(dataset_id, config_id) pairs allowed to repeat", "(dataset_id, system) pairs allowed to repeat"),
     ):  # fmt: skip
         out = out.replace(old, new)
-    dirs = _config_dirs()
-    if dirs:
+    globs = _folder_globs()
+    if globs:
         doc = json.loads(out)
-        root = _common.ROOT.resolve()
-        globs = list(doc.get("systems") or [])
-        for d in dirs:
-            rel = "/".join(
-                "systems" if x == "configs" else x for x in d.relative_to(root).as_posix().split("/")
-            )
-            globs.append(f"{rel}/*.yaml")
-        doc["systems"] = globs
+        doc["systems"] = list(doc.get("systems") or []) + globs
         out = json.dumps(doc, indent=2, ensure_ascii=False) + "\n"
     return out
+
+
+def _folder_globs() -> list[str]:
+    """The `systems` globs for config.yaml's `configs:` folders, as they are named once their configs have moved
+    (a folder named `configs` becoming `systems`)."""
+    root = _common.ROOT.resolve()
+    return [
+        "/".join("systems" if x == "configs" else x for x in d.relative_to(root).as_posix().split("/"))
+        + "/*.yaml"
+        for d in _config_dirs()
+    ]
 
 
 def _study_spec(text: str) -> str:
@@ -314,6 +319,9 @@ def run(dry_run: bool) -> None:
             _store.unlink(f)
     for f, _b, after in changes:
         _common.write_text_atomic(f, after)
+    policy = _common.DATA / "validate.json"
+    if _folder_globs() and not _store.is_file(policy):  # nothing else would say where the moved systems are
+        _common.write_text_atomic(policy, json.dumps({"systems": _folder_globs()}, indent=2) + "\n")
     cfg = _common.ROOT / "config.yaml"
     if _config_dirs() and _store.is_file(cfg):
         y = _yaml_rt()

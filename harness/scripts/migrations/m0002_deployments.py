@@ -3,7 +3,7 @@ each with the dated history of its checks: its onboarding becomes its first chec
 kept (by config id) becomes a check of the deployment its config names. The model record keeps its own facts.
 
 It reads the stored files as they are, not through the model: the configs are found as format 1 kept them (data/configs,
-validate.json's `configs` globs, a study's trials). A smoke whose deployment is not a fact (its config names none and the
+validate.json's `configs` globs, the folders config.yaml's `configs:` lists, a study's trials). A smoke whose deployment is not a fact (its config names none and the
 model has several) is refused, naming it: nothing is guessed."""
 
 from __future__ import annotations
@@ -27,6 +27,23 @@ def _yaml_rt() -> Any:
     return y
 
 
+def _config_dirs() -> list[Path]:
+    """config.yaml's `configs:` folders, inside the project."""
+    import yaml  # noqa: PLC0415
+
+    cfg = _common.ROOT / "config.yaml"
+    if not _store.is_file(cfg):
+        return []
+    try:
+        listed = (yaml.safe_load(_store.read_text(cfg, encoding="utf-8")) or {}).get("configs")
+    except (yaml.YAMLError, AttributeError):
+        return []
+    root = _common.ROOT.resolve()
+    return [
+        p for d in listed or [] if (p := (root / str(d)).resolve()).is_relative_to(root) and _store.is_dir(p)
+    ]
+
+
 def _configs() -> dict[str, dict[str, Any]]:
     """{config_id: config} as format 1 found the arms."""
     import json  # noqa: PLC0415
@@ -43,6 +60,8 @@ def _configs() -> dict[str, dict[str, Any]]:
     if _store.is_file(policy):
         for pattern in json.loads(_store.read_text(policy, encoding="utf-8")).get("configs") or []:
             found |= {f for f in _store.glob(root, pattern) if _store.is_file(f)}
+    for d in _config_dirs():
+        found |= {f for f in _store.glob(d, "*.yaml") if _store.is_file(f)}
     out: dict[str, dict[str, Any]] = {}
     for f in sorted(found):
         try:
