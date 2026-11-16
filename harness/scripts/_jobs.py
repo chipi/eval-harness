@@ -1,6 +1,8 @@
 """Jobs (RFC-026 step 3): one `evh` command each, run by a detached supervisor, in the project's .build/jobs/.
 
-    .build/jobs/<id>/job.json         the command, its argv, who asked and why, its locks, when, the harness version
+    .build/jobs/<id>/job.json         the operation and its inputs (a command and its argv, for a command not yet an
+                                      operation), who asked, its locks, when, the harness version
+    .build/jobs/<id>/inputs.json      an operation's inputs, which its command reads (`--inputs-file`)
     .build/jobs/<id>/state.json       queued | running | succeeded | failed | cancelled, rewritten whole
     .build/jobs/<id>/log              what the command printed (its stderr, and its stdout when it prints no envelope)
     .build/jobs/<id>/result.json      its --json envelope, when it prints one
@@ -198,7 +200,6 @@ LOCK_RULES: dict[str, Callable[[dict], list[tuple[str, bool]]]] = {
     "round-open": lambda a: [(f"goal:{a['goal']}", True)] if a.get("goal") else [],
     "round-carry": lambda a: [(f"goal:{a['goal']}", True)] if a.get("goal") else [],
     "round-retire": lambda a: [(f"goal:{a['goal']}", True)] if a.get("goal") else [],
-    "round-close": lambda a: [(f"goal:{a['goal']}", True)] if a.get("goal") else [],
     "run-promote": _promote_locks,
     "baseline-rollback": _promote_locks,
     # The pick list is one per project (data/picks.jsonl): one lock for it, whichever dataset a pick is from.
@@ -228,7 +229,6 @@ MIGRATIONS = {"data-migrate", "migrate"}
 #: Job commands that write nothing another job writes (reports, checks, estimates): `project` shared only.
 PROJECT_ONLY = {
     "exposure-check",  # reads the project's public checkouts; its --out goes into the job's own folder
-    "sealed-counts",
     "study-ask",  # its ask is appended under the study's own lock, briefly
     "study-stop",
     "study-import",
@@ -236,7 +236,6 @@ PROJECT_ONLY = {
     "prompt-export",  # into the job's own folder
     "bootstrap-test",
     "holdout",
-    "cost-report",
     "importer-check",
     "score-preview",
     "silver-calibrate",
@@ -399,6 +398,48 @@ def create(
     )
     _write_json(d / "state.json", {"state": "queued", "waiting_for": None})
     return job_id
+
+
+def create_operation(
+    operation: str,
+    inputs: dict[str, Any],
+    by: str | None,
+    locks: list[tuple[str, bool]],
+    env: dict[str, str] | None = None,
+    run_id: str | None = None,
+    job_id: str | None = None,
+) -> str:
+    """Write the record of a job of an operation (queued) and return its id; `start` runs it. A job names an operation
+    and its typed inputs, never a command line: the inputs are kept in the record and in inputs.json, which the command
+    reads (`cli.py <operation> --json --inputs-file`). `run_id` only for an operation that can be resumed."""
+    from evaluation_harness._version import __version__  # noqa: PLC0415
+
+    job_id = job_id or new_id()
+    d = job_dir(job_id)
+    d.mkdir(parents=True, exist_ok=True)
+    _write_json(d / "inputs.json", inputs)
+    _write_json(
+        d / "job.json",
+        {
+            "id": job_id,
+            "operation": operation,
+            "inputs": inputs,
+            "by": by,
+            "locks": [[k, ex] for k, ex in locks],
+            "env": env or {},
+            **({"run_id": run_id} if run_id is not None else {}),
+            "created_at": _common.now(),
+            "harness": __version__,
+        },
+    )
+    _write_json(d / "state.json", {"state": "queued", "waiting_for": None})
+    return job_id
+
+
+def name_of(job: dict[str, Any]) -> str:
+    """The operation or the command a job runs: a record of an operation names `operation`, a command's names `command`
+    (the two shapes live together until every command is an operation)."""
+    return str(job.get("operation") or job.get("command") or "")
 
 
 def start(job_id: str) -> int:

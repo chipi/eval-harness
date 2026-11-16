@@ -1,7 +1,9 @@
 """The API's OpenAPI 3.1 description (RFC-032), made from the operations: `GET /api/v1/openapi.json` and `evh openapi`
 print the same document. Every operation is a path and a method; its route's parts are path parameters, a read's inputs
-query parameters, an edit's or a decision's inputs a JSON body, with `by` (RFC-027) and the data header. The job routes
-and the few routes that are not an operation are described here, by what `catalog_serve` does with them.
+query parameters, an edit's inputs a JSON body, with `by` (RFC-027) and the data header. A decision or a work operation
+is a job (P3): its POST answers 202 with the job, its body the inputs the route's parts do not fill with `by`, `for` and
+`max_cost_usd`. The job routes and the few routes that are not an operation are described here, by what `catalog_serve`
+does with them.
 
 OpenAPI 3.1 takes JSON Schema 2020-12 as is, which is what the operations' inputs are written in."""
 
@@ -122,7 +124,80 @@ def _write_body(op: Op) -> dict[str, Any]:
     }
 
 
+def _job_body(op: Op) -> dict[str, Any]:
+    """A job operation's request body: the inputs its route's parts do not fill, and who asked, for whom and the cap."""
+    own = op.schema()
+    return {
+        "type": "object",
+        "properties": {
+            **own["properties"],
+            "by": {
+                "type": "string",
+                "pattern": "^(person|agent):",
+                "description": "who asked, person:NAME or agent:NAME (RFC-027); the job's actor",
+            },
+            "for": {
+                "type": "string",
+                "description": "the person an agent acts for, person:NAME: needed when by is an agent",
+            },
+            "max_cost_usd": {
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "description": "the most the job may spend"
+                + ("; required" if op.spends else ": this operation does not spend, so it takes none"),
+            },
+        },
+        "required": [*own["required"], "by", *(["max_cost_usd"] if op.spends else [])],
+        "additionalProperties": False,
+        **({"anyOf": own["anyOf"]} if "anyOf" in own else {}),
+        **({"allOf": own["allOf"]} if "allOf" in own else {}),
+    }
+
+
+def _locks_doc(op: Op) -> Any:
+    """What the job holds, as the description says it: `project` (a migration holds the whole project), the templates
+    of its locks, and the function that adds the others."""
+    if op.locks == "project":
+        return "project"
+    return {
+        "templates": [{"key": k, "exclusive": bool(ex)} for k, ex in op.locks or ()],
+        **({"function": op.locks_fn} if op.locks_fn else {}),
+    }
+
+
+def _job_operation(op: Op) -> dict[str, Any]:
+    out: dict[str, Any] = {
+        "operationId": op.name,
+        "summary": op.about,
+        "tags": [op.route.strip("/").split("/")[0]],
+        "x-evh-kind": op.kind,
+        "x-evh-locks": _locks_doc(op),
+        "x-evh-spends": op.spends,
+        "parameters": [*_path(op.route), _data_header()],
+        "requestBody": _json_body(_job_body(op)),
+        "responses": {
+            "202": {
+                "description": "the job, queued or started: follow it at GET /jobs/{id}",
+                "content": {"application/json": {"schema": {"$ref": _JOB}}},
+            },
+            **_errors(
+                "BadRequest",
+                "Unauthorized",
+                "Forbidden",
+                "NotFound",
+                "Conflict",
+                "TooLarge",
+                "Invalid",
+                "Migrating",
+            ),
+        },
+    }
+    return out
+
+
 def _operation(op: Op) -> dict[str, Any]:
+    if op.is_job():
+        return _job_operation(op)
     result = op.output or {"type": "object"}
     envelope = {
         "type": "object",
@@ -220,21 +295,34 @@ def _job_paths() -> dict[str, Any]:
             },
             "post": {
                 "operationId": "jobs-start",
-                "summary": "start a command as a job: checked, written, started; refused before a job exists when it "
-                "cannot run",
+                "summary": "start a job: an operation and its inputs (or, for a command that is not yet an operation, "
+                "the command and its arguments); checked, written, started; refused before a job exists when it cannot "
+                "run",
                 "tags": ["jobs"],
                 "parameters": [_data_header()],
                 "requestBody": _json_body(
                     {
                         "type": "object",
                         "properties": {
+                            "operation": {
+                                "type": "string",
+                                "enum": sorted(op.name for op in OPS.values() if op.is_job()),
+                                "description": "the operation to run (a decision or a work operation); its resource "
+                                "route starts the same job",
+                            },
+                            "inputs": {
+                                "type": "object",
+                                "description": "the operation's inputs by name, the route's parts too; a file as "
+                                "base64 where the operation takes an upload",
+                                "additionalProperties": True,
+                            },
                             "command": {
                                 "type": "string",
-                                "description": "the command to run (a work command)",
+                                "description": "a command that is not yet an operation (a work command)",
                             },
                             "args": {
                                 "type": "object",
-                                "description": "the command's arguments by name, without the dashes; a file as "
+                                "description": "that command's arguments by name, without the dashes; a file as "
                                 "base64 where the command takes an upload",
                                 "additionalProperties": True,
                             },
@@ -243,14 +331,17 @@ def _job_paths() -> dict[str, Any]:
                                 "description": "who started it, person:NAME or agent:NAME",
                             },
                             "for": {"type": "string", "description": "the person an agent acts for"},
-                            "reason": {"type": "string", "description": "why, for a decision"},
+                            "reason": {
+                                "type": "string",
+                                "description": "why, for a command that is not yet an operation",
+                            },
                             "max_cost_usd": {
                                 "type": "number",
                                 "exclusiveMinimum": 0,
                                 "description": "the most a spending job may spend; required for one",
                             },
                         },
-                        "required": ["command"],
+                        "oneOf": [{"required": ["operation"]}, {"required": ["command"]}],
                     }
                 ),
                 "responses": {
@@ -492,13 +583,16 @@ def document() -> dict[str, Any]:
                 },
                 "Job": {
                     "type": "object",
-                    "description": "a job (RFC-026): its id, command, state, who started it, its locks and how it ended",
+                    "description": "a job (RFC-026): its id, the operation and its inputs (a command and its argv, for "
+                    "a command that is not yet an operation), state, who started it, its locks and how it ended",
                     "properties": {
                         "id": {"type": "string"},
+                        "operation": {"type": "string"},
+                        "inputs": {"type": "object"},
                         "command": {"type": "string"},
                         "state": {"type": "string"},
                     },
-                    "required": ["id", "command", "state"],
+                    "required": ["id", "state"],
                     "additionalProperties": True,
                 },
             },

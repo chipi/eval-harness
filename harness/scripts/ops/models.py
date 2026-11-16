@@ -44,7 +44,7 @@ OPS = (
        "POST", "/models/{model}/deployments/{deployment}/accept", f"{_M}:accept", f"{_M}:say_saved",
        inputs={"flag": {"type": "string", "description": "the flag, or its kind (the words before its colon)"},
                "why": {"type": "string", "description": "why it is this deployment's nature, a sentence"}},
-       required=("flag", "why")),
+       required=("flag", "why"), in_process=True),
 )  # fmt: skip
 
 

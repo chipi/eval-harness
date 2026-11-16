@@ -5,6 +5,9 @@ one, and saying which), starts the command in a process group of its own with th
 the command holds its locks for as long as it lives, whatever happens to the supervisor), writes `running` with that
 group, waits, and writes how it ended: `succeeded`, `failed` (the exit code and the refusal kind), or `cancelled` when
 it was stopped. The command's envelope, when it prints one, goes to result.json.
+
+The command of a job of an operation is `cli.py <operation> --json --inputs-file <job folder>/inputs.json` (P3): the
+command line's own prelude, and its log live; the job of a command not yet an operation is that command and its argv.
 """
 
 from __future__ import annotations
@@ -46,12 +49,19 @@ def main(job_id: str) -> int:
     if (d / "stop").exists():  # stopped while it waited
         _jobs._write_json(d / "state.json", {**state, "state": "cancelled", "ended_at": _common.now()})
         return 0
-    from evaluation_harness.mcp_server import parser_of  # noqa: PLC0415
+    cli = str(Path(__file__).resolve().parent / "cli.py")
+    if "operation" in job:
+        # An operation runs through the command line's own prelude (.env, EVAL_VIA_EVH, the p-cache, the exit codes),
+        # its inputs read from the file the job was given: no command line to build.
+        has_json = True
+        cmd = [sys.executable, cli, job["operation"], "--json", "--inputs-file", str(d / "inputs.json")]
+    else:
+        from evaluation_harness.mcp_server import parser_of  # noqa: PLC0415
 
-    command = job["command"]
-    has_json = any("--json" in a.option_strings for a in parser_of(command)._actions)
-    cmd = [sys.executable, str(Path(__file__).resolve().parent / "cli.py"), command]
-    cmd += [*(["--json"] if has_json else []), *job["argv"]]
+        command = job["command"]
+        has_json = any("--json" in a.option_strings for a in parser_of(command)._actions)
+        cmd = [sys.executable, cli, command]
+        cmd += [*(["--json"] if has_json else []), *job["argv"]]
     # Who acted comes from the job alone (RFC-027): the server's or terminal's own EVH_ACTOR / EVH_FOR never reach it,
     # or every agent job would be recorded for whoever the server ran as.
     inherited = {k: v for k, v in os.environ.items() if k not in ("EVH_ACTOR", "EVH_FOR")}

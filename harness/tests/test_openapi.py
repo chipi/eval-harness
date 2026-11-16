@@ -4,9 +4,10 @@
     python tests/test_openapi.py
 
 The document on its own: every operation is a path and a method with its operationId, its route's parts as path
-parameters (each declared, each in the path), a read's inputs as query parameters and an edit's or a decision's as a
-JSON body with `by` and the data header, the refusals as 4xx with the error envelope, a declared result schema as the
-200's; the job routes are there; the structure is OpenAPI 3.1's (required keys, references that resolve, security
+parameters (each declared, each in the path), a read's inputs as query parameters and an edit's as a JSON body with `by`
+and the data header, a decision's or a work operation's (a job, P3) as the body the route's parts do not fill with `by`,
+`for` and `max_cost_usd`, answered 202 with the Job, its kind, locks and spend; the refusals as 4xx with the error
+envelope, a declared result schema as the 200's; the job routes are there; the structure is OpenAPI 3.1's (required keys, references that resolve, security
 schemes that exist) and every schema is valid JSON Schema 2020-12 (jsonschema's Draft202012Validator). The checker
 itself is shown to refuse a document with a part taken out. Then a real `evh catalog-serve` in a throwaway project
 ($0, offline): `GET /api/v1/openapi.json` answers the document `evh openapi` prints, only with the token, to this
@@ -207,6 +208,19 @@ for op in OPS.values():
             wrong_inputs.append(op.name)
         if any(p["schema"] != op.inputs[n] for n, p in by_in["query"].items()) or "requestBody" in o:
             wrong_inputs.append(op.name)
+    elif op.is_job():
+        body = o["requestBody"]["content"]["application/json"]["schema"]
+        own = op.schema()
+        if (
+            by_in["query"]
+            or by_in["header"].get("X-EVH-Data", {}).get("required") is not True
+            or set(body["properties"]) != {*own["properties"], "by", "for", "max_cost_usd"}
+            or body["required"] != [*own["required"], "by", *(["max_cost_usd"] if op.spends else [])]
+            or body["additionalProperties"] is not False
+            or o["x-evh-spends"] is not op.spends
+            or "x-evh-locks" not in o
+        ):
+            wrong_body.append(op.name)
     else:
         body = o["requestBody"]["content"]["application/json"]["schema"]
         if (
@@ -224,7 +238,7 @@ check(
     wrong_inputs,
 )
 check(
-    "an edit's or a decision's inputs are a JSON body with by, and the data header is required",
+    "an edit's inputs, and a job's that its route's parts do not fill, are a JSON body with by (and for, max_cost_usd), and the data header is required",
     not wrong_body,
     wrong_body,
 )
@@ -245,16 +259,18 @@ check(
 shape_wrong = []
 for op in OPS.values():
     rs = op_of(op)["responses"]
-    want = {"200", "400", "401", "403", "404", "409", "422", "503"} | (
+    want = {"202" if op.is_job() else "200", "400", "401", "403", "404", "409", "422", "503"} | (
         {"413"} if op.kind != "read" else set()
     )
     if set(rs) != want:
         shape_wrong.append((op.name, sorted(set(rs) ^ want)))
     for code, r in rs.items():
-        if code != "200" and r != {"$ref": f"#/components/responses/{r['$ref'].rsplit('/', 1)[-1]}"}:
+        if code not in ("200", "202") and r != {
+            "$ref": f"#/components/responses/{r['$ref'].rsplit('/', 1)[-1]}"
+        }:
             shape_wrong.append((op.name, code))
 check(
-    "every operation answers 200 and the refusals as 4xx (413 too for a write), 503 while a migration holds the project",
+    "every operation answers 200 (a job: 202) and the refusals as 4xx (413 too for a write), 503 while a migration holds the project",
     not shape_wrong,
     shape_wrong[:3],
 )
@@ -310,6 +326,46 @@ try:
     check(
         "a declared result schema is the 200's result",
         got["responses"]["200"]["content"]["application/json"]["schema"]["properties"]["result"] == declared,
+    )
+finally:
+    openapi.OPS = real
+
+# Every decision and work operation is a job: a POST answering 202, its parts path parameters; POST /jobs names them all.
+JOB_OPS = sorted(op.name for op in OPS.values() if op.is_job())
+
+
+def job_gaps(document: dict) -> list[str]:
+    """What the document lacks of the registry's jobs: each a POST with a 202 and its parts as path parameters, and
+    POST /jobs naming each as `operation`."""
+    gaps = []
+    for op in OPS.values():
+        if not op.is_job():
+            continue
+        o = (document["paths"].get(f"{PREFIX}{op.route}") or {}).get("post") or {}
+        if "202" not in (o.get("responses") or {}):
+            gaps.append(f"{op.name}: no POST with a 202")
+        if [p["name"] for p in o.get("parameters", []) if p["in"] == "path"] != op.path_params():
+            gaps.append(f"{op.name}: path parameters")
+    enum = document["paths"][f"{PREFIX}/jobs"]["post"]["requestBody"]["content"]["application/json"][
+        "schema"
+    ]["properties"]["operation"]["enum"]
+    if enum != JOB_OPS:
+        gaps.append(f"POST /jobs operation enum is {enum}, the jobs are {JOB_OPS}")
+    return gaps
+
+
+check(
+    "every decision and work operation is a POST answering 202 with its parts as path parameters, and POST /api/v1/jobs "
+    "takes each as `operation`",
+    JOB_OPS and not job_gaps(doc),
+    job_gaps(doc),
+)
+try:
+    openapi.OPS = {k: v for k, v in real.items() if k != "cost-report"}
+    check(
+        "that check fails on a document made without one of the jobs",
+        bool(job_gaps(openapi.document())),
+        job_gaps(openapi.document()),
     )
 finally:
     openapi.OPS = real

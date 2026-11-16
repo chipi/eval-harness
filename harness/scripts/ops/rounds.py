@@ -1,7 +1,8 @@
 """The rounds' reads (RFC-032 step 5): `evh round-list`, `round-show`, `round-evidence`, and the resources under
 /api/v1/goals/{goal}/rounds. Each answers what `evh round-list --json` answers for the same thing: both read the round
-through `_rounds.summary`, `view` and `evidence_values`. Opening, carrying, retiring and closing a round are the
-commands `round-open`, `round-carry`, `round-retire` and `round-close`."""
+through `_rounds.summary`, `view` and `evidence_values`. Opening, carrying and retiring a round are the commands
+`round-open`, `round-carry` and `round-retire`; `round-close` is a decision (RFC-032 step 9 P3): a job, `POST
+/api/v1/goals/{goal}/rounds/{round}/close`."""
 
 from __future__ import annotations
 
@@ -18,6 +19,17 @@ OPS = (
        "GET", "/goals/{goal}/rounds/{round}", f"{_R}:show_round", f"{_R}:say_round"),
     Op("round-evidence", "read", "what the evidence says about a round: its arms read, the leader, the tests against it and what to decide next",
        "GET", "/goals/{goal}/rounds/{round}/evidence", f"{_R}:round_evidence", f"{_R}:say_evidence"),
+    Op("round-close", "decision", "close a round with its conclusion, promoting the run it chose",
+       "POST", "/goals/{goal}/rounds/{round}/close", "evaluation_harness.rounds:close_body", "",
+       locks=(("goal:{goal}", True),), why="conclusion",
+       required=("goal", "round", "conclusion"), inputs={
+           "goal": {"type": "string", "description": "the goal the round belongs to"},
+           "round": {"type": "string", "description": "the round to close"},
+           "conclusion": {"type": "string", "description": "what the round showed, and what it decided"},
+           "promote": {"type": "string", "x-metavar": "RUN_ID", "description": "promote this run to the goal's baseline on the round's dataset, the conclusion as its reason"},
+           "confirm_extra_look": {"type": "boolean", "description": "--promote on a test set past its limit of looks (RFC-029): the person's consent (passed to run-promote)"},
+           "override_no_evidence": {"type": "boolean", "description": "--promote on a test set whose items cannot show it: promote anyway, inconclusive (passed to run-promote)"},
+       }),
 )  # fmt: skip
 
 

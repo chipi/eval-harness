@@ -48,6 +48,17 @@ check(
     jobs <= named,
     sorted(jobs - named),
 )
+check(
+    "and nothing else is named: no command that is gone, none that became an operation (its locks are its declaration's)",
+    named <= jobs,
+    sorted(named - jobs),
+)
+stale_args = sorted(c for c, _flag in _api.SYSTEM_ARGS if c not in jobs)
+check(
+    "and every argument that names a system belongs to a command that is a job",
+    not stale_args,
+    stale_args,
+)
 
 _run_meta, _jobs._run_meta = _jobs._run_meta, lambda run_id: {"system_id": "slow_v1"}
 try:

@@ -4,7 +4,7 @@
                      [--keep cfg,...] [--retire cfg,... --reason "..."] [--budget-usd N] [--baseline cfg|run]
     evh round-carry  --goal G --round rN --arm cfg [--from rM]
     evh round-retire --goal G --round rN --arm cfg --reason "..."
-    evh round-close  --goal G --round rN --conclusion "..." [--promote <run_id>]
+    evh round-close  --goal G --round rN --conclusion "..." [--promote <run_id>]   (an operation: ops/rounds.py)
     evh round-show G rN
 
 A round is a record beside the goal, data/rounds/<goal>/<round>.yaml: what it sets out to learn,
@@ -24,9 +24,7 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
 import argparse
-import subprocess
 import sys
-from pathlib import Path
 
 from evaluation_harness import _common, _jsonout, _rounds, _store
 from evaluation_harness._actor import actor, require_named
@@ -42,8 +40,6 @@ from evaluation_harness.model.rounds import (  # noqa: F401  (rounds' evidence l
     _silver_authors,
     evidence,
 )
-
-HERE = Path(__file__).resolve().parent
 
 
 def _goal(goal: str) -> dict:
@@ -381,86 +377,55 @@ def retire(argv: list[str]) -> int:
         return 0
 
 
-def close(argv: list[str]) -> int:
+def close_body(
+    goal: str,
+    round: str,
+    conclusion: str,
+    promote: str | None = None,
+    confirm_extra_look: bool = False,
+    override_no_evidence: bool = False,
+) -> int:
     """evh round-close: record the round's conclusion, and promote the run it chose."""
-    ap = argparse.ArgumentParser(prog="evh round-close", description="Close a round with its conclusion.")
-    ap.add_argument("--goal", required=True)
-    ap.add_argument("--round", required=True)
-    ap.add_argument("--conclusion", required=True, help="what the round showed, and what it decided")
-    ap.add_argument(
-        "--promote",
-        metavar="RUN_ID",
-        help="promote this run to the goal's baseline on the round's dataset, the conclusion as its reason",
-    )
-    ap.add_argument(
-        "--confirm-extra-look",
-        action="store_true",
-        help="--promote on a test set past its limit of looks (RFC-029): the person's consent (passed to run-promote)",
-    )
-    ap.add_argument(
-        "--override-no-evidence",
-        action="store_true",
-        help="--promote on a test set whose items cannot show it: promote anyway, inconclusive (passed to run-promote)",
-    )
-    from evaluation_harness._actor import add_by  # noqa: PLC0415
-
-    add_by(ap)
-    ap.add_argument(
-        "--json",
-        action="store_true",
-        help="one JSON object on stdout when done (the text goes to stderr as it is printed): the envelope every --json command gives (result.blocks, result.values)",
-    )
-    args = ap.parse_args(argv)
-    with _jsonout.collect("round-close", args.json, live=sys.stderr):
-        rnd = _round(args.goal, args.round)
-        if rnd.get("status") == "closed":
-            die(f"round {args.round} is already closed", "not-allowed")
-        if rnd.get("study"):
-            die(
-                f"round {args.round} is study {rnd['study']}'s: it closes when the study ends (evh study-stop "
-                f"{args.goal}/{rnd['study']})",
-                "not-allowed",
-            )
-        if len(args.conclusion.split()) < 3:
-            die("--conclusion must be a sentence: what did the round show?", "bad-argument")
-        who = require_named("round-close")
-        if args.promote:
-            r = subprocess.run(
-                [
-                    sys.executable,
-                    str(HERE / "promote_baseline.py"),
-                    "--run",
-                    args.promote,
-                    "--reason",
-                    args.conclusion,
-                    "--goal",
-                    args.goal,
-                    "--round",
-                    args.round,
-                    *(["--confirm-extra-look"] if args.confirm_extra_look else []),
-                    *(["--override-no-evidence"] if args.override_no_evidence else []),
-                ],
-                capture_output=True,
-                text=True,
-            )
-            sys.stdout.write(r.stdout)
-            if r.returncode:
-                sys.stderr.write(r.stderr)
-                die("the round stays open: promotion was refused (above)", "not-allowed")
-        rnd["status"] = "closed"
-        rnd["closed_at"] = now()
-        rnd["conclusion"] = {"text": args.conclusion, "promoted_run": args.promote, "actor": who}
-        _rounds.save(rnd)
-        print(
-            f"round {args.round} of {args.goal} closed"
-            + (f"; {args.promote} promoted" if args.promote else "")
+    rnd = _round(goal, round)
+    if rnd.get("status") == "closed":
+        die(f"round {round} is already closed", "not-allowed")
+    if rnd.get("study"):
+        die(
+            f"round {round} is study {rnd['study']}'s: it closes when the study ends (evh study-stop "
+            f"{goal}/{rnd['study']})",
+            "not-allowed",
         )
-        return 0
+    if len(conclusion.split()) < 3:
+        die("--conclusion must be a sentence: what did the round show?", "bad-argument")
+    who = require_named("round-close")
+    if promote:
+        from evaluation_harness import promote_baseline  # noqa: PLC0415
+
+        try:
+            refused = promote_baseline.body(
+                run=promote,
+                reason=conclusion,
+                goal=goal,
+                round=round,
+                confirm_extra_look=confirm_extra_look,
+                override_no_evidence=override_no_evidence,
+            )
+        except SystemExit as exc:  # the promotion's own refusal, said as it said it
+            print(exc.code, file=sys.stderr)
+            refused = 1
+        if refused:
+            die("the round stays open: promotion was refused (above)", "not-allowed")
+    rnd["status"] = "closed"
+    rnd["closed_at"] = now()
+    rnd["conclusion"] = {"text": conclusion, "promoted_run": promote, "actor": who}
+    _rounds.save(rnd)
+    print(f"round {round} of {goal} closed" + (f"; {promote} promoted" if promote else ""))
+    return 0
 
 
-ACTIONS = {"open": open_round, "carry": carry, "retire": retire, "close": close}
+ACTIONS = {"open": open_round, "carry": carry, "retire": retire}
 
 
 def run(action: str) -> int:
-    """Entry point for the per-action scripts (`evh round-open`, `round-carry`, `round-retire`, `round-close`)."""
+    """Entry point for the per-action scripts (`evh round-open`, `round-carry`, `round-retire`)."""
     return ACTIONS[action](sys.argv[1:])

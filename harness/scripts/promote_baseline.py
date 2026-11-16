@@ -186,6 +186,190 @@ def _version() -> str:
     return __version__
 
 
+def body(
+    run: str,
+    reason: str | None = None,
+    reason_from_env: bool = False,
+    goal: str | None = None,
+    no_goal: bool = False,
+    round: str | None = None,
+    allow_dirty: bool = False,
+    confirm_extra_look: bool = False,
+    override_no_evidence: bool = False,
+    allow_unknown_build: bool = False,
+    unfaithful: bool = False,
+) -> int:
+    """Promote a run to baseline status: print what was written, answer the exit code. A refusal is `die`."""
+    args = argparse.Namespace(
+        run=run,
+        reason=reason,
+        reason_from_env=reason_from_env,
+        goal=goal,
+        no_goal=no_goal,
+        round=round,
+        allow_dirty=allow_dirty,
+        confirm_extra_look=confirm_extra_look,
+        override_no_evidence=override_no_evidence,
+        allow_unknown_build=allow_unknown_build,
+        unfaithful=unfaithful,
+    )
+    if args.reason_from_env:
+        args.reason = os.environ.get("EVAL_PROMOTE_REASON", "")
+    if not (args.reason or "").strip():
+        die(
+            'a reason is required: --reason "..." or --reason-from-env with EVAL_PROMOTE_REASON set',
+            "bad-argument",
+        )
+    from evaluation_harness._actor import require_named  # noqa: PLC0415
+
+    who = require_named("run-promote")
+
+    m = run_record(args.run)
+    if m is None:
+        die(f"no scored run {args.run!r} (looked for {RUNS / args.run})", "not-found")
+    from evaluation_harness import _faith  # noqa: PLC0415
+
+    faith = _faith.allow_scoring(m, "promoting", args.unfaithful)
+
+    build = m.get("build") or {}
+    if build.get("ref", "unknown") == "unknown" and not args.allow_unknown_build:
+        die(
+            "REFUSED — this run does not identify its build.\n"
+            "  A baseline whose build is unknown cannot be attributed to any code.\n"
+            "  Declare it and re-run:  EVAL_BUILD_REF=<version|digest|sha> "
+            + how("evh run ...", "make run ...")
+            + "\n"
+            "  (--allow-unknown-build overrides, but then the baseline names no system.)",
+            "not-configured",
+        )
+    if build.get("dirty") and not args.allow_dirty:
+        die(
+            f"REFUSED — run {args.run} was produced by a DIRTY tree.\n"
+            f"  build.ref={build.get('ref', '?')[:12]} does not describe what actually ran.\n"
+            "  Commit, re-run, and promote that — or --allow-dirty and say why in --reason.",
+            "not-allowed",
+        )
+    if len(args.reason.split()) < 3:
+        die(
+            "REFUSED — --reason must be a sentence, not a word. It is the answer to "
+            '"why is this the baseline?" in six months.',
+            "bad-argument",
+        )
+
+    # AN ARM RUN WITH --repeat: the catalog, the inspector and every test read the mean of its
+    # repeats, while a baseline is promoted from one run. Record which runs the arm has and their
+    # mean beside the run's own scores (V6 keeps comparing `scores` with the run), and say so.
+    repeats = _repeats(m)
+    if args.goal and args.no_goal:
+        die("--goal and --no-goal: one or the other", "bad-argument")
+    goal_id = None if args.no_goal else (args.goal or m.get("goal"))
+    goal_doc = None
+    if goal_id:
+        goal_doc = load_goals().get(goal_id)
+        if goal_doc is None:
+            die(f"no goal {goal_id!r} (data/goals/)", "not-found")
+        if m["dataset_id"] not in {d.get("dataset_id") for d in goal_doc.get("datasets") or []}:
+            die(
+                f"goal {goal_id} does not name dataset {m['dataset_id']}: --goal another, or --no-goal",
+                "mismatch",
+            )
+
+    look_ctx: dict = {}
+    in_round: dict = {}
+    if args.round and goal_id:
+        from evaluation_harness import _rounds  # noqa: PLC0415
+        from evaluation_harness.model import rounds as model_rounds  # noqa: PLC0415
+
+        rnd = _rounds.find(goal_id, args.round)
+        held = next((a for a in model_rounds.arms(rnd or {}) if m["run_id"] in (a.get("runs") or [])), None)
+        in_round = {"round": args.round, **({"arm": held["system"]} if held else {})}
+
+    def make(cur: dict | None, n: int) -> dict:
+        ev = evidence(m, cur, goal_doc, args.round, look_ctx.get("look"))
+        doc = {
+            "dataset_id": m["dataset_id"],
+            "goal": goal_id,
+            "promoted_from": m["run_id"],
+            **in_round,
+            "promoted_at": now(),
+            "actor": who,
+            "reason": args.reason,
+            "replaces": cur["version"] if cur else None,
+            "evidence": ev,
+            "scores": m["scores"],
+            "build": build,
+            # Carried from the run: what the number means. A baseline is compared against, and
+            # a silver baseline beside a gold run, or one scored by another adapter, is not the
+            # same number.
+            **{k: v for k, v in carried(m).items() if k != "goal"},
+            **({"repeats": repeats} if repeats else {}),
+            **({"faithfulness": faith} if faith is not None else {}),
+        }
+        return doc
+
+    # A promotion on a test set compared with its current version is a look (RFC-029): numbered under the set's
+    # lock while the version is written, tested one-sided at the look's level; one question is one look.
+    from evaluation_harness import _looks  # noqa: PLC0415
+
+    cur = _baselines.current(goal_id, m["dataset_id"])
+    b_cfg = _config_of(cur["promoted_from"]) if cur else None
+    if cur and b_cfg and b_cfg != m["system_id"] and _looks.is_test_set(m["dataset_id"]):
+        prim = ((goal_doc or {}).get("success_criteria") or {}).get("primary") or {}
+        measure = prim.get("measure") or m.get("primary_metric")
+        k = _looks.key(m["dataset_id"], m["system_id"], b_cfg, measure, "superiority")
+        with _looks.taking(m["dataset_id"], k, consent=args.confirm_extra_look) as look:
+            look_ctx["look"] = {**look, "override": args.override_no_evidence}
+            print(
+                f"  look {look['number']} at test set {m['dataset_id']}, one-sided at {look['level']:.4%}"
+                + (" (the same question as before: its look reused)" if look["reused"] else "")
+            )
+            doc = _baselines.write_next(goal_id, m["dataset_id"], make)
+    else:
+        doc = _baselines.write_next(goal_id, m["dataset_id"], make)
+    line = f"{goal_id or 'the dataset'}'s baseline on {m['dataset_id']}"
+    out = _baselines.folder(goal_id, m["dataset_id"]) / f"{doc['version']}.json"
+    print(f"{out}  version {doc['version']} of {line}")
+    _jsonout.values(
+        {
+            "goal": goal_id,
+            "dataset_id": m["dataset_id"],
+            "version": doc["version"],
+            "path": str(out),
+            "evidence": doc["evidence"],
+        }
+    )
+    ev = doc["evidence"]
+    if ev.get("compared_to") is not None:
+        vd = ev.get("verdict")
+        print(
+            f"  against version {ev['compared_to']}: "
+            + (
+                f"{vd['outcome']}, delta {vd['delta']:+.4f}, p {vd['p']:.4g} on {ev.get('measure')} (n={ev.get('n')})"
+                if vd
+                else "no test (" + "; ".join(ev.get("not_comparable") or []) + ")"
+            )
+        )
+    # The scores it reads by, not the bookkeeping (`resumed`, `self_family_*`): the baseline file
+    # keeps every key, as its run has them (V6 compares the two).
+    shown = {k: v for k, v in m["scores"].items() if not k.startswith(BOOKKEEPING_PREFIXES)}
+    if repeats:
+        print(
+            f"  NOTE: {m['system_id']} has {len(repeats['runs'])} repeats; the catalog, the inspector and the tests read"
+            f" their mean.\n        The baseline records this run's own scores and, under `repeats`, the mean:"
+        )
+        w0 = max([len(k) for k in shown] + [6])
+        for k in sorted(shown):
+            if k in repeats["mean_scores"]:
+                print(
+                    f"    {k:{w0}} {shown[k]}   (mean of {len(repeats['runs'])}: {repeats['mean_scores'][k]:.6g})"
+                )
+        return 0
+    w = max([len(k) for k in shown] + [6])
+    for k, v in sorted(shown.items()):
+        print(f"    {k:{w}} {v}")
+    return 0
+
+
 def main() -> int:
     """Promote a run to baseline status."""
     ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
@@ -243,163 +427,7 @@ def main() -> int:
     )
     args = ap.parse_args()
     with _jsonout.collect("run-promote", args.json, live=sys.stderr):
-        if args.reason_from_env:
-            args.reason = os.environ.get("EVAL_PROMOTE_REASON", "")
-        if not (args.reason or "").strip():
-            die(
-                'a reason is required: --reason "..." or --reason-from-env with EVAL_PROMOTE_REASON set',
-                "bad-argument",
-            )
-        from evaluation_harness._actor import require_named  # noqa: PLC0415
-
-        who = require_named("run-promote")
-
-        m = run_record(args.run)
-        if m is None:
-            die(f"no scored run {args.run!r} (looked for {RUNS / args.run})", "not-found")
-        from evaluation_harness import _faith  # noqa: PLC0415
-
-        faith = _faith.allow_scoring(m, "promoting", args.unfaithful)
-
-        build = m.get("build") or {}
-        if build.get("ref", "unknown") == "unknown" and not args.allow_unknown_build:
-            die(
-                "REFUSED — this run does not identify its build.\n"
-                "  A baseline whose build is unknown cannot be attributed to any code.\n"
-                "  Declare it and re-run:  EVAL_BUILD_REF=<version|digest|sha> "
-                + how("evh run ...", "make run ...")
-                + "\n"
-                "  (--allow-unknown-build overrides, but then the baseline names no system.)",
-                "not-configured",
-            )
-        if build.get("dirty") and not args.allow_dirty:
-            die(
-                f"REFUSED — run {args.run} was produced by a DIRTY tree.\n"
-                f"  build.ref={build.get('ref', '?')[:12]} does not describe what actually ran.\n"
-                "  Commit, re-run, and promote that — or --allow-dirty and say why in --reason.",
-                "not-allowed",
-            )
-        if len(args.reason.split()) < 3:
-            die(
-                "REFUSED — --reason must be a sentence, not a word. It is the answer to "
-                '"why is this the baseline?" in six months.',
-                "bad-argument",
-            )
-
-        # AN ARM RUN WITH --repeat: the catalog, the inspector and every test read the mean of its
-        # repeats, while a baseline is promoted from one run. Record which runs the arm has and their
-        # mean beside the run's own scores (V6 keeps comparing `scores` with the run), and say so.
-        repeats = _repeats(m)
-        if args.goal and args.no_goal:
-            die("--goal and --no-goal: one or the other", "bad-argument")
-        goal_id = None if args.no_goal else (args.goal or m.get("goal"))
-        goal = None
-        if goal_id:
-            goal = load_goals().get(goal_id)
-            if goal is None:
-                die(f"no goal {goal_id!r} (data/goals/)", "not-found")
-            if m["dataset_id"] not in {d.get("dataset_id") for d in goal.get("datasets") or []}:
-                die(
-                    f"goal {goal_id} does not name dataset {m['dataset_id']}: --goal another, or --no-goal",
-                    "mismatch",
-                )
-
-        look_ctx: dict = {}
-        in_round: dict = {}
-        if args.round and goal_id:
-            from evaluation_harness import _rounds  # noqa: PLC0415
-            from evaluation_harness.model import rounds as model_rounds  # noqa: PLC0415
-
-            rnd = _rounds.find(goal_id, args.round)
-            held = next(
-                (a for a in model_rounds.arms(rnd or {}) if m["run_id"] in (a.get("runs") or [])), None
-            )
-            in_round = {"round": args.round, **({"arm": held["system"]} if held else {})}
-
-        def make(cur: dict | None, n: int) -> dict:
-            ev = evidence(m, cur, goal, args.round, look_ctx.get("look"))
-            doc = {
-                "dataset_id": m["dataset_id"],
-                "goal": goal_id,
-                "promoted_from": m["run_id"],
-                **in_round,
-                "promoted_at": now(),
-                "actor": who,
-                "reason": args.reason,
-                "replaces": cur["version"] if cur else None,
-                "evidence": ev,
-                "scores": m["scores"],
-                "build": build,
-                # Carried from the run: what the number means. A baseline is compared against, and
-                # a silver baseline beside a gold run, or one scored by another adapter, is not the
-                # same number.
-                **{k: v for k, v in carried(m).items() if k != "goal"},
-                **({"repeats": repeats} if repeats else {}),
-                **({"faithfulness": faith} if faith is not None else {}),
-            }
-            return doc
-
-        # A promotion on a test set compared with its current version is a look (RFC-029): numbered under the set's
-        # lock while the version is written, tested one-sided at the look's level; one question is one look.
-        from evaluation_harness import _looks  # noqa: PLC0415
-
-        cur = _baselines.current(goal_id, m["dataset_id"])
-        b_cfg = _config_of(cur["promoted_from"]) if cur else None
-        if cur and b_cfg and b_cfg != m["system_id"] and _looks.is_test_set(m["dataset_id"]):
-            prim = ((goal or {}).get("success_criteria") or {}).get("primary") or {}
-            measure = prim.get("measure") or m.get("primary_metric")
-            k = _looks.key(m["dataset_id"], m["system_id"], b_cfg, measure, "superiority")
-            with _looks.taking(m["dataset_id"], k, consent=args.confirm_extra_look) as look:
-                look_ctx["look"] = {**look, "override": args.override_no_evidence}
-                print(
-                    f"  look {look['number']} at test set {m['dataset_id']}, one-sided at {look['level']:.4%}"
-                    + (" (the same question as before: its look reused)" if look["reused"] else "")
-                )
-                doc = _baselines.write_next(goal_id, m["dataset_id"], make)
-        else:
-            doc = _baselines.write_next(goal_id, m["dataset_id"], make)
-        line = f"{goal_id or 'the dataset'}'s baseline on {m['dataset_id']}"
-        out = _baselines.folder(goal_id, m["dataset_id"]) / f"{doc['version']}.json"
-        print(f"{out}  version {doc['version']} of {line}")
-        _jsonout.values(
-            {
-                "goal": goal_id,
-                "dataset_id": m["dataset_id"],
-                "version": doc["version"],
-                "path": str(out),
-                "evidence": doc["evidence"],
-            }
-        )
-        ev = doc["evidence"]
-        if ev.get("compared_to") is not None:
-            vd = ev.get("verdict")
-            print(
-                f"  against version {ev['compared_to']}: "
-                + (
-                    f"{vd['outcome']}, delta {vd['delta']:+.4f}, p {vd['p']:.4g} on {ev.get('measure')} (n={ev.get('n')})"
-                    if vd
-                    else "no test (" + "; ".join(ev.get("not_comparable") or []) + ")"
-                )
-            )
-        # The scores it reads by, not the bookkeeping (`resumed`, `self_family_*`): the baseline file
-        # keeps every key, as its run has them (V6 compares the two).
-        shown = {k: v for k, v in m["scores"].items() if not k.startswith(BOOKKEEPING_PREFIXES)}
-        if repeats:
-            print(
-                f"  NOTE: {m['system_id']} has {len(repeats['runs'])} repeats; the catalog, the inspector and the tests read"
-                f" their mean.\n        The baseline records this run's own scores and, under `repeats`, the mean:"
-            )
-            w0 = max([len(k) for k in shown] + [6])
-            for k in sorted(shown):
-                if k in repeats["mean_scores"]:
-                    print(
-                        f"    {k:{w0}} {shown[k]}   (mean of {len(repeats['runs'])}: {repeats['mean_scores'][k]:.6g})"
-                    )
-            return 0
-        w = max([len(k) for k in shown] + [6])
-        for k, v in sorted(shown.items()):
-            print(f"    {k:{w}} {v}")
-        return 0
+        return body(**{k: v for k, v in vars(args).items() if k not in ("json", "by")})
 
 
 if __name__ == "__main__":

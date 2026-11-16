@@ -43,7 +43,7 @@
         <td>${esc(m.measure || "")} (${esc(m.direction || "")})</td><td>${esc(ds)}</td><td class="num">${rounds}</td><td>${next}</td></tr>`;
     });
     const running = jobs === undefined ? loading("the jobs") : jobs.error ? failed(jobs)
-      : jobs.jobs.length ? jobs.jobs.map((j) => `<div class="job"><span>${esc(j.command)}</span><span class="status">${esc(j.state)}</span></div>`).join("")
+      : jobs.jobs.length ? jobs.jobs.map((j) => `<div class="job"><span>${esc(j.operation || j.command)}</span><span class="status">${esc(j.state)}</span></div>`).join("")
       : '<p class="muted" style="margin:0">Nothing is running.</p>';
     return `<div class="screen wide">${head}
       <div class="part"><div class="parthead"><h2>Running now</h2></div><div class="body">${running}</div></div>

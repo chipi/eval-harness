@@ -312,7 +312,7 @@ rescore:
 # What each arm actually cost, from `_meta.usage.cost` rather than the price table in
 # its yaml. Added because RUNBOOK §7b documented this verb before it existed.
 cost-report:
-	$(PYTHON) scripts/cost_report.py $(ARGS)
+	$(PYTHON) scripts/cli.py cost-report $(ARGS)
 
 
 leaderboard:
@@ -450,7 +450,7 @@ round-retire:
 	$(PYTHON) scripts/round_retire.py --goal $(GOAL) --round $(ROUND) $(ARGS)
 
 round-close:
-	$(PYTHON) scripts/round_close.py --goal $(GOAL) --round $(ROUND) $(ARGS)
+	$(PYTHON) scripts/cli.py round-close --goal $(GOAL) --round $(ROUND) $(ARGS)
 
 
 # MATERIALIZE THE DEMO DATASET FIRST, or eleven assertions silently skip.

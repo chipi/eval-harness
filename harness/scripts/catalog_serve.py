@@ -809,7 +809,10 @@ def data_changed(why: str) -> None:
 def watch_write_job(job: dict) -> None:
     """A job this server started (any but the rebuild itself): when it ends, look at the data once and rebuild if it
     wrote."""
-    if not FRESH["on"] or job.get("command") == "catalog":
+    from evaluation_harness import _jobs  # noqa: PLC0415
+
+    name = _jobs.name_of(job)
+    if not FRESH["on"] or name == "catalog":
         return
     FRESH["jobs"].add(job["id"])
 
@@ -817,7 +820,7 @@ def watch_write_job(job: dict) -> None:
         _wait_job(job["id"])
         FRESH["jobs"].discard(job["id"])
         try:
-            fresh_check(force=True, why=f"job {job['id']} ({job.get('command')}) ended")
+            fresh_check(force=True, why=f"job {job['id']} ({name}) ended")
         except Exception as exc:  # noqa: BLE001 -- the look failed; the next read looks again
             say(
                 f"catalog: could not look at the data after job {job['id']}: {type(exc).__name__}: {exc}",
@@ -1092,6 +1095,9 @@ class Handler(SimpleHTTPRequestHandler):
             if any(w != p for w, p in zip(want, parts, strict=True) if not w.startswith("{")):
                 continue
             params = {w[1:-1]: unquote(p) for w, p in zip(want, parts, strict=True) if w.startswith("{")}
+            if op.is_job():
+                self._job_route(op, params)
+                return True
             inputs: dict = {}
             if op.kind == "read":
                 try:
@@ -1134,6 +1140,65 @@ class Handler(SimpleHTTPRequestHandler):
                 data_changed(f"{op.name} through the API")
             return say(200, {"command": op.name, "version": __version__, "result": result})
         return False
+
+    def _job_route(self, op, params: dict) -> None:
+        """A decision or a work operation (RFC-032 step 9 P3): POST of its resource starts a job and answers 202 with
+        it. The body is the inputs the route's parts do not fill, with `by`, `for` and, for an operation that spends,
+        `max_cost_usd`; the parts and the body make the job's inputs, the same a call of POST /api/v1/jobs gives."""
+        if self.headers.get(DATA_HEADER) != "1":
+            return self._json(
+                403, {"error": f"a call that is not a read needs the {DATA_HEADER}: 1 header"}, cache=False
+            )
+        n = int(self.headers.get("Content-Length") or 0)
+        if n > API_MAX_JOB_BODY:
+            return self._json(413, {"error": "a job call carries at most 50 MB of files"}, cache=False)
+        try:
+            body = json.loads(self.rfile.read(n) or b"{}") if n else {}
+        except ValueError:
+            body = None
+        if not isinstance(body, dict):
+            return self._json(400, {"error": "the body is a JSON object"}, cache=False)
+        by, for_, cap = body.pop("by", None), body.pop("for", None), body.pop("max_cost_usd", None)
+        try:
+            mapped = op.route_inputs(params)
+        except ValueError as exc:
+            return self._json(400, {"error": f"{op.name}: {exc}"}, cache=False)
+        clash = sorted(k for k in body if k in params or k in mapped)
+        if clash:
+            return self._json(
+                400,
+                {"error": f"{op.name}: {', '.join(clash)} is in the route: not also in the body"},
+                cache=False,
+            )
+        return self._start_job_reply(op.name, {**body, **mapped}, by, for_, cap)
+
+    def _start_job_reply(self, name: str, inputs: Any, by: Any, for_: Any, cap: Any) -> None:
+        """Start a job of an operation and answer 202 with it (what POST /api/v1/jobs and the operation's own route
+        share): refused before a job exists when it cannot run."""
+        from evaluation_harness import _api  # noqa: PLC0415
+
+        try:
+            j = _api.start_job(name, inputs, by, None, cap, for_)
+        except _api.Refused as exc:
+            return self._json(exc.status, {"error": str(exc)}, cache=False)
+        watch_write_job(j)
+        return self._json(202, j, cache=False)
+
+    def _start_operation_reply(self, body: dict) -> None:
+        """POST /api/v1/jobs of an operation: `{operation, inputs, by, for, max_cost_usd}` and nothing else."""
+        from evaluation_harness import _api, ops  # noqa: PLC0415
+
+        extra = sorted(set(body) - {"operation", "inputs", "by", "for", "max_cost_usd"})
+        if extra:
+            raise _api.Refused(
+                f"a job of an operation is {{operation, inputs, by, for, max_cost_usd}}, not {', '.join(extra)}"
+            )
+        name = str(body["operation"])
+        if (op := ops.get(name)) is None or not op.is_job():
+            raise _api.Refused(f"{name}: not an operation that runs as a job", 404)
+        return self._start_job_reply(
+            name, body.get("inputs", {}), body.get("by"), body.get("for"), body.get("max_cost_usd")
+        )
 
     def _jobs_route(self, method: str, url) -> None:
         """The jobs (RFC-026 step 3): list, read, follow the log, fetch an artifact (GET); start, stop, resume (POST,
@@ -1192,6 +1257,14 @@ class Handler(SimpleHTTPRequestHandler):
                     return self._json(400, {"error": "the body is a JSON object"}, cache=False)
                 if not isinstance(body, dict):
                     return self._json(400, {"error": "the body is a JSON object"}, cache=False)
+                if "operation" in body:
+                    return self._start_operation_reply(body)
+                from evaluation_harness import ops  # noqa: PLC0415
+
+                if (op := ops.get(str(body.get("command") or ""))) is not None and op.is_job():
+                    raise _api.Refused(
+                        f"{op.name} is an operation: a job of it is {{operation, inputs, by, for, max_cost_usd}}"
+                    )
                 j = _api.start_job(
                     str(body.get("command") or ""), body.get("args", {}), body.get("by"), body.get("reason"),
                     body.get("max_cost_usd"), body.get("for"),

@@ -972,6 +972,14 @@ def test_example_scorer_suites_pass() -> None:
             "jobs (RFC-026): locks, queue, stop, resume, unsupervised and lost; catalog as a swap, a migration's 503",
         ),
         (
+            "test_op_declarations.py",
+            "what a decision or a work operation declares (RFC-032 step 9 P3): locks, route, why, a word on every file input, no two routes alike, each rule failing on its planted defect; the command line made from the schema, a positional refused, the old parsers' parity",
+        ),
+        (
+            "test_job_operations.py",
+            "a job names an operation and its typed inputs (P3): the record, locks, files, resume; cost-report and round-close through their routes, POST /jobs and jobs-start, refusals before a job exists, the OpenAPI document",
+        ),
+        (
             "test_spend.py",
             "what a command may spend (RFC-026): one cap across passes, the provider's net, sweep, a round's budget",
         ),

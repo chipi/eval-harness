@@ -6,10 +6,10 @@
     evh jobs-stop JOB_ID
     evh jobs-resume JOB_ID
 
-`--arg` names an argument as the API does (its name without the dashes, as `evh COMMAND --help` shows it): a
-system by its id, `--arg repeat=3`, a flag as `--arg NAME=true`; repeated, it makes a list; `@FILE` uploads a
-file. A job started here is listed by the API and stopped by it, and one the Workbench started is followed here. No
-server is needed.
+`--arg` names an input as the API does: an operation's input name (`evh COMMAND --help` shows it as the option, its dashes
+underscores: `--dataset-id` is `dataset_id`), a command's argument without the dashes; a system by its id, `--arg repeat=3`,
+a flag as `--arg NAME=true`; repeated, it makes a list; `@FILE` uploads a file. A job started here is listed by the API
+and stopped by it, and one the Workbench started is followed here. No server is needed.
 """
 
 from __future__ import annotations
@@ -90,7 +90,9 @@ def _line(j: dict[str, Any]) -> str:
     extra = f"  waiting for {wait.get('lock')} ({wait.get('job') or 'another process'})" if wait else ""
     if j.get("refusal"):
         extra += f"  refused: {j['refusal']}"
-    return f"{j['id']}  {j['state']:<22} {j['command']:<18} by {j.get('by') or '-'}{extra}"
+    from evaluation_harness import _jobs  # noqa: PLC0415
+
+    return f"{j['id']}  {j['state']:<22} {_jobs.name_of(j):<18} by {j.get('by') or '-'}{extra}"
 
 
 def start(argv: list[str]) -> int:
@@ -141,9 +143,10 @@ def status(argv: list[str]) -> int:
             except (FileNotFoundError, ValueError):
                 die(f"no job {a.job_id!r} in {_jobs.jobs_dir()}", "not-found")
             print(_line(j))
-            for k in ("argv", "reason", "created_at", "started_at", "ended_at", "exit", "run_id"):
-                if j.get(k) not in (None, "", []):
-                    print(f"  {k}: {' '.join(j[k]) if k == 'argv' else j[k]}")
+            for k in ("argv", "inputs", "reason", "created_at", "started_at", "ended_at", "exit", "run_id"):
+                if j.get(k) not in (None, "", [], {}):
+                    shown = " ".join(j[k]) if k == "argv" else json.dumps(j[k]) if k == "inputs" else j[k]
+                    print(f"  {k}: {shown}")
             _jsonout.value("job", j)
         else:
             js = _jobs.list_jobs(a.state)
