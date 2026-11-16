@@ -271,8 +271,9 @@ try:
         old.stderr[-200:],
     )
 
-    from evaluation_harness import _api, _cmdline, mcp_server, ops
+    from evaluation_harness import _api, mcp_server, ops
     from evaluation_harness.cli import COMMANDS
+    from evaluation_harness.ops import cli as ops_cli
 
     tools = set(mcp_server.tools_for(False))
     wired = []
@@ -283,12 +284,15 @@ try:
         tool = op.kind == "read" or op.name in mcp_server.AGENT_TOOLS
         if tool != (op.name in tools):
             wired.append(f"{op.name}: MCP lists")
-        if (not tool) != (op.name in mcp_server.NOT_TOOLS and op.name in _api.NOT_SERVED):
-            wired.append(f"{op.name}: NOT_TOOLS / NOT_SERVED")
-        if _cmdline.parser_of(op.name).prog != f"evh {op.name}":
-            wired.append(f"{op.name}: parser_of")
+        if (not tool) != (op.name in mcp_server.NOT_TOOLS):
+            wired.append(f"{op.name}: NOT_TOOLS")
+        if op.name in _api.NOT_SERVED:
+            wired.append(f"{op.name}: NOT_SERVED (an operation is served, at its own resource)")
+        if ops_cli.parser(op).prog != f"evh {op.name}":
+            wired.append(f"{op.name}: its parser")
     check(
-        "every operation is an evh command, a read (and an agent tool) an MCP tool, any other write no tool; parser_of makes its parser",
+        "every operation is an evh command and served, a read (and an agent tool) an MCP tool, any other write no tool, "
+        "its parser made from it",
         not wired,
         wired,
     )

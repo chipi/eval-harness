@@ -47,7 +47,7 @@ COMMANDS = {
     ),
     "jobs-start": (
         "jobs_start.py",
-        "start a command as a job: detached, with its locks, log and state (RFC-026)",
+        "start an operation as a job: detached, with its locks, log and state (RFC-026)",
     ),
     "jobs-status": ("jobs_status.py", "the jobs, or one job: its state, what it waits for, how it ended"),
     "jobs-logs": ("jobs_logs.py", "a job's log, from a byte on, or followed until it ends"),

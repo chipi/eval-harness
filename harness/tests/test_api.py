@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
-"""The API's registry and its read side (RFC-026 step 2).
+"""What the API serves and its read side (RFC-026 step 2, RFC-032).
 
     python tests/test_api.py
 
-The registry on its own: every command is served or named as not served; every path-typed argument of a served
-command has a kind; the options that load code or reach outside the project are never taken. Then a real `evh
+Every command is an operation or named as not served, with why; how a job takes each input (a value, an upload, an
+artifact, or not at all: what loads code or reaches outside the project). Each input that names a file says how a call
+carries it, and one whose description offers path.py:Class or @file has a pattern: test_op_declarations.py checks both
+for every operation. Then a real `evh
 catalog-serve` in a throwaway tutorial project ($0, offline): no token, a wrong one, another Host and a foreign Origin
 are refused (on a read resource of the model, GET /api/v1/goals); the token works as a bearer and as the cookie the
 session route sets; the operations that list datasets and arms and compare arms answer, through the API, exactly what
@@ -36,45 +38,26 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
 import _runstore  # noqa: E402
 from evaluation_harness import _format  # noqa: E402
 
-reg = _api.registry()
 check(
-    "every command is served or named as not served, with why",
-    set(reg) | set(_api.NOT_SERVED) == set(COMMANDS) and not set(reg) & set(_api.NOT_SERVED),
-    sorted(set(COMMANDS) - set(reg) - set(_api.NOT_SERVED)),
+    "every command is an operation or named as not served, with why (and none is both)",
+    set(COMMANDS) == set(ops.OPS) | set(_api.NOT_SERVED) and not set(ops.OPS) & set(_api.NOT_SERVED),
+    (
+        sorted(set(COMMANDS) - set(ops.OPS) - set(_api.NOT_SERVED)),
+        sorted(set(ops.OPS) & set(_api.NOT_SERVED)),
+    ),
 )
-check(
-    "every path-typed argument of a served command has a kind",
-    _api.unkinded_paths() == [],
-    _api.unkinded_paths(),
-)
-check(
-    "every path entry names a command that exists and an argument it has",
-    _api.unknown_path_entries() == [],
-    _api.unknown_path_entries(),
-)
-from evaluation_harness import _cmdline  # noqa: E402
-
-no_json = sorted(
-    c
-    for c in reg
-    if c not in _cmdline.JSON
-    and not any("--json" in a.option_strings for a in _cmdline.parser_of(c)._actions)
-)
-check("every command the API serves answers --json (RFC-026 step 7)", not no_json, no_json)
 from evaluation_harness.ops import OPS  # noqa: E402
 
 
 def takes(command: str, name: str) -> str | None:
-    """How a job of `command` takes the argument `name` (as the option is spelled): value, upload, artifact, or None
-    when it takes none (an operation's `tool_hidden`, or no such input; a command's registry)."""
-    op = OPS.get(command)
-    if op is not None and op.is_job():
-        key = name.replace("-", "_")
-        spec = op.inputs.get(key)
-        if spec is None or key in op.tool_hidden:
-            return None
-        return {"upload": "upload", "artifact": "artifact"}.get(spec.get("x-file"), "value")
-    return {a["name"]: a["kind"] for a in reg[command]["arguments"]}.get(name)
+    """How a job of `command` takes the input `name` (as the option is spelled): value, upload, artifact, or None
+    when it takes none (an operation's `tool_hidden`, or no such input)."""
+    op = OPS[command]
+    key = name.replace("-", "_")
+    spec = op.inputs.get(key)
+    if spec is None or key in op.tool_hidden:
+        return None
+    return {"upload": "upload", "artifact": "artifact"}.get(spec.get("x-file"), "value")
 
 
 check(
@@ -89,7 +72,7 @@ check(
     and takes("dataset-create", "fields") == "upload"
     and takes("exposure-check", "out") == "artifact"
     and OPS["run"].spends
-    and "leaderboard" not in reg  # a read is an operation: its own resource, not a job
+    and not OPS["leaderboard"].is_job()  # a read answers in its own resource, never as a job
     and OPS["run"].is_job(),
 )
 
@@ -252,15 +235,12 @@ try:
         check("a name that does not exist (a system id) is refused", ok)
 
         def refused(command: str, args: dict) -> bool:
-            """Whether a job of `command` with these arguments is refused before it exists: a command's by the
-            registry, an operation's by its schema (the pattern of an input)."""
+            """Whether a job of `command` with these arguments is refused before it exists, by the operation's schema
+            (the pattern of an input)."""
             try:
-                if (op := OPS.get(command)) is not None and op.is_job():
-                    _api.operation_inputs(
-                        op, {k.replace("-", "_"): v for k, v in args.items()}, "20261116T000000-000000"
-                    )
-                else:
-                    _api.checked_args(command, args)
+                _api.operation_inputs(
+                    OPS[command], {k.replace("-", "_"): v for k, v in args.items()}, "20261116T000000-000000"
+                )
             except _api.Refused:
                 return True
             return False
@@ -295,11 +275,6 @@ try:
             "a name is still taken (capture --importer jsonl, dataset-create --source folder)",
             not refused("capture", {"importer": "jsonl", "query": "{}", "capture": "c1"})
             and not refused("dataset-create", {"source": "folder", "dataset-id": "d1"}),
-        )
-        check(
-            "every served argument whose help offers path.py:Class or @file has a rule",
-            _api.unruled_values() == [],
-            _api.unruled_values(),
         )
     finally:
         srv.terminate()

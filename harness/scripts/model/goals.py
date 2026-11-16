@@ -96,7 +96,7 @@ def status(goal_id: str, data: Path | None = None) -> dict[str, Any]:
             }
         )
     running = [
-        {"job": j.get("id") or j.get("job_id"), "command": _jobs.name_of(j), "state": j.get("state")}
+        {"job": j.get("id") or j.get("job_id"), "operation": j["operation"], "state": j.get("state")}
         for j in _jobs.list_jobs()
         if str(j.get("state", "")).startswith(("running", "queued"))
         and any(k in keys for k, _ in j.get("locks") or [])

@@ -43,7 +43,7 @@
         <td>${esc(m.measure || "")} (${esc(m.direction || "")})</td><td>${esc(ds)}</td><td class="num">${rounds}</td><td>${next}</td></tr>`;
     });
     const running = jobs === undefined ? loading("the jobs") : jobs.error ? failed(jobs)
-      : jobs.jobs.length ? jobs.jobs.map((j) => `<div class="job"><span>${esc(j.operation || j.command)}</span><span class="status">${esc(j.state)}</span></div>`).join("")
+      : jobs.jobs.length ? jobs.jobs.map((j) => `<div class="job"><span>${esc(j.operation)}</span><span class="status">${esc(j.state)}</span></div>`).join("")
       : '<p class="muted" style="margin:0">Nothing is running.</p>';
     return `<div class="screen wide">${head}
       <div class="part"><div class="parthead"><h2>Running now</h2></div><div class="body">${running}</div></div>
@@ -68,7 +68,7 @@
       <div class="answer"><div class="kicker">next step</div><p>${esc(st.next.what)}</p><p class="source"><code>${esc(st.next.command)}</code></p></div>
       <div class="tablewrap" style="margin-top:18px"><table><thead><tr><th>dataset</th><th>role</th><th>items</th><th>reference</th><th class="num">runs</th><th>baseline</th></tr></thead><tbody>${ds}</tbody></table></div>
       ${rounds ? `<h2 style="margin-top:22px">Rounds</h2><ul>${rounds}</ul>` : ""}
-      ${st.running.length ? `<h2 style="margin-top:22px">Running now</h2><ul>${st.running.map((j) => `<li>${esc(j.command)} · ${esc(j.state)}</li>`).join("")}</ul>` : ""}
+      ${st.running.length ? `<h2 style="margin-top:22px">Running now</h2><ul>${st.running.map((j) => `<li>${esc(j.operation)} · ${esc(j.state)}</li>`).join("")}</ul>` : ""}
       ${WB.cmd(`evh goal-status ${id}`)}
       <div class="actions"><a class="btn" href="#home">Back to your goals</a></div></div>`;
   }

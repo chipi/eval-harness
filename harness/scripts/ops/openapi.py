@@ -295,9 +295,8 @@ def _job_paths() -> dict[str, Any]:
             },
             "post": {
                 "operationId": "jobs-start",
-                "summary": "start a job: an operation and its inputs (or, for a command that is not yet an operation, "
-                "the command and its arguments); checked, written, started; refused before a job exists when it cannot "
-                "run",
+                "summary": "start a job: an operation and its inputs; checked, written, started; refused before a job "
+                "exists when it cannot run",
                 "tags": ["jobs"],
                 "parameters": [_data_header()],
                 "requestBody": _json_body(
@@ -316,32 +315,19 @@ def _job_paths() -> dict[str, Any]:
                                 "base64 where the operation takes an upload",
                                 "additionalProperties": True,
                             },
-                            "command": {
-                                "type": "string",
-                                "description": "a command that is not yet an operation (a work command)",
-                            },
-                            "args": {
-                                "type": "object",
-                                "description": "that command's arguments by name, without the dashes; a file as "
-                                "base64 where the command takes an upload",
-                                "additionalProperties": True,
-                            },
                             "by": {
                                 "type": "string",
                                 "description": "who started it, person:NAME or agent:NAME",
                             },
                             "for": {"type": "string", "description": "the person an agent acts for"},
-                            "reason": {
-                                "type": "string",
-                                "description": "why, for a command that is not yet an operation",
-                            },
                             "max_cost_usd": {
                                 "type": "number",
                                 "exclusiveMinimum": 0,
                                 "description": "the most a spending job may spend; required for one",
                             },
                         },
-                        "oneOf": [{"required": ["operation"]}, {"required": ["command"]}],
+                        "required": ["operation"],
+                        "additionalProperties": False,
                     }
                 ),
                 "responses": {
@@ -458,18 +444,25 @@ def _other_paths() -> dict[str, Any]:
         f"{PREFIX}/estimate": {
             "post": {
                 "operationId": "jobs-estimate",
-                "summary": "a work command's own --dry-run, run now (it calls nothing and writes nothing): what the "
-                "job would do and, for a command that spends, its cost",
+                "summary": "a job operation's own dry run, run now (it calls nothing and writes nothing): what the "
+                "job would do and, for an operation that spends, its cost",
                 "tags": ["jobs"],
                 "parameters": [_data_header()],
                 "requestBody": _json_body(
                     {
                         "type": "object",
                         "properties": {
-                            "command": {"type": "string", "description": "the work command"},
-                            "args": {"type": "object", "additionalProperties": True},
+                            "operation": {
+                                "type": "string",
+                                "enum": sorted(
+                                    op.name for op in OPS.values() if op.is_job() and "dry_run" in op.inputs
+                                ),
+                                "description": "the operation (one with a dry_run input)",
+                            },
+                            "inputs": {"type": "object", "additionalProperties": True},
                         },
-                        "required": ["command"],
+                        "required": ["operation"],
+                        "additionalProperties": False,
                     }
                 ),
                 "responses": {
@@ -480,12 +473,16 @@ def _other_paths() -> dict[str, Any]:
                                 "schema": {
                                     "type": "object",
                                     "properties": {
-                                        "command": {"type": "string"},
+                                        "operation": {"type": "string"},
                                         "version": {"type": "string"},
                                         "exit": {"type": "integer"},
-                                        "text": {"type": "string"},
+                                        "text": {"type": "string", "description": "what the dry run printed"},
+                                        "result": {
+                                            "type": ["object", "null"],
+                                            "description": "its answer as data (the operation's --json result)",
+                                        },
                                     },
-                                    "required": ["command", "version", "exit", "text"],
+                                    "required": ["operation", "version", "exit", "text", "result"],
                                 }
                             }
                         },
@@ -583,13 +580,12 @@ def document() -> dict[str, Any]:
                 },
                 "Job": {
                     "type": "object",
-                    "description": "a job (RFC-026): its id, the operation and its inputs (a command and its argv, for "
-                    "a command that is not yet an operation), state, who started it, its locks and how it ended",
+                    "description": "a job (RFC-026): its id, the operation and its inputs, state, who started it, its "
+                    "locks and how it ended",
                     "properties": {
                         "id": {"type": "string"},
                         "operation": {"type": "string"},
                         "inputs": {"type": "object"},
-                        "command": {"type": "string"},
                         "state": {"type": "string"},
                         "progress": {
                             "type": ["object", "null"],
@@ -603,7 +599,7 @@ def document() -> dict[str, Any]:
                         },
                         "spent_usd": {"type": "number", "description": "what it has spent so far"},
                     },
-                    "required": ["id", "state"],
+                    "required": ["id", "operation", "inputs", "state"],
                     "additionalProperties": True,
                 },
             },

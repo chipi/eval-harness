@@ -277,37 +277,18 @@ try:
             except urllib.error.HTTPError as exc:
                 return exc.code, json.loads(exc.read() or b"{}")
 
-        st, est = call(
-            "POST",
-            "/api/v1/estimate",
-            {
-                "command": "run",
-                "args": {
-                    "system": "rj_v1",
-                    "dataset": "tickets_v1",
-                    "goal": "tickets_summary",
-                    "round": "r3",
-                },
-            },
-        )
-        st2, none = call(
-            "POST",
-            "/api/v1/estimate",
-            {
-                "command": "arm-smoke",
-                "args": {
-                    "system": "rj_v1",
-                    "dataset": "tickets_v1",
-                    "goal": "tickets_summary",
-                    "round": "r3",
-                },
-            },
-        )
+        round_inputs = {"system": "rj_v1", "dataset": "tickets_v1", "goal": "tickets_summary", "round": "r3"}
+        st, est = call("POST", "/api/v1/estimate", {"operation": "run", "inputs": round_inputs})
+        st2, none = call("POST", "/api/v1/estimate", {"operation": "arm-smoke", "inputs": round_inputs})
+        st3, old = call("POST", "/api/v1/estimate", {"command": "run", "args": round_inputs})
         check(
-            "the estimate: run's --dry-run, what it would call and its cap; a command with no --dry-run is 404",
-            st == 200 and est.get("exit") == 0 and "cap" in est.get("text", "") and st2 == 404
-            and "no --dry-run" in none.get("error", ""),
-            (st, str(est)[:300], st2, none),
+            "the estimate: run's dry run, what it would call and its cap, its answer as data too; an operation with no "
+            "dry run is 404; a command and its args is refused (an estimate is an operation and its inputs)",
+            st == 200 and est.get("exit") == 0 and "cap" in est.get("text", "") and est.get("operation") == "run"
+            and isinstance(est.get("result"), dict)
+            and st2 == 404 and "no dry run" in none.get("error", "")
+            and st3 == 400 and "an estimate is {operation, inputs}" in old.get("error", ""),
+            (st, str(est)[:300], st2, none, st3, old),
         )  # fmt: skip
         st, j = call("POST", "/api/v1/jobs", {"operation": "run", "inputs": {"system": "rj_v1", "dataset": "tickets_v1", "goal": "tickets_summary", "round": "r3"}, "by": "person:ana",
                                               "max_cost_usd": 0.05})  # fmt: skip

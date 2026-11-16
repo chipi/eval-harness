@@ -214,7 +214,7 @@ def say_status(r: dict[str, Any]) -> str:
             f"{rd.get('question') or ''}"
         )
     for j in r["running"]:
-        lines.append(f"  running     {j['command']} ({j['state']}), job {j['job']}")
+        lines.append(f"  running     {j['operation']} ({j['state']}), job {j['job']}")
     lines.append(f"  next        {r['next']['what']}: {r['next']['command']}")
     return "\n".join(lines)
 

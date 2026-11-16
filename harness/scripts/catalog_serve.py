@@ -56,7 +56,6 @@ import errno
 import json
 import re
 import sys
-import tempfile
 import threading
 import time
 from collections import OrderedDict, defaultdict
@@ -516,68 +515,38 @@ WORKBENCH_TYPES = {
 API_MAX_JOB_BODY = 70 * 1024 * 1024  # 50 MB of files, base64 (RFC-026: owner, 2026-11-08)
 
 
-def _operation_estimate(op, inputs: Any) -> tuple[int, dict]:
-    """The estimate of an operation that has a `dry_run` input: its inputs checked as a job's are, then the command run
-    with `dry_run` as a short child that reads them from a file (it calls nothing and writes nothing), and what it
-    printed."""
+def api_estimate(body: dict) -> tuple[int, dict]:
+    """POST /api/v1/estimate, `{operation, inputs}`: a job operation's own dry run, run now as a read (it calls nothing
+    and writes nothing). Its inputs are checked as a job's are, the operation run as a short child that reads them from
+    a file, and what it printed and answered: what the job would do and, for one that spends, its cost (RFC-026 step 5)."""
     import json as _json  # noqa: PLC0415
 
-    from evaluation_harness import _api, _jobs  # noqa: PLC0415
-    from evaluation_harness import _cmdline as ms  # noqa: PLC0415
+    from evaluation_harness import _api, _cmdline, _jobs  # noqa: PLC0415
     from evaluation_harness._version import __version__  # noqa: PLC0415
 
-    if "dry_run" not in op.inputs:
-        return 404, {
-            "error": f"{op.name} has no --dry-run: there is nothing to estimate (a spending job shows its cap)"
-        }
+    extra = sorted(set(body) - {"operation", "inputs"})
     try:
-        checked = _api.operation_inputs(op, {**(inputs or {}), "dry_run": True}, _jobs.new_id())
-    except _api.Refused as exc:
-        return exc.status, {"error": str(exc)}
-    with tempfile.NamedTemporaryFile("w", suffix=".json", encoding="utf-8") as f:  # gone when the block ends
-        f.write(_json.dumps(checked))
-        f.flush()
-        code, out, err = ms.run_command(ROOT, op.name, ["--inputs-file", f.name])
-    return (200 if code == 0 else 400), {
-        "command": op.name,
-        "version": __version__,
-        "exit": code,
-        "text": out + err,
-    }
-
-
-def api_estimate(command: str, arguments: Any) -> tuple[int, dict]:
-    """POST /api/v1/estimate: a job command's own --dry-run, run now as a read (it calls nothing and writes nothing),
-    and what it printed: what the job would do and, for a command that spends, cost (RFC-026 step 5)."""
-    from evaluation_harness import _api, ops  # noqa: PLC0415
-    from evaluation_harness import _cmdline as ms  # noqa: PLC0415
-
-    if (op := ops.get(command)) is not None and op.is_job():
-        return _operation_estimate(op, arguments)
-    try:
-        reg = _api.registry().get(command)
-        if reg is None or reg["served"] != "job":
-            raise _api.Refused(f"{command}: not a job command the API serves", 404)
-        parser = ms.parser_of(command)
-        if not any("--dry-run" in a.option_strings for a in parser._actions):
+        if extra:
+            raise _api.Refused(f"an estimate is {{operation, inputs}}, not {', '.join(extra)}")
+        op = _api.job_operation(str(body.get("operation") or ""))
+        if "dry_run" not in op.inputs:
             raise _api.Refused(
-                f"{command} has no --dry-run: there is nothing to estimate (a spending job shows its cap)",
-                404,
+                f"{op.name} has no dry run: there is nothing to estimate (a spending job shows its cap)", 404
             )
-        checked = _api.checked_args(command, {k: v for k, v in (arguments or {}).items() if k != "dry-run"})
-        argv = [*ms.argv_of(parser, checked), "--dry-run"]
+        checked = _api.operation_inputs(op, {**(body.get("inputs") or {}), "dry_run": True}, _jobs.new_id())
     except _api.Refused as exc:
         return exc.status, {"error": str(exc)}
-    except (ValueError, AttributeError) as exc:
-        return 400, {"error": str(exc)}
-    code, out, err = ms.run_command(ROOT, command, argv)
-    from evaluation_harness._version import __version__  # noqa: PLC0415
-
+    code, out, err = _cmdline.run_operation(ROOT, op.name, checked)
+    try:
+        result = _json.loads(out).get("result") if out.strip() else None
+    except ValueError:
+        result = None
     return (200 if code == 0 else 400), {
-        "command": command,
+        "operation": op.name,
         "version": __version__,
         "exit": code,
-        "text": out + err,
+        "text": err,
+        "result": result,
     }
 
 
@@ -750,9 +719,7 @@ def _start_rebuild(why: str) -> None:
 
     inputs = {"out": str(FRESH["build_dir"]), **({"adapter": FRESH["adapter"]} if FRESH["adapter"] else {})}
     try:
-        job_id = _jobs.create_operation(
-            "catalog", inputs, None, op_locks.locks_for(ops.OPS["catalog"], inputs)
-        )
+        job_id = _jobs.create("catalog", inputs, None, op_locks.locks_for(ops.OPS["catalog"], inputs))
         _jobs.start(job_id)
     except Exception as exc:  # noqa: BLE001 -- a project that cannot start a job (read-only, no space) is said, not fatal
         _rebuild_failed(None, f"the job could not be started: {type(exc).__name__}: {exc}")
@@ -845,9 +812,8 @@ def data_changed(why: str) -> None:
 def watch_write_job(job: dict) -> None:
     """A job this server started (any but the rebuild itself): when it ends, look at the data once and rebuild if it
     wrote."""
-    from evaluation_harness import _jobs  # noqa: PLC0415
 
-    name = _jobs.name_of(job)
+    name = job["operation"]
     if not FRESH["on"] or name == "catalog":
         return
     FRESH["jobs"].add(job["id"])
@@ -1096,11 +1062,13 @@ class Handler(SimpleHTTPRequestHandler):
                 body = json.loads(self.rfile.read(n) or b"{}") if n else {}
             except ValueError:
                 return self._json(
-                    400, {"error": 'the body is a JSON object: {"command": ..., "args": {...}}'}, cache=False
+                    400,
+                    {"error": 'the body is a JSON object: {"operation": ..., "inputs": {...}}'},
+                    cache=False,
                 )
             if not isinstance(body, dict):
                 return self._json(400, {"error": "the body is a JSON object"}, cache=False)
-            code, answer_body = api_estimate(str(body.get("command") or ""), body.get("args", {}))
+            code, answer_body = api_estimate(body)
             return self._json(code, answer_body, cache=False)
         if self._model_route(method, url):
             return None
@@ -1214,26 +1182,29 @@ class Handler(SimpleHTTPRequestHandler):
         from evaluation_harness import _api  # noqa: PLC0415
 
         try:
-            j = _api.start_job(name, inputs, by, None, cap, for_)
+            j = _api.start_operation(_api.job_operation(name), inputs, by, cap, for_)
         except _api.Refused as exc:
             return self._json(exc.status, {"error": str(exc)}, cache=False)
         watch_write_job(j)
         return self._json(202, j, cache=False)
 
     def _start_operation_reply(self, body: dict) -> None:
-        """POST /api/v1/jobs of an operation: `{operation, inputs, by, for, max_cost_usd}` and nothing else."""
-        from evaluation_harness import _api, ops  # noqa: PLC0415
+        """POST /api/v1/jobs: `{operation, inputs, by, for, max_cost_usd}` and nothing else."""
+        from evaluation_harness import _api  # noqa: PLC0415
 
         extra = sorted(set(body) - {"operation", "inputs", "by", "for", "max_cost_usd"})
-        if extra:
+        if extra or "operation" not in body:
             raise _api.Refused(
-                f"a job of an operation is {{operation, inputs, by, for, max_cost_usd}}, not {', '.join(extra)}"
+                "a job is {operation, inputs, by, for, max_cost_usd}"
+                + (f", not {', '.join(extra)}" if extra else ": name the operation")
+                + ("; a decision's reason is one of its inputs" if "reason" in extra else "")
             )
-        name = str(body["operation"])
-        if (op := ops.get(name)) is None or not op.is_job():
-            raise _api.Refused(f"{name}: not an operation that runs as a job", 404)
         return self._start_job_reply(
-            name, body.get("inputs", {}), body.get("by"), body.get("for"), body.get("max_cost_usd")
+            str(body["operation"]),
+            body.get("inputs", {}),
+            body.get("by"),
+            body.get("for"),
+            body.get("max_cost_usd"),
         )
 
     def _jobs_route(self, method: str, url) -> None:
@@ -1293,20 +1264,7 @@ class Handler(SimpleHTTPRequestHandler):
                     return self._json(400, {"error": "the body is a JSON object"}, cache=False)
                 if not isinstance(body, dict):
                     return self._json(400, {"error": "the body is a JSON object"}, cache=False)
-                if "operation" in body:
-                    return self._start_operation_reply(body)
-                from evaluation_harness import ops  # noqa: PLC0415
-
-                if (op := ops.get(str(body.get("command") or ""))) is not None and op.is_job():
-                    raise _api.Refused(
-                        f"{op.name} is an operation: a job of it is {{operation, inputs, by, for, max_cost_usd}}"
-                    )
-                j = _api.start_job(
-                    str(body.get("command") or ""), body.get("args", {}), body.get("by"), body.get("reason"),
-                    body.get("max_cost_usd"), body.get("for"),
-                )  # fmt: skip
-                watch_write_job(j)
-                return self._json(202, j, cache=False)
+                return self._start_operation_reply(body)
             if len(parts) == 2 and parts[1] == "stop":
                 return self._json(200, _jobs.stop(parts[0]), cache=False)
             if len(parts) == 2 and parts[1] == "resume":

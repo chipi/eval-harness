@@ -42,15 +42,16 @@ from evaluation_harness._cmdline import (
     TIMEOUT_S,
     kill_group,
     public_error,
-    run_command,
+    run_operation,
 )
 
 HERE = Path(__file__).resolve().parent
 MAX_OUT = 1_000_000
 
 #: Tools that write, for the agent sampler of a study alone (owner, 2026-11-09, RFC-029): offered by a local server
-#: only, never a public one, and named as not read-only. They are commands, run as a process (the jobs: RFC-032 step 9,
-#: P3). Every other write is the command line's or a job's.
+#: only, never a public one, and named as not read-only. They are work operations, each run as its own process
+#: (_cmdline.run_operation), as a job's is: never its body in the server's. Every other write is the command line's or a
+#: job's.
 AGENT_TOOLS = ("study-ask", "study-tell")
 
 NOT_TOOLS = {
@@ -245,27 +246,6 @@ def check_agent_arguments(op: Any, arguments: dict) -> None:
         jsonschema.validate(arguments, op.job_schema())
     except jsonschema.ValidationError as exc:
         raise ValueError(input_problem(exc)) from None
-
-
-def run_agent_tool(
-    project: Path, name: str, arguments: dict, timeout: float, started: list[subprocess.Popen]
-) -> tuple[int, str, str]:
-    """An agent tool's call: its inputs in a file under the project's .build/mcp-calls (where a job's inputs.json is
-    read from: the command reads it through the store, which serves the project's paths), `evh <operation> --json
-    --inputs-file F` in the project, in its own process group with a timeout that kills the group (a work operation runs
-    its body as a job's process does, not in the server's); the file removed after."""
-    import uuid  # noqa: PLC0415
-
-    from evaluation_harness import _common  # noqa: PLC0415
-
-    calls = Path(project) / ".build" / "mcp-calls"
-    calls.mkdir(parents=True, exist_ok=True)
-    path = calls / f"{uuid.uuid4().hex}.json"
-    _common.write_text_atomic(path, json.dumps(arguments))
-    try:
-        return run_command(project, name, ["--inputs-file", str(path)], timeout, False, started)
-    finally:
-        path.unlink(missing_ok=True)
 
 
 def run_op(op: Any, arguments: dict, public: bool) -> dict:
@@ -565,7 +545,7 @@ def build_server(
                     """The call's work, in its own thread: the slot and the caller's count are given back when it ends."""
                     try:
                         if name in agent:
-                            result["value"] = run_agent_tool(project, name, arguments, timeout, started)
+                            result["value"] = run_operation(project, name, arguments, timeout, started)
                         else:
                             result["value"] = run_op(ops[name], arguments, public)
                     except Exception as exc:  # noqa: BLE001 - handed to the call waiting for it, raised there

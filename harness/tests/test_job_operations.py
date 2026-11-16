@@ -174,8 +174,8 @@ try:
         ok = {"system": "tickets_lead1_v1"}
 
         def start(name, inputs, **kw):
-            kw = {"by": by, "reason": None, "max_cost_usd": None, "for_": None} | kw
-            return _api.start_job(name, inputs, **kw)
+            kw = {"by": by, "max_cost_usd": None, "for_": None} | kw
+            return _api.start_operation(_api.job_operation(name), inputs, **kw)
 
         check(
             "a spending operation without max_cost_usd, with a zero one, or with a boolean one is refused before a job exists",
@@ -198,13 +198,6 @@ try:
                 (r := refused(start, "t-plain", {}, by=who, for_=whom)) and r[0] == 400
                 for who, whom in ((None, None), ("", None), ("agent:bot", None), ("person:ana", "person:bea"))
             ),
-        )
-        check(
-            "a reason is no field of a job (it is an input): refused, saying which input it is for a decision",
-            (r := refused(start, "t-decide", {"study": "g/s", "reason": "x y z"}, reason="why")) is not None
-            and "reason is not a field of a job" in r[1]
-            and "the reason input" in r[1],
-            r,
         )
         for what, name, inputs, status, needle in (
             ("an input the operation does not take", "t-plain", {"nope": 1}, 400, "nope"),
@@ -527,12 +520,14 @@ try:
     )
     st_f, e_f = call("POST", "/api/v1/jobs", {"operation": "goal-list", "inputs": {}, "by": "person:ana"})
     check(
-        "POST /api/v1/jobs refuses: the old shape for an operation (400), a name that is not a job (404: an unknown one, "
-        "nor a read), a field beyond {operation, inputs, by, for, max_cost_usd}, no `by`, a missing input",
+        "POST /api/v1/jobs refuses: a command and its args (400: a job is an operation and its inputs), a name that is "
+        "not a job (404: an unknown one, nor a read), a field beyond {operation, inputs, by, for, max_cost_usd} (a "
+        "reason: one of a decision's inputs), no `by`, a missing input",
         (st_a, st_b, st_c, st_d, st_e, st_f) == (400, 404, 400, 400, 400, 404)
-        and "is an operation" in e_a["error"]
+        and "a job is {operation, inputs" in e_a["error"]
         and "not an operation that runs as a job" in e_b["error"]
-        and "reason" in e_c["error"]
+        and "not a job: a read" in e_f["error"]
+        and "a decision's reason is one of its inputs" in e_c["error"]
         and "is a required property" in e_e["error"],
         (st_a, st_b, st_c, st_d, st_e, st_f, e_a, e_c),
     )
@@ -570,9 +565,10 @@ try:
     r2 = evh("jobs-start", "round-close", "--arg", "goal=g", "--reason", "x", "--by", "person:cara")
     r3 = evh("jobs-start", "round-close", "--arg", "goal=g", "--by", "person:cara")
     check(
-        "jobs-start refuses what the API refuses: --reason (no field of a job), an input missing",
+        "jobs-start refuses what the API refuses: --reason (it has none: a decision's reason is an input), an input "
+        "missing",
         r2.returncode != 0
-        and "reason is not a field of a job" in r2.stderr
+        and "unrecognized arguments: --reason" in r2.stderr
         and r3.returncode != 0
         and "is a required property" in r3.stderr,
         (r2.stderr[-200:], r3.stderr[-200:]),

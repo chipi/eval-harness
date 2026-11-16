@@ -4,10 +4,11 @@ It holds the job's supervisor.lock for its life, takes the job's locks (waiting,
 one, and saying which), starts the command in a process group of its own with the lock descriptors passed to it (so
 the command holds its locks for as long as it lives, whatever happens to the supervisor), writes `running` with that
 group, waits, and writes how it ended: `succeeded`, `failed` (the exit code and the refusal kind), or `cancelled` when
-it was stopped. The command's envelope, when it prints one, goes to result.json.
+it was stopped. The command's envelope goes to result.json.
 
-The command of a job of an operation is `cli.py <operation> --json --inputs-file <job folder>/inputs.json` (P3): the
-command line's own prelude, and its log live; the job of a command not yet an operation is that command and its argv.
+The command of a job is `cli.py <operation> --json --inputs-file <job folder>/inputs.json` (RFC-032 P3): the command
+line's own prelude (.env, EVAL_VIA_EVH, the p-cache, the exit codes), its log live, its inputs read from the file the job
+was given: no command line to build.
 """
 
 from __future__ import annotations
@@ -50,18 +51,7 @@ def main(job_id: str) -> int:
         _jobs._write_json(d / "state.json", {**state, "state": "cancelled", "ended_at": _common.now()})
         return 0
     cli = str(Path(__file__).resolve().parent / "cli.py")
-    if "operation" in job:
-        # An operation runs through the command line's own prelude (.env, EVAL_VIA_EVH, the p-cache, the exit codes),
-        # its inputs read from the file the job was given: no command line to build.
-        has_json = True
-        cmd = [sys.executable, cli, job["operation"], "--json", "--inputs-file", str(d / "inputs.json")]
-    else:
-        from evaluation_harness._cmdline import parser_of  # noqa: PLC0415
-
-        command = job["command"]
-        has_json = any("--json" in a.option_strings for a in parser_of(command)._actions)
-        cmd = [sys.executable, cli, command]
-        cmd += [*(["--json"] if has_json else []), *job["argv"]]
+    cmd = [sys.executable, cli, job["operation"], "--json", "--inputs-file", str(d / "inputs.json")]
     # Who acted comes from the job alone (RFC-027): the server's or terminal's own EVH_ACTOR / EVH_FOR never reach it,
     # or every agent job would be recorded for whoever the server ran as.
     inherited = {k: v for k, v in os.environ.items() if k not in ("EVH_ACTOR", "EVH_FOR")}
@@ -82,7 +72,7 @@ def main(job_id: str) -> int:
             cmd,
             cwd=_common.project_root(),
             stdin=subprocess.DEVNULL,
-            stdout=out if has_json else log,
+            stdout=out,
             stderr=log,
             start_new_session=True,
             pass_fds=tuple(fds),
@@ -93,7 +83,7 @@ def main(job_id: str) -> int:
         state.update(state="running", pgid=p.pid, waiting_for=None, started_at=_common.now())
         _jobs._write_json(d / "state.json", state)
         code = p.wait()
-    text = (d / "stdout").read_text(encoding="utf-8", errors="replace") if has_json else ""
+    text = (d / "stdout").read_text(encoding="utf-8", errors="replace")
     if text.strip():
         try:
             _jobs._write_json(d / "result.json", json.loads(text))

@@ -66,53 +66,7 @@ def _read_json(p: Path) -> dict:
     return doc if isinstance(doc, dict) else {}
 
 
-# ── what each job locks ────────────────────────────────────────────────────────────────────────────────────────────
-
-
-def _system(system_id: str | None) -> dict:
-    """A system's record (its model), {} when there is none or it cannot be read."""
-    if not system_id:
-        return {}
-    from evaluation_harness.model.entity import Problem  # noqa: PLC0415
-    from evaluation_harness.model.systems import SYSTEM  # noqa: PLC0415
-
-    try:
-        return SYSTEM.get(system_id)
-    except Problem:
-        return {}
-
-
-def _run_meta(run_id: str | None) -> dict:
-    from evaluation_harness.model import runs as model_runs  # noqa: PLC0415
-
-    if not run_id:
-        return {}
-    return model_runs.run(run_id) or {}
-
-
-def _first(v: Any) -> Any:
-    return v[0] if isinstance(v, list) and v else v
-
-
-#: command -> its locks from the call's arguments (names as the API takes them). `project` shared is added to every
-#: job; a migration takes it exclusive. A job command in neither this nor PROJECT_ONLY fails a test.
-LOCK_RULES: dict[str, Callable[[dict], list[tuple[str, bool]]]] = {}
-#: Migrations: the whole project, exclusive (every other job holds it shared, so each waits for the other).
-MIGRATIONS: frozenset[str] = frozenset()
-#: Job commands that write nothing another job writes (reports, checks, estimates): `project` shared only.
-PROJECT_ONLY: frozenset[str] = frozenset()
-
-
-def locks_for(command: str, args: dict) -> list[tuple[str, bool]]:
-    """(key, exclusive) for a job of `command` with these (checked) arguments, `project` included, sorted by key."""
-    if command in MIGRATIONS:
-        return [("project", True)]
-    rule = LOCK_RULES.get(command)
-    got = rule(args) if rule else []
-    out: dict[str, bool] = {"project": False}
-    for k, ex in got:
-        out[k] = out.get(k, False) or ex
-    return sorted(out.items())
+# ── the locks ──────────────────────────────────────────────────────────────────────────────────────────────────────
 
 
 def _lock_file(key: str) -> Path:
@@ -226,42 +180,6 @@ def spent(job_id: str) -> float:
 
 
 def create(
-    command: str,
-    argv: list[str],
-    by: str | None,
-    reason: str | None,
-    locks: list[tuple[str, bool]],
-    env: dict[str, str] | None = None,
-    run_id: str | None = None,
-    job_id: str | None = None,
-) -> str:
-    """Write a job's record (queued) and return its id; `start` runs it. `job_id`: one made beforehand (new_id),
-    when the call's arguments name a file in the job's own folder (an artifact)."""
-    from evaluation_harness._version import __version__  # noqa: PLC0415
-
-    job_id = job_id or new_id()
-    d = job_dir(job_id)
-    d.mkdir(parents=True, exist_ok=True)
-    _write_json(
-        d / "job.json",
-        {
-            "id": job_id,
-            "command": command,
-            "argv": argv,
-            "by": by,
-            "reason": reason,
-            "locks": [[k, ex] for k, ex in locks],
-            "env": env or {},
-            "run_id": run_id,
-            "created_at": _common.now(),
-            "harness": __version__,
-        },
-    )
-    _write_json(d / "state.json", {"state": "queued", "waiting_for": None})
-    return job_id
-
-
-def create_operation(
     operation: str,
     inputs: dict[str, Any],
     by: str | None,
@@ -295,12 +213,6 @@ def create_operation(
     )
     _write_json(d / "state.json", {"state": "queued", "waiting_for": None})
     return job_id
-
-
-def name_of(job: dict[str, Any]) -> str:
-    """The operation or the command a job runs: a record of an operation names `operation`, a command's names `command`
-    (the two shapes live together until every command is an operation)."""
-    return str(job.get("operation") or job.get("command") or "")
 
 
 def start(job_id: str) -> int:

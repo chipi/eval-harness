@@ -1,30 +1,22 @@
-"""The API's registry (RFC-026): every command it serves, made from the command's own argument parser.
+"""The API's jobs (RFC-026, RFC-032 P3): a job runs a decision or a work operation, named with its inputs, as a detached
+process. Each input is checked against the operation's schema before a job exists, and a file is one of two kinds:
 
-A command is served as a `job` (everything that works on the project and is not an operation of the model: a detached
-process, RFC-026 step 3), or not at all (the operations, each its own resource; the servers, the commands that set up a
-project or check the installation, `capture-scrub`, which runs a program it is given). Every argument the registry
-keeps has a kind:
-
-  value      typed as the parser types it (choices, numbers, true/false)
   upload     a file the call carries (at most 50 MB), kept under .build/uploads/<sha256> for the job
   artifact   a file the job writes under .build/jobs/<id>/, fetched from there
 
-and an argument with none (a path the command would read or write on the server: `--source-dir`,
-`--out` folders) is never taken. A path-typed argument the table below does not name fails a test, so a command that
-gains one cannot be served by accident.
+A path of the server's is never an input (an operation names such an input `tool_hidden`: only the command line takes it).
+The commands that are not operations (the servers, the setup commands, the terminal's jobs) are not served, each with why.
 """
 
 from __future__ import annotations
 
-import argparse
-import functools
-import re
 from pathlib import Path
 from typing import Any
 
 from evaluation_harness import _common
 
-#: Not served, and why (a test fails on a command in neither this nor the registry).
+#: The commands that are not operations, none served, and why (a test fails on a command in neither this nor the
+#: operations).
 NOT_SERVED = {
     "catalog-serve": "it is the server",
     "mcp": "the agents' server",
@@ -40,162 +32,7 @@ NOT_SERVED = {
         "the terminal's jobs; the API has its own job routes",
     ),
 }
-
-
-def _model_ops() -> dict[str, str]:
-    from evaluation_harness import ops  # noqa: PLC0415
-
-    return dict.fromkeys(ops.OPS, "served as the model's resource (RFC-032)")
-
-
-NOT_SERVED.update(_model_ops())
-#: The commands that call models and spend: a job of one must carry max_cost_usd (step 5).
-SPENDS: frozenset[str] = frozenset()
-#: The arguments that name a system (RFC-032): each refused before a job is made when no system has that id.
-SYSTEM_ARGS: set[tuple[str, str]] = set()
-#: Every path-typed argument a served command has, and its kind. Absent from this table: never taken.
-UPLOAD = "upload"
-ARTIFACT = "artifact"
-PATH_KINDS: dict[tuple[str, str], str] = {
-    ("label-mutants", "--map"): UPLOAD,
-}
-#: Path-typed arguments never taken, each a decision (RFC-026 revision 2): an output folder,
-#: a file of the server's, a page's own assets. A path-typed argument in neither table fails a test.
-NEVER_PATHS = {
-    ("label-mutants", "--mutants"),  # a Python file it runs: the project's own, on its machine
-    ("pair-test", "--items"),
-    ("family-test", "--items"),
-}
-#: Options never taken from any command: they load code or reach outside the project.
-NEVER = {"--adapter", "--help", "--json", "--source-dir", "--data-dir"}
-#: Text arguments that the command line also reads as a code file (`path.py:Class`) or a file to read (`@file`):
-#: the API takes their other form only. A served argument whose help offers either and has no rule fails a test.
-VALUE_RULES: dict[tuple[str, str], tuple[str, Any]] = {}
-
-
-def unruled_values() -> list[str]:
-    """Every served value argument whose help offers `path.py:Class` or `@file` with no VALUE_RULES entry: empty, or a
-    test fails."""
-    from evaluation_harness._cmdline import parser_of  # noqa: PLC0415
-    from evaluation_harness.cli import COMMANDS  # noqa: PLC0415
-
-    out = []
-    for c in sorted(COMMANDS):
-        if served_as(c) is None:
-            continue
-        for a in parser_of(c)._actions:
-            if (
-                kind_of(c, a) == "value"
-                and re.search(r"\.py:|@file", a.help or "")
-                and (c, _key(a)) not in VALUE_RULES
-            ):
-                out.append(f"{c} {_key(a)}")
-    return out
-
-
-def _name(a: argparse.Action) -> str:
-    longest = max(a.option_strings, key=len) if a.option_strings else a.dest
-    return longest.lstrip("-")
-
-
-def _key(a: argparse.Action) -> str:
-    """The argument as PATH_KINDS names it: its longest option string, or a positional's dest."""
-    return max(a.option_strings, key=len) if a.option_strings else a.dest
-
-
-def _is_path(a: argparse.Action) -> bool:
-    return a.type is Path
-
-
-def served_as(command: str) -> str | None:
-    """`job`, or None (not served here: an operation is its own resource, and the servers and setup commands are not served)."""
-    return None if command in NOT_SERVED else "job"
-
-
-def kind_of(command: str, a: argparse.Action) -> str | None:
-    """An argument's kind, or None when the API never takes it."""
-    from evaluation_harness._cmdline import TOOL_HIDDEN  # noqa: PLC0415
-
-    key = _key(a)
-    if set(a.option_strings) & NEVER or key in TOOL_HIDDEN.get(command, set()):
-        return None
-    if _is_path(a):
-        return PATH_KINDS.get((command, key))
-    return "value"
-
-
-def _argument(command: str, a: argparse.Action, kind: str) -> dict[str, Any]:
-    flag = isinstance(a, (argparse._StoreTrueAction, argparse._StoreFalseAction))
-    t = "boolean" if flag else {int: "integer", float: "number"}.get(a.type, "string")  # type: ignore[call-overload]
-    help_ = a.help if a.help and a.help != argparse.SUPPRESS else ""
-    if "%(default)" in help_:
-        help_ = help_ % {"default": a.default}
-    return {
-        "name": _name(a),
-        "kind": kind,
-        "type": t,
-        "many": a.nargs in ("*", "+") or isinstance(a, argparse._AppendAction),
-        "choices": list(a.choices) if a.choices else None,
-        "default": a.default if isinstance(a.default, (str, int, float, bool, type(None))) else None,
-        "required": bool(a.required or not a.option_strings),
-        "help": help_,
-    }
-
-
-@functools.lru_cache(maxsize=1)
-def registry() -> dict[str, dict[str, Any]]:
-    """{command: {"served": "job", "spends", "about", "arguments": [...]}} for every served command."""
-    from evaluation_harness._cmdline import parser_of  # noqa: PLC0415
-    from evaluation_harness.cli import COMMANDS  # noqa: PLC0415
-
-    out: dict[str, dict[str, Any]] = {}
-    for c in sorted(COMMANDS):
-        how = served_as(c)
-        if how is None:
-            continue
-        parser = parser_of(c)
-        args = [
-            _argument(c, a, k)
-            for a in parser._actions
-            if not isinstance(a, argparse._HelpAction) and (k := kind_of(c, a)) is not None
-        ]
-        out[c] = {"served": how, "spends": c in SPENDS, "about": COMMANDS[c][1], "arguments": args}
-    return out
-
-
-def unkinded_paths() -> list[str]:
-    """Every path-typed argument of a served command that the API would take but no kind names: empty, or a
-    test fails (a command that gains a path argument is not served by accident)."""
-    from evaluation_harness._cmdline import parser_of  # noqa: PLC0415
-    from evaluation_harness.cli import COMMANDS  # noqa: PLC0415
-
-    out = []
-    for c in sorted(COMMANDS):
-        if served_as(c) is None:
-            continue
-        for a in parser_of(c)._actions:
-            key = (c, _key(a))
-            if (
-                _is_path(a)
-                and not (set(a.option_strings) & NEVER)
-                and key not in PATH_KINDS
-                and key not in NEVER_PATHS
-            ):
-                out.append(f"{c} {_key(a)}")
-    return out
-
-
-def unknown_path_entries() -> list[str]:
-    """Every entry of PATH_KINDS and NEVER_PATHS that names a command or an argument no command has: empty, or a test
-    fails (a removed command left its entries behind, unnoticed)."""
-    from evaluation_harness._cmdline import parser_of  # noqa: PLC0415
-    from evaluation_harness.cli import COMMANDS  # noqa: PLC0415
-
-    return [
-        f"{c} {arg}"
-        for c, arg in sorted({*PATH_KINDS, *NEVER_PATHS})
-        if c not in COMMANDS or arg not in {_key(a) for a in parser_of(c)._actions}
-    ]
+MAX_UPLOAD = 50 * 1024 * 1024  # owner, 2026-11-08
 
 
 class Refused(ValueError):
@@ -204,47 +41,6 @@ class Refused(ValueError):
     def __init__(self, message: str, status: int = 400) -> None:
         super().__init__(message)
         self.status = status
-
-
-def _not_a_job(command: str) -> Refused:
-    """Why a command is no job: an operation answers in its own resource, anything else is no command the API serves."""
-    from evaluation_harness import ops  # noqa: PLC0415
-
-    op = ops.OPS.get(command)
-    if op is None:
-        return Refused(f"{command}: not a command the API serves", 404)
-    return Refused(f"{command}: not a job, an operation: {op.method} /api/v1{op.route}")
-
-
-def checked_args(command: str, arguments: Any) -> dict[str, Any]:
-    """The call's arguments, checked against the registry (names, kinds, types, choices, required), and each system
-    it names found. Refused before anything runs."""
-    reg = registry().get(command)
-    if reg is None:
-        raise _not_a_job(command)
-    if not isinstance(arguments, dict):
-        raise Refused("args: a JSON object keyed by the argument's name")
-    by = {a["name"]: a for a in reg["arguments"]}
-    unknown = sorted(set(arguments) - set(by))
-    if unknown:
-        raise Refused(f"{command}: not an argument the API takes: {', '.join(unknown)}")
-    out: dict[str, Any] = {}
-    for k, v in arguments.items():
-        a = by[k]
-        if a["kind"] in (UPLOAD, ARTIFACT):
-            raise Refused(f"{command} {k}: a file ({a['kind']}); a job takes it (POST /api/v1/jobs)")
-        vals = v if isinstance(v, list) else [v]
-        if isinstance(v, list) and not a["many"]:
-            raise Refused(f"{command} {k}: one value, not a list")
-        if a["choices"] and any(str(x) not in map(str, a["choices"]) for x in vals):
-            raise Refused(f"{command} {k}: one of {', '.join(map(str, a['choices']))}")
-        rule = VALUE_RULES.get((command, f"--{k}")) or VALUE_RULES.get((command, k))
-        if rule and not all(rule[1](str(x)) for x in vals):
-            raise Refused(f"{command} {k}: {rule[0]}")
-        if (command, f"--{k}") in SYSTEM_ARGS:
-            _systems_exist([str(x) for x in vals])
-        out[k] = v
-    return out
 
 
 def _systems_exist(ids: list[str]) -> None:
@@ -281,14 +77,7 @@ def new_token() -> str:
     return tok
 
 
-# ── jobs (RFC-026 step 3) ──────────────────────────────────────────────────────────────────────────────────────────
-
-#: The decisions (RFC-027): a job of one needs `by`, refused at the call before a job exists.
-DECISIONS: frozenset[str] = frozenset()
-MAX_UPLOAD = 50 * 1024 * 1024  # owner, 2026-11-08
-#: Where `by` and the reason go on the command line, for the commands that take them as who acted and why.
-BY_FLAG: set[str] = set()
-REASON_FLAG: dict[str, str] = {}
+# ── jobs (RFC-026 step 3, RFC-032 P3) ───────────────────────────────────────────────────────────────────────────────
 
 
 def _safe_name(name: str) -> str:
@@ -322,36 +111,6 @@ def _upload(value: Any, budget: list[int]) -> str:
     return str((d / name).relative_to(_common.project_root()))
 
 
-def job_argv(command: str, arguments: Any, job_id: str) -> tuple[list[str], dict[str, Any]]:
-    """A job call's argv, its arguments checked against the registry (a name mapped, an upload kept, an artifact
-    placed in the job's folder), and the checked arguments by name (what the locks read)."""
-    from evaluation_harness import _cmdline as ms  # noqa: PLC0415
-    from evaluation_harness import _jobs  # noqa: PLC0415
-
-    reg = registry().get(command)
-    if reg is None:
-        raise _not_a_job(command)
-    if reg["served"] != "job":
-        raise Refused(f"{command}: a read, not a job")
-    if not isinstance(arguments, dict):
-        raise Refused("args: a JSON object keyed by the argument's name")
-    files = {a["name"]: a["kind"] for a in reg["arguments"] if a["kind"] in (UPLOAD, ARTIFACT)}
-    budget = [0]
-    plain = {k: v for k, v in arguments.items() if k not in files}
-    checked = checked_args(command, plain)
-    for k, v in arguments.items():
-        if k not in files:
-            continue
-        if files[k] == UPLOAD:
-            checked[k] = _upload(v, budget)
-        else:
-            checked[k] = str((_jobs.job_dir(job_id) / _safe_name(str(v))).relative_to(_common.project_root()))
-    try:
-        return ms.argv_of(ms.parser_of(command), checked), checked
-    except ValueError as exc:
-        raise Refused(str(exc)) from exc
-
-
 def _who_env(by: Any, for_: Any) -> dict[str, str]:
     """The environment a job gets for who acted (RFC-027): an agent (`by: agent:NAME`) names the person it acts for
     (`for: person:NAME`), refused here without it, where the job's command would fail only when it first records who
@@ -378,40 +137,17 @@ def _spend_env(name: str, max_cost_usd: Any) -> dict[str, str]:
     return {"EVAL_MAX_COST_USD": str(max_cost_usd)}
 
 
-def start_job(
-    command: str, arguments: Any, by: Any, reason: Any, max_cost_usd: Any = None, for_: Any = None
-) -> dict[str, Any]:
-    """POST /api/v1/jobs: checked, written, and started (202). Refused before a job exists when it cannot run. A decision
-    or a work operation (`command` names it) is a job of the operation and its inputs (`arguments`); any other command is
-    still one of a command line (until every command is an operation)."""
-    from evaluation_harness import _jobs, ops  # noqa: PLC0415
+def job_operation(name: str) -> Any:
+    """The decision or work operation a job of `name` runs; refused (404) when no such operation is, or when it is a
+    read or an edit, which answers in its own resource."""
+    from evaluation_harness import ops  # noqa: PLC0415
 
-    op = ops.get(command)
-    if op is not None and op.is_job():
-        return start_operation(op, arguments, by, reason, max_cost_usd, for_)
-    if by is not None and not isinstance(by, str):
-        raise Refused("by: person:NAME, or agent:NAME with for (RFC-027)")
-    if command in DECISIONS and not by:
-        raise Refused(f"{command} is a decision: name who made it (by: person:NAME)")
-    env = _who_env(by, for_)
-    if command in SPENDS:
-        env.update(_spend_env(command, max_cost_usd))
-    job_id = _jobs.new_id()
-    argv, checked = job_argv(command, arguments, job_id)
-    if by and command in BY_FLAG and "by" not in checked:
-        argv = ["--by", str(by), *argv]
-    if reason and command in REASON_FLAG and REASON_FLAG[command] not in checked:
-        argv = [f"--{REASON_FLAG[command]}", str(reason), *argv]
-    run_id = None
-    if command == "run" and "run-id" not in checked:
-        cid = str(checked.get("system") or "run")
-        run_id = f"{cid}_{job_id}"  # the job's id: unique, where a second's timestamp is not (two runs started at once)
-        argv = ["--run-id", run_id, *argv]
-    elif command == "run":
-        run_id = str(checked["run-id"])
-    _jobs.create(command, argv, by, reason, _jobs.locks_for(command, checked), env, run_id, job_id=job_id)
-    _jobs.start(job_id)
-    return _jobs.read(job_id)
+    op = ops.get(name)
+    if op is None:
+        raise Refused(f"{name}: not an operation that runs as a job", 404)
+    if not op.is_job():
+        raise Refused(f"{name}: not a job: a {op.kind}, answered at {op.method} /api/v1{op.route}", 404)
+    return op
 
 
 def operation_inputs(op: Any, inputs: Any, job_id: str) -> dict[str, Any]:
@@ -449,18 +185,13 @@ def operation_inputs(op: Any, inputs: Any, job_id: str) -> dict[str, Any]:
 
 
 def start_operation(
-    op: Any, inputs: Any, by: Any, reason: Any, max_cost_usd: Any = None, for_: Any = None
+    op: Any, inputs: Any, by: Any, max_cost_usd: Any = None, for_: Any = None
 ) -> dict[str, Any]:
     """A job of a decision or a work operation: who asked (`by`, required: every job records who acted), the cap when it
-    spends, the inputs checked, its locks, started. A decision's reason is one of its inputs, not a field of the call."""
+    spends, the inputs checked, its locks, started (202). A decision's reason is one of its inputs (`Op.why`)."""
     from evaluation_harness import _jobs  # noqa: PLC0415
     from evaluation_harness.ops import locks as op_locks  # noqa: PLC0415
 
-    if reason is not None:
-        raise Refused(
-            f"{op.name}: reason is not a field of a job"
-            + (f"; the {op.why} input is the reason" if op.why else "")
-        )
     if not isinstance(by, str) or not by.strip():
         raise Refused(f"{op.name}: name who asked (by: person:NAME, or agent:NAME with for; RFC-027)")
     env = _who_env(by, for_)
@@ -477,17 +208,9 @@ def start_operation(
             # The job's id: unique, where a second's timestamp is not (two runs started at once).
             checked[run_input] = f"{checked.get('system') or 'run'}_{job_id}"
         run_id = str(checked[run_input])
-    _jobs.create_operation(op.name, checked, by.strip(), op_locks.locks_for(op, checked), env, run_id, job_id)
+    _jobs.create(op.name, checked, by.strip(), op_locks.locks_for(op, checked), env, run_id, job_id)
     _jobs.start(job_id)
     return _jobs.read(job_id)
-
-
-def _resume_inputs(j: dict[str, Any]) -> dict[str, Any]:
-    """The inputs of the job that continues `j`, which names the run it continues and gives the new one its own id."""
-    inputs = dict(j["inputs"])
-    if inputs.get("repeat") not in (None, 1):
-        raise Refused("a run with repeat above 1 is not resumed (run refuses it)", 409)
-    return inputs
 
 
 def resume_job(job_id: str) -> dict[str, Any]:
@@ -497,17 +220,12 @@ def resume_job(job_id: str) -> dict[str, Any]:
     from evaluation_harness import _jobs, ops  # noqa: PLC0415
 
     j = _jobs.read(job_id)
-    op = ops.get(j["operation"]) if "operation" in j else None
-    if "operation" in j:
-        if op is None or not op.resume or not j.get("run_id"):
-            raise Refused(f"only a run is resumed; {job_id} is {j['operation']}", 409)
-        inputs = _resume_inputs(j)
-    else:
-        if j["command"] != "run" or not j.get("run_id"):
-            raise Refused(f"only a run is resumed; {job_id} is {j['command']}", 409)
-        argv = list(j["argv"])
-        if "--repeat" in argv and argv[argv.index("--repeat") + 1] not in ("1",):
-            raise Refused("a run with --repeat above 1 is not resumed (run refuses it)", 409)
+    op = ops.get(j["operation"])
+    if op is None or not op.resume or not j.get("run_id"):
+        raise Refused(f"only a run is resumed; {job_id} is {j['operation']}", 409)
+    inputs = dict(j["inputs"])
+    if inputs.get("repeat") not in (None, 1):
+        raise Refused("a run with repeat above 1 is not resumed (run refuses it)", 409)
     if j["state"] in ("queued", "running", "running (unsupervised)", "succeeded"):
         raise Refused(f"{job_id} is {j['state']}: nothing to resume", 409)
     # The cap is the job's, not each attempt's: the new job is given what this one left.
@@ -522,36 +240,9 @@ def resume_job(job_id: str) -> dict[str, Any]:
             )
         env["EVAL_MAX_COST_USD"] = f"{given - paid:.8f}"
     new_id = _jobs.new_id()
-    if op is not None:
-        resume_input, run_input = op.resume
-        new_run = f"{inputs.get('system') or 'run'}_{new_id}"
-        inputs |= {resume_input: j["run_id"], run_input: new_run}
-        _jobs.create_operation(
-            op.name,
-            inputs,
-            j.get("by"),
-            [(k, bool(x)) for k, x in j["locks"]],
-            env,
-            new_run,
-            new_id,
-        )
-        _jobs.start(new_id)
-        return _jobs.read(new_id)
-    if "--run-id" in argv:
-        i = argv.index("--run-id")
-        del argv[i : i + 2]
-    cid = argv[argv.index("--system") + 1] if "--system" in argv else "run"
-    new_run = f"{cid}_{new_id}"
-    argv = ["--run-id", new_run, "--resume", j["run_id"], *argv]
-    _jobs.create(
-        "run",
-        argv,
-        j.get("by"),
-        j.get("reason"),
-        [(k, bool(x)) for k, x in j["locks"]],
-        env,
-        new_run,
-        job_id=new_id,
-    )
+    resume_input, run_input = op.resume
+    new_run = f"{inputs.get('system') or 'run'}_{new_id}"
+    inputs |= {resume_input: j["run_id"], run_input: new_run}
+    _jobs.create(op.name, inputs, j.get("by"), [(k, bool(x)) for k, x in j["locks"]], env, new_run, new_id)
     _jobs.start(new_id)
     return _jobs.read(new_id)

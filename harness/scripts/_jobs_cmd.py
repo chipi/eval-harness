@@ -1,15 +1,15 @@
 """The jobs from the terminal (RFC-026 step 6): the same jobs the API starts, in the project's .build/jobs/.
 
-    evh jobs-start COMMAND [--arg NAME=VALUE ...] [--max-cost-usd N] [--reason TEXT] [--by WHO]
+    evh jobs-start OPERATION [--arg NAME=VALUE ...] [--max-cost-usd N] [--by WHO]
     evh jobs-status [JOB_ID] [--state STATE] [--json]
     evh jobs-logs JOB_ID [--follow] [--from BYTE]
     evh jobs-stop JOB_ID
     evh jobs-resume JOB_ID
 
-`--arg` names an input as the API does: an operation's input name (`evh COMMAND --help` shows it as the option, its dashes
-underscores: `--dataset-id` is `dataset_id`), a command's argument without the dashes; a system by its id, `--arg repeat=3`,
-a flag as `--arg NAME=true`; repeated, it makes a list; `@FILE` uploads a file. A job started here is listed by the API
-and stopped by it, and one the Workbench started is followed here. No server is needed.
+`--arg` names an input as the API does: the operation's input name (`evh OPERATION --help` shows it as the option, its
+dashes underscores: `--dataset-id` is `dataset_id`); a system by its id, `--arg repeat=3`, a flag as `--arg NAME=true`;
+repeated, it makes a list; `@FILE` uploads a file. A decision's reason is one of its inputs. A job started here is listed
+by the API and stopped by it, and one the Workbench started is followed here. No server is needed.
 """
 
 from __future__ import annotations
@@ -42,13 +42,14 @@ def _value(raw: str) -> Any:
 
 
 def args_of(pairs: list[str]) -> dict[str, Any]:
-    """`--arg NAME=VALUE` pairs as the API's args: a name given twice is a list."""
+    """`--arg NAME=VALUE` pairs as the API's inputs: a name given twice is a list."""
     out: dict[str, Any] = {}
     for pair in pairs:
         name, sep, raw = pair.partition("=")
         if not sep or not name:
             die(
-                f"--arg {pair!r}: expected NAME=VALUE (the name as `evh COMMAND --help` shows it, without the dashes)",
+                f"--arg {pair!r}: expected NAME=VALUE (the input as `evh OPERATION --help` shows it, its dashes "
+                "underscores)",
                 "bad-argument",
             )
         v = _value(raw)
@@ -90,23 +91,19 @@ def _line(j: dict[str, Any]) -> str:
     extra = f"  waiting for {wait.get('lock')} ({wait.get('job') or 'another process'})" if wait else ""
     if j.get("refusal"):
         extra += f"  refused: {j['refusal']}"
-    from evaluation_harness import _jobs  # noqa: PLC0415
 
-    return f"{j['id']}  {j['state']:<22} {_jobs.name_of(j):<18} by {j.get('by') or '-'}{extra}"
+    return f"{j['id']}  {j['state']:<22} {j['operation']:<18} by {j.get('by') or '-'}{extra}"
 
 
 def start(argv: list[str]) -> int:
-    """evh jobs-start: a command started as a job, checked as the API checks it."""
-    ap = argparse.ArgumentParser(prog=evh_prog(), description="start a command as a job (RFC-026)")
+    """evh jobs-start: an operation started as a job, checked as the API checks it."""
+    ap = argparse.ArgumentParser(prog=evh_prog(), description="start an operation as a job (RFC-026)")
     ap.add_argument(
-        "command",
-        help="the command, as `evh --help` names it (a command that works on the project, not a read)",
+        "operation",
+        help="the operation, as `evh --help` names it (a decision or a work operation, not a read)",
     )
-    ap.add_argument(
-        "--arg", action="append", default=[], metavar="NAME=VALUE", help="an argument (repeatable)"
-    )
-    ap.add_argument("--max-cost-usd", type=float, help="a command that spends: the most the job may spend")
-    ap.add_argument("--reason", help="why (a decision's reason, a round's conclusion)")
+    ap.add_argument("--arg", action="append", default=[], metavar="NAME=VALUE", help="an input (repeatable)")
+    ap.add_argument("--max-cost-usd", type=float, help="an operation that spends: the most the job may spend")
     ap.add_argument("--json", action="store_true", help="the job's record as JSON")
     from evaluation_harness._actor import add_by  # noqa: PLC0415
 
@@ -116,8 +113,12 @@ def start(argv: list[str]) -> int:
 
     with _jsonout.collect("jobs-start", a.json):
         try:
-            j = _api.start_job(
-                a.command, args_of(a.arg), _who() or None, a.reason, a.max_cost_usd, _for() or None
+            j = _api.start_operation(
+                _api.job_operation(a.operation),
+                args_of(a.arg),
+                _who() or None,
+                a.max_cost_usd,
+                _for() or None,
             )
         except _api.Refused as exc:
             _refused(exc)

@@ -34,36 +34,16 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parents[1] / "scripts"
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 KIT = HERE.parent / "tutorial"
-from evaluation_harness import _api, _jobs  # noqa: E402
+from evaluation_harness import _jobs  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
-import _runstore  # noqa: E402
-from evaluation_harness import _format, ops  # noqa: E402
-from evaluation_harness.ops import locks as op_locks  # noqa: E402
-
-jobs = {c for c, v in _api.registry().items() if v["served"] == "job"}
-named = set(_jobs.LOCK_RULES) | _jobs.MIGRATIONS | _jobs.PROJECT_ONLY
-check(
-    "every job command has its locks named (a rule, a migration, or the project only)",
-    jobs <= named,
-    sorted(jobs - named),
-)
-check(
-    "and nothing else is named: no command that is gone, none that became an operation (its locks are its declaration's)",
-    named <= jobs,
-    sorted(named - jobs),
-)
-stale_args = sorted(c for c, _flag in _api.SYSTEM_ARGS if c not in jobs)
-check(
-    "and every argument that names a system belongs to a command that is a job",
-    not stale_args,
-    stale_args,
-)
-
 from unittest import mock  # noqa: E402
 
+import _runstore  # noqa: E402
+from evaluation_harness import _format, ops  # noqa: E402
 from evaluation_harness.model import runs as _model_runs  # noqa: E402
+from evaluation_harness.ops import locks as op_locks  # noqa: E402
 
 with mock.patch.object(_model_runs, "run", lambda *_a, **_k: {"system_id": "slow_v1"}):
     run_key = {
@@ -153,10 +133,6 @@ def call(method, path, body=None, data_header=True):
         return exc.code, json.loads(exc.read() or b"{}")
 
 
-def job(command, args, **extra):
-    return call("POST", "/api/v1/jobs", {"command": command, "args": args, **extra})
-
-
 def op_job(operation, inputs, **extra):
     """A job of an operation: {operation, inputs, by, for, max_cost_usd}."""
     return call("POST", "/api/v1/jobs", {"operation": operation, "inputs": inputs, **extra})
@@ -211,17 +187,25 @@ try:
 
     st, j = op_job("run", {"system": "fast_v1", "dataset": "tk_v1"}, by="person:ana")
     st2, _j = op_job("run-promote", {"run": "x", "reason": "no one is named for it"})
-    st3, _j = job("leaderboard", {"dataset-id": "tk_v1"})
+    st3, _j = op_job("leaderboard", {"dataset": "tk_v1"}, by="person:ana")
     st4, _j = call(
         "POST",
         "/api/v1/jobs",
-        {"command": "dataset-profile", "args": {"dataset-id": "tk_v1"}},
+        {"operation": "dataset-profile", "inputs": {"dataset_id": "tk_v1"}, "by": "person:ana"},
         data_header=False,
     )
+    st5, j5 = call(
+        "POST",
+        "/api/v1/jobs",
+        {"command": "dataset-profile", "args": {"dataset-id": "tk_v1"}, "by": "person:ana"},
+    )
     check(
-        "refused before a job exists: a spending job without max_cost_usd, a decision without by, a read, no data header",
-        (st, st2, st3, st4) == (400, 400, 400, 403) and "max_cost_usd" in j.get("error", ""),
-        (st, st2, st3, st4, j),
+        "refused before a job exists: a spending job without max_cost_usd, a decision without by, a read, no data "
+        "header, a command and its args (a job is an operation and its inputs)",
+        (st, st2, st3, st4, st5) == (400, 400, 404, 403, 400)
+        and "max_cost_usd" in j.get("error", "")
+        and "a job is {operation, inputs" in j5.get("error", ""),
+        (st, st2, st3, st4, st5, j, j5),
     )
     st, j = op_job("run", {"system": "fast_v1", "dataset": "tk_v1"}, by="person:ana", max_cost_usd=1)
     done = until(j.get("id"), ("succeeded", "failed")) if st == 202 else {}
@@ -300,7 +284,7 @@ try:
     _c.project_root.cache_clear()
     held = _jobs.take_locks([("dataset:hold_x", True)], "the test")
     qid = _jobs.new_id()
-    _jobs.create_operation("prompt-version", {"name": "who_q", "text": "x", "note": "n"}, "person:ana",
+    _jobs.create("prompt-version", {"name": "who_q", "text": "x", "note": "n"}, "person:ana",
                            [("aaa:first", True), ("dataset:hold_x", True)], {}, None, qid)  # fmt: skip
     _jobs.start(qid)
     end = time.monotonic() + 30
