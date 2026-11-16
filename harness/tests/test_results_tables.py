@@ -9,8 +9,9 @@ NaN, the infinities and an integer past int64 come back as they were (kept as JS
 keys sorted, and no field is lost or added. `_meta`: absent stays absent, `{}` stays `{}`, call facts equal to the ones
 the run holds for the item leave the row (`facts` = 1) and are put back on read, facts that differ keep the row's whole
 `_meta`, a `_meta` left empty keeps `{}`, a row's own key wins over the held one, a score set that is not under
-runs/<run>/scores/<key> has no call facts; `_extra` absent is NULL, `{}` is kept. A score set's id is its key's hash, the
-next free one upward on a collision (wrapping), a row's is `score_set * 2^20 + n`; more rows than that are refused.
+runs/<run>/scores/<key> has no call facts; `_extra` absent is NULL, `{}` is kept. A score set's id is the highest plus one
+(the first is 1; the lowest free one when the highest leaves no room), a row's is `score_set * 2^20 + n`; more rows
+than that are refused.
 A write is one transaction (a row that cannot be written leaves the score set as it was). Deleting a score set (and a
 folder under which there are some) takes its rows and values, and a run's call facts go with its last score set.
 `item_across` uses the item index. V9 reads the database: every score set with a record has rows, as many as the record
@@ -512,49 +513,56 @@ try:
     d = run_with("arm_e_v1", {"s": [{"item_id": "i", "x": 1}, {"item_id": "j", "x": 2}]})
     sd = score_dirs(d)[0]
     key = _store.rel(sd)
-    want_id = int.from_bytes(hashlib.sha256(key.encode()).digest()[:8], "big") >> 21
     got_id = db().execute("SELECT id FROM score_sets WHERE key = ?", (key,)).fetchone()[0]
     rids = [r[0] for r in db().execute("SELECT id FROM score_rows ORDER BY id")]
     check(
-        "a score set's id is the first 43 bits of its key's sha256; a row's is score_set * 2^20 + n, from n = 0",
-        got_id == want_id
-        and want_id < 2**43
-        and rids == [got_id << 20, (got_id << 20) + 1]
-        and rids[-1] < 2**63,
-        (got_id, want_id, rids),
+        "the first score set's id is 1; a row's is score_set * 2^20 + n, from n = 0",
+        got_id == 1 and rids == [1 << 20, (1 << 20) + 1] and rids[-1] < 2**63,
+        (got_id, rids),
     )
-    keep = _outputs._set_hash
-    try:
-        _outputs._set_hash = lambda key: 77  # every key collides
-        ks = [DATA / "scratch" / n for n in ("c", "a", "b")]
-        for kd in ks:
-            _outputs.store().put_rows(kd, [{"item_id": "i", "x": 1}])
-        ids = dict(db().execute("SELECT key, id FROM score_sets WHERE key LIKE 'scratch/%'"))
-        check(
-            "a collision takes the next free id upward, in the order the keys come",
-            ids == {"scratch/c": 77, "scratch/a": 78, "scratch/b": 79},
-            ids,
-        )
-        _outputs.store().put_rows(ks[1], [{"item_id": "i", "x": 2}, {"item_id": "k", "x": 3}])
-        fresh()
-        check(
-            "a key found by what it is, not by its hash: a rewritten probed set keeps its id and reads back, its neighbours untouched",
-            dict(db().execute("SELECT key, id FROM score_sets WHERE key LIKE 'scratch/%'")) == ids
-            and [r["x"] for r in _outputs.rows(ks[1]) or []] == [2, 3]
-            and [r["x"] for r in _outputs.rows(ks[0]) or []] == [1]
-            and [r["x"] for r in _outputs.rows(ks[2]) or []] == [1],
-        )
-        _outputs._set_hash = lambda key: 2**43 - 1
-        _outputs.store().put_rows(DATA / "scratch" / "w1", [{"item_id": "i"}])
-        _outputs.store().put_rows(DATA / "scratch" / "w2", [{"item_id": "i"}])
-        w = dict(db().execute("SELECT key, id FROM score_sets WHERE key LIKE 'scratch/w%'"))
-        check("an id past 2^43 - 1 wraps to 0", w == {"scratch/w1": 2**43 - 1, "scratch/w2": 0}, w)
-        check(
-            "a score set at the last id has its rows under 2^63",
-            db().execute("SELECT max(id) FROM score_rows").fetchone()[0] < 2**63,
-        )
-    finally:
-        _outputs._set_hash = keep
+    ks = [DATA / "scratch" / n for n in ("c", "a", "b")]
+    for kd in ks:
+        _outputs.store().put_rows(kd, [{"item_id": "i", "x": 1}])
+    ids = dict(db().execute("SELECT key, id FROM score_sets WHERE key LIKE 'scratch/%'"))
+    check(
+        "a new score set takes the next id after the highest, in the order the sets are written, not the key's order",
+        ids == {"scratch/c": 2, "scratch/a": 3, "scratch/b": 4},
+        ids,
+    )
+    _outputs.store().put_rows(ks[1], [{"item_id": "i", "x": 2}, {"item_id": "k", "x": 3}])
+    fresh()
+    check(
+        "a score set written again keeps its id and reads back, its neighbours untouched",
+        dict(db().execute("SELECT key, id FROM score_sets WHERE key LIKE 'scratch/%'")) == ids
+        and [r["x"] for r in _outputs.rows(ks[1]) or []] == [2, 3]
+        and [r["x"] for r in _outputs.rows(ks[0]) or []] == [1]
+        and [r["x"] for r in _outputs.rows(ks[2]) or []] == [1],
+    )
+    _outputs.store().drop_rows(ks[0])
+    _outputs.store().put_rows(DATA / "scratch" / "d", [{"item_id": "i"}])
+    check(
+        "a set added after one was deleted goes after the highest, the gap left alone",
+        db().execute("SELECT id FROM score_sets WHERE key = 'scratch/d'").fetchone()[0] == 5
+        and db().execute("SELECT 1 FROM score_sets WHERE id = 2").fetchone() is None,
+    )
+    new_project()
+    _outputs.store().put_rows(DATA / "scratch" / "w1", [{"item_id": "i"}])
+    db().execute("UPDATE score_sets SET id = ? WHERE key = 'scratch/w1'", (2**43 - 2,))
+    db().execute("UPDATE score_rows SET id = (? << 20) + n, score_set = ?", (2**43 - 2, 2**43 - 2))
+    db().commit()
+    for name in ("w2", "w3", "w4"):
+        _outputs.store().put_rows(DATA / "scratch" / name, [{"item_id": "i"}])
+    w = dict(db().execute("SELECT key, id FROM score_sets WHERE key LIKE 'scratch/w%'"))
+    check(
+        "a database whose highest id leaves no room (hashed ids of an earlier build) gives the lowest free id, "
+        "2^43 - 1 being the last a set may have",
+        w == {"scratch/w1": 2**43 - 2, "scratch/w2": 2**43 - 1, "scratch/w3": 1, "scratch/w4": 2},
+        w,
+    )
+    check(
+        "a score set at the last id has its rows under 2^63",
+        db().execute("SELECT max(id) FROM score_rows").fetchone()[0] < 2**63,
+    )
     said = ""
     try:
         _outputs.store().put_rows(DATA / "scratch" / "big", [{"item_id": "i"}] * (2**20 + 1))

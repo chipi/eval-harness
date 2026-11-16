@@ -17,11 +17,12 @@ written here; this file imports nothing from `model/`.
   written again.
 - A SQLite project keeps a score's rows in tables (score sets, metrics, per-item values, a run's call facts: the
   "SQLite tables" of RFC-033). Those a project holds in table `rows`, the lines of format 6 (or of the build of this
-  step that kept them there), are written into the new tables in one transaction, score sets in key order (a set's id
-  is its key's hash, which a collision moves by the order they come in, and the metrics are numbered as met), the
-  checkpoints copied as they are, and `rows` dropped. `unfinished` says whether a project still holds it: such a project
-  is at format 7 already when it kept the lines in `rows` under this step's first build, and `evh migrate` runs the step
-  again for it (nothing else changes: the run settings and usage were done).
+  step that kept them there), are written into the new tables in one transaction, score sets in the order of their
+  run's time (run.json's `started_at`, else `created_at`; a run with neither first), then their key: a set's id is its
+  place in that order, and the metrics are numbered as met. The checkpoints are copied as they are, and `rows`
+  dropped. `unfinished` says whether a project still holds it: such a project is at format 7 already when it kept the
+  lines in `rows` under this step's first build, and `evh migrate` runs the step again for it (nothing else changes:
+  the run settings and usage were done).
 
 `--dry-run` prints each count; nothing is written. Refused, writing nothing: a run.json whose `call` is not an object,
 rows that are not UTF-8, and a line of a score's rows that is not a JSON object with an `item_id` (the store refuses to
@@ -30,7 +31,7 @@ write one: correct the file first).
 
 from __future__ import annotations
 
-import hashlib
+import datetime
 import json
 import math
 import re
@@ -54,7 +55,6 @@ CALL_FACTS = (
     "system_fingerprint",
     "resumed_from_disk",
 )
-SET_BITS = 43
 ROW_BITS = 20
 SCORE_SET = re.compile(r"(runs/[^/]+)/scores/[^/]+")
 DDL = (
@@ -101,6 +101,21 @@ def _slim(usage: Any) -> Any:
 
 def _canon(value: Any) -> str:
     return json.dumps(value, sort_keys=True)
+
+
+def _time(doc: Any) -> float:
+    """A run's time from its run.json document: `started_at`, else `created_at`, as seconds since the epoch (a time with
+    no zone is UTC); minus infinity when it has neither as an ISO time, so that run is first."""
+    if isinstance(doc, dict):
+        for field in ("started_at", "created_at"):
+            v = doc.get(field)
+            if isinstance(v, str):
+                try:
+                    t = datetime.datetime.fromisoformat(v.replace("Z", "+00:00"))
+                except ValueError:
+                    continue
+                return (t if t.tzinfo else t.replace(tzinfo=datetime.timezone.utc)).timestamp()
+    return float("-inf")
 
 
 def _rel(p: Path) -> str:
@@ -209,6 +224,7 @@ def plan() -> dict[str, Any]:
     counts: Counter[str] = Counter()
     refused: list[str] = []
     final: dict[str, str] = {}
+    when: dict[str, float] = {}
     store = _outputs.store()
     legacy = _legacy()
     for run, score_dirs in _groups(refused, legacy):
@@ -300,6 +316,7 @@ def plan() -> dict[str, Any]:
                         counts["rows made canonical"] += 1
                 out.append(text)
             final[_rel(sd)] = "".join(out)
+            when[_rel(sd)] = _time(doc)
             if changed:
                 run_sets.append((sd, "".join(out)))
                 counts["score sets rewritten"] += 1
@@ -320,7 +337,7 @@ def plan() -> dict[str, Any]:
         counts["checkpoint lines moved"] = legacy.execute(
             "SELECT count(*) FROM rows WHERE partial = 1 AND n > 0"
         ).fetchone()[0]
-    return {"changes": changes, "counts": counts, "refused": refused, "text": final}
+    return {"changes": changes, "counts": counts, "refused": refused, "text": final, "time": when}
 
 
 # ── SQLite: the lines into the results tables (a frozen copy of what `_outputs.write_set` does) ─────────────────────
@@ -333,14 +350,12 @@ def _is_value(v: Any) -> bool:
 
 
 def _write_set(conn: Any, key: str, rows: list[dict[str, Any]]) -> None:
-    """One score set's rows into the new tables: its id from its key's hash (the next free id upward when taken);
+    """One score set's rows into the new tables: its id the next one (the sets come in their order);
     numeric fields as values, `_meta` less the call facts the run already holds for the item (`facts` = 1), `_extra`,
     and every other field as JSON in `rest`."""
     if len(rows) > 1 << ROW_BITS:
         _common.die(f"{key}: {len(rows):,} rows; a score set holds at most {1 << ROW_BITS:,}", "invalid-file")
-    sid = int.from_bytes(hashlib.sha256(key.encode("utf-8")).digest()[:8], "big") >> (64 - SET_BITS)
-    while conn.execute("SELECT 1 FROM score_sets WHERE id = ?", (sid,)).fetchone():
-        sid = (sid + 1) % (1 << SET_BITS)
+    sid = (conn.execute("SELECT MAX(id) FROM score_sets").fetchone()[0] or 0) + 1
     conn.execute("INSERT INTO score_sets VALUES (?, ?)", (sid, key))
     base = sid << ROW_BITS
     m = SCORE_SET.fullmatch(key)
@@ -392,15 +407,15 @@ def _write_set(conn: Any, key: str, rows: list[dict[str, Any]]) -> None:
     conn.executemany("INSERT INTO score_values VALUES (?, ?, ?)", val_out)
 
 
-def _fill(conn: Any, texts: dict[str, str]) -> None:
-    """The results tables made and filled from `texts` ({score key: its rows text}), the checkpoint copied, `rows`
-    dropped: one transaction, all of it or none."""
+def _fill(conn: Any, texts: dict[str, str], when: dict[str, float]) -> None:
+    """The results tables made and filled from `texts` ({score key: its rows text}) in the order of `when` ({score key:
+    its run's time}) then the key, the checkpoint copied, `rows` dropped: one transaction, all of it or none."""
     with _store._LOCK:
         conn.execute("BEGIN IMMEDIATE")
         try:
             for stmt in DDL:
                 conn.execute(stmt)
-            for key in sorted(texts):
+            for key in sorted(texts, key=lambda k: (when[k], k)):
                 rows = [json.loads(line) for line in texts[key].splitlines()]
                 _write_set(conn, key, rows)
             conn.execute("INSERT INTO rows_partial SELECT run, n, row FROM rows WHERE partial = 1")
@@ -455,4 +470,4 @@ def run(dry_run: bool) -> None:
             rows, _skipped = _outputs.parse_rows(text, _rel(sd))
             store.put_rows(sd, rows)
     if legacy is not None:
-        _fill(legacy, p["text"])
+        _fill(legacy, p["text"], p["time"])

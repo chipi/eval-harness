@@ -914,7 +914,11 @@ def test_example_scorer_suites_pass() -> None:
         ),
         (
             "test_results_tables.py",
-            "a score's per-item results as SQLite tables (RFC-033 step d): the schema, every type round-tripped (int and float, -0.0, bool, None, NaN, infinities, past int64), `_meta` and call facts, ids and probing, one transaction, deletes, the item index, V9 in SQLite with each failure planted, data-migrate there and back",
+            "a score's per-item results as SQLite tables (RFC-033 step d): the schema, every type round-tripped (int and float, -0.0, bool, None, NaN, infinities, past int64), `_meta` and call facts, ids (the next after the highest), one transaction, deletes, the item index, V9 in SQLite with each failure planted, data-migrate there and back",
+        ),
+        (
+            "test_results_order.py",
+            "the order the SQLite tables are built in (RFC-033): score sets, outputs and metric ids by the run's time then the key, a run with no time first, a zone counted, the same data the same tables, a set added to an old run sitting with it",
         ),
         (
             "test_rows_frozen.py",

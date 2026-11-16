@@ -510,8 +510,8 @@ that can move a result is never a patch release without saying so under **Change
   included, and the project's database 190.6 MiB (the lines of format 7) to 159.2 MiB. A row comes back as it was
   written: an integer stays an integer and a float a float (`1` and `1.0`, `-0.0`, int64's bounds), a bool, `null`,
   NaN, the infinities and an integer past int64 come back as they were, keys sorted; `_meta` absent, `{}`, its call
-  facts equal to the run's or different, and `_extra` absent or `{}` each round-trip. A score set's id is its key's
-  hash (the next free one upward on a collision), its rows are one id range, written in one transaction and deleted
+  facts equal to the run's or different, and `_extra` absent or `{}` each round-trip. A score set's id is the
+  next after the highest (see the order the tables are built in, below), its rows are one id range, written in one transaction and deleted
   through the key: dropping a score set, or `rmtree` of it or of a run, takes its rows, and a run's call facts go with
   its last score set. `evh migrate`
   moves a SQLite project of format 6 into the tables in one transaction (14 runs, 31 score sets, 3 settings hoisted,
@@ -532,14 +532,30 @@ that can move a result is never a patch release without saying so under **Change
   before its `VACUUM INTO` (SQLite takes the copy's page size from the connection, not from the file, and only outside
   write-ahead logging), `PRAGMA page_size` on the release says 16384, and render.sh's release check (`_release.py check`)
   refuses a release at another size. On this repository's data the release database went from 142,020,608 bytes at
-  4 KiB to 136,265,728 (two renders from two checkouts a few minutes apart: one sha256). What a deploy's rsync sends for
-  `inspector/data/` (the flags of `deploy-prod.yml`, delta transfer on): nothing when the data did not change (103 B),
-  and for one new run of 5 items 86.9 MB when its key sorts first, 61.4 MB in the middle, 10.1 MB last (the same tables at
-  4 KiB: 93.3 / 68.8 / 25.5 MB; format 6's `rows` table at 4 KiB: 228 / 122 / 20 MB). A run sorting first still renumbers
-  the rows of `outputs` and the ids of the metrics, so every page of those and of `score_values` is new. Release
+  4 KiB to 136,265,728 (two renders from two checkouts a few minutes apart: one sha256); what a deploy's rsync sends of
+  it is in the next entry. Release
   and serving, in compose.yml's limits (inspector 384m, MCP server 512m): the catalog's 2,905 comparisons and the MCP's 38
   calls give the same bytes from a files release and a SQLite release. A hidden dataset's run.json `call` holding anything
   but the three run settings is refused with the rest of the release (`_release.plan_problems`): run.json is copied whole.
+- **The SQLite tables are built in the order of time** (RFC-033 step e, owner 2026-11-16). `evh data-migrate --to
+  sqlite` (a release's database is made by it, and `evh migrate` moves a format-6 SQLite project the same way) writes
+  the outputs, the score sets, their rows and values in the order of the run's time, then the key: run.json's
+  `started_at`, else its `created_at`, as an instant (a zone counts, a time with none is UTC); a run with neither as an
+  ISO time comes first, by its key (304 of this repository's 305 runs hold `created_at` and one `started_at`). A score
+  set's id is its place in that order, from 1, in place of the hash of its key; the metrics' ids are the order their
+  names are first met in it. One data gives one database, whatever order its files were made in. A project that writes a
+  score set later gives it the next id after the highest; a database built with hashed ids (an early build) gives the
+  lowest free id when the highest has no room. What a deploy's rsync sends of `inspector/data/` (the flags of
+  `deploy-prod.yml`, delta transfer on, this repository's data, the stand-in remote shell of step e): nothing when the data
+  did not change (105 B), and for one new run of 5 items 9.4 MB when its name sorts first, 4.7 MB in the middle and 1.1 MB
+  last, against 86.9, 61.5 and 10.1 MB (the same code as before measured again: 32.6 MB for a run named last, where the hash
+  put its rows). What is left in the first two is `outputs`' index by run name, the item index of `score_rows` and the
+  `files` table (path order). A new score set on an old run lands where that run is, and the pages after it move: 26.3 MB
+  for a run in the middle of the time order, 61.2 MB for the oldest (36.8 and 20.6 MB before: where the hash put it).
+  The database is 128,516,096 bytes (136,265,728 before: a row id is 5 bytes where it was 7); two renders of one commit
+  give one sha256. The views' speed in both stores, three interleaved runs against the code before, is within 8% of it
+  and of step a (no row over 1.10; the first three runs, taken while the machine was used for tests, had three rows at
+  1.11 to 1.20 of the code before).
 - **The API's description, made from the operations** (RFC-032 step 9): `GET /api/v1/openapi.json` (OpenAPI 3.1,
   with the token) and `evh openapi` give every operation's route, inputs, body, refusals and the job routes. Gone:
   `POST /api/v1/read/<command>` (a read run as a process) and `GET /api/v1/commands`; the operations' resources

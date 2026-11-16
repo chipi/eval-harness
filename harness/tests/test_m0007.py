@@ -454,6 +454,49 @@ try:
         dump(live) == got,
         [t for t in got if dump(live)[t] != got[t]],
     )
+    # The score sets go in the order of their run's time (`started_at`, else `created_at`; none first), then the key.
+    timed = base / "timed"
+    shutil.copytree(FIXTURE, timed / "src")
+    when = {  # (field, value); key order would be alpha beta delta epsilon gamma zeta
+        "beta": [("created_at", "2026-11-01T00:00:00Z"), ("started_at", "2026-11-05T00:00:00Z")],
+        "gamma": [("created_at", "2026-11-04T00:00:00Z")],
+        "delta": [("created_at", "2026-11-03T00:00:00Z")],
+        "epsilon": [("created_at", "2026-11-02T00:00:00Z")],
+        "zeta": [("created_at", "2026-11-01T00:00:00+02:00")],
+    }
+    for name, fields in when.items():
+        run_json = timed / "src" / "runs" / f"{name}_20261101T000000Z" / "run.json"
+        run_json.write_text(json.dumps({**json.loads(run_json.read_text()), **dict(fields)}, indent=2) + "\n")
+    tsql = timed / "sql"
+    legacy_db(timed / "src", tsql)
+    r1_ = evh(tsql, "sqlite", "migrate")
+    shutil.copytree(timed / "src", timed / "files" / "data")
+    r2_ = evh(timed / "files", "files", "migrate")
+    shutil.copytree(timed / "files" / "data", timed / "live" / "data")
+    r3_ = evh(timed / "live", "sqlite", "data-migrate", "--to", "sqlite")
+    check(
+        "runs with times: the step and data-migrate both ran",
+        r1_.returncode == 0 and r2_.returncode == 0 and r3_.returncode == 0,
+        (r1_.stderr[-200:], r2_.stderr[-200:], r3_.stderr[-200:]),
+    )
+    seen_order = []
+    for (k,) in sqlite3.connect(timed / "sql" / "data" / "project.sqlite").execute(
+        "SELECT key FROM score_sets ORDER BY id"
+    ):
+        if k.split("/")[1].split("_")[0] not in seen_order:
+            seen_order.append(k.split("/")[1].split("_")[0])
+    check(
+        "sqlite migrate: score sets in the order of their run's time (a run with none first; `started_at` before "
+        "`created_at`; a zone counted), ids 1.. in that order",
+        seen_order == ["alpha", "zeta", "epsilon", "delta", "gamma", "beta"]
+        and [r[0] for r in dump(timed / "sql")["score_sets"]] == list(range(1, n_sets + 1)),
+        (seen_order, [r[0] for r in dump(timed / "sql")["score_sets"]]),
+    )
+    check(
+        "the step's frozen code and data-migrate's live code make the same tables in that order, cell for cell",
+        dump(timed / "sql") == dump(timed / "live"),
+        [t for t, v in dump(timed / "sql").items() if dump(timed / "live")[t] != v],
+    )
     r = evh(sql, "files", "data-migrate", "--to", "files")
     check("the migrated database moved back to files", r.returncode == 0, r.stdout + r.stderr[-300:])
     back = tree(sql / "data")

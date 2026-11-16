@@ -325,7 +325,8 @@ def _text_of(cache: _Kept, key: Any, held: _Held) -> str:
     return text
 
 
-#: A score set's id is the first SET_BITS bits of its key's sha256; a row's id is `score_set * ROWS_PER_SET + n`, under 2^63.
+#: A score set's id is the next free one after the highest (a release's are its position in the order `data-migrate`
+#: writes them, the run's start time then the key); a row's id is `score_set * ROWS_PER_SET + n`, under 2^63.
 SET_BITS = 43
 ROW_BITS = 20
 ROWS_PER_SET = 1 << ROW_BITS
@@ -339,11 +340,6 @@ INT64 = 1 << 63
 def _canon(value: Any) -> str:
     """The text the tables keep a JSON value as: keys sorted, as a row's line is."""
     return json.dumps(value, sort_keys=True)
-
-
-def _set_hash(key: str) -> int:
-    """The id a score set's key starts from: its sha256's first SET_BITS bits."""
-    return int.from_bytes(hashlib.sha256(key.encode("utf-8")).digest()[:8], "big") >> (64 - SET_BITS)
 
 
 def _is_value(v: Any) -> bool:
@@ -389,10 +385,14 @@ def _set_id(conn: sqlite3.Connection, key: str) -> int | None:
 
 
 def _add_set(conn: sqlite3.Connection, key: str) -> int:
-    """A new score set: its key's hash, or the next free id upward (wrapping) when another key holds it."""
-    sid = _set_hash(key)
-    while conn.execute("SELECT 1 FROM score_sets WHERE id = ?", (sid,)).fetchone():
-        sid = (sid + 1) % (1 << SET_BITS)
+    """A new score set, last: the highest id plus one, so a score set added later lands after every other in the tables.
+    A database whose highest id has no room for a row's 2^20 numbers above it (one built with hashed ids by an
+    earlier build) gives the lowest free id."""
+    sid = (conn.execute("SELECT MAX(id) FROM score_sets").fetchone()[0] or 0) + 1
+    if sid >= 1 << SET_BITS:
+        sid = 1
+        while conn.execute("SELECT 1 FROM score_sets WHERE id = ?", (sid,)).fetchone():
+            sid += 1
     conn.execute("INSERT INTO score_sets VALUES (?, ?)", (sid, key))
     return sid
 
@@ -824,8 +824,8 @@ def ensure_tables(conn: sqlite3.Connection) -> None:
         conn.execute(stmt)
 
 
-#: A score's per-item results (RFC-033), the tables `write_set` and `read_set` keep. The score set's id is its key's
-#: hash, never its insertion order; a row's id is `score_set * 2^20 + n`, so a score set's rows are one id range (read,
+#: A score's per-item results (RFC-033), the tables `write_set` and `read_set` keep. The score set's id follows the
+#: order the sets were added; a row's id is `score_set * 2^20 + n`, so a score set's rows are one id range (read,
 #: replaced and deleted by that range); `value` has no type affinity, so an integer stays an integer and a float a float.
 RESULTS_DDL = (
     "CREATE TABLE IF NOT EXISTS score_sets (id INTEGER PRIMARY KEY, key TEXT NOT NULL UNIQUE)",

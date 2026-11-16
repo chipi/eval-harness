@@ -9,6 +9,9 @@ A project is files or its database, never both. Each file is written to the targ
 sha256; a run's outputs by item, text, sha256 and order; its checkpoint's rows by their exact text, each of its scores'
 rows by their canonical text, `row_line` of each) before the old copy is removed;
 any difference stops the move with that file in its old place. A move a crash stopped is finished by the next one.
+Into SQLite the outputs and score sets go in the order of their run's time (run.json's `started_at`, else `created_at`; a
+run with neither first), then the key, so a score set's id is its place in that order and a run added since lands after
+every older one: a release's rsync of the database stays small (RFC-033).
 Refused while the project's store (`store` in config.yaml, or EVAL_STORE) is not the target, while data/ holds Python
 (code is never in the database: keep it outside data/ and name it by path), and while a run is still in the layout
 before 0.8.0 (`evh migrate` first).
@@ -23,7 +26,9 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
 import argparse
+import datetime
 import hashlib
+import json
 import os
 import sqlite3
 import sys
@@ -52,6 +57,43 @@ def _disk_files(data: Path) -> list[Path]:
                 continue
             out.append(p)
     return out
+
+
+def run_time(text: str | bytes | None) -> float | None:
+    """A run's time from its run.json: `started_at`, else `created_at` (the committed runs hold the second alone), as
+    seconds since the epoch (a time with no zone is UTC); None when the text is no JSON object, or holds neither as an
+    ISO time."""
+    try:
+        doc = json.loads(text) if text else None
+    except ValueError:
+        return None
+    if not isinstance(doc, dict):
+        return None
+    for field in ("started_at", "created_at"):
+        v = doc.get(field)
+        if isinstance(v, str):
+            try:
+                t = datetime.datetime.fromisoformat(v.replace("Z", "+00:00"))
+            except ValueError:
+                continue
+            return (t if t.tzinfo else t.replace(tzinfo=datetime.timezone.utc)).timestamp()
+    return None
+
+
+def _run_stamp(run: Path) -> float | None:
+    """The time of the run in folder `run`, from its run.json on disk or already in the database."""
+    p = run / "run.json"
+    if p.is_file():
+        return run_time(p.read_bytes())
+    return run_time(_store.read_bytes(p)) if _store.is_file(p) else None
+
+
+def _in_time_order(d: Path) -> tuple[float, str]:
+    """Where a folder with per-item files goes in the database: by its run's time, then its key. A score is its run's
+    (runs/<id>/scores/<key>); one with no time (no run.json, or none of the two fields) goes first, as the oldest."""
+    run = d.parent.parent if d.parent.name == "scores" else d
+    t = _run_stamp(run)
+    return (float("-inf") if t is None else t, d.relative_to(_common.DATA).as_posix())
 
 
 def _is_run(d: Path) -> bool:
@@ -102,12 +144,11 @@ def to_sqlite(dry_run: bool) -> dict[str, int]:
     n = {"files": 0, "runs": 0, "outputs": 0, "rows": 0, "bytes": 0}
     st = _outputs.store_named("sqlite")
     disk = _outputs.store_named("files")
-    # By key text, the order the database is built in: a score set's id depends on it only when two keys' hashes collide,
-    # and the metrics' ids follow the order the names are first met, so one data always gives one database.
-    runs = sorted(
-        {p.parent for p in files if p.name in PER_ITEM and _is_run(p.parent)},
-        key=lambda d: d.relative_to(data).as_posix(),
-    )
+    # The order the database is built in: by the run's time, then the key. A score set's id is its place in it, the
+    # outputs and rows fill their tables in it, and the metrics' ids follow the order the names are first met, so one
+    # data gives one database, and a run added since lands after every older one in each table: a release's delta stays
+    # at its end. (The order is read before any file moves: run.json goes into the database with the others.)
+    runs = sorted({p.parent for p in files if p.name in PER_ITEM and _is_run(p.parent)}, key=_in_time_order)
     run_set = set(runs)
     per_item = {p for p in files if p.name in PER_ITEM and p.parent in run_set}
     for p in files:

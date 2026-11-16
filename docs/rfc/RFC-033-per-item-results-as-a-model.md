@@ -37,7 +37,9 @@ and each name is stored once. Readers keep getting the same row dicts. The files
 7. The SQLite table of a call's facts is `call_facts` (not `calls`, which is already a `_meta` key: the judge adapter's
    per-pair records, 4,425 rows).
 8. V9 checks a SQLite project in this release (today it skips everything there).
-9. The release database uses 16 KiB pages and score-set ids that do not depend on where a key sorts.
+9. The release database uses 16 KiB pages. (Amended 2026-11-16: the tables are built in the order of the run's time, then
+   the key, so a new run lands at the end of each and a deploy's rsync sends little; score-set ids are the place in that
+   order, not a hash of the key: see Ids.)
 10. The MCP container's memory: 512m (done, 6a91f51db).
 
 Binding from before: one database for everything under `data/`, no Python in it, nothing invented beyond the scope
@@ -140,7 +142,7 @@ and `score_rows.meta`.
 ### SQLite tables (replace `rows`)
 
 ```sql
-score_sets   (id INTEGER PRIMARY KEY,               -- from the key's sha256 (below), not from insertion order
+score_sets   (id INTEGER PRIMARY KEY,               -- the order the sets were added: highest + 1 (below)
               key TEXT NOT NULL UNIQUE)             -- the score set's folder, data/-relative
 metrics      (id INTEGER PRIMARY KEY, name TEXT NOT NULL UNIQUE)
 call_facts   (run TEXT NOT NULL, item_id TEXT NOT NULL, meta TEXT NOT NULL,      -- JSON object
@@ -158,16 +160,22 @@ rows_partial (run TEXT NOT NULL, n INTEGER NOT NULL, line TEXT NOT NULL, PRIMARY
 CREATE INDEX score_rows_item ON score_rows (item_id)
 ```
 
-**Ids.** `score_sets.id` = the first 43 bits of the key's sha256; on a collision, the next free id upward, wrapping at 2^43 (linear
-probing). Probing makes an id depend on insertion order only for colliding keys, so keys are always inserted sorted
-(`data-migrate`, `m0007`, the release), and two builds of one data still give one database. Odds of any collision: about
-n²/2^44, 3e-8 at this repository's 711 sets, 6e-4 at 100,000 (31 bits, the first revision's, gave 90% there, with no
-way out). `score_rows.id` = `score_set * 2^20 + n`: under 2^63; a set over 2^20 rows is refused. Ids do not depend on
-which other score sets exist, so a new run does not renumber the others; the B-tree still orders by id, so how much a
-release delta shrinks is measured, not assumed (step e). The release is sealed with `page_size = 16384` (measured on
-today's layout: −27.1 MB, and the one-new-run delta from 20.2 MB to 1.1 MB when the run sorts last; to be measured again
-on this layout). Wide ids cost size: the review's prototype gave per-item results 73.1 MiB with them against 64.0 with
-sequential ids (`score_values`' key carries the 7-byte row id).
+**Ids.** `score_sets.id` = the highest id plus one (the first is 1): the order the sets are added. `data-migrate --to sqlite`
+(the release's, a project's) adds them, and writes the outputs, in the order of the run's time then the key: `started_at`
+of run.json, else its `created_at`, as an instant (a zone counts; a time with none is UTC); a run with neither as an ISO
+time comes first, by its key. A score set is its run's (`runs/<run>/scores/<key>`). So a release's ids are positions
+in that order, one data gives one database (the files' creation order and the project's place do not matter), and a run
+newer than every other lands at the end of `score_sets`, `score_rows`, `score_values` and `outputs`. Metric ids are the
+order their names are first met in that order, a set's new names sorted. A project that writes a score set later
+appends it the same way (highest + 1); a score set added to an old run sits with that run when the release is built
+again, and the ids after it move up (a release is always built from the files; ids are not content, every comparison
+of the two stores is on canonical text). A database whose highest id has no room for a set's 2^20 row numbers (a project
+built when ids were key hashes, 43 bits) gives the lowest free id. `score_rows.id` = `score_set * 2^20 + n`: under
+2^63; a set over 2^20 rows is refused. Ids that follow the order also shrink the database (a row id of 5 bytes, not 7 in
+`score_values`' key): 128.5 MB against 136.3 MB at 16 KiB pages. How much a release delta shrinks was measured (step
+e): a new run costs 1.1 MB (named last) to 9.4 MB (named first) of rsync, against 10 to 87 MB with hashed ids; a rescore
+of an old run lands where the run is and moves the pages after it (26 MB for a run in the middle of the time order, 61 MB
+for the oldest). The release is sealed with `page_size = 16384`.
 
 **What goes where** (one rule, tested case by case):
 
@@ -268,5 +276,7 @@ guards, commit, push, `ci-watch` green.
   MiB less): a large diff in `harness/data`; gitleaks and GitHub's diff limits are checked on it before push.
 - **Lossy slim**: dropped billing detail only comes back from the provider.
 - **Assembly speed**: +49% before tuning (above); the gate decides.
-- **Release delta**: B-trees order by id, so a new run still moves later pages; measured in step e.
+- **Release delta**: B-trees order by id, so what is added in the middle moves the pages after it. The tables are built
+  in the order of the run's time so a new run is added last; a rescore of an old run, a new run's name in `outputs`'
+  index, its item ids in `score_rows_item` and the `files` table (in path order) still move some pages; measured in step e.
 - **Fleet repo**: its rows are unread here (NaN, strings, `_commit`?); its scratch migrate in step f reports them.
