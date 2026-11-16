@@ -12,7 +12,8 @@
 #                               worktree=<branch>); read what the branch sent with the o11y-dev skill before a PR
 #   make browser-check                   the inspector and the public site in headless Chromium
 #   make guard-check                     the checks can fail: each checker catches its planted defects
-#   make quality                         lint, types, security, dead code, docstrings, spelling, shell
+#   make quality                         lint, types, security, dead code, docstrings, spelling, shell, llms.txt
+#   make llms                            llms.txt, the agent-facing index of the docs (tools/llms_txt.py)
 #
 # docs/REPRODUCE.md walks through it. The harness's own verbs live in harness/Makefile
 # (`make -C harness help`); this file drives the worked examples and the repository-wide checks.
@@ -25,11 +26,11 @@ ARMS ?=
 SYSTEM ?=
 
 .DEFAULT_GOAL := help
-.PHONY: help setup verify list plan data reproduce compare site docs serve serve-dev mcp-dev obs-vendor browser-check browser-real-check budget-check guard-check commands-check stores-check \
+.PHONY: help setup verify list plan data reproduce compare site docs serve serve-dev mcp-dev obs-vendor llms llms-check browser-check browser-real-check budget-check guard-check commands-check stores-check \
 	quality-install quality lint format type security audit-locks deadcode docstrings spelling shell complexity
 
 help:
-	@sed -n '1,18p' Makefile | sed 's/^# \{0,1\}//'
+	@sed -n '1,19p' Makefile | sed 's/^# \{0,1\}//'
 
 $(PY):
 	$(MAKE) -C harness install
@@ -126,10 +127,19 @@ docs:
 SPELLED := '*.py' '*.md' '*.sh' '*.yml' '*.yaml' '*.toml' '*.html' '*.js' '*.css' '*.txt' \
 	':!:harness/data/**' ':!:examples/*/data/**' ':!:harness/workbench/mock.js'
 
+# llms.txt (llmstxt.org), made from tools/llms.in.md and the docs' titles and status lines: `llms` writes it,
+# `llms-check` fails when it is stale, a link, an anchor or a path in it does not resolve, or a per-type index
+# misses one of its documents (the guard proves each: harness/tests/test_checks_can_fail.py).
+llms: $(PY)
+	$(PY) tools/llms_txt.py
+
+llms-check: $(PY)
+	$(PY) tools/llms_txt.py --check
+
 quality-install: $(PY)
 	$(BIN)/pip install -q -r harness/requirements-dev.txt
 
-quality: lint type security deadcode docstrings spelling shell complexity
+quality: lint type security deadcode docstrings spelling shell complexity llms-check
 
 lint:
 	$(BIN)/ruff check .

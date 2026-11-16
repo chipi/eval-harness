@@ -2,6 +2,8 @@
 
 Rules for coding agents working in this repository. The harness is the package in `harness/`; `infra/` is the
 deployment of evals.humancopilot.eu; `docs/` holds the decisions (ADRs), designs (RFCs), product and UX specs.
+`llms.txt` indexes the docs: by area of the code and by service, so you open only what your change needs
+(`make llms` writes it; edit `tools/llms.in.md`, never `llms.txt` itself).
 
 ## Observability: dev and prod
 

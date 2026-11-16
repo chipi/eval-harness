@@ -397,6 +397,12 @@ that can move a result is never a patch release without saying so under **Change
   `~/.config/evals/observability-dev.env`, never the repository. A dev run with a prod GlitchTip project, or a prod run
   with the dev one, sends nothing there; Umami counts prod's callers only. The repository gains an `AGENTS.md` for
   coding agents: run the `o11y-dev` skill before a PR; a dev error never becomes a GitHub issue.
+- **`llms.txt`, the agent-facing index of this repository's docs** (llmstxt.org; issue #35): the agent rules by
+  section, the ADR, RFC, PRD and UXS sets with their counts by status, the decisions every change must respect, the
+  guides, the docs to read for each area of the code, and for each service its GlitchTip project and logs. Made by
+  `tools/llms_txt.py` from `tools/llms.in.md` and the documents' own titles and status lines (`make llms`);
+  `make llms-check`, part of `make quality`, fails when it is stale, a link, an anchor or a path in it does not
+  resolve, or an index misses one of its documents, and the guard proves each of those failures.
 
 ### Changed
 

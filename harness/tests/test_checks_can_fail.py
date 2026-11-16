@@ -169,6 +169,47 @@ PLANTS = [
         "| Retrieval on SciFact |",
         "Retrieval on SciFact",
     ),
+    # llms.txt (tools/llms_txt.py --check): stale, a link, an anchor, a path in backticks, a per-type index.
+    (
+        "../tools/llms_txt.py",
+        "an llms.txt that is not what its template writes",
+        "tools/llms.in.md",
+        "the parts and how they fit",
+        "the parts, and how they fit together",
+        "is not what tools/llms_txt.py writes",
+    ),
+    (
+        "../tools/llms_txt.py",
+        "an llms.txt link to a file that does not exist",
+        "tools/llms.in.md",
+        "[RFC-018](docs/rfc/RFC-018-read-only-mcp-server.md)",
+        "[RFC-018](docs/rfc/RFC-018-no-such-design.md)",
+        "RFC-018-no-such-design.md, which does not exist",
+    ),
+    (
+        "../tools/llms_txt.py",
+        "an llms.txt link to a heading that does not exist",
+        "tools/llms.in.md",
+        "AGENTS.md#observability-dev-and-prod",
+        "AGENTS.md#no-such-heading",
+        "AGENTS.md#no-such-heading: no such heading",
+    ),
+    (
+        "../tools/llms_txt.py",
+        "an llms.txt code path that does not exist",
+        "tools/llms.in.md",
+        "`harness/scripts/model_onboard.py`",
+        "`harness/scripts/no_such_module.py`",
+        "`harness/scripts/no_such_module.py`: no such path",
+    ),
+    (
+        "../tools/llms_txt.py",
+        "a per-type index that misses one of its documents",
+        "docs/uxs/index.md",
+        "| [UXS-005](UXS-005-workbench.md) |",
+        "| UXS-005 |",
+        "docs/uxs/index.md does not list UXS-005-workbench.md",
+    ),
     # V10 guards CODE: each plant changes a constant code_digest covers, in the NER parser, the
     # extraction scorer and the retrieval parser. Their messages are checked below.
     (
@@ -252,7 +293,11 @@ def run_in(shadow: Path, script: str) -> str:
     cmd = (
         [sys.executable, str(shadow / "harness" / "scripts" / "cli.py"), "validate"]
         if script == "scripts/validate_tree.py"
-        else [sys.executable, str(shadow / "harness" / script)]
+        else [
+            sys.executable,
+            str(shadow / "harness" / script),
+            *(["--check"] if script.endswith("llms_txt.py") else []),
+        ]
     )
     r = subprocess.run(
         cmd,
