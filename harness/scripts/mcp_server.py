@@ -21,11 +21,13 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
 import argparse
+import contextvars
 import json
 import math
 import os
 import subprocess
 import sys
+import threading
 import time
 from collections import OrderedDict
 from pathlib import Path
@@ -448,7 +450,11 @@ def build_server(
             # never past ANSWERS_TTL (its time is infinitely recent).
             answers[key_of(rec["tool"], rec.get("args") or {})] = (math.inf, _answer(types, envelope, text))
             answers_size[0] += len(text)
-    slots = anyio.CapacityLimiter(concurrent)
+    # Held by a call's work, released by that work when it ends, not when its caller stops waiting: a call answered in this
+    # process cannot be stopped, so a slot freed at the timeout let repeated slow calls run past --concurrent (and the
+    # callers' one-at-a-time with them), unbounded, on a server with half a CPU.
+    slots = threading.BoundedSemaphore(concurrent)
+    tally = threading.Lock()  # inflight, which a call's work changes from its own thread
     tools = [
         types.Tool(
             name=op.name,
@@ -556,35 +562,66 @@ def build_server(
                         {**info, "refused": "rate_total"},
                     )
                 everyone.append(now)
-            if (
-                client and inflight.get(key, 0) >= 1
-            ):  # over HTTP: a local stdio client may run tools in parallel
+            with tally:  # over HTTP: a local stdio client may run tools in parallel
+                busy = bool(client) and inflight.get(key, 0) >= 1
+                if not busy:
+                    inflight[key] = inflight.get(key, 0) + 1
+            if busy:
                 return refuse(
                     "one call at a time per caller: wait for the last to answer", {**info, "refused": "busy"}
                 )
-            inflight[key] = inflight.get(key, 0) + 1
+
+            def caller_done() -> None:
+                """The caller's call is over: another may start (one at a time per caller)."""
+                with tally:
+                    inflight[key] -= 1
+                    if not inflight[key]:
+                        del inflight[key]
+
             code, err, out, envelope = 0, "", "", None
+            acquired = handed = False
             try:
                 t0 = time.monotonic()
-                with anyio.move_on_after(30) as waited:
-                    await slots.acquire()
-                if waited.cancelled_caught:
+                with anyio.move_on_after(30):
+                    while not (acquired := slots.acquire(blocking=False)):
+                        await anyio.sleep(0.05)
+                if not acquired:
                     return refuse("the server is busy: try again in a minute", {**info, "refused": "busy"})
                 started: list[subprocess.Popen] = []
+                result: dict[str, Any] = {}
+                finished = threading.Event()
+
+                def work() -> None:
+                    """The call's work, in its own thread: the slot and the caller's count are given back when it ends."""
+                    try:
+                        if name in agent:
+                            result["value"] = run_command(project, name, argv, timeout, False, started)
+                        else:
+                            result["value"] = run_op(ops[name], arguments, public)
+                    except Exception as exc:  # noqa: BLE001 - handed to the call waiting for it, raised there
+                        result["error"] = exc
+                    finally:
+                        slots.release()
+                        caller_done()
+                        finished.set()
+
+                # The call's own thread, in a copy of this context: from here the slot and the caller's count are the
+                # work's, given back when it ends.
+                worker = threading.Thread(target=contextvars.copy_context().run, args=(work,), daemon=True)
+                worker.start()
+                handed = True
                 try:
-                    # A cancelled call (notifications/cancelled, or the client gone) stops being waited for; a call answered in
-                    # this process cannot be stopped, so a computation that has begun runs to its end (the paired tests of a
-                    # leaderboard, bounded by their own inputs).
+                    # A cancelled call (notifications/cancelled, or the client gone) stops being waited for, as does one
+                    # past --timeout; what has begun in this process runs to its end, holding its slot.
+                    with anyio.fail_after(None if name in agent else timeout):
+                        while not finished.is_set():
+                            await anyio.sleep(0.02)
+                    if "error" in result:
+                        raise result["error"]
                     if name in agent:
-                        code, out, err = await anyio.to_thread.run_sync(
-                            lambda: run_command(project, name, argv, timeout, False, started),
-                            abandon_on_cancel=True,
-                        )
+                        code, out, err = result["value"]
                     else:
-                        with anyio.fail_after(timeout):
-                            envelope = await anyio.to_thread.run_sync(
-                                lambda: run_op(ops[name], arguments, public), abandon_on_cancel=True
-                            )
+                        envelope = result["value"]
                 except TimeoutError:
                     code, err = 124, f"(stopped waiting after {timeout:g} s)"
                 except (
@@ -599,12 +636,11 @@ def build_server(
                 except Exception as exc:  # noqa: BLE001 -- a crash is the server's: told to the hooks, "internal error" to a public caller
                     hooks("error", exc, info)
                     code, err = 70, f"{type(exc).__name__}: {exc}"
-                finally:
-                    slots.release()
             finally:
-                inflight[key] -= 1
-                if not inflight[key]:
-                    del inflight[key]
+                if not handed:
+                    if acquired:
+                        slots.release()
+                    caller_done()
             if envelope is not None:
                 out = json.dumps(envelope, ensure_ascii=False)
             done = {**info, "exit": code, "ms": round((time.monotonic() - t0) * 1000), "bytes": len(out)}

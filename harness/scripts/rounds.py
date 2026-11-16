@@ -26,7 +26,6 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 import argparse
 import subprocess
 import sys
-import textwrap
 from pathlib import Path
 
 from evaluation_harness import _common, _jsonout, _rounds, _store
@@ -43,7 +42,6 @@ from evaluation_harness.model.rounds import (  # noqa: F401  (rounds' evidence l
     _silver_authors,
     evidence,
 )
-from evaluation_harness.stats import fmt_p
 
 HERE = Path(__file__).resolve().parent
 
@@ -460,113 +458,9 @@ def close(argv: list[str]) -> int:
         return 0
 
 
-def status(argv: list[str]) -> int:
-    """evh round-list: every round of a goal, the open one with its evidence and suggestions."""
-    ap = argparse.ArgumentParser(
-        prog="evh round-list", description="A goal's rounds, and what the evidence suggests."
-    )
-    ap.add_argument("--goal", required=True)
-    ap.add_argument("--round", help="one round in full (default: the open one, else the last)")
-    ap.add_argument(
-        "--json",
-        action="store_true",
-        help="the same answer as one JSON object: the printed lines as blocks, the tables as data, and "
-        "the shown round, its evidence and suggestions under result.values",
-    )
-    args = ap.parse_args(argv)
-    with _jsonout.collect("rounds", args.json):
-        return _status(args)
-
-
-def _status(args: argparse.Namespace) -> int:
-    _goal(args.goal)
-    rounds = _rounds.load_rounds(args.goal)
-    if not rounds:
-        print(
-            f"{args.goal} has no rounds (they are optional). Open one: evh round-open --goal {args.goal} --dataset <dataset>"
-        )
-        _jsonout.values({"goal": args.goal, "rounds": []})
-        return 0
-    rows = [_rounds.summary(r) for r in rounds]
-    if not _jsonout.table(list(rows[0]), [list(r.values()) for r in rows]):
-        for r, row in zip(rounds, rows):
-            c = row["conclusion"]
-            print(
-                f"  {r['round_id']:4} {r['status']:7} {row['dataset_id']}  {row['arms']} arm(s), {row['retired']} retired"
-            )
-            if c:
-                print(textwrap.fill(c, 96, initial_indent="       ", subsequent_indent="       "))
-    rnd = (
-        _round(args.goal, args.round)
-        if args.round
-        else next((r for r in rounds if r["status"] == "open"), rounds[-1])
-    )
-    print(
-        f"\n{rnd['round_id']} · {rnd['status']} · {rnd['dataset_id']}"
-        + (f" · from {rnd['from']}" if rnd.get("from") else "")
-    )
-    for k in ("hypothesis",):
-        if rnd.get(k):
-            print(textwrap.fill(rnd[k], 96, initial_indent="  hypothesis: ", subsequent_indent="    "))
-    for ch in rnd.get("changes") or []:
-        print(textwrap.fill(str(ch), 100, initial_indent="  changed: ", subsequent_indent="           "))
-    for a in model_rounds.arms(rnd):
-        if a.get("retired"):
-            print(f"  retired: {a['system']} ({a['retired']['reason']})")
-    if rnd.get("harness"):
-        h = rnd["harness"]
-        print(
-            f"  harness: {h.get('version')}"
-            + (f" at {h['commit']}" if h.get("commit") and not h.get("installed") else "")
-            + f" (code {str(h.get('code_sha256'))[:12]})"
-        )
-    if rnd.get("scorer"):
-        print(f"  judged by: {rnd['scorer']}")
-    for sc in rnd.get("scoring") or []:
-        print(
-            f"  scoring {str(sc.get('at', ''))[:10]}: {sc.get('why', '')} "
-            f"({sc.get('scorer', '')}, {sc.get('runs', 0)} run(s) re-scored into {', '.join(sc.get('written') or []) or '—'})"
-        )
-    ev = evidence(args.goal, rnd)
-    print(
-        f"\n  on {ev['metric']}: {len(ev['arms'])} arm(s) in play"
-        + (f", leader {ev['leader'].rsplit('/', 1)[-1]}" if ev.get("leader") else "")
-    )
-    if not _jsonout.table(
-        ["arm", "verdict", "delta", "p"], [[r["arm"], r["verdict"], r["delta"], r["p"]] for r in ev["rows"]]
-    ):
-        for r in ev["rows"]:
-            print(
-                f"    {r['arm'].rsplit('/', 1)[-1]:32} {r['verdict']:18} Δ {r['delta']:+.4f}  p {fmt_p(r['p'])}"
-            )
-    if not _jsonout.table(
-        ["label", "other", "verdict", "delta", "p"],
-        [[v["label"], v["other"], v["verdict"], v["delta"], v["p"]] for v in ev["against"]],
-    ):
-        for v in ev["against"]:
-            print(
-                f"  against {v['label']} ({v['other'].rsplit('/', 1)[-1]}): {v['verdict']}, Δ {v['delta']:+.4f}, p {fmt_p(v['p'])}"
-            )
-    _jsonout.values(
-        {"goal": args.goal, "rounds": rows, "round": _rounds.view(rnd)} | _rounds.evidence_values(rnd, ev)
-    )
-    for n in ev["notes"]:
-        print(f"  NOTE: {n}")
-    if rnd["status"] == "open" and ev["suggest"]:
-        print("\n  suggested next:")
-        for what, cmd in ev["suggest"]:
-            print(f"    - {what}" + (f"\n        {cmd}" if cmd else ""))
-    if rnd["status"] == "closed":
-        text = str((rnd.get("conclusion") or {}).get("text", ""))
-        print(
-            "\n" + textwrap.fill(text, 100, initial_indent="  concluded: ", subsequent_indent="             ")
-        )
-    return 0
-
-
-ACTIONS = {"open": open_round, "carry": carry, "retire": retire, "close": close, "status": status}
+ACTIONS = {"open": open_round, "carry": carry, "retire": retire, "close": close}
 
 
 def run(action: str) -> int:
-    """Entry point for the per-action scripts (`evh round-open` ... `evh round-list`)."""
+    """Entry point for the per-action scripts (`evh round-open`, `round-carry`, `round-retire`, `round-close`)."""
     return ACTIONS[action](sys.argv[1:])

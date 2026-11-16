@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""evh round-list: see rounds.py."""
+"""evh round-close: see rounds.py."""
 
 import sys as _sys
 from pathlib import Path as _Path

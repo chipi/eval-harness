@@ -679,7 +679,7 @@ def print_overview(d: dict) -> None:
         _table(["when", "what", "kind"], [[x["at"][:16].replace("T", " "), x["what"], x["kind"]] for x in ev])
 
 
-def print_arms(d: dict, by: str = "dataset", every: bool = False) -> None:
+def print_arms(d: dict) -> None:
     """Every arm that fits, grouped as the arms page groups them, or one row a system (the `arms` view's data)."""
     ca_groups = dict(ca.GROUPS)
     f, rows = d["filters"], d["arms"]
@@ -716,18 +716,16 @@ def print_arms(d: dict, by: str = "dataset", every: bool = False) -> None:
             ],
         )
         return
-    # "dataset" groups by what can be ranked together, as the page does: a dataset, scored one way, on one measure.
-    key = "" if by == "none" else "set" if by == "dataset" else by
+    # Grouped by what can be ranked together, as the page does: a dataset, scored one way, on one measure.
     # One dataset asked for is that group opened; otherwise a group shows its first three, as the page does.
-    fold = 0 if every or f["dataset"] or not key else 3
+    fold = 0 if f["dataset"] else 3
     groups: dict = {}
     for r in sorted(rows, key=ca._reading_order):
-        groups.setdefault((ca.set_key(r) if key == "set" else r[key]) if key else "", []).append(r)
+        groups.setdefault(ca.set_key(r), []).append(r)
     for name in sorted(groups):
-        if key:
-            print(
-                f"\n{ca_groups[key]} {name or '—'} ({len(groups[name])} arm{'' if len(groups[name]) == 1 else 's'})"
-            )
+        print(
+            f"\n{ca_groups['set']} {name or '—'} ({len(groups[name])} arm{'' if len(groups[name]) == 1 else 's'})"
+        )
         _table(
             [
                 "arm id",
@@ -781,8 +779,6 @@ def print_arms(d: dict, by: str = "dataset", every: bool = False) -> None:
             more = (
                 f"evh dataset-arm-list {ds} lists them, with the dataset's other groups "
                 f"({sum(r['dataset'] == ds for r in rows)} arms)"
-                if key == "set"
-                else "evh arm-list --all"
             )
             print(f"  … and {len(groups[name]) - fold} more: {more}")
     if any(r["roles"] for r in rows):

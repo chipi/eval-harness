@@ -83,7 +83,6 @@ PATH_KINDS: dict[tuple[str, str], str] = {
     ("dataset-describe", "--card"): UPLOAD,
     ("import-run", "--scores"): UPLOAD,
     ("import-run", "--scorer-file"): UPLOAD,
-    ("label-coverage", "--map"): UPLOAD,
     ("label-mutants", "--map"): UPLOAD,
     ("label-from-capture", "--map"): UPLOAD,
     ("label-from-run", "--guideline"): UPLOAD,
@@ -99,7 +98,6 @@ PATH_KINDS: dict[tuple[str, str], str] = {
     ("study-tell", "--proposal"): UPLOAD,
     ("study-import", "file"): UPLOAD,
     ("prompt-export", "--to"): ARTIFACT,
-    ("dataset-card", "--out"): ARTIFACT,
     ("data-put", "file"): UPLOAD,
 }
 #: Path-typed arguments never taken, each a decision (RFC-026 revision 2): an output folder,
@@ -112,8 +110,6 @@ NEVER_PATHS = {
     ("catalog", "--out"),
     ("catalog", "--head"),
     ("catalog", "--about"),
-    ("inspect", "--csv"),
-    ("inspect", "--rubric"),
 }
 #: Options never taken from any command: they load code or reach outside the project.
 NEVER = {"--adapter", "--help", "--json", "--source-dir", "--data-dir"}
@@ -251,6 +247,19 @@ def unkinded_paths() -> list[str]:
             ):
                 out.append(f"{c} {_key(a)}")
     return out
+
+
+def unknown_path_entries() -> list[str]:
+    """Every entry of PATH_KINDS and NEVER_PATHS that names a command or an argument no command has: empty, or a test
+    fails (a removed command left its entries behind, unnoticed)."""
+    from evaluation_harness._cmdline import parser_of  # noqa: PLC0415
+    from evaluation_harness.cli import COMMANDS  # noqa: PLC0415
+
+    return [
+        f"{c} {arg}"
+        for c, arg in sorted({*PATH_KINDS, *NEVER_PATHS})
+        if c not in COMMANDS or arg not in {_key(a) for a in parser_of(c)._actions}
+    ]
 
 
 class Refused(ValueError):

@@ -251,55 +251,6 @@ def stop(argv: list[str]) -> int:
     return 0
 
 
-def _one(study: str) -> None:
-    """`evh goal-list --study`: one study, as its log says."""
-    goal, sid = model_studies.resolve(study)
-    st = model_studies.state(goal, sid)
-    print(
-        f"study {goal}/{sid}: {st['status']}, round {st['round']}, from {st['baseline']}, ${st['spent_usd']:.4f} spent"
-    )
-    for t in st["trials"]:
-        print(
-            f"  t{t['k']}  {t.get('outcome'):<9} {t.get('hypothesis') or t.get('change')}  — {t.get('reason')}"
-        )
-    best = st["best"]
-    print(f"  best so far: {best['system_id'] if best else st['baseline'] + ' (the baseline)'}")
-    for c in st["confirms"]:
-        print(
-            f"  confirm on {c.get('test')}: {c.get('outcome', 'started')} (look {(c.get('look') or {}).get('number')})"
-        )
-    if st["end"]:
-        print(f"  ended: {st['end'].get('reason')}. {st['end'].get('summary')}")
-    _jsonout.value("study", st)
-
-
-def studies(argv: list[str]) -> int:
-    """evh goal-list: every study, by goal; or one, as its log says."""
-    ap = _ap("every study, by goal; or one with --study, as its log says (RFC-029)")
-    ap.add_argument("--goal")
-    ap.add_argument("--study", help="one study (GOAL/ID): each trial, the best so far, its confirmations")
-    _json_flag(ap)
-    a = ap.parse_args(argv)
-    with _jsonout.collect("studies", a.json):
-        if a.study:
-            _one(a.study)
-            return 0
-        out = []
-        for rid in model_studies.ids(a.goal or None):
-            goal, sid = rid.split("/", 1)
-            st = model_studies.state(goal, sid)
-            kept = sum(1 for t in st["trials"] if t.get("outcome") == "kept")
-            out.append({"goal": goal, "study": sid, "status": st["status"], "trials": len(st["trials"]), "kept": kept,
-                        "spent_usd": st["spent_usd"], "confirms": len(st["confirms"])})  # fmt: skip
-            print(
-                f"{goal}/{sid}: {st['status']}, {len(st['trials'])} trial(s), {kept} kept, ${st['spent_usd']:.4f}"
-            )
-        if not out:
-            print("no studies: write a spec and run evh study-run <goal>/<id> --spec FILE")
-        _jsonout.value("studies", out)
-    return 0
-
-
 def confirm(argv: list[str]) -> int:
     """evh study-confirm: the best trial against the baseline on a test set, once, as one look (RFC-029)."""
     ap = _ap("confirm a study's best trial on a test set: one look, one-sided at its level (RFC-029)")
@@ -534,6 +485,6 @@ def import_tsv(argv: list[str]) -> int:
 def run(sub: str) -> int:
     """One of the study commands, by name."""
     return {
-        "run": run_study, "ask": ask, "tell": tell, "stop": stop, "studies": studies,
+        "run": run_study, "ask": ask, "tell": tell, "stop": stop,
         "confirm": confirm, "import": import_tsv,
     }[sub](sys.argv[1:])  # fmt: skip

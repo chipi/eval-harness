@@ -1,7 +1,7 @@
 """Failure modes and the tags on outputs (PLAN_0.8.0 D1): how an arm fails, counted, not only how often.
 
 A project names its failure modes once, `data/failure-modes/<id>.yaml` (like a field set). A person or an agent tags
-outputs in a sheet (`evh sheet-show … --fill tags --modes <id>`: one `failure_modes: <arm>` column per arm,
+outputs in a sheet (`evh sheet-export … --fill tags --modes <id>`: one `failure_modes: <arm>` column per arm,
 cells `mode|mode`), and `evh sheet-import … --tags <name> --modes <id>` reads it back into a tag set,
 `data/tags/<dataset>/<name>/tags.json`: who tagged, when, from which sheet, and per run and item the modes. A tag set
 is never edited (a correction is a new set). `evh dataset-list` and the goal page count the modes per arm.

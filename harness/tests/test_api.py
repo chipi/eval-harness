@@ -47,6 +47,11 @@ check(
     _api.unkinded_paths() == [],
     _api.unkinded_paths(),
 )
+check(
+    "every path entry names a command that exists and an argument it has",
+    _api.unknown_path_entries() == [],
+    _api.unknown_path_entries(),
+)
 from evaluation_harness import _cmdline  # noqa: E402
 
 no_json = sorted(
