@@ -751,6 +751,15 @@ def main(argv: list[str] | None = None) -> int:
         "(a line another harness version wrote is not read)",
     )
     args = ap.parse_args(argv)
+    # The project and a file the caller names are where the caller stands, read before use_project moves this process
+    # into the project (render.sh passes them relative to its own folder).
+    args.project = args.project.resolve()
+    args.write_answers = args.write_answers and args.write_answers.resolve()
+    args.answers = args.answers and args.answers.resolve()
+    if args.hooks:
+        where, sep, name = args.hooks.partition(":")
+        if where.endswith(".py"):
+            args.hooks = os.path.abspath(where) + sep + name
     use_project(args.project.resolve())
     if args.write_answers:
         return write_answers(args.project.resolve(), args.write_answers, args.public)

@@ -64,6 +64,7 @@ try:
         "goals/tickets_summary.yaml",
         (Path(__file__).resolve().parents[1] / "tutorial" / "goals" / "tickets_summary.yaml").read_text(),
     )
+    _runstore.write_text(tmp, "datasets/toy_v1.json", "{}")  # a dataset, so the per-dataset calls are made
     rel_env = dict(env, EVAL_HOME=tmp.name)
     r = subprocess.run(
         [
@@ -74,7 +75,7 @@ try:
             tmp.name,
             "--public",
             "--write-answers",
-            str(tmp / "rel.jsonl"),
+            f"{tmp.name}/rel.jsonl",  # relative to where the caller stands, as render.sh names it
         ],
         cwd=tmp.parent,
         env=rel_env,
@@ -83,12 +84,13 @@ try:
     )
     rel = (
         {x["tool"]: x for x in map(json.loads, (tmp / "rel.jsonl").read_text().splitlines())}
-        if r.returncode == 0
+        if r.returncode == 0 and (tmp / "rel.jsonl").is_file()
         else {}
     )
     goal_rows = json.loads(rel["goal-list"]["out"])["result"]["goals"] if "goal-list" in rel else []
     check(
-        "--write-answers with a relative EVAL_HOME (from outside the project) answers from the project's data",
+        "--write-answers with a relative EVAL_HOME and a relative FILE (from outside the project): the file is where the "
+        "caller named it, and answers from the project's data",
         [row.get("goal") for row in goal_rows] == ["tickets_summary"],
         (r.stderr[-300:], goal_rows),
     )
@@ -99,7 +101,13 @@ try:
         _release._answered_goals(tmp / "rel.jsonl")[0] == 1,
         _release._answered_goals(tmp / "rel.jsonl"),
     )
+    check(
+        "and with a relative --project the writer finds the project's datasets: leaderboard is asked for toy_v1",
+        "leaderboard" in rel or "1 per-dataset call(s) on a dataset with no runs" in r.stdout,
+        (r.stdout[-300:], sorted(rel)),
+    )
     (tmp / "rel.jsonl").unlink(missing_ok=True)
+    _runstore.unlink(tmp, "datasets/toy_v1.json")
     _runstore.rmtree(tmp, "goals")
 
     r = evh("mcp", "--public", "--write-answers", str(answers))
