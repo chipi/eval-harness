@@ -1,7 +1,7 @@
-"""Jobs (RFC-026 step 3): one `evh` command each, run by a detached supervisor, in the project's .build/jobs/.
+"""Jobs (RFC-026 step 3, RFC-032 P3): one decision or work operation each, run by a detached supervisor, in the
+project's .build/jobs/.
 
-    .build/jobs/<id>/job.json         the operation and its inputs (a command and its argv, for a command not yet an
-                                      operation), who asked, its locks, when, the harness version
+    .build/jobs/<id>/job.json         the operation and its inputs, who asked, its locks, when, the harness version
     .build/jobs/<id>/inputs.json      an operation's inputs, which its command reads (`--inputs-file`)
     .build/jobs/<id>/state.json       queued | running | succeeded | failed | cancelled, rewritten whole
     .build/jobs/<id>/log              what the command printed (its stderr, and its stdout when it prints no envelope)

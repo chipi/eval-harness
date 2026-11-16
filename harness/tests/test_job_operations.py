@@ -426,14 +426,20 @@ try:
     round_doc = yaml.safe_load(_runstore.read_text(proj, "rounds/tickets_summary/r1.yaml"))
     check(
         "POST /goals/{goal}/rounds/{round}/close: 202 with the job; its record is operation, inputs (the route's parts "
-        "and the body, merged), by, locks (the goal exclusive, the project shared), env, created_at, harness",
+        "and the body, merged), by, locks (the goal and, as it promotes, the baselines run-promote writes, exclusive; the "
+        "project shared), env, created_at, harness",
         st == 202
         and j["operation"] == "round-close"
         and set(rec) == {"id", "operation", "inputs", "by", "locks", "env", "created_at", "harness"}
         and rec["inputs"]
         == {"goal": "tickets_summary", "round": "r1", "conclusion": conclusion, "promote": lead2_run}
         and rec["by"] == "person:ana"
-        and rec["locks"] == [["goal:tickets_summary", True], ["project", False]]
+        and rec["locks"]
+        == [
+            ["baselines:tickets_summary/tickets_v1", True],
+            ["goal:tickets_summary", True],
+            ["project", False],
+        ]
         and rec["env"] == {}
         and on_disk(j["id"], "inputs.json") == rec["inputs"],
         (st, rec),
@@ -572,6 +578,21 @@ try:
         and r3.returncode != 0
         and "is a required property" in r3.stderr,
         (r2.stderr[-200:], r3.stderr[-200:]),
+    )
+    r4 = evh(
+        "jobs-start", "pick", "--arg", "dataset_id=tickets_v1", "--arg", "item=t01", "--by", "person:cara", "--json"
+    )  # fmt: skip
+    pj = (
+        (json.loads(r4.stdout).get("result") or {}).get("values", {}).get("job", {})
+        if r4.returncode == 0
+        else {}
+    )
+    if pj.get("id"):
+        until(pj["id"])
+    check(
+        "jobs-start: one --arg for an input that takes a list is a list of one (pick --arg item=t01)",
+        r4.returncode == 0 and pj.get("inputs", {}).get("item") == ["t01"],
+        (r4.returncode, r4.stderr[-300:], pj.get("inputs")),
     )
     sj = evh("jobs-status", tj.get("id", "none"))
     check(
@@ -713,7 +734,11 @@ try:
         }
         and rc["requestBody"]["content"]["application/json"]["schema"]["required"] == ["conclusion", "by"]
         and rc["x-evh-kind"] == "decision"
-        and rc["x-evh-locks"] == {"templates": [{"key": "goal:{goal}", "exclusive": True}]}
+        and rc["x-evh-locks"]
+        == {
+            "templates": [{"key": "goal:{goal}", "exclusive": True}],
+            "function": "evaluation_harness.ops.locks:round_close_locks",
+        }
         and rc["x-evh-spends"] is False
         and cr["x-evh-kind"] == "work"
         and cr["requestBody"]["content"]["application/json"]["schema"]["required"] == ["by"]

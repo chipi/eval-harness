@@ -1,12 +1,12 @@
 """The study operations' bodies (RFC-029; RFC-032 P3: they run as jobs, ops/study_jobs.py).
 
-    evh study-run STUDY [--spec FILE] [--resume] [--dry-run]     open it and run the loop (grid, command); agent: open
-    evh study-ask STUDY                                          the state for the agent sampler, with an ask id
-    evh study-tell STUDY --ask ID --proposal FILE               the agent's proposal run as the next trial
-    evh study-stop STUDY                                         the loop stops after its trial; the study ends
-    evh study-list G  ·  evh study-show STUDY ID         what the logs say
-    evh study-confirm STUDY --test D --rule superiority|noninferiority [--trial K] [--dry-run]
-    evh study-import FILE --goal G --study ID                   Karpathy's results.tsv as a closed study
+    evh study-run --study STUDY [--spec FILE] [--resume] [--dry-run]   open it and run the loop (grid, command); agent: open
+    evh study-ask --study STUDY                                  the state for the agent sampler, with an ask id
+    evh study-tell --study STUDY --ask ID --proposal FILE        the agent's proposal run as the next trial
+    evh study-stop --study STUDY                                 the loop stops after its trial; the study ends
+    evh study-list G  ·  evh study-show STUDY ID                 what the logs say
+    evh study-confirm --study STUDY --test D --rule superiority|noninferiority [--trial K] [--dry-run]
+    evh study-import --file FILE --goal G --study ID             Karpathy's results.tsv as a closed study
 
 STUDY is <goal>/<study_id>, or the id when one goal has it.
 """
@@ -34,6 +34,7 @@ def run_study_body(**inputs: Any) -> int:
     if "/" not in a.study:
         die("study-run names <goal>/<study_id>", "bad-argument")
     goal, sid = a.study.split("/", 1)
+    text = None
     if a.spec is not None:
         if not _store.is_file(a.spec):
             die(f"--spec {a.spec}: no such file", "not-found")
@@ -42,15 +43,20 @@ def run_study_body(**inputs: Any) -> int:
                 f"{model_studies.spec_path(goal, sid)} exists: a study's spec is written once",
                 "would-overwrite",
             )
-        _store.mkdir(model_studies.spec_path(goal, sid).parent, parents=True, exist_ok=True)
-        _store.write_text(model_studies.spec_path(goal, sid), _store.read_text(a.spec, encoding="utf-8"))
-    if not _store.is_file(model_studies.spec_path(goal, sid)):
+        text = _store.read_text(a.spec, encoding="utf-8")
+    elif not _store.is_file(model_studies.spec_path(goal, sid)):
         die(f"no spec at {model_studies.spec_path(goal, sid)} (--spec FILE writes it)", "not-found")
-    s = model_studies.spec(goal, sid)
+    # Checked as given and written only when the study opens: a dry run writes nothing.
+    s = model_studies.spec(goal, sid) if text is None else _spec_of(text, str(a.spec))
+    if text is not None and isinstance(s.get("sampler"), dict) and _uploaded(a.spec):
+        die(
+            "a spec sent with the call names a command sampler, a program the server would run: such a study is "
+            "opened from the project itself (its spec in data/studies/, or --spec on the command line)",
+            "not-allowed",
+        )
     found = _study.problems(goal, sid, s)
     if found:
         die(f"study {goal}/{sid}: " + "; ".join(found), "invalid-file")
-    st = model_studies.state(goal, sid)
     sampler = s["sampler"] if isinstance(s["sampler"], str) else "command"
     if a.dry_run:
         stop = s.get("stop") or {}
@@ -59,6 +65,10 @@ def run_study_body(**inputs: Any) -> int:
               f"${stop.get('usd', 'EVAL_MAX_COST_USD')} in all. Nothing was called.")  # fmt: skip
         _jsonout.values({"study": f"{goal}/{sid}", "sampler": sampler, "dry_run": True})
         return 0
+    if text is not None:
+        _store.mkdir(model_studies.spec_path(goal, sid).parent, parents=True, exist_ok=True)
+        _store.write_text(model_studies.spec_path(goal, sid), text)
+    st = model_studies.state(goal, sid)
     if st["status"] == "ended":
         die(
             f"study {goal}/{sid} has ended ({st['end'].get('reason')}): a new study continues it",
@@ -94,6 +104,27 @@ def run_study_body(**inputs: Any) -> int:
         {"study": f"{goal}/{sid}", "end": end, "trials": len(model_studies.state(goal, sid)["trials"])}
     )
     return 0
+
+
+def _spec_of(text: str, where: str) -> dict[str, Any]:
+    """A spec given as a file, read as model_studies.spec reads a written one."""
+    try:
+        doc = yaml.safe_load(text) or {}
+    except yaml.YAMLError as exc:
+        die(f"--spec {where}: not YAML ({exc})", "invalid-file")
+    if not isinstance(doc, dict):
+        die(f"--spec {where}: a mapping", "invalid-file")
+    return doc
+
+
+def _uploaded(path: Any) -> bool:
+    """Whether a file came with a job's call (an upload, kept under the project's .build/uploads)."""
+    from pathlib import Path  # noqa: PLC0415
+
+    from evaluation_harness._common import project_root  # noqa: PLC0415
+
+    uploads = (project_root() / ".build" / "uploads").resolve()
+    return (project_root() / Path(str(path))).resolve().is_relative_to(uploads)
 
 
 def ask_body(**inputs: Any) -> int:

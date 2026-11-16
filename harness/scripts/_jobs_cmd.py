@@ -113,13 +113,13 @@ def start(argv: list[str]) -> int:
 
     with _jsonout.collect("jobs-start", a.json):
         try:
-            j = _api.start_operation(
-                _api.job_operation(a.operation),
-                args_of(a.arg),
-                _who() or None,
-                a.max_cost_usd,
-                _for() or None,
-            )
+            op = _api.job_operation(a.operation)
+            inputs = args_of(a.arg)
+            # `--arg item=i1` given once is still a list for an input that takes one (the API's caller sends [..]).
+            for name, value in inputs.items():
+                if (op.inputs.get(name) or {}).get("type") == "array" and not isinstance(value, list):
+                    inputs[name] = [value]
+            j = _api.start_operation(op, inputs, _who() or None, a.max_cost_usd, _for() or None)
         except _api.Refused as exc:
             _refused(exc)
         print(_line(j))
@@ -144,9 +144,9 @@ def status(argv: list[str]) -> int:
             except (FileNotFoundError, ValueError):
                 die(f"no job {a.job_id!r} in {_jobs.jobs_dir()}", "not-found")
             print(_line(j))
-            for k in ("argv", "inputs", "reason", "created_at", "started_at", "ended_at", "exit", "run_id"):
+            for k in ("inputs", "created_at", "started_at", "ended_at", "exit", "run_id"):
                 if j.get(k) not in (None, "", [], {}):
-                    shown = " ".join(j[k]) if k == "argv" else json.dumps(j[k]) if k == "inputs" else j[k]
+                    shown = json.dumps(j[k]) if k == "inputs" else j[k]
                     print(f"  {k}: {shown}")
             _jsonout.value("job", j)
         else:

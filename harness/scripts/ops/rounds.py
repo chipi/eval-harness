@@ -77,7 +77,7 @@ OPS = (
        }),
     Op("round-close", "decision", "close a round with its conclusion, promoting the run it chose",
        "POST", "/goals/{goal}/rounds/{round}/close", "evaluation_harness.rounds:close_body", "",
-       locks=(("goal:{goal}", True),), why="conclusion",
+       locks=(("goal:{goal}", True),), locks_fn="evaluation_harness.ops.locks:round_close_locks", why="conclusion",
        required=("goal", "round", "conclusion"), inputs={
            "goal": {"type": "string", "description": "the goal the round belongs to"},
            "round": {"type": "string", "description": "the round to close"},

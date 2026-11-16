@@ -1509,13 +1509,13 @@ each client is in [the integration guide](INTEGRATION.md#for-an-agent-evh-mcp).
   agent. The log line on stderr, one JSON line per call, carries neither.
 
 **The API** (RFC-026; the Workbench's, PRD-017): a local `evh catalog-serve` also answers `/api/v1/` for the
-commands: a read is its own resource (`GET /api/v1/goals`, `/api/v1/datasets/{dataset}/arms`, ...), made from the operations, and
-the rest are jobs, made from the commands' own argument parsers. Every call needs the token the server writes at start to
+operations: a read is its own resource (`GET /api/v1/goals`, `/api/v1/datasets/{dataset}/arms`, ...), and a decision or a
+work operation is a job (below). Every call needs the token the server writes at start to
 `.build/api-token` (readable by you only): `Authorization: Bearer <token>`, or the cookie `GET
 /api/v1/session?token=<token>` sets; another Host or a foreign Origin is refused, and a call that is not a read needs
-`X-EVH-Data: 1`. `GET /api/v1/commands` lists the commands it serves as jobs: whether each spends, and its arguments with a kind (a value, a system id checked to exist; an `upload`; an
-`artifact` a job writes); what loads code or names a path of the server's (`--adapter`, `--runs-dir`, output folders)
-is never taken. A read answers what the command answers with `--json`; `evh openapi` describes every resource. A server started `--public` or `--behind-proxy` answers no `/api/v1/` call: the API is this machine's only.
+`X-EVH-Data: 1`. `evh openapi` (and `GET /api/v1/openapi.json`) lists every operation with its inputs: whether it
+spends, a system id checked to exist, a file as an `upload` or as an `artifact` a job writes; what loads code or names a
+path of the server's (`--adapter`, output folders) is never taken, and a query's `path` must be inside the project. A read answers what the command answers with `--json`; `evh openapi` describes every resource. A server started `--public` or `--behind-proxy` answers no `/api/v1/` call: the API is this machine's only.
 
 **Jobs.** A decision or a work operation runs as a job: a POST on its own resource (`POST
 /api/v1/goals/{goal}/rounds/{round}/close`, `POST /api/v1/systems/{system}/runs`, ...; `evh openapi` lists them) with

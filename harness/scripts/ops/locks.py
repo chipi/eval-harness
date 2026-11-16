@@ -52,6 +52,13 @@ def promote_locks(inputs: dict[str, Any]) -> list[tuple[str, bool]]:
     return [(f"baselines:{goal or '_dataset'}/{dataset}", True)] if dataset else []
 
 
+def round_close_locks(inputs: dict[str, Any]) -> list[tuple[str, bool]]:
+    """A round closed with `promote` writes the goal's next baseline as run-promote does: the same baselines lock, so the
+    two never write one baseline's next version at once."""
+    run = _first(inputs.get("promote"))
+    return promote_locks({"run": run, "goal": inputs.get("goal")}) if run else []
+
+
 def split_locks(inputs: dict[str, Any]) -> list[tuple[str, bool]]:
     """A split writes two datasets beside the one it splits (and unsealing one opens them): all three, exclusive."""
     d = _first(inputs.get("dataset_id"))
@@ -112,11 +119,16 @@ def rescore_locks(inputs: dict[str, Any]) -> list[tuple[str, bool]]:
 
 
 def data_rm_locks(inputs: dict[str, Any]) -> list[tuple[str, bool]]:
-    """A setting deleted is the settings', exclusive; a run deleted is also its system's (a run of it may be writing)."""
+    """A setting deleted is the settings', exclusive; a run deleted is also its system's (a run of it may be writing).
+    The path is read as the deletion reads it (`/runs/r1`, `./runs/r1` and `runs//r1` are the run runs/r1)."""
+    from evaluation_harness import _data_page  # noqa: PLC0415
     from evaluation_harness.model import runs as model_runs  # noqa: PLC0415
 
     out = [("settings", True)]
-    path = str(_first(inputs.get("path")) or "")
+    try:
+        path = _data_page.resolve(str(_first(inputs.get("path")) or ""))[0]
+    except _data_page.Refused:
+        return out  # the job refuses it, deleting nothing
     run = path.split("/")[1] if path.startswith("runs/") and path.count("/") >= 1 else None
     cid = ((model_runs.run(run) or {}) if run else {}).get("system_id")
     if cid:

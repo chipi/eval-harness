@@ -172,7 +172,7 @@ that can move a result is never a patch release without saying so under **Change
   its state, log and envelope in `.build/jobs/<id>/`; listed, read, followed from a byte offset, stopped (its process group,
   `cancelled`) and, for a run, resumed. Locks per thing written (`.build/locks/`, taken in key order, held by the
   command itself): a second writer of the same thing waits `queued`, naming the job it waits for; a migration takes
-  the whole project. A spending job needs `max_cost_usd`, a decision `by` (the command's actor). Uploads (50 MB a
+  the whole project. A spending job needs `max_cost_usd`, and every job `by` (who asked). Uploads (50 MB a
   call) and artifacts (files a job writes, fetched from it). A job outlives the server; one whose supervisor died
   reads `running (unsupervised)`, then `lost`.
 - **The API, its read side** (RFC-026 step 2): a local `catalog-serve` answers `/api/v1/` behind a token written to

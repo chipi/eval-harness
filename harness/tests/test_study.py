@@ -131,7 +131,8 @@ try:
                 "accept: {point: {min_gain: 0}}\nstop: {trials: 5}\n"
                 "space:\n  groups:\n    - {name: length, reason: how much to keep, params: {sentences: [2, 3, 4]}}\n")  # fmt: skip
     dry = evh("study-run", "--study", "g/s1", "--spec", grid, "--dry-run")
-    r = evh("study-run", "--study", "g/s1", "--json")
+    dry_wrote = _runstore.exists(proj, "studies/g/s1.yaml")
+    r = evh("study-run", "--study", "g/s1", "--spec", grid, "--json")
     st = study_of("g", "s1")
     outs = {t["change"]["params"]["sentences"]: t["outcome"] for t in st.get("trials", [])}
     rounds = [
@@ -139,8 +140,9 @@ try:
         for n in _runstore.listdir(proj, "rounds/g")
     ]
     check(
-        "a grid study: sentences 2 kept, 3 and 4 dropped (measured against the best so far), the space exhausted",
-        dry.returncode == 0 and "Nothing was called" in dry.stdout and r.returncode == 0
+        "a grid study: its dry run checks the spec and writes nothing; sentences 2 kept, 3 and 4 dropped (measured "
+        "against the best so far), the space exhausted",
+        dry.returncode == 0 and "Nothing was called" in dry.stdout and not dry_wrote and r.returncode == 0
         and outs == {2: "kept", 3: "dropped", 4: "dropped"} and st.get("status") == "ended"
         and st.get("best") == "s1-t1",
         (dry.stderr[-200:], r.stderr[-600:], outs, st.get("status")),
@@ -259,6 +261,17 @@ try:
         r.returncode == 0 and [t["outcome"] for t in st3.get("trials", [])] == ["kept"]
         and "sampler stopped" in str(st3.get("end")),
         (r.stderr[-400:], st3.get("end")),
+    )  # fmt: skip
+    # A spec that came with a job's call (an upload, under .build/uploads) never names a program for the server to run.
+    up = proj / ".build" / "uploads" / ("0" * 64) / "cmd.yaml"
+    up.parent.mkdir(parents=True, exist_ok=True)
+    up.write_text(Path(cmd).read_text())
+    r = evh("study-run", "--study", "g/s9", "--spec", str(up.relative_to(proj)), "--dry-run")
+    check(
+        "a spec sent with a call (an upload) that names a command sampler is refused, and nothing is written",
+        r.returncode != 0 and "ERROR (not-allowed)" in r.stderr and "command sampler" in r.stderr
+        and not _runstore.exists(proj, "studies/g/s9.yaml"),
+        (r.returncode, r.stderr[-300:]),
     )  # fmt: skip
 
     # ── the confirmation ──────────────────────────────────────────────────────────────────────────────────────────

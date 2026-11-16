@@ -60,11 +60,20 @@ def takes(command: str, name: str) -> str | None:
     return {"upload": "upload", "artifact": "artifact"}.get(spec.get("x-file"), "value")
 
 
+hidden = [
+    ("catalog", "adapter"),
+    ("catalog", "out"),
+    ("catalog", "head"),
+    ("dataset-create", "source-dir"),
+    ("study-tell", "proposal"),
+]
 check(
-    "never taken: --adapter, a sweep or rescore output folder, a source folder",
-    takes("run", "adapter") is None
-    and takes("rescore", "out") is None
-    and takes("dataset-create", "source-dir") is None,
+    "never taken: what loads code (catalog's --adapter), an output folder, a file of the server's, a source folder, a "
+    "proposal file (each an input of its operation that only the command line takes)",
+    all(
+        c in OPS and name.replace("-", "_") in OPS[c].inputs and takes(c, name) is None for c, name in hidden
+    ),
+    [(c, name, takes(c, name)) for c, name in hidden],
 )
 check(
     "kinds: run's system is a plain value (found by id, not a path), a dataset's fields file an upload, exposure-check's out an artifact; spenders marked",
@@ -263,6 +272,18 @@ try:
             "importer-check --query @file (a server file)": refused(
                 "importer-check", {"importer": "jsonl", "query": "@/etc/hostname"}
             ),
+            "capture's query path outside the project (a server file)": refused(
+                "capture", {"importer": "jsonl", "query": '{"path": "/etc/hostname"}', "capture": "c1"}
+            ),
+            "a query path that climbs out of the project": refused(
+                "importer-check", {"importer": "jsonl", "query": '{"path": "../../outside.jsonl"}'}
+            ),
+            "capture-restore's path override outside the project": refused(
+                "capture-restore", {"capture": "c1", "query": ["path=/etc/hostname"]}
+            ),
+            "a dataset source's query path outside the project": refused(
+                "dataset-create", {"source": "folder", "dataset-id": "d1", "query": '{"path": "/etc"}'}
+            ),
         }
         check("a code path or an @file is refused before anything runs", all(never.values()), never)
         put_file = ops.OPS["data-put"].inputs["file"]
@@ -272,9 +293,14 @@ try:
             put_file,
         )
         check(
-            "a name is still taken (capture --importer jsonl, dataset-create --source folder)",
+            "a name is still taken (capture --importer jsonl, dataset-create --source folder), and a query path "
+            "inside the project",
             not refused("capture", {"importer": "jsonl", "query": "{}", "capture": "c1"})
-            and not refused("dataset-create", {"source": "folder", "dataset-id": "d1"}),
+            and not refused("dataset-create", {"source": "folder", "dataset-id": "d1"})
+            and not refused(
+                "capture", {"importer": "jsonl", "query": '{"path": "exports/x.jsonl"}', "capture": "c1"}
+            )
+            and not refused("capture-restore", {"capture": "c1", "query": ["path=exports/x.jsonl"]}),
         )
     finally:
         srv.terminate()

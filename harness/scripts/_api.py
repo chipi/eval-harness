@@ -4,7 +4,9 @@ process. Each input is checked against the operation's schema before a job exist
   upload     a file the call carries (at most 50 MB), kept under .build/uploads/<sha256> for the job
   artifact   a file the job writes under .build/jobs/<id>/, fetched from there
 
-A path of the server's is never an input (an operation names such an input `tool_hidden`: only the command line takes it).
+A path of the server's is never an input (an operation names such an input `tool_hidden`: only the command line takes it),
+and the path a query names (`{"path": ...}`, read by an importer or a source, or a publisher's folder) is refused when it
+is outside the project.
 The commands that are not operations (the servers, the setup commands, the terminal's jobs) are not served, each with why.
 """
 
@@ -181,7 +183,38 @@ def operation_inputs(op: Any, inputs: Any, job_id: str) -> dict[str, Any]:
             out[name] = str(
                 (_jobs.job_dir(job_id) / _safe_name(str(out[name]))).relative_to(_common.project_root())
             )
+    for p in _query_paths(out.get("query")) if "query" in op.inputs else ():
+        root = _common.project_root().resolve()
+        if not (root / p).resolve().is_relative_to(root):
+            raise Refused(
+                f"{op.name}: the query's path {p!r} is outside the project; a job reads only the project's files "
+                "(no input is a free path): copy the file into the project and name it from there"
+            )
     return out
+
+
+def _query_paths(query: Any) -> list[str]:
+    """The paths a query names for its importer, source or publisher to read or write (`path`): from its JSON text, or
+    from capture-restore's KEY=VALUE overrides. A query that is not JSON is the operation's own to refuse."""
+    import json  # noqa: PLC0415
+
+    found: list[Any] = []
+    if isinstance(query, str):
+        try:
+            doc = json.loads(query)
+        except ValueError:
+            return []
+        if isinstance(doc, dict):
+            found.append(doc.get("path"))
+    elif isinstance(query, list):
+        for pair in query:
+            key, sep, raw = str(pair).partition("=")
+            if sep and key.strip() == "path":
+                try:
+                    found.append(json.loads(raw))
+                except ValueError:
+                    found.append(raw)
+    return [str(p) for p in found if p not in (None, "")]
 
 
 def start_operation(

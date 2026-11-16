@@ -56,6 +56,15 @@ with mock.patch.object(_model_runs, "run", lambda *_a, **_k: {"system_id": "slow
         for k, _ex in op_locks.locks_for(ops.OPS["data-rm"], {"path": "runs/slow_v1_20261113"})
         if k.startswith("system:")
     }
+    # The same run spelled as data-rm reads it (resolved): each takes its system's lock.
+    rm_spelled = {
+        spelled: {
+            k
+            for k, _ex in op_locks.locks_for(ops.OPS["data-rm"], {"path": spelled})
+            if k.startswith("system:")
+        }
+        for spelled in ("/runs/slow_v1_20261113", "./runs/slow_v1_20261113", "runs//slow_v1_20261113")
+    }
     capture_key = {
         k
         for k, _ex in op_locks.locks_for(
@@ -67,6 +76,31 @@ check(
     "a data-rm of a run's folder and an arm-from-capture of a system take the lock a run of that system takes",
     run_key == rm_key == capture_key == {"system:slow_v1"},
     (run_key, rm_key, capture_key),
+)
+check(
+    "a data-rm of a run spelled another way (/runs/r, ./runs/r, runs//r) takes the same system lock",
+    all(v == {"system:slow_v1"} for v in rm_spelled.values()),
+    rm_spelled,
+)
+with mock.patch.object(_model_runs, "run", lambda *_a, **_k: {"system_id": "slow_v1", "dataset_id": "tk_v1"}):
+    promote_keys = {
+        k for k, ex in op_locks.locks_for(ops.OPS["run-promote"], {"run": "r1", "goal": "g"}) if ex
+    }
+    close_keys = {
+        k
+        for k, ex in op_locks.locks_for(ops.OPS["round-close"], {"goal": "g", "round": "r1", "promote": "r1"})
+        if ex
+    }
+    plain_close = {
+        k for k, ex in op_locks.locks_for(ops.OPS["round-close"], {"goal": "g", "round": "r1"}) if ex
+    }
+check(
+    "a round closed with --promote holds the baselines run-promote writes (and the goal); one without, the goal only",
+    "baselines:g/tk_v1" in promote_keys
+    and promote_keys <= close_keys
+    and "goal:g" in close_keys
+    and plain_close == {"goal:g"},
+    (promote_keys, close_keys, plain_close),
 )
 
 proj = Path(tempfile.mkdtemp(prefix="evh-jobs-"))

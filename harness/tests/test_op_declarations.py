@@ -66,7 +66,7 @@ def says(op, needle: str) -> bool:
 
 
 mutants = {
-    "locks never declared": (replace(close, locks=None), "locks: not declared"),
+    "locks never declared": (replace(close, locks=None, locks_fn=""), "locks: not declared"),
     "a lock template naming an input there is not": (
         replace(close, locks=(("goal:{nope}", True),)),
         "which is not an input",
