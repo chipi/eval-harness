@@ -173,7 +173,7 @@ PLANTS = [
     (
         "../tools/llms_txt.py",
         "an llms.txt that is not what its template writes",
-        "tools/llms.in.md",
+        "tools/llms.in.txt",
         "the parts and how they fit",
         "the parts, and how they fit together",
         "is not what tools/llms_txt.py writes",
@@ -181,7 +181,7 @@ PLANTS = [
     (
         "../tools/llms_txt.py",
         "an llms.txt link to a file that does not exist",
-        "tools/llms.in.md",
+        "tools/llms.in.txt",
         "[RFC-018](docs/rfc/RFC-018-read-only-mcp-server.md)",
         "[RFC-018](docs/rfc/RFC-018-no-such-design.md)",
         "RFC-018-no-such-design.md, which does not exist",
@@ -189,7 +189,7 @@ PLANTS = [
     (
         "../tools/llms_txt.py",
         "an llms.txt link to a heading that does not exist",
-        "tools/llms.in.md",
+        "tools/llms.in.txt",
         "AGENTS.md#observability-dev-and-prod",
         "AGENTS.md#no-such-heading",
         "AGENTS.md#no-such-heading: no such heading",
@@ -197,7 +197,7 @@ PLANTS = [
     (
         "../tools/llms_txt.py",
         "an llms.txt code path that does not exist",
-        "tools/llms.in.md",
+        "tools/llms.in.txt",
         "`harness/scripts/model_onboard.py`",
         "`harness/scripts/no_such_module.py`",
         "`harness/scripts/no_such_module.py`: no such path",

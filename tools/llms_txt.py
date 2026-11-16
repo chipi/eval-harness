@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""llms.txt, the agent-facing index of this repository's docs (llmstxt.org), made from tools/llms.in.md and the docs.
+"""llms.txt, the agent-facing index of this repository's docs (llmstxt.org), made from tools/llms.in.txt and the docs.
 
     python tools/llms_txt.py           write llms.txt
     python tools/llms_txt.py --check   exit 1 when llms.txt is not what this would write, a link or an anchor does not
@@ -20,7 +20,7 @@ from collections import Counter
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-TEMPLATE = ROOT / "tools" / "llms.in.md"
+TEMPLATE = ROOT / "tools" / "llms.in.txt"
 OUT = ROOT / "llms.txt"
 #: llmstxt.org: short enough to load whole (the fleet's brief: under about 8k tokens).
 BUDGET_BYTES = 30_000

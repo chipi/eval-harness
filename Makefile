@@ -127,7 +127,7 @@ docs:
 SPELLED := '*.py' '*.md' '*.sh' '*.yml' '*.yaml' '*.toml' '*.html' '*.js' '*.css' '*.txt' \
 	':!:harness/data/**' ':!:examples/*/data/**' ':!:harness/workbench/mock.js'
 
-# llms.txt (llmstxt.org), made from tools/llms.in.md and the docs' titles and status lines: `llms` writes it,
+# llms.txt (llmstxt.org), made from tools/llms.in.txt and the docs' titles and status lines: `llms` writes it,
 # `llms-check` fails when it is stale, a link, an anchor or a path in it does not resolve, or a per-type index
 # misses one of its documents (the guard proves each: harness/tests/test_checks_can_fail.py).
 llms: $(PY)
