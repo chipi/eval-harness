@@ -173,9 +173,10 @@ of the two stores is on canonical text). A database whose highest id has no room
 built when ids were key hashes, 43 bits) gives the lowest free id. `score_rows.id` = `score_set * 2^20 + n`: under
 2^63; a set over 2^20 rows is refused. Ids that follow the order also shrink the database (a row id of 5 bytes, not 7 in
 `score_values`' key): 128.5 MB against 136.3 MB at 16 KiB pages. How much a release delta shrinks was measured (step
-e): a new run costs 1.1 MB (named last) to 9.4 MB (named first) of rsync, against 10 to 87 MB with hashed ids; a rescore
-of an old run lands where the run is and moves the pages after it (26 MB for a run in the middle of the time order, 61 MB
-for the oldest). The release is sealed with `page_size = 16384`.
+e): a new run costs 1.1 MB (named last) to 4.3 MB (named first) of rsync, against 10 to 87 MB with hashed ids; a rescore
+of an old run lands where the run is and moves the pages after it (27 MB for a run in the middle of the time order, 61 MB
+for the oldest). The release is sealed with `page_size = 16384`. The `files` table is built in the same order (what is not under a run first, in path order,
+then each run's files by its time): in path order a new run's files cost 4.8 MB when the name sorts first.
 
 **What goes where** (one rule, tested case by case):
 
@@ -278,5 +279,5 @@ guards, commit, push, `ci-watch` green.
 - **Assembly speed**: +49% before tuning (above); the gate decides.
 - **Release delta**: B-trees order by id, so what is added in the middle moves the pages after it. The tables are built
   in the order of the run's time so a new run is added last; a rescore of an old run, a new run's name in `outputs`'
-  index, its item ids in `score_rows_item` and the `files` table (in path order) still move some pages; measured in step e.
+  index and its item ids in `score_rows_item` still move some pages; measured in step e.
 - **Fleet repo**: its rows are unread here (NaN, strings, `_commit`?); its scratch migrate in step f reports them.

@@ -65,6 +65,14 @@ def build(root: Path, runs: list[tuple[str, dict[str, Any]]], extra: tuple[str, 
     data = root / "data"
     data.mkdir(parents=True)
     _format.stamp(data=data)
+    (data / "zz_goals").mkdir()  # after "runs" by name: it must still come before every run
+    (data / "zz_goals" / "g.json").write_text("{}\n")
+    for extra_file in (
+        "a_x/z.json",
+        "b_x/a.json",
+    ):  # two more, to tell their order from the reverse of their names
+        (data / extra_file).parent.mkdir(exist_ok=True)
+        (data / extra_file).write_text("{}\n")
     for rid, fields in runs:
         rd = data / "runs" / rid
         rd.mkdir(parents=True)
@@ -107,6 +115,15 @@ def tables(root: Path) -> dict[str, list[Any]]:
             "call_facts": c.execute("SELECT * FROM call_facts ORDER BY 1, 2").fetchall(),
             "outputs": c.execute("SELECT * FROM outputs ORDER BY rowid").fetchall(),
         }
+    finally:
+        c.close()
+
+
+def files_of(root: Path) -> list[str]:
+    """The paths in the `files` table, in the order they are stored in."""
+    c = sqlite3.connect(root / "data" / "project.sqlite")
+    try:
+        return [r[0] for r in c.execute("SELECT path FROM files ORDER BY rowid")]
     finally:
         c.close()
 
@@ -196,6 +213,23 @@ try:
         [r[0] for r in got["score_rows"]][:4],
     )
 
+    paths = files_of(one)
+    rest = [x for x in paths if not x.startswith("runs/")]
+    under = [x for x in paths if x.startswith("runs/")]
+    check(
+        "the files table: what is not under a run first, in path order (even a name after `runs`), then each run's "
+        "files in the order of its time, a run's own by path",
+        paths == rest + under
+        and rest == sorted(rest)
+        and "zz_goals/g.json" in rest
+        and runs_of(under) == ORDER
+        and all(
+            [x for x in under if x.split("/")[1] == r] == sorted(x for x in under if x.split("/")[1] == r)
+            for r in ORDER
+        ),
+        paths,
+    )
+
     # ── the same data, the same tables ──────────────────────────────────────────────────────────────────────────────
     two = base / "elsewhere" / "two"
     build(two, list(reversed(RUNS)))
@@ -207,7 +241,7 @@ try:
     )
     check(
         "the same data gives the same tables, cell for cell, whatever order its files were made in",
-        tables(two) == got,
+        tables(two) == got and files_of(two) == paths,
         [k for k, v in tables(two).items() if v != got[k]],
     )
 
@@ -223,6 +257,13 @@ try:
         "a score set added to an old run sits with that run when the database is built again (its later neighbours' ids move up)",
         r.returncode == 0 and keys3 == want3,
         keys3,
+    )
+    paths3 = files_of(three)
+    check(
+        "a score set added to an old run: its files sit with that run's, the other runs' unmoved",
+        runs_of([x for x in paths3 if x.startswith("runs/")]) == ORDER
+        and [x for x in paths3 if "cccccccccccc" not in x] == paths,
+        [x for x in paths3 if "cccccccccccc" in x],
     )
 finally:
     shutil.rmtree(base, ignore_errors=True)

@@ -539,7 +539,9 @@ that can move a result is never a patch release without saying so under **Change
   but the three run settings is refused with the rest of the release (`_release.plan_problems`): run.json is copied whole.
 - **The SQLite tables are built in the order of time** (RFC-033 step e, owner 2026-11-16). `evh data-migrate --to
   sqlite` (a release's database is made by it, and `evh migrate` moves a format-6 SQLite project the same way) writes
-  the outputs, the score sets, their rows and values in the order of the run's time, then the key: run.json's
+  the outputs, the score sets, their rows and values, and the files under `runs/<id>/` (run.json, score.json,
+  metrics.json, ...) in the order of the run's time, then the key (the other files of `data/`, in path order, come before
+  every run): run.json's
   `started_at`, else its `created_at`, as an instant (a zone counts, a time with none is UTC); a run with neither as an
   ISO time comes first, by its key (304 of this repository's 305 runs hold `created_at` and one `started_at`). A score
   set's id is its place in that order, from 1, in place of the hash of its key; the metrics' ids are the order their
@@ -547,12 +549,13 @@ that can move a result is never a patch release without saying so under **Change
   score set later gives it the next id after the highest; a database built with hashed ids (an early build) gives the
   lowest free id when the highest has no room. What a deploy's rsync sends of `inspector/data/` (the flags of
   `deploy-prod.yml`, delta transfer on, this repository's data, the stand-in remote shell of step e): nothing when the data
-  did not change (105 B), and for one new run of 5 items 9.4 MB when its name sorts first, 4.7 MB in the middle and 1.1 MB
+  did not change (103 B), and for one new run of 5 items 4.3 MB when its name sorts first, 2.2 MB in the middle and 1.1 MB
   last, against 86.9, 61.5 and 10.1 MB (the same code as before measured again: 32.6 MB for a run named last, where the hash
-  put its rows). What is left in the first two is `outputs`' index by run name, the item index of `score_rows` and the
-  `files` table (path order). A new score set on an old run lands where that run is, and the pages after it move: 26.3 MB
-  for a run in the middle of the time order, 61.2 MB for the oldest (36.8 and 20.6 MB before: where the hash put it).
-  The database is 128,516,096 bytes (136,265,728 before: a row id is 5 bytes where it was 7); two renders of one commit
+  put its rows; 9.4, 4.7 and 1.1 MB with the `files` table in path order). What is left in the first two is `outputs`'
+  index by run name (4.2 MB when the name sorts first) and the item index of `score_rows` (1.2 MB). A new score set on an
+  old run lands where that run is, and the pages after it move: 26.6 MB for a run in the middle of the time order, 61.2 MB
+  for the oldest (36.8 and 20.6 MB before: where the hash put it).
+  The database is 128,581,632 bytes (136,265,728 before: a row id is 5 bytes where it was 7); two renders of one commit
   give one sha256. The views' speed in both stores, three interleaved runs against the code before, is within 8% of it
   and of step a (no row over 1.10; the first three runs, taken while the machine was used for tests, had three rows at
   1.11 to 1.20 of the code before).

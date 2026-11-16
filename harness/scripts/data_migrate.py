@@ -96,6 +96,20 @@ def _in_time_order(d: Path) -> tuple[float, str]:
     return (float("-inf") if t is None else t, d.relative_to(_common.DATA).as_posix())
 
 
+def _file_order(p: Path, stamps: dict[str, float]) -> tuple[int, float, str]:
+    """Where a file goes in the `files` table: what is not under a run (datasets, goals, references, ...) first, in
+    path order, then everything under runs/<id>/ by that run's time, then its path: a run added since is appended after
+    the older ones, as in the per-item tables, and a change to the first group stays in the front pages."""
+    rel = p.relative_to(_common.DATA).as_posix()
+    parts = rel.split("/")
+    if parts[0] != "runs" or len(parts) < 3:
+        return (0, 0.0, rel)
+    if parts[1] not in stamps:
+        t = _run_stamp(_common.DATA / "runs" / parts[1])
+        stamps[parts[1]] = float("-inf") if t is None else t
+    return (1, stamps[parts[1]], rel)
+
+
 def _is_run(d: Path) -> bool:
     """Whether `d` holds per-item files: a run (its run.json) or one of its scores (its score.json under scores/), the
     record on disk or already in the database (a migration a crash stopped after moving the record, before the
@@ -151,9 +165,8 @@ def to_sqlite(dry_run: bool) -> dict[str, int]:
     runs = sorted({p.parent for p in files if p.name in PER_ITEM and _is_run(p.parent)}, key=_in_time_order)
     run_set = set(runs)
     per_item = {p for p in files if p.name in PER_ITEM and p.parent in run_set}
-    for p in files:
-        if p in per_item:
-            continue
+    stamps: dict[str, float] = {}
+    for p in sorted((p for p in files if p not in per_item), key=lambda p: _file_order(p, stamps)):
         b = p.read_bytes()
         n["files"] += 1
         n["bytes"] += len(b)
