@@ -35,9 +35,13 @@ tmp = Path(tempfile.mkdtemp(prefix="evh-mcp-cancel-"))
 site = tmp / "site"
 site.mkdir()
 started = tmp / "slow.started"
+patched = tmp / "slow.started.patched"
+# The package is put on the path here, as cli.py puts it: sitecustomize runs before cli.py, and CI installs no package
+# (only requirements.txt), so the import failed there, site.py swallowed it, and nothing was slow.
 (site / "sitecustomize.py").write_text(
     "import os, sys, time\n"
     "if os.environ.get('EVH_TEST_SLOW') and sys.argv[1:2] != ['--help']:\n"
+    f"    sys.path.insert(0, {str(HERE.parent)!r})\n"
     "    from evaluation_harness.ops import records\n"
     "    real = records.licences\n"
     "    def slow(*a, **k):\n"
@@ -45,6 +49,7 @@ started = tmp / "slow.started"
     "        time.sleep(20)\n"
     "        return real(*a, **k)\n"
     "    records.licences = slow\n"
+    "    open(os.environ['EVH_TEST_SLOW'] + '.patched', 'w').close()\n"
 )
 env = dict(
     os.environ,
@@ -64,6 +69,7 @@ async def session(extra: list[str], timeout_check: bool):
     )
     async with stdio_client(params) as (rd, wr), ClientSession(rd, wr) as s:
         await s.initialize()
+        check("the server's licences is the slow one (the sitecustomize applied)", patched.is_file())
         if timeout_check:
             res = await s.call_tool("licences", {})
             said = getattr(res.content[0], "text", "")
@@ -88,6 +94,7 @@ async def session(extra: list[str], timeout_check: bool):
 try:
     anyio.run(session, [], False)
     started.unlink(missing_ok=True)
+    patched.unlink(missing_ok=True)
     anyio.run(session, ["--timeout", "1"], True)
 finally:
     shutil.rmtree(tmp, ignore_errors=True)
