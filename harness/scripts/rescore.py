@@ -31,7 +31,7 @@ import textwrap
 from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _jsonout, _outputs, _runs, _store
+from evaluation_harness import _jsonout, _outputs, _progress, _runs, _store
 from evaluation_harness._adapter import load_recorded_adapter, score_wants_source
 from evaluation_harness._common import (
     DATA,
@@ -577,7 +577,9 @@ def rescore_runs(
     """Re-score each run (rescore_one); the scores written, or found already there, with their records."""
     adapters: dict[str, Any] = {}
     done = []
-    for d, m in sorted(todo, key=lambda t: (t[1]["run_id"], t[0].name)):
+    ordered = sorted(todo, key=lambda t: (t[1]["run_id"], t[0].name))
+    for k, (d, m) in enumerate(ordered):
+        _progress.step(k, len(ordered))
         got = rescore_one(
             d,
             m,
@@ -589,6 +591,7 @@ def rescore_runs(
         )
         if got is not None:
             done.append(got)
+    _progress.step(len(ordered), len(ordered))
     return done
 
 

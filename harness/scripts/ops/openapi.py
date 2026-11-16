@@ -591,6 +591,17 @@ def document() -> dict[str, Any]:
                         "inputs": {"type": "object"},
                         "command": {"type": "string"},
                         "state": {"type": "string"},
+                        "progress": {
+                            "type": ["object", "null"],
+                            "description": "how far it has got, as its operation last said (run: items, sweep: arms, "
+                            "judge-score: verdict tasks, rescore: runs); null for one that says nothing",
+                            "properties": {
+                                "done": {"type": "integer"},
+                                "total": {"type": ["integer", "null"]},
+                                "at": {"type": "string"},
+                            },
+                        },
+                        "spent_usd": {"type": "number", "description": "what it has spent so far"},
                     },
                     "required": ["id", "state"],
                     "additionalProperties": True,

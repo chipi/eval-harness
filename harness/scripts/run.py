@@ -31,7 +31,7 @@ import time
 from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _common, _jsonout, _outputs, _spend, _store
+from evaluation_harness import _common, _jsonout, _outputs, _progress, _spend, _store
 from evaluation_harness._adapter import (
     calls_per_item,
     load_adapter,
@@ -597,6 +597,7 @@ def one_pass(
         # because it is an append, but a torn final line is discarded on read.
         if live_dir is not None and not resumed:
             _outputs.append_partial(live_dir, row)
+        _progress.step(n, n_items)
 
         if n % every == 0 or n == n_items:
             print(

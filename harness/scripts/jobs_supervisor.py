@@ -72,6 +72,8 @@ def main(job_id: str) -> int:
     env["EVH_LOCKS"] = ",".join(k for k, _ex in job["locks"])
     # What it has spent so far, kept as it goes: a resumed job is given what this one left.
     env["EVH_SPENT_LIVE"] = str(d / "spent.json")
+    # How far it has got (items done of how many), kept as it goes, for the job's record (RFC-032: a job reports progress).
+    env["EVH_PROGRESS_LIVE"] = str(d / "progress.json")
     by = job.get("by")
     if by:  # who acted (RFC-027): a job has no terminal, so the actor comes from the call
         env["EVH_ACTOR"] = by if ":" in by else f"person:{by}"

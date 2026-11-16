@@ -59,7 +59,7 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Any, Callable
 
-from evaluation_harness import _outputs, _providers, _runs, _store
+from evaluation_harness import _outputs, _progress, _providers, _runs, _store
 from evaluation_harness._codeid import content_sha256, file_sha256
 from evaluation_harness._common import (
     BOOKKEEPING_PREFIXES,
@@ -812,7 +812,8 @@ def run_judging(
     first_replies: dict[str, list[bool]] = {}  # per judge: its first replies, empty at the token limit
     work = tasks(manifest)
     try:
-        for item, pass_name, block in work:
+        for k, (item, pass_name, block) in enumerate(work):
+            _progress.step(k, len(work))
             msg = None
             for j in sc["judges"]:
                 path = verdict_path(vdir, j["id"], item["item_id"], pass_name, block)
@@ -969,6 +970,7 @@ def run_judging(
             f"  JUDGE CALL FAILED after retries or refused: {exc}\n  Stopping; every stored verdict is kept. "
             "Fix the cause and run the same command again: it resumes where it stopped."
         )
+    _progress.step(len(work) if not stats["aborted"] else k, len(work))
     stats["spent_usd"] = spent
     if cut_empty:
         log(cutoff_hint(cut_empty, stats["calls"], sc))

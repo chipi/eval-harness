@@ -17,7 +17,7 @@ import subprocess
 import sys
 from typing import Any
 
-from evaluation_harness import _jsonout, _spend
+from evaluation_harness import _jsonout, _progress, _spend
 from evaluation_harness._common import CODE, EXIT_PARTLY, EXIT_STOPPED, ROOT, die
 from evaluation_harness.ops import legacy
 
@@ -40,6 +40,7 @@ def body(**inputs: Any) -> int:
 
     failed: list[str] = []
     for i, c in enumerate(configs, 1):
+        _progress.step(i - 1, len(configs))
         print(f"── [{i}/{len(configs)}] {c} " + "─" * max(0, 50 - len(c)))
         cmd = [
             py,
@@ -85,6 +86,7 @@ def body(**inputs: Any) -> int:
             print(f"   ARM FAILED (exit {r.returncode}) — continuing with the rest")
         print()
 
+    _progress.step(len(configs), len(configs))
     if failed:
         print(f"  {len(failed)} arm(s) failed: {', '.join(failed)}")
         print("  The rest still ran; their results are on the leaderboard below.\n")

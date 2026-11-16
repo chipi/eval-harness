@@ -238,6 +238,11 @@ try:
         and m.get("actor", {}).get("name") == "ana",
         (st, {k: done.get(k) for k in ("state", "exit", "refusal", "run_id")}),
     )
+    check(
+        "a run job that ended says it did every item (progress 6 of 6)",
+        (done.get("progress") or {}).get("done") == 6 and (done.get("progress") or {}).get("total") == 6,
+        done.get("progress"),
+    )
     st, lg = call("GET", f"/api/v1/jobs/{j.get('id')}/log?from=0")
     check(
         "its log, followed from an offset",
@@ -263,6 +268,17 @@ try:
         "log", ""
     ):
         time.sleep(0.2)  # two items written: something for the resume to continue from
+    _st, mid = call("GET", f"/api/v1/jobs/{a['id']}")
+    prog = mid.get("progress") or {}
+    check(
+        "a running run job says how far it has got: items done of the dataset's 6, while it runs, and what it has spent",
+        mid.get("state") == "running"
+        and prog.get("total") == 6
+        and 2 <= int(prog.get("done") or 0) < 6
+        and prog.get("at")
+        and isinstance(mid.get("spent_usd"), (int, float)),
+        mid,
+    )
     _st, stopped = call("POST", f"/api/v1/jobs/{a['id']}/stop")
     pgid = stopped.get("pgid")
     try:

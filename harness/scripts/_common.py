@@ -278,6 +278,9 @@ if SPENT_TO:
 #: nothing at exit, and `jobs-resume` gives the next job what this one left (RFC-026 step 5). Taken out of the
 #: environment like EVH_SPENT_TO: a sweep's arms report to the sweep, which counts them here.
 SPENT_LIVE = os.environ.pop("EVH_SPENT_LIVE", "")
+#: Where a job's command keeps how far it has got ({done, total, at}, `_progress.step`), for the job's record. Taken out of
+#: the environment the same way: a sweep's arms are its steps, not writers of its progress.
+PROGRESS_LIVE = os.environ.pop("EVH_PROGRESS_LIVE", "")
 
 
 class CostCapExceeded(RuntimeError):

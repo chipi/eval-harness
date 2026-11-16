@@ -417,7 +417,9 @@ def _ended(pid: int) -> bool:
 
 def read(job_id: str) -> dict[str, Any]:
     """A job: its record and its state, with what the files cannot say by themselves: a `running` or `queued` job
-    whose supervisor is gone reads `running (unsupervised)` while its command lives, else `lost`."""
+    whose supervisor is gone reads `running (unsupervised)` while its command lives, else `lost`. How far it has got
+    (`progress`: {done, total, at}, or None when its command reports none) and what it has spent so far (`spent_usd`)
+    are as the command last wrote them."""
     d = job_dir(job_id)
     job = _read_json(d / "job.json")
     if not job:
@@ -426,7 +428,8 @@ def read(job_id: str) -> dict[str, Any]:
     if st.get("state") in ("queued", "running") and not _held(d / "supervisor.lock") and not _starting(d, st):
         st = {**st, "state": "running (unsupervised)" if _alive(st.get("pgid")) else "lost"}
     res = _read_json(d / "result.json") or None
-    return {**job, **st, "result": res}
+    progress = _read_json(d / "progress.json") or None
+    return {**job, **st, "progress": progress, "spent_usd": spent(job_id), "result": res}
 
 
 def list_jobs(state: str | None = None) -> list[dict[str, Any]]:
