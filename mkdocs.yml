@@ -95,7 +95,7 @@ nav:
           - "RFC-030: Replay the code that ran, and prove it faithful (draft, 0.8.0)": rfc/RFC-030-replay-and-faithfulness.md
           - "RFC-031: Held-out discipline, maturing outside labels, decisions scored by what followed (0.8.0)": rfc/RFC-031-held-out-discipline-and-outcome-labels.md
           - "RFC-032: One data model, with the command line and the API as its surfaces (accepted, 0.8.0)": rfc/RFC-032-one-model-two-surfaces.md
-          - "RFC-033: Per-item results as a model, in both stores (draft, 0.8.0)": rfc/RFC-033-per-item-results-as-a-model.md
+          - "RFC-033: Per-item results as a model, in both stores (built, 0.8.0)": rfc/RFC-033-per-item-results-as-a-model.md
       - Decisions (ADRs):
           - Index: adr/index.md
           - "ADR-0001: Judge scorers: re-measuring frozen outputs with a validated LLM judge": adr/ADR-0001-judge-scorers.md
@@ -116,6 +116,7 @@ nav:
           - "ADR-0027: One catalog page writes: the data page, on this machine only (accepted, built, 0.8.0)": adr/ADR-0027-the-data-page-writes-locally.md
           - "ADR-0028: From 10,000 items a paired test's p is its normal limit (proposed, 0.8.0)": adr/ADR-0028-large-samples-use-the-normal-limit.md
           - "ADR-0029: One data model; the CLI, API and MCP made from one registry (accepted, 0.8.0)": adr/ADR-0029-one-model-two-surfaces.md
+          - "ADR-0030: Per-item results as tables in the SQLite store; the files store stays JSONL (accepted, 0.8.0)": adr/ADR-0030-per-item-results-as-tables.md
   - The evals:
       - Reproduce it: REPRODUCE.md
       - Protocol: PROTOCOL.md

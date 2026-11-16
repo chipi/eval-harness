@@ -10,7 +10,8 @@ correctness bugs, not just missing features.
 - **Before the release**, a pin on a commit of the 0.8.0 branch installs `0.8.0.dev0`, the version every commit of it
   carries until the release: moving such a pin from one commit to another takes `pip install --force-reinstall`, as
   pip keeps an installed copy of the same version.
-- **Run `evh migrate` once** (`--dry-run` first shows what each step will do; a second run changes nothing). It
+- **Run `evh migrate` once** (`--dry-run` first shows what each step will do, running the real steps on a copy of the data
+  under the project's `.build/`, as large as the data while it runs and deleted after; a second run changes nothing). It
   brings the data to format 7 and records it in `data/project.yaml` (RFC-032): from 0.8.0 a project's data has a
   format, `evh migrate --check` compares it with the release's, and a deploy runs that check (the RUNBOOK's "The
   data's format"). A SQLite project's database is copied beside it first. Commit `data/project.yaml` with the
@@ -93,16 +94,25 @@ correctness bugs, not just missing features.
     of `catalog-serve`, the key file `evh inspect --sheet` writes and, for a catalog adapter, the `{"system_id", ...}`
     its `arm_config(arm)` returns; the table headers follow, and `evh arm-show` says `system` where it said `config`.
     `evh validate`'s V8 is "no two runs share a system_id".
-  - *results* (RFC-033, format 7): the three run settings in a row's `_meta` (`generation_config`,
+  - *results* (RFC-033, format 7, both stores): the three run settings in a row's `_meta` (`generation_config`,
     `generation_requested`, `encoder_window`) that every row of every score of a run holds with one value move to
     `run.json`'s `call`; a run whose rows differ keeps them in its rows. `_meta.usage` is cut to `cost`,
     `prompt_tokens`, `completion_tokens` and, when nonzero, `cached_tokens` and `cache_write_tokens` (the rest of the
-    provider's billing object is not kept: it only comes back from the provider), and rows are written as canonical
-    text. `--dry-run` counts each. Of this repository's data: 14 runs hoisted, 53,720 usage objects slimmed, 295
-    `predictions.jsonl` rewritten, about 41 MB less under `data/runs`, with every number the same (a large diff in git:
-    commit it with the migration). A SQLite project's database is copied first, as for every step. What reads a row's
-    `_meta.generation_config` (or the other two) from a stored row reads the run's `call` instead; what reads a full
-    `usage` object from a stored row keeps only what is listed; `evh validate`'s V28 checks both.
+    provider's billing object is not kept: it only comes back from the provider; a `usage` that is `null` or not an
+    object is left as it is), and rows are written as canonical text. `--dry-run` counts each. Of this repository's
+    data: 14 runs hoisted, 53,720 usage objects slimmed, 295 `predictions.jsonl` rewritten, `data/runs` 153,465,935 to
+    112,483,047 bytes, with every number the same (a large diff in git: commit it with the migration). A SQLite project's
+    database is copied first, as for every step; its per-item rows, kept until now as table `rows` (a text value per
+    line), move in one transaction into the tables `score_sets`, `metrics`, `call_facts`, `score_rows` and
+    `score_values` (RFC-033, ADR-0030), `rows` is dropped and the database is vacuumed, since the pages `rows` held stay
+    in the file until it is (on this repository's data, a format-6 database of 241.8 MB stood at 327.7 MB after the
+    move until vacuumed); a VACUUM that cannot run, for want of free disk about the size of the database, leaves the data
+    moved and says so. A line of a score's rows that is not a JSON object with an `item_id` is refused, writing nothing:
+    correct the file first. A SQLite project that an early build of this release stamped format 7 but left with
+    table `rows` is finished by `evh migrate` too, and every command refuses it until then (`ERROR (old-format)`).
+    What reads a row's `_meta.generation_config` (or the other two) from a stored row reads the run's `call` instead;
+    what reads a full `usage` object from a stored row keeps only what is listed; `Result.meta` itself stays free-form,
+    the slimming happens when it is written ([INTEGRATION](INTEGRATION.md)); `evh validate`'s V28 checks both.
 
   `run-migrate`, `dataset-migrate` and `baselines-migrate` (built during 0.8.0, never released) and
   `fingerprint-migrate` (0.6.0 to 0.7.2) are this one command now. Moving the data into SQLite is

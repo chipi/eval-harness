@@ -47,8 +47,8 @@ class Result:
     cost_usd: float | None = None
     latency_ms: float | None = None
     extra: dict[str, float] = field(default_factory=dict)
-    # Raw provider metadata, kept verbatim and never averaged: the `usage` object,
-    # `finish_reason`, the model string the provider actually reports back. Anything
+    # Raw provider metadata, never averaged: the `usage` object (kept to cost and the token counts at write,
+    # RFC-033), `finish_reason`, the model string the provider actually reports back. Anything
     # numeric belongs in `extra` (it becomes a metric); anything you want preserved
     # for forensics belongs here. Without this the harness could not answer "were
     # reasoning tokens billed?" or "was this output cut off at max_tokens?" -- both

@@ -85,12 +85,19 @@ per run directory, `runs.store`/`EVAL_RUNS_STORE` and `run-migrate --to` (replac
 - **A run** is its key under `data/`; its outputs and rows are the per-item tables built in the first version.
   `_store.rmtree` of a run removes its outputs and rows with its files, so a run made again at the same path starts
   empty. A run outside `data/` (a scratch folder) is the disk's, as every path outside `data/` is.
-- **Never both**: V23 names a `data/project.sqlite` beside files, and files under `data/` beside the database. V7 and
-  V9 read git and say why they do not apply; their floors (each committed runs folder holds at least N runs) have no
-  counterpart in SQLite mode.
-- **The release** reads the store and writes the same files layout from either store, a hidden dataset's text left
-  out; the deployment is unchanged. (The design above said the release copies the database: a deployment that reads
-  a database needs the prod deploy changed, which is not this RFC's.)
+- **Per-item rows are tables since format 7** ([RFC-033](RFC-033-per-item-results-as-a-model.md),
+  [ADR-0030](../adr/ADR-0030-per-item-results-as-tables.md)). The "per-item tables" above were a text value per line,
+  a byte-for-byte mirror of `predictions.jsonl`. They are now `score_sets`, `score_rows`, `score_values`, `call_facts`
+  and `metrics`, and `data-migrate` compares a score set's rows as canonical text, not as bytes. The files store, the
+  `files` table and `outputs` are as described here.
+- **Never both**: V23 names a `data/project.sqlite` beside files, and files under `data/` beside the database. V7 reads
+  git and says why it does not apply; V9's file listing reads git too, and in SQLite mode V9 checks what the database
+  is the record of instead (RFC-033): every score set with a record has rows, as many as its `n_items`, and each
+  committed arm meets its floor.
+- **The release** reads the store and wrote the same files layout from either store, a hidden dataset's text left
+  out. (The design above said the release copies the database; a deployment that reads a database needed the prod
+  deploy changed.) Superseded in 0.8.0 by RFC-032 step 9: the release is one sealed SQLite database, opened read-only
+  on the box (`EVALS_STORE=files` still makes a files release).
 - **`catalog-serve`** serves the data tree from the database.
 - **Verified on this repository's data**: `data-migrate` there and back, 12,001 files byte-identical; on the
   database, `validate` passes, `check_report_claims` verifies 200/200 claims, the site check is green, and the

@@ -69,6 +69,19 @@ before the first item (load a model, check a key), so it is not timed as the fir
 optional. If your system cannot report token counts, leave them out; the
 harness records what arrives and skips what does not.
 
+**`Result.meta`** is free-form: a dict of what you want kept about the call (the provider's `usage`, `finish_reason`, the
+model that answered), which `evh run` stores under the row's `_meta`. Two things happen to it when it is written
+(RFC-033, format 7), and what you return does not change:
+
+- `usage` is cut to `cost`, `prompt_tokens`, `completion_tokens` and, when nonzero, `cached_tokens` and
+  `cache_write_tokens` (the last two taken from `prompt_tokens_details`, or from the top of `usage`). The rest of a
+  provider's billing object is not stored. A `usage` that is `null` or not an object is stored as it is.
+- `generation_config`, `generation_requested` and `encoder_window` are the run's settings: when every item of a run
+  returns the same value for one, the run keeps it once, in `run.json`'s `call`, and the rows do not carry it. An item
+  that differs keeps its own. A stored row's setting is found in the run's `call`.
+
+Everything else in `meta` (a parser's `predicted`, `ranking`, `gates`, ...) stays in the row's `_meta`.
+
 ### If your system is not a function call
 
 - **A CLI** — `subprocess.run([...], capture_output=True)`, return stdout.

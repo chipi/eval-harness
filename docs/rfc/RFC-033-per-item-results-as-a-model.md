@@ -1,9 +1,14 @@
 # RFC-033: Per-item results as a model, in both stores
 
-- **Status**: Draft, revision 3 (owner, 2026-11-15: "goal is a model that can be queried, so we need to build both
-  layers"; after the second review: "fix all blockers and high and other issues, we need clean work"). Revision 2
-  answers every finding of the second review, revision 3 the re-review's four (ids, `json_group_object`,
-  text-only callers, `_meta: {}`): ready to build.
+- **Status**: Accepted and built (0.8.0): steps a and b d853c6550, their end-to-end proofs 325a04f5a, step c 7bdc081af,
+  step d 34ce211fb (with 5ddbddaec: the VACUUM), step e 18923f31c, the order of time 7c7908d39 and a7c49749a, three
+  migration fixes e1a7fcf53; step g is this documentation. Where the build differs from the text below, [As
+  built](#as-built-080) says so; the text keeps the decisions as they were taken. Step f, the fleet's data repository, landed
+  on chipi/fleet-eval-data main 985d628 (2026-11-16; the migration commit 60cda28, pinned to e1a7fcf5), reviewed by the
+  fleet session: 119 runs, 390 scores, 107 systems, validate passing with its dedup guard. History: Draft, revision 3 (owner, 2026-11-15: "goal is a model that
+  can be queried, so we need to build both layers"; after the second review: "fix all blockers and high and other
+  issues, we need clean work"). Revision 2 answers every finding of the second review, revision 3 the re-review's four
+  (ids, `json_group_object`, text-only callers, `_meta: {}`).
 - **Authors**: Marko Dragoljevic
 - **Related**: [RFC-024](RFC-024-run-outputs-in-one-file.md) (outputs and rows in one place),
   [RFC-025](RFC-025-runs-in-sqlite.md) (both stores; this RFC replaces its "byte-for-byte mirror" for per-item rows),
@@ -201,14 +206,15 @@ allowed). The files store's reader stays tolerant of a hand-edited file (as toda
 **Reading** a score set: its `score_rows` by id range, its `score_values` by `row BETWEEN`, its run's `call_facts`, each
 dict assembled with keys sorted. `rows_text` is derived (`row_line` of each dict); the kept-rows cache keeps the parsed
 dicts and the text together (the same text object, so `item_across` on the files path keeps its index), and is sized by
-what it holds now, dicts being 2-3 times their text: budget-check in step c sets the bound. The callers that only want
+what it holds now, dicts being 2-3 times their text (superseded: measured 4.85 times in the files store, see As built):
+budget-check in step c sets the bound. The callers that only want
 text pay for the derivation and are measured in step c: `family_test.py:124` (a cache key), `_data_page.py:367` (line
 counts), `validate_tree.py:408` and `:788` (V5, V9).
 
 **Deleting** (`rmtree`, `forget_under`, `_store._per_item_tables` / `_per_item_under`, `_store.py:689-715`): a score
 set's rows go through `score_sets.key` (a subselect); a run's `call_facts` with its last score set; metric names stay.
 `SqliteStore._ready` (`_outputs.py:335`) checks the new tables; `ensure_tables` stops creating `rows`; `runs()` and
-`row_runs()` read `score_sets`.
+`row_runs()` read `score_sets` (superseded for `runs()`: see As built).
 
 **`data-migrate`** files ⇄ sqlite compares every score set as canonical row text (`row_line` of the assembled dicts),
 not raw bytes; to files it writes canonical lines. The sentences that promise "byte for byte" (`data_migrate.py:6`,
@@ -216,7 +222,7 @@ not raw bytes; to files it writes canonical lines. The sentences that promise "b
 
 ### Performance
 
-A prototype on this data (second review): reading every row from today's table and parsing it, 0.65 s; assembling the
+(Superseded in part: the build kept the assembly in Python and added `meta=False`; see As built.) A prototype on this data (second review): reading every row from today's table and parsing it, 0.65 s; assembling the
 same rows from the new tables, 0.97 s (+49%), before key sorting. The gate is `tools/view_bench.py` cold and warm within
 ±10% of step a on both stores. Planned in the build, measured in order until the gate holds: (1) assemble per score set
 in one query (`score_values` grouped by row, `json_group_object` in SQL) instead of per row in Python; (2) keep
@@ -260,7 +266,7 @@ aggregation in views (the files store could not share it); modelling `outputs` o
 | a | Baseline | `view_bench` both stores; dbstat per table; files `runs/` size; `cost-report` totals; `check_report_claims` 200/200; the deploy image's `sqlite3` version |
 | b | `model/results.py`; format 7 in both stores (`m0007`, frozen); `run.json` `call` (schema, `RUN_ONLY`); writes (run.py in memory, `_outputs` slim, later score sets) | `migrate --dry-run`: 14 runs / 31 score sets / 3 keys hoisted, 53,720 usage objects slimmed; every score set's rows equal before/after except those keys; `cost-report` identical; V1 passes with `call`; no `unset: ["call"]`; V5 and outputs signatures unchanged; the new check passes; files `runs/` about 42 MiB smaller |
 | c | `_outputs` API: dicts as the primitive, `rows_text` derived, malformed lines refused (checkpoint exempt), the cache keeping dicts and text; the 15 test files (16 `put_rows_text` calls) moved to rows, the few that write malformed lines to raw-file tests | `make check`; `make stores-check`; budget-check |
-| d | SQLite tables, ids, the type rule, `facts`, deletes, `data-migrate`, `m0007`'s SQLite part; V9 in SQLite | data-migrate there and back: every score set's canonical text equal; dbstat per table (expected per-item results ~73 MiB with the wide ids, database ~150 MiB at 4 KiB pages: the review's prototype); `view_bench` within ±10%; each type case (bool, None, NaN, ±inf, int64 bounds, -0.0, 1 vs 1.0, `_meta` absent / `{}`, `_extra` absent / `{}`) round-trips; V9 failures planted |
+| d | SQLite tables, ids, the type rule, `facts`, deletes, `data-migrate`, `m0007`'s SQLite part; V9 in SQLite | data-migrate there and back: every score set's canonical text equal; dbstat per table (expected per-item results ~73 MiB with the wide ids, database ~150 MiB at 4 KiB pages: the review's prototype; measured 82.0 and 159.2, see As built); `view_bench` within ±10%; each type case (bool, None, NaN, ±inf, int64 bounds, -0.0, 1 vs 1.0, `_meta` absent / `{}`, `_extra` absent / `{}`) round-trips; V9 failures planted |
 | e | Release: 16 KiB pages | P1b's proof (catalog, 2,905 comparisons, 38 MCP calls, same bytes from both stores); two renders, one sha256; rsync bytes for no change and one new run first / middle / last, against today's 219 B / 228 / 122 / 20 MB |
 | f | Fleet data repository, own PR | on a scratch copy first: `evh migrate --dry-run` with its own counts (formats 1-7 at once: it is unstamped, format 0, old layout), then the migrate; its gate is `evh validate` and `make catalog` (it has no CI); pin bumped to the pushed harness commit (pushing there needs the owner's approval) |
 | g | Docs | RFC-025 "As built" amended; ADR-0030 (the results model); UPGRADING (format 7); RUNBOOK (tables, the read path, data-migrate's equality); `docs/DATA.md`; `harness/docs/INTEGRATION.md` (`Result.meta`: usage slimmed at write); `harness/skills/evh-compare-and-read/SKILL.md:75` (`_meta.gates`); CHANGELOG |
@@ -281,3 +287,81 @@ guards, commit, push, `ci-watch` green.
   in the order of the run's time so a new run is added last; a rescore of an old run, a new run's name in `outputs`'
   index and its item ids in `score_rows_item` still move some pages; measured in step e.
 - **Fleet repo**: its rows are unread here (NaN, strings, `_commit`?); its scratch migrate in step f reports them.
+
+## As built (0.8.0)
+
+Where the build differs from the text above, and why. Every number is from the commit message named or from the code
+cited; the sizes in the last table are the commits' own measurements on this repository's data.
+
+- **`runs()` still lists the runs that hold outputs; only `row_runs()` reads `score_sets`.** The text said both read
+  `score_sets`. `runs()` is `SELECT DISTINCT run FROM outputs` (`harness/scripts/_outputs.py:962-968`), the runs the
+  database holds outputs for; `row_runs()` lists each score set (`SELECT key FROM score_sets`) and each run with a
+  checkpoint in `rows_partial` (`_outputs.py:970-978`).
+- **`meta=False` reads.** Added in step d, so a caller that reads the item and the numbers does not decode `_meta` and
+  `_extra`: `_outputs.rows(..., meta=False)` and `_runs.item_rows(..., meta=False)` (`_outputs.py:1363-1372`,
+  `_runs.py:62-67`). The sqlite store then does not read `score_rows.meta` or `extra` or the call facts and the rows it
+  gives may lack them; the files store gives them whole (`read_set`'s docstring, `_outputs.py:514-520`). It is the text's
+  performance plan step (3). Callers: the leaderboards, the arms and goals pages, the paired tests, the sheet, a study
+  and the data page's line counts (`_runs.py:115,167`, `_sheet.py:168,190`, `_study.py:424`, `catalog_adapter.py:639`,
+  `_data_page.py:367`). Step d's commit: view_bench medians of 3 interleaved runs, SQLite 0.81-1.01 of step c and
+  0.86-0.96 of step a.
+- **`json_group_object` was measured and is not adopted.** Step d measured assembling every score set's values on this
+  repository's data: 0.407 s with `json_group_object` against 0.380 s in Python (0.360 s with the set's rows scanned once),
+  so no gain, and it would have needed the `-0.0` and version caveats above. The build assembles each score set in
+  Python from one `score_values` query (`_outputs.py:503-510`, `read_set`); there is no `json_group_object` anywhere in
+  `harness/scripts`. Plan step (2), "keep assembled dicts in the view cache", is built as the kept-rows cache holding the
+  parsed dicts with their text (step c's commit).
+- **The cache's weight factors are measured, not 2-3.** The files store's parsed dicts weigh `DICT_FACTOR = 5` times their
+  text (4.85 measured over a seventh of the score sets: 13,295 rows, 9.1 MB of text, 44.0 MB of dicts); the sqlite
+  store has no text, so it weighs its estimate of the text (0.96 times the real) at `SQLITE_DICT_FACTOR = 4` (3.84
+  measured) with `_meta` and `_extra`, and `SQLITE_LIGHT_FACTOR = 2` (1.97) with `meta=False`; the bound is
+  `ROWS_KEPT_BYTES = 8_000_000` (`_outputs.py:60-74`). The item index is a cache of its own, valid by the file's stamp: kept
+  inside the rows' cache it was evicted and `items-out` took 14.4 s against 3.5 (step c's commit).
+- **Rows the cache shares can be frozen: `EVH_FREEZE_ROWS=1`** (step d; not in the text). Every row the cache holds is
+  frozen, a change raises `TypeError` where it is made, and a copy is a plain dict (`_outputs.py:77-126`). The suite
+  runs under it (`tests/self_test.py:52`, `tools/store_matrix.py:36`) and found no caller that changes a cached row
+  (step d's commit).
+- **The `unfinished()` hook for a project at format 7 with the old `rows` table.** An early build of format 7 (steps b
+  and c) stamped a SQLite project at 7 and kept its rows in `rows`. `migrations/m0007_results.py` has `unfinished()`
+  (line 179: whether table `rows` is still there), `migrate._todo` runs a step again for data stamped with its number
+  when the step says it is unfinished (`migrate.py:78-86`), and `evh migrate --check` and every command refuse such a
+  project (`old-format`) until then (step d's commit, CHANGELOG).
+- **Score-set ids are the order of time, not a hash.** Step d built 43-bit sha256 ids with linear probing and the keys
+  inserted sorted (34ce211fb). Owner, 2026-11-16: the order of time. `data-migrate` and m0007 write the outputs, score
+  sets, metrics and rows in the order of the run's time (`started_at`, else `created_at`; a run with neither first), then
+  the key, and a score set's id is its place in it (7c7908d39); the `Ids` paragraph above is the amended text. 304 of the
+  305 committed runs hold only `created_at`. rsync as the deploy runs it, the database: a new 5-item run 86.9 MB (name
+  sorting first), 61.5 MB (middle), 10.1 MB (last) with hashed ids at 16 KiB (18923f31c, against 228 / 122 / 20 MB on
+  the old `rows` table); 9.4, 4.7 and 1.1 MB in time order (7c7908d39); no change 105 B. A rescore of an old run is not
+  improved: 26.3 to 61.2 MB (median run to oldest) in 7c7908d39.
+- **The `files` table is in run order too** (a7c49749a, `data_migrate._file_order`): what is not under a run first, in
+  path order, then each run's files by the run's time, then path. A new 5-item run 4.3 MB (name sorting first), 2.2
+  (middle), 1.1 (last), against 9.4 / 4.7 / 1.1 with the files in path order; a median old run rescored 26.6 MB. What
+  remains of a new run's cost is `outputs`' (run, item_id) index when its name sorts first (4.2 MB) and the item index
+  (1.2 MB); changing them would change the key this RFC keeps.
+- **A VACUUM after m0007** (5ddbddaec, `m0007_results._vacuum`). A format-6 database of 241.8 MB stood at 327.7 MB after
+  the move, 150 MB of it the pages `rows` held, until vacuumed. The VACUUM runs after the move's commit, so one that
+  cannot run (it needs about the database's size free) leaves the data moved and says so.
+- **A resumed run restores its settings** (325a04f5a, `results.restore_call`, `run.py:987`). Resuming a finished run
+  replayed rows that no longer hold the run settings; the resume path now puts them back from the run's `call`.
+  The same commit: a crashed run's first run.json names its build (V3), V13 no longer asks for a scorer file for scores
+  entered through a sheet, and the warm-up's "nothing to load" threshold is 25 ms, not 5.
+- **The new validation check is V28** (`validate_tree.py`, listed in its docstring at line 73): a stored row holding a
+  run setting or a `usage` key outside the kept set, and, from step c, each line of a files score set that is no row.
+- **Three migration fixes from the fleet's data repository** (e1a7fcf53; found moving it to format 7): m0002 now finds
+  configs in config.yaml's `configs:` folders; `evh migrate --dry-run` runs the real steps on a scratch copy under the
+  project's `.build/` (as large as the data while it runs; the project is byte-identical afterwards), since a step that
+  reads what an earlier one writes could not run otherwise; m0003 writes validate.json when none existed.
+
+### Measured sizes against the estimates
+
+| | Estimated (RFC) | Built | Commit |
+|---|---|---|---|
+| Per-item results, indexes included | ~73 MiB | 82.0 MiB (73.9 MiB tables only), against 168.7 MiB for `rows` and its indexes | 34ce211fb |
+| Project database at 4 KiB pages | ~150 MiB | 159.2 MiB, against 246 MiB with `rows` (190.6 MiB at format 7 with the lines) | 34ce211fb |
+| Release database | not estimated | 142,020,608 bytes at 4 KiB (hashed ids); 136,265,728 at 16 KiB (hashed ids); 128,516,096 in time order; 128,581,632 with the `files` table in run order | 34ce211fb, 18923f31c, 7c7908d39, a7c49749a |
+
+The estimates were over by about 9 MiB on the less favourable reading (34ce211fb). The release database is sealed at 16
+KiB pages (`RELEASE_PAGE_SIZE = 16384`, `_release_store.py:26`) and the release check refuses another size
+(`_release_store.py:114-115`). Renders of one commit gave one sha256: two from checkouts 2m40s apart at 16 KiB (61efcf89..., 18923f31c), three and a
+fourth in time order (430f4648..., 7c7908d39), three with the `files` table in run order (6ae18c15..., a7c49749a).

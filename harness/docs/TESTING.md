@@ -43,6 +43,13 @@ run concludes success, which is what the deploy and the release read. Chromium a
   each with a copy of the expected number.
 - **Limits leave room for a slow runner** and say why they are what they are (prod's 384 MiB, 256 before 0.5.0; a
   cached answer is a dictionary lookup).
+- **The rows the cache shares are frozen under test** (RFC-033). `tests/self_test.py` sets `EVH_FREEZE_ROWS=1` (unless
+  it is already set) for the whole suite and every process it starts, and `tools/store_matrix.py` (`make stores-check`,
+  the suite on SQLite) sets it for each test file it runs. Every row the kept-rows cache holds is then frozen: a view or
+  a command that changes a row it shares with every other reader fails its test with a `TypeError` at the line that
+  does, instead of changing what the next reader sees in a server that lives on. A copy (`copy.deepcopy`, `dict(row)`)
+  is a plain dict. Without the variable the cache's rows are plain dicts; `tests/test_rows_frozen.py` tests the
+  safeguard in both stores.
 - **Absence is a failure, not a skip** ([CONTRIBUTING](https://github.com/chipi/eval-harness/blob/main/CONTRIBUTING.md)).
 
 ## Measured

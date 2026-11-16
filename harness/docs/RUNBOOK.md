@@ -723,15 +723,37 @@ and name it by path. Move a project after setting the key, either way:
 ```bash
 evh data-migrate --to sqlite --dry-run   # what would move
 evh data-migrate --to sqlite             # every file read back by its sha256, then removed from disk
-evh data-migrate --to files              # back, byte for byte, after setting store: files
+evh data-migrate --to files              # back, after setting store: files (a score's rows come back as canonical lines)
 ```
+
+**A score's per-item rows in SQLite** (RFC-033, [ADR-0030](../../docs/adr/ADR-0030-per-item-results-as-tables.md)). The
+database does not keep a score set's rows as lines of text. `score_sets` has one row per score set (its key is the
+score's folder under `data/`), `score_rows` one per item (its `_meta`, its `_extra` and the fields that are not
+numbers), `score_values` one per numeric field (the metric named once in `metrics`), `call_facts` what a run's call to
+one item was, held once for every score set of the run, and `rows_partial` the crash checkpoint, verbatim. The files
+store keeps `predictions.jsonl`, one canonical JSON line per item. Code reads a score set's rows as dicts in either
+store (`_runs.item_rows`, `_outputs.rows`): the same dict, keys sorted, an integer still an integer and a float a float;
+`_outputs.rows_text` derives the lines from them. A reader that needs the item and the numbers only passes
+`meta=False`: the SQLite store then does not decode `_meta` and `_extra` and the rows it gives may lack them, while the
+files store gives them whole. A line that is not a JSON object with an `item_id` is refused at write (`ERROR
+(invalid-file)`) in both stores; the crash checkpoint is exempt. The files store still reads a hand-edited
+`predictions.jsonl`, and `evh validate`'s V28 names a line that is no row. The rows the cache shares between readers are
+the cache's own: a command that changes one copies it first, and `EVH_FREEZE_ROWS=1` (below) makes a change that does
+not raise.
+
+`data-migrate` compares every score set's rows as canonical text (`row_line` of each row), not as bytes, so the
+equality it proves is of the rows' content; in either direction it writes canonical lines, so a `predictions.jsonl`
+that was not in key order comes back canonical. It refuses a project whose file holds a line that is no row, until it is
+corrected. Into SQLite it writes the outputs, the score sets and the `files` table in the order of each run's time
+(`run.json`'s `started_at`, else `created_at`), then the key, so a run added later lands after the older ones and a
+deploy's rsync of the database stays small.
 
 `data-migrate` refuses while the project's store is not the target, while `data/` holds Python, and
 while a run is still in the layout before 0.8.0 (`evh migrate` first); a move a crash stopped is
 finished by the next one. In SQLite mode a setting you write (a goal, a system) gets in through the
 `evh data-put` (below), and a folder of files through `data-migrate`. `validate` V23 names a database beside files, or files beside the database; V7 and V9, which
 read git, say why they do not apply. A release (`_release.py copy-data`, what a deployment ships) is files, or with
-`--store sqlite` one sealed database (`data/project.sqlite` alone, out of write-ahead logging, and a `config.yaml` saying
+`--store sqlite` one sealed database (`data/project.sqlite` alone, out of write-ahead logging, at 16 KiB pages, and a `config.yaml` saying
 `store: sqlite`), a hidden dataset's text left out either way. A database nothing may write, a release on a read-only
 mount, is opened read-only when `EVAL_STORE_READONLY=1` or its folder is not writable (SQLite's `immutable` mode: no lock
 file, no journal, nothing created): every read works, and every write refuses as `ERROR (not-allowed)`.
@@ -842,8 +864,9 @@ Three things worth knowing:
   `predictions.jsonl`, still carries them. A run's outputs are one file, `outputs.jsonl`, a line per item appended
   as it is produced (a torn last line from a kill is not an output, so that item is called again) and rewritten in
   dataset order when the run completes; a derived run (a re-score, a judging, a sheet import) keeps no outputs of its
-  own and reads its source's (RFC-024). With the sqlite store the same outputs and rows are rows of
-  `data/project.sqlite`, each committed as it is produced (RFC-025).
+  own and reads its source's (RFC-024). With the sqlite store the same outputs and rows are in tables of
+  `data/project.sqlite` (the rows in the per-item tables above, the checkpoint in `rows_partial`), each committed as it is
+  produced (RFC-025).
 - **You cannot resume from a different arm, or from one that cannot be identified.**
   The source's system (`system_id`) and `dataset_id` are checked against the system and
   dataset you are launching and a mismatch is refused. Identity comes from `run.json`, written **before
@@ -1948,7 +1971,7 @@ A project's data has a format: one number, `format` in `data/project.yaml` (RFC-
 release reads one format. `evh migrate --check` compares the two:
 
 ```sh
-evh migrate --check      # data format 3; this release reads 3 (exit 0), or ERROR (old-format) / ERROR (mismatch)
+evh migrate --check      # data format 7; this release reads 7 (exit 0), or ERROR (old-format) / ERROR (mismatch)
 evh migrate --dry-run    # what each step would change, from the real steps on a scratch copy of the data; the project is not written
 evh migrate              # the steps the data needs, each recorded as it lands
 ```
@@ -1959,7 +1982,9 @@ on, and the format is recorded after each, so a step that fails leaves the proje
 
 A dry run needs disk: it copies the data (and config.yaml and the config folders it names) into the project's ignored
 `.build/`, runs every step on the copy so that each reads what the one before wrote, prints each step's counts from it and
-deletes it. The copy is as large as the data while the dry run lasts; the project itself is never written.
+deletes it. The copy is as large as the data while the dry run lasts (a SQLite project's database too); the project itself
+is never written. Format 7 (RFC-033) moves a SQLite project's per-item rows into tables and then vacuums the database,
+which needs free disk about the size of the database; a VACUUM that cannot run leaves the data moved and says so.
 
 Before its first change, `migrate` copies a SQLite project's database beside it
 (`data/project.sqlite.before-format-<n>-<time>`); restoring it is the undo. A files project's undo is git: `migrate`
@@ -2050,6 +2075,7 @@ notebook) reads no `.env`, and the project's paths are resolved on first use, so
 | `EVAL_NO_CACHE` | `1`: `family-test` recomputes instead of replaying an identical earlier run |
 | `EVH_P_CACHE` | a file that keeps every estimated p of the paired test between processes (one JSON line each, read back exactly); every `evh` command (and `evh mcp`, and `evh catalog-serve`, also when started as `python catalog_serve.py`) uses `<project>/.cache/evh-p.jsonl` when it is unset; an empty value turns it off (ADR-0028). A library import (an adapter, a notebook) stores nothing unless it is set. A file that cannot be read is no cache; a read-only one is read and never written |
 | `EVH_VIEW_CACHE_VALUES` | how many per-item scores the view cache keeps in a process that answers more than one view (`catalog-serve`, the MCP server, a notebook): default 2,000,000, ~72 bytes each (this repository's catalog is 1.4 million, ~100 MB); a catalog that does not fit is answered right and not made faster. Lower it for a process with less room, such as the public inspector's 384 MB container |
+| `EVH_FREEZE_ROWS` | `1`: every row the kept-rows cache holds is frozen (RFC-033): a view or command that changes a row it shares with other readers raises `TypeError` where it does, and a copy (`copy.deepcopy`, `dict(row)`) is a plain dict. The harness's test suite runs under it; set it when writing code that reads rows |
 | `EVH_VIEW_CACHE` | `0`: the view cache keeps nothing (every view is read from the data again); for a test that compares a view with and without it |
 | `EVH_WORKERS` | how many child processes may draw a command's resampled tests at once (the same p's); default: the CPUs the process may use, capped by its container's CPU quota, so under one whole CPU none; `1` turns it off |
 | `OPENAI_API_KEY` (and `OPENAI_BASE_URL`) | `provider: openai`: OpenAI, or any OpenAI-compatible endpoint; an arm's `api_key_env` names another variable |
