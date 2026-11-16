@@ -57,7 +57,9 @@ try:
     two.mkdir()
     for f in files[:2]:
         shutil.copy(f, two / f.name)
-    r = evh("label-import", "gold_two", "--dataset-id", "tickets_v1", "--set", "two", "--by", "owner")
+    r = evh(
+        "label-import", "--sheet", "gold_two", "--dataset-id", "tickets_v1", "--set", "two", "--by", "owner"
+    )
     r = (
         r
         if r.returncode

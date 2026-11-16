@@ -113,7 +113,17 @@ try:
         ds2.get("actor", {}).get("name") == "ana" and ds2.get("created_at") == ds.get("created_at"),
         ds2.get("actor"),
     )
-    r = evh("label-import", str(KIT / "gold"), "--dataset-id", "tk_v1", "--set", "g", "--by", "person:cy")
+    r = evh(
+        "label-import",
+        "--sheet",
+        str(KIT / "gold"),
+        "--dataset-id",
+        "tk_v1",
+        "--set",
+        "g",
+        "--by",
+        "person:cy",
+    )
     lab = _runstore.read_json(proj, "labels/tk_v1/g/labels.json") if r.returncode == 0 else {}
     check(
         "label-import: who labelled (source.by) and who acted, both kept",
@@ -160,7 +170,18 @@ try:
         else ""
     )
     check("pick: the entry names its actor", '"name": "dee"' in picks, out(r)[-300:] + picks[-300:])
-    r = evh("dataset-split", "tk_v1", "--test", "0.5", "--split-by", "hash", "--by", "ana", "--force")
+    r = evh(
+        "dataset-split",
+        "--dataset-id",
+        "tk_v1",
+        "--test",
+        "0.5",
+        "--split-by",
+        "hash",
+        "--by",
+        "ana",
+        "--force",
+    )
     side = _runstore.read_json(proj, "datasets/tk_v1_test.json") if r.returncode == 0 else {}
     check(
         "dataset-split: --split-by is the rule, --by who acted",

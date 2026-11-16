@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """What is inside a dataset, without its text: `evh dataset-profile` writes it, `evh dataset-items` reads it.
 
     evh dataset-profile --dataset-id ag_news_200          # data/profiles/ag_news_200.json
@@ -21,26 +20,20 @@ Hugging Face fetchers write). Only an http(s) address is a link. Without either,
 git: it publishes only what the repository already does (a project's own synthetic data).
 """
 
-import sys as _sys
-from pathlib import Path as _Path
-
-if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
-    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
-
-import argparse
 import json
 import subprocess
-import sys
 from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 
-from evaluation_harness import _common, _store
+from evaluation_harness import _common, _jsonout, _store
 from evaluation_harness._common import die, read_json, write_json
 from evaluation_harness._fingerprint import items_digest
 from evaluation_harness._version import __version__
 from evaluation_harness.catalog_adapter import HarnessAdapter
 from evaluation_harness.model import datasets as _datasets
+from evaluation_harness.ops import legacy
 
 #: A gold reference reads as labels when it takes at most this many distinct values, each short.
 MAX_LABELS = 30
@@ -300,33 +293,12 @@ def load_profile(dataset_id: str) -> dict:
     return read_json(f)
 
 
-def main_profile(argv: list[str] | None = None) -> int:
-    """evh dataset-profile."""
-    ap = argparse.ArgumentParser(prog="evh dataset-profile", description=__doc__.split("\n\n")[0])
-    ap.add_argument("--dataset-id", required=True)
-    ap.add_argument(
-        "--with-text",
-        action="store_true",
-        help="add each item's text (only when git has committed every item's file)",
-    )
-    ap.add_argument(
-        "--json",
-        action="store_true",
-        help='the profile written, as JSON: {"command", "version", "result": <the profile>}',
-    )
-    from evaluation_harness._actor import add_by  # noqa: PLC0415
-
-    add_by(ap)
-    args = ap.parse_args(argv)
+def body(**inputs: Any) -> int:
+    """evh dataset-profile: write the profile, say what is inside; its answer is the profile (`values.profile`)."""
+    args = legacy.namespace(inputs, "dataset-profile")
     p = profile(args.dataset_id, args.with_text)
     out = _common.DATA / "profiles" / f"{_common.dataset_id_ok(args.dataset_id)}.json"
     write_json(out, p)
-    if args.json:
-        print(json.dumps({"command": "dataset-profile", "version": __version__, "result": p}, indent=1))
-    else:
-        print(f"wrote {out}\n" + render(p, None).split("\n\n")[0])
+    print(f"wrote {out}\n" + render(p, None).split("\n\n")[0])
+    _jsonout.value("profile", p)
     return 0
-
-
-if __name__ == "__main__":
-    sys.exit(main_profile())

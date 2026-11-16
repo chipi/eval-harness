@@ -119,7 +119,7 @@
         ${note(`this project's capture, from its deployed triage goal; the CNN goal is not deployed, so it has none.`)}`)}
       ${part("b", "dataset.columns", "What's in it", false, "")}${part("c", "dataset.fields", "Its fields", false, "")}${part("d", "dataset.name", "Name it", false, "")}
       <div class="actions"><a class="btn" href="#dataset">Other sources</a></div>
-      ${cmd(`evh dataset-from-capture ${p.capture} --dataset-id <id> --one-per <field>`)}</div>`;
+      ${cmd(`evh dataset-from-capture --capture ${p.capture} --dataset-id <id> --one-per <field>`)}</div>`;
   }
 
   // ── W5: bring in a model ─────────────────────────────────────────────────
@@ -183,13 +183,13 @@
           <label class="dropzone" id="dropzone">drop a .csv here, or <u>choose one</u><input type="file" id="sheetfile" accept=".csv,text/csv" hidden></label>
           <div id="sheetcheck">${s.sheetCheck ? sheetReport(s.sheetCheck) : ""}</div></div></div>
         ${note("the sheet is the one `evh label-sheet --dataset-id cnn_dailymail_200 --items all` writes; a dropped sheet is checked here in the page, the way label-import checks it.")}
-        ${cmd(`evh label-sheet --dataset-id ${dsid()} --out sheet.csv --items unlabelled\nevh label-import sheet.csv --dataset-id ${dsid()} --set <name> --by you`)}`
+        ${cmd(`evh label-sheet --dataset-id ${dsid()} --out sheet.csv --items unlabelled\nevh label-import --sheet sheet.csv --dataset-id ${dsid()} --set <name> --by you`)}`
       : `<div class="pager" style="margin:12px 0"><button type="button" data-lat="-1" aria-label="previous">‹</button><span>item ${at + 1} of ${M.items.length} shown · row ${it.row}</span><button type="button" data-lat="1" aria-label="next">›</button><span class="grow"></span><span>${n} labelled</span></div>
         <div class="reader"><div class="pane"><div class="kicker">${w("item", "the item")} · the article (first 600 characters)</div>${esc(it.article)}…</div>
           <div class="pane"><div class="kicker">your answer: its summary</div><textarea id="lab" rows="8" placeholder="2-3 short sentences: the story's main points">${esc(ans)}</textarea>
             <div class="inline" style="margin-top:8px"><button class="btn" type="button" id="labhl">Start from its highlights</button><button class="btn primary" type="button" id="labnext">Save and next</button></div></div></div>
         ${note(`the dataset has ${M.profile.n} items; the mockup shows the first ${M.items.length}.`)}
-        ${cmd(`# each answer is kept as it is saved, in a label set of yours\nevh label-import <answers> --dataset-id ${dsid()} --set ${dsid()}_mine --by you`)}`}
+        ${cmd(`# each answer is kept as it is saved, in a label set of yours\nevh label-import --sheet <answers> --dataset-id ${dsid()} --set ${dsid()}_mine --by you`)}`}
       <div class="actions">${n ? `<a class="btn primary" href="#reference">Promote ${n} label${n === 1 ? "" : "s"} to a reference set →</a>` : ""}${back("#prepare", "Back to prepare")}</div>
     </div>`;
   }
@@ -277,7 +277,7 @@
         <div class="field"><div class="name">A note</div><div><input type="text" id="rvnote" value="${esc(mk.note || "")}" placeholder="anything a number would miss"></div></div>
         <div class="actions" style="margin-top:0"><button class="btn primary" type="button" id="rvnext">Save and next</button></div></div></div>
       ${note(`the outputs are the arms' real summaries of the first ${M.items.length - 1} items; the failure modes are the CNN adapter's checks (narration, label, markdown, bullets, paragraphs, overlong, truncated).`)}
-      ${cmd(`# the same sheet, to fill elsewhere, and read back\nevh sheet-export --dataset-id ${dsid()} --runs ${A.config_id},${B.config_id} --csv sheet.csv --fill pick\nevh sheet-import sheet.csv --dataset-id ${dsid()} --by you --kind person --set <name>`)}
+      ${cmd(`# the same sheet, to fill elsewhere, and read back\nevh sheet-export --dataset-id ${dsid()} --runs ${A.config_id},${B.config_id} --csv sheet.csv --fill pick\nevh sheet-import --sheet sheet.csv --dataset-id ${dsid()} --by you --kind person --set <name>`)}
     </div>`;
   }
   function wireReview() {
@@ -393,7 +393,7 @@
         <div class="row"><span class="dot">·</span><div><h3>Replay the code that ran</h3><p>production's own code over its history, proved faithful, then a candidate compared period by period</p></div><a class="btn" href="#production-replay">Open</a></div></div>
       ${part("4", null, "The next dataset version", !!pr.picked, pr.extended ? `<div class="note">${esc(p.dataset)} + ${pr.picked} picks → the next version, recorded as made from it.</div>` : `<div class="actions" style="margin-top:0"><button class="btn primary" type="button" id="extend">Make the next version</button></div>`)}
       <div class="actions">${back("#home", "Home")}</div>
-      ${cmd(`evh capture … (the deployment's importer)\nevh arm-from-capture --dataset-id ${p.dataset} --capture ${p.capture} --as production_<date>_v1\nevh label-from-capture --dataset-id ${p.dataset} --capture ${p.capture} --map rules.yaml --set outcomes\nevh sheet-show ${p.dataset} --runs <the production arm>,<a candidate> --wrong-against gold_${p.dataset}\nevh pick --dataset-id ${p.dataset} --item ${(pr.ids || [])[0] || "<id>"} --note "${pr.why || "<why>"}"\nevh dataset-extend ${p.dataset} --dataset-id <next> --picks`)}
+      ${cmd(`evh capture … (the deployment's importer)\nevh arm-from-capture --dataset-id ${p.dataset} --capture ${p.capture} --as production_<date>_v1\nevh label-from-capture --dataset-id ${p.dataset} --capture ${p.capture} --map rules.yaml --set outcomes\nevh sheet-show ${p.dataset} --runs <the production arm>,<a candidate> --wrong-against gold_${p.dataset}\nevh pick --dataset-id ${p.dataset} --item ${(pr.ids || [])[0] || "<id>"} --note "${pr.why || "<why>"}"\nevh dataset-extend --dataset ${p.dataset} --dataset-id <next> --picks`)}
     </div>`;
   }
   function wireProductionLive() {

@@ -121,6 +121,7 @@ def main() -> int:
             put(proj, f"systems/{f.name}", f.read_bytes())
         setup(
             "label-import",
+            "--sheet",
             "tutorial/gold",
             "--dataset-id",
             "tickets_v1",
@@ -269,7 +270,7 @@ def main() -> int:
             # The capture lane (RFC-019), on the same scores file read as records.
             (
                 "importer-check",
-                ["jsonl", "--query", '{"path": "imported.jsonl", "id": "item_id"}'],
+                ["--importer", "jsonl", "--query", '{"path": "imported.jsonl", "id": "item_id"}'],
                 "ok:PASS",
             ),
             (
@@ -285,10 +286,21 @@ def main() -> int:
                 "ok:record(s) from jsonl",
             ),
             ("capture-scrub", ["c1", "--command", "true {records}"], "ok:0 of"),
-            ("dataset-split", ["tickets_v1", "--test", "0.5", "--seed", "3"], "ok:tickets_v1_test"),
+            (
+                "dataset-split",
+                ["--dataset-id", "tickets_v1", "--test", "0.5", "--seed", "3"],
+                "ok:tickets_v1_test",
+            ),
             (
                 "dataset-unseal",
-                ["tickets_v1_test", "--system", "nope_v1", "--reason", "only to read the arguments"],
+                [
+                    "--dataset-id",
+                    "tickets_v1_test",
+                    "--system",
+                    "nope_v1",
+                    "--reason",
+                    "only to read the arguments",
+                ],
                 "is not sealed",
             ),
             ("baselines", [], "ok:no baselines yet"),
@@ -307,7 +319,7 @@ def main() -> int:
                 "no versions",
             ),
             ("capture-show", ["c1"], "ok:c1 "),
-            ("dataset-from-capture", ["c1", "--dataset-id", "captured_v1"], "ok:records kept"),
+            ("dataset-from-capture", ["--capture", "c1", "--dataset-id", "captured_v1"], "ok:records kept"),
             ("capture-restore", ["--capture", "c1"], "ok:records restored"),
             # Labels (RFC-023): installed and reading their arguments; the flow is tests/test_label_sets.py.
             ("label-set-list", ["tickets_v1"], "ok:tickets_v1/installed_from_run: model"),
@@ -351,19 +363,41 @@ def main() -> int:
             ),
             (
                 "label-import",
-                ["installed_sheet.csv", "--dataset-id", "tickets_v1", "--set", "installed_v1", "--by", "t"],
+                [
+                    "--sheet",
+                    "installed_sheet.csv",
+                    "--dataset-id",
+                    "tickets_v1",
+                    "--set",
+                    "installed_v1",
+                    "--by",
+                    "t",
+                ],
                 "no labels",
             ),
             (
                 "sheet-import",
-                ["installed_sheet.csv", "--dataset-id", "tickets_v1", "--by", "t", "--set", "installed_v2"],
+                [
+                    "--sheet",
+                    "installed_sheet.csv",
+                    "--dataset-id",
+                    "tickets_v1",
+                    "--by",
+                    "t",
+                    "--set",
+                    "installed_v2",
+                ],
                 "nothing filled",
             ),
             ("label-from-run", ["--run", "no_such_run", "--set", "installed_v1"], "no finished run"),
             ("picks", [], "ok:No picks waiting"),
             ("deploy-sheet", ["no_such_v1"], "no run of that system"),
             ("pick", ["--dataset-id", "tickets_v1", "--item", "no_such_item"], "not in tickets_v1"),
-            ("dataset-extend", ["tickets_v1", "--dataset-id", "tickets_v9", "--picks"], "no pick is waiting"),
+            (
+                "dataset-extend",
+                ["--dataset", "tickets_v1", "--dataset-id", "tickets_v9", "--picks"],
+                "no pick is waiting",
+            ),
             (
                 "arm-from-capture",
                 ["--dataset-id", "captured_v1", "--capture", "no_such_capture", "--as", "installed_rec_v1"],

@@ -215,7 +215,7 @@ try:
         sheet = csv.writer(f)
         sheet.writerow(["item_id", "label"])
         sheet.writerows([["t01_login", "A"], ["t02_invoice", "B"], ["t03_export", "A"]])
-    r = evh("label-import", "sheet.csv", "--dataset-id", D, "--set", "owner", "--by", "owner")
+    r = evh("label-import", "--sheet", "sheet.csv", "--dataset-id", D, "--set", "owner", "--by", "owner")
     check("setup: a person labels three tickets", r.returncode == 0, out(r)[-300:])
     r = evh("pick", "--dataset-id", D, "--item", "t04_api", "--for", "tickets_gov", "--tag", "case=api")
     check("setup: one ticket is picked", r.returncode == 0, out(r)[-300:])
@@ -279,7 +279,17 @@ try:
     # is two sets, and reading the first one found was a guess.
     with (proj / "gov.csv").open("w", newline="") as f:
         csv.writer(f).writerows([["item_id", "label"], ["t02_invoice", "A"]])
-    r = evh("label-import", "gov.csv", "--dataset-id", "tickets_gov", "--set", "owner", "--by", "someone")
+    r = evh(
+        "label-import",
+        "--sheet",
+        "gov.csv",
+        "--dataset-id",
+        "tickets_gov",
+        "--set",
+        "owner",
+        "--by",
+        "someone",
+    )
     amb = evh("sheet-show", D, "--runs", RUNS, "--wrong-against", "owner")
     r2, rs = rows("--wrong-against", f"{D}/owner")
     check(
@@ -295,7 +305,7 @@ try:
     (proj / "gov.csv").unlink()
     # A label accepting both answers on t02: production's A is one of them, so not wrong; the rows show both.
     (proj / "two.csv").write_text("item_id,label,also right\nt02_invoice,B,A\n")
-    r = evh("label-import", "two.csv", "--dataset-id", D, "--set", "owner_two", "--by", "owner")
+    r = evh("label-import", "--sheet", "two.csv", "--dataset-id", D, "--set", "owner_two", "--by", "owner")
     r2, rs = rows("--wrong-against", "owner_two")
     _, every_row = rows()
     t02: dict = next((x for x in every_row if x["item_id"] == "t02_invoice"), {})
@@ -413,7 +423,7 @@ try:
         wr = csv.writer(fh)
         wr.writerow(["item_id", "label"])
         wr.writerows(bare.items())
-    r2 = evh("label-import", "bare.csv", "--dataset-id", D, "--set", "bare", "--by", "owner")
+    r2 = evh("label-import", "--sheet", "bare.csv", "--dataset-id", D, "--set", "bare", "--by", "owner")
     r3 = evh(
         "sheet-show", D, "--runs", "jsonish_v1", "--wrong-against", "bare", "--json",
         extra={"PYTHONPATH": str(HERE.parent)},

@@ -267,7 +267,7 @@ Seven behaviours change without a migration:
 
 - **A reference folder with no manifest fails `validate` (V16).** Texts copied into `data/references/<tier>/<id>/`
   by hand said nothing of where they came from, and runs scored against them as if promoted. Import them as a
-  person's labels where they are and promote them (`evh label-import data/references/<tier>/<id> --dataset-id D
+  person's labels where they are and promote them (`evh label-import --sheet data/references/<tier>/<id> --dataset-id D
   --set S --by WHO`, then `evh reference-promote … --tier … --reason …`): the promotion adopts the folder, its
   texts being the labels', so no run's reference moves.
 - **`evh reference-manifest` is a promotion too**: it takes `--labelled-by` (whose labels a script builds),

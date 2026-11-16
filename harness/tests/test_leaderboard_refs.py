@@ -110,6 +110,7 @@ try:
     check("setup: the author runs against its own silver", r.returncode == 0, (r.stdout + r.stderr)[-400:])
     r = evh(
         "label-import",
+        "--sheet",
         str(KIT / "gold"),
         "--dataset-id",
         "tickets_v1",

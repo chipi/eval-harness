@@ -90,7 +90,7 @@ check(
     out(r)[-300:],
 )
 
-r = evh("dataset-split", "base_v2", "--test", "0.3", "--seed", "7")
+r = evh("dataset-split", "--dataset-id", "base_v2", "--test", "0.3", "--seed", "7")
 dev, held = ids("base_v2_validation"), ids("base_v2_test")
 check(
     "split: every item on exactly one side, about 30% test",
@@ -115,18 +115,31 @@ check(
     and sorted(ds("base_v2_validation")["derived_from"]["removed"]) == sorted(held),
     sp,
 )
-r = evh("dataset-split", "base_v1", "--test", "0.3", "--seed", "7")
+r = evh("dataset-split", "--dataset-id", "base_v1", "--test", "0.3", "--seed", "7")
 check(
     "split: a later version keeps every earlier item on its side",
     r.returncode == 0 and ids("base_v1_test") <= held and ids("base_v1_validation") <= dev,
     out(r)[-200:],
 )
-r = evh("dataset-split", "base_v2", "--test", "0.3", "--seed", "7", "--key", "group", "--force")
+r = evh(
+    "dataset-split", "--dataset-id", "base_v2", "--test", "0.3", "--seed", "7", "--key", "group", "--force"
+)
 groups = {it["item_id"]: it["fields"]["group"] for it in ds("base_v2")["items"]}
 gd = {groups[i] for i in ids("base_v2_validation")}
 gh = {groups[i] for i in ids("base_v2_test")}
 check("split --key: no group on both sides", r.returncode == 0 and not gd & gh and gd and gh, out(r)[-200:])
-r = evh("dataset-split", "base_v1", "--test", "0.25", "--split-by", "time", "--key", "day", "--force")
+r = evh(
+    "dataset-split",
+    "--dataset-id",
+    "base_v1",
+    "--test",
+    "0.25",
+    "--split-by",
+    "time",
+    "--key",
+    "day",
+    "--force",
+)
 days = {it["item_id"]: it["fields"]["day"] for it in ds("base_v1")["items"]}
 check(
     "split --split-by time: the newest quarter is test",
@@ -135,11 +148,11 @@ check(
     and min(days[i] for i in ids("base_v1_test")) >= max(days[i] for i in ids("base_v1_validation")),
     out(r)[-200:],
 )
-r = evh("dataset-split", "base_v1", "--test", "0.25", "--seed", "1")
+r = evh("dataset-split", "--dataset-id", "base_v1", "--test", "0.25", "--seed", "1")
 check("split: never overwrites without --force", r.returncode != 0 and "frozen" in out(r))
-r = evh("dataset-split", "base_v1", "--test", "1.5")
+r = evh("dataset-split", "--dataset-id", "base_v1", "--test", "1.5")
 check("split: a share outside (0, 1) is refused", r.returncode != 0)
-r = evh("dataset-split", "base_v1", "--test", "0.5", "--split-by", "time")
+r = evh("dataset-split", "--dataset-id", "base_v1", "--test", "0.5", "--split-by", "time")
 check("split --split-by time without --key is refused", r.returncode != 0 and "--key" in out(r))
 for name in ("base_v2_validation", "base_v2_test"):
     r = evh("dataset-materialize", "--dataset-id", name)

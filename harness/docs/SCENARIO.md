@@ -78,8 +78,8 @@ purpose):
 evh dataset-create --dataset-id briefs_v1 --source-dir data/sources/briefs --glob "*.txt"
 evh dataset-create --dataset-id intents_v1 --source-dir data/sources/messages --glob "*.txt"
 evh dataset-materialize --dataset-id briefs_v1 && evh dataset-materialize --dataset-id intents_v1
-evh label-import data/sources/briefs_gold --dataset-id briefs_v1 --set my_gold --by me
-evh label-import data/sources/messages_gold --dataset-id intents_v1 --set my_gold --by me
+evh label-import --sheet data/sources/briefs_gold --dataset-id briefs_v1 --set my_gold --by me
+evh label-import --sheet data/sources/messages_gold --dataset-id intents_v1 --set my_gold --by me
 evh reference-promote --dataset-id briefs_v1 --labels my_gold --tier gold --reason "my own summaries" --by me
 evh reference-promote --dataset-id intents_v1 --labels my_gold --tier gold --reason "my own intents" --by me
 ```

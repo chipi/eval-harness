@@ -2116,7 +2116,7 @@ def render_picks_waiting(A: Adapter, ds: str) -> str:
         rows,
     )
     return cmdpick(
-        f"evh dataset-extend {ds} --dataset-id <next>",
+        f"evh dataset-extend --dataset {ds} --dataset-id <next>",
         "--pick",
         "tick the picks to add: the command to make the next version shows here",
         f'<p class="small muted">{len(picks)} pick(s) name this dataset as a target. The page writes nothing: '
@@ -4418,7 +4418,7 @@ def render_labels(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
         )
         if rows
         else '<p class="muted">No labels yet: <code>evh label-sheet --dataset-id D --out sheet.csv</code>, filled '
-        "and read back with <code>evh label-import sheet.csv --dataset-id D --set S --by WHO</code>; a run's outputs "
+        "and read back with <code>evh label-import --sheet sheet.csv --dataset-id D --set S --by WHO</code>; a run's outputs "
         "with <code>evh label-from-run --run R --set S</code>.</p>",
     )
     write(

@@ -424,7 +424,8 @@ with tempfile.TemporaryDirectory() as tmp:
     subprocess.run(
         [
             sys.executable,
-            str(HERE / "promote_baseline.py"),
+            str(HERE / "cli.py"),
+            "run-promote",
             "--run",
             "r1",
             "--reason",

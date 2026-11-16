@@ -20,8 +20,10 @@ from typing import Any
 from evaluation_harness.ops.registry import Op
 
 
-def _flag(name: str) -> str:
-    return f"--{name.replace('_', '-')}"
+def _flag(name: str, spec: dict[str, Any] | None = None) -> str:
+    """The option of an input: its name with dashes, or what `x-flag` says (an input that cannot be called what the option
+    is called: pick's `--for` is the input `targets`, since `for` is who the call acts for)."""
+    return (spec or {}).get("x-flag") or f"--{name.replace('_', '-')}"
 
 
 def parser(op: Op, strict: bool = True) -> argparse.ArgumentParser:
@@ -38,7 +40,7 @@ def parser(op: Op, strict: bool = True) -> argparse.ArgumentParser:
         groups.update(dict.fromkeys(names, group))
     for name, spec in op.inputs.items():
         target = groups.get(name, ap)
-        flags = [*([spec["x-short"]] if spec.get("x-short") else []), _flag(name)]
+        flags = [*([spec["x-short"]] if spec.get("x-short") else []), _flag(name, spec)]
         help_ = spec.get("description", "")
         t = spec.get("type")
         kind = {"integer": int, "number": float}.get(t, str)
@@ -150,31 +152,47 @@ def _inputs_file(op: Op, path: str) -> dict[str, Any]:
     return inputs
 
 
-def _job_inputs(op: Op, ap: argparse.ArgumentParser, args: argparse.Namespace) -> dict[str, Any]:
+def _joins(spec: dict[str, Any]) -> bool:
+    """Whether an input is the outside captures' joins (an array of objects): each `--outcomes` with the options after it."""
+    return spec.get("type") == "array" and spec.get("items", {}).get("type") == "object"
+
+
+def _job_inputs(
+    op: Op, ap: argparse.ArgumentParser, args: argparse.Namespace, line: list[str]
+) -> dict[str, Any]:
     """A job's inputs from its options, or from its --inputs-file; what the schema requires, checked here."""
-    given = {n: getattr(args, n) for n in op.inputs}
+    from evaluation_harness import _outcome_join  # noqa: PLC0415
+
+    given: dict[str, Any] = {
+        n: (_outcome_join.outcomes_from_argv(line) if _joins(s) else getattr(args, n))
+        for n, s in op.inputs.items()
+    }
     if args.inputs_file:
-        also = [_flag(n) for n, v in given.items() if v != ap.get_default(n)]
+        also = [
+            _flag(n, op.inputs[n])
+            for n, v in given.items()
+            if v != ap.get_default(n) and not _joins(op.inputs[n])
+        ]
         if also:
             ap.error(f"--inputs-file takes every input from the file: not also {', '.join(also)}")
         return _inputs_file(op, args.inputs_file)
     inputs: dict[str, Any] = {}
     for name, spec in op.inputs.items():
-        v = _pairs(given[name]) if spec.get("type") == "object" else given[name]
+        v: Any = _pairs(given[name]) if spec.get("type") == "object" else given[name]
         if v not in (None, [], {}) or name in op.required:
             inputs[name] = v
     if op.one_of and not any(given[n] not in (None, [], {}, False) for n in op.one_of):
-        ap.error(f"one of {', '.join(_flag(n) for n in op.one_of)} is needed")
+        ap.error(f"one of {', '.join(_flag(n, op.inputs[n]) for n in op.one_of)} is needed")
     return inputs
 
 
-def _run_job(op: Op, ap: argparse.ArgumentParser, args: argparse.Namespace) -> int:
+def _run_job(op: Op, ap: argparse.ArgumentParser, args: argparse.Namespace, line: list[str]) -> int:
     """A decision or a work operation as a command: its body prints (live on stderr under --json, so a job's log
     follows it) and answers the exit code; --json prints the envelope after."""
     from evaluation_harness import _common, _jsonout  # noqa: PLC0415
     from evaluation_harness.model.entity import Problem  # noqa: PLC0415
 
-    inputs = _job_inputs(op, ap, args)
+    inputs = _job_inputs(op, ap, args, line)
     try:
         with _jsonout.collect(op.name, args.json, live=sys.stderr):
             return op.body(**inputs)
@@ -192,7 +210,7 @@ def main(op: Op, argv: list[str] | None = None) -> int:
     ap = parser(op, strict=not any(a == "--inputs-file" or a.startswith("--inputs-file=") for a in line))
     args = ap.parse_args(line)
     if op.is_job():
-        return _run_job(op, ap, args)
+        return _run_job(op, ap, args, line)
     kwargs: dict[str, Any] = {p: getattr(args, p) for p in op.path_params()}
     for name, spec in op.inputs.items():
         v = getattr(args, name.replace("-", "_"))

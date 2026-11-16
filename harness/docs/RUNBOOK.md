@@ -23,7 +23,7 @@ What [Getting started](../../docs/GUIDE.md) walks: a dataset, its reference, run
 | what is configured | `evh env-check` |
 | freeze | `evh dataset-create --dataset-id … --source-dir … [--licence ID]` |
 | materialize | `evh dataset-materialize --dataset-id …` |
-| a person's labels | `evh label-sheet --dataset-id … --out sheet.csv` · `evh label-import sheet.csv --dataset-id … --set … --by …` (or a folder of `<item_id>.txt`) |
+| a person's labels | `evh label-sheet --dataset-id … --out sheet.csv` · `evh label-import --sheet sheet.csv --dataset-id … --set … --by …` (or a folder of `<item_id>.txt`) |
 | a reference (labels you promote) | `evh reference-promote --dataset-id … --labels … --tier gold\|silver --reason "…" --by …` |
 | cost before spending | `evh run --system … --dataset … --dry-run` |
 | measure (+ own noise) | `evh run --system … --dataset … [--goal G] --repeat 3` |
@@ -51,7 +51,7 @@ What [Getting started](../../docs/GUIDE.md) walks: a dataset, its reference, run
 | a sealed held-out side | `evh dataset-split … --split-by time --key F --at T --seal [--count-by F,…]` · `evh dataset-unseal …_test --system S --reason "…"` |
 | who read a held-out item; counts only | `evh exposure-add --dataset-id …_test --item ID --what "…"` · `evh exposure` · `evh exposure-check --dataset-id …_test` · `evh sealed-counts …_test` · `evh dataset-seal-counts --dataset-id …_test --add F --reason "…"` |
 | pick for the next version | `evh pick --dataset-id … --item … --for V` · `evh picks [--for V]` |
-| the next version of a dataset | `evh dataset-extend V1 --dataset-id V2 --picks` (or `--pick ITEM …`) |
+| the next version of a dataset | `evh dataset-extend --dataset V1 --dataset-id V2 --picks` (or `--pick ITEM …`) |
 
 ### Labels, references and scoring
 
@@ -59,7 +59,7 @@ What [Getting started](../../docs/GUIDE.md) walks: a dataset, its reference, run
 |---|---|
 | a model's labels (a run's outputs) | `evh label-from-run --run <run_id> --set … [--not-redistributed]` |
 | the label sets | `evh label-set-list …` |
-| how arms fail (failure modes) | `evh sheet-export --dataset-id … --runs A,B --csv tags.csv --fill tags --modes …` · `evh sheet-import tags.csv --dataset-id … --by … --tags … --modes …` · `evh tag-set-list …` |
+| how arms fail (failure modes) | `evh sheet-export --dataset-id … --runs A,B --csv tags.csv --fill tags --modes …` · `evh sheet-import --sheet tags.csv --dataset-id … --by … --tags … --modes …` · `evh tag-set-list …` |
 | gold a script builds, promoted | `evh reference-manifest --reference-id gold/… --source … --labelled-by … --reason "…" --by …` |
 | score against labels | `evh rescore --dataset-id … --labels …` · `evh run --system … --dataset … --labels …` |
 | re-score, $0 | `evh rescore --dataset-id … [--reference-id gold/…]` |
@@ -87,7 +87,7 @@ What [Getting started](../../docs/GUIDE.md) walks: a dataset, its reference, run
 | the sheet: every item, every arm's output and scores, the labels, the winner, the signals | `evh sheet-export --dataset-id … --runs A,B [--wrong-against SET] [--new-vs V] [--csv FILE [--fill label\|pick\|scores]]` |
 | how two per-item scores relate, by a recorded field (a gate that saved a false dismissal, one that cost a false alarm) | `evh comparison-crosstab --runs A --crosstab M1,M2 [--group _meta.gates [--group-match REGEX]] [--where F:V]` ([§14](#14-browse-the-catalog-and-the-inspector)) |
 | why items flipped: each run's whole output beside the reference, many items at once | `evh comparison-items --runs A,B [--disagree] [--where F:V] [--max-chars N] --json` ([§14](#14-browse-the-catalog-and-the-inspector)) |
-| a sheet filled elsewhere, read back | `evh sheet-import sheet.csv --dataset-id … --by WHO [--set S \| --scorer S]` |
+| a sheet filled elsewhere, read back | `evh sheet-import --sheet sheet.csv --dataset-id … --by WHO [--set S \| --scorer S]` |
 
 ### Production
 
@@ -96,10 +96,10 @@ What [Getting started](../../docs/GUIDE.md) walks: a dataset, its reference, run
 | step | command |
 |---|---|
 | keep a production system's records | `evh capture --importer jsonl --query '{"path": "export.jsonl"}' --capture c1` · `evh capture-list` ([§15](#15-datasets-from-production-the-capture-lane)) |
-| test an importer | `evh importer-check path/to/importer.py:Importer --query …` |
+| test an importer | `evh importer-check --importer path/to/importer.py:Importer --query …` |
 | scrub a capture | `evh capture-scrub c1 --command "python scrub.py {records}"` |
 | a capture's records again (a fresh clone) | `evh capture-restore --capture c1 [--query path=…]` |
-| a dataset from a capture | `evh dataset-from-capture c1 --dataset-id … [--where F:V] [--one-per F] [--tag K=V]` |
+| a dataset from a capture | `evh dataset-from-capture --capture c1 --dataset-id … [--where F:V] [--one-per F] [--tag K=V]` |
 | labels from what happened afterwards | `evh label-from-capture --dataset-id … --capture c1 --map rules.yaml --set …` |
 | how far outcome rules label a dataset now | `evh label-coverage-show … --capture c1 --map rules.yaml` |
 | an outcome from another system; relabels that only add | `evh label-from-capture … --outcomes C2 --join F=F --within -1m,+15m` · `… --set s2 --from-set s1` · `evh label-coverage-show … --from-set s1` |
@@ -480,7 +480,7 @@ manifest even when the texts may not be redistributed (`--not-redistributed`): `
 (V16) then checks any rebuilt copy against it, and the catalog lists the reference as fetched.
 `reference-promote` writes the manifest of the references it makes. Texts copied into
 `data/references/<tier>/<id>/` with no manifest fail `validate` (V16): nothing says where they came from. Import
-them as labels where they are and promote them (`evh label-import data/references/<tier>/<id> …`, then
+them as labels where they are and promote them (`evh label-import --sheet data/references/<tier>/<id> …`, then
 `evh reference-promote`): the promotion adopts the folder, its texts being the labels'.
 
 Every later run is scored against these automatically and records which tier it
@@ -1644,12 +1644,12 @@ that never captures sees none of it. Design: [RFC-019](../../docs/rfc/RFC-019-da
 evh capture --importer jsonl --query '{"path": "decisions.jsonl"}' --capture prod_2026_10   # or tsv, github, langfuse, path.py:Class
 evh capture-show prod_2026_10                                    # what was read, when, the hashes
 evh capture-scrub prod_2026_10 --command "python scrub.py {records}"   # your scrubber; changed records re-hashed
-evh dataset-from-capture prod_2026_10 --dataset-id prod_v1 --one-per fingerprint --tag source=prod
+evh dataset-from-capture --capture prod_2026_10 --dataset-id prod_v1 --one-per fingerprint --tag source=prod
 evh dataset-materialize --dataset-id prod_v1
 evh label-from-capture --dataset-id prod_v1 --capture prod_2026_10 --map rules.yaml \
     --set prod_outcomes                                                # a rule set: what happened afterwards
 evh label-coverage-show prod_v1 --capture prod_2026_10 --map rules.yaml   # how far the rules label it now
-evh dataset-split prod_v1 --test 0.3 --seed 7 --key fingerprint     # prod_v1_validation, prod_v1_test
+evh dataset-split --dataset-id prod_v1 --test 0.3 --seed 7 --key fingerprint     # prod_v1_validation, prod_v1_test
 ```
 
 - **A capture** is `data/captures/<id>/capture.json` (each record's id and hashes) and `records/` (the
@@ -1734,11 +1734,11 @@ evh dataset-split prod_v1 --test 0.3 --seed 7 --key fingerprint     # prod_v1_va
   read it beside a person's labels; promoted, it is a reference like any (ADR-0022).
 - **`text: hidden`** (`dataset-from-capture --hide-text`) keeps a dataset's text, and every text derived
   from it, off every public surface, for data a project may measure but not publish.
-- **A held-out side, sealed.** `evh dataset-split prod_v1 --split-by time --key opened --at 2026-11-07T00:00:00Z
+- **A held-out side, sealed.** `evh dataset-split --dataset-id prod_v1 --split-by time --key opened --at 2026-11-07T00:00:00Z
   --seal` puts every item at or after the boundary on the test side and seals it: no run, label, label sheet,
   reference, rescore or judging is written onto it, refused before anything is called. Tune on the validation
   side; when one candidate is ready, give its system a hypothesis (`against`, `measure`, `direction`, `statement`,
-  ADR-0025), commit it, and `evh dataset-unseal prod_v1_test --system cand_v1 --reason "..."`: the side opens to
+  ADR-0025), commit it, and `evh dataset-unseal --dataset-id prod_v1_test --system cand_v1 --reason "..."`: the side opens to
   that system and the one its hypothesis is against, and the look is recorded (when, why, the hypothesis, the
   commit). Every other system is still refused; each unseal is one more look.
   `validate` (V22) fails when the validation side's items changed after the seal, or a run on the sealed side has
@@ -1775,12 +1775,12 @@ evh arm-from-capture --dataset-id prod_v1 --capture prod_2026_11 --as production
     --like deployed_v1                                                 # production's decisions, as a system
 evh run --system deployed_v1 --dataset prod_v1              # the deployed system, run again
 evh label-sheet --dataset-id prod_v1 --items disagree --runs production_v1,deployed_v1 --out sheet.csv
-evh label-import sheet.csv --dataset-id prod_v1 --set owner_2026_11 --by <you>
+evh label-import --sheet sheet.csv --dataset-id prod_v1 --set owner_2026_11 --by <you>
 evh rescore --dataset-id prod_v1 --labels owner_2026_11                # every arm, against your labels
 evh sheet-show prod_v1 --runs production_v1,deployed_v1 \
     --wrong-against owner_2026_11 --new-vs governed_v1                  # where production was wrong on something new
 evh pick --dataset-id prod_v1 --item … --for governed_v1 --tag case=…  # worth keeping
-evh dataset-extend governed_v1 --dataset-id governed_v2 --picks        # the next version, from the picks
+evh dataset-extend --dataset governed_v1 --dataset-id governed_v2 --picks        # the next version, from the picks
 evh deploy-sheet deployed_v1 --capture prod_2026_11           # did production run what you promoted?
 ```
 
@@ -1804,7 +1804,7 @@ evh deploy-sheet deployed_v1 --capture prod_2026_11           # did production r
   sheet with each arm's output and a `failure_modes: <arm>` cell beside it (not blind: a tag is about whose output
   it is), its first row listing the modes, and a key beside it. Fill a cell with modes (`too-long|misses-ask` for
   several), `ok` for an output read and found fine, or leave it blank (not read, so an unfinished sheet never reads
-  as fine). `evh sheet-import tags.csv --dataset-id D --by <who> --tags <name> --modes <id>` checks the key (an
+  as fine). `evh sheet-import --sheet tags.csv --dataset-id D --by <who> --tags <name> --modes <id>` checks the key (an
   edited output, a mode not in the list, a name already used are refused) and writes the tag set,
   `data/tags/<dataset>/<name>/tags.json`, never edited after. `evh tag-set-list D` and the goal page count per
   arm the outputs read, how many had a failure and each mode; the sheet (`evh sheet-show`, its CSV) shows each
@@ -1831,7 +1831,7 @@ evh deploy-sheet deployed_v1 --capture prod_2026_11           # did production r
   writes the arms' outputs as blind columns A, B, C… shuffled per row (`--seed`, default 0), a `pick` column or a
   `score: X` column per output (`--scale LO..HI`, default 1..5), the rubric as the first row (`#rubric`;
   `--rubric FILE`, else a plain one) and the key beside the sheet (`sheet.key.json`: which letter was which arm,
-  the rubric and its sha256). A person or any AI tool fills it; `evh sheet-import sheet.csv --dataset-id D --by
+  the rubric and its sha256). A person or any AI tool fills it; `evh sheet-import --sheet sheet.csv --dataset-id D --by
   WHO` reads it back: a `label` column as a label set (`--set S`; `--kind model` when a tool filled it), a `pick`
   (`A|B` for a tie) or `score:` columns as judged runs under `data/runs-judged/<scorer>/` (`--scorer S`), one per
   arm, with `judge_won_unvalidated` or `judge_score_unvalidated` per item: unvalidated until the same judge is

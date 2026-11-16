@@ -107,7 +107,17 @@ try:
         shutil.copytree(KIT / "gold", answers)
         for f in answers.glob("*.txt"):
             f.write_text(f"{word} gold. " + f.read_text())
-        r = evh("label-import", f"{ds}_gold", "--dataset-id", ds, "--set", "owner_gold", "--by", "owner")
+        r = evh(
+            "label-import",
+            "--sheet",
+            f"{ds}_gold",
+            "--dataset-id",
+            ds,
+            "--set",
+            "owner_gold",
+            "--by",
+            "owner",
+        )
         r = (
             r
             if r.returncode
@@ -253,7 +263,9 @@ try:
             folder.mkdir()
             for n, i in enumerate(ids):
                 (folder / f"{i}.txt").write_text(f"{MARK[k]}{extra if n % 2 else ''}\n")
-            r = evh("label-import", str(folder), "--dataset-id", ds, "--set", name, "--by", "owner")
+            r = evh(
+                "label-import", "--sheet", str(folder), "--dataset-id", ds, "--set", name, "--by", "owner"
+            )
             check(f"setup: {ds}'s short label set {name}", r.returncode == 0, said(r)[-300:])
     cat2 = proj / "cat2"
     r = evh("catalog", "--out", str(cat2))

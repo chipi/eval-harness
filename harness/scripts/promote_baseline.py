@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Promote a run to a baseline.
 
 A baseline belongs to a goal on a dataset (or, for a run with no goal, to the dataset alone), in
@@ -13,22 +12,14 @@ Two things are refused, because both produce a baseline nobody can act on:
   * a promotion with no reason — six months on, "why is this the baseline?"
     has no answer, and the number gets cargo-culted
 
-    python scripts/promote_baseline.py --run <run_id> --reason "beat prev by 4% on n=40"
+    evh run-promote --run <run_id> --reason "beat prev by 4% on n=40"
     evh run-promote --run <run_id> --reason "..." --goal G      # another of the dataset's goals
     evh run-promote --run <run_id> --reason "..." --no-goal     # the dataset's own baselines
 """
 
 from __future__ import annotations
 
-import sys as _sys
-from pathlib import Path as _Path
-
-if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
-    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
-
 import argparse
-import os
-import sys
 from typing import Any
 
 from evaluation_harness import _baselines, _common, _jsonout, _store
@@ -36,7 +27,6 @@ from evaluation_harness._common import (
     BOOKKEEPING_PREFIXES,
     RUNS,
     die,
-    evh_prog,
     how,
     load_goals,
     now,
@@ -189,7 +179,6 @@ def _version() -> str:
 def body(
     run: str,
     reason: str | None = None,
-    reason_from_env: bool = False,
     goal: str | None = None,
     no_goal: bool = False,
     round: str | None = None,
@@ -203,7 +192,6 @@ def body(
     args = argparse.Namespace(
         run=run,
         reason=reason,
-        reason_from_env=reason_from_env,
         goal=goal,
         no_goal=no_goal,
         round=round,
@@ -213,13 +201,8 @@ def body(
         allow_unknown_build=allow_unknown_build,
         unfaithful=unfaithful,
     )
-    if args.reason_from_env:
-        args.reason = os.environ.get("EVAL_PROMOTE_REASON", "")
     if not (args.reason or "").strip():
-        die(
-            'a reason is required: --reason "..." or --reason-from-env with EVAL_PROMOTE_REASON set',
-            "bad-argument",
-        )
+        die('a reason is required: --reason "..."', "bad-argument")
     from evaluation_harness._actor import require_named  # noqa: PLC0415
 
     who = require_named("run-promote")
@@ -368,67 +351,3 @@ def body(
     for k, v in sorted(shown.items()):
         print(f"    {k:{w}} {v}")
     return 0
-
-
-def main() -> int:
-    """Promote a run to baseline status."""
-    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
-    ap.add_argument("--run", required=True)
-    ap.add_argument("--reason", help="why this run earned promotion")
-    # Reading the reason from the environment keeps it away from the shell entirely.
-    # As a command-line argument interpolated by make, a backtick in the reason
-    # executed and a double quote mangled it -- and this text is written into a
-    # baseline, where it is the permanent record of why a number was promoted.
-    ap.add_argument(
-        "--reason-from-env",
-        action="store_true",
-        help="take the reason from $EVAL_PROMOTE_REASON (what `make "
-        "run-promote` does, so the shell never re-parses it)",
-    )
-    ap.add_argument("--goal", help="the goal it is the baseline of (default: the run's own goal)")
-    ap.add_argument(
-        "--no-goal",
-        action="store_true",
-        help="the dataset's own baselines, not a goal's (a run with no goal goes there)",
-    )
-    ap.add_argument(
-        "--round", help="the round whose conclusion this is: the evidence reads the arms as it does"
-    )
-    ap.add_argument("--allow-dirty", action="store_true", help="promote from a dirty tree anyway")
-    ap.add_argument(
-        "--confirm-extra-look",
-        action="store_true",
-        help="on a test set past its limit of looks (RFC-029): the person's consent to look again (an agent cannot)",
-    )
-    ap.add_argument(
-        "--override-no-evidence",
-        action="store_true",
-        help="on a test set whose items could never show the comparison: promote anyway, labelled inconclusive",
-    )
-    ap.add_argument(
-        "--allow-unknown-build",
-        action="store_true",
-        help="promote a run whose build could not be identified — a DIFFERENT and worse "
-        "problem than a dirty tree, so it takes its own flag",
-    )
-    from evaluation_harness._actor import add_by  # noqa: PLC0415
-
-    ap.add_argument(
-        "--unfaithful",
-        action="store_true",
-        help="promote a replay (RFC-030) whose faithfulness record does not agree with production, as a person (an "
-        "agent is refused); the baseline says so",
-    )
-    add_by(ap)
-    ap.add_argument(
-        "--json",
-        action="store_true",
-        help="one JSON object on stdout when done (the text goes to stderr as it is printed): the envelope every --json command gives (result.blocks, result.values)",
-    )
-    args = ap.parse_args()
-    with _jsonout.collect("run-promote", args.json, live=sys.stderr):
-        return body(**{k: v for k, v in vars(args).items() if k not in ("json", "by")})
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())

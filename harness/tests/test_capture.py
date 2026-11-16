@@ -98,13 +98,13 @@ check(
 )
 
 # ── importer-check ──────────────────────────────────────────────────────────────────────────
-r = evh("importer-check", "jsonl", "--query", json.dumps({"path": "rows.jsonl"}))
+r = evh("importer-check", "--importer", "jsonl", "--query", json.dumps({"path": "rows.jsonl"}))
 check("importer-check: a good file passes", r.returncode == 0 and r.stdout.rstrip().endswith("PASS"), out(r))
 
 
 def bad_file(name, lines):
     (proj / name).write_text("".join(json.dumps(x) + "\n" for x in lines))
-    return evh("importer-check", "jsonl", "--query", json.dumps({"path": name}))
+    return evh("importer-check", "--importer", "jsonl", "--query", json.dumps({"path": name}))
 
 
 for label, lines, says in (
@@ -124,13 +124,13 @@ for label, lines, says in (
     "    def records(self, query):\n"
     "        yield {'id': 'f', 'body': str(random.random())}\n"
 )
-r = evh("importer-check", "flaky.py:Importer", "--query", "{}")
+r = evh("importer-check", "--importer", "flaky.py:Importer", "--query", "{}")
 check(
     "importer-check: red when two reads differ",
     r.returncode == 6 and "FAIL two reads" in out(r),
     out(r)[-300:],
 )
-r = evh("importer-check", "../escape", "--query", "{}")
+r = evh("importer-check", "--importer", "../escape", "--query", "{}")
 check(
     "importer-check: a name that would leave data/ is refused",
     r.returncode != 0 and "lowercase" in out(r),
@@ -204,13 +204,13 @@ check(
     " ('a2', '2026-10-05T10:00:00Z'), ('a3', '2026-10-09T10:00:00Z')):\n"
     "            yield {'id': i, 'body': i, 'created_at': t}\n"
 )
-r = evh("importer-check", "deaf.py:Importer", "--query", "{}")
+r = evh("importer-check", "--importer", "deaf.py:Importer", "--query", "{}")
 check(
     "importer-check: red on an importer that ignores since",
     r.returncode == 6 and "FAIL it keeps to since" in out(r),
     out(r)[-300:],
 )
-r = evh("importer-check", "deaf.py:Importer", "--query", json.dumps({"since": "2026-10-04"}))
+r = evh("importer-check", "--importer", "deaf.py:Importer", "--query", json.dumps({"since": "2026-10-04"}))
 check(
     "importer-check: red when a record falls outside the query's own window",
     r.returncode == 6 and "FAIL every record is inside the window" in out(r) and "a0" in out(r),
@@ -265,7 +265,7 @@ def ds(name):
     return _runstore.read_json(proj, f"datasets/{name}.json")
 
 
-r = evh("dataset-from-capture", "c1", "--dataset-id", "cap_v1")
+r = evh("dataset-from-capture", "--capture", "c1", "--dataset-id", "cap_v1")
 d = ds("cap_v1") if r.returncode == 0 else {}
 cap1 = _runstore.read_json(proj, "captures/c1/capture.json")
 check(
@@ -295,13 +295,13 @@ check("from-capture: the dataset materializes, hashes checked", r.returncode == 
 r = evh("validate")
 check("from-capture: validate passes (V1 schema, V2, V4)", r.returncode == 0, out(r)[-400:])
 
-r = evh("dataset-from-capture", "m", "--dataset-id", "m_where", "--where", "kind:b")
+r = evh("dataset-from-capture", "--capture", "m", "--dataset-id", "m_where", "--where", "kind:b")
 check(
     "from-capture --where on a field",
     r.returncode == 0 and {it["item_id"] for it in ds("m_where")["items"]} == {"m1", "m4", "m7", "m10"},
     out(r)[-200:],
 )
-r = evh("dataset-from-capture", "m", "--dataset-id", "m_text", "--dedup", "text")
+r = evh("dataset-from-capture", "--capture", "m", "--dataset-id", "m_text", "--dedup", "text")
 check(
     "from-capture --dedup text: case and whitespace folded, the first kept",
     r.returncode == 0
@@ -309,12 +309,12 @@ check(
     and "m_dup" not in {it["item_id"] for it in ds("m_text")["items"]},
     out(r)[-200:],
 )
-r = evh("dataset-from-capture", "m", "--dataset-id", "m_exact", "--dedup", "exact")
+r = evh("dataset-from-capture", "--capture", "m", "--dataset-id", "m_exact", "--dedup", "exact")
 check(
     "from-capture --dedup exact: only identical bodies",
     r.returncode == 0 and len(ds("m_exact")["items"]) == 4,
 )
-r = evh("dataset-from-capture", "m", "--dataset-id", "m_nos", "--sample", "3")
+r = evh("dataset-from-capture", "--capture", "m", "--dataset-id", "m_nos", "--sample", "3")
 check(
     "from-capture no longer samples: the capture does",
     r.returncode != 0 and "--sample" in out(r),
@@ -323,7 +323,7 @@ check(
 # The fleet's beta (2026-11-12): the folder a dataset's items go in held the capture's own export, and it was deleted
 # without a word. A file the harness did not write there is refused, and stays.
 _runstore.write_text(proj, "sources/m_own/export.jsonl", '{"id": "x"}\n')
-r = evh("dataset-from-capture", "m", "--dataset-id", "m_own")
+r = evh("dataset-from-capture", "--capture", "m", "--dataset-id", "m_own")
 check(
     "from-capture: a folder holding a file the harness did not write is refused, the file kept",
     r.returncode != 0
@@ -332,10 +332,10 @@ check(
     and not _runstore.exists(proj, "datasets/m_own.json"),
     out(r)[-300:],
 )
-r = evh("dataset-from-capture", "m", "--dataset-id", "m_where", "--where", "kind:b", "--force")
+r = evh("dataset-from-capture", "--capture", "m", "--dataset-id", "m_where", "--where", "kind:b", "--force")
 check("from-capture --force: the dataset's own items are replaced", r.returncode == 0, out(r)[-300:])
 _runstore.write_text(proj, "sources/m_where/notes.txt", "mine\n")
-r = evh("dataset-from-capture", "m", "--dataset-id", "m_where", "--where", "kind:b", "--force")
+r = evh("dataset-from-capture", "--capture", "m", "--dataset-id", "m_where", "--where", "kind:b", "--force")
 check(
     "from-capture --force: a file beside the dataset's items that it did not write is refused, kept",
     r.returncode != 0 and "notes.txt" in out(r) and _runstore.exists(proj, "sources/m_where/notes.txt"),
@@ -448,6 +448,7 @@ for c in ("s1", "s2", "s3", "s4"):
     _runstore.rmtree(proj, f"captures/{c}")
 r = evh(
     "dataset-from-capture",
+    "--capture",
     "m",
     "--dataset-id",
     "m_f",
@@ -463,7 +464,7 @@ check(
     r.returncode == 0 and all(it.get("fields") == {"kind": "a"} for it in ds("m_f")["items"]),
     out(r)[-300:],
 )
-r = evh("dataset-from-capture", "c2", "--dataset-id", "cap_v2", "--from", "cap_v1")
+r = evh("dataset-from-capture", "--capture", "c2", "--dataset-id", "cap_v2", "--from", "cap_v1")
 lin = ds("cap_v2").get("derived_from", {}) if r.returncode == 0 else {}
 check(
     "from-capture --from: the earlier version's items stay, the new are added, lineage recorded",
@@ -477,7 +478,7 @@ check(
 # correct an item's body, kept the old body and reported "0 changed".
 (proj / "fix.jsonl").write_text(json.dumps({"id": "a1", "body": "The corrected body of a1."}) + "\n")
 evh("capture", "--importer", "jsonl", "--query", json.dumps({"path": "fix.jsonl"}), "--capture", "c_fix")
-r = evh("dataset-from-capture", "c_fix", "--dataset-id", "cap_fixed", "--from", "cap_v1")
+r = evh("dataset-from-capture", "--capture", "c_fix", "--dataset-id", "cap_fixed", "--from", "cap_v1")
 lin = ds("cap_fixed").get("derived_from", {}) if r.returncode == 0 else {}
 a1: dict = (
     next(
@@ -497,7 +498,17 @@ check(
     out(r)[-300:],
 )
 # and a field set alone keeps the fields it declares (it kept none, silently)
-r = evh("dataset-from-capture", "m", "--dataset-id", "m_fs", "--fieldset", "kinds", "--where", "kind:b")
+r = evh(
+    "dataset-from-capture",
+    "--capture",
+    "m",
+    "--dataset-id",
+    "m_fs",
+    "--fieldset",
+    "kinds",
+    "--where",
+    "kind:b",
+)
 check(
     "from-capture --fieldset alone: every field the set declares is kept",
     r.returncode == 0
@@ -505,7 +516,7 @@ check(
     and all(it.get("fields") == {"kind": "b"} for it in ds("m_fs")["items"]),
     out(r)[-300:],
 )
-r = evh("dataset-from-capture", "c1", "--dataset-id", "cap_v1")
+r = evh("dataset-from-capture", "--capture", "c1", "--dataset-id", "cap_v1")
 check(
     "from-capture: a dataset is never overwritten without --force", r.returncode != 0 and "frozen" in out(r)
 )
@@ -513,7 +524,7 @@ REC = "captures/c1/records"
 rec_doc = _runstore.read_json(proj, f"{REC}/a1.json")
 rec_doc["outcome"] = {"verdict": "noise"}
 _runstore.write_text(proj, f"{REC}/a1.json", json.dumps(rec_doc))
-r = evh("dataset-from-capture", "c1", "--dataset-id", "cap_tampered")
+r = evh("dataset-from-capture", "--capture", "c1", "--dataset-id", "cap_tampered")
 check(
     "from-capture: a record edited since the capture is refused",
     r.returncode != 0 and "does not match the hash" in out(r),
@@ -625,7 +636,7 @@ r = evh("capture-show", "../x")
 check("captures: a path as the id is refused", r.returncode != 0)
 
 # ── --one-per, --where !=, --tag ───────────────────────────────────────────────────────────
-r = evh("dataset-from-capture", "m", "--dataset-id", "m_one", "--one-per", "kind")
+r = evh("dataset-from-capture", "--capture", "m", "--dataset-id", "m_one", "--one-per", "kind")
 check(
     "--one-per: one record per value of the field, the newest (by time, then id)",
     r.returncode == 0
@@ -633,7 +644,17 @@ check(
     and ds("m_one")["made_from"]["one_per"] == "kind",
     out(r)[-300:],
 )
-r = evh("dataset-from-capture", "m", "--dataset-id", "m_not", "--where", "kind!=a", "--where", "kind!=b")
+r = evh(
+    "dataset-from-capture",
+    "--capture",
+    "m",
+    "--dataset-id",
+    "m_not",
+    "--where",
+    "kind!=a",
+    "--where",
+    "kind!=b",
+)
 check(
     "--where FIELD!=VALUE drops the matching records",
     r.returncode == 0 and {it["item_id"] for it in ds("m_not")["items"]} == {"m2", "m5", "m8", "m11"},
@@ -641,6 +662,7 @@ check(
 )
 r = evh(
     "dataset-from-capture",
+    "--capture",
     "c1",
     "--dataset-id",
     "cap_tagged",
@@ -654,7 +676,7 @@ check(
     r.returncode == 0 and ds("cap_tagged").get("tags") == {"source": "fleet", "environment": "prod"},
     out(r)[-300:],
 )
-r = evh("dataset-from-capture", "c1", "--dataset-id", "cap_badtag", "--tag", "noequals")
+r = evh("dataset-from-capture", "--capture", "c1", "--dataset-id", "cap_badtag", "--tag", "noequals")
 check("--tag without KEY=VALUE is refused", r.returncode != 0 and "KEY=VALUE" in out(r))
 r = evh("validate")
 check("validate passes with tags and one_per (V1)", r.returncode == 0, out(r)[-300:])
@@ -728,7 +750,15 @@ check(
     "               'source': {'system': 's'}, 'outcome': {}}\n"
 )
 r = subprocess.run(
-    [sys.executable, str(HERE / "cli.py"), "importer-check", "tools/imp.py:Importer", "--query", "{}"],
+    [
+        sys.executable,
+        str(HERE / "cli.py"),
+        "importer-check",
+        "--importer",
+        "tools/imp.py:Importer",
+        "--query",
+        "{}",
+    ],
     cwd=proj / "data",
     env=env,
     capture_output=True,

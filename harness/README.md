@@ -254,10 +254,10 @@ What a system did in production is the most realistic test there is, and what ha
 
 ```bash
 evh capture --importer jsonl --query '{"path": "export.jsonl"}' --capture prod_2026_10   # the records, hashed
-evh dataset-from-capture prod_2026_10 --dataset-id prod_v1 --tag source=prod             # a frozen selection
+evh dataset-from-capture --capture prod_2026_10 --dataset-id prod_v1 --tag source=prod             # a frozen selection
 evh label-from-capture --dataset-id prod_v1 --capture prod_2026_10 \
     --map outcomes.yaml --set prod_outcomes                                              # labels from what happened
-evh dataset-split prod_v1 --test 0.3 --seed 7                                         # validation and test
+evh dataset-split --dataset-id prod_v1 --test 0.3 --seed 7                                         # validation and test
 evh capture --importer jsonl --query '{"path": "export.jsonl"}' --capture prod_2026_11 \
     --since-capture prod_2026_10                                                         # later: what came since
 ```

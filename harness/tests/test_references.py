@@ -189,6 +189,7 @@ try:
         if r.returncode
         else evh(
             "label-import",
+            "--sheet",
             "data/references/silver/toy_v1",
             "--dataset-id",
             "toy_v1",

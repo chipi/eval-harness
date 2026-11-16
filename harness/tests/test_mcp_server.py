@@ -87,6 +87,7 @@ try:
     check("setup: the tutorial dataset", r.returncode == 0, r.stderr[-300:])
     r = evh(
         "label-import",
+        "--sheet",
         str(KIT / "gold"),
         "--dataset-id",
         "tickets_v1",

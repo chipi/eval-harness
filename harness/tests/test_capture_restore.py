@@ -82,7 +82,7 @@ try:
         "--capture",
         "c1",
     )
-    r = r if r.returncode else evh("dataset-from-capture", "c1", "--dataset-id", "c1_v1")
+    r = r if r.returncode else evh("dataset-from-capture", "--capture", "c1", "--dataset-id", "c1_v1")
     check("setup: a capture and a dataset made from it", r.returncode == 0, out(r)[-400:])
     cap = proj / "data" / "captures" / "c1"
     cap_rel, src_rel = "captures/c1", "sources/c1_v1"
@@ -178,7 +178,7 @@ try:
         if r.returncode
         else evh("capture-scrub", "s1", "--command", f"{sys.executable} scrub.py {{records}}")
     )
-    r = r if r.returncode else evh("dataset-from-capture", "s1", "--dataset-id", "s1_v1")
+    r = r if r.returncode else evh("dataset-from-capture", "--capture", "s1", "--dataset-id", "s1_v1")
     check("setup: a scrubbed capture and a dataset made after the scrub", r.returncode == 0, out(r)[-400:])
     scap, ssrc = proj / "data" / "captures" / "s1", proj / "data" / "sources" / "s1_v1"
     scap_rel, ssrc_rel = "captures/s1", "sources/s1_v1"

@@ -310,7 +310,7 @@ check(
 )
 
 # A declared result schema is the 200's; none declares one yet, so it is object.
-first = next(iter(OPS.values()))
+first = next(op for op in OPS.values() if op.kind == "read")
 check(
     "the 200 is the envelope with an object result when the operation declares none",
     op_of(first)["responses"]["200"]["content"]["application/json"]["schema"]["properties"]["result"]

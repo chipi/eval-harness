@@ -1,10 +1,9 @@
-#!/usr/bin/env python3
 """A sheet filled elsewhere, read back: labels or judgements (RFC-023).
 
-    evh sheet-import sheet.csv --dataset-id tickets_v1 --by owner --set owner_2026_11
-    evh sheet-import sheet.csv --dataset-id tickets_v1 --by claude --kind model --set claude_labels
-    evh sheet-import sheet.csv --dataset-id tickets_v1 --by owner --scorer owner_picks
-    evh sheet-import sheet.csv --dataset-id tickets_v1 --by owner --tags first --modes summaries
+    evh sheet-import --sheet sheet.csv --dataset-id tickets_v1 --by owner --set owner_2026_11
+    evh sheet-import --sheet sheet.csv --dataset-id tickets_v1 --by claude --kind model --set claude_labels
+    evh sheet-import --sheet sheet.csv --dataset-id tickets_v1 --by owner --scorer owner_picks
+    evh sheet-import --sheet sheet.csv --dataset-id tickets_v1 --by owner --tags first --modes summaries
 
 A person, or any AI tool, fills the empty columns of a sheet `evh sheet-export … --csv sheet.csv --fill …` wrote,
 and one command reads back whatever was filled. The records stay two kinds, because they mean different things: a
@@ -30,28 +29,21 @@ whose `item_id` starts `#` (the rubric, a footer) are not items and are left out
 
 from __future__ import annotations
 
-import sys as _sys
-from pathlib import Path as _Path
-
-if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
-    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
-
 import argparse
 import hashlib
 import json
 import re
-import sys
 from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _jsonout, _outputs, _store, _tags
+from evaluation_harness import _outputs, _store, _tags
+from evaluation_harness._actor import stated
 from evaluation_harness._codeid import file_sha256
 from evaluation_harness._common import (
     BOOKKEEPING_PREFIXES,
     DATA,
     classify_metrics,
     die,
-    evh_prog,
     load_dataset,
 )
 from evaluation_harness._fingerprint import seal
@@ -63,6 +55,7 @@ from evaluation_harness._sheets import read_csv
 from evaluation_harness.label_import import labels_from_rows
 from evaluation_harness.label_sheet import run_dir
 from evaluation_harness.model import runs as _model_runs
+from evaluation_harness.ops import legacy
 
 NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$")
 #: What describes the call that made an arm's output, not how it was judged: carried across, as judge-score carries
@@ -71,116 +64,84 @@ CARRY = ("latency_ms", "tokens_in", "tokens_out", "cost_usd")
 SUFFIX = "_unvalidated"
 
 
-def main() -> int:
+def body(**inputs: Any) -> int:
     """Read a filled sheet back as a label set, or as judged runs."""
-    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
-    ap.add_argument("sheet", type=Path, help="the filled sheet (.csv)")
-    ap.add_argument("--dataset-id", required=True)
-    from evaluation_harness._actor import add_by  # noqa: PLC0415
+    args = legacy.namespace(inputs, "sheet-import", {"set": "name"})
+    args.by = stated("evh sheet-import")
+    if not _store.is_file(args.sheet):
+        die(f"no sheet {args.sheet}", "not-found")
+    load_dataset(args.dataset_id)
+    rows, choices = read_csv(args.sheet)
+    if not rows or "item_id" not in rows[0]:
+        die(
+            f"{args.sheet}: a sheet has the column item_id (evh sheet-export … --csv writes one)",
+            "invalid-file",
+        )
+    head = list(rows[0])
+    rows = [r for r in rows if not r["item_id"].startswith(NOT_AN_ITEM)]
+    sha = hashlib.sha256(_store.read_bytes(args.sheet)).hexdigest()
 
-    add_by(ap, required=True, help="who filled it: a person, or the tool; also who acted")
-    ap.add_argument(
-        "--kind", choices=("person", "model"), default="person", help="who filled it (default: person)"
-    )
-    ap.add_argument("--set", dest="name", help="the label set's name, for a filled `label` column")
-    ap.add_argument(
-        "--scorer",
-        help="the name of the judged scores (read as judged/<scorer>; key <scorer>@none under each arm's run), for "
-        "`pick`/`score:`",
-    )
-    ap.add_argument(
-        "--tags", help="the tag set's name, for filled `failure_modes:` columns (data/tags/<dataset>/<name>/)"
-    )
-    ap.add_argument(
-        "--modes", help="with --tags: the failure-mode list the tags name (data/failure-modes/<id>.yaml)"
-    )
-    ap.add_argument("--key", type=Path, help="the sheet's key (default: sheet.key.json beside it)")
-    ap.add_argument(
-        "--guideline",
-        type=Path,
-        help="with --set, a file: the instructions the labeller followed (its path and sha256 are recorded)",
-    )
-    ap.add_argument(
-        "--json",
-        action="store_true",
-        help="one JSON object on stdout when done (the text goes to stderr as it is printed): the envelope every --json command gives (result.blocks, result.values)",
-    )
-    args = ap.parse_args()
-    with _jsonout.collect("sheet-import", args.json, live=sys.stderr):
-        if not _store.is_file(args.sheet):
-            die(f"no sheet {args.sheet}", "not-found")
-        load_dataset(args.dataset_id)
-        rows, choices = read_csv(args.sheet)
-        if not rows or "item_id" not in rows[0]:
+    def filled(col: str) -> bool:
+        return any((r.get(col) or "").strip() for r in rows)
+
+    score_cols = [h for h in head if h.startswith("score: ")]
+    has_label = "label" in head and filled("label")
+    has_pick = "pick" in head and filled("pick")
+    has_scores = any(filled(h) for h in score_cols)
+    if any(h.startswith(_tags.COLUMN) for h in head):
+        return _import_tags(args, rows, sha, any(filled(h) for h in head if h.startswith(_tags.COLUMN)))
+    if args.tags or args.modes:
+        die(
+            f"{args.sheet}: --tags and --modes read `failure_modes:` columns, and the sheet has none",
+            "bad-argument",
+        )
+    if not (has_label or has_pick or has_scores):
+        die(
+            f"{args.sheet}: nothing filled: no `label`, `pick` or `score:` cell has an answer",
+            "not-enough",
+        )
+    if has_pick and has_scores:
+        die(
+            f"{args.sheet}: both `pick` and `score:` are filled: a sheet is judged one way",
+            "invalid-file",
+        )
+    if has_label and not args.name:
+        die("the sheet has labels: name the label set with --set", "bad-argument")
+    if (has_pick or has_scores) and not args.scorer:
+        die(
+            "the sheet has judgements: name the judging scorer with --scorer (its scores are read as judged/<scorer>)",
+            "bad-argument",
+        )
+
+    labels: dict[str, str] = {}
+    notes: dict[str, str] = {}
+    if has_label:
+        labels, notes = labels_from_rows(rows, choices)
+        out = set_dir(args.dataset_id, args.name)
+        if _store.exists(out) and any(_store.iterdir(out)):
             die(
-                f"{args.sheet}: a sheet has the column item_id (evh sheet-export … --csv writes one)",
-                "invalid-file",
+                f"{out} exists: a label set is never edited. A correction is a new set: name another.",
+                "would-overwrite",
             )
-        head = list(rows[0])
-        rows = [r for r in rows if not r["item_id"].startswith(NOT_AN_ITEM)]
-        sha = hashlib.sha256(_store.read_bytes(args.sheet)).hexdigest()
-
-        def filled(col: str) -> bool:
-            return any((r.get(col) or "").strip() for r in rows)
-
-        score_cols = [h for h in head if h.startswith("score: ")]
-        has_label = "label" in head and filled("label")
-        has_pick = "pick" in head and filled("pick")
-        has_scores = any(filled(h) for h in score_cols)
-        if any(h.startswith(_tags.COLUMN) for h in head):
-            return _import_tags(args, rows, sha, any(filled(h) for h in head if h.startswith(_tags.COLUMN)))
-        if args.tags or args.modes:
+    judged: dict[str, Any] | None = None
+    if has_pick or has_scores:
+        if not NAME.match(args.scorer):
             die(
-                f"{args.sheet}: --tags and --modes read `failure_modes:` columns, and the sheet has none",
+                f"--scorer {args.scorer!r}: letters, digits, _ . - (at most 100), starting with a letter or digit",
                 "bad-argument",
             )
-        if not (has_label or has_pick or has_scores):
-            die(
-                f"{args.sheet}: nothing filled: no `label`, `pick` or `score:` cell has an answer",
-                "not-enough",
-            )
-        if has_pick and has_scores:
-            die(
-                f"{args.sheet}: both `pick` and `score:` are filled: a sheet is judged one way",
-                "invalid-file",
-            )
-        if has_label and not args.name:
-            die("the sheet has labels: name the label set with --set", "bad-argument")
-        if (has_pick or has_scores) and not args.scorer:
-            die(
-                "the sheet has judgements: name the judging scorer with --scorer (its scores are read as judged/<scorer>)",
-                "bad-argument",
-            )
+        judged = _judgements(args, rows, has_pick)
 
-        labels: dict[str, str] = {}
-        notes: dict[str, str] = {}
-        if has_label:
-            labels, notes = labels_from_rows(rows, choices)
-            out = set_dir(args.dataset_id, args.name)
-            if _store.exists(out) and any(_store.iterdir(out)):
-                die(
-                    f"{out} exists: a label set is never edited. A correction is a new set: name another.",
-                    "would-overwrite",
-                )
-        judged: dict[str, Any] | None = None
-        if has_pick or has_scores:
-            if not NAME.match(args.scorer):
-                die(
-                    f"--scorer {args.scorer!r}: letters, digits, _ . - (at most 100), starting with a letter or digit",
-                    "bad-argument",
-                )
-            judged = _judgements(args, rows, has_pick)
-
-        if has_label:
-            source = {"kind": args.kind, "by": args.by, "sheet": args.sheet.name, "sheet_sha256": sha}
-            doc = write_set(args.dataset_id, args.name, labels, source, args.guideline, notes)
-            print(
-                f"data/labels/{args.dataset_id}/{args.name}: {doc['n_items']} label(s) of {len(rows)} row(s), "
-                f"source {args.kind} · {args.by}"
-            )
-        if judged is not None:
-            _write(args, judged, sha)
-        return 0
+    if has_label:
+        source = {"kind": args.kind, "by": args.by, "sheet": args.sheet.name, "sheet_sha256": sha}
+        doc = write_set(args.dataset_id, args.name, labels, source, args.guideline, notes)
+        print(
+            f"data/labels/{args.dataset_id}/{args.name}: {doc['n_items']} label(s) of {len(rows)} row(s), "
+            f"source {args.kind} · {args.by}"
+        )
+    if judged is not None:
+        _write(args, judged, sha)
+    return 0
 
 
 def _import_tags(
@@ -375,7 +336,3 @@ def _write(args: argparse.Namespace, judged: dict[str, Any], sheet_sha: str) -> 
         f"judged/{args.scorer}: {written} score(s), {n} judgement(s), {metric}, unvalidated · {args.kind} {args.by}"
     )
     print(f"  look at it: evh sheet-show {args.dataset_id} --runs {','.join(a['arm'] for a in key['arms'])}")
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())

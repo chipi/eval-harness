@@ -109,7 +109,7 @@ try:
     for step in (
         ("dataset-create", "--dataset-id", DS, "--source-dir", "tickets"),
         ("dataset-materialize", "--dataset-id", DS),
-        ("label-import", str(KIT / "gold"), "--dataset-id", DS, "--set", "g", "--by", "t"),
+        ("label-import", "--sheet", str(KIT / "gold"), "--dataset-id", DS, "--set", "g", "--by", "t"),
         ("reference-promote", "--dataset-id", DS, "--labels", "g", "--tier", "gold", "--reason", "the kit's summaries, for the view cache's test", "--by", "t"),
     ):  # fmt: skip
         r = r if r.returncode else evh(*step)

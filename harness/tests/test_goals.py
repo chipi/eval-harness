@@ -62,6 +62,7 @@ try:
     check("setup: the tutorial dataset is created and materialized", r.returncode == 0, r.stderr[-300:])
     r = evh(
         "label-import",
+        "--sheet",
         str(KIT / "gold"),
         "--dataset-id",
         "tickets_v1",

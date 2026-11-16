@@ -75,6 +75,7 @@ try:
     ready = ready and ok(
         evh(
             "label-import",
+            "--sheet",
             str(KIT / "gold"),
             "--dataset-id",
             "tickets_v1",
@@ -246,7 +247,17 @@ try:
             text = "something else entirely."
         (second / f.name).write_text(text)
     ok(
-        evh("label-import", str(second), "--dataset-id", "tickets_v1", "--set", "second", "--by", "reviewer"),
+        evh(
+            "label-import",
+            "--sheet",
+            str(second),
+            "--dataset-id",
+            "tickets_v1",
+            "--set",
+            "second",
+            "--by",
+            "reviewer",
+        ),
         "a second person's labels",
     )
     r = evh("label-set-list", "tickets_v1", "--contested", "--json")

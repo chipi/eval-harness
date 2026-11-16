@@ -322,24 +322,3 @@ def outcomes_from_argv(raw: list[str] | None = None) -> list[dict[str, Any]]:
             o["gone_if_missing"] = True
         out.append(o)
     return out
-
-
-def from_args(args: Any, raw: list[str] | None = None) -> Joins | None:
-    """The joins the command line asks for (one per `--outcomes`, each with the options after it), or None."""
-    del args  # the options' order says which capture each belongs to, which the parsed namespace has lost
-    gs = groups(raw)
-    if not gs:
-        return None
-    return Joins(
-        [
-            Join(
-                g["outcomes"],
-                g.get("join"),
-                g.get("within"),
-                g.get("identity"),
-                g.get("gone_if_missing", False),
-                g.get("outcomes_as"),
-            )
-            for g in gs
-        ]
-    )

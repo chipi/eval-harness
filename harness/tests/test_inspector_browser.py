@@ -87,7 +87,17 @@ def project(tmp: Path) -> tuple:
     evh("dataset-materialize", "--dataset-id", "tickets_v1")
     for f in (proj / "tutorial/systems").glob("tickets_*.yaml"):
         shutil.copy(f, proj / "data/systems/")
-    evh("label-import", "tutorial/gold", "--dataset-id", "tickets_v1", "--set", "owner_gold", "--by", "owner")
+    evh(
+        "label-import",
+        "--sheet",
+        "tutorial/gold",
+        "--dataset-id",
+        "tickets_v1",
+        "--set",
+        "owner_gold",
+        "--by",
+        "owner",
+    )
     evh(
         "reference-promote",
         "--dataset-id",
@@ -127,11 +137,21 @@ def project(tmp: Path) -> tuple:
         "--capture",
         "prod_c1",
     )
-    evh("dataset-from-capture", "prod_c1", "--dataset-id", "prod_v1")
+    evh("dataset-from-capture", "--capture", "prod_c1", "--dataset-id", "prod_v1")
     evh("pick", "--dataset-id", "prod_v1", "--item", "p1", "--item", "p2", "--for", "tickets_v1")
     # A person's labels on two tickets: the sheet's wrong signal against them marks those two.
     (proj / "sheet.csv").write_text("item_id,label\nt01_login,Login fails.\nt02_invoice,Invoice wrong.\n")
-    evh("label-import", "sheet.csv", "--dataset-id", "tickets_v1", "--set", "owner_v1", "--by", "owner")
+    evh(
+        "label-import",
+        "--sheet",
+        "sheet.csv",
+        "--dataset-id",
+        "tickets_v1",
+        "--set",
+        "owner_v1",
+        "--by",
+        "owner",
+    )
     evh("catalog")
     return proj, env
 
@@ -440,7 +460,8 @@ def drive(base: str, overview: str = "") -> None:
         page.locator('#picks input.cmdsel[value="prod_v1:p2"]').check()
         check(
             "picks waiting: a ticked row gives the dataset-extend command, to copy",
-            pickcmd.inner_text() == "evh dataset-extend tickets_v1 --dataset-id <next> --pick prod_v1:p2"
+            pickcmd.inner_text()
+            == "evh dataset-extend --dataset tickets_v1 --dataset-id <next> --pick prod_v1:p2"
             and page.locator("#picks button.copy").is_visible(),
             pickcmd.inner_text(),
         )

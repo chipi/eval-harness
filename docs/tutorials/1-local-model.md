@@ -36,7 +36,7 @@ promote them to gold, with why: a reference set is only ever labels promoted on 
 ```bash
 evh dataset-create --dataset-id briefs_v1 --source-dir data/sources/briefs --glob "*.txt"
 evh dataset-materialize --dataset-id briefs_v1
-evh label-import data/sources/briefs_gold --dataset-id briefs_v1 --set my_gold --by me
+evh label-import --sheet data/sources/briefs_gold --dataset-id briefs_v1 --set my_gold --by me
 evh reference-promote --dataset-id briefs_v1 --labels my_gold --tier gold \
     --reason "My own summaries are what the arms are judged by." --by me
 ```

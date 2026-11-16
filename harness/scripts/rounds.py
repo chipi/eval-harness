@@ -17,16 +17,10 @@ never opens a round loses nothing.
 
 from __future__ import annotations
 
-import sys as _sys
-from pathlib import Path as _Path
-
-if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
-    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
-
-import argparse
 import sys
+from typing import Any
 
-from evaluation_harness import _common, _jsonout, _rounds, _store
+from evaluation_harness import _common, _rounds, _store
 from evaluation_harness._actor import actor, require_named
 from evaluation_harness._common import die, load_goals, now
 from evaluation_harness.model import rounds as model_rounds
@@ -40,6 +34,7 @@ from evaluation_harness.model.rounds import (  # noqa: F401  (rounds' evidence l
     _silver_authors,
     evidence,
 )
+from evaluation_harness.ops import legacy
 
 
 def _goal(goal: str) -> dict:
@@ -64,154 +59,115 @@ def _ids(spec: str | None) -> list[str]:
     return [t.strip() for t in (spec or "").split(",") if t.strip()]
 
 
-def open_round(argv: list[str]) -> int:
+def open_body(**inputs: Any) -> int:
     """evh round-open: start a round of a goal, optionally continuing one."""
-    ap = argparse.ArgumentParser(prog="evh round-open", description="Open a round of a goal.")
-    ap.add_argument("--goal", required=True)
-    ap.add_argument("--dataset", required=True, help="the dataset its arms run on")
-    ap.add_argument("--from", dest="from_", help="the round it continues (closed first)")
-    ap.add_argument("--hypothesis", default="", help="what this round sets out to learn")
-    ap.add_argument("--change", action="append", default=[], help="what changed and why (repeatable)")
-    ap.add_argument(
-        "--keep",
-        help="system ids already run (in an earlier round or in none) carried in unchanged, not run again; "
-        "`all`: every arm of --from",
-    )
-    ap.add_argument(
-        "--adopt",
-        action="store_true",
-        help="the goal's first round, from arms already run on the dataset before any round was opened",
-    )
-    ap.add_argument(
-        "--scoring",
-        default="",
-        help="this round is judged by the scorer in this tree, and why (RFC-022): carried arms another scorer "
-        "judged are re-scored first ($0)",
-    )
-    ap.add_argument("--retire", help="system ids from earlier rounds dropped here")
-    ap.add_argument("--reason", default="", help="why the --retire arms are dropped")
-    ap.add_argument("--budget-usd", type=float, help="what the round may spend")
-    ap.add_argument(
-        "--baseline",
-        help="the run the round starts from, by its system id (its latest measured run on --dataset) or its run id; "
-        "default: the dataset's promoted baseline. What `pair-test --round` and `rounds` read the round's arms against",
-    )
-    from evaluation_harness._actor import add_by  # noqa: PLC0415
+    args = legacy.namespace(inputs, "round-open", {"from": "from_"})
+    _goal(args.goal)
+    if not _store.is_file(_common.DATASETS / f"{args.dataset}.json"):
+        die(f"no dataset {args.dataset!r} (evh dataset-create first)", "not-found")
+    if args.from_:
+        _round(args.goal, args.from_)
+    from evaluation_harness import rescore as rs  # noqa: PLC0415
 
-    add_by(ap)
-    ap.add_argument(
-        "--json",
-        action="store_true",
-        help="one JSON object on stdout when done (the text goes to stderr as it is printed): the envelope every --json command gives (result.blocks, result.values)",
-    )
-    args = ap.parse_args(argv)
-    with _jsonout.collect("round-open", args.json, live=sys.stderr):
-        _goal(args.goal)
-        if not _store.is_file(_common.DATASETS / f"{args.dataset}.json"):
-            die(f"no dataset {args.dataset!r} (evh dataset-create first)", "not-found")
-        if args.from_:
-            _round(args.goal, args.from_)
-        from evaluation_harness import rescore as rs  # noqa: PLC0415
-
-        carried = _ids(args.keep)
-        from_rnd = _round(args.goal, args.from_) if args.from_ else None
-        if args.adopt:
-            if args.from_ or _rounds.load_rounds(args.goal):
-                die(
-                    f"--adopt records a goal's first round; {args.goal} has rounds already (use --from)",
-                    "bad-argument",
-                )
-            carried = sorted(
-                {m["system_id"] for _d, m in rs.measured_runs(args.dataset) if m.get("goal") == args.goal}
-            )
-            if not carried:
-                die(f"--adopt: no run on {args.dataset} names goal {args.goal}", "not-found")
-        elif carried == ["all"]:
-            if from_rnd is None:
-                die("--keep all needs --from: the round whose arms are carried", "bad-argument")
-            carried = _rounds.arms_of(from_rnd)
-        if args.scoring and len(args.scoring.split()) < 3:
-            die("--scoring needs a sentence: what changed in the scoring, and why?", "bad-argument")
-        # A study's round (RFC-029) opens and closes with its study: it holds no other round back.
-        open_ones = [
-            r["round_id"]
-            for r in _rounds.load_rounds(args.goal)
-            if r.get("status") == "open" and not r.get("study")
-        ]
-        if open_ones:
+    carried = _ids(args.keep)
+    from_rnd = _round(args.goal, args.from_) if args.from_ else None
+    if args.adopt:
+        if args.from_ or _rounds.load_rounds(args.goal):
             die(
-                f'round {open_ones[0]} of {args.goal} is still open: close it first (evh round-close --goal {args.goal} --round {open_ones[0]} --conclusion "...")',
-                "not-allowed",
+                f"--adopt records a goal's first round; {args.goal} has rounds already (use --from)",
+                "bad-argument",
             )
-        if args.retire and len(args.reason.split()) < 3:
-            die("--retire needs --reason, a sentence: why are these arms dropped?", "bad-argument")
-        from evaluation_harness import _baselines  # noqa: PLC0415
+        carried = sorted(
+            {m["system_id"] for _d, m in rs.measured_runs(args.dataset) if m.get("goal") == args.goal}
+        )
+        if not carried:
+            die(f"--adopt: no run on {args.dataset} names goal {args.goal}", "not-found")
+    elif carried == ["all"]:
+        if from_rnd is None:
+            die("--keep all needs --from: the round whose arms are carried", "bad-argument")
+        carried = _rounds.arms_of(from_rnd)
+    if args.scoring and len(args.scoring.split()) < 3:
+        die("--scoring needs a sentence: what changed in the scoring, and why?", "bad-argument")
+    # A study's round (RFC-029) opens and closes with its study: it holds no other round back.
+    open_ones = [
+        r["round_id"]
+        for r in _rounds.load_rounds(args.goal)
+        if r.get("status") == "open" and not r.get("study")
+    ]
+    if open_ones:
+        die(
+            f'round {open_ones[0]} of {args.goal} is still open: close it first (evh round-close --goal {args.goal} --round {open_ones[0]} --conclusion "...")',
+            "not-allowed",
+        )
+    if args.retire and len(args.reason.split()) < 3:
+        die("--retire needs --reason, a sentence: why are these arms dropped?", "bad-argument")
+    from evaluation_harness import _baselines  # noqa: PLC0415
 
-        cur = _baselines.current(args.goal, args.dataset)  # the goal's own baseline on the dataset (RFC-027)
-        start = cur.get("promoted_from") if cur else None
-        if args.baseline:
-            # Fleet feedback 22: a round opened with --keep carried its baseline arm in but recorded no baseline, and
-            # `pair-test --round` then refused ("records no other baseline run").
-            runs = rs.measured_runs(args.dataset)
-            named = [m["run_id"] for _d, m in runs if m["run_id"] == args.baseline] or sorted(
-                m["run_id"] for _d, m in runs if m.get("system_id") == args.baseline
+    cur = _baselines.current(args.goal, args.dataset)  # the goal's own baseline on the dataset (RFC-027)
+    start = cur.get("promoted_from") if cur else None
+    if args.baseline:
+        # Fleet feedback 22: a round opened with --keep carried its baseline arm in but recorded no baseline, and
+        # `pair-test --round` then refused ("records no other baseline run").
+        runs = rs.measured_runs(args.dataset)
+        named = [m["run_id"] for _d, m in runs if m["run_id"] == args.baseline] or sorted(
+            m["run_id"] for _d, m in runs if m.get("system_id") == args.baseline
+        )
+        if not named:
+            die(
+                f"--baseline {args.baseline}: no measured run of that system or with that run id on {args.dataset}",
+                "not-found",
             )
-            if not named:
-                die(
-                    f"--baseline {args.baseline}: no measured run of that system or with that run id on {args.dataset}",
-                    "not-found",
-                )
-            start = named[-1]
-        rid = _rounds.next_id(args.goal)
-        doc = {
-            "round_id": rid,
-            "goal": args.goal,
-            "dataset_id": args.dataset,
-            "from": args.from_,
-            "hypothesis": args.hypothesis,
-            "changes": args.change,
-            "baseline": start,
-            "budget_usd": args.budget_usd,
-            "harness": _rounds.harness_now(),
-            "arms": [],
-            "status": "open",
-            "opened_at": now(),
-            "actor": actor(),
-        }
-        dropped = _ids(args.retire)
-        _carry_in(doc, list(dict.fromkeys([*carried, *dropped])), from_rnd)
-        for c in dropped:
-            model_rounds.retire(doc, c, args.reason, actor())
-        if args.scoring:
-            _adopt_scoring(doc, args.scoring, rs)
-        p = _rounds.save(doc)
+        start = named[-1]
+    rid = _rounds.next_id(args.goal)
+    doc = {
+        "round_id": rid,
+        "goal": args.goal,
+        "dataset_id": args.dataset,
+        "from": args.from_,
+        "hypothesis": args.hypothesis,
+        "changes": args.change,
+        "baseline": start,
+        "budget_usd": args.budget_usd,
+        "harness": _rounds.harness_now(),
+        "arms": [],
+        "status": "open",
+        "opened_at": now(),
+        "actor": actor(),
+    }
+    dropped = _ids(args.retire)
+    _carry_in(doc, list(dict.fromkeys([*carried, *dropped])), from_rnd)
+    for c in dropped:
+        model_rounds.retire(doc, c, args.reason, actor())
+    if args.scoring:
+        _adopt_scoring(doc, args.scoring, rs)
+    p = _rounds.save(doc)
+    print(
+        f"{p.relative_to(_common.ROOT) if p.is_relative_to(_common.ROOT) else p}: round {rid} of {args.goal}, open"
+    )
+    print(
+        f"  It starts from {start}."
+        if start
+        else "  It starts from no baseline run (none promoted; --baseline names one)."
+    )
+    h = doc["harness"]
+    print(
+        f"  On harness {h['version']}"
+        + (f" at {h['commit']}" if h.get("commit") and not h.get("installed") else "")
+        + f" (code {str(h['code_sha256'])[:12]}): a run of the round on other harness code is named in evh round-list."
+    )
+    if carried:
         print(
-            f"{p.relative_to(_common.ROOT) if p.is_relative_to(_common.ROOT) else p}: round {rid} of {args.goal}, open"
+            f"  Carried in as they are, their runs already count: {', '.join(carried)} "
+            "(they need not run again)."
         )
-        print(
-            f"  It starts from {start}."
-            if start
-            else "  It starts from no baseline run (none promoted; --baseline names one)."
-        )
-        h = doc["harness"]
-        print(
-            f"  On harness {h['version']}"
-            + (f" at {h['commit']}" if h.get("commit") and not h.get("installed") else "")
-            + f" (code {str(h['code_sha256'])[:12]}): a run of the round on other harness code is named in evh round-list."
-        )
-        if carried:
-            print(
-                f"  Carried in as they are, their runs already count: {', '.join(carried)} "
-                "(they need not run again)."
-            )
-        if dropped:
-            print(f"  Dropped here: {', '.join(dropped)} ({args.reason})")
-        print(
-            f"  A NEW system joins it by running in it: evh run --system <id> --dataset {args.dataset} "
-            f"--goal {args.goal} --round {rid}; then: evh round-list {args.goal}"
-        )
-        print("  Commit the round file before the runs: an uncommitted file makes them dirty.")
-        return 0
+    if dropped:
+        print(f"  Dropped here: {', '.join(dropped)} ({args.reason})")
+    print(
+        f"  A NEW system joins it by running in it: evh run --system <id> --dataset {args.dataset} "
+        f"--goal {args.goal} --round {rid}; then: evh round-list {args.goal}"
+    )
+    print("  Commit the round file before the runs: an uncommitted file makes them dirty.")
+    return 0
 
 
 def _carry_in(doc: dict, systems: list[str], frm: dict | None) -> None:
@@ -269,112 +225,69 @@ def _adopt_scoring(doc: dict, why: str, rs) -> None:
     doc["scoring"] = [{"at": now(), "scorer": scorer, "why": why, "written": written, "runs": len(done)}]
 
 
-def carry(argv: list[str]) -> int:
+def carry_body(**inputs: Any) -> int:
     """evh round-carry: bring an arm of an earlier round into the open round, unchanged."""
-    ap = argparse.ArgumentParser(
-        prog="evh round-carry",
-        description="Carry an arm of an earlier round of the goal into the open round: its system, the label it is "
-        "read under and its runs, unchanged; nothing is run again.",
-    )
-    ap.add_argument("--goal", required=True)
-    ap.add_argument("--round", required=True, help="the open round it joins")
-    ap.add_argument("--arm", required=True, help="its system id")
-    ap.add_argument(
-        "--from", dest="from_", help="the earlier round it comes from (default: the latest round that has it)"
-    )
-    from evaluation_harness._actor import add_by  # noqa: PLC0415
-
-    add_by(ap)
-    ap.add_argument(
-        "--json",
-        action="store_true",
-        help="one JSON object on stdout when done (the text goes to stderr as it is printed): the envelope every --json command gives (result.blocks, result.values)",
-    )
-    args = ap.parse_args(argv)
-    with _jsonout.collect("round-carry", args.json, live=sys.stderr):
-        rnd = _round(args.goal, args.round)
-        if rnd.get("status") == "closed":
-            die(f"round {args.round} is closed", "not-allowed")
-        who = require_named("round-carry")
-        if args.arm in {a["system"] for a in model_rounds.in_play(rnd)}:
-            die(f"{args.arm!r} is in play in {args.round} already", "not-allowed")
-        earlier = [
-            r
-            for r in _rounds.load_rounds(args.goal)
-            if _rounds._num(r["round_id"]) < _rounds._num(rnd["round_id"])
-        ]
-        if args.from_:
-            src = _round(args.goal, args.from_)
-            if src not in earlier:
-                die(f"--from {args.from_}: not an earlier round than {args.round}", "bad-argument")
-            frm = [src]
-        else:
-            frm = sorted(earlier, key=lambda r: -_rounds._num(r["round_id"]))
-        found = next(((r, a) for r in frm if (a := model_rounds.find_arm(r, args.arm))), None)
-        if found is None:
-            where = args.from_ or "an earlier round"
-            have = ", ".join(sorted({a["system"] for r in frm for a in model_rounds.arms(r)})) or "no arms"
-            die(f"{where} of {args.goal} has no arm {args.arm!r} (it has: {have})", "not-found")
-        src, arm = found
-        if src["dataset_id"] != rnd["dataset_id"]:
-            die(
-                f"{src['round_id']} ran on {src['dataset_id']!r}, {args.round} on {rnd['dataset_id']!r}: "
-                "an arm is carried between rounds of one dataset",
-                "mismatch",
-            )
-        model_rounds.carry(
-            rnd, args.arm, arm.get("label") or "", list(arm.get("runs") or []), src["round_id"], who
+    args = legacy.namespace(inputs, "round-carry", {"from": "from_"})
+    rnd = _round(args.goal, args.round)
+    if rnd.get("status") == "closed":
+        die(f"round {args.round} is closed", "not-allowed")
+    who = require_named("round-carry")
+    if args.arm in {a["system"] for a in model_rounds.in_play(rnd)}:
+        die(f"{args.arm!r} is in play in {args.round} already", "not-allowed")
+    earlier = [
+        r
+        for r in _rounds.load_rounds(args.goal)
+        if _rounds._num(r["round_id"]) < _rounds._num(rnd["round_id"])
+    ]
+    if args.from_:
+        src = _round(args.goal, args.from_)
+        if src not in earlier:
+            die(f"--from {args.from_}: not an earlier round than {args.round}", "bad-argument")
+        frm = [src]
+    else:
+        frm = sorted(earlier, key=lambda r: -_rounds._num(r["round_id"]))
+    found = next(((r, a) for r in frm if (a := model_rounds.find_arm(r, args.arm))), None)
+    if found is None:
+        where = args.from_ or "an earlier round"
+        have = ", ".join(sorted({a["system"] for r in frm for a in model_rounds.arms(r)})) or "no arms"
+        die(f"{where} of {args.goal} has no arm {args.arm!r} (it has: {have})", "not-found")
+    src, arm = found
+    if src["dataset_id"] != rnd["dataset_id"]:
+        die(
+            f"{src['round_id']} ran on {src['dataset_id']!r}, {args.round} on {rnd['dataset_id']!r}: "
+            "an arm is carried between rounds of one dataset",
+            "mismatch",
         )
-        _rounds.save(rnd)
-        print(
-            f"{args.arm} carried from {src['round_id']} into {args.round}: {len(arm.get('runs') or [])} run(s), unchanged"
-        )
-        return 0
+    model_rounds.carry(
+        rnd, args.arm, arm.get("label") or "", list(arm.get("runs") or []), src["round_id"], who
+    )
+    _rounds.save(rnd)
+    print(
+        f"{args.arm} carried from {src['round_id']} into {args.round}: {len(arm.get('runs') or [])} run(s), unchanged"
+    )
+    return 0
 
 
-def retire(argv: list[str]) -> int:
+def retire_body(**inputs: Any) -> int:
     """evh round-retire: drop an arm from a round, with the reason."""
-    ap = argparse.ArgumentParser(
-        prog="evh round-retire",
-        description="Drop an arm from a round, with the reason. An arm is retired whole (its system, its label and all "
-        "its runs); a run of it made afterwards brings it back.",
-    )
-    ap.add_argument("--goal", required=True)
-    ap.add_argument("--round", required=True)
-    ap.add_argument("--arm", required=True, help="its system id")
-    ap.add_argument(
-        "--label",
-        help='only the arm read under this label (a re-timing\'s "linux", say; "" the plain runs); default: every '
-        "arm of the system in play",
-    )
-    ap.add_argument("--reason", required=True)
-    from evaluation_harness._actor import add_by  # noqa: PLC0415
-
-    add_by(ap)
-    ap.add_argument(
-        "--json",
-        action="store_true",
-        help="one JSON object on stdout when done (the text goes to stderr as it is printed): the envelope every --json command gives (result.blocks, result.values)",
-    )
-    args = ap.parse_args(argv)
-    with _jsonout.collect("round-retire", args.json, live=sys.stderr):
-        rnd = _round(args.goal, args.round)
-        if rnd.get("status") == "closed":
-            die(f"round {args.round} is closed", "not-allowed")
-        if len(args.reason.split()) < 3:
-            die("--reason must be a sentence: what did the tests show?", "bad-argument")
-        gone = 0
-        while model_rounds.retire(rnd, args.arm, args.reason, actor(), args.label) is not None:
-            gone += 1  # every arm of the system in play (or the one under --label)
-        if not gone:
-            die(
-                f"{args.arm!r}{'' if args.label is None else f' read under {args.label!r}'} is not in play in "
-                f"{args.round}: {', '.join(_rounds.arms_of(rnd)) or '(no arms yet)'}",
-                "not-found",
-            )
-        _rounds.save(rnd)
-        print(f"{args.arm} retired from {args.round}: {args.reason}")
-        return 0
+    args = legacy.namespace(inputs, "round-retire")
+    rnd = _round(args.goal, args.round)
+    if rnd.get("status") == "closed":
+        die(f"round {args.round} is closed", "not-allowed")
+    if len(args.reason.split()) < 3:
+        die("--reason must be a sentence: what did the tests show?", "bad-argument")
+    gone = 0
+    while model_rounds.retire(rnd, args.arm, args.reason, actor(), args.label) is not None:
+        gone += 1  # every arm of the system in play (or the one under --label)
+    if not gone:
+        die(
+            f"{args.arm!r}{'' if args.label is None else f' read under {args.label!r}'} is not in play in "
+            f"{args.round}: {', '.join(_rounds.arms_of(rnd)) or '(no arms yet)'}",
+            "not-found",
+        )
+    _rounds.save(rnd)
+    print(f"{args.arm} retired from {args.round}: {args.reason}")
+    return 0
 
 
 def close_body(
@@ -421,11 +334,3 @@ def close_body(
     _rounds.save(rnd)
     print(f"round {round} of {goal} closed" + (f"; {promote} promoted" if promote else ""))
     return 0
-
-
-ACTIONS = {"open": open_round, "carry": carry, "retire": retire}
-
-
-def run(action: str) -> int:
-    """Entry point for the per-action scripts (`evh round-open`, `round-carry`, `round-retire`)."""
-    return ACTIONS[action](sys.argv[1:])

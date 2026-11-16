@@ -53,7 +53,7 @@ TARGET = re.compile(r"^([A-Za-z][\w.-]*(?:[ \t]+[A-Za-z][\w.-]*)*)\s*:(?!=)", re
 
 
 def makefile(path: Path) -> tuple:
-    """({target: [script paths its recipe runs]}, {variables it uses})."""
+    """({target: [script paths its recipe runs, or ("evh", command) for `scripts/cli.py <command>`]}, {variables it uses})."""
     text = path.read_text(encoding="utf-8")
     targets: dict = {}
     current: list = []
@@ -64,9 +64,15 @@ def makefile(path: Path) -> tuple:
             for t in current:
                 targets.setdefault(t, [])
         elif line.startswith("\t") and current:
-            for s in re.findall(r"(scripts/[\w]+\.py|site/[\w]+\.py|examples/[\w./-]+\.py)", line):
+            for s in re.findall(
+                r"(scripts/cli\.py [a-z][a-z0-9-]*|scripts/[\w]+\.py|site/[\w]+\.py|examples/[\w./-]+\.py)",
+                line,
+            ):
+                runs = (
+                    ("evh", s.split()[1]) if s.startswith("scripts/cli.py ") else (path.parent / s).resolve()
+                )
                 for t in current:
-                    targets[t].append((path.parent / s).resolve())
+                    targets[t].append(runs)
     return targets, set(re.findall(r"\$\((\w+)\)", text)) | set(re.findall(r"^(\w+)\s*[?:]?=", text, re.M))
 
 
@@ -88,6 +94,16 @@ def evh_flags(name: str) -> frozenset:
         [sys.executable, str(HERE / "cli.py"), name, "--help"], capture_output=True, text=True, timeout=120
     )
     return frozenset(re.findall(r"(--[a-z][a-z0-9-]*)", r.stdout + r.stderr)) | {"--help"}
+
+
+def flags_run(s) -> frozenset:
+    """The flags of what a recipe runs: a script's, or `evh <command>`'s."""
+    return evh_flags(s[1]) if isinstance(s, tuple) else flags_of(s)
+
+
+def runs_ok(s) -> bool:
+    """Whether what a recipe runs exists: a script file, or a command evh has."""
+    return s[1] in COMMANDS if isinstance(s, tuple) else s.is_file()
 
 
 def commands_in(text: str) -> list:
@@ -213,11 +229,11 @@ def check_line(cmd: str) -> list:
                         if (
                             w.startswith("--")
                             and hit[0][target]
-                            and not any(w.split("=")[0] in flags_of(s) for s in hit[0][target] if s.is_file())
+                            and not any(w.split("=")[0] in flags_run(s) for s in hit[0][target] if runs_ok(s))
                         ):
                             problems.append(
                                 f'`make {target} ARGS="{w}"`: '
-                                f"{', '.join(s.name for s in hit[0][target])} has no {w}"
+                                f"{', '.join(s[1] if isinstance(s, tuple) else s.name for s in hit[0][target])} has no {w}"
                             )
     return problems
 

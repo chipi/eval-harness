@@ -363,7 +363,7 @@ tiles open it.
 - `picks waiting` (0.6.0), for a dataset some picks name as their target: one row per pick: **item**
   (opens the inspector's sheet on it), **from** (the production dataset, its capture), **labels** (source chips, or
   "none yet"), **tags**, **note**, **picked** (who, when), and a select box per row; the rows selected give the
-  command `evh dataset-extend <this> --dataset-id <next> --pick … --pick …`, shown to copy. The page writes nothing.
+  command `evh dataset-extend --dataset <this> --dataset-id <next> --pick … --pick …`, shown to copy. The page writes nothing.
 - `added from production` (0.6.0), for a version made by `dataset-extend`: each item it added, with the
   capture and production dataset it came from, the pick's note, and the labels it carried.
 - `item fields`, when the dataset declares a field set: "Declared in the field set `<id>`", then

@@ -48,7 +48,7 @@ def version(ds: str, tickets: Path, gold: Path, arm: str = "lead1") -> subproces
     r = evh("dataset-create", "--dataset-id", ds, "--source-dir", str(tickets.relative_to(proj)))
     for step in (
         ("dataset-materialize", "--dataset-id", ds),
-        ("label-import", str(gold), "--dataset-id", ds, "--set", "owner_gold", "--by", "owner"),
+        ("label-import", "--sheet", str(gold), "--dataset-id", ds, "--set", "owner_gold", "--by", "owner"),
         (
             "reference-promote", "--dataset-id", ds, "--labels", "owner_gold", "--tier", "gold",
             "--reason", "The kit's hand-written summaries decide.", "--by", "owner",

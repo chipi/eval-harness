@@ -53,7 +53,7 @@ def _sheet_csv(args, model: dict, shown: list) -> int:
         print(
             f"  fill each failure_modes cell with modes of {args.modes} ({', '.join(_tags.mode_ids(modes))}; mode|mode "
             "for several), `ok` when the output is fine, blank when not read; then: "
-            f"evh sheet-import {args.csv} --dataset-id {args.dataset_id} --by <who> --tags <name> --modes {args.modes}"
+            f"evh sheet-import --sheet {args.csv} --dataset-id {args.dataset_id} --by <who> --tags <name> --modes {args.modes}"
         )
         return 0
     if not blind:
@@ -66,7 +66,7 @@ def _sheet_csv(args, model: dict, shown: list) -> int:
         if args.fill == "label":
             print(
                 "  fill `label` (answers just as right in `also right`, separated by |), then: "
-                f"evh sheet-import {args.csv} --dataset-id {args.dataset_id} --by <you> --set <name>"
+                f"evh sheet-import --sheet {args.csv} --dataset-id {args.dataset_id} --by <you> --set <name>"
             )
         return 0
     scale = (1, 5)
@@ -97,7 +97,7 @@ def _sheet_csv(args, model: dict, shown: list) -> int:
     )
     what = "`pick` (the best letter, `A|B` for a tie)" if args.fill == "pick" else "`score: A`, `score: B`…"
     print(
-        f"  fill {what}, then: evh sheet-import {args.csv} --dataset-id {args.dataset_id} --by <who> --scorer <name>"
+        f"  fill {what}, then: evh sheet-import --sheet {args.csv} --dataset-id {args.dataset_id} --by <who> --scorer <name>"
     )
     return 0
 
@@ -153,7 +153,7 @@ def main() -> int:
     ap.add_argument(
         "--fill",
         choices=_sheet.FILLS,
-        help="add the columns to fill. label: label, also right, note. pick, scores: the outputs as blind columns A, B, C... shuffled per row, a key beside the sheet (sheet.key.json), the rubric as its first row; tags: a failure_modes column beside each arm's output (with --modes), a key beside the sheet; evh sheet-import reads it back",
+        help="add the columns to fill. label: label, also right, note. pick, scores: the outputs as blind columns A, B, C... shuffled per row, a key beside the sheet (sheet.key.json), the rubric as its first row; tags: a failure_modes column beside each arm's output (with --modes), a key beside the sheet; evh sheet-import --sheet reads it back",
     )
     ap.add_argument(
         "--modes", help="with --fill tags: the failure-mode list the tags name (data/failure-modes/<id>.yaml)"

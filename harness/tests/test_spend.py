@@ -115,7 +115,17 @@ try:
     r = (
         r
         if r.returncode
-        else evh("label-import", str(KIT / "gold"), "--dataset-id", "tickets_v1", "--set", "g", "--by", "t")
+        else evh(
+            "label-import",
+            "--sheet",
+            str(KIT / "gold"),
+            "--dataset-id",
+            "tickets_v1",
+            "--set",
+            "g",
+            "--by",
+            "t",
+        )
     )
     r = r if r.returncode else evh(
         "reference-promote", "--dataset-id", "tickets_v1", "--labels", "g", "--tier", "gold",

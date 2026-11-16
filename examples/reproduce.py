@@ -243,7 +243,9 @@ def data(exp: dict, light: bool = False) -> int:
     for args in exp["fetch"]:
         _run(["uv", "run", "fetch.py", *args], cwd=ex)
     for d in exp["datasets"]:
-        _run([str(_venv_python(exp)), "scripts/materialize.py", "--dataset-id", d], cwd=HARNESS)
+        _run(
+            [str(_venv_python(exp)), "scripts/cli.py", "dataset-materialize", "--dataset-id", d], cwd=HARNESS
+        )
     print(f"\ndata for {exp['slug']} fetched and hash-checked against the committed dataset files")
     return 0
 

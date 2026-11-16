@@ -118,13 +118,19 @@ try:
     r = (
         r
         if r.returncode
-        else evh("label-import", str(KIT / "gold"), "--dataset-id", "tk_v1", "--set", "g", "--by", "t")
+        else evh(
+            "label-import", "--sheet", str(KIT / "gold"), "--dataset-id", "tk_v1", "--set", "g", "--by", "t"
+        )
     )
     r = r if r.returncode else evh(
         "reference-promote", "--dataset-id", "tk_v1", "--labels", "g", "--tier", "gold",
         "--reason", "the kit's summaries, for the looks test", "--by", "t",
     )  # fmt: skip
-    r = r if r.returncode else evh("dataset-split", "tk_v1", "--test", "0.7", "--seed", "3", "--seal")
+    r = (
+        r
+        if r.returncode
+        else evh("dataset-split", "--dataset-id", "tk_v1", "--test", "0.7", "--seed", "3", "--seal")
+    )
     for ds in ("tk_v1_validation", "tk_v1_test"):
         r = r if r.returncode else evh("dataset-materialize", "--dataset-id", ds)
     check("setup: a split whose test side is sealed", r.returncode == 0, (r.stdout + r.stderr)[-400:])
@@ -136,15 +142,28 @@ try:
     git("commit", "-qm", "systems with their hypotheses")
 
     u1 = evh(
-        "dataset-unseal", "tk_v1_test", "--system", "cand_v1", "--reason", "the two-sentence arm, frozen now"
+        "dataset-unseal",
+        "--dataset-id",
+        "tk_v1_test",
+        "--system",
+        "cand_v1",
+        "--reason",
+        "the two-sentence arm, frozen now",
     )
     commit("unsealed for cand_v1")
     u1b = evh(
-        "dataset-unseal", "tk_v1_test", "--system", "cand_v1", "--reason", "the same question asked again"
+        "dataset-unseal",
+        "--dataset-id",
+        "tk_v1_test",
+        "--system",
+        "cand_v1",
+        "--reason",
+        "the same question asked again",
     )
     commit("again")
     u2 = evh(
         "dataset-unseal",
+        "--dataset-id",
         "tk_v1_test",
         "--system",
         "cand2_v1",
@@ -173,14 +192,20 @@ try:
     )
     commit("the goal")
     refused = evh(
-        "dataset-unseal", "tk_v1_test", "--system", "cand3_v1", "--reason", "a third arm, past the limit"
+        "dataset-unseal",
+        "--dataset-id",
+        "tk_v1_test",
+        "--system",
+        "cand3_v1",
+        "--reason",
+        "a third arm, past the limit",
     )
     agent = evh(
-        "dataset-unseal", "tk_v1_test", "--system", "cand3_v1", "--reason", "a third arm, past the limit",
+        "dataset-unseal", "--dataset-id", "tk_v1_test", "--system", "cand3_v1", "--reason", "a third arm, past the limit",
         "--confirm-extra-look", extra={"EVH_ACTOR": "agent:helper", "EVH_FOR": "person:test"},
     )  # fmt: skip
     person = evh(
-        "dataset-unseal", "tk_v1_test", "--system", "cand3_v1", "--reason", "a third arm, past the limit",
+        "dataset-unseal", "--dataset-id", "tk_v1_test", "--system", "cand3_v1", "--reason", "a third arm, past the limit",
         "--confirm-extra-look",
     )  # fmt: skip
     check(
@@ -199,7 +224,7 @@ try:
     for f in (KIT / "gold").iterdir():
         if f.stem in side:
             shutil.copy(f, gold / f.name)
-    g = evh("label-import", str(gold), "--dataset-id", "tk_v1_test", "--set", "gt", "--by", "t")
+    g = evh("label-import", "--sheet", str(gold), "--dataset-id", "tk_v1_test", "--set", "gt", "--by", "t")
     g = g if g.returncode else evh(
         "reference-promote", "--dataset-id", "tk_v1_test", "--labels", "gt", "--tier", "gold",
         "--reason", "the kit's summaries, for the test side", "--by", "t",

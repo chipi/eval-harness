@@ -49,7 +49,7 @@ A production export can hold what must not leave the project: `evh capture-scrub
 ## 2 · A dataset from the capture
 
 ```bash
-evh dataset-from-capture desk_2026_10 --dataset-id tickets_desk_v1 --tag source=support-desk --tag channel=all
+evh dataset-from-capture --capture desk_2026_10 --dataset-id tickets_desk_v1 --tag source=support-desk --tag channel=all
 evh dataset-materialize --dataset-id tickets_desk_v1
 ```
 ```text
@@ -94,7 +94,7 @@ need engineering?") would be scored against, beside a person's labels; the six-t
 ## 4 · Validation and test
 
 ```bash
-evh dataset-split tickets_desk_v1 --test 0.34 --seed 7
+evh dataset-split --dataset-id tickets_desk_v1 --test 0.34 --seed 7
 ```
 ```text
 data/datasets/tickets_desk_v1_validation.json  (5 item(s))
@@ -185,11 +185,11 @@ Say the routing set you govern was frozen from the email tickets only. The route
 an API ticket it does not hold: pick them for it, and make its next version from the picks.
 
 ```bash
-evh dataset-from-capture desk_2026_10 --dataset-id tickets_routing_v1 --where channel:email
+evh dataset-from-capture --capture desk_2026_10 --dataset-id tickets_routing_v1 --where channel:email
 evh pick --dataset-id tickets_desk_v1 --item t01_login --item t04_api --for tickets_routing_v1 \
     --tag case=misrouted --note "routed to support; it needed engineering"
 evh picks --for tickets_routing_v1
-evh dataset-extend tickets_routing_v1 --dataset-id tickets_routing_v2 --picks
+evh dataset-extend --dataset tickets_routing_v1 --dataset-id tickets_routing_v2 --picks
 ```
 ```text
 picked 2 item(s) of tickets_desk_v1 for tickets_routing_v1; evh picks lists what waits

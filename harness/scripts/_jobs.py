@@ -117,11 +117,6 @@ def _sweep_locks(a: dict) -> list[tuple[str, bool]]:
     return out
 
 
-def _split_locks(a: dict) -> list[tuple[str, bool]]:
-    d = _first(a.get("dataset_id")) or _first(a.get("dataset-id"))
-    return [(f"dataset:{x}", True) for x in (d, f"{d}_validation", f"{d}_test")] if d else []
-
-
 def _rescore_locks(a: dict) -> list[tuple[str, bool]]:
     out = _ds(a)
     if a.get("round") and a.get("goal"):
@@ -132,29 +127,6 @@ def _rescore_locks(a: dict) -> list[tuple[str, bool]]:
             rnd = _rounds.find(str(a["goal"]), str(a["round"])) or {}
             if rnd.get("dataset_id"):
                 out.append((f"dataset:{rnd['dataset_id']}", True))
-    return out
-
-
-def _promote_locks(a: dict) -> list[tuple[str, bool]]:
-    m = _run_meta(_first(a.get("run")))
-    goal = None if a.get("no-goal") else (a.get("goal") or m.get("goal"))
-    d = m.get("dataset_id") or _first(a.get("dataset"))
-    return [(f"baselines:{goal or '_dataset'}/{d}", True)] if d else []
-
-
-def _label_from_run_locks(a: dict) -> list[tuple[str, bool]]:
-    d = _run_meta(_first(a.get("run"))).get("dataset_id")
-    return [(f"dataset:{d}", True)] if d else []
-
-
-def _capture_ds_locks(a: dict) -> list[tuple[str, bool]]:
-    return [("captures", False), *_ds(a)]
-
-
-def _arm_from_capture_locks(a: dict) -> list[tuple[str, bool]]:
-    out = [("captures", False), *_ds(a)]
-    if a.get("as"):
-        out.append((f"system:{a['as']}", True))
     return out
 
 
@@ -175,46 +147,8 @@ LOCK_RULES: dict[str, Callable[[dict], list[tuple[str, bool]]]] = {
     "arm-smoke": _model_locks,
     "model-onboard": _model_locks,
     "sweep": _sweep_locks,
-    **dict.fromkeys(
-        (
-            "dataset-create",
-            "dataset-materialize",
-            "dataset-describe",
-            "dataset-profile",
-            "reference-manifest",
-            "reference-promote",
-            "label-import",
-            "label-sheet",
-            "sheet-import",
-            "label-from-capture",
-            "dataset-publish",
-            "fieldset-propose",
-        ),
-        _ds,
-    ),
-    "dataset-split": _split_locks,
-    "dataset-unseal": _split_locks,
-    "label-from-run": _label_from_run_locks,
     "rescore": _rescore_locks,
     "judge-score": _rescore_locks,
-    "round-open": lambda a: [(f"goal:{a['goal']}", True)] if a.get("goal") else [],
-    "round-carry": lambda a: [(f"goal:{a['goal']}", True)] if a.get("goal") else [],
-    "round-retire": lambda a: [(f"goal:{a['goal']}", True)] if a.get("goal") else [],
-    "run-promote": _promote_locks,
-    "baseline-rollback": _promote_locks,
-    # The pick list is one per project (data/picks.jsonl): one lock for it, whichever dataset a pick is from.
-    "pick": lambda a: [("picks", True)],
-    # A held-out side's register is one per dataset (data/exposure/<id>.jsonl).
-    "dataset-seal-counts": _ds,
-    "exposure-add": lambda a: [
-        (f"exposure:{_first(a.get('dataset-id')) or _first(a.get('dataset_id'))}", True)
-    ],
-    "dataset-extend": lambda a: [*_ds(a), *([("picks", True)] if a.get("picks") or a.get("pick") else [])],
-    "capture": lambda a: [("captures", True)],
-    "capture-restore": lambda a: [("captures", True)],
-    "dataset-from-capture": _capture_ds_locks,
-    "arm-from-capture": _arm_from_capture_locks,
-    "import-run": _ds,
     "catalog": lambda a: [("catalog", True)],
     "study-run": lambda a: [(f"study-loop:{_first(a.get('study'))}", True)] if a.get("study") else [],
     "study-tell": lambda a: [(f"study-loop:{_first(a.get('study'))}", True)] if a.get("study") else [],
@@ -228,7 +162,6 @@ LOCK_RULES: dict[str, Callable[[dict], list[tuple[str, bool]]]] = {
 MIGRATIONS = {"data-migrate", "migrate"}
 #: Job commands that write nothing another job writes (reports, checks, estimates): `project` shared only.
 PROJECT_ONLY = {
-    "exposure-check",  # reads the project's public checkouts; its --out goes into the job's own folder
     "study-ask",  # its ask is appended under the study's own lock, briefly
     "study-stop",
     "study-import",
@@ -236,7 +169,6 @@ PROJECT_ONLY = {
     "prompt-export",  # into the job's own folder
     "bootstrap-test",
     "holdout",
-    "importer-check",
     "score-preview",
     "silver-calibrate",
 }

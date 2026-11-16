@@ -41,7 +41,7 @@ From production records (a JSON-lines export; also `tsv`, `github`, `langfuse` i
 
 ```evh
 evh capture --importer jsonl --query '{"path": "tutorial/production/desk_export.jsonl"}' --capture desk_c1
-evh dataset-from-capture desk_c1 --dataset-id tickets_desk_v1
+evh dataset-from-capture --capture desk_c1 --dataset-id tickets_desk_v1
 evh dataset-materialize --dataset-id tickets_desk_v1
 ```
 

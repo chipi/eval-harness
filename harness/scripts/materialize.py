@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Derive the run inputs for a dataset, verifying every item against its hash.
 
 `materialized/` is DERIVED and regenerable from `sources/` + the dataset. If it
@@ -14,62 +13,43 @@ failure, not a warning.
 
 from __future__ import annotations
 
-import sys as _sys
-from pathlib import Path as _Path
-
-if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
-    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
-
-import argparse
-import sys
 from pathlib import Path
+from typing import Any
 
-from evaluation_harness import _fetch, _jsonout, _store
+from evaluation_harness import _fetch, _store
 from evaluation_harness._common import (
     die,
-    evh_prog,
     load_dataset,
     now,
     sha256,
     write_json,
 )
 from evaluation_harness.model import datasets as _datasets
+from evaluation_harness.ops import legacy
 
 
-def main() -> int:
+def body(**inputs: Any) -> int:
     """Materialize a dataset from sources and verify hashes."""
-    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
-    ap.add_argument("--dataset-id", required=True)
-    ap.add_argument("--force", action="store_true", help="rebuild even if it exists")
-    from evaluation_harness._actor import add_by  # noqa: PLC0415
+    args = legacy.namespace(inputs, "dataset-materialize")
+    ds = load_dataset(args.dataset_id)
+    out = _datasets.materialized_dir(args.dataset_id)
 
-    add_by(ap)
-    ap.add_argument(
-        "--json",
-        action="store_true",
-        help="one JSON object on stdout when done (the text goes to stderr as it is printed): the envelope every --json command gives (result.blocks, result.values)",
-    )
-    args = ap.parse_args()
-    with _jsonout.collect("dataset-materialize", args.json, live=sys.stderr):
-        ds = load_dataset(args.dataset_id)
-        out = _datasets.materialized_dir(args.dataset_id)
-
-        if _store.exists(out) and not args.force:
-            print(f"{out} exists — nothing to do (--force to rebuild)")
-            return 0
-        # Built beside the old copy and put in its place only when every item is verified: a failed run leaves what was
-        # there (a --force that failed deleted the good copy; one without it left an empty folder that `exists` then
-        # took for a copy).
-        stage = _store.staging(out, f".{args.dataset_id}.")
-        try:
-            _build(ds, _datasets.source_dir(ds), stage)
-            if _store.exists(out):
-                _store.rmtree(out)
-            _store.adopt(stage, out)
-        finally:
-            _store.rmtree(stage, ignore_errors=True)
-        print(f"{out}  ({len(ds['items'])} item(s), all hashes verified)")
+    if _store.exists(out) and not args.force:
+        print(f"{out} exists — nothing to do (--force to rebuild)")
         return 0
+    # Built beside the old copy and put in its place only when every item is verified: a failed run leaves what was
+    # there (a --force that failed deleted the good copy; one without it left an empty folder that `exists` then
+    # took for a copy).
+    stage = _store.staging(out, f".{args.dataset_id}.")
+    try:
+        _build(ds, _datasets.source_dir(ds), stage)
+        if _store.exists(out):
+            _store.rmtree(out)
+        _store.adopt(stage, out)
+    finally:
+        _store.rmtree(stage, ignore_errors=True)
+    print(f"{out}  ({len(ds['items'])} item(s), all hashes verified)")
+    return 0
 
 
 def _build(ds: dict, src_root: Path, stage: Path) -> None:
@@ -127,7 +107,3 @@ def _build(ds: dict, src_root: Path, stage: Path) -> None:
             "verified": "every item matched its frozen sha256",
         },
     )
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())

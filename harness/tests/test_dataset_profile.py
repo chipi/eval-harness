@@ -48,7 +48,17 @@ def dataset(ds: str, texts: dict[str, str], gold: dict[str, str]) -> None:
     g.mkdir(parents=True)
     for k, t in gold.items():
         (g / f"{k}.txt").write_text(t, encoding="utf-8")
-    r = evh("label-import", f"src/{ds}_gold", "--dataset-id", ds, "--set", "gold_answers", "--by", "owner")
+    r = evh(
+        "label-import",
+        "--sheet",
+        f"src/{ds}_gold",
+        "--dataset-id",
+        ds,
+        "--set",
+        "gold_answers",
+        "--by",
+        "owner",
+    )
     r = (
         r
         if r.returncode

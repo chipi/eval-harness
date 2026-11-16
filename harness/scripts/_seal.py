@@ -1,7 +1,7 @@
 """A sealed side of a split (the fleet's feedback 29): held out until a candidate is named in advance.
 
-    evh dataset-split triage_v1 --split-by time --key created_at --at 2026-11-07T00:00:00Z --seal
-    evh dataset-unseal triage_v1_test --system candidate_v3 --reason "the tuned filter, frozen"
+    evh dataset-split --dataset-id triage_v1 --split-by time --key created_at --at 2026-11-07T00:00:00Z --seal
+    evh dataset-unseal --dataset-id triage_v1_test --system candidate_v3 --reason "the tuned filter, frozen"
 
 `dataset-split --seal` writes `sealed` on the test side's record: when, and a digest of the open (validation) side's
 items as they were then, so `validate` can say the open side was not changed to fit what the sealed one holds. A
@@ -77,7 +77,7 @@ def refuse_if_sealed(dataset_id: str | None, what: str, system_id: str | None = 
         + (f" for {system_id}" if system_id else "")
         + (f"; it is open to {', '.join(named)} only" if named else "")
         + ". Name the candidate first: commit its system with a hypothesis, then "
-        f'evh dataset-unseal {dataset_id} --system <system_id> --reason "..."',
+        f'evh dataset-unseal --dataset-id {dataset_id} --system <system_id> --reason "..."',
         "not-allowed",
     )
 

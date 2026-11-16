@@ -116,6 +116,7 @@ def main() -> int:
                     "label-import: the tutorial's hand-written summaries, a person's labels",
                     [
                         "label-import",
+                        "--sheet",
                         "tutorial/gold",
                         "--dataset-id",
                         "tickets_v1",

@@ -39,7 +39,8 @@ from evaluation_harness._check import check, summary  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
 import _runstore  # noqa: E402
-from evaluation_harness import _format  # noqa: E402
+from evaluation_harness import _format, ops  # noqa: E402
+from evaluation_harness.ops import locks as op_locks  # noqa: E402
 
 jobs = {c for c, v in _api.registry().items() if v["served"] == "job"}
 named = set(_jobs.LOCK_RULES) | _jobs.MIGRATIONS | _jobs.PROJECT_ONLY
@@ -73,7 +74,11 @@ try:
         if k.startswith("system:")
     }
     capture_key = {
-        k for k, _ex in _jobs.locks_for("arm-from-capture", {"as": "slow_v1"}) if k.startswith("system:")
+        k
+        for k, _ex in op_locks.locks_for(
+            ops.OPS["arm-from-capture"], {"as": "slow_v1", "dataset_id": "tk_v1"}
+        )
+        if k.startswith("system:")
     }
 finally:
     _jobs._run_meta = _run_meta
@@ -151,6 +156,11 @@ def job(command, args, **extra):
     return call("POST", "/api/v1/jobs", {"command": command, "args": args, **extra})
 
 
+def op_job(operation, inputs, **extra):
+    """A job of an operation: {operation, inputs, by, for, max_cost_usd}."""
+    return call("POST", "/api/v1/jobs", {"operation": operation, "inputs": inputs, **extra})
+
+
 def until(job_id, states, seconds=120):
     end = time.monotonic() + seconds
     j = {}
@@ -172,7 +182,9 @@ try:
     r = (
         r
         if r.returncode
-        else evh("label-import", str(KIT / "gold"), "--dataset-id", "tk_v1", "--set", "g", "--by", "t")
+        else evh(
+            "label-import", "--sheet", str(KIT / "gold"), "--dataset-id", "tk_v1", "--set", "g", "--by", "t"
+        )
     )
     r = (
         r
@@ -397,7 +409,7 @@ try:
     check("and lost once its command is gone", lost.get("state") == "lost", lost.get("state"))
 
     # An artifact, and an upload.
-    st, ls = job("label-sheet", {"dataset-id": "tk_v1", "out": "sheet.csv"}, by="person:ana")
+    st, ls = op_job("label-sheet", {"dataset_id": "tk_v1", "out": "sheet.csv"}, by="person:ana")
     lsd = until(ls.get("id"), ("succeeded", "failed"), 120) if st == 202 else {}
     st2, body = call("GET", f"/api/v1/jobs/{ls.get('id')}/files/sheet.csv")
     check(
@@ -409,18 +421,19 @@ try:
         json.dumps({"item_id": i, "acc": 1.0}) + "\n"
         for i in sorted(p.stem for p in (proj / "tickets").glob("*.txt"))
     )
-    st, imp = job(
+    st, imp = op_job(
         "import-run",
         {
-            "dataset-id": "tk_v1", "system-id": "imported_v1", "primary-metric": "acc", "source": "a test",
-            "scorer-id": "test", "build-ref": "test", "scores": {"name": "scores.jsonl", "content_base64": base64.b64encode(scores.encode()).decode()},
+            "dataset_id": "tk_v1", "system_id": "imported_v1", "primary_metric": "acc", "source": "a test",
+            "scorer_id": "test", "build_ref": "test", "scores": {"name": "scores.jsonl", "content_base64": base64.b64encode(scores.encode()).decode()},
         },
         by="person:ana",
     )  # fmt: skip
     impd = until(imp.get("id"), ("succeeded", "failed"), 120) if st == 202 else {}
     check(
         "an upload: the file reaches the job, kept under .build/uploads",
-        impd.get("state") == "succeeded" and any(".build/uploads/" in x for x in impd.get("argv", [])),
+        impd.get("state") == "succeeded"
+        and (impd.get("inputs") or {}).get("scores", "").startswith(".build/uploads/"),
         (st, imp, impd.get("state"), impd.get("refusal")),
     )
     srv.terminate()

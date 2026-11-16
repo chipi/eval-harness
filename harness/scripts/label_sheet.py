@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """A sheet of a dataset's items to label (RFC-023): what production or an arm decided, a proposal, an empty label.
 
     evh label-sheet --dataset-id tickets_v1 --out sheet.csv
@@ -19,24 +18,18 @@ id (its latest run on the dataset). Nothing is written but the sheet.
 
 from __future__ import annotations
 
-import sys as _sys
-from pathlib import Path as _Path
-
-if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
-    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
-
-import argparse
 import json
-import sys
 from pathlib import Path
+from typing import Any
 
-from evaluation_harness import _jsonout, _outputs, _store
-from evaluation_harness._common import die, evh_prog, item_path, load_dataset
+from evaluation_harness import _outputs, _store
+from evaluation_harness._common import die, item_path, load_dataset
 from evaluation_harness._label_sets import labels_for, sets, text_of
 from evaluation_harness._runs import runs_on
 from evaluation_harness._sheets import ALSO, NOTE, label_header, write_csv
 from evaluation_harness.model import datasets as _datasets
 from evaluation_harness.model import runs as _model_runs
+from evaluation_harness.ops import legacy
 
 VIEW = 160
 
@@ -98,53 +91,31 @@ def view(dataset_id: str, item_id: str, limit: int | None = VIEW) -> str:
     return one if limit is None or len(one) <= limit else one[: limit - 1] + "…"
 
 
-def main() -> int:
+def body(**inputs: Any) -> int:
     """Write a sheet of items to label."""
-    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
-    ap.add_argument("--dataset-id", required=True)
-    ap.add_argument("--out", required=True, type=Path, help="the sheet to write (.csv)")
-    ap.add_argument("--items", choices=("unlabelled", "all", "disagree"), default="unlabelled")
-    ap.add_argument("--item", action="append", default=[], help="exactly this item (repeatable)")
-    ap.add_argument(
-        "--runs", default="", help="runs (or systems) whose decisions the sheet shows, comma-separated"
-    )
-    ap.add_argument(
-        "--propose", help="a label set (by name, on this dataset) or a run whose answers are proposed"
-    )
-    ap.add_argument(
-        "--choices",
-        help="the allowed answers, comma-separated (e.g. file,dismiss,escalate): written into the label column's "
-        "header; label-import refuses any other",
-    )
-    ap.add_argument(
-        "--json",
-        action="store_true",
-        help="one JSON object on stdout when done (the text goes to stderr as it is printed): the envelope every --json command gives (result.blocks, result.values)",
-    )
-    args = ap.parse_args()
-    with _jsonout.collect("label-sheet", args.json, live=sys.stderr):
-        if _store.exists(args.out):
-            die(f"{args.out} exists: a sheet is not overwritten (you may have filled it)", "would-overwrite")
-        choices = [c.strip() for c in (args.choices or "").split(",") if c.strip()] or None
-        from evaluation_harness import _seal  # noqa: PLC0415
+    args = legacy.namespace(inputs, "label-sheet")
+    if _store.exists(args.out):
+        die(f"{args.out} exists: a sheet is not overwritten (you may have filled it)", "would-overwrite")
+    choices = [c.strip() for c in (args.choices or "").split(",") if c.strip()] or None
+    from evaluation_harness import _seal  # noqa: PLC0415
 
-        _seal.refuse_if_sealed(args.dataset_id, "a label sheet")
-        header, rows, n = build(args.dataset_id, args.items, args.item, args.runs, args.propose, choices)
-        write_csv(header, rows, args.out)
-        from evaluation_harness import _exposure  # noqa: PLC0415
+    _seal.refuse_if_sealed(args.dataset_id, "a label sheet")
+    header, rows, n = build(args.dataset_id, args.items, args.item, args.runs, args.propose, choices)
+    write_csv(header, rows, args.out)
+    from evaluation_harness import _exposure  # noqa: PLC0415
 
-        at = header.index("item_id")
-        _exposure.read_by_harness(
-            args.dataset_id,
-            [r[at] if isinstance(r, (list, tuple)) else r["item_id"] for r in rows],
-            "a label sheet",
-        )
-        print(f"{args.out}: {len(rows)} item(s) of {n} to label")
-        print(
-            "  fill `label` (or `yes` for the proposal; answers just as right in `also right`, separated by |), "
-            f"then: evh label-import {args.out} --dataset-id {args.dataset_id} --set <name> --by <you>"
-        )
-        return 0
+    at = header.index("item_id")
+    _exposure.read_by_harness(
+        args.dataset_id,
+        [r[at] if isinstance(r, (list, tuple)) else r["item_id"] for r in rows],
+        "a label sheet",
+    )
+    print(f"{args.out}: {len(rows)} item(s) of {n} to label")
+    print(
+        "  fill `label` (or `yes` for the proposal; answers just as right in `also right`, separated by |), "
+        f"then: evh label-import --sheet {args.out} --dataset-id {args.dataset_id} --set <name> --by <you>"
+    )
+    return 0
 
 
 def build(
@@ -213,7 +184,3 @@ def build(
         for i in chosen
     ]
     return header, rows, len(ids)
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())

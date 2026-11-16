@@ -61,20 +61,34 @@ no_json = sorted(
     and not any("--json" in a.option_strings for a in _cmdline.parser_of(c)._actions)
 )
 check("every command the API serves answers --json (RFC-026 step 7)", not no_json, no_json)
-names = {c: {a["name"] for a in v["arguments"]} for c, v in reg.items()}
+from evaluation_harness.ops import OPS  # noqa: E402
+
+
+def takes(command: str, name: str) -> str | None:
+    """How a job of `command` takes the argument `name` (as the option is spelled): value, upload, artifact, or None
+    when it takes none (an operation's `tool_hidden`, or no such input; a command's registry)."""
+    op = OPS.get(command)
+    if op is not None and op.is_job():
+        key = name.replace("-", "_")
+        spec = op.inputs.get(key)
+        if spec is None or key in op.tool_hidden:
+            return None
+        return {"upload": "upload", "artifact": "artifact"}.get(spec.get("x-file"), "value")
+    return {a["name"]: a["kind"] for a in reg[command]["arguments"]}.get(name)
+
+
 check(
     "never taken: --adapter, a sweep or rescore output folder, a source folder",
-    "adapter" not in names["run"]
-    and "out" not in names["rescore"]
-    and "source-dir" not in names["dataset-create"],
+    takes("run", "adapter") is None
+    and takes("rescore", "out") is None
+    and takes("dataset-create", "source-dir") is None,
 )
 check(
-    "kinds: run's system is a plain value (found by id, not a path), label-import's sheet an upload, label-sheet's out an artifact; spenders marked",
-    {a["name"]: a["kind"] for a in reg["run"]["arguments"]}.get("system") == "value"
-    and {a["name"]: a["kind"] for a in reg["label-import"]["arguments"]}.get("sheet") == "upload"
-    and {a["name"]: a["kind"] for a in reg["label-sheet"]["arguments"]}.get("out") == "artifact"
+    "kinds: run's system is a plain value (found by id, not a path), a dataset's fields file an upload, exposure-check's out an artifact; spenders marked",
+    takes("run", "system") == "value"
+    and takes("dataset-create", "fields") == "upload"
+    and takes("exposure-check", "out") == "artifact"
     and reg["run"]["spends"]
-    and not reg["label-sheet"]["spends"]
     and "leaderboard" not in reg  # a read is an operation: its own resource, not a job
     and reg["run"]["served"] == "job",
 )
@@ -145,7 +159,9 @@ try:
     r = (
         r
         if r.returncode
-        else evh("label-import", str(KIT / "gold"), "--dataset-id", "tk_v1", "--set", "g", "--by", "t")
+        else evh(
+            "label-import", "--sheet", str(KIT / "gold"), "--dataset-id", "tk_v1", "--set", "g", "--by", "t"
+        )
     )
     r = (
         r
@@ -234,8 +250,15 @@ try:
         check("a name that does not exist (a system id) is refused", ok)
 
         def refused(command: str, args: dict) -> bool:
+            """Whether a job of `command` with these arguments is refused before it exists: a command's by the
+            registry, an operation's by its schema (the pattern of an input)."""
             try:
-                _api.checked_args(command, args)
+                if (op := OPS.get(command)) is not None and op.is_job():
+                    _api.operation_inputs(
+                        op, {k.replace("-", "_"): v for k, v in args.items()}, "20261116T000000-000000"
+                    )
+                else:
+                    _api.checked_args(command, args)
             except _api.Refused:
                 return True
             return False

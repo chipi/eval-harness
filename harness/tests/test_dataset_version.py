@@ -86,7 +86,7 @@ try:
     check(
         "then with items removed: 2.0", r.returncode == 0 and ds("t_v3")["version"] == "2.0", r.stderr[-300:]
     )
-    r = evh("dataset-split", "t_v2", "--test", "0.4", "--seed", "1")
+    r = evh("dataset-split", "--dataset-id", "t_v2", "--test", "0.4", "--seed", "1")
     sides = [
         n.removesuffix(".json")
         for n in _runstore.listdir(proj, "datasets")

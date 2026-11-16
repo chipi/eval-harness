@@ -1492,7 +1492,7 @@ def v16_references() -> None:
                 tier, name = rel.split("/", 1)
                 bad.append(
                     f"{rel}: no manifest, so nothing says where it came from. Make it a promoted reference where it "
-                    f"is: evh label-import data/references/{rel} --dataset-id {name} --set {name}_hand --by WHO, then "
+                    f"is: evh label-import --sheet data/references/{rel} --dataset-id {name} --set {name}_hand --by WHO, then "
                     f"evh reference-promote --dataset-id {name} --labels {name}_hand --tier {tier} --reason … --by WHO "
                     f"(the promotion adopts the folder: its texts are the labels'). For gold a script builds: "
                     f"evh reference-manifest --reference-id {rel} --source <how it is built>"

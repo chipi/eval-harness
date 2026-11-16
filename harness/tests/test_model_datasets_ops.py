@@ -480,7 +480,7 @@ try:
         check("the API answers 404 for an id that does not exist", set(codes) == {404}, codes)
         edits = [
             call(port, "PATCH", "/datasets/ds_v1", {"set": {"version": "9"}, "by": "person:api"})[0],
-            call(port, "POST", "/datasets/ds_v1/label-sets/rule_cap", {"set": {}, "by": "person:api"})[0],
+            call(port, "POST", "/datasets/ds_v1/label-sets", {"set": {}, "by": "person:api"})[0],
             call(port, "PATCH", "/references/gold/ds_v1", {"set": {"reason": "x"}, "by": "person:api"})[0],
             call(port, "PATCH", "/captures/cap_1", {"set": {"importer": "x"}, "by": "person:api"})[0],
         ]  # fmt: skip

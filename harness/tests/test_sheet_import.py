@@ -183,7 +183,9 @@ try:
     mine[2][col] = ""
     mine.append({"item_id": "#a footer", col: "dismiss"})
     write("lab_f.csv", head, mine)
-    r = evh("sheet-import", "lab_f.csv", "--dataset-id", D, "--by", "owner", "--set", "owner_sheet")
+    r = evh(
+        "sheet-import", "--sheet", "lab_f.csv", "--dataset-id", D, "--by", "owner", "--set", "owner_sheet"
+    )
     labels_dir = f"labels/{D}/owner_sheet"
     doc = (
         _runstore.read_json(proj, f"{labels_dir}/labels.json")
@@ -209,6 +211,7 @@ try:
     )
     r = evh(
         "sheet-import",
+        "--sheet",
         "lab_f.csv",
         "--dataset-id",
         D,
@@ -227,17 +230,19 @@ try:
     )
     bad = [{**x, col: "maybe"} for x in rows]
     write("lab_bad.csv", head, bad)
-    r = evh("sheet-import", "lab_bad.csv", "--dataset-id", D, "--by", "owner", "--set", "never")
+    r = evh("sheet-import", "--sheet", "lab_bad.csv", "--dataset-id", D, "--by", "owner", "--set", "never")
     check(
         "refused: an answer outside the sheet's choices, nothing written",
         refused(r, "not among the sheet's choices") and not _runstore.exists(proj, f"labels/{D}/never"),
         out(r)[-300:],
     )
-    r = evh("sheet-import", "lab_f.csv", "--dataset-id", D, "--by", "owner")
+    r = evh("sheet-import", "--sheet", "lab_f.csv", "--dataset-id", D, "--by", "owner")
     check("refused: labels without --set", refused(r, "--set"), out(r)[-200:])
-    r = evh("sheet-import", "lab_f.csv", "--dataset-id", D, "--by", "owner", "--set", "owner_sheet")
+    r = evh(
+        "sheet-import", "--sheet", "lab_f.csv", "--dataset-id", D, "--by", "owner", "--set", "owner_sheet"
+    )
     check("refused: a label set that exists is never edited", refused(r, "never edited"), out(r)[-200:])
-    r = evh("sheet-import", "lab.csv", "--dataset-id", D, "--by", "owner", "--set", "empty_one")
+    r = evh("sheet-import", "--sheet", "lab.csv", "--dataset-id", D, "--by", "owner", "--set", "empty_one")
     check("refused: nothing filled", refused(r, "nothing filled"), out(r)[-200:])
 
     # ── pick: blind columns, the key, the round trip ─────────────────────────────────────────
@@ -304,7 +309,9 @@ try:
         return {"pick": letter_of(key_row, key, ARMS["author"]).lower()}
 
     filled("pick", pick_author)
-    r = evh("sheet-import", "pick_f.csv", "--dataset-id", D, "--by", "owner", "--scorer", "owner_picks")
+    r = evh(
+        "sheet-import", "--sheet", "pick_f.csv", "--dataset-id", D, "--by", "owner", "--scorer", "owner_picks"
+    )
     after_import = tree()
     recs = {}
     metrics = {}
@@ -371,9 +378,11 @@ try:
         and byi[items[0]][f"{ARMS['author']}: owner_picks/judge_won_unvalidated"] == 1.0,
         out(r)[-300:] + str(table["columns"]),
     )
-    r = evh("sheet-import", "pick_f.csv", "--dataset-id", D, "--by", "owner", "--scorer", "owner_picks")
+    r = evh(
+        "sheet-import", "--sheet", "pick_f.csv", "--dataset-id", D, "--by", "owner", "--scorer", "owner_picks"
+    )
     check("refused: judged scores are never overwritten", refused(r, "never overwritten"), out(r)[-200:])
-    r = evh("sheet-import", "pick_f.csv", "--dataset-id", D, "--by", "owner")
+    r = evh("sheet-import", "--sheet", "pick_f.csv", "--dataset-id", D, "--by", "owner")
     check("refused: judgements without --scorer", refused(r, "--scorer"), out(r)[-200:])
     check("refusing wrote nothing more", tree() == after_import and after_import != [], str(tree()))
 
@@ -385,7 +394,7 @@ try:
         (proj / "bad.key.json").unlink(missing_ok=True)
         if not drop_key:
             shutil.copy(proj / (key_from or "pick.key.json"), proj / "bad.key.json")
-        r_ = evh("sheet-import", "bad.csv", "--dataset-id", D, "--by", "owner", "--scorer", scorer)
+        r_ = evh("sheet-import", "--sheet", "bad.csv", "--dataset-id", D, "--by", "owner", "--scorer", scorer)
         check(
             f"refused: {what}, nothing written",
             refused(r_, text) and not scored_by(scorer),
@@ -456,6 +465,7 @@ try:
     filled("sc", score_by_arm)
     r = evh(
         "sheet-import",
+        "--sheet",
         "sc_f.csv",
         "--dataset-id",
         D,
@@ -501,7 +511,9 @@ try:
         edit(first_row(rows_), key)
         write("bad2.csv", head_, rows_)
         shutil.copy(proj / "sc.key.json", proj / "bad2.key.json")
-        r_ = evh("sheet-import", "bad2.csv", "--dataset-id", D, "--by", "owner", "--scorer", scorer)
+        r_ = evh(
+            "sheet-import", "--sheet", "bad2.csv", "--dataset-id", D, "--by", "owner", "--scorer", scorer
+        )
         check(
             f"refused: {what}, nothing written",
             refused(r_, text) and not scored_by(scorer),
@@ -519,6 +531,7 @@ try:
     )
     r = evh(
         "sheet-import",
+        "--sheet",
         "pick_f.csv",
         "--dataset-id",
         D,
@@ -534,13 +547,25 @@ try:
         refused(r, "--fill scores") and not scored_by("mixed"),
         out(r)[-300:],
     )
-    r = evh("sheet-import", "sc_f.csv", "--dataset-id", "no_such_dataset", "--by", "owner", "--scorer", "s9")
+    r = evh(
+        "sheet-import",
+        "--sheet",
+        "sc_f.csv",
+        "--dataset-id",
+        "no_such_dataset",
+        "--by",
+        "owner",
+        "--scorer",
+        "s9",
+    )
     check(
         "refused: a dataset that does not exist",
         r.returncode != 0 and "Traceback" not in out(r),
         out(r)[-200:],
     )
-    r = evh("sheet-import", "sc_f.csv", "--dataset-id", D, "--by", "owner", "--scorer", "has/slash")
+    r = evh(
+        "sheet-import", "--sheet", "sc_f.csv", "--dataset-id", D, "--by", "owner", "--scorer", "has/slash"
+    )
     check("refused: a scorer name that is no folder name", refused(r, "--scorer"), out(r)[-200:])
 finally:
     shutil.rmtree(proj, ignore_errors=True)

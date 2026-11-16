@@ -77,7 +77,7 @@ try:
         "--capture",
         "prod_c1",
     )
-    r = r if r.returncode else evh("dataset-from-capture", "prod_c1", "--dataset-id", "prod_v1")
+    r = r if r.returncode else evh("dataset-from-capture", "--capture", "prod_c1", "--dataset-id", "prod_v1")
     check("setup: the production dataset", r.returncode == 0, out(r)[-300:])
 
     # ── pick, retarget, drop, the waiting list ─────────────────────────────────────────────
@@ -151,11 +151,13 @@ try:
 
     # ── a label on a picked item follows it ────────────────────────────────────────────────
     (proj / "sheet.csv").write_text("item_id,label\np1,needs-engineering\n")
-    r = evh("label-import", "sheet.csv", "--dataset-id", "prod_v1", "--set", "owner_p", "--by", "owner")
+    r = evh(
+        "label-import", "--sheet", "sheet.csv", "--dataset-id", "prod_v1", "--set", "owner_p", "--by", "owner"
+    )
     check("setup: the owner labels a picked item", r.returncode == 0, out(r)[-200:])
 
     # ── dataset-extend ─────────────────────────────────────────────────────────────────────
-    r = evh("dataset-extend", "tickets_v1", "--dataset-id", "tickets_v2", "--picks")
+    r = evh("dataset-extend", "--dataset", "tickets_v1", "--dataset-id", "tickets_v2", "--picks")
     v2 = _runstore.read_json(proj, "datasets/tickets_v2.json") if r.returncode == 0 else {}
     ids = [it["item_id"] for it in v2.get("items", [])]
     check(
@@ -186,7 +188,7 @@ try:
     check(
         "a picked item's labels follow it into V2", cov.get("owner_p") == ["p1"], (r.stdout + r.stderr)[-300:]
     )
-    r = evh("dataset-extend", "tickets_v2", "--dataset-id", "tickets_v3", "--pick", "prod_v1:p4")
+    r = evh("dataset-extend", "--dataset", "tickets_v2", "--dataset-id", "tickets_v3", "--pick", "prod_v1:p4")
     v3 = _runstore.read_json(proj, "datasets/tickets_v3.json") if r.returncode == 0 else {}
     check(
         "dataset-extend --pick DATASET:ITEM: one pick, whatever its target",
@@ -194,12 +196,12 @@ try:
         and len(v3.get("items", [])) == 8,
         out(r)[-300:],
     )
-    r = evh("dataset-extend", "tickets_v2", "--dataset-id", "tickets_v2", "--picks")
+    r = evh("dataset-extend", "--dataset", "tickets_v2", "--dataset-id", "tickets_v2", "--picks")
     check("dataset-extend: an existing dataset is never overwritten", refused(r, "exists"), out(r)[-200:])
-    r = evh("dataset-extend", "tickets_v1", "--dataset-id", "tickets_v4", "--pick", "no_such")
+    r = evh("dataset-extend", "--dataset", "tickets_v1", "--dataset-id", "tickets_v4", "--pick", "no_such")
     check("dataset-extend --pick of an item not waiting is refused", refused(r, "not waiting"), out(r)[-200:])
     _runstore.write_text(proj, "sources/prod_v1/p3.txt", "changed after it was picked")
-    r = evh("dataset-extend", "tickets_v1", "--dataset-id", "tickets_v5", "--pick", "p3")
+    r = evh("dataset-extend", "--dataset", "tickets_v1", "--dataset-id", "tickets_v5", "--pick", "p3")
     check(
         "dataset-extend: a picked item whose file changed since is refused",
         refused(r, "not the one picked") and not _runstore.exists(proj, "datasets/tickets_v5.json"),

@@ -118,6 +118,7 @@ try:
     shutil.copy(proj / "tags.key.json", proj / "filled.key.json")
     r = evh(
         "sheet-import",
+        "--sheet",
         str(filled),
         "--dataset-id",
         "tickets_v1",
@@ -171,6 +172,7 @@ try:
     )
     r = evh(
         "sheet-import",
+        "--sheet",
         str(filled),
         "--dataset-id",
         "tickets_v1",
@@ -192,6 +194,7 @@ try:
     shutil.copy(proj / "tags.key.json", proj / "bad.key.json")
     r = evh(
         "sheet-import",
+        "--sheet",
         str(proj / "bad.csv"),
         "--dataset-id",
         "tickets_v1",
@@ -215,6 +218,7 @@ try:
     shutil.copy(proj / "tags.key.json", proj / "edited.key.json")
     r = evh(
         "sheet-import",
+        "--sheet",
         str(proj / "edited.csv"),
         "--dataset-id",
         "tickets_v1",

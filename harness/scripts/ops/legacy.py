@@ -144,3 +144,36 @@ def say_blocks(result: dict[str, Any]) -> str:
             cols = b.get("columns") or []
             out.extend(table_text(cols, [[cell(r.get(c)) for c in cols] for r in b.get("rows") or []]))
     return "\n".join(out)
+
+
+def namespace(inputs: dict[str, Any], command: str, dests: dict[str, str] | None = None) -> Any:
+    """A job's body called with its inputs, as the Namespace its old parser gave it: every input of the operation, the
+    schema's default (a flag false, a repeatable option an empty list, anything else None) where the call gave none, a
+    path as a `Path`, under the name its option stored it as (`dests`: `from` was `from_`)."""
+    import argparse  # noqa: PLC0415
+    from pathlib import Path  # noqa: PLC0415
+
+    from evaluation_harness.ops.registry import OPS  # noqa: PLC0415
+
+    op = OPS[command]
+    unknown = sorted(set(inputs) - set(op.inputs))
+    if unknown:
+        raise TypeError(f"{command}: not inputs: {', '.join(unknown)}")
+    out: dict[str, Any] = {}
+    for name, spec in op.inputs.items():
+        if name in inputs:
+            value = inputs[name]
+        elif "default" in spec:
+            value = spec["default"]
+        elif spec.get("type") == "boolean":
+            value = False
+        elif spec.get("type") == "array" and spec.get("x-nargs") != "+":
+            value = []
+        elif spec.get("type") == "object":
+            value = {}
+        else:
+            value = None
+        if spec.get("format") == "path" and isinstance(value, str):
+            value = Path(value)
+        out[(dests or {}).get(name, name)] = value
+    return argparse.Namespace(**out)

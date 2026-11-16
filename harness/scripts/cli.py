@@ -37,19 +37,6 @@ COMMANDS = {
         "copy the agent skills (evaluate, compare, promote) into .claude/skills/ or --target",
     ),
     "env-check": ("env_check.py", "check the Python environment and keys"),
-    "dataset-create": ("dataset_create.py", "freeze a dataset: item list + per-item sha256"),
-    "dataset-describe": (
-        "dataset_describe.py",
-        "change a dataset's licence or description, never its items or version",
-    ),
-    "fieldset-propose": (
-        "fieldset_propose.py",
-        "a field set proposed from a dataset source's features, for a person to accept (--write)",
-    ),
-    "dataset-publish": (
-        "dataset_publish.py",
-        "publish a dataset to a new repo (Hugging Face), private first, read back and checked by sha256",
-    ),
     "migrate": (
         "migrate.py",
         "bring the project's data to this release's formats: runs, datasets, records, fingerprints, once (idempotent)",
@@ -60,19 +47,6 @@ COMMANDS = {
     ),
     "data-put": ("data_put.py", "create or change a setting (system, goal, fieldset, ...), checked first"),
     "data-rm": ("data_rm.py", "delete a setting, or a whole run"),
-    "dataset-materialize": ("materialize.py", "hash-checked working copy of a dataset"),
-    "dataset-profile": (
-        "dataset_profile.py",
-        "what is inside a dataset: items, lengths, the gold's shape, a link per item (text only with --with-text)",
-    ),
-    "reference-promote": (
-        "reference_promote.py",
-        "promote a label set's labels to a reference set, at a tier, with a reason",
-    ),
-    "reference-manifest": (
-        "reference_manifest.py",
-        "the checksummed manifest of a reference set a fetch script built",
-    ),
     "run": ("run.py", "run one arm over a dataset (--dry-run to cost it)"),
     "arm-smoke": (
         "arm_smoke.py",
@@ -93,27 +67,8 @@ COMMANDS = {
         "re-measure frozen outputs with a validated LLM judge (--dry-run first)",
     ),
     "silver-calibrate": ("silver_calibrate.py", "how far silver reference sets drift from gold"),
-    "cost-report": ("cost_report.py", "billed cost per arm, and what judging cost"),
     "bootstrap-test": ("bootstrap_test.py", "bootstrap intervals for corpus-level metrics"),
     "holdout": ("holdout_significance.py", "tune on a pilot slice, confirm on the rest"),
-    "import-run": ("import_run.py", "per-item scores from another tool, as a run the tests can read"),
-    "importer-check": (
-        "importer_check.py",
-        "check an importer: its records are well-formed, ids unique, two reads the same",
-    ),
-    "capture": ("capture.py", "keep a production system's records as a capture (data/captures/)"),
-    "dataset-split": (
-        "dataset_split.py",
-        "split a dataset into <id>_validation and <id>_test, stable across versions",
-    ),
-    "dataset-unseal": (
-        "dataset_unseal.py",
-        "open a sealed test side to one candidate system whose hypothesis is committed (one look)",
-    ),
-    "capture-restore": (
-        "capture_restore.py",
-        "read a capture's records again from its source, and the items of the datasets made from it, every hash checked",
-    ),
     "capture-scrub": (
         "capture_scrub.py",
         "run the project's own scrubber over a capture's records, and record it",
@@ -122,60 +77,6 @@ COMMANDS = {
         "sheet_export.py",
         "a dataset's sheet written as a CSV to fill in: what each run wrote and scored beside every item, the columns to fill (--fill label|pick|scores|tags)",
     ),
-    "label-sheet": (
-        "label_sheet.py",
-        "a sheet of a dataset's items to label, with what production or an arm decided",
-    ),
-    "label-import": ("label_import.py", "a filled label sheet as a person's label set"),
-    "sheet-import": (
-        "sheet_import.py",
-        "a sheet filled elsewhere, read back: labels as a label set, picks or scores as judged runs",
-    ),
-    "label-from-run": (
-        "label_from_run.py",
-        "a finished run's outputs as a model's label set (calls nothing)",
-    ),
-    "label-from-capture": (
-        "label_from_capture.py",
-        "rules over a capture's recorded outcomes as a rule label set",
-    ),
-    "pick": ("pick.py", "pick production items for the next version of governed datasets, or drop a pick"),
-    "exposure-add": (
-        "exposure_add.py",
-        "record reads of a held-out side's items: each is left out of every later score on it (RFC-031)",
-    ),
-    "exposure-check": (
-        "exposure_check.py",
-        "search the project's public repos for a held-out side's item ids: leaks the register lacks (RFC-031)",
-    ),
-    "dataset-seal-counts": (
-        "dataset_seal_counts.py",
-        "allow one more field in a held-out side's counts: a person's decision, recorded (RFC-031)",
-    ),
-    "dataset-extend": (
-        "dataset_extend.py",
-        "the next version of a dataset: its items and the picks you choose",
-    ),
-    "arm-from-capture": (
-        "arm_from_capture.py",
-        "production's recorded decisions as an arm, scored like any (no call)",
-    ),
-    "dataset-from-capture": (
-        "dataset_from_capture.py",
-        "make a dataset version from a capture: choose records, freeze their bodies as items",
-    ),
-    "baseline-rollback": (
-        "baseline_rollback.py",
-        "roll a baseline back to an earlier version, as a new version with its own evidence",
-    ),
-    "run-promote": ("promote_baseline.py", "promote a run to a baseline, with a reason"),
-    "round-open": (
-        "round_open.py",
-        "open a round of a goal (optional): its hypothesis, changes, arms kept or dropped",
-    ),
-    "round-carry": ("round_carry.py", "carry an arm of an earlier round into the open round, unchanged"),
-    "round-retire": ("round_retire.py", "drop an arm from the open round, with the reason"),
-    "round-close": ("round_close.py", "close a round with its conclusion, promoting the run it chose"),
     "study-run": (
         "study_run.py",
         "open a study and run its loop on validation items: research, never evidence",

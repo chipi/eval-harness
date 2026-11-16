@@ -186,7 +186,17 @@ try:
         w = csv.DictWriter(f, fieldnames=list(rows[0]))
         w.writeheader()
         w.writerows(rows)
-    r = evh("label-import", "filled.csv", "--dataset-id", "tickets_v1", "--set", "owner_v1", "--by", "owner")
+    r = evh(
+        "label-import",
+        "--sheet",
+        "filled.csv",
+        "--dataset-id",
+        "tickets_v1",
+        "--set",
+        "owner_v1",
+        "--by",
+        "owner",
+    )
     doc = lab_doc("tickets_v1/owner_v1/labels.json") if r.returncode == 0 else {}
     check(
         "label-import: the filled rows as a person set; `yes` takes the proposal; a note kept; empty rows left out",
@@ -206,7 +216,17 @@ try:
     answers.mkdir()
     (answers / "t01_login.txt").write_text("Login fails after SSO change.\n")
     (answers / "t04_api.txt").write_text("Rate limit lower than documented.\n")
-    r = evh("label-import", "answers", "--dataset-id", "tickets_v1", "--set", "owner_files", "--by", "owner")
+    r = evh(
+        "label-import",
+        "--sheet",
+        "answers",
+        "--dataset-id",
+        "tickets_v1",
+        "--set",
+        "owner_files",
+        "--by",
+        "owner",
+    )
     fdoc = lab_doc("tickets_v1/owner_files/labels.json") if r.returncode == 0 else {}
     check(
         "label-import: a folder of <item_id>.txt as a person set, its files hashed",
@@ -220,7 +240,7 @@ try:
     # 2026-11-04 (a beta agent): a refusal found late (a --guideline file that does not exist) left the set's
     # .txt files written and no labels.json, and the half set then blocked its own name.
     r = evh(
-        "label-import", "answers", "--dataset-id", "tickets_v1", "--set", "half_set", "--by", "owner",
+        "label-import", "--sheet", "answers", "--dataset-id", "tickets_v1", "--set", "half_set", "--by", "owner",
         "--guideline", "no_such_guideline.md",
     )  # fmt: skip
     half = f"{LABELS}/tickets_v1/half_set"
@@ -234,7 +254,7 @@ try:
     )
     (proj / "guide.md").write_text("Summarise the ticket's problem in one sentence.\n")
     r = evh(
-        "label-import", "answers", "--dataset-id", "tickets_v1", "--set", "half_set", "--by", "owner",
+        "label-import", "--sheet", "answers", "--dataset-id", "tickets_v1", "--set", "half_set", "--by", "owner",
         "--guideline", "guide.md",
     )  # fmt: skip
     check(
@@ -246,7 +266,9 @@ try:
     )
     _runstore.rmtree(proj, half)  # this throwaway set is not one the checks below count
     (proj / "empty").mkdir()
-    r = evh("label-import", "empty", "--dataset-id", "tickets_v1", "--set", "none_v1", "--by", "owner")
+    r = evh(
+        "label-import", "--sheet", "empty", "--dataset-id", "tickets_v1", "--set", "none_v1", "--by", "owner"
+    )
     check("label-import: an empty folder is refused", refused(r, "no <item_id>.txt"), out(r)[-200:])
     # ── a sheet opened in Excel and saved back (owner, 2026-11-02: CSV only, Excel-friendly) ──────────────────────
     r = evh(
@@ -274,7 +296,15 @@ try:
         "t01_login;Login fails;;file;escalate;\r\nt02_invoice;Invoice wrong;;dismiss;;\r\n".encode()
     )
     r = evh(
-        "label-import", "excel_saved.csv", "--dataset-id", "tickets_v1", "--set", "excel_v1", "--by", "owner"
+        "label-import",
+        "--sheet",
+        "excel_saved.csv",
+        "--dataset-id",
+        "tickets_v1",
+        "--set",
+        "excel_v1",
+        "--by",
+        "owner",
     )
     check(
         "label-import: Excel's own CSV (the mark, `;`, CRLF) reads back, also right included",
@@ -287,7 +317,15 @@ try:
         "\ufeffitem_id;label [file|dismiss|escalate]\r\nt01_login;dismis\r\nt02_invoice;file\r\n".encode()
     )
     r = evh(
-        "label-import", "excel_typo.csv", "--dataset-id", "tickets_v1", "--set", "typo_v1", "--by", "owner"
+        "label-import",
+        "--sheet",
+        "excel_typo.csv",
+        "--dataset-id",
+        "tickets_v1",
+        "--set",
+        "typo_v1",
+        "--by",
+        "owner",
     )
     check(
         "label-import: an answer not among the sheet's choices is refused, naming the row; nothing is written",
@@ -295,7 +333,17 @@ try:
         out(r)[-300:],
     )
     (proj / "book.xlsx").write_bytes(b"PK\x03\x04 a workbook")
-    r = evh("label-import", "book.xlsx", "--dataset-id", "tickets_v1", "--set", "book_v1", "--by", "owner")
+    r = evh(
+        "label-import",
+        "--sheet",
+        "book.xlsx",
+        "--dataset-id",
+        "tickets_v1",
+        "--set",
+        "book_v1",
+        "--by",
+        "owner",
+    )
     check(
         "label-import: a workbook is refused, saying how to save it as CSV",
         refused(r, "Save As > CSV UTF-8"),
@@ -309,7 +357,15 @@ try:
         "item_id,label,also right,note\nt01_login,file,escalate | file,\nt02_invoice,dismiss,,\n"
     )
     r = evh(
-        "label-import", "several.csv", "--dataset-id", "tickets_v1", "--set", "several_v1", "--by", "owner"
+        "label-import",
+        "--sheet",
+        "several.csv",
+        "--dataset-id",
+        "tickets_v1",
+        "--set",
+        "several_v1",
+        "--by",
+        "owner",
     )
     several = "tickets_v1/several_v1"
     check(
@@ -322,7 +378,15 @@ try:
     (answers / "t01_login.txt").write_text('{"accept": ["file", "escalate", "file"]}\n')
     (answers / "t04_api.txt").unlink()
     r = evh(
-        "label-import", "answers", "--dataset-id", "tickets_v1", "--set", "several_files", "--by", "owner"
+        "label-import",
+        "--sheet",
+        "answers",
+        "--dataset-id",
+        "tickets_v1",
+        "--set",
+        "several_files",
+        "--by",
+        "owner",
     )
     check(
         "label-import: a folder's {\"accept\": [...]} is the same label as the sheet's",
@@ -332,7 +396,15 @@ try:
     )
     (proj / "notalist.csv").write_text('item_id,label\nt01_login,"{""accept"": ""file""}"\n')
     r = evh(
-        "label-import", "notalist.csv", "--dataset-id", "tickets_v1", "--set", "bad_accept", "--by", "owner"
+        "label-import",
+        "--sheet",
+        "notalist.csv",
+        "--dataset-id",
+        "tickets_v1",
+        "--set",
+        "bad_accept",
+        "--by",
+        "owner",
     )
     check(
         'label-import: {"accept": ...} that is not a list of answers is refused, saying how to write one',
@@ -340,7 +412,9 @@ try:
         out(r)[-300:],
     )
     (proj / "one.csv").write_text("item_id,label\nt01_login,escalate\nt02_invoice,file\n")
-    evh("label-import", "one.csv", "--dataset-id", "tickets_v1", "--set", "one_v1", "--by", "owner")
+    evh(
+        "label-import", "--sheet", "one.csv", "--dataset-id", "tickets_v1", "--set", "one_v1", "--by", "owner"
+    )
     r = evh("label-set-list", "tickets_v1", "--json")
     pairs = {
         frozenset((p["a"], p["b"])): p
@@ -435,14 +509,26 @@ try:
         proj, f"{LABELS}/tickets_v1/owner_files"
     )  # the later checks count the sets on tickets_v1
     (proj / "bad.csv").write_text("id,answer\nt01_login,x\n")
-    r = evh("label-import", "bad.csv", "--dataset-id", "tickets_v1", "--set", "bad_v1", "--by", "owner")
+    r = evh(
+        "label-import", "--sheet", "bad.csv", "--dataset-id", "tickets_v1", "--set", "bad_v1", "--by", "owner"
+    )
     check(
         "label-import: a file without item_id and label is refused",
         refused(r, "item_id and label"),
         out(r)[-200:],
     )
     (proj / "ghost.csv").write_text("item_id,label\nno_such_item,x\n")
-    r = evh("label-import", "ghost.csv", "--dataset-id", "tickets_v1", "--set", "ghost_v1", "--by", "owner")
+    r = evh(
+        "label-import",
+        "--sheet",
+        "ghost.csv",
+        "--dataset-id",
+        "tickets_v1",
+        "--set",
+        "ghost_v1",
+        "--by",
+        "owner",
+    )
     check(
         "label-import: an item not in the dataset is refused", refused(r, "not in tickets_v1"), out(r)[-200:]
     )
@@ -523,7 +609,7 @@ try:
         "--capture",
         "desk_c1",
     )
-    r = r if r.returncode else evh("dataset-from-capture", "desk_c1", "--dataset-id", "desk_v1")
+    r = r if r.returncode else evh("dataset-from-capture", "--capture", "desk_c1", "--dataset-id", "desk_v1")
     r = (
         r
         if r.returncode
@@ -972,7 +1058,7 @@ try:
         ("dataset-materialize", "--dataset-id", "twins_v1"),
         ("dataset-create", "--dataset-id", "twins_v2", "--source-dir", "twins2"),
         ("dataset-materialize", "--dataset-id", "twins_v2"),
-        ("label-import", "twin_labels", "--dataset-id", "twins_v1", "--set", "s", "--by", "person:t"),
+        ("label-import", "--sheet", "twin_labels", "--dataset-id", "twins_v1", "--set", "s", "--by", "person:t"),
         ("reference-promote", "--dataset-id", "twins_v1", "--labels", "s", "--tier", "gold",
          "--reason", "each twin has its own answer", "--by", "person:t"),
         ("reference-promote", "--dataset-id", "twins_v2", "--labels", "twins_v1/s", "--tier", "gold",

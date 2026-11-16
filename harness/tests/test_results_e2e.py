@@ -473,7 +473,15 @@ def later(store: str) -> None:
             w.writerows([[x.get(h, "") for h in head] for x in out_rows])
         shutil.copy(p.dir / "sc.key.json", p.dir / "sc_f.key.json")
         si = p.evh(
-            "sheet-import", "sc_f.csv", "--dataset-id", "tickets_v1", "--by", "owner", "--scorer", "sheet_v1"
+            "sheet-import",
+            "--sheet",
+            "sc_f.csv",
+            "--dataset-id",
+            "tickets_v1",
+            "--by",
+            "owner",
+            "--scorer",
+            "sheet_v1",
         )
 
         def sheeted(run_id):
@@ -497,6 +505,7 @@ def later(store: str) -> None:
             sheet_before = [(p.text_of(s), p.record_text(s), p.stamp(s)) for s in (sa[0], sb[0])]
             si2 = p.evh(
                 "sheet-import",
+                "--sheet",
                 "sc_f.csv",
                 "--dataset-id",
                 "tickets_v1",

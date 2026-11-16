@@ -38,3 +38,30 @@ def locks_for(op: Op, inputs: dict[str, Any]) -> list[tuple[str, bool]]:
         for key, exclusive in _load(op.locks_fn)(inputs):
             out[key] = out.get(key, False) or bool(exclusive)
     return sorted(out.items())
+
+
+def promote_locks(inputs: dict[str, Any]) -> list[tuple[str, bool]]:
+    """A baseline's versions are written one at a time: `baselines:<goal or _dataset>/<dataset>`, the goal and dataset
+    of the run promoted (or, for a rollback, named)."""
+    from evaluation_harness.model import runs as model_runs  # noqa: PLC0415
+
+    run = _first(inputs.get("run"))
+    meta = (model_runs.run(run) or {}) if run else {}
+    goal = None if inputs.get("no_goal") else (inputs.get("goal") or meta.get("goal"))
+    dataset = meta.get("dataset_id") or _first(inputs.get("dataset"))
+    return [(f"baselines:{goal or '_dataset'}/{dataset}", True)] if dataset else []
+
+
+def split_locks(inputs: dict[str, Any]) -> list[tuple[str, bool]]:
+    """A split writes two datasets beside the one it splits (and unsealing one opens them): all three, exclusive."""
+    d = _first(inputs.get("dataset_id"))
+    return [(f"dataset:{x}", True) for x in (d, f"{d}_validation", f"{d}_test")] if d else []
+
+
+def run_dataset_locks(inputs: dict[str, Any]) -> list[tuple[str, bool]]:
+    """What is made from a run is made on the run's own dataset: that dataset, exclusive."""
+    from evaluation_harness.model import runs as model_runs  # noqa: PLC0415
+
+    run = _first(inputs.get("run"))
+    dataset = ((model_runs.run(run) or {}) if run else {}).get("dataset_id")
+    return [(f"dataset:{dataset}", True)] if dataset else []

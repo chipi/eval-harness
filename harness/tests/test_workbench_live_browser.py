@@ -124,7 +124,7 @@ try:
     for step in (
         ("dataset-create", "--dataset-id", "tk_v1", "--source-dir", "tickets"),
         ("dataset-materialize", "--dataset-id", "tk_v1"),
-        ("label-import", str(KIT / "gold"), "--dataset-id", "tk_v1", "--set", "g", "--by", "t"),
+        ("label-import", "--sheet", str(KIT / "gold"), "--dataset-id", "tk_v1", "--set", "g", "--by", "t"),
         ("reference-promote", "--dataset-id", "tk_v1", "--labels", "g", "--tier", "gold", "--reason", "the kit's summaries, for the test", "--by", "t"),
         ("run", "--system", "one_v1", "--dataset", "tk_v1"),
         ("goal-new", "tickets_summary", "--set", "title=Ticket summaries", "--set", "statement=A one-line summary of a ticket.",

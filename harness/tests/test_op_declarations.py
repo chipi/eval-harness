@@ -115,6 +115,14 @@ mutants = {
         "has no pattern",
     ),
     "by as an input": (inputs_plus(report, by={"type": "string"}), "never an input"),
+    "an input named like what the call itself carries (for: who an agent acts for)": (
+        inputs_plus(report, **{"for": {"type": "array", "items": {"type": "string"}}}),
+        "never an input",
+    ),
+    "an x-flag that is no option": (
+        inputs_plus(report, targets={"type": "string", "x-flag": "for"}),
+        "an option, --like-this",
+    ),
     "a boolean that defaults to true": (
         inputs_plus(report, flag={"type": "boolean", "default": True}),
         "only turns on",
@@ -318,6 +326,33 @@ check(
     (a_read.name, err),
 )
 
+ns, _ = parse(OPS["pick"], "--dataset-id", "d", "--item", "i", "--for", "x", "--for", "y")
+check(
+    "x-flag: pick's option --for is the input `targets` (the call's own `for` is who an agent acts for)",
+    ns is not None
+    and ns.targets == ["x", "y"]
+    and "for" not in OPS["pick"].inputs
+    and "targets" in OPS["pick"].inputs,
+    ns,
+)
+ns, err = parse(
+    replace(
+        OPS["pick"],
+        inputs={**OPS["pick"].inputs, "targets": {**OPS["pick"].inputs["targets"], "x-flag": None}},
+    ),
+    "--dataset-id",
+    "d",
+    "--item",
+    "i",
+    "--for",
+    "x",
+)
+check(
+    "and without it the option is --targets: --for is refused",
+    ns is None and err is not None and err[0] == 2,
+    err,
+)
+
 # the schema made argparse
 spend = _job_ops.SPEND
 ns, _ = parse(spend, "--system", "s1")
@@ -514,7 +549,7 @@ def table(parser) -> list[dict]:
             row["nargs"] = a.nargs
         if a.choices:
             row["choices"] = sorted(map(str, a.choices))
-        if a.default not in (None, [], False):
+        if a.default is not None and a.default != [] and a.default is not False:
             row["default"] = a.default
         if id(a) in group_of:
             row["group"] = group_of[id(a)]
@@ -561,13 +596,29 @@ def same(old_rows: list[dict], new_rows: list[dict]) -> list[str]:
     return diffs
 
 
+#: What a moved command's parser says differently from the old one, each decided and with why: (command, difference).
+DECIDED = {
+    (
+        "run-promote",
+        "('--reason-from-env',): in the old parser only",
+    ): "the reason is an input of the call, and `make "
+    'run-promote` passes it as one quoted word (`--reason "$$EVAL_PROMOTE_REASON"`), so the shell never re-parses it',
+    ("run-promote", "('--reason',): required False -> True"): "a decision's reason is required (Op.why)",
+}
 moved = [c for c in OLD if (op := OPS.get(c)) is not None and op.is_job()]
 diffs = {c: same(OLD[c], table(cli.parser(OPS[c]))) for c in moved}
+undecided = {c: [x for x in d if (c, x) not in DECIDED] for c, d in diffs.items()}
 check(
     "parity: the parser of each command that became an operation says what the old parser said (option strings, "
-    "choices, required, type, nargs, default, groups)",
-    moved and not any(diffs.values()),
-    {c: d for c, d in diffs.items() if d},
+    "choices, required, type, nargs, default, groups), but for what was decided",
+    moved and not any(undecided.values()),
+    {c: d for c, d in undecided.items() if d},
+)
+stale = sorted(k for k in DECIDED if k[1] not in diffs.get(k[0], []))
+check(
+    "and every difference decided is still there (none left over from a parser that changed)",
+    not stale,
+    stale,
 )
 check(
     "parity covers every command the registry served before P3 (58), the two moved first",
@@ -587,6 +638,29 @@ planted = {
     ),
     "a type changed": replace(
         close, inputs={**close.inputs, "promote": {"type": "integer", "x-metavar": "RUN_ID"}}
+    ),
+    "an exclusive group lost": replace(OPS["dataset-extend"], exclusive=()),
+    "a default lost": replace(
+        OPS["dataset-split"],
+        inputs={**OPS["dataset-split"].inputs, "seed": {"type": "integer", "description": "the seed"}},
+    ),
+    "a choice lost": replace(
+        OPS["label-sheet"],
+        inputs={
+            **OPS["label-sheet"].inputs,
+            "items": {"type": "string", "default": "unlabelled", "description": "x"},
+        },
+    ),
+    "a repeatable option made a single one": replace(
+        OPS["pick"], inputs={**OPS["pick"].inputs, "item": {"type": "string", "description": "x"}}
+    ),
+    "the one option that takes several values": replace(
+        OPS["import-run"],
+        inputs={**OPS["import-run"].inputs, "scorer_file": {"type": "string", "x-file": "upload"}},
+    ),
+    "an option renamed (a flag the old parser did not have)": replace(
+        OPS["pick"],
+        inputs={**OPS["pick"].inputs, "targets": {**OPS["pick"].inputs["targets"], "x-flag": "--to"}},
     ),
 }
 for what, planted_op in planted.items():

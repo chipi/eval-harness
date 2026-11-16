@@ -92,6 +92,7 @@ try:
 
     r = evh(
         "dataset-split",
+        "--dataset-id",
         "tk_v1",
         "--test",
         "0.5",
@@ -103,10 +104,11 @@ try:
         "2026-11-07",
     )
     check("dataset-split: --test and --at together are refused", refused(r, "one of --test"), out(r)[-300:])
-    r = evh("dataset-split", "tk_v1", "--at", "2026-11-07")
+    r = evh("dataset-split", "--dataset-id", "tk_v1", "--at", "2026-11-07")
     check("dataset-split: --at needs --split-by time", refused(r, "--at is a time boundary"), out(r)[-300:])
     r = evh(
         "dataset-split",
+        "--dataset-id",
         "tk_v1",
         "--split-by",
         "time",
@@ -131,7 +133,9 @@ try:
     r = evh("dataset-materialize", "--dataset-id", "tk_v1_test")
     check("setup: the sealed side materialized (reading it is not refused)", r.returncode == 0, out(r)[-300:])
 
-    r = evh("label-import", str(KIT / "gold"), "--dataset-id", "tk_v1_test", "--set", "g", "--by", "o")
+    r = evh(
+        "label-import", "--sheet", str(KIT / "gold"), "--dataset-id", "tk_v1_test", "--set", "g", "--by", "o"
+    )
     check(
         "sealed: a label set onto it is refused",
         refused(r, "tk_v1_test is sealed", "a label set"),
@@ -146,13 +150,22 @@ try:
     check(
         "sealed: a run on it is refused before anything is called, with how to name the candidate",
         refused(
-            r, "tk_v1_test is sealed", "a run is refused for cand_test_v1", "evh dataset-unseal tk_v1_test"
+            r,
+            "tk_v1_test is sealed",
+            "a run is refused for cand_test_v1",
+            "evh dataset-unseal --dataset-id tk_v1_test",
         ),
         out(r)[-400:],
     )
 
     r = evh(
-        "dataset-unseal", "tk_v1_test", "--system", "base_test_v1", "--reason", "the baseline, to look at it"
+        "dataset-unseal",
+        "--dataset-id",
+        "tk_v1_test",
+        "--system",
+        "base_test_v1",
+        "--reason",
+        "the baseline, to look at it",
     )
     check(
         "dataset-unseal: a system with no hypothesis is refused",
@@ -164,6 +177,7 @@ try:
     if not _runstore.sqlite():
         r = evh(
             "dataset-unseal",
+            "--dataset-id",
             "tk_v1_test",
             "--system",
             "cand_test_v1",
@@ -178,6 +192,7 @@ try:
     commit("the candidate and its hypothesis, before the held-out side is read")
     r = evh(
         "dataset-unseal",
+        "--dataset-id",
         "tk_v1_test",
         "--system",
         "cand_test_v1",
@@ -202,7 +217,7 @@ try:
     for f in (KIT / "gold").iterdir():
         if f.stem in names[3:]:
             shutil.copy(f, proj / "gold_test" / f.name)
-    r = evh("label-import", "gold_test", "--dataset-id", "tk_v1_test", "--set", "g", "--by", "o")
+    r = evh("label-import", "--sheet", "gold_test", "--dataset-id", "tk_v1_test", "--set", "g", "--by", "o")
     r = (
         r
         if r.returncode

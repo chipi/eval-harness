@@ -76,10 +76,10 @@ try:
     )  # fmt: skip
     steps = [
         ("capture", "--importer", "jsonl", "--query", json.dumps({"path": "replay-filing/rows.jsonl"}), "--capture", "filing_prod"),
-        ("dataset-from-capture", "filing_prod", "--dataset-id", "filing_history_v1", "--fieldset", "filing",
+        ("dataset-from-capture", "--capture", "filing_prod", "--dataset-id", "filing_history_v1", "--fieldset", "filing",
          "--field", "ts", "--field", "started", "--field", "production_issue"),
         ("dataset-materialize", "--dataset-id", "filing_history_v1"),
-        ("label-import", "replay-filing/gold", "--dataset-id", "filing_history_v1", "--set", "gold", "--by", "person:t"),
+        ("label-import", "--sheet", "replay-filing/gold", "--dataset-id", "filing_history_v1", "--set", "gold", "--by", "person:t"),
         ("reference-promote", "--dataset-id", "filing_history_v1", "--labels", "gold", "--tier", "gold",
          "--reason", "what each decision should have done", "--by", "person:t"),
     ]  # fmt: skip

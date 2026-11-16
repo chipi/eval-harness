@@ -104,6 +104,7 @@ try:
     r = r if r.returncode else evh("dataset-materialize", "--dataset-id", "tickets_v1")
     r = evh(
         "label-import",
+        "--sheet",
         str(KIT / "gold"),
         "--dataset-id",
         "tickets_v1",

@@ -13,11 +13,12 @@ from evaluation_harness.ops import locks as op_locks
 from evaluation_harness.ops.registry import Op, _load
 
 #: A decision that has no reason of its own to give: it opens something, and says what it opens in its inputs.
-NO_WHY = frozenset({"round-open"})
+NO_WHY = frozenset({"round-open", "round-carry"})
 #: The words that name an input a file may be behind, as a whole word of its name (`items`, `scorer_file`), or `path`
 #: anywhere in it.
 FILE_WORDS = frozenset({"out", "file", "dir", "items", "spec", "sheet", "map", "guideline", "proposal"})
-X_FILE = ("upload", "artifact")
+#: `no`: the name says a file and the input is not one (reference-promote's `items` are item ids).
+X_FILE = ("upload", "artifact", "no")
 X_REF = ("system",)
 #: A text a call gives that the command line also reads as a code file (`path.py:Class`) or a file (`@file`): the API
 #: takes its other form only, which the input's `pattern` says.
@@ -92,7 +93,7 @@ def problems(op: Op) -> list[str]:
     for n in (*op.tool_hidden, *op.one_of, *(m for g in op.exclusive for m in g)):
         if n not in op.inputs:
             say(f"{n!r}: named but not an input")
-    for n in ("by", "json", "inputs_file"):
+    for n in ("by", "for", "json", "inputs_file", "max_cost_usd"):
         if n in op.inputs:
             say(f"input {n!r}: never an input (the call's own)")
     if op.resume and not (len(op.resume) == 2 and all(n in op.inputs for n in op.resume)):
@@ -110,12 +111,18 @@ def _input_problems(name: str, spec: dict[str, Any], op: Op, say: Any) -> None:
     ref = spec.get("x-ref")
     if ref is not None and ref not in X_REF:
         say(f"x-ref {ref!r}: one of {', '.join(X_REF)}")
-    if (names_a_file(name) or spec.get("format") == "path") and f is None and name not in op.tool_hidden:
+    names_one = names_a_file(name) and "enum" not in spec  # a choice among words is no path
+    if (names_one or spec.get("format") == "path") and f is None and name not in op.tool_hidden:
         say("names a file or a path: say how a call carries it (x-file: upload or artifact), or tool_hidden")
-    if f is not None and name in op.tool_hidden:
+    if f in ("upload", "artifact") and name in op.tool_hidden:
         say("x-file and tool_hidden: a hidden input is never carried")
-    if f is not None and spec.get("type") != "string":
-        say("x-file: the job is given a path, so the input is a string")
+    if f in ("upload", "artifact") and not (
+        spec.get("type") == "string"
+        or (spec.get("type") == "array" and spec.get("items", {}).get("type") == "string")
+    ):
+        say(
+            "x-file: the job is given a path (a list of them), so the input is a string (or an array of strings)"
+        )
     if (
         CODE_OR_FILE.search(spec.get("description", ""))
         and "pattern" not in spec
@@ -128,6 +135,8 @@ def _input_problems(name: str, spec: dict[str, Any], op: Op, say: Any) -> None:
         say("pattern: only on a text")
     if spec.get("x-short") and not re.fullmatch(r"-[A-Za-z]", spec["x-short"]):
         say(f"x-short {spec['x-short']!r}: one letter after a dash")
+    if spec.get("x-flag") is not None and not re.fullmatch(r"--[a-z][a-z0-9-]*", str(spec["x-flag"])):
+        say(f"x-flag {spec['x-flag']!r}: an option, --like-this")
     if spec.get("x-nargs") not in (None, "+"):
         say("x-nargs: '+' or nothing")
 

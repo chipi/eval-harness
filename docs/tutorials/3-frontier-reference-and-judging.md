@@ -66,7 +66,7 @@ Gold is a person's labels, promoted at gold. Write them in a sheet (`evh label-s
 those you would sign. The kit has six, written by hand:
 
 ```bash
-evh label-import tutorial/gold --dataset-id tickets_v1 --set owner_gold --by owner
+evh label-import --sheet tutorial/gold --dataset-id tickets_v1 --set owner_gold --by owner
 evh reference-promote --dataset-id tickets_v1 --labels owner_gold --tier gold \
     --reason "The owner's own summaries are what the arms are judged by." --by owner
 git add data/labels data/references && git commit -qm "tickets_v1: gold, the owner's labels"

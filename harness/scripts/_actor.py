@@ -106,3 +106,13 @@ def require_named(what: str) -> dict[str, Any]:
             "not-allowed",
         )
     return a
+
+
+def stated(who_needed: str = "") -> str | None:
+    """The actor as it was said, in the words it was said in: this process's `--by`, else EVH_ACTOR (a job's `by` is set
+    there), else None: the terminal's user is no statement. A command that records who labelled or promoted passes
+    `who_needed` (its name), and nobody having said is refused."""
+    raw = _FLAG[0] if _FLAG else os.environ.get("EVH_ACTOR", "").strip()
+    if not raw and who_needed:
+        die(f"{who_needed} records who acted: pass --by person:NAME (or a bare name)", "bad-argument")
+    return raw or None

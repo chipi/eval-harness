@@ -42,7 +42,7 @@ class Op:
     is (it is required), empty for a decision with none. `resume`: (the input that names the run to continue, the input
     that names the run a job writes), for a job that can be resumed. An input says more in its schema: `x-ref: "system"`
     (a system of the project), `x-file: "upload"` (a file the call carries) or `"artifact"` (a file the job writes in its
-    folder), `pattern` (what a text may be), `x-short`, `x-metavar` and `x-nargs: "+"` for the command line, `default`.
+    folder; `"no"`: it is named like a file and is not one), `pattern` (what a text may be), `x-short`, `x-flag`, `x-metavar` and `x-nargs: "+"` for the command line, `default`.
     `in_process`: a decision quick enough to answer in the server's process (RFC-032: "in-process when quick"), as an
     edit is: it is not a job, and none of the above applies to it (`deployment-accept`)."""
 
@@ -177,7 +177,8 @@ def api_spec(spec: dict[str, Any]) -> dict[str, Any]:
     """An input's schema as the API takes it: a file is an upload object."""
     if spec.get("x-file") != "upload":
         return spec
-    return {**UPLOAD_SCHEMA, **({"description": spec["description"]} if "description" in spec else {})}
+    one = {**UPLOAD_SCHEMA, **({"description": spec["description"]} if "description" in spec else {})}
+    return {"type": "array", "items": one} if spec.get("type") == "array" else one
 
 
 def input_problem(exc: Any) -> str:
@@ -205,12 +206,14 @@ def _load(dotted: str) -> Callable[..., Any]:
 
 def _all() -> dict[str, Op]:
     from evaluation_harness.ops import (  # noqa: PLC0415
+        dataset_jobs,
         datasets,
         goals,
         inspect,
         models,
         prompts,
         records,
+        records_work,
         reports,
         rounds,
         scorers,
@@ -222,6 +225,7 @@ def _all() -> dict[str, Op]:
 
     out: dict[str, Op] = {}
     for op in (
+        *dataset_jobs.OPS,
         *datasets.OPS,
         *goals.OPS,
         *inspect.OPS,
@@ -234,6 +238,7 @@ def _all() -> dict[str, Op]:
         *systems.OPS,
         *prompts.OPS,
         *records.OPS,
+        *records_work.OPS,
         *reports.OPS,
     ):
         if op.kind not in KINDS:

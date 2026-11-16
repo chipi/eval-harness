@@ -79,7 +79,15 @@ try:
         r
         if r.returncode
         else evh(
-            "label-import", str(KIT / "gold"), "--dataset-id", "tickets_v1", "--set", "g", "--by", "owner"
+            "label-import",
+            "--sheet",
+            str(KIT / "gold"),
+            "--dataset-id",
+            "tickets_v1",
+            "--set",
+            "g",
+            "--by",
+            "owner",
         )
     )
     r = (

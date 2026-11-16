@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """A finished run's outputs as a model's label set (RFC-023): what that model said each item's answer is.
 
     evh label-from-run --run tickets_author_v1_20261101T101500 --set author_v1
@@ -16,21 +15,16 @@ set whose texts are not here writes them again from the run and checks them agai
 
 from __future__ import annotations
 
-import sys as _sys
-from pathlib import Path as _Path
-
-if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
-    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
-
 import argparse
 import hashlib
-import sys
 from pathlib import Path
+from typing import Any
 
-from evaluation_harness import _jsonout, _outputs, _runs, _store
-from evaluation_harness._common import die, evh_prog, load_dataset, read_json
+from evaluation_harness import _outputs, _runs, _store
+from evaluation_harness._common import die, load_dataset, read_json
 from evaluation_harness._label_sets import set_dir, write_set
 from evaluation_harness.model import runs as _model_runs
+from evaluation_harness.ops import legacy
 
 
 def _unusable(rows: list[tuple[str, str, object]], max_tokens: object) -> tuple[list[str], list[str]]:
@@ -176,60 +170,31 @@ def _rebuild(dataset_id: str, name: str, rows: list) -> bool:
     return True
 
 
-def main() -> int:
+def body(**inputs: Any) -> int:
     """Take a finished run's outputs as a model's label set."""
-    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
-    ap.add_argument("--run", required=True, help="the run whose outputs become the labels")
-    ap.add_argument("--set", required=True, dest="name", help="the label set's name (lowercase, _ . -)")
-    ap.add_argument(
-        "--guideline",
-        type=Path,
-        help="a file: the prompt or instructions the model labelled by (its path and sha256 are recorded)",
-    )
-    ap.add_argument("--allow-cut-off", action="store_true", help="keep outputs that stopped at max_tokens")
-    ap.add_argument("--allow-dirty", action="store_true", help="a run from a dirty tree")
-    ap.add_argument("--allow-unknown-build", action="store_true", help="a run whose build is unknown")
-    ap.add_argument(
-        "--not-redistributed",
-        action="store_true",
-        help="keep the texts out of git (a .gitignore beside them); labels.json says how to rebuild them",
-    )
-    from evaluation_harness._actor import add_by  # noqa: PLC0415
-
-    add_by(ap)
-    ap.add_argument(
-        "--json",
-        action="store_true",
-        help="one JSON object on stdout when done (the text goes to stderr as it is printed): the envelope every --json command gives (result.blocks, result.values)",
-    )
-    args = ap.parse_args()
-    with _jsonout.collect("label-from-run", args.json, live=sys.stderr):
-        dataset_id = _finished(args.run)[1].get("dataset_id")
-        if not dataset_id:
-            die(f"run {args.run} names no dataset", "invalid-file")
-        rows, meta = _from_run(args.run, dataset_id, load_dataset(dataset_id)["items"], args)
-        if _rebuild(dataset_id, args.name, rows):
-            return 0
-        source = {"kind": "model", **meta["from_run"], "model": meta.get("model")}
-        rebuild = (
-            f"evh label-from-run --run {args.run} --set {args.name} --not-redistributed"
-            if args.not_redistributed
-            else None
-        )
-        doc = write_set(
-            dataset_id,
-            args.name,
-            {item: text for item, text, _ in rows},
-            source,
-            args.guideline,
-            rebuild=rebuild,
-        )
-        print(f"data/labels/{dataset_id}/{args.name}: {doc['n_items']} label(s), source model · {args.run}")
-        if rebuild:
-            print(f"  its texts are kept out of git; commit labels.json. They are rebuilt with: {rebuild}")
-        print(f"  every set on it: evh label-set-list {dataset_id}")
+    args = legacy.namespace(inputs, "label-from-run", {"set": "name"})
+    dataset_id = _finished(args.run)[1].get("dataset_id")
+    if not dataset_id:
+        die(f"run {args.run} names no dataset", "invalid-file")
+    rows, meta = _from_run(args.run, dataset_id, load_dataset(dataset_id)["items"], args)
+    if _rebuild(dataset_id, args.name, rows):
         return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())
+    source = {"kind": "model", **meta["from_run"], "model": meta.get("model")}
+    rebuild = (
+        f"evh label-from-run --run {args.run} --set {args.name} --not-redistributed"
+        if args.not_redistributed
+        else None
+    )
+    doc = write_set(
+        dataset_id,
+        args.name,
+        {item: text for item, text, _ in rows},
+        source,
+        args.guideline,
+        rebuild=rebuild,
+    )
+    print(f"data/labels/{dataset_id}/{args.name}: {doc['n_items']} label(s), source model · {args.run}")
+    if rebuild:
+        print(f"  its texts are kept out of git; commit labels.json. They are rebuilt with: {rebuild}")
+    print(f"  every set on it: evh label-set-list {dataset_id}")
+    return 0

@@ -83,7 +83,17 @@ try:
         w.writerows(
             [["t01_login", "Login fails."], ["t02_invoice", "Invoice wrong."], ["t03_export", "Export."]]
         )
-    r = evh("label-import", "sheet.csv", "--dataset-id", "tickets_v1", "--set", "owner_v1", "--by", "owner")
+    r = evh(
+        "label-import",
+        "--sheet",
+        "sheet.csv",
+        "--dataset-id",
+        "tickets_v1",
+        "--set",
+        "owner_v1",
+        "--by",
+        "owner",
+    )
     check("setup: a person's label set", r.returncode == 0, out(r)[-300:])
     r = evh(
         "reference-promote",
@@ -123,7 +133,7 @@ try:
         "--capture",
         "prod_c1",
     )
-    r = r if r.returncode else evh("dataset-from-capture", "prod_c1", "--dataset-id", "prod_v1")
+    r = r if r.returncode else evh("dataset-from-capture", "--capture", "prod_c1", "--dataset-id", "prod_v1")
     r = r if r.returncode else evh("dataset-materialize", "--dataset-id", "prod_v1")
     check("setup: a capture and its dataset", r.returncode == 0, out(r)[-300:])
     r = evh(
@@ -141,7 +151,11 @@ try:
     r = evh(
         "pick", "--dataset-id", "prod_v1", "--item", "p1", "--for", "tickets_v1", "--note", "nothing like it"
     )
-    r = r if r.returncode else evh("dataset-extend", "tickets_v1", "--dataset-id", "tickets_v2", "--picks")
+    r = (
+        r
+        if r.returncode
+        else evh("dataset-extend", "--dataset", "tickets_v1", "--dataset-id", "tickets_v2", "--picks")
+    )
     check("setup: a version made from a pick", r.returncode == 0, out(r)[-300:])
     r = evh(
         "pick",
@@ -234,7 +248,7 @@ try:
         and "capture prod_c1" in pick_row
         and "case=new" in pick_row
         and "owner" in pick_row
-        and 'data-prefix="evh dataset-extend tickets_v1 --dataset-id &lt;next&gt;"' in dp
+        and 'data-prefix="evh dataset-extend --dataset tickets_v1 --dataset-id &lt;next&gt;"' in dp
         and 'data-flag="--pick"' in dp
         and "sheet=1&item=p2" in pick_row,
         pick_row[:700],

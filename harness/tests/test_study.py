@@ -109,7 +109,7 @@ try:
         for argv in (
             ("dataset-create", "--dataset-id", ds, "--source-dir", f"src_{side}"),
             ("dataset-materialize", "--dataset-id", ds),
-            ("label-import", f"gold_{side}", "--dataset-id", ds, "--set", "g", "--by", "t"),
+            ("label-import", "--sheet", f"gold_{side}", "--dataset-id", ds, "--set", "g", "--by", "t"),
             ("reference-promote", "--dataset-id", ds, "--labels", "g", "--tier", "gold", "--reason", "the first two sentences", "--by", "t"),
         ):  # fmt: skip
             r = evh(*argv)

@@ -108,12 +108,12 @@ try:
     )
     check("setup: a dataset whose items carry opened, kind and alert", r.returncode == 0, out(r)[-300:])
     r = evh(
-        "dataset-split", "tk_v1", "--split-by", "time", "--key", "opened", "--at", "2026-11-02T00:00:00Z",
+        "dataset-split", "--dataset-id", "tk_v1", "--split-by", "time", "--key", "opened", "--at", "2026-11-02T00:00:00Z",
         "--seal", "--count-by", "kind,nope",
     )  # fmt: skip
     check("--count-by: a field no item has is refused", refused(r, "nope"), out(r)[-300:])
     r = evh(
-        "dataset-split", "tk_v1", "--split-by", "time", "--key", "opened", "--at", "2026-11-02T00:00:00Z",
+        "dataset-split", "--dataset-id", "tk_v1", "--split-by", "time", "--key", "opened", "--at", "2026-11-02T00:00:00Z",
         "--seal", "--count-by", "kind",
     )  # fmt: skip
     sealed = (
@@ -204,6 +204,7 @@ try:
     commit("the candidate and its hypothesis")
     r = evh(
         "dataset-unseal",
+        "--dataset-id",
         "tk_v1_test",
         "--system",
         "cand_x_v1",
@@ -215,7 +216,7 @@ try:
     for f in (KIT / "gold").iterdir():
         if f.stem in held:
             shutil.copy(f, proj / "gold_test" / f.name)
-    r = evh("label-import", "gold_test", "--dataset-id", "tk_v1_test", "--set", "g", "--by", "o")
+    r = evh("label-import", "--sheet", "gold_test", "--dataset-id", "tk_v1_test", "--set", "g", "--by", "o")
     r = (
         r
         if r.returncode

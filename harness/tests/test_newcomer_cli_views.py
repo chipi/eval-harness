@@ -334,6 +334,7 @@ try:
         else evh(
             proj,
             "label-import",
+            "--sheet",
             str(KIT / "gold"),
             "--dataset-id",
             "tickets_v1",

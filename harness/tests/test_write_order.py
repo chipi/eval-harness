@@ -80,7 +80,9 @@ try:
     r = (
         r
         if r.returncode
-        else evh("label-import", str(KIT / "gold"), "--dataset-id", "tk_v1", "--set", "g", "--by", "t")
+        else evh(
+            "label-import", "--sheet", str(KIT / "gold"), "--dataset-id", "tk_v1", "--set", "g", "--by", "t"
+        )
     )
     r = (
         r
@@ -122,7 +124,7 @@ try:
     )
 
     # A reference promotion that fails partway: the manifest write raises, in the command's own process.
-    r = evh("label-import", str(KIT / "gold"), "--dataset-id", "tk_v1", "--set", "g2", "--by", "t")
+    r = evh("label-import", "--sheet", str(KIT / "gold"), "--dataset-id", "tk_v1", "--set", "g2", "--by", "t")
     check("setup: a second label set to promote", r.returncode == 0, out(r)[-300:])
     breaker = proj / "breaker.py"
     breaker.write_text(
@@ -133,8 +135,9 @@ try:
         "_references.write_manifest = broken\n"
         "import evaluation_harness.reference_promote as rp\n"
         "rp.write_manifest = broken\n"
-        "sys.argv = ['reference-promote'] + sys.argv[1:]\n"
-        "raise SystemExit(rp.main())\n"
+        "from evaluation_harness import ops\n"
+        "from evaluation_harness.ops import cli\n"
+        "raise SystemExit(cli.main(ops.OPS['reference-promote'], sys.argv[1:]))\n"
     )
     r = subprocess.run(
         [

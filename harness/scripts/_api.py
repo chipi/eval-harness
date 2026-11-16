@@ -73,22 +73,7 @@ SYSTEM_ARGS = {
 UPLOAD = "upload"
 ARTIFACT = "artifact"
 PATH_KINDS: dict[tuple[str, str], str] = {
-    ("exposure-add", "--from"): UPLOAD,
-    ("exposure-check", "--out"): ARTIFACT,
-    ("dataset-create", "--fields"): UPLOAD,
-    ("dataset-create", "--manifest"): UPLOAD,
-    ("dataset-describe", "--card"): UPLOAD,
-    ("import-run", "--scores"): UPLOAD,
-    ("import-run", "--scorer-file"): UPLOAD,
     ("label-mutants", "--map"): UPLOAD,
-    ("label-from-capture", "--map"): UPLOAD,
-    ("label-from-run", "--guideline"): UPLOAD,
-    ("label-import", "sheet"): UPLOAD,
-    ("label-import", "--guideline"): UPLOAD,
-    ("sheet-import", "sheet"): UPLOAD,
-    ("sheet-import", "--key"): UPLOAD,
-    ("sheet-import", "--guideline"): UPLOAD,
-    ("label-sheet", "--out"): ARTIFACT,
     ("prompt-version", "--from-file"): UPLOAD,
     ("study-run", "--spec"): UPLOAD,
     ("run", "--items"): UPLOAD,
@@ -110,28 +95,9 @@ NEVER_PATHS = {
 }
 #: Options never taken from any command: they load code or reach outside the project.
 NEVER = {"--adapter", "--help", "--json", "--source-dir", "--data-dir"}
-_NAME_ONLY = re.compile(r"[a-z0-9][a-z0-9_]*")
 #: Text arguments that the command line also reads as a code file (`path.py:Class`) or a file to read (`@file`):
 #: the API takes their other form only. A served argument whose help offers either and has no rule fails a test.
-VALUE_RULES: dict[tuple[str, str], tuple[str, Any]] = {
-    ("capture", "--importer"): ("a name; a code file (path.py:Class) is never taken", _NAME_ONLY.fullmatch),
-    ("importer-check", "importer"): (
-        "a name; a code file (path.py:Class) is never taken",
-        _NAME_ONLY.fullmatch,
-    ),
-    ("dataset-create", "--source"): (
-        "a name; a code file (path.py:Class) is never taken",
-        _NAME_ONLY.fullmatch,
-    ),
-    ("capture", "--query"): (
-        "the query's JSON; a file (@file) is never taken",
-        lambda v: not v.startswith("@"),
-    ),
-    ("importer-check", "--query"): (
-        "the query's JSON; a file (@file) is never taken",
-        lambda v: not v.startswith("@"),
-    ),
-}
+VALUE_RULES: dict[tuple[str, str], tuple[str, Any]] = {}
 
 
 def unruled_values() -> list[str]:
@@ -346,28 +312,13 @@ def new_token() -> str:
 
 #: The decisions (RFC-027): a job of one needs `by`, refused at the call before a job exists.
 DECISIONS = {
-    "run-promote",
-    "baseline-rollback",
-    "round-close",
-    "round-carry",
-    "dataset-unseal",
     "study-confirm",
     "faithfulness-name",
-    "dataset-seal-counts",
 }
 MAX_UPLOAD = 50 * 1024 * 1024  # owner, 2026-11-08
 #: Where `by` and the reason go on the command line, for the commands that take them as who acted and why.
-BY_FLAG = {"label-import", "sheet-import", "pick", "reference-manifest", "reference-promote", "exposure-add"}
-REASON_FLAG = {
-    "run-promote": "reason",
-    "reference-promote": "reason",
-    "reference-manifest": "reason",
-    "round-retire": "reason",
-    "dataset-unseal": "reason",
-    "dataset-seal-counts": "reason",
-    "baseline-rollback": "reason",
-    "round-close": "conclusion",
-}
+BY_FLAG: set[str] = set()
+REASON_FLAG: dict[str, str] = {}
 
 
 def _safe_name(name: str) -> str:
@@ -515,7 +466,11 @@ def operation_inputs(op: Any, inputs: Any, job_id: str) -> dict[str, Any]:
         if spec.get("x-ref") == "system":
             _systems_exist([str(x) for x in (out[name] if isinstance(out[name], list) else [out[name]])])
         if spec.get("x-file") == "upload":
-            out[name] = _upload(out[name], budget)
+            out[name] = (
+                [_upload(x, budget) for x in out[name]]
+                if spec.get("type") == "array"
+                else _upload(out[name], budget)
+            )
         elif spec.get("x-file") == "artifact":
             out[name] = str(
                 (_jobs.job_dir(job_id) / _safe_name(str(out[name]))).relative_to(_common.project_root())

@@ -17,12 +17,12 @@ From your project (with the example copied into it, so its adapter is the projec
 cp -r <harness>/examples/replay-filing examples/
 python examples/replay-filing/make_history.py --out replay-filing
 evh capture --importer jsonl --query '{"path": "replay-filing/rows.jsonl"}' --capture filing_prod
-evh dataset-from-capture filing_prod --dataset-id filing_history_v1 --fieldset filing \
+evh dataset-from-capture --capture filing_prod --dataset-id filing_history_v1 --fieldset filing \
     --field ts --field started --field production_issue
 evh dataset-materialize --dataset-id filing_history_v1
 evh run --system filing_production_v1 --dataset filing_history_v1 --goal filing   # production's arm
 evh faithfulness --system filing_replay_v1 --dataset filing_history_v1 --production <that run>
-evh label-import replay-filing/gold --dataset-id filing_history_v1 --set gold --by person:you
+evh label-import --sheet replay-filing/gold --dataset-id filing_history_v1 --set gold --by person:you
 evh reference-promote --dataset-id filing_history_v1 --labels gold --tier gold \
     --reason "what each decision should have done" --by person:you
 evh run --system filing_replay_v1 --dataset filing_history_v1 --goal filing       # the replay, scored

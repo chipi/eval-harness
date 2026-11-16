@@ -980,6 +980,10 @@ def test_example_scorer_suites_pass() -> None:
             "a job names an operation and its typed inputs (P3): the record, locks, files, resume; cost-report and round-close through their routes, POST /jobs and jobs-start, refusals before a job exists, the OpenAPI document",
         ),
         (
+            "test_job_routes.py",
+            "one POST of each shape of route (P3 steps 3 to 5): creating, acting on a part, no part, an upload, an artifact; each answers 202 with a job naming the operation, the merged inputs and its locks",
+        ),
+        (
             "test_spend.py",
             "what a command may spend (RFC-026): one cap across passes, the provider's net, sweep, a round's budget",
         ),
@@ -2558,30 +2562,24 @@ def test_the_reports_significance_counts_are_real() -> None:
     )
 
 
-def test_promote_reads_its_reason_from_the_env() -> None:
-    """`--reason-from-env` must run. It raised NameError on every invocation.
+def test_promote_refuses_a_missing_reason() -> None:
+    """`evh run-promote` needs a reason, and a blank one is refused, not crashed.
 
-    Added in round 1 to close a backtick injection in `make run-promote`, and shipped
-    broken: `promote_baseline.py` called `os.environ.get` without importing `os`, so
-    the documented command in RUNBOOK:170 died with
-    `NameError: name 'os' is not defined` before doing anything at all.
-
-    It survived because the only test of this script was `--help`, which never reaches
-    the flag. A `--help` test proves a file parses; it proves nothing about the path a
-    user takes. Both assertions here reach line 48 and neither writes a baseline.
+    The reason was once read from the environment (`--reason-from-env`, to keep a backtick in it from the shell) and
+    shipped broken, a NameError on every call. The reason is an input now, required, and `make run-promote` passes
+    `"$$EVAL_PROMOTE_REASON"` as one word. A `--help` test proves a file parses; these reach the check a person
+    meets, and neither writes a baseline.
     """
     r = run(
-        "scripts/promote_baseline.py", "--reason-from-env", "--run", "nope", env={"EVAL_PROMOTE_REASON": ""}
+        "scripts/cli.py", "run-promote", "--run", "nope", "--reason", " ", env={"EVH_ACTOR": "person:test"}
     )
     out = (r.stderr or "") + (r.stdout or "")
     check(
-        "promote: an empty EVAL_PROMOTE_REASON is refused, not crashed",
+        "promote: a blank reason is refused, not crashed",
         r.returncode != 0 and "NameError" not in out,
         out[-160:],
     )
-    # NOT just `"reason" in out`: the NameError traceback echoes the offending source
-    # line, which contains the word "reason", so that assertion passed against the
-    # broken code. It has to be the ERROR MESSAGE, and no traceback.
+    # NOT just `"reason" in out`: a traceback echoes the offending source line, which contains the word "reason".
     check(
         "promote: and it says a reason is required",
         "a reason is required" in out and "Traceback" not in out,
@@ -2589,15 +2587,17 @@ def test_promote_reads_its_reason_from_the_env() -> None:
     )
 
     r = run(
-        "scripts/promote_baseline.py",
-        "--reason-from-env",
+        "scripts/cli.py",
+        "run-promote",
         "--run",
         "_no_such_run_selftest_",
-        env={"EVAL_PROMOTE_REASON": "a reason", "EVH_ACTOR": "person:test"},
+        "--reason",
+        "a reason",
+        env={"EVH_ACTOR": "person:test"},
     )
     out = (r.stderr or "") + (r.stdout or "")
     check(
-        "promote: with the env reason set it gets PAST the env read to the run lookup",
+        "promote: with a reason it gets past the reason check to the run lookup",
         "NameError" not in out and "no scored run" in out.lower(),
         out[-160:],
     )
@@ -2897,7 +2897,9 @@ def test_rescore_can_move_runs_onto_a_new_reference_set() -> None:
             for item, text in _outputs.outputs(src).items():
                 (as_labels / f"{item}.txt").write_text(text, encoding="utf-8")
             made = run(
-                "scripts/label_import.py",
+                "scripts/cli.py",
+                "label-import",
+                "--sheet",
                 str(as_labels),
                 "--dataset-id",
                 "smoke_v1",
@@ -2911,7 +2913,8 @@ def test_rescore_can_move_runs_onto_a_new_reference_set() -> None:
                 made
                 if made.returncode
                 else run(
-                    "scripts/reference_promote.py",
+                    "scripts/cli.py",
+                    "reference-promote",
                     "--dataset-id",
                     "smoke_v1",
                     "--labels",
@@ -3282,7 +3285,13 @@ def test_a_project_elsewhere_imports_runs_and_tests_them() -> None:
         (data / "sources" / f"ep_{n}.txt").write_text(f"episode {n}\n", encoding="utf-8")
     env = {"EVAL_HOME": str(proj), "EVAL_DATA_DIR": "data/eval/stats"}
     made = run(
-        "scripts/dataset_create.py", "--dataset-id", "proj_v1", "--source-dir", str(data / "sources"), env=env
+        "scripts/cli.py",
+        "dataset-create",
+        "--dataset-id",
+        "proj_v1",
+        "--source-dir",
+        str(data / "sources"),
+        env=env,
     )
     check(
         "project elsewhere: dataset frozen under EVAL_DATA_DIR",
@@ -3301,7 +3310,9 @@ def test_a_project_elsewhere_imports_runs_and_tests_them() -> None:
     for i in ids:
         (answers / f"{i}.txt").write_text(f"reference {i}\n", encoding="utf-8")
     made = run(
-        "scripts/label_import.py",
+        "scripts/cli.py",
+        "label-import",
+        "--sheet",
         str(answers),
         "--dataset-id",
         "proj_v1",
@@ -3315,7 +3326,8 @@ def test_a_project_elsewhere_imports_runs_and_tests_them() -> None:
         made
         if made.returncode
         else run(
-            "scripts/reference_promote.py",
+            "scripts/cli.py",
+            "reference-promote",
             *("--dataset-id", "proj_v1", "--labels", "owner", "--tier", "gold"),
             *("--reason", "the owner's answers decide", "--by", "t"),
             env=env,
@@ -3341,7 +3353,8 @@ def test_a_project_elsewhere_imports_runs_and_tests_them() -> None:
 
     def imp(arm: str, f: Path, *extra: str):
         return run(
-            "scripts/import_run.py",
+            "scripts/cli.py",
+            "import-run",
             "--dataset-id",
             "proj_v1",
             "--system-id",
@@ -3496,7 +3509,7 @@ def test_hints_name_the_command_the_user_has() -> None:
     repository has. A project that pins the package has `evh`, so its first step, GUIDE step
     1, ended "Next: make dataset-materialize DATASET_ID=tickets_v1", and four of the hints
     named targets no project has (`make promote`, `make demo`). Through `evh` each hint is an
-    `evh` command; run as a checkout's script it stays `make`."""
+    `evh` command."""
     import os  # noqa: PLC0415
     import shutil  # noqa: PLC0415
     import tempfile  # noqa: PLC0415
@@ -3525,23 +3538,10 @@ def test_hints_name_the_command_the_user_has() -> None:
             )
             return r.stdout + r.stderr
 
-        def script(name: str, *args: str) -> str:
-            r = subprocess.run(
-                [PY, str(site / "evaluation_harness" / name), *args],
-                cwd=proj,
-                capture_output=True,
-                text=True,
-                env=env,
-            )
-            return r.stdout + r.stderr
-
         created = evh("dataset-create", "--dataset-id", "h_v1", "--source-dir", "data/sources/h_v1")
         base = evh("baselines")
         none = evh("runs-list")
         missing = evh("leaderboard", "nope_v1")
-        direct = script(
-            "dataset_create.py", "--dataset-id", "h_v1", "--source-dir", "data/sources/h_v1", "--force"
-        )
         outs = (created, base, none, missing)
         check(
             "hints: through evh, the next step is an evh command",
@@ -3555,11 +3555,6 @@ def test_hints_name_the_command_the_user_has() -> None:
         )
         check(
             "hints: promoting a baseline is `evh run-promote`", "evh run-promote --run" in base, base[-200:]
-        )
-        check(
-            "hints: a checkout's script keeps the make form",
-            "Next: make dataset-materialize DATASET_ID=h_v1" in direct,
-            direct[-300:],
         )
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
@@ -3675,7 +3670,15 @@ def test_rescore_finds_the_bundled_adapter_from_an_installed_package() -> None:
         for i in ("t1", "t2", "t3"):
             (answers / f"{i}.txt").write_text(f"Ticket {i}: cannot log in.\n")
         r = evh(
-            "label-import", str(answers), "--dataset-id", "rs_v1", "--set", "owner_gold", "--by", "self-test"
+            "label-import",
+            "--sheet",
+            str(answers),
+            "--dataset-id",
+            "rs_v1",
+            "--set",
+            "owner_gold",
+            "--by",
+            "self-test",
         )
         r = (
             r
@@ -4080,7 +4083,7 @@ def main() -> int:
         test_nemenyi_table_is_computed_not_copied,
         test_two_runs_sharing_a_system_id_are_refused,
         test_the_reports_significance_counts_are_real,
-        test_promote_reads_its_reason_from_the_env,
+        test_promote_refuses_a_missing_reason,
         test_rescore_refuses_a_missing_reference_set,
         test_spearman_is_tie_correct,
         test_rank_stability_ranks_the_right_way_up,

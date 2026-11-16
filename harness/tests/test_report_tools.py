@@ -84,7 +84,8 @@ def fetched_gold(data: Path, dataset: str, items: dict, redistributed: bool = Tr
     r = subprocess.run(
         [
             sys.executable,
-            str(HARNESS / "scripts" / "reference_manifest.py"),
+            str(HARNESS / "scripts" / "cli.py"),
+            "reference-manifest",
             "--reference-id",
             f"gold/{dataset}",
             "--source",

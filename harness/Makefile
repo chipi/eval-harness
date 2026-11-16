@@ -174,27 +174,27 @@ demo:
 
 # ── data lifecycle ──────────────────────────────────────────────────────────
 dataset-create:
-	$(PYTHON) scripts/dataset_create.py --dataset-id $(DATASET_ID) $(ARGS)
+	$(PYTHON) scripts/cli.py dataset-create --dataset-id $(DATASET_ID) $(ARGS)
 
 dataset-materialize:
-	$(PYTHON) scripts/materialize.py --dataset-id $(DATASET_ID) $(ARGS)
+	$(PYTHON) scripts/cli.py dataset-materialize --dataset-id $(DATASET_ID) $(ARGS)
 
 # What is inside a dataset, without its text (data/profiles/<id>.json): written where it is
 # materialized, committed, read by the dataset page and dataset-items.
 dataset-profile:
-	$(PYTHON) scripts/dataset_profile.py --dataset-id $(DATASET_ID) $(ARGS)
+	$(PYTHON) scripts/cli.py dataset-profile --dataset-id $(DATASET_ID) $(ARGS)
 
 dataset-items:
 	$(PYTHON) scripts/cli.py dataset-items $(DATASET_ID) $(ARGS)
 
 # Gold a fetch script builds, promoted where it is: its manifest, with whose labels they are and why.
 reference-manifest:
-	$(PYTHON) scripts/reference_manifest.py $(ARGS)
+	$(PYTHON) scripts/cli.py reference-manifest $(ARGS)
 
 # ── the commands added in 0.5.0 and 0.6.0, each with its own flags in ARGS ─────────────────────────────
 # promote a label set's labels to a reference, at a tier, with a reason
 reference-promote:
-	$(PYTHON) scripts/reference_promote.py $(ARGS)
+	$(PYTHON) scripts/cli.py reference-promote $(ARGS)
 
 # smoke an arm on a few items before its full run: checks, projection, flags
 arm-smoke:
@@ -210,15 +210,15 @@ score-preview:
 
 # check an importer: its records are well-formed, ids unique, two reads the same
 importer-check:
-	$(PYTHON) scripts/importer_check.py $(ARGS)
+	$(PYTHON) scripts/cli.py importer-check $(ARGS)
 
 # keep a production system's records as a capture (data/captures/)
 capture:
-	$(PYTHON) scripts/capture.py $(ARGS)
+	$(PYTHON) scripts/cli.py capture $(ARGS)
 
 # split a dataset into <id>_validation and <id>_test, stable across versions
 dataset-split:
-	$(PYTHON) scripts/dataset_split.py $(ARGS)
+	$(PYTHON) scripts/cli.py dataset-split $(ARGS)
 
 # run the project's own scrubber over a capture's records, and record it
 capture-scrub:
@@ -228,27 +228,27 @@ capture-scrub:
 
 # a sheet of a dataset's items to label, with what production or an arm decided
 label-sheet:
-	$(PYTHON) scripts/label_sheet.py $(ARGS)
+	$(PYTHON) scripts/cli.py label-sheet $(ARGS)
 
 # a filled label sheet as a person's label set
 label-import:
-	$(PYTHON) scripts/label_import.py $(ARGS)
+	$(PYTHON) scripts/cli.py label-import $(ARGS)
 
 # a sheet filled elsewhere, read back: labels as a label set, picks or scores as judged runs
 sheet-import:
-	$(PYTHON) scripts/sheet_import.py $(ARGS)
+	$(PYTHON) scripts/cli.py sheet-import $(ARGS)
 
 # a finished run's outputs as a model's label set (calls nothing)
 label-from-run:
-	$(PYTHON) scripts/label_from_run.py $(ARGS)
+	$(PYTHON) scripts/cli.py label-from-run $(ARGS)
 
 # rules over a capture's recorded outcomes as a rule label set
 label-from-capture:
-	$(PYTHON) scripts/label_from_capture.py $(ARGS)
+	$(PYTHON) scripts/cli.py label-from-capture $(ARGS)
 
 # pick production items for the next version of governed datasets, or drop a pick
 pick:
-	$(PYTHON) scripts/pick.py $(ARGS)
+	$(PYTHON) scripts/cli.py pick $(ARGS)
 
 # the picks waiting: per target, where each came from, its labels, tags and note
 picks:
@@ -256,7 +256,7 @@ picks:
 
 # the next version of a dataset: its items and the picks you choose
 dataset-extend:
-	$(PYTHON) scripts/dataset_extend.py $(ARGS)
+	$(PYTHON) scripts/cli.py dataset-extend $(ARGS)
 
 # what production must match to run a promoted arm, and whether a capture says it did
 deploy-sheet:
@@ -264,11 +264,11 @@ deploy-sheet:
 
 # production's recorded decisions as an arm, scored like any (no call)
 arm-from-capture:
-	$(PYTHON) scripts/arm_from_capture.py $(ARGS)
+	$(PYTHON) scripts/cli.py arm-from-capture $(ARGS)
 
 # make a dataset version from a capture: choose records, freeze their bodies as items
 dataset-from-capture:
-	$(PYTHON) scripts/dataset_from_capture.py $(ARGS)
+	$(PYTHON) scripts/cli.py dataset-from-capture $(ARGS)
 
 
 
@@ -366,9 +366,9 @@ family-test:
 	  $(if $(ASC),--asc,)
 
 # Per-item scores made by ANOTHER tool, written as a run the tests above can read. Every
-# flag is required except where marked; see scripts/import_run.py for what it refuses.
+# flag is required except where marked; see scripts/cli.py import-run for what it refuses.
 import-run:
-	$(PYTHON) scripts/import_run.py $(ARGS)
+	$(PYTHON) scripts/cli.py import-run $(ARGS)
 
 run-compare:
 	@test -n "$(BASE)" || { echo "BASE=<run_id> is required (see: make runs-list)"; exit 1; }
@@ -385,7 +385,7 @@ run-promote: export EVAL_PROMOTE_REASON = $(REASON)
 run-promote:
 	@test -n "$(RUN)" || { echo "RUN=<run_id> is required (see: make runs-list)"; exit 1; }
 	@test -n "$$EVAL_PROMOTE_REASON" || { echo 'REASON="why this run earned it" is required'; exit 1; }
-	$(PYTHON) scripts/promote_baseline.py --run $(RUN) --reason-from-env $(ARGS)
+	$(PYTHON) scripts/cli.py run-promote --run $(RUN) --reason "$$EVAL_PROMOTE_REASON" $(ARGS)
 
 # ── gates ───────────────────────────────────────────────────────────────────
 validate:
@@ -441,13 +441,13 @@ search:
 # make round-open GOAL=g DATASET_ID=d ARGS='--from r1 --hypothesis "..." --keep a,b --retire c --reason "..."'
 round-open:
 	@test -n "$(GOAL)" -a -n "$(DATASET_ID)" || { echo "GOAL=<goal_id> DATASET_ID=<dataset> are required"; exit 1; }
-	$(PYTHON) scripts/round_open.py --goal $(GOAL) --dataset $(DATASET_ID) $(ARGS)
+	$(PYTHON) scripts/cli.py round-open --goal $(GOAL) --dataset $(DATASET_ID) $(ARGS)
 
 round-carry:
-	$(PYTHON) scripts/round_carry.py --goal $(GOAL) --round $(ROUND) $(ARGS)
+	$(PYTHON) scripts/cli.py round-carry --goal $(GOAL) --round $(ROUND) $(ARGS)
 
 round-retire:
-	$(PYTHON) scripts/round_retire.py --goal $(GOAL) --round $(ROUND) $(ARGS)
+	$(PYTHON) scripts/cli.py round-retire --goal $(GOAL) --round $(ROUND) $(ARGS)
 
 round-close:
 	$(PYTHON) scripts/cli.py round-close --goal $(GOAL) --round $(ROUND) $(ARGS)
@@ -464,12 +464,12 @@ round-close:
 #
 # `-` so a machine that cannot materialize still runs the rest of the suite.
 smoke-fixture:
-	@test -d data/materialized/smoke_v1 || $(PYTHON) scripts/materialize.py --dataset-id smoke_v1 >/dev/null 2>&1 || true
+	@test -d data/materialized/smoke_v1 || $(PYTHON) scripts/cli.py dataset-materialize --dataset-id smoke_v1 >/dev/null 2>&1 || true
 # ...and the summarisation slice when its sources are present, because the two
 # corpus tests need it materialized as well as fetched. The setup note said
 # `fetch.py` was enough; it is not. Found by external review.
 	@test ! -d data/sources/cnn_dailymail_200 || test -d data/materialized/cnn_dailymail_200 || \
-	  $(PYTHON) scripts/materialize.py --dataset-id cnn_dailymail_200 >/dev/null 2>&1 || true
+	  $(PYTHON) scripts/cli.py dataset-materialize --dataset-id cnn_dailymail_200 >/dev/null 2>&1 || true
 
 test: smoke-fixture
 	$(PYTHON) tests/self_test.py

@@ -60,7 +60,7 @@ The procedures are skills: `evh skills-install` copies them into `.claude/skills
 evh init --store files|sqlite                   # done: folders, config.yaml, .gitignore, this file
 # production records -> a dataset (or files: evh dataset-create --dataset-id D --source-dir data/sources/NAME)
 evh capture --importer jsonl --query '{"path": "prod.jsonl"}' --capture prod_c1
-evh dataset-from-capture prod_c1 --dataset-id prod_v1
+evh dataset-from-capture --capture prod_c1 --dataset-id prod_v1
 evh dataset-materialize --dataset-id prod_v1
 # what is right for each item: a person's labels (gold), production's outcomes, or yours (model)
 evh label-from-capture --dataset-id prod_v1 --capture prod_c1 --map rules.yaml --set outcomes
