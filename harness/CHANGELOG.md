@@ -727,14 +727,13 @@ that can move a result is never a patch release without saying so under **Change
   `comparison-crosstab`, nor `items` of `label-set-show`, and a public server's `label-set-show` answers with no
   labels). What a call computes is its own while others run beside it: its printing, its notes (the held-out items
   left out, the items not scorable, the history confounds) and `include_exposed`; the scores the server keeps are kept
-  before the held-out items are left out and are filtered on every call, so a kept answer still says what it left out. `mcp-answers.jsonl` is still written ahead (each line `{"tool", "args", "out", "harness"}`),
-  `render.sh`'s release check reads its `goal-list` answer, and the first `goal-list` call after a start, which was 33 s
-  at the box's cpus 0.5, is answered from it (without the file, at those limits, 7 to 8 s: the next views then take 0.3 to 2.5 s
-  where each took 12 to 16 s as a process of its own, and the view cache keeps one computation in flight per key, so two
-  callers asking for the same view at once pay for one). A call that runs past `--timeout`, or is cancelled, stops being waited
+  before the held-out items are left out and are filtered on every call, so a kept answer still says what it left out. The first `goal-list` call after a start, which was 33 s at the box's
+  cpus 0.5, is 7 to 8 s at those limits; the next views take 0.3 to 2.5 s where each took 12 to 16 s as a process of its
+  own, and the view cache keeps one computation in flight per key, so two callers asking for the same view at once pay
+  for one. So no answer is written ahead any more (owner, 2026-11-17): `evh mcp`'s `--write-answers` and `--answers` are
+  gone, with render.sh's step that wrote `mcp-answers.jsonl` and its check of it, and compose.yml's `--answers`. A call that runs past `--timeout`, or is cancelled, stops being waited
   for but is not stopped: a computation answered in the server's process runs to its end, and keeps its slot (and its
-  caller's one call at a time) until it does, so no more runs at once than `--concurrent` allows. A tool that crashes
-  while `--write-answers` writes them fails the release, named, the others still written. The old server refused the
+  caller's one call at a time) until it does, so no more runs at once than `--concurrent` allows. The old server refused the
   tools that take more than one path argument (`arm-show`, `reference-show`): it sorted a call's arguments by name
   before putting them on the command line.
 - **A job is an operation and its inputs** (RFC-032 step 9; owner 2026-11-16: a route for each): every command that ran
@@ -753,11 +752,9 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Fixed
 
-- **`evh mcp --write-answers` with relative paths** (RFC-032; unreleased 0.8 code, found rendering a release as the
-  deploy does, `render.sh _release <sha>`): the server moves into the project before it works, and read `--project`,
-  `--write-answers`, `--answers` and a `--hooks` file from there: the answers went under the inspector's folder (the
-  release check counted no goal) and no leaderboard was written ahead (no dataset found). They are taken where the
-  caller stands.
+- **`evh mcp` with relative paths** (RFC-032; unreleased 0.8 code, found rendering a release as the deploy does,
+  `render.sh _release <sha>`): the server moves into the project before it works, and read `--project` and a `--hooks`
+  file from there, so a relative one named a place inside the project. They are taken where the caller stands.
 
 - **`evh migrate` step 2 finds the configs step 3 does** (RFC-032; unreleased 0.8 code, found migrating the fleet's data): step 2 (deployments) looked for configs in data/configs, the studies and validate.json's globs but not in the folders config.yaml's `configs:` lists, so a smoke whose config named its `deployment:` there was refused (`its config names none, and the model has 4`). It reads those folders too.
 - **`evh migrate` step 3 keeps config.yaml's config folders findable** (RFC-032; unreleased 0.8 code, found migrating the fleet's data): a project with no data/validate.json had config.yaml's `configs:` removed and no `systems` glob written, so the systems the step wrote were in no folder the project read and step 6 refused every run (`config_id … is not the id of a system of this project`). Step 3 now writes data/validate.json with the `systems` globs of the folders it moved (UPGRADING always said they are added to them); an existing validate.json keeps its other keys.

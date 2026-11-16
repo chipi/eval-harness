@@ -23,7 +23,6 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 import argparse
 import contextvars
 import json
-import math
 import os
 import subprocess
 import sys
@@ -33,7 +32,6 @@ from collections import OrderedDict
 from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _store
 from evaluation_harness import ops as _ops  # the model's operations (RFC-032), no project code
 from evaluation_harness._cmdline import (
     MAX_VALUE,
@@ -174,11 +172,6 @@ def tools_for(public: bool) -> tuple:
     return tuple(op.name for op in read_ops(public)) + (() if public else AGENT_TOOLS)
 
 
-#: The reads whose answer with no input depends on today's date (a period counted from today, by default): never written
-#: ahead, since an answer kept past the day would read the wrong period.
-DATED = {"overview-show", "activity-show"}
-
-
 def tool_schema(op: Any, public: bool) -> dict:
     """An operation's input as the tool's JSON Schema: the parts of its route, then its own inputs (and the inputs of which
     a call names one, `anyOf`)."""
@@ -194,16 +187,6 @@ def tool_schema(op: Any, public: bool) -> dict:
         **({"anyOf": own["anyOf"]} if "anyOf" in own else {}),
         "additionalProperties": False,
     }
-
-
-def answerable_ahead(public: bool) -> list[str]:
-    """The tools whose answer can be written ahead for a release that never changes (--write-answers): each read that takes no
-    input it must be given (none required, none of several to name), but those whose default depends on the date (DATED)."""
-    return [
-        op.name
-        for op in read_ops(public)
-        if op.name not in DATED and not tool_schema(op, public)["required"] and not op.one_of
-    ]
 
 
 def check_arguments(op: Any, arguments: dict, public: bool) -> None:
@@ -270,63 +253,6 @@ def _answer(types, envelope: dict | None, text: str):
     return types.CallToolResult(content=[types.TextContent(text=text)], structured_content=envelope)
 
 
-def write_answers(project: Path, path: Path, public: bool) -> int:
-    """--write-answers: each read answerable ahead, answered once with no argument as a call would be, in this process, its
-    answer one JSON line {tool, args, out, harness}. A tool that fails or answers past MAX_OUT is left out: a call runs it.
-    A first call after a start used to take tens of seconds on a deployment that limits the server's CPU (every arm's
-    scores read again); an answer written ahead is read from the release."""
-    from evaluation_harness._version import __version__  # noqa: PLC0415
-    from evaluation_harness.model.entity import Problem  # noqa: PLC0415
-
-    ops = {op.name: op for op in read_ops(public)}
-    calls: list[tuple[str, dict]] = [(c, {}) for c in answerable_ahead(public)]
-    # A tool whose one input is a dataset is answerable ahead for each dataset: a finite set. The first public
-    # `leaderboard` took 47-60 s on 2026-11-04 (a seeded permutation test, 5 s of CPU here).
-    calls += [(c, {"dataset": ds}) for c in BY_DATASET if c in ops for ds in dataset_ids(project)]
-    lines, left, failed, no_runs, large = [], [], [], 0, 0
-    for name, args in calls:
-        try:
-            envelope = run_op(ops[name], args, public)
-            out = json.dumps(envelope, ensure_ascii=False)
-        except Problem as exc:
-            if not args:
-                left.append(f"{name} ({exc.kind})")
-            elif "no runs on dataset" in str(exc):  # nothing to say about it: a call answers that itself
-                no_runs += 1
-            else:  # named, so a broken render says why (every one failed from 0.6.2 to 0.7.1, unnoticed)
-                failed.append(f"{name} {args} ({exc.kind}: {str(exc)[:120]})")
-            continue
-        except Exception as exc:  # noqa: BLE001 - a crash is the harness's bug: the release fails, the tool named, the rest still tried
-            failed.append(f"{name} {args} ({type(exc).__name__}: {str(exc)[:120]})")
-            continue
-        if len(out) > MAX_OUT:
-            if not args:
-                left.append(f"{name} ({len(out):,} bytes)")
-            else:
-                large += 1
-            continue
-        lines.append(json.dumps({"tool": name, "args": args, "out": out, "harness": __version__}))
-    _store.mkdir(path.parent, parents=True, exist_ok=True)
-    _store.write_text(path, "".join(x + "\n" for x in lines), encoding="utf-8")
-    print(
-        f"{path}: {len(lines)} answer(s) written ahead"
-        + (f"; left out: {', '.join(left)}" if left else "")
-        + (f"; {no_runs} per-dataset call(s) on a dataset with no runs" if no_runs else "")
-        + (f"; {large} too large to keep" if large else "")
-        + (f"; {len(failed)} FAILED: {'; '.join(failed[:3])}" if failed else "")
-    )
-    return 1 if failed else 0
-
-
-#: The tools written ahead once per dataset (--write-answers), with `dataset` their only input.
-BY_DATASET = ("leaderboard",)
-
-
-def dataset_ids(project: Path) -> list[str]:
-    """The project's dataset ids (data/datasets/*.json), sorted."""
-    return sorted(p.stem for p in _store.glob(project / "data" / "datasets", "*.json"))
-
-
 def use_project(project: Path) -> None:
     """Make this process the project's: its working directory, EVAL_HOME, the paired tests' cache and its .env, as a command
     run in the project had them. A relative path the caller set is made absolute from where the caller stands first."""
@@ -356,15 +282,12 @@ def build_server(
     rate_total: int = 0,
     client_header: str | None = None,
     hooks: Hooks | None = None,
-    answers_file: Path | None = None,
 ):
     """The MCP server: its tools, and how a call is answered. Every read operation of the registry is a tool, answered in this
     process (`public`: the call is a public server's, so what a public server must not show stays hidden, and the operations
     that show it are not offered); `concurrent`: how many calls are answered at once (a call that waits 30 s for a slot is
     refused); `rate`: calls a minute per caller, `rate_total`: from all callers together (0: no limit; nothing in front of a
-    public server throttles for it, and a caller who can rotate its address is still held by the total). `answers_file`
-    (--public): answers written ahead for this release (--write-answers), served without computing them; a line another
-    harness version wrote is not read."""
+    public server throttles for it, and a caller who can rotate its address is still held by the total)."""
     hooks = hooks or Hooks()
     recent: dict[str, list[float]] = {}
     everyone: list[float] = []
@@ -384,23 +307,6 @@ def build_server(
     def key_of(name: str, arguments: dict) -> tuple:
         return (name, json.dumps(arguments, sort_keys=True, ensure_ascii=False))
 
-    if public and answers_file is not None:
-        for line in _store.read_text(answers_file, encoding="utf-8").splitlines():
-            try:
-                rec = json.loads(line)
-            except ValueError:
-                continue  # a torn line: that tool is answered when called
-            if not isinstance(rec, dict) or rec.get("harness") != __version__ or rec.get("tool") not in ops:
-                continue
-            text = str(rec.get("out") or "")
-            try:
-                envelope = json.loads(text)
-            except ValueError:
-                continue
-            # Written for this release, which never changes under the server: kept for as long as it runs,
-            # never past ANSWERS_TTL (its time is infinitely recent).
-            answers[key_of(rec["tool"], rec.get("args") or {})] = (math.inf, _answer(types, envelope, text))
-            answers_size[0] += len(text)
     # Held by a call's work, released by that work when it ends, not when its caller stops waiting: a call answered in this
     # process cannot be stopped, so a slot freed at the timeout let repeated slow calls run past --concurrent (and the
     # callers' one-at-a-time with them), unbounded, on a server with half a CPU.
@@ -716,37 +622,15 @@ def main(argv: list[str] | None = None) -> int:
         "--hooks",
         help="a deployment's observability: path/to/file.py[:NAME] or module[:NAME] (start, request, error, routes)",
     )
-    ap.add_argument(
-        "--write-answers",
-        type=Path,
-        metavar="FILE",
-        help="write ahead the answer of every tool that takes no argument and does not depend on the date, then "
-        "exit: for a release that never changes, served with --answers",
-    )
-    ap.add_argument(
-        "--answers",
-        type=Path,
-        metavar="FILE",
-        help="--public: serve the answers --write-answers wrote for this release without computing them "
-        "(a line another harness version wrote is not read)",
-    )
     args = ap.parse_args(argv)
     # The project and a file the caller names are where the caller stands, read before use_project moves this process
-    # into the project (render.sh passes them relative to its own folder).
+    # into the project (a deployment passes them relative to its own folder).
     args.project = args.project.resolve()
-    args.write_answers = args.write_answers and args.write_answers.resolve()
-    args.answers = args.answers and args.answers.resolve()
     if args.hooks:
         where, sep, name = args.hooks.partition(":")
         if where.endswith(".py"):
             args.hooks = os.path.abspath(where) + sep + name
     use_project(args.project.resolve())
-    if args.write_answers:
-        return write_answers(args.project.resolve(), args.write_answers, args.public)
-    if args.answers and not args.public:
-        from evaluation_harness._common import die  # noqa: PLC0415
-
-        die("--answers serves a release that never changes: it needs --public", "not-allowed")
     if args.http and args.port is None:
         from evaluation_harness._common import project_port  # noqa: PLC0415
 
@@ -776,7 +660,6 @@ def main(argv: list[str] | None = None) -> int:
         rate_total=args.rate_total,
         client_header=args.client_header,
         hooks=hooks,
-        answers_file=args.answers,
     )
     from evaluation_harness._version import __version__  # noqa: PLC0415
 

@@ -785,7 +785,6 @@ def test_example_scorer_suites_pass() -> None:
         ("test_mcp_server.py", "evh mcp: the read commands as tools, through the SDK's own client"),
         ("test_p_cache.py", "the on-disk p cache: the same p, read back by a fresh process"),
         ("test_mcp_http.py", "evh mcp --http: health, Host check, --public, --rate, hooks"),
-        ("test_mcp_answers.py", "evh mcp --write-answers and --answers: a release's answers written ahead"),
         ("test_mcp_cancel.py", "evh mcp: a cancelled call stops being waited for and gives its slot back"),
         (
             "test_mcp_in_process.py",

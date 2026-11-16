@@ -175,7 +175,7 @@ secs=$(( $(date +%s) - t0 ))
 if ! { grep -q '"result"' <<<"$body" && ! grep -Eq '"isError": *true' <<<"$body"; }; then
   rollback "health check failed: the MCP server did not answer goal-list within 120 s (${body:0:200})"
 fi
-[ "$secs" -le 30 ] || echo "::warning::the MCP server took ${secs} s to answer goal-list: is the release's mcp-answers.jsonl or p cache missing?"
+[ "$secs" -le 30 ] || echo "::warning::the MCP server took ${secs} s to answer goal-list (7 to 8 s expected at cpus 0.5): is the release's p cache missing?"
 echo "  mcp ok (goal-list in ${secs} s)"
 
 # 5. The inspector after its --warm: the health check above passes while warm still runs, and a

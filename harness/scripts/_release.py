@@ -25,7 +25,7 @@ The copy is files; with `--store sqlite` it is then made one database (data/proj
 The release's config.yaml names its store either way (a project with none is refused). With sqlite a release never changes, so the database is sealed (checkpointed,
 out of write-ahead logging, written again whole at 16 KiB pages) and holds the only file under data/, which every reader opens read-only (`_store.readonly`).
 `check` is render.sh's last word on a rendered release, read through the release's own store: no reference text git
-does not track, no materialized item, the MCP answers written from the release's goals, the goals' tests kept, and a
+does not track, no materialized item, the goals' tests kept, and a
 sealed database (16 KiB pages) holding the only file.
 render.sh calls this; the hidden-text test calls it directly.
 """
@@ -530,14 +530,6 @@ def copy_data(src: Path, dst: Path) -> dict:
     return counts
 
 
-def _answered_goals(answers: Path) -> tuple[int, int]:
-    """(how many goals the MCP `goal-list` answer written ahead lists, how many leaderboards were written ahead)."""
-    recs = [json.loads(x) for x in _store.read_text(answers, encoding="utf-8").splitlines() if x.strip()]
-    goals = next((r for r in recs if r.get("tool") == "goal-list" and not r.get("args")), None)
-    rows = len(json.loads(goals["out"])["result"]["goals"]) if goals else 0
-    return rows, sum(r.get("tool") == "leaderboard" for r in recs)
-
-
 def check(root: Path, tracked: set[str]) -> list[str]:
     """What is wrong with a rendered release (the project at `root`, EVAL_HOME of this process), read through its
     own store, never by looking at files a database release does not have; [] when nothing. `tracked` is what git
@@ -563,14 +555,6 @@ def check(root: Path, tracked: set[str]) -> list[str]:
     if not _store.is_file(cache / "evh-p.jsonl") or not _store.stat(cache / "evh-p.jsonl").st_size:
         bad.append(
             "the p cache (inspector/cache/evh-p.jsonl) is missing or empty: each MCP view takes ~50 s without it"
-        )
-    answers = cache / "mcp-answers.jsonl"
-    rows, boards = _answered_goals(answers) if _store.is_file(answers) else (0, 0)
-    want = len(_store.glob_str(str(data / "goals" / "*.yaml")))
-    if rows != want or not boards:
-        bad.append(
-            f"the MCP answers (inspector/cache/mcp-answers.jsonl): goal-list answers {rows} of the release's {want}, "
-            f"{boards} leaderboard(s) written ahead"
         )
     return bad + _release_store.layout_problems(data)
 

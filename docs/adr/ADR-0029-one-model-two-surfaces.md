@@ -2,7 +2,7 @@
 
 **Status:** Accepted (owner, 2026-11-13, [RFC-032](../rfc/RFC-032-one-model-two-surfaces.md)); built in 0.8.0, steps 1
 to 8, and of step 9 (the parts of RFC-026 this replaces) P1 to P3: the views' cache, the SQLite release, every read an
-operation answered in the server's process, every job an operation and its inputs; P4 (answers written ahead) under way.
+operation answered in the server's process, every job an operation and its inputs, and no answer written ahead (P4).
 **Date:** 2026-11-15
 **Detail:** [RFC-032](../rfc/RFC-032-one-model-two-surfaces.md) (its decision blocks, step by step),
 [RFC-026](../rfc/RFC-026-an-api-for-every-command.md) (what it keeps and what it replaces),

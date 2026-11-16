@@ -136,13 +136,6 @@ EVH_P_CACHE="$OUT/inspector/cache/evh-p.jsonl" \
   --head "$OUT/catalog-head.html" --about "$ROOT/infra/catalog/about.html" \
   --repo "https://github.com/${GITHUB_REPOSITORY:-chipi/eval-harness}/blob/main/"
 rm -rf "$OUT/inspector/examples" "$OUT/catalog-head.html"
-# The MCP server's answers to the tools that take no argument, written ahead from the release as the box
-# serves it (after the examples are gone, with the box's EVAL_BUILD_REF): a view is several seconds of CPU, and the
-# server's cpus 0.5 made the first call after each start take 33 s (`evh mcp --write-answers`; served by --answers in
-# compose.yml).
-EVH_P_CACHE="$OUT/inspector/cache/evh-p.jsonl" EVAL_HOME="$OUT/inspector" EVAL_BUILD_REF=deployed \
-  PYTHONDONTWRITEBYTECODE=1 python3 "$OUT/inspector/pkg/evaluation_harness/mcp_server.py" \
-  --project "$OUT/inspector" --public --write-answers "$OUT/inspector/cache/mcp-answers.jsonl"
 # The build above ran the package's code; its bytecode is not part of the release.
 find "$OUT/inspector/pkg" -name __pycache__ -type d -prune -exec rm -rf {} +
 
@@ -194,9 +187,8 @@ if left="$(grep -rnoE --exclude='*.js' --exclude='*.map' '__[A-Z][A-Z0-9_]+__' "
 fi
 # What a release must never carry, whatever the checkout it was rendered from holds: reference texts git does not
 # track (a gold reference is not committed; a working copy may have fetched it) and materialized items; and what it
-# must carry: the goals' tests and the MCP answers written ahead from the release's own goals (its `goal-list` answer
-# lists every goal; they were once written from an empty project, and the public server said there were no goals), and,
-# in SQLite, the one sealed database. The
+# must carry: the goals' tests (the p cache the MCP server reads instead of drawing them again) and, in SQLite, the one
+# sealed database. The
 # tracked references (the synthetic smoke_v1 silver) are public already. The checks read the release through its own
 # store (_release.py check), so they hold in files and in SQLite alike; the list is built whole, never cut by `head`
 # in a pipe (under pipefail that once killed `find` with SIGPIPE and the check passed with 1,657 texts in the release,

@@ -19,8 +19,7 @@ files and, migrated, a SQLite database:
 - A hidden dataset's run.json `call` holds the run settings only: one with another key is refused before anything is
   written, in each store.
 - `_release.py check`, render.sh's last word, on each store: passes on a good release, and fails on each planted
-  leak (a reference text git does not track, a materialized item, a goal the MCP answers do not cover, a missing p
-  cache); on a SQLite release also a stray -wal, setup lock or file, and a database still in write-ahead logging.
+  leak (a reference text git does not track, a materialized item, a missing or empty p cache); on a SQLite release also a stray -wal, setup lock or file, and a database still in write-ahead logging.
   The planted leaks are put where each store keeps files, never found by looking at a folder a database release does
   not have.
 - `evh migrate --check`, render.sh's format check, on each store: passes, and fails on a release from before.
@@ -186,15 +185,9 @@ def make_release(src: Path, store: str, dst: Path, source_store: str) -> subproc
     )
 
 
-def add_caches(root: Path, goals: int = 2) -> None:
+def add_caches(root: Path) -> None:
     (root / "cache").mkdir(exist_ok=True)
     (root / "cache" / "evh-p.jsonl").write_text(json.dumps({"k": "a" * 64, "p": (0.5).hex()}) + "\n")
-    answer = {"command": "goal-list", "result": {"goals": [{"goal": f"g{i}"} for i in range(goals)]}}
-    lines = [
-        {"tool": "goal-list", "args": {}, "out": json.dumps(answer), "harness": "x"},
-        {"tool": "leaderboard", "args": {"dataset": "ds1"}, "out": "{}", "harness": "x"},
-    ]
-    (root / "cache" / "mcp-answers.jsonl").write_text("".join(json.dumps(x) + "\n" for x in lines))
 
 
 def run_check(root: Path, tracked: Path):
@@ -459,21 +452,6 @@ try:
             "a materialized item, planted, fails check",
             lambda root: plant(root, store, "materialized/ds1/items.json", b"{}"),
             "materialized items in the release",
-        )
-        case(
-            "a goal the MCP answers do not cover fails check",
-            lambda root: add_caches(root, goals=1),
-            "goal-list answers 1 of the release's 2",
-        )
-        case(
-            "a goal added after the answers were written fails check",
-            lambda root: plant(root, store, "goals/g3.yaml", b"goal_id: g3\n"),
-            "goal-list answers 2 of the release's 3",
-        )
-        case(
-            "no MCP answers at all fails check",
-            lambda root: (root / "cache" / "mcp-answers.jsonl").unlink(),
-            "goal-list answers 0 of the release's 2",
         )
         case(
             "an empty p cache fails check",

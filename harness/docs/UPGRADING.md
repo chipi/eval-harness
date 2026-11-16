@@ -32,6 +32,9 @@ correctness bugs, not just missing features.
   resource), an input named as the operation names it (`dataset_id`, not `dataset-id`), and an estimate is
   `{"operation", "inputs"}`; `{"command", "args"}` is refused. Jobs recorded before this in a project's `.build/jobs/`
   name a command the harness no longer runs: let them end, then delete the folder.
+- **`evh mcp`'s `--write-answers` and `--answers` are gone** (RFC-032 step 9): a deployment that wrote answers ahead and
+  served them drops both (the server answers the first `goal-list` in 7 to 8 s at cpus 0.5 without them); a stale
+  `mcp-answers.jsonl` beside the release is read by nothing and can be deleted.
 - **Run `evh migrate` once** (`--dry-run` first shows what each step will do, running the real steps on a copy of the data
   under the project's `.build/`, as large as the data while it runs and deleted after; a second run changes nothing). It
   brings the data to format 7 and records it in `data/project.yaml` (RFC-032): from 0.8.0 a project's data has a

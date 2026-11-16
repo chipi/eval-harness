@@ -541,6 +541,10 @@ Quoted from the discussion, typing slips corrected.
     and refuses anywhere else. Rendering a release as the deploy does (a relative output folder) found that `evh mcp`
     read `--project` and `--write-answers` from inside the project after moving into it: no goal and no leaderboard
     were written ahead; the paths are now taken where the caller stands.
+  - built (P4, owner 2026-11-17: "drop them"): no answer is written ahead. At the box's limits the first `goal-list`
+    after a start is 7.4 to 8.0 s without them (P2's measure, above; the deploy's smoke warns only past 30 s), so
+    `evh mcp`'s `--write-answers` and `--answers`, render.sh's step and its release check, and compose.yml's flag are gone;
+    the p cache, which the release carries, stays.
   - built (P1b, deterministic release): the same data makes the same database, byte for byte (each file goes in with one
     modification time, the seal writes the database again whole); two builds from two checkouts of one commit are one
     sha256 (they were 2,624 of 58,965 pages apart). Deploy transfer by `rsync --checksum --link-dest`, delta on: no data
