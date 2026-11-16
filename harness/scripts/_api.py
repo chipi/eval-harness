@@ -179,7 +179,8 @@ def operation_inputs(op: Any, inputs: Any, job_id: str) -> dict[str, Any]:
         raise Refused(f"{op.name}: {registry.input_problem(exc)}") from exc
     named = {(op.parts or {}).get(p, p) for p in op.path_params()}
     for name in sorted(named | {n for n, s in op.inputs.items() if s.get("x-ref")}):
-        for v in inputs.get(name) if isinstance(inputs.get(name), list) else [inputs.get(name)]:
+        given = inputs.get(name)
+        for v in given if isinstance(given, list) else [given]:
             if isinstance(v, str) and id_problem(v):
                 raise Refused(f"{op.name}: {name} {v!r}: {id_problem(v)}")
     out = op.with_defaults(inputs)

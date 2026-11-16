@@ -303,7 +303,7 @@ try:
         }
         id_refusals = {
             "a job's input, absolute": refused(
-                "round-close", {"goal": "/tmp/x", "round": "r1", "conclusion": "c"}
+                "round-close", {"goal": "/etc/evh-x", "round": "r1", "conclusion": "c"}
             ),
             "a job's input, climbing": refused("dataset-profile", {"dataset_id": "../x"}),
             "a job's input, a backslash": refused(
