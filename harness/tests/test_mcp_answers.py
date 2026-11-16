@@ -187,8 +187,14 @@ try:
         s.bind(("127.0.0.1", 0))
         port = s.getsockname()[1]
     cmd = [sys.executable, str(HERE / "cli.py"), "mcp", "--http", "--port", str(port), "--public"]
+    # Started from the project's parent with the project and the answers named relative to it, as render.sh and
+    # compose name them: the server moves into the project, and both are read where the caller named them.
     srv = subprocess.Popen(
-        [*cmd, "--answers", str(answers)], cwd=tmp, env=env, stderr=subprocess.DEVNULL, start_new_session=True
+        [*cmd, "--project", tmp.name, "--answers", f"{tmp.name}/{answers.name}"],
+        cwd=tmp.parent,
+        env={**env, "EVAL_HOME": tmp.name},
+        stderr=subprocess.DEVNULL,
+        start_new_session=True,
     )
     base = f"http://127.0.0.1:{port}"
     for _ in range(100):

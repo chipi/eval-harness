@@ -208,9 +208,14 @@ def split_accepted(
 
 
 def find(data_dir: Path, model_id: str) -> dict[str, Any] | None:
-    """The model with this id, with its deployments, or None when there is none."""
+    """The model with this id, with its deployments, or None when there is none. An id is a model id
+    (schemas/model.schema.json) or names none: a path (`/home/x/y`, `../y`) is never joined to the records' folder."""
+    import re  # noqa: PLC0415
+
     from evaluation_harness import _format  # noqa: PLC0415
 
+    if not re.fullmatch(r"[a-z0-9][a-z0-9._-]*", str(model_id)) or ".." in str(model_id):
+        return None
     f = records_dir(data_dir) / f"{model_id}.yaml"
     if yaml is None or not _store.is_file(f):
         return None

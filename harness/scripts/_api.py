@@ -152,6 +152,17 @@ def job_operation(name: str) -> Any:
     return op
 
 
+def id_problem(value: str) -> str:
+    """Why a value a call gives as an id (a route's part, or the input it fills) is no id, or "": an absolute path, a
+    `..` segment, a backslash or a NUL would name a file outside the folder the id is looked up in. A `/` inside is an
+    id's own (a label `judged/<scorer>`, a study `<goal>/<id>`)."""
+    if "\0" in value or "\\" in value:
+        return "an id holds no NUL and no backslash"
+    if value.startswith("/") or ".." in value.split("/"):
+        return "an id is not a path (no leading /, no ..)"
+    return ""
+
+
 def operation_inputs(op: Any, inputs: Any, job_id: str) -> dict[str, Any]:
     """A job's inputs, checked against the operation's schema (names, types, required, `pattern`, `enum`), each system
     it names found, a file kept (an upload under .build/uploads, an artifact placed in the job's folder), and every default
@@ -166,6 +177,11 @@ def operation_inputs(op: Any, inputs: Any, job_id: str) -> dict[str, Any]:
         jsonschema.validate(inputs, op.job_schema())
     except jsonschema.ValidationError as exc:
         raise Refused(f"{op.name}: {registry.input_problem(exc)}") from exc
+    named = {(op.parts or {}).get(p, p) for p in op.path_params()}
+    for name in sorted(named | {n for n, s in op.inputs.items() if s.get("x-ref")}):
+        for v in inputs.get(name) if isinstance(inputs.get(name), list) else [inputs.get(name)]:
+            if isinstance(v, str) and id_problem(v):
+                raise Refused(f"{op.name}: {name} {v!r}: {id_problem(v)}")
     out = op.with_defaults(inputs)
     budget = [0]
     for name, spec in op.inputs.items():

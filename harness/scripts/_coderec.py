@@ -64,7 +64,7 @@ def load(model_id: str) -> dict[str, Any]:
     rec = _models.find(_common.DATA, model_id)
     if rec is None:
         _common.die(
-            f"no model record {model_id!r} ({_models.records_dir(_common.DATA) / (model_id + '.yaml')})",
+            f"no model record {model_id!r} in {_models.records_dir(_common.DATA)}",
             "not-found",
         )
     if rec.get("kind") != "code":

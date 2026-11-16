@@ -62,8 +62,12 @@ with socket.socket() as s:
 env = dict(os.environ, EVAL_HOME=str(tmp))
 env.pop("EVAL_DATA_DIR", None)
 cmd = [sys.executable, str(HERE / "cli.py"), "mcp", "--http", "--port", str(port), "--public", "--rate", "6"]
-cmd += ["--allowed-host", "evals.example.test", "--hooks", str(tmp / "hooks.py")]
-srv = subprocess.Popen(cmd, cwd=tmp, env=env, stderr=subprocess.PIPE, text=True, start_new_session=True)
+# The hooks file named relative to where the server starts (the project's parent): read there, before the server
+# moves into the project.
+cmd += ["--allowed-host", "evals.example.test", "--project", tmp.name, "--hooks", f"{tmp.name}/hooks.py"]
+srv = subprocess.Popen(
+    cmd, cwd=tmp.parent, env=env, stderr=subprocess.PIPE, text=True, start_new_session=True
+)
 base = f"http://127.0.0.1:{port}"
 
 

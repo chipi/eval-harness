@@ -286,6 +286,50 @@ try:
             ),
         }
         check("a code path or an @file is refused before anything runs", all(never.values()), never)
+        # An id is never a path: a route's part or the input it fills that is absolute, climbs (..), or holds a
+        # backslash or a NUL is refused before anything is read; a / inside an id (a label judged/<scorer>) is its own.
+        data_h = {**bearer, "X-EVH-Data": "1"}
+        id_calls = {
+            "a read's part, absolute": call(port, "GET", "/api/v1/goals/%2Fetc%2Fhostname", headers=bearer)[
+                0
+            ],
+            "a job's part, absolute": call(
+                port,
+                "POST",
+                "/api/v1/goals/%2Ftmp%2Fx/rounds/r1/close",
+                body={"conclusion": "c"},
+                headers=data_h,
+            )[0],
+        }
+        id_refusals = {
+            "a job's input, absolute": refused(
+                "round-close", {"goal": "/tmp/x", "round": "r1", "conclusion": "c"}
+            ),
+            "a job's input, climbing": refused("dataset-profile", {"dataset_id": "../x"}),
+            "a job's input, a backslash": refused(
+                "round-close", {"goal": "a\\b", "round": "r1", "conclusion": "c"}
+            ),
+        }
+        # A .. anywhere in the address is refused before any route is read (allowed(): 404).
+        climbing = call(port, "GET", "/api/v1/models/..%2F..%2Fsecret/faithfulness", headers=bearer)[0]
+        label_ok = call(port, "GET", "/api/v1/arms/judged%2Fs1/tk_v1/nope_v1", headers=bearer)
+        check(
+            "an id is not a path: absolute, .. or a backslash in a route's part or the input it fills is refused (400); "
+            "a / inside a label is its own (the arm is looked up and not found, 404)",
+            all(st == 400 for st in id_calls.values()) and climbing == 404 and all(id_refusals.values())
+            and label_ok[0] == 404,
+            (id_calls, climbing, id_refusals, label_ok[:2]),
+        )  # fmt: skip
+        from evaluation_harness import _models
+
+        outside = Path(tempfile.mkdtemp(prefix="evh-outside-"))
+        (outside / "m.yaml").write_text("model_id: m\nkind: llm\n")
+        check(
+            "a model is found by its id only: a path to a record outside the project names none",
+            _models.find(proj / "data", str(outside / "m")) is None
+            and _models.find(proj / "data", "../" + outside.name + "/m") is None,
+        )
+        shutil.rmtree(outside, ignore_errors=True)
         put_file = ops.OPS["data-put"].inputs["file"]
         check(
             "data-put's file is an upload, never a path on the server",

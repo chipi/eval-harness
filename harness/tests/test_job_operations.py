@@ -594,6 +594,30 @@ try:
         r4.returncode == 0 and pj.get("inputs", {}).get("item") == ["t01"],
         (r4.returncode, r4.stderr[-300:], pj.get("inputs")),
     )
+    # A study whose spec comes with the call and names a command sampler: the job refuses it, and the program the
+    # spec names never runs (it would make the marker file); no spec is written.
+    marker = proj / ".build" / "sampler-ran"
+    cmd_spec = (
+        "dataset: tickets_v1\nbaseline: {system: tickets_lead1_v1}\nmeasure: overlap_f1\n"
+        f"sampler: {{command: 'touch {marker}'}}\nstop: {{trials: 1}}\n"
+    )
+    up_spec = {"name": "spec.yaml", "content_base64": base64.b64encode(cmd_spec.encode()).decode()}
+    st_s, sj_s = call(
+        "POST",
+        "/api/v1/goals/tickets_summary/studies/s_up",
+        {"spec": up_spec, "by": "person:ana", "max_cost_usd": 0.01},
+    )
+    ds = until(sj_s.get("id")) if st_s == 202 else {}
+    check(
+        "a study spec sent with the call that names a command sampler: the job is refused (not-allowed), its program "
+        "never runs, no spec is written",
+        st_s == 202
+        and ds.get("state") == "failed"
+        and ds.get("refusal") == "not-allowed"
+        and not marker.exists()
+        and not _runstore.exists(proj, "studies/tickets_summary/s_up.yaml"),
+        (st_s, ds.get("state"), ds.get("refusal"), log_of(sj_s.get("id", ""))[-300:]),
+    )
     sj = evh("jobs-status", tj.get("id", "none"))
     check(
         "jobs-status names the operation and shows the inputs",

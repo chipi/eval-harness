@@ -1099,6 +1099,11 @@ class Handler(SimpleHTTPRequestHandler):
             if any(w != p for w, p in zip(want, parts, strict=True) if not w.startswith("{")):
                 continue
             params = {w[1:-1]: unquote(p) for w, p in zip(want, parts, strict=True) if w.startswith("{")}
+            from evaluation_harness import _api  # noqa: PLC0415
+
+            bad = next(((k, v) for k, v in params.items() if _api.id_problem(v)), None)
+            if bad:
+                return say(400, {"error": f"{op.name}: {bad[0]} {bad[1]!r}: {_api.id_problem(bad[1])}"})
             if op.is_job():
                 self._job_route(op, params)
                 return True
