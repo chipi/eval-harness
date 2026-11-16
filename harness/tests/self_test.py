@@ -262,13 +262,10 @@ _EXAMPLE_ONLY_MODULES = frozenset(
 
 
 def test_cli_help_works() -> None:
+    # A script answers its help with a usage line: one that exits 0 printing nothing (a module whose command moved to an
+    # operation, run as a file) proved nothing here and failed only where the package is not installed (CI).
     for script in (
-        "dataset_create",
-        "materialize",
         "run",
-        "promote_baseline",
-        "reference_promote",
-        "reference_manifest",
         "sweep",
         "env_check",
         "holdout_significance",
@@ -283,9 +280,18 @@ def test_cli_help_works() -> None:
         "check_model_facts",
     ):
         r = run(at(f"{script}.py"), "--help")
-        check(f"{script}.py --help", r.returncode == 0, r.stderr.strip()[:80])
-    # the reads that were scripts of their own are operations: their command's help
+        check(
+            f"{script}.py --help",
+            r.returncode == 0 and "usage:" in r.stdout,
+            (r.returncode, r.stdout[:80], r.stderr.strip()[-160:]),
+        )
+    # the commands that were scripts of their own are operations: their command's help
     for command in (
+        "dataset-create",
+        "dataset-materialize",
+        "run-promote",
+        "reference-promote",
+        "reference-manifest",
         "run-compare",
         "validate",
         "runs-list",
