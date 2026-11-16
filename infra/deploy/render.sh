@@ -78,6 +78,7 @@ python3 -m pip install --quiet --no-deps --no-compile --target "$OUT/inspector/v
   --only-binary=:all: --platform any --implementation py --python-version 3.12 \
   -r "$ROOT/infra/inspector/requirements.txt"
 cp -a "$ROOT/infra/inspector/hooks.py" "$OUT/inspector/hooks.py"
+cp -a "$ROOT/infra/inspector/hooks_env.py" "$OUT/inspector/hooks_env.py"   # prod or dev, for both hooks (hooks_env.py)
 # The MCP server (evals-mcp, RFC-018): the same package and data, plus the official MCP SDK and its
 # dependencies, pinned (infra/mcp/requirements.txt), as wheels for the box (x86_64, musl: the
 # image is Alpine), beside the package; its hooks (GlitchTip, traces, /metrics, Umami) reuse the

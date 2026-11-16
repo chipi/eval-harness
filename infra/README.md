@@ -23,7 +23,8 @@ infra/
   nginx/                 nginx.conf, one server block per host, the security headers
   caddy/                 evals.caddy, catalog.caddy, enabled.txt (which ones are live)
   sites/<host>.cfg       per-host public settings (the CSP report address)
-  inspector/             hooks.py (the inspector's observability)
+  inspector/             hooks.py (the inspector's observability), hooks_env.py (prod or dev, for both
+                         servers' hooks)
   catalog/               about.html (the overview's paragraph, --about)
   observability/         evals.alloy: the three containers' logs to VictoriaLogs (app=evals; service
                          evals-web for nginx, evals-inspector, evals-mcp; `release` and, on
@@ -117,6 +118,39 @@ infra/
     (`mcp goal-list exit=0 12ms`), which VictoriaLogs needs. A call is logged as one JSON line: the tool, its
     arguments' names (never their values), how it ended, its time; never the caller's address or
     user agent (those go to the hooks only, for the Umami visitor count).
+
+## Dev observability, on a workstation
+
+The same hooks report a branch's dev runs to the dev side of the homelab's observability (the contract:
+agentic-ai-homelab `docs/recipes/o11y-dev.md`), so the agent on that branch reads what its change did before a PR
+(the `o11y-dev` skill) and nothing of it reaches prod's reviews or the triage fleet.
+
+    make serve-dev  [ARGS="--port N"]   the catalog and inspector, with infra/inspector/hooks.py
+    make mcp-dev    [ARGS="--port N"]   the MCP server over HTTP, with infra/mcp/hooks.py
+
+Both vendor the SDKs into `harness/.build/vendor` (`make obs-vendor`, as `render.sh` does for prod; nothing goes
+into the venv) and set `EVALS_ENV=dev`. `infra/inspector/hooks_env.py` holds what differs from prod:
+
+- **Settings:** `~/.config/evals/observability-dev.env` (mode 600, never in the repository; `EVALS_OBS_ENV` names
+  another): `SENTRY_DSN_FILE` (the file homelab handed the GlitchTip `evals-dev` DSN in, `SENTRY_DSN=...`) or
+  `SENTRY_DSN`; `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT`, the tailnet's VictoriaTraces TLS node
+  (`/insert/opentelemetry/v1/traces`); `EVALS_LOGS_URL`, the tailnet's VictoriaLogs TLS node (`/insert/jsonline`).
+  The hosts are in the homelab handbook (`agent-access.md`, section 5); a workstation sends to the TLS nodes, not
+  the host ports.
+- **Labels:** GlitchTip events in `evals-dev` (40), environment `dev`, tags `service` and `worktree` (the git
+  branch; `EVALS_WORKTREE` overrides), release `dev-<7>` of the checkout's commit; spans with the resource
+  attributes `deployment.environment=dev` and `worktree`; one log line per request or tool call and per error, its
+  stream `service`, `environment=dev`, `worktree`, with `level`. In prod the box's collector reads the logs from
+  stdout, so the hooks push none.
+- **Refusals:** a dev run with a prod GlitchTip project (`evals-web` 36, `evals-inspector` 37, `evals-mcp` 38), or
+  a prod run with `evals-dev`, sends nothing to GlitchTip and says so at start; `EVALS_ENV` other than `prod` or
+  `dev` turns everything but `/metrics` off. Umami counts prod's callers only.
+- **Proof:** `infra/inspector/test_hooks_env.py` (in `make budget-check`): the labels, the refusals, prod unchanged,
+  the lines sent at exit. Checked live on 2026-11-16 from a workstation: a dev error, log lines and traces of both
+  servers read back by branch (`worktree:080`), and prod's spans of the same services still `prod` with no worktree.
+
+A dev error never becomes a GitHub issue, and a dev agent never resolves, ignores or deletes one: `evals-dev` issues
+close on their own three days after they were last seen.
 
 ## What `deploy.sh` checks before a release counts as live
 

@@ -1,17 +1,19 @@
-"""The prod MCP server's observability: this deployment's layer over `evh mcp --hooks`.
+"""The MCP server's observability: this deployment's layer over `evh mcp --hooks`, on the box (prod) or on a
+workstation (dev, `make mcp-dev`; hooks_env.py says which and how they differ).
 
     mcp_server.py --http ... --hooks /srv/evals/current/inspector/mcp_hooks.py
 
 The harness calls start, request (after every tool call) and error, and serves `routes`; what they
 do is this file's business, not the harness's (`evh mcp` on a laptop uses none of it):
 
-  - errors to GlitchTip, through the Sentry SDK, environment prod, release sha-<7>, when
-    MCP_SENTRY_DSN is set (the GlitchTip project for the MCP server, not the inspector's);
+  - errors to GlitchTip, through the Sentry SDK, environment prod or dev (dev: tag worktree), release sha-<7>, the
+    service a tag: in prod the MCP server's own project (MCP_SENTRY_DSN), in dev the one dev project (SENTRY_DSN);
+  - in dev, a log line per tool call and per error to VictoriaLogs (EVALS_LOGS_URL), labelled with the worktree;
   - one OpenTelemetry span per tool call, service evals-mcp, namespace evals, when
     OTEL_EXPORTER_OTLP_TRACES_ENDPOINT is set;
   - /metrics, always: calls per tool and outcome and their latency, the process's memory, in the
     Prometheus text format, on the loopback port only (Caddy forwards nothing but /mcp to it);
-  - one Umami event per tool call, `mcp:<tool>`, on the site's own Umami website (its id in
+  - in prod only, one Umami event per tool call, `mcp:<tool>`, on the site's own Umami website (its id in
     mcp_umami.json, which render.sh writes from site/analytics.json: public), POSTed to
     UMAMI_SEND_URL (Umami's /api/send on the tailnet, so the deploy renders it: no tailnet name is
     committed), in the background so a slow Umami never delays an answer. The event carries the
@@ -20,23 +22,32 @@ do is this file's business, not the harness's (`evh mcp` on a laptop uses none o
     address (X-Forwarded-For) and one fixed browser-like user agent: an agent library's own
     (python-httpx, node-fetch) reads to Umami as a bot, and its events are dropped without an error.
 
-Settings come from the environment, else from /srv/evals/observability.env (KEY=VALUE lines, on
-the box, never in the repository). A part whose SDK or setting is missing is off; the server
-answers as before.
+Settings come from the environment, else from the mode's file (hooks_env.py: /srv/evals/observability.env on the box,
+~/.config/evals/observability-dev.env on a workstation; never in the repository). A part whose SDK or setting is missing
+is off; the server answers as before.
 """
 
 from __future__ import annotations
 
+import importlib.util
 import json
-import os
 import queue
+import sys
 import threading
 import time
 import urllib.request
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-SERVICE, NAMESPACE, ENVIRONMENT, HOST = "evals-mcp", "evals", "prod", "evals.humancopilot.eu"
+SERVICE, NAMESPACE, HOST = "evals-mcp", "evals", "evals.humancopilot.eu"
+KEYS = (
+    "MCP_SENTRY_DSN",
+    "SENTRY_DSN",
+    "SENTRY_DSN_FILE",
+    "OTEL_EXPORTER_OTLP_TRACES_ENDPOINT",
+    "UMAMI_SEND_URL",
+    "EVALS_LOGS_URL",
+)
 BUCKETS = (0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0, 30.0, 60.0)
 #: The user agent Umami is told (see the module docstring): browser-shaped, so Umami keeps the event.
 UA = "Mozilla/5.0 (X11; Linux x86_64) evals-mcp"
@@ -46,42 +57,61 @@ _count: dict = {}  # (tool, outcome) -> calls
 _hist: dict = {}  # tool -> [count per bucket..., +Inf count, sum of seconds]
 _errors = [0]
 _umami_sent = [0, 0]  # sent, failed
-_state: dict = {"tracer": None, "sentry": False, "umami": None, "started": time.time(), "tools": frozenset()}
+_state: dict = {
+    "tracer": None,
+    "sentry": False,
+    "umami": None,
+    "logs": None,
+    "env": "prod",
+    "started": time.time(),
+    "tools": frozenset(),
+}
 #: Umami events waiting to be sent, by one worker thread: a bounded queue, so a slow or absent Umami
 #: never grows threads or memory (an event that does not fit is dropped and counted).
 _events: queue.Queue = queue.Queue(maxsize=256)
 
 
-def _settings() -> dict:
-    out: dict = {}
-    f = Path(os.environ.get("EVALS_OBS_ENV", "/srv/evals/observability.env"))
-    if f.is_file():
-        for line in f.read_text().splitlines():
-            k, sep, v = line.strip().partition("=")
-            if sep and k and not k.startswith("#"):
-                out[k.strip()] = v.strip().strip('"').strip("'")
-    keys = ("MCP_SENTRY_DSN", "OTEL_EXPORTER_OTLP_TRACES_ENDPOINT", "UMAMI_SEND_URL")
-    out.update({k: v for k, v in os.environ.items() if k in keys})
-    return out
+def _env_module():
+    """hooks_env.py: beside this file when deployed (render.sh), infra/inspector/ in the repository."""
+    if "evals_hooks_env" not in sys.modules:
+        f = HERE / "hooks_env.py"
+        if not f.is_file():
+            f = HERE.parent / "inspector" / "hooks_env.py"
+        spec = importlib.util.spec_from_file_location("evals_hooks_env", f)
+        assert spec is not None and spec.loader is not None
+        mod = importlib.util.module_from_spec(spec)
+        sys.modules["evals_hooks_env"] = mod
+        spec.loader.exec_module(mod)
+    return sys.modules["evals_hooks_env"]
 
 
-def _release() -> str:
-    f = HERE.parent / "RELEASE"
-    sha = f.read_text().strip() if f.is_file() else ""
-    return f"sha-{sha[:7]}" if sha else "unknown"
+hooks_env = _env_module()
 
 
 def start(info: dict) -> None:
-    s, release = _settings(), _release()
     # The tools this server offers: anything else a client names is counted as "unknown".
     _state["tools"] = frozenset(info.get("tools") or ())
-    if s.get("MCP_SENTRY_DSN"):
+    env = hooks_env.mode()
+    if env == "off":
+        print(
+            "hooks: EVALS_ENV is neither prod nor dev: GlitchTip, traces, logs and Umami off, /metrics on",
+            flush=True,
+        )
+        return
+    _state["env"], release = env, hooks_env.release(HERE.parent / "RELEASE", env)
+    s = hooks_env.settings(env, KEYS)
+    worktree = hooks_env.worktree() if env == "dev" else ""
+    dsn = s.get("SENTRY_DSN" if env == "dev" else "MCP_SENTRY_DSN", "")
+    refused = hooks_env.dsn_refused(dsn, env) if dsn else ""
+    if refused:
+        print(f"hooks: GlitchTip off: {refused}", flush=True)
+    elif dsn:
         try:
             import sentry_sdk  # noqa: PLC0415
 
             sentry_sdk.init(
-                dsn=s["MCP_SENTRY_DSN"],
-                environment=ENVIRONMENT,
+                dsn=dsn,
+                environment=env,
                 release=release,
                 server_name=SERVICE,
                 traces_sample_rate=0.0,
@@ -89,9 +119,16 @@ def start(info: dict) -> None:
                 # A call's frames hold its arguments; GlitchTip gets the error, never their values.
                 include_local_variables=False,
             )
+            sentry_sdk.set_tag("service", SERVICE)
+            if worktree:
+                sentry_sdk.set_tag("worktree", worktree)
             _state["sentry"] = True
         except Exception as exc:  # noqa: BLE001
             print(f"hooks: GlitchTip off: {type(exc).__name__}: {exc}", flush=True)
+    if env == "dev" and s.get("EVALS_LOGS_URL"):
+        _state["logs"] = hooks_env.LogPush(
+            s["EVALS_LOGS_URL"], {"service": SERVICE, "environment": env, "worktree": worktree}
+        )
     if s.get("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT"):
         try:
             from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter  # noqa: PLC0415
@@ -104,8 +141,9 @@ def start(info: dict) -> None:
                     {
                         "service.name": SERVICE,
                         "service.namespace": NAMESPACE,
-                        "deployment.environment": ENVIRONMENT,
+                        "deployment.environment": env,
                         "service.version": release,
+                        **({"worktree": worktree} if worktree else {}),
                     }
                 )
             )
@@ -121,16 +159,25 @@ def start(info: dict) -> None:
             _state["tracer"] = provider.get_tracer(SERVICE)
         except Exception as exc:  # noqa: BLE001
             print(f"hooks: traces off: {type(exc).__name__}: {exc}", flush=True)
+    # The site's analytics count prod's callers only: a dev run is not a visit.
     umami = HERE / "mcp_umami.json"
     cfg = json.loads(umami.read_text()) if umami.is_file() else {}
-    if s.get("UMAMI_SEND_URL", "").startswith("https://") and cfg.get("website_id"):
+    if env == "prod" and s.get("UMAMI_SEND_URL", "").startswith("https://") and cfg.get("website_id"):
         _state["umami"] = {"send_url": s["UMAMI_SEND_URL"], "website_id": cfg["website_id"]}
         threading.Thread(target=_umami_worker, daemon=True, name="umami").start()
     print(
-        f"hooks: {release}; GlitchTip {'on' if _state['sentry'] else 'off'}, traces "
-        f"{'on' if _state['tracer'] else 'off'}, Umami {'on' if _state['umami'] else 'off'}, /metrics on",
+        f"hooks: {env}{f' ({worktree})' if worktree else ''}, {release}; GlitchTip "
+        f"{'on' if _state['sentry'] else 'off'}, traces {'on' if _state['tracer'] else 'off'}, "
+        + (
+            f"logs {'on' if _state['logs'] else 'off'}"
+            if env == "dev"
+            else f"Umami {'on' if _state['umami'] else 'off'}"
+        )
+        + ", /metrics on",
         flush=True,
     )
+    if _state["logs"]:
+        _state["logs"].log(f"{SERVICE} started", release=release)
 
 
 def _outcome(info: dict) -> str:
@@ -167,6 +214,15 @@ def request(info: dict) -> None:
 
             span.set_status(Status(StatusCode.ERROR))
         span.end(end_time=end)
+    if _state["logs"]:
+        _state["logs"].log(
+            f"mcp {tool} {outcome} {info.get('ms') or 0:.0f}ms",
+            level="error" if outcome == "error" else "info",
+            tool=tool,
+            outcome=outcome,
+            ms=info.get("ms") or 0,
+            args=",".join(info.get("args") or [])[:400],
+        )
     # Analytics count calls the server answered; a refused one (rate, busy, a bad argument) is not a
     # visit, and sending it would let a flood through to the shared Umami.
     if _state["umami"] is not None and not info.get("refused"):
@@ -215,6 +271,8 @@ def _umami(tool: str, outcome: str, ms: int, client: str) -> None:
 def error(exc: BaseException, info: dict) -> None:
     with _lock:
         _errors[0] += 1
+    if _state["logs"]:
+        _state["logs"].log(f"{type(exc).__name__}: {exc}", level="error", tool=_tool(info))
     if _state["sentry"]:
         import sentry_sdk  # noqa: PLC0415
 

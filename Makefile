@@ -8,6 +8,8 @@
 #   make compare   EXP=scifact           the replication card: does every finding hold?
 #   make reproduce EXP=scifact SYSTEM=path/to/sf_mine_v1.yaml  add a model of your own (a system id or file)
 #   make serve [STORE=sqlite]   the catalog and inspector on 127.0.0.1 (in SQLite, a copy of the data)
+#   make serve-dev / mcp-dev    the same, or the MCP server, reporting to the dev observability (environment=dev,
+#                               worktree=<branch>); read what the branch sent with the o11y-dev skill before a PR
 #   make browser-check                   the inspector and the public site in headless Chromium
 #   make guard-check                     the checks can fail: each checker catches its planted defects
 #   make quality                         lint, types, security, dead code, docstrings, spelling, shell
@@ -23,11 +25,11 @@ ARMS ?=
 SYSTEM ?=
 
 .DEFAULT_GOAL := help
-.PHONY: help setup verify list plan data reproduce compare site docs serve browser-check browser-real-check budget-check guard-check commands-check stores-check \
+.PHONY: help setup verify list plan data reproduce compare site docs serve serve-dev mcp-dev obs-vendor browser-check browser-real-check budget-check guard-check commands-check stores-check \
 	quality-install quality lint format type security audit-locks deadcode docstrings spelling shell complexity
 
 help:
-	@sed -n '1,16p' Makefile | sed 's/^# \{0,1\}//'
+	@sed -n '1,18p' Makefile | sed 's/^# \{0,1\}//'
 
 $(PY):
 	$(MAKE) -C harness install
@@ -86,15 +88,33 @@ stores-check: $(PY)
 
 # The inspector's budgets: the harness alone, then with this deployment's hooks and their SDKs
 # (infra/inspector/), vendored into .build/vendor as render.sh vendors them for prod.
-budget-check: $(PY)
-	$(MAKE) -C harness budget-check
+# This deployment's observability SDKs (infra/inspector/requirements.txt), vendored into harness/.build/vendor as
+# render.sh vendors them for prod: pure-Python wheels, pinned, on PYTHONPATH; nothing goes into the venv.
+obs-vendor: $(PY)
 	$(PY) -m pip install --quiet --no-deps --no-compile --target harness/.build/vendor --upgrade \
 	  --only-binary=:all: --platform any --implementation py --python-version 3.12 \
 	  -r infra/inspector/requirements.txt
+
+# Dev observability (agentic-ai-homelab docs/recipes/o11y-dev.md): the servers with this deployment's hooks in dev
+# mode (infra/inspector/hooks_env.py): errors to GlitchTip evals-dev, traces to VictoriaTraces, log lines to
+# VictoriaLogs, each labelled environment=dev and worktree=<this branch>. Settings from
+# ~/.config/evals/observability-dev.env (infra/README.md says what it holds), never from the repository.
+serve-dev: obs-vendor
+	EVALS_ENV=dev PYTHONPATH=$(abspath harness/.build/vendor) $(MAKE) -C harness serve STORE=$(STORE) FRESH=$(FRESH) \
+	  ARGS="--hooks $(abspath infra/inspector/hooks.py) $(ARGS)"
+
+mcp-dev: obs-vendor
+	EVALS_ENV=dev PYTHONPATH=$(abspath harness/.build/vendor) $(MAKE) -C harness mcp \
+	  ARGS="--http --hooks $(abspath infra/mcp/hooks.py) $(ARGS)"
+
+budget-check: obs-vendor
+	$(MAKE) -C harness budget-check
 	printf 'SENTRY_DSN=http://k@127.0.0.1:9/1\nOTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://127.0.0.1:9/v1/traces\n' > harness/.build/obs-unreachable.env
 	cd harness && PYTHONPATH=.build/vendor EVALS_OBS_ENV=.build/obs-unreachable.env $(abspath $(PY)) tests/test_inspector_budget.py --catalog .build/budget-catalog --hooks ../infra/inspector/hooks.py
 	# This deployment's hooks with the same SDKs: which requests become traces.
 	PYTHONPATH=harness/.build/vendor $(abspath $(PY)) infra/inspector/test_hooks.py
+	# Dev and prod observability for both servers (hooks_env.py): the labels, the refusals, Umami prod only.
+	PYTHONPATH=harness/.build/vendor $(abspath $(PY)) infra/inspector/test_hooks_env.py
 
 docs:
 	mkdocs build --strict

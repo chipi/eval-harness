@@ -389,6 +389,14 @@ that can move a result is never a patch release without saying so under **Change
   label only where the replay at the recorded versions reproduces production's decision, and counts one at a version
   dated by commit time (`dated_by: commit` on a code record's deployment) as approximate. A replay run records each
   item's commit on its row (`_commit`).
+- **Dev observability, for this repository's deployment** (`infra/`, not the package; the homelab's contract,
+  `docs/recipes/o11y-dev.md`): `make serve-dev` and `make mcp-dev` run the servers with the deployment's hooks in dev
+  mode (`EVALS_ENV=dev`, `infra/inspector/hooks_env.py`). Errors go to GlitchTip `evals-dev` tagged with the service
+  and the worktree (the git branch), release `dev-<7>`; spans carry `deployment.environment=dev` and the worktree; one
+  log line per request, tool call and error goes to VictoriaLogs with the same labels. Settings come from
+  `~/.config/evals/observability-dev.env`, never the repository. A dev run with a prod GlitchTip project, or a prod run
+  with the dev one, sends nothing there; Umami counts prod's callers only. The repository gains an `AGENTS.md` for
+  coding agents: run the `o11y-dev` skill before a PR; a dev error never becomes a GitHub issue.
 
 ### Changed
 
