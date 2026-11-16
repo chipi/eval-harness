@@ -236,7 +236,8 @@ def test_bootstrap_test_basic() -> int:
 
     env = {"EVAL_HOME": str(tmp)}
     result = run_script(
-        "scripts/bootstrap_test.py",
+        "scripts/cli.py",
+        "bootstrap-test",
         "--dataset-id",
         dataset_id,
         "--a",
@@ -274,7 +275,8 @@ def test_bootstrap_test_refuses_non_classification() -> int:
 
     env = {"EVAL_HOME": str(tmp)}
     result = run_script(
-        "scripts/bootstrap_test.py",
+        "scripts/cli.py",
+        "bootstrap-test",
         "--dataset-id",
         dataset_id,
         "--a",
@@ -319,7 +321,8 @@ def test_holdout_significance_basic() -> int:
 
     env = {"EVAL_HOME": str(tmp)}
     result = run_script(
-        "scripts/holdout_significance.py",
+        "scripts/cli.py",
+        "holdout",
         "--dataset-id",
         dataset_id,
         "--exclude-dataset",
@@ -374,7 +377,8 @@ def test_silver_calibrate_basic() -> int:
 
     env = {"EVAL_HOME": str(tmp)}
     result = run_script(
-        "scripts/silver_calibrate.py",
+        "scripts/cli.py",
+        "silver-calibrate",
         "--dataset-id",
         dataset_id,
         "--ref-match",
@@ -423,7 +427,8 @@ def test_silver_calibrate_refuses_too_few_arms() -> int:
 
     env = {"EVAL_HOME": str(tmp)}
     result = run_script(
-        "scripts/silver_calibrate.py",
+        "scripts/cli.py",
+        "silver-calibrate",
         "--dataset-id",
         dataset_id,
         "--ref-match",
@@ -481,7 +486,8 @@ def test_bootstrap_test_missing_opponent() -> int:
 
     env = {"EVAL_HOME": str(tmp)}
     result = run_script(
-        "scripts/bootstrap_test.py",
+        "scripts/cli.py",
+        "bootstrap-test",
         "--dataset-id",
         dataset_id,
         "--a",
@@ -561,7 +567,8 @@ def mutation_test_silver_calibrate() -> int:
 
     env = {"EVAL_HOME": str(tmp)}
     result = run_script(
-        "scripts/silver_calibrate.py",
+        "scripts/cli.py",
+        "silver-calibrate",
         "--dataset-id",
         dataset_id,
         "--ref-match",
@@ -606,7 +613,8 @@ def mutation_test_bootstrap_test() -> int:
 
     env = {"EVAL_HOME": str(tmp)}
     result = run_script(
-        "scripts/bootstrap_test.py",
+        "scripts/cli.py",
+        "bootstrap-test",
         "--dataset-id",
         dataset_id,
         "--a",
@@ -655,7 +663,8 @@ def mutation_test_holdout() -> int:
 
     env = {"EVAL_HOME": str(tmp)}
     result = run_script(
-        "scripts/holdout_significance.py",
+        "scripts/cli.py",
+        "holdout",
         "--dataset-id",
         dataset_id,
         "--exclude-dataset",

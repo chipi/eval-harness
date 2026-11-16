@@ -728,9 +728,9 @@ is used. A models tile on the home page opens it, beside arms.
   its measurement and the flags that name it, the other flags, and **Accepted**: the flags it accepts, each with
   why (the record's `accepted`, and the deployment's own). For an LLM the report's default and chosen calls carry
   the time, tokens out, whether it reasoned and how it ended. A deployment never onboarded says so, with the
-  command (`evh model-onboard <id> --deployment <id>`). Under the sections, what the model can do across its
+  command (`evh model-onboard --model-id <id> --deployment <id>`). Under the sections, what the model can do across its
   deployments (its capabilities). A record with no deployment says so: "No deployment is recorded for this
-  model. Not onboarded yet: `evh model-onboard <id>`". A deployment table beside a separate onboarding section
+  model. Not onboarded yet: `evh model-onboard --model-id <id>`". A deployment table beside a separate onboarding section
   described the same deployments twice (owner, 2026-10-31).
 - `02 settings history`: **when**, **what changed** (from, to), **why**, newest first.
 - `03 arms`: every arm that uses it, by `model_record` or by an alias, one row per arm the goals read (an arm a

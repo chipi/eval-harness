@@ -506,7 +506,7 @@ def main() -> int:
             ),
             # Model records (RFC-020, optional): installed, each answers in words; the flows are
             # test_model_onboard.py, test_arm_smoke.py and test_catalog_models.py.
-            ("model-onboard", ["no_such_model"], "no model record 'no_such_model'"),
+            ("model-onboard", ["--model-id", "no_such_model"], "no model record 'no_such_model'"),
             ("arm-smoke", ["--system", "no_such_v1", "--dataset", "tickets_v1"], "no system 'no_such_v1'"),
             # Scoring that evolves (RFC-022): the flow is test_scoring_evolves.py.
             ("score-preview", ["--goal", "no_such_goal"], "no goal 'no_such_goal'"),

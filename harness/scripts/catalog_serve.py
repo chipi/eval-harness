@@ -56,6 +56,7 @@ import errno
 import json
 import re
 import sys
+import tempfile
 import threading
 import time
 from collections import OrderedDict, defaultdict
@@ -515,12 +516,44 @@ WORKBENCH_TYPES = {
 API_MAX_JOB_BODY = 70 * 1024 * 1024  # 50 MB of files, base64 (RFC-026: owner, 2026-11-08)
 
 
+def _operation_estimate(op, inputs: Any) -> tuple[int, dict]:
+    """The estimate of an operation that has a `dry_run` input: its inputs checked as a job's are, then the command run
+    with `dry_run` as a short child that reads them from a file (it calls nothing and writes nothing), and what it
+    printed."""
+    import json as _json  # noqa: PLC0415
+
+    from evaluation_harness import _api, _jobs  # noqa: PLC0415
+    from evaluation_harness import _cmdline as ms  # noqa: PLC0415
+    from evaluation_harness._version import __version__  # noqa: PLC0415
+
+    if "dry_run" not in op.inputs:
+        return 404, {
+            "error": f"{op.name} has no --dry-run: there is nothing to estimate (a spending job shows its cap)"
+        }
+    try:
+        checked = _api.operation_inputs(op, {**(inputs or {}), "dry_run": True}, _jobs.new_id())
+    except _api.Refused as exc:
+        return exc.status, {"error": str(exc)}
+    with tempfile.NamedTemporaryFile("w", suffix=".json", encoding="utf-8") as f:  # gone when the block ends
+        f.write(_json.dumps(checked))
+        f.flush()
+        code, out, err = ms.run_command(ROOT, op.name, ["--inputs-file", f.name])
+    return (200 if code == 0 else 400), {
+        "command": op.name,
+        "version": __version__,
+        "exit": code,
+        "text": out + err,
+    }
+
+
 def api_estimate(command: str, arguments: Any) -> tuple[int, dict]:
     """POST /api/v1/estimate: a job command's own --dry-run, run now as a read (it calls nothing and writes nothing),
     and what it printed: what the job would do and, for a command that spends, cost (RFC-026 step 5)."""
-    from evaluation_harness import _api  # noqa: PLC0415
+    from evaluation_harness import _api, ops  # noqa: PLC0415
     from evaluation_harness import _cmdline as ms  # noqa: PLC0415
 
+    if (op := ops.get(command)) is not None and op.is_job():
+        return _operation_estimate(op, arguments)
     try:
         reg = _api.registry().get(command)
         if reg is None or reg["served"] != "job":

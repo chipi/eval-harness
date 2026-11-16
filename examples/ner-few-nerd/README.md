@@ -89,7 +89,7 @@ that relevance is what this example gives up to keep the licence clean.
 ```bash
 cd "$(git rev-parse --show-toplevel)/harness"     # from anywhere in the repo
 for s in ../examples/ner-few-nerd/systems/*.yaml; do
-  ../examples/ner-few-nerd/.venv/bin/python scripts/run.py --system "$(basename "$s" .yaml)" \
+  ../examples/ner-few-nerd/.venv/bin/python scripts/cli.py run --system "$(basename "$s" .yaml)" \
     --dataset few_nerd_280 --goal entities_few_nerd
 done
 ```

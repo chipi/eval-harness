@@ -315,7 +315,7 @@ try:
     )
     st, body = call(
         port, "POST", "/api/v1/jobs",
-        {"command": "run", "args": {"system": "two_v1", "dataset": "tk_v1"}, "by": "person:test", "max_cost_usd": 0.01},
+        {"operation": "run", "inputs": {"system": "two_v1", "dataset": "tk_v1"}, "by": "person:test", "max_cost_usd": 0.01},
     )  # fmt: skip
     check("the API starts the run job", st == 202, (st, body[:300]))
     job_id = json.loads(body).get("id") if st == 202 else None

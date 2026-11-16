@@ -470,7 +470,8 @@ with tempfile.TemporaryDirectory() as tmp:
     r = subprocess.run(
         [
             sys.executable,
-            str(HERE / "rescore.py"),
+            str(HERE / "cli.py"),
+            "rescore",
             "--dataset-id",
             "d",
             "--out",

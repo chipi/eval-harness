@@ -309,7 +309,7 @@ try:
             and "no --dry-run" in none.get("error", ""),
             (st, str(est)[:300], st2, none),
         )  # fmt: skip
-        st, j = call("POST", "/api/v1/jobs", {"command": "run", "args": {"system": "rj_v1", "dataset": "tickets_v1", "goal": "tickets_summary", "round": "r3"}, "by": "person:ana",
+        st, j = call("POST", "/api/v1/jobs", {"operation": "run", "inputs": {"system": "rj_v1", "dataset": "tickets_v1", "goal": "tickets_summary", "round": "r3"}, "by": "person:ana",
                                               "max_cost_usd": 0.05})  # fmt: skip
         ledger3 = proj / ".build" / "rounds" / "tickets_summary" / "r3.json"
         for _ in range(300):

@@ -42,6 +42,14 @@ from evaluation_harness import _outputs  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 
 
+def cli_main(argv: list[str]) -> int:
+    """`evh judge-score` on this line, in this process (the exit code the command gives)."""
+    from evaluation_harness import ops  # noqa: PLC0415
+    from evaluation_harness.ops import cli as ops_cli  # noqa: PLC0415
+
+    return ops_cli.main(ops.OPS["judge-score"], argv)
+
+
 def _exit(fn):
     """The message of the SystemExit fn raises, or '' if it does not."""
     try:
@@ -794,14 +802,13 @@ with tempfile.TemporaryDirectory() as tmp:
     )
     old = (js.SCORERS, sys.argv)
     js.SCORERS = Path(td)
-    sys.argv = ["judge_score.py", "--dataset-id", real["dataset_id"], "--scorer", "judge-test-unval"]
     try:
         import contextlib
         import io
 
         buf = io.StringIO()
         with contextlib.redirect_stderr(buf):
-            rc = js.main()
+            rc = cli_main(["--dataset-id", real["dataset_id"], "--scorer", "judge-test-unval"])
     finally:
         js.SCORERS, sys.argv = old
     check("CLI: an unvalidated scorer exits 3 and says REFUSED", rc == 3 and "REFUSED" in buf.getvalue())
@@ -1052,14 +1059,13 @@ check(
     "validation" not in pw and js.validation_problems(pw) != [],
 )
 argv0 = sys.argv
-sys.argv = ["judge_score.py", "--dataset-id", pw["dataset_id"], "--scorer", pw["scorer_id"]]
 try:
     import contextlib
     import io
 
     buf = io.StringIO()
     with contextlib.redirect_stderr(buf):
-        rc = js.main()
+        rc = cli_main(["--dataset-id", pw["dataset_id"], "--scorer", pw["scorer_id"]])
 finally:
     sys.argv = argv0
 check(

@@ -83,7 +83,15 @@ with tempfile.TemporaryDirectory() as td:
     put(td, rec)
     env = {**os.environ, "EVAL_HOME": td, "EVAL_DATA_DIR": str(data), "OPENAI_API_KEY": "local"}
     run = subprocess.run(
-        [sys.executable, str(HERE / "scripts" / "model_onboard.py"), "fake-1b", "--deployment", "here"],
+        [
+            sys.executable,
+            str(HERE / "scripts" / "cli.py"),
+            "model-onboard",
+            "--model-id",
+            "fake-1b",
+            "--deployment",
+            "here",
+        ],
         capture_output=True,
         text=True,
         env=env,
@@ -150,7 +158,15 @@ with tempfile.TemporaryDirectory() as td:
     rec2 = {**rec, "settings": {}}
     put(td, rec2)
     run = subprocess.run(
-        [sys.executable, str(HERE / "scripts" / "model_onboard.py"), "fake-1b", "--deployment", "here"],
+        [
+            sys.executable,
+            str(HERE / "scripts" / "cli.py"),
+            "model-onboard",
+            "--model-id",
+            "fake-1b",
+            "--deployment",
+            "here",
+        ],
         capture_output=True,
         text=True,
         env=env,
@@ -164,7 +180,15 @@ with tempfile.TemporaryDirectory() as td:
     )
     put(td, {**rec2, "accepted": {"reasoning": "it cannot stop reasoning; low is the least"}})
     run = subprocess.run(
-        [sys.executable, str(HERE / "scripts" / "model_onboard.py"), "fake-1b", "--deployment", "here"],
+        [
+            sys.executable,
+            str(HERE / "scripts" / "cli.py"),
+            "model-onboard",
+            "--model-id",
+            "fake-1b",
+            "--deployment",
+            "here",
+        ],
         capture_output=True,
         text=True,
         env=env,
@@ -184,7 +208,15 @@ with tempfile.TemporaryDirectory() as td:
     rec3 = {**rec, "deployments": [{**rec["deployments"][0], "digest": "ffffffffffff"}]}
     put(td, rec3)
     run = subprocess.run(
-        [sys.executable, str(HERE / "scripts" / "model_onboard.py"), "fake-1b", "--deployment", "here"],
+        [
+            sys.executable,
+            str(HERE / "scripts" / "cli.py"),
+            "model-onboard",
+            "--model-id",
+            "fake-1b",
+            "--deployment",
+            "here",
+        ],
         capture_output=True,
         text=True,
         env=env,
@@ -209,7 +241,7 @@ with tempfile.TemporaryDirectory() as td:
     other = {**rec["deployments"][0], "id": "there", "where": "there"}
     put(td, {**rec, "deployments": [rec["deployments"][0], other]})
     run = subprocess.run(
-        [sys.executable, str(HERE / "scripts" / "model_onboard.py"), "fake-1b"],
+        [sys.executable, str(HERE / "scripts" / "cli.py"), "model-onboard", "--model-id", "fake-1b"],
         capture_output=True,
         text=True,
         env=env,
@@ -220,7 +252,15 @@ with tempfile.TemporaryDirectory() as td:
         (run.stdout + run.stderr)[-400:],
     )
     run = subprocess.run(
-        [sys.executable, str(HERE / "scripts" / "model_onboard.py"), "fake-1b", "--deployment", "there"],
+        [
+            sys.executable,
+            str(HERE / "scripts" / "cli.py"),
+            "model-onboard",
+            "--model-id",
+            "fake-1b",
+            "--deployment",
+            "there",
+        ],
         capture_output=True,
         text=True,
         env=env,

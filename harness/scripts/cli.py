@@ -47,28 +47,6 @@ COMMANDS = {
     ),
     "data-put": ("data_put.py", "create or change a setting (system, goal, fieldset, ...), checked first"),
     "data-rm": ("data_rm.py", "delete a setting, or a whole run"),
-    "run": ("run.py", "run one arm over a dataset (--dry-run to cost it)"),
-    "arm-smoke": (
-        "arm_smoke.py",
-        "smoke an arm on a few items before its full run: checks, projection, flags",
-    ),
-    "model-onboard": (
-        "model_onboard.py",
-        "onboard a model once: probe a deployment, write what was found into its record",
-    ),
-    "sweep": ("sweep.py", "run several arms, then the leaderboard"),
-    "rescore": ("rescore.py", "re-score stored outputs, a round's or a dataset's, for $0"),
-    "score-preview": (
-        "score_preview.py",
-        "what the scorer in this tree would move in a goal's decision; writes nothing",
-    ),
-    "judge-score": (
-        "judge_score.py",
-        "re-measure frozen outputs with a validated LLM judge (--dry-run first)",
-    ),
-    "silver-calibrate": ("silver_calibrate.py", "how far silver reference sets drift from gold"),
-    "bootstrap-test": ("bootstrap_test.py", "bootstrap intervals for corpus-level metrics"),
-    "holdout": ("holdout_significance.py", "tune on a pilot slice, confirm on the rest"),
     "capture-scrub": (
         "capture_scrub.py",
         "run the project's own scrubber over a capture's records, and record it",
@@ -89,14 +67,6 @@ COMMANDS = {
         "a study's best trial against its baseline on a test set: one look, the evidence",
     ),
     "study-import": ("study_import.py", "a past loop's results.tsv as a closed study (not confirmable)"),
-    "faithfulness": (
-        "faithfulness.py",
-        "replay a system at the commits production ran and compare it with production's arm, item by item",
-    ),
-    "faithfulness-name": (
-        "faithfulness_name.py",
-        "name a replay's disagreement whose cause is outside the system (a person's decision)",
-    ),
     "prompt-version": (
         "prompt_version.py",
         "record a prompt version from a file or text, with its parent and a note",

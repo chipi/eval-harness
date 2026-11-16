@@ -14,11 +14,11 @@ plan     what a rerun involves before anything is spent: every arm, what it cost
          which route a hosted arm would take. Free, offline.
 data     the example's environment (`uv sync`), its public data (`fetch.py`), and the
          hash check against the committed dataset files (`make dataset-materialize`).
-run      reruns the chosen arms as throwaway runs (`scripts/run.py --scratch`, under
+run      reruns the chosen arms as throwaway runs (`scripts/cli.py run --scratch`, under
          harness/.build/scratch/runs/ -- gitignored, read by nothing that reads runs), never
          beside the committed runs, which stay the record. A hosted arm's spend is
          capped at twice what it was billed when measured (EVAL_MAX_COST_USD per run).
-         Each arm is `scripts/run.py --system <id> --dataset <the eval's dataset>` on the
+         Each arm is `scripts/cli.py run --system <id> --dataset <the eval's dataset>` on the
          system in the example's systems/ folder. --system adds a system of your own, on the
          same items: a system id the harness can find (data/systems/), or a system file
          (system_id: <prefix><name>_v1, params, adapter; no dataset_id, goal or round),
@@ -299,7 +299,8 @@ def _run_cmd(venv: Path, system_id: str, exp: dict, goal: str | None) -> list:
     """The system on the eval's dataset, for the goal the committed run was measured for (a system names neither)."""
     return [
         str(venv),
-        "scripts/run.py",
+        "scripts/cli.py",
+        "run",
         "--system",
         system_id,
         "--dataset",

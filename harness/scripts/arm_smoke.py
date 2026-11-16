@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Smoke a system on a dataset before its full run (RFC-020): a few items, the way evh run would run them.
 
     evh arm-smoke --system <id> --dataset <id> [--items 3] [--replies] [--json]
@@ -20,21 +19,15 @@ SMOKE PASS (exit 0) or SMOKE CHECK with the flags (exit 6). When the system name
 
 from __future__ import annotations
 
-import sys as _sys
-from pathlib import Path as _Path
-
-if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
-    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
-
 import argparse
 import statistics
-import sys
 import time
 from typing import Any
 
 from evaluation_harness import _common, _jsonout, _models, _store
 from evaluation_harness._adapter import load_adapter, score_wants_source
-from evaluation_harness._common import DATA, EXIT_PROBLEMS, MATERIALIZED, die, evh_prog, load_dataset, now
+from evaluation_harness._common import DATA, EXIT_PROBLEMS, MATERIALIZED, die, load_dataset, now
+from evaluation_harness.ops import legacy
 
 #: A reply is long when it is this many times the arm's median reply (RFC-020: "far longer than the arm's
 #: normal ones"), over at least LONG_FLOOR tokens, among at least LONG_MIN_CALLS calls. A fixed count was a
@@ -196,34 +189,10 @@ def projection(items: list[dict[str, Any]], n_items: int) -> dict[str, Any]:
     }
 
 
-def main() -> int:
+def body(**inputs: Any) -> int:
     """Smoke one arm; exit 0 on SMOKE PASS, 6 (EXIT_PROBLEMS) on SMOKE CHECK."""
-    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.split("\n\n")[0])
-    ap.add_argument("--system", required=True, help="the system to smoke: its id (evh system-list)")
-    ap.add_argument("--dataset", required=True, help="the dataset whose first items it runs")
-    ap.add_argument("--goal", help="the goal its full run is for")
-    ap.add_argument(
-        "--round", help="the round its full run is in: the smoke spends on the round (needs --goal)"
-    )
-    ap.add_argument("--items", type=int, default=3, help="how many of the dataset's first items (default 3)")
-    ap.add_argument("--no-record", action="store_true", help="do not write the report into the model record")
-    ap.add_argument(
-        "--replies",
-        action="store_true",
-        help=f"print each reply whole (default: its first {REPLY_EXCERPT} characters)",
-    )
-    ap.add_argument(
-        "--json",
-        action="store_true",
-        help="one JSON object on stdout when done (the text goes to stderr): result.values has status, flags, "
-        "spent_usd, cost_basis (bill, price, mixed or none), calls, projection and items (with each reply)",
-    )
-    from evaluation_harness._actor import add_by  # noqa: PLC0415
-
-    add_by(ap)
-    args = ap.parse_args()
-    with _jsonout.collect("arm-smoke", args.json, live=sys.stderr):
-        return _smoke(args)
+    args = legacy.namespace(inputs, "arm-smoke")
+    return _smoke(args)
 
 
 def _smoke(args: argparse.Namespace) -> int:
@@ -433,7 +402,3 @@ def _smoke(args: argparse.Namespace) -> int:
         }
     )
     return 0 if not flags else EXIT_PROBLEMS
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())

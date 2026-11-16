@@ -44,7 +44,7 @@
       ])}`)}
       <div class="actions">${back()}</div>
       ${note("the held-out side is the tutorial's tickets split at 2026-11-02, sealed, two of its items read, opened for a two-sentence candidate: every number above is the harness's own answer in a throwaway project (workbench/round5_inputs.py).")}
-      ${cmd(`evh dataset-split <dataset> --split-by time --key opened --at <T> --seal --count-by kind\nevh exposure-add --dataset-id <dataset>_test --item <id> --what "…" --read-by agent:<name>\nevh exposure --dataset-id <dataset>_test\nevh exposure-check --dataset-id <dataset>_test --out leaks.tsv\nevh sealed-counts --dataset-id <dataset>_test\nevh dataset-unseal <dataset>_test --config <candidate> --reason "…"\nevh pair-test --dataset-id <dataset>_test --a <candidate> --b <baseline> --include-exposed`)}
+      ${cmd(`evh dataset-split --dataset-id <dataset> --split-by time --key opened --at <T> --seal --count-by kind\nevh exposure-add --dataset-id <dataset>_test --item <id> --what "…" --read-by agent:<name>\nevh exposure --dataset-id <dataset>_test\nevh exposure-check --dataset-id <dataset>_test --out leaks.tsv\nevh sealed-counts --dataset-id <dataset>_test\nevh dataset-unseal --dataset-id <dataset>_test --config <candidate> --reason "…"\nevh pair-test --dataset-id <dataset>_test --a <candidate> --b <baseline> --include-exposed`)}
     </div>`;
   }
   function wireHeldout() {

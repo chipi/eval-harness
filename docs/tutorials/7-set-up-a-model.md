@@ -47,7 +47,7 @@ the same tag can be a different build on each, and each is checked on its own.
 ## 2 · Onboard it
 
 ```bash
-evh model-onboard llama3.1-8b --deployment laptop
+evh model-onboard --model-id llama3.1-8b --deployment laptop
 ```
 ```text
 model-onboard: llama3.1-8b (llm)

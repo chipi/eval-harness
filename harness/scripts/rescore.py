@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Re-score finished runs from their stored outputs. No API calls, no money.
 
 The outputs are the expensive part of a run; the scores are arithmetic over them. But
@@ -25,13 +24,6 @@ inventing them.
 
 from __future__ import annotations
 
-import sys as _sys
-from pathlib import Path as _Path
-
-if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
-    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
-
-import argparse
 import inspect
 import json
 import sys
@@ -52,7 +44,6 @@ from evaluation_harness._common import (
     adapter_search_dirs,
     dataset_id_ok,
     die,
-    evh_prog,
     how,
     labels_reference,
     now,
@@ -69,6 +60,7 @@ from evaluation_harness._record import (
 )
 from evaluation_harness.model import datasets as _datasets
 from evaluation_harness.model import runs as _model_runs
+from evaluation_harness.ops import legacy
 
 #: Carried across from the original run rather than recomputed: these describe the CALL,
 #: not the measurement. A rescore that recomputed a latency would be reporting a number
@@ -600,115 +592,76 @@ def rescore_runs(
     return done
 
 
-def main() -> int:
+def body(**inputs: Any) -> int:
     """Re-score finished runs from their stored outputs: no API calls, no money."""
-    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
-    ap.add_argument("--dataset-id", help="the dataset whose runs to re-score (or --goal and --round)")
-    ap.add_argument("--match", help="only runs whose system_id contains this substring")
-    ap.add_argument(
-        "--label",
-        help="the label the scores are read under (default: 'rescored <8 characters of the scorer>'; 'silver' with "
-        "--reference-id silver/...; 'labels-<dataset>-<set>' with --labels)",
-    )
-    ap.add_argument(
-        "--reference-id",
-        help="score against THIS reference set (e.g. gold/my_v1) instead of the "
-        "one each run recorded -- for when gold arrives after the runs",
-    )
-    ap.add_argument(
-        "--labels",
-        metavar="SET",
-        help="score against a label set of the dataset (SET or DATASET/SET), without promoting it; read under its own "
-        "label (labels-<dataset>-<set>), never where a goal reads a re-score (RFC-023)",
-    )
-    ap.add_argument("--goal", help="with --round: re-score that round's arms")
-    ap.add_argument(
-        "--round", dest="round_id", help="the round whose arms (its own and those it carried) to re-score"
-    )
-    ap.add_argument("--why", default="", help="with --round: why the scoring changed, recorded on the round")
-    ap.add_argument(
-        "--unfaithful",
-        action="store_true",
-        help="re-score a replay (RFC-030) whose faithfulness record does not agree with production, as a person (an "
-        "agent is refused); the record says so",
-    )
-    from evaluation_harness._actor import add_by  # noqa: PLC0415
+    args = legacy.namespace(inputs, "rescore", {"round": "round_id"})
+    if args.labels:
+        if args.reference_id or args.round_id:
+            die("--labels is its own target: not with --reference-id or --round", "bad-argument")
+        if not args.dataset_id:
+            die("--labels needs --dataset-id", "bad-argument")
+        args.reference_id = labels_reference(args.labels, args.dataset_id)
+    elif args.reference_id and not _store.is_dir(REFERENCES / args.reference_id):
+        die(f"no reference set at data/references/{args.reference_id}", "not-found")
+    rnd = None
+    if args.round_id:
+        if not args.goal:
+            die("--round needs --goal", "bad-argument")
+        if len(args.why.split()) < 3:
+            die("--round needs --why, a sentence: what changed in the scoring, and why?", "bad-argument")
+        from evaluation_harness import _rounds  # noqa: PLC0415
 
-    add_by(ap)
-    ap.add_argument(
-        "--json",
-        action="store_true",
-        help="one JSON object on stdout when done (the text goes to stderr as it is printed): the envelope every --json command gives (result.blocks, result.values)",
-    )
-    args = ap.parse_args()
-    with _jsonout.collect("rescore", args.json, live=sys.stderr):
-        if args.labels:
-            if args.reference_id or args.round_id:
-                die("--labels is its own target: not with --reference-id or --round", "bad-argument")
-            if not args.dataset_id:
-                die("--labels needs --dataset-id", "bad-argument")
-            args.reference_id = labels_reference(args.labels, args.dataset_id)
-        elif args.reference_id and not _store.is_dir(REFERENCES / args.reference_id):
-            die(f"no reference set at data/references/{args.reference_id}", "not-found")
-        rnd = None
-        if args.round_id:
-            if not args.goal:
-                die("--round needs --goal", "bad-argument")
-            if len(args.why.split()) < 3:
-                die("--round needs --why, a sentence: what changed in the scoring, and why?", "bad-argument")
-            from evaluation_harness import _rounds  # noqa: PLC0415
-
-            rnd = _rounds.find(args.goal, args.round_id)
-            if rnd is None:
-                die(f"no round {args.round_id} of {args.goal}", "not-found")
-            args.dataset_id = rnd["dataset_id"]
-            todo = measured_runs(args.dataset_id, set(_rounds.arms_of(rnd)))
-        elif not args.dataset_id:
-            die("--dataset-id, or --goal with --round", "bad-argument")
-        else:
-            todo = [
-                (d, m)
-                for d, m in measured_runs(args.dataset_id)
-                if not args.match or args.match in m["system_id"]
-            ]
-        if not todo:
-            die(
-                f"no runs on {args.dataset_id!r}" + (f" matching {args.match!r}" if args.match else ""),
-                "not-found",
-            )
-        # A replay is scored only once it reproduces production (RFC-030): every run checked before any is written.
-        from evaluation_harness import _faith  # noqa: PLC0415
-
-        faith = {m["run_id"]: _faith.allow_scoring(m, "re-scoring", args.unfaithful) for d, m in todo}
-        print(f"rescoring {len(todo)} run(s)")
-        done = rescore_runs(todo, label_as=args.label, reference_id=args.reference_id, faith=faith)
-        labels = sorted({str(_model_runs.meta(d).get("label") or "") for d, _ in done})
-        print(f"\n{len(done)} run(s) rescored, read as {', '.join(repr(x) for x in labels)}")
-        _jsonout.values({"rescored": [str(d) for d, _ in done], "labels": labels})
-        if rnd is not None and done:
-            from evaluation_harness import _rounds  # noqa: PLC0415
-
-            sha = (done[0][1].get("derived") or {}).get("with", {}).get("sha256", "")
-            rnd.setdefault("scoring", []).append(
-                {"at": now(), "scorer": sha[:12], "why": args.why, "written": labels, "runs": len(done)}
-            )
-            src_ref = {m["run_id"]: _reference_of(m) for _d, m in todo}
-            _rounds.read_under_rescore(
-                rnd,
-                done,
-                frozenset(m["system_id"] for _d, m in done if src_ref.get(m["run_id"]) != _reference_of(m)),
-            )
-            _rounds.save(rnd)
-            print(f"  round {rnd['round_id']} of {rnd['goal']} records the scoring: {args.why}")
-        for line in cut_off_lines(todo, done):
-            print(line)
-        next_cmd = f"evh goal-leaderboard {rnd['goal']}" if rnd else "evh goal-list"
-        src_ref = {m["run_id"]: _reference_of(m) for d, m in todo}
-        print(
-            closing_line([(src_ref.get(m["run_id"]), _reference_of(m)) for d, m in done])
-            + how(next_cmd, "make catalog")
+        rnd = _rounds.find(args.goal, args.round_id)
+        if rnd is None:
+            die(f"no round {args.round_id} of {args.goal}", "not-found")
+        args.dataset_id = rnd["dataset_id"]
+        todo = measured_runs(args.dataset_id, set(_rounds.arms_of(rnd)))
+    elif not args.dataset_id:
+        die("--dataset-id, or --goal with --round", "bad-argument")
+    else:
+        todo = [
+            (d, m)
+            for d, m in measured_runs(args.dataset_id)
+            if not args.match or args.match in m["system_id"]
+        ]
+    if not todo:
+        die(
+            f"no runs on {args.dataset_id!r}" + (f" matching {args.match!r}" if args.match else ""),
+            "not-found",
         )
-        return 0
+    # A replay is scored only once it reproduces production (RFC-030): every run checked before any is written.
+    from evaluation_harness import _faith  # noqa: PLC0415
+
+    faith = {m["run_id"]: _faith.allow_scoring(m, "re-scoring", args.unfaithful) for d, m in todo}
+    print(f"rescoring {len(todo)} run(s)")
+    done = rescore_runs(todo, label_as=args.label, reference_id=args.reference_id, faith=faith)
+    labels = sorted({str(_model_runs.meta(d).get("label") or "") for d, _ in done})
+    print(f"\n{len(done)} run(s) rescored, read as {', '.join(repr(x) for x in labels)}")
+    _jsonout.values({"rescored": [str(d) for d, _ in done], "labels": labels})
+    if rnd is not None and done:
+        from evaluation_harness import _rounds  # noqa: PLC0415
+
+        sha = (done[0][1].get("derived") or {}).get("with", {}).get("sha256", "")
+        rnd.setdefault("scoring", []).append(
+            {"at": now(), "scorer": sha[:12], "why": args.why, "written": labels, "runs": len(done)}
+        )
+        src_ref = {m["run_id"]: _reference_of(m) for _d, m in todo}
+        _rounds.read_under_rescore(
+            rnd,
+            done,
+            frozenset(m["system_id"] for _d, m in done if src_ref.get(m["run_id"]) != _reference_of(m)),
+        )
+        _rounds.save(rnd)
+        print(f"  round {rnd['round_id']} of {rnd['goal']} records the scoring: {args.why}")
+    for line in cut_off_lines(todo, done):
+        print(line)
+    next_cmd = f"evh goal-leaderboard {rnd['goal']}" if rnd else "evh goal-list"
+    src_ref = {m["run_id"]: _reference_of(m) for d, m in todo}
+    print(
+        closing_line([(src_ref.get(m["run_id"]), _reference_of(m)) for d, m in done])
+        + how(next_cmd, "make catalog")
+    )
+    return 0
 
 
 def cut_off_lines(todo: list[tuple[Path, dict]], done: list[tuple[Path, dict]]) -> list[str]:
@@ -799,7 +752,3 @@ def _sha(path):
 
     # By behaviour: an adapter whose docstrings or METRIC_DESCRIPTIONS changed scores the same.
     return file_sha256(Path(path)) if path else None
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())

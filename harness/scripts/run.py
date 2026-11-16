@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Run one system on one dataset; emit a run directory.
 
 A run records THREE things, and is worthless without all of them:
@@ -24,12 +23,6 @@ half stays generic.
 """
 
 from __future__ import annotations
-
-import sys as _sys
-from pathlib import Path as _Path
-
-if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
-    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
 import argparse
 import json
@@ -66,7 +59,6 @@ from evaluation_harness._common import (
     classify_metrics,
     die,
     env_float,
-    evh_prog,
     how,
     load_dataset,
     load_goals,
@@ -86,6 +78,7 @@ from evaluation_harness._retry import call_with_retries, is_transient
 from evaluation_harness.model import datasets as _datasets
 from evaluation_harness.model import results as _results
 from evaluation_harness.model import runs as _model_runs
+from evaluation_harness.ops import legacy
 
 
 class _Resumed:
@@ -994,79 +987,15 @@ def _resume_source(
     return resume_dir, prior_rows
 
 
-def main() -> int:
+def body(**inputs: Any) -> int:
     """Run a system on a dataset."""
-    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
-    ap.add_argument("--system", required=True, help="the system to run: its id (evh system-list)")
-    ap.add_argument("--dataset", required=True, help="the dataset it runs on: its id")
-    ap.add_argument("--goal", help="the goal this run is measured for (ADR-0002)")
-    ap.add_argument(
-        "--round",
-        help="the round of its goal the run belongs to (ADR-0004): needs --goal, on the round's dataset",
-    )
-    ap.add_argument(
-        "--labels",
-        metavar="SET",
-        help="score against this label set of the dataset (SET or DATASET/SET) instead of its gold or silver (RFC-023)",
-    )
-    ap.add_argument("--repeat", type=int, default=1, help="run N times to measure the arm's spread")
-    ap.add_argument(
-        "--purpose",
-        choices=_model_runs.PURPOSES,
-        default="run",
-        help="what the run is for (RFC-032): run (default), repeat (another measurement of a system's run), retime "
-        "(the same on another machine), pair (a run for a paired test); a re-run is read as an arm of its own",
-    )
-    ap.add_argument(
-        "--of", metavar="RUN_ID", help="the run a re-run (--purpose repeat, retime, pair) re-does"
-    )
-    ap.add_argument(
-        "--scratch",
-        action="store_true",
-        help="a throwaway pass: written under .build/scratch/runs, where nothing that reads runs looks",
-    )
-    ap.add_argument("--run-id", help="default: <system>_<timestamp>")
-    ap.add_argument(
-        "--items",
-        type=Path,
-        metavar="FILE",
-        help="run only these item ids (one per line) of the dataset: a study's confirmation leaves out the items its "
-        "study saw (RFC-029). The fingerprint's items are then these; a test set's looks are still the whole set's",
-    )
-    ap.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="cost and shape the sweep WITHOUT calling anything",
-    )
-    ap.add_argument(
-        "--resume",
-        metavar="RUN_ID",
-        help="reuse outputs already produced by RUN_ID; only pay for what is missing",
-    )
-    ap.add_argument(
-        "--json",
-        action="store_true",
-        help="progress on stderr, and one JSON object on stdout when done: result.values.runs, one entry per "
-        "run written (run_id, system_id, dataset_id, dir, n_items, total_cost_usd, capped_at); with "
-        "--dry-run, result.values.dry_run. Exit codes as without it (1: nothing measured, 2: cost cap)",
-    )
-    ap.add_argument(
-        "--unfaithful",
-        action="store_true",
-        help="a replay (RFC-030) whose faithfulness record does not agree with production is scored anyway, by a "
-        "person (an agent is refused); the run and every page showing it say so",
-    )
-    from evaluation_harness._actor import add_by  # noqa: PLC0415
-
-    add_by(ap)
-    args = ap.parse_args()
+    args = legacy.namespace(inputs, "run")
     # Redirected to a log, stdout is block-buffered and a watcher saw nothing for minutes (stderr, where --json sends
     # the progress, can be as well): a line is written when it is printed, whatever the stream is.
     for stream in (sys.stdout, sys.stderr):
-        if not stream.isatty() and hasattr(stream, "reconfigure"):
+        if hasattr(stream, "reconfigure") and not stream.isatty():
             stream.reconfigure(line_buffering=True)
-    with _jsonout.collect("run", args.json, live=sys.stderr):
-        return _run(args)
+    return _run(args)
 
 
 def _run(args: argparse.Namespace) -> int:
@@ -1658,7 +1587,3 @@ def _run(args: argparse.Namespace) -> int:
     if not args.scratch:
         warn_if_ignored(runs)
     return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())

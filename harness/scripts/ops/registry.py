@@ -216,6 +216,7 @@ def _all() -> dict[str, Op]:
         records_work,
         reports,
         rounds,
+        run_jobs,
         scorers,
         stats,
         studies,
@@ -240,6 +241,7 @@ def _all() -> dict[str, Op]:
         *records.OPS,
         *records_work.OPS,
         *reports.OPS,
+        *run_jobs.OPS,
     ):
         if op.kind not in KINDS:
             raise ValueError(f"{op.name}: kind {op.kind!r} is not one of {KINDS}")

@@ -94,42 +94,6 @@ def _first(v: Any) -> Any:
     return v[0] if isinstance(v, list) and v else v
 
 
-def _ds(a: dict) -> list[tuple[str, bool]]:
-    d = _first(a.get("dataset-id")) or _first(a.get("dataset_id"))
-    return [(f"dataset:{d}", True)] if d else []
-
-
-def _run_locks(a: dict) -> list[tuple[str, bool]]:
-    s, d = _first(a.get("system")), _first(a.get("dataset"))
-    return [*([(f"system:{s}", True)] if s else []), *([(f"dataset:{d}", False)] if d else [])]
-
-
-def _model_locks(a: dict) -> list[tuple[str, bool]]:
-    c = _system(_first(a.get("system")))
-    m = c.get("model_record") or (c.get("params") or {}).get("model")
-    return [(f"model:{m}", True)] if m else []
-
-
-def _sweep_locks(a: dict) -> list[tuple[str, bool]]:
-    out: list[tuple[str, bool]] = []
-    for s in a.get("systems") or []:
-        out += _run_locks({"system": s, "dataset": a.get("dataset")})
-    return out
-
-
-def _rescore_locks(a: dict) -> list[tuple[str, bool]]:
-    out = _ds(a)
-    if a.get("round") and a.get("goal"):
-        out.append((f"goal:{a['goal']}", True))
-        if not out[:-1]:
-            from evaluation_harness import _rounds  # noqa: PLC0415
-
-            rnd = _rounds.find(str(a["goal"]), str(a["round"])) or {}
-            if rnd.get("dataset_id"):
-                out.append((f"dataset:{rnd['dataset_id']}", True))
-    return out
-
-
 def _data_rm_locks(a: dict) -> list[tuple[str, bool]]:
     out = [("settings", True)]
     path = str(_first(a.get("path")) or "")
@@ -143,18 +107,10 @@ def _data_rm_locks(a: dict) -> list[tuple[str, bool]]:
 #: command -> its locks from the call's arguments (names as the API takes them). `project` shared is added to every
 #: job; a migration takes it exclusive. A job command in neither this nor PROJECT_ONLY fails a test.
 LOCK_RULES: dict[str, Callable[[dict], list[tuple[str, bool]]]] = {
-    "run": _run_locks,
-    "arm-smoke": _model_locks,
-    "model-onboard": _model_locks,
-    "sweep": _sweep_locks,
-    "rescore": _rescore_locks,
-    "judge-score": _rescore_locks,
     "catalog": lambda a: [("catalog", True)],
     "study-run": lambda a: [(f"study-loop:{_first(a.get('study'))}", True)] if a.get("study") else [],
     "study-tell": lambda a: [(f"study-loop:{_first(a.get('study'))}", True)] if a.get("study") else [],
     "study-confirm": lambda a: [(f"dataset:{_first(a.get('test'))}", True)] if a.get("test") else [],
-    "faithfulness": _model_locks,  # writes its versions' summaries into the code record
-    "faithfulness-name": lambda a: [(f"model:{_first(a.get('model'))}", True)] if a.get("model") else [],
     "data-put": lambda a: [("settings", True)],
     "data-rm": _data_rm_locks,
 }
@@ -167,10 +123,6 @@ PROJECT_ONLY = {
     "study-import",
     "prompt-version",  # a version is written once, named by its content (RFC-028): two at once write one
     "prompt-export",  # into the job's own folder
-    "bootstrap-test",
-    "holdout",
-    "score-preview",
-    "silver-calibrate",
 }
 
 

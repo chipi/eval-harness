@@ -648,8 +648,9 @@ try:
             "    time.sleep(0.7 if 25 < n[0] <= 28 else 0)\n"
             "    return call_judge(message, params)\n"
             "js.real_call = slow\n"
-            "sys.argv = ['judge_score.py', '--dataset-id', 'tickets_v1', '--scorer', 'tickets-judge-v1', '--unvalidated']\n"
-            "sys.exit(js.main())\n"
+            "from evaluation_harness import ops\n"
+            "from evaluation_harness.ops import cli\n"
+            "sys.exit(cli.main(ops.OPS['judge-score'], ['--dataset-id', 'tickets_v1', '--scorer', 'tickets-judge-v1', '--unvalidated']))\n"
         )
         started = time.perf_counter()
         pr = subprocess.Popen(

@@ -60,7 +60,7 @@ OPS = (
            "key": {"type": "string", "description": "an item field: hash all items with one value to one side, or the time field for --split-by time"},
            "seed": {"type": "integer", "default": 0, "description": "with --split-by hash: the seed (default 0)"},
            "at": {"type": "string", "description": "with --split-by time: the boundary, an ISO time; items at or after it are the test side (instead of --test)"},
-           "seal": {"type": "boolean", "description": "seal the test side: no run, score or label on it until evh dataset-unseal names a candidate system with a committed hypothesis"},
+           "seal": {"type": "boolean", "description": "seal the test side: no run, score or label on it until evh dataset-unseal --dataset-id names a candidate system with a committed hypothesis"},
            "count_by": {"type": "string", "description": "with --seal: item fields a counts-only report (evh sealed-counts) may group the held-out side by, comma-separated; fixed now, so whoever reads the counts does not choose what they show (RFC-031)"},
            "force": {"type": "boolean", "description": "overwrite the two datasets if nothing cites them yet"},
        }),

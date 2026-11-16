@@ -65,7 +65,7 @@ _run_meta, _jobs._run_meta = _jobs._run_meta, lambda run_id: {"system_id": "slow
 try:
     run_key = {
         k
-        for k, _ex in _jobs.locks_for("run", {"system": "slow_v1", "dataset": "tk_v1"})
+        for k, _ex in op_locks.locks_for(ops.OPS["run"], {"system": "slow_v1", "dataset": "tk_v1"})
         if k.startswith("system:")
     }
     rm_key = {
@@ -208,8 +208,8 @@ try:
     )
     srv, PORT, TOKEN = serve()
 
-    st, j = job("run", {"system": "fast_v1", "dataset": "tk_v1"}, by="person:ana")
-    st2, _j = job("run-promote", {"run": "x"}, reason="no one named")
+    st, j = op_job("run", {"system": "fast_v1", "dataset": "tk_v1"}, by="person:ana")
+    st2, _j = op_job("run-promote", {"run": "x", "reason": "no one is named for it"})
     st3, _j = job("leaderboard", {"dataset-id": "tk_v1"})
     st4, _j = call(
         "POST",
@@ -222,7 +222,7 @@ try:
         (st, st2, st3, st4) == (400, 400, 400, 403) and "max_cost_usd" in j.get("error", ""),
         (st, st2, st3, st4, j),
     )
-    st, j = job("run", {"system": "fast_v1", "dataset": "tk_v1"}, by="person:ana", max_cost_usd=1)
+    st, j = op_job("run", {"system": "fast_v1", "dataset": "tk_v1"}, by="person:ana", max_cost_usd=1)
     done = until(j.get("id"), ("succeeded", "failed")) if st == 202 else {}
     run_id = (done.get("run_id") or "") if done else ""
     m = (
@@ -246,9 +246,9 @@ try:
     )
 
     # Locks: a second run of one system waits for the first.
-    st, a = job("run", {"system": "slow_v1", "dataset": "tk_v1"}, by="person:ana", max_cost_usd=1)
+    st, a = op_job("run", {"system": "slow_v1", "dataset": "tk_v1"}, by="person:ana", max_cost_usd=1)
     until(a["id"], ("running",), 30)
-    st, b = job("run", {"system": "slow_v1", "dataset": "tk_v1"}, by="person:ana", max_cost_usd=1)
+    st, b = op_job("run", {"system": "slow_v1", "dataset": "tk_v1"}, by="person:ana", max_cost_usd=1)
     time.sleep(1.5)
     _st, bq = call("GET", f"/api/v1/jobs/{b['id']}")
     check(
@@ -365,12 +365,12 @@ try:
         "a stopped run is resumed by a new job (run --resume its run id)",
         st == 202
         and rdone.get("state") == "succeeded"
-        and "--resume" in rdone.get("argv", [])
-        and a.get("run_id") in rdone.get("argv", []),
+        and (rdone.get("inputs") or {}).get("resume") == a.get("run_id")
+        and (rdone.get("inputs") or {}).get("run_id") == rdone.get("run_id") != a.get("run_id"),
         (
             st,
             rdone.get("state"),
-            rdone.get("argv"),
+            rdone.get("inputs"),
             call("GET", f"/api/v1/jobs/{res.get('id')}/log")[1].get("log", "")[-600:],
         ),
     )
@@ -383,7 +383,7 @@ try:
         paid > 0 and abs(float(rjob.get("env", {}).get("EVAL_MAX_COST_USD", "nan")) - (1 - paid)) < 1e-6,
         (paid, rjob.get("env")),
     )
-    st, f = job("run", {"system": "slow_v1", "dataset": "tk_v1"}, by="person:ana", max_cost_usd=0.01)
+    st, f = op_job("run", {"system": "slow_v1", "dataset": "tk_v1"}, by="person:ana", max_cost_usd=0.01)
     fdone = until(f.get("id"), ("succeeded", "failed", "cancelled"), 120) if st == 202 else {}
     st, refusal = call("POST", f"/api/v1/jobs/{f.get('id')}/resume")
     check(
@@ -395,7 +395,7 @@ try:
     )
 
     # A supervisor that dies.
-    st, e = job("run", {"system": "slow_v1", "dataset": "tk_v1"}, by="person:ana", max_cost_usd=1)
+    st, e = op_job("run", {"system": "slow_v1", "dataset": "tk_v1"}, by="person:ana", max_cost_usd=1)
     run_e = until(e["id"], ("running",), 30)
     os.kill(run_e["supervisor_pid"], signal.SIGKILL)
     time.sleep(0.5)
@@ -475,7 +475,7 @@ try:
         and after.get("state") == "cancelled",
         (r.returncode, r.stderr[-300:], listed, tj.get("by"), r2.stderr[-200:], after.get("state")),
     )  # fmt: skip
-    st, aj = job("run", {"system": "fast_v1", "dataset": "tk_v1"}, by="person:ana", max_cost_usd=1)
+    st, aj = op_job("run", {"system": "fast_v1", "dataset": "tk_v1"}, by="person:ana", max_cost_usd=1)
     r3 = evh("jobs-logs", aj.get("id", "none"), "--follow")
     r4 = evh("jobs-status", aj.get("id", "none"))
     check(

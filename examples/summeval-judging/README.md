@@ -135,7 +135,7 @@ With `OPENROUTER_API_KEY` in `harness/.env`, from `harness/` (about $7 for all 2
 for a in anthropic_s anthropic_m anthropic_l openai_s openai_m openai_l \
          deepseek_s deepseek_m deepseek_l gemma_s gemma_m gemma_l glm_s glm_m glm_l \
          llama_s llama_m llama_l mistral_s mistral_m mistral_l qwen_s qwen_m qwen37max; do
-  ../examples/summeval-judging/.venv/bin/python scripts/run.py \
+  ../examples/summeval-judging/.venv/bin/python scripts/cli.py run \
     --system se_${a}_n100_v1 --dataset summeval_100 --goal summary_judge_summeval; done
 make leaderboard DATASET_ID=summeval_100
 ```
@@ -144,7 +144,7 @@ The pick and pairwise validations, the same way (the `random` arms call nothing)
 
 ```bash
 for a in gemma_l qwen_s random; do for m in pick pairwise; do
-  ../examples/summeval-judging/.venv/bin/python scripts/run.py \
+  ../examples/summeval-judging/.venv/bin/python scripts/cli.py run \
     --system se_${a}_n100_${m}_v1 --dataset summeval_100 --goal summary_judge_summeval; done; done
 ```
 

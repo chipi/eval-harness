@@ -251,6 +251,34 @@ try:
     st, e = call("POST", f"/api/v1/runs/{lead2}/promote", {"reason": "a b c d"})
     check("a decision with no `by` is refused (400)", st == 400, (st, e))
 
+    # A spending operation's own route (run, step 6): its cap, the system it names, the run id the job gives it.
+    st, e = call(
+        "POST", "/api/v1/systems/tickets_lead1_v1/runs", {"dataset": "tickets_v1", "by": "person:ana"}
+    )
+    check(
+        "POST /systems/{system}/runs without max_cost_usd is refused before a job exists (400)",
+        st == 400 and "max_cost_usd" in e.get("error", ""),
+        (st, e),
+    )
+    st, e = call(
+        "POST",
+        "/api/v1/systems/no_such_v1/runs",
+        {"dataset": "tickets_v1", "by": "person:ana", "max_cost_usd": 1},
+    )
+    check("a run of a system that does not exist is refused (404)", st == 404, (st, e))
+    st, rec, done = post("/systems/tickets_lead1_v1/runs", {"dataset": "tickets_v1", "max_cost_usd": 1})
+    check(
+        "POST /systems/{system}/runs starts a run job: the system from the path, the run id the job's own, "
+        "the cap in its environment, and the run ends succeeded ($0, an offline arm)",
+        st == 202
+        and rec.get("operation") == "run"
+        and rec.get("inputs", {}).get("system") == "tickets_lead1_v1"
+        and str(rec.get("run_id", "")).startswith("tickets_lead1_v1_")
+        and rec.get("env", {}).get("EVAL_MAX_COST_USD") == "1"
+        and done.get("state") == "succeeded",
+        (st, rec, done.get("state"), done.get("refusal"), log_tail(rec, done)),
+    )
+
     # ── step 4: datasets ───────────────────────────────────────────────────────────────────────────────────────────
     for n in range(1, 13):
         _runstore.write_text(proj, f"sources/item_{n}.txt", f"item {n} of the route test\n")

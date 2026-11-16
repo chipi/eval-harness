@@ -439,7 +439,7 @@ def print_model(d: dict) -> None:
             onb = dep.get("onboarding") or {}
             if not onb:
                 print(
-                    f"  {dep['id']}: not onboarded: evh model-onboard {d['model']} --deployment {dep['id']}"
+                    f"  {dep['id']}: not onboarded: evh model-onboard --model-id {d['model']} --deployment {dep['id']}"
                 )
                 continue
             print(
@@ -451,7 +451,7 @@ def print_model(d: dict) -> None:
             for f in onb.get("flags") or []:
                 print(f"    flag: {f}")
     else:
-        print(f"  not onboarded: evh model-onboard {d['model']}")
+        print(f"  not onboarded: evh model-onboard --model-id {d['model']}")
     print("\nsettings history:")
     if c["history"]:
         _table(

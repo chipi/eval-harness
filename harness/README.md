@@ -235,7 +235,7 @@ once, in a record (`data/models/<id>.yaml`) with a deployment per place it runs,
 eval uses it:
 
 ```bash
-evh model-onboard my-model --deployment laptop   # its build, whether it reasons, JSON, determinism, speed
+evh model-onboard --model-id my-model --deployment laptop   # its build, whether it reasons, JSON, determinism, speed
 evh arm-smoke --system my_system_v1 --dataset my_v1   # a few items with the system's own settings, before the full run
 evh model-list                                       # which models are onboarded, vetted, and where they run
 ```

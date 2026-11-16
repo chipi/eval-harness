@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Replay a system at the commits production ran and compare it with production's arm, item by item (RFC-030).
 
     evh faithfulness --system filing_replay_v1 --dataset filing_history_v1 --production production_v1_20261105T120000
@@ -14,16 +13,9 @@ per commit, the functions of the system's code the replay entered and those it n
 
 from __future__ import annotations
 
-import sys as _sys
-from pathlib import Path as _Path
-
-if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
-    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
-
 import argparse
 import os
 import shutil
-import sys
 from pathlib import Path
 from typing import Any
 
@@ -41,44 +33,20 @@ from evaluation_harness._common import (
     EXIT_STOPPED,
     ROOT,
     die,
-    evh_prog,
     load_dataset,
     now,
 )
 from evaluation_harness.model import faithfulness as model_faithfulness
+from evaluation_harness.ops import legacy
 
 #: Disagreements printed; the record keeps every one.
 SHOWN = 30
 
 
-def main() -> int:
+def body(**inputs: Any) -> int:
     """Replay at the recorded commits and compare with production."""
-    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
-    ap.add_argument(
-        "--system", required=True, help="the replay system (replay:, model_record: a code record): its id"
-    )
-    ap.add_argument("--dataset", required=True, help="the dataset it replays, production's arm's")
-    ap.add_argument(
-        "--production",
-        required=True,
-        metavar="RUN_ID",
-        help="production's arm: a run on the same dataset holding what production did (a recorded arm)",
-    )
-    ap.add_argument(
-        "--dry-run", action="store_true", help="the plan (items, commits) without calling anything"
-    )
-    ap.add_argument(
-        "--json",
-        action="store_true",
-        help="progress on stderr, and one JSON object on stdout: result.values.faithfulness (the record, its n), "
-        "or result.values.plan with --dry-run",
-    )
-    from evaluation_harness._actor import add_by  # noqa: PLC0415
-
-    add_by(ap)
-    args = ap.parse_args()
-    with _jsonout.collect("faithfulness", args.json, live=sys.stderr):
-        return _faithfulness(args)
+    args = legacy.namespace(inputs, "faithfulness")
+    return _faithfulness(args)
 
 
 def _production(run_id: str, ds: dict[str, Any]) -> dict[str, str]:
@@ -245,7 +213,3 @@ def _faithfulness(args: argparse.Namespace) -> int:
         )
     _jsonout.value("faithfulness", {**rec, "n": n})
     return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())

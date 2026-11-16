@@ -1,8 +1,7 @@
-#!/usr/bin/env python3
 """Onboard a model once, for every eval (RFC-020): probe it and write what was found into its record.
 
-    evh model-onboard <model_id> --deployment <id>        an LLM: probes through the deployment's endpoint
-    evh model-onboard <model_id> --system <id> --dataset <id>   an ML model or a baseline: through a system that runs it
+    evh model-onboard --model-id <model_id> --deployment <id>        an LLM: probes through the deployment's endpoint
+    evh model-onboard --model-id <model_id> --system <id> --dataset <id>   an ML model or a baseline: through a system that runs it
                                                           (--deployment names the deployment it is written to)
 
 An LLM is probed task-independently, through the endpoint its record gives for that deployment (a built-in
@@ -26,13 +25,6 @@ ONBOARD PASS (exit 0) or ONBOARD CHECK with the flags (exit 6). The onboarding i
 
 from __future__ import annotations
 
-import sys as _sys
-from pathlib import Path as _Path
-
-if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
-    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
-
-import argparse
 import json
 import sys
 import time
@@ -40,8 +32,9 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _jsonout, _models
-from evaluation_harness._common import DATA, EXIT_PROBLEMS, die, evh_prog, now
+from evaluation_harness import _models
+from evaluation_harness._common import DATA, EXIT_PROBLEMS, die, now
+from evaluation_harness.ops import legacy
 
 PROBE = (
     "Answer with one JSON object and nothing else, in the form "
@@ -168,164 +161,143 @@ def probe_llm(rec: dict[str, Any], dep: dict[str, Any]) -> tuple[dict[str, Any],
     return report, flags, caps
 
 
-def main() -> int:
+def body(**inputs: Any) -> int:
     """Onboard one deployment (or an arm's model); exit 0 on ONBOARD PASS, 6 (EXIT_PROBLEMS) on ONBOARD CHECK."""
-    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.split("\n\n")[0])
-    ap.add_argument("model_id")
-    ap.add_argument(
-        "--deployment", help="the deployment to probe and write: an `id` in the record's deployments"
-    )
-    ap.add_argument("--system", help="a system that runs the model (an ML model or a baseline): its id")
-    ap.add_argument("--dataset", help="the dataset whose first items the system runs (with --system)")
-    from evaluation_harness._actor import add_by  # noqa: PLC0415
-
-    add_by(ap)
-    ap.add_argument(
-        "--json",
-        action="store_true",
-        help="one JSON object on stdout when done (the text goes to stderr as it is printed): the envelope every --json command gives (result.blocks, result.values)",
-    )
-    args = ap.parse_args()
-    with _jsonout.collect("model-onboard", args.json, live=sys.stderr):
-        rec = _models.find(DATA, args.model_id)
-        if rec is None:
+    args = legacy.namespace(inputs, "model-onboard")
+    rec = _models.find(DATA, args.model_id)
+    if rec is None:
+        die(
+            f"no model record {args.model_id!r}: write data/models/{args.model_id}.yaml first (model_id, kind, aliases)",
+            "not-found",
+        )
+    before = json.loads(json.dumps(rec))  # what this run read, so it writes back only what it changed
+    print(f"model-onboard: {args.model_id} ({rec.get('kind')})")
+    if rec.get("kind") == "llm":
+        deployments = rec.get("deployments") or []
+        dep = (
+            _models.deployment_of(rec, args.deployment)
+            if args.deployment
+            else (deployments[0] if len(deployments) == 1 else None)
+        )
+        if dep is None:
             die(
-                f"no model record {args.model_id!r}: write data/models/{args.model_id}.yaml first (model_id, kind, aliases)",
-                "not-found",
+                f"--deployment: one of {', '.join(x.get('id', '?') for x in deployments) or '(no deployments in the record)'}",
+                "bad-argument",
             )
-        before = json.loads(json.dumps(rec))  # what this run read, so it writes back only what it changed
-        print(f"model-onboard: {args.model_id} ({rec.get('kind')})")
-        if rec.get("kind") == "llm":
-            deployments = rec.get("deployments") or []
-            dep = (
-                _models.deployment_of(rec, args.deployment)
-                if args.deployment
-                else (deployments[0] if len(deployments) == 1 else None)
-            )
-            if dep is None:
-                die(
-                    f"--deployment: one of {', '.join(x.get('id', '?') for x in deployments) or '(no deployments in the record)'}",
-                    "bad-argument",
-                )
-            report, flags, caps = probe_llm(rec, dep)
-            d, c = report["default"], report["chosen"]
-            print(f"  {dep['id']} ({dep['where']}): {report['endpoint']}")
-            if "digest_found" in report:
-                print(
-                    f"  build: the server reports {str(report['digest_found'])[:12]}, the record {str(dep.get('digest'))[:12]}"
-                )
+        report, flags, caps = probe_llm(rec, dep)
+        d, c = report["default"], report["chosen"]
+        print(f"  {dep['id']} ({dep['where']}): {report['endpoint']}")
+        if "digest_found" in report:
             print(
-                f"  default settings: {d['s']} s, {d['tokens_out']} tokens out, reasoned: {d['reasoned']}, end {d['finish']}"
+                f"  build: the server reports {str(report['digest_found'])[:12]}, the record {str(dep.get('digest'))[:12]}"
             )
-            print(
-                f"  record's settings {c['settings'] or '(none)'}: {c['s']} s, {c['tokens_out']} tokens out, reasoned: {c['reasoned']}, end {c['finish']}"
+        print(
+            f"  default settings: {d['s']} s, {d['tokens_out']} tokens out, reasoned: {d['reasoned']}, end {d['finish']}"
+        )
+        print(
+            f"  record's settings {c['settings'] or '(none)'}: {c['s']} s, {c['tokens_out']} tokens out, reasoned: {c['reasoned']}, end {c['finish']}"
+        )
+        print(
+            f"  JSON valid: {report['json_valid']}  deterministic: {report['deterministic']}  tokens/s: {report.get('tokens_per_s')}"
+        )
+        found = report.get("digest_found")
+        if (
+            found
+            and dep.get("digest")
+            and not (found.startswith(dep["digest"]) or dep["digest"].startswith(found))
+        ):
+            # A different build behind the same tag (flagged above): the record takes the build it found, and
+            # its history keeps the one it replaced.
+            rec.setdefault("history", []).append(
+                {
+                    "at": now()[:10],
+                    "what": f"deployment {dep['id']}: digest",
+                    "from": dep["digest"],
+                    "to": found,
+                    "why": "model-onboard found a different build on the server",
+                }
             )
-            print(
-                f"  JSON valid: {report['json_valid']}  deterministic: {report['deterministic']}  tokens/s: {report.get('tokens_per_s')}"
-            )
-            found = report.get("digest_found")
-            if (
-                found
-                and dep.get("digest")
-                and not (found.startswith(dep["digest"]) or dep["digest"].startswith(found))
-            ):
-                # A different build behind the same tag (flagged above): the record takes the build it found, and
-                # its history keeps the one it replaced.
-                rec.setdefault("history", []).append(
-                    {
-                        "at": now()[:10],
-                        "what": f"deployment {dep['id']}: digest",
-                        "from": dep["digest"],
-                        "to": found,
-                        "why": "model-onboard found a different build on the server",
-                    }
-                )
-            if found:
-                dep["digest"] = found
-            dep["checked_at"] = now()
-            kept = {k: v for k, v in (rec.get("capabilities") or {}).items() if k not in DEPLOYMENT_FACTS}
-            rec["capabilities"] = {
-                **kept,
-                **{k: v for k, v in caps.items() if v is not None or k == "reasoning_off"},
-            }
-            where = dep["where"]
-        else:
-            if not args.system or not args.dataset:
-                die(
-                    f"{args.model_id} is {rec.get('kind')}: onboard it through a system that runs it "
-                    "(--system <id> --dataset <id>)",
-                    "bad-argument",
-                )
-
-            cmd = [
-                _sys.executable,
-                str(Path(__file__).with_name("arm_smoke.py")),
-                "--system",
-                args.system,
-                "--dataset",
-                args.dataset,
-                "--items",
-                "2",
-                "--no-record",
-            ]
-            from evaluation_harness import _spend  # noqa: PLC0415
-
-            out, _paid = _spend.run_child(
-                cmd, capture_output=True, text=True
-            )  # given what is left of the cap
-            print(out.stdout.rstrip())
-            flags = [ln.strip()[2:] for ln in out.stdout.splitlines() if ln.startswith("  - ")]
-            report = {"via_arm": args.system, "smoke": out.stdout[-4000:]}
-            where = "via " + args.system
-            deployments = rec.setdefault("deployments", [])
-            dep = _models.deployment_of(rec, args.deployment) if args.deployment else None
-            if args.deployment and dep is None:
-                dep = {"id": args.deployment, "where": "local"}
-                deployments.append(dep)
-            elif dep is None and len(deployments) == 1:
-                dep = deployments[0]
-            elif dep is None:
-                dep = {"id": "local", "where": "local"}
-                deployments.append(dep)
-        flags, accepted = _models.split_accepted(rec, flags, dep["id"])
-        status = "pass" if not flags else "check"
-        onboarding = {
-            "kind": "onboarding",
-            "status": status,
-            "at": now(),
-            "where": where,
-            "flags": flags,
-            "report": report,
-            "by": _models.check_by(),
+        if found:
+            dep["digest"] = found
+        dep["checked_at"] = now()
+        kept = {k: v for k, v in (rec.get("capabilities") or {}).items() if k not in DEPLOYMENT_FACTS}
+        rec["capabilities"] = {
+            **kept,
+            **{k: v for k, v in caps.items() if v is not None or k == "reasoning_off"},
         }
-        if accepted:
-            onboarding["accepted"] = accepted
-        added = [h for h in rec.get("history") or [] if h not in (before.get("history") or [])]
+        where = dep["where"]
+    else:
+        if not args.system or not args.dataset:
+            die(
+                f"{args.model_id} is {rec.get('kind')}: onboard it through a system that runs it "
+                "(--system <id> --dataset <id>)",
+                "bad-argument",
+            )
 
-        def probed(d: dict) -> None:
-            # the deployment as probed (its build, when it was checked) and this run added to its checks; everything
-            # else as it is on disk now
-            d.update({k: v for k, v in dep.items() if k not in ("id", "onboarding")})
-            d.setdefault("checks", []).append(onboarding)
+        cmd = [
+            sys.executable,
+            str(Path(__file__).with_name("cli.py")),
+            "arm-smoke",
+            "--system",
+            args.system,
+            "--dataset",
+            args.dataset,
+            "--items",
+            "2",
+            "--no-record",
+        ]
+        from evaluation_harness import _spend  # noqa: PLC0415
 
-        def merge(doc: dict) -> None:
-            # the model's capabilities as found, and the history entries this run added
-            if rec.get("capabilities") is not None:
-                doc["capabilities"] = rec["capabilities"]
-            if added:
-                doc.setdefault("history", []).extend(h for h in added if h not in (doc.get("history") or []))
+        out, _paid = _spend.run_child(cmd, capture_output=True, text=True)  # given what is left of the cap
+        print(out.stdout.rstrip())
+        flags = [ln.strip()[2:] for ln in out.stdout.splitlines() if ln.startswith("  - ")]
+        report = {"via_arm": args.system, "smoke": out.stdout[-4000:]}
+        where = "via " + args.system
+        deployments = rec.setdefault("deployments", [])
+        dep = _models.deployment_of(rec, args.deployment) if args.deployment else None
+        if args.deployment and dep is None:
+            dep = {"id": args.deployment, "where": "local"}
+            deployments.append(dep)
+        elif dep is None and len(deployments) == 1:
+            dep = deployments[0]
+        elif dep is None:
+            dep = {"id": "local", "where": "local"}
+            deployments.append(dep)
+    flags, accepted = _models.split_accepted(rec, flags, dep["id"])
+    status = "pass" if not flags else "check"
+    onboarding = {
+        "kind": "onboarding",
+        "status": status,
+        "at": now(),
+        "where": where,
+        "flags": flags,
+        "report": report,
+        "by": _models.check_by(),
+    }
+    if accepted:
+        onboarding["accepted"] = accepted
+    added = [h for h in rec.get("history") or [] if h not in (before.get("history") or [])]
 
-        _models.update_deployment(DATA, args.model_id, dep["id"], probed, where=dep.get("where") or "local")
-        _models.update_record(DATA, args.model_id, merge)
-        print("ONBOARD PASS" if not flags else "ONBOARD CHECK")
-        for f in accepted:
-            why = (rec.get("accepted") or {}).get(f.split(":", 1)[0], "")
-            print(f"  accepted: {f} ({why})")
-        for f in flags:
-            print(f"  - {f}")
-        print(f"  written into data/deployments/{args.model_id}/{dep['id']}.yaml (its checks)")
-        return 0 if not flags else EXIT_PROBLEMS
+    def probed(d: dict) -> None:
+        # the deployment as probed (its build, when it was checked) and this run added to its checks; everything
+        # else as it is on disk now
+        d.update({k: v for k, v in dep.items() if k not in ("id", "onboarding")})
+        d.setdefault("checks", []).append(onboarding)
 
+    def merge(doc: dict) -> None:
+        # the model's capabilities as found, and the history entries this run added
+        if rec.get("capabilities") is not None:
+            doc["capabilities"] = rec["capabilities"]
+        if added:
+            doc.setdefault("history", []).extend(h for h in added if h not in (doc.get("history") or []))
 
-if __name__ == "__main__":
-    raise SystemExit(main())
+    _models.update_deployment(DATA, args.model_id, dep["id"], probed, where=dep.get("where") or "local")
+    _models.update_record(DATA, args.model_id, merge)
+    print("ONBOARD PASS" if not flags else "ONBOARD CHECK")
+    for f in accepted:
+        why = (rec.get("accepted") or {}).get(f.split(":", 1)[0], "")
+        print(f"  accepted: {f} ({why})")
+    for f in flags:
+        print(f"  - {f}")
+    print(f"  written into data/deployments/{args.model_id}/{dep['id']}.yaml (its checks)")
+    return 0 if not flags else EXIT_PROBLEMS

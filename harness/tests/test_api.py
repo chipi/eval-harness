@@ -88,9 +88,9 @@ check(
     takes("run", "system") == "value"
     and takes("dataset-create", "fields") == "upload"
     and takes("exposure-check", "out") == "artifact"
-    and reg["run"]["spends"]
+    and OPS["run"].spends
     and "leaderboard" not in reg  # a read is an operation: its own resource, not a job
-    and reg["run"]["served"] == "job",
+    and OPS["run"].is_job(),
 )
 
 proj = Path(tempfile.mkdtemp(prefix="evh-api-"))
@@ -243,7 +243,9 @@ try:
             parity,
         )
         try:
-            _api.checked_args("run", {"system": "nope_v1", "dataset": "tk_v1"})
+            _api.operation_inputs(
+                OPS["run"], {"system": "nope_v1", "dataset": "tk_v1"}, "20261116T000000-000000"
+            )
             ok = False
         except _api.Refused as exc:
             ok = exc.status == 404 and "no system" in str(exc)

@@ -944,7 +944,7 @@ try:
         (r.stdout + r.stderr)[-300:],
     )
     _model_records.put(proj, {"model_id": "lead", "kind": "baseline", "aliases": ["lead-5"]})
-    r = evh("model-onboard", "lead", "--system", system("lead", ""), "--dataset", "tickets_v1")
+    r = evh("model-onboard", "--model-id", "lead", "--system", system("lead", ""), "--dataset", "tickets_v1")
     lead = _model_records.view(proj, "lead")
     dep = (lead.get("deployments") or [{}])[0]
     check(

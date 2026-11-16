@@ -261,37 +261,40 @@ _EXAMPLE_ONLY_MODULES = frozenset(
 )
 
 
+#: The scripts of a checkout that are still run as files (`--help` says what each takes): a command that is an operation is
+#: no script, and is checked below by its command.
+SCRIPTS_WITH_HELP = (
+    "env_check",
+    "classification_report",
+    "extraction_report",
+    "retrieval_report",
+    "check_terminology",
+    "check_report_claims",
+    "check_links",
+    "check_model_facts",
+)
+
+
+def help_problem(script_args: tuple[str, ...]) -> str:
+    """Why `--help` of this script or command is no help: it failed, or it said nothing (a module with no run-as-file block
+    exits 0 and prints nothing, which an exit-code check alone takes for a pass; and a script that cannot import the
+    package when run as a file fails where the editable install of a checkout hides it)."""
+    r = run(*script_args, "--help")
+    if r.returncode != 0:
+        return f"exit {r.returncode}: {r.stderr.strip()[:80]}"
+    if "usage:" not in r.stdout:
+        return f"no usage line in {r.stdout.strip()[:60]!r}"
+    return ""
+
+
 def test_cli_help_works() -> None:
-    # A script answers its help with a usage line: one that exits 0 printing nothing (a module whose command moved to an
-    # operation, run as a file) proved nothing here and failed only where the package is not installed (CI).
-    for script in (
-        "run",
-        "sweep",
-        "env_check",
-        "holdout_significance",
-        "classification_report",
-        "bootstrap_test",
-        "extraction_report",
-        "retrieval_report",
-        "rescore",
-        "check_terminology",
-        "check_report_claims",
-        "check_links",
-        "check_model_facts",
-    ):
-        r = run(at(f"{script}.py"), "--help")
-        check(
-            f"{script}.py --help",
-            r.returncode == 0 and "usage:" in r.stdout,
-            (r.returncode, r.stdout[:80], r.stderr.strip()[-160:]),
-        )
-    # the commands that were scripts of their own are operations: their command's help
+    from evaluation_harness import ops  # noqa: PLC0415
+
+    for script in SCRIPTS_WITH_HELP:
+        problem = help_problem((at(f"{script}.py"),))
+        check(f"{script}.py --help", not problem, problem)
+    # every command that is an operation (the reads, the edits, the jobs): its command's help, which names the command
     for command in (
-        "dataset-create",
-        "dataset-materialize",
-        "run-promote",
-        "reference-promote",
-        "reference-manifest",
         "run-compare",
         "validate",
         "runs-list",
@@ -299,10 +302,13 @@ def test_cli_help_works() -> None:
         "pair-test",
         "family-test",
         "rank-stability",
+        *(op.name for op in ops.OPS.values() if op.is_job()),
     ):
         r = run(at("cli.py"), command, "--help")
         check(
-            f"evh {command} --help", r.returncode == 0 and f"evh {command}" in r.stdout, r.stderr.strip()[:80]
+            f"evh {command} --help",
+            r.returncode == 0 and f"usage: evh {command}" in r.stdout,
+            r.stderr.strip()[:80],
         )
 
 
@@ -1490,7 +1496,16 @@ def _resume_scores_and_persists(runs: Path, fixture: Path) -> None:
     scratch = ("--scratch",)
     src = "selftest_resume_src"
     r = run(
-        "scripts/run.py", "--system", "arm_b_v1", "--dataset", "smoke_v1", *scratch, "--run-id", src, env=env
+        "scripts/cli.py",
+        "run",
+        "--system",
+        "arm_b_v1",
+        "--dataset",
+        "smoke_v1",
+        *scratch,
+        "--run-id",
+        src,
+        env=env,
     )
     if r.returncode != 0:
         print("  --   resume: skipped (demo arm did not run)")
@@ -1506,7 +1521,7 @@ def _resume_scores_and_persists(runs: Path, fixture: Path) -> None:
     _outputs.write_all(runs / src, {outs[0]: kept[outs[0]]}, outs[:1])
     res = "selftest_resume_res"
     r2 = run(
-        "scripts/run.py", "--system", "arm_b_v1", "--dataset", "smoke_v1", *scratch,
+        "scripts/cli.py", "run", "--system", "arm_b_v1", "--dataset", "smoke_v1", *scratch,
         "--resume", src, "--run-id", res, env=env,
     )  # fmt: skip
     check("resume: the resumed pass exits 0", r2.returncode == 0, (r2.stderr or "")[-160:])
@@ -1583,7 +1598,7 @@ def _resume_scores_and_persists(runs: Path, fixture: Path) -> None:
     )
 
     r3 = run(
-        "scripts/run.py", "--system", "arm_b_v1", "--dataset", "smoke_v1", *scratch,
+        "scripts/cli.py", "run", "--system", "arm_b_v1", "--dataset", "smoke_v1", *scratch,
         "--resume", crash.name, "--run-id", "selftest_resume_crash_res", env=env,
     )  # fmt: skip
     check(
@@ -1647,7 +1662,14 @@ def _resume_scores_and_persists(runs: Path, fixture: Path) -> None:
     )
     try:
         fx_arm = ("--system", "fx_extra_v1", "--dataset", "smoke_v1", *scratch)
-        rf = run("scripts/run.py", *fx_arm, "--run-id", "selftest_resume_fx_src", env={**env, "FX_PASS": "1"})
+        rf = run(
+            "scripts/cli.py",
+            "run",
+            *fx_arm,
+            "--run-id",
+            "selftest_resume_fx_src",
+            env={**env, "FX_PASS": "1"},
+        )
         if rf.returncode != 0:
             check(
                 "resume: the extra-carrying fixture arm runs",
@@ -1665,7 +1687,8 @@ def _resume_scores_and_persists(runs: Path, fixture: Path) -> None:
             )
             shutil.rmtree(fx_src / "scores", ignore_errors=True)
             rr = run(
-                "scripts/run.py",
+                "scripts/cli.py",
+                "run",
                 *fx_arm,
                 "--run-id",
                 "selftest_resume_fx_res",
@@ -1708,7 +1731,16 @@ def _resume_scores_and_persists(runs: Path, fixture: Path) -> None:
     # outputs; nothing compared the arms, so one mistyped id replayed a different
     # model's answers and recorded them under this one, with a valid fingerprint.
     other = run(
-        "scripts/run.py", "--system", "arm_a_v1", "--dataset", "smoke_v1", *scratch, "--resume", src, env=env
+        "scripts/cli.py",
+        "run",
+        "--system",
+        "arm_a_v1",
+        "--dataset",
+        "smoke_v1",
+        *scratch,
+        "--resume",
+        src,
+        env=env,
     )
     msg = (other.stderr or "") + (other.stdout or "")
     check(
@@ -1724,7 +1756,7 @@ def _resume_scores_and_persists(runs: Path, fixture: Path) -> None:
     shutil.rmtree(anon, ignore_errors=True)
     _outputs.writer(anon).add("item_01", "from who knows where")
     r4 = run(
-        "scripts/run.py", "--system", "arm_a_v1", "--dataset", "smoke_v1", *scratch,
+        "scripts/cli.py", "run", "--system", "arm_a_v1", "--dataset", "smoke_v1", *scratch,
         "--resume", anon.name, env=env,
     )  # fmt: skip
     m4 = (r4.stderr or "") + (r4.stdout or "")
@@ -1858,7 +1890,8 @@ def test_rescore_rehashes_the_references_it_actually_read() -> None:
 
         before = {p.name for p in model_runs.scores_of(dst)}
         r = run(
-            "scripts/rescore.py",
+            "scripts/cli.py",
+            "rescore",
             "--dataset-id",
             str(j.get("dataset_id")),
             "--match",
@@ -1935,7 +1968,8 @@ def test_rescore_takes_source_path_from_the_dataset() -> None:
         dst = add_run(data, src)
         env = {"EVAL_DATA_DIR": str(data)}
         args = (
-            "scripts/rescore.py",
+            "scripts/cli.py",
+            "rescore",
             "--dataset-id",
             "cnn_dailymail_200",
             "--match",
@@ -2037,7 +2071,15 @@ def _nothing_measured(names) -> None:
     # on the author's laptop and red in a fresh clone is the exact shape of bug this
     # review found elsewhere, so it must skip honestly instead.
     r2 = run(
-        "scripts/run.py", "--system", "arm_b_v1", "--dataset", "smoke_v1", *scratch, "--run-id", names[0]
+        "scripts/cli.py",
+        "run",
+        "--system",
+        "arm_b_v1",
+        "--dataset",
+        "smoke_v1",
+        *scratch,
+        "--run-id",
+        names[0],
     )
     out2 = (r2.stdout or "") + (r2.stderr or "")
     if r2.returncode != 0 and "is not materialized" in out2:
@@ -2054,7 +2096,8 @@ def _nothing_measured(names) -> None:
         return
 
     r = run(
-        "scripts/run.py",
+        "scripts/cli.py",
+        "run",
         "--system",
         "arm_b_v1",
         "--dataset",
@@ -2651,7 +2694,8 @@ def test_rescore_refuses_a_missing_reference_set() -> None:
 
         before = {p.name for p in model_runs.scores_of(dst)}
         r = run(
-            "scripts/rescore.py",
+            "scripts/cli.py",
+            "rescore",
             "--dataset-id",
             str(m.get("dataset_id")),
             "--match",
@@ -2943,7 +2987,8 @@ def test_rescore_can_move_runs_onto_a_new_reference_set() -> None:
             )
             before = {p.name for p in model_runs.scores_of(dst)}
             r = run(
-                "scripts/rescore.py",
+                "scripts/cli.py",
+                "rescore",
                 "--dataset-id",
                 "smoke_v1",
                 "--reference-id",
@@ -2973,7 +3018,8 @@ def test_rescore_can_move_runs_onto_a_new_reference_set() -> None:
                 fp.get("reference_id_at_measurement") == "silver/smoke_v1",
             )
             bad = run(
-                "scripts/rescore.py",
+                "scripts/cli.py",
+                "rescore",
                 "--dataset-id",
                 "smoke_v1",
                 "--reference-id",

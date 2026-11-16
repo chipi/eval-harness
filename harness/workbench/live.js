@@ -177,7 +177,7 @@
         <div class="field"><label class="name" for="dep-url">Its address</label><div><input type="text" id="dep-url" placeholder="http://host:11434/v1" inputmode="url"></div></div>
         ${byField("dep-by")}
         <div class="actions" style="margin-top:0"><button class="btn" type="button" id="dep-add">Add it</button></div><div id="dep-out"></div></div></section>
-      ${WB.cmd(`evh model-show ${id}\nevh model-onboard ${id} --deployment <deployment>\nevh deployment-accept ${id} <deployment> --flag "<kind>" --why "<a sentence>"`)}
+      ${WB.cmd(`evh model-show ${id}\nevh model-onboard --model-id ${id} --deployment <deployment>\nevh deployment-accept ${id} <deployment> --flag "<kind>" --why "<a sentence>"`)}
       <div class="actions"><a class="btn" href="#models">The models</a></div></div>`;
   }
   async function follow(model, dep, jobId) {
@@ -203,7 +203,7 @@
       if (!(cap > 0)) { out.innerHTML = '<p class="note" role="alert">Say the most the probes may spend first.</p>'; return; }
       b.disabled = true;
       try {
-        const j = await send("POST", "/jobs", { command: "model-onboard", args: { model_id: id, deployment: dep }, by: byOf(`by-${dep}`) || (who() ? `person:${who()}` : undefined), max_cost_usd: cap });
+        const j = await send("POST", `/models/${enc(id)}/onboard`, { deployment: dep, by: byOf(`by-${dep}`) || (who() ? `person:${who()}` : undefined), max_cost_usd: cap });
         follow(id, dep, j.id);
       } catch (e) { out.innerHTML = refusal(e); b.disabled = false; }
     }));

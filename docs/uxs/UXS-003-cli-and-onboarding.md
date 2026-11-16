@@ -108,7 +108,7 @@ answer. Where the page has a `make` target in a checkout, it runs the same scrip
 | an arm page: metrics, cost and speed, runs, system, conditions, rounds | `evh arm-show LABEL DATASET <arm id or system id>` | |
 | the models page: every model record, its deployments, settings, onboarding, arms (0.6.0, RFC-020) | `evh model-list [--kind K] [--where self-hosted\|hosted] [--status vetted\|onboarded\|check\|none]` | |
 | a model page: its deployments and their onboarding, settings history, arms | `evh model-show <id>` | |
-| (no page action) onboarding a model's deployment, smoking an arm before its run | `evh model-onboard <id> --deployment <d>`, `evh arm-smoke --system <id> --dataset <id>` | |
+| (no page action) onboarding a model's deployment, smoking an arm before its run | `evh model-onboard --model-id <id> --deployment <d>`, `evh arm-smoke --system <id> --dataset <id>` | |
 | reference set pages | `evh reference-show <id> NAME` | |
 | the Captures page | `evh capture-show ID [--json]` | |
 | (no page; the Configure page was retired, PRD-017) the project's data: the overview, a folder, find | `evh data-ls [PATH] [--find TEXT]` | |

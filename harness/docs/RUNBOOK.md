@@ -1920,7 +1920,7 @@ defaults as much as the models. Settle them before the full run, on purpose, and
 ```bash
 evh model-new gemma4-12b --set kind=llm --set aliases.0=gemma4:12b   # the model's own facts
 evh deployment-new gemma4-12b mac --set where=mac --set tag=gemma4:12b # one per place it runs
-evh model-onboard gemma4-12b --deployment mac   # once per deployment: build, reasoning, JSON, determinism
+evh model-onboard --model-id gemma4-12b --deployment mac   # once per deployment: build, reasoning, JSON, determinism
 evh arm-smoke --system my_system_v1 --dataset my_v1   # once per system, on its own task, before its full run
 evh model-list                                       # what is onboarded, vetted (an arm smoke passed), where it runs
 ```
@@ -1929,7 +1929,7 @@ evh model-list                                       # what is onboarded, vetted
    (`data/deployments/<model>/<deployment>.yaml`, `evh deployment-new` / `deployment-set`), one per place the
    model runs (`mac`, `dgx`, `x3`, a hosted route with its `provider_routing`). One tag name can name different builds on different
    machines (an MLX build on a Mac, an older pull on another host): compare digests across every deployment
-   that will run the arm, and against the registry, before the first run. `evh model-onboard <model>
+   that will run the arm, and against the registry, before the first run. `evh model-onboard --model-id <model>
    --deployment dgx` probes one deployment and writes its onboarding. A system names the record and the
    deployment (`model_record: gem`, `deployment: dgx`); its run's fingerprint then takes the weights, server
    and hardware from that entry (`source: record`), and `metrics.json` records `deployment_id`.

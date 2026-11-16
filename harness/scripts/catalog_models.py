@@ -649,7 +649,7 @@ def render_model(A, r: dict, out, nav: list) -> None:
         else:
             body_dep += (
                 f'<p class="muted">Not onboarded yet: '
-                f"<code>evh model-onboard {e(r['id'])} --deployment {e(b['id'])}</code>.</p>"
+                f"<code>evh model-onboard --model-id {e(r['id'])} --deployment {e(b['id'])}</code>.</p>"
             )
         inner += (
             f'<details class="rounddetail" id="dep-{cb.slug(b["id"])}"'
@@ -665,7 +665,7 @@ def render_model(A, r: dict, out, nav: list) -> None:
         if not r["deployments"]:
             inner = (
                 '<p class="muted">No deployment is recorded for this model. Not onboarded yet: '
-                f"<code>evh model-onboard {e(r['id'])}</code>.</p>"
+                f"<code>evh model-onboard --model-id {e(r['id'])}</code>.</p>"
             )
         body += cb.block("01", "deployments and their onboarding", inner)
     hist = [

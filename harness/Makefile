@@ -198,15 +198,15 @@ reference-promote:
 
 # smoke an arm on a few items before its full run: checks, projection, flags
 arm-smoke:
-	$(PYTHON) scripts/arm_smoke.py $(ARGS)
+	$(PYTHON) scripts/cli.py arm-smoke $(ARGS)
 
 # onboard a model once: probe a deployment, write what was found into its record
 model-onboard:
-	$(PYTHON) scripts/model_onboard.py $(ARGS)
+	$(PYTHON) scripts/cli.py model-onboard $(ARGS)
 
 # what the scorer in this tree would move in a goal's decision; writes nothing
 score-preview:
-	$(PYTHON) scripts/score_preview.py $(ARGS)
+	$(PYTHON) scripts/cli.py score-preview $(ARGS)
 
 # check an importer: its records are well-formed, ids unique, two reads the same
 importer-check:
@@ -278,15 +278,15 @@ self-test:
 
 # ── evals ───────────────────────────────────────────────────────────────────
 run-dry-run:
-	$(PYTHON) scripts/run.py --system $(SYSTEM) --dataset $(DATASET_ID) --repeat $(REPEAT) --dry-run
+	$(PYTHON) scripts/cli.py run --system $(SYSTEM) --dataset $(DATASET_ID) --repeat $(REPEAT) --dry-run
 
 run:
-	$(PYTHON) scripts/run.py --system $(SYSTEM) --dataset $(DATASET_ID) --repeat $(REPEAT) $(ARGS)
+	$(PYTHON) scripts/cli.py run --system $(SYSTEM) --dataset $(DATASET_ID) --repeat $(REPEAT) $(ARGS)
 
 # SYSTEMS is a list of system ids: make sweep SYSTEMS="arm_a_v1 arm_b_v1" DATASET_ID=smoke_v1
 sweep:
 	@test -n "$(SYSTEMS)" || { echo 'SYSTEMS="arm_a_v1 arm_b_v1" is required'; exit 1; }
-	$(PYTHON) scripts/sweep.py --systems $(SYSTEMS) --dataset $(DATASET_ID) --repeat $(REPEAT) $(ARGS)
+	$(PYTHON) scripts/cli.py sweep --systems $(SYSTEMS) --dataset $(DATASET_ID) --repeat $(REPEAT) $(ARGS)
 
 # ── inspect and decide ──────────────────────────────────────────────────────
 runs-list:
@@ -301,13 +301,13 @@ runs-list:
 # same prompt and settings" is exactly what X produced. Read the result against the
 # CEILING it prints -- two runs against the same gold do not agree perfectly either.
 silver-calibrate:
-	$(PYTHON) scripts/silver_calibrate.py --dataset-id $(DATASET_ID) \
+	$(PYTHON) scripts/cli.py silver-calibrate --dataset-id $(DATASET_ID) \
 	  $(if $(REF_MATCH),--ref-match $(REF_MATCH),) $(if $(ARM_MATCH),--arm-match $(ARM_MATCH),) \
 	  $(if $(METRIC),--metric $(METRIC),) $(if $(GROUP_BY),--group-by $(GROUP_BY),)
 
 # Without OUT the re-scores land where the tool designates (data/runs-rescored/<scorer>/<source>/, RFC-022).
 rescore:
-	$(PYTHON) scripts/rescore.py $(if $(ROUND),--goal $(GOAL) --round $(ROUND) --why "$(WHY)",--dataset-id $(DATASET_ID)) $(if $(MATCH),--match $(MATCH),) $(if $(REFERENCE),--reference-id $(REFERENCE),) $(if $(OUT),--out $(OUT),)
+	$(PYTHON) scripts/cli.py rescore $(if $(ROUND),--goal $(GOAL) --round $(ROUND) --why "$(WHY)",--dataset-id $(DATASET_ID)) $(if $(MATCH),--match $(MATCH),) $(if $(REFERENCE),--reference-id $(REFERENCE),) $(if $(OUT),--out $(OUT),)
 
 # What each arm actually cost, from `_meta.usage.cost` rather than the price table in
 # its yaml. Added because RUNBOOK §7b documented this verb before it existed.
@@ -322,7 +322,7 @@ leaderboard:
 # re-measured on a set that still holds the items that chose them, so "it replicated" can
 # only be read on the rest.
 holdout:
-	$(PYTHON) scripts/holdout_significance.py --dataset-id $(DATASET_ID) \
+	$(PYTHON) scripts/cli.py holdout --dataset-id $(DATASET_ID) \
 	  $(if $(EXCLUDE),--exclude-dataset $(EXCLUDE),) $(if $(METRIC),--metric $(METRIC),) \
 	  $(if $(MATCH),--match $(MATCH),)
 
@@ -350,7 +350,7 @@ pair-test:
 # test (11 vs 8 separations on the same data) -- read the interval, not the p-value.
 bootstrap-test:
 	@test -n "$(A)" -a -n "$(AGAINST)" || { echo 'A=<config_id> AGAINST=<substring> are required'; exit 1; }
-	$(PYTHON) scripts/bootstrap_test.py --dataset-id $(DATASET_ID) --a $(A) --against $(AGAINST) \
+	$(PYTHON) scripts/cli.py bootstrap-test --dataset-id $(DATASET_ID) --a $(A) --against $(AGAINST) \
 	  $(if $(METRIC),--metric $(METRIC),) $(if $(EXCLUDE),--exclude-dataset $(EXCLUDE),) \
 	  $(if $(ITEMS),--items $(ITEMS),) $(if $(DRAWS),--draws $(DRAWS),)
 
@@ -507,7 +507,7 @@ ci: check site-check
 # anything; ARGS=--no-calls re-reads stored verdicts for $0.
 judge-score:
 	@test -n "$(SCORER)" || { echo 'SCORER=<id in data/scorers/> is required'; exit 1; }
-	$(PYTHON) scripts/judge_score.py --dataset-id $(DATASET_ID) --scorer $(SCORER) $(ARGS)
+	$(PYTHON) scripts/cli.py judge-score --dataset-id $(DATASET_ID) --scorer $(SCORER) $(ARGS)
 
 # ── housekeeping ────────────────────────────────────────────────────────────
 clean:

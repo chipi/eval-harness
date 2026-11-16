@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """What a scoring change would move, before anything is written (RFC-022).
 
     evh score-preview --goal <goal_id> [--round rN] [--json]
@@ -13,26 +12,20 @@ scoring. Then `evh rescore --goal G --round rN --why "..."` applies it to a roun
 
 from __future__ import annotations
 
-import sys as _sys
-from pathlib import Path as _Path
-
-if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
-    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
-
-import argparse
 import contextlib
 import io
 import tempfile
 from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _common, _jsonout, _rounds
+from evaluation_harness import _common, _rounds
 from evaluation_harness import catalog_build as cb
 from evaluation_harness import rescore as rs
 from evaluation_harness._common import die, load_goals
 from evaluation_harness._runs import runs_on
 from evaluation_harness.catalog_adapter import HarnessAdapter, load_catalog_adapter
 from evaluation_harness.model import goal_views as gv
+from evaluation_harness.ops import legacy
 
 
 def decisions(A, goal: dict) -> dict[str, dict[str, Any]]:
@@ -85,14 +78,9 @@ def _set_of(arm: str) -> str:
     return " (repeats)" if "repeats" in arm.rsplit("/", 2)[0] else ""
 
 
-def main() -> int:
+def body(**inputs: Any) -> int:
     """Print what the scorer in this tree would change in a goal's decision; write nothing."""
-    ap = argparse.ArgumentParser(prog="evh score-preview", description=__doc__.splitlines()[0])
-    ap.add_argument("--goal", required=True)
-    ap.add_argument("--round", dest="round_id", help="only this round's arms (its own and those it carried)")
-    ap.add_argument("--json", action="store_true", help="the preview as one JSON object on stdout")
-    args = ap.parse_args()
-    as_json = args.json
+    args = legacy.namespace(inputs, "score-preview", {"round": "round_id"})
     goal = load_goals().get(args.goal)
     if goal is None:
         die(f"no goal {args.goal!r}", "not-found")
@@ -121,10 +109,6 @@ def main() -> int:
                         per_ds[ds] += 1
         after = decisions(HarnessAdapter(runs_root=root), goal)
         scorer = next((rs.current_scorer({"adapter": k}, adapters) for k in adapters), "")
-    if as_json:
-        with _jsonout.collect("score-preview"):
-            _print(args.goal, scorer, n, before, after, per_ds)
-        return 0
     _print(args.goal, scorer, n, before, after, per_ds)
     return 0
 
@@ -183,7 +167,3 @@ def _print(goal: str, scorer: str, n: int, before: dict, after: dict, per_ds: di
         'Apply it: evh rescore --goal G --round rN --why "..." (re-score a round), or evh round-open --from rN '
         '--scoring "..." (adopt it from the next round).'
     )
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())

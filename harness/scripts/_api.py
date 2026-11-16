@@ -51,24 +51,12 @@ def _model_ops() -> dict[str, str]:
 NOT_SERVED.update(_model_ops())
 #: The commands that call models and spend: a job of one must carry max_cost_usd (step 5).
 SPENDS = {
-    "run",
-    "sweep",
-    "arm-smoke",
-    "judge-score",
-    "model-onboard",
     "study-run",
     "study-tell",
     "study-confirm",
-    "faithfulness",
 }
 #: The arguments that name a system (RFC-032): each refused before a job is made when no system has that id.
-SYSTEM_ARGS = {
-    ("run", "--system"),
-    ("faithfulness", "--system"),
-    ("arm-smoke", "--system"),
-    ("model-onboard", "--system"),
-    ("sweep", "--systems"),
-}
+SYSTEM_ARGS: set[tuple[str, str]] = set()
 #: Every path-typed argument a served command has, and its kind. Absent from this table: never taken.
 UPLOAD = "upload"
 ARTIFACT = "artifact"
@@ -76,7 +64,6 @@ PATH_KINDS: dict[tuple[str, str], str] = {
     ("label-mutants", "--map"): UPLOAD,
     ("prompt-version", "--from-file"): UPLOAD,
     ("study-run", "--spec"): UPLOAD,
-    ("run", "--items"): UPLOAD,
     ("study-tell", "--proposal"): UPLOAD,
     ("study-import", "file"): UPLOAD,
     ("prompt-export", "--to"): ARTIFACT,
@@ -86,7 +73,6 @@ PATH_KINDS: dict[tuple[str, str], str] = {
 #: a file of the server's, a page's own assets. A path-typed argument in neither table fails a test.
 NEVER_PATHS = {
     ("label-mutants", "--mutants"),  # a Python file it runs: the project's own, on its machine
-    ("bootstrap-test", "--items"),
     ("pair-test", "--items"),
     ("family-test", "--items"),
     ("catalog", "--out"),
@@ -313,7 +299,6 @@ def new_token() -> str:
 #: The decisions (RFC-027): a job of one needs `by`, refused at the call before a job exists.
 DECISIONS = {
     "study-confirm",
-    "faithfulness-name",
 }
 MAX_UPLOAD = 50 * 1024 * 1024  # owner, 2026-11-08
 #: Where `by` and the reason go on the command line, for the commands that take them as who acted and why.

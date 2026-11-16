@@ -65,3 +65,47 @@ def run_dataset_locks(inputs: dict[str, Any]) -> list[tuple[str, bool]]:
     run = _first(inputs.get("run"))
     dataset = ((model_runs.run(run) or {}) if run else {}).get("dataset_id")
     return [(f"dataset:{dataset}", True)] if dataset else []
+
+
+def sweep_locks(inputs: dict[str, Any]) -> list[tuple[str, bool]]:
+    """A sweep runs each of its systems on the dataset: each system exclusive, the dataset shared."""
+    dataset = _first(inputs.get("dataset"))
+    out: list[tuple[str, bool]] = []
+    for system in inputs.get("systems") or []:
+        out.append((f"system:{system}", True))
+        if dataset:
+            out.append((f"dataset:{dataset}", False))
+    return out
+
+
+def model_locks(inputs: dict[str, Any]) -> list[tuple[str, bool]]:
+    """What runs a system writes the record of the model it runs (a smoke, an onboarding, a replay's faithfulness): that
+    model, exclusive, from the system's own record."""
+    from evaluation_harness.model.entity import Problem  # noqa: PLC0415
+    from evaluation_harness.model.systems import SYSTEM  # noqa: PLC0415
+
+    system = _first(inputs.get("system"))
+    if not system:
+        return []
+    try:
+        record = SYSTEM.get(system)
+    except Problem:
+        return []
+    model = record.get("model_record") or (record.get("params") or {}).get("model")
+    return [(f"model:{model}", True)] if model else []
+
+
+def rescore_locks(inputs: dict[str, Any]) -> list[tuple[str, bool]]:
+    """A re-score writes onto a dataset's runs, or a round's arms: the dataset, and the round's goal; a round's own dataset
+    when no dataset is named."""
+    dataset = _first(inputs.get("dataset_id"))
+    out: list[tuple[str, bool]] = [(f"dataset:{dataset}", True)] if dataset else []
+    if inputs.get("round") and inputs.get("goal"):
+        out.append((f"goal:{inputs['goal']}", True))
+        if not dataset:
+            from evaluation_harness import _rounds  # noqa: PLC0415
+
+            rnd = _rounds.find(str(inputs["goal"]), str(inputs["round"])) or {}
+            if rnd.get("dataset_id"):
+                out.append((f"dataset:{rnd['dataset_id']}", True))
+    return out

@@ -155,7 +155,7 @@
           <div class="field"><div class="name">Why</div><div><input type="text" id="nmwhy" placeholder="e.g. the probes passed; reasoning off for this task"></div></div>
           <div class="actions" style="margin-top:0"><button class="btn primary" type="button" id="vet">Approve</button><span class="muted" style="font-size:13px">then smoke it on an arm in step 4</span></div>`, nm.vetted ? "vetted" : "")}
       <div class="actions">${back("#models", "Back to the models")}</div>
-      ${cmd(`# the model's record (data/models/<id>.yaml), then\nevh model-onboard ${rec.id} --deployment ${dep.id}\nevh arm-smoke --config <an arm on it> --items 3`)}
+      ${cmd(`# the model's record (data/models/<id>.yaml), then\nevh model-onboard --model-id ${rec.id} --deployment ${dep.id}\nevh arm-smoke --config <an arm on it> --items 3`)}
     </div>`;
   }
   function wireModelNew() {

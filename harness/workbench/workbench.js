@@ -439,7 +439,7 @@ success_criteria:
       ${part("c", "models.smoke", "Check each on three items", chosen.size > 0, smoke, checked.length ? `${checked.length} checked` : "")}
       <div class="actions"><span class="status ${checked.length >= 2 ? "ok" : ""}">Ready when: at least two arms checked (${checked.length})</span><span class="grow"></span>
         <a class="btn ${checked.length >= 2 ? "primary" : ""}" href="${checked.length >= 2 ? "#eval" : "#hub"}">${checked.length >= 2 ? "Next: the eval →" : "Back to the goal"}</a></div>
-      ${cmd(`# once per model, for every goal\nevh model-onboard <model_id>\n# each arm, on the dataset's first three items\nevh arm-smoke --config ${cfg ? `examples/summarization-cnn-dailymail/configs/arm_${cfg.arm}_n200.yaml` : "<arm config>"} --items 3`)}
+      ${cmd(`# once per model, for every goal\nevh model-onboard --model-id <model_id>\n# each arm, on the dataset's first three items\nevh arm-smoke --config ${cfg ? `examples/summarization-cnn-dailymail/configs/arm_${cfg.arm}_n200.yaml` : "<arm config>"} --items 3`)}
     </div>`;
   }
   function wireModels() {

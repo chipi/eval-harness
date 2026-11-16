@@ -111,7 +111,10 @@ def _input_problems(name: str, spec: dict[str, Any], op: Op, say: Any) -> None:
     ref = spec.get("x-ref")
     if ref is not None and ref not in X_REF:
         say(f"x-ref {ref!r}: one of {', '.join(X_REF)}")
-    names_one = names_a_file(name) and "enum" not in spec  # a choice among words is no path
+    # A choice among words, a number or a flag is no path.
+    names_one = (
+        names_a_file(name) and "enum" not in spec and spec.get("type") not in ("integer", "number", "boolean")
+    )
     if (names_one or spec.get("format") == "path") and f is None and name not in op.tool_hidden:
         say("names a file or a path: say how a call carries it (x-file: upload or artifact), or tool_hidden")
     if f in ("upload", "artifact") and name in op.tool_hidden:
