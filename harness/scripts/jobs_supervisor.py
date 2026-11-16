@@ -56,7 +56,7 @@ def main(job_id: str) -> int:
         has_json = True
         cmd = [sys.executable, cli, job["operation"], "--json", "--inputs-file", str(d / "inputs.json")]
     else:
-        from evaluation_harness.mcp_server import parser_of  # noqa: PLC0415
+        from evaluation_harness._cmdline import parser_of  # noqa: PLC0415
 
         command = job["command"]
         has_json = any("--json" in a.option_strings for a in parser_of(command)._actions)

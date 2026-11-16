@@ -1,4 +1,4 @@
-"""The study commands (RFC-029).
+"""The study operations' bodies (RFC-029; RFC-032 P3: they run as jobs, ops/study_jobs.py).
 
     evh study-run STUDY [--spec FILE] [--resume] [--dry-run]     open it and run the loop (grid, command); agent: open
     evh study-ask STUDY                                          the state for the agent sampler, with an ask id
@@ -17,134 +17,107 @@ import argparse
 import csv
 import io
 import json
-import sys
 import time
-from pathlib import Path
 from typing import Any
 
 import yaml
 from evaluation_harness import _jsonout, _store, _study
-from evaluation_harness._common import die, evh_prog
+from evaluation_harness._common import die
 from evaluation_harness.model import studies as model_studies
 from evaluation_harness.model.entity import Problem
+from evaluation_harness.ops import legacy
 
 
-def _ap(desc: str) -> argparse.ArgumentParser:
-    return argparse.ArgumentParser(prog=evh_prog(), description=desc)
-
-
-def _json_flag(ap: argparse.ArgumentParser) -> None:
-    ap.add_argument(
-        "--json", action="store_true", help="one JSON object on stdout when done (text to stderr)"
-    )
-
-
-def run_study(argv: list[str]) -> int:
+def run_study_body(**inputs: Any) -> int:
     """evh study-run: open a study and run its loop (the agent sampler: open it and return)."""
-    ap = _ap("open a study and run it (RFC-029): research on validation items, never evidence")
-    ap.add_argument("study", help="<goal>/<study_id>")
-    ap.add_argument(
-        "--spec", type=Path, help="the spec, written into data/studies/<goal>/<study_id>.yaml first"
-    )
-    ap.add_argument("--resume", action="store_true", help="continue a study after its last finished trial")
-    ap.add_argument("--dry-run", action="store_true", help="check the spec and print the plan; call nothing")
-    _json_flag(ap)
-    from evaluation_harness._actor import add_by  # noqa: PLC0415
-
-    add_by(ap)
-    a = ap.parse_args(argv)
-    with _jsonout.collect("study-run", a.json, live=sys.stderr):
-        if "/" not in a.study:
-            die("study-run names <goal>/<study_id>", "bad-argument")
-        goal, sid = a.study.split("/", 1)
-        if a.spec is not None:
-            if not _store.is_file(a.spec):
-                die(f"--spec {a.spec}: no such file", "not-found")
-            if _store.is_file(model_studies.spec_path(goal, sid)):
-                die(
-                    f"{model_studies.spec_path(goal, sid)} exists: a study's spec is written once",
-                    "would-overwrite",
-                )
-            _store.mkdir(model_studies.spec_path(goal, sid).parent, parents=True, exist_ok=True)
-            _store.write_text(model_studies.spec_path(goal, sid), _store.read_text(a.spec, encoding="utf-8"))
-        if not _store.is_file(model_studies.spec_path(goal, sid)):
-            die(f"no spec at {model_studies.spec_path(goal, sid)} (--spec FILE writes it)", "not-found")
-        s = model_studies.spec(goal, sid)
-        found = _study.problems(goal, sid, s)
-        if found:
-            die(f"study {goal}/{sid}: " + "; ".join(found), "invalid-file")
-        st = model_studies.state(goal, sid)
-        sampler = s["sampler"] if isinstance(s["sampler"], str) else "command"
-        if a.dry_run:
-            stop = s.get("stop") or {}
-            print(f"study {goal}/{sid}: {sampler} sampler on {s['dataset']}, from {s['baseline']['system']}, decided on "
-                  f"{s['measure']}; at most {stop.get('trials', 'until stopped')} trial(s), "
-                  f"${stop.get('usd', 'EVAL_MAX_COST_USD')} in all. Nothing was called.")  # fmt: skip
-            _jsonout.values({"study": f"{goal}/{sid}", "sampler": sampler, "dry_run": True})
-            return 0
-        if st["status"] == "ended":
+    a = legacy.namespace(inputs, "study-run")
+    if "/" not in a.study:
+        die("study-run names <goal>/<study_id>", "bad-argument")
+    goal, sid = a.study.split("/", 1)
+    if a.spec is not None:
+        if not _store.is_file(a.spec):
+            die(f"--spec {a.spec}: no such file", "not-found")
+        if _store.is_file(model_studies.spec_path(goal, sid)):
             die(
-                f"study {goal}/{sid} has ended ({st['end'].get('reason')}): a new study continues it",
-                "not-allowed",
+                f"{model_studies.spec_path(goal, sid)} exists: a study's spec is written once",
+                "would-overwrite",
             )
-        if st["status"] in ("running", "stopping") and not a.resume:
-            die(f"study {goal}/{sid} was started: --resume continues it after its last trial", "not-allowed")
-        if a.resume:
-            lost = _study.mark_interrupted(goal, sid)
-            if lost:
-                print(
-                    f"  trial(s) {', '.join(map(str, lost))} stopped mid-way: recorded as interrupted; going on after them"
-                )
-        if st["status"] == "not started":
-            ev = _study.open_study(goal, sid)
-            print(f"study {goal}/{sid}: round {ev['round']} opened, from {ev['baseline']}")
-        if sampler == "agent":
-            print(
-                f"  the agent sampler: evh study-ask {goal}/{sid}, then evh study-tell {goal}/{sid} --ask <id> --proposal FILE"
-            )
-            _jsonout.values({"study": f"{goal}/{sid}", "status": "waiting for the agent"})
-            return 0
-        smp: Any = "grid" if sampler == "grid" else _study.CommandSampler(str(s["sampler"]["command"]))
-        try:
-            with _study.loop_lock(goal, sid):
-                why = _study.run_loop(goal, sid, smp)
-        finally:
-            if smp != "grid":
-                smp.close()
-        end = _study.close_study(goal, sid, why)
-        print(f"study {goal}/{sid} ended: {why}. {end['summary']}")
-        _jsonout.values(
-            {"study": f"{goal}/{sid}", "end": end, "trials": len(model_studies.state(goal, sid)["trials"])}
+        _store.mkdir(model_studies.spec_path(goal, sid).parent, parents=True, exist_ok=True)
+        _store.write_text(model_studies.spec_path(goal, sid), _store.read_text(a.spec, encoding="utf-8"))
+    if not _store.is_file(model_studies.spec_path(goal, sid)):
+        die(f"no spec at {model_studies.spec_path(goal, sid)} (--spec FILE writes it)", "not-found")
+    s = model_studies.spec(goal, sid)
+    found = _study.problems(goal, sid, s)
+    if found:
+        die(f"study {goal}/{sid}: " + "; ".join(found), "invalid-file")
+    st = model_studies.state(goal, sid)
+    sampler = s["sampler"] if isinstance(s["sampler"], str) else "command"
+    if a.dry_run:
+        stop = s.get("stop") or {}
+        print(f"study {goal}/{sid}: {sampler} sampler on {s['dataset']}, from {s['baseline']['system']}, decided on "
+              f"{s['measure']}; at most {stop.get('trials', 'until stopped')} trial(s), "
+              f"${stop.get('usd', 'EVAL_MAX_COST_USD')} in all. Nothing was called.")  # fmt: skip
+        _jsonout.values({"study": f"{goal}/{sid}", "sampler": sampler, "dry_run": True})
+        return 0
+    if st["status"] == "ended":
+        die(
+            f"study {goal}/{sid} has ended ({st['end'].get('reason')}): a new study continues it",
+            "not-allowed",
         )
+    if st["status"] in ("running", "stopping") and not a.resume:
+        die(f"study {goal}/{sid} was started: --resume continues it after its last trial", "not-allowed")
+    if a.resume:
+        lost = _study.mark_interrupted(goal, sid)
+        if lost:
+            print(
+                f"  trial(s) {', '.join(map(str, lost))} stopped mid-way: recorded as interrupted; going on after them"
+            )
+    if st["status"] == "not started":
+        ev = _study.open_study(goal, sid)
+        print(f"study {goal}/{sid}: round {ev['round']} opened, from {ev['baseline']}")
+    if sampler == "agent":
+        print(
+            f"  the agent sampler: evh study-ask {goal}/{sid}, then evh study-tell {goal}/{sid} --ask <id> --proposal FILE"
+        )
+        _jsonout.values({"study": f"{goal}/{sid}", "status": "waiting for the agent"})
+        return 0
+    smp: Any = "grid" if sampler == "grid" else _study.CommandSampler(str(s["sampler"]["command"]))
+    try:
+        with _study.loop_lock(goal, sid):
+            why = _study.run_loop(goal, sid, smp)
+    finally:
+        if smp != "grid":
+            smp.close()
+    end = _study.close_study(goal, sid, why)
+    print(f"study {goal}/{sid} ended: {why}. {end['summary']}")
+    _jsonout.values(
+        {"study": f"{goal}/{sid}", "end": end, "trials": len(model_studies.state(goal, sid)["trials"])}
+    )
     return 0
 
 
-def ask(argv: list[str]) -> int:
+def ask_body(**inputs: Any) -> int:
     """evh study-ask: the state the agent sampler proposes from, and an ask id (one open at a time)."""
-    ap = _ap("the state of a study for the agent sampler, with an ask id (RFC-029)")
-    ap.add_argument("study")
-    _json_flag(ap)
-    a = ap.parse_args(argv)
-    with _jsonout.collect("study-ask", a.json, live=sys.stderr):
-        goal, sid = model_studies.resolve(a.study)
-        s, st = model_studies.spec(goal, sid), model_studies.state(goal, sid)
-        if st["status"] != "running":
-            die(f"study {goal}/{sid} is {st['status']}: nothing to ask", "not-allowed")
-        timeout = float((s.get("stop") or {}).get("ask_timeout_h") or 2) * 3600
-        why = _study.stop_reason(goal, sid, _started(st), _start_hash(goal, sid))
-        if why:
-            end = _study.close_study(goal, sid, why)
-            die(f"study {goal}/{sid} ended: {why}. {end['summary']}", "not-allowed")
-        open_ask = st["open_ask"]
-        state = _study.sampler_state(goal, sid)
-        shown = [{"item_id": x["item_id"], "sha256": x.get("sha256")} for x in state["weakest_items"]]
-        if open_ask and _age(open_ask) < timeout:
-            ask_id = open_ask["ask_id"]
-        else:
-            ask_id = _study.new_ask_id()
-            _study.append(goal, sid, {"event": "ask", "ask_id": ask_id, "shown": shown})
-        print(json.dumps({"ask_id": ask_id, **state}, indent=2, default=str))
-        _jsonout.values({"ask_id": ask_id, "state": state})
+    a = legacy.namespace(inputs, "study-ask")
+    goal, sid = model_studies.resolve(a.study)
+    s, st = model_studies.spec(goal, sid), model_studies.state(goal, sid)
+    if st["status"] != "running":
+        die(f"study {goal}/{sid} is {st['status']}: nothing to ask", "not-allowed")
+    timeout = float((s.get("stop") or {}).get("ask_timeout_h") or 2) * 3600
+    why = _study.stop_reason(goal, sid, _started(st), _start_hash(goal, sid))
+    if why:
+        end = _study.close_study(goal, sid, why)
+        die(f"study {goal}/{sid} ended: {why}. {end['summary']}", "not-allowed")
+    open_ask = st["open_ask"]
+    state = _study.sampler_state(goal, sid)
+    shown = [{"item_id": x["item_id"], "sha256": x.get("sha256")} for x in state["weakest_items"]]
+    if open_ask and _age(open_ask) < timeout:
+        ask_id = open_ask["ask_id"]
+    else:
+        ask_id = _study.new_ask_id()
+        _study.append(goal, sid, {"event": "ask", "ask_id": ask_id, "shown": shown})
+    print(json.dumps({"ask_id": ask_id, **state}, indent=2, default=str))
+    _jsonout.values({"ask_id": ask_id, "state": state})
     return 0
 
 
@@ -165,127 +138,72 @@ def _start_hash(goal: str, sid: str) -> str:
     return next(e for e in model_studies.events(goal, sid) if e.get("event") == "start")["spec_sha256"]
 
 
-def tell(argv: list[str]) -> int:
+def tell_body(**inputs: Any) -> int:
     """evh study-tell: the agent's proposal for the open ask, run as the next trial."""
-    ap = _ap("run the agent's proposal as a study's next trial (RFC-029)")
-    ap.add_argument("study")
-    ap.add_argument("--ask", required=True, help="the ask id study-ask gave")
-    given = ap.add_mutually_exclusive_group(required=True)
-    given.add_argument(
-        "--proposal",
-        type=Path,
-        help='a JSON file: {"params": {"a.b": v}, "prompts": {name: text}, "hypothesis": "...", "rationale": "..."}',
-    )
-    given.add_argument("--proposal-json", help="the same proposal as JSON text (an MCP tool call sends this)")
-    _json_flag(ap)
-    from evaluation_harness._actor import add_by, require_named  # noqa: PLC0415
+    from evaluation_harness._actor import require_named  # noqa: PLC0415
 
-    add_by(ap)
-    a = ap.parse_args(argv)
-    with _jsonout.collect("study-tell", a.json, live=sys.stderr):
-        require_named("study-tell")
-        goal, sid = model_studies.resolve(a.study)
-        s, st = model_studies.spec(goal, sid), model_studies.state(goal, sid)
-        timeout = float((s.get("stop") or {}).get("ask_timeout_h") or 2) * 3600
-        o = st["open_ask"]
-        if not o or o["ask_id"] != a.ask:
+    a = legacy.namespace(inputs, "study-tell")
+    require_named("study-tell")
+    goal, sid = model_studies.resolve(a.study)
+    s, st = model_studies.spec(goal, sid), model_studies.state(goal, sid)
+    timeout = float((s.get("stop") or {}).get("ask_timeout_h") or 2) * 3600
+    o = st["open_ask"]
+    if not o or o["ask_id"] != a.ask:
+        die(
+            f"ask {a.ask} is not the study's open ask (used, or never asked): study-ask again",
+            "not-allowed",
+        )
+    if _age(o) >= timeout:
+        die(f"ask {a.ask} lapsed (older than {timeout / 3600:g} h): study-ask again", "not-allowed")
+    if a.proposal is not None and not _store.is_file(a.proposal):
+        die(f"--proposal {a.proposal}: no such file", "not-found")
+    text = _store.read_text(a.proposal, encoding="utf-8") if a.proposal is not None else a.proposal_json
+    try:
+        proposal = json.loads(text)
+    except ValueError as exc:
+        die(f"the proposal is not JSON ({exc})", "invalid-file")
+    if not isinstance(proposal, dict) or not (proposal.get("params") or proposal.get("prompts")):
+        die("--proposal: an object with params and/or prompts (and a hypothesis)", "bad-argument")
+    allowed = set(((s.get("space") or {}).get("prompts")) or [])
+    for name in proposal.get("prompts") or {}:
+        if allowed and name not in allowed:
             die(
-                f"ask {a.ask} is not the study's open ask (used, or never asked): study-ask again",
+                f"prompt {name} is not in the study's space (space.prompts: {', '.join(sorted(allowed))})",
                 "not-allowed",
             )
-        if _age(o) >= timeout:
-            die(f"ask {a.ask} lapsed (older than {timeout / 3600:g} h): study-ask again", "not-allowed")
-        if a.proposal is not None and not _store.is_file(a.proposal):
-            die(f"--proposal {a.proposal}: no such file", "not-found")
-        text = _store.read_text(a.proposal, encoding="utf-8") if a.proposal is not None else a.proposal_json
-        try:
-            proposal = json.loads(text)
-        except ValueError as exc:
-            die(f"the proposal is not JSON ({exc})", "invalid-file")
-        if not isinstance(proposal, dict) or not (proposal.get("params") or proposal.get("prompts")):
-            die("--proposal: an object with params and/or prompts (and a hypothesis)", "bad-argument")
-        allowed = set(((s.get("space") or {}).get("prompts")) or [])
-        for name in proposal.get("prompts") or {}:
-            if allowed and name not in allowed:
-                die(
-                    f"prompt {name} is not in the study's space (space.prompts: {', '.join(sorted(allowed))})",
-                    "not-allowed",
-                )
-        with _study.loop_lock(goal, sid):
-            if model_studies.state(goal, sid)["open_ask"] != o:
-                die(f"ask {a.ask} was told while this call waited: study-ask again", "not-allowed")
-            line = _study.trial(
-                goal, sid, len(st["trials"]) + 1, proposal, ask_id=a.ask, shown=o.get("shown")
-            )
-        print(f"trial {line['k']}: {line['outcome']}: {line.get('reason')}")
-        _jsonout.values({"trial": line})
+    with _study.loop_lock(goal, sid):
+        if model_studies.state(goal, sid)["open_ask"] != o:
+            die(f"ask {a.ask} was told while this call waited: study-ask again", "not-allowed")
+        line = _study.trial(goal, sid, len(st["trials"]) + 1, proposal, ask_id=a.ask, shown=o.get("shown"))
+    print(f"trial {line['k']}: {line['outcome']}: {line.get('reason')}")
+    _jsonout.values({"trial": line})
     return 0
 
 
-def stop(argv: list[str]) -> int:
+def stop_body(**inputs: Any) -> int:
     """evh study-stop: the loop stops after its current trial (an agent study ends at once)."""
-    ap = _ap("stop a study (RFC-029)")
-    ap.add_argument("study")
-    _json_flag(ap)
-    from evaluation_harness._actor import add_by  # noqa: PLC0415
-
-    add_by(ap)
-    a = ap.parse_args(argv)
-    with _jsonout.collect("study-stop", a.json, live=sys.stderr):
-        goal, sid = model_studies.resolve(a.study)
-        st = model_studies.state(goal, sid)
-        if st["status"] == "ended":
-            die(f"study {goal}/{sid} has already ended", "not-allowed")
-        s = model_studies.spec(goal, sid)
-        if s.get("sampler") == "agent" or st["status"] == "not started":
-            end = (
-                _study.close_study(goal, sid, "stopped (study-stop)")
-                if st["status"] != "not started"
-                else None
-            )
-            print(f"study {goal}/{sid} ended" + (f": {end['summary']}" if end else " before it started"))
-        else:
-            _study.append(goal, sid, {"event": "stop"})
-            print(f"study {goal}/{sid}: the loop stops after its current trial")
-        _jsonout.values({"study": f"{goal}/{sid}"})
+    a = legacy.namespace(inputs, "study-stop")
+    goal, sid = model_studies.resolve(a.study)
+    st = model_studies.state(goal, sid)
+    if st["status"] == "ended":
+        die(f"study {goal}/{sid} has already ended", "not-allowed")
+    s = model_studies.spec(goal, sid)
+    if s.get("sampler") == "agent" or st["status"] == "not started":
+        end = _study.close_study(goal, sid, "stopped (study-stop)") if st["status"] != "not started" else None
+        print(f"study {goal}/{sid} ended" + (f": {end['summary']}" if end else " before it started"))
+    else:
+        _study.append(goal, sid, {"event": "stop"})
+        print(f"study {goal}/{sid}: the loop stops after its current trial")
+    _jsonout.values({"study": f"{goal}/{sid}"})
     return 0
 
 
-def confirm(argv: list[str]) -> int:
+def confirm_body(**inputs: Any) -> int:
     """evh study-confirm: the best trial against the baseline on a test set, once, as one look (RFC-029)."""
-    ap = _ap("confirm a study's best trial on a test set: one look, one-sided at its level (RFC-029)")
-    ap.add_argument("study")
-    ap.add_argument(
-        "--test", required=True, help="the test set (a goal's role: test dataset, or a sealed side)"
-    )
-    ap.add_argument(
-        "--rule",
-        required=True,
-        choices=("superiority", "noninferiority"),
-        help="given before any test item is read",
-    )
-    ap.add_argument("--trial", type=int, help="this trial instead of the best kept one")
-    ap.add_argument(
-        "--margin", type=float, help="noninferiority: the margin (default: the study's accept.margin)"
-    )
-    ap.add_argument(
-        "--dry-run", action="store_true", help="the items, the look and whether it can succeed; run nothing"
-    )
-    ap.add_argument(
-        "--confirm-extra-look", action="store_true", help="past the set's limit: the person's consent"
-    )
-    ap.add_argument(
-        "--override-no-evidence",
-        action="store_true",
-        help="items that cannot show it: run anyway, inconclusive",
-    )
-    _json_flag(ap)
-    from evaluation_harness._actor import add_by, require_named  # noqa: PLC0415
+    from evaluation_harness._actor import require_named  # noqa: PLC0415
 
-    add_by(ap)
-    a = ap.parse_args(argv)
-    with _jsonout.collect("study-confirm", a.json, live=sys.stderr):
-        return _confirm(a, require_named)
+    a = legacy.namespace(inputs, "study-confirm")
+    return _confirm(a, require_named)
 
 
 def _confirm(a: argparse.Namespace, require_named: Any) -> int:
@@ -422,69 +340,52 @@ def _open_sealed(test: str, cids: list[str], look: dict[str, Any], who: dict[str
     write_json(DATASETS / f"{test}.json", doc)
 
 
-def import_tsv(argv: list[str]) -> int:
+def import_tsv_body(**inputs: Any) -> int:
     """evh study-import: Karpathy's results.tsv (commit, val_bpb, memory_gb, status, description) as a closed
     study, marked imported; its trials carry one number each and cannot be confirmed."""
-    ap = _ap("import a past loop's results.tsv as a closed study (RFC-029)")
-    ap.add_argument("file", type=Path)
-    ap.add_argument("--goal", required=True)
-    ap.add_argument("--study", required=True, help="the study id to give it")
-    _json_flag(ap)
-    from evaluation_harness._actor import add_by  # noqa: PLC0415
+    a = legacy.namespace(inputs, "study-import")
+    from evaluation_harness._common import load_goals  # noqa: PLC0415
 
-    add_by(ap)
-    a = ap.parse_args(argv)
-    with _jsonout.collect("study-import", a.json, live=sys.stderr):
-        from evaluation_harness._common import load_goals  # noqa: PLC0415
-
-        if a.goal not in load_goals():
-            die(f"no goal {a.goal!r}", "not-found")
-        if not _study.STUDY_ID.fullmatch(a.study):
-            die(f"--study {a.study!r}: lower-case letters, digits, '_' or '-'", "bad-argument")
-        if _store.is_file(model_studies.spec_path(a.goal, a.study)):
-            die(f"study {a.goal}/{a.study} exists", "would-overwrite")
-        if not _store.is_file(a.file):
-            die(f"{a.file}: no such file", "not-found")
-        rows = list(csv.DictReader(io.StringIO(_store.read_text(a.file, encoding="utf-8")), delimiter="\t"))
-        need = {"commit", "val_bpb", "status", "description"}
-        if not rows or not need <= set(rows[0]):
-            die(
-                f"{a.file}: a results.tsv with columns {', '.join(sorted(need))} (memory_gb optional)",
-                "invalid-file",
-            )
-        spec = {"imported": True, "source": str(a.file), "measure": "val_bpb", "direction": "lower",
-                "note": "imported from a results.tsv: one number per trial, not confirmable"}  # fmt: skip
-        _store.mkdir(model_studies.spec_path(a.goal, a.study).parent, parents=True, exist_ok=True)
-        _store.write_text(model_studies.spec_path(a.goal, a.study), yaml.safe_dump(spec, sort_keys=False))
-        _study.append(
-            a.goal,
-            a.study,
-            {"event": "start", "imported": True, "round": None, "baseline": None, "spec_sha256": None},
+    if a.goal not in load_goals():
+        die(f"no goal {a.goal!r}", "not-found")
+    if not _study.STUDY_ID.fullmatch(a.study):
+        die(f"--study {a.study!r}: lower-case letters, digits, '_' or '-'", "bad-argument")
+    if _store.is_file(model_studies.spec_path(a.goal, a.study)):
+        die(f"study {a.goal}/{a.study} exists", "would-overwrite")
+    if not _store.is_file(a.file):
+        die(f"{a.file}: no such file", "not-found")
+    rows = list(csv.DictReader(io.StringIO(_store.read_text(a.file, encoding="utf-8")), delimiter="\t"))
+    need = {"commit", "val_bpb", "status", "description"}
+    if not rows or not need <= set(rows[0]):
+        die(
+            f"{a.file}: a results.tsv with columns {', '.join(sorted(need))} (memory_gb optional)",
+            "invalid-file",
         )
-        status_map = {"keep": "kept", "discard": "dropped", "crash": "failed"}
-        for k, row in enumerate(rows, 1):
-            try:
-                val = float(row["val_bpb"])
-            except (TypeError, ValueError):
-                val = None
-            _study.append(a.goal, a.study, {
-                "event": "trial", "k": k, "imported": True, "system_id": None, "commit": row.get("commit"),
-                "val_bpb": val, "memory_gb": row.get("memory_gb"), "outcome": status_map.get(str(row.get("status")).strip(), "dropped"),
-                "hypothesis": row.get("description"), "reason": f"imported: {row.get('status')}", "cost_usd": 0,
-            })  # fmt: skip
-        _study.append(
-            a.goal,
-            a.study,
-            {"event": "end", "reason": "imported", "summary": f"{len(rows)} trial(s) imported from {a.file}"},
-        )
-        print(f"study {a.goal}/{a.study}: {len(rows)} trial(s) imported (closed; not confirmable)")
-        _jsonout.values({"study": f"{a.goal}/{a.study}", "trials": len(rows)})
+    spec = {"imported": True, "source": str(a.file), "measure": "val_bpb", "direction": "lower",
+            "note": "imported from a results.tsv: one number per trial, not confirmable"}  # fmt: skip
+    _store.mkdir(model_studies.spec_path(a.goal, a.study).parent, parents=True, exist_ok=True)
+    _store.write_text(model_studies.spec_path(a.goal, a.study), yaml.safe_dump(spec, sort_keys=False))
+    _study.append(
+        a.goal,
+        a.study,
+        {"event": "start", "imported": True, "round": None, "baseline": None, "spec_sha256": None},
+    )
+    status_map = {"keep": "kept", "discard": "dropped", "crash": "failed"}
+    for k, row in enumerate(rows, 1):
+        try:
+            val = float(row["val_bpb"])
+        except (TypeError, ValueError):
+            val = None
+        _study.append(a.goal, a.study, {
+            "event": "trial", "k": k, "imported": True, "system_id": None, "commit": row.get("commit"),
+            "val_bpb": val, "memory_gb": row.get("memory_gb"), "outcome": status_map.get(str(row.get("status")).strip(), "dropped"),
+            "hypothesis": row.get("description"), "reason": f"imported: {row.get('status')}", "cost_usd": 0,
+        })  # fmt: skip
+    _study.append(
+        a.goal,
+        a.study,
+        {"event": "end", "reason": "imported", "summary": f"{len(rows)} trial(s) imported from {a.file}"},
+    )
+    print(f"study {a.goal}/{a.study}: {len(rows)} trial(s) imported (closed; not confirmable)")
+    _jsonout.values({"study": f"{a.goal}/{a.study}", "trials": len(rows)})
     return 0
-
-
-def run(sub: str) -> int:
-    """One of the study commands, by name."""
-    return {
-        "run": run_study, "ask": ask, "tell": tell, "stop": stop,
-        "confirm": confirm, "import": import_tsv,
-    }[sub](sys.argv[1:])  # fmt: skip

@@ -13,7 +13,7 @@ from evaluation_harness.ops import locks as op_locks
 from evaluation_harness.ops.registry import Op, _load
 
 #: A decision that has no reason of its own to give: it opens something, and says what it opens in its inputs.
-NO_WHY = frozenset({"round-open", "round-carry"})
+NO_WHY = frozenset({"round-open", "round-carry", "study-confirm"})
 #: The words that name an input a file may be behind, as a whole word of its name (`items`, `scorer_file`), or `path`
 #: anywhere in it.
 FILE_WORDS = frozenset({"out", "file", "dir", "items", "spec", "sheet", "map", "guideline", "proposal"})
@@ -75,7 +75,8 @@ def problems(op: Op) -> list[str]:
             say("a decision names the required input that is its reason (why=...), or is listed in NO_WHY")
     elif op.why:
         say("why: only a decision has a reason of its own")
-    if op.spends and op.kind == "decision" and not op.why:
+    # NO_WHY's decisions record their reason themselves (study-confirm: the study and trial it confirms, pre-registered).
+    if op.spends and op.kind == "decision" and not op.why and op.name not in NO_WHY:
         say("a decision that spends still names its why")
     if op.parts_fn and not _dotted(op.parts_fn):
         say(f"parts_fn {op.parts_fn!r}: a dotted module:function")

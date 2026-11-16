@@ -279,14 +279,16 @@ try:
     for op in ops.OPS.values():
         if COMMANDS.get(op.name, ("",))[0] != "op_command.py":
             wired.append(f"{op.name}: not an evh command")
-        if (op.kind == "read") != (op.name in tools):
+        # A tool: every read, and a local server's agent tools (study-ask, study-tell: work operations it runs).
+        tool = op.kind == "read" or op.name in mcp_server.AGENT_TOOLS
+        if tool != (op.name in tools):
             wired.append(f"{op.name}: MCP lists")
-        if (op.kind != "read") != (op.name in mcp_server.NOT_TOOLS and op.name in _api.NOT_SERVED):
+        if (not tool) != (op.name in mcp_server.NOT_TOOLS and op.name in _api.NOT_SERVED):
             wired.append(f"{op.name}: NOT_TOOLS / NOT_SERVED")
         if _cmdline.parser_of(op.name).prog != f"evh {op.name}":
             wired.append(f"{op.name}: parser_of")
     check(
-        "every operation is an evh command, a read an MCP tool, a write neither tool nor job; parser_of makes its parser",
+        "every operation is an evh command, a read (and an agent tool) an MCP tool, any other write no tool; parser_of makes its parser",
         not wired,
         wired,
     )

@@ -220,6 +220,7 @@ try:
     vid = vs[-1]["id"] if vs else "x"
     pv = evh(
         "prompt-version",
+        "--name",
         "summary/user",
         "--text",
         "A fourth wording.\n",
@@ -233,11 +234,11 @@ try:
     check(
         "prompt-version records a version with its parent and note; the same bytes again are named, not doubled",
         pv.returncode == 0 and len(vs) == 4 and vs[-1]["parent"] == vid and vs[-1]["note"] == "shorter"
-        and "already recorded" in evh("prompt-version", "summary/user", "--text", "A fourth wording.\n", "--note", "x").stdout,
+        and "already recorded" in evh("prompt-version", "--name", "summary/user", "--text", "A fourth wording.\n", "--note", "x").stdout,
         (pv.stdout[-300:], pv.stderr[-300:]),
     )  # fmt: skip
-    ex = evh("prompt-export", vs[-1]["id"] if vs else "x", "--to", "exported.txt")
-    bad = evh("prompt-export", vid, "--to", str(proj / "venv/lib/site-packages/p.txt"))
+    ex = evh("prompt-export", "--id", vs[-1]["id"] if vs else "x", "--to", "exported.txt")
+    bad = evh("prompt-export", "--id", vid, "--to", str(proj / "venv/lib/site-packages/p.txt"))
     check(
         "prompt-export writes the bytes; a path inside an installed package is refused",
         ex.returncode == 0 and (proj / "exported.txt").read_text() == "A fourth wording.\n"

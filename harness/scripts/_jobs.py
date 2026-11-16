@@ -108,22 +108,13 @@ def _data_rm_locks(a: dict) -> list[tuple[str, bool]]:
 #: job; a migration takes it exclusive. A job command in neither this nor PROJECT_ONLY fails a test.
 LOCK_RULES: dict[str, Callable[[dict], list[tuple[str, bool]]]] = {
     "catalog": lambda a: [("catalog", True)],
-    "study-run": lambda a: [(f"study-loop:{_first(a.get('study'))}", True)] if a.get("study") else [],
-    "study-tell": lambda a: [(f"study-loop:{_first(a.get('study'))}", True)] if a.get("study") else [],
-    "study-confirm": lambda a: [(f"dataset:{_first(a.get('test'))}", True)] if a.get("test") else [],
     "data-put": lambda a: [("settings", True)],
     "data-rm": _data_rm_locks,
 }
 #: Migrations: the whole project, exclusive (every other job holds it shared, so each waits for the other).
 MIGRATIONS = {"data-migrate", "migrate"}
 #: Job commands that write nothing another job writes (reports, checks, estimates): `project` shared only.
-PROJECT_ONLY = {
-    "study-ask",  # its ask is appended under the study's own lock, briefly
-    "study-stop",
-    "study-import",
-    "prompt-version",  # a version is written once, named by its content (RFC-028): two at once write one
-    "prompt-export",  # into the job's own folder
-}
+PROJECT_ONLY: frozenset[str] = frozenset()
 
 
 def locks_for(command: str, args: dict) -> list[tuple[str, bool]]:

@@ -40,11 +40,7 @@ from evaluation_harness._cmdline import (
     MAX_VALUES,
     PATH_VARS,
     TIMEOUT_S,
-    TOOL_HIDDEN,
-    argv_of,
-    input_schema,
     kill_group,
-    parser_of,
     public_error,
     run_command,
 )
@@ -58,12 +54,6 @@ MAX_OUT = 1_000_000
 AGENT_TOOLS = ("study-ask", "study-tell")
 
 NOT_TOOLS = {
-    "study-run": "runs a study's loop and spends: a job (the agent sampler's own steps are tools)",
-    "study-stop": "stops a study",
-    "study-confirm": "a decision that spends a look and money: a person's command or a job",
-    "study-import": "writes a study",
-    "prompt-version": "records a prompt version",
-    "prompt-export": "writes a file",
     "jobs-start": "starts a job: the agents act through the command line or the API (RFC-026)",
     "jobs-status": "the jobs of this machine's project, not its data",
     "jobs-logs": "a job's log, which can hold anything its command printed",
@@ -85,7 +75,7 @@ NOT_TOOLS = {
 }
 NOT_TOOLS.update(
     dict.fromkeys(
-        (op.name for op in _ops.of_kind("edit", "decision", "work")),
+        (op.name for op in _ops.of_kind("edit", "decision", "work") if op.name not in AGENT_TOOLS),
         "a write of the model: the command line, or its API resource (RFC-032)",
     )
 )
@@ -249,6 +239,40 @@ def check_arguments(op: Any, arguments: dict, public: bool) -> None:
             raise ValueError(f"{k}: at most {MAX_VALUES} values of {MAX_VALUE} characters")
 
 
+def check_agent_arguments(op: Any, arguments: dict) -> None:
+    """An agent tool's arguments (a work operation, a local server's only) against the operation's schema, which leaves
+    out what only the command line takes (study-tell's --proposal: a path of the server's; a call sends proposal_json):
+    refused before anything runs, ValueError saying which."""
+    import jsonschema  # noqa: PLC0415
+    from evaluation_harness.ops.registry import input_problem  # noqa: PLC0415
+
+    try:
+        jsonschema.validate(arguments, op.job_schema())
+    except jsonschema.ValidationError as exc:
+        raise ValueError(input_problem(exc)) from None
+
+
+def run_agent_tool(
+    project: Path, name: str, arguments: dict, timeout: float, started: list[subprocess.Popen]
+) -> tuple[int, str, str]:
+    """An agent tool's call: its inputs in a file under the project's .build/mcp-calls (where a job's inputs.json is
+    read from: the command reads it through the store, which serves the project's paths), `evh <operation> --json
+    --inputs-file F` in the project, in its own process group with a timeout that kills the group (a work operation runs
+    its body as a job's process does, not in the server's); the file removed after."""
+    import uuid  # noqa: PLC0415
+
+    from evaluation_harness import _common  # noqa: PLC0415
+
+    calls = Path(project) / ".build" / "mcp-calls"
+    calls.mkdir(parents=True, exist_ok=True)
+    path = calls / f"{uuid.uuid4().hex}.json"
+    _common.write_text_atomic(path, json.dumps(arguments))
+    try:
+        return run_command(project, name, ["--inputs-file", str(path)], timeout, False, started)
+    finally:
+        path.unlink(missing_ok=True)
+
+
 def run_op(op: Any, arguments: dict, public: bool) -> dict:
     """An operation answered in this process, as the public flag of the server says: its result, as the envelope every
     surface gives it (`command`, `version`, `result`), as JSON holds it (NaN and infinities as null)."""
@@ -375,15 +399,11 @@ def build_server(
     import anyio  # noqa: PLC0415
     import mcp.types as types  # noqa: PLC0415
     from evaluation_harness._version import __version__  # noqa: PLC0415
-    from evaluation_harness.cli import COMMANDS  # noqa: PLC0415
     from evaluation_harness.model.entity import Problem  # noqa: PLC0415
     from mcp.server import Server  # noqa: PLC0415
 
     ops = {op.name: op for op in read_ops(public)}
-    agent = {} if public else {c: parser_of(c) for c in AGENT_TOOLS}
-    for c, flags in TOOL_HIDDEN.items():
-        if c in agent:
-            agent[c]._actions = [a for a in agent[c]._actions if not set(a.option_strings) & flags]
+    agent = {} if public else {c: _ops.OPS[c] for c in AGENT_TOOLS}
     known_tools = {*ops, *agent}
 
     def key_of(name: str, arguments: dict) -> tuple:
@@ -424,8 +444,8 @@ def build_server(
     ] + [
         types.Tool(
             name=c,
-            description=f"{COMMANDS[c][1]}." + (f" {agent[c].description}" if agent[c].description else ""),
-            input_schema=input_schema(agent[c]),
+            description=agent[c].about,
+            input_schema=agent[c].job_schema(),
             annotations=types.ToolAnnotations(
                 read_only_hint=False, destructive_hint=False, idempotent_hint=False, open_world_hint=False
             ),
@@ -483,10 +503,9 @@ def build_server(
                         del recent[k]
             if not known:
                 return refuse(f"no tool {name[:60]!r}", {**info, "refused": "tool"})
-            argv: list[str] = []
             try:
                 if name in agent:
-                    argv = argv_of(agent[name], arguments)
+                    check_agent_arguments(agent[name], arguments)
                 else:
                     check_arguments(ops[name], arguments, public)
             except ValueError as exc:
@@ -551,7 +570,7 @@ def build_server(
                     """The call's work, in its own thread: the slot and the caller's count are given back when it ends."""
                     try:
                         if name in agent:
-                            result["value"] = run_command(project, name, argv, timeout, False, started)
+                            result["value"] = run_agent_tool(project, name, arguments, timeout, started)
                         else:
                             result["value"] = run_op(ops[name], arguments, public)
                     except Exception as exc:  # noqa: BLE001 - handed to the call waiting for it, raised there

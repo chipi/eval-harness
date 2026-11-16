@@ -651,6 +651,7 @@ ALLOWED = {
     "harness/scripts/_api.py": "the API's token and a job's uploads, under .build/, outside data/ (RFC-026)",
     "harness/scripts/_jobs.py": "jobs and their lock files, under .build/, outside data/ (RFC-026)",
     "harness/scripts/jobs_supervisor.py": "a job's own folder under .build/jobs, outside data/ (RFC-026)",
+    "harness/scripts/mcp_server.py": "an agent tool call's inputs file under .build/mcp-calls, outside data/ (RFC-032)",
     "harness/scripts/_prompts.py": "reads the prompt files a config names and copies a prompt root under .build/, outside data/; versions go through _store (RFC-028)",
     "harness/scripts/_coderec.py": "unpacks each commit of a code record's checkout under .build/code, outside data/; records go through _store (RFC-030)",
     "harness/scripts/_coverage.py": "reads the source files of the version copies a replay ran, under .build/code (RFC-030)",

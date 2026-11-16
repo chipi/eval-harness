@@ -299,8 +299,8 @@ try:
     _c.project_root.cache_clear()
     held = _jobs.take_locks([("dataset:hold_x", True)], "the test")
     qid = _jobs.new_id()
-    _jobs.create("prompt-version", ["who_q", "--text", "x", "--note", "n"], "person:ana", None,
-                 [("aaa:first", True), ("dataset:hold_x", True)], job_id=qid)  # fmt: skip
+    _jobs.create_operation("prompt-version", {"name": "who_q", "text": "x", "note": "n"}, "person:ana",
+                           [("aaa:first", True), ("dataset:hold_x", True)], {}, None, qid)  # fmt: skip
     _jobs.start(qid)
     end = time.monotonic() + 30
     while (
@@ -584,11 +584,11 @@ try:
     # never the server's own EVH_ACTOR / EVH_FOR (every agent job was recorded for whoever the server ran as).
     env["EVH_ACTOR"], env["EVH_FOR"] = "agent:server-shell", "person:mallory"
     srv, PORT, TOKEN = serve()
-    no_for, _ = job("prompt-version", {"name": "who_p", "text": "a", "note": "n"}, by="agent:bot")
-    st_a, ja = job(
+    no_for, _ = op_job("prompt-version", {"name": "who_p", "text": "a", "note": "n"}, by="agent:bot")
+    st_a, ja = op_job(
         "prompt-version", {"name": "who_p", "text": "b", "note": "n"}, by="agent:bot", **{"for": "person:ana"}
     )
-    st_p, jp = job("prompt-version", {"name": "who_p", "text": "c", "note": "n"}, by="person:bea")
+    st_p, jp = op_job("prompt-version", {"name": "who_p", "text": "c", "note": "n"}, by="person:bea")
     da = until(ja.get("id"), ("succeeded", "failed"), 60) if st_a == 202 else {}
     dp = until(jp.get("id"), ("succeeded", "failed"), 60) if st_p == 202 else {}
     srv.terminate()

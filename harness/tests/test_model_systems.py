@@ -158,7 +158,9 @@ try:
 
     note = proj / "p.txt"
     note.write_text("Summarise the ticket in one sentence.\n")
-    pv = evh("prompt-version", "tickets/summary", "--from-file", str(note), "--note", "the first wording")
+    pv = evh(
+        "prompt-version", "--name", "tickets/summary", "--from-file", str(note), "--note", "the first wording"
+    )
     listed = result(evh("prompt-list", "--json"))
     shown = result(evh("prompt-show", "--name", "tickets/summary", "--json"))
     check(

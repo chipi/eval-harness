@@ -513,7 +513,9 @@ try:
     st_a, e_a = call(
         "POST", "/api/v1/jobs", {"command": "round-close", "args": {"goal": "g"}, "by": "person:ana"}
     )
-    st_b, e_b = call("POST", "/api/v1/jobs", {"operation": "study-run", "inputs": {}, "by": "person:ana"})
+    st_b, e_b = call(
+        "POST", "/api/v1/jobs", {"operation": "no-such-operation", "inputs": {}, "by": "person:ana"}
+    )
     st_c, e_c = call(
         "POST",
         "/api/v1/jobs",
@@ -525,8 +527,8 @@ try:
     )
     st_f, e_f = call("POST", "/api/v1/jobs", {"operation": "goal-list", "inputs": {}, "by": "person:ana"})
     check(
-        "POST /api/v1/jobs refuses: the old shape for an operation (400), an operation that is not a job (404: study-run is not "
-        "one yet, nor is a read), a field beyond {operation, inputs, by, for, max_cost_usd}, no `by`, a missing input",
+        "POST /api/v1/jobs refuses: the old shape for an operation (400), a name that is not a job (404: an unknown one, "
+        "nor a read), a field beyond {operation, inputs, by, for, max_cost_usd}, no `by`, a missing input",
         (st_a, st_b, st_c, st_d, st_e, st_f) == (400, 404, 400, 400, 400, 404)
         and "is an operation" in e_a["error"]
         and "not an operation that runs as a job" in e_b["error"]

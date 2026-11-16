@@ -55,23 +55,6 @@ COMMANDS = {
         "sheet_export.py",
         "a dataset's sheet written as a CSV to fill in: what each run wrote and scored beside every item, the columns to fill (--fill label|pick|scores|tags)",
     ),
-    "study-run": (
-        "study_run.py",
-        "open a study and run its loop on validation items: research, never evidence",
-    ),
-    "study-ask": ("study_ask.py", "a study's state for the agent sampler, with an ask id"),
-    "study-tell": ("study_tell.py", "the agent sampler's proposal, run as the study's next trial"),
-    "study-stop": ("study_stop.py", "stop a study after its current trial"),
-    "study-confirm": (
-        "study_confirm.py",
-        "a study's best trial against its baseline on a test set: one look, the evidence",
-    ),
-    "study-import": ("study_import.py", "a past loop's results.tsv as a closed study (not confirmable)"),
-    "prompt-version": (
-        "prompt_version.py",
-        "record a prompt version from a file or text, with its parent and a note",
-    ),
-    "prompt-export": ("prompt_export.py", "write a prompt version out, for a person to commit"),
     "jobs-start": (
         "jobs_start.py",
         "start a command as a job: detached, with its locks, log and state (RFC-026)",

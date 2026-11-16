@@ -130,8 +130,8 @@ try:
     grid = spec("grid", "dataset: tk_val\nbaseline: {system: one_v1}\nmeasure: overlap_f1\nsampler: grid\n"
                 "accept: {point: {min_gain: 0}}\nstop: {trials: 5}\n"
                 "space:\n  groups:\n    - {name: length, reason: how much to keep, params: {sentences: [2, 3, 4]}}\n")  # fmt: skip
-    dry = evh("study-run", "g/s1", "--spec", grid, "--dry-run")
-    r = evh("study-run", "g/s1", "--json")
+    dry = evh("study-run", "--study", "g/s1", "--spec", grid, "--dry-run")
+    r = evh("study-run", "--study", "g/s1", "--json")
     st = study_of("g", "s1")
     outs = {t["change"]["params"]["sentences"]: t["outcome"] for t in st.get("trials", [])}
     rounds = [
@@ -165,15 +165,21 @@ try:
     # ── an agent study ────────────────────────────────────────────────────────────────────────────────────────────
     agent = spec("agent", "dataset: tk_val\nbaseline: {system: one_v1}\nmeasure: overlap_f1\nsampler: agent\n"
                  "accept: {point: {min_gain: 0}}\nstop: {trials: 10}\ndirections: keep what a reader needs\n")  # fmt: skip
-    r = evh("study-run", "g/s2", "--spec", agent)
-    a1 = values(evh("study-ask", "g/s2", "--json")).get("ask_id")
-    t1 = evh("study-tell", "g/s2", "--ask", str(a1), "--proposal-json",
+    r = evh("study-run", "--study", "g/s2", "--spec", agent)
+    a1 = values(evh("study-ask", "--study", "g/s2", "--json")).get("ask_id")
+    t1 = evh("study-tell", "--study", "g/s2", "--ask", str(a1), "--proposal-json",
              json.dumps({"params": {"sentences": 2}, "hypothesis": "two sentences cover the gold"}), "--json")  # fmt: skip
     again = evh(
-        "study-tell", "g/s2", "--ask", str(a1), "--proposal-json", json.dumps({"params": {"sentences": 3}})
+        "study-tell",
+        "--study",
+        "g/s2",
+        "--ask",
+        str(a1),
+        "--proposal-json",
+        json.dumps({"params": {"sentences": 3}}),
     )
-    a2 = values(evh("study-ask", "g/s2", "--json")).get("ask_id")
-    t2 = evh("study-tell", "g/s2", "--ask", str(a2), "--proposal-json",
+    a2 = values(evh("study-ask", "--study", "g/s2", "--json")).get("ask_id")
+    t2 = evh("study-tell", "--study", "g/s2", "--ask", str(a2), "--proposal-json",
              json.dumps({"params": {"note": "a knob the system does not read"}, "hypothesis": "nothing"}), "--json")  # fmt: skip
     check(
         "the agent sampler: ask, tell (kept), the same ask again refused, a change the system does not read: no effect",
@@ -201,7 +207,7 @@ try:
     _runstore.write_text(
         proj, "studies/g/s2.yaml", _runstore.read_text(proj, "studies/g/s2.yaml") + "# edited\n"
     )
-    stopped = evh("study-ask", "g/s2")
+    stopped = evh("study-ask", "--study", "g/s2")
     st2 = study_of("g", "s2")
     check("a spec changed mid-study stops it, with the reason",
           stopped.returncode != 0 and st2.get("status") == "ended" and "changed" in str(st2.get("end")),
@@ -213,7 +219,7 @@ try:
     from mcp import ClientSession, StdioServerParameters
     from mcp.client.stdio import stdio_client
 
-    r = evh("study-run", "g/s5", "--spec", agent)
+    r = evh("study-run", "--study", "g/s5", "--spec", agent)
     agent_env = {**env, "EVH_ACTOR": "agent:helper", "EVH_FOR": "person:test"}
 
     async def over_mcp():
@@ -224,7 +230,7 @@ try:
             await sess.initialize()
             asked = await sess.call_tool("study-ask", {"study": "g/s5"})
             ask_id = json.loads(asked.content[0].text)["result"]["values"]["ask_id"]
-            told = await sess.call_tool("study-tell", {"study": "g/s5", "ask": ask_id, "proposal-json": json.dumps(
+            told = await sess.call_tool("study-tell", {"study": "g/s5", "ask": ask_id, "proposal_json": json.dumps(
                 {"params": {"sentences": 2}, "hypothesis": "proposed over MCP"})})  # fmt: skip
             return asked, told
 
@@ -246,7 +252,7 @@ try:
     )  # fmt: skip
     cmd = spec("cmd", "dataset: tk_val\nbaseline: {system: one_v1}\nmeasure: overlap_f1\n"
                f"sampler: {{command: '{sys.executable} sampler.py'}}\naccept: {{point: {{min_gain: 0}}}}\nstop: {{trials: 4}}\n")  # fmt: skip
-    r = evh("study-run", "g/s3", "--spec", cmd)
+    r = evh("study-run", "--study", "g/s3", "--spec", cmd)
     st3 = study_of("g", "s3")
     check(
         "a command sampler speaking ask/tell: its one proposal kept, then it stops the study",
@@ -256,8 +262,8 @@ try:
     )  # fmt: skip
 
     # ── the confirmation ──────────────────────────────────────────────────────────────────────────────────────────
-    d = evh("study-confirm", "g/s1", "--test", "tk_test", "--rule", "superiority", "--dry-run")
-    c = evh("study-confirm", "g/s1", "--test", "tk_test", "--rule", "superiority", "--json")
+    d = evh("study-confirm", "--study", "g/s1", "--test", "tk_test", "--rule", "superiority", "--dry-run")
+    c = evh("study-confirm", "--study", "g/s1", "--test", "tk_test", "--rule", "superiority", "--json")
     conf = values(c).get("confirm") or {}
     looks = (result_of(evh("looks", "--dataset", "tk_test", "--json")).get("sets") or [{}])[0]
     check(
@@ -273,7 +279,7 @@ try:
     evs = [json.loads(x) for x in _runstore.read_text(proj, "studies/g/s5.events.jsonl").splitlines()]
     ask_ev = next(e for e in evs if e.get("event") == "ask")
     tr_ev = next(e for e in evs if e.get("event") == "trial")
-    st_seen = values(evh("study-ask", "g/s3", "--json"))  # an ended study: refused, nothing shown
+    st_seen = values(evh("study-ask", "--study", "g/s3", "--json"))  # an ended study: refused, nothing shown
     shown_state = json.loads(asked.content[0].text)["result"]["values"]["state"]
     check(
         "the agent is shown the best's 5 weakest validation items (their text); the ask and its trial record them",
@@ -292,9 +298,9 @@ try:
     rr = evh("run", "--system", "root_v1", "--dataset", "tk_val", "--goal", "g")
     rspec = spec("rootspec", "dataset: tk_val\nbaseline: {system: root_v1}\nmeasure: overlap_f1\nsampler: agent\n"
                  "accept: {point: {min_gain: -1}}\nstop: {trials: 3}\n")  # fmt: skip
-    evh("study-run", "g/s6", "--spec", rspec)
-    a6 = values(evh("study-ask", "g/s6", "--json")).get("ask_id")
-    t6 = evh("study-tell", "g/s6", "--ask", str(a6), "--proposal-json",
+    evh("study-run", "--study", "g/s6", "--spec", rspec)
+    a6 = values(evh("study-ask", "--study", "g/s6", "--json")).get("ask_id")
+    t6 = evh("study-tell", "--study", "g/s6", "--ask", str(a6), "--proposal-json",
              json.dumps({"prompts": {"lib/sub/b.txt": "system v2\n"}, "hypothesis": "a new system prompt"}), "--json")  # fmt: skip
     import yaml
 
@@ -325,9 +331,9 @@ try:
     evh("run", "--system", "wrap_v1", "--dataset", "tk_val", "--goal", "g")
     wspec = spec("wrapspec", "dataset: tk_val\nbaseline: {system: wrap_v1}\nmeasure: overlap_f1\nsampler: agent\n"
                  "accept: {point: {min_gain: 0}}\nstop: {trials: 3}\n")  # fmt: skip
-    evh("study-run", "g/s7", "--spec", wspec)
+    evh("study-run", "--study", "g/s7", "--spec", wspec)
     (proj / "wrap.py").write_text((proj / "wrap.py").read_text() + "LIMIT = 3\n")
-    sc = evh("study-ask", "g/s7")
+    sc = evh("study-ask", "--study", "g/s7")
     st7 = study_of("g", "s7")
     check("the scoring code changed mid-study (the baseline's adapter): the study stops, saying so",
           sc.returncode != 0 and "scoring code changed" in str(st7.get("end")), (sc.stderr[-300:], st7.get("end")))  # fmt: skip
@@ -344,7 +350,7 @@ try:
                  "space:\n  groups:\n    - {name: length, reason: how much, params: {sentences: [2, 3]}}\n")  # fmt: skip
     log = proj / "s8.log"
     with open(log, "w") as fh:
-        pk = subprocess.Popen([sys.executable, str(HERE / "cli.py"), "study-run", "g/s8", "--spec", kspec], cwd=proj, env=env,
+        pk = subprocess.Popen([sys.executable, str(HERE / "cli.py"), "study-run", "--study", "g/s8", "--spec", kspec], cwd=proj, env=env,
                               stdout=fh, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, start_new_session=True)  # fmt: skip
     for _ in range(300):
         time.sleep(0.1)
@@ -354,7 +360,7 @@ try:
             break
     os.killpg(pk.pid, signal.SIGKILL)
     pk.wait(timeout=30)
-    res = evh("study-run", "g/s8", "--resume")
+    res = evh("study-run", "--study", "g/s8", "--resume")
     st8 = study_of("g", "s8")
     outs8 = [(t.get("k"), t.get("outcome")) for t in st8.get("trials", [])]
     check(
@@ -380,7 +386,7 @@ try:
         "commit\tval_bpb\tmemory_gb\tstatus\tdescription\n"
         "a1b2c3d\t0.997\t44.0\tkeep\tbaseline\nb2c3d4e\t0.993\t44.2\tkeep\tbigger lr\nc3d4e5f\t1.005\t44.0\tdiscard\tswiglu\n"
     )  # fmt: skip
-    imp = evh("study-import", "results.tsv", "--goal", "g", "--study", "karpathy")
+    imp = evh("study-import", "--file", "results.tsv", "--goal", "g", "--study", "karpathy")
     st4 = study_of("g", "karpathy")
     ls = [x for g in result_of(evh("goal-list", "--json")).get("goals") or [] for x in g["studies"]]
     check(
