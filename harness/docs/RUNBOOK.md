@@ -115,7 +115,7 @@ What [Getting started](../../docs/GUIDE.md) walks: a dataset, its reference, run
 | step | command |
 |---|---|
 | ask from an agent | `evh mcp` |
-| background jobs (the Workbench's) | `evh jobs-start run --arg system=ID --max-cost-usd N` · `evh jobs-status` · `evh jobs-logs JOB --follow` · `evh jobs-stop JOB` · `evh jobs-resume JOB` |
+| background jobs (the Workbench's) | `evh jobs-start run --arg system=ID --arg dataset=D --max-cost-usd N` · `evh jobs-status` · `evh jobs-logs JOB --follow` · `evh jobs-stop JOB` · `evh jobs-resume JOB` |
 
 ---
 
@@ -649,9 +649,9 @@ code: {path: ../podcast_scraper}  # the system's own checkout
 - `code:` records the checkout's remote, commit and changed files as `deployment.code` (its path outside the hash);
   an adapter's `fingerprint()` hook may return `code_ref` with the same keys instead, for a system the harness cannot
   read.
-- `evh prompt-list [NAME]` (versions, lineage, the runs that used each), `evh prompt-diff A B`, `evh prompt-version NAME
+- `evh prompt-list [NAME]` (versions, lineage, the runs that used each), `evh prompt-diff A B`, `evh prompt-version --name NAME
   --from-file F --parent ID --note "..."` (a version with its lineage: record it before a run does, since a version is
-  written once), `evh prompt-export ID --to PATH`. The catalog's Prompts page shows names and versions; their text
+  written once), `evh prompt-export --id ID --to PATH`. The catalog's Prompts page shows names and versions; their text
   only with `catalog: {publish: [prompts]}` in `config.yaml`. `validate` V24 checks every version against its bytes.
 
 **Test sets and their looks** (RFC-029). A test set is a goal's dataset with `role: test`, or a split's sealed side.
@@ -681,15 +681,15 @@ space:
     - {name: length, reason: how much to keep, params: {sentences: [2, 3, 4]}}
 ```
 
-`evh study-run <goal>/<id> --spec spec.yaml` writes the spec, opens the study's round (it holds no other round back
+`evh study-run --study <goal>/<id> --spec spec.yaml` writes the spec, opens the study's round (it holds no other round back
 and closes with the study) and runs the loop: each trial is the best so far with one change, run on the validation
 set, kept or dropped by the rule (its p values nominal: this is research), its limits checked against the baseline so
-concessions cannot add up. With `sampler: agent` the agent asks and tells: `evh study-ask <study>` gives the state and an
-ask id, `evh study-tell <study> --ask ID --proposal-json '{"params": {...}, "prompts": {...}, "hypothesis": "..."}'`
+concessions cannot add up. With `sampler: agent` the agent asks and tells: `evh study-ask --study <study>` gives the state and an
+ask id, `evh study-tell --study <study> --ask ID --proposal-json '{"params": {...}, "prompts": {...}, "hypothesis": "..."}'`
 runs it (both also MCP tools, for an agent with `EVH_ACTOR=agent:NAME` and `EVH_FOR=person:NAME`). `evh study-show`,
-`evh goal-list`, `evh study-stop`. A study never promotes: `evh study-confirm <study> --test <test set> --rule superiority`
+`evh goal-list`, `evh study-stop`. A study never promotes: `evh study-confirm --study <study> --test <test set> --rule superiority`
 runs the best trial and the baseline once on the test items no study saw, as one look at the set's next level, and
-suggests the promotion only when the outcome meets the rule. `evh study-import results.tsv --goal G --study ID` brings
+suggests the promotion only when the outcome meets the rule. `evh study-import --file results.tsv --goal G --study ID` brings
 a past autoresearch loop in, closed and not confirmable.
 
 **Where runs go.** Measured runs go in `data/runs`: leave `EVAL_RUNS_DIR` unset, on every
@@ -769,10 +769,10 @@ is the one kind of data `data-rm` deletes, whole:
 evh data-ls [PATH] [--find TEXT]          # the overview, a folder, or every file whose path holds TEXT
 evh data-show goals/x.yaml                # one file: its text, size, sha256, and who writes it
 evh data-show systems/x_v1.yaml --fields  # a setting's fields, one dotted key a line
-evh data-put systems/x_v1.yaml --set params.sentences=2 --unset params.noise   # the form's Save, a field at a time
-evh data-put goals/x.yaml x.yaml --check  # a whole file: the check alone
-evh data-put goals/x.yaml x.yaml [--new]  # a whole file saved (- reads stdin); --new refuses a name taken
-evh data-rm runs/<run> --dry-run          # what would go; without --dry-run, a setting or a whole run
+evh data-put --path systems/x_v1.yaml --set params.sentences=2 --unset params.noise   # the form's Save, a field at a time
+evh data-put --path goals/x.yaml --file x.yaml --check  # a whole file: the check alone
+evh data-put --path goals/x.yaml --file x.yaml [--new]  # a whole file saved (--file - reads stdin); --new refuses a name taken
+evh data-rm --path runs/<run> --dry-run          # what would go; without --dry-run, a setting or a whole run
 ```
 
 `evh run` and `rescore` print a `WARNING` when they write to a directory git ignores
@@ -1517,11 +1517,15 @@ the rest are jobs, made from the commands' own argument parsers. Every call need
 `artifact` a job writes); what loads code or names a path of the server's (`--adapter`, `--runs-dir`, output folders)
 is never taken. A read answers what the command answers with `--json`; `evh openapi` describes every resource. A server started `--public` or `--behind-proxy` answers no `/api/v1/` call: the API is this machine's only.
 
-**Jobs.** `POST /api/v1/jobs` with `{"command", "args", "by", "reason"}` (and `max_cost_usd` for a command that
-spends) starts one command as a job and answers `202`: a detached process that goes on when the page closes or the
-server restarts, in `.build/jobs/<id>/` (its record, its state, its `log`, its envelope as `result`). A decision
-(`run-promote`, `round-close`, `dataset-unseal`, `baseline-rollback`) needs `by`; a file argument is sent as
-`{"name", "content_base64"}` (at most 50 MB a call) or, for a file the job writes, named and fetched with `GET
+**Jobs.** A decision or a work operation runs as a job: a POST on its own resource (`POST
+/api/v1/goals/{goal}/rounds/{round}/close`, `POST /api/v1/systems/{system}/runs`, ...; `evh openapi` lists them) with
+its inputs as the body, or `POST /api/v1/jobs` with `{"operation", "inputs", "by", "for", "max_cost_usd"}`, answers
+`202`: a detached process that goes on when the page closes or the server restarts, in `.build/jobs/<id>/` (its record
+`job.json`, the operation and its inputs; `inputs.json`, what its command reads; its state, its `log`, its envelope as
+`result`, its `progress` and `spent_usd` as it goes). Every job names who asked (`by`; an agent names whom it acts for,
+`for`), one that spends carries `max_cost_usd`, and a decision's reason is one of its inputs; an input is named as the
+operation names it (`dataset_id`). A file input is sent as `{"name", "content_base64"}` (at most 50 MB a call) or, for a
+file the job writes, named and fetched with `GET
 /api/v1/jobs/<id>/files/<name>`. `GET /api/v1/jobs` (`?state=`), `GET /api/v1/jobs/<id>`, `GET
 /api/v1/jobs/<id>/log?from=<byte>`; `POST /api/v1/jobs/<id>/stop` (SIGTERM to its process group, SIGKILL after 10 s:
 `cancelled`) and `.../resume` (a stopped run, continued with `run --resume`; a run job is given its run id up front,
@@ -1531,12 +1535,14 @@ was killed was never reported and is not counted), and a job that spent it all i
 (a system, a dataset, a goal's baselines, the captures, the catalog; the whole project for a migration), and one
 whose lock is held waits, `queued`, saying which job holds it. The command holds its locks itself, so they outlive
 the supervisor: a job whose supervisor died reads `running (unsupervised)` while its command lives, `lost` after.
-The terminal has the same jobs, no server needed: `evh jobs-start COMMAND --arg NAME=VALUE ...` (names as `GET
-/api/v1/commands` lists them; repeated for a list, `@FILE` uploads a file; `--max-cost-usd`, `--reason`, `--by`),
+The terminal has the same jobs, no server needed: `evh jobs-start OPERATION --arg NAME=VALUE ...` (the operation's
+input names, as the operation's `--help` shows them with underscores; repeated for a list, `@FILE` uploads a file;
+`--max-cost-usd`, `--by`),
 `evh jobs-status [JOB]`, `evh jobs-logs JOB [--follow]`, `evh jobs-stop JOB`, `evh jobs-resume JOB`. A job started
 there is listed and stopped by the API, and one the Workbench started is followed there.
-`POST /api/v1/estimate` with `{"command", "args"}` runs a job command's own `--dry-run` (`run`, `sweep`,
-`judge-score` and the migrations have one) and answers what it printed; a stopped run job's round reservation is
+`POST /api/v1/estimate` with `{"operation", "inputs"}` runs a job operation's own dry run (`run`, `sweep`,
+`judge-score`, `faithfulness`, `study-run`, `study-confirm`, `data-rm` and the two migrations have one) and answers what
+it printed and its result; a stopped run job's round reservation is
 closed by its supervisor with what the run's items paid.
 `evh catalog` builds beside the served folder and
 swaps it in, from the terminal or as a job, so a server keeps serving the old pages until the new ones are whole (the

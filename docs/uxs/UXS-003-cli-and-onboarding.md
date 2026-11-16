@@ -113,8 +113,8 @@ answer. Where the page has a `make` target in a checkout, it runs the same scrip
 | the Captures page | `evh capture-show ID [--json]` | |
 | (no page; the Configure page was retired, PRD-017) the project's data: the overview, a folder, find | `evh data-ls [PATH] [--find TEXT]` | |
 | (no page) a file; a setting's fields | `evh data-show PATH [--fields]` | |
-| (no page) saving or creating a setting | `evh data-put PATH --set KEY=VALUE … [--unset KEY …] [--new] [--check]`, or a whole file: `evh data-put PATH FILE` | |
-| (no page) deleting a setting, or a whole run | `evh data-rm PATH [--dry-run]` | |
+| (no page) saving or creating a setting | `evh data-put --path PATH --set KEY=VALUE … [--unset KEY …] [--new] [--check]`, or a whole file: `evh data-put --path PATH --file FILE` | |
+| (no page) deleting a setting, or a whole run | `evh data-rm --path PATH [--dry-run]` | |
 | the Labels page; a dataset page's labels (0.6.0) | `evh label-set-list D` | |
 | a goal page's failure modes (0.8.0) | `evh tag-set-list D` | |
 | (no page action) labelling: a sheet to fill, then its import (0.6.0) | `evh label-sheet --dataset-id D --out sheet.csv [--items …] [--item ID …]`, `evh label-import --sheet sheet.csv --dataset-id D --set S --by NAME` | |

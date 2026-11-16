@@ -231,9 +231,9 @@ data.**
 | --- | --- |
 | the overview, a folder | `evh data-ls [PATH]` |
 | a file; a setting's fields | `evh data-show PATH [--fields]` |
-| the form's Save, a field at a time | `evh data-put PATH --set KEY=VALUE … [--unset KEY …] [--check]` (KEY a dotted path, `datasets.0.role`; VALUE read as YAML: `3`, `true`, `null`, text) |
-| Create, a whole file | `evh data-put PATH FILE [--new] [--check]` (`-` reads stdin) |
-| Delete | `evh data-rm PATH` (a setting, or a whole run) |
+| the form's Save, a field at a time | `evh data-put --path PATH --set KEY=VALUE … [--unset KEY …] [--check]` (KEY a dotted path, `datasets.0.role`; VALUE read as YAML: `3`, `true`, `null`, text) |
+| Create, a whole file | `evh data-put --path PATH --file FILE [--new] [--check]` (`--file -` reads stdin) |
+| Delete | `evh data-rm --path PATH` (a setting, or a whole run) |
 
 ## Checklist for a change to the data page
 

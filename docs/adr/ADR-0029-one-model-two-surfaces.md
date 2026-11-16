@@ -1,7 +1,8 @@
 # ADR-0029 — One data model; the command line, the API and MCP made from one registry (0.8.0)
 
 **Status:** Accepted (owner, 2026-11-13, [RFC-032](../rfc/RFC-032-one-model-two-surfaces.md)); built in 0.8.0, steps 1
-to 8, step 9 (the parts of RFC-026 this replaces) under way.
+to 8, and of step 9 (the parts of RFC-026 this replaces) P1 to P3: the views' cache, the SQLite release, every read an
+operation answered in the server's process, every job an operation and its inputs; P4 (answers written ahead) under way.
 **Date:** 2026-11-15
 **Detail:** [RFC-032](../rfc/RFC-032-one-model-two-surfaces.md) (its decision blocks, step by step),
 [RFC-026](../rfc/RFC-026-an-api-for-every-command.md) (what it keeps and what it replaces),
@@ -31,7 +32,9 @@ parts); study; faithfulness record; capture. "Config" names nothing: a run recor
 
 **Operations.** A named function with typed inputs and an output, of one kind: *read* (answers at once, writes
 nothing), *edit* (an entity's settings, checked against its schema and links, under its lock, comments kept, with a
-short history), *decision* (refused without who and why), *work* (a job). The registry is the source of each surface:
+short history), *decision* (refused without who and why), *work* (a job). A decision or a work operation runs as a job:
+its inputs, its locks and whether it spends are declared, and the job names the operation and its inputs, never a command
+line (a decision quick enough is answered in the server's process). The registry is the source of each surface:
 each operation's command-line arguments, the API's resources and their checks, its OpenAPI description and the MCP tools.
 
 **Views.** Where a goal stands, its decision (one leader rule for goals and rounds), a round's evidence, the

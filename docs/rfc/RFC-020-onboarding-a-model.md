@@ -79,7 +79,7 @@ records (`weights`, `licence`, and `aliases`: the ids runs record for the model,
 `gemma4:31b` alike), the file and its schema go, and the weights filter reads the records. No second file and no
 shim: the committed data is migrated (0.6.0's rule for formats nobody depends on yet).
 
-### 2. Onboarding: `evh model-onboard <model_id> --deployment <id>`
+### 2. Onboarding: `evh model-onboard --model-id <model_id> --deployment <id>`
 
 Task-independent, once per deployment, and again when its build changes. It probes the model through that
 deployment's endpoint with a few fixed requests of its kind and writes the result into the deployment (an ML

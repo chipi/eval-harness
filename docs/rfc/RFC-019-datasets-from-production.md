@@ -100,7 +100,7 @@ any public surface.
 
 ### 3. A dataset version from a capture
 
-- **The command:** `evh dataset-from-capture C --dataset-id D [--from D_prev] [--where F:V] [--dedup exact|text]
+- **The command:** `evh dataset-from-capture --capture C --dataset-id D [--from D_prev] [--where F:V] [--dedup exact|text]
   [--one-per F] [--fieldset FS --field F] [--tag k=v]`. It selects; it does not sample (the capture does).
 - **Only the body becomes the item**, written to `data/sources/<D>/`, so an outcome never enters an item's bytes.
 - **The dataset is written through `dataset-create`'s own functions** and records `made_from`.
@@ -143,7 +143,7 @@ any public surface.
 
 ### 6. Splits
 
-- **The command:** `evh dataset-split D --test 0.3 [--by hash|time] [--key F] --seed S` writes `D_validation` and
+- **The command:** `evh dataset-split --dataset-id D --test 0.3 [--split-by hash|time] [--key F] --seed S` writes `D_validation` and
   `D_test`, ordinary datasets with lineage.
 - **By hash** of the key (item id by default, or a field, so one fingerprint never lands on both sides): stable
   across versions.

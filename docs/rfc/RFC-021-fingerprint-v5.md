@@ -89,7 +89,7 @@ deployment:
 
 RFC-020's `builds[]` is renamed `deployments[]`, each with an `id` unique in the record (`mac`, `dgx`, `x3`,
 `openrouter-nebius`), its fingerprint fields as above, its own `onboarding` (no longer one per record), and its
-`endpoint`. An arm names one (`deployment: dgx`); `evh model-onboard <id> --deployment dgx` probes and writes that
+`endpoint`. An arm names one (`deployment: dgx`); `evh model-onboard --model-id <id> --deployment dgx` probes and writes that
 one. A hosted deployment pins its route (`provider_routing`); the run records the upstream provider each call
 reported, and a call served by another host is flagged by `evh arm-smoke`.
 

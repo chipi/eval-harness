@@ -524,6 +524,23 @@ Quoted from the discussion, typing slips corrected.
     `--timeout`, or cancelled, stops being waited for but is not stopped: a computation in the server's process runs
     to its end. The old server refused the tools that take two path arguments (`arm-show`, `reference-show`): it sorted
     a call's arguments by name.
+  - built (P3, "jobs as operations", owner 2026-11-16: a route for each of the 58): every command that ran as a job is
+    a work (46) or decision (12) operation whose body runs as the job's process, with its locks declared (`Op.locks`, a
+    template from its inputs, or a function of them; `migrate` and `data-migrate` hold the whole project), whether it
+    spends (9: a call carries `max_cost_usd`), a decision's reason as a required input (`Op.why`), and a POST on its own
+    resource that answers 202 with the job (`POST /goals/{goal}/rounds/{round}/close`, `POST /systems/{system}/runs`,
+    `POST /data/file`, ...). A job is `{id, operation, inputs, by, locks, env, run_id}`, its inputs also in its folder's
+    `inputs.json`, which the supervisor gives the command (`cli.py <operation> --json --inputs-file`): no command line is
+    built from them. `POST /api/v1/jobs` and `POST /api/v1/estimate` take `{operation, inputs}` only; a job reports
+    `progress` and `spent_usd` as it goes. On the command line a route's parts are named options (`evh round-close
+    --goal G --round r1 ...`); while the commands moved, each new parser was compared with the old one's options,
+    choices, defaults, types and groups (the differences decided one by one), and that comparison went with the old
+    parsers. The agent sampler's two MCP tools (`study-ask`, `study-tell`) are work operations a local server runs as a
+    child process, never in its own. Gone: the registry made from the parsers, its path tables, `parser_of`, the
+    command-shaped job, and the scripts the operations replaced; `migrate.py` run as a file is only its dry run's child,
+    and refuses anywhere else. Rendering a release as the deploy does (a relative output folder) found that `evh mcp`
+    read `--project` and `--write-answers` from inside the project after moving into it: no goal and no leaderboard
+    were written ahead; the paths are now taken where the caller stands.
   - built (P1b, deterministic release): the same data makes the same database, byte for byte (each file goes in with one
     modification time, the seal writes the database again whole); two builds from two checkouts of one commit are one
     sha256 (they were 2,624 of 58,965 pages apart). Deploy transfer by `rsync --checksum --link-dest`, delta on: no data

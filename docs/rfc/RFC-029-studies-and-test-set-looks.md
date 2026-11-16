@@ -151,7 +151,7 @@ append end; close the round
 
 ### The confirmation (`evh study-confirm`, a decision)
 
-`evh study-confirm <study> --test <dataset> --rule superiority|noninferiority [--trial k] [--dry-run]`:
+`evh study-confirm --study <study> --test <dataset> --rule superiority|noninferiority [--trial k] [--dry-run]`:
 
 1. The rule is given on the command line before the test items are looked at, and never switched. The `confirm` line
    is written first, timestamped before any run it allows: it is the naming in advance (as an unseal's own entry is

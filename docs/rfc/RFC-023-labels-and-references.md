@@ -221,7 +221,7 @@ best and cannot score an arm added next week. Mixing them would let a judgement 
   shuffled per row by a seed, and the sheet names no arm; the key (which letter was which arm on each row) is written
   beside it (`sheet.key.json`), kept on this machine. The rubric goes at the top of the sheet (what to judge; the scale,
   or "pick the best"), and its sha256 into the key.
-- `evh sheet-import sheet.csv --dataset-id D --by WHO [--kind person|model] [--set S] [--scorer S]` reads it back:
+- `evh sheet-import --sheet sheet.csv --dataset-id D --by WHO [--kind person|model] [--set S] [--scorer S]` reads it back:
   a filled `label` column becomes a label set (`--set`; source `person`, or `model` with the tool named in `--by`); a
   filled `pick` or `score:` column becomes judged runs under `data/runs-judged/<scorer>/` (`--scorer`, a name of the
   importer's choosing), mapped back through the key, with `judge_won` or `judge_score` per arm per item, the rubric's
@@ -262,7 +262,7 @@ best and cannot score an arm added next week. Mixing them would let a judgement 
 
 ### The next version of a governed dataset
 
-- `evh dataset-extend <v1> --dataset-id <v2>` with `--picks` (every pick waiting for v1) or `--pick ITEM`
+- `evh dataset-extend --dataset <v1> --dataset-id <v2>` with `--picks` (every pick waiting for v1) or `--pick ITEM`
   (repeatable: the ones you choose, any pick): v1's items plus the chosen picks, the lineage recorded per item (the
   capture and production dataset each came from), as `dataset-create --from` records a version today. The picks
   used are marked used: they leave the waiting list and keep their history.
@@ -319,7 +319,7 @@ The docs and the site say so and imply neither.
 | Command | What it does | Replaces |
 | --- | --- | --- |
 | `evh label-sheet --dataset-id D --out sheet.csv [--items unlabelled\|all\|disagree --runs A,B] [--item ID …] [--propose SET\|RUN]` | a sheet: item, a short view of it, what production or an arm decided, a proposal, empty `label`, `also right` and `note` columns | `label_sheet.py` |
-| `evh label-import sheet.csv --dataset-id D --set S --by NAME [--guideline FILE]` | the filled rows become a `person` set | `write_verdicts.py`, `write_gold.py` |
+| `evh label-import --sheet sheet.csv --dataset-id D --set S --by NAME [--guideline FILE]` | the filled rows become a `person` set | `write_verdicts.py`, `write_gold.py` |
 | `evh label-from-run --run R --set S [--guideline FILE]` | a run's outputs become a `model` set | `reference-create --from-run`, `--config` |
 | `evh label-from-capture --dataset-id D --capture C --map rules.yaml --set S` | rules over recorded outcomes become a `rule` set | `reference-from-outcomes` |
 | `evh label-set-list D` | every set: source, coverage, guideline, how two sets agree (the same answers, sharing one, Cohen's kappa, Krippendorff's alpha, with each pair's confusion matrix), what was promoted | — |
@@ -327,9 +327,9 @@ The docs and the site say so and imply neither.
 | `evh rescore --labels D/S`, `evh run --labels D/S` | score against a label set, without promoting it | — |
 | `evh arm-from-capture --dataset-id D --capture C --as NAME` | production's recorded decisions as an arm | — |
 | `evh sheet-show D --runs A,B …` | every item with each arm's output and scores, the labels, the winner, the signals (wrong, disagree, split, new, unlabelled) and a footer per arm, to explore, label and pick from; `evh sheet-export --csv FILE [--fill label\|pick\|scores]` writes it to fill | the rows view, the inspector's `--items` |
-| `evh sheet-import sheet.csv --dataset-id D --by WHO [--kind person\|model] [--set S] [--scorer S]` | a filled sheet read back: labels as a label set, picks or scores as unvalidated judged runs | — |
+| `evh sheet-import --sheet sheet.csv --dataset-id D --by WHO [--kind person\|model] [--set S] [--scorer S]` | a filled sheet read back: labels as a label set, picks or scores as unvalidated judged runs | — |
 | `evh pick`, `evh picks`, `evh pick … --drop` | mark an item for datasets (targets, tags, note), list what waits, drop one | — |
-| `evh dataset-extend V1 --dataset-id V2 --picks` (or `--pick ITEM …`) | the next version: v1's items and the chosen picks, with their lineage | — |
+| `evh dataset-extend --dataset V1 --dataset-id V2 --picks` (or `--pick ITEM …`) | the next version: v1's items and the chosen picks, with their lineage | — |
 | `evh deploy-sheet ARM` | what production must match; checked against a capture | — |
 
 The catalog and the inspector do the same where they can; every view or action has its command.
@@ -380,7 +380,7 @@ Page by page (UXS-001 and UXS-002 updated with the build):
    owner_2026_11 --new-vs orrery_triage_v1_labelled`: where production was wrong on something v1 does not cover;
    pick those worth keeping, for `orrery_triage_v1_labelled`, tagged by case.
 8. Steps 1 to 7 again on later captures; the picks accumulate (`evh picks --for orrery_triage_v1_labelled`).
-9. A month on: `evh dataset-extend orrery_triage_v1_labelled --dataset-id orrery_triage_v2_labelled --pick … --pick
+9. A month on: `evh dataset-extend --dataset orrery_triage_v1_labelled --dataset-id orrery_triage_v2_labelled --pick … --pick
    …` (the seven you choose of the twelve waiting), then `evh label-set-list orrery_triage_v2_labelled`, then
    `evh reference-promote … --tier gold --reason …`.
 

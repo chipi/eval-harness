@@ -61,7 +61,7 @@ fingerprint that names where a model really ran.
 
 ## User Stories
 
-- _As the person running the evals, I onboard a model once (`evh model-onboard <id> --deployment <d>`), so that every arm of
+- _As the person running the evals, I onboard a model once (`evh model-onboard --model-id <id> --deployment <d>`), so that every arm of
   it inherits settings that were checked._
 - _As the person running the evals, I smoke an arm before its full run (`evh arm-smoke --system <id> --dataset <id>`), so that I know it
   runs, how long it will take and what it will cost before it spends any of it._
@@ -77,7 +77,7 @@ fingerprint that names where a model really ran.
   aliases, weights and licence, capabilities, settings with `settings_why`, history, and deployments, each with
   an id, where, server and settings or device and backend, the build (digest, revision or hash; quantization),
   for a hosted one its provider id and route, an endpoint, and its own onboarding. Replaces `data/models.yaml`.
-- **FR2 Onboarding.** `evh model-onboard <id> --deployment <d>` probes an LLM through the deployment's endpoint:
+- **FR2 Onboarding.** `evh model-onboard --model-id <id> --deployment <d>` probes an LLM through the deployment's endpoint:
   the digest its server reports against the record's, reasoning at the default and with the record's settings,
   JSON, determinism, speed (the last two written to the deployment, not the record), and a probe reply cut off.
   A build the server serves differently is flagged, and the record takes it with a history entry for the one

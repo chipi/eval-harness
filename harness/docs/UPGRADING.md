@@ -21,6 +21,17 @@ correctness bugs, not just missing features.
   they print in `--json` is the operation's structured result (`result.runs` for `runs-list`, `result.sets` for
   `looks`, `result.schema` and `result.baselines` for `baselines`). MCP clients: a tool is named as its operation, and
   takes the operation's inputs.
+- **The commands that work on the project take named options, and a job is an operation and its inputs** (RFC-032 step
+  9). What was a positional of a command that runs as a job is a named option: `evh data-put PATH FILE` is `evh data-put
+  --path PATH --file FILE` (`--file -` reads standard input), `evh data-put PATH --set K=V` is `evh data-put --path PATH
+  --set K=V`, `evh data-rm PATH` is `evh data-rm --path PATH`; each command's `--help` names them. A script or Makefile that
+  ran a harness script by its path (`scripts/catalog_build.py`, `migrate.py`, `data_migrate.py`, `data_put.py`, ...)
+  runs `evh` instead (`evh catalog --out DIR`, `evh migrate --check`). `evh jobs-start` names an operation and has no
+  `--reason`: a decision's reason is one of its inputs (`--arg reason=...`, `--arg conclusion=...` for `round-close`).
+  Through the API a job is `{"operation", "inputs", "by", "for", "max_cost_usd"}` (or a POST on the operation's own
+  resource), an input named as the operation names it (`dataset_id`, not `dataset-id`), and an estimate is
+  `{"operation", "inputs"}`; `{"command", "args"}` is refused. Jobs recorded before this in a project's `.build/jobs/`
+  name a command the harness no longer runs: let them end, then delete the folder.
 - **Run `evh migrate` once** (`--dry-run` first shows what each step will do, running the real steps on a copy of the data
   under the project's `.build/`, as large as the data while it runs and deleted after; a second run changes nothing). It
   brings the data to format 7 and records it in `data/project.yaml` (RFC-032): from 0.8.0 a project's data has a

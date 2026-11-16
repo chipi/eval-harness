@@ -164,12 +164,12 @@ that can move a result is never a patch release without saying so under **Change
   what is left; `judge` takes the lower of its config's cap and this one. A run or smoke of a round with
   `budget_usd` reserves its share in the round's ledger before its first call and is refused (`over-budget`, a new
   refusal kind) when nothing is left; a stopped or killed run's paid items count; `evh rounds` shows what is left.
-  `POST /api/v1/estimate` answers a job command's `--dry-run`.
+  `POST /api/v1/estimate` answers a job operation's dry run.
 - **A migration holds the server too** (RFC-026 step 4): while a migration holds the project the server answers
   `503` with `Retry-After` and lets go of the database, so `data-migrate` runs as a job with the server up, and the
   server reads the new store after.
-- **Jobs** (RFC-026 step 3): `POST /api/v1/jobs` runs one command as a detached job with a supervisor, its state, log
-  and envelope in `.build/jobs/<id>/`; listed, read, followed from a byte offset, stopped (its process group,
+- **Jobs** (RFC-026 step 3): `POST /api/v1/jobs` runs a decision or work operation as a detached job with a supervisor,
+  its state, log and envelope in `.build/jobs/<id>/`; listed, read, followed from a byte offset, stopped (its process group,
   `cancelled`) and, for a run, resumed. Locks per thing written (`.build/locks/`, taken in key order, held by the
   command itself): a second writer of the same thing waits `queued`, naming the job it waits for; a migration takes
   the whole project. A spending job needs `max_cost_usd`, a decision `by` (the command's actor). Uploads (50 MB a
@@ -737,8 +737,27 @@ that can move a result is never a patch release without saying so under **Change
   while `--write-answers` writes them fails the release, named, the others still written. The old server refused the
   tools that take more than one path argument (`arm-show`, `reference-show`): it sorted a call's arguments by name
   before putting them on the command line.
+- **A job is an operation and its inputs** (RFC-032 step 9; owner 2026-11-16: a route for each): every command that ran
+  as a job is a work or decision operation (58), with its locks, whether it spends and a decision's reason declared,
+  and starts at its own resource as well as at `POST /api/v1/jobs` (`POST /api/v1/goals/{goal}/rounds/{round}/close`,
+  `POST /api/v1/systems/{system}/runs`, `POST /api/v1/data/file`, ...), answering 202 with the job. A job is
+  `{"operation", "inputs", "by", "for", "max_cost_usd"}`, where it was `{"command", "args", "by", "reason"}` (refused
+  now); an estimate is `{"operation", "inputs"}` and answers the dry run's text and its result; a job's record names its
+  `operation` and `inputs` (no `command`, `argv` or `reason`) and reports `progress` and `spent_usd`; a goal's status
+  names a running job's `operation`. An input is named as the operation names it, with underscores (`dataset_id`). On
+  the command line a route's parts are named options, never positionals: `evh data-put --path P (--file F | --set
+  K=V ...)`, `evh data-rm --path P`, `evh round-close --goal G --round R --conclusion ...`; `evh jobs-start` names an
+  operation and has no `--reason` (a decision's reason is one of its `--arg` inputs). A local MCP server's `study-ask`
+  and `study-tell` run as the operation's own process. `migrate.py` run as a file is only the dry run's own child and
+  refuses anywhere else.
 
 ### Fixed
+
+- **`evh mcp --write-answers` with relative paths** (RFC-032; unreleased 0.8 code, found rendering a release as the
+  deploy does, `render.sh _release <sha>`): the server moves into the project before it works, and read `--project`,
+  `--write-answers`, `--answers` and a `--hooks` file from there: the answers went under the inspector's folder (the
+  release check counted no goal) and no leaderboard was written ahead (no dataset found). They are taken where the
+  caller stands.
 
 - **`evh migrate` step 2 finds the configs step 3 does** (RFC-032; unreleased 0.8 code, found migrating the fleet's data): step 2 (deployments) looked for configs in data/configs, the studies and validate.json's globs but not in the folders config.yaml's `configs:` lists, so a smoke whose config named its `deployment:` there was refused (`its config names none, and the model has 4`). It reads those folders too.
 - **`evh migrate` step 3 keeps config.yaml's config folders findable** (RFC-032; unreleased 0.8 code, found migrating the fleet's data): a project with no data/validate.json had config.yaml's `configs:` removed and no `systems` glob written, so the systems the step wrote were in no folder the project read and step 6 refused every run (`config_id … is not the id of a system of this project`). Step 3 now writes data/validate.json with the `systems` globs of the folders it moved (UPGRADING always said they are added to them); an existing validate.json keeps its other keys.

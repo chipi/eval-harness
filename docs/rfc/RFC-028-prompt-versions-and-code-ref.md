@@ -123,8 +123,8 @@ code: {path: ../podcast_scraper}                # the system's checkout, read at
 | --- | --- | --- |
 | `evh prompt-list [NAME]` | names, versions (display numbers), lineage, and per version the runs that used it with their goal's measure | read |
 | `evh prompt-diff A B` | a unified diff, and the runs of each | read |
-| `evh prompt-version NAME (--from-file F \| --text T) [--parent ID] --note "…" [--by]` | records a version; a hash already recorded is named, not duplicated | job, `--from-file` an upload |
-| `evh prompt-export ID --to PATH` | writes a version's bytes; refuses a path inside an installed package and a tracked file with uncommitted changes | job, `--to` an artifact (a download) |
+| `evh prompt-version --name NAME (--from-file F \| --text T) [--parent ID] --note "…" [--by]` | records a version; a hash already recorded is named, not duplicated | job, `--from-file` an upload |
+| `evh prompt-export --id ID --to PATH` | writes a version's bytes; refuses a path inside an installed package and a tracked file with uncommitted changes | job, `--to` an artifact (a download) |
 
 ### The catalog
 

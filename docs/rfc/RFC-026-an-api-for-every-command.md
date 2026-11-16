@@ -4,7 +4,11 @@
   [ADR-0029](../adr/ADR-0029-one-model-two-surfaces.md): the registry made from the commands' parsers, reads by process,
   jobs as command lines and "the server writes nothing itself" give way to one registry of operations, reads in the
   server's process and edits the server makes; its token, cookie, Host and Origin rules, uploads, jobs, caps, the round
-  ledger and the estimate stay. Accepted (owner, 2026-11-08: "update rfc26 to approved"; revision 2 accepted 2026-11-09: "mark both as accepted"); building: steps 1 to 7 built (2026-11-09). On 2026-11-11 the Configure page was retired (PRD-017 decision 4) and
+  ledger and the estimate stay. Built 2026-11-16 (RFC-032 P3): a job names a work or decision operation and its inputs,
+  `{operation, inputs, by, for, max_cost_usd}` (an estimate `{operation, inputs}`), and each of the 58 also starts at its
+  own resource; the supervisor runs `cli.py <operation> --json --inputs-file`; locks are the operation's declaration; a
+  decision's reason is one of its inputs. Where the sections below describe the registry made from the parsers or a job
+  as a command line, they are this RFC's record, and RFC-032 holds. Accepted (owner, 2026-11-08: "update rfc26 to approved"; revision 2 accepted 2026-11-09: "mark both as accepted"); building: steps 1 to 7 built (2026-11-09). On 2026-11-11 the Configure page was retired (PRD-017 decision 4) and
   with it the server's own data writes in step 4 (its `/api/data/` routes): the server writes nothing itself; jobs do. An
   agent's job names the person it acts for (`for`), as below; that was built after an independent review. Owner, 2026-11-06: "next RFC is
   for this API" (S0b); the Workbench (PRD-017) is its first user. Its four open questions decided by the owner the same
@@ -56,6 +60,9 @@ does not, or miss what it adds; every command it serves answers `--json`.
 ## Design
 
 ### One registry, made from the command line
+
+(Superseded by RFC-032: the registry is the operations', `GET /api/v1/openapi.json` describes it, and an input that
+names a file says how a call carries it, `x-file`.)
 
 `GET /api/v1/commands` lists every command the API serves: its name, what it does (`cli.COMMANDS`), how it is served
 (`read` or `job`), whether it spends, what it locks (below), and its arguments as the parser declares them (name,
@@ -120,6 +127,10 @@ process group, stdin closed, the same timeout, with the same options left out, a
 their text as `{"command", "version", "text"}` until step 7 gives them `--json`.
 
 ### Jobs
+
+(As built by RFC-032 P3: a job is `{operation, inputs, by, for, max_cost_usd}`, its record `job.json` the operation, its
+inputs, who asked, its locks and environment, and `inputs.json` the inputs the command reads; `jobs-start` names an
+operation, `--arg` its inputs.)
 
 `POST /api/v1/jobs` with `{"command", "args", "by", "reason"}` starts a job and answers `202` with its id and state.
 `by` is RFC-027's actor (`person:NAME`, or `agent:NAME` with `for: person:NAME`); a decision (`run-promote`,

@@ -81,7 +81,7 @@ comment that says what it was.
 - _As an engineer, I open the rows where production was wrong on something the governed dataset does not cover
   (`evh sheet-show D --runs P,C --wrong-against S --new-vs V1`) and pick the ones worth keeping._
 - _As a dataset owner, a month later I make v2 of my dataset from v1 and seven of the picks waiting
-  (`evh dataset-extend V1 --dataset-id V2 --pick …`), and promote its labels._
+  (`evh dataset-extend --dataset V1 --dataset-id V2 --pick …`), and promote its labels._
 
 ## Functional Requirements
 
@@ -174,7 +174,7 @@ comment that says what it was.
 
 ### FR10: The next version of a governed dataset (0.6.0)
 
-- **FR10.1**: `evh dataset-extend V1 --dataset-id V2 --picks|--pick ITEM …` makes V2 of V1's items and the chosen
+- **FR10.1**: `evh dataset-extend --dataset V1 --dataset-id V2 --picks|--pick ITEM …` makes V2 of V1's items and the chosen
   picks (`--picks`: those waiting for V1; `--pick ITEM` or `DATASET:ITEM`: any), each copied as it was picked (its
   sha256 checked); V2 records `extended_from` (V1, and per added item its dataset, capture and note) and the lineage
   `dataset-create --from` records; the picks used get a `used` line and leave the waiting list. An item already in
