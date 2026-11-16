@@ -20,7 +20,8 @@ A kept value is valid for one STATE, the tuple a lookup compares before it reuse
 Bounded: every entry says what it weighs (`weigh`: the number of per-item values for scores, else 1), the total stays
 under BUDGET (least recently used out first), and a value heavier than the whole budget is not kept. A value built for
 an older epoch (a slow reader that a write overtook) is returned to its caller and never kept. What `get` returns is
-shared: a caller only reads it.
+shared: a caller only reads it. One thread computes a value at a time: another that asks for it meanwhile waits for it
+(two callers of a server asking for the same view at once pay for one computation, not two on the same CPU).
 """
 
 from __future__ import annotations
@@ -36,7 +37,7 @@ from datetime import date
 from pathlib import Path
 from typing import Any, TypeVar
 
-from evaluation_harness import _common, _store
+from evaluation_harness import _common, _store, _visibility
 from evaluation_harness._version import __version__
 
 T = TypeVar("T")
@@ -52,6 +53,8 @@ ON = os.environ.get("EVH_VIEW_CACHE", "1") != "0"
 _LOCK = threading.RLock()
 _LOCAL = threading.local()
 _ITEMS: OrderedDict[Hashable, tuple[Any, int]] = OrderedDict()
+#: The keys being computed now, each with the event its computer sets when it is done (under _LOCK).
+_FLIGHT: dict[Hashable, threading.Event] = {}
 #: [the state the items were read in, the fingerprint last taken, the epoch, the total weight, a look is due]
 _HELD: list[Any] = [None, None, 0, 0, True]
 _STATE, _PRINT, _EPOCH, _WEIGHT, _DUE = range(5)
@@ -145,23 +148,34 @@ def get(
     current one. Never raises for the cache: when it is off, `compute` is the answer."""
     if not ON:
         return compute()
-    with _LOCK:
-        now = _sync()
-        if key in _ITEMS:
-            _ITEMS.move_to_end(key)
-            return _ITEMS[key][0]
-    value = compute()
-    weight = max(1, weigh(value)) if weigh else 1
-    with _LOCK:
-        if _HELD[_EPOCH] != (now if epoch_of is None else epoch_of) or weight > BUDGET:
-            return value
-        if key in _ITEMS:
-            _HELD[_WEIGHT] -= _ITEMS.pop(key)[1]
-        _ITEMS[key] = (value, weight)
-        _HELD[_WEIGHT] += weight
-        while _HELD[_WEIGHT] > BUDGET and len(_ITEMS) > 1:
-            _HELD[_WEIGHT] -= _ITEMS.popitem(last=False)[1][1]
-    return value
+    while True:
+        with _LOCK:
+            now = _sync()
+            if key in _ITEMS:
+                _ITEMS.move_to_end(key)
+                return _ITEMS[key][0]
+            flying = _FLIGHT.get(key)
+            if flying is None:
+                _FLIGHT[key] = mine = threading.Event()
+                break
+        flying.wait()  # another thread computes it: look again when it is done (it keeps it, or it failed and this one tries)
+    try:
+        value = compute()
+        weight = max(1, weigh(value)) if weigh else 1
+        with _LOCK:
+            if _HELD[_EPOCH] != (now if epoch_of is None else epoch_of) or weight > BUDGET:
+                return value
+            if key in _ITEMS:
+                _HELD[_WEIGHT] -= _ITEMS.pop(key)[1]
+            _ITEMS[key] = (value, weight)
+            _HELD[_WEIGHT] += weight
+            while _HELD[_WEIGHT] > BUDGET and len(_ITEMS) > 1:
+                _HELD[_WEIGHT] -= _ITEMS.popitem(last=False)[1][1]
+        return value
+    finally:
+        with _LOCK:
+            _FLIGHT.pop(key, None)
+        mine.set()
 
 
 def result(name: str, args: dict[str, Any], compute: Callable[[], T]) -> T:
@@ -185,7 +199,7 @@ def result(name: str, args: dict[str, Any], compute: Callable[[], T]) -> T:
         name,
         json.dumps(args, sort_keys=True, default=str),
         date.today().toordinal(),
-        os.environ.get("EVH_PUBLIC", ""),
+        _visibility.public_env(),
     )
     blob = get(key, build, weigh=lambda b: len(b or b"") // 64 + 1)
     if box:  # this call computed it: the caller gets what was computed, as without the cache

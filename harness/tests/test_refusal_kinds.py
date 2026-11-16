@@ -72,7 +72,7 @@ env = dict(os.environ, EVAL_HOME=str(proj))
 for k in ("EVAL_DATA_DIR",):
     env.pop(k, None)
 r = subprocess.run(
-    [sys.executable, str(HARNESS / "scripts" / "cli.py"), "goals", "--goal", "no_such_goal"],
+    [sys.executable, str(HARNESS / "scripts" / "cli.py"), "goal-leaderboard", "no_such_goal"],
     cwd=proj,
     env=env,
     capture_output=True,

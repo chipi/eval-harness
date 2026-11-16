@@ -113,7 +113,7 @@ def sha(b):
 def fill(prefix, fill_, *extra, seed=None):
     name = f"{prefix}.csv"
     r = evh(
-        "inspect", "--sheet", "--dataset-id", D, "--runs", RUNS, "--csv", name, "--fill", fill_, *extra,
+        "sheet-export", "--dataset-id", D, "--runs", RUNS, "--csv", name, "--fill", fill_, *extra,
         *(["--seed", str(seed)] if seed is not None else []),
     )  # fmt: skip
     return r, name
@@ -277,15 +277,13 @@ try:
         r2.returncode == r3.returncode == 0 and again == key["rows"] and other != key["rows"],
         "",
     )
-    r = evh("inspect", "--sheet", "--dataset-id", D, "--runs", RUNS, "--csv", "pick.csv", "--fill", "pick")
+    r = evh("sheet-export", "--dataset-id", D, "--runs", RUNS, "--csv", "pick.csv", "--fill", "pick")
     check(
         "refused: a sheet that exists is not overwritten (it may be filled)",
         refused(r, "not overwritten"),
         out(r)[-200:],
     )
-    r = evh(
-        "inspect", "--sheet", "--dataset-id", D, "--runs", ARMS["lead1"], "--csv", "one.csv", "--fill", "pick"
-    )
+    r = evh("sheet-export", "--dataset-id", D, "--runs", ARMS["lead1"], "--csv", "one.csv", "--fill", "pick")
     check(
         "refused: a pick needs two runs",
         refused(r, "two runs or more") and not (proj / "one.csv").exists(),
@@ -357,7 +355,7 @@ try:
         and abs(m["scores"]["judge_won_unvalidated"] - (4 + 0.5) / 5) < 1e-9,
         json.dumps(w)[:400],
     )
-    r = evh("inspect", "--sheet", "--dataset-id", D, "--runs", RUNS, "--json")
+    r = evh("sheet-show", D, "--runs", RUNS, "--json")
     blocks = json.loads(r.stdout)["result"]["blocks"] if r.returncode == 0 else []
     table: dict = next(
         (b for b in blocks if "columns" in b and b["columns"][0] == "item_id"), {"rows": [], "columns": []}

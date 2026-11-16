@@ -1067,7 +1067,7 @@ def render_datasets(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
             (*PERIOD_SCRIPTS("datasets"), "assets/group.js"),
             nav=nav,
             item=A.item_word,
-            elsewhere=(("datasets", {}),),
+            elsewhere=(("dataset-list", {}),),
         ),
     )
 
@@ -1500,7 +1500,7 @@ def _entries(counts: list[tuple]) -> str:
 def render_home(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
     """The home page: the whole catalog at a glance. Counts with their trends, then what each goal
     concludes, when work happened and what it cost, what each dataset covers, and everything
-    recorded, for the period picked (from today, in the browser; `evh overview --period` prints
+    recorded, for the period picked (from today, in the browser; `evh overview-show --period` prints
     the same)."""
 
     from evaluation_harness import catalog_periods as cp  # noqa: PLC0415
@@ -1593,7 +1593,7 @@ def render_home(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
             (*PERIOD_SCRIPTS(), "home.js", "assets/overview.js"),
             nav=nav,
             item=A.item_word,
-            elsewhere=(("overview", {}),),
+            elsewhere=(("overview-show", {}),),
         ),
     )
 
@@ -1705,7 +1705,7 @@ def render_activity(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
             (*PERIOD_SCRIPTS("activity"), "home.js", "assets/overview.js"),
             nav=nav,
             item=A.item_word,
-            elsewhere=(("activity", {}),),
+            elsewhere=(("activity-show", {}),),
         ),
     )
 
@@ -1906,8 +1906,8 @@ def render_dataset(A: Adapter, ds: str, v: dict, out: Path, nav: list) -> None:
             item=A.item_word,
             # dataset-items answers only once the dataset has a profile; it refuses otherwise
             elsewhere=(
-                (("datasets", {"dataset-id": ds}),)
-                + ((("dataset-items", {"dataset-id": ds}),) if callable(prof) and prof(ds) else ())
+                (("dataset-show", {"dataset": ds}),)
+                + ((("dataset-items", {"dataset": ds}),) if callable(prof) and prof(ds) else ())
                 if ds
                 else ()
             ),
@@ -2283,7 +2283,7 @@ def render_inside(
         rows.append(cells)
     heads = [f"{e(A.item_word)}", *(["text"] if has_text else []), "words", "gold", "open"]
     foot = (
-        '<p class="small muted">Each row is the profile <code>evh dataset-items --dataset-id '
+        '<p class="small muted">Each row is the profile <code>evh dataset-items '
         f"{e(ds)}</code> prints; <b>inspect</b> opens the {e(A.item_word)} in the inspector with the dataset's "
         "largest group of comparable arms, and its text where the inspector runs on a machine that has it.</p>"
     )
@@ -2303,7 +2303,7 @@ def render_inside(
         )
         return (
             f'<p class="small">{e(A.item_word)}s {lo}–{hi} of {len(rows)}, {per} a page: {links}. The filter reads '
-            f"this page's {e(A.item_word)}s; <code>evh dataset-items --dataset-id {e(ds)}</code> lists them all.</p>"
+            f"this page's {e(A.item_word)}s; <code>evh dataset-items {e(ds)}</code> lists them all.</p>"
         )
 
     first = (
@@ -2496,7 +2496,7 @@ def render_goals(A: Adapter, by_ds: dict, out: Path, nav: list) -> int:
             PERIOD_SCRIPTS("goals"),
             nav=nav,
             item=A.item_word,
-            elsewhere=(("goals", {}),),
+            elsewhere=(("goal-list", {}),),
         ),
     )
     return len(goals)
@@ -2712,9 +2712,9 @@ def _rounds_block(A: Adapter, g: dict, measure: str, above: str = "") -> str:
                     # The arms in play and the arms retired, as the round stores them.
                     f'<div class="armsbest"><span data-v="{n_cfg}">{n_cfg} arms</span>'
                     + (f" <small>({n_retired} retired)</small>" if n_retired else "")
-                    # The round's arms in the inspector, against its leader: `evh inspect --round`.
+                    # The round's arms in the inspector, against its leader: `evh comparison-show --round`.
                     + (
-                        f' <a class="btn small" title="evh inspect --round {e(r["round_id"])} --goal {e(g["goal_id"])}" '
+                        f' <a class="btn small" title="evh comparison-show --round {e(r["round_id"])} --goal {e(g["goal_id"])}" '
                         f'href="{inspect_url((r.get("arms") or [])[:INSPECT_MAX], "../", baseline=arm, metric=measure)}">inspect</a>'
                         if arm and len(r.get("arms") or []) > 1
                         else ""
@@ -2754,7 +2754,7 @@ def _rounds_block(A: Adapter, g: dict, measure: str, above: str = "") -> str:
             if carried
             else []
         )
-        # The scorer it is judged by, and each change of it (RFC-022): `evh rounds` prints the same lines.
+        # The scorer it is judged by, and each change of it (RFC-022): `evh round-list` prints the same lines.
         scoring_li = ([f"<li>judged by <code>{e(r['scorer'])}</code></li>"] if r.get("scorer") else []) + [
             f"<li>{e(str(sc.get('at', ''))[:10])}: {e(sc.get('why', ''))} (<code>{e(sc.get('scorer', ''))}</code>, "
             f"{int(sc.get('runs') or 0)} run(s) re-scored into {e(', '.join(sc.get('written') or []) or '—')})</li>"
@@ -2831,7 +2831,7 @@ def _rounds_block(A: Adapter, g: dict, measure: str, above: str = "") -> str:
         '<p class="small muted">Rounds are optional: each one sets out to learn something, changes a few '
         "arms, drops what lost and says why, and ends in a conclusion. Decisions are made with "
         "<code>evh round-open</code>, <code>round-retire</code> and <code>round-close</code>; "
-        "<code>evh rounds</code> says the same as this page. Open a round for what changed, what was "
+        "<code>evh round-list</code> says the same as this page. Open a round for what changed, what was "
         "retired and why, and what to do next.</p>"
         '<div class="roundcards"><div class="rc-head" aria-hidden="true"><div>round</div>'
         f"<div>concluded</div><div>set out to learn</div><div>arms · best on {e(measure)}</div></div>"
@@ -3112,7 +3112,7 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
             "goals",
             nav=nav,
             item=A.item_word,
-            elsewhere=(("goals", {"goal": g["goal_id"]}),),
+            elsewhere=(("goal-leaderboard", {"goal": g["goal_id"]}),),
         ),
     )
 
@@ -3135,7 +3135,7 @@ def _failure_modes_html(A: Adapter, ds: str, rows: list) -> str:
     )
     return (
         '<p class="small"><b>failure modes</b> <small class="muted">(tagged by hand on outputs read; '
-        f'<code>evh tags --dataset-id {e(ds)}</code>)</small></p><ul class="small">{lis}</ul>'
+        f'<code>evh tag-set-list {e(ds)}</code>)</small></p><ul class="small">{lis}</ul>'
     )
 
 
@@ -3205,7 +3205,7 @@ def shown_labels(labels: dict) -> tuple[dict, str]:
 def why_lines(dec: dict, labels: dict) -> list[str]:
     """The decision's reasons as HTML, for a page: the scorer every arm is read through named once, not after each
     arm, and a list of more than LONG_LIST arms (the triage goal's 50 contenders, then the same 50 undecided) given
-    as a count with the names folded under it. `evh goals` prints them whole."""
+    as a count with the names folded under it. `evh goal-list` prints them whole."""
     shown, common = shown_labels({a: labels[a] for a in dec["rows"] if a in labels})
     drop = bool(common)
     # Label by label, longest first, so a list's commas are never touched.
@@ -3500,7 +3500,7 @@ def render_metrics(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
             (*PERIOD_SCRIPTS("metrics"), "assets/group.js"),
             nav=nav,
             item=A.item_word,
-            elsewhere=(("metrics", {}),),
+            elsewhere=(("metric-list", {}),),
         ),
     )
 
@@ -3576,7 +3576,9 @@ def render_references(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
                     "",
                     nav=nav,
                     item=A.item_word,
-                    elsewhere=(("references", {"reference-id": r["id"]}),),
+                    elsewhere=(
+                        ("reference-show", dict(zip(("tier", "name"), r["id"].split("/", 1), strict=False))),
+                    ),
                 ),
             )
 
@@ -3709,7 +3711,7 @@ def deploy_sheet_html(sh: dict, up: str) -> str:
         else '<p class="small muted">No capture here says what production ran (the adapter\'s production_ran).</p>'
     )
     return (
-        f'<dl class="kv">{dl}</dl>{caps}<p class="small">Command: <code>evh deploy-sheet --system '
+        f'<dl class="kv">{dl}</dl>{caps}<p class="small">Command: <code>evh deploy-sheet '
         f"{e(sh['system_id'])} [--capture C]</code></p>"
     )
 
@@ -3958,7 +3960,9 @@ def render_arm(A: Adapter, a: dict, ds: str, by_ds: dict, out: Path, nav: list) 
             "datasets",
             nav=nav,
             item=A.item_word,
-            elsewhere=(("arms", {"arm": a["arm"]}),),
+            elsewhere=(
+                ("arm-show", dict(zip(("label", "dataset", "system"), a["arm"].split("/", 2), strict=False))),
+            ),
         ),
     )
 
@@ -4088,7 +4092,7 @@ def render_metric(A: Adapter, m: str, where: dict, by_ds: dict, project: dict, o
     write(
         out,
         metric_page(m),
-        page(m, body, 1, "metrics", nav=nav, item=A.item_word, elsewhere=(("metrics", {"metric": m}),)),
+        page(m, body, 1, "metrics", nav=nav, item=A.item_word, elsewhere=(("metric-show", {"metric": m}),)),
     )
 
 
@@ -4173,7 +4177,7 @@ def render_reference_index(A: Adapter, by_ds: dict, out: Path, nav: list) -> Non
             PERIOD_SCRIPTS("references"),
             nav=nav,
             item=A.item_word,
-            elsewhere=(("references", {}),),
+            elsewhere=(("reference-list", {}),),
         ),
     )
 
@@ -4274,7 +4278,7 @@ def render_captures(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
     write(
         out,
         "captures.html",
-        page("Captures", body, 0, "captures", nav=nav, item=A.item_word, elsewhere=(("captures", {}),)),
+        page("Captures", body, 0, "captures", nav=nav, item=A.item_word, elsewhere=(("capture-list", {}),)),
     )
 
 
@@ -4347,12 +4351,12 @@ def render_prompts(A: Adapter, out: Path, nav: list) -> None:
         (table("prompts", ["prompt", "versions", "runs"], rows, "filter prompts") + "".join(sections))
         if rows
         else '<p class="muted">No prompt versions yet: declare <code>prompts:</code> in a system and its next run '
-        "records them (<code>evh prompts</code>).</p>",
+        "records them (<code>evh prompt-list</code>).</p>",
     )
     write(
         out,
         "prompts.html",
-        page("Prompts", body, 0, "prompts", nav=nav, item=A.item_word, elsewhere=(("prompts", {}),)),
+        page("Prompts", body, 0, "prompts", nav=nav, item=A.item_word, elsewhere=(("prompt-list", {}),)),
     )
 
 
@@ -4420,7 +4424,7 @@ def render_labels(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
     write(
         out,
         "labels.html",
-        page("Labels", body, 0, "labels", nav=nav, item=A.item_word, elsewhere=(("labels", {}),)),
+        page("Labels", body, 0, "labels", nav=nav, item=A.item_word, elsewhere=(("dataset-list", {}),)),
     )
 
 
@@ -4510,7 +4514,7 @@ def render_inspect(
             ("runs.js", *(("pick.js",) if pick else ()), "assets/inspect.js"),
             item=item,
             serve=serve,
-            elsewhere=(("inspect", {}),),
+            elsewhere=(("comparison-show", {}),),
             **page_kw,
         ),
     )
@@ -4544,7 +4548,14 @@ def elsewhere_line(cmds: tuple) -> str:
         return ""
 
     def term(cmd: str, args: dict) -> str:
-        return " ".join(["evh", cmd, *(f"--{k} {v}" for k, v in args.items())])
+        from evaluation_harness import ops  # noqa: PLC0415
+
+        op = ops.get(cmd)
+        parts = op.path_params() if op else []  # the parts of an operation's route are the command's words
+        return " ".join(
+            ["evh", cmd, *(str(args[k]) for k in parts if k in args)]
+            + [f"--{k.replace('_', '-')} {v}" for k, v in args.items() if k not in parts]
+        )
 
     terms = " · ".join(f"<code>{e(term(c, a))}</code>" for c, a in cmds)
     line = f"This page in the terminal: <span data-elsewhere=term>{terms}</span>"

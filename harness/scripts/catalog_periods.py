@@ -2,7 +2,7 @@
 
 The catalog is static and built only when it is deployed, so a period like "current week" cannot
 be fixed at build time: the page carries the numbers per day (`home_data`) and the browser works
-the period out from the viewer's date (catalog_assets/overview.js, `HOME`). `evh overview
+the period out from the viewer's date (catalog_assets/overview.js, `HOME`). `evh overview-show
 --period` computes the same here, from the machine's date; the browser test checks they agree.
 
 A flow tile (measured runs, billed, tokens) shows the period's total and its change against the
@@ -27,7 +27,7 @@ PERIODS = (
     ("year", "this year", "the same days last year"),
     ("all", "all time", ""),
 )
-#: The period the page and `evh overview` open on.
+#: The period the page and `evh overview-show` open on.
 DEFAULT = "14d"
 #: The periods shown as chips; the others are in the "more" list beside them.
 CHIPS = ("14d", "30d", "month", "all")

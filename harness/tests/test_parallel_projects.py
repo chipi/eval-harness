@@ -135,13 +135,13 @@ check(
 )
 
 # ── EVAL_HOME pointing at another project ─────────────────────────────────────────────────────
-r = evh(projects["beta"], "datasets", extra={"EVAL_HOME": str(projects["alpha"])})
+r = evh(projects["beta"], "dataset-list", extra={"EVAL_HOME": str(projects["alpha"])})
 check(
     "a shell's EVAL_HOME at another project is named",
     "note: EVAL_HOME is" in r.stderr and "alpha" in r.stderr and "beta" in r.stderr,
     r.stderr[-300:],
 )
-r = evh(projects["alpha"], "datasets", extra={"EVAL_HOME": str(projects["alpha"])})
+r = evh(projects["alpha"], "dataset-list", extra={"EVAL_HOME": str(projects["alpha"])})
 check("no note when EVAL_HOME is the project you are in", "EVAL_HOME" not in r.stderr, r.stderr[-300:])
 
 # ── model records: locked by their own path ───────────────────────────────────────────────────

@@ -112,7 +112,7 @@ the two differed by 0.67× to 3.76× per arm.
 git add -A && git commit -qm "briefs: the hosted system"
 evh run --system briefs_mistral_small_v1 --dataset briefs_v1 --goal brief_summary --dry-run    # calls nothing
 evh run --system briefs_mistral_small_v1 --dataset briefs_v1 --goal brief_summary --repeat 3
-evh leaderboard --dataset-id briefs_v1
+evh leaderboard briefs_v1
 evh cost-report
 ```
 

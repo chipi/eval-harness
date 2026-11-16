@@ -9,7 +9,7 @@ compared with production's (a recorded arm's run on the same dataset) by the ada
 The result is written once, data/faithfulness/<model_id>/<n>.json: the counts, every disagreement with both sides, the
 hashes the gate checks (items, the record's deployed versions, adapter and its support modules), and the coverage:
 per commit, the functions of the system's code the replay entered and those it never did. The Models page and
-`evh models` read each version's summary from the records. It measures: exit 0 whatever it found. A disagreement whose cause is outside the system is named with `evh faithfulness-name`.
+`evh model-list` read each version's summary from the records. It measures: exit 0 whatever it found. A disagreement whose cause is outside the system is named with `evh faithfulness-name`.
 """
 
 from __future__ import annotations

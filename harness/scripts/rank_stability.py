@@ -38,7 +38,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 
 from evaluation_harness import _jsonout  # noqa: E402
-from evaluation_harness._common import die, evh_prog  # noqa: E402
+from evaluation_harness._common import die  # noqa: E402
 from evaluation_harness._runs import default_metric, direction, matrix, runs_on, warn_on_ambiguous_runs  # noqa: E402  # noqa: E402
 from evaluation_harness.stats import spearman  # noqa: E402 - midranks of midranks are the midranks: same rho
 
@@ -99,25 +99,29 @@ def tied_at_top(M, arms, items) -> int:
     return sum(1 for a in arms if mu[a] == best)
 
 
-def main() -> int:
+def body(
+    dataset: str,
+    metric: str | None = None,
+    match: str | None = None,
+    draws: int = 400,
+    seed: int = 20260926,
+    asc: bool = False,
+    desc: bool = False,
+    as_json: bool = False,
+) -> int:
     """Measure how many items it takes before the ranking stops moving."""
-    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
-    ap.add_argument("--dataset-id", required=True)
-    ap.add_argument("--metric", help="default: the primary metric the runs recorded")
-    ap.add_argument("--match")
-    ap.add_argument("--draws", type=int, default=400)
-    ap.add_argument("--seed", type=int, default=20260926)
-    ap.add_argument("--asc", action="store_true", help="lower is better (default: inferred)")
-    ap.add_argument("--desc", action="store_true", help="higher is better, whatever the runs declare")
-    ap.add_argument(
-        "--json",
-        action="store_true",
-        help="the same answer as one JSON object: the printed lines as blocks, the table as data, and the "
-        "result by name under result.values",
+    return _run(
+        argparse.Namespace(
+            dataset_id=dataset,
+            metric=metric,
+            match=match,
+            draws=draws,
+            seed=seed,
+            asc=asc,
+            desc=desc,
+            json=as_json,
+        )
     )
-    args = ap.parse_args()
-    with _jsonout.collect("rank-stability", args.json):
-        return _run(args)
 
 
 def _run(args: argparse.Namespace) -> int:
@@ -248,7 +252,3 @@ def _run(args: argparse.Namespace) -> int:
         print(f"\n  WARNING: up to {worst_ties:.1f} arms tie for first in a half. This")
         print("  metric is saturated at these sizes; read the tie column before rho.")
     return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())

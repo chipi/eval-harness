@@ -28,7 +28,7 @@ just static"): `harness/workbench/` (`index.html`, `workbench.css`, `workbench.j
   scores, settings and first replies, the silver reference and who wrote it, the judge and its validation, and the
   triage goal's capture and comparison, the rows where production was wrong, the label sheet, the local arms' re-runs
   and their paired tests. Several inputs are the harness's own answers, saved first because they take minutes (`evh
-  models`, `evh goals`, `evh pair-test`, `evh inspect --sheet --wrong-against`, `evh label-sheet`; the list is at the
+  models`, `evh goal-list`, `evh pair-test`, `evh sheet-show --wrong-against`, `evh label-sheet`; the list is at the
   top of the script). `harness/workbench/read_sources.py` reads every other dataset source with the example its module
   documents, through the harness's own source classes, writing nothing to the project.
 - **What it pretends is labelled.** Jobs and saving are pretended; each place says so in a "mockup:" note, which a
@@ -309,7 +309,7 @@ decision kept with its reason. This is where people spend most of their time (W1
 ```
 
 - Two arms' outputs on the same item; the sides are shuffled and the scores hidden while arms are hidden, so the pick
-  is not swayed. Picks, tags and notes are a label set with who made them (`inspect --sheet … --fill pick`,
+  is not swayed. Picks, tags and notes are a label set with who made them (`sheet-export … --fill pick`,
   `sheet-import`).
 - The failure modes are a named list, so tags are counted; the first list is proposed from the eval's own format
   checks (the CNN adapter's narration, label, markdown, bullets, paragraphs, overlong, truncated).
@@ -334,7 +334,7 @@ decision kept with its reason. This is where people spend most of their time (W1
   deployed goal (triage): its capture, production's decisions scored like an arm against people's labels, the 30
   decisions where production's model disagreed with the owner's labels (what it decided, what people decided, its
   cost), the picks (checked rows, one reason) and the next dataset version made from them (`arm-from-capture`, `label-from-capture`,
-  `inspect --wrong-against`, `pick`, `dataset-extend`).
+  `sheet-show --wrong-against`, `pick`, `dataset-extend`).
 
 ### W5 Bring in a model
 
@@ -424,21 +424,21 @@ this project holds no held-out side, study, prompt version, job or replay yet; e
   - Its results compare each arm's Linux re-run with bart_l's Linux re-run (the pair tests' baseline), so speed and
     coverage are from one machine; each row says which run under the arm's name, and its actions sit beside the name,
     so the table fits a desktop screen. The re-runs (2026-09-30) stand in for r4's runs, and a mockup note says so:
-    in the harness a run counts in a round only when its system names it, and `evh rounds` would read bart_l, carried
+    in the harness a run counts in a round only when its system names it, and `evh round-list` would read bart_l, carried
     in, through its r1 run. bart_l is carried into the round (`round-open --keep`), not run again; the arms part
     counts "5 arms: 4 re-run, bart_l carried", and a closed round's fold "the round's 5 arms".
   - The results open with the round's answer in one line, from the verdicts below it ("No arm was shown ahead of
-    bart_l: 3 significantly worse (…), which `evh rounds` suggests retiring; 1 not significantly different (…),
+    bart_l: 3 significantly worse (…), which `evh round-list` suggests retiring; 1 not significantly different (…),
     which more items may tell apart. bart_l leads the round and stays the baseline."), then the correction as a note
     above the table (a phone hides the table's head), then the table and the mockup note.
-  - r4's verdicts are the ones `evh rounds` gives (`rounds.evidence`): every arm in play against the round's leader,
+  - r4's verdicts are the ones `evh round-list` gives (`rounds.evidence`): every arm in play against the round's leader,
     the best mean, Holm across them, each row showing Δ, the raw p and its threshold, with r1's coverage bars.
     `_rounds.arms_of` leaves the retired out, so a retire narrows the family and moves the thresholds; a retired row
     says "retired: not tested". The project's pair tests are each arm against bart_l, which leads the round on these
-    re-runs. (`evh rounds` tests a leader against the baseline it started from, Bonferroni over the round's arms, only
+    re-runs. (`evh round-list` tests a leader against the baseline it started from, Bonferroni over the round's arms, only
     when the two differ, to decide whether to suggest promoting it; an earlier version of this screen applied that
-    test to every arm, which `evh rounds` never does.)
-  - No arm here leads bart_l, so the screen offers no "Make baseline": `evh rounds` would not suggest a promotion,
+    test to every arm, which `evh round-list` never does.)
+  - No arm here leads bart_l, so the screen offers no "Make baseline": `evh round-list` would not suggest a promotion,
     and `round-close --promote` takes the round's conclusion as the promotion's reason, so there is no second reason to
     ask for.
   - The baseline cannot be retired. A retire can be undone until the round closes.

@@ -94,7 +94,7 @@ fingerprint that names where a model really ran.
   runner outside the hash; `evh run-compare` names the part that moved; the inspector's speed warning tells a
   deployment from a runner. `fingerprint-migrate` moves a project's committed runs, once (from 0.8.0 the fingerprints step of `evh migrate`).
 - **FR6 The catalog.** The Models page, a page per model with its deployments and their onboarding, a smoke badge
-  on the arms page, a models tile; `evh models` the same (and over `evh mcp`). A model is *vetted* only when an
+  on the arms page, a models tile; `evh model-list` the same (and over `evh mcp`). A model is *vetted* only when an
   arm that names it passed its smoke; its onboarding alone makes it *onboarded*.
 - **FR7 Advice, not refusal.** `validate` notes an arm never smoked, a reasoning model with no `max_tokens`, and a
   tag that is a different build on two deployments; `--repeat` notes when a deployment's passes will be identical.

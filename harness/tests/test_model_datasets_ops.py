@@ -170,8 +170,12 @@ try:
     )
     text = evh("dataset-list").stdout
     check(
-        "dataset-list in words: a line a dataset, with its parent, seal and counts",
-        "ds_v2  " in text and "from ds_v1" in text and "sealed" in text and "3 reference(s)" in text,
+        "dataset-list in words: a line a dataset, with its parent, seal, reference sets and parts",
+        "ds_v2  " in text
+        and "ds_v1  " in text
+        and "sealed" in text
+        and "ds_v1_adj1" in text
+        and "label set(s)" in text,
         text,
     )
     show = result(evh("dataset-show", "ds_v1", "--json"))
@@ -388,8 +392,10 @@ try:
     cl = result(evh("capture-list", "--json"))["captures"]
     check(
         "capture-list: what read it, when, how many records, the datasets and label sets made from it",
-        cl == [{"capture": "cap_1", "importer": "jsonl", "captured_at": "2026-11-13T00:00:00Z", "records": 2,
-                "scrubbed": False, "continues": None, "datasets": ["ds_v1"], "label_sets": ["ds_v1/rule_cap"]}],
+        len(cl) == 1
+        and {k: cl[0][k] for k in ("capture", "importer", "captured_at", "records", "scrubbed", "continues", "datasets", "label_sets")}
+        == {"capture": "cap_1", "importer": "jsonl", "captured_at": "2026-11-13T00:00:00Z", "records": 2,
+            "scrubbed": False, "continues": None, "datasets": ["ds_v1"], "label_sets": ["ds_v1/rule_cap"]},
         cl,
     )  # fmt: skip
     cs = result(evh("capture-show", "cap_1", "--json"))

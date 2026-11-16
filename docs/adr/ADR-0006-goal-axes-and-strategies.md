@@ -63,7 +63,7 @@ set is not evidence that they are equally good.
   group scored against silver beside a gold group on its dataset (gold decides; silver favours
   its author's family), and a group measured by unvalidated judges (a trial, not a measurement).
 - **Guardrails stay words** (`{name, rule, source}`): shown on the goal page and by
-  `evh goals --goal`, never computed.
+  `evh goal-leaderboard`, never computed.
 - **`secondary` is removed**; its entries become axes.
 - The rule recommends. Promoting a baseline is still `evh run-promote`, a person's decision.
 
@@ -73,7 +73,7 @@ set is not evidence that they are equally good.
   the contenders were, who was out and for what. Beside the reasons it shows each arm's cost and speed, and
   a chart of quality against each axis. The home page's glance gains the recommended arm with
   its cost and speed against the baseline; the dataset and arm pages show cost and speed; the
-  inspector's scatter takes cost and tokens. `evh goals --goal` and `evh overview` print the
+  inspector's scatter takes cost and tokens. `evh goal-leaderboard` and `evh overview-show` print the
   same. A project adds its own axis with one line.
 - **Negative.** A goal with `secondary:` fails validation until it is moved to `axes:`
   (UPGRADING). The default margin is a convention: a goal whose measure has a natural

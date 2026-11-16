@@ -146,7 +146,7 @@ services:
       PYTHONDONTWRITEBYTECODE: "1"
       PYTHONUNBUFFERED: "1"
       PYTHONPATH: /srv/evals/current/inspector/pkg:/srv/evals/current/inspector/mcpvendor:/srv/evals/current/inspector/vendor
-      # The goals' tests, precomputed by render.sh: each tool call is a fresh process.
+      # The goals' tests, precomputed by render.sh: the server answers in its own process, which starts empty.
       EVH_P_CACHE: /srv/evals/current/inspector/cache/evh-p.jsonl
     labels:
       telemetry.service: evals-mcp
@@ -191,8 +191,8 @@ services:
       - "60"
       - --hooks
       - /srv/evals/current/inspector/mcp_hooks.py
-      # The tools that take no argument, answered ahead by render.sh: at cpus 0.5 a fresh process took
-      # 33 s for goals, the first time after each start and each hour.
+      # The tools that take no argument, answered ahead by render.sh: at cpus 0.5 the first goal-list after each
+      # start took 33 s.
       - --answers
       - /srv/evals/current/inspector/cache/mcp-answers.jsonl
     ports:

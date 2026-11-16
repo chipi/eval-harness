@@ -702,7 +702,7 @@ def main() -> int:
             print(f"  round {rnd['round_id']} of {rnd['goal']} records the scoring: {args.why}")
         for line in cut_off_lines(todo, done):
             print(line)
-        next_cmd = f"evh goals --goal {rnd['goal']}" if rnd else "evh goals"
+        next_cmd = f"evh goal-leaderboard {rnd['goal']}" if rnd else "evh goal-list"
         src_ref = {m["run_id"]: _reference_of(m) for d, m in todo}
         print(
             closing_line([(src_ref.get(m["run_id"]), _reference_of(m)) for d, m in done])

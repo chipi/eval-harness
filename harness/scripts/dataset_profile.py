@@ -2,8 +2,8 @@
 """What is inside a dataset, without its text: `evh dataset-profile` writes it, `evh dataset-items` reads it.
 
     evh dataset-profile --dataset-id ag_news_200          # data/profiles/ag_news_200.json
-    evh dataset-items --dataset-id ag_news_200            # its shape, then one row per item
-    evh dataset-items --dataset-id ag_news_200 --item 00ea08cd9ddbc99f   # one item (its text when it is here)
+    evh dataset-items ag_news_200            # its shape, then one row per item
+    evh dataset-items ag_news_200 --item 00ea08cd9ddbc99f   # one item (its text when it is here)
 
 A dataset's text often cannot be redistributed (docs/DATA.md), so the published catalog never
 had it, and a reader could not see what an item looks like. A profile is what can be published:
@@ -35,7 +35,7 @@ from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
 
-from evaluation_harness import _common, _store, _visibility
+from evaluation_harness import _common, _store
 from evaluation_harness._common import die, read_json, write_json
 from evaluation_harness._fingerprint import items_digest
 from evaluation_harness._version import __version__
@@ -325,50 +325,6 @@ def main_profile(argv: list[str] | None = None) -> int:
         print(json.dumps({"command": "dataset-profile", "version": __version__, "result": p}, indent=1))
     else:
         print(f"wrote {out}\n" + render(p, None).split("\n\n")[0])
-    return 0
-
-
-def main_items(argv: list[str] | None = None) -> int:
-    """evh dataset-items."""
-    ap = argparse.ArgumentParser(prog="evh dataset-items", description=__doc__.split("\n\n")[0])
-    ap.add_argument("--dataset-id", required=True)
-    ap.add_argument("--item", help="one item: its id, or the start of it; its text when it is here")
-    ap.add_argument(
-        "--json",
-        action="store_true",
-        help='the profile as JSON: {"command", "version", "result": <the profile>}',
-    )
-    from evaluation_harness._actor import add_by  # noqa: PLC0415
-
-    add_by(ap)
-    args = ap.parse_args(argv)
-    p = load_profile(args.dataset_id)
-    hide = _visibility.public_env() and _visibility.hidden(args.dataset_id)
-    if hide:  # a public server's command, on a `text: hidden` dataset: ids and lengths only
-        if args.item:
-            die(f"{args.dataset_id} is `text: hidden`: no item is shown here", "not-public")
-        p = _visibility.public_profile(p)
-    if args.item:  # an item's text, shown: on a held-out side, a read (RFC-031 H1)
-        from evaluation_harness import _exposure  # noqa: PLC0415
-
-        _exposure.read_by_harness(
-            p["dataset_id"],
-            [r["item_id"] for r in p["rows"] if r["item_id"].startswith(args.item)],
-            "dataset-items --item",
-        )
-    if args.json:
-        if args.item:
-            rows = [dict(r) for r in p["rows"] if r["item_id"].startswith(args.item)]
-            if not rows:
-                die(f"no item {args.item!r} in {p['dataset_id']}", "not-found")
-            for r in rows:  # its text when it is here, as the printed form shows it
-                local = _common.item_path(p["dataset_id"], r["item_id"])
-                if local:
-                    r["text"] = _store.read_text(local, encoding="utf-8", errors="replace")
-            p = dict(p, rows=rows)
-        print(json.dumps({"command": "dataset-items", "version": __version__, "result": p}, indent=1))
-    else:
-        print(render(p, args.item))
     return 0
 
 

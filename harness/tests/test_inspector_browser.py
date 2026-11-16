@@ -190,7 +190,7 @@ def drive(base: str, overview: str = "") -> None:
             if ln.startswith("  ")
         }
         check(
-            "home: every tile is what `evh overview` prints for the same period, from today",
+            "home: every tile is what `evh overview-show` prints for the same period, from today",
             bool(cli) and all(shown.get(k) == v for k, v in cli.items()),
             f"page {shown} cli {cli}",
         )
@@ -216,7 +216,7 @@ def drive(base: str, overview: str = "") -> None:
                 ):
                     bad.append((d.isoformat(), k, js, py))
         check(
-            f"home: the browser's periods are evh overview's, on {len(days)} days and every period",
+            f"home: the browser's periods are evh overview-show's, on {len(days)} days and every period",
             not bad,
             str(bad[:3]),
         )
@@ -315,8 +315,8 @@ def drive(base: str, overview: str = "") -> None:
         check("goals page: loads", page.locator("main").count() == 1)
         page.goto(base + "g/tickets_summary.html")
         check(
-            "goal page: the open round opens in the inspector (evh inspect --round)",
-            page.locator('a[title^="evh inspect --round r1"]').count() == 1,
+            "goal page: the open round opens in the inspector (evh comparison-show --round)",
+            page.locator('a[title^="evh comparison-show --round r1"]').count() == 1,
         )
         # Each round is a folded section: open the open one, as a reader does, to reach its suggestions.
         page.click("details.roundcard.t-open > summary")
@@ -383,7 +383,7 @@ def drive(base: str, overview: str = "") -> None:
         foot = page.locator("[data-elsewhere=term]").inner_text()
         check(
             "inspector: the footer names the comparison picked as its command",
-            foot == f"evh inspect --runs {arms} --baseline runs/tickets_v1/tickets_lead1_v1",
+            foot == f"evh comparison-show --runs {arms} --baseline runs/tickets_v1/tickets_lead1_v1",
             foot,
         )
         with page.expect_navigation():
@@ -860,7 +860,7 @@ def main() -> int:
         proj, env = project(tmp)
         server, base = serve(proj, env, tmp / "serve.log")
         ov = subprocess.run(
-            [sys.executable, "-m", "evaluation_harness", "overview", "--period", "14d"],
+            [sys.executable, "-m", "evaluation_harness", "overview-show", "--period", "14d"],
             cwd=proj, env=env, capture_output=True, text=True,
         )  # fmt: skip
         drive(base, ov.stdout)

@@ -142,7 +142,7 @@ try:
     )
     check("setup: lead1 runs against gold", r.returncode == 0, (r.stdout + r.stderr)[-400:])
 
-    r = evh("leaderboard", "--dataset-id", "tickets_v1")
+    r = evh("leaderboard", "tickets_v1")
     out = r.stdout
     heads = re.findall(r"^=== scored against (.+) ===$", out, re.M)
     check(
@@ -175,9 +175,9 @@ try:
 
     # The catalog and the inspector read an arm against the reference of its latest run, and
     # say which runs they left out (they averaged all three before, labelled ×3).
-    r = evh("inspect", "--runs", "tickets_lead1_v1,tickets_author_v1", "--metric", "output_words")
+    r = evh("comparison-show", "--runs", "tickets_lead1_v1,tickets_author_v1", "--metric", "output_words")
     check(
-        "inspect: an arm is read against its latest run's reference; the runs left out are named",
+        "comparison-show: an arm is read against its latest run's reference; the runs left out are named",
         "2 earlier run(s) scored against no reference, silver/tickets_v1 left out" in r.stdout
         and "tickets_lead1_v1 ×" not in r.stdout,
         (r.stdout + r.stderr)[-800:],
@@ -193,7 +193,7 @@ try:
         "round-open", "--goal", "tickets_summary", "--dataset", "tickets_v1",
         "--hypothesis", "mixed references", "--keep", "tickets_lead1_v1,tickets_author_v1",
     )  # fmt: skip
-    rs = evh("rounds", "--goal", "tickets_summary")
+    rs = evh("round-evidence", "tickets_summary", "r1")
     check(
         "rounds: read against one reference; an arm scored against another is named",
         r.returncode == 0
@@ -203,7 +203,7 @@ try:
     )
 
     # With the goal that names the dataset the tables are the goal's: its decision under each, its flags in the data.
-    r = evh("leaderboard", "--dataset-id", "tickets_v1", "--json")
+    r = evh("leaderboard", "tickets_v1", "--json")
     doc = json.loads(r.stdout) if r.returncode == 0 else {}
     vals = (doc.get("result") or {}).get("values") or {}
     gold_g: dict = next((g for g in vals.get("groups", []) if g["reference"] == "gold/tickets_v1"), {})
@@ -216,19 +216,19 @@ try:
         and gold_g["arms"][0]["flags"] == [],
         r.stdout[-700:] + r.stderr[-300:],
     )
-    r = evh("leaderboard", "--dataset-id", "tickets_v1")
+    r = evh("leaderboard", "tickets_v1")
     check(
         "leaderboard: under a table, what the goal makes of it",
         "goal tickets_summary: leader tickets_lead1_v1" in r.stdout,
         r.stdout[-600:],
     )
-    r = evh("leaderboard", "--dataset-id", "tickets_v1", "--goal", "no_such_goal")
+    r = evh("leaderboard", "tickets_v1", "--goal", "no_such_goal")
     check(
         "leaderboard --goal: a goal that does not exist is refused, naming those there are",
         r.returncode != 0 and "no goal 'no_such_goal': one of tickets_summary" in r.stderr,
         r.stdout[-300:] + r.stderr[-300:],
     )
-    r = evh("leaderboard", "--dataset-id", "tickets_v1", "--label", "silver")
+    r = evh("leaderboard", "tickets_v1", "--label", "silver")
     check(
         "leaderboard --label: only the arms read under it; none is refused with the label named",
         r.returncode != 0 and "read as 'silver'" in r.stderr,

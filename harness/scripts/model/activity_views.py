@@ -1,5 +1,5 @@
 """The activity page as data (RFC-032 step 8): runs, spend and tokens in a period by dataset, by arm and by kind, each
-against the period before. `evh activity`, the activity page's numbers and `GET /activity` read it."""
+against the period before. `evh activity-show`, the activity page's numbers and `GET /activity` read it."""
 
 from __future__ import annotations
 

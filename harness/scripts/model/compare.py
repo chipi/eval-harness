@@ -1,5 +1,5 @@
 """The comparison of arms (RFC-032 step 8): the paired test of every arm against a baseline on one metric, the
-yardstick chosen, what could not be compared said in words. The inspector's `/api/compare`, `evh inspect`, a round's
+yardstick chosen, what could not be compared said in words. The inspector's `/api/compare`, `evh comparison-show`, a round's
 evidence (model/rounds) and the API's comparison all read it; catalog_serve answers the route by calling it.
 
 It reads one adapter, set by `set_adapter` (the server's, or the one a view builds): the arms, their scores and what
@@ -20,6 +20,13 @@ STATES = ("compared", "average only", "no shared metric", "not scorable")
 A: Adapter = None  # type: ignore[assignment]  # set by set_adapter()
 #: Set by the server's main(): the public mode's limits. max_arms applies locally too (a URL is not a query).
 LIMITS: dict = {"max_arms": 40, "rate": 0, "hosts": (), "proxy_hosts": ()}
+
+
+def public() -> bool:
+    """Whether this comparison is a public server's: the inspector's --public, or an MCP call made for a public server."""
+    from evaluation_harness import _visibility  # noqa: PLC0415
+
+    return bool(LIMITS["hosts"]) or _visibility.public_env()
 
 
 def set_adapter(adapter: Adapter) -> None:
@@ -290,7 +297,7 @@ def _fields_of(dataset: str) -> tuple:
     show, the public API may show, and a filter on a hidden field would leak it through counts."""
     fl = item_fields(A, dataset) if dataset else {"fieldset": None, "values": {}}
     decl = {f["name"]: f for f in (fl["fieldset"] or {}).get("fields") or []}
-    if LIMITS["hosts"]:
+    if public():
         decl = {n: f for n, f in decl.items() if f.get("public")}
     values = {i: {n: v for n, v in vs.items() if n in decl} for i, vs in fl["values"].items()}
     return decl, values
@@ -315,7 +322,7 @@ def _filter(series: dict, decl: dict, values: dict, wheres: list):
     for w in wheres:
         name, _, want = w.partition(":")
         if name not in decl:
-            return None, f"no field {name!r} to filter by" + (" here" if LIMITS["hosts"] else "")
+            return None, f"no field {name!r} to filter by" + (" here" if public() else "")
         try:
             keep = {i for i, vs in values.items() if _fields.matches(decl[name], vs.get(name), want)}
         except ValueError as exc:

@@ -86,11 +86,18 @@ try:
         if r.returncode == 0
         else {}
     )
-    goal_rows = json.loads(rel["goals"]["out"])["result"]["blocks"][0]["rows"] if "goals" in rel else []
+    goal_rows = json.loads(rel["goal-list"]["out"])["result"]["goals"] if "goal-list" in rel else []
     check(
         "--write-answers with a relative EVAL_HOME (from outside the project) answers from the project's data",
         [row.get("goal") for row in goal_rows] == ["tickets_summary"],
         (r.stderr[-300:], goal_rows),
+    )
+    from evaluation_harness import _release
+
+    check(
+        "render.sh's release check (`_release.py check`) reads the goal-list answer the writer wrote: the one goal is counted",
+        _release._answered_goals(tmp / "rel.jsonl")[0] == 1,
+        _release._answered_goals(tmp / "rel.jsonl"),
     )
     (tmp / "rel.jsonl").unlink(missing_ok=True)
     _runstore.rmtree(tmp, "goals")
@@ -101,46 +108,63 @@ try:
     check(
         "--write-answers: every tool that takes no argument, none whose default is dated or that needs an argument",
         r.returncode == 0
-        and {"datasets", "goals", "arms", "metrics"} <= tools
-        and not tools & {"overview", "activity", "search", "dataset-items", "deploy-sheet", "inspect"}
+        and {"dataset-list", "goal-list", "arm-list", "metric-list"} <= tools
+        and not tools
+        & {"overview-show", "activity-show", "search", "dataset-items", "deploy-sheet", "comparison-show"}
         and "left out" not in r.stdout,
         f"exit {r.returncode}: {sorted(tools)} {r.stdout[-200:]}{r.stderr[-300:]}",
     )
     version = next((x["harness"] for x in lines), "")
 
-    # Per dataset: the writer asks leaderboard once for each dataset, with the argv a call builds.
+    # Per dataset: the writer asks leaderboard once for each dataset, with the arguments a call gives.
     from evaluation_harness import mcp_server as ms
+    from evaluation_harness.model.entity import Problem
 
     _runstore.write_text(tmp, "datasets/toy_v1.json", "{}")
     asked: list = []
 
-    def fake_run(project, c, argv, timeout, public):
-        asked.append((c, list(argv)))
-        return (0, json.dumps({"command": c, "argv": argv}), "") if c == "leaderboard" else (1, "", "")
+    def fake_run(op, arguments, public):
+        asked.append((op.name, dict(arguments)))
+        if op.name == "leaderboard":
+            return {"command": op.name, "result": {"asked": arguments}}
+        raise Problem("a stand-in refuses the rest", "not-found")
 
-    real_run = ms.run_command
-    ms.run_command = fake_run  # type: ignore[assignment]  # a stand-in for the test
+    real_run = ms.run_op
+    ms.run_op = fake_run  # a stand-in for the test
     try:
         with _runstore._InProject(tmp):
             ms.write_answers(tmp, tmp / "ahead.jsonl", True)
     finally:
-        ms.run_command = real_run
-    want = ms.argv_of(ms.parser_of("leaderboard"), {"dataset-id": "toy_v1"})
+        ms.run_op = real_run
+    want = {"dataset": "toy_v1"}
     ahead = [json.loads(x) for x in (tmp / "ahead.jsonl").read_text().splitlines()]
     check(
-        "--write-answers: leaderboard written ahead for each dataset, with the argv a call builds",
+        "--write-answers: leaderboard written ahead for each dataset, with the arguments a call gives",
         ("leaderboard", want) in asked
-        and any(x["tool"] == "leaderboard" and x["argv"] == want for x in ahead),
+        and any(x["tool"] == "leaderboard" and x["args"] == want for x in ahead),
         (asked[-3:], ahead[-1:] if ahead else None),
     )
 
     # Markers: a written answer the command would never print, and a line from another harness version.
-    out = [json.dumps({"tool": "leaderboard", "argv": want, "out": "LEADERBOARD-AHEAD", "harness": version})]
+    out = [
+        json.dumps(
+            {
+                "tool": "leaderboard",
+                "args": want,
+                "out": json.dumps({"command": "leaderboard", "result": "LEADERBOARD-AHEAD"}),
+                "harness": version,
+            }
+        )
+    ]
     for x in lines:
-        if x["tool"] == "datasets":
-            x = {**x, "out": json.dumps({"command": "datasets", "result": "WRITTEN-AHEAD"})}
-        if x["tool"] == "goals":
-            x = {**x, "out": json.dumps({"command": "goals", "result": "OLD-VERSION"}), "harness": "0.0.0"}
+        if x["tool"] == "dataset-list":
+            x = {**x, "out": json.dumps({"command": "dataset-list", "result": "WRITTEN-AHEAD"})}
+        if x["tool"] == "goal-list":
+            x = {
+                **x,
+                "out": json.dumps({"command": "goal-list", "result": "OLD-VERSION"}),
+                "harness": "0.0.0",
+            }
         out.append(json.dumps(x))
     answers.write_text("\n".join(out) + "\n")
 
@@ -173,9 +197,9 @@ try:
             ClientSession(streams[0], streams[1]) as s,
         ):
             await s.initialize()
-            ds = await s.call_tool("datasets", {})
-            goals = await s.call_tool("goals", {})
-            lb = await s.call_tool("leaderboard", {"dataset-id": "toy_v1"})
+            ds = await s.call_tool("dataset-list", {})
+            goals = await s.call_tool("goal-list", {})
+            lb = await s.call_tool("leaderboard", {"dataset": "toy_v1"})
             return ds.content[0].text, goals.content[0].text, goals.is_error, lb.content[0].text
 
     ds_text, goals_text, goals_error, lb_text = anyio.run(calls)
@@ -185,12 +209,12 @@ try:
         lb_text[:200],
     )
     check(
-        "--answers: a written answer is served without running the command",
+        "--answers: a written answer is served without computing it",
         "WRITTEN-AHEAD" in ds_text,
         ds_text[:200],
     )
     check(
-        "--answers: a line another harness version wrote is not read (the command runs)",
+        "--answers: a line another harness version wrote is not read (the operation answers)",
         not goals_error and "OLD-VERSION" not in goals_text and f'"version": "{version}"' in goals_text,
         goals_text[:200],
     )

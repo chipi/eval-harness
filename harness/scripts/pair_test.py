@@ -51,7 +51,7 @@ import hashlib
 import json
 import statistics
 from pathlib import Path
-from typing import Any
+from typing import Any, NoReturn
 
 HERE = Path(__file__).resolve().parent
 
@@ -63,7 +63,6 @@ from evaluation_harness import (  # noqa: E402
 from evaluation_harness._common import (  # noqa: E402
     dataset_item_ids,
     die,
-    evh_prog,
     item_clusters,
     read_item_ids,
     scored_against_dir,
@@ -271,103 +270,54 @@ def _check_same_reference(args: argparse.Namespace, runs_a: list, runs_b: list, 
     return f"{ids[0]} / {ids[1]}"
 
 
-def main() -> int:
+class _Refuse:
+    """Where `_run` says an argument is wrong: the operation's refusal, not a usage error."""
+
+    @staticmethod
+    def error(message: str) -> NoReturn:
+        die(message, "bad-argument")
+
+
+#: What an input the call does not give is, as its option was when the command line did not give it.
+DEFAULTS = {
+    "a": None,
+    "b": None,
+    "b_dataset": None,
+    "round": None,
+    "goal": None,
+    "metric": None,
+    "label": "",
+    "exclude_dataset": None,
+    "include_exposed": False,
+    "items": None,
+    "cluster": None,
+    "reduce": None,
+    "margin": None,
+    "look_level": None,
+    "permutations": 20000,
+    "family": None,
+    "seed": 20260926,
+    "asc": False,
+    "desc": False,
+}
+
+
+def body(dataset: str, **given: Any) -> int:
     """Test a pre-registered pair with sign-flip permutation."""
-    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
-    ap.add_argument("--dataset-id", required=True)
-    ap.add_argument("--a", help="system_id of the arm under test (with --round: default its leader)")
-    ap.add_argument(
-        "--b", help="system_id it is compared against (with --round: default the baseline it started from)"
-    )
-    ap.add_argument(
-        "--b-dataset",
-        help="a second version of --dataset-id: B's runs are read on it, A's on --dataset-id, paired by item id. "
-        "Refused unless the items, the reference they are scored against and the metric agree (a cross-version "
-        "comparison: the effect of the dataset change plus run-to-run noise)",
-    )
-    ap.add_argument("--round", help="test within this round of a goal (rN): arms must be in play in it")
-    ap.add_argument("--goal", help="the goal --round belongs to, when several goals have one")
-    ap.add_argument(
-        "--metric",
-        help="default: the round's goal measure with --round, else the primary metric the runs recorded",
-    )
-    ap.add_argument(
-        "--label",
-        default="",
-        help='the arm label the runs are read under (default: "", the plain runs; `evh runs-list` shows the '
-        'labels present, e.g. "repeats" or a re-score\'s)',
-    )
-    ap.add_argument("--exclude-dataset", help="drop items this dataset also contains")
-    ap.add_argument(
-        "--include-exposed",
-        action="store_true",
-        help="on a held-out side, also show the mean difference with its read (exposed) items kept, marked: the "
-        "number without them is the one that counts (RFC-031)",
-    )
-    ap.add_argument(
-        "--items",
-        type=Path,
-        help="file of item_ids (one per line); restrict the test to exactly these",
-    )
-    ap.add_argument(
-        "--cluster",
-        metavar="FIELD",
-        help="an item field whose items are not independent (one thread's comments): flip one sign per value of "
-        "it, so related items count once (with --round: default the goal's `cluster:`)",
-    )
-    ap.add_argument(
-        "--reduce",
-        default=None,
-        help="how an arm's repeats make one score per item: mean (the default), majority or at_least_K, for 0/1 "
-        "scores (with --round: default the goal's primary.reduce)",
-    )
-    ap.add_argument(
-        "--margin",
-        type=float,
-        help="also test whether A is no worse than B by more than this, in the metric's units: the contender test "
-        "goals use (one-sided non-inferiority; ADR-0026), for this one pair, uncorrected",
-    )
-    ap.add_argument(
-        "--look-level",
-        type=float,
-        metavar="L",
-        help="decide one-sided at this level, as a look at a test set does (RFC-029; run-promote passes the look's "
-        "level): A better than B; with --margin, non-inferiority at L too. Reports the smallest p these items can reach",
-    )
-    ap.add_argument("--permutations", type=int, default=20000)
-    ap.add_argument(
-        "--family",
-        type=int,
-        default=None,
-        help="how many pairs were tested together (Bonferroni: alpha/family); default 1, or with --round "
-        "when A was chosen as the round's leader, the arms in play minus 1",
-    )
-    ap.add_argument("--seed", type=int, default=20260926)
-    ap.add_argument(
-        "--asc",
-        action="store_true",
-        help="lower is better: 'A wins' counts items where A scored lower "
-        "(default: inferred from the metric and the runs)",
-    )
-    ap.add_argument("--desc", action="store_true", help="higher is better, whatever the runs declare")
-    ap.add_argument(
-        "--json",
-        action="store_true",
-        help="the same answer as one JSON object: the printed lines as blocks, and the result by name "
-        "under result.values (a, b, metric, n, delta, wins, ties, p, method, verdict, threshold, ...)",
-    )
-    args = ap.parse_args()
+    args = argparse.Namespace(dataset_id=dataset, **{**DEFAULTS, **given})
+    if args.items:
+        args.items = Path(args.items)
+    ap = _Refuse()
     if args.b_dataset and args.round:
-        ap.error("--b-dataset and --round cannot be combined: a round is on one dataset")
+        ap.error("b_dataset and round cannot be combined: a round is on one dataset")
     if args.b_dataset and not (args.a and args.b):
-        ap.error("--b-dataset needs --a and --b")
+        ap.error("b_dataset needs a and b")
     if args.family is not None and args.family < 1:
-        ap.error(f"--family must be at least 1 (the number of pairs tested together), not {args.family}")
-    with _jsonout.collect("pair-test", args.json):
-        return _run(args, ap)
+        ap.error(f"family must be at least 1 (the number of pairs tested together), not {args.family}")
+    return _run(args, ap)
 
 
-def _run(args: argparse.Namespace, ap: argparse.ArgumentParser) -> int:
+def _run(args: argparse.Namespace, ap: Any) -> int:
     # Two runs sharing a system_id are averaged together below without
     # saying so. See _runs.warn_on_ambiguous_runs.
     warn_on_ambiguous_runs(args.label, args.dataset_id)
@@ -390,7 +340,7 @@ def _run(args: argparse.Namespace, ap: argparse.ArgumentParser) -> int:
         if args.family is None and chose:
             args.family = max(candidates, 1)
     elif not (args.a and args.b):
-        ap.error("--a and --b are required (or --round, which defaults them)")
+        ap.error("a and b are required (or round, which defaults them)")
     if args.family is None:
         args.family = 1
     _named_metric = bool(args.metric)
@@ -767,7 +717,3 @@ def _with_exposed(scores_now, items_all: set, lower: bool) -> None:
         f"delta (A - B) {d:+.4f}{' (lower is better)' if lower else ''}"
     )
     _jsonout.value("with_exposed", {"n": len(shared), "delta": d})
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())

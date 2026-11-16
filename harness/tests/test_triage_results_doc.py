@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """The triage results doc's table is the harness's own (research/internal/triage_results.py --check), and
-`evh goals --goal` prints a dataset's notes, among them how many arms it reads from their re-score.
+`evh goal-leaderboard` prints a dataset's notes, among them how many arms it reads from their re-score.
 
 python tests/test_triage_results_doc.py
 """
@@ -24,13 +24,13 @@ check(
     (r.stdout + r.stderr)[-400:],
 )
 g = subprocess.run(
-    [sys.executable, "-m", "evaluation_harness", "goals", "--goal", "triage_orrery"],
+    [sys.executable, "-m", "evaluation_harness", "goal-leaderboard", "triage_orrery"],
     capture_output=True,
     text=True,
     cwd=HERE,
 )
 check(
-    "evh goals --goal: a dataset's notes are printed, with the arms read from their re-score",
+    "evh goal-leaderboard: a dataset's notes are printed, with the arms read from their re-score",
     g.returncode == 0 and "mostly rebuilt" in g.stdout and "read from their re-score" in g.stdout,
     g.stdout[:600],
 )

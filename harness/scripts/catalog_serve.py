@@ -224,7 +224,7 @@ def _error(exc: SystemExit) -> dict:
 
 
 def sheet_csv(query: str) -> tuple[int, bytes, str]:
-    """The sheet as a download (RFC-023): the CSV `evh inspect --sheet --csv` writes, built in memory by the same
+    """The sheet as a download (RFC-023): the CSV `evh sheet-export --csv` writes, built in memory by the same
     code, so the page still writes nothing. The local inspector only: a sheet carries item text and outputs."""
     if LIMITS["hosts"]:
         return 403, b"the sheet shows item text and outputs: not served publicly", "text/plain; charset=utf-8"
@@ -236,7 +236,7 @@ def sheet_csv(query: str) -> tuple[int, bytes, str]:
     if fill not in (None, "label"):
         return (
             400,
-            b"fill=label (a blind fill needs its key written beside the sheet: evh inspect --sheet --csv)",
+            b"fill=label (a blind fill needs its key written beside the sheet: evh sheet-export --csv)",
             "text/plain; charset=utf-8",
         )
     choices = [c.strip() for c in params.get("choices", [""])[0].split(",") if c.strip()] or None
@@ -253,7 +253,7 @@ def sheet_csv(query: str) -> tuple[int, bytes, str]:
 def sheet(params: dict) -> dict:
     """The sheet (RFC-023, UXS-002 05): one dataset's items down, a column per arm across (the first stands for
     production): outputs and scores, a column per label set, the winners, the signals, the footer per arm;
-    `evh inspect --sheet --dataset-id D` in the browser. The local inspector only: it carries outputs and labels."""
+    `evh sheet-show D` in the browser. The local inspector only: it carries outputs and labels."""
     if LIMITS["hosts"]:
         return {"error": "the sheet shows outputs and labels: not served publicly"}
     from evaluation_harness import _picks, _sheet  # noqa: PLC0415
@@ -519,7 +519,7 @@ def api_estimate(command: str, arguments: Any) -> tuple[int, dict]:
     """POST /api/v1/estimate: a job command's own --dry-run, run now as a read (it calls nothing and writes nothing),
     and what it printed: what the job would do and, for a command that spends, cost (RFC-026 step 5)."""
     from evaluation_harness import _api  # noqa: PLC0415
-    from evaluation_harness import mcp_server as ms  # noqa: PLC0415
+    from evaluation_harness import _cmdline as ms  # noqa: PLC0415
 
     try:
         reg = _api.registry().get(command)

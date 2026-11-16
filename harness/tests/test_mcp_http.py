@@ -40,6 +40,9 @@ except ImportError as exc:
 
 tmp = Path(tempfile.mkdtemp(prefix="evh-mcp-http-"))
 (tmp / "data" / "datasets").mkdir(parents=True)
+from evaluation_harness import _format  # noqa: E402
+
+_runstore.write_text(tmp, _format.NAME, f"format: {_format.FORMAT}\n")
 seen = tmp / "seen.jsonl"
 (tmp / "hooks.py").write_text(
     f"""
@@ -107,32 +110,33 @@ try:
             await s.initialize()
             tools = {t.name: t for t in (await s.list_tools()).tools}
             check(
-                "--public: no option answers with an item's text, an output or a label (--item, --sheet)",
-                not {"item", "sheet", "dataset-id", "wrong-against", "scores-only", "items-out", "group"}
-                & set(tools["inspect"].input_schema["properties"])
+                "--public: no tool answers with an item's text, an output or a label (the sheet, an item, the items' outputs), and no input of one that remains does",
+                not {"sheet-show", "comparison-item", "comparison-items"} & set(tools)
+                and not {"group", "group_match"}
+                & set(tools["comparison-crosstab"].input_schema["properties"])
                 and "item" not in tools["dataset-items"].input_schema["properties"],
             )
             check(
                 "--public: validate is not offered (a public copy is not a whole project)",
                 "validate" not in tools,
             )
-            res = await s.call_tool("rounds", {})
+            res = await s.call_tool("round-list", {})
             check(
                 "a missing required argument is refused before anything runs",
-                res.is_error and "missing argument(s): goal" in res.content[0].text,
+                res.is_error and "'goal' is a required property" in res.content[0].text,
                 res.content[0].text,
             )
             res = await s.call_tool("search", {"text": ["x", "--adapter", "os:getcwd"]})
             check(
-                "a value that starts with '-' is refused (it would be read as an option the schema hides)",
-                res.is_error and "may not start with '-'" in res.content[0].text,
+                "a value that starts with '-' is a value: words to look for, nothing is loaded",
+                not res.is_error and res.structured_content["result"]["hits"] == [],
                 res.content[0].text,
             )
             res = await s.call_tool('a"} 1\nforged 0', {})
             check("an unknown tool is refused", res.is_error and "no tool" in res.content[0].text)
-            results = [await s.call_tool("datasets", {"dataset-id": f"d{i}"}) for i in range(4)]
+            results = [await s.call_tool("dataset-show", {"dataset": f"d{i}"}) for i in range(4)]
             check(
-                "--rate 6: the three refused calls count; three datasets calls answer, the fourth is refused",
+                "--rate 6: the three refused calls count; three dataset-show calls answer, the fourth is refused",
                 "a minute" in results[3].content[0].text
                 and results[3].is_error
                 and not any("a minute" in r.content[0].text for r in results[:3]),
@@ -153,10 +157,10 @@ try:
         any(c["tool"] == "unknown" for c in calls) and "forged" not in seen.read_text(),
         [c["tool"] for c in calls],
     )
-    calls = [c for c in calls if c["tool"] == "datasets"]
+    calls = [c for c in calls if c["tool"] == "dataset-show"]
     check(
         "hooks: each call, its tool and argument names, never their values",
-        len(calls) == 4 and all(c["args"] == ["dataset-id"] for c in calls) and "d0" not in seen.read_text(),
+        len(calls) == 4 and all(c["args"] == ["dataset"] for c in calls) and "d0" not in seen.read_text(),
         calls,
     )
     check("hooks: the caller's address", all(c.get("client") == "127.0.0.1" for c in calls), calls)
@@ -226,7 +230,7 @@ try:
             # Refusals first: they cost nothing and never count toward the total.
             for _ in range(3):
                 await s.call_tool("no-such-tool", {})
-            items = await s.call_tool("dataset-items", {"dataset-id": "p"})
+            items = await s.call_tool("dataset-items", {"dataset": "p"})
             check(
                 "--public: dataset-items serves a profile's rows, never their text",
                 not items.is_error
@@ -235,12 +239,14 @@ try:
                 items.content[0].text[:200],
             )
             bad = await s.call_tool(
-                "dataset-items", {"dataset-id": "a.b.x"}
-            )  # runs, and the command refuses it
+                "dataset-items", {"dataset": "a.b.x"}
+            )  # is answered, and the operation refuses it
             check(
-                "a command's own refusal is an error to the caller", bad.is_error, bad.content[0].text[:120]
+                "an operation's own refusal is an error to the caller",
+                bad.is_error,
+                bad.content[0].text[:120],
             )
-            res = [await s.call_tool("datasets", {"period": p}) for p in ("all", "30d", "week")]
+            res = [await s.call_tool("dataset-list", {"period": p}) for p in ("all", "30d", "week")]
             check(
                 "--rate-total 4: the fifth call that runs is refused, from anyone (refusals do not count)",
                 not res[0].is_error
@@ -249,7 +255,7 @@ try:
                 and "as many calls" in res[2].content[0].text,
                 [r.content[0].text[:60] for r in res],
             )
-            again = await s.call_tool("datasets", {"period": "all"})
+            again = await s.call_tool("dataset-list", {"period": "all"})
             check(
                 "--public: a repeated call is answered from what was kept, and is not counted",
                 not again.is_error and again.content[0].text == res[0].content[0].text,
@@ -262,7 +268,7 @@ try:
         x for x in told if x.get("kind") == "request" and x.get("tool") == "dataset-items" and "exit" in x
     ]
     check(
-        "hooks: a command's own refusal is told as refused (no analytics event, not an error)",
+        "hooks: an operation's own refusal is told as refused (no analytics event, not an error)",
         any(x.get("exit") == 1 and x.get("refused") == "command" for x in mine)
         and any(x.get("exit") == 0 and "refused" not in x for x in mine),
         mine,
@@ -326,14 +332,7 @@ check(
 )
 from types import SimpleNamespace  # noqa: E402
 
-from evaluation_harness.mcp_server import Hooks, _client, caller_key, run_command  # noqa: E402
-
-stopped, _out, err = run_command(tmp, "datasets", [], timeout=0.05)
-check(
-    "a call over its time is stopped: exit 124, saying so",
-    stopped == 124 and "stopped after" in err,
-    (stopped, err[-120:]),
-)
+from evaluation_harness.mcp_server import Hooks, _client, caller_key  # noqa: E402
 
 
 class Raises:
@@ -439,12 +438,11 @@ check(
     "an IPv4-mapped IPv6 caller is counted by its IPv4, not a /64 shared with every other",
     caller_key("::ffff:203.0.113.7") == "203.0.113.7" != caller_key("::ffff:203.0.113.8"),
 )
-from evaluation_harness.mcp_server import argv_of, parser_of  # noqa: E402
+from evaluation_harness.mcp_server import tools_for  # noqa: E402
 
-ap = parser_of("arms")
 check(
-    "the same arguments in another order make the same command line (one cached answer, not two)",
-    argv_of(ap, {"period": "30d", "systems": True}) == argv_of(ap, {"systems": True, "period": "30d"}),
+    "a public server offers fewer tools than a local one, and none of the agent sampler's",
+    set(tools_for(True)) < set(tools_for(False)) and not {"study-ask", "study-tell"} & set(tools_for(True)),
 )
 got = anyio.run(held_open)
 check(

@@ -52,6 +52,13 @@ class _Collector:
         cols = [str(h) for h in heads]
         self.blocks.append({"columns": cols, "rows": [dict(zip(cols, map(_clean, r))) for r in rows]})
 
+    def result(self) -> dict:
+        """What the command answered: the printed lines and tables in order, and its named values when it gave some."""
+        out: dict = {"blocks": self.blocks}
+        if self.values:
+            out["values"] = self.values
+        return out
+
 
 def _plain(v):
     """A JSON value: NaN and infinities (which JSON cannot carry) as null."""
@@ -96,11 +103,6 @@ def values(named: dict) -> None:
         value(name, v)
 
 
-def take_flag(argv: list[str]) -> tuple[list[str], bool]:
-    """argv without --json, and whether it was there."""
-    return [a for a in argv if a != "--json"], "--json" in argv
-
-
 class _Tee:
     """What a command prints: kept for the blocks, and passed on to `live` as it is written."""
 
@@ -143,6 +145,33 @@ def _say_exposed() -> None:
 
 
 @contextlib.contextmanager
+def capture() -> Iterator[_Collector]:
+    """Run the body in this process with its printing collected and hand the answer back (`.result()`), where `collect`
+    prints it as an envelope: how an operation answers a call (RFC-032 step 9). What an earlier call left in the
+    held-out reads and variants is forgotten first and after, since a process that answers many calls is not a
+    process per call."""
+    global _ACTIVE
+    from evaluation_harness import _exposure, _runs  # noqa: PLC0415
+
+    def forget() -> None:
+        _exposure.LEFT.clear()
+        _runs.NOT_SCORABLE.clear()
+        _runs.CONFOUND.clear()
+
+    forget()
+    c = _Collector()
+    before, _ACTIVE = _ACTIVE, c
+    try:
+        with contextlib.redirect_stdout(c.buf):
+            yield c
+            _say_exposed()
+    finally:
+        _ACTIVE = before
+        forget()
+    c.flush()
+
+
+@contextlib.contextmanager
 def collect(command: str, enabled: bool = True, live=None) -> Iterator[None]:
     """Run the body with its printing collected, then print the envelope. A refusal raises through
     and prints nothing to stdout: its message is on stderr, as without --json. `enabled=False` runs
@@ -175,9 +204,7 @@ def collect(command: str, enabled: bool = True, live=None) -> Iterator[None]:
             os.dup2(saved_fd, 1)
             os.close(saved_fd)
     c.flush()
-    result: dict = {"blocks": c.blocks}
-    if c.values:
-        result["values"] = c.values
+    result = c.result()
     sys.stdout.write(
         json.dumps(
             {"command": command, "version": __version__, "result": result},

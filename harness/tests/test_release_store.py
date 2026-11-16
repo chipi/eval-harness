@@ -187,10 +187,10 @@ def make_release(src: Path, store: str, dst: Path, source_store: str) -> subproc
 def add_caches(root: Path, goals: int = 2) -> None:
     (root / "cache").mkdir(exist_ok=True)
     (root / "cache" / "evh-p.jsonl").write_text(json.dumps({"k": "a" * 64, "p": (0.5).hex()}) + "\n")
-    answer = {"result": {"blocks": [{"rows": [{"goal": f"g{i}"} for i in range(goals)]}]}}
+    answer = {"command": "goal-list", "result": {"goals": [{"goal": f"g{i}"} for i in range(goals)]}}
     lines = [
-        {"tool": "goals", "argv": [], "out": json.dumps(answer), "harness": "x"},
-        {"tool": "leaderboard", "argv": ["--dataset-id", "ds1"], "out": "{}", "harness": "x"},
+        {"tool": "goal-list", "args": {}, "out": json.dumps(answer), "harness": "x"},
+        {"tool": "leaderboard", "args": {"dataset": "ds1"}, "out": "{}", "harness": "x"},
     ]
     (root / "cache" / "mcp-answers.jsonl").write_text("".join(json.dumps(x) + "\n" for x in lines))
 
@@ -459,17 +459,17 @@ try:
         case(
             "a goal the MCP answers do not cover fails check",
             lambda root: add_caches(root, goals=1),
-            "goals answers 1 of the release's 2",
+            "goal-list answers 1 of the release's 2",
         )
         case(
             "a goal added after the answers were written fails check",
             lambda root: plant(root, store, "goals/g3.yaml", b"goal_id: g3\n"),
-            "goals answers 2 of the release's 3",
+            "goal-list answers 2 of the release's 3",
         )
         case(
             "no MCP answers at all fails check",
             lambda root: (root / "cache" / "mcp-answers.jsonl").unlink(),
-            "goals answers 0 of the release's 2",
+            "goal-list answers 0 of the release's 2",
         )
         case(
             "an empty p cache fails check",

@@ -454,7 +454,7 @@ def later(store: str) -> None:
         # (c) sheet-import of a judged sheet
         (p.dir / "rubric.md").write_text("Score the summary for what a person triaging needs to know.\n")
         runs = ",".join(["arm_a_v1", "arm_b_v1"])
-        sh = p.evh("inspect", "--sheet", "--dataset-id", "tickets_v1", "--runs", runs, "--csv", "sc.csv",
+        sh = p.evh("sheet-export", "--dataset-id", "tickets_v1", "--runs", runs, "--csv", "sc.csv",
                    "--fill", "scores", "--scale", "1..10", "--rubric", "rubric.md", "--seed", "3")  # fmt: skip
         key = json.loads((p.dir / "sc.key.json").read_text())
         raw = (p.dir / "sc.csv").read_bytes().decode("utf-8-sig")

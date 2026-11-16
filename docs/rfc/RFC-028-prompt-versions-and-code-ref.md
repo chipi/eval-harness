@@ -18,7 +18,7 @@ directory the system loads prompts from) and the files in it that may change. At
 finds or records the version those bytes are, gives the adapter their text (and, for a root, a per-run copy of the
 root with the run's versions in it), and records each under the fingerprint's `settings`, so two runs that differ
 only in a prompt differ in the fingerprint only there. Versions are kept in `data/prompts/<name>/`, named by their
-content's hash, each with who made it, its parent and a note; `evh prompts`, `prompt-diff`, `prompt-version` and
+content's hash, each with who made it, its parent and a note; `evh prompt-list`, `prompt-diff`, `prompt-version` and
 `prompt-export` read and write them. Separately, the code a system runs gets one standard place: `code_ref`, the
 repository, commit and dirty state of the system's code, declared by the config or the adapter's hook and recorded in
 the deployment, so `run-compare` names a code change as the variable.
@@ -121,7 +121,7 @@ code: {path: ../podcast_scraper}                # the system's checkout, read at
 
 | command | what | served |
 | --- | --- | --- |
-| `evh prompts [NAME]` | names, versions (display numbers), lineage, and per version the runs that used it with their goal's measure | read |
+| `evh prompt-list [NAME]` | names, versions (display numbers), lineage, and per version the runs that used it with their goal's measure | read |
 | `evh prompt-diff A B` | a unified diff, and the runs of each | read |
 | `evh prompt-version NAME (--from-file F \| --text T) [--parent ID] --note "…" [--by]` | records a version; a hash already recorded is named, not duplicated | job, `--from-file` an upload |
 | `evh prompt-export ID --to PATH` | writes a version's bytes; refuses a path inside an installed package and a tracked file with uncommitted changes | job, `--to` an artifact (a download) |

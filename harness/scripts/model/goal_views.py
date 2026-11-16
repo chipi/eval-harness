@@ -1,6 +1,6 @@
 """Where a goal stands, decided once (RFC-032 step 8): the arms on each of its datasets that record its measure, grouped
 by what they are scored against, each group's leader, contenders and recommended arm (axes.decide), the promoted
-baseline's facts, and the leader against the baseline. The goal pages, `evh goals`, the overview, the arms page,
+baseline's facts, and the leader against the baseline. The goal pages, `evh goal-list`, the overview, the arms page,
 `evh leaderboard` and `GET /goals/{goal}/leaderboard` all read these functions; the catalog only renders them.
 
 Everything here reads the adapter it is given (the catalog's), never a global: `by_dataset(A)` is what the arms, the
@@ -660,13 +660,26 @@ def dataset_groups(A, by_ds: dict, ds: str, goal: dict | None = None) -> list[di
 # -- the goal's leaderboard ----------------------------------------------------------------------------------------
 
 
-def leaderboard(A, goal_id: str, by_ds: dict | None = None) -> dict:
+def leaderboard(
+    A, goal_id: str, by_ds: dict | None = None, arms: list[str] | None = None, top: int | None = None
+) -> dict:
     """Where each arm of the goal stands, as the goal page shows it: per dataset, per reference scored against, every arm's
     row (`_goal_view.group_values`: its mean and items, flags, the paired test against the group's leader, the contender
     test, its means on the goal's axes), the leader, the contenders, the recommended arm, the promoted baseline, the
-    recommended arm against it (`baseline_gap`) and the leader against it, corrected (`leader_vs_baseline`, in the group the baseline is in)."""
-    from evaluation_harness import _goal_view  # noqa: PLC0415
+    recommended arm against it (`baseline_gap`) and the leader against it, corrected (`leader_vs_baseline`, in the group the baseline is in).
+
+    `arms` (patterns: an arm or system id that contains one, or fits it as a glob) and `top` (the first N arms in the goal's
+    own order) choose the rows shown: the decision above them was made over every arm, and the baseline, the leader and the
+    recommended arm are always shown."""
+    from evaluation_harness import _exposure, _goal_view, _looks  # noqa: PLC0415
+    from evaluation_harness import catalog_build as cb  # noqa: PLC0415
+    from evaluation_harness.axes import STRATEGIES, tie_break_of  # noqa: PLC0415
+    from evaluation_harness.model import arm_views  # noqa: PLC0415
     from evaluation_harness.model.entity import Problem  # noqa: PLC0415
+
+    pats = _goal_view.patterns(arms)
+    if top is not None and top < 1:
+        raise Problem(f"top must be at least 1, not {top}", "bad-argument")
 
     goals = A.goals()
     g = next((x for x in goals if x["goal_id"] == goal_id), None)
@@ -681,10 +694,15 @@ def leaderboard(A, goal_id: str, by_ds: dict | None = None) -> dict:
     for ans in decided(A, g, by_ds):
         ds = ans["dataset"]
         bl, base = baseline_read(by_ds.get(ds) or {}, goal_id)
+        tiers = {r["id"]: r["tier"] for r in (by_ds.get(ds) or {}).get("refs", [])}
         groups = []
         for grp in ans["groups"]:
             rows, dec, gm = grp["rows"], grp["dec"], grp["measure"]
             base_arm = next((r["arm"] for r in rows if r.get("baseline")), None)
+            on_show = _goal_view.select(
+                rows, pats, top, {x for x in (base_arm, dec["leader"], dec["recommended"]) if x}
+            )
+            hyps = {r["arm"]: _goal_view.hypothesis_of(A, r["arm"]) for r in on_show}
             groups.append(
                 _goal_view.group_values(
                     dataset=ds,
@@ -692,16 +710,19 @@ def leaderboard(A, goal_id: str, by_ds: dict | None = None) -> dict:
                     measure=gm,
                     dec=dec,
                     rows=rows,
-                    shown=rows,
+                    shown=on_show,
                     axes=shown_axes(dec),
                     baseline=base_arm,
-                    hypotheses={},
-                    retired={r["arm"]: retired_round(retired_in, r["arm"]) for r in rows},
-                    arms_filter=[],
-                    top=None,
+                    hypotheses={a: h for a, h in hyps.items() if h},
+                    retired={r["arm"]: retired_round(retired_in, r["arm"]) for r in on_show},
+                    arms_filter=pats,
+                    top=top,
                 )
                 | {
+                    "axes_shown": shown_axes(dec),
+                    "row_kinds": {r["arm"]: arm_views.kind(r, tiers) for r in on_show},
                     "why": list(dec["why"]),
+                    "baseline_gap_text": cb.baseline_gap(A, dec, rows, gm),
                     "baseline_gap": baseline_gap(A, dec, rows, gm),
                     "leader_vs_baseline": leader_vs_baseline(A, g, ds, rows, dec, base, gm)
                     if any(r["arm"] == base for r in rows)
@@ -714,6 +735,8 @@ def leaderboard(A, goal_id: str, by_ds: dict | None = None) -> dict:
                 "role": ans["role"],
                 "decides": decides_on(g, ds),
                 "notes": ans["notes"],
+                "looks": _looks.said(ds, getattr(A, "data_dir", None)),
+                "exposure": _exposure.line(ds, getattr(A, "data_dir", None)),
                 "baseline": (
                     {k: bl[-1].get(k) for k in ("version", "run", "reason", "promoted_at", "tier")}
                     | {"arm": base}
@@ -723,10 +746,46 @@ def leaderboard(A, goal_id: str, by_ds: dict | None = None) -> dict:
                 "groups": groups,
             }
         )
+    studies = getattr(A, "studies", None)
+    rounds_of = getattr(A, "rounds", None)
+    answer = []
+    for d in g.get("datasets") or []:
+        b = [
+            x
+            for x in (by_ds.get(d.get("dataset_id", "")) or {}).get("baselines", [])
+            if x.get("goal") == goal_id
+        ]
+        answer.append(
+            {
+                "dataset": d.get("dataset_id", ""),
+                "baseline": {k: b[-1].get(k) for k in ("arm", "run", "promoted_at", "reason")} if b else None,
+            }
+        )
     return {
         "goal": goal_id,
+        "item_word": getattr(A, "item_word", "item"),
+        "title": g.get("title") or goal_id,
+        "statement": g.get("statement", ""),
+        "decision": g.get("decision", ""),
+        "guardrails": list((g.get("success_criteria") or {}).get("guardrails") or []),
+        "links": [x for x in g.get("links") or [] if x.get("url")],
+        "studies": (studies(goal_id) if callable(studies) else []) or [],
+        "rounds": [
+            {
+                "round": r["round_id"],
+                "status": r.get("status", ""),
+                "arms": len(r.get("arms") or []),
+                "retired": sum(1 for x in r.get("arm_records") or [] if x.get("retired")),
+                "conclusion": (r.get("conclusion") or {}).get("text", ""),
+            }
+            for r in (rounds_of() if callable(rounds_of) else [])
+            if r.get("goal") == goal_id
+        ],
+        "answer": answer,
         "measure": prim.get("measure", ""),
         "direction": "lower" if prim.get("direction") == "lower" else "higher",
         "strategy": strategy_of(g),
+        "strategy_about": STRATEGIES[strategy_of(g)],
+        "tie_break": list(tie_break_of(g)),
         "datasets": datasets,
     }

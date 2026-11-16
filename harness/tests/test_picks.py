@@ -24,6 +24,7 @@ from evaluation_harness._check import check, summary  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
 import _runstore  # noqa: E402
+from evaluation_harness import _format  # noqa: E402
 
 proj = Path(tempfile.mkdtemp(prefix="evh-picks-"))
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-picks")
@@ -47,12 +48,13 @@ def refused(r, text):
 
 def picks():
     r = evh("picks", "--json")
-    return {p["item"]: p for p in json.loads(r.stdout)["picks"]} if r.returncode == 0 else {}
+    return {p["item"]: p for p in json.loads(r.stdout)["result"]["picks"]} if r.returncode == 0 else {}
 
 
 try:
     if not _runstore.sqlite():
         (proj / "data").mkdir()
+    _runstore.write_text(proj, _format.NAME, f"format: {_format.FORMAT}\n")
     shutil.copytree(KIT / "tickets", proj / "tickets")
     r = evh("dataset-create", "--dataset-id", "tickets_v1", "--source-dir", "tickets")
     check("setup: the governed dataset", r.returncode == 0, out(r)[-300:])
@@ -175,9 +177,15 @@ try:
         "p1" not in picks() and "p3" in picks(),
         json.dumps(picks())[:200],
     )
-    r = evh("labels", "--dataset-id", "tickets_v2", "--json")
-    cov = {s["set"]: s["items"] for s in json.loads(r.stdout)["sets"]} if r.returncode == 0 else {}
-    check("a picked item's labels follow it into V2", cov.get("owner_p") == ["p1"], r.stdout[-300:])
+    r = evh("label-set-list", "tickets_v2", "--json")
+    cov = (
+        {s["set"]: s["items"] for s in json.loads(r.stdout)["result"]["coverage"]}
+        if r.returncode == 0
+        else {}
+    )
+    check(
+        "a picked item's labels follow it into V2", cov.get("owner_p") == ["p1"], (r.stdout + r.stderr)[-300:]
+    )
     r = evh("dataset-extend", "tickets_v2", "--dataset-id", "tickets_v3", "--pick", "prod_v1:p4")
     v3 = _runstore.read_json(proj, "datasets/tickets_v3.json") if r.returncode == 0 else {}
     check(

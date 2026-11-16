@@ -215,7 +215,7 @@ try:
         json.dumps((mc.get("scores") or {}).get("history_confound")),
     )
     pt = evh(
-        "pair-test", "--dataset-id", "filing_history_v1", "--a", "filing_candidate_v3_hidden",
+        "pair-test", "filing_history_v1", "--a", "filing_candidate_v3_hidden",
         "--b", "filing_replay_hidden_v1", "--metric", "exact",
     )  # fmt: skip
     check(
@@ -227,7 +227,6 @@ try:
     # ── P2: a past period at its own code, beside the candidate ───────────────────────────────────────────────────
     per = evh(
         "periods",
-        "--model",
         "toy_filing",
         "--system",
         "filing_replay_hidden_v1",
@@ -255,7 +254,6 @@ try:
     ]
     pc = evh(
         *PC,
-        "--system",
         "filing_replay_hidden_v1",
         "--dataset",
         "filing_history_v1",
@@ -286,7 +284,7 @@ try:
     prod_run = sorted(n for n in _runstore.listdir(proj, "runs") if n.startswith("filing_production_v1_"))[-1]
     pc_id = evh(
         *[prod_run if x == "filing_production_v1" else x for x in PC],
-        "--system", "filing_replay_hidden_v1", "--dataset", "filing_history_v1", "--candidate", "filing_candidate_v3_hidden",
+        "filing_replay_hidden_v1", "--dataset", "filing_history_v1", "--candidate", "filing_candidate_v3_hidden",
     )  # fmt: skip
     check(
         "period-compare --production takes a run id too, with the same answer as its system id",
@@ -295,7 +293,6 @@ try:
     )
     bad_pc = evh(
         *PC,
-        "--system",
         "filing_candidate_v3_hidden",
         "--dataset",
         "filing_history_v1",
@@ -315,7 +312,7 @@ try:
     # The fleet's beta (F9): dated_by on a version, not on its deployment, was accepted and dated nothing.
     wrong = {**rec, "versions": [{**rec["versions"][0], "dated_by": "commit"}, *rec["versions"][1:]]}
     _runstore.write_text(proj, "models/toy_filing.yaml", yaml.safe_dump(wrong, sort_keys=False))
-    w = evh("periods", "--model", "toy_filing")
+    w = evh("periods", "toy_filing")
     check(
         "a code record with dated_by on a version (not its deployment) is refused, saying where it goes",
         w.returncode != 0 and "dated_by" in said(w) and "versions[].deployed[].dated_by" in said(w),
@@ -366,7 +363,7 @@ try:
         and doc2.get("n_items") == 20 - rb2.get("not_reproduced", 0),
         said(x2)[-500:] + json.dumps(rb2),
     )
-    per2 = evh("periods", "--model", "toy_filing", "--json")
+    per2 = evh("periods", "toy_filing", "--json")
     check(
         "periods says how each period was dated: the first by commit time (approximate)",
         [x.get("dated_by") for x in values(per2).get("periods") or []][:1] == ["commit"]

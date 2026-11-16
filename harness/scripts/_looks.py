@@ -213,7 +213,7 @@ def double_spent(dataset_id: str, data: Path | None = None) -> list[tuple[int, l
 
 
 def said(dataset_id: str, data: Path | None = None) -> str | None:
-    """A test set's looks in one line, for its goals' pages and `evh goals`; None for any other dataset."""
+    """A test set's looks in one line, for its goals' pages and `evh goal-list`; None for any other dataset."""
     if not is_test_set(dataset_id, data):
         return None
     s = summary(dataset_id, data)

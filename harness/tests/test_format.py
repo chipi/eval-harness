@@ -190,7 +190,7 @@ try:
         steps_run = evh(proj, "migrate")
         after = evh(proj, "migrate", "--check")
         evh(proj, "dataset-materialize", "--dataset-id", "tickets_v1")
-        lb = evh(proj, "leaderboard", "--dataset-id", "tickets_v1", "--json")
+        lb = evh(proj, "leaderboard", "tickets_v1", "--json")
         want = (
             board(json.loads((fx / "leaderboard-0.7.2.json").read_text()), "config_id") if old == 0 else None
         )

@@ -78,7 +78,7 @@ Code facts this design rests on (each checked):
   (through `_outputs` too). `run.py:580` puts an adapter's `Result.meta` under `_meta`; `run.py:1487-1507` writes
   `run.json`, the first score, then the rows; `rescore.py:199` adds to `_meta`.
 - Rows are read through `_runs.item_rows` (most readers), `_outputs.rows_text` (16 call sites outside `_outputs`),
-  `_outputs.item_across` (one item across runs: only `catalog_views._items_out`, `evh inspect --items-out`, which is not
+  `_outputs.item_across` (one item across runs: only `catalog_views._items_out`, `evh comparison-items`, which is not
   served publicly), `_outputs.lines`.
 - No stored hash covers prediction rows: the fingerprint (`_fingerprint.py`), judging sets (`judge_score.py:656`, over
   output texts), prompts, articles, manifests and ids. `family_test.py:124` hashes rows text for a cache key only.

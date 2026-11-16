@@ -16,6 +16,12 @@ OPS = (
        "that used it", "GET", "/prompts/versions", f"{_P}:show_prompt", f"{_P}:say_prompt",
        inputs={"name": {"type": "string", "description": "the prompt's name (segments joined by /)"}},
        required=("name",)),
+    Op("prompt-diff", "read", "two prompt versions compared: their text as a unified diff, and the runs of each (RFC-028)",
+       "GET", "/prompts/diff", f"{_P}:diff_prompts", f"{_P}:say_diff",
+       inputs={
+           "a": {"type": "string", "description": "a version id, <name>/<sha16>"},
+           "b": {"type": "string", "description": "the other version id"},
+       }, required=("a", "b"), positional=("a", "b")),
 )  # fmt: skip
 
 
@@ -80,3 +86,45 @@ def say_prompt(r: dict[str, Any]) -> str:
         lines.append(f"     {v.get('note') or ''}")
         lines.extend(f"     run {x['run_id']}  {x['metric']}={x['score']}" for x in v["runs"])
     return "\n".join(lines)
+
+
+def diff_prompts(a: str, b: str) -> dict[str, Any]:
+    """Two versions' text as a unified diff, and the runs that used each."""
+    import difflib  # noqa: PLC0415
+
+    from evaluation_harness import _format, _prompt_cmd, _prompts  # noqa: PLC0415
+    from evaluation_harness.ops.legacy import refusing  # noqa: PLC0415
+
+    _format.require()
+    with refusing():
+        da, ta = _prompt_cmd._version_or_die(a)
+        db, tb = _prompt_cmd._version_or_die(b)
+    lines = list(
+        difflib.unified_diff(
+            ta.decode("utf-8", "replace").splitlines(keepends=True),
+            tb.decode("utf-8", "replace").splitlines(keepends=True),
+            fromfile=a,
+            tofile=b,
+        )
+    )
+    used = _prompt_cmd._runs_of()
+    return {
+        "a": a,
+        "b": b,
+        "diff": "".join(lines),
+        "runs": {
+            vid: used.get((_prompts.split_id(vid)[0], d.get("sha256", "")), [])
+            for vid, d in ((a, da), (b, db))
+        },
+    }
+
+
+def say_diff(r: dict[str, Any]) -> str:
+    """prompt-diff's answer as text: the diff, then each version's runs."""
+    out = [r["diff"].rstrip("\n") if r["diff"] else "the two versions are the same text"]
+    for vid, runs in r["runs"].items():
+        out.append(
+            f"\n{vid}: {len(runs)} run(s)"
+            + "".join(f"\n  {x['run_id']}  {x['metric']}={x['score']}" for x in runs)
+        )
+    return "\n".join(out)

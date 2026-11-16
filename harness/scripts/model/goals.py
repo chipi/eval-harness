@@ -141,7 +141,7 @@ def _next(goal_id: str, datasets: list[dict[str, Any]], rounds: list[dict[str, A
         r = open_[-1]["round"]
         return {
             "what": f"read round {r}'s evidence, then close it",
-            "command": f"evh rounds --goal {goal_id} --round {r}",
+            "command": f"evh round-show {goal_id} {r}",
         }
     return {
         "what": "open a round with a question",

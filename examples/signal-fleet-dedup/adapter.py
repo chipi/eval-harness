@@ -33,7 +33,7 @@ from evaluation_harness.adapter import Result  # noqa: E402
 PRIMARY_METRIC = "key_match"
 METRIC_DIRECTIONS = {"key_match": "higher", "class_match": "higher"}
 
-#: What each metric measures (the catalog's metric pages and `evh metrics`), from score() below.
+#: What each metric measures (the catalog's metric pages and `evh metric-list`), from score() below.
 METRIC_DESCRIPTIONS = {
     "key_match": {"summary": "1 when the signal's normalized key is the one the pinned fleet code gives it, else 0."},
     "class_match": {

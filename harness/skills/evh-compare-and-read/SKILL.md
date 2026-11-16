@@ -17,7 +17,7 @@ The blocks run as written on the tutorial kit after `evh-evaluate-a-system`.
 ## Which arm leads, and is the order real
 
 ```evh
-evh leaderboard --dataset-id tickets_v1 --json
+evh leaderboard tickets_v1 --json
 ```
 
 The ranking alone is not a finding. The leaderboard's own test (Friedman, then Nemenyi's critical
@@ -26,14 +26,14 @@ difference) says which pairs are distinguishable; with few items, often none are
 ## One comparison you named in advance
 
 ```evh
-evh pair-test --dataset-id tickets_v1 --a tickets_lead2_v1 --b tickets_lead1_v1 --json
+evh pair-test tickets_v1 --a tickets_lead2_v1 --b tickets_lead1_v1 --json
 ```
 
 A paired test on the same items: the difference, its p, and the verdict at 0.05. Valid only for a
 pair chosen before you read the table; for one arm against all the others, correct for the family:
 
 ```evh
-evh family-test --dataset-id tickets_v1 --a tickets_lead2_v1 --against tickets_ --json
+evh family-test tickets_v1 --a tickets_lead2_v1 --against tickets_ --json
 ```
 
 ## A goal's answer
@@ -42,30 +42,30 @@ With a goal (`data/goals/<goal_id>.yaml`), one command gives the leader, the bas
 test and what the goal's strategy recommends once its limits are applied:
 
 ```evh
-evh goals --json
+evh goal-list --json
 ```
 
 ## Where two arms differ
 
-`evh inspect --runs A,B --json` tests each arm against the first (Holm across them) and lists the
-items; `--item ID` shows one item's outputs beside the reference; `--disagree` keeps only the items
-the arms decided differently; `--by FIELD` breaks it down by an item's field.
+`evh comparison-show --runs A,B --json` tests each arm against the first (Holm across them);
+`--disagree 1` tests only the items the arms decided differently; `--by FIELD` breaks it down by an
+item's field. `evh comparison-item --runs A,B --item ID` shows one item's outputs beside the reference.
 
 ```evh
-evh inspect --runs tickets_lead1_v1,tickets_lead2_v1 --json
+evh comparison-show --runs tickets_lead1_v1,tickets_lead2_v1 --json
 ```
 
 ## Why the items flipped: the outputs together
 
-`evh inspect --item ID` shows one item. For many, `--items-out` gives per item each arm's decision,
-whole output, per-item scores and the facts the adapter recorded (`_meta`), beside the reference and
-the labels; `--disagree` keeps the items the arms decided differently from the first, `--where F:V`
-narrows by an item's field. In `--json` the texts are whole (`result.values.items_out.items`); in
-text an output is cut at `--max-chars` (default 300). The sheet (`--sheet`) has the decisions and
-labels too, but cut to a cell.
+`evh comparison-item --item ID` shows one item. For many, `evh comparison-items` gives per item each
+arm's decision, whole output, per-item scores and the facts the adapter recorded (`_meta`), beside the
+reference and the labels; `--disagree` keeps the items the arms decided differently from the first,
+`--where F:V` narrows by an item's field. In `--json` the texts are whole (`result.values.items_out.items`);
+in text an output is cut at `--max-chars` (default 300). The sheet (`evh sheet-show D --runs A,B`) has the
+decisions and labels too, but cut to a cell.
 
 ```evh
-evh inspect --runs tickets_lead1_v1,tickets_lead2_v1 --items-out --disagree --json
+evh comparison-items --runs tickets_lead1_v1,tickets_lead2_v1 --disagree --json
 ```
 
 ## How two scores relate, by a recorded fact
@@ -80,20 +80,20 @@ counts and ids. Items with no value count as `none`. Run both crosses before rep
 a save and a cost are different items.
 
 ```evh
-evh inspect --runs tickets_lead2_v1 --crosstab overlap_f1,overlap_f1 --json
+evh comparison-crosstab --runs tickets_lead2_v1 --crosstab overlap_f1,overlap_f1 --json
 ```
 
 ## A result with and without a set of items
 
-`evh pair-test --dataset-id D --a A --b B --items FILE` tests only the item ids in FILE (one per
+`evh pair-test D --a A --b B --items FILE` tests only the item ids in FILE (one per
 line); give the rest as a second file, or drop a dataset's items with `--exclude-dataset D2`. The
-inspector filters by an item's field, so a set marked by a field is `evh inspect --runs A,B --where
+inspector filters by an item's field, so a set marked by a field is `evh comparison-show --runs A,B --where
 FIELD:VALUE` (and the other half with the other value). Report both halves and the whole, and say
 how the set was chosen: a set picked after reading results is a finding to confirm, not a test.
 
 ## What a new version of a dataset changed
 
-`evh pair-test --dataset-id D1 --a ARM_v1 --b ARM_v2 --b-dataset D2` tests one arm's runs on D1
+`evh pair-test D1 --a ARM_v1 --b ARM_v2 --b-dataset D2` tests one arm's runs on D1
 against its runs on D2, paired by item id. It refuses unless the items are in both versions and the
 reference gives the same text for each, and says it is a cross-version comparison: the difference is
 the dataset change plus the arm's run-to-run noise, so one run each cannot separate them. Repeats are

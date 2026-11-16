@@ -453,8 +453,8 @@ def _family(exp: dict, runs: list, cids: dict, arm: str | None = None) -> tuple[
         r = subprocess.run(
             [
                 sys.executable,
-                str(HARNESS / "scripts" / "family_test.py"),
-                "--dataset-id",
+                str(HARNESS / "scripts" / "cli.py"),
+                "family-test",
                 exp["dataset"],
                 "--a",
                 a_cid,

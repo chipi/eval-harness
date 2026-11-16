@@ -183,7 +183,7 @@ check("supersede: a re-score against another reference is its own row", "superse
 check("supersede: a second measurement is its own row", "superseded_by" not in repeat)
 check("supersede: an arm with a run nobody re-scored stays", "superseded_by" not in half)
 
-# A measured arm whose run was re-scored says so on the arms page and in `evh arms`, beside the goals' choice: the
+# A measured arm whose run was re-scored says so on the arms page and in `evh arm-list`, beside the goals' choice: the
 # re-score is a second score of the same run, under its own label.
 with tempfile.TemporaryDirectory() as tmp:
     data = Path(tmp) / "data"

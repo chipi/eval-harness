@@ -32,6 +32,7 @@ from evaluation_harness import stats  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 from evaluation_harness.catalog_adapter import HarnessAdapter  # noqa: E402
 from evaluation_harness.model import goal_views as gv  # noqa: E402
+from evaluation_harness.model.entity import Problem  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
 import _catalog_fixture as fx  # noqa: E402
@@ -406,23 +407,12 @@ try:
     )
     check("metrics page: each metric links to its own page", 'href="m/acc.html"' in metrics)
     # The same pages in the terminal (CLI parity): one adapter, one computation.
-    import contextlib as _cl
-    import io as _io
+    import _ops
 
-    from evaluation_harness import catalog_views as _cv
+    def _view(name, **kw):
+        return _ops.view(name, HarnessAdapter(data3), **kw)
 
-    def _view(fn, argv):
-        buf = _io.StringIO()
-        real = _cv.load_catalog_adapter
-        _cv.load_catalog_adapter = lambda spec=None: HarnessAdapter(data3)
-        try:
-            with _cl.redirect_stdout(buf):
-                fn(argv)
-        finally:
-            _cv.load_catalog_adapter = real
-        return buf.getvalue()
-
-    ov = _view(_cv.overview, ["--period", "all"])
+    ov = _view("overview-show", period="all")
     tiles = cb.home_counts(
         HarnessAdapter(data3), cb.collect(HarnessAdapter(data3)), HarnessAdapter(data3).spend()
     )
@@ -432,7 +422,7 @@ try:
         if ln.startswith("  ")
     }
     check(
-        "evh overview --period all: every stock tile is the page's count, then the sections",
+        "evh overview-show --period all: every stock tile is the page's count, then the sections",
         all(lines.get(cb.TILE_LABEL.get(k, k)) == str(n) for k, n, _ in tiles[:7])
         and all(x in ov for x in ("goals at a glance", "activity", "coverage:")),
         ov[:600],
@@ -493,11 +483,9 @@ try:
         page_keys == set(pds) and "window.PERIOD_ROWS=" in (out3 / "datasets-rows.js").read_text(),
         f"{page_keys} {set(pds)}",
     )
-    dl = next(
-        ln for ln in _view(_cv.datasets, ["--period", "all"]).splitlines() if ln.strip().startswith("ds3")
-    )
+    dl = next(ln for ln in _view("dataset-list", period="all").splitlines() if ln.strip().startswith("ds3"))
     check(
-        "evh datasets --period all: the builder's runs for the dataset (all time: no trend)",
+        "evh dataset-list --period all: the builder's runs for the dataset (all time: no trend)",
         re.split(r"\s{2,}", dl.strip())[-2] == str(per["ds3"]["runs"])
         and per["ds3"]["runs"]
         == sum(
@@ -523,26 +511,22 @@ try:
         and 'data-scored="judge"' in arms_html
         and "judged by sc1" in arms_html,
     )
-    grouped = _view(_cv.arms, ["--by", "system"])
     check(
-        "evh arms --by system: a heading per system, its arms under it",
-        "system arm_t (2 arms)" in grouped and "system arm_s (1 arm)" in grouped,
-        grouped[:400],
+        "evh arm-list --systems: one row per system across its datasets",
+        all(x in _view("arm-list", systems="1") for x in ("arm_s", "arm_t", "rank on each goal")),
     )
+    act = _view("activity-show", period="all")
     check(
-        "evh arms --systems: one row per system across its datasets",
-        all(x in _view(_cv.arms, ["--systems"]) for x in ("arm_s", "arm_t", "rank on each goal")),
-    )
-    act = _view(_cv.activity, ["--period", "all"])
-    check(
-        "evh activity: by dataset, by arm, by kind, from the activity page's builder",
+        "evh activity-show: by dataset, by arm, by kind, from the activity page's builder",
         all(x in act for x in ("by dataset:", "by arm (", "by kind:", "ds3")),
         act[:400],
     )
     arm_id = next(a for a in HarnessAdapter(data3).arms() if a.endswith("/arm_s"))
-    ar = _view(_cv.arms, ["--arm", arm_id])
+    ar = _view(
+        "arm-show", label=arm_id.split("/")[0], dataset=arm_id.split("/")[1], system=arm_id.split("/")[2]
+    )
     check(
-        "evh arms --arm: the arm page's facts, its metrics and the note that it wrote its reference",
+        "evh arm-show: the arm page's facts, its metrics and the note that it wrote its reference",
         "scored against  silver/ds3" in ar and "metrics:" in ar and "wrote the reference" in ar,
         ar[:500],
     )
@@ -553,9 +537,9 @@ try:
         any("wrote the reference these arms are scored against" in w for w in r_.get("warnings", [])),
         r_.get("error") or r_.get("warnings"),
     )
-    mt = _view(_cv.metrics, ["--metric", "acc"])
+    mt = _view("metric-show", metric="acc")
     check(
-        "evh metrics --metric: the metric page's description and the arms recording it",
+        "evh metric-list --metric: the metric page's description and the arms recording it",
         "share of items right" in mt and "on ds3:" in mt,
         mt[:400],
     )
@@ -1026,22 +1010,10 @@ try:
     )
     # The dataset page's fields block, in the terminal (CLI parity): fields listed, a field not
     # marked public shows no value there either.
-    import contextlib
-    import io
 
-    from evaluation_harness import catalog_views as cv
-
-    buf = io.StringIO()
-    real_loader = cv.load_catalog_adapter
-    cv.load_catalog_adapter = lambda spec=None: AF
-    try:
-        with contextlib.redirect_stdout(buf):
-            cv.datasets(["--dataset-id", "ds1"])
-    finally:
-        cv.load_catalog_adapter = real_loader
-    txt = buf.getvalue()
+    txt = _ops.view("dataset-show", AF, dataset="ds1")
     check(
-        "evh datasets --dataset-id: the fields block, with no value of a field not marked public",
+        "evh dataset-show: the fields block, with no value of a field not marked public",
         "fields (field set" in txt and "product" in txt and HIDDEN not in txt and "not public" in txt,
         txt[-600:],
     )
@@ -1349,10 +1321,8 @@ try:
 
     # The inspector's "Average only" table in the terminal (CLI parity): an arm that recorded
     # only a run-level average is listed beside the comparison, never tested.
-    import contextlib
-    import io
-
-    from evaluation_harness import catalog_views as cv
+    import _ops
+    from evaluation_harness.model import arm_views
 
     data6 = tmp / "data6"
     run("", "p_1", "ds6", "arm_p", [0.5] * 6, root=data6)
@@ -1369,17 +1339,9 @@ try:
         },
     )
     A6 = HarnessAdapter(data6)
-    real_loader = cv.load_catalog_adapter
-    cv.load_catalog_adapter = lambda spec=None: A6
-    buf = io.StringIO()
-    try:
-        with contextlib.redirect_stdout(buf):
-            cv.inspect(["--runs", "arm_p,arm_q,arm_z", "--no-rescore"])
-    finally:
-        cv.load_catalog_adapter = real_loader
-    txt = buf.getvalue()
+    txt = _ops.view("comparison-show", A6, runs="arm_p,arm_q,arm_z", rescore="0")
     check(
-        "evh inspect: the Average only table lists an arm with no per-item scores (and --no-rescore runs)",
+        "evh comparison-show: the Average only table lists an arm with no per-item scores (and --no-rescore runs)",
         "Average only · 1" in txt and "arm_z" in txt and "+0.400" in txt,
         txt[-700:],
     )
@@ -1390,18 +1352,18 @@ try:
         HarnessAdapter(data6).arm_of("ds", "c") == "runs/ds/c",
         HarnessAdapter(data6).arm_of("ds", "c"),
     )
-    # `evh inspect --label`: a system id is looked up among the arms read under that label (data2: arm_g plain,
+    # `evh comparison-show --label`: a system id is looked up among the arms read under that label (data2: arm_g plain,
     # arm_s read as silver).
     A2 = HarnessAdapter(data2)
     refused_plain = ""
     try:
-        cv._arm_ids(A2, ["arm_s"], "")
-    except SystemExit as exc:
+        arm_views.arm_ids(A2, ["arm_s"], "")
+    except Problem as exc:
         refused_plain = str(exc)
     check(
         "inspect --label: a system id is found under its label, and not under the plain one",
-        cv._arm_ids(A2, ["arm_s"], "silver") == ["silver/ds1/arm_s"]
-        and cv._arm_ids(A2, ["arm_g"], "") == ["runs/ds1/arm_g"]
+        arm_views.arm_ids(A2, ["arm_s"], "silver") == ["silver/ds1/arm_s"]
+        and arm_views.arm_ids(A2, ["arm_g"], "") == ["runs/ds1/arm_g"]
         and "name the arm id: silver/ds1/arm_s" in refused_plain,
         refused_plain,
     )

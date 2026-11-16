@@ -6,7 +6,7 @@
 In a throwaway git project built from the tutorial ($0, offline, the echo provider): a hypothesis committed before
 the run is recorded as named in advance (yes, with the commit); one added to the config after the run reads no; one
 made outside git or on a dirty tree is not determinable; a hypothesis never changes the fingerprint's hash; validate
-V20 and `evh run` refuse a malformed one in words; `evh pair-test` and `evh goals --goal` report it; and pair-test
+V20 and `evh run` refuse a malformed one in words; `evh pair-test` and `evh goal-leaderboard` report it; and pair-test
 --round corrects for the selection when it chose A, and refuses --family below 1.
 """
 
@@ -281,7 +281,7 @@ try:
         (plain["hash"][:12], with_h["hash"][:12], other["hash"][:12]),
     )
 
-    r = evh("pair-test", "--dataset-id", "tickets_v1", "--a", "tickets_lead2_v1", "--b", "tickets_lead1_v1")
+    r = evh("pair-test", "tickets_v1", "--a", "tickets_lead2_v1", "--b", "tickets_lead1_v1")
     check(
         "pair-test: A's hypothesis against B on the tested metric, named in advance (yes, the commit), agreement",
         r.returncode == 0
@@ -292,7 +292,6 @@ try:
     )  # fmt: skip
     js = evh(
         "pair-test",
-        "--dataset-id",
         "tickets_v1",
         "--a",
         "tickets_lead2_v1",
@@ -309,23 +308,23 @@ try:
         and hv.get("agrees") in ("yes", "no", "not shown"),
         hv,
     )  # fmt: skip
-    r = evh("pair-test", "--dataset-id", "tickets_v1", "--a", "tickets_lead1_v1", "--b", "tickets_lead2_v1")
+    r = evh("pair-test", "tickets_v1", "--a", "tickets_lead1_v1", "--b", "tickets_lead2_v1")
     check(
         "pair-test: a pair no run has a hypothesis for prints what it always did",
         "named in advance" not in r.stdout and "uncorrected: valid only if this pair was named" in r.stdout,
         out(r)[-400:],
     )
 
-    r = evh("goals", "--goal", "tickets_summary")
+    r = evh("goal-leaderboard", "tickets_summary")
     check(
         "goals --goal: the hypothesis beside the arm that has one",
         "hypothesis" in r.stdout
         and "better than tickets_lead1_v1 on overlap_f1; named in advance: yes" in r.stdout,
         out(r)[-800:],
     )
-    gj = evh("goals", "--goal", "tickets_summary", "--json")
+    gj = evh("goal-leaderboard", "tickets_summary", "--json")
     arms = (
-        [a for g in json.loads(gj.stdout)["result"]["values"]["groups"] for a in g["arms"]]
+        [a for d in json.loads(gj.stdout)["result"]["datasets"] for g in d["groups"] for a in g["arms"]]
         if gj.returncode == 0
         else []
     )
@@ -345,7 +344,7 @@ try:
     )
     write_system("tickets_late_v1", 2, HYP)
     commit("late arm: hypothesis written after the results")
-    r = evh("pair-test", "--dataset-id", "tickets_v1", "--a", "tickets_late_v1", "--b", "tickets_lead1_v1")
+    r = evh("pair-test", "tickets_v1", "--a", "tickets_late_v1", "--b", "tickets_lead1_v1")
     check(
         "pair-test: a hypothesis added to the config after the run reads 'no'",
         r.returncode == 0 and "named in advance   no (" in r.stdout and "added after" in r.stdout
@@ -355,17 +354,18 @@ try:
     # Final review 2026-11-04 (medium): the arm run again AFTER the hypothesis was committed read "yes ... valid
     # because the hypothesis was committed before the run", while the test averaged in the run made before it.
     evh("run", "--system", "tickets_late_v1", "--dataset", "tickets_v1", "--goal", "tickets_summary")
-    r = evh("pair-test", "--dataset-id", "tickets_v1", "--a", "tickets_late_v1", "--b", "tickets_lead1_v1")
+    r = evh("pair-test", "tickets_v1", "--a", "tickets_late_v1", "--b", "tickets_lead1_v1")
     check(
         "pair-test: an arm with a run from before its hypothesis is not named in advance, though a later run is",
         r.returncode == 0 and "named in advance   no (" in r.stdout and "predate the hypothesis" in r.stdout
         and "uncorrected: valid because" not in r.stdout,
         out(r)[-2500:],
     )  # fmt: skip
-    r = evh("goals", "--goal", "tickets_summary", "--json")
+    r = evh("goal-leaderboard", "tickets_summary", "--json")
     late = [
         a
-        for g in (json.loads(r.stdout)["result"]["values"].get("groups") or [] if r.returncode == 0 else [])
+        for d in (json.loads(r.stdout)["result"]["datasets"] if r.returncode == 0 else [])
+        for g in d["groups"]
         for a in g.get("arms", [])
         if "tickets_late_v1" in str(a.get("arm"))
     ]
@@ -475,7 +475,6 @@ try:
     check("setup: a round with three arms in play", r.returncode == 0, out(r)[-300:])
     base = [
         "pair-test",
-        "--dataset-id",
         "tickets_v1",
         "--round",
         "r1",
@@ -512,7 +511,6 @@ try:
     for bad in ("0", "-2"):
         r = evh(
             "pair-test",
-            "--dataset-id",
             "tickets_v1",
             "--a",
             "tickets_lead2_v1",
@@ -523,7 +521,7 @@ try:
         )
         check(
             f"pair-test --family {bad}: refused in words, no traceback",
-            r.returncode != 0 and "--family must be at least 1" in r.stderr and "Traceback" not in r.stderr,
+            r.returncode != 0 and "family must be at least 1" in r.stderr and "Traceback" not in r.stderr,
             r.stderr[-300:],
         )
 finally:

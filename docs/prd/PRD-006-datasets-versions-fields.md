@@ -58,7 +58,7 @@ defines no field, a project declares its own
 - _As an engineer, I can correct a field later (`--update-fields`) without changing any run's
   fingerprint._
 - _As an engineer, I can filter a comparison to the items whose field matches, or break it down
-  by a choice or yes/no field, in the inspector or with `evh inspect --where … --by …`._
+  by a choice or yes/no field, in the inspector or with `evh comparison-show --where … --by …`._
 - _As an engineer, I can freeze items from URLs (`--manifest FILE`) and be refused when the
   bytes there are not the pinned ones._
 
@@ -71,7 +71,7 @@ defines no field, a project declares its own
 - **FR1.2**: `--from DATASET_ID` records `derived_from`: the parent and the item ids added,
   removed and changed. `evh validate` V2 fails a version whose parent is gone.
 - **FR1.3**: The catalog links versions both ways with what changed, and a version no arm has run
-  on yet gets a page when it is linked to one that has. `evh datasets --dataset-id …` says the
+  on yet gets a page when it is linked to one that has. `evh dataset-show …` says the
   same.
 
 ### FR2: Item fields

@@ -105,7 +105,6 @@ try:
         check(f"setup: {ds} with its gold and an arm on it", r.returncode == 0, out(r)[-300:])
     base = [
         "pair-test",
-        "--dataset-id",
         "tickets_v1",
         "--metric",
         "overlap_f1",
@@ -233,9 +232,9 @@ try:
         out(r),
     )
     r = evh(*base, "tickets_lead1_v2", "--b-dataset", "tickets_v2", "--round", "r1")
-    check("--b-dataset with --round: refused", r.returncode == 2 and "cannot be combined" in r.stderr, out(r))
-    r = evh("pair-test", "--dataset-id", "tickets_v1", "--a", "tickets_lead1_v1", "--b-dataset", "tickets_v2")
-    check("--b-dataset without --b: refused", r.returncode == 2 and "needs --a and --b" in r.stderr, out(r))
+    check("--b-dataset with --round: refused", r.returncode == 1 and "cannot be combined" in r.stderr, out(r))
+    r = evh("pair-test", "tickets_v1", "--a", "tickets_lead1_v1", "--b-dataset", "tickets_v2")
+    check("--b-dataset without --b: refused", r.returncode == 1 and "needs a and b" in r.stderr, out(r))
 
     # An arm scored against a different metric direction on each side.
     goal2 = _runstore.read_text(proj, "goals/tickets_v2.yaml")

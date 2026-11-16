@@ -30,7 +30,7 @@ git add data/rounds && git commit -qm "tickets_summary r1: open"
 ```text
 data/rounds/tickets_summary/r1.yaml: round r1 of tickets_summary, open
   Carried in as they are, their runs already count: tickets_lead1_v1, tickets_lead2_v1, tickets_lead2_noisy_v1 (they need not run again).
-  A NEW system joins it by running in it: evh run --system <id> --dataset tickets_v1 --goal tickets_summary --round r1; then: evh rounds --goal tickets_summary
+  A NEW system joins it by running in it: evh run --system <id> --dataset tickets_v1 --goal tickets_summary --round r1; then: evh round-list tickets_summary
   Commit the round file before the runs: an uncommitted file makes them dirty.
 ```
 
@@ -43,30 +43,28 @@ A round belongs to a goal and one dataset, and is a file beside the goal,
 ## 2. Read the evidence
 
 ```bash
-evh rounds --goal tickets_summary
+evh round-list tickets_summary
+evh round-show tickets_summary r1
+evh round-evidence tickets_summary r1
 ```
 <!-- guide-check: varies lead2_noisy -->
 ```text
-  r1   open    tickets_v1  3 arm(s), 0 retired
-
+r1   open    tickets_v1  3 arm(s), 0 retired
 r1 · open · tickets_v1
   hypothesis: how many leading sentences make the best one-line summary
-
-  on overlap_f1: 3 arm(s) in play, leader tickets_lead2_v1
-    tickets_lead1_v1                 not significant    Δ -0.2592  p 0.0312
-    tickets_lead2_noisy_v1           not significant    Δ -0.1011  p 0.0312
+r1 on overlap_f1: 3 arm(s) in play, leader tickets_lead2_v1
+  tickets_lead1_v1                 not significant    delta -0.2592  p 0.0312
+  tickets_lead2_noisy_v1           not significant    delta -0.1011  p 0.0312
   NOTE: cost per item: tickets_lead2_v1 $0.000000
-
-  suggested next:
-    - 2 arm(s) not significantly different from the leader (tickets_lead1_v1, tickets_lead2_noisy_v1): more items may tell them apart
-        evh rank-stability --dataset-id tickets_v1
-    - close the round with what it showed (tickets_lead2_v1 is already the baseline)
+  next: 2 arm(s) not significantly different from the leader (tickets_lead1_v1, tickets_lead2_noisy_v1): more items may tell them apart
+        evh rank-stability tickets_v1
+  next: close the round with what it showed (tickets_lead2_v1 is already the baseline)
         evh round-close --goal tickets_summary --round r1 --conclusion "..."
 ```
 
-`evh rounds` reads the evidence the way the inspector does (every arm in play against the
+`evh round-evidence` reads the evidence the way the inspector does (every arm in play against the
 round's leader, Holm-corrected) and suggests the next decision, each as the command that makes
-it. It decides nothing: you do, with the commands. Here every arm is behind `lead2` on every
+it; `evh round-list` lists the rounds and `evh round-show` gives one round as it is recorded. It decides nothing: you do, with the commands. Here every arm is behind `lead2` on every
 ticket and none is significantly different at six items, so the honest decisions are about wording, not
 winners.
 
@@ -88,7 +86,7 @@ round r1 of tickets_summary closed
 ```
 
 `--promote <run_id>` on `round-close` would also promote that run to the goal's baseline, with
-the conclusion as its reason; `lead2` already is the baseline, so `evh rounds` suggests closing
+the conclusion as its reason; `lead2` already is the baseline, so `evh round-list` suggests closing
 without it.
 A closed round refuses new runs.
 
@@ -96,7 +94,7 @@ A closed round refuses new runs.
 
 Round 2 continues round 1 (`--from r1`): it carries `lead2` in unchanged, drops `lead2_noisy` for
 a new version of it, and records the change and what the round sets out to learn. `--budget-usd`
-is what the round may spend; `evh rounds` sets its spend against it.
+is what the round may spend; `evh round-list` sets its spend against it.
 
 ```bash
 evh round-open --goal tickets_summary --dataset tickets_v1 --from r1 \
@@ -109,7 +107,7 @@ evh round-open --goal tickets_summary --dataset tickets_v1 --from r1 \
 ```text
 data/rounds/tickets_summary/r2.yaml: round r2 of tickets_summary, open
   Carried in as they are, their runs already count: tickets_lead2_v1 (they need not run again).
-  A NEW system joins it by running in it: evh run --system <id> --dataset tickets_v1 --goal tickets_summary --round r2; then: evh rounds --goal tickets_summary
+  A NEW system joins it by running in it: evh run --system <id> --dataset tickets_v1 --goal tickets_summary --round r2; then: evh round-list tickets_summary
 ```
 
 A new system joins a round by running in it, naming the round and its goal:
@@ -137,27 +135,25 @@ Every run records the round it ran in.
 ## 5. Read round 2, then close it
 
 ```bash
-evh rounds --goal tickets_summary
+evh round-list tickets_summary
+evh round-show tickets_summary r2
+evh round-evidence tickets_summary r2
 ```
 <!-- guide-check: varies tickets_lead2_noisy_v2 retire signifi -->
 ```text
-  r1   closed  tickets_v1  2 arm(s), 1 retired  lead2 is ahead of lead1 and lead2_noisy on all six tickets, not signifi
-  r2   open    tickets_v1  2 arm(s), 1 retired
-
+r1   closed  tickets_v1  2 arm(s), 1 retired
+r2   open    tickets_v1  2 arm(s), 1 retired
 r2 · open · tickets_v1 · from r1
   hypothesis: a noisy summariser that drops fewer words comes closer to lead2
   changed: tickets_lead2_noisy_v2: drops 5% of words instead of 20%
-  retired: tickets_lead2_noisy_v1 (replaced by v2, which drops fewer words)
   ...
-  on overlap_f1: 2 arm(s) in play, leader tickets_lead2_v1
-    tickets_lead2_noisy_v2           significant: worse Δ -0.0207  p 0.0312
+r2 on overlap_f1: 2 arm(s) in play, leader tickets_lead2_v1
+  tickets_lead2_noisy_v2           significant: worse delta -0.0207  p 0.03125
   NOTE: spent $0.0000 of $0.01
   NOTE: cost per item: tickets_lead2_v1 $0.000000
-
-  suggested next:
-    - retire tickets_lead2_noisy_v2
+  next: retire tickets_lead2_noisy_v2
         evh round-retire --goal tickets_summary --round r2 --arm tickets_lead2_noisy_v2 --reason "significantly worse than tickets_lead2_v1 on overlap_f1 after Holm (p 0.0312)"
-    - close the round with what it showed (tickets_lead2_v1 is already the baseline)
+  next: close the round with what it showed (tickets_lead2_v1 is already the baseline)
   ...
 ```
 
@@ -166,8 +162,8 @@ is not significant, and the first suggestion goes. The same comparison, as the i
 it, and the round's leaderboard:
 
 ```bash
-evh inspect --round r2
-evh leaderboard --dataset-id tickets_v1 --round r2
+evh comparison-show --round r2
+evh leaderboard tickets_v1 --round r2
 ```
 <!-- guide-check: varies tickets_lead2_noisy_v2 -->
 ```text
@@ -178,14 +174,14 @@ Same conditions: all ... recorded fields match (machine, libraries, harness, sco
   tickets_lead2_v1            3      0.9001       28.5000  0.000000         0.0        0.000000
 ```
 
-`inspect --round` reads the round on the goal's measure, against the round's leader; `--metric` and
+`comparison-show --round` reads the round on the goal's measure, against the round's leader; `--metric` and
 `--baseline` choose otherwise. One pair you named before reading the table is a `pair-test` within
 the round: A defaults to its leader and B to the baseline the round started from. Here they are the
 same arm, so name B. A leader the tool picked was chosen from the table, so the test corrects for the
 choice (Bonferroni over the other candidates); with two arms there is nothing to correct:
 
 ```bash
-evh pair-test --dataset-id tickets_v1 --round r2 --b tickets_lead2_noisy_v2
+evh pair-test tickets_v1 --round r2 --b tickets_lead2_noisy_v2
 ```
 <!-- guide-check: varies delta wins sign-flip verdict -->
 ```text
@@ -224,7 +220,7 @@ ERROR (not-allowed): --round r2: round r2 of tickets_summary is closed; open the
 
 `evh validate` (V14) checks the round files; `evh family-test --round r2` tests the round's leader
 against every other arm in play, as `pair-test --round` picks its pair. The catalog's goal page shows the rounds, newest
-first, with the open round's suggestions ([tutorial 5](5-catalog-and-inspector.md)); `evh goals
+first, with the open round's suggestions ([tutorial 5](5-catalog-and-inspector.md)); `evh goal-list
 --goal tickets_summary` lists them too, one line each, and marks the arms they retired.
 
 ## 6. A new version of the dataset
@@ -244,19 +240,16 @@ data/datasets/tickets_v2.json  (7 item(s))
 ```
 
 ```bash
-evh datasets
-evh datasets --dataset-id tickets_v2
+evh dataset-list
+evh dataset-show tickets_v2
 ```
 ```text
-  dataset     items  arms  systems  reference sets     made from
-  tickets_v1  6      5     5        silver/tickets_v1
-  tickets_v2  7      0     0        —                  tickets_v1
-tickets_v2: 7 items, 0 arms from 0 systems (a system rescored against silver or by a judge is an arm of its own)
-
-made from tickets_v1: 1 added, 0 removed, 0 changed
-  added: t07_reports
-
-no arm has run on it yet
+  dataset     version  items  arms  systems  reference sets     made from   tags  here
+  tickets_v1  v1.0     6      5     5        silver/tickets_v1
+  tickets_v2  v1.1     7      0     0        —                  tickets_v1
+tickets_v2  v1.1  7 items  (data/datasets/tickets_v2.json)
+  derived from tickets_v1: 1 added, 0 removed, 0 changed
+  0 arm(s) from 0 system(s) (a system rescored against silver or by a judge is an arm of its own)
 ```
 
 Nothing measured on `tickets_v1` moves: its runs, references and baseline stay its own. An arm

@@ -60,6 +60,18 @@ def evh(*args, extra=None):
                           capture_output=True, text=True, stdin=subprocess.DEVNULL)  # fmt: skip
 
 
+def study_of(goal, study):
+    """The study as `evh study-show` gives it (its trials, its outcome), {} when there is none."""
+    return result_of(evh("study-show", goal, study, "--json"))
+
+
+def result_of(r):
+    try:
+        return json.loads(r.stdout).get("result") or {}
+    except ValueError:
+        return {}
+
+
 def values(r):
     try:
         return (json.loads(r.stdout).get("result") or {}).get("values") or {}
@@ -120,7 +132,7 @@ try:
                 "space:\n  groups:\n    - {name: length, reason: how much to keep, params: {sentences: [2, 3, 4]}}\n")  # fmt: skip
     dry = evh("study-run", "g/s1", "--spec", grid, "--dry-run")
     r = evh("study-run", "g/s1", "--json")
-    st = values(evh("studies", "--study", "g/s1", "--json")).get("study") or {}
+    st = study_of("g", "s1")
     outs = {t["change"]["params"]["sentences"]: t["outcome"] for t in st.get("trials", [])}
     rounds = [
         _runstore.read_json(proj, f"rounds/g/{n}") if n.endswith(".json") else None
@@ -130,7 +142,7 @@ try:
         "a grid study: sentences 2 kept, 3 and 4 dropped (measured against the best so far), the space exhausted",
         dry.returncode == 0 and "Nothing was called" in dry.stdout and r.returncode == 0
         and outs == {2: "kept", 3: "dropped", 4: "dropped"} and st.get("status") == "ended"
-        and (st.get("best") or {}).get("system_id") == "s1-t1",
+        and st.get("best") == "s1-t1",
         (dry.stderr[-200:], r.stderr[-600:], outs, st.get("status")),
     )  # fmt: skip
     import yaml
@@ -176,7 +188,7 @@ try:
     plain = evh(
         "round-open", "--goal", "g", "--dataset", "tk_val", "--hypothesis", "a plain round beside the study"
     )
-    st2 = values(evh("studies", "--study", "g/s2", "--json")).get("study") or {}
+    st2 = study_of("g", "s2")
     by_hand = evh(
         "round-close", "--goal", "g", "--round", str(st2.get("round")), "--conclusion", "closed by hand here"
     )
@@ -190,9 +202,9 @@ try:
         proj, "studies/g/s2.yaml", _runstore.read_text(proj, "studies/g/s2.yaml") + "# edited\n"
     )
     stopped = evh("study-ask", "g/s2")
-    st2 = values(evh("studies", "--study", "g/s2", "--json")).get("study") or {}
+    st2 = study_of("g", "s2")
     check("a spec changed mid-study stops it, with the reason",
-          stopped.returncode != 0 and st2.get("status") == "ended" and "changed" in str((st2.get("end") or {}).get("reason")),
+          stopped.returncode != 0 and st2.get("status") == "ended" and "changed" in str(st2.get("end")),
           (stopped.stderr[-300:], st2.get("end")))  # fmt: skip
 
     # ── the agent sampler as MCP tools (owner, 2026-11-09): the agent's own actor on what it does ──────────────────
@@ -217,7 +229,7 @@ try:
             return asked, told
 
     asked, told = asyncio.run(over_mcp())
-    st5 = values(evh("studies", "--study", "g/s5", "--json")).get("study") or {}
+    st5 = study_of("g", "s5")
     t5 = (st5.get("trials") or [{}])[0]
     check(
         "study-ask and study-tell as MCP tools: the trial run and kept, recorded as the agent's for its person",
@@ -235,11 +247,11 @@ try:
     cmd = spec("cmd", "dataset: tk_val\nbaseline: {system: one_v1}\nmeasure: overlap_f1\n"
                f"sampler: {{command: '{sys.executable} sampler.py'}}\naccept: {{point: {{min_gain: 0}}}}\nstop: {{trials: 4}}\n")  # fmt: skip
     r = evh("study-run", "g/s3", "--spec", cmd)
-    st3 = values(evh("studies", "--study", "g/s3", "--json")).get("study") or {}
+    st3 = study_of("g", "s3")
     check(
         "a command sampler speaking ask/tell: its one proposal kept, then it stops the study",
         r.returncode == 0 and [t["outcome"] for t in st3.get("trials", [])] == ["kept"]
-        and "sampler stopped" in str((st3.get("end") or {}).get("reason")),
+        and "sampler stopped" in str(st3.get("end")),
         (r.stderr[-400:], st3.get("end")),
     )  # fmt: skip
 
@@ -247,7 +259,7 @@ try:
     d = evh("study-confirm", "g/s1", "--test", "tk_test", "--rule", "superiority", "--dry-run")
     c = evh("study-confirm", "g/s1", "--test", "tk_test", "--rule", "superiority", "--json")
     conf = values(c).get("confirm") or {}
-    looks = (values(evh("looks", "--dataset", "tk_test", "--json")).get("sets") or [{}])[0]
+    looks = (result_of(evh("looks", "--dataset", "tk_test", "--json")).get("sets") or [{}])[0]
     check(
         "study-confirm: the dry run runs nothing; then one look at 1.52% on the 12 test items, the trial better, "
         "promotion suggested",
@@ -316,9 +328,9 @@ try:
     evh("study-run", "g/s7", "--spec", wspec)
     (proj / "wrap.py").write_text((proj / "wrap.py").read_text() + "LIMIT = 3\n")
     sc = evh("study-ask", "g/s7")
-    st7 = values(evh("studies", "--study", "g/s7", "--json")).get("study") or {}
+    st7 = study_of("g", "s7")
     check("the scoring code changed mid-study (the baseline's adapter): the study stops, saying so",
-          sc.returncode != 0 and "scoring code changed" in str((st7.get("end") or {}).get("reason")), (sc.stderr[-300:], st7.get("end")))  # fmt: skip
+          sc.returncode != 0 and "scoring code changed" in str(st7.get("end")), (sc.stderr[-300:], st7.get("end")))  # fmt: skip
 
     # ── a study killed mid-trial, resumed ─────────────────────────────────────────────────────────────────────────
     import signal
@@ -343,7 +355,7 @@ try:
     os.killpg(pk.pid, signal.SIGKILL)
     pk.wait(timeout=30)
     res = evh("study-run", "g/s8", "--resume")
-    st8 = values(evh("studies", "--study", "g/s8", "--json")).get("study") or {}
+    st8 = study_of("g", "s8")
     outs8 = [(t.get("k"), t.get("outcome")) for t in st8.get("trials", [])]
     check(
         "a study killed mid-trial and resumed: the interrupted trial recorded as such, the grid tried again after it",
@@ -352,12 +364,12 @@ try:
         (res.stdout[-400:], res.stderr[-300:], outs8),
     )  # fmt: skip
 
-    # ── the goal's page and evh goals show the studies ────────────────────────────────────────────────────────────
-    gv = evh("goals", "--goal", "g")
+    # ── the goal's page and evh goal-list show the studies ────────────────────────────────────────────────────────────
+    gv = evh("goal-leaderboard", "g")
     cat = evh("catalog")
     page = (proj / ".build" / "catalog" / "g" / "g.html").read_text() if cat.returncode == 0 else ""
     check(
-        "the goal's page: each study's trials (change, hypothesis, outcome, why), its confirmation; evh goals too",
+        "the goal's page: each study's trials (change, hypothesis, outcome, why), its confirmation; evh goal-list too",
         "studies: research, then one confirmation" in page and "sentences = 2" in page and "confirmed on tk_test" in page
         and "study s1: ended" in gv.stdout and "confirmed on tk_test: better" in gv.stdout,
         (cat.stderr[-300:], gv.stdout[-600:]),
@@ -369,8 +381,8 @@ try:
         "a1b2c3d\t0.997\t44.0\tkeep\tbaseline\nb2c3d4e\t0.993\t44.2\tkeep\tbigger lr\nc3d4e5f\t1.005\t44.0\tdiscard\tswiglu\n"
     )  # fmt: skip
     imp = evh("study-import", "results.tsv", "--goal", "g", "--study", "karpathy")
-    st4 = values(evh("studies", "--study", "g/karpathy", "--json")).get("study") or {}
-    ls = values(evh("studies", "--json")).get("studies") or []
+    st4 = study_of("g", "karpathy")
+    ls = [x for g in result_of(evh("goal-list", "--json")).get("goals") or [] for x in g["studies"]]
     check(
         "results.tsv: a closed study of 3 trials (2 kept, 1 dropped), listed with the others",
         imp.returncode == 0 and [t["outcome"] for t in st4.get("trials", [])] == ["kept", "kept", "dropped"]

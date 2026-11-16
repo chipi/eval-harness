@@ -123,9 +123,9 @@ if c.get("umami_src") and c.get("website_id"):
     d = f' data-domains="{html.escape(c["domains"])}"' if c.get("domains") else ""
     print(f'<script defer src="{html.escape(c["umami_src"])}" data-website-id="{html.escape(c["website_id"])}"{d}></script>')
 PY
-# The goals' tests the build runs are kept (stats' EVH_P_CACHE), so the MCP server's commands, each
-# a fresh process, read them instead of drawing them again (~50 s a view without it). The file is
-# part of the release, read-only on the box.
+# The goals' tests the build runs are kept (stats' EVH_P_CACHE), so the MCP server, which answers in its own process
+# and starts empty, reads them instead of drawing them again (~50 s a view without it). The file is part of the
+# release, read-only on the box.
 mkdir -p "$OUT/inspector/cache"
 EVH_P_CACHE="$OUT/inspector/cache/evh-p.jsonl" \
   EVAL_HOME="$OUT/inspector" python3 "$OUT/inspector/pkg/evaluation_harness/catalog_build.py" \
@@ -136,9 +136,9 @@ EVH_P_CACHE="$OUT/inspector/cache/evh-p.jsonl" \
   --repo "https://github.com/${GITHUB_REPOSITORY:-chipi/eval-harness}/blob/main/"
 rm -rf "$OUT/inspector/examples" "$OUT/catalog-head.html"
 # The MCP server's answers to the tools that take no argument, written ahead from the release as the box
-# serves it (after the examples are gone, with the box's EVAL_BUILD_REF): each call is a fresh process,
-# several seconds of CPU, and the server's cpus 0.5 made the first goals after each start and each hour
-# take 33 s (`evh mcp --write-answers`; served by --answers in compose.yml).
+# serves it (after the examples are gone, with the box's EVAL_BUILD_REF): a view is several seconds of CPU, and the
+# server's cpus 0.5 made the first call after each start take 33 s (`evh mcp --write-answers`; served by --answers in
+# compose.yml).
 EVH_P_CACHE="$OUT/inspector/cache/evh-p.jsonl" EVAL_HOME="$OUT/inspector" EVAL_BUILD_REF=deployed \
   PYTHONDONTWRITEBYTECODE=1 python3 "$OUT/inspector/pkg/evaluation_harness/mcp_server.py" \
   --project "$OUT/inspector" --public --write-answers "$OUT/inspector/cache/mcp-answers.jsonl"
@@ -193,8 +193,9 @@ if left="$(grep -rnoE --exclude='*.js' --exclude='*.map' '__[A-Z][A-Z0-9_]+__' "
 fi
 # What a release must never carry, whatever the checkout it was rendered from holds: reference texts git does not
 # track (a gold reference is not committed; a working copy may have fetched it) and materialized items; and what it
-# must carry: the goals' tests and the MCP answers written ahead from the release's own goals (they were once written
-# from an empty project, and the public server said there were no goals), and, in SQLite, the one sealed database. The
+# must carry: the goals' tests and the MCP answers written ahead from the release's own goals (its `goal-list` answer
+# lists every goal; they were once written from an empty project, and the public server said there were no goals), and,
+# in SQLite, the one sealed database. The
 # tracked references (the synthetic smoke_v1 silver) are public already. The checks read the release through its own
 # store (_release.py check), so they hold in files and in SQLite alike; the list is built whole, never cut by `head`
 # in a pipe (under pipefail that once killed `find` with SIGPIPE and the check passed with 1,657 texts in the release,

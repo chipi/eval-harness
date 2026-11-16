@@ -35,8 +35,8 @@ evh label-from-run --run <its run_id> --set best_v1                 # optional: 
 evh reference-promote --dataset-id my_v1 --labels best_v1 --tier silver \
     --reason "the best system we have ranks the rest" --by me          # ...promoted to silver
 evh run --system <id> --dataset my_v1 --repeat 3        # + its own noise
-evh leaderboard --dataset-id my_v1                                 # the ranking, and whether it is real
-evh family-test --dataset-id my_v1 --a arm_a_v1 --against arm_     # is the winner significantly better?
+evh leaderboard my_v1                                 # the ranking, and whether it is real
+evh family-test my_v1 --a arm_a_v1 --against arm_     # is the winner significantly better?
 evh run-promote --run <run_id> --reason "what the tests showed"    # the choice, with why
 ```
 
@@ -237,7 +237,7 @@ eval uses it:
 ```bash
 evh model-onboard my-model --deployment laptop   # its build, whether it reasons, JSON, determinism, speed
 evh arm-smoke --system my_system_v1 --dataset my_v1   # a few items with the system's own settings, before the full run
-evh models                                       # which models are onboarded, vetted, and where they run
+evh model-list                                       # which models are onboarded, vetted, and where they run
 ```
 
 `model-onboard` and `arm-smoke` call the model (a few calls each, billed like any other); `models`
@@ -267,7 +267,7 @@ of the same query and make a new label set from it (tutorial 6 §5).
 
 Labels are not reference sets: arms are scored against a label set as it is, and a reference set is labels promoted on
 purpose, at the tier chosen then. Production's own decisions become an arm (`evh arm-from-capture`), scored like any;
-`evh inspect --sheet --dataset-id prod_v1 --runs …` shows each item's outputs, scores, labels and signals (wrong,
+`evh sheet-show prod_v1 --runs …` shows each item's outputs, scores, labels and signals (wrong,
 disagree, new) to pick the ones worth keeping (`evh pick`); `evh dataset-extend` makes the next version of a governed dataset from
 them; `evh deploy-sheet` says what production must match to run what you promoted, and whether a capture shows it
 did. Importers for
@@ -309,9 +309,9 @@ A dataset accumulates arms across system versions, and v1 and v2 of one arm are 
 measurements that must not share a row:
 
 ```
-evh leaderboard --dataset-id my_v1 --match _v2    only the v2 arms
-evh leaderboard --dataset-id my_v1 --round r2     only the arms in play in a round
-EVAL_RUNS_DIR=<dir> evh leaderboard --dataset-id my_v1   run or read somewhere else
+evh leaderboard my_v1 --match _v2    only the v2 arms
+evh leaderboard my_v1 --round r2     only the arms in play in a round
+EVAL_RUNS_DIR=<dir> evh leaderboard my_v1   run or read somewhere else
 ```
 
 `EVAL_RUNS_DIR` is how a smoke pass avoids adding repeats to a real sweep's arms and
@@ -361,7 +361,7 @@ bundled adapter a pinned project has is `evaluation_harness/adapter.py`.
 | `scripts/judge_score.py`, `scripts/judging.py` | the judge scorer: gate, judging set, verdicts, projection; prompt, parser, judge client |
 | `scripts/catalog_build.py`, `scripts/catalog_serve.py`, `catalog_assets/` | the catalog's pages, and the run inspector; `catalog_periods.py` the period (from today) and the trends, `catalog_arms.py` the arms page |
 | `scripts/catalog_adapter.py` | what the catalog asks of a project's data, and `HarnessAdapter`, the answer for this layout |
-| `scripts/catalog_views.py`, `scripts/view_*.py` | the catalog and the inspector in the terminal: `evh overview`, `activity`, `datasets`, `arms`, `references`, `metrics`, `goals`, `inspect` |
+| `scripts/catalog_views.py`, `scripts/view_*.py` | the catalog and the inspector in the terminal: `evh overview-show`, `activity`, `datasets`, `arms`, `references`, `metrics`, `goals`, `inspect` |
 | `tests/` | this repository's tests (`make test`, `tests/self_test.py`) and the GUIDE and the offline tutorials run in a fresh project (`make guide-check`); not in the package. The ones that run `evh` install the real wheel (`tools/_wheel.py`, which the deploy uses too). `scripts/test_stats.py` ships: `evh self-test` runs it |
 | `tools/` | this repository's report checks (`check_report_claims.py` and friends), judge validations and `*_report.py` tables; not in the package |
 | `tests/test_inspector_browser.py`, `requirements-browser.txt` | the catalog and the inspector in headless Chromium: `make browser-install`, then `make browser-check` |

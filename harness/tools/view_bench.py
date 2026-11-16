@@ -41,7 +41,6 @@ DEFAULT_VIEWS = (
     "overview-show",
     "arm-list",
     "goal-leaderboard {goal}",
-    "goals",
     "dataset-arm-list {dataset}",
     "metric-list",
     "dataset-list",

@@ -6,7 +6,7 @@
     evh sheet-import sheet.csv --dataset-id tickets_v1 --by owner --scorer owner_picks
     evh sheet-import sheet.csv --dataset-id tickets_v1 --by owner --tags first --modes summaries
 
-A person, or any AI tool, fills the empty columns of a sheet `evh inspect --sheet … --csv sheet.csv --fill …` wrote,
+A person, or any AI tool, fills the empty columns of a sheet `evh sheet-export … --csv sheet.csv --fill …` wrote,
 and one command reads back whatever was filled. The records stay two kinds, because they mean different things: a
 label says what is right for the item and scores any arm, a later one too; a judgement says which of these arms did
 best and cannot score an arm added next week.
@@ -113,7 +113,7 @@ def main() -> int:
         rows, choices = read_csv(args.sheet)
         if not rows or "item_id" not in rows[0]:
             die(
-                f"{args.sheet}: a sheet has the column item_id (evh inspect --sheet … --csv writes one)",
+                f"{args.sheet}: a sheet has the column item_id (evh sheet-export … --csv writes one)",
                 "invalid-file",
             )
         head = list(rows[0])
@@ -212,7 +212,7 @@ def _import_tags(
         f"data/tags/{args.dataset_id}/{args.tags}: {doc['n_tagged']} output(s) read in {len(tags)} run(s), "
         f"modes of {args.modes} · {args.kind} {args.by}"
     )
-    print(f"  the counts: evh tags --dataset-id {args.dataset_id}")
+    print(f"  the counts: evh tag-set-list {args.dataset_id}")
     return 0
 
 
@@ -374,9 +374,7 @@ def _write(args: argparse.Namespace, judged: dict[str, Any], sheet_sha: str) -> 
     print(
         f"judged/{args.scorer}: {written} score(s), {n} judgement(s), {metric}, unvalidated · {args.kind} {args.by}"
     )
-    print(
-        f"  look at it: evh inspect --sheet --dataset-id {args.dataset_id} --runs {','.join(a['arm'] for a in key['arms'])}"
-    )
+    print(f"  look at it: evh sheet-show {args.dataset_id} --runs {','.join(a['arm'] for a in key['arms'])}")
 
 
 if __name__ == "__main__":

@@ -15,7 +15,7 @@ written for it (EVAL_DATA_DIR), whose right answer is worked out below by hand:
   - classification_report: accuracy, macro-F1 and the worst class on a two-class set;
   - each of the three refuses, naming the fix, when the gold references are only a manifest;
   - goal_decisions: on this repository's goals, one row per goal with a deciding dataset, the
-    recommendation `evh goals` prints for the same goal.
+    recommendation `evh goal-list` prints for the same goal.
 """
 
 from __future__ import annotations
@@ -309,7 +309,7 @@ def test_manifest_only(tmp: Path) -> None:
 
 def test_goal_decisions() -> None:
     """On this repository's own goals and runs: one row per goal and deciding dataset, and the
-    recommendation `evh goals` prints for that goal."""
+    recommendation `evh goal-list` prints for that goal."""
     r = tool("goal_decisions.py", None)
     check("goal_decisions: runs on the repository", r.returncode == 0, r.stderr[-300:])
     try:
@@ -325,7 +325,7 @@ def test_goal_decisions() -> None:
     env = {k: v for k, v in os.environ.items() if k not in ("EVAL_HOME", "EVAL_DATA_DIR")}
     env["EVAL_STORE"] = "files"  # this repository's own data, which is files
     g = subprocess.run(
-        [sys.executable, "-m", "evaluation_harness", "goals"],
+        [sys.executable, "-m", "evaluation_harness", "goal-list"],
         cwd=HARNESS,
         capture_output=True,
         text=True,
@@ -354,7 +354,7 @@ def test_goal_decisions() -> None:
     # Every recommendation the CLI names must be one of the goal's rows here.
     differ = [gid for gid, recs in cli.items() if any(r not in by_goal.get(gid, set()) for r in recs)]
     check(
-        "goal_decisions: each goal's recommendation is the one `evh goals` prints",
+        "goal_decisions: each goal's recommendation is the one `evh goal-list` prints",
         bool(cli) and not differ,
         f"differ: {differ}; cli {cli}",
     )

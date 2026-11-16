@@ -40,8 +40,8 @@ It also fixes how data moves between releases, a deployed project included.
   has runs in two folders.
 - **A round's arms are worked out, not stored:** the configs whose runs name the round (`round:` in the config),
   plus carried, less retired (`_rounds.arms_of`).
-- **Views are computed inside commands.** `evh rounds` computes a round's evidence (each arm against the leader,
-  Holm), `evh goals`, `evh leaderboard` and `catalog_build` (172 functions) compute theirs, each on its own.
+- **Views are computed inside commands.** `evh round-list` computes a round's evidence (each arm against the leader,
+  Holm), `evh goal-list`, `evh leaderboard` and `catalog_build` (172 functions) compute theirs, each on its own.
 - **The store is a file system.** `_store` reads and writes by path; in a SQLite project each key is a path and
   each value that file's bytes.
 - **Migration** is `evh migrate`: four steps that each recognise old data by its shape. The project records no
@@ -146,13 +146,13 @@ parsers.
 ### Views
 
 Where a goal stands and its next step, a round's evidence (each arm against the leader, Holm: the raw p and its
-threshold; what `evh rounds` would suggest; why nothing is promoted), the leaderboard, a comparison, a dataset's
+threshold; what `evh round-list` would suggest; why nothing is promoted), the leaderboard, a comparison, a dataset's
 label coverage: each is a read operation and a resource (`GET /api/v1/goals/{id}/status`,
 `/goals/{id}/rounds/{r}/evidence`, `/goals/{id}/leaderboard`, …). They are computed from what is stored when read,
 never stored as data; a cache keyed by what they were computed from is cleared by any write to it.
 
 **The catalog renders these views.** `catalog_build` stops computing its own, so the catalog, the Workbench and the
-command line give the same numbers. (The Workbench mockup showed r4's statistics with a test `evh rounds` does not
+command line give the same numbers. (The Workbench mockup showed r4's statistics with a test `evh round-list` does not
 use, eight reviews in; one computation, read everywhere, is the fix.)
 
 ### Stores
@@ -226,11 +226,11 @@ and the Workbench's screens that need it are wired behind it.
 0. The skeleton: `model/` (the entity table, schemas, layout), `ops/` (the registry, its kinds), the surfaces made
    from it (argparse, API routes, MCP), the project format and the numbered migrations (`--check`, verify by views,
    the frozen fixtures), the format gate in `render.sh`; `data-put`'s file argument checked (above).
-1. Goals and the goal's status view: proves the stack end to end (`evh goals`, `GET /goals`, the Workbench's home).
+1. Goals and the goal's status view: proves the stack end to end (`evh goal-list`, `GET /goals`, the Workbench's home).
 2. Models and deployments, apart (a migration step). Built 2026-11-13 as format 2 (`m0002_deployments`): a
    deployment keeps an `order` (the record's list order, which the views keep) and its checks of three kinds,
    `onboarding`, `smoke` (with its arm's config id) and `approval` (`deployment-accept`); a smoke is placed on the
-   deployment its config names, else the model's only one, else refused. The 65 `evh models` views and 64 model pages
+   deployment its config names, else the model's only one, else refused. The 65 `evh model-list` views and 64 model pages
    of this repository were compared before and after: none differ.
 3. Prompts and systems (configs become systems; a migration step). Built 2026-11-13 as format 3 (`m0003_systems`):
    451 configs became 299 systems (146 groups that differed only in their dataset merged, 155 ids renamed, listed in
@@ -389,12 +389,12 @@ Quoted from the discussion, typing slips corrected.
     it entered (ran in the round, carried or adopted from an earlier one) and who added it, and its retirement
     (when, who, why); `carried` and `retired` go; a run made in a round joins its system's arm or adds one, and
     keeps `round` and `goal` as where it came from; format 5 writes each round's arms from what is read today
-    (membership as `evh rounds` computes it, runs read through the round's scorer);
+    (membership as `evh round-list` computes it, runs read through the round's scorer);
   - an arm is a system read under one label: a silver, judged or adjudicated scoring of its runs is another
     scoring, not another arm;
   - the rounds that only retired re-timings, repeats or pair runs get those as arms read under their label, retired
     with the reason recorded;
-  - one evidence computation (`model/rounds.evidence`) read by `evh rounds`, the goal page for every round,
+  - one evidence computation (`model/rounds.evidence`) read by `evh round-list`, the goal page for every round,
     `inspect --round`, pair-test's and family-test's `--round`, `leaderboard --round` and the API's
     `/goals/{id}/rounds/{r}/evidence`, its leader by the catalog's rules (gold first; no judged arm and no
     reference author leads); a closed round's "best" that moves under them is shown before the commit;
@@ -448,7 +448,7 @@ Quoted from the discussion, typing slips corrected.
 - **Step 8, the catalog onto the views** (after an inventory, each recommendation checked against the code: most
   numbers come from functions the catalog and `evh` share, not from model views; where a model view exists it is a
   second implementation; all agreed on this repository's data), "build/fix all of those issues":
-  - one goal decision in the model (answers, groups, leader, contenders, axes), read by the goal pages, `evh goals`,
+  - one goal decision in the model (answers, groups, leader, contenders, axes), read by the goal pages, `evh goal-list`,
     the overview, `leaderboard` and `GET /goals/{id}/leaderboard`; one leader rule for rounds and goals (the round's
     left in arms with too few items or the wrong format, which a goal never recommends);
   - the overview's leader-against-baseline test is corrected for the arms the leader was chosen from, as the round
@@ -498,6 +498,32 @@ Quoted from the discussion, typing slips corrected.
     compose.yml's container limits: 4,481 files against 12,174, the catalog and 2,905 comparisons and 38 MCP calls the
     same bytes from both, the inspector's peak resident memory 208.6 MB on SQLite (206.7 files), 49.8% of 384 MiB by
     `docker stats`. A first request on the old code: `/api/health` 200, a comparison 500.
+  - built (P2, "every legacy read is an operation or goes; MCP in the server's process", owner 2026-11-16: no outside
+    caller, so no old name or shape is kept, and a tool is named as its operation): the 16 commands that read a view
+    through a script of their own, the 26 scripts, and the process path the MCP server ran a read by (the API's was
+    removed before) are gone. Of the 40 tools of the old server 8 were answered by an operation, 8 in part (`datasets`,
+    `references`, `models`, `goals`, `captures`, `labels`, `tags`, `inspect`: the operations got what they lacked, the
+    catalog's columns and periods, `--arms`/`--top`, the label sets' agreement, the inspector's analysis and its per-item
+    reads as `comparison-*` and `sheet-show`) and 24 had none (the plan counted 8, 9 and 23: `prompt-diff` was counted as answered in part by `prompt-show`, which gives no diff;
+    `leaderboard`, `pair-test`, `family-test`, `validate`, `dataset-items`, `search`, ...: made operations, their print-style bodies run in the process under a lock with
+    their printed blocks collected, `ops/legacy.py`). A tool is a read operation (71, 61 public), answered in the
+    server's process with the public flag of the call (`_visibility.public_call`: a contextvar, as a command's
+    `EVH_PUBLIC` was), its answer the operation's structured result; `--write-answers` still writes ahead, `render.sh`'s
+    check reads its `goal-list` answer, `deploy.sh`'s smoke calls `goal-list`. Measured on this repository, both stores,
+    the old tools against the new, each call twice, validate (27 s either way) left out: 150.6 s first and 124.2 s repeat
+    against 26.5 s and 9.8 s on files, 157.1 s and 118.2 s against 27.0 s and 8.3 s on SQLite; the 40 views computed
+    from every arm's scores 136.9 s and 111.1 s against 19.4 s and 2.9 s (files). Under compose.yml's limits (the pinned
+    image, 512m, cpus 0.5, the release read-only, two callers at once, no `--answers`): HEAD's 38 calls twice cost a
+    caller 294 to 313 s, the 26 now 45 to 51 s (three runs a store); the first `goals` was 15.4 s (files) and 16.0 s
+    (SQLite) and the first `goal-list` now 7.4 and 8.0 s, the views after it 0.3 to 2.5 s (they were 12 to 16 s each),
+    a leaderboard 4.5 to 11.3 s (10 to 24 s), a repeat 0.0 s; with `--answers`, as deployed, the first `goal-list` is
+    0.08 s. Memory: the server's resident peak 277 to 287 MB where HEAD's was 93 MB plus two children, the container's
+    peak 384 to 401 MB of 512 where HEAD's was 508 to 511 MB, `docker stats` 237 to 261 MiB (46 to 51 %), no OOM and no
+    restart. Two callers asking for one view at once had each computed it (the CPU at cpus 0.5 shared: 67 to 207 s a
+    caller); the view cache keeps one computation in flight per key now, the second caller waits for it. A call past
+    `--timeout`, or cancelled, stops being waited for but is not stopped: a computation in the server's process runs
+    to its end. The old server refused the tools that take two path arguments (`arm-show`, `reference-show`): it sorted
+    a call's arguments by name.
   - built (P1b, deterministic release): the same data makes the same database, byte for byte (each file goes in with one
     modification time, the seal writes the database again whole); two builds from two checkouts of one commit are one
     sha256 (they were 2,624 of 58,965 pages apart). Deploy transfer by `rsync --checksum --link-dest`, delta on: no data

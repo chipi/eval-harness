@@ -172,7 +172,7 @@ try:
         (proj / "data").mkdir(parents=True)
         if cfgtext is not None:
             (proj / "config.yaml").write_text(cfgtext)
-        r = evh(proj, "datasets")
+        r = evh(proj, "data-ls")
         check(
             f"a project with {label}: a data command is ERROR (not-configured) with the explanation",
             r.returncode == 1 and r.stderr.startswith("ERROR (not-configured)") and explains(r.stderr),
@@ -189,7 +189,7 @@ try:
             r.returncode != 0 and "not-configured" in r.stderr,
             (r.returncode, r.stderr[-200:]),
         )
-        r = evh(proj, "datasets", EVAL_STORE="files")
+        r = evh(proj, "data-ls", EVAL_STORE="files")
         check(
             f"a project with {label}: EVAL_STORE names the store, the command runs",
             r.returncode == 0,
@@ -211,7 +211,7 @@ try:
     )
     (base / "badcfg" / "data").mkdir(parents=True)
     (base / "badcfg" / "config.yaml").write_text("store: tape\n")
-    r = evh(base / "badcfg", "datasets")
+    r = evh(base / "badcfg", "dataset-list")
     check(
         "a config.yaml naming a store that is none: ERROR (invalid-file)",
         r.stderr.startswith("ERROR (invalid-file)"),

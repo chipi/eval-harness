@@ -217,7 +217,7 @@ goal file and its allowed values:
 Evals go round on round, and the reasons an arm was dropped are the first thing lost. An
 optional round ([ADR-0004](../../docs/adr/ADR-0004-eval-rounds.md)) records what it set out
 to learn, what changed, which arms it carried in and which it dropped and why, and what it
-concluded. `evh rounds` suggests the next decision from the evidence, as a command; it never
+concluded. `evh round-list` suggests the next decision from the evidence, as a command; it never
 makes one. A closed round refuses new runs, so its evidence cannot grow after its conclusion.
 
 A round also records the scorer it is judged by. Scoring may change between rounds (a rule the

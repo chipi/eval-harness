@@ -200,7 +200,7 @@ def main() -> int:
         )
 
     print(f"\n  {changed_arms} arm(s) changed. Written as scores read as {args.label!r}")
-    print(f"  evh leaderboard --dataset-id {args.dataset_id} --label {args.label}")
+    print(f"  evh leaderboard {args.dataset_id} --label {args.label}")
     return 0
 
 

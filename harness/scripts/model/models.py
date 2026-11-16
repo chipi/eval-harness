@@ -34,7 +34,7 @@ DEPLOYMENT = Entity(
 )
 
 
-#: The onboarding status a record's chip and `evh models --status` name, by the status it records.
+#: The onboarding status a record's chip and `evh model-list --status` name, by the status it records.
 STATUS = {"pass": "vetted", "check": "check"}
 
 

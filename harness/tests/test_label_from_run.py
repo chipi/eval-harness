@@ -230,7 +230,7 @@ try:
         "--reference-id",
         "silver/tickets_v1",
     )
-    board = evh("leaderboard", "--dataset-id", "tickets_v1", "--label", "silver")
+    board = evh("leaderboard", "tickets_v1", "--label", "silver")
     check(
         "promoted: the leaderboard marks the arm that wrote the reference, and says why",
         r.returncode == 0

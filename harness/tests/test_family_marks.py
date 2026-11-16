@@ -55,7 +55,6 @@ try:
             sys.executable,
             str(HERE / "cli.py"),
             "family-test",
-            "--dataset-id",
             "ds",
             "--a",
             "arm_a",

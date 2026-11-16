@@ -103,7 +103,7 @@ try:
     r = evh("validate")
     check("validate: a record with run_metrics passes the schema", r.returncode == 0, r.stdout[-600:])
 
-    r = evh("leaderboard", "--dataset-id", "tickets_v1", "--json")
+    r = evh("leaderboard", "tickets_v1", "--json")
     lb = json.loads(r.stdout) if r.returncode == 0 else {}
     cols = [c for b in (lb.get("result") or {}).get("blocks", []) for c in b.get("columns", [])]
     check(
@@ -115,7 +115,6 @@ try:
     for cmd in (
         (
             "pair-test",
-            "--dataset-id",
             "tickets_v1",
             "--a",
             "one_v1",
@@ -126,7 +125,6 @@ try:
         ),
         (
             "family-test",
-            "--dataset-id",
             "tickets_v1",
             "--a",
             "one_v1",
@@ -144,24 +142,22 @@ try:
             and "Traceback" not in out(r),
             out(r)[-400:],
         )
-    r = evh("inspect", "--runs", "one_v1,two_v1", "--metric", "share_longer")
+    r = evh("comparison-show", "--runs", "one_v1,two_v1", "--metric", "share_longer")
     check(
-        "inspect --metric <run-level>: said it cannot be tested, with each arm's recorded value, and what was compared",
+        "comparison-show --metric <run-level>: said it cannot be tested, with each arm's recorded value, and what was compared",
         r.returncode == 0
         and "share_longer has no score per item for these runs, so it cannot be tested: recorded per run as"
         in r.stdout
         and "Compared on overlap_f1 instead" in r.stdout,
         out(r)[-700:],
     )
-    r = evh("inspect", "--runs", "one_v1,two_v1")
+    r = evh("comparison-show", "--runs", "one_v1,two_v1")
     check(
-        "inspect: with no --metric, a per-item metric is compared, not the run-level one",
+        "comparison-show: with no --metric, a per-item metric is compared, not the run-level one",
         r.returncode == 0 and "share_longer" not in r.stdout.splitlines()[0] if r.stdout else False,
         out(r)[-500:],
     )
-    r = evh(
-        "pair-test", "--dataset-id", "tickets_v1", "--a", "one_v1", "--b", "two_v1", "--metric", "overlap_f1"
-    )
+    r = evh("pair-test", "tickets_v1", "--a", "one_v1", "--b", "two_v1", "--metric", "overlap_f1")
     check("pair-test: a per-item metric of the same runs still tests", r.returncode == 0, out(r)[-300:])
 
     (proj / "adapter.py").write_text(

@@ -268,7 +268,7 @@ def _family_on(dataset_id, held, argv):
             _outputs.write_rows(sd, rows)
         env = {k: v for k, v in _os.environ.items() if not k.startswith("EVAL_")} | {"EVAL_HOME": td}
         r = _sp.run(
-            [sys.executable, str(HERE / "family_test.py"), "--dataset-id", dataset_id, *argv],
+            [sys.executable, str(HERE / "cli.py"), "family-test", dataset_id, *argv],
             capture_output=True,
             text=True,
             env=env,
@@ -879,8 +879,8 @@ def _not_significant(leader, runs_dir, dataset_id, metric):
     r = subprocess.run(
         [
             sys.executable,
-            str(HERE / "family_test.py"),
-            "--dataset-id",
+            str(HERE / "cli.py"),
+            "family-test",
             dataset_id,
             "--a",
             leader,
@@ -1132,8 +1132,8 @@ if "bert_mini" in _AG and "qwen_m" in _DB:
     _fo = _clsp.run(
         [
             sys.executable,
-            str(HERE / "family_test.py"),
-            "--dataset-id",
+            str(HERE / "cli.py"),
+            "family-test",
             "dbpedia_280",
             "--a",
             "db_qwen_m_v1",
@@ -2319,8 +2319,8 @@ _lead = max((a for a in _se_arms if a not in _sea.FREE), key=lambda a: _se_arms[
 _ft = _subp.run(
     [
         sys.executable,
-        str(HERE / "family_test.py"),
-        "--dataset-id",
+        str(HERE / "cli.py"),
+        "family-test",
         _sea.DATASET,
         "--a",
         f"se_{_lead}_n100_v1",
@@ -2357,8 +2357,8 @@ _judges = sorted(a for a in _se_arms if a not in _sea.FREE)
 _bft = _subp.run(
     [
         sys.executable,
-        str(HERE / "family_test.py"),
-        "--dataset-id",
+        str(HERE / "cli.py"),
+        "family-test",
         _sea.DATASET,
         "--a",
         "se_bartscore_n100_v1",
@@ -2399,8 +2399,8 @@ for _u in ("unievalpub", "unieval"):
     _uft = _subp.run(
         [
             sys.executable,
-            str(HERE / "family_test.py"),
-            "--dataset-id",
+            str(HERE / "cli.py"),
+            "family-test",
             _sea.DATASET,
             "--a",
             f"se_{_u}_n100_v1",
@@ -2753,7 +2753,7 @@ check(
     str(_ui),
 )
 _rs = _subp.run(
-    [sys.executable, str(HERE / "rank_stability.py"), "--dataset-id", _sea.DATASET, "--metric", "tau"],
+    [sys.executable, str(HERE / "cli.py"), "rank-stability", _sea.DATASET, "--metric", "tau"],
     capture_output=True,
     text=True,
     cwd=str(HERE.parent),

@@ -5,7 +5,7 @@
 
 In a throwaway project with the tutorial's tickets and two arms: a failure-mode list; `inspect --sheet --fill tags`
 writes a sheet with a `failure_modes:` column per arm and its key; filled as a person would (modes, `ok`, a blank),
-`sheet-import --tags` reads it back into a tag set and `evh tags` counts each arm's modes. A blank cell is not
+`sheet-import --tags` reads it back into a tag set and `evh tag-set-list` counts each arm's modes. A blank cell is not
 recorded, `ok` is; an edited output, an unknown mode and a second import under the same name are refused.
 """
 
@@ -80,8 +80,7 @@ try:
     )
     sheet = proj / "tags.csv"
     r = evh(
-        "inspect",
-        "--sheet",
+        "sheet-export",
         "--dataset-id",
         "tickets_v1",
         "--runs",
@@ -97,7 +96,7 @@ try:
     head = rows[0] if rows else []
     cols = [h for h in head if h.startswith("failure_modes: ")]
     check(
-        "inspect --fill tags: a failure_modes column per arm, the modes listed in the first row, a key beside it",
+        "sheet-export --fill tags: a failure_modes column per arm, the modes listed in the first row, a key beside it",
         r.returncode == 0
         and len(cols) == 2
         and rows[1][0] == "#modes"
@@ -134,12 +133,12 @@ try:
         r.returncode == 0 and _runstore.is_file(proj, "tags/tickets_v1/first/tags.json"),
         (r.stdout + r.stderr)[-400:],
     )
-    r = evh("tags", "--dataset-id", "tickets_v1", "--json")
-    arms = json.loads(r.stdout).get("arms", {}) if r.returncode == 0 else {}
+    r = evh("tag-set-list", "tickets_v1", "--json")
+    arms = json.loads(r.stdout)["result"].get("arms", {}) if r.returncode == 0 else {}
     l1: dict = next((v for k, v in arms.items() if "lead1" in k), {})
     l2: dict = next((v for k, v in arms.items() if "lead2" in k), {})
     check(
-        "evh tags: lead1 read once (blank cells are not recorded), lead2 six times, its modes counted",
+        "evh tag-set-list: lead1 read once (blank cells are not recorded), lead2 six times, its modes counted",
         l1.get("outputs") == 1
         and l1.get("modes") == {"misses-ask": 1}
         and l2.get("outputs") == 6
@@ -149,8 +148,7 @@ try:
     )
     shown = proj / "shown.csv"
     r = evh(
-        "inspect",
-        "--sheet",
+        "sheet-export",
         "--dataset-id",
         "tickets_v1",
         "--runs",

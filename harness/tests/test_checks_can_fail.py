@@ -248,8 +248,14 @@ def run_in(shadow: Path, script: str) -> str:
         ["git", "rev-parse", "--absolute-git-dir"], cwd=REPO, capture_output=True, text=True
     ).stdout.strip()
     env = {**os.environ, "GIT_DIR": gitdir, "GIT_WORK_TREE": str(shadow), "GIT_OPTIONAL_LOCKS": "0"}
+    # `evh validate` is what scripts/validate_tree.py's checks answer to now: the shadow's own command
+    cmd = (
+        [sys.executable, str(shadow / "harness" / "scripts" / "cli.py"), "validate"]
+        if script == "scripts/validate_tree.py"
+        else [sys.executable, str(shadow / "harness" / script)]
+    )
     r = subprocess.run(
-        [sys.executable, str(shadow / "harness" / script)],
+        cmd,
         cwd=shadow / "harness",
         capture_output=True,
         text=True,

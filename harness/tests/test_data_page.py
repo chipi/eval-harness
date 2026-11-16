@@ -169,13 +169,13 @@ def run_case(store: str) -> None:
         )
         r = cli(proj, env, "data-ls", "systems", "--json")
         names = (
-            [e["name"] for e in json.loads(r.stdout)["result"]["values"]["listing"]["entries"]]
+            [e["name"] for e in json.loads(r.stdout)["result"]["listing"]["entries"]]
             if r.returncode == 0
             else []
         )
         check(f"{store}: data-ls systems lists the systems", "tickets_lead1_v1.yaml" in names, names)
         r = cli(proj, env, "data-ls", "scorers", "--json")
-        ls = json.loads(r.stdout)["result"]["values"]["listing"] if r.returncode == 0 else {}
+        ls = json.loads(r.stdout)["result"]["listing"] if r.returncode == 0 else {}
         check(
             f"{store}: a settings folder not made yet lists empty, ready for its first file",
             ls.get("entries") == [] and ls.get("settings_folder") == "scorers",
@@ -186,15 +186,15 @@ def run_case(store: str) -> None:
         r = cli(proj, env, "data-ls", "--find", "summary")
         check(f"{store}: data-ls --find finds the goal by name", goal in r.stdout, r.stdout[-300:])
         r = cli(proj, env, "data-show", goal, "--json")
-        f = json.loads(r.stdout)["result"]["values"]["file"] if r.returncode == 0 else {}
+        f = json.loads(r.stdout)["result"]["file"] if r.returncode == 0 else {}
         before = f.get("text") or ""
         check(f"{store}: data-show: a goal's text, editable, its sha256", "goal_id: tickets_summary" in before
               and f.get("editable") is True and len(f.get("sha256", "")) == 64, f)  # fmt: skip
         run = next(
             e["path"]
-            for e in json.loads(cli(proj, env, "data-ls", "runs", "--json").stdout)["result"]["values"][
-                "listing"
-            ]["entries"]
+            for e in json.loads(cli(proj, env, "data-ls", "runs", "--json").stdout)["result"]["listing"][
+                "entries"
+            ]
             if e["type"] == "run"
         )
         r = cli(proj, env, "data-show", f"{run}/run.json")
@@ -246,9 +246,9 @@ def run_case(store: str) -> None:
         r = cli(proj, env, "data-put", goal, "-", stdin=GOOD_GOAL_EDIT + before)
         check(f"{store}: a valid change is saved and reads back", r.returncode == 0 and "saved goals/tickets_summary.yaml" in r.stdout
               and cli(proj, env, "data-show", goal, "--text").stdout == GOOD_GOAL_EDIT + before, (r.stdout + r.stderr)[-300:])  # fmt: skip
-        r = cli(proj, env, "goals")
+        r = cli(proj, env, "goal-list")
         check(
-            f"{store}: evh goals reads the changed goal",
+            f"{store}: evh goal-list reads the changed goal",
             r.returncode == 0 and "tickets_summary" in r.stdout,
             r.stderr[-300:],
         )
@@ -374,7 +374,7 @@ def run_case(store: str) -> None:
               and cli(proj, env, "data-show", f"{run}/run.json").returncode == 0, r.stdout + r.stderr[-200:])  # fmt: skip
         r = cli(proj, env, "data-rm", run)
         left = [
-            e for e in json.loads(cli(proj, env, "data-ls", "runs", "--json").stdout)["result"]["values"]["listing"]["entries"]
+            e for e in json.loads(cli(proj, env, "data-ls", "runs", "--json").stdout)["result"]["listing"]["entries"]
             if e["path"] == run
         ]  # fmt: skip
         check(f"{store}: data-rm deletes the run whole: no record, no outputs, no score",

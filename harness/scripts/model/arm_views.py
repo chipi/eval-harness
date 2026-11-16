@@ -1,6 +1,6 @@
 """The arms, as data (RFC-032 step 8): every arm with how it was measured, its model and provider, its roles under the
 goals and its cost and speed, every system across the datasets it ran on, and one arm in full (its metrics, runs,
-config, conditions, siblings and rounds). `evh arms`, the arms page's rows and `GET /arms` read them; the rows are
+config, conditions, siblings and rounds). `evh arm-list`, the arms page's rows and `GET /arms` read them; the rows are
 catalog_arms.arm_rows, the one listing."""
 
 from __future__ import annotations
@@ -48,7 +48,7 @@ def arm_ids(A, tokens: list, label: str) -> list:
                 + (
                     f"{len(hits)} arms read as {label or 'the plain label'} match; name the arm id: {', '.join(near)}"
                     if near
-                    else "no arm with that id; `evh datasets --dataset-id <id>` lists them"
+                    else "no arm with that id; `evh dataset-show <id>` lists them"
                 ),
                 "not-found",
             )
@@ -127,7 +127,7 @@ def arm(A, by_ds: dict, arm_id: str) -> dict[str, Any]:
     in, and the notes on it. Refused when no arm has the id."""
     hit = next(((ds, a) for ds, v in by_ds.items() for a in v["arms"] if a["arm"] == arm_id), None)
     if hit is None:
-        raise Problem(f"no arm {arm_id!r}: `evh arms` lists them", "not-found")
+        raise Problem(f"no arm {arm_id!r}: `evh arm-list` lists them", "not-found")
     ds, a = hit
     v = by_ds[ds]
     goals = {g["goal_id"]: g for g in A.goals()}

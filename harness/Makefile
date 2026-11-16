@@ -16,15 +16,15 @@ NOISE ?=
 TIER ?= silver
 
 .PHONY: help demo init env-check install venv-init catalog catalog-serve serve \
-        overview activity datasets arms references metrics goals inspect round-open round-carry round-retire round-close rounds \
+        round-open round-carry round-retire round-close \
         dataset-create dataset-materialize dataset-profile dataset-items reference-manifest \
         mcp search self-test \
         reference-promote arm-smoke model-onboard score-preview importer-check capture \
-        dataset-split capture-scrub captures labels label-sheet label-import sheet-import label-from-run label-from-capture pick \
-        picks dataset-extend deploy-sheet arm-from-capture dataset-from-capture models \
+        dataset-split capture-scrub label-sheet label-import sheet-import label-from-run label-from-capture pick \
+        picks dataset-extend deploy-sheet arm-from-capture dataset-from-capture \
         holdout pair-test rank-stability \
         run-dry-run run sweep \
-        runs-list baselines-list run-compare leaderboard run-promote \
+        runs-list run-compare leaderboard run-promote \
         validate format-check judge judge-score check guide-check browser-install browser-check budget-check browser-real-check guard-check commands-check stores-check coverage ci test smoke-fixture cost-report clean clean-cache \
         bootstrap-test family-test import-run rescore silver-calibrate site site-check docs
 
@@ -185,7 +185,7 @@ dataset-profile:
 	$(PYTHON) scripts/dataset_profile.py --dataset-id $(DATASET_ID) $(ARGS)
 
 dataset-items:
-	$(PYTHON) scripts/dataset_items.py --dataset-id $(DATASET_ID) $(ARGS)
+	$(PYTHON) scripts/cli.py dataset-items $(DATASET_ID) $(ARGS)
 
 # Gold a fetch script builds, promoted where it is: its manifest, with whose labels they are and why.
 reference-manifest:
@@ -224,13 +224,7 @@ dataset-split:
 capture-scrub:
 	$(PYTHON) scripts/capture_scrub.py $(ARGS)
 
-# every capture, or one: what was read, when, the datasets made from it
-captures:
-	$(PYTHON) scripts/view_captures.py $(ARGS)
 
-# every label set, or a dataset's: source, coverage, guideline, how often two agree
-labels:
-	$(PYTHON) scripts/view_labels.py $(ARGS)
 
 # a sheet of a dataset's items to label, with what production or an arm decided
 label-sheet:
@@ -258,7 +252,7 @@ pick:
 
 # the picks waiting: per target, where each came from, its labels, tags and note
 picks:
-	$(PYTHON) scripts/view_picks.py $(ARGS)
+	$(PYTHON) scripts/cli.py picks $(ARGS)
 
 # the next version of a dataset: its items and the picks you choose
 dataset-extend:
@@ -266,7 +260,7 @@ dataset-extend:
 
 # what production must match to run a promoted arm, and whether a capture says it did
 deploy-sheet:
-	$(PYTHON) scripts/deploy_sheet.py $(ARGS)
+	$(PYTHON) scripts/cli.py deploy-sheet $(SYSTEM) $(ARGS)
 
 # production's recorded decisions as an arm, scored like any (no call)
 arm-from-capture:
@@ -276,9 +270,6 @@ arm-from-capture:
 dataset-from-capture:
 	$(PYTHON) scripts/dataset_from_capture.py $(ARGS)
 
-# every model record, or one: its deployments, onboarding, settings history and arms
-models:
-	$(PYTHON) scripts/view_models.py $(ARGS)
 
 
 # Does the installed harness work here? (in a checkout: the full test suite)
@@ -299,10 +290,8 @@ sweep:
 
 # ── inspect and decide ──────────────────────────────────────────────────────
 runs-list:
-	@$(PYTHON) scripts/list_runs.py
+	@$(PYTHON) scripts/cli.py runs-list
 
-baselines-list:
-	@$(PYTHON) scripts/list_runs.py --baselines
 
 # Re-score finished runs from their stored outputs. No API calls, no money: the outputs
 # are the expensive part, the scores are arithmetic over them. Writes to a SEPARATE
@@ -327,7 +316,7 @@ cost-report:
 
 
 leaderboard:
-	$(PYTHON) scripts/leaderboard.py --dataset-id $(DATASET_ID) $(if $(MATCH),--match $(MATCH),) $(ARGS)
+	$(PYTHON) scripts/cli.py leaderboard $(DATASET_ID) $(if $(MATCH),--match $(MATCH),) $(ARGS)
 
 # A dataset grown from a smaller one contains it. Arms chosen on the small set are being
 # re-measured on a set that still holds the items that chose them, so "it replicated" can
@@ -341,7 +330,7 @@ holdout:
 # independently, correlated against each other — neither treated as truth. Free: it reads
 # runs already on disk. The answer here was sobering, which is the point.
 rank-stability:
-	$(PYTHON) scripts/rank_stability.py --dataset-id $(DATASET_ID) \
+	$(PYTHON) scripts/cli.py rank-stability $(DATASET_ID) \
 	  $(if $(METRIC),--metric $(METRIC),) $(if $(MATCH),--match $(MATCH),)
 
 # ONE pair, named before the table was read. The leaderboard's Nemenyi line prices in all
@@ -351,9 +340,9 @@ rank-stability:
 # ITEMS=<file> restricts the test to one stratum, one item_id per line.
 pair-test:
 	@test -n "$(A)" -a -n "$(B)" || { echo 'A=<config_id> B=<config_id> are required'; exit 1; }
-	$(PYTHON) scripts/pair_test.py --dataset-id $(DATASET_ID) --a $(A) --b $(B) \
+	$(PYTHON) scripts/cli.py pair-test $(DATASET_ID) --a $(A) --b $(B) \
 	  $(if $(METRIC),--metric $(METRIC),) $(if $(EXCLUDE),--exclude-dataset $(EXCLUDE),) \
-	  $(if $(FAMILY),--family $(FAMILY),) $(if $(RUNS_DIR),--runs-dir $(RUNS_DIR),) \
+	  $(if $(FAMILY),--family $(FAMILY),) \
 	  $(if $(ITEMS),--items $(ITEMS),) $(if $(ASC),--asc,)
 
 # MACRO-F1 and friends: metrics with no per-item value, so the sign-flip test cannot
@@ -371,9 +360,9 @@ bootstrap-test:
 # naming it before reading the p-values is the honesty condition the correction assumes.
 family-test:
 	@test -n "$(A)" -a -n "$(AGAINST)" || { echo 'A=<config_id> AGAINST=<substring> are required'; exit 1; }
-	$(PYTHON) scripts/family_test.py --dataset-id $(DATASET_ID) --a $(A) --against $(AGAINST) \
+	$(PYTHON) scripts/cli.py family-test $(DATASET_ID) --a $(A) --against $(AGAINST) \
 	  $(if $(METRIC),--metric $(METRIC),) $(if $(EXCLUDE),--exclude-dataset $(EXCLUDE),) \
-	  $(if $(RUNS_DIR),--runs-dir $(RUNS_DIR),) $(if $(ITEMS),--items $(ITEMS),) \
+	  $(if $(ITEMS),--items $(ITEMS),) \
 	  $(if $(ASC),--asc,)
 
 # Per-item scores made by ANOTHER tool, written as a run the tests above can read. Every
@@ -384,7 +373,7 @@ import-run:
 run-compare:
 	@test -n "$(BASE)" || { echo "BASE=<run_id> is required (see: make runs-list)"; exit 1; }
 	@test -n "$(CAND)" || { echo "CAND=<run_id> is required (see: make runs-list)"; exit 1; }
-	$(PYTHON) scripts/compare_runs.py --baseline $(BASE) --candidate $(CAND) \
+	$(PYTHON) scripts/cli.py run-compare --baseline $(BASE) --candidate $(CAND) \
 	  $(if $(NOISE),--noise $(NOISE),) $(ARGS)
 
 # REASON reaches the script through the ENVIRONMENT, not the command line. Interpolated
@@ -400,7 +389,7 @@ run-promote:
 
 # ── gates ───────────────────────────────────────────────────────────────────
 validate:
-	$(PYTHON) scripts/validate_tree.py
+	$(PYTHON) scripts/cli.py validate
 
 # The data is in the format this release reads (RFC-032): the deploy's gate (render.sh), met here first.
 format-check:
@@ -438,34 +427,15 @@ mcp:
 # The catalog's search in the terminal: TEXT="words".
 search:
 	@test -n "$(TEXT)" || { echo "TEXT=<words> is required"; exit 1; }
-	$(PYTHON) scripts/view_search.py $(TEXT) $(ARGS)
+	$(PYTHON) scripts/cli.py search $(TEXT) $(ARGS)
 
-# The catalog's pages and the inspector's comparison in the terminal (scripts/catalog_views.py):
-# the same adapter and the same computation, so a number here is the number on the page.
-overview:
-	$(PYTHON) scripts/view_overview.py $(ARGS)
 
-activity:
-	$(PYTHON) scripts/view_activity.py $(ARGS)
 
-arms:
-	$(PYTHON) scripts/view_arms.py $(if $(DATASET_ID),--dataset-id $(DATASET_ID),) $(if $(ARM),--arm $(ARM),) $(ARGS)
 
-datasets:
-	$(PYTHON) scripts/view_datasets.py $(if $(DATASET_ID),--dataset-id $(DATASET_ID),) $(ARGS)
 
-references:
-	$(PYTHON) scripts/view_references.py $(if $(REFERENCE),--reference-id $(REFERENCE),) $(ARGS)
 
-metrics:
-	$(PYTHON) scripts/view_metrics.py $(if $(DATASET_ID),--dataset-id $(DATASET_ID),) $(if $(METRIC),--metric $(METRIC),) $(ARGS)
 
-goals:
-	$(PYTHON) scripts/view_goals.py $(if $(GOAL),--goal $(GOAL),) $(ARGS)
 
-inspect:
-	@test -n "$(RUNS)" || { echo "RUNS=<arm>,<arm>,... is required (system ids, or arm ids from make datasets)"; exit 1; }
-	$(PYTHON) scripts/view_inspect.py --runs $(RUNS) $(if $(BASELINE),--baseline $(BASELINE),) $(ARGS)
 
 # EVAL ROUNDS (ADR-0004), optional: a round of a goal, its decisions as commands.
 # make round-open GOAL=g DATASET_ID=d ARGS='--from r1 --hypothesis "..." --keep a,b --retire c --reason "..."'
@@ -482,9 +452,6 @@ round-retire:
 round-close:
 	$(PYTHON) scripts/round_close.py --goal $(GOAL) --round $(ROUND) $(ARGS)
 
-rounds:
-	@test -n "$(GOAL)" || { echo "GOAL=<goal_id> is required"; exit 1; }
-	$(PYTHON) scripts/round_status.py --goal $(GOAL) $(if $(ROUND),--round $(ROUND),) $(ARGS)
 
 # MATERIALIZE THE DEMO DATASET FIRST, or eleven assertions silently skip.
 #

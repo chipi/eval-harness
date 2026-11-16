@@ -32,7 +32,6 @@ from evaluation_harness._adapter import recorded_metric_kinds
 from evaluation_harness._common import (
     RUNS,
     die,
-    evh_prog,
     how,
     verdict_for,
 )
@@ -180,30 +179,6 @@ def load(run_id: str) -> dict:
     return rec
 
 
-def main() -> int:
-    """Load and summarize a single run."""
-    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
-    ap.add_argument("--baseline", required=True)
-    ap.add_argument("--candidate", required=True)
-    ap.add_argument(
-        "--noise",
-        type=float,
-        default=None,
-        help="the arm's own spread; deltas at or below it are reported as noise. "
-        "0 is a real answer — it means the arm is deterministic — so it is not "
-        "the same as omitting the flag.",
-    )
-    ap.add_argument(
-        "--json",
-        action="store_true",
-        help="the same answer as one JSON object: the printed lines as blocks, the metric table as data, "
-        "and the result by name under result.values (fingerprint, worth, ...)",
-    )
-    args = ap.parse_args()
-    with _jsonout.collect("run-compare", args.json):
-        return _run(args)
-
-
 def _run(args: argparse.Namespace) -> int:
     a, b = load(args.baseline), load(args.candidate)
 
@@ -214,7 +189,7 @@ def _run(args: argparse.Namespace) -> int:
             f"    {args.candidate:32} {b['dataset_id']}\n"
             "  A metric compared across two datasets is not a comparison, it is a\n"
             "  coincidence. Re-run one arm on the other's dataset_id. For two versions of one\n"
-            "  dataset (same item ids, same reference), `evh pair-test --dataset-id D1 --a A --b B\n"
+            "  dataset (same item ids, same reference), `evh pair-test D1 --a A --b B\n"
             "  --b-dataset D2` is the comparison.",
             "mismatch",
         )
@@ -301,7 +276,3 @@ def _run(args: argparse.Namespace) -> int:
         )
     print(f"\n  {worth} metric(s) moved beyond the stated noise floor")
     return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())

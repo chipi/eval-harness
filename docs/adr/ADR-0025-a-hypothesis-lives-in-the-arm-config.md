@@ -27,7 +27,7 @@ the record.
 - **Checked** by `evh validate` (V20) and by `evh run`, before anything is spent: the keys, the direction
   (better, worse, no-worse), `against` an existing config, `measure` one of the arm's metrics.
 - **Reported** by `evh pair-test` (named in advance: yes, with the commit, no, or not determinable; and whether
-  the result agrees with the direction) and by `evh goals --goal` beside the arm.
+  the result agrees with the direction) and by `evh goal-leaderboard` beside the arm.
 - **A hypothesis found in the config that the run does not carry reads "no"**: it was added after the run. That is
   the one way a "no" is reached for a run made before the block existed.
 - **A pair the tool chose is not a named pair.** `pair-test --round` without `--a` takes the round's leader, so

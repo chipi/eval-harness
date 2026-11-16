@@ -1,7 +1,7 @@
 """The API's registry (RFC-026): every command it serves, made from the command's own argument parser.
 
-A command is served as a `read` (the MCP server's read tools: answered at once) or a `job` (everything else that
-works on the project: a detached process, RFC-026 step 3), or not at all (the servers, the commands that set up a
+A command is served as a `job` (everything that works on the project and is not an operation of the model: a detached
+process, RFC-026 step 3), or not at all (the operations, each its own resource; the servers, the commands that set up a
 project or check the installation, `capture-scrub`, which runs a program it is given). Every argument the registry
 keeps has a kind:
 
@@ -33,6 +33,7 @@ NOT_SERVED = {
     "env-check": "the server's own environment",
     "self-test": "checks the installed package",
     "capture-scrub": "runs a program it is given",
+    "sheet-export": "writes a file on the machine: the inspector serves the sheet as a download (/api/sheet?format=csv)",
     "openapi": "the API's own description: GET /api/v1/openapi.json",
     **dict.fromkeys(
         ("jobs-start", "jobs-status", "jobs-logs", "jobs-stop", "jobs-resume"),
@@ -41,16 +42,13 @@ NOT_SERVED = {
 }
 
 
-def _model_writes() -> dict[str, str]:
+def _model_ops() -> dict[str, str]:
     from evaluation_harness import ops  # noqa: PLC0415
 
-    return dict.fromkeys(
-        (op.name for op in ops.of_kind("edit", "decision", "work")),
-        "served as the model's resource (RFC-032)",
-    )
+    return dict.fromkeys(ops.OPS, "served as the model's resource (RFC-032)")
 
 
-NOT_SERVED.update(_model_writes())
+NOT_SERVED.update(_model_ops())
 #: The commands that call models and spend: a job of one must carry max_cost_usd (step 5).
 SPENDS = {
     "run",
@@ -146,8 +144,8 @@ VALUE_RULES: dict[tuple[str, str], tuple[str, Any]] = {
 def unruled_values() -> list[str]:
     """Every served value argument whose help offers `path.py:Class` or `@file` with no VALUE_RULES entry: empty, or a
     test fails."""
+    from evaluation_harness._cmdline import parser_of  # noqa: PLC0415
     from evaluation_harness.cli import COMMANDS  # noqa: PLC0415
-    from evaluation_harness.mcp_server import parser_of  # noqa: PLC0415
 
     out = []
     for c in sorted(COMMANDS):
@@ -178,17 +176,13 @@ def _is_path(a: argparse.Action) -> bool:
 
 
 def served_as(command: str) -> str | None:
-    """`read`, `job`, or None (not served)."""
-    from evaluation_harness.mcp_server import READ_TOOLS  # noqa: PLC0415
-
-    if command in NOT_SERVED:
-        return None
-    return "read" if command in READ_TOOLS else "job"
+    """`job`, or None (not served here: an operation is its own resource, and the servers and setup commands are not served)."""
+    return None if command in NOT_SERVED else "job"
 
 
 def kind_of(command: str, a: argparse.Action) -> str | None:
     """An argument's kind, or None when the API never takes it."""
-    from evaluation_harness.mcp_server import TOOL_HIDDEN  # noqa: PLC0415
+    from evaluation_harness._cmdline import TOOL_HIDDEN  # noqa: PLC0415
 
     key = _key(a)
     if set(a.option_strings) & NEVER or key in TOOL_HIDDEN.get(command, set()):
@@ -218,9 +212,9 @@ def _argument(command: str, a: argparse.Action, kind: str) -> dict[str, Any]:
 
 @functools.lru_cache(maxsize=1)
 def registry() -> dict[str, dict[str, Any]]:
-    """{command: {"served": "read"|"job", "spends", "about", "arguments": [...]}} for every served command."""
+    """{command: {"served": "job", "spends", "about", "arguments": [...]}} for every served command."""
+    from evaluation_harness._cmdline import parser_of  # noqa: PLC0415
     from evaluation_harness.cli import COMMANDS  # noqa: PLC0415
-    from evaluation_harness.mcp_server import parser_of  # noqa: PLC0415
 
     out: dict[str, dict[str, Any]] = {}
     for c in sorted(COMMANDS):
@@ -240,8 +234,8 @@ def registry() -> dict[str, dict[str, Any]]:
 def unkinded_paths() -> list[str]:
     """Every path-typed argument of a served command that the API would take but no kind names: empty, or a
     test fails (a command that gains a path argument is not served by accident)."""
+    from evaluation_harness._cmdline import parser_of  # noqa: PLC0415
     from evaluation_harness.cli import COMMANDS  # noqa: PLC0415
-    from evaluation_harness.mcp_server import parser_of  # noqa: PLC0415
 
     out = []
     for c in sorted(COMMANDS):
@@ -267,12 +261,22 @@ class Refused(ValueError):
         self.status = status
 
 
+def _not_a_job(command: str) -> Refused:
+    """Why a command is no job: an operation answers in its own resource, anything else is no command the API serves."""
+    from evaluation_harness import ops  # noqa: PLC0415
+
+    op = ops.OPS.get(command)
+    if op is None:
+        return Refused(f"{command}: not a command the API serves", 404)
+    return Refused(f"{command}: not a job, an operation: {op.method} /api/v1{op.route}")
+
+
 def checked_args(command: str, arguments: Any) -> dict[str, Any]:
     """The call's arguments, checked against the registry (names, kinds, types, choices, required), and each system
     it names found. Refused before anything runs."""
     reg = registry().get(command)
     if reg is None:
-        raise Refused(f"{command}: not a command the API serves", 404)
+        raise _not_a_job(command)
     if not isinstance(arguments, dict):
         raise Refused("args: a JSON object keyed by the argument's name")
     by = {a["name"]: a for a in reg["arguments"]}
@@ -394,12 +398,12 @@ def _upload(value: Any, budget: list[int]) -> str:
 def job_argv(command: str, arguments: Any, job_id: str) -> tuple[list[str], dict[str, Any]]:
     """A job call's argv, its arguments checked against the registry (a name mapped, an upload kept, an artifact
     placed in the job's folder), and the checked arguments by name (what the locks read)."""
+    from evaluation_harness import _cmdline as ms  # noqa: PLC0415
     from evaluation_harness import _jobs  # noqa: PLC0415
-    from evaluation_harness import mcp_server as ms  # noqa: PLC0415
 
     reg = registry().get(command)
     if reg is None:
-        raise Refused(f"{command}: not a command the API serves", 404)
+        raise _not_a_job(command)
     if reg["served"] != "job":
         raise Refused(f"{command}: a read, not a job")
     if not isinstance(arguments, dict):

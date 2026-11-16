@@ -4,8 +4,8 @@
     python tests/test_view_ops.py
 
 In a throwaway project written here: three arms on two datasets, a goal, and a capture of decisions with outcome rules.
-Each operation answers what `evh <view>` reads, in the words the command prints (`op.say` is the command's text, byte
-for byte) and as data (`op.call`); the names are not commands that exist and the routes are not taken; an input that is
+Each operation answers in the words its command prints (`op.say` is the command's text, byte for byte) and as data
+(`op.call`); the legacy view commands are gone and the routes are not taken; an input that is
 not one of its choices, an arm or a metric that is not there, a map outside the project and a comparison of arms the
 catalog does not list are refused as the model refuses; and through the API and the command line the answers are the
 same. The operations are registered here for the run (`registry.OPS`), so the test does not wait on the registry.
@@ -41,16 +41,21 @@ for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_GOALS_DIR", "EVH_PUBLIC"):
 
 import _catalog_fixture as fx  # noqa: E402
 import _runstore  # noqa: E402
-from evaluation_harness import _format, _jsonout  # noqa: E402
+from evaluation_harness import (  # noqa: E402
+    _format,
+    _jsonout,
+    _visibility,
+)
 from evaluation_harness import catalog_serve as cs  # noqa: E402
-from evaluation_harness import catalog_views as cv  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 from evaluation_harness.catalog_adapter import load_catalog_adapter, scores_once  # noqa: E402
 from evaluation_harness.cli import COMMANDS  # noqa: E402
 from evaluation_harness.model import compare as compare_model  # noqa: E402
 from evaluation_harness.model.entity import Problem  # noqa: E402
 from evaluation_harness.ops import cli as ops_cli  # noqa: E402
-from evaluation_harness.ops import registry, views  # noqa: E402
+from evaluation_harness.ops import legacy, registry, views  # noqa: E402
+
+_outcomes_items = legacy.OUTCOMES["items"]
 
 NEW = {op.name: op for op in views.OPS}
 registry.OPS.update(NEW)  # what `ops/registry.py` does once it lists views
@@ -146,8 +151,13 @@ try:
     ]
     check("no route is one another operation's: the server picks the first that matches", not clash, clash)
     check(
-        "every input is a string (a read's inputs reach the server as the query's), a flag the one value it takes",
-        all(s["type"] == "string" for o in NEW.values() for s in o.inputs.values()),
+        "every input is typed: a string, an array of strings (the outside captures: of objects) or a flag; a choice names its values",
+        all(
+            s["type"] in ("string", "boolean")
+            or (s["type"] == "array" and s["items"] in ({"type": "string"}, _outcomes_items))
+            for o in NEW.values()
+            for s in o.inputs.values()
+        ),
     )
     check(
         "the routes: overview, arms (all, a dataset's, one), metrics (all, one), activity, compare, label coverage",
@@ -166,58 +176,44 @@ try:
     )
 
     # -- the text is the command's, the data is the view -------------------------------------------------------
-    def same_text(op: str, kwargs: dict, command, argv: list[str]) -> bool:
-        return NEW[op].say(NEW[op].call(**kwargs)) == printed(command, argv)
+    def same_text(op: str, kwargs: dict, argv: list[str]) -> bool:
+        """The operation's text is what its command prints."""
+        r = evh(op, *argv)
+        return r.returncode == 0 and NEW[op].say(NEW[op].call(**kwargs)) == r.stdout.rstrip("\n")
 
     check(
-        "overview-show says what `evh overview` prints, for the default period and for all time",
-        same_text("overview-show", {}, cv.overview, [])
-        and same_text("overview-show", {"period": "all"}, cv.overview, ["--period", "all"]),
+        "overview-show says what `evh overview-show` prints, for the default period and for all time",
+        same_text("overview-show", {}, [])
+        and same_text("overview-show", {"period": "all"}, ["--period", "all"]),
     )
     check(
-        "activity-show says what `evh activity` prints, with its period and its arms",
-        same_text(
-            "activity-show", {"period": "30d", "arms": "1"}, cv.activity, ["--period", "30d", "--arms", "1"]
-        ),
+        "activity-show says what `evh activity-show` prints, with its period and its arms",
+        same_text("activity-show", {"period": "30d", "arms": "1"}, ["--period", "30d", "--arms", "1"]),
     )
     check(
-        "metric-list and metric-show say what `evh metrics` prints, whole and for one dataset and one metric",
-        same_text("metric-list", {}, cv.metrics, [])
+        "metric-list and metric-show say what their commands print, whole and for one dataset and one metric",
+        same_text("metric-list", {}, [])
         and same_text(
-            "metric-list",
-            {"dataset": "ds1", "period": "all"},
-            cv.metrics,
-            ["--dataset-id", "ds1", "--period", "all"],
+            "metric-list", {"dataset": "ds1", "period": "all"}, ["--dataset", "ds1", "--period", "all"]
         )
-        and same_text("metric-show", {"metric": "acc"}, cv.metrics, ["--metric", "acc"])
+        and same_text("metric-show", {"metric": "acc"}, ["acc"])
+        and same_text("metric-show", {"metric": "acc", "dataset": "ds1"}, ["acc", "--dataset", "ds1"]),
+    )
+    check(
+        "arm-list, dataset-arm-list and arm-show say what their commands print",
+        same_text("arm-list", {}, [])
+        and same_text("arm-list", {"systems": "1", "period": "30d"}, ["--systems", "1", "--period", "30d"])
+        and same_text("arm-list", {"where": "local"}, ["--where", "local"])
+        and same_text("dataset-arm-list", {"dataset": "ds1"}, ["ds1"])
         and same_text(
-            "metric-show",
-            {"metric": "acc", "dataset": "ds1"},
-            cv.metrics,
-            ["--metric", "acc", "--dataset-id", "ds1"],
+            "arm-show", {"label": "runs", "dataset": "ds1", "system": "arm_b"}, ["runs", "ds1", "arm_b"]
         ),
     )
     check(
-        "arm-list, dataset-arm-list and arm-show say what `evh arms` prints",
-        same_text("arm-list", {}, cv.arms, [])
-        and same_text(
-            "arm-list", {"systems": "1", "period": "30d"}, cv.arms, ["--systems", "--period", "30d"]
-        )
-        and same_text("arm-list", {"where": "local"}, cv.arms, ["--where", "local"])
-        and same_text("dataset-arm-list", {"dataset": "ds1"}, cv.arms, ["--dataset-id", "ds1"])
-        and same_text(
-            "arm-show",
-            {"label": "runs", "dataset": "ds1", "system": "arm_b"},
-            cv.arms,
-            ["--arm", "runs/ds1/arm_b"],
-        ),
-    )
-    check(
-        "comparison-show says what `evh inspect --runs` prints",
+        "comparison-show says what `evh comparison-show --runs` prints",
         same_text(
             "comparison-show",
             {"runs": "runs/ds1/arm_a,runs/ds1/arm_b", "baseline": "runs/ds1/arm_a"},
-            cv.inspect,
             ["--runs", "runs/ds1/arm_a,runs/ds1/arm_b", "--baseline", "runs/ds1/arm_a"],
         ),
     )
@@ -323,8 +319,8 @@ try:
         cmp_["rows"],
     )
     check(
-        "comparison-show: arms the catalog does not list, arms of two datasets and a bad choice are refused",
-        refused(NEW["comparison-show"].call, runs="runs/ds1/arm_a,runs/ds1/nope")[0] == "bad-argument"
+        "comparison-show: an arm the catalog does not list is not found; arms of two datasets and a bad choice are refused",
+        refused(NEW["comparison-show"].call, runs="runs/ds1/arm_a,runs/ds1/nope")[0] == "not-found"
         and refused(NEW["comparison-show"].call, runs="runs/ds1/arm_a,runs/ds2/arm_c")[0] == "bad-argument"
         and refused(NEW["comparison-show"].call, runs="runs/ds1/arm_a", rescore="2")[0] == "bad-argument",
     )
@@ -368,9 +364,9 @@ try:
         and cov["map"] == "rules.yaml",
         cov["counts"],
     )
-    cmd = evh("label-coverage", "--dataset-id", "dec_v1", "--capture", "dec", "--map", "rules.yaml")
+    cmd = evh("label-coverage-show", "dec_v1", "--capture", "dec", "--map", "rules.yaml")
     check(
-        "label-coverage-show: says what `evh label-coverage` prints",
+        "label-coverage-show: says what `evh label-coverage-show` prints",
         cmd.returncode == 0 and lc.say(cov) == cmd.stdout.rstrip("\n"),
         (lc.say(cov), cmd.stdout),
     )
@@ -382,22 +378,23 @@ try:
         and refused(lc.call, dataset="dec_v1", capture="dec", map="nope.yaml")[0] == "not-found"
         and refused(lc.call, dataset="dec_v1", capture="nope", map="rules.yaml")[0] == "not-found"
         and refused(lc.call, dataset="nope", capture="dec", map="rules.yaml")[0] == "not-found"
-        and refused(lc.call, dataset="dec_v1", capture="dec", map="rules.yaml", within="-1m,+1m")[0]
+        and refused(
+            lc.call,
+            dataset="dec_v1",
+            capture="dec",
+            map="rules.yaml",
+            outcomes=[{"capture": "dec", "join": "bad"}],
+        )[0]
         == "bad-argument",
     )
 
-    os.environ["EVH_PUBLIC"] = "1"
-    try:
-        was = dict(compare_model.LIMITS)
+    with _visibility.public_call(True):
         public = refused(lc.call, dataset="dec_v1", capture="dec", map="rules.yaml")[0]
         NEW["comparison-show"].call(runs="runs/ds1/arm_a,runs/ds1/arm_b")
-        limited = compare_model.LIMITS["hosts"]
-    finally:
-        os.environ.pop("EVH_PUBLIC")
-        compare_model.LIMITS.update(was)
+        limited = compare_model.public()
     check(
-        "on a public MCP server's process label coverage is refused, and a comparison is held to the public rules",
-        public == "not-allowed" and limited == ("public",),
+        "on a public call label coverage is refused, and a comparison is held to the public rules; a local call is not",
+        public == "not-allowed" and limited and not compare_model.public(),
         (public, limited),
     )
 
@@ -493,9 +490,9 @@ try:
     )
     srv.shutdown()
 
-    # -- the commands stay as they were -----------------------------------------------------------------------
+    # -- the legacy commands are gone ---------------------------------------------------------------------------
     for c in ("overview", "arms", "metrics", "activity", "inspect", "label-coverage"):
-        check(f"`evh {c}` is still a command of its own", c in hand and c not in NEW)
+        check(f"`evh {c}` is not a command: its operation is", c not in COMMANDS and c not in NEW)
 finally:
     shutil.rmtree(proj, ignore_errors=True)
 

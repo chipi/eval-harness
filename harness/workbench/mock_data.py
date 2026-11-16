@@ -4,13 +4,13 @@ arms on cnn_dailymail_200 with their scores, settings and first replies.
 
 Two inputs are the harness's own printed answers, saved first (both slow to compute):
 
-    evh models > build/models.txt
-    evh goals --goal news_summary_cnn > build/goal_cnn.txt
-    evh goals --goal triage_orrery > build/goal_triage.txt
+    evh model-list > build/models.txt
+    evh goal-leaderboard news_summary_cnn > build/goal_cnn.txt
+    evh goal-leaderboard triage_orrery > build/goal_triage.txt
     python workbench/read_sources.py                            (build/source_previews.json)
-    evh pair-test --dataset-id cnn_dailymail_200 --a <arm> --b cnn_bart_l_n200_v1 --runs-dir data/runs-linux \
+    evh pair-test cnn_dailymail_200 --a <arm> --b cnn_bart_l_n200_v1 --runs-dir data/runs-linux \
         --metric coverage, each local arm, after a "== <arm>" line   (build/pair_linux.txt)
-    evh inspect --sheet --runs triage_baseline_pro_v2data_v1 --dataset-id orrery_triage_v1_labelled_v2 \
+    evh sheet-show orrery_triage_v1_labelled_v2 --runs triage_baseline_pro_v2data_v1 \
         --wrong-against gold_orrery_triage_v1_labelled_v2 --csv build/prod_wrong.csv --fill label
     evh label-sheet --dataset-id cnn_dailymail_200 --out build/label_sheet_cnn200.csv --items all
     python workbench/round5_inputs.py                          (build/round5/: round 5's screens, see that file)
@@ -78,7 +78,7 @@ for iid, r in first:
 prof = json.loads((D / "profiles" / "cnn_dailymail_200.json").read_text())
 words = prof["items"].get("words") or {}
 
-# the models, as `evh models` prints them
+# the models, as `evh model-list` prints them
 mlines = (H / "build" / "models.txt").read_text().splitlines()
 models = []
 for r in table(mlines, next(i for i, x in enumerate(mlines) if x.strip().startswith("model "))):
@@ -95,7 +95,7 @@ for r in table(mlines, next(i for i, x in enumerate(mlines) if x.strip().startsw
         }
     )
 
-# the goal's arms on cnn_dailymail_200 (gold), as `evh goals --goal news_summary_cnn` prints them
+# the goal's arms on cnn_dailymail_200 (gold), as `evh goal-leaderboard news_summary_cnn` prints them
 glines = (H / "build" / "goal_cnn.txt").read_text().splitlines()
 g0 = next(i for i, x in enumerate(glines) if "scored against gold/cnn_dailymail_200" in x)
 arm_rows = [r for r in table(glines, g0 + 1) if "retired" not in r["arm"]]
@@ -358,7 +358,7 @@ for rd in sorted((D / "runs-linux").glob("cnn_*")):
         **pairs.get(met["config_id"], {}),
     }
 
-# production's wrong decisions: `evh inspect --sheet --wrong-against` (build/prod_wrong.csv)
+# production's wrong decisions: `evh sheet-show --wrong-against` (build/prod_wrong.csv)
 with (H / "build" / "prod_wrong.csv").open(encoding="utf-8-sig", newline="") as fh:
     wrong_rows = list(csv.DictReader(fh))
 prod_arm = "triage_baseline_pro_v2data_v1"

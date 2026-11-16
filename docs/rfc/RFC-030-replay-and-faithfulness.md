@@ -53,7 +53,7 @@ joining production's writes to its decisions, and mutants are example code (R3 t
 
 - **The code record** is the model record of `kind: code` the fleet's feedback 27 already added
   (`data/models/<id>.yaml`): the system's `repo` and its `versions`, each a `commit`, when it was `deployed` in
-  production (`[{from, to}]`) and the `faithfulness` a replay measured; the Models page and `evh models` show it. R1
+  production (`[{from, to}]`) and the `faithfulness` a replay measured; the Models page and `evh model-list` show it. R1
   adds `checkout`, a local clone the harness reads versions from when `repo` is a URL, and requires the periods to be
   date-times with an offset that never overlap (V18).
 - **The version an item came from**: a declared item field (`version_field`) when production recorded its own commit,
@@ -141,8 +141,8 @@ joining production's writes to its decisions, and mutants are example code (R3 t
 | --- | --- | --- |
 | `evh faithfulness --system S --dataset D --production ARM [--dry-run]` | replay at the recorded versions, compare, record | job, spends |
 | `evh faithfulness-name --model ID --item ITEM --cause "..."` | name a disagreement's outside cause | job, a decision |
-| `evh faithfulness-show --model ID [--n N]` | a recorded result | read |
-| `evh models --model ID` | the code record: its versions, when each ran, its latest faithfulness | read |
+| `evh faithfulness-show ID [--n N]` | a recorded result | read |
+| `evh model-show ID` | the code record: its versions, when each ran, its latest faithfulness | read |
 
 ## As built (2026-11-11)
 
@@ -150,7 +150,7 @@ joining production's writes to its decisions, and mutants are example code (R3 t
   `data/code/<id>.yaml` beside it: a second record of the same thing, made because the draft (mine) never looked for
   the fleet's feedback 27, which was already built. Rebuilt on the model record the same day: a replay names it with
   `model_record:`, a candidate with `replay.commit`; `evh faithfulness` writes each version's summary into it, so
-  the Models page and `evh models` are its view; the code command and the Code page of the first build are gone.
+  the Models page and `evh model-list` are its view; the code command and the Code page of the first build are gone.
 - **Commands**: one command is either a read or a job for the API (RFC-026), so naming and showing are commands of
   their own: `faithfulness` (a job that spends), `faithfulness-name` (a decision) and `faithfulness-show` (a read, also
   an MCP tool).

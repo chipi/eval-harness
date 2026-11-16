@@ -676,7 +676,7 @@ def labels_reference(spec: str, dataset_id: str) -> str:
     d = scored_against_dir(rid)
     if d is None or not _store.is_file(d / "labels.json"):
         die(
-            f"--labels {spec}: no label set at data/labels/{dataset_id}/{name} (evh labels --dataset-id {dataset_id})",
+            f"--labels {spec}: no label set at data/labels/{dataset_id}/{name} (evh label-set-list {dataset_id})",
             "not-found",
         )
     return rid

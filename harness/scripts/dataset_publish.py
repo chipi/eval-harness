@@ -56,7 +56,7 @@ def main() -> int:
     with _jsonout.collect("dataset-publish", args.json, live=sys.stderr):
         f = DATASETS / f"{dataset_id_ok(args.dataset_id)}.json"
         if not _store.is_file(f):
-            die(f"no dataset {args.dataset_id!r} (evh datasets lists them)", "not-found")
+            die(f"no dataset {args.dataset_id!r} (evh dataset-list lists them)", "not-found")
         record = read_json(f)
         if record.get("text") == "hidden":
             die(f"{args.dataset_id}: its text is hidden; a hidden dataset is never published", "not-public")

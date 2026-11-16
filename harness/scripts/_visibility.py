@@ -7,13 +7,16 @@ totals of public fields stay. A person's own local views show everything, as bef
 
 Every public surface asks `text_shown(dataset_id, public=...)`: the catalog's pages (always public:
 they are what gets published), the inspector and MCP in public mode, `evh dataset-items` and
-`evh inspect` under EVH_PUBLIC, and a deployment's copy of the data (_release.py).
+`evh comparison-show` under EVH_PUBLIC, and a deployment's copy of the data (_release.py).
 """
 
 from __future__ import annotations
 
+import contextlib
+import contextvars
 import json
 import os
+from collections.abc import Iterator
 from pathlib import Path
 
 from evaluation_harness import _store
@@ -41,9 +44,24 @@ def hidden(dataset_id: str | None, datasets_dir: Path | None = None) -> bool:
     return _CACHE[key][1]
 
 
+#: Whether the call in progress is a public server's: set per call by `public_call` (the MCP server answers in its own
+#: process, so one call's mode cannot be an environment variable another call reads).
+_PUBLIC: contextvars.ContextVar[bool] = contextvars.ContextVar("evh_public", default=False)
+
+
+@contextlib.contextmanager
+def public_call(on: bool) -> Iterator[None]:
+    """Run the body as a public server's call (or as a local one): what it reads, it reads as that mode says."""
+    token = _PUBLIC.set(bool(on))
+    try:
+        yield
+    finally:
+        _PUBLIC.reset(token)
+
+
 def public_env() -> bool:
-    """A command run by a public server (MCP --public sets EVH_PUBLIC for its child processes)."""
-    return bool(os.environ.get("EVH_PUBLIC"))
+    """A call made for a public server: inside `public_call(True)`, or in a process started with EVH_PUBLIC set."""
+    return _PUBLIC.get() or bool(os.environ.get("EVH_PUBLIC"))
 
 
 def public_profile(p: dict) -> dict:

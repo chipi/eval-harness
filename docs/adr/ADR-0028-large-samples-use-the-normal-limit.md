@@ -9,7 +9,7 @@
 
 Above 30 items the paired sign-flip test estimates its p from 20,000 seeded permutations, and the contender test
 (ADR-0026) from 9,999 bootstrap-t resamples, both in pure Python. S1 measured what that costs at scale: at 10,000 items
-one sign-flip p took 8.1 s and one bootstrap-t p 22.9 s; a 50-arm catalog took 1,532 s and every `evh goals` as long
+one sign-flip p took 8.1 s and one bootstrap-t p 22.9 s; a 50-arm catalog took 1,532 s and every `evh goal-list` as long
 again, almost all of it these draws. The plan (S2): a large-sample approximation where simulation shows it accurate,
 else cheaper resampling.
 

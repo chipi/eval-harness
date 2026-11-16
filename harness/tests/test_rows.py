@@ -4,7 +4,7 @@
     python tests/test_sheet.py
 
 In a throwaway project built from the tutorial ($0, offline): three arms run on the six tickets, a person labels
-three of them, a smaller governed dataset stands for v1; `evh inspect --sheet --dataset-id D` then shows every row,
+three of them, a smaller governed dataset stands for v1; `evh sheet-show D` then shows every row,
 and each signal (wrong, disagree, split, new, unlabelled) filters to exactly the items it should, together with
 `--where`; rows are sorted by how many signals they carry; a picked row says so; the sheet carries each arm's
 scores and the judge's, the winner per row on the chosen metric (ties named, the direction respected) and per
@@ -78,7 +78,7 @@ def blocks_of(r):
 
 def sheet_of(*args, runs=None):
     """The sheet's blocks: (the process, its rows in order each {column: value}, the footer {line: {arm: value}})."""
-    r = evh("inspect", "--sheet", "--dataset-id", D, "--runs", runs or RUNS, *args, "--json")
+    r = evh("sheet-show", D, "--runs", runs or RUNS, *args, "--json")
     blocks = blocks_of(r)
     table = next((b for b in blocks if "columns" in b and b["columns"][0] == "item_id"), {"rows": []})
     foot = next((b for b in blocks if "columns" in b and b["columns"][0] == "per arm"), {"rows": []})
@@ -280,7 +280,7 @@ try:
     with (proj / "gov.csv").open("w", newline="") as f:
         csv.writer(f).writerows([["item_id", "label"], ["t02_invoice", "A"]])
     r = evh("label-import", "gov.csv", "--dataset-id", "tickets_gov", "--set", "owner", "--by", "someone")
-    amb = evh("inspect", "--sheet", "--dataset-id", D, "--runs", RUNS, "--wrong-against", "owner")
+    amb = evh("sheet-show", D, "--runs", RUNS, "--wrong-against", "owner")
     r2, rs = rows("--wrong-against", f"{D}/owner")
     check(
         "--wrong-against: a bare name two datasets' sets share is refused, naming both; DATASET/SET still reads one",
@@ -328,7 +328,7 @@ try:
     check("signals and --where together: an item needs every one", ids(rs) == ["t05_delete"], out(r)[-300:])
 
     # ── the commands for what it shows, and --by ─────────────────────────────────────────────
-    r = evh("inspect", "--sheet", "--dataset-id", D, "--runs", RUNS, "--unlabelled", "--by", "area")
+    r = evh("sheet-show", D, "--runs", RUNS, "--unlabelled", "--by", "area")
     check(
         "the view prints the pick and label-sheet commands for the rows it shows",
         r.returncode == 0
@@ -415,7 +415,7 @@ try:
         wr.writerows(bare.items())
     r2 = evh("label-import", "bare.csv", "--dataset-id", D, "--set", "bare", "--by", "owner")
     r3 = evh(
-        "inspect", "--sheet", "--dataset-id", D, "--runs", "jsonish_v1", "--wrong-against", "bare", "--json",
+        "sheet-show", D, "--runs", "jsonish_v1", "--wrong-against", "bare", "--json",
         extra={"PYTHONPATH": str(HERE.parent)},
     )  # fmt: skip
     got = []
@@ -645,7 +645,7 @@ try:
         and abs(jr.get(T["author"], 0) - 2 / 6) < 1e-9,
         json.dumps(jr) + json.dumps(by.get("t06_mobile", {}))[:300],
     )
-    r = evh("inspect", "--sheet", "--dataset-id", D, "--runs", RUNS, "--metric", "judge_score")
+    r = evh("sheet-show", D, "--runs", RUNS, "--metric", "judge_score")
     check("refused: a metric two scorers judged, naming them", refused(r, "judge_a, judge_c"), out(r)[-300:])
     r, rs, foot = sheet_of("--metric", "judge_a/judge_score")
     check(
@@ -677,7 +677,7 @@ try:
         text = (proj / name).read_text("utf-8-sig") if (proj / name).is_file() else ""
         return list(csv.DictReader(io.StringIO(text, newline=""))), next(csv.reader(io.StringIO(text)), [])
 
-    r = evh("inspect", "--sheet", "--dataset-id", D, "--runs", RUNS, "--csv", "out.csv")
+    r = evh("sheet-export", "--dataset-id", D, "--runs", RUNS, "--csv", "out.csv")
     raw = (proj / "out.csv").read_bytes() if (proj / "out.csv").is_file() else b""
     body, head = read_sheet("out.csv")
     items_ = [x for x in body if not x["item_id"].startswith("#")]
@@ -696,14 +696,14 @@ try:
         and items_[0][T["lead1"]],
         out(r)[-300:] + str(head),
     )
-    r = evh("inspect", "--sheet", "--dataset-id", D, "--runs", RUNS, "--csv", "out.csv")
+    r = evh("sheet-export", "--dataset-id", D, "--runs", RUNS, "--csv", "out.csv")
     check(
         "--csv never overwrites a sheet (it may have been filled)",
         refused(r, "not overwritten"),
         out(r)[-200:],
     )
     r = evh(
-        "inspect", "--sheet", "--dataset-id", D, "--runs", RUNS, "--csv", "lab.csv", "--fill", "label",
+        "sheet-export", "--dataset-id", D, "--runs", RUNS, "--csv", "lab.csv", "--fill", "label",
         "--choices", "A,B",
     )  # fmt: skip
     lab_rows, lab_head = read_sheet("lab.csv")
@@ -716,7 +716,7 @@ try:
         out(r)[-300:] + str(lab_head[-4:]),
     )
     r = evh(
-        "inspect", "--sheet", "--dataset-id", D, "--runs", RUNS, "--csv", "sc.csv", "--scores-only", "--unlabelled"
+        "sheet-export", "--dataset-id", D, "--runs", RUNS, "--csv", "sc.csv", "--scores-only", "--unlabelled"
     )  # fmt: skip
     sc_rows, sc_head = read_sheet("sc.csv")
     check(
@@ -728,7 +728,7 @@ try:
         == ["t04_api", "t05_delete", "t06_mobile"],
         out(r)[-200:],
     )
-    r = evh("inspect", "--sheet", "--dataset-id", D, "--runs", RUNS, "--seed", "3")
+    r = evh("sheet-export", "--dataset-id", D, "--runs", RUNS, "--csv", "seed.csv", "--seed", "3")
     check("refused: --seed without a blind fill", refused(r, "--fill pick or scores"), out(r)[-200:])
     for made in ("out.csv", "lab.csv", "sc.csv"):
         (proj / made).unlink(missing_ok=True)
@@ -751,9 +751,9 @@ try:
         and [x["item_id"] for x in rs2] == [x["item_id"] for x in rs],
         out(r2)[-300:],
     )
-    r2 = evh("inspect", "--sheet", "--dataset-id", D, "--runs", f"judged-judge-a/other_v1/{T['lead1']}")
+    r2 = evh("sheet-show", D, "--runs", f"judged-judge-a/other_v1/{T['lead1']}")
     check("refused: a nested arm id on another dataset", refused(r2, f"not an arm on {D}"), out(r2)[-200:])
-    r = evh("inspect", "--sheet", "--dataset-id", D, "--runs", T["lead1"], "--label", "judged/no_such")
+    r = evh("sheet-show", D, "--runs", T["lead1"], "--label", "judged/no_such")
     check("refused: a --label that holds no such run", refused(r, "no run of that system"), out(r)[-200:])
     # A metric an arm has on some rows only: its win rate is over the rows it was scored on, and an arm scored on
     # none has no win rate (it was never compared, not always beaten).
@@ -794,43 +794,39 @@ try:
     for args, text, what in (
         (["--runs", two, "--split"], "--split needs 3", "--split with fewer than three runs"),
         (["--runs", "tickets_lead1_v1", "--disagree"], "--disagree needs 2", "--disagree with one run"),
-        (["--wrong-against", "owner"], "--wrong-against needs 1", "--wrong-against with no run"),
         (["--runs", two, "--wrong-against", "no_such"], "no such label set", "an unknown label set"),
         (["--runs", two, "--new-vs", "no_such_dataset"], "no_such_dataset", "an unknown --new-vs dataset"),
         (["--runs", two, "--where", "nope:x"], "no field 'nope'", "a --where on no field"),
         (["--runs", two, "--metric", "no_such_metric"], "no run in --runs records it", "an unknown --metric"),
-        (["--runs", two, "--item", "t01_login"], "not with --sheet", "--item with --sheet"),
-        (["--runs", two, "--fill", "pick"], "with --csv", "--fill without --csv"),
-        (
-            ["--runs", two, "--csv", "x.csv", "--fill", "scores", "--scale", "5"],
-            "LO..HI",
-            "a --scale that is no range",
-        ),
         (["--runs", "no_such_run_v1"], "no run with that id", "a run that does not exist"),
     ):
-        r = evh("inspect", "--sheet", "--dataset-id", D, *args)
+        r = evh("sheet-show", D, *args)
         check(f"refused: {what}", refused(r, text), out(r)[-200:])
-    r = evh("inspect", "--sheet", "--runs", two)
-    check("refused: --sheet without --dataset-id", refused(r, "--dataset-id"), out(r)[-200:])
-    r = evh("inspect", "--dataset-id", D, "--runs", two)
-    check("refused: --dataset-id without --sheet", refused(r, "--sheet"), out(r)[-200:])
-    r = evh("inspect", "--dataset-id", D, "--runs", two, "--unlabelled")
-    check("refused: a sheet filter without --sheet", refused(r, "--sheet"), out(r)[-200:])
-    r = evh("inspect", "--runs", two, "--scores-only")
-    check("refused: --scores-only without --sheet", refused(r, "--sheet"), out(r)[-200:])
-    r = evh("inspect", "--sheet", "--dataset-id", D, "--round", "r1")
-    check("refused: --sheet with --round", refused(r, "--runs"), out(r)[-200:])
-    r = evh("inspect", "--sheet", "--dataset-id", D, "--runs", two, extra={"EVH_PUBLIC": "1"})
+    r = evh(
+        "sheet-export", "--dataset-id", D, "--runs", two, "--csv", "x.csv", "--fill", "scores", "--scale", "5"
+    )
+    check("refused: a --scale that is no range", refused(r, "LO..HI"), out(r)[-200:])
+    r = evh("sheet-show", "--runs", two)
+    check(
+        "refused: the sheet's dataset is its argument",
+        r.returncode != 0 and "dataset" in out(r),
+        out(r)[-200:],
+    )
+    r = evh("sheet-show", D)
+    check(
+        "refused: the sheet's runs are its argument", r.returncode != 0 and "--runs" in out(r), out(r)[-200:]
+    )
+    r = evh("sheet-show", D, "--runs", two, extra={"EVH_PUBLIC": "1"})
     check(
         "refused publicly: the sheet carries outputs and labels",
         refused(r, "not served publicly"),
         out(r)[-200:],
     )
-    r = evh("inspect", "--baseline", "x")
-    check("inspect still needs --runs, --round or --sheet", refused(r, "--runs"), out(r)[-200:])
-    r = evh("inspect", "--runs", two, "--items")
+    r = evh("comparison-show", "--baseline", "x")
+    check("comparison-show still needs runs or a round", refused(r, "runs"), out(r)[-200:])
+    r = evh("comparison-show", "--runs", two, "--items")
     check("--items is gone (the sheet replaces it)", r.returncode != 0 and "--items" in out(r), out(r)[-200:])
-    r = evh("inspect", "--dataset-id", D, "--rows", "--runs", two)
+    r = evh("comparison-show", "--rows", "--runs", two)
     check("--rows is gone (the sheet replaces it)", r.returncode != 0 and "--rows" in out(r), out(r)[-200:])
 
     # ── the decision, not the whole output (UXS-002): an adapter's decision(output) is what a row shows ───
@@ -857,9 +853,7 @@ try:
         extra={"PYTHONPATH": str(HERE.parent)},
     )
     check("setup: an arm whose adapter has decision()", r.returncode == 0, out(r)[-300:])
-    r = evh(
-        "inspect", "--sheet", "--dataset-id", D, "--runs", "tickets_decider_v1,tickets_lead1_v1", "--json"
-    )
+    r = evh("sheet-show", D, "--runs", "tickets_decider_v1,tickets_lead1_v1", "--json")
     table = next(
         (b for b in blocks_of(r) if "columns" in b and b["columns"][0] == "item_id"),
         {"rows": [], "columns": []},
@@ -874,9 +868,7 @@ try:
         and "disagree" not in str(first.get("signals")),
         out(r)[-400:] + json.dumps(table.get("columns")),
     )
-    rest = evh(
-        "inspect", "--sheet", "--dataset-id", D, "--runs", "tickets_lead1_v1,tickets_decider_v1", "--json"
-    )
+    rest = evh("sheet-show", D, "--runs", "tickets_lead1_v1,tickets_decider_v1", "--json")
     rest_rows: list = next(
         (b for b in blocks_of(rest) if "columns" in b and b["columns"][0] == "item_id"), {"rows": []}
     )["rows"]

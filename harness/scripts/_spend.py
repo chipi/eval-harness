@@ -8,7 +8,7 @@
                           for a command that died, and a reader counts a dead one's written items)
 
 The ledger is `.build/rounds/<goal>/<round>.json`, one entry per spending command: {id, pid, job, command, run_ids,
-reserved, spent, closed_at}. What a round has left is its budget, less what its runs have spent (as `evh rounds`
+reserved, spent, closed_at}. What a round has left is its budget, less what its runs have spent (as `evh round-list`
 counts it), less each closed entry's spend its runs do not already show, less each open entry's reservation (its
 items' spend when its process is gone). Ten arms of a round started at once share what is left; none gets all of it.
 """
@@ -232,7 +232,7 @@ def reserve(rnd: dict[str, Any], command: str, run_ids: list[str] | None = None)
             _common.die(
                 f"round {rnd['round_id']} of {rnd['goal']} has spent its budget (${float(rnd['budget_usd']):.2f}, "
                 "counting what its running commands have reserved): nothing is called. Raise budget_usd in the "
-                "round, or wait for a running arm to end (`evh rounds` shows what was spent)",
+                "round, or wait for a running arm to end (`evh round-list` shows what was spent)",
                 "over-budget",
             )
         own = own_cap()

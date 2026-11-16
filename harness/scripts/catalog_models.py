@@ -5,7 +5,7 @@
     models/<id>.html     one record: its deployments, each one's onboarding report, the settings history,
                          its arms
 
-`evh models` prints the same rows (`model_rows`). The records are data/models/<id>.yaml (_models.py); the
+`evh model-list` prints the same rows (`model_rows`). The records are data/models/<id>.yaml (_models.py); the
 adapter's `models()` says which arms use each. The grouping and facets are catalog_assets/group.js, the
 period parts the shared ones (catalog_periods.py, catalog_assets/period.js).
 """
@@ -449,7 +449,7 @@ def render_models(A, by_ds: dict, out, nav: list, arms_rows: list[dict] | None =
             (*cb.PERIOD_SCRIPTS(), "assets/group.js"),
             nav=nav,
             item=A.item_word,
-            elsewhere=(("models", {}),),
+            elsewhere=(("model-list", {}),),
         ),
     )
     for r in rows:
@@ -482,7 +482,7 @@ def yes_no(v: bool) -> str:
 
 def version_rows(rec: dict) -> list[list[str]]:
     """A code record's versions, newest first, as text: the commit, when it ran in production, what changed, and
-    how faithfully a replay reproduced it (R; "not checked" until a replay has run). The page and `evh models
+    how faithfully a replay reproduced it (R; "not checked" until a replay has run). The page and `evh model-list
     --model` both read these."""
     rows = []
     for v in reversed([v for v in rec.get("versions") or [] if isinstance(v, dict)]):
@@ -741,6 +741,6 @@ def render_model(A, r: dict, out, nav: list) -> None:
             "models",
             nav=nav,
             item=A.item_word,
-            elsewhere=(("models", {"model": r["id"]}),),
+            elsewhere=(("model-show", {"model": r["id"]}),),
         ),
     )

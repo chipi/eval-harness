@@ -709,7 +709,7 @@ def drive(cat: Path, base: str) -> None:
             "; ".join(young[:4]),
         )
 
-        # A goal page's rounds count their arms as `evh rounds` does: a re-scored run is the same arm.
+        # A goal page's rounds count their arms as `evh round-list` does: a re-scored run is the same arm.
         differ = []
         for gp in sorted((cat / "g").glob("*.html")):
             shown = dict(
@@ -718,19 +718,19 @@ def drive(cat: Path, base: str) -> None:
             if not shown:
                 continue
             cli = subprocess.run(
-                [sys.executable, str(HARNESS / "scripts" / "cli.py"), "rounds", "--goal", gp.stem],
+                [sys.executable, str(HARNESS / "scripts" / "cli.py"), "round-list", gp.stem],
                 cwd=HARNESS,
                 capture_output=True,
                 text=True,
             ).stdout
-            said = dict(re.findall(r"^\s+(r\d+)\s+\S+\s+\S+\s+(\d+) arm\(s\)", cli, re.M))
+            said = dict(re.findall(r"^\s*(r\d+)\s+\S+\s+\S+\s+(\d+) arm\(s\)", cli, re.M))
             differ += [
-                f"{gp.stem} {rid}: page {n}, evh rounds {said.get(rid)}"
+                f"{gp.stem} {rid}: page {n}, evh round-list {said.get(rid)}"
                 for rid, n in shown.items()
                 if said.get(rid) != n
             ]
         check(
-            "goal pages: each round's arms counted as evh rounds counts them",
+            "goal pages: each round's arms counted as evh round-list counts them",
             not differ,
             "; ".join(differ[:4]),
         )

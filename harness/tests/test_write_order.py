@@ -67,10 +67,7 @@ def out(r):
 
 def listed():
     r = evh("runs-list", "--json")
-    rows = [
-        x for b in (json.loads(r.stdout).get("result") or {}).get("blocks", []) for x in b.get("rows", [])
-    ]
-    return {x["run_id"] for x in rows}
+    return {x["run_id"] for x in (json.loads(r.stdout).get("result") or {}).get("runs", [])}
 
 
 try:

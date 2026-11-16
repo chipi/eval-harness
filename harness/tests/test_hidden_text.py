@@ -183,7 +183,7 @@ try:
 
     # ── the inspector's item answer, in process ────────────────────────────────────────────
     from evaluation_harness import catalog_serve as cs
-    from evaluation_harness.catalog_views import load_catalog_adapter
+    from evaluation_harness.catalog_adapter import load_catalog_adapter
 
     cs.set_adapter(load_catalog_adapter(None))
     item = "t01_login"
@@ -219,24 +219,25 @@ try:
     cs.LIMITS.update(hosts=(), publish=())
 
     # ── a public MCP server's command ──────────────────────────────────────────────────────
-    from evaluation_harness.mcp_server import run_command
+    sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _ops
+    import _ops
 
-    rc, out, err = run_command(proj, "dataset-items", ["--dataset-id", "tickets_s"], public=True)
+    run_command = _ops.mcp
+
+    rc, out, err = run_command(proj, "dataset-items", {"dataset": "tickets_s"})
     check(
-        "MCP public: dataset-items shows the shown dataset's text",
-        rc == 0 and MARK["s"] in out,
+        "MCP public: dataset-items serves the shown dataset's rows, never a profile's item text (L2)",
+        rc == 0 and "t01_login" in out and MARK["s"] not in out,
         (out + err)[-300:],
     )
-    rc, out, err = run_command(proj, "dataset-items", ["--dataset-id", "tickets_h"], public=True)
+    rc, out, err = run_command(proj, "dataset-items", {"dataset": "tickets_h"})
     check(
         "MCP public: dataset-items answers on the hidden dataset",
         rc == 0 and "t01_login" in out,
         (out + err)[-300:],
     )
     check("MCP public: with none of its text", MARK["h"] not in out + err, out[-300:])
-    rc, out, err = run_command(
-        proj, "dataset-items", ["--dataset-id", "tickets_h", "--item", item], public=True
-    )
+    rc, out, err = run_command(proj, "dataset-items", {"dataset": "tickets_h", "item": item})
     check(
         "MCP public: dataset-items --item on the hidden dataset is refused",
         rc != 0 and MARK["h"] not in out + err,
@@ -268,15 +269,15 @@ try:
         "how often two sets agree" in page_h and MARK["h"] not in page_h,
         [ln for ln in page_h.splitlines() if MARK["h"] in ln][:2],
     )
-    rc, out, err = run_command(proj, "labels", ["--dataset-id", "tickets_s", "--confusion"], public=True)
+    rc, out, err = run_command(proj, "label-set-list", {"dataset": "tickets_s"})
     check(
-        "MCP public: labels --confusion names the shown dataset's labels",
+        "MCP public: label-set-list names the shown dataset's labels",
         rc == 0 and MARK["s"] in out,
         out[-300:],
     )
-    rc, out, err = run_command(proj, "labels", ["--dataset-id", "tickets_h", "--confusion"], public=True)
+    rc, out, err = run_command(proj, "label-set-list", {"dataset": "tickets_h"})
     check(
-        "MCP public: labels --confusion on the hidden dataset answers, with none of its labels' text",
+        "MCP public: label-set-list on the hidden dataset answers, with none of its labels' text",
         rc == 0 and "tickets_h" in out and MARK["h"] not in out + err,
         (out + err)[-400:],
     )
@@ -318,17 +319,19 @@ try:
             }
         ),
     )
-    rc, out, err = run_command(proj, "tags", ["--dataset-id", "tickets_h", "--json"], public=True)
+    rc, out, err = run_command(proj, "tag-set-list", {"dataset": "tickets_h"})
     check(
-        "MCP public: tags counts the hidden dataset's modes, never a note",
+        "MCP public: tag-set-list counts the hidden dataset's modes, never a note",
         rc == 0 and "too-long" in out and MARK["h"] not in out + err,
         (out + err)[-300:],
     )
-    rc, out, err = run_command(proj, "labels", [], public=False)
-    check("labels, local: a hidden set's notes are listed on this machine", MARK["h"] in out, out[-300:])
-    rc, out, err = run_command(proj, "labels", [], public=True)
+    rc, out, err = run_command(proj, "label-set-list", {"dataset": "tickets_h"}, public=False)
     check(
-        "MCP public: labels lists the hidden dataset's sets, never their notes",
+        "label-set-list, local: a hidden set's notes are listed on this machine", MARK["h"] in out, out[-300:]
+    )
+    rc, out, err = run_command(proj, "label-set-list", {"dataset": "tickets_h"})
+    check(
+        "MCP public: label-set-list lists the hidden dataset's sets, never their notes",
         rc == 0 and "tickets_h" in out and MARK["h"] not in out + err,
         (out + err)[-300:],
     )

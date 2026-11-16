@@ -314,7 +314,7 @@ try:
         "a promoted arm's page: its deploy sheet (what was sent, the bookkeeping not sent, the command)",
         'id="deploy-sheet"' in bp
         and "settings sent" in bp
-        and "evh deploy-sheet --system tickets_lead1_v1" in bp
+        and "evh deploy-sheet tickets_lead1_v1" in bp
         and "No capture here says what production ran" in bp,
         "",
     )

@@ -37,7 +37,7 @@ from evaluation_harness.model import goal_views as gv
 
 def decisions(A, goal: dict) -> dict[str, dict[str, Any]]:
     """{dataset: {"rows": {system_id: {"arm", "label", "mean", "out"}}, "leader", "contenders", "recommended"}}: the
-    goal's decision on each dataset's gold group (else its first group), as `evh goals` reads it."""
+    goal's decision on each dataset's gold group (else its first group), as `evh goal-list` reads it."""
     by_ds = cb.collect(A)
     retired_in = gv.retired_in_of(A, goal)
     out: dict[str, dict[str, Any]] = {}
@@ -71,7 +71,7 @@ def decisions(A, goal: dict) -> dict[str, dict[str, Any]]:
             "measure": gm,
             "rows": rows,
             "leader": label.get(dec.get("leader") or "", ""),
-            # the contenders beside the leader, as `evh goals` counts them: the leader is not one of them
+            # the contenders beside the leader, as `evh goal-list` counts them: the leader is not one of them
             "contenders": sorted(
                 label.get(a, a) for a in dec.get("contenders") or [] if a != dec.get("leader")
             ),

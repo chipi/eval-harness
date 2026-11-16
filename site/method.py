@@ -141,7 +141,7 @@ NODES = [
             "A claim means significant, not scored higher."
         ),
         "your terminal",
-        "evh family-test --dataset-id … --a … --against …",
+        "evh family-test … --a … --against …",
         (GUIDE, "7-compare"),
     ),
     (
@@ -565,7 +565,7 @@ LASTING = [
             "deployed system decides, against new candidates. Each round records what it set out to learn and what it "
             "concluded."
         ),
-        "evh round-open --from · evh rounds",
+        "evh round-open --from · evh round-list",
         "docs/tutorials/4-rounds-and-versions/#after-deploy",
     ),
 ]
@@ -844,7 +844,7 @@ STEPS = [
     (
         "Compare",
         "Read the significance block, not the row numbers.",
-        "evh leaderboard --dataset-id tickets_v1",
+        "evh leaderboard tickets_v1",
         "pairs distinguishable: 1 of 3",
         GUIDE,
         "7-compare",

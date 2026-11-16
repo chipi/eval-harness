@@ -2,7 +2,7 @@
 
 A round (data/rounds/<goal>/<r>.yaml) keeps its arms: each a system read under one label (the arm's id is
 `<label prefix>/<dataset>/<system>`, model/runs.arm_id), the runs it is read through, how and when it entered, and its
-retirement. `evidence(goal, round)` is what every view of a round reads: `evh rounds`, the goal page, the inspector's
+retirement. `evidence(goal, round)` is what every view of a round reads: `evh round-list`, the goal page, the inspector's
 `--round`, pair-test's and family-test's `--round` and the API (owner, 2026-11-13). Its leader is read as a goal
 decides: among the gold-scored arms where there are any, never a judged arm, never the arm that wrote the reference it
 is scored against."""
@@ -276,7 +276,7 @@ def _promote_hold(
         shown = ", ".join(tied[:5]) + (f" and {len(tied) - 5} more" if len(tied) > 5 else "")
         return (
             f"not separated from {shown} (not significantly different after Holm): the goal's tie-break picks among "
-            "them, and `evh goals --goal` names the arm it recommends"
+            "them, and `evh goal-leaderboard` names the arm it recommends"
         )
     return ""
 
@@ -432,7 +432,7 @@ def evidence(goal: str, rnd: dict, A: Any = None, data: Path | None = None) -> d
             out["suggest"].append(
                 (
                     f"{len(level)} arm(s) not significantly different from the leader ({', '.join(level)}): more items may tell them apart",
-                    f"evh rank-stability --dataset-id {ds}",
+                    f"evh rank-stability {ds}",
                 )
             )
     prev = _rounds.find(goal, rnd["from"], data) if rnd.get("from") else None

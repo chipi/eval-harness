@@ -1,7 +1,6 @@
 """The prompt commands (RFC-028): versions read, compared, recorded and exported.
 
-evh prompts [NAME] [--json]                 names; or a name's versions, lineage and the runs that used each
-evh prompt-diff A B [--json]                two versions' text as a unified diff, and the runs of each
+(`evh prompt-list`, `prompt-show` and `prompt-diff` read them: ops/prompts.py)
 evh prompt-version NAME (--from-file F | --text T) [--parent ID] --note "..." [--by WHO]
 evh prompt-export ID --to PATH              a version's bytes written out, for a person to commit
 """
@@ -9,7 +8,6 @@ evh prompt-export ID --to PATH              a version's bytes written out, for a
 from __future__ import annotations
 
 import argparse
-import difflib
 import sys
 from pathlib import Path
 from typing import Any
@@ -50,77 +48,9 @@ def _version_or_die(vid: str) -> tuple[dict[str, Any], bytes]:
         name, sha16 = _prompts.split_id(vid)
         data = _prompts.text_of(vid)
     except (ValueError, FileNotFoundError):
-        die(f"no prompt version {vid!r} (evh prompts lists them)", "not-found")
+        die(f"no prompt version {vid!r} (evh prompt-list lists them)", "not-found")
     doc = next((v for v in _prompts.versions(name) if v["sha256"].startswith(sha16)), {})
     return doc, data
-
-
-def prompts(argv: list[str]) -> int:
-    """evh prompts: every name, or one name's versions with their lineage and runs."""
-    ap = argparse.ArgumentParser(prog=evh_prog(), description="prompt versions (RFC-028)")
-    ap.add_argument("name", nargs="?", help="one prompt name (default: every name)")
-    ap.add_argument("--json", action="store_true", help="the same as one JSON object")
-    a = ap.parse_args(argv)
-    with _jsonout.collect("prompts", a.json):
-        used = _runs_of()
-        if not a.name:
-            rows = []
-            for name in _prompts.names():
-                vs = _prompts.versions(name)
-                rows.append({"name": name, "versions": len(vs), "latest": vs[-1]["id"] if vs else None,
-                             "runs": sum(len(used.get((name, v["sha256"]), [])) for v in vs)})  # fmt: skip
-            for r in rows:
-                print(
-                    f"{r['name']:<48} {r['versions']:>3} version(s)  {r['runs']:>4} run(s)  latest {r['latest']}"
-                )
-            if not rows:
-                print("no prompt versions yet: declare `prompts:` in a system, and its next run records them")
-            _jsonout.value("prompts", rows)
-            return 0
-        vs = _prompts.versions(a.name)
-        if not vs:
-            die(f"no prompt named {a.name!r} (evh prompts lists the names)", "not-found")
-        out = []
-        for v in vs:
-            runs = used.get((a.name, v["sha256"]), [])
-            who = (v.get("actor") or {}).get("name") or "?"
-            print(f"v{v['n']}  {v['id']}  {v.get('created_at')}  by {who}  parent {v.get('parent') or '-'}")
-            print(f"     {v.get('note') or ''}")
-            for r in runs:
-                print(f"     run {r['run_id']}  {r['metric']}={r['score']}")
-            out.append({**v, "runs": runs})
-        _jsonout.value("versions", out)
-    return 0
-
-
-def diff(argv: list[str]) -> int:
-    """evh prompt-diff: two versions' text as a unified diff, and the runs of each."""
-    ap = argparse.ArgumentParser(prog=evh_prog(), description="two prompt versions compared (RFC-028)")
-    ap.add_argument("a", help="a version id, <name>/<sha16>")
-    ap.add_argument("b", help="the other")
-    ap.add_argument("--json", action="store_true", help="the same as one JSON object")
-    a = ap.parse_args(argv)
-    with _jsonout.collect("prompt-diff", a.json):
-        da, ta = _version_or_die(a.a)
-        db, tb = _version_or_die(a.b)
-        lines = list(
-            difflib.unified_diff(
-                ta.decode("utf-8", "replace").splitlines(keepends=True),
-                tb.decode("utf-8", "replace").splitlines(keepends=True),
-                fromfile=a.a,
-                tofile=a.b,
-            )
-        )
-        sys.stdout.write("".join(lines) if lines else "the two versions are the same text\n")
-        used = _runs_of()
-        for vid, d in ((a.a, da), (a.b, db)):
-            runs = used.get((_prompts.split_id(vid)[0], d.get("sha256", "")), [])
-            print(
-                f"\n{vid}: {len(runs)} run(s)"
-                + "".join(f"\n  {r['run_id']}  {r['metric']}={r['score']}" for r in runs)
-            )
-        _jsonout.values({"a": a.a, "b": a.b, "diff": "".join(lines)})
-    return 0
 
 
 def version(argv: list[str]) -> int:
@@ -188,4 +118,4 @@ def export(argv: list[str]) -> int:
 
 def run(sub: str) -> int:
     """One of the prompt commands, by name."""
-    return {"prompts": prompts, "diff": diff, "version": version, "export": export}[sub](sys.argv[1:])
+    return {"version": version, "export": export}[sub](sys.argv[1:])

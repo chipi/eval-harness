@@ -110,7 +110,7 @@ like any arm; seven things are different. (The triage fleet's questions, 2026-11
 - **Two goals, two questions.** *Is it right?* is a goal against gold (labels from outcomes, below).
   *Did it change?* is a regression guard: the same dataset scored against a silver reference made from the
   current code's own run (`evh label-from-run`, `evh reference-promote --tier silver`), and the changed items
-  read with `evh inspect --runs A,B --items-out --disagree`. An arm that must give exactly what another gives
+  read with `evh comparison-items --runs A,B --disagree`. An arm that must give exactly what another gives
   (the same code at a newer commit) says `expect_identical_to: <system_id>` in its system, and `evh validate`
   fails it when it does not (RUNBOOK §4). [`examples/signal-fleet-dedup/`](../../examples/signal-fleet-dedup/README.md)
   is one, on the fleet's real signals.
@@ -127,7 +127,7 @@ like any arm; seven things are different. (The triage fleet's questions, 2026-11
 - **The code is a record of its own.** `data/models/<id>.yaml` with `kind: code` holds its `repo` and its
   `versions`: each a `commit`, when it was `deployed` (`from`, `to`), and the `faithfulness` a replay measured
   (`agreed` of `items`, the named `exceptions`). It needs no `aliases`; an arm names it with `model_record` like
-  any record, and its Models page and `evh models --model <id>` list the versions instead of an onboarding. A replay
+  any record, and its Models page and `evh model-show <id>` list the versions instead of an onboarding. A replay
   (`replay:` in the system, RFC-030) runs each item at the version deployed then, read from `checkout` (a local clone)
   or `repo` when it is a path; `evh faithfulness` writes each version's `faithfulness` (RUNBOOK §15c).
 
@@ -207,7 +207,7 @@ in the same file:
 |---|---|---|
 | `decision(output)` | the decision in one output (a disposition, a label), without the reasons and traces around it | the sheet shows it per arm; with no `same`, two outputs agree when their decisions do |
 | `title(item)` | a line that names an item (an alert's name, a ticket's subject) | the sheet shows it as the item's start, else the item's own first characters |
-| `same(a, b)` | whether two outputs are one decision | agreement: `inspect --disagree`, the sheet's disagree and split, `label-sheet --items disagree` (default: the same decision, else the same text) |
+| `same(a, b)` | whether two outputs are one decision | agreement: `comparison-show --disagree 1`, the sheet's disagree and split, `label-sheet --items disagree` (default: the same decision, else the same text) |
 | `recorded_output(record)` | production's own decision, from a capture's record | `arm-from-capture` (else `--field`) |
 | `production_ran(record)` | what production ran for a record, under the keys a run's items report (`_meta`) | `deploy-sheet --capture` |
 
@@ -371,19 +371,19 @@ which references exist, what one arm wrote for one item.
   | what an arm was measured under (optional) | `conditions(arm)`: `{"machine.platform": …, "library.torch": …, "deployment.machine": …, "harness.version": …, "scorer.sha256": …, "data.items_sha256": …, "reference.sha256": …}` (`machine.*` and `library.*` are the runner, where `evh` ran; `deployment.*` is where the system under test ran; both come from the run's fingerprint, v5); the inspector lists what differs between the arms it compares, and warns when it is the scorer, the reference or, for latency, the machine |
   | dataset versions (optional) | `datasets()`: every dataset id, run or not; `dataset_lineage(dataset)`: `{"dataset_id", "added", "removed", "changed"}` or None; the dataset pages link versions both ways; `dataset_created(dataset)`: when it was frozen (ISO), the day the home page counts it new (else its first run) |
   | what is inside a dataset (optional) | `dataset_profile(dataset)`: the profile `evh dataset-profile` writes (`schemas/profile.schema.json`: `dataset_id`, `items_sha256`, `items`, `references`, `rows`, and `source` when known), plus `"stale": True` when the items changed since; the dataset page's "what's inside" shows it. The harness's own adapter reads `data/profiles/<dataset>.json` |
-  | rounds: a config's arm id (optional) | `arm_of(dataset, system_id)`: `evh rounds` and `inspect --round` use it; `runs/<dataset>/<system_id>` when absent |
+  | rounds: a config's arm id (optional) | `arm_of(dataset, system_id)`: `evh round-list` and `comparison-show --round` use it; `runs/<dataset>/<system_id>` when absent |
   | arm page: runs and details (optional) | `arm_runs(arm)`: `[{"run_id", "created_at", "items", "cost_usd", "derived"}]`; `arm_config(arm)`: `{"system_id", "params" (credentials removed), "adapter", "deployment" (the model-record deployment its config named, "" for none)}`; an arm page shows them when present |
-  | spend in USD and tokens (optional) | `spend()`: `[{"at", "usd", "tokens", "kind": "arm"\|"judge", "dataset", "what", "arm"}]` (usd or tokens None when unknown; measured runs and judging per set and day; `arm`, optional, names a measured run's arm); the home page's spend, the activity page and the arms page's spend columns, and `evh overview` and `evh activity` use it |
-  | what each model's weights are (optional) | `model_facts()`: `{model: {"weights": "open" \| "proprietary", "licence": …}}`, keyed by the model a run records (`params.model`); the arms page's open-weights and proprietary filters and `evh arms --weights` read it. The harness's own adapter reads the model records, `data/models/<model_id>.yaml` (`schemas/model.schema.json`, validate V1: `aliases` are the ids runs record, `weights`, `licence`, and `deployments`, each place the model runs with its own onboarding); a model not listed is in neither |
+  | spend in USD and tokens (optional) | `spend()`: `[{"at", "usd", "tokens", "kind": "arm"\|"judge", "dataset", "what", "arm"}]` (usd or tokens None when unknown; measured runs and judging per set and day; `arm`, optional, names a measured run's arm); the home page's spend, the activity page and the arms page's spend columns, and `evh overview-show` and `evh activity-show` use it |
+  | what each model's weights are (optional) | `model_facts()`: `{model: {"weights": "open" \| "proprietary", "licence": …}}`, keyed by the model a run records (`params.model`); the arms page's open-weights and proprietary filters and `evh arm-list --weights` read it. The harness's own adapter reads the model records, `data/models/<model_id>.yaml` (`schemas/model.schema.json`, validate V1: `aliases` are the ids runs record, `weights`, `licence`, and `deployments`, each place the model runs with its own onboarding); a model not listed is in neither |
   | metrics that need no reference (optional) | `reference_free(metric)`: True when the metric is measured off the bill or the clock, so arms scored against different references can still be compared on it; when absent, a metric whose name contains cost, latency or tokens |
   | labels (optional, RFC-023) | `label_sets()`: every set, `{dataset, set, id, source, n_items, guideline, created_at, items}`; `label_coverage(dataset)`: the sets covering a dataset's items (by their sha256) and how often two agree; `item_labels(dataset, item)`: every label one item has, with its source; the Labels page, a dataset page's labels and the inspector's item view read them. `describe(arm)` may add `"labels_source"` (an arm scored against a label set) and `references()` `"promoted_from"`, `"reason"`, `"promoted_by"` |
-  | production (optional, RFC-019, RFC-023) | `captures()`: every capture, as `evh captures` lists them (the Captures page); `dataset_meta(dataset)`: its tags and where it came from (a capture, or the version it was derived from); `describe(arm)["recorded"]`: the capture a recorded arm read production's decisions from; `same_output(arm)`: whether two outputs are one decision (the adapter's `same(a, b)`), for agreement and the sheet |
+  | production (optional, RFC-019, RFC-023) | `captures()`: every capture, as `evh capture-list` lists them (the Captures page); `dataset_meta(dataset)`: its tags and where it came from (a capture, or the version it was derived from); `describe(arm)["recorded"]`: the capture a recorded arm read production's decisions from; `same_output(arm)`: whether two outputs are one decision (the adapter's `same(a, b)`), for agreement and the sheet |
   | picks and the deploy sheet (optional, ADR-0023) | `picks_waiting(dataset)`: the picks naming a dataset as their target; `deploy_sheet(arm)`: what production must match to run a promoted arm, and what each capture says it ran |
   | the inspector's view kinds | `item_view` returns `{"kind": "text", "text"}`, `{"kind": "none", "note"}`, or a structured `insights` (`items` of `{text, grounded}`, `quotes`), `nodes` (`groups`) or `entities` (`items`); any may carry `info` |
 
   Every page and comparison is also a command that asks the same adapter the same questions:
-  `evh datasets`, `evh references`, `evh metrics`, `evh goals`, `evh rounds`, `evh search` and
-  `evh inspect --runs …` (`--analysis`, `--item`) and `evh inspect --sheet --dataset-id … --runs …` (with
+  `evh dataset-list`, `evh reference-list`, `evh metric-list`, `evh goal-list`, `evh round-list`, `evh search` and
+  `evh comparison-show --runs …` (`--analysis`, `--item`) and `evh sheet-show … --runs …` (with
   `--adapter` for a project adapter not named in `config.yaml`). The
   pages are a comfort; [tutorial 5](../../docs/tutorials/5-catalog-and-inspector.md#3-every-page-and-its-command)
   maps each page to its command.
@@ -439,18 +439,18 @@ project (the rules, the loop, what it may do: [CONCEPTS](CONCEPTS.md#an-agent-wo
 `evh mcp` is for an agent that cannot run commands (a chat client, a hosted assistant) and for
 a team sharing one project.
 
-`evh mcp` serves the project's read commands to an agent over MCP (the official SDK): the
-catalog's views (`overview`, `datasets`, `dataset-items`, `dataset-card`, `licences`, `arms`, `models`, `goals`,
-`references`, `metrics`, `activity`, `search`, `captures`, `labels`, `tags`, `picks`, `label-coverage`,
-`deploy-sheet`), the project's
-files as `data-ls` and `data-show` list and show them, the inspector in the terminal (`inspect`, its
-sheet included, without the options that write a file: `--csv`, `--fill` and theirs), the ranking
-and the tests (`leaderboard`, `pair-test`, `family-test`, `rank-stability`, `run-compare`), `rounds`,
-`runs-list` and `validate`: 28 tools. Each call runs the command as a person would, with `--json`,
-so the agent sees the same numbers you do. No tool writes project data, spends or runs a model:
-running arms, promoting a baseline and closing a round stay commands. (What a call does write is
-computed answers in the project's ignored `.cache/`: the paired tests' p values and
-`family-test`'s results.) The design is
+`evh mcp` serves the project's reads to an agent over MCP (the official SDK): one tool for each read
+operation, named as the operation, the command and the API's resource are (`goal-list`, `dataset-show`,
+`comparison-show`, `leaderboard`, `pair-test`, `family-test`, `rank-stability`, `run-compare`, `validate`, `data-ls`,
+`search`, ...; `evh mcp --help` and the tool list name them all): 71 on your machine, 61 on a public server, and on
+your machine the agent sampler's `study-ask` and `study-tell`. A call is answered in the server's own process, from
+the same operation the command and the API are made from, so the agent sees the same numbers you do; its answer is
+the operation's result, structured (the `result` of the command's `--json`), and the tool's inputs are the
+operation's own, typed. No tool writes project data, spends or runs a model: running arms, promoting a baseline and
+closing a round stay commands. (What a call does write is computed answers in the project's ignored `.cache/`: the
+paired tests' p values and `family-test`'s results.) A tool name from before 0.8.0 that differs from its operation
+(`goals`, `datasets`, `inspect`, `labels`, ...) is gone, no alias; the inputs are the operation's (`dataset`, not
+`dataset-id`). The design is
 [RFC-018](https://github.com/chipi/eval-harness/blob/main/docs/rfc/RFC-018-read-only-mcp-server.md).
 
 **On your machine, against your project** (stdio: the agent starts it):
@@ -491,8 +491,9 @@ evh mcp --http --bind 0.0.0.0 --port 8766 --allowed-host evals.team.example [--p
 ```
 
 `--allowed-host` is required beyond the loopback (the server checks the Host against DNS
-rebinding); `--public` leaves out the options that answer with an item's text (an item, the sheet), and the
-`validate`, `data-ls` and `data-show` tools (25 tools), and the options that set how long a test runs (`--permutations`, `--draws`); `--rate` (per
+rebinding); `--public` leaves out the tools that answer with an item's text, an output or a label, or read the project's files
+(`comparison-item`, `comparison-items`, `sheet-show`, `validate`, `data-ls`, `data-show` and the like: 61 tools of the 71), and the inputs that
+would (`group` of `comparison-crosstab`, `item` of `dataset-items`) and the ones that set how long a test runs (`permutations`, `draws`); `--rate` (per
 caller), `--rate-total` (everyone together), `--concurrent` and `--timeout` bound the load, and a
 caller has one call running at a time; `--client-header` names the header your proxy sets for the
 caller's address (trust it only if nothing else can reach the port); `--hooks FILE` adds your error reporting, tracing

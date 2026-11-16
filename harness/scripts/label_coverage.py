@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """How far an outcome rule set labels a dataset now, and what it waits for (the fleet's feedback 31).
 
-    evh label-coverage --dataset-id triage_v1 --capture fleet_2026_11 --map outcomes.yaml
+    evh label-coverage-show triage_v1 --capture fleet_2026_11 --map outcomes.yaml
 
 The same rules `evh label-from-capture` applies, read without writing anything: each item is labelled now, skipped
 by design, not yet mature (a rule fits it but for `min_age_days`: the date it matures is named), matched by no rule
@@ -18,16 +18,14 @@ from pathlib import Path as _Path
 if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
-import argparse
 from collections import Counter
 from datetime import timedelta
-from pathlib import Path
 from typing import Any
 
 from evaluation_harness import _jsonout
-from evaluation_harness._common import evh_prog, load_dataset
+from evaluation_harness._common import load_dataset
 from evaluation_harness._importers import parse_time
-from evaluation_harness._outcome_rules import load_rules, matches
+from evaluation_harness._outcome_rules import matches
 from evaluation_harness.dataset_from_capture import load_capture
 
 CLASSES = ("labelled", "skipped", "not_mature", "unmatched", "no_record", "gone")
@@ -210,37 +208,3 @@ def show(cov: dict[str, Any], rules: str, items: bool = False) -> None:
                 + (f" lacks {', '.join(x['lacks'])}" if x.get("lacks") else "")
             )
             print(f"  {x['item_id']}  {SAID[x['class']]}{extra}")
-
-
-def main() -> int:
-    """Report how far an outcome rule set labels a dataset."""
-    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
-    ap.add_argument("--dataset-id", required=True)
-    ap.add_argument("--capture", required=True, help="the capture whose records hold the outcomes")
-    ap.add_argument(
-        "--map", required=True, type=Path, help="the rules (the mapping label-from-capture reads)"
-    )
-    ap.add_argument(
-        "--items", action="store_true", help="also list every item with its class (and maturing date)"
-    )
-    from evaluation_harness import _outcome_join  # noqa: PLC0415
-
-    _outcome_join.add_arguments(ap)
-    ap.add_argument(
-        "--from-set", help="also say what a relabel of this earlier set would add and change today"
-    )
-    ap.add_argument(
-        "--json", action="store_true", help="the same answer as one JSON object: counts, rules and every item"
-    )
-    args = ap.parse_args(_outcome_join.argv())
-    with _jsonout.collect("label-coverage", args.json):
-        cov = coverage(
-            args.dataset_id, args.capture, load_rules(args.map), _outcome_join.from_args(args), args.from_set
-        )
-        show(cov, args.map.as_posix(), args.items and not args.json)
-        _jsonout.values(cov)
-    return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())

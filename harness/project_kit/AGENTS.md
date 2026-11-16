@@ -47,7 +47,7 @@ The procedures are skills: `evh skills-install` copies them into `.claude/skills
    harness records each set's source but does not stop you, so never promote your own labels
    at gold (silver is for those).
 7. **Validate, then report with evidence.** `evh validate` checks the whole tree. A claim that
-   one arm is better cites the paired test that says so (`evh pair-test`, `evh goals`), not a
+   one arm is better cites the paired test that says so (`evh pair-test`, `evh goal-list`), not a
    mean.
 8. **Name the comparison before the run.** Write a `hypothesis:` into the new system
    (`against`, `measure`, `direction`, `statement`) and commit it before `evh run`. `evh pair-test`
@@ -72,17 +72,17 @@ evh arm-smoke --system <system_id> --dataset prod_v1
 evh run --system <system_id> --dataset prod_v1  # prints the run id it wrote
 git add -A && git commit -m "runs"
 # compare and decide
-evh leaderboard --dataset-id prod_v1 --json
-evh pair-test --dataset-id prod_v1 --a <new_system_id> --b <baseline_system_id> --json
+evh leaderboard prod_v1 --json
+evh pair-test prod_v1 --a <new_system_id> --b <baseline_system_id> --json
 evh run-promote --run <run_id> --reason "<who asked>: <why>"
 ```
 
 A goal (`data/goals/<goal_id>.yaml`) says what the evaluation is for and which measure decides; a
-run names it (`evh run ... --goal <goal_id>`), and `evh goals --goal <goal_id> --json` gives the leader, the baseline, the paired test
+run names it (`evh run ... --goal <goal_id>`), and `evh goal-leaderboard <goal_id> --json` gives the leader, the baseline, the paired test
 and what the goal recommends, in one answer.
 
 Rounds are optional: a round is one line of investigation of a goal, with its hypothesis, its arms,
-the ones retired and a conclusion (`evh round-open`, `evh round-retire`, `evh rounds --goal G --json`
+the ones retired and a conclusion (`evh round-open`, `evh round-retire`, `evh round-list G --json`
 for what the evidence suggests next). Open the round **before** its systems run: a new one runs in it
 (`evh run ... --goal G --round rN`); one already run joins only through `round-open --keep SYSTEM_ID`.
 Closing it is your operator's (rule 5).
@@ -91,11 +91,11 @@ Closing it is your operator's (rule 5).
 
 | question | command |
 | --- | --- |
-| what is in the project | `evh overview --json`, `evh datasets --json`, `evh arms --json` |
-| which arm leads, and is it significant | `evh goals --goal G --json`; `evh leaderboard --dataset-id D --json` |
-| is A better than B | `evh pair-test --dataset-id D --a A --b B --json` |
-| one arm against several, corrected | `evh family-test --dataset-id D --a A --against B,C --json` (`--against`: a comma list of system ids, or one substring) |
-| where two arms differ, item by item | `evh inspect --runs A,B --json` |
+| what is in the project | `evh overview-show --json`, `evh dataset-list --json`, `evh arm-list --json` |
+| which arm leads, and is it significant | `evh goal-leaderboard G --json`; `evh leaderboard D --json` |
+| is A better than B | `evh pair-test D --a A --b B --json` |
+| one arm against several, corrected | `evh family-test D --a A --against B,C --json` (`--against`: a comma list of system ids, or one substring) |
+| where two arms differ, item by item | `evh comparison-show --runs A,B --json` |
 | what two runs did differently | `evh run-compare --baseline RUN_A --candidate RUN_B --json` |
 | is the tree consistent | `evh validate` |
 
@@ -105,7 +105,7 @@ Read the exit code and, on a refusal, the kind in `ERROR (<kind>): <why>`, not t
 
 | exit | what to do |
 | --- | --- |
-| `1` `not-found` | check the id: `evh datasets`, `evh arms`, `evh goals`, `evh runs-list` list them |
+| `1` `not-found` | check the id: `evh dataset-list`, `evh arm-list`, `evh goal-list`, `evh runs-list` list them |
 | `1` `not-materialized` | `evh dataset-materialize --dataset-id D`, then the same command again |
 | `1` `not-configured` | `evh env-check` says which key, cap or build ref is missing |
 | `1` `not-allowed` | a rule refuses it (a dirty tree: commit first; a closed round): fix that, or hand it to your operator |

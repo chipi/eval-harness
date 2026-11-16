@@ -90,7 +90,7 @@ try:
         m.get("reference_coverage") == {"items_with_reference": 2, "items": len(files)},
         str(m.get("reference_coverage")),
     )
-    lb = evh("leaderboard", "--dataset-id", "tickets_v1")
+    lb = evh("leaderboard", "tickets_v1")
     check(
         "the leaderboard names a run whose quality is a mean over some items",
         f"had a reference for 2 of {len(files)} items" in lb.stdout,

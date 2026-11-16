@@ -370,7 +370,7 @@ the dataset is never optional in these labels.
 | **arm** | one configuration under test — a model *plus* its prompt, parameters and parsing | "model", which is only part of an arm |
 | **eval** | one task on one dataset, with its own report section — OpenAI's "eval", inspect_ai's "task" | "experiment", which Braintrust and LangSmith use for one run; "dataset" or "task" alone |
 | **run** | one arm over one dataset: `evh run`; Braintrust and LangSmith call it an experiment | "experiment" |
-| **comparison** | several runs of one eval side by side, in the inspector or `evh inspect` | "experiment" |
+| **comparison** | several runs of one eval side by side, in the inspector or `evh comparison-show` | "experiment" |
 | **pilot slice / test slice** | a small slice INSIDE the test slice, where prompts and parsers were tuned and a pilot ranking was read (not a validation split: its items are also measured) / the frozen set results are reported on | "dev slice / measurement slice"; "train/test", which implies we trained something |
 | **validation / test** | a goal's dataset roles: the set an arm is tuned on, and the set it is reported on (`evh dataset-split` writes `<D>_validation` and `<D>_test`) | "dev / heldout" |
 | **floor** | a non-model arm (rule, constant or random: `lead3`, `keyword`, `constant`, `nothing`, `capitalized`, `random`, `first_k`); those with a score predictable in advance double as scorer calibration checks | "baseline" — the predictable ones are scorer checks first |

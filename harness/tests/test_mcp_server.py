@@ -4,10 +4,10 @@
     python tests/test_mcp_server.py
 
 In a throwaway project built from the tutorial ($0, offline): the server lists exactly the read
-commands, each annotated read-only, none taking --adapter or --json; a tool answers what the
-command prints, with its JSON as structured content; an unknown argument is refused before
-anything runs; a command's refusal comes back as an error with its message; and every evh command
-is either a tool or listed, with a reason, as not one.
+operations (named as the command line and the API name them), each annotated read-only, none taking --adapter or --json; a tool
+answers the operation's result, the envelope `evh <operation> --json` prints, as structured content; an unknown argument is
+refused before anything runs; an operation's refusal comes back as an error with its message; the public flag of a call hides
+what a public server must not show; and every evh command is either a tool or listed, with a reason, as not one.
 """
 
 import json
@@ -27,8 +27,9 @@ from evaluation_harness._check import check, summary  # noqa: E402
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
 import _runstore  # noqa: E402
 from evaluation_harness import _format  # noqa: E402
+from evaluation_harness import ops as _ops  # noqa: E402
 from evaluation_harness.cli import COMMANDS  # noqa: E402
-from evaluation_harness.mcp_server import AGENT_TOOLS, NOT_TOOLS, READ_TOOLS, tools_for  # noqa: E402
+from evaluation_harness.mcp_server import AGENT_TOOLS, NOT_TOOLS, tools_for  # noqa: E402
 
 try:
     import anyio
@@ -51,12 +52,13 @@ def evh(*args):
     )
 
 
-TOOLS = set(READ_TOOLS) | set(AGENT_TOOLS)
+READ_TOOLS = {op.name for op in _ops.of_kind("read")}
+TOOLS = READ_TOOLS | set(AGENT_TOOLS)
 check(
-    "every evh command is a tool (a read, or the agent sampler's two) or not one, with a reason; none is both",
+    "every evh command is a tool (a read operation, or the agent sampler's two) or not one, with a reason; none is both",
     TOOLS | set(NOT_TOOLS) == set(COMMANDS)
     and not TOOLS & set(NOT_TOOLS)
-    and not set(READ_TOOLS) & set(AGENT_TOOLS),
+    and not READ_TOOLS & set(AGENT_TOOLS),
     f"neither: {sorted(set(COMMANDS) - TOOLS - set(NOT_TOOLS))}; unknown: {sorted((TOOLS | set(NOT_TOOLS)) - set(COMMANDS))}",
 )
 
@@ -164,35 +166,42 @@ try:
         r.stdout[-300:] + r.stderr[-300:],
     )
 
-    # A PUBLIC SERVER'S inspect SEES ONLY PUBLIC FIELDS. It runs in its own process, where the
-    # inspector's public rules were never set, so --where/--by on a field not marked public answered
-    # with its values through the counts (0.5.0). The command, run as the server runs it:
-    from evaluation_harness.mcp_server import run_command
+    # A PUBLIC SERVER'S comparison SEES ONLY PUBLIC FIELDS. The server answers in its own process, with the public flag of
+    # the call: a --where or --by on a field not marked public is refused instead of answering with its values through the
+    # counts (0.5.0). The operation, answered as the server answers it:
+    from evaluation_harness import mcp_server as ms
+    from evaluation_harness import ops
+    from evaluation_harness.model.entity import Problem
 
     os.environ.clear()
-    os.environ.update(env)  # run_command passes this process's environment on, as the server does
+    os.environ.update(env)
+    ms.use_project(proj)
 
-    for argv, public, ok, label in (
-        (["--runs", "tickets_lead2_v1", "--by", "deadline"], True, False, "a hidden field (--by) is refused"),
+    for arguments, public, ok, label in (
+        ({"runs": "tickets_lead2_v1", "by": "deadline"}, True, False, "a hidden field (by) is refused"),
         (
-            ["--runs", "tickets_lead2_v1", "--where", "deadline:yes"],
+            {"runs": "tickets_lead2_v1", "where": ["deadline:yes"]},
             True,
             False,
-            "a hidden field (--where) is refused",
+            "a hidden field (where) is refused",
         ),
-        (["--runs", "tickets_lead2_v1", "--by", "area"], True, True, "a public field still breaks it down"),
+        ({"runs": "tickets_lead2_v1", "by": "area"}, True, True, "a public field still breaks it down"),
         (
-            ["--runs", "tickets_lead2_v1", "--by", "deadline"],
+            {"runs": "tickets_lead2_v1", "by": "deadline"},
             False,
             True,
             "a local server still sees every field",
         ),
     ):
-        code, out_, err_ = run_command(proj, "inspect", argv, public=public)
-        said = out_ + err_
+        try:
+            said = json.dumps(ms.run_op(ops.get("comparison-show"), arguments, public))
+            refused = False
+        except Problem as exc:
+            said, refused = str(exc), True
         check(
-            f"inspect {'--public' if public else 'local'}: {label}",
-            (code == 0) == ok and (ok or ("deadline" in said and "True" not in out_ and "yes" not in out_)),
+            f"comparison-show {'--public' if public else 'local'}: {label}",
+            refused != ok
+            and (ok or ("deadline" in said and "True" not in said and '"breakdown"' not in said)),
             said[-300:],
         )
 
@@ -205,7 +214,7 @@ try:
             tools = (await s.list_tools()).tools
             by = {t.name: t for t in tools}
             check(
-                "tools: the read commands, and the agent sampler's study-ask and study-tell (a local server)",
+                "tools: the read operations, named as the command line and the API name them, and the agent sampler's study-ask and study-tell (a local server)",
                 sorted(by) == sorted(TOOLS),
                 sorted(by),
             )
@@ -222,58 +231,65 @@ try:
                 not any({"adapter", "json"} & set(t.input_schema.get("properties", {})) for t in tools),
             )
             check(
-                "tools: the schema comes from the command's parser (datasets: dataset-id, period)",
-                {"dataset-id", "period"} <= set(by["datasets"].input_schema["properties"]),
-                by["datasets"].input_schema,
+                "tools: the schema comes from the operation (dataset-list: tag, period; the parts of its route are required)",
+                {"tag", "period"} <= set(by["dataset-list"].input_schema["properties"])
+                and by["dataset-show"].input_schema["required"] == ["dataset"],
+                by["dataset-list"].input_schema,
             )
-            res = await s.call_tool("datasets", {})
-            want = evh("datasets", "--json").stdout
+            res = await s.call_tool("dataset-list", {})
+            want = evh("dataset-list", "--json").stdout
             check(
-                "datasets: the command's own answer, its JSON as structured content",
+                "dataset-list: the operation's own result, the envelope the command line and the API give, as structured content",
                 not res.is_error
                 and json.loads(res.content[0].text) == json.loads(want)
-                and (res.structured_content or {}).get("command") == "datasets",
+                and res.structured_content == json.loads(want)
+                and (res.structured_content or {}).get("command") == "dataset-list",
                 res.content[0].text[:300],
             )
-            rows = [r_ for b in res.structured_content["result"]["blocks"] for r_ in b.get("rows", [])]
             check(
-                "datasets: its table's rows as data",
-                any(r_.get("dataset") == "tickets_v1" for r_ in rows),
-                rows,
+                "dataset-list: its rows as data",
+                any(d_.get("dataset") == "tickets_v1" for d_ in res.structured_content["result"]["datasets"]),
+                res.structured_content["result"],
             )
-            res = await s.call_tool("datasets", {"dataset-id": "tickets_v1"})
+            res = await s.call_tool("dataset-show", {"dataset": "tickets_v1"})
             check(
-                "datasets with an option: passed as the command line",
-                not res.is_error and "tickets_v1" in res.content[0].text,
+                "dataset-show: the part of the route is an argument, the answer the one dataset's",
+                not res.is_error and res.structured_content["result"]["dataset"] == "tickets_v1",
+                res.content[0].text[:200],
             )
-            props = set(by["inspect"].input_schema["properties"])
+            props = set(by["sheet-show"].input_schema["properties"])
             check(
-                "inspect: the sheet's options are in its schema; the ones that write a file (the CSV and its fill) are not, nor the removed --rows and --items",
+                "sheet-show: the sheet's options are in its schema; the ones that write a file (the CSV and its fill) are not: sheet-export is a command",
                 {
-                    "sheet",
-                    "dataset-id",
-                    "wrong-against",
-                    "new-vs",
+                    "dataset",
+                    "runs",
+                    "wrong_against",
+                    "new_vs",
                     "split",
                     "unlabelled",
-                    "scores-only",
+                    "scores_only",
                     "metric",
                     "label",
                 }
                 <= props
-                and not {"csv", "fill", "choices", "seed", "rubric", "scale", "rows", "items"} & props,
+                and not {"csv", "fill", "choices", "seed", "rubric", "scale"} & props
+                and "sheet-export" not in by,
                 str(sorted(props)),
             )
             check(
-                "inspect: the crosstab and the items' outputs are in the local schema",
-                {"crosstab", "group", "group-match", "max-ids", "items-out", "max-chars"} <= props,
-                str(sorted(props)),
+                "comparison-show, -crosstab and -items: the comparison, the crosstab and the items' outputs are in the local tools",
+                {"runs", "round", "label", "baseline", "analysis", "where", "by"}
+                <= set(by["comparison-show"].input_schema["properties"])
+                and {"runs", "crosstab", "group", "group_match", "max_ids"}
+                <= set(by["comparison-crosstab"].input_schema["properties"])
+                and {"runs", "disagree", "max_chars"}
+                <= set(by["comparison-items"].input_schema["properties"]),
             )
-            res = await s.call_tool("labels", {"dataset-id": "tickets_v1"})
-            want = evh("labels", "--dataset-id", "tickets_v1", "--json").stdout
+            res = await s.call_tool("label-set-list", {"dataset": "tickets_v1"})
+            want = evh("label-set-list", "tickets_v1", "--json").stdout
             check(
-                "labels: a read tool, its schema the command's options, its answer the command's JSON",
-                {"dataset-id"} <= set(by["labels"].input_schema["properties"])
+                "label-set-list: a read tool, its schema the operation's inputs, its answer the command's JSON",
+                {"contested"} == set(by["label-set-list"].input_schema["properties"]) - {"dataset"}
                 and not res.is_error
                 and json.loads(res.content[0].text) == json.loads(want)
                 and res.structured_content == json.loads(want),
@@ -281,36 +297,19 @@ try:
             )
             # The statistics and the runs: tools that answer with the command's own --json.
             ids = {
-                row["system_id"]: row["run_id"]
-                for b in json.loads(evh("runs-list", "--json").stdout)["result"]["blocks"]
-                for row in b.get("rows", [])
+                r_["system_id"]: r_["run_id"]
+                for r_ in json.loads(evh("runs-list", "--json").stdout)["result"]["runs"]
             }
             asked = {
                 "runs-list": ({}, ["runs-list"]),
-                "leaderboard": ({"dataset-id": "tickets_v1"}, ["leaderboard", "--dataset-id", "tickets_v1"]),
+                "leaderboard": ({"dataset": "tickets_v1"}, ["leaderboard", "tickets_v1"]),
                 "pair-test": (
-                    {"dataset-id": "tickets_v1", "a": "tickets_lead2_v1", "b": "tickets_lead1_v1"},
-                    [
-                        "pair-test",
-                        "--dataset-id",
-                        "tickets_v1",
-                        "--a",
-                        "tickets_lead2_v1",
-                        "--b",
-                        "tickets_lead1_v1",
-                    ],
+                    {"dataset": "tickets_v1", "a": "tickets_lead2_v1", "b": "tickets_lead1_v1"},
+                    ["pair-test", "tickets_v1", "--a", "tickets_lead2_v1", "--b", "tickets_lead1_v1"],
                 ),
                 "family-test": (
-                    {"dataset-id": "tickets_v1", "a": "tickets_lead2_v1", "against": "tickets_lead"},
-                    [
-                        "family-test",
-                        "--dataset-id",
-                        "tickets_v1",
-                        "--a",
-                        "tickets_lead2_v1",
-                        "--against",
-                        "tickets_lead",
-                    ],
+                    {"dataset": "tickets_v1", "a": "tickets_lead2_v1", "against": "tickets_lead"},
+                    ["family-test", "tickets_v1", "--a", "tickets_lead2_v1", "--against", "tickets_lead"],
                 ),
                 "run-compare": (
                     {"baseline": ids["tickets_lead1_v1"], "candidate": ids["tickets_lead2_v1"]},
@@ -322,7 +321,7 @@ try:
                         ids["tickets_lead2_v1"],
                     ],
                 ),
-                "rounds": ({"goal": "tickets_summary"}, ["rounds", "--goal", "tickets_summary"]),
+                "round-list": ({"goal": "tickets_summary"}, ["round-list", "tickets_summary"]),
             }
             for tool, (arguments, argv) in asked.items():
                 res = await s.call_tool(tool, arguments)
@@ -334,7 +333,7 @@ try:
                     and got == want
                     and res.structured_content == want
                     and want["command"] == tool
-                    and "values" in want["result"],
+                    and ("values" in want["result"] or tool in ("runs-list", "round-list")),
                     res.content[0].text[:300],
                 )
             pv = json.loads((await s.call_tool("pair-test", asked["pair-test"][0])).content[0].text)[
@@ -351,24 +350,24 @@ try:
             for tool in ("pair-test", "family-test"):
                 props = set(by[tool].input_schema["properties"])
                 check(
-                    f"{tool}: its schema has no option naming a path of the server's (--runs-dir, --items)",
-                    {"dataset-id", "a", "permutations"} <= props and not {"runs-dir", "items"} & props,
+                    f"{tool}: its schema has no input naming a path of the server's (items)",
+                    {"a", "permutations"} <= props and "items" not in props,
                     sorted(props),
                 )
             check(
-                "pair-test: --b-dataset (a dataset id) is offered, for two versions of one dataset",
-                "b-dataset" in by["pair-test"].input_schema["properties"]
-                and "b-dataset" not in by["family-test"].input_schema["properties"],
+                "pair-test: b_dataset (a dataset id) is offered, for two versions of one dataset",
+                "b_dataset" in by["pair-test"].input_schema["properties"]
+                and "b_dataset" not in by["family-test"].input_schema["properties"],
                 sorted(by["pair-test"].input_schema["properties"]),
             )
             for bad, want in (("../outside", "not a dataset id"), ("tickets_v1", "itself")):
-                res = await s.call_tool("pair-test", {**asked["pair-test"][0], "b-dataset": bad})
+                res = await s.call_tool("pair-test", {**asked["pair-test"][0], "b_dataset": bad})
                 check(
-                    f"pair-test b-dataset={bad}: refused with the command's message, nothing as an answer",
+                    f"pair-test b_dataset={bad}: refused with the command's message, nothing as an answer",
                     res.is_error and want in res.content[0].text,
                     res.content[0].text[:300],
                 )
-            res = await s.call_tool("rank-stability", {"dataset-id": "tickets_v1"})
+            res = await s.call_tool("rank-stability", {"dataset": "tickets_v1"})
             check(
                 "rank-stability: two arms cannot be ranked: an error with the message, nothing as an answer",
                 res.is_error and "need at least 3 to rank" in res.content[0].text,
@@ -384,30 +383,38 @@ try:
                 and "not a path" in res.content[0].text,
                 res.content[0].text[:300],
             )
-            res = await s.call_tool("datasets", {"bogus": 1})
+            res = await s.call_tool("dataset-list", {"bogus": 1})
             check(
                 "an unknown argument is refused before anything runs",
                 res.is_error and "unknown argument" in res.content[0].text,
                 res.content[0].text,
             )
-            res = await s.call_tool("goals", {"goal": "no_such_goal"})
+            res = await s.call_tool("goal-leaderboard", {"goal": "no_such_goal"})
             check(
-                "a command's refusal is an error, with its message and exit code",
-                res.is_error and "no_such_goal" in res.content[0].text and "(exit 1)" in res.content[0].text,
+                "an operation's refusal is an error, with its kind and message",
+                res.is_error
+                and "no_such_goal" in res.content[0].text
+                and "ERROR (not-found)" in res.content[0].text,
                 res.content[0].text[:300],
             )
             res = await s.call_tool("validate", {})
             check(
-                "validate: runs, its text as the answer",
-                "V1" in res.content[0].text,
+                "validate: answers, the verdict as data (its checks passed or named)",
+                not res.is_error
+                and "passed" in res.structured_content["result"]["values"]
+                and "V1" in res.content[0].text,
                 res.content[0].text[:200],
             )
             res = await s.call_tool("run-promote", {})
-            check("a command that is not a tool is refused", res.is_error, res.content[0].text)
+            check(
+                "a command that is not a tool is refused",
+                res.is_error and "no tool" in res.content[0].text,
+                res.content[0].text,
+            )
             # Values are data, never a way past the schema (an independent review's two holes).
             (proj / "outside.json").write_text('{"secret": "TOPSECRET"}')
             for bad in ["../outside", str(proj / "outside"), "..", "a/b"]:
-                res = await s.call_tool("dataset-items", {"dataset-id": bad})
+                res = await s.call_tool("dataset-items", {"dataset": bad})
                 check(
                     f"dataset-items: a path as the id is refused ({bad[:20]!r}), nothing outside data/ is read",
                     res.is_error
@@ -415,45 +422,31 @@ try:
                     and "not a dataset id" in res.content[0].text,
                     res.content[0].text[:200],
                 )
-            for v in (["r1", "--item", "t01_login"], "--item"):
-                res = await s.call_tool("inspect", {"runs": v})
-                check(
-                    f"inspect: an option smuggled in a value is refused ({v!r})",
-                    res.is_error
-                    and (
-                        "may not start with '-'" in res.content[0].text or "not a list" in res.content[0].text
-                    ),
-                    res.content[0].text[:200],
-                )
-            res = await s.call_tool("datasets", {"dataset-id": ["tickets_v1", "x"]})
+            res = await s.call_tool("comparison-show", {"runs": "--item"})
             check(
-                "a list for an option that takes one value is refused",
-                res.is_error and "one value, not a list" in res.content[0].text,
+                "a value that starts with '-' is a value: it names no arm, and is not read as an option",
+                res.is_error and "no arm with that id" in res.content[0].text,
                 res.content[0].text[:200],
             )
-            flag = next(
-                (
-                    (t.name, k)
-                    for t in tools
-                    for k, v in t.input_schema["properties"].items()
-                    if v.get("type") == "boolean"
-                ),
-                None,
+            res = await s.call_tool("dataset-show", {"dataset": ["tickets_v1", "x"]})
+            check(
+                "a list for an input that takes one value is refused",
+                res.is_error and "is not of type 'string'" in res.content[0].text,
+                res.content[0].text[:200],
             )
-            if flag:
-                res = await s.call_tool(flag[0], {flag[1]: "false"})
-                check(
-                    f"a flag given as the string 'false' is refused, not read as on ({flag[0]} {flag[1]})",
-                    res.is_error and "true or false" in res.content[0].text,
-                    res.content[0].text[:200],
-                )
-            res = await s.call_tool("datasets", {"dataset-id": "a\u0000b"})
+            res = await s.call_tool("leaderboard", {"dataset": "tickets_v1", "asc": "false"})
+            check(
+                "a flag given as the string 'false' is refused, not read as on",
+                res.is_error and "is not of type 'boolean'" in res.content[0].text,
+                res.content[0].text[:200],
+            )
+            res = await s.call_tool("dataset-show", {"dataset": "a\u0000b"})
             check(
                 "a NUL byte in a value is refused before anything runs",
                 res.is_error and "NUL" in res.content[0].text,
                 res.content[0].text[:200],
             )
-            res = await s.call_tool("datasets", {"dataset-id": "x" * 600})
+            res = await s.call_tool("dataset-show", {"dataset": "x" * 600})
             check(
                 "an over-long value is refused before anything runs",
                 res.is_error and "characters" in res.content[0].text,
@@ -461,7 +454,7 @@ try:
             )
             res = await s.call_tool("search", {"text": ["tickets_v1"]})
             check(
-                "search: its text after '--', read as words, the answer found",
+                "search: its words, the answer found",
                 not res.is_error and "tickets_v1" in res.content[0].text,
                 res.content[0].text[:200],
             )
@@ -476,32 +469,47 @@ try:
             await s.initialize()
             by = {t.name: t for t in (await s.list_tools()).tools}
             check(
-                "--public: the statistics are tools; validate is not",
-                {"leaderboard", "pair-test", "family-test", "rank-stability", "run-compare", "rounds"}
+                "--public: the statistics are tools; validate, and every tool that shows a file, an item's text or an output, are not",
+                {"leaderboard", "pair-test", "family-test", "rank-stability", "run-compare", "round-list"}
                 <= set(by)
-                and "validate" not in by
+                and not {
+                    "validate",
+                    "data-ls",
+                    "data-show",
+                    "sheet-show",
+                    "comparison-item",
+                    "comparison-items",
+                    "exposure",
+                    "sealed-counts",
+                    "label-mutants",
+                    "label-coverage-show",
+                }
+                & set(by)
                 and sorted(by) == sorted(tools_for(True)),
                 sorted(by),
             )
-            pub = set(by["inspect"].input_schema["properties"])
+            pub = set(by["comparison-crosstab"].input_schema["properties"])
             check(
-                "--public inspect: the crosstab of two scores is offered; --items-out and --group (recorded texts) are not",
-                {"crosstab", "max-ids"} <= pub
-                and not {"items-out", "max-chars", "group", "group-match"} & pub,
+                "--public comparison-crosstab: the crosstab of two scores is offered; --group (recorded texts) is not",
+                {"crosstab", "max_ids"} <= pub and not {"group", "group_match"} & pub,
                 sorted(pub),
             )
+            check(
+                "--public dataset-items: one item's text is not offered",
+                "item" not in by["dataset-items"].input_schema["properties"],
+            )
             held = {
-                "pair-test": {"permutations", "runs-dir", "items"},
-                "family-test": {"permutations", "runs-dir", "items"},
+                "pair-test": {"permutations", "items"},
+                "family-test": {"permutations", "items"},
                 "rank-stability": {"draws"},
             }
             check(
-                "--public: how long a statistic runs (--permutations, --draws) is not the caller's to set",
+                "--public: how long a statistic runs (permutations, draws) is not the caller's to set",
                 all(not held[t] & set(by[t].input_schema["properties"]) for t in held),
                 {t: sorted(by[t].input_schema["properties"]) for t in held},
             )
             res = await s.call_tool(
-                "pair-test", {"dataset-id": "tickets_v1", "a": "tickets_lead2_v1", "b": "tickets_lead1_v1"}
+                "pair-test", {"dataset": "tickets_v1", "a": "tickets_lead2_v1", "b": "tickets_lead1_v1"}
             )
             check(
                 "--public pair-test: numbers and ids only (no item text, no output)",
@@ -509,9 +517,15 @@ try:
                 and not any(k in res.content[0].text for k in ("t01_login", "area", "deadline", "TOPSECRET")),
                 res.content[0].text[:300],
             )
+            res = await s.call_tool("comparison-show", {"runs": "tickets_lead2_v1", "by": "deadline"})
+            check(
+                "--public comparison-show: a field not marked public is refused, by the call's own flag",
+                res.is_error and "deadline" in res.content[0].text,
+                res.content[0].text[:300],
+            )
 
     anyio.run(public_session)
-    from evaluation_harness.mcp_server import public_error
+    from evaluation_harness._cmdline import public_error
 
     tb = "Traceback (most recent call last):\n  File \"/srv/evals/releases/abc/pkg/x.py\", line 1\nKeyError: 'x'"
     check(

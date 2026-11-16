@@ -47,22 +47,21 @@ check(
     _api.unkinded_paths() == [],
     _api.unkinded_paths(),
 )
-from evaluation_harness import mcp_server as _ms  # noqa: E402
+from evaluation_harness import _cmdline  # noqa: E402
 
 no_json = sorted(
     c
     for c in reg
-    if c not in _ms.JSON and not any("--json" in a.option_strings for a in _ms.parser_of(c)._actions)
+    if c not in _cmdline.JSON
+    and not any("--json" in a.option_strings for a in _cmdline.parser_of(c)._actions)
 )
 check("every command the API serves answers --json (RFC-026 step 7)", not no_json, no_json)
 names = {c: {a["name"] for a in v["arguments"]} for c, v in reg.items()}
 check(
-    "never taken: --adapter, --runs-dir, a sweep or rescore output folder, a source folder",
+    "never taken: --adapter, a sweep or rescore output folder, a source folder",
     "adapter" not in names["run"]
-    and "runs-dir" not in names["pair-test"]
     and "out" not in names["rescore"]
-    and "source-dir" not in names["dataset-create"]
-    and "json" not in names["leaderboard"],
+    and "source-dir" not in names["dataset-create"],
 )
 check(
     "kinds: run's system is a plain value (found by id, not a path), label-import's sheet an upload, label-sheet's out an artifact; spenders marked",
@@ -70,8 +69,8 @@ check(
     and {a["name"]: a["kind"] for a in reg["label-import"]["arguments"]}.get("sheet") == "upload"
     and {a["name"]: a["kind"] for a in reg["label-sheet"]["arguments"]}.get("out") == "artifact"
     and reg["run"]["spends"]
-    and not reg["datasets"]["spends"]
-    and reg["leaderboard"]["served"] == "read"
+    and not reg["label-sheet"]["spends"]
+    and "leaderboard" not in reg  # a read is an operation: its own resource, not a job
     and reg["run"]["served"] == "job",
 )
 

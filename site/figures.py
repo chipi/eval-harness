@@ -123,8 +123,8 @@ def _not_significant(exp: dict) -> list:
     r = subprocess.run(
         [
             sys.executable,
-            str(HARNESS / "scripts" / "family_test.py"),
-            "--dataset-id",
+            str(HARNESS / "scripts" / "cli.py"),
+            "family-test",
             exp["dataset"],
             "--a",
             leader,

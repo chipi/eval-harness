@@ -1029,7 +1029,7 @@ def home(f: dict) -> str:
             "Pick",
             "What to keep",
             "The rows where it was wrong, or saw something new, picked for the dataset you govern.",
-            "evh inspect --sheet · pick",
+            "evh sheet-show · pick",
         ),
         (
             "Round 5",
@@ -1223,7 +1223,7 @@ def home(f: dict) -> str:
   <div class="eyebrow"><span class="num">05</span>For agents</div>
   <h2>Ask it from your agent.</h2>
   <div class="cols">
-    <div class="prose"><p>The harness is also an MCP server. <code>evh mcp</code> gives an agent the same read commands you use: datasets and what is inside them, goals and what they recommend, arms, reference sets, metrics, activity, the inspector's paired comparisons and its sheet of every item and arm, the label sets and how two agree, and what production decided (its captures, the deploy sheet, the picks waiting for a dataset's next version), each answering exactly what the command prints. Nothing it does writes your project, spends or runs a model (the one file it keeps is a cache of the goals' tests).</p>
+    <div class="prose"><p>The harness is also an MCP server. <code>evh mcp</code> gives an agent the same read commands you use: datasets and what is inside them, goals and what they recommend, arms, reference sets, metrics, activity, the inspector's paired comparisons and its sheet of every item and arm, the label sets and how two agree, and what production decided (its captures, the deploy sheet, the picks waiting for a dataset's next version), each answering what the command's <code>--json</code> gives. Nothing it does writes your project, spends or runs a model (the one file it keeps is a cache of the goals' tests).</p>
     <p>On your machine it serves your own project; for a team, <code>evh mcp --http</code> serves one checkout to everyone. The worked examples above are served at <code>https://evals.humancopilot.eu/mcp</code>, read-only and without sign-in, answering what the site and the catalog publish and never an item's text (so without the sheet), for Claude, ChatGPT and the OpenAI API, Gemini, or any MCP client.</p>
       <div class="btns"><a class="btn primary" href="docs/harness/INTEGRATION/#for-an-agent-evh-mcp">Connect an agent</a><a class="btn" href="{BLOB}/docs/rfc/RFC-018-read-only-mcp-server.md">How it works, on GitHub ↗</a></div></div>
 <pre class="term"><span class="c"># the worked examples, from Claude Code</span>
@@ -1249,7 +1249,7 @@ def home(f: dict) -> str:
 <pre class="term"><span class="p">$ </span>evh dataset-create --dataset-id my_v1 \
     --source-dir data/sources
 <span class="p">$ </span>evh run --system arm_a_v1 --dataset my_v1
-<span class="p">$ </span>evh leaderboard --dataset-id my_v1
+<span class="p">$ </span>evh leaderboard my_v1
 <span class="p">$ </span>evh catalog && evh catalog-serve</pre></div>
     <div><h3>3 · Or the bundled demo</h3>
 <pre class="term"><span class="p">$ </span>git clone {REPO}
@@ -1927,7 +1927,7 @@ def goal_note(x: dict) -> str:
     return (
         f'<p class="note"><b>The goal\'s rule, in the catalog.</b> {e(g["goal_title"])} ({e(g["strategy"])}, on '
         f'{e(g["measure"])}) {says}.{base} <a href="{CATALOG}{g["goal_page"]}">The goal page, with its reasons →</a> '
-        f"An agent gets the same answer from the MCP server: the tool <code>goals</code> with "
+        f"An agent gets the same answer from the MCP server: the tool <code>goal-leaderboard</code> with "
         f"<code>goal: {e(Path(g['goal_page']).stem)}</code> at <code>https://evals.humancopilot.eu/mcp</code> "
         f'(<a href="../docs/harness/INTEGRATION/#for-an-agent-evh-mcp">how to connect</a>).</p>'
     )

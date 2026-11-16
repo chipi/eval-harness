@@ -147,7 +147,7 @@ def test_compare_runs_identical_builds() -> int:
 
     env = {"EVAL_HOME": str(tmp)}
     result = run_script(
-        "scripts/compare_runs.py", "--baseline", "run_a", "--candidate", "run_b", env=env, cwd=tmp
+        "scripts/cli.py", "run-compare", "--baseline", "run_a", "--candidate", "run_b", env=env, cwd=tmp
     )
 
     check(
@@ -169,7 +169,7 @@ def test_compare_runs_different_datasets() -> int:
 
     env = {"EVAL_HOME": str(tmp)}
     result = run_script(
-        "scripts/compare_runs.py", "--baseline", "run_a", "--candidate", "run_b", env=env, cwd=tmp
+        "scripts/cli.py", "run-compare", "--baseline", "run_a", "--candidate", "run_b", env=env, cwd=tmp
     )
 
     check(
@@ -192,7 +192,15 @@ def test_compare_runs_with_noise_floor() -> int:
 
     env = {"EVAL_HOME": str(tmp)}
     result = run_script(
-        "scripts/compare_runs.py", "--baseline", "run_a", "--candidate", "run_b", "--noise", "0.01", env=env
+        "scripts/cli.py",
+        "run-compare",
+        "--baseline",
+        "run_a",
+        "--candidate",
+        "run_b",
+        "--noise",
+        "0.01",
+        env=env,
     )
 
     check(
@@ -443,7 +451,7 @@ def test_compare_runs_missing_run() -> int:
 
     env = {"EVAL_HOME": str(tmp)}
     result = run_script(
-        "scripts/compare_runs.py", "--baseline", "run_a", "--candidate", "nonexistent", env=env, cwd=tmp
+        "scripts/cli.py", "run-compare", "--baseline", "run_a", "--candidate", "nonexistent", env=env, cwd=tmp
     )
 
     check("compare_runs missing run: exit non-zero", result.returncode != 0)
@@ -505,7 +513,7 @@ def mutation_test_compare_runs() -> int:
 
     # First run: check that it reports the correct delta
     result_ok = run_script(
-        "scripts/compare_runs.py", "--baseline", "run_a", "--candidate", "run_b", env=env, cwd=tmp
+        "scripts/cli.py", "run-compare", "--baseline", "run_a", "--candidate", "run_b", env=env, cwd=tmp
     )
     check("mutation compare_runs baseline: runs ok", result_ok.returncode == 0)
     check(
@@ -700,7 +708,7 @@ def table_rows(env_: dict, first_column: str) -> list[dict]:
 def test_json_pair_test() -> int:
     """pair-test --json: the text's numbers by name; the text itself is unchanged."""
     tmp, _meta, env = json_tree()
-    base = ["scripts/pair_test.py", "--dataset-id", "dsj", "--a", "arm_a", "--b", "arm_b"]
+    base = ["scripts/cli.py", "pair-test", "dsj", "--a", "arm_a", "--b", "arm_b"]
     text = run_script(*base, env=env, cwd=tmp)
     js = run_script(*base, "--json", env=env, cwd=tmp)
     e = parsed(js)
@@ -771,7 +779,7 @@ def test_json_pair_test() -> int:
 def test_json_family_test() -> int:
     """family-test --json: the opponents as a table, Holm's adjusted p beside the text's threshold."""
     tmp, _meta, env = json_tree()
-    base = ["scripts/family_test.py", "--dataset-id", "dsj", "--a", "arm_a", "--against", "arm_"]
+    base = ["scripts/cli.py", "family-test", "dsj", "--a", "arm_a", "--against", "arm_"]
     text = run_script(*base, env=env, cwd=tmp)
     js = run_script(*base, "--json", env=env, cwd=tmp)
     e = parsed(js)
@@ -835,7 +843,7 @@ def test_json_family_test() -> int:
 def test_json_leaderboard() -> int:
     """leaderboard --json: the ranking, the ordering test and the frontier as numbers."""
     tmp, _meta, env = json_tree()
-    base = ["scripts/leaderboard.py", "--dataset-id", "dsj"]
+    base = ["scripts/cli.py", "leaderboard", "dsj"]
     text = run_script(*base, env=env, cwd=tmp)
     js = run_script(*base, "--json", env=env, cwd=tmp)
     e = parsed(js)
@@ -898,7 +906,7 @@ def test_json_leaderboard() -> int:
         "leaderboard --json: the printed lines are the text's lines (the tables aside)",
         all(ln in text.stdout for ln in printed_lines(e)),
     )
-    bad = run_script("scripts/leaderboard.py", "--dataset-id", "no_such_ds", "--json", env=env, cwd=tmp)
+    bad = run_script("scripts/cli.py", "leaderboard", "no_such_ds", "--json", env=env, cwd=tmp)
     check(
         "leaderboard --json: a refusal is on stderr, nothing on stdout, exit non-zero",
         bad.returncode != 0 and bad.stdout == "" and "no runs on dataset" in bad.stderr,
@@ -910,7 +918,7 @@ def test_json_leaderboard() -> int:
 def test_json_run_compare() -> int:
     """run-compare --json: the fingerprint result, the metric rows and the noise verdict."""
     tmp, meta, env = json_tree()
-    base = ["scripts/compare_runs.py", "--baseline", "run_arm_a", "--candidate", "run_arm_b"]
+    base = ["scripts/cli.py", "run-compare", "--baseline", "run_arm_a", "--candidate", "run_arm_b"]
     text = run_script(*base, "--noise", "0.1", env=env, cwd=tmp)
     js = run_script(*base, "--noise", "0.1", "--json", env=env, cwd=tmp)
     e = parsed(js)
@@ -961,13 +969,13 @@ def test_json_run_compare() -> int:
         old,
     )
     write_run(meta, "run_other", "other_ds", "arm_a", {"acc": 0.5})
-    bad = run_script(*base[:3], "--candidate", "run_other", "--json", env=env, cwd=tmp)
+    bad = run_script(*base[:4], "--candidate", "run_other", "--json", env=env, cwd=tmp)
     check(
         "run-compare --json: different datasets are REFUSED on stderr, nothing on stdout",
         bad.returncode != 0 and bad.stdout == "" and "REFUSED" in bad.stderr,
         (bad.stdout, bad.stderr),
     )
-    trav = run_script(*base[:3], "--candidate", "../data/runs/run_arm_b", "--json", env=env, cwd=tmp)
+    trav = run_script(*base[:4], "--candidate", "../data/runs/run_arm_b", "--json", env=env, cwd=tmp)
     check(
         "run-compare: a run id that is a path is refused, not read",
         trav.returncode != 0 and trav.stdout == "" and "not a path" in trav.stderr,
@@ -979,7 +987,7 @@ def test_json_run_compare() -> int:
 def test_json_rank_stability() -> int:
     """rank-stability --json: its table and conclusion; too few items is a refusal under --json."""
     tmp, meta, env = json_tree()
-    base = ["scripts/rank_stability.py", "--dataset-id", "dsj", "--draws", "30"]
+    base = ["scripts/cli.py", "rank-stability", "dsj", "--draws", "30"]
     text = run_script(*base, env=env, cwd=tmp)
     js = run_script(*base, "--json", env=env, cwd=tmp)
     e = parsed(js)
@@ -1015,7 +1023,7 @@ def test_json_rank_stability() -> int:
     ids = [f"j{i:02d}" for i in range(12)]
     for arm in ("s_a", "s_b", "s_c"):
         write_run(meta, f"run_{arm}", "dss", arm, {"acc": 0.5}, outputs={i: {"acc": 1.0} for i in ids})
-    small = ["scripts/rank_stability.py", "--dataset-id", "dss"]
+    small = ["scripts/cli.py", "rank-stability", "dss"]
     t = run_script(*small, env=env, cwd=tmp)
     j = run_script(*small, "--json", env=env, cwd=tmp)
     check(
@@ -1034,17 +1042,14 @@ def test_json_rank_stability() -> int:
 def test_json_runs_list() -> int:
     """runs-list --json: a row per run, a row per baseline."""
     tmp, meta, env = json_tree()
-    text = run_script("scripts/list_runs.py", env=env, cwd=tmp)
-    js = run_script("scripts/list_runs.py", "--json", env=env, cwd=tmp)
+    text = run_script("scripts/cli.py", "runs-list", env=env, cwd=tmp)
+    js = run_script("scripts/cli.py", "runs-list", "--json", env=env, cwd=tmp)
     e = parsed(js)
-    rows = table_rows(e, "run_id")
+    rows = e["result"]["runs"]
     check(
-        "runs-list --json: one envelope, a row per run, count in values",
-        js.returncode == 0
-        and len(rows) == 4
-        and e["result"]["values"] == {"kind": "runs", "count": 4}
-        and e["command"] == "runs-list",
-        e["result"]["values"],
+        "runs-list --json: one envelope, a row per run, the count beside them",
+        js.returncode == 0 and len(rows) == 4 and e["result"]["count"] == 4 and e["command"] == "runs-list",
+        e["result"]["count"],
     )
     a = next(r for r in rows if r["run_id"] == "run_arm_a")
     check(
@@ -1060,7 +1065,7 @@ def test_json_runs_list() -> int:
         all(r["run_id"] in text.stdout for r in rows) and len(rows) == len(rows_of_text(text.stdout)),
         text.stdout,
     )
-    none = parsed(run_script("scripts/view_baselines.py", "--json", env=env, cwd=tmp))
+    none = parsed(run_script("scripts/cli.py", "baselines", "--json", env=env, cwd=tmp))["result"]
     check(
         "evh baselines --json: no baselines is an empty list",
         none == {"schema": "evh-baselines/1", "baselines": []},
@@ -1085,9 +1090,9 @@ def test_json_runs_list() -> int:
             }
         ),
     )
-    bl = parsed(run_script("scripts/view_baselines.py", "--json", env=env, cwd=tmp))
+    bl = parsed(run_script("scripts/cli.py", "baselines", "--json", env=env, cwd=tmp))["result"]
     brow = bl["baselines"]
-    bl_text = run_script("scripts/view_baselines.py", env=env, cwd=tmp).stdout
+    bl_text = run_script("scripts/cli.py", "baselines", env=env, cwd=tmp).stdout
     check(
         "evh baselines --json: one entry per baseline, its scores as numbers; the text says the same",
         len(brow) == 1

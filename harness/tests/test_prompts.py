@@ -122,14 +122,10 @@ try:
         and not Path(seen_root).exists(),
         (r.returncode, r.stderr[-300:], s, out_rows[:200], seen_root),
     )
-    v = evh("prompts", "--json")
-    rows = (
-        (json.loads(v.stdout).get("result") or {}).get("values", {}).get("prompts", [])
-        if v.returncode == 0
-        else []
-    )
+    v = evh("prompt-list", "--json")
+    rows = (json.loads(v.stdout).get("result") or {}).get("prompts", []) if v.returncode == 0 else []
     check(
-        "evh prompts: both names, one version each, the run that used them",
+        "evh prompt-list: both names, one version each, the run that used them",
         sorted((x["name"], x["versions"], x["runs"]) for x in rows)
         == [("lib/sub/b.txt", 1, 1), ("summary/user", 1, 1)],
         (v.stdout[-300:], v.stderr[-300:]),
@@ -147,12 +143,8 @@ try:
     (proj / "prompts" / "user.txt").write_text("Summarise in one short line.\n")
     r2 = evh("run", "--system", c1, "--dataset", "tk_v1")
     m = metrics_of("p1_v1")
-    vers = evh("prompts", "summary/user", "--json")
-    vs = (
-        (json.loads(vers.stdout).get("result") or {}).get("values", {}).get("versions", [])
-        if vers.returncode == 0
-        else []
-    )
+    vers = evh("prompt-show", "--name", "summary/user", "--json")
+    vs = (json.loads(vers.stdout).get("result") or {}).get("versions", []) if vers.returncode == 0 else []
     f1, f3 = (m[0].get("fingerprint") or {}), (m[-1].get("fingerprint") or {})
     parts_moved = [p for p in _fingerprint.PARTS if f1.get(f"{p}_sha256") != f3.get(f"{p}_sha256")]
     check(
@@ -185,12 +177,8 @@ try:
     (proj / "prompts" / "user.txt").write_text("A third wording.\n")
     with ThreadPoolExecutor(8) as ex:
         codes = list(ex.map(lambda _: evh("run", "--system", c1, "--dataset", "tk_v1").returncode, range(8)))
-    vers = evh("prompts", "summary/user", "--json")
-    vs = (
-        (json.loads(vers.stdout).get("result") or {}).get("values", {}).get("versions", [])
-        if vers.returncode == 0
-        else []
-    )
+    vers = evh("prompt-show", "--name", "summary/user", "--json")
+    vs = (json.loads(vers.stdout).get("result") or {}).get("versions", []) if vers.returncode == 0 else []
     check(
         "eight runs at once on new bytes: all succeed, one version recorded",
         codes == [0] * 8 and len(vs) == 3,
@@ -240,12 +228,8 @@ try:
         "--note",
         "shorter",
     )
-    vers = evh("prompts", "summary/user", "--json")
-    vs = (
-        (json.loads(vers.stdout).get("result") or {}).get("values", {}).get("versions", [])
-        if vers.returncode == 0
-        else []
-    )
+    vers = evh("prompt-show", "--name", "summary/user", "--json")
+    vs = (json.loads(vers.stdout).get("result") or {}).get("versions", []) if vers.returncode == 0 else []
     check(
         "prompt-version records a version with its parent and note; the same bytes again are named, not doubled",
         pv.returncode == 0 and len(vs) == 4 and vs[-1]["parent"] == vid and vs[-1]["note"] == "shorter"

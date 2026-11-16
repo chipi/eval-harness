@@ -83,7 +83,7 @@ try:
         r.returncode == 0,
         (r.stdout + r.stderr)[-300:],
     )
-    r = evh("dataset-card", "--dataset-id", "n_v2", "--format", "croissant")
+    r = evh("dataset-card", "n_v2", "--format", "croissant")
     doc = json.loads(r.stdout) if r.returncode == 0 else {}
     check(
         "Croissant 1.1: conformsTo, the licence's SPDX page, the version, the parent, the card as rai:",
@@ -121,24 +121,21 @@ try:
     )
     r = evh(
         "dataset-card",
-        "--dataset-id",
         "n_v2",
         "--format",
         "croissant",
         "--creator",
         "Ada L.",
-        "--out",
-        "n.json",
     )
-    out = json.loads((proj / "n.json").read_text()) if r.returncode == 0 else {}
+    out = json.loads(r.stdout) if r.returncode == 0 else {}
     check(
-        "--creator and --out: written, the creator named; a folder dataset has no url, and that alone is named",
+        "--creator: the creator named; a folder dataset has no url, and that alone is named",
         out.get("creator", {}).get("name") == "Ada L."
         and "asks for url, which" in r.stderr
         and "creator" not in r.stderr,
         r.stderr[-300:],
     )
-    r = evh("dataset-card", "--dataset-id", "n_v2")
+    r = evh("dataset-card", "n_v2")
     check(
         "the text card: version, licence, and each answered question",
         r.returncode == 0
@@ -148,7 +145,7 @@ try:
         and "2 of 20 questions answered" in r.stdout,
         r.stdout[-500:],
     )
-    r = evh("dataset-card", "--dataset-id", "n_v2", "--format", "hf-readme")
+    r = evh("dataset-card", "n_v2", "--format", "hf-readme")
     head = r.stdout.split("---")[1] if r.stdout.startswith("---") else ""
     check(
         "the Hugging Face README: the Hub's licence key, the card's answers under the Hub template's headings",

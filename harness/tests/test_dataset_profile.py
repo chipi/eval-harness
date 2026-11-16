@@ -208,7 +208,7 @@ try:
     )
     evh("dataset-profile", "--dataset-id", "topics")
 
-    r = evh("dataset-items", "--dataset-id", "topics")
+    r = evh("dataset-items", "topics")
     check(
         "dataset-items: prints the shape and a row per item",
         r.returncode == 0
@@ -217,14 +217,14 @@ try:
         and r.stdout.count("example.org") >= 6,
         r.stdout[-400:],
     )
-    r = evh("dataset-items", "--dataset-id", "topics", "--item", ids[0][:10])
+    r = evh("dataset-items", "topics", "--item", ids[0][:10])
     check(
         "dataset-items --item: one item, with its text when it is materialized here",
         r.returncode == 0
         and any(t in r.stdout for t in ("the market fell", "the team won", "a new chip", "rates rose")),
         r.stdout[-300:],
     )
-    r = evh("dataset-items", "--dataset-id", "nothing")
+    r = evh("dataset-items", "nothing")
     check(
         "dataset-items: no profile is refused, saying how to write one",
         r.returncode != 0 and "dataset-profile" in r.stderr,
@@ -267,7 +267,9 @@ try:
     import html as _html
     import re
 
-    from evaluation_harness.mcp_server import READ_TOOLS
+    from evaluation_harness import ops
+
+    READ_TOOLS = {op.name for op in ops.of_kind("read")}
 
     term = re.compile(r"<span data-elsewhere=term>(.*?)</span>")
     lines = {
@@ -303,7 +305,7 @@ try:
         "--mcp: each page names its tool call, the server and how to connect",
         r.returncode == 0
         and "From an agent: the tool" in d
-        and "<code>datasets</code> with <code>{&quot;dataset-id&quot;: &quot;topics&quot;}</code>" in d
+        and "<code>dataset-show</code> with <code>{&quot;dataset&quot;: &quot;topics&quot;}</code>" in d
         and "https://evals.example.test/mcp" in d
         and "how to connect" in d,
         d.split("<footer>")[-1][:600],

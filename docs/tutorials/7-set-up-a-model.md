@@ -140,7 +140,7 @@ A passed smoke makes the model **vetted**: onboarded, and shown to work on a tas
 
 ```bash
 evh run --system tickets_llama_v1 --dataset tickets_v1
-evh models
+evh model-list
 ```
 ```text
   model        kind  where        weights  build                     deployments  settings  onboarding       arms
@@ -148,7 +148,7 @@ evh models
 ```
 
 The run's fingerprint takes the weights, the server and where it ran from the record's deployment, so two
-runs of this arm on different builds cannot pass for one measurement. `evh models --model llama3.1-8b` prints
+runs of this arm on different builds cannot pass for one measurement. `evh model-show llama3.1-8b` prints
 the record in full: each deployment, its onboarding, the settings' history, and the arms that use it. The
 catalog shows the same on its **Models** page and a page per model (`evh catalog`, then
 [tutorial 5](5-catalog-and-inspector.md)).

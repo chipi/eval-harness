@@ -17,9 +17,14 @@ _UNSET = {"type": "array", "items": {"type": "string"}, "description": "fields t
 _M = "evaluation_harness.ops.models"
 
 OPS = (
-    Op("model-list", "read", "every model: its kind, weights, deployments and state (vetted, onboarded, check, none)",
-       "GET", "/models", f"{_M}:list_models", f"{_M}:say_list"),
-    Op("model-show", "read", "one model and its deployments, each with its state", "GET", "/models/{model}",
+    Op("model-list", "read", "every model: its kind, weights, where it runs, deployments and state (vetted, onboarded, check, none), its build and settings, the goals its arms are on and its best place on each",
+       "GET", "/models", f"{_M}:list_models", f"{_M}:say_list",
+       inputs={
+           "kind": {"type": "string", "enum": ["llm", "ml", "baseline", "code"], "description": "only models of this kind"},
+           "where": {"type": "string", "enum": ["self-hosted", "hosted"], "description": "only models that run on our machines (a deployment with a server or device, no provider id), or only hosted ones"},
+           "status": {"type": "string", "enum": ["vetted", "onboarded", "check", "none"], "description": "only models whose onboarding passed and an arm passed its smoke (vetted), whose onboarding passed with no arm smoked (onboarded), any flagged something (check), or none ran (none)"},
+       }),
+    Op("model-show", "read", "one model and its deployments, each with its state; its settings history, whether each deployment's build matches the record, and its arms: the goal, the settings, the smoke and the result of each", "GET", "/models/{model}",
        f"{_M}:show_model", f"{_M}:say_model"),
     Op("model-new", "edit", "make a model record, checked against its schema", "POST", "/models/{model}",
        f"{_M}:new_model", f"{_M}:say_saved", inputs={"set": _SET}, required=("set",)),
@@ -53,32 +58,112 @@ def _no_checks(sets: dict[str, Any] | None, unsets: list[str] | None) -> None:
         )
 
 
-def list_models() -> dict[str, Any]:
-    """Every model with its deployments' count and its state."""
-    from evaluation_harness.model.models import DEPLOYMENT, MODEL, status  # noqa: PLC0415
+def _catalog_rows() -> tuple[Any, dict[str, dict[str, Any]]]:
+    """The adapter, and the catalog's row of each model record (its arms, goals and best places), by id."""
+    from evaluation_harness import catalog_models as cm  # noqa: PLC0415
+    from evaluation_harness.ops.views import _view  # noqa: PLC0415
 
-    deps = DEPLOYMENT.ids()
+    A, by_ds = _view()
+    return A, {r["id"]: r for r in cm.model_rows(A, by_ds)}
+
+
+def _catalog_of(c: dict[str, Any]) -> dict[str, Any]:
+    """What the catalog says of a model: where it runs, its build and settings, the goals its arms are on and its best place
+    on each."""
+    rec = c["record"]
+    versions = (
+        [x for x in rec.get("versions") or [] if isinstance(x, dict)] if rec.get("kind") == "code" else None
+    )
     return {
-        "models": [
-            {
-                "model": m.get("model_id"),
-                "name": m.get("name"),
-                "kind": m.get("kind"),
-                "weights": m.get("weights"),
-                "deployments": sum(1 for d in deps if d.split("/")[0] == m.get("model_id")),
-                "state": status(str(m.get("model_id"))),
-            }
-            for m in MODEL.all()
-        ]
+        "licence": c["licence"] or None,
+        "deployment_ids": [b["id"] for b in c["deployments"]],
+        "versions": {
+            "n": len(versions),
+            "checked": sum(1 for x in versions if (x.get("faithfulness") or {}).get("items")),
+        }
+        if versions is not None
+        else None,
+        "hosting": c["hosting"] or None,
+        "status": c["status"],
+        "onboarded": c["onboarded"] or None,
+        "flags": c["flags"],
+        "build": c["build"],
+        "differs": c["differs"],
+        "settings": c["settings"],
+        "arms": len(c["arms"]),
+        "goals": [g["goal_id"] for g in c["goals"]],
+        "best": [{"goal": g["goal_id"], "dataset": ds, "rank": i, "of": n} for g, ds, i, n in c["best"]],
     }
 
 
+def list_models(
+    kind: str | None = None, where: str | None = None, status: str | None = None
+) -> dict[str, Any]:
+    """Every model with its deployments' count and its state, and the catalog's view of it; with `kind`, `where` or
+    `status`, only the models that match."""
+    from evaluation_harness.model.models import DEPLOYMENT, MODEL  # noqa: PLC0415
+    from evaluation_harness.model.models import status as state_of  # noqa: PLC0415
+
+    _, cat = _catalog_rows()
+    deps = DEPLOYMENT.ids()
+    rows = []
+    for m in MODEL.all():
+        mid = str(m.get("model_id"))
+        c = cat.get(mid)
+        if (
+            (kind and m.get("kind") != kind)
+            or (where and not (c and c["hosting"] == where))
+            or (status and not (c and c["status"] == status))
+        ):
+            continue
+        rows.append(
+            {
+                "model": mid,
+                "name": m.get("name"),
+                "kind": m.get("kind"),
+                "weights": m.get("weights"),
+                "deployments": sum(1 for d in deps if d.split("/")[0] == mid),
+                "state": state_of(mid),
+                **(_catalog_of(c) if c else {}),
+            }
+        )
+    return {"models": rows, "records": len(MODEL.ids())}
+
+
 def show_model(model: str) -> dict[str, Any]:
-    """The model's record and each deployment's record with its state."""
+    """The model's record and each deployment's record with its state, and the catalog's view of it: whether each
+    deployment's build matches the record, and its arms (the goal, the settings, the smoke and the result of each)."""
+    from evaluation_harness import _jsonout  # noqa: PLC0415
+    from evaluation_harness import catalog_models as cm  # noqa: PLC0415
     from evaluation_harness.model.models import DEPLOYMENT, MODEL, deployment_state, status  # noqa: PLC0415
 
     rec = MODEL.get(model)
     deps = [d for d in DEPLOYMENT.ids() if d.split("/")[0] == model]
+    A, cat = _catalog_rows()
+    c = cat.get(model)
+    catalog = None
+    if c:
+        cfg_fn = getattr(A, "arm_config", None)
+        catalog = {
+            **_catalog_of(c),
+            "diffs": dict(zip((b["id"] for b in c["deployments"]), c["diffs"], strict=True)),
+            "deployment_rows": c["deployments"],
+            "version_rows": cm.version_rows(c["record"]) if rec.get("kind") == "code" else None,
+            "history": sorted(rec.get("history") or [], key=lambda h: str(h.get("at")), reverse=True),
+            "arm_rows": [
+                {
+                    "arm": a["arm"],
+                    "goal": a["goal"]["goal_id"] if a["goal"] else None,
+                    "settings": cm.arm_settings(
+                        rec, ((cfg_fn(a["arm"]) if callable(cfg_fn) else {}) or {}).get("params") or {}
+                    ),
+                    "smoke": cm.SMOKE_WORDS[a["smoke"]],
+                    "measure": a["measure"],
+                    "value": a["value"],
+                }
+                for a in c["arms"]
+            ],
+        }
     return {
         "model": model,
         "record": rec,
@@ -87,6 +172,7 @@ def show_model(model: str) -> dict[str, Any]:
             {"deployment": d.split("/")[1], "record": DEPLOYMENT.get(d), "state": deployment_state(d)}
             for d in deps
         ],
+        "catalog": _jsonout.plain(catalog),
     }
 
 
@@ -159,19 +245,18 @@ def accept(model: str, deployment: str, flag: str, why: str, by: str) -> dict[st
 
 
 def say_list(r: dict[str, Any]) -> str:
-    """model-list's answer as text: one model a line."""
-    rows = r["models"]
-    if not rows:
-        return "no model records yet: evh model-new <id> --set kind=llm --set aliases.0=<the id runs record>"
-    w = max(len(str(m["model"])) for m in rows)
-    return "\n".join(
-        f"{m['model']:<{w}}  {m.get('kind') or '':<5} {m.get('weights') or '':<12} {m['deployments']} deployment(s)  {m['state']}"
-        for m in rows
-    )
+    """model-list's answer as text: one model a row, its build, settings, onboarding, arms and best place."""
+    from evaluation_harness import catalog_views  # noqa: PLC0415
+
+    return catalog_views.say(catalog_views.print_models, r)
 
 
 def say_model(r: dict[str, Any]) -> str:
-    """model-show's answer as text: the record's facts, then each deployment and its state."""
+    """model-show's answer as text: the record's facts, deployments, onboarding, settings history and arms."""
+    if r["catalog"]:
+        from evaluation_harness import catalog_views  # noqa: PLC0415
+
+        return catalog_views.say(catalog_views.print_model, r)
     rec = r["record"]
     lines = [
         f"{r['model']}: {rec.get('name') or ''} ({rec.get('kind')}, {rec.get('weights') or 'weights unknown'}) {r['state']}"

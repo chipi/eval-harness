@@ -74,10 +74,12 @@ def join(cap):
 
 
 def values(r):
-    return json.loads(r.stdout)["result"]["values"] if r.returncode == 0 else {}
+    """label-coverage-show's answer (its result is the coverage itself)."""
+    return json.loads(r.stdout)["result"] if r.returncode == 0 else {}
 
 
 BASE = ("--dataset-id", "tickets_v1", "--map", "rules.yaml")
+COVER = ("tickets_v1", "--map", "rules.yaml")
 try:
     (proj / "data" / "systems").mkdir(parents=True)
     _runstore.write_text(proj, _format.NAME, f"format: {_format.FORMAT}\n")
@@ -120,9 +122,9 @@ try:
         "- {when: {iss.state_reason: completed}, date: iss.closed_at, under: action, label: file}\n"
         "- {when: {iss.count: 0}, min_age_days: 14, label: dismiss}\n"
     )
-    r = evh("label-coverage", *BASE, "--capture", "dec", *join("iss"), "--json")
+    r = evh("label-coverage-show", *COVER, "--capture", "dec", *join("iss"), "--json")
     check(
-        "label-coverage --outcomes: joined by key, window and identity; gone and not mature counted apart",
+        "label-coverage-show --outcomes: joined by key, window and identity; gone and not mature counted apart",
         values(r).get("counts")
         == {"labelled": 3, "skipped": 0, "not_mature": 1, "unmatched": 0, "no_record": 1, "gone": 1},
         said(r)[-600:],
@@ -190,7 +192,7 @@ try:
         and [o.get("within") for o in two_doc["source"]["outcomes"]] == ["-1m,+15m", None],
         said(r)[-400:] + json.dumps(two_labels),
     )
-    r = evh("label-coverage", *BASE, "--capture", "dec", "--outcomes-as", "iss", "--join", "fp=fp",
+    r = evh("label-coverage-show", *COVER, "--capture", "dec", "--outcomes-as", "iss", "--join", "fp=fp",
             "--within=-1m,+15m", "--identity", "first_seen=first_seen", "--outcomes", "iss", "--json")  # fmt: skip
     check(
         "one --outcomes: its options are its own wherever they stand (the MCP server writes them in name order)",
@@ -198,7 +200,7 @@ try:
         == {"labelled": 3, "skipped": 0, "not_mature": 1, "unmatched": 0, "no_record": 1, "gone": 1},
         said(r)[-400:],
     )
-    r = evh("label-coverage", *BASE, "--capture", "dec", "--outcomes", "iss", "--join", "fp=fp",
+    r = evh("label-coverage-show", *COVER, "--capture", "dec", "--outcomes", "iss", "--join", "fp=fp",
             "--outcomes", "gtrec", "--join", "fp=fp", "--outcomes-as", "iss")  # fmt: skip
     check(
         "two --outcomes read under one name are refused, naming it",
@@ -207,7 +209,6 @@ try:
     )
     r = evh(
         "label-mutants",
-        "--dataset-id",
         "tickets_v1",
         "--map",
         "rules2.yaml",
@@ -230,10 +231,10 @@ try:
     # A later read: item 1 has matured (no issue for 14 days), item 2 recurred inside the window.
     capture("dec2", [decision(i, NOW - 20 * DAY if i == 1 else None) for i in range(5)])
     capture("iss2", [*issues, issue("is2b", 2, 3 * MIN, closed=NOW - DAY)])
-    r = evh("label-coverage", *BASE, "--capture", "dec2", *join("iss2"), "--from-set", "s1", "--json")
+    r = evh("label-coverage-show", *COVER, "--capture", "dec2", *join("iss2"), "--from-set", "s1", "--json")
     rel = values(r).get("relabel") or {}
     check(
-        "label-coverage --from-set: what a relabel would add and change today",
+        "label-coverage-show --from-set: what a relabel would add and change today",
         rel.get("would_add") == 1 and rel.get("would_change") == 1 and rel.get("no_longer_given") == 0,
         said(r)[-500:],
     )
@@ -280,8 +281,8 @@ try:
     # X3: a capture holding the very objects the items name (GlitchTip's issues): a fingerprint none carries is gone.
     capture("gt", [{"id": f"g{i}", "created_at": iso(t[i]), "fp": f"fp{i}", "body": "x"} for i in (0, 1, 2)])
     r = evh(
-        "label-coverage",
-        *BASE,
+        "label-coverage-show",
+        *COVER,
         "--capture",
         "dec",
         "--outcomes",
@@ -356,7 +357,7 @@ try:
         "    out[0] = {**out[0], 'when': {'iss.closed_at': 'completed'}}\n"
         "    return [('the close reason read from the wrong field', out)]\n"
     )
-    r = evh("label-mutants", "--dataset-id", "tickets_v1", "--capture", "dec", "--map", "rules.yaml", *join("iss"),
+    r = evh("label-mutants", "tickets_v1", "--capture", "dec", "--map", "rules.yaml", *join("iss"),
             "--mutants", "mut.py", "--json")  # fmt: skip
     try:
         mv = json.loads(r.stdout)["result"]["values"]
@@ -380,7 +381,7 @@ try:
     (proj / "mut_bad.py").write_text(
         "def join_mutants(join):\n    return [('the item side keyed on the wrong field', {**join, 'item_field': 'ticket'})]\n"
     )
-    r = evh("label-mutants", "--dataset-id", "tickets_v1", "--capture", "dec", "--map", "rules.yaml", *join("iss"),
+    r = evh("label-mutants", "tickets_v1", "--capture", "dec", "--map", "rules.yaml", *join("iss"),
             "--mutants", "mut_bad.py")  # fmt: skip
     check(
         "label-mutants: a project join mutant with a key the harness does not read is refused, the key named",

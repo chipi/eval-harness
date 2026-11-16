@@ -461,7 +461,7 @@ try:
         (st, r3.stdout[-300:], r3.stderr[-200:], r4.stdout[-200:]),
     )  # fmt: skip
     r5 = evh("jobs-start", "round-close", "--arg", "goal=g")
-    r6 = evh("jobs-start", "datasets")
+    r6 = evh("jobs-start", "goal-list")
     check(
         "jobs-start refuses as the API does: a read is not a job; and needs no server",
         r6.returncode != 0 and "not a job" in r6.stderr and r5.returncode != 0,

@@ -109,7 +109,7 @@ try:
         ("lb_worse", "arm_worse_v1", {"acc": 0.5, "total_cost_usd": 0.003, "latency_ms": 300.0}),
     ):
         write_run(syn, name, cfg, {**base, **over})
-    lb = evh(syn, "leaderboard", "--dataset-id", "dsv", "--match", "_v1")
+    lb = evh(syn, "leaderboard", "dsv", "--match", "_v1")
     widest = max((len(ln) for ln in lb.stdout.splitlines()), default=0)
     check(
         "leaderboard: the default text fits a normal terminal (<= 100 characters a line)",
@@ -131,12 +131,12 @@ try:
         ),
         lb.stdout[:600],
     )
-    wide = evh(syn, "leaderboard", "--dataset-id", "dsv", "--match", "_v1", "--wide")
+    wide = evh(syn, "leaderboard", "dsv", "--match", "_v1", "--wide")
     check(
         "leaderboard --wide: every column, nothing left out",
         "extra_metric_number_7" in wide.stdout.split("IS THE ORDERING")[0] and "Not shown" not in wide.stdout,
     )
-    js = evh(syn, "leaderboard", "--dataset-id", "dsv", "--match", "_v1", "--json")
+    js = evh(syn, "leaderboard", "dsv", "--match", "_v1", "--json")
     g = json.loads(js.stdout)["result"]["values"]["groups"][0]
     check(
         "leaderboard --json: every metric of every arm, whatever the text shows",
@@ -191,7 +191,7 @@ try:
         bl.stdout,
     )
     blj = json.loads(evh(syn, "baselines", "--json").stdout)
-    row = blj["baselines"][0]
+    row = blj["result"]["baselines"][0]
     check(
         "evh baselines --json: the same mean, and the number of repeats beside it",
         row.get("scores", {}).get("acc") == 0.6 and row.get("repeats") == 3,
@@ -212,10 +212,10 @@ try:
         (yaml.safe_load(f.read_text()).get("conclusion") or {}).get("text", "")
         for f in sorted(rounds_src.glob("r*.yaml"))
     ]
-    rl = evh(syn, "rounds", "--goal", "triage_orrery")
+    rl = evh(syn, "round-list", "triage_orrery")
     flat_rl = " ".join(rl.stdout.split())
     check(
-        "rounds --goal triage_orrery: every earlier round's conclusion is in the list whole",
+        "round-list triage_orrery: every earlier round's conclusion is in the list whole",
         rl.returncode == 0 and len(texts) > 1 and all(" ".join(t.split()) in flat_rl for t in texts[:-1]),
         [t[:80] for t in texts if " ".join(t.split()) not in flat_rl],
     )
@@ -261,21 +261,23 @@ try:
         (one, none),
     )
 
-    line = " ".join((rs.closing_line([("gold/x", "gold/x")]) + "evh goals").split())
+    line = " ".join((rs.closing_line([("gold/x", "gold/x")]) + "evh goal-list").split())
     check(
         "rescore: the closing line is a whole sentence ending with the command, for a re-score on the run's reference",
         "in place of its runs when every run of the arm was re-scored against the reference it was measured on."
         in line
-        and line.endswith("See it with: evh goals")
+        and line.endswith("See it with: evh goal-list")
         and "Not in place" not in line,
         line,
     )
-    line = " ".join((rs.closing_line([("gold/x", "silver/x"), ("gold/x", "silver/x")]) + "evh goals").split())
+    line = " ".join(
+        (rs.closing_line([("gold/x", "silver/x"), ("gold/x", "silver/x")]) + "evh goal-list").split()
+    )
     check(
         "rescore: a re-score on another reference says it is a table of its own and the old table is unchanged",
         "Not in place: 2 run(s) against silver/x, measured against gold/x." in line
         and "the table scored against the old one stays as it was" in line
-        and line.endswith("evh goals"),
+        and line.endswith("evh goal-list"),
         line,
     )
     many: list[tuple[str | None, str]] = [
@@ -388,14 +390,13 @@ try:
     check("setup: a round adopts the arms", r.returncode == 0, out(r)[-300:])
 
     # family-test --round
-    bare = evh(proj, "family-test", "--dataset-id", "tickets_v1")
+    bare = evh(proj, "family-test", "tickets_v1")
     check(
         "family-test: without --round, --a and --against are still required",
-        bare.returncode != 0
-        and "--a and --against are required (or --round, which defaults them)" in out(bare),
+        bare.returncode != 0 and "a and against are required (or round, which defaults them)" in out(bare),
         out(bare),
     )
-    ft = evh(proj, "family-test", "--dataset-id", "tickets_v1", "--round", "r1")
+    ft = evh(proj, "family-test", "tickets_v1", "--round", "r1")
     check(
         "family-test --round: the leader is A and every other arm in play is the family, Holm-corrected",
         ft.returncode == 0
@@ -415,7 +416,6 @@ try:
     ex = evh(
         proj,
         "family-test",
-        "--dataset-id",
         "tickets_v1",
         "--round",
         "r1",
@@ -435,7 +435,6 @@ try:
     exa = evh(
         proj,
         "family-test",
-        "--dataset-id",
         "tickets_v1",
         "--a",
         "tickets_lead1_v1",
@@ -449,7 +448,7 @@ try:
     )
 
     # goals --goal: no empty column
-    gl = evh(proj, "goals", "--goal", "tickets_summary")
+    gl = evh(proj, "goal-leaderboard", "tickets_summary")
     head = next(
         (ln for ln in gl.stdout.splitlines() if ln.strip().startswith("arm ") and "vs leader" in ln), ""
     )
@@ -465,22 +464,33 @@ try:
         m = _runstore.read_json(proj, rj)
         m.setdefault("fingerprint", {}).setdefault("deployment", {})["model"] = model
         _runstore.write_text(proj, rj, json.dumps(m))
-    ins = evh(proj, "inspect", "--runs", "runs/tickets_v1/tickets_lead1_v1,runs/tickets_v1/tickets_lead2_v1")
+    ins = evh(
+        proj, "comparison-show", "--runs", "runs/tickets_v1/tickets_lead1_v1,runs/tickets_v1/tickets_lead2_v1"
+    )
     check(
-        "inspect: the conditions table shows eval-mistral-small whole",
+        "comparison-show: the conditions table shows eval-mistral-small whole",
         "eval-mistral-small" in ins.stdout and "eval-mistral-sma " not in ins.stdout,
         out(ins)[-600:],
     )
 
-    rins = evh(proj, "inspect", "--round", "r1")
+    rins = evh(proj, "comparison-show", "--round", "r1", "--goal", "tickets_summary")
     check(
-        "inspect --round: the table's head names the baseline as the round's leader when no baseline was promoted",
+        "comparison-show --round: the table's head names the baseline as the round's leader when no baseline was promoted",
         re.search(r"· baseline \S+ \(the round's leader\): mean", rins.stdout) is not None,
         out(rins)[:400],
     )
-    pins = evh(proj, "inspect", "--round", "r1", "--baseline", "tickets_lead2_v1")
+    pins = evh(
+        proj,
+        "comparison-show",
+        "--round",
+        "r1",
+        "--goal",
+        "tickets_summary",
+        "--baseline",
+        "tickets_lead2_v1",
+    )
     check(
-        "inspect --round --baseline: a baseline given is not called the leader",
+        "comparison-show --round --baseline: a baseline given is not called the leader",
         "(the round's leader)" not in pins.stdout and "· baseline " in pins.stdout,
         out(pins)[:400],
     )
@@ -507,7 +517,7 @@ try:
             },
         },
     )
-    ov = evh(proj, "overview")
+    ov = evh(proj, "overview-show")
     billed = next((ln for ln in ov.stdout.splitlines() if ln.strip().startswith("billed")), "")
     check(
         "overview: the billed tile counts the arm smoke (the project's runs here bill nothing)",
@@ -570,7 +580,7 @@ try:
         rsr.returncode == 0
         and "in place of its runs when every run of the arm was re-scored against the reference it was measured on."
         in " ".join(rsr.stdout.split())
-        and rsr.stdout.rstrip().endswith(("See it with: evh goals", "See it with: make catalog")),
+        and rsr.stdout.rstrip().endswith(("See it with: evh goal-list", "See it with: make catalog")),
         rsr.stdout[-500:],
     )
     sp = evh(proj, "score-preview", "--goal", "tickets_summary")

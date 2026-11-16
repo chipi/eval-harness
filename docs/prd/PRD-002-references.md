@@ -98,7 +98,7 @@ against the books in [LABELS_ANALYSIS_0.6.0](https://github.com/chipi/eval-harne
   filled rows. The sheet is CSV that Excel opens and saves (UTF-8 with its mark; `,` or `;`); `--choices`
   writes the allowed answers into the label column's header and the import refuses any other; a workbook
   (.xlsx) is refused, saying how to save it as CSV. The local inspector downloads the same sheet.
-- **FR2.3b** (0.6.0): The sheet of `evh inspect --sheet … --csv FILE --fill label` is filled the same way, and
+- **FR2.3b** (0.6.0): The sheet of `evh sheet-export … --csv FILE --fill label` is filled the same way, and
   `evh sheet-import FILE --dataset-id D --by WHO --set S` makes its `label` column a set: `person`, or `model` with
   `--kind model` when a tool filled it. A filled `pick` or `score:` column is a judgement, not a label: it becomes
   unvalidated judged runs (`--scorer`, PRD-003), never a label set.
@@ -107,7 +107,7 @@ against the books in [LABELS_ANALYSIS_0.6.0](https://github.com/chipi/eval-harne
   run, an empty output and outputs that stopped at `max_tokens` (`--allow-cut-off`).
 - **FR2.5**: `evh label-from-capture` makes a `rule` set from a capture's recorded outcomes (PRD-014).
 - **FR2.6**: A set is never edited; a correction is a new set. Labels follow the item by its sha256.
-- **FR2.7**: `evh labels [--dataset-id D]` lists every set: source, coverage, guideline, and how often two sets
+- **FR2.7**: `evh label-set-list D` lists every set: source, coverage, guideline, and how often two sets
   agree (FR2.10); the pages show what was promoted from it (UXS-001).
 - **FR2.8**: `evh validate` V19 checks every set's labels against the sha256 it recorded.
 - **FR2.9**: A label is one right answer, or several when more than one is right for the item (owner, 2026-11-02),

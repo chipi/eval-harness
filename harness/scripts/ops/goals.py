@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from evaluation_harness.catalog_periods import PERIODS
 from evaluation_harness.ops.registry import Op
 
 _GOAL = {"type": "string", "description": "the goal's id"}
@@ -14,16 +15,27 @@ _SET = {
     "additionalProperties": True,
 }
 _UNSET = {"type": "array", "items": {"type": "string"}, "description": "fields to remove, by dotted key"}
+_PERIOD = {
+    "type": "string",
+    "enum": [k for k, *_ in PERIODS],
+    "description": "add each goal's numbers in a period counted from today: "
+    + ", ".join(f"{k} ({label})" for k, label, _ in PERIODS),
+}
 
 OPS = (
-    Op("goal-list", "read", "every goal: its title, status and measure", "GET", "/goals",
-       "evaluation_harness.ops.goals:list_goals", "evaluation_harness.ops.goals:say_list"),
+    Op("goal-list", "read", "every goal: its title, status and measure, its datasets, how many systems were filed for it, the arm it recommends, and its studies; with a period, each goal's runs and spend in it and what happened to it",
+       "GET", "/goals", "evaluation_harness.ops.goals:list_goals", "evaluation_harness.ops.goals:say_list",
+       inputs={"period": _PERIOD}),
     Op("goal-show", "read", "one goal, as stored", "GET", "/goals/{goal}",
        "evaluation_harness.ops.goals:show", "evaluation_harness.ops.goals:say_record"),
     Op("goal-status", "read", "where a goal stands: its datasets, reference, runs, baseline, rounds, what runs now, and the next step",
        "GET", "/goals/{goal}/status", "evaluation_harness.ops.goals:status", "evaluation_harness.ops.goals:say_status"),
-    Op("goal-leaderboard", "read", "where each arm of a goal stands on each of its datasets, per reference scored against: its means on the goal's axes, flags and tests, the leader, the contenders, the recommended arm and the baseline",
-       "GET", "/goals/{goal}/leaderboard", "evaluation_harness.ops.goals:leaderboard", "evaluation_harness.ops.goals:say_leaderboard"),
+    Op("goal-leaderboard", "read", "where each arm of a goal stands on each of its datasets, per reference scored against: its means on the goal's axes, flags and tests, the leader, the contenders, the recommended arm and the baseline; with arms or top, only the arms chosen (the baseline, the leader and the recommended arm stay)",
+       "GET", "/goals/{goal}/leaderboard", "evaluation_harness.ops.goals:leaderboard", "evaluation_harness.ops.goals:say_leaderboard",
+       inputs={
+           "arms": {"type": "array", "items": {"type": "string"}, "description": "only arms whose arm or system id contains PATTERN (or fits it, as a glob when it has * ? or [); comma-separated within a value"},
+           "top": {"type": "integer", "minimum": 1, "description": "only the first N arms in the goal's own order"},
+       }),
     Op("goal-history", "read", "a goal's saves, newest first: when, by whom, what it was", "GET", "/goals/{goal}/history",
        "evaluation_harness.ops.goals:history", "evaluation_harness.ops.goals:say_history"),
     Op("goal-new", "edit", "make a goal, checked against its schema and the datasets and references it names", "POST",
@@ -35,21 +47,83 @@ OPS = (
 )  # fmt: skip
 
 
-def list_goals() -> dict[str, Any]:
-    """Every goal: its id, title, status and primary measure."""
-    from evaluation_harness.model.goals import GOAL  # noqa: PLC0415
+def _adapter_view() -> tuple[Any, dict]:
+    from evaluation_harness.ops.views import _view  # noqa: PLC0415
 
-    return {
-        "goals": [
+    return _view()
+
+
+def list_goals(period: str | None = None) -> dict[str, Any]:
+    """Every goal: its id, title, status and primary measure, its datasets, how many systems were filed for it, the arm each
+    of its decisions recommends (with what it costs and how fast it is against the baseline), and its studies; with
+    `period`, each goal's runs and spend in the period against the one before, and what happened in it."""
+    from datetime import date  # noqa: PLC0415
+
+    from evaluation_harness import _jsonout  # noqa: PLC0415
+    from evaluation_harness import catalog_build as cb  # noqa: PLC0415
+    from evaluation_harness import catalog_periods as cp  # noqa: PLC0415
+    from evaluation_harness.model import goal_views as gv  # noqa: PLC0415
+    from evaluation_harness.model import period_views  # noqa: PLC0415
+    from evaluation_harness.model.goals import GOAL  # noqa: PLC0415
+    from evaluation_harness.ops.views import _period  # noqa: PLC0415
+
+    A, by_ds = _adapter_view()
+    seen = gv.glance(A, by_ds)
+    studies = getattr(A, "studies", None)
+    rows = []
+    for g in GOAL.all():
+        gid = g.get("goal_id")
+        full = next((x for x in A.goals() if x["goal_id"] == gid), g)
+        rows.append(
             {
-                "goal": g.get("goal_id"),
+                "goal": gid,
                 "title": g.get("title"),
                 "status": g.get("status"),
                 "measure": (g.get("success_criteria") or {}).get("primary"),
+                "datasets": [d.get("dataset_id", "") for d in full.get("datasets") or []],
+                "systems_filed": gv.systems_filed(by_ds, full),
+                "recommended": [
+                    {
+                        "dataset": r["dataset"],
+                        "arm": r["recommended"],
+                        "label": r["recommended_label"],
+                        "vs_baseline": r["vs_baseline"],
+                    }
+                    for r in seen
+                    if r["goal"]["goal_id"] == gid and r["recommended"]
+                ],
+                "studies": [
+                    {k: s.get(k) for k in ("study", "status", "baseline", "spent_usd", "end")}
+                    | {"trials": len(s.get("rows") or []), "confirms": len(s.get("confirms") or [])}
+                    for s in ((studies(gid) if callable(studies) else []) or [])
+                ],
             }
-            for g in GOAL.all()
-        ]
-    }
+        )
+    out: dict[str, Any] = {"goals": _jsonout.plain(rows)}
+    key = _period(period)
+    if key:
+        rows_p = cb.period_goals(A, by_ds)
+        got = period_views.rows_in(A, by_ds, rows_p, key)
+        for row in out["goals"]:
+            row["period"] = _jsonout.plain(got["rows"].get(row["goal"]))
+        b = cp.bounds(key, date.today(), cb.window(A, by_ds)["first"])
+        out["period"] = {
+            "key": key,
+            "line": got["line"],
+            "happened": _jsonout.plain(
+                sorted(
+                    (
+                        {"when": day, "goal": gid, "what": cb.plain(h)}
+                        for gid in rows_p
+                        for day, h in rows_p[gid]["events"]
+                        if b["since"] <= day <= b["until"]
+                    ),
+                    key=lambda x: (x["when"], x["goal"]),
+                    reverse=True,
+                )
+            ),
+        }
+    return out
 
 
 def show(goal: str) -> dict[str, Any]:
@@ -66,15 +140,15 @@ def status(goal: str) -> dict[str, Any]:
     return goals.status(goal)
 
 
-def leaderboard(goal: str) -> dict[str, Any]:
-    """The goal's decision on each of its datasets (the model's view: what the goal page and `evh goals` show), read
+def leaderboard(goal: str, arms: list[str] | None = None, top: int | None = None) -> dict[str, Any]:
+    """The goal's decision on each of its datasets (the model's view: what the goal page and `evh goal-list` show), read
     with the adapter the server serves when one is set."""
     from evaluation_harness import catalog_serve  # noqa: PLC0415
     from evaluation_harness.catalog_adapter import shared_adapter  # noqa: PLC0415
     from evaluation_harness.model import goal_views  # noqa: PLC0415
 
     A = getattr(catalog_serve, "A", None) or shared_adapter()
-    return goal_views.leaderboard(A, goal)
+    return goal_views.leaderboard(A, goal, arms=arms, top=top)
 
 
 def history(goal: str) -> dict[str, Any]:
@@ -104,15 +178,12 @@ def change(
 
 
 def say_list(r: dict[str, Any]) -> str:
-    """goal-list's answer as text: one goal a line."""
-    rows = r["goals"]
-    if not rows:
+    """goal-list's answer as text: one goal a row, with its recommendation and, with a period, what moved in it."""
+    if not r["goals"]:
         return "no goals yet: evh goal-new <id> --set title=... (the GUIDE's step 1)"
-    w = max(len(str(g["goal"])) for g in rows)
-    return "\n".join(
-        f"{g['goal']:<{w}}  {g.get('status') or '':<10}  {(g.get('measure') or {}).get('measure', '')}  {g.get('title') or ''}"
-        for g in rows
-    )
+    from evaluation_harness import catalog_views  # noqa: PLC0415
+
+    return catalog_views.say(catalog_views.print_goals, r)
 
 
 def say_record(r: dict[str, Any]) -> str:
@@ -148,61 +219,12 @@ def say_status(r: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
-def _p(p: float | None) -> str:
-    from evaluation_harness.stats import fmt_p  # noqa: PLC0415
-
-    return "—" if p is None else fmt_p(p)
-
-
-def _d(v: float | None) -> str:
-    return "—" if v is None else f"{v:+.4f}"
-
-
 def say_leaderboard(r: dict[str, Any]) -> str:
-    """goal-leaderboard's answer as text: per dataset and reference, each arm a line, the leader and the recommended
-    arm marked, then what the baseline is and how the leader and the recommended arm stand against it."""
-    lines = [f"{r['goal']}: {r['measure']} ({r['direction']} is better), strategy {r['strategy']}"]
-    for d in r["datasets"]:
-        base = d["baseline"]
-        lines.append(
-            f"\n{d['dataset']} ({d['role'] or 'dataset'}{'' if d['decides'] else ', does not decide'})"
-            + (
-                f": baseline {str(base['arm']).rsplit('/', 1)[-1]}, promoted {str(base['promoted_at'])[:10]}"
-                if base
-                else ""
-            )
-        )
-        for g in d["groups"]:
-            lines.append(f"  scored against {g['scored_against']}, on {g['measure']}")
-            for a in g["arms"]:
-                mark = " ".join(
-                    w
-                    for w, on in (
-                        ("leader", a["leader"]),
-                        ("recommended", a["recommended"]),
-                        ("contender", a["contender"] and not a["leader"]),
-                        ("baseline", a["baseline"]),
-                    )
-                    if on
-                )
-                lines.append(
-                    f"    {a['label']:<44} {a['mean']:.4f}  n {a['n']:<5} {mark}"
-                    + (f"  [{'; '.join(a['flags'])}]" if a["flags"] else "")
-                )
-            t = g["leader_vs_baseline"]
-            if t:
-                fam = (
-                    f", Bonferroni over {t['family']} arms: {_p(t['p_adjusted'])}" if t["family"] > 1 else ""
-                )
-                lines.append(
-                    f"    leader against the baseline: {t['verdict']}, delta {_d(t['delta'])}, p {_p(t['p'])}{fam}"
-                )
-            if gap := g["baseline_gap"]:
-                lines.append(
-                    f"    recommended against the baseline: {gap['verdict']}, delta {_d(gap['delta'])}, "
-                    f"p {_p(gap['p'])} (one comparison, not corrected)"
-                )
-    return "\n".join(lines)
+    """goal-leaderboard's answer as text: the goal's statement, its decision rule, its studies and where each arm stands on
+    each dataset, per reference scored against, with what the baseline is and how the recommended arm stands against it."""
+    from evaluation_harness import catalog_views  # noqa: PLC0415
+
+    return catalog_views.say(catalog_views.print_goal, r)
 
 
 def say_history(r: dict[str, Any]) -> str:

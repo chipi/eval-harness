@@ -5,12 +5,12 @@
     evh round-carry  --goal G --round rN --arm cfg [--from rM]
     evh round-retire --goal G --round rN --arm cfg --reason "..."
     evh round-close  --goal G --round rN --conclusion "..." [--promote <run_id>]
-    evh rounds       --goal G [--round rN]
+    evh round-show G rN
 
 A round is a record beside the goal, data/rounds/<goal>/<round>.yaml: what it sets out to learn,
 what changed, its arms, the baseline it starts from, its conclusion. It stores its arms: each a system, the label it is
 read under, the runs it is read through, how it entered (ran in the round, with `--round rN` on `evh run`; or carried
-in unchanged: --keep, round-carry) and its retirement. `evh rounds` reads the evidence the way the inspector does and
+in unchanged: --keep, round-carry) and its retirement. `evh round-list` reads the evidence the way the inspector does and
 suggests the next decision, each as the command that makes it; the commands are the only writers. A project that
 never opens a round loses nothing.
 """
@@ -203,7 +203,7 @@ def open_round(argv: list[str]) -> int:
         print(
             f"  On harness {h['version']}"
             + (f" at {h['commit']}" if h.get("commit") and not h.get("installed") else "")
-            + f" (code {str(h['code_sha256'])[:12]}): a run of the round on other harness code is named in evh rounds."
+            + f" (code {str(h['code_sha256'])[:12]}): a run of the round on other harness code is named in evh round-list."
         )
         if carried:
             print(
@@ -214,7 +214,7 @@ def open_round(argv: list[str]) -> int:
             print(f"  Dropped here: {', '.join(dropped)} ({args.reason})")
         print(
             f"  A NEW system joins it by running in it: evh run --system <id> --dataset {args.dataset} "
-            f"--goal {args.goal} --round {rid}; then: evh rounds --goal {args.goal}"
+            f"--goal {args.goal} --round {rid}; then: evh round-list {args.goal}"
         )
         print("  Commit the round file before the runs: an uncommitted file makes them dirty.")
         return 0
@@ -461,9 +461,9 @@ def close(argv: list[str]) -> int:
 
 
 def status(argv: list[str]) -> int:
-    """evh rounds: every round of a goal, the open one with its evidence and suggestions."""
+    """evh round-list: every round of a goal, the open one with its evidence and suggestions."""
     ap = argparse.ArgumentParser(
-        prog="evh rounds", description="A goal's rounds, and what the evidence suggests."
+        prog="evh round-list", description="A goal's rounds, and what the evidence suggests."
     )
     ap.add_argument("--goal", required=True)
     ap.add_argument("--round", help="one round in full (default: the open one, else the last)")
@@ -568,5 +568,5 @@ ACTIONS = {"open": open_round, "carry": carry, "retire": retire, "close": close,
 
 
 def run(action: str) -> int:
-    """Entry point for the per-action scripts (`evh round-open` ... `evh rounds`)."""
+    """Entry point for the per-action scripts (`evh round-open` ... `evh round-list`)."""
     return ACTIONS[action](sys.argv[1:])

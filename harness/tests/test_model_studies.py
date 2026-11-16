@@ -420,10 +420,10 @@ try:
     }
     got = {n: result(evh(n, *args, "--json")) for n, (_route, args) in pairs.items()}
     check(
-        "study-list and study-show answer the views' rows, and `evh studies` still lists what it did",
+        "study-list and study-show answer the views' rows, and `evh goal-list` lists the study that ran",
         got["study-list"] == {"goal": "g", "studies": sv.list_studies("g")}
         and got["study-show"] == json.loads(json.dumps(sv.show_study("g", "s1")))
-        and {x["study"] for x in result(evh("studies", "--json"))["values"]["studies"]} == {"s1", "s2"}
+        and {x["study"] for g in result(evh("goal-list", "--json"))["goals"] for x in g["studies"]} == {"s1"}
         and "g/s1" in evh("study-list", "g").stdout
         and "round r1" in evh("study-show", "g", "s1").stdout,
         (got["study-list"], evh("study-list", "g").stderr[-200:]),

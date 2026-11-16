@@ -1,6 +1,6 @@
 /* The home page's period: tiles with trends, the activity and spend charts and the feed, for the
    period picked, measured from today (the viewer's date). window.HOME is written by the build
-   (home.js); scripts/catalog_periods.py computes the same for `evh overview --period`, and the
+   (home.js); scripts/catalog_periods.py computes the same for `evh overview-show --period`, and the
    charts are drawn as scripts/catalog_charts.py draws them. Without this script the page shows
    all time. */
 (function(){const H=window.HOME,Pd=window.Period;if(!H||!Pd)return;

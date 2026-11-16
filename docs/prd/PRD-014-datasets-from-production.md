@@ -79,7 +79,7 @@ comment that says what it was.
 - _As an engineer, I check that production ran what I promoted (`evh deploy-sheet`)._
 - _As an operator, my close comments become labels through a mapping I can read (`evh label-from-capture`)._
 - _As an engineer, I open the rows where production was wrong on something the governed dataset does not cover
-  (`evh inspect --sheet --dataset-id D --runs P,C --wrong-against S --new-vs V1`) and pick the ones worth keeping._
+  (`evh sheet-show D --runs P,C --wrong-against S --new-vs V1`) and pick the ones worth keeping._
 - _As a dataset owner, a month later I make v2 of my dataset from v1 and seven of the picks waiting
   (`evh dataset-extend V1 --dataset-id V2 --pick …`), and promote its labels._
 
@@ -105,7 +105,7 @@ comment that says what it was.
 - **FR2.3**: `--sample-rate R --seed S` keeps a record when the seeded hash of its id falls below R, as the records
   arrive; the rule is recorded (rate, seed, read, kept) and a continued capture keeps it.
 - **FR2.4**: `evh capture-scrub` runs the project's own scrubber and records it.
-- **FR2.5**: `evh captures` and the catalog's Captures page list them; `evh validate` V17 checks every record
+- **FR2.5**: `evh capture-list` and the catalog's Captures page list them; `evh validate` V17 checks every record
   against its hash. Newer outcomes of records already held are a fresh capture of the same query.
 - **FR2.6**: `evh capture-restore` rebuilds a capture's records (and the item files of the datasets made from
   it) from the recorded importer and query, a key replaceable with `--query KEY=VALUE`, re-running a recorded
@@ -147,13 +147,13 @@ comment that says what it was.
   sha256 is in the run's settings; scored, tested and compared like any arm. Refused before anything is written
   when there is no reader, or when the capture lacks an item.
 - **FR7.2**: Two outputs are one decision when the adapter's `same(a, b)` says so (default: the same text; the
-  triage adapter's compares the dispositions, not the reasons). `evh inspect --runs A,B --disagree` keeps the items
+  triage adapter's compares the dispositions, not the reasons). `evh comparison-show --runs A,B --disagree` keeps the items
   where an arm decided differently from the baseline, the same filter the inspector page offers ("only where they disagree"), and
   `evh label-sheet --items disagree` reads the same hook.
 
 ### FR8: The sheet: exploring every item (0.6.0)
 
-- **FR8.1**: `evh inspect --sheet --dataset-id D --runs P,C,…` shows the items down and a column per run across
+- **FR8.1**: `evh sheet-show D --runs P,C,…` shows the items down and a column per run across
   (the first is production's): what each wrote, every score it has, every label with its source, the winner per
   item, a footer per run (its mean, its win rate, its verdict), and the signals: **wrong** (`--wrong-against SET`),
   **disagree**, **split** (candidates disagree among themselves), **new** (`--new-vs V`: a field value the governed

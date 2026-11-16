@@ -29,10 +29,10 @@ What [Getting started](../../docs/GUIDE.md) walks: a dataset, its reference, run
 | measure (+ own noise) | `evh run --system … --dataset … [--goal G] --repeat 3` |
 | many systems | `evh sweep --systems A B … --dataset …` |
 | list runs | `evh runs-list` |
-| rank, with the test | `evh leaderboard --dataset-id …` |
+| rank, with the test | `evh leaderboard …` |
 | two runs | `evh run-compare --baseline … --candidate … --noise …` |
-| a pre-named pair | `evh pair-test --dataset-id … --a … --b …` (or `--round rN`: A its leader, B the baseline it started from; a leader chosen from the table is corrected for the comparisons it could have been, every arm in play but B). A `hypothesis:` committed in A's system before the run is what makes the pair "named in advance" (§4) |
-| a winner claim | `evh family-test --dataset-id … --a … --against …` |
+| a pre-named pair | `evh pair-test … --a … --b …` (or `--round rN`: A its leader, B the baseline it started from; a leader chosen from the table is corrected for the comparisons it could have been, every arm in play but B). A `hypothesis:` committed in A's system before the run is what makes the pair "named in advance" (§4) |
+| a winner claim | `evh family-test … --a … --against …` |
 | what it is for | `data/goals/<goal_id>.yaml` (every field: [§4c](#4c-the-goal-file-field-by-field)), and `goal:` on each system |
 | baseline | `evh run-promote --run … --reason "…"` · `evh baselines` · `evh baseline-rollback --goal G --dataset D --to N --reason "…"` |
 | browse and inspect | `evh catalog` · `evh catalog-serve` · `evh dataset-profile` · `evh dataset-items` |
@@ -44,12 +44,12 @@ What [Getting started](../../docs/GUIDE.md) walks: a dataset, its reference, run
 | step | command |
 |---|---|
 | a licence, a description (no new version) | `evh licences` · `evh dataset-describe --dataset-id … --licence …` |
-| the card; as Croissant 1.1 | `evh dataset-card --dataset-id …` · `… --format croissant --creator … --out …` |
+| the card; as Croissant 1.1 | `evh dataset-card …` · `… --format croissant --creator … --out …` |
 | a new version | `evh dataset-create --dataset-id …_v2 --source-dir … --from …_v1` |
 | fields on an existing dataset | `evh dataset-create --dataset-id … --update-fields --fieldset … --fields …` |
 | validation and test | `evh dataset-split … --test 0.3 --seed 7 [--key F]` |
 | a sealed held-out side | `evh dataset-split … --split-by time --key F --at T --seal [--count-by F,…]` · `evh dataset-unseal …_test --system S --reason "…"` |
-| who read a held-out item; counts only | `evh exposure-add --dataset-id …_test --item ID --what "…"` · `evh exposure` · `evh exposure-check --dataset-id …_test` · `evh sealed-counts --dataset-id …_test` · `evh dataset-seal-counts --dataset-id …_test --add F --reason "…"` |
+| who read a held-out item; counts only | `evh exposure-add --dataset-id …_test --item ID --what "…"` · `evh exposure` · `evh exposure-check --dataset-id …_test` · `evh sealed-counts …_test` · `evh dataset-seal-counts --dataset-id …_test --add F --reason "…"` |
 | pick for the next version | `evh pick --dataset-id … --item … --for V` · `evh picks [--for V]` |
 | the next version of a dataset | `evh dataset-extend V1 --dataset-id V2 --picks` (or `--pick ITEM …`) |
 
@@ -58,13 +58,13 @@ What [Getting started](../../docs/GUIDE.md) walks: a dataset, its reference, run
 | step | command |
 |---|---|
 | a model's labels (a run's outputs) | `evh label-from-run --run <run_id> --set … [--not-redistributed]` |
-| the label sets | `evh labels [--dataset-id …]` |
-| how arms fail (failure modes) | `evh inspect --sheet --dataset-id … --runs A,B --csv tags.csv --fill tags --modes …` · `evh sheet-import tags.csv --dataset-id … --by … --tags … --modes …` · `evh tags [--dataset-id …]` |
+| the label sets | `evh label-set-list …` |
+| how arms fail (failure modes) | `evh sheet-export --dataset-id … --runs A,B --csv tags.csv --fill tags --modes …` · `evh sheet-import tags.csv --dataset-id … --by … --tags … --modes …` · `evh tag-set-list …` |
 | gold a script builds, promoted | `evh reference-manifest --reference-id gold/… --source … --labelled-by … --reason "…" --by …` |
 | score against labels | `evh rescore --dataset-id … --labels …` · `evh run --system … --dataset … --labels …` |
 | re-score, $0 | `evh rescore --dataset-id … [--reference-id gold/…]` |
 | re-measure with a judge (optional) | `evh judge-score --dataset-id … --scorer … [--dry-run]` |
-| read the judged runs | `evh leaderboard --dataset-id … --label judged/<scorer>` |
+| read the judged runs | `evh leaderboard … --label judged/<scorer>` |
 | is silver good enough | `evh silver-calibrate --dataset-id …` |
 | scores made elsewhere | `evh import-run --dataset-id … --system-id … --scores … --scorer-file …` |
 | billed cost | `evh cost-report` |
@@ -73,20 +73,20 @@ What [Getting started](../../docs/GUIDE.md) walks: a dataset, its reference, run
 
 | step | command |
 |---|---|
-| how many items | `evh rank-stability --dataset-id …` |
+| how many items | `evh rank-stability …` |
 | pilot-slice-free result | `evh holdout --dataset-id … --exclude-dataset …` |
-| rounds (optional) | `evh round-open` · `evh round-retire` · `evh round-close` · `evh rounds --goal …` |
-| a result with and without a set of items | `evh pair-test … --items FILE` (only the ids in the file, one per line; the rest is a second file, or `--exclude-dataset D` when the set is a dataset) · `evh inspect --runs A,B --where F:V` (the items with that field value; a boolean or choice field marking the set) |
+| rounds (optional) | `evh round-open` · `evh round-retire` · `evh round-close` · `evh round-list …` |
+| a result with and without a set of items | `evh pair-test … --items FILE` (only the ids in the file, one per line; the rest is a second file, or `--exclude-dataset D` when the set is a dataset) · `evh comparison-show --runs A,B --where F:V` (the items with that field value; a boolean or choice field marking the set) |
 
 ### Reading results
 
 | step | command |
 |---|---|
-| the same, in the terminal | `evh overview [--period P]` · `evh activity` · `evh datasets` · `evh arms` (`--by …`, `--systems`, `--arm …`) · `evh references` · `evh metrics --metric …` · `evh goals` · `evh goals --goal G [--arms PATTERN] [--top N]` (a goal with many arms: only the arms matching, or the first N, always with the baseline, the leader and the recommended arm; each arm's paired test against the leader) · `evh search …` · `evh inspect --runs …` (`--analysis`, `--item …`) · `evh inspect --sheet --dataset-id … --runs …`; every list takes `--period P` |
-| where arms decided differently | `evh inspect --runs A,B --disagree` |
-| the sheet: every item, every arm's output and scores, the labels, the winner, the signals | `evh inspect --sheet --dataset-id … --runs A,B [--wrong-against SET] [--new-vs V] [--csv FILE [--fill label\|pick\|scores]]` |
-| how two per-item scores relate, by a recorded field (a gate that saved a false dismissal, one that cost a false alarm) | `evh inspect --runs A --crosstab M1,M2 [--group _meta.gates [--group-match REGEX]] [--where F:V]` ([§14](#14-browse-the-catalog-and-the-inspector)) |
-| why items flipped: each run's whole output beside the reference, many items at once | `evh inspect --runs A,B --items-out [--disagree] [--where F:V] [--max-chars N] --json` ([§14](#14-browse-the-catalog-and-the-inspector)) |
+| the same, in the terminal | `evh overview-show [--period P]` · `evh activity-show` · `evh dataset-list` · `evh arm-list` (`--by …`, `--systems`, `--arm …`) · `evh reference-list` · `evh metric-show …` · `evh goal-list` · `evh goal-leaderboard G [--arms PATTERN] [--top N]` (a goal with many arms: only the arms matching, or the first N, always with the baseline, the leader and the recommended arm; each arm's paired test against the leader) · `evh search …` · `evh comparison-show --runs …` (`--analysis`, `--item …`) · `evh sheet-show … --runs …`; every list takes `--period P` |
+| where arms decided differently | `evh comparison-show --runs A,B --disagree` |
+| the sheet: every item, every arm's output and scores, the labels, the winner, the signals | `evh sheet-export --dataset-id … --runs A,B [--wrong-against SET] [--new-vs V] [--csv FILE [--fill label\|pick\|scores]]` |
+| how two per-item scores relate, by a recorded field (a gate that saved a false dismissal, one that cost a false alarm) | `evh comparison-crosstab --runs A --crosstab M1,M2 [--group _meta.gates [--group-match REGEX]] [--where F:V]` ([§14](#14-browse-the-catalog-and-the-inspector)) |
+| why items flipped: each run's whole output beside the reference, many items at once | `evh comparison-items --runs A,B [--disagree] [--where F:V] [--max-chars N] --json` ([§14](#14-browse-the-catalog-and-the-inspector)) |
 | a sheet filled elsewhere, read back | `evh sheet-import sheet.csv --dataset-id … --by WHO [--set S \| --scorer S]` |
 
 ### Production
@@ -95,20 +95,20 @@ What [Getting started](../../docs/GUIDE.md) walks: a dataset, its reference, run
 
 | step | command |
 |---|---|
-| keep a production system's records | `evh capture --importer jsonl --query '{"path": "export.jsonl"}' --capture c1` · `evh captures` ([§15](#15-datasets-from-production-the-capture-lane)) |
+| keep a production system's records | `evh capture --importer jsonl --query '{"path": "export.jsonl"}' --capture c1` · `evh capture-list` ([§15](#15-datasets-from-production-the-capture-lane)) |
 | test an importer | `evh importer-check path/to/importer.py:Importer --query …` |
 | scrub a capture | `evh capture-scrub c1 --command "python scrub.py {records}"` |
 | a capture's records again (a fresh clone) | `evh capture-restore --capture c1 [--query path=…]` |
 | a dataset from a capture | `evh dataset-from-capture c1 --dataset-id … [--where F:V] [--one-per F] [--tag K=V]` |
 | labels from what happened afterwards | `evh label-from-capture --dataset-id … --capture c1 --map rules.yaml --set …` |
-| how far outcome rules label a dataset now | `evh label-coverage --dataset-id … --capture c1 --map rules.yaml` |
-| an outcome from another system; relabels that only add | `evh label-from-capture … --outcomes C2 --join F=F --within -1m,+15m` · `… --set s2 --from-set s1` · `evh label-coverage … --from-set s1` |
-| the labeller tested; labels where production is reproduced | `evh label-mutants --dataset-id … --capture c1 --map rules.yaml` · `evh label-from-capture … --reproduced-by REPLAY_RUN --production RUN` |
+| how far outcome rules label a dataset now | `evh label-coverage-show … --capture c1 --map rules.yaml` |
+| an outcome from another system; relabels that only add | `evh label-from-capture … --outcomes C2 --join F=F --within -1m,+15m` · `… --set s2 --from-set s1` · `evh label-coverage-show … --from-set s1` |
+| the labeller tested; labels where production is reproduced | `evh label-mutants … --capture c1 --map rules.yaml` · `evh label-from-capture … --reproduced-by REPLAY_RUN --production RUN` |
 | production's own decisions as an arm | `evh arm-from-capture --dataset-id … --capture c1 --as production_v1 [--like CONFIG]` ([§15b](#15b-evaluating-what-production-did)) |
-| what production must match | `evh deploy-sheet --system S [--capture C]` |
-| replay the code that ran, item by item | `evh run --system REPLAY --dataset …` (a system with `replay:` and `model_record:` a `kind: code` record) · `evh models --model …` ([§15c](#15c-replaying-the-code-that-ran)) |
-| is the replay faithful to production | `evh faithfulness --system REPLAY --dataset … --production RUN` · `evh faithfulness-show --model …` · `evh faithfulness-name --model … --item … --cause "…"` |
-| a past period at its own code, beside a candidate | `evh periods --model …` · `evh period-compare --system REPLAY --dataset … --candidate C --production P --period N` |
+| what production must match | `evh deploy-sheet S [--capture C]` |
+| replay the code that ran, item by item | `evh run --system REPLAY --dataset …` (a system with `replay:` and `model_record:` a `kind: code` record) · `evh model-show …` ([§15c](#15c-replaying-the-code-that-ran)) |
+| is the replay faithful to production | `evh faithfulness --system REPLAY --dataset … --production RUN` · `evh faithfulness-show …` · `evh faithfulness-name --model … --item … --cause "…"` |
+| a past period at its own code, beside a candidate | `evh periods …` · `evh period-compare REPLAY --dataset … --candidate C --production P --period N` |
 
 ### Agents and jobs
 
@@ -162,9 +162,9 @@ The `dataset_id` is the comparison contract. Every run records it, and
 
 **A new version** of a dataset names the one it came from: `--from my_v1` on `my_v2` records
 its parent and the item ids it adds, removes and changes (`derived_from` in the dataset file).
-`evh datasets --dataset-id my_v2` prints the lineage, the catalog links the versions both ways,
+`evh dataset-show my_v2` prints the lineage, the catalog links the versions both ways,
 and `validate` V2 fails a version whose parent is gone. "What did the new version change for this
-arm?" is `evh pair-test --dataset-id my_v1 --a ARM_v1 --b ARM_v2 --b-dataset my_v2`: the arm's runs
+arm?" is `evh pair-test my_v1 --a ARM_v1 --b ARM_v2 --b-dataset my_v2`: the arm's runs
 on each version, paired by item id (below, under `pair-test`).
 A version made without `--from`, and already cited by runs, gains the link afterwards:
 `evh dataset-create --dataset-id my_v2 --from my_v1 --lineage-only` records the parent and what changed, and
@@ -247,7 +247,7 @@ one that exists), and `dataset-create --fieldset ID` uses it as it is.
 biases and limits, who maintains it) under Croissant RAI 1.0's property names, so an export writes them as they
 are: `evh dataset-describe --card-template > card.yaml` prints each key with its question, `evh dataset-describe
 --dataset-id D --card card.yaml` records the answered ones (it replaces the card; no new version). All optional;
-`validate` (V22) refuses a key that is not one of them. `evh dataset-card --dataset-id D` prints the card (what
+`validate` (V22) refuses a key that is not one of them. `evh dataset-card D` prints the card (what
 the dataset is, where it came from, each answered question); `--format croissant [--creator NAME] [--out F]`
 writes it as Croissant 1.1 JSON-LD: the record (licence as its SPDX page, the card as `rai:` properties, the parent
 as PROV-O's `prov:wasDerivedFrom`), its files with their sha256, one record set of the items with the field set's types. A required
@@ -372,7 +372,7 @@ It is not part of the fingerprint: a hypothesis does not change what was measure
 --b B` prints it when A's run carries a hypothesis against B on the tested metric: `named in advance: yes
 (committed <sha> before the run)`, `no` or `not determinable`, and whether the result agrees with the
 stated direction (`yes`, `no`, `not shown`); a hypothesis found in A's system that its run does not carry
-reads `no` (added after the run). `evh goals --goal G` shows it in a `hypothesis` column beside the arm.
+reads `no` (added after the run). `evh goal-leaderboard G` shows it in a `hypothesis` column beside the arm.
 [ADR-0025](../../docs/adr/ADR-0025-a-hypothesis-lives-in-the-arm-config.md).
 
 **A regression guard (optional).** A system that must give exactly what another gives (the same code at a newer
@@ -546,24 +546,24 @@ references:
 |---|---|---|
 | `goal_id` | lowercase letters, digits and `_`, starting with a letter or digit; **equals the file name** | V14 fails a file whose `goal_id` is not its name. Permanent: a materially different purpose is a new goal |
 | `schema_version` | any string (`"0.1"`) | nothing |
-| `title` | any string | the goal page's heading, `evh goals` |
-| `statement` | one sentence, "X for Y so that Z" | the goal page, `evh goals --goal` |
+| `title` | any string | the goal page's heading, `evh goal-list` |
+| `statement` | one sentence, "X for Y so that Z" | the goal page, `evh goal-leaderboard` |
 | `status` | `active`, `draft`, `exploratory`, `dormant` or `superseded` | shown on the goal page |
 | `superseded_by` | the `goal_id` that replaces this one | nothing (for the reader) |
 | `context.audience`, `context.usage` | any string | `audience` is shown on the goal page |
-| `decision` | the decision an answer informs | the goal page and `evh goals --goal` lead with it |
+| `decision` | the decision an answer informs | the goal page and `evh goal-leaderboard` lead with it |
 | `output_contract[]` | a list of shapes, each `{format}` (required) plus optional `id`, `length`, `structure`, `language` | A system may declare `format:` (any non-empty string); when the goal has a contract, that format must be one of its `format`s (V14 fails it, and the goal page flags the arm "format f not in the contract"). `format` is your own word for a shape (`paragraph`, `label`, `json`): the harness has no list of them. A system without `format:` is not checked |
-| `success_criteria.primary.measure` | a per-item metric as the runs record it (`rouge_l`, `accuracy`, `overlap_f1`) | the goal page, `evh goals --goal`, `evh rounds` and `inspect --round` read the arms on it; an arm that does not record it is not listed (a judged arm is shown in its judge's group, on the judge's score) |
+| `success_criteria.primary.measure` | a per-item metric as the runs record it (`rouge_l`, `accuracy`, `overlap_f1`) | the goal page, `evh goal-leaderboard`, `evh round-list` and `inspect --round` read the arms on it; an arm that does not record it is not listed (a judged arm is shown in its judge's group, on the judge's score) |
 | `success_criteria.primary.direction` | `higher`, `lower` or `non_inferior` | `higher`/`lower` rank the arms. `non_inferior` is a guard (no significant drop against a baseline) and ranks nothing. V14 fails a direction that contradicts what the runs record, or `higher` on a cost, latency or token count |
 | `success_criteria.primary.threshold` | any value | shown beside the measure on the goal page |
 | `success_criteria.primary.reduce` | `mean` (the default), `majority` or `at_least_K` | how an arm's repeats make one score per item on the goal's measure: the mean, or for 0/1 scores right when more than half (or at least K) of the repeats are right |
 | `success_criteria.min_items` | an integer, at least 1 | The fewest items a winner-picking comparison may rest on: an arm with fewer is flagged "n k < min_items m" on the goal page and is never a group's leader; `evh validate` notes a goal dataset smaller than it (a note, not a failure) |
-| `success_criteria.axes` | a map of name → `{measure, direction, stat, limit, margin, role, unit, note}`, all optional. `cost` (`cost_usd`, mean, tokens shown beside it) and `speed` (`latency_ms`, p95) are built in and need no entry; `quality` takes only a `limit`, a `margin`, a `reference` and a `note` (its measure and direction are the primary's), and `margin` belongs to quality alone; any other name is the project's own axis, a per-item metric its runs record (`measure` defaults to the name, `direction` to the adapter's `METRIC_DIRECTIONS`, else `higher`, `stat` to `mean`). `role: ignore` drops an axis. `limit: baseline` in place of a number: an arm is out when the paired test finds it worse than the group's promoted baseline on that axis (p < 0.05, each arm on its own, not corrected across the arms; RFC-022); with no baseline promoted, no limit applies and the decision says so | The goal's decision ([ADR-0006](../../docs/adr/ADR-0006-goal-axes-and-strategies.md)): an arm past a `limit` is out, with the reason; `margin`, in the measure's units, is how much worse than the leader an arm may be and still be a contender: the arm must be *shown* no worse by more than it (a one-sided non-inferiority test against the leader, Holm across the candidates: Tango's score test for 0/1 scores at any size, the bootstrap-t from 100 items or equal clusters, 250 effective clusters when they differ in size, for other scores, "too few items to call a tie" below). With no margin set, the strategy's default: `balanced` 5% of the leader's mean, `frugal` 10%; `evh validate` notes each goal on a default. `quality: {reference: baseline}` tests contenders against the group's promoted baseline instead ("no worse than what runs now", for a goal about replacing it; the margin is then a share of the baseline's mean; with none promoted the leader is used, and said). The decision also says which margin the group can detect at all: with k candidates on n items (or clusters), a truly equal arm is shown within about (z(1 − 0.025/k) + z(0.8)) × the paired standard error, 80% of the time; a goal margin under it rarely admits anyone. It does not count the leader being chosen from the same data, which raises the bar further. The goal page and `evh goals --goal` show a column per axis; V14 refuses an unknown key in an entry |
+| `success_criteria.axes` | a map of name → `{measure, direction, stat, limit, margin, role, unit, note}`, all optional. `cost` (`cost_usd`, mean, tokens shown beside it) and `speed` (`latency_ms`, p95) are built in and need no entry; `quality` takes only a `limit`, a `margin`, a `reference` and a `note` (its measure and direction are the primary's), and `margin` belongs to quality alone; any other name is the project's own axis, a per-item metric its runs record (`measure` defaults to the name, `direction` to the adapter's `METRIC_DIRECTIONS`, else `higher`, `stat` to `mean`). `role: ignore` drops an axis. `limit: baseline` in place of a number: an arm is out when the paired test finds it worse than the group's promoted baseline on that axis (p < 0.05, each arm on its own, not corrected across the arms; RFC-022); with no baseline promoted, no limit applies and the decision says so | The goal's decision ([ADR-0006](../../docs/adr/ADR-0006-goal-axes-and-strategies.md)): an arm past a `limit` is out, with the reason; `margin`, in the measure's units, is how much worse than the leader an arm may be and still be a contender: the arm must be *shown* no worse by more than it (a one-sided non-inferiority test against the leader, Holm across the candidates: Tango's score test for 0/1 scores at any size, the bootstrap-t from 100 items or equal clusters, 250 effective clusters when they differ in size, for other scores, "too few items to call a tie" below). With no margin set, the strategy's default: `balanced` 5% of the leader's mean, `frugal` 10%; `evh validate` notes each goal on a default. `quality: {reference: baseline}` tests contenders against the group's promoted baseline instead ("no worse than what runs now", for a goal about replacing it; the margin is then a share of the baseline's mean; with none promoted the leader is used, and said). The decision also says which margin the group can detect at all: with k candidates on n items (or clusters), a truly equal arm is shown within about (z(1 − 0.025/k) + z(0.8)) × the paired standard error, 80% of the time; a goal margin under it rarely admits anyone. It does not count the leader being chosen from the same data, which raises the bar further. The goal page and `evh goal-leaderboard` show a column per axis; V14 refuses an unknown key in an entry |
 | `success_criteria.strategy` | `balanced` (the default), `quality_first` or `frugal` | Who the contenders are beside the quality leader: `balanced` shown no worse than the leader by more than the margin (default 5% of the leader); `quality_first` the same quality only; `frugal` the same test with a wider default margin (10%), so the cheaper arm wins more often. Before 0.8.0 a contender only had to be "not significantly different", which more arms are the fewer items there are |
 | `success_criteria.tie_break` | a list of axis names, default `[cost, speed]`; `quality` may be one | Among the contenders, the axes that pick, in order (`[cost, quality]`: the cheapest, then the best of the equally cheap). V14 fails a name the goal does not weigh |
-| `success_criteria.guardrails[]` | `{name, rule}` (required), `source` | Rules in words that no number checks: a "guardrails" row on the goal page, a line each in `evh goals --goal`; never computed |
+| `success_criteria.guardrails[]` | `{name, rule}` (required), `source` | Rules in words that no number checks: a "guardrails" row on the goal page, a line each in `evh goal-leaderboard`; never computed |
 | `success_criteria.secondary` | removed in 0.4.0 | V14 fails a goal that still has it: move its entries to `axes` (UPGRADING) |
-| `datasets[]` | `{dataset_id}` (required), `role`, `cluster` (an item field: related items count once in every test), `decides` (false: the goal never decides on it), `notes`. An empty list is a goal checked by a gate rather than measured on a dataset | Each dataset gets a section on the goal page and in `evh goals --goal`. `role` is free text (`validation`, `test`, `pilot`, `smoke`, `generalization`), shown beside the dataset. `cluster: FIELD` names an item field whose items are not independent (one thread's comments, one document's questions): every paired test on that dataset, on the goal page, in `evh goals`, the inspector and `pair-test`/`family-test --round`, flips one sign per value of it, and says so. `decides: false` makes a dataset one the goal never decides on: its groups keep their leader but recommend nothing, and the home page's glance leaves it out. `notes` is shown under it |
+| `datasets[]` | `{dataset_id}` (required), `role`, `cluster` (an item field: related items count once in every test), `decides` (false: the goal never decides on it), `notes`. An empty list is a goal checked by a gate rather than measured on a dataset | Each dataset gets a section on the goal page and in `evh goal-leaderboard`. `role` is free text (`validation`, `test`, `pilot`, `smoke`, `generalization`), shown beside the dataset. `cluster: FIELD` names an item field whose items are not independent (one thread's comments, one document's questions): every paired test on that dataset, on the goal page, in `evh goal-list`, the inspector and `pair-test`/`family-test --round`, flips one sign per value of it, and says so. `decides: false` makes a dataset one the goal never decides on: its groups keep their leader but recommend nothing, and the home page's glance leaves it out. `notes` is shown under it |
 | `references[]` | `{reference_id, tier, format}`, all strings; `tier` is `gold` or `silver` by convention, `format` your word for the reference text's shape (`label` for a bare-label gold) | nothing: which reference an arm is scored against comes from its run, not from the goal |
 | `measures[]` | `{id, kind, validity}`, all strings; `validity` says how far the measure is trusted (`unvalidated`, or what it was validated against) | nothing (for the reader) |
 | `links[]` | `{url, note}` | nothing (for the reader) |
@@ -649,7 +649,7 @@ code: {path: ../podcast_scraper}  # the system's own checkout
 - `code:` records the checkout's remote, commit and changed files as `deployment.code` (its path outside the hash);
   an adapter's `fingerprint()` hook may return `code_ref` with the same keys instead, for a system the harness cannot
   read.
-- `evh prompts [NAME]` (versions, lineage, the runs that used each), `evh prompt-diff A B`, `evh prompt-version NAME
+- `evh prompt-list [NAME]` (versions, lineage, the runs that used each), `evh prompt-diff A B`, `evh prompt-version NAME
   --from-file F --parent ID --note "..."` (a version with its lineage: record it before a run does, since a version is
   written once), `evh prompt-export ID --to PATH`. The catalog's Prompts page shows names and versions; their text
   only with `catalog: {publish: [prompts]}` in `config.yaml`. `validate` V24 checks every version against its bytes.
@@ -663,7 +663,7 @@ asked: an unseal for a candidate and its later promotion against the same arm sh
 better way out. A promotion whose items could never reach its look's level (5 items reach 1/32 at best, above 1.52%)
 is refused, or with the person's `--override-no-evidence` recorded inconclusive. `pair-test` on a test set labels its
 answer "nominal, not a look"; `evh looks` lists each test set's looks and the next level, and a goal's page and
-`evh goals` say it under each test set; `round-close --promote` takes the same two flags. V25 reports a number two
+`evh goal-list` say it under each test set; `round-close --promote` takes the same two flags. V25 reports a number two
 decisions took (two clones deciding at once).
 
 **Studies** (RFC-029): research by ask/tell, then one confirmation. A spec names the validation dataset, the arm it
@@ -686,8 +686,8 @@ and closes with the study) and runs the loop: each trial is the best so far with
 set, kept or dropped by the rule (its p values nominal: this is research), its limits checked against the baseline so
 concessions cannot add up. With `sampler: agent` the agent asks and tells: `evh study-ask <study>` gives the state and an
 ask id, `evh study-tell <study> --ask ID --proposal-json '{"params": {...}, "prompts": {...}, "hypothesis": "..."}'`
-runs it (both also MCP tools, for an agent with `EVH_ACTOR=agent:NAME` and `EVH_FOR=person:NAME`). `evh studies --study`,
-`evh studies`, `evh study-stop`. A study never promotes: `evh study-confirm <study> --test <test set> --rule superiority`
+runs it (both also MCP tools, for an agent with `EVH_ACTOR=agent:NAME` and `EVH_FOR=person:NAME`). `evh study-show`,
+`evh goal-list`, `evh study-stop`. A study never promotes: `evh study-confirm <study> --test <test set> --rule superiority`
 runs the best trial and the baseline once on the test items no study saw, as one look at the set's next level, and
 suggests the promotion only when the outcome meets the rule. `evh study-import results.tsv --goal G --study ID` brings
 a past autoresearch loop in, closed and not confirmable.
@@ -777,7 +777,7 @@ evh data-rm runs/<run> --dry-run          # what would go; without --dry-run, a 
 
 `evh run` and `rescore` print a `WARNING` when they write to a directory git ignores
 that is neither, or to one outside the project's data, and `evh validate` notes any ignored
-directory that already holds finished runs. The catalog, `evh goals` and `evh arms` read only
+directory that already holds finished runs. The catalog, `evh goal-list` and `evh arm-list` read only
 the directories git keeps, so what you see locally is what a clone, CI and the published
 catalog see: a smoke pass in `data/runs-smoke*` never shows up as a result.
 
@@ -792,10 +792,10 @@ evh round-open --goal my_goal --dataset my_v1 --from r1 --keep all \
 
 Re-scores land in `data/runs-rescored/<scorer>/<source>/`, the place the tool designates, so a new scorer never
 needs a directory of its own (or a `.gitignore` block). A re-score stands in for the run it re-read: the goal
-pages, `evh goals`, the rounds and the recommendation read one row per arm, from its latest re-score against the
+pages, `evh goal-list`, the rounds and the recommendation read one row per arm, from its latest re-score against the
 same reference, and say how many arms they read that way. The measured run keeps its own page, and says there, on
-the arms page and in `evh arms` that the goals read its re-score. A round records the scorer it is judged by, and
-`evh rounds` shows it with each scoring change. A goal whose first round was run as plain runs gets one with
+the arms page and in `evh arm-list` that the goals read its re-score. A round records the scorer it is judged by, and
+`evh round-list` shows it with each scoring change. A goal whose first round was run as plain runs gets one with
 `evh round-open --goal G --dataset D --adopt`.
 
 **The dry run and the run's output.** `evh run --system S --dataset D --dry-run` calls nothing. Its `ESTIMATE` counts one
@@ -822,7 +822,7 @@ reserves, before its first call, the least of its own cap and what the round has
 runs spent, less what running commands reserved, less what a stopped or killed run's items paid (its run is not
 listed, its items were paid for). So arms started at once share the budget: give each its own
 `EVAL_MAX_COST_USD`, or the first takes all that is left. With nothing left a run is refused before any call
-(`ERROR (over-budget)`); `evh rounds` shows what is left beside what was spent.
+(`ERROR (over-budget)`); `evh round-list` shows what is left beside what was spent.
 
 `evh run` warns, naming the items, when outputs stop at `max_tokens` (the provider's
 `finish_reason`, or tokens out reaching the cap): they are scored as if complete. The harness
@@ -907,15 +907,15 @@ into a *finding* is a separate verb: these are the tools behind the numbers in `
 
 | verb | answers |
 |---|---|
-| `evh leaderboard --dataset-id …` | how do all the arms rank, on every metric at once (the columns that fit the terminal, the ranking metric first, and a line naming the rest; `--wide` or `--json` for all) |
-| `evh family-test --dataset-id … --a … --against …` | does arm A differ significantly from a **pre-declared family**, Holm step-down. This is what every significance claim in the reports rests on |
-| `evh pair-test --dataset-id … --a … --b …` | are these two arms different — paired, per item. Uncorrected, so only legitimate for a pair named in advance: the arm's `hypothesis:` records that it was (§4). With `--round` and no `--a`, A is the round's leader, chosen from the table, so the test is Bonferroni-corrected for the comparisons it could have been, every arm in play but B (`--family N` overrides; below 1 is refused) |
-| `evh pair-test --dataset-id D1 --a … --b … --b-dataset D2` | **two versions of one dataset**: A's runs on D1 against B's on D2, paired by item id (the same arm on both is "what did the change do to it"). Refused, on stderr and non-zero, unless the items it uses are in both datasets by id (at least 3), the reference each arm was scored against has the same text for each of them (compared item by item by checksum; the first differing ids are named), and both arms are scored on one metric in one direction. The output says it is a cross-version comparison and names both datasets: the difference is the effect of the dataset change plus the arms' run-to-run noise, and the test cannot tell the two apart; repeats are averaged per item as in any pair-test. It names the runs of each side and the folder they were read from (`--runs-dir` for another set, e.g. the re-scored runs; JSON `run_ids_a`, `run_ids_b`). A metric one side's runs do not store per item is refused as a missing metric, with what they do store (a measure computed at re-score is only in the re-scored runs). Not with `--round`; `run-compare` still refuses across datasets |
-| `evh pair-test --dataset-id … --a … --b … --margin M` | **is A no worse than B by more than M** (in the metric's units): the contender test goals use ([ADR-0026](../../docs/adr/ADR-0026-contenders-by-non-inferiority.md)), for one pair and uncorrected: Tango for 0/1 scores, the bootstrap-t from 100 items or equal clusters (250 effective when they differ), "too few" below; with `--cluster` by clusters. JSON `noninferior` (verdict, method, p, level, units) |
+| `evh leaderboard …` | how do all the arms rank, on every metric at once (the columns that fit the terminal, the ranking metric first, and a line naming the rest; `--wide` or `--json` for all) |
+| `evh family-test … --a … --against …` | does arm A differ significantly from a **pre-declared family**, Holm step-down. This is what every significance claim in the reports rests on |
+| `evh pair-test … --a … --b …` | are these two arms different — paired, per item. Uncorrected, so only legitimate for a pair named in advance: the arm's `hypothesis:` records that it was (§4). With `--round` and no `--a`, A is the round's leader, chosen from the table, so the test is Bonferroni-corrected for the comparisons it could have been, every arm in play but B (`--family N` overrides; below 1 is refused) |
+| `evh pair-test D1 --a … --b … --b-dataset D2` | **two versions of one dataset**: A's runs on D1 against B's on D2, paired by item id (the same arm on both is "what did the change do to it"). Refused, on stderr and non-zero, unless the items it uses are in both datasets by id (at least 3), the reference each arm was scored against has the same text for each of them (compared item by item by checksum; the first differing ids are named), and both arms are scored on one metric in one direction. The output says it is a cross-version comparison and names both datasets: the difference is the effect of the dataset change plus the arms' run-to-run noise, and the test cannot tell the two apart; repeats are averaged per item as in any pair-test. It names the runs of each side and the folder they were read from (`--runs-dir` for another set, e.g. the re-scored runs; JSON `run_ids_a`, `run_ids_b`). A metric one side's runs do not store per item is refused as a missing metric, with what they do store (a measure computed at re-score is only in the re-scored runs). Not with `--round`; `run-compare` still refuses across datasets |
+| `evh pair-test … --a … --b … --margin M` | **is A no worse than B by more than M** (in the metric's units): the contender test goals use ([ADR-0026](../../docs/adr/ADR-0026-contenders-by-non-inferiority.md)), for one pair and uncorrected: Tango for 0/1 scores, the bootstrap-t from 100 items or equal clusters (250 effective when they differ), "too few" below; with `--cluster` by clusters. JSON `noninferior` (verdict, method, p, level, units) |
 | `evh pair-test … --reduce majority` | how an arm's repeats make one score per item: `mean` (the default), `majority` or `at_least_K` for 0/1 scores (`at_least_1`: did any of the repeats get it right). With `--round`, the goal's `primary.reduce` is the default; `family-test` takes it too |
 | `evh pair-test … --cluster FIELD` | items that share a value of FIELD count as one: one sign per cluster (and `--margin` by clusters). With `--round`, the goal's `cluster:` is the default |
 | `evh holdout --dataset-id … --exclude-dataset …` | does the result survive on the items the pilot slice never contained |
-| `evh rank-stability --dataset-id …` | how many items before the ordering stops moving — measured, not assumed from a power table |
+| `evh rank-stability …` | how many items before the ordering stops moving — measured, not assumed from a power table |
 | `evh bootstrap-test --dataset-id … --a … --against …` | a percentile interval for a corpus-level metric that has no per-item value |
 | `evh rescore --dataset-id …` | recompute every score from stored outputs under the current scorer — or, with `--reference-id gold/…`, against a reference set that arrived later. **$0, no API calls** |
 | `evh cost-report` | what each arm actually cost, from the provider's bill (`_meta.usage.cost` in its predictions) against the cost the run recorded; runs with no bill there are listed apart (§4); then what judging cost, per scorer, judging set and judge, from the verdicts' own cost |
@@ -940,8 +940,8 @@ would print as 0.0000. `family-test`'s `A wins` column counts the items A wins; 
 Without `--metric` they read the primary metric the runs recorded. Which way is better is
 inferred once for every command: a flag (`--asc`, `--desc`), else the goal the runs name, else
 the adapter's `METRIC_DIRECTIONS`, else the name (cost, latency and token metrics go down).
-`leaderboard`, `family-test`, `pair-test` and `inspect` take `--round rN` for the arms in play in
-a round (`pair-test --round`, `family-test --round` and `inspect --round` also default the metric to the
+`leaderboard`, `family-test`, `pair-test` and `comparison-show` take `--round rN` for the arms in play in
+a round (`pair-test --round`, `family-test --round` and `comparison-show --round` also default the metric to the
 goal's measure; `family-test --round` tests the round's leader against every other arm in play unless
 `--a`/`--against` say otherwise).
 When a dataset's runs were scored more than one way, `leaderboard` prints one table for each
@@ -1104,7 +1104,7 @@ $0:
    ```bash
    python examples/_shared/adjudicate.py examples/<eval>/adjudication.json
    evh rescore --dataset-id <id> --reference-id gold/<id>_adj1 --label adjudicated
-   evh leaderboard --dataset-id <id> --label adjudicated
+   evh leaderboard <id> --label adjudicated
    ```
 
 4. **Add a claim check** for every new number you report. It can recompute them from the
@@ -1129,7 +1129,7 @@ for $0 first, run [tutorial 3, step 5](../../docs/tutorials/3-frontier-reference
 ```bash
 evh judge-score --dataset-id my_v1 --scorer my-judge-v1 --dry-run   # free
 evh judge-score --dataset-id my_v1 --scorer my-judge-v1
-EVAL_RUNS_DIR=data/runs-judged/my-judge-v1 evh leaderboard --dataset-id my_v1
+EVAL_RUNS_DIR=data/runs-judged/my-judge-v1 evh leaderboard my_v1
 ```
 
 A project needs only its own data directory, scorer, prompt and runs: the judging code, the
@@ -1254,7 +1254,7 @@ This repository's two, `judge-summ-pick-v1` and `judge-summ-pairwise-v1`, use
 ```bash
 evh judge-score --dataset-id cnn_dailymail_200 --scorer judge-summ-pick-v1 --dry-run   # free
 evh judge-score --dataset-id cnn_dailymail_200 --scorer judge-summ-pick-v1
-evh inspect --sheet --dataset-id cnn_dailymail_200 --runs … --metric judge-summ-pick-v1/judge_won
+evh sheet-show cnn_dailymail_200 --runs … --metric judge-summ-pick-v1/judge_won
 ```
 
 ### Validating a judge: what the gate needs
@@ -1327,7 +1327,7 @@ it names against the project. A save that does not check writes nothing and name
 made it (`--by`, as RFC-027) and the goal as it was. The project's full check (`evh validate`) is not part of a save:
 run it, or let the Workbench run it as a job. A goal a job is writing is refused, not waited on (`ERROR
 (not-allowed)`, naming the job). `--set` takes a dotted key and a YAML value, as `evh data-put --set` does.
-`evh goals` is still the view of each goal's arms on its datasets; it moves onto the model with the views.
+`evh goal-list` is still the view of each goal's arms on its datasets; it moves onto the model with the views.
 
 Through the API (`catalog-serve`, its token, RFC-026), the same operations are resources:
 
@@ -1360,7 +1360,7 @@ commands are its only writers, and a project that never opens one sees none of i
 ```bash
 evh round-open --goal my_goal --dataset my_v1 --hypothesis "what this round sets out to learn" \
     --keep arm_a_v1,arm_b_v1 --baseline arm_a_v1   # round 1: carry in arms already run, one as the baseline
-evh rounds --goal my_goal                          # the evidence, and the next decisions as commands
+evh round-list my_goal                          # the evidence, and the next decisions as commands
 evh round-retire --goal my_goal --round r1 --arm arm_b_v1 --reason "why it is dropped"
 evh round-retire --goal my_goal --round r1 --arm arm_b_v1 --label linux --reason "..."  # only the arm under that label
 evh round-close --goal my_goal --round r1 --conclusion "what it showed" [--promote <run_id>]
@@ -1376,17 +1376,17 @@ evh round-open --goal my_goal --dataset my_v1 --from r1 --change "what changed a
 - **The run a round starts from** is the dataset's promoted baseline when it has one. Without one (a goal's first
   rounds, or arms carried in with `--keep`), name it: `--baseline <system id>` takes that system's latest measured
   run on the dataset, or give a run id. `round-open` says which run the round starts from; `pair-test --round` and
-  `evh rounds` read the round's arms against it.
+  `evh round-list` read the round's arms against it.
 - **A round records the harness code it opened on** (its version, the project's commit and the hash of the code
   that can change a measurement, as every run records it). Harness code taken mid-round measures some arms with other
-  code than the rest: `evh rounds` names each run of the round that recorded other code (`NOTE: N run(s) ran on other
+  code than the rest: `evh round-list` names each run of the round that recorded other code (`NOTE: N run(s) ran on other
   harness code than the round opened on …`) and how to run it on the round's code: a worktree at the round's commit,
   or the round's version pinned when the harness is installed. Or open a new round on the new code.
-- **`evh rounds` never suggests promoting the run that already is the baseline**: its close
+- **`evh round-list` never suggests promoting the run that already is the baseline**: its close
   suggestion then reads "close the round with what it showed (<arm> is already the baseline)",
   with no `--promote`. `leaderboard --round` does not warn about two versions of one arm (`_v1`,
   `_v2`) in a round: comparing them is what the round is for.
-- **`evh rounds`** reads the evidence the way the inspector does (the round's arms against its
+- **`evh round-list`** reads the evidence the way the inspector does (the round's arms against its
   leader, Holm-corrected; its leader against the previous round's best, the baseline it started
   from and the arm that wrote a silver reference of the dataset; its spend against `--budget-usd`,
   and the cost per item), read against the reference most of its arms use (gold before silver on
@@ -1407,7 +1407,7 @@ evh round-open --goal my_goal --dataset my_v1 --from r1 --change "what changed a
   time.
 - A round compares arms scored against one reference: when gold arrives mid-way, new runs are
   scored against gold while carried arms were scored against silver, so re-score them first.
-- `leaderboard`, `family-test`, `pair-test` and `inspect` take `--round rN`. `inspect --round`
+- `leaderboard`, `family-test`, `pair-test` and `comparison-show` take `--round rN`. `comparison-show --round`
   reads the goal's measure against the round's leader, and names the arms with no score on it;
   `pair-test --round` tests the round's leader against the baseline it started from unless
   `--a`/`--b` say otherwise, and refuses an arm not in play. `validate` (V14) checks the round
@@ -1422,7 +1422,7 @@ evh catalog                                             # build static pages int
 evh catalog-serve [--port N]                           # the catalog and inspector on 127.0.0.1, a port of the project's own
 evh catalog-serve --public catalog.example.com --publish outputs --client-header X-Real-IP  # public deployment
 evh dataset-profile --dataset-id my_v1 [--with-text]   # what is inside a dataset, for its page (text: committed items only)
-evh dataset-items --dataset-id my_v1 [--item ID]       # the same in the terminal
+evh dataset-items my_v1 [--item ID]       # the same in the terminal
 evh mcp                                                 # the read commands as MCP tools, over stdio
 evh mcp --http --bind 0.0.0.0 --allowed-host evals.team.example --public  # a shared MCP server
 ```
@@ -1451,23 +1451,25 @@ run it wrote; with `--json` its progress goes to stderr and `values.runs` lists 
 `run_id`, `system_id`, `dataset_id`, `dir`, `n_items`, `total_cost_usd` and `capped_at` (`--dry-run
 --json`: `values.dry_run`, the projection). The text output without `--json` is unchanged.
 
-**For an agent without one**, `evh mcp` serves the same read commands as MCP tools; how to connect
+**For an agent without one**, `evh mcp` serves the same reads as MCP tools; how to connect
 each client is in [the integration guide](INTEGRATION.md#for-an-agent-evh-mcp).
 
-- **The tools** (29) are `overview`, `datasets`, `dataset-items`, `arms`, `models`, `goals`, `references`,
-  `metrics`, `activity`, `search`, `inspect`, `leaderboard`, `pair-test`, `family-test`,
-  `rank-stability`, `run-compare`, `rounds`, `runs-list`, `validate`, `captures`, `labels`, `tags`,
-  `licences`, `dataset-card`, `picks`, `label-coverage`, `deploy-sheet`, `data-ls` and `data-show`. Each takes the
-  command's own options, named as on the command line (`dataset-id`, `period`), except those
-  that name a server path (`--runs-dir`, `--items` on `pair-test` and `family-test`). Each call runs
-  the command as a child process, with `--json`, so the answer is what you would
-  see. No tool writes project data, spends or runs a model. What a call writes is computed
-  answers in `<project>/.cache/`: the p cache, `evh-p.jsonl` (below, `EVH_P_CACHE`), and
-  `family-test`'s results.
-- **Refused before anything runs:** an argument the tool does not have, a missing required one,
-  a value of the wrong kind (a list for a one-value option, a flag that is not `true`/`false`),
-  and any value that starts with `-`. A dataset id that is not a plain name is refused by the
-  command itself when it runs, as on the command line.
+- **The tools** are the read operations of the registry (`evaluation_harness/ops`), each named as the operation, the
+  command and the API's resource are: 71 on your machine (`goal-list`, `goal-leaderboard`, `dataset-list`,
+  `dataset-show`, `arm-list`, `comparison-show`, `comparison-items`, `sheet-show`, `leaderboard`, `pair-test`,
+  `family-test`, `rank-stability`, `run-compare`, `runs-list`, `validate`, `data-ls`, `search`, ... as `evh mcp --help`
+  and the client's tool list show), and the agent sampler's `study-ask` and `study-tell`, which a public server does
+  not offer. A tool takes the operation's own inputs, typed (`dataset`, `period`, `runs`; a list is an array, a flag a
+  boolean), except those that name a path of the server's (`items` on `pair-test` and `family-test`). A call is
+  answered in the server's own process by the same operation the command and the API are made from, so its answer is
+  what `--json` gives: the operation's result, as structured content and as JSON text, with no process started. No tool
+  writes project data, spends or runs a model. What a call writes is computed answers in `<project>/.cache/`: the p
+  cache, `evh-p.jsonl` (below, `EVH_P_CACHE`), and `family-test`'s results. A tool name from before 0.8.0 that is not
+  an operation's (`goals`, `datasets`, `inspect`, `labels`, `rounds`, ...) is gone, no alias.
+- **Refused before anything runs:** an argument the tool does not have, a missing required one, a value of the
+  wrong type (checked against the tool's JSON Schema), a value with a NUL byte or longer than 512 characters. What the
+  operation refuses (a dataset id that is not a plain name, a goal that is not there) is its own refusal, with its
+  kind, as on the command line.
 - **Stdio** (the default): the agent starts `evh mcp --project /path/to/project`. A desktop client
   starts it with its own `PATH` and working directory, so give the full path to `evh` and
   `--project`.
@@ -1476,11 +1478,17 @@ each client is in [the integration guide](INTEGRATION.md#for-an-agent-evh-mcp).
   "tools", "public"}`. Beyond the loopback, `--allowed-host` is required: a request for another Host
   is answered 421 (DNS rebinding). `--allowed-origin` names the browser origins it accepts; an
   agent sends no Origin.
-- **`--public`**, for a server anyone can reach: no option that answers with an item's text or a label
-  (`inspect --item`, `--items-out` and the sheet's options, `dataset-items --item`), no `inspect --group`
-  (a recorded field can hold text; `--crosstab` of two scores stays), and no `validate`.
-- **Load:** `--concurrent N` commands at once (default 4; a call that waits 30 s for a slot is
-  refused, "busy"), `--timeout S` per call (default 300; the command is stopped, exit 124),
+- **`--public`**, for a server anyone can reach: each call is made with the public flag, so what `--public` hides on
+  the command line stays hidden (a hidden dataset's text and labels, an item's text), and the tools that answer with
+  an item's text, an arm's output or a label, or read the project's files, are not offered (`comparison-item`,
+  `comparison-items`, `sheet-show`, `label-coverage-show`, `label-mutants`, `sealed-counts`, `exposure`, `data-ls`,
+  `data-show`, `validate`, and the agent sampler's two); the inputs that would answer with one are not offered either
+  (`item` of `dataset-items`, `group` of `comparison-crosstab`: a recorded field can hold text; `crosstab` of two scores
+  stays).
+- **Load:** `--concurrent N` calls at once (default 4; a call that waits 30 s for a slot is
+  refused, "busy"), `--timeout S` per call (default 300; a call that has run that long is told as "stopped waiting
+  after S s": it is answered in the server's own process, which cannot stop it, so it keeps running to its end, its
+  slot given back at once),
   `--rate N` calls a minute per caller and `--rate-total N` for everyone together (default: no
   limit), and over HTTP one call at a time per caller. Every call counts toward the caller's rate, a
   refused one too; the total counts only calls that run a command, so a flood of refusals never
@@ -1490,7 +1498,7 @@ each client is in [the integration guide](INTEGRATION.md#for-an-agent-evh-mcp).
   (default 64; more are 503), at most 8 requests open per caller (more are 429), a body due in
   full within 10 s (else 408), and a GET on the endpoint is 405 (stateless: no stream to hold);
   `/mcp/` is the endpoint too, never a redirect.
-  With `--public`, an answer is kept by its command line (16 MB of text in all, for an hour: a
+  With `--public`, an answer is kept by the tool and its arguments (16 MB of text in all, for an hour: a
   view's default period moves with the date), since the data under the server never changes, and a refusal is told without server paths or a traceback.
   A value with a NUL byte, or longer than 512 characters, is refused. `--client-header NAME` names the header your proxy sets for
   the caller's address. Trust it only when nothing but the proxy reaches the port: a caller who
@@ -1501,14 +1509,13 @@ each client is in [the integration guide](INTEGRATION.md#for-an-agent-evh-mcp).
   agent. The log line on stderr, one JSON line per call, carries neither.
 
 **The API** (RFC-026; the Workbench's, PRD-017): a local `evh catalog-serve` also answers `/api/v1/` for the
-commands, made from their own argument parsers. Every call needs the token the server writes at start to
+commands: a read is its own resource (`GET /api/v1/goals`, `/api/v1/datasets/{dataset}/arms`, ...), made from the operations, and
+the rest are jobs, made from the commands' own argument parsers. Every call needs the token the server writes at start to
 `.build/api-token` (readable by you only): `Authorization: Bearer <token>`, or the cookie `GET
 /api/v1/session?token=<token>` sets; another Host or a foreign Origin is refused, and a call that is not a read needs
-`X-EVH-Data: 1`. `GET /api/v1/commands` lists what it serves: each command as a `read` or a `job`, whether it spends,
-and its arguments with a kind (a value, a system id checked to exist; an `upload`; an
+`X-EVH-Data: 1`. `GET /api/v1/commands` lists the commands it serves as jobs: whether each spends, and its arguments with a kind (a value, a system id checked to exist; an `upload`; an
 `artifact` a job writes); what loads code or names a path of the server's (`--adapter`, `--runs-dir`, output folders)
-is never taken. `POST /api/v1/read/<command>` with `{"args": {...}}` answers exactly what the command answers with
-`--json`. A server started `--public` or `--behind-proxy` answers no `/api/v1/` call: the API is this machine's only.
+is never taken. A read answers what the command answers with `--json`; `evh openapi` describes every resource. A server started `--public` or `--behind-proxy` answers no `/api/v1/` call: the API is this machine's only.
 
 **Jobs.** `POST /api/v1/jobs` with `{"command", "args", "by", "reason"}` (and `max_cost_usd` for a command that
 spends) starts one command as a job and answers `202`: a detached process that goes on when the page closes or the
@@ -1541,9 +1548,9 @@ the server reads the project's store again.
 **The run inspector** is a local server (`evh catalog-serve`) that tests chosen arms against a
 baseline with the same paired test as the command line, and shows outputs beside references.
 Its "re-score" box (shown when the adapter can re-score) scores what is not on record; `evh
-inspect --no-rescore` is the box unticked.
+comparison-show --rescore 0` is the box unticked.
 
-**A crosstab of two per-item scores** (terminal only): `evh inspect --runs A --crosstab M1,M2
+**A crosstab of two per-item scores** (terminal only): `evh comparison-crosstab --runs A --crosstab M1,M2
 [--group FIELD [--group-match REGEX]] [--where F:V] [--max-ids N] [--json]`. For each group, the run's
 items counted by their value of `M1` (down) and `M2` (across), with totals, and the item ids of every cell
 off the diagonal (`M1` value differing from `M2` value; text lists up to `--max-ids`, default 8, then
@@ -1556,7 +1563,7 @@ without one), `none` when it does not match. `--where` is the usual dataset-fiel
 give each its own groups. Example, the triage baseline's dismiss gate:
 
 ```
-evh inspect --runs triage_baseline_pro_v1 --crosstab model_false_dismiss,false_dismiss \
+evh comparison-crosstab --runs triage_baseline_pro_v1 --crosstab model_false_dismiss,false_dismiss \
     --group _meta.gates --group-match 'd:(n/a|[^/]+)'
 ```
 
@@ -1565,10 +1572,10 @@ gate saved a false dismissal); the same group under `model_false_alarm,false_ala
 `model_false_alarm=0, false_alarm=1` (a right dismissal turned into a false alarm). The 12 and the 8 are
 different items, so a gate's net effect is read from both.
 
-**Each item's outputs and reference together** (terminal only): `evh inspect --runs A,B --items-out
-[--disagree] [--where F:V] [--baseline A] [--max-chars N] [--json]`. `--sheet` carries each run's
+**Each item's outputs and reference together** (terminal only): `evh comparison-items --runs A,B
+[--disagree] [--where F:V] [--baseline A] [--max-chars N] [--json]`. `evh sheet-show D --runs A,B` carries each run's
 decision, scores and the labels but cuts them for a cell (`--json` too) and has no run's whole output;
-`--items-out` is the record per item: `item_id`, the item's start, its fields, the signals, and per run its
+`comparison-items` is the record per item: `item_id`, the item's start, its fields, the signals, and per run its
 `decision`, whole `output` text, `scores` and the `_meta` the adapter recorded, then the `references` and
 `labels`. Text prints each as a block with an output cut at `--max-chars` (default 300, 0 = whole), a
 JSON-object output without its `_`-keys (a probe trace; the `_` keys are counted), and how long a cut
@@ -1602,7 +1609,7 @@ each table as columns and rows. 0.8.0 gives each command its own result and reti
 build on it. `captures`, `labels`, `picks` and `deploy-sheet` already answer `--json` with an object of their
 own (`{"captures": …}`, `{"sets": …}`, `{"picks": …}`, the sheet).
 
-**The catalog's footer** names each page's command (`evh goals --goal G`); `evh catalog --mcp URL`
+**The catalog's footer** names each page's command (`evh goal-leaderboard G`); `evh catalog --mcp URL`
 adds the same as an MCP tool call, with the server and a "how to connect" link (`--mcp-howto URL`,
 the harness's INTEGRATION guide by default). Every page carries a share card (its title and its
 opening line as the description); `--card URL` adds the image a shared link shows. The pages stay
@@ -1613,14 +1620,14 @@ opening line as the description); `--card URL` adds the image a shared link show
 `"refused"` (`rate`, `rate_total`, `tool`, `arguments`, `busy`, or `command` for a command that ran and refused: exit 1, its `ERROR:` line) or `"cached": true`. `tool` is
 `unknown` for a name the server does not have; `args` are argument names, never values.
 
-**In the terminal:** every view has a command. `evh overview [--period P]` for the home page,
-`evh activity` for the activity page, `evh arms` (`--by system`, `--systems`) for the arms page,
-`evh datasets`, `evh arms --arm …`, `evh references`, `evh metrics --metric …` and
-`evh goals --goal …` for the others, `evh inspect --runs …` (`--analysis` for the charts, `--item <id>`
-for one item) for the inspector, `evh labels` and `evh captures` for the Labels and Captures pages,
-`evh inspect --sheet --dataset-id … --runs …` for a dataset's sheet (the inspector's per-item scores too),
-`evh inspect --runs … --crosstab M1,M2` and `--items-out` for the two per-item reads above,
-`evh picks` for the picks waiting and `evh deploy-sheet --system …` for a goal's deploy sheet.
+**In the terminal:** every view has a command. `evh overview-show [--period P]` for the home page,
+`evh activity-show` for the activity page, `evh arm-list` (`--by system`, `--systems`) for the arms page,
+`evh dataset-list`, `evh arm-show LABEL DATASET …`, `evh reference-list`, `evh metric-show …` and
+`evh goal-leaderboard …` for the others, `evh comparison-show --runs …` (`--analysis` for the charts, `--item <id>`
+for one item) for the inspector, `evh dataset-list` and `evh capture-list` for the Labels and Captures pages,
+`evh sheet-show … --runs …` for a dataset's sheet (the inspector's per-item scores too),
+`evh comparison-crosstab --runs … --crosstab M1,M2` and `evh comparison-items` for the two per-item reads above,
+`evh picks` for the picks waiting and `evh deploy-sheet …` for a goal's deploy sheet.
 
 ---
 
@@ -1634,13 +1641,13 @@ that never captures sees none of it. Design: [RFC-019](../../docs/rfc/RFC-019-da
 
 ```bash
 evh capture --importer jsonl --query '{"path": "decisions.jsonl"}' --capture prod_2026_10   # or tsv, github, langfuse, path.py:Class
-evh captures --capture prod_2026_10                                    # what was read, when, the hashes
+evh capture-show prod_2026_10                                    # what was read, when, the hashes
 evh capture-scrub prod_2026_10 --command "python scrub.py {records}"   # your scrubber; changed records re-hashed
 evh dataset-from-capture prod_2026_10 --dataset-id prod_v1 --one-per fingerprint --tag source=prod
 evh dataset-materialize --dataset-id prod_v1
 evh label-from-capture --dataset-id prod_v1 --capture prod_2026_10 --map rules.yaml \
     --set prod_outcomes                                                # a rule set: what happened afterwards
-evh label-coverage --dataset-id prod_v1 --capture prod_2026_10 --map rules.yaml   # how far the rules label it now
+evh label-coverage-show prod_v1 --capture prod_2026_10 --map rules.yaml   # how far the rules label it now
 evh dataset-split prod_v1 --test 0.3 --seed 7 --key fingerprint     # prod_v1_validation, prod_v1_test
 ```
 
@@ -1674,7 +1681,7 @@ evh dataset-split prod_v1 --test 0.3 --seed 7 --key fingerprint     # prod_v1_va
   the earlier capture never saw, listed as `late`). A continued capture never re-reads a record it holds,
   so for newer outcomes take a fresh capture of the same query and run `label-from-capture --capture`
   on it into a new set: the dataset stays as frozen, only the labels move (tutorial 6 §5).
-- **How far the rules label it, before writing a set.** `evh label-coverage --dataset-id D --capture C --map
+- **How far the rules label it, before writing a set.** `evh label-coverage-show D --capture C --map
   rules.yaml` applies the same rules and writes nothing: each item is labelled now, skipped by design, not yet
   mature (a rule fits it but for `min_age_days`, and the date it matures is named), matched by no rule (with the
   outcome fields those items lack) or not in the capture; per rule, the items it takes now and when mature.
@@ -1702,7 +1709,7 @@ evh dataset-split prod_v1 --test 0.3 --seed 7 --key fingerprint     # prod_v1_va
   the set keeps production's action per item; a run or rescore against it does not score an item where its output is
   not that action (the adapter's `same()`), says "N item(s) not scorable under this variant", and records them
   (`not_scorable`). Related decisions (one fingerprint decided many times) count once with a goal's `cluster:`.
-- **The labeller mutation-tested** (RFC-031 X1). `evh label-mutants --dataset-id D --capture C --map rules.yaml
+- **The labeller mutation-tested** (RFC-031 X1). `evh label-mutants D --capture C --map rules.yaml
   [--outcomes …] [--mutants my_mutants.py]` labels again with each named change (each `min_age_days` halved and one
   and a half times, neighbouring rules swapped, each `when` value replaced, the join's window moved an hour; a
   project's own from `mutants(rules)` and `join_mutants(join)`) and counts the labels each moves. A mutant that moves
@@ -1741,17 +1748,17 @@ evh dataset-split prod_v1 --test 0.3 --seed 7 --key fingerprint     # prod_v1_va
   a read is neither, and on the triage fleet 78 of 91 held-out items were read (a comparison, a test fixture)
   before anyone noticed. `evh exposure-add --dataset-id prod_v1_test --item ID --what "decision and reason"
   [--read-by agent:NAME] [--at T]` (or `--from reads.tsv`: `item_id`, `what`, and optionally `by`, `at`) records a
-  read; the harness records its own when it shows a held-out item's text, an output or a label on it (`inspect
-  --item`, `--sheet`, `--items-out`, `label-sheet`, `dataset-items --item`, the inspector). Every score on the side
+  read; the harness records its own when it shows a held-out item's text, an output or a label on it (`comparison-item`,
+  `sheet-show`, `comparison-items`, `label-sheet`, `dataset-items --item`, the inspector). Every score on the side
   (`pair-test`, `family-test`, the leaderboard, goals, the catalog and the inspector) leaves the read items out and
   says "N item(s) left out (exposed)"; `pair-test --include-exposed` shows the full number beside it, marked as not
-  the one that counts. `evh exposure --dataset-id prod_v1_test` counts the reads (`--ids`, a person only, lists
+  the one that counts. `evh exposure --dataset prod_v1_test` counts the reads (`--ids`, a person only, lists
   them). `evh exposure-check --dataset-id prod_v1_test [--out leaks.tsv]` searches the public repos `config.yaml`
   names (`exposure: {public_repos: [...], ids: [fields], ids_hook: file.py:fn}`) for each item's ids in commits made
   after its time, exits 6 on one the register lacks, and says what it cannot catch (a paraphrase, a title, a list
   written without the ids' prefix).
 - **Counts over a held-out side, for safety only** (RFC-031 H2). `dataset-split … --seal --count-by kind,gate` fixes
-  the fields its counts may be grouped by; `evh sealed-counts --dataset-id prod_v1_test [--by kind] [--capture
+  the fields its counts may be grouped by; `evh sealed-counts prod_v1_test [--by kind] [--capture
   live]` counts per day by them (with `--capture`, also a capture's records on the held-out side of the boundary:
   the live watch), prints no id or text, and records no read. A person widens the list with `evh
   dataset-seal-counts --dataset-id prod_v1_test --add F --reason "..."` (recorded); an agent cannot.
@@ -1769,40 +1776,40 @@ evh run --system deployed_v1 --dataset prod_v1              # the deployed syste
 evh label-sheet --dataset-id prod_v1 --items disagree --runs production_v1,deployed_v1 --out sheet.csv
 evh label-import sheet.csv --dataset-id prod_v1 --set owner_2026_11 --by <you>
 evh rescore --dataset-id prod_v1 --labels owner_2026_11                # every arm, against your labels
-evh inspect --sheet --dataset-id prod_v1 --runs production_v1,deployed_v1 \
+evh sheet-show prod_v1 --runs production_v1,deployed_v1 \
     --wrong-against owner_2026_11 --new-vs governed_v1                  # where production was wrong on something new
 evh pick --dataset-id prod_v1 --item … --for governed_v1 --tag case=…  # worth keeping
 evh dataset-extend governed_v1 --dataset-id governed_v2 --picks        # the next version, from the picks
-evh deploy-sheet --system deployed_v1 --capture prod_2026_11           # did production run what you promoted?
+evh deploy-sheet deployed_v1 --capture prod_2026_11           # did production run what you promoted?
 ```
 
 - **Production's recorded arm** (`provider: recorded`): each output is the capture's record of the same
   id, read by the adapter's `recorded_output(record)` (else `--field`). It is scored, tested and compared
   like any arm; it costs nothing and its speed is not measured.
 - **Agreement**: two outputs are one decision when the adapter's `same(a, b)` says so (default: the same
-  decision, by the adapter's `decision(output)`, else the same text). `inspect --disagree` and
+  decision, by the adapter's `decision(output)`, else the same text). `comparison-show --disagree 1` and
   `label-sheet --items disagree` keep the items where the arms differ.
 - **More than one right answer**: a label can accept several (`also right` in the sheet, `label: [file, escalate]`
   in a rule), written `{"accept": ["escalate", "file"]}` and shown "escalate or file", for answers each fully
   right, never for "unsure which". A decision is **wrong** against a label when it is none of them.
-- **Agreement between label sets** (`evh labels --dataset-id D [--confusion]`, the dataset page): on the items
+- **Agreement between label sets** (`evh label-set-list D`, the dataset page; each pair's confusion matrix is in the answer): on the items
   both label, how many accept the same answers, how many share one (apart: a label accepting more agrees more
   easily), Cohen's kappa and Krippendorff's alpha (MASI distance for several answers), which correct for the
   agreement chance alone gives when one class dominates. With three sets or more, also all of them together: one Krippendorff's alpha over every item labelled twice or more, with a 95% bootstrap interval (JSON `agreement_all`). `--contested`: per item, how many people's sets agree with the gold reference (sharing an answer with it), the most contested first, the set the reference was promoted from left out (JSON `contested`). Free-text labels are not compared as text. An adapter's `score` reads such a reference with `answers(reference)` from `evaluation_harness.adapter`.
-- **Failure modes: how an arm fails, not only how often** (`evh tags`). A mean says an arm is wrong on 12% of the
+- **Failure modes: how an arm fails, not only how often** (`evh dataset-list`). A mean says an arm is wrong on 12% of the
   items; the tags say how. Name the ways once, `data/failure-modes/<id>.yaml` (`failure_modes_id`, then `modes`:
   each an `id`, and a `description` a tagger reads first; write it after reading some outputs with open notes, so
-  the modes are the ones that happen). `evh inspect --sheet … --csv tags.csv --fill tags --modes <id>` writes a
+  the modes are the ones that happen). `evh sheet-export … --csv tags.csv --fill tags --modes <id>` writes a
   sheet with each arm's output and a `failure_modes: <arm>` cell beside it (not blind: a tag is about whose output
   it is), its first row listing the modes, and a key beside it. Fill a cell with modes (`too-long|misses-ask` for
   several), `ok` for an output read and found fine, or leave it blank (not read, so an unfinished sheet never reads
   as fine). `evh sheet-import tags.csv --dataset-id D --by <who> --tags <name> --modes <id>` checks the key (an
   edited output, a mode not in the list, a name already used are refused) and writes the tag set,
-  `data/tags/<dataset>/<name>/tags.json`, never edited after. `evh tags --dataset-id D` and the goal page count per
-  arm the outputs read, how many had a failure and each mode; the sheet (`evh inspect --sheet`, its CSV) shows each
+  `data/tags/<dataset>/<name>/tags.json`, never edited after. `evh tag-set-list D` and the goal page count per
+  arm the outputs read, how many had a failure and each mode; the sheet (`evh sheet-show`, its CSV) shows each
   item's modes in an `<arm>: failure modes` column (`ok` read and fine, blank not read); `validate` (V21) checks the lists and the sets. A tag
   scores nothing: it explains a score.
-- **The sheet** (`evh inspect --sheet --dataset-id D --runs A,B,…`) shows the dataset's items down (each by the
+- **The sheet** (`evh sheet-show D --runs A,B,…`) shows the dataset's items down (each by the
   first arm's adapter's `title(item)` when it has one, else its start) and a column per arm across: what it wrote (the adapter's `decision(output)`, else its output, shortened; `--scores-only` leaves
   it out) and every score it has on the item: its run's metrics, and a judging pass's where one under
   `data/runs-judged/<scorer>/` covered the run (`--metric M`, or `SCORER/M` for a judge's, picks the one the sheet
@@ -1867,7 +1874,7 @@ each item at the commit that ran it, and scores the replay only once it is shown
   `data/faithfulness/<id>/<n>.json` once: the counts, each disagreement with both sides, and the coverage (per
   commit, the functions of the system the replay entered and those it never did: a rule no item reaches is named).
   Each version's summary goes into the code record's `faithfulness` (agreed of items, the named exceptions, the
-  record), which the Models page and `evh models --model <id>` show.
+  record), which the Models page and `evh model-show <id>` show.
 - **The gate**: a replay, or a candidate made from it, is scored against a reference or label set (`run`, `rescore`,
   `run-promote`) only when the newest faithfulness record made with its adapter and support modules agrees on every
   item, on the same items and deployments. A disagreement whose cause is outside the system is named with
@@ -1878,7 +1885,7 @@ each item at the commit that ran it, and scores the replay only once it is shown
   adapter reads that is not one of its `support` files (a frozen world under the project): change those and run
   `evh faithfulness` again yourself. A system with compiled extensions cannot switch versions in one process and is
   refused.
-- `evh faithfulness-show --model ID [--n N]` prints a record whole (the disagreements, who named which, the
+- `evh faithfulness-show ID [--n N]` prints a record whole (the disagreements, who named which, the
   coverage); a replay's arm page names its code record and its faithfulness. `validate` V26 checks the records.
 - **Production's own writes, hidden** ([RFC-031](../../docs/rfc/RFC-031-held-out-discipline-and-outcome-labels.md)
   P1). A frozen history carries production's own writes (its labels, its reopens); a variant replayed over it sees
@@ -1894,9 +1901,9 @@ each item at the commit that ran it, and scores the replay only once it is shown
   every score on it say "history confound: N of M". `examples/replay-filing/` shows both (`filing_replay_hidden_v1`,
   `filing_candidate_v3_hidden`).
 - **A past period at its own code** (RFC-031 P2). A window over several deployments mixes a fix's before and after.
-  `evh periods --model ID [--system REPLAY --dataset D]` numbers the code record's deployed periods (each with how it was dated:
+  `evh periods ID [--system REPLAY --dataset D]` numbers the code record's deployed periods (each with how it was dated:
   `dated_by: pull`, or `commit` when the host no longer records the pull, approximate) and counts the items in each;
-  `evh period-compare --system REPLAY --dataset D --candidate C [--production P] --period N` (or `--from T --to T`) reads the
+  `evh period-compare REPLAY --dataset D --candidate C [--production P] --period N` (or `--from T --to T`) reads the
   latest run of each on the period's items: what production recorded, the code that ran then (it must agree with
   production on those items, or the report says it does not count) and the candidate, with the paired test between
   the last two. Nothing is called: run them first.
@@ -1914,7 +1921,7 @@ evh model-new gemma4-12b --set kind=llm --set aliases.0=gemma4:12b   # the model
 evh deployment-new gemma4-12b mac --set where=mac --set tag=gemma4:12b # one per place it runs
 evh model-onboard gemma4-12b --deployment mac   # once per deployment: build, reasoning, JSON, determinism
 evh arm-smoke --system my_system_v1 --dataset my_v1   # once per system, on its own task, before its full run
-evh models                                       # what is onboarded, vetted (an arm smoke passed), where it runs
+evh model-list                                       # what is onboarded, vetted (an arm smoke passed), where it runs
 ```
 
 1. **Pin the build, per deployment.** Record the tag and its digest in the deployment's own record
@@ -2119,7 +2126,7 @@ In order, because each is cheaper than the next:
 6. Did a source change? `evh dataset-materialize --dataset-id ... --force`
    re-verifies every hash.
 7. Do the runs share their conditions? `evh run-compare` names the fingerprint part that moved
-   (instrument, data, deployment, settings); `evh inspect --runs a,b` names every condition that differs
+   (instrument, data, deployment, settings); `evh comparison-show --runs a,b` names every condition that differs
    (the runner's machine and libraries, where the deployment ran, harness, scorer, items, reference bytes).
    The runner (where `evh` ran) is outside the fingerprint's hash: the same deployment run from two machines
    is the same measurement, and the runner is shown as a condition.

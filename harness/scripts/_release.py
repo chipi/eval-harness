@@ -531,10 +531,10 @@ def copy_data(src: Path, dst: Path) -> dict:
 
 
 def _answered_goals(answers: Path) -> tuple[int, int]:
-    """(how many goals the MCP `goals` answer written ahead lists, how many leaderboards were written ahead)."""
+    """(how many goals the MCP `goal-list` answer written ahead lists, how many leaderboards were written ahead)."""
     recs = [json.loads(x) for x in _store.read_text(answers, encoding="utf-8").splitlines() if x.strip()]
-    goals = next((r for r in recs if r.get("tool") == "goals" and not r.get("argv")), None)
-    rows = sum(len(b.get("rows") or []) for b in json.loads(goals["out"])["result"]["blocks"]) if goals else 0
+    goals = next((r for r in recs if r.get("tool") == "goal-list" and not r.get("args")), None)
+    rows = len(json.loads(goals["out"])["result"]["goals"]) if goals else 0
     return rows, sum(r.get("tool") == "leaderboard" for r in recs)
 
 
@@ -569,7 +569,7 @@ def check(root: Path, tracked: set[str]) -> list[str]:
     want = len(_store.glob_str(str(data / "goals" / "*.yaml")))
     if rows != want or not boards:
         bad.append(
-            f"the MCP answers (inspector/cache/mcp-answers.jsonl): goals answers {rows} of the release's {want}, "
+            f"the MCP answers (inspector/cache/mcp-answers.jsonl): goal-list answers {rows} of the release's {want}, "
             f"{boards} leaderboard(s) written ahead"
         )
     return bad + _release_store.layout_problems(data)

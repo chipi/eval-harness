@@ -19,12 +19,10 @@ from pathlib import Path as _Path
 if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
-import argparse
-import json
 from typing import Any
 
 from evaluation_harness import _baselines
-from evaluation_harness._common import BOOKKEEPING_PREFIXES, die, evh_prog, how, load_goals
+from evaluation_harness._common import BOOKKEEPING_PREFIXES, load_goals
 
 SCHEMA = "evh-baselines/1"
 
@@ -99,71 +97,3 @@ def lines(goal: str | None, no_goal: bool, dataset: str | None, all_versions: bo
             }
         )
     return out
-
-
-def main() -> int:
-    """List the baselines."""
-    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
-    ap.add_argument("--goal", help="only this goal's baselines")
-    ap.add_argument(
-        "--no-goal", action="store_true", help="only the datasets' own baselines (runs with no goal)"
-    )
-    ap.add_argument("--dataset", help="only this dataset's")
-    ap.add_argument(
-        "--all-versions", action="store_true", help="every version in the history, the current included"
-    )
-    ap.add_argument(
-        "--json", action="store_true", help="the export: one JSON document, the same bytes until a promotion"
-    )
-    args = ap.parse_args()
-    if args.goal and args.no_goal:
-        die("--goal and --no-goal: one or the other", "bad-argument")
-    rows = lines(args.goal, args.no_goal, args.dataset, args.all_versions)
-    if args.json:
-        print(json.dumps({"schema": SCHEMA, "baselines": rows}, sort_keys=True))  # one line, as every --json
-        return 0
-    if not rows:
-        print(
-            "no baselines yet: promote a run:  "
-            + how('evh run-promote --run <id> --reason "..."', 'make run-promote RUN=<id> REASON="..."')
-        )
-        return 0
-    for r in rows:
-        who = r.get("actor") or {}
-        named = f"{who.get('name')}" + (f" for {who['for']}" if who.get("for") else "") if who else "?"
-        print(f"{r['goal'] or 'the dataset'}'s baseline on {r['dataset']}: version {r['current']}")
-        print(
-            f"    run      {r.get('promoted_from')}, promoted {str(r.get('promoted_at') or '')[:10]} by {named}"
-        )
-        print(f"    why      {r.get('reason', '(none recorded)')}")
-        label = f"scores (mean of {r['repeats']} repeats)" if r.get("repeats") else "scores"
-        print(f"    {label}   " + "  ".join(f"{k}={v}" for k, v in (r.get("scores") or {}).items()))
-        ev = r.get("evidence") or {}
-        vd = ev.get("verdict")
-        if r.get("migrated"):
-            print("    evidence promoted before 0.8.0: not recorded")
-        elif ev.get("compared_to") is None:
-            print("    evidence the first version: nothing to compare with")
-        elif vd:
-            print(
-                f"    evidence against version {ev['compared_to']}: {vd.get('outcome')}, delta {vd.get('delta'):+.4f},"
-                f" p {vd.get('p'):.4g} on {ev.get('measure')} (n={ev.get('n')})"
-            )
-        else:
-            print(
-                f"    evidence against version {ev['compared_to']}: no test ({'; '.join(ev.get('not_comparable') or [])})"
-            )
-        for h in r["history"]:
-            what = (
-                f"restores {h['restores']}"
-                if h.get("restores")
-                else (f"replaced {h['replaces']}" if h.get("replaces") else "first")
-            )
-            print(
-                f"    v{h['version']:<4}   {str(h.get('promoted_at') or '')[:10]} {h.get('promoted_from')} ({what}): {h.get('reason', '')}"
-            )
-    return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())

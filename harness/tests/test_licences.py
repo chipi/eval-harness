@@ -55,12 +55,12 @@ try:
         r.stdout[-300:],
     )
     r = evh("licences", "--search", "share", "--json")
-    ids = [x["id"] for x in json.loads(r.stdout)["licences"]] if r.returncode == 0 else []
+    ids = [x["id"] for x in json.loads(r.stdout)["result"]["licences"]] if r.returncode == 0 else []
     check(
         "--search keeps the matching ones, --json gives each its SPDX page",
         "CC-BY-SA-4.0" in ids
         and "MIT" not in ids
-        and all(x["url"].startswith("https://spdx.org/") for x in json.loads(r.stdout)["licences"]),
+        and all(x["url"].startswith("https://spdx.org/") for x in json.loads(r.stdout)["result"]["licences"]),
         r.stdout[-300:],
     )
     src = proj / "src"

@@ -16,8 +16,8 @@ the sqlite store takes the project in. Then:
 - they are the copy's: a copy changed after it was made (a run's rows, the materialized items) gives other evidence and
   another status, and the project's are as they were;
 - one listing per entity: a reference's item count is its manifest's (`n_items`), not a count of the texts in its
-  folder; label coverage is one decision for `evh labels` and the catalog (the catalog also counts the labels whose text a
-  release does not keep); a captures listing for `evh captures` and the catalog; picks and tag counts are read through
+  folder; label coverage is one decision for `evh dataset-list` and the catalog (the catalog also counts the labels whose text a
+  release does not keep); a captures listing for `evh capture-list` and the catalog; picks and tag counts are read through
   `_picks` and `_tags`; the judge spend the catalog charts is what `evh cost-report` counts, estimated apart;
 - the comparison and a model's state live in the model: `catalog_serve.compare` is `model.compare.compare`, a round's
   evidence imports no server, `catalog_models` reads a model's state from `model.models`.
@@ -396,7 +396,7 @@ try:
     cov = _label_sets.coverage("ds_v1")
     by_set = {c["set"]: c["items"] for c in cov}
     check(
-        "label coverage is one decision for `evh labels` and the catalog: by id on the set's dataset, by the item's bytes on "
+        "label coverage is one decision for `evh dataset-list` and the catalog: by id on the set's dataset, by the item's bytes on "
         "another's, an ambiguous label (two items alike, labelled differently) carried to none",
         by_set == {"lab_h": ["i0", "i1", "i3"], "lab_o": ["i0", "i1"]}
         and {s["set"]: s["covers"] for s in LP["coverage"]["sets"]} == by_set
@@ -419,7 +419,7 @@ try:
     cd = HarnessAdapter(CD)
     check(
         "without label texts (a release's copy) the catalog's coverage still lists the items a set labels, with no agreement; "
-        "`evh labels` over the same tree lists none (it reads the texts)",
+        "`evh dataset-list` over the same tree lists none (it reads the texts)",
         {s["set"]: s["covers"] for s in cd.label_coverage("ds_v1")["sets"]} == by_set
         and cd.label_coverage("ds_v1")["agreement"] == []
         and _label_sets.coverage("ds_v1", CD) == []
@@ -446,9 +446,9 @@ try:
         and [s["set"] for s in HarnessAdapter(CD).label_coverage("ds_v1")["sets"]] == ["lab_o"]
         and [s["id"] for s in HarnessAdapter().label_sets()] == ["ds_other/lab_o", "ds_v1/lab_h"],
     )
-    caps_cmd = json.loads(evh("captures", "--json").stdout)["captures"]
+    caps_cmd = json.loads(evh("capture-list", "--json").stdout)["result"]["captures"]
     check(
-        "captures: `evh captures` and the catalog list one thing (the dataset made from each, its first and last record)",
+        "captures: `evh capture-list` and the catalog list one thing (the dataset made from each, its first and last record)",
         caps_cmd == LP["captures"] == dataset_views.capture_views()
         and caps_cmd[0]["datasets"] == ["ds_v1"]
         and caps_cmd[0]["first"] == "2026-10-01T00:00:00Z"

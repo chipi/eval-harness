@@ -14,7 +14,7 @@ measure that decides and which way is better, the output formats it accepts, and
 it is measured on. Configs name their goal, runs and baselines carry it, `validate` checks it,
 and the catalog gives each goal a page that leads with its answer so far. On top of goals,
 **rounds** are optional: a round records what it sets out to learn, what changed, which arms it
-carries in, drops (with the reason) or adds, and what it concluded. `evh rounds` reads the
+carries in, drops (with the reason) or adds, and what it concluded. `evh round-list` reads the
 evidence and suggests the next decision as the command that makes it. A project that never
 opens a round sees none of it.
 
@@ -58,7 +58,7 @@ belonged together, why one was dropped, or what a round concluded. The newcomer 
   each dataset and the reason._
 - _As an engineer, I can open a round with a hypothesis, carry in the arms worth keeping and drop
   the rest with a reason (`evh round-open --goal … --dataset … --keep … --retire … --reason "…"`)._
-- _As an engineer, I can ask what the evidence suggests (`evh rounds --goal …`) and get each
+- _As an engineer, I can ask what the evidence suggests (`evh round-list …`) and get each
   suggestion as the command that acts on it._
 - _As an engineer, I can close a round with its conclusion and promote the run it chose in one
   step (`evh round-close … --conclusion "…" --promote <run_id>`)._
@@ -74,7 +74,7 @@ belonged together, why one was dropped, or what a round concluded. The newcomer 
   `datasets` (each with an optional role: validation, test, ...; empty for a goal checked by a gate
   rather than measured on a dataset). Optional: `context` (its audience), `output_contract`,
   `references`, `measures`, `min_items` (in `success_criteria`), `links` (shown on the goal
-  page and by `evh goals --goal`: a web address as a link, a project path as text), `status`.
+  page and by `evh goal-leaderboard`: a web address as a link, a project path as text), `status`.
 - **FR1.2**: A system names its goal (`goal:`) and may declare its `format`; `evh run`
   refuses an unknown goal before it spends anything. The run records both outside the
   fingerprint; `run-promote` carries both onto the baseline.
@@ -84,7 +84,7 @@ belonged together, why one was dropped, or what a round concluded. The newcomer 
   `min_items` gets a note.
 - **FR1.4**: `required_from: YYYY-MM-DD` in `data/goals/policy.yaml` makes every run created
   from that date name a goal. Without it, nothing is required.
-- **FR1.5**: The goal page and `evh goals --goal …` give: the answer so far per dataset; the
+- **FR1.5**: The goal page and `evh goal-leaderboard …` give: the answer so far per dataset; the
   rounds, when there are any; what the goal is for; and on each dataset its references and its
   arms grouped by what they are scored against (gold, silver, a judge), ranked within a group.
   An arm with fewer items than `min_items`, a format the goal does not accept, or that wrote the
@@ -113,7 +113,7 @@ belonged together, why one was dropped, or what a round concluded. The newcomer 
   `--keep` (carried in, not run again), `--retire … --reason "…"`, `--budget-usd`.
 - **FR2.3**: An arm joins a round by running in it (`evh run --round rN`, with `--goal`);
   `evh run` refuses a round that does not exist, is closed, or is on another dataset.
-- **FR2.4**: `evh rounds --goal G [--round rN]` shows each round and, for the open one, the
+- **FR2.4**: `evh round-show G rN` shows each round and, for the open one, the
   arms against its leader, its leader against the previous round's best, the baseline it started
   from and the arm that wrote a silver reference of the dataset, its spend against the budget and
   the cost per item, all read against the reference most of its arms use (gold before silver on
@@ -124,8 +124,8 @@ belonged together, why one was dropped, or what a round concluded. The newcomer 
 - **FR2.5**: `evh round-retire --goal G --round rN --arm C --reason "…"` and
   `evh round-close --goal G --round rN --conclusion "…" [--promote RUN_ID]` record decisions;
   a reason or conclusion must be a sentence. If the promotion is refused, the round stays open.
-- **FR2.6**: `evh leaderboard`, `evh family-test`, `evh pair-test` and `evh inspect` take
-  `--round` to scope to a round's arms in play; `inspect --round` and `pair-test --round` default
+- **FR2.6**: `evh leaderboard`, `evh family-test`, `evh pair-test` and `evh comparison-show` take
+  `--round` to scope to a round's arms in play; `comparison-show --round` and `pair-test --round` default
   to the goal's measure and the round's leader (`pair-test`'s B: the baseline the round started
   from).
 - **FR2.7**: `evh validate` (V14) checks round records: schema, file name, goal and dataset
@@ -134,13 +134,13 @@ belonged together, why one was dropped, or what a round concluded. The newcomer 
 
 ### FR3: The deploy sheet (0.6.0)
 
-- **FR3.1**: `evh deploy-sheet --system ARM` prints what production must match to run what was measured: the model
+- **FR3.1**: `evh deploy-sheet ARM` prints what production must match to run what was measured: the model
   and its build (the model record's deployment: tag, digest, server and its settings), every setting the arm
   sends, the prompt and its hash, the adapter and its version, and the dataset and reference it was promoted on.
   It reads the run the arm was promoted with (the latest baseline whose run is the arm's), else the arm's latest
   run, and says which; it notes a model record's setting the arm did not send. The promoted arm's page and the
   goal page beside its baseline (folded) show the same, with what each capture says production ran.
-- **FR3.2**: `evh deploy-sheet --system ARM --capture C` checks a capture whose records say what production ran (for
+- **FR3.2**: `evh deploy-sheet ARM --capture C` checks a capture whose records say what production ran (for
   triage: the ledger's `model`, `prompt_ver`, `prompt_sha`, through the adapter): "every captured decision was made
   by the promoted model and prompt", or what differs and on how many records. Each record's account comes from
   the adapter's `production_ran(record)`; a key is matched against what the run's own items reported (`_meta`), the

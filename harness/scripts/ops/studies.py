@@ -1,5 +1,5 @@
 """The studies' reads (RFC-032 step 7): `evh study-list`, `study-show`, and the resources under
-/api/v1/goals/{goal}/studies. `evh studies` stays what it is (every study with its counts, or one as its log says);
+/api/v1/goals/{goal}/studies. `evh goal-list` stays what it is (every study with its counts, or one as its log says);
 these answer the API a goal's studies and one study as resources, read through model/study_views. Running, asking,
 telling, stopping, confirming and importing a study are the commands `study-run`, `study-ask`, `study-tell`,
 `study-stop`, `study-confirm` and `study-import`."""

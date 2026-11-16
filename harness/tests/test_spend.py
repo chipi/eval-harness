@@ -215,9 +215,9 @@ try:
             break
     os.killpg(pk.pid, signal.SIGKILL)
     pk.wait(timeout=30)
-    rv = evh("rounds", "--goal", "tickets_summary")
+    rv = evh("round-evidence", "tickets_summary", "r2")
     check(
-        "evh rounds names what the round has left, counting the killed run's paid items",
+        "evh round-evidence names what the round has left, counting the killed run's paid items",
         "left, counting what running or stopped commands hold" in rv.stdout,
         rv.stdout[-600:],
     )

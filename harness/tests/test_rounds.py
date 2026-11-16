@@ -4,7 +4,7 @@
     python tests/test_rounds.py
 
 In a throwaway project built from the tutorial ($0, offline, the echo provider): a round of a goal
-is opened carrying two arms in, a third runs naming it; `evh rounds` suggests retiring the arm the
+is opened carrying two arms in, a third runs naming it; `evh round-list` suggests retiring the arm the
 test finds significantly worse, with the command; the retirement and the close (promoting the leader) are
 recorded; a closed round refuses new runs; the next round continues it; validate checks the
 records; the leaderboard scopes to a round; the goal page shows the rounds. Rounds are optional:
@@ -134,7 +134,7 @@ try:
         )
         evh("run", "--system", f"tickets_{arm}_v1", "--dataset", "tickets_v1")
 
-    r = evh("rounds", "--goal", "tickets_summary")
+    r = evh("round-list", "tickets_summary")
     check(
         "rounds are optional: a goal without any says so, and how to start",
         "has no rounds" in r.stdout,
@@ -192,37 +192,36 @@ try:
         and len(kept.get("runs") or []) == 1,
         json.dumps(arms1)[:600],
     )
-    r = evh("rounds", "--goal", "tickets_summary")
+    r = evh("round-evidence", "tickets_summary", "r1")
     # On gold over six tickets lead2 leads and no arm differs significantly: more items, the evidence says.
     check(
         "rounds: the evidence and its suggestions, each as the command that does it",
         "leader tickets_lead2_v1" in r.stdout
         and "not significantly different from the leader" in r.stdout
-        and "evh rank-stability --dataset-id tickets_v1" in r.stdout
+        and "evh rank-stability tickets_v1" in r.stdout
         and "evh round-close --goal tickets_summary --round r1" in r.stdout,
         r.stdout[-900:],
     )
-    r = evh("leaderboard", "--dataset-id", "tickets_v1", "--round", "r1")
+    r = evh("leaderboard", "tickets_v1", "--round", "r1")
     check(
         "leaderboard --round: the round's arms",
         r.returncode == 0 and "tickets_author_v1" in r.stdout,
         out(r)[-300:],
     )
-    r = evh("inspect", "--round", "r1", "--goal", "tickets_summary")
+    r = evh("comparison-show", "--round", "r1", "--goal", "tickets_summary")
     check(
-        "evh inspect --round: the round's arms, tested against one of them",
+        "evh comparison-show --round: the round's arms, tested against one of them",
         r.returncode == 0 and "run vs baseline" in r.stdout and "tickets_author_v1" in r.stdout,
         out(r)[-300:],
     )
     check(
-        "evh inspect --round: on the goal's measure, against the round's leader (as evh rounds reads it)",
+        "evh comparison-show --round: on the goal's measure, against the round's leader (as evh rounds reads it)",
         "overlap_f1 (higher is better) · baseline tickets_lead2_v1" in r.stdout,
         out(r)[-400:],
     )
 
     r = evh(
         "pair-test",
-        "--dataset-id",
         "tickets_v1",
         "--round",
         "r1",
@@ -240,7 +239,6 @@ try:
     )
     r = evh(
         "pair-test",
-        "--dataset-id",
         "tickets_v1",
         "--round",
         "r1",
@@ -255,22 +253,22 @@ try:
         out(r)[-300:],
     )
     # CLI parity: the inspector's sheet and analysis charts, and the catalog's search.
-    r = evh("inspect", "--sheet", "--dataset-id", "tickets_v1", "--runs", "tickets_lead1_v1,tickets_lead2_v1")
+    r = evh("sheet-show", "tickets_v1", "--runs", "tickets_lead1_v1,tickets_lead2_v1")
     check(
-        "evh inspect --sheet: every item's score per arm, the winner per row and each arm's win rate",
+        "evh sheet-show: every item's score per arm, the winner per row and each arm's win rate",
         r.returncode == 0 and "overlap_f1" in r.stdout and "win rate" in r.stdout,
         out(r)[-500:],
     )
-    r = evh("inspect", "--round", "r1", "--goal", "tickets_summary", "--analysis")
+    r = evh("comparison-show", "--round", "r1", "--goal", "tickets_summary", "--analysis")
     check(
-        "evh inspect --analysis: the charts' numbers (spread per run, difference from the baseline)",
+        "evh comparison-show --analysis: the charts' numbers (spread per run, difference from the baseline)",
         "spread per run (overlap_f1" in r.stdout and "difference from the baseline" in r.stdout,
         out(r)[-500:],
     )
     r = evh("search", "lead2")
     check(
         "evh search: the catalog's search, each hit with the command that shows it",
-        r.returncode == 0 and "evh inspect --runs runs/tickets_v1/tickets_lead2_v1" in r.stdout,
+        r.returncode == 0 and "evh comparison-show --runs runs/tickets_v1/tickets_lead2_v1" in r.stdout,
         out(r)[-500:],
     )
     # The author arm's outputs become a silver reference: the round's leader is then read against
@@ -293,7 +291,7 @@ try:
             "test",
         )
     )
-    rs = evh("rounds", "--goal", "tickets_summary")
+    rs = evh("round-evidence", "tickets_summary", "r1")
     check(
         "rounds: the leader against the arm that wrote a silver reference",
         r.returncode == 0 and "against the arm that wrote silver/tickets_v1 (tickets_author_v1)" in rs.stdout,
@@ -367,7 +365,7 @@ try:
         r.returncode != 0 and "unrecognized arguments: --runs" in out(r),
         out(r),
     )
-    r = evh("leaderboard", "--dataset-id", "tickets_v1", "--round", "r1")
+    r = evh("leaderboard", "tickets_v1", "--round", "r1")
     check(
         "leaderboard --round: a retired arm is out of it", "tickets_lead1_v1" not in r.stdout, r.stdout[-400:]
     )
@@ -569,7 +567,7 @@ try:
         "FAIL V14" not in evh("validate").stdout,
         evh("validate").stdout[-600:],
     )
-    r = evh("leaderboard", "--dataset-id", "tickets_v1", "--round", "r2")
+    r = evh("leaderboard", "tickets_v1", "--round", "r2")
     lines = [ln for ln in r.stdout.splitlines() if cfg_id in ln]
     check(
         "leaderboard --round: the arms the round compared, under their labels (the re-timing is a row of its own)",
@@ -619,7 +617,7 @@ try:
         and not any(a["system"] == cfg_id and not a.get("retired") for a in arms2),
         out(r) + json.dumps(arms2)[:800],
     )
-    r = evh("goals", "--goal", "tickets_summary")
+    r = evh("goal-leaderboard", "tickets_summary")
     rows = [ln for ln in r.stdout.splitlines() if cfg_id in ln]
     check(
         "the retired arms read retired on the goal's page: the plain one and the re-timing",
@@ -682,10 +680,12 @@ try:
          and _runstore.read_json(proj, f"runs/{n}/run.json").get("round") == "r3"),
         None,
     )  # fmt: skip
-    r = evh("rounds", "--goal", "tickets_summary", "--round", "r3")
+    r = evh("round-evidence", "tickets_summary", "r3")
     check(
         "rounds: a run on the round's own harness code gets no split note",
-        r3run is not None and "other harness code" not in r.stdout and "harness: " in r.stdout,
+        r3run is not None
+        and "other harness code" not in r.stdout
+        and "harness: " in evh("round-show", "tickets_summary", "r3").stdout,
         out(r)[-600:],
     )
     if r3run:
@@ -693,7 +693,7 @@ try:
         m["fingerprint"]["instrument"]["harness"]["code_sha256"] = "0" * 64
         m["fingerprint"]["instrument"]["harness"]["version"] = "9.9.9"
         _runstore.write_text(proj, f"runs/{r3run}/run.json", json.dumps(m))
-    r = evh("rounds", "--goal", "tickets_summary", "--round", "r3")
+    r = evh("round-evidence", "tickets_summary", "r3")
     check(
         "rounds: a run on other harness code than the round opened on is named, with how to run it on the round's",
         "1 run(s) ran on other harness code" in r.stdout
@@ -701,7 +701,7 @@ try:
         and ("git worktree add ../r3-harness" in r.stdout or "pip install evaluation-harness==" in r.stdout),
         out(r)[-800:],
     )
-    r = evh("pair-test", "--dataset-id", "tickets_v1", "--goal", "tickets_summary", "--round", "r3")
+    r = evh("pair-test", "tickets_v1", "--goal", "tickets_summary", "--round", "r3")
     check(
         "pair-test --round on that round: its leader against the named baseline, no --b needed",
         r.returncode == 0
@@ -710,7 +710,7 @@ try:
         out(r)[-400:],
     )
     r = evh(
-        "pair-test", "--dataset-id", "tickets_v1", "--goal", "tickets_summary", "--round", "r3",
+        "pair-test", "tickets_v1", "--goal", "tickets_summary", "--round", "r3",
         "--a", "tickets_lead1_v1",
     )  # fmt: skip
     check(
@@ -721,26 +721,24 @@ try:
         out(r)[-400:],
     )
 
-    # The rounds' reads (RFC-032 step 5): `evh rounds --json`, round-list, round-show, round-evidence and the API give
-    # the same answer for the same thing. r1 is closed, r3 open (its suggestions are given).
+    # The rounds' reads (RFC-032 step 5): round-list, round-show, round-evidence and the API give the same answer for
+    # the same thing. r1 is closed, r3 open (its suggestions are given).
     for rid in ("r1", "r3"):
-        rj = result("rounds", "--goal", "tickets_summary", "--round", rid)
-        vals = rj["values"]
-        table = next(b for b in rj["blocks"] if b.get("columns", [""])[0] == "round_id")
         lst = result("round-list", "tickets_summary")
         shown = result("round-show", "tickets_summary", rid)
         evd = result("round-evidence", "tickets_summary", rid)
         goal_part = {"goal": "tickets_summary"}
         check(
-            f"round-list: each round with its arms in play and retired, as the table of `evh rounds --json` ({rid})",
-            lst == goal_part | {"rounds": table["rows"]}
-            and lst["rounds"] == vals["rounds"]
-            and len(lst["rounds"]) == 3,
+            f"round-list: each round with its arms in play and retired ({rid})",
+            lst["goal"] == "tickets_summary"
+            and len(lst["rounds"]) == 3
+            and all({"round_id", "status", "dataset_id", "arms", "retired"} <= set(x) for x in lst["rounds"]),
             json.dumps(lst)[:500],
         )
         check(
-            f"round-show: the round with its arms, as `evh rounds --json` shows it ({rid})",
-            shown == goal_part | {"round": vals["round"]}
+            f"round-show: the round with its arms ({rid})",
+            shown["goal"] == "tickets_summary"
+            and shown["round"]["round_id"] == rid
             and all(
                 a["arm"].count("/") == 2 and a["entered"]["how"] in ("ran", "carried")
                 for a in shown["round"]["arms"]
@@ -748,10 +746,9 @@ try:
             json.dumps(shown)[:500],
         )
         check(
-            f"round-evidence: model.rounds.evidence as JSON, equal to what `evh rounds --json` says ({rid})",
-            evd == goal_part | {"round": rid} | {k: vals[k] for k in evd if k not in ("goal", "round")}
-            and evd["arms"] == vals["arms"]
-            and evd["leader"] == vals["leader"]
+            f"round-evidence: model.rounds.evidence as JSON ({rid})",
+            {"goal": evd["goal"], "round": evd["round"]} == goal_part | {"round": rid}
+            and bool(evd["arms"])
             and bool(evd["rows"])
             and (rid == "r3") == bool(evd["suggest"]),
             json.dumps(evd)[:500],
@@ -826,7 +823,7 @@ try:
         out(r)[-600:],
     )
     r = evh(
-        "pair-test", "--dataset-id", "tickets_v1", "--a", "tickets_lead1_v1", "--b", "tickets_lead2_v1",
+        "pair-test", "tickets_v1", "--a", "tickets_lead1_v1", "--b", "tickets_lead2_v1",
         "--metric", "overlap_f1", "--json",
     )  # fmt: skip
     pj = json.loads(r.stdout) if r.returncode == 0 else {}
@@ -853,7 +850,7 @@ try:
         "round-open", "--goal", "tickets_summary", "--dataset", "tickets_v1",
         "--keep", "tickets_lead1_v1", "--baseline", "tickets_lead1_v1",
     )  # fmt: skip
-    r4 = evh("pair-test", "--dataset-id", "tickets_v1", "--goal", "tickets_summary", "--round", "r4")
+    r4 = evh("pair-test", "tickets_v1", "--goal", "tickets_summary", "--round", "r4")
     check(
         "pair-test --round on a round whose only arm is its baseline: says so, not that no baseline is recorded",
         r.returncode == 0
@@ -864,7 +861,7 @@ try:
     )
     # The fleet's retest (F3b): --a naming the baseline, in that same round, was told there is no other arm.
     r4a = evh(
-        "pair-test", "--dataset-id", "tickets_v1", "--goal", "tickets_summary", "--round", "r4",
+        "pair-test", "tickets_v1", "--goal", "tickets_summary", "--round", "r4",
         "--a", "tickets_lead1_v1",
     )  # fmt: skip
     check(

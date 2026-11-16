@@ -26,7 +26,7 @@ q.set('sort',`${th.cellIndex}:${th.dataset.dir}`);try{history.replaceState(null,
 if(th&&th.querySelector('.sortbtn')){th.dataset.dir=m[2]==='asc'?'desc':'asc';setTimeout(()=>th.click(),0);}}
 /* the footer's command is the view's: grouping, one chip of a kind (the CLI takes one) and the period */
 const term=document.querySelector('[data-elsewhere=term] code');
-function viewCmd(){if(!term)return;const q=new URLSearchParams(location.search),a=['evh arms'];const g=q.get('group');
+function viewCmd(){if(!term)return;const q=new URLSearchParams(location.search),a=['evh arm-list'];const g=q.get('group');
 if(g&&g!=='set')a.push('--by '+(g==='scored'?'scored':g));
 const only={};(q.get('only')||'').split(',').filter(Boolean).forEach(x=>{const i=x.indexOf(':');(only[x.slice(0,i)]=only[x.slice(0,i)]||[]).push(x.slice(i+1));});
 const flag={where:'where',tier:'tier',weights:'weights',quality:'quality'},val={quality:{'a contender':'contender','below the leader':'below'}};

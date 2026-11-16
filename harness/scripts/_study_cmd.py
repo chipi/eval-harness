@@ -4,7 +4,7 @@
     evh study-ask STUDY                                          the state for the agent sampler, with an ask id
     evh study-tell STUDY --ask ID --proposal FILE               the agent's proposal run as the next trial
     evh study-stop STUDY                                         the loop stops after its trial; the study ends
-    evh studies [--goal G]  ·  evh studies --study STUDY         what the logs say
+    evh study-list G  ·  evh study-show STUDY ID         what the logs say
     evh study-confirm STUDY --test D --rule superiority|noninferiority [--trial K] [--dry-run]
     evh study-import FILE --goal G --study ID                   Karpathy's results.tsv as a closed study
 
@@ -26,6 +26,7 @@ import yaml
 from evaluation_harness import _jsonout, _store, _study
 from evaluation_harness._common import die, evh_prog
 from evaluation_harness.model import studies as model_studies
+from evaluation_harness.model.entity import Problem
 
 
 def _ap(desc: str) -> argparse.ArgumentParser:
@@ -251,7 +252,7 @@ def stop(argv: list[str]) -> int:
 
 
 def _one(study: str) -> None:
-    """`evh studies --study`: one study, as its log says."""
+    """`evh goal-list --study`: one study, as its log says."""
     goal, sid = model_studies.resolve(study)
     st = model_studies.state(goal, sid)
     print(
@@ -273,7 +274,7 @@ def _one(study: str) -> None:
 
 
 def studies(argv: list[str]) -> int:
-    """evh studies: every study, by goal; or one, as its log says."""
+    """evh goal-list: every study, by goal; or one, as its log says."""
     ap = _ap("every study, by goal; or one with --study, as its log says (RFC-029)")
     ap.add_argument("--goal")
     ap.add_argument("--study", help="one study (GOAL/ID): each trial, the best so far, its confirmations")
@@ -422,13 +423,10 @@ def _confirm(a: argparse.Namespace, require_named: Any) -> int:
                 "failed",
             )
         runs[cid] = rids
-    argv = ["pair-test", "--dataset-id", a.test, "--a", trial_cid, "--b", base_cid, "--metric", metric,
-            "--look-level", repr(level), "--json", "--asc" if lower else "--desc"]  # fmt: skip
-    argv += ["--margin", repr(margin)] if margin is not None else []
-    r = _study._evh(argv)
-    if r.returncode != 0:
-        die(f"pair-test refused: {(r.stderr.strip().splitlines() or ['?'])[-1]}", "failed")
-    v = (json.loads(r.stdout).get("result") or {}).get("values") or {}
+    try:
+        v = _study.pair_test(a.test, trial_cid, base_cid, metric, lower, margin, float(level))
+    except Problem as exc:
+        die(f"pair-test refused: ERROR ({exc.kind}): {exc}", "failed")
     lv = v.get("look") or {}
     if not can:
         outcome = "inconclusive"

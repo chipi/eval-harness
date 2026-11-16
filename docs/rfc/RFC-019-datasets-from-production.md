@@ -94,7 +94,7 @@ any public surface.
   every record against the rule, records it (`sample`: rate, seed, read, kept), and a continued capture keeps it.
 - **`evh capture-scrub C --command "... {records}"`** runs the project's own scrubber, re-hashes, and records the
   command and its files' hashes.
-- **`evh captures`** lists the captures. **V17** checks every record against its hash.
+- **`evh capture-list`** lists the captures. **V17** checks every record against its hash.
 - **Commit before running.** Untracked captures and sources mark runs dirty, so they are committed before any
   billed run.
 
@@ -116,7 +116,7 @@ any public surface.
   - the catalog;
   - the inspector's API;
   - the MCP tools;
-  - `evh dataset-items` and `evh inspect` under `EVH_PUBLIC`;
+  - `evh dataset-items` and `evh comparison-show` under `EVH_PUBLIC`;
   - and a deployment's data copy, which moves from `render.sh` into a Python module.
 - **A marker test** fails if any surface leaks.
 - **It also closes two holes.** The MCP `inspect --where/--by` hole on hidden fields was closed in 0.6.0's first
@@ -153,7 +153,7 @@ any public surface.
 
 - **The datasets page** groups and filters on tags, says where a dataset came from, and puts a version's profile
   beside its parent's.
-- **`evh captures`**, and the read-only MCP tool of the same name.
+- **`evh capture-list`**, and the read-only MCP tool of the same name.
 - **The writing commands are not MCP tools** until 0.8.0's declarations and consent.
 
 ### 8. The triage fleet, end to end (the acceptance case)
@@ -178,7 +178,7 @@ The data, the references, the arms and the cost are in the application plan (`re
 **What round 1 showed, and did not** (2026-10-31; the numbers in `research/internal/TRIAGE_RESULTS_LIVE.md`, its
 table generated from the harness). The lane works end to end: capture, dataset, gold, every arm replayed, scored
 and compared in the catalog. The comparison decides nothing yet: on 65 decisions the paired test finds no arm
-under the ceiling significantly different from the leader (`evh goals` names all 39 as contenders, the always-dismiss stub among them). The
+under the ceiling significantly different from the leader (`evh goal-list` names all 39 as contenders, the always-dismiss stub among them). The
 ceiling was set after the results and sits within one or two false alarms of 18 rows. 20 of the 65 gold labels are
 production's own decision, accepted by the owner after a model of the Anthropic family agreed with it. A no-decision
 replay scores as an escalation, a path production does not have. How large the gold must be, and how a no-decision
@@ -241,7 +241,7 @@ What the build changed or added beyond the third draft, each in the code and its
   refuses a release carrying untracked reference texts or run outputs.
 - **Item ids** may contain `:`, `@`, `+` and `=` (a record's id is often a fingerprint and a time).
 - **Dataset tags on the views**: the datasets page groups by tag key and names a capture-made dataset's origin;
-  `evh datasets --tag` filters.
+  `evh dataset-list --tag` filters.
 - **A capture keeps the window it records** (found by the first live continuation, 2026-11-01: the triage
   importer ignored `since`, and a capture that said it began on 29 October held three test signals from August).
   `evh capture` names every record outside `[since, until)` and writes nothing; `--late` keeps records older than

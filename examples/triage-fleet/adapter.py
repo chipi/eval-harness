@@ -65,7 +65,7 @@ METRIC_DIRECTIONS = {
     "model_false_alarm": "lower",
     "model_escalated": "lower",
 }
-#: What each metric measures (the catalog's metric pages and `evh metrics`), from score() and run() below.
+#: What each metric measures (the catalog's metric pages and `evh metric-list`), from score() and run() below.
 METRIC_DESCRIPTIONS = {
     "triage_cost": {
         "summary": "One decision's cost: 5 for a missed real problem, 1 for a false alarm, 0 when right; lower is better."

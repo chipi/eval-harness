@@ -6,7 +6,7 @@ project's included.
     data/faithfulness/<model_id>/<n>.json              the record, never edited
     data/faithfulness/<model_id>/<n>.exceptions.jsonl  the disagreements a person named (appended: who, when, cause)
 
-A version's faithfulness, the summary the Models page and `evh models` show, is read from these records and never kept
+A version's faithfulness, the summary the Models page and `evh model-list` show, is read from these records and never kept
 in the model record: the newest record that replayed the version's commit says (`summaries`).
 """
 

@@ -226,13 +226,13 @@ def self_check() -> list:
     """Each rule must fire on a line that breaks it, and stay quiet on one that does not:
     a checker that reports nothing proves nothing until it is shown to report something."""
     cases = [
-        ("evh pair-test --dataset-id x --nope", True),
+        ("evh pair-test x --nope", True),
         ("evh nosuch", True),
         ("make nosuch-target", True),
         ('make dataset-create DATASET_ID=x ARGS="--nope"', True),
         ("make leaderboard NOSUCHVAR=1", True),
         ('make dataset-create DATASET_ID=x ARGS="--fieldset t"', False),
-        ("evh leaderboard --dataset-id x --sort overlap_f1", False),
+        ("evh leaderboard x --sort overlap_f1", False),
         ("make -C harness ci", False),
     ]
     bad = [

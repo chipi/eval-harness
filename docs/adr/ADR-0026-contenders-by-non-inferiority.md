@@ -31,7 +31,7 @@ first runs) showed the shifted sign-flip test rejecting up to 30% at a nominal 2
 - **A strategy is a default margin** (owner): `quality_first` 0 (the same quality only), `balanced` 5% of the
   leader's mean, `frugal` 10%. A goal's `axes.quality.margin`, in the measure's units, always wins. 2% admitted
   only the leader on every committed goal; 10% as the general default admitted 25 on dbpedia.
-- **Every test is visible:** the decision names the margin and where it came from; `evh goals` and the goal
+- **Every test is visible:** the decision names the margin and where it came from; `evh goal-list` and the goal
   page show each arm's contender test (p, its Holm threshold, shown or not, or too few); `evh validate` notes each
   goal on a default margin.
 

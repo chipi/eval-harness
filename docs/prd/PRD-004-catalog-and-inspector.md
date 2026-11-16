@@ -65,8 +65,8 @@ adapter file ([ADR-0002](../adr/ADR-0002-catalog-inspector-goals.md),
 - _As a reviewer, I am told when the arms I compare ran under different conditions (scorer,
   reference bytes, machine), before I read the test._
 - _As a terminal user, I can get the inspector's comparison with
-  `evh inspect --runs a,b`, and every page with `evh datasets`, `evh references`, `evh metrics`,
-  `evh goals`, `evh arms` and `evh activity`._
+  `evh comparison-show --runs a,b`, and every page with `evh dataset-list`, `evh reference-list`, `evh metric-list`,
+  `evh goal-list`, `evh arm-list` and `evh activity-show`._
 - _As a person working with an agent, I can ask it which arm a goal recommends and why, and it
   answers from the same table and paired test the catalog shows, without being able to change
   anything._
@@ -152,7 +152,7 @@ adapter file ([ADR-0002](../adr/ADR-0002-catalog-inspector-goals.md),
   measured from different runners (RFC-021).
 - **FR2.6** (0.6.0): A label set can be what arms are scored against; the item view shows every label
   with its source; `--disagree` keeps the items where the chosen arms decided differently; and the sheet
-  (`evh inspect --sheet --dataset-id D --runs …`) shows the items down and a column per arm across, with what each
+  (`evh sheet-show D --runs …`) shows the items down and a column per arm across, with what each
   wrote, its scores, the labels, the winner, the signals (wrong, disagree, split, new, unlabelled) as filters and
   sorts, and a footer per arm. A selection of rows gives the `evh pick` and `evh label-sheet` commands, and its CSV
   downloads; the page writes nothing (PRD-014 FR8).
@@ -173,9 +173,9 @@ adapter file ([ADR-0002](../adr/ADR-0002-catalog-inspector-goals.md),
 ### FR4: Command-line parity
 
 - **FR4.1**: Every page and comparison is also a command that asks the same adapter and computes
-  with the same functions: `evh overview` (the home dashboard), `evh activity`, `evh datasets`,
-  `evh arms` (`--by`, `--where`, `--tier`, `--systems`), `evh references`, `evh metrics`,
-  `evh goals`, `evh search`, `evh inspect` (its comparison, `--analysis`, `--item`, `--sheet`)
+  with the same functions: `evh overview-show` (the home dashboard), `evh activity-show`, `evh dataset-list`,
+  `evh arm-list` (`--by`, `--where`, `--tier`, `--systems`), `evh reference-list`, `evh metric-list`,
+  `evh goal-list`, `evh search`, `evh comparison-show` (its comparison, `--analysis`; `comparison-item`, `sheet-show`)
   ([UXS-003](../uxs/UXS-003-cli-and-onboarding.md)); every list takes `--period P` and prints the
   page's period columns, from the same builder the page reads.
 - **FR4.2**: New views and actions are added to both. A decision the pages suggest is shown as
@@ -208,7 +208,7 @@ adapter file ([ADR-0002](../adr/ADR-0002-catalog-inspector-goals.md),
 - The catalog and the inspector pass the headless browser check (`make browser-check`) and the
   catalog tests (`harness/tests/test_catalog.py`).
 - Both deployed sites pass a content security policy with no inline script or style.
-- An MCP client gets the same JSON from `datasets` as `evh datasets --json` prints, and every tool is
+- An MCP client gets the same JSON from `datasets` as `evh dataset-list --json` prints, and every tool is
   annotated read-only (`harness/tests/test_mcp_server.py`, `test_mcp_http.py`).
 
 ## Related Documents

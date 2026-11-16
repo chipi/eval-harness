@@ -101,11 +101,7 @@ def commit(msg):
 
 def looks_of():
     r = evh("looks", "--dataset", "tk_v1_test", "--json")
-    sets = (
-        (json.loads(r.stdout).get("result") or {}).get("values", {}).get("sets", [])
-        if r.returncode == 0
-        else []
-    )
+    sets = (json.loads(r.stdout).get("result") or {}).get("sets", []) if r.returncode == 0 else []
     return sets[0] if sets else {}
 
 
@@ -211,7 +207,7 @@ try:
     check("setup: the test side's gold", g.returncode == 0, (g.stdout + g.stderr)[-400:])
     r1 = evh("run", "--system", "base_v1", "--dataset", "tk_v1_test")
     r2 = evh("run", "--system", "cand_v1", "--dataset", "tk_v1_test")
-    pt = evh("pair-test", "--dataset-id", "tk_v1_test", "--a", "cand_v1", "--b", "base_v1")
+    pt = evh("pair-test", "tk_v1_test", "--a", "cand_v1", "--b", "base_v1")
     check(
         "pair-test on a test set: 'nominal, not a look', and the next look's level",
         r1.returncode == r2.returncode == 0 and pt.returncode == 0 and "nominal, not a look" in pt.stdout,
@@ -296,13 +292,13 @@ try:
         (ro.stderr[-300:], rc1.stderr[-300:], rc2.stdout[-300:], rc2.stderr[-300:], ev.get("look")),
     )  # fmt: skip
 
-    # The goal's page and `evh goals` say the test set's looks.
-    gv = evh("goals", "--goal", "g")
+    # The goal's page and `evh goal-list` say the test set's looks.
+    gv = evh("goal-leaderboard", "g")
     cat = evh("catalog")
     page = (proj / ".build" / "catalog" / "g" / "g.html").read_text() if cat.returncode == 0 else ""
     line = "test set: 4 look(s) of 2; a decision here is look 5"
     check(
-        "the goal's page and evh goals: the test set's looks, its limit and the next look's level",
+        "the goal's page and evh goal-list: the test set's looks, its limit and the next look's level",
         line in gv.stdout and line in page,
         (gv.stdout[-500:], cat.stderr[-300:]),
     )

@@ -238,7 +238,7 @@ def test_score_handles_absent_reference() -> None:
 
 
 def test_compare_refuses_cross_dataset() -> None:
-    r = run("scripts/compare_runs.py", "--baseline", "nope_a", "--candidate", "nope_b")
+    r = run("scripts/cli.py", "run-compare", "--baseline", "nope_a", "--candidate", "nope_b")
     check("compare: unknown run is an error", r.returncode != 0)
 
 
@@ -266,21 +266,14 @@ def test_cli_help_works() -> None:
         "dataset_create",
         "materialize",
         "run",
-        "compare_runs",
         "promote_baseline",
-        "validate_tree",
-        "list_runs",
         "reference_promote",
         "reference_manifest",
-        "leaderboard",
         "sweep",
         "env_check",
         "holdout_significance",
-        "pair_test",
-        "family_test",
         "classification_report",
         "bootstrap_test",
-        "rank_stability",
         "extraction_report",
         "retrieval_report",
         "rescore",
@@ -291,6 +284,20 @@ def test_cli_help_works() -> None:
     ):
         r = run(at(f"{script}.py"), "--help")
         check(f"{script}.py --help", r.returncode == 0, r.stderr.strip()[:80])
+    # the reads that were scripts of their own are operations: their command's help
+    for command in (
+        "run-compare",
+        "validate",
+        "runs-list",
+        "leaderboard",
+        "pair-test",
+        "family-test",
+        "rank-stability",
+    ):
+        r = run(at("cli.py"), command, "--help")
+        check(
+            f"evh {command} --help", r.returncode == 0 and f"evh {command}" in r.stdout, r.stderr.strip()[:80]
+        )
 
 
 def test_metric_direction_is_not_always_up() -> None:
@@ -767,7 +774,11 @@ def test_example_scorer_suites_pass() -> None:
         ("test_p_cache.py", "the on-disk p cache: the same p, read back by a fresh process"),
         ("test_mcp_http.py", "evh mcp --http: health, Host check, --public, --rate, hooks"),
         ("test_mcp_answers.py", "evh mcp --write-answers and --answers: a release's answers written ahead"),
-        ("test_mcp_cancel.py", "evh mcp: a cancelled call stops the command it started"),
+        ("test_mcp_cancel.py", "evh mcp: a cancelled call stops being waited for and gives its slot back"),
+        (
+            "test_mcp_in_process.py",
+            "evh mcp: a read is answered in the server's own process, no command started",
+        ),
         ("test_help_names.py", "every evh <command> --help names the command, not its script"),
         (
             "test_exit_codes.py",
@@ -833,7 +844,7 @@ def test_example_scorer_suites_pass() -> None:
         ),
         (
             "test_triage_results_doc.py",
-            "the triage results table is the harness's, and evh goals prints a dataset's notes",
+            "the triage results table is the harness's, and evh goal-leaderboard prints a dataset's notes",
         ),
         (
             "test_runs_location.py",
@@ -843,7 +854,7 @@ def test_example_scorer_suites_pass() -> None:
             "test_fingerprint_v5.py",
             "fingerprint v5: the parts and their hashes, the runner outside the hash, the deployment sources, the migration, run-compare",
         ),
-        ("test_catalog_models.py", "the Models page, a page per model, the arms badge, evh models"),
+        ("test_catalog_models.py", "the Models page, a page per model, the arms badge, evh model-list"),
         (
             "test_site_releases.py",
             "the site's release notes: nested bullets, bold holding code and italics, code never emphasis",
@@ -1166,7 +1177,7 @@ def test_example_scorer_suites_pass() -> None:
         ),
         (
             "test_tags.py",
-            "failure modes: a tag sheet from inspect, its import as a tag set, evh tags counts per arm; refusals",
+            "failure modes: a tag sheet from sheet-export, its import as a tag set, evh tag-set-list counts per arm; refusals",
         ),
         (
             "test_picks.py",
@@ -1178,7 +1189,7 @@ def test_example_scorer_suites_pass() -> None:
         ),
         (
             "test_inspect_crosstab.py",
-            "evh inspect --crosstab (two per-item scores by a recorded field, the off-diagonal items named) and --items-out (each run's whole output beside the reference), on the triage runs",
+            "evh comparison-crosstab (two per-item scores by a recorded field, the off-diagonal items named) and comparison-items (each run's whole output beside the reference), on the triage runs",
         ),
         (
             "test_sheet_import.py",
@@ -2095,8 +2106,8 @@ def test_adapter_declaration_beats_a_stale_run() -> None:
 
         # --wide: every metric column, so the order of the kinds is what is read, not the terminal's width.
         r = run(
-            "scripts/leaderboard.py",
-            "--dataset-id",
+            "scripts/cli.py",
+            "leaderboard",
             str(dataset_id),
             "--wide",
             env={"EVAL_DATA_DIR": str(data)},
@@ -2470,8 +2481,8 @@ def test_the_reports_significance_counts_are_real() -> None:
         for d in sorted(reparsed.glob("sf_*_n200_v1_20260928*")):
             add_run(data, d)
         r = run(
-            "scripts/family_test.py",
-            "--dataset-id",
+            "scripts/cli.py",
+            "family-test",
             "scifact_200",
             "--a",
             "sf_glm_s_v1",
@@ -2721,7 +2732,7 @@ def test_rank_stability_ranks_the_right_way_up() -> None:
                 ],
             )
         r = subprocess.run(
-            [PY, str(HERE / "rank_stability.py"), "--dataset-id", "rd_v1", "--draws", "20"],
+            [PY, str(HERE / "cli.py"), "rank-stability", "rd_v1", "--draws", "20"],
             capture_output=True,
             text=True,
             env={**os.environ, "EVAL_HOME": str(tmp), "EVAL_DATA_DIR": "data"},
@@ -3182,8 +3193,8 @@ def test_family_test_cache_never_serves_a_stale_answer() -> None:
         write(root, "c_x", [1, 1, 1, 1, 0, 1, 1, 1])
         env = {"EVAL_HOME": td}
         argv = (
-            "scripts/family_test.py",
-            "--dataset-id",
+            "scripts/cli.py",
+            "family-test",
             "tds",
             "--a",
             "a_x",
@@ -3220,8 +3231,8 @@ def test_family_test_cache_never_serves_a_stale_answer() -> None:
 
         env = {"EVAL_HOME": str(proj), "EVAL_DATA_DIR": ""}
         gargv = (
-            "scripts/family_test.py",
-            "--dataset-id",
+            "scripts/cli.py",
+            "family-test",
             "tds",
             "--a",
             "a_x",
@@ -3426,8 +3437,8 @@ def test_a_project_elsewhere_imports_runs_and_tests_them() -> None:
     )
 
     pt = run(
-        "scripts/pair_test.py",
-        "--dataset-id",
+        "scripts/cli.py",
+        "pair-test",
         "proj_v1",
         "--a",
         "arm_lo",
@@ -3444,8 +3455,8 @@ def test_a_project_elsewhere_imports_runs_and_tests_them() -> None:
         pt.stdout[-300:],
     )
     ft = run(
-        "scripts/family_test.py",
-        "--dataset-id",
+        "scripts/cli.py",
+        "family-test",
         "proj_v1",
         "--a",
         "arm_lo",
@@ -3519,7 +3530,7 @@ def test_hints_name_the_command_the_user_has() -> None:
         created = evh("dataset-create", "--dataset-id", "h_v1", "--source-dir", "data/sources/h_v1")
         base = evh("baselines")
         none = evh("runs-list")
-        missing = evh("leaderboard", "--dataset-id", "nope_v1")
+        missing = evh("leaderboard", "nope_v1")
         direct = script(
             "dataset_create.py", "--dataset-id", "h_v1", "--source-dir", "data/sources/h_v1", "--force"
         )
@@ -3925,7 +3936,6 @@ def test_judge_score_runs_from_an_installed_package() -> None:
                 "-m",
                 "evaluation_harness",
                 "leaderboard",
-                "--dataset-id",
                 "jds_v1",
                 "--label",
                 "judged/judge-fake-v1",

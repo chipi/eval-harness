@@ -174,7 +174,7 @@ git add -A && git commit -qm "briefs_v1: dataset, gold, adapter, systems"
 evh run --system briefs_lead1_v1 --dataset briefs_v1 --goal brief_summary
 evh run --system briefs_t5_small_v1 --dataset briefs_v1 --goal brief_summary --repeat 3
 evh run --system briefs_flan_t5_small_v1 --dataset briefs_v1 --goal brief_summary --repeat 3
-evh leaderboard --dataset-id briefs_v1
+evh leaderboard briefs_v1
 ```
 
 Without sampling (`do_sample=False`) a local model on one machine usually gives the same output
@@ -190,8 +190,8 @@ You named the question before you looked: does the model beat the baseline?
 
 <!-- guide-check: skip -->
 ```bash
-evh pair-test --dataset-id briefs_v1 --a briefs_flan_t5_small_v1 --b briefs_lead1_v1
-evh family-test --dataset-id briefs_v1 --a briefs_flan_t5_small_v1 --against briefs_
+evh pair-test briefs_v1 --a briefs_flan_t5_small_v1 --b briefs_lead1_v1
+evh family-test briefs_v1 --a briefs_flan_t5_small_v1 --against briefs_
 evh run-promote --run <run_id> --reason "<what the tests showed, and what it costs>"
 ```
 

@@ -6,7 +6,7 @@
 In a throwaway project built from the tutorial ($0, offline): a run's outputs become a `model` set, with the
 refusals of a reference's provenance (a clean, finished run); a sheet of the items to label (unlabelled, all, where two runs disagree, chosen
 ones, with a proposal) and its import as a `person` set (`yes` takes the proposal, notes kept); a set is never
-edited; a capture's outcomes become a `rule` set by the mapping; `evh labels` lists the sets, their coverage and
+edited; a capture's outcomes become a `rule` set by the mapping; `evh dataset-list` lists the sets, their coverage and
 how often two agree; and labels follow an item by its sha256 into another dataset holding it.
 """
 
@@ -341,10 +341,10 @@ try:
     )
     (proj / "one.csv").write_text("item_id,label\nt01_login,escalate\nt02_invoice,file\n")
     evh("label-import", "one.csv", "--dataset-id", "tickets_v1", "--set", "one_v1", "--by", "owner")
-    r = evh("labels", "--dataset-id", "tickets_v1", "--json")
+    r = evh("label-set-list", "tickets_v1", "--json")
     pairs = {
         frozenset((p["a"], p["b"])): p
-        for p in (json.loads(r.stdout) if r.returncode == 0 else {}).get("agreement", [])
+        for p in (json.loads(r.stdout)["result"] if r.returncode == 0 else {}).get("agreement", [])
     }
     p = pairs.get(frozenset(("tickets_v1/one_v1", "tickets_v1/several_v1")), {})
     check(
@@ -352,9 +352,9 @@ try:
         p.get("both") == 2 and p.get("same") == 0 and p.get("share") == 1 and "agree" not in p,
         str(p) + r.stdout[-300:],
     )
-    r = evh("labels", "--dataset-id", "tickets_v1", "--confusion")
+    r = evh("label-set-list", "tickets_v1")
     check(
-        "labels --confusion: each pair's matrix, the first set's labels down",
+        "label-set-list: each pair's matrix, the first set's labels down",
         r.returncode == 0 and "escalate or file" in r.stdout and "Cohen's kappa" in r.stdout,
         r.stdout[-600:],
     )
@@ -448,8 +448,8 @@ try:
     )
 
     # ── labels ───────────────────────────────────────────────────────────────────────────
-    r = evh("labels", "--dataset-id", "tickets_v1", "--json")
-    v = json.loads(r.stdout) if r.returncode == 0 else {}
+    r = evh("label-set-list", "tickets_v1", "--json")
+    v = json.loads(r.stdout)["result"] if r.returncode == 0 else {}
     pair: dict = next(
         (
             p
@@ -459,14 +459,15 @@ try:
         {},
     )
     check(
-        "labels --dataset-id: each set's coverage; two sets of written summaries are free text, not compared as text",
-        sorted((s["set"], len(s["items"])) for s in v.get("sets", [])) == [("author_v1", 6), ("owner_v1", 3)]
+        "label-set-list: each set's coverage; two sets of written summaries are free text, not compared as text",
+        sorted((s["set"], len(s["items"])) for s in v.get("coverage", []))
+        == [("author_v1", 6), ("owner_v1", 3)]
         and pair == {"a": pair.get("a"), "b": pair.get("b"), "both": 3, "kind": "free text"},
         r.stdout[-400:],
     )
-    r = evh("labels")
+    r = evh("label-set-list", "tickets_v1")
     check(
-        "labels: every set, with its source",
+        "label-set-list: every set, with its source",
         "tickets_v1/owner_v1: person · owner" in r.stdout and "model · " in r.stdout,
         r.stdout[-300:],
     )
@@ -481,12 +482,12 @@ try:
         "--from",
         "tickets_v1",
     )
-    r2 = evh("labels", "--dataset-id", "tickets_v2", "--json")
-    v2 = json.loads(r2.stdout) if r2.returncode == 0 else {}
+    r2 = evh("label-set-list", "tickets_v2", "--json")
+    v2 = json.loads(r2.stdout)["result"] if r2.returncode == 0 else {}
     check(
         "labels follow the item: a new version with the same items has v1's labels",
         r.returncode == 0
-        and sorted((s["set"], len(s["items"])) for s in v2.get("sets", []))
+        and sorted((s["set"], len(s["items"])) for s in v2.get("coverage", []))
         == [("author_v1", 6), ("owner_v1", 3)],
         out(r)[-200:] + r2.stdout[-300:],
     )
@@ -503,9 +504,9 @@ try:
         "--from",
         "tickets_v1",
     )
-    r = evh("labels", "--dataset-id", "tickets_v3", "--json")
-    v3 = json.loads(r.stdout) if r.returncode == 0 else {}
-    cover = {s["set"]: s["items"] for s in v3.get("sets", [])}
+    r = evh("label-set-list", "tickets_v3", "--json")
+    v3 = json.loads(r.stdout)["result"] if r.returncode == 0 else {}
+    cover = {s["set"]: s["items"] for s in v3.get("coverage", [])}
     check(
         "an edited item's labels do not follow it",
         len(cover.get("author_v1", [])) == 5 and first.stem not in cover.get("author_v1", []),
@@ -692,7 +693,7 @@ try:
         "--reference-id",
         "silver/tickets_v1_author",
     )
-    r = r if r.returncode else evh("leaderboard", "--dataset-id", "tickets_v1", "--label", "silver")
+    r = r if r.returncode else evh("leaderboard", "tickets_v1", "--label", "silver")
     check(
         "scored against it, the author arm is marked as graded against its own answers",
         r.returncode == 0
@@ -796,7 +797,7 @@ try:
 
     def inspected(*extra):
         r = evh(
-            "inspect",
+            "comparison-show",
             "--runs",
             "tickets_lead1_v1,repeats/tickets_v1/tickets_lead1_v1",
             "--metric",
@@ -804,22 +805,18 @@ try:
             "--json",
             *extra,
         )
-        rows = [
-            x
-            for b in (json.loads(r.stdout)["result"]["blocks"] if r.returncode == 0 else [])
-            for x in b.get("rows", [])
-        ]
+        rows = json.loads(r.stdout)["result"]["rows"] if r.returncode == 0 else []
         return r, rows
 
-    r, dis_rows = inspected("--disagree")
+    r, dis_rows = inspected("--disagree", "1")
     check(
-        "inspect --disagree: only the items where the arms' outputs are not the same decision",
+        "comparison-show --disagree: only the items where the arms' outputs are not the same decision",
         r.returncode == 0 and [x["n"] for x in dis_rows] == [len(changed)],
         out(r)[-400:],
     )
     r, dis_rows = inspected()
     check(
-        "inspect without --disagree: every item",
+        "comparison-show without --disagree: every item",
         r.returncode == 0 and [x["n"] for x in dis_rows] == [6],
         out(r)[-300:],
     )
@@ -917,7 +914,7 @@ try:
     )
     for d in made:
         _runstore.rmtree(proj, f"runs/{d}")
-    r = evh("goals", "--goal", "tickets_summary")
+    r = evh("goal-leaderboard", "tickets_summary")
     group = (
         out(r).split("labels/tickets_v1/author_v1", 1)[1] if "labels/tickets_v1/author_v1" in out(r) else ""
     )

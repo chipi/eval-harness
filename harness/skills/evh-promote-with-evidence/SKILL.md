@@ -28,7 +28,7 @@ The blocks run as written on the tutorial kit after `evh-evaluate-a-system`.
 Find the run (its id from `evh run`, or the list), then promote it:
 
 ```evh
-RUN=$(evh runs-list --json | python3 -c 'import json,sys; rows=[r for b in json.load(sys.stdin)["result"]["blocks"] for r in b.get("rows", [])]; print(next(r["run_id"] for r in rows if r.get("system_id") == "tickets_lead2_v1"))')
+RUN=$(evh runs-list --json | python3 -c 'import json,sys; rows=json.load(sys.stdin)["result"]["runs"]; print(next(r["run_id"] for r in rows if r.get("system_id") == "tickets_lead2_v1"))')
 EVH_ACTOR=agent:assistant EVH_FOR=person:operator evh run-promote --run "$RUN" --reason "operator asked for a working baseline: lead2 is closest to the author's silver on all six tickets but not significantly different from lead1 at n=6 (pair-test p > 0.05); kept until the dataset grows"
 git add -A && git commit -qm "tickets_v1: baseline" --allow-empty
 ```

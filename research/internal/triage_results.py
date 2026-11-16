@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """The table in TRIAGE_RESULTS_LIVE.md, generated from the harness: the triage goal's rows exactly as the
-catalog and `evh goals --goal triage_orrery` rank them (one row per arm, a re-score standing in for the run
+catalog and `evh goal-leaderboard triage_orrery` rank them (one row per arm, a re-score standing in for the run
 it re-read), with the arms' other measures beside them. Only the text between the two markers is rewritten;
 the notes around it are written by hand.
 

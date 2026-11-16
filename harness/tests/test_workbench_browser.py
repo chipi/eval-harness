@@ -13,7 +13,7 @@ Served from a static server on a free port, with Chromium:
     on Space without scrolling the page;
   - round r4's results fit a desktop screen, each arm on its own Linux re-run (bart_l carried, read through its own),
     the round's answer in one line above them;
-  - r4's verdicts are `evh rounds`': each arm against the leader, Holm across the arms in play, so a retire narrows
+  - r4's verdicts are `evh round-list`': each arm against the leader, Holm across the arms in play, so a retire narrows
     it; the commands carry the round (--keep, round: r4);
   - a retire's reason is a sentence, an empty or one-word one an error tied to its field;
   - Close needs a sentence, as round-close does; its confirm is an alertdialog, and Escape backs out of it;
@@ -258,7 +258,7 @@ def check_round(browser, base: str) -> None:
 
 
 def check_verdicts_and_reading(browser, base: str) -> None:
-    """r4's verdicts are `evh rounds`': every arm in play against the round's leader (bart_l), Holm across them
+    """r4's verdicts are `evh round-list`': every arm in play against the round's leader (bart_l), Holm across them
     (rounds.evidence; stats.holm reports a raw p and its threshold). bart_s, raw p 0.0158, is third of four and under
     its 0.025; a Bonferroni reading once shown here called it not significant. Retiring bart_m leaves three, and bart_s's
     threshold is then 0.05. r1 sorts; an opened command stays open; Escape closes an arm's panel; on a phone the rail is
@@ -276,7 +276,7 @@ def check_verdicts_and_reading(browser, base: str) -> None:
     )
     bart_s = next((r for r in rows if r.startswith("bart_s:")), "")
     check(
-        "workbench: r4's verdicts are evh rounds' (bart_s significantly worse: raw p 0.0158 under its Holm threshold 0.025)",
+        "workbench: r4's verdicts are evh round-list' (bart_s significantly worse: raw p 0.0158 under its Holm threshold 0.025)",
         "significantly worse" in bart_s
         and "raw p 0.0158 · threshold 0.025" in bart_s
         and any("not significantly different" in r for r in rows),
@@ -291,7 +291,7 @@ def check_verdicts_and_reading(browser, base: str) -> None:
     )
     bart_s = next((r for r in rows if r.startswith("bart_s:")), "")
     check(
-        "workbench: a retire narrows r4's Holm family, as evh rounds leaves the retired out (bart_s's threshold 0.05)",
+        "workbench: a retire narrows r4's Holm family, as evh round-list leaves the retired out (bart_s's threshold 0.05)",
         "threshold 0.05" in bart_s
         and any(r.startswith("bart_m:") and "retired: not tested" in r for r in rows)
         and "across the 3" in page.locator(".cmpnote").inner_text(),

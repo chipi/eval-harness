@@ -1,5 +1,5 @@
 """What each metric measures, as data (RFC-032 step 8): which way is better, what it is, where it is recorded, the goals
-that decide on it or weigh it, and, for one metric, the arms recording it, best first. `evh metrics`, the metric pages'
+that decide on it or weigh it, and, for one metric, the arms recording it, best first. `evh metric-list`, the metric pages'
 numbers and `GET /metrics` read it."""
 
 from __future__ import annotations

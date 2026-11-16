@@ -64,6 +64,8 @@ VIEWS: list[tuple[str, dict]] = [
     ("activity-show", {}),
     ("scorer-list", {}),
     ("model-list", {}),
+    ("leaderboard", {"dataset": DS}),
+    ("capture-list", {}),
 ]
 
 

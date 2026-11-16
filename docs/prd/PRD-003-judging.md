@@ -57,7 +57,7 @@ and step 10 of the [GUIDE](../GUIDE.md).
 - _As a reviewer, I can see each judge's score, their agreement, and whether an arm shares a
   judge's vendor family._
 - _As an engineer, I can read judged runs with the usual commands
-  (`EVAL_RUNS_DIR=data/runs-judged/<scorer> evh leaderboard --dataset-id …`)._
+  (`EVAL_RUNS_DIR=data/runs-judged/<scorer> evh leaderboard …`)._
 
 ## Functional Requirements
 

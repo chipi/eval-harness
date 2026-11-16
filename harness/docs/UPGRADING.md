@@ -10,6 +10,17 @@ correctness bugs, not just missing features.
 - **Before the release**, a pin on a commit of the 0.8.0 branch installs `0.8.0.dev0`, the version every commit of it
   carries until the release: moving such a pin from one commit to another takes `pip install --force-reinstall`, as
   pip keeps an installed copy of the same version.
+- **The legacy read commands and MCP tools are gone, no alias** (RFC-032 step 9). A script, a Makefile, a skill or an
+  agent's configuration that runs the commands `overview`, `activity`, `arms`, `datasets`, `references`, `metrics`, `goals`,
+  `rounds`, `inspect`, `labels`, `tags`, `captures`, `models`, `prompts`, `studies` or `label-coverage`, or that
+  calls an MCP tool of one of those names, takes the operation instead: the CHANGELOG's 0.8.0 "Changed" entry lists
+  each with its replacement (`goals --goal G` is `evh goal-leaderboard G`; `inspect --runs A,B` is `evh
+  comparison-show --runs A,B`; `inspect --sheet --dataset-id D --runs A,B` is `evh sheet-show D --runs A,B`, and
+  with `--csv` it is `evh sheet-export --dataset-id D --runs A,B --csv FILE`). The reads that kept their name take the
+  dataset, system or model as their argument (`evh leaderboard D`, `evh deploy-sheet S`, `evh periods M`), and what
+  they print in `--json` is the operation's structured result (`result.runs` for `runs-list`, `result.sets` for
+  `looks`, `result.schema` and `result.baselines` for `baselines`). MCP clients: a tool is named as its operation, and
+  takes the operation's inputs.
 - **Run `evh migrate` once** (`--dry-run` first shows what each step will do, running the real steps on a copy of the data
   under the project's `.build/`, as large as the data while it runs and deleted after; a second run changes nothing). It
   brings the data to format 7 and records it in `data/project.yaml` (RFC-032): from 0.8.0 a project's data has a
@@ -35,7 +46,7 @@ correctness bugs, not just missing features.
     its first check; each of the record's `smokes` becomes a check of the deployment its arm's config names (or the
     model's only deployment). A smoke whose deployment is neither is refused before anything is written, naming the
     config: set its `deployment:` and migrate again. The model record keeps its comments and loses only those two
-    keys. `evh models` and the catalog's model pages read the same as before.
+    keys. `evh model-list` and the catalog's model pages read the same as before.
   - *systems* (RFC-032 step 3, format 3): each config becomes a system, `<folder>/<system_id>.yaml` (a folder named
     `configs` becomes `systems`: `data/systems/`, and the folders validate.json's `systems` globs name, which were its
     `configs` globs; config.yaml's `configs:` folders are added to them), with `system_id` and without `dataset_id`,
@@ -78,7 +89,7 @@ correctness bugs, not just missing features.
     retired. A retirement naming some but not all of a system's runs is refused before anything is written. A
     baseline version a round promoted names the round and the arm. Then: `round-retire` retires an arm whole, every
     arm of the system in play or the one `--label` names (`--runs` is gone), `evh round-carry` carries an arm of an
-    earlier round into the open one, and `evh rounds --json` gives a round's `arms`. A run made with `--round` joins
+    earlier round into the open one, and `evh round-list --json` gives a round's `arms`. A run made with `--round` joins
     its system's arm, so the round's file changes with every run: commit it with the runs.
   - *system_id* (RFC-032 step 8, format 6): a run's `config_id` named its system, so the stored key is `system_id`
     ("config" is no longer the name of anything): in `run.json`, a score's `metrics.json` (and the `unset` list of its
@@ -91,7 +102,7 @@ correctness bugs, not just missing features.
     run) and migrate again. Then change what reads the JSON answers: `system_id` replaces `config_id` in `evh leaderboard
     --json` (its rows and its column list), `evh runs-list --json`, `evh run --json` (the dry run and the run written),
     `evh baselines`, `evh prompt-show --json`'s runs, an arm's `config` block (`evh arm-show --json`), the compare answer
-    of `catalog-serve`, the key file `evh inspect --sheet` writes and, for a catalog adapter, the `{"system_id", ...}`
+    of `catalog-serve`, the key file `evh sheet-show` writes and, for a catalog adapter, the `{"system_id", ...}`
     its `arm_config(arm)` returns; the table headers follow, and `evh arm-show` says `system` where it said `config`.
     `evh validate`'s V8 is "no two runs share a system_id".
   - *results* (RFC-033, format 7, both stores): the three run settings in a row's `_meta` (`generation_config`,
@@ -133,7 +144,7 @@ correctness bugs, not just missing features.
   database).
 - **A goal's recommendation can move.** Contenders are now the arms shown no worse than the leader by more than
   the margin (ADR-0026), and the default margins are 5% (`balanced`) and 10% (`frugal`) of the leader. Read
-  `evh goals --goal G` after upgrading. A goal that wants its old breadth back sets `axes.quality.margin` in the
+  `evh goal-leaderboard G` after upgrading. A goal that wants its old breadth back sets `axes.quality.margin` in the
   measure's units; one on fewer than 100 items with a continuous measure now recommends its leader and says
   "too few items to call a tie". `evh validate` notes every goal on a default margin. No run, score or
   fingerprint changes.
@@ -170,7 +181,7 @@ Change the pin to `@v0.7.1`. No format changes; no committed run's scores or fin
   **Changed**): `family-test --round`'s p (it now reads re-scores in place, as the round does), the billed
   figure (arm smokes counted), and `runs-list --baselines` (the repeats' mean).
 - **Scripts reading `--json`:** the leaderboard's text table shows the columns that fit the terminal (the JSON
-  keeps all); `evh goals --goal`'s last table column is `decision`, not `""`.
+  keeps all); `evh goal-leaderboard`'s last table column is `decision`, not `""`.
 
 ## From 0.6.2 to 0.7.0
 
@@ -182,7 +193,7 @@ What can read differently (the [changelog](https://github.com/chipi/eval-harness
 
 - **`pair-test --round` and a round's promotion gate correct for the pick**, so a leader that was significant can
   read not significant. A round whose leader is tied, or whose arms were scored differently, now holds instead of
-  promoting; its baseline is read re-scored. Re-read an open round's status (`evh rounds --goal G`).
+  promoting; its baseline is read re-scored. Re-read an open round's status (`evh round-list G`).
 - **A new run never reuses a directory.** A script that passes `--run-id` for a run that exists is refused; name a
   new id.
 - **`dataset-from-capture --from` and `--fieldset`** make a version that differs from what 0.6.2 made from the same
@@ -243,14 +254,14 @@ Renamed to the field's words, with no alias (the old names stop working):
   prints `SIGNIFICANT` or `NOT-SIGNIFICANT`, `family_test` and `bootstrap_test` `SIGNIFICANT`. A script that
   matched the old strings matches the new ones.
 - **A goal's arms that may win the tie-break are its contenders**: the decision's key is `contenders` (was
-  `tied`), and `evh arms --quality contender|below` (was `ties|below`).
+  `tied`), and `evh arm-list --quality contender|below` (was `ties|below`).
 
 A goal's dataset `role:` is free text and keeps whatever you wrote; the docs now say validation, test and pilot
 (were dev and heldout).
 
 Seven behaviours change without a migration:
 
-- **The `--items` flag of `evh inspect` is gone**, replaced by the sheet: `evh inspect --sheet --dataset-id D --runs A,B`
+- **The `--items` flag of `evh comparison-show` is gone**, replaced by the sheet: `evh sheet-show D --runs A,B`
   shows every item's scores per arm, beside what each wrote, the labels and the winner (`--scores-only` for the
   scores alone). A script that parsed `--items` reads `--sheet --csv FILE` instead.
 
@@ -276,13 +287,13 @@ Seven behaviours change without a migration:
 
 Everything else is added and optional: the capture lane (`evh capture`, `importer-check`, `captures`,
 `capture-scrub`, `dataset-from-capture`, `dataset-split`, `text: hidden`; RFC-019); evaluating what production did
-(`evh labels`, a label accepting more than one answer, `{"accept": [...]}`, read by `answers(reference)` from
+(`evh dataset-list`, a label accepting more than one answer, `{"accept": [...]}`, read by `answers(reference)` from
 `evaluation_harness.adapter`, scoring against a label set with `--labels`, `evh arm-from-capture`, `inspect --disagree` and
 the sheet (`inspect --sheet`, `--csv`, `--fill`, read back by `evh sheet-import`), `evh pick`, `evh picks`,
 `evh dataset-extend`, `evh deploy-sheet`; the catalog's Labels page; an adapter's optional `same(a, b)`,
 `decision(output)`, `title(item)`, `recorded_output(record)` and `production_ran(record)`; RFC-023); judging modes (a scorer's
 `mode: pick` or `pairwise`, validated in that mode; RFC-005) and an adapter's optional `primary_metric(params)`;
-model onboarding (`evh model-onboard`, `evh arm-smoke`, `evh models`, `model_record:` and `deployment:` in a
+model onboarding (`evh model-onboard`, `evh arm-smoke`, `evh model-list`, `model_record:` and `deployment:` in a
 config; RFC-020); scoring that evolves (`evh score-preview`, `evh rescore --goal --round --why`,
 `round-open --keep all --scoring` and `--adopt`, a goal axis's `limit: baseline`; RFC-022); `call_timeout_s` for
 the built-in providers. `evh init`'s `.gitignore` now ignores `data/runs-smoke*/` and `data/runs-tune*/`; add the
@@ -303,7 +314,7 @@ Change the pin to `@v0.5.0`. No record, hash or p-value moves. Three things to c
 
 A dataset id must now be a name (letters, digits, `.`, `_`, `-`): an id with `/` or `..` is
 refused by every command that reads or writes a dataset's file. An arm's params as a page or
-`evh arms --arm` shows them hide a URL's user and password and a nested credential-named key
+`evh arm-show` shows them hide a URL's user and password and a nested credential-named key
 (`headers: {Authorization: …}`), so a page can differ from 0.4.4's where a config held one.
 Everything else is added and optional: `evh mcp`, `--json` on the views, `evh catalog --mcp`; `evh dataset-profile` and a committed `data/profiles/<id>.json` give a dataset page its
 "what's inside"; an adapter may answer `dataset_profile(dataset)`.
@@ -323,7 +334,7 @@ any `/api/` path that is not one of its endpoints, where 0.4.2 could serve a fil
 ## From 0.4.1 to 0.4.2
 
 Change the pin to `@v0.4.2`. No record, hash or p-value moves. One command line changes:
-**`evh overview` no longer takes `--all`**: `evh overview --period all` says the same (`--period P` on every list now,
+**`evh overview-show` no longer takes `--all`**: `evh overview-show --period all` says the same (`--period P` on every list now,
 counted from today). Everything else is added and optional: an adapter may answer
 `dataset_created(dataset)` and `model_facts()` (each model's weights, open or proprietary; the
 harness's own adapter reads an optional `data/models.yaml`), `spend()` events may name an `arm`,
@@ -438,7 +449,7 @@ so check these before you trust a `validate`:
   its own table and tests, gold first, under `=== scored against <ref> ===` (judged runs:
   `=== scored by judge <scorer_id> ===`), and nothing is averaged across them. Before, they were averaged into one row and one ranking. The
   catalog and the inspector read an arm against the reference of its latest run and say which
-  earlier runs they leave out; `evh rounds` reads a round against the reference most of its arms
+  earlier runs they leave out; `evh round-list` reads a round against the reference most of its arms
   use and names the arms it does not compare. With one reference the output is unchanged.
 - **The bundled adapter stores `overlap_f1` unrounded** (it rounded to 6 decimals); a new run's
   mean can differ from an older one's in the sixth decimal, and the leaderboard's rounding note
@@ -451,8 +462,8 @@ so check these before you trust a `validate`:
 - **The catalog and the run inspector** (`evh catalog`, `evh catalog-serve`). On the
   harness's own data layout they need no code; with another layout, write one adapter
   ([tutorial 5](https://evals.humancopilot.eu/docs/tutorials/5-catalog-and-inspector/)). Every
-  view is also a command: `evh overview`, `evh datasets`, `evh arms`, `evh references`,
-  `evh metrics`, `evh goals`, `evh search`, `evh inspect` (with `--items` for the per-item table
+  view is also a command: `evh overview-show`, `evh dataset-list`, `evh arm-list`, `evh reference-list`,
+  `evh metric-list`, `evh goal-list`, `evh search`, `evh comparison-show` (with `--items` for the per-item table
   and `--analysis` for the charts as numbers). **The home page** is now a dashboard (index.html
   moved, the datasets table is datasets.html). **Metric links** now go to m/<metric>.html pages
   (metrics.html#m-<metric> anchors still exist for compatibility). A project's own catalog
@@ -460,7 +471,7 @@ so check these before you trust a `validate`:
   exist (`pages=True` parameter).
 - **Goals** (`data/goals/<goal_id>.yaml`, `goal:` on configs, validate V14). Nothing is
   required of an upgrading project until it sets `required_from` in `data/goals/policy.yaml`.
-- **Eval rounds** (`evh round-open`, `evh round-retire`, `evh round-close`, `evh rounds`;
+- **Eval rounds** (`evh round-open`, `evh round-retire`, `evh round-close`, `evh round-list`;
   `round: rN` on configs; validate V14). `--round rN` on `leaderboard`, `family-test`,
   `pair-test` and `inspect`: `inspect --round` and `pair-test --round` default to the goal's
   measure and the round's leader (`pair-test`'s B: the baseline the round started from). A

@@ -141,7 +141,7 @@ def main() -> int:
         }
         if not mine:
             die(
-                f"no labels of {set_ds}/{set_name} on {args.dataset_id}'s items (evh labels --dataset-id {args.dataset_id})",
+                f"no labels of {set_ds}/{set_name} on {args.dataset_id}'s items (evh label-set-list {args.dataset_id})",
                 "not-found",
             )
         if args.items:

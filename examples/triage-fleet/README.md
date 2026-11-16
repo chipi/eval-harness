@@ -50,7 +50,7 @@ The goal and the item fields are the project's own, one copy each: `harness/data
 python examples/triage-fleet/fetch.py                       # needs the revision public, or a token
 evh dataset-materialize --dataset-id orrery_triage_v1_labelled
 TRIAGE_FLEET_SRC=/path/to/signal-fleet evh run --system <id> --dataset orrery_triage_v1_labelled --goal triage_orrery
-evh goals --goal triage_orrery
+evh goal-leaderboard triage_orrery
 ```
 
 The fleet's code is not copied here: `TRIAGE_FLEET_SRC` names the `signal-fleet` folder of its repository, at

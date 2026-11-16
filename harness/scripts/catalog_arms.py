@@ -4,7 +4,7 @@
                 scored against; a derived arm under the arm it came from), the systems, what changed
                 in the period, and each goal's arms on its trade-off charts
 
-`evh arms` prints the same rows (`arm_rows`, `system_rows`). The period parts are the shared ones
+`evh arm-list` prints the same rows (`arm_rows`, `system_rows`). The period parts are the shared ones
 (catalog_periods.py, catalog_assets/period.js); the grouping, facets and comparison are
 catalog_assets/group.js and arms.js.
 """
@@ -639,6 +639,6 @@ def render_arms(A, by_ds: dict, out, nav: list, rows: list[dict] | None = None) 
             (*cb.PERIOD_SCRIPTS("arms"), "assets/group.js", "assets/arms.js"),
             nav=nav,
             item=A.item_word,
-            elsewhere=(("arms", {}),),
+            elsewhere=(("arm-list", {}),),
         ),
     )

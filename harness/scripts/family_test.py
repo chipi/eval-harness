@@ -63,7 +63,6 @@ from evaluation_harness._common import (  # noqa: E402
     RUNS,
     dataset_item_ids,
     die,
-    evh_prog,
     item_clusters,
     item_selection,
 )
@@ -139,19 +138,76 @@ def _cache_key(argv: list[str], args) -> str:
     return h.hexdigest()
 
 
-def main() -> int:
-    """Run the family test, or replay its output when the exact same test has already run.
+#: What an input the call does not give is, as its option was when the command line did not give it.
+DEFAULTS = {
+    "a": None,
+    "against": None,
+    "metric": None,
+    "label": "",
+    "exclude_dataset": None,
+    "items": None,
+    "reduce": None,
+    "cluster": None,
+    "permutations": 20000,
+    "alpha": 0.05,
+    "asc": False,
+    "desc": False,
+    "seed": 20260926,
+    "round": None,
+    "goal": None,
+}
+
+
+def _args(dataset: str, given: dict[str, Any]) -> argparse.Namespace:
+    args = argparse.Namespace(dataset_id=dataset, **{**DEFAULTS, **given})
+    if args.items:
+        args.items = Path(args.items)
+    if not args.round and not (args.a and args.against):
+        die("a and against are required (or round, which defaults them)", "bad-argument")
+    return args
+
+
+def body(dataset: str, **given: Any) -> int:
+    """Test one arm against a declared family of opponents, Holm-corrected over the whole family."""
+    return _run(_args(dataset, given))
+
+
+def replayed(dataset: str, given: dict[str, Any], compute: Any) -> dict[str, Any]:
+    """The operation's answer (`compute()`: the blocks and values), replayed from the project's cache when the exact same
+    test has run, as `text` replays the printed one (EVAL_NO_CACHE=1 forces a recomputation)."""
+    from evaluation_harness.ops.legacy import refusing  # noqa: PLC0415
+
+    with refusing():
+        args = _args(dataset, given)
+    use_cache = not os.environ.get("EVAL_NO_CACHE") and _store.is_dir(RUNS)
+    if use_cache:
+        argv = [dataset, "result", *(f"{k}={given[k]}" for k in sorted(given))]
+        hit = CACHE / f"{_cache_key(argv, args)}.json"
+        if _store.is_file(hit):
+            return json.loads(_store.read_text(hit, encoding="utf-8"))
+    out = compute()
+    if use_cache:
+        try:
+            _store.mkdir(CACHE, parents=True, exist_ok=True)
+            tmp = hit.with_suffix(".tmp")
+            _store.write_text(tmp, json.dumps(out), encoding="utf-8")
+            tmp.replace(hit)  # atomic: a concurrent reader never sees half a file
+        except OSError:
+            pass
+    return out
+
+
+def text(dataset: str, **given: Any) -> int:
+    """The family test as the command prints it, or replayed when the exact same test has already run.
 
     Each run is ~20,000 seeded permutations per opponent in pure Python (~18 s for a family
     of 29), and the report checker, the self-test and the site build ask the same questions
     dozens of times per `make ci`. EVAL_NO_CACHE=1 forces a recomputation."""
-    ap = _parser()
-    args = ap.parse_args()
-    if not args.round and not (args.a and args.against):
-        ap.error("--a and --against are required (or --round, which defaults them)")
+    args = _args(dataset, given)
+    argv = [dataset, *(f"{k}={given[k]}" for k in sorted(given))]
     use_cache = not os.environ.get("EVAL_NO_CACHE") and _store.is_dir(RUNS)
     if use_cache:
-        hit = CACHE / f"{_cache_key(sys.argv[1:], args)}.json"
+        hit = CACHE / f"{_cache_key(argv, args)}.json"
         if _store.is_file(hit):
             c = json.loads(_store.read_text(hit, encoding="utf-8"))
             sys.stdout.write(c["stdout"])
@@ -161,7 +217,7 @@ def main() -> int:
     with (
         contextlib.redirect_stdout(out),
         contextlib.redirect_stderr(err),
-        _jsonout.collect("family-test", args.json),
+        _jsonout.collect("family-test", False),
     ):
         rc = _run(args)
     sys.stdout.write(out.getvalue())
@@ -180,57 +236,6 @@ def main() -> int:
         except OSError:
             pass
     return rc
-
-
-def _parser() -> argparse.ArgumentParser:
-    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
-    ap.add_argument("--dataset-id", required=True)
-    ap.add_argument("--a", help="system_id of the arm under test (with --round: default its leader)")
-    ap.add_argument(
-        "--against",
-        help="the opponent family, declared in advance: a substring of their system ids, or a comma-separated "
-        "list of system ids (with --round: default every other arm in play in it)",
-    )
-    ap.add_argument("--metric", help="default: the primary metric the runs recorded")
-    ap.add_argument(
-        "--label",
-        default="",
-        help='the arm label the runs are read under (default: "", the plain runs; `evh runs-list` shows the '
-        "labels present)",
-    )
-    ap.add_argument("--exclude-dataset", help="drop items this dataset also contains")
-    ap.add_argument("--items", type=Path, help="file of item_ids; restrict to exactly these")
-    ap.add_argument(
-        "--reduce",
-        default=None,
-        help="how an arm's repeats make one score per item: mean (the default), majority or at_least_K, for 0/1 "
-        "scores (with --round: default the goal's primary.reduce)",
-    )
-    ap.add_argument(
-        "--cluster",
-        metavar="FIELD",
-        help="an item field whose items are not independent: flip one sign per value of it, so related items "
-        "count once (with --round: default the goal's `cluster:`)",
-    )
-    ap.add_argument("--permutations", type=int, default=20000)
-    ap.add_argument("--alpha", type=float, default=0.05)
-    ap.add_argument(
-        "--asc",
-        action="store_true",
-        help="lower is better: wins and 'ahead' count the lower score "
-        "(default: inferred from the metric and the runs)",
-    )
-    ap.add_argument("--desc", action="store_true", help="higher is better, whatever the runs declare")
-    ap.add_argument("--seed", type=int, default=20260926)
-    ap.add_argument("--round", help="only opponents in play in this round of a goal (rN; ADR-0004)")
-    ap.add_argument("--goal", help="the goal --round belongs to, when several goals have one")
-    ap.add_argument(
-        "--json",
-        action="store_true",
-        help="the same answer as one JSON object: the printed lines as blocks, the opponents table as "
-        "data, and the result by name under result.values",
-    )
-    return ap
 
 
 def _round_defaults(args, runs: list) -> Any:
@@ -468,7 +473,3 @@ def _run(args) -> int:
     # The gap between those two numbers is the finding most of the time: an ordering the
     # means assert and the data cannot support.
     return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())

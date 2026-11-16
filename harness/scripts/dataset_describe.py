@@ -79,7 +79,7 @@ def main() -> int:
         card = _read_card(args.card) if args.card is not None else None
         f = DATASETS / f"{dataset_id_ok(args.dataset_id)}.json"
         if not _store.is_file(f):
-            die(f"no dataset {args.dataset_id!r} (evh datasets lists them)", "not-found")
+            die(f"no dataset {args.dataset_id!r} (evh dataset-list lists them)", "not-found")
         doc = read_json(f)
         said = []
         if args.licence is not None:

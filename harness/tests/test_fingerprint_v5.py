@@ -751,7 +751,8 @@ with tempfile.TemporaryDirectory() as td:
     run = subprocess.run(
         [
             sys.executable,
-            str(HERE / "scripts" / "compare_runs.py"),
+            str(HERE / "scripts" / "cli.py"),
+            "run-compare",
             "--baseline",
             "run_a",
             "--candidate",

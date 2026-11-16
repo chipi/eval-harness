@@ -1845,7 +1845,7 @@ def main() -> int:
         print(
             "  "
             + how(
-                f"evh leaderboard --dataset-id {args.dataset_id} --label judged/{sc['scorer_id']}",
+                f"evh leaderboard {args.dataset_id} --label judged/{sc['scorer_id']}",
                 f"make leaderboard DATASET_ID={args.dataset_id} ARGS='--label judged/{sc['scorer_id']}'",
             )
         )

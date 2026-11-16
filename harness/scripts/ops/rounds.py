@@ -1,5 +1,5 @@
 """The rounds' reads (RFC-032 step 5): `evh round-list`, `round-show`, `round-evidence`, and the resources under
-/api/v1/goals/{goal}/rounds. Each answers what `evh rounds --json` answers for the same thing: both read the round
+/api/v1/goals/{goal}/rounds. Each answers what `evh round-list --json` answers for the same thing: both read the round
 through `_rounds.summary`, `view` and `evidence_values`. Opening, carrying, retiring and closing a round are the
 commands `round-open`, `round-carry`, `round-retire` and `round-close`."""
 
@@ -25,8 +25,9 @@ def _goal(goal: str) -> None:
     from evaluation_harness._common import load_goals  # noqa: PLC0415
     from evaluation_harness.model.entity import Problem  # noqa: PLC0415
 
-    if goal not in load_goals():
-        raise Problem(f"no goal {goal!r}", "not-found")
+    goals = load_goals()
+    if goal not in goals:
+        raise Problem(f"no goal {goal!r}: one of {', '.join(sorted(goals)) or '(none)'}", "not-found")
 
 
 def _round(goal: str, round: str) -> dict[str, Any]:
@@ -87,6 +88,20 @@ def say_round(r: dict[str, Any]) -> str:
     if x.get("hypothesis"):
         lines.append(f"  hypothesis: {x['hypothesis']}")
     lines += [f"  changed: {c}" for c in x["changes"]]
+    if x.get("harness"):
+        h = x["harness"]
+        lines.append(
+            f"  harness: {h.get('version')}"
+            + (f" at {h['commit']}" if h.get("commit") and not h.get("installed") else "")
+            + f" (code {str(h.get('code_sha256'))[:12]})"
+        )
+    if x.get("scorer"):
+        lines.append(f"  judged by: {x['scorer']}")
+    for sc in x.get("scoring") or []:
+        lines.append(
+            f"  scoring {str(sc.get('at', ''))[:10]}: {sc.get('why', '')} "
+            f"({sc.get('scorer', '')}, {sc.get('runs', 0)} run(s) re-scored into {', '.join(sc.get('written') or []) or '—'})"
+        )
     for a in x["arms"]:
         how = a["entered"]["how"] + (f" from {a['entered']['from']}" if a["entered"].get("from") else "")
         gone = f"; retired: {a['retired']['reason']}" if a.get("retired") else ""

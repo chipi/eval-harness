@@ -308,7 +308,7 @@ try:
         and (my.get("faithfulness") or {}).get("faithful") is False,
         (no.stderr[-300:], agent.stderr[-300:], yes.stderr[-300:]),
     )
-    show = evh("faithfulness-show", "--model", "toy_filing", "--json")
+    show = evh("faithfulness-show", "toy_filing", "--json")
     ag_name = evh("faithfulness-name", "--model", "toy_filing", "--item", dis[0] if dis else "x", "--cause", "c",
                   extra={"EVH_ACTOR": "agent:bot", "EVH_FOR": "person:t"})  # fmt: skip
     names = [
@@ -433,13 +433,13 @@ try:
         and any((m["faithfulness"] or {}).get("unfaithful_by") for m in rescored),
         (late.stderr[-300:], resc.stderr[-300:], resc_ok.stderr[-400:]),
     )
-    view = evh("models", "--model", "toy_filing")
+    view = evh("model-show", "toy_filing")
     versions = yaml.safe_load(_runstore.read_text(proj, "models/toy_filing.yaml"))["versions"]
-    periods = evh("periods", "--model", "toy_filing", "--json")
+    periods = evh("periods", "toy_filing", "--json")
     summary_ = [x.get("faithfulness") or {} for x in values(periods).get("periods") or []]
     check(
         "the code record keeps no summary of a version's faithfulness; the latest (record 2, its named disagreements) "
-        "is read from the records, by `evh periods` and `evh models`",
+        "is read from the records, by `evh periods` and `evh model-show`",
         view.returncode == 0
         and not any("faithfulness" in v for v in versions)
         and len(summary_) == len(versions)

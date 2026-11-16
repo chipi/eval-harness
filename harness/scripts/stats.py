@@ -361,7 +361,7 @@ _P_MAX = 4096
 
 #: A file of estimated p's that outlives the process: `EVH_P_CACHE=<path>`, one JSON line per p,
 #: {"k": sha256 of the deltas (as float.hex), permutations and seed; "p": the p as float.hex}. Each
-#: `evh` command is a fresh process, so without it every `evh goals` (and every MCP call, RFC-018)
+#: `evh` command is a fresh process, so without it every `evh goal-list` (and every MCP call, RFC-018)
 #: drew the same ~500 tests again (about 50 s here). A stored p is the one the test computed, read
 #: back exactly; the file is read once, appended when writable, and only read when it is not (a
 #: deployment precomputes it). Unset: nothing is stored. A file that cannot be read is no cache.

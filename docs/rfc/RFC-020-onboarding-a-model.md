@@ -151,7 +151,7 @@ arms were smoked, and a model counts as vetted once one of them passed.
   onboarding report; the settings' history (`at`, `what`, `from`, `to`, `why`); its arms, each with its arm smoke.
 - **The arms page** gets a badge per arm that has a record: its record and deployment, and "smoked", "smoke:
   check" or "not smoked".
-- **CLI parity**: `evh models [--kind] [--where] [--status]` lists the same; `evh models --model <id>` shows one.
+- **CLI parity**: `evh model-list [--kind] [--where] [--status]` lists the same; `evh model-show <id>` shows one.
 
 *Added while onboarding the triage models (2026-10-31):* a record's `accepted` names flag kinds a person accepted
 as the model's own nature, with why (gpt-oss cannot stop reasoning; `low` is the least it takes): onboarding and arm

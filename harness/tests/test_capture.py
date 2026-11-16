@@ -17,7 +17,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parents[1] / "scripts"
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from evaluation_harness import _common, _importers, _store  # noqa: E402
+from evaluation_harness import _common, _format, _importers, _store  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
@@ -25,6 +25,7 @@ import _runstore  # noqa: E402
 
 proj = Path(tempfile.mkdtemp(prefix="evh-capture-"))
 (proj / "data").mkdir()
+_runstore.write_text(proj, _format.NAME, f"format: {_format.FORMAT}\n")
 env = dict(os.environ, EVAL_HOME=str(proj))
 env.pop("EVAL_DATA_DIR", None)
 
@@ -441,7 +442,7 @@ check(
     r.returncode != 0 and "keeps it" in out(r),
     out(r)[-200:],
 )
-r = evh("captures", "--capture", "s1")
+r = evh("capture-show", "s1")
 check("captures: names the sample", "a sample: rate 0.1, seed 7" in out(r), out(r)[-300:])
 for c in ("s1", "s2", "s3", "s4"):
     _runstore.rmtree(proj, f"captures/{c}")
@@ -608,9 +609,9 @@ check(
 r = evh("capture-scrub", "m", "--command", "true")
 check("capture-scrub: a command without {records} is refused", r.returncode != 0 and "{records}" in out(r))
 
-# ── evh captures ───────────────────────────────────────────────────────────────────────────
-r = evh("captures", "--json")
-caps = {c["capture"]: c for c in json.loads(r.stdout)["captures"]} if r.returncode == 0 else {}
+# ── evh capture-list ───────────────────────────────────────────────────────────────────────────
+r = evh("capture-list", "--json")
+caps = {c["capture"]: c for c in json.loads(r.stdout)["result"]["captures"]} if r.returncode == 0 else {}
 check(
     "captures: each capture, its importer, scrubbed or not, and the datasets made from it",
     set(caps) == {"c1", "c2", "m", "c_fix"}
@@ -620,7 +621,7 @@ check(
     and caps["c2"]["continues"] == "c1",
     r.stdout[-400:],
 )
-r = evh("captures", "--capture", "../x")
+r = evh("capture-show", "../x")
 check("captures: a path as the id is refused", r.returncode != 0)
 
 # ── --one-per, --where !=, --tag ───────────────────────────────────────────────────────────
@@ -672,7 +673,7 @@ check(
     and "continues c1" in page
     and 'cap_v1 <small class="muted">no runs yet</small>' in page
     and 'href="d/cap_v1.html"' not in page
-    and "evh captures" in page
+    and "evh capture-list" in page
     and 'href="captures.html"' in (site / "index.html").read_text(),
     page[-600:],
 )
@@ -707,11 +708,11 @@ import _runfix  # noqa: E402
 for d in ("cap_v1", "cap_v2"):
     _runfix.put_run(proj / "data", {"run_id": f"{d}_run", "system_id": "sys_a", "dataset_id": d, "scores": {"acc": 1.0},
                                     "primary_metric": "acc"}, [{"item_id": "i1", "acc": 1.0}])  # fmt: skip
-said = {d: evh("datasets", "--dataset-id", d) for d in ("cap_v1", "cap_v2")}
+said = {d: evh("dataset-show", d) for d in ("cap_v1", "cap_v2")}
 check(
-    "evh datasets: a capture-made dataset says its capture; one made from a version and a capture says both",
+    "evh dataset-show: a capture-made dataset says its capture; one made from a version and a capture says both",
     all(r.returncode == 0 for r in said.values())
-    and "made from capture c1" in said["cap_v1"].stdout and "made from cap_v1:" in said["cap_v2"].stdout
+    and "made from capture c1" in said["cap_v1"].stdout and "derived from cap_v1:" in said["cap_v2"].stdout
     and "from capture c2" in said["cap_v2"].stdout,
     {d: (r.stdout + r.stderr)[-400:] for d, r in said.items()},
 )  # fmt: skip

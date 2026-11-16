@@ -1,6 +1,9 @@
 # RFC-018: A read-only MCP server in 0.5.0
 
 - **Status**: Completed (v0.5.0), 2026-10-29; accepted that day: a small read-only MCP server, with Python 3.9 dropped for it
+- **Amended** (2026-11-16, RFC-032 step 9, P2): the tools are the registry's reads, each named as its operation, and a call is
+  answered in the server's own process, not by a child process; the tool names, the arguments and the answers below are
+  those of 0.5.0 to 0.7, kept for the record
 - **Authors**: Marko Dragoljevic
 - **Related RFCs**: 0.8.0's RFC-013 (one declaration per command, `--json`, exit codes) and RFC-016 (the MCP server,
   skills, consent), on branch `070`: this is their first, read-only step, shipped early
@@ -184,7 +187,7 @@ put it behind what the team already uses (a VPN, an authenticating proxy).
 
 - `harness/tests/test_mcp_server.py` (offline, the tutorial project): the server starts through the SDK's own stdio
   client; `tools/list` holds exactly `READ_TOOLS`, each read-only, each schema without `--adapter` or `--json`;
-  `datasets` returns the same text as `evh datasets` and a `structuredContent` whose tables hold its rows; a call with
+  `datasets` returns the same text as `evh dataset-list` and a `structuredContent` whose tables hold its rows; a call with
   an unknown property is refused before it runs; a refusal (`goals` with an unknown goal) comes back as `isError` with
   the command's message; every command is in `READ_TOOLS` or in the list of commands that are not tools.
 - `harness/tests/test_mcp_http.py` (the SDK's streamable HTTP client): health; another Host refused (421);

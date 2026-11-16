@@ -81,7 +81,7 @@ paid for again: their outputs are stored, so re-scoring is arithmetic.
 
 ```bash
 evh rescore --dataset-id tickets_v1 --reference-id gold/tickets_v1 --label gold
-evh leaderboard --dataset-id tickets_v1 --label gold
+evh leaderboard tickets_v1 --label gold
 ```
 <!-- guide-check: varies lead2_noisy author global distinguishable sorted ordering -->
 ```text
@@ -135,7 +135,7 @@ rank by silver, check it against a gold slice. How big a gold set must be is a m
 ## 4. Is the winner significantly better, on gold?
 
 ```bash
-evh family-test --dataset-id tickets_v1 --a tickets_lead2_v1 --against tickets_ \
+evh family-test tickets_v1 --a tickets_lead2_v1 --against tickets_ \
     --label gold
 ```
 <!-- guide-check: varies tickets_lead1_v1 tickets_author_v1 lead2_noisy ahead -->
@@ -267,7 +267,7 @@ verdict?) and a repeat on half (the **noise** check: does the judge agree with i
 
 ```bash
 evh judge-score --dataset-id tickets_v1 --scorer tickets-judge-v1 --unvalidated
-evh leaderboard --dataset-id tickets_v1 --label "judged/tickets-judge-v1" --wide
+evh leaderboard tickets_v1 --label "judged/tickets-judge-v1" --wide
 ```
 <!-- guide-check: varies tickets_ global FRONTIER agree reshuffled -->
 ```text
@@ -349,7 +349,7 @@ credentials). A judge's own `base_url` or `api_key_env` in its params overrides 
 evh judge-score --dataset-id briefs_v1 --scorer briefs-judge-v1 --unvalidated --dry-run
 evh judge-score --dataset-id briefs_v1 --scorer briefs-judge-v1 --unvalidated
 evh judge-score --dataset-id briefs_v1 --scorer briefs-judge-v1 --unvalidated --retry-unparsed
-EVAL_RUNS_DIR=data/runs-judged/briefs-judge-v1 evh leaderboard --dataset-id briefs_v1
+EVAL_RUNS_DIR=data/runs-judged/briefs-judge-v1 evh leaderboard briefs_v1
 ```
 
 Real judges sometimes reply with something that does not parse (reasoning aloud, a reply cut

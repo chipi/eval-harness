@@ -242,7 +242,7 @@ the "nominal, not a look" label on test sets; a goal's recommendation does not c
 ## The gaps of the first build, closed (owner, 2026-11-11: "finish building studies, no need to have gaps")
 
 - **The goal page** has a section per study: its trials as a table (the change, the hypothesis, kept or dropped and
-  why, the delta against the best so far, the cost), its stop reason, and its confirmations with their looks; `evh goals
+  why, the delta against the best so far, the cost), its stop reason, and its confirmations with their looks; `evh goal-list
   --goal G` prints the same.
 - **What a sampler is shown**: the best so far's weakest validation items (`show_items`, default 5: their ids, scores
   and text), recorded on the ask (or the command sampler's trial) by id and content hash; a confirmation leaves out every

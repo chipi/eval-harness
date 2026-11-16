@@ -178,7 +178,7 @@ def main() -> int:
             ),
             ("dataset-materialize", ["--dataset-id", "tickets_v1"], "ok"),
             ("dataset-profile", ["--dataset-id", "tickets_v1"], "ok:tickets_v1: 6 items"),
-            ("dataset-items", ["--dataset-id", "tickets_v1"], "ok:6 items"),
+            ("dataset-items", ["tickets_v1"], "ok:6 items"),
             ("label-from-run", ["--run", run_id, "--set", "installed_from_run"], "ok:label(s), source model"),
             (
                 "reference-manifest",
@@ -227,16 +227,16 @@ def main() -> int:
             ),
             ("silver-calibrate", ["--dataset-id", "tickets_v1"], "ok"),
             ("cost-report", ["--dataset-id", "tickets_v1"], "ok"),
-            ("leaderboard", ["--dataset-id", "tickets_v1"], "ok"),
+            ("leaderboard", ["tickets_v1"], "ok"),
             # No --metric: the default is the runs' recorded primary metric, not another project's.
             (
                 "pair-test",
-                ["--dataset-id", "tickets_v1", "--a", "tickets_lead2_v1", "--b", "tickets_lead1_v1"],
+                ["tickets_v1", "--a", "tickets_lead2_v1", "--b", "tickets_lead1_v1"],
                 "ok:overlap_f1",
             ),
             (
                 "family-test",
-                ["--dataset-id", "tickets_v1", "--a", "tickets_lead2_v1", "--against", "tickets_"],
+                ["tickets_v1", "--a", "tickets_lead2_v1", "--against", "tickets_"],
                 "ok:overlap_f1",
             ),
             (
@@ -245,7 +245,7 @@ def main() -> int:
                 "for classification",
             ),
             ("holdout", ["--dataset-id", "tickets_v1", "--exclude-dataset", "tickets_pilot_v1"], "ok"),
-            ("rank-stability", ["--dataset-id", "tickets_v1"], "too few"),
+            ("rank-stability", ["tickets_v1"], "too few"),
             (
                 "import-run",
                 [
@@ -306,12 +306,12 @@ def main() -> int:
                 ],
                 "no versions",
             ),
-            ("captures", ["--capture", "c1"], "ok:c1:"),
+            ("capture-show", ["c1"], "ok:c1 "),
             ("dataset-from-capture", ["c1", "--dataset-id", "captured_v1"], "ok:records kept"),
             ("capture-restore", ["--capture", "c1"], "ok:records restored"),
             # Labels (RFC-023): installed and reading their arguments; the flow is tests/test_label_sets.py.
-            ("labels", [], "ok:tickets_v1/installed_from_run: model"),
-            ("tags", [], "ok:No tag sets yet"),
+            ("label-set-list", ["tickets_v1"], "ok:tickets_v1/installed_from_run: model"),
+            ("tag-set-list", ["tickets_v1"], "ok:no tag sets"),
             ("licences", ["--search", "share"], "ok:CC-BY-SA-4.0"),
             ("migrate", ["--dry-run"], "ok:this release reads"),
             # the project's own store: data-migrate moves into the store the setting names, and data-ls says it
@@ -330,7 +330,7 @@ def main() -> int:
                 ["--source", "folder", "--query", '{"path": "tutorial/tickets"}', "--fieldset-id", "x"],
                 "describes no features",
             ),
-            ("dataset-card", ["--dataset-id", "tickets_v1", "--format", "croissant"], "ok:croissant/1.1"),
+            ("dataset-card", ["tickets_v1", "--format", "croissant"], "ok:croissant/1.1"),
             (
                 "dataset-create",
                 [
@@ -361,7 +361,7 @@ def main() -> int:
             ),
             ("label-from-run", ["--run", "no_such_run", "--set", "installed_v1"], "no finished run"),
             ("picks", [], "ok:No picks waiting"),
-            ("deploy-sheet", ["--system", "no_such_v1"], "no run of that system"),
+            ("deploy-sheet", ["no_such_v1"], "no run of that system"),
             ("pick", ["--dataset-id", "tickets_v1", "--item", "no_such_item"], "not in tickets_v1"),
             ("dataset-extend", ["tickets_v1", "--dataset-id", "tickets_v9", "--picks"], "no pick is waiting"),
             (
@@ -401,40 +401,12 @@ def main() -> int:
                 ],
                 "--map: no file",
             ),
-            (
-                "label-coverage",
-                ["--dataset-id", "captured_v1", "--capture", "c1", "--map", "no_such_map.yaml"],
-                "--map: no file",
-            ),
             ("run-compare", ["--baseline", base_id, "--candidate", run_id], "ok"),
             (
                 "run-promote",
                 ["--run", run_id, "--reason", "the tutorial's working baseline, for this test"],
                 "ok",
             ),
-            # The pages in the terminal: the same answers as the catalog and the inspector.
-            ("datasets", [], "ok:tickets_v1"),
-            ("datasets", ["--dataset-id", "tickets_v1"], "ok:runs/tickets_v1/tickets_lead2_v1"),
-            ("references", ["--reference-id", "gold/tickets_v1"], "ok:scored against it"),
-            ("metrics", [], "ok:overlap_f1"),
-            ("metrics", ["--metric", "overlap_f1"], "ok:on tickets_v1:"),
-            ("overview", [], "ok:goals at a glance"),
-            ("overview", ["--period", "all"], "ok:all time"),
-            ("activity", ["--period", "all"], "ok:by dataset:"),
-            ("datasets", ["--period", "30d"], "ok:runs in period"),
-            ("arms", ["--by", "system", "--period", "30d"], "ok:system tickets_lead2_v1"),
-            ("arms", ["--systems"], "ok:rank on each goal"),
-            ("arms", ["--quality", "contender"], "ok:no arm matches: only arms a goal's decision weighs"),
-            (
-                "arms",
-                ["--weights", "open"],
-                "ok:no arm matches: an arm's weights come from the model records (data/models/",
-            ),
-            ("arms", [], "ok:runs/tickets_v1/tickets_lead2_v1"),
-            ("arms", ["--arm", "runs/tickets_v1/tickets_lead2_v1"], "ok:metrics:"),
-            ("arms", ["--arm", "tickets_lead2_v1"], "ok:scored against"),
-            ("arms", ["--arm", "runs/tickets_v1/no_such_v1"], "no arm"),
-            ("goals", [], "ok"),
             # The views as resources (RFC-032 step 8): installed, each says what its command prints; the flow is
             # test_view_ops.py.
             ("overview-show", [], "ok:goals at a glance"),
@@ -457,12 +429,12 @@ def main() -> int:
             (
                 "comparison-show",
                 ["--runs", "runs/tickets_v1/tickets_lead1_v1,runs/tickets_v1/no_such_v1"],
-                "no arm known to the catalog",
+                "no arm with that id",
             ),
             (
                 "label-coverage-show",
                 ["captured_v1", "--capture", "c1", "--map", "no_such_map.yaml"],
-                "--map: no file",
+                "map: no file",
             ),
             # The goal through the model (RFC-032 step 1): the flow is test_model_goals.py.
             ("goal-list", [], "ok"),
@@ -481,7 +453,7 @@ def main() -> int:
             ("goal-new", ["no_such_goal"], "goals/no_such_goal.yaml not saved"),
             ("goal-set", ["no_such_goal", "--set", "title=x"], "no goal 'no_such_goal'"),
             # Models and deployments through the model (RFC-032 step 2): the flow is test_model_ops.py.
-            ("model-list", [], "ok:no model records yet"),
+            ("model-list", [], "ok:no model records"),
             ("model-show", ["no_such_model"], "no model 'no_such_model'"),
             ("model-new", ["no_such_model", "--set", "kind=llm"], "models/no_such_model.yaml not saved"),
             ("model-set", ["no_such_model", "--set", "kind=llm"], "no model 'no_such_model'"),
@@ -500,28 +472,44 @@ def main() -> int:
             ),
             # Model records (RFC-020, optional): installed, each answers in words; the flows are
             # test_model_onboard.py, test_arm_smoke.py and test_catalog_models.py.
-            ("models", [], "ok:no model records"),
             ("model-onboard", ["no_such_model"], "no model record 'no_such_model'"),
             ("arm-smoke", ["--system", "no_such_v1", "--dataset", "tickets_v1"], "no system 'no_such_v1'"),
             # Scoring that evolves (RFC-022): the flow is test_scoring_evolves.py.
             ("score-preview", ["--goal", "no_such_goal"], "no goal 'no_such_goal'"),
-            ("search", ["lead2"], "ok:evh inspect --runs runs/tickets_v1/tickets_lead2_v1"),
+            ("search", ["lead2"], "ok:evh comparison-show --runs runs/tickets_v1/tickets_lead2_v1"),
             ("search", ["no_such_thing"], "No match."),
             # lead2 against lead1 on gold: the p of tutorial 3 step 4 (3/32 = 0.09375, printed 0.0938; exact over 2^6)
-            ("inspect", ["--runs", "tickets_lead1_v1,tickets_lead2_v1"], "ok:0.0938"),
-            ("inspect", ["--runs", "tickets_lead1_v1,no_such_v1"], "no arm with that id"),
+            ("comparison-show", ["--runs", "tickets_lead1_v1,tickets_lead2_v1"], "ok:0.0938"),
+            ("comparison-show", ["--runs", "tickets_lead1_v1,no_such_v1"], "no arm with that id"),
             (
-                "inspect",
-                ["--sheet", "--dataset-id", "tickets_v1", "--runs", "tickets_lead1_v1,tickets_lead2_v1"],
+                "sheet-show",
+                ["tickets_v1", "--runs", "tickets_lead1_v1,tickets_lead2_v1"],
                 "ok:tickets_v1: 6 of 6",
             ),
             (
-                "inspect",
+                "comparison-item",
                 ["--runs", "tickets_lead1_v1,tickets_lead2_v1", "--item", "t01_login"],
                 "ok:(baseline)",
             ),
+            ("comparison-items", ["--runs", "tickets_lead1_v1,tickets_lead2_v1"], "ok:t01_login"),
+            (
+                "comparison-crosstab",
+                ["--runs", "tickets_lead1_v1,tickets_lead2_v1", "--crosstab", "overlap_f1,overlap_f1"],
+                "ok:",
+            ),
+            (
+                "sheet-export",
+                [
+                    "--dataset-id",
+                    "tickets_v1",
+                    "--runs",
+                    "tickets_lead1_v1,tickets_lead2_v1",
+                    "--csv",
+                    "sheet.csv",
+                ],
+                "ok:",
+            ),
             # Rounds (optional; the flow is test_rounds.py): installed, each answers in words.
-            ("rounds", ["--goal", "no_such_goal"], "no goal 'no_such_goal'"),
             ("round-open", ["--goal", "no_such_goal", "--dataset", "tickets_v1"], "no goal 'no_such_goal'"),
             ("round-carry", ["--goal", "g", "--round", "r1", "--arm", "a"], "no round"),
             ("round-retire", ["--goal", "g", "--round", "r1", "--arm", "a", "--reason", "x y z"], "no round"),
@@ -555,24 +543,21 @@ def main() -> int:
             ("scorer-set", ["no_such", "--set", "cost_cap_usd=1"], "no scorer 'no_such'"),
             # The terminal's jobs (RFC-026): installed, each answers in words; the flow is test_jobs.py.
             # Prompt versions (RFC-028): installed, each answers in words; the flow is test_prompts.py.
-            ("prompts", [], "ok:no prompt versions yet"),
             ("looks", ["--dataset", "no_such_v1"], "not a test set"),
             # Studies (RFC-029): installed, each answers in words; the flow is test_study.py.
-            ("studies", [], "ok:no studies"),
-            ("studies", ["--study", "g/no_such"], "no study"),
             # The studies as resources (RFC-032 step 7): the flow is test_model_studies.py.
             ("study-list", ["no_such_goal"], "no goal 'no_such_goal'"),
             ("study-show", ["no_such_goal", "s1"], "no goal 'no_such_goal'"),
-            ("periods", ["--model", "no_such"], "no model record 'no_such'"),
+            ("periods", ["no_such"], "no model record 'no_such'"),
             (
                 "period-compare",
-                ["--system", "no_v1", "--dataset", "tickets_v1", "--candidate", "x", "--period", "1"],
+                ["no_v1", "--dataset", "tickets_v1", "--candidate", "x", "--period", "1"],
                 "no system 'no_v1'",
             ),
             (
                 "label-mutants",
-                ["--dataset-id", "tickets_v1", "--capture", "no_such", "--map", "no.yaml"],
-                "--map: no file no.yaml",
+                ["tickets_v1", "--capture", "no_such", "--map", "no.yaml"],
+                "map: no file no.yaml",
             ),
             # Held-out discipline (RFC-031): installed, each answers in words; the flow is test_exposure.py.
             ("exposure", [], "ok:No held-out sides"),
@@ -582,7 +567,7 @@ def main() -> int:
                 "not a held-out side",
             ),
             ("exposure-check", ["--dataset-id", "tickets_v1"], "not a held-out side"),
-            ("sealed-counts", ["--dataset-id", "tickets_v1"], "not a held-out side"),
+            ("sealed-counts", ["tickets_v1"], "not a held-out side"),
             (
                 "dataset-seal-counts",
                 ["--dataset-id", "tickets_v1", "--add", "x", "--reason", "only to read the arguments"],
@@ -612,9 +597,9 @@ def main() -> int:
                 ["--model", "no_such", "--item", "x", "--cause", "c"],
                 "no model record 'no_such'",
             ),
-            ("faithfulness-show", ["--model", "no_such"], "no model record 'no_such'"),
+            ("faithfulness-show", ["no_such"], "no model record 'no_such'"),
             ("jobs-status", [], "ok:no jobs"),
-            ("jobs-start", ["datasets"], "not a job"),
+            ("jobs-start", ["goal-list"], "not a job"),
             ("jobs-logs", ["20990101T000000-abcdef"], "no job"),
             ("jobs-stop", ["20990101T000000-abcdef"], "no job"),
             ("jobs-resume", ["20990101T000000-abcdef"], "no job"),
@@ -622,7 +607,7 @@ def main() -> int:
             ("catalog", [], "ok"),
             ("catalog-serve", [], "ok"),  # started, its address read, stopped
             # A stdio server: --help here; tests/test_mcp_server.py talks to it through the SDK.
-            ("mcp", ["--help"], "ok:the project's read commands as MCP tools"),
+            ("mcp", ["--help"], "ok:the harness's reads as MCP tools"),
             ("validate", [], "ok"),
             ("self-test", [], "ok"),
         ]
@@ -726,9 +711,7 @@ def main() -> int:
         def values_of(env_: dict) -> dict:
             return (env_.get("result") or {}).get("values") or {}
 
-        r, e = as_json(
-            "pair-test", "--dataset-id", "tickets_v1", "--a", "tickets_lead2_v1", "--b", "tickets_lead1_v1"
-        )
+        r, e = as_json("pair-test", "tickets_v1", "--a", "tickets_lead2_v1", "--b", "tickets_lead1_v1")
         v = values_of(e)
         check(
             "pair-test --json: lead2 against lead1, the tutorial's p = 3/32, exact over 6 items",
@@ -737,9 +720,7 @@ def main() -> int:
             and abs(v.get("p", 0) - 3 / 32) < 1e-9,
             r.stdout[-300:] + r.stderr[-300:],
         )
-        r, e = as_json(
-            "family-test", "--dataset-id", "tickets_v1", "--a", "tickets_lead2_v1", "--against", "tickets_"
-        )
+        r, e = as_json("family-test", "tickets_v1", "--a", "tickets_lead2_v1", "--against", "tickets_")
         rows: list = next(
             (b["rows"] for b in e.get("result", {}).get("blocks", []) if "opponent" in b.get("columns", [])),
             [],
@@ -749,7 +730,7 @@ def main() -> int:
             values_of(e).get("family_size") == len(rows) >= 2 and all("p_holm" in x for x in rows),
             r.stdout[-300:] + r.stderr[-300:],
         )
-        r, e = as_json("leaderboard", "--dataset-id", "tickets_v1")
+        r, e = as_json("leaderboard", "tickets_v1")
         groups = values_of(e).get("groups") or [{}]
         check(
             "leaderboard --json: a ranking with a row per arm, and the ordering test",
@@ -767,15 +748,15 @@ def main() -> int:
             r.stdout[-300:] + r.stderr[-300:],
         )
         r, e = as_json("runs-list")
-        listed = [x["run_id"] for b in e.get("result", {}).get("blocks", []) for x in b.get("rows", [])]
+        listed = [x["run_id"] for x in e.get("result", {}).get("runs", [])]
         check(
             "runs-list --json: a row per run",
-            values_of(e).get("count") == len(listed) and run_id in listed and base_id in listed,
+            e.get("result", {}).get("count") == len(listed) and run_id in listed and base_id in listed,
             r.stdout[-300:] + r.stderr[-300:],
         )
         for cmd, args, said in (
-            ("rank-stability", ["--dataset-id", "tickets_v1"], "too few"),
-            ("rounds", ["--goal", "no_such_goal"], "no goal 'no_such_goal'"),
+            ("rank-stability", ["tickets_v1"], "too few"),
+            ("round-list", ["no_such_goal"], "no goal 'no_such_goal'"),
         ):
             r = evh(cmd, *args, "--json")
             check(

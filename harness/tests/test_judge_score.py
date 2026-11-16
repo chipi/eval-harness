@@ -906,8 +906,8 @@ with tempfile.TemporaryDirectory() as tmp:
         lb_run = subprocess.run(
             [
                 sys.executable,
-                str(HERE / "leaderboard.py"),
-                "--dataset-id",
+                str(HERE / "cli.py"),
+                "leaderboard",
                 "ds",
                 "--label",
                 f"judged/{sc['scorer_id']}",
@@ -2997,8 +2997,8 @@ with tempfile.TemporaryDirectory() as tmp:
         lb_pick = subprocess.run(
             [
                 sys.executable,
-                str(HERE / "leaderboard.py"),
-                "--dataset-id",
+                str(HERE / "cli.py"),
+                "leaderboard",
                 "ds",
                 "--label",
                 f"judged/{sc['scorer_id']}",

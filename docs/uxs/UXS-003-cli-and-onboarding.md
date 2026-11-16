@@ -93,52 +93,52 @@ answer. Where the page has a `make` target in a checkout, it runs the same scrip
 
 | in the catalog or inspector | command | make target |
 | --- | --- | --- |
-| home: the tiles with their trends, goals at a glance, activity and spend, coverage, what was recorded | `evh overview [--period P]` | `make overview` |
-| the activity page: runs, spend and tokens by dataset, arm and kind | `evh activity [--period P] [--arms N]` | `make activity` |
-| any page's period (the chips): its in-period columns, new rows, trends | `--period P` on `evh datasets`, `goals`, `references`, `metrics`, `arms` | `ARGS='--period 30d'` |
-| the datasets page | `evh datasets` | `make datasets` |
-| a dataset page: arms with their cost and speed, baseline, versions, references | `evh datasets --dataset-id <id>` | `make datasets DATASET_ID=<id>` |
-| a dataset page's what's inside: items, words, the gold's shape, each item's row at its source | `evh dataset-items --dataset-id <id> [--item ID]` (written by `evh dataset-profile`) | `make dataset-items DATASET_ID=<id>` |
-| the goals page | `evh goals` | `make goals` |
-| a goal page: the answer so far, arms per dataset and group (a judge's group on its score), retired marks, one line per round | `evh goals --goal <id>` | `make goals GOAL=<id>` |
-| a goal page: its rounds and suggestions (each suggestion's copy button copies its command) | `evh rounds --goal <id> [--round rN]` | `make rounds GOAL=<id>` |
-| a goal page: a round's **inspect** button | `evh inspect --round rN [--goal <id>]` | |
-| the arms page: every arm, grouped, filtered (local / hosted, price tier) | `evh arms [--by dataset\|system\|model\|provider\|scored\|none] [--all] [--where local\|hosted] [--tier T]` (grouped by dataset by default, three a group) | `make arms` |
-| the arms page: the systems, with their rank on each goal | `evh arms --systems` | `make arms ARGS=--systems` |
-| an arm page: metrics, cost and speed, runs, system, conditions, rounds | `evh arms --arm <arm id or system id>` | `make arms ARM=<id>` |
-| the models page: every model record, its deployments, settings, onboarding, arms (0.6.0, RFC-020) | `evh models [--kind K] [--where self-hosted\|hosted] [--status vetted\|onboarded\|check\|none]` | |
-| a model page: its deployments and their onboarding, settings history, arms | `evh models --model <id>` | |
+| home: the tiles with their trends, goals at a glance, activity and spend, coverage, what was recorded | `evh overview-show [--period P]` | |
+| the activity page: runs, spend and tokens by dataset, arm and kind | `evh activity-show [--period P] [--arms N]` | |
+| any page's period (the chips): its in-period columns, new rows, trends | `--period P` on `evh dataset-list`, `goals`, `references`, `metrics`, `arms` | `ARGS='--period 30d'` |
+| the datasets page | `evh dataset-list` | |
+| a dataset page: arms with their cost and speed, baseline, versions, references | `evh dataset-show <id>` | |
+| a dataset page's what's inside: items, words, the gold's shape, each item's row at its source | `evh dataset-items <id> [--item ID]` (written by `evh dataset-profile`) | `make dataset-items DATASET_ID=<id>` |
+| the goals page | `evh goal-list` | |
+| a goal page: the answer so far, arms per dataset and group (a judge's group on its score), retired marks, one line per round | `evh goal-leaderboard <id>` | |
+| a goal page: its rounds and suggestions (each suggestion's copy button copies its command) | `evh round-show <id> rN` | |
+| a goal page: a round's **inspect** button | `evh comparison-show --round rN [--goal <id>]` | |
+| the arms page: every arm, grouped, filtered (local / hosted, price tier) | `evh arm-list [--where local\|hosted] [--tier T]` (grouped by dataset by default, three a group) | |
+| the arms page: the systems, with their rank on each goal | `evh arm-list --systems 1` | |
+| an arm page: metrics, cost and speed, runs, system, conditions, rounds | `evh arm-show LABEL DATASET <arm id or system id>` | |
+| the models page: every model record, its deployments, settings, onboarding, arms (0.6.0, RFC-020) | `evh model-list [--kind K] [--where self-hosted\|hosted] [--status vetted\|onboarded\|check\|none]` | |
+| a model page: its deployments and their onboarding, settings history, arms | `evh model-show <id>` | |
 | (no page action) onboarding a model's deployment, smoking an arm before its run | `evh model-onboard <id> --deployment <d>`, `evh arm-smoke --system <id> --dataset <id>` | |
-| reference set pages | `evh references [--reference-id <id>]` | `make references` |
-| the Captures page | `evh captures [--capture ID] [--json]` | |
+| reference set pages | `evh reference-show <id> NAME` | |
+| the Captures page | `evh capture-show ID [--json]` | |
 | (no page; the Configure page was retired, PRD-017) the project's data: the overview, a folder, find | `evh data-ls [PATH] [--find TEXT]` | |
 | (no page) a file; a setting's fields | `evh data-show PATH [--fields]` | |
 | (no page) saving or creating a setting | `evh data-put PATH --set KEY=VALUE … [--unset KEY …] [--new] [--check]`, or a whole file: `evh data-put PATH FILE` | |
 | (no page) deleting a setting, or a whole run | `evh data-rm PATH [--dry-run]` | |
-| the Labels page; a dataset page's labels (0.6.0) | `evh labels [--dataset-id D]` | |
-| a goal page's failure modes (0.8.0) | `evh tags [--dataset-id D]` | |
+| the Labels page; a dataset page's labels (0.6.0) | `evh label-set-list D` | |
+| a goal page's failure modes (0.8.0) | `evh tag-set-list D` | |
 | (no page action) labelling: a sheet to fill, then its import (0.6.0) | `evh label-sheet --dataset-id D --out sheet.csv [--items …] [--item ID …]`, `evh label-import sheet.csv --dataset-id D --set S --by NAME` | |
 | (no page action) a run's outputs, or outcome rules, as labels (0.6.0) | `evh label-from-run --run R --set S`, `evh label-from-capture --dataset-id D --capture C --map rules.yaml --set S` | |
 | a reference's "promoted from" (0.6.0) | `evh reference-promote --dataset-id D --labels S [--items …] --tier gold\|silver --reason "…"` | |
 | scored against a label set (0.6.0) | `evh rescore --labels D/S`, `evh run --labels D/S` | |
 | a recorded arm's badge (0.6.0) | `evh arm-from-capture --dataset-id D --capture C --as NAME` | |
-| the inspector's sheet, its downloads; its selection's commands (0.6.0) | `evh inspect --sheet --dataset-id D --runs A,B … [--csv FILE [--fill label\|pick\|scores]]`; `evh pick --dataset-id D --item … [--for V] [--tag k=v] [--note "…"]` | |
+| the inspector's sheet, its downloads; its selection's commands (0.6.0) | `evh sheet-export --dataset-id D --runs A,B … [--csv FILE [--fill label\|pick\|scores]]`; `evh pick --dataset-id D --item … [--for V] [--tag k=v] [--note "…"]` | |
 | (no page action) a sheet filled elsewhere, read back (0.6.0) | `evh sheet-import sheet.csv --dataset-id D --by WHO [--kind person\|model] [--set S] [--scorer S]` | `make sheet-import ARGS="…"` |
 | a dataset page's picks waiting; its selection's command (0.6.0) | `evh picks [--for V] [--tag k=v]`, `evh pick --dataset-id D --item ITEM --drop`; `evh dataset-extend V1 --dataset-id V2 --picks`, `evh dataset-extend V1 --dataset-id V2 --pick ITEM` | |
-| a promoted arm's deploy sheet (0.6.0) | `evh deploy-sheet --system ARM [--capture C]` | |
-| the metrics page | `evh metrics [--dataset-id <id>]` | `make metrics` |
-| a metric page: summary, details, goals, per-dataset strip chart and arms | `evh metrics --metric <metric>` | `make metrics METRIC=<metric>` |
-| inspector: a comparison | `evh inspect --runs a,b [--baseline a] [--metric m]` | `make inspect RUNS=a,b` |
-| inspector: filter, breakdown | `evh inspect --runs … --where field:value --by field` | |
-| inspector: one item | `evh inspect --runs … --item <item_id>` | |
-| inspector: the per-item table | `evh inspect --sheet --dataset-id D --runs …` (the sheet; `--scores-only`) | |
-| inspector: the analysis charts, as numbers | `evh inspect --runs … --analysis [--x <metric>]` | |
+| a promoted arm's deploy sheet (0.6.0) | `evh deploy-sheet ARM [--capture C]` | |
+| the metrics page | `evh metric-list [--dataset-id <id>]` | |
+| a metric page: summary, details, goals, per-dataset strip chart and arms | `evh metric-show <metric>` | |
+| inspector: a comparison | `evh comparison-show --runs a,b [--baseline a] [--metric m]` | |
+| inspector: filter, breakdown | `evh comparison-show --runs … --where field:value --by field` | |
+| inspector: one item | `evh comparison-item --runs … --item <item_id>` | |
+| inspector: the per-item table | `evh sheet-show D --runs …` (the sheet; `--scores-only`) | |
+| inspector: the analysis charts, as numbers | `evh comparison-show --runs … --analysis [--x <metric>]` | |
 | the catalog's global search | `evh search <text>` | |
 | "promote its run" (a goal page with no decision) | `evh run-promote --run <run_id> --reason "…"` | `make run-promote` |
 | a suggested retirement | `evh round-retire --goal g --round rN --arm <system> --reason "…"` | `make round-retire` |
 | a suggested close | `evh round-close --goal g --round rN --conclusion "…" [--promote <run_id>]` | `make round-close` |
 | (no page action) opening a round | `evh round-open --goal g --dataset d … [--adopt] [--keep all] [--scoring "…"]` | `make round-open` |
-| a round's scorer and its scoring changes (the goal page's round section) | `evh rounds --goal g --round rN` | |
+| a round's scorer and its scoring changes (the goal page's round section) | `evh round-show g rN` | |
 | (no page action) what a scoring change would move | `evh score-preview --goal g [--round rN]` | |
 | (no page action) re-scoring a round | `evh rescore --goal g --round rN --why "…"` | `make rescore` |
 | building and serving the pages | `evh catalog`, `evh catalog-serve` | `make catalog`, `make catalog-serve` |
@@ -164,7 +164,7 @@ evh round-open --goal tickets_summary --dataset tickets_v1 \
     --hypothesis "how many leading sentences summarise a ticket best" \
     --keep tickets_lead1_v1,tickets_lead2_v1 --budget-usd 1
 # commit the round file, then run each new system in it: evh run --system <id> --dataset tickets_v1 --goal tickets_summary --round r1
-evh rounds --goal tickets_summary
+evh round-list tickets_summary
 evh round-retire --goal tickets_summary --round r1 --arm tickets_lead1_v1 --reason "…"
 evh round-close --goal tickets_summary --round r1 --conclusion "…" --promote <run_id>
 ```
@@ -172,9 +172,9 @@ evh round-close --goal tickets_summary --round r1 --conclusion "…" --promote <
 - `round-open` prints the round file it wrote, then, when it carried arms in: "Carried in as
   they are, their runs already count: <arms> (their systems need no change and they need not run
   again)", then "A NEW system joins it by running in it: evh run --system <id> --dataset <dataset>
-  --goal tickets_summary --round r1; then: evh rounds --goal tickets_summary" and "Commit the round file
+  --goal tickets_summary --round r1; then: evh round-list tickets_summary" and "Commit the round file
   before the runs: an uncommitted file makes them dirty."
-- `evh rounds --goal G` prints one line per round, then the open round in full: its hypothesis,
+- `evh round-list G` prints one line per round, then the open round in full: its hypothesis,
   "on <measure>: n arm(s) in play, leader <arm>", each other arm's verdict against the leader
   with Δ and p (four decimals, as every command prints a p), `NOTE:` lines (the spend against
   the budget), and **suggested next**, each suggestion followed by its command, ready to paste.

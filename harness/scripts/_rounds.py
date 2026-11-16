@@ -231,7 +231,7 @@ def read_under_rescore(
 
 
 def summary(rnd: dict[str, Any]) -> dict[str, Any]:
-    """One round as a line of `evh rounds` and `round-list`: its arms in play and retired, counted from the stored arms."""
+    """One round as a line of `evh round-list` and `round-list`: its arms in play and retired, counted from the stored arms."""
     from evaluation_harness.model import rounds as model_rounds  # noqa: PLC0415
 
     arms = model_rounds.arms(rnd)
@@ -246,7 +246,7 @@ def summary(rnd: dict[str, Any]) -> dict[str, Any]:
 
 
 def view(rnd: dict[str, Any]) -> dict[str, Any]:
-    """The round with its arms, as `evh rounds --json`, `round-show` and the API give it: each arm with the id the
+    """The round with its arms, as `evh round-list --json`, `round-show` and the API give it: each arm with the id the
     catalog names it by."""
     from evaluation_harness.model import rounds as model_rounds  # noqa: PLC0415
 

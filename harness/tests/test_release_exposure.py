@@ -62,8 +62,8 @@ try:
     )
     _runstore.write_text(proj, "exposure/held_h.jsonl", json.dumps(ROW) + "\n")
 
-    r = run(sys.executable, str(HERE / "cli.py"), "exposure", "--dataset-id", "held_v1", "--json", e=env)
-    got = json.loads(r.stdout)["result"]["values"]["exposure"][0] if r.returncode == 0 else {}
+    r = run(sys.executable, str(HERE / "cli.py"), "exposure", "--dataset", "held_v1", "--json", e=env)
+    got = json.loads(r.stdout)["result"]["sides"][0] if r.returncode == 0 else {}
     check("setup: in the project the item is read", got.get("exposed") == 1, (r.stdout + r.stderr)[-300:])
 
     copy = dest / "data"
@@ -94,8 +94,8 @@ try:
         hid.read_text() if hid.is_file() else "no copy",
     )
     on_copy = dict(env, EVAL_HOME=str(dest), EVAL_STORE="files")
-    r = run(sys.executable, str(HERE / "cli.py"), "exposure", "--dataset-id", "held_v1", "--json", e=on_copy)
-    got = json.loads(r.stdout)["result"]["values"]["exposure"][0] if r.returncode == 0 else {}
+    r = run(sys.executable, str(HERE / "cli.py"), "exposure", "--dataset", "held_v1", "--json", e=on_copy)
+    got = json.loads(r.stdout)["result"]["sides"][0] if r.returncode == 0 else {}
     check(
         "with the copy as the project, the exposed item is counted read (a score leaves it out)",
         got.get("exposed") == 1 and got.get("reads") == 1,

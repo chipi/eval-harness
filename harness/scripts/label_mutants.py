@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Mutation-test a labeller (RFC-031 X1): each named change to the rules or the join must move some labels.
 
-    evh label-mutants --dataset-id triage_v1 --capture decisions --map outcomes.yaml \\
+    evh label-mutants triage_v1 --capture decisions --map outcomes.yaml \\
         [--outcomes issues --join fp=fp --within -1m,+15m] [--mutants my_mutants.py]
 
 Three of the triage fleet's labeller mistakes (a recurrence counted from every ledger row, "closed as duplicate" read as
@@ -25,14 +25,13 @@ from pathlib import Path as _Path
 if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
-import argparse
 import copy
-import sys
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 from evaluation_harness import _jsonout, _outcome_join
-from evaluation_harness._common import die, evh_prog, load_module
+from evaluation_harness._common import die, load_module
 from evaluation_harness._outcome_rules import load_rules
 from evaluation_harness.label_coverage import coverage
 
@@ -79,117 +78,107 @@ def _signature(cov: dict[str, Any]) -> dict[str, tuple]:
     return {x["item_id"]: (x["class"], tuple(x.get("label") or ())) for x in cov["by_item"]}
 
 
-def main() -> int:
-    """Run every mutant and count the labels each moves."""
-    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
-    ap.add_argument("--dataset-id", required=True)
-    ap.add_argument("--capture", required=True, help="the capture whose records hold the decisions")
-    ap.add_argument("--map", required=True, type=Path, help="the rules")
-    _outcome_join.add_arguments(ap)
-    ap.add_argument(
-        "--mutants", type=Path, help="a project's own mutants (FILE.py: mutants(rules), join_mutants(join))"
+def body(
+    dataset: str,
+    capture: str,
+    map: str,
+    mutants: str | None = None,
+    outcomes: list[dict[str, Any]] | None = None,
+) -> int:
+    """Run every mutant of a labeller and count the labels each moves."""
+    args = SimpleNamespace(
+        dataset_id=dataset, capture=capture, map=Path(map), mutants=Path(mutants) if mutants else None
     )
-    ap.add_argument(
-        "--json",
-        action="store_true",
-        help="one JSON object on stdout when done (the text goes to stderr as it is printed): the envelope every --json command gives (result.blocks, result.values)",
-    )
-    args = ap.parse_args(_outcome_join.argv())
-    with _jsonout.collect("label-mutants", args.json, live=sys.stderr):
-        rules = load_rules(args.map)
-        join = _outcome_join.from_args(args)
-        base = _signature(coverage(args.dataset_id, args.capture, rules, join))
-        labelled = sum(1 for c, _l in base.values() if c == "labelled")
-        plans: list[tuple[str, list[dict], Any]] = [(name, m, join) for name, m in builtin(rules)]
+    rules = load_rules(args.map)
+    join = _outcome_join.joins_of(outcomes)
+    base = _signature(coverage(args.dataset_id, args.capture, rules, join))
+    labelled = sum(1 for c, _l in base.values() if c == "labelled")
+    plans: list[tuple[str, list[dict], Any]] = [(name, m, join) for name, m in builtin(rules)]
 
-        def describe(j: Any) -> dict[str, Any]:
-            return {
-                "capture": j.capture,
-                "join": f"{j.item_field}={j.record_field}",
-                "within": j.within_text,
-                "identity": "=".join(j.identity) if j.identity else None,
-                "gone_if_missing": j.gone_if_missing,
-                "as": j.name,
-            }
+    def describe(j: Any) -> dict[str, Any]:
+        return {
+            "capture": j.capture,
+            "join": f"{j.item_field}={j.record_field}",
+            "within": j.within_text,
+            "identity": "=".join(j.identity) if j.identity else None,
+            "gone_if_missing": j.gone_if_missing,
+            "as": j.name,
+        }
 
-        def make_join(j: dict) -> Any:
-            return _outcome_join.Join(
-                j["capture"],
-                j["join"],
-                j.get("within"),
-                j.get("identity"),
-                j.get("gone_if_missing", False),
-                j.get("as"),
-            )
+    def make_join(j: dict) -> Any:
+        return _outcome_join.Join(
+            j["capture"],
+            j["join"],
+            j.get("within"),
+            j.get("identity"),
+            j.get("gone_if_missing", False),
+            j.get("as"),
+        )
 
-        # Each outside capture's join is mutated in turn, the others as they are (several: the fleet's beta).
-        joins = join.joins if join else []
+    # Each outside capture's join is mutated in turn, the others as they are (several: the fleet's beta).
+    joins = join.joins if join else []
 
-        def with_one(k: int, j: dict) -> Any:
-            return _outcome_join.Joins([make_join(j) if n == k else o for n, o in enumerate(joins)])
+    def with_one(k: int, j: dict) -> Any:
+        return _outcome_join.Joins([make_join(j) if n == k else o for n, o in enumerate(joins)])
 
-        mod = None
-        if args.mutants:
-            from evaluation_harness import _common  # noqa: PLC0415
+    mod = None
+    if args.mutants:
+        from evaluation_harness import _common  # noqa: PLC0415
 
-            mod = load_module(
-                (_common.ROOT / args.mutants).resolve() if not args.mutants.is_absolute() else args.mutants,
-                "evh_label_mutants",
-            )
-        for k, one in enumerate(joins):
-            jargs = describe(one)
-            which = f" ({jargs['as']})" if len(joins) > 1 else ""
-            if jargs.get("within"):
-                plans.append(
-                    (
-                        f"the join's window moved an hour later{which} ({jargs['within']} -> {_shift(jargs['within'])})",
-                        rules,
-                        with_one(k, {**jargs, "within": _shift(jargs["within"])}),
-                    )
+        mod = load_module(
+            (_common.ROOT / args.mutants).resolve() if not args.mutants.is_absolute() else args.mutants,
+            "evh_label_mutants",
+        )
+    for k, one in enumerate(joins):
+        jargs = describe(one)
+        which = f" ({jargs['as']})" if len(joins) > 1 else ""
+        if jargs.get("within"):
+            plans.append(
+                (
+                    f"the join's window moved an hour later{which} ({jargs['within']} -> {_shift(jargs['within'])})",
+                    rules,
+                    with_one(k, {**jargs, "within": _shift(jargs["within"])}),
                 )
-            for name, j in (getattr(mod, "join_mutants", lambda j: [])(dict(jargs)) or []) if mod else []:
-                # A key the join does not read would run the unchanged join and be reported SURVIVED (the
-                # fleet's beta): refused, so the mutant is written in the keys that are read.
-                unread = sorted(set(j) - set(jargs)) if isinstance(j, dict) else []
-                if not isinstance(j, dict) or unread:
-                    die(
-                        f"--mutants {args.mutants}: join mutant {name!r} "
-                        + (
-                            f"has key(s) the join does not read: {', '.join(unread)}"
-                            if unread
-                            else "is not a dict"
-                        )
-                        + f". A join mutant changes {', '.join(sorted(jargs))}; the fields joined are one "
-                        "'join': 'ITEM_FIELD=RECORD_FIELD'.",
-                        "bad-argument",
-                    )
-                plans.append((f"{name}{which} (the project's)", rules, with_one(k, j)))
-        if mod is not None:
-            for name, m in getattr(mod, "mutants", lambda r: [])(copy.deepcopy(rules)) or []:
-                plans.append((f"{name} (the project's)", m, join))
-        print(
-            f"{args.dataset_id}: {len(plans)} mutant(s) of the labeller over capture {args.capture}"
-            + (f" and {join.capture}" if join else "")
-            + f"; unchanged it labels {labelled} item(s)"
-        )
-        results = []
-        for name, m, j in plans:
-            sig = _signature(coverage(args.dataset_id, args.capture, m, j))
-            moved = sorted(i for i in base if sig.get(i) != base[i])
-            results.append({"mutant": name, "moved": len(moved)})
-            print(f"  {'SURVIVED' if not moved else 'killed  '}  {name}: {len(moved)} label(s) moved")
-        survivors = [r["mutant"] for r in results if not r["moved"]]
-        print(
-            f"{len(results) - len(survivors)} of {len(results)} killed"
-            + (
-                f"; {len(survivors)} survived: the labelled items do not reach what they change (a finding: read why)"
-                if survivors
-                else ""
             )
+        for name, j in (getattr(mod, "join_mutants", lambda j: [])(dict(jargs)) or []) if mod else []:
+            # A key the join does not read would run the unchanged join and be reported SURVIVED (the
+            # fleet's beta): refused, so the mutant is written in the keys that are read.
+            unread = sorted(set(j) - set(jargs)) if isinstance(j, dict) else []
+            if not isinstance(j, dict) or unread:
+                die(
+                    f"--mutants {args.mutants}: join mutant {name!r} "
+                    + (
+                        f"has key(s) the join does not read: {', '.join(unread)}"
+                        if unread
+                        else "is not a dict"
+                    )
+                    + f". A join mutant changes {', '.join(sorted(jargs))}; the fields joined are one "
+                    "'join': 'ITEM_FIELD=RECORD_FIELD'.",
+                    "bad-argument",
+                )
+            plans.append((f"{name}{which} (the project's)", rules, with_one(k, j)))
+    if mod is not None:
+        for name, m in getattr(mod, "mutants", lambda r: [])(copy.deepcopy(rules)) or []:
+            plans.append((f"{name} (the project's)", m, join))
+    print(
+        f"{args.dataset_id}: {len(plans)} mutant(s) of the labeller over capture {args.capture}"
+        + (f" and {join.capture}" if join else "")
+        + f"; unchanged it labels {labelled} item(s)"
+    )
+    results = []
+    for name, m, j in plans:
+        sig = _signature(coverage(args.dataset_id, args.capture, m, j))
+        moved = sorted(i for i in base if sig.get(i) != base[i])
+        results.append({"mutant": name, "moved": len(moved)})
+        print(f"  {'SURVIVED' if not moved else 'killed  '}  {name}: {len(moved)} label(s) moved")
+    survivors = [r["mutant"] for r in results if not r["moved"]]
+    print(
+        f"{len(results) - len(survivors)} of {len(results)} killed"
+        + (
+            f"; {len(survivors)} survived: the labelled items do not reach what they change (a finding: read why)"
+            if survivors
+            else ""
         )
-        _jsonout.values({"mutants": results, "survived": survivors, "labelled": labelled})
-        return 6 if survivors else 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())
+    )
+    _jsonout.values({"mutants": results, "survived": survivors, "labelled": labelled})
+    return 6 if survivors else 0

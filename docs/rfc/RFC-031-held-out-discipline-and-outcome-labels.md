@@ -100,14 +100,14 @@ fleet-eval-data, as config or hooks.
   paraphrases, titles, ranges and ids written without their prefix. A project hook (`exposure.ids_hook`) may add
   forms, such as the fleet's "PREFIX-X, -Y" lists.
 - **Index, not name**: a command that lists sealed items for a person prints an index ("sealed item 37 of 91"); the
-  ids are printed only by `evh exposure --dataset-id D --ids`, which records nothing and is refused to an agent.
+  ids are printed only by `evh exposure --dataset D --ids`, which records nothing and is refused to an agent.
 
 ### H2: counts-only reports (gap 2)
 
 - **The allow-list is fixed when the side is sealed**: `dataset-split --seal --count-by FIELD,...` writes
   `sealed.count_by`. A person may extend it later with `evh dataset-seal-counts --dataset-id D --add FIELD --reason
   "…"` (recorded, with who); an agent may not.
-- **`evh sealed-counts --dataset-id D [--by FIELD,...] [--per day]`**: counts per UTC day (the split's time key) and
+- **`evh sealed-counts D [--by FIELD,...] [--per day]`**: counts per UTC day (the split's time key) and
   per allowed field, over the sealed items and, with `--capture C`, over a capture's records on the sealed side of
   the boundary (the live watch: records that arrived after the split). It refuses any field not on the list, any id
   or text field, and prints "for safety only, never to judge effect". It records no read.
@@ -163,18 +163,18 @@ fleet-eval-data, as config or hooks.
 
 ### P2: a baseline from a past period (gap 6)
 
-- **`evh period-compare --system REPLAY --dataset D --candidate CANDIDATE --from T --to T`**: on the items whose replay time falls in
+- **`evh period-compare REPLAY --dataset D --candidate CANDIDATE --from T --to T`**: on the items whose replay time falls in
   the period, three columns per measure: what production recorded (`arm-from-capture`), the code that ran then
   (the replay run, which must agree with production on those items or the report says it does not count), and the
   candidate on the same items; the paired test between the last two, on the period's items only.
-- **Periods from the code record**: `evh periods --model RECORD` lists the record's deployed periods (RFC-030's
+- **Periods from the code record**: `evh periods RECORD` lists the record's deployed periods (RFC-030's
   `kind: code` versions) with each period's item count and faithfulness; `--period N` takes one by number. A result
   can be split at a deploy boundary.
 
 ### X1 to X3: three needs from the fleet's notes (confirmed by the fleet session, 2026-11-12)
 
 - **X1, the labeller mutation-tested.** Three of the fleet's labeller mistakes were caught only by reading results,
-  none by a test. `evh label-mutants --dataset-id D --capture C --map RULES [--outcomes …] --mutants FILE.py` applies
+  none by a test. `evh label-mutants D --capture C --map RULES [--outcomes …] --mutants FILE.py` applies
   named mutants to the rules or the join (a project's mutants file, as RFC-030's R5 for a replay), labels again with
   each, and reports per mutant how many labels moved. A mutant that moves none is a finding: the labelled set does not
   reach that rule. The fleet's five: the recurrence definition (every ledger row instead of real recurrences: 12,635
@@ -253,7 +253,7 @@ Every part is built, each with a test that fails before it (`tests/test_exposure
   (pair-test, family-test, the leaderboard) and the catalog adapter's `scores`, wrapped where every adapter is built
   (a project's own too); `_jsonout` says "N item(s) left out (exposed)" after any command whose scores did.
   `--include-exposed` is on `pair-test`: the mean difference with the read items kept, marked, no test run on it
-  (a test set's look is spent on the number that counts). The dataset page, the goal page and `evh goals` carry a
+  (a test set's look is spent on the number that counts). The dataset page, the goal page and `evh goal-list` carry a
   held-out side's read count.
 - **H2**: `sealed-counts --no-day` gives totals; a counted field holding text (over 60 characters, or a newline)
   is refused. The counts hook is called with the capture's records on the held-out side and the side's items.

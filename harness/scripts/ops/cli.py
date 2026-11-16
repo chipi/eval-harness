@@ -21,7 +21,23 @@ def parser(op: Op) -> argparse.ArgumentParser:
         flag = f"--{name.replace('_', '-')}"
         help_ = spec.get("description", "")
         t = spec.get("type")
-        if t == "object":
+        kind = {"integer": int, "number": float}.get(t, str)
+        if name in op.positional:
+            many = t == "array"
+            ap.add_argument(
+                name,
+                nargs=("+" if name in op.required else "*")
+                if many
+                else (None if name in op.required else "?"),
+                type=kind if not many else str,
+                choices=spec.get("enum"),
+                help=help_,
+            )
+        elif t == "array" and spec.get("items", {}).get("type") == "object":
+            from evaluation_harness import _outcome_join  # noqa: PLC0415
+
+            _outcome_join.add_arguments(ap)  # --outcomes CAPTURE, each with the options after it
+        elif t == "object":
             ap.add_argument(
                 flag, action="append", default=[], metavar="KEY=VALUE", help=help_ + " (repeatable)"
             )
@@ -30,9 +46,7 @@ def parser(op: Op) -> argparse.ArgumentParser:
         elif t == "boolean":
             ap.add_argument(flag, action="store_true", help=help_)
         else:
-            ap.add_argument(
-                flag, type=int if t == "integer" else str, required=name in op.required, help=help_
-            )
+            ap.add_argument(flag, type=kind, required=name in op.required, help=help_)
     if op.kind != "read":
         from evaluation_harness._actor import add_by  # noqa: PLC0415
 
@@ -63,15 +77,17 @@ def _pairs(items: list[str]) -> dict[str, Any]:
 
 def main(op: Op, argv: list[str] | None = None) -> int:
     """Run the operation as a command."""
-    from evaluation_harness import _common  # noqa: PLC0415
+    from evaluation_harness import _common, _outcome_join  # noqa: PLC0415
     from evaluation_harness._version import __version__  # noqa: PLC0415
     from evaluation_harness.model.entity import Problem  # noqa: PLC0415
 
-    args = parser(op).parse_args(argv)
+    args = parser(op).parse_args(_outcome_join.argv(argv))  # a window `--within -1m,+15m` is one value
     kwargs: dict[str, Any] = {p: getattr(args, p) for p in op.path_params()}
     for name, spec in op.inputs.items():
         v = getattr(args, name.replace("-", "_"))
-        if spec.get("type") == "object":
+        if spec.get("type") == "array" and spec.get("items", {}).get("type") == "object":
+            v = _outcome_join.outcomes_from_argv(argv)
+        elif spec.get("type") == "object":
             v = _pairs(v)
         if v not in (None, [], {}) or name in op.required:
             kwargs[name] = v
@@ -81,6 +97,8 @@ def main(op: Op, argv: list[str] | None = None) -> int:
         a = _actor.actor()
         kwargs["by"] = f"{a['type']}:{a['name']}"
     try:
+        if op.printer and not args.json:
+            return op.print_text(**kwargs)
         result = op.call(**kwargs)
     except Problem as exc:
         _common.die(str(exc), exc.kind)
@@ -88,4 +106,4 @@ def main(op: Op, argv: list[str] | None = None) -> int:
         print(json.dumps({"command": op.name, "version": __version__, "result": result}, ensure_ascii=False))
     else:
         print(op.say(result))
-    return 0
+    return op.exit_code(result)

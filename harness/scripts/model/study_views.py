@@ -1,4 +1,4 @@
-"""What a study shows (RFC-032 step 7): a goal's studies as its page and `evh goals` print them, and the study-list and
+"""What a study shows (RFC-032 step 7): a goal's studies as its page and `evh goal-list` print them, and the study-list and
 study-show operations' answers, each read from the study's log through the layout in model/studies, from the project's
 data or another data root (a deployment's copy of it, which the catalog reads)."""
 
@@ -33,7 +33,7 @@ def _rows(trials: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
 
 def of_goal(goal: str, data: Path | None = None) -> list[dict[str, Any]]:
-    """A goal's studies as its page and `evh goals` show them: each one's state, its trials in rows, its confirms, and
+    """A goal's studies as its page and `evh goal-list` show them: each one's state, its trials in rows, its confirms, and
     whether its text is hidden (a public page shows no hypothesis then). A study with no log yet (a spec nothing has
     run) is not shown."""
     out = []
@@ -83,7 +83,8 @@ def list_studies(goal: str, data: Path | None = None) -> list[dict[str, Any]]:
 
 def show_study(goal: str, sid: str, data: Path | None = None) -> dict[str, Any]:
     """One study: its spec as written, where it stands as its log says (trials in rows, the best so far, an open ask,
-    how it ended), its confirmations and where its parts are."""
+    how it ended), the trials as the log records them (what each changed, its tests against the best and the baseline, who
+    asked), its confirmations and where its parts are."""
     from evaluation_harness.model.dataset_views import rel  # noqa: PLC0415
 
     st = ms.state(goal, sid, data)
@@ -96,6 +97,7 @@ def show_study(goal: str, sid: str, data: Path | None = None) -> dict[str, Any]:
         "baseline": st["baseline"],
         "spent_usd": st["spent_usd"],
         "rows": _rows(st["trials"]),
+        "trials": st["trials"],
         "best": (st["best"] or {}).get("system_id"),
         "open_ask": (st["open_ask"] or {}).get("ask_id"),
         "end": (st["end"] or {}).get("reason"),

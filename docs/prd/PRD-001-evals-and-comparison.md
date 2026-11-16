@@ -99,7 +99,7 @@ the [Runbook](../../harness/docs/RUNBOOK.md); the first evaluation, step by step
 
 ### FR3: Comparison
 
-- **FR3.1**: `evh leaderboard --dataset-id …` ranks every arm on one dataset with quality,
+- **FR3.1**: `evh leaderboard …` ranks every arm on one dataset with quality,
   cost and speed together, and runs a Friedman permutation test with Nemenyi before it lets an
   order be read.
 - **FR3.2**: `evh pair-test` tests one pre-named pair; `evh family-test` tests one arm against a

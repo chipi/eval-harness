@@ -191,7 +191,7 @@ git add data/labels data/references && git commit -qm "silver/tickets_v1: the au
 ```
 ```text
 data/labels/tickets_v1/author_v1: 6 label(s), source model · tickets_author_v1_...
-  every set on it: evh labels --dataset-id tickets_v1
+  every set on it: evh label-set-list tickets_v1
 .../my-evals/data/references/silver/tickets_v1: 6 of 6 item(s), silver, promoted from tickets_v1/author_v1 (model · tickets_author_v1_...)
   commit it before the next run: an untracked reference marks every run scored against it dirty
 ```
@@ -239,7 +239,7 @@ metric`. A run that spent money prints `spent $…` after them.)
 **All arms at once:**
 
 ```bash
-evh leaderboard --dataset-id tickets_v1
+evh leaderboard tickets_v1
 ```
 <!-- guide-check: varies lead2_noisy global distinguishable -->
 ```text
@@ -272,7 +272,7 @@ score, so it is not ranked. The table also carries each arm's cost and speed (al
 **One pair you named in advance**, tested item by item:
 
 ```bash
-evh pair-test --dataset-id tickets_v1 --a tickets_lead2_v1 --b tickets_lead1_v1
+evh pair-test tickets_v1 --a tickets_lead2_v1 --b tickets_lead1_v1
 ```
 ```text
     items A wins       6/6
@@ -287,7 +287,7 @@ leaderboard, the `pair-test` p-value above is wrong; `family-test` corrects for 
 comparison you could have made:
 
 ```bash
-evh family-test --dataset-id tickets_v1 --a tickets_lead2_v1 --against tickets_
+evh family-test tickets_v1 --a tickets_lead2_v1 --against tickets_
 ```
 <!-- guide-check: varies lead2_noisy ahead -->
 ```text
@@ -380,7 +380,7 @@ command, flag, environment variable and exit code), [CONCEPTS](../harness/docs/C
 
 And for an agent: `evh init` wrote `AGENTS.md`, its rules and this loop in brief. An agent with a
 shell runs the commands above itself and reads them with `--json` (`evh runs-list --json`,
-`evh leaderboard --json`, `evh pair-test --json`, `evh goals --json`); it needs neither the
+`evh leaderboard --json`, `evh pair-test --json`, `evh goal-list --json`); it needs neither the
 catalog nor MCP. `evh mcp` serves the same read commands as tools to an agent that cannot run
 them, Claude, ChatGPT, the OpenAI API, Gemini or any MCP client, on your project or for a team;
 this repository's own evals answer at `https://evals.humancopilot.eu/mcp`, without sign-in

@@ -131,7 +131,7 @@ try:
     check("setup: the sealed side materialized (reading it is not refused)", r.returncode == 0, out(r)[-300:])
 
     # H2: counts only, by the allowed fields
-    r = evh("sealed-counts", "--dataset-id", "tk_v1_test", "--no-day", "--json")
+    r = evh("sealed-counts", "tk_v1_test", "--no-day", "--json")
     counts = (
         (json.loads(r.stdout)["result"]["values"]["counts"]["held-out items"]["all"])
         if r.returncode == 0
@@ -140,11 +140,11 @@ try:
     check(
         "sealed-counts: counts by kind, no id printed, said to be for safety only",
         counts == {"n": 5, "kind=bug": 3, "kind=question": 2}
-        and "for safety only, never to judge effect" in r.stderr
+        and "for safety only, never to judge effect" in out(r)
         and not any(n in out(r) for n in held),
         out(r)[-500:],
     )
-    r = evh("sealed-counts", "--dataset-id", "tk_v1_test", "--by", "alert")
+    r = evh("sealed-counts", "tk_v1_test", "--by", "alert")
     check(
         "sealed-counts: a field the seal does not allow is refused",
         refused(r, "not a field this held-out side may be counted by"),
@@ -187,15 +187,15 @@ try:
         and "1 of 5 item(s) now exposed" in out(r),
         out(r)[-300:] + json.dumps(reg),
     )
-    r = evh("exposure", "--dataset-id", "tk_v1_test")
+    r = evh("exposure", "--dataset", "tk_v1_test")
     check(
         "exposure: counts, no id",
         "1 of 5 item(s) exposed (4 unread)" in r.stdout and held[0] not in r.stdout,
         out(r)[-300:],
     )
-    r = evh("exposure", "--dataset-id", "tk_v1_test", "--ids", e=AGENT)
+    r = evh("exposure", "--dataset", "tk_v1_test", "--ids", e=AGENT)
     check("exposure --ids: an agent is refused", refused(r, "a person's command"), out(r)[-300:])
-    r = evh("exposure", "--dataset-id", "tk_v1_test", "--ids")
+    r = evh("exposure", "--dataset", "tk_v1_test", "--ids")
     check("exposure --ids: a person sees the ids", held[0] in r.stdout, out(r)[-300:])
 
     # scores leave the read item out, after an unseal
@@ -241,7 +241,7 @@ try:
         out(r)[-400:] + out(ra)[-200:] + out(rb)[-200:],
     )
     r = evh(
-        "pair-test", "--dataset-id", "tk_v1_test", "--a", "cand_x_v1", "--b", "base_x_v1", "--metric", "overlap_f1",
+        "pair-test", "tk_v1_test", "--a", "cand_x_v1", "--b", "base_x_v1", "--metric", "overlap_f1",
         "--json",
     )  # fmt: skip
     vals = json.loads(r.stdout)["result"]["values"] if r.returncode == 0 else {}
@@ -253,7 +253,7 @@ try:
         out(r)[-600:],
     )
     r = evh(
-        "pair-test", "--dataset-id", "tk_v1_test", "--a", "cand_x_v1", "--b", "base_x_v1", "--metric", "overlap_f1",
+        "pair-test", "tk_v1_test", "--a", "cand_x_v1", "--b", "base_x_v1", "--metric", "overlap_f1",
         "--include-exposed",
     )  # fmt: skip
     check(
@@ -261,10 +261,10 @@ try:
         r.returncode == 0 and "NOT the number that counts): n 5 (+1)" in r.stdout,
         out(r)[-600:],
     )
-    r = evh("inspect", "--runs", "cand_x_v1", "--item", held[1])
+    r = evh("comparison-item", "--runs", "cand_x_v1", "--item", held[1])
     reg = register()
     check(
-        "inspect --item on a held-out item records the read itself (by this process's actor)",
+        "comparison-item on a held-out item records the read itself (by this process's actor)",
         any(x["item_id"] == held[1] and x["source"] == "harness" and x["by"] == "person:ana" for x in reg),
         out(r)[-400:] + json.dumps(reg)[-400:],
     )

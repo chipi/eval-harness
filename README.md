@@ -90,8 +90,8 @@ evh label-from-run --run <its run_id> --set best_v1                  # optional:
 evh reference-promote --dataset-id my_v1 --labels best_v1 --tier silver \
     --reason "the best system we have ranks the rest" --by me           # ...promoted: the reference set
 evh run --system <id> --dataset my_v1 --repeat 3         # each system, with its own noise
-evh leaderboard --dataset-id my_v1                                  # the ranking, and whether it is real
-evh family-test --dataset-id my_v1 --a arm_a_v1 --against arm_      # does the winner differ significantly?
+evh leaderboard my_v1                                  # the ranking, and whether it is real
+evh family-test my_v1 --a arm_a_v1 --against arm_      # does the winner differ significantly?
 evh run-promote --run <run_id> --reason "what the tests showed"     # the choice, recorded with why
 ```
 
@@ -111,14 +111,14 @@ offline, with the real output of every command. The tutorials take it further:
 
 | command | answers |
 | --- | --- |
-| `evh leaderboard --dataset-id my_v1` | rank arms on quality, cost and speed, and whether the order is real |
-| `evh pair-test --dataset-id my_v1 --a … --b …` | one comparison you named in advance, without paying the multiplicity price for 275 you didn't |
+| `evh leaderboard my_v1` | rank arms on quality, cost and speed, and whether the order is real |
+| `evh pair-test my_v1 --a … --b …` | one comparison you named in advance, without paying the multiplicity price for 275 you didn't |
 | `evh holdout --dataset-id my_v1 --exclude-dataset …` | the same test minus items a smaller dataset already contained |
-| `evh rank-stability --dataset-id my_v1` | how many items before the ordering stops moving: measured, not assumed |
+| `evh rank-stability my_v1` | how many items before the ordering stops moving: measured, not assumed |
 | `evh silver-calibrate --dataset-id my_v1` | is a silver reference usable? How far it drifts from gold, read against the ceiling it prints |
 | `evh rescore --dataset-id my_v1` | recompute scores from stored outputs, no API calls |
 | `evh judge-score --dataset-id my_v1 --scorer …` | optional: re-measure stored outputs with LLM judges that grade each output, pick the best or compare two (the scorer's `mode`), refused until they are validated against people in that mode ([tutorial 3](docs/tutorials/3-frontier-reference-and-judging.md)) |
-| `evh inspect --sheet --dataset-id my_v1 --runs …` | one sheet: every item, what each arm wrote and its scores, the labels, the winner and a footer per arm; `--csv FILE --fill label\|pick\|scores` for a person or a tool to fill, `evh sheet-import` to read it back |
+| `evh sheet-show my_v1 --runs …` | one sheet: every item, what each arm wrote and its scores, the labels, the winner and a footer per arm; `--csv FILE --fill label\|pick\|scores` for a person or a tool to fill, `evh sheet-import` to read it back |
 | `evh catalog-serve` | browse every run and test any arms against a baseline, item by item; every view is also a command ([tutorial 5](docs/tutorials/5-catalog-and-inspector.md)) |
 
 `evh --help` lists every verb. **The catalog and MCP are optional.** `evh catalog` and

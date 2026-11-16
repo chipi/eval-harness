@@ -117,7 +117,7 @@ def main() -> int:
             print("Dry run — nothing was called and nothing was spent.")
             return 0
 
-        lb = [py, str(CODE / "leaderboard.py"), "--dataset-id", dataset_id]
+        lb = [py, str(CODE / "cli.py"), "leaderboard", dataset_id]
         if args.sort:
             lb += ["--sort", args.sort]
         subprocess.run(lb, cwd=ROOT)

@@ -539,7 +539,7 @@ success_criteria:
           <div class="inline" style="margin-top:8px"><button type="button" class="btn" id="showall">${S.showAll ? "Hide" : "Show"} the ${arms.length - arms.filter((a) => a.verdict !== "significant: worse").length} significantly worse</button><span class="muted" style="font-size:13px">select an arm to read its summaries</span></div>`
           : `<p class="muted">${r.retired} run${r.retired === 1 ? "" : "s"} retired in this round; no new arms.</p>`}
         <div class="part" style="margin-top:20px"><div class="parthead"><h3>Its conclusion</h3><span class="grow"></span>${r.promoted ? `<span class="status ok">promoted ${esc(r.promoted.replace(/_\d{8}T\d{6}Z$/, ""))}</span>` : ""}</div><p style="margin:10px 0 0">${esc(r.conclusion)}</p></div>
-        ${cmd(`evh rounds --goal ${M.goal.goal_id} --round ${r.id}\nevh goals --goal ${M.goal.goal_id}`, "the commands that show this")}`;
+        ${cmd(`evh round-show ${M.goal.goal_id} ${r.id}\nevh goal-leaderboard ${M.goal.goal_id}`, "the commands that show this")}`;
     }
     return `<div class="screen wide">
       <div class="kicker">Step 5 of 5 · ${esc(S.goal.goal_id)} · ${esc(ds() || "cnn_dailymail_200")}</div>
@@ -579,7 +579,7 @@ success_criteria:
     // The baseline's own re-run on the same machine is what the pair tests compared against (its r1 run was a Mac's).
     const baseRe = (M.reruns || {})[base.config_id];
     const CH = { prompt: "the prompt", model: "the model", temperature: "the temperature", max_tokens: "the most it may write" };
-    // r4's verdicts are `evh rounds`': every arm in play against the round's leader (the best mean, bart_l carried in
+    // r4's verdicts are `evh round-list`': every arm in play against the round's leader (the best mean, bart_l carried in
     // among them), Holm across them (rounds.evidence); arms_of leaves the retired out, so a retire narrows it. The
     // project's pair tests are each arm against bart_l, so they are the round's while bart_l leads it, as it does on
     // these re-runs (the Bonferroni test of a leader against the baseline runs only when the two differ).
@@ -607,10 +607,10 @@ success_criteria:
       <div class="part ${ran ? "" : "off"}"><div class="parthead"><span class="letter">3</span><h3 id="results-h">Results</h3>${q("eval.compare")}</div>
         ${ran ? `<div class="body">${(() => { const by = (x) => inPlay.filter((a) => verdictOf(a)[0] === x).map((a) => a.arm);
             const ahead = by("significantly ahead"), worse = by("significantly worse"), same = by("not significantly different");
-            const parts = [worse.length && `${worse.length} significantly worse (${worse.join(", ")}), which <code>evh rounds</code> suggests retiring`,
+            const parts = [worse.length && `${worse.length} significantly worse (${worse.join(", ")}), which <code>evh round-list</code> suggests retiring`,
               same.length && `${same.length} not significantly different (${same.join(", ")}), which more items may tell apart`].filter(Boolean).join("; ");
             return `<p class="roundanswer"><b>${ahead.length ? `${ahead.join(", ")} ahead of bart_l` : "No arm was shown ahead of bart_l"}</b>${parts ? `: ${parts}` : ""}. ${leader === base ? "bart_l leads the round and stays the baseline." : ""}</p>`; })()}
-          <p class="muted fine cmpnote">vs bart_l, the round's leader: every arm in play against it, ${w("Holm")} across the ${inPlay.length}, as <code>evh rounds</code> tests them (a retire narrows it). Each row: ${w("Δ")}, the ${w("raw p")} and its ${w("threshold")}.</p>
+          <p class="muted fine cmpnote">vs bart_l, the round's leader: every arm in play against it, ${w("Holm")} across the ${inPlay.length}, as <code>evh round-list</code> tests them (a retire narrows it). Each row: ${w("Δ")}, the ${w("raw p")} and its ${w("threshold")}.</p>
           <div class="tablewrap"><table class="cmp r4res"><thead><tr><th>arm</th><th><span class="vh">actions</span></th><th>coverage</th><th>vs bart_l</th>${paid ? '<th class="num">per 1M articles</th>' : ""}<th class="num">per article</th></tr></thead><tbody>
           ${results.map((a) => { const [v, k] = VERD(a); const rt = retired[a.config_id]; const isBase = a === base; const rr = a !== base ? M.reruns[a.config_id] : baseRe;
             const run = rr ? `${isBase ? "carried · " : ""}Linux re-run, ${esc(rr.created_at.slice(0, 10))}` : "r1's (no re-run)";
@@ -619,7 +619,7 @@ success_criteria:
               <td>${a === leader ? '<span class="muted">the leader</span>' : rt ? '<span class="muted">retired: not tested</span>' : rr ? (() => { const [vv, kk] = verdictOf(a); return `<span class="verdict v-${kk}">${vv}</span><br><small class="muted p">Δ ${rr.delta >= 0 ? "+" : ""}${rr.delta.toFixed(4)} · raw p ${esc(rr.p)} · threshold ${thrTxt(H4[a.config_id])}</small>`; })() : `<span class="verdict v-${k}">${esc(v)}</span>${a.p ? ` <small class="muted">p ${esc(a.p)}</small>` : ""}`}</td>${paid ? `<td class="num">${perM(a.usd_per_item)}</td>` : ""}
               <td class="num">${secs(rr ? rr.p50_ms : a.p50_ms)}</td></tr>`; }).join("")}
           ${clones.map((c) => `<tr><td class="mono">${esc(M.arms.find((a) => a.config_id === c.from).arm)} · ${esc(c.change)} <span class="tag new">clone</span><div class="muted runof">not run</div></td><td></td><td class="num">—</td><td class="muted">no run in the project</td>${paid ? '<td class="num">—</td>' : ""}<td class="num">—</td></tr>`).join("")}</tbody></table></div>
-          ${note("the rows are the project's Linux re-runs of 2026-09-30, standing in for r4's runs (a run counts in a round only when its config names it); bart_l's is the re-run the pair tests compared against, where evh rounds would read its r1 run. A clone has no run, so no scores.")}
+          ${note("the rows are the project's Linux re-runs of 2026-09-30, standing in for r4's runs (a run counts in a round only when its config names it); bart_l's is the re-run the pair tests compared against, where evh round-list would read its r1 run. A clone has no run, so no scores.")}
           ${r4.closed ? `<div class="note"><b>Closed.</b> Its conclusion is part of the answer at the top.</div>` : `<div class="field"><div class="name">The conclusion ${q("eval.close")}</div><div><textarea id="r4c" rows="2" placeholder="what the round showed, and what it decided">${esc(r4.draft || "")}</textarea></div></div>
           <div class="actions" style="margin-top:0"><button class="btn primary" id="closer4" type="button" ${words(r4.draft) >= 3 ? "" : "disabled"}>Close the round</button><span class="muted" style="font-size:13px">the baseline stays bart_l<span id="closehint">${words(r4.draft) >= 3 ? "" : " · write a sentence: what did the round show?"}</span></span></div><div id="closeconfirm"></div>`}</div>` : ""}</div>
       <div class="actions">${r4.closed ? `<a class="btn primary" href="#review">Review the outputs</a>${S.r5 ? "" : `<button class="btn" type="button" id="openr5">Open the next round</button>`}<a class="btn" href="#judge">Score with a judge too</a>` : `<a class="btn" href="#judge">Score with a judge too</a><a class="btn" href="#review">Review the outputs</a>`}</div>

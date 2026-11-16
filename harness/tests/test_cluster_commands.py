@@ -6,7 +6,7 @@
 In a throwaway project with the tutorial's six tickets, its gold and two arms: the tickets' `area` has five
 values (two tickets are about `account`). pair-test and family-test with `--cluster area` test five units, and
 pair-test's p is the sign-flip p of the five clusters' summed differences; a goal naming `cluster: area` says
-so in `evh goals`; validate refuses a goal whose cluster field no item carries; an unknown field is refused.
+so in `evh goal-list`; validate refuses a goal whose cluster field no item carries; an unknown field is refused.
 """
 
 import json
@@ -124,7 +124,6 @@ try:
 
     r = evh(
         "pair-test",
-        "--dataset-id",
         "tickets_v1",
         "--a",
         "tickets_lead2_v1",
@@ -162,7 +161,6 @@ try:
     )
     r = evh(
         "pair-test",
-        "--dataset-id",
         "tickets_v1",
         "--a",
         "tickets_lead2_v1",
@@ -176,7 +174,6 @@ try:
     )
     r = evh(
         "pair-test",
-        "--dataset-id",
         "tickets_v1",
         "--a",
         "tickets_lead2_v1",
@@ -195,7 +192,6 @@ try:
 
     r = evh(
         "family-test",
-        "--dataset-id",
         "tickets_v1",
         "--a",
         "tickets_lead2_v1",
@@ -206,7 +202,7 @@ try:
         "--json",
     )
     fv = json.loads(r.stdout)["result"]["values"] if r.returncode == 0 else {}
-    r = evh("inspect", "--runs", "tickets_lead1_v1,tickets_lead2_v1", "--json")
+    r = evh("comparison-show", "--runs", "tickets_lead1_v1,tickets_lead2_v1", "--json")
     check(
         "the inspector tests by the goal's cluster too, and says so",
         r.returncode == 0 and "Tested by area" in r.stdout and "(5 clusters)" in r.stdout,
@@ -218,7 +214,7 @@ try:
         (r.stdout + r.stderr)[-300:],
     )
 
-    r = evh("goals", "--goal", "tickets_summary", "--json")
+    r = evh("goal-leaderboard", "tickets_summary", "--json")
     check(
         "a goal naming cluster: area says its tests are by area",
         r.returncode == 0 and "Tested by area" in r.stdout,
@@ -227,7 +223,6 @@ try:
 
     r = evh(
         "pair-test",
-        "--dataset-id",
         "tickets_v1",
         "--a",
         "tickets_lead2_v1",
@@ -254,8 +249,8 @@ try:
         evh("label-import", str(second), "--dataset-id", "tickets_v1", "--set", "second", "--by", "reviewer"),
         "a second person's labels",
     )
-    r = evh("labels", "--dataset-id", "tickets_v1", "--contested", "--json")
-    cont = (json.loads(r.stdout).get("contested") or {}) if r.returncode == 0 else {}
+    r = evh("label-set-list", "tickets_v1", "--contested", "--json")
+    cont = (json.loads(r.stdout)["result"].get("contested") or {}) if r.returncode == 0 else {}
     worst = {x["item_id"]: (x["agree"], x["people"]) for x in cont.get("rows") or []}
     check(
         "labels --contested: the two items the second person labelled otherwise, the gold's own set left out",

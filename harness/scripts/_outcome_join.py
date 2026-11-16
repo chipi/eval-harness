@@ -286,6 +286,44 @@ def groups(raw: list[str] | None = None) -> list[dict[str, Any]]:
     return out
 
 
+def joins_of(outcomes: list[dict[str, Any]] | None) -> Joins | None:
+    """The joins an operation was asked for (`ops.legacy.OUTCOMES`), or None."""
+    if not outcomes:
+        return None
+    return Joins(
+        [
+            Join(
+                o["capture"],
+                o.get("join"),
+                o.get("within"),
+                o.get("identity"),
+                bool(o.get("gone_if_missing")),
+                o.get("as"),
+            )
+            for o in outcomes
+        ]
+    )
+
+
+def outcomes_from_argv(raw: list[str] | None = None) -> list[dict[str, Any]]:
+    """The command line's joins as `ops.legacy.OUTCOMES` has them: each `--outcomes CAPTURE` with the options after it."""
+    out = []
+    for g in groups(raw):
+        o: dict[str, Any] = {"capture": g["outcomes"]}
+        for k_from, k_to in (
+            ("outcomes_as", "as"),
+            ("join", "join"),
+            ("within", "within"),
+            ("identity", "identity"),
+        ):
+            if g.get(k_from):
+                o[k_to] = g[k_from]
+        if g.get("gone_if_missing"):
+            o["gone_if_missing"] = True
+        out.append(o)
+    return out
+
+
 def from_args(args: Any, raw: list[str] | None = None) -> Joins | None:
     """The joins the command line asks for (one per `--outcomes`, each with the options after it), or None."""
     del args  # the options' order says which capture each belongs to, which the parsed namespace has lost

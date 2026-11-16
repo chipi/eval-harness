@@ -125,8 +125,8 @@ Use the skill `evh-compare-and-read`: the leaderboard says whether any order is 
 answers one comparison named in advance; `family-test` one arm against several, corrected.
 
 ```evh
-evh leaderboard --dataset-id tickets_v1 --json
-evh pair-test --dataset-id tickets_v1 --a tickets_lead2_v1 --b tickets_lead1_v1 --json
+evh leaderboard tickets_v1 --json
+evh pair-test tickets_v1 --a tickets_lead2_v1 --b tickets_lead1_v1 --json
 ```
 
 `values.hypothesis` says whether the pair was named in advance (the `hypothesis:` of step 2, committed
@@ -138,8 +138,8 @@ or from evidence that gave the answer away. List the items the two arms decided 
 a few:
 
 ```evh
-evh inspect --runs tickets_lead1_v1,tickets_lead2_v1 --disagree --json
-evh inspect --runs tickets_lead1_v1,tickets_lead2_v1 --item t01_login
+evh comparison-show --runs tickets_lead1_v1,tickets_lead2_v1 --disagree 1 --json
+evh comparison-item --runs tickets_lead1_v1,tickets_lead2_v1 --item t01_login
 ```
 
 Check that the frozen evidence holds only what the system could see when it decided. Evidence
@@ -155,7 +155,7 @@ The project already has a baseline and you changed one thing. Read the baseline 
 the system under a new `system_id` with the change and a hypothesis, commit, then measure it the way
 the baseline was measured (the same dataset, reference and repeats) and test it against the baseline.
 
-1. `evh goals --goal G --json`: `values.baseline` is the baseline arm; `evh arms --arm <that arm> --json`
+1. `evh goal-leaderboard G --json`: `values.baseline` is the baseline arm; `evh arm-show LABEL DATASET <that arm> --json`
    gives its system and how many repeats it has.
 2. Copy that system (`evh data-show --text systems/<it>.yaml` into a draft), give it a new
    `system_id` (and the file its name), make the one change, add the `hypothesis:` block (`against`
@@ -163,13 +163,13 @@ the baseline was measured (the same dataset, reference and repeats) and test it 
 3. `evh run --system S --dataset D --dry-run`, then `evh arm-smoke --system S --dataset D` and read the
    replies, then `evh run --system S --dataset D --goal G --repeat N` with the baseline's number of
    repeats.
-4. `evh pair-test --dataset-id D --a NEW --b BASELINE --json`, and read the items (step 5).
+4. `evh pair-test D --a NEW --b BASELINE --json`, and read the items (step 5).
 
 The same on the tutorial kit, with `tickets_lead1_v1` standing as the baseline:
 
 ```evh
 evh data-put goals/tickets_summary.yaml tutorial/goals/tickets_summary.yaml
-evh goals --goal tickets_summary --json
+evh goal-leaderboard tickets_summary --json
 D=$(mktemp -d)
 evh data-show --text systems/tickets_lead1_v1.yaml | sed -e 's/tickets_lead1_v1/tickets_lead3_v1/' -e 's/sentences: 1/sentences: 3/' > "$D"/tickets_lead3_v1.yaml
 cat >> "$D"/tickets_lead3_v1.yaml <<'EOF'
@@ -185,7 +185,7 @@ evh run --system tickets_lead3_v1 --dataset tickets_v1 --dry-run
 evh arm-smoke --system tickets_lead3_v1 --dataset tickets_v1
 evh run --system tickets_lead3_v1 --dataset tickets_v1 --goal tickets_summary --repeat 3
 git add -A && git commit -qm "tickets_lead3_v1: runs" --allow-empty
-evh pair-test --dataset-id tickets_v1 --a tickets_lead3_v1 --b tickets_lead1_v1 --json
+evh pair-test tickets_v1 --a tickets_lead3_v1 --b tickets_lead1_v1 --json
 ```
 
 ## When to stop and ask

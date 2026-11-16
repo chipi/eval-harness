@@ -56,7 +56,7 @@ def main() -> int:
     with _jsonout.collect("arm-from-capture", args.json, live=sys.stderr):
         load_dataset(args.dataset_id)
         if not _store.is_file(CAPTURES / dataset_id_ok(args.capture) / "capture.json"):
-            die(f"no capture {args.capture} (evh captures)", "not-found")
+            die(f"no capture {args.capture} (evh capture-list)", "not-found")
         from evaluation_harness.model.systems import SYSTEM  # noqa: PLC0415
 
         out = DATA / "systems" / f"{dataset_id_ok(args.system_id)}.yaml"

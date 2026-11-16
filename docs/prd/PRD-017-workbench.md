@@ -80,7 +80,7 @@ conclusion.
 **W2 Review outputs, label and tag.** On a goal's dataset: a sheet of items across the arms that matter; read
 outputs side by side, pick the better one, give a label, tag failure modes, leave a note; bring back a sheet filled
 elsewhere.
-*Tasks:* `inspect --sheet`, `pick`, `label-sheet` / `label-import`, `sheet-import`, `tags`.
+*Tasks:* `sheet-show`, `pick`, `label-sheet` / `label-import`, `sheet-import`, `tags`.
 
 **W3 Learn from production** (once a goal is deployed): capture what the deployed system decided, evaluate it
 against labels, pick the rows where it was wrong or saw something new, and make the next dataset version from them.

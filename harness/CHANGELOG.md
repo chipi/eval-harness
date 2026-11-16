@@ -662,6 +662,60 @@ that can move a result is never a patch release without saying so under **Change
   `missing-dependency`. A script or an agent reads the kind, which stays when a message is reworded. The
   project's `AGENTS.md` (`evh init`) says what to do for each exit code and the common kinds.
 
+- **Every legacy read is an operation or gone, and MCP answers in the server's own process** (RFC-032 step 9, owner
+  2026-11-14/16: "this is a new project and I don't want many legacy commands or tools, we just move forwards"; no alias,
+  no shim, no old name kept). The 16 commands that read a view through a script of their own are removed, each replaced
+  by the operation (and its API resource) that answers it, which now also gives what the old command gave and the
+  operation lacked: `overview` is `overview-show`; `activity` is `activity-show`; `arms` is `arm-list` (`--systems 1` a
+  row per system) and `arm-show LABEL DATASET SYSTEM`; `datasets` is `dataset-list [--tag K=V] [--period P]` and
+  `dataset-show D` (its arms: `dataset-arm-list D`); `references` is `reference-list` and `reference-show TIER NAME`;
+  `metrics` is `metric-list` and `metric-show M`; `goals` is `goal-list [--period P]` and `goal-leaderboard G [--arms
+  PATTERN] [--top N]`; `rounds` is `round-list G`, `round-show G R` and `round-evidence G R`; `inspect` is
+  `comparison-show` (the verdicts; `--analysis`, `--round`, `--goal`, `--rescore 0`), `comparison-item` (`--item`),
+  `comparison-crosstab` (`--crosstab`), `comparison-items` (`--items-out`) and `sheet-show D` (`--sheet`), with
+  `sheet-export` the one that writes a file (`--csv`, `--fill`, which no tool and no API resource offers);
+  `labels` is `label-set-list D` (each pair's confusion matrix is always in the answer: no `--confusion`) and
+  `label-set-show D SET`; `tags` is `tag-set-list D`; `captures` is `capture-list` and `capture-show C`; `models` is
+  `model-list [--kind K] [--where W] [--status S]` and `model-show M`; `prompts` is `prompt-list` and `prompt-show --name
+  N`; `studies` is `study-list G` and `study-show G S`; `label-coverage` is `label-coverage-show D`. The reads that were
+  commands of their own are operations now and name the thing they read as their argument: `leaderboard`, `pair-test`,
+  `family-test`, `rank-stability`, `sealed-counts`, `label-mutants`, `dataset-items` and `dataset-card` take the
+  dataset (`evh leaderboard D`, not `--dataset-id D`), `deploy-sheet` and `period-compare` the system, `periods` and
+  `faithfulness-show` the model, and `exposure --dataset-id` is `--dataset`; `dataset-card --out` is gone (it prints:
+  redirect it) and `search --adapter` with it. Several outside systems for `label-coverage-show` and `label-mutants` are
+  `--outcomes` repeated, as `label-from-capture` takes them. A conflict between two options of a read is `ERROR
+  (bad-argument)` (exit 1), naming the inputs (`b_dataset and round cannot be combined`), where the old parser said
+  exit 2; `inspect`'s choice of what to show by which option was given is the choice of command. Dropped, with no
+  replacement: `arms --by system` (the grouped listing) and `arms --arm ID` (`arm-show`), the `labels` listing of every
+  set of every dataset (`dataset-list` says each dataset's sets), and the studies listing across goals (`goal-list`
+  names each goal's studies that ran). What a command prints is what it printed (the tables, the notes, the columns);
+  what `--json` gives is the operation's result: structured, no longer the printed blocks, so `result.values.groups`
+  of `goals --goal G --json` is `result.datasets[].groups[]` of `goal-leaderboard G --json`, `runs-list --json` is
+  `result.runs`, `looks --json` is `result.sets`, `baselines --json` is the export itself (`result.schema`,
+  `result.baselines`), `dataset-list --json` and the other listings are `result.datasets`, and so on; `pair-test`,
+  `family-test`, `leaderboard`, `rank-stability`, `run-compare`, `validate`, `sealed-counts`, `periods`,
+  `period-compare`, `faithfulness-show`, `label-mutants`, `comparison-item`, `comparison-items`, `comparison-crosstab` and `sheet-show` keep `result.blocks` and `result.values`. Every script of a
+  removed command, and the process path the MCP server and the API ran a read by, are gone.
+- **MCP tools are the registry's reads, named as the operation, answered in the server's process** (RFC-032 step 9;
+  owner 2026-11-16: no outside caller, so no old name kept): 71 tools on a local server and 61 on a public one (and a
+  local server's `study-ask` and `study-tell`), where there were 40 command tools beside 43 operation tools. A call is the
+  operation's own call, in the process the server runs in: no process per call, the view cache and the p cache shared
+  by every call, the answer the operation's structured result (as `structuredContent` and as JSON text, in the envelope
+  `{"command", "version", "result"}`). A tool name from before that differs from its operation (`goals`, `datasets`,
+  `arms`, `models`, `inspect`, `labels`, `rounds`, `references`, `metrics`, `overview`, `activity`, `captures`, `tags`,
+  `prompts`, `studies`, `label-coverage`) is gone; an input is the operation's own, typed (`dataset`, not `dataset-id`;
+  a list is an array; a flag a boolean) and checked against the tool's JSON Schema before anything runs. `--public` is
+  the flag of each call (what `--public` hides stays hidden: a hidden dataset's text and labels; the tools that would
+  answer with an item's text, an output or a label are not offered, nor `group` and `group_match` of
+  `comparison-crosstab`). `mcp-answers.jsonl` is still written ahead (each line `{"tool", "args", "out", "harness"}`),
+  `render.sh`'s release check reads its `goal-list` answer, and the first `goal-list` call after a start, which was 33 s
+  at the box's cpus 0.5, is answered from it (without the file, at those limits, 7 to 8 s: the next views then take 0.3 to 2.5 s
+  where each took 12 to 16 s as a process of its own, and the view cache keeps one computation in flight per key, so two
+  callers asking for the same view at once pay for one). A call that runs past `--timeout`, or is cancelled, stops being waited
+  for but is not stopped: a computation answered in the server's process runs to its end. The old server refused the
+  tools that take more than one path argument (`arm-show`, `reference-show`): it sorted a call's arguments by name
+  before putting them on the command line.
+
 ### Fixed
 
 - **`evh migrate` step 2 finds the configs step 3 does** (RFC-032; unreleased 0.8 code, found migrating the fleet's data): step 2 (deployments) looked for configs in data/configs, the studies and validate.json's globs but not in the folders config.yaml's `configs:` lists, so a smoke whose config named its `deployment:` there was refused (`its config names none, and the model has 4`). It reads those folders too.

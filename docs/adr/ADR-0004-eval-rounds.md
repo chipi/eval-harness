@@ -25,7 +25,7 @@ read-only, decisions as commands run locally.
 - **Decisions are commands**: `evh round-open`, `round-retire`, `round-close` (which can promote);
   `round-retire --runs-dir` retires one copy of a config (its runs in another runs directory, such
   as a re-timing on another machine) and leaves the arm in the project's runs directory in play;
-  `evh rounds` shows the evidence and suggests the next decision, each as the command that makes
+  `evh round-list` shows the evidence and suggests the next decision, each as the command that makes
   it. The pages never write.
 - **The goal page leads with the answer**, then the rounds, then the arms grouped by what they
   are scored against.

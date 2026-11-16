@@ -38,7 +38,6 @@ from evaluation_harness._common import (
     BOOKKEEPING_PREFIXES,
     classify_metrics,
     die,
-    evh_prog,
     how,
     read_json,
 )
@@ -568,48 +567,36 @@ def _metric_kinds(by_config: dict[str, list[dict]]) -> dict[str, str]:
     return declared
 
 
-def main() -> int:
+def body(
+    dataset: str,
+    sort: str | None = None,
+    asc: bool = False,
+    desc: bool = False,
+    match: str | None = None,
+    label: str | None = None,
+    round: str | None = None,
+    goal: str | None = None,
+    wide: bool = False,
+) -> int:
     """Generate a leaderboard from run results."""
-    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
-    ap.add_argument("--dataset-id", required=True)
-    ap.add_argument("--sort", help="metric to rank by (default: the first quality metric)")
-    ap.add_argument(
-        "--asc", action="store_true", help="lower is better for the sort metric (default: inferred)"
-    )
-    ap.add_argument("--desc", action="store_true", help="higher is better, whatever the runs declare")
     # A dataset accumulates arms across system VERSIONS -- v1 and v2 of the same arm are
     # different measurements and must not share a row, but they do share a dataset. Without
-    # a way to scope the table, the only ways to get a readable leaderboard are to delete
+    # a way to scope the table (`match`), the only ways to get a readable leaderboard are to delete
     # the older runs or to read past them. Deleting paid-for results to tidy a table is how
     # 18 arms were lost once; this is the alternative.
-    ap.add_argument("--match", help="only arms whose system_id contains this substring")
-    ap.add_argument(
-        "--label",
-        default=None,
-        help='only the arms read under this label: "" the runs\' own scores; "silver", "repeats", "linux", '
-        '"judged/<scorer>", "rescored <scorer>" ... (evh runs-list names those present); default: every arm',
+    return _run(
+        argparse.Namespace(
+            dataset_id=dataset,
+            sort=sort,
+            asc=asc,
+            desc=desc,
+            match=match,
+            label=label,
+            round=round,
+            goal=goal,
+            wide=wide,
+        )
     )
-    ap.add_argument(
-        "--round", help="only the arms this round of a goal compared, under their labels (rN; ADR-0004)"
-    )
-    ap.add_argument(
-        "--goal",
-        help="the goal that reads the dataset (default: the one that names it; with --round, the round's goal)",
-    )
-    ap.add_argument(
-        "--wide",
-        action="store_true",
-        help="print every metric column, however wide (default: as many as fit the terminal, the ranking metric first)",
-    )
-    ap.add_argument(
-        "--json",
-        action="store_true",
-        help="the same answer as one JSON object: the printed lines as blocks, each table as data, and "
-        "result.values.groups: per reference scored against, its ranking, ordering test and frontier",
-    )
-    args = ap.parse_args()
-    with _jsonout.collect("leaderboard", args.json):
-        return _run(args)
 
 
 def _goal_read(args: argparse.Namespace, A) -> tuple[dict | None, set[str] | None]:
@@ -1028,7 +1015,3 @@ def _table(args: argparse.Namespace, A, group: dict, goal: dict | None) -> dict:
         "silver": any("silver" in r["tiers"] for r in rows),
         "judged": judged,
     }
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())

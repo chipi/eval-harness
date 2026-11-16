@@ -2,13 +2,14 @@
 `label-set-*`, `tag-set-*`, `reference-*`, `capture-*`, and the resources under /api/v1/datasets, /fieldsets,
 /failure-modes, /references and /captures. A dataset, a label set, a tag set, a reference and a capture are written by
 their own commands (dataset-create, label-import, reference-promote, capture, ...), never edited: only the fieldsets and
-the failure-mode lists are. The older views (`evh datasets`, `references`, `captures`, `labels`, `tags`) stay as they
+the failure-mode lists are. The older views (`evh dataset-list`, `references`, `captures`, `labels`, `tags`) stay as they
 are until the catalog moves onto the model (step 8)."""
 
 from __future__ import annotations
 
 from typing import Any
 
+from evaluation_harness.catalog_periods import PERIODS
 from evaluation_harness.ops.registry import Op
 
 _SET = {
@@ -18,11 +19,21 @@ _SET = {
 }
 _UNSET = {"type": "array", "items": {"type": "string"}, "description": "fields to remove, by dotted key"}
 _D = "evaluation_harness.ops.datasets"
+_PERIOD = {
+    "type": "string",
+    "enum": [k for k, *_ in PERIODS],
+    "description": "add each row's numbers in a period counted from today: "
+    + ", ".join(f"{k} ({label})" for k, label, _ in PERIODS),
+}
 
 OPS = (
-    Op("dataset-list", "read", "every dataset: its version, items, fieldset, parent, whether it is sealed, the parts that are here, its label sets and references",
-       "GET", "/datasets", f"{_D}:list_datasets", f"{_D}:say_datasets"),
-    Op("dataset-show", "read", "one dataset: its record (the item count for the items), its parts and where they are, its lineage, label sets, references, capture and tag sets",
+    Op("dataset-list", "read", "every dataset: its version, items, fieldset, parent, whether it is sealed, the parts that are here, its label sets and references; and what the catalog knows of it: its arms and systems, its tags, where it came from",
+       "GET", "/datasets", f"{_D}:list_datasets", f"{_D}:say_datasets",
+       inputs={
+           "tag": {"type": "array", "items": {"type": "string"}, "description": "KEY=VALUE: only datasets with this tag"},
+           "period": _PERIOD,
+       }),
+    Op("dataset-show", "read", "one dataset: its record (the item count for the items), its parts and where they are, its lineage, label sets, references, capture and tag sets; and what the catalog knows of it: its arms and systems, its tags, the baselines promoted on it, its item fields",
        "GET", "/datasets/{dataset}", f"{_D}:show_dataset", f"{_D}:say_dataset"),
     Op("fieldset-list", "read", "every fieldset: the facts each item carries, how many, and the datasets that use it",
        "GET", "/fieldsets", f"{_D}:list_fieldsets", f"{_D}:say_fieldsets"),
@@ -42,17 +53,21 @@ OPS = (
     Op("failure-modes-set", "edit", "change a failure-mode list's fields, checked; its comments kept", "PATCH",
        "/failure-modes/{failure_modes}", f"{_D}:set_failure_modes", f"{_D}:say_saved",
        inputs={"set": _SET, "unset": _UNSET}),
-    Op("label-set-list", "read", "a dataset's label sets: who gave the labels, how many, when", "GET",
-       "/datasets/{dataset}/label-sets", f"{_D}:list_label_sets", f"{_D}:say_label_sets"),
-    Op("label-set-show", "read", "one label set: its record (the item count for the items), its folder and the references promoted from it",
-       "GET", "/datasets/{dataset}/label-sets/{set}", f"{_D}:show_label_set", f"{_D}:say_label_set"),
-    Op("tag-set-list", "read", "a dataset's tag sets: the failure-mode list each is named from, the outputs tagged", "GET",
+    Op("label-set-list", "read", "a dataset's label sets: who gave the labels, from what, under which guideline, how many, when; which sets cover its items, a set of another dataset covering the items it shares; how often two sets agree (kappa, alpha) with each pair's confusion matrix and, on request, the items people contest", "GET",
+       "/datasets/{dataset}/label-sets", f"{_D}:list_label_sets", f"{_D}:say_label_sets",
+       inputs={
+           "contested": {"type": "boolean", "description": "per item, how many people's label sets agree with the gold reference, the most contested first"},
+       }),
+    Op("label-set-show", "read", "one label set: its record (the item count for the items), its folder and the references promoted from it; with items, the label of each item",
+       "GET", "/datasets/{dataset}/label-sets/{set}", f"{_D}:show_label_set", f"{_D}:say_label_set",
+       inputs={"items": {"type": "boolean", "description": "the label of each item too"}}),
+    Op("tag-set-list", "read", "a dataset's tag sets: the failure-mode list each is named from, the outputs tagged; and per arm how often each failure mode was tagged", "GET",
        "/datasets/{dataset}/tag-sets", f"{_D}:list_tag_sets", f"{_D}:say_tag_sets"),
     Op("tag-set-show", "read", "one tag set: its record (the runs and outputs counted), the failure modes tagged and how often",
        "GET", "/datasets/{dataset}/tag-sets/{set}", f"{_D}:show_tag_set", f"{_D}:say_tag_set"),
-    Op("reference-list", "read", "every reference: its tier, dataset, items, and the label set and person or model it came from",
-       "GET", "/references", f"{_D}:list_references", f"{_D}:say_references"),
-    Op("reference-show", "read", "one reference: its manifest (the item count for the checksums), where it came from and its folder",
+    Op("reference-list", "read", "every reference: its tier, dataset, items, who wrote it, the label set and person or model it came from, and how many arms are scored against it",
+       "GET", "/references", f"{_D}:list_references", f"{_D}:say_references", inputs={"period": _PERIOD}),
+    Op("reference-show", "read", "one reference: its manifest (the item count for the checksums), where it came from, its folder, and the arms scored against it",
        "GET", "/references/{tier}/{name}", f"{_D}:show_reference", f"{_D}:say_reference"),
     Op("capture-list", "read", "every capture: what read it, when, how many records, and the datasets and label sets made from it",
        "GET", "/captures", f"{_D}:list_captures", f"{_D}:say_captures"),
@@ -61,18 +76,92 @@ OPS = (
 )  # fmt: skip
 
 
-def list_datasets() -> dict[str, Any]:
-    """Every dataset with its parts and what hangs on it."""
-    from evaluation_harness.model import dataset_views as v  # noqa: PLC0415
+def _catalog() -> tuple[Any, dict]:
+    """The adapter and what the catalog collects from it: the arms by dataset."""
+    from evaluation_harness.ops.views import _view  # noqa: PLC0415
 
-    return {"datasets": v.list_datasets()}
+    return _view()
+
+
+def list_datasets(tag: list[str] | None = None, period: str | None = None) -> dict[str, Any]:
+    """Every dataset with its parts and what hangs on it, and the catalog's view of it: its arms and systems, its tags
+    and where it came from; with `tag`, only the datasets with every tag given; with `period`, each one's runs and spend
+    in the period against the one before."""
+    from evaluation_harness import _jsonout  # noqa: PLC0415
+    from evaluation_harness import catalog_build as cb  # noqa: PLC0415
+    from evaluation_harness.model import dataset_views as v  # noqa: PLC0415
+    from evaluation_harness.model import period_views  # noqa: PLC0415
+    from evaluation_harness.model.entity import Problem  # noqa: PLC0415
+    from evaluation_harness.ops.views import _period  # noqa: PLC0415
+
+    want = []
+    for t in tag or []:
+        k, sep, val = t.partition("=")
+        if not sep or not k:
+            raise Problem(f"tag {t!r}: KEY=VALUE", "bad-argument")
+        want.append((k, val))
+    A, by_ds = _catalog()
+    rows = []
+    recorded = v.list_datasets()
+    # A dataset that runs were recorded on but whose record is not in this project is a row too, as the catalog lists it.
+    bare = [
+        {"dataset": d, "version": None, "items": None, "description": None, "fieldset": None, "parent": None,
+         "sealed": False, "parts": {}, "label_sets": [], "references": [], "recorded": False}
+        for d in sorted(set(by_ds) - {r["dataset"] for r in recorded})
+    ]  # fmt: skip
+    for r in [{**x, "recorded": True} for x in recorded] + bare:
+        c = by_ds.get(r["dataset"])
+        tags = dict((c or {}).get("tags") or {})
+        if want and not all(tags.get(k) == val for k, val in want):
+            continue
+        rows.append(
+            {
+                **r,
+                "arms": len(c["arms"]) if c else None,
+                "systems": cb._n_systems({r["dataset"]: c}) if c else None,
+                "tags": tags,
+                "origin": (c or {}).get("origin") or None,
+            }
+        )
+    out: dict[str, Any] = {"datasets": rows, "item_word": A.item_word}
+    key = _period(period)
+    if key:
+        got = period_views.rows_in(A, by_ds, cb.period_datasets(A, by_ds), key)
+        for row in rows:
+            row["period"] = _jsonout.plain(got["rows"].get(row["dataset"]))
+        out["period"] = {"key": key, "line": got["line"]}
+    return out
 
 
 def show_dataset(dataset: str) -> dict[str, Any]:
-    """The dataset: record, parts, lineage and what hangs on it."""
+    """The dataset: record, parts, lineage and what hangs on it, and the catalog's view of it: its arms and systems, its
+    tags, the baselines promoted on it and a summary of each of its item fields."""
+    from evaluation_harness import _fields, _jsonout  # noqa: PLC0415
+    from evaluation_harness import catalog_build as cb  # noqa: PLC0415
+    from evaluation_harness.catalog_adapter import item_fields  # noqa: PLC0415
     from evaluation_harness.model import dataset_views as v  # noqa: PLC0415
 
-    return v.show_dataset(dataset)
+    out = v.show_dataset(dataset)
+    A, by_ds = _catalog()
+    c = by_ds.get(dataset)
+    out["catalog"] = None
+    if c is not None:
+        fl = item_fields(A, dataset)
+        fs = fl.get("fieldset")
+        items = [{"item_id": i, "fields": f} for i, f in (fl.get("values") or {}).items()]
+        out["catalog"] = _jsonout.plain(
+            {
+                "arms": len(c["arms"]),
+                "systems": cb._n_systems({dataset: c}),
+                "tags": c.get("tags") or {},
+                "origin": c.get("origin") or None,
+                "baselines": c.get("baselines") or [],
+                "fields": {"fieldset": fs.get("fieldset_id", ""), "fields": _fields.summary(fs, items)}
+                if fs
+                else None,
+            }
+        )
+    return out
 
 
 def list_fieldsets() -> dict[str, Any]:
@@ -144,25 +233,55 @@ def set_failure_modes(
     return FAILURE_MODES.patch(failure_modes, list((set or {}).items()), list(unset or []), by)
 
 
-def list_label_sets(dataset: str) -> dict[str, Any]:
-    """The dataset's label sets."""
+def list_label_sets(dataset: str, contested: bool = False) -> dict[str, Any]:
+    """The dataset's label sets, which sets cover its items (a set of another dataset covers the items it shares), how often two
+    of them agree (Cohen's kappa, Krippendorff's alpha, all together, each pair's confusion matrix) and, on request, the items
+    people contest. A hidden dataset's labels are per-item text (RFC-019 section 4): its confusion matrices stay out of a
+    public answer, the counts and the coefficients stay."""
+    from evaluation_harness import _jsonout, _visibility  # noqa: PLC0415
+    from evaluation_harness._common import load_dataset  # noqa: PLC0415
+    from evaluation_harness._label_sets import agreement, agreement_all, coverage  # noqa: PLC0415
+    from evaluation_harness._label_sets import contested as contested_items  # noqa: PLC0415
+    from evaluation_harness.model import dataset_views as v  # noqa: PLC0415
+    from evaluation_harness.ops.legacy import refusing  # noqa: PLC0415
+
+    with refusing():
+        rows = v.list_label_sets(dataset)
+        n = len(load_dataset(dataset).get("items") or [])
+        cov = coverage(dataset)
+        pairs = agreement(dataset)
+        together = agreement_all(dataset)
+        disputed = contested_items(dataset) if contested else None
+    if not _visibility.text_shown(dataset, public=_visibility.public_env()):
+        pairs = [{k: x for k, x in p.items() if k != "confusion"} for p in pairs]
+    out: dict[str, Any] = {
+        "dataset": dataset,
+        "items": n,
+        "label_sets": rows,
+        "coverage": [{**c, "items": sorted(c["items"])} for c in cov],
+        "agreement": pairs,
+        "agreement_all": together,
+    }
+    if contested:
+        out["contested"] = disputed
+    return _jsonout.plain(out)
+
+
+def show_label_set(dataset: str, set: str, items: bool = False) -> dict[str, Any]:
+    """The label set's record, folder and references; with `items`, the label of each item."""
     from evaluation_harness.model import dataset_views as v  # noqa: PLC0415
 
-    return {"dataset": dataset, "label_sets": v.list_label_sets(dataset)}
-
-
-def show_label_set(dataset: str, set: str) -> dict[str, Any]:
-    """The label set's record, folder and references."""
-    from evaluation_harness.model import dataset_views as v  # noqa: PLC0415
-
-    return v.show_label_set(dataset, set)
+    return v.show_label_set(dataset, set, items)
 
 
 def list_tag_sets(dataset: str) -> dict[str, Any]:
-    """The dataset's tag sets."""
+    """The dataset's tag sets, and per arm how many outputs were tagged and how often each failure mode was."""
+    from evaluation_harness import _jsonout  # noqa: PLC0415
+    from evaluation_harness._tags import counts  # noqa: PLC0415
     from evaluation_harness.model import dataset_views as v  # noqa: PLC0415
 
-    return {"dataset": dataset, "tag_sets": v.list_tag_sets(dataset)}
+    rows = v.list_tag_sets(dataset)
+    return {"dataset": dataset, "tag_sets": rows, "arms": _jsonout.plain(counts(dataset))}
 
 
 def show_tag_set(dataset: str, set: str) -> dict[str, Any]:
@@ -172,18 +291,68 @@ def show_tag_set(dataset: str, set: str) -> dict[str, Any]:
     return v.show_tag_set(dataset, set)
 
 
-def list_references() -> dict[str, Any]:
-    """Every reference."""
+def list_references(period: str | None = None) -> dict[str, Any]:
+    """Every reference, who wrote it and how many arms are scored against it; with `period`, the arms and runs in it."""
+    from evaluation_harness import _jsonout  # noqa: PLC0415
+    from evaluation_harness import catalog_build as cb  # noqa: PLC0415
     from evaluation_harness.model import dataset_views as v  # noqa: PLC0415
+    from evaluation_harness.model import period_views  # noqa: PLC0415
+    from evaluation_harness.ops.views import _period  # noqa: PLC0415
 
-    return {"references": v.list_references()}
+    A, by_ds = _catalog()
+    scored: dict[str, int] = {}
+    author: dict[str, Any] = {}
+    for c in by_ds.values():
+        for r in c["refs"]:
+            author[r["id"]] = r.get("author")
+        for a in c["arms"]:
+            if a.get("reference") and not a["judge"]:
+                scored[a["reference"]] = scored.get(a["reference"], 0) + 1
+    rows = [
+        {**r, "author": author.get(r["reference"]), "scored": scored.get(r["reference"], 0)}
+        for r in v.list_references()
+    ]
+    out: dict[str, Any] = {"references": rows}
+    key = _period(period)
+    if key:
+        got = period_views.rows_in(A, by_ds, cb.period_references(A, by_ds), key)
+        for row in rows:
+            row["period"] = _jsonout.plain(got["rows"].get(row["reference"]))
+        out["period"] = {"key": key, "line": got["line"]}
+    return out
 
 
 def show_reference(tier: str, name: str) -> dict[str, Any]:
-    """The reference's manifest and folder."""
+    """The reference's manifest and folder, and the arms scored against it (best first)."""
+    from evaluation_harness import _jsonout  # noqa: PLC0415
+    from evaluation_harness.model import arm_views  # noqa: PLC0415
     from evaluation_harness.model import dataset_views as v  # noqa: PLC0415
 
-    return v.show_reference(tier, name)
+    out = v.show_reference(tier, name)
+    _, by_ds = _catalog()
+    rid = out["reference"]
+    hit = next(((ds, c) for ds, c in by_ds.items() for r in c["refs"] if r["id"] == rid), None)
+    out["scored_against"] = []
+    if hit:
+        _, c = hit
+        tiers = {x["id"]: x["tier"] for x in c["refs"]}
+        out["scored_against"] = _jsonout.plain(
+            [
+                {
+                    "arm": a["arm"],
+                    "label": a["label"],
+                    "metric": a["metric"],
+                    "mean": a["mean"],
+                    "n": a["n"],
+                    "row": arm_views.kind(a, tiers),
+                }
+                for a in sorted(
+                    (a for a in c["arms"] if a["reference"] == rid and not a["judge"]),
+                    key=lambda a: -(a["mean"] or 0),
+                )
+            ]
+        )
+    return out
 
 
 def list_captures() -> dict[str, Any]:
@@ -217,21 +386,9 @@ def say_datasets(r: dict[str, Any]) -> str:
     """dataset-list's answer as text: one dataset a line."""
     if not r["datasets"]:
         return "no datasets yet: evh dataset-create --dataset-id <id> --source-dir <folder>"
-    rows: list[tuple[str, ...]] = []
-    for d in r["datasets"]:
-        here = [k for k, v in d["parts"].items() if v]
-        rows.append(
-            (
-                d["dataset"],
-                f"v{d['version']}",
-                f"{d['items']} items",
-                "sealed" if d["sealed"] else "",
-                f"from {d['parent']}" if d["parent"] else "",
-                f"fieldset {d['fieldset']}" if d["fieldset"] else "",
-                f"here: {' '.join(here) or 'none'}; {len(d['label_sets'])} label set(s), {len(d['references'])} reference(s)",
-            )
-        )
-    return _table(rows)
+    from evaluation_harness import catalog_views  # noqa: PLC0415
+
+    return catalog_views.say(catalog_views.print_datasets, r)
 
 
 def say_dataset(r: dict[str, Any]) -> str:
@@ -255,6 +412,13 @@ def say_dataset(r: dict[str, Any]) -> str:
             f"  made into    {c['dataset']}: {c['added']} added, {c['removed']} removed, {c['changed']} changed"
         )
     lines += [f"  made from    capture {c}" for c in r["captures"]]
+    if r.get("catalog"):
+        from evaluation_harness import catalog_views  # noqa: PLC0415
+
+        lines += [
+            "  " + x if x else x
+            for x in catalog_views.say(catalog_views.print_dataset_catalog, r["catalog"]).split("\n")
+        ]
     for name, x in r["parts"].items():
         lines.append(f"  {name:<12} {x['path']}{'' if x['present'] else '  (not here)'}")
     for s in r["label_sets"]:
@@ -317,16 +481,76 @@ def say_failure_mode(r: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
-def say_label_sets(r: dict[str, Any]) -> str:
-    """label-set-list's answer as text: one set a line."""
-    if not r["label_sets"]:
-        return f"{r['dataset']} has no label sets (evh label-import, label-from-run, label-from-capture)"
-    return _table(
-        [
-            (s["set"], f"{s['kind']}", f"{s['items']} items", str(s["created_at"] or ""))
-            for s in r["label_sets"]
-        ]
+def _confusion_lines(p: dict[str, Any]) -> str:
+    """A pair's confusion matrix: the first set's labels down, the second's across."""
+    conf = p["confusion"]
+    cols = sorted({c for row in conf.values() for c in row})
+    corner = f"{p['a'].split('/')[-1]} ↓ · {p['b'].split('/')[-1]} →"
+    first = max(len(x) for x in [*conf, corner]) + 2
+    widths = [len(c) + 3 for c in cols]
+    lines = ["    " + corner.ljust(first) + "".join(c.rjust(w) for c, w in zip(cols, widths, strict=True))]
+    for r in sorted(conf):
+        lines.append(
+            "    "
+            + r.ljust(first)
+            + "".join(str(conf[r].get(c, 0)).rjust(w) for c, w in zip(cols, widths, strict=True))
+        )
+    return "\n".join(lines)
+
+
+def _pair_line(p: dict[str, Any]) -> str:
+    """Two label sets compared, in words: both label, the same answers, sharing one, kappa and alpha."""
+    if p.get("kind") != "categories":
+        return f"both label {p['both']}; free text, not compared as text"
+
+    def coef(k: str) -> str:
+        return "undefined" if p.get(k) is None else f"{p[k]:.2f}"
+
+    alpha = coef("alpha") + (" (MASI)" if p.get("alpha_distance") == "MASI" else "")
+    return (
+        f"both label {p['both']}, the same answers on {p['same']}, sharing one on {p['share']}; "
+        f"Cohen's kappa {coef('kappa')}, Krippendorff's alpha {alpha}"
     )
+
+
+def say_label_sets(r: dict[str, Any]) -> str:
+    """label-set-list's answer as text: the sets that cover the dataset's items, how they agree, the items people contest."""
+    if not r["coverage"] and not r["label_sets"]:
+        return f"{r['dataset']}: no labels yet (evh label-sheet, evh label-import, evh label-from-run)"
+    from evaluation_harness._label_sets import source_line  # noqa: PLC0415
+
+    out = [f"{r['dataset']}: {r['items']} item(s), {len(r['coverage'])} label set(s)"]
+    for c in r["coverage"]:
+        g = (c.get("guideline") or {}).get("path") or "no guideline"
+        out.append(
+            f"  {c['dataset_id']}/{c['set']}: {source_line(c['source'])}, {len(c['items'])} of {r['items']} item(s), {g}"
+        )
+    t = r.get("agreement_all")
+    if t:
+        ci = t.get("ci")
+        out.append(
+            f"  all {t['sets']} sets together: Krippendorff's alpha {t['alpha']}"
+            + (f" (95% interval {ci[0]} to {ci[1]})" if ci else "")
+            + f" over {t['items']} item(s) labelled twice or more, {t['alpha_distance']}"
+        )
+    for p in r["agreement"]:
+        out.append(f"  {p['a']} and {p['b']}: {_pair_line(p)}")
+        if p.get("confusion"):
+            out.append(_confusion_lines(p))
+    if "contested" in r:
+        d = r["contested"]
+        if not d:
+            out.append("  contested: no gold reference, or no person set labels its items beside it")
+        else:
+            out.append(
+                f"  contested: {d['contested']} of {d['items']} item(s) have a person who disagrees with the {d['tier']} reference"
+            )
+            out += [
+                f"    {x['item_id']}: {x['agree']} of {x['people']} agree"
+                for x in d["rows"]
+                if x["agree"] < x["people"]
+            ][:40]
+    return "\n".join(out)
 
 
 def say_label_set(r: dict[str, Any]) -> str:
@@ -425,8 +649,15 @@ def say_capture(r: dict[str, Any]) -> str:
         + ("  scrubbed" if r["scrubbed"] else "")
         + f"  ({r['file']})"
     ]
+    if r["first"]:
+        lines.append(f"  records from {r['first']} to {r['last']}")
     if r["continues"]:
         lines.append(f"  continues    {r['continues']}")
+    if r["sample"]:
+        s = r["sample"]
+        lines.append(
+            f"  a sample: rate {s['rate']}, seed {s['seed']} ({s.get('kept')} of {s.get('read')} read)"
+        )
     lines += [f"  dataset      {d}" for d in r["datasets"]]
     lines += [f"  label set    {s}" for s in r["label_sets"]]
     return "\n".join(lines)

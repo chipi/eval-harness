@@ -268,14 +268,14 @@ try:
     )
     rows = cm.version_rows(next(x for x in A_copy.models() if x["record"]["model_id"] == "code1")["record"])
     check(
-        "a version row says how many agreed, how many were named and the record (the page and `evh models --model`)",
+        "a version row says how many agreed, how many were named and the record (the page and `evh model-list --model`)",
         rows[0][3].startswith("2 of 2 agreed")
         and "code1/3" in rows[0][3]
         and rows[2][3].startswith("9 of 10 agreed")
         and "code1/1" in rows[2][3],
         rows,
     )
-    shown = subprocess.run([sys.executable, str(HARNESS / "scripts" / "cli.py"), "periods", "--model", "code1", "--json"],
+    shown = subprocess.run([sys.executable, str(HARNESS / "scripts" / "cli.py"), "periods", "code1", "--json"],
                            cwd=proj, env=env, capture_output=True, text=True, stdin=subprocess.DEVNULL, timeout=600)  # fmt: skip
     periods = json.loads(shown.stdout)["result"]["values"]["periods"] if shown.returncode == 0 else []
     check(

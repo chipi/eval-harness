@@ -247,7 +247,7 @@ decided it is enforced (2026-11-08). So:
 - **A round's budget is enforced**, by the spending commands themselves, so a run from the terminal and a job
   stop at the same place. A command that spends on a goal with an open round that has `budget_usd` takes, as its
   cap, the least of its own cap and what the round has left: the budget, less what the round's runs have spent (as
-  `evh rounds` counts it), less what the round's running commands have reserved. It reserves that cap when it
+  `evh round-list` counts it), less what the round's running commands have reserved. It reserves that cap when it
   starts, in the round's ledger (`.build/rounds/<goal>/<round>.json`, under the `goal:<goal>` lock for the moment it
   writes), and records what it spent when it ends. A stopped or crashed run writes no `metrics.json` and so is not
   among the runs `rounds` counts, though its items were paid for: the supervisor, not the command, closes the

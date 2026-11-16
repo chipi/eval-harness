@@ -14,7 +14,7 @@ that they still answer as they did at a pinned commit. There is no model and no 
 ```bash
 python examples/signal-fleet-dedup/fetch.py
 TRIAGE_FLEET_SRC=/path/to/signal-fleet evh run --system dedup_guard_v1 --dataset fleet_dedup_v1
-evh leaderboard --dataset-id fleet_dedup_v1
+evh leaderboard fleet_dedup_v1
 ```
 
 The reference set, `silver/fleet_dedup_v1`, is the fleet's own output at `f07efa9`: that run's outputs as a model's labels (`evh label-from-run`), promoted to silver (`evh reference-promote`).

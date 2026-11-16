@@ -153,7 +153,6 @@ def main() -> int:
                     "pair-test on the recorded primary metric",
                     [
                         "pair-test",
-                        "--dataset-id",
                         "tickets_v1",
                         "--a",
                         "tickets_lead2_v1",

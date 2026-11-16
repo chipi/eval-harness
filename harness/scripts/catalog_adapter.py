@@ -110,7 +110,7 @@ def _values_in(sc: dict) -> int:
 
 def scores_once(adapter, held: bool = False):
     """The adapter, its `scores` read once per arm from now on: for a process that answers once and exits (a view,
-    a build). `evh goals` read 1,054 arms' scores for 686 arms (the collect, the goals' groups and the adapter's own
+    a build). `evh goal-list` read 1,054 arms' scores for 686 arms (the collect, the goals' groups and the adapter's own
     `describe` asking again): 79% of its CPU. Set on the instance, so the adapter's own `self.scores` reads it too.
     Callers only read what `scores` returns (every caller gets the same dict).
     `held`: for a process that answers again and again (catalog-serve, the MCP server, a notebook): the scores are
@@ -259,7 +259,7 @@ class Adapter(Protocol):
     # [{"version", "dataset", "run", "arm", "reason", "promoted_at", "tier", "goal", "actor", "evidence"}], oldest
     # promotion first; the pages lead with them, the answer so far.
     # def baselines(self) -> list[dict]: ...
-    # Optional: the arm id of a system on a dataset (`evh rounds`, `evh inspect --round` and the
+    # Optional: the arm id of a system on a dataset (`evh round-list`, `evh comparison-show --round` and the
     # round pages build arm ids with it): `runs/<dataset>/<system_id>` when absent.
     # def arm_of(self, dataset: str, system_id: str) -> str: ...
     # Optional: whether a metric needs no reference (the bill, the clock, token counts), so arms
@@ -422,7 +422,7 @@ class HarnessAdapter:
     can_rescore = False
 
     def captures(self) -> list[dict]:
-        """Every capture in the data tree, as `evh captures` lists them (RFC-019): the Captures page reads these."""
+        """Every capture in the data tree, as `evh capture-list` lists them (RFC-019): the Captures page reads these."""
         return model_dataset_views.capture_views(self.data_dir, check_format=False)
 
     @_memo
@@ -881,7 +881,7 @@ class HarnessAdapter:
         """{"sets": [{set..., "covers": [item ids]}], "agreement": [{"a", "b", **_label_sets.compare(...)}]}: the label
         sets covering this dataset's items, matched by the item's sha256 (labels follow the item), and how two compare
         on the items both label (where the label texts are here; a release keeps only labels.json). One decision with
-        `evh labels` (_label_sets.coverage, agreement)."""
+        `evh dataset-list` (_label_sets.coverage, agreement)."""
         by_key = {(ls["dataset"], ls["set"]): ls for ls in self.label_sets()}
         sets = []
         for c in _label_sets.coverage(dataset, self.data_dir, texts=False):

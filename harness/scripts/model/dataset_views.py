@@ -67,11 +67,20 @@ def _delta(record: dict[str, Any]) -> dict[str, int]:
 
 def label_set_row(set_id: str, rec: dict[str, Any]) -> dict[str, Any]:
     """A label set as a list shows it."""
+    from evaluation_harness import _visibility  # noqa: PLC0415
+
     src = rec.get("source") or {}
     return {
         "set": set_id,
         "dataset": rec.get("dataset_id"),
         "kind": src.get("kind"),
+        "source": src,
+        "guideline": rec.get("guideline"),
+        "actor": rec.get("actor"),
+        # A hidden dataset's notes are free text a person wrote on its items, which can quote them (RFC-019 section 4).
+        "note": rec.get("note")
+        if _visibility.text_shown(rec.get("dataset_id"), public=_visibility.public_env())
+        else None,
         "items": rec.get("n_items", len(rec.get("items") or {})),
         "created_at": rec.get("created_at"),
     }
@@ -277,17 +286,25 @@ def list_label_sets(dataset: str) -> list[dict[str, Any]]:
     return [label_set_row(i, r) for i, r in _owned(LABEL_SET, dataset)]
 
 
-def show_label_set(dataset: str, set: str) -> dict[str, Any]:
-    """One label set: its record less its items, where its folder is, and the references promoted from it."""
+def show_label_set(dataset: str, set: str, items: bool = False) -> dict[str, Any]:
+    """One label set: its record less its items, where its folder is, and the references promoted from it; with
+    `items`, the label of each item too."""
+    from evaluation_harness import _visibility  # noqa: PLC0415
+
     sid = f"{dataset}/{set}"
     rec = LABEL_SET.get(sid)
-    return {
+    # What a person wrote on a hidden dataset's items is free text, which can quote them (RFC-019 section 4).
+    hidden = not _visibility.text_shown(dataset, public=_visibility.public_env())
+    out = {
         "set": sid,
         "items": rec.get("n_items", len(rec.get("items") or {})),
-        "record": _without(rec, "items"),
+        "record": _without(rec, "items", *(("notes", "note") if hidden else ())),
         "folder": rel(LABEL_SET.path(sid).parent),
         "references": [reference_row(i, m) for i, m in _records(REFERENCE) if _label_set_of(m) == sid],
     }
+    if items:
+        out["labels"] = {} if hidden else rec.get("items") or {}
+    return out
 
 
 def list_tag_sets(dataset: str) -> list[dict[str, Any]]:
@@ -345,23 +362,8 @@ def _capture_row(
     datasets: list[tuple[str, dict[str, Any]]],
     sets: list[tuple[str, dict[str, Any]]],
 ) -> dict[str, Any]:
-    return {
-        "capture": cid,
-        "importer": doc.get("importer"),
-        "captured_at": doc.get("captured_at"),
-        "records": doc.get("n_records", len(doc.get("records") or [])),
-        "scrubbed": bool(doc.get("scrubbed")),
-        "continues": doc.get("continues"),
-        "datasets": _made_from(cid, datasets),
-        "label_sets": [i for i, r in sets if (r.get("source") or {}).get("capture") == cid],
-    }
-
-
-def _capture_view(
-    cid: str, doc: dict[str, Any], datasets: list[tuple[str, dict[str, Any]]]
-) -> dict[str, Any]:
-    """A capture as `evh captures` and the catalog's Captures page show it: what it read and when (the first and last
-    of its records), whether it continues one, was sampled or scrubbed, and the datasets made from it."""
+    """A capture as a list shows it: what read it and when (the first and last of its records), whether it continues
+    one, was sampled or scrubbed, and the datasets and label sets made from it."""
     times = sorted(r["created_at"] for r in doc.get("records") or [] if r.get("created_at"))
     return {
         "capture": cid,
@@ -371,10 +373,11 @@ def _capture_view(
         "records": doc.get("n_records", len(doc.get("records") or [])),
         "first": times[0] if times else None,
         "last": times[-1] if times else None,
-        "continues": doc.get("continues"),
         "scrubbed": bool(doc.get("scrubbed")),
+        "continues": doc.get("continues"),
         "sample": doc.get("sample"),
         "datasets": _made_from(cid, datasets),
+        "label_sets": [i for i, r in sets if (r.get("source") or {}).get("capture") == cid],
         "query": doc.get("query") or {},
     }
 
@@ -386,10 +389,8 @@ def list_captures(data: Path | None = None, check_format: bool = True) -> list[d
 
 
 def capture_views(data: Path | None = None, check_format: bool = True) -> list[dict[str, Any]]:
-    """Every capture as `evh captures` and the catalog's Captures page show it: the one listing of captures
-    (`list_captures` is the same captures, as the operations list them)."""
-    datasets = _records(DATASET, data, check_format)
-    return [_capture_view(i, c, datasets) for i, c in _records(CAPTURE, data, check_format)]
+    """Every capture as the catalog's Captures page shows it (`list_captures` is the same listing)."""
+    return list_captures(data, check_format)
 
 
 def show_capture(capture: str) -> dict[str, Any]:

@@ -224,14 +224,12 @@ try:
         "- {when: {verdict: open}, skip: true}\n- {when: {verdict: fixed}, min_age_days: 14, label: file}\n"
         "- {when: {verdict: noise}, label: dismiss}\n"
     )
-    r = evh(
-        "label-coverage", "--dataset-id", "tickets_v1", "--capture", "oc2", "--map", "map_age.yaml", "--json"
-    )
-    cov = (json.loads(r.stdout).get("result") or {}).get("values") or {} if r.returncode == 0 else {}
+    r = evh("label-coverage-show", "tickets_v1", "--capture", "oc2", "--map", "map_age.yaml", "--json")
+    cov = json.loads(r.stdout).get("result") or {} if r.returncode == 0 else {}
     by = {x["item_id"]: x for x in cov.get("by_item") or []}
     young = by.get(items[1]) or {}
     check(
-        "label-coverage: labelled now, skipped, not yet mature (with its date), unmatched (and what they lack), "
+        "label-coverage-show: labelled now, skipped, not yet mature (with its date), unmatched (and what they lack), "
         "not in the capture",
         cov.get("counts")
         == {"labelled": 2, "skipped": 1, "not_mature": 1, "unmatched": 1, "no_record": 1, "gone": 0}
@@ -246,11 +244,9 @@ try:
         [(x["now"], x["when_mature"]) for x in cov.get("rules") or []] == [(1, 0), (1, 1), (1, 0)],
         json.dumps(cov.get("rules")),
     )
-    r = evh(
-        "label-coverage", "--dataset-id", "tickets_v1", "--capture", "oc2", "--map", "map_age.yaml", "--items"
-    )
+    r = evh("label-coverage-show", "tickets_v1", "--capture", "oc2", "--map", "map_age.yaml", "--items")
     check(
-        "label-coverage (text): the classes, the rules, and each item with its maturing date; nothing written",
+        "label-coverage-show (text): the classes, the rules, and each item with its maturing date; nothing written",
         r.returncode == 0
         and "not yet mature" in r.stdout
         and "the unmatched lack: verdict (1)" in r.stdout
@@ -294,7 +290,7 @@ try:
         f"silver/{name}",
     )
     check("the runs rescore against it", r.returncode == 0, said(r)[-300:])
-    r = evh("goals", "--goal", "tickets_summary")
+    r = evh("goal-leaderboard", "tickets_summary")
     lines = r.stdout.splitlines()
     check(
         "with gold beside it: one recommendation, from gold; the silver group shown, not recommended",
@@ -315,18 +311,19 @@ try:
         )
         + "\n",
     )
-    r = evh("datasets", "--tag", "source=support")
+    r = evh("dataset-list", "--tag", "source=support")
     check(
-        "evh datasets --tag: the datasets with that tag, with the tag shown",
+        "evh dataset-list --tag: the datasets with that tag, with the tag shown",
         r.returncode == 0 and "tickets_v1" in r.stdout and "source=support" in r.stdout,
         said(r)[-600:],
     )
-    r = evh("datasets", "--tag", "source=nothing")
+    r = evh("dataset-list", "--tag", "source=nothing")
     check(
-        "evh datasets --tag no dataset has: none listed", r.returncode == 0 and "tickets_v1" not in r.stdout
+        "evh dataset-list --tag no dataset has: none listed",
+        r.returncode == 0 and "tickets_v1" not in r.stdout,
     )
-    r = evh("datasets", "--dataset-id", "tickets_v1")
-    check("evh datasets --dataset-id: its tags", "tags: source=support" in r.stdout, said(r)[:500])
+    r = evh("dataset-show", "tickets_v1")
+    check("evh dataset-show: its tags", "tags: source=support" in r.stdout, said(r)[:500])
     r = evh("catalog")
     page = (proj / ".build" / "catalog" / "datasets.html").read_text() if r.returncode == 0 else ""
     check(
@@ -342,7 +339,7 @@ try:
         for key, lbl, _rec in _runview.scores_of(proj, rid):
             if lbl == "":
                 _runstore.rmtree(proj, f"runs/{rid}/scores/{key}")
-    r = evh("goals", "--goal", "tickets_summary")
+    r = evh("goal-leaderboard", "tickets_summary")
     check(
         "NO GOLD: the promoted rule set is governed like any silver: its group recommends",
         r.returncode == 0 and f"scored against silver/{name}" in r.stdout and "recommended:" in r.stdout,

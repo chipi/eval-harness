@@ -205,13 +205,13 @@ try:
         and len({a["label"] for a in arms1}) == 1,
         arms1,
     )
-    g = evh("goals", "--goal", "tickets_summary")
+    g = evh("goal-leaderboard", "tickets_summary")
     check(
         "the goal reads the re-score: one row per arm, from its re-score",
         g.stdout.count("rescored") >= 2,
         g.stdout[-900:],
     )
-    rs = evh("rounds", "--goal", "tickets_summary", "--round", "r1")
+    rs = evh("round-evidence", "tickets_summary", "r1")
     check(
         "the round reads the re-score as the goal does",
         "read from their re-score by" in rs.stdout,
@@ -225,13 +225,12 @@ try:
     )
     m = re.search(r'<span data-v="(\d+)">\d+ arms</span>', page)
     check(
-        "the catalog counts a re-scored round's arms once each, as evh rounds does (a re-score is the same arm)",
+        "the catalog counts a re-scored round's arms once each, as evh round-list does (a re-score is the same arm)",
         m is not None and m.group(1) == "2",
         (m.group(0) if m else out(cat)[-300:]),
     )
     pt = evh(
         "pair-test",
-        "--dataset-id",
         "tickets_v1",
         "--round",
         "r1",
@@ -305,9 +304,9 @@ try:
         and all(a["label"].startswith("rescored ") and a["label"] != arms1[0]["label"] for a in arms2),
         arms2,
     )
-    rs2 = evh("rounds", "--goal", "tickets_summary", "--round", "r2")
+    rs2 = evh("round-show", "tickets_summary", "r2")
     check(
-        "evh rounds: the scorer a round is judged by, and its scoring change, as the goal page lists them",
+        "evh round-show: the scorer a round is judged by, and its scoring change, as the goal page lists them",
         "judged by:" in rs2.stdout and "scoring " in rs2.stdout and "a larger bonus" in rs2.stdout,
         rs2.stdout[-900:],
     )

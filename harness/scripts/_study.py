@@ -24,6 +24,7 @@ from typing import Any
 import yaml
 from evaluation_harness import _common, _store
 from evaluation_harness.model import runs as _model_runs
+from evaluation_harness.model.entity import Problem
 from evaluation_harness.model.studies import (
     events,
     log_path,
@@ -225,13 +226,6 @@ def write_trial_system(goal: str, sid: str, k: int, base_cid: str, proposal: dic
 # ── running and comparing ──────────────────────────────────────────────────────────────────────────────────────────
 
 
-def _evh(argv: list[str], **kw: Any) -> subprocess.CompletedProcess:
-    return subprocess.run(  # nosec B603 - this interpreter and the harness's own commands
-        [sys.executable, str(Path(__file__).resolve().parent / "cli.py"), *argv],
-        capture_output=True, text=True, stdin=subprocess.DEVNULL, check=False, **kw,
-    )  # fmt: skip
-
-
 def run_system(
     cid: str,
     dataset: str,
@@ -263,15 +257,32 @@ def run_system(
 def compare(
     dataset: str, a: str, b: str, metric: str, lower: bool, margin: float | None = None
 ) -> dict[str, Any]:
-    """`pair-test --json` of two arms on the dataset (nominal: a study's p values are research): its values, or
+    """`pair-test` of two arms on the dataset (nominal: a study's p values are research): its values, or
     {"error"} when it refuses."""
-    argv = ["pair-test", "--dataset-id", dataset, "--a", a, "--b", b, "--metric", metric, "--json"]
-    argv += ["--asc"] if lower else ["--desc"]
-    argv += ["--margin", repr(margin)] if margin is not None else []
-    r = _evh(argv)
-    if r.returncode != 0:
-        return {"error": (r.stderr.strip().splitlines() or ["pair-test refused"])[-1]}
-    return (json.loads(r.stdout).get("result") or {}).get("values") or {}
+    try:
+        return pair_test(dataset, a, b, metric, lower, margin)
+    except Problem as exc:
+        return {"error": f"ERROR ({exc.kind}): {exc}"}
+
+
+def pair_test(
+    dataset: str,
+    a: str,
+    b: str,
+    metric: str,
+    lower: bool,
+    margin: float | None = None,
+    look_level: float | None = None,
+) -> dict[str, Any]:
+    """The values of the `pair-test` operation, answered in this process; the model's refusal (`Problem`) is raised."""
+    from evaluation_harness import ops  # noqa: PLC0415
+
+    inputs: dict[str, Any] = {"a": a, "b": b, "metric": metric, "asc" if lower else "desc": True}
+    if margin is not None:
+        inputs["margin"] = margin
+    if look_level is not None:
+        inputs["look_level"] = look_level
+    return ops.OPS["pair-test"].call(dataset=dataset, **inputs).get("values") or {}
 
 
 def decide(

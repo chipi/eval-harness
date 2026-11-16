@@ -277,7 +277,7 @@
         <div class="field"><div class="name">A note</div><div><input type="text" id="rvnote" value="${esc(mk.note || "")}" placeholder="anything a number would miss"></div></div>
         <div class="actions" style="margin-top:0"><button class="btn primary" type="button" id="rvnext">Save and next</button></div></div></div>
       ${note(`the outputs are the arms' real summaries of the first ${M.items.length - 1} items; the failure modes are the CNN adapter's checks (narration, label, markdown, bullets, paragraphs, overlong, truncated).`)}
-      ${cmd(`# the same sheet, to fill elsewhere, and read back\nevh inspect --sheet --goal ${gid()} --round r1 --runs ${A.config_id},${B.config_id} --csv sheet.csv --fill pick\nevh sheet-import sheet.csv --dataset-id ${dsid()} --by you --kind person --set <name>`)}
+      ${cmd(`# the same sheet, to fill elsewhere, and read back\nevh sheet-export --dataset-id ${dsid()} --runs ${A.config_id},${B.config_id} --csv sheet.csv --fill pick\nevh sheet-import sheet.csv --dataset-id ${dsid()} --by you --kind person --set <name>`)}
     </div>`;
   }
   function wireReview() {
@@ -310,7 +310,7 @@
           ${rows.map((r) => { const g = rankOf(r.arm), mv = g ? g - r.rank : 0; return `<tr><td class="num">${r.rank}</td><td class="mono">${esc(r.arm)}${r.arm.split("_")[0] === sv.authored_by.split("_")[0] ? ' <span class="tag new">author\'s family</span>' : ""}</td><td class="num">${r.coverage.toFixed(3)}</td>
             <td><span class="verdict ${r.verdict === "leader" ? "v-lead" : r.verdict === "not significant" ? "v-ns" : "v-worse"}">${esc(r.verdict)}</span>${r.p ? ` <small class="muted">p ${esc(r.p)}</small>` : ""}</td><td class="num">${g ?? "—"}</td><td class="num ${mv > 0 ? "v-lead" : mv < 0 ? "v-worse" : ""}">${mv > 0 ? `↑ ${mv}` : mv < 0 ? `↓ ${-mv}` : "—"}</td></tr>`; }).join("")}</tbody></table></div>
         <div class="note">On gold, bart_l leads and deepseek_m is not significantly different. On this silver set, ${esc(sv.rows[0].arm)} leads and deepseek_m is significantly worse (p ${esc(sv.rows[1].p)}). The two arms that rise most are the author's own family: read that before promoting it.</div>
-        ${note(`both orders are the harness's real scores on the same 200 items (evh goals --goal ${M.goal.goal_id}); the first 12 of ${sv.rows.length} shown.`)}`)}
+        ${note(`both orders are the harness's real scores on the same 200 items (evh goal-leaderboard ${M.goal.goal_id}); the first 12 of ${sv.rows.length} shown.`)}`)}
       ${part("c", null, "Promote it", true, s.newRef ? `<div class="note"><span class="tag">silver</span> promoted by ${esc(s.newRef.by)}: “${esc(s.newRef.why)}”. Re-scoring the arms is a job: <a href="#jobs">jobs →</a></div>`
         : `<div class="field"><div class="name">Who</div><div><input type="text" id="refby2" value="you"></div></div>
           <div class="field"><div class="name">Why</div><div><input type="text" id="refwhy2" placeholder="why these answers are the yardstick"></div></div>
@@ -379,7 +379,7 @@
       ${part("2", null, "Against people's labels", true, `<div class="tablewrap"><table class="cmp"><thead><tr><th>arm</th><th class="num">triage_cost</th><th>vs the leader</th><th class="num">per decision</th></tr></thead><tbody>
           ${p.rows.map((r) => `<tr><td class="mono">${esc(r.arm)}${r === base ? ' <span class="tag gold">production\'s model</span>' : ""}${r === lead ? ' <span class="tag new">recommended</span>' : ""}</td><td class="num">${r.triage_cost.toFixed(3)}</td><td>${esc(r.vs)}</td><td class="num">${esc(r.usd_per_item)}</td></tr>`).join("")}</tbody></table></div>
         <div class="note">${esc(p.decides)}. Production's own model costs ${base ? base.triage_cost.toFixed(3) : "—"} against ${lead.triage_cost.toFixed(3)} for the recommended prompt (${esc(baseVs)}); ${nItems} items are too few to show a tie, so the goal names no contenders.</div>
-        ${note("the arms and numbers are the triage goal's real comparison on its v2 dataset (evh goals --goal triage_orrery).")}`)}
+        ${note("the arms and numbers are the triage goal's real comparison on its v2 dataset (evh goal-leaderboard triage_orrery).")}`)}
       ${part("3", null, "Pick the rows for the next version", true, `<p style="margin:0">Rows where production was wrong, or saw something the dataset does not have yet. Each pick has a reason; picks wait until a new version is made.</p>
         <div class="choices row"><label class="choice"><input type="radio" name="pf" checked> wrong against the labels</label><label class="choice"><input type="radio" name="pf"> new since ${esc(p.dataset)}</label><label class="choice"><input type="radio" name="pf"> not labelled yet</label></div>
         <div class="tablewrap"><table><thead><tr><th></th><th>decision</th><th>production decided</th><th>people decided</th><th class="num">its cost</th><th>stage</th></tr></thead><tbody>
@@ -387,13 +387,13 @@
         ${pr.all ? "" : `<button class="linkbtn" type="button" id="wrongall">all ${M.wrong.length} wrong decisions</button>`}
         ${pr.picked ? `<div class="note">${pr.picked} rows picked (“${esc(pr.why)}”), waiting for the next version.</div>`
           : `<div class="inline"><input type="text" id="pickwhy" placeholder="why these rows, recorded with each pick" style="width:340px"><button class="btn primary" type="button" id="pickrows">Pick the checked rows</button></div>`}
-        ${note(`the ${M.wrong.length} decisions where production's model disagreed with the owner's labels, as evh inspect --sheet --wrong-against finds them.`)}`, pr.picked ? `${pr.picked} picked` : "")}
+        ${note(`the ${M.wrong.length} decisions where production's model disagreed with the owner's labels, as evh sheet-show --wrong-against finds them.`)}`, pr.picked ? `${pr.picked} picked` : "")}
       <div class="steps" style="margin-top:18px">
         <div class="row"><span class="dot">·</span><div><h3>Labels from what happened later</h3><p>outcomes joined from another system, labels that mature, and a test of the labeller itself</p></div><a class="btn" href="#production-labels">Open</a></div>
         <div class="row"><span class="dot">·</span><div><h3>Replay the code that ran</h3><p>production's own code over its history, proved faithful, then a candidate compared period by period</p></div><a class="btn" href="#production-replay">Open</a></div></div>
       ${part("4", null, "The next dataset version", !!pr.picked, pr.extended ? `<div class="note">${esc(p.dataset)} + ${pr.picked} picks → the next version, recorded as made from it.</div>` : `<div class="actions" style="margin-top:0"><button class="btn primary" type="button" id="extend">Make the next version</button></div>`)}
       <div class="actions">${back("#home", "Home")}</div>
-      ${cmd(`evh capture … (the deployment's importer)\nevh arm-from-capture --dataset-id ${p.dataset} --capture ${p.capture} --as production_<date>_v1\nevh label-from-capture --dataset-id ${p.dataset} --capture ${p.capture} --map rules.yaml --set outcomes\nevh inspect --goal ${p.goal} --wrong-against gold_${p.dataset}\nevh pick --dataset-id ${p.dataset} --item ${(pr.ids || [])[0] || "<id>"} --note "${pr.why || "<why>"}"\nevh dataset-extend ${p.dataset} --dataset-id <next> --picks`)}
+      ${cmd(`evh capture … (the deployment's importer)\nevh arm-from-capture --dataset-id ${p.dataset} --capture ${p.capture} --as production_<date>_v1\nevh label-from-capture --dataset-id ${p.dataset} --capture ${p.capture} --map rules.yaml --set outcomes\nevh sheet-show ${p.dataset} --runs <the production arm>,<a candidate> --wrong-against gold_${p.dataset}\nevh pick --dataset-id ${p.dataset} --item ${(pr.ids || [])[0] || "<id>"} --note "${pr.why || "<why>"}"\nevh dataset-extend ${p.dataset} --dataset-id <next> --picks`)}
     </div>`;
   }
   function wireProductionLive() {

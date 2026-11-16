@@ -1,5 +1,5 @@
 """The catalog's home page as data (RFC-032 step 8): the period, the tiles with their trends, each goal's decision at a
-glance, the measured runs per day, the spend, what each dataset has, and what was recorded. `evh overview`, the home
+glance, the measured runs per day, the spend, what each dataset has, and what was recorded. `evh overview-show`, the home
 page's numbers and `GET /overview` read it; each is the computation the others share, rendered."""
 
 from __future__ import annotations

@@ -3,14 +3,12 @@
 
     python tests/test_scores_once.py
 
-On this repository's runs, `evh goals` read 1,054 arms' scores for 686 arms (the collect, the goals' groups and the
+On this repository's runs, `evh goal-list` read 1,054 arms' scores for 686 arms (the collect, the goals' groups and the
 adapter's own `describe` asking again): 79% of its CPU, which the evals MCP server pays at cpus 0.5 on every fresh
 call. With a counting adapter behind the views' loader: no arm's scores are read twice by a view or by a catalog
 build, the adapter's own methods included (a wrapper around it missed those: arms read three times).
 """
 
-import contextlib
-import io
 import os
 import sys
 import tempfile
@@ -21,8 +19,9 @@ from pathlib import Path
 os.environ["EVAL_STORE"] = "files"
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _ops
+import _ops
 from evaluation_harness import catalog_build as cb
-from evaluation_harness import catalog_views as cv
 from evaluation_harness._check import check, summary
 from evaluation_harness.catalog_adapter import HarnessAdapter, scores_once
 
@@ -49,21 +48,13 @@ check(
     dict(READS),
 )
 
-# A view: evh goals, in this process, with the counting adapter behind its loader.
+# A view: evh goal-list, in this process, with the counting adapter behind it (scores read once per arm, as the
+# project's shared adapter does).
 READS.clear()
-
-
-def counting_loader(spec: str | None = None) -> Counting:
-    return Counting()
-
-
-cv.load_catalog_adapter = counting_loader
-sys.argv = ["evh goals", "--json"]
-with contextlib.redirect_stdout(io.StringIO()):
-    cv.run("goals")
+_ops.result("goal-list", scores_once(Counting()))
 twice = {a: n for a, n in READS.items() if n > 1}
 check(
-    f"evh goals: no arm's scores read twice ({len(READS)} arms read)",
+    f"evh goal-list: no arm's scores read twice ({len(READS)} arms read)",
     READS and not twice,
     dict(list(twice.items())[:5]),
 )

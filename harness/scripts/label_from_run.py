@@ -227,7 +227,7 @@ def main() -> int:
         print(f"data/labels/{dataset_id}/{args.name}: {doc['n_items']} label(s), source model · {args.run}")
         if rebuild:
             print(f"  its texts are kept out of git; commit labels.json. They are rebuilt with: {rebuild}")
-        print(f"  every set on it: evh labels --dataset-id {dataset_id}")
+        print(f"  every set on it: evh label-set-list {dataset_id}")
         return 0
 
 

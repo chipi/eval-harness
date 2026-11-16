@@ -55,7 +55,7 @@ so each line can be checked.
   arXiv:2404.12272): an LLM judge is graded against people, and the criteria change as people read outputs.
   Why a judge is validated before its scores count, and why a changed rubric names the one it supersedes.
 - **Error analysis before metrics** — Hamel Husain's writing on evals (hamel.dev): read outputs, write open
-  notes, then name the failure modes and count them. The source of failure modes and tags (`evh tags`).
+  notes, then name the failure modes and count them. The source of failure modes and tags (`evh dataset-list`).
 - **Datasets are documented** — Gebru et al., *Datasheets for Datasets* (CACM 2021), Pushkarna et al., *Data
   Cards* (FAccT 2022), and MLCommons' Croissant 1.1 with its RAI vocabulary: what a dataset is for, how it was
   collected and labelled, its limits. The card asks those questions in Croissant's words, and a dataset

@@ -184,6 +184,56 @@ try:
 finally:
     vc.BUDGET = was
 
+# ── two threads asking for one value at once: one computes ──────────────────────────────────────────────────────────
+vc.clear()
+started, release = threading.Event(), threading.Event()
+got: list[str] = []
+computed = [0]
+
+
+def slow_value() -> str:
+    computed[0] += 1
+    started.set()
+    release.wait(10)
+    return "v"
+
+
+def asker() -> None:
+    got.append(vc.get("flight", slow_value))
+
+
+first_t = threading.Thread(target=asker)
+first_t.start()
+started.wait(10)
+second_t = threading.Thread(target=asker)
+second_t.start()
+second_t.join(0.3)
+waiting = second_t.is_alive()
+release.set()
+first_t.join(10)
+second_t.join(10)
+check(
+    "a second thread that asks for a value being computed waits for it: computed once, both given it",
+    waiting and computed[0] == 1 and got == ["v", "v"],
+    (waiting, computed[0], got),
+)
+failed = [0]
+
+
+def broken() -> str:
+    failed[0] += 1
+    raise RuntimeError("no")
+
+
+try:
+    vc.get("flight2", broken)
+except RuntimeError:
+    pass
+check(
+    "a computation that raised is not in flight: the next asker computes it",
+    vc.get("flight2", lambda: "ok") == "ok",
+)
+
 # ── an operation's answer ──────────────────────────────────────────────────────────────────────────────────────────
 vc.clear()
 runs = [0]

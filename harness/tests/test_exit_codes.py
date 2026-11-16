@@ -88,7 +88,7 @@ try:
     r = evh("run", "--system", "priced_v1", "--dataset", "tickets_v1", "--no-such-flag")
     check("an unknown argument: exit 2", r.returncode == 2 and "usage: evh run" in r.stderr, r.stderr[-200:])
 
-    r = evh("datasets", "--dataset-id", "no_such_dataset")
+    r = evh("dataset-show", "no_such_dataset")
     check("a refusal: exit 1 with its ERROR line", r.returncode == 1 and "ERROR" in r.stderr, r.stderr[-200:])
 
     _runstore.write_text(proj, "datasets/tickets_v1.json", "{not json")

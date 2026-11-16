@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """What production must match to run what was measured (RFC-023, PRD-005 FR3), and whether a capture says it did.
 
-    evh deploy-sheet --system triage_baseline_pro_v1
-    evh deploy-sheet --system triage_baseline_pro_v1 --capture orrery_2026_11
+    evh deploy-sheet triage_baseline_pro_v1
+    evh deploy-sheet triage_baseline_pro_v1 --capture orrery_2026_11
 
 The sheet is read from the run the arm was promoted with (the latest baseline whose run is the arm's), else the
 arm's latest run: the model, its record and the deployment (tag, endpoint, server, build), every setting the arm
@@ -24,15 +24,13 @@ from pathlib import Path as _Path
 if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
-import argparse
-import json
 from collections import Counter
 from pathlib import Path
 from typing import Any
 
 from evaluation_harness import _models, _runs, _store
 from evaluation_harness._adapter import adapter_module
-from evaluation_harness._common import DATA, EXIT_PROBLEMS, die, evh_prog
+from evaluation_harness._common import DATA, die
 from evaluation_harness.dataset_from_capture import load_capture
 from evaluation_harness.model import runs as _model_runs
 
@@ -180,88 +178,3 @@ def check(s: dict[str, Any], capture_id: str, captures_dir: Path | None = None) 
             else:
                 row["differ"][str(v)] += 1
     return {"capture": capture_id, "records": len(recs), "keys": per}
-
-
-def main() -> int:
-    """Print the deploy sheet, and the capture check."""
-    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
-    ap.add_argument("--system", required=True, help="the system: its id (its promoted run, else its latest)")
-    ap.add_argument(
-        "--capture", help="a capture whose records say what production ran (the adapter's production_ran)"
-    )
-    ap.add_argument("--json", action="store_true", help="print JSON")
-    args = ap.parse_args()
-
-    s = sheet(args.system)
-    c = check(s, args.capture) if args.capture else None
-    ok = c is None or (
-        bool(c["keys"]) and all(not k["differ"] and not k["missing"] for k in c["keys"].values())
-    )
-    if args.json:
-        out = {k: v for k, v in s.items() if not k.startswith("_")}
-        if c is not None:
-            out["capture_check"] = {**c, "ok": ok}
-        print(json.dumps(out, indent=2, default=dict))
-        return 0 if ok else EXIT_PROBLEMS
-    p = s["promoted"]
-    print(f"deploy sheet: {s['system_id']}")
-    ref = s.get("reference") or {}
-    against = f"{ref['id']} ({ref.get('tier') or 'no tier'})" if ref.get("id") else "no reference"
-    print(f"  measured by   {s['run_id']} on {s['dataset_id']}, against {against}")
-    print(
-        f"  promoted      as {p['goal'] or 'the dataset'}'s baseline on {p['dataset_id']}, version {p['version']},"
-        f" {p['promoted_at']}"
-        if p
-        else "  promoted      no: this is the arm's latest run, not a baseline"
-    )
-    mm = s["model"]
-    print(f"\nmodel\n  sent          {mm['sent']}")
-    print(f"  record        {mm['record'] or '(no model record names it)'}")
-    if mm["deployment"]:
-        for k, v in mm["deployment"].items():
-            print(f"  {k:<13} {json.dumps(v) if isinstance(v, dict) else v}")
-    print(f"  provider      {mm['provider']}")
-    print(f"  server        {mm['server'] or '(not recorded)'}")
-    print(f"  build         {mm['build'] or '(none recorded: a hosted model has no digest)'}")
-    print("\nsettings the arm sent")
-    for k, v in s["sent"].items():
-        print(f"  {k:<22} {v}")
-    if s["not_sent"]:
-        print(f"  (bookkeeping, not sent: {', '.join(s['not_sent'])})")
-    for k, v in s["record_settings_not_sent"].items():
-        print(f"  NOTE: the record sets {k}: {v}; this arm did not send it (it names no model_record)")
-    print("\ndeclared")
-    for part, kv in s["declared"].items():
-        for k, v in kv.items():
-            print(f"  {part}.{k:<14} {v}")
-    print("\nwhat the system reported per item")
-    for k, vs in s["reported"].items():
-        print(f"  {k:<22} {', '.join(vs)}")
-    if not s["reported"]:
-        print("  (nothing: the adapter records no _meta)")
-    print(f"\nadapter         {s['adapter'].get('id')} {s['adapter'].get('sha256') or ''}".rstrip())
-    print(f"harness         {s['harness']['version']} {s['harness']['commit'] or ''}".rstrip())
-    if c is not None:
-        print(f"\ncapture {c['capture']}: {c['records']} record(s)")
-        for k, row in c["keys"].items():
-            if row["missing"] == c["records"] and not row["match"] and not row["differ"]:
-                print(f"  {k:<12} production recorded none, so it cannot be checked")
-                continue
-            line = f"  {k:<12} {row['match']} match"
-            if row["differ"]:
-                line += "; differ: " + ", ".join(f"{v} ({n})" for v, n in row["differ"].most_common(5))
-            if row["missing"]:
-                line += f"; not recorded: {row['missing']}"
-            print(line + f"   (expected: {', '.join(row['expected']) or 'nothing the run reported'})")
-        if not c["keys"]:
-            print("  the adapter's production_ran said nothing for any record")
-        print(
-            "\nevery captured decision was made by the promoted model and prompt"
-            if ok
-            else "\nNOT every captured decision was made by the promoted model and prompt (above: what differs)"
-        )
-    return 0 if ok else EXIT_PROBLEMS
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())

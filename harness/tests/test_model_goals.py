@@ -271,18 +271,19 @@ try:
         old.stderr[-200:],
     )
 
-    from evaluation_harness import _api, mcp_server, ops
+    from evaluation_harness import _api, _cmdline, mcp_server, ops
     from evaluation_harness.cli import COMMANDS
 
+    tools = set(mcp_server.tools_for(False))
     wired = []
     for op in ops.OPS.values():
         if COMMANDS.get(op.name, ("",))[0] != "op_command.py":
             wired.append(f"{op.name}: not an evh command")
-        if (op.kind == "read") != (op.name in mcp_server.READ_TOOLS and op.name in mcp_server.JSON):
+        if (op.kind == "read") != (op.name in tools):
             wired.append(f"{op.name}: MCP lists")
         if (op.kind != "read") != (op.name in mcp_server.NOT_TOOLS and op.name in _api.NOT_SERVED):
             wired.append(f"{op.name}: NOT_TOOLS / NOT_SERVED")
-        if mcp_server.parser_of(op.name).prog != f"evh {op.name}":
+        if _cmdline.parser_of(op.name).prog != f"evh {op.name}":
             wired.append(f"{op.name}: parser_of")
     check(
         "every operation is an evh command, a read an MCP tool, a write neither tool nor job; parser_of makes its parser",

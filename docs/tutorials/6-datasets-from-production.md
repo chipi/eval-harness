@@ -30,12 +30,13 @@ beside each close) and `langfuse` (traces) come with the harness, and your own i
 method (`evh importer-check` tests it against the contract).
 
 ```bash
-evh captures
+evh capture-list
+evh capture-show desk_2026_10
 ```
 ```text
-desk_2026_10: 6 record(s) from jsonl, captured ...
+desk_2026_10  6 records  ...  datasets: none; label sets: 0
+desk_2026_10  6 records from jsonl, captured ...
   records from 2026-10-01T08:12:00Z to 2026-10-05T10:00:00Z
-  datasets made from it: none
 ```
 
 A production source is often far larger than a test needs: `--sample-rate 0.001 --seed 7` keeps one record in
@@ -59,7 +60,7 @@ data/materialized/tickets_desk_v1  (6 item(s), all hashes verified)
 Only the body becomes the item: what the system received, nothing about what happened next. A selection is
 part of the dataset's record: `--where channel:email`, `--one-per F` (one record per value, the newest, for
 independent items), `--dedup text`. Tags label the dataset outside its identity; the
-catalog's datasets page groups by them, and `evh datasets --tag source=support-desk` filters by them.
+catalog's datasets page groups by them, and `evh dataset-list --tag source=support-desk` filters by them.
 
 The systems of Getting started run on it unchanged: `evh run --system tickets_lead2_v1 --dataset
 tickets_desk_v1`.
@@ -167,7 +168,7 @@ reads it with `recorded_output(record)`), and it costs nothing. Scored against a
 the others, in `data/runs-labels-tickets_desk_v1-desk_outcomes/`. Where was it wrong?
 
 ```bash
-evh inspect --sheet --dataset-id tickets_desk_v1 --runs desk_router_v1 --wrong-against desk_outcomes
+evh sheet-show tickets_desk_v1 --runs desk_router_v1 --wrong-against desk_outcomes
 ```
 ```text
 tickets_desk_v1: 2 of 6 item(s) (wrong) · wrong 2 · read on overlap_f1 (higher is better)
@@ -201,7 +202,7 @@ data/datasets/tickets_routing_v2.json  (4 item(s): 2 of tickets_routing_v1, 2 pi
 A pick waits in `data/picks.jsonl` (append-only; the latest line for an item wins, `pick --drop` takes one off)
 until a version uses it. `tickets_routing_v2` holds v1's tickets and the two picked, each with where it came from
 (`extended_from`), and their labels follow them; nothing is promoted by it. What you promote stays your decision:
-the deploy sheet (`evh deploy-sheet --system ID [--capture C]`) then says what production must match to run it,
+the deploy sheet (`evh deploy-sheet ID [--capture C]`) then says what production must match to run it,
 and whether a capture shows it did ([RUNBOOK §15b](../../harness/docs/RUNBOOK.md#15b-evaluating-what-production-did)).
 
 ## Data you may measure but not publish

@@ -331,7 +331,7 @@ with tempfile.TemporaryDirectory() as tmp:
     )
     _runstore.migrate_in(tmp)
     r = subprocess.run(
-        [sys.executable, str(HERE / "validate_tree.py")],
+        [sys.executable, str(HERE / "cli.py"), "validate"],
         cwd=tmp,
         env={**os.environ, "EVAL_HOME": tmp, "EVAL_DATA_DIR": ""},
         capture_output=True,
@@ -354,7 +354,7 @@ with tempfile.TemporaryDirectory() as tmp:
     verdict.write_text(json.dumps({"set_id": "set", "judge": "j", "pass": "first"}), encoding="utf-8")
     _runstore.migrate_in(tmp)
     r = subprocess.run(
-        [sys.executable, str(HERE / "validate_tree.py")],
+        [sys.executable, str(HERE / "cli.py"), "validate"],
         cwd=tmp,
         env={**os.environ, "EVAL_HOME": tmp, "EVAL_DATA_DIR": ""},
         capture_output=True,
@@ -446,7 +446,7 @@ with tempfile.TemporaryDirectory() as tmp:
 
     def _v6() -> str:
         r = subprocess.run(
-            [sys.executable, str(HERE / "validate_tree.py")], env=env, capture_output=True, text=True
+            [sys.executable, str(HERE / "cli.py"), "validate"], env=env, capture_output=True, text=True
         )
         return next((ln for ln in r.stdout.splitlines() if " V6 " in ln), r.stdout[-300:])
 
@@ -529,7 +529,7 @@ def _stats_project(tmp: str, rec: dict) -> None:
 
 def _validate(tmp: str, extra: dict) -> str:
     r = subprocess.run(
-        [sys.executable, str(HERE / "validate_tree.py")],
+        [sys.executable, str(HERE / "cli.py"), "validate"],
         env={
             **os.environ,
             "EVAL_HOME": tmp,

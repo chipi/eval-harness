@@ -106,7 +106,7 @@ try:
     r = evh("run-promote", "--run", run_of("two_v1"), "--reason", "two sentences, against one")
     v2 = version("g_one", 2)
     pt = evh(
-        "pair-test", "--dataset-id", "tk_v1", "--a", "two_v1", "--b", "one_v1", "--metric", "overlap_f1", "--desc", "--json"
+        "pair-test", "tk_v1", "--a", "two_v1", "--b", "one_v1", "--metric", "overlap_f1", "--desc", "--json"
     )  # fmt: skip
     want = (json.loads(pt.stdout).get("result") or {}).get("values") or {} if pt.returncode == 0 else {}
     ev = v2.get("evidence") or {}
@@ -214,10 +214,10 @@ try:
     )
     a = evh("baselines", "--json").stdout
     b = evh("baselines", "--json").stdout
-    doc = json.loads(a) if a.strip() else {}
+    doc = json.loads(a)["result"] if a.strip() else {}
     lines = {(x["goal"], x["dataset"]): x for x in doc.get("baselines") or []}
     check(
-        "evh baselines --json: the same bytes twice; one entry per line with its current version and history",
+        "evh baselines --json: the same bytes twice (the export is its result); one entry per line with its current version and history",
         a == b
         and set(lines) == {("g_one", "tk_v1"), ("g_two", "tk_v1"), (None, "tk_v1")}
         and lines[("g_one", "tk_v1")]["current"] == 4

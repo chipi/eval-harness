@@ -1,6 +1,6 @@
 """The sheet (RFC-023, PRD-014 FR8): one view of everything a dataset's items and arms have.
 
-    evh inspect --sheet --dataset-id prod_2026_11 --runs production_2026_11,triage_lead_v1 \\
+    evh sheet-show prod_2026_11 --runs production_2026_11,triage_lead_v1 \\
         --wrong-against owner_2026_11 --new-vs triage_v1
 
 The items down, a column per arm across: what each wrote, every score it has on that item (its run's metrics, the
@@ -84,7 +84,7 @@ def _set_named(name: str, dataset_id: str) -> None:
     """Refuse a label set no dataset has, and a bare name that two datasets' sets on this dataset's items share
     (labels follow an item by its bytes into every dataset holding it): which one the row read was a guess."""
     if not any(name in (d["set"], f"{d['dataset_id']}/{d['set']}") for d in sets()):
-        die(f"--wrong-against {name}: no such label set (evh labels lists them)", "not-found")
+        die(f"--wrong-against {name}: no such label set (evh dataset-list lists them)", "not-found")
     if "/" not in name:
         same = sorted(
             {

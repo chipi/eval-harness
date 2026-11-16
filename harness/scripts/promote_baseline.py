@@ -27,9 +27,7 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
 import argparse
-import json
 import os
-import subprocess
 import sys
 from typing import Any
 
@@ -121,31 +119,30 @@ def evidence(
     if a == b:
         out |= {"verdict": None, "not_comparable": ["the same arm (another run of it)"]}
         return out
-    argv = ["pair-test", "--dataset-id", m["dataset_id"], "--a", a, "--b", b, "--json"]
+    inputs: dict[str, Any] = {"a": a, "b": b}
     if measure:
-        argv += ["--metric", measure]
+        inputs["metric"] = measure
     if goal:
         cl = _common.goal_cluster(goal, m["dataset_id"])
-        argv += ["--cluster", cl] if cl else []
+        if cl:
+            inputs["cluster"] = cl
         if isinstance(prim, dict) and prim.get("reduce"):
-            argv += ["--reduce", str(prim["reduce"])]
+            inputs["reduce"] = str(prim["reduce"])
         if prim.get("direction") in ("lower", "higher"):
-            argv += ["--asc"] if prim["direction"] == "lower" else ["--desc"]
+            inputs["asc" if prim["direction"] == "lower" else "desc"] = True
         if round_id:
-            argv += ["--round", round_id, "--goal", goal["goal_id"]]
+            inputs |= {"round": round_id, "goal": goal["goal_id"]}
     if look is not None:  # a look at a test set (RFC-029): one-sided at its level
-        argv += ["--look-level", repr(look["level"])]
-    r = subprocess.run(
-        [sys.executable, str(_Path(__file__).resolve().parent / "cli.py"), *argv],
-        capture_output=True,
-        text=True,
-        stdin=subprocess.DEVNULL,
-    )
-    if r.returncode != 0:
-        why = (r.stderr.strip().splitlines() or ["pair-test refused"])[-1]
+        inputs["look_level"] = float(look["level"])
+    from evaluation_harness import ops  # noqa: PLC0415
+    from evaluation_harness.model.entity import Problem  # noqa: PLC0415
+
+    try:
+        v = (ops.OPS["pair-test"].call(dataset=m["dataset_id"], **inputs).get("values")) or {}
+    except Problem as exc:
+        why = (f"ERROR ({exc.kind}): {exc}".splitlines() or ["pair-test refused"])[-1]
         out |= {"verdict": None, "not_comparable": [why]}
         return out
-    v = (json.loads(r.stdout).get("result") or {}).get("values") or {}
     if look is not None:
         lv = v.get("look") or {}
         if not lv.get("can_reach") and not look.get("override"):

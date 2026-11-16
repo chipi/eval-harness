@@ -23,29 +23,33 @@
   const short = a => a.replace(/^runs\//, '');
   const ARMS = window.RUNS || {};
 
-  // The footer's "this page elsewhere" (catalog_build.elsewhere_line): the comparison picked, as
-  // the inspect command and, when the deployment names its MCP server, as the tool call.
+  // The footer's "this page elsewhere" (catalog_build.elsewhere_line): the comparison picked (or the sheet), as the
+  // operation's command and, when the deployment names its MCP server, as the tool call.
   (function elsewhere() {
     const t = document.querySelector('[data-elsewhere=term]'), m = document.querySelector('[data-elsewhere=mcp]');
+    const sheet = !!P.get('sheet');
     const args = {};
-    if (P.get('sheet')) {
+    if (sheet) {
       // The sheet: the flags that filter are the signals ticked (a flag always filters in the terminal).
-      args.sheet = true; args['dataset-id'] = P.get('dataset');
+      args.dataset = P.get('dataset');
       const only = P.getAll('only');
       for (const k of ['runs', 'metric', 'by']) if (P.get(k)) args[k] = P.get(k);
-      if (P.get('wrong') && only.includes('wrong')) args['wrong-against'] = P.get('wrong');
-      if (P.get('new') && only.includes('new')) args['new-vs'] = P.get('new');
+      if (P.get('wrong') && only.includes('wrong')) args.wrong_against = P.get('wrong');
+      if (P.get('new') && only.includes('new')) args.new_vs = P.get('new');
       for (const k of ['disagree', 'split', 'unlabelled']) if (only.includes(k)) args[k] = true;
-      if (P.get('scores') === 'only') args['scores-only'] = true;
+      if (P.get('scores') === 'only') args.scores_only = true;
     } else {
       for (const k of ['runs', 'baseline', 'metric', 'by']) if (P.get(k)) args[k] = P.get(k);
-      if (P.get('rescore') === '0') args['no-rescore'] = true;
+      if (P.get('rescore') === '0') args.rescore = '0';
     }
     if (P.getAll('where').length) args.where = P.getAll('where');
-    const opts = Object.entries(args).flatMap(([k, v]) =>
-      v === true ? [`--${k}`] : (Array.isArray(v) ? v : [v]).map(x => `--${k} ${x}`));
-    if (t) t.innerHTML = `<code>${esc(['evh inspect', ...opts].join(' '))}</code>`;
-    if (m) m.innerHTML = '<code>inspect</code>' + (opts.length ? ` with <code>${esc(JSON.stringify(args))}</code>` : '');
+    const flag = k => '--' + k.replace(/_/g, '-');
+    const { dataset, ...rest } = args;  // the sheet's dataset is a word of the command, not a flag
+    const opts = Object.entries(sheet ? rest : args).flatMap(([k, v]) =>
+      v === true ? [flag(k)] : (Array.isArray(v) ? v : [v]).map(x => `${flag(k)} ${x}`));
+    const cmd = sheet ? ['evh sheet-show', dataset, ...opts] : ['evh comparison-show', ...opts];
+    if (t) t.innerHTML = `<code>${esc(cmd.filter(Boolean).join(' '))}</code>`;
+    if (m) m.innerHTML = `<code>${sheet ? 'sheet-show' : 'comparison-show'}</code>` + (Object.keys(args).length ? ` with <code>${esc(JSON.stringify(args))}</code>` : '');
   })();
 
   // The picker. With pick.js (catalog_build.write_pick): a goal narrows the datasets, a dataset

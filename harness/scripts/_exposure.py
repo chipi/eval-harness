@@ -164,7 +164,7 @@ def said() -> list[str]:
 
 
 def line(dataset_id: str | None, data: Path | None = None) -> str | None:
-    """A held-out side's reads in one line, for its pages and `evh goals`; None for any other dataset."""
+    """A held-out side's reads in one line, for its pages and `evh goal-list`; None for any other dataset."""
     if not dataset_id or not applies(dataset_id, data):
         return None
     from evaluation_harness import _seal  # noqa: PLC0415

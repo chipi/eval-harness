@@ -40,7 +40,7 @@ def evh(*args):
 
 
 def arm_rows(text):
-    """The arm rows of `evh goals --goal` (a name, then the six items): not the wrapped reasons beneath."""
+    """The arm rows of `evh goal-leaderboard` (a name, then the six items): not the wrapped reasons beneath."""
     return [ln for ln in text.splitlines() if re.match(r"^  tickets_\S+.* {2,}6 {2,}", ln)]
 
 
@@ -264,9 +264,9 @@ try:
         'class="decision"' in html and "cost per item" in html and "speed per item" in html,
     )
     check("catalog: the dataset page shows cost and speed per arm", "cost per item" in ds_page)
-    r = evh("goals", "--goal", "tickets_summary")
+    r = evh("goal-leaderboard", "tickets_summary")
     check(
-        "evh goals --goal: the strategy, the tie-break and the group's recommendation",
+        "evh goal-leaderboard: the strategy, the tie-break and the group's recommendation",
         r.returncode == 0
         and "strategy   balanced" in r.stdout
         and "tie-break  cost, speed" in r.stdout
@@ -274,18 +274,19 @@ try:
         and ("recommended:" in r.stdout or "no single arm recommended" in r.stdout),
         r.stdout[-600:] + r.stderr[-300:],
     )
-    r = evh("overview")
+    r = evh("overview-show")
     check(
-        "evh overview: the glance has the recommended column", r.returncode == 0 and "recommended" in r.stdout
+        "evh overview-show: the glance has the recommended column",
+        r.returncode == 0 and "recommended" in r.stdout,
     )
     goals_page = (proj / ".build/catalog/goals.html").read_text()
     check(
         "catalog: the goals page counts systems, not scorings, and shows each goal's recommendation",
         "systems filed" in goals_page and "arms filed" not in goals_page and ">recommended<" in goals_page,
     )
-    r = evh("goals")
+    r = evh("goal-list")
     check(
-        "evh goals: systems filed and the recommendation",
+        "evh goal-list: systems filed and the recommendation",
         "systems filed" in r.stdout and "recommended" in r.stdout,
         r.stdout,
     )
@@ -296,14 +297,14 @@ try:
         "cost: what an item cost" in cp and "<dt>weighed by</dt>" in cp and "tickets_summary.html" in cp,
         f"page exists: {cost_page.is_file()}",
     )
-    r = evh("metrics", "--metric", "latency_ms")
+    r = evh("metric-show", "latency_ms")
     check(
-        "evh metrics --metric: speed is its own kind, weighed by the goal",
+        "evh metric-list --metric: speed is its own kind, weighed by the goal",
         "speed: how long an item took" in r.stdout and "weighed by   tickets_summary" in r.stdout,
         r.stdout[-400:] + r.stderr[-300:],
     )
 
-    # A goal with many arms (evh goals --goal G --arms/--top): the table can be cut down, never the decision.
+    # A goal with many arms (evh goal-leaderboard G --arms/--top): the table can be cut down, never the decision.
     lead1 = (KIT / "systems" / "tickets_lead1_v1.yaml").read_text()
     for i in range(1, 7):
         _runstore.write_text(
@@ -314,30 +315,30 @@ try:
             ),
         )
         evh("run", "--system", f"tickets_x{i:02d}_v1", "--dataset", "tickets_v1", "--goal", "tickets_summary")
-    full = evh("goals", "--goal", "tickets_summary")
+    full = evh("goal-leaderboard", "tickets_summary")
     rows_full = arm_rows(full.stdout)
     check(
-        "evh goals --goal: every arm listed, a 'vs leader' column with the paired test against the leader",
+        "evh goal-leaderboard: every arm listed, a 'vs leader' column with the paired test against the leader",
         len(rows_full) == 7
         and "vs leader (paired test)" in full.stdout
         and ("not significant" in full.stdout or "significant" in full.stdout or "identical" in full.stdout)
         and "left out" not in full.stdout,
         full.stdout[-1500:],
     )
-    r = evh("goals", "--goal", "tickets_summary", "--top", "2")
+    r = evh("goal-leaderboard", "tickets_summary", "--top", "2")
     shown = arm_rows(r.stdout)
     check(
-        "evh goals --goal --top 2: at most two arms and what must stay (the baseline), kept, the count left out said",
+        "evh goal-leaderboard --top 2: at most two arms and what must stay (the baseline), kept, the count left out said",
         r.returncode == 0
         and len(shown) < len(rows_full)
         and any("[baseline]" in ln for ln in shown)
         and f"{len(shown)} of 7 arms shown, {7 - len(shown)} left out by --top 2" in r.stdout,
         r.stdout[-1500:] + r.stderr[-300:],
     )
-    r = evh("goals", "--goal", "tickets_summary", "--arms", "x01,x02", "--arms", "tickets_x0[56]*")
+    r = evh("goal-leaderboard", "tickets_summary", "--arms", "x01,x02", "--arms", "tickets_x0[56]*")
     shown = arm_rows(r.stdout)
     check(
-        "evh goals --goal --arms: substring and glob, repeatable and comma-separated; the baseline stays",
+        "evh goal-leaderboard --arms: substring and glob, repeatable and comma-separated; the baseline stays",
         r.returncode == 0
         and any("[baseline]" in ln for ln in shown)
         and all(f"x0{n}" in "\n".join(shown) for n in (1, 2, 5, 6))
@@ -345,10 +346,10 @@ try:
         and "left out by --arms x01 --arms x02 --arms tickets_x0[56]*" in r.stdout,
         r.stdout[-1500:] + r.stderr[-300:],
     )
-    r = evh("goals", "--goal", "tickets_summary", "--arms", "zzz_no_such_arm")
+    r = evh("goal-leaderboard", "tickets_summary", "--arms", "zzz_no_such_arm")
     shown = arm_rows(r.stdout)
     check(
-        "evh goals --goal --arms with no match: the baseline is still there, marked",
+        "evh goal-leaderboard --arms with no match: the baseline is still there, marked",
         # Shown whatever the filter: the baseline, the leader and the recommended arm. Which arm the goal
         # recommends turns on these offline arms' speeds, a few ms that vary run to run, so it is sometimes
         # not the leader: its row is marked [recommended].
@@ -358,11 +359,12 @@ try:
         and all("[baseline]" in ln or "leader" in ln or "[recommended]" in ln for ln in shown),
         r.stdout[-900:],
     )
-    r = evh("goals", "--goal", "tickets_summary", "--top", "1", "--json")
-    v = json.loads(r.stdout)["result"]["values"] if r.returncode == 0 else {}
-    g0 = (v.get("groups") or [{}])[0]
+    r = evh("goal-leaderboard", "tickets_summary", "--top", "1", "--json")
+    res = json.loads(r.stdout)["result"] if r.returncode == 0 else {}
+    g0 = ((res.get("datasets") or [{}])[0].get("groups") or [{}])[0]
+    v = {"goal": res.get("goal"), **g0}
     check(
-        "evh goals --goal --json: leader, baseline, contenders, recommended and each arm's test against the leader",
+        "evh goal-leaderboard --json: leader, baseline, contenders, recommended and each arm's test against the leader",
         v.get("goal") == "tickets_summary"
         and v.get("baseline", "").endswith("tickets_lead2_v1")
         and v.get("leader")
@@ -373,7 +375,7 @@ try:
         {k: v.get(k) for k in ("goal", "leader", "baseline", "contenders", "recommended")},
     )
     check(
-        "evh goals --goal --top 1 --json: the arms shown with raw numbers, and how many were left out",
+        "evh goal-leaderboard --top 1 --json: the arms shown with raw numbers, and how many were left out",
         g0.get("arms_total") == 7
         and g0.get("arms_left_out") == 7 - g0.get("arms_shown", 0) > 0
         and g0["filter"] == {"arms": [], "top": 1}
@@ -382,16 +384,16 @@ try:
         and any(a["leader"] for a in g0["arms"]),
         {k: g0.get(k) for k in ("arms_total", "arms_shown", "arms_left_out", "filter")},
     )
-    r = evh("goals", "--top", "3")
+    r = evh("goal-leaderboard", "--top", "3")
     check(
-        "evh goals --top without --goal: refused, saying why",
-        r.returncode != 0 and "need --goal" in r.stderr,
+        "evh goal-leaderboard --top without its goal: refused, saying what is missing",
+        r.returncode != 0 and "goal" in r.stderr,
         r.stderr[-300:],
     )
-    r = evh("goals", "--goal", "tickets_summary", "--top", "0")
+    r = evh("goal-leaderboard", "tickets_summary", "--top", "0")
     check(
-        "evh goals --goal --top 0: refused",
-        r.returncode != 0 and "--top must be at least 1" in r.stderr,
+        "evh goal-leaderboard --top 0: refused",
+        r.returncode != 0 and "top must be at least 1" in r.stderr,
         r.stderr[-300:],
     )
     for i in range(1, 7):
@@ -429,11 +431,11 @@ try:
         "catalog: the chosen strategy, the tie-break order and the limit are shown",
         "frugal: contenders" in html and "speed, cost" in html and "limit ≤ 60,000" in html,
     )
-    # A limit an arm breaks: the arms page badges it "over a limit", not "not eligible", and evh arms
+    # A limit an arm breaks: the arms page badges it "over a limit", not "not eligible", and evh arm-list
     # says the same. No arm in this repository's own data breaks a limit, so this is the proof.
-    r = evh("arms", "--quality", "contender")
+    r = evh("arm-list", "--quality", "contender")
     check(
-        "evh arms --quality contender: the goal's quality leader, and no arm it ranks below",
+        "evh arm-list --quality contender: the goal's quality leader, and no arm it ranks below",
         r.returncode == 0 and "leader" in r.stdout and "no arm matches" not in r.stdout,
         r.stdout[-500:] + r.stderr[-300:],
     )
@@ -442,9 +444,9 @@ try:
     )
     evh("catalog")
     arms_page = (proj / ".build/catalog/arms.html").read_text()
-    r = evh("arms")
+    r = evh("arm-list")
     check(
-        "catalog: an arm below the goal's quality limit is badged over a limit, on the page and in evh arms",
+        "catalog: an arm below the goal's quality limit is badged over a limit, on the page and in evh arm-list",
         '<span class="role role-out">over a limit</span>' in arms_page and "over a limit" in r.stdout,
         r.stdout[-500:] + r.stderr[-300:],
     )
@@ -466,13 +468,13 @@ try:
     _runstore.write_text(
         proj, GOAL, original.replace("role: validation,", "role: validation, decides: false,")
     )
-    r = evh("goals", "--goal", "tickets_summary")
+    r = evh("goal-leaderboard", "tickets_summary")
     check(
         "decides: false: the goal page says it does not decide there, and recommends nothing",
         "The goal does not decide on tickets_v1 (validation)" in r.stdout and "recommended:" not in r.stdout,
         r.stdout[-700:],
     )
-    r = evh("overview")
+    r = evh("overview-show")
     glance = r.stdout.split("goals at a glance", 1)[-1].split("activity", 1)[0]
     check("decides: false: the glance leaves the dataset out", "tickets_v1" not in glance, glance)
     _runstore.write_text(proj, GOAL, original)
@@ -482,9 +484,9 @@ try:
     with _runstore._InProject(proj) as pdata:
         _store.copy_tree(pdata / "references" / "gold", proj / "gold-aside")
         _store.rmtree(pdata / "references" / "gold")
-    r = evh("overview")
+    r = evh("overview-show")
     check(
-        "evh overview: a gold reference the checkout does not hold is still read as gold",
+        "evh overview-show: a gold reference the checkout does not hold is still read as gold",
         r.returncode == 0 and "no gold" not in r.stdout and "tickets_summary" in r.stdout,
         r.stdout[:600] + r.stderr[-300:],
     )

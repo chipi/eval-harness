@@ -1,4 +1,4 @@
-"""What `evh goals --goal G` adds to a long table: a filter on its arms (--arms, --top), the paired test against
+"""What `evh goal-leaderboard G` adds to a long table: a filter on its arms (--arms, --top), the paired test against
 the leader as text, an arm's hypothesis beside it, and the same as named values for --json.
 
 The decision (leader, contenders, recommended) is always made over every arm of the group; the filter only

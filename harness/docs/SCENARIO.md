@@ -124,8 +124,8 @@ evh run --system briefs_mistral_small_v1 --dataset briefs_v1 --goal brief_summar
 evh arm-smoke --system briefs_mistral_small_v1 --dataset briefs_v1   # a few items, before the full run; prints "spent $…"
 evh run --system <id> --dataset briefs_v1 --goal brief_summary       # every system
 evh run --system <hosted id> --dataset briefs_v1 --goal brief_summary --repeat 3   # the noise floor; prints "spent $…"
-evh leaderboard --dataset-id briefs_v1
-evh family-test --dataset-id briefs_v1 --a briefs_mistral_small_v1 --against briefs_ --metric rouge_l
+evh leaderboard briefs_v1
+evh family-test briefs_v1 --a briefs_mistral_small_v1 --against briefs_ --metric rouge_l
 ```
 
 The same for `intents_v1` (`--metric accuracy`). The smoke runs and the hosted arm's repeats both print what they spent (a few calls per arm in arm-smoke's case).
@@ -141,7 +141,7 @@ git add data/labels data/references && git commit -qm "silver from the frontier 
 evh rescore --dataset-id briefs_v1 --reference-id silver/briefs_v1
 evh rescore --dataset-id intents_v1 --reference-id silver/intents_v1
 git add data/runs && git commit -qm "the runs re-scored against silver"
-evh leaderboard --dataset-id briefs_v1 --label silver    # the author's row is marked
+evh leaderboard briefs_v1 --label silver    # the author's row is marked
 evh silver-calibrate --dataset-id briefs_v1                              # silver authors vs your gold
 ```
 
@@ -171,7 +171,7 @@ classifier's label fit and reason quality. They are not validated, so:
 evh judge-score --dataset-id briefs_v1 --scorer briefs-judge-v1 --unvalidated --dry-run
 evh judge-score --dataset-id briefs_v1 --scorer briefs-judge-v1 --unvalidated
 evh judge-score --dataset-id briefs_v1 --scorer briefs-judge-v1 --unvalidated --retry-unparsed
-EVAL_RUNS_DIR=data/runs-judged/briefs-judge-v1 evh leaderboard --dataset-id briefs_v1
+EVAL_RUNS_DIR=data/runs-judged/briefs-judge-v1 evh leaderboard briefs_v1
 ```
 
 The same for `intents_v1` with its scorer, then commit what the judging wrote:
@@ -207,14 +207,14 @@ evh round-open --goal brief_summary --dataset briefs_v1 \
     --hypothesis "which of four systems, from no model to a frontier LLM, best summarises a brief in one sentence" \
     --keep briefs_lead1_v1,briefs_t5_small_v1,briefs_mistral_small_v1,briefs_opus_v1
 git add data/rounds && git commit -qm "brief_summary r1: open"
-evh rounds --goal brief_summary                    # the evidence, and the suggested decisions
+evh round-list brief_summary                    # the evidence, and the suggested decisions
 evh round-retire --goal brief_summary --round r1 --arm briefs_t5_small_v1 --reason "<what the test showed>"
 evh round-close --goal brief_summary --round r1 --conclusion "<what r1 showed, and what it decided>"
 git add data/rounds && git commit -qm "brief_summary r1: closed"
 ```
 
 The carried arms need no system change and no new run: `round-open` says so, and their runs
-already count. Use the commands `evh rounds` suggests (it prints each as the command that makes
+already count. Use the commands `evh round-list` suggests (it prints each as the command that makes
 it), and check that its verdicts are `family-test`'s for the same arms against the same leader.
 
 ## 9 · Round 2: change one thing
@@ -229,9 +229,9 @@ evh round-open --goal brief_summary --dataset briefs_v1 --from r1 \
 git add -A && git commit -qm "brief_summary r2: open; mistral-small v2"
 evh run --system briefs_mistral_small_v2 --dataset briefs_v1 --goal brief_summary --round r2 --repeat 3
 git add data/runs && git commit -qm "brief_summary r2: runs"
-evh rounds --goal brief_summary                    # r2 against r1's best, the baseline, the budget
-evh inspect --round r2 --goal brief_summary --baseline briefs_mistral_small_v1
-evh leaderboard --dataset-id briefs_v1 --round r2
+evh round-list brief_summary                    # r2 against r1's best, the baseline, the budget
+evh comparison-show --round r2 --goal brief_summary --baseline briefs_mistral_small_v1
+evh leaderboard briefs_v1 --round r2
 evh catalog && evh catalog-serve                   # screenshot the goal page's rounds now: r2's suggestions show only while it is open
 evh round-close --goal brief_summary --round r2 --conclusion "<what r2 showed>" [--promote <run_id>]
 git add data/rounds data/baselines && git commit -qm "brief_summary r2: closed"
@@ -251,7 +251,7 @@ mkdir -p data/sources/briefs_v2 && cp data/sources/briefs/*.txt data/sources/bri
 rm data/sources/briefs_v2/<one brief>.txt                       # the trial dropped b20_train
 $EDITOR data/sources/briefs_v2/<a new brief>.txt                # the trial added b21_ferry
 evh dataset-create --dataset-id briefs_v2 --source-dir data/sources/briefs_v2 --glob "*.txt" --from briefs_v1
-evh datasets --dataset-id briefs_v2                # made from briefs_v1: 1 added, 1 removed, 0 changed
+evh dataset-show briefs_v2                # made from briefs_v1: 1 added, 1 removed, 0 changed
 git add data/sources data/datasets && git commit -qm "briefs_v2 from briefs_v1"
 ```
 
@@ -272,19 +272,19 @@ closed rounds with their conclusions and retired arms; r2's suggestions were cap
 while r2 was open); each reference page; the metrics page and a metric page (what it measures, its
 kind, the goals it decides, per-dataset strip chart); for each dataset, the inspector testing every
 arm on gold against the baseline, on silver against the baseline too (the frontier arm wrote that
-reference, so against it every other arm reads as worse, as `evh inspect` notes), and on the
+reference, so against it every other arm reads as worse, as `evh comparison-show` notes), and on the
 judge's score; one
 item opened in each (the item itself beside the reference and every output); the inspector over r2's
 arms; and what a goal page's "test every arm against the leader" link opens. For each page, run its
-command (`evh overview`, `evh datasets`, `evh arms`, `evh references`, `evh metrics`, `evh goals
---goal …`, `evh rounds --goal …`, `evh inspect --runs …`, `--item …`) and check the numbers are
+command (`evh overview-show`, `evh dataset-list`, `evh arm-list`, `evh reference-list`, `evh metric-list`, `evh goal-list
+--goal …`, `evh round-list …`, `evh comparison-show --runs …`, `--item …`) and check the numbers are
 the page's.
 
 ## What to check
 
 - Every command either succeeds or refuses with a message that says what to do; no traceback
   from the harness.
-- The inspector's verdicts and p-values equal `pair-test`'s for the same pair, and `evh rounds`'
+- The inspector's verdicts and p-values equal `pair-test`'s for the same pair, and `evh round-list`'
   equal the inspector's for the round's arms. `family-test`'s verdicts are the same; its p-values
   are the same up to 30 items and may differ in the third decimal above that (it says "p: a
   seeded estimate").
@@ -294,7 +294,7 @@ the page's.
 - The spend stays under the cap and matches the sum of what each command printed.
 - Each goal group's recommendation follows its strategy and says why: on `intents_v1` the
   keyword arm (0.875, free) is not significantly different from the frontier arm (1.000) but is further off
-  than the 2% margin, so `balanced` recommends the frontier arm; `evh goals --goal` and the
+  than the 2% margin, so `balanced` recommends the frontier arm; `evh goal-leaderboard` and the
   home page's glance say the same.
 
 ## Open after the 2026-10-24 runs
@@ -318,29 +318,29 @@ described `reference-create` as making references from a run or with a system (b
 reference set is labels you promote, 0.6.0); `leaderboard` prints one
 table per reference and never averages across them; the bundled adapter stores `overlap_f1`
 unrounded, so the rounding note no longer fires for it; `run-promote` prints no `resumed`;
-`evh inspect --round` reads the goal's measure against the round's leader and names the arms it
+`evh comparison-show --round` reads the goal's measure against the round's leader and names the arms it
 leaves out; judged runs are grouped by their judge, and the leaderboard's NOTE names each way
-the runs were scored rather than calling "no reference" a reference; `evh rounds` reads a round
+the runs were scored rather than calling "no reference" a reference; `evh round-list` reads a round
 against the reference most of its arms use and names the arms it does not compare; the
 `pair-test --metric` and `evh --help` texts describe `--round` and the inspect views.
 
 After the second run (0.4.0 candidate `e91ff94c`), fixed in code: `run-promote` of one of an
 arm's repeats records every repeat and their mean (`repeats`); `round-open --keep` says carried
-arms need no change and no new run; `evh rounds` no longer suggests promoting the run that is
+arms need no change and no new run; `evh round-list` no longer suggests promoting the run that is
 already the baseline; `leaderboard --round` no longer warns about two versions of an arm in a
 round that compares them; a judge reply that is not committed keeps its text, git-ignored, in
 `.withheld/` beside its record, and the log names the file; the judged leaderboard has a frontier
 and prints the judging pass's agreement and position and noise checks; the silver author is left
-out of the ordering test and the frontier; the dataset page and `evh datasets` sort arms by what
-they are scored against; the goal page and `evh goals --goal` show a judge's group, and `evh goals
+out of the ordering test and the frontier; the dataset page and `evh dataset-list` sort arms by what
+they are scored against; the goal page and `evh goal-leaderboard` show a judge's group, and `evh goal-list
 --goal` lists the rounds and marks retired arms; every command prints p the same way (four
 decimals, `<0.0001`), and `family-test` says whether its p is exact or a seeded estimate and
 labels its column `A wins`; `evh run` prints what it spent and calls the cost and speed
 spread what it is; `judge-score` says its spend is the provider's bill where one is reported,
 else the price table; `silver-calibrate` explains rho and sibling lift; the catalog counts the
 systems behind its arms; "filed" reads "filed under this goal"; the item view says it shows the
-latest of N repeats beside their mean, and `evh inspect --item` prints the run and the same note;
-`evh cost-report` sees the bundled adapter's bills (`_meta.usage.cost`); `evh datasets` counts the
+latest of N repeats beside their mean, and `evh comparison-item --item` prints the run and the same note;
+`evh cost-report` sees the bundled adapter's bills (`_meta.usage.cost`); `evh dataset-list` counts the
 systems behind the arms; judged arms keep their version in the inspector; a heading
 scrolled to is not hidden under the header; `env-check` names example arms only in a checkout; the
 kit's judge scorer points at tutorial 3. Fixed in the docs: every goal field and its allowed
@@ -349,7 +349,7 @@ to promote; family-test's p against pair-test's above 30 items; tutorial 1's ada
 model library's bars and warnings; this page's system ids (`_v1` throughout), step 10's data and
 step 11's screenshots.
 
-After the third run (candidate `80e8f3f5`), fixed in code: `evh rounds` suggests retiring the arm
+After the third run (candidate `80e8f3f5`), fixed in code: `evh round-list` suggests retiring the arm
 that wrote a silver reference when the round is read against gold (only on its own silver is it the
 yardstick), never suggests retiring the baseline the round started from, says "significantly worse
 than" r(n-1)'s best when it is, and suggests `--promote` only for a leader significantly better than
@@ -388,7 +388,7 @@ fixed in 0.7.1:
 - The inspector names the silver reference's author and marks its row; item cards show each arm's score;
   the goal page's "test every arm against its leader" leaves out retired arms; a judged group below the goal's
   `min_items` says so; home tiles keep their number on one line at 1400 px.
-- `family-test --round` takes the round's leader and every other arm in play; `inspect --round` names the
+- `family-test --round` takes the round's leader and every other arm in play; `comparison-show --round` names the
   round's leader as such; `silver-calibrate` says what `--ref-match` and `--arm-match` take, with an example
   from your runs; `rescore` ends with a whole sentence and warns about outputs cut off at `max_tokens`;
   `score-preview` says when a goal holds no measured run to re-score.
@@ -396,8 +396,8 @@ fixed in 0.7.1:
   0ms" for arms with nothing to load; the dry run counts the system's prompt; `arm-smoke` prints each reply
   and what it spent, and the overview and the catalog count smoke spend.
 - Leaderboards fit the terminal (`--wide` for every column), and "dominated" says what it means;
-  `cost-report` names each repeat; `evh baselines` shows the repeats' mean; `evh rounds` prints a
-  round's conclusion whole; the `inspect` conditions table and `evh goals --goal` headers no longer cut or
+  `cost-report` names each repeat; `evh baselines` shows the repeats' mean; `evh round-list` prints a
+  round's conclusion whole; the `inspect` conditions table and `evh goal-leaderboard` headers no longer cut or
   misalign.
 - Step 0: `uv venv` makes a venv with no pip; `--seed` adds it.
 
