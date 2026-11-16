@@ -570,10 +570,10 @@ def label_coverage(
 
 def say_label_coverage(r: dict[str, Any]) -> str:
     """label-coverage-show's answer as text: what `evh label-coverage-show` prints, without the item list."""
-    from evaluation_harness import label_coverage  # noqa: PLC0415
+    from evaluation_harness import _jsonout, label_coverage  # noqa: PLC0415
 
     buf = io.StringIO()
-    with contextlib.redirect_stdout(buf):
+    with _jsonout.printing_to(buf):
         label_coverage.show(r, r["map"])
     return buf.getvalue().rstrip("\n")
 

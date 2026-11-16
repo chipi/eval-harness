@@ -13,10 +13,11 @@ Nobody removes a row. A dataset that was never sealed has no register.
 from __future__ import annotations
 
 import contextlib
+import contextvars
 import json
 import os
 import re
-from collections.abc import Iterable
+from collections.abc import Iterable, Iterator
 from pathlib import Path
 from typing import Any
 
@@ -24,10 +25,33 @@ from evaluation_harness import _store
 from evaluation_harness._common import die, now
 
 DATASET_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,199}$")
-#: Items left out of the scores this process computed, per dataset (the commands print it).
-LEFT: dict[str, set[str]] = {}
+# Both are the call's, not the process's: the MCP server answers calls at once, in threads of one process, and one
+# call's --include-exposed kept the exposed items in another's scores while it ran.
+#: Items left out of the scores this call computed, per dataset (the commands print it): `left()`.
+_LEFT: contextvars.ContextVar[dict[str, set[str]] | None] = contextvars.ContextVar(
+    "evh_left_exposed", default=None
+)
 #: --include-exposed: the scores keep the exposed items (a command shows that number beside the clean one, marked).
-INCLUDE = [False]
+_INCLUDE: contextvars.ContextVar[bool] = contextvars.ContextVar("evh_include_exposed", default=False)
+
+
+def left() -> dict[str, set[str]]:
+    """The items this call's scores left out, per dataset."""
+    d = _LEFT.get()
+    if d is None:
+        d = {}
+        _LEFT.set(d)
+    return d
+
+
+@contextlib.contextmanager
+def including() -> Iterator[None]:
+    """The body's scores keep the exposed items (--include-exposed), in this call only."""
+    token = _INCLUDE.set(True)
+    try:
+        yield
+    finally:
+        _INCLUDE.reset(token)
 
 
 def path(dataset_id: str, data: Path | None = None) -> Path:
@@ -144,22 +168,22 @@ def read_by_harness(dataset_id: str | None, items: Iterable[str], what: str) -> 
 
 def keep(dataset_id: str | None, item_ids: Iterable[str], data: Path | None = None) -> set[str] | None:
     """The items a score on `dataset_id` keeps: every one but the exposed (None: keep all). What it leaves out is
-    counted in LEFT for the command to say."""
+    counted in `left()` for the command to say."""
     gone = exposed(dataset_id, data)
-    if not gone or INCLUDE[0]:
+    if not gone or _INCLUDE.get():
         return None
     ids = set(item_ids)
     out = ids & gone
     if out:
-        LEFT.setdefault(str(dataset_id), set()).update(out)
+        left().setdefault(str(dataset_id), set()).update(out)
     return ids - gone
 
 
 def said() -> list[str]:
-    """One line per dataset whose scores this process left exposed items out of."""
+    """One line per dataset whose scores this call left exposed items out of."""
     return [
         f"{ds}: {len(ids)} item(s) left out (exposed: read on the held-out side; RFC-031)"
-        for ds, ids in sorted(LEFT.items())
+        for ds, ids in sorted(left().items())
     ]
 
 
@@ -189,10 +213,18 @@ def aware(adapter):
     """The adapter, its `scores` leaving out a held-out side's read items (RFC-031 H1): every page, goal, round and
     inspector answer reads scores through it, a project's own adapter's too, so the read items count in none of them.
     The seal and the register are the adapter's own data directory's (`data_dir`; the project's when it has none), so a
-    copy of the data with a sealed dataset is read by its own register. What it leaves out is counted (`LEFT`) for
-    whoever shows the scores to say."""
+    copy of the data with a sealed dataset is read by its own register. What it leaves out is counted (`left()`) for
+    whoever shows the scores to say. The read it filters is kept (`_scores_unfiltered`): a cache of the scores
+    (catalog_adapter.scores_once) holds that one and is filtered again on every call, so a cached answer still leaves
+    the items out as this call says, and still counts them."""
     read = adapter.scores
-    data = getattr(adapter, "data_dir", None)
+    adapter._scores_unfiltered = read
+    adapter.scores = filtered(read, getattr(adapter, "data_dir", None))
+    return adapter
+
+
+def filtered(read, data: Path | None):
+    """`read` (an adapter's `scores`), leaving out a held-out side's read items (`aware`)."""
 
     def scores(arm, *args, **kw):
         out = read(arm, *args, **kw)
@@ -216,5 +248,4 @@ def aware(adapter):
             for k, sc in out.items()
         }
 
-    adapter.scores = scores
-    return adapter
+    return scores

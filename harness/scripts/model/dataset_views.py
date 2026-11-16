@@ -303,7 +303,8 @@ def show_label_set(dataset: str, set: str, items: bool = False) -> dict[str, Any
         "references": [reference_row(i, m) for i, m in _records(REFERENCE) if _label_set_of(m) == sid],
     }
     if items:
-        out["labels"] = {} if hidden else rec.get("items") or {}
+        # Labels are reference material: a public server answers with none (the gold references are not published).
+        out["labels"] = {} if hidden or _visibility.public_env() else rec.get("items") or {}
     return out
 
 

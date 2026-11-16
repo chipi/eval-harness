@@ -164,12 +164,12 @@ try:
         and not _exposure.applies("ds_sealed_here")
         and not _exposure.applies("ds_open", CD),
     )
-    _exposure.LEFT.clear()
+    _exposure.left().clear()
     check(
         "keep leaves out the register's items, the copy's own when the copy is asked, and counts them",
         _exposure.keep("ds_v1", ITEMS) == {"i0", "i1", "i2"}
         and _exposure.keep("ds_v1", ITEMS, CD) == {"i2", "i3", "i4", "i5"}
-        and {"ds_v1": {"i0", "i1", "i3", "i4", "i5"}} == _exposure.LEFT,
+        and {"ds_v1": {"i0", "i1", "i3", "i4", "i5"}} == _exposure.left(),
         _exposure.keep("ds_v1", ITEMS, CD),
     )
     check(
@@ -185,7 +185,7 @@ try:
     P, C = HarnessAdapter(), HarnessAdapter(CD)
     runs_c = list(model_runs.scored("ds_v1", data=CD))
     check("the copy's runs are read for the test", len(runs_c) == 3, len(runs_c))
-    _exposure.LEFT.clear()
+    _exposure.left().clear()
     check(
         "per_item leaves out the register of the data directory the runs are of",
         set(_runs.per_item(runs_c, "acc", data=CD)) == {"i2", "i3", "i4", "i5"}
@@ -199,6 +199,73 @@ try:
         and set(ca.scores(arm)["acc"]["values"]) == {"i2", "i3", "i4", "i5"}
         and set(P.scores(arm)["acc"]["values"]) == set(ITEMS),
         (sorted(pa.scores(arm)["acc"]["values"]), sorted(ca.scores(arm)["acc"]["values"])),
+    )
+
+    # -- one process, many calls (the MCP server answers in threads of its own process) -----------------------------
+    import threading
+
+    from evaluation_harness import _jsonout
+    from evaluation_harness.catalog_adapter import scores_once
+
+    inside, done = threading.Barrier(2), threading.Barrier(2)
+    seen: dict = {}
+
+    def including_call() -> None:
+        with _exposure.including():
+            inside.wait()
+            done.wait()
+
+    def other_call() -> None:
+        inside.wait()
+        seen["kept"] = _exposure.keep("ds_v1", ITEMS)
+        done.wait()
+
+    calls = [threading.Thread(target=f) for f in (including_call, other_call)]
+    for t in calls:
+        t.start()
+    for t in calls:
+        t.join(30)
+    check(
+        "one call's --include-exposed keeps the exposed items in its own scores only, not in a call running beside it",
+        seen.get("kept") == {"i0", "i1", "i2"},
+        seen.get("kept"),
+    )
+    held = scores_once(_exposure.aware(HarnessAdapter()), held=True)
+    said = []
+    for _ in range(2):
+        with _jsonout.own_notes():
+            values = set(held.scores(arm)["acc"]["values"])
+            said.append((values, dict(_exposure.left())))
+    with _jsonout.own_notes(), _exposure.including():
+        including_values = set(held.scores(arm)["acc"]["values"])
+    check(
+        "held scores are filtered on every call: a cached answer still leaves the read items out and says so, and a "
+        "call that includes them gets them without the cache keeping that for the next",
+        said == [({"i0", "i1", "i2"}, {"ds_v1": {"i3", "i4", "i5"}})] * 2
+        and including_values == set(ITEMS)
+        and set(held.scores(arm)["acc"]["values"]) == {"i0", "i1", "i2"},
+        (said, sorted(including_values)),
+    )
+    printed: dict = {}
+    both_in = threading.Barrier(2)
+
+    def printing_call(name: str) -> None:
+        with _jsonout.capture() as c:
+            print(f"{name} one")
+            both_in.wait()
+            print(f"{name} two")
+            both_in.wait()
+        printed[name] = [ln for b in c.result()["blocks"] for ln in b.get("lines", [])]
+
+    calls = [threading.Thread(target=printing_call, args=(n,)) for n in ("first", "second")]
+    for t in calls:
+        t.start()
+    for t in calls:
+        t.join(30)
+    check(
+        "two calls captured at once each answer with their own printing, none of the other's",
+        printed == {"first": ["first one", "first two"], "second": ["second one", "second two"]},
+        printed,
     )
 
     # -- a round's evidence over the copy ----------------------------------------------------------------------

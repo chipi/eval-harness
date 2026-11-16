@@ -115,27 +115,35 @@ def scores_once(adapter, held: bool = False):
     Callers only read what `scores` returns (every caller gets the same dict).
     `held`: for a process that answers again and again (catalog-serve, the MCP server, a notebook): the scores are
     kept by the model's view cache (model/view_cache), bounded, and dropped when the data changes; under a token of
-    this adapter, which its `refresh()` replaces. Without it every arm is kept, for as long as the adapter lives."""
-    read = adapter.scores
+    this adapter, which its `refresh()` replaces. Without it every arm is kept, for as long as the adapter lives.
+    What is kept is the read before the exposure filter (`_exposure.aware`), filtered again on every call: kept after
+    it, a cached answer said nothing of the items it left out, and one call's --include-exposed was kept for others."""
+    unfiltered = adapter.__dict__.get("_scores_unfiltered")
+    read = unfiltered or adapter.scores
     if held:
 
-        def held_scores(arm, rescore=False):
+        def scores(arm, rescore=False):
             token = adapter.__dict__.setdefault("_view_token", next(_TOKENS))
             return view_cache.get(
                 ("scores", token, arm, bool(rescore)), lambda: read(arm, rescore), weigh=_values_in
             )
 
-        adapter.scores = held_scores
-        return adapter
-    kept: dict = {}
+    else:
+        kept: dict = {}
 
-    def scores(arm, rescore=False):
-        k = (arm, bool(rescore))  # scores(arm) and scores(arm, rescore=False) are one read
-        if k not in kept:
-            kept[k] = read(arm, rescore)
-        return kept[k]
+        def scores(arm, rescore=False):
+            k = (arm, bool(rescore))  # scores(arm) and scores(arm, rescore=False) are one read
+            if k not in kept:
+                kept[k] = read(arm, rescore)
+            return kept[k]
 
-    adapter.scores = scores
+    if unfiltered is None:
+        adapter.scores = scores
+    else:
+        from evaluation_harness import _exposure  # noqa: PLC0415
+
+        adapter._scores_unfiltered = scores
+        adapter.scores = _exposure.filtered(scores, getattr(adapter, "data_dir", None))
     return adapter
 
 

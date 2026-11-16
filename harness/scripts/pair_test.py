@@ -699,14 +699,11 @@ def _with_exposed(scores_now, items_all: set, lower: bool) -> None:
     test is run on it (a test set's look is spent on the number that counts)."""
     from evaluation_harness import _exposure  # noqa: PLC0415
 
-    if not _exposure.LEFT:
+    if not _exposure.left():
         print("  with exposed items: none were left out")
         return
-    _exposure.INCLUDE[0] = True
-    try:
+    with _exposure.including():
         A, B = scores_now()
-    finally:
-        _exposure.INCLUDE[0] = False
     shared = sorted(set(A) & set(B))
     if not shared:
         return

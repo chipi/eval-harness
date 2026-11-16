@@ -301,7 +301,7 @@ def run_op(op: Any, arguments: dict, public: bool) -> dict:
     parts = {p: arguments[p] for p in op.path_params()}
     inputs = {k: v for k, v in arguments.items() if k not in parts}
     try:
-        with _visibility.public_call(public), refusing():
+        with _visibility.public_call(public), _jsonout.own_notes(), refusing():
             result = op.call(**parts, **inputs)
     except SystemExit as exc:  # a command's exit that is not a refusal: a crash, not the server's end
         raise RuntimeError(f"{op.name} exited: {exc.code}") from None
@@ -338,6 +338,9 @@ def write_answers(project: Path, path: Path, public: bool) -> int:
                 no_runs += 1
             else:  # named, so a broken render says why (every one failed from 0.6.2 to 0.7.1, unnoticed)
                 failed.append(f"{name} {args} ({exc.kind}: {str(exc)[:120]})")
+            continue
+        except Exception as exc:  # noqa: BLE001 - a crash is the harness's bug: the release fails, the tool named, the rest still tried
+            failed.append(f"{name} {args} ({type(exc).__name__}: {str(exc)[:120]})")
             continue
         if len(out) > MAX_OUT:
             if not args:

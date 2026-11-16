@@ -60,7 +60,7 @@ OPS = (
        }),
     Op("label-set-show", "read", "one label set: its record (the item count for the items), its folder and the references promoted from it; with items, the label of each item",
        "GET", "/datasets/{dataset}/label-sets/{set}", f"{_D}:show_label_set", f"{_D}:say_label_set",
-       inputs={"items": {"type": "boolean", "description": "the label of each item too"}}),
+       inputs={"items": {"type": "boolean", "description": "the label of each item too"}}, public_hidden=("items",)),
     Op("tag-set-list", "read", "a dataset's tag sets: the failure-mode list each is named from, the outputs tagged; and per arm how often each failure mode was tagged", "GET",
        "/datasets/{dataset}/tag-sets", f"{_D}:list_tag_sets", f"{_D}:say_tag_sets"),
     Op("tag-set-show", "read", "one tag set: its record (the runs and outputs counted), the failure modes tagged and how often",

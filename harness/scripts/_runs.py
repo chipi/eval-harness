@@ -20,6 +20,7 @@ from pathlib import Path as _Path
 if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
+import contextvars
 import re
 import statistics
 import sys
@@ -78,11 +79,34 @@ def score_of(row: dict, metric: str) -> float | None:
     return float(v)
 
 
-#: Items each arm's runs left unscored this process: its action differed from production's, under which their labels
+# The call's, not the process's (the MCP server answers calls at once, in threads): `not_scorable()`, `confound()`.
+#: Items each arm's runs left unscored in this call: its action differed from production's, under which their labels
 #: hold (RFC-031 L3). {system_id: item ids}; the command says it (`_jsonout`).
-NOT_SCORABLE: dict[str, set[str]] = {}
+_NOT_SCORABLE: contextvars.ContextVar[dict[str, set[str]] | None] = contextvars.ContextVar(
+    "evh_not_scorable", default=None
+)
 #: A replay arm's history confound (RFC-031 P1): {system_id: {items, of}}, said by the command.
-CONFOUND: dict[str, dict[str, int]] = {}
+_CONFOUND: contextvars.ContextVar[dict[str, dict[str, int]] | None] = contextvars.ContextVar(
+    "evh_confound", default=None
+)
+
+
+def _own(var: contextvars.ContextVar) -> dict:
+    d = var.get()
+    if d is None:
+        d = {}
+        var.set(d)
+    return d
+
+
+def not_scorable() -> dict[str, set[str]]:
+    """The items this call's scores left unscored, per arm (RFC-031 L3)."""
+    return _own(_NOT_SCORABLE)
+
+
+def confound() -> dict[str, dict[str, int]]:
+    """This call's replay arms' history confounds (RFC-031 P1)."""
+    return _own(_CONFOUND)
 
 
 def per_item(
@@ -106,7 +130,7 @@ def per_item(
     for d, m in runs:
         datasets.add(str((m or {}).get("dataset_id") or ""))
         if (m or {}).get("not_scorable"):  # RFC-031 L3: said by the command (_jsonout)
-            NOT_SCORABLE.setdefault(str(m.get("system_id")), set()).update(m["not_scorable"])
+            not_scorable().setdefault(str(m.get("system_id")), set()).update(m["not_scorable"])
         # RFC-031 P1, said by the command: counted over the items this command reads (a period's, under `keep`), not
         # the whole run's (the fleet's beta: "5 of 287" beside a comparison of 52).
         confounded = ((m or {}).get("history_confound") or {}).get("items")
@@ -125,7 +149,7 @@ def per_item(
             if raw is not None:
                 raw.append(v)
         if confounded and hit:
-            CONFOUND[str(m.get("system_id"))] = {"items": len(hit), "of": len(seen)}
+            confound()[str(m.get("system_id"))] = {"items": len(hit), "of": len(seen)}
     # A held-out side's read items count in no score on it (RFC-031 H1): left out here, where every paired command's
     # scores come from, and counted for the command to say.
     for ds in datasets:

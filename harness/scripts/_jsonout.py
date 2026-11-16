@@ -20,17 +20,77 @@ prints reaches the terminal as it happens, on stderr, and is collected into the 
 from __future__ import annotations
 
 import contextlib
+import contextvars
 import io
 import json
 import math
 import os
 import sys
+import threading
 from collections.abc import Iterator
 
 from evaluation_harness._version import __version__
 
+# The call's, not the process's: the MCP server answers calls at once, in threads of one process.
 #: The collector in force, or None (a table prints as text).
-_ACTIVE: _Collector | None = None
+_ACTIVE: contextvars.ContextVar[_Collector | None] = contextvars.ContextVar("evh_collector", default=None)
+#: Where this call's printing goes while `capture` holds it; None: the stdout `_Routed` stands in for.
+_OUT: contextvars.ContextVar[io.StringIO | None] = contextvars.ContextVar("evh_stdout", default=None)
+_ROUTING = threading.Lock()
+
+
+class _Routed:
+    """sys.stdout while calls are captured: a call's printing goes to that call's buffer, anything else to the stdout
+    this stands in for. `redirect_stdout` swaps the one stdout every thread prints to: two calls at once printed into
+    each other's answers."""
+
+    def __init__(self, base) -> None:
+        self.base = base
+
+    def _to(self):
+        out = _OUT.get()
+        return self.base if out is None else out
+
+    def write(self, text: str) -> int:
+        return self._to().write(text)
+
+    def flush(self) -> None:
+        self._to().flush()
+
+    def __getattr__(self, name: str):
+        return getattr(self._to(), name)
+
+
+@contextlib.contextmanager
+def printing_to(buf: io.StringIO) -> Iterator[None]:
+    """The body's printing goes to `buf`, and only this call's: another thread prints where it did."""
+    with _ROUTING:
+        if not isinstance(sys.stdout, _Routed):
+            sys.stdout = _Routed(sys.stdout)
+    token = _OUT.set(buf)
+    try:
+        yield
+    finally:
+        _OUT.reset(token)
+
+
+@contextlib.contextmanager
+def own_notes() -> Iterator[None]:
+    """The body's notes (held-out items left out, items not scorable, history confounds) start empty and are its own:
+    a process that answers many calls is not a process per call."""
+    from evaluation_harness import _exposure, _runs  # noqa: PLC0415
+
+    left, not_scorable, confound = (
+        _exposure._LEFT.set({}),
+        _runs._NOT_SCORABLE.set({}),
+        _runs._CONFOUND.set({}),
+    )
+    try:
+        yield
+    finally:
+        _runs._CONFOUND.reset(confound)
+        _runs._NOT_SCORABLE.reset(not_scorable)
+        _exposure._LEFT.reset(left)
 
 
 class _Collector:
@@ -84,17 +144,19 @@ def plain(v):
 
 def table(heads: list, rows: list) -> bool:
     """Record a table under --json; False when no collector is in force (print it as text)."""
-    if _ACTIVE is None:
+    c = _ACTIVE.get()
+    if c is None:
         return False
-    _ACTIVE.table(heads, rows)
+    c.table(heads, rows)
     return True
 
 
 def value(name: str, v) -> None:
     """Hand over a named result beside the printed blocks (`result["values"][name]`). Nothing when
     no collector is in force, so a command calls it whether or not it was asked for --json."""
-    if _ACTIVE is not None:
-        _ACTIVE.values[name] = _clean(v)
+    c = _ACTIVE.get()
+    if c is not None:
+        c.values[name] = _clean(v)
 
 
 def values(named: dict) -> None:
@@ -122,52 +184,43 @@ def _say_exposed() -> None:
     and under result.values.left_out_exposed. Every score that leaves them out says so, whichever command."""
     from evaluation_harness import _exposure, _runs  # noqa: PLC0415
 
-    if _runs.NOT_SCORABLE:
-        for cid, ids in sorted(_runs.NOT_SCORABLE.items()):
+    active = _ACTIVE.get()
+    not_scorable, confound, left = _runs.not_scorable(), _runs.confound(), _exposure.left()
+    if not_scorable:
+        for cid, ids in sorted(not_scorable.items()):
             print(
                 f"  note: {cid}: {len(ids)} item(s) not scorable under this variant (its action differs from "
                 "production's, under which their labels hold; RFC-031)"
             )
-        if _ACTIVE is not None:
-            _ACTIVE.values["not_scorable"] = {c: len(ids) for c, ids in sorted(_runs.NOT_SCORABLE.items())}
-    for cid, hc in sorted(_runs.CONFOUND.items()):
+        if active is not None:
+            active.values["not_scorable"] = {c: len(ids) for c, ids in sorted(not_scorable.items())}
+    for cid, hc in sorted(confound.items()):
         print(
             f"  note: {cid}: history confound: {hc['items']} of {hc['of']} item(s) met a human reaction to an action "
             "production took and this variant did not (RFC-031)"
         )
-    if _runs.CONFOUND and _ACTIVE is not None:
-        _ACTIVE.values["history_confound"] = dict(sorted(_runs.CONFOUND.items()))
-    if not _exposure.LEFT:
+    if confound and active is not None:
+        active.values["history_confound"] = dict(sorted(confound.items()))
+    if not left:
         return
     _exposure.say()
-    if _ACTIVE is not None:
-        _ACTIVE.values["left_out_exposed"] = {ds: len(ids) for ds, ids in sorted(_exposure.LEFT.items())}
+    if active is not None:
+        active.values["left_out_exposed"] = {ds: len(ids) for ds, ids in sorted(left.items())}
 
 
 @contextlib.contextmanager
 def capture() -> Iterator[_Collector]:
     """Run the body in this process with its printing collected and hand the answer back (`.result()`), where `collect`
-    prints it as an envelope: how an operation answers a call (RFC-032 step 9). What an earlier call left in the
-    held-out reads and variants is forgotten first and after, since a process that answers many calls is not a
-    process per call."""
-    global _ACTIVE
-    from evaluation_harness import _exposure, _runs  # noqa: PLC0415
-
-    def forget() -> None:
-        _exposure.LEFT.clear()
-        _runs.NOT_SCORABLE.clear()
-        _runs.CONFOUND.clear()
-
-    forget()
+    prints it as an envelope: how an operation answers a call (RFC-032 step 9). Its printing, its collector and its
+    notes are its own, whatever else the process answers at the same time."""
     c = _Collector()
-    before, _ACTIVE = _ACTIVE, c
+    token = _ACTIVE.set(c)
     try:
-        with contextlib.redirect_stdout(c.buf):
+        with own_notes(), printing_to(c.buf):
             yield c
             _say_exposed()
     finally:
-        _ACTIVE = before
-        forget()
+        _ACTIVE.reset(token)
     c.flush()
 
 
@@ -178,13 +231,12 @@ def collect(command: str, enabled: bool = True, live=None) -> Iterator[None]:
     the body as it is (a command writes `with collect(name, args.json):`). `live`: a stream the
     printing also goes to as it happens; file descriptor 1 is pointed at it for the body, so nothing
     a library or a child process writes to stdout can reach the envelope's stream."""
-    global _ACTIVE
     if not enabled:
         yield
         _say_exposed()
         return
     c = _Collector()
-    _ACTIVE = c
+    token = _ACTIVE.set(c)
     saved_fd = None
     if live is not None:
         live.flush()
@@ -199,7 +251,7 @@ def collect(command: str, enabled: bool = True, live=None) -> Iterator[None]:
             yield
             _say_exposed()
     finally:
-        _ACTIVE = None
+        _ACTIVE.reset(token)
         if saved_fd is not None:
             os.dup2(saved_fd, 1)
             os.close(saved_fd)

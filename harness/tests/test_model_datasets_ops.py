@@ -315,6 +315,24 @@ try:
         and [x["reference"] for x in lss["references"]] == ["silver/ds_v1_rule"],
         lss,
     )  # fmt: skip
+    from evaluation_harness import mcp_server
+    from evaluation_harness.ops import registry
+
+    with_items = result(evh("label-set-show", "ds_v1", "rule_cap", "--items", "--json"))
+    public_items = subprocess.run(
+        [sys.executable, str(HERE / "cli.py"), "label-set-show", "ds_v1", "rule_cap", "--items", "--json"],
+        cwd=proj, env={**env, "EVH_PUBLIC": "1"}, capture_output=True, text=True, stdin=subprocess.DEVNULL, timeout=600,
+    )  # fmt: skip
+    lss_op = registry.get("label-set-show")
+    check(
+        "label-set-show --items: each item's label locally; a public server answers with none, and its tool does not "
+        "take items (labels are reference material, not published)",
+        len(with_items["labels"]) == 1
+        and result(public_items)["labels"] == {}
+        and "items" not in mcp_server.tool_schema(lss_op, True)["properties"]
+        and "items" in mcp_server.tool_schema(lss_op, False)["properties"],
+        (with_items.get("labels"), public_items.stdout[-300:], public_items.stderr[-300:]),
+    )  # fmt: skip
     lss = result(evh("label-set-show", "ds_v1", "gold_ds_v1", "--json"))
     check(
         "label-set-show: a reference promoted under another name (no label set) is not this set's",
