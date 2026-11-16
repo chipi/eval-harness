@@ -91,7 +91,7 @@ version. `evh baselines` lists them with how to reproduce each (the `deploy-shee
   - the comparison's fallback to a promoted arm (`catalog_serve.py:499-501`): the dataset's own current baseline;
   - `deploy-sheet` (keyed by `--config`): it scans the current versions across goals for the arm's run and prints the
     goal and version in its block and `--json`;
-  - `list_runs.py` (`runs-list --baselines` goes: `evh baselines` replaces it), the data page (`_data_page.py:50`),
+  - `runs-list` (`ops/records.py`; its `--baselines` went: `evh baselines` replaces it), the data page (`_data_page.py:50`),
     `fingerprint-migrate` (`fingerprint_migrate.py:169`, a flat glob today), `validate_tree.py` (:208, :501, :1178,
     flat globs today), `promote_baseline.py`;
   - `data/baselines/README.md` and the docs that describe one baseline per dataset (UPGRADING, RUNBOOK, SCENARIO,

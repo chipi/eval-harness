@@ -119,7 +119,7 @@ any public surface.
   - `evh dataset-items` and `evh comparison-show` under `EVH_PUBLIC`;
   - and a deployment's data copy, which moves from `render.sh` into a Python module.
 - **A marker test** fails if any surface leaks.
-- **It also closes two holes.** The MCP `inspect --where/--by` hole on hidden fields was closed in 0.6.0's first
+- **It also closes two holes.** The MCP `comparison-show --where/--by` hole on hidden fields was closed in 0.6.0's first
   part. A profile written `--with-text` is now checked again whenever the catalog builds.
 
 ### 5. Reference sets from outcomes

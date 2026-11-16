@@ -7,7 +7,7 @@ In a throwaway git project ($0, offline): the tutorial's tickets with an `opened
 split at a time boundary with the test side sealed and its counts allowed by `kind`. `sealed-counts` counts by the
 allowed fields only (an agent cannot widen them; a person can, recorded). `exposure-add` records a read (an unknown id
 refused); `exposure` counts it (`--ids` refused to an agent). After an unseal, every paired score on the side leaves the
-read items out and says how many, `--include-exposed` shows the full number beside it, marked; `inspect --item` on a
+read items out and says how many, `--include-exposed` shows the full number beside it, marked; `comparison-item --item` on a
 held-out item records the read itself. `exposure-check` finds an item's alert id in a later commit of a public
 checkout (not an earlier one), exits 6 and writes the rows `exposure-add --from` records; then it passes.
 """

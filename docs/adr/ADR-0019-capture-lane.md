@@ -18,7 +18,7 @@ fates are all recorded.
 
 ## Decision
 
-- **A lane, not a rewrite.** New commands (`capture`, `capture-scrub`, `captures`,
+- **A lane, not a rewrite.** New commands (`capture`, `capture-scrub`, `capture-list`,
   `dataset-from-capture`, `reference-from-outcomes`, `dataset-split`, `importer-check`) end in the
   files the method already reads: a dataset with lineage, a reference. No existing command changes
   its arguments or its output for data without the new optional fields (a dataset's `tags`,

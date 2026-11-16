@@ -174,7 +174,7 @@ adapter file ([ADR-0002](../adr/ADR-0002-catalog-inspector-goals.md),
 
 - **FR4.1**: Every page and comparison is also a command that asks the same adapter and computes
   with the same functions: `evh overview-show` (the home dashboard), `evh activity-show`, `evh dataset-list`,
-  `evh arm-list` (`--by`, `--where`, `--tier`, `--systems`), `evh reference-list`, `evh metric-list`,
+  `evh arm-list` (`--where`, `--tier`, `--systems 1`; `evh arm-show`), `evh reference-list`, `evh metric-list`,
   `evh goal-list`, `evh search`, `evh comparison-show` (its comparison, `--analysis`; `comparison-item`, `sheet-show`)
   ([UXS-003](../uxs/UXS-003-cli-and-onboarding.md)); every list takes `--period P` and prints the
   page's period columns, from the same builder the page reads.
@@ -191,8 +191,8 @@ adapter file ([ADR-0002](../adr/ADR-0002-catalog-inspector-goals.md),
 
 ### FR6: The same views for an agent (v0.5.0)
 
-- **FR6.1**: `evh mcp` serves the read commands of FR4 (and `rounds`, `runs-list`, `validate`,
-  `dataset-items`) as MCP tools, each call the command itself, so FR4's parity holds for an agent
+- **FR6.1**: `evh mcp` serves the read operations of FR4 (and `round-list`, `runs-list`, `validate`,
+  `dataset-items`) as MCP tools, each call the operation itself, so FR4's parity holds for an agent
   too ([RFC-018](../rfc/RFC-018-read-only-mcp-server.md)).
 - **FR6.2**: No tool writes project data, spends or runs a model: the non-goal "the pages never
   write" holds for the tools. A command that writes is never a tool, and a test lists every
@@ -208,7 +208,7 @@ adapter file ([ADR-0002](../adr/ADR-0002-catalog-inspector-goals.md),
 - The catalog and the inspector pass the headless browser check (`make browser-check`) and the
   catalog tests (`harness/tests/test_catalog.py`).
 - Both deployed sites pass a content security policy with no inline script or style.
-- An MCP client gets the same JSON from `datasets` as `evh dataset-list --json` prints, and every tool is
+- An MCP client gets the same JSON from `dataset-list` as `evh dataset-list --json` prints, and every tool is
   annotated read-only (`harness/tests/test_mcp_server.py`, `test_mcp_http.py`).
 
 ## Related Documents

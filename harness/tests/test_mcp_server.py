@@ -389,6 +389,17 @@ try:
                 res.is_error and "unknown argument" in res.content[0].text,
                 res.content[0].text,
             )
+            listed = {t.name: t for t in (await s.list_tools()).tools}
+            res = await s.call_tool("comparison-show", {})
+            check(
+                "comparison-show's schema says it needs runs or round, and a call with neither is refused in those words "
+                "before anything runs",
+                listed["comparison-show"].input_schema.get("anyOf")
+                == [{"required": ["runs"]}, {"required": ["round"]}]
+                and res.is_error
+                and "one of runs, round is needed" in res.content[0].text,
+                (listed["comparison-show"].input_schema.get("anyOf"), res.content[0].text[:200]),
+            )
             res = await s.call_tool("goal-leaderboard", {"goal": "no_such_goal"})
             check(
                 "an operation's refusal is an error, with its kind and message",

@@ -135,9 +135,9 @@ an image only when the deployment names one (`evh catalog --card URL`).
 ### The footer
 
 When the page was built, by `evh catalog`, and that the pages carry counts and means only. Then
-**this page in the terminal**: the read command that answers what the page shows (`evh goal-list
---goal G` on a goal page, `evh dataset-show D` and, once it has a profile, `evh
-dataset-items --dataset-id D` on a dataset page; the inspector's is the comparison picked, filled
+**this page in the terminal**: the read command that answers what the page shows (`evh goal-leaderboard
+G` on a goal page, `evh dataset-show D` and, once it has a profile, `evh
+dataset-items D` on a dataset page; the inspector's is the comparison picked, filled
 in as the arms change). With `evh catalog --mcp URL` the same line names it **from an agent**: the
 tool and its arguments as JSON, the server, and how to connect (`--mcp-howto`, the harness's
 INTEGRATION guide by default). A test runs every page's command and fails when one is not a read
@@ -215,8 +215,8 @@ show the same period, and the home tiles open those pages at the period picked.
   of its datasets.
 - **Without a script:** the chips stay hidden, the line says the page shows all time, and the
   in-period columns hold all-time counts.
-- **Commands:** every list takes `--period P` (`evh dataset-list`, `goals`, `references`,
-  `metrics`, `arms`, `overview`, `activity`), with the same numbers: each page's rows in the
+- **Commands:** every list takes `--period P` (`evh dataset-list`, `goal-list`, `reference-list`,
+  `metric-list`, `arm-list`, `overview-show`, `activity-show`), with the same numbers: each page's rows in the
   period come from one builder that the page and the command both read.
 
 ## The home page
@@ -307,7 +307,7 @@ tiles open it.
 - A dataset marked `text: hidden` shows its counts and its rows' ids and lengths, never its text, on
   this page and its own.
 - Command: `evh dataset-list [--period P] [--tag K=V …]`; the list has `made from` (a parent, or a
-  capture) and `tags` columns, and `--dataset-id` prints the tags and origin.
+  capture) and `tags` columns, and `evh dataset-show D` prints the tags and origin.
 
 ## The dataset page
 
@@ -636,8 +636,8 @@ tile opens it grouped by system (`arms.html?group=system`).
 - Command: `evh dataset-arm-list <id>
   [--where local|hosted] [--tier <tier>] [--weights open|proprietary] [--quality contender|below]
   [--period P]`, and `evh arm-list --systems 1` for `02`. It opens as the page does: grouped by dataset, in reading order,
-  three a group with "… and N more: evh dataset-arm-list <id>"; `--all` shows every row, `--by none` none grouped,
-  and `--dataset-id` that dataset in full. A derived arm's **how measured** carries its move, "(+0.033 vs measured)".
+  three a group with "… and N more: evh dataset-arm-list <id>"; `evh dataset-arm-list <id>` lists every row of one dataset.
+  A derived arm's **how measured** carries its move, "(+0.033 vs measured)".
 
 ## The arm page
 
@@ -827,8 +827,8 @@ names and the verdicts' metric open their pages.
 - The page still carries counts and means only.
 - Every arms table keeps the row key and the tints.
 - Every catalog page opens with a skip link to its content, the first stop of the Tab key.
-- The same view is still a command, with the same numbers (`evh dataset-list`, `goals`,
-  `references`, `metrics`, `arms`, `activity`), or the command gains it in the same change; a
+- The same view is still a command, with the same numbers (`evh dataset-list`, `goal-list`,
+  `reference-list`, `metric-list`, `arm-list`, `activity-show`), or the command gains it in the same change; a
   page's period numbers come from its builder in `catalog_build.py` (`period_*`), never computed
   twice.
 - A table that shows the period keeps the new badge, the row chips and the trends' form.

@@ -105,7 +105,7 @@ and step 10 of the [GUIDE](../GUIDE.md).
   the scorer is refused. A pick scorer whose `outputs_per_call` cannot hold every arm, and a pairwise one whose
   `outputs_per_call` is not 2, are refused.
 - **FR5.3**: Pick and pairwise project `won` per arm per item (judged runs' primary `judge_won`), read by goals,
-  rounds, `inspect` and the sheet as `judge_score` is; the pass reports each arm's win rate and Bradley-Terry
+  rounds, `comparison-show` and the sheet as `judge_score` is; the pass reports each arm's win rate and Bradley-Terry
   strength with an interval, and the position and noise checks as the share of verdicts that held.
 - **FR5.4**: The SummEval example validates judges in each mode as arms (`top1` for pick, `pair_agreement` for
   pairwise), with a random arm as the floor; an adapter may name an arm's primary metric by its params

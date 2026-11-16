@@ -128,9 +128,9 @@ services:
       options: { max-size: "10m", max-file: "3" }
 
   mcp:
-    # The harness's MCP server (evals.humancopilot.eu/mcp, RFC-018): the project's read commands as
-    # tools for any agent, over Streamable HTTP, stateless. Read-only by construction: its tools are
-    # the commands that only read (no tool writes, spends or runs a model), --public leaves out the
+    # The harness's MCP server (evals.humancopilot.eu/mcp, RFC-018): the project's read operations as
+    # tools for any agent, over Streamable HTTP, stateless, answered in the server's own process.
+    # Read-only by construction: its tools are the operations that only read (no tool writes, spends or runs a model), --public leaves out the
     # options that answer with an item's text, and it reads the release's public copy of the data
     # from the read-only mount. No authentication: anyone may read what the site and the catalog
     # already publish. The same stock image and package as the inspector; the MCP SDK and its
@@ -184,7 +184,8 @@ services:
       - "65536"
       - --max-connections
       - "64"
-      # Two commands at once at most: each is a process of up to ~160 MiB (measured 2026-11-15), inside mem_limit.
+      # Two calls computed at once at most, in the server's own process; a call given up on (--timeout, cancelled) keeps
+      # its slot until its work ends, so no more than two ever run.
       - --concurrent
       - "2"
       - --timeout
@@ -205,8 +206,10 @@ services:
       - /tmp:size=16m,nr_inodes=4096,uid=65534,gid=65534,mode=0700
     cap_drop: [ALL]
     security_opt: ["no-new-privileges:true"]
-    # A hard limit (the box has no swap and a nightly pipeline): the server (~70 MiB) and two commands (~160 MiB
-    # each). Measured 2026-11-15 in these limits: two at once peaked at 365-371 MiB, too close to 384m.
+    # A hard limit (the box has no swap and a nightly pipeline). Measured 2026-11-16 in these limits, the release without
+    # its answers file, two callers at once each calling every tool that takes no argument and three datasets'
+    # leaderboards: the process peaked at 271-280 MiB (VmHWM), the cgroup with its page cache at 366-394 MiB, never
+    # killed. Not measured: two of the heaviest calls with arguments (pair-test, comparison-show) at the same moment.
     mem_limit: 512m
     cpus: 0.5
     pids_limit: 64

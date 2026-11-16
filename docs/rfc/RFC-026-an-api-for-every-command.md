@@ -35,17 +35,17 @@ does not, or miss what it adds; every command it serves answers `--json`.
 
 - 82 commands (`evh --help`, 2026-11-09). 8 take `--dry-run`, 1 takes `--resume` (`run`). `--by` means who acted
   on 5 (`label-import`, `sheet-import`, `pick`, `reference-manifest`, `reference-promote`); on `dataset-split` it is
-  the split rule (renamed `--split-by` by RFC-027) and on `inspect` a breakdown field. `--reason` is why on
+  the split rule (renamed `--split-by` by RFC-027) and on `comparison-show` a breakdown field. `--reason` is why on
   `run-promote`, `reference-promote`, `reference-manifest`, `round-retire` and `dataset-unseal`; on `round-open` it is
   why the `--retire` arms are dropped; `round-close` takes `--conclusion`.
 - `evh mcp` serves 29 of them as read-only tools; each of the other 53 is listed with why it is not a tool
   (`mcp_server.NOT_TOOLS`: it writes, spends, or reaches outside the project). Its `parser_of(command)` reads a
   command's argparse parser without running it, and its tools' schemas are made from those parsers, leaving out the
   options a read must not have (`HIDDEN`: `--adapter`, which loads code; `TOOL_HIDDEN`: per command, the options that
-  write a file or read outside the project, e.g. `inspect --csv`, `--fill`, `pair-test --runs-dir`).
+  write a file or read outside the project, e.g. `sheet-export --csv`, `--fill`, `pair-test --runs-dir`).
   `mcp_server.run_command` runs each call in its own process group, stdin closed, with a timeout, adding `--json`
   for the tools listed in `JSON`. 27 of the 29 read commands have `--json`; `validate` and `dataset-card` answer
-  text. (`JSON` lists 24: `data-ls`, `data-show` and `label-coverage` have `--json` and are added to it in step 2.)
+  text. (`JSON` lists 24: `data-ls`, `data-show` and `label-coverage-show` have `--json` and are added to it in step 2.)
 - `catalog-serve` answers 11 routes: the inspector's 4 (`/api/health`, `/api/compare`, `/api/item`, `/api/sheet`) and
   the data page's 7 under `/api/data/` (UXS-004, ADR-0027: settings written through `_settings_form.guarded_write`,
   one at a time in the server, with `evh validate` before and after; a run removed whole). Those 7 answer only a
@@ -78,7 +78,7 @@ served command's path arguments with theirs (a test fails on a `Path` argument w
 - **a name the server maps to a file**: `run --config`, `arm-smoke --config`, `model-onboard --config`, `sweep
   --configs` take config ids (`data/configs/<id>.yaml`, or the project's configured config globs);
 - **an upload**: `data-put`'s file, `label-import`'s and `sheet-import`'s sheet, `sheet-import --key`,
-  `import-run --scores`, `label-coverage --map`, `dataset-create --fields`, `capture --query @file`;
+  `import-run --scores`, `label-coverage-show --map`, `dataset-create --fields`, `capture --query @file`;
 - **a job artifact**: `label-sheet --out`, the one output file a served command writes outside the project's data,
   is written under `.build/jobs/<id>/` and fetched with `GET /api/v1/jobs/<id>/files/<name>` (owner, 2026-11-09: the
   sheet is offered as a download);
@@ -250,7 +250,7 @@ decided it is enforced (2026-11-08). So:
   `evh round-list` counts it), less what the round's running commands have reserved. It reserves that cap when it
   starts, in the round's ledger (`.build/rounds/<goal>/<round>.json`, under the `goal:<goal>` lock for the moment it
   writes), and records what it spent when it ends. A stopped or crashed run writes no `metrics.json` and so is not
-  among the runs `rounds` counts, though its items were paid for: the supervisor, not the command, closes the
+  among the runs `round-list` counts, though its items were paid for: the supervisor, not the command, closes the
   reservation, reading the run's written items for what was actually spent. The budget left is the budget, less the
   round's visible runs, less the ledger's closed entries whose run is not visible, less the open reservations. Nothing left: the command is refused before it calls a model (`ERROR (over-budget)`). So
   ten arms of one round started at once cannot overrun its budget together.
@@ -367,8 +367,15 @@ has, except a migration's `503` above, so it works the same in either (RFC-025).
 Generated from `evh --help` and `mcp_server.READ_TOOLS` / `NOT_TOOLS` on 2026-11-08, updated 2026-11-09: 29 read,
 40 jobs, 6 jobs that spend, 7 not served (`capture-scrub` runs a program it is given). RFC-027 adds `baselines`
 (read), `baseline-rollback` and `baselines-migrate` (jobs); the table is generated again from `cli.COMMANDS` at the
-build, and its test fails on a command it does not classify. Step 7 (built) gave every served command `--json`
-(`test_api` fails on one without it); the `jobs-*` commands of step 6 are not served.
+build, and its test fails on a command it does not classify. Step 7 (built) gave every served command `--json` (`test_api` fails on one without it); the `jobs-*` commands of step 6 are not served.
+
+This table is the inventory of 2026-11-09. RFC-032 P2 removed 16 of its read commands (`activity`, `arms`, `captures`,
+`datasets`, `goals`, `inspect`, `label-coverage`, `labels`, `metrics`, `models`, `overview`, `prompts`, `references`,
+`rounds`, `studies`, `tags`) and answers each by operations (`overview-show`, `arm-list`, `capture-list`, `dataset-list`,
+`goal-list`, `comparison-show`, `label-coverage-show`, `label-set-list`, `metric-list`, `model-list`, `reference-list`,
+`round-list`, `study-list`, `tag-set-list`, ...; the full mapping is in the
+[changelog](../../harness/CHANGELOG.md)), which are read, served and
+MCP tools by their registry entry. The rows below keep the names of that date.
 
 | command | served as | `--json` | why |
 | --- | --- | --- | --- |

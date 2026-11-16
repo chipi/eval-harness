@@ -1187,9 +1187,9 @@ within the allowance on one dimension (REPORT_SUMMEVAL §5).
 ```bash
 cd harness
 # §1, §3 — cost and rank by eval, from what the provider billed
-python scripts/leaderboard.py --dataset-id few_nerd_280        # and the other five
+python scripts/cli.py leaderboard few_nerd_280        # and the other five
 # §2 — significance
-python scripts/family_test.py --dataset-id few_nerd_280 \
+python scripts/cli.py family-test few_nerd_280 \
     --a fn_span_marker_v1 --against fn_ --metric f1
 # §4 — pilot vs full, and holdout
 python scripts/holdout_significance.py --dataset-id few_nerd_280 \
@@ -1198,7 +1198,7 @@ python scripts/holdout_significance.py --dataset-id few_nerd_280 \
 python tools/extraction_report.py --dataset-id few_nerd_280 --match fn_
 python tools/classification_report.py --dataset-id dbpedia_280
 # §7 — tie behaviour by metric shape
-python scripts/rank_stability.py --dataset-id dbpedia_280 --metric correct --match db_
+python scripts/cli.py rank-stability dbpedia_280 --metric correct --match db_
 # SummEval's derived figures (split-half, price vs quality, ladders, dimensions)
 python tools/summeval_analysis.py
 ```

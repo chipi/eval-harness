@@ -13,7 +13,7 @@
   form and a setting's fields), `harness/scripts/_settings_form.py` (schema, values, suggestions, the save that keeps
   comments), `harness/scripts/catalog_build.py`
   (`render_data`: the shell), `harness/scripts/catalog_serve.py` (`/api/data/*`), `harness/scripts/_data_page.py`
-  (listing, checking, writing, deleting), `harness/scripts/data_ls.py`, `data_show.py`, `data_put.py`, `data_rm.py` (`evh data-ls`, `data-show`, `data-put`, `data-rm`);
+  (listing, checking, writing, deleting), `harness/scripts/ops/records.py` (`evh data-ls`, `data-show`), `harness/scripts/data_put.py`, `data_rm.py` (`evh data-put`, `data-rm`);
   tests `harness/tests/test_data_page.py` (server and commands), `test_settings_form.py` (every setting of this
   repository through the form's save) and `test_data_page_browser.py` (the page)
 

@@ -236,13 +236,11 @@ def tools_for(public: bool) -> tuple:
 #: The reads whose answer with no input depends on today's date (a period counted from today, by default): never written
 #: ahead, since an answer kept past the day would read the wrong period.
 DATED = {"overview-show", "activity-show"}
-#: The reads with no required input that still need one of several to answer (comparison-show: runs or round): asked with
-#: none, they refuse, so there is nothing to write ahead.
-NEEDS_ONE_OF = {"comparison-show"}
 
 
 def tool_schema(op: Any, public: bool) -> dict:
-    """An operation's input as the tool's JSON Schema: the parts of its route, then its own inputs."""
+    """An operation's input as the tool's JSON Schema: the parts of its route, then its own inputs (and the inputs of which
+    a call names one, `anyOf`)."""
     own = op.schema(public)
     parts = op.path_params()
     return {
@@ -252,17 +250,18 @@ def tool_schema(op: Any, public: bool) -> dict:
             **own["properties"],
         },
         "required": [*parts, *own["required"]],
+        **({"anyOf": own["anyOf"]} if "anyOf" in own else {}),
         "additionalProperties": False,
     }
 
 
 def answerable_ahead(public: bool) -> list[str]:
     """The tools whose answer can be written ahead for a release that never changes (--write-answers): each read that takes no
-    required input, but those whose default depends on the date (DATED)."""
+    input it must be given (none required, none of several to name), but those whose default depends on the date (DATED)."""
     return [
         op.name
         for op in read_ops(public)
-        if op.name not in DATED | NEEDS_ONE_OF and not tool_schema(op, public)["required"]
+        if op.name not in DATED and not tool_schema(op, public)["required"] and not op.one_of
     ]
 
 
@@ -280,7 +279,9 @@ def check_arguments(op: Any, arguments: dict, public: bool) -> None:
             raise ValueError(
                 f"unknown argument(s): {', '.join(unknown)}; this tool takes {', '.join(sorted(schema['properties'])) or 'none'}"
             ) from None
-        raise ValueError(exc.message) from None
+        from evaluation_harness.ops.registry import input_problem  # noqa: PLC0415
+
+        raise ValueError(input_problem(exc)) from None
 
     def strings(v: Any) -> list[str]:
         return [x for x in (v if isinstance(v, list) else [v]) if isinstance(x, str)]

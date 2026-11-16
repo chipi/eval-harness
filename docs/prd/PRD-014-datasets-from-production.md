@@ -160,7 +160,7 @@ comment that says what it was.
   dataset has never had), **unlabelled**; each a filter and a sort, with `--where` and `--by`.
 - **FR8.2** (0.6.0): The inspector's sheet shows the same, and downloads its CSV; a selection of rows gives the
   `evh pick` and `evh label-sheet` commands for them. The page writes nothing. It replaces the rows view and
-  `inspect --items`, which are gone.
+  the inspector's `--items`, which are gone.
 
 ### FR9: Picks (0.6.0)
 

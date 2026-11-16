@@ -129,7 +129,7 @@ The harness cannot do steps 6 and after:
   and goal from `--like`, the deployed arm's) and runs it. The triage capture keeps no gate reason, so for
   production's arm the model's own decision (`model_*`) reads as the fleet's.
 - As built (agreement): `same(a, b)` is read from the baseline arm's adapter (`_adapter.same_of`, else the same
-  text); `inspect --disagree` is a filter in the comparison itself (`catalog_serve.compare`), so the page and the
+  text); `comparison-show --disagree 1` is a filter in the comparison itself (`catalog_serve.compare`), so the page and the
   terminal share it. The triage adapter's `same` compares dispositions. Its two new functions moved its scorer
   version 3d3a6afdb978 -> 9558eee9cac9; score-preview over the triage goal's 91 runs moves no arm (+0.0000).
 - **Agreement** is how often two arms decided the same, per item, through an adapter hook `same(a, b)` (default:
@@ -139,7 +139,7 @@ The harness cannot do steps 6 and after:
 ### The rows view: exploring, and what to pick
 
 **As built (0.6.0):** replaced by [the sheet](#the-sheet-one-view-of-everything-060) before it shipped; `--rows`
-and `inspect --items` are gone. The signals and the selection below are the sheet's, as described here.
+and the inspector's `--items` are gone. The signals and the selection below are the sheet's, as described here.
 
 In the inspector, for one dataset (as specified, a `--rows` view of `evh sheet-show D`):
 
@@ -174,7 +174,7 @@ In the inspector, for one dataset (as specified, a `--rows` view of `evh sheet-s
 
 The owner's requirement (2026-11-02): one sheet to look at. "Which arm writes the best summary": the dataset's items
 down, a column per arm across, what each wrote and every score it has, the labels, the winner per row, and the verdict
-per arm at the bottom. It replaces the rows view and `inspect --items`, which showed halves of it: `--rows` and
+per arm at the bottom. It replaces the rows view and the inspector's `--items`, which showed halves of it: `--rows` and
 `--items` are gone (no aliases), their options (`--wrong-against`, `--new-vs`, `--split`, `--unlabelled`, `--where`,
 `--by`) are the sheet's, and so are the `evh pick` and `evh label-sheet` commands for the rows ticked.
 
@@ -322,11 +322,11 @@ The docs and the site say so and imply neither.
 | `evh label-import sheet.csv --dataset-id D --set S --by NAME [--guideline FILE]` | the filled rows become a `person` set | `write_verdicts.py`, `write_gold.py` |
 | `evh label-from-run --run R --set S [--guideline FILE]` | a run's outputs become a `model` set | `reference-create --from-run`, `--config` |
 | `evh label-from-capture --dataset-id D --capture C --map rules.yaml --set S` | rules over recorded outcomes become a `rule` set | `reference-from-outcomes` |
-| `evh label-set-list D` | every set: source, coverage, guideline, how two sets agree (the same answers, sharing one, Cohen's kappa, Krippendorff's alpha; `--confusion`), what was promoted | — |
+| `evh label-set-list D` | every set: source, coverage, guideline, how two sets agree (the same answers, sharing one, Cohen's kappa, Krippendorff's alpha, with each pair's confusion matrix), what was promoted | — |
 | `evh reference-promote --dataset-id D --labels S [--items …] --tier gold\|silver --reason "…"` | the chosen labels become a reference, recording the set, its source and the reason | `reference-create` |
 | `evh rescore --labels D/S`, `evh run --labels D/S` | score against a label set, without promoting it | — |
 | `evh arm-from-capture --dataset-id D --capture C --as NAME` | production's recorded decisions as an arm | — |
-| `evh sheet-show D --runs A,B …` | every item with each arm's output and scores, the labels, the winner, the signals (wrong, disagree, split, new, unlabelled) and a footer per arm, to explore, label and pick from; `--csv FILE [--fill label\|pick\|scores]` writes it to fill | `inspect --rows`, `inspect --items` |
+| `evh sheet-show D --runs A,B …` | every item with each arm's output and scores, the labels, the winner, the signals (wrong, disagree, split, new, unlabelled) and a footer per arm, to explore, label and pick from; `evh sheet-export --csv FILE [--fill label\|pick\|scores]` writes it to fill | the rows view, the inspector's `--items` |
 | `evh sheet-import sheet.csv --dataset-id D --by WHO [--kind person\|model] [--set S] [--scorer S]` | a filled sheet read back: labels as a label set, picks or scores as unvalidated judged runs | — |
 | `evh pick`, `evh picks`, `evh pick … --drop` | mark an item for datasets (targets, tags, note), list what waits, drop one | — |
 | `evh dataset-extend V1 --dataset-id V2 --picks` (or `--pick ITEM …`) | the next version: v1's items and the chosen picks, with their lineage | — |

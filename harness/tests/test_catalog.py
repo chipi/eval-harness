@@ -1361,7 +1361,7 @@ try:
     except Problem as exc:
         refused_plain = str(exc)
     check(
-        "inspect --label: a system id is found under its label, and not under the plain one",
+        "comparison-show --label: a system id is found under its label, and not under the plain one",
         arm_views.arm_ids(A2, ["arm_s"], "silver") == ["silver/ds1/arm_s"]
         and arm_views.arm_ids(A2, ["arm_g"], "") == ["runs/ds1/arm_g"]
         and "name the arm id: silver/ds1/arm_s" in refused_plain,

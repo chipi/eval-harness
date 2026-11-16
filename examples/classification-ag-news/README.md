@@ -117,7 +117,7 @@ ARM="--system ag_deepseek_m_v1 --dataset ag_news_200 --goal news_topic_ag"
 $PY scripts/run.py $ARM --dry-run
 $PY scripts/run.py $ARM
 
-$PY scripts/leaderboard.py --dataset-id ag_news_200
+$PY scripts/cli.py leaderboard ag_news_200
 $PY tools/classification_report.py --dataset-id ag_news_200
 $PY tools/classification_report.py --dataset-id ag_news_200 --arm ag_keyword_v1
 ```

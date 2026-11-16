@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Integrity checks over the eval tree. Run it before you trust any number.
 
 Each check exists because its absence let a real defect through somewhere:
@@ -80,12 +79,6 @@ Exit 1 on any failure, so it can gate.
 """
 
 from __future__ import annotations
-
-import sys as _sys
-from pathlib import Path as _Path
-
-if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
-    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
 import hashlib
 import json

@@ -114,7 +114,7 @@ infra/
     `docker exec evals-mcp python /srv/evals/current/inspector/mcp_probe.py "homelab-probe evals-mcp
     <UTC time>"` (`infra/mcp/probe_error.py`): one labelled exception through the server's own hooks,
     its event id printed, to read back and delete. `evals.alloy` adds a `_msg` to each call line
-    (`mcp goals exit=0 12ms`), which VictoriaLogs needs. A call is logged as one JSON line: the tool, its
+    (`mcp goal-list exit=0 12ms`), which VictoriaLogs needs. A call is logged as one JSON line: the tool, its
     arguments' names (never their values), how it ended, its time; never the caller's address or
     user agent (those go to the hooks only, for the Umami visitor count).
 
@@ -131,7 +131,7 @@ infra/
    `/api/health` and two real comparisons taken from the catalog's own links: one arm, and
    the first group of arms on one metric (`deploy/probe_link.sh` picks it; `make -C harness
    test` runs the same probe against the tutorial project). Both must come back with verdict
-   rows. The MCP server answers `/mcp/health` and a real `goals` call (up to 120 s; a warning
+   rows. The MCP server answers `/mcp/health` and a real `goal-list` call (up to 120 s; a warning
    past 30 s, which means the precomputed p cache was not read: without it the call takes ~50 s).
 5. The inspector once `--warm` is done (its log line, up to 300 s): running, never restarted,
    under 80% of its memory limit, else the release rolls back.

@@ -118,7 +118,7 @@ because a judge is validated in the mode it is used: a judge that grades like pe
   per-item `won` is its share of the item's pairs it won, a tie counting a half.
 
 For pick and pairwise, `won` is the projected metric (`judge_won`, the mean over judges, is the primary), written as
-judged runs exactly as grading's: goals, rounds, `inspect` and the paired tests read them unchanged. The controls
+judged runs exactly as grading's: goals, rounds, `comparison-show` and the paired tests read them unchanged. The controls
 stay: the position check re-shuffles (pick) or swaps the two outputs (pairwise) and reports how often the verdict
 holds; the noise check repeats calls; judges are compared with each other. The summary adds each arm's **win rate**
 (its mean `won`) and **Bradley-Terry strengths** (Hunter 2004's MM fit over every pairwise outcome: a pick is the

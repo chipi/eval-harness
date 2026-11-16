@@ -95,7 +95,7 @@ answer. Where the page has a `make` target in a checkout, it runs the same scrip
 | --- | --- | --- |
 | home: the tiles with their trends, goals at a glance, activity and spend, coverage, what was recorded | `evh overview-show [--period P]` | |
 | the activity page: runs, spend and tokens by dataset, arm and kind | `evh activity-show [--period P] [--arms N]` | |
-| any page's period (the chips): its in-period columns, new rows, trends | `--period P` on `evh dataset-list`, `goals`, `references`, `metrics`, `arms` | `ARGS='--period 30d'` |
+| any page's period (the chips): its in-period columns, new rows, trends | `--period P` on `evh dataset-list`, `goal-list`, `reference-list`, `metric-list`, `arm-list` | `ARGS='--period 30d'` |
 | the datasets page | `evh dataset-list` | |
 | a dataset page: arms with their cost and speed, baseline, versions, references | `evh dataset-show <id>` | |
 | a dataset page's what's inside: items, words, the gold's shape, each item's row at its source | `evh dataset-items <id> [--item ID]` (written by `evh dataset-profile`) | `make dataset-items DATASET_ID=<id>` |
@@ -103,7 +103,7 @@ answer. Where the page has a `make` target in a checkout, it runs the same scrip
 | a goal page: the answer so far, arms per dataset and group (a judge's group on its score), retired marks, one line per round | `evh goal-leaderboard <id>` | |
 | a goal page: its rounds and suggestions (each suggestion's copy button copies its command) | `evh round-show <id> rN` | |
 | a goal page: a round's **inspect** button | `evh comparison-show --round rN [--goal <id>]` | |
-| the arms page: every arm, grouped, filtered (local / hosted, price tier) | `evh arm-list [--where local\|hosted] [--tier T]` (grouped by dataset by default, three a group) | |
+| the arms page: every arm, grouped, filtered (local / hosted, price tier) | `evh arm-list [--where local\|hosted] [--tier T]` (grouped by dataset, three a group, with `evh dataset-arm-list D` for the rest) | |
 | the arms page: the systems, with their rank on each goal | `evh arm-list --systems 1` | |
 | an arm page: metrics, cost and speed, runs, system, conditions, rounds | `evh arm-show LABEL DATASET <arm id or system id>` | |
 | the models page: every model record, its deployments, settings, onboarding, arms (0.6.0, RFC-020) | `evh model-list [--kind K] [--where self-hosted\|hosted] [--status vetted\|onboarded\|check\|none]` | |

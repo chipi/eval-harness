@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """How far an outcome rule set labels a dataset now, and what it waits for (the fleet's feedback 31).
 
     evh label-coverage-show triage_v1 --capture fleet_2026_11 --map outcomes.yaml
@@ -11,12 +10,6 @@ that item's label can still change: it counts as not yet mature, with what it ge
 """
 
 from __future__ import annotations
-
-import sys as _sys
-from pathlib import Path as _Path
-
-if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
-    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
 from collections import Counter
 from datetime import timedelta

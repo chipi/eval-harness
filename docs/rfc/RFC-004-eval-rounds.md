@@ -8,7 +8,7 @@
 - **Related ADR**: [ADR-0004](../adr/ADR-0004-eval-rounds.md)
 - **Code**: `harness/scripts/_rounds.py` (records, membership, checks), `rounds.py` (the
   commands and the evidence), `round_open.py`, `round_retire.py`, `round_close.py`,
-  `round_status.py` (entry points), `harness/schemas/round.schema.json`; test
+  `ops/rounds.py` (the read operations `round-list`, `round-show`, `round-evidence`), `harness/schemas/round.schema.json`; test
   `harness/tests/test_rounds.py`
 
 ## Abstract

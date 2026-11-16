@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """evh periods: a code record's deployed periods, numbered, with how each was dated and its faithfulness (RFC-031 P2).
 
     evh periods toy_filing [--system filing_replay_v1 --dataset filing_history_v1]
@@ -10,12 +9,6 @@ many of the dataset's items fall in each.
 """
 
 from __future__ import annotations
-
-import sys as _sys
-from pathlib import Path as _Path
-
-if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
-    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
 from types import SimpleNamespace
 

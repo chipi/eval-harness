@@ -78,7 +78,7 @@ correctness bugs, not just missing features.
     catalog redirects its old page. Then: a `.gitignore` that re-admits run files names the new ones (this
     repository's `harness/.gitignore` shows the pattern), and change your commands: `EVAL_RUNS_DIR` is gone (a
     throwaway pass is `evh run --scratch`; a re-run is `evh run --purpose repeat|retime|pair [--of RUN_ID]`),
-    `--runs-dir` (pair-test, family-test) and `inspect --from` are `--label`, `round-retire --runs-dir` is `--label`
+    `--runs-dir` (pair-test, family-test) and the inspector's `--from` are `--label`, `round-retire --runs-dir` is `--label`
     (below), and `rescore`/`judge-score` write under the runs they score (no `--out`; `rescore --label` names what its
     scores are read as).
   - *rounds* (RFC-032 step 5, format 5): a round stores its arms, `arms:` in its record, each a system, the label it
@@ -285,11 +285,11 @@ Seven behaviours change without a migration:
 - **`evh rescore` writes to one designated place**, `data/runs-rescored/<scorer>/<source>/`, unless `--out` names
   another; the catalog, the goals and the rounds read an arm from its latest re-score there.
 
-Everything else is added and optional: the capture lane (`evh capture`, `importer-check`, `captures`,
+Everything else is added and optional: the capture lane (`evh capture`, `importer-check`, `capture-list`,
 `capture-scrub`, `dataset-from-capture`, `dataset-split`, `text: hidden`; RFC-019); evaluating what production did
 (`evh dataset-list`, a label accepting more than one answer, `{"accept": [...]}`, read by `answers(reference)` from
-`evaluation_harness.adapter`, scoring against a label set with `--labels`, `evh arm-from-capture`, `inspect --disagree` and
-the sheet (`inspect --sheet`, `--csv`, `--fill`, read back by `evh sheet-import`), `evh pick`, `evh picks`,
+`evaluation_harness.adapter`, scoring against a label set with `--labels`, `evh arm-from-capture`, `comparison-show --disagree 1` and
+the sheet (`sheet-show`, `sheet-export --csv`, `--fill`, read back by `evh sheet-import`), `evh pick`, `evh picks`,
 `evh dataset-extend`, `evh deploy-sheet`; the catalog's Labels page; an adapter's optional `same(a, b)`,
 `decision(output)`, `title(item)`, `recorded_output(record)` and `production_ran(record)`; RFC-023); judging modes (a scorer's
 `mode: pick` or `pairwise`, validated in that mode; RFC-005) and an adapter's optional `primary_metric(params)`;
@@ -473,7 +473,7 @@ so check these before you trust a `validate`:
   required of an upgrading project until it sets `required_from` in `data/goals/policy.yaml`.
 - **Eval rounds** (`evh round-open`, `evh round-retire`, `evh round-close`, `evh round-list`;
   `round: rN` on configs; validate V14). `--round rN` on `leaderboard`, `family-test`,
-  `pair-test` and `inspect`: `inspect --round` and `pair-test --round` default to the goal's
+  `pair-test` and `comparison-show`: `comparison-show --round` and `pair-test --round` default to the goal's
   measure and the round's leader (`pair-test`'s B: the baseline the round started from). A
   project that never opens a round sees none of it
   ([tutorial 4](https://evals.humancopilot.eu/docs/tutorials/4-rounds-and-versions/)).

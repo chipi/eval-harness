@@ -195,7 +195,7 @@ def score_run(items: list[dict]) -> dict[str, float]:
 They go into the run's `scores` beside the means, and the record names them in `run_metrics`. A name must be its
 own (not one `score()` returns), every value a finite number; a `score_run` that raises fails the run. `METRIC_KINDS`,
 `METRIC_DIRECTIONS` and `METRIC_DESCRIPTIONS` describe them like any metric. The leaderboard shows them, with
-their spread over an arm's runs; `evh rescore` computes them again from the stored outputs; `inspect` and the
+their spread over an arm's runs; `evh rescore` computes them again from the stored outputs; `comparison-show` and the
 comparison show each arm's recorded value but never test one, and `pair-test` and `family-test` refuse them by
 name: with one number per run there is no item to pair. To test an arm against another on one, run each arm
 several times and read the spread.
@@ -481,7 +481,7 @@ the ChatGPT line follows third-party guides, as OpenAI renames that menu often. 
 every protocol revision since 2025-03-26 without a session, which is what they send.
 
 Ask it, for example: *"Which arm leads on the news_topic_ag goal, and is the lead significant?"* The
-agent calls `goals` (and `arms` for the detail) and answers from the same table and paired test
+agent calls `goal-leaderboard` (and `arm-list` for the detail) and answers from the same table and paired test
 the catalog shows.
 
 **For a team**: serve a checkout of the project over HTTP behind the team's proxy:

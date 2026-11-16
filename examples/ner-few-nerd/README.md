@@ -101,7 +101,7 @@ Then the analysis — all of it $0, all of it from the stored runs:
 
 ```bash
 python tools/extraction_report.py --dataset-id few_nerd_280 --match fn_
-python scripts/family_test.py --dataset-id few_nerd_280 --a fn_span_marker_v1 \
+python scripts/cli.py family-test few_nerd_280 --a fn_span_marker_v1 \
     --against fn_ --metric f1
 ```
 

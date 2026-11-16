@@ -24,7 +24,8 @@ class Op:
     with an item's text, an output or a label, or how long a test runs); `public_dropped`, when set, why a public server
     does not offer the operation at all; `status`, a dotted `module:function` of the result giving the command's exit code
     when the answer is also a verdict (`validate`: 1 when it found a problem); `positional` names inputs the command takes
-    as positional words, after the route's parts (`evh search news summary`)."""
+    as positional words, after the route's parts (`evh search news summary`); `one_of`, inputs of which a call names at
+    least one (`comparison-show`: runs or round), said in the schema so a caller knows before it calls."""
 
     name: str
     kind: str
@@ -42,6 +43,7 @@ class Op:
     public_dropped: str = ""
     status: str = ""
     positional: tuple[str, ...] = ()
+    one_of: tuple[str, ...] = ()
 
     def path_params(self) -> list[str]:
         """The parts of the route the call names, in order."""
@@ -76,12 +78,22 @@ class Op:
         """Its inputs (not the route's parts) as one JSON Schema object: what the API and the MCP tools take, so not
         what only the command line takes (`tool_hidden`), nor, for a public server, `public_hidden`."""
         hidden = {*self.tool_hidden, *(self.public_hidden if public else ())}
+        one_of = [k for k in self.one_of if k not in hidden]
         return {
             "type": "object",
             "properties": {k: v for k, v in self.inputs.items() if k not in hidden},
             "required": [k for k in self.required if k not in hidden],
+            **({"anyOf": [{"required": [k]} for k in one_of]} if one_of else {}),
             "additionalProperties": False,
         }
+
+
+def input_problem(exc: Any) -> str:
+    """A jsonschema ValidationError of a call's inputs in words: an unmet `one_of` names the inputs (jsonschema says
+    only that the call 'is not valid under any of the given schemas')."""
+    if exc.validator == "anyOf" and all(set(s) == {"required"} for s in exc.validator_value):
+        return "one of " + ", ".join(k for s in exc.validator_value for k in s["required"]) + " is needed"
+    return str(exc.message)
 
 
 #: The reads whose answers the view cache keeps (model/view_cache.result): the views computed from every arm's scores

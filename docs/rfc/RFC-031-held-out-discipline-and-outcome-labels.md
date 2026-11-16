@@ -66,7 +66,7 @@ fleet-eval-data, as config or hooks.
 
 - `dataset-split --seal`, `dataset-unseal`, `_seal.refuse_if_sealed` (run, score, label refused on a sealed side),
   `_looks` (looks counted per test set). Nothing is recorded per item; nothing about reads.
-- `label-from-capture` (rules over the same capture's record of the item), `label-coverage` (labelled now, skipped,
+- `label-from-capture` (rules over the same capture's record of the item), `label-coverage-show` (labelled now, skipped,
   not yet mature with its date, unmatched, not in the capture), `_outcome_rules` (`min_age_days` against the
   capture's time). A label set is one pass, never edited; a newer outcome is a new capture and a new set.
 - Captures and importers (`github` with state, state_reason, close events; `jsonl`, `tsv`, `langfuse`); a project's
@@ -86,11 +86,11 @@ fleet-eval-data, as config or hooks.
 - **Recorded by hand**: `evh exposure-add --dataset-id D --item ID --what TEXT [--at T]` (repeatable `--item`), or
   `--from FILE.tsv` (the fleet's `exposed.tsv` imports as is). A person or an agent may record; nobody may remove.
 - **Recorded by the harness**: a command that shows a person or an agent a sealed item's content, or an output or
-  label on it, records the read itself: `inspect --item`, `inspect --sheet`, `--items-out`, `label-sheet`, the catalog
+  label on it, records the read itself: `comparison-item`, `sheet-show`, `comparison-items`, `label-sheet`, the catalog
   and inspector's per-item views (served pages record the reader as "catalog-serve" with the client), a run or import
   for the items it prints. A command that prints counts only records nothing.
 - **Every score on that dataset leaves exposed items out**, not only the confirmation (the fleet: "once read, always
-  read"): `pair-test`, `family-test`, `leaderboard`, `goals`, `study-confirm`, the catalog and the inspector print
+  read"): `pair-test`, `family-test`, `leaderboard`, `goal-leaderboard`, `study-confirm`, the catalog and the inspector print
   "N left out (exposed)" beside the number. `--include-exposed` shows the full number beside it, marked; it never
   replaces it.
 - **The leak check**: `evh exposure-check --dataset-id D` scans the repos named in `config.yaml`
@@ -116,7 +116,7 @@ fleet-eval-data, as config or hooks.
 
 ### L1: an outcome from another capture (gap 4)
 
-- `label-from-capture` and `label-coverage` gain `--outcomes CAPTURE --join ITEM_FIELD=RECORD_FIELD [--within
+- `label-from-capture` and `label-coverage-show` gain `--outcomes CAPTURE --join ITEM_FIELD=RECORD_FIELD [--within
   -1m,+15m]`: each item's outcome fields come from the other capture's records that match the key and fall in the time
   window after the item's time (the fleet's issue created within -1 to +15 minutes of the decision), named
   `<capture>.<field>` beside the item's own. More than one match: the rules see `count` and the first by time, and the
@@ -133,8 +133,8 @@ fleet-eval-data, as config or hooks.
 - **A relabel adds what matured**: `label-from-capture … --set S2 --from-set S1` writes a new set (sets stay never
   edited) holding S1's labels unchanged, the labels matured since, and, for any item whose label differs from S1's
   (a reopen, a recurrence), the new label with `changed_after_maturing: {from, at}`. It refuses an S1 label that
-  vanished without a reason. Every report on S2 (`labels`, `label-coverage`, the catalog) counts "changed after
-  maturing", and `label-coverage --from-set S1` says what a relabel would add today.
+  vanished without a reason. Every report on S2 (`label-set-list`, `label-coverage-show`, the catalog) counts "changed after
+  maturing", and `label-coverage-show --from-set S1` says what a relabel would add today.
 
 ### L3: decisions scored by what followed (gap 7)
 
@@ -192,7 +192,7 @@ fleet-eval-data, as config or hooks.
   reproduced, 2 "path unexplained".
 - **X3, items gone from the source, or their id reused.** A joined outside record (L1) that is gone, or whose id now
   names another object (a GlitchTip short id reused after a project is deleted: the fleet's bug of 10-17), is its own
-  class in `label-coverage` and the label set: "gone from the source, or its id reused", with when it was last seen;
+  class in `label-coverage-show` and the label set: "gone from the source, or its id reused", with when it was last seen;
   never "no outcome", never a negative label. The join checks identity, not only the id: a record whose first-seen
   differs from the item's recorded one is gone (`--outcomes … --identity FIELD`). The fleet: 17 of 93 rollup items,
   498 re-triage fingerprints.
@@ -208,7 +208,7 @@ fleet-eval-data, as config or hooks.
 | `dataset-seal-counts` | extend the allow-list | a person's command |
 | `periods` | a code record's periods | read |
 | `period-compare` | production, as it ran, the candidate, on a period | job |
-| `label-from-capture --outcomes … --from-set …`, `label-coverage --outcomes … --from-set …` | (above) | as now |
+| `label-from-capture --outcomes … --from-set …`, `label-coverage-show --outcomes … --from-set …` | (above) | as now |
 
 ## The Workbench
 
@@ -231,7 +231,7 @@ Each of these is a view the Workbench mockups gain after the build (the owner's 
 
 ## Testing
 
-Each part with a test that fails before it: H1 a read recorded by `inspect --item` on a sealed set, a score printing
+Each part with a test that fails before it: H1 a read recorded by `comparison-item` on a sealed set, a score printing
 "N left out (exposed)", the leak check finding an id in a synthetic repo's later commit and missing it in an earlier
 one; H2 a refused field, counts per day with a capture; L1 a join in and out of the window; L2 a relabel that adds
 only matured items, keeps the old ones and counts a changed one; L3 a variant scored only where its action matches;

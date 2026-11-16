@@ -240,7 +240,7 @@ evh arm-smoke --system my_system_v1 --dataset my_v1   # a few items with the sys
 evh model-list                                       # which models are onboarded, vetted, and where they run
 ```
 
-`model-onboard` and `arm-smoke` call the model (a few calls each, billed like any other); `models`
+`model-onboard` and `arm-smoke` call the model (a few calls each, billed like any other); `model-list` and `model-show`
 reads.
 
 An arm names the record and deployment (`model_record:`, `deployment:`), and its run's fingerprint takes the
@@ -353,7 +353,7 @@ bundled adapter a pinned project has is `evaluation_harness/adapter.py`.
 | `scripts/compare_runs.py` | compare two runs, or refuse |
 | `scripts/promote_baseline.py` | run → baseline, or refuse |
 | `scripts/validate_tree.py` | twenty-three integrity checks (V1–V23) |
-| `scripts/list_runs.py` | what runs and baselines exist |
+| `scripts/ops/records.py` | what runs and baselines exist: `evh runs-list`, `evh baselines` |
 | `schemas/` | the contracts: dataset, metrics (a run), baseline, system (an arm), goal, field set, judge scorer, judging set, verdict |
 | `scripts/_fields.py`, `scripts/_fetch.py` | item fields (types, checks, the catalog's summary) and items fetched from a pinned URL (ADR-0003) |
 | `scripts/stats.py` | the one paired test: `pair-test`, `family-test` and the inspector all call it |
@@ -361,7 +361,7 @@ bundled adapter a pinned project has is `evaluation_harness/adapter.py`.
 | `scripts/judge_score.py`, `scripts/judging.py` | the judge scorer: gate, judging set, verdicts, projection; prompt, parser, judge client |
 | `scripts/catalog_build.py`, `scripts/catalog_serve.py`, `catalog_assets/` | the catalog's pages, and the run inspector; `catalog_periods.py` the period (from today) and the trends, `catalog_arms.py` the arms page |
 | `scripts/catalog_adapter.py` | what the catalog asks of a project's data, and `HarnessAdapter`, the answer for this layout |
-| `scripts/catalog_views.py`, `scripts/view_*.py` | the catalog and the inspector in the terminal: `evh overview-show`, `activity`, `datasets`, `arms`, `references`, `metrics`, `goals`, `inspect` |
+| `scripts/catalog_views.py`, `scripts/ops/views.py`, `scripts/model/*_views.py` | the catalog and the inspector in the terminal: `evh overview-show`, `activity-show`, `dataset-list`, `arm-list`, `reference-list`, `metric-list`, `goal-list`, `comparison-show` |
 | `tests/` | this repository's tests (`make test`, `tests/self_test.py`) and the GUIDE and the offline tutorials run in a fresh project (`make guide-check`); not in the package. The ones that run `evh` install the real wheel (`tools/_wheel.py`, which the deploy uses too). `scripts/test_stats.py` ships: `evh self-test` runs it |
 | `tools/` | this repository's report checks (`check_report_claims.py` and friends), judge validations and `*_report.py` tables; not in the package |
 | `tests/test_inspector_browser.py`, `requirements-browser.txt` | the catalog and the inspector in headless Chromium: `make browser-install`, then `make browser-check` |

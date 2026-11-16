@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """What production must match to run what was measured (RFC-023, PRD-005 FR3), and whether a capture says it did.
 
     evh deploy-sheet triage_baseline_pro_v1
@@ -17,12 +16,6 @@ differs or is not recorded. Nothing is written.
 """
 
 from __future__ import annotations
-
-import sys as _sys
-from pathlib import Path as _Path
-
-if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
-    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
 from collections import Counter
 from pathlib import Path

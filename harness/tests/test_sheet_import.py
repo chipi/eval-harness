@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""A sheet filled elsewhere, read back (RFC-023): `inspect --sheet --csv --fill …` and `sheet-import`.
+"""A sheet filled elsewhere, read back (RFC-023): `sheet-export --csv --fill …` and `sheet-import`.
 
     python tests/test_sheet_import.py
 

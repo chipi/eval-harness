@@ -50,7 +50,7 @@ It also fixes how data moves between releases, a deployed project included.
   read-only: it is migrated only because migrated data is committed, and nothing checks it.
 
 The Workbench's gap map (2026-11-13, against the mockup's screens) found, among others: `data-ls` and `data-show`
-answer text through the API; `label-coverage` cannot be called (a read that needs an upload); no command reads a
+answer text through the API; `label-coverage-show` cannot be called (a read that needs an upload); no command reads a
 judge's validation or records a model's approval; one label or one pick can only be written as a CSV; a job has no
 progress; the Workbench is not served. Not re-verified by hand: `data-put`'s file argument is a plain string, which
 the API's path check does not see (`data_put.py:39`, `_api.py:189-208`); it is checked and closed in step 0.
@@ -377,7 +377,7 @@ Quoted from the discussion, typing slips corrected.
   - rounds now: a retirement names run ids, not a folder; `scoring.written` names scores; arms stored stay step 5;
   - every view gives the same numbers and the same labels ("silver", "repeats", "rescored cd35dc1f"); arm ids and
     page URLs change, the old pages redirect;
-  - the folder flags go, no shims (`EVAL_RUNS_DIR`, `--runs-dir`, `inspect --from`, `rescore --out`, `judge-score
+  - the folder flags go, no shims (`EVAL_RUNS_DIR`, `--runs-dir`, the inspector's `--from`, `rescore --out`, `judge-score
     --out`, `sheet-import --scorer`'s folder): commands select by purpose, scorer and reference; throwaway smoke and
     tune runs go under `.build/`, outside the data;
   - prompt versions are a step of their own (4b): a run records the version of the prompt file it read; past runs
@@ -395,7 +395,7 @@ Quoted from the discussion, typing slips corrected.
   - the rounds that only retired re-timings, repeats or pair runs get those as arms read under their label, retired
     with the reason recorded;
   - one evidence computation (`model/rounds.evidence`) read by `evh round-list`, the goal page for every round,
-    `inspect --round`, pair-test's and family-test's `--round`, `leaderboard --round` and the API's
+    `comparison-show --round`, pair-test's and family-test's `--round`, `leaderboard --round` and the API's
     `/goals/{id}/rounds/{r}/evidence`, its leader by the catalog's rules (gold first; no judged arm and no
     reference author leads); a closed round's "best" that moves under them is shown before the commit;
   - a baseline version names the round and arm that promoted it; the seven an r1 promoted get the link from the

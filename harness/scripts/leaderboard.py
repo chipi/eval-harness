@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Rank every arm that ran on one dataset — quality, cost and speed together.
 
 `run-compare` answers "is B better than A". When you sweep four models you want
@@ -13,17 +12,11 @@ against, each arm one row (its runs' repeats collapse into it and their spread i
 exceeds the gap to its neighbour is not distinguishable from it, and the table says so), flagged and led as the
 goal page has it.
 
-    python scripts/leaderboard.py --dataset-id my_v1
-    python scripts/leaderboard.py --dataset-id my_v1 --sort overlap_f1
+    evh leaderboard my_v1
+    evh leaderboard my_v1 --sort overlap_f1
 """
 
 from __future__ import annotations
-
-import sys as _sys
-from pathlib import Path as _Path
-
-if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
-    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
 import argparse
 import math

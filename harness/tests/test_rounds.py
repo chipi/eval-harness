@@ -215,7 +215,7 @@ try:
         out(r)[-300:],
     )
     check(
-        "evh comparison-show --round: on the goal's measure, against the round's leader (as evh rounds reads it)",
+        "evh comparison-show --round: on the goal's measure, against the round's leader (as evh round-evidence reads it)",
         "overlap_f1 (higher is better) · baseline tickets_lead2_v1" in r.stdout,
         out(r)[-400:],
     )

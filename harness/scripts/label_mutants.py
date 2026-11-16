@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Mutation-test a labeller (RFC-031 X1): each named change to the rules or the join must move some labels.
 
     evh label-mutants triage_v1 --capture decisions --map outcomes.yaml \\
@@ -18,12 +17,6 @@ join)]` (join: {"capture", "join", "within", "identity", "gone_if_missing", "as"
 """
 
 from __future__ import annotations
-
-import sys as _sys
-from pathlib import Path as _Path
-
-if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
-    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
 import copy
 from pathlib import Path

@@ -77,7 +77,7 @@ cd ../../harness
 PY=../examples/classification-dbpedia-14/.venv/bin/python
 $PY scripts/run.py --system db_qwen_m_v1 --dataset dbpedia_280 --goal entity_topic_dbpedia --dry-run
 $PY tools/classification_report.py --dataset-id dbpedia_280
-$PY scripts/family_test.py --dataset-id dbpedia_280 --a db_qwen_m_v1 \
+$PY scripts/cli.py family-test dbpedia_280 --a db_qwen_m_v1 \
      --against db_ --metric correct
 ```
 

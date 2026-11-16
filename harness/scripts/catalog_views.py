@@ -1235,7 +1235,7 @@ def _crosstab(A, args) -> None:
 
 
 def _items_out(A, args) -> None:
-    """evh comparison-items --runs A,B --items-out [--disagree] [--where F:V]: each item's output of every run, its scores, the
+    """evh comparison-items --runs A,B [--disagree] [--where F:V]: each item's output of every run, its scores, the
     recorded facts, beside the reference and the labels (the sheet's model, read as records, the texts whole)."""
 
     tokens = [t.strip() for t in args.runs.split(",") if t.strip()]
@@ -1253,7 +1253,7 @@ def _items_out(A, args) -> None:
     dss = {A.describe(a).get("dataset", "") for a in arms}
     if len(dss) != 1:
         die(
-            f"--items-out: the runs are on {len(dss)} datasets ({', '.join(sorted(dss))}); one dataset at a time",
+            f"comparison-items: the runs are on {len(dss)} datasets ({', '.join(sorted(dss))}); one dataset at a time",
             "bad-argument",
         )
     ds = dss.pop()
@@ -1293,7 +1293,7 @@ def _items_out(A, args) -> None:
     )
     from evaluation_harness import _exposure  # noqa: PLC0415
 
-    _exposure.read_by_harness(ds, [r["item_id"] for r in records], "inspect --items-out")
+    _exposure.read_by_harness(ds, [r["item_id"] for r in records], "comparison-items")
     print(f"{ds}: {len(shown)} of {len(found)} {A.item_word}(s)" + (" (disagree)" if args.disagree else ""))
     cut = args.max_chars
     for rec in records:

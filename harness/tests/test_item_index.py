@@ -3,7 +3,7 @@
 
     python tests/test_item_index.py
 
-S1 measured `inspect --sheet` at 1,000 items loading and parsing the whole dataset record 1,002 times
+S1 measured `inspect --sheet` (now `sheet-show`) at 1,000 items loading and parsing the whole dataset record 1,002 times
 (`_common.item_path`, quadratic: each call read the record and scanned its items). Now 1,000 lookups read it once;
 a changed record is read again; an item it does not hold, or one not materialized, is None as before.
 """

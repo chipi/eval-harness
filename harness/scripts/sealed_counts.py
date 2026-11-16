@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Counts over a held-out side, for safety only, never to judge effect (RFC-031 H2).
 
     evh sealed-counts triage_v1_test [--by disposition,gate] [--capture fleet_live]
@@ -13,12 +12,6 @@ with the records, returning (day, name, n) rows). Reading counts is not a read o
 """
 
 from __future__ import annotations
-
-import sys as _sys
-from pathlib import Path as _Path
-
-if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
-    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
 from collections import Counter, defaultdict
 from types import SimpleNamespace

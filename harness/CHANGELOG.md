@@ -686,9 +686,12 @@ that can move a result is never a patch release without saying so under **Change
   `--outcomes` repeated, as `label-from-capture` takes them. A conflict between two options of a read is `ERROR
   (bad-argument)` (exit 1), naming the inputs (`b_dataset and round cannot be combined`), where the old parser said
   exit 2; `inspect`'s choice of what to show by which option was given is the choice of command. Dropped, with no
-  replacement: `arms --by system` (the grouped listing) and `arms --arm ID` (`arm-show`), the `labels` listing of every
-  set of every dataset (`dataset-list` says each dataset's sets), and the studies listing across goals (`goal-list`
-  names each goal's studies that ran). What a command prints is what it printed (the tables, the notes, the columns);
+  replacement: `arms --by system|model|provider|scored|none` and `arms --all` (`arm-list` groups as the arms page does,
+  by dataset, three arms a group, `dataset-arm-list D` opening one; `--systems 1` lists a row per system instead), `arms --arm
+  ID` (`arm-show`), the `labels` and `tags` listings of every set of every dataset (`dataset-list` says each dataset's label
+  sets, `dataset-show D` its tag sets), the studies listing across goals (`goal-list` names each goal's studies that
+  ran), and `--adapter` of the view
+  commands (every operation reads the project's adapter). What a command prints is what it printed (the tables, the notes, the columns);
   what `--json` gives is the operation's result: structured, no longer the printed blocks, so `result.values.groups`
   of `goals --goal G --json` is `result.datasets[].groups[]` of `goal-leaderboard G --json`, `runs-list --json` is
   `result.runs`, `looks --json` is `result.sets`, `baselines --json` is the export itself (`result.schema`,
@@ -707,12 +710,17 @@ that can move a result is never a patch release without saying so under **Change
   a list is an array; a flag a boolean) and checked against the tool's JSON Schema before anything runs. `--public` is
   the flag of each call (what `--public` hides stays hidden: a hidden dataset's text and labels; the tools that would
   answer with an item's text, an output or a label are not offered, nor `group` and `group_match` of
-  `comparison-crosstab`). `mcp-answers.jsonl` is still written ahead (each line `{"tool", "args", "out", "harness"}`),
+  `comparison-crosstab`, nor `items` of `label-set-show`, and a public server's `label-set-show` answers with no
+  labels). What a call computes is its own while others run beside it: its printing, its notes (the held-out items
+  left out, the items not scorable, the history confounds) and `include_exposed`; the scores the server keeps are kept
+  before the held-out items are left out and are filtered on every call, so a kept answer still says what it left out. `mcp-answers.jsonl` is still written ahead (each line `{"tool", "args", "out", "harness"}`),
   `render.sh`'s release check reads its `goal-list` answer, and the first `goal-list` call after a start, which was 33 s
   at the box's cpus 0.5, is answered from it (without the file, at those limits, 7 to 8 s: the next views then take 0.3 to 2.5 s
   where each took 12 to 16 s as a process of its own, and the view cache keeps one computation in flight per key, so two
   callers asking for the same view at once pay for one). A call that runs past `--timeout`, or is cancelled, stops being waited
-  for but is not stopped: a computation answered in the server's process runs to its end. The old server refused the
+  for but is not stopped: a computation answered in the server's process runs to its end, and keeps its slot (and its
+  caller's one call at a time) until it does, so no more runs at once than `--concurrent` allows. A tool that crashes
+  while `--write-answers` writes them fails the release, named, the others still written. The old server refused the
   tools that take more than one path argument (`arm-show`, `reference-show`): it sorted a call's arguments by name
   before putting them on the command line.
 

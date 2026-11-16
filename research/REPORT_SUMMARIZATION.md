@@ -422,7 +422,7 @@ Membership is far better determined than order. From 2,000 item-resamples:
 claim this data supports.
 
 **Over all 29 arms** (k=29: CD 3.18, 80 of 406 pairs): `bart_l` P(1st) 0.45 and
-`deepseek_m` 0.41 — the same coin flip — with `bart_m` P(top 5) 0.57 (`scripts/leaderboard.py --dataset-id cnn_dailymail_200 --sort coverage`, rank bootstrap). Family tests, Holm
+`deepseek_m` 0.41 — the same coin flip — with `bart_m` P(top 5) 0.57 (`scripts/cli.py leaderboard cnn_dailymail_200 --sort coverage`, rank bootstrap). Family tests, Holm
 over the 28 others on `coverage` — each row tests one local arm against all 28 others at
 once:
 
@@ -475,7 +475,7 @@ arm finished") names `deepseek_m` > `anthropic_l`. The Holm over four covers the
 the choosing of them.
 
 In the wider family — `deepseek_m` against all 28 other arms, Holm over 28
-(`python scripts/family_test.py --dataset-id cnn_dailymail_200 --a cnn_deepseek_m_v2
+(`python scripts/cli.py family-test cnn_dailymail_200 --a cnn_deepseek_m_v2
 --against cnn_ --metric coverage`) — `anthropic_l` (p = 0.0000) and `anthropic_m` (p = 0.0003)
 differ significantly; `openai_l` does not (p = 0.0049 against a threshold of 0.0045), and 17 of the
 28 differ significantly, so 11 do not.
@@ -967,11 +967,11 @@ make leaderboard DATASET_ID=cnn_dailymail_200
 # the two questions the leaderboard cannot answer on its own
 make holdout   DATASET_ID=cnn_dailymail_200 EXCLUDE=cnn_dailymail_20
 make pair-test DATASET_ID=cnn_dailymail_200 A=cnn_deepseek_m_v2 B=cnn_anthropic_l_v2 FAMILY=4
-python scripts/rank_stability.py --dataset-id cnn_dailymail_200
+python scripts/cli.py rank-stability cnn_dailymail_200
 
 # the local arms (bart_m, bart_s, bart_l_xsum need torch >= 2.6: uv sync --extra local)
-python scripts/family_test.py --dataset-id cnn_dailymail_200 --a cnn_bart_l_v1 --against cnn_ --metric coverage
-python scripts/family_test.py --dataset-id cnn_dailymail_200 --a cnn_bart_l_xsum_v1 --against cnn_ --metric coverage
+python scripts/cli.py family-test cnn_dailymail_200 --a cnn_bart_l_v1 --against cnn_ --metric coverage
+python scripts/cli.py family-test cnn_dailymail_200 --a cnn_bart_l_xsum_v1 --against cnn_ --metric coverage
 ```
 
 The three 2026-09-30 BART arms load `main`'s `pytorch_model.bin`; each checkpoint also has

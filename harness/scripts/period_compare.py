@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """A past period at its own code, beside a candidate on the same items (RFC-031 P2).
 
     evh period-compare filing_replay_v1 --dataset filing_history_v1 --candidate filing_candidate_v3 \\
@@ -13,12 +12,6 @@ nothing is called here). A period is a code record's deployed period (`evh perio
 """
 
 from __future__ import annotations
-
-import sys as _sys
-from pathlib import Path as _Path
-
-if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
-    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
 import statistics
 from types import SimpleNamespace

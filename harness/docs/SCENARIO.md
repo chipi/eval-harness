@@ -397,7 +397,7 @@ fixed in 0.7.1:
   and what it spent, and the overview and the catalog count smoke spend.
 - Leaderboards fit the terminal (`--wide` for every column), and "dominated" says what it means;
   `cost-report` names each repeat; `evh baselines` shows the repeats' mean; `evh round-list` prints a
-  round's conclusion whole; the `inspect` conditions table and `evh goal-leaderboard` headers no longer cut or
+  round's conclusion whole; the `comparison-show` conditions table and `evh goal-leaderboard` headers no longer cut or
   misalign.
 - Step 0: `uv venv` makes a venv with no pip; `--seed` adds it.
 

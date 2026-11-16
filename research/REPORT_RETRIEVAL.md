@@ -524,18 +524,18 @@ done
 # The committed runs are scored with the current parser (recorded in each run's `derived`
 # block); a fresh run parses with it directly.
 python tools/retrieval_report.py --dataset-id scifact_200 --match sf_
-python scripts/family_test.py --dataset-id scifact_200 --a sf_glm_s_v1 \
+python scripts/cli.py family-test scifact_200 --a sf_glm_s_v1 \
     --against sf_ --metric ndcg_10
 python scripts/holdout_significance.py --dataset-id scifact_200 \
     --exclude-dataset scifact_40 --metric ndcg_10 --match sf_
-python scripts/rank_stability.py --dataset-id scifact_200 --metric ndcg_10 --match sf_
+python scripts/cli.py rank-stability scifact_200 --metric ndcg_10 --match sf_
 
 # The §3.4 pair runs live in data/runs-pair, so testing them against the main arms needs
 # one directory holding both (copy the runs; the config_ids differ, so nothing collides):
 mkdir -p /tmp/sf_all && cp -r data/runs/sf_* data/runs-pair/sf_* /tmp/sf_all/
-python scripts/family_test.py --dataset-id scifact_200 --a sf_glm_s_e5first_n200_v1 \
+python scripts/cli.py family-test scifact_200 --a sf_glm_s_e5first_n200_v1 \
     --against sf_ --metric ndcg_10 --runs-dir /tmp/sf_all
-python scripts/pair_test.py --dataset-id scifact_200 --a sf_glm_s_e5first_n200_v1 \
+python scripts/cli.py pair-test scifact_200 --a sf_glm_s_e5first_n200_v1 \
     --b sf_glm_s_bm25first_n200_v1 --metric ndcg_10 --runs-dir /tmp/sf_all
 ```
 

@@ -675,12 +675,12 @@ for s in ../examples/ner-few-nerd/systems/*.yaml; do
 done
 
 python tools/extraction_report.py --dataset-id few_nerd_280 --match fn_
-python scripts/family_test.py --dataset-id few_nerd_280 --a fn_span_marker_v1 \
+python scripts/cli.py family-test few_nerd_280 --a fn_span_marker_v1 \
     --against fn_ --metric f1
 python scripts/holdout_significance.py \
     --dataset-id few_nerd_280 --exclude-dataset few_nerd_56 --metric f1 --match fn_
-python scripts/rank_stability.py \
-    --dataset-id few_nerd_280 --metric f1 --match fn_
+python scripts/cli.py rank-stability few_nerd_280 \
+    --metric f1 --match fn_
 ```
 
 The corpus is never committed: `fetch.py` downloads it to whoever runs this and the slice is

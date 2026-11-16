@@ -52,7 +52,7 @@ looking again and again cannot manufacture a result; a check refuses a look that
   by its items' digest (`_seal.items_digest`), so a run on part of it spends the same budget and dropping an item does
   not make a fresh one.
 - **A look is a decision written on it** (owner, 2026-11-09): a `dataset-unseal`, a `study-confirm`, and a
-  `run-promote` or `round-close --promote` whose evidence is computed on it. Reads (`pair-test`, `rounds`, the pages)
+  `run-promote` or `round-close --promote` whose evidence is computed on it. Reads (`pair-test`, `round-list`, the pages)
   never take one: on a test set they show the nominal result labelled "nominal, not a look" and the next look's level.
 - **One look per question, whatever records it**: a look is keyed by (the set's digest, the two configs, the
   measure, the rule). Configs, not the runs' fingerprints: an unseal is a look and comes before any run (built,
@@ -180,7 +180,7 @@ append end; close the round
 | `study-stop STUDY` | job | `study:<goal>/<id>` |
 | `study-confirm STUDY --test D --rule R` | job, spends, a decision (`by` required) | `study:<goal>/<id>`, `dataset:<test>` |
 | `study-import FILE --goal G` | job (Karpathy's `results.tsv` as a closed study; its trials not confirmable) | `study:<goal>/<id>` |
-| `studies [--goal G]`, `studies --study STUDY`, `looks [--dataset D]` | reads | none |
+| `study-list G`, `study-show G S`, `looks [--dataset D]` | reads | none |
 
 `study-ask` and `study-tell` are MCP tools as well (owner, 2026-11-09: "also MCP tools"): the first writes on the MCP
 server, an exception to RFC-027's read-only rule for the agent sampler alone. Each runs as the command does, through

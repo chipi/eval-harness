@@ -16,8 +16,8 @@ The catalog builder and the inspector server never read a project's files direct
 **adapter** a fixed set of questions (which arms exist, what each scored per item, which way is
 better, which references exist, what one item looked like). The harness ships one adapter,
 `HarnessAdapter`, over its own layout, so a project on that layout writes no code; a project with
-another layout writes one class. The terminal views (`evh dataset-list`, `references`, `metrics`,
-`goals`, `search`, `inspect`) ask the same adapter and call the same functions, which is how
+another layout writes one class. The terminal views (`evh dataset-list`, `reference-list`, `metric-list`,
+`goal-list`, `search`, `comparison-show`) ask the same adapter and call the same functions, which is how
 command-line parity is kept.
 
 ## Background

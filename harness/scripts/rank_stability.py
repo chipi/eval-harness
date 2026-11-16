@@ -1,7 +1,6 @@
-#!/usr/bin/env python3
 """How many items before a leaderboard stops moving? Measured, not assumed. $0.
 
-    python scripts/rank_stability.py --dataset-id cnn_dailymail_200 [--metric coverage]
+    evh rank-stability cnn_dailymail_200 [--metric coverage]
 
 WHY
   "Is n big enough?" is normally answered from a power table, which needs an effect size
@@ -23,12 +22,6 @@ READING IT
 """
 
 from __future__ import annotations
-
-import sys as _sys
-from pathlib import Path as _Path
-
-if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
-    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
 import argparse
 import random

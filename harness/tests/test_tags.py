@@ -3,7 +3,7 @@
 
     python tests/test_tags.py
 
-In a throwaway project with the tutorial's tickets and two arms: a failure-mode list; `inspect --sheet --fill tags`
+In a throwaway project with the tutorial's tickets and two arms: a failure-mode list; `sheet-export --fill tags`
 writes a sheet with a `failure_modes:` column per arm and its key; filled as a person would (modes, `ok`, a blank),
 `sheet-import --tags` reads it back into a tag set and `evh tag-set-list` counts each arm's modes. A blank cell is not
 recorded, `ok` is; an edited output, an unknown mode and a second import under the same name are refused.

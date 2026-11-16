@@ -319,7 +319,7 @@ try:
         got,
     )
 
-    # ---- a tutorial project: goals, family-test --round, score-preview, overview, inspect ----
+    # ---- a tutorial project: goals, family-test --round, score-preview, overview-show, comparison-show ----
     proj = tutorial_proj
     _runstore.write_text(proj, _format.NAME, f"format: {_format.FORMAT}\n")
     _runstore.write_text(

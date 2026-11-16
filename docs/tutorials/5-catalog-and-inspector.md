@@ -83,7 +83,7 @@ in a `catalog` job, and the old pages are served until the new ones are whole.
 | a metric page: what it measures, its kind, the goals it decides, per-dataset strip chart | `evh metric-show overlap_f1` |
 | the search box on every catalog page | `evh search lead2` |
 | the goals page, and one goal's page: its answer (the baseline and why), its arms per dataset, its rounds | `evh goal-list`, `evh goal-leaderboard tickets_summary`, `evh round-list tickets_summary` |
-| the period chips on any of these pages: what is new and what changed in the last 30 days, this week, … | `--period 30d` (or `week`, `month`, `all`, …) on `evh overview-show`, `activity`, `datasets`, `goals`, `references`, `metrics`, `arms` |
+| the period chips on any of these pages: what is new and what changed in the last 30 days, this week, … | `--period 30d` (or `week`, `month`, `all`, …) on `evh overview-show`, `activity-show`, `dataset-list`, `goal-list`, `reference-list`, `metric-list`, `arm-list` |
 | a goal page's suggested next steps, each with a copy button | the commands `evh round-list tickets_summary` prints |
 | a goal page's inspect button on a round: its arms against its leader ([tutorial 4](4-rounds-and-versions.md)) | `evh comparison-show --round r2` |
 | the inspector: arms tested against a baseline, and whether they ran under the same conditions | `evh comparison-show --runs tickets_lead1_v1,tickets_lead2_v1` |
@@ -96,7 +96,7 @@ which writes) is an MCP tool: `evh mcp`
 serves them, and the agent gets
 the same numbers you do: the command's own output, its JSON where it has one. In Claude Code, in
 this project, `claude mcp add evh -- evh mcp`; then ask it, say, *"which tickets summariser does
-the goal recommend, and is it significantly better than the baseline?"*, and it calls `goals` and `inspect`.
+the goal recommend, and is it significantly better than the baseline?"*, and it calls `goal-leaderboard` and `comparison-show`.
 No tool writes your project, spends or runs a model (the one file a call keeps is a cache of the
 goals' tests, in the ignored `.cache/`). Other clients, and a shared server for a team:
 [INTEGRATION](../../harness/docs/INTEGRATION.md#for-an-agent-evh-mcp).

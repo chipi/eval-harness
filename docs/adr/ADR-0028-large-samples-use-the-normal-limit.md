@@ -59,7 +59,7 @@ off). The key holds the data and the algorithm, so a kept p is never stale.
 ## Consequences
 
 - Positive: at 10,000 items a comparison costs milliseconds instead of half a minute: the bench's 50-arm catalog took
-  12.8 s (1,532 s before) and `family-test` 1.6 s (332.5 s); `goals` after `catalog` reads the p's the catalog drew
+  12.8 s (1,532 s before) and `family-test` 1.6 s (332.5 s); `goal-leaderboard` after `catalog` reads the p's the catalog drew
   (the p cache, now on by default). The intervals were already analytic above 30 items.
 - Negative: below 10,000 items a first comparison still resamples, measured at 1,000 items about 1 s a sign-flip and
   2 s a bootstrap-t, at 10,000 8.1 s and 22.9 s (so up to about 23 s just below the threshold): heavy-tailed or

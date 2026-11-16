@@ -44,7 +44,7 @@ What [Getting started](../../docs/GUIDE.md) walks: a dataset, its reference, run
 | step | command |
 |---|---|
 | a licence, a description (no new version) | `evh licences` · `evh dataset-describe --dataset-id … --licence …` |
-| the card; as Croissant 1.1 | `evh dataset-card …` · `… --format croissant --creator … --out …` |
+| the card; as Croissant 1.1 | `evh dataset-card …` · `… --format croissant --creator … > card.json` (it prints; redirect it) |
 | a new version | `evh dataset-create --dataset-id …_v2 --source-dir … --from …_v1` |
 | fields on an existing dataset | `evh dataset-create --dataset-id … --update-fields --fieldset … --fields …` |
 | validation and test | `evh dataset-split … --test 0.3 --seed 7 [--key F]` |
@@ -82,7 +82,7 @@ What [Getting started](../../docs/GUIDE.md) walks: a dataset, its reference, run
 
 | step | command |
 |---|---|
-| the same, in the terminal | `evh overview-show [--period P]` · `evh activity-show` · `evh dataset-list` · `evh arm-list` (`--by …`, `--systems`, `--arm …`) · `evh reference-list` · `evh metric-show …` · `evh goal-list` · `evh goal-leaderboard G [--arms PATTERN] [--top N]` (a goal with many arms: only the arms matching, or the first N, always with the baseline, the leader and the recommended arm; each arm's paired test against the leader) · `evh search …` · `evh comparison-show --runs …` (`--analysis`, `--item …`) · `evh sheet-show … --runs …`; every list takes `--period P` |
+| the same, in the terminal | `evh overview-show [--period P]` · `evh activity-show` · `evh dataset-list` · `evh arm-list` (`--systems 1`) · `evh arm-show LABEL DATASET SYSTEM` · `evh reference-list` · `evh metric-show …` · `evh goal-list` · `evh goal-leaderboard G [--arms PATTERN] [--top N]` (a goal with many arms: only the arms matching, or the first N, always with the baseline, the leader and the recommended arm; each arm's paired test against the leader) · `evh search …` · `evh comparison-show --runs …` (`--analysis`) · `evh comparison-item --runs … --item ID` · `evh sheet-show … --runs …`; every list takes `--period P` |
 | where arms decided differently | `evh comparison-show --runs A,B --disagree` |
 | the sheet: every item, every arm's output and scores, the labels, the winner, the signals | `evh sheet-export --dataset-id … --runs A,B [--wrong-against SET] [--new-vs V] [--csv FILE [--fill label\|pick\|scores]]` |
 | how two per-item scores relate, by a recorded field (a gate that saved a false dismissal, one that cost a false alarm) | `evh comparison-crosstab --runs A --crosstab M1,M2 [--group _meta.gates [--group-match REGEX]] [--where F:V]` ([§14](#14-browse-the-catalog-and-the-inspector)) |
@@ -553,7 +553,7 @@ references:
 | `context.audience`, `context.usage` | any string | `audience` is shown on the goal page |
 | `decision` | the decision an answer informs | the goal page and `evh goal-leaderboard` lead with it |
 | `output_contract[]` | a list of shapes, each `{format}` (required) plus optional `id`, `length`, `structure`, `language` | A system may declare `format:` (any non-empty string); when the goal has a contract, that format must be one of its `format`s (V14 fails it, and the goal page flags the arm "format f not in the contract"). `format` is your own word for a shape (`paragraph`, `label`, `json`): the harness has no list of them. A system without `format:` is not checked |
-| `success_criteria.primary.measure` | a per-item metric as the runs record it (`rouge_l`, `accuracy`, `overlap_f1`) | the goal page, `evh goal-leaderboard`, `evh round-list` and `inspect --round` read the arms on it; an arm that does not record it is not listed (a judged arm is shown in its judge's group, on the judge's score) |
+| `success_criteria.primary.measure` | a per-item metric as the runs record it (`rouge_l`, `accuracy`, `overlap_f1`) | the goal page, `evh goal-leaderboard`, `evh round-list` and `comparison-show --round` read the arms on it; an arm that does not record it is not listed (a judged arm is shown in its judge's group, on the judge's score) |
 | `success_criteria.primary.direction` | `higher`, `lower` or `non_inferior` | `higher`/`lower` rank the arms. `non_inferior` is a guard (no significant drop against a baseline) and ranks nothing. V14 fails a direction that contradicts what the runs record, or `higher` on a cost, latency or token count |
 | `success_criteria.primary.threshold` | any value | shown beside the measure on the goal page |
 | `success_criteria.primary.reduce` | `mean` (the default), `majority` or `at_least_K` | how an arm's repeats make one score per item on the goal's measure: the mean, or for 0/1 scores right when more than half (or at least K) of the repeats are right |
@@ -1244,7 +1244,7 @@ modes"), and a judge is validated in the mode it is used (`validation.mode` must
 
 Pick and pairwise project `won` per arm per item: 1 for an arm picked alone, 1/k when k share the best, else 0
 (pick); the share of its pairs it won, a tie a half (pairwise). The judged runs' primary is `judge_won`
-(`judge_won_unvalidated` with `--unvalidated`), and goals, rounds, `inspect` and the sheet read them as they read
+(`judge_won_unvalidated` with `--unvalidated`), and goals, rounds, `comparison-show` and the sheet read them as they read
 `judge_score`. `summary.json` and the terminal add each arm's win rate (its mean `won`) and its Bradley-Terry
 strength with a 95% interval from resampling the items; the position check (a re-shuffle, or the pair swapped) and
 the noise check (the same call repeated) are reported as the share of verdicts that held.
@@ -1436,8 +1436,8 @@ page shows what is inside it once `evh dataset-profile` has written its profile 
 dataset is materialized: the items' lengths, the gold's labels or shape, and each item's link to
 its source when one is recorded; commit `data/profiles/` and a catalog built anywhere shows it.
 
-**For an agent with a shell**, every command the API serves takes `--json` (RFC-026): the views, `inspect`,
-`leaderboard`, `pair-test`, `family-test`, `rank-stability`, `run-compare`, `rounds`, `runs-list`, `validate`, and
+**For an agent with a shell**, every command the API serves takes `--json` (RFC-026): the views, `comparison-show`,
+`leaderboard`, `pair-test`, `family-test`, `rank-stability`, `run-compare`, `round-list`, `runs-list`, `validate`, and
 every command that writes (`evh run`, below; a command that writes prints its text to stderr as it goes, and its
 envelope last; `catalog`, `dataset-create`, `import-run`, `run-promote`, `rescore` and `sweep` name their results in
 `values`). Stdout is then exactly one object,
@@ -1601,13 +1601,14 @@ committed every item's file; `--json` prints what it wrote, in the views' envelo
 to its source by its own `source_url`, else by `data/sources/<dataset_id>.rows.json` (`{"source":
 {"name", "url"}, "item_url": "...{row}...", "rows": {item_id: {"row", "sha256"}}}`), an entry
 counting only when its sha256 is the item's; only an http(s) address becomes a link. `evh
-dataset-items --dataset-id D [--item ID] [--json]` prints the profile.
+dataset-items D [--item ID] [--json]` prints the profile.
 
-**`--json` on the views** (`overview`, `datasets`, `arms`, `goals`, `references`, `metrics`,
-`activity`, `search`, `inspect`): one object, `{"command", "version", "result": {"blocks": [...]}}`,
-each table as columns and rows. 0.8.0 gives each command its own result and retires `blocks`: do not
-build on it. `captures`, `labels`, `picks` and `deploy-sheet` already answer `--json` with an object of their
-own (`{"captures": …}`, `{"sets": …}`, `{"picks": …}`, the sheet).
+**`--json` on the views** (`overview-show`, `dataset-list`, `arm-list`, `goal-list`, `reference-list`, `metric-list`,
+`activity-show`, `capture-list`, `label-set-list` and the other reads): one object,
+`{"command", "version", "result": {...}}`, the result the operation's own structured answer (`result.datasets` for
+`dataset-list`, `result.runs` for `runs-list`, and so on), no longer the printed tables. `pair-test`, `family-test`,
+`leaderboard`, `rank-stability`, `run-compare`, `validate`, `sealed-counts`, `comparison-item`, `comparison-items`,
+`comparison-crosstab` and `sheet-show` keep `result.blocks` and `result.values`; see the CHANGELOG (RFC-032 step 9).
 
 **The catalog's footer** names each page's command (`evh goal-leaderboard G`); `evh catalog --mcp URL`
 adds the same as an MCP tool call, with the server and a "how to connect" link (`--mcp-howto URL`,
@@ -1621,10 +1622,10 @@ opening line as the description); `--card URL` adds the image a shared link show
 `unknown` for a name the server does not have; `args` are argument names, never values.
 
 **In the terminal:** every view has a command. `evh overview-show [--period P]` for the home page,
-`evh activity-show` for the activity page, `evh arm-list` (`--by system`, `--systems`) for the arms page,
+`evh activity-show` for the activity page, `evh arm-list` (`--systems 1`) for the arms page,
 `evh dataset-list`, `evh arm-show LABEL DATASET …`, `evh reference-list`, `evh metric-show …` and
-`evh goal-leaderboard …` for the others, `evh comparison-show --runs …` (`--analysis` for the charts, `--item <id>`
-for one item) for the inspector, `evh dataset-list` and `evh capture-list` for the Labels and Captures pages,
+`evh goal-leaderboard …` for the others, `evh comparison-show --runs …` (`--analysis` for the charts; `evh comparison-item --runs … --item <id>`
+for one item) for the inspector, `evh label-set-list D` and `evh capture-list` for the Labels and Captures pages,
 `evh sheet-show … --runs …` for a dataset's sheet (the inspector's per-item scores too),
 `evh comparison-crosstab --runs … --crosstab M1,M2` and `evh comparison-items` for the two per-item reads above,
 `evh picks` for the picks waiting and `evh deploy-sheet …` for a goal's deploy sheet.
@@ -1690,7 +1691,7 @@ evh dataset-split prod_v1 --test 0.3 --seed 7 --key fingerprint     # prod_v1_va
 - **An outcome from another system** ([RFC-031](../../docs/rfc/RFC-031-held-out-discipline-and-outcome-labels.md)
   L1). A decision's outcome often lives on another object: the issue it filed, the errors that followed. Capture that
   source too (its own importer: what was read is kept, hashed and dated), then join it: `label-from-capture` and
-  `label-coverage` take `--outcomes issues_2026_11 --join fingerprint=fingerprint [--within -1m,+15m]
+  `label-coverage-show` take `--outcomes issues_2026_11 --join fingerprint=fingerprint [--within -1m,+15m]
   [--outcomes-as issue]`, and the rules read `issue.<field>`, `issue.count` and `issue.created_at` beside the item's
   own outcome (one name across later captures of the same source). `--identity first_seen=first_seen` makes a match
   whose identity differs (an id reused after a project was deleted) "gone from the source, or its id reused"; with
@@ -1703,7 +1704,7 @@ evh dataset-split prod_v1 --test 0.3 --seed 7 --key fingerprint     # prod_v1_va
   are kept per item, and the set records `as_of`. A relabel is a new set: `label-from-capture … --set s2 --from-set s1`
   keeps s1's labels, adds what matured since, and marks an item whose outcome changed after maturing (a reopen, a
   recurrence) `changed_after_maturing`; a label s1 has that no rule gives today is refused unless `--keep-vanished`
-  keeps it, said. `label-coverage --from-set s1` says what a relabel would add and change today.
+  keeps it, said. `label-coverage-show --from-set s1` says what a relabel would add and change today.
 - **A label that holds only under production's action** (L3). `under: action` on a rule: the outcome was observed
   because production acted so (an issue's close reason exists because production filed it). With `--action-field F`
   the set keeps production's action per item; a run or rescore against it does not score an item where its output is

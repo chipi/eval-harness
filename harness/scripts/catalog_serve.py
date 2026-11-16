@@ -92,7 +92,7 @@ from evaluation_harness.model.compare import (  # noqa: E402, F401 -- compare an
     compare,
     goal_clusters_on,
 )
-from evaluation_harness.ops import openapi  # noqa: E402
+from evaluation_harness.ops import openapi, registry  # noqa: E402
 from evaluation_harness.ops.openapi import REFUSAL_STATUS  # noqa: E402
 
 A: Adapter = None  # type: ignore[assignment]  # set by main() or set_adapter()
@@ -1122,7 +1122,7 @@ class Handler(SimpleHTTPRequestHandler):
             try:
                 jsonschema.validate({k: v for k, v in inputs.items() if k != "by"}, op.schema())
             except jsonschema.ValidationError as exc:
-                return say(400, {"error": f"{op.name}: {exc.message}"})
+                return say(400, {"error": f"{op.name}: {registry.input_problem(exc)}"})
             try:
                 result = op.call(**params, **inputs)
             except Problem as exc:
