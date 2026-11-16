@@ -1,0 +1,6 @@
+round_id: r5
+goal: triage_orrery
+dataset_id: orrery_triage_v1_labelled_v2
+status: open
+opened_at: '2026-11-16T23:20:10Z'
+baseline: null

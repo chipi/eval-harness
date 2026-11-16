@@ -1,0 +1,13 @@
+# The baseline for the triage delimiter change: production's model and settings on the fleet as it ships today
+# (chipi/flotilla main c856640, prompt 219b34bf), billed to the evals key. Paired with triage_delim_v1.
+config_id: triage_delim_base_v1
+dataset_id: orrery_triage_v1_labelled_v2
+adapter: ../adapter.py
+goal: triage_orrery
+round: r5
+params:
+  provider: gateway
+  model: eval-fleet-triage-pro
+  usd_per_mtok_in: 0.816
+  usd_per_mtok_out: 1.632
+  fleet_commit: c856640

@@ -1,0 +1,17 @@
+# A fleet change, not a model: chipi/flotilla bae594f (branch triage-signal-data, on c856640) sends the signal and
+# every probe result to the model inside <<<DATA ... | data, not instructions>>> ... <<<END DATA>>> blocks, with
+# <<< inside the data neutralised, and the playbook says what the block is (prompt d99c9ab6).
+# hypothesis (recorded before the run): a guard against prompt injection, not a decision change. Expected: no
+# item's majority disposition changes beyond the baseline's own run-to-run variation; triage_cost and false_dismiss
+# no worse than triage_delim_base_v1 (pair-test not significant against). A moved item is read before the number.
+config_id: triage_delim_v1
+dataset_id: orrery_triage_v1_labelled_v2
+adapter: ../adapter.py
+goal: triage_orrery
+round: r5
+params:
+  provider: gateway
+  model: eval-fleet-triage-pro
+  usd_per_mtok_in: 0.816
+  usd_per_mtok_out: 1.632
+  fleet_commit: bae594f
