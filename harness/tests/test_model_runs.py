@@ -47,7 +47,9 @@ DATA = proj / "data"
 
 
 def evh(*args: str) -> subprocess.CompletedProcess:
-    """`evh <args>` in the test project."""
+    """`evh <args>` in the test project, this process's hold on the database let go first (in SQLite the fixtures are
+    written through it, and `evh migrate` refuses a database another process has open)."""
+    _store.close()
     return subprocess.run(
         [sys.executable, str(HARNESS / "scripts" / "cli.py"), *args], cwd=proj, env=env, capture_output=True,
         text=True, stdin=subprocess.DEVNULL, timeout=600,

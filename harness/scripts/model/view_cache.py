@@ -58,6 +58,9 @@ _FLIGHT: dict[Hashable, threading.Event] = {}
 #: [the state the items were read in, the fingerprint last taken, the epoch, the total weight, a look is due]
 _HELD: list[Any] = [None, None, 0, 0, True]
 _STATE, _PRINT, _EPOCH, _WEIGHT, _DUE = range(5)
+#: What the cache did since the process started (under _LOCK): a value given from it, one computed, a call that waited for
+#: another's computation, a value dropped for room, everything dropped because the data changed.
+_COUNTS = {"hit": 0, "miss": 0, "wait": 0, "eviction": 0, "invalidation": 0}
 
 
 def _state() -> tuple:
@@ -109,6 +112,7 @@ def clear() -> None:
         _HELD[_WEIGHT] = 0
         _HELD[_EPOCH] += 1
         _HELD[_DUE] = True
+        _COUNTS["invalidation"] += 1
 
 
 def _sync() -> int:
@@ -153,11 +157,14 @@ def get(
             now = _sync()
             if key in _ITEMS:
                 _ITEMS.move_to_end(key)
+                _COUNTS["hit"] += 1
                 return _ITEMS[key][0]
             flying = _FLIGHT.get(key)
             if flying is None:
                 _FLIGHT[key] = mine = threading.Event()
+                _COUNTS["miss"] += 1
                 break
+            _COUNTS["wait"] += 1
         flying.wait()  # another thread computes it: look again when it is done (it keeps it, or it failed and this one tries)
     try:
         value = compute()
@@ -171,6 +178,7 @@ def get(
             _HELD[_WEIGHT] += weight
             while _HELD[_WEIGHT] > BUDGET and len(_ITEMS) > 1:
                 _HELD[_WEIGHT] -= _ITEMS.popitem(last=False)[1][1]
+                _COUNTS["eviction"] += 1
         return value
     finally:
         with _LOCK:
@@ -213,3 +221,16 @@ def weight() -> int:
     """What is kept weighs this much against BUDGET."""
     with _LOCK:
         return int(_HELD[_WEIGHT])
+
+
+def stats() -> dict[str, Any]:
+    """What the cache holds and has done since the process started, for a deployment's metrics: its entries, their
+    weight and the budget, and how many hits, misses (computed), waits, evictions and invalidations."""
+    with _LOCK:
+        return {
+            "on": ON,
+            "entries": len(_ITEMS),
+            "weight": int(_HELD[_WEIGHT]),
+            "budget": BUDGET,
+            **_COUNTS,
+        }

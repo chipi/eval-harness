@@ -46,4 +46,16 @@ check(
     counted == ["/api/compare", "/api/health", "/api/item", "/metrics", "static"],
     counted,
 )
+_code, _ctype, body = hooks.metrics("")
+text = body.decode()
+wanted = [
+    f'evals_inspector_view_cache_events_total{{event="{e}"}}'
+    for e in ("hit", "miss", "wait", "eviction", "invalidation")
+]
+wanted += [f"evals_inspector_view_cache_{g} " for g in ("entries", "weight", "budget")]
+check(
+    "/metrics gives the view cache's events (hit, miss, wait, eviction, invalidation) and what it holds against its budget",
+    all(w in text for w in wanted),
+    [w for w in wanted if w not in text],
+)
 raise SystemExit(summary())

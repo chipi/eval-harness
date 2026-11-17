@@ -72,6 +72,25 @@ vc.get("k", c)
 check("a value is computed once and then kept", c.n == 1, c.n)
 check("another key is another value", Count("w") is not None and vc.get("k2", Count("w")) == "w")
 
+# ── what it did is counted (a deployment's /metrics reads stats()) ─────────────────────────────────────────────────
+s0 = vc.stats()
+kc = Count()
+vc.get("counted", kc)
+vc.get("counted", kc)
+s1 = vc.stats()
+vc.clear()
+s2 = vc.stats()
+check(
+    "stats() counts a miss (computed) and a hit, the entries kept, and an invalidation when everything is dropped",
+    s1["miss"] - s0["miss"] == 1
+    and s1["hit"] - s0["hit"] == 1
+    and s1["entries"] >= 1
+    and s2["invalidation"] - s1["invalidation"] == 1
+    and s2["entries"] == 0
+    and s2["budget"] == vc.BUDGET,
+    (s0, s1, s2),
+)
+
 # ── this process's own write clears it, at once ────────────────────────────────────────────────────────────────────
 _store.write_text(data / "b.txt", "two")
 vc.get("k", c)
@@ -174,6 +193,7 @@ try:
     check("what is kept is not computed again", cs["b"].n == 1 and cs["c"].n == 1)
     vc.get("a", cs["a"], weigh=lambda v: 4)
     check("the one out was the oldest: it is computed again", cs["a"].n == 2 and cs["b"].n == 1)
+    check("each value thrown out for room is counted as an eviction", vc.stats()["eviction"] >= 2, vc.stats())
     big = Count("big")
     vc.get("big", big, weigh=lambda v: 11)
     vc.get("big", big, weigh=lambda v: 11)
@@ -209,12 +229,13 @@ second_t = threading.Thread(target=asker)
 second_t.start()
 second_t.join(0.3)
 waiting = second_t.is_alive()
+waits = vc.stats()["wait"]
 release.set()
 first_t.join(10)
 second_t.join(10)
 check(
-    "a second thread that asks for a value being computed waits for it: computed once, both given it",
-    waiting and computed[0] == 1 and got == ["v", "v"],
+    "a second thread that asks for a value being computed waits for it (counted as a wait): computed once, both given it",
+    waiting and computed[0] == 1 and got == ["v", "v"] and waits >= 1,
     (waiting, computed[0], got),
 )
 failed = [0]

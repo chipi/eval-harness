@@ -291,6 +291,33 @@ def _rss_bytes() -> int:
     return 0
 
 
+def _view_cache_lines(prefix: str) -> list[str]:
+    """The model's view cache (RFC-032 P1), as {prefix}_view_cache_*: what it did since the process started and what
+    it holds against its budget. Nothing when an internal moved: the metric goes, the answers stay."""
+    try:
+        from evaluation_harness.model import view_cache  # noqa: PLC0415
+
+        st = view_cache.stats()
+    except Exception:  # noqa: BLE001
+        return []
+    lines = [
+        (
+            f"# HELP {prefix}_view_cache_events_total What the view cache did: a hit, a miss (computed), a wait for "
+            "another call's computation, an eviction for room, an invalidation (the data changed)."
+        ),
+        f"# TYPE {prefix}_view_cache_events_total counter",
+    ]
+    lines += [
+        f'{prefix}_view_cache_events_total{{event="{e}"}} {st[e]}'
+        for e in ("hit", "miss", "wait", "eviction", "invalidation")
+    ]
+    for name, what in (("entries", "Views kept."), ("weight", "What the views kept weigh (per-item scores)."),
+                       ("budget", "The most they may weigh (EVH_VIEW_CACHE_VALUES).")):  # fmt: skip
+        lines += [f"# HELP {prefix}_view_cache_{name} {what}", f"# TYPE {prefix}_view_cache_{name} gauge",
+                  f"{prefix}_view_cache_{name} {st[name]}"]  # fmt: skip
+    return lines
+
+
 def metrics(query: str) -> tuple:
     """The Prometheus text format, for the box's collector."""
     lines = [
@@ -331,6 +358,7 @@ def metrics(query: str) -> tuple:
         "# TYPE evals_mcp_start_time_seconds gauge",
         f"evals_mcp_start_time_seconds {_state['started']:.0f}",
     ]
+    lines += _view_cache_lines("evals_mcp")
     return 200, "text/plain; version=0.0.4; charset=utf-8", ("\n".join(lines) + "\n").encode()
 
 

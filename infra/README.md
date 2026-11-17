@@ -62,7 +62,9 @@ infra/
     harness's generic hook point. It reports errors to GlitchTip through the Sentry SDK
     (environment `prod`, release `sha-<7>` from `RELEASE`), sends one OpenTelemetry span per API
     request to VictoriaTraces (service `evals-inspector`, namespace `evals`), and serves
-    `/metrics` (requests and latency per route and status, the caches, resident memory) on the
+    `/metrics` (requests and latency per route and status, an `/api/v1` request under its route's template
+    such as `/api/v1/goals/{goal}`, the caches, the view cache's hits, misses, waits, evictions and invalidations
+    and its weight against the budget, resident memory) on the
     container's port, which only the box's Alloy scrapes (`observability/evals.alloy`): Caddy
     forwards nothing but `/catalog/api/` to the inspector. The SDKs
     (`infra/inspector/requirements.txt`, pinned, pure-Python wheels) are vendored by `render.sh`
@@ -108,7 +110,8 @@ infra/
   - **Observability:** `inspector/mcp_hooks.py` (from `infra/mcp/hooks.py`) as `--hooks`: errors
     to GlitchTip project `evals-mcp` (`MCP_SENTRY_DSN` in `observability.env`, from the secret
     `EVALS_SENTRY_DSN_MCP`), one span per tool call to VictoriaTraces (service `evals-mcp`),
-    `/metrics` on the container's port only (Caddy forwards nothing but `/mcp`), and one Umami event
+    `/metrics` on the container's port only (calls per tool and outcome, the view cache's events and weight;
+    Caddy forwards nothing but `/mcp`), and one Umami event
     per call (`mcp:<tool>`, on the site's website; `UMAMI_SEND_URL`, the homelab Umami on the
     tailnet, rendered like the traces endpoint; a call the command itself refuses, exit 1 with its
     `ERROR:` line, is outcome `refused:command` and sends no event). To prove the error path, run

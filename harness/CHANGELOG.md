@@ -766,6 +766,10 @@ that can move a result is never a patch release without saying so under **Change
 - **`evh migrate` refuses a SQLite project another process has open** (RFC-032; unreleased 0.8 code, an independent
   review): its last step drops a table and rewrites the database, under a running catalog-serve or run. As a job it
   waits for the server to let go, as `data-migrate` does.
+- **An `/api/v1` request is logged and measured under its route** (RFC-032; unreleased 0.8 code): `--hooks` saw every
+  `/api/v1/…` request as the one route `/api/other`, so a deployment's metrics and traces could not tell a goal's
+  status from a job's log. Each is named by its route's template (`/api/v1/goals/{goal}/rounds/{round}/close`,
+  `/api/v1/jobs/{id}/log`), never its ids; a path no route fits is `/api/v1/other`.
 - **`evh mcp` with relative paths** (RFC-032; unreleased 0.8 code, found rendering a release as the deploy does,
   `render.sh _release <sha>`): the server moves into the project before it works, and read `--project` and a `--hooks`
   file from there, so a relative one named a place inside the project. They are taken where the caller stands.

@@ -735,6 +735,29 @@ try:
         and cs._route("/api/compare") == "/api/compare",
         (cs._route("/api/nope"), cs._route("/api/compare")),
     )
+    v1 = {
+        p: cs._route(p)
+        for p in (
+            "/api/v1/goals", "/api/v1/goals/g1", "/api/v1/goals/g1/rounds/r1/close", "/api/v1/goals/g1/status",
+            "/api/v1/jobs/20261117-abc/log", "/api/v1/estimate", "/api/v1/arms/judged%2Fs1/ds/sys", "/api/v1/nope/x",
+        )
+    }  # fmt: skip
+    check(
+        "http: an /api/v1 request's route is its template, never its ids (a route is a metric series and a trace's "
+        "name); one no route fits is /api/v1/other",
+        v1
+        == {
+            "/api/v1/goals": "/api/v1/goals",
+            "/api/v1/goals/g1": "/api/v1/goals/{goal}",
+            "/api/v1/goals/g1/rounds/r1/close": "/api/v1/goals/{goal}/rounds/{round}/close",
+            "/api/v1/goals/g1/status": "/api/v1/goals/{goal}/status",
+            "/api/v1/jobs/20261117-abc/log": "/api/v1/jobs/{id}/log",
+            "/api/v1/estimate": "/api/v1/estimate",
+            "/api/v1/arms/judged%2Fs1/ds/sys": "/api/v1/arms/{label}/{dataset}/{system}",
+            "/api/v1/nope/x": "/api/v1/other",
+        },
+        v1,
+    )
     srv.shutdown()
 
     # BEHIND A PROXY (--behind-proxy, the homelab fleet's private catalog): the whole local inspector, for the

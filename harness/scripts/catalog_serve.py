@@ -53,6 +53,7 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 
 import argparse
 import errno
+import functools
 import json
 import re
 import sys
@@ -912,12 +913,41 @@ def _hook_routes() -> dict:
     return r if isinstance(r, dict) else {}
 
 
+#: The /api/v1 routes that are no operation's: the jobs', the estimate, the description and the session.
+V1_FIXED = (
+    "/jobs", "/jobs/{id}", "/jobs/{id}/log", "/jobs/{id}/files/{name}", "/jobs/{id}/stop", "/jobs/{id}/resume",
+    "/estimate", "/openapi.json", "/session",
+)  # fmt: skip
+
+
+@functools.cache
+def _v1_templates() -> tuple[tuple[str, ...], ...]:
+    """Every /api/v1 route as its segments, the most literal first (a path two templates fit is the literal one's)."""
+    from evaluation_harness import ops  # noqa: PLC0415
+
+    found = {op.route for op in ops.OPS.values()} | set(V1_FIXED)
+    split = [tuple(r.strip("/").split("/")) for r in found]
+    return tuple(sorted(split, key=lambda t: (-sum(not x.startswith("{") for x in t), t)))
+
+
+def _v1_route(path: str) -> str:
+    """An /api/v1 path as its route's template (`/api/v1/goals/{goal}/rounds/{round}`), never its ids: a route is a
+    metric series and a trace's name, and the ids are many. One no route fits is `/api/v1/other`."""
+    parts = tuple(path[len("/api/v1") :].strip("/").split("/"))
+    for t in _v1_templates():
+        if len(t) == len(parts) and all(w.startswith("{") or w == p for w, p in zip(t, parts, strict=True)):
+            return "/api/v1/" + "/".join(t)
+    return "/api/v1/other"
+
+
 def _route(path: str) -> str:
-    """A request's route for the hooks: the API endpoint, a hook's own path, "/api/other" for any
-    other /api/ path (one name, however many paths are asked: a route is a metric series), or
+    """A request's route for the hooks: the API endpoint, an /api/v1 path's route template, a hook's own path,
+    "/api/other" for any other /api/ path (one name, however many paths are asked: a route is a metric series), or
     "static"."""
     if path in API_ROUTES or path in _hook_routes():
         return path
+    if path == "/api/v1" or path.startswith("/api/v1/"):
+        return _v1_route(path)
     return "/api/other" if path.startswith("/api/") else "static"
 
 
