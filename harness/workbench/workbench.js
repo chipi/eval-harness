@@ -732,7 +732,11 @@ success_criteria:
     const k = ["data-tab", "data-armbtn", "data-retire", "data-promote", "data-model"].find((x) => el.hasAttribute(x));
     return k ? `[${k}="${CSS.escape(el.getAttribute(k))}"]` : null;
   };
+  // A screen holding unsent changes (UXS-005, "For every live screen") is never redrawn under the person: a redraw of the
+  // same screen (a job's poll, a read that came back) waits until the change is saved or given up.
+  const unsent = () => (window.WB.unsent ? window.WB.unsent() : []);
   function render(newScreen) {
+    if (!newScreen && unsent().length) return;
     const keep = newScreen ? null : focusKey(document.activeElement);
     const route = (location.hash || "#start").slice(1);
     // a route with a part after it (#goal/<id>, the live Workbench): its first word names the screen
@@ -784,7 +788,18 @@ success_criteria:
     }));
   });
   new MutationObserver(stackTables).observe(main, { childList: true, subtree: true });
-  window.addEventListener("hashchange", () => { help.hidden = true; render(true); window.scrollTo(0, 0); });
+  // Leaving a screen with unsent changes asks first, naming them; staying puts the address back as it was.
+  let shownHash = location.hash;
+  window.addEventListener("hashchange", () => {
+    const held = unsent();
+    if (held.length && !window.confirm(`Not saved: ${held.join("; ")}. Leave this screen and lose it?`)) {
+      history.replaceState(null, "", shownHash || "#home");
+      return;
+    }
+    if (held.length && window.WB.forgetUnsent) window.WB.forgetUnsent();
+    shownHash = location.hash;
+    help.hidden = true; render(true); window.scrollTo(0, 0);
+  });
   // the screens are routes in the hash: the skip link focuses the screen without changing it
   document.querySelector("a.skip")?.addEventListener("click", (e) => { e.preventDefault(); main.focus(); });
   $("#hints").addEventListener("change", (e) => { S.hints = e.target.checked; save(); render(); });

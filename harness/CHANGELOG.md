@@ -13,6 +13,11 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Added
 
+- **The Workbench shows unsent changes** (owner, 2026-11-17; UXS-005 "For every live screen"): a live form with
+  changes not yet sent (a new model, a deployment, a flag accepted) is marked "not saved yet", its button is enabled
+  only then and names what it will write ("Make model gemma4-12b"), leaving the screen or closing the page asks first,
+  and the screen is not redrawn under it (a job's poll used to redraw the model's page every 2 s and wipe what was
+  being typed in its forms).
 - **A source previewed** (the Workbench's dataset step): `evh source-preview --source NAME --query '{…}' [--rows N]`
   and `POST /api/v1/source-previews` (a job): the source's description and its first items, the start of each text
   and its answer, nothing written under data/.

@@ -242,8 +242,8 @@ Owner, 2026-11-06: agree first, then build.
    reviewed in eight rounds (`harness/workbench/`). The mockup's pages, layout and styles are the app's own (owner:
    "think about the mock-up as already a workbench app that you're starting, except it's just a static thing").
 3. **RFC-032** (one model, its operations, the API) and RFC-033, built.
-4. **From here** (owner's order, 2026-11-17): the API above (1 to 6) and the unsent-changes rule (requirement 11,
-   built once and added to the live goal and model screens), then the screens, wired workflow by workflow:
+4. **From here** (owner's order, 2026-11-17): the API above (1 to 6) and the unsent-changes rule (requirement 11),
+   built on 2026-11-17; then the screens, wired workflow by workflow:
    home and goal (wired), W5 (wired), W4's dataset and preparation (needs API 2 and 3), the models and systems, W1 the
    eval, W2 (needs API 1), W3, then W6, W7 and W8 as short lists, and the held-out test and studies last.
 

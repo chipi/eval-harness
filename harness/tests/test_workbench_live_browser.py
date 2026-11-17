@@ -198,6 +198,30 @@ try:
             page.fill("#nm-id", "Bad Id")
             page.fill("#nm-aliases", "fake:1b")
             page.fill("#nm-by", "tester")
+            # unsent changes (UXS-005, owner 2026-11-17): marked, the button says what it writes, leaving asks
+            unsent_mark = page.locator("[data-form=model-new] [data-unsent-mark]")
+            check(
+                "a form with unsent changes is marked, and its button names what it will write",
+                unsent_mark.is_visible() and page.locator("#nm-save").inner_text() == "Make model Bad Id",
+                (unsent_mark.is_visible(), page.locator("#nm-save").inner_text()),
+            )
+            dialogs: list[str] = []
+
+            def stay(d) -> None:
+                dialogs.append(d.message)
+                d.dismiss()
+
+            page.on("dialog", stay)
+            page.click("a.btn:has-text('The models')")
+            page.wait_for_timeout(500)
+            check(
+                "leaving it asks first, naming what is not saved; staying keeps the screen and what was typed",
+                len(dialogs) == 1
+                and "Make model Bad Id" in dialogs[0]
+                and page.locator("h1:has-text('Bring in a model')").is_visible()
+                and page.input_value("#nm-aliases") == "fake:1b",
+                (dialogs, page.url),
+            )
             page.click("#nm-save")
             page.wait_for_selector("#nm-out [role=alert]", timeout=20000)
             check(
@@ -218,7 +242,20 @@ try:
                 and '"person:tester"' in hist[0].read_text(),
                 page.locator("main").inner_text()[:300],
             )
+            check(
+                "once saved the form holds nothing: going on to the model's page asked nothing more",
+                len(dialogs) == 1 and not unsent_mark.count(),
+                dialogs,
+            )
             page.fill("#dep-id", "here")
+            page.evaluate("window.WB.render()")  # a redraw, as a job's poll or a read coming back does
+            check(
+                "a form with unsent changes is not redrawn under the person: what was typed stays",
+                page.input_value("#dep-id") == "here"
+                and page.locator("[data-form=dep-add] [data-unsent-mark]").is_visible()
+                and page.locator("#dep-add").inner_text() == "Add deployment here",
+                (page.input_value("#dep-id"), page.locator("#dep-add").inner_text()),
+            )
             page.fill("#dep-where", "here")
             page.fill("#dep-tag", "fake:1b")
             page.fill("#dep-url", f"http://127.0.0.1:{fake.server_port}/v1")

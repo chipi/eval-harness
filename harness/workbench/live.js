@@ -100,6 +100,31 @@
   const refusal = (e) => `<p class="note" role="alert"><b>Not saved.</b> ${esc(e.message)}</p>${(e.problems || []).length
     ? `<ul class="problems">${e.problems.map((p) => `<li><code>${esc((p.path || []).join("."))}</code> ${esc(p.message)}</li>`).join("")}</ul>` : ""}`;
   const forget = (prefix) => Object.keys(LIVE.cache).filter((k) => k.startsWith(prefix)).forEach((k) => delete LIVE.cache[k]);
+
+  // ── unsent changes (UXS-005, "For every live screen"; owner 2026-11-17) ──────────────────────
+  // What a person types is sent only by the form's own button. Until then the form is marked, its button (enabled only
+  // then) says what it will write, the screen is not redrawn under it (workbench.js) and leaving asks first. A form is
+  // an element with data-form; its button is [data-send], its mark [data-unsent-mark].
+  const UNSENT = new Map();
+  WB.unsent = () => [...UNSENT.values()];
+  WB.forgetUnsent = () => UNSENT.clear();
+  window.addEventListener("beforeunload", (e) => { if (UNSENT.size) { e.preventDefault(); e.returnValue = ""; } });
+  const mark = '<span class="unsent" data-unsent-mark hidden>not saved yet</span>';
+  function holds(form, what) {
+    const root = document.querySelector(`[data-form="${form}"]`);
+    if (!root) return;
+    const btn = root.querySelector("[data-send]"), m = root.querySelector("[data-unsent-mark]");
+    const show = () => {
+      const on = UNSENT.has(form);
+      if (m) m.hidden = !on;
+      if (btn) { btn.disabled = !on; btn.textContent = what(); }
+    };
+    const changed = () => { UNSENT.set(form, what()); show(); };
+    root.addEventListener("input", changed);
+    root.addEventListener("change", changed);
+    show();
+  }
+  const sent = (form) => UNSENT.delete(form);
   const enc = encodeURIComponent;
   const STATE_TAG = { vetted: "pass", onboarded: "pass", check: "check", none: "none" };
   const stateTag = (s) => `<span class="tag onb-${STATE_TAG[s] || "none"}">${esc(s)}</span>`;
@@ -149,13 +174,13 @@
           <div class="hint">a model of ours costs nothing; a hosted one is charged for each probe call</div></div></div>
         <div class="actions" style="margin-top:0"><button class="btn primary" type="button" data-onboard="${esc(k)}">Run the probes</button></div>
         <div id="job-${esc(k)}" aria-live="polite">${job ? `<p class="muted">${jobLine(job)}</p>` : ""}</div>
-        ${on && on.status === "check" ? `<h3>Accept what it raises</h3>
+        ${on && on.status === "check" ? `<div data-form="accept-${esc(k)}"><h3>Accept what it raises</h3>
           <p class="muted">When a flag is the deployment's own nature (a hosted gateway has no build to pin), accept it with why: it is kept in its checks and no longer counts against it.</p>
           <div class="field"><label class="name" for="flag-${esc(k)}">The flag's kind</label><div><input type="text" id="flag-${esc(k)}" placeholder="the words before its colon: reasoning, where it ran"></div></div>
           <div class="field"><label class="name" for="why-${esc(k)}">Why</label><div><input type="text" id="why-${esc(k)}" placeholder="a sentence"></div></div>
           ${byField(`by-${k}`)}
-          <div class="actions" style="margin-top:0"><button class="btn" type="button" data-accept="${esc(k)}">Accept it</button></div>
-          <div id="acc-${esc(k)}"></div>` : ""}
+          <div class="actions" style="margin-top:0"><button class="btn" type="button" data-send data-accept="${esc(k)}">Accept it</button>${mark}</div>
+          <div id="acc-${esc(k)}"></div></div>` : ""}
       </div></section>`;
   }
   function screenModel(id) {
@@ -170,13 +195,13 @@
       <dl class="gloss">${facts.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}</dl>
       <h2 style="margin-top:22px">Where it runs</h2>
       ${m.deployments.map((d) => deploymentPart(id, d)).join("") || '<p class="muted">No deployment yet: add the first below.</p>'}
-      <section class="part"><div class="parthead"><h2>Add a deployment</h2></div><div class="body">
+      <section class="part" data-form="dep-add"><div class="parthead"><h2>Add a deployment</h2></div><div class="body">
         <div class="field"><label class="name" for="dep-id">Its id</label><div><input type="text" id="dep-id" placeholder="mac, dgx, openrouter"></div></div>
         <div class="field"><label class="name" for="dep-where">Where</label><div><input type="text" id="dep-where" placeholder="the machine, or the hosted route"></div></div>
         <div class="field"><label class="name" for="dep-tag">Its tag</label><div><input type="text" id="dep-tag" placeholder="the name the server knows it by"></div></div>
         <div class="field"><label class="name" for="dep-url">Its address</label><div><input type="text" id="dep-url" placeholder="http://host:11434/v1" inputmode="url"></div></div>
         ${byField("dep-by")}
-        <div class="actions" style="margin-top:0"><button class="btn" type="button" id="dep-add">Add it</button></div><div id="dep-out"></div></div></section>
+        <div class="actions" style="margin-top:0"><button class="btn" type="button" id="dep-add" data-send>Add it</button>${mark}</div><div id="dep-out"></div></div></section>
       ${WB.cmd(`evh model-show ${id}\nevh model-onboard --model-id ${id} --deployment <deployment>\nevh deployment-accept ${id} <deployment> --flag "<kind>" --why "<a sentence>"`)}
       <div class="actions"><a class="btn" href="#models">The models</a></div></div>`;
   }
@@ -197,6 +222,12 @@
   }
   function wireModel() {
     const id = WB.param || "";
+    const val = (x) => (document.getElementById(x)?.value || "").trim();
+    holds("dep-add", () => `Add deployment ${val("dep-id") || "…"}`);
+    document.querySelectorAll("[data-accept]").forEach((b) => {
+      const dep = b.dataset.accept;
+      holds(`accept-${dep}`, () => `Accept ${val(`flag-${dep}`) || "the flag"} as ${dep}'s own`);
+    });
     document.querySelectorAll("[data-onboard]").forEach((b) => b.addEventListener("click", async () => {
       const dep = b.dataset.onboard, out = document.getElementById(`job-${dep}`);
       const cap = Number(document.getElementById(`cap-${dep}`).value);
@@ -212,7 +243,7 @@
       if (!by) { out.innerHTML = '<p class="note" role="alert">Say who you are: an acceptance names who made it.</p>'; return; }
       try {
         await send("POST", `/models/${enc(id)}/deployments/${enc(dep)}/accept`, { flag: document.getElementById(`flag-${dep}`).value, why: document.getElementById(`why-${dep}`).value, by });
-        forget(`model:${id}`); forget("models"); WB.render();
+        sent(`accept-${dep}`); forget(`model:${id}`); forget("models"); WB.render();
       } catch (e) { out.innerHTML = refusal(e); }
     }));
     document.getElementById("dep-add")?.addEventListener("click", async () => {
@@ -223,14 +254,14 @@
       if (v("dep-url")) Object.assign(set, { "endpoint.base_url": v("dep-url"), "endpoint.provider": "openai", "endpoint.model": v("dep-tag") || id });
       try {
         await send("POST", `/models/${enc(id)}/deployments/${enc(v("dep-id"))}`, { set, by });
-        forget(`model:${id}`); forget("models"); WB.render();
+        sent("dep-add"); forget(`model:${id}`); forget("models"); WB.render();
       } catch (e) { out.innerHTML = refusal(e); }
     });
   }
 
   // ── bring in a model: what it is, then where it runs on its own page ──────────────────────────
   function screenModelNew() {
-    return `<div class="screen"><div class="kicker">Models · bring one in</div><h1>Bring in a model</h1>
+    return `<div class="screen" data-form="model-new"><div class="kicker">Models · bring one in</div><h1>Bring in a model</h1>
       <p class="lead">A model is onboarded once and every goal can use it. Say what it is here; where it runs and its
       probes come next, on its page.</p>
       <div class="field"><label class="name" for="nm-id">Its id</label><div><input type="text" id="nm-id" placeholder="gemma4-12b" autocapitalize="off" spellcheck="false">
@@ -247,11 +278,12 @@
         <label class="choice"><input type="radio" name="nm-weights" value="proprietary"> proprietary <small>only its vendor serves it</small></label></div></div>
       <div class="field"><label class="name" for="nm-licence">Licence</label><div><input type="text" id="nm-licence" placeholder="Apache-2.0"></div></div>
       ${byField("nm-by")}
-      <div class="actions"><button class="btn primary" type="button" id="nm-save">Make it</button><a class="btn" href="#models">The models</a></div>
+      <div class="actions"><button class="btn primary" type="button" id="nm-save" data-send>Make it</button>${mark}<a class="btn" href="#models">The models</a></div>
       <div id="nm-out"></div>
       ${WB.cmd("evh model-new <id> --set kind=llm --set aliases.0=<the id runs record>")}</div>`;
   }
   function wireModelNew() {
+    holds("model-new", () => `Make model ${(document.getElementById("nm-id")?.value || "").trim() || "…"}`);
     document.getElementById("nm-save")?.addEventListener("click", async () => {
       const out = document.getElementById("nm-out"), v = (x) => document.getElementById(x).value.trim(), by = byOf("nm-by");
       if (!by) { out.innerHTML = '<p class="note" role="alert">Say who you are: a change names who made it.</p>'; return; }
@@ -263,6 +295,7 @@
       if (v("nm-licence")) set.licence = v("nm-licence");
       try {
         await send("POST", `/models/${enc(id)}`, { set, by });
+        sent("model-new");
         forget("models");
         location.hash = `#model/${enc(id)}`;
       } catch (e) { out.innerHTML = refusal(e); }

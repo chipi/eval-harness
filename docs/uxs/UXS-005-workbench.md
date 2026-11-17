@@ -763,11 +763,12 @@ against the code on 2026-11-17 (`research/internal/WORKBENCH_GAPS_0.8.0.md` has 
   - **forms** saved by one button are marked dirty and ask before leaving, with no memory across a reload: the goal
     (step 1), a model and a deployment (W5), a scorer (W7), a fieldset, a file under `data/` (W8), a round's question,
     a retire's reason and a round's conclusion.
-  The live goal, model and deployment forms do not do this yet.
+  Built 2026-11-17 for the live forms (a new model, a deployment, a flag accepted): `live.js` marks a form
+  (`data-form`), its button (`data-send`) and its mark; `workbench.js` asks before leaving and redraws nothing
+  that holds unsent changes; closing the page asks too. The live goal screen has no form yet.
 
 ## The order of the build (owner, 2026-11-17)
 
-API 1 to 6 first, and the unsent-changes rule once ("For every live screen"), added to the live goal, model and
-deployment forms; then the screens: home and goal (live) → W5 (live) → steps 2 and 3 (need API 2 and 3) → step 4 →
+API 1 to 6 and the unsent-changes rule ("For every live screen") are built (2026-11-17); then the screens: home and goal (live) → W5 (live) → steps 2 and 3 (need API 2 and 3) → step 4 →
 W1 the eval → W2 (needs API 1) → W3 → W6, W7 and W8 as short lists → the held-out test and studies last. The mockup's
 "mockup:" notes go with the screens that replace them.
