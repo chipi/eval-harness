@@ -70,7 +70,7 @@
       ${rounds ? `<h2 style="margin-top:22px">Rounds</h2><ul>${rounds}</ul>` : ""}
       ${st.running.length ? `<h2 style="margin-top:22px">Running now</h2><ul>${st.running.map((j) => `<li>${esc(j.operation)} · ${esc(j.state)}</li>`).join("")}</ul>` : ""}
       ${WB.cmd(`evh goal-status ${id}`)}
-      <div class="actions"><a class="btn primary" href="#dataset/${encodeURIComponent(id)}">Add a dataset</a><a class="btn" href="#systems/${encodeURIComponent(id)}">Choose the systems</a><a class="btn" href="#eval/${encodeURIComponent(id)}">The eval</a><a class="btn" href="#goal-edit/${encodeURIComponent(id)}">Edit the goal</a><a class="btn" href="#home">Back to your goals</a></div></div>`;
+      <div class="actions"><a class="btn primary" href="#dataset/${encodeURIComponent(id)}">Add a dataset</a><a class="btn" href="#systems/${encodeURIComponent(id)}">Choose the systems</a><a class="btn" href="#eval/${encodeURIComponent(id)}">The eval</a><a class="btn" href="#review/${encodeURIComponent(id)}">Review the outputs</a><a class="btn" href="#production/${encodeURIComponent(id)}">Production</a><a class="btn" href="#goal-edit/${encodeURIComponent(id)}">Edit the goal</a><a class="btn" href="#home">Back to your goals</a></div></div>`;
   }
 
   // ── writes: who acted, the data header, and the model's refusal shown as it is ──────────────────────
@@ -173,14 +173,14 @@
         <div class="field"><label class="name" for="cap-${esc(k)}">Spend at most (USD)</label><div><input type="number" id="cap-${esc(k)}" min="0.01" step="0.01" inputmode="decimal">
           <div class="hint">a model of ours costs nothing; a hosted one is charged for each probe call</div></div></div>
         <div class="actions" style="margin-top:0"><button class="btn primary" type="button" data-onboard="${esc(k)}">Run the probes</button></div>
-        <div id="job-${esc(k)}" aria-live="polite">${job ? `<p class="muted">${jobLine(job)}</p>` : ""}</div>
+        <div id="job-${esc(k)}" data-out aria-live="polite">${job ? `<p class="muted">${jobLine(job)}</p>` : ""}</div>
         ${on && on.status === "check" ? `<div data-form="accept-${esc(k)}"><h3>Accept what it raises</h3>
           <p class="muted">When a flag is the deployment's own nature (a hosted gateway has no build to pin), accept it with why: it is kept in its checks and no longer counts against it.</p>
           <div class="field"><label class="name" for="flag-${esc(k)}">The flag's kind</label><div><input type="text" id="flag-${esc(k)}" placeholder="the words before its colon: reasoning, where it ran"></div></div>
           <div class="field"><label class="name" for="why-${esc(k)}">Why</label><div><input type="text" id="why-${esc(k)}" placeholder="a sentence"></div></div>
           ${byField(`by-${k}`)}
           <div class="actions" style="margin-top:0"><button class="btn" type="button" data-send data-accept="${esc(k)}">Accept it</button>${mark}</div>
-          <div id="acc-${esc(k)}"></div></div>` : ""}
+          <div id="acc-${esc(k)}" data-out></div></div>` : ""}
       </div></section>`;
   }
   function screenModel(id) {
@@ -201,7 +201,7 @@
         <div class="field"><label class="name" for="dep-tag">Its tag</label><div><input type="text" id="dep-tag" placeholder="the name the server knows it by"></div></div>
         <div class="field"><label class="name" for="dep-url">Its address</label><div><input type="text" id="dep-url" placeholder="http://host:11434/v1" inputmode="url"></div></div>
         ${byField("dep-by")}
-        <div class="actions" style="margin-top:0"><button class="btn" type="button" id="dep-add" data-send>Add it</button>${mark}</div><div id="dep-out"></div></div></section>
+        <div class="actions" style="margin-top:0"><button class="btn" type="button" id="dep-add" data-send>Add it</button>${mark}</div><div id="dep-out" data-out></div></div></section>
       ${WB.cmd(`evh model-show ${id}\nevh model-onboard --model-id ${id} --deployment <deployment>\nevh deployment-accept ${id} <deployment> --flag "<kind>" --why "<a sentence>"`)}
       <div class="actions"><a class="btn" href="#models">The models</a></div></div>`;
   }
@@ -279,7 +279,7 @@
       <div class="field"><label class="name" for="nm-licence">Licence</label><div><input type="text" id="nm-licence" placeholder="Apache-2.0"></div></div>
       ${byField("nm-by")}
       <div class="actions"><button class="btn primary" type="button" id="nm-save" data-send>Make it</button>${mark}<a class="btn" href="#models">The models</a></div>
-      <div id="nm-out"></div>
+      <div id="nm-out" data-out></div>
       ${WB.cmd("evh model-new <id> --set kind=llm --set aliases.0=<the id runs record>")}</div>`;
   }
   function wireModelNew() {
@@ -338,7 +338,7 @@
       ${byField("gf-by")}
       <div class="actions"><button class="btn primary" type="button" id="gf-save" data-send>${editing ? "Save the goal" : "Make the goal"}</button>${mark}
         <a class="btn" href="${editing ? `#goal/${enc(goal)}` : "#home"}">Cancel</a></div>
-      <div id="gf-out"></div>
+      <div id="gf-out" data-out></div>
       ${WB.cmd(editing ? `evh goal-set ${goal} --set KEY=VALUE` : "evh goal-new <id> --set title=... --set statement=... --set decision=... --set success_criteria.primary.measure=... --set success_criteria.primary.direction=higher --set 'datasets=[]'")}</div>`;
   }
   function wireGoalForm() {
@@ -446,20 +446,20 @@
         ${options ? `<div class="inline"><select id="ds-pick" aria-label="the project's datasets"><option value="">choose one of the project's datasets</option>${options}</select>
           <button class="btn" type="button" id="ds-use" disabled>Use it</button></div>` : '<p class="muted">The project has no other dataset.</p>'}
         <div class="field"><div class="name" id="ds-role-l">Its role for this goal</div><div class="choices row" role="radiogroup" aria-labelledby="ds-role-l">${roles}</div></div>
-        <div id="ds-use-out"></div></div></section>
+        <div id="ds-use-out" data-out></div></div></section>
       <section class="part" data-form="dataset-new"><div class="parthead"><h2>Or make one from a source</h2></div><div class="body">
         <div class="field"><label class="name" for="ds-source">Where from</label><div><select id="ds-source"><option value="">choose a source</option>
           ${Object.entries(SOURCES).map(([k, [name]]) => `<option value="${k}" ${src === k ? "selected" : ""}>${esc(name)}</option>`).join("")}</select></div></div>
         ${fields.map(([k, hint, ex]) => `<div class="field"><label class="name" for="dsq-${k}">${esc(k)}</label><div><input type="text" id="dsq-${k}" data-q="${k}" value="${esc((d.q || {})[k] ?? "")}" placeholder="${esc(ex)}" autocapitalize="off" spellcheck="false"><div class="hint">${esc(hint)}</div></div></div>`).join("")}
         ${src ? `<div class="actions" style="margin-top:0"><button class="btn" type="button" id="ds-read">Read it</button><span class="muted">a job: the source's description and its first rows; nothing is saved</span></div>` : ""}
-        <div id="ds-read-out">${said ? `<p class="note">${esc(JSON.stringify(said.source || {}))}${said.licence ? ` · licence ${esc(said.licence)}` : ""}</p>${rows}` : ""}</div>
+        <div id="ds-read-out" data-out>${said ? `<p class="note">${esc(JSON.stringify(said.source || {}))}${said.licence ? ` · licence ${esc(said.licence)}` : ""}</p>${rows}` : ""}</div>
         ${src && tabular(src) ? `<h3>Its fields</h3><p class="muted">Facts about each item to slice the results by, proposed from the source's columns; keep the ones you would compare on.</p>
           <div class="actions" style="margin-top:0"><button class="btn" type="button" id="ds-fields">Propose its fields</button></div>
-          <div id="ds-fields-out">${fieldRows(d.fields)}</div>` : ""}
+          <div id="ds-fields-out" data-out>${fieldRows(d.fields)}</div>` : ""}
         ${src ? `<div class="field"><label class="name" for="ds-id">Its id</label><div><input type="text" id="ds-id" value="${esc(d.id || "")}" placeholder="cnn_dailymail_200" autocapitalize="off" spellcheck="false"><div class="hint">lowercase letters, digits and _</div></div></div>
         ${byField("ds-by")}
         <div class="actions" style="margin-top:0"><button class="btn primary" type="button" id="ds-make" data-send>Make the dataset</button><span class="unsent" data-unsent-mark hidden>not saved yet · kept in this browser until it is made</span></div>` : ""}
-        <div id="ds-make-out"></div></div></section>
+        <div id="ds-make-out" data-out></div></div></section>
       ${WB.cmd(`evh source-preview --source ${src || "<source>"} --query '${JSON.stringify(queryOf(d))}'\nevh dataset-create --dataset-id ${d.id || "<id>"} --source ${src || "<source>"} --query '${JSON.stringify(queryOf(d))}'`)}
       <div class="actions"><a class="btn" href="#goal/${enc(goal)}">Back to the goal</a></div></div>`;
   }
@@ -588,7 +588,7 @@
         <div class="tablewrap"><table><thead><tr><th>system</th><th>model</th><th>where it runs</th><th>its check</th></tr></thead><tbody>
         ${sys.systems.map((x) => `<tr><td class="mono">${esc(x.system)}</td><td>${esc(x.model || "")}</td><td>${esc(x.deployment || "")}</td>
           <td><button class="btn" type="button" data-smoke="${esc(x.system)}">Check it on three items</button> <button class="btn" type="button" data-clone="${esc(x.system)}">Clone it, change one thing</button>
-            <div id="sm-${esc(x.system)}" aria-live="polite">${smokeView(smokes[`${goal}/${x.system}`])}</div><div id="cl-${esc(x.system)}"></div></td></tr>`).join("")}</tbody></table></div>
+            <div id="sm-${esc(x.system)}" data-out aria-live="polite">${smokeView(smokes[`${goal}/${x.system}`])}</div><div id="cl-${esc(x.system)}"></div></td></tr>`).join("")}</tbody></table></div>
         ${byField("sm-by")}</div></section>
       <section class="part" data-form="system-new"><div class="parthead"><h2>Make a system from a model</h2></div><div class="body">
         <div class="field"><label class="name" for="sn-model">The model</label><div><select id="sn-model"><option value="">choose a model that has somewhere to run</option>
@@ -602,7 +602,7 @@
         <div class="field"><label class="name" for="sn-id">Its id</label><div><input type="text" id="sn-id" value="${esc(d.idTyped ? d.id : `${d.model}_${d.deployment || deps[0] || ""}`.replace(/[^A-Za-z0-9_.-]+/g, "_"))}" autocapitalize="off" spellcheck="false"></div></div>
         ${byField("sn-by")}
         <div class="actions" style="margin-top:0"><button class="btn primary" type="button" id="sn-make" data-send>Make the system</button><span class="unsent" data-unsent-mark hidden>not saved yet · kept in this browser until it is made</span></div>` : ""}
-        <div id="sn-out"></div></div></section>
+        <div id="sn-out" data-out></div></div></section>
       ${WB.cmd(`evh system-new <id> --set model_record=<model> --set deployment=<where> --set params.prompt=...\nevh arm-smoke --system <id> --dataset ${datasets[0] || "<dataset>"} --max-cost-usd 0.05`)}
       <div class="actions"><a class="btn" href="#goal/${enc(goal)}">Back to the goal</a></div></div>`;
   }
@@ -632,7 +632,7 @@
         <label class="name" for="cl-id-${esc(src)}">new id</label><input type="text" id="cl-id-${esc(src)}" value="${esc(src)}_2" autocapitalize="off" spellcheck="false">
         <select id="cl-what-${esc(src)}" aria-label="what changes"><option value="prompt">the prompt</option><option value="temperature">the temperature</option><option value="max_tokens">the most tokens</option><option value="model">the model it sends</option></select>
         <input type="text" id="cl-val-${esc(src)}" placeholder="its new value" aria-label="the new value" style="min-width:14rem">
-        <button class="btn primary" type="button" id="cl-go-${esc(src)}" data-send>Make the clone</button>${mark}</div><div id="cl-out-${esc(src)}"></div>`;
+        <button class="btn primary" type="button" id="cl-go-${esc(src)}" data-send>Make the clone</button>${mark}</div><div id="cl-out-${esc(src)}" data-out></div>`;
       holds(`clone-${src}`, () => `Make system ${v(`cl-id-${src}`) || "…"}`);
       document.getElementById(`cl-go-${src}`).addEventListener("click", async (ev) => {
         const out = document.getElementById(`cl-out-${src}`), by = byOf("sm-by") || (who() ? `person:${who()}` : null);
@@ -735,7 +735,7 @@
         ${last ? `<div class="field"><label class="name" for="ro-keep">Carry in from ${esc(last.round_id)}</label><div><select id="ro-keep"><option value="all">every arm still in play</option><option value="">none</option></select><div class="hint">carried arms are not run again</div></div></div>` : ""}
         <div class="field"><label class="name" for="ro-budget">What it may spend (USD)</label><div><input type="text" id="ro-budget" inputmode="decimal" placeholder="no budget" style="width:8rem"></div></div>
         ${byField("ro-by")}
-        <div class="actions" style="margin-top:0"><button class="btn primary" type="button" id="ro-open" data-send>Open the round</button>${mark}</div><div id="ro-out"></div></div></section>`;
+        <div class="actions" style="margin-top:0"><button class="btn primary" type="button" id="ro-open" data-send>Open the round</button>${mark}</div><div id="ro-out" data-out></div></div></section>`;
     if (!cur) return `<div class="screen wide">${head}<p class="muted">No round yet.</p>${openForm}<div class="actions"><a class="btn" href="#goal/${enc(goal)}">Back to the goal</a></div></div>`;
     const rs = load(`round:${goal}/${cur}`, `/goals/${enc(goal)}/rounds/${enc(cur)}`), ev = load(`evidence:${goal}/${cur}`, `/goals/${enc(goal)}/rounds/${enc(cur)}/evidence`);
     const sys = load("systems", "/systems"), bl = load(`baselines:${goal}`, `/baselines?goal=${enc(goal)}`);
@@ -759,7 +759,7 @@
     const baseline = versions.length ? `<section class="part"><div class="parthead"><h2>The baseline on ${esc(r.dataset_id)}</h2></div><div class="body"><ul>
       ${versions.map((b) => `<li>v${b.version}${b.version === b.current ? ' <span class="status ok">current</span>' : ""} · <span class="mono">${esc(b.promoted_from)}</span> · ${esc((b.actor || {}).name || "")} · <small>${esc(b.reason || "")}</small>
         ${b.version !== b.current ? `<div class="inline" data-form="rollback-${b.version}"><input type="text" id="rb-why-${b.version}" placeholder="why go back to it, a sentence" aria-label="why roll back to v${b.version}" style="min-width:16rem">
-          <button class="btn" type="button" data-rollback="${b.version}" data-send>Roll back to v${b.version}</button>${mark}</div>` : ""}</li>`).join("")}</ul><div id="rb-out"></div></div></section>` : "";
+          <button class="btn" type="button" data-rollback="${b.version}" data-send>Roll back to v${b.version}</button>${mark}</div>` : ""}</li>`).join("")}</ul><div id="rb-out" data-out></div></div></section>` : "";
     const leaderRun = (() => { const a = r.arms.find((x) => x.arm === ev.leader); return a ? a.runs[a.runs.length - 1] : ""; })();
     return `<div class="screen wide">${head}${tabs}
       <h2>${esc(r.hypothesis || "(no question)")}</h2>
@@ -774,17 +774,17 @@
       <section class="part"><div class="parthead"><h2>Its arms</h2></div><div class="body"><ul id="arms">${arms || '<li class="muted">none yet</li>'}</ul>
         ${isOpen ? `<div id="rt-box"></div>` : ""}
         ${isOpen && carryable.length ? `<div class="inline"><label class="name" for="cy-arm">Carry in from ${esc(r.from)}</label><select id="cy-arm">${carryable.map((x) => `<option>${esc(x)}</option>`).join("")}</select>
-          <button class="btn" type="button" id="cy-go">Carry it in</button><span class="muted">unchanged, not run again</span></div><div id="cy-out"></div>` : ""}</div></section>
+          <button class="btn" type="button" id="cy-go">Carry it in</button><span class="muted">unchanged, not run again</span></div><div id="cy-out" data-out></div>` : ""}</div></section>
       ${baseline}
       ${isOpen ? `<section class="part"><div class="parthead"><h2>Run arms in it</h2></div><div class="body">
         ${toRun.length ? `<div class="choices">${toRun.map((x) => `<label class="choice"><input type="checkbox" data-run="${esc(x.system)}"> <span class="mono">${esc(x.system)}</span> <small>${esc(x.model || "")}</small></label>`).join("")}</div>
           <div class="inline"><label class="name" for="rn-cap">spend at most (USD)</label><input type="number" id="rn-cap" min="0.01" step="0.01" value="1" inputmode="decimal" style="width:7rem">
           <button class="btn" type="button" id="rn-est">See the cost first</button><button class="btn primary" type="button" id="rn-go">Run them</button></div>
-          <div id="rn-out" aria-live="polite"></div>` : '<p class="muted">Every system of the project is in this round.</p>'}</div></section>
+          <div id="rn-out" data-out aria-live="polite"></div>` : '<p class="muted">Every system of the project is in this round.</p>'}</div></section>
         <section class="part" data-form="round-close"><div class="parthead"><h2>Close the round</h2></div><div class="body">
           <div class="field"><label class="name" for="rc-text">Its conclusion</label><div><textarea id="rc-text" rows="3" placeholder="What the round showed, and what it decided, in a sentence or more."></textarea></div></div>
           ${leaderRun ? `<label class="choice"><input type="checkbox" id="rc-promote" value="${esc(leaderRun)}"> promote the leader's run (<span class="mono">${esc(leaderRun)}</span>) to the goal's baseline, the conclusion as its reason</label>` : ""}
-          <div class="actions" style="margin-top:0"><button class="btn primary" type="button" id="rc-close" data-send>Close the round</button>${mark}</div><div id="rc-out"></div></div></section>` : openForm}
+          <div class="actions" style="margin-top:0"><button class="btn primary" type="button" id="rc-close" data-send>Close the round</button>${mark}</div><div id="rc-out" data-out></div></div></section>` : openForm}
       ${WB.cmd(`evh round-list ${goal}\nevh round-evidence ${goal} ${r.round_id}`)}
       <div class="actions"><a class="btn" href="#goal/${enc(goal)}">Back to the goal</a></div></div>`;
   }
@@ -862,7 +862,7 @@
       const sysId = b.dataset.retire, box = document.getElementById("rt-box");
       box.innerHTML = `<div data-form="retire"><p>Retire <b class="mono">${esc(sysId)}</b> from ${esc(cur)}: final, kept with its reason; no operation undoes it.</p>
         <div class="inline"><input type="text" id="rt-why" placeholder="why, in a sentence" style="min-width:20rem" aria-label="why it is retired">
-        <button class="btn" type="button" id="rt-go" data-send>Retire it</button>${mark}<button class="btn" type="button" id="rt-no">Keep it</button></div><div id="rt-out"></div></div>`;
+        <button class="btn" type="button" id="rt-go" data-send>Retire it</button>${mark}<button class="btn" type="button" id="rt-no">Keep it</button></div><div id="rt-out" data-out></div></div>`;
       holds("retire", () => `Retire ${sysId}`);
       document.getElementById("rt-why").focus();
       document.getElementById("rt-no").addEventListener("click", () => { sent("retire"); box.innerHTML = ""; });
@@ -913,6 +913,329 @@
     });
   }
 
+  // ── W2 review the outputs (UXS-005 W2): which is better, blind, or what went wrong, on a sheet submitted when done ──
+  // The sheet is a sheet-export job's (API 1): the page reads the sheet, never its key, so "which is better" stays blind;
+  // the filled sheet goes to sheet-import with export_job, which reads the key where the job kept it.
+  const revKey = (goal) => `evh.draft.review.${goal}`;
+  const readRev = (goal) => { try { return JSON.parse(localStorage.getItem(revKey(goal)) || "null"); } catch { return null; } };
+  const keepRev = (goal, d) => { try { localStorage.setItem(revKey(goal), JSON.stringify(d)); } catch { /* this visit only */ } };
+  const dropRev = (goal) => { try { localStorage.removeItem(revKey(goal)); } catch { /* nothing kept */ } };
+  const revDone = (d) => Object.values(d.answers || {}).filter((a) => a.pick || Object.values(a.tags || {}).some((t) => t && t.length)).length;
+  function screenReview(goal) {
+    const head = `<div class="kicker">Review · ${esc(goal)}</div><h1>Review the outputs</h1>
+      <p class="lead">Two arms' outputs on the same item, side by side: say which is better (blind, the arms hidden) or what went wrong in each. Nothing is written until you submit the sheet.</p>`;
+    if (!goal) return `<div class="screen">${head}</div>`;
+    const d = readRev(goal);
+    if (!d || !d.sheet) {
+      const rec = load(`goalrec:${goal}`, `/goals/${enc(goal)}`), fm = load("failure-modes", "/failure-modes");
+      if (rec === undefined || fm === undefined) return `<div class="screen wide">${head}${loading("the goal")}</div>`;
+      if (rec.error || fm.error) return `<div class="screen wide">${head}${failed(rec.error ? rec : fm)}</div>`;
+      const datasets = (rec.record.datasets || []).map((x) => x.dataset_id), pickDs = (d && d.dataset) || datasets[0];
+      const arms = pickDs ? load(`arms:${pickDs}`, `/datasets/${enc(pickDs)}/arms`) : { arms: [] };
+      if (arms === undefined) return `<div class="screen wide">${head}${loading("the arms")}</div>`;
+      const systems = [...new Set((arms.arms || []).map((a) => a.system))];
+      const lists = (fm.failure_modes || []).map((x) => x.failure_modes).filter(Boolean);
+      return `<div class="screen wide">${head}
+        <div class="field"><label class="name" for="rv-ds">On</label><div><select id="rv-ds">${datasets.map((x) => `<option value="${esc(x)}" ${x === pickDs ? "selected" : ""}>${esc(x)}</option>`).join("")}</select></div></div>
+        <div class="field"><label class="name" for="rv-a">Compare</label><div class="inline"><select id="rv-a">${systems.map((x, i) => `<option value="${esc(x)}" ${i === 0 ? "selected" : ""}>${esc(x)}</option>`).join("")}</select>
+          with <select id="rv-b">${systems.map((x, i) => `<option value="${esc(x)}" ${i === 1 ? "selected" : ""}>${esc(x)}</option>`).join("")}</select></div></div>
+        <div class="field"><div class="name" id="rv-mode-l">What you will say</div><div class="choices" role="radiogroup" aria-labelledby="rv-mode-l">
+          <label class="choice"><input type="radio" name="rv-mode" value="pick" checked> which is better <small>the arms hidden and shuffled per item, so the pick is not swayed</small></label>
+          <label class="choice"><input type="radio" name="rv-mode" value="tags"> what went wrong <small>each output tagged with the failure modes it shows</small></label></div></div>
+        <div class="field"><label class="name" for="rv-modes">Failure modes</label><div><select id="rv-modes">${lists.map((x) => `<option>${esc(x)}</option>`).join("")}<option value="">a new list…</option></select>
+          <div class="inline"><input type="text" id="rv-new-id" placeholder="its id: summaries" style="width:10rem" autocapitalize="off" spellcheck="false"><input type="text" id="rv-new-modes" placeholder="its modes: narration, overlong, truncated" style="min-width:18rem" autocapitalize="off" spellcheck="false"></div>
+          <div class="hint">for "what went wrong": a named list, so tags are counted, not re-invented in each note</div></div></div>
+        ${byField("rv-by")}
+        <div class="actions"><button class="btn primary" type="button" id="rv-make">Make the sheet</button><a class="btn" href="#goal/${enc(goal)}">Back to the goal</a></div><div id="rv-out" data-out></div>
+        <p class="muted">The expected answers are labelled on their own screen: <a href="#label/${enc(pickDs || "")}">label ${esc(pickDs || "")}'s items</a>.</p>
+        ${WB.cmd(`evh sheet-export --dataset-id ${pickDs || "<dataset>"} --runs A,B --csv review.csv --fill pick`)}</div>`;
+    }
+    const n = revDone(d);
+    if (n) UNSENT.set("review-sheet", `${n} answer(s) on the review of ${goal}`);
+    const [header, ...rows] = d.sheet, at = (h) => header.indexOf(h);
+    const iId = at("item_id"), iItem = at("item");
+    const items = rows.filter((r) => !String(r[iId]).startsWith("#"));
+    const legend = (rows.find((r) => String(r[iId]) === "#modes") || [])[iItem] || "";
+    const tokens = header.filter((h) => h.startsWith("failure_modes: ")).map((h) => h.slice("failure_modes: ".length));
+    const body = items.map((r) => {
+      const id = r[iId], a = (d.answers || {})[id] || {};
+      if (d.mode === "pick") {
+        const letters = ["A", "B"].filter((x) => at(x) >= 0);
+        return `<tr><td class="mono">${esc(id)}</td><td class="clip"><div>${esc(r[iItem])}</div></td>${letters.map((x) => `<td class="clip"><div>${esc(r[at(x)])}</div></td>`).join("")}
+          <td><div class="choices">${[...letters, "A|B"].map((x) => `<label class="choice"><input type="radio" name="pk-${esc(id)}" data-pick="${esc(id)}" value="${x}" ${a.pick === x ? "checked" : ""}> ${x === "A|B" ? "the same" : x}</label>`).join("")}</div></td></tr>`;
+      }
+      return `<tr><td class="mono">${esc(id)}</td><td class="clip"><div>${esc(r[iItem])}</div></td>${tokens.map((t) => `<td><div class="clip"><div>${esc(r[at(`output: ${t}`)])}</div></div>
+        <div class="choices">${[...d.modeIds, "ok"].map((m) => `<label class="choice"><input type="checkbox" data-tag="${esc(id)}" data-arm="${esc(t)}" value="${esc(m)}" ${((a.tags || {})[t] || []).includes(m) ? "checked" : ""}> ${esc(m)}</label>`).join("")}</div></td>`).join("")}</tr>`;
+    }).join("");
+    const cols = d.mode === "pick" ? `<th>A</th><th>B</th><th>which is better</th>` : tokens.map((t) => `<th>${esc(t)}</th>`).join("");
+    return `<div class="screen wide" data-form="review-sheet">${head}
+      <p class="muted">${esc(d.dataset)} · ${d.mode === "pick" ? "which is better, blind" : `what went wrong · ${esc(legend)}`}</p>
+      <div class="tablewrap"><table><thead><tr><th>item</th><th>the item</th>${cols}</tr></thead><tbody>${body}</tbody></table></div>
+      <div class="field"><label class="name" for="rv-name">${d.mode === "pick" ? "The judgements' name" : "The tag set's name"}</label><div><input type="text" id="rv-name" value="${esc(d.name || "")}" placeholder="${d.mode === "pick" ? "owner_picks" : "first_pass"}" autocapitalize="off" spellcheck="false"></div></div>
+      ${byField("rv-by")}
+      <div class="actions"><button class="btn primary" type="button" id="rv-submit" data-send>Submit</button><span class="unsent" data-unsent-mark hidden><span id="rv-count">${n}</span> answer(s) not submitted · kept in this browser</span>
+        <button class="btn" type="button" id="rv-drop">Throw the sheet away</button></div><div id="rv-out" data-out></div></div>`;
+  }
+  function wireReview() {
+    const goal = WB.param || "";
+    const v = (id) => (document.getElementById(id)?.value || "").trim();
+    document.getElementById("rv-ds")?.addEventListener("change", () => { keepRev(goal, { dataset: v("rv-ds") }); WB.render(true); });
+    document.getElementById("rv-make")?.addEventListener("click", async (ev) => {
+      const out = document.getElementById("rv-out"), by = byOf("rv-by") || (who() ? `person:${who()}` : null);
+      if (!by) { out.innerHTML = '<p class="note" role="alert">Say who you are: a job names who asked.</p>'; return; }
+      const mode = document.querySelector("input[name=rv-mode]:checked").value, ds = v("rv-ds");
+      const runs = mode === "pick" ? [v("rv-a"), v("rv-b")] : [...new Set([v("rv-a"), v("rv-b")])];
+      if (mode === "pick" && runs[0] === runs[1]) { out.innerHTML = '<p class="note" role="alert">Two different arms: a pick needs two outputs.</p>'; return; }
+      ev.target.disabled = true;
+      try {
+        let modes = v("rv-modes");
+        if (mode === "tags" && !modes) {
+          modes = v("rv-new-id");
+          const ids = v("rv-new-modes").split(",").map((x) => x.trim()).filter(Boolean);
+          await send("POST", `/failure-modes/${enc(modes)}`, { set: { modes: ids.map((id) => ({ id })) }, by });
+          forget("failure-modes");
+        }
+        const inputs = { runs: runs.join(","), csv: "review.csv", fill: mode, by };
+        if (mode === "tags") inputs.modes = modes;
+        const done = await runJob(`/datasets/${enc(ds)}/sheets`, inputs, out, "making the sheet");
+        if (done) {
+          const sheet = parseCsv(await (await fetch(`/api/v1/jobs/${enc(done.id)}/files/review.csv`, { credentials: "same-origin" })).text()).filter((r) => r.length > 1);
+          let modeIds = [];
+          if (mode === "tags") {
+            const fmr = await fetch(`/api/v1/failure-modes/${enc(modes)}`, { credentials: "same-origin" }).then((x) => x.json());
+            modeIds = (((fmr.result || {}).record || {}).modes || []).map((m) => m.id);
+          }
+          keepRev(goal, { dataset: ds, mode, modes, modeIds, job: done.id, sheet, answers: {}, name: "" });
+          WB.render(true);
+        }
+      } catch (e) { out.innerHTML = refusal(e); }
+      ev.target.disabled = false;
+    });
+    const d = readRev(goal);
+    if (!d || !d.sheet) return;
+    const name = () => v("rv-name");
+    const show = (cur) => {
+      const n = revDone(cur), btn = document.getElementById("rv-submit");
+      if (n) UNSENT.set("review-sheet", `${n} answer(s) on the review of ${goal}`); else UNSENT.delete("review-sheet");
+      document.getElementById("rv-count").textContent = n;
+      document.querySelector("[data-form=review-sheet] [data-unsent-mark]").hidden = !n;
+      btn.disabled = !n;
+      btn.textContent = `Submit ${n} answer(s) as ${cur.mode === "pick" ? "judgements" : "tag set"} ${name() || "…"}`;
+    };
+    show(d);
+    document.querySelector("[data-form=review-sheet]").addEventListener("change", (e) => {
+      const cur = readRev(goal) || d, t = e.target;
+      cur.answers = cur.answers || {};
+      if (t.dataset.pick) { cur.answers[t.dataset.pick] = { ...(cur.answers[t.dataset.pick] || {}), pick: t.value }; }
+      if (t.dataset.tag) {
+        const a = cur.answers[t.dataset.tag] = cur.answers[t.dataset.tag] || {};
+        a.tags = a.tags || {};
+        const set = new Set(a.tags[t.dataset.arm] || []);
+        if (t.checked) set.add(t.value); else set.delete(t.value);
+        a.tags[t.dataset.arm] = [...set];
+      }
+      cur.name = name();
+      keepRev(goal, cur); show(cur);
+    }, true);
+    document.getElementById("rv-name").addEventListener("input", () => { const cur = readRev(goal) || d; cur.name = name(); keepRev(goal, cur); show(cur); });
+    document.getElementById("rv-drop").addEventListener("click", () => {
+      if (!window.confirm(`Throw away ${revDone(readRev(goal) || d)} answer(s) not submitted?`)) return;
+      dropRev(goal); UNSENT.delete("review-sheet"); WB.render(true);
+    });
+    document.getElementById("rv-submit").addEventListener("click", async (ev) => {
+      const cur = readRev(goal) || d, out = document.getElementById("rv-out"), by = byOf("rv-by");
+      if (!by) { out.innerHTML = '<p class="note" role="alert">Say who you are: a sheet names who filled it.</p>'; return; }
+      if (!name()) { out.innerHTML = '<p class="note" role="alert">Name what it is written as.</p>'; return; }
+      const [header, ...rows] = cur.sheet, at = (h) => header.indexOf(h), iId = at("item_id");
+      const filled = [header, ...rows.map((r) => {
+        const x = [...r], a = (cur.answers || {})[r[iId]] || {};
+        if (cur.mode === "pick" && at("pick") >= 0 && !String(r[iId]).startsWith("#")) x[at("pick")] = a.pick || "";
+        if (cur.mode === "tags") for (const [t, ms] of Object.entries(a.tags || {})) if (at(`failure_modes: ${t}`) >= 0) x[at(`failure_modes: ${t}`)] = ms.join("|");
+        return x;
+      })];
+      const content = btoa(unescape(encodeURIComponent(csvOf(filled))));
+      const inputs = { sheet: { name: "review.csv", content_base64: content }, export_job: cur.job, by };
+      if (cur.mode === "pick") inputs.scorer = name(); else { inputs.tags = name(); inputs.modes = cur.modes; }
+      ev.target.disabled = true;
+      try {
+        const done = await runJob(`/datasets/${enc(cur.dataset)}/sheets/import`, inputs, out, "submitting the sheet");
+        if (done) {
+          dropRev(goal); UNSENT.delete("review-sheet");
+          out.innerHTML = `<p class="note">Written: ${cur.mode === "pick" ? `the judgements <b>${esc(name())}</b>, read as judged/${esc(name())}` : `the tag set <b>${esc(name())}</b>`}. <button class="btn" type="button" data-again>Make another sheet</button></p>`;
+          out.querySelector("[data-again]").addEventListener("click", () => WB.render(true));
+          document.querySelector("[data-form=review-sheet] [data-unsent-mark]").hidden = true;
+        }
+      } catch (e) { out.innerHTML = refusal(e); }
+      ev.target.disabled = false;
+    });
+  }
+
+  // ── W3 production (UXS-005 W3): what the deployed system decided, scored against labels, the rows to keep, the next
+  // version of the dataset made from them ────────────────────────────────────────────────────────────────────────────
+  const IMPORTERS = ["jsonl", "tsv", "github", "langfuse"];
+  const blocksView = (res) => `<pre class="reply">${esc((((res || {}).blocks) || []).flatMap((b) => b.lines || []).join("\n"))}</pre>`;
+  // label-coverage-show answers values (label_coverage.show prints them): the classes counted, each rule's reach
+  const coverageView = (c) => `<p class="muted">${esc(c.dataset_id)}: ${c.items} item(s) over capture ${esc(c.capture)}</p>
+    <div class="tablewrap"><table><thead><tr><th>class</th><th class="num">items</th></tr></thead><tbody>${Object.entries(c.counts || {}).map(([k, n]) => `<tr><td>${esc(k.replace(/_/g, " "))}</td><td class="num">${n}</td></tr>`).join("")}</tbody></table></div>
+    <div class="tablewrap"><table><thead><tr><th>rule</th><th class="num">now</th><th class="num">when mature</th></tr></thead><tbody>${(c.rules || []).map((r) => `<tr><td class="mono">${esc(r.text)}</td><td class="num">${r.now}</td><td class="num">${r.when_mature}</td></tr>`).join("")}</tbody></table></div>`;
+  const RULES_EXAMPLE = "- when: {resolved: fixed}\n  label: real problem\n- when: {resolved: wontfix}\n  label: not a problem\n- min_age_days: 14\n  absent: [resolved]\n  label: not a problem";
+  function screenProduction(goal) {
+    const head = `<div class="kicker">Production · ${esc(goal)}</div><h1>Learn from production</h1>
+      <p class="lead">What the deployed system decided, kept as a capture; scored like an arm against the labels; the rows where it was wrong picked for the next version of the dataset.</p>`;
+    if (!goal) return `<div class="screen">${head}</div>`;
+    const caps = load("captures", "/captures"), sys = load("systems", "/systems"), ds = load("datasets", "/datasets"), rec = load(`goalrec:${goal}`, `/goals/${enc(goal)}`);
+    if ([caps, sys, ds, rec].includes(undefined)) return `<div class="screen wide">${head}${loading("the captures")}</div>`;
+    const bad = [caps, sys, ds, rec].find((x) => x.error);
+    if (bad) return `<div class="screen wide">${head}${failed(bad)}</div>`;
+    const capIds = caps.captures.map((c) => c.capture), dsIds = ds.datasets.map((x) => x.dataset), sysIds = sys.systems.map((x) => x.system);
+    const ms = load("models", "/models");
+    const codeIds = ms && !ms.error ? ms.models.filter((m) => m.kind === "code").map((m) => m.model) : [];
+    const rp = WB._replay || {};
+    const opt = (xs, sel) => xs.map((x) => `<option value="${esc(x)}" ${x === sel ? "selected" : ""}>${esc(x)}</option>`).join("");
+    const pv = WB._prod || {};
+    const wrong = pv.rows ? `<div class="tablewrap"><table><thead><tr><th>keep</th><th>item</th><th>production decided</th><th>the labels</th></tr></thead><tbody>
+      ${pv.rows.map((r) => `<tr><td><input type="checkbox" data-keep-item="${esc(r.item)}" aria-label="pick ${esc(r.item)}" ${r.picked ? "disabled checked" : ""}></td><td class="mono">${esc(r.item)}</td>
+        <td class="clip"><div>${esc(Object.values(r.decisions || {})[0] ?? "")}</div></td><td class="clip"><div>${esc(Object.values(r.labels || {}).join(" · "))}</div></td></tr>`).join("")}</tbody></table></div>
+      <p class="muted">${pv.rows.length} row(s) where production's decision is not ${esc(pv.against)}'s.</p>` : "";
+    return `<div class="screen wide">${head}
+      ${byField("pd-by")}
+      <section class="part"><div class="parthead"><span class="letter">1</span><h2>What it decided</h2></div><div class="body">
+        ${caps.captures.length ? `<ul>${caps.captures.map((c) => `<li><b class="mono">${esc(c.capture)}</b> · ${c.records} record(s) · ${esc(c.importer)} · ${esc((c.captured_at || "").slice(0, 16))}${(c.datasets || []).length ? ` · made into ${c.datasets.map(esc).join(", ")}` : ""}</li>`).join("")}</ul>` : '<p class="muted">No capture yet.</p>'}
+        <div data-form="capture-new"><h3>Capture records</h3>
+          <div class="inline"><select id="cp-importer" aria-label="the importer">${opt(IMPORTERS, "jsonl")}</select>
+            <input type="text" id="cp-id" placeholder="the capture's id: prod_2026_11" autocapitalize="off" spellcheck="false"></div>
+          <textarea id="cp-query" rows="2" placeholder='{"path": "records.jsonl"}' aria-label="the importer's query" style="width:100%"></textarea>
+          <div class="actions" style="margin-top:0"><button class="btn" type="button" id="cp-go" data-send>Capture them</button>${mark}</div><div id="cp-out" data-out></div></div>
+        ${capIds.length ? `<h3>Make a dataset of a capture</h3><div class="inline" data-form="capture-dataset"><select id="cd-cap" aria-label="the capture">${opt(capIds)}</select>
+          <input type="text" id="cd-id" placeholder="its dataset's id" autocapitalize="off" spellcheck="false"><button class="btn" type="button" id="cd-go" data-send>Make the dataset</button>${mark}</div><div id="cd-out" data-out></div>` : ""}</div></section>
+      <section class="part"><div class="parthead"><span class="letter">2</span><h2>Against people's labels</h2></div><div class="body">
+        <p class="muted">Production's recorded decisions become an arm, scored like any (no call), beside the goal's arms in the eval.</p>
+        ${capIds.length ? `<div class="inline" data-form="capture-arm"><select id="ca-cap" aria-label="the capture">${opt(capIds)}</select><select id="ca-ds" aria-label="the dataset">${opt(dsIds)}</select>
+          <input type="text" id="ca-as" placeholder="the arm's system id: production_v1" autocapitalize="off" spellcheck="false">
+          <input type="text" id="ca-field" placeholder="the record's field holding the decision" autocapitalize="off" spellcheck="false">
+          <button class="btn" type="button" id="ca-go" data-send>Score its decisions</button>${mark}</div><div id="ca-out" data-out></div>` : '<p class="muted">Capture production\'s records first.</p>'}</div></section>
+      <section class="part"><div class="parthead"><span class="letter">3</span><h2>Pick the rows for the next version</h2></div><div class="body">
+        <div class="inline"><select id="wr-ds" aria-label="the dataset">${opt(dsIds, pv.dataset)}</select><select id="wr-run" aria-label="production's arm">${opt(sysIds, pv.run)}</select>
+          <input type="text" id="wr-set" value="${esc(pv.against || "")}" placeholder="against a label set: SET or DATASET/SET" autocapitalize="off" spellcheck="false"><button class="btn" type="button" id="wr-show">Show where it was wrong</button></div>
+        <div id="wr-out" data-out>${wrong}</div>
+        ${pv.rows && pv.rows.length ? `<div data-form="pick"><div class="inline"><input type="text" id="pk-for" placeholder="the dataset they may join (optional)" autocapitalize="off" spellcheck="false">
+          <input type="text" id="pk-note" placeholder="why they are worth keeping" style="min-width:18rem"><button class="btn primary" type="button" id="pk-go" data-send>Pick them</button>${mark}</div><div id="pk-out" data-out></div></div>` : ""}</div></section>
+      <section class="part"><div class="parthead"><span class="letter">4</span><h2>The next dataset version</h2></div><div class="body" data-form="extend">
+        <div class="inline"><select id="ex-from" aria-label="the dataset it grows from">${opt(dsIds, pv.dataset)}</select>
+          <input type="text" id="ex-id" placeholder="the new version's id: tickets_v2" autocapitalize="off" spellcheck="false">
+          <button class="btn primary" type="button" id="ex-go" data-send>Make the next version</button>${mark}</div>
+        <p class="muted">Its items and every pick waiting for it.</p><div id="ex-out" data-out></div></div></section>
+      <section class="part"><div class="parthead"><span class="letter">5</span><h2>Labels from what happened later</h2></div><div class="body">
+        <p class="muted">Rules over each record's outcome (what production recorded afterwards) give the item its label, or skip it; tried in order, the first that matches decides.</p>
+        ${capIds.length ? `<div data-form="outcome-labels"><div class="inline"><select id="ol-cap" aria-label="the capture">${opt(capIds)}</select><select id="ol-ds" aria-label="the dataset">${opt(dsIds, pv.dataset)}</select>
+          <input type="text" id="ol-set" placeholder="the label set's name: outcomes_2026_11" autocapitalize="off" spellcheck="false"></div>
+          <textarea id="ol-rules" rows="6" style="width:100%" aria-label="the rules" placeholder="${esc(RULES_EXAMPLE)}"></textarea>
+          <div class="actions" style="margin-top:0"><button class="btn" type="button" id="ol-go" data-send>Label from the outcomes</button>${mark}</div></div><div id="ol-out" data-out></div>` : '<p class="muted">Capture production\'s records first.</p>'}</div></section>
+      <section class="part"><div class="parthead"><span class="letter">6</span><h2>Replay the code that ran</h2></div><div class="body">
+        <p class="muted">A code record's periods, each at the commit production ran; a replay of a system at those commits compared with production's arm, item by item.</p>
+        ${codeIds.length ? `<div class="inline"><select id="rp-model" aria-label="the code record">${opt(codeIds, rp.model)}</select><button class="btn" type="button" id="rp-read">Show its periods and faithfulness</button></div>
+          <div id="rp-out" data-out>${rp.periods ? `<h3>Its periods</h3>${blocksView(rp.periods)}` : ""}${rp.faith ? `<h3>Its newest faithfulness record</h3>${blocksView(rp.faith)}` : ""}</div>
+          <h3>Replay a system</h3><div class="inline" data-form="replay"><select id="rf-sys" aria-label="the replay system">${opt(sysIds)}</select><select id="rf-ds" aria-label="the dataset">${opt(dsIds)}</select>
+            <input type="text" id="rf-prod" placeholder="production's run id" autocapitalize="off" spellcheck="false">
+            <input type="number" id="rf-cap" min="0.01" step="0.01" value="1" inputmode="decimal" style="width:6rem" aria-label="spend at most (USD)">
+            <button class="btn" type="button" id="rf-est">See the plan first</button><button class="btn primary" type="button" id="rf-go" data-send>Replay it</button>${mark}</div><div id="rf-out" data-out></div>` : '<p class="muted">No code record in this project (a model record of kind: code).</p>'}</div></section>
+      ${WB.cmd("evh capture --importer jsonl --query '{...}' --capture <id>\nevh arm-from-capture --capture <id> --dataset-id <d> --as <system>\nevh sheet-show <d> --runs <production> --wrong-against <set>\nevh pick --dataset-id <d> --item ... --note \"...\"\nevh dataset-extend --dataset <v1> --dataset-id <v2> --picks")}
+      <div class="actions"><a class="btn" href="#goal/${enc(goal)}">Back to the goal</a></div></div>`;
+  }
+  function wireProduction() {
+    const goal = WB.param || "";
+    const v = (id) => (document.getElementById(id)?.value || "").trim();
+    const by = () => byOf("pd-by") || (who() ? `person:${who()}` : null);
+    const done = (form, out) => { sent(form); forget("captures"); forget("datasets"); forget("systems"); if (UNSENT.size) out.insertAdjacentHTML("beforeend", '<p class="note">Done. <button class="btn" type="button" data-show>Show it</button></p>'); else WB.render(true); out.querySelector("[data-show]")?.addEventListener("click", () => WB.render(true)); };
+    const act = (btn, form, out, what, run) => document.getElementById(btn)?.addEventListener("click", async (ev) => {
+      const box = document.getElementById(out), who_ = by();
+      if (!who_) { box.innerHTML = '<p class="note" role="alert">Say who you are above: a change names who made it.</p>'; return; }
+      ev.target.disabled = true;
+      try { if (await run(who_, box)) done(form, box); } catch (e) { box.innerHTML = refusal(e); }
+      ev.target.disabled = false;
+    });
+    holds("capture-new", () => `Capture ${v("cp-id") || "…"}`);
+    holds("capture-dataset", () => `Make dataset ${v("cd-id") || "…"}`);
+    holds("capture-arm", () => `Score ${v("ca-as") || "…"}`);
+    holds("extend", () => `Make ${v("ex-id") || "…"}`);
+    act("cp-go", "capture-new", "cp-out", "capturing", (b, box) => runJob(`/captures/${enc(v("cp-id"))}`, { importer: v("cp-importer"), query: v("cp-query"), by: b }, box, "capturing"));
+    act("cd-go", "capture-dataset", "cd-out", "making the dataset", async (b, box) => {
+      // a dataset made from a capture is fetched at once: production's decisions are scored on its fetched items
+      if (!(await runJob(`/captures/${enc(v("cd-cap"))}/datasets`, { dataset_id: v("cd-id"), by: b }, box, "making the dataset"))) return null;
+      return runJob(`/datasets/${enc(v("cd-id"))}/materialize`, { by: b }, box, "fetching its items");
+    });
+    act("ca-go", "capture-arm", "ca-out", "scoring", (b, box) => {
+      const inputs = { dataset_id: v("ca-ds"), as: v("ca-as"), goal, by: b };
+      if (v("ca-field")) inputs.field = v("ca-field");
+      return runJob(`/captures/${enc(v("ca-cap"))}/arms`, inputs, box, "scoring production's decisions");
+    });
+    document.getElementById("wr-show")?.addEventListener("click", async () => {
+      const out = document.getElementById("wr-out"), dsId = v("wr-ds"), run = v("wr-run"), against = v("wr-set");
+      if (!against) { out.innerHTML = '<p class="note" role="alert">Name the label set it is compared against.</p>'; return; }
+      out.innerHTML = '<p class="muted">reading the sheet…</p>';
+      const r = await fetch(`/api/v1/datasets/${enc(dsId)}/sheet?runs=${enc(run)}&wrong_against=${enc(against)}`, { credentials: "same-origin" });
+      const b = await r.json().catch(() => ({}));
+      if (!r.ok) { out.innerHTML = `<p class="note" role="alert">${esc(b.error || r.status)}</p>`; return; }
+      WB._prod = { dataset: dsId, run, against, rows: ((b.result || {}).values || {}).rows || [] };
+      WB.render(true);
+    });
+    holds("pick", () => `Pick ${document.querySelectorAll("[data-keep-item]:checked:not([disabled])").length} row(s)`);
+    act("pk-go", "pick", "pk-out", "picking", (b, box) => {
+      const items = [...document.querySelectorAll("[data-keep-item]:checked:not([disabled])")].map((x) => x.dataset.keepItem);
+      const inputs = { item: items, note: v("pk-note"), by: b };
+      if (v("pk-for")) inputs.targets = [v("pk-for")];
+      return runJob(`/datasets/${enc((WB._prod || {}).dataset)}/picks`, inputs, box, "picking").then((j) => { if (j) WB._prod = null; return j; });
+    });
+    act("ex-go", "extend", "ex-out", "making the next version", (b, box) => runJob(`/datasets/${enc(v("ex-from"))}/extend`, { dataset_id: v("ex-id"), picks: true, by: b }, box, "making the next version"));
+    // labels from the outcomes: the rules sent as a file the job keeps; the coverage read from where it kept them
+    holds("outcome-labels", () => `Label ${v("ol-ds") || "…"} as ${v("ol-set") || "…"}`);
+    document.getElementById("ol-go")?.addEventListener("click", async (ev) => {
+      const box = document.getElementById("ol-out"), who_ = by();
+      if (!who_) { box.innerHTML = '<p class="note" role="alert">Say who you are above: a label set names who made it.</p>'; return; }
+      const rules = document.getElementById("ol-rules").value;
+      ev.target.disabled = true;
+      try {
+        const done = await runJob(`/captures/${enc(v("ol-cap"))}/label-sets`, { dataset_id: v("ol-ds"), set: v("ol-set"), map: { name: "rules.yaml", content_base64: btoa(unescape(encodeURIComponent(rules))) }, by: who_ }, box, "labelling from the outcomes");
+        if (done) {
+          sent("outcome-labels");
+          const map = ((await fetch(`/api/v1/jobs/${enc(done.id)}`, { credentials: "same-origin" }).then((x) => x.json())).inputs || {}).map;
+          const cov = await fetch(`/api/v1/datasets/${enc(v("ol-ds"))}/label-coverage?capture=${enc(v("ol-cap"))}&map=${enc(map)}`, { credentials: "same-origin" }).then((x) => x.json());
+          box.innerHTML = `<p class="note">Written: label set <b>${esc(v("ol-set"))}</b> (source rule). How far the rules label ${esc(v("ol-ds"))} now:</p>${cov.result ? coverageView(cov.result) : `<p class="note" role="alert">${esc(cov.error || "")}</p>`}`;
+        }
+      } catch (e) { box.innerHTML = refusal(e); }
+      ev.target.disabled = false;
+    });
+    // replay: a code record's periods and faithfulness, read; a replay as a job, its plan first
+    document.getElementById("rp-read")?.addEventListener("click", async () => {
+      const m = v("rp-model"), box = document.getElementById("rp-out");
+      box.innerHTML = '<p class="muted">reading…</p>';
+      const get = (path) => fetch(`/api/v1${path}`, { credentials: "same-origin" }).then((x) => x.json()).catch(() => ({}));
+      const [per, fa] = await Promise.all([get(`/models/${enc(m)}/periods`), get(`/models/${enc(m)}/faithfulness`)]);
+      WB._replay = { model: m, periods: per.result || { blocks: [{ lines: [per.error || "no periods"] }] }, faith: fa.result || { blocks: [{ lines: [fa.error || "no faithfulness record yet"] }] } };
+      box.innerHTML = `<h3>Its periods</h3>${blocksView(WB._replay.periods)}<h3>Its newest faithfulness record</h3>${blocksView(WB._replay.faith)}`;
+    });
+    holds("replay", () => `Replay ${v("rf-sys") || "…"}`);
+    const replayInputs = () => ({ dataset: v("rf-ds"), production: v("rf-prod") });
+    document.getElementById("rf-est")?.addEventListener("click", async () => {
+      const box = document.getElementById("rf-out");
+      box.innerHTML = '<p class="muted">planning…</p>';
+      const r = await fetch("/api/v1/estimate", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json", "X-EVH-Data": "1" }, body: JSON.stringify({ operation: "faithfulness", inputs: { system: v("rf-sys"), ...replayInputs() } }) });
+      const b = await r.json().catch(() => ({}));
+      box.innerHTML = r.ok ? blocksView(b.result) : `<p class="note" role="alert">${esc(b.error || b.text || r.status)}</p>`;
+    });
+    document.getElementById("rf-go")?.addEventListener("click", async (ev) => {
+      const box = document.getElementById("rf-out"), who_ = by(), cap = Number(v("rf-cap"));
+      if (!who_) { box.innerHTML = '<p class="note" role="alert">Say who you are above: a replay names who asked.</p>'; return; }
+      if (!(cap > 0)) { box.innerHTML = '<p class="note" role="alert">Say the most it may spend first.</p>'; return; }
+      ev.target.disabled = true;
+      try {
+        const done = await runJob(`/systems/${enc(v("rf-sys"))}/faithfulness`, { ...replayInputs(), by: who_, max_cost_usd: cap }, box, "replaying");
+        if (done) { sent("replay"); box.innerHTML = `<p class="note">Replayed.</p>${blocksView((done.result || {}).result)}`; }
+      } catch (e) { box.innerHTML = refusal(e); }
+      ev.target.disabled = false;
+    });
+  }
+
   // ── step 3: prepare a dataset (UXS-005 step 3): fetch it, look inside, its reference set ────────────────────────
   const catalogPage = (ds) => `${location.origin}/d/${String(ds || "none").replace(/[^A-Za-z0-9._-]+/g, "-").replace(/^-+|-+$/g, "") || "x"}.html`;
   async function runJob(path, body, box, what) {
@@ -934,15 +1257,15 @@
     const promote = sets.map((x) => `<div class="row-form" data-form="promote-${esc(x.name)}"><p><b class="mono">${esc(x.name)}</b> <span class="muted">${esc(x.kind)}${x.kind === "dataset" ? ": the answers the data came with" : ""}</span></p>
         <div class="inline"><select id="pt-${esc(x.name)}" aria-label="tier"><option value="gold">gold</option><option value="silver">silver</option></select>
         <input type="text" id="pr-${esc(x.name)}" placeholder="why: a sentence" aria-label="why it is promoted" style="min-width:18rem">
-        <button class="btn" type="button" data-promote="${esc(x.name)}" data-send>Promote</button>${mark}</div><div id="po-${esc(x.name)}"></div></div>`).join("");
+        <button class="btn" type="button" data-promote="${esc(x.name)}" data-send>Promote</button>${mark}</div><div id="po-${esc(x.name)}" data-out></div></div>`).join("");
     return `<div class="screen wide">${head}
       <section class="part"><div class="parthead"><span class="letter">a</span><h2>Fetch its items</h2><span class="grow"></span>${done(fetched)}</div><div class="body">
         <p class="muted">Downloads every item and checks it against its hash, so a run reads exactly the frozen items.</p>
-        ${fetched ? "" : `<div class="actions" style="margin-top:0"><button class="btn primary" type="button" id="pp-fetch">Fetch them</button></div>`}<div id="pp-fetch-out"></div></div></section>
+        ${fetched ? "" : `<div class="actions" style="margin-top:0"><button class="btn primary" type="button" id="pp-fetch">Fetch them</button></div>`}<div id="pp-fetch-out" data-out></div></div></section>
       <section class="part"><div class="parthead"><span class="letter">b</span><h2>Look inside</h2><span class="grow"></span>${done(looked)}</div><div class="body">
         <p class="muted">How many items, how long, each field's values: most surprises show here, before anything runs.</p>
         ${looked ? `<p><a href="${catalogPage(ds)}">Open its page in the catalog ↗</a></p>` : `<div class="actions" style="margin-top:0"><button class="btn primary" type="button" id="pp-look" ${fetched ? "" : "disabled"}>Profile it</button>${fetched ? "" : '<span class="muted">after it is fetched</span>'}</div>`}
-        <div id="pp-look-out"></div></div></section>
+        <div id="pp-look-out" data-out></div></div></section>
       <section class="part"><div class="parthead"><span class="letter">c</span><h2>Its reference set</h2><span class="grow"></span>${done(refs.length)}</div><div class="body">
         <p class="muted">The expected answer for each item, that outputs are scored against. Gold is checked by people; silver is a model's answers, enough to rank systems. Who and why are recorded.</p>
         ${refs.length ? `<ul>${refs.map((r) => `<li><b>${esc(r.reference)}</b> · ${r.items} item(s) · ${esc(r.kind || "")}</li>`).join("")}</ul>` : ""}
@@ -1016,7 +1339,7 @@
         <div class="field"><div class="name" id="lb-items-l">Which items</div><div class="choices row" role="radiogroup" aria-labelledby="lb-items-l">
           <label class="choice"><input type="radio" name="lb-items" value="unlabelled" checked> not labelled yet</label><label class="choice"><input type="radio" name="lb-items" value="all"> all</label></div></div>
         ${byField("lb-by")}
-        <div class="actions"><button class="btn primary" type="button" id="lb-make">Make the sheet</button><a class="btn" href="#prepare/${enc(ds)}">Back</a></div><div id="lb-make-out"></div>
+        <div class="actions"><button class="btn primary" type="button" id="lb-make">Make the sheet</button><a class="btn" href="#prepare/${enc(ds)}">Back</a></div><div id="lb-make-out" data-out></div>
         ${WB.cmd(`evh label-sheet --dataset-id ${ds} --out sheet.csv`)}</div>`;
     }
     if (answered(d)) UNSENT.set("label-sheet", `${answered(d)} answer(s) for ${ds}`);
@@ -1033,7 +1356,7 @@
       <div class="field"><label class="name" for="lb-set">The label set's name</label><div><input type="text" id="lb-set" value="${esc(d.set || "")}" placeholder="owner_2026_11" autocapitalize="off" spellcheck="false"><div class="hint">lowercase letters, digits, _ . -; a set is never edited, a second pass is a new set</div></div></div>
       ${byField("lb-by")}
       <div class="actions"><button class="btn primary" type="button" id="lb-submit" data-send>Submit</button><span class="unsent" data-unsent-mark hidden><span id="lb-count">${n}</span> answer(s) not submitted · kept in this browser</span>
-        <button class="btn" type="button" id="lb-drop">Throw the sheet away</button></div><div id="lb-out"></div>
+        <button class="btn" type="button" id="lb-drop">Throw the sheet away</button></div><div id="lb-out" data-out></div>
       ${WB.cmd(`evh label-import --sheet sheet.csv --dataset-id ${ds} --set <name> --by <you>`)}</div>`;
   }
   function wireLabel() {
@@ -1113,6 +1436,7 @@
     "goal-new": [() => screenGoalForm(""), wireGoalForm], "goal-edit": [() => screenGoalForm(WB.param || ""), wireGoalForm],
     prepare: [() => screenPrepare(WB.param || ""), wirePrepare], label: [() => screenLabel(WB.param || ""), wireLabel],
     systems: [() => screenSystems(WB.param || ""), wireSystems], eval: [() => screenEval(WB.param || ""), wireEval],
+    review: [() => screenReview(WB.param || ""), wireReview], production: [() => screenProduction(WB.param || ""), wireProduction],
   };
 
   function goLive() {

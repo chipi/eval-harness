@@ -385,7 +385,7 @@ try:
                 and page.evaluate("localStorage.getItem('evh.draft.label.notes_v1')") is None,
                 lab,
             )
-            page.goto(f"http://127.0.0.1:{port}/workbench/#review")
+            page.goto(f"http://127.0.0.1:{port}/workbench/#judge")
             page.wait_for_selector("h1", timeout=20000)
             check(
                 "a screen not wired yet says so, and shows none of the mockup's data",
@@ -716,6 +716,208 @@ try:
                 and "the first baseline was the one" in json.dumps(v3),
                 (r.stderr[-200:], vers, json.dumps(v3)[:300]),
             )
+            # W2 (UXS-005): which is better, blind, on a sheet submitted when done; then what went wrong, with a new list
+            page.goto(f"http://127.0.0.1:{port}/workbench/#review/tickets_summary")
+            page.wait_for_selector("#rv-make", timeout=20000)
+            page.select_option("#rv-ds", "tk_v1")
+            page.wait_for_selector("#rv-a option[value='fake-1b_here']", state="attached", timeout=20000)
+            page.select_option("#rv-a", "one_v1")
+            page.select_option("#rv-b", "fake-1b_here")
+            page.fill("#rv-by", "tester")
+            page.click("#rv-make")
+            page.wait_for_selector("[data-pick='t01_login']", timeout=60000)
+            table = page.locator("main table").inner_text()
+            check(
+                "Make the sheet: a blind sheet-export job; the page shows outputs A and B, never which arm is which",
+                "one_v1" not in table
+                and "fake-1b_here" not in table
+                and page.locator("[data-pick]").count() >= 3,
+                table[:300],
+            )
+            page.check("[data-pick='t01_login'][value='A']")
+            page.check("[data-pick='t02_invoice'][value='B']")
+            page.fill("#rv-name", "tester_picks")
+            page.reload()
+            page.wait_for_selector("[data-pick='t01_login']", timeout=20000)
+            check(
+                "the picks are kept in this browser across a reload, counted, Submit naming what it writes",
+                page.is_checked("[data-pick='t01_login'][value='A']")
+                and page.locator("#rv-count").inner_text() == "2"
+                and page.locator("#rv-submit").inner_text()
+                == "Submit 2 answer(s) as judgements tester_picks",
+                page.locator("#rv-submit").inner_text(),
+            )
+            page.fill("#rv-by", "tester")
+            page.click("#rv-submit")
+            page.wait_for_selector("text=Written: the judgements", timeout=60000)
+            judged = [
+                x for x in (proj / "data" / "runs").iterdir() if (x / "scores" / "tester_picks@none").exists()
+            ]
+            check(
+                "Submit: sheet-import reads the key the sheet-export job kept and writes judged scores under both arms' runs",
+                len(judged) == 2
+                and page.evaluate("localStorage.getItem('evh.draft.review.tickets_summary')") is None,
+                [x.name for x in judged],
+            )
+            page.click("[data-again]")
+            page.wait_for_selector("#rv-make", timeout=20000)
+            page.select_option("#rv-ds", "tk_v1")
+            page.wait_for_selector("#rv-a option[value='fake-1b_here']", state="attached", timeout=20000)
+            page.select_option("#rv-a", "one_v1")
+            page.select_option("#rv-b", "fake-1b_here")
+            page.check("input[name=rv-mode][value=tags]")
+            page.select_option("#rv-modes", "")
+            page.fill("#rv-new-id", "tk_modes")
+            page.fill("#rv-new-modes", "too-short, off-topic")
+            page.fill("#rv-by", "tester")
+            page.click("#rv-make")
+            page.wait_for_selector("[data-tag='t01_login']", timeout=60000)
+            page.locator("[data-tag='t01_login'][value='too-short']").first.check()
+            page.fill("#rv-name", "tester_tags")
+            page.fill("#rv-by", "tester")
+            page.click("#rv-submit")
+            page.wait_for_selector("text=Written: the tag set", timeout=60000)
+            tags_doc = proj / "data" / "tags" / "tk_v1" / "tester_tags" / "tags.json"
+            check(
+                "what went wrong: a failure-mode list made here (failure-modes-new), a tag sheet, the tags written as a tag set",
+                (proj / "data" / "failure-modes" / "tk_modes.yaml").is_file()
+                and tags_doc.is_file()
+                and "too-short" in tags_doc.read_text(),
+                tags_doc.read_text()[:300] if tags_doc.is_file() else "no tag set",
+            )
+            # W3 (UXS-005): production's records captured, made a dataset, its decisions scored as an arm, the rows where
+            # it was wrong against a label set picked, and the next version of a dataset made with them
+            prod_rows = [
+                {
+                    "id": f"p{i}",
+                    "body": f"ticket {i}: the customer cannot export a report",
+                    "decision": "export" if i % 2 else "login",
+                    "outcome": {"resolved": "fixed" if i <= 4 else "wontfix"},
+                }
+                for i in range(1, 7)
+            ]
+            (proj / "prod.jsonl").write_text("".join(json.dumps(r) + "\n" for r in prod_rows))
+            page.goto(f"http://127.0.0.1:{port}/workbench/#production/tickets_summary")
+            page.wait_for_selector("#cp-go", timeout=20000)
+            page.fill("#pd-by", "tester")
+            page.fill("#cp-id", "prod_2026_11")
+            page.fill("#cp-query", json.dumps({"path": "prod.jsonl"}))
+            page.click("#cp-go")
+            page.wait_for_selector("li:has-text('prod_2026_11')", timeout=60000)
+            page.fill("#cd-id", "prod_v1")
+            page.click("#cd-go")
+            page.wait_for_selector("li:has-text('made into prod_v1')", timeout=60000)
+            check(
+                "Capture them, make a dataset of it: capture and dataset-from-capture as jobs, the capture listed with it",
+                (proj / "data" / "captures" / "prod_2026_11" / "capture.json").is_file()
+                and len(json.loads((proj / "data" / "datasets" / "prod_v1.json").read_text())["items"]) == 6,
+                page.locator("main").inner_text()[:400],
+            )
+            page.select_option("#ca-cap", "prod_2026_11")
+            page.select_option("#ca-ds", "prod_v1")
+            page.fill("#ca-as", "prod_arm_v1")
+            page.fill("#ca-field", "decision")
+            page.click("#ca-go")
+            page.wait_for_selector("#wr-run option[value='prod_arm_v1']", state="attached", timeout=60000)
+            check(
+                "Score its decisions: arm-from-capture makes production's decisions an arm with a run on the dataset",
+                (proj / "data" / "systems" / "prod_arm_v1.yaml").is_file()
+                and any((proj / "data" / "runs").glob("prod_arm_v1_*")),
+                sorted(x.name for x in (proj / "data" / "runs").glob("prod_arm_*")),
+            )
+            labels_dir = proj / "prod_labels"
+            labels_dir.mkdir()
+            for i in range(1, 7):
+                (labels_dir / f"p{i}.txt").write_text("export")
+            lr = evh(
+                "label-import",
+                "--sheet",
+                "prod_labels",
+                "--dataset-id",
+                "prod_v1",
+                "--set",
+                "truth",
+                "--by",
+                "t",
+            )
+            page.select_option("#wr-ds", "prod_v1")
+            page.select_option("#wr-run", "prod_arm_v1")
+            page.fill("#wr-set", "truth")
+            page.click("#wr-show")
+            page.wait_for_selector("[data-keep-item]", timeout=60000)
+            shown_items = page.locator("[data-keep-item]").evaluate_all(
+                "els => els.map(e => e.dataset.keepItem)"
+            )
+            check(
+                "Show where it was wrong: sheet-show's rows as values, only the items production decided against the label set",
+                lr.returncode == 0 and sorted(shown_items) == ["p2", "p4", "p6"],
+                (lr.stderr[-200:], shown_items),
+            )
+            page.check("[data-keep-item='p2']")
+            page.check("[data-keep-item='p4']")
+            page.fill("#pk-for", "tk_v1")
+            page.fill("#pk-note", "production said login where the customer could not export")
+            page.click("#pk-go")
+            page.wait_for_selector(
+                "[data-keep-item]", state="detached", timeout=60000
+            )  # the pick job ended: the rows go
+            picks = evh("picks", "--json")
+            check(
+                "Pick them: the checked rows are picked for tk_v1 with the reason",
+                picks.returncode == 0
+                and "p2" in picks.stdout
+                and "p4" in picks.stdout
+                and "p6" not in picks.stdout,
+                picks.stdout[-400:],
+            )
+            page.select_option("#ex-from", "tk_v1")
+            page.fill("#ex-id", "tk_v2")
+            page.fill("#pd-by", "tester")
+            page.click("#ex-go")
+            page.wait_for_function(
+                "() => !document.querySelector('#ex-out') || !document.querySelector('#ex-out').textContent.includes('running')",
+                timeout=60000,
+            )
+            page.wait_for_timeout(1000)
+            v2 = (
+                json.loads((proj / "data" / "datasets" / "tk_v2.json").read_text())
+                if (proj / "data" / "datasets" / "tk_v2.json").is_file()
+                else {}
+            )
+            check(
+                "Make the next version: dataset-extend makes tk_v2 from tk_v1's items and the picks waiting for it",
+                len(v2.get("items", []))
+                == len(json.loads((proj / "data" / "datasets" / "tk_v1.json").read_text())["items"]) + 2,
+                (
+                    len(v2.get("items", [])),
+                    page.locator("#ex-out").inner_text() if page.locator("#ex-out").count() else "",
+                ),
+            )
+            page.goto(f"http://127.0.0.1:{port}/workbench/#production/tickets_summary")
+            page.wait_for_selector("#ol-go", timeout=20000)
+            page.select_option("#ol-cap", "prod_2026_11")
+            page.select_option("#ol-ds", "prod_v1")
+            page.fill("#ol-set", "outcomes_v1")
+            page.fill(
+                "#ol-rules",
+                "- when: {resolved: fixed}\n  label: export\n- when: {resolved: wontfix}\n  label: login\n",
+            )
+            page.fill("#pd-by", "tester")
+            page.click("#ol-go")
+            page.wait_for_selector("#ol-out table", timeout=60000)
+            out_doc = proj / "data" / "labels" / "prod_v1" / "outcomes_v1" / "labels.json"
+            olab = json.loads(out_doc.read_text()) if out_doc.is_file() else {}
+            check(
+                "Labels from what happened later: label-from-capture with the rules typed here, a rule label set, then its "
+                "coverage read from the rules the job kept",
+                olab.get("source", {}).get("kind") == "rule"
+                and olab.get("n_items") == 6
+                and "Written: label set" in page.locator("#ol-out").inner_text()
+                and "export" in page.locator("#ol-out").inner_text()
+                and "rule 1: label export" in page.locator("#ol-out").inner_text()
+                and "labelled\t6" in page.locator("#ol-out").inner_text(),
+                (olab.get("source"), page.locator("#ol-out").inner_text()[:500]),
+            )
             phone = browser.new_context(
                 viewport={"width": 390, "height": 844},
                 is_mobile=True,
@@ -730,6 +932,14 @@ try:
                 ("models", "Models in this project"),
                 ("model/fake-1b", "fake-1b"),
                 ("model-new", "Bring in a model"),
+                ("goal-new", "Set the goal"),
+                ("dataset/tickets_summary", "Add a dataset"),
+                ("prepare/notes_v1", "Prepare the dataset"),
+                ("label/notes_v1", "Label the items"),
+                ("systems/tickets_summary", "Choose the systems"),
+                ("eval/tickets_summary/r1", "Its rounds"),
+                ("review/tickets_summary", "Review the outputs"),
+                ("production/tickets_summary", "Learn from production"),
             ):
                 phone.goto(f"http://127.0.0.1:{port}/workbench/#{screen}")
                 phone.wait_for_selector(f"h1:has-text('{h1}')", timeout=20000)
@@ -737,7 +947,7 @@ try:
                     phone.screenshot(path=f"{shots}/phone-{screen.replace('/', '-')}.png", full_page=True)
                 wide[screen] = phone.evaluate("document.documentElement.scrollWidth - window.innerWidth")
             check(
-                "at a phone's width the models' screens do not scroll sideways",
+                "at a phone's width the models' screens and steps 1 to 4, the eval, the review and production do not scroll sideways",
                 all(v <= 0 for v in wide.values()),
                 wide,
             )

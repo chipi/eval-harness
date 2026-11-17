@@ -1046,6 +1046,28 @@ def sheet_view(A, args) -> int:
 
     head, body, _ = _sheet.flat(model, shown, scores_only=args.scores_only, short=True, picked=picked)
     _show(head, body)
+    # The rows as values (the Workbench's W3 picks rows; WORKBENCH_GAPS: sheet-show answered blocks only): what is printed
+    from evaluation_harness import _jsonout  # noqa: PLC0415
+
+    _jsonout.values(
+        {
+            "dataset": args.dataset_id,
+            "metric": model["metric"],
+            "counts": counts,
+            "rows": [
+                {
+                    "item": r["item"],
+                    "text": r["text"],
+                    "fields": r["fields"],
+                    "decisions": r["shown"],
+                    "labels": r["label_text"],
+                    "signals": r["signals"],
+                    "picked": picked(r["item"]),
+                }
+                for r in shown
+            ],
+        }
+    )
     if runs and model["metric"]:
         fhead, flines = _sheet.footer_table(model, _sheet.footer(model, shown))
         print(f"\nper run, over the {len(shown)} row(s) shown:")

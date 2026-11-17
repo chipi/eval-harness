@@ -13,6 +13,24 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Added
 
+- **The Workbench's production (W3), live** (UXS-005): "Production" on a goal captures a deployed system's records
+  through an importer (`capture`) and makes a dataset of them, fetched (`dataset-from-capture`, `dataset-materialize`);
+  scores production's recorded decisions as an arm (`arm-from-capture`); shows the rows where production was wrong
+  against a label set and picks the checked ones for a dataset with a reason (`pick`); makes the next version of a
+  dataset from the picks waiting for it (`dataset-extend`); labels a dataset from what happened later with rules typed
+  on the page (`label-from-capture`) and shows how far they reach (`label-coverage-show`); and replays the code that
+  ran: a code record's periods and newest faithfulness record, a replay's plan first (the dry run), then the replay as
+  a job under a cap (`faithfulness`).
+- **`sheet-show` gives its rows as values** (`--json`, the API's answer): each row's item, text, fields, the runs'
+  decisions, the labels, its signals and whether it is picked, and the counts; it answered printed blocks only.
+- **What an action said stays on the screen**: a refusal or a job's end shown under an action is kept through a redraw
+  of the same screen (a read coming back redrew it and wiped the message, so nothing seemed to happen).
+- **The Workbench's review (W2), live** (UXS-005): "Review the outputs" on a goal compares two arms of a dataset on a
+  sheet made as a `sheet-export` job: "which is better", blind (outputs A and B shuffled per item; the page reads the
+  sheet, never its key), or "what went wrong", each output tagged with a failure-mode list (a new one made here with
+  `failure-modes-new`). The answers are kept in this browser until submitted to `sheet-import` with `export_job`, as
+  judged scores (read as judged/<name>) or a tag set; "Make another sheet" starts the next one. Every live screen is
+  checked at a phone's width.
 - **The Workbench's eval (W1), live** (UXS-005 step 5): a goal's rounds as tabs; a round shows its question, its arms
   (a retired one with its reason) and the evidence (each arm against the leader, Holm: the raw p and its threshold, the
   verdict, the notes). With no round open, "Open the round" asks its question, the dataset, whether to carry the last

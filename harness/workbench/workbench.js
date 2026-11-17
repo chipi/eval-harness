@@ -759,8 +759,19 @@ success_criteria:
       el.dataset.typed = "1";
     });
   }
+  // what an action said (a refusal, a job's end) stays through a redraw of the same screen: a read coming back redrew
+  // the screen and wiped it, and the person never saw why nothing happened
+  function said() {
+    const out = {};
+    main.querySelectorAll("[data-out]").forEach((el) => { if (el.id && el.innerHTML.trim()) out[el.id] = el.innerHTML; });
+    return out;
+  }
+  function resay(kept) {
+    for (const [id, html] of Object.entries(kept)) { const el = document.getElementById(id); if (el && !el.innerHTML.trim()) el.innerHTML = html; }
+  }
   function render(newScreen) {
     const kept = newScreen ? {} : typed();
+    const told = newScreen ? {} : said();
     const keep = newScreen ? null : focusKey(document.activeElement);
     const route = (location.hash || "#start").slice(1);
     // a route with a part after it (#goal/<id>, the live Workbench): its first word names the screen
@@ -776,6 +787,7 @@ success_criteria:
     drawRail(route);
     retype(kept);
     if (wire) wire();
+    resay(told);
     const h1 = main.querySelector("h1");
     if (h1) h1.tabIndex = -1;
     const next = focusNext && main.querySelector(focusNext);
