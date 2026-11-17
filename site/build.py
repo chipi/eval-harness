@@ -18,6 +18,7 @@ import filecmp
 import html
 import json
 import math
+import os
 import re
 import shutil
 import sys
@@ -28,6 +29,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parent / "harness"))  # the evaluation_harness package: its store reads data/
+os.environ.setdefault("EVAL_HOME", str(HERE.parent / "harness"))
 import csp  # noqa: E402
 import figures  # noqa: E402
 import method  # noqa: E402

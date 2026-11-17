@@ -9,11 +9,13 @@ the notes around it are written by hand.
 """
 
 import argparse
+import os
 import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parents[1] / "harness"))
+os.environ.setdefault("EVAL_HOME", str(HERE.parents[1] / "harness"))
 from evaluation_harness import catalog_build as cb  # noqa: E402
 from evaluation_harness.axes import axis_title  # noqa: E402
 from evaluation_harness.catalog_adapter import load_catalog_adapter  # noqa: E402

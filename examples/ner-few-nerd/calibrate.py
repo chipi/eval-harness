@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import random
 import sys
 import urllib.request
@@ -34,6 +35,7 @@ import yaml
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent / "_shared"))
 sys.path.insert(0, str(HERE.parents[1] / "harness"))  # the evaluation_harness package: its store reads data/
+os.environ.setdefault("EVAL_HOME", str(HERE.parents[1] / "harness"))
 import calibration as cal  # noqa: E402
 from evaluation_harness import _store  # noqa: E402
 

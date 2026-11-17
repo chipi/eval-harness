@@ -27,6 +27,7 @@ from pathlib import Path
 
 HARNESS = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(HARNESS))
+os.environ.setdefault("EVAL_HOME", str(HARNESS))
 from evaluation_harness import _store, stats  # noqa: E402
 
 os.environ.pop("EVH_P_CACHE", None)  # every p computed, none read from a cache

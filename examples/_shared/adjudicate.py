@@ -23,11 +23,13 @@ against it, $0:
 from __future__ import annotations
 
 import json
+import os
 import sys
 from pathlib import Path
 
 REFS = Path(__file__).resolve().parents[2] / "harness" / "data" / "references"
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "harness"))  # evaluation_harness: its store
+os.environ.setdefault("EVAL_HOME", str(Path(__file__).resolve().parents[2] / "harness"))
 from evaluation_harness import _store  # noqa: E402
 
 

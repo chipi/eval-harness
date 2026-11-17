@@ -47,6 +47,7 @@ import itertools
 import json
 import random
 import re
+import os
 import sys
 import time
 from dataclasses import dataclass, field
@@ -56,6 +57,7 @@ from typing import Any, Dict, List, Optional
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent / "_shared"))
 sys.path.insert(0, str(HERE.parents[1] / "harness"))  # the evaluation_harness package: its store reads data/
+os.environ.setdefault("EVAL_HOME", str(HERE.parents[1] / "harness"))
 from evaluation_harness import _store  # noqa: E402
 import gateway  # noqa: E402
 from codehash import code_digest  # noqa: E402

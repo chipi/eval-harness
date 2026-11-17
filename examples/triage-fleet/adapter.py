@@ -42,6 +42,7 @@ from pathlib import Path
 from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "harness"))
+os.environ.setdefault("EVAL_HOME", str(Path(__file__).resolve().parents[2] / "harness"))
 from evaluation_harness import _store  # noqa: E402
 from evaluation_harness.adapter import Result, answers  # noqa: E402
 

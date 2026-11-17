@@ -22,6 +22,7 @@ from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "harness"))
+os.environ.setdefault("EVAL_HOME", str(Path(__file__).resolve().parents[3] / "harness"))
 os.environ["EVH_P_CACHE"] = ""
 os.environ["EVH_WORKERS"] = "1"
 from evaluation_harness import stats

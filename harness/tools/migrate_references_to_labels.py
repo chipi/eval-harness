@@ -20,10 +20,12 @@ are `rule`; a fetcher's, the owner's verdicts or fixture labels are `person`. Id
 
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
+os.environ.setdefault("EVAL_HOME", str(Path(__file__).resolve().parents[1]))
 
 import argparse
 import hashlib

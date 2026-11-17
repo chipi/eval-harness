@@ -20,12 +20,14 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import os
 import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parents[1] / "harness"))
+os.environ.setdefault("EVAL_HOME", str(HERE.parents[1] / "harness"))
 from evaluation_harness import _store  # noqa: E402
 from evaluation_harness._outcome_rules import load_rules, matches  # noqa: E402
 from importer import _t, close_comments, issue_verdicts, outcome_fields, own_issue, resolved  # noqa: E402

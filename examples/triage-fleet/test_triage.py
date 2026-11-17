@@ -13,6 +13,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parents[1] / "harness"))
+os.environ.setdefault("EVAL_HOME", str(HERE.parents[1] / "harness"))
 sys.path.insert(0, str(HERE))
 import adapter  # noqa: E402
 import importer  # noqa: E402

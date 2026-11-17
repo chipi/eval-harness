@@ -19,11 +19,13 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parents[1] / "harness"))
+os.environ.setdefault("EVAL_HOME", str(HERE.parents[1] / "harness"))
 from evaluation_harness import _store  # noqa: E402
 from evaluation_harness._common import die, load_dataset  # noqa: E402
 from evaluation_harness._label_sets import label_text  # noqa: E402

@@ -14,12 +14,14 @@ from __future__ import annotations
 import copy
 import json
 import math
+import os
 import sys
 from pathlib import Path
 from typing import Any
 
 HERE = Path(__file__).resolve().parents[1] / "scripts"  # the core modules (this file is in tools/)
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
+os.environ.setdefault("EVAL_HOME", str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tools/
 import validate_judge_goyal as vg  # noqa: E402
 import validate_judge_zhang as vz  # noqa: E402

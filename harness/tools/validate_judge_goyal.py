@@ -37,6 +37,7 @@ import hashlib
 import io
 import json
 import math
+import os
 import sys
 import time
 import zipfile
@@ -45,6 +46,7 @@ from pathlib import Path
 from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
+os.environ.setdefault("EVAL_HOME", str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tools/
 from evaluation_harness import (
     _fetch,

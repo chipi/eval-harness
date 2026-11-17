@@ -13,11 +13,13 @@ The canonical labels are defined in docs/REFERENCE.md#terminology. This fails if
 cell in any eval-keyed table does not use one.
 """
 
+import os
 import pathlib
 import re
 import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))  # the evaluation_harness package
+os.environ.setdefault("EVAL_HOME", str(pathlib.Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from evaluation_harness import _store
 from evaluation_harness._common import no_options

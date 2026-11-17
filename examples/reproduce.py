@@ -58,6 +58,7 @@ DATA = HARNESS / "data"
 CARDS = HARNESS / ".build" / "reproduce"
 sys.path.insert(0, str(HERE / "_shared"))
 sys.path.insert(0, str(HARNESS))  # the evaluation_harness package (a link to scripts/)
+os.environ.setdefault("EVAL_HOME", str(HARNESS))
 from eval_arms import arm_of  # noqa: E402
 from evaluation_harness import _store  # noqa: E402
 from evaluation_harness._runs import runs_on  # noqa: E402

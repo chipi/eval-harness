@@ -15,6 +15,7 @@ The split-half draw is seeded, so the same runs always give the same figures.
 from __future__ import annotations
 
 import math
+import os
 import random
 import re
 import statistics
@@ -23,6 +24,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parents[1] / "scripts"  # the core modules (this file is in tools/)
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
+os.environ.setdefault("EVAL_HOME", str(Path(__file__).resolve().parents[1]))
 from evaluation_harness._runs import item_rows, runs_on  # noqa: E402
 from evaluation_harness.stats import holm, sign_flip_p, spearman  # noqa: E402
 

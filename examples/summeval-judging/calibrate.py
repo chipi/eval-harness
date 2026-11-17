@@ -33,6 +33,7 @@ from __future__ import annotations
 
 import json
 import math
+import os
 import statistics
 import sys
 from pathlib import Path
@@ -41,6 +42,7 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 sys.path.insert(0, str(HERE.parent / "_shared"))
 sys.path.insert(0, str(ROOT / "harness"))  # the evaluation_harness package (a link to scripts/)
+os.environ.setdefault("EVAL_HOME", str(ROOT / "harness"))
 from evaluation_harness import _store  # noqa: E402
 from modules import load_module  # noqa: E402
 

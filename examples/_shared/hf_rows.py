@@ -20,10 +20,12 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "harness"))  # the harness's own package
+os.environ.setdefault("EVAL_HOME", str(Path(__file__).resolve().parents[2] / "harness"))
 from evaluation_harness import _store
 from evaluation_harness.sources import huggingface as _hf
 

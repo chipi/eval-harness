@@ -28,6 +28,7 @@ WHAT IT MEASURES
 from __future__ import annotations
 
 import json
+import os
 import statistics as st
 import sys
 from pathlib import Path
@@ -36,6 +37,7 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 sys.path.insert(0, str(HERE.parent / "_shared"))
 sys.path.insert(0, str(HERE.parents[1] / "harness"))  # the evaluation_harness package: its store reads data/
+os.environ.setdefault("EVAL_HOME", str(HERE.parents[1] / "harness"))
 from evaluation_harness import _store  # noqa: E402
 from modules import load_module  # noqa: E402
 

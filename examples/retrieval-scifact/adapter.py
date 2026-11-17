@@ -56,6 +56,7 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1] / "harness"
 sys.path.insert(0, str(HERE.parent / "_shared"))
 sys.path.insert(0, str(HERE.parents[1] / "harness"))  # the evaluation_harness package: its store reads data/
+os.environ.setdefault("EVAL_HOME", str(HERE.parents[1] / "harness"))
 from evaluation_harness import _store  # noqa: E402
 import gateway  # noqa: E402
 

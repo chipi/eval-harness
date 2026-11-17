@@ -14,6 +14,7 @@ here rather than in a reader's head.
 """
 
 import json
+import os
 import re
 import statistics
 import sys
@@ -21,6 +22,7 @@ from pathlib import Path
 from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
+os.environ.setdefault("EVAL_HOME", str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tools/
 from evaluation_harness import _outputs, _store
 from evaluation_harness import stats as _stats
