@@ -1403,7 +1403,9 @@ try:
             page.goto(f"http://127.0.0.1:{port}/workbench/#home")
             page.click("text=Every job")
             page.wait_for_selector("h1:has-text('Jobs')", timeout=20000)
-            page.wait_for_selector("text=of ", timeout=20000)
+            page.wait_for_function(
+                "() => /\\d+–\\d+ of \\d+/.test(document.querySelector('main').textContent)", timeout=20000
+            )
             every = evh("jobs-status", "--json")
             total = len(json.loads(every.stdout.splitlines()[-1])["result"]["values"]["jobs"])
             check(
