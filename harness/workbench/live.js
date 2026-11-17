@@ -48,8 +48,8 @@
     return `<div class="screen wide">${head}
       <div class="part"><div class="parthead"><h2>Running now</h2></div><div class="body">${running}</div></div>
       ${goals.goals.length ? `<div class="tablewrap" style="margin-top:18px"><table><thead><tr><th>goal</th><th>decides</th><th>datasets</th><th class="num">rounds</th><th>next</th></tr></thead><tbody>${rows.join("")}</tbody></table></div>`
-        : `<p class="muted" style="margin-top:18px">No goals yet: <code>evh goal-new</code> makes one (the form here is wired with W4).</p>`}
-      <div class="actions"><a class="btn" href="#models">Models</a><a class="btn" href="${location.origin}/">The catalog ↗</a></div></div>`;
+        : `<div class="answer" style="margin-top:18px"><p><b>What should this project help you decide?</b></p><p>An evaluation starts with a goal: the decision you need to make, and how you will know which system is better for it.</p></div>`}
+      <div class="actions"><a class="btn primary" href="#goal-new">${goals.goals.length ? "New goal" : "Start with a goal"}</a><a class="btn" href="#models">Models</a><a class="btn" href="${location.origin}/">The catalog ↗</a></div></div>`;
   }
 
   // ── a goal: where it stands, and the next step ─────────────────────────────
@@ -70,7 +70,7 @@
       ${rounds ? `<h2 style="margin-top:22px">Rounds</h2><ul>${rounds}</ul>` : ""}
       ${st.running.length ? `<h2 style="margin-top:22px">Running now</h2><ul>${st.running.map((j) => `<li>${esc(j.operation)} · ${esc(j.state)}</li>`).join("")}</ul>` : ""}
       ${WB.cmd(`evh goal-status ${id}`)}
-      <div class="actions"><a class="btn primary" href="#dataset/${encodeURIComponent(id)}">Add a dataset</a><a class="btn" href="#home">Back to your goals</a></div></div>`;
+      <div class="actions"><a class="btn primary" href="#dataset/${encodeURIComponent(id)}">Add a dataset</a><a class="btn" href="#goal-edit/${encodeURIComponent(id)}">Edit the goal</a><a class="btn" href="#home">Back to your goals</a></div></div>`;
   }
 
   // ── writes: who acted, the data header, and the model's refusal shown as it is ──────────────────────
@@ -302,6 +302,84 @@
     });
   }
 
+  // ── step 1: a goal, made or changed (UXS-005 step 1): five things on one screen, the rest "advanced" ──────────
+  const slugOf = (t) => String(t || "").toLowerCase().replace(/\(([^)]*)\)/g, " $1").replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "").slice(0, 40);
+  const STRATEGIES = [["balanced", "balanced", "not worse than the best by more than its margin, then the cheapest"],
+    ["quality_first", "quality first", "the same quality only"], ["frugal", "frugal", "a wider margin, then the cheapest"]];
+  const TIES = ["cost", "speed", "quality"];
+  function screenGoalForm(goal) {
+    const editing = !!goal;
+    const ms = load("metrics", "/metrics"), rec = editing ? load(`goalrec:${goal}`, `/goals/${enc(goal)}`) : {};
+    const head = `<div class="kicker">Step 1${editing ? ` · ${esc(goal)}` : ""}</div><h1>${editing ? "The goal" : "Set the goal"}</h1>
+      <p class="lead">A goal is the decision this evaluation helps you make. Everything later is measured against it.</p>`;
+    if (ms === undefined || rec === undefined) return `<div class="screen">${head}${loading(editing ? "the goal" : "the measures")}</div>`;
+    if (ms.error || rec.error) return `<div class="screen">${head}${failed(ms.error ? ms : rec)}</div>`;
+    const g = editing ? rec.record : {}, sc = g.success_criteria || {}, pr = sc.primary || {};
+    const margin = ((sc.axes || {}).quality || {}).margin, tie = sc.tie_break || ["cost", "speed"];
+    const radio = (name, val, label, small, on) => `<label class="choice"><input type="radio" name="${name}" value="${val}" ${on ? "checked" : ""}> <span>${esc(label)}${small ? ` <small>${esc(small)}</small>` : ""}</span></label>`;
+    const tieSel = (id, cur) => `<select id="${id}" aria-label="${id === "gf-tie1" ? "first" : "then"}">${TIES.map((t) => `<option ${cur === t ? "selected" : ""}>${t}</option>`).join("")}</select>`;
+    return `<div class="screen" data-form="goal-form">${head}
+      <div class="field"><label class="name" for="gf-title">What is it?</label><div><input type="text" id="gf-title" value="${esc(g.title || "")}" placeholder="Short news summaries (CNN)">
+        <div class="hint">a short title, as you would say it to a colleague</div>
+        <label class="idline">id <input type="text" id="gf-id" class="idinput" value="${esc(g.goal_id || "")}" placeholder="made from the title" ${editing ? "readonly" : ""} autocapitalize="off" spellcheck="false"></label></div></div>
+      <div class="field"><label class="name" for="gf-statement">What is it for?</label><div><textarea id="gf-statement" rows="2" placeholder="Pick a model that writes a short summary of a news article, at a known cost.">${esc(g.statement || "")}</textarea>
+        <div class="hint">one sentence: what you want, for whom, so that what</div></div></div>
+      <div class="field"><label class="name" for="gf-decision">The decision</label><div><textarea id="gf-decision" rows="2" placeholder="Which models can be told apart on summary quality, and what each costs.">${esc(g.decision || "")}</textarea>
+        <div class="hint">the choice you will make from the result</div></div></div>
+      <div class="field"><label class="name" for="gf-measure">How you'll judge</label><div><input type="text" id="gf-measure" list="gf-measures" value="${esc(pr.measure || "")}" placeholder="overlap_f1" autocapitalize="off" spellcheck="false">
+        <datalist id="gf-measures">${ms.metrics.map((m) => `<option value="${esc(m.metric)}">${esc(m.description || "")}</option>`).join("")}</datalist>
+        <div class="choices row" role="radiogroup" aria-label="which way is better">${radio("gf-dir", "higher", "higher is better", "", (pr.direction || "higher") === "higher")}${radio("gf-dir", "lower", "lower is better", "", pr.direction === "lower")}</div>
+        <div class="hint">the number that decides which system is better: one the project's scorers produce, or a new one</div></div></div>
+      <div class="field"><div class="name" id="gf-strategy-l">How a winner is picked</div><div><div class="choices" role="radiogroup" aria-labelledby="gf-strategy-l">${STRATEGIES.map(([v, l, sm]) => radio("gf-strategy", v, l, sm, (sc.strategy || "balanced") === v)).join("")}</div>
+        <details class="adv" style="margin-top:8px"><summary>advanced: the margin, the tie-break</summary><div class="form" style="gap:12px;margin-top:12px">
+          <div class="field"><label class="name" for="gf-margin">Margin</label><div><input type="text" id="gf-margin" inputmode="decimal" value="${esc(margin ?? "")}" placeholder="the strategy's default">
+            <div class="hint">how much worse than the best an arm may be and still win, in the measure's units</div></div></div>
+          <div class="field"><div class="name">Then pick by</div><div class="inline">${tieSel("gf-tie1", tie[0])}${tieSel("gf-tie2", tie[1])}</div></div></div></details></div></div>
+      ${byField("gf-by")}
+      <div class="actions"><button class="btn primary" type="button" id="gf-save" data-send>${editing ? "Save the goal" : "Make the goal"}</button>${mark}
+        <a class="btn" href="${editing ? `#goal/${enc(goal)}` : "#home"}">Cancel</a></div>
+      <div id="gf-out"></div>
+      ${WB.cmd(editing ? `evh goal-set ${goal} --set KEY=VALUE` : "evh goal-new <id> --set title=... --set statement=... --set decision=... --set success_criteria.primary.measure=... --set success_criteria.primary.direction=higher --set 'datasets=[]'")}</div>`;
+  }
+  function wireGoalForm() {
+    const goal = WB.param || "", editing = !!goal;
+    const v = (id) => (document.getElementById(id)?.value || "").trim();
+    const idIn = document.getElementById("gf-id");
+    if (!idIn) return;
+    let idEdited = editing;
+    idIn.addEventListener("input", () => { idEdited = !!idIn.value; });
+    document.getElementById("gf-title").addEventListener("input", () => { if (!idEdited) idIn.value = slugOf(v("gf-title")); });
+    document.getElementById("gf-measure").addEventListener("change", () => {
+      const m = ((LIVE.cache.metrics || {}).metrics || []).find((x) => x.metric === v("gf-measure"));
+      const dir = m && ["higher", "lower"].includes(m.better) ? m.better : null;
+      if (dir) document.querySelector(`input[name=gf-dir][value=${dir}]`).checked = true;
+    });
+    holds("goal-form", () => (editing ? `Save goal ${goal}` : `Make goal ${v("gf-id") || "…"}`));
+    document.getElementById("gf-save").addEventListener("click", async () => {
+      const out = document.getElementById("gf-out"), by = byOf("gf-by");
+      if (!by) { out.innerHTML = '<p class="note" role="alert">Say who you are: a change names who made it.</p>'; return; }
+      const pick = (name) => document.querySelector(`input[name=${name}]:checked`)?.value;
+      const want = {
+        title: v("gf-title"), statement: v("gf-statement"), decision: v("gf-decision"),
+        "success_criteria.primary.measure": v("gf-measure"), "success_criteria.primary.direction": pick("gf-dir"),
+        "success_criteria.strategy": pick("gf-strategy"),
+      };
+      if (v("gf-margin")) want["success_criteria.axes.quality.margin"] = Number(v("gf-margin"));
+      const tie = [v("gf-tie1"), v("gf-tie2")];
+      const rec = editing ? (LIVE.cache[`goalrec:${goal}`] || {}).record || {} : {};
+      const now = (key) => key.split(".").reduce((o, k) => (o == null ? undefined : o[k]), rec);
+      if (editing ? JSON.stringify(now("success_criteria.tie_break") || ["cost", "speed"]) !== JSON.stringify(tie) : tie.join() !== "cost,speed") want["success_criteria.tie_break"] = tie;
+      const set = editing ? Object.fromEntries(Object.entries(want).filter(([k, x]) => JSON.stringify(now(k)) !== JSON.stringify(x))) : { ...want, datasets: [] };
+      const id = editing ? goal : v("gf-id");
+      try {
+        if (editing && !Object.keys(set).length) { sent("goal-form"); location.hash = `#goal/${enc(goal)}`; return; }
+        await send(editing ? "PATCH" : "POST", `/goals/${enc(id)}`, { set, by });
+        sent("goal-form"); forget("goals"); forget(`goalrec:${id}`); forget(`status:${id}`);
+        location.hash = `#goal/${enc(id)}`;
+      } catch (e) { out.innerHTML = refusal(e); }
+    });
+  }
+
   // ── step 2: a dataset for a goal (UXS-005 step 2; source-preview, dataset-create with its answers) ─────────────
   // The choices are longer work: kept in this browser until the dataset is made ("For every live screen").
   const SOURCES = {
@@ -486,6 +564,7 @@
     home: [screenHome], goal: [() => screenGoal(WB.param || "")], glossary: null,
     models: [screenModels], model: [() => screenModel(WB.param || ""), wireModel], "model-new": [screenModelNew, wireModelNew],
     dataset: [() => screenDatasetNew(WB.param || ""), wireDatasetNew],
+    "goal-new": [() => screenGoalForm(""), wireGoalForm], "goal-edit": [() => screenGoalForm(WB.param || ""), wireGoalForm],
   };
 
   function goLive() {

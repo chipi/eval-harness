@@ -13,6 +13,10 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Added
 
+- **The Workbench's step 1, live** (UXS-005): "New goal" on the home (or "Start with a goal" in an empty project)
+  makes a goal from five things (what it is, what it is for, the decision, the measure and its direction, the winner
+  rule; the margin and tie-break under "advanced"), its id made from the title; "Edit the goal" on its page changes it,
+  sending only what changed. A refusal is shown on the page; the form keeps the unsent-changes rule.
 - **The Workbench's step 2, live** (UXS-005): from a goal, "Add a dataset" uses one the project has or makes one from a
   source: the source's own query (its columns, the answer column), "Read it" previews it as a job, "Make the dataset"
   runs `dataset-create` as a job and adds it to the goal with its role (validation or test). "Propose its fields"

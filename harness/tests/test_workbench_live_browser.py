@@ -264,6 +264,60 @@ try:
                 and "notes_v1" in page.locator("main").inner_text(),
                 (g.get("datasets"), made.get("items", [])[:1], page.locator("main").inner_text()[:300]),
             )
+            # step 1 (UXS-005): a goal made from the home, a bad id refused on the page, then changed
+            page.goto(f"http://127.0.0.1:{port}/workbench/#home")
+            page.click("text=New goal")
+            page.wait_for_selector("h1:has-text('Set the goal')", timeout=20000)
+            page.fill("#gf-title", "Notes triage")
+            id_from_title = page.input_value("#gf-id")
+            page.fill("#gf-id", "Bad Id")
+            page.fill("#gf-statement", "Sort a note into its kind, for the person reading the queue.")
+            page.fill("#gf-decision", "Which system sorts notes well enough to use.")
+            page.fill("#gf-measure", "overlap_f1")
+            page.fill("#gf-by", "tester")
+            page.click("#gf-save")
+            page.wait_for_selector("#gf-out [role=alert]", timeout=20000)
+            check(
+                "the goal's id is made from its title; one the model refuses is said on the page, nothing made",
+                id_from_title == "notes_triage"
+                and not (proj / "data" / "goals" / "Bad Id.yaml").exists()
+                and page.locator("h1:has-text('Set the goal')").is_visible(),
+                (id_from_title, page.locator("#gf-out").inner_text()[:300]),
+            )
+            page.fill("#gf-id", "notes_triage")
+            check(
+                "the goal form's button names what it will write",
+                page.locator("#gf-save").inner_text() == "Make goal notes_triage",
+                page.locator("#gf-save").inner_text(),
+            )
+            page.click("#gf-save")
+            page.wait_for_selector("h1:has-text('Notes triage')", timeout=20000)
+            made = yaml.safe_load((proj / "data" / "goals" / "notes_triage.yaml").read_text())
+            check(
+                "Make the goal: goal-new with its five things, no dataset yet, the winner rule balanced",
+                made.get("title") == "Notes triage"
+                and made["success_criteria"]["primary"] == {"measure": "overlap_f1", "direction": "higher"}
+                and made["success_criteria"].get("strategy") == "balanced"
+                and made.get("datasets") == [],
+                made,
+            )
+            page.click("text=Edit the goal")
+            page.wait_for_selector("h1:has-text('The goal')", timeout=20000)
+            page.fill("#gf-decision", "Which system sorts notes well enough to use, at what cost.")
+            page.fill("#gf-by", "tester")
+            page.click("#gf-save")
+            page.wait_for_selector("h1:has-text('Notes triage')", timeout=20000)
+            changed = yaml.safe_load((proj / "data" / "goals" / "notes_triage.yaml").read_text())
+            goal_hist = (proj / "data" / "history" / "goals" / "notes_triage.jsonl").read_text().splitlines()
+            last = json.loads(goal_hist[-1])
+            check(
+                "Edit the goal: goal-set saves the change (the decision), the rest kept, recorded with who made it",
+                changed.get("decision") == "Which system sorts notes well enough to use, at what cost."
+                and changed.get("title") == "Notes triage"
+                and last.get("by") == "person:tester"
+                and (last.get("was") or {}).get("decision") == "Which system sorts notes well enough to use.",
+                (changed.get("decision"), last),
+            )
             page.goto(f"http://127.0.0.1:{port}/workbench/#prepare")
             page.wait_for_selector("h1", timeout=20000)
             check(
