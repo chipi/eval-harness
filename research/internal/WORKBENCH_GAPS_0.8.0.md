@@ -25,7 +25,10 @@ lists them by resource).
 
 ## The API to build first (each blocks a screen)
 
-1. **One label, pick or tag for one item** (W2, step 3c). Today only a CSV upload writes them
+1. **Superseded (owner, 2026-11-17): not saved item by item.** The labelling screen fills a sheet and submits it
+   when done, to the imports as they are; what is missing is the blind sheet and its key as a job (`sheet-export`
+   as an operation, the key kept on the server for `sheet-import`). The original item: one label, pick or tag for
+   one item (W2, step 3c). Today only a CSV upload writes them
    (`sheet-import`, `label-import`), each a job holding the dataset's lock; RFC-032 named this gap
    ("one label or one pick can only be written as a CSV"). Shape to decide: an edit
    `POST /datasets/{dataset}/label-sets/{set}/items` (under the dataset's lock, `by`), or JSON rows accepted by the
@@ -110,6 +113,7 @@ page's forms and the jobs list are not covered by the 390 px browser tests.
 
 ## Order once the reviews are settled
 
-API 1-6 above, then the screens in this order: Home and Goal (wired) → W5 (wired) → steps 1-3 (need API 2, 3) →
+API 1-6 above and the unsent-changes rule (owner, 2026-11-17: UXS-005 "For every live screen"; the live goal,
+model and deployment forms have no leave guard today), then the screens in this order: Home and Goal (wired) → W5 (wired) → steps 1-3 (need API 2, 3) →
 step 4 → W1 the eval (every route exists) → W2 (needs API 1) → W3 → W6, W7, W8 as short lists → the held-out and
 study screens last. PRD-017 and UXS-005 are rewritten against RFC-032 first, with the decisions above.

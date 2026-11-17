@@ -179,6 +179,7 @@ Making one is four short screens, one decision each:
   | production | which capture, which records (`FIELD:VALUE`), one per a field (`dataset-from-capture`) |
 
 - Preview before anything is written; fields are a table, proposed (`fieldset-propose`), never typed from nothing.
+- The four steps' choices are unsent until Create, kept across a reload ("For every live screen": unsent changes).
   **To build (API 2):** no operation reads a source without writing (`dataset-create` has no dry run, so `POST
   /estimate` refuses it); a's "Read it" and b's first rows need one.
 - **To build (API 3):** the expected answer's column (b). The Hugging Face source takes the item's column and its id,
@@ -214,8 +215,8 @@ Making one is four short screens, one decision each:
   order, each showing its result: a `dataset-materialize` job, a `dataset-profile` job, then the reference set.
 - **"It came with one"** needs a reference made from the dataset's own answers, which no operation makes yet
   (API 3): `reference-promote` promotes a label set.
-- **Labelling here** opens the labelling screen (below, W2), which needs one item's label written at a time (API 1);
-  the CSV round trip (`label-sheet`, then `label-import` into a label set) works today.
+- **Labelling here** opens the labelling screen (below, W2): the person fills the sheet on the screen and submits
+  it when done (`label-import`, a job that writes the label set); the CSV round trip works as today.
 - A reference set's promotion (`reference-promote`, a decision) records who and why (governance).
 - Once there is one, **Change the reference set** (W6, below) shows what a new one moves before anything is re-scored.
 
@@ -245,6 +246,8 @@ Making one is four short screens, one decision each:
   a model here makes a system of it (`system-new`); a system placed in a round is an arm (step 5). One prompt and one
   set of settings for every system, so a difference in the scores is the model's; the prompt a person writes is
   saved as a prompt version (`prompt-version`, with a name and a note). ML models (BART) carry their own settings.
+- The models picked and their settings are unsent until their systems are made, kept across a reload ("For every
+  live screen": unsent changes).
 - The three-item check (`arm-smoke`, a job: a system on a dataset) shows each system's replies beside the reference,
   what they cost and what all items would cost, before anything is compared. In the mockup the replies, cost and
   timing are the r1 run's real first three items.
@@ -311,6 +314,9 @@ decision kept with its reason. This is where people spend most of their time (W1
   | Make baseline | `run-promote` (`reason`), or `round-close` with `promote` | the close's conclusion is the promotion's reason |
   | Close | `round-close` (`conclusion`) | |
 
+  A round being built (its clones and changed values) is unsent until Run, kept across a reload; its question and
+  conclusion are forms ("For every live screen": unsent changes).
+
 ## The other workflows
 
 ### Home
@@ -359,9 +365,20 @@ decision kept with its reason. This is where people spend most of their time (W1
   is not swayed. Which is better, tags and notes are a label set with who made them; today they come back only as a
   filled sheet (`sheet-import`, a job under the dataset's lock). The sheet is the inspector's download
   (`/api/sheet?format=csv`, the CSV `sheet-export` writes); a blind fill ("which is better" with the arms hidden) needs
-  its key written beside the sheet, so it is made on the command line (`evh sheet-export --csv`). Saving one item at a
-  time is to build (API 1). This "which is better" is not a
+  its key written beside the sheet, so it is made on the command line (`evh sheet-export --csv`); the blind sheet and
+  its key as a job, the key kept on the server, is to build (API 1). This "which is better" is not a
   **pick**: a pick is a production record chosen for the next dataset version (W3).
+- **Submitted when done, never item by item** (owner, 2026-11-17). The labelling screen is a sheet the person fills
+  on the screen; nothing is written until it is submitted, and then the imports write it as they do a CSV today
+  (`label-import` for labels; `sheet-import` for "which is better" and tags, with the key the server kept), one frozen
+  set each. While it holds answers not yet submitted the sheet is **dirty**, and the screen says so:
+  - a mark and a count beside the sheet's name ("12 answers not submitted"), from the first answer until the import
+    job succeeds;
+  - Submit is enabled only then, and says what it writes ("Submit 12 answers as label set owner_2026_11");
+  - leaving the screen, closing the page or opening another sheet asks first;
+  - a reload keeps the answers, in this browser only, and the screen says so;
+  - on success the mark clears and the screen links to the new set; on a refusal the mark stays, the refused rows are
+    shown on the sheet and nothing is written.
 - The two arms' outputs and the item come from `comparison-items` and `comparison-item`; `sheet-show` answers a
   sheet's blocks, not one row per item.
 - The failure modes are a named list, so tags are counted; the first list is proposed from the eval's own format
@@ -383,6 +400,8 @@ decision kept with its reason. This is where people spend most of their time (W1
  4 The next dataset version             [ Make the next version ]
 ```
 
+- The rows checked and their reason are unsent until "Make the next version", kept across a reload ("For every
+  live screen": unsent changes).
 - A goal that is not deployed says so and what will show once it is. The mockup shows production on this project's
   deployed goal (triage): its capture, production's decisions scored like an arm against people's labels, the 30
   decisions where production's model disagreed with the owner's labels (what it decided, what people decided, its
@@ -669,7 +688,7 @@ either store:
 | Goal | title, what it is for, the decision, the measure and direction, the winner rule (a named default) | its history of saves | `goals/<id>.yaml` |
 | Dataset | its source, name, fields | items, hashes, versions, profile, its sealed side | `datasets/`, `materialized/`, `sources/`, `profiles/` |
 | Fieldset | the fields kept | — | `fields/<id>.yaml` |
-| Label set | labels (a sheet today; one item at a time, API 1) | who, when | `labels/<dataset>/<set>/` |
+| Label set | labels (a filled sheet, submitted when done) | who, when | `labels/<dataset>/<set>/` |
 | Reference | who and why for a promotion | hashes, counts, its tier | `references/{gold,silver}/` |
 | Model | what it is, weights, licence | — | `models/<id>.yaml` |
 | Deployment | where it runs, its endpoint and settings; a flag accepted with why | its dated checks (onboarding, smokes, acceptances) | `deployments/<model>/<deployment>.yaml` |
@@ -700,11 +719,11 @@ against the code on 2026-11-17 (`research/internal/WORKBENCH_GAPS_0.8.0.md` has 
 | Home | `goal-list`, `goal-status` per goal, `jobs-list` | ~ live; the jobs list takes one state (API 5) |
 | 1 Goal | `goal-new` (with `datasets: []`), `goal-set`, `goal-show`, `goal-history`, `metric-list` | ✓ live |
 | 2 Dataset | `dataset-list`, `goal-set`, `fieldset-propose`, `fieldset-new`, `dataset-create`, `capture-list` | ✗ a source's preview (API 2), the answer column (API 3) |
-| 3 Prepare | `dataset-materialize`, `dataset-profile`, `dataset-show`, `dataset-items`, `label-sheet`, `label-import`, `reference-promote` | ✗ a reference from the dataset's answers (API 3), one item's label (API 1); items have no offset and limit |
+| 3 Prepare | `dataset-materialize`, `dataset-profile`, `dataset-show`, `dataset-items`, `label-sheet`, `label-import`, `reference-promote` | ✗ a reference from the dataset's answers (API 3); items have no offset and limit |
 | 4 Models | `model-list`, `goal-leaderboard`, `prompt-version`, `system-show`, `system-new`, `arm-smoke`, `POST /estimate` | ✓; a clone is a new system |
 | W5 Bring in a model | `model-new`, `deployment-new`, `model-onboard`, `model-show`, `deployment-history`, `deployment-accept` | ✓ live; no "approve" (D4) |
 | 5 / W1 The eval | `round-list`, `round-show`, `round-evidence`, `leaderboard`, `baselines`, `round-open`, `round-carry`, `sweep`, `POST /estimate`, `rescore`, `judge-score`, `round-retire`, `run-promote`, `round-close`, `arm-show`, `comparison-item` | ✓; a retire is final (D3) |
-| W2 Review, label, tag | `comparison-items`, `comparison-item`, `sheet-show`, `failure-modes-list`, `tag-set-list`, `label-set-list`, `sheet-import` | ✗ one item's preference, label or tag (API 1) |
+| W2 Review, label, tag | `comparison-items`, `comparison-item`, `sheet-show`, `failure-modes-list`, `tag-set-list`, `label-set-list`, `sheet-import` | ✗ the blind sheet and its key (API 1) |
 | W3 Production | `capture`, `arm-from-capture`, `label-from-capture`, `label-coverage-show`, `sheet-show`, `pick`, `dataset-extend`, `periods`, `faithfulness` | ✓ (the coverage's rules file must be in the project) |
 | W6 Reference | `reference-list`, `label-set-list`, `reference-promote`, `leaderboard` (`label`), `rescore` | ~ `score-preview` gives no result (API 4) |
 | W7 Judge | `scorer-list`, `scorer-new`, `scorer-set`, `judge-score`, `POST /estimate`, `cost-report` | ✓; validating stays a tool (D6) |
@@ -728,9 +747,24 @@ against the code on 2026-11-17 (`research/internal/WORKBENCH_GAPS_0.8.0.md` has 
 - **Phones.** Every screen at 390 px (owner, 2026-11-12): tables of four columns or more become cards; the two- and
   three-column tables, the forms and the jobs list are checked there too.
 - **Behind a proxy** the Workbench and `/api/v1` answer 404 in 0.8.0 (D8).
+- **Unsent changes** (owner, 2026-11-17). What a person enters is sent only by the screen's own action (Save,
+  Create, Run, Submit); until then the screen holds it and says so. One rule, built once, for every screen:
+  - **dirty**: a mark beside what holds unsent changes, from the first change until the action succeeds; the action is
+    enabled only then and names what it will write; leaving the screen, closing the page or opening another record asks
+    first; on success the mark clears; on a refusal it stays, the problems are shown where they belong, nothing is
+    written;
+  - **longer work** also counts what is pending ("12 answers not submitted") and keeps it across a reload, in this
+    browser only (the screen says so): the labelling sheet (W2, step 3c), the rows picked for the next version (W3),
+    the dataset's four steps before Create (step 2), the models and settings picked before their systems are made
+    (step 4), and a round being built (its clones and changed values before Run, W1);
+  - **forms** saved by one button are marked dirty and ask before leaving, with no memory across a reload: the goal
+    (step 1), a model and a deployment (W5), a scorer (W7), a fieldset, a file under `data/` (W8), a round's question,
+    a retire's reason and a round's conclusion.
+  The live goal, model and deployment forms do not do this yet.
 
 ## The order of the build (owner, 2026-11-17)
 
-API 1 to 6 first; then the screens: home and goal (live) → W5 (live) → steps 2 and 3 (need API 2 and 3) → step 4 →
+API 1 to 6 first, and the unsent-changes rule once ("For every live screen"), added to the live goal, model and
+deployment forms; then the screens: home and goal (live) → W5 (live) → steps 2 and 3 (need API 2 and 3) → step 4 →
 W1 the eval → W2 (needs API 1) → W3 → W6, W7 and W8 as short lists → the held-out test and studies last. The mockup's
 "mockup:" notes go with the screens that replace them.

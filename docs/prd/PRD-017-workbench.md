@@ -98,7 +98,9 @@ new system), `arm-smoke`, `POST /estimate`, `sweep` (the round's systems on its 
 **W2 Review outputs, label and tag.** On a goal's dataset: the items across the arms that matter; read outputs side
 by side, say which is better, give a label, tag failure modes, leave a note; bring back a sheet filled elsewhere.
 *Operations:* `comparison-items`, `comparison-item`, `sheet-show`, `label-sheet`, `label-import`, `sheet-import`,
-`tag-set-list`, `failure-modes-list`; writing one item's label, preference or tag is to build (API 1).
+`tag-set-list`, `failure-modes-list`. The screen fills a sheet and submits it when the person is done, to the
+imports as they work today (owner, 2026-11-17: not saved item by item); the blind sheet and its key as a job is to
+build (API 1).
 
 **W3 Learn from production** (once a goal is deployed): capture what the deployed system decided, evaluate it
 against labels, pick the rows where it was wrong or saw something new, and make the next dataset version from them.
@@ -170,13 +172,21 @@ budgets are files under `data/`; `config.yaml` stays a command-line edit (D9).
    it exists (`{error}`), a job that failed later (its state, its refusal's kind, its log), and 503 with Retry-After
    while the project's data is moved or migrated.
 10. **On a phone.** Every screen works at 390 px (owner, 2026-11-12).
+11. **Unsent changes are shown** (owner, 2026-11-17). What a person enters is sent only by the screen's own action
+    (Save, Create, Run, Submit). Until then the screen marks it dirty, names what the action will write and asks
+    before the person leaves; longer work (a labelling sheet, picked rows, a dataset's steps, models picked, a round
+    being built) also counts what is pending and survives a reload in that browser. Labels, preferences and tags are
+    submitted as a filled sheet, never saved item by item. The rule and the screens it covers are in UXS-005.
 
 ## The API to build first (owner's order, 2026-11-17)
 
 Each blocks a screen; each is built as an operation, for every surface. The detail and the per-screen map are in
 `research/internal/WORKBENCH_GAPS_0.8.0.md`.
 
-1. One label, preference or tag for one item (W2, W4's labelling).
+1. The blind sheet and its key as a job (`sheet-export` as an operation), the key kept on the server for
+   `sheet-import`, so the labelling screen can submit "which is better" and tags (W2). Labels need nothing new
+   (`label-sheet`, `label-import`). Owner, 2026-11-17: labels, preferences and tags are not saved item by item;
+   the screen submits the filled sheet when the person is done, and the sets stay frozen as today.
 2. A source's preview: its description and first rows, writing nothing (W4).
 3. A reference from the dataset's own answers (W4: "it came with one").
 4. `score-preview` gives a result (W6).
@@ -230,7 +240,8 @@ Owner, 2026-11-06: agree first, then build.
    reviewed in eight rounds (`harness/workbench/`). The mockup's pages, layout and styles are the app's own (owner:
    "think about the mock-up as already a workbench app that you're starting, except it's just a static thing").
 3. **RFC-032** (one model, its operations, the API) and RFC-033, built.
-4. **From here** (owner's order, 2026-11-17): the API above (1 to 6), then the screens, wired workflow by workflow:
+4. **From here** (owner's order, 2026-11-17): the API above (1 to 6) and the unsent-changes rule (requirement 11,
+   built once and added to the live goal and model screens), then the screens, wired workflow by workflow:
    home and goal (wired), W5 (wired), W4's dataset and preparation (needs API 2 and 3), the models and systems, W1 the
    eval, W2 (needs API 1), W3, then W6, W7 and W8 as short lists, and the held-out test and studies last.
 
