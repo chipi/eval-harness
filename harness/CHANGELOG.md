@@ -18,14 +18,22 @@ that can move a result is never a patch release without saying so under **Change
   verdict, the notes). With no round open, "Open the round" asks its question, the dataset, whether to carry the last
   round's arms in and its budget (`round-open`). In an open round: the systems to run, "See the cost first" (the
   sweep's dry run, `POST /estimate`), "Run them" as one `sweep` job under a cap, its progress shown (D2); "Retire" with a
-  reason, said to be final (D3); "Close the round" with its conclusion, optionally promoting the leader's run. One "who
-  you are" serves the round; after an action the round is redrawn unless something else on it is still being written.
+  reason, said to be final (D3); "Close the round" with its conclusion, optionally promoting the leader's run; "Carry it
+  in" brings an arm of the round before into the open one (`round-carry`); the evidence has its chart (each arm's mean
+  against its cost); the baseline on the round's dataset lists its versions, each with who and why, and rolls back to
+  one with a reason (`baseline-rollback`). One "who you are" serves the round.
 - **The Workbench's step 4, live** (UXS-005): "Choose the systems" on a goal lists the project's systems, each checked on
   three items of a goal's dataset (`arm-smoke` as a job, under a cap): its status and flags, what it spent, what the
   whole dataset would cost and take, a reply per item. "Make a system from a model" picks a model and where it runs,
   the shared prompt, temperature and most tokens, and makes the system (`system-new`) naming the model record and the
-  deployment, with the deployment's endpoint carried into its params (a run reads it from there). The form is kept in
-  this browser until the system is made.
+  deployment, with the deployment's endpoint carried into its params (a run reads it from there), its prompt recorded
+  as a prompt version beside it for its history (the bundled adapter reads `params.prompt`). Each model is offered with
+  its rank on this goal; "Clone it, change one thing" makes a new system with one change (the prompt, the temperature,
+  the most tokens, the model it sends). The form is kept in this browser until the system is made.
+- **The Workbench never loses what is being typed to a redraw, and reads afresh on each screen**: a redraw (a job's
+  poll, a read that came back) carries what the person typed in a form with unsent changes, instead of being held back
+  (held back, a screen waiting for its data stayed on "loading"); moving to another screen drops the page's reads, so
+  what a job wrote elsewhere (a sweep's runs, a model's rank) shows there.
 - **The Workbench's step 3 and labelling, live** (UXS-005): a goal's dataset opens its preparation: fetch it
   (`dataset-materialize`) and look inside (`dataset-profile`) as jobs, then its reference set, by promoting a label set
   (the dataset's own answers too) with its tier and why. "Label it here" makes the sheet (`label-sheet`, a job), fills it

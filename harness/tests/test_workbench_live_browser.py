@@ -519,6 +519,14 @@ try:
                 and sysrec["params"].get("temperature") == 0,
                 sysrec,
             )
+            check(
+                "the system's prompt is recorded as a prompt version beside it, for its history (owner, 2026-11-17)",
+                (proj / "data" / "prompts" / "fake-1b_here").is_dir()
+                and any((proj / "data" / "prompts" / "fake-1b_here").iterdir()),
+                sorted(x.name for x in (proj / "data" / "prompts").iterdir())
+                if (proj / "data" / "prompts").is_dir()
+                else [],
+            )
             page.select_option("#sm-ds", "tk_v1")
             page.fill("#sm-cap", "0.01")
             page.fill("#sm-by", "tester")
@@ -538,6 +546,22 @@ try:
                     page.locator("#sm-fake-1b_here").inner_text()[:400],
                     [c.get("kind") for c in dep_doc.get("checks") or []],
                 ),
+            )
+            page.click("[data-clone='fake-1b_here']")
+            page.fill("#cl-id-fake-1b_here", "fake-1b_here_t05")
+            page.select_option("#cl-what-fake-1b_here", "temperature")
+            page.fill("#cl-val-fake-1b_here", "0.5")
+            page.click("#cl-go-fake-1b_here")
+            page.wait_for_selector("td.mono:has-text('fake-1b_here_t05')", timeout=20000)
+            clone = yaml.safe_load((proj / "data" / "systems" / "fake-1b_here_t05.yaml").read_text())
+            check(
+                "Clone it, change one thing: a new system, the temperature changed and everything else as the original's",
+                clone["params"].get("temperature") == 0.5
+                and {k: v for k, v in clone["params"].items() if k != "temperature"}
+                == {k: v for k, v in sysrec["params"].items() if k != "temperature"}
+                and clone.get("model_record") == "fake-1b"
+                and clone.get("deployment") == "here",
+                clone,
             )
             # W1 the eval (UXS-005 step 5): a round opened with its question, two arms run as one sweep, the evidence
             # read, one arm retired with its reason, the round closed with its conclusion and the leader promoted
@@ -570,7 +594,7 @@ try:
             page.fill("#ev-by", "tester")
             page.click("#rn-go")
             try:
-                page.wait_for_selector("li:has-text('fake-1b_here') span.mono", timeout=180000)
+                page.wait_for_selector("#arms li:has-text('fake-1b_here')", timeout=180000)
             except Exception:
                 print(
                     "RUN-OUT",
@@ -585,6 +609,22 @@ try:
                 and page.locator("main th:has-text('threshold')").count() == 1,
                 (rnd.get("arms"), page.locator("main").inner_text()[:600]),
             )
+            check(
+                "the evidence's chart: each arm's mean against its cost, a point per arm",
+                page.locator("figure.chart circle").count() == 2,
+                page.locator("figure.chart").count(),
+            )
+            page.goto(f"http://127.0.0.1:{port}/workbench/#systems/tickets_summary")
+            page.wait_for_selector("#sn-model", timeout=20000)
+            offered = page.locator("#sn-model option[value='fake-1b']").inner_text()
+            check(
+                "a model whose arm is in play on the goal is offered with its rank there (a retired arm has none)",
+                "on this goal" in offered and "#" in offered,
+                offered,
+            )
+            page.goto(f"http://127.0.0.1:{port}/workbench/#eval/tickets_summary/r1")
+            page.wait_for_selector("[data-retire='fake-1b_here']", timeout=20000)
+            page.fill("#ev-by", "tester")
             page.click("[data-retire='fake-1b_here']")
             page.fill("#rt-why", "it repeats one fixed answer whatever the ticket says")
             page.click("#rt-go")
@@ -621,6 +661,60 @@ try:
                 .startswith("The echo arm is the one to keep")
                 and bool(base),
                 (rnd.get("status"), rnd.get("conclusion"), base),
+            )
+            page.goto(f"http://127.0.0.1:{port}/workbench/#eval/tickets_summary")
+            page.wait_for_selector("#ro-q", timeout=20000)
+            page.fill("#ro-q", "Is the echo arm as good when carried into the next round?")
+            page.select_option("#ro-keep", "")
+            page.fill("#ro-by", "tester")
+            page.click("#ro-open")
+            page.wait_for_selector("#cy-arm", timeout=60000)
+            page.select_option("#cy-arm", "one_v1")
+            page.fill("#ev-by", "tester")
+            page.click("#cy-go")
+            page.wait_for_selector("#arms li:has-text('one_v1')", timeout=60000)
+            r2 = yaml.safe_load((proj / "data" / "rounds" / "tickets_summary" / "r2.yaml").read_text())
+            carried: dict = next((a for a in r2.get("arms") or [] if a["system"] == "one_v1"), {})
+            check(
+                "Carry it in: round-carry brings an arm of the round before into the open round, unchanged",
+                (carried.get("entered") or {}).get("how") == "carried",
+                r2.get("arms"),
+            )
+            fake_run = sorted(x.name for x in (proj / "data" / "runs").glob("fake-1b_here_*"))[-1]
+            r = evh(
+                "run-promote",
+                "--run",
+                fake_run,
+                "--goal",
+                "tickets_summary",
+                "--reason",
+                "a second version for the rollback",
+                "--by",
+                "t",
+                "--override-no-evidence",  # tk_v1 is a test set of 6 items: no promotion can be shown on it
+            )
+            page.goto(f"http://127.0.0.1:{port}/workbench/#eval/tickets_summary/r2")
+            page.reload()  # the same address: reload, so the page reads the promotion made on the command line
+            page.wait_for_selector("[data-rollback='1']", timeout=20000)
+            page.fill("#rb-why-1", "the first baseline was the one the round decided")
+            page.fill("#ev-by", "tester")
+            page.click("[data-rollback='1']")
+            page.wait_for_selector("li:has-text('v3') .status:has-text('current')", timeout=60000)
+            vers = sorted(
+                int(x.stem)
+                for x in (proj / "data" / "baselines" / "tickets_summary" / "tk_v1").glob("*.json")
+            )
+            v3 = (
+                json.loads((proj / "data" / "baselines" / "tickets_summary" / "tk_v1" / "3.json").read_text())
+                if 3 in vers
+                else {}
+            )
+            check(
+                "Roll back: baseline-rollback restores v1 as a new version (v3) with its reason; the history kept",
+                r.returncode == 0
+                and vers == [1, 2, 3]
+                and "the first baseline was the one" in json.dumps(v3),
+                (r.stderr[-200:], vers, json.dumps(v3)[:300]),
             )
             phone = browser.new_context(
                 viewport={"width": 390, "height": 844},

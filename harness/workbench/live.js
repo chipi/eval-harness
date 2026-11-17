@@ -587,17 +587,19 @@
           <label class="name" for="sm-cap">spend at most (USD)</label><input type="number" id="sm-cap" min="0.01" step="0.01" value="0.05" inputmode="decimal" style="width:7rem"></div>
         <div class="tablewrap"><table><thead><tr><th>system</th><th>model</th><th>where it runs</th><th>its check</th></tr></thead><tbody>
         ${sys.systems.map((x) => `<tr><td class="mono">${esc(x.system)}</td><td>${esc(x.model || "")}</td><td>${esc(x.deployment || "")}</td>
-          <td><button class="btn" type="button" data-smoke="${esc(x.system)}">Check it on three items</button><div id="sm-${esc(x.system)}" aria-live="polite">${smokeView(smokes[`${goal}/${x.system}`])}</div></td></tr>`).join("")}</tbody></table></div>
+          <td><button class="btn" type="button" data-smoke="${esc(x.system)}">Check it on three items</button> <button class="btn" type="button" data-clone="${esc(x.system)}">Clone it, change one thing</button>
+            <div id="sm-${esc(x.system)}" aria-live="polite">${smokeView(smokes[`${goal}/${x.system}`])}</div><div id="cl-${esc(x.system)}"></div></td></tr>`).join("")}</tbody></table></div>
         ${byField("sm-by")}</div></section>
       <section class="part" data-form="system-new"><div class="parthead"><h2>Make a system from a model</h2></div><div class="body">
         <div class="field"><label class="name" for="sn-model">The model</label><div><select id="sn-model"><option value="">choose a model that has somewhere to run</option>
-          ${runnable.map((m) => `<option value="${esc(m.model)}" ${d.model === m.model ? "selected" : ""}>${esc(m.name || m.model)} · ${esc(m.state)}</option>`).join("")}</select>
+          ${runnable.map((m) => { const b = (m.best || []).find((x) => x.goal === goal);
+            return `<option value="${esc(m.model)}" ${d.model === m.model ? "selected" : ""}>${esc(m.name || m.model)} · ${esc(m.state)}${b ? ` · #${b.rank} of ${b.of} on this goal` : ""}</option>`; }).join("")}</select>
           <div class="hint">a model not here is brought in first: <a href="#model-new">Bring in a model</a></div></div></div>
         ${d.model ? `<div class="field"><label class="name" for="sn-dep">Where it runs</label><div><select id="sn-dep">${deps.map((x) => `<option ${d.deployment === x ? "selected" : ""}>${esc(x)}</option>`).join("")}</select></div></div>
         <div class="field"><label class="name" for="sn-prompt">The prompt</label><div><textarea id="sn-prompt" rows="2" placeholder="Summarise the following in one sentence:">${esc(d.prompt)}</textarea><div class="hint">the same for every system, so a difference in the scores is the model's</div></div></div>
         <div class="field"><label class="name" for="sn-temp">Temperature</label><div><input type="text" id="sn-temp" inputmode="decimal" value="${esc(d.temperature)}" style="width:6rem"></div></div>
         <div class="field"><label class="name" for="sn-max">At most this many tokens</label><div><input type="text" id="sn-max" inputmode="numeric" value="${esc(d.max_tokens)}" placeholder="the model's default" style="width:10rem"></div></div>
-        <div class="field"><label class="name" for="sn-id">Its id</label><div><input type="text" id="sn-id" value="${esc(d.id || `${d.model}_${d.deployment || deps[0] || ""}`.replace(/[^A-Za-z0-9_.-]+/g, "_"))}" autocapitalize="off" spellcheck="false"></div></div>
+        <div class="field"><label class="name" for="sn-id">Its id</label><div><input type="text" id="sn-id" value="${esc(d.idTyped ? d.id : `${d.model}_${d.deployment || deps[0] || ""}`.replace(/[^A-Za-z0-9_.-]+/g, "_"))}" autocapitalize="off" spellcheck="false"></div></div>
         ${byField("sn-by")}
         <div class="actions" style="margin-top:0"><button class="btn primary" type="button" id="sn-make" data-send>Make the system</button><span class="unsent" data-unsent-mark hidden>not saved yet · kept in this browser until it is made</span></div>` : ""}
         <div id="sn-out"></div></div></section>
@@ -623,22 +625,49 @@
       } catch (e) { box.innerHTML = refusal(e); }
       b.disabled = false;
     }));
+    // a clone changes one thing, so its difference in the scores is that change's (UXS-005 step 5)
+    document.querySelectorAll("[data-clone]").forEach((b) => b.addEventListener("click", () => {
+      const src = b.dataset.clone, box = document.getElementById(`cl-${src}`);
+      box.innerHTML = `<div data-form="clone-${esc(src)}" class="inline" style="margin-top:8px">
+        <label class="name" for="cl-id-${esc(src)}">new id</label><input type="text" id="cl-id-${esc(src)}" value="${esc(src)}_2" autocapitalize="off" spellcheck="false">
+        <select id="cl-what-${esc(src)}" aria-label="what changes"><option value="prompt">the prompt</option><option value="temperature">the temperature</option><option value="max_tokens">the most tokens</option><option value="model">the model it sends</option></select>
+        <input type="text" id="cl-val-${esc(src)}" placeholder="its new value" aria-label="the new value" style="min-width:14rem">
+        <button class="btn primary" type="button" id="cl-go-${esc(src)}" data-send>Make the clone</button>${mark}</div><div id="cl-out-${esc(src)}"></div>`;
+      holds(`clone-${src}`, () => `Make system ${v(`cl-id-${src}`) || "…"}`);
+      document.getElementById(`cl-go-${src}`).addEventListener("click", async (ev) => {
+        const out = document.getElementById(`cl-out-${src}`), by = byOf("sm-by") || (who() ? `person:${who()}` : null);
+        if (!by) { out.innerHTML = '<p class="note" role="alert">Say who you are above: a change names who made it.</p>'; return; }
+        const what = v(`cl-what-${src}`), raw = v(`cl-val-${src}`);
+        ev.target.disabled = true;
+        try {
+          const r = await fetch(`/api/v1/systems/${enc(src)}`, { credentials: "same-origin" }).then((x) => x.json());
+          const { system_id: _id, ...rest } = (r.result || {}).record || {};
+          const params = { ...(rest.params || {}) };
+          params[what] = ["temperature", "max_tokens"].includes(what) ? Number(raw) : raw;
+          await send("POST", `/systems/${enc(v(`cl-id-${src}`))}`, { set: { ...rest, params }, by });
+          sent(`clone-${src}`); forget("systems"); WB.render(true);
+        } catch (e) { out.innerHTML = refusal(e); ev.target.disabled = false; }
+      });
+    }));
     const draft = () => readSys(goal) || { model: "", deployment: "", prompt: "", temperature: "0", max_tokens: "", id: "" };
     const save = () => {
       const d = draft();
       d.model = v("sn-model"); d.deployment = v("sn-dep") || d.deployment; d.prompt = document.getElementById("sn-prompt")?.value ?? d.prompt;
-      d.temperature = v("sn-temp") || d.temperature; d.max_tokens = v("sn-max"); d.id = v("sn-id") || d.id;
+      d.temperature = v("sn-temp") || d.temperature; d.max_tokens = v("sn-max");
+      // the id follows the model and where it runs until the person types one
+      if (document.getElementById("sn-id")?.dataset.typed) { d.id = v("sn-id"); d.idTyped = true; }
       keepSys(goal, d);
       return d;
     };
     holds("system-new", () => `Make system ${v("sn-id") || "…"}`);
     document.querySelector("[data-form=system-new]")?.addEventListener("input", save);
     document.getElementById("sn-model")?.addEventListener("change", () => {
-      const d = save(); d.deployment = ""; d.id = ""; keepSys(goal, d); WB.render(true);
+      const d = save(); d.deployment = ""; d.id = ""; d.idTyped = false; keepSys(goal, d); WB.render(true);
     });
     document.getElementById("sn-make")?.addEventListener("click", async (ev) => {
       const d = save(), out = document.getElementById("sn-out"), by = byOf("sn-by");
       if (!by) { out.innerHTML = '<p class="note" role="alert">Say who you are: a change names who made it.</p>'; return; }
+      d.id = v("sn-id"); d.deployment = v("sn-dep") || d.deployment;
       const mrec = LIVE.cache[`model:${d.model}`] || {};
       const dep = (mrec.deployments || []).find((x) => x.deployment === d.deployment) || {};
       const ep = (dep.record || {}).endpoint || {};
@@ -650,6 +679,10 @@
       ev.target.disabled = true;
       try {
         await send("POST", `/systems/${enc(d.id)}`, { set, by });
+        if (d.prompt.trim()) {
+          // its history only: the bundled adapter reads params.prompt, not a version (owner, 2026-11-17)
+          await runJob("/prompts/versions", { name: d.id, text: d.prompt.trim(), note: `the prompt of system ${d.id}, made in the Workbench`, by }, out, "recording the prompt");
+        }
         sent("system-new"); dropSys(goal); forget("systems");
         WB.render(true);
       } catch (e) { out.innerHTML = refusal(e); ev.target.disabled = false; }
@@ -663,6 +696,26 @@
   const short = (arm) => String(arm || "").split("/").pop();
   const pfmt = (p) => (p == null ? "—" : p < 0.0001 ? "<0.0001" : Number(p).toFixed(4));
   const num = (x, d = 4) => (x == null ? "—" : Number(x).toFixed(d));
+  function evalChart(ev) {
+    const rows = ev.rows || [];
+    if (!rows.length) return "";
+    const pts = [{ arm: ev.leader, mean: rows[0].baseline_mean }, ...rows.map((x) => ({ arm: x.arm, mean: x.mean }))]
+      .filter((x) => x.mean != null).map((x) => ({ ...x, cost: Number((ev.cost_per_item || {})[x.arm] || 0) }));
+    const W = 560, H = 220, L = 56, R = 16, T = 14, B = 40;
+    const ys = pts.map((x) => x.mean), y0 = Math.min(...ys), y1 = Math.max(...ys), dy = y1 - y0 || Math.abs(y1) || 1;
+    const cs = pts.map((x) => x.cost), c1 = Math.max(...cs);
+    // cost runs from $0 (local) to the dearest: a log scale would put $0 nowhere, so it is linear, $ per 1M items
+    const X = (c) => L + (c1 ? (c / c1) * (W - L - R) : (W - L - R) / 2), Y = (m) => T + (1 - (m - (y0 - dy * 0.1)) / (dy * 1.2)) * (H - T - B);
+    const fmt = (c) => (c * 1e6 >= 1000 ? `$${Math.round(c * 1e6).toLocaleString("en")}` : `$${(c * 1e6).toFixed(c ? 2 : 0)}`);
+    const dots = pts.map((x) => `<circle cx="${X(x.cost).toFixed(1)}" cy="${Y(x.mean).toFixed(1)}" r="5" fill="${x.arm === ev.leader ? "var(--ok)" : "var(--accent)"}"><title>${esc(short(x.arm))}: ${num(x.mean)} at ${fmt(x.cost)} per 1M items</title></circle>
+      <text x="${(X(x.cost) + 8).toFixed(1)}" y="${(Y(x.mean) + 4).toFixed(1)}" font-size="11" fill="var(--ink-2)">${esc(short(x.arm))}</text>`).join("");
+    return `<figure class="chart" aria-label="${esc(ev.metric)} against cost"><svg viewBox="0 0 ${W} ${H}" width="100%" role="img">
+      <line x1="${L}" y1="${H - B}" x2="${W - R}" y2="${H - B}" stroke="var(--axis)"/><line x1="${L}" y1="${T}" x2="${L}" y2="${H - B}" stroke="var(--axis)"/>
+      <text x="${L}" y="${H - B + 16}" font-size="11" fill="var(--muted)">$0</text><text x="${W - R}" y="${H - B + 16}" font-size="11" fill="var(--muted)" text-anchor="end">${fmt(c1)}</text>
+      <text x="${(L + W - R) / 2}" y="${H - 6}" font-size="11" fill="var(--muted)" text-anchor="middle">cost per 1M items</text>
+      <text x="${L - 6}" y="${Y(y1) + 4}" font-size="11" fill="var(--muted)" text-anchor="end">${num(y1, 3)}</text><text x="${L - 6}" y="${Y(y0) + 4}" font-size="11" fill="var(--muted)" text-anchor="end">${num(y0, 3)}</text>
+      ${dots}</svg><figcaption class="muted">${esc(ev.metric)} (each arm's mean) against what it costs; the leader in green. The table below is the evidence.</figcaption></figure>`;
+  }
   function screenEval(param) {
     const [goal, wanted] = String(param || "").split("/");
     const head = `<div class="kicker">The eval · ${esc(goal)}</div><h1>Its rounds</h1>
@@ -685,9 +738,10 @@
         <div class="actions" style="margin-top:0"><button class="btn primary" type="button" id="ro-open" data-send>Open the round</button>${mark}</div><div id="ro-out"></div></div></section>`;
     if (!cur) return `<div class="screen wide">${head}<p class="muted">No round yet.</p>${openForm}<div class="actions"><a class="btn" href="#goal/${enc(goal)}">Back to the goal</a></div></div>`;
     const rs = load(`round:${goal}/${cur}`, `/goals/${enc(goal)}/rounds/${enc(cur)}`), ev = load(`evidence:${goal}/${cur}`, `/goals/${enc(goal)}/rounds/${enc(cur)}/evidence`);
-    const sys = load("systems", "/systems");
-    if ([rs, ev, sys].includes(undefined)) return `<div class="screen wide">${head}${tabs}${loading("the round")}</div>`;
-    const bad = [rs, ev, sys].find((x) => x.error);
+    const sys = load("systems", "/systems"), bl = load(`baselines:${goal}`, `/baselines?goal=${enc(goal)}`);
+    const prev = rs && !rs.error && rs.round.from ? load(`round:${goal}/${rs.round.from}`, `/goals/${enc(goal)}/rounds/${enc(rs.round.from)}`) : null;
+    if ([rs, ev, sys, bl, prev].includes(undefined)) return `<div class="screen wide">${head}${tabs}${loading("the round")}</div>`;
+    const bad = [rs, ev, sys, bl, prev].find((x) => x && x.error);
     if (bad) return `<div class="screen wide">${head}${tabs}${failed(bad)}</div>`;
     const r = rs.round, isOpen = r.status === "open";
     const rows = (ev.rows || []).map((x) => `<tr><td class="mono">${esc(short(x.arm))}</td><td class="num">${num(x.mean)}</td><td class="num">${num(x.delta)}</td>
@@ -697,18 +751,31 @@
       ${a.retired ? ` · <span class="status warn">retired</span> <small>${esc(a.retired.reason || "")}</small>` : isOpen ? ` <button class="btn" type="button" data-retire="${esc(a.system)}">Retire</button>` : ""}</li>`).join("");
     const have = new Set(r.arms.map((a) => a.system));
     const toRun = sys.systems.filter((x) => !have.has(x.system));
+    const carryable = prev ? prev.round.arms.filter((a) => !a.retired && !have.has(a.system)).map((a) => a.system) : [];
+    // a baseline line is its current version, its earlier ones in `history` (view_baselines.lines)
+    const line = (bl.baselines || []).find((b) => b.dataset === r.dataset_id);
+    const versions = line ? [line, ...(line.history || []).filter((h) => h.version !== line.current)]
+      .map((v) => ({ ...v, current: line.current })).sort((a, b) => b.version - a.version) : [];
+    const baseline = versions.length ? `<section class="part"><div class="parthead"><h2>The baseline on ${esc(r.dataset_id)}</h2></div><div class="body"><ul>
+      ${versions.map((b) => `<li>v${b.version}${b.version === b.current ? ' <span class="status ok">current</span>' : ""} · <span class="mono">${esc(b.promoted_from)}</span> · ${esc((b.actor || {}).name || "")} · <small>${esc(b.reason || "")}</small>
+        ${b.version !== b.current ? `<div class="inline" data-form="rollback-${b.version}"><input type="text" id="rb-why-${b.version}" placeholder="why go back to it, a sentence" aria-label="why roll back to v${b.version}" style="min-width:16rem">
+          <button class="btn" type="button" data-rollback="${b.version}" data-send>Roll back to v${b.version}</button>${mark}</div>` : ""}</li>`).join("")}</ul><div id="rb-out"></div></div></section>` : "";
     const leaderRun = (() => { const a = r.arms.find((x) => x.arm === ev.leader); return a ? a.runs[a.runs.length - 1] : ""; })();
     return `<div class="screen wide">${head}${tabs}
       <h2>${esc(r.hypothesis || "(no question)")}</h2>
-      ${isOpen ? byField("ev-by") : ""}
+      ${byField("ev-by")}
       <p class="muted">${esc(r.round_id)} · ${esc(r.status)} · on ${esc(r.dataset_id)}${r.from ? ` · from ${esc(r.from)}` : ""}${r.budget_usd != null ? ` · budget $${esc(r.budget_usd)}` : ""} · spent $${num(ev.spent_usd, 4)}</p>
       ${r.conclusion ? `<div class="answer"><div class="kicker">its conclusion</div><p>${esc(typeof r.conclusion === "string" ? r.conclusion : r.conclusion.text || JSON.stringify(r.conclusion))}</p></div>` : ""}
       <section class="part"><div class="parthead"><h2>The evidence</h2><span class="grow"></span><span class="muted">${esc(ev.metric || "")} · each arm against the leader, Holm</span></div><div class="body">
+        ${evalChart(ev)}
         ${rows ? `<p class="muted">The leader: <b class="mono">${esc(short(ev.leader))}</b>. A verdict holds when the raw p is under its threshold.</p>
           <div class="tablewrap"><table><thead><tr><th>arm</th><th class="num">mean</th><th class="num">Δ</th><th class="num">raw p</th><th class="num">threshold</th><th>verdict</th></tr></thead><tbody>${rows}</tbody></table></div>` : ""}
         ${(ev.notes || []).length ? `<ul>${ev.notes.map((n) => `<li class="muted">${esc(n)}</li>`).join("")}</ul>` : ""}</div></section>
-      <section class="part"><div class="parthead"><h2>Its arms</h2></div><div class="body"><ul>${arms || '<li class="muted">none yet</li>'}</ul>
-        ${isOpen ? `<div id="rt-box"></div>` : ""}</div></section>
+      <section class="part"><div class="parthead"><h2>Its arms</h2></div><div class="body"><ul id="arms">${arms || '<li class="muted">none yet</li>'}</ul>
+        ${isOpen ? `<div id="rt-box"></div>` : ""}
+        ${isOpen && carryable.length ? `<div class="inline"><label class="name" for="cy-arm">Carry in from ${esc(r.from)}</label><select id="cy-arm">${carryable.map((x) => `<option>${esc(x)}</option>`).join("")}</select>
+          <button class="btn" type="button" id="cy-go">Carry it in</button><span class="muted">unchanged, not run again</span></div><div id="cy-out"></div>` : ""}</div></section>
+      ${baseline}
       ${isOpen ? `<section class="part"><div class="parthead"><h2>Run arms in it</h2></div><div class="body">
         ${toRun.length ? `<div class="choices">${toRun.map((x) => `<label class="choice"><input type="checkbox" data-run="${esc(x.system)}"> <span class="mono">${esc(x.system)}</span> <small>${esc(x.model || "")}</small></label>`).join("")}</div>
           <div class="inline"><label class="name" for="rn-cap">spend at most (USD)</label><input type="number" id="rn-cap" min="0.01" step="0.01" value="1" inputmode="decimal" style="width:7rem">
@@ -808,6 +875,30 @@
         ev.target.disabled = false;
       });
     }));
+    document.getElementById("cy-go")?.addEventListener("click", async (ev) => {
+      const out = document.getElementById("cy-out"), by = byOr("ev-by");
+      if (!by) { out.innerHTML = '<p class="note" role="alert">Say who you are above: a decision names who made it.</p>'; return; }
+      ev.target.disabled = true;
+      try { if (await runJob(`/goals/${enc(goal)}/rounds/${enc(cur)}/carry`, { arm: v("cy-arm"), by }, out, "carrying it in")) again(null, out); }
+      catch (e) { out.innerHTML = refusal(e); }
+      ev.target.disabled = false;
+    });
+    document.querySelectorAll("[data-rollback]").forEach((b) => {
+      const to = Number(b.dataset.rollback);
+      holds(`rollback-${to}`, () => `Roll back to v${to}`);
+      b.addEventListener("click", async () => {
+        const out = document.getElementById("rb-out"), by = byOr("ev-by");
+        if (!by) { out.innerHTML = '<p class="note" role="alert">Say who you are above: a decision names who made it.</p>'; return; }
+        b.disabled = true;
+        const dataset = (LIVE.cache[`round:${goal}/${cur}`] || {}).round?.dataset_id;
+        try {
+          if (await runJob("/baselines/rollback", { goal, dataset, to, reason: v(`rb-why-${to}`), by }, out, "rolling back")) {
+            sent(`rollback-${to}`); forget(`baselines:${goal}`); again(null, out);
+          }
+        } catch (e) { out.innerHTML = refusal(e); }
+        b.disabled = false;
+      });
+    });
     holds("round-close", () => `Close ${cur}`);
     document.getElementById("rc-close")?.addEventListener("click", async (ev) => {
       const out = document.getElementById("rc-out"), by = byOr("ev-by");

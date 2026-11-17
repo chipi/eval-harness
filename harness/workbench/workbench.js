@@ -732,11 +732,35 @@ success_criteria:
     const k = ["data-tab", "data-armbtn", "data-retire", "data-promote", "data-model"].find((x) => el.hasAttribute(x));
     return k ? `[${k}="${CSS.escape(el.getAttribute(k))}"]` : null;
   };
-  // A screen holding unsent changes (UXS-005, "For every live screen") is never redrawn under the person: a redraw of the
-  // same screen (a job's poll, a read that came back) waits until the change is saved or given up.
+  // A screen holding unsent changes (UXS-005, "For every live screen") never loses them to a redraw (a job's poll, a
+  // read that came back): what is typed in its forms is carried across the redraw, so the screen still shows what came
+  // back. (Holding the redraw back instead left a screen on "loading" until its form was saved.)
   const unsent = () => (window.WB.unsent ? window.WB.unsent() : []);
+  const fieldKey = (el) => (el.id ? `#${el.id}` : el.name && el.type === "radio" ? `${el.name}=${el.value}` : null);
+  // only what the person typed or chose is carried: a value the screen filled in is the screen's to fill again
+  const FIELDS = "[data-form] input, [data-form] textarea, [data-form] select";
+  document.addEventListener("input", (e) => { if (e.target.matches && e.target.matches(FIELDS)) e.target.dataset.typed = "1"; }, true);
+  document.addEventListener("change", (e) => { if (e.target.matches && e.target.matches(FIELDS)) e.target.dataset.typed = "1"; }, true);
+  function typed() {
+    const out = {};
+    if (!unsent().length) return out;
+    main.querySelectorAll(FIELDS).forEach((el) => {
+      const k = fieldKey(el);
+      if (k && el.dataset.typed) out[k] = el.type === "checkbox" || el.type === "radio" ? el.checked : el.value;
+    });
+    return out;
+  }
+  function retype(kept) {
+    main.querySelectorAll(FIELDS).forEach((el) => {
+      const k = fieldKey(el);
+      if (!k || !(k in kept)) return;
+      if (el.type === "checkbox" || el.type === "radio") el.checked = kept[k];
+      else el.value = kept[k];
+      el.dataset.typed = "1";
+    });
+  }
   function render(newScreen) {
-    if (!newScreen && unsent().length) return;
+    const kept = newScreen ? {} : typed();
     const keep = newScreen ? null : focusKey(document.activeElement);
     const route = (location.hash || "#start").slice(1);
     // a route with a part after it (#goal/<id>, the live Workbench): its first word names the screen
@@ -750,6 +774,7 @@ success_criteria:
     main.innerHTML = html;
     main.querySelectorAll("details.cmd").forEach((d) => { if ((S.openCmds || []).includes(d.querySelector("summary").textContent)) d.open = true; });
     drawRail(route);
+    retype(kept);
     if (wire) wire();
     const h1 = main.querySelector("h1");
     if (h1) h1.tabIndex = -1;
@@ -798,6 +823,8 @@ success_criteria:
     }
     if (held.length && window.WB.forgetUnsent) window.WB.forgetUnsent();
     shownHash = location.hash;
+    // a new screen reads afresh: what a job wrote on another screen (a sweep's runs) shows here (the live pages' reads)
+    if (window.LIVE) window.LIVE.cache = {};
     help.hidden = true; render(true); window.scrollTo(0, 0);
   });
   // the screens are routes in the hash: the skip link focuses the screen without changing it
