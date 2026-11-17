@@ -491,6 +491,54 @@ try:
                 and dep.get("accepted", {}).get("reasoning", "").startswith("it reasons by default"),
                 (dep, page.locator("main").inner_text()[-600:]),
             )
+            # step 4 (UXS-005): a system made from a model where it runs, then checked on three items
+            page.goto(f"http://127.0.0.1:{port}/workbench/#systems/tickets_summary")
+            page.wait_for_selector("h1:has-text('Choose the systems')", timeout=20000)
+            page.select_option("#sn-model", "fake-1b")
+            page.wait_for_selector("#sn-dep", timeout=20000)
+            page.fill("#sn-prompt", "Summarise the ticket in one line:")
+            page.fill("#sn-max", "50")
+            page.fill("#sn-by", "tester")
+            check(
+                "the system's id is made from the model and where it runs, the button names what it writes",
+                page.input_value("#sn-id") == "fake-1b_here"
+                and page.locator("#sn-make").inner_text() == "Make system fake-1b_here",
+                (page.input_value("#sn-id"), page.locator("#sn-make").inner_text()),
+            )
+            page.click("#sn-make")
+            page.wait_for_selector("td.mono:has-text('fake-1b_here')", timeout=20000)
+            sysrec = yaml.safe_load((proj / "data" / "systems" / "fake-1b_here.yaml").read_text())
+            check(
+                "Make the system: system-new names the model record and the deployment, and carries its endpoint and settings",
+                sysrec.get("model_record") == "fake-1b"
+                and sysrec.get("deployment") == "here"
+                and sysrec["params"].get("provider") == "openai"
+                and sysrec["params"].get("base_url") == f"http://127.0.0.1:{fake.server_port}/v1"
+                and sysrec["params"].get("prompt") == "Summarise the ticket in one line:"
+                and sysrec["params"].get("max_tokens") == 50
+                and sysrec["params"].get("temperature") == 0,
+                sysrec,
+            )
+            page.select_option("#sm-ds", "tk_v1")
+            page.fill("#sm-cap", "0.01")
+            page.fill("#sm-by", "tester")
+            page.click("[data-smoke='fake-1b_here']")
+            page.wait_for_selector("#sm-fake-1b_here details", timeout=120000)
+            dep_doc = yaml.safe_load((proj / "data" / "deployments" / "fake-1b" / "here.yaml").read_text())
+            check(
+                "Check it on three items: arm-smoke as a job, its status, cost and projection, a reply per item; kept as the "
+                "deployment's check",
+                page.locator("#sm-fake-1b_here details").count() == 3
+                and "all " in page.locator("#sm-fake-1b_here").inner_text()
+                and any(
+                    c.get("kind") == "smoke" and c.get("system") == "fake-1b_here"
+                    for c in dep_doc.get("checks") or []
+                ),
+                (
+                    page.locator("#sm-fake-1b_here").inner_text()[:400],
+                    [c.get("kind") for c in dep_doc.get("checks") or []],
+                ),
+            )
             phone = browser.new_context(
                 viewport={"width": 390, "height": 844},
                 is_mobile=True,

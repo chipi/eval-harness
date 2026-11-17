@@ -13,6 +13,12 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Added
 
+- **The Workbench's step 4, live** (UXS-005): "Choose the systems" on a goal lists the project's systems, each checked on
+  three items of a goal's dataset (`arm-smoke` as a job, under a cap): its status and flags, what it spent, what the
+  whole dataset would cost and take, a reply per item. "Make a system from a model" picks a model and where it runs,
+  the shared prompt, temperature and most tokens, and makes the system (`system-new`) naming the model record and the
+  deployment, with the deployment's endpoint carried into its params (a run reads it from there). The form is kept in
+  this browser until the system is made.
 - **The Workbench's step 3 and labelling, live** (UXS-005): a goal's dataset opens its preparation: fetch it
   (`dataset-materialize`) and look inside (`dataset-profile`) as jobs, then its reference set, by promoting a label set
   (the dataset's own answers too) with its tier and why. "Label it here" makes the sheet (`label-sheet`, a job), fills it

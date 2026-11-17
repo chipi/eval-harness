@@ -141,6 +141,7 @@ details.cmd pre { margin: 10px 0 0; padding: 12px; background: var(--surface); b
 .steps .row.locked h3 { color: var(--muted); }
 .status { font: 500 12px/1.4 var(--mono); color: var(--muted); white-space: nowrap; }
 .unsent { font: 600 12px/1.4 var(--mono); color: var(--warn); white-space: nowrap; }
+.reply { white-space: pre-wrap; overflow-wrap: anywhere; font: 12px/1.5 var(--mono); max-height: 12rem; overflow: auto; margin: 6px 0; }
 .status.ok { color: var(--ok); }
 
 .goalhead { display: flex; justify-content: space-between; gap: 16px; align-items: start; flex-wrap: wrap; margin-bottom: 24px; }

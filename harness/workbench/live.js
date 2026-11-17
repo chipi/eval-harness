@@ -70,7 +70,7 @@
       ${rounds ? `<h2 style="margin-top:22px">Rounds</h2><ul>${rounds}</ul>` : ""}
       ${st.running.length ? `<h2 style="margin-top:22px">Running now</h2><ul>${st.running.map((j) => `<li>${esc(j.operation)} · ${esc(j.state)}</li>`).join("")}</ul>` : ""}
       ${WB.cmd(`evh goal-status ${id}`)}
-      <div class="actions"><a class="btn primary" href="#dataset/${encodeURIComponent(id)}">Add a dataset</a><a class="btn" href="#goal-edit/${encodeURIComponent(id)}">Edit the goal</a><a class="btn" href="#home">Back to your goals</a></div></div>`;
+      <div class="actions"><a class="btn primary" href="#dataset/${encodeURIComponent(id)}">Add a dataset</a><a class="btn" href="#systems/${encodeURIComponent(id)}">Choose the systems</a><a class="btn" href="#goal-edit/${encodeURIComponent(id)}">Edit the goal</a><a class="btn" href="#home">Back to your goals</a></div></div>`;
   }
 
   // ── writes: who acted, the data header, and the model's refusal shown as it is ──────────────────────
@@ -552,6 +552,110 @@
     });
   }
 
+  // ── step 4: the systems a goal compares (UXS-005 step 4): made from a model where it runs, checked on three items ──
+  const sysKey = (goal) => `evh.draft.system.${goal}`;
+  const readSys = (goal) => { try { return JSON.parse(localStorage.getItem(sysKey(goal)) || "null"); } catch { return null; } };
+  const keepSys = (goal, d) => { try { localStorage.setItem(sysKey(goal), JSON.stringify(d)); } catch { /* this visit only */ } };
+  const dropSys = (goal) => { try { localStorage.removeItem(sysKey(goal)); } catch { /* nothing kept */ } };
+  const smokes = {};
+  const smokeView = (r) => {
+    if (!r) return "";
+    if (r.error) return r.error;
+    const v = r.values || {}, pj = v.projection || {};
+    return `<p><span class="status ${v.status === "pass" ? "ok" : "warn"}">${esc(v.status || "?")}</span> · ${v.calls ?? 0} call(s) · spent $${Number(v.spent_usd || 0).toFixed(5)}
+      · all ${esc(pj.items ?? "?")} items ≈ $${esc(pj.usd ?? "?")}, about ${esc(pj.minutes ?? "?")} min</p>
+      ${(v.flags || []).length ? `<ul>${v.flags.map((f) => `<li>${esc(f)}</li>`).join("")}</ul>` : ""}
+      ${(v.items || []).map((it) => `<details><summary class="mono">${esc(it.item)}</summary><pre class="reply">${esc(it.reply || "")}</pre></details>`).join("")}`;
+  };
+  function screenSystems(goal) {
+    const head = `<div class="kicker">Step 4 · ${esc(goal)}</div><h1>Choose the systems</h1>
+      <p class="lead">What is compared is a system: a model where it runs, with a prompt and settings. Each is checked on three items before it costs anything.</p>`;
+    if (!goal) return `<div class="screen">${head}</div>`;
+    const rec = load(`goalrec:${goal}`, `/goals/${enc(goal)}`), sys = load("systems", "/systems"), ms = load("models", "/models");
+    if ([rec, sys, ms].includes(undefined)) return `<div class="screen wide">${head}${loading("the systems")}</div>`;
+    const bad = [rec, sys, ms].find((x) => x.error);
+    if (bad) return `<div class="screen wide">${head}${failed(bad)}</div>`;
+    const datasets = (rec.record.datasets || []).map((x) => x.dataset_id);
+    const d = readSys(goal) || { model: "", deployment: "", prompt: "", temperature: "0", max_tokens: "", id: "" };
+    if (readSys(goal)) UNSENT.set("system-new", `a new system for ${goal}`);
+    const mrec = d.model ? load(`model:${d.model}`, `/models/${enc(d.model)}`) : null;
+    const deps = mrec && !mrec.error ? mrec.deployments.map((x) => x.deployment) : [];
+    const runnable = ms.models.filter((m) => m.deployments > 0);
+    return `<div class="screen wide">${head}
+      <section class="part"><div class="parthead"><h2>Check each on three items</h2></div><div class="body">
+        <div class="inline"><label class="name" for="sm-ds">on</label><select id="sm-ds">${datasets.map((x) => `<option>${esc(x)}</option>`).join("")}</select>
+          <label class="name" for="sm-cap">spend at most (USD)</label><input type="number" id="sm-cap" min="0.01" step="0.01" value="0.05" inputmode="decimal" style="width:7rem"></div>
+        <div class="tablewrap"><table><thead><tr><th>system</th><th>model</th><th>where it runs</th><th>its check</th></tr></thead><tbody>
+        ${sys.systems.map((x) => `<tr><td class="mono">${esc(x.system)}</td><td>${esc(x.model || "")}</td><td>${esc(x.deployment || "")}</td>
+          <td><button class="btn" type="button" data-smoke="${esc(x.system)}">Check it on three items</button><div id="sm-${esc(x.system)}" aria-live="polite">${smokeView(smokes[`${goal}/${x.system}`])}</div></td></tr>`).join("")}</tbody></table></div>
+        ${byField("sm-by")}</div></section>
+      <section class="part" data-form="system-new"><div class="parthead"><h2>Make a system from a model</h2></div><div class="body">
+        <div class="field"><label class="name" for="sn-model">The model</label><div><select id="sn-model"><option value="">choose a model that has somewhere to run</option>
+          ${runnable.map((m) => `<option value="${esc(m.model)}" ${d.model === m.model ? "selected" : ""}>${esc(m.name || m.model)} · ${esc(m.state)}</option>`).join("")}</select>
+          <div class="hint">a model not here is brought in first: <a href="#model-new">Bring in a model</a></div></div></div>
+        ${d.model ? `<div class="field"><label class="name" for="sn-dep">Where it runs</label><div><select id="sn-dep">${deps.map((x) => `<option ${d.deployment === x ? "selected" : ""}>${esc(x)}</option>`).join("")}</select></div></div>
+        <div class="field"><label class="name" for="sn-prompt">The prompt</label><div><textarea id="sn-prompt" rows="2" placeholder="Summarise the following in one sentence:">${esc(d.prompt)}</textarea><div class="hint">the same for every system, so a difference in the scores is the model's</div></div></div>
+        <div class="field"><label class="name" for="sn-temp">Temperature</label><div><input type="text" id="sn-temp" inputmode="decimal" value="${esc(d.temperature)}" style="width:6rem"></div></div>
+        <div class="field"><label class="name" for="sn-max">At most this many tokens</label><div><input type="text" id="sn-max" inputmode="numeric" value="${esc(d.max_tokens)}" placeholder="the model's default" style="width:10rem"></div></div>
+        <div class="field"><label class="name" for="sn-id">Its id</label><div><input type="text" id="sn-id" value="${esc(d.id || `${d.model}_${d.deployment || deps[0] || ""}`.replace(/[^A-Za-z0-9_.-]+/g, "_"))}" autocapitalize="off" spellcheck="false"></div></div>
+        ${byField("sn-by")}
+        <div class="actions" style="margin-top:0"><button class="btn primary" type="button" id="sn-make" data-send>Make the system</button><span class="unsent" data-unsent-mark hidden>not saved yet · kept in this browser until it is made</span></div>` : ""}
+        <div id="sn-out"></div></div></section>
+      ${WB.cmd(`evh system-new <id> --set model_record=<model> --set deployment=<where> --set params.prompt=...\nevh arm-smoke --system <id> --dataset ${datasets[0] || "<dataset>"} --max-cost-usd 0.05`)}
+      <div class="actions"><a class="btn" href="#goal/${enc(goal)}">Back to the goal</a></div></div>`;
+  }
+  function wireSystems() {
+    const goal = WB.param || "";
+    const v = (id) => (document.getElementById(id)?.value || "").trim();
+    document.querySelectorAll("[data-smoke]").forEach((b) => b.addEventListener("click", async () => {
+      const id = b.dataset.smoke, box = document.getElementById(`sm-${id}`), by = byOf("sm-by") || (who() ? `person:${who()}` : null);
+      const cap = Number(v("sm-cap"));
+      if (!by) { box.innerHTML = '<p class="note" role="alert">Say who you are below: a check names who asked.</p>'; return; }
+      if (!(cap > 0)) { box.innerHTML = '<p class="note" role="alert">Say the most it may spend first.</p>'; return; }
+      b.disabled = true;
+      try {
+        const j = await send("POST", `/systems/${enc(id)}/smoke`, { dataset: v("sm-ds"), by, max_cost_usd: cap });
+        const done = await watchJob(j.id, box, "checking on three items");
+        // arm-smoke ends 6 when it flags something: its answer, shown as one
+        const res = (done.result || {}).result;
+        smokes[`${goal}/${id}`] = res ? { values: res.values } : { error: await jobRefusal(done) };
+        box.innerHTML = smokeView(smokes[`${goal}/${id}`]);
+      } catch (e) { box.innerHTML = refusal(e); }
+      b.disabled = false;
+    }));
+    const draft = () => readSys(goal) || { model: "", deployment: "", prompt: "", temperature: "0", max_tokens: "", id: "" };
+    const save = () => {
+      const d = draft();
+      d.model = v("sn-model"); d.deployment = v("sn-dep") || d.deployment; d.prompt = document.getElementById("sn-prompt")?.value ?? d.prompt;
+      d.temperature = v("sn-temp") || d.temperature; d.max_tokens = v("sn-max"); d.id = v("sn-id") || d.id;
+      keepSys(goal, d);
+      return d;
+    };
+    holds("system-new", () => `Make system ${v("sn-id") || "…"}`);
+    document.querySelector("[data-form=system-new]")?.addEventListener("input", save);
+    document.getElementById("sn-model")?.addEventListener("change", () => {
+      const d = save(); d.deployment = ""; d.id = ""; keepSys(goal, d); WB.render(true);
+    });
+    document.getElementById("sn-make")?.addEventListener("click", async (ev) => {
+      const d = save(), out = document.getElementById("sn-out"), by = byOf("sn-by");
+      if (!by) { out.innerHTML = '<p class="note" role="alert">Say who you are: a change names who made it.</p>'; return; }
+      const mrec = LIVE.cache[`model:${d.model}`] || {};
+      const dep = (mrec.deployments || []).find((x) => x.deployment === d.deployment) || {};
+      const ep = (dep.record || {}).endpoint || {};
+      const set = { model_record: d.model, deployment: d.deployment };
+      for (const k of ["provider", "model", "base_url", "api_key_env"]) if (ep[k]) set[`params.${k}`] = ep[k];
+      if (d.prompt.trim()) set["params.prompt"] = d.prompt.trim();
+      if (d.temperature !== "") set["params.temperature"] = Number(d.temperature);
+      if (d.max_tokens !== "") set["params.max_tokens"] = Number(d.max_tokens);
+      ev.target.disabled = true;
+      try {
+        await send("POST", `/systems/${enc(d.id)}`, { set, by });
+        sent("system-new"); dropSys(goal); forget("systems");
+        WB.render(true);
+      } catch (e) { out.innerHTML = refusal(e); ev.target.disabled = false; }
+    });
+  }
+
   // ── step 3: prepare a dataset (UXS-005 step 3): fetch it, look inside, its reference set ────────────────────────
   const catalogPage = (ds) => `${location.origin}/d/${String(ds || "none").replace(/[^A-Za-z0-9._-]+/g, "-").replace(/^-+|-+$/g, "") || "x"}.html`;
   async function runJob(path, body, box, what) {
@@ -751,6 +855,7 @@
     dataset: [() => screenDatasetNew(WB.param || ""), wireDatasetNew],
     "goal-new": [() => screenGoalForm(""), wireGoalForm], "goal-edit": [() => screenGoalForm(WB.param || ""), wireGoalForm],
     prepare: [() => screenPrepare(WB.param || ""), wirePrepare], label: [() => screenLabel(WB.param || ""), wireLabel],
+    systems: [() => screenSystems(WB.param || ""), wireSystems],
   };
 
   function goLive() {

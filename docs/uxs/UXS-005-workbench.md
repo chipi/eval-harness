@@ -28,7 +28,8 @@ just static"): `harness/workbench/` (`index.html`, `workbench.css`, `workbench.j
 `workflows.js` for the other workflows, `round5.js` for round 5's screens, `help.js` for every hint, `?` panel and
 word). `live.js` turns a screen live, on the project's own API; on 2026-11-17 the home, a goal, the models (a new
 model, a deployment, onboarding, an accepted flag), step 1 (a goal made or changed), step 2 (a dataset for a goal),
-step 3 (preparing it) and labelling a dataset's items (the sheet) are live, and every other screen
+step 3 (preparing it), labelling a dataset's items (the sheet) and step 4 (the systems) are live, and every other
+screen
 says it is not yet. Until the project answers no mockup screen is drawn (one sent a reload of a live screen home).
 
 **From 2026-11-17 (D7)** the mockup is a frozen design reference: its data (`mock.js`, this repository's) stops
@@ -725,7 +726,7 @@ against the code on 2026-11-17 (`research/internal/WORKBENCH_GAPS_0.8.0.md` has 
 | 1 Goal | `goal-new` (with `datasets: []`), `goal-set`, `goal-show`, `goal-history`, `metric-list` | ✓ live (2026-11-17): made from the home, changed from its page (only what changed is sent) |
 | 2 Dataset | `dataset-list`, `goal-set`, `source-preview`, `fieldset-propose`, `fieldset-new`, `dataset-create`, `capture-list` | ✓ live (2026-11-17): one the project has, or one from a source (its query, `source-preview`, its fields proposed and kept, `dataset-create` with them and its answers, the goal's role) |
 | 3 Prepare | `dataset-materialize`, `dataset-profile`, `dataset-show`, `reference-promote`; labelling: `label-sheet`, `jobs-file`, `label-import` | ✓ live (2026-11-17): fetch, look inside, promote a label set (the dataset's own answers too); "Label it here" fills the sheet on the page and submits it when done; items have no offset and limit |
-| 4 Models | `model-list`, `goal-leaderboard`, `prompt-version`, `system-show`, `system-new`, `arm-smoke`, `POST /estimate` | ✓; a clone is a new system |
+| 4 Models | `model-list`, `model-show`, `system-list`, `system-new`, `arm-smoke` | ✓ live (2026-11-17): a system made from a model where it runs (its endpoint carried into the system), the shared prompt and settings; each checked on three items with a cap (status, cost, the projection, a reply per item). Not yet: a clone of a system; the prompt kept as a prompt version (the bundled adapter reads `params.prompt` only, not versions) |
 | W5 Bring in a model | `model-new`, `deployment-new`, `model-onboard`, `model-show`, `deployment-history`, `deployment-accept` | ✓ live; no "approve" (D4) |
 | 5 / W1 The eval | `round-list`, `round-show`, `round-evidence`, `leaderboard`, `baselines`, `round-open`, `round-carry`, `sweep`, `POST /estimate`, `rescore`, `judge-score`, `round-retire`, `run-promote`, `round-close`, `arm-show`, `comparison-item` | ✓; a retire is final (D3) |
 | W2 Review, label, tag | `comparison-items`, `comparison-item`, `sheet-show`, `sheet-export`, `failure-modes-list`, `tag-set-list`, `label-set-list`, `sheet-import` | ✓ the blind sheet as a `sheet-export` job, read back with `export_job` (API 1) |
