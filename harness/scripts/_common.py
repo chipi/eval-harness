@@ -32,13 +32,12 @@ CODE = Path(__file__).resolve().parent
 def project_root() -> Path:
     """Where the PROJECT lives: its data/, its .env, its git history.
 
-    Run from a checkout of eval-harness, that is the harness/ directory beside this one,
-    as it always was. Installed as a package (`pip install evaluation-harness @ git+...`), the code sits in
-    site-packages and the project is wherever the user is working: `EVAL_HOME` if set, else
-    the nearest directory from here up that has a `data/` folder (what `evh init` makes), so
-    a command run from a subfolder finds its project; else the current directory. Kept apart
-    from CODE because a project that depends on the harness must never write its data into
-    site-packages.
+    `EVAL_HOME` if set, else the nearest directory from the current one up that has a `data/` folder (what `evh init`
+    makes), so a command run from a subfolder finds its project; else the current directory. The same whether the code
+    is installed (`pip install evaluation-harness @ git+...`) or run from a checkout (owner, 2026-11-17): a checkout's
+    scripts once preferred the checkout's own harness/ wherever they ran, and a command meant for another project wrote
+    into the repository's data. This repository's project is its harness/ folder: run from there, or name it. Kept
+    apart from CODE because a project that depends on the harness must never write its data into site-packages.
 
     Resolved on first use, not at import: a program that imports the harness as a library
     (an adapter, a notebook) can set `EVAL_HOME` or change directory first.
@@ -46,9 +45,6 @@ def project_root() -> Path:
     home = os.environ.get("EVAL_HOME", "").strip()
     if home:
         return Path(home).expanduser().resolve()
-    checkout = CODE.parent
-    if (checkout / "data").is_dir() and (checkout / "scripts").resolve() == CODE:
-        return checkout
     here = Path.cwd().resolve()
     return next((d for d in (here, *here.parents) if (d / "data").is_dir()), here)
 

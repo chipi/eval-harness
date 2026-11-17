@@ -19,6 +19,7 @@ import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2] / "harness"
+os.environ.setdefault("EVAL_HOME", str(ROOT))  # the repository's project, from wherever this runs
 sys.path.insert(0, str(ROOT))
 from evaluation_harness import (  # noqa: E402
     _importers,

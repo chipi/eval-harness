@@ -1166,7 +1166,7 @@ and to the news-summary judge, so neither is an `evh` command.
      narrows it. A subset is its own judging set. If the arms mix system versions
      (`_v1` and `_v2` of one arm), the pass warns: each version is judged as its own arm.
    - **`prompt.file`** is looked up in this order, first hit wins: an absolute path as
-     written; the project root (`EVAL_HOME`; else, in a checkout, the checkout; else the nearest
+     written; the project root (`EVAL_HOME`; else the nearest
      directory up from where you run that has `data/`); the directory of
      the scorer file itself; and, only in a checkout of this repository, the repository root,
      which is where the committed scorers' `examples/summeval-judging/prompt.txt` points. A

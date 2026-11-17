@@ -37,6 +37,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1] / "harness"
+os.environ.setdefault("EVAL_HOME", str(ROOT))  # the repository's project, from wherever this runs
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(ROOT.parent / "harness"))
 from evaluation_harness import (  # noqa: E402
