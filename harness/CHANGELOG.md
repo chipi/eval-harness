@@ -13,6 +13,19 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Added
 
+- **A source previewed** (the Workbench's dataset step): `evh source-preview --source NAME --query '{…}' [--rows N]`
+  and `POST /api/v1/source-previews` (a job): the source's description and its first items, the start of each text
+  and its answer, nothing written under data/.
+- **The dataset's own answers as a label set** (owner, 2026-11-17: the Workbench's "it came with one"): a source query
+  may name the expected answer's column, `"answer": COLUMN` (huggingface, croissant, kaggle, openml, zenodo). `dataset-create`
+  writes those answers as a frozen label set, `answers` by default (`--answer-set`), of a new source kind, `dataset`
+  (the provider, the column, the pinned revision; the label set and reference schemas name it, the catalog shows its
+  chip); `reference-promote` makes it a reference. Refused, before anything is written, when the set exists (a
+  dataset made again with `--force`). An answer of 0 or false is kept.
+- **`score-preview` gives its numbers as a result** (the Workbench's W6): with `--json`, and as its job's result, per
+  dataset each arm's deciding mean now and after, how far it moved and whether it is within the goal's limits, and the
+  leader, the recommendation and the contenders now and after; a dataset with nothing to re-score says how many
+  re-scores the goal reads instead.
 - **The jobs list filtered** (the Workbench's home and jobs pages): `GET /api/v1/jobs` takes several states at once
   (`state=queued,running` or `state` repeated; 400 for a state a job is never in), `operation`, `goal` (the jobs whose
   inputs name it), `offset` and `limit`, and answers the `total` found; `evh jobs-status` takes `--state` (repeatable

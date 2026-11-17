@@ -114,8 +114,8 @@ named default), its dataset (from a source: a folder, a table, Hugging Face, Cro
 capture; previewed, fields proposed, created, materialized, profiled), its reference set, and a first system run to
 see it work.
 *Operations:* `goal-new` (sent with `datasets: []`), `dataset-create`, `fieldset-propose`, `fieldset-new`,
-`dataset-materialize`, `dataset-profile`, `reference-promote`, `system-new`, `run`; a source's preview and a
-reference from the dataset's own answers are to build (API 2, API 3).
+`dataset-materialize`, `dataset-profile`, `reference-promote`, `system-new`, `run`, `source-preview` (API 2); the
+dataset's own answers (`"answer": COLUMN` in the query) are written as a label set at create (API 3).
 
 **W5 Bring in a model.** A model record (what it is, its weights and licence), a deployment (where it runs, its
 endpoint and settings), onboarded (the probes, kept as dated checks); a flag that is the deployment's own nature
@@ -127,8 +127,7 @@ onboarding passed and a system on it passed its smoke: computed, never approved 
 **W6 Make or change a reference.** Promote a label set to a silver or gold reference with who and why; see what the
 change moves before re-scoring the arms on it.
 *Operations:* `label-set-list`, `reference-list`, `reference-promote`, `leaderboard` (read under another label, such
-as `silver`), `rescore`;
-`score-preview` gives no result a page can show yet (API 4).
+as `silver`), `score-preview` (its result per arm, API 4), `rescore`.
 
 **W7 Set up a judge.** Judges picked from onboarded models (two families at least), the prompt, the mode; its stored
 validation against people's labels shown before it may decide. Validating a judge is a tool, not an operation, and
@@ -188,9 +187,10 @@ Each blocks a screen; each is built as an operation, for every surface. The deta
    (`label-sheet`, `label-import`). Owner, 2026-11-17: labels, preferences and tags are not saved item by item;
    the screen submits the filled sheet when the person is done, and the sets stay frozen as today. Built
    2026-11-17: `POST /datasets/{dataset}/sheets`, the key refused by the job's files, `sheet-import`'s `export_job`.
-2. A source's preview: its description and first rows, writing nothing (W4).
-3. A reference from the dataset's own answers (W4: "it came with one").
-4. `score-preview` gives a result (W6).
+2. A source's preview: its description and first rows, writing nothing (W4). Built 2026-11-17 (`source-preview`).
+3. A reference from the dataset's own answers (W4: "it came with one"). Built 2026-11-17 (owner: the answer column
+   becomes a frozen label set of source `dataset` at create, promoted with `reference-promote`).
+4. `score-preview` gives a result (W6). Built 2026-11-17.
 5. The jobs list: several states per query, filters by operation and goal, offset and limit (home, jobs). Built
    2026-11-17 (`GET /jobs`, `evh jobs-status`).
 6. A JSON answer for every unhandled error (every screen). Built 2026-11-17.

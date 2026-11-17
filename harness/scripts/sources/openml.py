@@ -78,5 +78,10 @@ class Source:
         if not d.get("parquet_url"):
             raise ValueError(f"OpenML dataset {query['dataset']} has no parquet copy")
         data = _tables.fetched(str(d["parquet_url"]))
-        cols = [query["text"], *([query["id"]] if query.get("id") else []), *(query.get("fields") or [])]
+        cols = [
+            query["text"],
+            *([query["id"]] if query.get("id") else []),
+            *([query["answer"]] if query.get("answer") else []),
+            *(query.get("fields") or []),
+        ]
         yield from _tables.items(_tables.rows(data, "parquet", cols), query)

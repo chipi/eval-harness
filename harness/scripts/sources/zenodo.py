@@ -88,5 +88,10 @@ class Source:
         algo, _, want = str(f.get("checksum") or "").partition(":")
         if algo == "md5" and hashlib.md5(data, usedforsecurity=False).hexdigest() != want:
             raise ValueError(f"{f.get('key')}: its bytes are not the md5 Zenodo lists for it")
-        cols = [query["text"], *([query["id"]] if query.get("id") else []), *(query.get("fields") or [])]
+        cols = [
+            query["text"],
+            *([query["id"]] if query.get("id") else []),
+            *([query["answer"]] if query.get("answer") else []),
+            *(query.get("fields") or []),
+        ]
         yield from _tables.items(_tables.rows(data, kind, cols), query)

@@ -10,6 +10,7 @@ In a throwaway project from the tutorial ($0, offline, the echo provider), with 
 bundled one and adds BONUS to overlap_f1: editing BONUS is a scoring change, with a new code hash.
 """
 
+import json
 import os
 import re
 import shutil
@@ -179,6 +180,20 @@ try:
         out(r)[-900:],
     )
     check("score-preview: writes nothing to the project", files_under() == before)
+    r = evh("score-preview", "--goal", "tickets_summary", "--json")
+    got = json.loads(r.stdout).get("result", {}).get("values", {}) if r.returncode == 0 else {}
+    arms = (got.get("datasets") or {}).get("tickets_v1", {}).get("arms") or []
+    check(
+        "score-preview --json (a job's result, the Workbench's W6): per dataset each arm's mean now and after and how "
+        "far it moved (the bonus, +0.5), the leader now and after, nothing written",
+        got.get("goal") == "tickets_summary"
+        and got.get("written") is False
+        and got.get("rescored", 0) > 0
+        and arms
+        and all(a["moved"] is not None and abs(a["moved"] - 0.5) < 1e-9 for a in arms)
+        and set(got["datasets"]["tickets_v1"]["leader"]) == {"now", "after"},
+        (r.returncode, r.stderr[-300:], got),
+    )
 
     # apply it to r1: a score under each run, the round's record
     r = evh(

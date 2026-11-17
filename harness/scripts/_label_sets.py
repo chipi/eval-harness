@@ -9,8 +9,9 @@ A label set is one labelling pass over one dataset by one source, never edited:
 A label is one right answer, or several when more than one is right for the item, written
 {"accept": ["escalate", "file"]} (`answers` reads either; two labels agree when they accept the same answers: `compare`).
 
-The source is `person` (who), `model` (the run its outputs came from) or `rule` (a mapping over a capture's
-recorded outcomes). Labels follow the item, not the dataset: a set records each item's sha256, so an item with the
+The source is `person` (who), `model` (the run its outputs came from), `rule` (a mapping over a capture's
+recorded outcomes) or `dataset` (the answers the data came with, read from a source's answer column at create:
+which source, which column, at which revision). Labels follow the item, not the dataset: a set records each item's sha256, so an item with the
 same bytes in another dataset (a later version, a production dataset) has the same labels. (Not `_labels.py`: that
 is the classification report's predicted and gold labels.)
 """
@@ -34,7 +35,7 @@ from evaluation_harness import _store
 from evaluation_harness._common import die, load_dataset, now, read_json, write_json
 from evaluation_harness.model import datasets as model_datasets
 
-SOURCES = ("person", "model", "rule")
+SOURCES = ("person", "model", "rule", "dataset")
 SET_ID = re.compile(r"^[a-z0-9][a-z0-9_.-]{0,99}$")
 
 
@@ -528,9 +529,15 @@ def contested(dataset_id: str, tier: str = "gold") -> dict[str, Any] | None:
 
 
 def source_line(source: dict[str, Any]) -> str:
-    """A source in words: "person · owner", "model · <run>", "rule · <capture>"."""
+    """A source in words: "person · owner", "model · <run>", "rule · <capture>", "dataset · <provider> <column>"."""
     kind = source.get("kind", "?")
-    who = source.get("by") or source.get("run_id") or source.get("capture") or ""
+    who = (
+        source.get("by")
+        or source.get("run_id")
+        or source.get("capture")
+        or " ".join(str(source[k]) for k in ("provider", "column") if source.get(k))
+        or ""
+    )
     return f"{kind} · {who}" if who else kind
 
 

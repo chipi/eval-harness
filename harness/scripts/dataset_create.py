@@ -239,6 +239,7 @@ def _from_source(name: str, query_text: str, dataset_id: str, fieldset, force: b
     if _store.exists(out) and any(_store.iterdir(out)) and not force:
         die(f"{out} has files: the items of another fetch (--force to replace them)", "would-overwrite")
     items, ids = [], set()
+    answers: dict[str, str] = {}
     for n, it in enumerate(got, 1):
         iid = str(it.get("item_id") or "")
         if not iid or iid.startswith("/") or ".." in iid.split("/") or iid in ids:
@@ -271,6 +272,8 @@ def _from_source(name: str, query_text: str, dataset_id: str, fieldset, force: b
             continue
         if it.get("row") is not None:
             item["source_row"] = it["row"]
+        if str(it.get("answer") or "").strip():
+            answers[iid] = str(it["answer"])
         if it.get("fields"):
             if not fieldset:
                 bad.append(f"item {iid}: fields need --fieldset to declare them")
@@ -284,7 +287,38 @@ def _from_source(name: str, query_text: str, dataset_id: str, fieldset, force: b
         die(f"--source {name}: {len(bad)} problem(s)\n  " + "\n  ".join(bad[:15]), "invalid-file")
     if not items:
         die(f"--source {name}: no items", "not-found")
-    return items, {**said, "source": block}
+    return items, {**said, "source": block, "answers": answers}
+
+
+def _answer_column(query_text: str) -> str:
+    """The expected answer's column the query names (`"answer"`), or "" (a query that is not JSON is the source's to
+    refuse)."""
+    import json  # noqa: PLC0415
+
+    try:
+        query = json.loads(query_text or "{}")
+    except ValueError:
+        return ""
+    return str(query.get("answer") or "") if isinstance(query, dict) else ""
+
+
+def _write_answers(dataset_id: str, name: str, answers: dict[str, str], block: dict, column: str) -> None:
+    """The answers the data came with, as a label set of source `dataset` (owner, 2026-11-17: the Workbench's "it came
+    with one"): which source, which column, at which revision; frozen as every label set is, and promoted to a
+    reference by `reference-promote` with who and why."""
+    from evaluation_harness import _label_sets  # noqa: PLC0415
+
+    source = {"kind": "dataset", "column": column}
+    for k in ("provider", "ref", "url", "revision", "config", "split"):
+        if block.get(k) not in (None, ""):
+            source[k] = block[k]
+    doc = _label_sets.write_set(dataset_id, name, answers, source)
+    print(
+        f"data/labels/{dataset_id}/{name}: the dataset's own answers ({doc['n_items']} item(s), column {column}), a label "
+        f"set; promote it: evh reference-promote --dataset-id {dataset_id} --labels {name} --tier gold|silver "
+        '--reason "..."'
+    )
+    _jsonout.value("answers", {"set": name, "n_items": doc["n_items"], "column": column})
 
 
 def _lineage(parent_id: str, dataset_id: str, items: list) -> dict:
@@ -519,7 +553,26 @@ def body(**inputs: Any) -> int:
     if args.source_name:
         if args.manifest:
             die("--source and --manifest: one way to name the items", "bad-argument")
+        column = _answer_column(args.query)
+        args.answer_set = args.answer_set or "answers"
+        if column:
+            from evaluation_harness import _label_sets  # noqa: PLC0415
+
+            there = _label_sets.set_dir(args.dataset_id, args.answer_set)
+            if _store.exists(there) and any(_store.iterdir(there)):
+                die(
+                    f"{there} exists: the dataset's answers would be written as label set {args.answer_set}, and a "
+                    "label set is never edited (a correction is a new set): name another with --answer-set",
+                    "would-overwrite",
+                )
         items, said = _from_source(args.source_name, args.query, args.dataset_id, fieldset, args.force)
+        answers = said.pop("answers", {})
+        if column and not answers:
+            die(
+                f"--source {args.source_name}: the query names the answer column {column!r} and no item has an answer "
+                "in it",
+                "not-enough",
+            )
         lic = licence or (_licences.canonical(said["licence"]) if said.get("licence") else None)
         if said.get("licence") and not lic:
             die(f"--source {args.source_name}: {_licences.problem(said['licence'])}", "invalid-file")
@@ -542,6 +595,8 @@ def body(**inputs: Any) -> int:
         print(
             f"{out.relative_to(DATASETS.parents[1])}  ({len(items)} item(s) from {said['source']['provider']})"
         )
+        if answers:
+            _write_answers(args.dataset_id, args.answer_set, answers, said["source"], column)
         _say_lineage(lineage)
         print(
             "Next: "

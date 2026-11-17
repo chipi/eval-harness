@@ -111,5 +111,10 @@ class Source:
         kind = _tables.kind_of(name)
         if not kind:
             raise ValueError(f"{name}: only parquet, CSV, JSON and JSON lines files are read")
-        cols = [query["text"], *([query["id"]] if query.get("id") else []), *(query.get("fields") or [])]
+        cols = [
+            query["text"],
+            *([query["id"]] if query.get("id") else []),
+            *([query["answer"]] if query.get("answer") else []),
+            *(query.get("fields") or []),
+        ]
         yield from _tables.items(_tables.rows(zf.read(name), kind, cols), query)

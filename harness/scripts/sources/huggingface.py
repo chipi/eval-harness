@@ -191,13 +191,21 @@ class Source:
         """Each row of the split, in the conversion's file and row order: its text, id, row and kept fields."""
         if not query.get("text"):
             raise ValueError('name the column that is an item\'s text: "text" in the query')
-        cols = [query["text"], *([query["id"]] if query.get("id") else []), *(query.get("fields") or [])]
+        cols = [
+            query["text"],
+            *([query["id"]] if query.get("id") else []),
+            *([query["answer"]] if query.get("answer") else []),
+            *(query.get("fields") or []),
+        ]
         for n, row in self.rows(query, cols):
             item: dict[str, Any] = {
                 "item_id": str(row[query["id"]]) if query.get("id") else f"row_{n}",
                 "text": str(row.get(query["text"]) or ""),
                 "row": n,
             }
+            answer = row.get(query["answer"]) if query.get("answer") else None
+            if answer is not None and str(answer).strip():  # 0 and False are answers
+                item["answer"] = str(answer)
             kept = {k: row.get(k) for k in query.get("fields") or []}
             if kept:
                 item["fields"] = kept

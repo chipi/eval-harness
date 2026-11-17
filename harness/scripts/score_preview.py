@@ -18,7 +18,7 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _common, _rounds
+from evaluation_harness import _common, _jsonout, _rounds
 from evaluation_harness import catalog_build as cb
 from evaluation_harness import rescore as rs
 from evaluation_harness._common import die, load_goals
@@ -79,7 +79,7 @@ def _set_of(arm: str) -> str:
 
 
 def body(**inputs: Any) -> int:
-    """Print what the scorer in this tree would change in a goal's decision; write nothing."""
+    """Print what the scorer in this tree would change in a goal's decision, and give it as values; write nothing."""
     args = legacy.namespace(inputs, "score-preview", {"round": "round_id"})
     goal = load_goals().get(args.goal)
     if goal is None:
@@ -110,7 +110,43 @@ def body(**inputs: Any) -> int:
         after = decisions(HarnessAdapter(runs_root=root), goal)
         scorer = next((rs.current_scorer({"adapter": k}, adapters) for k in adapters), "")
     _print(args.goal, scorer, n, before, after, per_ds)
+    _jsonout.values(result(args.goal, scorer, n, before, after, per_ds))
     return 0
+
+
+def result(
+    goal: str, scorer: str, n: int, before: dict, after: dict, per_ds: dict[str, int]
+) -> dict[str, Any]:
+    """What the preview found, as values (a job's `result`, the Workbench's W6): per dataset each arm's deciding mean
+    now and after, how far it moved, whether it is within the goal's limits now and after, and the leader, the
+    recommendation and how many contenders, now and after. A dataset with nothing to re-score says why
+    (`rescored: 0`, `derived`: the re-scores the goal reads, which a preview leaves alone)."""
+    out: dict[str, Any] = {}
+    for ds in sorted(set(before) | set(after)):
+        b, a = before.get(ds) or {"rows": {}}, after.get(ds) or {"rows": {}}
+        rows = []
+        for k in sorted(set(b["rows"]) | set(a["rows"])):
+            rb, ra = b["rows"].get(k) or {}, a["rows"].get(k) or {}
+            mb, ma = rb.get("mean"), ra.get("mean")
+            rows.append(
+                {
+                    "arm": k,
+                    "now": mb,
+                    "after": ma,
+                    "moved": None if mb is None or ma is None else ma - mb,
+                    "within_limits_now": (not rb.get("out")) if rb else None,
+                    "within_limits_after": (not ra.get("out")) if ra else None,
+                }
+            )
+        out[ds] = {
+            "measure": a.get("measure") or b.get("measure") or "",
+            "rescored": per_ds.get(ds, 0),
+            "arms": rows if per_ds.get(ds) else [],
+            **({} if per_ds.get(ds) else {"derived": _derived_on(ds)}),
+            **{what: {"now": b.get(what), "after": a.get(what)} for what in ("leader", "recommended")},
+            "contenders": {"now": len(b.get("contenders") or []), "after": len(a.get("contenders") or [])},
+        }
+    return {"goal": goal, "scorer": scorer, "rescored": n, "written": False, "datasets": out}
 
 
 def _derived_on(dataset_id: str) -> int:

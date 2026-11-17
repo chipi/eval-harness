@@ -55,8 +55,9 @@ def rows(data: bytes, kind: str, columns: list[str] | None = None) -> list[dict[
 def items(
     table: list[dict[str, Any]], query: dict, cols: dict[str, str] | None = None
 ) -> list[dict[str, Any]]:
-    """The query's items from a table's rows: `text`, `id` (default row_<n>), `fields`, `offset`, `limit`; `cols` maps a
-    query name to its column when they differ."""
+    """The query's items from a table's rows: `text`, `id` (default row_<n>), `answer` (the expected answer's column:
+    the dataset's own answers, a label set at create), `fields`, `offset`, `limit`; `cols` maps a query name to its
+    column when they differ."""
     col = cols or {}
     offset, limit = int(query.get("offset") or 0), int(query.get("limit") or 0)
     out = []
@@ -70,6 +71,10 @@ def items(
             "text": str(row.get(col.get(query["text"], query["text"])) or ""),
             "row": n,
         }
+        if query.get("answer"):
+            answer = row.get(col.get(query["answer"], query["answer"]))
+            if answer is not None and str(answer).strip():  # 0 and False are answers
+                item["answer"] = str(answer)
         kept = {k: row.get(col.get(k, k)) for k in query.get("fields") or []}
         if kept:
             item["fields"] = kept

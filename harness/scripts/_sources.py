@@ -5,7 +5,9 @@ A source is a class `Source(options)` with
     it knows them `licence`, `description`, `card` (E4 keys) and `features` ({name: type}, for E8);
   - `items(query) -> Iterator[dict]`: one per item: `item_id` and its bytes as one of `text` (written to the items
     folder), `file` (a path, copied there) or `source_url` (fetched by materialize; `source_sha256` pins it), with
-    `row` (its place at the source, for `source.item_url`) and `fields` when it has them;
+    `row` (its place at the source, for `source.item_url`) and `fields` when it has them, and `answer` when the query
+    names the expected answer's column (`"answer": COLUMN`; dataset-create writes those as a label set of source
+    `dataset`, to promote to a reference);
   - optionally `publish(record, items_dir, query)`: put a dataset back where it came from (P).
 `evh dataset-create --source NAME --query JSON` reads one; `--source-dir` and `--manifest` stay its shortcuts for the
 two built-in sources, `folder` and `manifest`.

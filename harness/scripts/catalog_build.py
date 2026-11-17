@@ -317,8 +317,8 @@ def tier_pill(tier: str) -> str:
 
 
 def source_chip(kind: str) -> str:
-    """A label set's source as a chip (person, model, rule), never a tier's colours (UXS-001)."""
-    k = kind if kind in ("person", "model", "rule") else "unknown"
+    """A label set's source as a chip (person, model, rule, dataset), never a tier's colours (UXS-001)."""
+    k = kind if kind in ("person", "model", "rule", "dataset") else "unknown"
     return f'<span class="src src-{k}">{e(kind or "unknown")}</span>'
 
 

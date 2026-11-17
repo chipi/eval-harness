@@ -237,6 +237,16 @@ the dataset (`published`: repo, revision, url, private, when, each file's sha256
 repo that exists, items not materialized here, and a dataset whose text is hidden. The token is huggingface_hub's
 (`HF_TOKEN`, or `hf auth login`).
 
+**A source before a dataset**: `evh source-preview --source NAME --query '{…}' [--rows N]` prints what the source
+describes and its first items (the start of each text, its answer when the query names one), writing nothing under
+data/; the API's `POST /api/v1/source-previews` runs it as a job.
+
+**The dataset's own answers**: a source's query may name the expected answer's column, `"answer": COLUMN` (the
+huggingface, croissant, kaggle, openml and zenodo sources read it). `dataset-create` then writes those answers as a label set,
+`answers` by default (`--answer-set NAME`), of source `dataset` (the provider, the column, the pinned revision), frozen
+as every label set; `evh reference-promote --dataset-id D --labels answers --tier gold --reason "…"` makes it the
+reference. A dataset made again with `--force` is refused while that set exists: name another with --answer-set.
+
 **A field set from a source's features**: `evh fieldset-propose --source NAME --query '{…}' --fieldset-id ID`
 prints a field set from what the source describes: each feature's type as the field set's (schema.org's, Hugging
 Face's and Python's spellings), a text feature with at most `--max-choices` distinct values among `--sample` items

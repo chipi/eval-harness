@@ -152,6 +152,86 @@ try:
         and _runstore.read_text(proj, "sources/n_v1/row_2.txt") == "note 2",
         json.dumps(d.get("items"))[:400],
     )
+    # The dataset's own answers (API 3, owner 2026-11-17): `"answer": COLUMN` writes them as a label set of source
+    # `dataset` at create, promoted to a reference like any label set; the preview shows them.
+    qa = {**q, "fields": [], "answer": "label"}
+    pv = evh("source-preview", "--source", "huggingface", "--query", json.dumps(qa), "--rows", "2", "--json")
+    pv_items = (json.loads(pv.stdout).get("result", {}).get("values", {}) if pv.returncode == 0 else {}).get(
+        "items"
+    )
+    check(
+        "source-preview shows each item's answer from the answer column",
+        [(i["item_id"], i.get("answer")) for i in pv_items or []] == [("row_1", "1"), ("row_2", "0")],
+        (pv.returncode, pv.stderr[-300:], pv_items),
+    )
+    r = evh("dataset-create", "--dataset-id", "n_ans", "--source", "huggingface", "--query", json.dumps(qa))
+    has_set = r.returncode == 0 and _runstore.exists(proj, "labels/n_ans/answers/labels.json")
+    doc = _runstore.read_json(proj, "labels/n_ans/answers/labels.json") if has_set else {}
+    check(
+        "dataset-create with an answer column writes the answers as label set `answers`, source `dataset`: the "
+        "provider, the column, the pinned revision; one label per item",
+        doc.get("source", {}).get("kind") == "dataset"
+        and doc["source"].get("provider") == "huggingface"
+        and doc["source"].get("column") == "label"
+        and doc["source"].get("revision") == REV
+        and doc.get("n_items") == 3
+        and _runstore.exists(proj, "labels/n_ans/answers/row_2.txt")
+        and _runstore.read_text(proj, "labels/n_ans/answers/row_2.txt").strip() == "0",
+        (r.stdout + r.stderr)[-400:] + json.dumps(doc)[:300],
+    )
+    pr = evh(
+        "reference-promote", "--dataset-id", "n_ans", "--labels", "answers", "--tier", "gold",
+        "--reason", "The notes came with their labels.", "--by", "owner",
+    )  # fmt: skip
+    refs = (
+        [n for n in _runstore.listdir(proj, "references/gold") if "n_ans" in n] if pr.returncode == 0 else []
+    )
+    check(
+        "the answers' label set is promoted to a gold reference as any label set is",
+        pr.returncode == 0 and bool(refs),
+        (pr.stdout + pr.stderr)[-300:],
+    )
+    before = _runstore.read_json(proj, "datasets/n_ans.json")
+    r = evh(
+        "dataset-create",
+        "--dataset-id",
+        "n_ans",
+        "--source",
+        "huggingface",
+        "--query",
+        json.dumps(qa),
+        "--force",
+    )
+    check(
+        "made again (--force), its answers' set exists: refused before anything is written (a set is never edited)",
+        r.returncode == 1
+        and "would-overwrite" in r.stderr
+        and "--answer-set" in r.stderr
+        and _runstore.read_json(proj, "datasets/n_ans.json") == before,
+        r.stderr[-300:],
+    )
+    r = evh(
+        "dataset-create", "--dataset-id", "n_none", "--source", "huggingface",
+        "--query", json.dumps({**qa, "answer": "no_such_column"}),
+    )  # fmt: skip
+    check(
+        "an answer column the table does not have is refused, naming it, and no dataset is made",
+        r.returncode == 1
+        and "no_such_column" in r.stderr
+        and "n_none.json" not in str(_runstore.listdir(proj, "datasets")),
+        r.stderr[-300:],
+    )
+    # The table sources (croissant, kaggle, openml, zenodo) read the answer column through _tables.items.
+    from evaluation_harness.sources import _tables
+
+    got = _tables.items(
+        [{"t": "a", "y": 0}, {"t": "b", "y": ""}, {"t": "c", "y": "yes"}], {"text": "t", "answer": "y"}
+    )
+    check(
+        "a table source's answer column: 0 is an answer, an empty cell is none",
+        [it.get("answer") for it in got] == ["0", None, "yes"],
+        got,
+    )
     STATE["oid"] = "0" * 64
     if _runstore.exists(proj, "sources/n_v2"):
         _runstore.rmtree(proj, "sources/n_v2")

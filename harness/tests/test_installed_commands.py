@@ -348,6 +348,11 @@ def main() -> int:
             ),
             ("dataset-card", ["tickets_v1", "--format", "croissant"], "ok:croissant/1.1"),
             (
+                "source-preview",
+                ["--source", "folder", "--query", '{"path": "tutorial/tickets"}', "--rows", "2"],
+                "ok:nothing written",
+            ),
+            (
                 "dataset-create",
                 [
                     "--dataset-id",

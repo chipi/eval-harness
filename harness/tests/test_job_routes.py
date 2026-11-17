@@ -584,6 +584,36 @@ try:
         ),
         (done.get("state"), log_tail(rec, done), done2.get("state"), log_tail(rec2, done2)),
     )
+    # A source's preview (API 2, owner 2026-11-17): its description and first items, nothing written under data/.
+    data_before = sorted(str(p.relative_to(proj)) for p in (proj / "data").rglob("*") if p.is_file())
+    st, rec, done = post(
+        "/source-previews", {"source": "folder", "query": json.dumps({"path": "tutorial/tickets"}), "rows": 2}
+    )
+    _st, shown = call("GET", f"/api/v1/jobs/{rec.get('id', 'none')}") if st == 202 else (0, {})
+    seen = ((shown.get("result") or {}).get("result") or {}).get("values") or {}
+    data_after = sorted(str(p.relative_to(proj)) for p in (proj / "data").rglob("*") if p.is_file())
+    check(
+        "POST /source-previews (source-preview): a job giving the source's description and its first items, each with "
+        "the start of its text; nothing written under data/",
+        st == 202
+        and done.get("state") == "succeeded"
+        and (seen.get("described") or {}).get("source", {}).get("provider") == "folder"
+        and [i["item_id"] for i in seen.get("items", [])] == ["t01_login", "t02_invoice"]
+        and all(i.get("text") for i in seen["items"])
+        and seen.get("written") is False
+        and data_after == data_before,
+        (st, done.get("state"), done.get("refusal"), seen, log_tail(rec, done)),
+    )
+    st, e = call(
+        "POST",
+        "/api/v1/source-previews",
+        {"source": "folder", "query": json.dumps({"path": "/etc"}), "by": "person:ana"},
+    )
+    check(
+        "a preview's query naming a path outside the project is refused before a job exists (400)",
+        st == 400,
+        (st, e),
+    )
     # The jobs list (API 5, owner 2026-11-17): several states at once, by operation, by goal, a page of it.
     _st, every = call("GET", "/api/v1/jobs")
     st_s, ended = call("GET", "/api/v1/jobs?state=failed,cancelled")

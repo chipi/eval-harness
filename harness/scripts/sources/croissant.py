@@ -132,7 +132,12 @@ class Source:
         by_name = {
             (f.get("name") or _ref(f.get("@id")) or "").rsplit("/", 1)[-1]: f for f in _list(rs.get("field"))
         }
-        wanted = [query["text"], *([query["id"]] if query.get("id") else []), *(query.get("fields") or [])]
+        wanted = [
+            query["text"],
+            *([query["id"]] if query.get("id") else []),
+            *([query["answer"]] if query.get("answer") else []),
+            *(query.get("fields") or []),
+        ]
         missing = [n for n in wanted if n not in by_name]
         if missing:
             raise ValueError(

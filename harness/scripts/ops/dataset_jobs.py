@@ -8,6 +8,13 @@ from __future__ import annotations
 from evaluation_harness.ops.registry import Op
 
 OPS = (
+    Op("source-preview", "work", "what a dataset source holds: its description and first items, before a dataset is made from it; writes nothing",
+       "POST", "/source-previews", "evaluation_harness.source_preview:body", "",
+       locks=(), required=("source",), inputs={
+           "source": {"type": "string", "x-metavar": "NAME", "description": "the dataset source: folder, manifest, huggingface, kaggle, zenodo, openml, croissant, the project's own (data/dataset_sources/NAME.py) or path/to/source.py:Class", "pattern": "^[a-z0-9][a-z0-9_]*$"},
+           "query": {"type": "string", "default": "{}", "description": "what to read, as JSON (each source says its keys), as dataset-create --query takes it"},
+           "rows": {"type": "integer", "default": 5, "minimum": 1, "maximum": 50, "description": "how many items to show"},
+       }),
     Op("dataset-create", "work", "freeze a dataset: item list + per-item sha256",
        "POST", "/datasets/{dataset}", "evaluation_harness.dataset_create:body", "",
        locks=(("dataset:{dataset_id}", True),), parts={"dataset": "dataset_id"}, tool_hidden=("source_dir",), required=("dataset_id",), inputs={
@@ -26,7 +33,8 @@ OPS = (
            "fields": {"type": "string", "format": "path", "description": "a .csv or .jsonl of field values, one row per item_id", "x-file": "upload"},
            "manifest": {"type": "string", "format": "path", "description": "a .csv or .jsonl of items: item_id, source_url [, source_sha256] [, field columns]", "x-file": "upload"},
            "source": {"type": "string", "x-metavar": "NAME", "description": "read the items from a dataset source: folder, manifest, huggingface, kaggle, zenodo, openml, croissant, the project's own (data/dataset_sources/NAME.py) or path/to/source.py:Class", "pattern": "^[a-z0-9][a-z0-9_]*$"},
-           "query": {"type": "string", "default": "{}", "description": "with --source: what to read, as JSON (each source says its keys)"},
+           "query": {"type": "string", "default": "{}", "description": "with --source: what to read, as JSON (each source says its keys; \"answer\": COLUMN names the expected answer's column)"},
+           "answer_set": {"type": "string", "description": "with --source and an answer column in the query: the label set the dataset's own answers are written as (source `dataset`; default: answers), to promote to a reference with reference-promote"},
            "update_fields": {"type": "boolean", "description": "replace the field values of an existing dataset; its items must be unchanged"},
            "lineage_only": {"type": "boolean", "description": "with --from: record which dataset an existing one was made from, its items untouched (a dataset already cited by runs gains the link; its version follows from it)"},
        }),

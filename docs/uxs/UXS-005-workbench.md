@@ -180,10 +180,11 @@ Making one is four short screens, one decision each:
 
 - Preview before anything is written; fields are a table, proposed (`fieldset-propose`), never typed from nothing.
 - The four steps' choices are unsent until Create, kept across a reload ("For every live screen": unsent changes).
-  **To build (API 2):** no operation reads a source without writing (`dataset-create` has no dry run, so `POST
-  /estimate` refuses it); a's "Read it" and b's first rows need one.
-- **To build (API 3):** the expected answer's column (b). The Hugging Face source takes the item's column and its id,
-  not an answer column; the mockup marks it as new.
+- a's "Read it" and b's first rows are `source-preview` (`POST /source-previews`, a job: the source's description and
+  its first items with the start of each text and its answer; nothing written under `data/`; API 2, built).
+- The expected answer's column (b) is the query's `"answer": COLUMN` (the Hugging Face, Croissant, Kaggle, OpenML and
+  Zenodo sources read it): `dataset-create` writes the answers as a label set, `answers` by default (`answer_set`), of
+  source `dataset` (API 3, built). The folder and manifest sources have no columns to name.
 - In the mockup each source is read for real with the example its module documents: a folder (`data/sources/
   cnn_dailymail_20`), Zenodo (record 10157504, `sts_gold_tweet.csv`), Kaggle (`uciml/iris`), Hugging Face; OpenML
   answered HTTP 503 on 2026-11-08 and the screen shows that answer; Croissant shows the refusal the source gives the
@@ -213,8 +214,8 @@ Making one is four short screens, one decision each:
 
 - One screen with the three things a dataset needs before an eval; each is a job or a small choice, done in
   order, each showing its result: a `dataset-materialize` job, a `dataset-profile` job, then the reference set.
-- **"It came with one"** needs a reference made from the dataset's own answers, which no operation makes yet
-  (API 3): `reference-promote` promotes a label set.
+- **"It came with one"** promotes the label set `dataset-create` wrote from the answer column (source `dataset`) with
+  `reference-promote`, who and why recorded (API 3, built).
 - **Labelling here** opens the labelling screen (below, W2): the person fills the sheet on the screen and submits
   it when done (`label-import`, a job that writes the label set); the CSV round trip works as today.
 - A reference set's promotion (`reference-promote`, a decision) records who and why (governance).
@@ -428,8 +429,9 @@ decision kept with its reason. This is where people spend most of their time (W1
   written by the arm `anthropic_l`, puts anthropic_m first (0.491) and makes deepseek_m significantly worse (p 0.0087);
   the two arms that rise most are the author's own family, which the screen says before promoting.
 - Live: the label sets (`label-set-list`), `reference-promote` (with its reason), `rescore` (a job). "What it moves"
-  is the leaderboard read under the other label (`leaderboard`, `label`, such as `silver`) today; `score-preview`
-  only prints, so a job gives no result to draw (API 4).
+  is the leaderboard read under the other label (`leaderboard`, `label`, such as `silver`); a scoring change's is
+  `score-preview`, whose job's result gives each arm now and after, how far it moved, and the leader, the
+  recommendation and the contenders now and after (API 4, built).
 
 ### W7 A judge
 
@@ -719,14 +721,14 @@ against the code on 2026-11-17 (`research/internal/WORKBENCH_GAPS_0.8.0.md` has 
 | --- | --- | --- |
 | Home | `goal-list`, `goal-status` per goal, `jobs-list` | ✓ live |
 | 1 Goal | `goal-new` (with `datasets: []`), `goal-set`, `goal-show`, `goal-history`, `metric-list` | ✓ live |
-| 2 Dataset | `dataset-list`, `goal-set`, `fieldset-propose`, `fieldset-new`, `dataset-create`, `capture-list` | ✗ a source's preview (API 2), the answer column (API 3) |
-| 3 Prepare | `dataset-materialize`, `dataset-profile`, `dataset-show`, `dataset-items`, `label-sheet`, `label-import`, `reference-promote` | ✗ a reference from the dataset's answers (API 3); items have no offset and limit |
+| 2 Dataset | `dataset-list`, `goal-set`, `source-preview`, `fieldset-propose`, `fieldset-new`, `dataset-create`, `capture-list` | ✓ `source-preview`; the answer column a label set (API 2, 3) |
+| 3 Prepare | `dataset-materialize`, `dataset-profile`, `dataset-show`, `dataset-items`, `label-sheet`, `label-import`, `reference-promote` | ✓ the answers' label set promoted (API 3); ~ items have no offset and limit |
 | 4 Models | `model-list`, `goal-leaderboard`, `prompt-version`, `system-show`, `system-new`, `arm-smoke`, `POST /estimate` | ✓; a clone is a new system |
 | W5 Bring in a model | `model-new`, `deployment-new`, `model-onboard`, `model-show`, `deployment-history`, `deployment-accept` | ✓ live; no "approve" (D4) |
 | 5 / W1 The eval | `round-list`, `round-show`, `round-evidence`, `leaderboard`, `baselines`, `round-open`, `round-carry`, `sweep`, `POST /estimate`, `rescore`, `judge-score`, `round-retire`, `run-promote`, `round-close`, `arm-show`, `comparison-item` | ✓; a retire is final (D3) |
 | W2 Review, label, tag | `comparison-items`, `comparison-item`, `sheet-show`, `sheet-export`, `failure-modes-list`, `tag-set-list`, `label-set-list`, `sheet-import` | ✓ the blind sheet as a `sheet-export` job, read back with `export_job` (API 1) |
 | W3 Production | `capture`, `arm-from-capture`, `label-from-capture`, `label-coverage-show`, `sheet-show`, `pick`, `dataset-extend`, `periods`, `faithfulness` | ✓ (the coverage's rules file must be in the project) |
-| W6 Reference | `reference-list`, `label-set-list`, `reference-promote`, `leaderboard` (`label`), `rescore` | ~ `score-preview` gives no result (API 4) |
+| W6 Reference | `reference-list`, `label-set-list`, `reference-promote`, `leaderboard` (`label`), `score-preview`, `rescore` | ✓ `score-preview`'s result (API 4) |
 | W7 Judge | `scorer-list`, `scorer-new`, `scorer-set`, `judge-score`, `POST /estimate`, `cost-report` | ✓; validating stays a tool (D6) |
 | W8 Settings | `validate`, `migrate`, `data-migrate`, `data-show`, `data-put`, `dataset-publish` | ~ `validate` is a read of about 27 s (D1); no `config.yaml` (D9) |
 | Held-out test, study | `dataset-split`, `exposure`, `exposure-add`, `sealed-counts`, `dataset-unseal`, `pair-test`, `looks`, `study-*` | ✓ |
