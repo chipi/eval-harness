@@ -144,6 +144,23 @@ def text_of(vid: str, data: Path | None = None) -> bytes:
     return _store.read_bytes(p)
 
 
+def declared_texts(cfg: dict[str, Any]) -> dict[str, str]:
+    """{name: text} of the prompts a system declares by version or file, read and never recorded (a dry run's
+    estimate); a prompt root's files, and one that cannot be read, are not in it."""
+    out: dict[str, str] = {}
+    for name, spec in (cfg.get("prompts") or {}).items():
+        if not isinstance(spec, dict):
+            continue
+        try:
+            if spec.get("version"):
+                out[str(name)] = text_of(str(spec["version"])).decode("utf-8", errors="replace")
+            elif spec.get("file"):
+                out[str(name)] = _project_path(spec["file"]).read_text(encoding="utf-8", errors="replace")
+        except (FileNotFoundError, ValueError, OSError):
+            continue
+    return out
+
+
 def _git_commit(path: Path) -> str | None:
     import subprocess  # noqa: PLC0415  # nosec B404 - git, read-only
 

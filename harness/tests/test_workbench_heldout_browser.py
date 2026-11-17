@@ -106,6 +106,25 @@ def serve() -> tuple[subprocess.Popen, int, list[str]]:
 
 try:
     r = evh("init", "--store", "files", "--tutorial")
+    # the baseline points at a recorded version of the goal's prompt: the agent study may change it
+    r = (
+        r
+        if r.returncode
+        else evh(
+            "prompt-version",
+            "--name",
+            "g/prompt",
+            "--text",
+            "Keep what support needs.",
+            "--note",
+            "the first wording",
+        )
+    )
+    base_ver = (
+        values(evh("prompt-list", "--json"))
+        or json.loads(evh("prompt-list", "--json").stdout.splitlines()[-1])["result"]
+    )
+    base_ver = ((base_ver.get("prompts") or [{}])[0]).get("latest") or ""
     shutil.copytree(KIT / "tickets", proj / "tickets")
     (proj / "data" / "fields" / "t.yaml").write_text(
         "fieldset_id: t\nfields:\n  - name: opened\n    type: date\n    required: true\n"
@@ -138,6 +157,7 @@ try:
     ):  # fmt: skip
         (proj / "data" / "systems" / f"{sid}.yaml").write_text(
             f"system_id: {sid}\nparams:\n  provider: echo\n  sentences: {n}\n{hyp}"
+            + (f"prompts:\n  g/prompt: {{version: {base_ver}}}\n" if sid == "sup_base_v1" else "")
         )
     steps = [
         ("dataset-create", "--dataset-id", "sup_v1", "--source-dir", "tickets", "--fieldset", "t", "--fields", "f.csv"),
@@ -449,17 +469,29 @@ try:
             page.select_option("#sn6-base", "sup_base_v1")
             page.select_option("#sn6-sampler", "agent")
             page.click("#sn6-fill")
+            page.wait_for_function(
+                "() => document.querySelector('#sn6-spec').value.includes('prompts: [g/prompt]')",
+                timeout=20000,
+            )
             page.click("#sn6-go")
             page.wait_for_selector("#sn6-out a:has-text('Open it'), #sn6-out [role=alert]", timeout=120000)
             page.click("#sn6-out a:has-text('Open it')")
             page.wait_for_selector("#sa-go", timeout=20000)
             page.click("#sa-go")
             page.wait_for_selector("#tl-go", timeout=60000)
+            offered = json.loads(page.input_value("#tl-json"))
+            check(
+                "an agent study whose baseline points at a prompt version: its spec lets the agent change that prompt, and "
+                "a proposal starts from the best so far's text",
+                offered.get("prompts") == {"g/prompt": "Keep what support needs."},
+                offered,
+            )
             page.fill(
                 "#tl-json",
                 json.dumps(
                     {
                         "params": {"sentences": 2},
+                        "prompts": {"g/prompt": "Keep what support needs, in two sentences."},
                         "hypothesis": "two keep more",
                         "rationale": "the gold keeps two",
                     }
@@ -472,10 +504,22 @@ try:
             again("#tl-out")
             page.wait_for_selector("#so-stop", timeout=20000)
             check(
-                "an agent study from the page: its state asked (study-ask), a proposal told (study-tell) and run as its trial",
+                "an agent study from the page: its state asked (study-ask), a proposal told (study-tell) and run as its trial, "
+                "its prompt a new version made from the baseline's",
                 "two keep more" in page.locator("main").inner_text()
-                and "kept" in page.locator("main").inner_text(),
-                page.locator("main").inner_text()[:900],
+                and "kept" in page.locator("main").inner_text()
+                and len(
+                    pvs := json.loads(
+                        evh("prompt-show", "--name", "g/prompt", "--json").stdout.splitlines()[-1]
+                    )["result"]["versions"]
+                )
+                == 2
+                and pvs[1].get("parent") == base_ver
+                and any(r["run_id"].startswith("s2-t1") for r in pvs[1]["runs"]),
+                (
+                    page.locator("main").inner_text()[:600],
+                    evh("prompt-show", "--name", "g/prompt").stdout[-600:],
+                ),
             )
             page.click("#so-stop")
             page.wait_for_selector(

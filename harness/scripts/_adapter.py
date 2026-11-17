@@ -235,6 +235,18 @@ def primary_metric(adapter_path: Path | None, params: dict[str, Any] | None = No
     return value if isinstance(value, str) and value else None
 
 
+def prompt_problem(adapter_path: Path | None, params: dict[str, Any]) -> str | None:
+    """What keeps the bundled adapter from sending the system's prompt (it sends one: two declared is refused before
+    anything is called, not met at the first item); None for another adapter, which reads its prompts its own way."""
+    if adapter_path is None or Path(adapter_path).resolve() != Path(BUNDLED).resolve():
+        return None
+    try:
+        module_at(BUNDLED).prompt_of(params)
+    except ValueError as exc:
+        return str(exc)
+    return None
+
+
 def prompts(adapter_path: Path | None, params: dict[str, Any]) -> dict[str, str]:
     """{name: text} of the prompts the adapter's `prompts(params)` says a call sends (RFC-032 step 4b), the text
     exactly as the adapter hashes it for its fingerprint's `prompt_sha256`; {} without the hook."""

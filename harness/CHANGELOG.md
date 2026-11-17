@@ -13,6 +13,17 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Added
 
+- **Prompts kept as versions in the Workbench, in a manual eval and in a study** (UXS-005; RFC-028; the owner's
+  prompt review): "Prompts" on the home lists every prompt with its versions and runs, shows a prompt's versions with
+  their text, who made each, what it was made from and the runs that sent it, compares two versions (`prompt-diff`),
+  records a new version from the latest and writes one out as a file (`prompt-export`). Step 4's systems point at a
+  version of the goal's prompt; an agent study offers the baseline's prompt to change, its proposal starting from the
+  best so far's text, each trial's text a new version.
+- **The bundled adapter sends a system's declared prompt**: `params.prompt` when the system has one, else the one
+  prompt it declares by version or file (RFC-028), in the run, its dry run's estimate and the arm-smoke (which now gives
+  the adapter its declared prompts, as a run does). It sent "Summarise:" for a system that declared its prompt; one
+  declaring two is refused before anything is called.
+- **`evh prompt-show --text`** (and `GET /prompts/versions?text=true`): each version's text with its record.
 - **The Workbench's held-out test and studies, live** (UXS-005): from a goal, "The held-out test" splits a dataset
   and seals its test side (both sides joining the goal), shows the seal, records reads and runs the leak check (its finds
   recorded as reads), shows the counts for safety and allows a field with why, opens the side for one candidate (one
@@ -79,10 +90,11 @@ that can move a result is never a patch release without saying so under **Change
   three items of a goal's dataset (`arm-smoke` as a job, under a cap): its status and flags, what it spent, what the
   whole dataset would cost and take, a reply per item. "Make a system from a model" picks a model and where it runs,
   the shared prompt, temperature and most tokens, and makes the system (`system-new`) naming the model record and the
-  deployment, with the deployment's endpoint carried into its params (a run reads it from there), its prompt recorded
-  as a prompt version beside it for its history (the bundled adapter reads `params.prompt`). Each model is offered with
-  its rank on this goal; "Clone it, change one thing" makes a new system with one change (the prompt, the temperature,
-  the most tokens, the model it sends). The form is kept in this browser until the system is made.
+  deployment, with the deployment's endpoint carried into its params (a run reads it from there). The prompt typed is
+  recorded as a version of the goal's prompt (`<goal>/prompt`) and the system points at it, so every run records the
+  version it sent. Each model is offered with its rank on this goal; "Clone it, change one thing" makes a new system
+  with one change (the prompt, as a new version made from the source's; the temperature, the most tokens, the model
+  it sends). The form is kept in this browser until the system is made.
 - **The Workbench never loses what is being typed to a redraw, and reads afresh on each screen**: a redraw (a job's
   poll, a read that came back) carries what the person typed in a form with unsent changes, instead of being held back
   (held back, a screen waiting for its data stayed on "loading"); moving to another screen drops the page's reads, so

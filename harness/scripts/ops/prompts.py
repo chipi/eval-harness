@@ -14,7 +14,10 @@ OPS = (
        "/prompts", f"{_P}:list_prompts", f"{_P}:say_list"),
     Op("prompt-show", "read", "one prompt's versions, oldest first: each one's parent, note, who made it and the runs "
        "that used it", "GET", "/prompts/versions", f"{_P}:show_prompt", f"{_P}:say_prompt",
-       inputs={"name": {"type": "string", "description": "the prompt's name (segments joined by /)"}},
+       inputs={
+           "name": {"type": "string", "description": "the prompt's name (segments joined by /)"},
+           "text": {"type": "boolean", "description": "each version's text too"},
+       },
        required=("name",)),
     Op("prompt-diff", "read", "two prompt versions compared: their text as a unified diff, and the runs of each (RFC-028)",
        "GET", "/prompts/diff", f"{_P}:diff_prompts", f"{_P}:say_diff",
@@ -45,8 +48,8 @@ def list_prompts() -> dict[str, Any]:
     return {"prompts": rows}
 
 
-def show_prompt(name: str) -> dict[str, Any]:
-    """One prompt's versions, each with the runs that used it."""
+def show_prompt(name: str, text: bool = False) -> dict[str, Any]:
+    """One prompt's versions, each with the runs that used it; with `text`, each version's text."""
     from evaluation_harness import _format, _prompt_cmd, _prompts  # noqa: PLC0415
     from evaluation_harness.model.entity import Problem  # noqa: PLC0415
 
@@ -60,7 +63,11 @@ def show_prompt(name: str) -> dict[str, Any]:
             "not-found",
         )
     used = _prompt_cmd._runs_of()
-    return {"name": name, "versions": [{**v, "runs": used.get((name, v["sha256"]), [])} for v in vs]}
+    out = [{**v, "runs": used.get((name, v["sha256"]), [])} for v in vs]
+    if text:
+        for v in out:
+            v["text"] = _prompts.text_of(v["id"]).decode("utf-8", "replace")
+    return {"name": name, "versions": out}
 
 
 def say_list(r: dict[str, Any]) -> str:
@@ -84,6 +91,8 @@ def say_prompt(r: dict[str, Any]) -> str:
             f"v{v['n']}  {v['id']}  {v.get('created_at')}  by {who}  parent {v.get('parent') or '-'}"
         )
         lines.append(f"     {v.get('note') or ''}")
+        if "text" in v:
+            lines.extend(f"     | {x}" for x in str(v["text"]).splitlines())
         lines.extend(f"     run {x['run_id']}  {x['metric']}={x['score']}" for x in v["runs"])
     return "\n".join(lines)
 

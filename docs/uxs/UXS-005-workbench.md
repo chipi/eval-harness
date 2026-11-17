@@ -456,7 +456,8 @@ decision kept with its reason. This is where people spend most of their time (W1
   started from it (`scorer-new` with `supersedes`, its judges given as params kept as they are); made on the page with
   systems as its judges (`scorer-new`); the cost first (`POST /estimate` on `judge-score`), then the judging as a job
   under a cap, an unvalidated judge only when asked and labelled so; what it cost (`cost-report`, a job). The prompt is
-  a file the scorer names (`prompt.file`), typed as its path: how the Workbench keeps prompts is the build's last step.
+  a file the scorer names (`prompt.file`), typed as its path: its validation was measured on those bytes (the prompt
+  review, 2026-11-17, kept it a file).
 
 ### W8 Settings
 
@@ -746,7 +747,8 @@ against the code on 2026-11-17 (`research/internal/WORKBENCH_GAPS_0.8.0.md` has 
 | 1 Goal | `goal-new` (with `datasets: []`), `goal-set`, `goal-show`, `goal-history`, `metric-list` | ✓ live (2026-11-17): made from the home, changed from its page (only what changed is sent) |
 | 2 Dataset | `dataset-list`, `goal-set`, `source-preview`, `fieldset-propose`, `fieldset-new`, `dataset-create`, `capture-list` | ✓ live (2026-11-17): one the project has, or one from a source (its query, `source-preview`, its fields proposed and kept, `dataset-create` with them and its answers, the goal's role) |
 | 3 Prepare | `dataset-materialize`, `dataset-profile`, `dataset-show`, `reference-promote`; labelling: `label-sheet`, `jobs-file`, `label-import` | ✓ live (2026-11-17): fetch, look inside, promote a label set (the dataset's own answers too); "Label it here" fills the sheet on the page and submits it when done; items have no offset and limit |
-| 4 Models | `model-list`, `model-show`, `system-list`, `system-show`, `system-new`, `prompt-version`, `arm-smoke` | ✓ live (2026-11-17): a system made from a model where it runs (its endpoint carried into the system), the shared prompt and settings, its prompt recorded as a prompt version beside it (owner: the easier way, the bundled adapter reads `params.prompt`; reviewed again as the build's last step); each model offered with its rank on this goal; a system cloned with one thing changed; each checked on three items with a cap (status, cost, the projection, a reply per item) |
+| 4 Models | `model-list`, `model-show`, `system-list`, `system-show`, `system-new`, `prompt-show`, `prompt-version`, `arm-smoke` | ✓ live (2026-11-17): a system made from a model where it runs (its endpoint carried into the system), the shared prompt and settings; the goal's prompt is one name, `<goal>/prompt`, kept as versions (RFC-028): the text typed is recorded (the same text is the same version) and the system points at it (`prompts: {<goal>/prompt: {version}}`), so every run records the version it sent (owner, 2026-11-17, after the prompt review); each system's version shown; each model offered with its rank on this goal; a system cloned with one thing changed (a changed prompt is a new version made from the source's); each checked on three items with a cap (status, cost, the projection, a reply per item) |
+| Prompts | `prompt-list`, `prompt-show` (`text`), `prompt-diff`, `prompt-version`, `prompt-export` | ✓ live (2026-11-17, "Prompts" on the home): every prompt with its versions and runs; a prompt's versions with their text, who made each, what it was made from and the runs that sent it; two versions' diff; a new version made from the latest (its note required); a version written out as a file to commit |
 | W5 Bring in a model | `model-new`, `deployment-new`, `model-onboard`, `model-show`, `deployment-history`, `deployment-accept` | ✓ live; no "approve" (D4) |
 | 5 / W1 The eval | `round-list`, `round-show`, `round-evidence`, `round-open`, `round-carry`, `POST /estimate`, `sweep`, `round-retire`, `round-close` (`promote`), `baselines`, `baseline-rollback` | ✓ live (2026-11-17): the rounds as tabs, a round's question, arms and evidence (raw p and threshold) with its chart (each arm's mean against its cost); open one (the last one's arms carried in or not), carry an arm in later, see a run's cost, run arms as one sweep under a cap, retire with a reason (final), close with a conclusion and the leader's run promoted; the baseline's versions, rolled back with a reason |
 | W2 Review, label, tag | `dataset-arm-list`, `failure-modes-list`, `failure-modes-show`, `failure-modes-new`, `sheet-export`, `jobs-file`, `sheet-import` (`export_job`); labelling: `label-sheet`, `label-import` | ✓ live (2026-11-17): two arms compared on a sheet made as a job, "which is better" blind (the page never holds the key), or "what went wrong" with a failure-mode list (made here if new); answers kept in this browser until submitted, written as judged scores or a tag set; the expected answers on the labelling screen |
@@ -794,5 +796,8 @@ against the code on 2026-11-17 (`research/internal/WORKBENCH_GAPS_0.8.0.md` has 
 
 API 1 to 6 and the unsent-changes rule ("For every live screen") are built (2026-11-17); then the screens: home and goal (live) → W5 (live) → steps 2 and 3 (need API 2 and 3) → step 4 →
 W1 the eval → W2 (needs API 1) → W3 → W6, W7 and W8 as short lists → the held-out test and studies → last, a review of how
-the Workbench keeps prompts (owner, 2026-11-17). The mockup's
+the Workbench keeps prompts (owner, 2026-11-17). Built (2026-11-17): every screen. The prompt review's decision (owner):
+a prompt is kept as versions in both of its uses, a manual eval (step 4's systems point at a version of the goal's
+prompt; a clone's changed prompt is a new version) and a study (a trial's proposed text is a new version); the bundled
+adapter sends a declared prompt; a Prompts screen reads their history. The mockup's
 "mockup:" notes go with the screens that replace them.

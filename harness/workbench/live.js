@@ -49,7 +49,7 @@
       <div class="part"><div class="parthead"><h2>Running now</h2><span class="grow"></span><a href="#jobs">Every job</a></div><div class="body">${running}</div></div>
       ${goals.goals.length ? `<div class="tablewrap" style="margin-top:18px"><table><thead><tr><th>goal</th><th>decides</th><th>datasets</th><th class="num">rounds</th><th>next</th></tr></thead><tbody>${rows.join("")}</tbody></table></div>`
         : `<div class="answer" style="margin-top:18px"><p><b>What should this project help you decide?</b></p><p>An evaluation starts with a goal: the decision you need to make, and how you will know which system is better for it.</p></div>`}
-      <div class="actions"><a class="btn primary" href="#goal-new">${goals.goals.length ? "New goal" : "Start with a goal"}</a><a class="btn" href="#models">Models</a><a class="btn" href="#settings">Settings</a><a class="btn" href="${location.origin}/">The catalog ↗</a></div></div>`;
+      <div class="actions"><a class="btn primary" href="#goal-new">${goals.goals.length ? "New goal" : "Start with a goal"}</a><a class="btn" href="#models">Models</a><a class="btn" href="#prompts">Prompts</a><a class="btn" href="#settings">Settings</a><a class="btn" href="${location.origin}/">The catalog ↗</a></div></div>`;
   }
 
   // ── a goal: where it stands, and the next step ─────────────────────────────
@@ -565,6 +565,19 @@
   const keepSys = (goal, d) => { try { localStorage.setItem(sysKey(goal), JSON.stringify(d)); } catch { /* this visit only */ } };
   const dropSys = (goal) => { try { localStorage.removeItem(sysKey(goal)); } catch { /* nothing kept */ } };
   const smokes = {};
+  // A goal's systems share one prompt, kept as versions of the name `<goal>/prompt` (RFC-028): a system points at the
+  // version it sends (prompts: {name: {version}}), and every run records it, so the prompts' history says which text
+  // each run sent. A prompt typed here is recorded first (the same text is the same version), then pointed at.
+  const promptName = (goal) => `${goal}/prompt`;
+  const latestOf = (pv) => (pv && !pv.error && (pv.versions || []).length ? pv.versions[pv.versions.length - 1] : null);
+  const promptOf = (rec) => {
+    const pr = ((rec || {}).record || {}).prompts || {}, n = Object.keys(pr)[0];
+    return n ? { name: n, version: (pr[n] || {}).version || null } : null;
+  };
+  async function recordPrompt(name, text, parent, note, by, box) {
+    const done = await runJob("/prompts/versions", { name, text, note, ...(parent ? { parent } : {}), by }, box, "recording the prompt");
+    return done ? (((done.result || {}).result || {}).values || {}).version : null;
+  }
   const smokeView = (r) => {
     if (!r) return "";
     if (r.error) return r.error;
@@ -583,7 +596,18 @@
     const bad = [rec, sys, ms].find((x) => x.error);
     if (bad) return `<div class="screen wide">${head}${failed(bad)}</div>`;
     const datasets = (rec.record.datasets || []).map((x) => x.dataset_id);
-    const d = readSys(goal) || { model: "", deployment: "", prompt: "", temperature: "0", max_tokens: "", id: "" };
+    const pv = load(`prompt:${promptName(goal)}`, `/prompts/versions?name=${enc(promptName(goal))}&text=true`);
+    if (pv === undefined) return `<div class="screen wide">${head}${loading("the goal's prompt")}</div>`;
+    const latest = latestOf(pv);
+    const d = readSys(goal) || { model: "", deployment: "", prompt: latest ? latest.text : "", temperature: "0", max_tokens: "", id: "" };
+    const sysrec = Object.fromEntries(sys.systems.map((x) => [x.system, load(`sysrec:${x.system}`, `/systems/${enc(x.system)}`)]));
+    const promptCell = (id) => {
+      const r = sysrec[id];
+      if (r === undefined) return "…";
+      const pr = promptOf(r);
+      if (pr) return `<a class="mono" href="#prompts/${enc(pr.name)}">${esc(pr.version || pr.name)}</a>`;
+      return r && !r.error && ((r.record || {}).params || {}).prompt != null ? '<span class="muted">inline, no version</span>' : '<span class="muted">—</span>';
+    };
     if (readSys(goal)) UNSENT.set("system-new", `a new system for ${goal}`);
     const mrec = d.model ? load(`model:${d.model}`, `/models/${enc(d.model)}`) : null;
     const deps = mrec && !mrec.error ? mrec.deployments.map((x) => x.deployment) : [];
@@ -592,8 +616,8 @@
       <section class="part"><div class="parthead"><h2>Check each on three items</h2></div><div class="body">
         <div class="inline"><label class="name" for="sm-ds">on</label><select id="sm-ds">${datasets.map((x) => `<option>${esc(x)}</option>`).join("")}</select>
           <label class="name" for="sm-cap">spend at most (USD)</label><input type="number" id="sm-cap" min="0.01" step="0.01" value="0.05" inputmode="decimal" style="width:7rem"></div>
-        <div class="tablewrap"><table><thead><tr><th>system</th><th>model</th><th>where it runs</th><th>its check</th></tr></thead><tbody>
-        ${sys.systems.map((x) => `<tr><td class="mono">${esc(x.system)}</td><td>${esc(x.model || "")}</td><td>${esc(x.deployment || "")}</td>
+        <div class="tablewrap"><table><thead><tr><th>system</th><th>model</th><th>where it runs</th><th>its prompt</th><th>its check</th></tr></thead><tbody>
+        ${sys.systems.map((x) => `<tr><td class="mono">${esc(x.system)}</td><td>${esc(x.model || "")}</td><td>${esc(x.deployment || "")}</td><td>${promptCell(x.system)}</td>
           <td><button class="btn" type="button" data-smoke="${esc(x.system)}">Check it on three items</button> <button class="btn" type="button" data-clone="${esc(x.system)}">Clone it, change one thing</button>
             <div id="sm-${esc(x.system)}" data-out aria-live="polite">${smokeView(smokes[`${goal}/${x.system}`])}</div><div id="cl-${esc(x.system)}"></div></td></tr>`).join("")}</tbody></table></div>
         ${byField("sm-by")}</div></section>
@@ -603,14 +627,14 @@
             return `<option value="${esc(m.model)}" ${d.model === m.model ? "selected" : ""}>${esc(m.name || m.model)} · ${esc(m.state)}${b ? ` · #${b.rank} of ${b.of} on this goal` : ""}</option>`; }).join("")}</select>
           <div class="hint">a model not here is brought in first: <a href="#model-new">Bring in a model</a></div></div></div>
         ${d.model ? `<div class="field"><label class="name" for="sn-dep">Where it runs</label><div><select id="sn-dep">${deps.map((x) => `<option ${d.deployment === x ? "selected" : ""}>${esc(x)}</option>`).join("")}</select></div></div>
-        <div class="field"><label class="name" for="sn-prompt">The prompt</label><div><textarea id="sn-prompt" rows="2" placeholder="Summarise the following in one sentence:">${esc(d.prompt)}</textarea><div class="hint">the same for every system, so a difference in the scores is the model's</div></div></div>
+        <div class="field"><label class="name" for="sn-prompt">The prompt</label><div><textarea id="sn-prompt" rows="2" placeholder="Summarise the following in one sentence:">${esc(d.prompt)}</textarea><div class="hint">the same for every system, so a difference in the scores is the model's. It is kept as a version of <a class="mono" href="#prompts/${enc(promptName(goal))}">${esc(promptName(goal))}</a>${latest ? ` (now ${esc(latest.id)})` : ""}: a changed text is a new version, and every run records the version it sent</div></div></div>
         <div class="field"><label class="name" for="sn-temp">Temperature</label><div><input type="text" id="sn-temp" inputmode="decimal" value="${esc(d.temperature)}" style="width:6rem"></div></div>
         <div class="field"><label class="name" for="sn-max">At most this many tokens</label><div><input type="text" id="sn-max" inputmode="numeric" value="${esc(d.max_tokens)}" placeholder="the model's default" style="width:10rem"></div></div>
         <div class="field"><label class="name" for="sn-id">Its id</label><div><input type="text" id="sn-id" value="${esc(d.idTyped ? d.id : `${d.model}_${d.deployment || deps[0] || ""}`.replace(/[^A-Za-z0-9_.-]+/g, "_"))}" autocapitalize="off" spellcheck="false"></div></div>
         ${byField("sn-by")}
         <div class="actions" style="margin-top:0"><button class="btn primary" type="button" id="sn-make" data-send>Make the system</button><span class="unsent" data-unsent-mark hidden>not saved yet · kept in this browser until it is made</span></div>` : ""}
         <div id="sn-out" data-out></div></div></section>
-      ${WB.cmd(`evh system-new <id> --set model_record=<model> --set deployment=<where> --set params.prompt=...\nevh arm-smoke --system <id> --dataset ${datasets[0] || "<dataset>"} --max-cost-usd 0.05`)}
+      ${WB.cmd(`evh prompt-version --name ${promptName(goal)} --text "..." --note "..."\nevh system-new <id> --set model_record=<model> --set deployment=<where> --set 'prompts={"${promptName(goal)}": {"version": "<id>"}}'\nevh arm-smoke --system <id> --dataset ${datasets[0] || "<dataset>"} --max-cost-usd 0.05`)}
       <div class="actions"><a class="btn" href="#goal/${enc(goal)}">Back to the goal</a></div></div>`;
   }
   function wireSystems() {
@@ -650,7 +674,15 @@
           const r = await fetch(`/api/v1/systems/${enc(src)}`, { credentials: "same-origin" }).then((x) => x.json());
           const { system_id: _id, ...rest } = (r.result || {}).record || {};
           const params = { ...(rest.params || {}) };
-          params[what] = ["temperature", "max_tokens"].includes(what) ? Number(raw) : raw;
+          if (what === "prompt") {
+            // a new version of the source's prompt (or of the goal's, for a system that kept its prompt inline)
+            const pr = promptOf(r.result) || { name: promptName(goal), version: null };
+            const ver = await recordPrompt(pr.name, raw, pr.version, `${v(`cl-id-${src}`)}: ${src}'s prompt, changed`, by, out);
+            if (!ver) { ev.target.disabled = false; return; }
+            delete params.prompt;
+            rest.prompts = { [pr.name]: { version: ver.id } };
+            forget(`prompt:${pr.name}`);
+          } else params[what] = ["temperature", "max_tokens"].includes(what) ? Number(raw) : raw;
           await send("POST", `/systems/${enc(v(`cl-id-${src}`))}`, { set: { ...rest, params }, by });
           sent(`clone-${src}`); forget("systems"); WB.render(true);
         } catch (e) { out.innerHTML = refusal(e); ev.target.disabled = false; }
@@ -680,17 +712,20 @@
       const ep = (dep.record || {}).endpoint || {};
       const set = { model_record: d.model, deployment: d.deployment };
       for (const k of ["provider", "model", "base_url", "api_key_env"]) if (ep[k]) set[`params.${k}`] = ep[k];
-      if (d.prompt.trim()) set["params.prompt"] = d.prompt.trim();
       if (d.temperature !== "") set["params.temperature"] = Number(d.temperature);
       if (d.max_tokens !== "") set["params.max_tokens"] = Number(d.max_tokens);
       ev.target.disabled = true;
       try {
-        await send("POST", `/systems/${enc(d.id)}`, { set, by });
         if (d.prompt.trim()) {
-          // its history only: the bundled adapter reads params.prompt, not a version (owner, 2026-11-17)
-          await runJob("/prompts/versions", { name: d.id, text: d.prompt.trim(), note: `the prompt of system ${d.id}, made in the Workbench`, by }, out, "recording the prompt");
+          // the goal's prompt as a version (the same text is the same version), the system pointing at it
+          const latest = latestOf(LIVE.cache[`prompt:${promptName(goal)}`]);
+          const ver = await recordPrompt(promptName(goal), d.prompt.trim(), latest && latest.text !== d.prompt.trim() ? latest.id : null, `the prompt of system ${d.id}, made in the Workbench`, by, out);
+          if (!ver) { ev.target.disabled = false; return; }
+          set.prompts = { [promptName(goal)]: { version: ver.id } };
+          forget(`prompt:${promptName(goal)}`);
         }
-        sent("system-new"); dropSys(goal); forget("systems");
+        await send("POST", `/systems/${enc(d.id)}`, { set, by });
+        sent("system-new"); dropSys(goal); forget("systems"); forget("sysrec:");
         WB.render(true);
       } catch (e) { out.innerHTML = refusal(e); ev.target.disabled = false; }
     });
@@ -2024,7 +2059,9 @@
   // ── studies (UXS-005; RFC-029): a search over one thing at a time on the validation items, never evidence; its trials
   // and the best so far; the agent sampler's ask and tell from the page; stopped; confirmed once on a test set (one
   // look). A spec is YAML, written on the page and checked (the dry run) before it runs ──
-  const specOf = (ds, base, measure, sampler) => `dataset: ${ds}\nbaseline: {system: ${base}}\nmeasure: ${measure}\nsampler: ${sampler}\naccept: {point: {min_gain: 0}}\nstop: {trials: 5}\nspace:\n  groups:\n    - {name: length, reason: how much to keep, params: {sentences: [2, 3, 4]}}\n`;
+  // A baseline that points at a prompt version lets the study change it: the agent proposes a new text, each trial a
+  // new version of it (its parent the best so far's).
+  const specOf = (ds, base, measure, sampler, prompts = []) => `dataset: ${ds}\nbaseline: {system: ${base}}\nmeasure: ${measure}\nsampler: ${sampler}\naccept: {point: {min_gain: 0}}\nstop: {trials: 5}\nspace:\n${prompts.length ? `  prompts: [${prompts.join(", ")}]\n` : ""}  groups:\n    - {name: length, reason: how much to keep, params: {sentences: [2, 3, 4]}}\n`;
   function screenStudies(param) {
     const [goal, sid] = String(param || "").split("/");
     const head = `<div class="kicker">Day to day · ${esc(goal)}</div><h1>${sid ? `The study ${esc(sid)}` : "Studies"}</h1>
@@ -2075,7 +2112,7 @@
         ${open ? `<div class="actions" style="margin-top:0"><button class="btn" type="button" id="so-stop">Stop it</button>${agent ? "" : '<label>at most (USD) <input type="number" id="so-cap" value="1" min="0.01" step="0.01" style="width:6rem"></label><button class="btn" type="button" id="so-resume">Continue it</button>'}</div><div id="so-out" data-out></div>` : ""}`)}
       ${agent && open ? part(3, "Propose the next trial", `<p class="muted">The agent sampler: ask for the study's state (its weakest items, what was tried), then tell a proposal, which runs as the next trial.</p>
         <div class="actions" style="margin-top:0"><button class="btn" type="button" id="sa-go">Ask its state</button></div><div id="sa-out" data-out>${st.ask ? `<p>ask <b class="mono">${esc(st.ask)}</b></p><details><summary>its state</summary><pre class="reply">${esc(JSON.stringify(st.state || {}, null, 2))}</pre></details>` : ""}</div>
-        ${st.ask ? `<div data-form="tell"><textarea id="tl-json" rows="5" style="width:100%" class="mono" spellcheck="false" aria-label="the proposal">${esc(JSON.stringify({ params: {}, hypothesis: "", rationale: "" }, null, 2))}</textarea>
+        ${st.ask ? `<div data-form="tell"><p class="muted">${Object.keys(((st.state || {}).best || {}).prompts || {}).length ? "Its prompts are below as the best so far sends them: change the text to try a new version." : "Change its settings (params) by their dotted names."}</p><textarea id="tl-json" rows="8" style="width:100%" class="mono" spellcheck="false" aria-label="the proposal">${esc(JSON.stringify({ params: {}, ...(Object.keys(((st.state || {}).best || {}).prompts || {}).length ? { prompts: (st.state.best || {}).prompts } : {}), hypothesis: "", rationale: "" }, null, 2))}</textarea>
           <div class="actions" style="margin-top:0"><label>at most (USD) <input type="number" id="tl-cap" value="1" min="0.01" step="0.01" style="width:6rem"></label><button class="btn primary" type="button" id="tl-go" data-send>Run this trial</button>${mark}</div><div id="tl-out" data-out></div></div>` : ""}`) : ""}
       ${part(agent && open ? 4 : 3, "Confirm it on a test set: one look", `${verdicts.length ? tbl(["trial", "test set", "rule", "items", "delta", "p (one-sided)", "look", "outcome"], verdicts.map((c) => `<tr><td class="mono">t${c.trial}</td><td class="mono">${esc(c.test)}</td><td>${esc(c.rule)}</td><td class="num">${c.n ?? c.items ?? ""}</td><td class="num">${typeof c.delta === "number" ? (c.delta >= 0 ? "+" : "") + c.delta.toFixed(4) : ""}</td><td class="num">${typeof c.p_one_sided === "number" ? c.p_one_sided.toFixed(4) : ""}</td><td class="num">${(c.look || {}).number ?? ""} at ${(((c.look || {}).level || 0) * 100).toFixed(4)}%</td><td><span class="verdict ${c.outcome === "better" || c.outcome === "noninferior" ? "v-lead" : "v-ns"}">${esc(c.outcome)}</span></td></tr>`)) : ""}
         <p class="muted">The rule is given before any test item is read; each look at a test set is tested at a stricter level.</p>
@@ -2118,9 +2155,12 @@
       const spec = document.getElementById("sn6-spec");
       // the spec is longer work: kept in this browser until the study runs
       spec?.addEventListener("input", () => { WB._study = { ...(WB._study || {}), [goal]: spec.value }; });
-      document.getElementById("sn6-fill")?.addEventListener("click", () => {
+      document.getElementById("sn6-fill")?.addEventListener("click", async () => {
         const m = ((((LIVE.cache[`goalrec:${goal}`] || {}).record || {}).success_criteria || {}).primary || {}).measure || "";
-        spec.value = specOf(v("sn6-ds"), v("sn6-base"), m, v("sn6-sampler"));
+        // the baseline's declared prompts: the agent may change them
+        const r = await fetch(`/api/v1/systems/${enc(v("sn6-base"))}`, { credentials: "same-origin" }).then((x) => x.json()).catch(() => ({}));
+        const named = v("sn6-sampler") === "agent" ? Object.keys(((r.result || {}).record || {}).prompts || {}) : [];
+        spec.value = specOf(v("sn6-ds"), v("sn6-base"), m, v("sn6-sampler"), named);
         spec.dispatchEvent(new Event("input", { bubbles: true }));
       });
       const specBody = (dry) => () => {
@@ -2172,6 +2212,82 @@
     holds("confirm", () => `Confirm on ${v("cf-test") || "…"}`);
     job("cf-dry", "cf-out", null, `${base}/confirm`, confirmBody(true), "looking at what it would read");
     job("cf-go", "cf-out", "confirm", `${base}/confirm`, confirmBody(false), "confirming", (box) => { forget(`looks:`); reread(box); });
+  }
+
+  // ── prompts (RFC-028): every prompt with its versions, the runs that sent each, two versions' diff; a version recorded
+  // or written out. A manual eval's systems and a study's trials both make versions; this is where their history is read ──
+  function screenPrompts(param) {
+    const name = String(param || "");
+    const head = `<div class="kicker">Prompts${name ? ` · ${esc(name)}` : ""}</div><h1>${name ? esc(name) : "Prompts"}</h1>
+      <p class="lead">Each prompt's versions, each with who made it, what it was made from and the runs that sent it. A system points at a version; a study's trials make new ones.</p>`;
+    const list = load("prompts", "/prompts");
+    if (list === undefined) return `<div class="screen wide">${head}${loading("the prompts")}</div>`;
+    if (list.error) return `<div class="screen wide">${head}${failed(list)}</div>`;
+    const tbl = (h, rows) => `<div class="tablewrap"><table><thead><tr>${h.map((x) => `<th>${esc(x)}</th>`).join("")}</tr></thead><tbody>${rows.join("")}</tbody></table></div>`;
+    const names = list.prompts.map((x) => x.name);
+    const listView = list.prompts.length ? tbl(["prompt", "versions", "runs", "latest"], list.prompts.map((x) => `<tr><td class="mono"><a href="#prompts/${enc(x.name)}">${esc(x.name)}</a>${x.name === name ? ' <span class="tag new">shown</span>' : ""}</td><td class="num">${x.versions}</td><td class="num">${x.runs}</td><td class="mono">${esc(x.latest || "")}</td></tr>`)) : '<p class="muted">No prompt versions yet: a system made in step 4 records its prompt, and a study\'s trials record theirs.</p>';
+    if (!name || !names.includes(name)) return `<div class="screen wide">${head}${listView}${WB.cmd("evh prompt-list\nevh prompt-show --name <name> --text")}<div class="actions"><a class="btn" href="#home">Your goals</a></div></div>`;
+    const pv = load(`prompt:${name}`, `/prompts/versions?name=${enc(name)}&text=true`);
+    if (pv === undefined) return `<div class="screen wide">${head}${loading("its versions")}</div>`;
+    if (pv.error) return `<div class="screen wide">${head}${failed(pv)}</div>`;
+    const vs = pv.versions, ids = vs.map((x) => x.id), last = vs[vs.length - 1];
+    const opt = (sel) => ids.map((x) => `<option value="${esc(x)}" ${x === sel ? "selected" : ""}>${esc(x)}</option>`).join("");
+    const df = WB._pdiff && WB._pdiff.name === name ? WB._pdiff : null;
+    return `<div class="screen wide">${head}${byField("pp6-by")}
+      <section class="part"><div class="parthead"><span class="letter">1</span><h2>Its versions</h2></div><div class="body">
+        ${vs.map((x) => `<details class="version" ${x === last ? "open" : ""}><summary><b>v${x.n}</b> <span class="mono">${esc(x.id)}</span> · ${esc(String(x.created_at || "").slice(0, 16).replace("T", " "))} · by ${esc(((x.actor || {}).name) || "?")}${x.parent ? ` · from <span class="mono">${esc(x.parent)}</span>` : ""} · ${x.runs.length} run(s)</summary>
+          <p class="muted">${esc(x.note || "")}</p><pre class="reply">${esc(x.text || "")}</pre>
+          ${x.runs.length ? tbl(["run", "measure", "score"], x.runs.map((r) => `<tr><td class="mono">${esc(r.run_id)}</td><td>${esc(r.metric || "")}</td><td class="num">${typeof r.score === "number" ? r.score.toFixed(4) : esc(r.score ?? "")}</td></tr>`)) : '<p class="muted">No run sent it yet.</p>'}</details>`).join("")}</div></section>
+      <section class="part"><div class="parthead"><span class="letter">2</span><h2>What changed between two</h2></div><div class="body">
+        ${ids.length > 1 ? `<div class="inline"><select id="pd-a" aria-label="from">${opt((df || {}).a || ids[ids.length - 2])}</select><span class="muted">to</span><select id="pd-b" aria-label="to">${opt((df || {}).b || ids[ids.length - 1])}</select><button class="btn" type="button" id="pd-go">Compare</button></div>
+          <div id="pd-out" data-out>${df && df.diff ? `<pre class="reply diff">${esc(df.diff)}</pre>` : ""}</div>` : '<p class="muted">One version: nothing to compare yet.</p>'}</div></section>
+      <section class="part"><div class="parthead"><span class="letter">3</span><h2>A new version</h2></div><div class="body" data-form="prompt-new">
+        <p class="muted">Made from ${esc(last.id)}. A system points at it once it is recorded (step 4: clone a system, change its prompt).</p>
+        <textarea id="pn-text" rows="5" style="width:100%" aria-label="its text">${esc(last.text || "")}</textarea>
+        <input type="text" id="pn-note" placeholder="what changed and why" style="width:100%;margin-top:8px">
+        <div class="actions" style="margin-top:8px"><button class="btn primary" type="button" id="pn-go" data-send>Record it</button>${mark}</div><div id="pn-out" data-out></div></div></section>
+      <section class="part"><div class="parthead"><span class="letter">4</span><h2>Write one out</h2></div><div class="body">
+        <p class="muted">A version as a file, for a project that keeps its prompts in its own repository to commit.</p>
+        <div class="inline"><select id="px-id" aria-label="the version">${opt(last.id)}</select><input type="text" id="px-to" value="${esc(name.split("/").pop())}.txt" aria-label="its file name" autocapitalize="off" spellcheck="false"><button class="btn" type="button" id="px-go">Write it out</button></div><div id="px-out" data-out></div></div></section>
+      ${WB.cmd(`evh prompt-show --name ${name} --text\nevh prompt-diff --a <id> --b <id>\nevh prompt-version --name ${name} --text "..." --parent ${last.id} --note "..."\nevh prompt-export --id <id> --to <file>`)}
+      <div class="actions"><a class="btn" href="#prompts">Every prompt</a><a class="btn" href="#home">Your goals</a></div></div>`;
+  }
+  function wirePrompts() {
+    const name = String(WB.param || "");
+    const v = (id) => (document.getElementById(id)?.value || "").trim();
+    const by = () => byOf("pp6-by") || (who() ? `person:${who()}` : null);
+    document.getElementById("pd-go")?.addEventListener("click", async () => {
+      const box = document.getElementById("pd-out");
+      const r = await fetch(`/api/v1/prompts/diff?a=${enc(v("pd-a"))}&b=${enc(v("pd-b"))}`, { credentials: "same-origin" });
+      const b = await r.json().catch(() => ({}));
+      if (!r.ok) { box.innerHTML = `<p class="note" role="alert">${esc(b.error || r.status)}</p>`; return; }
+      const res = b.result || {};
+      WB._pdiff = { name, a: v("pd-a"), b: v("pd-b"), diff: (res.diff || []).join ? (res.diff || []).join("") : String(res.diff || "") || "(the same text)" };
+      WB.render();
+    });
+    holds("prompt-new", () => `Record a new version of ${name}`);
+    document.getElementById("pn-go")?.addEventListener("click", async (ev) => {
+      const box = document.getElementById("pn-out"), who_ = by();
+      if (!who_) { box.innerHTML = '<p class="note" role="alert">Say who you are above: a version names who made it.</p>'; return; }
+      if (!v("pn-note")) { box.innerHTML = '<p class="note" role="alert">Say what changed and why: a version keeps its note.</p>'; return; }
+      const last = latestOf(LIVE.cache[`prompt:${name}`]);
+      ev.target.disabled = true;
+      try {
+        const ver = await recordPrompt(name, document.getElementById("pn-text").value, last ? last.id : null, v("pn-note"), who_, box);
+        if (ver) { sent("prompt-new"); forget(`prompt:${name}`); forget("prompts"); WB.render(true); }
+      } catch (e) { box.innerHTML = refusal(e); }
+      ev.target.disabled = false;
+    });
+    document.getElementById("px-go")?.addEventListener("click", async (ev) => {
+      const box = document.getElementById("px-out"), who_ = by();
+      if (!who_) { box.innerHTML = '<p class="note" role="alert">Say who you are above: a job names who asked.</p>'; return; }
+      ev.target.disabled = true;
+      try {
+        const done = await runJob("/prompts/versions/export", { id: v("px-id"), to: v("px-to"), by: who_ }, box, "writing it out");
+        if (done) box.innerHTML = `<p class="note">Written: <a class="mono" href="/api/v1/jobs/${enc(done.id)}/files/${enc((done.files || [])[0] || v("px-to"))}" download>${esc((done.files || [])[0] || v("px-to"))}</a></p>`;
+      } catch (e) { box.innerHTML = refusal(e); }
+      ev.target.disabled = false;
+    });
   }
 
   // ── labelling: a sheet filled here and submitted when done (owner, 2026-11-17: never item by item) ─────────────
@@ -2307,6 +2423,7 @@
     reference: [() => screenReference(WB.param || ""), wireReference], judge: [() => screenJudge(WB.param || ""), wireJudge],
     settings: [screenSettings, wireSettings], jobs: [() => screenJobs(WB.param || ""), wireJobs],
     heldout: [() => screenHeldout(WB.param || ""), wireHeldout], study: [() => screenStudies(WB.param || ""), wireStudies],
+    prompts: [() => screenPrompts(WB.param || ""), wirePrompts],
     "production-labels": [() => screenProduction(WB.param || ""), wireProduction], "production-replay": [() => screenProduction(WB.param || ""), wireProduction],
     // the mockup's own routes, each the live screen it stands for: its goal hub is a goal's screen or the home, its
     // dataset sources are step 2's, its deployed goal is production

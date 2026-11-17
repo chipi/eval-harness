@@ -91,6 +91,12 @@ made, so no per-run path enters it):
 An adapter that ignores these keys behaves as before. The wrapping guide shows the two ways a system takes the copy:
 a subprocess gets `PROMPT_DIR=<copy>`; an in-process library is pointed at it and its template cache cleared.
 
+The bundled adapter (added 2026-11-17, the Workbench's prompt review) sends `params["prompt"]` when the system has one,
+else the one prompt the system declares (`params["prompts"]`'s text), else "Summarise:". It sends one prompt: a
+system on it declaring several is refused before anything is called (`run`, `arm-smoke`). The Workbench's systems
+declare the goal's prompt by version (`prompts: {<goal>/prompt: {version: <id>}}`), so the run's fingerprint and the
+prompt's history say which text each run sent.
+
 ### The fingerprint
 
 `settings.prompts`: `{name: sha256}`, and for a root `settings.prompt_root_sha256` (the sorted relative paths and
@@ -122,6 +128,7 @@ code: {path: ../podcast_scraper}                # the system's checkout, read at
 | command | what | served |
 | --- | --- | --- |
 | `evh prompt-list [NAME]` | names, versions (display numbers), lineage, and per version the runs that used it with their goal's measure | read |
+| `evh prompt-show --name NAME [--text]` | one prompt's versions, each with its parent, note, who made it and its runs; `--text` each version's text (the Workbench's Prompts screen) | read |
 | `evh prompt-diff A B` | a unified diff, and the runs of each | read |
 | `evh prompt-version --name NAME (--from-file F \| --text T) [--parent ID] --note "…" [--by]` | records a version; a hash already recorded is named, not duplicated | job, `--from-file` an upload |
 | `evh prompt-export --id ID --to PATH` | writes a version's bytes; refuses a path inside an installed package and a tracked file with uncommitted changes | job, `--to` an artifact (a download) |

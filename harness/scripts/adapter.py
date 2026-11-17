@@ -176,12 +176,26 @@ def _echo(text: str, params: dict[str, Any]) -> Result:
     return Result(output=out, cost_usd=0.0)
 
 
+def prompt_of(params: dict[str, Any]) -> str:
+    """The prompt the arm sends: its `prompt`, else the one prompt it declares (RFC-028: a recorded version or a file,
+    whose text the harness gives as `params["prompts"]`), else "Summarise:". This adapter sends one prompt: a system
+    declaring several is refused, not sent the first."""
+    if isinstance(params.get("prompt"), str):
+        return params["prompt"]
+    declared = params.get("prompts") or {}
+    if len(declared) > 1:
+        raise ValueError(
+            f"the bundled adapter sends one prompt; the system declares {len(declared)} ({', '.join(sorted(declared))})"
+        )
+    if declared:
+        return str(next(iter(declared.values())).get("text") or "")
+    return "Summarise:"
+
+
 def _hosted(text: str, params: dict[str, Any]) -> Result:
     """A hosted model, through the harness's providers (openai, anthropic, openrouter, litellm):
-    the arm's `prompt`, then the item. Keys, addresses and cost: `evaluation_harness._providers`."""
-    c = _providers.complete(
-        params.get("prompt", "Summarise:") + "\n\n" + text, params, role="arm", max_tokens=600
-    )
+    the arm's prompt (`prompt_of`), then the item. Keys, addresses and cost: `evaluation_harness._providers`."""
+    c = _providers.complete(prompt_of(params) + "\n\n" + text, params, role="arm", max_tokens=600)
     return Result(
         output=c.text,
         tokens_in=c.tokens_in,

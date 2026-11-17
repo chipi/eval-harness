@@ -203,7 +203,7 @@ def _smoke(args: argparse.Namespace) -> int:
         cfg = _models.resolve(cfg, DATA)
     except ValueError as exc:
         die(f"{args.config}: {exc}", "invalid-file")
-    call_system, score, *_ = load_adapter(cfg.get("adapter"), args.config)
+    call_system, score, _aid, adapter_path, *_ = load_adapter(cfg.get("adapter"), args.config)
     ds = load_dataset(cfg["dataset_id"])
     from evaluation_harness import _seal  # noqa: PLC0415
 
@@ -215,7 +215,19 @@ def _smoke(args: argparse.Namespace) -> int:
     if rnd is not None and rnd.get("status") != "closed":
         _spend.reserve(rnd, "arm-smoke")
     mat = MATERIALIZED / ds["dataset_id"]
-    params = dict(cfg.get("params") or {})
+    # The prompts the system declares (RFC-028), given to the adapter as a run gives them: a smoke of a system that
+    # points at a prompt version sends that text.
+    from evaluation_harness import _prompts  # noqa: PLC0415
+    from evaluation_harness._adapter import prompt_problem  # noqa: PLC0415
+
+    resolved = _prompts.resolve(cfg, args.config, cfg["system_id"])
+    if resolved is not None:
+        import atexit  # noqa: PLC0415
+
+        atexit.register(_prompts.remove_copy, resolved)
+    params = {**dict(cfg.get("params") or {}), **(resolved or {}).get("params", {})}
+    if problem := prompt_problem(adapter_path, params):
+        die(f"{cfg['system_id']}: {problem}; nothing was called", "invalid-file")
     rec = _models.find(DATA, cfg["model_record"]) if cfg.get("model_record") else None
     named = _models.deployment_of(rec, cfg["deployment"]) if rec and cfg.get("deployment") else None
     deployments = [named] if named else (rec or {}).get("deployments") or []

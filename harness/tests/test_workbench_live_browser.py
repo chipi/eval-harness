@@ -57,6 +57,8 @@ env.update(
 
 #: Seconds the fake waits before it answers: a run the jobs page stops is still running when it is stopped.
 SLOW = {"s": 0.0}
+#: What each call sent as its user message: a system pointing at a prompt version sends that text.
+SENT: list[str] = []
 
 
 class Fake(http.server.BaseHTTPRequestHandler):
@@ -79,6 +81,7 @@ class Fake(http.server.BaseHTTPRequestHandler):
     def do_POST(self):
         time.sleep(SLOW["s"])
         body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
+        SENT.append(str(((body.get("messages") or [{}])[-1]).get("content") or ""))
         msg = {"role": "assistant", "content": '{"answer": "yes", "reason": "17 has no divisors"}'}
         if body.get("reasoning_effort") != "none":
             msg["reasoning"] = "Let me think. 17 divided by 2, 3, 5 ... prime."
@@ -529,19 +532,21 @@ try:
                 and sysrec.get("deployment") == "here"
                 and sysrec["params"].get("provider") == "openai"
                 and sysrec["params"].get("base_url") == f"http://127.0.0.1:{fake.server_port}/v1"
-                and sysrec["params"].get("prompt") == "Summarise the ticket in one line:"
+                and "prompt" not in sysrec["params"]
+                and list(sysrec.get("prompts") or {}) == ["tickets_summary/prompt"]
                 and sysrec["params"].get("max_tokens") == 50
                 and sysrec["params"].get("temperature") == 0,
                 sysrec,
             )
+            pv1 = sysrec["prompts"]["tickets_summary/prompt"]["version"]
+            v1_text = proj / "data" / "prompts" / "tickets_summary" / "prompt" / f"{pv1.split('/')[-1]}.txt"
             check(
-                "the system's prompt is recorded as a prompt version beside it, for its history (owner, 2026-11-17)",
-                (proj / "data" / "prompts" / "fake-1b_here").is_dir()
-                and any((proj / "data" / "prompts" / "fake-1b_here").iterdir()),
-                sorted(x.name for x in (proj / "data" / "prompts").iterdir())
-                if (proj / "data" / "prompts").is_dir()
-                else [],
+                "the prompt is recorded as a version of the goal's prompt, and the system points at it (RFC-028; owner, "
+                "2026-11-17: a manual eval and a study both make versions)",
+                v1_text.is_file() and v1_text.read_text() == "Summarise the ticket in one line:",
+                (pv1, sorted(x.name for x in v1_text.parent.iterdir()) if v1_text.parent.is_dir() else []),
             )
+            SENT.clear()
             page.select_option("#sm-ds", "tk_v1")
             page.fill("#sm-cap", "0.01")
             page.fill("#sm-by", "tester")
@@ -553,6 +558,8 @@ try:
                 "deployment's check",
                 page.locator("#sm-fake-1b_here details").count() == 3
                 and "all " in page.locator("#sm-fake-1b_here").inner_text()
+                and len(SENT) >= 3
+                and all(x.startswith("Summarise the ticket in one line:\n\n") for x in SENT)
                 and any(
                     c.get("kind") == "smoke" and c.get("system") == "fake-1b_here"
                     for c in dep_doc.get("checks") or []
@@ -560,6 +567,7 @@ try:
                 (
                     page.locator("#sm-fake-1b_here").inner_text()[:400],
                     [c.get("kind") for c in dep_doc.get("checks") or []],
+                    [x[:50] for x in SENT[:3]],
                 ),
             )
             page.click("[data-clone='fake-1b_here']")
@@ -577,6 +585,27 @@ try:
                 and clone.get("model_record") == "fake-1b"
                 and clone.get("deployment") == "here",
                 clone,
+            )
+            page.click("[data-clone='fake-1b_here']")
+            page.fill("#cl-id-fake-1b_here", "fake-1b_here_p2")
+            page.select_option("#cl-what-fake-1b_here", "prompt")
+            page.fill(
+                "#cl-val-fake-1b_here", "Summarise the ticket in one line a support engineer can act on:"
+            )
+            page.click("#cl-go-fake-1b_here")
+            page.wait_for_selector("td.mono:has-text('fake-1b_here_p2')", timeout=30000)
+            p2 = yaml.safe_load((proj / "data" / "systems" / "fake-1b_here_p2.yaml").read_text())
+            pv2 = (p2.get("prompts") or {}).get("tickets_summary/prompt", {}).get("version", "")
+            v2_doc = proj / "data" / "prompts" / "tickets_summary" / "prompt" / f"{pv2.split('/')[-1]}.json"
+            check(
+                "Clone it with a changed prompt: a new version of the goal's prompt, made from the source's, the clone "
+                "pointing at it and otherwise as the original",
+                bool(pv2)
+                and pv2 != pv1
+                and v2_doc.is_file()
+                and json.loads(v2_doc.read_text()).get("parent") == pv1
+                and p2["params"] == sysrec["params"],
+                (p2, v2_doc.read_text() if v2_doc.is_file() else None),
             )
             # W1 the eval (UXS-005 step 5): a round opened with its question, two arms run as one sweep, the evidence
             # read, one arm retired with its reason, the round closed with its conclusion and the leader promoted
@@ -932,6 +961,68 @@ try:
                 and "rule 1: label export" in page.locator("#ol-out").inner_text()
                 and "labelled\t6" in page.locator("#ol-out").inner_text(),
                 (olab.get("source"), page.locator("#ol-out").inner_text()[:500]),
+            )
+            # Prompts (RFC-028): the goal's prompt with its versions, each with its text and the runs that sent it; two
+            # versions compared; a new version recorded from the latest; one written out as a file
+            page.goto(f"http://127.0.0.1:{port}/workbench/#home")
+            page.click("text=Prompts")
+            page.wait_for_selector("h1:has-text('Prompts')", timeout=20000)
+            page.click("a:has-text('tickets_summary/prompt')")
+            page.wait_for_selector("#pd-go", timeout=20000)
+            pshown = evh("prompt-show", "--name", "tickets_summary/prompt", "--json")
+            vers = json.loads(pshown.stdout.splitlines()[-1])["result"]["versions"]
+            text = page.locator("main").inner_text()
+            check(
+                "a prompt's versions with their text, who made each, what it was made from and the runs that sent it, as "
+                "evh prompt-show says",
+                [v["id"] for v in vers][:2] == [pv1, pv2]
+                and "Summarise the ticket in one line a support engineer" in text
+                and len(vers[0]["runs"]) >= 1
+                and vers[0]["runs"][0]["run_id"] in page.content(),
+                ([(v["id"], len(v["runs"])) for v in vers], text[:600]),
+            )
+            page.select_option("#pd-a", pv1)
+            page.select_option("#pd-b", pv2)
+            page.click("#pd-go")
+            page.wait_for_selector("#pd-out pre", timeout=20000)
+            diff = page.locator("#pd-out").inner_text()
+            check(
+                "What changed between two: prompt-diff's unified diff",
+                "-Summarise the ticket in one line:" in diff
+                and "+Summarise the ticket in one line a support engineer can act on:" in diff,
+                diff[:400],
+            )
+            page.fill("#pp6-by", "tester")
+            page.fill("#pn-text", "Summarise the ticket in one line; name the product area first:")
+            page.fill("#pn-note", "the area first, so triage can route it")
+            check(
+                "A new version is a form with unsent changes",
+                page.locator("#pn-go").inner_text() == "Record a new version of tickets_summary/prompt"
+                and page.locator("[data-form=prompt-new] [data-unsent-mark]").is_visible(),
+                page.locator("#pn-go").inner_text(),
+            )
+            page.click("#pn-go")
+            page.wait_for_selector("summary:has-text('v3')", timeout=30000)
+            vers = json.loads(
+                evh("prompt-show", "--name", "tickets_summary/prompt", "--json").stdout.splitlines()[-1]
+            )["result"]["versions"]
+            check(
+                "Record it (prompt-version): the third version, made from the latest, with its note",
+                len(vers) == 3
+                and vers[2].get("parent") == pv2
+                and vers[2].get("note") == "the area first, so triage can route it",
+                [(v["id"], v.get("parent"), v.get("note")) for v in vers],
+            )
+            page.click("#px-go")
+            page.wait_for_selector("#px-out a, #px-out [role=alert]", timeout=30000)
+            got = page.evaluate(
+                "(u) => fetch(u, {credentials: 'same-origin'}).then((r) => r.text())",
+                page.locator("#px-out a").get_attribute("href"),
+            )
+            check(
+                "Write one out (prompt-export as a job): the version's text as a file to commit",
+                got == "Summarise the ticket in one line; name the product area first:",
+                (page.locator("#px-out").inner_text()[:200], got[:200]),
             )
             # W6 (UXS-005): a second label set's moves read before promoting it ($0, under its own label), then
             # promoted with why and the arms re-scored against it; the scorer in this tree previewed on the goal, then a
@@ -1427,6 +1518,7 @@ try:
                 ("judge/tickets_summary", "A judge for this goal"),
                 ("settings", "Govern and maintain"),
                 ("jobs", "Jobs"),
+                ("prompts/tickets_summary/prompt", "tickets_summary/prompt"),
                 ("review/tickets_summary", "Review the outputs"),
                 ("production/tickets_summary", "Learn from production"),
             ):
@@ -1436,7 +1528,7 @@ try:
                     phone.screenshot(path=f"{shots}/phone-{screen.replace('/', '-')}.png", full_page=True)
                 wide[screen] = phone.evaluate("document.documentElement.scrollWidth - window.innerWidth")
             check(
-                "at a phone's width the models' screens and steps 1 to 4, the eval, the review, production, the reference set, the judge, the settings and the jobs do not scroll sideways",
+                "at a phone's width the models' screens and steps 1 to 4, the eval, the review, production, the reference set, the judge, the settings, the jobs and the prompts do not scroll sideways",
                 all(v <= 0 for v in wide.values()),
                 wide,
             )

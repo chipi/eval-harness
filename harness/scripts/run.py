@@ -720,6 +720,10 @@ def _dry_run(
     # The prompt the system gives is sent with every item (the bundled adapter sends `prompt`, a blank line, the
     # item). An adapter that builds its own prompt elsewhere cannot be asked for it, so that part is not counted.
     prompt = params.get("prompt")
+    if not isinstance(prompt, str):  # the prompts it declares (RFC-028): a version's or a file's text
+        from evaluation_harness import _prompts  # noqa: PLC0415
+
+        prompt = "\n\n".join(_prompts.declared_texts(cfg).values()) or None
     prompt_chars = (len(prompt) + 2) * len(items) if isinstance(prompt, str) else 0
     chars = item_chars + prompt_chars
     # ~4 chars per token is the usual English rule of thumb; it is a rule of
@@ -1171,6 +1175,10 @@ def _run(args: argparse.Namespace) -> int:
 
         atexit.register(_prompts.remove_copy, resolved)
     call_cfg = {**cfg, "params": {**dict(cfg.get("params") or {}), **(resolved or {}).get("params", {})}}
+    from evaluation_harness._adapter import prompt_problem  # noqa: PLC0415
+
+    if problem := prompt_problem(adapter_path, call_cfg["params"]):
+        die(f"{cfg['system_id']}: {problem}; nothing was run", "invalid-file")
     if plan is not None:
         _replay.environment()
     warmup_ms: float | None = None

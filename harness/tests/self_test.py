@@ -778,6 +778,10 @@ def test_example_scorer_suites_pass() -> None:
             "catalog-serve: an unhandled error answered as a JSON 500 without --hooks too, its traceback on stderr",
         ),
         (
+            "test_declared_prompt.py",
+            "a system pointing at a recorded prompt version sends that text in the smoke and the run, records it, and the bundled adapter refuses two",
+        ),
+        (
             "test_goals.py",
             "goals: config, run, baseline, V14, pages, --arms/--top, the test against the leader",
         ),
