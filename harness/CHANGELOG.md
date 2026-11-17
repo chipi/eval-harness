@@ -13,6 +13,11 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Added
 
+- **The Workbench's step 3 and labelling, live** (UXS-005): a goal's dataset opens its preparation: fetch it
+  (`dataset-materialize`) and look inside (`dataset-profile`) as jobs, then its reference set, by promoting a label set
+  (the dataset's own answers too) with its tier and why. "Label it here" makes the sheet (`label-sheet`, a job), fills it
+  on the page and submits it when done to `label-import` (owner, 2026-11-17: never item by item); its answers are kept in
+  this browser until then, counted, and a sheet with no answer holds nothing to lose.
 - **The Workbench's step 1, live** (UXS-005): "New goal" on the home (or "Start with a goal" in an empty project)
   makes a goal from five things (what it is, what it is for, the decision, the measure and its direction, the winner
   rule; the margin and tie-break under "advanced"), its id made from the title; "Edit the goal" on its page changes it,

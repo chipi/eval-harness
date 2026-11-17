@@ -318,7 +318,74 @@ try:
                 and (last.get("was") or {}).get("decision") == "Which system sorts notes well enough to use.",
                 (changed.get("decision"), last),
             )
-            page.goto(f"http://127.0.0.1:{port}/workbench/#prepare")
+            # step 3 (UXS-005): fetch, look inside, promote the answers the data came with; then label it here, the
+            # sheet submitted when done (owner, 2026-11-17)
+            page.goto(f"http://127.0.0.1:{port}/workbench/#prepare/notes_v1")
+            page.wait_for_selector("h1:has-text('Prepare the dataset')", timeout=20000)
+            page.fill("#pp-by", "tester")
+            if page.locator("#pp-fetch").count():
+                page.click("#pp-fetch")
+                page.wait_for_selector("#pp-look:not([disabled])", timeout=60000)
+            page.fill("#pp-by", "tester")
+            page.click("#pp-look")
+            page.wait_for_selector("a:has-text('Open its page in the catalog')", timeout=60000)
+            check(
+                "fetch and look inside: dataset-materialize and dataset-profile as jobs, each step then marked done",
+                (proj / "data" / "materialized" / "notes_v1").is_dir()
+                and (proj / "data" / "profiles" / "notes_v1.json").is_file(),
+                page.locator("main").inner_text()[:400],
+            )
+            page.select_option("#pt-answers", "gold")
+            page.fill("#pr-answers", "the labels the notes came with")
+            page.fill("#pp-by", "tester")
+            page.click("[data-promote=answers]")
+            page.wait_for_selector("li:has-text('gold/notes_v1')", timeout=60000)
+            check(
+                "promote the answers the data came with: reference-promote as a job, the gold reference listed",
+                any("notes_v1" in x.name for x in (proj / "data" / "references" / "gold").iterdir()),
+                page.locator("main").inner_text()[:400],
+            )
+            page.click("text=Label it here")
+            page.wait_for_selector("h1:has-text('Label the items')", timeout=20000)
+            page.check("input[name=lb-items][value=all]")
+            page.fill("#lb-by", "tester")
+            page.click("#lb-make")
+            page.wait_for_selector("[data-answer=n1]", timeout=60000)
+            check(
+                "a sheet with no answer yet holds nothing to lose: no mark, Submit off",
+                not page.locator("[data-form=label-sheet] [data-unsent-mark]").is_visible()
+                and page.locator("#lb-submit").is_disabled(),
+                page.locator("#lb-submit").inner_text(),
+            )
+            page.fill("[data-answer=n1]", "a")
+            page.fill("[data-answer=n2]", "b")
+            page.fill("#lb-set", "tester_pass")
+            page.reload()
+            page.wait_for_selector("[data-answer=n1]", timeout=20000)
+            check(
+                "the sheet's answers are kept in this browser across a reload, counted, Submit naming what it writes",
+                page.input_value("[data-answer=n1]") == "a"
+                and page.locator("#lb-count").inner_text() == "2"
+                and page.locator("#lb-submit").inner_text() == "Submit 2 answer(s) as label set tester_pass"
+                and not (proj / "data" / "labels" / "notes_v1" / "tester_pass").exists(),
+                (page.input_value("[data-answer=n1]"), page.locator("#lb-submit").inner_text()),
+            )
+            page.fill("#lb-by", "tester")
+            page.click("#lb-submit")
+            page.wait_for_selector("text=Written: label set", timeout=60000)
+            lab = json.loads(
+                (proj / "data" / "labels" / "notes_v1" / "tester_pass" / "labels.json").read_text()
+            )
+            check(
+                "Submit: label-import writes the label set from the filled sheet (2 labels, a person's), the sheet dropped",
+                lab.get("n_items") == 2
+                and lab.get("source", {}).get("kind") == "person"
+                and (proj / "data" / "labels" / "notes_v1" / "tester_pass" / "n2.txt").read_text().strip()
+                == "b"
+                and page.evaluate("localStorage.getItem('evh.draft.label.notes_v1')") is None,
+                lab,
+            )
+            page.goto(f"http://127.0.0.1:{port}/workbench/#eval")
             page.wait_for_selector("h1", timeout=20000)
             check(
                 "a screen not wired yet says so, and shows none of the mockup's data",

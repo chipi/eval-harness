@@ -59,7 +59,7 @@
     if (st === undefined) return `<div class="screen wide">${head}${loading("the goal")}</div>`;
     if (st.error) return `<div class="screen wide">${head}${failed(st)}<div class="actions"><a class="btn" href="#home">Back to your goals</a></div></div>`;
     const m = st.measure || {};
-    const ds = st.datasets.map((d) => `<tr><td class="mono">${esc(d.dataset)}</td><td>${esc(d.role || "")}${d.decides ? "" : " · does not decide"}</td>
+    const ds = st.datasets.map((d) => `<tr><td class="mono"><a href="#prepare/${enc(d.dataset)}">${esc(d.dataset)}</a></td><td>${esc(d.role || "")}${d.decides ? "" : " · does not decide"}</td>
       <td>${d.made ? (d.materialized ? "made, fetched" : "made, not fetched") : "not made"}</td><td>${d.references.length ? d.references.map(esc).join(", ") : "—"}</td>
       <td class="num">${d.runs} run(s) · ${d.arms} arm(s)</td><td>${d.baseline ? `v${d.baseline.version}` : "—"}</td></tr>`).join("");
     const rounds = st.rounds.map((r) => `<li><b>${esc(r.round)}</b> ${esc(r.status)}: ${esc(r.question || "")}</li>`).join("");
@@ -552,6 +552,191 @@
     });
   }
 
+  // ── step 3: prepare a dataset (UXS-005 step 3): fetch it, look inside, its reference set ────────────────────────
+  const catalogPage = (ds) => `${location.origin}/d/${String(ds || "none").replace(/[^A-Za-z0-9._-]+/g, "-").replace(/^-+|-+$/g, "") || "x"}.html`;
+  async function runJob(path, body, box, what) {
+    const j = await send("POST", path, body);
+    const done = await watchJob(j.id, box, what);
+    if (done.state !== "succeeded") { box.innerHTML = await jobRefusal(done); return null; }
+    return done;
+  }
+  function screenPrepare(ds) {
+    const head = `<div class="kicker">Step 3 · ${esc(ds)}</div><h1>Prepare the dataset</h1>
+      <p class="lead">Three things a dataset needs before anything runs: its items fetched, a look inside, and the reference set outputs are scored against.</p>`;
+    if (!ds) return `<div class="screen">${head}<p class="note">Open it from a goal's dataset.</p><div class="actions"><a class="btn" href="#home">Your goals</a></div></div>`;
+    const d = load(`dataset:${ds}`, `/datasets/${enc(ds)}`);
+    if (d === undefined) return `<div class="screen wide">${head}${loading("the dataset")}</div>`;
+    if (d.error) return `<div class="screen wide">${head}${failed(d)}</div>`;
+    const fetched = d.parts.materialized.present, looked = d.parts.profile.present, refs = d.references || [];
+    const sets = (d.label_sets || []).map((x) => ({ ...x, name: String(x.set).split("/").pop() }));
+    const done = (on) => (on ? '<span class="status ok">✓</span>' : '<span class="status">to do</span>');
+    const promote = sets.map((x) => `<div class="row-form" data-form="promote-${esc(x.name)}"><p><b class="mono">${esc(x.name)}</b> <span class="muted">${esc(x.kind)}${x.kind === "dataset" ? ": the answers the data came with" : ""}</span></p>
+        <div class="inline"><select id="pt-${esc(x.name)}" aria-label="tier"><option value="gold">gold</option><option value="silver">silver</option></select>
+        <input type="text" id="pr-${esc(x.name)}" placeholder="why: a sentence" aria-label="why it is promoted" style="min-width:18rem">
+        <button class="btn" type="button" data-promote="${esc(x.name)}" data-send>Promote</button>${mark}</div><div id="po-${esc(x.name)}"></div></div>`).join("");
+    return `<div class="screen wide">${head}
+      <section class="part"><div class="parthead"><span class="letter">a</span><h2>Fetch its items</h2><span class="grow"></span>${done(fetched)}</div><div class="body">
+        <p class="muted">Downloads every item and checks it against its hash, so a run reads exactly the frozen items.</p>
+        ${fetched ? "" : `<div class="actions" style="margin-top:0"><button class="btn primary" type="button" id="pp-fetch">Fetch them</button></div>`}<div id="pp-fetch-out"></div></div></section>
+      <section class="part"><div class="parthead"><span class="letter">b</span><h2>Look inside</h2><span class="grow"></span>${done(looked)}</div><div class="body">
+        <p class="muted">How many items, how long, each field's values: most surprises show here, before anything runs.</p>
+        ${looked ? `<p><a href="${catalogPage(ds)}">Open its page in the catalog ↗</a></p>` : `<div class="actions" style="margin-top:0"><button class="btn primary" type="button" id="pp-look" ${fetched ? "" : "disabled"}>Profile it</button>${fetched ? "" : '<span class="muted">after it is fetched</span>'}</div>`}
+        <div id="pp-look-out"></div></div></section>
+      <section class="part"><div class="parthead"><span class="letter">c</span><h2>Its reference set</h2><span class="grow"></span>${done(refs.length)}</div><div class="body">
+        <p class="muted">The expected answer for each item, that outputs are scored against. Gold is checked by people; silver is a model's answers, enough to rank systems. Who and why are recorded.</p>
+        ${refs.length ? `<ul>${refs.map((r) => `<li><b>${esc(r.reference)}</b> · ${r.items} item(s) · ${esc(r.kind || "")}</li>`).join("")}</ul>` : ""}
+        ${sets.length ? `<h3>Promote a label set</h3>${promote}` : '<p class="muted">No label set yet.</p>'}
+        <h3>Or label it</h3><div class="actions" style="margin-top:0"><a class="btn" href="#label/${enc(ds)}">Label it here</a></div>
+        ${byField("pp-by")}</div></section>
+      ${WB.cmd(`evh dataset-materialize --dataset-id ${ds}\nevh dataset-profile --dataset-id ${ds}\nevh reference-promote --dataset-id ${ds} --labels <set> --tier gold --reason "..."`)}
+      <div class="actions"><a class="btn" href="#home">Your goals</a></div></div>`;
+  }
+  function wirePrepare() {
+    const ds = WB.param || "";
+    const by = () => byOf("pp-by") || (who() ? `person:${who()}` : null);
+    const again = () => { forget(`dataset:${ds}`); forget("datasets"); WB.render(true); };
+    for (const [btn, out, path, what] of [["pp-fetch", "pp-fetch-out", "materialize", "fetching"], ["pp-look", "pp-look-out", "profile", "profiling"]]) {
+      document.getElementById(btn)?.addEventListener("click", async (ev) => {
+        const box = document.getElementById(out), who_ = by();
+        if (!who_) { box.innerHTML = '<p class="note" role="alert">Say who you are below: a job names who asked.</p>'; return; }
+        ev.target.disabled = true;
+        try { if (await runJob(`/datasets/${enc(ds)}/${path}`, { by: who_ }, box, what)) again(); } catch (e) { box.innerHTML = refusal(e); }
+        ev.target.disabled = false;
+      });
+    }
+    document.querySelectorAll("[data-promote]").forEach((b) => {
+      const name = b.dataset.promote;
+      holds(`promote-${name}`, () => `Promote ${name} as ${document.getElementById(`pt-${name}`).value}`);
+      b.addEventListener("click", async () => {
+        const box = document.getElementById(`po-${name}`), who_ = by();
+        if (!who_) { box.innerHTML = '<p class="note" role="alert">Say who you are below: a promotion names who made it.</p>'; return; }
+        b.disabled = true;
+        try {
+          const ok = await runJob(`/datasets/${enc(ds)}/references`, { labels: name, tier: document.getElementById(`pt-${name}`).value, reason: document.getElementById(`pr-${name}`).value, by: who_ }, box, "promoting");
+          if (ok) { sent(`promote-${name}`); again(); }
+        } catch (e) { box.innerHTML = refusal(e); }
+        b.disabled = false;
+      });
+    });
+  }
+
+  // ── labelling: a sheet filled here and submitted when done (owner, 2026-11-17: never item by item) ─────────────
+  // The sheet is label-sheet's (a job's file); the answers stay in this browser until Submit sends the filled sheet to
+  // label-import, which writes a frozen label set as a CSV upload would.
+  function parseCsv(text) {
+    const rows = [];
+    let row = [], cell = "", q = false;
+    const t = text.replace(/^﻿/, "");
+    for (let i = 0; i < t.length; i++) {
+      const c = t[i];
+      if (q) {
+        if (c === '"' && t[i + 1] === '"') { cell += '"'; i++; } else if (c === '"') q = false; else cell += c;
+      } else if (c === '"') q = true;
+      else if (c === ",") { row.push(cell); cell = ""; }
+      else if (c === "\n" || c === "\r") { if (c === "\r" && t[i + 1] === "\n") i++; row.push(cell); rows.push(row); row = []; cell = ""; }
+      else cell += c;
+    }
+    if (cell || row.length) { row.push(cell); rows.push(row); }
+    return rows;
+  }
+  const csvOf = (rows) => rows.map((r) => r.map((c) => (/[",\n\r]/.test(c) ? `"${String(c).replace(/"/g, '""')}"` : c)).join(",")).join("\r\n") + "\r\n";
+  const labelKey = (ds) => `evh.draft.label.${ds}`;
+  const readSheet = (ds) => { try { return JSON.parse(localStorage.getItem(labelKey(ds)) || "null"); } catch { return null; } };
+  const keepSheet = (ds, d) => { try { localStorage.setItem(labelKey(ds), JSON.stringify(d)); } catch { /* this visit only */ } };
+  const dropSheet = (ds) => { try { localStorage.removeItem(labelKey(ds)); } catch { /* nothing kept */ } };
+  const answered = (d) => Object.values(d.answers || {}).filter((a) => String(a.label || "").trim()).length;
+  function screenLabel(ds) {
+    const head = `<div class="kicker">Label · ${esc(ds)}</div><h1>Label the items</h1>
+      <p class="lead">Give each item its expected answer. Nothing is written until you submit the sheet; then it becomes a label set, which you can promote to the reference set.</p>`;
+    if (!ds) return `<div class="screen">${head}</div>`;
+    const d = readSheet(ds);
+    if (!d) {
+      return `<div class="screen wide">${head}
+        <div class="field"><div class="name" id="lb-items-l">Which items</div><div class="choices row" role="radiogroup" aria-labelledby="lb-items-l">
+          <label class="choice"><input type="radio" name="lb-items" value="unlabelled" checked> not labelled yet</label><label class="choice"><input type="radio" name="lb-items" value="all"> all</label></div></div>
+        ${byField("lb-by")}
+        <div class="actions"><button class="btn primary" type="button" id="lb-make">Make the sheet</button><a class="btn" href="#prepare/${enc(ds)}">Back</a></div><div id="lb-make-out"></div>
+        ${WB.cmd(`evh label-sheet --dataset-id ${ds} --out sheet.csv`)}</div>`;
+    }
+    if (answered(d)) UNSENT.set("label-sheet", `${answered(d)} answer(s) for ${ds}`);
+    const [header, ...rows] = d.sheet, at = (n) => header.findIndex((h) => h === n || h.startsWith(`${n} [`));
+    const iItem = at("item"), iProp = at("proposal"), iId = at("item_id");
+    const choices = (header[at("label")].match(/\[(.*)\]/) || [, ""])[1].split("|").filter(Boolean);
+    const list = choices.length ? `<datalist id="lb-choices">${choices.map((c) => `<option value="${esc(c)}">`).join("")}</datalist>` : "";
+    const n = answered(d);
+    return `<div class="screen wide" data-form="label-sheet">${head}${list}
+      <div class="tablewrap"><table><thead><tr><th>item</th><th>the item</th><th>proposal</th><th>its answer</th><th>a note</th></tr></thead><tbody>
+      ${rows.map((r) => { const id = r[iId], a = d.answers[id] || {}; return `<tr><td class="mono">${esc(id)}</td><td class="clip"><div>${esc(r[iItem] || "")}</div></td>
+        <td>${esc(r[iProp] || "")}</td><td><input type="text" data-answer="${esc(id)}" value="${esc(a.label || "")}" ${choices.length ? 'list="lb-choices"' : ""} aria-label="the answer for ${esc(id)}"></td>
+        <td><input type="text" data-note="${esc(id)}" value="${esc(a.note || "")}" aria-label="a note on ${esc(id)}"></td></tr>`; }).join("")}</tbody></table></div>
+      <div class="field"><label class="name" for="lb-set">The label set's name</label><div><input type="text" id="lb-set" value="${esc(d.set || "")}" placeholder="owner_2026_11" autocapitalize="off" spellcheck="false"><div class="hint">lowercase letters, digits, _ . -; a set is never edited, a second pass is a new set</div></div></div>
+      ${byField("lb-by")}
+      <div class="actions"><button class="btn primary" type="button" id="lb-submit" data-send>Submit</button><span class="unsent" data-unsent-mark hidden><span id="lb-count">${n}</span> answer(s) not submitted · kept in this browser</span>
+        <button class="btn" type="button" id="lb-drop">Throw the sheet away</button></div><div id="lb-out"></div>
+      ${WB.cmd(`evh label-import --sheet sheet.csv --dataset-id ${ds} --set <name> --by <you>`)}</div>`;
+  }
+  function wireLabel() {
+    const ds = WB.param || "";
+    document.getElementById("lb-make")?.addEventListener("click", async (ev) => {
+      const box = document.getElementById("lb-make-out"), by = byOf("lb-by") || (who() ? `person:${who()}` : null);
+      if (!by) { box.innerHTML = '<p class="note" role="alert">Say who you are: a job names who asked.</p>'; return; }
+      ev.target.disabled = true;
+      try {
+        const done = await runJob(`/datasets/${enc(ds)}/label-sheets`, { out: "sheet.csv", items: document.querySelector("input[name=lb-items]:checked").value, by }, box, "making the sheet");
+        if (done) {
+          const r = await fetch(`/api/v1/jobs/${enc(done.id)}/files/sheet.csv`, { credentials: "same-origin" });
+          const sheet = parseCsv(await r.text()).filter((row) => row.length > 1);
+          keepSheet(ds, { sheet, answers: {}, set: "" });
+          WB.render(true);
+        }
+      } catch (e) { box.innerHTML = refusal(e); }
+      ev.target.disabled = false;
+    });
+    const d = readSheet(ds);
+    if (!d) return;
+    const name = () => (document.getElementById("lb-set").value || "").trim();
+    // dirty once an answer is given, not when the sheet is only made (a sheet with no answer loses nothing)
+    const show = (cur) => {
+      const n = answered(cur), btn = document.getElementById("lb-submit");
+      if (n) UNSENT.set("label-sheet", `${n} answer(s) for ${ds}`); else UNSENT.delete("label-sheet");
+      document.getElementById("lb-count").textContent = n;
+      document.querySelector("[data-form=label-sheet] [data-unsent-mark]").hidden = !n;
+      btn.disabled = !n;
+      btn.textContent = `Submit ${n} answer(s) as label set ${name() || "…"}`;
+    };
+    show(d);
+    document.querySelector("[data-form=label-sheet]").addEventListener("input", (e) => {
+      const cur = readSheet(ds) || d, id = e.target.dataset.answer || e.target.dataset.note;
+      if (id) { cur.answers[id] = cur.answers[id] || {}; cur.answers[id][e.target.dataset.answer ? "label" : "note"] = e.target.value; }
+      cur.set = name();
+      keepSheet(ds, cur);
+      show(cur);
+    }, true);
+    document.getElementById("lb-drop").addEventListener("click", () => {
+      if (!window.confirm(`Throw away ${answered(readSheet(ds) || d)} answer(s) not submitted?`)) return;
+      dropSheet(ds); sent("label-sheet"); WB.render(true);
+    });
+    document.getElementById("lb-submit").addEventListener("click", async (ev) => {
+      const cur = readSheet(ds) || d, out = document.getElementById("lb-out"), by = byOf("lb-by");
+      if (!by) { out.innerHTML = '<p class="note" role="alert">Say who you are: a label set names who labelled it.</p>'; return; }
+      if (!name()) { out.innerHTML = '<p class="note" role="alert">Name the label set.</p>'; return; }
+      const [header, ...rows] = cur.sheet, at = (n) => header.findIndex((h) => h === n || h.startsWith(`${n} [`));
+      const iId = at("item_id"), iLabel = at("label"), iNote = at("note");
+      const filled = [header, ...rows.map((r) => { const a = cur.answers[r[iId]] || {}, x = [...r]; x[iLabel] = a.label || ""; if (iNote >= 0) x[iNote] = a.note || ""; return x; })];
+      const content = btoa(unescape(encodeURIComponent(csvOf(filled))));
+      ev.target.disabled = true;
+      try {
+        const done = await runJob(`/datasets/${enc(ds)}/label-sets/${enc(name())}`, { sheet: { name: "sheet.csv", content_base64: content }, by }, out, "submitting the sheet");
+        if (done) {
+          dropSheet(ds); sent("label-sheet"); forget(`dataset:${ds}`);
+          out.innerHTML = `<p class="note">Written: label set <b>${esc(name())}</b>. <a href="#prepare/${enc(ds)}">Promote it to the reference set</a>.</p>`;
+          document.querySelector("[data-form=label-sheet] [data-unsent-mark]").hidden = true;
+        }
+      } catch (e) { out.innerHTML = refusal(e); }
+      ev.target.disabled = false;
+    });
+  }
+
   // ── a screen not wired yet: says which step wires it ───────────────────────
   function screenLater() {
     return `<div class="screen"><div class="kicker">Not wired yet</div><h1>This screen comes later</h1>
@@ -565,6 +750,7 @@
     models: [screenModels], model: [() => screenModel(WB.param || ""), wireModel], "model-new": [screenModelNew, wireModelNew],
     dataset: [() => screenDatasetNew(WB.param || ""), wireDatasetNew],
     "goal-new": [() => screenGoalForm(""), wireGoalForm], "goal-edit": [() => screenGoalForm(WB.param || ""), wireGoalForm],
+    prepare: [() => screenPrepare(WB.param || ""), wirePrepare], label: [() => screenLabel(WB.param || ""), wireLabel],
   };
 
   function goLive() {
