@@ -109,7 +109,7 @@ that can move a result is never a patch release without saying so under **Change
   `model-onboard` wrote is saved again through the model. `model-onboard` and `arm-smoke` exit 6 on a CHECK, as their
   help now says (it said 1).
 - **The data's format** (RFC-032): `data/project.yaml` records the format of a project's data, `evh init` writes it,
-  and `evh migrate --check` compares it with the release's (format 2 in 0.8.0; `ERROR (old-format)`, a new refusal kind, for older data;
+  and `evh migrate --check` compares it with the release's (format 7 in 0.8.0; `ERROR (old-format)`, a new refusal kind, for older data;
   `ERROR (mismatch)` for data a later release wrote). `evh migrate` runs numbered steps (`migrations/`), records the
   format after each, and copies a SQLite project's database first. This repository's deploy stops on data not in the
   release's format (`render.sh`), `make check` runs the same check first (CI's reproduce), and CI migrates a project 0.7.2's own code made (`tests/fixtures/formats/0/`) and
@@ -170,9 +170,10 @@ that can move a result is never a patch release without saying so under **Change
   server reads the new store after.
 - **Jobs** (RFC-026 step 3): `POST /api/v1/jobs` runs a decision or work operation as a detached job with a supervisor,
   its state, log and envelope in `.build/jobs/<id>/`; listed, read, followed from a byte offset, stopped (its process group,
-  `cancelled`) and, for a run, resumed. Locks per thing written (`.build/locks/`, taken in key order, held by the
-  command itself): a second writer of the same thing waits `queued`, naming the job it waits for; a migration takes
-  the whole project. A spending job needs `max_cost_usd`, and every job `by` (who asked). Uploads (50 MB a
+  `cancelled`) and, for a run, resumed. A job's locks, one per thing it writes (`.build/locks/`, taken in key order, held by the
+  job's command itself): a second job writing the same thing waits `queued`, naming the job it waits for; a migration
+  takes the whole project. A command run in the terminal takes no job lock; `evh migrate` and `evh data-migrate` refuse
+  a SQLite project another process has open. A spending job needs `max_cost_usd`, and every job `by` (who asked). Uploads (50 MB a
   call) and artifacts (files a job writes, fetched from it). A job outlives the server; one whose supervisor died
   reads `running (unsupervised)`, then `lost`.
 - **The API, its read side** (RFC-026 step 2): a local `catalog-serve` answers `/api/v1/` behind a token written to
@@ -752,6 +753,19 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Fixed
 
+- **A run's output, an exposure, a pick or a record's history holding U+2028, U+2029 or U+0085 is read whole**
+  (RFC-033; unreleased 0.8 code, an independent review): JSON-lines files keep those characters raw, and their readers
+  split lines with `str.splitlines`, which splits there too. `evh data-migrate --to sqlite` dropped such an output
+  without a word (its read-back check read the file the same way), `--to files` could never finish, an exposure's
+  `what` made the register unreadable (every score of that held-out dataset failed), and the next save split a
+  history's line in two for good. Every JSON-lines reader splits on newlines only (`_common.jsonl_lines`).
+- **`evh migrate`'s copy of a SQLite database is kept out of the project's data** (RFC-032; unreleased 0.8 code, an
+  independent review): named `project.sqlite.before-format-…`, validate called it a stray file and its advice
+  (`data-migrate --to sqlite`) would have moved the copy into the database. It is
+  `project.sqlite-before-format-<the data's format>-<when>`, beside the database as its -wal is.
+- **`evh migrate` refuses a SQLite project another process has open** (RFC-032; unreleased 0.8 code, an independent
+  review): its last step drops a table and rewrites the database, under a running catalog-serve or run. As a job it
+  waits for the server to let go, as `data-migrate` does.
 - **`evh mcp` with relative paths** (RFC-032; unreleased 0.8 code, found rendering a release as the deploy does,
   `render.sh _release <sha>`): the server moves into the project before it works, and read `--project` and a `--hooks`
   file from there, so a relative one named a place inside the project. They are taken where the caller stands.

@@ -20,7 +20,7 @@ from pathlib import Path
 from typing import Any
 
 from evaluation_harness import _common, _outputs
-from evaluation_harness._common import die, write_json
+from evaluation_harness._common import die, jsonl_lines, write_json
 
 
 def _old_signature(texts: dict[str, bytes]) -> str:
@@ -190,7 +190,7 @@ def _checkpoint_needed(rows: Path, predictions: Path) -> bool:
 
     def ids(p: Path) -> set[str]:
         out = set()
-        for line in p.read_text(encoding="utf-8").splitlines() if p.is_file() else []:
+        for line in jsonl_lines(p.read_text(encoding="utf-8")) if p.is_file() else []:
             try:
                 out.add(json.loads(line).get("item_id"))
             except ValueError:

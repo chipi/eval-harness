@@ -39,7 +39,7 @@ correctness bugs, not just missing features.
   under the project's `.build/`, as large as the data while it runs and deleted after; a second run changes nothing). It
   brings the data to format 7 and records it in `data/project.yaml` (RFC-032): from 0.8.0 a project's data has a
   format, `evh migrate --check` compares it with the release's, and a deploy runs that check (the RUNBOOK's "The
-  data's format"). A SQLite project's database is copied beside it first. Commit `data/project.yaml` with the
+  data's format"). A SQLite project's database is copied beside it first, as `data/project.sqlite-before-format-<n>-<time>`: the undo, to delete once the project works on format 7. Commit `data/project.yaml` with the
   migrated data. Its steps, in order:
   - *runs* (RFC-024): a run's outputs become one `outputs.jsonl` instead of an `outputs/` folder of `<item>.txt`,
     a derived run whose outputs are byte copies of its source's keeps none of its own, and the leftover row

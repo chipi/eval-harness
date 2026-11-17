@@ -40,6 +40,7 @@ from pathlib import Path
 from typing import Any
 
 from evaluation_harness import _common, _outputs, _store
+from evaluation_harness._common import jsonl_lines
 
 NUMBER = 7
 ABOUT = "RFC-033: the run's settings once in run.json, the provider's usage slimmed, rows canonical, SQLite's results tables"
@@ -136,7 +137,7 @@ def _dump_like(text: str, doc: Any) -> Any:
 def _lines(text: str) -> list[tuple[str, Any]]:
     """(line, its row or None) for each line of a rows text; a row is a JSON object."""
     out = []
-    for line in text.splitlines():
+    for line in jsonl_lines(text):
         try:
             row = json.loads(line)
         except ValueError:
@@ -416,7 +417,7 @@ def _fill(conn: Any, texts: dict[str, str], when: dict[str, float]) -> None:
             for stmt in DDL:
                 conn.execute(stmt)
             for key in sorted(texts, key=lambda k: (when[k], k)):
-                rows = [json.loads(line) for line in texts[key].splitlines()]
+                rows = [json.loads(line) for line in jsonl_lines(texts[key])]
                 _write_set(conn, key, rows)
             conn.execute("INSERT INTO rows_partial SELECT run, n, row FROM rows WHERE partial = 1")
             conn.execute("DROP TABLE rows")

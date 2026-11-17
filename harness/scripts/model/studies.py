@@ -22,6 +22,7 @@ from typing import Any
 
 import yaml
 from evaluation_harness import _common, _store
+from evaluation_harness._common import jsonl_lines
 from evaluation_harness.model.entity import Entity
 
 _PARTS = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*")
@@ -137,7 +138,7 @@ def events(goal: str, sid: str, data: Path | None = None) -> list[dict[str, Any]
     """The log's events, in order (a torn last line is not an event)."""
     p = log_path(goal, sid, data)
     out = []
-    for line in (_store.read_text(p, encoding="utf-8") if _store.is_file(p) else "").splitlines():
+    for line in jsonl_lines(_store.read_text(p, encoding="utf-8") if _store.is_file(p) else ""):
         with contextlib.suppress(ValueError):
             ev = json.loads(line)
             if isinstance(ev, dict):

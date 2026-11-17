@@ -231,14 +231,7 @@ def to_sqlite(dry_run: bool) -> dict[str, int]:
 def _held_elsewhere() -> bool:
     """Whether another process has the database open. As a job (RFC-026), a server on this project lets go of it once
     it sees the migration hold the project (within a second): asked again for up to 30 s before refusing."""
-    import time  # noqa: PLC0415
-
-    end = time.monotonic() + (30 if os.environ.get("EVH_JOB") else 0)
-    while _store.held_elsewhere():
-        if time.monotonic() >= end:
-            return True
-        time.sleep(0.5)
-    return False
+    return _store.held_after(30 if os.environ.get("EVH_JOB") else 0)
 
 
 def to_files(dry_run: bool) -> dict[str, int]:

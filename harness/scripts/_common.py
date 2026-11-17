@@ -383,6 +383,16 @@ def read_json(path: Path) -> Any:
     return json.loads(_store.read_text(path, encoding="utf-8"))
 
 
+def jsonl_lines(text: str) -> list[str]:
+    """A JSON-lines text's lines: split on "\\n" only (a trailing "\\r" dropped, and the empty piece after a final
+    newline), as `str.splitlines` would split such a file but for the characters JSON leaves raw in a string
+    (U+2028, U+2029, U+0085, ...): splitlines splits there too, and the line's two halves are not JSON."""
+    parts = text.split("\n")
+    if parts and parts[-1] == "":
+        parts.pop()
+    return [p[:-1] if p.endswith("\r") else p for p in parts]
+
+
 def write_text_atomic(path: Path, text: str) -> None:
     """Write via a temp file in the same directory, then rename.
 

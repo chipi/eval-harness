@@ -32,6 +32,7 @@ from pathlib import Path
 from typing import Any
 
 from evaluation_harness import _common, _store
+from evaluation_harness._common import jsonl_lines
 
 NUMBER = 4
 ABOUT = "RFC-032 step 4: one runs/ collection, each score under its run; a folder's meaning a field (purpose, label)"
@@ -274,7 +275,7 @@ def _outs(d: Path) -> dict[str, str] | None:
         f = d / "outputs.jsonl"
         if not _store.is_file(f):
             return None
-        rows = [json.loads(x) for x in _store.read_text(f, encoding="utf-8").splitlines() if x.strip()]
+        rows = [json.loads(x) for x in jsonl_lines(_store.read_text(f, encoding="utf-8")) if x.strip()]
         return {str(r.get("item_id")): str(r.get("text")) for r in rows if isinstance(r, dict)}
     conn = _store.connect(create=False)
     if conn is None or "outputs" not in {

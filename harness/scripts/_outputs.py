@@ -46,6 +46,7 @@ from pathlib import Path
 from typing import Any, Protocol
 
 from evaluation_harness import _common, _store
+from evaluation_harness._common import jsonl_lines
 from evaluation_harness.model import results as _results
 
 FILE = "outputs.jsonl"
@@ -281,7 +282,7 @@ def parse_rows(text: str, where: str, strict: bool = True) -> tuple[list[dict[st
     torn last line, a hand-edited file: a statistical test must not quietly drop an item, a page that shows a run may)."""
     out: list[dict[str, Any]] = []
     skipped = 0
-    for n, line in enumerate(text.splitlines(), 1):
+    for n, line in enumerate(jsonl_lines(text), 1):
         if not line.strip():
             continue
         try:
@@ -677,7 +678,7 @@ class FileStore:
         if not p.is_file():
             return []
         out = []
-        for line in p.read_text(encoding="utf-8").splitlines():
+        for line in jsonl_lines(p.read_text(encoding="utf-8")):
             try:
                 out.append(json.loads(line))
             except ValueError:
@@ -1384,7 +1385,7 @@ def malformed(run_dir: Path) -> list[int]:
     hand-edited file in the files store holds (a write refuses them, the reader skips them)."""
     text = store().stored_text(Path(run_dir), errors="replace")
     out = []
-    for n, line in enumerate((text or "").splitlines(), 1):
+    for n, line in enumerate(jsonl_lines(text or ""), 1):
         if not line.strip():
             continue
         try:

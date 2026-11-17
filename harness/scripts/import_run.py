@@ -47,6 +47,7 @@ from evaluation_harness._common import (
     ROOT,
     dataset_id_ok,
     die,
+    jsonl_lines,
     now,
     read_json,
     sha256,
@@ -59,7 +60,7 @@ from evaluation_harness.ops import legacy
 
 def _rows(path: Path) -> list:
     rows = []
-    for n, raw in enumerate(_store.read_text(path, encoding="utf-8").splitlines(), 1):
+    for n, raw in enumerate(jsonl_lines(_store.read_text(path, encoding="utf-8")), 1):
         if not raw.strip():
             continue
         try:

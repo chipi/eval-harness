@@ -105,6 +105,7 @@ from evaluation_harness._common import (
     data_rel,
     die,
     goal_policy,
+    jsonl_lines,
     load_goals,
     load_module,
     lower_is_better,
@@ -1744,7 +1745,7 @@ def v21_failure_modes() -> None:
 def _lines_problems(f: Path, rel: str, schema: Any) -> list[str]:
     """What is wrong with each line of the JSON-lines file `f` against `schema` (named `rel`); [] when it is sound."""
     out = []
-    for n, line in enumerate(_store.read_text(f, encoding="utf-8").splitlines(), 1):
+    for n, line in enumerate(jsonl_lines(_store.read_text(f, encoding="utf-8")), 1):
         if not line.strip():
             continue
         try:

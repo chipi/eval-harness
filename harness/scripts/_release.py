@@ -48,6 +48,7 @@ from pathlib import Path
 
 import yaml
 from evaluation_harness import _common, _outputs, _release_store, _store
+from evaluation_harness._common import jsonl_lines
 from evaluation_harness._visibility import hidden, public_profile
 from evaluation_harness.model import studies as model_studies
 from evaluation_harness.model.results import CALL_META, RUN_SETTINGS
@@ -236,7 +237,7 @@ def _study_log_public(text: str) -> str:
     """A hidden dataset's study log: the prose of each line (its hypothesis, rationale, instruction) a mark; the ids,
     numbers and reasons the log decides by stay."""
     out = []
-    for line in text.splitlines():
+    for line in jsonl_lines(text):
         try:
             ev = json.loads(line)
         except ValueError:
@@ -263,7 +264,7 @@ def _faithfulness_exceptions_public(text: str) -> str:
     """A hidden dataset's named exceptions: who named which item and when stay; the cause is a person's words about the
     item, a mark."""
     out = []
-    for line in text.splitlines():
+    for line in jsonl_lines(text):
         try:
             ev = json.loads(line)
         except ValueError:
@@ -431,7 +432,7 @@ def copy_data(src: Path, dst: Path) -> dict:
             for f in sorted(_store.glob(d, "*.jsonl")):
                 if hidden(f.stem, datasets):
                     rows = [
-                        json.loads(x) for x in _store.read_text(f, encoding="utf-8").splitlines() if x.strip()
+                        json.loads(x) for x in jsonl_lines(_store.read_text(f, encoding="utf-8")) if x.strip()
                     ]
                     text = "".join(json.dumps({**r, "what": HIDDEN_WHAT}) + "\n" for r in rows)
                     _store.write_text(dst / name / f.name, text, encoding="utf-8")

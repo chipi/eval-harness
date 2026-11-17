@@ -22,7 +22,7 @@ from pathlib import Path
 from typing import Any
 
 from evaluation_harness import _store
-from evaluation_harness._common import die, now
+from evaluation_harness._common import die, jsonl_lines, now
 
 DATASET_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,199}$")
 # Both are the call's, not the process's: the MCP server answers calls at once, in threads of one process, and one
@@ -85,7 +85,7 @@ def rows(dataset_id: str, data: Path | None = None) -> list[dict[str, Any]]:
     p = path(dataset_id, data)
     if not _store.is_file(p):
         return []
-    return [json.loads(x) for x in _store.read_text(p, encoding="utf-8").splitlines() if x.strip()]
+    return [json.loads(x) for x in jsonl_lines(_store.read_text(p, encoding="utf-8")) if x.strip()]
 
 
 def exposed(dataset_id: str | None, data: Path | None = None) -> frozenset[str]:

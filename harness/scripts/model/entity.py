@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import Any
 
 from evaluation_harness import _common, _format, _store
+from evaluation_harness._common import jsonl_lines
 
 ID = re.compile(r"[a-z0-9][a-z0-9_.-]*")
 #: How many saves of one record its history keeps.
@@ -246,7 +247,7 @@ class Entity:
 
     def _remember(self, rid: str, old: dict[str, Any] | None, by: str) -> None:
         f = self._history_file(rid)
-        lines = _store.read_text(f, encoding="utf-8").splitlines() if _store.is_file(f) else []
+        lines = jsonl_lines(_store.read_text(f, encoding="utf-8")) if _store.is_file(f) else []
         when = _dt.datetime.now(_dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
         lines.append(json.dumps({"at": when, "by": by, "was": old}, ensure_ascii=False, sort_keys=True))
         _store.mkdir(f.parent, parents=True, exist_ok=True)
@@ -259,5 +260,5 @@ class Entity:
         if not _store.is_file(f):
             return []
         return [
-            json.loads(x) for x in reversed(_store.read_text(f, encoding="utf-8").splitlines()) if x.strip()
+            json.loads(x) for x in reversed(jsonl_lines(_store.read_text(f, encoding="utf-8"))) if x.strip()
         ]

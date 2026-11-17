@@ -907,6 +907,19 @@ def held_elsewhere() -> bool:
     return any(Path(f"{path}{s}").exists() for s in ("-wal", "-shm"))
 
 
+def held_after(wait_s: float) -> bool:
+    """Whether another process still has the project's database open after up to `wait_s` seconds (asked every half
+    second): a migration run as a job gives a server on the project the second it needs to let go (RFC-026)."""
+    import time  # noqa: PLC0415
+
+    end = time.monotonic() + wait_s
+    while held_elsewhere():
+        if time.monotonic() >= end:
+            return True
+        time.sleep(0.5)
+    return False
+
+
 def stray_files() -> list[Path]:
     """Files on disk under data/ other than the database: none when the project's store is the database (never both,
     RFC-025); what validate names."""

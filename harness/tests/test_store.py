@@ -387,7 +387,9 @@ try:
     )
     (score_of(run) / "metrics.json").write_text(json.dumps({"scores": {"s": 0.75}}))
     w = _outputs.writer(run)
-    for i, t in (("i2", "two é\r\n"), ("i1", "")):
+    # i3's text holds the characters JSON keeps raw and str.splitlines splits on (a review, 2026-11-17: the move
+    # read the file with splitlines and dropped such an output, its read-back check reading it the same way).
+    for i, t in (("i2", "two é\r\n"), ("i1", ""), ("i3", "a\u2028b\u2029c\x85d")):
         w.add(i, t)
     _outputs.write_rows(score_of(run), [{"item_id": "i1", "s": 1.5}, {"item_id": "i2", "s": 0}])
     stopped = data / "runs" / "arm_v1_stopped"
@@ -444,7 +446,7 @@ try:
         and all(f.startswith(_store.DB) for f in disk_files())
         and _store.read_bytes(data / "references" / "gold" / "ds" / "i1.txt")
         == before["references/gold/ds/i1.txt"]
-        and _outputs.outputs(run) == {"i2": "two é\r\n", "i1": ""}
+        and _outputs.outputs(run) == {"i2": "two é\r\n", "i1": "", "i3": "a\u2028b\u2029c\x85d"}
         and _outputs.rows_text(score_of(run))
         == before[f"runs/arm_v1_x/scores/{SCORE}/predictions.jsonl"].decode()
         and _outputs.rows_text(stopped, partial=True)
@@ -496,7 +498,7 @@ try:
     check(
         "--to sqlite resumed after a crash: the run's outputs and rows go to their tables, not the files",
         r.returncode == 0
-        and _outputs.outputs(run) == {"i2": "two é\r\n", "i1": ""}
+        and _outputs.outputs(run) == {"i2": "two é\r\n", "i1": "", "i3": "a\u2028b\u2029c\x85d"}
         and _outputs.rows_text(score_of(run))
         == before[f"runs/arm_v1_x/scores/{SCORE}/predictions.jsonl"].decode()
         and not _store.is_file(run / _outputs.FILE)

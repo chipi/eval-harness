@@ -26,6 +26,7 @@ from pathlib import Path
 from typing import Any
 
 from evaluation_harness import _common, _store
+from evaluation_harness._common import jsonl_lines
 
 TYPES = ("text", "number", "integer", "boolean", "date", "datetime", "duration", "url", "choice")
 #: Types a comparison can be broken down by: a handful of named groups, never a continuum.
@@ -183,7 +184,7 @@ def digest(items: list[dict[str, Any]]) -> str:
 def read_rows(path: Path) -> list[dict[str, Any]]:
     """Rows of a .csv (header row) or .jsonl file, as dicts."""
     if path.suffix.lower() == ".jsonl":
-        return [json.loads(x) for x in _store.read_text(path, encoding="utf-8").splitlines() if x.strip()]
+        return [json.loads(x) for x in jsonl_lines(_store.read_text(path, encoding="utf-8")) if x.strip()]
     with _store.open_file(
         path, newline="", encoding="utf-8-sig"
     ) as fh:  # a spreadsheet's CSV may begin with a BOM

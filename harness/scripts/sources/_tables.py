@@ -45,7 +45,9 @@ def rows(data: bytes, kind: str, columns: list[str] | None = None) -> list[dict[
     if kind == "csv":
         return list(csv.DictReader(io.StringIO(text)))
     if kind == "jsonl":
-        return [json.loads(line) for line in text.splitlines() if line.strip()]
+        return [
+            json.loads(line) for line in text.split("\n") if line.strip()
+        ]  # "\n" only: JSON keeps U+2028 raw
     loaded = json.loads(text)
     return loaded if isinstance(loaded, list) else [loaded]
 

@@ -2001,7 +2001,8 @@ is never written. Format 7 (RFC-033) moves a SQLite project's per-item rows into
 which needs free disk about the size of the database; a VACUUM that cannot run leaves the data moved and says so.
 
 Before its first change, `migrate` copies a SQLite project's database beside it
-(`data/project.sqlite.before-format-<n>-<time>`); restoring it is the undo. A files project's undo is git: `migrate`
+(`data/project.sqlite-before-format-<n>-<time>`, `n` the format the data was at); restoring it is the undo, and once
+the project works on the new format it can be deleted. A files project's undo is git: `migrate`
 names the uncommitted changes under `data/` first. There is no step back down: a release's rollback after a migration
 restores that copy, or git, and loses what was written since.
 

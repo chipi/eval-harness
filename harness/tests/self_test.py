@@ -951,6 +951,10 @@ def test_example_scorer_suites_pass() -> None:
             "the project's store (RFC-025): the setting, _store on both, data-migrate there and back, never both (V23), concurrent writers, the release, the path-I/O guard",
         ),
         (
+            "test_jsonl_lines.py",
+            "JSON-lines files read whole when a line holds U+2028, U+2029 or U+0085: the exposure register, picks, a record's history (outputs: test_store)",
+        ),
+        (
             "test_store_choice.py",
             "a project names its store, no default: init --store required and explained, config.yaml, a project with none refused, EVAL_STORE, no project needed for help",
         ),

@@ -25,7 +25,7 @@ from pathlib import Path
 from typing import Any
 
 from evaluation_harness import _store
-from evaluation_harness._common import now
+from evaluation_harness._common import jsonl_lines, now
 from evaluation_harness.model import datasets as model_datasets
 
 
@@ -41,7 +41,7 @@ def lines(data: Path | None = None, strict: bool = True) -> list[dict[str, Any]]
     if not _store.is_file(p):
         return []
     out = []
-    for x in _store.read_text(p, encoding="utf-8").splitlines():
+    for x in jsonl_lines(_store.read_text(p, encoding="utf-8")):
         if not x.strip():
             continue
         try:

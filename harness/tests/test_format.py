@@ -152,14 +152,30 @@ try:
     con.execute("DELETE FROM files WHERE path = ?", (_format.NAME,))
     con.commit()
     con.close()
-    r = evh(db, "migrate", store="sqlite")
-    copies = list((db / "data").glob("project.sqlite.before-format-*"))
+    # The steps rewrite the database: refused while another process has it open (this one, here), nothing copied.
+    holder = sqlite3.connect(db / "data" / "project.sqlite")
+    holder.execute("SELECT count(*) FROM files").fetchall()
+    held = evh(db, "migrate", store="sqlite")
+    holder.close()
     check(
-        "migrate copies a SQLite project's database before its first change, then stamps it",
+        "migrate refuses a SQLite project another process has open, and copies nothing",
+        held.returncode == 1
+        and "ERROR (not-allowed)" in held.stderr
+        and "open in another process" in held.stderr
+        and not list((db / "data").glob("project.sqlite-before-format-*")),
+        (held.returncode, held.stderr[-300:]),
+    )
+    r = evh(db, "migrate", store="sqlite")
+    copies = list((db / "data").glob("project.sqlite-before-format-0-*"))
+    v = evh(db, "validate", store="sqlite")
+    check(
+        "migrate copies a SQLite project's database before its first change (named for the format the data was at, "
+        "a name the store keeps out of the project's data: validate names no stray file), then stamps it",
         r.returncode == 0
         and len(copies) == 1
-        and evh(db, "migrate", "--check", store="sqlite").returncode == 0,
-        (r.returncode, r.stdout[-300:], r.stderr[-300:], copies),
+        and evh(db, "migrate", "--check", store="sqlite").returncode == 0
+        and "while the project's store is sqlite" not in v.stdout + v.stderr,
+        (r.returncode, r.stdout[-300:], r.stderr[-300:], copies, (v.stdout + v.stderr)[-300:]),
     )
 
     numbers = [m.NUMBER for m in migrations.steps()]

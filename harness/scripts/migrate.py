@@ -43,14 +43,16 @@ from evaluation_harness.ops import legacy
 SCRATCH_MARK = "EVH_MIGRATE_SCRATCH_COPY"
 
 
-def _backup() -> None:
-    """The undo before the first change: a copy of the database, or the uncommitted changes named."""
+def _backup(have: int) -> None:
+    """The undo before the first change: a copy of the database, or the uncommitted changes named. The copy is
+    `project.sqlite-before-format-<the data's format>-<when>` beside the database: a name the store keeps out of the
+    project's data (as its -wal and -shm), so validate does not take it for a stray file nor data-migrate move it in."""
     if _common.store() == "sqlite":
         db = _store.db_path()
         if db.is_file():
             _store.close()
             copy = db.with_name(
-                f"{db.name}.before-format-{_format.FORMAT}-{time.strftime('%Y%m%dT%H%M%SZ', time.gmtime())}"
+                f"{db.name}-before-format-{have}-{time.strftime('%Y%m%dT%H%M%SZ', time.gmtime())}"
             )
             shutil.copy2(db, copy)
             print(f"backup: {copy} (restore it to undo)")
@@ -193,7 +195,15 @@ def body(**inputs: Any) -> int:
     if args.dry_run:
         _dry_run(todo)
         return 0
-    _backup()
+    # The steps rewrite the database (the last drops a table and VACUUMs): a server or a run that has it open would
+    # go on with what it read before, or be cut off mid-write. As a job the server lets go when it sees the migration.
+    if _common.store() == "sqlite" and _store.held_after(30 if os.environ.get("EVH_JOB") else 0):
+        _common.die(
+            f"{_store.db_path().name} is open in another process (a catalog-serve, a run): stop it first, or run "
+            "the migration as a job (evh jobs-start migrate), which the server lets go of the database for",
+            "not-allowed",
+        )
+    _backup(have)
     for m in todo:
         print(f"{m.NUMBER}: {m.ABOUT}")
         m.run(False)

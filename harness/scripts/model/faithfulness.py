@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import Any
 
 from evaluation_harness import _common, _store
+from evaluation_harness._common import jsonl_lines
 from evaluation_harness.model.entity import Entity
 
 #: Its id is `<model_id>/<n>`: the code record it is of, and its number there.
@@ -69,7 +70,7 @@ def exceptions(model_id: str, n: int, data: Path | None = None) -> list[dict[str
     if not _store.is_file(p):
         return []
     out = []
-    for line in _store.read_text(p, encoding="utf-8").splitlines():
+    for line in jsonl_lines(_store.read_text(p, encoding="utf-8")):
         if line.strip():
             try:
                 out.append(json.loads(line))
