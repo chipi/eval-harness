@@ -308,7 +308,7 @@
     huggingface: ["Hugging Face", [["ref", "the dataset", "abisee/cnn_dailymail"], ["config", "its config", "3.0.0"], ["split", "the split", "test"]]],
     folder: ["a folder of files", [["path", "the folder, inside the project", "raw/tickets"], ["glob", "which files", "*.txt"]]],
     manifest: ["a table: CSV, JSON lines", [["path", "the .csv or .jsonl, inside the project: item_id, source_url, field columns", "items.csv"]]],
-    croissant: ["Croissant", [["url", "its croissant.json's address", "https://…/croissant.json"], ["record_set", "the record set", "default"]]],
+    croissant: ["Croissant", [["url", "its croissant.json's address", "https://…/croissant.json"], ["path", "or its path, inside the project", "croissant.json"], ["record_set", "the record set", "default"]]],
     zenodo: ["Zenodo", [["record", "the record's number", "10157504"], ["file", "the file in it", "data.csv"]]],
     openml: ["OpenML", [["dataset", "the dataset's number", "61"]]],
     kaggle: ["Kaggle", [["ref", "owner/dataset", "uciml/iris"], ["version", "its version", "2"], ["file", "the file in it", "Iris.csv"]]],
@@ -342,6 +342,11 @@
     return `<p class="note" role="alert"><b>${esc(j.state)}.</b> ${esc(log || "see the job's log")}</p>`;
   };
   const previews = {};
+  const fieldRows = (fields) => (fields || []).length
+    ? `<div class="tablewrap"><table><thead><tr><th>keep</th><th>field</th><th>type</th><th>values</th></tr></thead><tbody>${fields.map((f, i) => `<tr>
+        <td><input type="checkbox" data-keep="${i}" aria-label="keep ${esc(f.name)}" ${f.keep === false ? "" : "checked"}></td><td class="mono">${esc(f.name)}</td>
+        <td>${esc(f.type)}</td><td>${esc((f.values || []).join(", "))}</td></tr>`).join("")}</tbody></table></div>`
+    : "";
   function screenDatasetNew(goal) {
     const head = `<div class="kicker">Step 2 · ${esc(goal)}</div><h1>Add a dataset</h1>
       <p class="lead">The examples your systems will be tested on: a frozen list of items, each with its hash, so every system sees exactly the same ones, now and later.</p>`;
@@ -370,6 +375,9 @@
         ${fields.map(([k, hint, ex]) => `<div class="field"><label class="name" for="dsq-${k}">${esc(k)}</label><div><input type="text" id="dsq-${k}" data-q="${k}" value="${esc((d.q || {})[k] ?? "")}" placeholder="${esc(ex)}" autocapitalize="off" spellcheck="false"><div class="hint">${esc(hint)}</div></div></div>`).join("")}
         ${src ? `<div class="actions" style="margin-top:0"><button class="btn" type="button" id="ds-read">Read it</button><span class="muted">a job: the source's description and its first rows; nothing is saved</span></div>` : ""}
         <div id="ds-read-out">${said ? `<p class="note">${esc(JSON.stringify(said.source || {}))}${said.licence ? ` · licence ${esc(said.licence)}` : ""}</p>${rows}` : ""}</div>
+        ${src && tabular(src) ? `<h3>Its fields</h3><p class="muted">Facts about each item to slice the results by, proposed from the source's columns; keep the ones you would compare on.</p>
+          <div class="actions" style="margin-top:0"><button class="btn" type="button" id="ds-fields">Propose its fields</button></div>
+          <div id="ds-fields-out">${fieldRows(d.fields)}</div>` : ""}
         ${src ? `<div class="field"><label class="name" for="ds-id">Its id</label><div><input type="text" id="ds-id" value="${esc(d.id || "")}" placeholder="cnn_dailymail_200" autocapitalize="off" spellcheck="false"><div class="hint">lowercase letters, digits and _</div></div></div>
         ${byField("ds-by")}
         <div class="actions" style="margin-top:0"><button class="btn primary" type="button" id="ds-make" data-send>Make the dataset</button><span class="unsent" data-unsent-mark hidden>not saved yet · kept in this browser until it is made</span></div>` : ""}
@@ -398,9 +406,11 @@
     const save = () => {
       const d = draft();
       d.source = document.getElementById("ds-source").value;
+      d.fields = d.fields || [];
       document.querySelectorAll("[data-q]").forEach((i) => { d.q[i.dataset.q] = i.value; });
       d.id = document.getElementById("ds-id")?.value || d.id;
       d.role = roleOf();
+      document.querySelectorAll("[data-keep]").forEach((b) => { if (d.fields && d.fields[b.dataset.keep]) d.fields[b.dataset.keep].keep = b.checked; });
       keepDraft(goal, d);
       return d;
     };
@@ -427,12 +437,34 @@
       } catch (e) { out.innerHTML = refusal(e); }
       ev.target.disabled = false;
     });
+    document.getElementById("ds-fields")?.addEventListener("click", async (ev) => {
+      const d = save(), out = document.getElementById("ds-fields-out"), by = byOf("ds-by") || (who() ? `person:${who()}` : null);
+      if (!by) { out.innerHTML = '<p class="note" role="alert">Say who you are below: a job names who asked.</p>'; return; }
+      ev.target.disabled = true;
+      try {
+        const j = await send("POST", "/fieldset-proposals", { source: d.source, query: JSON.stringify(queryOf(d)), fieldset_id: (d.id || "proposed").trim() || "proposed", by });
+        const done = await watchJob(j.id, out, "proposing fields");
+        if (done.state !== "succeeded") { out.innerHTML = await jobRefusal(done); ev.target.disabled = false; return; }
+        d.fields = ((done.result || {}).result?.values?.fieldset?.fields || []).map((f) => ({ ...f, keep: true }));
+        keepDraft(goal, d);
+        out.innerHTML = fieldRows(d.fields) || '<p class="muted">The source proposes no field.</p>';
+      } catch (e) { out.innerHTML = refusal(e); }
+      ev.target.disabled = false;
+    });
     document.getElementById("ds-make")?.addEventListener("click", async (ev) => {
       const d = save(), out = document.getElementById("ds-make-out"), by = byOf("ds-by");
       if (!by) { out.innerHTML = '<p class="note" role="alert">Say who you are: a change names who made it.</p>'; return; }
       ev.target.disabled = true;
       try {
-        const j = await send("POST", `/datasets/${enc(d.id.trim())}`, { source: d.source, query: JSON.stringify(queryOf(d)), by });
+        const kept = (d.fields || []).filter((f) => f.keep !== false).map(({ keep: _k, ...f }) => f);
+        const query = queryOf(d), body = { source: d.source, by };
+        if (kept.length) {
+          await send("POST", `/fieldsets/${enc(d.id.trim())}`, { set: { description: `the fields of ${d.id.trim()}, from source ${d.source}`, fields: kept }, by });
+          query.fields = kept.map((f) => f.name);
+          body.fieldset = d.id.trim();
+        }
+        body.query = JSON.stringify(query);
+        const j = await send("POST", `/datasets/${enc(d.id.trim())}`, body);
         const done = await watchJob(j.id, out, `dataset-create ${d.id}`);
         if (done.state !== "succeeded") { out.innerHTML = await jobRefusal(done); ev.target.disabled = false; return; }
         await addToGoal(d.id.trim(), by);

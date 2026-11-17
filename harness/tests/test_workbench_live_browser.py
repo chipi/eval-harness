@@ -17,6 +17,7 @@ in the deployment's checks; the model's page fits a phone.
 
 from __future__ import annotations
 
+import hashlib
 import http.server
 import json
 import os
@@ -118,6 +119,18 @@ def serve(*extra: str) -> tuple[subprocess.Popen, int, list[str]]:
 try:
     r = evh("init", "--store", "files", "--tutorial")
     shutil.copytree(KIT / "tickets", proj / "tickets")
+    notes = "id,text,label,words\nn1,first note,a,2\nn2,second note,b,2\nn3,third note,a,2\n"
+    (proj / "notes.csv").write_text(notes)
+    col = lambda c: {"fileObject": {"@id": "notes.csv"}, "extract": {"column": c}}  # noqa: E731
+    (proj / "croissant.json").write_text(json.dumps({
+        "@type": "sc:Dataset", "name": "notes",
+        "distribution": [{"@type": "cr:FileObject", "@id": "notes.csv", "contentUrl": "notes.csv",
+                          "encodingFormat": "text/csv", "sha256": hashlib.sha256(notes.encode()).hexdigest()}],
+        "recordSet": [{"@type": "cr:RecordSet", "name": "default", "field": [
+            {"name": f"default/{c}", "dataType": t, "source": col(c)}
+            for c, t in (("id", "sc:Text"), ("text", "sc:Text"), ("label", "sc:Text"), ("words", "sc:Integer"))
+        ]}],
+    }))  # fmt: skip
     (proj / "data" / "systems" / "one_v1.yaml").write_text(
         "system_id: one_v1\nparams:\n  provider: echo\n  sentences: 1\n"
     )
@@ -182,32 +195,50 @@ try:
                 and "promote a baseline on tk_v1" in goal,
                 goal[:500],
             )
-            # step 2 (UXS-005): a dataset from a source, previewed, made as a job, added to the goal with its role
+            # step 2 (UXS-005): a dataset from a source (a Croissant description in the project, offline), previewed with
+            # its answers, its fields proposed and kept, made as a job with its field set and its answers' label set,
+            # added to the goal with its role
             page.click("text=Add a dataset")
             page.wait_for_selector("h1:has-text('Add a dataset')", timeout=20000)
-            page.select_option("#ds-source", "folder")
+            page.select_option("#ds-source", "croissant")
             page.wait_for_selector("#dsq-path", timeout=20000)
-            page.fill("#dsq-path", "tickets")
-            page.fill("#dsq-glob", "*.txt")
+            for k, v in (
+                ("path", "croissant.json"),
+                ("record_set", "default"),
+                ("text", "text"),
+                ("id", "id"),
+                ("answer", "label"),
+            ):
+                page.fill(f"#dsq-{k}", v)
             page.fill("#ds-by", "tester")
             page.click("#ds-read")
-            page.wait_for_selector("#ds-read-out td:has-text('t01_login')", timeout=60000)
+            page.wait_for_selector("#ds-read-out td:has-text('n1')", timeout=60000)
             check(
-                "Read it: a source-preview job shows the source's first items, nothing written",
-                "Customer reports" in page.locator("#ds-read-out").inner_text()
-                and not (proj / "data" / "datasets" / "tk_v2.json").exists(),
+                "Read it: a source-preview job shows the source's first items with their answers, nothing written",
+                "first note" in page.locator("#ds-read-out").inner_text()
+                and page.locator("#ds-read-out tbody tr:first-child td:last-child").inner_text().strip()
+                == "a"
+                and not (proj / "data" / "datasets" / "notes_v1.json").exists(),
                 page.locator("#ds-read-out").inner_text()[:300],
             )
-            page.fill("#ds-id", "tk_v2")
+            page.click("#ds-fields")
+            page.wait_for_selector("#ds-fields-out td:has-text('words')", timeout=60000)
+            check(
+                "Propose its fields: a fieldset-propose job proposes words (an integer); the text, id and answer are not fields",
+                [t.strip() for t in page.locator("#ds-fields-out td.mono").all_inner_texts()] == ["words"],
+                page.locator("#ds-fields-out").inner_text(),
+            )
+            page.fill("#ds-id", "notes_v1")
             page.check("input[name=ds-role][value=validation]")
             page.reload()
             page.wait_for_selector("#dsq-path", timeout=20000)
             check(
-                "the dataset's choices are longer work: marked, and kept across a reload in this browser",
-                page.input_value("#dsq-path") == "tickets"
-                and page.input_value("#ds-id") == "tk_v2"
+                "the dataset's choices are longer work: marked, and kept across a reload in this browser (the fields too)",
+                page.input_value("#dsq-path") == "croissant.json"
+                and page.input_value("#ds-id") == "notes_v1"
+                and page.locator("#ds-fields-out td:has-text('words')").count() == 1
                 and page.locator("[data-form=dataset-new] [data-unsent-mark]").is_visible()
-                and page.locator("#ds-make").inner_text() == "Make dataset tk_v2",
+                and page.locator("#ds-make").inner_text() == "Make dataset notes_v1",
                 (
                     page.input_value("#dsq-path"),
                     page.input_value("#ds-id"),
@@ -217,13 +248,21 @@ try:
             page.click("#ds-make")
             page.wait_for_selector("h1:has-text('Ticket summaries')", timeout=60000)
             g = yaml.safe_load((proj / "data" / "goals" / "tickets_summary.yaml").read_text())
+            made = (
+                json.loads((proj / "data" / "datasets" / "notes_v1.json").read_text())
+                if (proj / "data" / "datasets" / "notes_v1.json").is_file()
+                else {}
+            )
             check(
-                "Make the dataset: dataset-create runs as a job, then the goal names it with its role; the draft is gone",
-                (proj / "data" / "datasets" / "tk_v2.json").is_file()
-                and {"dataset_id": "tk_v2", "role": "validation"} in (g.get("datasets") or [])
+                "Make the dataset: its field set (the kept fields), dataset-create with them and its answers' label set, then the "
+                "goal names it with its role; the draft is gone",
+                (proj / "data" / "fields" / "notes_v1.yaml").is_file()
+                and [it.get("fields") for it in made.get("items", [])][:1] == [{"words": 2}]
+                and (proj / "data" / "labels" / "notes_v1" / "answers" / "labels.json").is_file()
+                and {"dataset_id": "notes_v1", "role": "validation"} in (g.get("datasets") or [])
                 and page.evaluate("localStorage.getItem('evh.draft.dataset.tickets_summary')") is None
-                and "tk_v2" in page.locator("main").inner_text(),
-                (g.get("datasets"), page.locator("main").inner_text()[:300]),
+                and "notes_v1" in page.locator("main").inner_text(),
+                (g.get("datasets"), made.get("items", [])[:1], page.locator("main").inner_text()[:300]),
             )
             page.goto(f"http://127.0.0.1:{port}/workbench/#prepare")
             page.wait_for_selector("h1", timeout=20000)

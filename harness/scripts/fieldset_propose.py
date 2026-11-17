@@ -18,7 +18,7 @@ import sys
 from typing import Any
 
 import yaml
-from evaluation_harness import _fields, _sources, _store
+from evaluation_harness import _fields, _jsonout, _sources, _store
 from evaluation_harness._common import FIELDS, die, write_text_atomic
 from evaluation_harness.ops import legacy
 
@@ -76,8 +76,9 @@ def body(**inputs: Any) -> int:
         query = json.loads(args.query)
     except ValueError as e:
         die(f"--query is not JSON: {e}", "bad-argument")
-    # The text is the item and the id its identity: neither is a field of it.
-    skip = {query.get("text"), query.get("id")} - {None}
+    # The text is the item, the id its identity and the answer its reference (dataset-create's label set): none is a
+    # field of it.
+    skip = {query.get("text"), query.get("id"), query.get("answer")} - {None}
     cls, _path = _sources.resolve(args.source)
     src = cls({})
     try:
@@ -86,10 +87,17 @@ def body(**inputs: Any) -> int:
         if features:
             names = {NAME.sub("_", str(k).rsplit("/", 1)[-1].lower()).strip("_") for k in features}
             keep = sorted(names - skip)
-            for n, it in enumerate(src.items({**query, "fields": keep})):
-                if n >= args.sample:
-                    break
-                samples.append(it.get("fields") or {})
+            items = src.items({**query, "fields": keep})
+            try:
+                for n, it in enumerate(items):
+                    if n >= args.sample:
+                        break
+                    samples.append(it.get("fields") or {})
+            finally:
+                # read in part: closed now, not at the interpreter's exit (source_preview says why)
+                close = getattr(items, "close", None)
+                if close:
+                    close()
     except (ValueError, OSError) as e:
         die(f"--source {args.source}: {e}", "invalid-file")
     if not features:
@@ -104,6 +112,7 @@ def body(**inputs: Any) -> int:
     if problems:
         die("the proposal is not a valid field set: " + "; ".join(problems[:5]), "invalid-file")
     text = yaml.safe_dump(doc, sort_keys=False, allow_unicode=True)
+    _jsonout.values({"fieldset": doc, "written": bool(args.write)})
     if not args.write:
         print(text, end="")
         print(

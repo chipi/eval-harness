@@ -82,6 +82,17 @@ try:
         (r.stdout + r.stderr)[-500:],
     )
     check("nothing written without --write", not _runstore.exists(proj, "fields/notes.yaml"))
+    qa = json.dumps({"path": "croissant.json", "text": "text", "id": "id", "answer": "label"})
+    r = evh("fieldset-propose", "--source", "croissant", "--query", qa, "--fieldset-id", "notes", "--json")
+    got = (json.loads(r.stdout).get("result", {}).get("values", {}) if r.returncode == 0 else {}).get(
+        "fieldset"
+    ) or {}
+    check(
+        "--json gives the proposal as a value (the Workbench's step 2); the answer column is left out as the text and id "
+        "are (it is the reference, not a field)",
+        [f["name"] for f in got.get("fields") or []] == ["words"] and got.get("fieldset_id") == "notes",
+        (r.returncode, r.stderr[-300:], got),
+    )
     r = evh("fieldset-propose", "--source", "croissant", "--query", q, "--fieldset-id", "notes", "--write")
     r2 = evh("fieldset-propose", "--source", "croissant", "--query", q, "--fieldset-id", "notes", "--write")
     check(

@@ -722,7 +722,7 @@ against the code on 2026-11-17 (`research/internal/WORKBENCH_GAPS_0.8.0.md` has 
 | --- | --- | --- |
 | Home | `goal-list`, `goal-status` per goal, `jobs-list` | ✓ live |
 | 1 Goal | `goal-new` (with `datasets: []`), `goal-set`, `goal-show`, `goal-history`, `metric-list` | ✓ live |
-| 2 Dataset | `dataset-list`, `goal-set`, `source-preview`, `fieldset-propose`, `fieldset-new`, `dataset-create`, `capture-list` | ✓ live (2026-11-17): one the project has, or one from a source (its query, `source-preview`, `dataset-create`, the goal's role); fields not yet |
+| 2 Dataset | `dataset-list`, `goal-set`, `source-preview`, `fieldset-propose`, `fieldset-new`, `dataset-create`, `capture-list` | ✓ live (2026-11-17): one the project has, or one from a source (its query, `source-preview`, its fields proposed and kept, `dataset-create` with them and its answers, the goal's role) |
 | 3 Prepare | `dataset-materialize`, `dataset-profile`, `dataset-show`, `dataset-items`, `label-sheet`, `label-import`, `reference-promote` | ✓ the answers' label set promoted (API 3); ~ items have no offset and limit |
 | 4 Models | `model-list`, `goal-leaderboard`, `prompt-version`, `system-show`, `system-new`, `arm-smoke`, `POST /estimate` | ✓; a clone is a new system |
 | W5 Bring in a model | `model-new`, `deployment-new`, `model-onboard`, `model-show`, `deployment-history`, `deployment-accept` | ✓ live; no "approve" (D4) |
