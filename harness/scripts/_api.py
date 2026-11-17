@@ -277,6 +277,12 @@ def resume_job(job_id: str) -> dict[str, Any]:
         raise Refused("a run with repeat above 1 is not resumed (run refuses it)", 409)
     if j["state"] in ("queued", "running", "running (unsupervised)", "succeeded"):
         raise Refused(f"{job_id} is {j['state']}: nothing to resume", 409)
+    from evaluation_harness import _outputs  # noqa: PLC0415
+
+    if not _outputs.own(_common.RUNS / j["run_id"]):  # run --resume would start, then refuse the same
+        raise Refused(
+            f"{job_id} stopped before its run wrote anything: nothing to resume (start the run again)", 409
+        )
     # The cap is the job's, not each attempt's: the new job is given what this one left.
     env = dict(j.get("env") or {})
     if env.get("EVAL_MAX_COST_USD") is not None:

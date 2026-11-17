@@ -13,6 +13,19 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Added
 
+- **The Workbench's held-out test and studies, live** (UXS-005): from a goal, "The held-out test" splits a dataset
+  and seals its test side (both sides joining the goal), shows the seal, records reads and runs the leak check (its finds
+  recorded as reads), shows the counts for safety and allows a field with why, opens the side for one candidate (one
+  look), runs both arms on it and shows the confirmation with the read items left out beside the number with them kept.
+  "Studies" writes a study's spec on the page and checks it before it runs, shows its trials and best, asks and tells
+  the agent sampler from the page, stops it, confirms its best on a test set (one look) and imports a past loop's
+  results.tsv. Every screen of the Workbench is live: a route only the mockup has opens the live screen it stands for.
+- **The Workbench's jobs, live** (UXS-005): "Every job" on the home lists the jobs a page at a time, filtered by
+  state, operation and goal, counted as `evh jobs-status` counts them; a job's page shows its record, cap and spend,
+  progress, result, the files it wrote (each a link) and its log, followed while it runs; a running job is stopped
+  there, and a stopped run resumed as a new job with what it left of its cap. The home's running jobs open their pages.
+- **A job's read names the files it wrote** (`files`: a sheet, an export; never the job's own bookkeeping or a blind
+  sheet's key), in `GET /jobs/{id}` and `evh jobs-status JOB`: what `GET /jobs/{id}/files/{name}` gives had no list.
 - **The Workbench's settings (W8), live** (UXS-005): "Settings" on the home, one row each with its command: the
   store config.yaml names, and the data moved into it (`data-migrate`, its dry run first; Move it only once the dry run
   counted something; the page waits out the server's 503 while it moves); this release's formats (`migrate`); the
@@ -861,6 +874,13 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Fixed
 
+- **A study whose baseline has no run on its dataset is refused**, its dry run too, saying to run it first: every
+  trial was run, paid for and dropped as "not compared: only 0 shared item(s)".
+- **A failed job says what it printed last** in the Workbench when it printed no `ERROR` line (a check's findings, a
+  traceback), not "see the job's log"; the leak check's exit 6 (its finds) is read as finds, not as a failure.
+- **A run that stopped before it wrote anything is not resumed**: `jobs-resume` (and the API's resume) started a job
+  that then failed with "cannot resume: no outputs"; it refuses before starting anything, and says to start the run
+  again.
 - **A read the API serves that refuses is answered with the refusal**: a read whose body refused as a command does
   (`ERROR (old-format): …`, a project whose config.yaml just named a store still empty, say) ended the server's request
   with no answer at all. It is answered at its kind's status with `{error, kind}`.

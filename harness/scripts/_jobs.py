@@ -5,8 +5,12 @@ project's .build/jobs/.
     .build/jobs/<id>/inputs.json      an operation's inputs, which its command reads (`--inputs-file`)
     .build/jobs/<id>/state.json       queued | running | succeeded | failed | cancelled, rewritten whole
     .build/jobs/<id>/log              what the command printed (its stderr, and its stdout when it prints no envelope)
+    .build/jobs/<id>/stdout           what the command printed on stdout, read for its envelope when it ends
     .build/jobs/<id>/result.json      its --json envelope, when it prints one
+    .build/jobs/<id>/progress.json    how far it has got, {done, total, at}, for the commands that say
+    .build/jobs/<id>/stop             left by jobs-stop: the job ended because it was asked to
     .build/jobs/<id>/supervisor.lock  held by the supervisor for its life: free on a running job = the supervisor is gone
+    .build/jobs/<id>/<name>           a file the command wrote for the person (a sheet, an export): the job's `files`
     .build/locks/<key>.lock           one per thing written; shared to read, exclusive to write, taken in key order
 
 A job does not depend on the server: the server can stop and restart and the job goes on. Its locks are held by the
@@ -44,6 +48,30 @@ def jobs_dir() -> Path:
 def locks_dir() -> Path:
     """The project's lock files."""
     return _common.project_root() / ".build" / "locks"
+
+
+#: The job's own files, beside what its command wrote: never listed as the job's files.
+OWN = frozenset({
+    "job.json", "inputs.json", "state.json", "log", "stdout", "result.json", "progress.json", "stop", "supervisor.lock",
+    "supervisor.pid", "supervisor.log",
+})  # fmt: skip
+
+
+def files(job_id: str) -> list[str]:
+    """The files the job's command wrote into its folder (a sheet, an export), by name: what GET /jobs/<id>/files/<name>
+    gives. A blind sheet's key stays with the job and is not one of them."""
+    from evaluation_harness._sheet import KEY_SUFFIX  # noqa: PLC0415
+
+    d = job_dir(job_id)
+    return (
+        sorted(
+            f.name
+            for f in d.iterdir()
+            if f.is_file() and f.name not in OWN and not f.name.endswith(KEY_SUFFIX)
+        )
+        if d.is_dir()
+        else []
+    )
 
 
 def job_dir(job_id: str) -> Path:
@@ -318,7 +346,14 @@ def read(job_id: str) -> dict[str, Any]:
         st = {**st, "state": "running (unsupervised)" if _alive(st.get("pgid")) else "lost"}
     res = _read_json(d / "result.json") or None
     progress = _read_json(d / "progress.json") or None
-    return {**job, **st, "progress": progress, "spent_usd": spent(job_id), "result": res}
+    return {
+        **job,
+        **st,
+        "progress": progress,
+        "spent_usd": spent(job_id),
+        "result": res,
+        "files": files(job_id),
+    }
 
 
 #: The states a job is read in: its stored ones, and the two `read` works out (a supervisor gone).

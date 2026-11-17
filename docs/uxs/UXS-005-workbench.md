@@ -29,9 +29,9 @@ just static"): `harness/workbench/` (`index.html`, `workbench.css`, `workbench.j
 word). `live.js` turns a screen live, on the project's own API; on 2026-11-17 the home, a goal, the models (a new
 model, a deployment, onboarding, an accepted flag), step 1 (a goal made or changed), step 2 (a dataset for a goal),
 step 3 (preparing it), labelling a dataset's items (the sheet), step 4 (the systems), W1 (the eval's rounds), W2
-(reviewing the outputs), W3 (production, replay), W6 (changing the reference set), W7 (a judge) and W8 (the settings) are
-live, and every other screen
-says it is not yet. Until the project answers no mockup screen is drawn (one sent a reload of a live screen home).
+(reviewing the outputs), W3 (production, replay), W6 (changing the reference set), W7 (a judge), W8 (the settings), the
+jobs, the held-out test and the studies are live: every screen. A route only the mockup has opens the live screen it
+stands for (its goal hub the home, its dataset sources step 2), never the mockup's data. Until the project answers no mockup screen is drawn (one sent a reload of a live screen home).
 
 **From 2026-11-17 (D7)** the mockup is a frozen design reference: its data (`mock.js`, this repository's) stops
 shipping in the package, and `mock_data.py`, which reads the layout before RFC-032 (`data/configs`,
@@ -754,8 +754,8 @@ against the code on 2026-11-17 (`research/internal/WORKBENCH_GAPS_0.8.0.md` has 
 | W6 Reference | `reference-list`, `label-set-list`, `reference-promote`, `leaderboard`, `score-preview`, `rescore` | ✓ live (2026-11-17): the reference sets and label sets (with agreement); what a label set moves (the arms re-scored under its own label, $0, ranked beside a current reference); promoted with why and the arms re-scored against it; a scoring change previewed (each arm now and after, the leader, the contenders) and applied to a round with why |
 | W7 Judge | `scorer-list`, `scorer-show`, `scorer-new`, `scorer-set`, `judge-score`, `POST /estimate`, `cost-report` | ✓ live (2026-11-17): the goal's judge scorers and one shown (judges, guards, validation as stored); changed until it judges, then a new version from it; made from systems; the cost first, then judging as a job under a cap; what it cost. Validating stays a tool (D6); the prompt is a file's path until the prompt review |
 | W8 Settings | `data-ls`, `validate`, `migrate`, `data-migrate`, `data-show`, `data-put`, `dataset-publish` | ✓ live (2026-11-17): the store and moving the data into it (dry run first, 503s waited out); formats; `validate` as a read, "checking…" (about 27 s on this repository, D1); the policies checked and saved; publishing. No `config.yaml` (D9) |
-| Held-out test, study | `dataset-split`, `exposure`, `exposure-add`, `sealed-counts`, `dataset-unseal`, `pair-test`, `looks`, `study-*` | ✓ |
-| Jobs | `jobs-list`, `jobs-show`, `jobs-log`, `jobs-file`, `jobs-stop`, `jobs-resume` | ~ progress from four operations |
+| Held-out test, study | `dataset-split`, `exposure`, `exposure-add`, `exposure-check`, `sealed-counts`, `dataset-seal-counts`, `dataset-unseal`, `looks`, `pair-test`, `study-list`, `study-show`, `study-run`, `study-ask`, `study-tell`, `study-stop`, `study-confirm`, `study-import` | ✓ live (2026-11-17, from a goal): a dataset split and sealed, both sides joining the goal; the seal; reads recorded and the leak check's finds recorded as reads; the counts for safety and a field allowed; the side opened for one candidate (one look; its hypothesis committed first); both arms run on it; the confirmation with the read items left out. A study written as YAML and checked (the dry run) before it runs; its trials and best; the agent sampler asked and told from the page; stopped; confirmed on a test set (one look); a past loop imported |
+| Jobs | `jobs-status` (`GET /jobs`, `GET /jobs/{id}` with its `files`), `jobs-logs`, `GET /jobs/{id}/files/{name}`, `jobs-stop`, `jobs-resume` | ✓ live (2026-11-17, "Every job" on the home): every job a page at a time, filtered by state, operation and goal; one job's record, cap and spend, result, files and log (followed while it runs); stopped; a stopped run resumed (refused when it wrote nothing). ~ progress from four operations |
 
 ## For every live screen
 

@@ -43,10 +43,10 @@
         <td>${esc(m.measure || "")} (${esc(m.direction || "")})</td><td>${esc(ds)}</td><td class="num">${rounds}</td><td>${next}</td></tr>`;
     });
     const running = jobs === undefined ? loading("the jobs") : jobs.error ? failed(jobs)
-      : jobs.jobs.length ? jobs.jobs.map((j) => `<div class="job"><span>${esc(j.operation)}</span><span class="status">${esc(j.state)}</span></div>`).join("")
+      : jobs.jobs.length ? jobs.jobs.map((j) => `<div class="job"><a href="#jobs/${enc(j.id)}">${esc(j.operation)}</a><span class="status">${esc(j.state)}</span></div>`).join("")
       : '<p class="muted" style="margin:0">Nothing is running.</p>';
     return `<div class="screen wide">${head}
-      <div class="part"><div class="parthead"><h2>Running now</h2></div><div class="body">${running}</div></div>
+      <div class="part"><div class="parthead"><h2>Running now</h2><span class="grow"></span><a href="#jobs">Every job</a></div><div class="body">${running}</div></div>
       ${goals.goals.length ? `<div class="tablewrap" style="margin-top:18px"><table><thead><tr><th>goal</th><th>decides</th><th>datasets</th><th class="num">rounds</th><th>next</th></tr></thead><tbody>${rows.join("")}</tbody></table></div>`
         : `<div class="answer" style="margin-top:18px"><p><b>What should this project help you decide?</b></p><p>An evaluation starts with a goal: the decision you need to make, and how you will know which system is better for it.</p></div>`}
       <div class="actions"><a class="btn primary" href="#goal-new">${goals.goals.length ? "New goal" : "Start with a goal"}</a><a class="btn" href="#models">Models</a><a class="btn" href="#settings">Settings</a><a class="btn" href="${location.origin}/">The catalog ↗</a></div></div>`;
@@ -70,7 +70,7 @@
       ${rounds ? `<h2 style="margin-top:22px">Rounds</h2><ul>${rounds}</ul>` : ""}
       ${st.running.length ? `<h2 style="margin-top:22px">Running now</h2><ul>${st.running.map((j) => `<li>${esc(j.operation)} · ${esc(j.state)}</li>`).join("")}</ul>` : ""}
       ${WB.cmd(`evh goal-status ${id}`)}
-      <div class="actions"><a class="btn primary" href="#dataset/${encodeURIComponent(id)}">Add a dataset</a><a class="btn" href="#systems/${encodeURIComponent(id)}">Choose the systems</a><a class="btn" href="#eval/${encodeURIComponent(id)}">The eval</a><a class="btn" href="#review/${encodeURIComponent(id)}">Review the outputs</a><a class="btn" href="#production/${encodeURIComponent(id)}">Production</a><a class="btn" href="#goal-edit/${encodeURIComponent(id)}">Edit the goal</a><a class="btn" href="#home">Back to your goals</a></div></div>`;
+      <div class="actions"><a class="btn primary" href="#dataset/${encodeURIComponent(id)}">Add a dataset</a><a class="btn" href="#systems/${encodeURIComponent(id)}">Choose the systems</a><a class="btn" href="#eval/${encodeURIComponent(id)}">The eval</a><a class="btn" href="#review/${encodeURIComponent(id)}">Review the outputs</a><a class="btn" href="#production/${encodeURIComponent(id)}">Production</a><a class="btn" href="#heldout/${encodeURIComponent(id)}">The held-out test</a><a class="btn" href="#study/${encodeURIComponent(id)}">Studies</a><a class="btn" href="#goal-edit/${encodeURIComponent(id)}">Edit the goal</a><a class="btn" href="#home">Back to your goals</a></div></div>`;
   }
 
   // ── writes: who acted, the data header, and the model's refusal shown as it is ──────────────────────
@@ -421,8 +421,10 @@
   }
   const jobRefusal = async (j) => {
     const r = await fetch(`/api/v1/jobs/${enc(j.id)}/log`, { credentials: "same-origin" });
-    const log = ((await r.json().catch(() => ({}))).log || "").trim().split("\n").filter((x) => x.startsWith("ERROR")).pop();
-    return `<p class="note" role="alert"><b>${esc(j.state)}.</b> ${esc(log || "see the job's log")}</p>`;
+    const lines = ((await r.json().catch(() => ({}))).log || "").trim().split("\n").filter((x) => x.trim());
+    const err = lines.filter((x) => x.startsWith("ERROR")).pop();
+    return err ? `<p class="note" role="alert"><b>${esc(j.state)}.</b> ${esc(err)}</p>`
+      : `<p class="note" role="alert"><b>${esc(j.state)}${j.exit != null ? ` (exit ${esc(j.exit)})` : ""}.</b> What it printed last:</p><pre class="reply">${esc(lines.slice(-10).join("\n"))}</pre>`;
   };
   const previews = {};
   const fieldRows = (fields) => (fields || []).length
@@ -1729,6 +1731,449 @@
     job("pb-go", "pb-out", () => `/datasets/${enc(v("pb-ds"))}/publish`, () => ({ to: "huggingface", query: JSON.stringify({ repo: v("pb-repo") }) }), "publishing", () => sent("publish"));
   }
 
+  // ── the jobs (UXS-005, Jobs; RFC-026): every job, filtered by state, operation and goal, a page at a time; one job's
+  // record, progress, result, files and log, followed while it runs; stopped, and a stopped run resumed ──
+  const RUNNING = ["queued", "running", "running (unsupervised)"];
+  const STATE_SETS = [["", "every state"], ["queued,running,running (unsupervised)", "running or waiting"], ["succeeded", "succeeded"], ["failed", "failed"], ["cancelled", "stopped"], ["lost", "lost"]];
+  const PAGE = 50;
+  const stateTagOf = (st) => `<span class="verdict ${st === "succeeded" ? "v-lead" : RUNNING.includes(st) ? "v-ns" : "v-worse"}">${esc(st)}</span>`;
+  const progressOf = (p) => (p ? `${p.done ?? p.n ?? "?"} / ${p.total ?? "?"}${p.unit ? ` ${esc(p.unit)}` : ""}` : "—");
+  function screenJobs(param) {
+    const id = String(param || "");
+    if (id) return screenJob(id);
+    const f = WB._jobsF || { state: "", operation: "", goal: "", offset: 0 };
+    const q = new URLSearchParams();
+    if (f.state) q.set("state", f.state);
+    if (f.operation) q.set("operation", f.operation);
+    if (f.goal) q.set("goal", f.goal);
+    q.set("offset", String(f.offset || 0));
+    q.set("limit", String(PAGE));
+    const head = `<div class="kicker">Jobs</div><h1>Jobs</h1>
+      <p class="lead">Every step that runs is a job: its cost first, then its progress and log, then its result. A job keeps running when the page closes; it can be watched again, stopped, and a stopped run resumed with what it left of its cap.</p>`;
+    const js = load(`jobs:${q}`, `/jobs?${q}`, true), goals = load("goals", "/goals");
+    if (js === undefined || goals === undefined) return `<div class="screen wide">${head}${loading("the jobs")}</div>`;
+    if (js.error) return `<div class="screen wide">${head}${failed(js)}</div>`;
+    const ops = [...new Set(js.jobs.map((j) => j.operation).concat(f.operation ? [f.operation] : []))].sort();
+    const goalIds = goals.error ? [] : goals.goals.map((g) => g.goal);
+    const opt = (xs, sel, none) => `<option value="">${esc(none)}</option>` + xs.map((x) => `<option value="${esc(x)}" ${x === sel ? "selected" : ""}>${esc(x)}</option>`).join("");
+    const from = (f.offset || 0) + 1, to = (f.offset || 0) + js.jobs.length;
+    const rows = js.jobs.map((j) => `<tr><td class="mono"><a href="#jobs/${enc(j.id)}">${esc(j.id)}</a></td><td class="mono">${esc(j.operation)}</td><td>${stateTagOf(j.state)}${j.waiting_for ? ` <small class="muted">waits for ${esc(j.waiting_for)}</small>` : ""}</td>
+      <td class="mono">${esc(j.by || "")}</td><td class="num">${esc((j.created_at || "").replace("T", " ").slice(0, 16))}</td><td class="num">${progressOf(j.progress)}</td><td class="num">${j.spent_usd ? `$${Number(j.spent_usd).toFixed(4)}` : "—"}</td></tr>`).join("");
+    return `<div class="screen wide">${head}
+      <div class="inline"><select id="jf-state" aria-label="state">${STATE_SETS.map(([v, t]) => `<option value="${esc(v)}" ${v === f.state ? "selected" : ""}>${esc(t)}</option>`).join("")}</select>
+        <select id="jf-op" aria-label="operation">${opt(ops, f.operation, "every operation")}</select><select id="jf-goal" aria-label="goal">${opt(goalIds, f.goal, "every goal")}</select></div>
+      ${js.jobs.length ? `<div class="tablewrap" style="margin-top:12px"><table><thead><tr><th>job</th><th>operation</th><th>state</th><th>who</th><th class="num">made</th><th class="num">progress</th><th class="num">spent</th></tr></thead><tbody>${rows}</tbody></table></div>
+        <p class="muted">${from}–${to} of ${js.total}</p>` : '<p class="muted">No job like that.</p>'}
+      <div class="actions">${f.offset ? '<button class="btn" type="button" id="jf-prev">Newer</button>' : ""}${to < js.total ? '<button class="btn" type="button" id="jf-next">Older</button>' : ""}<a class="btn" href="#home">Your goals</a></div>
+      ${WB.cmd("evh jobs-status [--state running] [--operation run] [--goal <goal>]\nevh jobs-status <job>\nevh jobs-logs <job> --follow\nevh jobs-stop <job>\nevh jobs-resume <job>")}</div>`;
+  }
+  function screenJob(id) {
+    const head = `<div class="kicker"><a href="#jobs">Jobs</a> · ${esc(id)}</div>`;
+    const j = load(`job:${id}`, `/jobs/${enc(id)}`, true);
+    if (j === undefined) return `<div class="screen wide">${head}${loading("the job")}</div>`;
+    if (j.error) return `<div class="screen wide">${head}${failed(j)}</div>`;
+    const running = RUNNING.includes(j.state), cap = (j.env || {}).EVAL_MAX_COST_USD;
+    const res = (j.result || {}).result;
+    return `<div class="screen wide">${head}<h1 class="mono">${esc(j.operation)}</h1>
+      <p class="lead">${stateTagOf(j.state)}${j.waiting_for ? ` · waits for ${esc(j.waiting_for)}` : ""} · asked by <span class="mono">${esc(j.by || "?")}</span> · made ${esc((j.created_at || "").replace("T", " ").slice(0, 19))}${j.ended_at ? ` · ended ${esc(String(j.ended_at).replace("T", " ").slice(0, 19))}` : ""}${j.exit != null ? ` · exit ${esc(j.exit)}` : ""}</p>
+      <div class="tablewrap"><table><tbody>
+        <tr><th>progress</th><td>${progressOf(j.progress)}</td></tr>
+        <tr><th>spent</th><td>${j.spent_usd ? `$${Number(j.spent_usd).toFixed(4)}` : "$0"}${cap ? ` of at most $${Number(cap).toFixed(2)}` : ""}</td></tr>
+        <tr><th>holds</th><td class="mono">${(j.locks || []).map(([k, ex]) => `${esc(k)}${ex ? " (alone)" : ""}`).join(", ") || "—"}</td></tr>
+        ${j.run_id ? `<tr><th>its run</th><td class="mono">${esc(j.run_id)}</td></tr>` : ""}
+        <tr><th>inputs</th><td><pre class="reply">${esc(JSON.stringify(j.inputs || {}, null, 2))}</pre></td></tr>
+      </tbody></table></div>
+      <div class="actions">${running ? '<button class="btn" type="button" id="jb-stop">Stop it</button>' : ""}${j.run_id && !running && j.state !== "succeeded" ? '<button class="btn primary" type="button" id="jb-resume">Resume the run</button>' : ""}</div><div id="jb-out" data-out></div>
+      ${res ? `<h2>Its result</h2>${blocksView(res)}` : ""}
+      ${(j.files || []).length ? `<h2>Its files</h2><ul>${j.files.map((n) => `<li><a class="mono" href="/api/v1/jobs/${enc(id)}/files/${enc(n)}" download="${esc(n)}">${esc(n)}</a></li>`).join("")}</ul>` : ""}
+      <h2>Its log</h2><pre class="reply" id="jb-log">reading…</pre>
+      ${WB.cmd(`evh jobs-status ${id}\nevh jobs-logs ${id}${running ? " --follow" : ""}${running ? `\nevh jobs-stop ${id}` : ""}`)}
+      <div class="actions"><a class="btn" href="#jobs">Every job</a></div></div>`;
+  }
+  function wireJobs() {
+    const id = String(WB.param || "");
+    if (id) return wireJob(id);
+    const f = WB._jobsF || { state: "", operation: "", goal: "", offset: 0 };
+    const set = (k, v) => { WB._jobsF = { ...f, [k]: v, offset: k === "offset" ? v : 0 }; WB.render(); };
+    document.getElementById("jf-state")?.addEventListener("change", (e) => set("state", e.target.value));
+    document.getElementById("jf-op")?.addEventListener("change", (e) => set("operation", e.target.value));
+    document.getElementById("jf-goal")?.addEventListener("change", (e) => set("goal", e.target.value));
+    document.getElementById("jf-prev")?.addEventListener("click", () => set("offset", Math.max(0, (f.offset || 0) - PAGE)));
+    document.getElementById("jf-next")?.addEventListener("click", () => set("offset", (f.offset || 0) + PAGE));
+  }
+  function wireJob(id) {
+    const pre = document.getElementById("jb-log");
+    const j = LIVE.cache[`job:${id}`] || {};
+    // the log from the start, then followed while the job runs; the job read again when it ends
+    let next = 0, alive = true;
+    const shown = location.hash;
+    const follow = async () => {
+      while (alive && location.hash === shown) {
+        const r = await fetch(`/api/v1/jobs/${enc(id)}/log?from=${next}`, { credentials: "same-origin" }).catch(() => null);
+        const b = r && r.ok ? await r.json().catch(() => ({})) : {};
+        if (pre && b.log != null) {
+          if (next === 0) pre.textContent = "";
+          pre.textContent += b.log;
+          next = b.next ?? next;
+          if (!pre.textContent) pre.textContent = "(nothing printed yet)";
+        }
+        if (!RUNNING.includes(j.state)) return;
+        await new Promise((ok) => setTimeout(ok, 1000));
+        const now = await fetch(`/api/v1/jobs/${enc(id)}`, { credentials: "same-origin" }).then((x) => x.json()).catch(() => ({}));
+        if (now.state && !RUNNING.includes(now.state)) { alive = false; forget(`job:${id}`); forget("jobs:"); WB.render(true); return; }
+      }
+    };
+    follow();
+    const act = (btn, path, what, after) => document.getElementById(btn)?.addEventListener("click", async (ev) => {
+      const box = document.getElementById("jb-out");
+      ev.target.disabled = true;
+      try {
+        const r = await send("POST", path, {});
+        box.innerHTML = `<p class="note">${esc(what)}</p>`;
+        after(r);
+      } catch (e) { box.innerHTML = refusal(e); ev.target.disabled = false; }
+    });
+    act("jb-stop", `/jobs/${enc(id)}/stop`, "Stopped.", () => { alive = false; forget(`job:${id}`); forget("jobs:"); WB.render(true); });
+    act("jb-resume", `/jobs/${enc(id)}/resume`, "Resumed as a new job.", (r) => { forget("jobs:"); location.hash = `#jobs/${enc(r.id)}`; });
+  }
+
+  // ── the held-out test (UXS-005; RFC-029, RFC-031): items kept back until one candidate is named. The seal; who has
+  // read it (reads recorded, the leak check); counts for safety only; opening it for one candidate (one look); its runs;
+  // the confirmation with the read items left out. Holding a dataset out is a split, sealed ──
+  function screenHeldout(goal) {
+    const head = `<div class="kicker">Day to day · ${esc(goal)}</div><h1>The held-out test</h1>
+      <p class="lead">Items kept back from tuning until one candidate is named, so the last number is a fair one. A seal stops runs and labels on them; reads it cannot stop are recorded, and every score on them leaves the read items out.</p>`;
+    if (!goal) return `<div class="screen">${head}</div>`;
+    const rec = load(`goalrec:${goal}`, `/goals/${enc(goal)}`), ds = load("datasets", "/datasets"), sys = load("systems", "/systems");
+    if ([rec, ds, sys].includes(undefined)) return `<div class="screen wide">${head}${loading("the goal's datasets")}</div>`;
+    const bad = [rec, ds, sys].find((x) => x.error);
+    if (bad) return `<div class="screen wide">${head}${failed(bad)}</div>`;
+    const mine = (rec.record.datasets || []).map((x) => x.dataset_id), byId = Object.fromEntries(ds.datasets.map((x) => [x.dataset, x]));
+    const sides = ds.datasets.filter((x) => x.sealed && (mine.includes(x.dataset) || mine.includes(x.parent))).map((x) => x.dataset);
+    const st = WB._ho && WB._ho.goal === goal ? WB._ho : {};
+    const side = sides.includes(st.side) ? st.side : sides[0];
+    const opt = (xs, sel) => xs.map((x) => `<option value="${esc(x)}" ${x === sel ? "selected" : ""}>${esc(x)}</option>`).join("");
+    const sysIds = sys.systems.map((x) => x.system), splittable = mine.filter((x) => !(byId[x] || {}).parent || !/_(test|validation)$/.test(x));
+    const splitForm = `<details class="part" ${sides.length ? "" : "open"}><summary><b>Hold ${sides.length ? "another dataset" : "some items"} out</b></summary><div class="body" data-form="split">
+        <p class="muted">A split makes two datasets: <span class="mono">&lt;id&gt;_validation</span> to tune on and <span class="mono">&lt;id&gt;_test</span>, sealed, to decide on once.</p>
+        <div class="inline"><select id="sp-ds" aria-label="the dataset">${opt(splittable)}</select>
+          <label class="choice"><input type="radio" name="sp-by" value="time" checked> by time</label><label class="choice"><input type="radio" name="sp-by" value="hash"> by hash</label></div>
+        <div class="inline"><input type="text" id="sp-key" placeholder="the time field: opened (by hash: one value to one side)" autocapitalize="off" spellcheck="false" style="min-width:16rem">
+          <input type="text" id="sp-at" placeholder="by time: the boundary, 2026-11-02T00:00:00Z" autocapitalize="off" spellcheck="false" style="min-width:16rem">
+          <input type="number" id="sp-test" placeholder="by hash: the test share, 0.3" step="0.05" min="0.05" max="0.95" style="width:12rem"></div>
+        <div class="inline"><label class="choice"><input type="checkbox" id="sp-seal" checked> seal the test side</label>
+          <input type="text" id="sp-count" placeholder="fields its counts may show: kind (fixed now)" autocapitalize="off" spellcheck="false" style="min-width:16rem"></div>
+        <div class="actions" style="margin-top:0"><button class="btn primary" type="button" id="sp-go" data-send>Split it</button>${mark}</div><div id="sp-out" data-out></div></div></details>`;
+    if (!side) return `<div class="screen wide">${head}${byField("ho-by")}<p class="muted">None of this goal's datasets is held out yet.</p>${splitForm}
+      ${WB.cmd("evh dataset-split --dataset-id <dataset> --split-by time --key opened --at <T> --seal --count-by kind")}<div class="actions"><a class="btn" href="#goal/${enc(goal)}">Back to the goal</a></div></div>`;
+    const d = load(`dataset:${side}`, `/datasets/${enc(side)}`), ex = load(`exposure:${side}`, `/exposure?dataset=${enc(side)}`);
+    const counts = load(`sealedcounts:${side}`, `/datasets/${enc(side)}/sealed-counts`), lk = load(`looks:${side}`, `/looks?dataset=${enc(side)}`);
+    if ([d, ex, counts, lk].includes(undefined)) return `<div class="screen wide">${head}${loading("the held-out side")}</div>`;
+    const r = (d.record || {}), seal = r.sealed || {}, split = r.split || {}, opened = r.unsealed || [];
+    const exs = ((ex.sides || []).find((x) => x.dataset_id === side)) || { items: d.n_items, exposed: 0, reads: 0, by: {}, what: {} };
+    const look = ((lk.sets || []).find((x) => x.dataset_id === side)) || {};
+    const cnt = ((((counts || {}).values || {}).counts) || {})["held-out items"] || {};
+    const days = Object.keys(cnt).sort(), keys = [...new Set(days.flatMap((x) => Object.keys(cnt[x]).filter((k) => k !== "n")))].sort();
+    const last = opened[opened.length - 1];
+    const cand = st.cand || (last || {}).system_id, against = st.against || ((last || {}).hypothesis || {}).against, measure = ((last || {}).hypothesis || {}).measure;
+    const pt = cand && against ? load(`pairtest:${side}:${cand}:${against}`, `/datasets/${enc(side)}/pair-test?a=${enc(cand)}&b=${enc(against)}${measure ? `&metric=${enc(measure)}` : ""}&include_exposed=true`) : null;
+    const pv = pt && !pt.error ? pt.values || {} : null;
+    const tbl = (h, rows) => `<div class="tablewrap"><table><thead><tr>${h.map((x) => `<th>${esc(x)}</th>`).join("")}</tr></thead><tbody>${rows.join("")}</tbody></table></div>`;
+    const part = (n, title, body, tag = "") => `<section class="part"><div class="parthead"><span class="letter">${n}</span><h2>${esc(title)}</h2><span class="grow"></span>${tag}</div><div class="body">${body}</div></section>`;
+    const pct = (x) => (typeof x === "number" ? `${(x * 100).toFixed(4)}%` : "—");
+    return `<div class="screen wide">${head}<span id="ho-cur" data-side="${esc(side)}" hidden></span>
+      ${sides.length > 1 ? `<div class="inline"><span class="muted">the held-out side</span><select id="ho-side" aria-label="the held-out side">${opt(sides, side)}</select></div>` : ""}
+      ${byField("ho-by")}
+      ${part(1, "The seal", `<div class="stats"><div><b>${d.n_items}</b><span>held-out items</span></div><div><b>${seal.at ? esc(String(seal.at).slice(0, 10)) : "not sealed"}</b><span>sealed</span></div><div><b>${esc((seal.count_by || []).join(", ") || "—")}</b><span>what its counts may show</span></div></div>
+        <p class="muted">${split.split_by === "time" ? `Split by time on <span class="mono">${esc(split.key || "")}</span>: every item on or after ${esc(split.at || "")} is held out` : `Split by hash${split.key ? ` on <span class="mono">${esc(split.key)}</span>` : ""}, ${Math.round((split.test || 0) * 100)}% held out`}; its other side is <span class="mono">${esc(seal.open_side || "")}</span>, to tune on. A run, a label sheet or a reference on it is refused until a candidate is named in advance.</p>`, `<span class="status ${seal.at ? "ok" : ""}">${seal.at ? "sealed" : "open"}</span>`)}
+      ${part(2, "Who has read it", `<div class="stats"><div><b>${exs.exposed} of ${exs.items}</b><span>items read</span></div><div><b>${exs.reads}</b><span>reads recorded</span></div><div><b>${exs.items - exs.exposed}</b><span>still unread</span></div></div>
+        ${Object.keys(exs.by || {}).length ? tbl(["who read", "reads"], Object.entries(exs.by).map(([k, v]) => `<tr><td class="mono">${esc(k)}</td><td class="num">${v}</td></tr>`)) : ""}
+        ${Object.keys(exs.what || {}).length ? tbl(["what was read", "reads"], Object.entries(exs.what).map(([k, v]) => `<tr><td>${esc(k)}</td><td class="num">${v}</td></tr>`)) : ""}
+        <div data-form="read"><h3>Record a read</h3><div class="inline"><input type="text" id="rd-items" placeholder="the items read: t02, t05" autocapitalize="off" spellcheck="false">
+          <input type="text" id="rd-what" placeholder="what was read: the decision and its reason" style="min-width:16rem">
+          <input type="text" id="rd-who" placeholder="who read it: agent:homelab (default: you)" autocapitalize="off" spellcheck="false"></div>
+          <div class="actions" style="margin-top:0"><button class="btn" type="button" id="rd-go" data-send>Record it</button>${mark}</div><div id="rd-out" data-out></div></div>
+        <h3>The leak check</h3><p class="muted">Searches the project's public repos (config.yaml's exposure) for these items' ids; a find not yet recorded can be recorded as a read. It cannot catch a paraphrase.</p>
+        <div class="actions" style="margin-top:0"><button class="btn" type="button" id="lk-go">Check for leaks</button></div><div id="lk-out" data-out></div>`, `<span class="status ${exs.exposed ? "" : "ok"}">${exs.exposed} read</span>`)}
+      ${part(3, "Counts, for safety only", `${counts.error ? failed(counts) : days.length ? tbl(["day", "items", ...keys], days.map((x) => `<tr><td class="mono">${esc(x)}</td><td class="num">${cnt[x].n}</td>${keys.map((k) => `<td class="num">${cnt[x][k] || ""}</td>`).join("")}</tr>`)) : '<p class="muted">No counts.</p>'}
+        <p class="muted">Never to judge an effect: whoever reads them did not choose what they show.</p>
+        <div data-form="seal-counts"><div class="inline"><input type="text" id="sc-add" placeholder="allow one more field" autocapitalize="off" spellcheck="false"><input type="text" id="sc-why" placeholder="why the counts need it: a sentence" style="min-width:18rem">
+          <button class="btn" type="button" id="sc-go" data-send>Allow it</button>${mark}</div><div id="sc-out" data-out></div></div>`)}
+      ${part(4, "Open it for one candidate", `<p class="muted">The candidate's hypothesis (what it is against, the measure, the direction) must be in it and committed first. Opening it is one look at this test set; each later look is tested at a stricter level.</p>
+        <p>Next: look ${look.next ?? "?"}, one-sided at ${pct(look.next_level)}; ${look.limit != null ? `at most ${look.limit} looks` : ""}${(look.looks || []).length ? ` · ${look.looks.length} so far` : ""}</p>
+        ${opened.length ? tbl(["look", "candidate", "against", "why", "committed", "by"], opened.map((u) => `<tr><td class="num">${(u.look || {}).number ?? ""}</td><td class="mono">${esc(u.system_id)}</td><td class="mono">${esc((u.hypothesis || {}).against || "")}</td><td>${esc(u.reason || "")}</td><td class="mono">${esc(String(u.commit || "").slice(0, 8))}</td><td>${esc(((u.actor || {}).name) || "")}</td></tr>`)) : ""}
+        <div data-form="unseal"><div class="inline"><select id="us-sys" aria-label="the candidate">${opt(sysIds)}</select><input type="text" id="us-why" placeholder="why this candidate, and why now: a sentence" style="min-width:18rem">
+          ${look.limit != null && look.next > look.limit ? '<label class="choice"><input type="checkbox" id="us-extra"> look past the limit (a person only)</label>' : ""}
+          <button class="btn primary" type="button" id="us-go" data-send>Open it for this candidate</button>${mark}</div><div id="us-out" data-out></div></div>`, opened.length ? `<span class="status">look ${opened.length}</span>` : "")}
+      ${last ? part(5, "Run the candidate and what it is against", `<p class="muted">Each on the held-out side: the runs the confirmation reads.</p>
+        <div class="inline"><label>at most (USD) <input type="number" id="hr-cap" value="1" min="0.01" step="0.01" style="width:6rem"></label>
+          <button class="btn" type="button" id="hr-go">Run ${esc(cand)} and ${esc(against || "")}</button></div><div id="hr-out" data-out></div>`) : ""}
+      ${last ? part(6, "The confirmation", pt === undefined ? loading("the paired test") : pt && pt.error ? failed(pt) : pv ? `${tbl(["", "items", "delta (A − B)", "p", "verdict"], [
+          `<tr><td><b>the number that counts</b>${Object.values(pv.left_out_exposed || {})[0] ? ` <span class="muted">(${Object.values(pv.left_out_exposed)[0]} read item(s) left out)</span>` : ""}</td><td class="num">${pv.n}</td><td class="num">${pv.delta >= 0 ? "+" : ""}${fx(pv.delta)}</td><td class="num">${fx(pv.p)}</td><td><span class="verdict ${pv.verdict === "SIGNIFICANT" ? "v-lead" : "v-ns"}">${esc(String(pv.verdict || "").toLowerCase())}</span></td></tr>`,
+          pv.with_exposed ? `<tr class="muted"><td>with the read items kept (not the one that counts)</td><td class="num">${pv.with_exposed.n}</td><td class="num">${pv.with_exposed.delta >= 0 ? "+" : ""}${fx(pv.with_exposed.delta)}</td><td class="num">—</td><td></td></tr>` : "",
+        ])}<details><summary>As the harness says it</summary>${blocksView(pt)}</details>` : "") : ""}
+      ${splitForm}
+      ${WB.cmd(`evh exposure --dataset ${side}\nevh exposure-add --dataset-id ${side} --item <id> --what "…" --read-by agent:<name>\nevh exposure-check --dataset-id ${side} --out leaks.tsv\nevh sealed-counts ${side}\nevh dataset-unseal --dataset-id ${side} --system <candidate> --reason "…"\nevh pair-test ${side} --a <candidate> --b <against> --include-exposed`)}
+      <div class="actions"><a class="btn" href="#goal/${enc(goal)}">Back to the goal</a></div></div>`;
+  }
+  function wireHeldout() {
+    const goal = WB.param || "";
+    const v = (id) => (document.getElementById(id)?.value || "").trim();
+    const by = () => byOf("ho-by") || (who() ? `person:${who()}` : null);
+    const needWho = (box) => { box.innerHTML = '<p class="note" role="alert">Say who you are above: a change names who made it.</p>'; };
+    const cur = (LIVE.cache[`goalrec:${goal}`] || {}).record || {};
+    const theSide = () => document.getElementById("ho-cur")?.dataset.side || "";
+    const again = (box, done, keys) => {
+      keys.forEach((k) => forget(k));
+      box.innerHTML = `<p class="note">Done.</p>${blocksView((done.result || {}).result)}`;
+      const k = document.createElement("p");
+      k.innerHTML = '<button class="btn" type="button">Read it again</button>';
+      k.querySelector("button").addEventListener("click", () => WB.render(true));
+      box.appendChild(k);
+    };
+    const job = (btn, out, form, path, body, what, keys, after) => document.getElementById(btn)?.addEventListener("click", async (ev) => {
+      const box = document.getElementById(out), who_ = by();
+      if (!who_) return needWho(box);
+      ev.target.disabled = true;
+      try {
+        const done = await runJob(typeof path === "function" ? path() : path, { ...body(), by: who_ }, box, what);
+        if (done) { if (form) sent(form); again(box, done, keys()); if (after) await after(box, done, who_); }
+      } catch (e) { box.innerHTML = refusal(e); }
+      ev.target.disabled = false;
+    });
+    document.getElementById("ho-side")?.addEventListener("change", () => { WB._ho = { goal, side: v("ho-side") }; WB.render(); });
+    holds("read", () => `Record ${v("rd-items").split(/[\s,]+/).filter(Boolean).length || "…"} read(s)`);
+    job("rd-go", "rd-out", "read", () => `/datasets/${enc(theSide())}/exposure`, () => {
+      const b = { item: v("rd-items").split(/[\s,]+/).filter(Boolean), what: v("rd-what") };
+      if (v("rd-who")) b.read_by = v("rd-who");
+      return b;
+    }, "recording", () => [`exposure:${theSide()}`, `pairtest:${theSide()}`]);
+    document.getElementById("lk-go")?.addEventListener("click", async (ev) => {
+      const box = document.getElementById("lk-out"), who_ = by();
+      if (!who_) return needWho(box);
+      ev.target.disabled = true;
+      try {
+        const j = await send("POST", "/exposure/check", { dataset_id: theSide(), out: "leaks.tsv", by: who_ });
+        const done = await watchJob(j.id, box, "checking");
+        if (done.state !== "succeeded" && done.exit !== 6) { box.innerHTML = await jobRefusal(done); ev.target.disabled = false; return; }
+        const log = ((await fetch(`/api/v1/jobs/${enc(done.id)}/log`, { credentials: "same-origin" }).then((x) => x.json()).catch(() => ({}))).log || "").trim();
+        box.innerHTML = `${done.exit === 6 ? '<p class="note">It found ids the register lacks.</p>' : '<p class="note">Nothing found that the register lacks.</p>'}<pre class="reply">${esc(log.split("\n").slice(-12).join("\n"))}</pre>`;
+        await leaks(box, done, who_);
+      } catch (e) { box.innerHTML = refusal(e); }
+      ev.target.disabled = false;
+    });
+    async function leaks(box, done, who_) {
+      if (!(done.files || []).includes("leaks.tsv")) return;
+      const tsv = await (await fetch(`/api/v1/jobs/${enc(done.id)}/files/leaks.tsv`, { credentials: "same-origin" })).text();
+      const n = tsv.split("\n").filter((x) => x.trim()).length - 1;
+      if (n <= 0) return;
+      box.insertAdjacentHTML("beforeend", `<p class="note">${n} find(s) not yet in the register. <button class="btn" type="button" id="lk-add">Record them as reads</button></p>`);
+      document.getElementById("lk-add").addEventListener("click", async (ev) => {
+        ev.target.disabled = true;
+        try {
+          const added = await runJob(`/datasets/${enc(theSide())}/exposure`, { from: { name: "leaks.tsv", content_base64: b64(tsv) }, by: who_ }, box, "recording the finds");
+          if (added) again(box, added, [`exposure:${theSide()}`, `pairtest:${theSide()}`]);
+        } catch (e) { box.innerHTML = refusal(e); }
+      });
+    }
+    holds("seal-counts", () => `Allow ${v("sc-add") || "…"}`);
+    job("sc-go", "sc-out", "seal-counts", () => `/datasets/${enc(theSide())}/sealed-counts/allow`, () => ({ add: v("sc-add"), reason: v("sc-why") }), "allowing", () => [`sealedcounts:${theSide()}`, `dataset:${theSide()}`]);
+    holds("unseal", () => `Open it for ${v("us-sys") || "…"}`);
+    job("us-go", "us-out", "unseal", () => `/datasets/${enc(theSide())}/unseal`, () => {
+      const b = { system: v("us-sys"), reason: v("us-why") };
+      if (document.getElementById("us-extra")?.checked) b.confirm_extra_look = true;
+      return b;
+    }, "opening it", () => [`dataset:${theSide()}`, `looks:${theSide()}`, `pairtest:${theSide()}`]);
+    document.getElementById("hr-go")?.addEventListener("click", async (ev) => {
+      const box = document.getElementById("hr-out"), who_ = by(), cap = Number(v("hr-cap"));
+      if (!who_) return needWho(box);
+      const u = (((LIVE.cache[`dataset:${theSide()}`] || {}).record || {}).unsealed || []).slice(-1)[0] || {};
+      ev.target.disabled = true;
+      try {
+        // a split makes its sides unfetched: the runs read the side's items, so they are fetched first
+        if (!((((LIVE.cache[`dataset:${theSide()}`] || {}).parts || {}).materialized || {}).present) && !(await runJob(`/datasets/${enc(theSide())}/materialize`, { by: who_ }, box, "fetching its items"))) { ev.target.disabled = false; return; }
+        for (const s of [u.system_id, (u.hypothesis || {}).against].filter(Boolean)) {
+          const j = await send("POST", "/jobs", { operation: "run", inputs: { system: s, dataset: theSide() }, by: who_, max_cost_usd: cap });
+          const done = await watchJob(j.id, box, `running ${s}`);
+          if (done.state !== "succeeded") { box.innerHTML = await jobRefusal(done); ev.target.disabled = false; return; }
+        }
+        again(box, { result: {} }, [`pairtest:${theSide()}`]);
+      } catch (e) { box.innerHTML = refusal(e); }
+      ev.target.disabled = false;
+    });
+    holds("split", () => `Split ${v("sp-ds") || "…"}`);
+    job("sp-go", "sp-out", "split", () => `/datasets/${enc(v("sp-ds"))}/split`, () => {
+      const b = { split_by: document.querySelector("input[name=sp-by]:checked")?.value || "time" };
+      if (v("sp-key")) b.key = v("sp-key");
+      if (b.split_by === "time" && v("sp-at")) b.at = v("sp-at");
+      if (b.split_by === "hash" && v("sp-test")) b.test = Number(v("sp-test"));
+      if (document.getElementById("sp-seal").checked) b.seal = true;
+      if (v("sp-count")) b.count_by = v("sp-count");
+      return b;
+    }, "splitting", () => ["datasets", "dataset:"], async (box, done, who_) => {
+      // both sides join the goal: the validation side to tune on, the test side to decide on
+      const base = v("sp-ds"), n = (cur.datasets || []).length;
+      try {
+        await send("PATCH", `/goals/${enc(goal)}`, { set: { [`datasets.${n}.dataset_id`]: `${base}_validation`, [`datasets.${n}.role`]: "validation", [`datasets.${n + 1}.dataset_id`]: `${base}_test`, [`datasets.${n + 1}.role`]: "test" }, by: who_ });
+        forget(`goalrec:${goal}`); forget(`status:${goal}`);
+        box.insertAdjacentHTML("beforeend", `<p class="note">Both sides joined the goal: ${esc(base)}_validation to tune on, ${esc(base)}_test to decide on.</p>`);
+      } catch (e) { box.insertAdjacentHTML("beforeend", refusal(e)); }
+    });
+  }
+
+  // ── studies (UXS-005; RFC-029): a search over one thing at a time on the validation items, never evidence; its trials
+  // and the best so far; the agent sampler's ask and tell from the page; stopped; confirmed once on a test set (one
+  // look). A spec is YAML, written on the page and checked (the dry run) before it runs ──
+  const specOf = (ds, base, measure, sampler) => `dataset: ${ds}\nbaseline: {system: ${base}}\nmeasure: ${measure}\nsampler: ${sampler}\naccept: {point: {min_gain: 0}}\nstop: {trials: 5}\nspace:\n  groups:\n    - {name: length, reason: how much to keep, params: {sentences: [2, 3, 4]}}\n`;
+  function screenStudies(param) {
+    const [goal, sid] = String(param || "").split("/");
+    const head = `<div class="kicker">Day to day · ${esc(goal)}</div><h1>${sid ? `The study ${esc(sid)}` : "Studies"}</h1>
+      <p class="lead">A search over one thing at a time, each trial measured against the best so far on the validation items; it never promotes. Its best is confirmed once on a test set: one look.</p>`;
+    if (!goal) return `<div class="screen">${head}</div>`;
+    const rec = load(`goalrec:${goal}`, `/goals/${enc(goal)}`), list = load(`studies:${goal}`, `/goals/${enc(goal)}/studies`), sys = load("systems", "/systems"), dsl = load("datasets", "/datasets");
+    if ([rec, list, sys, dsl].includes(undefined)) return `<div class="screen wide">${head}${loading("the studies")}</div>`;
+    const bad = [rec, list, sys, dsl].find((x) => x.error);
+    if (bad) return `<div class="screen wide">${head}${failed(bad)}</div>`;
+    const dss = rec.record.datasets || [], roleOf = (r) => dss.filter((x) => x.role === r).map((x) => x.dataset_id);
+    const sealed = dsl.datasets.filter((x) => x.sealed && dss.some((d) => d.dataset_id === x.dataset || d.dataset_id === x.parent)).map((x) => x.dataset);
+    const tests = [...new Set(roleOf("test").concat(sealed))], vals = roleOf("validation").length ? roleOf("validation") : dss.map((x) => x.dataset_id);
+    const measure = ((rec.record.success_criteria || {}).primary || {}).measure || "";
+    const sysIds = sys.systems.map((x) => x.system);
+    const opt = (xs, sel) => xs.map((x) => `<option value="${esc(x)}" ${x === sel ? "selected" : ""}>${esc(x)}</option>`).join("");
+    const tbl = (h, rows) => `<div class="tablewrap"><table><thead><tr>${h.map((x) => `<th>${esc(x)}</th>`).join("")}</tr></thead><tbody>${rows.join("")}</tbody></table></div>`;
+    const part = (n, title, body, tag = "") => `<section class="part"><div class="parthead"><span class="letter">${n}</span><h2>${esc(title)}</h2><span class="grow"></span>${tag}</div><div class="body">${body}</div></section>`;
+    const cmd = WB.cmd(`evh study-run --study ${goal}/<id> --spec study.yaml --dry-run\nevh study-run --study ${goal}/<id> --spec study.yaml\nevh study-list ${goal}\nevh study-ask --study ${goal}/<id>\nevh study-tell --study ${goal}/<id> --ask <id> --proposal-json '{...}'\nevh study-stop --study ${goal}/<id>\nevh study-confirm --study ${goal}/<id> --test <test set> --rule superiority`);
+    if (!sid) {
+      const draft = (WB._study || {})[goal] || specOf(vals[0] || "<dataset>", sysIds[0] || "<system>", measure, "grid");
+      return `<div class="screen wide">${head}${byField("st6-by")}
+        ${list.studies.length ? tbl(["study", "state", "on", "from", "trials", "kept", "spent", "confirmed"], list.studies.map((x) => `<tr><td class="mono"><a href="#study/${enc(goal)}/${enc(x.study.split("/").pop())}">${esc(x.study)}</a></td><td>${esc(x.status)}</td><td class="mono">${esc(x.dataset)}</td><td class="mono">${esc(x.baseline)}</td><td class="num">${x.trials}</td><td class="num">${x.kept}</td><td class="num">$${Number(x.spent_usd || 0).toFixed(4)}</td><td class="num">${x.confirms}</td></tr>`)) : '<p class="muted">No study yet.</p>'}
+        ${part("a", "A new study", `<div data-form="study-new"><div class="inline"><input type="text" id="sn6-id" placeholder="its id: s1" autocapitalize="off" spellcheck="false">
+            <select id="sn6-ds" aria-label="the validation dataset">${opt(vals)}</select><select id="sn6-base" aria-label="the system it starts from">${opt(sysIds)}</select>
+            <select id="sn6-sampler" aria-label="how it chooses"><option value="grid">grid: every value in turn</option><option value="agent">agent: proposals asked and told</option></select>
+            <button class="btn" type="button" id="sn6-fill">Write the spec from these</button></div>
+          <textarea id="sn6-spec" rows="10" style="width:100%" class="mono" aria-label="the spec" spellcheck="false">${esc(draft)}</textarea>
+          <div class="actions" style="margin-top:0"><button class="btn" type="button" id="sn6-dry">Check it (nothing runs)</button>
+            <label>at most (USD) <input type="number" id="sn6-cap" value="1" min="0.01" step="0.01" style="width:6rem"></label>
+            <button class="btn primary" type="button" id="sn6-go" data-send>Run it</button>${mark}</div><div id="sn6-out" data-out></div></div>`)}
+        ${part("b", "Import a past loop", `<p class="muted">A results.tsv from a loop run elsewhere, kept as a closed study: shown, never confirmed.</p>
+          <div class="inline" data-form="study-import"><input type="text" id="si-id" placeholder="the study's id" autocapitalize="off" spellcheck="false"><input type="file" id="si-file" accept=".tsv,text/tab-separated-values" aria-label="the results.tsv">
+            <button class="btn" type="button" id="si-go" data-send>Import it</button>${mark}</div><div id="si-out" data-out></div>`)}
+        ${cmd}<div class="actions"><a class="btn" href="#goal/${enc(goal)}">Back to the goal</a></div></div>`;
+    }
+    const one = load(`study:${goal}/${sid}`, `/goals/${enc(goal)}/studies/${enc(sid)}`);
+    if (one === undefined) return `<div class="screen wide">${head}${loading("the study")}</div>`;
+    if (one.error) return `<div class="screen wide">${head}${failed(one)}<div class="actions"><a class="btn" href="#study/${enc(goal)}">Every study</a></div></div>`;
+    const sp = one.spec || {}, verdicts = (one.confirms || []).filter((c) => c.outcome);
+    const st = (WB._studyOne || {})[`${goal}/${sid}`] || {};
+    const agent = sp.sampler === "agent", open = one.status !== "ended";
+    return `<div class="screen wide">${head}<span id="st6-cur" data-study="${esc(goal)}/${esc(sid)}" hidden></span>${byField("st6-by")}
+      ${part(1, "What it searches", `<div class="stats"><div><b>${esc(one.baseline || "")}</b><span>from</span></div><div><b>${esc(sp.sampler || "")}</b><span>how it chooses</span></div><div><b>${(one.trials || []).length}</b><span>trials</span></div><div><b>${esc(one.status || "")}</b><span>its state</span></div></div>
+        <p class="muted">On <span class="mono">${esc(sp.dataset || "")}</span>, decided on ${esc(sp.measure || "")}; round ${esc(one.round || "")}; spent $${Number(one.spent_usd || 0).toFixed(4)}.${one.end ? ` Ended: ${esc(one.end)}.` : ""}</p>
+        <details><summary>Its spec</summary><pre class="reply">${esc(JSON.stringify(sp, null, 2))}</pre></details>`)}
+      ${part(2, "Its trials", `${(one.rows || []).length ? tbl(["trial", "what changed", "outcome", "why", "vs the best", "cost"], one.rows.map((x) => `<tr><td class="mono">t${x.k}</td><td>${esc(x.change || "")}${x.hypothesis && x.hypothesis !== x.change ? `<div class="muted">${esc(x.hypothesis)}</div>` : ""}</td><td><span class="verdict ${x.outcome === "kept" ? "v-lead" : "v-ns"}">${esc(x.outcome || "")}</span></td><td>${esc(x.reason || "")}</td><td class="num">${typeof x.delta === "number" ? (x.delta >= 0 ? "+" : "") + x.delta.toFixed(4) : "—"}</td><td class="num">$${Number(x.cost_usd || 0).toFixed(4)}</td></tr>`)) : '<p class="muted">No trial yet.</p>'}
+        <p class="note">Best so far: <span class="mono">${esc(one.best || one.baseline || "")}</span>. Research on validation items: no evidence until it is confirmed.</p>
+        ${open ? `<div class="actions" style="margin-top:0"><button class="btn" type="button" id="so-stop">Stop it</button>${agent ? "" : '<label>at most (USD) <input type="number" id="so-cap" value="1" min="0.01" step="0.01" style="width:6rem"></label><button class="btn" type="button" id="so-resume">Continue it</button>'}</div><div id="so-out" data-out></div>` : ""}`)}
+      ${agent && open ? part(3, "Propose the next trial", `<p class="muted">The agent sampler: ask for the study's state (its weakest items, what was tried), then tell a proposal, which runs as the next trial.</p>
+        <div class="actions" style="margin-top:0"><button class="btn" type="button" id="sa-go">Ask its state</button></div><div id="sa-out" data-out>${st.ask ? `<p>ask <b class="mono">${esc(st.ask)}</b></p><details><summary>its state</summary><pre class="reply">${esc(JSON.stringify(st.state || {}, null, 2))}</pre></details>` : ""}</div>
+        ${st.ask ? `<div data-form="tell"><textarea id="tl-json" rows="5" style="width:100%" class="mono" spellcheck="false" aria-label="the proposal">${esc(JSON.stringify({ params: {}, hypothesis: "", rationale: "" }, null, 2))}</textarea>
+          <div class="actions" style="margin-top:0"><label>at most (USD) <input type="number" id="tl-cap" value="1" min="0.01" step="0.01" style="width:6rem"></label><button class="btn primary" type="button" id="tl-go" data-send>Run this trial</button>${mark}</div><div id="tl-out" data-out></div></div>` : ""}`) : ""}
+      ${part(agent && open ? 4 : 3, "Confirm it on a test set: one look", `${verdicts.length ? tbl(["trial", "test set", "rule", "items", "delta", "p (one-sided)", "look", "outcome"], verdicts.map((c) => `<tr><td class="mono">t${c.trial}</td><td class="mono">${esc(c.test)}</td><td>${esc(c.rule)}</td><td class="num">${c.n ?? c.items ?? ""}</td><td class="num">${typeof c.delta === "number" ? (c.delta >= 0 ? "+" : "") + c.delta.toFixed(4) : ""}</td><td class="num">${typeof c.p_one_sided === "number" ? c.p_one_sided.toFixed(4) : ""}</td><td class="num">${(c.look || {}).number ?? ""} at ${(((c.look || {}).level || 0) * 100).toFixed(4)}%</td><td><span class="verdict ${c.outcome === "better" || c.outcome === "noninferior" ? "v-lead" : "v-ns"}">${esc(c.outcome)}</span></td></tr>`)) : ""}
+        <p class="muted">The rule is given before any test item is read; each look at a test set is tested at a stricter level.</p>
+        <div data-form="confirm"><div class="inline"><select id="cf-test" aria-label="the test set">${opt(tests)}</select>
+          <select id="cf-rule" aria-label="the rule"><option value="superiority">better than where it started</option><option value="noninferiority">no worse, within a margin</option></select>
+          <input type="number" id="cf-margin" placeholder="the margin (no worse)" step="any" style="width:10rem"><input type="number" id="cf-trial" placeholder="trial (default: the best)" min="1" style="width:10rem">
+          <label>at most (USD) <input type="number" id="cf-cap" value="1" min="0.01" step="0.01" style="width:6rem"></label></div>
+          <div class="actions" style="margin-top:0"><button class="btn" type="button" id="cf-dry">What it would read (nothing runs)</button><button class="btn primary" type="button" id="cf-go" data-send>Confirm it</button>${mark}</div><div id="cf-out" data-out></div></div>`, verdicts.length ? `<span class="status ok">${verdicts.length} confirmed</span>` : "")}
+      ${cmd}<div class="actions"><a class="btn" href="#study/${enc(goal)}">Every study</a><a class="btn" href="#goal/${enc(goal)}">Back to the goal</a></div></div>`;
+  }
+  function wireStudies() {
+    const [goal, sid] = String(WB.param || "").split("/");
+    const v = (id) => (document.getElementById(id)?.value || "").trim();
+    const by = () => byOf("st6-by") || (who() ? `person:${who()}` : null);
+    const needWho = (box) => { box.innerHTML = '<p class="note" role="alert">Say who you are above: a job names who asked.</p>'; };
+    const cap = (id) => Number(v(id));
+    const job = (btn, out, form, path, body, what, after) => document.getElementById(btn)?.addEventListener("click", async (ev) => {
+      const box = document.getElementById(out), who_ = by();
+      if (!who_) return needWho(box);
+      ev.target.disabled = true;
+      try {
+        const b = body();
+        if (b === null) { ev.target.disabled = false; return; }
+        const done = await runJob(typeof path === "function" ? path() : path, { ...b, by: who_ }, box, what);
+        if (done) {
+          if (form) sent(form);
+          box.innerHTML = blocksView((done.result || {}).result);
+          if (after) after(box, done);
+        }
+      } catch (e) { box.innerHTML = refusal(e); }
+      ev.target.disabled = false;
+    });
+    const reread = (box) => {
+      const k = document.createElement("p");
+      k.innerHTML = '<button class="btn" type="button">Read it again</button>';
+      k.querySelector("button").addEventListener("click", () => { forget(`studies:${goal}`); forget(`study:${goal}/`); WB.render(true); });
+      box.appendChild(k);
+    };
+    if (!sid) {
+      const spec = document.getElementById("sn6-spec");
+      // the spec is longer work: kept in this browser until the study runs
+      spec?.addEventListener("input", () => { WB._study = { ...(WB._study || {}), [goal]: spec.value }; });
+      document.getElementById("sn6-fill")?.addEventListener("click", () => {
+        const m = ((((LIVE.cache[`goalrec:${goal}`] || {}).record || {}).success_criteria || {}).primary || {}).measure || "";
+        spec.value = specOf(v("sn6-ds"), v("sn6-base"), m, v("sn6-sampler"));
+        spec.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+      const specBody = (dry) => () => {
+        if (!v("sn6-id")) { document.getElementById("sn6-out").innerHTML = '<p class="note" role="alert">Name it first: its id.</p>'; return null; }
+        return { spec: { name: `${v("sn6-id")}.yaml`, content_base64: b64(spec.value) }, dry_run: dry, max_cost_usd: cap("sn6-cap") };
+      };
+      holds("study-new", () => `Run study ${v("sn6-id") || "…"}`);
+      job("sn6-dry", "sn6-out", null, () => `/goals/${enc(goal)}/studies/${enc(v("sn6-id"))}`, specBody(true), "checking the spec");
+      job("sn6-go", "sn6-out", "study-new", () => `/goals/${enc(goal)}/studies/${enc(v("sn6-id"))}`, specBody(false), "running the study", (box) => {
+        WB._study = { ...(WB._study || {}), [goal]: undefined };
+        box.insertAdjacentHTML("beforeend", `<p><a class="btn" href="#study/${enc(goal)}/${enc(v("sn6-id"))}">Open it</a></p>`);
+        forget(`studies:${goal}`);
+      });
+      holds("study-import", () => `Import ${v("si-id") || "…"}`);
+      document.getElementById("si-go")?.addEventListener("click", async (ev) => {
+        const box = document.getElementById("si-out"), who_ = by(), f = document.getElementById("si-file").files[0];
+        if (!who_) return needWho(box);
+        if (!f) { box.innerHTML = '<p class="note" role="alert">Choose the results.tsv first.</p>'; return; }
+        ev.target.disabled = true;
+        try {
+          const text = await f.text();
+          const done = await runJob(`/goals/${enc(goal)}/study-imports`, { study: v("si-id"), file: { name: f.name, content_base64: b64(text) }, by: who_ }, box, "importing");
+          if (done) { sent("study-import"); box.innerHTML = blocksView((done.result || {}).result); reread(box); }
+        } catch (e) { box.innerHTML = refusal(e); }
+        ev.target.disabled = false;
+      });
+      return;
+    }
+    const base = `/goals/${enc(goal)}/studies/${enc(sid)}`;
+    job("so-stop", "so-out", null, `${base}/stop`, () => ({}), "stopping", (box) => reread(box));
+    job("so-resume", "so-out", null, base, () => ({ resume: true, max_cost_usd: cap("so-cap") }), "continuing", (box) => reread(box));
+    job("sa-go", "sa-out", null, `${base}/ask`, () => ({}), "asking", (box, done) => {
+      const vals = ((done.result || {}).result || {}).values || {};
+      WB._studyOne = { ...(WB._studyOne || {}), [`${goal}/${sid}`]: { ask: vals.ask_id, state: vals.state } };
+      WB.render();
+    });
+    holds("tell", () => "Run this trial");
+    job("tl-go", "tl-out", "tell", `${base}/tell`, () => {
+      const st = (WB._studyOne || {})[`${goal}/${sid}`] || {};
+      try { JSON.parse(v("tl-json")); } catch { document.getElementById("tl-out").innerHTML = '<p class="note" role="alert">The proposal is not JSON.</p>'; return null; }
+      return { ask: st.ask, proposal_json: v("tl-json"), max_cost_usd: cap("tl-cap") };
+    }, "running the trial", (box) => { WB._studyOne = { ...(WB._studyOne || {}), [`${goal}/${sid}`]: {} }; reread(box); });
+    const confirmBody = (dry) => () => {
+      const b = { test: v("cf-test"), rule: v("cf-rule") };
+      if (v("cf-margin")) b.margin = Number(v("cf-margin"));
+      if (v("cf-trial")) b.trial = Number(v("cf-trial"));
+      return dry ? { ...b, dry_run: true, max_cost_usd: cap("cf-cap") } : { ...b, max_cost_usd: cap("cf-cap") };
+    };
+    holds("confirm", () => `Confirm on ${v("cf-test") || "…"}`);
+    job("cf-dry", "cf-out", null, `${base}/confirm`, confirmBody(true), "looking at what it would read");
+    job("cf-go", "cf-out", "confirm", `${base}/confirm`, confirmBody(false), "confirming", (box) => { forget(`looks:`); reread(box); });
+  }
+
   // ── labelling: a sheet filled here and submitted when done (owner, 2026-11-17: never item by item) ─────────────
   // The sheet is label-sheet's (a job's file); the answers stay in this browser until Submit sends the filled sheet to
   // label-import, which writes a frozen label set as a CSV upload would.
@@ -1846,13 +2291,10 @@
     });
   }
 
-  // ── a screen not wired yet: says which step wires it ───────────────────────
-  function screenLater() {
-    return `<div class="screen"><div class="kicker">Not wired yet</div><h1>This screen comes later</h1>
-      <p class="lead">The Workbench is wired to your project a workflow at a time (RFC-032's build order). This screen still
-      shows the mockup's walk-through, read from the harness's own repository, so it is not shown here.</p>
-      <div class="actions"><a class="btn primary" href="#home">Your goals</a></div></div>`;
-  }
+  // ── links out: the catalog this server builds, and the harness's docs ───────────────────────
+  const DOCS = "https://evals.humancopilot.eu/docs/";
+  const screenOut = (title, href, what) => () => `<div class="screen"><div class="kicker">Out of the Workbench</div><h1>${esc(title)}</h1>
+      <p class="lead">${esc(what)}</p><div class="actions"><a class="btn primary" href="${esc(href)}">Open it ↗</a><a class="btn" href="#home">Your goals</a></div></div>`;
 
   const WIRED = {
     home: [screenHome], goal: [() => screenGoal(WB.param || "")], glossary: null,
@@ -1863,7 +2305,15 @@
     systems: [() => screenSystems(WB.param || ""), wireSystems], eval: [() => screenEval(WB.param || ""), wireEval],
     review: [() => screenReview(WB.param || ""), wireReview], production: [() => screenProduction(WB.param || ""), wireProduction],
     reference: [() => screenReference(WB.param || ""), wireReference], judge: [() => screenJudge(WB.param || ""), wireJudge],
-    settings: [screenSettings, wireSettings],
+    settings: [screenSettings, wireSettings], jobs: [() => screenJobs(WB.param || ""), wireJobs],
+    heldout: [() => screenHeldout(WB.param || ""), wireHeldout], study: [() => screenStudies(WB.param || ""), wireStudies],
+    "production-labels": [() => screenProduction(WB.param || ""), wireProduction], "production-replay": [() => screenProduction(WB.param || ""), wireProduction],
+    // the mockup's own routes, each the live screen it stands for: its goal hub is a goal's screen or the home, its
+    // dataset sources are step 2's, its deployed goal is production
+    hub: [screenHome], "production-live": [() => screenProduction(WB.param || ""), wireProduction],
+    "dataset-hf": [() => screenDatasetNew(WB.param || ""), wireDatasetNew],
+    catalog: [screenOut("The catalog", "/", "The pages this server builds over the project's runs, datasets and goals.")],
+    docs: [screenOut("The docs", DOCS, "The harness's documentation: getting started, the tutorials, every command.")],
   };
 
   function goLive() {
@@ -1871,7 +2321,8 @@
     document.body.classList.add("live");
     const bar = document.querySelector(".mockbar span");
     if (bar) bar.innerHTML = "<b>Workbench</b> · this project, through its API";
-    for (const k of Object.keys(WB.routes)) if (!(k in WIRED)) WB.routes[k] = [screenLater];
+    // a route of the mockup's own (a dataset source's screen) is the live screen it stands for; any other is the home
+    for (const k of Object.keys(WB.routes)) if (!(k in WIRED)) WB.routes[k] = k.startsWith("dataset-src-") ? WIRED["dataset-hf"] : [screenHome];
     for (const [k, v] of Object.entries(WIRED)) if (v) WB.routes[k] = v;
     WB.routes.start = [screenHome];
     if (!location.hash || location.hash === "#start") location.hash = "#home";

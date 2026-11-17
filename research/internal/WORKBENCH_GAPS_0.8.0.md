@@ -70,8 +70,8 @@ passage amended for D2). The mockup stays as reviewed, a frozen design reference
   rows in either store (RFC-033); no `runs-linux`, no `outputs.jsonl` beside `metrics.json`.
 - **Rounds**: arms are stored; `carried`/`retired` lists are gone; evidence is `model/rounds.evidence`, its rows carry
   their Holm `threshold` (checked: `stats.py` `_set_verdict`).
-- **Jobs**: the record is `{id, operation, inputs, by, locks, env, run_id, state, progress, spent_usd, result}`; no
-  `command`, `argv` or `reason`. A job's "command it runs" is built by the UI from the operation and its inputs.
+- **Jobs**: the record is `{id, operation, inputs, by, locks, env, run_id, state, progress, spent_usd, result, files}`
+  (`files` added in the build: what the job wrote for the person, by name); no `command`, `argv` or `reason`. A job's "command it runs" is built by the UI from the operation and its inputs.
 - **Labels, picks, references**: `pick` is the production-record pick, not an A/B preference; `sheet-export` is not
   served (the sheet is downloaded from a job's artifact); reference promotion needs a label set.
 - **Prompts**: `prompt-version` needs a `name` and a `note`.
@@ -109,7 +109,7 @@ first); every non-GET needs `X-EVH-Data: 1`; uploads are base64 JSON, at most 50
 (no events); the UI must render four refusal shapes (an edit's `{error, kind, problems}`, a job refused before it
 exists `{error}`, a job that failed later (`state`, its refusal kind, the log), 503 + Retry-After during a migration).
 Mobile: the mockup's tables of four or more columns stack into cards; two- and three-column tables, the live model
-page's forms and the jobs list are not covered by the 390 px browser tests.
+page's forms and the jobs list were not covered by the 390 px browser tests (every live screen is, since the build).
 
 ## Order once the reviews are settled
 

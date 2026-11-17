@@ -126,6 +126,24 @@ try:
     check("setup: validation and test sets of 12, their gold, a goal, the one-sentence arm run",
           r is not None and r.returncode == 0 and rb.returncode == 0, ((r.stderr if r else "") + rb.stderr)[-400:])  # fmt: skip
 
+    # ── a baseline with no run on the study's dataset: every trial would be compared with nothing ─────────────────────
+    system("unrun_v1", 1)
+    nb = spec("norun", "dataset: tk_val\nbaseline: {system: unrun_v1}\nmeasure: overlap_f1\nsampler: grid\n"
+              "accept: {point: {min_gain: 0}}\nstop: {trials: 5}\n"
+              "space:\n  groups:\n    - {name: length, reason: how much to keep, params: {sentences: [2, 3]}}\n")  # fmt: skip
+    nd = evh("study-run", "--study", "g/s0", "--spec", nb, "--dry-run")
+    nr = evh("study-run", "--study", "g/s0", "--spec", nb)
+    check(
+        "a study whose baseline has no run on its dataset is refused, its dry run too, saying to run it first; nothing "
+        "written, nothing run (each trial was dropped as compared with nothing)",
+        nd.returncode == 1
+        and nr.returncode == 1
+        and "unrun_v1 has no run on tk_val" in nd.stderr
+        and "evh run --system unrun_v1 --dataset tk_val" in nr.stderr
+        and not _runstore.exists(proj, "studies/g/s0.yaml"),
+        (nd.stderr[-300:], nr.stderr[-300:]),
+    )
+
     # ── a grid study ──────────────────────────────────────────────────────────────────────────────────────────────
     grid = spec("grid", "dataset: tk_val\nbaseline: {system: one_v1}\nmeasure: overlap_f1\nsampler: grid\n"
                 "accept: {point: {min_gain: 0}}\nstop: {trials: 5}\n"

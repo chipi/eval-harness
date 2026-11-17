@@ -155,6 +155,8 @@ def status(argv: list[str]) -> int:
                 if j.get(k) not in (None, "", [], {}):
                     shown = json.dumps(j[k]) if k == "inputs" else j[k]
                     print(f"  {k}: {shown}")
+            if j.get("files"):
+                print(f"  files: {', '.join(j['files'])}  (in {_jobs.job_dir(a.job_id)})")
             _jsonout.value("job", j)
         else:
             try:

@@ -55,21 +55,29 @@ env.update(
 )  # W8's publish is refused offline, with no token of this machine
 
 
+#: Seconds the fake waits before it answers: a run the jobs page stops is still running when it is stopped.
+SLOW = {"s": 0.0}
+
+
 class Fake(http.server.BaseHTTPRequestHandler):
     """An OpenAI-shaped server whose model reasons unless told not to: its onboarding is flagged."""
 
     def _send(self, doc):
         data = json.dumps(doc).encode()
-        self.send_response(200)
-        self.send_header("Content-Type", "application/json")
-        self.send_header("Content-Length", str(len(data)))
-        self.end_headers()
-        self.wfile.write(data)
+        try:
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(data)))
+            self.end_headers()
+            self.wfile.write(data)
+        except BrokenPipeError:
+            pass  # a run the jobs page stopped is killed mid-call: nobody reads this answer
 
     def do_GET(self):
         self._send({"models": [{"name": "fake:1b", "model": "fake:1b", "digest": "abc123def456" + "0" * 52}]})
 
     def do_POST(self):
+        time.sleep(SLOW["s"])
         body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
         msg = {"role": "assistant", "content": '{"answer": "yes", "reason": "17 has no divisors"}'}
         if body.get("reasoning_effort") != "none":
@@ -389,13 +397,16 @@ try:
                 and page.evaluate("localStorage.getItem('evh.draft.label.notes_v1')") is None,
                 lab,
             )
-            page.goto(f"http://127.0.0.1:{port}/workbench/#study")
-            page.wait_for_selector("h1", timeout=20000)
+            seen = {}
+            for route, h1 in (("hub", "Your goals"), ("dataset-hf/tickets_summary", "Add a dataset"),
+                              ("dataset-src-kaggle/tickets_summary", "Add a dataset"), ("catalog", "The catalog")):  # fmt: skip
+                page.goto(f"http://127.0.0.1:{port}/workbench/#{route}")
+                page.wait_for_selector(f"h1:has-text('{h1}')", timeout=20000)
+                seen[route] = "cnn_dailymail" not in page.content()
             check(
-                "a screen not wired yet says so, and shows none of the mockup's data",
-                "This screen comes later" in page.locator("main").inner_text()
-                and "cnn_dailymail" not in page.content(),
-                page.locator("main").inner_text()[:200],
+                "a route of the mockup's own opens the live screen it stands for, never the mockup's data",
+                all(seen.values()),
+                seen,
             )
             # the models: bring one in, add where it runs, onboard it as a job, accept what it raises
             page.goto(f"http://127.0.0.1:{port}/workbench/#models")
@@ -1261,6 +1272,137 @@ try:
                 page.locator("#pb-out [role=alert]").count() == 1,
                 page.locator("#pb-out").inner_text()[:400],
             )
+            # Jobs (UXS-005): every job a page at a time, filtered; one job's record, result, files (a blind sheet's key not
+            # among them) and log; a run stopped while it runs, then resumed as a new job with what it left of its cap
+            page.once("dialog", lambda d: d.accept())  # the publish form, refused, is still unsent: leave
+            page.goto(f"http://127.0.0.1:{port}/workbench/#home")
+            page.click("text=Every job")
+            page.wait_for_selector("h1:has-text('Jobs')", timeout=20000)
+            page.wait_for_selector("text=of ", timeout=20000)
+            every = evh("jobs-status", "--json")
+            total = len(json.loads(every.stdout.splitlines()[-1])["result"]["values"]["jobs"])
+            check(
+                "the jobs: the newest page of them (GET /jobs), counted as evh jobs-status counts them",
+                f"of {total}" in page.locator("main").inner_text()
+                and page.locator("main tbody tr").count() == min(total, 50),
+                (page.locator("main").inner_text()[-300:], total),
+            )
+            page.select_option("#jf-state", "succeeded")
+            page.wait_for_function(
+                "() => document.querySelector('#jf-state')?.value === 'succeeded' && document.querySelectorAll('main tbody tr').length",
+                timeout=20000,
+            )
+            page.select_option("#jf-op", "sheet-export")
+            page.wait_for_function(
+                "() => [...document.querySelectorAll('main tbody tr')].every((r) => r.children[1].textContent === 'sheet-export')"
+                " && document.querySelectorAll('main tbody tr').length > 0",
+                timeout=20000,
+            )
+            check(
+                "filtered by state and operation (state, operation)",
+                all("succeeded" in r for r in page.locator("main tbody tr").all_inner_texts()),
+                page.locator("main tbody tr").all_inner_texts()[:3],
+            )
+            page.click("main tbody tr >> nth=-1 >> a")
+            page.wait_for_selector("h1:has-text('sheet-export')", timeout=20000)
+            page.wait_for_function(
+                "() => !document.querySelector('#jb-log').textContent.startsWith('reading')", timeout=20000
+            )
+            jid = page.url.rsplit("/", 1)[-1]
+            names = page.locator("main ul a.mono").all_inner_texts()
+            on_disk = sorted(x.name for x in (proj / ".build" / "jobs" / jid).iterdir())
+            got = page.evaluate(
+                "(u) => fetch(u, {credentials: 'same-origin'}).then((r) => r.status)",
+                f"/api/v1/jobs/{jid}/files/{names[0]}" if names else "/none",
+            )
+            said = evh("jobs-status", jid).stdout
+            check(
+                "one job: its record, its result and its log, its files (a link each, which answers), the blind sheet's key "
+                "not among them (GET /jobs/{id}, its files, its log); evh jobs-status names the same files",
+                names == ["review.csv"]
+                and any(n.endswith(".key.json") for n in on_disk)
+                and got == 200
+                and "inputs" in page.locator("main").inner_text()
+                and page.locator("#jb-log").inner_text().strip() != ""
+                and f"files: {', '.join(names)}" in said,
+                (names, on_disk, got, said[-300:]),
+            )
+            SLOW["s"] = 1.5
+
+            def start_run() -> dict:
+                """A run of the fake system as a job: each call waits 1.5 s, so it is still running when stopped."""
+                return page.evaluate(
+                    """() => fetch('/api/v1/jobs', {method: 'POST', credentials: 'same-origin', headers: {'Content-Type':
+                    'application/json', 'X-EVH-Data': '1'}, body: JSON.stringify({operation: 'run', inputs: {system:
+                    'fake-1b_here', dataset: 'tk_v1'}, by: 'person:tester', max_cost_usd: 1})}).then((r) => r.json())"""
+                )
+
+            def done_items(jid: str) -> int:
+                f = proj / ".build" / "jobs" / jid / "progress.json"
+                return (json.loads(f.read_text()).get("done") or 0) if f.is_file() else 0
+
+            early = start_run()
+            page.goto(f"http://127.0.0.1:{port}/workbench/#jobs/{early.get('id')}")
+            page.wait_for_selector("#jb-stop", timeout=20000)
+            page.click("#jb-stop")
+            page.wait_for_selector("h1 ~ p.lead:has-text('cancelled'), #jb-out [role=alert]", timeout=30000)
+            stopped = json.loads((proj / ".build" / "jobs" / early["id"] / "state.json").read_text())
+            jobs_before = len(list((proj / ".build" / "jobs").iterdir()))
+            if page.locator("#jb-resume").count():
+                page.click("#jb-resume")
+                page.wait_for_function(
+                    f"() => !location.hash.endsWith('{early['id']}') || document.querySelector('#jb-out [role=alert], #jb-out .note')",
+                    timeout=20000,
+                )
+            check(
+                "a run stopped from its page before it wrote anything (POST /jobs/{id}/stop): cancelled; Resume refuses it "
+                "with why, and starts no job",
+                stopped.get("state") == "cancelled"
+                and done_items(early["id"]) == 0
+                and "nothing to resume" in page.locator("#jb-out").inner_text()
+                and len(list((proj / ".build" / "jobs").iterdir())) == jobs_before,
+                (stopped, page.locator("#jb-out").inner_text()[:300]),
+            )
+            started = start_run()
+            page.goto(f"http://127.0.0.1:{port}/workbench/#jobs/{started.get('id')}")
+            page.wait_for_selector("#jb-stop", timeout=20000)
+            deadline = time.monotonic() + 60
+            while done_items(started["id"]) < 1 and time.monotonic() < deadline:
+                time.sleep(0.2)
+            page.click("#jb-stop")
+            page.wait_for_selector("h1 ~ p.lead:has-text('cancelled'), #jb-out [role=alert]", timeout=30000)
+            stopped = json.loads((proj / ".build" / "jobs" / started["id"] / "state.json").read_text())
+            check(
+                "a running run stopped after it wrote something: cancelled, and Resume the run offered",
+                stopped.get("state") == "cancelled" and page.locator("#jb-resume").count() == 1,
+                (stopped, page.locator("main").inner_text()[:300]),
+            )
+            SLOW["s"] = 0.0
+            page.click("#jb-resume")
+            page.wait_for_function(
+                f"() => location.hash.startsWith('#jobs/') && !location.hash.endsWith('{started['id']}')",
+                timeout=20000,
+            )
+            page.wait_for_selector(
+                "h1 ~ p.lead:has-text('succeeded'), h1 ~ p.lead:has-text('failed')", timeout=120000
+            )
+            again = json.loads(
+                (proj / ".build" / "jobs" / page.url.rsplit("/", 1)[-1] / "job.json").read_text()
+            )
+            check(
+                "Resume the run: a new job continues the stopped run (run --resume its run id) with what it left of its cap, "
+                "and its page follows it to its end",
+                "succeeded" in page.locator("h1 ~ p.lead").inner_text()
+                and again["inputs"].get("resume") == started.get("run_id")
+                and float(again["env"]["EVAL_MAX_COST_USD"]) <= 1.0,
+                (
+                    page.locator("h1 ~ p.lead").inner_text(),
+                    again.get("inputs"),
+                    again.get("env"),
+                    started.get("run_id"),
+                    page.locator("#jb-log").inner_text()[-600:],
+                ),
+            )
             phone = browser.new_context(
                 viewport={"width": 390, "height": 844},
                 is_mobile=True,
@@ -1284,6 +1426,7 @@ try:
                 ("reference/tk_v1", "Change the reference set"),
                 ("judge/tickets_summary", "A judge for this goal"),
                 ("settings", "Govern and maintain"),
+                ("jobs", "Jobs"),
                 ("review/tickets_summary", "Review the outputs"),
                 ("production/tickets_summary", "Learn from production"),
             ):
@@ -1293,7 +1436,7 @@ try:
                     phone.screenshot(path=f"{shots}/phone-{screen.replace('/', '-')}.png", full_page=True)
                 wide[screen] = phone.evaluate("document.documentElement.scrollWidth - window.innerWidth")
             check(
-                "at a phone's width the models' screens and steps 1 to 4, the eval, the review, production, the reference set, the judge and the settings do not scroll sideways",
+                "at a phone's width the models' screens and steps 1 to 4, the eval, the review, production, the reference set, the judge, the settings and the jobs do not scroll sideways",
                 all(v <= 0 for v in wide.values()),
                 wide,
             )

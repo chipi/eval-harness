@@ -39,7 +39,7 @@ os.environ.setdefault("EVAL_STORE", "files")
 import _job_ops  # noqa: E402
 import _runstore  # noqa: E402
 import yaml  # noqa: E402
-from evaluation_harness import _api, _common, _format, _jobs, ops  # noqa: E402
+from evaluation_harness import _api, _common, _format, _jobs, _outputs, _store, ops  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 from evaluation_harness.ops import registry  # noqa: E402
 
@@ -309,10 +309,29 @@ try:
         )
 
         # resume: the stopped job's cap, less what it spent; a new run id; the run it continues
+        jn = start("t-spend", {**ok}, max_cost_usd=1)
+        (proj / ".build/jobs" / jn["id"] / "state.json").write_text(
+            json.dumps({"state": "failed", "exit": 1})
+        )
+        jobs_before = len(list((proj / ".build/jobs").iterdir()))
+        r = refused(_api.resume_job, jn["id"])
+        check(
+            "a run that stopped before it wrote anything is not resumed (run --resume would refuse it after starting)",
+            r is not None
+            and r[0] == 409
+            and "nothing to resume (start the run again)" in r[1]
+            and len(list((proj / ".build/jobs").iterdir())) == jobs_before,
+            r,
+        )
         jr = start("t-spend", {**ok}, max_cost_usd=1)
         (proj / ".build/jobs" / jr["id"] / "state.json").write_text(
             json.dumps({"state": "failed", "exit": 1})
         )
+        wrote = (
+            _common.RUNS / on_disk(jr["id"])["run_id"]
+        )  # the stopped run wrote one output before it stopped
+        _store.mkdir(wrote, parents=True, exist_ok=True)
+        _outputs.store().add(wrote, "t01_login", "a summary")
         (proj / ".build/jobs" / jr["id"] / "spent.json").write_text(json.dumps({"spent_usd": 0.25}))
         new = _api.resume_job(jr["id"])
         recn = on_disk(new["id"])

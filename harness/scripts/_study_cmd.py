@@ -57,6 +57,17 @@ def run_study_body(**inputs: Any) -> int:
     found = _study.problems(goal, sid, s)
     if found:
         die(f"study {goal}/{sid}: " + "; ".join(found), "invalid-file")
+    from evaluation_harness._runs import runs_on  # noqa: PLC0415
+
+    base, on = s["baseline"]["system"], s["dataset"]
+    if not any(
+        True for _ in runs_on(on, label="", system_id=base)
+    ):  # every trial would be compared with nothing
+        die(
+            f"{base} has no run on {on}: the study compares each trial with it. "
+            f"Run it first: evh run --system {base} --dataset {on}",
+            "not-found",
+        )
     sampler = s["sampler"] if isinstance(s["sampler"], str) else "command"
     if a.dry_run:
         stop = s.get("stop") or {}
