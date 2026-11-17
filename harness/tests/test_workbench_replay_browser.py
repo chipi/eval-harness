@@ -34,6 +34,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
 import _runstore  # noqa: E402
 
 proj = Path(tempfile.mkdtemp(prefix="evh-wbreplay-"))
+os.environ.setdefault("EVAL_STORE", "files")  # a project names its store; the suite's own, else files
 env = dict(os.environ, EVH_ACTOR="person:test", EVAL_HOME=str(proj), EVAL_BUILD_REF="test-wb-replay")
 env["PYTHONPATH"] = str(HARNESS) + os.pathsep + env.get("PYTHONPATH", "")
 for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_MAX_COST_USD", "EVH_FOR", "EVH_PUBLIC"):
