@@ -242,6 +242,16 @@ class Entity:
             raise Problem(str(exc), "bad-argument") from None
         return self.save(rid, changed, by)
 
+    def make(self, rid: str, base: dict[str, Any], sets: list[tuple[str, Any]], by: str) -> dict[str, Any]:
+        """A new record: `base` with each dotted key set, saved; an id that is taken is refused."""
+        from evaluation_harness import _data_page, _settings_form  # noqa: PLC0415
+
+        try:
+            record = _settings_form.set_values(base, sets, [])
+        except _data_page.Refused as exc:
+            raise Problem(str(exc), "bad-argument") from None
+        return self.save(rid, record, by, new=True)
+
     def _history_file(self, rid: str) -> Path:
         return _common.DATA / "history" / self.plural / f"{rid}.jsonl"
 

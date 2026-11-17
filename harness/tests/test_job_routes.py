@@ -695,6 +695,43 @@ try:
         and done.get("state") == "succeeded",
         (st, rec, done.get("state"), done.get("refusal"), log_tail(rec, done)),
     )
+    # judge-score as a job (the Workbench's judge screen) and with --json: its printing goes through the envelope's
+    # tee, which is not a terminal; it stopped on `stream.isatty()` (exit 70) before anything was judged.
+    shutil.copy2(KIT / "judge_prompt.txt", proj / "tutorial" / "judge_prompt.txt")
+    _runstore.write_text(
+        proj, "scorers/tickets-judge-v1.yaml", (KIT / "scorers" / "tickets-judge-v1.yaml").read_text()
+    )
+    st, rec, done = post(
+        "/scorers/tickets-judge-v1/judge",
+        {"dataset_id": "tickets_v1", "unvalidated": True, "dry_run": True, "max_cost_usd": 0.01},
+    )
+    check(
+        "POST /scorers/{scorer}/judge (judge-score, a dry run): the job succeeds and answers its plan",
+        st == 202
+        and done.get("state") == "succeeded"
+        and bool(((done.get("result") or {}).get("result") or {}).get("blocks")),
+        (
+            st,
+            rec if st != 202 else done.get("state"),
+            done.get("refusal"),
+            log_tail(rec, done) if st == 202 else "",
+        ),
+    )
+    r = evh(
+        "judge-score",
+        "--dataset-id",
+        "tickets_v1",
+        "--scorer",
+        "tickets-judge-v1",
+        "--unvalidated",
+        "--dry-run",
+        "--json",
+    )
+    check(
+        "evh judge-score --json answers its envelope (exit 0)",
+        r.returncode == 0 and json.loads(r.stdout or "{}").get("command") == "judge-score",
+        (r.returncode, r.stderr[-400:]),
+    )
     ids = sorted(p.stem for p in (proj / "tutorial" / "tickets").glob("*.txt"))
     scores = "".join(json.dumps({"item_id": i, "acc": 1.0}) + "\n" for i in ids)
 

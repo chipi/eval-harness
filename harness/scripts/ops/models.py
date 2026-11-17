@@ -178,12 +178,9 @@ def show_model(model: str) -> dict[str, Any]:
 
 def new_model(model: str, set: dict[str, Any], by: str) -> dict[str, Any]:
     """Make the model from its fields."""
-    from evaluation_harness import _settings_form  # noqa: PLC0415
     from evaluation_harness.model.models import MODEL  # noqa: PLC0415
 
-    return MODEL.save(
-        model, _settings_form.set_values({"model_id": model}, list(set.items()), []), by, new=True
-    )
+    return MODEL.make(model, {"model_id": model}, list(set.items()), by)
 
 
 def set_model(
@@ -219,12 +216,12 @@ def deployment_history(model: str, deployment: str) -> dict[str, Any]:
 
 def new_deployment(model: str, deployment: str, set: dict[str, Any], by: str) -> dict[str, Any]:
     """Make the deployment from its fields."""
-    from evaluation_harness import _settings_form  # noqa: PLC0415
     from evaluation_harness.model.models import DEPLOYMENT  # noqa: PLC0415
 
     _no_checks(set, None)
-    rec = _settings_form.set_values({"model_id": model, "deployment_id": deployment}, list(set.items()), [])
-    return DEPLOYMENT.save(f"{model}/{deployment}", rec, by, new=True)
+    return DEPLOYMENT.make(
+        f"{model}/{deployment}", {"model_id": model, "deployment_id": deployment}, list(set.items()), by
+    )
 
 
 def set_deployment(

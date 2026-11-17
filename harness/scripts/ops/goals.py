@@ -161,11 +161,9 @@ def history(goal: str) -> dict[str, Any]:
 
 def new(goal: str, set: dict[str, Any], by: str) -> dict[str, Any]:
     """Make the goal from its fields (dotted keys), checked; an id that is taken is refused."""
-    from evaluation_harness import _settings_form  # noqa: PLC0415
     from evaluation_harness.model.goals import GOAL  # noqa: PLC0415
 
-    record = _settings_form.set_values({"goal_id": goal}, list(set.items()), [])
-    return GOAL.save(goal, record, by, new=True)
+    return GOAL.make(goal, {"goal_id": goal}, list(set.items()), by)
 
 
 def change(

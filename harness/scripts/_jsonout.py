@@ -178,6 +178,10 @@ class _Tee:
     def flush(self) -> None:
         self.live.flush()
 
+    def isatty(self) -> bool:
+        """What is collected is no terminal, whatever `live` is (a body that asks before it line-buffers)."""
+        return False
+
 
 def _say_exposed() -> None:
     """After a command's body: the held-out items its scores left out (RFC-031 H1), said once, wherever it printed,

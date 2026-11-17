@@ -29,7 +29,8 @@ just static"): `harness/workbench/` (`index.html`, `workbench.css`, `workbench.j
 word). `live.js` turns a screen live, on the project's own API; on 2026-11-17 the home, a goal, the models (a new
 model, a deployment, onboarding, an accepted flag), step 1 (a goal made or changed), step 2 (a dataset for a goal),
 step 3 (preparing it), labelling a dataset's items (the sheet), step 4 (the systems), W1 (the eval's rounds), W2
-(reviewing the outputs) and W3 (production, replay) are live, and every other screen
+(reviewing the outputs), W3 (production, replay), W6 (changing the reference set), W7 (a judge) and W8 (the settings) are
+live, and every other screen
 says it is not yet. Until the project answers no mockup screen is drawn (one sent a reload of a live screen home).
 
 **From 2026-11-17 (D7)** the mockup is a frozen design reference: its data (`mock.js`, this repository's) stops
@@ -431,10 +432,14 @@ decision kept with its reason. This is where people spend most of their time (W1
   then promote it with who and why and re-score the arms ($0: stored outputs). In the mockup: the CNN silver set,
   written by the arm `anthropic_l`, puts anthropic_m first (0.491) and makes deepseek_m significantly worse (p 0.0087);
   the two arms that rise most are the author's own family, which the screen says before promoting.
-- Live: the label sets (`label-set-list`), `reference-promote` (with its reason), `rescore` (a job). "What it moves"
-  is the leaderboard read under the other label (`leaderboard`, `label`, such as `silver`); a scoring change's is
-  `score-preview`, whose job's result gives each arm now and after, how far it moved, and the leader, the
-  recommendation and the contenders now and after (API 4, built).
+- Live (2026-11-17, from step 3's "Change the reference set"): the dataset's reference sets (`reference-list`) and
+  label sets with how often two agree (`label-set-list`). "What it moves" scores the stored outputs against a label set
+  under its own label (`rescore` with `labels`, a job, $0; never where a goal reads) and reads the leaderboard, one
+  table per reference: the arms ranked on the label set beside their rank on a reference chosen to compare with, each
+  side's ordering test, an arm that wrote the reference marked. Promoting is `reference-promote` with its reason, then
+  `rescore` with `reference_id` (a table of its own beside the one scored against the old reference). A scoring change
+  is `score-preview` (a job writing nothing): each arm now and after, how far it moved, the leader, the recommendation
+  and the contenders now and after (API 4); applied to a round by `rescore` with the goal, the round and why.
 
 ### W7 A judge
 
@@ -444,8 +449,14 @@ decision kept with its reason. This is where people spend most of their time (W1
   In the mockup: `judge-summ-v2` (openai_l, anthropic_l), tau 0.540 and 0.528 on SummEval against 0.372 for the best
   free scorer, best pick on Goyal 2022's CNN set 0.52 and 0.54 against 0.33 by chance, at most $15.00.
 - The validation is shown as stored; running one stays a tool (`tools/validate_judge_*.py`), not in the Workbench in
-  0.8.0 (D6). Live: `scorer-list`, `scorer-new`, `scorer-set`, `POST /estimate` on `judge-score` (its dry run),
-  `judge-score` (a job), `cost-report`.
+  0.8.0 (D6). Live (2026-11-17, from the eval's "A judge for this goal"): the goal's judge scorers (`scorer-list`,
+  each with its judges, families, whether validated and what is wrong with it); one shown (`scorer-show`: how it judges,
+  its prompt file, guards and cap, its judges, its validation as stored with the reasons it is not, the people's checks,
+  what it judged); changed while it has judged nothing (`scorer-set`, only what changed sent), else a new version
+  started from it (`scorer-new` with `supersedes`, its judges given as params kept as they are); made on the page with
+  systems as its judges (`scorer-new`); the cost first (`POST /estimate` on `judge-score`), then the judging as a job
+  under a cap, an unvalidated judge only when asked and labelled so; what it cost (`cost-report`, a job). The prompt is
+  a file the scorer names (`prompt.file`), typed as its path: how the Workbench keeps prompts is the build's last step.
 
 ### W8 Settings
 
@@ -455,6 +466,15 @@ decision kept with its reason. This is where people spend most of their time (W1
   the goal policy, budgets (files under `data/`: `data-show`, `data-put`), publishing a dataset (`dataset-publish`).
 - `config.yaml` (the exposure check's repos, for one) is not edited here in 0.8.0 (D9): `data-put` writes only under
   `data/`.
+- Live (2026-11-17, "Settings" on the home), one row each with its command: the store config.yaml names and where the
+  data is (`data-ls`); the data moved into that store, the dry run first (`data-migrate`, a job whose counts come as
+  values) and Move it only once the dry run counted something, the page waiting out the server's 503 while it moves (to
+  move to the other store, config.yaml is changed first, by hand); this release's formats (`migrate`: the check, the dry
+  run, the migration, each a job); the project checked (`validate`, a read, "checking…", its failures listed as `evh
+  validate` prints them); its policies (`validate.json`, `goals/policy.yaml`: read with `data-show`, checked and saved
+  with `data-put` as a file, a file made elsewhere since it was read not overwritten); budgets (set when a round opens);
+  publishing a dataset (`dataset-publish`, a job). A project whose data the release does not read (another format, a
+  store just switched) opens live, not as the mockup, and the settings are where it is put right.
 
 ## Round 5: what 0.8.0 built after round 4
 
@@ -731,9 +751,9 @@ against the code on 2026-11-17 (`research/internal/WORKBENCH_GAPS_0.8.0.md` has 
 | 5 / W1 The eval | `round-list`, `round-show`, `round-evidence`, `round-open`, `round-carry`, `POST /estimate`, `sweep`, `round-retire`, `round-close` (`promote`), `baselines`, `baseline-rollback` | ✓ live (2026-11-17): the rounds as tabs, a round's question, arms and evidence (raw p and threshold) with its chart (each arm's mean against its cost); open one (the last one's arms carried in or not), carry an arm in later, see a run's cost, run arms as one sweep under a cap, retire with a reason (final), close with a conclusion and the leader's run promoted; the baseline's versions, rolled back with a reason |
 | W2 Review, label, tag | `dataset-arm-list`, `failure-modes-list`, `failure-modes-show`, `failure-modes-new`, `sheet-export`, `jobs-file`, `sheet-import` (`export_job`); labelling: `label-sheet`, `label-import` | ✓ live (2026-11-17): two arms compared on a sheet made as a job, "which is better" blind (the page never holds the key), or "what went wrong" with a failure-mode list (made here if new); answers kept in this browser until submitted, written as judged scores or a tag set; the expected answers on the labelling screen |
 | W3 Production | `capture-list`, `capture`, `dataset-from-capture`, `dataset-materialize`, `arm-from-capture`, `sheet-show` (`wrong_against`; its rows as values), `pick`, `dataset-extend`, `label-from-capture`, `label-coverage-show`, `periods`, `faithfulness-show`, `faithfulness` | ✓ live (2026-11-17): records captured through an importer and made a (fetched) dataset; production's decisions scored as an arm; the rows where it was wrong against a label set, picked with a reason for a dataset; the next version made from the picks; labels from what happened later (the rules typed here, their coverage); a code record's periods and faithfulness, a replay's plan first, then the replay as a job |
-| W6 Reference | `reference-list`, `label-set-list`, `reference-promote`, `leaderboard` (`label`), `score-preview`, `rescore` | ✓ `score-preview`'s result (API 4) |
-| W7 Judge | `scorer-list`, `scorer-new`, `scorer-set`, `judge-score`, `POST /estimate`, `cost-report` | ✓; validating stays a tool (D6) |
-| W8 Settings | `validate`, `migrate`, `data-migrate`, `data-show`, `data-put`, `dataset-publish` | ~ `validate` is a read of about 27 s (D1); no `config.yaml` (D9) |
+| W6 Reference | `reference-list`, `label-set-list`, `reference-promote`, `leaderboard`, `score-preview`, `rescore` | ✓ live (2026-11-17): the reference sets and label sets (with agreement); what a label set moves (the arms re-scored under its own label, $0, ranked beside a current reference); promoted with why and the arms re-scored against it; a scoring change previewed (each arm now and after, the leader, the contenders) and applied to a round with why |
+| W7 Judge | `scorer-list`, `scorer-show`, `scorer-new`, `scorer-set`, `judge-score`, `POST /estimate`, `cost-report` | ✓ live (2026-11-17): the goal's judge scorers and one shown (judges, guards, validation as stored); changed until it judges, then a new version from it; made from systems; the cost first, then judging as a job under a cap; what it cost. Validating stays a tool (D6); the prompt is a file's path until the prompt review |
+| W8 Settings | `data-ls`, `validate`, `migrate`, `data-migrate`, `data-show`, `data-put`, `dataset-publish` | ✓ live (2026-11-17): the store and moving the data into it (dry run first, 503s waited out); formats; `validate` as a read, "checking…" (about 27 s on this repository, D1); the policies checked and saved; publishing. No `config.yaml` (D9) |
 | Held-out test, study | `dataset-split`, `exposure`, `exposure-add`, `sealed-counts`, `dataset-unseal`, `pair-test`, `looks`, `study-*` | ✓ |
 | Jobs | `jobs-list`, `jobs-show`, `jobs-log`, `jobs-file`, `jobs-stop`, `jobs-resume` | ~ progress from four operations |
 

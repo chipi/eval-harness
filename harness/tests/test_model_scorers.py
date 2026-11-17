@@ -177,6 +177,31 @@ try:
         (again.stderr[-100:], bad.stderr[-200:], ghost.stderr[-200:]),
     )  # fmt: skip
 
+    # A key past the end of a list (judges.2 with no judges.0) is refused as a bad argument by every operation that makes
+    # a record, as the changes refuse it; the makes let the refusal escape (exit 70, the API's 500).
+    gaps = {
+        name: evh(name, *ids, "--set", f"{key}.2.id=x", "--by", "t")
+        for name, ids, key in (
+            ("scorer-new", ["s_gap"], "judges"),
+            ("model-new", ["m_gap"], "deployments"),
+            ("deployment-new", ["m_gap", "d_gap"], "checks_x"),
+            ("system-new", ["sys_gap"], "params.list"),
+            ("fieldset-new", ["f_gap"], "fields"),
+            ("failure-modes-new", ["fm_gap"], "modes"),
+            ("goal-new", ["g_gap"], "datasets"),
+        )
+    }
+    check(
+        "every make operation refuses a list item past the end as a bad argument (exit 1), not an error nothing caught",
+        all(
+            r.returncode == 1
+            and "ERROR (bad-argument)" in r.stderr
+            and "is not an item of the list" in r.stderr
+            for r in gaps.values()
+        ),
+        {k: (r.returncode, r.stderr[-160:]) for k, r in gaps.items()},
+    )
+
     # -- the views
     rows = result(evh("scorer-list", "--json"))["scorers"]
     row = rows[0] if rows else {}

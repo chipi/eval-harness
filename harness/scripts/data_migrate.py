@@ -26,7 +26,7 @@ import sqlite3
 from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _common, _outputs, _store
+from evaluation_harness import _common, _jsonout, _outputs, _store
 from evaluation_harness._common import die
 from evaluation_harness.ops import legacy
 
@@ -350,4 +350,5 @@ def body(**inputs: Any) -> int:
         f"{n['files']} file(s) ({n['bytes']:,} bytes) and {n['runs']} run(s)' {n['outputs']} output(s) and "
         f"{n['rows']} row(s) {verb} into the {args.to} store"
     )
+    _jsonout.values({"to": args.to, "dry_run": bool(args.dry_run), **n})
     return 0

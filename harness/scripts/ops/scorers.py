@@ -46,15 +46,9 @@ def show_scorer(scorer: str) -> dict[str, Any]:
 
 def new_scorer(scorer: str, set: dict[str, Any], by: str) -> dict[str, Any]:
     """Make the scorer from its fields."""
-    from evaluation_harness import _settings_form  # noqa: PLC0415
     from evaluation_harness.model.scorers import SCORER  # noqa: PLC0415
 
-    return SCORER.save(
-        scorer,
-        _settings_form.set_values({"scorer_id": scorer, "kind": "judge"}, list(set.items()), []),
-        by,
-        new=True,
-    )
+    return SCORER.make(scorer, {"scorer_id": scorer, "kind": "judge"}, list(set.items()), by)
 
 
 def set_scorer(

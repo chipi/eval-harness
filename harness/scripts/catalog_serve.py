@@ -1179,6 +1179,15 @@ class Handler(SimpleHTTPRequestHandler):
                     REFUSAL_STATUS.get(exc.kind, 400),
                     {"error": str(exc), "kind": exc.kind, "problems": exc.problems},
                 )
+            except (
+                SystemExit
+            ) as exc:  # a body that refuses as a command does (die): ended the thread, no answer
+                m = re.match(r"ERROR \(([a-z-]+)\): (.*)", str(exc), re.S)
+                kind = m.group(1) if m else "failed"
+                return say(
+                    REFUSAL_STATUS.get(kind, 400),
+                    {"error": (m.group(2) if m else str(exc)).strip(), "kind": kind},
+                )
             if op.kind != "read":
                 data_changed(f"{op.name} through the API")
             return say(200, {"command": op.name, "version": __version__, "result": result})

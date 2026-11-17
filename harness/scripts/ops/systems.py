@@ -53,12 +53,9 @@ def show_system(system: str) -> dict[str, Any]:
 
 def new_system(system: str, set: dict[str, Any], by: str) -> dict[str, Any]:
     """Make the system from its fields."""
-    from evaluation_harness import _settings_form  # noqa: PLC0415
     from evaluation_harness.model.systems import SYSTEM  # noqa: PLC0415
 
-    return SYSTEM.save(
-        system, _settings_form.set_values({"system_id": system}, list(set.items()), []), by, new=True
-    )
+    return SYSTEM.make(system, {"system_id": system}, list(set.items()), by)
 
 
 def set_system(

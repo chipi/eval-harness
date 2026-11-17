@@ -13,6 +13,28 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Added
 
+- **The Workbench's settings (W8), live** (UXS-005): "Settings" on the home, one row each with its command: the
+  store config.yaml names, and the data moved into it (`data-migrate`, its dry run first; Move it only once the dry run
+  counted something; the page waits out the server's 503 while it moves); this release's formats (`migrate`); the
+  project checked (`validate`, its failures listed); the policies (`validate.json`, `goals/policy.yaml`) read, checked
+  and saved with `data-put`, a file made elsewhere since it was read not overwritten; publishing a dataset
+  (`dataset-publish`). config.yaml is not edited here (D9).
+- **`data-migrate --json` gives its counts as values** (`to`, `dry_run`, `files`, `bytes`, `runs`, `outputs`, `rows`):
+  they were printed only.
+- **The Workbench's judge (W7), live** (UXS-005): "A judge for this goal" on the eval lists the goal's judge scorers
+  and shows one: how it judges, its prompt file, guards and cap, its judges and families, its validation as stored
+  (with the reasons it is not validated), the people's checks and what it judged. It is changed on the page while it
+  has judged nothing (`scorer-set`, only what changed), else a new version is started from it (`scorer-new` with
+  `supersedes`, its judges kept); a scorer is made with systems as its judges. The cost comes first (`POST /estimate`
+  on `judge-score`), then the arms are judged as a job under a cap, an unvalidated judge only when asked; what it cost
+  is `cost-report`. Validating a judge stays a tool (D6).
+- **The Workbench's reference set (W6), live** (UXS-005): "Change the reference set" on a dataset's prepare screen lists
+  its reference sets and label sets (how often two agree); shows what a label set moves before anything is promoted
+  (the stored outputs re-scored against it under its own label, `rescore --labels`, $0, and the arms ranked on it beside
+  their rank on a current reference, each side's ordering test, an arm that wrote the reference marked); promotes it
+  with why (`reference-promote`) and re-scores the arms against it (`rescore --reference-id`); previews a scoring change
+  on a goal (`score-preview`: each arm now and after, the leader and the contenders) and applies it to a round with why
+  (`rescore --goal --round --why`).
 - **The Workbench's production (W3), live** (UXS-005): "Production" on a goal captures a deployed system's records
   through an importer (`capture`) and makes a dataset of them, fetched (`dataset-from-capture`, `dataset-materialize`);
   scores production's recorded decisions as an arm (`arm-from-capture`); shows the rows where production was wrong
@@ -839,6 +861,18 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Fixed
 
+- **A read the API serves that refuses is answered with the refusal**: a read whose body refused as a command does
+  (`ERROR (old-format): …`, a project whose config.yaml just named a store still empty, say) ended the server's request
+  with no answer at all. It is answered at its kind's status with `{error, kind}`.
+- **The Workbench opens live on a project that refuses a read**: it fell back to the mockup on any answer but OK or 401,
+  so a project whose data needs migrating showed the mockup's data. Only no answer, or a 404, is the mockup now; the
+  home shows the refusal with the way to Settings, and Settings no longer needs the dataset list to open.
+- **`judge-score` runs as a job and with `--json`**: its body asked `sys.stdout.isatty()` to line-buffer, and the
+  envelope's stand-in for stdout had no `isatty`, so the API's judge-score job and `evh judge-score --json` stopped
+  (exit 70) before judging anything. The stand-in says it is not a terminal.
+- **A list item past the end is refused when a record is made**, as it is when one is changed: `--set judges.2.id=x`
+  on a new scorer (or model, deployment, system, field set, failure-mode list, goal) stopped with an error nothing
+  caught (exit 70; the API's 500) instead of `ERROR (bad-argument)` naming the key.
 - **An unhandled error in `evh catalog-serve` is answered as JSON** without `--hooks` too (API 6 of the Workbench's
   list): a route that raised closed the connection with no answer, so a Workbench page read a broken response, not
   `{error}`. It is now a 500 with `{"error": …}` either way; without hooks the traceback is printed on the server's

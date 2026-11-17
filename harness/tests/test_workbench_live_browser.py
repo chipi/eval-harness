@@ -49,6 +49,10 @@ env = dict(
 for k in ("EVAL_DATA_DIR", "EVAL_GOALS_DIR"):
     env.pop(k, None)
 env["OPENAI_API_KEY"] = "local"  # the fake server's; the onboarding job inherits the server's environment
+env.pop("HF_TOKEN", None)
+env.update(
+    HF_HUB_OFFLINE="1", HF_HOME=str(proj / ".hf")
+)  # W8's publish is refused offline, with no token of this machine
 
 
 class Fake(http.server.BaseHTTPRequestHandler):
@@ -385,7 +389,7 @@ try:
                 and page.evaluate("localStorage.getItem('evh.draft.label.notes_v1')") is None,
                 lab,
             )
-            page.goto(f"http://127.0.0.1:{port}/workbench/#judge")
+            page.goto(f"http://127.0.0.1:{port}/workbench/#study")
             page.wait_for_selector("h1", timeout=20000)
             check(
                 "a screen not wired yet says so, and shows none of the mockup's data",
@@ -918,6 +922,345 @@ try:
                 and "labelled\t6" in page.locator("#ol-out").inner_text(),
                 (olab.get("source"), page.locator("#ol-out").inner_text()[:500]),
             )
+            # W6 (UXS-005): a second label set's moves read before promoting it ($0, under its own label), then
+            # promoted with why and the arms re-scored against it; the scorer in this tree previewed on the goal, then a
+            # round re-scored with why
+            short = proj / "short"
+            short.mkdir()
+            for f in sorted((KIT / "gold").iterdir()):
+                (short / f.name).write_text(f.read_text().split(".")[0] + ".\n")
+            r = evh(
+                "label-import", "--sheet", str(short), "--dataset-id", "tk_v1", "--set", "short", "--by", "t"
+            )
+            check("setup: a second label set on tk_v1", r.returncode == 0, r.stderr[-300:])
+            page.goto(f"http://127.0.0.1:{port}/workbench/#reference/tk_v1")
+            page.wait_for_selector("#mv-go", timeout=20000)
+            now = page.locator("main").inner_text()
+            check(
+                "W6 reads its reference sets and label sets (reference-list, label-set-list), with how often two agree",
+                "gold/tk_v1" in now and "tk_v1/short" in now and "tk_v1/g" in now and "in both" in now,
+                now[:600],
+            )
+            page.fill("#rf6-by", "tester")
+            page.select_option("#mv-set", "short")
+            page.click("#mv-go")
+            page.wait_for_selector("#mv-out table, #mv-out [role=alert]", timeout=60000)
+            moves = page.locator("#mv-out").inner_text()
+            scored = sorted(x.name for x in (proj / "data" / "runs").glob("*/scores/*@labels.tk_v1.short"))
+            check(
+                "What it moves: the arms scored against the label set under its own label ($0, rescore --labels), "
+                "ranked beside their rank on the reference now",
+                "labels/tk_v1/short" in moves
+                and "one_v1" in moves
+                and "gold/tk_v1" in moves
+                and bool(scored)
+                and bool(rows := [r.split("\t") for r in page.locator("#mv-out tbody tr").all_inner_texts()])
+                and all(len(r) == 6 and r[0].strip().isdigit() and r[3].strip().isdigit() for r in rows)
+                and not (proj / "data" / "references" / "silver").exists(),
+                (moves[:600], scored, page.locator("#mv-out tbody tr").all_inner_texts()),
+            )
+            page.select_option("#rp6-set", "short")
+            page.select_option("#rp6-tier", "silver")
+            page.fill("#rp6-why", "the first sentence of each answer, to see the order it gives")
+            check(
+                "Promote is a form with unsent changes until sent: its button says what it will write",
+                page.locator("#rp6-go").inner_text() == "Promote short as silver/tk_v1"
+                and page.locator("[data-form=ref-promote] [data-unsent-mark]").is_visible(),
+                page.locator("#rp6-go").inner_text(),
+            )
+            page.click("#rp6-go")
+            page.wait_for_selector("#rp6-out:has-text('Promoted'), #rp6-out [role=alert]", timeout=60000)
+            man = proj / "data" / "references" / "silver" / "tk_v1"
+            silver_scored = sorted(x.name for x in (proj / "data" / "runs").glob("*/scores/*@silver.tk_v1"))
+            check(
+                "Promote it: reference-promote with who and why, then the arms re-scored against it (rescore --reference-id)",
+                man.is_dir() and bool(silver_scored) and "rescored" in page.locator("#rp6-out").inner_text(),
+                (
+                    sorted(x.name for x in man.iterdir()) if man.is_dir() else None,
+                    silver_scored,
+                    page.locator("#rp6-out").inner_text()[:400],
+                ),
+            )
+            page.click("#rp6-out button")
+            page.wait_for_selector("#mv-go", timeout=20000)
+            check(
+                "read again, the new reference set is listed",
+                "silver/tk_v1" in page.locator("main").inner_text(),
+                page.locator("main").inner_text()[:500],
+            )
+            before = sorted(str(x) for x in (proj / "data").rglob("*"))
+            page.click("#sp-go")
+            page.wait_for_selector("#sp-out table, #sp-out [role=alert]", timeout=60000)
+            prev = page.locator("#sp-out").inner_text()
+            check(
+                "When the scoring changes: score-preview as a job, each arm now and after, the leader and contenders; nothing written",
+                "one_v1" in prev
+                and "now" in prev
+                and "contenders" in prev
+                and "nothing written" in prev
+                and sorted(str(x) for x in (proj / "data").rglob("*")) == before,
+                prev[:600],
+            )
+            page.select_option("#rr-round", "r2")
+            page.fill("#rr-why", "the scorer's tokenizer changed, so the round reads the new numbers")
+            page.click("#rr-go")
+            page.wait_for_selector("#rr-out:has-text('Re-scored'), #rr-out [role=alert]", timeout=60000)
+            r2t = (proj / "data" / "rounds" / "tickets_summary" / "r2.yaml").read_text()
+            check(
+                "Apply it to a round: rescore with the goal, the round and why, the reason kept on the round",
+                "the scorer's tokenizer changed" in r2t,
+                (page.locator("#rr-out").inner_text()[:400], r2t[-600:]),
+            )
+            # W7 (UXS-005): a judge scorer made on the page from systems; the tutorial's fake-judge scorer shown with its
+            # judges, guards and (stored) validation, changed while it has judged nothing, its cost read first (the dry
+            # run through POST /estimate), the arms judged as a job under a cap, then kept as it judged; what it cost
+            (proj / "tutorial").mkdir(exist_ok=True)
+            shutil.copy2(KIT / "judge_prompt.txt", proj / "tutorial" / "judge_prompt.txt")
+            (proj / "data" / "scorers").mkdir(exist_ok=True)
+            (proj / "data" / "scorers" / "tickets-judge-v1.yaml").write_text(
+                (KIT / "scorers" / "tickets-judge-v1.yaml")
+                .read_text()
+                .replace("dataset_id: tickets_v1", "dataset_id: tk_v1")
+            )
+            page.goto(f"http://127.0.0.1:{port}/workbench/#eval/tickets_summary/r2")
+            page.click("text=A judge for this goal")
+            page.wait_for_selector("h1:has-text('A judge for this goal')", timeout=20000)
+            page.wait_for_selector("#js-est", timeout=20000)
+            shown = page.locator("main").inner_text()
+            check(
+                "W7 lists the goal's judge scorers (scorer-list) and shows one: its judges and families, its guards, not "
+                "validated with the reasons, as stored (scorer-show)",
+                "tickets-judge-v1" in shown
+                and "judge_a" in shown
+                and "vendor_b" in shown
+                and "re-asked in another order" in shown
+                and "not validated" in shown
+                and "can never be validated" in shown,
+                shown[:900],
+            )
+            page.fill("#jd-by", "tester")
+            page.fill("#ss-cap", "0.02")
+            check(
+                "changing it is a form with unsent changes",
+                page.locator("#ss-go").inner_text() == "Save tickets-judge-v1"
+                and page.locator("[data-form=scorer-set] [data-unsent-mark]").is_visible(),
+                page.locator("#ss-go").inner_text(),
+            )
+            page.click("#ss-go")
+            page.wait_for_function(
+                "() => document.querySelector('#js-cap') && document.querySelector('#js-cap').value === '0.02'",
+                timeout=20000,
+            )
+            sc = yaml.safe_load((proj / "data" / "scorers" / "tickets-judge-v1.yaml").read_text())
+            check(
+                "Save sends only what changed (scorer-set): the cap, the rest of the record as it was",
+                sc.get("cost_cap_usd") == 0.02
+                and sc["protocol"]["outputs_per_call"] == 16
+                and "mode" not in sc,
+                sc,
+            )
+            page.click("#js-est")
+            page.wait_for_selector("#js-out pre, #js-out [role=alert]", timeout=60000)
+            est = page.locator("#js-out").inner_text()
+            check(
+                "The cost first: judge-score's dry run through POST /estimate refuses an unvalidated judge unless asked",
+                "not validated" in est or "unvalidated" in est.lower(),
+                est[:500],
+            )
+            page.check("#js-unval")
+            page.click("#js-est")
+            page.wait_for_selector("#js-out:has-text('DRY RUN'), #js-out [role=alert]", timeout=60000)
+            est = page.locator("#js-out").inner_text()
+            check(
+                "asked to run it unvalidated, the dry run says its calls and cost, and the cap; nothing judged",
+                "DRY RUN" in est and "cap $0.02" in est and not (proj / "data" / "judge-summaries").exists(),
+                est[:600],
+            )
+            page.click("#js-go")
+            page.wait_for_selector("#js-out:has-text('Judged.'), #js-out [role=alert]", timeout=120000)
+            sums = (
+                sorted(x.name for x in (proj / "data" / "judge-summaries").glob("*.json"))
+                if (proj / "data" / "judge-summaries").is_dir()
+                else []
+            )
+            check(
+                "Judge the arms: judge-score as a job under the cap, labelled unvalidated; its summary written",
+                "Judged." in page.locator("#js-out").inner_text()
+                and any(x.startswith("tickets-judge-v1@") for x in sums),
+                (page.locator("#js-out").inner_text()[:600], sums),
+            )
+            page.goto(f"http://127.0.0.1:{port}/workbench/#goal/tickets_summary")
+            page.wait_for_selector("h1:has-text('Ticket summaries')", timeout=20000)
+            page.goto(f"http://127.0.0.1:{port}/workbench/#judge/tickets_summary")
+            page.wait_for_selector("#ss-new", timeout=20000)
+            check(
+                "read again, a scorer that has judged stays as it judged, and what it judged is listed",
+                "stays as it judged" in page.locator("main").inner_text()
+                and "verdict(s)" in page.locator("main").inner_text()
+                and not page.locator("#ss-go").count(),
+                page.locator("main").inner_text()[:900],
+            )
+            page.click("#ss-new")
+            page.wait_for_function(
+                "() => document.querySelector('#jn-id').value === 'tickets-judge-v1-v2'", timeout=20000
+            )
+            check(
+                "a new version starts from the one it supersedes: its prompt, guards, cap and judges (its fake judges kept as they are)",
+                page.input_value("#jn-prompt") == "tutorial/judge_prompt.txt"
+                and page.input_value("#jn-cap") == "0.02"
+                and page.locator("input[name=jn-keep]:checked").count() == 2,
+                (page.input_value("#jn-prompt"), page.input_value("#jn-cap")),
+            )
+            page.check("input[name=jn-judge][value=one_v1]")
+            page.check("input[name=jn-judge][value=fake-1b_here]")
+            page.click("#jn-go")
+            page.wait_for_selector("[data-scorer='tickets-judge-v1-v2'], #jn-out [role=alert]", timeout=20000)
+            v2f = proj / "data" / "scorers" / "tickets-judge-v1-v2.yaml"
+            v2 = (
+                yaml.safe_load(v2f.read_text())
+                if v2f.is_file()
+                else {"page": page.locator("#jn-out").inner_text()}
+            )
+            check(
+                "Make a new version: scorer-new with supersedes, the judges kept and the systems chosen, the prompt, guards and cap",
+                v2.get("supersedes") == "tickets-judge-v1"
+                and [j.get("id") for j in v2.get("judges", [])]
+                == ["judge_a", "judge_b", "fake-1b_here", "one_v1"]
+                and v2["judges"][0].get("params", {}).get("model") == "fake-a"
+                and v2.get("cost_cap_usd") == 0.02
+                and v2.get("prompt", {}).get("file") == "tutorial/judge_prompt.txt"
+                and v2.get("protocol", {}).get("outputs_per_call") == 16,
+                v2,
+            )
+            page.click("#cr-go")
+            page.wait_for_selector("#cr-out pre, #cr-out [role=alert]", timeout=60000)
+            check(
+                "What it cost: cost-report as a job, each arm's billed cost and the judging",
+                "billed" in page.locator("#cr-out").inner_text(),
+                page.locator("#cr-out").inner_text()[:500],
+            )
+            # W8 (UXS-005): the settings, one row each: where the data is kept (the move refused until config.yaml names
+            # the store), this release's formats, the project checked (validate, its failures as `evh validate` says),
+            # a policy file checked and saved (data-put), publishing refused offline
+            page.goto(f"http://127.0.0.1:{port}/workbench/#home")
+            page.click("text=Settings")
+            page.wait_for_selector("h1:has-text('Govern and maintain')", timeout=20000)
+            page.wait_for_selector("#vd-go", timeout=20000)
+            check(
+                "W8 says where the project keeps its data, the store config.yaml names (data-ls's overview)",
+                "config.yaml names files: every run, label and score a file under data/"
+                in page.locator("main").inner_text(),
+                page.locator("main").inner_text()[:400],
+            )
+            page.fill("#st-by", "tester")
+            page.click("#mv-dry")
+            page.wait_for_selector("#mv-st-out pre, #mv-st-out [role=alert]", timeout=60000)
+            page.wait_for_function(
+                "() => document.querySelector('#mv-st-out').textContent.includes('Nothing to move')",
+                timeout=20000,
+            )
+            check(
+                "the store's move goes into the store config.yaml names: its dry run as a job counts nothing to move into "
+                "files, so Move it stays off (tests/test_workbench_store_browser.py moves one)",
+                "0 file(s)" in page.locator("#mv-st-out").inner_text()
+                and page.locator("#mv-run").is_disabled(),
+                page.locator("#mv-st-out").inner_text()[:300],
+            )
+            page.click("#mg-check")
+            page.wait_for_selector("#mg-out pre, #mg-out [role=alert]", timeout=60000)
+            check(
+                "this release's formats: migrate --check as a job, the data's format against the release's",
+                "this release reads" in page.locator("#mg-out").inner_text(),
+                page.locator("#mg-out").inner_text()[:300],
+            )
+            page.click("#vd-go")
+            page.wait_for_selector("#vd-out details", timeout=120000)
+            cli = evh("validate").stdout
+            fails = [x.strip() for x in cli.splitlines() if x.strip().startswith("FAIL")]
+            listed = page.locator("#vd-out li").all_inner_texts()
+            check(
+                "Check the project: validate read through the API, its failures listed as evh validate prints them",
+                [x.strip() for x in listed] == fails
+                and (
+                    f"{len(fails)} check(s) failed" in page.locator("#vd-out").inner_text()
+                    if fails
+                    else "Every check passed" in page.locator("#vd-out").inner_text()
+                ),
+                (listed, fails),
+            )
+            page.select_option("#sf-path", "goals/policy.yaml")
+            page.wait_for_selector("#sf-text", timeout=20000)
+            page.fill("#sf-text", "required_from: 17/11/2026\n")
+            page.click("#sf-check")
+            page.wait_for_selector("#sf-out [role=alert], #sf-out .note", timeout=60000)
+            bad = page.locator("#sf-out").inner_text()
+            page.fill("#sf-text", "required_from: 2000-01-01\n")
+            check(
+                "a policy is a form with unsent changes; Check (data-put --check) shows what is wrong with it, nothing saved",
+                "does not pass" in bad
+                and "required_from" in bad
+                and not (proj / "data" / "goals" / "policy.yaml").exists()
+                and page.locator("#sf-save").inner_text() == "Save goals/policy.yaml",
+                bad[:500],
+            )
+            page.click("#sf-save")
+            page.wait_for_function(
+                "() => /Saved|Not saved/.test(document.querySelector('#sf-out').textContent)", timeout=60000
+            )
+            pol = proj / "data" / "goals" / "policy.yaml"
+            check(
+                "Save refuses a policy the project would fail (a run since then names no goal), and says which run",
+                "Not saved" in page.locator("#sf-out").inner_text()
+                and "names no goal" in page.locator("#sf-out").inner_text()
+                and not pol.exists(),
+                page.locator("#sf-out").inner_text()[:400],
+            )
+            pol.parent.mkdir(parents=True, exist_ok=True)
+            pol.write_text(
+                "required_from: 2098-01-01\n"
+            )  # made elsewhere after the page read that there was none
+            page.fill("#sf-text", "required_from: 2099-01-01\n")
+            page.click("#sf-save")
+            page.wait_for_function(
+                "() => /Not saved/.test(document.querySelector('#sf-out').textContent) && !/names no goal/.test(document.querySelector('#sf-out').textContent) || /Saved\\./.test(document.querySelector('#sf-out').textContent)",
+                timeout=60000,
+            )
+            check(
+                "a file made elsewhere after the page read that there was none is not overwritten (data-put new): refused",
+                "exists" in page.locator("#sf-out").inner_text()
+                and pol.read_text() == "required_from: 2098-01-01\n",
+                (page.locator("#sf-out").inner_text()[:300], pol.read_text()),
+            )
+            page.once("dialog", lambda d: d.accept())  # the unsent policy asks before leaving: leave
+            page.goto(f"http://127.0.0.1:{port}/workbench/#home")
+            page.wait_for_selector("h1:has-text('Your goals')", timeout=20000)
+            page.goto(f"http://127.0.0.1:{port}/workbench/#settings")
+            page.wait_for_selector("#sf-path", timeout=20000)
+            page.select_option("#sf-path", "goals/policy.yaml")
+            page.wait_for_function(
+                "() => document.querySelector('#sf-text') && document.querySelector('#sf-text').value.includes('2098')",
+                timeout=20000,
+            )
+            page.fill("#sf-text", "required_from: 2099-01-01\n")
+            page.click("#sf-save")
+            page.wait_for_function(
+                "() => /Saved\\./.test(document.querySelector('#sf-out').textContent) || /Not saved/.test(document.querySelector('#sf-out').textContent) && !/names no goal/.test(document.querySelector('#sf-out').textContent)",
+                timeout=60000,
+            )
+            check(
+                "Save (data-put with the file, new): the policy written as typed",
+                pol.is_file() and pol.read_text() == "required_from: 2099-01-01\n",
+                (page.locator("#sf-out").inner_text()[:300], pol.read_text() if pol.is_file() else None),
+            )
+            page.select_option("#pb-ds", "tk_v1")
+            page.fill("#pb-repo", "someone/tk")
+            page.click("#pb-go")
+            page.wait_for_selector("#pb-out [role=alert], #pb-out pre", timeout=60000)
+            check(
+                "Publish: dataset-publish as a job with the repo; offline and with no token it is refused, and says why",
+                page.locator("#pb-out [role=alert]").count() == 1,
+                page.locator("#pb-out").inner_text()[:400],
+            )
             phone = browser.new_context(
                 viewport={"width": 390, "height": 844},
                 is_mobile=True,
@@ -938,6 +1281,9 @@ try:
                 ("label/notes_v1", "Label the items"),
                 ("systems/tickets_summary", "Choose the systems"),
                 ("eval/tickets_summary/r1", "Its rounds"),
+                ("reference/tk_v1", "Change the reference set"),
+                ("judge/tickets_summary", "A judge for this goal"),
+                ("settings", "Govern and maintain"),
                 ("review/tickets_summary", "Review the outputs"),
                 ("production/tickets_summary", "Learn from production"),
             ):
@@ -947,7 +1293,7 @@ try:
                     phone.screenshot(path=f"{shots}/phone-{screen.replace('/', '-')}.png", full_page=True)
                 wide[screen] = phone.evaluate("document.documentElement.scrollWidth - window.innerWidth")
             check(
-                "at a phone's width the models' screens and steps 1 to 4, the eval, the review and production do not scroll sideways",
+                "at a phone's width the models' screens and steps 1 to 4, the eval, the review, production, the reference set, the judge and the settings do not scroll sideways",
                 all(v <= 0 for v in wide.values()),
                 wide,
             )

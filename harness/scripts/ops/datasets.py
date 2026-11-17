@@ -180,12 +180,9 @@ def show_fieldset(fieldset: str) -> dict[str, Any]:
 
 def new_fieldset(fieldset: str, set: dict[str, Any], by: str) -> dict[str, Any]:
     """Make the fieldset from its fields."""
-    from evaluation_harness import _settings_form  # noqa: PLC0415
     from evaluation_harness.model.datasets import FIELDSET  # noqa: PLC0415
 
-    return FIELDSET.save(
-        fieldset, _settings_form.set_values({"fieldset_id": fieldset}, list(set.items()), []), by, new=True
-    )
+    return FIELDSET.make(fieldset, {"fieldset_id": fieldset}, list(set.items()), by)
 
 
 def set_fieldset(
@@ -213,15 +210,9 @@ def show_failure_modes(failure_modes: str) -> dict[str, Any]:
 
 def new_failure_modes(failure_modes: str, set: dict[str, Any], by: str) -> dict[str, Any]:
     """Make the failure-mode list from its fields."""
-    from evaluation_harness import _settings_form  # noqa: PLC0415
     from evaluation_harness.model.datasets import FAILURE_MODES  # noqa: PLC0415
 
-    return FAILURE_MODES.save(
-        failure_modes,
-        _settings_form.set_values({"failure_modes_id": failure_modes}, list(set.items()), []),
-        by,
-        new=True,
-    )
+    return FAILURE_MODES.make(failure_modes, {"failure_modes_id": failure_modes}, list(set.items()), by)
 
 
 def set_failure_modes(

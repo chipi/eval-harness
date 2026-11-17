@@ -32,7 +32,7 @@
     const head = `<div class="kicker">Home</div><h1>Your goals</h1>
       <p class="lead">Each goal with where it stands and its next step. What is running shows here too, across goals.</p>`;
     if (goals === undefined) return `<div class="screen wide">${head}${loading("the goals")}</div>`;
-    if (goals.error) return `<div class="screen wide">${head}${failed(goals)}</div>`;
+    if (goals.error) return `<div class="screen wide">${head}${failed(goals)}<div class="actions"><a class="btn primary" href="#settings">Settings</a></div></div>`;
     const rows = goals.goals.map((g) => {
       const st = load(`status:${g.goal}`, `/goals/${encodeURIComponent(g.goal)}/status`);
       const m = g.measure || {};
@@ -49,7 +49,7 @@
       <div class="part"><div class="parthead"><h2>Running now</h2></div><div class="body">${running}</div></div>
       ${goals.goals.length ? `<div class="tablewrap" style="margin-top:18px"><table><thead><tr><th>goal</th><th>decides</th><th>datasets</th><th class="num">rounds</th><th>next</th></tr></thead><tbody>${rows.join("")}</tbody></table></div>`
         : `<div class="answer" style="margin-top:18px"><p><b>What should this project help you decide?</b></p><p>An evaluation starts with a goal: the decision you need to make, and how you will know which system is better for it.</p></div>`}
-      <div class="actions"><a class="btn primary" href="#goal-new">${goals.goals.length ? "New goal" : "Start with a goal"}</a><a class="btn" href="#models">Models</a><a class="btn" href="${location.origin}/">The catalog ↗</a></div></div>`;
+      <div class="actions"><a class="btn primary" href="#goal-new">${goals.goals.length ? "New goal" : "Start with a goal"}</a><a class="btn" href="#models">Models</a><a class="btn" href="#settings">Settings</a><a class="btn" href="${location.origin}/">The catalog ↗</a></div></div>`;
   }
 
   // ── a goal: where it stands, and the next step ─────────────────────────────
@@ -407,7 +407,12 @@
   };
   async function watchJob(id, box, what) {
     for (;;) {
-      const r = await fetch(`/api/v1/jobs/${enc(id)}`, { credentials: "same-origin" });
+      const r = await fetch(`/api/v1/jobs/${enc(id)}`, { credentials: "same-origin" }).catch(() => null);
+      if (!r || r.status === 503) {
+        if (box) box.innerHTML = `<p class="muted" aria-live="polite">${esc(what)}: the project is being moved, waiting…</p>`;
+        await new Promise((ok) => setTimeout(ok, 1000 * Number((r && r.headers.get("Retry-After")) || 2)));
+        continue;
+      }
       const j = await r.json().catch(() => ({}));
       if (box) box.innerHTML = `<p class="muted" aria-live="polite">${esc(what)}: ${esc(j.state || "…")}</p>`;
       if (!["queued", "running", "running (unsupervised)"].includes(j.state)) return j;
@@ -786,7 +791,7 @@
           ${leaderRun ? `<label class="choice"><input type="checkbox" id="rc-promote" value="${esc(leaderRun)}"> promote the leader's run (<span class="mono">${esc(leaderRun)}</span>) to the goal's baseline, the conclusion as its reason</label>` : ""}
           <div class="actions" style="margin-top:0"><button class="btn primary" type="button" id="rc-close" data-send>Close the round</button>${mark}</div><div id="rc-out" data-out></div></div></section>` : openForm}
       ${WB.cmd(`evh round-list ${goal}\nevh round-evidence ${goal} ${r.round_id}`)}
-      <div class="actions"><a class="btn" href="#goal/${enc(goal)}">Back to the goal</a></div></div>`;
+      <div class="actions"><a class="btn" href="#judge/${enc(goal)}">A judge for this goal</a><a class="btn" href="#goal/${enc(goal)}">Back to the goal</a></div></div>`;
   }
   function wireEval() {
     const [goal, wanted] = String(WB.param || "").split("/");
@@ -1268,7 +1273,8 @@
         <div id="pp-look-out" data-out></div></div></section>
       <section class="part"><div class="parthead"><span class="letter">c</span><h2>Its reference set</h2><span class="grow"></span>${done(refs.length)}</div><div class="body">
         <p class="muted">The expected answer for each item, that outputs are scored against. Gold is checked by people; silver is a model's answers, enough to rank systems. Who and why are recorded.</p>
-        ${refs.length ? `<ul>${refs.map((r) => `<li><b>${esc(r.reference)}</b> · ${r.items} item(s) · ${esc(r.kind || "")}</li>`).join("")}</ul>` : ""}
+        ${refs.length ? `<ul>${refs.map((r) => `<li><b>${esc(r.reference)}</b> · ${r.items} item(s) · ${esc(r.kind || "")}</li>`).join("")}</ul>
+          <div class="actions" style="margin-top:0"><a class="btn" href="#reference/${enc(ds)}">Change the reference set</a><span class="muted">see what another one moves first</span></div>` : ""}
         ${sets.length ? `<h3>Promote a label set</h3>${promote}` : '<p class="muted">No label set yet.</p>'}
         <h3>Or label it</h3><div class="actions" style="margin-top:0"><a class="btn" href="#label/${enc(ds)}">Label it here</a></div>
         ${byField("pp-by")}</div></section>
@@ -1302,6 +1308,425 @@
         b.disabled = false;
       });
     });
+  }
+
+  // ── W6: change the reference set (UXS-005 W6): what a label set moves, promoted with why, the arms re-scored ($0) ──
+  // "What it moves" scores the stored outputs against the label set under its own label (rescore --labels: never where
+  // a goal reads), then reads the leaderboard: one table per reference the arms were scored against.
+  const fx = (x) => (typeof x === "number" ? x.toFixed(3) : "—");
+  const orderLine = (g) => {
+    const o = g.ordering || {}, d = g.decision || {}, lead = String(d.leader || "").split("/").pop();
+    const p = typeof o.global_p === "number" ? `p ${o.global_p.toFixed(4)}` : "";
+    return `${lead ? `leader <b class="mono">${esc(lead)}</b>; ` : ""}${o.arm_effect ? `the arms differ (${p})` : o.enough_data === false ? "too few items to test an order" : `no detectable difference between the arms${p ? ` (${p})` : ""}: do not report an order`}`;
+  };
+  function movesView(lb, newRef, oldRef) {
+    const groups = ((lb && lb.values) || {}).groups || [], nw = groups.find((g) => g.reference === newRef), od = groups.find((g) => g.reference === oldRef);
+    if (!nw) return `<p class="note" role="alert">No arm is scored against ${esc(newRef)} yet.</p>`;
+    const m = nw.sort_by, rankOld = Object.fromEntries(((od || {}).arms || []).map((a) => [a.system_id, a]));
+    const rows = nw.arms.map((a) => {
+      const o = rankOld[a.system_id], mv = o ? o.rank - a.rank : 0;
+      return `<tr><td class="num">${a.rank}</td><td class="mono">${esc(a.system_id)}${a.wrote_reference ? ' <span class="tag new">wrote this reference</span>' : ""}</td><td class="num">${fx(a.metrics[m])}</td>
+        <td class="num">${o ? o.rank : "—"}</td><td class="num">${o ? fx(o.metrics[m]) : "—"}</td><td class="num ${mv > 0 ? "v-lead" : mv < 0 ? "v-worse" : ""}">${mv > 0 ? `↑ ${mv}` : mv < 0 ? `↓ ${-mv}` : "—"}</td></tr>`;
+    }).join("");
+    return `<div class="tablewrap"><table class="cmp"><thead><tr><th class="num">on it</th><th>arm</th><th class="num">${esc(m)}</th><th class="num">on ${esc(oldRef || "—")}</th><th class="num">${esc(m)}</th><th>moves</th></tr></thead><tbody>${rows}</tbody></table></div>
+      <p class="muted">On ${esc(newRef)}: ${orderLine(nw)}.${od ? ` On ${esc(oldRef)}: ${orderLine(od)}.` : ""}</p>
+      ${nw.arms.some((a) => a.wrote_reference) ? '<p class="note">An arm that wrote the reference is scored against its own answers: read its rise, and its family\'s, before promoting it.</p>' : ""}`;
+  }
+  function screenReference(ds) {
+    const head = `<div class="kicker">Prepare · ${esc(ds)} · its reference set</div><h1>Change the reference set</h1>
+      <p class="lead">A different reference can reorder the arms. See what it moves before anything is promoted; re-scoring reads stored outputs, so it costs nothing.</p>`;
+    if (!ds) return `<div class="screen">${head}<p class="note">Open it from a dataset's prepare screen.</p></div>`;
+    const refs = load("references", "/references"), ls = load(`labelsets:${ds}`, `/datasets/${enc(ds)}/label-sets`), lb = load(`leaderboard:${ds}`, `/datasets/${enc(ds)}/leaderboard`), goals = load("goals", "/goals");
+    if ([refs, ls, lb, goals].includes(undefined)) return `<div class="screen wide">${head}${loading("the reference sets")}</div>`;
+    const bad = [refs, ls, goals].find((x) => x.error);
+    if (bad) return `<div class="screen wide">${head}${failed(bad)}</div>`;
+    const mine = refs.references.filter((r) => r.dataset === ds), sets = ls.label_sets.map((x) => String(x.set).split("/").pop());
+    const scored = lb.error ? [] : ((lb.values || {}).groups || []).map((g) => g.reference);
+    const st = WB._ref && WB._ref.ds === ds ? WB._ref : {};
+    const against = st.against || (mine.find((r) => r.tier === "gold") || mine[0] || {}).reference || scored[0];
+    const opt = (xs, sel) => xs.map((x) => `<option value="${esc(x)}" ${x === sel ? "selected" : ""}>${esc(x)}</option>`).join("");
+    const readers = goals.goals.filter((g) => (g.datasets || []).some((d) => (d.dataset_id || d.dataset || d) === ds)).map((g) => g.goal);
+    const sp = WB._sp && WB._sp.ds === ds ? WB._sp : {}, spGoal = sp.goal || readers[0];
+    const rounds = spGoal ? load(`rounds:${spGoal}`, `/goals/${enc(spGoal)}/rounds`) : null;
+    const roundIds = rounds && !rounds.error ? rounds.rounds.map((r) => r.round_id) : [];
+    const agree = (ls.agreement || []).map((a) => `<li><span class="mono">${esc(a.a)}</span> and <span class="mono">${esc(a.b)}</span>: ${a.both} item(s) in both${a.kappa != null ? `, kappa ${fx(a.kappa)}` : ""}${a.alpha != null ? `, alpha ${fx(a.alpha)}` : ""} (${esc(a.kind || "")})</li>`).join("");
+    const spView = sp.values ? Object.entries(sp.values.datasets || {}).map(([d, x]) => `<h3>${esc(d)} · ${esc(x.measure)}, now → with the scorer in this tree</h3>
+      <div class="tablewrap"><table class="cmp"><thead><tr><th>arm</th><th class="num">now</th><th class="num">after</th><th class="num">moved</th><th>within the limits</th></tr></thead><tbody>${x.arms.map((a) => `<tr><td class="mono">${esc(a.arm)}</td><td class="num">${fx(a.now)}</td><td class="num">${fx(a.after)}</td><td class="num ${a.moved > 0 ? "v-lead" : a.moved < 0 ? "v-worse" : ""}">${a.moved > 0 ? "+" : ""}${a.moved.toFixed(4)}</td><td>${a.within_limits_now ? "yes" : "no"} → ${a.within_limits_after ? "yes" : "no"}</td></tr>`).join("")}</tbody></table></div>
+      <p class="muted">leader ${esc(x.leader.now || "—")} → ${esc(x.leader.after || "—")} · recommended ${esc(x.recommended.now || "—")} → ${esc(x.recommended.after || "—")} · contenders ${x.contenders.now} → ${x.contenders.after}</p>`).join("")
+      + `<p class="muted">${sp.values.rescored} run(s) re-scored in a temporary folder by scorer ${esc(sp.values.scorer)}; nothing written.</p>` : "";
+    return `<div class="screen wide">${head}
+      ${byField("rf6-by")}
+      <section class="part"><div class="parthead"><span class="letter">a</span><h2>Its reference sets now</h2></div><div class="body">
+        ${mine.length ? `<div class="tablewrap"><table><thead><tr><th>reference</th><th class="num">items</th><th>from</th><th>by</th><th>when</th><th class="num">arms scored</th></tr></thead><tbody>${mine.map((r) => `<tr><td class="mono"><span class="tag ${esc(r.tier)}">${esc(r.tier)}</span> ${esc(r.reference)}</td><td class="num">${r.items}</td><td class="mono">${esc(r.label_set || "—")} <span class="muted">${esc(r.kind || "")}${r.author ? ` · written by ${esc(r.author)}` : ""}</span></td><td>${esc(r.promoted_by || "")}</td><td>${esc((r.created_at || "").slice(0, 10))}</td><td class="num">${r.scored}</td></tr>`).join("")}</tbody></table></div>` : '<p class="muted">None yet: promote a label set below.</p>'}
+        <h3>Its label sets</h3>${ls.label_sets.length ? `<ul>${ls.label_sets.map((x) => `<li><b class="mono">${esc(x.set)}</b> · ${x.items} item(s) · ${esc(x.kind)}${x.actor && x.actor.name ? ` · by ${esc(x.actor.name)}` : ""} · ${esc((x.created_at || "").slice(0, 10))}</li>`).join("")}</ul>` : '<p class="muted">None yet. <a href="#label/' + enc(ds) + '">Label it here</a>.</p>'}
+        ${agree ? `<p class="muted" style="margin-bottom:4px">How often two sets agree:</p><ul>${agree}</ul>` : ""}</div></section>
+      <section class="part"><div class="parthead"><span class="letter">b</span><h2>What it moves</h2></div><div class="body">
+        ${sets.length ? `<div class="inline"><select id="mv-set" aria-label="the label set">${opt(sets, st.set)}</select>
+          <span class="muted">compared with</span><select id="mv-against" aria-label="the reference it is compared with">${opt(scored, against)}</select>
+          <button class="btn primary" type="button" id="mv-go">Score the arms against it ($0)</button></div>
+          <div id="mv-out" data-out>${st.label ? movesView(lb, `labels/${ds}/${st.set}`, against) : ""}</div>` : '<p class="muted">No label set to compare yet.</p>'}</div></section>
+      <section class="part"><div class="parthead"><span class="letter">c</span><h2>Promote it</h2></div><div class="body">
+        ${sets.length ? `<div data-form="ref-promote"><div class="inline"><select id="rp6-set" aria-label="the label set">${opt(sets, st.set)}</select><select id="rp6-tier" aria-label="tier"><option value="gold">gold</option><option value="silver">silver</option></select>
+          <input type="text" id="rp6-name" placeholder="its name: ${esc(ds)}" autocapitalize="off" spellcheck="false" aria-label="the reference set's name"></div>
+          <input type="text" id="rp6-why" placeholder="why these answers are the yardstick: a sentence" aria-label="why it is promoted" style="width:100%;margin-top:8px">
+          <div class="actions" style="margin-top:8px"><button class="btn primary" type="button" id="rp6-go" data-send>Promote</button>${mark}<span class="muted" style="font-size:13px">then the arms are re-scored against it: stored outputs, no calls, $0</span></div></div><div id="rp6-out" data-out></div>` : '<p class="muted">No label set to promote.</p>'}</div></section>
+      <section class="part"><div class="parthead"><span class="letter">d</span><h2>When the scoring changes</h2></div><div class="body">
+        <p class="muted">The scorer in this tree, run over a goal's stored outputs in a temporary folder: each arm now and after, and whether the leader, the recommendation or the contenders change. Nothing is written.</p>
+        ${readers.length ? `<div class="inline"><select id="sp-goal" aria-label="the goal">${opt(readers, spGoal)}</select><select id="sp-round" aria-label="the round"><option value="">every arm</option>${opt(roundIds, sp.round)}</select>
+          <button class="btn" type="button" id="sp-go">Preview the change</button></div><div id="sp-out" data-out>${spView}</div>
+          ${roundIds.length ? `<div data-form="rescore-round"><h3>Apply it to a round</h3><div class="inline"><select id="rr-round" aria-label="the round">${opt(roundIds, sp.round)}</select>
+            <input type="text" id="rr-why" placeholder="why the scoring changed, recorded on the round" style="min-width:20rem"><button class="btn primary" type="button" id="rr-go" data-send>Re-score the round</button>${mark}</div><div id="rr-out" data-out></div></div>` : ""}`
+          : '<p class="muted">No goal reads this dataset.</p>'}</div></section>
+      ${WB.cmd(`evh rescore --dataset-id ${ds} --labels <set>\nevh leaderboard ${ds}\nevh reference-promote --dataset-id ${ds} --labels <set> --tier gold --reason "..."\nevh rescore --dataset-id ${ds} --reference-id gold/${ds}\nevh score-preview --goal <goal>\nevh rescore --goal <goal> --round rN --why "..."`)}
+      <div class="actions"><a class="btn" href="#prepare/${enc(ds)}">Back to prepare</a></div></div>`;
+  }
+  function wireReference() {
+    const ds = WB.param || "";
+    const v = (id) => (document.getElementById(id)?.value || "").trim();
+    const by = () => byOf("rf6-by") || (who() ? `person:${who()}` : null);
+    const needWho = (box) => { box.innerHTML = '<p class="note" role="alert">Say who you are above: a job names who asked.</p>'; };
+    const reread = () => { forget(`leaderboard:${ds}`); forget("references"); forget(`labelsets:${ds}`); forget(`dataset:${ds}`); };
+    document.getElementById("mv-against")?.addEventListener("change", () => { WB._ref = { ...(WB._ref || {}), ds, against: v("mv-against") }; WB.render(); });
+    document.getElementById("mv-go")?.addEventListener("click", async (ev) => {
+      const box = document.getElementById("mv-out"), who_ = by(), set = v("mv-set");
+      if (!who_) return needWho(box);
+      ev.target.disabled = true;
+      try {
+        const done = await runJob("/runs/rescore", { dataset_id: ds, labels: set, by: who_ }, box, "scoring the arms against it");
+        if (done) {
+          const label = ((((done.result || {}).result || {}).values || {}).labels || [])[0];
+          WB._ref = { ds, set, label, against: v("mv-against") };
+          forget(`leaderboard:${ds}`);
+          WB.render(true);
+        }
+      } catch (e) { box.innerHTML = refusal(e); }
+      ev.target.disabled = false;
+    });
+    holds("ref-promote", () => `Promote ${v("rp6-set") || "…"} as ${v("rp6-tier")}/${v("rp6-name") || ds}`);
+    document.getElementById("rp6-go")?.addEventListener("click", async (ev) => {
+      const box = document.getElementById("rp6-out"), who_ = by(), tier = v("rp6-tier"), name = v("rp6-name") || ds;
+      if (!who_) return needWho(box);
+      ev.target.disabled = true;
+      try {
+        const inputs = { labels: v("rp6-set"), tier, reason: v("rp6-why"), by: who_ };
+        if (v("rp6-name")) inputs.name = name;
+        if (await runJob(`/datasets/${enc(ds)}/references`, inputs, box, "promoting")) {
+          sent("ref-promote");
+          const done = await runJob("/runs/rescore", { dataset_id: ds, reference_id: `${tier}/${name}`, by: who_ }, box, "re-scoring the arms against it");
+          if (done) {
+            reread();
+            box.innerHTML = `<p class="note">Promoted <b>${esc(tier)}/${esc(name)}</b>; the arms re-scored against it.</p>${blocksView((done.result || {}).result)}`;
+            const k = document.createElement("p");
+            k.innerHTML = '<button class="btn" type="button">Show the reference sets</button>';
+            k.querySelector("button").addEventListener("click", () => WB.render(true));
+            box.appendChild(k);
+          }
+        }
+      } catch (e) { box.innerHTML = refusal(e); }
+      ev.target.disabled = false;
+    });
+    document.getElementById("sp-goal")?.addEventListener("change", () => { WB._sp = { ds, goal: v("sp-goal") }; WB.render(); });
+    document.getElementById("sp-go")?.addEventListener("click", async (ev) => {
+      const box = document.getElementById("sp-out"), who_ = by(), goal = v("sp-goal"), round = v("sp-round");
+      if (!who_) return needWho(box);
+      ev.target.disabled = true;
+      try {
+        const done = await runJob(`/goals/${enc(goal)}/score-preview`, { ...(round ? { round } : {}), by: who_ }, box, "previewing the scoring");
+        if (done) { WB._sp = { ds, goal, round, values: ((done.result || {}).result || {}).values }; WB.render(true); }
+      } catch (e) { box.innerHTML = refusal(e); }
+      ev.target.disabled = false;
+    });
+    holds("rescore-round", () => `Re-score ${v("rr-round") || "…"}`);
+    document.getElementById("rr-go")?.addEventListener("click", async (ev) => {
+      const box = document.getElementById("rr-out"), who_ = by(), goal = v("sp-goal");
+      if (!who_) return needWho(box);
+      ev.target.disabled = true;
+      try {
+        const done = await runJob("/runs/rescore", { goal, round: v("rr-round"), why: v("rr-why"), by: who_ }, box, "re-scoring the round");
+        if (done) { sent("rescore-round"); reread(); forget(`round:${goal}`); forget(`evidence:${goal}`); box.innerHTML = `<p class="note">Re-scored; the reason is kept on the round.</p>${blocksView((done.result || {}).result)}`; }
+      } catch (e) { box.innerHTML = refusal(e); }
+      ev.target.disabled = false;
+    });
+  }
+
+  // ── W7: a judge (UXS-005 W7): its judges, how it judges, whether it agrees with people (as stored: validating stays a
+  // tool, D6), the cost first (POST /estimate, the dry run), then the judging as a job under a cap, and what it cost ──
+  const MODES = [["grade", "grade each"], ["pick", "pick the best of an item's outputs"], ["pairwise", "pick the better of two"]];
+  const PROTO = [["protocol.outputs_per_call", "outputs per call", 16], ["protocol.position_check_fraction", "re-asked in another order (fraction)", 0.5], ["protocol.noise_check_fraction", "re-asked as is (fraction)", 0.5]];
+  const dig = (o, key) => key.split(".").reduce((x, k) => (x == null ? undefined : x[k]), o);
+  function screenJudge(goal) {
+    const head = `<div class="kicker">Scoring · ${esc(goal)}</div><h1>A judge for this goal</h1>
+      <p class="lead">A judge is a model that scores outputs the way a person would. It decides only once it agrees with people's labels on a set where both are known; until then every number it makes is labelled.</p>`;
+    if (!goal) return `<div class="screen">${head}</div>`;
+    const rec = load(`goalrec:${goal}`, `/goals/${enc(goal)}`), sc = load("scorers", "/scorers"), sys = load("systems", "/systems");
+    if ([rec, sc, sys].includes(undefined)) return `<div class="screen wide">${head}${loading("the judges")}</div>`;
+    const bad = [rec, sc, sys].find((x) => x.error);
+    if (bad) return `<div class="screen wide">${head}${failed(bad)}</div>`;
+    const dss = (rec.record.datasets || []).map((x) => x.dataset_id);
+    const mine = sc.scorers.filter((x) => dss.includes(x.dataset)), others = sc.scorers.filter((x) => !dss.includes(x.dataset));
+    const st = WB._judge && WB._judge.goal === goal ? WB._judge : {};
+    const cur = st.scorer && sc.scorers.some((x) => x.scorer === st.scorer) ? st.scorer : (mine[0] || {}).scorer;
+    const one = cur ? load(`scorer:${cur}`, `/scorers/${enc(cur)}`) : null;
+    const opt = (xs, sel) => xs.map((x) => `<option value="${esc(x)}" ${x === sel ? "selected" : ""}>${esc(x)}</option>`).join("");
+    const sysIds = sys.systems.map((x) => x.system), withModel = sys.systems.filter((x) => x.model).map((x) => x.system);
+    const list = mine.length ? `<div class="tablewrap"><table><thead><tr><th>scorer</th><th>mode</th><th>dataset</th><th>judges</th><th>validated</th><th class="num">judged scores</th></tr></thead><tbody>${mine.map((x) => `<tr><td class="mono"><a href="#judge/${enc(goal)}" data-scorer="${esc(x.scorer)}">${esc(x.scorer)}</a>${x.scorer === cur ? ' <span class="tag new">shown</span>' : ""}</td><td>${esc(x.mode)}</td><td class="mono">${esc(x.dataset)}</td>
+      <td>${x.judges.map((j) => `<span class="mono">${esc(j.judge)}</span> <span class="muted">${esc(j.model || j.system || "")} · ${esc(j.family || "no family")}</span>`).join("<br>")}</td><td>${x.validated ? '<span class="status ok">yes</span>' : '<span class="status">no</span>'}</td><td class="num">${x.judged_scores}</td></tr>${x.problem ? `<tr><td colspan="6"><p class="note" role="alert" style="margin:0">${esc(x.problem)}</p></td></tr>` : ""}`).join("")}</tbody></table></div>`
+      : `<p class="muted">No judge scorer for ${dss.map(esc).join(", ") || "this goal's datasets"} yet.${others.length ? ` The project has ${others.length} for other datasets.` : ""}</p>`;
+    const base = st.supersedes ? ((LIVE.cache[`scorer:${st.supersedes}`] || {}).record || {}) : {};
+    const baseSys = (base.judges || []).filter((j) => j.system).map((j) => j.system);
+    const kept = (base.judges || []).map((j, i) => [j, i]).filter(([j]) => !j.system).map(([j, i]) => `<label class="choice"><input type="checkbox" name="jn-keep" value="${i}" checked> <span class="mono">${esc(j.id)}</span> <small class="muted">${esc((j.params || {}).model || "")} · ${esc((j.params || {}).family || "no family")}, as it is</small></label>`).join("");
+    const judgesPick = kept + sysIds.map((x) => `<label class="choice"><input type="checkbox" name="jn-judge" value="${esc(x)}" ${baseSys.includes(x) ? "checked" : ""}> <span class="mono">${esc(x)}</span>${withModel.includes(x) ? "" : ' <small class="muted">(names no model)</small>'}</label>`).join("");
+    const newForm = `<details class="part" ${mine.length ? "" : "open"}><summary><b>Make a judge scorer</b></summary><div class="body" data-form="scorer-new">
+        <div class="field"><label class="name" for="jn-id">Its id</label><div><input type="text" id="jn-id" value="${esc(st.supersedes ? `${st.supersedes}-v2` : "")}" placeholder="${esc(goal)}-judge-v1" autocapitalize="off" spellcheck="false">${st.supersedes ? `<div class="hint">a new version of ${esc(st.supersedes)}, which has judged and is kept as it is</div>` : ""}</div></div>
+        <div class="field"><label class="name" for="jn-ds">On</label><div><select id="jn-ds">${opt(dss)}</select></div></div>
+        <div class="field"><div class="name">How it judges</div><div class="choices row">${MODES.map(([m, t]) => `<label class="choice"><input type="radio" name="jn-mode" value="${m}" ${(base.mode || "grade") === m ? "checked" : ""}> ${esc(t)}</label>`).join("")}</div></div>
+        <div class="field"><div class="name">Its judges</div><div><div class="choices">${judgesPick || '<p class="muted">No system yet: <a href="#models">bring in a model</a> and make a system of it.</p>'}</div><div class="hint">two families at least, so one vendor's taste does not decide: each judge is called, priced and fingerprinted as its system is</div></div></div>
+        <div class="field"><label class="name" for="jn-prompt">The prompt</label><div><input type="text" id="jn-prompt" value="${esc(dig(base, "prompt.file") || "")}" placeholder="prompts/judge.txt: a file in the project" autocapitalize="off" spellcheck="false"><div class="hint">a file in the project, relative to data/scorers/ or the project; {n} becomes the number of outputs in a call</div></div></div>
+        ${PROTO.map(([k, t, d]) => `<div class="field"><label class="name" for="jn-${k.split(".").pop()}">${esc(t)}</label><div><input type="number" id="jn-${k.split(".").pop()}" value="${esc(dig(base, k) ?? d)}" step="any" min="0" style="width:8rem"></div></div>`).join("")}
+        <div class="field"><label class="name" for="jn-cap">At most (USD)</label><div><input type="number" id="jn-cap" value="${esc(base.cost_cap_usd ?? 1)}" step="0.01" min="0" style="width:8rem"><div class="hint">for one whole judging pass</div></div></div>
+        <div class="actions" style="margin-top:0"><button class="btn primary" type="button" id="jn-go" data-send>Make it</button>${mark}</div><div id="jn-out" data-out></div></div></details>`;
+    let shown = "";
+    if (cur && one === undefined) shown = loading("the scorer");
+    else if (one && one.error) shown = failed(one);
+    else if (one) {
+      const r = one.record || {}, va = one.validation || {}, b = va.block || {};
+      const editable = !one.judged_scores;
+      const guards = `${dig(r, "protocol.outputs_per_call")} output(s) per call · arms ${dig(r, "protocol.blinding") === false ? "named" : "hidden"} · ${Math.round((dig(r, "protocol.position_check_fraction") || 0) * 100)}% re-asked in another order · ${Math.round((dig(r, "protocol.noise_check_fraction") || 0) * 100)}% re-asked as is`;
+      const edit = editable ? `<div data-form="scorer-set"><div class="choices row">${MODES.map(([m, t]) => `<label class="choice"><input type="radio" name="ss-mode" value="${m}" ${(r.mode || "grade") === m ? "checked" : ""}> ${esc(t)}</label>`).join("")}</div>
+          <div class="inline"><label>the prompt <input type="text" id="ss-prompt" value="${esc(dig(r, "prompt.file") || "")}" autocapitalize="off" spellcheck="false"></label>
+          ${PROTO.map(([k, t]) => `<label>${esc(t)} <input type="number" id="ss-${k.split(".").pop()}" value="${esc(dig(r, k) ?? "")}" step="any" min="0" style="width:6rem"></label>`).join("")}
+          <label>at most (USD) <input type="number" id="ss-cap" value="${esc(r.cost_cap_usd ?? "")}" step="0.01" min="0" style="width:6rem"></label></div>
+          <div class="actions" style="margin-top:0"><button class="btn" type="button" id="ss-go" data-send>Save</button>${mark}</div><div id="ss-out" data-out></div></div>`
+        : `<p class="note">It has made ${one.judged_scores} judged score(s), so it stays as it judged. <button class="btn" type="button" id="ss-new">Make a new version of it</button></p>`;
+      const valRows = (b.runs || []).map((x) => `<tr><td class="mono">${esc(x.judge)}</td><td class="num">${fx(x.value)}</td><td class="num">${fx(x.min_metric ?? b.min_metric)}</td><td class="mono">${esc(x.run)}</td></tr>`).join("");
+      const checks = (one.checks || []).map((c) => `<li>${esc(typeof c === "string" ? c : JSON.stringify(c))}</li>`).join("");
+      shown = `<section class="part"><div class="parthead"><span class="letter">b</span><h2>How ${esc(cur)} judges</h2></div><div class="body">
+          <p><b>${esc((MODES.find(([m]) => m === (r.mode || "grade")) || [])[1] || r.mode)}</b> · on <span class="mono">${esc(r.dataset_id)}</span> · the prompt <span class="mono">${esc(dig(r, "prompt.file") || "—")}</span> · at most $${esc(r.cost_cap_usd ?? "—")} a pass</p>
+          <p class="muted">${guards}</p>
+          <div class="tablewrap"><table><thead><tr><th>judge</th><th>model or system</th><th>family</th></tr></thead><tbody>${(one.judges || []).map((j) => `<tr><td class="mono">${esc(j.judge)}</td><td class="mono">${esc(j.model || j.system || "")}</td><td>${esc(j.family || "—")}</td></tr>`).join("")}</tbody></table></div>
+          ${one.problem ? `<p class="note" role="alert">${esc(one.problem)}</p>` : ""}${edit}</div></section>
+        <section class="part"><div class="parthead"><span class="letter">c</span><h2>Does it agree with people?</h2><span class="grow"></span>${va.validated ? '<span class="status ok">validated</span>' : '<span class="status">not validated</span>'}</div><div class="body">
+          ${valRows ? `<p class="muted">${esc(b.what || "")}${b.metric ? ` · ${esc(b.metric)} on ${esc(b.dataset_id)}` : ""}${b.differs_from_this_use ? ` · differs from this use: ${esc(b.differs_from_this_use)}` : ""}</p>
+            <div class="tablewrap"><table><thead><tr><th>judge</th><th class="num">${esc(b.metric || "agreement")}</th><th class="num">it must beat</th><th>measured by</th></tr></thead><tbody>${valRows}</tbody></table></div>` : '<p class="muted">No validation recorded: nothing measured these judges against people\'s labels.</p>'}
+          ${(va.problems || []).length ? `<ul class="problems">${va.problems.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}
+          ${checks ? `<p class="muted" style="margin-bottom:4px">People's checks of its judges:</p><ul>${checks}</ul>` : ""}
+          <p class="muted">Shown as stored. Measuring it is a tool, not this screen: <code>tools/validate_judge_*.py</code> writes the runs a validation names.</p></div></section>
+        <section class="part"><div class="parthead"><span class="letter">d</span><h2>Score the arms with it</h2></div><div class="body" data-form="judge-run">
+          <div class="inline"><select id="js-ds" aria-label="the dataset">${opt(dss, r.dataset_id)}</select>
+            <input type="text" id="js-arms" placeholder="only these arms: a,b (optional)" autocapitalize="off" spellcheck="false">
+            <label>at most (USD) <input type="number" id="js-cap" value="${esc(r.cost_cap_usd ?? 1)}" step="0.01" min="0.01" inputmode="decimal" style="width:6rem"></label>
+            ${va.validated ? "" : '<label class="choice"><input type="checkbox" id="js-unval"> run it unvalidated, every number labelled so</label>'}</div>
+          <div class="actions" style="margin-top:0"><button class="btn" type="button" id="js-est">The cost first (a dry run)</button><button class="btn primary" type="button" id="js-go" data-send>Judge the arms</button>${mark}</div>
+          <div id="js-out" data-out></div>
+          ${(one.judging_sets || []).length ? `<p class="muted" style="margin-bottom:4px">What it judged:</p><ul>${one.judging_sets.map((j) => `<li><span class="mono">${esc(j.set)}</span> · ${j.arms} arm(s) · ${j.items} item(s) · ${j.verdicts} verdict(s)${j.summary ? ` · ${esc(j.summary.label || "")}${j.summary.current ? "" : " · made by an older version of the scorer"}` : ""}</li>`).join("")}</ul>
+            <p class="muted">Read as <span class="mono">judged/${esc(cur)}</span> on the leaderboard.</p>` : ""}</div></section>`;
+    }
+    return `<div class="screen wide">${head}<span id="jd-cur" data-cur="${esc(cur || "")}" hidden></span>
+      ${byField("jd-by")}
+      <section class="part"><div class="parthead"><span class="letter">a</span><h2>Its judge scorers</h2></div><div class="body">${list}${newForm}</div></section>
+      ${shown}
+      <section class="part"><div class="parthead"><span class="letter">e</span><h2>What it cost</h2></div><div class="body">
+        <p class="muted">The billed cost of each arm, and what judging cost, from the runs and the judges' verdicts.</p>
+        <div class="inline"><select id="cr-ds" aria-label="the dataset">${opt(dss)}</select><button class="btn" type="button" id="cr-go">Show the costs</button></div><div id="cr-out" data-out></div></div></section>
+      ${WB.cmd(`evh scorer-list\nevh scorer-new <id> --set dataset_id=... --set judges.0.system=... --set prompt.file=...\nevh judge-score --dataset-id <d> --scorer ${cur || "<id>"} --dry-run\nevh judge-score --dataset-id <d> --scorer ${cur || "<id>"}\nevh cost-report --dataset-id <d>`)}
+      <div class="actions"><a class="btn" href="#eval/${enc(goal)}">The eval</a><a class="btn" href="#goal/${enc(goal)}">Back to the goal</a></div></div>`;
+  }
+  function wireJudge() {
+    const goal = WB.param || "";
+    const v = (id) => (document.getElementById(id)?.value || "").trim();
+    const by = () => byOf("jd-by") || (who() ? `person:${who()}` : null);
+    const needWho = (box) => { box.innerHTML = '<p class="note" role="alert">Say who you are above: a change names who made it.</p>'; };
+    const st = () => (WB._judge && WB._judge.goal === goal ? WB._judge : (WB._judge = { goal }));
+    const cur = () => document.getElementById("jd-cur")?.dataset.cur || "";
+    document.querySelectorAll("[data-scorer]").forEach((a) => a.addEventListener("click", (e) => { e.preventDefault(); st().scorer = a.dataset.scorer; WB.render(); }));
+    const num = (id) => (v(id) === "" ? undefined : Number(v(id)));
+    holds("scorer-new", () => `Make ${v("jn-id") || "…"}`);
+    document.getElementById("jn-go")?.addEventListener("click", async (ev) => {
+      const box = document.getElementById("jn-out"), who_ = by(), id = v("jn-id");
+      if (!who_) return needWho(box);
+      const judges = [...document.querySelectorAll("input[name=jn-judge]:checked")].map((x) => x.value);
+      const set = { dataset_id: v("jn-ds"), mode: document.querySelector("input[name=jn-mode]:checked")?.value || "grade", cost_cap_usd: num("jn-cap"), "protocol.blinding": true };
+      const old = st().supersedes ? ((LIVE.cache[`scorer:${st().supersedes}`] || {}).record || {}).judges || [] : [];
+      const keep = [...document.querySelectorAll("input[name=jn-keep]:checked")].map((x) => old[Number(x.value)]).filter(Boolean);
+      keep.forEach((j, i) => { set[`judges.${i}.id`] = j.id; set[`judges.${i}.params`] = j.params; });
+      judges.forEach((j, i) => { set[`judges.${keep.length + i}.id`] = j; set[`judges.${keep.length + i}.system`] = j; });
+      if (v("jn-prompt")) set["prompt.file"] = v("jn-prompt");
+      for (const [k] of PROTO) set[k] = num(`jn-${k.split(".").pop()}`);
+      if (st().supersedes) set.supersedes = st().supersedes;
+      ev.target.disabled = true;
+      try {
+        await send("POST", `/scorers/${enc(id)}`, { set, by: who_ });
+        sent("scorer-new"); forget("scorers"); forget(`scorer:${id}`);
+        WB._judge = { goal, scorer: id };
+        WB.render(true);
+      } catch (e) { box.innerHTML = refusal(e); ev.target.disabled = false; }
+    });
+    document.getElementById("ss-new")?.addEventListener("click", () => { st().supersedes = cur(); WB.render(); document.getElementById("jn-id")?.closest("details")?.setAttribute("open", ""); });
+    holds("scorer-set", () => `Save ${cur()}`);
+    document.getElementById("ss-go")?.addEventListener("click", async (ev) => {
+      const box = document.getElementById("ss-out"), who_ = by(), id = cur();
+      if (!who_) return needWho(box);
+      const rec = ((LIVE.cache[`scorer:${id}`] || {}).record) || {};
+      const want = { mode: document.querySelector("input[name=ss-mode]:checked")?.value, "prompt.file": v("ss-prompt"), cost_cap_usd: num("ss-cap") };
+      for (const [k] of PROTO) want[k] = num(`ss-${k.split(".").pop()}`);
+      const set = Object.fromEntries(Object.entries(want).filter(([k, x]) => x !== undefined && x !== "" && JSON.stringify(dig(rec, k) ?? (k === "mode" ? "grade" : undefined)) !== JSON.stringify(x)));
+      if (!Object.keys(set).length) { sent("scorer-set"); WB.render(); return; }
+      ev.target.disabled = true;
+      try { await send("PATCH", `/scorers/${enc(id)}`, { set, by: who_ }); sent("scorer-set"); forget("scorers"); forget(`scorer:${id}`); WB.render(true); }
+      catch (e) { box.innerHTML = refusal(e); ev.target.disabled = false; }
+    });
+    const judgeInputs = () => {
+      const i = { dataset_id: v("js-ds") };
+      if (v("js-arms")) i.arms = v("js-arms");
+      if (document.getElementById("js-unval")?.checked) i.unvalidated = true;
+      return i;
+    };
+    document.getElementById("js-est")?.addEventListener("click", async (ev) => {
+      const box = document.getElementById("js-out");
+      box.innerHTML = '<p class="muted">costing it…</p>';
+      ev.target.disabled = true;
+      const r = await fetch("/api/v1/estimate", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json", "X-EVH-Data": "1" }, body: JSON.stringify({ operation: "judge-score", inputs: { scorer: cur(), ...judgeInputs() } }) });
+      const b = await r.json().catch(() => ({}));
+      box.innerHTML = r.ok ? blocksView(b.result) : `<p class="note" role="alert">${esc(b.error || b.text || r.status)}</p>`;
+      ev.target.disabled = false;
+    });
+    holds("judge-run", () => `Judge with ${cur()}`);
+    document.getElementById("js-go")?.addEventListener("click", async (ev) => {
+      const box = document.getElementById("js-out"), who_ = by(), cap = Number(v("js-cap"));
+      if (!who_) return needWho(box);
+      if (!(cap > 0)) { box.innerHTML = '<p class="note" role="alert">Say the most it may spend first.</p>'; return; }
+      ev.target.disabled = true;
+      try {
+        const done = await runJob(`/scorers/${enc(cur())}/judge`, { ...judgeInputs(), by: who_, max_cost_usd: cap }, box, "judging");
+        if (done) { sent("judge-run"); forget(`scorer:${cur()}`); forget("scorers"); box.innerHTML = `<p class="note">Judged.</p>${blocksView((done.result || {}).result)}`; }
+      } catch (e) { box.innerHTML = refusal(e); }
+      ev.target.disabled = false;
+    });
+    document.getElementById("cr-go")?.addEventListener("click", async (ev) => {
+      const box = document.getElementById("cr-out"), who_ = by();
+      if (!who_) return needWho(box);
+      ev.target.disabled = true;
+      try {
+        const done = await runJob("/reports/cost", { dataset_id: v("cr-ds"), by: who_ }, box, "reading the costs");
+        if (done) box.innerHTML = blocksView((done.result || {}).result);
+      } catch (e) { box.innerHTML = refusal(e); }
+      ev.target.disabled = false;
+    });
+  }
+
+  // ── W8: settings (UXS-005 W8): rare, so terse; one row each, with its command. config.yaml is not edited here (D9) ──
+  const SETTING_FILES = [["validate.json", "Committed runs and their floors", "which run folders the checks hold to their numbers"], ["goals/policy.yaml", "The goal policy", "what every goal must have before a round closes"]];
+  const b64 = (text) => btoa(unescape(encodeURIComponent(text)));
+  function screenSettings() {
+    const head = `<div class="kicker">Settings</div><h1>Govern and maintain</h1>
+      <p class="lead">Rare, so terse: each row is one form, and the command that does the same.</p>`;
+    const ov = load("data-ls", "/data"), ds = load("datasets", "/datasets");
+    if (ov === undefined || ds === undefined) return `<div class="screen wide">${head}${loading("the project")}</div>`;
+    if (ov.error) return `<div class="screen wide">${head}${failed(ov)}</div>`;
+    const o = ov.overview || {}, other = o.store === "sqlite" ? "files" : "sqlite";
+    const where = o.store === "sqlite" ? `one database, <span class="mono">${esc(o.database || "data/project.sqlite")}</span>${o.database_bytes != null ? `, ${o.database_bytes.toLocaleString()} bytes` : ", not made yet"}` : "every run, label and score a file under data/, kept in git";
+    const st = WB._settings || {}, path = st.path || SETTING_FILES[0][0];
+    const file = load(`data-file:${path}`, `/data/file?path=${enc(path)}`);
+    const text = file === undefined ? null : file.error ? "" : ((file.file || {}).text ?? "");
+    const row = (n, title, why, body, cmd) => `<section class="part"><div class="parthead"><span class="letter">${n}</span><h2>${esc(title)}</h2></div><div class="body">
+        <p class="muted">${why}</p>${body}${WB.cmd(cmd)}</div></section>`;
+    const opt = (xs, sel) => xs.map((x) => `<option value="${esc(x)}" ${x === sel ? "selected" : ""}>${esc(x)}</option>`).join("");
+    return `<div class="screen wide">${head}
+      ${byField("st-by")}
+      ${row(1, "Where the project keeps its data", `config.yaml names <b>${esc(o.store || "?")}</b>: ${where}. The data moves into the store config.yaml names, keeping everything; while it moves the server answers every call with “wait” (503). To move it to ${other}, set <code>store: ${other}</code> in config.yaml first (it is not edited here), then come back.`,
+        `<div class="actions" style="margin-top:0"><button class="btn" type="button" id="mv-dry">Count what would move into ${esc(o.store)}</button><button class="btn primary" type="button" id="mv-run" disabled>Move it</button></div><div id="mv-st-out" data-out></div>`,
+        `evh data-migrate --to ${o.store} --dry-run\nevh data-migrate --to ${o.store}`)}
+      ${row(2, "Bring the data to this release's formats", "After upgrading the harness: runs, datasets, records and fingerprints, once; a second run changes nothing.",
+        `<div class="actions" style="margin-top:0"><button class="btn" type="button" id="mg-check">Compare the formats</button><button class="btn" type="button" id="mg-dry">What it would change</button><button class="btn primary" type="button" id="mg-run">Migrate</button></div><div id="mg-out" data-out></div>`,
+        "evh migrate --check\nevh migrate --dry-run\nevh migrate")}
+      ${row(3, "Check the project", "The integrity checks over every dataset, run, reference and scorer; each exists because its absence let a real defect through. It reads everything: about half a minute on a large project.",
+        `<div class="actions" style="margin-top:0"><button class="btn primary" type="button" id="vd-go">Check it</button></div><div id="vd-out" data-out></div>`,
+        "evh validate")}
+      ${row(4, "Its policies", "Two settings files under data/, checked before they are saved.",
+        `<div class="inline"><select id="sf-path" aria-label="the setting">${SETTING_FILES.map(([f, t]) => `<option value="${esc(f)}" ${f === path ? "selected" : ""}>${esc(t)} · ${esc(f)}</option>`).join("")}</select></div>
+          <p class="muted">${esc((SETTING_FILES.find(([f]) => f === path) || [])[2] || "")}${file && file.error ? " · not made yet: saving makes it" : ""}</p>
+          ${text === null ? loading("the file") : `<div data-form="setting-file"><textarea id="sf-text" rows="8" style="width:100%" class="mono" aria-label="its text" spellcheck="false">${esc(text)}</textarea>
+          <div class="actions" style="margin-top:0"><button class="btn" type="button" id="sf-check">Check it</button><button class="btn primary" type="button" id="sf-save" data-send>Save</button>${mark}</div></div><div id="sf-out" data-out></div>`}`,
+        `evh data-show ${path}\nevh data-put --path ${path} --file - --check\nevh data-put --path ${path} --file -`)}
+      ${row(5, "Budgets", "A round's spending cap is set when the round opens, and checked before a run starts; a job that spends carries its own cap.",
+        '<p class="muted" style="margin:0">Open a round from a goal\'s eval.</p>', "evh round-open <goal> --budget-usd 5 ...")}
+      ${row(6, "Publish a dataset", "To a new Hugging Face repo: private first, read back and checked by sha256. Needs a token with write access on this machine.",
+        ds.error ? failed(ds) : `<div class="inline" data-form="publish"><select id="pb-ds" aria-label="the dataset">${opt(ds.datasets.map((x) => x.dataset))}</select>
+          <input type="text" id="pb-repo" placeholder="owner/name" autocapitalize="off" spellcheck="false" aria-label="the repo"><button class="btn" type="button" id="pb-go" data-send>Publish</button>${mark}</div><div id="pb-out" data-out></div>`,
+        `evh dataset-publish --dataset-id <id> --to huggingface --query '{"repo": "owner/name"}'`)}
+      <div class="actions"><a class="btn" href="#home">Your goals</a></div></div>`;
+  }
+  function wireSettings() {
+    const v = (id) => (document.getElementById(id)?.value || "").trim();
+    const by = () => byOf("st-by") || (who() ? `person:${who()}` : null);
+    const needWho = (box) => { box.innerHTML = '<p class="note" role="alert">Say who you are above: a job names who asked.</p>'; };
+    const job = (btn, out, path, body, what, after) => document.getElementById(btn)?.addEventListener("click", async (ev) => {
+      const box = document.getElementById(out), who_ = by();
+      if (!who_) return needWho(box);
+      ev.target.disabled = true;
+      try {
+        const done = await runJob(typeof path === "function" ? path() : path, { ...body(), by: who_ }, box, what);
+        if (done) { box.innerHTML = blocksView((done.result || {}).result); if (after) after(box, done); }
+      } catch (e) { box.innerHTML = refusal(e); }
+      ev.target.disabled = false;
+    });
+    // the move goes into the store config.yaml names; it is offered once its dry run has counted something to move
+    const to = ((LIVE.cache["data-ls"] || {}).overview || {}).store;
+    job("mv-dry", "mv-st-out", "/project/store/move", () => ({ to, dry_run: true }), "counting", (box, done) => {
+      const n = (((done.result || {}).result || {}).values) || {};
+      const some = (n.files || 0) + (n.rows || 0) + (n.outputs || 0) > 0;
+      document.getElementById("mv-run").disabled = !some;
+      if (!some) box.insertAdjacentHTML("beforeend", `<p class="muted">Nothing to move: the data is in ${esc(to)} already.</p>`);
+    });
+    job("mv-run", "mv-st-out", "/project/store/move", () => ({ to }), "moving the data", (box) => {
+      forget("data-ls");
+      box.insertAdjacentHTML("beforeend", '<p class="note">Moved. <button class="btn" type="button" data-again>Read it again</button></p>');
+      box.querySelector("[data-again]").addEventListener("click", () => WB.render(true));
+    });
+    job("mg-check", "mg-out", "/project/migrate", () => ({ check: true }), "comparing");
+    job("mg-dry", "mg-out", "/project/migrate", () => ({ dry_run: true }), "looking");
+    job("mg-run", "mg-out", "/project/migrate", () => ({}), "migrating");
+    document.getElementById("vd-go")?.addEventListener("click", async (ev) => {
+      const box = document.getElementById("vd-out");
+      ev.target.disabled = true;
+      box.innerHTML = '<p class="muted" aria-live="polite">checking… (it reads everything)</p>';
+      const r = await fetch("/api/v1/validate", { credentials: "same-origin" }).catch(() => null);
+      const b = r ? await r.json().catch(() => ({})) : {};
+      const lines = (((b.result || {}).blocks) || []).flatMap((x) => x.lines || []);
+      const bad = lines.filter((x) => /^\s*FAIL\b/.test(x));
+      box.innerHTML = r && r.ok ? `<p class="${bad.length ? "note" : "muted"}" ${bad.length ? 'role="alert"' : ""}>${bad.length ? `${bad.length} check(s) failed:` : "Every check passed."}</p>${bad.length ? `<ul>${bad.map((x) => `<li class="mono">${esc(x.trim())}</li>`).join("")}</ul>` : ""}<details><summary>Every check</summary>${blocksView(b.result)}</details>`
+        : `<p class="note" role="alert">${esc(b.error || (r ? r.status : "no answer"))}</p>`;
+      ev.target.disabled = false;
+    });
+    document.getElementById("sf-path")?.addEventListener("change", () => { WB._settings = { path: v("sf-path") }; WB.render(); });
+    const path = () => v("sf-path"), exists = () => !((LIVE.cache[`data-file:${path()}`] || {}).error);
+    holds("setting-file", () => `Save ${path()}`);
+    const put = (check) => async (ev) => {
+      const box = document.getElementById("sf-out"), who_ = by();
+      if (!who_) return needWho(box);
+      ev.target.disabled = true;
+      try {
+        const body = { path: path(), file: { name: path().split("/").pop(), content_base64: b64(document.getElementById("sf-text").value) }, by: who_ };
+        if (check) body.check = true;
+        else if (!exists()) body.new = true;
+        // a file with problems ends the job (exit 1) with each problem printed on its line, not as an ERROR: shown whole
+        const j = await send("POST", "/data/file", body);
+        const done = await watchJob(j.id, box, check ? "checking" : "saving");
+        if (done.state === "succeeded") {
+          box.innerHTML = `<p class="note">${check ? "It passes the check" : "Saved"}.</p>${blocksView((done.result || {}).result)}`;
+          if (!check) { sent("setting-file"); forget(`data-file:${path()}`); }
+        } else {
+          const log = ((await fetch(`/api/v1/jobs/${enc(j.id)}/log`, { credentials: "same-origin" }).then((x) => x.json()).catch(() => ({}))).log || "");
+          const said = log.split("\n").filter((x) => x.trim() && !x.startsWith("[")).slice(-12).join("\n");
+          box.innerHTML = `<p class="note" role="alert"><b>${check ? "It does not pass" : "Not saved"}.</b></p><pre class="reply">${esc(said)}</pre>`;
+        }
+      } catch (e) { box.innerHTML = refusal(e); }
+      ev.target.disabled = false;
+    };
+    document.getElementById("sf-check")?.addEventListener("click", put(true));
+    document.getElementById("sf-save")?.addEventListener("click", put(false));
+    holds("publish", () => `Publish ${v("pb-ds") || "…"} to ${v("pb-repo") || "…"}`);
+    job("pb-go", "pb-out", () => `/datasets/${enc(v("pb-ds"))}/publish`, () => ({ to: "huggingface", query: JSON.stringify({ repo: v("pb-repo") }) }), "publishing", () => sent("publish"));
   }
 
   // ── labelling: a sheet filled here and submitted when done (owner, 2026-11-17: never item by item) ─────────────
@@ -1437,6 +1862,8 @@
     prepare: [() => screenPrepare(WB.param || ""), wirePrepare], label: [() => screenLabel(WB.param || ""), wireLabel],
     systems: [() => screenSystems(WB.param || ""), wireSystems], eval: [() => screenEval(WB.param || ""), wireEval],
     review: [() => screenReview(WB.param || ""), wireReview], production: [() => screenProduction(WB.param || ""), wireProduction],
+    reference: [() => screenReference(WB.param || ""), wireReference], judge: [() => screenJudge(WB.param || ""), wireJudge],
+    settings: [screenSettings, wireSettings],
   };
 
   function goLive() {
@@ -1454,13 +1881,13 @@
   if (location.pathname.startsWith("/workbench")) {
     // Until the project answers, no mockup screen is drawn: one of them sends a browser without the mockup's own state
     // to #start, and a reload of a live screen (#dataset/<goal>) ended on the home. The mockup comes back only when
-    // there is no project's API to answer.
+    // there is no project's API to answer (no answer, or 404); a refusal (its data at another format) is the project's.
     const mockRoutes = { ...WB.routes };
     for (const k of Object.keys(WB.routes)) WB.routes[k] = [() => '<div class="screen"><p class="muted">Opening this project…</p></div>'];
     const asMockup = () => { Object.assign(WB.routes, mockRoutes); WB.render(true); };
     fetch("/api/v1/goals", { credentials: "same-origin" }).then((r) => {
-      if (r.ok) goLive();
-      else if (r.status !== 401) asMockup();
+      if (r.status === 404) asMockup();
+      else if (r.status !== 401) goLive();
       else {
         document.querySelector("#main").innerHTML = `<div class="screen"><h1>Sign in</h1><p class="lead">Open the Workbench through the link
           <code>evh catalog-serve</code> printed: it carries this server's token once and leaves a cookie.</p></div>`;
