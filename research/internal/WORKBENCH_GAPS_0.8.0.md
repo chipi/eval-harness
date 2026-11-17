@@ -50,6 +50,9 @@ catalog's rebuild state.
 
 ## Stale definitions (to realign in PRD-017, UXS-005 and the mockup)
 
+Done for PRD-017 and UXS-005 on 2026-11-17 (both rewritten against RFC-032 and D1 to D9; RFC-032's `round-run`
+passage amended for D2). The mockup stays as reviewed, a frozen design reference (D7).
+
 - **The governing RFC**: PRD-017 names RFC-026 for the API; RFC-032 (and RFC-033) replace its model and amend it.
   UXS-005's "mock data model" table and ER diagram are superseded by RFC-032's entities (system, score, baseline
   versions, study, exposure, faithfulness are missing from the diagram).

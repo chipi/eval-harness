@@ -1,10 +1,14 @@
-# UXS-005: The Workbench (sketches round 3, mockup round 5)
+# UXS-005: The Workbench (sketches round 3, mockup round 5, realigned with RFC-032)
 
 - **Status**: Draft — sketches and the clickable mockup for review (owner, 2026-11-06: "agree on the structure … see
   some sketches … then a mock-up"; 2026-11-08: "complete the mock-up really with everything we've been saying";
-  2026-11-12, the owner's request: the mockups brought up to the code built since round 4, round 5); 0.8.0
+  2026-11-12, the owner's request: the mockups brought up to the code built since round 4, round 5); 2026-11-17:
+  realigned with the model RFC-032 built and the owner's decisions D1 to D9 (PRD-017), as the spec the live screens
+  are built from; 0.8.0
 - **Authors**: Marko Dragoljevic
 - **Related PRDs**: [PRD-017](../prd/PRD-017-workbench.md) (the Workbench: workflows, decisions)
+- **Related RFCs**: [RFC-032](../rfc/RFC-032-one-model-two-surfaces.md) (the entities and operations every screen
+  calls), [RFC-033](../rfc/RFC-033-per-item-results-as-a-model.md) (per-item results)
 - **Related UX specs**: [UXS-001](UXS-001-catalog.md) (the catalog: shell, tokens), [UXS-002](UXS-002-inspector.md)
   (the inspector), [UXS-003](UXS-003-cli-and-onboarding.md) (commands)
 
@@ -17,13 +21,20 @@ Face (`abisee/cnn_dailymail`, the 1.0.0 test split's 11,490 rows, the first 200 
 not read from the project are left out rather than invented; the round sketched at the end is made up to show the
 screen.
 
-## The mockup
+## The mockup, and the live screens
 
 The mockup is the Workbench's first, static form (owner: "the mock-up is already the workbench app you're starting,
 just static"): `harness/workbench/` (`index.html`, `workbench.css`, `workbench.js` for the shell and the five steps,
-`workflows.js` for the other workflows, `help.js` for every hint, `?` panel and word).
+`workflows.js` for the other workflows, `round5.js` for round 5's screens, `help.js` for every hint, `?` panel and
+word). `live.js` turns a screen live, on the project's own API; on 2026-11-17 the home, a goal and the models (a new
+model, a deployment, onboarding, an accepted flag) are live, and every other screen says it is not yet.
 
-- **Its data is read, never invented.** `harness/workbench/mock_data.py` writes `mock.js` from the project: the goals,
+**From 2026-11-17 (D7)** the mockup is a frozen design reference: its data (`mock.js`, this repository's) stops
+shipping in the package, and `mock_data.py`, which reads the layout before RFC-032 (`data/configs`,
+`data/runs-linux`), is not run again. The live screens are built from this spec, each calling the operations named in
+"Every screen and what it calls" below. What the sections below say of "the mockup" describes it as it was reviewed.
+
+- **Its data was read, never invented.** `harness/workbench/mock_data.py` wrote `mock.js` from the project: the goals,
   datasets, models and their onboarding, the CNN source, items, references and profile, the rounds, every arm's
   scores, settings and first replies, the silver reference and who wrote it, the judge and its validation, and the
   triage goal's capture and comparison, the rows where production was wrong, the label sheet, the local arms' re-runs
@@ -80,6 +91,8 @@ just static"): `harness/workbench/` (`index.html`, `workbench.css`, `workbench.j
 ```
 
 - With no goal there is one thing to do. The menu is there, its pages empty with the same single way in.
+- The project exists already: its store was named at `evh init --store files|sqlite`, which the Workbench does not
+  do. "import a dataset" is step 2's sources.
 
 ## 1 The goal
 
@@ -102,7 +115,9 @@ just static"): `harness/workbench/` (`index.html`, `workbench.css`, `workbench.j
 - Five things, on one screen; everything else in a goal (axes, tie-breaks, guardrails, output contract, links) is
   "advanced" or comes later from the steps that own it (datasets in step 2, references in step 3).
 - The id is made from the title and shown small (`news_summary_cnn`), changeable before saving.
-- The measure offers the metrics the project's scorers produce; a new one can be typed.
+- The measure offers the metrics the project's scorers produce (`GET /metrics`); a new one can be typed.
+- Saving is `goal-new` (an edit, checked against the goal's schema and links), sent with `datasets: []`: a goal has
+  no dataset until step 2 adds one (`goal-set`). Its problems are shown on their fields.
 
 After saving, the goal's page is the hub of the journey: the same five steps, each with its state and its next action.
 
@@ -163,16 +178,20 @@ Making one is four short screens, one decision each:
   | Kaggle | `ref`, `version`, `file`, `text` |
   | production | which capture, which records (`FIELD:VALUE`), one per a field (`dataset-from-capture`) |
 
-- Preview before anything is written; fields are a table, proposed, never typed from nothing.
-- **New:** the expected answer's column (b). The Hugging Face source takes the item's column and its id today, not an
-  answer column; the mockup marks it as new.
+- Preview before anything is written; fields are a table, proposed (`fieldset-propose`), never typed from nothing.
+  **To build (API 2):** no operation reads a source without writing (`dataset-create` has no dry run, so `POST
+  /estimate` refuses it); a's "Read it" and b's first rows need one.
+- **To build (API 3):** the expected answer's column (b). The Hugging Face source takes the item's column and its id,
+  not an answer column; the mockup marks it as new.
 - In the mockup each source is read for real with the example its module documents: a folder (`data/sources/
   cnn_dailymail_20`), Zenodo (record 10157504, `sts_gold_tweet.csv`), Kaggle (`uciml/iris`), Hugging Face; OpenML
   answered HTTP 503 on 2026-11-08 and the screen shows that answer; Croissant shows the refusal the source gives the
   harness's own export (a text dataset's items are a FileSet, which the source does not read); the table source shows
   that the project has no manifest to read. Reading them found that the Zenodo source documented a record without the
   file it named; its example is now one that reads.
-- **Create** is a job (`dataset-create`): it freezes the items and their hashes. The goal's step 2 turns ✓.
+- **Create** is a job (`dataset-create`): it freezes the items and their hashes. Its role for the goal is a
+  `goal-set` on the goal's `datasets`. The goal's step 2 turns ✓. Fields kept are a fieldset (`fieldset-new`), which
+  other datasets may share.
 
 ## 3 Prepare the dataset
 
@@ -192,9 +211,12 @@ Making one is four short screens, one decision each:
 ```
 
 - One screen with the three things a dataset needs before an eval; each is a job or a small choice, done in
-  order, each showing its result.
-- **Labelling here** opens the labelling screen (below, W2); a CSV round trip stays the other way in.
-- A reference set's promotion records who and why (governance).
+  order, each showing its result: a `dataset-materialize` job, a `dataset-profile` job, then the reference set.
+- **"It came with one"** needs a reference made from the dataset's own answers, which no operation makes yet
+  (API 3): `reference-promote` promotes a label set.
+- **Labelling here** opens the labelling screen (below, W2), which needs one item's label written at a time (API 1);
+  the CSV round trip (`label-sheet`, then `label-import` into a label set) works today.
+- A reference set's promotion (`reference-promote`, a decision) records who and why (governance).
 - Once there is one, **Change the reference set** (W6, below) shows what a new one moves before anything is re-scored.
 
 ## 4 Models
@@ -203,26 +225,29 @@ Making one is four short screens, one decision each:
  Choose the models to compare                                                  step 4 of 5
 
  a Pick the models    (•) run on this goal before (28)   ( ) every model in the project (64)
-   [ ] model                 kind  weights      onboarding        arms  on this goal
-   [x] deepseek-4.1-flash    llm   open         pass 2026-10-31   19    #2 of 29
-   [x] eval-llama-maverick   llm   open         none              12    #3 of 29
+   [ ] model                 kind  weights      state             systems  on this goal
+   [x] deepseek-4.1-flash    llm   open         vetted            19       #2 of 29
+   [x] eval-llama-maverick   llm   open         none              12       #3 of 29
        …                                                   [ Bring a model that isn't here ]
- b Their settings     the prompt (the same for every arm) · temperature 0 · at most 1200 tokens
- c Check each on three items                                         [ Check 3 arms on 3 items ]
-   deepseek-4.1-flash  arm deepseek_m   3 replies · spent $0.00092 · all 200 ≈ $0.04       ▸
+ b Their settings     the prompt (the same for every system) · temperature 0 · at most 1200 tokens
+ c Check each on three items                                      [ Check 3 systems on 3 items ]
+   deepseek-4.1-flash  system deepseek_m   3 replies · spent $0.00092 · all 200 ≈ $0.04    ▸
      item 1 · its reply · 2.0 s          │ the reference · coverage 0.47
 
- Ready when: at least two arms checked (3)                              [ Next: the eval → ]
+ Ready when: at least two systems checked (3)                           [ Next: the eval → ]
 ```
 
-- Models come from the project's records with their onboarding: **pass** (probed and passed), **probed** (nothing
-  flagged, not yet run on an arm), **check** (a probe flagged something to read), **none** (never probed: run before
-  onboarding existed). A model that is not there is brought in (W5).
-- One prompt and one set of settings for every arm, so a difference in the scores is the model's. ML models (BART)
-  carry their own settings.
-- The three-item check (`arm-smoke`) shows each arm's replies beside the reference, what they cost and what all items
-  would cost, before anything is compared. In the mockup the replies, cost and timing are the r1 run's real first
-  three items.
+- Models come from the project's records with their state (`GET /models`, ADR-0021): **vetted** (every deployment's
+  onboarding passed and a system on it passed its smoke), **onboarded** (onboarding passed, no system smoked yet),
+  **check** (a probe flagged something to read), **none** (never probed: run before onboarding existed). Vetted is
+  computed, never approved by hand (D4). A model that is not there is brought in (W5).
+- What is compared is a **system**: a deployment, a prompt version and settings, with no dataset (RFC-032). Picking
+  a model here makes a system of it (`system-new`); a system placed in a round is an arm (step 5). One prompt and one
+  set of settings for every system, so a difference in the scores is the model's; the prompt a person writes is
+  saved as a prompt version (`prompt-version`, with a name and a note). ML models (BART) carry their own settings.
+- The three-item check (`arm-smoke`, a job: a system on a dataset) shows each system's replies beside the reference,
+  what they cost and what all items would cost, before anything is compared. In the mockup the replies, cost and
+  timing are the r1 run's real first three items.
 
 ## 5 The eval: its rounds
 
@@ -268,9 +293,23 @@ decision kept with its reason. This is where people spend most of their time (W1
 ```
 
   The arms come from step 4; the baseline is carried, not re-run; a clone changes one thing so its difference is that
-  change's. The estimate is each arm's r1 cost per item × 200 in the mockup (`run --dry-run` in the real one).
-  Retiring and making a baseline each record a reason; closing records the conclusion and promotes the baseline's run.
-  From here: score with a judge (W7), review the outputs (W2).
+  change's. The estimate is each arm's r1 cost per item × 200 in the mockup (`POST /estimate` on the run in the live
+  one). Retiring and making a baseline each record a reason; closing records the conclusion and promotes the
+  baseline's run. From here: score with a judge (W7), review the outputs (W2).
+
+  What each part calls (RFC-032; the owner's decisions of 2026-11-17):
+
+  | Part | Operation | Note |
+  | --- | --- | --- |
+  | Open the round | `round-open` (`goal`, `dataset`, `from`, `keep`, `hypothesis`, `budget_usd`) | the page says "question", the model stores `hypothesis` (D5) |
+  | Carry an arm in later | `round-carry` | unchanged, not run again |
+  | Clone an arm | `system-show`, then `system-new` with the one change | a clone is a new system; no clone operation |
+  | The estimate | `POST /estimate` with the `sweep` (its dry run) | the cap the person sets is the job's `max_cost_usd` |
+  | Run | `sweep` (`systems`, `dataset`, `goal`, `round`), a job | one job for the round's arms; `round-run` is not built (D2) |
+  | Results | `round-evidence`; the chart from `leaderboard` (`goal`, `round`) | each arm against the leader, Holm: the raw p and its threshold |
+  | Retire | `round-retire` (`reason`) | final: a recorded decision, not undone (D3) |
+  | Make baseline | `run-promote` (`reason`), or `round-close` with `promote` | the close's conclusion is the promotion's reason |
+  | Close | `round-close` (`conclusion`) | |
 
 ## The other workflows
 
@@ -286,6 +325,8 @@ decision kept with its reason. This is where people spend most of their time (W1
 
 - Every goal with where it stands and its next step, and what is running across goals (PRD-017, requirement 1). The
   mockup lists the walk-through's goal, then this repository's seven goals as they stand.
+- Live: `GET /goals`, then `GET /goals/{goal}/status` per goal, and `GET /jobs`. "Running now" needs the jobs list to
+  take several states at once (queued, running, running (unsupervised)); today `state` is one exact match (API 5).
 
 ### Jobs
 
@@ -293,8 +334,14 @@ decision kept with its reason. This is where people spend most of their time (W1
   the page closes; it can be stopped (`jobs-stop`), and a run resumed (`jobs-resume`) with what the stopped job left
   of its cap; one that spent it all is not resumed. A job that spends carries its cap (`--max-cost-usd`); one that
   waits for what another holds is "queued", naming it; one whose supervisor stopped is "running (unsupervised)" while
-  its command lives, "lost" after (RFC-026). The list shows each job,
+  its process lives, "lost" after (RFC-026). The list shows each job,
   its status, when it started and how far it is.
+- A job is an operation run detached (RFC-032): its record is `{id, operation, inputs, by, locks, env, run_id, state,
+  progress, spent_usd, result}`. It holds no command line: the page builds the command it shows from the operation and
+  its inputs. Progress (`done` of `total`) is reported by `run`, `sweep`, `rescore` and `judge-score`; the others show
+  their log. The page polls; there are no events.
+- Operations: `jobs-list`, `jobs-show`, `jobs-log`, `jobs-file` (a job's artifact, such as a label sheet),
+  `jobs-stop`, `jobs-resume`. Filters by operation and goal, and offset and limit, are to build (API 5).
 
 ### W2 Review and label
 
@@ -309,8 +356,14 @@ decision kept with its reason. This is where people spend most of their time (W1
 ```
 
 - Two arms' outputs on the same item; the sides are shuffled and the scores hidden while arms are hidden, so the pick
-  is not swayed. Picks, tags and notes are a label set with who made them (`sheet-export … --fill pick`,
-  `sheet-import`).
+  is not swayed. Which is better, tags and notes are a label set with who made them; today they come back only as a
+  filled sheet (`sheet-import`, a job under the dataset's lock). The sheet is the inspector's download
+  (`/api/sheet?format=csv`, the CSV `sheet-export` writes); a blind fill ("which is better" with the arms hidden) needs
+  its key written beside the sheet, so it is made on the command line (`evh sheet-export --csv`). Saving one item at a
+  time is to build (API 1). This "which is better" is not a
+  **pick**: a pick is a production record chosen for the next dataset version (W3).
+- The two arms' outputs and the item come from `comparison-items` and `comparison-item`; `sheet-show` answers a
+  sheet's blocks, not one row per item.
 - The failure modes are a named list, so tags are counted; the first list is proposed from the eval's own format
   checks (the CNN adapter's narration, label, markdown, bullets, paragraphs, overlong, truncated).
 - **Labelling the items** (the expected answer) is the same screen's other half: the item, a box for its answer
@@ -338,11 +391,15 @@ decision kept with its reason. This is where people spend most of their time (W1
 
 ### W5 Bring in a model
 
-- What it is and where it runs (a hosted gateway, a machine of ours, inside the harness), its address, weights and
-  licence; then **onboard**: the probes run as a job and their findings are shown, never typed (answers, thinks before
-  answering, with the chosen settings, speed, the same answer twice, valid JSON); then **approve** with who and why.
-  A **check** is read before approving. In the mockup the findings are `deepseek-4.1-flash`'s (pass) and
-  `ministral-3-14b`'s (check: "the JSON probe's answer is not valid JSON") real onboarding.
+- What it is (`model-new`: weights and licence) and where it runs (`deployment-new`: a hosted gateway, a machine of
+  ours, inside the harness; its address and settings); then **onboard** (`model-onboard`, a job with a cap): the
+  probes run and their findings are kept as the deployment's dated checks (`deployment-history`), shown, never typed
+  (answers, thinks before answering, with the chosen settings, speed, the same answer twice, valid JSON).
+- A **check** is read, then either fixed and onboarded again or **accepted** as the deployment's own nature with why
+  (`deployment-accept`, a decision). There is no "approve as vetted" (D4): the page shows the rule, vetted when
+  every deployment's onboarding passed and a system on it passed its smoke. In the mockup the findings are
+  `deepseek-4.1-flash`'s (pass) and `ministral-3-14b`'s (check: "the JSON probe's answer is not valid JSON") real
+  onboarding. Live today.
 
 ### W6 Change the reference set
 
@@ -350,6 +407,9 @@ decision kept with its reason. This is where people spend most of their time (W1
   then promote it with who and why and re-score the arms ($0: stored outputs). In the mockup: the CNN silver set,
   written by the arm `anthropic_l`, puts anthropic_m first (0.491) and makes deepseek_m significantly worse (p 0.0087);
   the two arms that rise most are the author's own family, which the screen says before promoting.
+- Live: the label sets (`label-set-list`), `reference-promote` (with its reason), `rescore` (a job). "What it moves"
+  is the leaderboard read under the other label (`leaderboard`, `label`, such as `silver`) today; `score-preview`
+  only prints, so a job gives no result to draw (API 4).
 
 ### W7 A judge
 
@@ -358,11 +418,18 @@ decision kept with its reason. This is where people spend most of their time (W1
   scorer, and on a CNN set where people chose the best summary); then a dry run for the cost and the scoring as a job.
   In the mockup: `judge-summ-v2` (openai_l, anthropic_l), tau 0.540 and 0.528 on SummEval against 0.372 for the best
   free scorer, best pick on Goyal 2022's CNN set 0.52 and 0.54 against 0.33 by chance, at most $15.00.
+- The validation is shown as stored; running one stays a tool (`tools/validate_judge_*.py`), not in the Workbench in
+  0.8.0 (D6). Live: `scorer-list`, `scorer-new`, `scorer-set`, `POST /estimate` on `judge-score` (its dry run),
+  `judge-score` (a job), `cost-report`.
 
 ### W8 Settings
 
-- Rare, so terse, one row each with its command: where the project keeps its data (`data-migrate`), checking the
-  project (`validate`, a job), committed runs and their floors, the goal policy, budgets, publishing a dataset.
+- Rare, so terse, one row each with its command: where the project keeps its data (`data-migrate`, a job; the
+  server answers 503 with Retry-After while it moves), bringing the data to this release's format (`migrate`),
+  checking the project (`validate`: a read of about 27 s, shown as "checking…", D1), committed runs and their floors,
+  the goal policy, budgets (files under `data/`: `data-show`, `data-put`), publishing a dataset (`dataset-publish`).
+- `config.yaml` (the exposure check's repos, for one) is not edited here in 0.8.0 (D9): `data-put` writes only under
+  `data/`.
 
 ## Round 5: what 0.8.0 built after round 4
 
@@ -424,8 +491,8 @@ this project holds no held-out side, study, prompt version, job or replay yet; e
   - Its results compare each arm's Linux re-run with bart_l's Linux re-run (the pair tests' baseline), so speed and
     coverage are from one machine; each row says which run under the arm's name, and its actions sit beside the name,
     so the table fits a desktop screen. The re-runs (2026-09-30) stand in for r4's runs, and a mockup note says so:
-    in the harness a run counts in a round only when its system names it, and `evh round-list` would read bart_l, carried
-    in, through its r1 run. bart_l is carried into the round (`round-open --keep`), not run again; the arms part
+    in the harness a run counts in a round only when it is made in it (it records the goal and the round, and joins
+    its system's arm), and `evh round-list` would read bart_l, carried in, through its r1 run. bart_l is carried into the round (`round-open --keep`), not run again; the arms part
     counts "5 arms: 4 re-run, bart_l carried", and a closed round's fold "the round's 5 arms".
   - The results open with the round's answer in one line, from the verdicts below it ("No arm was shown ahead of
     bart_l: 3 significantly worse (…), which `evh round-list` suggests retiring; 1 not significantly different (…),
@@ -433,7 +500,7 @@ this project holds no held-out side, study, prompt version, job or replay yet; e
     above the table (a phone hides the table's head), then the table and the mockup note.
   - r4's verdicts are the ones `evh round-list` gives (`rounds.evidence`): every arm in play against the round's leader,
     the best mean, Holm across them, each row showing Δ, the raw p and its threshold, with r1's coverage bars.
-    `_rounds.arms_of` leaves the retired out, so a retire narrows the family and moves the thresholds; a retired row
+    The arms in play leave the retired out (`model.rounds.in_play`), so a retire narrows the family and moves the thresholds; a retired row
     says "retired: not tested". The project's pair tests are each arm against bart_l, which leads the round on these
     re-runs. (`evh round-list` tests a leader against the baseline it started from, Bonferroni over the round's arms, only
     when the two differ, to decide whether to suggest promoting it; an earlier version of this screen applied that
@@ -441,7 +508,8 @@ this project holds no held-out side, study, prompt version, job or replay yet; e
   - No arm here leads bart_l, so the screen offers no "Make baseline": `evh round-list` would not suggest a promotion,
     and `round-close --promote` takes the round's conclusion as the promotion's reason, so there is no second reason to
     ask for.
-  - The baseline cannot be retired. A retire can be undone until the round closes.
+  - The baseline cannot be retired. A retire is final: a recorded decision with its reason, which no operation undoes
+    (D3); its confirm says so.
   - A prompt opens under its row and names the arm; Enter confirms it, Escape cancels it; a reason under three words is
     an error in the bad status, tied to its field (`round-retire` refuses one). The confirm of a close is an
     alertdialog that restates what it decides, focus on its "Yes, close r4", and Escape backs out of it. Close is
@@ -449,9 +517,9 @@ this project holds no held-out side, study, prompt version, job or replay yet; e
     sentence until then. A clone keeps its fold open and focus on its Remove once added, and an empty value is an
     error; a clone can be removed before the run. The round's question is fixed once the round has run. The answer's
     source is a quiet line under it.
-  - The commands are the ones that make the round: `round-open --keep` carries bart_l, the round file is committed
-    before the runs (as `round-open` says), and each new system runs in it (`--goal` and `--round r4`), so
-    its runs count in it (`_rounds.runs_of`). r5's `round-open` keeps bart_l too.
+  - The commands are the ones that make the round: `round-open --keep` carries bart_l (in a files project the round
+    file is committed before the runs, as `round-open` says), and the new systems run in it as one `sweep` (`--goal`
+    and `--round r4`; D2), so each run joins its system's arm. r5's `round-open` keeps bart_l too.
   - Once a round has run its question is its heading (h2), as r1's is; the kicker above it is a line. The close
     confirm keeps Tab between its two buttons.
   - A cost column every arm of which is $0 gives way to one line in the arms part; a local run's button says "local,
@@ -510,7 +578,7 @@ person is an engineer and knows all this stuff, let's not make it too childish".
 ### Words
 
 - The harness's own words are taught, not replaced: a goal, a dataset, an item, a reference set (gold, silver), an
-  arm, a run, a round, a baseline, significant, contenders. The first time a word appears on a screen it is
+  system, an arm, a run, a round, a baseline, significant, contenders. The first time a word appears on a screen it is
   underlined lightly; pointing at it (or tapping it) shows its one-line meaning, and its `?` the full one.
 - A glossary page holds every word, the same text as the `?` panels, linked from each.
 
@@ -526,7 +594,8 @@ person is an engineer and knows all this stuff, let's not make it too childish".
 ### Where the help lives
 
 - One file of help texts, keyed by step and field, written and reviewed like the docs; the screens read it.
-- A check fails when a field or a step has no hint or no `?` text, so help cannot fall behind the screens.
+- A check fails when a field or a step has no hint or no `?` text, so help cannot fall behind the screens. (Not
+  built yet: it comes with the live screens.)
 
 ### Help texts (first draft)
 
@@ -548,8 +617,8 @@ person is an engineer and knows all this stuff, let's not make it too childish".
 | a Fetch its items | Downloads every item and checks it against its hash. | So a run reads exactly the frozen items, offline, every time. |
 | b Look inside | What the items are like: how many, how long, each field's values. | Read a few before running anything: most surprises (empty items, the wrong column, a skewed sample) show here. |
 | c Its reference set | The expected answer for each item, that outputs are scored against. | Three ways: the data came with answers (promote them), label them here, or bring a filled sheet (CSV). **Gold** is checked by people; **silver** is a model's answers, consistent rather than correct: enough to rank systems against each other, not a claim about truth. Who and why are recorded. |
-| Step 4, models | The systems you compare. Each is checked on three items before it costs anything. | A model with its prompt and settings, run on this dataset, is an arm. A model that fails on three items would fail on all of them, and you would pay for every one. |
-| Pick the models | Models already in this project are ready to use; a new one is onboarded once, for every goal. | Onboarding probes a model once: does it answer, how it counts tokens, what it costs, whether it thinks first. pass, probed, check, none. A model with an unread check can fail mid-run, after it has cost money. |
+| Step 4, models | The systems you compare. Each is checked on three items before it costs anything. | A model with its prompt and settings is a system; placed in a round, it is an arm. A model that fails on three items would fail on all of them, and you would pay for every one. |
+| Pick the models | Models already in this project are ready to use; a new one is onboarded once, for every goal. | Onboarding probes a model once: does it answer, how it counts tokens, what it costs, whether it thinks first. vetted, onboarded, check, none. A model with an unread check can fail mid-run, after it has cost money. |
 | Their settings | What every arm is given: the prompt, the temperature, the most it may write. | The same for every model, so a difference in the scores is the model's. Change one thing at a time. |
 | Check each on three items | Runs each arm on the first three items, the way the full run would, and shows the replies. | An empty, cut-off or wrongly formatted reply shows here for a few cents; the cost of three projects the cost of all. |
 | Step 5, the eval | The goal measured on its dataset, in rounds. | Each round asks one question, runs its arms, compares them by the goal's measure and rule, and ends in a decision kept with its reason. |
@@ -570,8 +639,9 @@ person is an engineer and knows all this stuff, let's not make it too childish".
 | label, label set | An answer a person, a model or a rule gave for an item; a label set is many of them, which can be promoted to a reference set. |
 | field | A fact about each item (its source, its length) you can slice the results by. |
 | measure | One number per item that says how good an output is (coverage, accuracy, cost). |
-| arm | One system you compare: a model with a prompt and settings, on a dataset. |
-| run | One pass of an arm over the dataset: its outputs, their scores, its cost. |
+| system | What is evaluated: a model where it runs, a prompt and settings. It names no dataset: the same system runs on any. |
+| arm | A system placed in a round, with the runs it is read through; retired with a reason. |
+| run | One pass of a system over a dataset: its outputs, their scores, its cost. |
 | round | One comparison of arms on a goal and its dataset, from its question to its decision. |
 | baseline | The arm the others are measured against: the current choice, or the simplest one. |
 | significant | The difference holds up beyond chance, by the paired test (better or worse); "not significant" means it may be noise. |
@@ -579,86 +649,88 @@ person is an engineer and knows all this stuff, let's not make it too childish".
 | eval | The goal measured on its dataset, in rounds. |
 | validation, test | A dataset's role: validation while you choose and tune; test for the final answer, kept untouched until then. |
 | gold, silver | A reference set checked by people; one made of a model's answers, enough to rank systems, not a claim about truth. |
-| onboarding | Probing a model once, for every goal: does it answer, how it counts tokens, what it costs. Kept in its record. |
+| onboarding | Probing a model's deployment once, for every goal: does it answer, how it counts tokens, what it costs. Kept as the deployment's dated checks. |
+| vetted | A model whose every deployment passed its onboarding and a system on it passed its smoke. Worked out, never set by hand. |
 | coverage | How much of the reference a summary covers, cut to the reference's own length, 0 to 1. |
 | capture | What a deployed system decided, kept as records with their hashes, to evaluate and learn from. |
 | pick | A production record chosen for the next version of a dataset, with the reason it was chosen. |
 | judge | A model that scores outputs the way a person would; it may decide only after agreeing with people's labels. |
 | failure mode | A named way an output can be wrong (overlong, narration), so tags are counted rather than re-invented in each note. |
 
-## The mock data model (round 3)
+## The data model (RFC-032)
 
-What the screens above show and how it links; the files and the database keep it as they keep it today until the
-data-model RFC decides. Reviewed with the mockup (PRD-017, decision 5).
+The mock data model of round 3 (an ER diagram and a table beside the mockup, PRD-017's decision 5) is replaced by
+RFC-032's entities, built in 0.8.0. What a screen shows is an entity or a view of them; what a person changes goes
+through an operation, never a path. Where each lives is the model's (`harness/scripts/model/`), the same keys in
+either store:
 
-```mermaid
-erDiagram
-    GOAL ||--o{ ROUND : "is decided in"
-    GOAL }o--o{ DATASET : "is measured on (role: validation, test, pilot)"
-    GOAL ||--o{ SCORER : "is scored by"
-    DATASET ||--o{ DATASET : "v2 from v1"
-    DATASET }o--|| SOURCE : "is made from"
-    DATASET ||--o{ ITEM : has
-    DATASET }o--o| FIELDSET : "its items carry"
-    DATASET ||--o{ LABELSET : "is labelled in"
-    LABELSET ||--o{ REFERENCE : "is promoted to (silver, gold)"
-    MODEL ||--o{ DEPLOYMENT : "runs on"
-    DEPLOYMENT ||--o{ ONBOARDING : "is checked by"
-    ARM }o--|| DEPLOYMENT : runs
-    ARM }o--|| PROMPT : uses
-    ARM }o--|| DATASET : "runs on"
-    ARM ||--o{ RUN : "is run as (repeats)"
-    ROUND }o--o{ ARM : "compares (kept, retired, carried)"
-    RUN ||--o{ SCORE : "is scored (by scorer, on reference)"
-    SCORER ||--o{ JUDGE : "has (a judge scorer)"
-    JUDGE }o--|| DEPLOYMENT : "calls"
-    JOB }o--o| RUN : "makes"
-    CAPTURE ||--o{ DATASET : "is made into"
-    CAPTURE ||--o{ ARM : "is scored as (production)"
-    CAPTURE ||--o{ LABELSET : "gives rule labels"
-    DATASET ||--o{ PICK : "waits for (next version)"
-    LABELSET ||--o{ TAG : "holds (review)"
-    FAILUREMODES ||--o{ TAG : "names"
-```
-
-| Entity | What a person sets | What commands write | Today it lives in |
+| Entity | What a person sets | What operations write | Kept at |
 | --- | --- | --- | --- |
-| Goal | title, what it is for, the decision, the measure and direction, the winner rule (a named default) | — | `goals/<id>.yaml` |
-| Round | its question, budget, which arms; the decision and conclusion | when opened and closed | `rounds/<goal>/<r>.yaml` |
-| Dataset | its source, name, fields | items, hashes, version lineage, profile | `datasets/`, `materialized/`, `sources/`, `profiles/` |
-| Model / Deployment | what it is, where it runs, endpoint, settings | onboarding, capabilities, smokes, history | `models/<id>.yaml` |
-| Arm | dataset, deployment, prompt, the settings it varies | its config id, version | `configs/<id>.yaml` |
-| Prompt | its text | its hash | a file named by the system |
-| Run | — (it is made by running an arm) | outputs, rows, metrics, cost, fingerprint | `runs*/…` |
-| Label set / Reference | labels (in the labelling screen), who and why for a promotion | hashes, counts | `labels/`, `references/` |
-| Scorer / Judge | which judges, prompt, mode | validation numbers, verdicts | `scorers/`, `judge-*/` |
-| Job | which step to run | status, progress, log, cost | — (new: RFC-026) |
+| Goal | title, what it is for, the decision, the measure and direction, the winner rule (a named default) | its history of saves | `goals/<id>.yaml` |
+| Dataset | its source, name, fields | items, hashes, versions, profile, its sealed side | `datasets/`, `materialized/`, `sources/`, `profiles/` |
+| Fieldset | the fields kept | — | `fields/<id>.yaml` |
+| Label set | labels (a sheet today; one item at a time, API 1) | who, when | `labels/<dataset>/<set>/` |
+| Reference | who and why for a promotion | hashes, counts, its tier | `references/{gold,silver}/` |
+| Model | what it is, weights, licence | — | `models/<id>.yaml` |
+| Deployment | where it runs, its endpoint and settings; a flag accepted with why | its dated checks (onboarding, smokes, acceptances) | `deployments/<model>/<deployment>.yaml` |
+| Prompt | its text, a name, a note | its hash, its parent | `prompts/<name>/` |
+| System | a deployment, a prompt version, settings (no dataset) | — | `systems/<id>.yaml` |
+| Run | — (a system run on a dataset, in a round or not) | outputs, cost, latency, fingerprint, purpose | `runs/<id>/run.json`, `outputs.jsonl` |
+| Score | which scorer, which reference | per-item rows (RFC-033), metrics | `runs/<id>/scores/<scorer>@<reference>/` |
+| Round, arm | its question (`hypothesis`), budget, which arms; a retire's reason; the conclusion | when opened and closed, by whom; each arm's runs | `rounds/<goal>/<r>.yaml` |
+| Baseline | a promotion's reason; a rollback | its versions, the evidence | `baselines/<goal>/<dataset>/<n>.json` |
+| Scorer, judge | which judges, prompt, mode | its validation (by the tools), verdicts | `scorers/`, `judge-validation/`, `judge-verdicts/` |
 | Capture | which deployment, since when | its records and their hashes | `captures/<id>/` |
-| Pick | which record, for which dataset, why | when, by whom | the picks (`evh picks`) |
-| Failure modes / Tag | the list of modes; a tag on an output (in review) | counts per arm | `failure-modes/<id>.yaml`, a label set |
-| Baseline (round 5) | who promotes, why; a rollback | its versions, the evidence (the paired test) | `baselines/<goal>/<dataset>/<n>.json` |
-| Prompt version (round 5) | its text | its hash, its parent | `prompts/<name>/` |
-| Study, look (round 5) | the spec; the rule of a confirmation | trials, the looks a test set has had | `studies/<goal>/`, the dataset's record |
-| Held-out side, read (round 5) | a read, by hand; the fields counts may show | reads the harness makes, the leak check | the dataset's `sealed`, `exposure/<dataset>.jsonl` |
-| Code record, faithfulness (round 5) | its versions and when each ran | each faithfulness record, its summary | `models/<id>.yaml` (`kind: code`), `faithfulness/<id>/` |
+| Pick | which production record, for which dataset, why | when, by whom | the picks (`GET /picks`) |
+| Failure modes, tag | the list of modes; a tag on an output | counts per arm | `failure-modes/<id>.yaml`, a label set |
+| Study, look; exposure; faithfulness | the spec; a read by hand; a code record's versions | trials, looks, reads, faithfulness records | as RFC-029 to RFC-031 define them |
+| Job | which operation, its inputs, its cap | state, progress, log, spent, result | the project's `.build/jobs/` (not project data) |
 
-## To review in this round
+Views (where a goal stands, a round's evidence, the leaderboard, a comparison, label coverage) are read operations,
+computed from what is stored when read and cached until a write changes what they read: the Workbench, the catalog
+and `evh` give the same numbers.
 
-1. The order: an empty project, the goal (step 1), its dataset (2), preparing it (3), models (4), the eval (5),
-   with the goal's page as the hub that shows the five steps and their state.
-2. The goal in five inputs, the rest advanced (the margin, the tie-break, other measures) or owned by later steps.
-3. The dataset in four parts (where from, what's in it, its fields, its name), the same for every source, preview
-   before writing.
-4. Preparing as one screen of three things (fetch, look, reference set), with the three ways to a reference set.
-5. Models: pick with their onboarding, one set of settings, three items checked before anything is compared.
-6. The eval: the answer so far, its rounds, the comparison (chart, table, what the rule picks, what the items can
-   show), an arm's summaries; a round of one's own (question, arms from step 4 and clones, the dry run's estimate,
-   run, results, retire and make baseline with a reason, close).
-7. The day-to-day work under each goal: review and label (W2), production (W3), a judge (W7); and home, jobs,
-   bringing in a model (W5), changing the reference set (W6), settings (W8).
-8. The help layer: three layers, the words with a glossary, the command folded; the texts for steps 0 to 5.
-9. The data model, with captures, picks, failure modes and tags added.
+## Every screen and what it calls
 
-Not in the mockup yet: a hosted arm's new run (the project has none; one would be a paid call, from about $0.04 for
-deepseek_m's 200 items); OpenML's rows (it answered HTTP 503 when read); a Croissant description the source can read
-(none in the project; the harness's own export is refused); a table source's rows (no manifest in the project).
+✓ every operation exists, ~ partly, ✗ an operation is missing (API n: PRD-017, "The API to build first"). Checked
+against the code on 2026-11-17 (`research/internal/WORKBENCH_GAPS_0.8.0.md` has the detail).
+
+| Screen | Calls | State |
+| --- | --- | --- |
+| Home | `goal-list`, `goal-status` per goal, `jobs-list` | ~ live; the jobs list takes one state (API 5) |
+| 1 Goal | `goal-new` (with `datasets: []`), `goal-set`, `goal-show`, `goal-history`, `metric-list` | ✓ live |
+| 2 Dataset | `dataset-list`, `goal-set`, `fieldset-propose`, `fieldset-new`, `dataset-create`, `capture-list` | ✗ a source's preview (API 2), the answer column (API 3) |
+| 3 Prepare | `dataset-materialize`, `dataset-profile`, `dataset-show`, `dataset-items`, `label-sheet`, `label-import`, `reference-promote` | ✗ a reference from the dataset's answers (API 3), one item's label (API 1); items have no offset and limit |
+| 4 Models | `model-list`, `goal-leaderboard`, `prompt-version`, `system-show`, `system-new`, `arm-smoke`, `POST /estimate` | ✓; a clone is a new system |
+| W5 Bring in a model | `model-new`, `deployment-new`, `model-onboard`, `model-show`, `deployment-history`, `deployment-accept` | ✓ live; no "approve" (D4) |
+| 5 / W1 The eval | `round-list`, `round-show`, `round-evidence`, `leaderboard`, `baselines`, `round-open`, `round-carry`, `sweep`, `POST /estimate`, `rescore`, `judge-score`, `round-retire`, `run-promote`, `round-close`, `arm-show`, `comparison-item` | ✓; a retire is final (D3) |
+| W2 Review, label, tag | `comparison-items`, `comparison-item`, `sheet-show`, `failure-modes-list`, `tag-set-list`, `label-set-list`, `sheet-import` | ✗ one item's preference, label or tag (API 1) |
+| W3 Production | `capture`, `arm-from-capture`, `label-from-capture`, `label-coverage-show`, `sheet-show`, `pick`, `dataset-extend`, `periods`, `faithfulness` | ✓ (the coverage's rules file must be in the project) |
+| W6 Reference | `reference-list`, `label-set-list`, `reference-promote`, `leaderboard` (`label`), `rescore` | ~ `score-preview` gives no result (API 4) |
+| W7 Judge | `scorer-list`, `scorer-new`, `scorer-set`, `judge-score`, `POST /estimate`, `cost-report` | ✓; validating stays a tool (D6) |
+| W8 Settings | `validate`, `migrate`, `data-migrate`, `data-show`, `data-put`, `dataset-publish` | ~ `validate` is a read of about 27 s (D1); no `config.yaml` (D9) |
+| Held-out test, study | `dataset-split`, `exposure`, `exposure-add`, `sealed-counts`, `dataset-unseal`, `pair-test`, `looks`, `study-*` | ✓ |
+| Jobs | `jobs-list`, `jobs-show`, `jobs-log`, `jobs-file`, `jobs-stop`, `jobs-resume` | ~ progress from four operations; filters (API 5) |
+
+## For every live screen
+
+- **The session.** The page opens through the Workbench link `evh catalog-serve` prints (it signs in once); the token is new at every server
+  start, so a page left open answers 401 on any call after a restart, and says to open the new link.
+- **Writes.** Every call that is not a GET sends `X-EVH-Data: 1`; an upload is base64 JSON, at most 50 MB a call.
+- **Refusals**, shown where the action was: an edit's problems on their fields (`{error, kind, problems}`); a job
+  refused before it exists (`{error}`); a job that failed later (its state, its refusal's kind, its log); 503 with
+  Retry-After while the data is moved or migrated, retried after it. An unhandled server error is always JSON
+  (API 6).
+- **Who acted.** The name is asked once and kept in the browser; every write sends it (`by`), every decision its
+  reason.
+- **Kinds.** A read answers at once; an edit or a quick decision answers with what was saved; work is a job (its
+  estimate first where it spends, its cap, then its progress).
+- **Phones.** Every screen at 390 px (owner, 2026-11-12): tables of four columns or more become cards; the two- and
+  three-column tables, the forms and the jobs list are checked there too.
+- **Behind a proxy** the Workbench and `/api/v1` answer 404 in 0.8.0 (D8).
+
+## The order of the build (owner, 2026-11-17)
+
+API 1 to 6 first; then the screens: home and goal (live) → W5 (live) → steps 2 and 3 (need API 2 and 3) → step 4 →
+W1 the eval → W2 (needs API 1) → W3 → W6, W7 and W8 as short lists → the held-out test and studies last. The mockup's
+"mockup:" notes go with the screens that replace them.

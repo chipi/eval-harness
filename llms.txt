@@ -95,7 +95,7 @@ What a change in each part of the code should read first.
 - [RFC-018: A read-only MCP server in 0.5.0](docs/rfc/RFC-018-read-only-mcp-server.md): the server and its limits (status: Completed (v0.5.0), 2026-10-29)
 - **The Workbench** (`harness/workbench/`):
 - [PRD-017: The Workbench, where an evaluation is set up and run](docs/prd/PRD-017-workbench.md): what it is for (status: Draft (owner, 2026-11-06: "workbench is a good name")
-- [UXS-005: The Workbench (sketches round 3, mockup round 5)](docs/uxs/UXS-005-workbench.md): the sketches and the mockup (status: Draft — sketches and the clickable mockup for review (owner, 2026-11-06: "agree on the...)
+- [UXS-005: The Workbench (sketches round 3, mockup round 5, realigned with RFC-032)](docs/uxs/UXS-005-workbench.md): the sketches and the mockup (status: Draft — sketches and the clickable mockup for review (owner, 2026-11-06: "agree on the...)
 - **Tests and releases** (`harness/tests/`):
 - [Testing the harness](harness/docs/TESTING.md): how the harness is tested, and the gates
 - [Releasing the harness](harness/docs/RELEASING.md): releasing

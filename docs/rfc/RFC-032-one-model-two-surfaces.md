@@ -293,10 +293,10 @@ and the Workbench's screens that need it are wired behind it.
 Answered the same day (owner: "Love the reasoning and answers. I agree with all").
 
 1. **How a run starts.** A run is always a system run on a dataset: `evh run --system cnn_bart_l --dataset
-   cnn_dailymail_200`, optionally `--round r4`. Running a round is an operation of its own, `evh round-run --goal
-   news_summary_cnn --round r4` (every arm, or `--arm`), from the round's dataset and arms. Runs happen outside rounds
-   (smokes, pair re-runs, repeats, one-off runs), so the base operation does not need one; in the Workbench, "Run 4
-   arms" is one action on a round. A run made in a round records it as where it came from, and the arm's
+   cnn_dailymail_200`, optionally `--round r4`. Running a round's arms is `sweep` (its systems, the dataset, `--goal`
+   and `--round`), one job; the `round-run` operation first proposed here was not built (owner, 2026-11-17, D2 in
+   PRD-017). Runs happen outside rounds (smokes, pair re-runs, repeats, one-off runs), so the base operation does not
+   need one; in the Workbench, "Run 4 arms" is one action on a round. A run made in a round records it as where it came from, and the arm's
    `read_through` points to it; membership stays on the round's list.
 2. **A dataset's parts.** Its items, profile, source and versions are parts of it: each dataset has one of each today
    (`materialized/<id>`, `profiles/<id>.json`, `sources/<id>.rows.json`), the profile written by a command but a fact
