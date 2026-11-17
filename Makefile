@@ -125,7 +125,7 @@ docs:
 # `complexity` reports. Ruff and codespell run from here (their config is at the root),
 # mypy and interrogate from harness/ (theirs is in harness/pyproject.toml).
 SPELLED := '*.py' '*.md' '*.sh' '*.yml' '*.yaml' '*.toml' '*.html' '*.js' '*.css' '*.txt' \
-	':!:harness/data/**' ':!:examples/*/data/**' ':!:harness/workbench/mock.js'
+	':!:harness/data/**' ':!:examples/*/data/**' ':!:harness/workbench/mockup/mock.js'
 
 # llms.txt (llmstxt.org), made from tools/llms.in.txt and the docs' titles and status lines: `llms` writes it,
 # `llms-check` fails when it is stale, a link, an anchor or a path in it does not resolve, or a per-type index

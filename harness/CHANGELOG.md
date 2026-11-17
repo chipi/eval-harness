@@ -13,6 +13,11 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Added
 
+- **The package ships the live Workbench only** (D7): `index.html`, `workbench.js`, `help.js`, `live.js` and
+  `workbench.css`, the only files `/workbench/` serves. The mockup (its page, this repository's data in `mock.js`, its
+  screens and the scripts that read its data, 170 KB of it loaded by every installed project's Workbench) is a frozen
+  design reference in `harness/workbench/mockup/`, outside the package; opened without its project's API, the
+  Workbench says to open the link `evh catalog-serve` prints.
 - **Prompts kept as versions in the Workbench, in a manual eval and in a study** (UXS-005; RFC-028; the owner's
   prompt review): "Prompts" on the home lists every prompt with its versions and runs, shows a prompt's versions with
   their text, who made each, what it was made from and the runs that sent it, compares two versions (`prompt-diff`),
@@ -235,7 +240,7 @@ that can move a result is never a patch release without saying so under **Change
   `deployment.schema.json` and names one under no model or not named by its folder and file.
 - **The Workbench on its server** (PRD-017, RFC-032 step 1): `evh catalog-serve` serves it under `/workbench/` on
   this machine (never `--public` or `--behind-proxy`) and prints the link that signs in. Its home and a goal's screen
-  read the model's API; a screen not wired yet says so. Opened as files, it is still the mockup. Its models (step 2, W5): the project's models and their state, a model's page with each deployment's checks,
+  read the model's API. Its models (step 2, W5): the project's models and their state, a model's page with each deployment's checks,
   "Run the probes" (`model-onboard` as a job, with the most it may spend, followed on the page), accepting a flag with
   why, adding a deployment, and bringing a model in; every change names who made it, asked once and kept in the browser.
   A deployment's record names no actor of its own: each of its checks names who made it (`by`), so a deployment
@@ -897,8 +902,8 @@ that can move a result is never a patch release without saying so under **Change
   (`ERROR (old-format): …`, a project whose config.yaml just named a store still empty, say) ended the server's request
   with no answer at all. It is answered at its kind's status with `{error, kind}`.
 - **The Workbench opens live on a project that refuses a read**: it fell back to the mockup on any answer but OK or 401,
-  so a project whose data needs migrating showed the mockup's data. Only no answer, or a 404, is the mockup now; the
-  home shows the refusal with the way to Settings, and Settings no longer needs the dataset list to open.
+  so a project whose data needs migrating showed the mockup's data. The home shows the refusal with the way to
+  Settings, and Settings no longer needs the dataset list to open.
 - **`judge-score` runs as a job and with `--json`**: its body asked `sys.stdout.isatty()` to line-buffer, and the
   envelope's stand-in for stdout had no `isatty`, so the API's judge-score job and `evh judge-score --json` stopped
   (exit 70) before judging anything. The stand-in says it is not a terminal.

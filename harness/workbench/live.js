@@ -1,5 +1,6 @@
-// The Workbench on its server (RFC-032): served by `catalog-serve` under /workbench/, it reads the model's API instead
-// of the mockup's data. Opened any other way (the mockup's own files, its artifact) it stays the mockup.
+// The Workbench on its server (RFC-032): served by `catalog-serve` under /workbench/, it reads the project through the
+// model's API. The mockup (mockup.html, its data in mock.js) is a frozen design reference in the repository (D7): it does
+// not load this file and does not ship in the package.
 // Screens are wired workflow by workflow as their entities land on the model; until then a screen says which step
 // wires it, never this repository's data as if it were the project's.
 (() => {
@@ -2436,30 +2437,32 @@
   function goLive() {
     LIVE.on = true;
     document.body.classList.add("live");
-    const bar = document.querySelector(".mockbar span");
-    if (bar) bar.innerHTML = "<b>Workbench</b> · this project, through its API";
-    // a route of the mockup's own (a dataset source's screen) is the live screen it stands for; any other is the home
-    for (const k of Object.keys(WB.routes)) if (!(k in WIRED)) WB.routes[k] = k.startsWith("dataset-src-") ? WIRED["dataset-hf"] : [screenHome];
+    // a route the live Workbench does not have is the home
+    for (const k of Object.keys(WB.routes)) if (!(k in WIRED)) WB.routes[k] = [screenHome];
     for (const [k, v] of Object.entries(WIRED)) if (v) WB.routes[k] = v;
     WB.routes.start = [screenHome];
     if (!location.hash || location.hash === "#start") location.hash = "#home";
     WB.render();
   }
 
-  if (location.pathname.startsWith("/workbench")) {
-    // Until the project answers, no mockup screen is drawn: one of them sends a browser without the mockup's own state
-    // to #start, and a reload of a live screen (#dataset/<goal>) ended on the home. The mockup comes back only when
-    // there is no project's API to answer (no answer, or 404); a refusal (its data at another format) is the project's.
-    const mockRoutes = { ...WB.routes };
-    for (const k of Object.keys(WB.routes)) WB.routes[k] = [() => '<div class="screen"><p class="muted">Opening this project…</p></div>'];
-    const asMockup = () => { Object.assign(WB.routes, mockRoutes); WB.render(true); };
+  // Until the project answers, no screen is drawn. A refusal (its data at another format) is the project's: live. No
+  // answer, or no API (404): the page was opened some other way, and says how to open it.
+  const opening = (title, text) => `<div class="screen"><h1>${title}</h1><p class="lead">${text}</p></div>`;
+  for (const k of Object.keys(WB.routes)) WB.routes[k] = [() => opening("Workbench", "Opening this project…")];
+  WB.render(true);
+  const noProject = () => {
+    for (const k of Object.keys(WB.routes)) WB.routes[k] = [() => opening("Open it from your project", `The Workbench reads a project through <code>evh catalog-serve</code>: run it in the project and open the Workbench link it prints.`)];
+    WB.render(true);
+  };
+  if (!location.pathname.startsWith("/workbench")) noProject();
+  else {
     fetch("/api/v1/goals", { credentials: "same-origin" }).then((r) => {
-      if (r.status === 404) asMockup();
+      if (r.status === 404) noProject();
       else if (r.status !== 401) goLive();
       else {
         document.querySelector("#main").innerHTML = `<div class="screen"><h1>Sign in</h1><p class="lead">Open the Workbench through the link
           <code>evh catalog-serve</code> printed: it carries this server's token once and leaves a cookie.</p></div>`;
       }
-    }).catch(asMockup);
+    }).catch(noProject);
   }
 })();

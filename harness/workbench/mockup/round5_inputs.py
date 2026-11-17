@@ -3,7 +3,7 @@ side and its reads, a study, prompt versions, a job, a replay with its faithfuln
 from another system), each made in a throwaway project under build/round5/ from the tutorial's tickets or the replay
 example, by the commands a person would run. Nothing is invented: each JSON file is a command's own `--json` answer.
 
-    python workbench/round5_inputs.py            (from harness/; writes build/round5/*.json; about two minutes)
+    python workbench/mockup/round5_inputs.py            (from harness/; writes build/round5/*.json; about two minutes)
 
 mock_data.py reads them into the mockup's `round5` key, beside this project's own baselines (`evh baselines`).
 """

@@ -199,6 +199,40 @@ try:
                 and not errors,
                 (home[:400], errors[:2]),
             )
+            served = page.evaluate(
+                "() => Promise.all(['mock.js', 'mockup.html', 'workflows.js', 'round5.js', 'live.js'].map((n) =>"
+                " fetch('/workbench/' + n, {credentials: 'same-origin'}).then((r) => [n, r.status])))"
+            )
+            import tomllib
+            from evaluation_harness.catalog_serve import WORKBENCH_FILES
+
+            shipped = tomllib.loads((HARNESS / "pyproject.toml").read_text())["tool"]["setuptools"][
+                "package-data"
+            ]["evaluation_harness.workbench"]
+            beside = sorted(
+                x.name
+                for x in (HARNESS / "workbench").iterdir()
+                if x.is_file() and x.suffix in (".js", ".html", ".css", ".py")
+            )
+            check(
+                "the package ships the live Workbench's files, the ones the server serves and nothing else of the folder: "
+                "the frozen mockup is in workbench/mockup/, outside the package (D7)",
+                set(shipped) == set(WORKBENCH_FILES) == set(beside),
+                (shipped, sorted(WORKBENCH_FILES), beside),
+            )
+            check(
+                "the live Workbench loads no mockup data and the server serves none of the frozen mockup's files (D7)",
+                page.evaluate("() => typeof window.MOCK") == "undefined"
+                and dict(served)
+                == {
+                    "mock.js": 404,
+                    "mockup.html": 404,
+                    "workflows.js": 404,
+                    "round5.js": 404,
+                    "live.js": 200,
+                },
+                served,
+            )
             page.click("text=Ticket summaries")
             page.wait_for_selector("h1:has-text('Ticket summaries')", timeout=20000)
             goal = page.locator("main").inner_text()
@@ -402,12 +436,12 @@ try:
             )
             seen = {}
             for route, h1 in (("hub", "Your goals"), ("dataset-hf/tickets_summary", "Add a dataset"),
-                              ("dataset-src-kaggle/tickets_summary", "Add a dataset"), ("catalog", "The catalog")):  # fmt: skip
+                              ("dataset-src-kaggle/tickets_summary", "Your goals"), ("catalog", "The catalog")):  # fmt: skip
                 page.goto(f"http://127.0.0.1:{port}/workbench/#{route}")
                 page.wait_for_selector(f"h1:has-text('{h1}')", timeout=20000)
                 seen[route] = "cnn_dailymail" not in page.content()
             check(
-                "a route of the mockup's own opens the live screen it stands for, never the mockup's data",
+                "a route of the mockup's own opens the live screen it stands for (one the live page lacks, the home), never mock data",
                 all(seen.values()),
                 seen,
             )

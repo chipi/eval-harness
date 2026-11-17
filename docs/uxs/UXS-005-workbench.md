@@ -33,18 +33,20 @@ step 3 (preparing it), labelling a dataset's items (the sheet), step 4 (the syst
 jobs, the held-out test and the studies are live: every screen. A route only the mockup has opens the live screen it
 stands for (its goal hub the home, its dataset sources step 2), never the mockup's data. Until the project answers no mockup screen is drawn (one sent a reload of a live screen home).
 
-**From 2026-11-17 (D7)** the mockup is a frozen design reference: its data (`mock.js`, this repository's) stops
-shipping in the package, and `mock_data.py`, which reads the layout before RFC-032 (`data/configs`,
-`data/runs-linux`), is not run again. The live screens are built from this spec, each calling the operations named in
+**From 2026-11-17 (D7)** the mockup is a frozen design reference in the repository, `harness/workbench/mockup/`
+(`mockup.html`, its data `mock.js`, its screens `workflows.js` and `round5.js`, and the scripts that read its data),
+outside the package: an installed project's `/workbench/` is the live Workbench only (`index.html`, `workbench.js`,
+`help.js`, `live.js`, `workbench.css`), and the server serves no other file there. `mock_data.py`, which reads the
+layout before RFC-032 (`data/configs`, `data/runs-linux`), is not run again. The live screens are built from this spec, each calling the operations named in
 "Every screen and what it calls" below. What the sections below say of "the mockup" describes it as it was reviewed.
 
-- **Its data was read, never invented.** `harness/workbench/mock_data.py` wrote `mock.js` from the project: the goals,
+- **Its data was read, never invented.** `harness/workbench/mockup/mock_data.py` wrote `mock.js` from the project: the goals,
   datasets, models and their onboarding, the CNN source, items, references and profile, the rounds, every arm's
   scores, settings and first replies, the silver reference and who wrote it, the judge and its validation, and the
   triage goal's capture and comparison, the rows where production was wrong, the label sheet, the local arms' re-runs
   and their paired tests. Several inputs are the harness's own answers, saved first because they take minutes (`evh
   models`, `evh goal-list`, `evh pair-test`, `evh sheet-show --wrong-against`, `evh label-sheet`; the list is at the
-  top of the script). `harness/workbench/read_sources.py` reads every other dataset source with the example its module
+  top of the script). `harness/workbench/mockup/read_sources.py` reads every other dataset source with the example its module
   documents, through the harness's own source classes, writing nothing to the project.
 - **What it pretends is labelled.** Jobs and saving are pretended; each place says so in a "mockup:" note, which a
   switch hides. In a round opened in the walk-through, a local arm shows its own real re-run (the project's Linux
@@ -480,7 +482,7 @@ decision kept with its reason. This is where people spend most of their time (W1
 ## Round 5: what 0.8.0 built after round 4
 
 The owner asked (2026-11-12) for the mockups to follow the code built since round 4. Everything below is the harness's own answer, made by
-`harness/workbench/round5_inputs.py` in throwaway projects (the tutorial's tickets and the replay example), because
+`harness/workbench/mockup/round5_inputs.py` in throwaway projects (the tutorial's tickets and the replay example), because
 this project holds no held-out side, study, prompt version, job or replay yet; each screen's "mockup:" note says so.
 `round5.js` holds the new screens.
 

@@ -508,6 +508,9 @@ WORKBENCH = next(
     (p for p in (CODE / "workbench", CODE.parent / "workbench") if _store.is_dir(p)),
     CODE.parent / "workbench",
 )
+#: The live Workbench's files: what /workbench/ serves, from the package or a checkout (whose mockup.html and its data,
+#: mock.js, a frozen design reference, are never served; D7).
+WORKBENCH_FILES = frozenset({"index.html", "workbench.css", "workbench.js", "help.js", "live.js"})
 WORKBENCH_TYPES = {
     ".html": "text/html; charset=utf-8",
     ".js": "text/javascript; charset=utf-8",
@@ -1438,7 +1441,7 @@ class Handler(SimpleHTTPRequestHandler):
         name = url_path[len("/workbench/") :] or "index.html"
         kind = WORKBENCH_TYPES.get(Path(name).suffix)
         f = WORKBENCH / name
-        if "/" in name or kind is None or not _store.is_file(f):
+        if name not in WORKBENCH_FILES or kind is None or not _store.is_file(f):
             self.send_error(404)
             return
         data = _store.read_bytes(f)

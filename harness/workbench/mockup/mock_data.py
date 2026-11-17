@@ -7,14 +7,14 @@ Two inputs are the harness's own printed answers, saved first (both slow to comp
     evh model-list > build/models.txt
     evh goal-leaderboard news_summary_cnn > build/goal_cnn.txt
     evh goal-leaderboard triage_orrery > build/goal_triage.txt
-    python workbench/read_sources.py                            (build/source_previews.json)
+    python workbench/mockup/read_sources.py                            (build/source_previews.json)
     evh pair-test cnn_dailymail_200 --a <arm> --b cnn_bart_l_n200_v1 --runs-dir data/runs-linux \
         --metric coverage, each local arm, after a "== <arm>" line   (build/pair_linux.txt)
     evh sheet-show orrery_triage_v1_labelled_v2 --runs triage_baseline_pro_v2data_v1 \
         --wrong-against gold_orrery_triage_v1_labelled_v2 --csv build/prod_wrong.csv --fill label
     evh label-sheet --dataset-id cnn_dailymail_200 --out build/label_sheet_cnn200.csv --items all
-    python workbench/round5_inputs.py                          (build/round5/: round 5's screens, see that file)
-    python workbench/mock_data.py > workbench/mock.js          (all from harness/)
+    python workbench/mockup/round5_inputs.py                          (build/round5/: round 5's screens, see that file)
+    python workbench/mockup/mock_data.py > workbench/mockup/mock.js          (all from harness/)
 """
 
 import csv

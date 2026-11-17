@@ -39,8 +39,8 @@ site explains it: a goal, data, arms, a comparison, a choice.
   52 s (two full `evh validate` runs) with no progress shown, and no lock between two saves.
 - The catalog's read-only rule (UXS index, rule 1) stays: the Workbench is where writing and running happen, the
   catalog where results are read. Each links to the other.
-- Today (2026-11-17) the live Workbench serves the home, a goal and the models (model-new, a deployment, onboarding);
-  every other screen exists only in the static mockup, whose data is this repository's (`mock.js`).
+- Since 2026-11-17 every screen of the Workbench is live, on the project's API; the static mockup, whose data is this
+  repository's (`mock.js`), is a frozen design reference in `harness/workbench/mockup/`, outside the package (D7).
 
 ## Goals
 
@@ -229,7 +229,8 @@ Owner, 2026-11-17 ("accept all"), after the review of the Workbench against what
 - **D5** The round's question is stored as `hypothesis`; the page says "question".
 - **D6** Validating a judge stays a tool; W7 shows the stored validation.
 - **D7** `mock.js` (this repository's data) stops shipping in the package; the mockup is kept as a frozen design
-  reference and the live screens are built from UXS-005.
+  reference and the live screens are built from UXS-005. Built 2026-11-17: the mockup and its scripts moved to
+  `harness/workbench/mockup/`; the package ships the live Workbench's five files, the only ones `/workbench/` serves.
 - **D8** The Workbench stays refused behind a proxy in 0.8.0.
 - **D9** `config.yaml` settings (the exposure check's repos, for one) stay out of W8 in 0.8.0.
 
@@ -239,7 +240,7 @@ Owner, 2026-11-06: agree first, then build.
 
 1. **The structure** (this PRD): what the Workbench solves, its workflows, where the UI effort goes.
 2. **Sketches** of the screens (UXS-005), then **a clickable mockup** of them with this repository's real data,
-   reviewed in eight rounds (`harness/workbench/`). The mockup's pages, layout and styles are the app's own (owner:
+   reviewed in eight rounds (`harness/workbench/mockup/` since D7). The mockup's pages, layout and styles are the app's own (owner:
    "think about the mock-up as already a workbench app that you're starting, except it's just a static thing").
 3. **RFC-032** (one model, its operations, the API) and RFC-033, built.
 4. **From here** (owner's order, 2026-11-17): the API above (1 to 6) and the unsent-changes rule (requirement 11),

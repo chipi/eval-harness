@@ -2,7 +2,7 @@
 and keep what it describes and its first rows for the Workbench mockup: build/source_previews.json (a source read before with the same
 query is kept, so a run retries only what failed). Nothing is written to the project.
 
-    python workbench/read_sources.py          (from harness/; Zenodo, OpenML and Kaggle are read over the network)
+    python workbench/mockup/read_sources.py          (from harness/; Zenodo, OpenML and Kaggle are read over the network)
 """
 
 import itertools

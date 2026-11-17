@@ -498,7 +498,8 @@ success_criteria:
     ps.forEach((x, k) => { const thr = 0.05 / (ps.length - k), ok = !stopped && x.p <= thr; stopped = stopped || !ok; out[x.id] = { thr, ok }; });
     return out; };
   const thrTxt = (h) => (h ? String(+h.thr.toFixed(4)) : "—");
-  const R1HOLM = holmOf(M.arms.filter((a) => a.p != null && a.p !== "").map((a) => ({ id: a.config_id, p: a.p })));
+  // the mockup's round 1 (mockup.html, with its data); the live Workbench (index.html) loads no mock data
+  const R1HOLM = M ? holmOf(M.arms.filter((a) => a.p != null && a.p !== "").map((a) => ({ id: a.config_id, p: a.p }))) : {};
   function compareTable(arms, sel, family) {
     const max = Math.max(...arms.map((a) => a.coverage));
     const srt = S.sort || { col: "rank", dir: 1 }, val = { rank: (a) => a.rank, arm: (a) => a.arm, coverage: (a) => -a.coverage, cost: (a) => a.usd_per_item, speed: (a) => a.p50_ms };
@@ -842,8 +843,8 @@ success_criteria:
   // the screens are routes in the hash: the skip link focuses the screen without changing it
   document.querySelector("a.skip")?.addEventListener("click", (e) => { e.preventDefault(); main.focus(); });
   $("#hints").addEventListener("change", (e) => { S.hints = e.target.checked; save(); render(); });
-  $("#mocknotes").addEventListener("change", (e) => document.body.classList.toggle("mocknotes-off", !e.target.checked));
-  $("#reset").addEventListener("click", () => { S = fresh(); save(); help.hidden = true; location.hash = "#start"; render(); });
+  $("#mocknotes")?.addEventListener("change", (e) => document.body.classList.toggle("mocknotes-off", !e.target.checked));
+  $("#reset")?.addEventListener("click", () => { S = fresh(); save(); help.hidden = true; location.hash = "#start"; render(); });
   $("#theme").addEventListener("click", () => {
     const r = document.documentElement, dark = r.dataset.theme ? r.dataset.theme === "dark" : !matchMedia("(prefers-color-scheme: light)").matches;
     r.dataset.theme = dark ? "light" : "dark";

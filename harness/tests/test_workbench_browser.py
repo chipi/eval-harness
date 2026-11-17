@@ -64,7 +64,7 @@ class Quiet(http.server.SimpleHTTPRequestHandler):
 def serve() -> tuple:
     srv = socketserver.TCPServer(("127.0.0.1", 0), partial(Quiet, directory=str(WORKBENCH)))
     threading.Thread(target=srv.serve_forever, daemon=True).start()
-    return srv, f"http://127.0.0.1:{srv.server_address[1]}/index.html"
+    return srv, f"http://127.0.0.1:{srv.server_address[1]}/mockup/mockup.html"
 
 
 def seeded(browser, base: str, state: dict, **page_args):
