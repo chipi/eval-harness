@@ -142,6 +142,17 @@ correctness bugs, not just missing features.
   `run-migrate`, `dataset-migrate` and `baselines-migrate` (built during 0.8.0, never released) and
   `fingerprint-migrate` (0.6.0 to 0.7.2) are this one command now. Moving the data into SQLite is
   `data-migrate`, not a format step.
+- **A system on the bundled adapter that declares its prompt now sends it.** A system whose `prompts:` names one
+  prompt (a file or a recorded version) and has no `params.prompt` was sent "Summarise:" before 0.8.0; it now sends the
+  declared text, so its outputs, and the numbers on them, change. Its fingerprint already held the declared prompt's
+  hash, so the runs before and after differ only there. A system on it declaring two prompts is refused (the bundled
+  adapter sends one); a system with `params.prompt` is as before.
+- **A study whose baseline has no run on its dataset is refused**, its dry run too (`evh run --system <baseline>
+  --dataset <dataset>` first): every trial of such a study was run, paid for and dropped as compared with nothing.
+- **`evh jobs-resume` refuses a run that stopped before it wrote anything** (it started a job that then failed):
+  start the run again.
+- **The Workbench is served from the package** (`/workbench/`, its five files): the mockup's data no longer ships;
+  nothing to do.
 - **Three new dependencies** install with the package: `ruamel.yaml` (a setting saved keeps its comments),
   `pyarrow` (tables and Hugging Face parquet) and `huggingface_hub` (Hub datasets in and out). `pip install` of the
   new pin brings them; nothing to enable.

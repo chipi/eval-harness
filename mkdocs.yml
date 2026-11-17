@@ -41,6 +41,7 @@ nav:
       - 5 · The catalog and the inspector: tutorials/5-catalog-and-inspector.md
       - 6 · Datasets from production: tutorials/6-datasets-from-production.md
       - 7 · Set up a model before you test it: tutorials/7-set-up-a-model.md
+      - 8 · The Workbench: tutorials/8-the-workbench.md
   - The harness:
       - Concepts: harness/CONCEPTS.md
       - Integration: harness/INTEGRATION.md
@@ -64,14 +65,14 @@ nav:
           - "PRD-014: Datasets from production (built, 0.6.0)": prd/PRD-014-datasets-from-production.md
           - "PRD-015: Models, onboarded once, for every eval (built, 0.6.0)": prd/PRD-015-models-onboarded-once.md
           - "PRD-016: Managing a project's data from the catalog (built, 0.8.0)": prd/PRD-016-managing-project-data.md
-          - "PRD-017: The Workbench (draft, 0.8.0)": prd/PRD-017-workbench.md
+          - "PRD-017: The Workbench (built, 0.8.0)": prd/PRD-017-workbench.md
       - Experience (UXS):
           - Index: uxs/index.md
           - "UXS-001: The catalog": uxs/UXS-001-catalog.md
           - "UXS-002: The run inspector": uxs/UXS-002-inspector.md
           - "UXS-003: The command line and the first evaluation": uxs/UXS-003-cli-and-onboarding.md
           - "UXS-004: The data page (built, 0.8.0)": uxs/UXS-004-data-page.md
-          - "UXS-005: The Workbench (draft: sketches and the mockup, 0.8.0)": uxs/UXS-005-workbench.md
+          - "UXS-005: The Workbench (built, 0.8.0)": uxs/UXS-005-workbench.md
       - Designs (RFCs):
           - Index: rfc/index.md
           - "RFC-001: The run fingerprint and code identity (version 4)": rfc/RFC-001-fingerprint-and-code-identity.md

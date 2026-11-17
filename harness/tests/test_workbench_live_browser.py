@@ -1470,7 +1470,9 @@ try:
             page.goto(f"http://127.0.0.1:{port}/workbench/#jobs/{early.get('id')}")
             page.wait_for_selector("#jb-stop", timeout=20000)
             page.click("#jb-stop")
-            page.wait_for_selector("h1 ~ p.lead:has-text('cancelled'), #jb-out [role=alert]", timeout=30000)
+            page.wait_for_selector(
+                "#jb-resume, #jb-out [role=alert]", timeout=30000
+            )  # the page draws the job again after a stop
             stopped = json.loads((proj / ".build" / "jobs" / early["id"] / "state.json").read_text())
             jobs_before = len(list((proj / ".build" / "jobs").iterdir()))
             if page.locator("#jb-resume").count():
@@ -1495,7 +1497,7 @@ try:
             while done_items(started["id"]) < 1 and time.monotonic() < deadline:
                 time.sleep(0.2)
             page.click("#jb-stop")
-            page.wait_for_selector("h1 ~ p.lead:has-text('cancelled'), #jb-out [role=alert]", timeout=30000)
+            page.wait_for_selector("#jb-resume, #jb-out [role=alert]", timeout=30000)
             stopped = json.loads((proj / ".build" / "jobs" / started["id"] / "state.json").read_text())
             check(
                 "a running run stopped after it wrote something: cancelled, and Resume the run offered",

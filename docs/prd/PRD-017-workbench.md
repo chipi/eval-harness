@@ -1,7 +1,8 @@
 # PRD-017: The Workbench, where an evaluation is set up and run
 
-- **Status**: Draft (owner, 2026-11-06: "workbench is a good name"; "start with the PRD and then the RFC"); rewritten
-  2026-11-17 against RFC-032 and the owner's decisions of that day (D1 to D9, below); 0.8.0
+- **Status**: Built, 0.8.0 (2026-11-17: every screen live). Draft from 2026-11-06 (owner: "workbench is a good name";
+  "start with the PRD and then the RFC"); rewritten 2026-11-17 against RFC-032 and the owner's decisions of that day
+  (D1 to D9, below)
 - **Authors**: Marko Dragoljevic
 - **Related PRDs**: [PRD-004](PRD-004-catalog-and-inspector.md) (the catalog and the inspector, which stay read-only),
   [PRD-016](PRD-016-managing-project-data.md) (the Configure page, retired: the Workbench replaces it),

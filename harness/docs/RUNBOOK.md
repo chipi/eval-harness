@@ -1352,8 +1352,8 @@ Through the API (`catalog-serve`, its token, RFC-026), the same operations are r
 
 The Workbench (PRD-017) is served by `evh catalog-serve` under `/workbench/`, on this machine only, as the API is.
 Its startup prints the link that signs in (`/api/v1/session?token=…&next=/workbench/`: the token once, then a cookie).
-It is wired to the project a workflow at a time: the home (every goal, its next step, what is running) and a goal's
-screen read the model now; a screen not wired yet says so rather than show the mockup's data.
+Every screen reads and writes the project through these operations, each showing the command it runs:
+[tutorial 8](../../docs/tutorials/8-the-workbench.md) walks them.
 
 Each answers `{"command", "version", "result"}`, the `result` the command's `--json` gives. A write needs the
 `X-EVH-Data: 1` header and `by` (an agent: `"by": "agent:NAME", "for": "person:NAME"`); a refusal answers its kind

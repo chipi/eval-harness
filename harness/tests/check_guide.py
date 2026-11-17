@@ -58,6 +58,7 @@ TUTORIALS = [
         "4-rounds-and-versions.md",
         "5-catalog-and-inspector.md",
         "6-datasets-from-production.md",
+        "8-the-workbench.md",
     )
 ]
 FENCE = re.compile(r"^```(\w*)\s*$")

@@ -1,6 +1,7 @@
 # UXS-005: The Workbench (sketches round 3, mockup round 5, realigned with RFC-032)
 
-- **Status**: Draft — sketches and the clickable mockup for review (owner, 2026-11-06: "agree on the structure … see
+- **Status**: Built, 0.8.0 (2026-11-17: every screen live; the mockup frozen, D7). Before: sketches and the
+  clickable mockup for review (owner, 2026-11-06: "agree on the structure … see
   some sketches … then a mock-up"; 2026-11-08: "complete the mock-up really with everything we've been saying";
   2026-11-12, the owner's request: the mockups brought up to the code built since round 4, round 5); 2026-11-17:
   realigned with the model RFC-032 built and the owner's decisions D1 to D9 (PRD-017), as the spec the live screens

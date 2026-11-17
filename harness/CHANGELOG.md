@@ -13,6 +13,10 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Added
 
+- **Tutorial 8, the Workbench** (`docs/tutorials/8-the-workbench.md`, run by `make guide-check`): opening it from
+  `evh catalog-serve`, every screen in the order a goal goes through them with the commands it calls, what it keeps for
+  you (unsent changes, jobs, refusals), and prompts as versions in a manual eval and a study. PRD-017 and UXS-005 are
+  marked built.
 - **The package ships the live Workbench only** (D7): `index.html`, `workbench.js`, `help.js`, `live.js` and
   `workbench.css`, the only files `/workbench/` serves. The mockup (its page, this repository's data in `mock.js`, its
   screens and the scripts that read its data, 170 KB of it loaded by every installed project's Workbench) is a frozen

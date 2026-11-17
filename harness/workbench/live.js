@@ -1856,6 +1856,7 @@
         if (!RUNNING.includes(j.state)) return;
         await new Promise((ok) => setTimeout(ok, 1000));
         const now = await fetch(`/api/v1/jobs/${enc(id)}`, { credentials: "same-origin" }).then((x) => x.json()).catch(() => ({}));
+        if (!alive) return;  // the stop button read the job again already
         if (now.state && !RUNNING.includes(now.state)) { alive = false; forget(`job:${id}`); forget("jobs:"); WB.render(true); return; }
       }
     };
@@ -1869,7 +1870,8 @@
         after(r);
       } catch (e) { box.innerHTML = refusal(e); ev.target.disabled = false; }
     });
-    act("jb-stop", `/jobs/${enc(id)}/stop`, "Stopped.", () => { alive = false; forget(`job:${id}`); forget("jobs:"); WB.render(true); });
+    // the job read again once: by the log's poll when it saw the end first (alive then false), else here
+    act("jb-stop", `/jobs/${enc(id)}/stop`, "Stopped.", () => { if (!alive) return; alive = false; forget(`job:${id}`); forget("jobs:"); WB.render(true); });
     act("jb-resume", `/jobs/${enc(id)}/resume`, "Resumed as a new job.", (r) => { forget("jobs:"); location.hash = `#jobs/${enc(r.id)}`; });
   }
 
