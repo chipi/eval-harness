@@ -182,7 +182,50 @@ try:
                 and "promote a baseline on tk_v1" in goal,
                 goal[:500],
             )
-            page.goto(f"http://127.0.0.1:{port}/workbench/#dataset")
+            # step 2 (UXS-005): a dataset from a source, previewed, made as a job, added to the goal with its role
+            page.click("text=Add a dataset")
+            page.wait_for_selector("h1:has-text('Add a dataset')", timeout=20000)
+            page.select_option("#ds-source", "folder")
+            page.wait_for_selector("#dsq-path", timeout=20000)
+            page.fill("#dsq-path", "tickets")
+            page.fill("#dsq-glob", "*.txt")
+            page.fill("#ds-by", "tester")
+            page.click("#ds-read")
+            page.wait_for_selector("#ds-read-out td:has-text('t01_login')", timeout=60000)
+            check(
+                "Read it: a source-preview job shows the source's first items, nothing written",
+                "Customer reports" in page.locator("#ds-read-out").inner_text()
+                and not (proj / "data" / "datasets" / "tk_v2.json").exists(),
+                page.locator("#ds-read-out").inner_text()[:300],
+            )
+            page.fill("#ds-id", "tk_v2")
+            page.check("input[name=ds-role][value=validation]")
+            page.reload()
+            page.wait_for_selector("#dsq-path", timeout=20000)
+            check(
+                "the dataset's choices are longer work: marked, and kept across a reload in this browser",
+                page.input_value("#dsq-path") == "tickets"
+                and page.input_value("#ds-id") == "tk_v2"
+                and page.locator("[data-form=dataset-new] [data-unsent-mark]").is_visible()
+                and page.locator("#ds-make").inner_text() == "Make dataset tk_v2",
+                (
+                    page.input_value("#dsq-path"),
+                    page.input_value("#ds-id"),
+                    page.locator("#ds-make").inner_text(),
+                ),
+            )
+            page.click("#ds-make")
+            page.wait_for_selector("h1:has-text('Ticket summaries')", timeout=60000)
+            g = yaml.safe_load((proj / "data" / "goals" / "tickets_summary.yaml").read_text())
+            check(
+                "Make the dataset: dataset-create runs as a job, then the goal names it with its role; the draft is gone",
+                (proj / "data" / "datasets" / "tk_v2.json").is_file()
+                and {"dataset_id": "tk_v2", "role": "validation"} in (g.get("datasets") or [])
+                and page.evaluate("localStorage.getItem('evh.draft.dataset.tickets_summary')") is None
+                and "tk_v2" in page.locator("main").inner_text(),
+                (g.get("datasets"), page.locator("main").inner_text()[:300]),
+            )
+            page.goto(f"http://127.0.0.1:{port}/workbench/#prepare")
             page.wait_for_selector("h1", timeout=20000)
             check(
                 "a screen not wired yet says so, and shows none of the mockup's data",

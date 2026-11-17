@@ -13,6 +13,11 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Added
 
+- **The Workbench's step 2, live** (UXS-005): from a goal, "Add a dataset" uses one the project has or makes one from a
+  source: the source's own query (its columns, the answer column), "Read it" previews it as a job, "Make the dataset"
+  runs `dataset-create` as a job and adds it to the goal with its role (validation or test). The choices are kept in
+  this browser until the dataset is made. A reload of a live screen no longer lands on the home (a mockup screen drew
+  first and sent it there). Proposing fields from the source comes next.
 - **The Workbench shows unsent changes** (owner, 2026-11-17; UXS-005 "For every live screen"): a live form with
   changes not yet sent (a new model, a deployment, a flag accepted) is marked "not saved yet", its button is enabled
   only then and names what it will write ("Make model gemma4-12b"), leaving the screen or closing the page asks first,

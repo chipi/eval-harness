@@ -792,7 +792,7 @@ success_criteria:
   let shownHash = location.hash;
   window.addEventListener("hashchange", () => {
     const held = unsent();
-    if (held.length && !window.confirm(`Not saved: ${held.join("; ")}. Leave this screen and lose it?`)) {
+    if (held.length && !window.confirm(`Not saved: ${held.join("; ")}. Leave this screen anyway?`)) {
       history.replaceState(null, "", shownHash || "#home");
       return;
     }

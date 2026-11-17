@@ -70,7 +70,7 @@
       ${rounds ? `<h2 style="margin-top:22px">Rounds</h2><ul>${rounds}</ul>` : ""}
       ${st.running.length ? `<h2 style="margin-top:22px">Running now</h2><ul>${st.running.map((j) => `<li>${esc(j.operation)} · ${esc(j.state)}</li>`).join("")}</ul>` : ""}
       ${WB.cmd(`evh goal-status ${id}`)}
-      <div class="actions"><a class="btn" href="#home">Back to your goals</a></div></div>`;
+      <div class="actions"><a class="btn primary" href="#dataset/${encodeURIComponent(id)}">Add a dataset</a><a class="btn" href="#home">Back to your goals</a></div></div>`;
   }
 
   // ── writes: who acted, the data header, and the model's refusal shown as it is ──────────────────────
@@ -302,6 +302,146 @@
     });
   }
 
+  // ── step 2: a dataset for a goal (UXS-005 step 2; source-preview, dataset-create with its answers) ─────────────
+  // The choices are longer work: kept in this browser until the dataset is made ("For every live screen").
+  const SOURCES = {
+    huggingface: ["Hugging Face", [["ref", "the dataset", "abisee/cnn_dailymail"], ["config", "its config", "3.0.0"], ["split", "the split", "test"]]],
+    folder: ["a folder of files", [["path", "the folder, inside the project", "raw/tickets"], ["glob", "which files", "*.txt"]]],
+    manifest: ["a table: CSV, JSON lines", [["path", "the .csv or .jsonl, inside the project: item_id, source_url, field columns", "items.csv"]]],
+    croissant: ["Croissant", [["url", "its croissant.json's address", "https://…/croissant.json"], ["record_set", "the record set", "default"]]],
+    zenodo: ["Zenodo", [["record", "the record's number", "10157504"], ["file", "the file in it", "data.csv"]]],
+    openml: ["OpenML", [["dataset", "the dataset's number", "61"]]],
+    kaggle: ["Kaggle", [["ref", "owner/dataset", "uciml/iris"], ["version", "its version", "2"], ["file", "the file in it", "Iris.csv"]]],
+  };
+  const COLUMNS = [["text", "the item: the column a system receives", "article"],
+    ["answer", "the expected answer's column, if it has one: it becomes the reference set in step 3", "highlights"],
+    ["id", "the item's id column (default: the row number)", "id"], ["limit", "take the first N rows (default: all)", "200"]];
+  const NUMBERS = new Set(["record", "dataset", "version", "limit"]);
+  const tabular = (src) => !["folder", "manifest"].includes(src);
+  const draftKey = (goal) => `evh.draft.dataset.${goal}`;
+  const readDraft = (goal) => { try { return JSON.parse(localStorage.getItem(draftKey(goal)) || "null"); } catch { return null; } };
+  const keepDraft = (goal, d) => { try { localStorage.setItem(draftKey(goal), JSON.stringify(d)); } catch { /* this visit only */ } };
+  const dropDraft = (goal) => { try { localStorage.removeItem(draftKey(goal)); } catch { /* nothing kept */ } };
+  const queryOf = (d) => {
+    const q = {};
+    for (const [k, v] of Object.entries(d.q || {})) if (String(v).trim()) q[k] = NUMBERS.has(k) && /^\d+$/.test(String(v).trim()) ? Number(v) : String(v).trim();
+    return q;
+  };
+  async function watchJob(id, box, what) {
+    for (;;) {
+      const r = await fetch(`/api/v1/jobs/${enc(id)}`, { credentials: "same-origin" });
+      const j = await r.json().catch(() => ({}));
+      if (box) box.innerHTML = `<p class="muted" aria-live="polite">${esc(what)}: ${esc(j.state || "…")}</p>`;
+      if (!["queued", "running", "running (unsupervised)"].includes(j.state)) return j;
+      await new Promise((ok) => setTimeout(ok, 1000));
+    }
+  }
+  const jobRefusal = async (j) => {
+    const r = await fetch(`/api/v1/jobs/${enc(j.id)}/log`, { credentials: "same-origin" });
+    const log = ((await r.json().catch(() => ({}))).log || "").trim().split("\n").filter((x) => x.startsWith("ERROR")).pop();
+    return `<p class="note" role="alert"><b>${esc(j.state)}.</b> ${esc(log || "see the job's log")}</p>`;
+  };
+  const previews = {};
+  function screenDatasetNew(goal) {
+    const head = `<div class="kicker">Step 2 · ${esc(goal)}</div><h1>Add a dataset</h1>
+      <p class="lead">The examples your systems will be tested on: a frozen list of items, each with its hash, so every system sees exactly the same ones, now and later.</p>`;
+    if (!goal) return `<div class="screen">${head}<p class="note">Open it from a goal.</p><div class="actions"><a class="btn" href="#home">Your goals</a></div></div>`;
+    const ds = load("datasets", "/datasets"), rec = load(`goalrec:${goal}`, `/goals/${enc(goal)}`);
+    if (ds === undefined || rec === undefined) return `<div class="screen wide">${head}${loading("the datasets")}</div>`;
+    if (ds.error || rec.error) return `<div class="screen wide">${head}${failed(ds.error ? ds : rec)}</div>`;
+    const d = readDraft(goal) || { source: "", q: {}, id: "", role: "validation" };
+    if (readDraft(goal)) UNSENT.set(`dataset-new`, `a new dataset for ${goal}`);
+    const have = new Set((rec.record.datasets || []).map((x) => x.dataset_id));
+    const options = ds.datasets.filter((x) => !have.has(x.dataset)).map((x) => `<option value="${esc(x.dataset)}">${esc(x.dataset)} · ${x.items} item(s)</option>`).join("");
+    const src = d.source, fields = src ? [...SOURCES[src][1], ...(tabular(src) ? COLUMNS : [])] : [];
+    const pv = previews[goal];
+    const roles = ["validation", "test"].map((r) => `<label class="choice"><input type="radio" name="ds-role" value="${r}" ${d.role === r ? "checked" : ""}> ${r} <small>${r === "test" ? "the final answer, kept untouched" : "while you choose and tune"}</small></label>`).join("");
+    const rows = pv && pv.items ? `<div class="tablewrap"><table><thead><tr><th>item</th><th>text</th><th>answer</th></tr></thead><tbody>${pv.items.map((it) => `<tr><td class="mono">${esc(it.item_id)}</td><td class="clip"><div>${esc(it.text || it.file || it.source_url || "")}</div></td><td class="clip"><div>${esc(it.answer ?? "—")}</div></td></tr>`).join("")}</tbody></table></div>` : "";
+    const said = pv && pv.described ? pv.described : null;
+    return `<div class="screen wide">${head}
+      <section class="part"><div class="parthead"><h2>Use one you have</h2></div><div class="body">
+        ${options ? `<div class="inline"><select id="ds-pick" aria-label="the project's datasets"><option value="">choose one of the project's datasets</option>${options}</select>
+          <button class="btn" type="button" id="ds-use" disabled>Use it</button></div>` : '<p class="muted">The project has no other dataset.</p>'}
+        <div class="field"><div class="name" id="ds-role-l">Its role for this goal</div><div class="choices row" role="radiogroup" aria-labelledby="ds-role-l">${roles}</div></div>
+        <div id="ds-use-out"></div></div></section>
+      <section class="part" data-form="dataset-new"><div class="parthead"><h2>Or make one from a source</h2></div><div class="body">
+        <div class="field"><label class="name" for="ds-source">Where from</label><div><select id="ds-source"><option value="">choose a source</option>
+          ${Object.entries(SOURCES).map(([k, [name]]) => `<option value="${k}" ${src === k ? "selected" : ""}>${esc(name)}</option>`).join("")}</select></div></div>
+        ${fields.map(([k, hint, ex]) => `<div class="field"><label class="name" for="dsq-${k}">${esc(k)}</label><div><input type="text" id="dsq-${k}" data-q="${k}" value="${esc((d.q || {})[k] ?? "")}" placeholder="${esc(ex)}" autocapitalize="off" spellcheck="false"><div class="hint">${esc(hint)}</div></div></div>`).join("")}
+        ${src ? `<div class="actions" style="margin-top:0"><button class="btn" type="button" id="ds-read">Read it</button><span class="muted">a job: the source's description and its first rows; nothing is saved</span></div>` : ""}
+        <div id="ds-read-out">${said ? `<p class="note">${esc(JSON.stringify(said.source || {}))}${said.licence ? ` · licence ${esc(said.licence)}` : ""}</p>${rows}` : ""}</div>
+        ${src ? `<div class="field"><label class="name" for="ds-id">Its id</label><div><input type="text" id="ds-id" value="${esc(d.id || "")}" placeholder="cnn_dailymail_200" autocapitalize="off" spellcheck="false"><div class="hint">lowercase letters, digits and _</div></div></div>
+        ${byField("ds-by")}
+        <div class="actions" style="margin-top:0"><button class="btn primary" type="button" id="ds-make" data-send>Make the dataset</button><span class="unsent" data-unsent-mark hidden>not saved yet · kept in this browser until it is made</span></div>` : ""}
+        <div id="ds-make-out"></div></div></section>
+      ${WB.cmd(`evh source-preview --source ${src || "<source>"} --query '${JSON.stringify(queryOf(d))}'\nevh dataset-create --dataset-id ${d.id || "<id>"} --source ${src || "<source>"} --query '${JSON.stringify(queryOf(d))}'`)}
+      <div class="actions"><a class="btn" href="#goal/${enc(goal)}">Back to the goal</a></div></div>`;
+  }
+  function wireDatasetNew() {
+    const goal = WB.param || "";
+    if (!goal) return;
+    const draft = () => readDraft(goal) || { source: "", q: {}, id: "", role: "validation" };
+    const roleOf = () => document.querySelector("input[name=ds-role]:checked")?.value || "validation";
+    const addToGoal = async (dataset, by) => {
+      const n = ((LIVE.cache[`goalrec:${goal}`] || {}).record?.datasets || []).length;
+      await send("PATCH", `/goals/${enc(goal)}`, { set: { [`datasets.${n}.dataset_id`]: dataset, [`datasets.${n}.role`]: roleOf() }, by });
+      forget(`goalrec:${goal}`); forget(`status:${goal}`); forget("datasets"); forget("goals");
+    };
+    const pick = document.getElementById("ds-pick");
+    pick?.addEventListener("change", () => { document.getElementById("ds-use").disabled = !pick.value; });
+    document.getElementById("ds-use")?.addEventListener("click", async () => {
+      const out = document.getElementById("ds-use-out"), by = byOf("ds-by") || (who() ? `person:${who()}` : null);
+      if (!by) { out.innerHTML = '<p class="note" role="alert">Say who you are below: a change names who made it.</p>'; return; }
+      try { await addToGoal(pick.value, by); location.hash = `#goal/${enc(goal)}`; } catch (e) { out.innerHTML = refusal(e); }
+    });
+    holds("dataset-new", () => `Make dataset ${(document.getElementById("ds-id")?.value || "").trim() || "…"}`);
+    const save = () => {
+      const d = draft();
+      d.source = document.getElementById("ds-source").value;
+      document.querySelectorAll("[data-q]").forEach((i) => { d.q[i.dataset.q] = i.value; });
+      d.id = document.getElementById("ds-id")?.value || d.id;
+      d.role = roleOf();
+      keepDraft(goal, d);
+      return d;
+    };
+    document.querySelector("[data-form=dataset-new]")?.addEventListener("input", save);
+    document.getElementById("ds-source")?.addEventListener("change", () => {
+      const d = save();
+      d.q = {};
+      keepDraft(goal, d);
+      delete previews[goal];
+      WB.render(true);
+    });
+    document.getElementById("ds-read")?.addEventListener("click", async (ev) => {
+      const d = save(), out = document.getElementById("ds-read-out"), by = byOf("ds-by") || (who() ? `person:${who()}` : null);
+      if (!by) { out.innerHTML = '<p class="note" role="alert">Say who you are below: a job names who asked.</p>'; return; }
+      ev.target.disabled = true;
+      try {
+        const j = await send("POST", "/source-previews", { source: d.source, query: JSON.stringify(queryOf(d)), rows: 5, by });
+        const done = await watchJob(j.id, out, "reading the source");
+        if (done.state !== "succeeded") { out.innerHTML = await jobRefusal(done); ev.target.disabled = false; return; }
+        previews[goal] = (done.result || {}).result?.values || {};
+        const pv = previews[goal], said = pv.described || {};
+        out.innerHTML = `<p class="note">${esc(JSON.stringify(said.source || {}))}${said.licence ? ` · licence ${esc(said.licence)}` : ""}</p>
+          <div class="tablewrap"><table><thead><tr><th>item</th><th>text</th><th>answer</th></tr></thead><tbody>${(pv.items || []).map((it) => `<tr><td class="mono">${esc(it.item_id)}</td><td class="clip"><div>${esc(it.text || it.file || it.source_url || "")}</div></td><td class="clip"><div>${esc(it.answer ?? "—")}</div></td></tr>`).join("")}</tbody></table></div>`;
+      } catch (e) { out.innerHTML = refusal(e); }
+      ev.target.disabled = false;
+    });
+    document.getElementById("ds-make")?.addEventListener("click", async (ev) => {
+      const d = save(), out = document.getElementById("ds-make-out"), by = byOf("ds-by");
+      if (!by) { out.innerHTML = '<p class="note" role="alert">Say who you are: a change names who made it.</p>'; return; }
+      ev.target.disabled = true;
+      try {
+        const j = await send("POST", `/datasets/${enc(d.id.trim())}`, { source: d.source, query: JSON.stringify(queryOf(d)), by });
+        const done = await watchJob(j.id, out, `dataset-create ${d.id}`);
+        if (done.state !== "succeeded") { out.innerHTML = await jobRefusal(done); ev.target.disabled = false; return; }
+        await addToGoal(d.id.trim(), by);
+        sent("dataset-new"); dropDraft(goal); delete previews[goal];
+        location.hash = `#goal/${enc(goal)}`;
+      } catch (e) { out.innerHTML = refusal(e); ev.target.disabled = false; }
+    });
+  }
+
   // ── a screen not wired yet: says which step wires it ───────────────────────
   function screenLater() {
     return `<div class="screen"><div class="kicker">Not wired yet</div><h1>This screen comes later</h1>
@@ -313,6 +453,7 @@
   const WIRED = {
     home: [screenHome], goal: [() => screenGoal(WB.param || "")], glossary: null,
     models: [screenModels], model: [() => screenModel(WB.param || ""), wireModel], "model-new": [screenModelNew, wireModelNew],
+    dataset: [() => screenDatasetNew(WB.param || ""), wireDatasetNew],
   };
 
   function goLive() {
@@ -328,12 +469,19 @@
   }
 
   if (location.pathname.startsWith("/workbench")) {
+    // Until the project answers, no mockup screen is drawn: one of them sends a browser without the mockup's own state
+    // to #start, and a reload of a live screen (#dataset/<goal>) ended on the home. The mockup comes back only when
+    // there is no project's API to answer.
+    const mockRoutes = { ...WB.routes };
+    for (const k of Object.keys(WB.routes)) WB.routes[k] = [() => '<div class="screen"><p class="muted">Opening this project…</p></div>'];
+    const asMockup = () => { Object.assign(WB.routes, mockRoutes); WB.render(true); };
     fetch("/api/v1/goals", { credentials: "same-origin" }).then((r) => {
       if (r.ok) goLive();
-      else if (r.status === 401) {
+      else if (r.status !== 401) asMockup();
+      else {
         document.querySelector("#main").innerHTML = `<div class="screen"><h1>Sign in</h1><p class="lead">Open the Workbench through the link
           <code>evh catalog-serve</code> printed: it carries this server's token once and leaves a cookie.</p></div>`;
       }
-    });
+    }).catch(asMockup);
   }
 })();

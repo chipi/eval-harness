@@ -36,7 +36,15 @@ def body(**inputs: Any) -> int:
     src = cls({})
     try:
         said = src.describe(query) or {}
-        first = list(itertools.islice(src.items(query), args.rows))
+        items = src.items(query)
+        try:
+            first = list(itertools.islice(items, args.rows))
+        finally:
+            # A source read only in part is closed here: a generator left suspended was finalized at the interpreter's
+            # exit, after pyarrow's runtime, and the process aborted (CI on e02a0989e: the first preview of a Hub split).
+            close = getattr(items, "close", None)
+            if close:
+                close()
     except (ValueError, OSError) as e:
         die(f"--source {args.source}: {e}", "invalid-file")
     rows = [_row(it) for it in first]
