@@ -13,6 +13,13 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Added
 
+- **The Workbench's eval (W1), live** (UXS-005 step 5): a goal's rounds as tabs; a round shows its question, its arms
+  (a retired one with its reason) and the evidence (each arm against the leader, Holm: the raw p and its threshold, the
+  verdict, the notes). With no round open, "Open the round" asks its question, the dataset, whether to carry the last
+  round's arms in and its budget (`round-open`). In an open round: the systems to run, "See the cost first" (the
+  sweep's dry run, `POST /estimate`), "Run them" as one `sweep` job under a cap, its progress shown (D2); "Retire" with a
+  reason, said to be final (D3); "Close the round" with its conclusion, optionally promoting the leader's run. One "who
+  you are" serves the round; after an action the round is redrawn unless something else on it is still being written.
 - **The Workbench's step 4, live** (UXS-005): "Choose the systems" on a goal lists the project's systems, each checked on
   three items of a goal's dataset (`arm-smoke` as a job, under a cap): its status and flags, what it spent, what the
   whole dataset would cost and take, a reply per item. "Make a system from a model" picks a model and where it runs,

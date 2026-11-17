@@ -70,7 +70,7 @@
       ${rounds ? `<h2 style="margin-top:22px">Rounds</h2><ul>${rounds}</ul>` : ""}
       ${st.running.length ? `<h2 style="margin-top:22px">Running now</h2><ul>${st.running.map((j) => `<li>${esc(j.operation)} · ${esc(j.state)}</li>`).join("")}</ul>` : ""}
       ${WB.cmd(`evh goal-status ${id}`)}
-      <div class="actions"><a class="btn primary" href="#dataset/${encodeURIComponent(id)}">Add a dataset</a><a class="btn" href="#systems/${encodeURIComponent(id)}">Choose the systems</a><a class="btn" href="#goal-edit/${encodeURIComponent(id)}">Edit the goal</a><a class="btn" href="#home">Back to your goals</a></div></div>`;
+      <div class="actions"><a class="btn primary" href="#dataset/${encodeURIComponent(id)}">Add a dataset</a><a class="btn" href="#systems/${encodeURIComponent(id)}">Choose the systems</a><a class="btn" href="#eval/${encodeURIComponent(id)}">The eval</a><a class="btn" href="#goal-edit/${encodeURIComponent(id)}">Edit the goal</a><a class="btn" href="#home">Back to your goals</a></div></div>`;
   }
 
   // ── writes: who acted, the data header, and the model's refusal shown as it is ──────────────────────
@@ -656,6 +656,172 @@
     });
   }
 
+  // ── W1 the eval: a goal's rounds (UXS-005 step 5; RFC-032, D2, D3, D5) ───────────────────────────────────────
+  // A round asks one question (stored as its hypothesis, D5), compares its arms by the evidence (each arm against the
+  // leader, Holm: the raw p and its threshold), and ends in a decision kept with its reason. Its arms run as one sweep
+  // (D2); a retire is final (D3).
+  const short = (arm) => String(arm || "").split("/").pop();
+  const pfmt = (p) => (p == null ? "—" : p < 0.0001 ? "<0.0001" : Number(p).toFixed(4));
+  const num = (x, d = 4) => (x == null ? "—" : Number(x).toFixed(d));
+  function screenEval(param) {
+    const [goal, wanted] = String(param || "").split("/");
+    const head = `<div class="kicker">The eval · ${esc(goal)}</div><h1>Its rounds</h1>
+      <p class="lead">Each round asks one question, compares its arms on the goal's measure, and ends in a decision kept with its reason.</p>`;
+    if (!goal) return `<div class="screen">${head}</div>`;
+    const rl = load(`rounds:${goal}`, `/goals/${enc(goal)}/rounds`), rec = load(`goalrec:${goal}`, `/goals/${enc(goal)}`);
+    if (rl === undefined || rec === undefined) return `<div class="screen wide">${head}${loading("the rounds")}</div>`;
+    if (rl.error || rec.error) return `<div class="screen wide">${head}${failed(rl.error ? rl : rec)}</div>`;
+    const rounds = rl.rounds, open = rounds.find((r) => r.status === "open");
+    const cur = wanted || (open || rounds[rounds.length - 1] || {}).round_id;
+    const tabs = rounds.length ? `<div class="tabs" role="tablist">${rounds.map((r) => `<a role="tab" class="tab" aria-selected="${r.round_id === cur}" href="#eval/${enc(goal)}/${enc(r.round_id)}">${esc(r.round_id)} · ${esc(r.status)}</a>`).join("")}</div>` : "";
+    const datasets = (rec.record.datasets || []).map((x) => x.dataset_id);
+    const last = rounds[rounds.length - 1];
+    const openForm = open ? "" : `<section class="part" data-form="round-open"><div class="parthead"><h2>Open ${rounds.length ? "the next round" : "the first round"}</h2></div><div class="body">
+        <div class="field"><label class="name" for="ro-q">The round's question</label><div><textarea id="ro-q" rows="2" placeholder="Does a cheaper hosted model match the baseline's coverage?"></textarea><div class="hint">what this round should find out, in one sentence</div></div></div>
+        <div class="field"><label class="name" for="ro-ds">On</label><div><select id="ro-ds">${datasets.map((x) => `<option>${esc(x)}</option>`).join("")}</select></div></div>
+        ${last ? `<div class="field"><label class="name" for="ro-keep">Carry in from ${esc(last.round_id)}</label><div><select id="ro-keep"><option value="all">every arm still in play</option><option value="">none</option></select><div class="hint">carried arms are not run again</div></div></div>` : ""}
+        <div class="field"><label class="name" for="ro-budget">What it may spend (USD)</label><div><input type="text" id="ro-budget" inputmode="decimal" placeholder="no budget" style="width:8rem"></div></div>
+        ${byField("ro-by")}
+        <div class="actions" style="margin-top:0"><button class="btn primary" type="button" id="ro-open" data-send>Open the round</button>${mark}</div><div id="ro-out"></div></div></section>`;
+    if (!cur) return `<div class="screen wide">${head}<p class="muted">No round yet.</p>${openForm}<div class="actions"><a class="btn" href="#goal/${enc(goal)}">Back to the goal</a></div></div>`;
+    const rs = load(`round:${goal}/${cur}`, `/goals/${enc(goal)}/rounds/${enc(cur)}`), ev = load(`evidence:${goal}/${cur}`, `/goals/${enc(goal)}/rounds/${enc(cur)}/evidence`);
+    const sys = load("systems", "/systems");
+    if ([rs, ev, sys].includes(undefined)) return `<div class="screen wide">${head}${tabs}${loading("the round")}</div>`;
+    const bad = [rs, ev, sys].find((x) => x.error);
+    if (bad) return `<div class="screen wide">${head}${tabs}${failed(bad)}</div>`;
+    const r = rs.round, isOpen = r.status === "open";
+    const rows = (ev.rows || []).map((x) => `<tr><td class="mono">${esc(short(x.arm))}</td><td class="num">${num(x.mean)}</td><td class="num">${num(x.delta)}</td>
+      <td class="num">${pfmt(x.p)}</td><td class="num">${pfmt(x.threshold)}</td><td>${esc(x.verdict || "")}</td></tr>`).join("");
+    const inPlay = r.arms.filter((a) => !a.retired);
+    const arms = r.arms.map((a) => `<li><span class="mono">${esc(a.system)}</span>${a.label ? ` <small>(${esc(a.label)})</small>` : ""} · ${a.runs.length} run(s) · ${esc((a.entered || {}).how || "")}
+      ${a.retired ? ` · <span class="status warn">retired</span> <small>${esc(a.retired.reason || "")}</small>` : isOpen ? ` <button class="btn" type="button" data-retire="${esc(a.system)}">Retire</button>` : ""}</li>`).join("");
+    const have = new Set(r.arms.map((a) => a.system));
+    const toRun = sys.systems.filter((x) => !have.has(x.system));
+    const leaderRun = (() => { const a = r.arms.find((x) => x.arm === ev.leader); return a ? a.runs[a.runs.length - 1] : ""; })();
+    return `<div class="screen wide">${head}${tabs}
+      <h2>${esc(r.hypothesis || "(no question)")}</h2>
+      ${isOpen ? byField("ev-by") : ""}
+      <p class="muted">${esc(r.round_id)} · ${esc(r.status)} · on ${esc(r.dataset_id)}${r.from ? ` · from ${esc(r.from)}` : ""}${r.budget_usd != null ? ` · budget $${esc(r.budget_usd)}` : ""} · spent $${num(ev.spent_usd, 4)}</p>
+      ${r.conclusion ? `<div class="answer"><div class="kicker">its conclusion</div><p>${esc(typeof r.conclusion === "string" ? r.conclusion : r.conclusion.text || JSON.stringify(r.conclusion))}</p></div>` : ""}
+      <section class="part"><div class="parthead"><h2>The evidence</h2><span class="grow"></span><span class="muted">${esc(ev.metric || "")} · each arm against the leader, Holm</span></div><div class="body">
+        ${rows ? `<p class="muted">The leader: <b class="mono">${esc(short(ev.leader))}</b>. A verdict holds when the raw p is under its threshold.</p>
+          <div class="tablewrap"><table><thead><tr><th>arm</th><th class="num">mean</th><th class="num">Δ</th><th class="num">raw p</th><th class="num">threshold</th><th>verdict</th></tr></thead><tbody>${rows}</tbody></table></div>` : ""}
+        ${(ev.notes || []).length ? `<ul>${ev.notes.map((n) => `<li class="muted">${esc(n)}</li>`).join("")}</ul>` : ""}</div></section>
+      <section class="part"><div class="parthead"><h2>Its arms</h2></div><div class="body"><ul>${arms || '<li class="muted">none yet</li>'}</ul>
+        ${isOpen ? `<div id="rt-box"></div>` : ""}</div></section>
+      ${isOpen ? `<section class="part"><div class="parthead"><h2>Run arms in it</h2></div><div class="body">
+        ${toRun.length ? `<div class="choices">${toRun.map((x) => `<label class="choice"><input type="checkbox" data-run="${esc(x.system)}"> <span class="mono">${esc(x.system)}</span> <small>${esc(x.model || "")}</small></label>`).join("")}</div>
+          <div class="inline"><label class="name" for="rn-cap">spend at most (USD)</label><input type="number" id="rn-cap" min="0.01" step="0.01" value="1" inputmode="decimal" style="width:7rem">
+          <button class="btn" type="button" id="rn-est">See the cost first</button><button class="btn primary" type="button" id="rn-go">Run them</button></div>
+          <div id="rn-out" aria-live="polite"></div>` : '<p class="muted">Every system of the project is in this round.</p>'}</div></section>
+        <section class="part" data-form="round-close"><div class="parthead"><h2>Close the round</h2></div><div class="body">
+          <div class="field"><label class="name" for="rc-text">Its conclusion</label><div><textarea id="rc-text" rows="3" placeholder="What the round showed, and what it decided, in a sentence or more."></textarea></div></div>
+          ${leaderRun ? `<label class="choice"><input type="checkbox" id="rc-promote" value="${esc(leaderRun)}"> promote the leader's run (<span class="mono">${esc(leaderRun)}</span>) to the goal's baseline, the conclusion as its reason</label>` : ""}
+          <div class="actions" style="margin-top:0"><button class="btn primary" type="button" id="rc-close" data-send>Close the round</button>${mark}</div><div id="rc-out"></div></div></section>` : openForm}
+      ${WB.cmd(`evh round-list ${goal}\nevh round-evidence ${goal} ${r.round_id}`)}
+      <div class="actions"><a class="btn" href="#goal/${enc(goal)}">Back to the goal</a></div></div>`;
+  }
+  function wireEval() {
+    const [goal, wanted] = String(WB.param || "").split("/");
+    const rl = LIVE.cache[`rounds:${goal}`] || { rounds: [] };
+    const cur = wanted || ((rl.rounds || []).find((r) => r.status === "open") || rl.rounds[rl.rounds.length - 1] || {}).round_id;
+    const v = (id) => (document.getElementById(id)?.value || "").trim();
+    const byOr = (id) => byOf(id) || (who() ? `person:${who()}` : null);
+    const again = (round, box) => {
+      forget(`rounds:${goal}`); forget(`round:${goal}/`); forget(`evidence:${goal}/`); forget(`status:${goal}`); forget("goals");
+      if (round && round !== cur) { location.hash = `#eval/${enc(goal)}/${enc(round)}`; return; }
+      // a redraw now would wipe what is still being written elsewhere on the screen (the unsent-changes rule)
+      if (UNSENT.size && box) {
+        box.innerHTML = '<p class="note">Done. The round has changed; <button class="btn" type="button" data-show>Show the round</button> when what you are writing is saved.</p>';
+        box.querySelector("[data-show]").addEventListener("click", () => WB.render(true));
+        return;
+      }
+      WB.render(true);
+    };
+    holds("round-open", () => `Open the round`);
+    document.getElementById("ro-open")?.addEventListener("click", async (ev) => {
+      const out = document.getElementById("ro-out"), by = byOf("ro-by");
+      if (!by) { out.innerHTML = '<p class="note" role="alert">Say who you are: a decision names who made it.</p>'; return; }
+      const inputs = { dataset: v("ro-ds"), hypothesis: v("ro-q"), by };
+      const last = rl.rounds[rl.rounds.length - 1];
+      if (last) { inputs.from = last.round_id; if (v("ro-keep")) inputs.keep = v("ro-keep"); }
+      if (v("ro-budget")) inputs.budget_usd = Number(v("ro-budget"));
+      ev.target.disabled = true;
+      try {
+        if (await runJob(`/goals/${enc(goal)}/rounds`, inputs, out, "opening the round")) {
+          sent("round-open"); forget(`rounds:${goal}`);
+          const fresh = await fetch(`/api/v1/goals/${enc(goal)}/rounds`, { credentials: "same-origin" }).then((x) => x.json());
+          const opened = ((fresh.result || {}).rounds || []).find((x) => x.status === "open");
+          again(opened ? opened.round_id : null);
+        }
+      } catch (e) { out.innerHTML = refusal(e); }
+      ev.target.disabled = false;
+    });
+    const picked = () => [...document.querySelectorAll("[data-run]:checked")].map((b) => b.dataset.run);
+    const sweepInputs = () => ({ systems: picked(), dataset: (LIVE.cache[`round:${goal}/${cur}`] || {}).round?.dataset_id, goal, round: cur });
+    document.getElementById("rn-est")?.addEventListener("click", async () => {
+      const out = document.getElementById("rn-out");
+      if (!picked().length) { out.innerHTML = '<p class="note" role="alert">Pick the systems to run first.</p>'; return; }
+      out.innerHTML = '<p class="muted">estimating…</p>';
+      const r = await fetch("/api/v1/estimate", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json", "X-EVH-Data": "1" }, body: JSON.stringify({ operation: "sweep", inputs: sweepInputs() }) });
+      const b = await r.json().catch(() => ({}));
+      const lines = ((b.result || {}).blocks || []).flatMap((x) => x.lines || []).filter((l) => /\$|estimat|items|calls|cost/i.test(l));
+      out.innerHTML = r.ok ? `<pre class="reply">${esc(lines.join("\n") || b.text || "no cost to estimate")}</pre>` : `<p class="note" role="alert">${esc(b.error || b.text || r.status)}</p>`;
+    });
+    document.getElementById("rn-go")?.addEventListener("click", async (ev) => {
+      const out = document.getElementById("rn-out"), by = byOr("ev-by"), cap = Number(v("rn-cap"));
+      if (!picked().length) { out.innerHTML = '<p class="note" role="alert">Pick the systems to run first.</p>'; return; }
+      if (!by) { out.innerHTML = '<p class="note" role="alert">Say who you are below: a run names who asked.</p>'; return; }
+      if (!(cap > 0)) { out.innerHTML = '<p class="note" role="alert">Say the most it may spend first.</p>'; return; }
+      ev.target.disabled = true;
+      try {
+        const { dataset, ...rest } = sweepInputs();  // the dataset is the route's part, not the body's
+        const j = await send("POST", `/datasets/${enc(dataset)}/sweeps`, { ...rest, by, max_cost_usd: cap });
+        for (;;) {
+          const jr = await fetch(`/api/v1/jobs/${enc(j.id)}`, { credentials: "same-origin" }).then((x) => x.json()).catch(() => ({}));
+          const pg = jr.progress ? ` · ${jr.progress.done} of ${jr.progress.total}` : "";
+          out.innerHTML = `<p class="muted">sweep ${esc(jr.state || "…")}${pg}${jr.spent_usd ? ` · spent $${Number(jr.spent_usd).toFixed(4)}` : ""}</p>`;
+          if (!["queued", "running", "running (unsupervised)"].includes(jr.state)) {
+            if (jr.state !== "succeeded") out.innerHTML = await jobRefusal(jr);
+            else again(null, out);
+            break;
+          }
+          await new Promise((ok) => setTimeout(ok, 1000));
+        }
+      } catch (e) { out.innerHTML = refusal(e); }
+      ev.target.disabled = false;
+    });
+    document.querySelectorAll("[data-retire]").forEach((b) => b.addEventListener("click", () => {
+      const sysId = b.dataset.retire, box = document.getElementById("rt-box");
+      box.innerHTML = `<div data-form="retire"><p>Retire <b class="mono">${esc(sysId)}</b> from ${esc(cur)}: final, kept with its reason; no operation undoes it.</p>
+        <div class="inline"><input type="text" id="rt-why" placeholder="why, in a sentence" style="min-width:20rem" aria-label="why it is retired">
+        <button class="btn" type="button" id="rt-go" data-send>Retire it</button>${mark}<button class="btn" type="button" id="rt-no">Keep it</button></div><div id="rt-out"></div></div>`;
+      holds("retire", () => `Retire ${sysId}`);
+      document.getElementById("rt-why").focus();
+      document.getElementById("rt-no").addEventListener("click", () => { sent("retire"); box.innerHTML = ""; });
+      document.getElementById("rt-go").addEventListener("click", async (ev) => {
+        const out = document.getElementById("rt-out"), by = byOr("ev-by");
+        if (!by) { out.innerHTML = '<p class="note" role="alert">Say who you are below: a decision names who made it.</p>'; return; }
+        ev.target.disabled = true;
+        try { if (await runJob(`/goals/${enc(goal)}/rounds/${enc(cur)}/retire`, { arm: sysId, reason: v("rt-why"), by }, out, "retiring")) { sent("retire"); again(null, out); } }
+        catch (e) { out.innerHTML = refusal(e); }
+        ev.target.disabled = false;
+      });
+    }));
+    holds("round-close", () => `Close ${cur}`);
+    document.getElementById("rc-close")?.addEventListener("click", async (ev) => {
+      const out = document.getElementById("rc-out"), by = byOr("ev-by");
+      if (!by) { out.innerHTML = '<p class="note" role="alert">Say who you are: a decision names who made it.</p>'; return; }
+      if (!window.confirm(`Close ${cur} with this conclusion?${document.getElementById("rc-promote")?.checked ? " Its leader's run becomes the goal's baseline." : ""}`)) return;
+      const inputs = { conclusion: v("rc-text"), by };
+      if (document.getElementById("rc-promote")?.checked) inputs.promote = document.getElementById("rc-promote").value;
+      ev.target.disabled = true;
+      try { if (await runJob(`/goals/${enc(goal)}/rounds/${enc(cur)}/close`, inputs, out, "closing the round")) { sent("round-close"); again(); } }
+      catch (e) { out.innerHTML = refusal(e); }
+      ev.target.disabled = false;
+    });
+  }
+
   // ── step 3: prepare a dataset (UXS-005 step 3): fetch it, look inside, its reference set ────────────────────────
   const catalogPage = (ds) => `${location.origin}/d/${String(ds || "none").replace(/[^A-Za-z0-9._-]+/g, "-").replace(/^-+|-+$/g, "") || "x"}.html`;
   async function runJob(path, body, box, what) {
@@ -855,7 +1021,7 @@
     dataset: [() => screenDatasetNew(WB.param || ""), wireDatasetNew],
     "goal-new": [() => screenGoalForm(""), wireGoalForm], "goal-edit": [() => screenGoalForm(WB.param || ""), wireGoalForm],
     prepare: [() => screenPrepare(WB.param || ""), wirePrepare], label: [() => screenLabel(WB.param || ""), wireLabel],
-    systems: [() => screenSystems(WB.param || ""), wireSystems],
+    systems: [() => screenSystems(WB.param || ""), wireSystems], eval: [() => screenEval(WB.param || ""), wireEval],
   };
 
   function goLive() {

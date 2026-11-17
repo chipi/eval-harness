@@ -385,7 +385,7 @@ try:
                 and page.evaluate("localStorage.getItem('evh.draft.label.notes_v1')") is None,
                 lab,
             )
-            page.goto(f"http://127.0.0.1:{port}/workbench/#eval")
+            page.goto(f"http://127.0.0.1:{port}/workbench/#review")
             page.wait_for_selector("h1", timeout=20000)
             check(
                 "a screen not wired yet says so, and shows none of the mockup's data",
@@ -538,6 +538,89 @@ try:
                     page.locator("#sm-fake-1b_here").inner_text()[:400],
                     [c.get("kind") for c in dep_doc.get("checks") or []],
                 ),
+            )
+            # W1 the eval (UXS-005 step 5): a round opened with its question, two arms run as one sweep, the evidence
+            # read, one arm retired with its reason, the round closed with its conclusion and the leader promoted
+            page.goto(f"http://127.0.0.1:{port}/workbench/#eval/tickets_summary")
+            page.wait_for_selector("#ro-q", timeout=20000)
+            page.fill("#ro-q", "Does the fake model summarise a ticket as well as the echo arm?")
+            page.select_option("#ro-ds", "tk_v1")
+            page.fill("#ro-by", "tester")
+            page.click("#ro-open")
+            page.wait_for_selector("[data-run]", timeout=60000)
+            rnd = yaml.safe_load((proj / "data" / "rounds" / "tickets_summary" / "r1.yaml").read_text())
+            check(
+                "Open the round: round-open as a job, its question kept as the hypothesis, the round open",
+                rnd.get("status") == "open"
+                and rnd.get("hypothesis") == "Does the fake model summarise a ticket as well as the echo arm?"
+                and "Does the fake model" in page.locator("main h2").first.inner_text(),
+                rnd,
+            )
+            page.check("[data-run='one_v1']")
+            page.check("[data-run='fake-1b_here']")
+            page.click("#rn-est")
+            page.wait_for_selector("#rn-out pre, #rn-out [role=alert]", timeout=60000)
+            check(
+                "See the cost first: the sweep's dry run (POST /estimate), nothing run",
+                page.locator("#rn-out pre").count() == 1
+                and not list((proj / "data" / "runs").glob("fake-1b_here_*")),
+                page.locator("#rn-out").inner_text()[:300],
+            )
+            page.fill("#rn-cap", "0.05")
+            page.fill("#ev-by", "tester")
+            page.click("#rn-go")
+            try:
+                page.wait_for_selector("li:has-text('fake-1b_here') span.mono", timeout=180000)
+            except Exception:
+                print(
+                    "RUN-OUT",
+                    page.locator("#rn-out").inner_text()[:600],
+                    page.locator("main").inner_text()[:800],
+                )
+                raise
+            rnd = yaml.safe_load((proj / "data" / "rounds" / "tickets_summary" / "r1.yaml").read_text())
+            check(
+                "Run them: one sweep job runs both in the round; each joins the round as an arm and the evidence reads them",
+                {a["system"] for a in rnd.get("arms") or []} >= {"one_v1", "fake-1b_here"}
+                and page.locator("main th:has-text('threshold')").count() == 1,
+                (rnd.get("arms"), page.locator("main").inner_text()[:600]),
+            )
+            page.click("[data-retire='fake-1b_here']")
+            page.fill("#rt-why", "it repeats one fixed answer whatever the ticket says")
+            page.click("#rt-go")
+            page.wait_for_selector("li:has-text('fake-1b_here') .status:has-text('retired')", timeout=60000)
+            rnd = yaml.safe_load((proj / "data" / "rounds" / "tickets_summary" / "r1.yaml").read_text())
+            gone: dict = next((a for a in rnd["arms"] if a["system"] == "fake-1b_here"), {})
+            check(
+                "Retire: round-retire with its reason, final, kept on the arm",
+                (gone.get("retired") or {}).get("reason")
+                == "it repeats one fixed answer whatever the ticket says"
+                and page.locator("[data-retire='fake-1b_here']").count() == 0,
+                gone,
+            )
+            page.remove_listener("dialog", stay)
+            page.once("dialog", lambda d: d.accept())
+            page.fill(
+                "#rc-text", "The echo arm is the one to keep for this test; the fake model was retired."
+            )
+            page.check("#rc-promote")
+            page.fill("#ev-by", "tester")
+            page.click("#rc-close")
+            try:
+                page.wait_for_selector(".answer .kicker:has-text('its conclusion')", timeout=60000)
+            except Exception:
+                print("RC-OUT", page.locator("#rc-out").inner_text()[:600])
+                raise
+            rnd = yaml.safe_load((proj / "data" / "rounds" / "tickets_summary" / "r1.yaml").read_text())
+            base = list((proj / "data" / "baselines" / "tickets_summary" / "tk_v1").glob("*.json"))
+            check(
+                "Close the round: round-close with its conclusion, the leader's run promoted to the goal's baseline",
+                rnd.get("status") == "closed"
+                and (rnd.get("conclusion") or {})
+                .get("text", "")
+                .startswith("The echo arm is the one to keep")
+                and bool(base),
+                (rnd.get("status"), rnd.get("conclusion"), base),
             )
             phone = browser.new_context(
                 viewport={"width": 390, "height": 844},
