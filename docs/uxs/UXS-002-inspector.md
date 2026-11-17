@@ -283,7 +283,8 @@ For an agent, each of these is an MCP tool named as its command: `comparison-sho
 `where`, `by`, `disagree`, `analysis`, `x`, `round`, `goal`, `label`, `rescore`), `comparison-item` (`runs`, `item`),
 `comparison-items` (`runs`, `disagree`, `where`, `baseline`, `max_chars`), `comparison-crosstab` (`runs`, `crosstab`,
 `group`, `group_match`, `where`, `max_ids`) and `sheet-show` (`dataset`, `runs`, `scores_only`, `wrong_against`,
-`new_vs`, `split`, `unlabelled`); the command that writes a file, `sheet-export`, is not a tool. A public server
+`new_vs`, `split`, `unlabelled`); `sheet-export`, which writes a file (an operation run as a job: `POST /api/v1/datasets/{dataset}/sheets`), is not a
+tool. A public server
 (`evh mcp --public`, and this repository's at `/mcp`) offers `comparison-show` and, without `group` and `group_match`
 (a recorded field can hold text), `comparison-crosstab`, as the public inspector serves no item text, output or
 label; `crosstab` of two scores stays.

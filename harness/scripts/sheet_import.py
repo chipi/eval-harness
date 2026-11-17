@@ -45,6 +45,7 @@ from evaluation_harness._common import (
     classify_metrics,
     die,
     load_dataset,
+    project_root,
 )
 from evaluation_harness._fingerprint import seal
 from evaluation_harness._label_sets import set_dir, write_set
@@ -64,10 +65,39 @@ CARRY = ("latency_ms", "tokens_in", "tokens_out", "cost_usd")
 SUFFIX = "_unvalidated"
 
 
+def _key_file(args: argparse.Namespace) -> Path:
+    """The sheet's key: --key, or where the sheet-export job --export-job kept it (a job's files never serve a key, so a
+    page that fills a blind sheet never holds it), else beside the sheet."""
+    if not args.export_job:
+        return args.key or key_path(args.sheet)
+    from evaluation_harness import _jobs  # noqa: PLC0415
+
+    try:
+        job = _jobs.read(args.export_job)
+    except (ValueError, FileNotFoundError, OSError):
+        die(f"no job {args.export_job} (evh jobs-status)", "not-found")
+    if job.get("operation") != "sheet-export":
+        die(
+            f"job {args.export_job} is {job.get('operation')!r}, not a sheet-export: it holds no key",
+            "mismatch",
+        )
+    if job.get("state") != "succeeded":
+        die(f"job {args.export_job} is {job.get('state')}: its sheet was not written", "not-found")
+    sheet = (job.get("inputs") or {}).get("csv")
+    if (job.get("inputs") or {}).get("dataset_id") != args.dataset_id:
+        die(
+            f"job {args.export_job} wrote a sheet of {(job.get('inputs') or {}).get('dataset_id')}, not {args.dataset_id}",
+            "mismatch",
+        )
+    return key_path(project_root() / str(sheet))
+
+
 def body(**inputs: Any) -> int:
     """Read a filled sheet back as a label set, or as judged runs."""
     args = legacy.namespace(inputs, "sheet-import", {"set": "name"})
     args.by = stated("evh sheet-import")
+    if args.key and args.export_job:
+        die("--key or --export-job: the key is read from one of them", "bad-argument")
     if not _store.is_file(args.sheet):
         die(f"no sheet {args.sheet}", "not-found")
     load_dataset(args.dataset_id)
@@ -155,7 +185,7 @@ def _import_tags(
         )
     if not any_filled:
         die(f"{args.sheet}: nothing filled: no `failure_modes:` cell has an answer", "not-enough")
-    key = read_key(args.key or key_path(args.sheet))
+    key = read_key(_key_file(args))
     if key["dataset_id"] != args.dataset_id:
         die(f"the key is for {key['dataset_id']}, not {args.dataset_id}", "mismatch")
     if key["fill"] != "tags":
@@ -179,7 +209,7 @@ def _import_tags(
 
 def _judgements(args: argparse.Namespace, rows: list[dict[str, str]], pick: bool) -> dict[str, Any]:
     """The key checked against the sheet, and what was judged: {key, metric, values {arm index: {item: value}}}."""
-    key = read_key(args.key or key_path(args.sheet))
+    key = read_key(_key_file(args))
     if key["dataset_id"] != args.dataset_id:
         die(f"the key is for {key['dataset_id']}, not {args.dataset_id}", "mismatch")
     if key["fill"] != ("pick" if pick else "scores"):

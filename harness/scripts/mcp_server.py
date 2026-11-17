@@ -73,7 +73,6 @@ NOT_TOOLS.update(
         "a write of the model: the command line, or its API resource (RFC-032)",
     )
 )
-NOT_TOOLS["sheet-export"] = "writes a file: the sheet as a CSV to fill in"
 
 #: The request body the HTTP endpoint reads (--max-body): a tool call is a few hundred bytes, and
 #: the SDK's 4 MiB default let a few parallel bodies take the container past its memory limit.

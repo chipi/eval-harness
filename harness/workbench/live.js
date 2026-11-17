@@ -28,7 +28,7 @@
   // ── home: every goal and where it stands; what is running ───────────────────
   function screenHome() {
     const goals = load("goals", "/goals");
-    const jobs = load("jobs", "/jobs?state=running", true);
+    const jobs = load("jobs", `/jobs?state=${encodeURIComponent("queued,running,running (unsupervised)")}`, true);
     const head = `<div class="kicker">Home</div><h1>Your goals</h1>
       <p class="lead">Each goal with where it stands and its next step. What is running shows here too, across goals.</p>`;
     if (goals === undefined) return `<div class="screen wide">${head}${loading("the goals")}</div>`;

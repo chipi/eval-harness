@@ -273,9 +273,40 @@ def _job_paths() -> dict[str, Any]:
                         "name": "state",
                         "in": "query",
                         "required": False,
-                        "description": "only the jobs in this state",
+                        "description": "only the jobs in these states: repeated, or comma-separated "
+                        "(`queued,running,running (unsupervised)`); 400 for a state a job is never in",
+                        "schema": {"type": "array", "items": {"type": "string"}},
+                        "style": "form",
+                        "explode": True,
+                    },
+                    {
+                        "name": "operation",
+                        "in": "query",
+                        "required": False,
+                        "description": "only the jobs of this operation",
                         "schema": {"type": "string"},
-                    }
+                    },
+                    {
+                        "name": "goal",
+                        "in": "query",
+                        "required": False,
+                        "description": "only the jobs whose inputs name this goal",
+                        "schema": {"type": "string"},
+                    },
+                    {
+                        "name": "offset",
+                        "in": "query",
+                        "required": False,
+                        "description": "skip this many of the jobs found",
+                        "schema": {"type": "integer", "minimum": 0, "default": 0},
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": False,
+                        "description": "at most this many (0: every one)",
+                        "schema": {"type": "integer", "minimum": 0, "default": 0},
+                    },
                 ],
                 "responses": {
                     "200": {
@@ -284,8 +315,14 @@ def _job_paths() -> dict[str, Any]:
                             "application/json": {
                                 "schema": {
                                     "type": "object",
-                                    "properties": {"jobs": {"type": "array", "items": {"$ref": _JOB}}},
-                                    "required": ["jobs"],
+                                    "properties": {
+                                        "jobs": {"type": "array", "items": {"$ref": _JOB}},
+                                        "total": {
+                                            "type": "integer",
+                                            "description": "the jobs found, before offset and limit",
+                                        },
+                                    },
+                                    "required": ["jobs", "total"],
                                 }
                             }
                         },

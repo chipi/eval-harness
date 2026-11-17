@@ -84,10 +84,10 @@ What [Getting started](../../docs/GUIDE.md) walks: a dataset, its reference, run
 |---|---|
 | the same, in the terminal | `evh overview-show [--period P]` · `evh activity-show` · `evh dataset-list` · `evh arm-list` (`--systems 1`) · `evh arm-show LABEL DATASET SYSTEM` · `evh reference-list` · `evh metric-show …` · `evh goal-list` · `evh goal-leaderboard G [--arms PATTERN] [--top N]` (a goal with many arms: only the arms matching, or the first N, always with the baseline, the leader and the recommended arm; each arm's paired test against the leader) · `evh search …` · `evh comparison-show --runs …` (`--analysis`) · `evh comparison-item --runs … --item ID` · `evh sheet-show … --runs …`; every list takes `--period P` |
 | where arms decided differently | `evh comparison-show --runs A,B --disagree` |
-| the sheet: every item, every arm's output and scores, the labels, the winner, the signals | `evh sheet-export --dataset-id … --runs A,B [--wrong-against SET] [--new-vs V] [--csv FILE [--fill label\|pick\|scores]]` |
+| the sheet: every item, every arm's output and scores, the labels, the winner, the signals | `evh sheet-export --dataset-id … --runs A,B --csv FILE [--wrong-against SET] [--new-vs V] [--fill label\|pick\|scores\|tags]` (the API: `POST /api/v1/datasets/{dataset}/sheets`, a job keeping the sheet and its key) |
 | how two per-item scores relate, by a recorded field (a gate that saved a false dismissal, one that cost a false alarm) | `evh comparison-crosstab --runs A --crosstab M1,M2 [--group _meta.gates [--group-match REGEX]] [--where F:V]` ([§14](#14-browse-the-catalog-and-the-inspector)) |
 | why items flipped: each run's whole output beside the reference, many items at once | `evh comparison-items --runs A,B [--disagree] [--where F:V] [--max-chars N] --json` ([§14](#14-browse-the-catalog-and-the-inspector)) |
-| a sheet filled elsewhere, read back | `evh sheet-import --sheet sheet.csv --dataset-id … --by WHO [--set S \| --scorer S]` |
+| a sheet filled elsewhere, read back | `evh sheet-import --sheet sheet.csv --dataset-id … --by WHO [--set S \| --scorer S] [--key K \| --export-job JOB]` (`--export-job`: the key the sheet-export job kept, never served) |
 
 ### Production
 
@@ -115,7 +115,7 @@ What [Getting started](../../docs/GUIDE.md) walks: a dataset, its reference, run
 | step | command |
 |---|---|
 | ask from an agent | `evh mcp` |
-| background jobs (the Workbench's) | `evh jobs-start run --arg system=ID --arg dataset=D --max-cost-usd N` · `evh jobs-status` · `evh jobs-logs JOB --follow` · `evh jobs-stop JOB` · `evh jobs-resume JOB` |
+| background jobs (the Workbench's) | `evh jobs-start run --arg system=ID --arg dataset=D --max-cost-usd N` · `evh jobs-status [--state S,S] [--operation OP] [--goal G]` · `evh jobs-logs JOB --follow` · `evh jobs-stop JOB` · `evh jobs-resume JOB` |
 
 ---
 

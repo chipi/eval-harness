@@ -41,10 +41,6 @@ COMMANDS = {
         "capture_scrub.py",
         "run the project's own scrubber over a capture's records, and record it",
     ),
-    "sheet-export": (
-        "sheet_export.py",
-        "a dataset's sheet written as a CSV to fill in: what each run wrote and scored beside every item, the columns to fill (--fill label|pick|scores|tags)",
-    ),
     "jobs-start": (
         "jobs_start.py",
         "start an operation as a job: detached, with its locks, log and state (RFC-026)",

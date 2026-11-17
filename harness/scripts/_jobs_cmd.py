@@ -132,7 +132,14 @@ def status(argv: list[str]) -> int:
     """evh jobs-status: every job, newest first, or one."""
     ap = argparse.ArgumentParser(prog=evh_prog(), description="the jobs, or one job (RFC-026)")
     ap.add_argument("job_id", nargs="?", help="one job (default: every job, newest first)")
-    ap.add_argument("--state", choices=("queued", "running", "running (unsupervised)", "lost", *TERMINAL[:3]))
+    ap.add_argument(
+        "--state",
+        action="append",
+        help="only jobs in this state (repeatable, or comma-separated): queued, running, running (unsupervised), lost, "
+        "succeeded, failed, cancelled",
+    )
+    ap.add_argument("--operation", help="only the jobs of this operation")
+    ap.add_argument("--goal", help="only the jobs whose inputs name this goal")
     ap.add_argument("--json", action="store_true", help="the jobs' records as JSON")
     a = ap.parse_args(argv)
     from evaluation_harness import _jobs  # noqa: PLC0415
@@ -150,11 +157,14 @@ def status(argv: list[str]) -> int:
                     print(f"  {k}: {shown}")
             _jsonout.value("job", j)
         else:
-            js = _jobs.list_jobs(a.state)
+            try:
+                js = _jobs.list_jobs(a.state, a.operation, a.goal)
+            except ValueError as exc:
+                die(str(exc), "bad-argument")
             for j in js:
                 print(_line(j))
             if not js:
-                print("no jobs" + (f" {a.state}" if a.state else ""))
+                print("no jobs" + (f" {', '.join(a.state)}" if a.state else ""))
             _jsonout.value("jobs", js)
     return 0
 

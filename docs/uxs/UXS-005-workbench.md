@@ -331,8 +331,8 @@ decision kept with its reason. This is where people spend most of their time (W1
 
 - Every goal with where it stands and its next step, and what is running across goals (PRD-017, requirement 1). The
   mockup lists the walk-through's goal, then this repository's seven goals as they stand.
-- Live: `GET /goals`, then `GET /goals/{goal}/status` per goal, and `GET /jobs`. "Running now" needs the jobs list to
-  take several states at once (queued, running, running (unsupervised)); today `state` is one exact match (API 5).
+- Live: `GET /goals`, then `GET /goals/{goal}/status` per goal, and `GET /jobs?state=queued,running,running
+  (unsupervised)` for "running now" (API 5, built).
 
 ### Jobs
 
@@ -347,7 +347,8 @@ decision kept with its reason. This is where people spend most of their time (W1
   its inputs. Progress (`done` of `total`) is reported by `run`, `sweep`, `rescore` and `judge-score`; the others show
   their log. The page polls; there are no events.
 - Operations: `jobs-list`, `jobs-show`, `jobs-log`, `jobs-file` (a job's artifact, such as a label sheet),
-  `jobs-stop`, `jobs-resume`. Filters by operation and goal, and offset and limit, are to build (API 5).
+  `jobs-stop`, `jobs-resume`. The list filters by state (several at once), operation and goal, with offset, limit and
+  the total found (API 5, built).
 
 ### W2 Review and label
 
@@ -363,10 +364,10 @@ decision kept with its reason. This is where people spend most of their time (W1
 
 - Two arms' outputs on the same item; the sides are shuffled and the scores hidden while arms are hidden, so the pick
   is not swayed. Which is better, tags and notes are a label set with who made them; today they come back only as a
-  filled sheet (`sheet-import`, a job under the dataset's lock). The sheet is the inspector's download
-  (`/api/sheet?format=csv`, the CSV `sheet-export` writes); a blind fill ("which is better" with the arms hidden) needs
-  its key written beside the sheet, so it is made on the command line (`evh sheet-export --csv`); the blind sheet and
-  its key as a job, the key kept on the server, is to build (API 1). This "which is better" is not a
+  filled sheet (`sheet-import`, a job under the dataset's lock). The sheet is a `sheet-export` job (`POST
+  /datasets/{dataset}/sheets`, `fill` pick, scores, tags or label): the page fetches the sheet from the job's files,
+  never its key (403), so a blind sheet stays blind in the browser; the filled sheet goes back to `sheet-import`
+  with `export_job` naming that job, which reads the key where the job kept it (API 1, built). This "which is better" is not a
   **pick**: a pick is a production record chosen for the next dataset version (W3).
 - **Submitted when done, never item by item** (owner, 2026-11-17). The labelling screen is a sheet the person fills
   on the screen; nothing is written until it is submitted, and then the imports write it as they do a CSV today
@@ -716,20 +717,20 @@ against the code on 2026-11-17 (`research/internal/WORKBENCH_GAPS_0.8.0.md` has 
 
 | Screen | Calls | State |
 | --- | --- | --- |
-| Home | `goal-list`, `goal-status` per goal, `jobs-list` | ~ live; the jobs list takes one state (API 5) |
+| Home | `goal-list`, `goal-status` per goal, `jobs-list` | ✓ live |
 | 1 Goal | `goal-new` (with `datasets: []`), `goal-set`, `goal-show`, `goal-history`, `metric-list` | ✓ live |
 | 2 Dataset | `dataset-list`, `goal-set`, `fieldset-propose`, `fieldset-new`, `dataset-create`, `capture-list` | ✗ a source's preview (API 2), the answer column (API 3) |
 | 3 Prepare | `dataset-materialize`, `dataset-profile`, `dataset-show`, `dataset-items`, `label-sheet`, `label-import`, `reference-promote` | ✗ a reference from the dataset's answers (API 3); items have no offset and limit |
 | 4 Models | `model-list`, `goal-leaderboard`, `prompt-version`, `system-show`, `system-new`, `arm-smoke`, `POST /estimate` | ✓; a clone is a new system |
 | W5 Bring in a model | `model-new`, `deployment-new`, `model-onboard`, `model-show`, `deployment-history`, `deployment-accept` | ✓ live; no "approve" (D4) |
 | 5 / W1 The eval | `round-list`, `round-show`, `round-evidence`, `leaderboard`, `baselines`, `round-open`, `round-carry`, `sweep`, `POST /estimate`, `rescore`, `judge-score`, `round-retire`, `run-promote`, `round-close`, `arm-show`, `comparison-item` | ✓; a retire is final (D3) |
-| W2 Review, label, tag | `comparison-items`, `comparison-item`, `sheet-show`, `failure-modes-list`, `tag-set-list`, `label-set-list`, `sheet-import` | ✗ the blind sheet and its key (API 1) |
+| W2 Review, label, tag | `comparison-items`, `comparison-item`, `sheet-show`, `sheet-export`, `failure-modes-list`, `tag-set-list`, `label-set-list`, `sheet-import` | ✓ the blind sheet as a `sheet-export` job, read back with `export_job` (API 1) |
 | W3 Production | `capture`, `arm-from-capture`, `label-from-capture`, `label-coverage-show`, `sheet-show`, `pick`, `dataset-extend`, `periods`, `faithfulness` | ✓ (the coverage's rules file must be in the project) |
 | W6 Reference | `reference-list`, `label-set-list`, `reference-promote`, `leaderboard` (`label`), `rescore` | ~ `score-preview` gives no result (API 4) |
 | W7 Judge | `scorer-list`, `scorer-new`, `scorer-set`, `judge-score`, `POST /estimate`, `cost-report` | ✓; validating stays a tool (D6) |
 | W8 Settings | `validate`, `migrate`, `data-migrate`, `data-show`, `data-put`, `dataset-publish` | ~ `validate` is a read of about 27 s (D1); no `config.yaml` (D9) |
 | Held-out test, study | `dataset-split`, `exposure`, `exposure-add`, `sealed-counts`, `dataset-unseal`, `pair-test`, `looks`, `study-*` | ✓ |
-| Jobs | `jobs-list`, `jobs-show`, `jobs-log`, `jobs-file`, `jobs-stop`, `jobs-resume` | ~ progress from four operations; filters (API 5) |
+| Jobs | `jobs-list`, `jobs-show`, `jobs-log`, `jobs-file`, `jobs-stop`, `jobs-resume` | ~ progress from four operations |
 
 ## For every live screen
 
@@ -738,8 +739,8 @@ against the code on 2026-11-17 (`research/internal/WORKBENCH_GAPS_0.8.0.md` has 
 - **Writes.** Every call that is not a GET sends `X-EVH-Data: 1`; an upload is base64 JSON, at most 50 MB a call.
 - **Refusals**, shown where the action was: an edit's problems on their fields (`{error, kind, problems}`); a job
   refused before it exists (`{error}`); a job that failed later (its state, its refusal's kind, its log); 503 with
-  Retry-After while the data is moved or migrated, retried after it. An unhandled server error is always JSON
-  (API 6).
+  Retry-After while the data is moved or migrated, retried after it. An unhandled server error is always a JSON 500
+  (API 6, built).
 - **Who acted.** The name is asked once and kept in the browser; every write sends it (`by`), every decision its
   reason.
 - **Kinds.** A read answers at once; an edit or a quick decision answers with what was saved; work is a job (its

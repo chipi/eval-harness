@@ -27,7 +27,6 @@ NOT_SERVED = {
     "env-check": "the server's own environment",
     "self-test": "checks the installed package",
     "capture-scrub": "runs a program it is given",
-    "sheet-export": "writes a file on the machine: the inspector serves the sheet as a download (/api/sheet?format=csv)",
     "openapi": "the API's own description: GET /api/v1/openapi.json",
     **dict.fromkeys(
         ("jobs-start", "jobs-status", "jobs-logs", "jobs-stop", "jobs-resume"),

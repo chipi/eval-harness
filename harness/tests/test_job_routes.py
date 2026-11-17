@@ -512,6 +512,137 @@ try:
         "POST", "/api/v1/datasets/routes_v1/label-sets/rs2", {"sheet": "filled.csv", "by": "person:ana"}
     )
     check("a sheet named by a path is refused: a file is an upload (400)", st == 400, (st, e))
+    # A blind sheet as a job (owner, 2026-11-17: the Workbench submits a filled sheet): sheet-export writes the sheet and
+    # its key in the job's folder; the sheet is served, the key never is; sheet-import reads the key from that job.
+    other_job = rec["id"]
+    st, rec, done = post(
+        "/datasets/tickets_v1/sheets",
+        {"runs": "tickets_lead1_v1,tickets_lead2_v1", "csv": "pick.csv", "fill": "pick"},
+    )
+    blind_job = rec.get("id", "")
+    stf, blind = call("GET", f"/api/v1/jobs/{blind_job}/files/pick.csv") if st == 202 else (0, b"")
+    stk, ek = call("GET", f"/api/v1/jobs/{blind_job}/files/pick.key.json") if st == 202 else (0, {})
+    check(
+        "POST /datasets/{dataset}/sheets (sheet-export) writes a blind sheet and its key in the job's folder, under the "
+        "dataset's lock; the sheet is served (200), its key is not (403), so a page that fills it stays blind",
+        st == 202
+        and rec["operation"] == "sheet-export"
+        and locks_of(rec) == [("dataset:tickets_v1", True), ("project", False)]
+        and done.get("state") == "succeeded"
+        and (proj / ".build" / "jobs" / blind_job / "pick.key.json").is_file()
+        and stf == 200
+        and isinstance(blind, bytes)
+        and b"pick" in blind
+        and b"tickets_lead1_v1" not in blind
+        and stk == 403
+        and "key" in str(ek.get("error")),
+        (st, rec, done.get("state"), done.get("refusal"), stf, stk, ek, log_tail(rec, done)),
+    )
+    blind_rows = (
+        list(csv.reader(io.StringIO(blind.decode("utf-8-sig")))) if isinstance(blind, bytes) else [[]]
+    )
+    pick_col = blind_rows[0].index("pick") if "pick" in blind_rows[0] else 0
+    for row in blind_rows[1:]:
+        if not row[0].startswith("#"):
+            row[pick_col] = "A"
+    picked = io.StringIO()
+    csv.writer(picked).writerows(blind_rows)
+    up = {"name": "pick.csv", "content_base64": base64.b64encode(picked.getvalue().encode()).decode()}
+    st, rec, done = post(
+        "/datasets/tickets_v1/sheets/import", {"sheet": up, "scorer": "ana_picks", "export_job": blind_job}
+    )
+    judged = [
+        n
+        for r in ("tickets_lead1_v1", "tickets_lead2_v1")
+        for n in _runstore.listdir(proj, "runs")
+        if n.startswith(r + "_") and _runstore.exists(proj, f"runs/{n}/scores/ana_picks@none")
+    ]
+    check(
+        "POST /datasets/{dataset}/sheets/import with export_job: the filled blind sheet is read back through the key the "
+        "sheet-export job kept (the call carries none), as judged scores under each arm's run",
+        st == 202 and done.get("state") == "succeeded" and len(judged) == 2,
+        (st, done.get("state"), done.get("refusal"), judged, log_tail(rec, done)),
+    )
+    st, rec, done = post(
+        "/datasets/tickets_v1/sheets/import", {"sheet": up, "scorer": "ana_picks_2", "export_job": other_job}
+    )
+    st2, rec2, done2 = post(
+        "/datasets/tickets_v1/sheets/import",
+        {"sheet": up, "scorer": "ana_picks_3", "export_job": blind_job, "key": up},
+    )
+    check(
+        "export_job refused when it names a job that is not a sheet-export (mismatch), and with a key given too "
+        "(bad-argument); nothing written",
+        done.get("state") == "failed"
+        and "mismatch" in log_tail(rec, done)
+        and done2.get("state") == "failed"
+        and "bad-argument" in log_tail(rec2, done2)
+        and not any(
+            _runstore.exists(proj, f"runs/{n}/scores/ana_picks_{i}@none")
+            for n in _runstore.listdir(proj, "runs")
+            for i in (2, 3)
+        ),
+        (done.get("state"), log_tail(rec, done), done2.get("state"), log_tail(rec2, done2)),
+    )
+    # The jobs list (API 5, owner 2026-11-17): several states at once, by operation, by goal, a page of it.
+    _st, every = call("GET", "/api/v1/jobs")
+    st_s, ended = call("GET", "/api/v1/jobs?state=failed,cancelled")
+    st_r, rep = call("GET", "/api/v1/jobs?state=failed&state=cancelled")
+    states_all = {j["state"] for j in every["jobs"]}
+    check(
+        "GET /jobs?state=a,b (or state repeated) keeps the jobs in any of those states, the others (succeeded ones "
+        "here) left out, with the total found",
+        st_s == 200
+        and st_r == 200
+        and "succeeded" in states_all
+        and ended["jobs"]
+        and {j["state"] for j in ended["jobs"]} <= {"failed", "cancelled"}
+        and ended["total"] == len(ended["jobs"])
+        and [j["id"] for j in rep["jobs"]] == [j["id"] for j in ended["jobs"]]
+        and len(ended["jobs"]) == sum(j["state"] in ("failed", "cancelled") for j in every["jobs"]),
+        (st_s, st_r, ended.get("total"), sorted(states_all)),
+    )
+    _st, by_op = call("GET", "/api/v1/jobs?operation=sheet-export")
+    _st, by_goal = call("GET", "/api/v1/jobs?goal=tickets_summary")
+    check(
+        "GET /jobs?operation= keeps one operation's jobs, ?goal= the jobs whose inputs name the goal",
+        [j["id"] for j in by_op["jobs"]] == [blind_job]
+        and by_goal["jobs"]
+        and all(j["inputs"].get("goal") == "tickets_summary" for j in by_goal["jobs"])
+        and len(by_goal["jobs"])
+        == sum((j.get("inputs") or {}).get("goal") == "tickets_summary" for j in every["jobs"]),
+        (by_op, [j["operation"] for j in by_goal.get("jobs", [])]),
+    )
+    _st, page = call("GET", "/api/v1/jobs?offset=1&limit=2")
+    st_b, bad = call("GET", "/api/v1/jobs?state=done")
+    st_n, neg = call("GET", "/api/v1/jobs?limit=-1")
+    check(
+        "GET /jobs?offset=&limit= gives a page, the total unchanged; an unknown state or a negative limit is refused (400)",
+        [j["id"] for j in page["jobs"]] == [j["id"] for j in every["jobs"]][1:3]
+        and page["total"] == every["total"]
+        and st_b == 400
+        and "state 'done'" in bad["error"]
+        and st_n == 400,
+        (page.get("total"), st_b, bad, st_n, neg),
+    )
+    r = evh(
+        "jobs-status", "--state", "failed", "--state", "cancelled", "--operation", "sheet-import", "--json"
+    )
+    cli = (
+        json.loads(r.stdout).get("result", {}).get("values", {}).get("jobs", []) if r.returncode == 0 else []
+    )
+    check(
+        "evh jobs-status --state a --state b --operation X: the same filter on the command line, a succeeded sheet-import left out",
+        r.returncode == 0
+        and cli
+        and all(j["operation"] == "sheet-import" and j["state"] in ("failed", "cancelled") for j in cli)
+        and len(cli)
+        == sum(
+            j["operation"] == "sheet-import" and j["state"] in ("failed", "cancelled") for j in every["jobs"]
+        )
+        and any(j["operation"] == "sheet-import" and j["state"] == "succeeded" for j in every["jobs"]),
+        (r.returncode, r.stderr[-300:], r.stdout[:300]),
+    )
     st, rec, done = post(
         "/datasets/routes_v1/references",
         {"labels": "rs1", "tier": "gold", "reason": "the test's labels decide"},

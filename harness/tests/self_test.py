@@ -774,6 +774,10 @@ def test_example_scorer_suites_pass() -> None:
         ("test_catalog.py", "catalog and run inspector"),
         ("test_serve_hooks.py", "catalog-serve --hooks: called, never breaking a request, off by default"),
         (
+            "test_serve_error_json.py",
+            "catalog-serve: an unhandled error answered as a JSON 500 without --hooks too, its traceback on stderr",
+        ),
+        (
             "test_goals.py",
             "goals: config, run, baseline, V14, pages, --arms/--top, the test against the leader",
         ),

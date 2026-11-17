@@ -186,12 +186,14 @@ Each blocks a screen; each is built as an operation, for every surface. The deta
 1. The blind sheet and its key as a job (`sheet-export` as an operation), the key kept on the server for
    `sheet-import`, so the labelling screen can submit "which is better" and tags (W2). Labels need nothing new
    (`label-sheet`, `label-import`). Owner, 2026-11-17: labels, preferences and tags are not saved item by item;
-   the screen submits the filled sheet when the person is done, and the sets stay frozen as today.
+   the screen submits the filled sheet when the person is done, and the sets stay frozen as today. Built
+   2026-11-17: `POST /datasets/{dataset}/sheets`, the key refused by the job's files, `sheet-import`'s `export_job`.
 2. A source's preview: its description and first rows, writing nothing (W4).
 3. A reference from the dataset's own answers (W4: "it came with one").
 4. `score-preview` gives a result (W6).
-5. The jobs list: several states per query, filters by operation and goal, offset and limit (home, jobs).
-6. A JSON answer for every unhandled error (every screen).
+5. The jobs list: several states per query, filters by operation and goal, offset and limit (home, jobs). Built
+   2026-11-17 (`GET /jobs`, `evh jobs-status`).
+6. A JSON answer for every unhandled error (every screen). Built 2026-11-17.
 
 ## Success Criteria
 

@@ -59,6 +59,7 @@ import re
 import sys
 import threading
 import time
+import traceback
 from collections import OrderedDict, defaultdict
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
@@ -970,8 +971,10 @@ class Handler(SimpleHTTPRequestHandler):
         super().send_response(code, message)
 
     def _observed(self, serve) -> None:
-        """Serve the request, then tell the hooks how it went; on an unhandled error answer 500
-        and tell them that too (without hooks the error propagates as before)."""
+        """Serve the request, then tell the hooks how it went; on an unhandled error answer a JSON 500 (`{error}`) when
+        nothing was sent yet, and tell the hooks, or print the traceback on the server's stderr without them: a page
+        always reads an answer (before 0.8.0, without --hooks the error propagated and the browser got a broken
+        response)."""
         t0, self._status = time.monotonic(), 0
         path = urlparse(self.path).path
         try:
@@ -987,14 +990,15 @@ class Handler(SimpleHTTPRequestHandler):
                 return
             _look()
             serve()
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 — the request's last resort: printed or told to the hooks, answered 500
             if HOOKS is None:
-                raise
-            _hook(
-                "error",
-                exc,
-                {"method": self.command, "path": path, "route": _route(path), "status": 500, "ms": 0.0},
-            )
+                traceback.print_exc(file=sys.stderr)
+            else:
+                _hook(
+                    "error",
+                    exc,
+                    {"method": self.command, "path": path, "route": _route(path), "status": 500, "ms": 0.0},
+                )
             if not self._status:
                 try:
                     self._json(500, {"error": "the server failed on this request"})
@@ -1252,8 +1256,18 @@ class Handler(SimpleHTTPRequestHandler):
         try:
             if method == "GET":
                 if not parts:
-                    state = (q.get("state") or [None])[0]
-                    return self._json(200, {"jobs": _jobs.list_jobs(state)}, cache=False)
+                    try:
+                        found = _jobs.list_jobs(
+                            q.get("state"), (q.get("operation") or [None])[0], (q.get("goal") or [None])[0]
+                        )
+                        offset = int((q.get("offset") or ["0"])[0])
+                        limit = int((q.get("limit") or ["0"])[0])
+                        if offset < 0 or limit < 0:
+                            raise ValueError("offset and limit are 0 or more")
+                    except ValueError as exc:
+                        return self._json(400, {"error": f"jobs: {exc}"}, cache=False)
+                    shown = found[offset : offset + limit] if limit else found[offset:]
+                    return self._json(200, {"jobs": shown, "total": len(found)}, cache=False)
                 job_id = parts[0]
                 if len(parts) == 1:
                     return self._json(200, _jobs.read(job_id), cache=False)
@@ -1262,6 +1276,17 @@ class Handler(SimpleHTTPRequestHandler):
                     return self._json(200, {"log": data.decode("utf-8", "replace"), "next": nxt}, cache=False)
                 if len(parts) == 3 and parts[1] == "files":
                     f = _jobs.job_dir(job_id) / _api._safe_name(parts[2])
+                    from evaluation_harness._sheet import KEY_SUFFIX  # noqa: PLC0415
+
+                    if f.name.endswith(KEY_SUFFIX):
+                        return self._json(
+                            403,
+                            {
+                                "error": f"{f.name} is a blind sheet's key: it stays with the job, so the sheet stays "
+                                f"blind; sheet-import reads it there (export_job: {job_id})"
+                            },
+                            cache=False,
+                        )
                     if parts[2] in (
                         "job.json",
                         "state.json",

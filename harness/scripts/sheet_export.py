@@ -1,6 +1,7 @@
-#!/usr/bin/env python3
 """A dataset's sheet written as a CSV to fill in (RFC-023): what each run wrote and scored beside every item, with the columns
-to fill when --fill says so; read back by `evh sheet-import`.
+to fill when --fill says so; read back by `evh sheet-import`. An operation (`POST /datasets/{dataset}/sheets`): as a job,
+the sheet and its key are written in the job's folder; the sheet is served as the job's file, the key never is, and
+`sheet-import --export-job` reads it there (owner, 2026-11-17: the Workbench submits a filled sheet).
 
     evh sheet-export --dataset-id D --runs A,B --csv sheet.csv [--fill label|pick|scores|tags]
 
@@ -11,23 +12,17 @@ the sheet (sheet.key.json): keep it there, not with the sheet.
 
 from __future__ import annotations
 
-import sys as _sys
-from pathlib import Path as _Path
-
-if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
-    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
-
-import argparse
 import re
-from pathlib import Path
+from typing import Any
 
 from evaluation_harness import _sheet, _store
 from evaluation_harness import catalog_serve as cs
-from evaluation_harness._common import die, evh_prog
+from evaluation_harness._common import die
 from evaluation_harness.catalog_adapter import load_catalog_adapter
+from evaluation_harness.ops import legacy
 
 
-def _sheet_csv(args, model: dict, shown: list) -> int:
+def _sheet_csv(args: Any, model: dict, shown: list) -> int:
     """--csv FILE: the sheet written as CSV for a spreadsheet (UTF-8 with the mark Excel needs), with the columns to
     fill when --fill says so; for a blind fill the key beside it (sheet.key.json). Never over a file that exists."""
 
@@ -102,76 +97,9 @@ def _sheet_csv(args, model: dict, shown: list) -> int:
     return 0
 
 
-def main() -> int:
-    """Write the sheet as a CSV."""
-    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.split("\n\n")[0])
-    ap.add_argument("--dataset-id", required=True, help="the dataset whose items are the rows")
-    ap.add_argument(
-        "--runs",
-        required=True,
-        help="runs: run ids or system ids (their latest run on the dataset), comma-separated; the first is production's",
-    )
-    ap.add_argument(
-        "--csv",
-        type=Path,
-        required=True,
-        metavar="FILE",
-        help="the CSV to write (UTF-8 with the mark Excel needs)",
-    )
-    ap.add_argument("--metric", help="default: the arms' primary metric")
-    ap.add_argument(
-        "--label", default="", help="the label system ids are looked up under (default: the plain arm)"
-    )
-    ap.add_argument(
-        "--where",
-        action="append",
-        default=[],
-        help="FIELD:VALUE or FIELD:LO..HI, keep only matching items (repeatable)",
-    )
-    ap.add_argument(
-        "--disagree",
-        action="store_true",
-        help="only the items where a run decided differently from the first",
-    )
-    ap.add_argument(
-        "--split",
-        action="store_true",
-        help="only the items the candidates (the runs after the first) decided differently among themselves",
-    )
-    ap.add_argument(
-        "--wrong-against",
-        metavar="SET",
-        help="only the items where the first run's decision is not this label set's (SET or DATASET/SET)",
-    )
-    ap.add_argument(
-        "--new-vs", metavar="DATASET", help="only the items with a field value this dataset has never had"
-    )
-    ap.add_argument("--unlabelled", action="store_true", help="only the items no label set labels yet")
-    ap.add_argument(
-        "--scores-only", action="store_true", help="leave the runs' outputs out, keep their scores"
-    )
-    ap.add_argument(
-        "--fill",
-        choices=_sheet.FILLS,
-        help="add the columns to fill. label: label, also right, note. pick, scores: the outputs as blind columns A, B, C... shuffled per row, a key beside the sheet (sheet.key.json), the rubric as its first row; tags: a failure_modes column beside each arm's output (with --modes), a key beside the sheet; evh sheet-import --sheet reads it back",
-    )
-    ap.add_argument(
-        "--modes", help="with --fill tags: the failure-mode list the tags name (data/failure-modes/<id>.yaml)"
-    )
-    ap.add_argument(
-        "--choices",
-        help="with --fill label: the allowed answers, comma-separated (e.g. file,dismiss,escalate), written into the label column's header",
-    )
-    ap.add_argument(
-        "--seed", type=int, default=None, help="with --fill pick or scores: the shuffle's seed (default 0)"
-    )
-    ap.add_argument(
-        "--rubric",
-        type=Path,
-        help="with --fill pick or scores: a file saying what to judge (default: a plain one)",
-    )
-    ap.add_argument("--scale", help="with --fill scores: the scores' range, LO..HI (default 1..5)")
-    args = ap.parse_args()
+def body(**inputs: Any) -> int:
+    """Write the sheet as a CSV (and a blind fill's key beside it)."""
+    args = legacy.namespace(inputs, "sheet-export")
     A = load_catalog_adapter(None)
     cs.set_adapter(A)
     runs = [t.strip() for t in args.runs.split(",") if t.strip()]
@@ -216,7 +144,3 @@ def main() -> int:
 
     _exposure.read_by_harness(args.dataset_id, [r["item"] for r in shown], "sheet-export")
     return _sheet_csv(args, model, shown)
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())

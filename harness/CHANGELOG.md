@@ -13,6 +13,17 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Added
 
+- **The jobs list filtered** (the Workbench's home and jobs pages): `GET /api/v1/jobs` takes several states at once
+  (`state=queued,running` or `state` repeated; 400 for a state a job is never in), `operation`, `goal` (the jobs whose
+  inputs name it), `offset` and `limit`, and answers the `total` found; `evh jobs-status` takes `--state` (repeatable
+  or comma-separated), `--operation` and `--goal`. The Workbench's "running now" asked for `running` alone and missed
+  queued jobs and those whose supervisor had gone; it asks for all three.
+- **A sheet to fill as a job** (owner, 2026-11-17: the Workbench submits a filled sheet, never item by item):
+  `sheet-export` is an operation, `POST /api/v1/datasets/{dataset}/sheets`, run as a job under the dataset's lock.
+  The job writes the sheet and, for a blind fill, its key in its own folder; `GET /api/v1/jobs/{id}/files/<sheet>`
+  serves the sheet and answers 403 for the key, so a page that fills a blind sheet never holds which arm is which.
+  `sheet-import --export-job JOB` (`export_job`) reads the key where that job kept it; it is refused for a job that is
+  not a succeeded sheet-export of the same dataset, and with `--key`.
 - **The goal through the model** (RFC-032 step 1): `evh goal-list`, `goal-show`, `goal-status` (where a goal stands and
   its next step), `goal-history`, `goal-new` and `goal-set`, and the same operations as the API's resources
   (`/api/v1/goals`, `PATCH /api/v1/goals/{goal}`, …), giving the same JSON. A save is checked against the schema and the
@@ -753,6 +764,10 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Fixed
 
+- **An unhandled error in `evh catalog-serve` is answered as JSON** without `--hooks` too (API 6 of the Workbench's
+  list): a route that raised closed the connection with no answer, so a Workbench page read a broken response, not
+  `{error}`. It is now a 500 with `{"error": …}` either way; without hooks the traceback is printed on the server's
+  stderr, with them the hooks are told as before.
 - **A run's output, an exposure, a pick or a record's history holding U+2028, U+2029 or U+0085 is read whole**
   (RFC-033; unreleased 0.8 code, an independent review): JSON-lines files keep those characters raw, and their readers
   split lines with `str.splitlines`, which splits there too. `evh data-migrate --to sqlite` dropped such an output

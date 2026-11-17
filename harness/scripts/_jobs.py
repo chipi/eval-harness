@@ -321,15 +321,40 @@ def read(job_id: str) -> dict[str, Any]:
     return {**job, **st, "progress": progress, "spent_usd": spent(job_id), "result": res}
 
 
-def list_jobs(state: str | None = None) -> list[dict[str, Any]]:
-    """Every job, newest first; `state` keeps one state."""
+#: The states a job is read in: its stored ones, and the two `read` works out (a supervisor gone).
+SHOWN_STATES = ("queued", "running", "running (unsupervised)", "lost", "succeeded", "failed", "cancelled")
+
+
+def states_of(values: list[str] | str | None) -> list[str]:
+    """The states a query asks for: each value, or several separated by commas (`queued,running`); refused (ValueError)
+    for one a job is never in."""
+    given = [values] if isinstance(values, str) else list(values or [])
+    wanted = [s.strip() for v in given for s in str(v).split(",") if s.strip()]
+    unknown = [s for s in wanted if s not in SHOWN_STATES]
+    if unknown:
+        raise ValueError(f"state {', '.join(map(repr, unknown))}: one of {', '.join(SHOWN_STATES)}")
+    return wanted
+
+
+def list_jobs(
+    state: list[str] | str | None = None, operation: str | None = None, goal: str | None = None
+) -> list[dict[str, Any]]:
+    """Every job, newest first; `state` keeps those in any of these states (one, a list, or comma-separated: the home
+    page's "running now" is queued, running and running (unsupervised)), `operation` those of one operation, `goal`
+    those whose inputs name the goal."""
+    wanted = set(states_of(state))
     root = jobs_dir()
     out = []
     for d in sorted(root.iterdir(), reverse=True) if root.is_dir() else []:
         with contextlib.suppress(FileNotFoundError, ValueError):
             j = read(d.name)
-            if state is None or j["state"] == state:
-                out.append({k: v for k, v in j.items() if k not in ("env", "result")})
+            if wanted and j["state"] not in wanted:
+                continue
+            if operation and j.get("operation") != operation:
+                continue
+            if goal and (j.get("inputs") or {}).get("goal") != goal:
+                continue
+            out.append({k: v for k, v in j.items() if k not in ("env", "result")})
     return out
 
 
