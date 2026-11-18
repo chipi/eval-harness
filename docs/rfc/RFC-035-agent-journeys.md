@@ -144,7 +144,10 @@ the outcome production recorded. A production failure becomes a journey that mus
 
 1. Which runner first: **cli** (Claude Code first, as the agent we use), **http**, or **python**?
 2. Is there a first real journey set to prove it on (the triage fleet's agents, the podcast product's MCP server)?
-3. The simulated user's default model, and whether a journey set may pin its own.
+3. ~~The simulated user's default model~~ Decided (owner, 2026-11-18): any model, local or online, named the way a
+   judge's is (a model record or a system, its provider, its settings), and part of the run's fingerprint.
+4. Before 1 and 2 (owner, 2026-11-18): what this is in the harness's model, what it is called, how small it can stay,
+   and whether scripted and person-driven flows are the same thing with another driver.
 
 ## Not in this RFC
 
