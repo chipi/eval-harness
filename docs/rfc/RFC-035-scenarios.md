@@ -194,7 +194,7 @@ One shape, not a mapping, in two layers with one owner each:
 
 Arguments and results are kept whole only after Flotilla's redaction (credentials masked), and above a size cap (set in
 the schema) as a hash and a length, so a record cannot balloon or carry raw source text. The schema comes with v2's
-build step 4 (the harness layer in `runtime/`), validated against every adapter in the same commit.
+build step 3 (with the offline entry point that writes episodes), validated against every adapter in the same commit.
 
 A transcript is a new kind of output beside the ones the views already draw (`text`, `insights`, `nodes`, `entities`):
 the inspector, the sheet and the Workbench gain one renderer, turn by turn, two side by side.
@@ -344,12 +344,12 @@ steps are v2's):
 
 | piece | v2 step | what it is |
 | --- | --- | --- |
-| episode schema | 4 | `runtime/episode.schema.json`, every adapter validated against it |
-| offline entry point | 3, its test in 5 | a tested contract (`flotillad -run-offline`, flags settled at build): a version folder, models, an input envelope, a fresh state folder, an output folder; the version's own `run:` in the worker image, read-only; episodes, the calls file and decision records in the output folder; the e2e asserts nothing outside it changed. The harness's runner starts it; Flotilla provides and tests it |
-| frozen input | 2 | `runtime/input.schema.json`: the handed input, the ledger mark, the case keys, the commit, the routine and version. A captured input exports as the envelope, the ledger slice as of the mark, and a state snapshot together, so a scenario sees what the live run saw |
-| acceptance | 1 | promote gains evidence: an eval-harness run id and its verdict line beside the pairs and the replay gates; a routine declares `acceptance: [pairs, replay, scenario_eval]` and promote refuses without it unless the operator gives a reason. Flotilla stores the verdict; it does not judge the eval |
+| episode schema | 3 | `runtime/episode.schema.json`, versioned, in the same step as the offline entry point that writes episodes; every adapter validated against it. An episode carries the raw stream's path, never the stream |
+| offline entry point | 3, its test in 5 | a tested, sealed contract (`flotillad -run-offline`, flags settled at build): the version's own `run:` in the routine's shadow worker image, a fresh HOME, the read-only environment (never the caller's), its own models config (an eval spends on its own key), the run's API an in-process stand-in that turns every write into a decision record and accepts no live flotillad address or token; outputs to a folder the caller names, outside the state and the fleets tree. Stations on adopted harnesses get the input's commit in a fixture workspace, with no network but the gateway. The harness's runner starts it; Flotilla provides and tests it, on authored fixtures only |
+| frozen input | 2 | `runtime/input.schema.json`: the handed input, the ledger mark, the case keys, the commit, the routine and version; live-only fields optional, so dataset-built inputs validate. It may carry **recorded tool results**, matched by station, tool name and normalised arguments (never by order), so `k` runs of a live model replay; a call with no recording fails the run and is never sent live (RFC-0002 §8 model replay). A captured input exports with the ledger slice as of the mark and a state snapshot |
+| acceptance | 1 | `acceptance:` in routine.yaml lists the required kinds (`pairs`, `replay`, `scenario_eval`; `[pairs]` when absent). Promote records the bar in force and the evidence (an eval-harness run id and its verdict line) and refuses evidence that is missing or FAILED unless the operator gives a reason. Flotilla reads the verdict; it never computes it |
 
-A captured live input carries production data: making it a scenario is a copy and a scrub, and it lands in the
+Design final at flotilla 9b58673 (`docs/wip/v2-design.md` §6, both reviewers' go). A captured live input carries production data, written outside any repository until scrubbed: making it a scenario is a copy and a scrub, and it lands in the
 installation's private data (fleet-eval-data), never a public repository.
 
 **Where scenarios sit in Flotilla's acceptance** (the installation's bars, flotilla-fleets
