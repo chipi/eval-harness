@@ -1,6 +1,6 @@
 # RFC-034: Charts that show the evidence, and judges that say why
 
-- **Status**: Accepted (0.8.0), building. Owner, 2026-11-18, after comparing the harness with EvalBench (Google
+- **Status**: Accepted and built (0.8.0); where the build differs, [As built](#as-built-080) says so. Owner, 2026-11-18, after comparing the harness with EvalBench (Google
   Cloud, shown at AGNTCon + MCPCon North America 2026): "do 1 and 2 now for 0.8", then "did we look enough into how
   much more we can visualize?", choosing every chart in §2.
 - **Authors**: Marko Dragoljevic
@@ -130,7 +130,7 @@ is on (as it hashes a declared `mode`), so a set made before keeps its id.
 
 **Where the reason is read.**
 
-- The command line: `evh judge-verdicts --scorer S [--item I] [--arm A]` lists verdicts with their reasons (the
+- The command line: `evh judge-verdicts S [--item I] [--arm A]` lists verdicts with their reasons (the
   scores per dimension, the reason, the judge, the pass).
 - The Workbench's judge screen: each judged item shows its verdicts and their reasons.
 - The catalog's item page (the local inspector, not the public catalog, which shows no item text): the verdicts of
@@ -170,3 +170,28 @@ pass.
   dependency, and the command line would have none. One Python drawing, served everywhere, is kept.
 - **Quadrant names without significance.** What EvalBench's slide shows; it would call a lucky estimate a "free
   win". §3 keeps the names for what the tests support.
+
+## As built (0.8.0)
+
+- **Reasons**: no migration. A scorer without `explain` gives no reasons, so the committed scorers keep their judging
+  sets' ids and their messages byte for byte; `scorer-new` (and the Workbench's form, a box ticked by default) write
+  `explain: true`, and the tutorial's fake judge explains. The judging set hashes `explain` only when it is on, as it
+  hashes a declared `mode`; the judge's fingerprint is unchanged. The SummEval validation adapter asks for the reason in
+  the words the package uses (a test holds them equal), so a judge with reasons can be validated. The dry run's
+  estimate is 20 output tokens per graded output and 40 for a pick or a pair, not measured. `judge-score` names
+  `evh judge-verdicts` at its end instead of a list in the summary.
+- **Intervals**: the interval drawn is the paired test's 95% interval before Holm's correction (`stats.cluster_ci`),
+  the verdict after it; the caption says an interval clear of zero can still be not separated. The inspector's
+  "Difference from the baseline" draws each arm's interval under its mean (it was in the table, not the chart); the
+  goal page draws the same as a forest (`catalog_charts.forest`). `forest.js` (a project's baseline pages) is unchanged.
+- **Latency**: drawn as the existing strip with p50 and p95 marked (`catalog_charts.strip(marks=)`), at the evidence
+  charts' width; the inspector's "Spread per run" marks them for a latency measure.
+- **Agreement**: a dataset's label sets as heat maps above the confusion tables the dataset page already folded; a pair
+  with a free-text set has no matrix and is counted, not drawn. Judge against people is the validation the judge screen
+  shows; the chart draws the judge's own controls (reordered, re-asked, length, each other).
+- **The Workbench** already drew one chart, each arm's mean against its cost on the eval screen; `gain-cost` replaced it.
+  A read answered after its screen was left no longer redraws the screen opened since (a slow chart redrew Settings
+  under a person's typing).
+- **Not built**: rank stability is not on the catalog's pages (it reads the project's runs, not a deployment's copy, and
+  costs seconds per dataset), only in the Workbench's dataset screen and `evh chart`; production's label agreement over
+  time is not drawn (the trend draws a code record's faithfulness per deployed period).

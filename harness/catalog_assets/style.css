@@ -130,6 +130,11 @@ figure { margin: 0; }
 .chart { background: var(--surface); border: 1px solid var(--hair); border-radius: 14px; padding: 22px 22px 14px; }
 .chart svg { width: 100%; height: auto; display: block; overflow: visible; }
 .chart svg text { font-family: var(--mono); fill: var(--ink-2); }
+/* The evidence charts (RFC-034, catalog_charts.NARROW wide): sideways on a phone, at least 520px, never shrunk below
+   reading size. */
+.chart.evidence svg.wide { min-width: 520px; }
+.chart.evidence svg text { font-size: 12.5px; }
+.chart.evidence figcaption { margin-top: 8px; }
 .chart svg .t-muted { fill: var(--muted); }
 .chart svg .t-ink { fill: var(--ink); paint-order: stroke; stroke: var(--surface); stroke-width: 4px; stroke-linejoin: round; }
 .chart svg .t-head { font-family: var(--display); font-weight: 700; fill: var(--ink); letter-spacing: -0.01em; }

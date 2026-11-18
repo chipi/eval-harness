@@ -228,6 +228,15 @@ try:
         (made.stderr[-300:], quiet.stderr[-300:], rec, rq),
     )
 
+    vd = evh("validate")
+    lines = [ln.strip() for ln in vd.stdout.splitlines()]
+    check(
+        "validate's V1 (schemas) and V12 (verdicts) pass with the reasons stored: the verdicts' why and the judging "
+        "set's explain fit their schemas",
+        any(ln.startswith("ok   V1 schemas") for ln in lines)
+        and any(ln.startswith("ok   V12 ") for ln in lines),
+        [ln for ln in lines if ln.startswith(("FAIL V1 ", "FAIL V12"))][:5],
+    )
     local, public = item_view(False), item_view(True)
     lv = local.get("verdicts") or []
     check(

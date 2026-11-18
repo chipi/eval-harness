@@ -450,6 +450,24 @@ try:
         and "named" in view.stdout,
         (view.stdout[-600:], summary_),
     )
+    trend = evh("chart", "trend", "--model", "toy_filing", "--json")
+    tr_rows: list = (
+        (json.loads(trend.stdout.splitlines()[-1]).get("result") or {}).get("rows") or []
+        if trend.returncode == 0
+        else []
+    )
+    check(
+        "the code record's faithfulness over time (evh chart trend, RFC-034): a row per deployed period, its share agreed "
+        "the record's agreed over items, drawn",
+        trend.returncode == 0
+        and len(tr_rows) == len(summary_)
+        and all(
+            r["share"] == (f["agreed"] / f["items"] if f.get("items") else None)
+            for r, f in zip(tr_rows, summary_, strict=True)
+        )
+        and "<polyline" in json.loads(trend.stdout.splitlines()[-1])["result"]["svg"],
+        (trend.stderr[-300:], tr_rows),
+    )
 
     v_ok = evh("validate")
     ex = "faithfulness/toy_filing/2.exceptions.jsonl"

@@ -117,6 +117,67 @@ def body(
     )
 
 
+def measure(
+    dataset: str, metric: str | None = None, match: str | None = None, draws: int = 400, seed: int = 20260926
+) -> dict:
+    """The table `rank-stability` prints, as values (charts.rank_stability draws it): per half size, the halves'
+    mean and 5th-percentile rho, the share of decided draws naming the same winner, the median rank move, the arms
+    tied first and the undecided draws. Refused (Problem) with fewer than 3 arms; `rows` is empty with too few items."""
+    from evaluation_harness.model.entity import Problem  # noqa: PLC0415
+
+    metric = metric or default_metric(dataset, match)
+    M = load(dataset, metric, match)
+    if direction(runs_on(dataset, match=match), metric, False, False):
+        M = {a: {i: -v for i, v in s.items()} for a, s in M.items()}
+    arms = sorted(M)
+    if len(arms) < 3:
+        raise Problem(
+            f"{len(arms)} arm(s) with per-item '{metric}' on {dataset}: need at least 3 to rank", "not-enough"
+        )
+    items = sorted(set.intersection(*(set(M[a]) for a in arms)))
+    full = ranks_on(M, arms, items)
+    rng = random.Random(seed)
+    rows = []
+    for n in SIZES:
+        if 2 * n > len(items):
+            continue
+        rhos, same, moves, ties, undecided = [], 0, [], [], 0
+        for _ in range(draws):
+            pick = rng.sample(items, 2 * n)
+            A, B = pick[:n], pick[n:]
+            ra, rb = ranks_on(M, arms, A), ranks_on(M, arms, B)
+            r = spearman([ra[a] for a in arms], [rb[a] for a in arms])
+            if r == r:
+                rhos.append(r)
+            wa = [a for a in arms if ra[a] == min(ra.values())]
+            wb = [a for a in arms if rb[a] == min(rb.values())]
+            if len(wa) == 1 and len(wb) == 1:
+                same += 1 if wa[0] == wb[0] else 0
+            else:
+                undecided += 1
+            moves.append(statistics.median(abs(ra[a] - full[a]) for a in arms))
+            ties.append(tied_at_top(M, arms, A))
+        rhos.sort()
+        decided = draws - undecided
+        rows.append({
+            "n_per_half": n,
+            "rho_mean": statistics.fmean(rhos) if rhos else None,
+            "rho_5th_pct": rhos[int(0.05 * len(rhos))] if rhos else None,
+            "p_same_winner": (same / decided) if decided else None,
+            "median_rank_move": statistics.fmean(moves),
+            "arms_tied_first": statistics.fmean(ties),
+            "undecided_draws": undecided,
+        })  # fmt: skip
+    return {
+        "dataset": dataset,
+        "metric": metric,
+        "arms": len(arms),
+        "items": len(items),
+        "draws": draws,
+        "rows": rows,
+    }
+
+
 def _run(args: argparse.Namespace) -> int:
     # Two runs sharing a system_id are averaged together below without
     # saying so. See _runs.warn_on_ambiguous_runs.

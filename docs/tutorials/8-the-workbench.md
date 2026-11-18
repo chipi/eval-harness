@@ -60,6 +60,13 @@ every change and every job (`person:<name>`).
 The models (bring one in, add where it runs, run its probes, accept a flag with why), the **Jobs**, the **Prompts** and
 the **Settings** are on the home page's bar.
 
+The evidence is drawn where it is read (RFC-034), each chart with its numbers folded under it and the `evh chart`
+command that answers the same: on **The eval**, the round's arms against where it started, the difference in quality
+against the difference in cost, a quadrant named only for a difference the tests support, then every arm against the
+leader with its interval, where they differ item by item and their latency; on a **study**, its trials and the best so
+far; on **A judge**, what each judge said and why, the lowest scores first, and its judges' controls; on the **goal**,
+its baseline over time; on **Prepare it**, how many items the order needs and whether the label sets agree.
+
 ## 3. What it keeps for you
 
 - **Nothing you type is lost and nothing is half-sent.** A form you changed is marked "not saved yet", its button says

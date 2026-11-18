@@ -1,0 +1,391 @@
+#!/usr/bin/env python3
+"""The evidence charts (RFC-034), every kind end to end: $0, offline, on the store EVAL_STORE names (files by default).
+
+    python tests/test_charts.py
+
+A project with 24 validation items, three echo arms, a round, a grid study, two categorical label sets, two baseline
+versions and a judge pass on fake judges: each chart kind's numbers (`rows`), its drawing (well formed, no script) and
+its refusals; the quadrant named only for a significant difference; a lower-is-better measure turned so right is
+better; the API's answer the command line's; the drawing written to a file; the catalog's goal, study and dataset
+pages carrying them.
+"""
+
+from __future__ import annotations
+
+import json
+import os
+import shutil
+import socket
+import subprocess
+import sys
+import tempfile
+import time
+import urllib.error
+import urllib.request
+import xml.etree.ElementTree as ET
+from pathlib import Path
+
+HARNESS = Path(__file__).resolve().parents[1]
+HERE = HARNESS / "scripts"
+KIT = HARNESS / "tutorial"
+sys.path.insert(0, str(HARNESS))
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runstore  # noqa: E402
+import yaml  # noqa: E402
+from evaluation_harness import _format  # noqa: E402
+from evaluation_harness._check import check, summary  # noqa: E402
+
+proj = Path(tempfile.mkdtemp(prefix="evh-charts-"))
+env = dict(os.environ, EVH_ACTOR="person:test", EVAL_HOME=str(proj), EVAL_BUILD_REF="test-charts")
+for k in ("EVAL_DATA_DIR", "EVAL_GOALS_DIR", "EVAL_MAX_COST_USD"):
+    env.pop(k, None)
+os.environ.setdefault("EVAL_STORE", "files")
+env["EVAL_STORE"] = os.environ["EVAL_STORE"]
+WORDS = [
+    "login",
+    "invoice",
+    "export",
+    "api",
+    "delete",
+    "mobile",
+    "refund",
+    "billing",
+    "search",
+    "upload",
+    "report",
+    "password",
+]
+QUADRANTS = ("better and cheaper", "better, costs more", "worse and cheaper", "worse, costs more")
+
+
+def evh(*args: str) -> subprocess.CompletedProcess:
+    return subprocess.run(
+        [sys.executable, str(HERE / "cli.py"), *args], cwd=proj, env=env, capture_output=True, text=True,
+        stdin=subprocess.DEVNULL, timeout=900,
+    )  # fmt: skip
+
+
+def result(r: subprocess.CompletedProcess) -> dict:
+    try:
+        return json.loads(r.stdout.splitlines()[-1]).get("result") or {}
+    except (IndexError, ValueError):
+        return {}
+
+
+def chart(*args: str) -> dict:
+    r = evh("chart", *args, "--json")
+    return result(r) or {"error": (r.stderr or r.stdout)[-300:], "rows": []}
+
+
+def well_formed(svg: str) -> bool:
+    """Every drawing parses as XML (inside one root), and carries no script or javascript: link."""
+    try:
+        ET.fromstring(f"<root>{svg}</root>")  # noqa: S314  # nosec B314 - the drawings this test made
+    except ET.ParseError:
+        return False
+    return "<script" not in svg.lower() and "javascript:" not in svg.lower()
+
+
+def run_of(system: str) -> str:
+    rows = (
+        result(evh("runs-list", "--json")).get("values", {}).get("runs")
+        or result(evh("runs-list", "--json")).get("runs")
+        or []
+    )
+    return next((r["run_id"] for r in rows if r.get("system_id") == system), "")
+
+
+try:
+    for side, rng in (("val", range(24)), ("test", range(24, 36))):
+        src, gold = proj / f"src_{side}", proj / f"gold_{side}"
+        src.mkdir(parents=True)
+        gold.mkdir()
+        for i in rng:
+            s = [
+                f"Ticket{i} " + " ".join(WORDS[(i + j * 3 + w) % len(WORDS)] for w in range(5)) + "."
+                for j in range(4)
+            ]
+            (src / f"t{i:02d}.txt").write_text(" ".join(s) + "\n")
+            (gold / f"t{i:02d}.txt").write_text(" ".join(s[:2]) + "\n")
+    ids = [f"t{i:02d}" for i in range(24)]
+    (proj / "cat_a.csv").write_text(
+        "item_id,label\n" + "".join(f"{x},{'a' if k % 3 else 'b'}\n" for k, x in enumerate(ids))
+    )
+    (proj / "cat_b.csv").write_text(
+        "item_id,label\n" + "".join(f"{x},{'a' if k % 4 else 'b'}\n" for k, x in enumerate(ids))
+    )
+    (proj / "data" / "systems").mkdir(parents=True)
+    _runstore.write_text(proj, _format.NAME, f"format: {_format.FORMAT}\n")
+    r: subprocess.CompletedProcess = subprocess.CompletedProcess([], 0)
+    for ds, side in (("tk_val", "val"), ("tk_test", "test")):
+        for argv in (
+            ("dataset-create", "--dataset-id", ds, "--source-dir", f"src_{side}"),
+            ("dataset-materialize", "--dataset-id", ds),
+            ("label-import", "--sheet", f"gold_{side}", "--dataset-id", ds, "--set", "g", "--by", "t"),
+            ("reference-promote", "--dataset-id", ds, "--labels", "g", "--tier", "gold", "--reason", "the first two sentences", "--by", "t"),
+        ):  # fmt: skip
+            r = r if r.returncode else evh(*argv)
+    for name in ("cat_a", "cat_b"):
+        r = (
+            r
+            if r.returncode
+            else evh(
+                "label-import", "--sheet", f"{name}.csv", "--dataset-id", "tk_val", "--set", name, "--by", "t"
+            )
+        )
+    _runstore.write_text(
+        proj, "goals/g.yaml",
+        "goal_id: g\ntitle: t\nstatement: s\ndecision: d\n"
+        "success_criteria: {primary: {measure: overlap_f1, direction: higher}}\n"
+        "datasets:\n  - {dataset_id: tk_val, role: validation}\n  - {dataset_id: tk_test, role: test}\n",
+    )  # fmt: skip
+    _runstore.write_text(
+        proj, "goals/short.yaml",
+        "goal_id: short\ntitle: short\nstatement: s\ndecision: d\n"
+        "success_criteria: {primary: {measure: output_words, direction: lower}}\n"
+        "datasets:\n  - {dataset_id: tk_val, role: validation}\n",
+    )  # fmt: skip
+    # s1b_v1 writes what s1_v1 writes: in the round it is not separated from the baseline, so it must stay unnamed.
+    for name, n in (("s1_v1", 1), ("s2_v1", 2), ("s3_v1", 3), ("s1b_v1", 1)):
+        _runstore.write_text(
+            proj, f"systems/{name}.yaml", f"system_id: {name}\nparams:\n  provider: echo\n  sentences: {n}\n"
+        )
+        r = r if r.returncode else evh("run", "--system", name, "--dataset", "tk_val", "--goal", "g")
+    r = (
+        r
+        if r.returncode
+        else evh(
+            "run-promote",
+            "--run",
+            run_of("s1_v1"),
+            "--goal",
+            "g",
+            "--reason",
+            "the first arm, to start the line",
+        )
+    )
+    r = (
+        r
+        if r.returncode
+        else evh(
+            "run-promote",
+            "--run",
+            run_of("s2_v1"),
+            "--goal",
+            "g",
+            "--reason",
+            "two sentences cover more of the gold",
+        )
+    )
+    r = r if r.returncode else evh("round-open", "--goal", "g", "--dataset", "tk_val", "--keep", "s1_v1,s2_v1,s3_v1,s1b_v1",
+                                   "--baseline", "s1_v1", "--hypothesis", "longer summaries cover more")  # fmt: skip
+    spec = proj / "grid.yaml"
+    spec.write_text("dataset: tk_val\nbaseline: {system: s1_v1}\nmeasure: overlap_f1\nsampler: grid\n"
+                    "accept: {point: {min_gain: 0}}\nstop: {trials: 3}\n"
+                    "space:\n  groups:\n    - {name: length, reason: how much to keep, params: {sentences: [2, 4]}}\n")  # fmt: skip
+    st = r if r.returncode else evh("study-run", "--study", "g/s1", "--spec", str(spec))
+    (proj / "tutorial").mkdir(exist_ok=True)
+    shutil.copy2(KIT / "judge_prompt.txt", proj / "tutorial" / "judge_prompt.txt")
+    sc = yaml.safe_load((KIT / "scorers" / "tickets-judge-v1.yaml").read_text()) | {"dataset_id": "tk_val"}
+    _runstore.write_text(
+        proj, "scorers/judge-v1.yaml", yaml.safe_dump(sc | {"scorer_id": "judge-v1"}, sort_keys=False)
+    )
+    jd = evh("judge-score", "--dataset-id", "tk_val", "--scorer", "judge-v1", "--unvalidated")
+    check(
+        "setup: 24 items, four arms, two baseline versions, a round, a grid study, two label sets, a judge pass",
+        r.returncode == 0 and st.returncode == 0 and jd.returncode == 0,
+        ((r.stdout + r.stderr)[-300:], (st.stdout + st.stderr)[-300:], (jd.stdout + jd.stderr)[-300:]),
+    )
+
+    # ── each kind ────────────────────────────────────────────────────────────
+    got = {
+        "intervals": chart("intervals", "--goal", "g", "--dataset", "tk_val"),
+        "gain-cost round": chart("gain-cost", "--goal", "g", "--round", "r1"),
+        "gain-cost study": chart("gain-cost", "--goal", "g", "--study", "s1"),
+        "study-progress": chart("study-progress", "--goal", "g", "--study", "s1"),
+        "rank-stability": chart("rank-stability", "--dataset", "tk_val"),
+        "latency": chart("latency", "--goal", "g"),
+        "agreement dataset": chart("agreement", "--dataset", "tk_val"),
+        "agreement scorer": chart("agreement", "--scorer", "judge-v1"),
+        "items": chart("items", "--goal", "g"),
+        "trend": chart("trend", "--goal", "g"),
+    }
+    check(
+        "every kind answers its rows, its columns, a title and a caption, and a drawing that is well formed",
+        all(c.get("rows") and c.get("columns") and c.get("title") and c.get("caption") and well_formed(c.get("svg", "")) for c in got.values()),
+        {k: c.get("error") or (len(c.get("rows") or []), well_formed(c.get("svg", ""))) for k, c in got.items()},
+    )  # fmt: skip
+
+    iv = got["intervals"]["rows"]
+    lead = [x for x in iv if x["verdict"] == "the leader"]
+    check(
+        "intervals: the leader at 0, every other arm's difference inside its interval, the verdict in words",
+        len(lead) == 1 and lead[0]["difference"] == 0
+        and all(x["low"] <= x["difference"] <= x["high"] for x in iv if x["low"] is not None)
+        and all(x["verdict"].split(",")[0] in ("better", "worse", "not separated", "identical", "the leader") for x in iv),
+        iv,
+    )  # fmt: skip
+    short = chart("intervals", "--goal", "short")["rows"]
+    check(
+        "a lower-is-better measure is turned so right is better: the shortest arm leads, every other arm is to its left",
+        any(x["verdict"] == "the leader" and x["arm"].startswith("s1_v1") for x in short)
+        and all(x["difference"] <= 0 for x in short),
+        short,
+    )
+
+    def claim_ok(x: dict) -> bool:
+        significant = x["verdict"] in ("better", "worse")
+        return (x["claim"] in QUADRANTS) == significant and (
+            significant or x["claim"] in ("not separated", "no gain shown, costs more")
+        )
+
+    gr = got["gain-cost round"] or {"rows": []}
+    check(
+        "gain-cost on a round: each arm against the run it started from, named by its quadrant only when significant",
+        gr.get("baseline", "").startswith("s1_v1") and {x["arm"].split(" ")[0] for x in gr["rows"]} == {"s1b_v1", "s2_v1", "s3_v1"}
+        and all(claim_ok(x) for x in gr["rows"])
+        and any(x["claim"] == "not separated" for x in gr["rows"]) and any(x["claim"] in QUADRANTS for x in gr["rows"]),
+        gr["rows"],
+    )  # fmt: skip
+    shown = result(evh("study-show", "g", "s1", "--json"))
+    outs = {f"t{t['k']}": t.get("outcome") for t in shown.get("trials", [])}
+    gs, sp = got["gain-cost study"] or {"rows": []}, got["study-progress"] or {"rows": []}
+    check(
+        "gain-cost on a study: a point per trial with its change and outcome, named only when its own test was significant",
+        {x["arm"]: x["outcome"] for x in gs["rows"]} == {k: v for k, v in outs.items() if v != "failed"}
+        and all(claim_ok(x) for x in gs["rows"]),
+        (gs["rows"], outs),
+    )
+    check(
+        "study-progress: a row per trial, its outcome as the study recorded it",
+        {f"t{x['trial']}": x["outcome"] for x in sp["rows"]} == outs
+        and all(x["mean"] is not None for x in sp["rows"]),
+        (sp["rows"], outs),
+    )
+    rs = got["rank-stability"]["rows"]
+    check(
+        "rank-stability: 24 items allow halves of 10, its agreement and same-winner share between -1 and 1",
+        [x["n_per_half"] for x in rs] == [10] and all(-1 <= x["rho_mean"] <= 1 for x in rs),
+        rs,
+    )
+    lt = got["latency"]["rows"]
+    arms_n = len(got["items"]["columns"]) - 2  # the goal's arms: the three, and the study's trial systems
+    check(
+        "latency: an arm a row, its p50 at most its p95",
+        len(lt) == arms_n >= 3 and all(x["p50_ms"] <= x["p95_ms"] for x in lt),
+        lt,
+    )
+    ag = got["agreement dataset"]["rows"]
+    check(
+        "agreement on a dataset: the two categorical label sets compared, with their kappa",
+        any({x["a"], x["b"]} == {"tk_val/cat_a", "tk_val/cat_b"} and x["kappa"] is not None for x in ag)
+        and got["agreement dataset"]["svg"].count("<svg") == sum(1 for x in ag if x["kappa"] is not None),
+        ag,
+    )
+    aj = got["agreement scorer"]["rows"]
+    check(
+        "agreement on a judge scorer: each judge's controls and the judges with each other",
+        {x["judge"] for x in aj} >= {"judge_a", "judge_b", "judge_a~judge_b"},
+        aj,
+    )
+    it = got["items"]
+    check(
+        "items: an item a row, the most disputed first, a column per arm",
+        len(it["rows"]) == 24
+        and it["rows"][0]["spread"] >= it["rows"][-1]["spread"]
+        and {"s1_v1", "s2_v1", "s3_v1"} <= {c.split(" ")[0] for c in it["columns"][2:]},
+        it["columns"],
+    )
+    tr = got["trend"]["rows"]
+    check(
+        "trend: the goal's baseline at each of its two versions",
+        [x["version"] for x in tr if x["line"].startswith("baseline")] == [1, 2],
+        tr,
+    )
+
+    # ── refusals, words, the file, the API ─────────────────────────────────────
+    refused = {
+        "an unknown kind": evh("chart", "nope", "--goal", "g"),
+        "gain-cost with neither a round nor a study": evh("chart", "gain-cost", "--goal", "g"),
+        "rank-stability where fewer than 3 arms ran": evh("chart", "rank-stability", "--dataset", "tk_test"),
+        "a goal that does not exist": evh("chart", "intervals", "--goal", "nope"),
+    }
+    check(
+        "a chart with too little to draw, or asked wrongly, is refused in words, never drawn empty",
+        all(x.returncode == 1 and "ERROR (" in x.stderr for x in refused.values()),
+        {k: (x.returncode, x.stderr[-160:]) for k, x in refused.items()},
+    )
+    words = evh("chart", "intervals", "--goal", "g", "--svg", str(proj / "iv.svg"))
+    drawn = (proj / "iv.svg").read_text() if (proj / "iv.svg").is_file() else ""
+    check(
+        "in words: the title, the table, the caption; --svg writes the drawing as a file an SVG reader opens",
+        words.returncode == 0 and got["intervals"]["title"] in words.stdout and "95% interval" in words.stdout
+        and well_formed(drawn) and 'xmlns="http://www.w3.org/2000/svg"' in drawn and "--ink:" in drawn,
+        (words.stdout[-500:], drawn[:200]),
+    )  # fmt: skip
+    from evaluation_harness import charts as ch
+
+    check(
+        "the claim (RFC-034 §3): a quadrant only for a significant difference; otherwise not separated, or no gain shown at a cost",
+        ch._claim(True, 0.1, -0.1) == QUADRANTS[0] and ch._claim(True, 0.1, 0.1) == QUADRANTS[1]
+        and ch._claim(True, -0.1, -0.1) == QUADRANTS[2] and ch._claim(True, -0.1, 0.1) == QUADRANTS[3]
+        and ch._claim(False, 0.1, -0.1) == "not separated" and ch._claim(False, 0.1, 0.1) == "no gain shown, costs more",
+        "",
+    )  # fmt: skip
+
+    with socket.socket() as sock:
+        sock.bind(("127.0.0.1", 0))
+        port = sock.getsockname()[1]
+    evh("catalog")
+    srv = subprocess.Popen(
+        [sys.executable, str(HERE / "cli.py"), "catalog-serve", "--port", str(port)], cwd=proj, env=env,
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, stdin=subprocess.DEVNULL,
+    )  # fmt: skip
+    try:
+        for _ in range(300):
+            try:
+                with socket.create_connection(("127.0.0.1", port), timeout=0.2):
+                    break
+            except OSError:
+                time.sleep(0.1)
+        time.sleep(0.5)
+        token = (proj / ".build" / "api-token").read_text().strip()
+        req = urllib.request.Request(
+            f"http://127.0.0.1:{port}/api/v1/charts/intervals?goal=g&dataset=tk_val",
+            headers={"Host": f"127.0.0.1:{port}", "Authorization": f"Bearer {token}", "X-EVH-Data": "1"},
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=120) as resp:  # noqa: S310 - the test's own server  # nosec B310
+                api = json.loads(resp.read()).get("result")
+        except urllib.error.HTTPError as exc:
+            api = {"status": exc.code}
+        check(
+            "the API's /charts/{kind} gives the command line's answer",
+            api == got["intervals"],
+            str(api)[:300],
+        )
+    finally:
+        srv.terminate()
+        srv.wait(timeout=20)
+
+    goal_page = (
+        (proj / ".build" / "catalog" / "g" / "g.html").read_text()
+        if (proj / ".build" / "catalog" / "g" / "g.html").is_file()
+        else ""
+    )
+    ds_pages = list((proj / ".build" / "catalog").rglob("*tk_val*.html"))
+    ds_page = "".join(p.read_text() for p in ds_pages)
+    check(
+        "the catalog's goal page draws the goal over time, the evidence per dataset and the study's trials",
+        goal_page.count('class="chart evidence"') >= 5 and "The evidence, drawn" in goal_page
+        and "each arm against the leader" in goal_page and "trial (0: the baseline)" in goal_page,
+        (goal_page.count('class="chart evidence"'), [p.name for p in (proj / ".build" / "catalog").rglob("*.html")][:20]),
+    )  # fmt: skip
+    check(
+        "the catalog's dataset page draws each pair of label sets as a heat map",
+        "tk_val/cat_a against tk_val/cat_b" in ds_page or "tk_val/cat_b against tk_val/cat_a" in ds_page,
+        [p.name for p in ds_pages],
+    )
+finally:
+    shutil.rmtree(proj, ignore_errors=True)
+sys.exit(summary())

@@ -26,7 +26,7 @@ that lists every document with its status.
 ## Decisions and specs
 
 - [ADRs](docs/adr/index.md): the decisions that shape the architecture; 19 documents, each with its status (15 built, 3 accepted, 1 proposed)
-- [RFCs](docs/rfc/index.md): the technical designs, with their alternatives; 24 documents, each with its status (20 built, 2 accepted, 1 draft, 1 superseded)
+- [RFCs](docs/rfc/index.md): the technical designs, with their alternatives; 24 documents, each with its status (21 built, 1 accepted, 1 draft, 1 superseded)
 - [PRDs](docs/prd/index.md): what users need, and why; 11 documents, each with its status (11 built)
 - [UXS](docs/uxs/index.md): what users see and type; 5 documents, each with its status (3 active, 1 built, 1 retired)
 

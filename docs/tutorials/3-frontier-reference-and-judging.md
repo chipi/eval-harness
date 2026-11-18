@@ -295,6 +295,19 @@ dataset: tickets_v1   ranked by: judge_score_unvalidated (higher is better)
   ...
 ```
 
+Each judge also said **why**: the tutorial's scorer has `explain: true`, so every verdict carries a short reason
+(here the fake judges' stand-in words; a real judge writes what decided its score). The lowest scores come first,
+which is where to start reading:
+
+```bash
+evh judge-verdicts tickets-judge-v1 --limit 3
+```
+<!-- guide-check: varies tickets_ rated -->
+```text
+tickets-judge-v1, primary pass: rows 1-3 of 48 (48 with a reason; lowest scores first)
+...
+```
+
 Your judging-set id, token counts, scores and p-value will differ from these: `lead2_noisy` is
 unseeded, so its outputs, and the set built from them, differ on every run. One judge scored
 every arm the same way, so all four share one table, `author` included: its run predates the

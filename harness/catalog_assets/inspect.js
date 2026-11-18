@@ -490,6 +490,8 @@
   // deterministic vertical jitter so tied scores stay visible
   const jit = (ep, k) => { let h = 0; for (const c of ep + k) h = (h * 31 + c.charCodeAt(0)) % 997; return (h / 997 - 0.5) * 12; };
 
+  // A time per item (latency_ms, seconds): its median and 95th percentile are marked on the spread (RFC-034).
+  const LATENCY = /latency|_ms$|seconds/i;
   function spread(d, label, col) {
     const mu = a => mean(Object.values(d.series[a]));
     const dirn = d.higher_is_better || d.neutral ? -1 : 1;
@@ -507,6 +509,10 @@
       g += rowLabel(y, label[a] || a, a, col[a]);
       g += ys.length > DOTS_MAX ? binRow(ys, x, lo, hi, y, col[a], label[a] || a)
         : Object.entries(v).map(([ep, s]) => dot(x(s), y + jit(ep, a), col[a], `${label[a] || a} · ${ep}: ${tfmt(s)}`)).join('');
+      if (ys.length && LATENCY.test(d.metric)) {
+        const sorted = [...ys].sort((p, q) => p - q), at = f => sorted[Math.min(sorted.length - 1, Math.round(f * (sorted.length - 1)))];
+        for (const [f, nm] of [[0.5, 'p50'], [0.95, 'p95']]) g += `<line class="ci" x1="${x(at(f))}" x2="${x(at(f))}" y1="${y - 8}" y2="${y + 8}" stroke="var(--ink)" stroke-width="2" data-tip="${esc((label[a] || a) + ' ' + nm + ' ' + tfmt(at(f)))}"/><text class="tick" x="${x(at(f))}" y="${y - 10}" text-anchor="middle" font-size="10">${nm}</text>`;
+      }
       if (ys.length) g += `<line class="meanmark" x1="${x(mean(ys))}" x2="${x(mean(ys))}" y1="${y - 11}" y2="${y + 11}" data-tip="${esc((label[a] || a) + ' mean ' + tfmt(mean(ys)))}"/>`
         + rowValue(y, W - RIGHT - 66, tfmt(mean(ys)));
     });
@@ -520,7 +526,9 @@
     if (!rows.length) return '';
     const md = r => mean(r[1].map(z => z[1]));
     rows.sort((p, q) => (d.higher_is_better || d.neutral ? md(q) - md(p) : md(p) - md(q)));
-    const m = maxOf(rows.flatMap(r => r[1].map(x => Math.abs(x[1])))) * 1.08 || 1;
+    // The scale holds every item's difference and every interval (RFC-034): an interval drawn past the edge would lie.
+    const ciOf = a => (Object.fromEntries(d.rows.map(r => [r.arm, r]))[a] || {}).ci;
+    const m = maxOf([...rows.flatMap(r => r[1].map(x => Math.abs(x[1]))), ...rows.flatMap(([a]) => (ciOf(a) || []).map(Math.abs))]) * 1.08 || 1;
     const RH = ROW, top = NARROW ? 30 : 14, H = top + rows.length * RH + 30, x = scale(-m, m, LEFT, W - RIGHT - (NARROW ? 0 : 160));
     const verdict = Object.fromEntries(d.rows.map(r => [r.arm, r]));
     let g = axis(x, -m, m, top - 6, top + rows.length * RH);
@@ -531,13 +539,15 @@
       g += ds.length > DOTS_MAX ? binRow(ds.map(z => z[1]), x, -m, m, y, col[a], `${label[a] || a} vs baseline`)
         : ds.map(([ep, z]) => dot(x(z), y + jit(ep, a), col[a], `${label[a] || a} · ${ep}: ${z >= 0 ? '+' : ''}${tfmt(z)} vs baseline`)).join('');
       g += `<line class="meanmark" x1="${x(mu)}" x2="${x(mu)}" y1="${y - 11}" y2="${y + 11}"/>`;
+      const ci = r.ci;
+      if (ci) g += `<line class="ci" x1="${x(ci[0])}" x2="${x(ci[1])}" y1="${y + 14}" y2="${y + 14}" stroke="var(--ink)" stroke-width="2" data-tip="${esc((label[a] || a) + ': 95% interval ' + tfmt(ci[0]) + ' to ' + tfmt(ci[1]) + ' (before Holm)')}"/>`;
       // Words, not arrows: for a lower-is-better metric an up-arrow beside a negative number reads wrong.
       const v = r.verdict || '';
       const word = !v.startsWith('significant') ? '·' : d.neutral ? (mu > 0 ? 'higher' : 'lower') : v.includes('better') ? '✓ better' : '✗ worse';
       g += rowValue(y, W - RIGHT - 150, `${mu >= 0 ? '+' : ''}${tfmt(mu)} ${r.wins != null ? r.wins + '–' + r.losses : ''} ${word}`);
     });
     const side = d.neutral ? '← lower · higher →' : d.higher_is_better ? '← worse · better →' : '← better · worse →';
-    return `<figure class="chart"><figcaption><b>Difference from the baseline</b> · each ${ITEM}'s ${esc(d.metric)} minus the baseline's (${esc(label[d.baseline] || d.baseline)}); bar = mean difference; right column: mean difference, wins–losses, and ✓ better / ✗ worse when significant after Holm${binNote}. <span class="muted">${side}</span></figcaption>
+    return `<figure class="chart"><figcaption><b>Difference from the baseline</b> · each ${ITEM}'s ${esc(d.metric)} minus the baseline's (${esc(label[d.baseline] || d.baseline)}); bar = mean difference; the line under it, its 95% interval from the paired test (before Holm); right column: mean difference, wins–losses, and ✓ better / ✗ worse when significant after Holm${binNote}. <span class="muted">${side}</span></figcaption>
       <div class="scroll-x"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Per-${ITEM} difference from the baseline">${g}</svg></div></figure>`;
   }
 

@@ -586,6 +586,8 @@ def main() -> int:
             ("scorer-set", ["no_such", "--set", "cost_cap_usd=1"], "no scorer 'no_such'"),
             # Judges that say why (RFC-034): the flow is test_judge_verdicts.py.
             ("judge-verdicts", ["no_such"], "has judged nothing yet"),
+            # The evidence charts (RFC-034): the flow is test_charts.py.
+            ("chart", ["nope"], "no chart 'nope'"),
             # The terminal's jobs (RFC-026): installed, each answers in words; the flow is test_jobs.py.
             # Prompt versions (RFC-028): installed, each answers in words; the flow is test_prompts.py.
             ("looks", ["--dataset", "no_such_v1"], "not a test set"),

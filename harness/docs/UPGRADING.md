@@ -142,6 +142,11 @@ correctness bugs, not just missing features.
   `run-migrate`, `dataset-migrate` and `baselines-migrate` (built during 0.8.0, never released) and
   `fingerprint-migrate` (0.6.0 to 0.7.2) are this one command now. Moving the data into SQLite is
   `data-migrate`, not a format step.
+- **`evh scorer-new` makes a scorer whose judges explain** (`explain: true`, RFC-034): each verdict carries a reason,
+  and costs its output tokens. Pass `--set explain=false` for one that does not. Existing scorers have no field and are
+  unchanged; to get reasons from one that has judged, make a new version (`supersedes`), and validate it with reasons.
+- **`goal-leaderboard`'s `vs_leader` has a fourth key, `ci`** (the test's 95% interval, before Holm): a reader that
+  checked the keys exactly reads it now.
 - **A system on the bundled adapter that declares its prompt now sends it.** A system whose `prompts:` names one
   prompt (a file or a recorded version) and has no `params.prompt` was sent "Summarise:" before 0.8.0; it now sends the
   declared text, so its outputs, and the numbers on them, change. Its fingerprint already held the declared prompt's

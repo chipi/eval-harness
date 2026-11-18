@@ -439,3 +439,20 @@ table.cmp th small { font: 400 12px/1.4 var(--text); }
 .checks ul { margin: 0 0 12px; padding-left: 20px; }
 .part .body h3 { margin: 18px 0 8px; }
 input[type=number] { max-width: 12rem; }
+
+/* The evidence charts (RFC-034), drawn by the server as the catalog draws them: the catalog's series colours and the
+   local hue, the drawing scrolling sideways on a phone (at least 520px) rather than shrinking its text. */
+:root { --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s6: #008300; --s7: #9085e9; --s8: #e66767; --local: #de4f16; }
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) {
+  --s1: #2a78d6; --s2: #e8551a; --s3: #179669; --s4: #b47a00; --s5: #e15187; --s6: #008300; --s7: #6250d6; --s8: #e34948; --local: #d95926; } }
+:root[data-theme="light"] { --s1: #2a78d6; --s2: #e8551a; --s3: #179669; --s4: #b47a00; --s5: #e15187; --s6: #008300; --s7: #6250d6; --s8: #e34948; --local: #d95926; }
+.chart.evidence { margin: 0 0 14px; }
+.chart.evidence .scroll-x { overflow-x: auto; }
+.chart.evidence svg { width: 100%; height: auto; display: block; overflow: visible; }
+.chart.evidence svg.wide { min-width: 520px; }
+.chart.evidence svg text { font: 12.5px var(--mono); fill: var(--ink-2); }
+.chart.evidence svg .t-ink { fill: var(--ink); paint-order: stroke; stroke: var(--surface); stroke-width: 3px; stroke-linejoin: round; }
+.chart.evidence svg .t-muted { fill: var(--muted); }
+.chart.evidence figcaption { margin-top: 6px; font-size: 13px; color: var(--ink-2); }
+.chart-box details.table { margin: 4px 0 0; font-size: 13px; }
+.chart-box details.table summary { cursor: pointer; color: var(--ink-2); }

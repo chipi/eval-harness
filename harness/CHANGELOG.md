@@ -13,6 +13,25 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Added
 
+- **Evidence charts, one operation for every surface** (RFC-034): `evh chart KIND` (and `GET /api/v1/charts/{kind}`, an
+  MCP tool) answers what a chart draws as a table, its caption, and the drawing as SVG (`--svg FILE` writes it).
+  `gain-cost`: a round's arms or a study's trials against their baseline, the difference in quality (with its interval)
+  against the difference in cost per item, a quadrant named only for a difference the tests support; `intervals`: each
+  arm against the leader with its 95% interval and the contender margin; `study-progress`: a study's trials, kept or
+  dropped, and the best so far; `rank-stability`; `latency`: every item's latency with its p50 and p95; `agreement`: a
+  dataset's label sets as confusion heat maps, or a judge scorer's controls; `items`: arms by items, the most disputed
+  first; `trend`: a goal's baseline across its versions and its closed rounds, or a code record's faithfulness per
+  deployed period. The Workbench draws them on the eval, study, judge, goal and dataset screens; the catalog on a goal's
+  page (its datasets and studies) and a dataset's (its label sets); the inspector adds each interval to "Difference from
+  the baseline" and a latency's p50 and p95 to "Spread per run".
+- **Judges that say why** (RFC-034 §5): a scorer with `explain: true` asks each judge for a short reason inside its
+  verdict, one per graded output or one for a pick or a pair, in the same call. The verdict stores it (`why`), withheld
+  like a reply when it repeats the source, marked missing when absent, never costing the scores. `evh judge-verdicts
+  SCORER` lists the verdicts with their reasons, the lowest scores first, a page at a time (also
+  `GET /scorers/{scorer}/verdicts`); the Workbench's judge screen and the inspector's item view show them. The validation
+  gate compares `explain` (a judge asked for its reason is validated with it), and the SummEval validation adapter asks
+  in the same words; the dry run counts the reasons' tokens.
+
 - **Tutorial 8, the Workbench** (`docs/tutorials/8-the-workbench.md`, run by `make guide-check`): opening it from
   `evh catalog-serve`, every screen in the order a goal goes through them with the commands it calls, what it keeps for
   you (unsent changes, jobs, refusals), and prompts as versions in a manual eval and a study. PRD-017 and UXS-005 are
@@ -549,6 +568,12 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Changed
 
+- **`evh scorer-new` writes `explain: true`**: a new judge scorer's judges give their reasons. A scorer without the
+  field gives none, so every scorer made before keeps its judging sets and its messages byte for byte.
+- **`goal-leaderboard`'s test against the leader carries its 95% interval** (`vs_leader.ci`, before Holm's correction;
+  the verdict is after it).
+- **The Workbench's eval screen draws the round's arms against its baseline** (`gain-cost`) where it drew each arm's
+  mean against its cost.
 - **A project names its store: `evh init --store files|sqlite` is required, and there is no default** (owner decision,
   2026-11-15). The two are equal choices: `files` keeps every run, label and score as a file under `data/`, in git
   (review in a pull request, history in git log); `sqlite` keeps the project's data in one database file,
@@ -895,6 +920,9 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Fixed
 
+- **A Workbench read answered after its screen was left no longer redraws the screen opened since.** A slow read (a
+  chart) landing on Settings redrew its text box while a person typed, and the rest of the typing went into the new box
+  in front of the old text: the file saved held both.
 - **A study whose baseline has no run on its dataset is refused**, its dry run too, saying to run it first: every
   trial was run, paid for and dropped as "not compared: only 0 shared item(s)".
 - **A failed job says what it printed last** in the Workbench when it printed no `ERROR` line (a check's findings, a

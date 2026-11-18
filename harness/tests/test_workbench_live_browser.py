@@ -687,11 +687,35 @@ try:
                 and page.locator("main th:has-text('threshold')").count() == 1,
                 (rnd.get("arms"), page.locator("main").inner_text()[:600]),
             )
+            # RFC-034: the round's arms against where it started (or its leader), and where every arm of the goal stands,
+            # drawn by the server (`evh chart`), each with its numbers and its command.
+            page.wait_for_selector("[data-chart='gain-cost'] svg", timeout=60000)
+            page.wait_for_selector("[data-chart='intervals'] svg", timeout=60000)
             check(
-                "the evidence's chart: each arm's mean against its cost, a point per arm",
-                page.locator("figure.chart circle").count() == 2,
-                page.locator("figure.chart").count(),
+                "the evidence's charts: gain against cost for the round's arms, each arm against the leader with its "
+                "interval, where they differ item by item; each with its numbers and its command",
+                page.locator("[data-chart='gain-cost'] svg circle").count() >= 1
+                and page.locator("[data-chart='intervals'] svg circle").count() >= 2
+                and page.locator("[data-chart='items'] svg rect").count() >= 2
+                and "evh chart gain-cost --goal tickets_summary --round r1"
+                in (page.locator("[data-chart='gain-cost']").text_content() or "")
+                and page.locator("[data-chart='intervals'] details.table").count() == 1,
+                [
+                    page.locator(f"[data-chart='{k}']").count()
+                    for k in ("gain-cost", "intervals", "items", "latency")
+                ],
             )
+            page.set_viewport_size({"width": 390, "height": 844})
+            page.wait_for_timeout(300)
+            check(
+                "at a phone's width the charts scroll in their own box, the page does not",
+                page.evaluate("() => document.scrollingElement.scrollWidth <= window.innerWidth + 1")
+                and page.evaluate(
+                    "() => [...document.querySelectorAll('.chart.evidence .scroll-x')].every((b) => b.scrollWidth >= b.clientWidth)"
+                ),
+                page.evaluate("() => [document.scrollingElement.scrollWidth, window.innerWidth]"),
+            )
+            page.set_viewport_size({"width": 1280, "height": 900})
             page.goto(f"http://127.0.0.1:{port}/workbench/#systems/tickets_summary")
             page.wait_for_selector("#sn-model", timeout=20000)
             offered = page.locator("#sn-model option[value='fake-1b']").inner_text()
@@ -1250,6 +1274,13 @@ try:
                 why_text[:700],
             )
             first_page = why_text
+            page.wait_for_selector("[data-chart='agreement'] svg", timeout=60000)
+            check(
+                "W7 draws its judges' controls beside its validation: reordered, re-asked, length, each other",
+                page.locator("[data-chart='agreement'] svg rect").count() >= 4
+                and "reordered τ" in (page.locator("[data-chart='agreement']").text_content() or ""),
+                (page.locator("[data-chart='agreement']").text_content() or "")[:300],
+            )
             page.click("#why-next")
             page.wait_for_function(
                 "() => /11–/.test((document.querySelector('#why') || {}).innerText || '')", timeout=20000
@@ -1300,6 +1331,35 @@ try:
                 "billed" in page.locator("#cr-out").inner_text(),
                 page.locator("#cr-out").inner_text()[:500],
             )
+            # A slow read lands after its screen was left: it must not redraw the screen opened since (the charts' reads,
+            # held back here, landed on Settings and redrew its text box under the typing, which then went to the new box).
+            waiting: list = []
+
+            def hold(route) -> None:  # held: answered only once Settings is open
+                waiting.append(route)
+
+            page.route("**/api/v1/charts/**", hold)
+            page.goto(f"http://127.0.0.1:{port}/workbench/#eval/tickets_summary/r2")
+            page.reload()  # the page's reads are kept until it reloads: these charts are asked for again, and held
+            page.wait_for_selector(".chart-box [role=status]", timeout=20000)
+            page.goto(f"http://127.0.0.1:{port}/workbench/#home")
+            page.click("text=Settings")
+            page.wait_for_selector("#sf-path", timeout=20000)
+            page.evaluate("() => { document.querySelector('#sf-path').dataset.mark = 'kept'; }")
+            held_n = len(waiting)
+            for r_ in waiting:
+                r_.continue_()
+            page.wait_for_timeout(3000)
+            check(
+                "a read answered after its screen was left does not redraw the screen opened since",
+                held_n >= 1
+                and page.evaluate(
+                    "() => document.querySelector('#sf-path') && document.querySelector('#sf-path').dataset.mark"
+                )
+                == "kept",
+                (held_n, page.evaluate("() => location.hash")),
+            )
+            page.unroute("**/api/v1/charts/**")
             # W8 (UXS-005): the settings, one row each: where the data is kept (the move refused until config.yaml names
             # the store), this release's formats, the project checked (validate, its failures as `evh validate` says),
             # a policy file checked and saved (data-put), publishing refused offline

@@ -372,7 +372,13 @@ try:
         and isinstance(v.get("contenders"), list)
         and "recommended" in v
         and len(v.get("vs_leader") or {}) == 7
-        and all(set(x) == {"delta", "p", "verdict"} for x in v["vs_leader"].values() if x),
+        and all(set(x) == {"delta", "p", "verdict", "ci"} for x in v["vs_leader"].values() if x)
+        # the 95% interval of the paired test (RFC-034's intervals chart): two numbers, low first, or none
+        and all(
+            x["ci"] is None or (len(x["ci"]) == 2 and x["ci"][0] <= x["ci"][1])
+            for x in v["vs_leader"].values()
+            if x
+        ),
         {k: v.get(k) for k in ("goal", "leader", "baseline", "contenders", "recommended")},
     )
     check(

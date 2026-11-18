@@ -1980,6 +1980,7 @@ def render_labels_of(A: Adapter, ds: str, v: dict) -> str:
             )
             # A hidden dataset's labels are per-item text (RFC-019 §4): its confusion matrices, which name them, stay off
             # the pages; the counts and coefficients above are numbers.
+            + ("" if _visibility.hidden(ds) else _pair_heatmaps(cov["agreement"]))
             + ("" if _visibility.hidden(ds) else "".join(confusion_html(a) for a in cov["agreement"]))
         )
     return html_
@@ -2004,6 +2005,13 @@ def agreement_cells(a: dict) -> list[str]:
         else ""
     )
     return [str(both), share("same"), share("share"), coef("kappa"), alpha]
+
+
+def _pair_heatmaps(pairs: list) -> str:
+    """Each pair of label sets' confusion matrix drawn (RFC-034), the tables folded under them."""
+    from evaluation_harness import charts  # noqa: PLC0415
+
+    return "".join(charts.pair_heatmap(a) for a in pairs)
 
 
 def confusion_html(a: dict) -> str:
@@ -2418,7 +2426,11 @@ def render_goals(A: Adapter, by_ds: dict, out: Path, nav: list) -> int:
                 ],
             }
         )
-        render_goal(A, g, by_ds, out, nav)
+        # The page's charts (RFC-034) read the goal's leaderboard once for all its datasets and studies.
+        from evaluation_harness import charts  # noqa: PLC0415
+
+        with charts.using(A):
+            render_goal(A, g, by_ds, out, nav)
     write_period_rows(out, "goals", period_rows)
     # What happened, one row per change; the period keeps the rows of its own days.
     feed = sorted(
@@ -2854,10 +2866,44 @@ def _studies_block(A: Adapter, g: dict) -> str:
             "p values are nominal; only a confirmation on a test set is evidence."
             + (" Its hypotheses are not shown: the dataset's text is hidden." if s.get("text_hidden") else "")
             + "</p>"
+            + (_study_charts(A, g["goal_id"], str(s["study"])) if rows else "")
             + (table(f"study-{s['study']}", ["trial", "change", "hypothesis", "outcome", "vs best", "cost"], rows) if rows else "")
             + (f"<ul>{conf}</ul>" if conf else "")
         )  # fmt: skip
     return "".join(parts)
+
+
+def _trend_chart(A: Adapter, goal_id: str) -> str:
+    """The goal over time (RFC-034): its baseline's versions and its closed rounds' promoted runs; nothing before
+    there are any."""
+    from evaluation_harness import charts  # noqa: PLC0415
+    from evaluation_harness.model.entity import Problem  # noqa: PLC0415
+
+    with charts.using(A):
+        try:
+            return chart_html(charts.chart("trend", goal=goal_id), f"chart-trend-{slug(goal_id)}")
+        except Problem:
+            return ""
+
+
+def _study_charts(A: Adapter, goal_id: str, study: str) -> str:
+    """A study's trials drawn (RFC-034): its progress, and each trial's gain against its cost."""
+    from evaluation_harness import charts  # noqa: PLC0415
+    from evaluation_harness.model.entity import Problem  # noqa: PLC0415
+
+    out = []
+    with charts.using(A):
+        for kind in ("study-progress", "gain-cost"):
+            try:
+                out.append(
+                    chart_html(
+                        charts.chart(kind, goal=goal_id, study=study),
+                        f"chart-{kind}-{slug(goal_id)}-{slug(study)}",
+                    )
+                )
+            except Problem:
+                continue
+    return "".join(out)
 
 
 def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
@@ -2927,7 +2973,7 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
     # goal before it concludes (owner, 2026-10-31).
     body += block("01", "what it is for", f'<dl class="kv">{dl}</dl>')
     answer = _answer(A, g, by_ds, measure)
-    body += block("02", "the answer so far", answer)
+    body += block("02", "the answer so far", answer + _trend_chart(A, g["goal_id"]))
     n = 3
     rounds_html = _rounds_block(A, g, measure, answer)
     if rounds_html:
@@ -3084,6 +3130,7 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
                 )
                 inner += tradeoff_charts(dec, named, gm)
         inner += _failure_modes_html(A, ds, v.get("arms") or [])
+        inner += _evidence_charts(A, g["goal_id"], ds)
         body += block(f"{n:02d}", f"{ds}{' · ' + ans['role'] if ans['role'] else ''}", inner)
         n += 1
     write(
@@ -3099,6 +3146,46 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
             elsewhere=(("goal-leaderboard", {"goal": g["goal_id"]}),),
         ),
     )
+
+
+def chart_html(c: dict, tid: str) -> str:
+    """One evidence chart (RFC-034) on a page: the drawing, and its numbers folded under it."""
+    cols = c["columns"]
+
+    def cell(v) -> str:
+        if v is None:
+            return "—"
+        if isinstance(v, float):
+            return f"{v:.4g}"
+        return e(v if isinstance(v, str) else json.dumps(v))
+
+    return (
+        c["svg"]
+        + f'<details class="small"><summary>its numbers <small class="muted">(evh chart {e(c["kind"])})</small></summary>'
+        + table(tid, [e(x) for x in cols], [[cell(r.get(x)) for x in cols] for r in c["rows"]])
+        + "</details>"
+    )
+
+
+def _evidence_charts(A: Adapter, goal_id: str, ds: str) -> str:
+    """The goal's arms on one dataset drawn (RFC-034): each against the leader with its interval, where they differ
+    item by item (each cell opening the item in the inspector), their latency. A chart with too little to draw is left
+    out."""
+    from evaluation_harness import charts  # noqa: PLC0415
+    from evaluation_harness.model.entity import Problem  # noqa: PLC0415
+
+    out = []
+    with charts.using(A):
+        for kind in ("intervals", "items", "latency"):
+            try:
+                if kind == "items":
+                    c = charts.items(goal_id, ds, href=lambda arm, item: inspect_url([arm], "../", item=item))
+                else:
+                    c = charts.chart(kind, goal=goal_id, dataset=ds)
+            except Problem:
+                continue
+            out.append(chart_html(c, f"chart-{kind}-{slug(goal_id)}-{slug(ds)}"))
+    return ('<h3 class="sub">The evidence, drawn</h3>' + "".join(out)) if out else ""
 
 
 def _failure_modes_html(A: Adapter, ds: str, rows: list) -> str:

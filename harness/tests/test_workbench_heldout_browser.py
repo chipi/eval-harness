@@ -437,6 +437,17 @@ try:
                 and f"Best so far: {shown.get('best')}" in one,
                 (one[:900], shown.get("best")),
             )
+            # RFC-034: the trials drawn above their table, the best so far as a line, and each against its cost.
+            page.wait_for_selector("[data-chart='study-progress'] svg", timeout=60000)
+            page.wait_for_selector("[data-chart='gain-cost'] svg", timeout=60000)
+            check(
+                "its trials drawn: kept filled, dropped hollow, the best so far from the baseline; each trial's gain "
+                "against its cost",
+                page.locator("[data-chart='study-progress'] svg polyline").count() == 1
+                and page.locator("[data-chart='study-progress'] svg circle").count() >= 3
+                and page.locator("[data-chart='gain-cost'] svg circle").count() >= 1,
+                page.locator("[data-chart='study-progress']").inner_text()[:300],
+            )
             page.select_option("#cf-test", "tk_test")
             page.click("#cf-dry")
             page.wait_for_selector("#cf-out pre, #cf-out [role=alert]", timeout=60000)

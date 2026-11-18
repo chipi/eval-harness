@@ -13,13 +13,16 @@
   function load(key, path, raw = false) {
     if (key in LIVE.cache) return LIVE.cache[key];
     if (!LIVE.pending[key]) {
+      // An answer redraws the screen that asked for it, never one opened since: a slow read (a chart) landing on another
+      // screen redrew it under the person's typing, and the text box it replaced took the rest of their keystrokes.
+      const asked = location.hash;
       LIVE.pending[key] = fetch(`/api/v1${path}`, { credentials: "same-origin" })
         .then(async (r) => {
           const body = await r.json().catch(() => ({}));
           LIVE.cache[key] = r.ok ? (raw ? body : body.result) : { error: body.error || `${r.status}` };
         })
         .catch((e) => { LIVE.cache[key] = { error: String(e) }; })
-        .finally(() => { delete LIVE.pending[key]; WB.render(); });
+        .finally(() => { delete LIVE.pending[key]; if (location.hash === asked) WB.render(); });
     }
     return undefined;
   }
@@ -70,6 +73,7 @@
       <div class="tablewrap" style="margin-top:18px"><table><thead><tr><th>dataset</th><th>role</th><th>items</th><th>reference</th><th class="num">runs</th><th>baseline</th></tr></thead><tbody>${ds}</tbody></table></div>
       ${rounds ? `<h2 style="margin-top:22px">Rounds</h2><ul>${rounds}</ul>` : ""}
       ${st.running.length ? `<h2 style="margin-top:22px">Running now</h2><ul>${st.running.map((j) => `<li>${esc(j.operation)} · ${esc(j.state)}</li>`).join("")}</ul>` : ""}
+      ${chartBox("trend", { goal: id }, true)}
       ${WB.cmd(`evh goal-status ${id}`)}
       <div class="actions"><a class="btn primary" href="#dataset/${encodeURIComponent(id)}">Add a dataset</a><a class="btn" href="#systems/${encodeURIComponent(id)}">Choose the systems</a><a class="btn" href="#eval/${encodeURIComponent(id)}">The eval</a><a class="btn" href="#review/${encodeURIComponent(id)}">Review the outputs</a><a class="btn" href="#production/${encodeURIComponent(id)}">Production</a><a class="btn" href="#heldout/${encodeURIComponent(id)}">The held-out test</a><a class="btn" href="#study/${encodeURIComponent(id)}">Studies</a><a class="btn" href="#goal-edit/${encodeURIComponent(id)}">Edit the goal</a><a class="btn" href="#home">Back to your goals</a></div></div>`;
   }
@@ -739,25 +743,18 @@
   const short = (arm) => String(arm || "").split("/").pop();
   const pfmt = (p) => (p == null ? "—" : p < 0.0001 ? "<0.0001" : Number(p).toFixed(4));
   const num = (x, d = 4) => (x == null ? "—" : Number(x).toFixed(d));
-  function evalChart(ev) {
-    const rows = ev.rows || [];
-    if (!rows.length) return "";
-    const pts = [{ arm: ev.leader, mean: rows[0].baseline_mean }, ...rows.map((x) => ({ arm: x.arm, mean: x.mean }))]
-      .filter((x) => x.mean != null).map((x) => ({ ...x, cost: Number((ev.cost_per_item || {})[x.arm] || 0) }));
-    const W = 560, H = 220, L = 56, R = 16, T = 14, B = 40;
-    const ys = pts.map((x) => x.mean), y0 = Math.min(...ys), y1 = Math.max(...ys), dy = y1 - y0 || Math.abs(y1) || 1;
-    const cs = pts.map((x) => x.cost), c1 = Math.max(...cs);
-    // cost runs from $0 (local) to the dearest: a log scale would put $0 nowhere, so it is linear, $ per 1M items
-    const X = (c) => L + (c1 ? (c / c1) * (W - L - R) : (W - L - R) / 2), Y = (m) => T + (1 - (m - (y0 - dy * 0.1)) / (dy * 1.2)) * (H - T - B);
-    const fmt = (c) => (c * 1e6 >= 1000 ? `$${Math.round(c * 1e6).toLocaleString("en")}` : `$${(c * 1e6).toFixed(c ? 2 : 0)}`);
-    const dots = pts.map((x) => `<circle cx="${X(x.cost).toFixed(1)}" cy="${Y(x.mean).toFixed(1)}" r="5" fill="${x.arm === ev.leader ? "var(--ok)" : "var(--accent)"}"><title>${esc(short(x.arm))}: ${num(x.mean)} at ${fmt(x.cost)} per 1M items</title></circle>
-      <text x="${(X(x.cost) + 8).toFixed(1)}" y="${(Y(x.mean) + 4).toFixed(1)}" font-size="11" fill="var(--ink-2)">${esc(short(x.arm))}</text>`).join("");
-    return `<figure class="chart" aria-label="${esc(ev.metric)} against cost"><svg viewBox="0 0 ${W} ${H}" width="100%" role="img">
-      <line x1="${L}" y1="${H - B}" x2="${W - R}" y2="${H - B}" stroke="var(--axis)"/><line x1="${L}" y1="${T}" x2="${L}" y2="${H - B}" stroke="var(--axis)"/>
-      <text x="${L}" y="${H - B + 16}" font-size="11" fill="var(--muted)">$0</text><text x="${W - R}" y="${H - B + 16}" font-size="11" fill="var(--muted)" text-anchor="end">${fmt(c1)}</text>
-      <text x="${(L + W - R) / 2}" y="${H - 6}" font-size="11" fill="var(--muted)" text-anchor="middle">cost per 1M items</text>
-      <text x="${L - 6}" y="${Y(y1) + 4}" font-size="11" fill="var(--muted)" text-anchor="end">${num(y1, 3)}</text><text x="${L - 6}" y="${Y(y0) + 4}" font-size="11" fill="var(--muted)" text-anchor="end">${num(y0, 3)}</text>
-      ${dots}</svg><figcaption class="muted">${esc(ev.metric)} (each arm's mean) against what it costs; the leader in green. The table below is the evidence.</figcaption></figure>`;
+  // An evidence chart (RFC-034), drawn by the server as the catalog and `evh chart` draw it: the drawing, its numbers
+  // folded under it, and its command. `quiet`: a chart with too little to draw yet leaves no note behind.
+  const chartArgs = (p) => Object.entries(p).filter(([, v]) => v).map(([k, v]) => `--${k} ${v}`).join(" ");
+  function chartBox(kind, params, quiet = false) {
+    const qs = new URLSearchParams(Object.entries(params).filter(([, v]) => v)).toString();
+    const r = load(`chart:${kind}:${qs}`, `/charts/${kind}?${qs}`);
+    if (r === undefined) return `<div class="chart-box">${loading("the chart")}</div>`;
+    if (r.error) return quiet ? "" : `<div class="chart-box" data-chart="${esc(kind)}"><p class="muted">No chart yet: ${esc(r.error)}</p></div>`;
+    const cols = r.columns || [];
+    const cell = (v) => (v == null ? "—" : typeof v === "number" ? num(v, 4) : typeof v === "object" ? esc(JSON.stringify(v)) : esc(v));
+    return `<div class="chart-box" data-chart="${esc(kind)}">${r.svg}<details class="table"><summary>The numbers</summary><div class="tablewrap"><table><thead><tr>${cols.map((c) => `<th>${esc(c)}</th>`).join("")}</tr></thead>
+      <tbody>${(r.rows || []).map((x) => `<tr>${cols.map((c) => `<td>${cell(x[c])}</td>`).join("")}</tr>`).join("")}</tbody></table></div></details>${WB.cmd(`evh chart ${kind} ${chartArgs(params)}`)}</div>`;
   }
   function screenEval(param) {
     const [goal, wanted] = String(param || "").split("/");
@@ -810,10 +807,12 @@
       <p class="muted">${esc(r.round_id)} · ${esc(r.status)} · on ${esc(r.dataset_id)}${r.from ? ` · from ${esc(r.from)}` : ""}${r.budget_usd != null ? ` · budget $${esc(r.budget_usd)}` : ""} · spent $${num(ev.spent_usd, 4)}</p>
       ${r.conclusion ? `<div class="answer"><div class="kicker">its conclusion</div><p>${esc(typeof r.conclusion === "string" ? r.conclusion : r.conclusion.text || JSON.stringify(r.conclusion))}</p></div>` : ""}
       <section class="part"><div class="parthead"><h2>The evidence</h2><span class="grow"></span><span class="muted">${esc(ev.metric || "")} · each arm against the leader, Holm</span></div><div class="body">
-        ${evalChart(ev)}
+        ${chartBox("gain-cost", { goal, round: cur })}
         ${rows ? `<p class="muted">The leader: <b class="mono">${esc(short(ev.leader))}</b>. A verdict holds when the raw p is under its threshold.</p>
           <div class="tablewrap"><table><thead><tr><th>arm</th><th class="num">mean</th><th class="num">Δ</th><th class="num">raw p</th><th class="num">threshold</th><th>verdict</th></tr></thead><tbody>${rows}</tbody></table></div>` : ""}
         ${(ev.notes || []).length ? `<ul>${ev.notes.map((n) => `<li class="muted">${esc(n)}</li>`).join("")}</ul>` : ""}</div></section>
+      <section class="part"><div class="parthead"><h2>Where the arms stand</h2><span class="grow"></span><span class="muted">the goal's every arm on ${esc(r.dataset_id)}</span></div><div class="body">
+        ${chartBox("intervals", { goal, dataset: r.dataset_id })}${chartBox("items", { goal, dataset: r.dataset_id })}${chartBox("latency", { goal, dataset: r.dataset_id }, true)}</div></section>
       <section class="part"><div class="parthead"><h2>Its arms</h2></div><div class="body"><ul id="arms">${arms || '<li class="muted">none yet</li>'}</ul>
         ${isOpen ? `<div id="rt-box"></div>` : ""}
         ${isOpen && carryable.length ? `<div class="inline"><label class="name" for="cy-arm">Carry in from ${esc(r.from)}</label><select id="cy-arm">${carryable.map((x) => `<option>${esc(x)}</option>`).join("")}</select>
@@ -838,7 +837,7 @@
     const v = (id) => (document.getElementById(id)?.value || "").trim();
     const byOr = (id) => byOf(id) || (who() ? `person:${who()}` : null);
     const again = (round, box) => {
-      forget(`rounds:${goal}`); forget(`round:${goal}/`); forget(`evidence:${goal}/`); forget(`status:${goal}`); forget("goals");
+      forget(`rounds:${goal}`); forget(`round:${goal}/`); forget(`evidence:${goal}/`); forget(`status:${goal}`); forget("goals"); forget("chart:");
       if (round && round !== cur) { location.hash = `#eval/${enc(goal)}/${enc(round)}`; return; }
       // a redraw now would wipe what is still being written elsewhere on the screen (the unsent-changes rule)
       if (UNSENT.size && box) {
@@ -1316,6 +1315,7 @@
         ${sets.length ? `<h3>Promote a label set</h3>${promote}` : '<p class="muted">No label set yet.</p>'}
         <h3>Or label it</h3><div class="actions" style="margin-top:0"><a class="btn" href="#label/${enc(ds)}">Label it here</a></div>
         ${byField("pp-by")}</div></section>
+      ${chartBox("rank-stability", { dataset: ds }, true)}${chartBox("agreement", { dataset: ds }, true)}
       ${WB.cmd(`evh dataset-materialize --dataset-id ${ds}\nevh dataset-profile --dataset-id ${ds}\nevh reference-promote --dataset-id ${ds} --labels <set> --tier gold --reason "..."`)}
       <div class="actions"><a class="btn" href="#home">Your goals</a></div></div>`;
   }
@@ -1549,7 +1549,8 @@
             <div class="tablewrap"><table><thead><tr><th>judge</th><th class="num">${esc(b.metric || "agreement")}</th><th class="num">it must beat</th><th>measured by</th></tr></thead><tbody>${valRows}</tbody></table></div>` : '<p class="muted">No validation recorded: nothing measured these judges against people\'s labels.</p>'}
           ${(va.problems || []).length ? `<ul class="problems">${va.problems.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}
           ${checks ? `<p class="muted" style="margin-bottom:4px">People's checks of its judges:</p><ul>${checks}</ul>` : ""}
-          <p class="muted">Shown as stored. Measuring it is a tool, not this screen: <code>tools/validate_judge_*.py</code> writes the runs a validation names.</p></div></section>
+          <p class="muted">Shown as stored. Measuring it is a tool, not this screen: <code>tools/validate_judge_*.py</code> writes the runs a validation names.</p>
+          ${(one.judging_sets || []).some((j) => j.verdicts) ? chartBox("agreement", { scorer: cur }, true) : ""}</div></section>
         <section class="part"><div class="parthead"><span class="letter">d</span><h2>Score the arms with it</h2></div><div class="body" data-form="judge-run">
           <div class="inline"><select id="js-ds" aria-label="the dataset">${opt(dss, r.dataset_id)}</select>
             <input type="text" id="js-arms" placeholder="only these arms: a,b (optional)" autocapitalize="off" spellcheck="false">
@@ -1651,7 +1652,7 @@
       ev.target.disabled = true;
       try {
         const done = await runJob(`/scorers/${enc(cur())}/judge`, { ...judgeInputs(), by: who_, max_cost_usd: cap }, box, "judging");
-        if (done) { sent("judge-run"); forget(`scorer:${cur()}`); forget("scorers"); forget(`verdicts:${cur()}:`); box.innerHTML = `<p class="note">Judged.</p>${blocksView((done.result || {}).result)}`; }
+        if (done) { sent("judge-run"); forget(`scorer:${cur()}`); forget("scorers"); forget(`verdicts:${cur()}:`); forget("chart:"); box.innerHTML = `<p class="note">Judged.</p>${blocksView((done.result || {}).result)}`; }
       } catch (e) { box.innerHTML = refusal(e); }
       ev.target.disabled = false;
     });
@@ -2125,7 +2126,7 @@
       ${part(1, "What it searches", `<div class="stats"><div><b>${esc(one.baseline || "")}</b><span>from</span></div><div><b>${esc(sp.sampler || "")}</b><span>how it chooses</span></div><div><b>${(one.trials || []).length}</b><span>trials</span></div><div><b>${esc(one.status || "")}</b><span>its state</span></div></div>
         <p class="muted">On <span class="mono">${esc(sp.dataset || "")}</span>, decided on ${esc(sp.measure || "")}; round ${esc(one.round || "")}; spent $${Number(one.spent_usd || 0).toFixed(4)}.${one.end ? ` Ended: ${esc(one.end)}.` : ""}</p>
         <details><summary>Its spec</summary><pre class="reply">${esc(JSON.stringify(sp, null, 2))}</pre></details>`)}
-      ${part(2, "Its trials", `${(one.rows || []).length ? tbl(["trial", "what changed", "outcome", "why", "vs the best", "cost"], one.rows.map((x) => `<tr><td class="mono">t${x.k}</td><td>${esc(x.change || "")}${x.hypothesis && x.hypothesis !== x.change ? `<div class="muted">${esc(x.hypothesis)}</div>` : ""}</td><td><span class="verdict ${x.outcome === "kept" ? "v-lead" : "v-ns"}">${esc(x.outcome || "")}</span></td><td>${esc(x.reason || "")}</td><td class="num">${typeof x.delta === "number" ? (x.delta >= 0 ? "+" : "") + x.delta.toFixed(4) : "—"}</td><td class="num">$${Number(x.cost_usd || 0).toFixed(4)}</td></tr>`)) : '<p class="muted">No trial yet.</p>'}
+      ${part(2, "Its trials", `${(one.trials || []).length ? chartBox("study-progress", { goal, study: sid }) + chartBox("gain-cost", { goal, study: sid }) : ""}${(one.rows || []).length ? tbl(["trial", "what changed", "outcome", "why", "vs the best", "cost"], one.rows.map((x) => `<tr><td class="mono">t${x.k}</td><td>${esc(x.change || "")}${x.hypothesis && x.hypothesis !== x.change ? `<div class="muted">${esc(x.hypothesis)}</div>` : ""}</td><td><span class="verdict ${x.outcome === "kept" ? "v-lead" : "v-ns"}">${esc(x.outcome || "")}</span></td><td>${esc(x.reason || "")}</td><td class="num">${typeof x.delta === "number" ? (x.delta >= 0 ? "+" : "") + x.delta.toFixed(4) : "—"}</td><td class="num">$${Number(x.cost_usd || 0).toFixed(4)}</td></tr>`)) : '<p class="muted">No trial yet.</p>'}
         <p class="note">Best so far: <span class="mono">${esc(one.best || one.baseline || "")}</span>. Research on validation items: no evidence until it is confirmed.</p>
         ${open ? `<div class="actions" style="margin-top:0"><button class="btn" type="button" id="so-stop">Stop it</button>${agent ? "" : '<label>at most (USD) <input type="number" id="so-cap" value="1" min="0.01" step="0.01" style="width:6rem"></label><button class="btn" type="button" id="so-resume">Continue it</button>'}</div><div id="so-out" data-out></div>` : ""}`)}
       ${agent && open ? part(3, "Propose the next trial", `<p class="muted">The agent sampler: ask for the study's state (its weakest items, what was tried), then tell a proposal, which runs as the next trial.</p>
@@ -2166,7 +2167,7 @@
     const reread = (box) => {
       const k = document.createElement("p");
       k.innerHTML = '<button class="btn" type="button">Read it again</button>';
-      k.querySelector("button").addEventListener("click", () => { forget(`studies:${goal}`); forget(`study:${goal}/`); WB.render(true); });
+      k.querySelector("button").addEventListener("click", () => { forget(`studies:${goal}`); forget(`study:${goal}/`); forget("chart:"); WB.render(true); });
       box.appendChild(k);
     };
     if (!sid) {

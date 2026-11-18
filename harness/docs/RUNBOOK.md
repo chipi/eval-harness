@@ -83,6 +83,7 @@ What [Getting started](../../docs/GUIDE.md) walks: a dataset, its reference, run
 | step | command |
 |---|---|
 | the same, in the terminal | `evh overview-show [--period P]` · `evh activity-show` · `evh dataset-list` · `evh arm-list` (`--systems 1`) · `evh arm-show LABEL DATASET SYSTEM` · `evh reference-list` · `evh metric-show …` · `evh goal-list` · `evh goal-leaderboard G [--arms PATTERN] [--top N]` (a goal with many arms: only the arms matching, or the first N, always with the baseline, the leader and the recommended arm; each arm's paired test against the leader) · `evh search …` · `evh comparison-show --runs …` (`--analysis`) · `evh comparison-item --runs … --item ID` · `evh sheet-show … --runs …`; every list takes `--period P` |
+| the evidence drawn (RFC-034): a round's or a study's gain against cost, each arm against the leader, a study's trials, rank stability, latency, label or judge agreement, arms by items, a goal or a code record over time | `evh chart KIND --goal G [--round R \| --study S] [--dataset D] [--scorer S] [--model M] [--svg FILE]` (KIND: `gain-cost`, `intervals`, `study-progress`, `rank-stability`, `latency`, `agreement`, `items`, `trend`); the table it draws, its caption, the drawing as SVG |
 | where arms decided differently | `evh comparison-show --runs A,B --disagree` |
 | the sheet: every item, every arm's output and scores, the labels, the winner, the signals | `evh sheet-export --dataset-id … --runs A,B --csv FILE [--wrong-against SET] [--new-vs V] [--fill label\|pick\|scores\|tags]` (the API: `POST /api/v1/datasets/{dataset}/sheets`, a job keeping the sheet and its key) |
 | how two per-item scores relate, by a recorded field (a gate that saved a false dismissal, one that cost a false alarm) | `evh comparison-crosstab --runs A --crosstab M1,M2 [--group _meta.gates [--group-match REGEX]] [--where F:V]` ([§14](#14-browse-the-catalog-and-the-inspector)) |
@@ -1266,6 +1267,23 @@ evh judge-score --dataset-id cnn_dailymail_200 --scorer judge-summ-pick-v1 --dry
 evh judge-score --dataset-id cnn_dailymail_200 --scorer judge-summ-pick-v1
 evh sheet-show cnn_dailymail_200 --runs … --metric judge-summ-pick-v1/judge_won
 ```
+
+### Judges that say why
+
+A scorer with `explain: true` (what `evh scorer-new` writes) asks each judge for a short reason inside its verdict,
+after the scores and in the same JSON object: one sentence per graded output, or one for a pick or a pair. It is the
+same call, so it costs output tokens, not calls; the dry run counts them. The verdict stores the reason as `why`. One
+that repeats eight words of the item or the outputs is not committed (`why_withheld`, kept in the git-ignored local copy
+as a withheld reply is), and one that is missing is marked so (`why_missing`); the scores stand either way.
+
+```bash
+evh judge-verdicts <scorer> --limit 10              # the lowest scores first, each with its reason
+evh judge-verdicts <scorer> --item <id> --order item # one item, every arm and judge
+```
+
+A judge asked for its reason is a different judge (its message changes), so the gate compares `explain` with its
+validation runs: validate it with `explain: true` in the judge arm's params (the SummEval adapter asks in the same
+words). A scorer without the field gives no reasons and keeps its judging sets and messages as they were.
 
 ### Validating a judge: what the gate needs
 

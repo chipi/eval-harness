@@ -391,6 +391,7 @@ def evidence(goal: str, rnd: dict, A: Any = None, data: Path | None = None) -> d
     if barm:
         held = find_arm(rnd, barm.rsplit("/", 1)[-1])
         barm = arm_id(rnd, held) if held is not None else barm
+    out["baseline_arm"] = barm
     level: list[str] = []  # the arms the leader is not separated from, after Holm
     if len(arms) > 1:
         from evaluation_harness import stats  # noqa: PLC0415

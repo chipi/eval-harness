@@ -330,6 +330,8 @@ def decide(
                 "delta": r.get("delta"),
                 "p": r.get("p"),
                 "verdict": note or r.get("verdict"),
+                # The 95% interval of the paired test before Holm (stats.cluster_ci): what the intervals chart draws.
+                "ci": r.get("ci"),
             }
     for x in [
         x for x in eligible if (rows[x]["quality"].get("vs_leader") or {}).get("verdict") == "untestable"

@@ -206,6 +206,7 @@ def _load(dotted: str) -> Callable[..., Any]:
 
 def _all() -> dict[str, Op]:
     from evaluation_harness.ops import (  # noqa: PLC0415
+        charts,
         dataset_jobs,
         datasets,
         goals,
@@ -246,6 +247,7 @@ def _all() -> dict[str, Op]:
         *reports.OPS,
         *run_jobs.OPS,
         *study_jobs.OPS,
+        *charts.OPS,
     ):
         if op.kind not in KINDS:
             raise ValueError(f"{op.name}: kind {op.kind!r} is not one of {KINDS}")
