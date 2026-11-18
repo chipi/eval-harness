@@ -451,6 +451,8 @@ input[type=number] { max-width: 12rem; }
 .chart.evidence svg { width: 100%; height: auto; display: block; overflow: visible; }
 .chart.evidence svg.wide { min-width: 520px; }
 .chart.evidence svg text { font: 12.5px var(--mono); fill: var(--ink-2); }
+/* the drawings are at least 520px wide, so their text keeps its size on a phone (the older charts' 20px is for theirs) */
+main .chart.evidence svg[role="img"] text { font-size: 12.5px; }
 .chart.evidence svg .t-ink { fill: var(--ink); paint-order: stroke; stroke: var(--surface); stroke-width: 3px; stroke-linejoin: round; }
 .chart.evidence svg .t-muted { fill: var(--muted); }
 .chart.evidence figcaption { margin-top: 6px; font-size: 13px; color: var(--ink-2); }

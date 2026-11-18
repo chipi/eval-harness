@@ -486,11 +486,18 @@ def forest(rows: list[dict], label: str, x_label: str, margin: float | None = No
             f"{_e(_num(r['est']))} {_e(r.get('word') or '')}</text>"
         )
     base = top + rh * len(rows)
+
+    def end(v: float, anchor: str) -> str:
+        """An end of the axis, labelled unless its label would sit on zero's ("0" and "0.002" read "0002")."""
+        if abs(x_of(v) - x_of(0)) < LABEL_W * (len(_num(v)) + 2):
+            return ""
+        return f'<text x="{x_of(v):.1f}" y="{base + 16}"{anchor} class="tick">{_e(_num(v))}</text>'
+
     body.append(
-        f'<text x="{x_of(lo):.1f}" y="{base + 16}" class="tick">{_e(_num(lo))}</text>'
-        f'<text x="{x_of(0):.1f}" y="{base + 16}" text-anchor="middle" class="tick">0</text>'
-        f'<text x="{x_of(hi):.1f}" y="{base + 16}" text-anchor="end" class="tick">{_e(_num(hi))}</text>'
-        f'<text x="{(left + NARROW - right) / 2:.0f}" y="{base + 38}" text-anchor="middle" class="tick">{_e(x_label)}</text>'
+        end(lo, "")
+        + f'<text x="{x_of(0):.1f}" y="{base + 16}" text-anchor="middle" class="tick">0</text>'
+        + end(hi, ' text-anchor="end"')
+        + f'<text x="{(left + NARROW - right) / 2:.0f}" y="{base + 38}" text-anchor="middle" class="tick">{_e(x_label)}</text>'
     )
     return _evidence("".join(body), NARROW, h, label, caption)
 

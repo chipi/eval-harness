@@ -721,6 +721,18 @@ try:
                 page.evaluate("() => [document.scrollingElement.scrollWidth, window.innerWidth]"),
             )
             wide_fonts.evaluate("(e) => e.remove()")
+            page.wait_for_timeout(300)
+            # The older charts' phone rule set every drawing's text to 20 px: an arm's name then began left of its chart.
+            cut = page.evaluate(
+                "() => [...document.querySelectorAll('.chart.evidence svg text')]"
+                ".filter((t) => t.getBoundingClientRect().left < t.ownerSVGElement.getBoundingClientRect().left - 1)"
+                ".map((t) => t.textContent).slice(0, 5)"
+            )
+            check(
+                "at a phone's width every chart's names start inside it (none cut at its left edge)",
+                not cut,
+                cut,
+            )
             page.set_viewport_size({"width": 1280, "height": 900})
             page.goto(f"http://127.0.0.1:{port}/workbench/#systems/tickets_summary")
             page.wait_for_selector("#sn-model", timeout=20000)
