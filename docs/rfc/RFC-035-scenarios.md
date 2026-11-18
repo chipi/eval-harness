@@ -40,6 +40,8 @@ system, gives it each user turn, and reports what the system did, through one sm
    beside fleet-eval-data. The fleet session's count: three of Flotilla's routines call a model, triage (`triage/cycle`),
    the bugfix chain (`bugfix/fix`) and `fix-podcast`; the rest call none. So the order is triage, then bugfix, then
    fix-podcast; each takes one input and works alone, so each of their scenarios is one step.
+7. Keep it small: the boundary of [§2](#2-what-the-harness-owns-and-what-it-does-not) and the surfaces of
+   [§12](#12-what-it-adds-to-the-surfaces) hold.
 8. **One shape in two layers** (owner, 2026-11-18, on the flotilla session's proposal): the station **episode** is
    Flotilla's (a versioned JSON schema in its `runtime/`, produced by every harness adapter); the **transcript** is the
    harness's envelope around it and embeds episodes verbatim. Names: *station* (one agent), *episode* (one station's
@@ -48,8 +50,6 @@ system, gives it each user turn, and reports what the system did, through one sm
    stations and its own command. See [Where systems run](#where-systems-run). The owner asked Flotilla to make the
    episode schema, the offline entry point, the frozen input format and a scenario result in acceptance first-class
    parts of its v2 build.
-7. Keep it small: the boundary of [§2](#2-what-the-harness-owns-and-what-it-does-not) and the surfaces of
-   [§12](#12-what-it-adds-to-the-surfaces) hold.
 
 ## What we learned from EvalBench
 
@@ -191,6 +191,10 @@ One shape, not a mapping, in two layers with one owner each:
 - **The transcript** is the harness's envelope: the scenario, the trial, the user's turns, `stations: [episode, …]` in
   run order (kick-backs included), the final state, the outcome check's verdict, and how it ended (mapped from the
   episodes' `exit_reason`). Episodes are embedded verbatim, never converted.
+
+Arguments and results are kept whole only after Flotilla's redaction (credentials masked), and above a size cap (set in
+the schema) as a hash and a length, so a record cannot balloon or carry raw source text. The schema comes with v2's
+build step 4 (the harness layer in `runtime/`), validated against every adapter in the same commit.
 
 A transcript is a new kind of output beside the ones the views already draw (`text`, `insights`, `nodes`, `entities`):
 the inspector, the sheet and the Workbench gain one renderer, turn by turn, two side by side.
@@ -335,6 +339,19 @@ gives isolation and reset per scenario, many trials, no load on the live platfor
 live. Through flotillad does not fit: v2's shadows start from live inputs and are paired with them, and feeding them
 scenarios would put evaluation inside Flotilla.
 
+**What v2 builds for it** (the flotilla session, 2026-11-18, on the owner's request that these be first-class; build
+steps are v2's):
+
+| piece | v2 step | what it is |
+| --- | --- | --- |
+| episode schema | 4 | `runtime/episode.schema.json`, every adapter validated against it |
+| offline entry point | 3, its test in 5 | a tested contract (`flotillad -run-offline`, flags settled at build): a version folder, models, an input envelope, a fresh state folder, an output folder; the version's own `run:` in the worker image, read-only; episodes, the calls file and decision records in the output folder; the e2e asserts nothing outside it changed. The harness's runner starts it; Flotilla provides and tests it |
+| frozen input | 2 | `runtime/input.schema.json`: the handed input, the ledger mark, the case keys, the commit, the routine and version. A captured input exports as the envelope, the ledger slice as of the mark, and a state snapshot together, so a scenario sees what the live run saw |
+| acceptance | 1 | promote gains evidence: an eval-harness run id and its verdict line beside the pairs and the replay gates; a routine declares `acceptance: [pairs, replay, scenario_eval]` and promote refuses without it unless the operator gives a reason. Flotilla stores the verdict; it does not judge the eval |
+
+A captured live input carries production data: making it a scenario is a copy and a scrub, and it lands in the
+installation's private data (fleet-eval-data), never a public repository.
+
 **Where scenarios sit in Flotilla's acceptance** (the installation's bars, flotilla-fleets
 `docs/fleets-v2-requirements.md`, draft; the fleet session's summary): a new version is accepted by the operator after
 replay gates, a model replay (triage: k>=3, false dismissals and silent drops no worse than live; bugfix: approved plans
@@ -354,7 +371,8 @@ comparison of at least seven days. Scenarios are the eval part of those bars; th
 3. Answered by the flotilla session (2026-11-18) and decided by the owner: one shape in two layers, the offline path.
    Asked of it next (owner, 2026-11-18): the episode schema, the offline entry point as a tested contract, the frozen
    input format usable as a scenario's start, and a scenario result in a version's acceptance, as parts of v2's build;
-   the schema's commit to reference here.
+   the schema's commit to reference here. Answered: all four fit v2 (the table above); the commits follow as v2's
+   steps land.
 
 ## Not in this RFC
 
