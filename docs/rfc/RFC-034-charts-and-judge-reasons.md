@@ -8,7 +8,7 @@
   surfaces), [RFC-029](RFC-029-studies-and-test-set-looks.md) (studies), [RFC-027](RFC-027-who-acted-and-baselines-per-goal.md)
   (baselines and rounds), [RFC-030](RFC-030-replay-and-faithfulness.md) (periods and faithfulness),
   [ADR-0001](../adr/ADR-0001-judge-scorers.md) (the validated judge), [ADR-0026](../adr/ADR-0026-contenders-by-non-inferiority.md)
-  (contenders), [RFC-035](RFC-035-agent-journeys.md) (agent journeys, 0.9.0)
+  (contenders), [RFC-035](RFC-035-scenarios.md) (scenarios, 0.9.0)
 
 ## Abstract
 
