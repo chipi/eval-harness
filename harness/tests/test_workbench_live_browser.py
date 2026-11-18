@@ -706,15 +706,21 @@ try:
                 ],
             )
             page.set_viewport_size({"width": 390, "height": 844})
+            # Wider text than this machine's fonts: CI's fallback fonts made the page 12 px wider than here, and a long
+            # run id in the close form pushed it past the phone's edge only there.
+            wide_fonts = page.add_style_tag(
+                content="* { font-family: 'Liberation Mono', 'DejaVu Sans Mono', monospace !important; letter-spacing: 0.4px !important; }"
+            )
             page.wait_for_timeout(300)
             check(
-                "at a phone's width the charts scroll in their own box, the page does not",
+                "at a phone's width, in wide fonts too, the charts scroll in their own box, the page does not",
                 page.evaluate("() => document.scrollingElement.scrollWidth <= window.innerWidth + 1")
                 and page.evaluate(
                     "() => [...document.querySelectorAll('.chart.evidence .scroll-x')].every((b) => b.scrollWidth >= b.clientWidth)"
                 ),
                 page.evaluate("() => [document.scrollingElement.scrollWidth, window.innerWidth]"),
             )
+            wide_fonts.evaluate("(e) => e.remove()")
             page.set_viewport_size({"width": 1280, "height": 900})
             page.goto(f"http://127.0.0.1:{port}/workbench/#systems/tickets_summary")
             page.wait_for_selector("#sn-model", timeout=20000)

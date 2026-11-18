@@ -95,6 +95,19 @@ def _mean(xs) -> float | None:
     return statistics.fmean(xs) if xs else None
 
 
+def _shown(labels: dict) -> tuple[dict, str]:
+    """Arms' labels as the goal page shows them (catalog_build.shown_labels): when most are read through one re-score,
+    the scorer is named once (returned) and dropped from each arm's label."""
+    from evaluation_harness.catalog_build import shown_labels  # noqa: PLC0415
+
+    return shown_labels(labels)
+
+
+def _through(scorer: str) -> str:
+    """The caption's sentence naming the re-score the arms are read through, once."""
+    return f" Every arm is read through the re-score by scorer {scorer}." if scorer else ""
+
+
 def _label(A, arm: str) -> str:
     return str(A.describe(arm).get("label") or arm.rsplit("/", 1)[-1])
 
@@ -147,7 +160,9 @@ def _group(goal: str, dataset: str | None) -> dict[str, Any]:
     )
     if d is None:
         raise Problem(f"goal {goal} has no arms on {dataset or 'its datasets'} yet", "not-enough")
-    return d["groups"][0]
+    grp = d["groups"][0]
+    named, scorer = _shown({a["arm"]: a["label"] for a in grp["arms"]})
+    return {**grp, "arms": [{**a, "label": named[a["arm"]]} for a in grp["arms"]], "scorer": scorer}
 
 
 def intervals(goal: str, dataset: str | None = None) -> dict:
@@ -206,6 +221,7 @@ def intervals(goal: str, dataset: str | None = None) -> dict:
         f"{grp['scored_against']}), oriented so right is better. The line is its 95% interval from the paired test, "
         "before Holm's correction across the arms; the verdict is after it, so an interval clear of zero can still be "
         "not separated. A filled dot: a significant difference."
+        + _through(grp["scorer"])
         + (
             f" The dashed line is the margin a contender must stay within ({margin:.4g})."
             if margin is not None
@@ -259,7 +275,7 @@ def latency(goal: str, dataset: str | None = None) -> dict:
     caption = (
         f"Every {A.item_word}'s latency in milliseconds per arm on {grp['dataset']} (the mean of its repeats), lower "
         "is better; the ticks are its median (p50) and its 95th percentile (p95). Latencies measured on different "
-        "machines are not comparable: the goal never tie-breaks on them then."
+        "machines are not comparable: the goal never tie-breaks on them then." + _through(grp["scorer"])
     )
     svg = cc.strip(
         groups, f"latency per {A.item_word}", lower=True, marks=marks, width=cc.NARROW, caption=cc._e(caption)
@@ -305,7 +321,7 @@ def items(goal: str, dataset: str | None = None, href=None) -> dict:
     caption = (
         f"{m} per {A.item_word} and arm on {grp['dataset']}, the darker the higher ({'lower' if lower else 'higher'} "
         f"is better). The {len(shown)} of {len(shared)} {A.item_word}s where the arms differ most, most first: where "
-        "to read outputs side by side."
+        "to read outputs side by side." + _through(grp["scorer"])
     )
     svg = cc.heatmap(
         list(series), shown, cells, f"{m} by arm and {A.item_word}", lo, hi, caption=cc._e(caption)
@@ -376,13 +392,14 @@ def gain_cost(goal: str, round: str | None = None, study: str | None = None) -> 
         against = "the run it started from" if ev.get("baseline_arm") else "its leader (it names no baseline)"
         arms = [a for a in ev["arms"] if a != base]
         tested = _against(A, arms, base, metric, lower, rnd["dataset_id"])
+        names, scorer = _shown({a: _label(A, a) for a in [base, *arms]})
         for r in tested:
             ci = r.get("ci")
             y = (r["delta"] or 0) * flip if r.get("delta") is not None else None
             filled = str(r.get("verdict") or "").startswith("significant")
             rows.append(
                 {
-                    "arm": _label(A, r["arm"]),
+                    "arm": names[r["arm"]],
                     "quality_delta": y,
                     "low": min(ci[0] * flip, ci[1] * flip) if ci else None,
                     "high": max(ci[0] * flip, ci[1] * flip) if ci else None,
@@ -392,11 +409,12 @@ def gain_cost(goal: str, round: str | None = None, study: str | None = None) -> 
                     "claim": _claim(filled, y or 0, r["cost_delta"]),
                 }
             )
-        title, base_name, ds = f"{goal} {round}: gain against cost", _label(A, base), rnd["dataset_id"]
+        title, base_name, ds = f"{goal} {round}: gain against cost", names[base], rnd["dataset_id"]
         tests = "the paired test, Holm across the arms"
     else:
         from evaluation_harness.model import studies as ms  # noqa: PLC0415
 
+        scorer = ""  # a study's trials are its own systems' runs, read as they ran
         sid = str(study)
         st, spec = ms.state(goal, sid, _data()), ms.spec(goal, sid, _data())
         ds = str(spec.get("dataset"))
@@ -460,6 +478,7 @@ def gain_cost(goal: str, round: str | None = None, study: str | None = None) -> 
         f"is cheaper per {A.item_word}. A filled mark is a difference {tests} supports, and only those are named by "
         "their quadrant; a hollow one is not separated from the baseline, whatever side it falls on."
         + ("" if priced else " No arm recorded a cost different from the baseline's: the cost axis is flat.")
+        + _through(scorer)
     )
     svg = cc.quadrant(
         points,

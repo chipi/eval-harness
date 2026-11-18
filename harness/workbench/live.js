@@ -811,7 +811,8 @@
         ${rows ? `<p class="muted">The leader: <b class="mono">${esc(short(ev.leader))}</b>. A verdict holds when the raw p is under its threshold.</p>
           <div class="tablewrap"><table><thead><tr><th>arm</th><th class="num">mean</th><th class="num">Δ</th><th class="num">raw p</th><th class="num">threshold</th><th>verdict</th></tr></thead><tbody>${rows}</tbody></table></div>` : ""}
         ${(ev.notes || []).length ? `<ul>${ev.notes.map((n) => `<li class="muted">${esc(n)}</li>`).join("")}</ul>` : ""}</div></section>
-      <section class="part"><div class="parthead"><h2>Where the arms stand</h2><span class="grow"></span><span class="muted">the goal's every arm on ${esc(r.dataset_id)}</span></div><div class="body">
+      <section class="part"><div class="parthead"><h2>Where the arms stand</h2></div><div class="body">
+        <p class="muted">Every arm of the goal on ${esc(r.dataset_id)}, this round's and before.</p>
         ${chartBox("intervals", { goal, dataset: r.dataset_id })}${chartBox("items", { goal, dataset: r.dataset_id })}${chartBox("latency", { goal, dataset: r.dataset_id }, true)}</div></section>
       <section class="part"><div class="parthead"><h2>Its arms</h2></div><div class="body"><ul id="arms">${arms || '<li class="muted">none yet</li>'}</ul>
         ${isOpen ? `<div id="rt-box"></div>` : ""}

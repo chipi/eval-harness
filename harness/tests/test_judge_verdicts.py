@@ -95,7 +95,7 @@ def item_view(public: bool) -> dict:
         + ("cs.LIMITS['hosts'] = ['example.org']; " if public else "")
         + "print(json.dumps(cs.item({'arms': ['runs/tk_v1/echo_s1'], 'item': ['t01_login']})))"
     )
-    r = subprocess.run([sys.executable, "-c", code], cwd=proj, env=dict(env, PYTHONPATH=str(HARNESS.parent)),
+    r = subprocess.run([sys.executable, "-c", code], cwd=proj, env=dict(env, PYTHONPATH=str(HARNESS)),
                        capture_output=True, text=True, stdin=subprocess.DEVNULL, timeout=300)  # fmt: skip
     try:
         return json.loads(r.stdout.splitlines()[-1])
