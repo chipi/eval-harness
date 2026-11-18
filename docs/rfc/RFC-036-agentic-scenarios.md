@@ -32,7 +32,9 @@ agents, and Flotilla's v2 design builds what that runner needs.
    run), *turn* (one model call), *action* (one tool call).
 3. **Any agent**: the episode is defined generically in the harness's transcript schema; Flotilla's
    `runtime/episode.schema.json` is that shape plus Flotilla's own fields, so its runner embeds its episodes unchanged
-   and a runner for another agent writes the generic shape. (Proposed in this revision; Flotilla's confirmation asked.)
+   and a runner for another agent writes the generic shape. Confirmed by the flotilla session (2026-11-18): Flotilla
+   vendors a pinned copy of the generic schema by version under its `runtime/testdata/` and tests every episode against
+   it; no runtime reference, and a new version of the harness's schema is a deliberate bump on Flotilla's side.
 4. **The offline path**: Flotilla's agents run outside flotillad, on the version's stations and its own command
    ([§5](#5-the-first-runner-flotilla)).
 5. The evaluation pieces are first-class parts of Flotilla's v2 build ([§5](#5-the-first-runner-flotilla)).
@@ -57,14 +59,19 @@ against one world; a call with no recording fails the run and is never sent live
 [RFC-035](RFC-035-scenarios.md#4-a-transcript)'s transcript, plus `stations: [episode, …]` in run order, kick-backs
 included. A run of one agent has one station; the bugfix chain has five (verdict, reproducer, fix, review, advisor).
 
-An episode, generic:
+An episode, generic (`episode` in the harness's transcript schema; field shapes from the flotilla session, 2026-11-18):
 
-- the station's name and sequence, its model, its harness, the system's version and spec hash;
-- its turns (one model call each): model, text, tokens (input, output, cache read and write, reasoning), time, latency,
-  the rendered prompt or its hash and a pointer;
-- its actions (one tool call each): name (`server__tool` for MCP), arguments and result whole or hashed, duration,
-  success;
-- its answer, how it ended (`exit_reason`), its cost with `cost_source`.
+| field | shape |
+| --- | --- |
+| `schema_version` | on the episode itself; additional properties allowed, so a runner's superset validates |
+| `station` | `{name, sequence}` |
+| `version`, `spec_hash` | the system's version and its spec's hash |
+| `harness` | `{name, version}` (`pi`, `0.80.10`): stream shapes change between versions, so the version is part of what was measured |
+| `turns[]` | one model call each: `model_alias` (what the system asked for) and `model` (the upstream model that answered, when reported); `text`; `tokens` `{input, output, cache_read, cache_write, reasoning}`, each null when not reported, never 0 for unknown; `started_at` (ISO 8601 UTC); `latency_ms`; `prompts` `{name: {text?, sha256, ref?}}`, one per declared text, the text inline only under a size cap |
+| `actions[]` | one tool call each, under its turn: `name` (`server__tool` for MCP); `args` and `result`, each whole or `{sha256, length}` above a size cap; `redacted` (credentials masked before recording: without it a masked value cannot be told from a real one); `ok`; `started_at`; `duration_ms` |
+| `answer` | the station's last answer |
+| `exit_reason` | an open set: `completed`, `turn_cap`, `timeout`, `error` at its core; RFC-037 adds `user_done`; a harness may add its own |
+| `cost` | `{usd, source}`, `source` one of `gateway`, `provider`, `harness_estimate` and required: no figure without its source |
 
 A runner may add its own fields (Flotilla's: `session_id` to resume after a kill, `notes` for prompt changes a harness
 forced, `raw_path` for the native stream); the harness keeps them and ignores them.
@@ -151,5 +158,6 @@ Built with [RFC-035](RFC-035-scenarios.md#10-the-build-in-order)'s steps 1 to 3,
 
 ## Open questions
 
-1. Flotilla's confirmation that its episode schema is the generic episode plus its own fields (decision 3).
-2. The episode schema's commit, when v2's step 3 lands, for §2 to reference.
+1. Decided: the generic episode is the harness's, Flotilla's a pinned superset (decision 3).
+2. The generic schema's path and commit, when built (RFC-036's step 1), sent to the flotilla session to pin; Flotilla's
+   superset commit, when its v2 step 3 lands, for §2 to reference.
