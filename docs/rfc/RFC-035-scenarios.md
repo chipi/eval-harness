@@ -1,6 +1,6 @@
 # RFC-035: Scenarios: evaluating what takes several steps
 
-- **Status**: Draft, revision 2 (0.9.0). Owner, 2026-11-18: "write RFC for 4 for 0.9" (multi-turn evaluation, after
+- **Status**: Draft, revision 3 (0.9.0): the fleet session's feedback folded in (2026-11-18). Owner, 2026-11-18: "write RFC for 4 for 0.9" (multi-turn evaluation, after
   the comparison with EvalBench); then, on revision 1: no EvalBench importer, ever; the simulated user is any model,
   local or online, as a judge is; "how do we keep it small?"; agreed: the approach below, the names **scenario** and
   **transcript**, running a scenario outside the harness behind an interface.
@@ -37,7 +37,9 @@ system, gives it each user turn, and reports what the system did, through one sm
 5. No EvalBench importer.
 6. **The first users are Flotilla's agents** (owner, 2026-11-18): every Flotilla agent is evaluated with scenarios as
    part of its acceptance. Triage and the others first; the bugfix chain last. The first runner is the one for them,
-   beside fleet-eval-data.
+   beside fleet-eval-data. The fleet session's count: three of Flotilla's routines call a model, triage (`triage/cycle`),
+   the bugfix chain (`bugfix/fix`) and `fix-podcast`; the rest call none. So the order is triage, then bugfix, then
+   fix-podcast; each takes one input and works alone, so each of their scenarios is one step.
 7. Keep it small: the boundary of [§2](#2-what-the-harness-owns-and-what-it-does-not) and the surfaces of
    [§12](#12-what-it-adds-to-the-surfaces) hold.
 
@@ -100,7 +102,17 @@ same user, so its model and its prompt are the harness's to fix and to fingerpri
 
 ## 3. The runner interface
 
-A runner is a service the harness calls. The harness keeps the loop; the runner is three calls:
+A runner has one of two shapes. Most systems an evaluation meets take one input and work alone (every Flotilla agent
+does); they need no loop, so the first shape is a batch:
+
+```
+run(scenario, system) -> transcript                # a command: one scenario (or a file of them) in, a transcript
+                                                   # file out; a fresh, isolated run each time
+```
+
+That is the shape fleet-eval-data's bugfix driver already has (`driver_fix.py`): a command, no service to keep up. A
+system that converses (a chatbot, the bugfix chain when it asks its reporter a question) needs the user's next turn to
+depend on its last reply, so the second shape is a session, and the harness keeps the loop:
 
 ```
 start(scenario_env, system)  -> session            # a fresh, isolated run of the system under test
@@ -109,7 +121,7 @@ step(session, user_turn)     -> system_turn        # what the system did with th
 end(session)                 -> final_state        # what the outcome check reads, then the session is gone
 ```
 
-An agent given one task and left to work is the same interface with one `step`. A runner is named like a deployment
+A batch run is a session with one `step`, so the two shapes record the same transcript. A runner is named like a deployment
 (RFC-032's model records): where it is, how it is reached, which systems it can run, and a check that it answers. The
 harness ships one runner of its own, `local`: an in-process stub that replays fixed system turns, for its own tests and
 the tutorial, $0 and offline. Every real runner lives outside: a project's own service, a container, or a platform that
@@ -151,13 +163,25 @@ What a scenario's run records, in the run's rows (RFC-033's model), one row per 
 - the actions: name (`server__tool` for MCP), arguments, result (or its hash when it carries the source's text, as V12
   treats a judge's reply), duration, success;
 - tokens, cost, latency, turns, steps; how it ended (the user said done, `max_turns`, a timeout, an error);
-- the final state the runner reported, and the outcome check's verdict on it.
+- the final state the runner reported, and the outcome check's verdict on it;
+- **stations**: a run can be several agents in sequence, each on its own model and harness (the bugfix chain is five:
+  verdict, reproducer, fix, review, advisor, with kick-backs between them; Flotilla calls them stations). Every turn and
+  action names its station, and each station has its own model, harness, tokens, cost and time;
+- the prompt each call received, rendered (Flotilla's texts are templates, recorded per call), and the system's version
+  and spec hash;
+- the cost and its source: a provider's bill or a gateway key's spend before and after (an agent's own count can
+  under-report: the fleet measured pi at about half), never a figure without saying which.
+
+One shape, not a mapping: the transcript's fields are agreed with Flotilla's Episode (`bugfix/HARNESS_SEAMS.md`, S4 and
+S8: call recording with rendered texts; S9: cost), so its runner writes a transcript, not something to convert.
 
 A transcript is a new kind of output beside the ones the views already draw (`text`, `insights`, `nodes`, `entities`):
 the inspector, the sheet and the Workbench gain one renderer, turn by turn, two side by side.
 
-## 6. The two drivers, in order
+## 6. The drivers, in order
 
+0. **None**: a one-step scenario, an agent given its input and left to work, needs no driver. All of Flotilla's agents
+   are this, so their scenarios need neither of the two below; neither gates them.
 1. **Script** first: the scenario's `turns:` are sent in order. Deterministic, $0 on the harness's side, and it proves
    the whole shape (scenario datasets, the runner interface, transcripts, scorers, repeats, tests, views) before any model
    plays a user.
@@ -189,7 +213,9 @@ simulated user varies it (the plan).
 | behaviour | invented facts, needless questions | a judge, counted per scenario |
 | cost | what the whole run cost | tokens, dollars, latency, turns, steps per scenario |
 
-Every judge here is a judge scorer as today: validated against people's labels on transcripts before its numbers count.
+Each row can be scored per station as well as for the whole: did the reproducer's test fail on the base, did the review
+approve a wrong fix. For a chain, a station's score often says more than the whole run's. Every judge here is a judge
+scorer as today: validated against people's labels on transcripts before its numbers count.
 
 ## 9. Trials and statistics
 
@@ -241,14 +267,21 @@ A capture of real conversations (RFC-019) becomes scenarios: the first message a
 (or proposed by a model, accepted by a person) from what the user went on to say, `success` from the outcome production
 recorded. A production failure becomes a scenario that must pass from then on.
 
+For Flotilla this needs no new machinery: its v2 design freezes exactly what a live run was handed (the case, the
+commit, the ledger's mark) and exports live and shadow results as pairs keyed by that frozen input. A frozen input is a
+scenario's `start`; a pair's sides are transcripts.
+
 ## 14. The build, in order
 
-1. Scenario datasets and the transcript output; the runner interface and the `local` runner; the scripted driver.
-2. The deterministic scorers (path, outcome, cost) and the transcript renderer in the inspector and the Workbench.
+1. Scenario datasets and the transcript output (with stations); the batch runner contract and the `local` runner.
+2. The deterministic scorers (path, outcome, cost), whole and per station, and the transcript renderer in the inspector
+   and the Workbench.
 3. Repeats and the statistics on scenarios (pass rate, pass^k, the paired test on scenarios).
-4. The first real runner, outside the harness, on the first real scenario set.
-5. The simulated user; the judges on transcripts and their validation on labelled transcripts.
-6. Scenarios from production.
+4. Triage: its scenarios and its batch runner beside fleet-eval-data, the first acceptance.
+5. The bugfix chain, then fix-podcast, on the batch runner fleet-eval-data's driver already is.
+6. The session runner, the script and the simulated user, when a system that converses needs them (the first: the
+   bugfix chain's question to its reporter).
+7. Judges on transcripts and their validation on labelled transcripts; scenarios from production.
 
 ## Where systems run
 
@@ -268,16 +301,35 @@ Read 2026-11-18 at flotilla `main` 0ed0d28: not as it is, and not by its own rul
   only (fleet-eval-data `projects/bugfix-eval/PLAN.md`).
 
 So the synergy runs the other way: Flotilla's agents are systems under test, and a runner for them lives beside the
-evaluation data (fleet-eval-data), as that driver does, implementing this RFC's three calls; Flotilla contributes what
-its own plans already hold (the records export, the episode format). Neither the harness nor Flotilla takes on running
-scenarios.
+evaluation data (fleet-eval-data), as that driver does; Flotilla contributes what its own plans already hold. Neither
+the harness nor Flotilla takes on running scenarios.
+
+**Flotilla's v2 design changes the "not as it is"** (flotilla `docs/wip/v2-design.md`, the operator's decision of
+2026-11-18, to become its ADR-0020; designed, not built). Every routine gets versions; a new version runs in shadow
+beside the live one with no effect, over the same frozen input; live and shadow results are exported as pairs (per
+side: the version and hash, the outcome, the plan and any diff, per station the turns, tokens, cost and rendered texts);
+"An eval run is a shadow run, under the same rules"; and `flotillad -stations <version> -models <config>` gives an eval
+exactly what a live run of that version would get. So the runner beside fleet-eval-data takes the version's stations
+through `flotillad -stations`, and runs exactly the version that would go live.
+
+**Where scenarios sit in Flotilla's acceptance** (the installation's bars, flotilla-fleets
+`docs/fleets-v2-requirements.md`, draft; the fleet session's summary): a new version is accepted by the operator after
+replay gates, a model replay (triage: k>=3, false dismissals and silent drops no worse than live; bugfix: approved plans
+that fail the oracle = 0 and approved plans and oracle passes at least live's, cost from the gateway key) and a shadow
+comparison of at least seven days. Scenarios are the eval part of those bars; the shadow pairs stay Flotilla's.
 
 ## Open questions
 
 1. Decided (owner, 2026-11-18): the first runner is the one for Flotilla's agents, beside fleet-eval-data; the first
    scenario sets are theirs, triage first, bugfix last.
-2. For the fleet's session (asked 2026-11-18): which agents after triage, what each one's acceptance asks of a scenario,
-   what its runner can give (input, isolation, reset, the episode as a transcript), and what in this RFC does not fit.
+2. Answered by the fleet session (2026-11-18), folded in above: three model-calling agents, one step each; triage's
+   scenario is a signal with its six probes' frozen results and a ledger fixture, one step, its decision as the final
+   state (success: the reference decision; forbidden: cleanup or dismiss without the evidence probe), much of which
+   exists already as items with frozen tool results, so what scenarios add is path scoring and the outcome check on
+   what it would file; the batch runner; stations, rendered prompts and the cost's source in the transcript; no
+   simulated user or person driver needed for Flotilla now.
+3. For the flotilla session (the fleet session's advice): one shape for the transcript and Flotilla's Episode (field
+   names), and this section checked against `docs/wip/v2-design.md`.
 
 ## Not in this RFC
 
