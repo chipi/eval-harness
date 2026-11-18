@@ -140,19 +140,14 @@ A capture of real conversations (RFC-019) becomes scenarios: the first message a
 by a person (or proposed by a model, accepted by a person) from what the user went on to say, and `success` from
 the outcome production recorded. A production failure becomes a journey that must pass from then on.
 
-## 10. Interoperability
-
-`evh import-run` gains an EvalBench importer: its `scores.csv` and `evals.csv` as a run, so EvalBench's journeys
-get the harness's tests and decisions without being re-run.
-
 ## Open questions for the owner
 
 1. Which runner first: **cli** (Claude Code first, as the agent we use), **http**, or **python**?
 2. Is there a first real journey set to prove it on (the triage fleet's agents, the podcast product's MCP server)?
 3. The simulated user's default model, and whether a journey set may pin its own.
-4. Does the EvalBench importer belong in 0.9.0 or earlier?
 
 ## Not in this RFC
 
 - Agents that run for hours (the harness's jobs cover long runs; a journey has a timeout).
 - Voice and screen agents.
+- Importing EvalBench's results (owner, 2026-11-18: never).
