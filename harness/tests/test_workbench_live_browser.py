@@ -1350,7 +1350,12 @@ try:
             page.wait_for_selector(".chart-box [role=status]", timeout=20000)
             page.goto(f"http://127.0.0.1:{port}/workbench/#home")
             page.click("text=Settings")
-            page.wait_for_selector("#sf-path", timeout=20000)
+            # Settings' own reads land first (its overview, its file's text): they redraw it, rightly. The mark goes on
+            # once nothing of its own is left to read, so only the held charts can redraw it (CI's slower reads landed
+            # after a mark set at #sf-path, and redrew it themselves).
+            page.wait_for_selector("#sf-text", timeout=20000)
+            page.wait_for_function("() => !document.querySelector('main [role=status]')", timeout=20000)
+            page.wait_for_timeout(1500)
             page.evaluate("() => { document.querySelector('#sf-path').dataset.mark = 'kept'; }")
             held_n = len(waiting)
             for r_ in waiting:
