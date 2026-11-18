@@ -189,6 +189,27 @@ def item(params: dict) -> dict:
     if callable(lab) and not LIMITS["hosts"]:
         out["labels"] = lab(dataset, it)
     out["recorded"] = {a: rec for a in arms if (rec := A.describe(A.arms_of(a)[0]).get("recorded"))}
+    # What the judges said of this item and why (RFC-034 §5): the local inspector only, as the reasons describe the
+    # outputs they judged.
+    if not LIMITS["hosts"]:
+        out["verdicts"] = _judged(dataset, it)
+    return out
+
+
+def _judged(dataset: str, item_id: str) -> list[dict]:
+    """Every judge scorer's primary verdicts on one item of a dataset, in the judging set's order."""
+    from evaluation_harness.model import scorer_views  # noqa: PLC0415
+    from evaluation_harness.model.entity import Problem  # noqa: PLC0415
+
+    out = []
+    for s in scorer_views.list_scorers(check_format=False):
+        if s.get("dataset") != dataset:
+            continue
+        try:
+            r = scorer_views.verdicts(s["scorer"], item=item_id, order="item", limit=500)
+        except Problem:
+            continue
+        out += [dict(x, scorer=s["scorer"]) for x in r["rows"]]
     return out
 
 

@@ -3357,4 +3357,154 @@ check(
     and "Begin your reply with the JSON object" in judging.PAIR_REMINDER,
 )
 
+# ── reasons inside the verdict (RFC-034 §5) ──────────────────────────────────
+for mode_, mine_, theirs_ in (
+    (
+        "grade",
+        judging.with_reason(
+            judging.build_message(BASE, ad_item["article"], ad_item["summaries"]), "grade", 16
+        ),
+        ad._judge_message(ad_item, {"prompt": BASE, "explain": True}),
+    ),
+    (
+        "pick",
+        judging.with_reason(
+            judging.build_pick_message(PICK_BASE, ad_item["article"], ad_item["summaries"]), "pick", 16
+        ),
+        ad._pick_message(ad_item, {"prompt": PICK_BASE, "explain": True}),
+    ),
+    (
+        "pairwise",
+        judging.with_reason(
+            judging.build_pairwise_message(PAIR_BASE, ad_item["article"], ad_item["summaries"][3:5]),
+            "pairwise",
+            2,
+        ),
+        ad._pair_message(ad_item, 3, 4, {"prompt": PAIR_BASE, "explain": True}),
+    ),
+):
+    check(
+        f"explain, {mode_}: the reason's request is the same words in the package and the adapter",
+        mine_ == theirs_,
+    )
+check(
+    "explain absent or false: the adapter's messages are the ones validated before reasons existed",
+    ad._judge_message(ad_item, {"prompt": BASE})
+    == ad._judge_message(ad_item, {"prompt": BASE, "explain": False})
+    == judging.build_message(BASE, ad_item["article"], ad_item["summaries"]),
+)
+for reply_, mode_, n_, want_ in (
+    ('{"coherence": [3, 4], "why": ["clear", "drifts"]}', "grade", 2, ["clear", "drifts"]),
+    ('{"coherence": [3, 4], "why": ["clear"]}', "grade", 2, None),
+    ('{"coherence": [3, 4], "why": ["clear", ""]}', "grade", 2, None),
+    ('{"coherence": [3, 4]}', "grade", 2, None),
+    ('{"best": [2], "why": " keeps the facts "}', "pick", 3, "keeps the facts"),
+    ('{"better": "tie", "why": ["a list"]}', "pairwise", 2, None),
+    ("no JSON at all", "pick", 3, None),
+):
+    check(f"parse_why({reply_!r}, {mode_}) is {want_!r}", judging.parse_why(reply_, mode_, n_) == want_)
+check(
+    "a reason never decides whether the verdict parsed: scores with a broken why still parse",
+    judging.parse_block(
+        '{"coherence": [3], "consistency": [3], "fluency": [3], "relevance": [3], "why": 7}', 1
+    )
+    == [3.0],
+)
+m_why = manifest_for(scorer(explain=True))
+check(
+    "the judging set hashes explain only when it is on: a set made before keeps its id",
+    "explain" not in m1 and m_why.get("explain") is True and m_why["judging_set_id"] != m1["judging_set_id"],
+)
+msg_on = js.message_for(m_why, BASE, ARTICLES, OUTPUTS, m_why["items"][0], "primary", 0)
+msg_off = js.message_for(m1, BASE, ARTICLES, OUTPUTS, m1["items"][0], "primary", 0)
+check(
+    "message_for: with explain the message ends with the reason's request, without it it is unchanged",
+    msg_on.startswith(msg_off)
+    and msg_on.endswith("name what you saw in your own words.")
+    and '"why"' not in msg_off,
+)
+
+
+def explaining_judge(quote_item=None, drop_why=False):
+    """fake_judge's scores, plus a reason per summary; for `quote_item` the reason repeats its article."""
+    base_call = fake_judge()
+
+    def call(message, params):
+        res = base_call(message, params)
+        d = json.loads(res.output)
+        n = len(d["coherence"])
+        if not drop_why:
+            item = next(i for i in ITEMS if ARTICLES[i].strip() in message)
+            d["why"] = [
+                ARTICLES[item] if item == quote_item else f"summary {k} reads cleanly"
+                for k in range(1, n + 1)
+            ]
+        res.output = json.dumps(d)
+        return res
+
+    return call
+
+
+with tempfile.TemporaryDirectory() as tmp:
+    td = Path(tmp)
+    js.run_judging(m_why, scorer(explain=True), BASE, ARTICLES, OUTPUTS, td, explaining_judge(quote_item="itemB"), None,
+                   log=lambda *_: None)  # fmt: skip
+    rec_a = json.loads(js.verdict_path(td, "ja", "itemA", "primary", 0).read_text())
+    rec_b = json.loads(js.verdict_path(td, "ja", "itemB", "primary", 0).read_text())
+    check(
+        "a verdict stores its reasons, one per output, beside its scores",
+        rec_a.get("why") == [f"summary {k} reads cleanly" for k in range(1, rec_a["n"] + 1)]
+        and rec_a.get("scores") is not None
+        and rec_a.get("output") is not None,
+    )
+    check(
+        "a reason that repeats the source is withheld, and so is the reply, while its scores are committed",
+        rec_b.get("why") is None
+        and rec_b.get("why_withheld") == "repeats the source"
+        and rec_b.get("output") is None
+        and rec_b.get("output_withheld") is True
+        and rec_b.get("scores") is not None,
+    )
+    check("V12 accepts both", not vt.reply_problems(rec_a) and not vt.reply_problems(rec_b))
+with tempfile.TemporaryDirectory() as tmp:
+    td = Path(tmp)
+    js.run_judging(m_why, scorer(explain=True), BASE, ARTICLES, OUTPUTS, td, explaining_judge(drop_why=True), None,
+                   log=lambda *_: None)  # fmt: skip
+    rec_c = json.loads(js.verdict_path(td, "ja", "itemA", "primary", 0).read_text())
+    check(
+        "a reply without its reason keeps its scores and says the reason is missing",
+        rec_c.get("scores") is not None and rec_c.get("why") is None and rec_c.get("why_missing") is True,
+    )
+with tempfile.TemporaryDirectory() as tmp:
+    td = Path(tmp)
+    js.run_judging(m1, scorer(), BASE, ARTICLES, OUTPUTS, td, fake_judge(), None, log=lambda *_: None)
+    rec_d = json.loads(js.verdict_path(td, "ja", "itemA", "primary", 0).read_text())
+    check(
+        "without explain a verdict has no reason fields at all (its record is as before)",
+        not any(k.startswith("why") for k in rec_d),
+    )
+with tempfile.TemporaryDirectory() as tmp:
+    e_off = js.estimate(m1, scorer(), BASE, ARTICLES, OUTPUTS, Path(tmp))
+    e_on = js.estimate(m_why, scorer(explain=True), BASE, ARTICLES, OUTPUTS, Path(tmp))
+    check(
+        "the dry run counts the reasons' tokens, out and in",
+        all(e_on[j]["tokens_out"] > e_off[j]["tokens_out"] for j in e_off)
+        and all(e_on[j]["tokens_in"] > e_off[j]["tokens_in"] for j in e_off),
+    )
+check(
+    "the gate: a scorer that asks for reasons is not validated by runs made without them",
+    any("explain=" in p for p in js.validation_problems(dict(real, explain=True))),
+)
+for mode_, n_ in (("grade", 3), ("pick", 3), ("pairwise", 2)):
+    fake_msg = judging.build_message(BASE, "An article.", [f"s{i}" for i in range(n_)]) if mode_ == "grade" else (
+        judging.build_pick_message(PICK_BASE, "An article.", [f"s{i}" for i in range(n_)]) if mode_ == "pick"
+        else judging.build_pairwise_message(PAIR_BASE, "An article.", ["s0", "s1"])
+    )  # fmt: skip
+    out_ = judging.call_judge(
+        fake_msg, {"provider": "fake", "model": "f", "_mode": mode_, "_explain": True}
+    ).output
+    check(
+        f"the fake judge gives a reason that parses ({mode_})", judging.parse_why(out_, mode_, n_) is not None
+    )
+
 sys.exit(summary())

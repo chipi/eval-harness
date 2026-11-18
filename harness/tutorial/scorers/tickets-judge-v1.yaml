@@ -9,6 +9,9 @@ scorer_id: tickets-judge-v1
 kind: judge
 dataset_id: tickets_v1
 
+# Each judge says why, inside its verdict: a short reason per summary, read with `evh judge-verdicts`.
+explain: true
+
 # What is judged. Without this block a scorer judges news summaries the way SummEval did
 # (ARTICLE, SUMMARIES, coherence/consistency/fluency/relevance, 1-5).
 task:

@@ -14,6 +14,7 @@
     "supersedes": {"type": "string", "minLength": 1, "description": "The scorer this one replaces: a changed rubric, prompt or judges is a new scorer (a frozen judging set is never rewritten), and this says which it follows (criteria drift, Shankar et al. 2024)."},
     "why": {"type": "string", "description": "With supersedes: a sentence, what changed and why (which outputs led to it), carried like a promotion's reason."},
     "mode": {"enum": ["grade", "pick", "pairwise"], "default": "grade", "description": "What a judge is asked: grade (each output scored on the scale), pick (name the best output of an item; outputs_per_call must cover every arm) or pairwise (which of two is better, every pair of arms; outputs_per_call is 2). Absent means grade."},
+    "explain": {"type": "boolean", "default": false, "description": "Whether each judge gives its reason inside its verdict (RFC-034 §5): a short `why` per graded output, or one for a pick or a pair, stored with the verdict. A judge asked for its reason is another judge: it is validated with explain on. Absent means false; evh scorer-new writes true."},
     "judges": {
       "type": "array",
       "minItems": 1,

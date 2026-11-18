@@ -1518,6 +1518,7 @@
         <div class="field"><label class="name" for="jn-id">Its id</label><div><input type="text" id="jn-id" value="${esc(st.supersedes ? `${st.supersedes}-v2` : "")}" placeholder="${esc(goal)}-judge-v1" autocapitalize="off" spellcheck="false">${st.supersedes ? `<div class="hint">a new version of ${esc(st.supersedes)}, which has judged and is kept as it is</div>` : ""}</div></div>
         <div class="field"><label class="name" for="jn-ds">On</label><div><select id="jn-ds">${opt(dss)}</select></div></div>
         <div class="field"><div class="name">How it judges</div><div class="choices row">${MODES.map(([m, t]) => `<label class="choice"><input type="radio" name="jn-mode" value="${m}" ${(base.mode || "grade") === m ? "checked" : ""}> ${esc(t)}</label>`).join("")}</div></div>
+        <div class="field"><div class="name">Its reasons</div><div><label class="choice"><input type="checkbox" id="jn-explain" ${base.explain === false ? "" : "checked"}> each judge says why, inside its verdict</label><div class="hint">a short reason per output, read below; it costs output tokens, not calls. A judge asked for reasons is validated with them.</div></div></div>
         <div class="field"><div class="name">Its judges</div><div><div class="choices">${judgesPick || '<p class="muted">No system yet: <a href="#models">bring in a model</a> and make a system of it.</p>'}</div><div class="hint">two families at least, so one vendor's taste does not decide: each judge is called, priced and fingerprinted as its system is</div></div></div>
         <div class="field"><label class="name" for="jn-prompt">The prompt</label><div><input type="text" id="jn-prompt" value="${esc(dig(base, "prompt.file") || "")}" placeholder="prompts/judge.txt: a file in the project" autocapitalize="off" spellcheck="false"><div class="hint">a file in the project, relative to data/scorers/ or the project; {n} becomes the number of outputs in a call</div></div></div>
         ${PROTO.map(([k, t, d]) => `<div class="field"><label class="name" for="jn-${k.split(".").pop()}">${esc(t)}</label><div><input type="number" id="jn-${k.split(".").pop()}" value="${esc(dig(base, k) ?? d)}" step="any" min="0" style="width:8rem"></div></div>`).join("")}
@@ -1539,7 +1540,7 @@
       const valRows = (b.runs || []).map((x) => `<tr><td class="mono">${esc(x.judge)}</td><td class="num">${fx(x.value)}</td><td class="num">${fx(x.min_metric ?? b.min_metric)}</td><td class="mono">${esc(x.run)}</td></tr>`).join("");
       const checks = (one.checks || []).map((c) => `<li>${esc(typeof c === "string" ? c : JSON.stringify(c))}</li>`).join("");
       shown = `<section class="part"><div class="parthead"><span class="letter">b</span><h2>How ${esc(cur)} judges</h2></div><div class="body">
-          <p><b>${esc((MODES.find(([m]) => m === (r.mode || "grade")) || [])[1] || r.mode)}</b> · on <span class="mono">${esc(r.dataset_id)}</span> · the prompt <span class="mono">${esc(dig(r, "prompt.file") || "—")}</span> · at most $${esc(r.cost_cap_usd ?? "—")} a pass</p>
+          <p><b>${esc((MODES.find(([m]) => m === (r.mode || "grade")) || [])[1] || r.mode)}</b> · ${r.explain === true ? "each judge says why" : "no reasons asked"} · on <span class="mono">${esc(r.dataset_id)}</span> · the prompt <span class="mono">${esc(dig(r, "prompt.file") || "—")}</span> · at most $${esc(r.cost_cap_usd ?? "—")} a pass</p>
           <p class="muted">${guards}</p>
           <div class="tablewrap"><table><thead><tr><th>judge</th><th>model or system</th><th>family</th></tr></thead><tbody>${(one.judges || []).map((j) => `<tr><td class="mono">${esc(j.judge)}</td><td class="mono">${esc(j.model || j.system || "")}</td><td>${esc(j.family || "—")}</td></tr>`).join("")}</tbody></table></div>
           ${one.problem ? `<p class="note" role="alert">${esc(one.problem)}</p>` : ""}${edit}</div></section>
@@ -1557,17 +1558,28 @@
           <div class="actions" style="margin-top:0"><button class="btn" type="button" id="js-est">The cost first (a dry run)</button><button class="btn primary" type="button" id="js-go" data-send>Judge the arms</button>${mark}</div>
           <div id="js-out" data-out></div>
           ${(one.judging_sets || []).length ? `<p class="muted" style="margin-bottom:4px">What it judged:</p><ul>${one.judging_sets.map((j) => `<li><span class="mono">${esc(j.set)}</span> · ${j.arms} arm(s) · ${j.items} item(s) · ${j.verdicts} verdict(s)${j.summary ? ` · ${esc(j.summary.label || "")}${j.summary.current ? "" : " · made by an older version of the scorer"}` : ""}</li>`).join("")}</ul>
-            <p class="muted">Read as <span class="mono">judged/${esc(cur)}</span> on the leaderboard.</p>` : ""}</div></section>`;
+            <p class="muted">Read as <span class="mono">judged/${esc(cur)}</span> on the leaderboard.</p>` : ""}</div></section>
+        ${(one.judging_sets || []).some((j) => j.verdicts) ? whySection(cur, st.whyOffset || 0) : ""}`;
     }
     return `<div class="screen wide">${head}<span id="jd-cur" data-cur="${esc(cur || "")}" hidden></span>
       ${byField("jd-by")}
       <section class="part"><div class="parthead"><span class="letter">a</span><h2>Its judge scorers</h2></div><div class="body">${list}${newForm}</div></section>
       ${shown}
-      <section class="part"><div class="parthead"><span class="letter">e</span><h2>What it cost</h2></div><div class="body">
+      <section class="part"><div class="parthead"><span class="letter">f</span><h2>What it cost</h2></div><div class="body">
         <p class="muted">The billed cost of each arm, and what judging cost, from the runs and the judges' verdicts.</p>
         <div class="inline"><select id="cr-ds" aria-label="the dataset">${opt(dss)}</select><button class="btn" type="button" id="cr-go">Show the costs</button></div><div id="cr-out" data-out></div></div></section>
       ${WB.cmd(`evh scorer-list\nevh scorer-new <id> --set dataset_id=... --set judges.0.system=... --set prompt.file=...\nevh judge-score --dataset-id <d> --scorer ${cur || "<id>"} --dry-run\nevh judge-score --dataset-id <d> --scorer ${cur || "<id>"}\nevh cost-report --dataset-id <d>`)}
       <div class="actions"><a class="btn" href="#eval/${enc(goal)}">The eval</a><a class="btn" href="#goal/${enc(goal)}">Back to the goal</a></div></div>`;
+  }
+  // What the judges said and why (RFC-034 §5), the lowest scores first: what failed, and the judge's reason for it.
+  function whySection(cur, offset) {
+    const r = load(`verdicts:${cur}:${offset}`, `/scorers/${enc(cur)}/verdicts?limit=10&offset=${offset}`);
+    const body = r === undefined ? loading("the verdicts") : r.error ? failed(r) : !r.rows.length ? '<p class="muted">No verdicts on the primary pass.</p>'
+      : `<p class="muted">${r.offset + 1}–${r.offset + r.rows.length} of ${r.total} · ${r.explained} with a reason · the lowest scores first</p>
+        <div class="tablewrap"><table class="why"><thead><tr><th>item</th><th>arm</th><th>judge</th><th class="num">said</th><th>why</th></tr></thead><tbody>${r.rows.map((x) => `<tr><td class="mono">${esc(x.item)}</td><td class="mono">${esc(x.arm)}</td><td class="mono">${esc(x.judge)}</td><td class="num">${typeof x.said === "number" ? fx(x.said) : esc(x.said ?? "—")}</td><td>${x.why ? esc(x.why) : `<span class="muted">${esc(x.why_status === "withheld" ? "withheld: it repeated the source" : x.why_status === "missing" ? "missing" : "not asked")}</span>`}</td></tr>`).join("")}</tbody></table></div>
+        <div class="actions" style="margin-top:0">${r.offset > 0 ? '<button class="btn" type="button" id="why-prev">Lower</button>' : ""}${r.offset + r.rows.length < r.total ? '<button class="btn" type="button" id="why-next">Higher</button>' : ""}</div>`;
+    return `<section class="part" id="why"><div class="parthead"><span class="letter">e</span><h2>What it said, and why</h2></div><div class="body">${body}
+      ${WB.cmd(`evh judge-verdicts ${cur}`)}</div></section>`;
   }
   function wireJudge() {
     const goal = WB.param || "";
@@ -1583,7 +1595,7 @@
       const box = document.getElementById("jn-out"), who_ = by(), id = v("jn-id");
       if (!who_) return needWho(box);
       const judges = [...document.querySelectorAll("input[name=jn-judge]:checked")].map((x) => x.value);
-      const set = { dataset_id: v("jn-ds"), mode: document.querySelector("input[name=jn-mode]:checked")?.value || "grade", cost_cap_usd: num("jn-cap"), "protocol.blinding": true };
+      const set = { dataset_id: v("jn-ds"), mode: document.querySelector("input[name=jn-mode]:checked")?.value || "grade", explain: !!document.getElementById("jn-explain")?.checked, cost_cap_usd: num("jn-cap"), "protocol.blinding": true };
       const old = st().supersedes ? ((LIVE.cache[`scorer:${st().supersedes}`] || {}).record || {}).judges || [] : [];
       const keep = [...document.querySelectorAll("input[name=jn-keep]:checked")].map((x) => old[Number(x.value)]).filter(Boolean);
       keep.forEach((j, i) => { set[`judges.${i}.id`] = j.id; set[`judges.${i}.params`] = j.params; });
@@ -1599,6 +1611,9 @@
         WB.render(true);
       } catch (e) { box.innerHTML = refusal(e); ev.target.disabled = false; }
     });
+    const page = (d) => { st().whyOffset = Math.max(0, (st().whyOffset || 0) + d); WB.render(); };
+    document.getElementById("why-next")?.addEventListener("click", () => page(10));
+    document.getElementById("why-prev")?.addEventListener("click", () => page(-10));
     document.getElementById("ss-new")?.addEventListener("click", () => { st().supersedes = cur(); WB.render(); document.getElementById("jn-id")?.closest("details")?.setAttribute("open", ""); });
     holds("scorer-set", () => `Save ${cur()}`);
     document.getElementById("ss-go")?.addEventListener("click", async (ev) => {
@@ -1636,7 +1651,7 @@
       ev.target.disabled = true;
       try {
         const done = await runJob(`/scorers/${enc(cur())}/judge`, { ...judgeInputs(), by: who_, max_cost_usd: cap }, box, "judging");
-        if (done) { sent("judge-run"); forget(`scorer:${cur()}`); forget("scorers"); box.innerHTML = `<p class="note">Judged.</p>${blocksView((done.result || {}).result)}`; }
+        if (done) { sent("judge-run"); forget(`scorer:${cur()}`); forget("scorers"); forget(`verdicts:${cur()}:`); box.innerHTML = `<p class="note">Judged.</p>${blocksView((done.result || {}).result)}`; }
       } catch (e) { box.innerHTML = refusal(e); }
       ev.target.disabled = false;
     });

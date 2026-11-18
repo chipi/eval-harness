@@ -116,14 +116,17 @@ bare JSON and repeats no eight consecutive words of the item or the outputs) app
 `why` on its own: a `why` that repeats the source is not committed (`why_withheld: "repeats the source"`, kept in
 the git-ignored local copy as an unparsed reply is now), and the scores still are.
 
-**The scorer.** A new field `explain: true | false`, default `true` for a new scorer (`scorer-new`). Every committed
-scorer (`harness/data/scorers/*.yaml`, `harness/tutorial/scorers/*.yaml`) was validated and judged without reasons,
-so the migration writes `explain: false` into each: their messages stay byte-identical and their validations still
-hold. A scorer that wants reasons is a new scorer version (`supersedes`), as any change to a judging scorer is.
+**The scorer.** A new field `explain: true | false`. A scorer without it gives no reasons, so every scorer made
+before (the committed `harness/data/scorers/*.yaml` were validated and judged without reasons) keeps its identity,
+its judging sets' ids and its byte-identical messages, with no migration. `evh scorer-new` writes `explain: true`
+(the Workbench's form too, as a box ticked by default), and the tutorial's fake judge explains. A judged scorer that
+wants reasons is a new scorer version (`supersedes`), as any change to a judging scorer is.
 
 **Validation.** `validation_problems` also compares `explain` between the scorer and its validation runs (a run
-measured with `explain: false` does not validate a scorer with `explain: true`). The judge's fingerprint includes
-`explain`.
+measured with `explain: false` does not validate a scorer with `explain: true`). The SummEval validation adapter
+(`examples/summeval-judging/adapter.py`) takes `explain: true` in a judge arm's params and ends its messages with the
+same words, held equal by a test, so a judge with reasons can be validated. The judging set hashes `explain` when it
+is on (as it hashes a declared `mode`), so a set made before keeps its id.
 
 **Where the reason is read.**
 
@@ -132,17 +135,18 @@ measured with `explain: false` does not validate a scorer with `explain: true`).
 - The Workbench's judge screen: each judged item shows its verdicts and their reasons.
 - The catalog's item page (the local inspector, not the public catalog, which shows no item text): the verdicts of
   that item beside the outputs they judge.
-- The judging summary: the lowest-scored verdicts with their reasons, as the "what failed and why" the talk asked
-  for.
+- `judge-score` ends by naming `evh judge-verdicts <scorer>` when its judges explain: the lowest scores first are
+  the "what failed, and why" the talk asked for.
 
-**Cost.** The reason adds output tokens to each call. The judge's dry run (`judge-score --dry-run`) counts them in
-its projection (an estimate per output, replaced by the measured mean once verdicts exist), and the arm-smoke rule
-applies: a three-item judging smoke and its replies are read before a paid pass.
+**Cost.** The reason adds output tokens to each call (and the request's few words to its input). The judge's dry
+run (`judge-score --dry-run`) counts them: an estimate of 20 tokens per graded output and 40 for a pick or a pair, not
+measured yet. The smoke rule applies: a three-item judging smoke, its replies and its `tokens_out` read before a paid
+pass.
 
 ## 6. What changes for a project
 
-- Judge scorers gain `explain`; the migration writes `explain: false` into existing ones (no reasons, nothing else
-  changes). New scorers explain by default.
+- Judge scorers gain `explain`. Existing ones are unchanged (no field, no reasons); `scorer-new` writes
+  `explain: true`.
 - `evh chart` and `evh judge-verdicts` are new reads. The goal leaderboard's `vs_leader` gains `ci`.
 - Catalog pages gain charts; nothing is removed.
 

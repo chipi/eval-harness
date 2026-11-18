@@ -99,10 +99,13 @@ from evaluation_harness.judging import (
     parse_block,
     parse_pairwise,
     parse_pick,
+    parse_why,
+    quotes_source,
     render_prompt,  # noqa: F401 — re-exported: validate_tree and the tests call js.render_prompt
     shingles,
     spearman,
     task_of,
+    with_reason,
     withheld_reason,
 )
 from evaluation_harness.model import runs as _model_runs
@@ -160,6 +163,10 @@ OUT_TOKENS_PER_SUMMARY = 14
 OUT_TOKENS_FIXED = 10
 #: A pick or pairwise reply is one short JSON object ({"best": [3, 7]}, {"better": "tie"}).
 OUT_TOKENS_ANSWER = 12
+#: A reason (RFC-034 §5), estimated: a short sentence per graded output, one or two for a pick or a pair. Not
+#: measured yet; a judging smoke's tokens_out replaces the guess.
+OUT_TOKENS_WHY_PER_OUTPUT = 20
+OUT_TOKENS_WHY = 40
 CHARS_PER_TOKEN = 4
 
 
@@ -296,6 +303,13 @@ def mode_of(doc: dict[str, Any]) -> str:
     return doc.get("mode") or DEFAULT_MODE
 
 
+def explain_of(doc: dict[str, Any]) -> bool:
+    """Whether a judge gives its reason inside the verdict (RFC-034 §5): the scorer's (or a frozen set's) `explain`.
+    A scorer without the field gives none, so a scorer judged before reasons existed sends the message it was
+    validated on, byte for byte; `scorer-new` writes `explain: true`."""
+    return doc.get("explain") is True
+
+
 def mode_problems(sc: dict[str, Any]) -> list[str]:
     """What is wrong with a scorer's `mode` and what hangs on it; empty when nothing is.
 
@@ -340,6 +354,7 @@ def judge_params(sc: dict[str, Any], j: dict[str, Any]) -> dict[str, Any]:
     if p.get("provider") == FAKE:
         p["_task"] = task_for(sc)
         p["_mode"] = mode_of(sc)
+        p["_explain"] = explain_of(sc)
     return p
 
 
@@ -429,6 +444,11 @@ def validation_problems(
                 f"judge {j['id']!r}: run {r['run']} has {metric}={got}, below the scorer's min_metric {floor}"
             )
         rec = m.get("params") or {}
+        if explain_of(rec) != explain_of(sc):
+            out.append(
+                f"judge {j['id']!r}: run {r['run']} measured explain={explain_of(rec)}, the scorer uses "
+                f"explain={explain_of(sc)}: a judge asked for its reason is another judge, validated as such"
+            )
         if mode_of(rec) != mode_of(sc):
             out.append(
                 f"judge {j['id']!r}: run {r['run']} measured mode={mode_of(rec)!r}, "
@@ -659,6 +679,7 @@ def build_manifest(
         # Only a declared task and a declared mode are hashed, so a grade scorer keeps the set id it had.
         **({"task": task_for(sc)} if sc.get("task") else {}),
         **({"mode": mode} if mode != DEFAULT_MODE else {}),
+        **({"explain": True} if explain_of(sc) else {}),
         "items": items,
         "position_items": pick_subset(list(item_ids), pr["position_check_fraction"], seed, "position-subset"),
         "noise_items": pick_subset(list(item_ids), pr["noise_check_fraction"], seed, "noise-subset"),
@@ -694,13 +715,16 @@ def message_for(
     build = {"pick": build_pick_message, "pairwise": build_pairwise_message}.get(
         mode_of(manifest), build_message
     )
-    return build(
+    msg = build(
         base,
         articles[item["item_id"]],
         [outputs[a][item["item_id"]] for a in arm_ids],
         task["source_label"],
         task["output_label"],
     )
+    if not explain_of(manifest):
+        return msg
+    return with_reason(msg, mode_of(manifest), len(arm_ids), task["source_label"], task["output_label"])
 
 
 def freeze(manifest: dict[str, Any], sets_dir: Path = SETS) -> Path:
@@ -777,6 +801,20 @@ def parse_reply(mode: str, output: str, n: int, task: dict[str, Any]) -> dict[st
     if mode == "pairwise":
         return {"better": parse_pairwise(output)}
     return {"scores": parse_block(output, n, task["dimensions"], task["scale"])}
+
+
+def reason_fields(manifest: dict[str, Any], output: str | None, n: int, source: set) -> dict[str, Any]:
+    """What a verdict stores of the judge's reason (RFC-034 §5): `why` when the set asks for one and the reply gives
+    it, `why_missing` when it does not, and `why_withheld` instead of a reason that repeats the source (V12: the
+    source's text stays out of git; the whole reply is then kept only locally, its scores still committed)."""
+    if not explain_of(manifest):
+        return {}
+    w = parse_why(output, mode_of(manifest), n)
+    if w is None:
+        return {"why": None, "why_missing": True}
+    if quotes_source(" ".join(w) if isinstance(w, list) else w, source):
+        return {"why": None, "why_withheld": "repeats the source"}
+    return {"why": w}
 
 
 def verdict_parsed(rec: dict[str, Any]) -> bool:
@@ -864,10 +902,9 @@ def run_judging(
                 meta = getattr(res, "meta", None) or {}
                 answer = parse_reply(mode_of(manifest), res.output, n, task_for(sc))
                 arms = item["position" if pass_name == "position" else "primary"][block]  # noqa: S105 — a judging pass, not a password
-                why = withheld_reason(
-                    res.output,
-                    shingles([articles[item["item_id"]], *(outputs[a][item["item_id"]] for a in arms)]),
-                )
+                source = shingles([articles[item["item_id"]], *(outputs[a][item["item_id"]] for a in arms)])
+                why = withheld_reason(res.output, source)
+                reason = reason_fields(manifest, res.output, n, source)
                 # Nothing to quote is still not bare JSON: V12 refuses a committed `""`.
                 if not why and not res.output:
                     why = "empty reply"
@@ -891,6 +928,7 @@ def run_judging(
                         "output_withheld": bool(why),
                         **({"withheld_reason": why} if why else {}),
                         **answer,
+                        **reason,
                         "tokens_in": res.tokens_in,
                         "tokens_out": res.tokens_out,
                         "cost_usd": cost + earlier,
@@ -1561,12 +1599,13 @@ def estimate(
                 continue
             e["calls"] += 1
             e["tokens_in"] += math.ceil(len(msg) / CHARS_PER_TOKEN)
+            grade = mode_of(manifest) == DEFAULT_MODE
             e["tokens_out"] += (
                 OUT_TOKENS_FIXED
                 + math.ceil(OUT_TOKENS_PER_SUMMARY * len(task_for(sc)["dimensions"]) / len(DIMS)) * n
-                if mode_of(manifest) == DEFAULT_MODE
+                if grade
                 else OUT_TOKENS_ANSWER
-            )
+            ) + ((OUT_TOKENS_WHY_PER_OUTPUT * n if grade else OUT_TOKENS_WHY) if explain_of(manifest) else 0)
     for j in sc["judges"]:
         e, pr = per_judge[j["id"]], j["params"]
         e["est_cost_usd"] = round(
@@ -1804,6 +1843,8 @@ def body(**inputs: Any) -> int:
             f"make leaderboard DATASET_ID={args.dataset_id} ARGS='--label judged/{sc['scorer_id']}'",
         )
     )
+    if explain_of(sc):
+        print(f"  the judges' reasons, the lowest scores first: evh judge-verdicts {sc['scorer_id']}")
     if stats["aborted"]:
         return EXIT_STOPPED
     return 0

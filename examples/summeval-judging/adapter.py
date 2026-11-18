@@ -111,6 +111,22 @@ PAIR_REMINDER = (
 TIE_EPS = 1e-9
 
 
+def _explain(message: str, mode: str, n: int, params: Dict[str, Any]) -> str:
+    """With `explain: true` (docs/rfc/RFC-034 §5) the message ends with the reason's request, in the words
+    judging.explain_reminder uses (tests/test_judge_score.py holds them equal), so a judge that gives its reason
+    is validated on the message judge-score sends it."""
+    if params.get("explain") is not True:
+        return message
+    if mode == "grade":
+        what = f'"why": a list of {n} short sentences, one per numbered output in order, each saying what decided its scores'
+    elif mode == "pick":
+        what = '"why": one or two sentences saying what made the outputs you named the best'
+    else:
+        what = '"why": one or two sentences saying what made the better one better, or why they tie'
+    return (f"{message}\n\nInside the same JSON object, after your verdict, add {what}. Do not copy sentences "
+            "from the article or the summaries: name what you saw in your own words.")
+
+
 def _mode(params: Dict[str, Any]) -> str:
     mode = params.get("mode") or "grade"
     if mode not in MODES:
@@ -140,14 +156,14 @@ def _pick_message(item: Dict[str, Any], params: Dict[str, Any]) -> str:
     """Article and the 16 numbered summaries, as `_judge_message` lays them out, then the
     instruction to answer only the JSON. The prompt's `{n}` is the count."""
     summaries = "\n".join(f"{i}. {s.strip()}" for i, s in enumerate(item["summaries"], 1))
-    return (f"{_prompt(params).replace('{n}', str(N_SUMMARIES))}\n\nARTICLE:\n{item['article'].strip()}"
-            f"\n\nSUMMARIES:\n{summaries}\n\n{PICK_REMINDER}")
+    return _explain(f"{_prompt(params).replace('{n}', str(N_SUMMARIES))}\n\nARTICLE:\n{item['article'].strip()}"
+                    f"\n\nSUMMARIES:\n{summaries}\n\n{PICK_REMINDER}", "pick", N_SUMMARIES, params)
 
 
 def _pair_message(item: Dict[str, Any], first: int, second: int, params: Dict[str, Any]) -> str:
     summaries = "\n".join(f"{i}. {item['summaries'][k].strip()}" for i, k in enumerate((first, second), 1))
-    return (f"{_prompt(params).replace('{n}', '2')}\n\nARTICLE:\n{item['article'].strip()}"
-            f"\n\nSUMMARIES:\n{summaries}\n\n{PAIR_REMINDER}")
+    return _explain(f"{_prompt(params).replace('{n}', '2')}\n\nARTICLE:\n{item['article'].strip()}"
+                    f"\n\nSUMMARIES:\n{summaries}\n\n{PAIR_REMINDER}", "pairwise", 2, params)
 
 
 def _reply_object(output: Optional[str]) -> Optional[Dict[str, Any]]:
@@ -222,7 +238,8 @@ def _judge_message(item: Dict[str, Any], params: Dict[str, Any]) -> str:
     """Article and numbered summaries. The human references are deliberately left out:
     a judge shown them would be doing ROUGE's job, and that is a different arm."""
     summaries = "\n".join(f"{i}. {s.strip()}" for i, s in enumerate(item["summaries"], 1))
-    return f"{_prompt(params)}\n\nARTICLE:\n{item['article'].strip()}\n\nSUMMARIES:\n{summaries}"
+    return _explain(f"{_prompt(params)}\n\nARTICLE:\n{item['article'].strip()}\n\nSUMMARIES:\n{summaries}",
+                    "grade", len(item["summaries"]), params)
 
 
 # ── the hosted judge ─────────────────────────────────────────────────────────

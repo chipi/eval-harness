@@ -27,7 +27,57 @@ OPS = (
        "POST", "/scorers/{scorer}", f"{_S}:new_scorer", f"{_D}:say_saved", inputs={"set": _SET}, required=("set",)),
     Op("scorer-set", "edit", "change a judge scorer's fields, checked; its comments kept; refused once it has made judged scores",
        "PATCH", "/scorers/{scorer}", f"{_S}:set_scorer", f"{_D}:say_saved", inputs={"set": _SET, "unset": _UNSET}),
+    Op("judge-verdicts", "read", "a judge scorer's verdicts with their reasons (RFC-034): what each judge said of each arm and why, the lowest scores first",
+       "GET", "/scorers/{scorer}/verdicts", f"{_S}:judge_verdicts", f"{_S}:say_verdicts",
+       inputs={
+           "set": {"type": "string", "description": "one judging set (default: every set the scorer judged)"},
+           "item": {"type": "string", "description": "one item"},
+           "arm": {"type": "string", "description": "one arm (its system id in the judging set)"},
+           "judge": {"type": "string", "description": "one judge"},
+           "judging_pass": {"x-flag": "--pass", "enum": ["primary", "position", "noise"], "default": "primary",
+                            "description": "the pass: primary (default), or a control's"},
+           "order": {"enum": ["low", "item"], "default": "low", "description": "low: the lowest graded scores first; item: the set's order"},
+           "limit": {"type": "integer", "default": 20, "description": "rows on the page (default 20)"},
+           "offset": {"type": "integer", "default": 0, "description": "the first row of the page"},
+       }, public_dropped="the judges' reasons describe the outputs they judged"),
 )  # fmt: skip
+
+
+def judge_verdicts(
+    scorer: str,
+    set: str | None = None,
+    item: str | None = None,
+    arm: str | None = None,
+    judge: str | None = None,
+    judging_pass: str = "primary",  # noqa: S107 — a judging pass, not a password
+    order: str = "low",
+    limit: int = 20,
+    offset: int = 0,
+) -> dict[str, Any]:
+    """The verdicts and their reasons, a page at a time."""
+    from evaluation_harness.model import scorer_views as v  # noqa: PLC0415
+
+    return v.verdicts(scorer, set, item, arm, judge, judging_pass, order, limit, offset)
+
+
+def say_verdicts(r: dict[str, Any]) -> str:
+    """judge-verdicts' answer as text: a line per arm judged, its reason under it."""
+    if not r["rows"]:
+        return f"{r['scorer']}: no verdicts on the {r['pass']} pass match"
+    order = "lowest scores first" if r["order"] == "low" else "in the set order"
+    rows = f"rows {r['offset'] + 1}-{r['offset'] + len(r['rows'])} of {r['total']}"
+    lines = [f"{r['scorer']}, {r['pass']} pass: {rows} ({r['explained']} with a reason; {order})"]
+    for x in r["rows"]:
+        said = f"{x['said']:.2f}" if isinstance(x["said"], float) else str(x["said"])
+        lines.append(f"  {x['item']}  {x['arm']}  {x['judge']}  {said}")
+        if x["why"]:
+            lines.append(f"      why: {x['why']}")
+        elif x["why_status"] in ("missing", "withheld"):
+            lines.append(
+                f"      why: {x['why_status']}"
+                + (" (it repeated the source)" if x["why_status"] == "withheld" else "")
+            )
+    return "\n".join(lines)
 
 
 def list_scorers() -> dict[str, Any]:
@@ -48,7 +98,8 @@ def new_scorer(scorer: str, set: dict[str, Any], by: str) -> dict[str, Any]:
     """Make the scorer from its fields."""
     from evaluation_harness.model.scorers import SCORER  # noqa: PLC0415
 
-    return SCORER.make(scorer, {"scorer_id": scorer, "kind": "judge"}, list(set.items()), by)
+    # A new scorer's judges give their reasons (RFC-034 §5) unless it says `explain=false`.
+    return SCORER.make(scorer, {"scorer_id": scorer, "kind": "judge", "explain": True}, list(set.items()), by)
 
 
 def set_scorer(

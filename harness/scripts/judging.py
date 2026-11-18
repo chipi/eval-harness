@@ -178,6 +178,43 @@ PAIR_REMINDER = (
 )
 
 
+def explain_reminder(
+    mode: str, n: int, source_label: str = "ARTICLE", output_label: str = "SUMMARIES"
+) -> str:
+    """What a scorer with `explain: true` adds to every message (RFC-034 §5): the reason goes inside the same JSON
+    object, after the verdict, so a reply is still one object and its verdict parses as before."""
+    src, outs = source_label.lower(), output_label.lower()
+    if mode == "grade":
+        what = f'"why": a list of {n} short sentences, one per numbered output in order, each saying what decided its scores'
+    elif mode == "pick":
+        what = '"why": one or two sentences saying what made the outputs you named the best'
+    else:
+        what = '"why": one or two sentences saying what made the better one better, or why they tie'
+    return (
+        f"Inside the same JSON object, after your verdict, add {what}. Do not copy sentences from the {src} "
+        f"or the {outs}: name what you saw in your own words."
+    )
+
+
+def with_reason(
+    message: str, mode: str, n: int, source_label: str = "ARTICLE", output_label: str = "SUMMARIES"
+) -> str:
+    """The message with `explain_reminder` after it."""
+    return f"{message}\n\n{explain_reminder(mode, n, source_label, output_label)}"
+
+
+def parse_why(output: str | None, mode: str, n: int) -> str | list[str] | None:
+    """The reason a reply gives (RFC-034 §5), or None: for `grade` one non-empty sentence per output, in order; for
+    `pick` and `pairwise` one non-empty string. A reason never decides whether the verdict parsed."""
+    obj = _object(output)
+    w = obj.get("why") if obj else None
+    if mode == "grade":
+        if isinstance(w, list) and len(w) == n and all(isinstance(x, str) and x.strip() for x in w):
+            return [x.strip() for x in w]
+        return None
+    return w.strip() if isinstance(w, str) and w.strip() else None
+
+
 def _layout(prompt: str, source: str, outputs: Sequence[str], source_label: str, output_label: str) -> str:
     numbered = "\n".join(f"{i}. {s.strip()}" for i, s in enumerate(outputs, 1))
     return f"{prompt}\n\n{source_label}:\n{source.strip()}\n\n{output_label}:\n{numbered}"
@@ -422,14 +459,23 @@ def _fake_call(message: str, params: dict[str, Any]) -> JudgeResult:
             lo + int(hashlib.sha256(f"{model}|{x}".encode()).hexdigest()[:8], 16) % (hi - lo + 1)
             for x in sums
         ]
-        out = json.dumps(dict.fromkeys(task["dimensions"], s))
+        reply: dict[str, Any] = dict.fromkeys(task["dimensions"], s)
+        if params.get("_explain"):
+            reply["why"] = [
+                f"output {i} rated {v} on every dimension by the fake judge" for i, v in enumerate(s, 1)
+            ]
+        out = json.dumps(reply)
     else:
-        keys = _fake_keys(sums, str(params.get("prefer", "longer")))
+        prefer = str(params.get("prefer", "longer"))
+        keys = _fake_keys(sums, prefer)
         top = max(keys)
         if mode == "pick":
-            out = json.dumps({"best": [i + 1 for i, k in enumerate(keys) if k == top]})
+            reply = {"best": [i + 1 for i, k in enumerate(keys) if k == top]}
         else:
-            out = json.dumps({"better": "tie" if keys[0] == keys[1] else 1 + keys.index(top)})
+            reply = {"better": "tie" if keys[0] == keys[1] else 1 + keys.index(top)}
+        if params.get("_explain"):
+            reply["why"] = f"the fake judge prefers the {prefer} output"
+        out = json.dumps(reply)
     tin, tout = max(1, len(message) // 4), max(1, len(out) // 4)
     return JudgeResult(
         output=out,

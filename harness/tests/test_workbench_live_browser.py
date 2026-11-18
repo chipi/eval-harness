@@ -1236,6 +1236,30 @@ try:
                 and not page.locator("#ss-go").count(),
                 page.locator("main").inner_text()[:900],
             )
+            # RFC-034 §5: the tutorial's judges explain, so the screen shows what they said and why, the lowest first.
+            page.wait_for_selector("#why table.why tbody tr", timeout=20000)
+            why_rows = page.locator("#why table.why tbody tr")
+            why_text = page.locator("#why").inner_text()
+            check(
+                "W7 shows what the judges said and why (judge-verdicts): ten at a time, the lowest scores first, each reason",
+                why_rows.count() == 10
+                and "with a reason" in why_text
+                and "by the fake judge" in why_text
+                and "evh judge-verdicts tickets-judge-v1" in (page.locator("#why").text_content() or "")
+                and "each judge says why" in page.locator("main").inner_text(),
+                why_text[:700],
+            )
+            first_page = why_text
+            page.click("#why-next")
+            page.wait_for_function(
+                "() => /11–/.test((document.querySelector('#why') || {}).innerText || '')", timeout=20000
+            )
+            check(
+                "Higher shows the next ten",
+                page.locator("#why table.why tbody tr").count() >= 1
+                and page.locator("#why").inner_text() != first_page,
+                page.locator("#why").inner_text()[:300],
+            )
             page.click("#ss-new")
             page.wait_for_function(
                 "() => document.querySelector('#jn-id').value === 'tickets-judge-v1-v2'", timeout=20000
@@ -1265,7 +1289,8 @@ try:
                 and v2["judges"][0].get("params", {}).get("model") == "fake-a"
                 and v2.get("cost_cap_usd") == 0.02
                 and v2.get("prompt", {}).get("file") == "tutorial/judge_prompt.txt"
-                and v2.get("protocol", {}).get("outputs_per_call") == 16,
+                and v2.get("protocol", {}).get("outputs_per_call") == 16
+                and v2.get("explain") is True,
                 v2,
             )
             page.click("#cr-go")

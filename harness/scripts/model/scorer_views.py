@@ -170,6 +170,99 @@ def _judging_sets(
     return out
 
 
+def _verdict_cells(v: dict[str, Any], arm_ids: list[str]) -> list[dict[str, Any]]:
+    """One stored verdict as a cell per arm it judged: what the judge said of that arm, and its reason."""
+    why = v.get("why")
+    if v.get("why_withheld"):
+        status = "withheld"
+    elif v.get("why_missing"):
+        status = "missing"
+    elif "why" in v:
+        status = "given"
+    else:
+        status = "not asked"
+    out = []
+    for i, arm in enumerate(arm_ids):
+        if v.get("scores") is not None:
+            said: Any = v["scores"][i]
+        elif v.get("best") is not None:
+            said = "best" if i + 1 in v["best"] else "not best"
+        elif v.get("better") is not None:
+            said = "tie" if v["better"] == "tie" else ("better" if v["better"] == i + 1 else "worse")
+        else:
+            said = None
+        out.append(
+            {
+                "arm": arm,
+                "position": i + 1,
+                "said": said,
+                "why": (why[i] if isinstance(why, list) and i < len(why) else why)
+                if status == "given"
+                else None,
+                "why_status": status,
+            }
+        )
+    return out
+
+
+def verdicts(
+    scorer_id: str,
+    set: str | None = None,
+    item: str | None = None,
+    arm: str | None = None,
+    judge: str | None = None,
+    pass_name: str = "primary",  # noqa: S107 — a judging pass, not a password
+    order: str = "low",
+    limit: int = 20,
+    offset: int = 0,
+    data: Path | None = None,
+) -> dict[str, Any]:
+    """The judges' verdicts with their reasons (RFC-034 §5), one row per arm a verdict judged. `order`: `low` puts the
+    lowest graded scores first (what failed, and why), `item` keeps the judging set's order. A page of `limit` rows
+    from `offset`, with the total: the list grows with the data."""
+    if order not in ("low", "item"):
+        raise Problem(f"order must be low or item, got {order!r}", "bad-argument")
+    if pass_name not in ("primary", "position", "noise"):
+        raise Problem(f"pass must be primary, position or noise, got {pass_name!r}", "bad-argument")
+    vroot = verdicts_dir(scorer_id, data)
+    sets = [set] if set else judging_sets_of(scorer_id, data)
+    if not sets:
+        raise Problem(
+            f"scorer {scorer_id} has judged nothing yet: evh judge-score --scorer {scorer_id}", "not-found"
+        )
+    rows: list[dict[str, Any]] = []
+    for sid in sets:
+        man = _read(judging_set_file(sid, data))
+        if man is None:
+            raise Problem(f"no judging set {sid} of scorer {scorer_id}", "not-found")
+        by_item = {it["item_id"]: it for it in man.get("items") or []}
+        for f in sorted(_store.glob(vroot / sid, f"*/*.{pass_name}.b*.json")):
+            v = _read(f)
+            if not v or (item and v.get("item_id") != item) or (judge and v.get("judge") != judge):
+                continue
+            it = by_item.get(str(v.get("item_id")))
+            if it is None:
+                continue
+            arm_ids = it["position" if pass_name == "position" else "primary"][int(v["block"])]  # noqa: S105 — a judging pass
+            for c in _verdict_cells(v, arm_ids):
+                if arm and c["arm"] != arm:
+                    continue
+                rows.append({"set": sid, "item": v["item_id"], "judge": v["judge"], "pass": pass_name,
+                             "block": v["block"], **c})  # fmt: skip
+    if order == "low":
+        # Graded scores lowest first; a pick's or a pair's words, and unparsed verdicts, after them in set order.
+        rows.sort(key=lambda r: (0, r["said"]) if isinstance(r["said"], (int, float)) else (1, 0))
+    return {
+        "scorer": scorer_id,
+        "pass": pass_name,
+        "order": order,
+        "total": len(rows),
+        "explained": sum(1 for r in rows if r["why_status"] == "given"),
+        "offset": offset,
+        "rows": rows[offset : offset + max(0, limit)],
+    }
+
+
 def show_scorer(scorer_id: str, data: Path | None = None, check_format: bool = True) -> dict[str, Any]:
     """One scorer: its record, its judges with their fingerprints, its validation (the block, and why it passes the gate
     or not), the judging sets it judged with their verdicts and summaries counted, the runs it judged, and the people's

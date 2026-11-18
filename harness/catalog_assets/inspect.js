@@ -652,13 +652,18 @@
     const labs = (d.labels || []).length ? `<h3 class="sub">labels · ${d.labels.length}</h3><ul class="labels">${d.labels.map(l =>
       `<li>${chip(l.kind)} <code>${esc(l.set.split('/').pop())}</code>${l.by ? ' <small class="muted">' + esc(l.by) + '</small>' : ''}${l.note ? ' <small>' + esc(l.note) + '</small>' : ''}<div class="outtext">${l.text == null ? '<span class="muted">(its text is not here)</span>' : esc(l.text)}</div></li>`).join('')}</ul>`
       : (d.labels ? `<p class="small muted">No label for this ${ITEM} yet.</p>` : '');
+    // What the judges said of this item and why (RFC-034): the local inspector only.
+    const said = x => typeof x.said === 'number' ? fmt(x.said) : esc(x.said == null ? '—' : x.said);
+    const whyOf = x => x.why ? esc(x.why) : `<span class="muted">${x.why_status === 'withheld' ? 'withheld: it repeated the source' : esc(x.why_status)}</span>`;
+    const judged = (d.verdicts || []).length ? `<h3 class="sub">what the judges said · ${d.verdicts.length}</h3><div class="scroll-x"><table class="data why"><thead><tr><th>scorer</th><th>judge</th><th>arm</th><th class="num">said</th><th>why</th></tr></thead><tbody>${d.verdicts.map(x =>
+      `<tr><td><code>${esc(x.scorer)}</code></td><td><code>${esc(x.judge)}</code></td><td><code>${esc(x.arm)}</code></td><td class="num">${said(x)}</td><td>${whyOf(x)}</td></tr>`).join('')}</tbody></table></div>` : '';
     const refcol = d.reference && d.reference.view && d.reference.view.kind !== 'none' ? `<div class="outcol refcol"><h3>${esc(d.reference.id)} <small class="muted">reference</small></h3>${view(d.reference.view, null)}</div>` : '';
     const hasText = Object.values(d.views).some(v => v && v.kind === 'text');
     const toggle = hasText ? `<label class="tick small"><input type="checkbox" id="difft" ${DIFF ? 'checked' : ''}> mark what each run <ins>adds</ins> and <del>drops</del> against the baseline (useful between near-identical outputs, noisy between independent ones)</label>` : '';
     // The item itself, what every arm read (the local inspector only); folded when it is long.
     const src = d.source && d.source.kind !== 'none' && d.source.text
       ? `<details class="srcbox"${d.source.text.length <= 1500 ? ' open' : ''}><summary>the ${ITEM} itself <small class="muted">${d.source.text.length.toLocaleString()} characters, what every arm read</small></summary><div class="outtext">${esc(d.source.text)}</div></details>` : '';
-    box.innerHTML = `<p class="eyebrow gap"><span class="num">04</span>${ITEM} · ${esc(ep)}</p>${fieldsTable(d.fields)}${src}${labs}${toggle}<div class="outgrid">${refcol}${cols}</div>`;
+    box.innerHTML = `<p class="eyebrow gap"><span class="num">04</span>${ITEM} · ${esc(ep)}</p>${fieldsTable(d.fields)}${src}${labs}${judged}${toggle}<div class="outgrid">${refcol}${cols}</div>`;
     const t = document.getElementById('difft');
     if (t) t.onchange = () => { DIFF = t.checked; drill(ep, arms, baseline, label, ref, tr, scores); };
     box.scrollIntoView({behavior: 'smooth', block: 'start'});

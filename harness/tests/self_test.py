@@ -1132,6 +1132,10 @@ def test_example_scorer_suites_pass() -> None:
             "a judge that names a system: its settings, fingerprint, judging with the fake provider, refusals",
         ),
         (
+            "test_judge_verdicts.py",
+            "judges that say why (RFC-034): judge-verdicts by page, filter and pass, the API's answer the same, scorer-new explains by default, the inspector's item view local only",
+        ),
+        (
             "test_judge_cap.py",
             "what a judging pass may spend: the smallest of its scorer's cap, EVAL_JUDGE_MAX_COST_USD and EVAL_MAX_COST_USD",
         ),
