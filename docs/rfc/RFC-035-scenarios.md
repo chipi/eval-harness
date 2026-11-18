@@ -35,6 +35,11 @@ system, gives it each user turn, and reports what the system did, through one sm
    its settings), and part of the run's fingerprint.
 4. Running a scenario is outside the harness, behind an interface; where the systems run is the runner's business.
 5. No EvalBench importer.
+6. **The first users are Flotilla's agents** (owner, 2026-11-18): every Flotilla agent is evaluated with scenarios as
+   part of its acceptance. Triage and the others first; the bugfix chain last. The first runner is the one for them,
+   beside fleet-eval-data.
+7. Keep it small: the boundary of [§2](#2-what-the-harness-owns-and-what-it-does-not) and the surfaces of
+   [§12](#12-what-it-adds-to-the-surfaces) hold.
 
 ## What we learned from EvalBench
 
@@ -267,11 +272,12 @@ evaluation data (fleet-eval-data), as that driver does, implementing this RFC's 
 its own plans already hold (the records export, the episode format). Neither the harness nor Flotilla takes on running
 scenarios.
 
-## Open questions for the owner
+## Open questions
 
-1. The first real runner: one beside fleet-eval-data for Flotilla's agents (as its bugfix driver), a project's own
-   service, or another.
-2. The first real scenario set to prove it on (the triage fleet's agents, the podcast product's MCP server, another).
+1. Decided (owner, 2026-11-18): the first runner is the one for Flotilla's agents, beside fleet-eval-data; the first
+   scenario sets are theirs, triage first, bugfix last.
+2. For the fleet's session (asked 2026-11-18): which agents after triage, what each one's acceptance asks of a scenario,
+   what its runner can give (input, isolation, reset, the episode as a transcript), and what in this RFC does not fit.
 
 ## Not in this RFC
 
