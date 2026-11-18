@@ -1,6 +1,6 @@
 # RFC-035: Scenarios: evaluating what takes several steps
 
-- **Status**: Draft, revision 3 (0.9.0): the fleet session's feedback folded in (2026-11-18). Owner, 2026-11-18: "write RFC for 4 for 0.9" (multi-turn evaluation, after
+- **Status**: Draft, revision 4 (0.9.0): the fleet and flotilla sessions' feedback folded in (2026-11-18). Owner, 2026-11-18: "write RFC for 4 for 0.9" (multi-turn evaluation, after
   the comparison with EvalBench); then, on revision 1: no EvalBench importer, ever; the simulated user is any model,
   local or online, as a judge is; "how do we keep it small?"; agreed: the approach below, the names **scenario** and
   **transcript**, running a scenario outside the harness behind an interface.
@@ -40,6 +40,14 @@ system, gives it each user turn, and reports what the system did, through one sm
    beside fleet-eval-data. The fleet session's count: three of Flotilla's routines call a model, triage (`triage/cycle`),
    the bugfix chain (`bugfix/fix`) and `fix-podcast`; the rest call none. So the order is triage, then bugfix, then
    fix-podcast; each takes one input and works alone, so each of their scenarios is one step.
+8. **One shape in two layers** (owner, 2026-11-18, on the flotilla session's proposal): the station **episode** is
+   Flotilla's (a versioned JSON schema in its `runtime/`, produced by every harness adapter); the **transcript** is the
+   harness's envelope around it and embeds episodes verbatim. Names: *station* (one agent), *episode* (one station's
+   run), *turn* (one model call), *action* (one tool call). See [§5](#5-a-transcript).
+9. **The offline path** (owner, 2026-11-18): scenarios of Flotilla's agents run outside flotillad, on the version's
+   stations and its own command. See [Where systems run](#where-systems-run). The owner asked Flotilla to make the
+   episode schema, the offline entry point, the frozen input format and a scenario result in acceptance first-class
+   parts of its v2 build.
 7. Keep it small: the boundary of [§2](#2-what-the-harness-owns-and-what-it-does-not) and the surfaces of
    [§12](#12-what-it-adds-to-the-surfaces) hold.
 
@@ -172,8 +180,17 @@ What a scenario's run records, in the run's rows (RFC-033's model), one row per 
 - the cost and its source: a provider's bill or a gateway key's spend before and after (an agent's own count can
   under-report: the fleet measured pi at about half), never a figure without saying which.
 
-One shape, not a mapping: the transcript's fields are agreed with Flotilla's Episode (`bugfix/HARNESS_SEAMS.md`, S4 and
-S8: call recording with rendered texts; S9: cost), so its runner writes a transcript, not something to convert.
+One shape, not a mapping, in two layers with one owner each:
+
+- **The episode** (one station's run) is Flotilla's: a versioned JSON schema in its `runtime/`, which every harness
+  adapter produces and both repositories test against. It carries the station's name and sequence, the version and spec
+  hash, its turns (one model call each: model, text, tokens including cache and reasoning, time, latency, the rendered
+  prompt or its hash and a pointer), its actions (one tool call each: name, arguments and result whole or hashed,
+  duration, success), its answer, `exit_reason`, `session_id`, `notes` (prompt changes a harness forced, part of what
+  was measured), the cost with `cost_source`, and `raw_path` (the native stream, for audit).
+- **The transcript** is the harness's envelope: the scenario, the trial, the user's turns, `stations: [episode, …]` in
+  run order (kick-backs included), the final state, the outcome check's verdict, and how it ended (mapped from the
+  episodes' `exit_reason`). Episodes are embedded verbatim, never converted.
 
 A transcript is a new kind of output beside the ones the views already draw (`text`, `insights`, `nodes`, `entities`):
 the inspector, the sheet and the Workbench gain one renderer, turn by turn, two side by side.
@@ -305,12 +322,18 @@ evaluation data (fleet-eval-data), as that driver does; Flotilla contributes wha
 the harness nor Flotilla takes on running scenarios.
 
 **Flotilla's v2 design changes the "not as it is"** (flotilla `docs/wip/v2-design.md`, the operator's decision of
-2026-11-18, to become its ADR-0020; designed, not built). Every routine gets versions; a new version runs in shadow
-beside the live one with no effect, over the same frozen input; live and shadow results are exported as pairs (per
-side: the version and hash, the outcome, the plan and any diff, per station the turns, tokens, cost and rendered texts);
-"An eval run is a shadow run, under the same rules"; and `flotillad -stations <version> -models <config>` gives an eval
-exactly what a live run of that version would get. So the runner beside fleet-eval-data takes the version's stations
-through `flotillad -stations`, and runs exactly the version that would go live.
+2026-11-18; designed, not built). Every routine gets versions; a new version runs in shadow beside the live one with no
+effect, over the same frozen input; live and shadow results are exported as pairs. "Evals have the same guarantees": an
+eval runs through flotillad as a shadow run on a given input, or offline with `flotillad -stations` and the shadow
+worker's read-only environment; either way no write credential is reachable.
+
+Scenarios take the **offline path** (the flotilla session's recommendation, the owner's decision): the runner beside
+fleet-eval-data takes the version's stations from `flotillad -stations <version> -models <config>`, runs the version's
+own `run:` command in a fresh container from the worker image with the read-only environment, the scenario's input as
+the run's input and a fresh state folder per scenario, and wraps the episodes the run writes in a transcript. That
+gives isolation and reset per scenario, many trials, no load on the live platform, and exactly the version that would go
+live. Through flotillad does not fit: v2's shadows start from live inputs and are paired with them, and feeding them
+scenarios would put evaluation inside Flotilla.
 
 **Where scenarios sit in Flotilla's acceptance** (the installation's bars, flotilla-fleets
 `docs/fleets-v2-requirements.md`, draft; the fleet session's summary): a new version is accepted by the operator after
@@ -328,8 +351,10 @@ comparison of at least seven days. Scenarios are the eval part of those bars; th
    exists already as items with frozen tool results, so what scenarios add is path scoring and the outcome check on
    what it would file; the batch runner; stations, rendered prompts and the cost's source in the transcript; no
    simulated user or person driver needed for Flotilla now.
-3. For the flotilla session (the fleet session's advice): one shape for the transcript and Flotilla's Episode (field
-   names), and this section checked against `docs/wip/v2-design.md`.
+3. Answered by the flotilla session (2026-11-18) and decided by the owner: one shape in two layers, the offline path.
+   Asked of it next (owner, 2026-11-18): the episode schema, the offline entry point as a tested contract, the frozen
+   input format usable as a scenario's start, and a scenario result in a version's acceptance, as parts of v2's build;
+   the schema's commit to reference here.
 
 ## Not in this RFC
 
