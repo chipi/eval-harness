@@ -834,6 +834,24 @@ try:
                 and "the first baseline was the one" in json.dumps(v3),
                 (r.stderr[-200:], vers, json.dumps(v3)[:300]),
             )
+            # G6 (fleet, 2026-11-18): a version `evh migrate` filled in showed its placeholder actor as a name
+            # ("before 0.8.0"). Version 1 is made one here, as the migration writes it.
+            from evaluation_harness.baselines_migrate import BEFORE
+
+            v1_path = proj / "data" / "baselines" / "tickets_summary" / "tk_v1" / "1.json"
+            v1 = json.loads(v1_path.read_text())
+            v1_path.write_text(json.dumps(v1 | {"actor": BEFORE, "migrated": True}, indent=2) + "\n")
+            page.reload()
+            page.wait_for_selector("li:has-text('v3') .status:has-text('current')", timeout=60000)
+            versions = page.locator(
+                "section.part", has=page.locator("h2", has_text="The baseline on")
+            ).locator("li")
+            v1_line = next((t for t in versions.all_inner_texts() if t.startswith("v1 ")), "")
+            check(
+                "a migrated baseline version names nobody in the Workbench, not the placeholder 'before 0.8.0'",
+                "nobody recorded (before 0.8.0)" in v1_line and "· before 0.8.0 ·" not in v1_line,
+                v1_line,
+            )
             # W2 (UXS-005): which is better, blind, on a sheet submitted when done; then what went wrong, with a new list
             page.goto(f"http://127.0.0.1:{port}/workbench/#review/tickets_summary")
             page.wait_for_selector("#rv-make", timeout=20000)

@@ -301,6 +301,61 @@ try:
         got.get("metric") == "zeta",
         (got.get("metric"), r.stderr[-400:]),
     )
+
+    # G2, as the fleet re-checked it (2026-11-18): the arms' primary (`oracle_pass`) had no score per item where
+    # their plain runs are read, only in another reading of one of them (`silver`), and the comparison moved to
+    # another metric in silence. Here the primary `late` is scored only against a reference.
+    shutil.copytree(KIT / "gold", proj / "tutorial" / "gold")
+    r = evh(
+        "label-import", "--sheet", "tutorial/gold", "--dataset-id", "tickets_v1", "--set", "g", "--by", "t"
+    )
+    check("setup: a label set to score against", r.returncode == 0, r.stderr[-400:])
+    (proj / "late_adapter.py").write_text(
+        ADAPTER.replace(
+            'return {"words": float(len(output.split()))}',
+            'return {"words": float(len(output.split()))} | ({"late": 1.0} if reference else {})',
+        ).replace('PRIMARY_METRIC = "words"', 'PRIMARY_METRIC = "late"')
+    )
+    for name in ("late_a", "late_b"):
+        _runstore.write_text(
+            proj,
+            f"systems/{name}_v1.yaml",
+            f"system_id: {name}_v1\nadapter: late_adapter.py\nparams:\n  sleep: 0\n",
+        )
+        r = evh("run", "--system", f"{name}_v1", "--dataset", "tickets_v1")
+        check(f"setup: {name} ran", r.returncode == 0, r.stderr[-400:])
+
+    def said() -> str:
+        c = evh("comparison-show", "--runs", "late_a_v1,late_b_v1", "--json")
+        return (
+            " ".join((json.loads(c.stdout or "{}").get("result") or {}).get("warnings") or [])
+            + c.stderr[-300:]
+        )
+
+    note = said()
+    check(
+        "comparison-show: when the arms' primary has no score per item as read, it says so and names the metric used",
+        "primary metric, late, has no score per item" in note
+        and "compared on words instead" in note
+        and "not scored for late_a_v1, late_b_v1 in any reading" in note,
+        note,
+    )
+    r = evh("rescore", "--dataset-id", "tickets_v1", "--labels", "g", "--match", "late_a", "--by", "t")
+    note = said()
+    check(
+        "comparison-show: and where another reading scores it (--label), and which arm has it nowhere",
+        r.returncode == 0
+        and "It is scored for late_a_v1 under --label labels-tickets_v1-g." in note
+        and "not scored for late_b_v1 in any reading" in note,
+        (r.stderr[-300:], note),
+    )
+    c = evh("comparison-show", "--runs", "late_a_v1", "--label", "labels-tickets_v1-g", "--json")
+    got = json.loads(c.stdout or "{}").get("result") or {}
+    check(
+        "comparison-show: the label the note names reads the primary when passed back",
+        got.get("metric") == "late",
+        (got.get("metric"), c.stderr[-300:]),
+    )
 finally:
     shutil.rmtree(proj, ignore_errors=True)
 

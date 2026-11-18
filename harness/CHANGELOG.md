@@ -929,7 +929,9 @@ that can move a result is never a patch release without saying so under **Change
   spend): now the price table only when the system declares `usd_per_mtok_in` and `_out`, else "the adapter's own
   figure", with the `cost_source` the adapter put in its meta.
 - **`evh comparison-show` with no metric named compares on the arms' own primary metric**, not the project's most
-  common one (bugfix arms were compared on triage's `actionable`, not their `oracle_pass`).
+  common one; and when that metric has no score per item as the arms are read, it says so instead of moving to
+  another in silence, naming the `--label` of another reading that scores it and the arms scored for it nowhere
+  (bugfix arms read as plain runs carry `oracle_pass` only under `silver`, and were compared on `actionable`).
 - **`evh chart trend` reads a goal's measure as the leaderboard does**, from a run's latest re-score when the run was
   measured before the measure existed (triage's `triage_cost`); it said there were no closed rounds with the measure,
   and now says how many versions and rounds it found when there is nothing to draw.

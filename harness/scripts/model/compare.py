@@ -188,6 +188,43 @@ def _default_metric(counts: Counter, per_arm: dict, arms: list, asked: str, data
     )
 
 
+def _primary_not_read(arms: list, metric: str, counts: Counter) -> str | None:
+    """When no metric was named and the compared arms' primary metric has no score per item as they are read, the
+    default is another metric: said, with where the primary is scored (another reading of the same runs, an arm id
+    `<label>/<dataset>/<system>`) and which arms it is scored for nowhere (fleet, 2026-11-18: bugfix arms read as
+    plain runs carry `oracle_pass` only in their `silver` reading, and were compared on `actionable` in silence)."""
+    primaries = Counter(p for a in arms if (p := (A.describe(a) or {}).get("primary")))
+    if not primaries:
+        return None
+    primary = primaries.most_common(1)[0][0]
+    if primary == metric or primary in counts:
+        return None
+    where: dict[str, list[str]] = {}
+    nowhere = []
+    # The label a reading is asked for by, not the arm id's folder (`labels-tickets-v1-g` is read as
+    # `labels-tickets_v1-g`): an adapter without read_as names the folder.
+    read_as = getattr(A, "read_as", None)
+    for a in arms:
+        rest = a.split("/", 1)[-1]
+        found = [
+            (read_as(b) if callable(read_as) else "") or b.split("/", 1)[0]
+            for b in A.arms()
+            if b != a and b.split("/", 1)[-1] == rest and primary in A.scores(b)
+        ]
+        for lb in found:
+            where.setdefault(lb, []).append(_label(a))
+        if not found:
+            nowhere.append(_label(a))
+    said = (
+        f"The arms' primary metric, {primary}, has no score per {A.item_word} for these runs as read, so it cannot be "
+        f"tested; compared on {metric or 'nothing'} instead."
+    )
+    said += "".join(f" It is scored for {', '.join(xs)} under --label {lb}." for lb, xs in where.items())
+    if nowhere:
+        said += f" It is not scored for {', '.join(nowhere)} in any reading: a re-score against a reference that scores it would."
+    return said
+
+
 def _averages(arms: list, series: dict, metric: str):
     """Arms with only a run-level average for this metric: shown beside the comparison, never
     tested. The same value as an arm already shown is the same result filed twice: reported,
@@ -437,6 +474,8 @@ def compare(params: dict) -> dict:
         metric = _default_metric(counts, per_arm, arms, asked, dataset) if counts else ""
         if instead:
             instead += f". Compared on {metric} instead."
+        else:
+            instead = _primary_not_read(arms, metric, counts)
     if not counts or (metric in A.shape_metrics and not params.get("metric", [""])[0]):
         return {
             "state": "not scorable",
