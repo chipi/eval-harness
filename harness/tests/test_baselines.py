@@ -235,6 +235,20 @@ try:
         and "restores 1" in r.stdout,
         r.stdout[-800:],
     )
+    # G6 (fleet, 2026-11-18): a baseline `evh migrate` filled in printed "promoted 2026-10-31 by before 0.8.0"
+    from evaluation_harness._actor import said
+    from evaluation_harness.baselines_migrate import BEFORE
+    from evaluation_harness.ops.records import say_baselines
+
+    migrated = [dict(x, actor=BEFORE) for x in doc.get("baselines") or []][:1]
+    text = say_baselines({"baselines": migrated}) if migrated else ""
+    check(
+        "a migrated baseline names nobody, in the CLI's text and the shared wording, not 'by before 0.8.0'",
+        "by nobody recorded (before 0.8.0)" in text
+        and "by before 0.8.0" not in text
+        and said({"type": "person", "name": "ana", "from": "flag"}) == "ana",
+        text[-400:],
+    )
     r = evh("validate")
     v6 = [ln for ln in r.stdout.splitlines() if "V6" in ln]
     check(

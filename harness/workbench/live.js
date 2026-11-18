@@ -131,7 +131,9 @@
   }
   const sent = (form) => UNSENT.delete(form);
   const enc = encodeURIComponent;
-  const STATE_TAG = { vetted: "pass", onboarded: "pass", check: "check", none: "none" };
+  // A recorded actor in words, as the CLI's `_actor.said`: a record `evh migrate` filled in names nobody.
+  const actorSaid = (a) => !a || !a.name ? "?" : a.from === "migration" ? `nobody recorded (${a.name})` : a.name + (a.for ? ` for ${a.for}` : "");
+  const STATE_TAG ={ vetted: "pass", onboarded: "pass", check: "check", none: "none" };
   const stateTag = (s) => `<span class="tag onb-${STATE_TAG[s] || "none"}">${esc(s)}</span>`;
 
   // ── models: every model in the project and its state ──────────────────────
@@ -797,7 +799,7 @@
     const versions = line ? [line, ...(line.history || []).filter((h) => h.version !== line.current)]
       .map((v) => ({ ...v, current: line.current })).sort((a, b) => b.version - a.version) : [];
     const baseline = versions.length ? `<section class="part"><div class="parthead"><h2>The baseline on ${esc(r.dataset_id)}</h2></div><div class="body"><ul>
-      ${versions.map((b) => `<li>v${b.version}${b.version === b.current ? ' <span class="status ok">current</span>' : ""} · <span class="mono">${esc(b.promoted_from)}</span> · ${esc((b.actor || {}).name || "")} · <small>${esc(b.reason || "")}</small>
+      ${versions.map((b) => `<li>v${b.version}${b.version === b.current ? ' <span class="status ok">current</span>' : ""} · <span class="mono">${esc(b.promoted_from)}</span> · ${esc(actorSaid(b.actor))} · <small>${esc(b.reason || "")}</small>
         ${b.version !== b.current ? `<div class="inline" data-form="rollback-${b.version}"><input type="text" id="rb-why-${b.version}" placeholder="why go back to it, a sentence" aria-label="why roll back to v${b.version}" style="min-width:16rem">
           <button class="btn" type="button" data-rollback="${b.version}" data-send>Roll back to v${b.version}</button>${mark}</div>` : ""}</li>`).join("")}</ul><div id="rb-out" data-out></div></div></section>` : "";
     const leaderRun = (() => { const a = r.arms.find((x) => x.arm === ev.leader); return a ? a.runs[a.runs.length - 1] : ""; })();
@@ -1397,7 +1399,7 @@
       ${byField("rf6-by")}
       <section class="part"><div class="parthead"><span class="letter">a</span><h2>Its reference sets now</h2></div><div class="body">
         ${mine.length ? `<div class="tablewrap"><table><thead><tr><th>reference</th><th class="num">items</th><th>from</th><th>by</th><th>when</th><th class="num">arms scored</th></tr></thead><tbody>${mine.map((r) => `<tr><td class="mono"><span class="tag ${esc(r.tier)}">${esc(r.tier)}</span> ${esc(r.reference)}</td><td class="num">${r.items}</td><td class="mono">${esc(r.label_set || "—")} <span class="muted">${esc(r.kind || "")}${r.author ? ` · written by ${esc(r.author)}` : ""}</span></td><td>${esc(r.promoted_by || "")}</td><td>${esc((r.created_at || "").slice(0, 10))}</td><td class="num">${r.scored}</td></tr>`).join("")}</tbody></table></div>` : '<p class="muted">None yet: promote a label set below.</p>'}
-        <h3>Its label sets</h3>${ls.label_sets.length ? `<ul>${ls.label_sets.map((x) => `<li><b class="mono">${esc(x.set)}</b> · ${x.items} item(s) · ${esc(x.kind)}${x.actor && x.actor.name ? ` · by ${esc(x.actor.name)}` : ""} · ${esc((x.created_at || "").slice(0, 10))}</li>`).join("")}</ul>` : '<p class="muted">None yet. <a href="#label/' + enc(ds) + '">Label it here</a>.</p>'}
+        <h3>Its label sets</h3>${ls.label_sets.length ? `<ul>${ls.label_sets.map((x) => `<li><b class="mono">${esc(x.set)}</b> · ${x.items} item(s) · ${esc(x.kind)}${x.actor && x.actor.name ? ` · by ${esc(actorSaid(x.actor))}` : ""} · ${esc((x.created_at || "").slice(0, 10))}</li>`).join("")}</ul>` : '<p class="muted">None yet. <a href="#label/' + enc(ds) + '">Label it here</a>.</p>'}
         ${agree ? `<p class="muted" style="margin-bottom:4px">How often two sets agree:</p><ul>${agree}</ul>` : ""}</div></section>
       <section class="part"><div class="parthead"><span class="letter">b</span><h2>What it moves</h2></div><div class="body">
         ${sets.length ? `<div class="inline"><select id="mv-set" aria-label="the label set">${opt(sets, st.set)}</select>
@@ -1956,7 +1958,7 @@
           <button class="btn" type="button" id="sc-go" data-send>Allow it</button>${mark}</div><div id="sc-out" data-out></div></div>`)}
       ${part(4, "Open it for one candidate", `<p class="muted">The candidate's hypothesis (what it is against, the measure, the direction) must be in it and committed first. Opening it is one look at this test set; each later look is tested at a stricter level.</p>
         <p>Next: look ${look.next ?? "?"}, one-sided at ${pct(look.next_level)}; ${look.limit != null ? `at most ${look.limit} looks` : ""}${(look.looks || []).length ? ` · ${look.looks.length} so far` : ""}</p>
-        ${opened.length ? tbl(["look", "candidate", "against", "why", "committed", "by"], opened.map((u) => `<tr><td class="num">${(u.look || {}).number ?? ""}</td><td class="mono">${esc(u.system_id)}</td><td class="mono">${esc((u.hypothesis || {}).against || "")}</td><td>${esc(u.reason || "")}</td><td class="mono">${esc(String(u.commit || "").slice(0, 8))}</td><td>${esc(((u.actor || {}).name) || "")}</td></tr>`)) : ""}
+        ${opened.length ? tbl(["look", "candidate", "against", "why", "committed", "by"], opened.map((u) => `<tr><td class="num">${(u.look || {}).number ?? ""}</td><td class="mono">${esc(u.system_id)}</td><td class="mono">${esc((u.hypothesis || {}).against || "")}</td><td>${esc(u.reason || "")}</td><td class="mono">${esc(String(u.commit || "").slice(0, 8))}</td><td>${esc(u.actor && u.actor.name ? actorSaid(u.actor) : "")}</td></tr>`)) : ""}
         <div data-form="unseal"><div class="inline"><select id="us-sys" aria-label="the candidate">${opt(sysIds)}</select><input type="text" id="us-why" placeholder="why this candidate, and why now: a sentence" style="min-width:18rem">
           ${look.limit != null && look.next > look.limit ? '<label class="choice"><input type="checkbox" id="us-extra"> look past the limit (a person only)</label>' : ""}
           <button class="btn primary" type="button" id="us-go" data-send>Open it for this candidate</button>${mark}</div><div id="us-out" data-out></div></div>`, opened.length ? `<span class="status">look ${opened.length}</span>` : "")}
@@ -2255,7 +2257,7 @@
     const df = WB._pdiff && WB._pdiff.name === name ? WB._pdiff : null;
     return `<div class="screen wide">${head}${byField("pp6-by")}
       <section class="part"><div class="parthead"><span class="letter">1</span><h2>Its versions</h2></div><div class="body">
-        ${vs.map((x) => `<details class="version" ${x === last ? "open" : ""}><summary><b>v${x.n}</b> <span class="mono">${esc(x.id)}</span> · ${esc(String(x.created_at || "").slice(0, 16).replace("T", " "))} · by ${esc(((x.actor || {}).name) || "?")}${x.parent ? ` · from <span class="mono">${esc(x.parent)}</span>` : ""} · ${x.runs.length} run(s)</summary>
+        ${vs.map((x) => `<details class="version" ${x === last ? "open" : ""}><summary><b>v${x.n}</b> <span class="mono">${esc(x.id)}</span> · ${esc(String(x.created_at || "").slice(0, 16).replace("T", " "))} · by ${esc(actorSaid(x.actor))}${x.parent ? ` · from <span class="mono">${esc(x.parent)}</span>` : ""} · ${x.runs.length} run(s)</summary>
           <p class="muted">${esc(x.note || "")}</p><pre class="reply">${esc(x.text || "")}</pre>
           ${x.runs.length ? tbl(["run", "measure", "score"], x.runs.map((r) => `<tr><td class="mono">${esc(r.run_id)}</td><td>${esc(r.metric || "")}</td><td class="num">${typeof r.score === "number" ? r.score.toFixed(4) : esc(r.score ?? "")}</td></tr>`)) : '<p class="muted">No run sent it yet.</p>'}</details>`).join("")}</div></section>
       <section class="part"><div class="parthead"><span class="letter">2</span><h2>What changed between two</h2></div><div class="body">

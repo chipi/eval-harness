@@ -46,6 +46,8 @@ def call_system(text, params):
     meta = {"finish_reason": "stop"}
     if params.get("billed"):
         meta["usage"] = {"cost": 0.002}
+    if params.get("source"):
+        meta["cost_source"] = params["source"]
     return SimpleNamespace(output="A" * 350 + "END", tokens_in=10, tokens_out=5, cost_usd=0.002,
                            latency_ms=None, extra={}, meta=meta)
 
@@ -94,7 +96,7 @@ try:
     r = evh(
         "arm-smoke",
         "--system",
-        system("priced", record="mrec", sleep=0.2),
+        system("priced", record="mrec", sleep=0.2, usd_per_mtok_in=0.5, usd_per_mtok_out=1.5),
         "--dataset",
         "tickets_v1",
         "--no-record",
@@ -192,11 +194,46 @@ try:
     )
 
     # evh run: spent says its basis; warm-up only when something was warmed
-    r = evh("run", "--system", system("run_priced", sleep=0.0), "--dataset", "tickets_v1")
+    r = evh(
+        "run",
+        "--system",
+        system("run_priced", sleep=0.0, usd_per_mtok_in=0.5, usd_per_mtok_out=1.5),
+        "--dataset",
+        "tickets_v1",
+    )
     check(
-        "run: 'spent' says the system's price table when no bill came",
+        "run: 'spent' says the system's price table when no bill came and the system declares prices",
         re.search(r"spent \$0\.012000 \(the system's price table", r.stdout) is not None,
         r.stdout[-500:],
+    )
+    # G1 (fleet, 2026-11-18): a system with no prices whose adapter reports its own cost was labelled the
+    # price table's
+    r = evh("run", "--system", system("run_own", sleep=0.0), "--dataset", "tickets_v1")
+    check(
+        "run: 'spent' says the adapter's own figure when the system declares no prices and no bill came",
+        "spent $0.012000 (the adapter's own figure, the provider sent no bill)" in r.stdout
+        and "price table" not in r.stdout,
+        r.stdout[-500:],
+    )
+    r = evh("run", "--system", system("run_gateway", sleep=0.0, source="gateway"), "--dataset", "tickets_v1")
+    check(
+        "run: 'spent' names the cost_source the adapter's rows carry",
+        "spent $0.012000 (the adapter's own figure, cost_source gateway, the provider sent no bill)"
+        in r.stdout,
+        r.stdout[-500:],
+    )
+    r = evh(
+        "arm-smoke",
+        "--system",
+        system("smoke_gateway", sleep=0.0, source="gateway"),
+        "--dataset",
+        "tickets_v1",
+        "--no-record",
+    )
+    check(
+        "arm-smoke: names the adapter's cost_source, not the price table",
+        "(the adapter's own figure, cost_source gateway, the provider sent no bill)" in r.stdout,
+        r.stdout[-900:],
     )
     r = evh("run", "--system", system("run_billed", sleep=0.0, billed=True), "--dataset", "tickets_v1")
     check(
@@ -238,6 +275,31 @@ try:
         "dry run: the line says what it counts",
         "item text only" in r0.stderr and "item text + the system's prompt" in r1.stderr,
         (r0.stderr[-600:], r1.stderr[-600:]),
+    )
+
+    # G2 (fleet, 2026-11-18): with no metric named, comparison-show compared bugfix arms on `actionable`, the
+    # project's most common primary metric (triage's), not on the compared arms' own `oracle_pass`. Here `words` is
+    # every other arm's primary and the two compared arms' is `zeta`.
+    (proj / "two_adapter.py").write_text(
+        ADAPTER.replace(
+            'return {"words": float(len(output.split()))}',
+            'return {"words": float(len(output.split())), "zeta": 1.0}',
+        ).replace('PRIMARY_METRIC = "words"', 'PRIMARY_METRIC = "zeta"')
+    )
+    for name in ("two_a", "two_b"):
+        _runstore.write_text(
+            proj,
+            f"systems/{name}_v1.yaml",
+            f"system_id: {name}_v1\nadapter: two_adapter.py\nparams:\n  sleep: 0\n",
+        )
+        r = evh("run", "--system", f"{name}_v1", "--dataset", "tickets_v1")
+        check(f"setup: {name} ran", r.returncode == 0, r.stderr[-400:])
+    r = evh("comparison-show", "--runs", "two_a_v1,two_b_v1", "--json")
+    got = json.loads(r.stdout or "{}").get("result") or {}
+    check(
+        "comparison-show: with no metric named, the compared arms' own primary metric, not the project's most common",
+        got.get("metric") == "zeta",
+        (got.get("metric"), r.stderr[-400:]),
     )
 finally:
     shutil.rmtree(proj, ignore_errors=True)

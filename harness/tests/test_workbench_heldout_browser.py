@@ -20,7 +20,6 @@ from __future__ import annotations
 
 import json
 import os
-import re
 import shutil
 import socket
 import subprocess
@@ -33,6 +32,8 @@ HARNESS = Path(__file__).resolve().parents[1]
 HERE = HARNESS / "scripts"
 KIT = HARNESS / "tutorial"
 sys.path.insert(0, str(HARNESS))
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _signin
+import _signin  # noqa: E402
 import yaml  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 
@@ -203,14 +204,7 @@ try:
 
     srv, port, lines = serve()
     try:
-        link = next(
-            (
-                m.group(0)
-                for ln in lines
-                if (m := re.search(r"http://\S+/api/v1/session\?token=\S+&next=/workbench/", ln))
-            ),
-            None,
-        )
+        link = _signin.link(lines)
         with sync_playwright() as pw:
             browser = pw.chromium.launch()
             page = browser.new_page(viewport={"width": 1280, "height": 900})

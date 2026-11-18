@@ -2590,8 +2590,9 @@ def _answer(A: Adapter, g: dict, by_ds: dict, measure: str) -> str:
 def _baseline_facts(A: Adapter, b: dict) -> str:
     """What a baseline version says beyond its run (RFC-027): its number, who promoted it, the evidence frozen in
     at promotion, and the line's history, folded."""
-    who = b.get("actor") or {}
-    by = (e(who.get("name") or "") + (f" for {e(who['for'])}" if who.get("for") else "")) if who else ""
+    from evaluation_harness._actor import said as actor_said  # noqa: PLC0415
+
+    by = e(actor_said(b.get("actor"))) if b.get("actor") else ""
     ev = b.get("evidence") or {}
     vd = ev.get("verdict")
     if b.get("migrated"):

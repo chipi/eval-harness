@@ -28,6 +28,7 @@ import argparse
 import json
 import sys
 import time
+from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
 
@@ -326,16 +327,37 @@ def _outcome(res: Any, scored: dict[str, Any], primary: str | None, resumed: boo
     return "ok"
 
 
-def spend_basis(billed_usd: float, priced_usd: float) -> str:
+def spend_basis(
+    billed_usd: float, other_usd: float, priced: bool = False, sources: Iterable[str] = ()
+) -> str:
     """Where a spend came from, in the words `evh run` and `evh arm-smoke` share: a Result's cost_usd is the
-    provider's bill when its meta carries one (usage.cost), else tokens x the system's usd_per_mtok_in / _out."""
-    if billed_usd > 0 and priced_usd <= 1e-12:
+    provider's bill when its meta carries one (usage.cost); the rest is tokens x the system's usd_per_mtok_in /
+    _out when the system declares both (`priced`), else the adapter's own figure, with the `cost_source` its
+    meta names (a gateway key's spend, say)."""
+    named = sorted({s for s in sources if s})
+    if priced:
+        other = "the system's price table: tokens x usd_per_mtok_in / usd_per_mtok_out"
+    else:
+        other = "the adapter's own figure" + (f", cost_source {', '.join(named)}" if named else "")
+    if billed_usd > 0 and other_usd <= 1e-12:
         return "the provider's bill"
     if billed_usd <= 0:
-        return (
-            "the system's price table: tokens x usd_per_mtok_in / usd_per_mtok_out, the provider sent no bill"
-        )
-    return f"${billed_usd:.6f} the provider's bill, ${priced_usd:.6f} the system's price table"
+        return f"{other}, the provider sent no bill"
+    return f"${billed_usd:.6f} the provider's bill, ${other_usd:.6f} {other}"
+
+
+def is_priced(params: dict[str, Any]) -> bool:
+    """Whether a system declares both prices, so a cost without a bill is its price table's."""
+    return params.get("usd_per_mtok_in") is not None and params.get("usd_per_mtok_out") is not None
+
+
+def cost_source(meta: dict[str, Any] | None) -> str | None:
+    """The `cost_source` an adapter names in a result's meta when no bill came with it, else None."""
+    meta = meta or {}
+    if (meta.get("usage") or {}).get("cost") is not None:
+        return None
+    src = meta.get("cost_source")
+    return src if isinstance(src, str) and src else None
 
 
 def progress_line(n: int, total: int, item_id: str, outcome: str, seconds: float, spent: float) -> str:
@@ -1564,10 +1586,13 @@ def _run(args: argparse.Namespace) -> int:
         float(((_model_runs.record(d) or {}).get("scores") or {}).get("total_cost_usd") or 0) for d in made
     )
     if spent:
+        from evaluation_harness import _runs  # noqa: PLC0415
         from evaluation_harness.cost_report import billed_and_recorded  # noqa: PLC0415
 
         billed = sum(billed_and_recorded(d)[0] for d in made)
-        print(f"spent ${spent:.6f} ({spend_basis(billed, max(spent - billed, 0.0))})")
+        sources = {s for d in made for r in _runs.item_rows(d) if (s := cost_source(r.get("_meta")))}
+        basis = spend_basis(billed, max(spent - billed, 0.0), is_priced(call_cfg["params"]), sources)
+        print(f"spent ${spent:.6f} ({basis})")
 
     # A CAPPED RUN IS NOT A SUCCESSFUL RUN, AND AN EMPTY ONE CERTAINLY IS NOT.
     #

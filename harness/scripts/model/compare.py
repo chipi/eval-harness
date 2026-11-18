@@ -167,6 +167,10 @@ def _default_metric(counts: Counter, per_arm: dict, arms: list, asked: str, data
         f = A.reference_format(_ref_of(k)) if _ref_of(k) else ""
         return bool(want and f and f != want)
 
+    # The compared arms' own primary metric before any count: with no primary in the key, two metrics every arm
+    # records tied and the name decided (fleet, 2026-11-18: `actionable` shown before the arms' `oracle_pass`).
+    primaries = Counter(p for a in arms if (p := (A.describe(a) or {}).get("primary")))
+
     return min(
         pool,
         key=lambda k: (
@@ -175,6 +179,7 @@ def _default_metric(counts: Counter, per_arm: dict, arms: list, asked: str, data
             _reference_free(k),  # the bill and the clock: only when nothing is scored
             k not in mine,
             mismatch(k),
+            -primaries[k.split(" vs ")[0]],
             -counts[k],
             -recorded[k],
             next((i for i, p in enumerate(preferred) if k.split(" vs ")[0] == p), 99),

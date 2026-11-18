@@ -15,8 +15,12 @@ correctness bugs, not just missing features.
   `rounds`, `inspect`, `labels`, `tags`, `captures`, `models`, `prompts`, `studies` or `label-coverage`, or that
   calls an MCP tool of one of those names, takes the operation instead: the CHANGELOG's 0.8.0 "Changed" entry lists
   each with its replacement (`goals --goal G` is `evh goal-leaderboard G`; `inspect --runs A,B` is `evh
-  comparison-show --runs A,B`; `inspect --sheet --dataset-id D --runs A,B` is `evh sheet-show D --runs A,B`, and
-  with `--csv` it is `evh sheet-export --dataset-id D --runs A,B --csv FILE`). The reads that kept their name take the
+  comparison-show --runs A,B`, where A and B are now arm or system ids, not run ids: a run id is refused with
+  `not-found`, and `evh arm-list` names the arms; `inspect --sheet --dataset-id D --runs A,B` is `evh sheet-show D --runs A,B`, and
+  with `--csv` it is `evh sheet-export --dataset-id D --runs A,B --csv FILE`). The likeliest places these hide are a
+  project's own Makefile targets and its README's examples, an `evh init` project's among them: `grep -nE "evh
+  (overview|activity|arms|datasets|references|metrics|goals|rounds|inspect|labels|tags|captures|models|prompts|studies|label-coverage)([^a-z-]|$)"
+  Makefile README.md` finds them. The reads that kept their name take the
   dataset, system or model as their argument (`evh leaderboard D`, `evh deploy-sheet S`, `evh periods M`), and what
   they print in `--json` is the operation's structured result (`result.runs` for `runs-list`, `result.sets` for
   `looks`, `result.schema` and `result.baselines` for `baselines`). MCP clients: a tool is named as its operation, and

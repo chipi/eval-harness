@@ -211,6 +211,26 @@ try:
         "scoring:" in r1 and "a bonus to see the scoring move" in r1,
         r1,
     )
+
+    # G3 (fleet, 2026-11-18): a goal whose measure only a re-score carries; `evh chart trend` said it had no
+    # baseline versions or closed rounds with that measure while the leaderboard read it.
+    _runstore.write_text(
+        proj, "goals/seen.yaml",
+        "goal_id: seen\ntitle: seen\nstatement: s\ndecision: d\n"
+        "success_criteria: {primary: {measure: bonus_seen, direction: higher}}\n"
+        "datasets:\n  - {dataset_id: tickets_v1, role: validation}\n",
+    )  # fmt: skip
+    seen_run = placed[0][0] if placed else ""
+    r = evh(
+        "run-promote", "--run", seen_run, "--goal", "seen", "--reason", "a measure only its re-score carries"
+    )
+    tr = evh("chart", "trend", "--goal", "seen", "--json")
+    rows = (json.loads(tr.stdout or "{}").get("result") or {}).get("rows") or []
+    check(
+        "chart trend: a measure only a re-score carries is read from the re-score, as the leaderboard reads it",
+        r.returncode == 0 and tr.returncode == 0 and [x.get("bonus_seen") for x in rows] == [0.5],
+        (out(r)[-300:], out(tr)[-400:]),
+    )
     import yaml
 
     arms1 = yaml.safe_load(r1)["arms"]

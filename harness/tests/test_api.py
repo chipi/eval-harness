@@ -349,6 +349,20 @@ try:
     finally:
         srv.terminate()
         srv.wait(timeout=10)
+    # G4 (fleet, 2026-11-18): the startup lines went to a log with a working token in the Workbench link, and the
+    # access log wrote the session route's request line, token and all. Its output here is a pipe, as a background
+    # job's or CI's is, and the test signed in through /session?token= above.
+    said = srv.stdout.read() if srv.stdout else ""
+    check(
+        "catalog-serve: printed to a pipe, the Workbench link names the token's file and never holds the token",
+        bool(token) and "Workbench:" in said and "<the token in " in said,
+        [ln for ln in said.splitlines() if "Workbench:" in ln],
+    )
+    check(
+        "catalog-serve: no line it wrote holds the token; the session route is logged with it masked",
+        bool(token) and token not in said and "session?token=<masked>" in said,
+        [ln for ln in said.splitlines() if "token" in ln][:6],
+    )
 
     for mode in (("--public", "a.example"), ("--behind-proxy", "evals.example")):
         srv, port = serve(*mode, *(("--bind", "0.0.0.0") if mode[0] == "--behind-proxy" else ()))  # noqa: S104 - a mode under test  # nosec B104

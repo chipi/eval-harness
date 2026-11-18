@@ -743,14 +743,36 @@ def trend(goal: str | None = None, model: str | None = None, dataset: str | None
     A = _adapter()
     g = _goal(A, goal)
     metric = str(((g.get("success_criteria") or {}).get("primary") or {}).get("measure", ""))
+
+    def of_run(run: str | None) -> float | None:
+        """The run's value of the goal's measure as the leaderboard reads it now: its latest re-score, else the score
+        it made when it ran. A measure added after the run was measured lives only in a re-score (fleet,
+        2026-11-18: triage_cost, and the trend said no closed round had one)."""
+        from evaluation_harness import rescore  # noqa: PLC0415
+
+        first = model_runs.first_score(run, _data()) if run else None
+        rec = model_runs.record(first) if first else None
+        if not first or not rec:
+            return None
+        _scorer, read_from = rescore.latest_scoring(first, rec)
+        for sd in (read_from, first):
+            sc = (((model_runs.record(sd) if sd else None) or {}).get("scores") or {}).get(metric)
+            if sc is not None:
+                return float(sc)
+        return None
+
     rows, series, names = [], {}, {}
+    versions = 0
     for d in g.get("datasets") or []:
         ds = d.get("dataset_id", "")
         if dataset and ds != dataset:
             continue
         line: list[tuple[float, float]] = []
         for v in _baselines.versions(goal, ds, _data()):
+            versions += 1
             sc = ((v.get("repeats") or {}).get("mean_scores") or v.get("scores") or {}).get(metric)
+            if sc is None:
+                sc = of_run(v.get("promoted_from"))
             if sc is None:
                 continue
             x = float(len(line) + 1)
@@ -767,16 +789,12 @@ def trend(goal: str | None = None, model: str | None = None, dataset: str | None
             )
         if line:
             series[f"the baseline on {ds}"] = line
-    closed = [
-        r
-        for r in _rounds.load_rounds(goal, _data())
-        if r.get("status") == "closed" and (r.get("conclusion") or {}).get("promoted_run")
-    ]
+    all_closed = [r for r in _rounds.load_rounds(goal, _data()) if r.get("status") == "closed"]
+    closed = [r for r in all_closed if (r.get("conclusion") or {}).get("promoted_run")]
     rl: list[tuple[float, float]] = []
     for r in closed:
         run = r["conclusion"]["promoted_run"]
-        first = model_runs.first_score(run, _data())
-        sc = (((model_runs.record(first) if first else None) or {}).get("scores") or {}).get(metric)
+        sc = of_run(run)
         rows.append(
             {"line": "rounds", "at": r.get("closed_at"), "version": r["round_id"], "run": run, metric: sc}
         )
@@ -785,7 +803,12 @@ def trend(goal: str | None = None, model: str | None = None, dataset: str | None
     if rl:
         series["each closed round's promoted run"] = rl
     if not series:
-        raise Problem(f"goal {goal}: no baseline versions or closed rounds with {metric} yet", "not-enough")
+        raise Problem(
+            f"goal {goal}: nothing to draw: {versions} baseline version(s) and {len(closed)} of {len(all_closed)} closed "
+            f"round(s) that promoted a run, none of them with a {metric} score (not in the runs' scores nor in a "
+            "re-scoring of them)",
+            "not-enough",
+        )
     caption = (
         f"{metric} of {goal}'s baseline at each of its versions (v1, v2, ...) and of the run each closed round "
         "promoted, in the order they happened. A step up is a promotion the evidence supported at the time; versions "

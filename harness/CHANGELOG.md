@@ -920,6 +920,21 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Fixed
 
+- **No log holds the Workbench's token.** `evh catalog-serve` printed the sign-in link with its token, and its access
+  log wrote the session route's request line, token and all: a background job's log, CI's, a terminal recording kept a
+  working token. The full link is printed to a terminal only; elsewhere it names the token's file (`.build/api-token`),
+  and the access log masks the token. Found by the fleet trying 0.8.0 (2026-11-18), as were the four below.
+- **`evh run` and `evh arm-smoke` say where a spend without a bill came from.** They called any such figure "the
+  system's price table" even for a system with no prices, whose adapter reported the cost itself (a gateway key's
+  spend): now the price table only when the system declares `usd_per_mtok_in` and `_out`, else "the adapter's own
+  figure", with the `cost_source` the adapter put in its meta.
+- **`evh comparison-show` with no metric named compares on the arms' own primary metric**, not the project's most
+  common one (bugfix arms were compared on triage's `actionable`, not their `oracle_pass`).
+- **`evh chart trend` reads a goal's measure as the leaderboard does**, from a run's latest re-score when the run was
+  measured before the measure existed (triage's `triage_cost`); it said there were no closed rounds with the measure,
+  and now says how many versions and rounds it found when there is nothing to draw.
+- **A record `evh migrate` filled in names nobody**: "promoted 2026-10-31 by nobody recorded (before 0.8.0)" in the
+  CLI, the catalog and the Workbench, not "by before 0.8.0".
 - **A Workbench read answered after its screen was left no longer redraws the screen opened since.** A slow read (a
   chart) landing on Settings redrew its text box while a person typed, and the rest of the typing went into the new box
   in front of the old text: the file saved held both.

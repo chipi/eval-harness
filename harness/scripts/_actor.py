@@ -95,6 +95,16 @@ def actor() -> dict[str, Any]:
     return out
 
 
+def said(who: dict[str, Any] | None) -> str:
+    """A recorded actor in words, after "by": its name (and whom an agent acted for); a record `evh migrate` filled in,
+    whose maker nobody recorded, as that, not as the migration's placeholder name ("by before 0.8.0")."""
+    if not who:
+        return "?"
+    if who.get("from") == "migration":
+        return f"nobody recorded ({who.get('name') or 'before 0.8.0'})"
+    return f"{who.get('name')}" + (f" for {who['for']}" if who.get("for") else "")
+
+
 def require_named(what: str) -> dict[str, Any]:
     """The actor of a decision: refused when unknown (owner, 2026-11-09), saying how to name one."""
     a = actor()

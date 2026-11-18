@@ -1519,9 +1519,10 @@ class Handler(SimpleHTTPRequestHandler):
         self.wfile.write(data)
 
     def log_message(self, fmt, *args):
-        """Log API requests only; suppress static file serving noise."""
+        """Log API requests only; suppress static file serving noise. A token in a request line (the session route's
+        `?token=`) is masked: the log is kept where the token must not be (fleet, 2026-11-18)."""
         if args and "/api/" in str(args[0]):
-            super().log_message(fmt, *args)
+            super().log_message(fmt, *(re.sub(r"token=[^&\s\"]+", "token=<masked>", str(a)) for a in args))
 
 
 def _common_prog() -> str | None:
@@ -1679,7 +1680,9 @@ def main() -> int:
             f"Authorization: Bearer <token>, or GET /api/v1/session?token=<token> for a cookie)",
             flush=True,
         )
-        tok = (API_TOKEN or [""])[0]
+        # The link that signs in carries the token: printed whole only to a terminal, so a log that captures this
+        # output (a background job's, CI's, a recording) never holds a working token (fleet, 2026-11-18).
+        tok = (API_TOKEN or [""])[0] if sys.stdout.isatty() else f"<the token in {_api.token_path()}>"
         print(
             f"  Workbench: http://127.0.0.1:{args.port}/api/v1/session?token={tok}&next=/workbench/  (signs in once)",
             flush=True,

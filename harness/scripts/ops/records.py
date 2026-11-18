@@ -382,8 +382,9 @@ def say_baselines(r: dict[str, Any]) -> str:
         )
     out = []
     for b in rows:
-        who = b.get("actor") or {}
-        named = f"{who.get('name')}" + (f" for {who['for']}" if who.get("for") else "") if who else "?"
+        from evaluation_harness._actor import said  # noqa: PLC0415
+
+        named = said(b.get("actor"))
         out.append(f"{b['goal'] or 'the dataset'}'s baseline on {b['dataset']}: version {b['current']}")
         out.append(
             f"    run      {b.get('promoted_from')}, promoted {str(b.get('promoted_at') or '')[:10]} by {named}"
