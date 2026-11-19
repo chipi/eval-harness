@@ -278,4 +278,20 @@ with tempfile.TemporaryDirectory() as td:
         drift,
     )
 
+# The same run: a grade prompt that did not name the dimensions paid for 80 unparsed replies. judge-score refuses it
+# before any call (its dry run too); a pick or pairwise message carries its shape; the tutorial's prompt names both.
+kit = Path(__file__).resolve().parents[1] / "tutorial"
+import yaml  # noqa: E402
+
+kit_sc = yaml.safe_load((kit / "scorers" / "tickets-judge-v1.yaml").read_text())
+grade = {"task": {"dimensions": ["faithfulness", "coverage"]}}
+check(
+    "a grade prompt that does not name a dimension is caught; a pick needs none; the tutorial kit's prompt names its own",
+    js.unnamed_dimensions(grade, "Rate faithfulness from 1 to 5.") == ["coverage"]
+    and js.unnamed_dimensions(grade, 'JSON: {"Faithfulness": [...], "Coverage": [...]}') == []
+    and js.unnamed_dimensions({**grade, "mode": "pick"}, "Pick the best.") == []
+    and js.unnamed_dimensions(kit_sc, (kit / "judge_prompt.txt").read_text()) == [],
+    js.unnamed_dimensions(kit_sc, (kit / "judge_prompt.txt").read_text()),
+)
+
 sys.exit(summary())

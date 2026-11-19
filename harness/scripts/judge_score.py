@@ -182,6 +182,16 @@ def _keep_withheld(record: Path, text: str) -> Path:
     return out
 
 
+def unnamed_dimensions(sc: dict[str, Any], prompt: str) -> list[str]:
+    """A grade scorer's dimensions its prompt does not name (case aside): asked for scores without the keys, a judge
+    invents its own, and every reply comes back unparsed (the 0.8.0 newcomer run paid for 80). A pick or a pairwise
+    message carries its own shape, so they need none."""
+    if mode_of(sc) != DEFAULT_MODE:
+        return []
+    text = prompt.lower()
+    return [d for d in task_for(sc)["dimensions"] if str(d).lower() not in text]
+
+
 def unparsed_cause(
     output: str | None, finish_reason: Any, mode: str, dimensions: list[str] | None = None
 ) -> str:
@@ -1784,6 +1794,15 @@ def body(**inputs: Any) -> int:
     arms = as_judged(args.dataset_id, arms)
     outputs = {a["system_id"]: read_outputs(a, item_ids) for a in arms}
     base = prompt_text(sc)
+    unnamed = [] if args.no_calls else unnamed_dimensions(sc, base)
+    if unnamed:
+        die(
+            f"{sc['scorer_id']}: its prompt does not name the dimension(s) {', '.join(unnamed)}. A grade is one JSON "
+            "object with a list of numbers per dimension, keyed by its name (the scorer's task.dimensions), and a judge "
+            "not told the names answers with keys of its own: every reply would come back unparsed, and paid for. Name "
+            "each dimension in the prompt, with the object's shape (tutorial 3's prompt shows one).",
+            "invalid-file",
+        )
     items_sha = (
         (_model_runs.record(Path(arms[0]["dir"])) or {})
         .get("fingerprint", {})
