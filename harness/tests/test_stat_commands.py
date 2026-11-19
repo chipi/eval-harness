@@ -1009,14 +1009,14 @@ def test_json_rank_stability() -> int:
     )
     check(
         "rank-stability --json: arms, items, draws, the sizes measured and the leader",
-        (v["arms"], v["items"], v["draws"], v["sizes"], v["leader"]) == (4, 40, 30, [10, 20], "arm_a")
+        (v["arms"], v["items"], v["draws"], v["sizes"], v["leader"]) == (4, 40, 30, [5, 10, 20], "arm_a")
         and "4 arms, 40 items, metric=acc, 30 draws per size" in text.stdout
         and f"full-40 ordering's leader: {v['leader']}" in text.stdout,
         v,
     )
     check(
         "rank-stability --json: one row per size, rho and the tie count as the text prints them",
-        [r["n_per_half"] for r in rows] == [10, 20]
+        [r["n_per_half"] for r in rows] == [5, 10, 20]
         and all(
             f"{r['n_per_half']:>11} {r['rho_mean']:>21.3f} {r['rho_5th_pct']:>9.3f}" in text.stdout
             for r in rows
@@ -1029,7 +1029,7 @@ def test_json_rank_stability() -> int:
         v["saturated"] == ("WARNING: up to" in text.stdout) and v["saturated"] == (v["worst_ties"] >= 2.0),
         v,
     )
-    ids = [f"j{i:02d}" for i in range(12)]
+    ids = [f"j{i:02d}" for i in range(8)]
     for arm in ("s_a", "s_b", "s_c"):
         write_run(meta, f"run_{arm}", "dss", arm, {"acc": 0.5}, outputs={i: {"acc": 1.0} for i in ids})
     small = ["scripts/cli.py", "rank-stability", "dss"]
@@ -1037,15 +1037,27 @@ def test_json_rank_stability() -> int:
     j = run_script(*small, "--json", env=env, cwd=tmp)
     check(
         "rank-stability: too few items prints its message on stdout and exits 1, as ever",
-        t.returncode == 1 and "too few for two disjoint halves of 10" in t.stdout,
+        t.returncode == 1 and "too few for two disjoint halves of 5" in t.stdout,
         t.stdout,
     )
     check(
         "rank-stability --json: too few items is a refusal: stderr, nothing on stdout, exit 1",
-        j.returncode == 1 and j.stdout == "" and "too few for two disjoint halves of 10" in j.stderr,
+        j.returncode == 1 and j.stdout == "" and "too few for two disjoint halves of 5" in j.stderr,
         (j.stdout, j.stderr),
     )
-    return 7
+    # The 0.8.0 newcomer run: 20 items gave one row, no line to flatten. The fixed sizes are drawn first, in their
+    # order, so adding sizes moves none of their numbers; then the smallest half and the largest one.
+    from evaluation_harness.rank_stability import sizes_for  # noqa: PLC0415
+
+    check(
+        "rank-stability: the sizes fit the dataset, the fixed ones drawn first (20 items: 10, then 5; 280: up to 140)",
+        sizes_for(20) == [10, 5]
+        and sizes_for(280) == [10, 20, 50, 100, 5, 140]
+        and sizes_for(9) == []
+        and sizes_for(12) == [5, 6],
+        (sizes_for(20), sizes_for(280), sizes_for(9), sizes_for(12)),
+    )
+    return 8
 
 
 def test_json_runs_list() -> int:

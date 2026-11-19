@@ -267,8 +267,8 @@ try:
     )
     rs = got["rank-stability"]["rows"]
     check(
-        "rank-stability: 24 items allow halves of 10, its agreement and same-winner share between -1 and 1",
-        [x["n_per_half"] for x in rs] == [10] and all(-1 <= x["rho_mean"] <= 1 for x in rs),
+        "rank-stability: 24 items allow halves of 5, 10 and 12, its agreement between -1 and 1",
+        [x["n_per_half"] for x in rs] == [5, 10, 12] and all(-1 <= x["rho_mean"] <= 1 for x in rs),
         rs,
     )
     lt = got["latency"]["rows"]

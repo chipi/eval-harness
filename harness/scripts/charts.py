@@ -657,7 +657,7 @@ def rank_stability(dataset: str, metric: str | None = None) -> dict:
     m = rs.measure(dataset, metric)
     rows = m["rows"]
     if not rows:
-        raise Problem(f"{dataset}: too few items for two halves of {rs.SIZES[0]}", "not-enough")
+        raise Problem(f"{dataset}: too few items for two halves of {rs.SMALLEST}", "not-enough")
     series = {
         "rank agreement (Spearman's rho, mean)": [(r["n_per_half"], r["rho_mean"]) for r in rows],
         "the same winner (share of decided draws)": [(r["n_per_half"], r["p_same_winner"]) for r in rows],
