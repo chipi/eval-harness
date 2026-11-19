@@ -385,6 +385,11 @@ body:has(.onpage) section[id], body:has(.onpage) .chapter { scroll-margin-top: 1
 .habit-card span:last-child { color: var(--ink-2); font-size: 15px; }
 @media (max-width: 900px) { .habits { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 560px) { .habits { grid-template-columns: 1fr; } }
+/* The Workbench, as it is: two screenshots, the home beside a round's evidence, on a hairline like a chart frame. */
+.shots { display: grid; grid-template-columns: 1.35fr 1fr; gap: 24px; margin: 32px 0 36px; align-items: start; }
+.shots figure { min-width: 0; }
+.shots img { display: block; width: 100%; height: auto; border: 1px solid var(--hair); border-radius: 14px; background: var(--surface); }
+@media (max-width: 760px) { .shots { grid-template-columns: 1fr; } }
 .lesson { max-width: 70ch; }
 .lesson h2 { font-size: clamp(32px, 4.4vw, 56px) !important; }
 .lesson p { font-size: 19px; color: var(--ink-2); margin: 0 0 8px; }

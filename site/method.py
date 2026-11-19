@@ -481,6 +481,10 @@ def chapters(H, f: dict) -> list:
                 "once. Not significant means the test could not tell two arms apart at this many items, "
                 "not that they are equal. Intervals elsewhere (the human ceiling) are "
                 "bootstrapped, and the price slopes are fits, not tests.</p>"
+                "<p>The charts keep the same rule: a mark is filled, and a quadrant such as “better and "
+                "cheaper” is named, only when the test supports the difference (<code>evh chart</code>). And a "
+                "test set is spent by reading it: a study searches on a validation set, its winner is confirmed on "
+                "a test set, and every look at a test set counts against its limit.</p>"
             ),
             "habit": "Decide the comparisons before reading the table, correct for how many you "
             "made, and report a tie as a tie.",
@@ -513,6 +517,8 @@ def chapters(H, f: dict) -> list:
                 "<p>The lab notebook records the findings that were retracted along the way, "
                 "several caused by this harness's own scorer; the reports state today's figures, "
                 "and git keeps every earlier version.</p>"
+                "<p>A promoted baseline keeps the test it was promoted on and who promoted it, in versions that "
+                "can be rolled back, and a judge's verdict keeps its reason beside its scores.</p>"
             ),
             "habit": "Hash and test the scorer, re-score stored outputs when it changes, and "
             "promote a baseline only with a reason that says what the tests showed.",
@@ -953,7 +959,7 @@ def use_page(H, f: dict) -> str:
 <section class="block" id="steps" data-nav="Steps"><div class="wrap">
   <div class="eyebrow"><span class="num">03</span>Step by step</div>
   <h2>Seven steps and five optional ones, on a real example.</h2>
-  <p class="lede">The tutorial kit ships six support tickets and summaries a person wrote. Every output below is what the command printed.</p>
+  <p class="lede">The tutorial kit ships six support tickets and summaries a person wrote. Every output below is what the command printed. Each step is also a screen of the Workbench, which <code>evh catalog-serve</code> opens on your machine, and each screen shows the command it runs (<a href="docs/tutorials/8-the-workbench/">tutorial 8</a>).</p>
   <ol class="findings steps">{steps}</ol>
 </div></section>
 
@@ -973,7 +979,7 @@ def use_page(H, f: dict) -> str:
       </div>
     </div>
     <div class="byo-col"><h3>The harness gives you</h3>
-      <p class="byo-sub">Ten things you would otherwise build, or skip.</p>
+      <p class="byo-sub">Twelve things you would otherwise build, or skip.</p>
       <div class="byo-tiles">
         <div class="tile"><b>Frozen datasets</b><span>by content hash, re-checked on every use</span></div>
         <div class="tile"><b>A fingerprint per run</b><span>instrument, data, deployment, settings</span></div>
@@ -983,8 +989,10 @@ def use_page(H, f: dict) -> str:
         <div class="tile"><b>Re-scoring for $0</b><span>from stored outputs; validation for CI</span></div>
         <div class="tile"><b>A recommendation</b><span>per goal, with its reasons, beside the baseline</span></div>
         <div class="tile"><b>A catalog</b><span>every goal, dataset, arm and run, and an inspector (<a href="{H.CATALOG}">ours</a>)</span></div>
+        <div class="tile"><b>A Workbench</b><span>the whole loop in a browser, each screen with its command</span></div>
+        <div class="tile"><b>Evidence charts</b><span>a quadrant named only when the test supports it</span></div>
         <div class="tile"><b>MCP tools</b><span><code>evh mcp</code> for an agent (<a href="docs/harness/INTEGRATION/#for-an-agent-evh-mcp">how</a>)</span></div>
-        <div class="tile"><b>Validated judges</b><span>optional, refused until checked against people</span></div>
+        <div class="tile"><b>Validated judges</b><span>optional, refused until checked against people; each verdict with its reason</span></div>
       </div>
     </div>
     <div class="byo-col"><h3>Start on Monday</h3>

@@ -38,6 +38,8 @@ does not fit them.
 
 - The six evals' committed runs, the judging re-measurement, and the figures built from them.
 - The social cards: `site/assets/social.png` and `social-home.png`.
+- The Workbench, captured from the showcase project (0.8.0): `site/assets/workbench-home.png` (its home) and
+  `workbench-evidence.png` (a round's evidence chart).
 
 ## Shared with the other apps
 

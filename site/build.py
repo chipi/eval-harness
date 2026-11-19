@@ -975,11 +975,12 @@ def home(f: dict) -> str:
         ),
         (
             "06",
-            "A catalog to look around in",
+            "A catalog to read, a Workbench to work in",
             (
                 "The harness builds pages over your committed runs: every goal with what it recommends, "
                 "every dataset, arm, reference set and metric, and an inspector that compares any arms item "
-                "by item. Every view is also an evh command."
+                "by item. On your machine the same server opens the Workbench, where the loop is worked in a "
+                "browser. Every view and action is also an evh command."
             ),
             (CATALOG, "Ours, on the six worked examples"),
         ),
@@ -1213,8 +1214,25 @@ def home(f: dict) -> str:
   <div class="habits">{idea_html}</div>
 </div></section>
 
+<section class="block" id="workbench" data-nav="Workbench"><div class="wrap">
+  <div class="eyebrow"><span class="num">04</span>The Workbench</div>
+  <h2>The whole loop, in a browser.</h2>
+  <p class="lede">Set a goal, bring a dataset and label it, choose the systems, run rounds, review outputs blind, judge with reasons, keep a test set sealed, and learn from production: each step a screen, on your machine. What runs is a job you can watch, stop and resume; what costs money shows its estimate first; and every screen shows the <code>evh</code> command it runs, so nothing is only in the browser.</p>
+  <div class="shots">
+    <figure><img src="assets/workbench-home.png" width="1280" height="452" loading="lazy" alt="The Workbench's home: a table of goals, each with the measure it decides on, its datasets, its rounds and its next step, under what is running now."><figcaption>The home: each goal with where it stands and its next step.</figcaption></figure>
+    <figure><img src="assets/workbench-evidence.png" width="962" height="512" loading="lazy" alt="A round's evidence chart: each arm's difference in quality against its difference in cost from the run the round started from. Two arms are filled marks above zero; one is a hollow mark at zero."><figcaption>A round's evidence: a filled mark only where the paired test, Holm across the arms, supports the difference; a hollow one is not separated, whatever side it falls on.</figcaption></figure>
+  </div>
+  <div class="habits two">
+    <div class="habit-card"><span class="n">charts</span><b>The evidence, drawn</b><span>Gain against cost, each arm against the leader with its interval, a study's trials, rank stability, latency, agreement, the items where arms differ, a goal over time. A quadrant is named only when the test supports it. <code>evh chart</code> gives the same table and drawing.</span></div>
+    <div class="habit-card"><span class="n">judges</span><b>Judges that say why</b><span>A judge scorer asks each verdict for a short reason, kept beside its scores and read with <code>evh judge-verdicts</code>; a reason that copies the source is never committed.</span></div>
+    <div class="habit-card"><span class="n">decisions</span><b>Decisions kept with their evidence</b><span>A promoted baseline keeps the test that justified it, in versions you can roll back; every record says who acted, a person or an agent and the person it acted for.</span></div>
+    <div class="habit-card"><span class="n">test sets</span><b>Studies, and a test set that stays sealed</b><span>A study searches on a validation set and its winner is confirmed on a test set; every look at a test set counts against its limit.</span></div>
+  </div>
+  <p class="dek-note">Served by <code>evh catalog-serve</code> on this machine only, behind a token it prints; <a href="docs/tutorials/8-the-workbench/">tutorial 8</a> walks it.</p>
+</div></section>
+
 <section class="block" id="lasting" data-nav="Rounds"><div class="wrap">
-  <div class="eyebrow"><span class="num">04</span>Rounds, before deploy and after</div>
+  <div class="eyebrow"><span class="num">05</span>Rounds, before deploy and after</div>
   <h2>Evaluation that doesn\u2019t stop at deploy.</h2>
   <p class="lede">A goal is answered in rounds: before deploy they narrow a field to a choice; after it, what the deployed system decided is captured, scored against labels, and picked from for the next version of a dataset. Offline: no online A/B test, no drift detection.</p>
   {flow_html}
@@ -1222,7 +1240,7 @@ def home(f: dict) -> str:
 </div></section>
 
 <section class="block" id="mcp" data-nav="For agents"><div class="wrap">
-  <div class="eyebrow"><span class="num">05</span>For agents</div>
+  <div class="eyebrow"><span class="num">06</span>For agents</div>
   <h2>Ask it from your agent.</h2>
   <div class="cols">
     <div class="prose"><p>The harness is also an MCP server. <code>evh mcp</code> gives an agent the same read commands you use: datasets and what is inside them, goals and what they recommend, arms, reference sets, metrics, activity, the inspector's paired comparisons and its sheet of every item and arm, the label sets and how two agree, and what production decided (its captures, the deploy sheet, the picks waiting for a dataset's next version), each answering what the command's <code>--json</code> gives. Nothing it does writes your project, spends or runs a model (the one file it keeps is a cache of the goals' tests).</p>
@@ -1237,7 +1255,7 @@ def home(f: dict) -> str:
   </div>
 </div></section>
 
-{method.landing_teaser(H, f, "06")}
+{method.landing_teaser(H, f, "07")}
 <section class="block" id="start" data-nav="Start"><div class="wrap">
   <h2>Try it on your own data.</h2>
   <p class="lede">About fifteen minutes, offline, no API key: install the pinned release, take its tutorial kit through the whole loop, then start from your own problem.</p>
@@ -1252,7 +1270,8 @@ def home(f: dict) -> str:
     --source-dir data/sources
 <span class="p">$ </span>evh run --system arm_a_v1 --dataset my_v1
 <span class="p">$ </span>evh leaderboard my_v1
-<span class="p">$ </span>evh catalog && evh catalog-serve</pre></div>
+<span class="p">$ </span>evh catalog && evh catalog-serve
+<span class="c"># it prints the Workbench's link</span></pre></div>
     <div><h3>3 · Or the bundled demo</h3>
 <pre class="term"><span class="p">$ </span>git clone {REPO}
 <span class="p">$ </span>cd eval-harness/harness

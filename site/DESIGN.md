@@ -257,6 +257,13 @@ a tooltip), pills for buttons and the section switcher (999px), circles for icon
 - A note: a 2px lime rule on the left, 18px in, text in Ink Secondary at 15px. A habit (the method page): a 3px rule on
   a Surface panel, its label in lime monospace above the text.
 
+### Screenshots
+
+- The Workbench as it is (the home's `.shots`): real captures of the tutorial-shaped showcase project, never mock-ups,
+  cropped to their content, on a hairline with the card's 14px corner and Surface behind. Two side by side (the wider
+  first), stacked under 760px; each with a caption in Muted saying what it shows, and alt text that says what is in it.
+  Captured in the dark theme at twice the size they are shown, so the light theme shows the product as it ships.
+
 ### Charts
 
 - A Surface frame with a hairline, the legend in monospace above, the caption in Muted below. Series use the three kinds'
