@@ -60,6 +60,13 @@ every change and every job (`person:<name>`).
 | **The held-out test** | a dataset split and its test side sealed; its reads recorded and the leak check; counts for safety only; opened for one candidate (one look); the confirmation with the read items left out | `dataset-split`, `exposure-add`, `exposure-check`, `sealed-counts`, `dataset-unseal`, `pair-test` |
 | **Studies** | a search over one thing at a time on the validation items, its trials and best, an agent's proposals asked and told, confirmed once on a test set | `study-run`, `study-ask`, `study-tell`, `study-stop`, `study-confirm`, `study-import` |
 
+On a goal's screens a **rail** on the left lists the goal's five steps, each marked done, current, open or locked from
+what the project holds, and what a step not done lacks ("not fetched", "no reference set", "1 of 2 systems with runs");
+a locked step leads back to the goal's page, and on a narrow screen the rail folds to "Step N of 5". A **?** beside a
+field or heading opens a side panel (what it is, why it matters, an example, what goes wrong, a link to the docs), and a
+harness word is underlined the first time it appears: point at it for its meaning, click for the panel. The **Words**
+page lists them all.
+
 The models (bring one in, add where it runs, run its probes, accept a flag with why), the **Jobs**, the **Prompts** and
 the **Settings** are on the home page's bar.
 

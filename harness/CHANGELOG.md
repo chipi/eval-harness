@@ -40,6 +40,16 @@ that can move a result is never a patch release without saying so under **Change
   `evh catalog-serve`, every screen in the order a goal goes through them with the commands it calls, what it keeps for
   you (unsent changes, jobs, refusals), and prompts as versions in a manual eval and a study. PRD-017 and UXS-005 are
   marked built.
+- **The Workbench's step rail and help layer** (UXS-005): on a goal's step and day-to-day screens, a rail with the goal's
+  title, "states for dataset `<id>`" (the dataset the screen is on, else the first that decides), Overview, the five
+  steps (The goal, Add a dataset, Prepare the dataset, Choose the systems, Its rounds) as done, current, open or locked
+  from live data, and under a step not done what it lacks ("no dataset named", "not fetched", "not looked at yet", "no
+  reference set", "N of 2 systems with runs", "no round closed"); a locked step links to the goal's page, then Review the
+  outputs, Production, A judge for this goal, The held-out test and Studies. At 390 px it folds to "Step N of 5 · Name
+  ▾", the reasons in the opened list. A `?` beside a field or heading opens a side panel (what it is, why it matters,
+  an example, if it is wrong, read more: the published docs page); a glossary word is underlined the first time it
+  appears in running text, its one-line meaning on pointing and the full panel on a click; the Words screen lists the
+  glossary.
 - **The package ships the live Workbench only** (D7): `index.html`, `workbench.js`, `help.js`, `live.js` and
   `workbench.css`, the only files `/workbench/` serves. The mockup (its page, this repository's data in `mock.js`, its
   screens and the scripts that read its data, 170 KB of it loaded by every installed project's Workbench) is a frozen
@@ -581,6 +591,14 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Changed
 
+- **The Workbench's goal screen shows its command once**, and a goal's trend with fewer than two points is one line
+  ("One point so far: …") rather than a chart; a page left open after the server restarted says, on any 401, that the
+  server restarted and to open the Workbench link it printed.
+- **Every command a surface shows is checked**: `tests/check_shown_commands.py` extracts each `evh` command from the
+  Workbench's and the catalog's scripts and the package's Python and checks its name, flags and argument count (the
+  self-test runs it). 13 wrong ones are fixed, among them the Workbench's `prompt-diff`, `round-open`, `arm-smoke` and
+  `dataset-items`.
+- **`schemas/config.schema.json` is removed**: nothing read it.
 - **`evh scorer-new` writes `explain: true`**: a new judge scorer's judges give their reasons. A scorer without the
   field gives none, so every scorer made before keeps its judging sets and its messages byte for byte.
 - **`goal-leaderboard`'s test against the leader carries its 95% interval** (`vs_leader.ci`, before Holm's correction;
@@ -960,6 +978,13 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Fixed
 
+- **`pair-test --round` read the runs the round recorded and the arm's later ones**; it reads only the recorded ones,
+  as every other view of a round does.
+- **`make demo` overwrote the committed `smoke_v1` dataset** (it re-created it with `--force`, sweeping the real datasets' row
+  files into it) and added its runs to the committed `data/runs`: it now leaves an existing dataset alone and runs a scratch
+  pass (nothing added to committed data, any number of times).
+- **`evh jobs-status` and the API's job reads stopped on a job record from before jobs were operations** (a KeyError,
+  a 500): the record reads with the operation `unknown`, its state as recorded, and resuming it is refused.
 - **No log file holds the Workbench's token.** `evh catalog-serve` printed the sign-in link with its token, and its
   access log wrote the session route's request line, token and all: a background job's log or CI's kept a working
   token. The full link is printed only when the output is a terminal; to a file or a pipe it names the token's file

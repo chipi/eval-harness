@@ -15,7 +15,7 @@ The Workbench is a web UI for the harness, in the order a person works: set a go
 
 The live Workbench is `harness/workbench/index.html` (the shell), `workbench.js` (the routes, the help panel, the Words screen, the unsent-changes guard), `live.js` (every screen, read and written through the project's API under `/api/v1`), `help.js` (the help texts and the glossary) and `workbench.css`. `evh catalog-serve` serves it under `/workbench/` and prints the link that signs a browser in.
 
-`harness/workbench/mockup/` is a frozen design reference: `mockup.html` with `mock.js`, `workflows.js` and `round5.js`, and the scripts that make their data (`mock_data.py`, `read_sources.py`, `round5_inputs.py`). It loads none of `live.js`, saves nothing, and is not part of the package. It shows the walk-through of one goal with this repository's data, every screen read from it, and `round5.js` adds the screens for the held-out test, a study, labels from what happened later, replaying the code that ran, and jobs. The mockup has a rail of the five steps; the live Workbench has none.
+`harness/workbench/mockup/` is a frozen design reference: `mockup.html` with `mock.js`, `workflows.js` and `round5.js`, and the scripts that make their data (`mock_data.py`, `read_sources.py`, `round5_inputs.py`). It loads none of `live.js`, saves nothing, and is not part of the package. It shows the walk-through of one goal with this repository's data, every screen read from it, and `round5.js` adds the screens for the held-out test, a study, labels from what happened later, replaying the code that ran, and jobs. The mockup's rail is drawn from its own browser state; the live Workbench draws its rail from the project's API (see The shell).
 
 ## The shell
 
@@ -30,6 +30,40 @@ The live Workbench is `harness/workbench/index.html` (the shell), `workbench.js`
   **Prompts**, **Settings**, **Words** (the glossary) and **Catalog ↗**. The catalog stays where results are read.
 - A goal's page leads to each step by its buttons; every screen's kicker names where it is ("Step 2 · <goal>", "The eval · <goal>").
 - A `?` opens a side panel (a sheet at the bottom on a phone); "hints" hides the one-line hints for good.
+- **The step rail** is on a goal's screens: the goal's overview, its five steps (`#goal-edit`, `#dataset`, `#prepare`, `#label`,
+  `#reference`, `#systems`, `#eval`) and its day-to-day screens (review, production, a judge, the held-out test, studies). It is
+  not on the home, the models, the jobs, the prompts, the settings or the Words. From the top it holds:
+
+  ```text
+   Goal
+   Short news summaries (CNN)
+   states for dataset cnn_dailymail_200
+   ≡ Overview
+   ✓ The goal
+   ✓ Add a dataset
+   3 Prepare the dataset      not looked at yet, no reference set
+   4 Choose the systems       0 of 2 systems with runs
+   5 Its rounds               no round closed
+   Day to day
+   · Review the outputs   · Production   · A judge for this goal   · The held-out test   · Studies
+  ```
+
+  - The goal's title, then "states for dataset `<id>`": the dataset the screen is on for the prepare, label and reference
+    screens, else the first dataset that decides the goal (else the first it names). A dataset's screen is placed under the
+    goal the person last had open when that goal names it, else the first goal that does.
+  - **Overview** is the goal's page. The five steps are **The goal**, **Add a dataset**, **Prepare the dataset**, **Choose the
+    systems** and **Its rounds**; each is `done` (a check mark), `current` (the screen it is on), `open` or `locked`. Done is read
+    from live data: the goal exists; it names a dataset; that dataset is fetched, has a profile ("looked at") and has a
+    reference set; two or more systems have runs on it; a round is closed. Adding a dataset is open from the start; Prepare is
+    open once a dataset is named; Choose the systems and Its rounds are open once the dataset is prepared. A locked step links
+    to the goal's page.
+  - A step not done says what it lacks, under its name and as its tooltip: "no dataset named"; for Prepare "not fetched", "not
+    looked at yet", "no reference set" (those that apply, comma-separated; "no dataset to prepare" with no dataset); for the
+    systems "N of 2 systems with runs"; for the rounds "no round closed".
+  - The day-to-day group links to **Review the outputs**, **Production**, **A judge for this goal**, **The held-out test** and
+    **Studies**; the screen the person is on is marked.
+  - At 900 px and narrower (checked at 390 px) the rail folds to one line, "Step N of 5 · Name ▾" (the day-to-day screen's name
+    on a day-to-day screen), and the reasons are in the opened list.
 - Opened without the server's link, the page says how to open it (`evh catalog-serve` prints the link); with a server that
   has restarted, it says to open the new link.
 
@@ -101,7 +135,7 @@ After saving, the goal's page is the hub of the journey: where it stands, and th
 
 - The next-step box and the table come from `goal-status`; a dataset reads "made, fetched", "made, not fetched" or
   "not made", and "does not decide" beside a role it does not decide on. Running jobs and rounds show only when there are some.
-- The trend chart is `evh chart trend --goal <id>`, its numbers folded under it; it is left out until there is something to draw.
+- The trend chart is `evh chart trend --goal <id>`, its numbers folded under it; it is left out until there is something to draw. With fewer than two points it is one line ("One point so far: <line> (v<n>), <measure> <value>. A trend needs two."). The goal screen shows its commands (`goal-status` and `chart trend`) in one folded block, once.
 
 ## 2 The dataset
 
@@ -523,9 +557,10 @@ one who does. It is a secondary goal of every screen.
    same ones, now and later.").
 2. **Each field has a one-line hint** under it: what to put, with an example from this kind of project. Short enough
    to read without stopping.
-3. **A `?` next to a field or a word opens its explanation** in a side panel (not a tooltip that vanishes): what it
-   is, why it matters, a real example, what goes wrong if it is wrong, and "read more" into the docs. The panel stays
-   open while the person fills the field.
+3. **A `?` next to a field or a heading opens its explanation** in a side panel (not a tooltip that vanishes): what it
+   is, why it matters, a real example, what goes wrong if it is wrong, and "read more", a link to the page of the published
+   docs that holds the topic (`DOCS_BASE` plus the page `HELP_DOCS` names for the label). The panel stays open while the
+   person fills the field. A screen's lead sentence carries the `?` of its step.
 
 ```text
  How you'll judge ?  measure [ coverage ▾ ]  (•) higher is better          ┌─ How you'll judge ─────────────┐
@@ -546,8 +581,8 @@ one who does. It is a secondary goal of every screen.
 
 ### Words
 
-- The harness's own words are taught, not replaced. The first time a word appears on a screen it is underlined lightly; pointing at it (or tapping
-  it) shows its one-line meaning, and its `?` the full one. The **Words** screen holds every word, the same text as the `?` panels.
+- The harness's own words are taught, not replaced. The first time a word appears on a screen it is underlined lightly, in running text only; pointing at it shows its one-line meaning and a click (or Enter, or Space) opens the full
+  panel. A word carries no `?` of its own. The **Words** screen lists the glossary.
 
 ### Not childish
 
@@ -619,7 +654,7 @@ and `evh` give the same numbers.
 ## For every live screen
 
 - **The session.** The page opens through the Workbench link `evh catalog-serve` prints (it signs in once); the token is new at every server
-  start, so a page left open answers 401 on any call after a restart and shows the server's message ("the API needs the server's token");
+  start, so a page left open answers 401 on any call after a restart and the page says the server was restarted and to open the Workbench link it printed (it carries the new token);
   reloading the page shows "Sign in" and says to open the Workbench link the server printed.
 - **Writes.** Every call that is not a GET sends `X-EVH-Data: 1`; an upload is base64 JSON, at most 50 MB a call.
 - **Reads.** An API read that may have nothing to show takes `optional=1`: the server then answers 200 with why instead of an error, and the

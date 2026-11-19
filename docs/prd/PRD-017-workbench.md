@@ -38,6 +38,11 @@ site explains it: a goal, data, arms, a comparison, a choice.
   catalog where results are read. Each links to the other.
 - Every screen of the Workbench is live, on the project's API; the static mockup, whose data is this repository's
   (`mock.js`), is a frozen design reference in `harness/workbench/mockup/`, outside the package (D7).
+- The live Workbench has the step rail and the help layer UXS-005 describes. The rail, on a goal's step and day-to-day
+  screens, shows the goal's five steps as done, current, open or locked from live data, and what a step not done lacks
+  ("no dataset named", "not fetched", "not looked at yet", "no reference set", "N of 2 systems with runs", "no round
+  closed"). A `?` beside a field or heading opens a side panel (what it is, why it matters, an example, if it is wrong,
+  read more); a glossary word is underlined the first time it appears in running text.
 
 ## Goals
 
