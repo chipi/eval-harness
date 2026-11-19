@@ -650,7 +650,7 @@
         ${byField("sn-by")}
         <div class="actions" style="margin-top:0"><button class="btn primary" type="button" id="sn-make" data-send>Make the system</button><span class="unsent" data-unsent-mark hidden>not saved yet · kept in this browser until it is made</span></div>` : ""}
         <div id="sn-out" data-out></div></div></section>
-      ${WB.cmd(`evh prompt-version --name ${promptName(goal)} --text "..." --note "..."\nevh system-new <id> --set model_record=<model> --set deployment=<where> --set 'prompts={"${promptName(goal)}": {"version": "<id>"}}'\nevh arm-smoke --system <id> --dataset ${datasets[0] || "<dataset>"} --max-cost-usd 0.05`)}
+      ${WB.cmd(`evh prompt-version --name ${promptName(goal)} --text "..." --note "..."\nevh system-new <id> --set model_record=<model> --set deployment=<where> --set 'prompts={"${promptName(goal)}": {"version": "<id>"}}'\nevh arm-smoke --system <id> --dataset ${datasets[0] || "<dataset>"}`)}
       <div class="actions"><a class="btn" href="#goal/${enc(goal)}">Back to the goal</a></div></div>`;
   }
   function wireSystems() {
@@ -1732,7 +1732,7 @@
           <div class="actions" style="margin-top:0"><button class="btn" type="button" id="sf-check">Check it</button><button class="btn primary" type="button" id="sf-save" data-send>Save</button>${mark}</div></div><div id="sf-out" data-out></div>`}`,
         `evh data-show ${path}\nevh data-put --path ${path} --file - --check\nevh data-put --path ${path} --file -`)}
       ${row(5, "Budgets", "A round's spending cap is set when the round opens, and checked before a run starts; a job that spends carries its own cap.",
-        '<p class="muted" style="margin:0">Open a round from a goal\'s eval.</p>', "evh round-open <goal> --budget-usd 5 ...")}
+        '<p class="muted" style="margin:0">Open a round from a goal\'s eval.</p>', "evh round-open --goal <goal> --dataset <dataset> --budget-usd 5 ...")}
       ${row(6, "Publish a dataset", "To a new Hugging Face repo: private first, read back and checked by sha256. Needs a token with write access on this machine.",
         ds.error ? failed(ds) : `<div class="inline" data-form="publish"><select id="pb-ds" aria-label="the dataset">${opt(ds.datasets.map((x) => x.dataset))}</select>
           <input type="text" id="pb-repo" placeholder="owner/name" autocapitalize="off" spellcheck="false" aria-label="the repo"><button class="btn" type="button" id="pb-go" data-send>Publish</button>${mark}</div><div id="pb-out" data-out></div>`,
@@ -2297,7 +2297,7 @@
       <section class="part"><div class="parthead"><span class="letter">4</span><h2>Write one out</h2></div><div class="body">
         <p class="muted">A version as a file, for a project that keeps its prompts in its own repository to commit.</p>
         <div class="inline"><select id="px-id" aria-label="the version">${opt(last.id)}</select><input type="text" id="px-to" value="${esc(name.split("/").pop())}.txt" aria-label="its file name" autocapitalize="off" spellcheck="false"><button class="btn" type="button" id="px-go">Write it out</button></div><div id="px-out" data-out></div></div></section>
-      ${WB.cmd(`evh prompt-show --name ${name} --text\nevh prompt-diff --a <id> --b <id>\nevh prompt-version --name ${name} --text "..." --parent ${last.id} --note "..."\nevh prompt-export --id <id> --to <file>`)}
+      ${WB.cmd(`evh prompt-show --name ${name} --text\nevh prompt-diff <id> <id>\nevh prompt-version --name ${name} --text "..." --parent ${last.id} --note "..."\nevh prompt-export --id <id> --to <file>`)}
       <div class="actions"><a class="btn" href="#prompts">Every prompt</a><a class="btn" href="#home">Your goals</a></div></div>`;
   }
   function wirePrompts() {

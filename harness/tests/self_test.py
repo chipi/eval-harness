@@ -1343,6 +1343,10 @@ def test_example_scorer_suites_pass() -> None:
         ("check_terminology.py", "eval tables use the canonical Task · Dataset labels"),
         ("test_summeval_analysis.py", "SummEval split-half: a tied top is undecided"),
         ("check_commands.py", "documented commands: every make target, evh command and flag exists"),
+        (
+            "check_shown_commands.py",
+            "shown commands: every `evh` command the Workbench, catalog and CLI messages show exists and fits",
+        ),
         ("check_model_facts.py", "model facts vs the evidence capture"),
     )
     present = [script for script, _ in suites if (ROOT / at(script)).is_file()]

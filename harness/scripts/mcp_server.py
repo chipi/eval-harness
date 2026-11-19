@@ -5,7 +5,7 @@
     evh mcp --project path/to/project
 
 An MCP client (Claude Code, Claude Desktop, any agent) starts this as a stdio server. Its tools are the read operations of
-the harness (`evh operations`; the same names as the command line and the API's resources): the catalog's views, the rounds,
+the harness (the `evh` commands that read; the same names as the command line and the API's resources): the catalog's views, the rounds,
 the runs, the statistics. Each call is answered in the server's own process, from the data the project holds, and the answer
 is the operation's result, structured: `{"command", "version", "result"}`. No tool writes the project, spends or runs a model:
 those stay commands a person runs (0.8.0 adds them, with consent). The server keeps what it computed in memory, for as long as

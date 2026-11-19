@@ -309,7 +309,7 @@ def show_metric(metric: str, dataset: str | None = None) -> dict[str, Any]:
 
 
 def say_metric(r: dict[str, Any]) -> str:
-    """metric-show's answer as text: what `evh metric-list --metric` prints."""
+    """metric-show's answer as text: what `evh metric-show METRIC` prints."""
     return _say("print_metric", r)
 
 

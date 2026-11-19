@@ -1,8 +1,8 @@
 """The prompt operations' bodies (RFC-028; RFC-032 P3: they run as jobs, ops/study_jobs.py).
 
 (`evh prompt-list`, `prompt-show` and `prompt-diff` read them: ops/prompts.py)
-evh prompt-version NAME (--from-file F | --text T) [--parent ID] --note "..." [--by WHO]
-evh prompt-export ID --to PATH              a version's bytes written out, for a person to commit
+evh prompt-version --name NAME (--from-file F | --text T) [--parent ID] --note "..." [--by WHO]
+evh prompt-export --id ID --to PATH         a version's bytes written out, for a person to commit
 """
 
 from __future__ import annotations

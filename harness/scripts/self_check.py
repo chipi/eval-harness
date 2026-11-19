@@ -143,11 +143,11 @@ def main() -> int:
                     ],
                 ),
                 (
-                    "evh run lead1 x2",
+                    "run lead1, twice",
                     ["run", "--system", "tickets_lead1_v1", "--dataset", "tickets_v1", "--repeat", "2"],
                 ),
                 (
-                    "evh run lead2 x2",
+                    "run lead2, twice",
                     ["run", "--system", "tickets_lead2_v1", "--dataset", "tickets_v1", "--repeat", "2"],
                 ),
                 (

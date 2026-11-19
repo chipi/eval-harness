@@ -959,7 +959,7 @@ def evh_prog() -> str | None:
 def no_options(doc: str | None, *flags: str) -> Any:
     """The command line of a command that takes no arguments but `flags` (each an on/off
     switch): -h/--help prints `doc`, anything else is refused with exit 2. Seven commands
-    checked for --help by hand and ignored every other argument, so `evh validate --strict`
+    checked for --help by hand and ignored every other argument, so `validate --strict`
     ran the plain validation and said nothing."""
     import argparse  # noqa: PLC0415
 

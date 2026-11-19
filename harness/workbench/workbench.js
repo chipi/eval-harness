@@ -348,7 +348,7 @@ success_criteria:
       <div class="reader"><div class="pane"><div class="kicker">${w("item", "the item")} · article (first 600 characters)</div>${esc(it.article)}…</div>
         <div class="pane"><div class="kicker">its highlights</div>${esc(it.highlights)}</div></div>
       ${S.looked ? "" : `<div class="actions" style="margin-top:0"><button class="btn primary" id="looked" type="button">I've looked</button></div>`}
-      ${cmd(`evh dataset-profile --dataset-id ${id}\nevh dataset-items --dataset-id ${id}`)}`
+      ${cmd(`evh dataset-profile --dataset-id ${id}\nevh dataset-items ${id}`)}`
       : note("round 1 reads only cnn_dailymail_200's profile and items; choose it in step 2 to see this part.");
     const ways = [
       ["promote", "It came with answers", "promote the highlights as they are", "gold"],
@@ -439,7 +439,7 @@ success_criteria:
       ${part("c", "models.smoke", "Check each on three items", chosen.size > 0, smoke, checked.length ? `${checked.length} checked` : "")}
       <div class="actions"><span class="status ${checked.length >= 2 ? "ok" : ""}">Ready when: at least two arms checked (${checked.length})</span><span class="grow"></span>
         <a class="btn ${checked.length >= 2 ? "primary" : ""}" href="${checked.length >= 2 ? "#eval" : "#hub"}">${checked.length >= 2 ? "Next: the eval →" : "Back to the goal"}</a></div>
-      ${cmd(`# once per model, for every goal\nevh model-onboard --model-id <model_id>\n# each arm, on the dataset's first three items\nevh arm-smoke --config ${cfg ? `examples/summarization-cnn-dailymail/configs/arm_${cfg.arm}_n200.yaml` : "<arm config>"} --items 3`)}
+      ${cmd(`# once per model, for every goal\nevh model-onboard --model-id <model_id>\n# each arm, on the dataset's first three items\nevh arm-smoke --system ${cfg ? cfg.arm : "<system>"} --dataset ${ds() || "cnn_dailymail_200"} --items 3`)}
     </div>`;
   }
   function wireModels() {
@@ -624,7 +624,7 @@ success_criteria:
           ${r4.closed ? `<div class="note"><b>Closed.</b> Its conclusion is part of the answer at the top.</div>` : `<div class="field"><div class="name">The conclusion ${q("eval.close")}</div><div><textarea id="r4c" rows="2" placeholder="what the round showed, and what it decided">${esc(r4.draft || "")}</textarea></div></div>
           <div class="actions" style="margin-top:0"><button class="btn primary" id="closer4" type="button" ${words(r4.draft) >= 3 ? "" : "disabled"}>Close the round</button><span class="muted" style="font-size:13px">the baseline stays bart_l<span id="closehint">${words(r4.draft) >= 3 ? "" : " · write a sentence: what did the round show?"}</span></span></div><div id="closeconfirm"></div>`}</div>` : ""}</div>
       <div class="actions">${r4.closed ? `<a class="btn primary" href="#review">Review the outputs</a>${S.r5 ? "" : `<button class="btn" type="button" id="openr5">Open the next round</button>`}<a class="btn" href="#judge">Score with a judge too</a>` : `<a class="btn" href="#judge">Score with a judge too</a><a class="btn" href="#review">Review the outputs</a>`}</div>
-      ${cmd(`evh round-open --goal ${M.goal.goal_id} --dataset ${ds() || "cnn_dailymail_200"} --from r1 \\\n  --keep ${base.config_id} --hypothesis "${r4.question || "<the question>"}"\n# commit the round file before the runs; each arm's config names the round: round: r4, beside its goal:\n${own.map((a) => `evh run --config examples/summarization-cnn-dailymail/configs/arm_${a.arm}_n200.yaml --dry-run`).join("\n")}\n${own.map((a) => `evh run --config examples/summarization-cnn-dailymail/configs/arm_${a.arm}_n200.yaml`).join("\n")}${Object.entries(retired).map(([id, why]) => `\nevh round-retire --goal ${M.goal.goal_id} --round r4 --arm ${id} --reason "${why}"`).join("")}\nevh round-close --goal ${M.goal.goal_id} --round r4 --conclusion "${(r4.conclusion || r4.draft || "<what it showed and decided>").replace(/"/g, "'")}" --by person:<you>`)}`;
+      ${cmd(`evh round-open --goal ${M.goal.goal_id} --dataset ${ds() || "cnn_dailymail_200"} --from r1 \\\n  --keep ${base.config_id} --hypothesis "${r4.question || "<the question>"}"\n# commit the round file before the runs; each run names its goal and round:\n${own.map((a) => `evh run --system ${a.arm} --dataset ${ds() || "cnn_dailymail_200"} --goal ${M.goal.goal_id} --round r4 --dry-run`).join("\n")}\n${own.map((a) => `evh run --system ${a.arm} --dataset ${ds() || "cnn_dailymail_200"} --goal ${M.goal.goal_id} --round r4`).join("\n")}${Object.entries(retired).map(([id, why]) => `\nevh round-retire --goal ${M.goal.goal_id} --round r4 --arm ${id} --reason "${why}"`).join("")}\nevh round-close --goal ${M.goal.goal_id} --round r4 --conclusion "${(r4.conclusion || r4.draft || "<what it showed and decided>").replace(/"/g, "'")}" --by person:<you>`)}`;
   }
   // r5, opened from r4's conclusion: its question and what it would run. The project has no runs past r4's re-runs,
   // so the round stops at its question and says so (a mockup shows only what the project holds).

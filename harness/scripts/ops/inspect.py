@@ -1,4 +1,4 @@
-"""The inspector's per-item reads as operations (RFC-032 step 9): what `evh inspect` answered besides the comparison
+"""The inspector's per-item reads as operations (RFC-032 step 9): what the inspect command answered besides the comparison
 (`comparison-show`): one item of the arms compared (`comparison-item`), two per-item scores crossed (`comparison-crosstab`),
 every item's outputs (`comparison-items`) and a dataset's sheet (`sheet-show`). The sheet as a CSV to fill in is the command
 `sheet-export`, which writes a file.
