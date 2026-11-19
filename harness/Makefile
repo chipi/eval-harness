@@ -59,12 +59,12 @@ help:
 	@echo ""
 	@echo "RE-MEASURE  (free — recomputes scores from stored outputs, no API calls)"
 	@echo "  make rescore DATASET_ID=my_v1 MATCH=_v2   after changing a metric (or GOAL=g ROUND=r1 WHY=\"...\")"
-	@echo "  EVAL_RUNS_DIR=data/runs-rescored/<scorer>/runs make leaderboard DATASET_ID=my_v1"
+	@echo "  make leaderboard DATASET_ID=my_v1 ARGS='--label \"rescored <scorer>\"'   the re-scores, under their label"
 	@echo ""
 	@echo "RE-MEASURE WITH A VALIDATED JUDGE  (BILLED and cost-capped; --dry-run first, it is free)"
 	@echo "  make judge-score DATASET_ID=my_v1 SCORER=<id> ARGS=--dry-run   calls, tokens, estimated cost"
 	@echo "  make judge-score DATASET_ID=my_v1 SCORER=<id>                  resumable; verdicts are stored"
-	@echo "  EVAL_RUNS_DIR=data/runs-judged/<id> make leaderboard DATASET_ID=my_v1"
+	@echo "  make leaderboard DATASET_ID=my_v1 ARGS='--label judged/<id>'          the verdicts, under their label"
 	@echo ""
 	@echo "ASK ONE QUESTION  (free — no API calls)"
 	@echo "  make pair-test DATASET_ID=my_v1 A=<arm> B=<arm> [FAMILY=n]"
@@ -88,8 +88,7 @@ help:
 	@echo ""
 	@echo "SCOPING  (a dataset accumulates arms across system versions)"
 	@echo "  make leaderboard DATASET_ID=my_v1 MATCH=_v2   only v2 arms"
-	@echo "  EVAL_RUNS_DIR=<dir>                           run/read elsewhere, e.g. a"
-	@echo "                                                smoke pass or a rescore"
+	@echo "  make leaderboard DATASET_ID=my_v1 ARGS='--label <label>'   one label's arms (runs-list names them)"
 	@echo "  make check                    validate + test + guide-check"
 	@echo ""
 	@echo "Read docs/INTEGRATION.md first, then docs/RUNBOOK.md."
@@ -310,7 +309,7 @@ silver-calibrate:
 
 # Without OUT the re-scores land where the tool designates (data/runs-rescored/<scorer>/<source>/, RFC-022).
 rescore:
-	$(PYTHON) scripts/cli.py rescore $(if $(ROUND),--goal $(GOAL) --round $(ROUND) --why "$(WHY)",--dataset-id $(DATASET_ID)) $(if $(MATCH),--match $(MATCH),) $(if $(REFERENCE),--reference-id $(REFERENCE),) $(if $(OUT),--out $(OUT),)
+	$(PYTHON) scripts/cli.py rescore $(if $(ROUND),--goal $(GOAL) --round $(ROUND) --why "$(WHY)",--dataset-id $(DATASET_ID)) $(if $(MATCH),--match $(MATCH),) $(if $(REFERENCE),--reference-id $(REFERENCE),)
 
 # What each arm actually cost, from `_meta.usage.cost` rather than the price table in
 # its yaml. Added because RUNBOOK §7b documented this verb before it existed.

@@ -28,7 +28,7 @@ KIT = HERE.parent / "tutorial"
 
 proj = Path(tempfile.mkdtemp(prefix="evh-hypothesis-"))
 os.environ["EVAL_HOME"] = str(proj)  # the library below reads the same project the commands do
-for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_MAX_COST_USD", "EVAL_GOALS_DIR", "EVAL_BUILD_REF"):
+for k in ("EVAL_DATA_DIR", "EVAL_MAX_COST_USD", "EVAL_GOALS_DIR", "EVAL_BUILD_REF"):
     os.environ.pop(k, None)
 env = dict(os.environ)
 

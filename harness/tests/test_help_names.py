@@ -10,7 +10,6 @@
 import os
 import subprocess
 import sys
-import tempfile
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -19,7 +18,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from evaluation_harness._check import check, summary  # noqa: E402
 from evaluation_harness.cli import COMMANDS  # noqa: E402
 
-proj = Path(tempfile.mkdtemp(prefix="evh-help-"))
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _tmp
+import _tmp  # noqa: E402
+
+proj = Path(_tmp.mkdtemp(prefix="evh-help-"))
 (proj / "data").mkdir()
 env = dict(os.environ, EVH_ACTOR="person:test", EVAL_HOME=str(proj))
 env.pop("EVAL_DATA_DIR", None)

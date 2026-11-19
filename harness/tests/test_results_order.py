@@ -28,7 +28,7 @@ HARNESS = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(HARNESS))
 base = Path(tempfile.mkdtemp(prefix="evh-order-"))
 os.environ["EVAL_HOME"] = str(base)
-for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_STORE"):
+for k in ("EVAL_DATA_DIR", "EVAL_STORE"):
     os.environ.pop(k, None)
 from evaluation_harness import _format, data_migrate  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
@@ -95,7 +95,7 @@ def build(root: Path, runs: list[tuple[str, dict[str, Any]]], extra: tuple[str, 
 
 
 def migrate(root: Path) -> subprocess.CompletedProcess[str]:
-    env = {k: v for k, v in os.environ.items() if k not in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR")}
+    env = {k: v for k, v in os.environ.items() if k not in ("EVAL_DATA_DIR",)}
     env.update(EVAL_HOME=str(root), EVAL_STORE="sqlite")
     return subprocess.run(
         [sys.executable, str(HARNESS / "scripts" / "cli.py"), "data-migrate", "--to", "sqlite"],

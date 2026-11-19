@@ -17,7 +17,6 @@ import os
 import socket
 import subprocess
 import sys
-import tempfile
 import time
 import urllib.error
 import urllib.request
@@ -119,8 +118,12 @@ def stop(proc, wait_for: str | None = None) -> str:
     return seen + out
 
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _tmp
+import _tmp  # noqa: E402
+
+
 def main() -> int:
-    tmp = Path(tempfile.mkdtemp(prefix="evh-hooks-"))
+    tmp = Path(_tmp.mkdtemp(prefix="evh-hooks-"))
     (tmp / "hooks.py").write_text(HOOKS)
     log = tmp / "log.jsonl"
 

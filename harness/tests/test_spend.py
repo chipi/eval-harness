@@ -64,7 +64,7 @@ check(
 
 proj = Path(tempfile.mkdtemp(prefix="evh-spend-"))
 env = dict(os.environ, EVH_ACTOR="person:test", EVAL_HOME=str(proj), EVAL_BUILD_REF="test-spend")
-for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_MAX_COST_USD", "EVH_FOR", "EVH_SPENT_TO"):
+for k in ("EVAL_DATA_DIR", "EVAL_MAX_COST_USD", "EVH_FOR", "EVH_SPENT_TO"):
     env.pop(k, None)
 
 PAY = """import time

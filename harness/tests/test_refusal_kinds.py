@@ -15,7 +15,6 @@ import os
 import re
 import subprocess
 import sys
-import tempfile
 from pathlib import Path
 
 HARNESS = Path(__file__).resolve().parents[1]
@@ -66,7 +65,10 @@ runbook = (HARNESS / "docs" / "RUNBOOK.md").read_text(encoding="utf-8").split("#
 documented = dict(re.findall(r"^\| `([a-z-]+)` \| (.+?) \|$", runbook.split("\n## ", 1)[0], re.M))
 check("the Runbook's Refusals table is REFUSALS, word for word", documented == REFUSALS, documented)
 
-proj = Path(tempfile.mkdtemp(prefix="evh-refusal-"))
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _tmp
+import _tmp  # noqa: E402
+
+proj = Path(_tmp.mkdtemp(prefix="evh-refusal-"))
 (proj / "data").mkdir()
 env = dict(os.environ, EVAL_HOME=str(proj))
 for k in ("EVAL_DATA_DIR",):

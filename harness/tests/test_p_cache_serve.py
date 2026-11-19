@@ -13,7 +13,6 @@ would keep it running, `serve_forever`, replaced; the variable it leaves in its 
 import os
 import subprocess
 import sys
-import tempfile
 from pathlib import Path
 
 HARNESS = Path(__file__).resolve().parents[1]
@@ -21,7 +20,10 @@ sys.path.insert(0, str(HARNESS))
 from evaluation_harness import _common  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 
-proj = Path(tempfile.mkdtemp(prefix="evh-pserve-")).resolve()
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _tmp
+import _tmp  # noqa: E402
+
+proj = Path(_tmp.mkdtemp(prefix="evh-pserve-")).resolve()
 (proj / "data").mkdir()
 script = proj / "serve_once.py"
 script.write_text(

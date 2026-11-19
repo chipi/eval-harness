@@ -31,7 +31,7 @@ import _runview  # noqa: E402
 
 proj = Path(tempfile.mkdtemp(prefix="evh-scoring-"))
 env = dict(os.environ, EVH_ACTOR="person:test", EVAL_HOME=str(proj), EVAL_BUILD_REF="test-scoring")
-for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_MAX_COST_USD", "EVAL_GOALS_DIR"):
+for k in ("EVAL_DATA_DIR", "EVAL_MAX_COST_USD", "EVAL_GOALS_DIR"):
     env.pop(k, None)
 ADAPTER = '''"""The bundled adapter, with BONUS added to overlap_f1: editing BONUS changes the scoring."""
 from evaluation_harness.adapter import *  # noqa: F401,F403

@@ -36,7 +36,7 @@ import _runstore  # noqa: E402
 KIT = HERE.parent / "tutorial"
 proj = Path(tempfile.mkdtemp(prefix="evh-outlabels-"))
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-outlabels", EVH_ACTOR="person:ana")
-for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVH_FOR"):
+for k in ("EVAL_DATA_DIR", "EVH_FOR"):
     env.pop(k, None)
 NOW = _dt.datetime.now(_dt.timezone.utc).replace(microsecond=0)
 DAY, MIN = _dt.timedelta(days=1), _dt.timedelta(minutes=1)

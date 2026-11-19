@@ -30,7 +30,7 @@ import _runview  # noqa: E402
 
 proj = Path(tempfile.mkdtemp(prefix="evh-coverage-"))
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-coverage")
-for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_MAX_COST_USD", "EVAL_GOALS_DIR"):
+for k in ("EVAL_DATA_DIR", "EVAL_MAX_COST_USD", "EVAL_GOALS_DIR"):
     env.pop(k, None)
 
 

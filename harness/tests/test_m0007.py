@@ -110,7 +110,7 @@ def legacy_db(src_data, proj, extra=None):
 
 
 def evh(proj, store, *args):
-    env = {k: v for k, v in os.environ.items() if k not in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR")}
+    env = {k: v for k, v in os.environ.items() if k not in ("EVAL_DATA_DIR",)}
     env.update(EVAL_HOME=str(proj), EVAL_STORE=store, EVAL_BUILD_REF="test-m0007")
     return subprocess.run(
         [sys.executable, str(HERE / "cli.py"), *args], cwd=proj, env=env, capture_output=True, text=True,
@@ -569,7 +569,7 @@ try:
     c = sqlite3.connect(crash2 / "data" / "project.sqlite")
     n_before = c.execute("SELECT count(*) FROM rows").fetchone()[0]
     c.close()
-    env = {k: v for k, v in os.environ.items() if k not in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR")}
+    env = {k: v for k, v in os.environ.items() if k not in ("EVAL_DATA_DIR",)}
     env.update(EVAL_HOME=str(crash2), EVAL_STORE="sqlite")
     r = subprocess.run(
         [sys.executable, str(helper2)], cwd=crash2, env=env, capture_output=True, text=True, stdin=subprocess.DEVNULL,
@@ -647,7 +647,7 @@ try:
         "from evaluation_harness.migrations import m0007_results\n"
         "m0007_results.run(False)\n"
     )
-    env = {k: v for k, v in os.environ.items() if k not in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR")}
+    env = {k: v for k, v in os.environ.items() if k not in ("EVAL_DATA_DIR",)}
     env.update(EVAL_HOME=str(crash), EVAL_STORE="files")
     r = subprocess.run(
         [sys.executable, str(helper)], cwd=crash, env=env, capture_output=True, text=True, stdin=subprocess.DEVNULL,

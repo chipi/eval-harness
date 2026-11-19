@@ -17,7 +17,6 @@ import io
 import json
 import os
 import sys
-import tempfile
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -75,7 +74,10 @@ class Hub(BaseHTTPRequestHandler):
 srv = ThreadingHTTPServer(("127.0.0.1", 0), Hub)
 threading.Thread(target=srv.serve_forever, daemon=True).start()
 os.environ["HF_ENDPOINT"] = f"http://127.0.0.1:{srv.server_address[1]}"
-os.environ["EVAL_HOME"] = tempfile.mkdtemp(prefix="evh-hf-rows-")  # the item cache lives under it
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _tmp
+import _tmp  # noqa: E402
+
+os.environ["EVAL_HOME"] = _tmp.mkdtemp(prefix="evh-hf-rows-")  # the item cache lives under it
 sys.path.insert(0, str(HARNESS.parent / "examples" / "_shared"))
 import hf_rows  # noqa: E402
 
@@ -89,7 +91,7 @@ try:
     check("past the end: []", hf_rows.page(REF, "default", "test", 7, 5) == [])
     hf_rows.page(REF, "default", "test", 0, 1)
     check("the conversion's commit is resolved once a process", STATE["refs"] == 1, STATE)
-    root = Path(tempfile.mkdtemp(prefix="evh-hf-rows-out-"))
+    root = Path(_tmp.mkdtemp(prefix="evh-hf-rows-out-"))
     (root / "data" / "sources" / "ds").mkdir(parents=True)
     (root / "data" / "sources" / "ds" / "x.txt").write_bytes(b"hello")
     where = hf_rows.Sources(REF, "default", "test")

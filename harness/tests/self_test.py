@@ -54,8 +54,11 @@ os.environ.setdefault("EVH_FREEZE_ROWS", "1")
 from evaluation_harness import _outputs  # noqa: E402
 from evaluation_harness._check import check, results  # noqa: E402
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore, _tmp
 import _runstore  # noqa: E402
+import _tmp  # noqa: E402
+
+_tmp.use_root()  # before the first temporary folder: outside /tmp and outside any git repository
 from evaluation_harness.model import runs as model_runs  # noqa: E402
 
 
@@ -3542,6 +3545,7 @@ def test_a_project_elsewhere_imports_runs_and_tests_them() -> None:
         fp_s = (model_runs.record(srun_first) or {}).get("fingerprint") or {} if srun_first else {}
         hashes[arm] = (fp_s.get("hash"), (fp_s.get("instrument") or {}).get("adapter", {}).get("sha256"))
         shutil.rmtree(srun, ignore_errors=True)
+        sf.unlink(missing_ok=True)  # beside the project, not in it: its rmtree does not take it
     check(
         "import-run: the scoring code's hash is the adapter's, inside the fingerprint hash",
         bool(hashes["arm_s1"][1]) and hashes["arm_s1"][0] != hashes["arm_s2"][0],

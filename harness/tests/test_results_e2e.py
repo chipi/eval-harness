@@ -100,11 +100,11 @@ class Project:
         self.dir = Path(tempfile.mkdtemp(prefix="evh-results-e2e-"))
         self.env = dict(os.environ, EVAL_HOME=str(self.dir), EVAL_STORE=store, EVAL_BUILD_REF="test-results-e2e",
                         EVAL_MAX_RETRIES="0", EVH_ACTOR="person:tester")  # fmt: skip
-        for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_MAX_COST_USD", "EVH_E2E_CRASH_AT"):
+        for k in ("EVAL_DATA_DIR", "EVAL_MAX_COST_USD", "EVH_E2E_CRASH_AT"):
             self.env.pop(k, None)
         os.environ["EVAL_HOME"] = str(self.dir)
         os.environ["EVAL_STORE"] = store
-        for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR"):
+        for k in ("EVAL_DATA_DIR",):
             os.environ.pop(k, None)
         _outputs.reset()
         r = self.evh("init", "--store", store)

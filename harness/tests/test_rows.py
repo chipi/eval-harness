@@ -49,7 +49,7 @@ def _set_output(run, item, text):
 
 proj = Path(tempfile.mkdtemp(prefix="evh-rows-"))
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-rows")
-for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_MAX_COST_USD", "EVH_PUBLIC"):
+for k in ("EVAL_DATA_DIR", "EVAL_MAX_COST_USD", "EVH_PUBLIC"):
     env.pop(k, None)
 D = "tickets_v1"
 

@@ -16,7 +16,6 @@ import json
 import os
 import subprocess
 import sys
-import tempfile
 import threading
 import urllib.error
 import urllib.request
@@ -25,7 +24,10 @@ from http.server import ThreadingHTTPServer
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parents[1] / "scripts"
-proj = Path(tempfile.mkdtemp(prefix="evh-serve-error-"))
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _tmp
+import _tmp  # noqa: E402
+
+proj = Path(_tmp.mkdtemp(prefix="evh-serve-error-"))
 env = {k: v for k, v in os.environ.items() if not k.startswith("EVAL_")}
 init = subprocess.run(
     [sys.executable, str(HERE / "cli.py"), "init", "--store", "files"], cwd=proj, env={**env, "EVAL_HOME": str(proj)},

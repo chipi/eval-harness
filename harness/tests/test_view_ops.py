@@ -36,7 +36,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 proj = Path(tempfile.mkdtemp(prefix="evh-viewops-"))
 os.environ.update(EVAL_HOME=str(proj), EVAL_BUILD_REF="test-view-ops", EVH_ACTOR="person:tester")
-for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_GOALS_DIR", "EVH_PUBLIC"):
+for k in ("EVAL_DATA_DIR", "EVAL_GOALS_DIR", "EVH_PUBLIC"):
     os.environ.pop(k, None)
 
 import _catalog_fixture as fx  # noqa: E402

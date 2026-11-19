@@ -15,7 +15,6 @@ from __future__ import annotations
 import json
 import os
 import sys
-import tempfile
 import threading
 import urllib.error
 import urllib.request
@@ -26,7 +25,10 @@ from pathlib import Path
 HARNESS = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(HARNESS))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-proj = Path(tempfile.mkdtemp(prefix="evh-apiquery-"))
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _tmp
+import _tmp  # noqa: E402
+
+proj = Path(_tmp.mkdtemp(prefix="evh-apiquery-"))
 os.environ.update(EVAL_HOME=str(proj), EVAL_BUILD_REF="test-api-query", EVH_ACTOR="person:tester")
 for k in ("EVAL_DATA_DIR", "EVAL_GOALS_DIR", "EVH_PUBLIC"):
     os.environ.pop(k, None)

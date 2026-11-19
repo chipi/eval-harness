@@ -37,7 +37,7 @@ env = dict(
     EVAL_MAX_RETRIES="2",
     EVAL_RETRY_MAX_DELAY="0",
 )
-for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_MAX_COST_USD"):
+for k in ("EVAL_DATA_DIR", "EVAL_MAX_COST_USD"):
     env.pop(k, None)
 
 

@@ -15,12 +15,14 @@ the suite runs in. The run outputs' round trip through `data-migrate` is test_st
 import os
 import subprocess
 import sys
-import tempfile
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parents[1] / "scripts"
 SEP = "a b c\x85d"
-proj = Path(tempfile.mkdtemp(prefix="evh-jsonl-"))
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _tmp
+import _tmp  # noqa: E402
+
+proj = Path(_tmp.mkdtemp(prefix="evh-jsonl-"))
 store = os.environ.get("EVAL_STORE") or "files"
 env = {k: v for k, v in os.environ.items() if not k.startswith("EVAL_")}
 env.update(EVAL_HOME=str(proj), EVH_ACTOR="person:test")

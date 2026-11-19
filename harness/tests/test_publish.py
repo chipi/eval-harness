@@ -16,7 +16,6 @@ import os
 import shutil
 import subprocess
 import sys
-import tempfile
 from pathlib import Path
 
 HARNESS = Path(__file__).resolve().parents[1]
@@ -35,12 +34,16 @@ class Commit:
         self.oid = oid
 
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _tmp
+import _tmp  # noqa: E402
+
+
 class FakeHub:
     """The four HfApi calls publish() makes, kept in memory."""
 
     def __init__(self, exists=False, tamper=None):
         self.exists, self.tamper, self.files, self.repos = exists, tamper, {}, []
-        self.dir = Path(tempfile.mkdtemp(prefix="evh-fakehub-"))
+        self.dir = Path(_tmp.mkdtemp(prefix="evh-fakehub-"))
 
     def repo_exists(self, repo, repo_type=None):
         return self.exists
@@ -106,7 +109,7 @@ for kwargs, why in (
 got = Source({"api": FakeHub()}).publish(record, items, {"repo": "ada/notes", "public": True})
 check('"public": true makes it public', got["private"] is False)
 
-proj = Path(tempfile.mkdtemp(prefix="evh-publish-"))
+proj = Path(_tmp.mkdtemp(prefix="evh-publish-"))
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-publish")
 for k in ("EVAL_DATA_DIR", "EVAL_MAX_COST_USD"):
     env.pop(k, None)

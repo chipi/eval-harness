@@ -34,7 +34,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 proj = Path(tempfile.mkdtemp(prefix="evh-results-"))
 os.environ["EVAL_HOME"] = str(proj)
 os.environ.setdefault("EVAL_STORE", "files")
-for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR"):
+for k in ("EVAL_DATA_DIR",):
     os.environ.pop(k, None)
 import _runstore  # noqa: E402
 import jsonschema  # noqa: E402

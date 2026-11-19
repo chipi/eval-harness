@@ -14,7 +14,6 @@ import json
 import os
 import subprocess
 import sys
-import tempfile
 import traceback
 from pathlib import Path
 
@@ -135,9 +134,13 @@ def write_materialized(meta: dict, dataset_id: str, items: dict) -> None:
         _runstore.write_text(project(meta), f"materialized/{dataset_id}/{item_id}.txt", text)
 
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _tmp
+import _tmp  # noqa: E402
+
+
 def test_compare_runs_identical_builds() -> int:
     """compare_runs detects identical builds (same code, delta is noise)."""
-    tmp = Path(tempfile.mkdtemp(prefix="evh-compare-"))
+    tmp = Path(_tmp.mkdtemp(prefix="evh-compare-"))
     meta = setup_runs_tree(tmp)
 
     # Two runs, identical build, different scores
@@ -161,7 +164,7 @@ def test_compare_runs_identical_builds() -> int:
 
 def test_compare_runs_different_datasets() -> int:
     """compare_runs refuses different dataset_ids."""
-    tmp = Path(tempfile.mkdtemp(prefix="evh-compare-"))
+    tmp = Path(_tmp.mkdtemp(prefix="evh-compare-"))
     meta = setup_runs_tree(tmp)
 
     write_run(meta, "run_a", "ds1", "arm_a", {"f1": 0.850})
@@ -183,7 +186,7 @@ def test_compare_runs_different_datasets() -> int:
 
 def test_compare_runs_with_noise_floor() -> int:
     """compare_runs respects --noise flag for detecting significance."""
-    tmp = Path(tempfile.mkdtemp(prefix="evh-compare-"))
+    tmp = Path(_tmp.mkdtemp(prefix="evh-compare-"))
     meta = setup_runs_tree(tmp)
 
     # Two runs with a small delta (0.005)
@@ -214,7 +217,7 @@ def test_compare_runs_with_noise_floor() -> int:
 
 def test_bootstrap_test_basic() -> int:
     """bootstrap_test computes p-values and confidence intervals for macro-F1."""
-    tmp = Path(tempfile.mkdtemp(prefix="evh-boot-"))
+    tmp = Path(_tmp.mkdtemp(prefix="evh-boot-"))
     meta = setup_runs_tree(tmp)
 
     dataset_id = "ds_clf"
@@ -257,7 +260,7 @@ def test_bootstrap_test_basic() -> int:
 
 def test_bootstrap_test_refuses_non_classification() -> int:
     """bootstrap_test refuses datasets with too many distinct labels (free text)."""
-    tmp = Path(tempfile.mkdtemp(prefix="evh-boot-"))
+    tmp = Path(_tmp.mkdtemp(prefix="evh-boot-"))
     meta = setup_runs_tree(tmp)
 
     dataset_id = "ds_free"
@@ -296,7 +299,7 @@ def test_bootstrap_test_refuses_non_classification() -> int:
 
 def test_holdout_significance_basic() -> int:
     """holdout_significance runs significance tests on a subset (excluding items from prior dataset)."""
-    tmp = Path(tempfile.mkdtemp(prefix="evh-hold-"))
+    tmp = Path(_tmp.mkdtemp(prefix="evh-hold-"))
     meta = setup_runs_tree(tmp)
 
     dataset_id = "ds_main"
@@ -337,7 +340,7 @@ def test_holdout_significance_basic() -> int:
 
 def test_silver_calibrate_basic() -> int:
     """silver_calibrate measures how well silver references rank arms vs gold."""
-    tmp = Path(tempfile.mkdtemp(prefix="evh-silver-"))
+    tmp = Path(_tmp.mkdtemp(prefix="evh-silver-"))
     meta = setup_runs_tree(tmp)
 
     dataset_id = "ds_cal"
@@ -401,7 +404,7 @@ def test_silver_calibrate_basic() -> int:
 
 def test_silver_calibrate_refuses_too_few_arms() -> int:
     """silver_calibrate refuses <4 arms (needs 4: author + 3 subjects)."""
-    tmp = Path(tempfile.mkdtemp(prefix="evh-silver-"))
+    tmp = Path(_tmp.mkdtemp(prefix="evh-silver-"))
     meta = setup_runs_tree(tmp)
 
     dataset_id = "ds_few"
@@ -449,7 +452,7 @@ def test_silver_calibrate_refuses_too_few_arms() -> int:
 
 def test_compare_runs_missing_run() -> int:
     """compare_runs refuses non-existent runs."""
-    tmp = Path(tempfile.mkdtemp(prefix="evh-compare-"))
+    tmp = Path(_tmp.mkdtemp(prefix="evh-compare-"))
     meta = setup_runs_tree(tmp)
 
     write_run(meta, "run_a", "ds1", "arm_a", {"f1": 0.850})
@@ -470,7 +473,7 @@ def test_compare_runs_missing_run() -> int:
 
 def test_bootstrap_test_missing_opponent() -> int:
     """bootstrap_test refuses when no opponent matches the family."""
-    tmp = Path(tempfile.mkdtemp(prefix="evh-boot-"))
+    tmp = Path(_tmp.mkdtemp(prefix="evh-boot-"))
     meta = setup_runs_tree(tmp)
 
     dataset_id = "ds_clf"
@@ -509,7 +512,7 @@ def test_bootstrap_test_missing_opponent() -> int:
 
 def mutation_test_compare_runs() -> int:
     """Mutation test: break the delta computation in compare_runs."""
-    tmp = Path(tempfile.mkdtemp(prefix="evh-mut-compare-"))
+    tmp = Path(_tmp.mkdtemp(prefix="evh-mut-compare-"))
     meta = setup_runs_tree(tmp)
 
     write_run(meta, "run_a", "ds1", "arm_a", {"f1": 0.850, "acc": 0.780})
@@ -533,7 +536,7 @@ def mutation_test_compare_runs() -> int:
 
 def mutation_test_silver_calibrate() -> int:
     """Mutation test: break the spearman correlation computation."""
-    tmp = Path(tempfile.mkdtemp(prefix="evh-mut-silver-"))
+    tmp = Path(_tmp.mkdtemp(prefix="evh-mut-silver-"))
     meta = setup_runs_tree(tmp)
 
     dataset_id = "ds_mut"
@@ -592,7 +595,7 @@ def mutation_test_silver_calibrate() -> int:
 
 def mutation_test_bootstrap_test() -> int:
     """Mutation test: verify bootstrap_test correctly computes p-values."""
-    tmp = Path(tempfile.mkdtemp(prefix="evh-mut-boot-"))
+    tmp = Path(_tmp.mkdtemp(prefix="evh-mut-boot-"))
     meta = setup_runs_tree(tmp)
 
     dataset_id = "ds_mut"
@@ -638,7 +641,7 @@ def mutation_test_bootstrap_test() -> int:
 
 def mutation_test_holdout() -> int:
     """Mutation test: verify holdout_significance excludes correct items."""
-    tmp = Path(tempfile.mkdtemp(prefix="evh-mut-hold-"))
+    tmp = Path(_tmp.mkdtemp(prefix="evh-mut-hold-"))
     meta = setup_runs_tree(tmp)
 
     exclude_dataset_id = "ds_prior"
@@ -681,7 +684,7 @@ def mutation_test_holdout() -> int:
 def json_tree() -> tuple[Path, dict, dict]:
     """40 items and four arms that win on 40, 30, 20 and 10 of them (acc), so every p is known; arm_d is also the
     dearest and slowest, so it is off the frontier. Returns (tmp, meta, env)."""
-    tmp = Path(tempfile.mkdtemp(prefix="evh-json-"))
+    tmp = Path(_tmp.mkdtemp(prefix="evh-json-"))
     meta = setup_runs_tree(tmp)
     ids = [f"i{i:02d}" for i in range(40)]
     for arm, wins, cost, latency in (

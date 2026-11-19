@@ -40,7 +40,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 proj = Path(tempfile.mkdtemp(prefix="evh-tables-"))
 os.environ["EVAL_HOME"] = str(proj)
 os.environ["EVAL_STORE"] = "sqlite"
-for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR"):
+for k in ("EVAL_DATA_DIR",):
     os.environ.pop(k, None)
 import _runstore  # noqa: E402
 from evaluation_harness import _format, _outputs, _runs, _store  # noqa: E402
@@ -131,7 +131,7 @@ def v9() -> tuple[list[str], str]:
 
 
 def dm(store: str, *args: str, cwd: Path) -> subprocess.CompletedProcess:
-    env = {k: v for k, v in os.environ.items() if k not in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR")}
+    env = {k: v for k, v in os.environ.items() if k not in ("EVAL_DATA_DIR",)}
     env.update(EVAL_HOME=str(cwd), EVAL_STORE=store)
     return subprocess.run(
         [sys.executable, str(HARNESS / "scripts" / "cli.py"), *args], cwd=cwd, env=env, capture_output=True, text=True,

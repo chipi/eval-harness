@@ -46,7 +46,7 @@ def project(name: str) -> tuple[Path, dict]:
     (p / "config.yaml").write_text("store: files\n")
     env = dict(os.environ, EVAL_HOME=str(p), EVH_ACTOR="person:owner", EVAL_BUILD_REF="workbench-round5")
     env["PYTHONPATH"] = str(H) + os.pathsep + env.get("PYTHONPATH", "")
-    for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_MAX_COST_USD", "EVH_FOR", "EVAL_STORE"):
+    for k in ("EVAL_DATA_DIR", "EVAL_MAX_COST_USD", "EVH_FOR", "EVAL_STORE"):
         env.pop(k, None)
     subprocess.run(["git", "init", "-q"], cwd=p, check=True)
     return p, env
@@ -83,7 +83,7 @@ def config(p: Path, cid: str, ds: str, sentences: int, extra: str = "") -> None:
 
 def this_project() -> None:
     env = dict(os.environ, EVAL_HOME=str(H))
-    for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_STORE"):
+    for k in ("EVAL_DATA_DIR", "EVAL_STORE"):
         env.pop(k, None)
     save("baselines", evh(H, env, "baselines", "--json"))
 

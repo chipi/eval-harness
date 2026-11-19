@@ -30,7 +30,7 @@ import _runview  # noqa: E402
 
 proj = Path(tempfile.mkdtemp(prefix="evh-run-metrics-"))
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-run-metrics")
-for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_MAX_COST_USD"):
+for k in ("EVAL_DATA_DIR", "EVAL_MAX_COST_USD"):
     env.pop(k, None)
 
 ADAPTER = """from evaluation_harness.adapter import Result, score  # noqa: F401

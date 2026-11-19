@@ -56,6 +56,10 @@ def tweak(v: object) -> object:
     return None
 
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _tmp
+import _tmp  # noqa: E402
+
+
 def main() -> int:
     paths = settings()
     check("the repository has settings to open", len(paths) > 20, len(paths))
@@ -133,10 +137,9 @@ def main() -> int:
     # (advisor review, 2026-11-06: a crashed validate let every save through). subprocess.run is faked; the file is
     # a temporary one outside any project.
     import subprocess  # noqa: PLC0415
-    import tempfile  # noqa: PLC0415
 
     real_run = subprocess.run
-    tmp = Path(tempfile.mkdtemp(prefix="evh-guard-"))
+    tmp = Path(_tmp.mkdtemp(prefix="evh-guard-"))
     target = tmp / "g.yaml"
 
     def fake(*answers):

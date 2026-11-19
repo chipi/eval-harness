@@ -12,7 +12,6 @@ import json
 import os
 import stat
 import sys
-import tempfile
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
@@ -21,7 +20,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from evaluation_harness import _importers
 from evaluation_harness._check import check, summary
 
-tmp = Path(tempfile.mkdtemp(prefix="evh-importers-"))
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _tmp
+import _tmp
+
+tmp = Path(_tmp.mkdtemp(prefix="evh-importers-"))
 
 
 def read_list(name: str, query: dict) -> list:

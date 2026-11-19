@@ -15,7 +15,6 @@ import json
 import os
 import subprocess
 import sys
-import tempfile
 import time
 from pathlib import Path
 
@@ -24,7 +23,10 @@ TOOL = HARNESS / "tools" / "view_bench.py"
 sys.path.insert(0, str(HARNESS))
 from evaluation_harness._check import check, summary  # noqa: E402
 
-tmp = Path(tempfile.mkdtemp(prefix="evh-bench-"))
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _tmp
+import _tmp  # noqa: E402
+
+tmp = Path(_tmp.mkdtemp(prefix="evh-bench-"))
 proj, scratch = tmp / "project", tmp / "scratch"
 proj.mkdir()
 env = {

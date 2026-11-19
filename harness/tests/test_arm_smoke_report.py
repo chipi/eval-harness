@@ -32,7 +32,7 @@ from evaluation_harness import _format  # noqa: E402
 
 proj = Path(tempfile.mkdtemp(prefix="evh-smoke-report-"))
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-smoke-report", EVAL_MAX_RETRIES="0")
-for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_MAX_COST_USD"):
+for k in ("EVAL_DATA_DIR", "EVAL_MAX_COST_USD"):
     env.pop(k, None)
 
 # A stand-in for a project's adapter that calls a hosted model through the bundled provider: it does not time

@@ -48,7 +48,7 @@ def _set_output(d, item, text):
 proj = Path(tempfile.mkdtemp(prefix="evh-labels-"))
 _common.project_root.cache_clear()  # _runstore aims at the project by EVAL_HOME; this process may have resolved its own
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-labels")
-for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_MAX_COST_USD"):
+for k in ("EVAL_DATA_DIR", "EVAL_MAX_COST_USD"):
     env.pop(k, None)
 
 

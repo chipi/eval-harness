@@ -40,7 +40,7 @@ import _runview  # noqa: E402
 
 proj = Path(tempfile.mkdtemp(prefix="evh-sheet-import-"))
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-sheet-import")
-for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_MAX_COST_USD", "EVH_PUBLIC"):
+for k in ("EVAL_DATA_DIR", "EVAL_MAX_COST_USD", "EVH_PUBLIC"):
     env.pop(k, None)
 D = "tickets_v1"
 ARMS = {"lead1": "tickets_lead1_v1", "lead2": "tickets_lead2_v1", "author": "tickets_author_v1"}

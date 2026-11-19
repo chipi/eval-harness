@@ -38,7 +38,7 @@ import _runview  # noqa: E402
 proj = Path(tempfile.mkdtemp(prefix="evh-replay-hide-"))
 env = dict(os.environ, EVH_ACTOR="person:test", EVAL_HOME=str(proj), EVAL_BUILD_REF="test-replay-hide")
 env["PYTHONPATH"] = str(HARNESS) + os.pathsep + env.get("PYTHONPATH", "")
-for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_MAX_COST_USD", "EVH_FOR"):
+for k in ("EVAL_DATA_DIR", "EVAL_MAX_COST_USD", "EVH_FOR"):
     env.pop(k, None)
 MINE = proj / "examples" / "replay-filing"
 

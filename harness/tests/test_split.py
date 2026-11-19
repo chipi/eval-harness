@@ -7,7 +7,6 @@ python tests/test_split.py
 import os
 import subprocess
 import sys
-import tempfile
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parents[1] / "scripts"
@@ -17,7 +16,10 @@ from evaluation_harness._check import check, summary  # noqa: E402
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
 import _runstore  # noqa: E402
 
-proj = Path(tempfile.mkdtemp(prefix="evh-split-"))
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _tmp
+import _tmp  # noqa: E402
+
+proj = Path(_tmp.mkdtemp(prefix="evh-split-"))
 data = proj / "data"
 (data / "fields").mkdir(parents=True)
 env = dict(os.environ, EVAL_HOME=str(proj))

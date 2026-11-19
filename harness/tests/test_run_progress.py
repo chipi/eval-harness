@@ -31,7 +31,7 @@ from evaluation_harness.run import price_drift, progress_every, progress_line  #
 
 proj = Path(tempfile.mkdtemp(prefix="evh-progress-"))
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-progress", EVAL_MAX_RETRIES="0")
-for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_MAX_COST_USD"):
+for k in ("EVAL_DATA_DIR", "EVAL_MAX_COST_USD"):
     env.pop(k, None)
 
 ADAPTER = """

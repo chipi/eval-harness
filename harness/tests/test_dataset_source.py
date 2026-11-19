@@ -31,7 +31,7 @@ proj = Path(tempfile.mkdtemp(prefix="evh-source-"))
 outside = Path(tempfile.mkdtemp(prefix="evh-outside-"))
 _common.project_root.cache_clear()
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-source")
-for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_MAX_COST_USD"):
+for k in ("EVAL_DATA_DIR", "EVAL_MAX_COST_USD"):
     env.pop(k, None)
 
 

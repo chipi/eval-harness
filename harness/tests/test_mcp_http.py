@@ -15,7 +15,6 @@ import os
 import socket
 import subprocess
 import sys
-import tempfile
 import time
 import urllib.error
 import urllib.request
@@ -38,7 +37,10 @@ except ImportError as exc:
     )
     sys.exit(1)
 
-tmp = Path(tempfile.mkdtemp(prefix="evh-mcp-http-"))
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _tmp
+import _tmp  # noqa: E402
+
+tmp = Path(_tmp.mkdtemp(prefix="evh-mcp-http-"))
 (tmp / "data" / "datasets").mkdir(parents=True)
 from evaluation_harness import _format  # noqa: E402
 

@@ -28,7 +28,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 proj = Path(tempfile.mkdtemp(prefix="evh-rowsapi-"))
 os.environ["EVAL_HOME"] = str(proj)
 os.environ.pop("EVAL_STORE", None)
-for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR"):
+for k in ("EVAL_DATA_DIR",):
     os.environ.pop(k, None)
 import _runstore  # noqa: E402
 from evaluation_harness import _format, _outputs, _runs, _store  # noqa: E402

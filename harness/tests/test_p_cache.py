@@ -8,7 +8,6 @@ import json
 import os
 import subprocess
 import sys
-import tempfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -26,7 +25,10 @@ p = stats.sign_flip_p(d, permutations=4000)
 print(p.hex(), round(time.monotonic() - t, 3), stats._disk_key((tuple(d), 4000, stats.SEED)))
 """
 
-tmp = Path(tempfile.mkdtemp(prefix="evh-pcache-"))
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _tmp
+import _tmp  # noqa: E402
+
+tmp = Path(_tmp.mkdtemp(prefix="evh-pcache-"))
 script = tmp / "p.py"
 script.write_text(SNIPPET.format(root=str(ROOT)))
 
