@@ -14,6 +14,8 @@ is safe.
                  catalog build, caches, .env, the venv)
   AGENTS.md      how an agent works in the project: the rules, the loop, how to read results
                  (CLAUDE.md beside it imports it, for Claude Code)
+  prompts/judge_prompt_example.txt   an example prompt for an LLM judge to copy for your first judge scorer;
+                 it must name the scorer's task.dimensions
   tutorial/      with --tutorial: six support tickets, their gold summaries, four arms, a
                  goal and a judge scorer, as docs/GUIDE.md uses them
 """
@@ -56,6 +58,8 @@ def _agents() -> Path | None:
 
 
 FOLDERS = ("data/sources", "data/systems", "data/goals", "data/fields")
+# An example of an LLM judge's prompt, to copy beside a scorer that names the same dimensions.
+JUDGE_EXAMPLE = "prompts/judge_prompt_example.txt"
 IGNORE = """\
 # evaluation-harness: derived or private, never committed
 .venv
@@ -169,11 +173,13 @@ def main() -> int:
     for name, text in (
         ("AGENTS.md", _store.read_text(agents / "AGENTS.md", encoding="utf-8")),
         ("CLAUDE.md", "@AGENTS.md\n"),
+        (JUDGE_EXAMPLE, _store.read_text(agents / "judge_prompt.txt", encoding="utf-8")),
     ):
         dst = root / name
         if _store.exists(dst):
             kept.append(name)
         else:
+            _store.mkdir(dst.parent, parents=True, exist_ok=True)
             _store.write_text(dst, text, encoding="utf-8")
             made.append(name)
     if args.tutorial:

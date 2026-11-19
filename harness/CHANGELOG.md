@@ -13,6 +13,10 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Added
 
+- **`evh init` writes an example judge prompt** (`prompts/judge_prompt_example.txt`, without `--tutorial` too): a worked
+  prompt to copy for a first judge scorer, with the dimensions named, `{n}` and one JSON list per dimension. A newcomer
+  whose prompt did not name its scorer's dimensions got 80 unparsed replies; `judge-score` now refuses such a prompt, and
+  the example shows one that passes. An existing file is kept.
 - **Evidence charts, one operation for every surface** (RFC-034): `evh chart KIND` (and `GET /api/v1/charts/{kind}`, an
   MCP tool) answers what a chart draws as a table, its caption, and the drawing as SVG (`--svg FILE` writes it).
   `gain-cost`: a round's arms or a study's trials against their baseline, the difference in quality (with its interval)

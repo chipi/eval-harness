@@ -74,7 +74,8 @@ a walkthrough in the user's own project, not inside a checkout of this repositor
 ### FR2: The project
 
 - **FR2.1**: `evh init --store files|sqlite [--tutorial]` creates the data folders, a `config.yaml` naming the
-  store (required, no default) and a `.gitignore`; `--tutorial` adds the GUIDE's kit.
+  store (required, no default), a `.gitignore` and an example judge prompt (`prompts/judge_prompt_example.txt`);
+  `--tutorial` adds the GUIDE's kit.
 - **FR2.2**: The project root is `EVAL_HOME`, else the nearest directory up with a `data/`
   folder; `EVAL_DATA_DIR`, `EVAL_RUNS_DIR` and `EVAL_GOALS_DIR` move the data, the runs and the
   goals.

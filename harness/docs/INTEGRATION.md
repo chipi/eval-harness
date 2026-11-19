@@ -19,7 +19,7 @@ Pin it into your project, and start the project's folders:
 ```bash
 cd /path/to/your-project
 pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.7.2#subdirectory=harness"
-evh init --store files   # config.yaml, data/sources, data/systems, data/goals, data/fields, a .gitignore; --store sqlite is its equal
+evh init --store files   # config.yaml, data/sources, data/systems, data/goals, data/fields, a .gitignore, prompts/judge_prompt_example.txt; --store sqlite is its equal
 ```
 
 That one install is everything: the hosted-model clients (`openai`, `anthropic`), the judges, the
@@ -515,7 +515,7 @@ them answers in seconds after the first.
 ```bash
 cd your-project && python3 -m venv .venv && . .venv/bin/activate
 pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.7.2#subdirectory=harness"
-evh init --store files                        # folders, config.yaml, .gitignore, AGENTS.md for an agent
+evh init --store files                        # folders, config.yaml, .gitignore, AGENTS.md for an agent, an example judge prompt
 export EVAL_MAX_COST_USD=2                    # a run stops when it has spent this; with none, no cap
 
 cp some/real/items/* data/sources/            # your data

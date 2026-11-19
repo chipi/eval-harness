@@ -1178,6 +1178,11 @@ and to the news-summary judge, so neither is an `evh` command.
      must ask for JSON with one list of n numbers per dimension. A prompt without `{n}` is
      taken to be SummEval's, whose own count phrases are rewritten instead; a prompt with both
      is refused, since its fixed phrases would keep saying 16.
+     A worked prompt is `prompts/judge_prompt_example.txt`, which `evh init` writes into every project (the tutorial
+     kit's is `tutorial/judge_prompt.txt`). Copy it and match the scorer: `{n}`, each name in `task.dimensions` as a JSON
+     key (`judge-score` refuses a prompt that leaves one out) and `task.scale`. The prompt file is sent whole, so it holds
+     the prompt only; `source_label` and `output_label` are added after it, and `explain: true` adds the request for a
+     reason, so the prompt does not ask for `why`.
    - **Which arms.** Every arm on the dataset (its latest run per `system_id`) unless the
      scorer sets `arms_match` (a `system_id` substring), or `--match …` or `--arms a,b,c`
      narrows it. A subset is its own judging set. If the arms mix system versions

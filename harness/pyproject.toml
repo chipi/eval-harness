@@ -56,8 +56,8 @@ package-dir = {"evaluation_harness" = "scripts", "evaluation_harness.importers" 
 "evaluation_harness.catalog_assets" = ["*.css", "*.js", "*.svg"]
 # The Workbench (PRD-017): catalog-serve serves it under /workbench/.
 "evaluation_harness.workbench" = ["index.html", "workbench.css", "workbench.js", "help.js", "live.js"]
-# The AGENTS.md `evh init` writes into every new project.
-"evaluation_harness.project_kit" = ["*.md"]
+# The AGENTS.md and the example judge prompt `evh init` writes into every new project.
+"evaluation_harness.project_kit" = ["*.md", "*.txt"]
 # The agent skills `evh skills-install` copies into a project.
 "evaluation_harness.skills" = ["*/SKILL.md"]
 # The GUIDE's kit: `evh init --tutorial` copies it into a new project.

@@ -228,6 +228,10 @@ cost_cap_usd: 0.01
 The two check fractions are required: a scorer without them is refused. The noise check must be
 above 0, and so must the position check whenever a call sees more than one output.
 
+The prompt must name each dimension in `task.dimensions` as a JSON key of the reply, or `judge-score` refuses it. For a
+judge of your own, `evh init` wrote a worked prompt to copy into any project: `prompts/judge_prompt_example.txt`. It is
+sent to the judge as it is, so change its dimensions and scale to the scorer's `task`.
+
 ```bash
 mkdir -p data/scorers && cp tutorial/scorers/tickets-judge-v1.yaml data/scorers/
 evh judge-score --dataset-id tickets_v1 --scorer tickets-judge-v1

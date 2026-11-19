@@ -164,6 +164,30 @@ try:
         (r.returncode, text),
     )
 
+    # a plain init (no --tutorial) writes an example of a judge prompt, keeps one that is there, and it names its dimensions
+    example = "prompts/judge_prompt_example.txt"
+    from evaluation_harness import judge_score as js
+
+    for store in ("files", "sqlite"):
+        plain = base / f"plain-{store}"
+        r = evh(base, "init", str(plain), "--store", store)
+        text = (plain / example).read_text() if (plain / example).is_file() else ""
+        dims = ["correctness", "completeness"]
+        check(
+            f"plain init --store {store}: writes {example}, which names its dimensions",
+            r.returncode == 0
+            and js.unnamed_dimensions({"task": {"dimensions": dims}}, text) == []
+            and "{n}" in text,
+            (r.returncode, r.stderr[-300:], text[:200]),
+        )
+        (plain / example).write_text("mine\n")
+        r = evh(base, "init", str(plain), "--store", store)
+        check(
+            f"plain init --store {store} again: the example prompt that is there is kept",
+            r.returncode == 0 and (plain / example).read_text() == "mine\n",
+            (r.returncode, r.stdout[-300:]),
+        )
+
     # a project that names none is refused
     for label, cfgtext in (
         ("no config.yaml", None),
