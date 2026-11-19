@@ -5,24 +5,31 @@
 // wires it, never this repository's data as if it were the project's.
 (() => {
   const WB = window.WB;
-  const LIVE = { on: false, cache: {}, pending: {}, failed: null };
+  const LIVE = { on: false, cache: {}, pending: {}, wanted: {}, failed: null };
   window.LIVE = LIVE;
   const esc = WB.esc;
 
   // One API read, kept until the page reloads; a screen asks again by key and is drawn again when it lands.
   function load(key, path, raw = false) {
     if (key in LIVE.cache) return LIVE.cache[key];
+    // An answer redraws the screen that asked for it last, never one that did not ask: a slow read (a chart) landing on
+    // another screen redrew it under the person's typing, and the text box it replaced took the rest of their
+    // keystrokes. A screen asking for a read already on its way (the screen before asked first) is recorded too, or
+    // the read lands, redraws nothing, and the screen stays on "Reading…".
+    LIVE.wanted[key] = location.hash;
     if (!LIVE.pending[key]) {
-      // An answer redraws the screen that asked for it, never one opened since: a slow read (a chart) landing on another
-      // screen redrew it under the person's typing, and the text box it replaced took the rest of their keystrokes.
-      const asked = location.hash;
       LIVE.pending[key] = fetch(`/api/v1${path}`, { credentials: "same-origin" })
         .then(async (r) => {
           const body = await r.json().catch(() => ({}));
           LIVE.cache[key] = r.ok ? (raw ? body : body.result) : { error: body.error || `${r.status}` };
         })
         .catch((e) => { LIVE.cache[key] = { error: String(e) }; })
-        .finally(() => { delete LIVE.pending[key]; if (location.hash === asked) WB.render(); });
+        .finally(() => {
+          const asked = LIVE.wanted[key];
+          delete LIVE.pending[key];
+          delete LIVE.wanted[key];
+          if (location.hash === asked) WB.render();
+        });
     }
     return undefined;
   }

@@ -1371,7 +1371,8 @@ Through the API (`catalog-serve`, its token, RFC-026), the same operations are r
 The Workbench (PRD-017) is served by `evh catalog-serve` under `/workbench/`, on this machine only, as the API is.
 Its startup prints the link that signs in (`/api/v1/session?token=…&next=/workbench/`: the token once, then a cookie)
 to a terminal; when its output goes to a file or a pipe (a background job, CI), the link names the token's file
-(`.build/api-token`) instead, and the access log masks the token, so no log holds one.
+(`.build/api-token`) instead, and the access log masks the token, so no log file holds one. A terminal recorder
+(`script`, asciinema, tmux's `pipe-pane`) runs in a terminal and records the link with its token.
 Every screen reads and writes the project through these operations, each showing the command it runs:
 [tutorial 8](../../docs/tutorials/8-the-workbench.md) walks them.
 

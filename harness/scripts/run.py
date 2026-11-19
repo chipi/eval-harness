@@ -331,14 +331,18 @@ def spend_basis(
     billed_usd: float, other_usd: float, priced: bool = False, sources: Iterable[str] = ()
 ) -> str:
     """Where a spend came from, in the words `evh run` and `evh arm-smoke` share: a Result's cost_usd is the
-    provider's bill when its meta carries one (usage.cost); the rest is tokens x the system's usd_per_mtok_in /
-    _out when the system declares both (`priced`), else the adapter's own figure, with the `cost_source` its
-    meta names (a gateway key's spend, say)."""
+    provider's bill when its meta carries one (usage.cost); the rest is the adapter's own figure when its meta names
+    a `cost_source` (a gateway key's spend, say), else tokens x the system's usd_per_mtok_in / _out when the system
+    declares both (`priced`), else the adapter's own figure."""
     named = sorted({s for s in sources if s})
-    if priced:
+    # The adapter's own word on where its figure came from wins: a system declares prices for the dry run's estimate
+    # whatever its adapter reports (review, 2026-11-19: a gateway's spend was called the price table's).
+    if named:
+        other = f"the adapter's own figure, cost_source {', '.join(named)}"
+    elif priced:
         other = "the system's price table: tokens x usd_per_mtok_in / usd_per_mtok_out"
     else:
-        other = "the adapter's own figure" + (f", cost_source {', '.join(named)}" if named else "")
+        other = "the adapter's own figure"
     if billed_usd > 0 and other_usd <= 1e-12:
         return "the provider's bill"
     if billed_usd <= 0:

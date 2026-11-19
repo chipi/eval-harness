@@ -4361,6 +4361,7 @@ def render_prompts(A: Adapter, out: Path, nav: list) -> None:
     import difflib  # noqa: PLC0415
 
     from evaluation_harness import _prompt_cmd, _prompts  # noqa: PLC0415
+    from evaluation_harness._actor import said as actor_said  # noqa: PLC0415
 
     show = _prompts.published()
     used = _prompt_cmd._runs_of()
@@ -4375,7 +4376,7 @@ def render_prompts(A: Adapter, out: Path, nav: list) -> None:
         items, prev = [], None
         for v in vs:
             runs = used.get((name, v["sha256"]), [])
-            who = (v.get("actor") or {}).get("name") or "?"
+            who = actor_said(v.get("actor"))
             text = ""
             if show:
                 try:

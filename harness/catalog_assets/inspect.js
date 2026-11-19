@@ -510,7 +510,8 @@
       g += ys.length > DOTS_MAX ? binRow(ys, x, lo, hi, y, col[a], label[a] || a)
         : Object.entries(v).map(([ep, s]) => dot(x(s), y + jit(ep, a), col[a], `${label[a] || a} · ${ep}: ${tfmt(s)}`)).join('');
       if (ys.length && LATENCY.test(d.metric)) {
-        const sorted = [...ys].sort((p, q) => p - q), at = f => sorted[Math.min(sorted.length - 1, Math.round(f * (sorted.length - 1)))];
+        // linear between the closest ranks, as the leaderboard's speed column and `evh chart latency` (axes.percentile)
+        const sorted = [...ys].sort((p, q) => p - q), at = f => { const pos = f * (sorted.length - 1), lo = Math.floor(pos), hi = Math.ceil(pos); return sorted[lo] + (sorted[hi] - sorted[lo]) * (pos - lo); };
         for (const [f, nm] of [[0.5, 'p50'], [0.95, 'p95']]) g += `<line class="ci" x1="${x(at(f))}" x2="${x(at(f))}" y1="${y - 8}" y2="${y + 8}" stroke="var(--ink)" stroke-width="2" data-tip="${esc((label[a] || a) + ' ' + nm + ' ' + tfmt(at(f)))}"/><text class="tick" x="${x(at(f))}" y="${y - 10}" text-anchor="middle" font-size="10">${nm}</text>`;
       }
       if (ys.length) g += `<line class="meanmark" x1="${x(mean(ys))}" x2="${x(mean(ys))}" y1="${y - 11}" y2="${y + 11}" data-tip="${esc((label[a] || a) + ' mean ' + tfmt(mean(ys)))}"/>`

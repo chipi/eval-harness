@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from evaluation_harness._actor import said
 from evaluation_harness.catalog_periods import PERIODS
 from evaluation_harness.ops.registry import Op
 
@@ -551,7 +552,7 @@ def say_label_set(r: dict[str, Any]) -> str:
     lines += [f"  source       {k} = {v}" for k, v in sorted((rec.get("source") or {}).items())]
     for k in ("guideline", "created_at", "actor", "note"):
         if rec.get(k):
-            lines.append(f"  {k:<12} {rec[k]}")
+            lines.append(f"  {k:<12} {said(rec[k]) if k == 'actor' else rec[k]}")
     lines += [f"  reference    {x['reference']}" for x in r["references"]]
     return "\n".join(lines)
 

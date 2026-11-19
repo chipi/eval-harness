@@ -35,7 +35,9 @@ catalog: http://127.0.0.1:18xxx/.build/catalog/   (Ctrl-C to stop)
 Its startup also prints a **Workbench** line: a link that signs in once (it carries the server's token, which becomes a
 cookie) and opens `/workbench/`. The token is new at every start, so a page left open from before a restart asks you
 to open the new link. The token is printed to a terminal only: when the server's output goes to a file (a background
-job's log), the line names the token's file instead, `.build/api-token`, and the link takes the token read from it. The Workbench answers on this machine only: a server started with `--public` or behind a proxy
+job's log), the line names the token's file instead, `.build/api-token`, and the link takes the token read from it.
+A terminal recorder (`script`, asciinema) runs in a terminal and does record the link. The Workbench answers on this
+machine only: a server started with `--public` or behind a proxy
 does not serve it.
 
 The first time a screen writes something it asks who you are; that name is kept in your browser and recorded with

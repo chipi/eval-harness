@@ -3475,6 +3475,41 @@ with tempfile.TemporaryDirectory() as tmp:
         "a reply without its reason keeps its scores and says the reason is missing",
         rec_c.get("scores") is not None and rec_c.get("why") is None and rec_c.get("why_missing") is True,
     )
+# pick and pairwise, end to end on the fake provider (review, 2026-11-19: only grade was tested): the reason is one
+# string, stored beside the verdict, and each judged output's cell says what the judge said of it, with that reason.
+from evaluation_harness.model.scorer_views import _verdict_cells  # noqa: E402
+
+for mode_ in ("pick", "pairwise"):
+    sc_w = mscorer(mode_, explain=True)
+    man_w = mmanifest(sc_w)
+    with tempfile.TemporaryDirectory() as tmp:
+        mrun(tmp, sc_w, man_w)
+        it0 = man_w["items"][0]["item_id"]
+        rec_w = json.loads(js.verdict_path(Path(tmp), "ja", it0, "primary", 0).read_text())
+        n_w = rec_w["n"]
+        cells = _verdict_cells(rec_w, [f"arm{k}" for k in range(n_w)])
+        said_w = [c["said"] for c in cells]
+        if mode_ == "pick":
+            said_ok = set(said_w) <= {"best", "not best"} and "best" in said_w
+            verdict_ok = isinstance(rec_w.get("best"), list) and all(
+                (c["said"] == "best") == (c["position"] in rec_w["best"]) for c in cells
+            )
+        else:
+            b = rec_w.get("better")
+            said_ok = n_w == 2 and (
+                said_w == ["tie", "tie"] if b == "tie" else sorted(said_w) == ["better", "worse"]
+            )
+            verdict_ok = b == "tie" or cells[int(b) - 1]["said"] == "better"
+        check(
+            f"explain, {mode_}: the reason is one string stored beside the verdict, each output's cell says what the "
+            "judge said of it, with that reason",
+            isinstance(rec_w.get("why"), str)
+            and rec_w["why"].startswith("the fake judge prefers")
+            and said_ok
+            and verdict_ok
+            and all(c["why"] == rec_w["why"] and c["why_status"] == "given" for c in cells),
+            (rec_w.get("why"), rec_w.get("best"), rec_w.get("better"), cells),
+        )
 with tempfile.TemporaryDirectory() as tmp:
     td = Path(tmp)
     js.run_judging(m1, scorer(), BASE, ARTICLES, OUTPUTS, td, fake_judge(), None, log=lambda *_: None)
@@ -3486,10 +3521,36 @@ with tempfile.TemporaryDirectory() as tmp:
 with tempfile.TemporaryDirectory() as tmp:
     e_off = js.estimate(m1, scorer(), BASE, ARTICLES, OUTPUTS, Path(tmp))
     e_on = js.estimate(m_why, scorer(explain=True), BASE, ARTICLES, OUTPUTS, Path(tmp))
+    # Exactly what RFC-034 §5 says the estimate adds (review, 2026-11-19: a `>` let any number pass): 20 tokens out per
+    # graded output (judge_score.OUT_TOKENS_WHY_PER_OUTPUT), and in the reason's request on every call.
+    graded = sum(len(it["position" if p == "position" else "primary"][b]) for it, p, b in js.tasks(m_why))
+    calls = len(js.tasks(m_why))
     check(
-        "the dry run counts the reasons' tokens, out and in",
-        all(e_on[j]["tokens_out"] > e_off[j]["tokens_out"] for j in e_off)
-        and all(e_on[j]["tokens_in"] > e_off[j]["tokens_in"] for j in e_off),
+        "the dry run counts the reasons' tokens: 20 out per graded output, the request in on every call",
+        all(e_on[j]["tokens_out"] - e_off[j]["tokens_out"] == 20 * graded for j in e_off)
+        and all(e_on[j]["tokens_in"] - e_off[j]["tokens_in"] >= calls * 10 for j in e_off),
+        (
+            {
+                j: (
+                    e_on[j]["tokens_out"] - e_off[j]["tokens_out"],
+                    e_on[j]["tokens_in"] - e_off[j]["tokens_in"],
+                )
+                for j in e_off
+            },
+            graded,
+            calls,
+        ),
+    )
+    sc_p = mscorer("pick", explain=True)
+    sc_p0 = mscorer("pick")
+    with tempfile.TemporaryDirectory() as tmp2:
+        p_on = js.estimate(mmanifest(sc_p), sc_p, PICK_BASE, MARTICLES, m_outputs(), Path(tmp2))
+        p_off = js.estimate(mmanifest(sc_p0), sc_p0, PICK_BASE, MARTICLES, m_outputs(), Path(tmp2))
+    pick_calls = len(js.tasks(mmanifest(sc_p)))
+    check(
+        "the dry run counts a pick's reason as 40 tokens out a call",
+        all(p_on[j]["tokens_out"] - p_off[j]["tokens_out"] == 40 * pick_calls for j in p_off),
+        ({j: p_on[j]["tokens_out"] - p_off[j]["tokens_out"] for j in p_off}, pick_calls),
     )
 check(
     "the gate: a scorer that asks for reasons is not validated by runs made without them",

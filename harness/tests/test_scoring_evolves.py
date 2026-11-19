@@ -384,6 +384,27 @@ try:
         and "evh score-preview --goal tickets_summary --round r2" in v.stdout,
         v.stdout[-1200:],
     )
+
+    # The trend reads a round's promoted run as it was when it ran (review, 2026-11-19: it read the latest re-score
+    # first, so the chart said "the evidence ... at the time" and drew today's scoring). The run carried into r2 has its
+    # own overlap_f1 (no bonus, at most 1) and re-scores with a bonus of 0.5 and of 1.0.
+    carried = placed[0][0] if placed else ""
+    rc = evh(
+        "round-close", "--goal", "tickets_summary", "--round", "r2", "--conclusion",
+        "The bonus moved every arm alike.", "--promote", carried, "--by", "t",
+    )  # fmt: skip
+    tr = evh("chart", "trend", "--goal", "tickets_summary", "--json")
+    rows = (json.loads(tr.stdout or "{}").get("result") or {}).get("rows") or []
+    r2_rows = [x for x in rows if x.get("version") == "r2"]
+    check(
+        "chart trend: a round's promoted run as it was when it ran (its own score), not its latest re-score",
+        rc.returncode == 0
+        and len(r2_rows) == 1
+        and r2_rows[0]["read"] == "the run's own score"
+        and r2_rows[0]["overlap_f1"] is not None
+        and r2_rows[0]["overlap_f1"] <= 1.0,
+        (out(rc)[-300:], r2_rows),
+    )
 finally:
     shutil.rmtree(proj, ignore_errors=True)
 

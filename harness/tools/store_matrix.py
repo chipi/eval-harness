@@ -23,9 +23,16 @@ from pathlib import Path
 HARNESS = Path(__file__).resolve().parents[1]
 
 #: Files that are not tests of the store's behaviour: a browser (needs Chromium, the browser gate runs them), the whole
-#: self-test (it runs every file here, and checks this repository's own committed data, which is files), and the
-#: inspector's budget (this repository's runs, files; its own CI job; two runs at once share .build/budget-catalog).
-SKIP = ("test_*_browser.py", "self_test.py", "test_catalog_real_browser.py", "test_inspector_budget.py")
+#: self-test (it runs every file here, and checks this repository's own committed data, which is files), the
+#: inspector's budget (this repository's runs, files; its own CI job; two runs at once share .build/budget-catalog), and
+#: the judges' frozen messages (this repository's committed verdicts, files).
+SKIP = (
+    "test_*_browser.py",
+    "self_test.py",
+    "test_catalog_real_browser.py",
+    "test_inspector_budget.py",
+    "test_judge_message_frozen.py",
+)
 
 
 def run(test: Path, store: str, log: Path) -> tuple[str, str, int, float]:

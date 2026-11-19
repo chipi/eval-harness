@@ -33,6 +33,7 @@ HERE = HARNESS / "scripts"
 KIT = HARNESS / "tutorial"
 sys.path.insert(0, str(HARNESS))
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _signin
+import _serve  # noqa: E402
 import _signin  # noqa: E402
 import yaml  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
@@ -98,11 +99,7 @@ def serve() -> tuple[subprocess.Popen, int, list[str]]:
                 break
         except OSError:
             time.sleep(0.1)
-    while line := p.stdout.readline():
-        lines.append(line.rstrip())
-        if "rebuilt when the data changes" in line:
-            break
-    return p, port, lines
+    return p, port, _serve.startup(p, lines)  # its start-up lines, the rest read as it comes
 
 
 try:
@@ -572,7 +569,11 @@ try:
             ):
                 phone.goto(f"{base}#{screen}")
                 phone.wait_for_selector(f"h1:has-text('{h1}')", timeout=20000)
-                phone.wait_for_timeout(500)
+                # measured once every chart on the screen is drawn: a chart lands after the screen, and measured
+                # before it, a chart that widened the page passed (review, 2026-11-19)
+                phone.wait_for_function(
+                    "() => !document.querySelector('.chart-box [role=status]')", timeout=30000
+                )
                 wide[screen] = phone.evaluate("document.documentElement.scrollWidth - window.innerWidth")
             check(
                 "at a phone's width the held-out test and the studies do not scroll sideways",

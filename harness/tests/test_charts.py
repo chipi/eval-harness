@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shutil
 import socket
 import subprocess
@@ -298,9 +299,31 @@ try:
     )
     tr = got["trend"]["rows"]
     check(
-        "trend: the goal's baseline at each of its two versions",
-        [x["version"] for x in tr if x["line"].startswith("baseline")] == [1, 2],
+        "trend: the goal's baseline at each of its two versions, each as its record has it",
+        [x["version"] for x in tr if x["line"] == "the baseline on tk_val"] == [1, 2]
+        and all(x["read"] == "the version's record" for x in tr),
         tr,
+    )
+    # A closed round that promoted a run joins the same time line, its point named by the round, never by a version
+    # (review, 2026-11-19: a round's point sat under "v1" and its title read "· v1").
+    rc = evh(
+        "round-close", "--goal", "g", "--round", "r1", "--conclusion", "Two sentences cover more of the gold than one.", "--promote",
+        run_of("s2_v1"), "--by", "t",
+    )  # fmt: skip
+    t2 = chart("trend", "--goal", "g")
+    rows2 = t2.get("rows") or []
+    titles = re.findall(r"<title>([^<]+)</title>", t2.get("svg", ""))
+    check(
+        "trend: a closed round's promoted run is a point on the same time line, named by its round; the versions by theirs",
+        rc.returncode == 0
+        # the promotion made version 3 as the round closed: three versions and the round, in the order they happened
+        and sorted(x["version"] for x in rows2 if x["line"] == "the baseline on tk_val") == [1, 2, 3]
+        and [x["version"] for x in rows2 if x["line"] == "each closed round's promoted run"] == ["r1"]
+        and [x["at"] for x in rows2] == sorted(x["at"] for x in rows2)
+        and any("r1" in x and "round" in x for x in titles)
+        and not any("round" in x and "v1" in x for x in titles)
+        and any("baseline" in x and "v2" in x for x in titles),
+        ((rc.stdout + rc.stderr)[-300:], rows2, titles),
     )
 
     # ── refusals, words, the file, the API ─────────────────────────────────────

@@ -213,6 +213,8 @@ def looks(dataset: str | None = None) -> dict[str, Any]:
 
 def say_looks(r: dict[str, Any]) -> str:
     """looks' answer as text: a line a test set, a line a look."""
+    from evaluation_harness._actor import said as _said  # noqa: PLC0415
+
     out = []
     for s in r["sets"]:
         out.append(
@@ -223,7 +225,7 @@ def say_looks(r: dict[str, Any]) -> str:
         for x in s["looks"]:
             out.append(
                 f"  look {x.get('number')}  {x.get('level'):.4%}  {x.get('what')}  by "
-                f"{(x.get('actor') or {}).get('name', '?')}  {x.get('at') or ''}"
+                f"{_said(x.get('actor'))}  {x.get('at') or ''}"
                 + (f"  {x['verdict']}" if x.get("verdict") else "")
             )
     if not r["sets"]:

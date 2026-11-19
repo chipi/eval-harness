@@ -850,6 +850,10 @@ def test_example_scorer_suites_pass() -> None:
         ("test_models.py", "model records: the weights facts, and what V18 catches"),
         ("test_arm_smoke.py", "evh arm-smoke: the calls it reads, the projection, every flag"),
         (
+            "test_compare_default.py",
+            "comparison-show with no metric named: the arms' own primary among the metrics all score, a missing primary said",
+        ),
+        (
             "test_arm_smoke_report.py",
             "evh arm-smoke and run: spend and its basis, replies, call time, warm-up, dry-run input",
         ),
@@ -981,6 +985,10 @@ def test_example_scorer_suites_pass() -> None:
         (
             "test_actor.py",
             "who acted (RFC-027): --by, EVH_ACTOR, EVH_FOR, the terminal user; decisions need a name",
+        ),
+        (
+            "test_actor_wording.py",
+            "who acted, in words, wherever an actor is shown: a migrated record names nobody (the fleet's G6)",
         ),
         (
             "test_baselines.py",
@@ -1136,8 +1144,20 @@ def test_example_scorer_suites_pass() -> None:
             "judges that say why (RFC-034): judge-verdicts by page, filter and pass, the API's answer the same, scorer-new explains by default, the inspector's item view local only",
         ),
         (
+            "test_judge_message_frozen.py",
+            "a judge's message without reasons is what it was sent, byte for byte: committed verdicts' prompt_sha256 rebuilt",
+        ),
+        (
             "test_charts.py",
             "the evidence charts (RFC-034): every kind's numbers, drawing and refusals, a quadrant named only when significant, a lower measure turned, the API's answer, the file, the catalog's pages",
+        ),
+        (
+            "test_charts_gain_cost.py",
+            "the gain-cost chart on stub data: an arm sharing no item, the flip, a study's own measure, filled and hollow, the tokens axis",
+        ),
+        (
+            "test_charts_intervals.py",
+            "the intervals chart's margin from the arm contenders are tested against, filled only when significant; agreement's empty cells",
         ),
         (
             "test_judge_cap.py",

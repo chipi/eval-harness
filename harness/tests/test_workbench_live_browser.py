@@ -21,6 +21,7 @@ import hashlib
 import http.server
 import json
 import os
+import re
 import shutil
 import socket
 import subprocess
@@ -35,6 +36,7 @@ HERE = HARNESS / "scripts"
 KIT = HARNESS / "tutorial"
 sys.path.insert(0, str(HARNESS))
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _signin
+import _serve  # noqa: E402
 import _signin  # noqa: E402
 import yaml  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
@@ -125,11 +127,7 @@ def serve(*extra: str) -> tuple[subprocess.Popen, int, list[str]]:
             time.sleep(0.1)
     if "--public" in extra:
         return p, port, lines
-    while line := p.stdout.readline():  # the startup's lines, up to its last
-        lines.append(line.rstrip())
-        if "rebuilt when the data changes" in line:
-            break
-    return p, port, lines
+    return p, port, _serve.startup(p, lines)  # its start-up lines, the rest read as it comes
 
 
 try:
@@ -852,6 +850,22 @@ try:
                 "nobody recorded (before 0.8.0)" in v1_line and "· before 0.8.0 ·" not in v1_line,
                 v1_line,
             )
+            # ...and a label set `evh migrate` filled in, on the reference screen's list of label sets
+            ls_path = proj / "data" / "labels" / "tk_v1" / "g" / "labels.json"
+            ls_text = ls_path.read_text()
+            ls_path.write_text(json.dumps(json.loads(ls_text) | {"actor": BEFORE}, indent=2) + "\n")
+            page.goto(f"http://127.0.0.1:{port}/workbench/#reference/tk_v1")
+            page.reload()  # the reads are kept until the page reloads: the label sets read again
+            page.wait_for_selector("h3:has-text('Its label sets')", timeout=20000)
+            g_line = next(
+                (t for t in page.locator("main li").all_inner_texts() if t.startswith("tk_v1/g ")), ""
+            )
+            ls_path.write_text(ls_text)  # as it was: the steps after this read the label set as made
+            check(
+                "a migrated label set names nobody in the Workbench, not the placeholder 'before 0.8.0'",
+                "by nobody recorded (before 0.8.0)" in g_line and "by before 0.8.0" not in g_line,
+                (g_line, page.locator("main li").all_inner_texts()[:12]),
+            )
             # W2 (UXS-005): which is better, blind, on a sheet submitted when done; then what went wrong, with a new list
             page.goto(f"http://127.0.0.1:{port}/workbench/#review/tickets_summary")
             page.wait_for_selector("#rv-make", timeout=20000)
@@ -1399,6 +1413,41 @@ try:
                 (held_n, page.evaluate("() => location.hash")),
             )
             page.unroute("**/api/v1/charts/**")
+            # ...and the other way round (review, 2026-11-19): a screen that asks for a read already on its way, asked by
+            # the screen before, is drawn when it lands; it stayed on "Reading…" for good. The Models screen and a goal's
+            # Systems screen both read the models (the shell does not): held on Models, answered once Systems is open and
+            # its own other reads have landed, so only the models' answer can draw it.
+            held: list = []
+            models_url = re.compile(r"/api/v1/models(\?.*)?$")
+
+            # a function of its own: Playwright marks its handler, which a builtin (held.append) cannot be
+            def hold_models(route) -> None:
+                held.append(route)
+
+            page.route(models_url, hold_models)
+            page.goto(f"http://127.0.0.1:{port}/workbench/#models")
+            page.reload()  # the reads are kept until the page reloads: the models are asked for again, and held
+            page.wait_for_selector("text=Reading the models", timeout=20000)
+            page.goto(f"http://127.0.0.1:{port}/workbench/#systems/tickets_summary")
+            page.wait_for_timeout(2000)
+            still = page.evaluate("() => !!document.querySelector('main [role=status]')")
+            n_held = len(held)
+            for r_ in held:
+                r_.continue_()
+            page.unroute(models_url)
+            drawn = True
+            try:
+                page.wait_for_function("() => !document.querySelector('main [role=status]')", timeout=15000)
+            except Exception:  # noqa: BLE001 - a screen left on "Reading…" is the failure checked below
+                drawn = False
+            check(
+                "a screen asking for a read the screen before had on its way is drawn when it lands, not left reading",
+                n_held >= 1
+                and still
+                and drawn
+                and page.evaluate("() => location.hash") == "#systems/tickets_summary",
+                (n_held, still, page.locator("main").inner_text()[:300]),
+            )
             # W8 (UXS-005): the settings, one row each: where the data is kept (the move refused until config.yaml names
             # the store), this release's formats, the project checked (validate, its failures as `evh validate` says),
             # a policy file checked and saved (data-put), publishing refused offline
@@ -1686,6 +1735,11 @@ try:
             ):
                 phone.goto(f"http://127.0.0.1:{port}/workbench/#{screen}")
                 phone.wait_for_selector(f"h1:has-text('{h1}')", timeout=20000)
+                # measured once every chart on the screen is drawn: a chart lands after the screen, and measured
+                # before it, a chart that widened the page passed (review, 2026-11-19)
+                phone.wait_for_function(
+                    "() => !document.querySelector('.chart-box [role=status]')", timeout=30000
+                )
                 if shots := os.environ.get("EVH_WB_SHOTS"):
                     phone.screenshot(path=f"{shots}/phone-{screen.replace('/', '-')}.png", full_page=True)
                 wide[screen] = phone.evaluate("document.documentElement.scrollWidth - window.innerWidth")

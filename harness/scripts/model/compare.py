@@ -167,9 +167,12 @@ def _default_metric(counts: Counter, per_arm: dict, arms: list, asked: str, data
         f = A.reference_format(_ref_of(k)) if _ref_of(k) else ""
         return bool(want and f and f != want)
 
-    # The compared arms' own primary metric before any count: with no primary in the key, two metrics every arm
-    # records tied and the name decided (fleet, 2026-11-18: `actionable` shown before the arms' `oracle_pass`).
+    # The compared arms' own primary metric before any count, among the metrics every compared arm scores: with no
+    # primary in the key, two metrics every arm records tied and the name decided (fleet, 2026-11-18: `actionable`
+    # shown before the arms' `oracle_pass`); preferred whatever its count, a primary only one arm scores won over a
+    # metric all share, and left nothing to test (review, 2026-11-19).
     primaries = Counter(p for a in arms if (p := (A.describe(a) or {}).get("primary")))
+    everyone = len(per_arm)
 
     return min(
         pool,
@@ -179,7 +182,7 @@ def _default_metric(counts: Counter, per_arm: dict, arms: list, asked: str, data
             _reference_free(k),  # the bill and the clock: only when nothing is scored
             k not in mine,
             mismatch(k),
-            -primaries[k.split(" vs ")[0]],
+            -(primaries[k.split(" vs ")[0]] if counts[k] == everyone else 0),
             -counts[k],
             -recorded[k],
             next((i for i, p in enumerate(preferred) if k.split(" vs ")[0] == p), 99),
@@ -188,40 +191,54 @@ def _default_metric(counts: Counter, per_arm: dict, arms: list, asked: str, data
     )
 
 
-def _primary_not_read(arms: list, metric: str, counts: Counter) -> str | None:
-    """When no metric was named and the compared arms' primary metric has no score per item as they are read, the
-    default is another metric: said, with where the primary is scored (another reading of the same runs, an arm id
-    `<label>/<dataset>/<system>`) and which arms it is scored for nowhere (fleet, 2026-11-18: bugfix arms read as
-    plain runs carry `oracle_pass` only in their `silver` reading, and were compared on `actionable` in silence)."""
+def _primary_not_read(arms: list, metric: str, per_arm: dict) -> str | None:
+    """When no metric was named and the compared arms' primary metric is not scored per item for every one of them as
+    they are read, the default is another metric: said, with the arms that lack it, where another reading of the same
+    runs scores it (`--label`, when the adapter says what its readings are: `read_as`), and the arms it is scored for
+    nowhere (fleet, 2026-11-18: bugfix arms read as plain runs carry `oracle_pass` only in their `silver` reading, and
+    were compared on `actionable` in silence). A metric is its name before " vs " (`oracle_pass vs gold`)."""
     primaries = Counter(p for a in arms if (p := (A.describe(a) or {}).get("primary")))
     if not primaries:
         return None
     primary = primaries.most_common(1)[0][0]
-    if primary == metric or primary in counts:
+
+    def base(k: str) -> str:
+        return k.split(" vs ")[0]
+
+    if base(metric) == primary:
         return None
+    lacking = [a for a in arms if not any(base(k) == primary for k in per_arm.get(a, {}))]
+    if not lacking:
+        return None
+    read_as = getattr(A, "read_as", None)
     where: dict[str, list[str]] = {}
     nowhere = []
-    # The label a reading is asked for by, not the arm id's folder (`labels-tickets-v1-g` is read as
-    # `labels-tickets_v1-g`): an adapter without read_as names the folder.
-    read_as = getattr(A, "read_as", None)
-    for a in arms:
-        rest = a.split("/", 1)[-1]
-        found = [
-            (read_as(b) if callable(read_as) else "") or b.split("/", 1)[0]
-            for b in A.arms()
-            if b != a and b.split("/", 1)[-1] == rest and primary in A.scores(b)
-        ]
+    for a in lacking:
+        found = []
+        if callable(
+            read_as
+        ):  # an arm id is `<reading>/<dataset>/<system>`; the reading's label is what --label takes
+            rest = a.split("/", 1)[-1]
+            found = [
+                read_as(b) or b.split("/", 1)[0]
+                for b in A.arms()
+                if b != a and b.split("/", 1)[-1] == rest and any(base(k) == primary for k in A.scores(b))
+            ]
         for lb in found:
             where.setdefault(lb, []).append(_label(a))
         if not found:
             nowhere.append(_label(a))
     said = (
-        f"The arms' primary metric, {primary}, has no score per {A.item_word} for these runs as read, so it cannot be "
-        f"tested; compared on {metric or 'nothing'} instead."
+        f"The arms' primary metric, {primary}, has no score per {A.item_word} for "
+        f"{', '.join(_label(a) for a in lacking)} as read, so it cannot be tested across them; compared on "
+        f"{metric or 'nothing'} instead."
     )
     said += "".join(f" It is scored for {', '.join(xs)} under --label {lb}." for lb, xs in where.items())
-    if nowhere:
-        said += f" It is not scored for {', '.join(nowhere)} in any reading: a re-score against a reference that scores it would."
+    if nowhere and callable(read_as):
+        said += (
+            f" It is not scored for {', '.join(nowhere)} in any reading: a re-score against a reference that "
+            "scores it would."
+        )
     return said
 
 
@@ -475,7 +492,7 @@ def compare(params: dict) -> dict:
         if instead:
             instead += f". Compared on {metric} instead."
         else:
-            instead = _primary_not_read(arms, metric, counts)
+            instead = _primary_not_read(arms, metric, per_arm)
     if not counts or (metric in A.shape_metrics and not params.get("metric", [""])[0]):
         return {
             "state": "not scorable",

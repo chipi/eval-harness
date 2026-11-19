@@ -222,6 +222,21 @@ try:
         in r.stdout,
         r.stdout[-500:],
     )
+    # review, 2026-11-19: a system declaring prices (for the dry run's estimate) whose adapter names its cost_source
+    # was still called the price table's
+    r = evh(
+        "run",
+        "--system",
+        system("run_gw_priced", sleep=0.0, source="gateway", usd_per_mtok_in=0.5, usd_per_mtok_out=1.5),
+        "--dataset",
+        "tickets_v1",
+    )
+    check(
+        "run: the adapter's cost_source wins over the system's prices",
+        "(the adapter's own figure, cost_source gateway, the provider sent no bill)" in r.stdout
+        and "price table" not in r.stdout,
+        r.stdout[-500:],
+    )
     r = evh(
         "arm-smoke",
         "--system",

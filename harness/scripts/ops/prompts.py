@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from evaluation_harness._actor import said
 from evaluation_harness.ops.registry import Op
 
 _P = "evaluation_harness.ops.prompts"
@@ -86,7 +87,7 @@ def say_prompt(r: dict[str, Any]) -> str:
     """prompt-show's answer as text: each version, its note and its runs."""
     lines = []
     for v in r["versions"]:
-        who = (v.get("actor") or {}).get("name") or "?"
+        who = said(v.get("actor"))
         lines.append(
             f"v{v['n']}  {v['id']}  {v.get('created_at')}  by {who}  parent {v.get('parent') or '-'}"
         )

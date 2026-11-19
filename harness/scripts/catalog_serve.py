@@ -1681,7 +1681,8 @@ def main() -> int:
             flush=True,
         )
         # The link that signs in carries the token: printed whole only to a terminal, so a log that captures this
-        # output (a background job's, CI's, a recording) never holds a working token (fleet, 2026-11-18).
+        # output to a file or a pipe (a background job's log, CI's) never holds a working token (fleet, 2026-11-18).
+        # A terminal recorder (script, asciinema, tmux's pipe-pane) runs in a terminal and does keep it.
         tok = (API_TOKEN or [""])[0] if sys.stdout.isatty() else f"<the token in {_api.token_path()}>"
         print(
             f"  Workbench: http://127.0.0.1:{args.port}/api/v1/session?token={tok}&next=/workbench/  (signs in once)",

@@ -28,6 +28,7 @@ HARNESS = Path(__file__).resolve().parents[1]
 HERE = HARNESS / "scripts"
 sys.path.insert(0, str(HARNESS))
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _signin
+import _serve  # noqa: E402
 import _signin  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 
@@ -62,11 +63,7 @@ def serve() -> tuple[subprocess.Popen, int, list[str]]:
                 break
         except OSError:
             time.sleep(0.1)
-    while line := p.stdout.readline():
-        lines.append(line.rstrip())
-        if "rebuilt when the data changes" in line:
-            break
-    return p, port, lines
+    return p, port, _serve.startup(p, lines)  # its start-up lines, the rest read as it comes
 
 
 try:

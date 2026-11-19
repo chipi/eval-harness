@@ -436,7 +436,9 @@ def _dot(x: float, y: float, filled: bool, tip: str, r: float = 5.0) -> str:
     return f'<circle cx="{x:.1f}" cy="{y:.1f}" r="{r}" {paint}><title>{_e(tip)}</title></circle>'
 
 
-def forest(rows: list[dict], label: str, x_label: str, margin: float | None = None, caption: str = "") -> str:
+def forest(
+    rows: list[dict], label: str, x_label: str, margin_at: float | None = None, caption: str = ""
+) -> str:
     """A row per arm: its difference (`est`) as a dot, its interval (`lo`..`hi`, when it has one) as a line, zero and
     the margin as vertical lines, its words (`word`) at the right. rows: {name, est, lo, hi, filled, word, tip}."""
     rows = [r for r in rows if r.get("est") is not None]
@@ -448,8 +450,8 @@ def forest(rows: list[dict], label: str, x_label: str, margin: float | None = No
         + [v for r in rows for v in (r.get("lo"), r.get("hi")) if v is not None]
         + [0.0]
     )
-    if margin is not None:
-        vals.append(-abs(margin))
+    if margin_at is not None:
+        vals.append(margin_at)
     lo, hi = _domain(vals)
     h = top + rh * len(rows) + 46
 
@@ -459,11 +461,11 @@ def forest(rows: list[dict], label: str, x_label: str, margin: float | None = No
     body = [
         f'<line x1="{x_of(0):.1f}" x2="{x_of(0):.1f}" y1="{top - 4}" y2="{top + rh * len(rows)}" stroke="var(--muted)"/>'
     ]
-    if margin is not None:
-        mx = x_of(-abs(margin))
+    if margin_at is not None:
+        mx = x_of(margin_at)
         body.append(
             f'<line x1="{mx:.1f}" x2="{mx:.1f}" y1="{top - 4}" y2="{top + rh * len(rows)}" stroke="var(--local)" '
-            f'stroke-dasharray="4 4"><title>the margin: {_e(_num(-abs(margin)))}</title></line>'
+            f'stroke-dasharray="4 4"><title>the margin: {_e(_num(margin_at))}</title></line>'
             f'<text x="{mx:.1f}" y="{top - 4}" text-anchor="middle" class="tick t-muted">margin</text>'
         )
     for i, r in enumerate(rows):

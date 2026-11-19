@@ -363,6 +363,42 @@ try:
         bool(token) and token not in said and "session?token=<masked>" in said,
         [ln for ln in said.splitlines() if "token" in ln][:6],
     )
+    # ...and to a terminal (a pseudo-terminal here) the link carries the token, so a person can open it: the masking
+    # follows where the output goes, as RUNBOOK says (review, 2026-11-19: the terminal's branch was not tested).
+    import pty
+    import select
+
+    port_t = free_port()
+    master, slave = pty.openpty()
+    tty_srv = subprocess.Popen(
+        [sys.executable, str(HERE / "cli.py"), "catalog-serve", "--port", str(port_t)],
+        cwd=proj,
+        env=env,
+        stdout=slave,
+        stderr=slave,
+        stdin=subprocess.DEVNULL,
+    )
+    os.close(slave)
+    shown_tty, t_end = "", time.time() + 60
+    try:
+        while "Workbench:" not in shown_tty and time.time() < t_end:
+            ready, _w, _x = select.select([master], [], [], 0.5)
+            if ready:
+                try:
+                    shown_tty += os.read(master, 4096).decode(errors="replace")
+                except OSError:
+                    break
+        tty_token = (proj / ".build" / "api-token").read_text().strip()
+        line = next((ln for ln in shown_tty.splitlines() if "Workbench:" in ln), "")
+        check(
+            "catalog-serve: printed to a terminal, the Workbench link carries this server's token",
+            bool(tty_token) and f"session?token={tty_token}&next=/workbench/" in line,
+            line,
+        )
+    finally:
+        tty_srv.terminate()
+        tty_srv.wait(timeout=10)
+        os.close(master)
 
     for mode in (("--public", "a.example"), ("--behind-proxy", "evals.example")):
         srv, port = serve(*mode, *(("--bind", "0.0.0.0") if mode[0] == "--behind-proxy" else ()))  # noqa: S104 - a mode under test  # nosec B104

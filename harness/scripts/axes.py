@@ -392,7 +392,11 @@ def decide(
 
         def test(x: str) -> dict:
             vals = (arms[x]["scores"].get(quality["measure"]) or {}).get("values") or {}
-            return stats.noninferior(vals, lead_vals, margin, quality["direction"] == "higher", clusters)
+            # Which arm the margin is measured from, kept with the test: a chart drawing the margin from the leader
+            # when the goal tests against the baseline drew a line no contender is held to (review, 2026-11-19).
+            return stats.noninferior(vals, lead_vals, margin, quality["direction"] == "higher", clusters) | {
+                "against": "baseline" if reference != leader else "leader"
+            }
 
         # Their bootstrap-t's drawn at once in child processes first, the same p's (stats.prefetch); only when one of
         # them resamples (with clusters, units can be fewer than items: any test above EXACT_UP_TO items counts).

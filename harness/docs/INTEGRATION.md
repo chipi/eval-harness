@@ -82,6 +82,13 @@ model that answered), which `evh run` stores under the row's `_meta`. Two things
 
 Everything else in `meta` (a parser's `predicted`, `ranking`, `gates`, ...) stays in the row's `_meta`.
 
+**Where a cost came from.** A `Result`'s `cost_usd` is the provider's bill when `meta["usage"]["cost"]` carries one.
+An adapter that measures the cost itself (a gateway key's spend before and after the call, say) puts the figure in
+`cost_usd` and names its source in `meta["cost_source"]` (`"gateway"`, for instance): `evh run` and `evh arm-smoke`
+then say "the adapter's own figure, cost_source gateway", whatever prices the system declares. With neither, a cost is
+the system's price table (`usd_per_mtok_in` / `_out` times the tokens) when the system declares both prices, and the
+adapter's own figure when it does not.
+
 ### If your system is not a function call
 
 - **A CLI** — `subprocess.run([...], capture_output=True)`, return stdout.

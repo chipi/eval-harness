@@ -170,12 +170,12 @@ def intervals(goal: str, dataset: str | None = None) -> dict:
     grp = _group(goal, dataset)
     flip = -1.0 if grp["direction"] == "lower" else 1.0
     rows, draw = [], []
-    margin = None
+    margin, against, base_row = None, "leader", None
     for a in grp["arms"]:
         vs = a.get("vs_leader") or {}
         ni = a.get("noninferior") or {}
         if ni.get("margin") is not None:
-            margin = float(ni["margin"])
+            margin, against = float(ni["margin"]), str(ni.get("against") or "leader")
         if a["leader"]:
             row = {
                 "arm": a["label"],
@@ -199,14 +199,16 @@ def intervals(goal: str, dataset: str | None = None) -> dict:
                 "verdict": _word(vs.get("verdict")) + (", a contender" if a.get("contender") else ""),
             }
         rows.append(row)
+        if a.get("baseline"):
+            base_row = row
         draw.append(
             {
                 "name": row["arm"],
                 "est": row["difference"],
                 "lo": row["low"],
                 "hi": row["high"],
-                "filled": row["verdict"] in ("the leader",)
-                or str(vs.get("verdict") or "").startswith("significant"),
+                # Filled is a significant difference, as the caption says; the leader is the zero it is measured from.
+                "filled": not a["leader"] and str(vs.get("verdict") or "").startswith("significant"),
                 "word": row["verdict"],
                 "tip": f"{row['arm']}: {row['difference']:+.4g}"
                 + (f", 95% interval {row['low']:.4g} to {row['high']:.4g}" if row["low"] is not None else "")
@@ -216,23 +218,37 @@ def intervals(goal: str, dataset: str | None = None) -> dict:
         )
     if len(rows) < 2:
         raise Problem(f"goal {goal}: one arm only on {grp['dataset']}: nothing to compare", "not-enough")
+    # The margin is measured from the arm contenders are tested against: the leader (at 0), or the promoted baseline
+    # (axes.quality.reference: baseline), at the baseline's own difference from the leader.
+    margin_at, margin_said = None, ""
+    if margin is not None and against == "baseline":
+        b = base_row
+        if b is not None:
+            margin_at = b["difference"] - abs(margin)
+            margin_said = (
+                f" The dashed line is the margin a contender must stay within ({margin:.4g}), measured from the promoted "
+                f"baseline {b['arm']}, which contenders are tested against."
+            )
+        else:
+            margin_said = f" Contenders are tested against the promoted baseline, within {margin:.4g}; it is not drawn here."
+    elif margin is not None:
+        margin_at = -abs(margin)
+        margin_said = (
+            f" The dashed line is the margin a contender must stay within ({margin:.4g}), from the leader."
+        )
     caption = (
         f"Each arm's mean difference from the leader on {grp['measure']} ({grp['dataset']}, against "
         f"{grp['scored_against']}), oriented so right is better. The line is its 95% interval from the paired test, "
         "before Holm's correction across the arms; the verdict is after it, so an interval clear of zero can still be "
-        "not separated. A filled dot: a significant difference."
+        "not separated. A filled dot: a significant difference; the leader is the hollow dot at 0."
         + _through(grp["scorer"])
-        + (
-            f" The dashed line is the margin a contender must stay within ({margin:.4g})."
-            if margin is not None
-            else ""
-        )
+        + margin_said
     )
     svg = cc.forest(
         draw,
         f"{grp['measure']}: each arm against the leader",
         "difference from the leader (← worse · better →)",
-        margin=margin,
+        margin_at=margin_at,
         caption=cc._e(caption),
     )
     return _out(
@@ -256,9 +272,12 @@ def latency(goal: str, dataset: str | None = None) -> dict:
         lat = _values(A, a["arm"], "latency_ms")
         if not lat:
             continue
-        vals = sorted(lat.values())
-        p50 = statistics.median(vals)
-        p95 = vals[min(len(vals) - 1, max(0, round(0.95 * (len(vals) - 1))))]
+        from evaluation_harness.axes import percentile  # noqa: PLC0415
+
+        # The leaderboard's p50 and p95 (axes.percentile, linear between the closest ranks), so a chart and the
+        # speed column never differ on one arm.
+        vals = list(lat.values())
+        p50, p95 = percentile(vals, 50), percentile(vals, 95)
         groups[a["label"]] = [(v, f"{a['label']} · {i}") for i, v in lat.items()]
         marks[a["label"]] = [(p50, "p50"), (p95, "p95")]
         rows.append(
@@ -347,18 +366,28 @@ def _against(A, arms: list[str], base: str, metric: str, lower: bool, dataset: s
         clusters=model_compare.goal_clusters_on(dataset)[0],
     )
     cost_b = _values(A, base, "cost_usd")
+    tok_b = _tokens(A, base)
     out = []
     for r in cmp["rows"]:
         cost_a = _values(A, r["arm"], "cost_usd")
         both = sorted(set(cost_a) & set(cost_b))
+        tok_a = _tokens(A, r["arm"])
+        tboth = sorted(set(tok_a) & set(tok_b))
         out.append(
             r
             | {
                 "cost_delta": _mean(cost_a[i] - cost_b[i] for i in both) if both else None,
                 "cost_items": len(both),
+                "tokens_delta": _mean(tok_a[i] - tok_b[i] for i in tboth) if tboth else None,
             }
         )
     return out
+
+
+def _tokens(A, arm: str) -> dict[str, float]:
+    """An arm's tokens per item (in plus out), on the items that record both: the cost axis when no arm has a price."""
+    tin, tout = _values(A, arm, "tokens_in"), _values(A, arm, "tokens_out")
+    return {i: tin[i] + tout[i] for i in tin if i in tout}
 
 
 def _claim(filled: bool, y: float, x: float | None) -> str:
@@ -371,15 +400,35 @@ def _claim(filled: bool, y: float, x: float | None) -> str:
 
 def gain_cost(goal: str, round: str | None = None, study: str | None = None) -> dict:
     """A round's arms (against the run it started from, else its leader) or a study's trials (against its baseline):
-    the difference in quality against the difference in cost per item."""
+    the difference in quality against the difference in cost per item (in tokens when no arm records a cost)."""
     if bool(round) == bool(study):
         raise Problem("gain-cost: name a round or a study", "bad-argument")
     A = _adapter()
     g = _goal(A, goal)
     prim = (g.get("success_criteria") or {}).get("primary") or {}
     metric, lower = str(prim.get("measure", "")), prim.get("direction") == "lower"
-    flip = -1.0 if lower else 1.0
-    points, rows = [], []
+    rows: list[dict] = []
+
+    def row(name: str, r: dict, flip: float, filled: bool, **extra: Any) -> dict:
+        """One arm or trial against the base: its difference, flipped so up is better, its interval and its claim; an
+        arm that shares no item with the base (no difference) is a row that says so, never a point."""
+        ci, d = r.get("ci"), r.get("delta")
+        y = d * flip if d is not None else None
+        return {
+            "arm": name,
+            **{k: v for k, v in extra.items() if k in ("change",)},
+            "quality_delta": y,
+            "low": min(ci[0] * flip, ci[1] * flip) if ci else None,
+            "high": max(ci[0] * flip, ci[1] * flip) if ci else None,
+            "p": extra.get("p", r.get("p")),
+            "verdict": _word(extra.get("verdict", r.get("verdict"))),
+            "cost_delta_per_item": r["cost_delta"],
+            "tokens_delta_per_item": r.get("tokens_delta"),
+            "claim": "not compared: no shared item" if y is None else "",
+            "_significant": filled,
+            **{k: v for k, v in extra.items() if k in ("outcome", "reason")},
+        }
+
     if round:
         from evaluation_harness.model import rounds as model_rounds  # noqa: PLC0415
         from evaluation_harness.ops.rounds import _round  # noqa: PLC0415
@@ -391,24 +440,10 @@ def gain_cost(goal: str, round: str | None = None, study: str | None = None) -> 
             raise Problem(f"round {round}: no arm records {metric} yet", "not-enough")
         against = "the run it started from" if ev.get("baseline_arm") else "its leader (it names no baseline)"
         arms = [a for a in ev["arms"] if a != base]
-        tested = _against(A, arms, base, metric, lower, rnd["dataset_id"])
+        flip = -1.0 if lower else 1.0
         names, scorer = _shown({a: _label(A, a) for a in [base, *arms]})
-        for r in tested:
-            ci = r.get("ci")
-            y = (r["delta"] or 0) * flip if r.get("delta") is not None else None
-            filled = str(r.get("verdict") or "").startswith("significant")
-            rows.append(
-                {
-                    "arm": names[r["arm"]],
-                    "quality_delta": y,
-                    "low": min(ci[0] * flip, ci[1] * flip) if ci else None,
-                    "high": max(ci[0] * flip, ci[1] * flip) if ci else None,
-                    "p": r.get("p"),
-                    "verdict": _word(r.get("verdict")),
-                    "cost_delta_per_item": r["cost_delta"],
-                    "claim": _claim(filled, y or 0, r["cost_delta"]),
-                }
-            )
+        for r in _against(A, arms, base, metric, lower, rnd["dataset_id"]):
+            rows.append(row(names[r["arm"]], r, flip, str(r.get("verdict") or "").startswith("significant")))
         title, base_name, ds = f"{goal} {round}: gain against cost", names[base], rnd["dataset_id"]
         tests = "the paired test, Holm across the arms"
     else:
@@ -418,37 +453,36 @@ def gain_cost(goal: str, round: str | None = None, study: str | None = None) -> 
         sid = str(study)
         st, spec = ms.state(goal, sid, _data()), ms.spec(goal, sid, _data())
         ds = str(spec.get("dataset"))
+        # A study decides on its own measure, in that measure's direction (as study-progress draws it): drawn on the
+        # goal's primary instead, a trial better on the study's measure was plotted down and called worse.
+        metric = str(spec.get("measure") or metric)
+        lower = ms_lower(goal, metric)
+        flip = -1.0 if lower else 1.0
         base = _arm_of(A, ds, st["baseline"])
         if base is None:
             raise Problem(f"study {study}: its baseline {st['baseline']} has no run on {ds}", "not-enough")
         trials = [t for t in st["trials"] if t.get("system_id") and t.get("outcome") != "failed"]
         trial_arms = {t["system_id"]: _arm_of(A, ds, t["system_id"]) for t in trials}
         by_arm = {
-            r["arm"]: r
-            for r in _against(
-                A, [a for a in trial_arms.values() if a], base, str(spec.get("measure") or metric), lower, ds
-            )
+            r["arm"]: r for r in _against(A, [a for a in trial_arms.values() if a], base, metric, lower, ds)
         }
         for t in trials:
             tr = by_arm.get(trial_arms[t["system_id"]] or "")
             if tr is None:
                 continue
-            ci = tr.get("ci")
-            y = (tr["delta"] or 0) * flip if tr.get("delta") is not None else None
-            filled = str((t.get("vs_baseline") or {}).get("verdict") or "").startswith("significant")
+            vs = t.get("vs_baseline") or {}
             rows.append(
-                {
-                    "arm": f"t{t['k']}",
-                    "change": t.get("change"),
-                    "quality_delta": y,
-                    "low": min(ci[0] * flip, ci[1] * flip) if ci else None,
-                    "high": max(ci[0] * flip, ci[1] * flip) if ci else None,
-                    "p": (t.get("vs_baseline") or {}).get("p"),
-                    "verdict": _word((t.get("vs_baseline") or {}).get("verdict")),
-                    "cost_delta_per_item": tr["cost_delta"],
-                    "claim": _claim(filled, y or 0, tr["cost_delta"]),
-                    "outcome": t.get("outcome"),
-                }
+                row(
+                    f"t{t['k']}",
+                    tr,
+                    flip,
+                    str(vs.get("verdict") or "").startswith("significant"),
+                    change=t.get("change"),
+                    p=vs.get("p"),
+                    verdict=vs.get("verdict"),
+                    outcome=t.get("outcome"),
+                    reason=t.get("reason"),
+                )
             )
         title, base_name, against = (
             f"{goal}/{study}: each trial's gain against its cost",
@@ -458,33 +492,62 @@ def gain_cost(goal: str, round: str | None = None, study: str | None = None) -> 
         tests = "each trial's nominal paired test against the baseline (a study is research: its confirmation on the test set is the evidence)"
     if not rows:
         raise Problem(f"{round or study}: no arm or trial measured against {base_name} yet", "not-enough")
-    priced = any((r["cost_delta_per_item"] or 0) != 0 for r in rows)
+    drawn = [r for r in rows if r["quality_delta"] is not None]
+    if not drawn:
+        raise Problem(
+            f"{round or study}: no arm or trial shares an {A.item_word} with {base_name}: nothing to compare",
+            "not-enough",
+        )
+    priced = any((r["cost_delta_per_item"] or 0) != 0 for r in drawn)
+    by_tokens = not priced and any((r["tokens_delta_per_item"] or 0) != 0 for r in drawn)
+    x_key = "tokens_delta_per_item" if by_tokens else "cost_delta_per_item"
+    for r in drawn:  # the quadrant named on the axis drawn: cost, else tokens
+        r["claim"] = _claim(r["_significant"], r["quality_delta"], r[x_key])
     for r in rows:
+        r.pop("_significant", None)
+    points = []
+    for r in drawn:
         filled = not r["claim"].startswith(("not separated", "no gain"))
+        x = r[x_key] if r[x_key] is not None else 0.0
+        cost = f"{x:+.0f} tokens" if by_tokens else f"{x:+.6f} USD"
         points.append(
             {
                 "name": r["arm"],
-                "x": r["cost_delta_per_item"] if r["cost_delta_per_item"] is not None else 0.0,
+                "x": x,
                 "y": r["quality_delta"],
                 "ylo": r["low"],
                 "yhi": r["high"],
                 "filled": filled,
-                "tip": f"{r['arm']}: {metric} {r['quality_delta']:+.4g}, cost per item "
-                f"{(r['cost_delta_per_item'] or 0):+.6f} USD ({r['claim']})",
+                "tip": f"{r['arm']}: {metric} {r['quality_delta']:+.4g}, per {A.item_word} {cost} ({r['claim']})"
+                + (f"; {r['outcome']}: {r['reason']}" if r.get("reason") else ""),
             }
         )
+    left_out = [r["arm"] for r in rows if r["quality_delta"] is None]
+    flipped = " (lower is better: flipped, so up is better)" if lower else ""
     caption = (
-        f"Against {base_name} ({against}) on {ds}: up is better on {metric}, with the 95% interval as a whisker; left "
-        f"is cheaper per {A.item_word}. A filled mark is a difference {tests} supports, and only those are named by "
-        "their quadrant; a hollow one is not separated from the baseline, whatever side it falls on."
-        + ("" if priced else " No arm recorded a cost different from the baseline's: the cost axis is flat.")
+        f"Against {base_name} ({against}) on {ds}: up is better on {metric}{flipped}, with the 95% interval as a "
+        f"whisker; left is cheaper per {A.item_word}"
+        + (" in tokens, as no arm recorded a cost" if by_tokens else "")
+        + f". A filled mark is a difference {tests} supports, and only those are named by their quadrant; a hollow "
+        "one is not separated from the baseline, whatever side it falls on."
+        + (
+            ""
+            if priced or by_tokens
+            else " No arm recorded a cost or tokens different from the baseline's: the cost axis is flat."
+        )
+        + (
+            f" Not drawn, sharing no {A.item_word} with the baseline: {', '.join(left_out)}."
+            if left_out
+            else ""
+        )
         + _through(scorer)
     )
     svg = cc.quadrant(
         points,
         title,
-        f"difference in cost per {A.item_word} (USD)",
-        f"difference in {metric}",
+        f"difference in {'tokens' if by_tokens else 'cost'} per {A.item_word}"
+        + ("" if by_tokens else " (USD)"),
+        f"difference in {metric}" + (", flipped (lower is better)" if lower else ""),
         fmt_x=lambda v: f"{v:+.4g}",
         caption=cc._e(caption),
     )
@@ -501,7 +564,9 @@ def gain_cost(goal: str, round: str | None = None, study: str | None = None) -> 
             "p",
             "verdict",
             "cost_delta_per_item",
+            "tokens_delta_per_item",
             "claim",
+            *(["outcome", "reason"] if study else []),
         ],
         rows,
         svg,
@@ -704,10 +769,13 @@ def _judge_agreement(scorer: str) -> dict:
                 "item_tau": v.get("mean_item_tau"),
             }
         )
-        cells[(pair, "each other τ")] = {
-            "value": float(v.get("mean_item_tau") or 0),
-            "tip": f"{a} and {b}: τ per item {v.get('mean_item_tau')}",
-        }
+        # A pair with no τ (too few shared items) is an empty cell, as the controls are: drawn as 0 it read as two
+        # judges that do not agree at all (review, 2026-11-19).
+        if v.get("mean_item_tau") is not None:
+            cells[(pair, "each other τ")] = {
+                "value": float(v["mean_item_tau"]),
+                "tip": f"{a} and {b}: τ per item {v['mean_item_tau']}",
+            }
     cols = cols + (["each other τ"] if s.get("judge_agreement") else [])
     names = judges + list(s.get("judge_agreement") or {})
     caption = (
@@ -744,64 +812,79 @@ def trend(goal: str | None = None, model: str | None = None, dataset: str | None
     g = _goal(A, goal)
     metric = str(((g.get("success_criteria") or {}).get("primary") or {}).get("measure", ""))
 
-    def of_run(run: str | None) -> float | None:
-        """The run's value of the goal's measure as the leaderboard reads it now: its latest re-score, else the score
-        it made when it ran. A measure added after the run was measured lives only in a re-score (fleet,
+    def of_run(run: str | None) -> tuple[float | None, str]:
+        """The run's value of the goal's measure as it was when it ran (the score it made then), and where it was read.
+        A measure added after the run was measured is only in a re-score: then the latest one, named (fleet,
         2026-11-18: triage_cost, and the trend said no closed round had one)."""
         from evaluation_harness import rescore  # noqa: PLC0415
 
         first = model_runs.first_score(run, _data()) if run else None
         rec = model_runs.record(first) if first else None
         if not first or not rec:
-            return None
-        _scorer, read_from = rescore.latest_scoring(first, rec)
-        for sd in (read_from, first):
-            sc = (((model_runs.record(sd) if sd else None) or {}).get("scores") or {}).get(metric)
-            if sc is not None:
-                return float(sc)
-        return None
+            return None, ""
+        sc = (rec.get("scores") or {}).get(metric)
+        if sc is not None:
+            return float(sc), "the run's own score"
+        scorer, read_from = rescore.latest_scoring(first, rec)
+        later = ((model_runs.record(read_from) if read_from else None) or {}).get("scores") or {}
+        if later.get(metric) is not None:
+            return float(later[metric]), f"re-scored {str(scorer)[:8]} (the measure came after the run)"
+        return None, ""
 
-    rows, series, names = [], {}, {}
+    # Every event on one time line: a baseline version when it was promoted, a closed round when it closed. Each x is
+    # one event, named by it (v1, r2): a round's point under a version's name, or a second dataset's names written over
+    # the first's, read as something it was not.
+    events: list[dict[str, Any]] = []
     versions = 0
     for d in g.get("datasets") or []:
         ds = d.get("dataset_id", "")
         if dataset and ds != dataset:
             continue
-        line: list[tuple[float, float]] = []
         for v in _baselines.versions(goal, ds, _data()):
             versions += 1
             sc = ((v.get("repeats") or {}).get("mean_scores") or v.get("scores") or {}).get(metric)
+            src = "the version's record"
             if sc is None:
-                sc = of_run(v.get("promoted_from"))
-            if sc is None:
-                continue
-            x = float(len(line) + 1)
-            line.append((x, float(sc)))
-            names[x] = f"v{v.get('version')}"
-            rows.append(
+                sc, src = of_run(v.get("promoted_from"))
+            events.append(
                 {
-                    "line": f"baseline on {ds}",
+                    "line": f"the baseline on {ds}",
                     "at": v.get("promoted_at"),
+                    "name": f"v{v.get('version')}" + (f" {ds}" if len(g.get("datasets") or []) > 1 else ""),
                     "version": v.get("version"),
                     "run": v.get("promoted_from"),
-                    metric: sc,
+                    "value": sc,
+                    "read": src if sc is not None else "",
                 }
             )
-        if line:
-            series[f"the baseline on {ds}"] = line
     all_closed = [r for r in _rounds.load_rounds(goal, _data()) if r.get("status") == "closed"]
     closed = [r for r in all_closed if (r.get("conclusion") or {}).get("promoted_run")]
-    rl: list[tuple[float, float]] = []
     for r in closed:
         run = r["conclusion"]["promoted_run"]
-        sc = of_run(run)
-        rows.append(
-            {"line": "rounds", "at": r.get("closed_at"), "version": r["round_id"], "run": run, metric: sc}
+        sc, src = of_run(run)
+        events.append(
+            {
+                "line": "each closed round's promoted run",
+                "at": r.get("closed_at"),
+                "name": str(r["round_id"]),
+                "version": r["round_id"],
+                "run": run,
+                "value": sc,
+                "read": src,
+            }
         )
-        if sc is not None:
-            rl.append((float(len(rl) + 1), float(sc)))
-    if rl:
-        series["each closed round's promoted run"] = rl
+    events.sort(key=lambda e: (e["at"] is None, str(e["at"] or "")))
+    series: dict[str, list[tuple[float, float]]] = {}
+    names: dict[float, str] = {}
+    rows = []
+    for x, e in enumerate(events, 1):
+        rows.append(
+            {k: e[k] for k in ("line", "at", "version", "run")} | {metric: e["value"], "read": e["read"]}
+        )
+        if e["value"] is None:
+            continue
+        series.setdefault(str(e["line"]), []).append((float(x), float(e["value"])))
+        names[float(x)] = str(e["name"])
     if not series:
         raise Problem(
             f"goal {goal}: nothing to draw: {versions} baseline version(s) and {len(closed)} of {len(all_closed)} closed "
@@ -809,15 +892,28 @@ def trend(goal: str | None = None, model: str | None = None, dataset: str | None
             "re-scoring of them)",
             "not-enough",
         )
+    rescored = any(str(e["read"]).startswith("re-scored") for e in events)
     caption = (
-        f"{metric} of {goal}'s baseline at each of its versions (v1, v2, ...) and of the run each closed round "
-        "promoted, in the order they happened. A step up is a promotion the evidence supported at the time; versions "
-        "measured on different dataset versions are not on one scale."
+        f"{metric} of {goal}'s baseline at each of its versions and of the run each closed round promoted, in the order "
+        "they happened, each as it was then: a version's record, a run's own score. A step up is a promotion the "
+        "evidence supported at the time; versions measured on different dataset versions are not on one scale."
+        + (
+            " A run measured before the measure existed is read from its latest re-score, as its row says."
+            if rescored
+            else ""
+        )
     )
     svg = cc.lines(
-        series, f"{goal} over time", "version, in order", metric, x_names=names, caption=cc._e(caption)
+        series,
+        f"{goal} over time",
+        "in the order they happened",
+        metric,
+        x_names=names,
+        caption=cc._e(caption),
     )
-    return _out("trend", f"{goal} over time", caption, ["line", "at", "version", "run", metric], rows, svg)
+    return _out(
+        "trend", f"{goal} over time", caption, ["line", "at", "version", "run", metric, "read"], rows, svg
+    )
 
 
 def _faith_trend(model: str) -> dict:

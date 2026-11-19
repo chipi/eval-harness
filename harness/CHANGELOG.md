@@ -920,23 +920,47 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Fixed
 
-- **No log holds the Workbench's token.** `evh catalog-serve` printed the sign-in link with its token, and its access
-  log wrote the session route's request line, token and all: a background job's log, CI's, a terminal recording kept a
-  working token. The full link is printed to a terminal only; elsewhere it names the token's file (`.build/api-token`),
-  and the access log masks the token. Found by the fleet trying 0.8.0 (2026-11-18), as were the four below.
+- **No log file holds the Workbench's token.** `evh catalog-serve` printed the sign-in link with its token, and its
+  access log wrote the session route's request line, token and all: a background job's log or CI's kept a working
+  token. The full link is printed only when the output is a terminal; to a file or a pipe it names the token's file
+  (`.build/api-token`) instead, and the access log masks the token. A terminal recorder (`script`, asciinema, tmux's
+  `pipe-pane`) runs in a terminal and still records the link. Found by the fleet trying 0.8.0 (2026-11-18), as were the
+  four below; a review of the release (2026-11-19) found the five after them.
 - **`evh run` and `evh arm-smoke` say where a spend without a bill came from.** They called any such figure "the
   system's price table" even for a system with no prices, whose adapter reported the cost itself (a gateway key's
-  spend): now the price table only when the system declares `usd_per_mtok_in` and `_out`, else "the adapter's own
-  figure", with the `cost_source` the adapter put in its meta.
-- **`evh comparison-show` with no metric named compares on the arms' own primary metric**, not the project's most
-  common one; and when that metric has no score per item as the arms are read, it says so instead of moving to
-  another in silence, naming the `--label` of another reading that scores it and the arms scored for it nowhere
-  (bugfix arms read as plain runs carry `oracle_pass` only under `silver`, and were compared on `actionable`).
-- **`evh chart trend` reads a goal's measure as the leaderboard does**, from a run's latest re-score when the run was
-  measured before the measure existed (triage's `triage_cost`); it said there were no closed rounds with the measure,
-  and now says how many versions and rounds it found when there is nothing to draw.
-- **A record `evh migrate` filled in names nobody**: "promoted 2026-10-31 by nobody recorded (before 0.8.0)" in the
-  CLI, the catalog and the Workbench, not "by before 0.8.0".
+  spend). Now: the adapter's own figure, with its source, when its meta names a `cost_source` (whatever prices the
+  system declares for the dry run's estimate); else the price table when the system declares `usd_per_mtok_in` and
+  `_out`; else the adapter's own figure. INTEGRATION.md says how an adapter names its source.
+- **`evh comparison-show` with no metric named compares on the arms' own primary metric, among the metrics every
+  compared arm scores**, not the project's most common one (bugfix arms were compared on triage's `actionable`); a
+  primary only some arms score never wins over a metric they all share, and a metric scored against a reference
+  (`oracle_pass vs gold`) is that metric. When the primary has no score per item as the arms are read, it says so
+  instead of moving to another in silence: which arms lack it, the `--label` of another reading of the same runs that
+  scores it, and the arms scored for it nowhere (bugfix arms read as plain runs carry `oracle_pass` only under
+  `silver`).
+- **`evh chart trend` draws what each point was at the time, on one time line.** It said a goal had no closed rounds
+  with its measure when the measure was added after the runs (triage's `triage_cost`): a run measured before its
+  measure existed is now read from its latest re-score, and its row says so; any other run from the score it made
+  when it ran, a baseline version from its record. Every baseline version and closed round is one point in the order
+  they happened, named by itself (`v2`, `r1`): a round's point no longer sits under a version's name, nor a second
+  dataset's names over the first's. With nothing to draw it says how many versions and rounds it found.
+- **A record `evh migrate` filled in names nobody**, wherever an actor is shown: "promoted 2026-10-31 by nobody
+  recorded (before 0.8.0)", not "by before 0.8.0" (baselines, label sets, looks, prompt versions, faithfulness, in the
+  CLI, the catalog and the Workbench); `label-set-show` printed the raw record.
+- **`evh chart gain-cost` no longer fails on an arm that shares no item with the baseline**: it is a row "not
+  compared: no shared item", left off the drawing and named in the caption, not a crash of the command, the API and the
+  Workbench's chart. A study is drawn on its own measure in that measure's direction (on a measure other than the
+  goal's primary, a trial better on it was drawn down and called worse); the axis says when lower is better and the
+  mark is flipped; with no cost recorded the cost axis is tokens per item; a trial its rule dropped carries its reason.
+- **A Workbench screen that asks for a read already on its way is drawn when it lands.** Since a read only redraws the
+  screen that asked for it, a screen opened while the screen before was still reading the same thing stayed on
+  "Reading…" for good.
+- **`evh chart intervals` draws the margin from the arm contenders are tested against**: the promoted baseline when
+  the goal says `axes.quality.reference: baseline`, not always the leader; and only a significant difference is a
+  filled dot (the leader, the zero, was filled too).
+- **`evh chart agreement` draws a judge pair with no τ as an empty cell**, not as 0 (two judges that disagree).
+- **The inspector's p50 and p95 of a time are the leaderboard's** (linear between the closest ranks), as `evh chart
+  latency`'s now are: four times gave p50 30 in the inspector and 25 in the chart.
 - **A Workbench read answered after its screen was left no longer redraws the screen opened since.** A slow read (a
   chart) landing on Settings redrew its text box while a person typed, and the rest of the typing went into the new box
   in front of the old text: the file saved held both.

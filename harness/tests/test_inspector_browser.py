@@ -27,6 +27,7 @@ import csv
 import io
 import json
 import os
+import re
 import shutil
 import signal
 import socket
@@ -506,6 +507,43 @@ def drive(base: str, overview: str = "") -> None:
             paged,
         )
 
+        # A time per item's p50 and p95 marks are the leaderboard's (axes.percentile, linear between the closest
+        # ranks), as `evh chart latency` gives them (review, 2026-11-19: n=4 times gave p50 30 here and 25 there).
+        page.goto(
+            f"{base}inspect.html?runs={arms}&baseline=runs/tickets_v1/tickets_lead1_v1&metric=latency_ms"
+        )
+        page.wait_for_selector("[data-tip*=' p95 ']", state="attached", timeout=15000)
+        tips = page.eval_on_selector_all(
+            "[data-tip*=' p50 '], [data-tip*=' p95 ']", "es => es.map(e => e.dataset.tip)"
+        )
+        series = page.evaluate(
+            """async (q) => (await (await fetch((document.body.dataset.api || '/api/') + 'compare?' + q)).json()).series""",
+            f"runs={arms}&baseline=runs/tickets_v1/tickets_lead1_v1&metric=latency_ms",
+        )
+        import math  # noqa: PLC0415
+
+        from evaluation_harness.axes import percentile  # noqa: PLC0415
+
+        def near(
+            shown: str, v: float
+        ) -> bool:  # the tooltip's rounding (inspect.js tfmt): 0, 1 or 3 decimals
+            tol = 0.5 if abs(v) >= 100 else 0.05 if abs(v) >= 10 else 0.0005
+            return math.isfinite(v) and abs(float(shown) - v) <= tol + 1e-9
+
+        marks_ok, seen = bool(series), []
+        for tip in tips:
+            m = re.match(r"(.+) (p50|p95) (\S+)$", tip)
+            arm_id = next((a for a in (series or {}) if m and a.endswith(m.group(1).split(" ")[0])), None)
+            if not m or arm_id is None:
+                continue
+            want = percentile(list(series[arm_id].values()), 50 if m.group(2) == "p50" else 95)
+            seen.append((m.group(1), m.group(2), m.group(3), round(want, 3)))
+            marks_ok = marks_ok and near(m.group(3), want)
+        check(
+            "inspector: a time's p50 and p95 marks are the leaderboard's percentiles (linear between ranks)",
+            marks_ok and len(seen) >= 2 * len(arms.split(",")),
+            (seen, tips[:6]),
+        )
         page.goto(f"{base}inspect.html?runs={arms}&baseline=runs/tickets_v1/tickets_lead1_v1")
         page.wait_for_selector("#wfield", timeout=15000)
         opts = page.locator("#wfield option").all_inner_texts()
