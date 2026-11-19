@@ -35,13 +35,13 @@ judge's are.
 ## 2. The session runner
 
 ```
-start(scenario_env, system)  -> session            # a fresh, isolated run of the system under test
+start(scenario, system)      -> session            # a fresh, isolated run, given the scenario's input and env
 step(session, user_turn)     -> system_turn        # what the system did with that turn: its reply, its actions, done?
 end(session)                 -> final_state        # what the outcome check reads, then the session is gone
 ```
 
 The harness keeps the loop: the user's turn depends on the system's last reply, the stop rule (the user says it is
-done, `max_turns`, a timeout) is part of the measurement, and the transcript is recorded as it happens by the side that
+done, `user_done`; the conversation's length limit; a timeout) is part of the measurement, and the transcript is recorded as it happens by the side that
 scores it. A batch run of [RFC-035](RFC-035-scenarios.md#2-the-runner-contract) is a session with one step, so both
 record the same transcript.
 
@@ -50,13 +50,14 @@ record the same transcript.
 [RFC-035](RFC-035-scenarios.md#3-a-scenario)'s fields, plus the user's side:
 
 ```yaml
-start: Show my top customers
+input: Show my top customers                    # the user's first message, as RFC-035's input
 plan: |                         # for a simulated user; or `turns:` for a script (the user's turns, in order)
   You want your top customers in the EU for last quarter. Say "EU" and "last quarter" only when asked.
   If you get a list, ask for just the top 5.
 ```
 
-`success` is never shown to the simulated user.
+`success` is never shown to the simulated user. Here *turn* means a step of the conversation (the user's, the
+system's), not RFC-036's model call: RFC-035's open question 1.
 
 ## 4. The drivers, in order
 

@@ -19,15 +19,15 @@ correctness bugs, not just missing features.
   `not-found`, and `evh arm-list` names the arms; `inspect --sheet --dataset-id D --runs A,B` is `evh sheet-show D --runs A,B`, and
   with `--csv` it is `evh sheet-export --dataset-id D --runs A,B --csv FILE`). Where these hide in a project made
   before 0.8.0:
-  - **its `AGENTS.md`**: the one `evh init` wrote up to 0.7.2 runs `evh overview`, `evh goals --goal G`, `evh
-    datasets`, `evh arms`, `evh rounds --goal G` and `evh inspect --runs A,B`, and an agent that follows it runs
-    commands that no longer exist. `evh init` never overwrites the file: run `evh init --store files` in an empty folder
+  - **its `AGENTS.md`**: the one `evh init` wrote up to 0.7.2 runs the old `overview`, `goals --goal G`, `datasets`,
+    `arms`, `rounds --goal G` and `inspect --runs A,B`, and an agent that follows it runs commands that no longer
+    exist. `evh init` never overwrites the file: run `evh init --store files` in an empty folder
     and carry the new `AGENTS.md` over, keeping your own additions;
   - **its installed skills** (`.claude/skills/`, from `evh skills-install`): two of 0.7.2's run the old reads;
     `evh skills-install --force` replaces them with this release's (it overwrites copies you changed);
   - **its own Makefile targets, README examples and scripts**.
 
-  `grep -rnE "evh (overview|activity|arms|datasets|references|metrics|goals|rounds|inspect|labels|tags|captures|models|prompts|studies|label-coverage)([^a-z-]|$)|evh leaderboard --dataset-id" AGENTS.md CLAUDE.md .claude/skills Makefile README.md`
+  `grep -rnE "evh[[:space:]]+(overview|activity|arms|datasets|references|metrics|goals|rounds|inspect|labels|tags|captures|models|prompts|studies|label-coverage)([^a-z-]|$)|evh[[:space:]]+leaderboard[[:space:]]+--dataset-id" AGENTS.md CLAUDE.md .claude/skills Makefile README.md`
   finds them (add your scripts' folders). The reads that kept their name take the
   dataset, system or model as their argument (`evh leaderboard D`, `evh deploy-sheet S`, `evh periods M`), and what
   they print in `--json` is the operation's structured result (`result.runs` for `runs-list`, `result.sets` for

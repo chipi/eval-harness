@@ -1,6 +1,8 @@
 # RFC-032: One data model, with the command line and the API as its surfaces
 
-- **Status**: Accepted (owner, 2026-11-13: "Yes and yes", to accept it and start the build); drafted with the owner the same day. Every decision below was taken in that discussion and is quoted
+- **Status**: Accepted and built (0.8.0): accepted by the owner on 2026-11-13 ("Yes and yes", to accept it and start
+  the build), every step of the build order built by 2026-11-17 (steps 6 to 9: ada47566b and 4f5926a6c, 6c7929c71,
+  ecaf989c7 and e30f910af, 118c2971d and 9f2baff4c). Drafted with the owner the same day. Every decision below was taken in that discussion and is quoted
   under **Decisions**; the first draft's six open questions are answered under **The six questions of the first draft**.
 - **Authors**: Marko Dragoljevic
 - **Related**: [PRD-017](../prd/PRD-017-workbench.md) (the Workbench; step 4 of "How it is decided" names this RFC),

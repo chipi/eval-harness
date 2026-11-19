@@ -925,7 +925,7 @@ that can move a result is never a patch release without saying so under **Change
   token. The full link is printed only when the output is a terminal; to a file or a pipe it names the token's file
   (`.build/api-token`) instead, and the access log masks the token. A terminal recorder (`script`, asciinema, tmux's
   `pipe-pane`) runs in a terminal and still records the link. Found by the fleet trying 0.8.0 (2026-11-18), as were the
-  four below; a review of the release (2026-11-19) found the five after them.
+  four below; a review of the release (2026-11-19) found the six after them.
 - **`evh run` and `evh arm-smoke` say where a spend without a bill came from.** They called any such figure "the
   system's price table" even for a system with no prices, whose adapter reported the cost itself (a gateway key's
   spend). Now: the adapter's own figure, with its source, when its meta names a `cost_source` (whatever prices the
@@ -961,6 +961,9 @@ that can move a result is never a patch release without saying so under **Change
 - **`evh chart agreement` draws a judge pair with no τ as an empty cell**, not as 0 (two judges that disagree).
 - **The inspector's p50 and p95 of a time are the leaderboard's** (linear between the closest ranks), as `evh chart
   latency`'s now are: four times gave p50 30 in the inspector and 25 in the chart.
+- **`evh validate`'s V12 checks a committed reason's shape**: `why` a sentence, or one per graded output, never beside
+  `why_missing` or `why_withheld`; it read the reply only, so a hand-edited reason passed. Whether a reason repeats the
+  source stays checked when it is written, where the source is at hand.
 - **A Workbench read answered after its screen was left no longer redraws the screen opened since.** A slow read (a
   chart) landing on Settings redrew its text box while a person typed, and the rest of the typing went into the new box
   in front of the old text: the file saved held both.

@@ -106,7 +106,8 @@ projects: fleet-eval-data's bugfix driver runs a routine's entry point in a cont
 Flotilla mounted read only (fleet-eval-data `projects/bugfix-eval/PLAN.md`). So Flotilla's agents are systems under
 test, and their runner lives beside fleet-eval-data.
 
-**Flotilla's v2 design** (flotilla `docs/wip/v2-design.md`, final at 9b58673, both reviewers' go; designed, not built):
+**Flotilla's v2 design** (flotilla `docs/wip/v2-design.md`, final at 9b58673, both reviewers' go; accepted as flotilla
+ADR-0020 on 2026-11-18, its step 1 built, step 2 being built: the frozen input's schema at flotilla 84180ed):
 every routine gets versions; a new version runs in shadow beside the live one with no effect, over the same frozen
 input; live and shadow results are exported as pairs. "Evals have the same guarantees": an eval runs through flotillad
 as a shadow run on a given input, or offline; either way no write credential is reachable.
@@ -115,14 +116,19 @@ as a shadow run on a given input, or offline; either way no write credential is 
 version's stations from `flotillad -stations <version> -models <config>`, runs the version's own `run:` command through
 the offline entry point with the scenario's input and a fresh state folder, and wraps the episodes the run writes in a
 transcript: isolation and reset per scenario, many trials, no load on the live platform, exactly the version that would
-go live. Through flotillad does not fit: v2's shadows start from live inputs and are paired with them.
+go live. Flotilla's design also lets an eval run through flotillad as a shadow run on a given input ("Evals have the
+same guarantees"); scenarios take the offline path because a shadow is started by a live run and paired with it
+(the flotilla session's reading of its design: feeding shadows arbitrary scenario inputs is not designed), and
+because the offline path gives each scenario its own container, state and trials without load on the platform.
 
 **What v2 builds for it** (on the owner's request that these be first-class; build steps are v2's):
 
 | piece | v2 step | what it is |
 | --- | --- | --- |
-| episode schema | 3 | `runtime/episode.schema.json`, versioned, in the same step as the offline entry point that writes episodes; every adapter validated against it. An episode carries the raw stream's path, never the stream |
-| offline entry point | 3, its test in 5 | a tested, sealed contract (`flotillad -run-offline`, flags settled at build): the version's own `run:` in the routine's shadow worker image, a fresh HOME, the read-only environment (never the caller's), its own models config (an eval spends on its own key), the run's API an in-process stand-in that turns every write into a decision record and accepts no live flotillad address or token; outputs to a folder the caller names, outside the state and the fleets tree. Stations on adopted harnesses get the input's commit in a fixture workspace, with no network but the gateway. The harness's runner starts it; Flotilla provides and tests it, on authored fixtures only |
+| episode schema | 3 | `runtime/episode.schema.json`, versioned, in the same step as the offline entry point that writes episodes; every adapter's episodes validated against it in
+step 4, with the harness layer. An episode carries the raw stream's path, never the stream |
+| offline entry point | 3, its test in 5 | a tested, sealed contract (one command; the flotilla session proposed `flotillad -run-offline`, its design names no
+flag yet): the version's own `run:` in the routine's shadow worker image, a fresh HOME, the read-only environment (never the caller's), its own models config (an eval spends on its own key), the run's API an in-process stand-in that turns every write into a decision record and accepts no live flotillad address or token; outputs to a folder the caller names, outside the state and the fleets tree. Stations on adopted harnesses get the input's commit in a fixture workspace, with no network but the gateway. The harness's runner starts it; Flotilla provides and tests it, on authored fixtures only |
 | frozen input | 2 | `runtime/input.schema.json`: the handed input, the ledger mark, the case keys, the commit, the routine and version; live-only fields optional, so dataset-built inputs validate. It may carry recorded tool results ([§1](#1-a-scenario-of-an-agent); RFC-0002 §8 model replay). A captured input exports with the ledger slice as of the mark and a state snapshot |
 | acceptance | 1 | `acceptance:` in routine.yaml lists the required kinds (`pairs`, `replay`, `scenario_eval`; `[pairs]` when absent). Promote records the bar in force and the evidence (an eval-harness run id and its verdict line) and refuses evidence that is missing or FAILED unless the operator gives a reason. Flotilla reads the verdict; it never computes it |
 
@@ -161,3 +167,9 @@ Built with [RFC-035](RFC-035-scenarios.md#10-the-build-in-order)'s steps 1 to 3,
 1. Decided: the generic episode is the harness's, Flotilla's a pinned superset (decision 3).
 2. The generic schema's path and commit, when built (RFC-036's step 1), sent to the flotilla session to pin; Flotilla's
    superset commit, when its v2 step 3 lands, for §2 to reference.
+3. Decision 3 (the generic episode is the harness's, Flotilla's a pinned superset) is recorded in Flotilla's ADR-0020 §9
+   and design §6 at flotilla d5b633f (2026-11-19: "The episode format is shared"), committed on flotilla's main but not
+   pushed yet: it goes out with flotilla's next push, on its owner's go. Its published ADR still says "flotilla owns
+   the recording, the entry point and the formats" until then.
+4. Claims here that rest on the fleet and flotilla sessions' messages, not their files: the episode's field shapes, the
+   three routines that call a model, and pi's cost counted at about half the gateway's.

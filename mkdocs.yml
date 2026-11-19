@@ -89,15 +89,15 @@ nav:
           - "RFC-023: Labels, and the reference sets promoted from them (built, 0.6.0)": rfc/RFC-023-labels-and-references.md
           - "RFC-024: A run's outputs in one file, read through one function (built, 0.8.0)": rfc/RFC-024-run-outputs-in-one-file.md
           - "RFC-025: A project's data in SQLite, a project's choice (built, 0.8.0)": rfc/RFC-025-runs-in-sqlite.md
-          - "RFC-026: An API for every command, long ones as jobs (accepted, 0.8.0)": rfc/RFC-026-an-api-for-every-command.md
+          - "RFC-026: An API for every command, long ones as jobs (built, 0.8.0; partly superseded by RFC-032)": rfc/RFC-026-an-api-for-every-command.md
           - "RFC-027: Who acted on every record, and baselines per goal (built, 0.8.0)": rfc/RFC-027-who-acted-and-baselines-per-goal.md
           - "RFC-028: Prompt versions, and the code a system runs (built, 0.8.0)": rfc/RFC-028-prompt-versions-and-code-ref.md
-          - "RFC-029: Studies, and the looks a test set allows (accepted, 0.8.0)": rfc/RFC-029-studies-and-test-set-looks.md
+          - "RFC-029: Studies, and the looks a test set allows (built, 0.8.0)": rfc/RFC-029-studies-and-test-set-looks.md
           - "RFC-030: Replay the code that ran, and prove it faithful (draft, 0.8.0)": rfc/RFC-030-replay-and-faithfulness.md
           - "RFC-031: Held-out discipline, maturing outside labels, decisions scored by what followed (0.8.0)": rfc/RFC-031-held-out-discipline-and-outcome-labels.md
-          - "RFC-032: One data model, with the command line and the API as its surfaces (accepted, 0.8.0)": rfc/RFC-032-one-model-two-surfaces.md
+          - "RFC-032: One data model, with the command line and the API as its surfaces (built, 0.8.0)": rfc/RFC-032-one-model-two-surfaces.md
           - "RFC-033: Per-item results as a model, in both stores (built, 0.8.0)": rfc/RFC-033-per-item-results-as-a-model.md
-          - "RFC-034: Charts that show the evidence, and judges that say why (accepted, 0.8.0)": rfc/RFC-034-charts-and-judge-reasons.md
+          - "RFC-034: Charts that show the evidence, and judges that say why (built, 0.8.0)": rfc/RFC-034-charts-and-judge-reasons.md
           - "RFC-035: Scenarios, evaluating what takes several steps (draft, 0.9.0)": rfc/RFC-035-scenarios.md
           - "RFC-036: Agentic scenarios, tools, stations and the path (draft, 0.9.0)": rfc/RFC-036-agentic-scenarios.md
           - "RFC-037: Conversational scenarios, a user who talks back (draft)": rfc/RFC-037-conversational-scenarios.md

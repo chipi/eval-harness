@@ -5,7 +5,6 @@ from __future__ import annotations
 
 from typing import Any
 
-from evaluation_harness._actor import said
 from evaluation_harness.ops.registry import Op
 
 _P = "evaluation_harness.ops.prompts"
@@ -85,6 +84,8 @@ def say_list(r: dict[str, Any]) -> str:
 
 def say_prompt(r: dict[str, Any]) -> str:
     """prompt-show's answer as text: each version, its note and its runs."""
+    from evaluation_harness._actor import said  # noqa: PLC0415  # not at the top: _actor loads _common (see datasets)
+
     lines = []
     for v in r["versions"]:
         who = said(v.get("actor"))

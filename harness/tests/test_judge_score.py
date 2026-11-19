@@ -3466,6 +3466,19 @@ with tempfile.TemporaryDirectory() as tmp:
         and rec_b.get("scores") is not None,
     )
     check("V12 accepts both", not vt.reply_problems(rec_a) and not vt.reply_problems(rec_b))
+    # A hand-edited reason is caught by its shape (review, 2026-11-19: V12 never read `why`).
+    hand = {
+        "empty why": dict(rec_a, why=""),
+        "a list with an empty sentence": dict(rec_a, why=["fine", " "]),
+        "a number": dict(rec_a, why=3),
+        "why beside why_withheld": dict(rec_b, why="kept anyway"),
+        "an unknown withholding": dict(rec_b, why_withheld="too long"),
+    }
+    check(
+        "V12 refuses a reason out of shape: empty, not sentences, kept beside its withholding, an unknown withholding",
+        all(vt.reply_problems(r) for r in hand.values()),
+        {k: vt.reply_problems(r) for k, r in hand.items()},
+    )
 with tempfile.TemporaryDirectory() as tmp:
     td = Path(tmp)
     js.run_judging(m_why, scorer(explain=True), BASE, ARTICLES, OUTPUTS, td, explaining_judge(drop_why=True), None,

@@ -17,8 +17,8 @@ per item, quality against cost or speed with the frontier, a metric per arm as a
 Confidence intervals, rank stability, label agreement matrices, latency per item and study trials are computed and
 stored, and shown only as numbers or not at all. A judge's verdict is a number with no reason.
 
-This RFC adds one chart operation (`evh chart`, `GET /api/v1/charts/{kind}`) that every surface draws from, nine
-charts, and a reason inside every judge verdict.
+This RFC adds one chart operation (`evh chart`, `GET /api/v1/charts/{kind}`) that every surface draws from, eight
+kinds of chart, and a reason inside every judge verdict.
 
 ## Decisions (owner, 2026-11-18)
 
@@ -36,13 +36,13 @@ charts, and a reason inside every judge verdict.
 A chart is a read operation (RFC-032), so it has every surface at once:
 
 ```
-evh chart KIND [--goal G] [--round R] [--study S] [--dataset D] [--scorer S] [--json] [--svg FILE]
+evh chart KIND [--goal G] [--round R] [--study S] [--dataset D] [--scorer S] [--model M] [--metric M] [--json] [--svg FILE]
 GET /api/v1/charts/{kind}?goal=…&round=…
 ```
 
-- **Values**: `{kind, title, caption, data, svg}`. `data` is what is drawn (points, rows, cells), each with the
-  numbers a reader needs to check it; `svg` is the drawing.
-- **Command line**: prints `data` as a table and the caption; `--svg FILE` writes the drawing; `--json` gives the
+- **Values**: `{kind, title, caption, columns, rows, svg}`. `rows` is what is drawn (a row per point, line or cell),
+  each with the numbers a reader needs to check it, under `columns`; `svg` is the drawing.
+- **Command line**: prints `rows` as a table and the caption; `--svg FILE` writes the drawing; `--json` gives the
   values. Nothing is only in the picture.
 - **Catalog**: the page calls the same function at build time and embeds the SVG, with the table under a
   `<details>`.
@@ -111,10 +111,12 @@ or the outputs beyond a few words.
 or one string per output for `grade`). A reply whose scores parse and whose `why` does not keeps its scores; the
 verdict records `why_missing: true`. A reason never decides whether the scores parsed.
 
-**Storing.** The verdict file gains `why`. The rule that keeps a source's text out of git (V12: a committed reply is
-bare JSON and repeats no eight consecutive words of the item or the outputs) applies to the reply as now and to
-`why` on its own: a `why` that repeats the source is not committed (`why_withheld: "repeats the source"`, kept in
-the git-ignored local copy as an unparsed reply is now), and the scores still are.
+**Storing.** The verdict file gains `why`. The rule that keeps a source's text out of git (no eight consecutive words
+of the item or the outputs, `judging.quotes_source`) is applied when a verdict is written, where the source is at
+hand, to the reply as now and to `why` on its own: a `why` that repeats the source is not committed
+(`why_withheld: "repeats the source"`, kept in the git-ignored local copy as an unparsed reply is now), and the scores
+still are. `validate`'s V12 checks every committed verdict without the source: its reply bare JSON or withheld, and
+its reason in shape (a sentence, or one per graded output; never beside `why_missing` or `why_withheld`).
 
 **The scorer.** A new field `explain: true | false`. A scorer without it gives no reasons, so every scorer made
 before (the committed `harness/data/scorers/*.yaml` were validated and judged without reasons) keeps its identity,
@@ -154,7 +156,7 @@ pass.
 
 - Each chart kind: its data on a project made by the test (echo arms, a study, label sets, a judging set on
   `provider: fake`), the SVG well formed and free of unescaped text, the refusal when there is too little, and the
-  command line's table equal to the API's `data`.
+  command line's table equal to the API's `rows`.
 - `gain-cost`: a significant and a non-significant arm on the same side of zero draw filled and hollow; the names
   follow §3; a `lower` measure is flipped. Mutation: dropping the significance check must fail a test.
 - Judge reasons: the fake provider returns a `why`; parsing with and without it, a `why` that quotes the source
@@ -192,6 +194,18 @@ pass.
 - **The Workbench** already drew one chart, each arm's mean against its cost on the eval screen; `gain-cost` replaced it.
   A read answered after its screen was left no longer redraws the screen opened since (a slow chart redrew Settings
   under a person's typing).
+- **The answer**: `columns` and `rows` (the table the command line prints), not one `data` field; `evh chart` also takes
+  `--model` (`trend` of a code record) and `--metric` (`rank-stability`'s measure).
+- **After the release's review (2026-11-19)**:
+  - `gain-cost`: an arm sharing no item with the baseline is a row "not compared", not drawn; a study is drawn on its
+    own measure in that measure's direction, as `study-progress` is; a `lower` measure's axis says it is flipped;
+    with no cost the x axis is tokens per item; a trial its rule dropped carries its reason in its tooltip and row.
+  - `intervals`: the margin is drawn from the arm contenders are tested against (the promoted baseline under
+    `axes.quality.reference: baseline`), and the leader, the zero, is hollow.
+  - `trend`: each point as it was at the time (a version's record, a run's own score; a re-score only for a measure
+    added after the run, said in its row), every version and closed round on one time line named by itself.
+  - `latency`: p50 and p95 by the leaderboard's rule (`axes.percentile`), in the chart and the inspector alike.
+  - V12 checks a reason's shape; the eight-word rule stays where the source is, when a verdict is written.
 - **Not built**: rank stability is not on the catalog's pages (it reads the project's runs, not a deployment's copy, and
   costs seconds per dataset), only in the Workbench's dataset screen and `evh chart`; production's label agreement over
   time is not drawn (the trend draws a code record's faithfulness per deployed period).

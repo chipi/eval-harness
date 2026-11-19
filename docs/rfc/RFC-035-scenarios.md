@@ -94,7 +94,7 @@ That is the shape fleet-eval-data's bugfix driver already has (`driver_fix.py`):
 system that converses needs a second shape, a session the harness drives turn by turn; that is
 [RFC-037](RFC-037-conversational-scenarios.md), and it records the same transcript.
 
-A runner is named like a deployment (RFC-032's model records): where it is, how it is reached, which systems it can run,
+A runner is named like a deployment (RFC-032's deployments, kept apart from the model records): where it is, how it is reached, which systems it can run,
 and a check that it answers. The harness ships one runner of its own, `local`: an in-process stub that replays fixed
 transcripts, for its own tests and the tutorial, $0 and offline. Every real runner lives outside: a project's own
 service, a container, or a platform that already runs agents. The first is the one for Flotilla's agents
@@ -114,7 +114,7 @@ input: {ticket: "Customer asks for a refund of 640 EUR on order 1182"}   # what 
 success:
   - The refund is escalated, not issued: 640 EUR is over the 500 EUR limit.
 outcome_check: checks/refund_escalated.py   # optional: reads the final state the runner reports
-max_turns: 12                               # a limit on the system's steps; a timeout too
+max_turns: 12                               # a limit on the system's model calls (exit_reason turn_cap); a timeout too
 env: {LEDGER: refunds_eval}                 # passed to the runner
 ```
 
@@ -130,7 +130,8 @@ What a scenario's run records, in the run's rows (RFC-033's model), one row per 
 - the scenario, the trial, the system and its version;
 - the turns: who (user or system), the text, the time;
 - the answer, if the system gives one;
-- tokens, cost, latency, turns; how it ended (done, `max_turns`, a timeout, an error);
+- tokens, cost, latency, turns; how it ended, its `exit_reason` (RFC-036's open set: `completed`, `turn_cap` at
+  `max_turns`, `timeout`, `error`; RFC-037 adds `user_done`);
 - the final state the runner reported, and the outcome check's verdict on it;
 - the cost and its source: a provider's bill or a gateway key's spend before and after (an agent's own count can
   under-report: the fleet measured pi at about half), never a figure without saying which.
@@ -156,7 +157,8 @@ the harness already has: transcripts exported, labelled, imported.
 
 ## 6. Trials and statistics
 
-A scenario's run is noisy: the system samples. Each arm runs every scenario `k` times (default 3, as arms repeat now).
+A scenario's run is noisy: the system samples. Each arm runs every scenario `k` times (`--repeat k`; the harness's default is 1, and pass^k needs
+`k` of at least 2: 3 is the start this RFC proposes).
 The unit of the paired tests is the scenario, its mean over trials (`k` trials of `n` scenarios are not `k·n`
 independent items). Reported per arm: the pass rate with its interval, **pass^k** (all `k` trials passed: the
 consistency a user feels), cost and latency per scenario; between arms the paired test on scenarios, Holm across arms,
@@ -207,6 +209,15 @@ the transcript view (actions, stations; the user's turns); they add no screen of
 4. Judges over transcripts and their validation on labelled transcripts.
 
 Steps 1 to 3 are built with [RFC-036](RFC-036-agentic-scenarios.md#7-the-build-in-order)'s, in 0.9.0.
+
+## Open questions
+
+1. **Two kinds of turn.** RFC-036 takes Flotilla's names, where a *turn* is one model call inside an episode; RFC-035's
+   transcript and RFC-037 also say turn for one step of a conversation (the user's turn, the system's turn), and
+   `max_turns` for both a cap on model calls (`turn_cap`) and the length of a conversation. One word cannot mean both.
+   Proposed: *turn* stays a model call (as agreed with Flotilla), a conversation's step is a *message* (the user's
+   message, the system's reply), and RFC-037's limit is `max_messages`. New names: the owner's decision, not taken
+   here; until then each RFC says which it means.
 
 ## Not in this RFC
 

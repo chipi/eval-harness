@@ -1133,15 +1133,35 @@ def reply_problems(rec: dict, fix: str = "") -> list[str]:
     withhold those (judging.withheld_reason), and this catches one that slipped through."""
     from evaluation_harness.judging import json_only  # noqa: PLC0415
 
+    problems = why_problems(rec)
     out = rec.get("output")
     if out is None:
         if not (rec.get("output_withheld") and len(str(rec.get("output_sha256") or "")) == 64):
-            return ["no reply text and not marked withheld with its sha256"]
-        return []
+            return ["no reply text and not marked withheld with its sha256", *problems]
+        return problems
     if not json_only(out):
         how = f"; rewrite it with `{fix}`" if fix else ""
-        return [f"reply is not bare JSON ({len(out)} chars): withhold it, keep its hash{how}"]
-    return []
+        return [f"reply is not bare JSON ({len(out)} chars): withhold it, keep its hash{how}", *problems]
+    return problems
+
+
+def why_problems(rec: dict) -> list[str]:
+    """A verdict's reason (RFC-034 §5) in the shape the writer gives it: `why` a non-empty sentence, or one per graded
+    output; never beside `why_missing` or `why_withheld` (a reason not given, or held back for repeating the source).
+    Whether a reason repeats the source is checked when it is written, where the source is at hand (judging.quotes_source)."""
+    out = []
+    if rec.get("why") is not None:  # the writer stores `why: null` beside why_withheld and why_missing
+        w = rec["why"]
+        ok = (isinstance(w, str) and w.strip()) or (
+            isinstance(w, list) and w and all(isinstance(x, str) and x.strip() for x in w)
+        )
+        if not ok:
+            out.append("why is neither a sentence nor a list of them")
+        if rec.get("why_missing") or rec.get("why_withheld"):
+            out.append("why is kept beside why_missing or why_withheld")
+    if rec.get("why_withheld") not in (None, "repeats the source"):
+        out.append(f"why_withheld is {rec['why_withheld']!r}, not 'repeats the source'")
+    return out
 
 
 def validation_record_problems(validation_dir: Path) -> list[str]:
@@ -1262,7 +1282,7 @@ def v12_verdicts_belong_to_their_set() -> None:
         verdict_problems(DATA / "judge-verdicts", DATA / "judging-sets")
         + validation_record_problems(DATA / "judge-validation"),
         "V12 every judge verdict names a real set, item, pass and block, and its n; "
-        "every committed reply is bare JSON or withheld",
+        "every committed reply is bare JSON or withheld, and its reason in shape",
         "bad verdict(s)",
     )
 

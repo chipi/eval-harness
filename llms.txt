@@ -26,7 +26,7 @@ that lists every document with its status.
 ## Decisions and specs
 
 - [ADRs](docs/adr/index.md): the decisions that shape the architecture; 19 documents, each with its status (15 built, 3 accepted, 1 proposed)
-- [RFCs](docs/rfc/index.md): the technical designs, with their alternatives; 26 documents, each with its status (21 built, 3 draft, 1 accepted, 1 superseded)
+- [RFCs](docs/rfc/index.md): the technical designs, with their alternatives; 26 documents, each with its status (22 built, 3 draft, 1 superseded)
 - [PRDs](docs/prd/index.md): what users need, and why; 11 documents, each with its status (11 built)
 - [UXS](docs/uxs/index.md): what users see and type; 5 documents, each with its status (3 active, 1 built, 1 retired)
 
@@ -50,7 +50,7 @@ The decisions every change must respect:
 What a change in each part of the code should read first.
 
 - **Operations and the data model** (`harness/scripts/ops/`, `harness/scripts/model/`, `harness/scripts/cli.py`):
-- [RFC-032: One data model, with the command line and the API as its surfaces](docs/rfc/RFC-032-one-model-two-surfaces.md): the registry, the surfaces, the steps that built them (status: Accepted (owner, 2026-11-13: "Yes and yes", to accept it and start the build))
+- [RFC-032: One data model, with the command line and the API as its surfaces](docs/rfc/RFC-032-one-model-two-surfaces.md): the registry, the surfaces, the steps that built them (status: Accepted and built (0.8.0): accepted by the owner on 2026-11-13 ("Yes and yes", to acce...)
 - [RFC-026: An API for every command, long ones as jobs](docs/rfc/RFC-026-an-api-for-every-command.md): the API and its jobs, as first designed (status: Partly superseded by RFC-032 and ADR-0029: the registry made from the commands' parsers...)
 - [UXS-003: The command line and the first evaluation](docs/uxs/UXS-003-cli-and-onboarding.md): the command line as people use it (status: Active)
 - **Stores, run records and formats** (`harness/scripts/_store.py`, `harness/scripts/_outputs.py`, `harness/scripts/_runs.py`, `harness/scripts/migrations/`):

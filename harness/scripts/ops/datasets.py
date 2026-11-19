@@ -9,7 +9,6 @@ from __future__ import annotations
 
 from typing import Any
 
-from evaluation_harness._actor import said
 from evaluation_harness.catalog_periods import PERIODS
 from evaluation_harness.ops.registry import Op
 
@@ -547,6 +546,10 @@ def say_label_sets(r: dict[str, Any]) -> str:
 
 def say_label_set(r: dict[str, Any]) -> str:
     """label-set-show's answer as text: where the labels came from, and the references promoted from it."""
+    # Imported here: _actor imports _common, which an ops module must not load before cli has pointed argv[0] at
+    # the command (a project's .env would not be read: test_installed_commands).
+    from evaluation_harness._actor import said  # noqa: PLC0415
+
     rec = r["record"]
     lines = [f"{r['set']}  {r['items']} items  ({r['folder']})"]
     lines += [f"  source       {k} = {v}" for k, v in sorted((rec.get("source") or {}).items())]
