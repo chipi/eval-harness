@@ -187,7 +187,7 @@ try:
     bl = evh(syn, "baselines")
     check(
         "evh baselines: the scores are the mean over the repeats, and the line says it is one",
-        re.search(r"scores \(mean of 3 repeats\)\s+acc=0\.6\s+cost_usd=0\.002", bl.stdout) is not None,
+        re.search(r"scores \(mean of 3 repeats\)\s+acc=0\.6000\s+cost_usd=0\.0020", bl.stdout) is not None,
         bl.stdout,
     )
     blj = json.loads(evh(syn, "baselines", "--json").stdout)

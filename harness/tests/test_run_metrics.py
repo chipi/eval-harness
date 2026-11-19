@@ -191,7 +191,8 @@ try:
         (proj / "adapter.py").write_text(
             ADAPTER.split("def score_run")[0] + f"def score_run(items):\n    return {bad}\n"
         )
-        r = evh("run", "--system", "one_v1", "--dataset", "tickets_v1")
+        # --scratch: a pass to see the refusal, not a second measurement of one_v1 (which evh run refuses first)
+        r = evh("run", "--system", "one_v1", "--dataset", "tickets_v1", "--scratch")
         check(
             f"run: score_run returning {bad} is refused ({said})",
             r.returncode != 0 and said in out(r),

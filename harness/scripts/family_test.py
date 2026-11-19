@@ -328,6 +328,7 @@ def _run(args) -> int:
                 "units": len(units),
                 "delta": statistics.fmean(deltas),
                 "wins": sum(1 for d in deltas if (d < 0 if lower else d > 0)),
+                "losses": sum(1 for d in deltas if (d > 0 if lower else d < 0)),
                 "unit_values": units,
             }
         )
@@ -412,13 +413,28 @@ def _run(args) -> int:
         r["p_holm"] = running
     width = max(len(r["opp"]) for r in rows) + 2
     if not _jsonout.table(
-        ["opponent", "n", "delta", "wins", "p", "p_exact", "p_holm", "threshold", "significant", "p_method"],
+        [
+            "opponent",
+            "n",
+            "delta",
+            "wins",
+            "losses",
+            "ties",
+            "p",
+            "p_exact",
+            "p_holm",
+            "threshold",
+            "significant",
+            "p_method",
+        ],
         [
             [
                 r["opp"],
                 r["n"],
                 r["delta"],
                 r["wins"],
+                r["losses"],
+                r["n"] - r["wins"] - r["losses"],
                 r["p"],
                 r["units"] <= EXACT_UP_TO,
                 r["p_holm"],
@@ -429,13 +445,18 @@ def _run(args) -> int:
             for r in rows
         ],
     ):
-        print(f"    {'opponent':{width}} {'delta':>9} {'A wins':>9} {'p':>8} {'thresh':>8}   verdict")
+        # A's wins and losses against each opponent, ties apart, as the inspector prints them: `A wins 8/32` beside a
+        # positive delta read as A losing most items (the 0.8.0 newcomer run), when 23 of the 32 were ties.
+        print(
+            f"    {'opponent':{width}} {'delta':>9} {'A wins-losses (ties)':>22} {'p':>8} {'thresh':>8}   verdict"
+        )
         for r in rows:
             how = p_method(r["units"])
             mark = {"sampled": "~", "normal limit": "*"}.get(how, "") if len(kinds) > 1 else ""
             pv = mark + fmt_p(r["p"])
             print(
-                f"    {r['opp']:{width}} {r['delta']:+9.4f} {r['wins']:>4}/{r['n']:<4} "
+                f"    {r['opp']:{width}} {r['delta']:+9.4f} "
+                f"{str(r['wins']) + '–' + str(r['losses']) + ' (' + str(r['n'] - r['wins'] - r['losses']) + ' ties)':>22} "
                 f"{pv:>8} {r['thresh']:8.4f}   {'SIGNIFICANT' if r['sep'] else '--'}"
             )
     sep = sum(1 for r in rows if r["sep"])
