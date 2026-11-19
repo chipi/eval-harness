@@ -428,6 +428,8 @@ class HarnessAdapter:
 
     item_word = "item"
     can_rescore = False
+    #: The arms read through only some of their runs ({arm id: run ids}; only_runs), None for every run of every arm.
+    _only: dict[str, set[str]] | None = None
 
     def captures(self) -> list[dict]:
         """Every capture in the data tree, as `evh capture-list` lists them (RFC-019): the Captures page reads these."""
@@ -503,6 +505,9 @@ class HarnessAdapter:
                 refs[d] = ((m.get("fingerprint") or {}).get("data") or {}).get("reference_id") or ""
                 made[d] = m.get("created_at") or ""
         out = dict(sorted(out.items(), key=lambda kv: (not kv[0].startswith("runs/"), kv[0])))
+        for arm, keep in (self._only or {}).items():
+            if arm in out:
+                out[arm] = [d for d in out[arm] if model_runs.run_of(d).name in keep]
         # ONE REFERENCE PER ARM: the one its latest run was scored against. An arm's runs were
         # averaged whatever they were scored against, so a run on silver and a run on gold read
         # as two repeats of one measurement. Runs on another reference are left out, and said so.
@@ -522,6 +527,24 @@ class HarnessAdapter:
                 ]
         self._rec, self._label, self._every, self._stale = rec, label, every, stale
         return out
+
+    def only_runs(self, keep: dict[str, set[str]]) -> HarnessAdapter:
+        """This adapter with each arm named in `keep` read through only those runs (by run id), every other arm as it
+        is: a round reads the runs it recorded, so a later run of one of its systems never moves what it decided. A
+        new adapter, with nothing read yet; this one is unchanged. Its `scores` is its own: the read-once cache and the
+        exposure filter this one carries (scores_once, _exposure.aware) are set on it afresh, never copied, since a copy
+        reads this adapter's runs."""
+        from evaluation_harness import _exposure  # noqa: PLC0415
+
+        own = ("_view_token", "_only", "scores", "_scores_unfiltered")
+        view = type(self).__new__(type(self))
+        view.__dict__.update(
+            {k: v for k, v in self.__dict__.items() if not k.startswith("_memo_") and k not in own}
+        )
+        view._only = {arm: set(runs) for arm, runs in keep.items()}
+        if "_scores_unfiltered" in self.__dict__:
+            _exposure.aware(view)
+        return scores_once(view) if "scores" in self.__dict__ else view
 
     def refresh(self) -> None:
         """Forget what this adapter has read: the next question reads the data again. catalog-serve calls it when the

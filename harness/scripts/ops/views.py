@@ -348,7 +348,20 @@ def comparison(series: bool = False, **inputs: Any) -> dict[str, Any]:
     return out
 
 
-def compared(
+def compared(*args: Any, **kwargs: Any) -> dict[str, Any]:
+    """The arms compared (_compared), the comparison's adapter set back to the project's whole one afterwards: a round's
+    is read through its own runs only, and the inspector's next question reads every run again."""
+    from evaluation_harness.model import compare  # noqa: PLC0415
+
+    before = compare.A
+    try:
+        return _compared(*args, **kwargs)
+    finally:
+        if before is not None and compare.A is not before:
+            compare.set_adapter(before)
+
+
+def _compared(
     runs: str | None = None,
     round: str | None = None,
     goal: str | None = None,
@@ -386,6 +399,10 @@ def compared(
 
         with _refusing():
             rnd = resolve(round, goal)
+            # The round's arms through the runs it recorded (model.rounds.round_view): a later run of one of its systems
+            # never moves what it shows. `compared` sets the full adapter back when this is answered.
+            A = model_rounds.round_view(A, rnd)
+            compare.set_adapter(A)
             known = set(A.arms())
             tokens = [a for a in model_rounds.arm_ids(rnd) if a in known]
             if not tokens:

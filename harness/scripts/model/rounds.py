@@ -60,6 +60,15 @@ def arm_ids(rnd: dict[str, Any]) -> list[str]:
     return [arm_id(rnd, a) for a in sorted(in_play(rnd), key=lambda a: a["system"])]
 
 
+def round_view(A: Any, rnd: dict[str, Any]) -> Any:
+    """The adapter as the round reads it: each of its arms through the runs it recorded, so a run of one of its systems
+    made later (another round's, a repeat) never moves what the round shows or decided. An adapter that cannot be
+    scoped (a project's own) is read as it is; an arm that records no runs is read through all of its runs."""
+    only = getattr(A, "only_runs", None)
+    keep = {arm_id(rnd, a): set(a["runs"]) for a in arms(rnd) if a.get("runs")}
+    return only(keep) if callable(only) and keep else A
+
+
 def retired_ids(rnd: dict[str, Any]) -> list[str]:
     """The ids of the round's retired arms."""
     return [arm_id(rnd, a) for a in arms(rnd) if a.get("retired")]
@@ -297,7 +306,35 @@ def evidence(goal: str, rnd: dict, A: Any = None, data: Path | None = None) -> d
     g = load_goals(model_goals.GOAL.under(data).base()).get(goal) or {}
     prim = (g.get("success_criteria") or {}).get("primary") or {}
     metric, lower = prim.get("measure", ""), prim.get("direction") == "lower"
-    model_compare.set_adapter(A)
+    # The comparisons read the round's own runs (round_view); the adapter the caller set is set back afterwards, so a
+    # page built after this reads every run again.
+    before = model_compare.A
+    model_compare.set_adapter(round_view(A, rnd))
+    try:
+        out = _evidence(goal, rnd, model_compare.A, data, g, metric, lower)
+    finally:
+        model_compare.set_adapter(before if before is not None else A)
+    out["notes"] += since_then(A, rnd)
+    return out
+
+
+def since_then(A: Any, rnd: dict[str, Any]) -> list[str]:
+    """The runs of the round's arms it does not read (made after it recorded its own): named, never read into it."""
+    notes = []
+    for a in in_play(rnd):
+        mine = set(a.get("runs") or [])
+        if not mine:
+            continue
+        later = sorted({model_runs.run_of(d).name for d in _dirs(A, arm_id(rnd, a))} - mine)
+        if later:
+            notes.append(
+                f"{a['system']}: {len(later)} run(s) since then not read here ({', '.join(later)}); the round reads "
+                f"the {len(mine)} it recorded"
+            )
+    return notes
+
+
+def _evidence(goal: str, rnd: dict, A: Any, data: Path | None, g: dict, metric: str, lower: bool) -> dict:
     ds = rnd["dataset_id"]
     stored = arm_ids(rnd)
     rescored = [a for a in stored if a.startswith("rescored-")]

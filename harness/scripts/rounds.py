@@ -172,11 +172,13 @@ def open_body(**inputs: Any) -> int:
 
 def _carry_in(doc: dict, systems: list[str], frm: dict | None) -> None:
     """The systems carried into the round unchanged: an arm of the round they come from keeps its label and its runs
-    there; a system in none is read through its plain runs on the dataset."""
+    there, when that round ran on the same dataset; any other system is read through its plain runs on the dataset
+    (an earlier round's runs on another dataset are never read in this one)."""
     from evaluation_harness._runs import runs_on  # noqa: PLC0415
 
+    same = frm is not None and frm.get("dataset_id") == doc["dataset_id"]
     for c in systems:
-        src = model_rounds.find_arm(frm, c) if frm else None
+        src = model_rounds.find_arm(frm, c) if frm and same else None
         if frm is not None and src is not None:
             model_rounds.carry(
                 doc, c, src.get("label") or "", list(src.get("runs") or []), frm["round_id"], actor()

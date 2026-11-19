@@ -134,7 +134,11 @@ def _who_env(by: Any, for_: Any) -> dict[str, str]:
 
 def _spend_env(name: str, max_cost_usd: Any) -> dict[str, str]:
     if not isinstance(max_cost_usd, (int, float)) or isinstance(max_cost_usd, bool) or max_cost_usd <= 0:
-        raise Refused(f"{name} spends: a job of it carries max_cost_usd, the most it may spend")
+        raise Refused(
+            f"{name} spends: a job of it carries max_cost_usd, the most it may spend, above 0 (the cap is checked before"
+            " each call, so 0 would stop even an arm that costs nothing; such an arm spends nothing under any cap,"
+            " e.g. 0.01)"
+        )
     return {"EVAL_MAX_COST_USD": str(max_cost_usd)}
 
 
