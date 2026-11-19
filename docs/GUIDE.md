@@ -120,6 +120,10 @@ params:
 cp tutorial/systems/tickets_*.yaml data/systems/
 ```
 
+In a `--store sqlite` project `data/` holds only `project.sqlite`, so `cp` has no folder to copy
+into. Put each file with `evh data-put --path systems/<file> --file tutorial/systems/<file>`,
+which works in both stores (for the goal below: `--path goals/tickets_summary.yaml`).
+
 The four systems: `lead1` (one sentence), `lead2` (two), `lead2_noisy` (two, with random word
 drops: what a model at temperature > 0 looks like), and `author` (three), the most thorough
 system we have, which will write the reference.
