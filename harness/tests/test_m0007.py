@@ -109,13 +109,14 @@ def legacy_db(src_data, proj, extra=None):
     c.close()
 
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _cli
+import _cli  # noqa: E402
+
+
 def evh(proj, store, *args):
     env = {k: v for k, v in os.environ.items() if k not in ("EVAL_DATA_DIR",)}
     env.update(EVAL_HOME=str(proj), EVAL_STORE=store, EVAL_BUILD_REF="test-m0007")
-    return subprocess.run(
-        [sys.executable, str(HERE / "cli.py"), *args], cwd=proj, env=env, capture_output=True, text=True,
-        stdin=subprocess.DEVNULL, timeout=300,
-    )  # fmt: skip
+    return _cli.run(proj, env, *args, timeout=300)
 
 
 def tree(data):

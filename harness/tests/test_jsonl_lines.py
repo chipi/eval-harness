@@ -13,7 +13,6 @@ the suite runs in. The run outputs' round trip through `data-migrate` is test_st
 """
 
 import os
-import subprocess
 import sys
 from pathlib import Path
 
@@ -28,11 +27,11 @@ env = {k: v for k, v in os.environ.items() if not k.startswith("EVAL_")}
 env.update(EVAL_HOME=str(proj), EVH_ACTOR="person:test")
 
 
+import _cli  # noqa: E402
+
+
 def evh(*args):
-    return subprocess.run(
-        [sys.executable, str(HERE / "cli.py"), *args], cwd=proj, env=env, capture_output=True, text=True,
-        stdin=subprocess.DEVNULL, timeout=300,
-    )  # fmt: skip
+    return _cli.run(proj, env, *args, timeout=300)
 
 
 init = evh("init", "--store", store)

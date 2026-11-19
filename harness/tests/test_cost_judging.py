@@ -33,9 +33,12 @@ KEEP = {
 }
 
 
+import _cli  # noqa: E402
+
+
 def evh(proj: Path, *args: str, **env: str) -> subprocess.CompletedProcess:
     e = {**KEEP, "EVAL_HOME": str(proj), "EVAL_NO_CACHE": "1", "EVAL_BUILD_REF": "test-cost-judging", **env}
-    return subprocess.run([PY, str(HERE / "cli.py"), *args], cwd=proj, env=e, capture_output=True, text=True)
+    return _cli.run(proj, e, *args)
 
 
 def rows_into(proj: Path, score_dir: Path, rows: list[dict]) -> None:

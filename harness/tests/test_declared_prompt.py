@@ -64,11 +64,11 @@ os.environ.setdefault("EVAL_STORE", "files")
 env["EVAL_STORE"] = os.environ["EVAL_STORE"]
 
 
+import _cli  # noqa: E402
+
+
 def evh(*args: str) -> subprocess.CompletedProcess:
-    return subprocess.run(
-        [sys.executable, str(HERE / "cli.py"), *args], cwd=proj, env=env, capture_output=True, text=True,
-        stdin=subprocess.DEVNULL, timeout=600,
-    )  # fmt: skip
+    return _cli.run(proj, env, *args, timeout=600)
 
 
 def last(r: subprocess.CompletedProcess) -> dict:

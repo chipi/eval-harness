@@ -70,11 +70,11 @@ SCORES = {
 }
 
 
+import _cli  # noqa: E402
+
+
 def evh(*args: str) -> subprocess.CompletedProcess:
-    return subprocess.run(
-        [sys.executable, str(HARNESS / "scripts" / "cli.py"), *args], cwd=proj, env=env, capture_output=True,
-        text=True, stdin=subprocess.DEVNULL, timeout=600,
-    )  # fmt: skip
+    return _cli.run(proj, env, *args, timeout=600)
 
 
 def put(data: Path, rel: str, text: str) -> None:

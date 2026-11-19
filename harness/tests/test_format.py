@@ -28,14 +28,15 @@ from evaluation_harness._check import check, summary  # noqa: E402
 base = Path(tempfile.mkdtemp(prefix="evh-format-"))
 
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _cli
+import _cli  # noqa: E402
+
+
 def evh(proj: Path, *args: str, store: str = "files") -> subprocess.CompletedProcess:
     """`evh <args>` in the project `proj`, with the store given."""
     env = {k: v for k, v in os.environ.items() if k != "EVAL_DATA_DIR"}
     env.update(EVAL_HOME=str(proj), EVAL_STORE=store, EVAL_BUILD_REF="test-format")
-    return subprocess.run(
-        [sys.executable, str(HERE / "cli.py"), *args], cwd=proj, env=env, capture_output=True, text=True,
-        stdin=subprocess.DEVNULL, timeout=300,
-    )  # fmt: skip
+    return _cli.run(proj, env, *args, timeout=300)
 
 
 try:

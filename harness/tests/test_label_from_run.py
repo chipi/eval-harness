@@ -14,7 +14,6 @@ and its texts are rebuilt from the set.
 import json
 import os
 import shutil
-import subprocess
 import sys
 import tempfile
 from pathlib import Path
@@ -50,14 +49,11 @@ for k in ("EVAL_DATA_DIR", "EVAL_MAX_COST_USD"):
     env.pop(k, None)
 
 
+import _cli  # noqa: E402
+
+
 def evh(*args, extra=None):
-    return subprocess.run(
-        [sys.executable, str(HERE / "cli.py"), *args],
-        cwd=proj,
-        env={**env, **(extra or {})},
-        capture_output=True,
-        text=True,
-    )
+    return _cli.run(proj, {**env, **(extra or {})}, *args)
 
 
 def out(r):

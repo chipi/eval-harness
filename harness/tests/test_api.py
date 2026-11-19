@@ -34,8 +34,9 @@ from evaluation_harness import _api, ops  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 from evaluation_harness.cli import COMMANDS  # noqa: E402
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore, _serve
 import _runstore  # noqa: E402
+import _serve  # noqa: E402
 from evaluation_harness import _format  # noqa: E402
 
 check(
@@ -91,15 +92,11 @@ for k in ("EVAL_DATA_DIR", "EVAL_MAX_COST_USD"):
     env.pop(k, None)
 
 
+import _cli  # noqa: E402
+
+
 def evh(*args):
-    return subprocess.run(
-        [sys.executable, str(HERE / "cli.py"), *args],
-        cwd=proj,
-        env=env,
-        capture_output=True,
-        text=True,
-        stdin=subprocess.DEVNULL,
-    )
+    return _cli.run(proj, env, *args)
 
 
 def free_port():
@@ -109,24 +106,8 @@ def free_port():
 
 
 def serve(*extra):
-    port = free_port()
-    p = subprocess.Popen(
-        [sys.executable, str(HERE / "cli.py"), "catalog-serve", "--port", str(port), *extra],
-        cwd=proj,
-        env=env,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        text=True,
-        stdin=subprocess.DEVNULL,
-    )
-    for _ in range(200):
-        try:
-            with socket.create_connection(("127.0.0.1", port), timeout=0.2):
-                return p, port
-        except OSError:
-            time.sleep(0.1)
-    p.kill()
-    raise RuntimeError(p.stdout.read() if p.stdout else "server did not start")
+    """catalog-serve on a free port, once it answers: (the process, the port, its output as it comes)."""
+    return _serve.start(proj, env, *extra)
 
 
 def call(port, method, path, body=None, headers=None, host=None):
@@ -173,7 +154,7 @@ try:
     r = r if r.returncode else evh("catalog")
     check("setup: a project with two arms and its catalog", r.returncode == 0, (r.stdout + r.stderr)[-300:])
 
-    srv, port = serve()
+    srv, port, srv_out = serve()
     try:
         tok_file = proj / ".build" / "api-token"
         token = tok_file.read_text().strip() if tok_file.exists() else ""
@@ -347,12 +328,11 @@ try:
             and not refused("capture-restore", {"capture": "c1", "query": ["path=exports/x.jsonl"]}),
         )
     finally:
-        srv.terminate()
-        srv.wait(timeout=10)
+        _serve.stop(srv, proj)
     # G4 (fleet, 2026-11-18): the startup lines went to a log with a working token in the Workbench link, and the
     # access log wrote the session route's request line, token and all. Its output here is a pipe, as a background
     # job's or CI's is, and the test signed in through /session?token= above.
-    said = srv.stdout.read() if srv.stdout else ""
+    said = "\n".join(srv_out)
     check(
         "catalog-serve: printed to a pipe, the Workbench link names the token's file and never holds the token",
         bool(token) and "Workbench:" in said and "<the token in " in said,
@@ -401,7 +381,7 @@ try:
         os.close(master)
 
     for mode in (("--public", "a.example"), ("--behind-proxy", "evals.example")):
-        srv, port = serve(*mode, *(("--bind", "0.0.0.0") if mode[0] == "--behind-proxy" else ()))  # noqa: S104 - a mode under test  # nosec B104
+        srv, port, _out = serve(*mode, *(("--bind", "0.0.0.0") if mode[0] == "--behind-proxy" else ()))  # noqa: S104 - a mode under test  # nosec B104
         try:
             host = mode[1]
             st, _b, _h = call(port, "GET", "/api/v1/goals", headers={"Authorization": "Bearer x"}, host=host)
@@ -414,21 +394,19 @@ try:
     # opens nothing; found 2026-11-19 starting a server from a script).
     import re
 
-    import _serve
-
     any_port = subprocess.Popen(
         [sys.executable, str(HERE / "cli.py"), "catalog-serve", "--port", "0"],
         cwd=proj, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, stdin=subprocess.DEVNULL,
     )  # fmt: skip
     try:
-        said = _serve.startup(any_port, [])
-        m = re.search(r"catalog: http://127\.0\.0\.1:(\d+)/", "\n".join(said))
+        started = _serve.startup(any_port, [])
+        m = re.search(r"catalog: http://127\.0\.0\.1:(\d+)/", "\n".join(started))
         got = int(m.group(1)) if m else 0
         st = call(got, "GET", "/api/v1/goals")[0] if got else None
         check(
             "catalog-serve --port 0 names the port it listens on, and that port answers",
-            got > 0 and st in (200, 401) and f":{got}/api/v1/" in "\n".join(said),
-            (said[:3], st),
+            got > 0 and st in (200, 401) and f":{got}/api/v1/" in "\n".join(started),
+            (started[:3], st),
         )
     finally:
         any_port.terminate()

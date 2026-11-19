@@ -14,11 +14,9 @@ from __future__ import annotations
 import json
 import os
 import shutil
-import socket
 import subprocess
 import sys
 import tempfile
-import time
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -29,6 +27,7 @@ KIT = HARNESS / "tutorial"
 sys.path.insert(0, str(HARNESS))
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
 import _runstore  # noqa: E402
+import _serve  # noqa: E402
 import yaml  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 
@@ -40,11 +39,11 @@ os.environ.setdefault("EVAL_STORE", "files")
 env["EVAL_STORE"] = os.environ["EVAL_STORE"]
 
 
+import _cli  # noqa: E402
+
+
 def evh(*args: str) -> subprocess.CompletedProcess:
-    return subprocess.run(
-        [sys.executable, str(HERE / "cli.py"), *args], cwd=proj, env=env, capture_output=True, text=True,
-        stdin=subprocess.DEVNULL, timeout=600,
-    )  # fmt: skip
+    return _cli.run(proj, env, *args, timeout=600)
 
 
 def last(r: subprocess.CompletedProcess) -> dict:
@@ -56,21 +55,8 @@ def last(r: subprocess.CompletedProcess) -> dict:
 
 def serve() -> tuple[subprocess.Popen, int]:
     """catalog-serve on a free port, once it answers."""
-    with socket.socket() as s:
-        s.bind(("127.0.0.1", 0))
-        port = s.getsockname()[1]
-    p = subprocess.Popen(
-        [sys.executable, str(HERE / "cli.py"), "catalog-serve", "--port", str(port)], cwd=proj, env=env,
-        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, stdin=subprocess.DEVNULL,
-    )  # fmt: skip
-    for _ in range(300):
-        try:
-            with socket.create_connection(("127.0.0.1", port), timeout=0.2):
-                return p, port
-        except OSError:
-            time.sleep(0.1)
-    p.kill()
-    raise RuntimeError(f"the server did not start: {(p.communicate()[0] or '')[-500:]}")
+    p, port, _out = _serve.start(proj, env)
+    return p, port
 
 
 def get(port: int, path: str) -> tuple[int, dict]:
@@ -263,8 +249,7 @@ try:
         code404, _ = get(port, "/scorers/nope-v1/verdicts")
         check("the API answers 404 for a scorer that judged nothing", code404 == 404, code404)
     finally:
-        srv.terminate()
-        srv.wait(timeout=20)
+        _serve.stop(srv, proj)
 finally:
     shutil.rmtree(proj, ignore_errors=True)
 sys.exit(summary())

@@ -36,15 +36,12 @@ from evaluation_harness import _format, _hypothesis  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 from evaluation_harness.model import runs as _R  # noqa: E402
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _cli
+import _cli  # noqa: E402
+
 
 def evh(*args, extra_env=None):
-    return subprocess.run(
-        [sys.executable, str(HERE / "cli.py"), *args],
-        cwd=proj,
-        env={**env, **(extra_env or {})},
-        capture_output=True,
-        text=True,
-    )
+    return _cli.run(proj, {**env, **(extra_env or {})}, *args)
 
 
 def git(*args):

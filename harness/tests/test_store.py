@@ -42,15 +42,16 @@ data = proj / "data"
 env = dict(os.environ, EVAL_BUILD_REF="test-store")
 
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _cli
+import _cli  # noqa: E402
+
+
 def evh(*args, store=None, extra=None):
     e = {k: v for k, v in env.items() if k != "EVAL_STORE"}
     if store:
         e["EVAL_STORE"] = store
     e.update(extra or {})
-    return subprocess.run(
-        [sys.executable, str(HERE / "cli.py"), *args], cwd=proj, env=e, capture_output=True, text=True,
-        stdin=subprocess.DEVNULL, timeout=300,
-    )  # fmt: skip
+    return _cli.run(proj, e, *args, timeout=300)
 
 
 def use(store):

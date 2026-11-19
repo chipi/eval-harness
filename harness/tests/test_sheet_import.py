@@ -23,7 +23,6 @@ import io
 import json
 import os
 import shutil
-import subprocess
 import sys
 import tempfile
 from pathlib import Path
@@ -47,10 +46,11 @@ ARMS = {"lead1": "tickets_lead1_v1", "lead2": "tickets_lead2_v1", "author": "tic
 RUNS = ",".join(ARMS.values())
 
 
+import _cli  # noqa: E402
+
+
 def evh(*args):
-    return subprocess.run(
-        [sys.executable, str(HERE / "cli.py"), *args], cwd=proj, env=env, capture_output=True, text=True
-    )
+    return _cli.run(proj, env, *args)
 
 
 def out(r):

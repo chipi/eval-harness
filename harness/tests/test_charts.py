@@ -61,11 +61,11 @@ QUADRANTS = ("better and cheaper", "better, costs more", "worse and cheaper", "w
 NAMED = (*QUADRANTS, "better at the same cost", "worse at the same cost")
 
 
+import _cli  # noqa: E402
+
+
 def evh(*args: str) -> subprocess.CompletedProcess:
-    return subprocess.run(
-        [sys.executable, str(HERE / "cli.py"), *args], cwd=proj, env=env, capture_output=True, text=True,
-        stdin=subprocess.DEVNULL, timeout=900,
-    )  # fmt: skip
+    return _cli.run(proj, env, *args, timeout=900)
 
 
 def result(r: subprocess.CompletedProcess) -> dict:

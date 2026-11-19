@@ -37,10 +37,11 @@ AGENT = dict(env, EVH_ACTOR="agent:probe", EVH_FOR="person:ana")
 HYP = {"against": "base_x_v1", "measure": "overlap_f1", "direction": "better", "statement": "two sentences"}
 
 
+import _cli  # noqa: E402
+
+
 def evh(*args, e=None):
-    return subprocess.run(
-        [sys.executable, str(HERE / "cli.py"), *args], cwd=proj, env=e or env, capture_output=True, text=True
-    )
+    return _cli.run(proj, e or env, *args)
 
 
 def out(r):

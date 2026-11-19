@@ -44,11 +44,11 @@ WHO = {"type": "person", "name": "tester", "from": "flag"}
 ROWS = [{"item_id": "i1", "acc": 1.0}]
 
 
+import _cli  # noqa: E402
+
+
 def evh(*args: str) -> subprocess.CompletedProcess:
-    return subprocess.run(
-        [sys.executable, str(HARNESS / "scripts" / "cli.py"), *args], cwd=proj, env=env, capture_output=True,
-        text=True, stdin=subprocess.DEVNULL, timeout=600,
-    )  # fmt: skip
+    return _cli.run(proj, env, *args, timeout=600)
 
 
 def run(run_id: str, system: str, rnd: str | None = None, **kw) -> None:

@@ -13,7 +13,6 @@ the split rule, and `--by` there is who acted.
 import json
 import os
 import shutil
-import subprocess
 import sys
 import tempfile
 from pathlib import Path
@@ -79,15 +78,11 @@ for k in ("EVAL_DATA_DIR", "EVAL_MAX_COST_USD", "EVH_ACTOR", "EVH_FOR"):
     env.pop(k, None)
 
 
+import _cli  # noqa: E402
+
+
 def evh(*args, **extra):
-    return subprocess.run(
-        [sys.executable, str(HERE / "cli.py"), *args],
-        cwd=proj,
-        env={**env, **extra},
-        capture_output=True,
-        text=True,
-        stdin=subprocess.DEVNULL,
-    )
+    return _cli.run(proj, {**env, **extra}, *args)
 
 
 def out(r):

@@ -47,11 +47,11 @@ SCORES = {"sys_a": [1, 1, 1, 1, 1, 0], "sys_b": [1, 1, 0, 1, 0, 0], "sys_c": [0,
 PROJECT_READ, COPY_READ = ["i3", "i4", "i5"], ["i0", "i1"]
 
 
+import _cli  # noqa: E402
+
+
 def evh(*args: str) -> subprocess.CompletedProcess:
-    return subprocess.run(
-        [sys.executable, str(HARNESS / "scripts" / "cli.py"), *args], cwd=proj, env=env, capture_output=True,
-        text=True, stdin=subprocess.DEVNULL, timeout=600,
-    )  # fmt: skip
+    return _cli.run(proj, env, *args, timeout=600)
 
 
 def put(data: Path, rel: str, text: str) -> None:

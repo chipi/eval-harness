@@ -15,7 +15,6 @@ import json
 import os
 import re
 import shutil
-import subprocess
 import sys
 import tempfile
 from pathlib import Path
@@ -41,11 +40,12 @@ env = dict(os.environ, EVAL_BUILD_REF="test-outputs")
 env.pop("EVAL_MAX_COST_USD", None)
 
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _cli
+import _cli  # noqa: E402
+
+
 def evh(*args):
-    return subprocess.run(
-        [sys.executable, str(HERE / "cli.py"), *args], cwd=proj, env=env, capture_output=True, text=True,
-        stdin=subprocess.DEVNULL, timeout=300,
-    )  # fmt: skip
+    return _cli.run(proj, env, *args, timeout=300)
 
 
 def body(store: str) -> None:

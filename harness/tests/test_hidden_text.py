@@ -47,14 +47,11 @@ fields:
 """
 
 
+import _cli  # noqa: E402
+
+
 def evh(*args, extra_env=None):
-    return subprocess.run(
-        [sys.executable, str(HERE / "cli.py"), *args],
-        cwd=proj,
-        env={**env, **(extra_env or {})},
-        capture_output=True,
-        text=True,
-    )
+    return _cli.run(proj, {**env, **(extra_env or {})}, *args)
 
 
 def said(r):

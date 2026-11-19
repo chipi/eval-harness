@@ -81,12 +81,12 @@ def printed(fn, *a) -> str:
     return buf.getvalue().rstrip("\n")
 
 
+import _cli  # noqa: E402
+
+
 def evh(*args: str) -> subprocess.CompletedProcess:
     """`evh <args>` in the project."""
-    return subprocess.run(
-        [sys.executable, str(HERE / "cli.py"), *args], cwd=proj, env=os.environ.copy(), capture_output=True,
-        text=True, stdin=subprocess.DEVNULL, timeout=600,
-    )  # fmt: skip
+    return _cli.run(proj, os.environ.copy(), *args, timeout=600)
 
 
 def run(run_id: str, dataset: str, config: str, scores: list[float], **extra) -> None:

@@ -116,15 +116,11 @@ def call_system(text, params):
 """
 
 
+import _cli  # noqa: E402
+
+
 def evh(*args):
-    return subprocess.run(
-        [sys.executable, str(HERE / "cli.py"), *args],
-        cwd=proj,
-        env=env,
-        capture_output=True,
-        text=True,
-        stdin=subprocess.DEVNULL,
-    )
+    return _cli.run(proj, env, *args)
 
 
 #: Every server this test started: stopped in the end whatever happened (an exception mid-test left them serving a

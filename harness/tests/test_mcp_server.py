@@ -13,7 +13,6 @@ what a public server must not show; and every evh command is either a tool or li
 import json
 import os
 import shutil
-import subprocess
 import sys
 import tempfile
 from pathlib import Path
@@ -46,10 +45,11 @@ env = dict(os.environ, EVH_ACTOR="person:test", EVAL_HOME=str(proj), EVAL_BUILD_
 env.pop("EVAL_DATA_DIR", None)
 
 
+import _cli  # noqa: E402
+
+
 def evh(*args):
-    return subprocess.run(
-        [sys.executable, str(HERE / "cli.py"), *args], cwd=proj, env=env, capture_output=True, text=True
-    )
+    return _cli.run(proj, env, *args)
 
 
 READ_TOOLS = {op.name for op in _ops.of_kind("read")}

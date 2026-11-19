@@ -32,12 +32,13 @@ RUNS = HARNESS / "data" / "runs"
 CLI = HARNESS / "scripts" / "cli.py"
 
 
+import _cli  # noqa: E402
+
+
 def evh(*args: str, cwd: Path = HARNESS, **env_over: str) -> subprocess.CompletedProcess:
     env = {**os.environ, "EVAL_NO_CACHE": "1", **env_over}
     env.pop("EVH_P_CACHE", None)
-    return subprocess.run(
-        [sys.executable, str(CLI), *args], cwd=cwd, env=env, capture_output=True, text=True, timeout=600
-    )
+    return _cli.run(cwd, env, *args, timeout=600)
 
 
 def run_of(system_id: str) -> Path:

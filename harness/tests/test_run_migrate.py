@@ -17,7 +17,6 @@ import hashlib
 import json
 import os
 import shutil
-import subprocess
 import sys
 import tempfile
 from pathlib import Path
@@ -39,11 +38,12 @@ ITEMS = ["t03", "t01", "t02"]  # the dataset's order, not sorted
 OUT = {"t01": "one\r\nline", "t02": "two ✓", "t03": "three\n"}
 
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _cli
+import _cli  # noqa: E402
+
+
 def evh(*args):
-    return subprocess.run(
-        [sys.executable, str(HERE / "cli.py"), *args], cwd=proj, env=env, capture_output=True, text=True,
-        stdin=subprocess.DEVNULL, timeout=300,
-    )  # fmt: skip
+    return _cli.run(proj, env, *args, timeout=300)
 
 
 def old_run(d: Path, outs: dict, metrics: dict, rows: bool = False) -> None:

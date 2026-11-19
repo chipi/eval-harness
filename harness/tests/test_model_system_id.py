@@ -47,11 +47,11 @@ ROWS = [{"acc": 1.0, "item_id": "i1"}]  # canonical, as every release wrote them
 FP = {"version": 5, "arm": {"config_id": "sys_a", "labels": None}, "hash": "f" * 64}
 
 
+import _cli  # noqa: E402
+
+
 def evh(*args: str) -> subprocess.CompletedProcess:
-    return subprocess.run(
-        [sys.executable, str(HARNESS / "scripts" / "cli.py"), *args], cwd=proj, env=env, capture_output=True,
-        text=True, stdin=subprocess.DEVNULL, timeout=600,
-    )  # fmt: skip
+    return _cli.run(proj, env, *args, timeout=600)
 
 
 def put(rel: str, doc: object, *, sort: bool = True, ascii_: bool = True) -> None:

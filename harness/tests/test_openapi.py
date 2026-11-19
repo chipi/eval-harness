@@ -420,11 +420,11 @@ for k in ("EVAL_DATA_DIR", "EVAL_MAX_COST_USD"):
 SERVERS: list[subprocess.Popen] = []
 
 
+import _cli  # noqa: E402
+
+
 def evh(*args):
-    return subprocess.run(
-        [sys.executable, str(HERE / "cli.py"), *args],
-        cwd=proj, env=env, capture_output=True, text=True, stdin=subprocess.DEVNULL,
-    )  # fmt: skip
+    return _cli.run(proj, env, *args)
 
 
 def serve(*extra):

@@ -72,10 +72,12 @@ for k in ("EVAL_DATA_DIR", "EVAL_MAX_COST_USD", "EVH_FOR"):
     env.pop(k, None)
 
 
+import _cli  # noqa: E402
+
+
 def evh(*args, extra=None):
     e = {**env, **(extra or {})}
-    return subprocess.run([sys.executable, str(HERE / "cli.py"), *args], cwd=proj, env=e, capture_output=True,
-                          text=True, stdin=subprocess.DEVNULL)  # fmt: skip
+    return _cli.run(proj, e, *args)
 
 
 def git(*args):

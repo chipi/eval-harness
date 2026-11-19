@@ -69,11 +69,11 @@ VIEWS: list[tuple[str, dict]] = [
 ]
 
 
+import _cli  # noqa: E402
+
+
 def evh(*args: str) -> subprocess.CompletedProcess:
-    return subprocess.run(
-        [sys.executable, str(HERE / "cli.py"), *args],
-        cwd=proj, env=env, capture_output=True, text=True, stdin=subprocess.DEVNULL, timeout=900,
-    )  # fmt: skip
+    return _cli.run(proj, env, *args, timeout=900)
 
 
 def answers() -> dict[str, str]:

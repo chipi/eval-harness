@@ -17,11 +17,9 @@ from __future__ import annotations
 import json
 import os
 import shutil
-import socket
 import subprocess
 import sys
 import tempfile
-import time
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -31,6 +29,9 @@ HERE = HARNESS / "scripts"
 KIT = HARNESS / "tutorial"
 sys.path.insert(0, str(HARNESS))
 from evaluation_harness._check import check, summary  # noqa: E402
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _serve
+import _serve  # noqa: E402
 
 proj = Path(tempfile.mkdtemp(prefix="evh-goals-"))
 env = dict(
@@ -44,12 +45,12 @@ for k in ("EVAL_DATA_DIR", "EVAL_GOALS_DIR"):
     env.pop(k, None)
 
 
+import _cli  # noqa: E402
+
+
 def evh(*args: str) -> subprocess.CompletedProcess:
     """`evh <args>` in the test project."""
-    return subprocess.run(
-        [sys.executable, str(HERE / "cli.py"), *args], cwd=proj, env=env, capture_output=True, text=True,
-        stdin=subprocess.DEVNULL, timeout=600,
-    )  # fmt: skip
+    return _cli.run(proj, env, *args, timeout=600)
 
 
 def result(r: subprocess.CompletedProcess) -> dict:
@@ -59,21 +60,8 @@ def result(r: subprocess.CompletedProcess) -> dict:
 
 def serve() -> tuple[subprocess.Popen, int]:
     """catalog-serve on a free port, once it answers."""
-    with socket.socket() as s:
-        s.bind(("127.0.0.1", 0))
-        port = s.getsockname()[1]
-    p = subprocess.Popen(
-        [sys.executable, str(HERE / "cli.py"), "catalog-serve", "--port", str(port)], cwd=proj, env=env,
-        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, stdin=subprocess.DEVNULL,
-    )  # fmt: skip
-    for _ in range(300):
-        try:
-            with socket.create_connection(("127.0.0.1", port), timeout=0.2):
-                return p, port
-        except OSError:
-            time.sleep(0.1)
-    p.kill()
-    raise RuntimeError("the server did not start")
+    p, port, _out = _serve.start(proj, env)
+    return p, port
 
 
 def call(port: int, method: str, path: str, body: dict | None = None, data: bool = True) -> tuple[int, dict]:
@@ -231,8 +219,7 @@ try:
             refusals,
         )  # fmt: skip
     finally:
-        srv.terminate()
-        srv.wait(timeout=20)
+        _serve.stop(srv, proj)
 
     # A goal being written by a job: its lock is held, and a save is refused rather than waiting on it.
     holder = proj / "hold_goal.py"

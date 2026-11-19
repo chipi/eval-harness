@@ -55,9 +55,11 @@ WORDS = [
 ]
 
 
+import _cli  # noqa: E402
+
+
 def evh(*args, extra=None):
-    return subprocess.run([sys.executable, str(HERE / "cli.py"), *args], cwd=proj, env={**env, **(extra or {})},
-                          capture_output=True, text=True, stdin=subprocess.DEVNULL)  # fmt: skip
+    return _cli.run(proj, {**env, **(extra or {})}, *args)
 
 
 def study_of(goal, study):

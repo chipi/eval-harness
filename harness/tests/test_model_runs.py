@@ -46,14 +46,14 @@ SHA_B = "b" * 64
 DATA = proj / "data"
 
 
+import _cli  # noqa: E402
+
+
 def evh(*args: str) -> subprocess.CompletedProcess:
     """`evh <args>` in the test project, this process's hold on the database let go first (in SQLite the fixtures are
     written through it, and `evh migrate` refuses a database another process has open)."""
     _store.close()
-    return subprocess.run(
-        [sys.executable, str(HARNESS / "scripts" / "cli.py"), *args], cwd=proj, env=env, capture_output=True,
-        text=True, stdin=subprocess.DEVNULL, timeout=600,
-    )  # fmt: skip
+    return _cli.run(proj, env, *args, timeout=600)
 
 
 def record(run_id: str, system: str, *, platform: str = "Linux/x86_64", sha: str = SHA_A, ref: str = "gold/ds_v1",

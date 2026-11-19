@@ -19,11 +19,9 @@ from __future__ import annotations
 import json
 import os
 import shutil
-import socket
 import subprocess
 import sys
 import tempfile
-import time
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -32,6 +30,8 @@ HARNESS = Path(__file__).resolve().parents[1]
 HERE = HARNESS / "scripts"
 sys.path.insert(0, str(HARNESS))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _serve  # noqa: E402
+
 proj = Path(tempfile.mkdtemp(prefix="evh-dsops-"))
 os.environ["EVAL_HOME"] = str(proj)
 for k in ("EVAL_DATA_DIR", "EVAL_GOALS_DIR"):
@@ -44,12 +44,12 @@ SHA = "a" * 64
 SHA2 = "b" * 64
 
 
+import _cli  # noqa: E402
+
+
 def evh(*args: str) -> subprocess.CompletedProcess:
     """`evh <args>` in the test project."""
-    return subprocess.run(
-        [sys.executable, str(HERE / "cli.py"), *args], cwd=proj, env=env, capture_output=True, text=True,
-        stdin=subprocess.DEVNULL, timeout=600,
-    )  # fmt: skip
+    return _cli.run(proj, env, *args, timeout=600)
 
 
 def result(r: subprocess.CompletedProcess) -> dict:
@@ -63,21 +63,8 @@ def put(rel: str, doc: dict) -> None:
 
 def serve() -> tuple[subprocess.Popen, int]:
     """catalog-serve on a free port, once it answers."""
-    with socket.socket() as s:
-        s.bind(("127.0.0.1", 0))
-        port = s.getsockname()[1]
-    p = subprocess.Popen(
-        [sys.executable, str(HERE / "cli.py"), "catalog-serve", "--port", str(port)], cwd=proj, env=env,
-        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, stdin=subprocess.DEVNULL,
-    )  # fmt: skip
-    for _ in range(300):
-        try:
-            with socket.create_connection(("127.0.0.1", port), timeout=0.2):
-                return p, port
-        except OSError:
-            time.sleep(0.1)
-    p.kill()
-    raise RuntimeError(f"the server did not start: {(p.communicate()[0] or '')[-500:]}")
+    p, port, _out = _serve.start(proj, env)
+    return p, port
 
 
 def call(port: int, method: str, path: str, body: dict | None = None) -> tuple[int, dict]:
@@ -512,8 +499,7 @@ try:
             (code, code_new),
         )
     finally:
-        srv.terminate()
-        srv.wait(timeout=20)
+        _serve.stop(srv, proj)
 finally:
     shutil.rmtree(proj, ignore_errors=True)
 sys.exit(summary())

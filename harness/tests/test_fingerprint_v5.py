@@ -839,14 +839,11 @@ def score(output, reference):
 """
 
 
+import _cli  # noqa: E402
+
+
 def evh(*args):
-    return subprocess.run(
-        [sys.executable, str(HERE / "scripts" / "cli.py"), *args],
-        cwd=proj,
-        env=env,
-        capture_output=True,
-        text=True,
-    )
+    return _cli.run(proj, env, *args)
 
 
 def metrics_of(prefix):

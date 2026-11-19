@@ -32,13 +32,14 @@ base = Path(tempfile.mkdtemp(prefix="evh-storechoice-"))
 CLEAN = {k: v for k, v in os.environ.items() if not k.startswith("EVAL_")}
 
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _cli
+import _cli  # noqa: E402
+
+
 def evh(cwd: Path, *args: str, **env: str) -> subprocess.CompletedProcess:
     """`evh <args>` run in `cwd`, which is the project (EVAL_HOME), with no store setting but the ones given."""
     e = {**CLEAN, "EVAL_HOME": str(cwd), "EVAL_BUILD_REF": "test-store-choice", **env}
-    return subprocess.run(
-        [sys.executable, str(HERE / "cli.py"), *args], cwd=cwd, env=e, capture_output=True, text=True,
-        stdin=subprocess.DEVNULL, timeout=300,
-    )  # fmt: skip
+    return _cli.run(cwd, e, *args, timeout=300)
 
 
 def explains(text: str) -> bool:

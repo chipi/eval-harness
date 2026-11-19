@@ -14,7 +14,6 @@ content, and records a folder inside the project as it is.
 
 import json
 import os
-import subprocess
 import sys
 import tempfile
 from pathlib import Path
@@ -35,14 +34,11 @@ for k in ("EVAL_DATA_DIR", "EVAL_MAX_COST_USD"):
     env.pop(k, None)
 
 
+import _cli  # noqa: E402
+
+
 def evh(*args, cwd=None):
-    return subprocess.run(
-        [sys.executable, str(HERE / "cli.py"), *args],
-        cwd=cwd or proj,
-        env=env,
-        capture_output=True,
-        text=True,
-    )
+    return _cli.run(cwd or proj, env, *args)
 
 
 def out(r):

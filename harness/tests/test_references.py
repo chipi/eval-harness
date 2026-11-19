@@ -12,7 +12,6 @@ texts are missing; the catalog lists a manifest-only reference as fetched.
 import json
 import os
 import shutil
-import subprocess
 import sys
 import tempfile
 from pathlib import Path
@@ -29,11 +28,12 @@ env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-references")
 env.pop("EVAL_DATA_DIR", None)
 
 
+import _cli  # noqa: E402
+
+
 def evh(*args):
     """Run an evh command in the throwaway project."""
-    return subprocess.run(
-        [sys.executable, str(HERE / "cli.py"), *args], cwd=proj, env=env, capture_output=True, text=True
-    )
+    return _cli.run(proj, env, *args)
 
 
 def texts(rel):

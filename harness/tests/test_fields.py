@@ -15,7 +15,6 @@ import functools
 import http.server
 import json
 import os
-import subprocess
 import sys
 import tempfile
 import threading
@@ -34,10 +33,11 @@ env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-fields")
 env.pop("EVAL_DATA_DIR", None)
 
 
+import _cli  # noqa: E402
+
+
 def evh(*args):
-    return subprocess.run(
-        [sys.executable, str(HERE / "cli.py"), *args], cwd=proj, env=env, capture_output=True, text=True
-    )
+    return _cli.run(proj, env, *args)
 
 
 def out(r):

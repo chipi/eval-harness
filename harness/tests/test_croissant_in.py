@@ -13,7 +13,6 @@ import hashlib
 import json
 import os
 import shutil
-import subprocess
 import sys
 import tempfile
 from pathlib import Path
@@ -33,16 +32,11 @@ for k in ("EVAL_DATA_DIR", "EVAL_MAX_COST_USD"):
 CSV = "id,text,label\nn1,first note,a\nn2,second note,b\nn3,third note,a\n"
 
 
+import _cli  # noqa: E402
+
+
 def evh(*args):
-    return subprocess.run(
-        [sys.executable, str(HERE / "cli.py"), *args],
-        cwd=proj,
-        env=env,
-        capture_output=True,
-        text=True,
-        stdin=subprocess.DEVNULL,
-        timeout=300,
-    )
+    return _cli.run(proj, env, *args, timeout=300)
 
 
 def description(sha: str, fmt: str = "text/csv") -> dict:

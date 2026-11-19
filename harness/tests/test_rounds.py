@@ -15,11 +15,9 @@ import json
 import os
 import re
 import shutil
-import socket
 import subprocess
 import sys
 import tempfile
-import time
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -28,6 +26,8 @@ from typing import Any
 HERE = Path(__file__).resolve().parents[1] / "scripts"  # the core modules (this file is in tests/)
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tests/
+import _serve  # noqa: E402
+
 KIT = HERE.parent / "tutorial"
 import yaml  # noqa: E402
 from evaluation_harness import _common, _format, _rounds  # noqa: E402
@@ -42,10 +42,11 @@ for k in ("EVAL_DATA_DIR", "EVAL_MAX_COST_USD", "EVAL_GOALS_DIR"):
     env.pop(k, None)
 
 
+import _cli  # noqa: E402
+
+
 def evh(*args):
-    return subprocess.run(
-        [sys.executable, str(HERE / "cli.py"), *args], cwd=proj, env=env, capture_output=True, text=True
-    )
+    return _cli.run(proj, env, *args)
 
 
 def out(r):
@@ -54,21 +55,8 @@ def out(r):
 
 def serve():
     """catalog-serve on a free port, once it answers: (the process, the port, its bearer token)."""
-    with socket.socket() as sock:
-        sock.bind(("127.0.0.1", 0))
-        port = sock.getsockname()[1]
-    p = subprocess.Popen(
-        [sys.executable, str(HERE / "cli.py"), "catalog-serve", "--port", str(port)], cwd=proj, env=env,
-        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, stdin=subprocess.DEVNULL,
-    )  # fmt: skip
-    for _ in range(300):
-        try:
-            with socket.create_connection(("127.0.0.1", port), timeout=0.2):
-                return p, port, (proj / ".build" / "api-token").read_text().strip()
-        except OSError:
-            time.sleep(0.1)
-    p.kill()
-    raise RuntimeError("the server did not start: " + (p.stdout.read() if p.stdout else "")[-600:])
+    p, port, _out = _serve.start(proj, env)
+    return p, port, (proj / ".build" / "api-token").read_text().strip()
 
 
 def api(port, token, path):
@@ -802,8 +790,7 @@ try:
             json.dumps([got_list, got_none])[:600],
         )
     finally:
-        srv.terminate()
-        srv.wait(timeout=20)
+        _serve.stop(srv, proj)
 
     evh("catalog")
     page = (proj / ".build/catalog/g/tickets_summary.html").read_text()

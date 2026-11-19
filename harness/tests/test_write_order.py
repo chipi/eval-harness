@@ -50,15 +50,11 @@ def score(output, reference):
 """
 
 
+import _cli  # noqa: E402
+
+
 def evh(*args, **extra):
-    return subprocess.run(
-        [sys.executable, str(HERE / "cli.py"), *args],
-        cwd=proj,
-        env={**env, **extra},
-        capture_output=True,
-        text=True,
-        stdin=subprocess.DEVNULL,
-    )
+    return _cli.run(proj, {**env, **extra}, *args)
 
 
 def out(r):

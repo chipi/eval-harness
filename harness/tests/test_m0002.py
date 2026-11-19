@@ -46,13 +46,14 @@ def project(name: str, config: str) -> Path:
     return p
 
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _cli
+import _cli  # noqa: E402
+
+
 def evh(proj: Path, *args: str) -> subprocess.CompletedProcess:
     env = {k: v for k, v in os.environ.items() if k != "EVAL_DATA_DIR"}
     env.update(EVAL_HOME=str(proj), EVAL_STORE="files", EVAL_BUILD_REF="test-m0002")
-    return subprocess.run(
-        [sys.executable, str(HERE / "cli.py"), *args], cwd=proj, env=env, capture_output=True, text=True,
-        stdin=subprocess.DEVNULL, timeout=300,
-    )  # fmt: skip
+    return _cli.run(proj, env, *args, timeout=300)
 
 
 try:

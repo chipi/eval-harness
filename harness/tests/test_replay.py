@@ -43,9 +43,11 @@ for k in ("EVAL_DATA_DIR", "EVAL_MAX_COST_USD", "EVH_FOR"):
 EVH = f"{sys.executable} {HERE / 'cli.py'}"
 
 
+import _cli  # noqa: E402
+
+
 def evh(*args, extra=None):
-    return subprocess.run([sys.executable, str(HERE / "cli.py"), *args], cwd=proj, env={**env, **(extra or {})},
-                          capture_output=True, text=True, stdin=subprocess.DEVNULL)  # fmt: skip
+    return _cli.run(proj, {**env, **(extra or {})}, *args)
 
 
 def values(r):

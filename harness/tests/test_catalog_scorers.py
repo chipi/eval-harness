@@ -54,13 +54,13 @@ SHA = "a" * 64
 REPLY = "Verdictreplymarker"
 
 
+import _cli  # noqa: E402
+
+
 def evh(*args: str, home: Path | None = None) -> subprocess.CompletedProcess:
     """`evh <args>` in the test project; in `home`, a deployment's copy, read as files (render.sh's build)."""
     e = {**env, "EVAL_HOME": str(home), "EVAL_STORE": "files"} if home else env
-    return subprocess.run(
-        [sys.executable, str(HERE / "cli.py"), *args], cwd=home or proj, env=e,
-        capture_output=True, text=True, stdin=subprocess.DEVNULL, timeout=600,
-    )  # fmt: skip
+    return _cli.run(home or proj, e, *args, timeout=600)
 
 
 def stored(rel: str) -> str:
