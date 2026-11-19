@@ -1,8 +1,8 @@
 # ADR-0029 — One data model; the command line, the API and MCP made from one registry
 
-**Status:** Accepted (owner, 2026-11-13, [RFC-032](../rfc/RFC-032-one-model-two-surfaces.md)); built in 0.8.0, steps 1
-to 8, and of step 9 (the parts of RFC-026 this replaces) P1 to P3: the views' cache, the SQLite release, every read an
-operation answered in the server's process, every job an operation and its inputs, and no answer written ahead (P4).
+**Status:** Accepted (owner, 2026-11-13, [RFC-032](../rfc/RFC-032-one-model-two-surfaces.md)); built in 0.8.0: every
+step of the build order, 0 to 9, including step 9's P1 to P4 (the views' cache, the SQLite release, every read an
+operation answered in the server's process, every job an operation and its inputs, and no answer written ahead).
 **Date:** 2026-11-15
 **Detail:** [RFC-032](../rfc/RFC-032-one-model-two-surfaces.md) (its decision blocks, step by step),
 [RFC-026](../rfc/RFC-026-an-api-for-every-command.md) (what it keeps and what it replaces),
@@ -22,7 +22,7 @@ implementation. The owner asked for "the CLI and the API as different surfaces a
 **Three layers.** `model/` holds the entities and the views; `ops/` holds the operations; the command line, the API
 (`/api/v1`) and MCP are surfaces made from the operations. Runs, rounds, goals, datasets and their views are read
 through `model/`, which reads any data directory (a deployment's copy too) through its data root. The modules that still
-read data folders directly are not yet moved to the model layer: `judge_score`, `_baselines`, `family_test`,
+read data folders directly are not yet moved to the model layer, among them `judge_score`, `_baselines`, `family_test`,
 `dataset_split`, `_models`, `capture_restore`.
 
 **Entities.** Each has one schema, one id and one place: goal; dataset (its items, source, profile, versions, sealed
@@ -43,7 +43,7 @@ each operation's command-line arguments, the API's resources and their checks, i
 leaderboard, a comparison, label coverage: each computed from what is stored when read, never stored, read alike by
 the catalog, the Workbench, the command line and the API. The catalog renders the views; a write rebuilds it.
 
-**The project's format.** `data/project.yaml` names it; numbered migrations (`scripts/migrations/mNNNN_*.py`) take a
+**The project's format.** `data/project.yaml` names it; numbered migrations (`harness/evaluation_harness/migrations/mNNNN_*.py`) take a
 project forward, reading what is stored, never the current model; no version on each record, no down-migration (the
 backup is the rollback). A key that is part of a stored hash keeps its name: the fingerprint's `arm.config_id`,
 judging sets' arms, label sets' and silver references' sources, ids recorded at a promotion.

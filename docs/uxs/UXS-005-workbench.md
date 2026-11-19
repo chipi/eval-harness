@@ -345,7 +345,7 @@ decision kept with its reason. This is where people spend most of their time (W1
                                                                                    [ Make the sheet ]
 
  item   the item         A                          B                          which is better
- t01    The Palestinian  The Palestinian Authority  The Palestinian Authority  ( ) A  ( ) B  ( ) the same  ( ) neither
+ t01    The Palestinian  The Palestinian Authority  The Palestinian Authority  ( ) A  ( ) B  ( ) the same
  …
  The judgements' name [ … ]   Who you are [ … ]       [ Submit ]  12 answer(s) not submitted   [ Throw the sheet away ]
 ```
@@ -415,7 +415,7 @@ decision kept with its reason. This is where people spend most of their time (W1
   deployment, where it runs, its backend and tag, whether it passed onboarding, its flags, its arm smokes and what it accepts. **Add a
   deployment** is `deployment-new` (its id, where, its tag and address).
 - **Onboard** is `model-onboard`, a job with a cap (**Run the probes**): the probes run and their findings are kept as the
-  deployment's dated checks (`deployment-history`), shown, never typed (answers, thinks before answering, with the chosen
+  deployment's dated checks (stored in the deployment's history), shown, never typed (answers, thinks before answering, with the chosen
   settings, speed, the same answer twice, valid JSON). A model of ours costs nothing; a hosted one is charged for each probe call.
 - A **check** is read, then either fixed and onboarded again or **accepted** as the deployment's own nature with why
   (`deployment-accept`, a decision: the flag's kind, a sentence). There is no "approve as vetted": the page shows the rule, vetted when
@@ -467,9 +467,10 @@ decision kept with its reason. This is where people spend most of their time (W1
 ### W8 Settings
 
 - Rare, so terse: six rows, each one form with the command that does the same: where the project keeps its data (`data-migrate`, a job;
-  the server answers 503 with Retry-After while it moves, and the page waits it out), bringing the data to this release's formats
+  the server answers 503 with Retry-After while it moves, and the page waits it out; "Move it" is offered only once the dry run counted
+  something to move, and moving to the other store needs `store: <other>` set in `config.yaml` first), bringing the data to this release's formats
   (`migrate`), checking the project (`validate`, a read, shown as "checking…", its failures listed as `evh validate` prints them), the
-  two policies under `data/` (`validate.json`, `goals/policy.yaml`: `data-show`, `data-put`), budgets (set when a round opens) and
+  two policies under `data/` (`validate.json`, `goals/policy.yaml`: `data-show`, `data-put`; a file that did not exist when read is saved with `new: true`, so one made elsewhere since is not overwritten), budgets (set when a round opens) and
   publishing a dataset (`dataset-publish`, a job). The screen's detail is [UXS-004](UXS-004-data-page.md#the-settings-screen).
 - `config.yaml` (the exposure check's repos, for one) is not edited here: `data-put` writes only under `data/`.
 - A project whose data the release does not read (another format, a store just switched) opens live, and the settings are where it is put right.
@@ -493,7 +494,7 @@ decision kept with its reason. This is where people spend most of their time (W1
   at the seal, for safety only, never to judge an effect, with a field allowed by a decision with a reason (`dataset-seal-counts`); opening it for one
   candidate (`dataset-unseal`: its hypothesis committed first, one look, each later look tested at a stricter level); both arms run on it; and
   the confirmation, the read items left out and the full number beside it, marked.
-- **Hold some items out** (a split) is a form on the same screen: a dataset, by time (the time field and a boundary) or by hash (the test share),
+- **Hold some items out** (**Hold another dataset out** once one is) is a form on the same screen: a dataset, by time (the time field and a boundary) or by hash (the test share),
   and the fields its counts may show, with a box, ticked, to seal the test side. A split makes `<id>_validation` and `<id>_test`, and both sides join the goal
   (validation to tune on, test to decide on). Each side
   gets the parent's references, promoted from the same label sets at the same tiers; a parent with references is split only by someone named (the
@@ -598,13 +599,13 @@ and `evh` give the same numbers.
 | --- | --- | --- |
 | Home | `goal-list`, `goal-status` per goal, `jobs-status` | every goal with its next step; what is running |
 | Goal | `goal-status`, `chart trend` | where it stands, the next step, its datasets and rounds, the buttons to each step |
-| 1 Goal form | `goal-new` (with `datasets: []`), `goal-set`, `goal-show`, `goal-history`, `metric-list` | made from the home, changed from its page (only what changed is sent) |
+| 1 Goal form | `goal-new` (with `datasets: []`), `goal-set`, `goal-show`, `metric-list` | made from the home, changed from its page (only what changed is sent) |
 | 2 Dataset | `dataset-list`, `goal-set`, `source-preview`, `fieldset-propose`, `fieldset-new`, `dataset-create` | one the project has, or one from a source (its query, `source-preview`, its fields proposed and kept, `dataset-create` with them and its answers, the goal's role) |
 | 3 Prepare | `dataset-materialize`, `dataset-profile`, `dataset-show`, `reference-promote`, `chart` (rank-stability, agreement) | fetch, look inside, promote a label set (the dataset's own answers too); "Label it here" |
 | Label | `label-sheet`, `jobs-status` (its files), `label-import` | the sheet filled on the page and submitted when done |
 | 4 Models and systems | `model-list`, `model-show`, `system-list`, `system-show`, `system-new`, `prompt-show`, `prompt-version`, `arm-smoke` | a system made from a model where it runs, the shared prompt and settings (kept as versions of `<goal>/prompt`); a clone; each checked on three items with a cap |
 | Prompts | `prompt-list`, `prompt-show` (`text`), `prompt-diff`, `prompt-version`, `prompt-export` | every prompt with its versions and runs; two versions' diff; a new version made from the latest; a version written out as a file |
-| W5 Bring in a model | `model-new`, `deployment-new`, `model-onboard`, `model-show`, `deployment-history`, `deployment-accept` | a model, its deployments, the probes, an accepted flag; no "approve" |
+| W5 Bring in a model | `model-new`, `deployment-new`, `model-onboard`, `model-show`, `deployment-accept` | a model, its deployments, the probes, an accepted flag; no "approve" |
 | 5 / W1 The eval | `round-list`, `round-show`, `round-evidence`, `round-open`, `round-carry`, `POST /estimate`, `sweep`, `round-retire`, `round-close` (`promote`), `baselines`, `baseline-rollback`, `chart` (gain-cost, intervals, items, latency) | the rounds as tabs, a round's question, arms, evidence and baseline versions; open one, carry an arm in, see a run's cost, run arms as one sweep under a cap, retire with a reason, close with a conclusion |
 | W2 Review, label, tag | `dataset-arm-list`, `failure-modes-list`, `failure-modes-show`, `failure-modes-new`, `sheet-export`, `sheet-import` (`export_job`) | two arms compared on a sheet made as a job, "which is better" blind, or "what went wrong" with a failure-mode list; answers kept in this browser until submitted |
 | W3 Production | `capture-list`, `capture`, `dataset-from-capture`, `dataset-materialize`, `arm-from-capture`, `sheet-show` (`wrong_against`), `pick`, `dataset-extend`, `label-from-capture`, `label-coverage-show`, `periods`, `faithfulness-show`, `faithfulness` | records captured and made a dataset; production's decisions scored as an arm; the rows where it was wrong picked; the next version made from the picks; labels from what happened later; a code record's periods and faithfulness, a replay |
@@ -618,13 +619,14 @@ and `evh` give the same numbers.
 ## For every live screen
 
 - **The session.** The page opens through the Workbench link `evh catalog-serve` prints (it signs in once); the token is new at every server
-  start, so a page left open answers 401 on any call after a restart, and says to open the new link.
+  start, so a page left open answers 401 on any call after a restart and shows the server's message ("the API needs the server's token");
+  reloading the page shows "Sign in" and says to open the Workbench link the server printed.
 - **Writes.** Every call that is not a GET sends `X-EVH-Data: 1`; an upload is base64 JSON, at most 50 MB a call.
 - **Reads.** An API read that may have nothing to show takes `optional=1`: the server then answers 200 with why instead of an error, and the
   screen reads it as a refusal ("No chart yet: …", a chart left out).
 - **Refusals**, shown where the action was: an edit's problems on their fields (`{error, kind, problems}`); a job
   refused before it exists (`{error}`); a job that failed later (its state, its refusal's kind, its log); 503 with
-  Retry-After while the data is moved or migrated, retried after it. An unhandled server error is always a JSON 500.
+  Retry-After: 5 while a migration holds the project: job polling waits it out ("the project is being moved, waiting…"), other calls show the error. An unhandled server error is always a JSON 500.
 - **Who acted.** The name is asked once ("Who you are", kept in the browser) and sent as `person:<name>` with every write (`by`); every
   decision sends its reason.
 - **Kinds.** A read answers at once; an edit or a quick decision answers with what was saved; work is a job (its

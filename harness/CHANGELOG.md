@@ -546,7 +546,7 @@ that can move a result is never a patch release without saying so under **Change
 
 - **A past period at its own code, beside a candidate** (RFC-031 P2): `evh periods ID` (the model's ID) numbers a code
   record's deployed periods (with how each was dated, `dated_by: pull | commit`) and counts a replay's items in each;
-  `evh period-compare --system SYSTEM --model ID` reads a period's production, its code as it ran and a candidate, refuses to count when the
+  `evh period-compare SYSTEM --dataset D --candidate C` reads a period's production, its code as it ran and a candidate, refuses to count when the
   replay disagrees with production there, and gives the paired test on that period's items only.
 
 - **The labeller mutation-tested, and labels kept only where production is reproduced** (RFC-031 X1, X2): `evh
@@ -768,8 +768,7 @@ that can move a result is never a patch release without saying so under **Change
   the command's text and JSON; an API read's query inputs are typed by the operation's schema. Exposure registers,
   seals, looks and prompts read any data directory, so a copy's sealed side uses the copy's register.
 - **A goal's decision is made once** (RFC-032 step 8): the answers, groups, leader, contenders and axes a goal page,
-  `evh goal-list`, the overview and `evh leaderboard` show come from one view in the model, also served as `evh
-  goal-leaderboard` (`GET /api/v1/goals/{goal}/leaderboard`); a round's leader follows the goal's rule (never an arm
+  `evh goal-leaderboard` (`GET /api/v1/goals/{goal}/leaderboard`), the overview and `evh leaderboard` show come from one view in the model; a round's leader follows the goal's rule (never an arm
   with too few items, the wrong format, or one that wrote its reference). The overview's test of the leader against
   the baseline is corrected for the arms the leader was chosen from, as a round's is (it was not); the goal page's
   note on the recommended arm says it is one comparison. `evh leaderboard` shows the goal's arms and groups, every

@@ -27,7 +27,7 @@ Each layer freezes what it produces, so the next one can be redone without redoi
 | **2. Arms and runs** | a system per arm; per run its outputs, scores, cost, latency and a fingerprint of the system, the instrument and the data | `evh run`, `sweep`, `import-run` | a run missing any of the three inputs; an unknown goal |
 | **3. Scoring** | scores are arithmetic over stored outputs, so they can be redone | `rescore` ($0), `judge-score` (billed, optional) | a judge that is not validated |
 | **4. Decisions** | paired tests, rankings, baselines with a reason | `pair-test`, `family-test`, `leaderboard`, `run-promote` | comparing runs on two different `dataset_id`s |
-| **5. Goals** | what an evaluation is for and the measure that decides | `--goal` on run, validate V14 | a system or run naming a goal that does not exist |
+| **5. Goals** | what an evaluation is for and the measure that decides | `--goal` on run, validate V14 | a run or baseline naming a goal that does not exist |
 | **6. Looking** | the catalog (static pages), the run inspector (a local server), and the same read commands as MCP tools for an agent | `catalog`, `catalog-serve`, `mcp` | item text in the static pages or a public server's answers; mixed datasets in one comparison |
 
 Under all of them, `validate` (V1–V28) checks the tree in CI and exits non-zero, and

@@ -67,7 +67,7 @@ first and the arms' <NAME> when that is not set
               OPENAI_BASE_URL      not set (the default address)                  not set (the default address)
   anthropic   ANTHROPIC_API_KEY    not set                                        not set
               ANTHROPIC_BASE_URL   not set (the default address)                  not set (the default address)
-  openrouter  OPENROUTER_API_KEY   set (73 chars, ends …a1b2) (.env)            own: set (73 chars, ends …c3d4) (.env)
+  openrouter  OPENROUTER_API_KEY   set (73 chars, ends …a1b2) (.env)              own: set (73 chars, ends …c3d4) (.env)
   litellm     LITELLM_API_KEY      not set                                        not set
               LITELLM_BASE_URL     not set                                        not set
   arms can call: openrouter

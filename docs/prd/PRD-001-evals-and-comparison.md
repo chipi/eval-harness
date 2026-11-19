@@ -86,7 +86,7 @@ the [Runbook](../../harness/docs/RUNBOOK.md); the first evaluation, step by step
   reference, `scores/<scorer>@<reference>/{score.json, metrics.json, predictions.jsonl}`; each
   `metrics.json` carries the fingerprint (RFC-001).
 - **FR2.2**: `--dry-run` prints the calls, tokens and estimated cost and calls nothing; `--scratch` runs a throwaway pass under `.build/scratch/runs/`.
-- **FR2.3**: `--repeat N` measures a system's run-to-run spread; it is refused (would-overwrite) when the system already has a plain run on the dataset; use `--purpose repeat --of <run_id>` to repeat a run. A `--scratch` repeat is not refused.
+- **FR2.3**: `--repeat N` measures a system's run-to-run spread; it is refused (would-overwrite) when the system already has a plain run on the dataset; use `--purpose repeat --of <run_id>` to repeat a run. A `--scratch`, `--resume` or `--labels` repeat is not refused.
 - **FR2.4**: The core times every call (`latency_ms`) for an adapter that does not report its
   own, and records billed cost when the provider reports it, else tokens times the system's
   prices.

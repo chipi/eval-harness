@@ -8,8 +8,8 @@ metadata:
 # Compare arms and read the results
 
 Every answer here is a command; add `--json` and stdout is one object,
-`{"command", "version", "result": ...}`. Most commands structure it as `{"blocks": [...], "values": {...}}`: tables as columns and
-rows with their raw numbers, the key results as named values. Some commands like `goal-leaderboard`, `runs-list`, `looks` and `baselines` return structured results directly with keys like `answer`, `datasets`, `decision`, `goal`, `measure`, `statement`, etc. You do not need the catalog or
+`{"command", "version", "result": ...}`. Most reads return the operation's own structured result (`result.datasets`, `result.runs`, ...); `pair-test`, `family-test`, `leaderboard`, `validate` and a few more return `result.blocks` and `result.values`: tables as columns and
+rows with their raw numbers, the key results as named values. You do not need the catalog or
 `evh mcp`: they show the same numbers from the same code.
 
 The blocks run as written on the tutorial kit after `evh-evaluate-a-system`.

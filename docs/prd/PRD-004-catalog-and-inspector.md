@@ -124,7 +124,7 @@ adapter file ([ADR-0002](../adr/ADR-0002-catalog-inspector-goals.md),
   its origin to it.
 - **FR1.14**:
   - a tier is a large pill in its own colour wherever a reference or a tier is named; a label set is named by its
-    source chip (person, model, rule), never in a tier's colours; "scored against" names one or the other, always;
+    source chip (person, model, rule, dataset), never in a tier's colours; "scored against" names one or the other, always;
   - a Labels page under Data: every label set, its source, coverage, guideline, and what was promoted from it; a
     reference set's page says which label set it was promoted from, by whom, when and why;
   - the dataset page: its label sets, how often two agree, its picks waiting (a selection gives the

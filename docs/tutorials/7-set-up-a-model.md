@@ -57,6 +57,7 @@ evh model-onboard --model-id llama3.1-8b --deployment laptop
 ```
 ```text
 model-onboard: llama3.1-8b (llm)
+  laptop (laptop): http://127.0.0.1:11434/v1
   build: the server reports 46e0c10c039e, the record None
   default settings: 2.86 s, 19 tokens out, reasoned: False, end stop
   record's settings (none): 0.46 s, 19 tokens out, reasoned: False, end stop

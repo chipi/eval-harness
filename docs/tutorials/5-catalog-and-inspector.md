@@ -337,6 +337,6 @@ and what it defaults to:
 (`data/datasets/`, `data/runs/`, `data/references/`, `data/goals/`). If your runs live in
 another layout, write one adapter that answers the catalog's questions (which arms exist, what
 each scored per item, which references exist, what one item looked like) and name it in
-`config.yaml`: `catalog: {adapter: path/to/file.py:Class}`. Every command above takes the same
-adapter (`evh comparison-show path/to/file.py:Class`).
+`config.yaml`: `catalog: {adapter: path/to/file.py:Class}`. `evh catalog` and `evh catalog-serve`
+also take it as `--adapter` (`evh comparison-show` takes no adapter argument).
 [INTEGRATION](../../harness/docs/INTEGRATION.md#the-catalog-and-the-inspector) shows how.

@@ -612,7 +612,7 @@ tile opens it grouped by system (`arms.html?group=system`).
   - On a phone the grouping, the filters, the keys and the all / new / active chips fold behind one line ("group,
     filter and key · N on"); every chip row wraps. When new and active count the same, one chip says both.
   - The period is kept in the address beside the grouping (`?period=30d`); an older link's `#p30d` still opens it.
-    The picks (`?pick=`) and the sort (`?sort=<column>:<asc|desc>`) are kept there too; a shared link opens them.
+    The picks (`?pick=`) and the sort (`?sort=<column index>:<asc|desc>`) are kept there too; a shared link opens them.
   - Every grouping keeps what ranks together together: inside a system, model, provider or "scored against" group the
     rows cluster by dataset, reference and measure, and the deciding measure sorts within that set; with no grouping
     it sorts within each set too. The undecided note sits on its heading's line. "no reference" names an arm scored
@@ -788,8 +788,8 @@ is used. A models tile on the home page opens it, beside arms.
   re-score stands in for shows as the re-score, as on the goal pages): **arm** (linked), **deployment** (the one
   its system names, else the machine a self-hosted arm ran on, else the hosted deployment; linked to its
   section above), **goal**, **its settings**
-  (the record settings it overrides, then the task's own: its reply cap, call limit, temperature; `evh model-list
-  --model` shows the same column), **arm smoke** (pass / check / none, date, flags
+  (the record settings it overrides, then the task's own: its reply cap, call limit, temperature; `evh model-show <id>`
+  shows the same column), **arm smoke** (pass / check / none, date, flags
   on hover), **result** (the deciding measure).
 - Command: `evh model-show <id>`.
 

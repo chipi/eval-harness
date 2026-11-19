@@ -201,8 +201,8 @@ evh round-close --goal tickets_summary --round r1 --conclusion "…" --promote <
   decimals, as every command prints a p), the tests of the leader against earlier arms, `NOTE:`
   lines (the spend against the budget, runs made "since then" that the round does not read), and
   `next:` lines, each suggestion followed by its command, ready to paste. The close suggestion
-  carries `--promote <run_id>` only when the leader is not already the baseline ("close the round
-  with what it showed (<arm> is already the baseline)").
+  carries `--promote <run_id>` only when the leader is not already the baseline and the evidence puts it ahead ("close
+  the round with what it showed (<arm> is already the baseline)", otherwise "promoting nothing: <arm> is <reason>").
 - A reason or a conclusion shorter than three words is refused: it must be a sentence.
 - `--promote` runs `run-promote` with the conclusion as the reason; if the promotion is refused,
   the round stays open.

@@ -89,7 +89,7 @@ data/materialized/   derived, regenerable, disposable
 data/runs/
       ↓  evh label-from-run / label-import / label-from-capture   labels: a model's, a person's, a rule's
 data/labels/
-      ↓  evh reference-promote       ground truth to score against: labels promoted (gold | silver), with a reason
+      ↓  evh reference-promote       ground truth to score against: labels promoted (gold | silver), with a reason (--by or EVH_ACTOR is required, even at a terminal)
 data/references/
       ↓  evh leaderboard / pair-test / family-test / run-compare
 data/baselines/      evh run-promote — the number future work is judged against

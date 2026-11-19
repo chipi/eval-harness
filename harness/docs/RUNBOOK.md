@@ -47,7 +47,7 @@ What [Getting started](../../docs/GUIDE.md) walks: a dataset, its reference, run
 | the card; as Croissant 1.1 | `evh dataset-card …` · `… --format croissant --creator … > card.json` (it prints; redirect it) |
 | a new version | `evh dataset-create --dataset-id …_v2 --source-dir … --from …_v1` |
 | fields on an existing dataset | `evh dataset-create --dataset-id … --update-fields --fieldset … --fields …` |
-| validation and test | `evh dataset-split … --test 0.3 --seed 7 [--key F]` |
+| validation and test | `evh dataset-split … --test 0.3 --seed 7 [--key F]` · the split rule is `--split-by hash\|time` (hash is the default, and the seed applies to hash) |
 | a sealed held-out side | `evh dataset-split … --split-by time --key F --at T --seal [--count-by F,…]` · Each side gets the parent's references on its own items, promoted from the same label set at the same tier, recorded with who split it; an existing reference is kept; the sealed test side gets none and the command to run after unsealing is printed. A parent with references needs `--by` or `EVH_ACTOR` (bad-argument otherwise). `evh dataset-unseal …_test --system S --reason "…"` |
 | who read a held-out item; counts only | `evh exposure-add --dataset-id …_test --item ID --what "…"` · `evh exposure` · `evh exposure-check --dataset-id …_test` · `evh sealed-counts …_test` · `evh dataset-seal-counts --dataset-id …_test --add F --reason "…"` |
 | pick for the next version | `evh pick --dataset-id … --item … --for V` · `evh picks [--for V]` |
@@ -567,6 +567,7 @@ references:
 | `success_criteria.primary.reduce` | `mean` (the default), `majority` or `at_least_K` | how an arm's repeats make one score per item on the goal's measure: the mean, or for 0/1 scores right when more than half (or at least K) of the repeats are right |
 | `success_criteria.min_items` | an integer, at least 1 | The fewest items a winner-picking comparison may rest on: an arm with fewer is flagged "n k < min_items m" on the goal page and is never a group's leader; `evh validate` notes a goal dataset smaller than it (a note, not a failure) |
 | `success_criteria.axes` | a map of name → `{measure, direction, stat, limit, margin, role, unit, note}`, all optional. `cost` (`cost_usd`, mean, tokens shown beside it) and `speed` (`latency_ms`, p95) are built in and need no entry; `quality` takes only a `limit`, a `margin`, a `reference` and a `note` (its measure and direction are the primary's), and `margin` belongs to quality alone; any other name is the project's own axis, a per-item metric its runs record (`measure` defaults to the name, `direction` to the adapter's `METRIC_DIRECTIONS`, else `higher`, `stat` to `mean`). `role: ignore` drops an axis. `limit: baseline` in place of a number: an arm is out when the paired test finds it worse than the group's promoted baseline on that axis (p < 0.05, each arm on its own, not corrected across the arms; RFC-022); with no baseline promoted, no limit applies and the decision says so | The goal's decision ([ADR-0006](../../docs/adr/ADR-0006-goal-axes-and-strategies.md)): an arm past a `limit` is out, with the reason; `margin`, in the measure's units, is how much worse than the leader an arm may be and still be a contender: the arm must be *shown* no worse by more than it (a one-sided non-inferiority test against the leader, Holm across the candidates: Tango's score test for 0/1 scores at any size, the bootstrap-t from 100 items or equal clusters, 250 effective clusters when they differ in size, for other scores, "too few items to call a tie" below). With no margin set, the strategy's default: `balanced` 5% of the leader's mean, `frugal` 10%; `evh validate` notes each goal on a default. `quality: {reference: baseline}` tests contenders against the group's promoted baseline instead ("no worse than what runs now", for a goal about replacing it; the margin is then a share of the baseline's mean; with none promoted the leader is used, and said). The decision also says which margin the group can detect at all: with k candidates on n items (or clusters), a truly equal arm is shown within about (z(1 − 0.025/k) + z(0.8)) × the paired standard error, 80% of the time; a goal margin under it rarely admits anyone. It does not count the leader being chosen from the same data, which raises the bar further. The goal page and `evh goal-leaderboard` show a column per axis; V14 refuses an unknown key in an entry |
+| `success_criteria.secondary` | not allowed; the schema refuses it (V1/V14) | move its entries to `axes` |
 | `success_criteria.strategy` | `balanced` (the default), `quality_first` or `frugal` | Who the contenders are beside the quality leader: `balanced` shown no worse than the leader by more than the margin (default 5% of the leader); `quality_first` the same quality only; `frugal` the same test with a wider default margin (10%), so the cheaper arm wins more often |
 | `success_criteria.tie_break` | a list of axis names, default `[cost, speed]`; `quality` may be one | Among the contenders, the axes that pick, in order (`[cost, quality]`: the cheapest, then the best of the equally cheap). V14 fails a name the goal does not weigh |
 | `success_criteria.guardrails[]` | `{name, rule}` (required), `source` | Rules in words that no number checks: a "guardrails" row on the goal page, a line each in `evh goal-leaderboard`; never computed |
@@ -600,7 +601,7 @@ Write the number down; you need it in step 7. Cost and speed have a spread too, 
 say what they are (`latency_ms   spread=0.003833   speed, not a quality metric`): they move
 with the tokens and the machine, and say nothing about whether the arm is deterministic.
 
-The last line is per item: `per item, on overlap_f1: 3 runs, the same score on 38 of 40 items (pair-test counts each item once)`. The arm's spread can be 0 while items move, and repeats
+The last line is per item: `per item, on overlap_f1: 3 runs, the same score on 38 of 40 items (near-copies, not independent samples); read 40 items, not 120 item-runs (pair-test counts each item once)` (the near-copies note appears when at least 90% of the items agree). The arm's spread can be 0 while items move, and repeats
 that score nearly every item the same are one observation, not three: count items, never item-runs. `pair-test` does: an arm's repeats are averaged per item,
 and its `repeats` line (JSON `repeats`) names each arm's runs and how many items they agree on.
 
@@ -701,7 +702,7 @@ laptop and one made on a GPU box land in the same place. What is derived from a 
 read under a label of its own so it never shares a row with the measurement it came from:
 
 - **a repeat** of a measured run (`evh run --purpose repeat --of <run_id>`) is a run of its own, read under
-  `repeats` (each run is `<id>_r1`, `_r2`, ..., `_rN`; `--purpose repeat`, `retime` and `pair` read them under their own labels);
+  `repeats`; `--repeat N` instead writes N runs `<id>_r1` .. `_rN`, read under the plain label (`retime` and `pair` runs are read under their own labels);
 - **a re-score** (`evh rescore`) is a score under the run it re-read,
   `data/runs/<run_id>/scores/<scorer>@<reference>/`, read under `rescored <scorer>` (or `--label`);
 - **a judge's verdicts** (`evh judge-score`) are a score under each judged run, read under `judged/<scorer>`, with
@@ -1067,7 +1068,7 @@ every run that must name one, every item field declared, typed and matching its 
 reference made by promotion (a manifest saying where it came from) with texts matching its checksums, every capture's
 records matching the hashes it recorded, every model record and the systems naming it consistent, and every label set
 matching its hashes and its dataset, every `hypothesis:` in a system sound (V20), and every failure-mode list well formed with every tag set naming its modes and its dataset's items (V21), and every dataset's version the one its lineage gives, its licence
-on the list, its source block in form and its card's keys Croissant RAI's (V22); V24 checks every prompt version against its bytes, V25 reports when a test set's decisions took more than one look, V26 checks every faithfulness record and the systems naming it, and V27 examines every study and V28 names a row that is not a JSON object with an `item_id`. Every run's outputs are readable: a derived run finds its source's (V23). V4
+on the list, its source block in form and its card's keys Croissant RAI's (V22); V24 checks every prompt version against its bytes, V25 reports a look number two questions took, V26 checks every faithfulness record and the systems naming it, and V27 examines every study and V28 names a row that is not a JSON object with an `item_id`. V4
 checks only datasets materialized on this machine, and names each one it could not check (a CI
 job without the sources checks none: materialize first where the copy matters). Every run's outputs are readable: a derived run finds its source's (V23).
 
@@ -1084,7 +1085,7 @@ What it holds *your* project to is yours to declare, in `data/validate.json` (al
 }
 ```
 
-`committed` is the arm label prefixes (`runs`, `pair`, `repeats`, `adjudicated`, `judged-<scorer>`, etc.) your reports cite, each with its `floors`; every git-tracked `data/runs*` directory is checked, so one re-allowed in `.gitignore` is never
+`committed` is the arm label prefixes (`runs`, `pair`, `repeats`, `adjudicated`, `judged-<scorer>`, etc.) your reports cite, each with its `floors`; every other arm with a score git tracks is checked too, so one re-allowed in `.gitignore` is never
 skipped. `floors` makes deleting cited runs fail. `scorer_sources` lets V10 check that derived
 runs carry the current scorer's hash; each has `arms` (the label prefix its runs are under), `glob`, `path`, `module` (from project root), and `callable`. `duplicate_ok`
 names the (dataset, system) pairs allowed to repeat. `systems` adds globs (from the project root)
@@ -1322,7 +1323,7 @@ a judge's JSON reply into tau against the experts, and `judge-summ-v1` cites two
 **Validate on outputs like the ones you will judge.** A judge validated on one set may not transfer to another. The gate checks that a validation exists and is
 current, not that it transfers. `differs_from_this_use` is where
 you say how far it has to travel, and the honest next step is a small human check on your
-own outputs.
+own outputs. The evidence for the rule: judges validated on SummEval's 2019 summaries ranked modern LLM summaries above a fine-tuned BART, while one reader's check preferred BART 14 to 6 (p = 0.115), (`research/REPORT_SUMMARIZATION.md` §3.8).
 
 ---
 
@@ -1390,7 +1391,8 @@ evh round-retire --goal my_goal --round r1 --arm arm_b_v1 --reason "why it is dr
 evh round-retire --goal my_goal --round r1 --arm arm_b_v1 --label linux --reason "..."  # only the arm under that label
 evh round-close --goal my_goal --round r1 --conclusion "what it showed" [--promote <run_id>]
 evh round-open --goal my_goal --dataset my_v1 --from r1 --change "what changed and why" \
-    --keep arm_a_v1 --retire arm_c_v1 --reason "why" --budget-usd 0.50 --adopt  # or --keep all if none named
+    --keep arm_a_v1 --retire arm_c_v1 --reason "why" --budget-usd 0.50  # --keep all: every arm of --from (needs --from)
+# a goal's first round: evh round-open --goal my_goal --dataset my_v1 --adopt (refused once the goal has rounds)
 ```
 
 - **A new arm joins a round** by running in it, `evh run --goal G --round r2`; every run
@@ -1461,14 +1463,12 @@ page shows what is inside it once `evh dataset-profile` has written its profile 
 dataset is materialized: the items' lengths, the gold's labels or shape, and each item's link to
 its source when one is recorded; commit `data/profiles/` and a catalog built anywhere shows it.
 
-**For an agent with a shell**, every command the API serves takes `--json` (RFC-026): the views (`goal-list`, `goal-show`, `dataset-list`, `arm-list`, `reference-list`, `metric-show`, `overview-show`, `activity-show`), `comparison-show`,
-`leaderboard`, `pair-test`, `family-test`, `rank-stability`, `run-compare`, `round-list`, `round-evidence`, `runs-list`, and `validate` all answer
+**For an agent with a shell**, every command the API serves takes `--json` (RFC-026): one object, `{"command", "version", "result": {...}}`. Most reads return the operation's own structured result (`result.datasets` for `dataset-list`, `result.runs` and `result.count` for `runs-list`, `result.arms`, `result.baseline`, `result.rows`, `result.conditions` and `result.notes` for `comparison-show`, and so on). Only `leaderboard`, `validate`, `cost-report`, `rank-stability`, `pair-test`, `family-test`, `sheet-show`, `comparison-item` and `run-compare` answer
 `{"command", "version", "result": {"blocks": [...], "values": {...}}}`: `blocks` is what the
 command prints (each table with `columns` and `rows`, raw numbers as NaN=null), and `values` its key results by name.
-For views and reads: `blocks` and `values` together. For writes (`evh run`, `sweep`, `catalog`, `dataset-create`, `import-run`, `run-promote`, `rescore` and others):
-`values` only, naming their results. `comparison-show` gives `blocks` and `values` (the blocks are the printed tables, `values` has `verdict`, `delta`, `p`);
-`leaderboard` gives `blocks` and `values` (`values.groups` with each arm's rank and metrics, `ordering` test); `pair-test` and `family-test` give `blocks` and `values`;
-`runs-list` gives `blocks` with `count,label,labels,runs` columns, and `round-list` gives `blocks` with `goal,rounds`; `round-evidence` gives `blocks` and `values`. 
+`leaderboard`'s `values.groups` has each arm's rank and metrics, with the `ordering` test; `pair-test`'s `values` has `delta`, `p`, `method` and `verdict`; `family-test`'s table has `p_holm`, the Holm-adjusted p.
+For writes (`evh run`, `sweep`, `catalog`, `dataset-create`, `import-run`, `run-promote`, `rescore` and others):
+`values` only, naming their results.
 A refusal prints its message on stderr, nothing on stdout, and exits non-zero. `evh run` prints `  run <run_id>` for each run it wrote; with `--json` its progress goes to stderr and `values.runs` lists each run's
 `run_id`, `system_id`, `dataset_id`, `dir`, `n_items`, `total_cost_usd` and `capped_at` (`--dry-run --json`: `values.dry_run`, the projection). The text output without `--json` is unchanged.
 
@@ -1476,11 +1476,11 @@ A refusal prints its message on stderr, nothing on stdout, and exits non-zero. `
 each client is in [the integration guide](INTEGRATION.md#for-an-agent-evh-mcp).
 
 - **The tools** are the read operations of the registry (`evaluation_harness/ops`), each named as the operation, the
-  command and the API's resource are: 75 on your machine (`goal-list`, `goal-leaderboard`, `dataset-list`,
+  command and the API's resource are: 75 on your machine, among them `study-ask` and `study-tell` (`goal-list`, `goal-leaderboard`, `dataset-list`,
   `dataset-show`, `arm-list`, `comparison-show`, `comparison-items`, `sheet-show`, `leaderboard`, `pair-test`,
   `family-test`, `rank-stability`, `run-compare`, `runs-list`, `validate`, `data-ls`, `search`, ... as `evh mcp --help`
-  and the client's tool list show), and the agent sampler's `study-ask` and `study-tell`, which a public server does
-  not offer (62 tools on a public one). A tool takes the operation's own inputs, typed (`dataset`, `period`, `runs`; a list is an array, a flag a
+  and the client's tool list show); the agent sampler's `study-ask` and `study-tell` are not offered by a public server
+  (62 tools on a public one). A tool takes the operation's own inputs, typed (`dataset`, `period`, `runs`; a list is an array, a flag a
   boolean), except those that name a path of the server's (`items` on `pair-test` and `family-test`). A call is
   answered in the server's own process by the same operation the command and the API are made from, so its answer is
   what `--json` gives: the operation's result, as structured content and as JSON text, with no process started. No tool
@@ -1631,12 +1631,10 @@ to its source by its own `source_url`, else by `data/sources/<dataset_id>.rows.j
 counting only when its sha256 is the item's; only an http(s) address becomes a link. `evh
 dataset-items D [--item ID] [--json]` prints the profile.
 
-**`--json` on the views** (`overview-show`, `dataset-list`, `arm-list`, `goal-list`, `reference-list`, `metric-list`,
-`activity-show`, `capture-list`, `label-set-list` and the other reads): one object,
+**`--json` on the reads** (`comparison-show`, `goal-list`, `goal-show`, `goal-leaderboard`, `dataset-list`, `dataset-show`, `arm-list`, `reference-list`, `metric-list`, `metric-show`, `overview-show`, `activity-show`, `runs-list`, `round-list`, `round-show`, `round-evidence`, `baselines`, `looks`, `capture-list`, `label-set-list`, `model-list`, `model-show`, `prompt-list`, `study-list`, `failure-modes-list`, `tag-set-list`, `system-list`, `scorer-list`, `fieldset-list`): one object,
 `{"command", "version", "result": {...}}`, the result the operation's own structured answer (`result.datasets` for
-`dataset-list`, `result.runs` for `runs-list`, and so on). `pair-test`, `family-test`,
-`leaderboard`, `rank-stability`, `run-compare`, `validate`, `sealed-counts`, `comparison-item`, `comparison-items`,
-`comparison-crosstab` and `sheet-show` keep `result.blocks` and `result.values`.
+`dataset-list`, `result.runs` for `runs-list`, and so on). `leaderboard`, `validate`, `cost-report`, `rank-stability`,
+`pair-test`, `family-test`, `sheet-show`, `comparison-item` and `run-compare` give `result.blocks` and `result.values`.
 
 **The catalog's footer** names each page's command (`evh goal-leaderboard G`); `evh catalog --mcp URL`
 adds the same as an MCP tool call, with the server and a "how to connect" link (`--mcp-howto URL`,

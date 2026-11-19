@@ -86,7 +86,7 @@ correctness bugs, not just missing features.
     judging set's id and a run's reference hash are made of them). `data/renames.json` lists each renamed id; the
     catalog redirects an old arm page to its new one. Then change your commands: `evh run --system ID --dataset ID
     [--goal G] [--round R]` (a run names its goal and round now), `evh sweep --systems … --dataset …`, `arm-smoke`,
-    `faithfulness`, `period-compare`, `model-onboard` take `--system`/`--dataset`, `periods` takes the model positionally with `--system`/`--dataset` as optional filters, `deploy-sheet` and
+    `faithfulness`, `model-onboard` take `--system`/`--dataset`, `period-compare` takes the system positionally and `--dataset`, `periods` takes the model positionally with `--system`/`--dataset` as optional filters, `deploy-sheet` and
     `dataset-unseal` take `--system`, `arm-from-capture --like` takes a system id, `make run SYSTEM=… DATASET_ID=…`.
   - *runs and scores* (RFC-032 step 4, format 4): every pass of a system over a dataset is one run in
     `data/runs/<run_id>/` (`run.json`, `outputs.jsonl`) and every score of it sits under it, in
@@ -128,7 +128,7 @@ correctness bugs, not just missing features.
     run) and migrate again. Then change what reads the JSON answers: `system_id` replaces `config_id` in `evh leaderboard
     --json` (its rows and its column list), `evh runs-list --json`, `evh run --json` (the dry run and the run written),
     `evh baselines`, `evh prompt-show --json`'s runs, an arm's `config` block (`evh arm-show --json`), the compare answer
-    of `catalog-serve`, the key file `evh sheet-show` writes and, for a catalog adapter, the `{"system_id", ...}`
+    of `catalog-serve`, the key file `evh sheet-export` writes and, for a catalog adapter, the `{"system_id", ...}`
     its `arm_config(arm)` returns; the table headers follow, and `evh arm-show` says `system` where it said `config`.
     `evh validate`'s V8 is "no two runs share a system_id".
   - *results* (RFC-033, format 7, both stores): the three run settings in a row's `_meta` (`generation_config`,
@@ -136,7 +136,7 @@ correctness bugs, not just missing features.
     `run.json`'s `call`; a run whose rows differ keeps them in its rows. `_meta.usage` is cut to `cost`,
     `prompt_tokens`, `completion_tokens` and, when nonzero, `cached_tokens` and `cache_write_tokens` (the rest of the
     provider's billing object is not kept: it only comes back from the provider; a `usage` that is `null` or not an
-    object is left as it is), and rows are written as canonical text. `--dry-run` counts each. A SQLite project's
+    object is left as it is), and rows are written as canonical text. `--dry-run` counts each (a large diff in git: commit it with the migration). A SQLite project's
     database is copied first, as for every step; its per-item rows, kept as table `rows`, move into the tables
     `score_sets`, `metrics`, `call_facts`, `score_rows` and `score_values` (RFC-033, ADR-0030); `rows` is dropped and
     the database is vacuumed. A VACUUM that cannot run, for want of free disk about the size of the database, leaves the data

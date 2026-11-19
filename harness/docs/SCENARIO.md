@@ -423,3 +423,4 @@ command (`evh overview-show`, `evh dataset-list`, `evh arm-list`, `evh reference
 - Not re-checked by a run: whether "Review the outputs" shows its command before a sheet exists, and which actor a
   round record names when a name is typed in the Workbench and `EVH_ACTOR` is set.
 - Full-page screenshots repeat the sticky header mid-page.
+- Not exercised by a run yet: the direct OpenAI, Anthropic and OpenRouter paths (every run went through a LiteLLM proxy).

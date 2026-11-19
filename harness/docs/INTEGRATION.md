@@ -481,8 +481,8 @@ catalog publish, never an item's text):
 | Gemini CLI | `gemini mcp add --transport http evals https://evals.humancopilot.eu/mcp`, or in `~/.gemini/settings.json`: `{"mcpServers": {"evals": {"httpUrl": "https://evals.humancopilot.eu/mcp"}}}` |
 
 The Claude, Gemini and OpenAI lines follow each vendor's own documentation;
-the ChatGPT line follows third-party guides, as OpenAI renames that menu often. The server speaks
-every protocol revision without a session, which is what they send.
+the ChatGPT line follows third-party guides, as OpenAI renames that menu often. The server is stateless:
+it keeps no session, which is what these clients send.
 
 Ask it, for example: *"Which arm leads on the news_topic_ag goal, and is the lead significant?"* The
 agent calls `goal-leaderboard` (and `arm-list` for the detail) and answers from the same table and paired test

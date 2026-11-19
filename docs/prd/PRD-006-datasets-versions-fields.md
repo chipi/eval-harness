@@ -77,7 +77,7 @@ defines no field, a project declares its own
 ### FR2: Item fields
 
 - **FR2.1**: A field set is `data/fields/<fieldset_id>.yaml` (`schemas/fieldset.schema.json`): each
-  field has a name, a type (`text`, `number`, `integer`, `boolean`, `date`, `duration`, `url`,
+  field has a name, a type (`text`, `number`, `integer`, `boolean`, `date`, `datetime`, `duration`, `url`,
   `choice` with its values), a label, a description, and optionally `unit`, `required` and
   `public`.
 - **FR2.2**: A dataset names one field set and each item carries values for its declared names;

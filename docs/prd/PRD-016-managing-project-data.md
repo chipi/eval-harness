@@ -56,7 +56,8 @@ either store, with the same checks and the same words.
 ## Functional Requirements
 
 1. `evh data-ls [PATH] [--find TEXT] [--offset N]` lists what the project keeps under `data/`, in either store: the
-   overview (the store, every top-level folder with its file count), one folder, or the files whose path holds TEXT.
+   overview (the store, every top-level folder with its file count), one folder (each entry with its size and modification
+   time, 500 entries a page, `--offset` for the next), or the files whose path holds TEXT.
 2. `evh data-show PATH [--text] [--fields]` shows one file's size, date and sha256 and its text; `--fields` a setting's
    fields, one `KEY: value` a line; `--text` its text only.
 3. `evh data-put --path PATH [--by WHO]` creates or changes a setting (a system, a goal, a fieldset, a judge scorer, a
