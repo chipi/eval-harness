@@ -2828,7 +2828,9 @@ def _rounds_block(A: Adapter, g: dict, measure: str, above: str = "") -> str:
         '<p class="small muted">Rounds are optional: each one sets out to learn something, changes a few '
         "arms, drops what lost and says why, and ends in a conclusion. Decisions are made with "
         "<code>evh round-open</code>, <code>round-retire</code> and <code>round-close</code>; "
-        "<code>evh round-list</code> says the same as this page. Open a round for what changed, what was "
+        "<code>evh round-list</code> lists the rounds a line each; "
+        "<code>evh round-evidence &lt;goal&gt; &lt;round&gt;</code> prints a round's evidence and suggestions. "
+        "Open a round for what changed, what was "
         "retired and why, and what to do next.</p>"
         '<div class="roundcards"><div class="rc-head" aria-hidden="true"><div>round</div>'
         f"<div>concluded</div><div>set out to learn</div><div>arms · best on {e(measure)}</div></div>"

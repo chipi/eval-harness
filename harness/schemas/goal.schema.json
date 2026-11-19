@@ -60,7 +60,7 @@
             }
           }
         },
-        "strategy": {"enum": ["balanced", "quality_first", "frugal"], "description": "How the axes become a recommendation (ADR-0006): who the contenders are beside the quality leader. balanced (default): not significantly different AND within the quality margin; quality_first: the same quality only; frugal: anything not significantly different by the paired test."},
+        "strategy": {"enum": ["balanced", "quality_first", "frugal"], "description": "How the axes become a recommendation (ADR-0006): who the contenders are beside the quality leader (ADR-0026): an arm is a contender when a one-sided non-inferiority test (paired, Holm across the arms) shows it no worse than the leader by more than a margin, a share of the leader's mean; identical scores always qualify. balanced (default): margin 5%; frugal: 10%; quality_first: 0, the same quality only. `axes.quality.margin` sets the margin for any strategy."},
         "tie_break": {"type": "array", "items": {"type": "string"}, "description": "Among the contenders (the leader and the arms the strategy admits beside it), the axes that pick, in order (default: cost, then speed). `quality` may be one: [cost, quality] is the cheapest, then the best of the equally cheap."},
         "guardrails": {
           "type": "array",

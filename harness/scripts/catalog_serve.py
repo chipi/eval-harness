@@ -1568,7 +1568,7 @@ def main() -> int:
         metavar="HOST[,HOST]",
         help="the whole local inspector (pages, items, outputs, references) for these Host names too, behind a "
         "private proxy (a tailnet's Caddy); with --bind 0.0.0.0 in a container. No rate limit and nothing withheld, "
-        "unlike --public; the data page's writes stay this machine's own",
+        "unlike --public; the write API (/api/v1) and the Workbench stay this machine's own, never served to these Host names",
     )
     ap.add_argument(
         "--bind",

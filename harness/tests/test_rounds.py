@@ -933,7 +933,22 @@ try:
         (out(again)[-500:], out(dry)[-200:]),
     )
     # A closed round reads the runs it recorded: a later run of one of its systems is named beside it, never read into it.
+    pair_args = (
+        "pair-test",
+        "tickets_v1",
+        "--round",
+        "r1",
+        "--goal",
+        "tickets_summary",
+        "--a",
+        sys1,
+        "--b",
+        "tickets_author_v1",
+        "--json",
+    )
+    pair_before = evh(*pair_args)
     later = evh("run", "--system", sys1, "--dataset", "tickets_v1")
+    pair_after = evh(*pair_args)
     shown = evh("comparison-show", "--round", "r1", "--goal", "tickets_summary")
     ev = evh("round-evidence", "tickets_summary", "r1")
     n = len(arm1["runs"])
@@ -945,6 +960,16 @@ try:
         and (f"{sys1} ×{n}" in out(shown) if n > 1 else f"{sys1} ×" not in out(shown))
         and f"{sys1}: 1 run(s) since then not read here" in out(ev),
         (out(later)[-200:], arm_row, out(ev)[-400:], n),
+    )
+    # The printed warning about two runs of one system names the later run on purpose; the values are what is tested.
+    pair_values = lambda r: (json.loads(r.stdout).get("result") or {}).get("values")  # noqa: E731
+    check(
+        "pair-test --round reads the runs the round recorded too: a later run of one of its systems changes nothing",
+        pair_before.returncode == 0
+        and pair_after.returncode == 0
+        and bool(pair_values(pair_before))
+        and pair_values(pair_before) == pair_values(pair_after),
+        (out(pair_before)[-500:], out(pair_after)[-500:]),
     )
 finally:
     shutil.rmtree(proj, ignore_errors=True)

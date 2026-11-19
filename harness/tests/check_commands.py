@@ -12,7 +12,8 @@ hit it. This checks, in every fenced block and inline code span of the current d
   - `make <target>` (here or `make -C harness`): the target exists in one of the two
     Makefiles, every VAR=value names a variable that Makefile uses, and every --flag inside
     ARGS="..." is one the script behind the target accepts;
-  - every EVAL_*/EVH_* variable a doc or a Makefile's help names is one the harness's code reads (not checked in the
+  - every EVAL_*/EVH_* variable a doc, a Makefile's help or harness/.env.example names is one the harness's code reads
+    (not checked in the
     upgrade notes or the design records, which name variables as they were or as proposed).
 
 History is not checked: the research journal and the CHANGELOG describe commands as they
@@ -358,6 +359,10 @@ def self_check() -> list:
         bad.append(
             f"self-check: variables nothing reads: reported {got_env}, want EVAL_RUNS_DIR, EVAL_JUDGE_NOSUCH_KEY"
         )
+    env_example = "# the host\n#   EVAL_HOME=x\nEVAL_HOME=\n# gone\nEVAL_RUNS_DIR=\n"
+    got_example = [(n, name) for n, name in unread_env(env_example, code)]
+    if got_example != [(5, "EVAL_RUNS_DIR")]:
+        bad.append(f"self-check: .env.example: reported {got_example}, want [(5, 'EVAL_RUNS_DIR')]")
     got_dirs = [
         p for _, p in old_run_folders("`data/runs/<run_id>/` is\n`data/runs-judged/<scorer>/` is not\n")
     ]
@@ -374,6 +379,10 @@ def main() -> int:
             f"{mk.relative_to(REPO)}:{n}: the help names {name}, which nothing reads"
             for n, name in unread_env(make_help(mk), code)
         ]
+    bad += [
+        f".env.example:{n}: {name}: nothing reads this variable"
+        for n, name in unread_env((HARNESS / ".env.example").read_text(encoding="utf-8"), code)
+    ]
     for doc in DOCS:
         if doc in SKIP or not doc.is_file():
             continue

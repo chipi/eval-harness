@@ -86,6 +86,8 @@ def _round_values(dataset_id: str, args: Any = None) -> Any:
 
     ca = load_catalog_adapter(None)
     rnd = resolve(args.round, args.goal) if getattr(args, "round", None) else None
+    if rnd:
+        ca = model_rounds.round_view(ca, rnd)  # the runs the round recorded: a later run never moves its test
 
     def read(dataset: str, system_id: str) -> str:
         held = model_rounds.find_arm(rnd, system_id) if rnd else None
@@ -103,6 +105,19 @@ def _round_values(dataset_id: str, args: Any = None) -> Any:
         return dict(sc.get("values") or {})
 
     return values
+
+
+def _round_runs(runs: list, rnd: dict) -> list:
+    """`runs` as the round reads them: a system with arms that recorded runs keeps only those runs, so the runs
+    named, averaged and counted for an arm are the ones its test reads (`_round_values`); a system whose arms
+    record none keeps all of its runs."""
+    from evaluation_harness.model import rounds as model_rounds  # noqa: PLC0415
+
+    keep: dict[str, set] = {}
+    for a in model_rounds.arms(rnd):
+        if a.get("runs"):
+            keep.setdefault(a["system"], set()).update(a["runs"])
+    return [r for r in runs if r[1]["system_id"] not in keep or r[1]["run_id"] in keep[r[1]["system_id"]]]
 
 
 def _round_defaults(args: argparse.Namespace, runs: list, values: Any) -> tuple[bool, int]:
@@ -315,6 +330,10 @@ def _run(args: argparse.Namespace, ap: Any) -> int:
     # saying so. See _runs.warn_on_ambiguous_runs.
     warn_on_ambiguous_runs(args.label, args.dataset_id)
     runs = runs_on(args.dataset_id, label=args.label)
+    if args.round:
+        from evaluation_harness._rounds import resolve  # noqa: PLC0415
+
+        runs = _round_runs(runs, resolve(args.round, args.goal))
     cross = bool(args.b_dataset)
     runs_b = []
     if cross:

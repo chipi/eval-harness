@@ -167,12 +167,13 @@ demo:
 	  echo "make demo needs the bundled sample data in data/sources/."; \
 	  echo "If you stripped it for a real project, start at step 1 of docs/RUNBOOK.md:"; \
 	  echo "  make dataset-create DATASET_ID=my_v1"; exit 1; }
-	@$(MAKE) --no-print-directory dataset-create DATASET_ID=$(DATASET_ID) ARGS="--force"
+	@test -f data/datasets/$(DATASET_ID).json || \
+	  $(MAKE) --no-print-directory dataset-create DATASET_ID=$(DATASET_ID) ARGS="--glob '*.txt'"
 	@$(MAKE) --no-print-directory dataset-materialize DATASET_ID=$(DATASET_ID)
-	@$(MAKE) --no-print-directory run SYSTEM=$(SYSTEM) DATASET_ID=$(DATASET_ID) REPEAT=3
+	@$(MAKE) --no-print-directory run SYSTEM=$(SYSTEM) DATASET_ID=$(DATASET_ID) REPEAT=3 ARGS="--scratch"
 	@$(MAKE) --no-print-directory validate
 	@echo ""
-	@echo "Now: make runs-list, then make leaderboard DATASET_ID=$(DATASET_ID)"
+	@echo "Now: read the spread the run printed above. It is a scratch pass under .build/scratch/runs: runs-list and leaderboard do not read it."
 
 # ── data lifecycle ──────────────────────────────────────────────────────────
 dataset-create:
