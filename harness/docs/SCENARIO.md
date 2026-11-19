@@ -4,8 +4,10 @@ A person who has never used the harness pins a release candidate into an empty f
 using only the published docs, runs two small evals end to end: a summariser and a
 classifier, with no-model baselines, cheap hosted LLMs, an expensive frontier model whose run
 becomes the reference, and LLM judges, and one small CPU model, the fastest, for the summaries. They
-take the summariser through two eval rounds and a new dataset version, then browse everything
-in the catalog and the inspector. It costs under $1 and keeps a friction log.
+take the summariser through two eval rounds and a new dataset version, research it in a study on a
+validation set confirmed once on a held-out test, run a job, draw the evidence charts, do the loop's steps
+again in the Workbench, then browse everything in the catalog and the inspector. It costs under $1 and
+keeps a friction log.
 
 **It is a smoke test of the newcomer's path, not a release ritual.** Run it when something a
 newcomer touches changed since the last recorded run: the install, getting started, the
@@ -47,7 +49,8 @@ and returned nothing, fixed in 0.7.1), 10 needed a guess, about 15 of noise or p
 - **Screenshots and logs outside the project folder.** Keep screenshots and the pip install log outside
   the project's `evh-scenario/` folder (e.g. `~/screenshots/` or `/tmp/`) so they do not end up as
   untracked files in the scenario's git tree when you share it.
-- **Screenshots of every catalog and inspector page** listed under step 11, at 1400 px wide.
+- **Screenshots of every catalog and inspector page** listed under step 15, at 1400 px wide, and of every
+  Workbench screen listed under step 14, at 1400 px and at 390 px (a phone).
 
 ## 0 · A project
 
@@ -164,14 +167,15 @@ test and the frontier.
 ## 6 · Judge
 
 A judge scorer per dataset in `data/scorers/` (two judges from different vendor families, a
-`task` block, a prompt with `{n}`), for the summaries' faithfulness and coverage and the
-classifier's label fit and reason quality. They are not validated, so:
+`task` block, a prompt with `{n}`, and `explain: true` so each verdict says why), for the summaries'
+faithfulness and coverage and the classifier's label fit and reason quality. They are not validated, so:
 
 ```bash
 evh judge-score --dataset-id briefs_v1 --scorer briefs-judge-v1 --unvalidated --dry-run
 evh judge-score --dataset-id briefs_v1 --scorer briefs-judge-v1 --unvalidated
 evh judge-score --dataset-id briefs_v1 --scorer briefs-judge-v1 --unvalidated --retry-unparsed
 EVAL_RUNS_DIR=data/runs-judged/briefs-judge-v1 evh leaderboard briefs_v1
+evh judge-verdicts briefs-judge-v1 --limit 10     # the lowest scores first, each with its reason
 ```
 
 The same for `intents_v1` with its scorer, then commit what the judging wrote:
@@ -195,6 +199,7 @@ what the family test showed and what it costs against the frontier arm. For an a
 ```bash
 evh run-promote --run <run_id> --reason "<what the tests showed, and what it costs against the frontier arm>"
 git add data/baselines && git commit -qm "baselines"
+evh baselines                                     # each goal's baseline: current, why, its evidence
 ```
 
 ## 8 · Round 1 of the summariser, after the fact
@@ -225,11 +230,14 @@ evh round-open --goal brief_summary --dataset briefs_v1 --from r1 \
     --change "briefs_mistral_small_v2: the prompt asks for the news and its key facts, at most 25 words" \
     --keep briefs_mistral_small_v1,briefs_opus_v1 \
     --retire briefs_lead1_v1 --reason "<why it is dropped>" --budget-usd 0.05
-# data/systems/briefs_mistral_small_v2.yaml: the new prompt, a new system_id
+# data/systems/briefs_mistral_small_v2.yaml: a new system_id, its prompt in a file:
+#   prompts: {summary: {file: prompts/brief_summary.txt}}
 git add -A && git commit -qm "brief_summary r2: open; mistral-small v2"
 evh run --system briefs_mistral_small_v2 --dataset briefs_v1 --goal brief_summary --round r2 --repeat 3
-git add data/runs && git commit -qm "brief_summary r2: runs"
+git add data/runs data/prompts && git commit -qm "brief_summary r2: runs"
+evh prompt-list && evh prompt-show --name summary --text   # the version the runs used, and its text
 evh round-list brief_summary                    # r2 against r1's best, the baseline, the budget
+evh chart gain-cost --goal brief_summary --round r2         # each arm's gain against its cost, named only when tested
 evh comparison-show --round r2 --goal brief_summary --baseline briefs_mistral_small_v1
 evh leaderboard briefs_v1 --round r2
 evh catalog && evh catalog-serve                   # screenshot the goal page's rounds now: r2's suggestions show only while it is open
@@ -255,7 +263,93 @@ evh dataset-show briefs_v2                # made from briefs_v1: 1 added, 1 remo
 git add data/sources data/datasets && git commit -qm "briefs_v2 from briefs_v1"
 ```
 
-## 11 · Validate, then browse it
+## 11 · A study on a validation set, confirmed once on a held-out test
+
+Research belongs on a validation set; a test set is read once, for the decision. Split `briefs_v1`, give each
+side its gold, and add both sides to `brief_summary`'s `datasets:` (`role: validation` and `role: test`):
+
+```bash
+evh dataset-split --dataset-id briefs_v1 --test 0.4 --seed 7     # briefs_v1_validation, briefs_v1_test
+evh dataset-materialize --dataset-id briefs_v1_validation && evh dataset-materialize --dataset-id briefs_v1_test
+# each side's gold: the label-import and reference-promote of step 1, for that side's items
+git add -A && git commit -qm "briefs_v1 split, each side with its gold"
+evh run --system briefs_lead1_v1 --dataset briefs_v1_validation --goal brief_summary   # the study starts from it
+```
+
+The study varies how many sentences the no-model arm keeps (give the adapter's `lead` provider a `sentences`
+param, 1 by default), so it costs nothing. `lead_study.yaml`:
+
+```yaml
+dataset: briefs_v1_validation
+baseline: {system: briefs_lead1_v1}
+measure: rouge_l
+sampler: grid
+accept: {point: {min_gain: 0}}
+stop: {trials: 5}
+space:
+  groups:
+    - {name: length, reason: how much of the brief to keep, params: {sentences: [2, 3]}}
+```
+
+```bash
+evh study-run --study brief_summary/lead_length --spec lead_study.yaml --dry-run
+evh study-run --study brief_summary/lead_length --spec lead_study.yaml
+evh study-show brief_summary lead_length
+evh chart study-progress --goal brief_summary --study lead_length
+evh study-confirm --study brief_summary/lead_length --test briefs_v1_test --rule superiority --dry-run
+evh study-confirm --study brief_summary/lead_length --test briefs_v1_test --rule superiority
+evh looks                                          # the test set's looks, and the next one's level
+git add -A && git commit -qm "brief_summary: the lead_length study, confirmed"
+```
+
+A study never promotes: the confirmation is one look at the test set's next level and suggests a promotion
+only when the outcome meets the rule. Whatever it finds is the answer; check it says so plainly.
+
+## 12 · A job
+
+The Workbench runs its work as jobs; the terminal starts the same ones. Run the no-model arm over `briefs_v2`
+as a job and follow it:
+
+```bash
+evh jobs-start run --arg system=briefs_lead1_v1 --arg dataset=briefs_v2 --max-cost-usd 0
+evh jobs-status
+evh jobs-logs <job id> --follow
+git add data/runs && git commit -qm "lead1 on briefs_v2, as a job"
+```
+
+## 13 · The evidence charts
+
+```bash
+evh chart intervals --goal brief_summary --dataset briefs_v1     # each arm against the leader, with its interval
+evh chart latency --goal brief_summary --dataset briefs_v1
+evh chart rank-stability --dataset briefs_v1
+evh chart agreement --scorer briefs-judge-v1                       # the two judges, how far they agree
+evh chart trend --goal brief_summary
+evh chart gain-cost --goal brief_summary --round r2 --svg gain-cost.svg   # outside the project folder
+```
+
+Each prints the table it draws and its caption. Check that a quadrant such as "better and cheaper" is named only for a
+difference the tests support, and that the numbers are `family-test`'s and `round-list`'s for the same arms.
+
+## 14 · The same loop in the Workbench
+
+```bash
+evh catalog && evh catalog-serve      # open the Workbench link it prints
+```
+
+Follow [tutorial 8](../../docs/tutorials/8-the-workbench.md). Screenshot each screen
+at 1400 px and at 390 px: the home (every goal with its next step, what is running, the job from step 12);
+`brief_summary`'s steps 1 to 4 (the goal, its datasets, `briefs_v1`'s preparation and reference set, the systems);
+the eval (r1 and r2 as tabs, each with its evidence and its decisions); "Review the outputs" (two arms on
+`briefs_v1`); "A judge for this goal" (each verdict with its reason); "The held-out test" (the split from step 11,
+its look); "Every job"; "Settings". Each screen shows the command it runs: run that command in the terminal and
+check the numbers are the screen's.
+
+Then do one thing from the Workbench: open round r3 of `brief_summary` with `briefs_lead1_v1` and
+`briefs_mistral_small_v1`, run its arms as one sweep under a $0.05 cap, retire one with why, and close it. Check that
+`evh round-list brief_summary` and `evh jobs-status` show what the screens did, with your name as the actor.
+
+## 15 · Validate, then browse it
 
 ```bash
 evh validate
@@ -292,6 +386,10 @@ the page's.
 - A newcomer could tell from each page what the goal is, what was compared, against which
   reference, which run is the baseline and why, and what each round decided.
 - The spend stays under the cap and matches the sum of what each command printed.
+- Every Workbench screen shows its command, and that command in the terminal gives the screen's numbers;
+  nothing on a screen is cut off or scrolls the page sideways at 390 px.
+- The study's trials ran on the validation side only, its confirmation read the test side once (`evh looks`:
+  one look), and every judge verdict in step 6 carries a reason or says it is missing or withheld.
 - Each goal group's recommendation follows its strategy and says why: on `intents_v1` the
   keyword arm (0.875, free) is not significantly different from the frontier arm (1.000) but is further off
   than the 2% margin, so `balanced` recommends the frontier arm; `evh goal-leaderboard` and the
