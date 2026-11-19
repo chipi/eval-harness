@@ -225,6 +225,8 @@ def create(
     d = job_dir(job_id)
     d.mkdir(parents=True, exist_ok=True)
     _write_json(d / "inputs.json", inputs)
+    # job.json is written last: `read` takes a folder without it as no job, so a reader never sees a job without a state.
+    _write_json(d / "state.json", {"state": "queued", "waiting_for": None})
     _write_json(
         d / "job.json",
         {
@@ -239,7 +241,6 @@ def create(
             "harness": __version__,
         },
     )
-    _write_json(d / "state.json", {"state": "queued", "waiting_for": None})
     return job_id
 
 
@@ -336,7 +337,8 @@ def read(job_id: str) -> dict[str, Any]:
     """A job: its record and its state, with what the files cannot say by themselves: a `running` or `queued` job
     whose supervisor is gone reads `running (unsupervised)` while its command lives, else `lost`. How far it has got
     (`progress`: {done, total, at}, or None when its command reports none) and what it has spent so far (`spent_usd`)
-    are as the command last wrote them."""
+    are as the command last wrote them. A record without an `operation` (one from before jobs were operations, left in
+    .build/jobs) reads as a job of the operation `unknown`, its state as recorded; `create` always writes one."""
     d = job_dir(job_id)
     job = _read_json(d / "job.json")
     if not job:
@@ -349,6 +351,7 @@ def read(job_id: str) -> dict[str, Any]:
     return {
         **job,
         **st,
+        "operation": job.get("operation") or "unknown",
         "progress": progress,
         "spent_usd": spent(job_id),
         "result": res,

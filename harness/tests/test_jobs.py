@@ -515,6 +515,40 @@ try:
         and "succeeded" in r4.stdout,
         (st, r3.stdout[-300:], r3.stderr[-200:], r4.stdout[-200:]),
     )  # fmt: skip
+    # A record of a job from before jobs became operations (`command`/`argv`, no `operation`) is runtime state a
+    # project can still hold in .build/jobs: every reader shows it as a job of an unknown operation, never a crash.
+    old_id = "20200101T000000-a0b1c2"
+    old_dir = proj / ".build" / "jobs" / old_id
+    old_dir.mkdir(parents=True)
+    (old_dir / "job.json").write_text(
+        json.dumps({"id": old_id, "command": "catalog", "argv": ["--out", "x"], "by": None, "locks": [["catalog", True]],
+                    "env": {}, "created_at": "2020-01-01T00:00:00Z", "harness": "0.7.2"})
+    )  # fmt: skip
+    (old_dir / "state.json").write_text(json.dumps({"state": "succeeded", "exit": 0, "refusal": None}))
+    (old_dir / "log").write_text("old log line\n")
+    o1 = evh("jobs-status")
+    o2 = evh("jobs-status", "--json")
+    o3 = evh("jobs-status", old_id)
+    o4 = evh("jobs-logs", old_id)
+    st_o, listing = call("GET", "/api/v1/jobs")
+    st_o1, one = call("GET", f"/api/v1/jobs/{old_id}")
+    try:
+        cli_json = {j["id"]: j for j in json.loads(o2.stdout)["result"]["values"]["jobs"]}
+    except (ValueError, KeyError):
+        cli_json = {}
+    api_jobs = {j["id"]: j for j in listing.get("jobs", [])} if isinstance(listing, dict) else {}
+    check(
+        "a job record from before operations: jobs-status (list, --json, one), jobs-logs and GET /jobs[/id] show it as "
+        "a job of an unknown operation",
+        all(r.returncode == 0 for r in (o1, o2, o3, o4))
+        and old_id in o1.stdout and "unknown" in o3.stdout and "old log line" in o4.stdout
+        and cli_json.get(old_id, {}).get("operation") == "unknown"
+        and cli_json[old_id].get("state") == "succeeded"
+        and st_o == 200 and api_jobs.get(old_id, {}).get("operation") == "unknown"
+        and st_o1 == 200 and one.get("operation") == "unknown",
+        ([r.returncode for r in (o1, o2, o3, o4)], o1.stderr[-300:], o2.stderr[-300:], o3.stderr[-300:], st_o, st_o1),
+    )  # fmt: skip
+    shutil.rmtree(old_dir)
     r5 = evh("jobs-start", "round-close", "--arg", "goal=g")
     r6 = evh("jobs-start", "goal-list")
     check(
