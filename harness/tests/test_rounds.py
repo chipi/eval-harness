@@ -971,6 +971,31 @@ try:
         and pair_values(pair_before) == pair_values(pair_after),
         (out(pair_before)[-500:], out(pair_after)[-500:]),
     )
+    # A round that records, for an arm, only runs of another dataset (the newcomer run's r4 carried a run made on the
+    # study's dataset): the arm has no recorded run here, so every view of the round says so and none stops.
+    r5doc = yaml.safe_load(_runstore.read_text(proj, "rounds/tickets_summary/r5.yaml"))
+    r6doc = {**r5doc, "round_id": "r6", "dataset_id": "tickets_v1", "status": "closed", "closed_at": "2026-11-09T00:00:00Z",
+             "conclusion": {"text": "an arm whose recorded run is on another dataset"}}  # fmt: skip
+    r6doc.pop("from", None)
+    r6doc.pop("baseline", None)
+    _runstore.write_text(proj, "rounds/tickets_summary/r6.yaml", yaml.safe_dump(r6doc, sort_keys=False))
+    off_views = [
+        evh("round-evidence", "tickets_summary", "r6"),
+        evh("comparison-show", "--round", "r6", "--goal", "tickets_summary"),
+        evh("catalog", "--out", str(proj / "catalog_r6")),
+    ]
+    check(
+        "a round whose arm records only runs of another dataset: round-evidence, comparison-show --round and catalog "
+        "read it as having none, and none stops (comparison-show refuses a round with no arm in play, by name)",
+        off_views[0].returncode == 0
+        and "no arm in r6 records" in out(off_views[0])
+        and "since then not read here" in out(off_views[0])
+        and off_views[1].returncode != 0
+        and "round r6 has no arms in play yet" in out(off_views[1])
+        and off_views[2].returncode == 0
+        and not any("nothing caught" in out(v) for v in off_views),
+        [out(v)[-400:] for v in off_views],
+    )
 finally:
     shutil.rmtree(proj, ignore_errors=True)
     # _runstore aimed this process at the test project; the checks below read this repository's committed data,

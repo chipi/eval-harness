@@ -508,6 +508,9 @@ class HarnessAdapter:
         for arm, keep in (self._only or {}).items():
             if arm in out:
                 out[arm] = [d for d in out[arm] if model_runs.run_of(d).name in keep]
+                # none of the runs it recorded is of this arm here: in this view it has no run
+                if not out[arm]:
+                    del out[arm]
         # ONE REFERENCE PER ARM: the one its latest run was scored against. An arm's runs were
         # averaged whatever they were scored against, so a run on silver and a run on gold read
         # as two repeats of one measurement. Runs on another reference are left out, and said so.
