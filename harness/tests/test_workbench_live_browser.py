@@ -1773,6 +1773,38 @@ try:
                 all(v <= 0 for v in wide.values()),
                 wide,
             )
+            # The next round opens from the last: its form is on the last round's tab only, never on a closed round
+            # before it (the 0.8.0 newcomer run saw it on r1's and r2's tabs, with r3 the last).
+            open_now = [
+                x["round_id"]
+                for x in json.loads(evh("round-list", "tickets_summary", "--json").stdout)["result"]["rounds"]
+                if x["status"] == "open"
+            ]
+            for rid in open_now:
+                evh(
+                    "round-close",
+                    "--goal",
+                    "tickets_summary",
+                    "--round",
+                    rid,
+                    "--conclusion",
+                    "closed for the test",
+                )
+            rounds = [
+                x["round_id"]
+                for x in json.loads(evh("round-list", "tickets_summary", "--json").stdout)["result"]["rounds"]
+            ]
+            forms = {}
+            for rid in (rounds[0], rounds[-1]):
+                page.goto(f"http://127.0.0.1:{port}/workbench/#eval/tickets_summary/{rid}")
+                page.wait_for_selector("main h2", timeout=20000)
+                page.wait_for_timeout(1500)
+                forms[rid] = page.locator("#ro-q").count()
+            check(
+                "the open-round form is on the last round's tab, not on a closed round before it",
+                len(rounds) >= 2 and forms == {rounds[0]: 0, rounds[-1]: 1},
+                (rounds, forms),
+            )
             stranger = browser.new_context().new_page()
             stranger.goto(f"http://127.0.0.1:{port}/workbench/")
             stranger.wait_for_selector("h1:has-text('Sign in')", timeout=20000)

@@ -782,12 +782,13 @@
     const last = rounds[rounds.length - 1];
     // Each arm still in play in the last round, chosen one by one (all by default): the newcomer run could carry every
     // arm or none, so a round of two of them meant running one again.
-    const lastRec = last && !open ? load(`round:${goal}/${last.round_id}`, `/goals/${enc(goal)}/rounds/${enc(last.round_id)}`) : null;
+    const lastRec = last && !open && cur === last.round_id ? load(`round:${goal}/${last.round_id}`, `/goals/${enc(goal)}/rounds/${enc(last.round_id)}`) : null;
     const inPlayLast = lastRec && !lastRec.error ? lastRec.round.arms.filter((a) => !a.retired).map((a) => a.system) : [];
     const carry = !last ? "" : lastRec === undefined ? loading("its arms") : inPlayLast.length
       ? `<div class="choices" role="group" aria-labelledby="ro-keep-l">${inPlayLast.map((s) => `<label class="choice"><input type="checkbox" name="ro-keep" value="${esc(s)}" checked> <span class="mono">${esc(s)}</span></label>`).join("")}</div>`
       : '<p class="muted" style="margin:0">None is in play.</p>';
-    const openForm = open ? "" : `<section class="part" data-form="round-open"><div class="parthead"><h2>Open ${rounds.length ? "the next round" : "the first round"}</h2></div><div class="body">
+    // The next round opens from the last one: offered on its tab, not on every closed round before it.
+    const openForm = open || (last && cur !== last.round_id) ? "" : `<section class="part" data-form="round-open"><div class="parthead"><h2>Open ${rounds.length ? "the next round" : "the first round"}</h2></div><div class="body">
         <div class="field"><label class="name" for="ro-q">The round's question</label><div><textarea id="ro-q" rows="2" placeholder="Does a cheaper hosted model match the baseline's coverage?"></textarea><div class="hint">what this round should find out, in one sentence</div></div></div>
         <div class="field"><label class="name" for="ro-ds">On</label><div><select id="ro-ds">${datasets.map((x) => `<option>${esc(x)}</option>`).join("")}</select></div></div>
         ${last ? `<div class="field"><div class="name" id="ro-keep-l">Carry in from ${esc(last.round_id)}</div><div>${carry}<div class="hint">carried arms are not run again; on another dataset each is read through its runs there</div></div></div>` : ""}

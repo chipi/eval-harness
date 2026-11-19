@@ -508,7 +508,10 @@ def _evidence(goal: str, rnd: dict, A: Any, data: Path | None, g: dict, metric: 
     if priced:
         out["cost_per_item"] = priced
         out["notes"].append(
-            "cost per item: " + ", ".join(f"{a.rsplit('/', 1)[-1]} ${c:.6f}" for a, c in priced.items())
+            # The leader's and those it is read against (above), retired here or not: a newcomer read r1's best,
+            # retired in r2, as a retired arm left in by mistake.
+            "cost per item, the leader's and of the arms it is read against above: "
+            + ", ".join(f"{a.rsplit('/', 1)[-1]} ${c:.6f}" for a, c in priced.items())
         )
     lead_run = (
         sorted(model_runs.run_of(d).name for d in _dirs(A, leader))[0] if _dirs(A, leader) else "<run_id>"
