@@ -62,7 +62,8 @@
 
   // ── the help layer, over a drawn screen ──────────────────────────────────
   // A heading that is a help.js entry's title gets its ? (the entry's key, found by the title); a screen's lead gets the
-  // ? of its step. A word of the glossary is underlined the first time it appears on the screen, in running text only.
+  // ? of its step. A word of the glossary is underlined the first time it appears on the screen, in running text only:
+  // pointing shows its meaning, clicking opens the panel (the entry of help.js when it has one); it carries no ? of its own.
   const TITLE_KEY = {};
   for (const [k, v] of Object.entries(H)) if (v.title && !(v.title in TITLE_KEY)) TITLE_KEY[v.title] = k;
   const LEAD_KEY = { "goal-new": "goal", "goal-edit": "goal", dataset: "dataset", prepare: "prepare", systems: "models", eval: "eval", heldout: "heldout", study: "study", jobs: "jobs.what" };
@@ -99,7 +100,6 @@
         d.setAttribute("role", "button");
         d.textContent = rest.nodeValue;
         rest.replaceWith(d);
-        if (H[key]) d.insertAdjacentHTML("afterend", q(key));
         at = after;
       }
     }

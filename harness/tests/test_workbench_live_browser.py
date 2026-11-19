@@ -1819,13 +1819,16 @@ try:
             RAIL_JS = (
                 "() => Object.fromEntries([...document.querySelectorAll('#rail a.step[data-step]')].map((a) => "
                 "[a.dataset.step, [a.className.replace('step', '').trim(), a.getAttribute('href'), "
-                "a.getAttribute('aria-current') || '']]))"
+                "a.getAttribute('aria-current') || '', (a.querySelector('.why') || {}).textContent || '']]))"
             )
 
-            def rail_of(pg, screen: str, wait_for: str | None = None) -> dict:
+            def rail_of(pg, screen: str, reload: bool = True) -> dict:
                 """The rail's five steps on a screen: {step: [state class, href, aria-current]}, once its reads landed."""
                 pg.goto(f"{base_url}#{screen}")
-                pg.reload()  # the reads are kept until the screen changes: a new state of the project is read afresh
+                if (
+                    reload
+                ):  # the reads are kept until the screen changes: a new state of the project is read afresh
+                    pg.reload()
                 pg.wait_for_selector("#rail a.step[data-step]", state="attached", timeout=20000)
                 pg.wait_for_function(
                     "() => !document.querySelector('main').textContent.includes('Reading')", timeout=20000
@@ -1836,6 +1839,10 @@ try:
             def states(r: dict) -> dict:
                 return {k: v[0] for k, v in r.items()}
 
+            def lacks(r: dict) -> dict:
+                """What each step not done says it lacks (a done one says nothing)."""
+                return {k: v[3] for k, v in r.items() if v[3]}
+
             r_a = rail_of(page, "goal/rail_a")
             check(
                 "the rail of a goal with no dataset: the goal done, Add a dataset open, the rest locked and linking to the goal",
@@ -1845,6 +1852,17 @@ try:
                 and r_a["dataset"][1] == "#dataset/rail_a"
                 and r_a["goal"][1] == "#goal-edit/rail_a",
                 r_a,
+            )
+            check(
+                "a step not done says what it lacks: no dataset named, none to prepare, no system with runs, no round closed",
+                lacks(r_a)
+                == {
+                    "dataset": "no dataset named",
+                    "prepare": "no dataset to prepare",
+                    "systems": "0 of 2 systems with runs",
+                    "eval": "no round closed",
+                },
+                lacks(r_a),
             )
             rail_txt = page.locator("#rail").inner_text()
             day_links = page.evaluate(
@@ -1885,6 +1903,12 @@ try:
                 and r_b["prepare"][1] == "#prepare/rv1",
                 r_b,
             )
+            check(
+                "an unfetched dataset: Prepare says not fetched, not looked at yet, no reference set",
+                lacks(r_b)["prepare"] == "not fetched, not looked at yet, no reference set"
+                and "rv1" in page.locator("#rail .railds").inner_text(),
+                lacks(r_b),
+            )
             evh("dataset-materialize", "--dataset-id", "rv1")
             evh("dataset-profile", "--dataset-id", "rv1")
             r_c = rail_of(page, "prepare/rv1")
@@ -1895,6 +1919,11 @@ try:
                 and r_c["prepare"][2] == "page"
                 and "Rail with a dataset" in page.locator("#rail").inner_text(),
                 r_c,
+            )
+            check(
+                "fetched and looked at: Prepare lacks only the reference set",
+                lacks(r_c)["prepare"] == "no reference set",
+                lacks(r_c),
             )
             evh(
                 "label-import", "--sheet", str(KIT / "gold"), "--dataset-id", "rv1", "--set", "g", "--by", "t"
@@ -1921,6 +1950,11 @@ try:
                 and r_d["systems"][1] == "#systems/rail_b"
                 and r_d["eval"][1] == "#eval/rail_b",
                 r_d,
+            )
+            check(
+                "one system with runs: Choose the systems says 1 of 2; Prepare says nothing",
+                lacks(r_d) == {"systems": "1 of 2 systems with runs", "eval": "no round closed"},
+                lacks(r_d),
             )
             evh("run", "--system", "two_v1", "--dataset", "rv1")
             r_e = rail_of(page, "goal/rail_b")
@@ -1962,6 +1996,33 @@ try:
                 (closed.stdout[-300:], closed.stderr[-300:], r_f),
             )
 
+            check("a closed round: no step says it lacks anything", lacks(r_f) == {}, lacks(r_f))
+
+            # a goal with two deciding datasets: the rail follows the dataset the screen is on, and names it
+            evh("dataset-create", "--dataset-id", "rv2", "--source-dir", "tickets")
+            evh("goal-new", "rail_c", "--set", "title=Rail with two datasets", "--set", "statement=s.", "--set", "decision=d.",
+                "--set", "success_criteria.primary.measure=overlap_f1", "--set", "success_criteria.primary.direction=higher",
+                "--set", "datasets.0.dataset_id=rv1", "--set", "datasets.0.role=validation",
+                "--set", "datasets.1.dataset_id=rv2", "--set", "datasets.1.role=validation")  # fmt: skip
+            c_goal = rail_of(page, "goal/rail_c")
+            ds_goal = page.locator("#rail .railds").inner_text()
+            c_one = rail_of(page, "prepare/rv1", reload=False)
+            ds_one = page.locator("#rail .railds").inner_text()
+            c_two = rail_of(page, "prepare/rv2")
+            ds_two = page.locator("#rail .railds").inner_text()
+            check(
+                "on the goal the rail is about its first deciding dataset (rv1, prepared); on rv1's prepare screen rv1; on rv2's it names rv2 and says what rv2 lacks",
+                "rv1" in ds_goal
+                and states(c_goal)["prepare"] == "done"
+                and "rv1" in ds_one
+                and states(c_one)["prepare"] == "done"
+                and "rv2" in ds_two
+                and states(c_two)["prepare"] == "now"
+                and lacks(c_two)["prepare"] == "not fetched, not looked at yet, no reference set"
+                and c_two["prepare"][1] == "#prepare/rv2",
+                (ds_goal, ds_one, ds_two, lacks(c_two)),
+            )
+
             promoted = evh(
                 "run-promote", "--run", leader, "--goal", "rail_b", "--reason", "for the trend test"
             )
@@ -1973,7 +2034,7 @@ try:
             phone_rail = browser.new_context(
                 viewport={"width": 390, "height": 844}, storage_state=page.context.storage_state()
             ).new_page()
-            rail_of(phone_rail, "systems/rail_b")
+            rail_of(phone_rail, "systems/rail_c")
             toggle = phone_rail.locator("#rail .railtoggle")
             folded = phone_rail.locator("#rail a.step[data-step=eval]").is_visible()
             toggle.click()
@@ -1984,6 +2045,7 @@ try:
                 and not folded
                 and after
                 and toggle.get_attribute("aria-expanded") == "true"
+                and phone_rail.locator("#rail small.why").first.is_visible()
                 and phone_rail.evaluate("document.documentElement.scrollWidth - window.innerWidth") <= 0,
                 (toggle.inner_text(), folded, after),
             )
@@ -2049,8 +2111,14 @@ try:
             )
             page.locator("main dfn[data-word='goal']").first.click()
             check(
-                "clicking the word opens its longer explanation",
-                page.locator("#help").is_visible() and "The goal" in page.locator("#help").inner_text(),
+                "clicking the word opens its longer explanation; a word in running text carries no ? of its own",
+                page.locator("#help").is_visible()
+                and "The goal" in page.locator("#help").inner_text()
+                and page.evaluate(
+                    "() => [...document.querySelectorAll('main dfn[data-word]')].filter((d) => d.nextSibling"
+                    " && d.nextSibling.nodeType === 1 && d.nextSibling.classList.contains('q')).length"
+                )
+                == 0,
                 None,
             )
             page.goto(f"{base_url}#glossary")

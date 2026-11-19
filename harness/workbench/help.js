@@ -44,7 +44,7 @@ window.HELP = {
   "goal.measure": {
     title: "How you'll judge",
     hint: "The number that decides which system is better, and which way is better.",
-    what: "A measure is one number per example: how good one output is. coverage: how much of the reference a summary covers, cut to the reference's own length, so writing more cannot buy it. 0 to 1.",
+    what: "A measure is one number per example: how good one output is. For example, coverage: how much of the reference a summary covers, cut to the reference's own length, so writing more cannot buy it (0 to 1). Yours is whatever your decision depends on.",
     why: "The goal ranks systems by it. Pick the one your decision depends on. Quality goes up; cost and time go down.",
     wrong: "The \"best\" system wins at the wrong thing.",
     more: "Metrics",
@@ -393,6 +393,6 @@ window.GLOSSARY = {
   judge: "A model that scores outputs the way a person would; it may decide only after agreeing with people's labels.",
   "failure mode": "A named way an output can be wrong (overlong, narration), so tags are counted rather than re-invented in each note.",
   onboarding: "Probing a model once, for every goal: does it answer, how it counts tokens, what it costs. Kept in its record.",
-  coverage: "How much of the reference a summary covers, cut to the reference's own length, 0 to 1.",
+  coverage: "For example, the measure coverage: how much of the reference a summary covers, cut to the reference's own length, 0 to 1.",
   silver: "A reference set of a model's answers: enough to rank systems, not a claim about truth.",
 };

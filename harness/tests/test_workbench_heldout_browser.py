@@ -377,9 +377,7 @@ try:
             page.wait_for_selector("#sn6-go", timeout=20000)
             check(
                 "the studies: none yet",
-                # "study" is a glossary word: underlined once, with its ? after it
-                "No study" in page.locator("main").inner_text()
-                and "yet." in page.locator("main").inner_text(),
+                "No study yet." in page.locator("main").inner_text(),
                 page.locator("main").inner_text()[:300],
             )
             page.fill("#st6-by", "tester")

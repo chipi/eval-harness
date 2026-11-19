@@ -2526,15 +2526,29 @@
     const st = loadQ(`status:${goal}`, `/goals/${enc(goal)}/status`);
     if (st && st.error) return none();
     const rows = st ? st.datasets : [];
-    const d0 = rows.find((x) => x.decides) || rows[0];
+    // the dataset the states are about: the one the screen is on (its prepare, label and reference screens), else the first that decides
+    const d0 = (DATASET_ROUTES.includes(base) && rows.find((x) => x.dataset === param)) || rows.find((x) => x.decides) || rows[0];
     const detail = d0 ? loadQ(`dataset:${d0.dataset}`, `/datasets/${enc(d0.dataset)}`) : null;
     const parts = detail && !detail.error ? detail.parts : {};
     const prepared = !!d0 && !!d0.materialized && !!(parts.profile || {}).present && ((detail.references || []).length > 0 || d0.references.length > 0);
     const done = st ? {
       goal: true, dataset: rows.length > 0, prepare: prepared, systems: !!d0 && d0.arms >= 2, eval: st.rounds.some((r) => r.status === "closed"),
     } : {};
+    const loaded = !!detail && !detail.error;
+    const nRefs = loaded ? (detail.references || []).length : d0 ? d0.references.length : 0;
+    // what a step not done lacks, from the same facts its state is computed from
+    const lacks = (id) => {
+      if (!st || done[id]) return "";
+      if (id === "dataset") return "no dataset named";
+      if (id === "prepare") {
+        if (!d0) return "no dataset to prepare";
+        return [!d0.materialized && "not fetched", loaded && !(parts.profile || {}).present && "not looked at yet", !nRefs && "no reference set"].filter(Boolean).join(", ");
+      }
+      if (id === "systems") return `${d0 ? d0.arms : 0} of 2 systems with runs`;
+      return "no round closed";
+    };
     const open = { goal: true, dataset: true, prepare: !!done.dataset, systems: !!done.prepare, eval: !!done.prepare };
-    const href = (id) => (!st || open[id]
+    const href = (id) => (!st || open[id] || done[id]
       ? { goal: `#goal-edit/${enc(goal)}`, dataset: `#dataset/${enc(goal)}`, prepare: `#prepare/${enc(d0 ? d0.dataset : "")}`, systems: `#systems/${enc(goal)}`, eval: `#eval/${enc(goal)}` }[id]
       : `#goal/${enc(goal)}`);
     const here = RAIL_STEPS.find((x) => x.id === cur), dayHere = RAIL_DAY.find(([id]) => id === day);
@@ -2542,11 +2556,13 @@
     layout.classList.remove("no-rail");
     rail.innerHTML = `<button type="button" class="railtoggle" aria-expanded="${rail.classList.contains("open")}">${esc(fold)} ▾</button>
       <div class="label">Goal</div><div class="goalname">${esc((st && st.title) || goal)}</div>
+      ${d0 ? `<div class="railds">states for dataset <span class="mono">${esc(d0.dataset)}</span></div>` : ""}
       <a class="step" href="#goal/${enc(goal)}" ${overview ? 'aria-current="page"' : ""}><span class="dot">≡</span>Overview</a>
       ${RAIL_STEPS.map((x) => {
-        const locked = !!st && !open[x.id];
+        const locked = !!st && !open[x.id] && !done[x.id];
         const cls = done[x.id] ? "done" : locked ? "locked" : cur === x.id ? "now" : "";
-        return `<a class="step ${cls}" data-step="${x.id}" href="${href(x.id)}" ${cur === x.id ? 'aria-current="page"' : ""} ${locked ? 'title="Finish the step before it first"' : ""}><span class="dot">${done[x.id] ? "✓" : x.n}</span>${esc(x.name)}</a>`;
+        const why = lacks(x.id);
+        return `<a class="step ${cls}" data-step="${x.id}" href="${href(x.id)}" ${cur === x.id ? 'aria-current="page"' : ""} ${why ? `title="${esc(why)}"` : ""}><span class="dot">${done[x.id] ? "✓" : x.n}</span><span>${esc(x.name)}${why ? `<small class="why">${esc(why)}</small>` : ""}</span></a>`;
       }).join("")}
       <div class="label" style="margin-top:18px">Day to day</div>
       ${RAIL_DAY.map(([id, name]) => `<a class="step" data-day="${id}" href="#${id}/${enc(goal)}" ${day === id ? 'aria-current="page"' : ""}><span class="dot">·</span>${esc(name)}</a>`).join("")}`;

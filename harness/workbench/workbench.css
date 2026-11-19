@@ -463,4 +463,6 @@ main .chart.evidence svg[role="img"] text { font-size: 12.5px; }
 .chart-box details.table summary { cursor: pointer; color: var(--ink-2); }
 
 /* the rail opened on a phone lists the steps one under the other */
-@media (max-width: 900px) { .rail.open { flex-direction: column; } .rail.open .label, .rail.open .goalname { display: block; } }
+@media (max-width: 900px) { .rail.open { flex-direction: column; } .rail.open .label, .rail.open .goalname, .rail.open .railds { display: block; } .rail .railds { display: none; } }
+.rail .railds { font-size: 12px; color: var(--muted); margin: -8px 0 12px; }
+.rail .why { display: block; font-size: 12px; color: var(--muted); }
