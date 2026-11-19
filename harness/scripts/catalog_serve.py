@@ -1653,6 +1653,8 @@ def main() -> int:
     )
     try:
         server.server_bind()
+        # --port 0: the system chose one; every line below names it (they printed :0, which opens nothing)
+        args.port = int(server.server_address[1])  # an AF_INET (host, port)
         local = not args.public and not LIMITS.get("proxy_hosts")
         if local:
             from evaluation_harness import _api  # noqa: PLC0415

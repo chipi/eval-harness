@@ -3057,7 +3057,7 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
                         # One pair picked from a group of many: held to the group's family (every
                         # arm in it against the leader), never tested as if it were the only one.
                         f'<a class="btn small" href="{inspect_url([r["arm"], leader["arm"]], "../", baseline=leader["arm"], metric=gm, family=max(len(dec["eligible"]) - 1, 1))}">test vs leader</a>'
-                        if leader and r["arm"] != leader["arm"]
+                        if leader and r["arm"] != leader["arm"] and not r.get("wrote")
                         else ("leader" if leader and r is leader else "")
                     )
                     tag = (
@@ -3090,10 +3090,17 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
                         }
                     )
                 # Retired arms stay in the table (history) but are not tested again: the link names the leader's
-                # live rivals, and says how many it leaves out.
-                live = [r["arm"] for r in rows if not retired_round(retired_in, r["arm"]) or r is leader]
+                # live rivals, and says how many it leaves out. The arm that wrote the reference is left out too: it
+                # is scored against its own outputs, so against the leader it is always "better" (the 0.8.0 newcomer
+                # run's silver group tested it, p <0.0001), as the leaderboard leaves it out of its ordering test.
+                author = [r for r in rows if r.get("wrote") and r is not leader]
+                live = [
+                    r["arm"]
+                    for r in rows
+                    if (not retired_round(retired_in, r["arm"]) or r is leader) and r not in author
+                ]
                 arms = live[:INSPECT_MAX]
-                left_out = len(rows) - len(live)
+                left_out = len(rows) - len(live) - len(author)
                 what = grp["key"]
                 need = (g.get("success_criteria") or {}).get("min_items")
                 short = (
@@ -3110,6 +3117,12 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
                         + (
                             f' <small class="muted">({left_out} retired arm{"s" if left_out != 1 else ""} left out)</small>'
                             if left_out
+                            else ""
+                        )
+                        + (
+                            f' <small class="muted">({e(", ".join(named[r["arm"]] for r in author))} left out: it wrote '
+                            "the reference, so it is scored against its own outputs)</small>"
+                            if author
                             else ""
                         )
                         + "</p>"

@@ -409,6 +409,30 @@ try:
         finally:
             srv.terminate()
             srv.wait(timeout=10)
+
+    # --port 0: the system picks a free port, and the start-up lines name that one (they printed :0, an address that
+    # opens nothing; found 2026-11-19 starting a server from a script).
+    import re
+
+    import _serve
+
+    any_port = subprocess.Popen(
+        [sys.executable, str(HERE / "cli.py"), "catalog-serve", "--port", "0"],
+        cwd=proj, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, stdin=subprocess.DEVNULL,
+    )  # fmt: skip
+    try:
+        said = _serve.startup(any_port, [])
+        m = re.search(r"catalog: http://127\.0\.0\.1:(\d+)/", "\n".join(said))
+        got = int(m.group(1)) if m else 0
+        st = call(got, "GET", "/api/v1/goals")[0] if got else None
+        check(
+            "catalog-serve --port 0 names the port it listens on, and that port answers",
+            got > 0 and st in (200, 401) and f":{got}/api/v1/" in "\n".join(said),
+            (said[:3], st),
+        )
+    finally:
+        any_port.terminate()
+        any_port.wait(timeout=10)
 finally:
     shutil.rmtree(proj, ignore_errors=True)
 sys.exit(summary())

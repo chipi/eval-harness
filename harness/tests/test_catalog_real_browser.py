@@ -599,7 +599,7 @@ def drive(cat: Path, base: str) -> None:
         # group whose arms all have too few items says so on its heading (it stays listed, never recommended).
         from evaluation_harness.catalog_build import slug  # noqa: PLC0415
 
-        retired_in_link, unmarked = [], []
+        retired_in_link, unmarked, author_tested = [], [], []
         for gp in sorted((cat / "g").glob("*.html")):
             for grp in gp.read_text(encoding="utf-8").split('<h3 class="sub">')[1:]:
                 head, _, rest = grp.partition("</h3>")
@@ -609,12 +609,18 @@ def drive(cat: Path, base: str) -> None:
                     for row in re.findall(r'<tr class="[^"]*t-retired[^"]*".*?</tr>', grp_html, re.S)
                     for m in re.findall(r'href="\.\./a/([^"]+)\.html"', row)
                 }
+                # The arm that wrote the reference is scored against its own outputs: never tested against the
+                # leader, neither in the group's link nor from its own row (the 0.8.0 newcomer run).
+                author_rows = re.findall(r'<tr class="[^"]*t-author[^"]*".*?</tr>', grp_html, re.S)
+                authors = {m for row in author_rows for m in re.findall(r'href="\.\./a/([^"]+)\.html"', row)}
+                author_tested += [f"{gp.stem}: its row" for row in author_rows if "test vs leader" in row]
                 btn = re.search(
                     r'<a class="btn" href="\.\./inspect\.html\?runs=([^&"]+)[^"]*">Test every arm', grp_html
                 )
                 if btn:
                     ids = [slug(x) for x in btn.group(1).split(",")]
                     retired_in_link += [f"{gp.stem}: {x}" for x in ids if x in gone]
+                    author_tested += [f"{gp.stem}: {x}" for x in ids if x in authors]
                     if gone and " left out)" not in grp_html.split("</p>")[0]:
                         unmarked.append(f"{gp.stem}: link does not say retired arms are left out")
                 if "No arm is eligible: n " in grp_html and "below the goal" not in head:
@@ -623,6 +629,11 @@ def drive(cat: Path, base: str) -> None:
             "goal pages: the leader link leaves out retired arms (and says so); a group below min_items says so",
             not retired_in_link and not unmarked,
             f"retired arms in a link {retired_in_link[:4]}; unmarked short groups {unmarked[:4]}",
+        )
+        check(
+            "goal pages: the arm that wrote the reference is never tested against the leader (link or row)",
+            not author_tested,
+            author_tested[:6],
         )
 
         # A dataset page opens on the measure its goal decides on, and never inspects two judges' scores as one.
@@ -768,10 +779,41 @@ def drive(cat: Path, base: str) -> None:
                 page.locator("#sheettable").count() == 1 and not over,
                 f"headers over their cells: {over[:3]}" if over else page.locator("main").inner_text()[-300:],
             )
+
         # Against a silver reference the inspector names its author and marks that arm's row, so a "better 1.000" is
         # read as the author scored against its own output; an item's cards lead with the item's score.
+        # The catalog's own links leave the author out (it is never tested against a leader), so the comparison
+        # adds it, as a person comparing it by hand would: the reference's manifest names it. Four arms besides it
+        # are enough to see its row marked.
+        def with_author(q: str) -> str:
+            from urllib.parse import unquote  # noqa: PLC0415
+
+            whole = q.split("runs=", 1)[1].split("&", 1)[0]
+            found = re.search(r"baseline=([^&]+)", q)
+            base_arm = unquote(found.group(1)) if found else ""
+            kept = (
+                [base_arm, *[a for a in whole.split(",") if a != base_arm][:3]]
+                if base_arm
+                else whole.split(",")[:4]
+            )
+            q = q.replace("runs=" + whole, "runs=" + ",".join(kept), 1)
+            runs = q.split("runs=", 1)[1].split("&", 1)[0].split(",")
+            ds = runs[0].split("/")[1]
+            m = HARNESS / "data" / "references" / "silver" / ds / "manifest.json"
+            from evaluation_harness._common import system_now  # noqa: PLC0415
+
+            # the author by the id its system has now (a migration renamed systems; the manifest keeps the old one)
+            who = system_now(json.loads(m.read_text()).get("authored_by")) if m.is_file() else None
+            arm = f"silver/{ds}/{who}"
+            return (
+                q.replace("runs=" + ",".join(runs), "runs=" + ",".join([*runs, arm]), 1)
+                if who and arm not in runs
+                else q
+            )
+
         silver = sorted(
-            (q for q in links if "runs=silver/" in q and "baseline=" in q), key=lambda x: -x.count(",")
+            (with_author(q) for q in links if "runs=silver/" in q and "baseline=" in q),
+            key=lambda x: -x.count(","),
         )
         for q in silver:
             page.goto(base + "inspect.html?" + q)
