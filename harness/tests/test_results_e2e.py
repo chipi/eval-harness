@@ -399,6 +399,10 @@ def later(store: str) -> None:
         made = p.evh(
             "scorer-new", "judge_v1", "--set", "dataset_id=tickets_v1", "--set", f"judges={judges}",
             "--set", "prompt.file=judge_prompt.txt", "--set", "protocol.outputs_per_call=2",
+            # the kit's task, which its prompt asks for (judge-score refuses a prompt that does not name the task's
+            # dimensions; with no task the scorer read SummEval's, which this prompt never names)
+            "--set", "task.source_label=TICKET", "--set", "task.output_label=SUMMARIES",
+            "--set", "task.dimensions=[accuracy, usefulness]", "--set", "task.scale=[1, 5]",
             "--set", "protocol.position_check_fraction=0.5", "--set", "protocol.noise_check_fraction=0.5", "--set", "cost_cap_usd=1",
         )  # fmt: skip
         jr = p.evh("judge-score", "--dataset-id", "tickets_v1", "--scorer", "judge_v1", "--unvalidated")

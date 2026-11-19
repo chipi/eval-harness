@@ -227,13 +227,6 @@ try:
         (prog[0][0] if prog else None, ended),
     )
 
-    # The runs below test how a run reports and names itself, not a measurement: the project allows these systems a
-    # second plain run (validate.json's duplicate_ok), as evh run refuses one otherwise.
-    _runstore.write_text(
-        proj,
-        "validate.json",
-        json.dumps({"duplicate_ok": [["tickets_v1", "slow_v1"], ["tickets_v1", "one_v1"]]}),
-    )
     r = evh("run", *cfg, "--json", "--run-id", "slow_json")
     done = [ln.split()[0] for ln in r.stderr.splitlines() if ln.lstrip().startswith("[")]
     check(

@@ -940,14 +940,23 @@ def _prompt_versions(
     return out
 
 
-def _refuse_second_measurement(system_id: str, dataset_id: str) -> None:
-    """Refuse, before any call, a plain run of a system on a dataset that already has a measured one (a plain run or a
-    --repeat set): two measurements claiming one system id, which every reader averages and validate's V8 fails once
-    both are committed. The 0.8.0 newcomer run paid for a --repeat set beside its plain run, then failed V8. A pair
-    the project allows (`duplicate_ok` in validate.json) passes."""
-    from evaluation_harness import validate_tree  # noqa: PLC0415
-
-    allowed = {tuple(x) for x in validate_tree.policy().get("duplicate_ok") or []}
+def _refuse_repeat_beside_run(system_id: str, dataset_id: str, repeat: int) -> None:
+    """Refuse, before any call, a --repeat set of a system on a dataset where it already has a plain run: the set is
+    meant to be the arm's measurement, so beside the run it makes two measurements of one system id, which every
+    reader averages and validate's V8 fails once committed. The 0.8.0 newcomer run paid for a --repeat 3 after its
+    plain run, then failed V8; repeating the run it has is what measures its noise. Other runs of a system already
+    run (a changed prompt, a replay at a new commit, another reference) are the harness's own paths and are not refused
+    here. A pair the project allows (`duplicate_ok` in validate.json) passes."""
+    # validate.json read here, not through validate_tree: a checker imported by a run would join the code a run's
+    # fingerprint hashes (measuring_modules), and move every run's code hash.
+    policy_file = _common.DATA / "validate.json"
+    try:
+        policy = (
+            json.loads(_store.read_text(policy_file, encoding="utf-8")) if _store.is_file(policy_file) else {}
+        )
+    except ValueError:
+        policy = {}  # validate names a broken policy; it is no reason to refuse a run here
+    allowed = {tuple(x) for x in ((policy if isinstance(policy, dict) else {}).get("duplicate_ok") or [])}
     if (dataset_id, system_id) in allowed:
         return
     have = sorted(
@@ -957,13 +966,12 @@ def _refuse_second_measurement(system_id: str, dataset_id: str) -> None:
         return
     last = have[-1]
     die(
-        f"{system_id} already has a measured run on {dataset_id}: {', '.join(have)}. Another plain run would be a second "
-        "measurement claiming the same system id: every reader averages the two, and validate fails V8 once both are "
-        "committed.\n"
-        f"  To measure its noise, repeat that run: evh run --system {system_id} --dataset {dataset_id} "
-        f"--purpose repeat --of {last}\n"
-        "  To try a change, give it a new system id; to try without recording it, add --scratch.\n"
-        f"  To measure it again from scratch, delete the earlier run first: evh data-rm --path runs/{last}",
+        f"{system_id} already has a measured run on {dataset_id}: {', '.join(have)}. A --repeat {repeat} set beside it "
+        "would be a second measurement of the same arm: every reader averages them, and validate fails V8 once they "
+        "are committed.\n"
+        f"  To measure its noise, repeat the run it has, once per repeat: evh run --system {system_id} --dataset "
+        f"{dataset_id} --purpose repeat --of {last}\n"
+        f"  To measure it as a set from the start, delete that run first: evh data-rm --path runs/{last}",
         "would-overwrite",
     )
 
@@ -1174,8 +1182,8 @@ def _run(args: argparse.Namespace) -> int:
         die(f"--of {args.of}: no run of that id in {runs}", "not-found")
     if args.purpose == "run" and args.of:
         die("--of names the run a re-run re-does: give its --purpose (repeat, retime, pair)", "bad-argument")
-    if args.purpose == "run" and not args.resume and not args.scratch:
-        _refuse_second_measurement(cfg["system_id"], cfg["dataset_id"])
+    if args.purpose == "run" and args.repeat > 1 and not args.resume and not args.scratch and not args.labels:
+        _refuse_repeat_beside_run(cfg["system_id"], cfg["dataset_id"], args.repeat)
     # HOW MANY ITEMS HAVE A REFERENCE, counted before any call. A metric scored against a
     # missing reference is not computed, so with gold for 20 of 200 items the run's mean is a
     # mean over 20, recorded as a 200-item gold run. None is a refusal (nothing would be

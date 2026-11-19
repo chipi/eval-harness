@@ -206,6 +206,13 @@ def _pf(s: str) -> float:
     return 0.0 if s.startswith("<") else float(s)
 
 
+def _wins_of(token: str) -> str:
+    """The wins in a family-test row's wins column: `8/32` (its count of n, ties in n) or `1–8` (wins–losses, the
+    ties printed apart since 2026-11-19). The row's p, threshold and verdict are read from its right end ([-3], [-2],
+    [-1]), so the column's width in words does not move them."""
+    return token.split("/")[0] if "/" in token else token.split("–")[0]
+
+
 def check(label: str, cond: object, detail: str = "") -> None:
     """Record and print a check result."""
     ok.append(cond)
@@ -1285,7 +1292,7 @@ if not _rows2:
 else:
     _sep2 = {r[0] for r in _rows2 if r[-1] == "SIGNIFICANT"}
     _fts = ("ag_bert_mini_v1", "ag_bert_base_ta_v1", "ag_bert_base_fy_v1")
-    _p_ft = [_pf(r[3]) for r in _rows2 if r[0] in _fts]
+    _p_ft = [_pf(r[-3]) for r in _rows2 if r[0] in _fts]
     _ns2 = [r[0] for r in _rows2 if r[-1] == "--"]
     check(
         "classification: AG News v2, anthropic_l significantly different from 9 of 29 (all three fine-tunes, "
@@ -2344,8 +2351,8 @@ _tied_rows = [
 _bad_tie = []
 for _trow in _tied_rows:
     _arm = _trow[0][len("se_") : -len("_n100_v1")]
-    _wins = _trow[2].split("/")[0]
-    _want = f"| `{_arm}` | {_signed(-float(_trow[1]))} | {_wins} of 100 | {_pf(_trow[3]):.4f} | {float(_trow[4]):.4f} |"
+    _wins = _wins_of(_trow[2])
+    _want = f"| `{_arm}` | {_signed(-float(_trow[1]))} | {_wins} of 100 | {_pf(_trow[-3]):.4f} | {float(_trow[-2]):.4f} |"
     if _want not in _SEV:
         _bad_tie.append(_want)
 check(
@@ -2388,7 +2395,7 @@ check(
     f"not significant, or not behind: {_not_sep}",
 )
 _weakest = min(_judges, key=lambda a: _se_arms[a]["scores"]["tau"])
-_bw = _bart.get(_weakest, (0, "", "?/100"))[2].split("/")[0]
+_bw = _wins_of(_bart.get(_weakest, (0, "", "?/100"))[2])
 check(
     f"SummEval: against the weakest judge, {_weakest}, BARTScore wins {_bw} of 100 articles",
     f"`{_weakest}`" in _SEV and f"BARTScore wins only {_bw} of 100 articles" in _SEV,
@@ -2417,7 +2424,7 @@ for _u in ("unievalpub", "unieval"):
         text=True,
     )
     _ue[_u] = {
-        ln.split()[0][3:-8]: (float(ln.split()[1]), ln.split()[-1], ln.split()[2], _pf(ln.split()[3]))
+        ln.split()[0][3:-8]: (float(ln.split()[1]), ln.split()[-1], ln.split()[2], _pf(ln.split()[-3]))
         for ln in _uft.stdout.splitlines()
         if ln.strip().endswith(("SIGNIFICANT", "--")) and ln.split()[0].endswith("_n100_v1")
     }
@@ -2425,7 +2432,7 @@ for _u in ("unievalpub", "unieval"):
     _behind = [a for a in _judges if a != _weakest and (_ue[_u].get(a, (1,))[0] >= 0)]
     _delta, _, _w, _pv = _ue[_u].get(_weakest, (0, "", "?/100", 1))
     _row = (
-        f"| `{_u}` | {_se_arms[_u]['scores']['tau']:.4f} | {'+' if _delta > 0 else ''}{_signed(_delta)} | {_w.split('/')[0]} of 100 "
+        f"| `{_u}` | {_se_arms[_u]['scores']['tau']:.4f} | {'+' if _delta > 0 else ''}{_signed(_delta)} | {_wins_of(_w)} of 100 "
         f"| {_pv:.4f} | {len(_ue[_u]) - len(_unsep)} of {len(_ue[_u])}, all but `{_weakest}` |"
     )
     check(
@@ -2436,10 +2443,10 @@ for _u in ("unievalpub", "unieval"):
 _dpub = _ue["unievalpub"].get("unieval", (0, "", "?/100", 1))
 check(
     f"SummEval: the inputs move UniEval by {_dpub[0]:.4f}, p {_dpub[3]:.4f}, "
-    f"{_dpub[2].split('/')[0]} of 100 articles",
+    f"{_wins_of(_dpub[2])} of 100 articles",
     _dpub[1] == "SIGNIFICANT"
     and f"worth {_dpub[0]:.4f} τ, significant (p {_dpub[3]:.4f}; `unievalpub`"
-    f" wins {_dpub[2].split('/')[0]} of 100 articles)"
+    f" wins {_wins_of(_dpub[2])} of 100 articles)"
     in " ".join(_SEV.split()),
     "§3.3 does not state the paired difference between the two UniEval arms",
 )

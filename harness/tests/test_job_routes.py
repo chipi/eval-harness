@@ -205,10 +205,10 @@ try:
         and gone["retired"]["actor"]["name"] == "ana",
         (st, rec, done.get("state"), done.get("refusal")),
     )
-    st, rec, done = post("/goals/tickets_summary/rounds/r1/carry", {"arm": "tickets_lead1_v1"})
+    st, rec, done = post("/goals/tickets_summary/rounds/r1/carry", {"arm": "tickets_nope_v1"})
     check(
-        "POST .../carry (round-carry): a decision with no reason of its own; r1 is the goal's first round, so the job "
-        "is refused by the harness (no earlier round has the arm: not-found), never by the route",
+        "POST .../carry (round-carry): a decision with no reason of its own; no earlier round has the arm and it has "
+        "no run on the dataset, so the job is refused by the harness (not-found), never by the route",
         st == 202
         and rec["operation"] == "round-carry"
         and done.get("state") == "failed"

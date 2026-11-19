@@ -221,7 +221,7 @@ def _run(args: argparse.Namespace) -> int:
     try:
         m = measure(args.dataset_id, args.metric, args.match, args.draws, args.seed, args.asc, args.desc)
     except Problem as exc:
-        die(str(exc), exc.kind)
+        die(str(exc), "not-enough")  # measure refuses only fewer than 3 arms
     args.metric = m["metric"]
     if not m["rows"]:
         too_few = (

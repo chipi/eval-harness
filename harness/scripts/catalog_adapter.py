@@ -533,18 +533,35 @@ class HarnessAdapter:
         is: a round reads the runs it recorded, so a later run of one of its systems never moves what it decided. A
         new adapter, with nothing read yet; this one is unchanged. Its `scores` is its own: the read-once cache and the
         exposure filter this one carries (scores_once, _exposure.aware) are set on it afresh, never copied, since a copy
-        reads this adapter's runs."""
+        reads this adapter's runs. Only an arm whose runs here include some not in `keep` is restricted, and every
+        other arm is read through this adapter, its cache included; with nothing to restrict this adapter is returned
+        (a catalog build read every round arm's scores twice when the view re-read them all)."""
         from evaluation_harness import _exposure  # noqa: PLC0415
 
+        narrowed = {
+            arm: set(runs)
+            for arm, runs in keep.items()
+            if {model_runs.run_of(d).name for d in self._dirs(arm)} - set(runs)
+        }
+        if not narrowed:
+            return self
         own = ("_view_token", "_only", "scores", "_scores_unfiltered")
         view = type(self).__new__(type(self))
         view.__dict__.update(
             {k: v for k, v in self.__dict__.items() if not k.startswith("_memo_") and k not in own}
         )
-        view._only = {arm: set(runs) for arm, runs in keep.items()}
+        view._only = narrowed
         if "_scores_unfiltered" in self.__dict__:
             _exposure.aware(view)
-        return scores_once(view) if "scores" in self.__dict__ else view
+        if "scores" in self.__dict__:
+            scores_once(view)
+        mine, theirs = view.scores, self.scores
+
+        def scores(arm: str, rescore: bool = False) -> dict[str, dict]:
+            return mine(arm, rescore) if arm in narrowed else theirs(arm, rescore)
+
+        view.scores = scores  # type: ignore[method-assign]
+        return view
 
     def refresh(self) -> None:
         """Forget what this adapter has read: the next question reads the data again. catalog-serve calls it when the

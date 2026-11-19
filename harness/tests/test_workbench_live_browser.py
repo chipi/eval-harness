@@ -1660,12 +1660,6 @@ try:
                 f = proj / ".build" / "jobs" / jid / "progress.json"
                 return (json.loads(f.read_text()).get("done") or 0) if f.is_file() else 0
 
-            # These runs test stopping and resuming a job, not a measurement: the project allows fake-1b_here a run
-            # beside the one the round measured (validate.json's duplicate_ok), as a second plain run is refused.
-            pol = proj / "data" / "validate.json"
-            policy = json.loads(pol.read_text()) if pol.is_file() else {}
-            policy["duplicate_ok"] = [*(policy.get("duplicate_ok") or []), ["tk_v1", "fake-1b_here"]]
-            pol.write_text(json.dumps(policy))
             early = start_run()
             page.goto(f"http://127.0.0.1:{port}/workbench/#jobs/{early.get('id')}")
             page.wait_for_selector("#jb-stop", timeout=20000)

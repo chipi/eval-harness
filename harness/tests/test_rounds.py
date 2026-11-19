@@ -89,7 +89,7 @@ def result(*args):
 
 
 def allow(pairs):
-    """Allow these (dataset, system) pairs a second plain run (validate.json's `duplicate_ok`)."""
+    """Allow these (dataset, system) pairs a second measurement (validate.json's `duplicate_ok`)."""
     policy = (
         json.loads(_runstore.read_text(proj, "validate.json"))
         if _runstore.exists(proj, "validate.json")
@@ -676,9 +676,9 @@ try:
         "harness:" in doc3 and "code_sha256:" in doc3 and "On harness " in r.stdout,
         out(r) + doc3,
     )
-    # The arms below are measured again on purpose (in r3, and as a repeat set): a second plain run of a system is
-    # refused unless the project allows the pair, as the fleet's own projects do (`duplicate_ok`).
-    allow([["tickets_v1", "tickets_author_v1"], ["tickets_v1", "tickets_lead1_v1"]])
+    # lead1 is measured again below as a repeat set beside its plain run, on purpose: refused unless the project allows
+    # the pair, as the fleet's own projects do (`duplicate_ok`).
+    allow([["tickets_v1", "tickets_lead1_v1"]])
     evh(
         "run",
         "--system",
@@ -923,9 +923,9 @@ try:
         (out(refused)[-300:], out(r5)[-300:], arms5, on_twin),
     )
     # The 0.8.0 newcomer run: a plain run and then --repeat 3 of the same arm were paid for, then failed validate's V8
-    # once committed. A second plain run of a system on a dataset is refused before any call, its dry run too.
+    # once committed. A --repeat set beside a system's plain run is refused before any call, its dry run too.
     r1doc = yaml.safe_load(_runstore.read_text(proj, "rounds/tickets_summary/r1.yaml")) or {}
-    sys1 = "tickets_lead2_v1"  # in play in r1, and not allowed a second run (allow() above)
+    sys1 = "tickets_lead2_v1"  # in play in r1, and not in duplicate_ok (allow() above)
     arm1 = next(a for a in r1doc["arms"] if a["system"] == sys1 and not a.get("retired"))
     runs_of_sys = lambda: sorted(  # noqa: E731
         m["run_id"]
@@ -933,11 +933,11 @@ try:
         if m.get("system_id") == sys1 and m.get("dataset_id") == "tickets_v1"
     )
     had = runs_of_sys()
-    again = evh("run", "--system", sys1, "--dataset", "tickets_v1")
-    dry = evh("run", "--system", sys1, "--dataset", "tickets_v1", "--dry-run")
+    again = evh("run", "--system", sys1, "--dataset", "tickets_v1", "--repeat", "3")
+    dry = evh("run", "--system", sys1, "--dataset", "tickets_v1", "--repeat", "3", "--dry-run")
     check(
-        "a second plain run of a system on a dataset is refused before any call (its dry run too), naming the repeat "
-        "of the earlier run; nothing written",
+        "a --repeat set beside a system's plain run is refused before any call (its dry run too), naming the repeat "
+        "of the run it has; nothing written",
         again.returncode != 0
         and dry.returncode != 0
         and "already has a measured run on tickets_v1" in out(again)
@@ -945,9 +945,7 @@ try:
         and runs_of_sys() == had,
         (out(again)[-500:], out(dry)[-200:]),
     )
-    # A closed round reads the runs it recorded: a later run of one of its systems (a pair the project allows) is named
-    # beside it, never read into it.
-    allow([["tickets_v1", sys1]])
+    # A closed round reads the runs it recorded: a later run of one of its systems is named beside it, never read into it.
     later = evh("run", "--system", sys1, "--dataset", "tickets_v1")
     shown = evh("comparison-show", "--round", "r1", "--goal", "tickets_summary")
     ev = evh("round-evidence", "tickets_summary", "r1")
