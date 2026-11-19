@@ -184,6 +184,17 @@ try:
         progress_line(2, 6, "t2", "words=31", 1.234, 0.0) == "  [2/6] t2 words=31 1.2s"
         and progress_line(2, 6, "t2", "ok", 1.0, 0.0123).endswith("1.0s  $0.0123 so far"),
     )
+    check(
+        "progress: the time left at the pass's pace once it is 30 s or more (the 0.8.0 newcomer run's CPU model said "
+        "nothing of its 5.7 minutes); a fast pass's line as before",
+        progress_line(2, 20, "b2", "ok", 16.0, 0.0, 33.0) == "  [2/20] b2 ok 16.0s  about 5 min left"
+        and progress_line(18, 20, "b18", "ok", 16.0, 0.0, 297.0).endswith("about 33 s left")
+        and progress_line(2, 6, "t2", "ok", 0.1, 0.0, 0.2) == "  [2/6] t2 ok 0.1s",
+        (
+            progress_line(2, 20, "b2", "ok", 16.0, 0.0, 33.0),
+            progress_line(18, 20, "b18", "ok", 16.0, 0.0, 297.0),
+        ),
+    )
 
     cfg = system("slow", adapter="calls_adapter.py", provider="echo", sleep=0.5)
     started = time.perf_counter()
@@ -216,6 +227,13 @@ try:
         (prog[0][0] if prog else None, ended),
     )
 
+    # The runs below test how a run reports and names itself, not a measurement: the project allows these systems a
+    # second plain run (validate.json's duplicate_ok), as evh run refuses one otherwise.
+    _runstore.write_text(
+        proj,
+        "validate.json",
+        json.dumps({"duplicate_ok": [["tickets_v1", "slow_v1"], ["tickets_v1", "one_v1"]]}),
+    )
     r = evh("run", *cfg, "--json", "--run-id", "slow_json")
     done = [ln.split()[0] for ln in r.stderr.splitlines() if ln.lstrip().startswith("[")]
     check(

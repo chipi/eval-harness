@@ -364,10 +364,22 @@ def cost_source(meta: dict[str, Any] | None) -> str | None:
     return src if isinstance(src, str) and src else None
 
 
-def progress_line(n: int, total: int, item_id: str, outcome: str, seconds: float, spent: float) -> str:
-    """`[n/N] <item_id> <outcome> <seconds>s`, plus the running cost once there is one."""
+#: A pass says how long it has left once that is at least this many seconds (a fast arm's lines stay as they were).
+SAY_LEFT_FROM_S = 30.0
+
+
+def progress_line(
+    n: int, total: int, item_id: str, outcome: str, seconds: float, spent: float, elapsed: float | None = None
+) -> str:
+    """`[n/N] <item_id> <outcome> <seconds>s`, plus the running cost once there is one, and with `elapsed` (the pass's
+    seconds so far) the time left at its pace so far, when that is SAY_LEFT_FROM_S or more: a CPU model at 6 to 31 s an
+    item said nothing of the 5.7 minutes its 20 items took (the 0.8.0 newcomer run)."""
     line = f"  [{n}/{total}] {item_id} {outcome} {seconds:.1f}s"
-    return line + (f"  ${spent:.4f} so far" if spent else "")
+    line += f"  ${spent:.4f} so far" if spent else ""
+    left = (elapsed / n) * (total - n) if elapsed is not None and n else 0.0
+    if left >= SAY_LEFT_FROM_S:
+        line += f"  about {round(left / 60)} min left" if left >= 90 else f"  about {round(left)} s left"
+    return line
 
 
 def one_pass(
@@ -454,6 +466,7 @@ def one_pass(
     if every > 1 and idx == 0:
         print(f"  {n_items} items: a progress line for every {every}th item and the last")
 
+    pass_started = time.perf_counter()
     for n, item in enumerate(ds["items"], 1):
         item_started = time.perf_counter()
         # Resume: an item already produced is not PAID for twice -- but it is still
@@ -634,6 +647,7 @@ def one_pass(
                     _outcome(res, scored, primary, resumed),
                     time.perf_counter() - item_started,
                     spent,
+                    time.perf_counter() - pass_started,
                 ),
                 flush=True,
             )
