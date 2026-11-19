@@ -23,7 +23,8 @@ import hashlib
 from typing import Any
 
 from evaluation_harness import _fields, _seal, _store
-from evaluation_harness._common import DATASETS, dataset_id_ok, die, load_dataset, now, read_json
+from evaluation_harness._actor import stated
+from evaluation_harness._common import DATASETS, REFERENCES, dataset_id_ok, die, load_dataset, now, read_json
 from evaluation_harness._importers import parse_time
 from evaluation_harness.dataset_create import _lineage, _write
 from evaluation_harness.ops import legacy
@@ -91,6 +92,17 @@ def body(**inputs: Any) -> int:
         rule["at"] = args.at
     if args.split_by == "hash":
         rule["seed"] = args.seed
+    # Each side gets the parent's references, promoted from the same label sets at the same tiers (owner, 2026-11-19:
+    # the 0.8.0 newcomer run copied each side's gold files by hand). A promotion records who made it, so a parent
+    # with references is split only by someone named, before anything is written.
+    carry = parent_references(args.dataset_id)
+    if carry and not stated():
+        die(
+            f"{args.dataset_id} has {len(carry)} reference(s) ({', '.join(f'{t}/{n}' for t, n, _d, _s in carry)}), "
+            "promoted on each side as the split writes it, a decision that records who made it: pass --by person:NAME "
+            "(or set EVH_ACTOR)",
+            "bad-argument",
+        )
     written = []
     open_items = [dict(it) for it in items if assign[it["item_id"]] == "validation"]
     for part in ("validation", "test"):
@@ -140,4 +152,47 @@ def body(**inputs: Any) -> int:
                 else ""
             )
         )
+    for out_id, _n in written:
+        _promote_on_side(args, out_id, carry, sealed=args.seal and out_id.endswith("_test"))
     return 0
+
+
+def parent_references(dataset_id: str) -> list[tuple[str, str, str, str]]:
+    """The dataset's references promoted from a label set: (tier, name, the set's dataset, the set's name)."""
+    out = []
+    for m in sorted(_store.glob(REFERENCES, "*/*/manifest.json")):
+        doc = read_json(m)
+        frm = doc.get("promoted_from") or {}
+        if doc.get("dataset_id") == dataset_id and frm.get("labels"):
+            out.append(
+                (m.parent.parent.name, m.parent.name, frm.get("dataset_id") or dataset_id, frm["labels"])
+            )
+    return out
+
+
+def _promote_on_side(args: Any, side_id: str, carry: list[tuple[str, str, str, str]], sealed: bool) -> None:
+    """Promote each of the parent's references on one side, from the same label set at the same tier; a sealed side
+    gets none (nothing is labelled on it until it is unsealed): the command that promotes it then is printed."""
+    from evaluation_harness import reference_promote  # noqa: PLC0415
+
+    for tier, name, set_ds, set_name in carry:
+        side_name = name.replace(args.dataset_id, side_id) if args.dataset_id in name else f"{name}_{side_id}"
+        cmd = (
+            f'evh reference-promote --dataset-id {side_id} --labels {set_ds}/{set_name} --tier {tier} --reason "…"'
+            + (f" --name {side_name}" if side_name != side_id else "")
+        )
+        if sealed:
+            print(f"  {tier}/{side_name}: not promoted on the sealed side; once it is unsealed: {cmd}")
+            continue
+        if _store.exists(REFERENCES / tier / side_name / "manifest.json"):
+            print(f"  {tier}/{side_name}: kept as it is (a reference is never overwritten)")
+            continue
+        reference_promote.body(
+            dataset_id=side_id,
+            labels=f"{set_ds}/{set_name}",
+            tier=tier,
+            reason=f"{args.dataset_id}'s {tier} reference ({tier}/{name}, from {set_ds}/{set_name}), split: the same "
+            f"labels on this side's items.",
+            name=None if side_name == side_id else side_name,
+            items=None,
+        )

@@ -157,6 +157,59 @@ check("split --split-by time without --key is refused", r.returncode != 0 and "-
 for name in ("base_v2_validation", "base_v2_test"):
     r = evh("dataset-materialize", "--dataset-id", name)
     check(f"split: {name} materializes from the parent's source files", r.returncode == 0, out(r)[-200:])
+
+# Each side gets the parent's references (owner, 2026-11-19; the 0.8.0 newcomer run copied each side's gold by hand).
+gold = proj / "gold"
+gold.mkdir()
+for i in range(100, 200):
+    (gold / f"i{i:03d}.txt").write_text(f"summary {i}\n")
+evh("dataset-create", "--dataset-id", "kit_v1", "--source-dir", "src", "--glob", "i1*")
+evh("dataset-materialize", "--dataset-id", "kit_v1")
+evh("label-import", "--sheet", "gold", "--dataset-id", "kit_v1", "--set", "g", "--by", "t")
+evh(
+    "reference-promote",
+    "--dataset-id",
+    "kit_v1",
+    "--labels",
+    "g",
+    "--tier",
+    "gold",
+    "--reason",
+    "the test's own gold",
+    "--by",
+    "t",
+)
+split = ("dataset-split", "--dataset-id", "kit_v1", "--test", "0.3", "--seed", "7")
+nobody = evh(*split)
+check(
+    "split: a parent with a reference is split only by someone named, nothing written before",
+    nobody.returncode != 0
+    and "--by person:NAME" in out(nobody)
+    and not _runstore.exists(proj, "datasets/kit_v1_test.json"),
+    out(nobody)[-300:],
+)
+r = evh(*split, "--by", "t")
+got = {}
+for part in ("validation", "test"):
+    m = _runstore.read_json(proj, f"references/gold/kit_v1_{part}/manifest.json") if r.returncode == 0 else {}
+    got[part] = (
+        set(m.get("items_sha256") or {}) == ids(f"kit_v1_{part}"),
+        (m.get("promoted_from") or {}).get("labels"),
+    )
+check(
+    "split: each side gets the parent's reference on its own items, promoted from the same label set",
+    r.returncode == 0 and got == {"validation": (True, "g"), "test": (True, "g")},
+    (out(r)[-400:], got),
+)
+r = evh(*split, "--by", "t", "--force", "--seal")
+check(
+    "split --seal: the sealed side gets no reference, and the command for once it is unsealed",
+    r.returncode == 0
+    and "not promoted on the sealed side" in out(r)
+    and "--labels kit_v1/g --tier gold" in out(r),
+    out(r)[-400:],
+)
+
 r = evh("validate")
 check("split: validate passes (schema, lineage)", r.returncode == 0, out(r)[-400:])
 
