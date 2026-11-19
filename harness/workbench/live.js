@@ -21,7 +21,8 @@
       LIVE.pending[key] = fetch(`/api/v1${path}`, { credentials: "same-origin" })
         .then(async (r) => {
           const body = await r.json().catch(() => ({}));
-          LIVE.cache[key] = r.ok ? (raw ? body : body.result) : { error: body.error || `${r.status}` };
+          // An optional read with nothing to show (the server answers 200 and why, `empty`) reads as one that refused.
+          LIVE.cache[key] = r.ok && body.empty != null ? { error: body.empty, empty: true } : r.ok ? (raw ? body : body.result) : { error: body.error || `${r.status}` };
         })
         .catch((e) => { LIVE.cache[key] = { error: String(e) }; })
         .finally(() => {
@@ -60,6 +61,7 @@
       <div class="part"><div class="parthead"><h2>Running now</h2><span class="grow"></span><a href="#jobs">Every job</a></div><div class="body">${running}</div></div>
       ${goals.goals.length ? `<div class="tablewrap" style="margin-top:18px"><table><thead><tr><th>goal</th><th>decides</th><th>datasets</th><th class="num">rounds</th><th>next</th></tr></thead><tbody>${rows.join("")}</tbody></table></div>`
         : `<div class="answer" style="margin-top:18px"><p><b>What should this project help you decide?</b></p><p>An evaluation starts with a goal: the decision you need to make, and how you will know which system is better for it.</p></div>`}
+      ${WB.cmd("evh goal-list\nevh goal-status <goal>\nevh jobs-status --state queued,running", "the commands that show this")}
       <div class="actions"><a class="btn primary" href="#goal-new">${goals.goals.length ? "New goal" : "Start with a goal"}</a><a class="btn" href="#models">Models</a><a class="btn" href="#prompts">Prompts</a><a class="btn" href="#settings">Settings</a><a class="btn" href="${location.origin}/">The catalog ↗</a></div></div>`;
   }
 
@@ -610,7 +612,7 @@
     const bad = [rec, sys, ms].find((x) => x.error);
     if (bad) return `<div class="screen wide">${head}${failed(bad)}</div>`;
     const datasets = (rec.record.datasets || []).map((x) => x.dataset_id);
-    const pv = load(`prompt:${promptName(goal)}`, `/prompts/versions?name=${enc(promptName(goal))}&text=true`);
+    const pv = load(`prompt:${promptName(goal)}`, `/prompts/versions?name=${enc(promptName(goal))}&text=true&optional=1`);
     if (pv === undefined) return `<div class="screen wide">${head}${loading("the goal's prompt")}</div>`;
     const latest = latestOf(pv);
     const d = readSys(goal) || { model: "", deployment: "", prompt: latest ? latest.text : "", temperature: "0", max_tokens: "", id: "" };
@@ -757,7 +759,7 @@
   const chartArgs = (p) => Object.entries(p).filter(([, v]) => v).map(([k, v]) => `--${k} ${v}`).join(" ");
   function chartBox(kind, params, quiet = false) {
     const qs = new URLSearchParams(Object.entries(params).filter(([, v]) => v)).toString();
-    const r = load(`chart:${kind}:${qs}`, `/charts/${kind}?${qs}`);
+    const r = load(`chart:${kind}:${qs}`, `/charts/${kind}?${qs}&optional=1`);
     if (r === undefined) return `<div class="chart-box">${loading("the chart")}</div>`;
     if (r.error) return quiet ? "" : `<div class="chart-box" data-chart="${esc(kind)}"><p class="muted">No chart yet: ${esc(r.error)}</p></div>`;
     const cols = r.columns || [];
@@ -778,10 +780,17 @@
     const tabs = rounds.length ? `<div class="tabs" role="tablist">${rounds.map((r) => `<a role="tab" class="tab" aria-selected="${r.round_id === cur}" href="#eval/${enc(goal)}/${enc(r.round_id)}">${esc(r.round_id)} · ${esc(r.status)}</a>`).join("")}</div>` : "";
     const datasets = (rec.record.datasets || []).map((x) => x.dataset_id);
     const last = rounds[rounds.length - 1];
+    // Each arm still in play in the last round, chosen one by one (all by default): the newcomer run could carry every
+    // arm or none, so a round of two of them meant running one again.
+    const lastRec = last && !open ? load(`round:${goal}/${last.round_id}`, `/goals/${enc(goal)}/rounds/${enc(last.round_id)}`) : null;
+    const inPlayLast = lastRec && !lastRec.error ? lastRec.round.arms.filter((a) => !a.retired).map((a) => a.system) : [];
+    const carry = !last ? "" : lastRec === undefined ? loading("its arms") : inPlayLast.length
+      ? `<div class="choices" role="group" aria-labelledby="ro-keep-l">${inPlayLast.map((s) => `<label class="choice"><input type="checkbox" name="ro-keep" value="${esc(s)}" checked> <span class="mono">${esc(s)}</span></label>`).join("")}</div>`
+      : '<p class="muted" style="margin:0">None is in play.</p>';
     const openForm = open ? "" : `<section class="part" data-form="round-open"><div class="parthead"><h2>Open ${rounds.length ? "the next round" : "the first round"}</h2></div><div class="body">
         <div class="field"><label class="name" for="ro-q">The round's question</label><div><textarea id="ro-q" rows="2" placeholder="Does a cheaper hosted model match the baseline's coverage?"></textarea><div class="hint">what this round should find out, in one sentence</div></div></div>
         <div class="field"><label class="name" for="ro-ds">On</label><div><select id="ro-ds">${datasets.map((x) => `<option>${esc(x)}</option>`).join("")}</select></div></div>
-        ${last ? `<div class="field"><label class="name" for="ro-keep">Carry in from ${esc(last.round_id)}</label><div><select id="ro-keep"><option value="all">every arm still in play</option><option value="">none</option></select><div class="hint">carried arms are not run again</div></div></div>` : ""}
+        ${last ? `<div class="field"><div class="name" id="ro-keep-l">Carry in from ${esc(last.round_id)}</div><div>${carry}<div class="hint">carried arms are not run again; on another dataset each is read through its runs there</div></div></div>` : ""}
         <div class="field"><label class="name" for="ro-budget">What it may spend (USD)</label><div><input type="text" id="ro-budget" inputmode="decimal" placeholder="no budget" style="width:8rem"></div></div>
         ${byField("ro-by")}
         <div class="actions" style="margin-top:0"><button class="btn primary" type="button" id="ro-open" data-send>Open the round</button>${mark}</div><div id="ro-out" data-out></div></div></section>`;
@@ -799,8 +808,13 @@
     const arms = r.arms.map((a) => `<li><span class="mono">${esc(a.system)}</span>${a.label ? ` <small>(${esc(a.label)})</small>` : ""} · ${a.runs.length} run(s) · ${esc((a.entered || {}).how || "")}
       ${a.retired ? ` · <span class="status warn">retired</span> <small>${esc(a.retired.reason || "")}</small>` : isOpen ? ` <button class="btn" type="button" data-retire="${esc(a.system)}">Retire</button>` : ""}</li>`).join("");
     const have = new Set(r.arms.map((a) => a.system));
-    const toRun = sys.systems.filter((x) => !have.has(x.system));
-    const carryable = prev ? prev.round.arms.filter((a) => !a.retired && !have.has(a.system)).map((a) => a.system) : [];
+    // A system already measured on the round's dataset is carried in, never run again (a second measurement of it is
+    // refused: `evh run`); only the others are offered to run.
+    const dsArms = isOpen ? load(`arms:${r.dataset_id}`, `/datasets/${enc(r.dataset_id)}/arms`) : { arms: [] };
+    if (dsArms === undefined) return `<div class="screen wide">${head}${tabs}${loading("the round")}</div>`;
+    const measured = new Set((dsArms.arms || []).filter((a) => String(a.arm || "").startsWith(`runs/${r.dataset_id}/`)).map((a) => a.system));
+    const toRun = sys.systems.filter((x) => !have.has(x.system) && !measured.has(x.system));
+    const carryable = [...new Set([...(prev ? prev.round.arms.filter((a) => !a.retired).map((a) => a.system) : []), ...measured])].filter((s) => !have.has(s)).sort();
     // a baseline line is its current version, its earlier ones in `history` (view_baselines.lines)
     const line = (bl.baselines || []).find((b) => b.dataset === r.dataset_id);
     const versions = line ? [line, ...(line.history || []).filter((h) => h.version !== line.current)]
@@ -825,8 +839,8 @@
         ${chartBox("intervals", { goal, dataset: r.dataset_id })}${chartBox("items", { goal, dataset: r.dataset_id })}${chartBox("latency", { goal, dataset: r.dataset_id }, true)}</div></section>
       <section class="part"><div class="parthead"><h2>Its arms</h2></div><div class="body"><ul id="arms">${arms || '<li class="muted">none yet</li>'}</ul>
         ${isOpen ? `<div id="rt-box"></div>` : ""}
-        ${isOpen && carryable.length ? `<div class="inline"><label class="name" for="cy-arm">Carry in from ${esc(r.from)}</label><select id="cy-arm">${carryable.map((x) => `<option>${esc(x)}</option>`).join("")}</select>
-          <button class="btn" type="button" id="cy-go">Carry it in</button><span class="muted">unchanged, not run again</span></div><div id="cy-out" data-out></div>` : ""}</div></section>
+        ${isOpen && carryable.length ? `<div class="inline"><label class="name" for="cy-arm">Carry in</label><select id="cy-arm">${carryable.map((x) => `<option>${esc(x)}</option>`).join("")}</select>
+          <button class="btn" type="button" id="cy-go">Carry it in</button><span class="muted">an arm of an earlier round, or a system already measured on ${esc(r.dataset_id)}: unchanged, not run again</span></div><div id="cy-out" data-out></div>` : ""}</div></section>
       ${baseline}
       ${isOpen ? `<section class="part"><div class="parthead"><h2>Run arms in it</h2></div><div class="body">
         ${toRun.length ? `<div class="choices">${toRun.map((x) => `<label class="choice"><input type="checkbox" data-run="${esc(x.system)}"> <span class="mono">${esc(x.system)}</span> <small>${esc(x.model || "")}</small></label>`).join("")}</div>
@@ -863,7 +877,11 @@
       if (!by) { out.innerHTML = '<p class="note" role="alert">Say who you are: a decision names who made it.</p>'; return; }
       const inputs = { dataset: v("ro-ds"), hypothesis: v("ro-q"), by };
       const last = rl.rounds[rl.rounds.length - 1];
-      if (last) { inputs.from = last.round_id; if (v("ro-keep")) inputs.keep = v("ro-keep"); }
+      if (last) {
+        inputs.from = last.round_id;
+        const keep = [...document.querySelectorAll('input[name="ro-keep"]:checked')].map((x) => x.value);
+        if (keep.length) inputs.keep = keep.join(",");
+      }
       if (v("ro-budget")) inputs.budget_usd = Number(v("ro-budget"));
       ev.target.disabled = true;
       try {
@@ -1690,7 +1708,7 @@
     const o = ov.overview || {}, other = o.store === "sqlite" ? "files" : "sqlite";
     const where = o.store === "sqlite" ? `one database, <span class="mono">${esc(o.database || "data/project.sqlite")}</span>${o.database_bytes != null ? `, ${o.database_bytes.toLocaleString()} bytes` : ", not made yet"}` : "every run, label and score a file under data/, kept in git";
     const st = WB._settings || {}, path = st.path || SETTING_FILES[0][0];
-    const file = load(`data-file:${path}`, `/data/file?path=${enc(path)}`);
+    const file = load(`data-file:${path}`, `/data/file?path=${enc(path)}&optional=1`);
     const text = file === undefined ? null : file.error ? "" : ((file.file || {}).text ?? "");
     const row = (n, title, why, body, cmd) => `<section class="part"><div class="parthead"><span class="letter">${n}</span><h2>${esc(title)}</h2></div><div class="body">
         <p class="muted">${why}</p>${body}${WB.cmd(cmd)}</div></section>`;

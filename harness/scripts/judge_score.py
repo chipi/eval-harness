@@ -94,6 +94,7 @@ from evaluation_harness.judging import (
     build_pairwise_message,
     build_pick_message,
     call_judge,
+    json_object,
     json_only,
     kendall_tau_b,
     parse_block,
@@ -181,9 +182,13 @@ def _keep_withheld(record: Path, text: str) -> Path:
     return out
 
 
-def unparsed_cause(output: str | None, finish_reason: Any, mode: str) -> str:
+def unparsed_cause(
+    output: str | None, finish_reason: Any, mode: str, dimensions: list[str] | None = None
+) -> str:
     """Why a reply gave no verdict, for the line judge-score prints: empty, cut off at the
-    token limit, not JSON, or JSON of the wrong shape, with its character count."""
+    token limit, not JSON, or JSON of the wrong shape, with its character count. Of the wrong shape, a grade names the
+    keys the reply had and the dimensions the prompt must ask for (the 0.8.0 newcomer run: a prompt that did not name
+    them got 80 replies of the judges' own keys, every one unparsed, and the line did not say what was expected)."""
     n = len(output or "")
     cut = finish_reason == "length"
     if not output:
@@ -196,6 +201,12 @@ def unparsed_cause(output: str | None, finish_reason: Any, mode: str) -> str:
         return f"cut off at the token limit (finish_reason length), {n} chars"
     if not json_only(output):
         return f"not JSON, {n} chars"
+    if mode == "grade" and dimensions:
+        keys = ", ".join(map(str, json_object(output) or {})) or "none"
+        return (
+            f"JSON, but not the expected scores: its keys are {keys}; the prompt must ask for one list of numbers per "
+            f"dimension, keyed {', '.join(dimensions)}, {n} chars"
+        )
     return f"JSON, but not the expected {VERDICT_KEY[mode]} (the shape the prompt asks for), {n} chars"
 
 
@@ -981,7 +992,7 @@ def run_judging(
                             )
                     log(
                         f"    unparsed reply: {j['id']} {item['item_id'][:8]} {pass_name} b{block}: "
-                        f"{unparsed_cause(res.output, fr, mode_of(manifest))}"
+                        f"{unparsed_cause(res.output, fr, mode_of(manifest), task_for(sc).get('dimensions'))}"
                     )
                 else:
                     parsed = first_replies.setdefault(j["id"], [])

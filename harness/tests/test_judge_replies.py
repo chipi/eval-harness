@@ -244,4 +244,18 @@ check(
     prov._BODY_PARAMS.get("reasoning") == "reasoning",
 )
 
+# The 0.8.0 newcomer run: a grade prompt that did not name the dimensions got replies keyed by the judges' own words,
+# every one unparsed, and the line did not say what was expected.
+said = js.unparsed_cause(
+    '```json\n{"completeness": [4], "accuracy": [5], "why": ["fine"]}\n```',
+    "stop",
+    "grade",
+    ["faithful", "covers"],
+)
+check(
+    "an unparsed grade of the wrong keys names the keys it had and the dimensions the prompt must ask for",
+    "its keys are completeness, accuracy, why" in said and "keyed faithful, covers" in said,
+    said,
+)
+
 sys.exit(summary())

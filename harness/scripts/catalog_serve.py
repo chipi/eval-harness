@@ -1166,9 +1166,15 @@ class Handler(SimpleHTTPRequestHandler):
                 self._job_route(op, params)
                 return True
             inputs: dict = {}
+            optional = False
             if op.kind == "read":
+                q = parse_qs(url.query)
+                # `optional=1`: the caller shows the answer only when there is one (a Workbench chart, a file a project
+                # may not have), so a read with nothing to show is answered 200 with why (`empty`), as the command
+                # says it, not as an error (a browser logs every 4xx in its console).
+                optional = q.pop("optional", ["0"])[-1] == "1"
                 try:
-                    inputs = query_inputs(op.inputs, parse_qs(url.query))
+                    inputs = query_inputs(op.inputs, q)
                 except ValueError as exc:
                     return say(400, {"error": f"{op.name}: {exc}"})
             else:
@@ -1196,10 +1202,19 @@ class Handler(SimpleHTTPRequestHandler):
                 jsonschema.validate({k: v for k, v in inputs.items() if k != "by"}, op.schema())
             except jsonschema.ValidationError as exc:
                 return say(400, {"error": f"{op.name}: {registry.input_problem(exc)}"})
+
+            def nothing(kind: str, why: str, optional: bool = optional, name: str = op.name) -> bool | None:
+                """A read asked as optional with nothing to show, answered 200 with why; None for any other refusal."""
+                if not (optional and kind in ("not-enough", "not-found")):
+                    return None
+                return say(
+                    200, {"command": name, "version": __version__, "result": None, "empty": why, "kind": kind}
+                )
+
             try:
                 result = op.call(**params, **inputs)
             except Problem as exc:
-                return say(
+                return nothing(exc.kind, str(exc)) or say(
                     REFUSAL_STATUS.get(exc.kind, 400),
                     {"error": str(exc), "kind": exc.kind, "problems": exc.problems},
                 )
@@ -1208,10 +1223,8 @@ class Handler(SimpleHTTPRequestHandler):
             ) as exc:  # a body that refuses as a command does (die): ended the thread, no answer
                 m = re.match(r"ERROR \(([a-z-]+)\): (.*)", str(exc), re.S)
                 kind = m.group(1) if m else "failed"
-                return say(
-                    REFUSAL_STATUS.get(kind, 400),
-                    {"error": (m.group(2) if m else str(exc)).strip(), "kind": kind},
-                )
+                why = (m.group(2) if m else str(exc)).strip()
+                return nothing(kind, why) or say(REFUSAL_STATUS.get(kind, 400), {"error": why, "kind": kind})
             if op.kind != "read":
                 data_changed(f"{op.name} through the API")
             return say(200, {"command": op.name, "version": __version__, "result": result})

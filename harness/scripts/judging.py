@@ -390,17 +390,23 @@ def quotes_source(output: str, source: set) -> bool:
 _FENCE = re.compile(r"^```(?:json)?\s*(.*?)\s*```$", re.S)
 
 
-def json_only(output: str | None) -> bool:
-    """A reply that is one JSON object and nothing else (a ```json fence allowed)."""
+def json_object(output: str | None) -> dict | None:
+    """The reply's one JSON object when it is that and nothing else (a ```json fence allowed), else None."""
     t = (output or "").strip()
     m = _FENCE.match(t)
     t = m.group(1) if m else t
     if not (t.startswith("{") and t.endswith("}")):
-        return False
+        return None
     try:
-        return isinstance(json.loads(t), dict)
+        got = json.loads(t)
     except json.JSONDecodeError:
-        return False
+        return None
+    return got if isinstance(got, dict) else None
+
+
+def json_only(output: str | None) -> bool:
+    """A reply that is one JSON object and nothing else (a ```json fence allowed)."""
+    return json_object(output) is not None
 
 
 def withheld_reason(output: str | None, source: set) -> str | None:

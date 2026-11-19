@@ -654,7 +654,18 @@ try:
                 and "Does the fake model" in page.locator("main h2").first.inner_text(),
                 rnd,
             )
-            page.check("[data-run='one_v1']")
+            # one_v1 was measured on tk_v1 before the round: it is offered to carry in, never to run again (a second
+            # measurement of a system is refused); the fake model, never run there, is the one to run.
+            check(
+                "A system already measured on the round's dataset is offered to carry in, not to run",
+                page.locator("[data-run='one_v1']").count() == 0
+                and page.locator("#cy-arm option", has_text="one_v1").count() == 1,
+                page.locator("main").inner_text()[:600],
+            )
+            page.select_option("#cy-arm", "one_v1")
+            page.fill("#ev-by", "tester")
+            page.click("#cy-go")
+            page.wait_for_selector("#arms li:has-text('one_v1')", timeout=60000)
             page.check("[data-run='fake-1b_here']")
             page.click("#rn-est")
             page.wait_for_selector("#rn-out pre, #rn-out [role=alert]", timeout=60000)
@@ -678,7 +689,7 @@ try:
                 raise
             rnd = yaml.safe_load((proj / "data" / "rounds" / "tickets_summary" / "r1.yaml").read_text())
             check(
-                "Run them: one sweep job runs both in the round; each joins the round as an arm and the evidence reads them",
+                "Run them: the sweep job runs the new arm in the round; it joins the carried one and the evidence reads both",
                 {a["system"] for a in rnd.get("arms") or []} >= {"one_v1", "fake-1b_here"}
                 and page.locator("main th:has-text('threshold')").count() == 1,
                 (rnd.get("arms"), page.locator("main").inner_text()[:600]),
@@ -781,7 +792,15 @@ try:
             page.goto(f"http://127.0.0.1:{port}/workbench/#eval/tickets_summary")
             page.wait_for_selector("#ro-q", timeout=20000)
             page.fill("#ro-q", "Is the echo arm as good when carried into the next round?")
-            page.select_option("#ro-keep", "")
+            page.wait_for_selector("input[name=ro-keep]", timeout=20000)
+            boxes = page.locator("input[name=ro-keep]")
+            check(
+                "Open the next round: each arm still in play in the last one is offered to carry in, one by one, ticked",
+                boxes.count() >= 1 and boxes.evaluate_all("els => els.every(e => e.checked)"),
+                boxes.count(),
+            )
+            for i in range(boxes.count()):
+                boxes.nth(i).uncheck()
             page.fill("#ro-by", "tester")
             page.click("#ro-open")
             page.wait_for_selector("#cy-arm", timeout=60000)
@@ -1641,6 +1660,12 @@ try:
                 f = proj / ".build" / "jobs" / jid / "progress.json"
                 return (json.loads(f.read_text()).get("done") or 0) if f.is_file() else 0
 
+            # These runs test stopping and resuming a job, not a measurement: the project allows fake-1b_here a run
+            # beside the one the round measured (validate.json's duplicate_ok), as a second plain run is refused.
+            pol = proj / "data" / "validate.json"
+            policy = json.loads(pol.read_text()) if pol.is_file() else {}
+            policy["duplicate_ok"] = [*(policy.get("duplicate_ok") or []), ["tk_v1", "fake-1b_here"]]
+            pol.write_text(json.dumps(policy))
             early = start_run()
             page.goto(f"http://127.0.0.1:{port}/workbench/#jobs/{early.get('id')}")
             page.wait_for_selector("#jb-stop", timeout=20000)

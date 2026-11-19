@@ -9,6 +9,7 @@ from __future__ import annotations
 from typing import Any
 
 from evaluation_harness.ops.registry import Op
+from evaluation_harness.stats import fmt_p
 
 _R = "evaluation_harness.ops.rounds"
 
@@ -35,7 +36,7 @@ OPS = (
            "budget_usd": {"type": "number", "description": "what the round may spend"},
            "baseline": {"type": "string", "description": "the run the round starts from, by its system id (its latest measured run on --dataset) or its run id; default: the dataset's promoted baseline. What `pair-test --round` and `rounds` read the round's arms against"},
        }),
-    Op("round-carry", "decision", "carry an arm of an earlier round into the open round, unchanged",
+    Op("round-carry", "decision", "carry an arm of an earlier round, or a system already measured on the dataset, into the open round, unchanged",
        "POST", "/goals/{goal}/rounds/{round}/carry", "evaluation_harness.rounds:carry_body", "",
        locks=(("goal:{goal}", True),), required=("goal", "round", "arm"), inputs={
            "goal": {"type": "string", "description": "the goal the round belongs to"},
@@ -186,11 +187,11 @@ def say_evidence(r: dict[str, Any]) -> str:
         + (f", leader {r['leader'].rsplit('/', 1)[-1]}" if r.get("leader") else "")
     ]
     lines += [
-        f"  {x['arm'].rsplit('/', 1)[-1]:<32} {x['verdict']:<18} delta {x['delta']:+.4f}  p {x['p']}"
+        f"  {x['arm'].rsplit('/', 1)[-1]:<32} {x['verdict']:<18} delta {x['delta']:+.4f}  p {fmt_p(x['p'])}"
         for x in r["rows"]
     ]
     lines += [
-        f"  against {x['label']} ({x['other'].rsplit('/', 1)[-1]}): {x['verdict']}, delta {x['delta']:+.4f}, p {x['p']}"
+        f"  against {x['label']} ({x['other'].rsplit('/', 1)[-1]}): {x['verdict']}, delta {x['delta']:+.4f}, p {fmt_p(x['p'])}"
         for x in r["against"]
     ]
     lines += [f"  NOTE: {n}" for n in r["notes"]]

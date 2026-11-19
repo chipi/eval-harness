@@ -299,6 +299,9 @@ tr.retired td .mono, tr.retired td.num { text-decoration: line-through; }
 .dropzone.over { border-color: var(--accent); color: var(--accent); }
 textarea.mono { width: 100%; }
 .note .mono, .note code { overflow-wrap: anywhere; }
+/* An id (a run's, a system's) is one unbroken word: at phone width it breaks where it must, never widening the page
+   (the 0.8.0 newcomer run: a run id took the eval screen to 410 px at 390). */
+main .mono, main code { overflow-wrap: anywhere; }
 table.r4res td:first-child { white-space: normal; min-width: 160px; }
 table.r4res td:nth-child(3) { white-space: normal; }
 

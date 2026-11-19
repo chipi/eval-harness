@@ -213,7 +213,7 @@ def run_case(store: str) -> None:
         # A run's outputs and a score's rows are table rows in the database: still listed, counted and shown as the
         # files they were on disk before the move, byte for byte.
         listed = json.loads(cli(proj, env, "data-ls", run, "--json").stdout)["result"]["listing"]["entries"]
-        score = next((e["path"] for e in listed if e["name"] == "scores"), None)
+        score = next((e["path"] for e in listed if e["name"] == "scores"), "")
         sdir = json.loads(cli(proj, env, "data-ls", score, "--json").stdout)["result"]["listing"]["entries"][
             0
         ]["path"]

@@ -228,7 +228,8 @@ def _adopt_scoring(doc: dict, why: str, rs) -> None:
 
 
 def carry_body(**inputs: Any) -> int:
-    """evh round-carry: bring an arm of an earlier round into the open round, unchanged."""
+    """evh round-carry: bring an arm of an earlier round (or a system already measured on the dataset) into the open
+    round, unchanged."""
     args = legacy.namespace(inputs, "round-carry", {"from": "from_"})
     rnd = _round(args.goal, args.round)
     if rnd.get("status") == "closed":
@@ -248,25 +249,42 @@ def carry_body(**inputs: Any) -> int:
         frm = [src]
     else:
         frm = sorted(earlier, key=lambda r: -_rounds._num(r["round_id"]))
-    found = next(((r, a) for r in frm if (a := model_rounds.find_arm(r, args.arm))), None)
-    if found is None:
+    found = next(
+        (
+            (r, a)
+            for r in frm
+            if r["dataset_id"] == rnd["dataset_id"] and (a := model_rounds.find_arm(r, args.arm))
+        ),
+        None,
+    )
+    if found is not None:
+        src, arm = found
+        model_rounds.carry(
+            rnd, args.arm, arm.get("label") or "", list(arm.get("runs") or []), src["round_id"], who
+        )
+        _rounds.save(rnd)
+        print(
+            f"{args.arm} carried from {src['round_id']} into {args.round}: {len(arm.get('runs') or [])} run(s), "
+            "unchanged"
+        )
+        return 0
+    # A system measured outside the rounds on this dataset (or in a round on another one) is read through its plain
+    # runs here, as round-open --keep reads it: the Workbench offers a measured system to carry in, never to run again.
+    from evaluation_harness._runs import runs_on  # noqa: PLC0415
+
+    ds = rnd["dataset_id"]
+    runs = sorted(m["run_id"] for _d, m in runs_on(ds, label="", system_id=args.arm))
+    if not runs:
         where = args.from_ or "an earlier round"
         have = ", ".join(sorted({a["system"] for r in frm for a in model_rounds.arms(r)})) or "no arms"
-        die(f"{where} of {args.goal} has no arm {args.arm!r} (it has: {have})", "not-found")
-    src, arm = found
-    if src["dataset_id"] != rnd["dataset_id"]:
         die(
-            f"{src['round_id']} ran on {src['dataset_id']!r}, {args.round} on {rnd['dataset_id']!r}: "
-            "an arm is carried between rounds of one dataset",
-            "mismatch",
+            f"{where} of {args.goal} has no arm {args.arm!r} on {ds} (it has: {have}), and {args.arm} has no run on "
+            f"{ds} to carry in",
+            "not-found",
         )
-    model_rounds.carry(
-        rnd, args.arm, arm.get("label") or "", list(arm.get("runs") or []), src["round_id"], who
-    )
+    model_rounds.carry(rnd, args.arm, "", runs, None, who)
     _rounds.save(rnd)
-    print(
-        f"{args.arm} carried from {src['round_id']} into {args.round}: {len(arm.get('runs') or [])} run(s), unchanged"
-    )
+    print(f"{args.arm} carried into {args.round}: its {len(runs)} run(s) on {ds}, unchanged")
     return 0
 
 

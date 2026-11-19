@@ -952,14 +952,14 @@ try:
     shown = evh("comparison-show", "--round", "r1", "--goal", "tickets_summary")
     ev = evh("round-evidence", "tickets_summary", "r1")
     n = len(arm1["runs"])
-    row = next((ln for ln in out(shown).splitlines() if sys1 in ln), "")
+    arm_row = next((ln for ln in out(shown).splitlines() if sys1 in ln), "")
     check(
         "a closed round reads only the runs it recorded, and names a later run of one of its systems",
         later.returncode == 0
         and len(runs_of_sys()) == len(had) + 1
         and (f"{sys1} ×{n}" in out(shown) if n > 1 else f"{sys1} ×" not in out(shown))
         and f"{sys1}: 1 run(s) since then not read here" in out(ev),
-        (out(later)[-200:], row, out(ev)[-400:], n),
+        (out(later)[-200:], arm_row, out(ev)[-400:], n),
     )
 finally:
     shutil.rmtree(proj, ignore_errors=True)

@@ -12,6 +12,14 @@ from typing import Any
 from evaluation_harness.ops import legacy
 from evaluation_harness.ops.registry import Op
 
+
+def _num(v: Any) -> Any:
+    """A score as the text views print it: four decimals, six below 0.001 (a cost per item); the JSON keeps it."""
+    if isinstance(v, float):
+        return f"{v:.4f}" if abs(v) >= 0.001 or v == 0 else f"{v:.6f}"
+    return v
+
+
 _R = "evaluation_harness.ops.records"
 _STR = {"type": "string"}
 
@@ -393,7 +401,9 @@ def say_baselines(r: dict[str, Any]) -> str:
         )
         out.append(f"    why      {b.get('reason', '(none recorded)')}")
         label = f"scores (mean of {b['repeats']} repeats)" if b.get("repeats") else "scores"
-        out.append(f"    {label}   " + "  ".join(f"{k}={v}" for k, v in (b.get("scores") or {}).items()))
+        out.append(
+            f"    {label}   " + "  ".join(f"{k}={_num(v)}" for k, v in (b.get("scores") or {}).items())
+        )
         ev = b.get("evidence") or {}
         vd = ev.get("verdict")
         if b.get("migrated"):
@@ -562,7 +572,7 @@ def say_runs_list(r: dict[str, Any]) -> str:
         )
     out = [f"{'run_id':44} {'dataset_id':18} {'build':14} scores"]
     for m in r["runs"]:
-        scores = "  ".join(f"{k}={v}" for k, v in m["scores"].items())
+        scores = "  ".join(f"{k}={_num(v)}" for k, v in m["scores"].items())
         dirty = "*" if m["dirty"] else " "
         out.append(f"{m['run_id']:44} {m['dataset_id']:18} {(m['build_ref'] or '?')[:12]}{dirty} {scores}")
     out.append("\n  * = produced by a dirty tree; its build ref does not describe what ran")
