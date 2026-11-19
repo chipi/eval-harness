@@ -507,7 +507,7 @@ def one_pass(
         # reporting success. The outputs were all present and none of them counted.
         resumed = item["item_id"] in prior_out
 
-        if not resumed and _spend.reached(spent, cap):
+        if not resumed and _spend.stops(spent, cap, cfg.get("params")):
             # Check BEFORE the call: the cap is a ceiling on spend, not a report of
             # having exceeded it. A resumed item costs nothing, so the cap cannot stop it.
             capped_at = item["item_id"]
@@ -1620,6 +1620,8 @@ def _run(args: argparse.Namespace) -> int:
         )
         if result["capped_at"]:
             capped = True
+            if _spend.zero_blocked(_spend.cap(), call_cfg.get("params")):
+                print(f"\n  {args.system}: {_spend.ZERO_CAP_HINT}")
             print(
                 f"\n  COST CAP HIT at item {result['capped_at']} — "
                 f"spent ${result['spent_usd']:.4f} this pass, ${_spend.spent():.4f} in all, of the cap "

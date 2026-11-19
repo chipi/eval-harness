@@ -591,6 +591,10 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Changed
 
+- **`EVAL_MAX_COST_USD=0` means spend nothing**: a run, smoke, sweep arm or judging pass of a system known to be free
+  (provider echo, a recorded arm, a judge of provider fake, or both `usd_per_mtok_in` and `usd_per_mtok_out`
+  declared 0) is no longer stopped by it, and anything else is stopped before its first call (exit 7), with the message
+  saying how to declare it free.
 - **The Workbench's goal screen shows its command once**, and a goal's trend with fewer than two points is one line
   ("One point so far: …") rather than a chart; a page left open after the server restarted says, on any 401, that the
   server restarted and to open the Workbench link it printed.

@@ -294,7 +294,7 @@ def _smoke(args: argparse.Namespace) -> int:
             mat / (item.get("source_path") or item["item_id"]), encoding="utf-8", errors="replace"
         )
         row: dict[str, Any] = {"item": item["item_id"]}
-        if _spend.exhausted():  # the cap (EVAL_MAX_COST_USD, or the round's share): no further call
+        if _spend.exhausted(params):  # the cap (EVAL_MAX_COST_USD, or the round's share): no further call
             capped = item["item_id"]
             break
         t0 = time.perf_counter()
@@ -328,7 +328,7 @@ def _smoke(args: argparse.Namespace) -> int:
         if n == 0:
             first_output = res.output
             try:
-                if _spend.exhausted():
+                if _spend.exhausted(params):
                     raise _common.CostCapExceeded("the cap is reached: item 1 is not called twice")
                 again = call_system(text, params)
                 pay(again)
@@ -362,6 +362,8 @@ def _smoke(args: argparse.Namespace) -> int:
         rec, flags_for(items, calls, params_for_flags), cfg.get("deployment")
     )
     if capped:
+        if _spend.zero_blocked(_spend.cap(), params):
+            print(f"  {_spend.ZERO_CAP_HINT[0].upper()}{_spend.ZERO_CAP_HINT[1:]}")
         print(
             f"  COST CAP: stopped before item {capped} (${_spend.spent():.4f} spent of ${_spend.cap() or 0:.4f})"
         )

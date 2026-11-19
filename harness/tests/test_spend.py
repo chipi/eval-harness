@@ -182,12 +182,71 @@ try:
         and any(n.startswith("free_v1") for n in _runstore.listdir(proj, "runs")),
         (r.returncode, (r.stdout + r.stderr)[-400:]),
     )  # fmt: skip
-    r = evh("run", *system("paid0", "paid0_v1"), cap=0)
+    # an arm not known to be free (no provider named, no prices declared) is stopped before its first call, and the
+    # message says how to declare it free; the two prices as 0 make it known free
+    _runstore.write_text(proj, "systems/unk_v1.yaml", "system_id: unk_v1\nadapter: pay.py\nparams: {}\n")
+    unk = ["--system", "unk_v1", "--dataset", "tickets_v1"]
+    r = evh("run", *unk, cap=0)
     check(
-        "run with EVAL_MAX_COST_USD=0 of an arm that spends: stopped after the first call (exit 4), never past it",
-        r.returncode == _common.EXIT_STOPPED and "COST CAP HIT" in r.stdout
-        and abs(spent_of("paid0_v1") - 0.01) < 1e-9,
-        (r.returncode, spent_of("paid0_v1"), (r.stdout + r.stderr)[-400:]),
+        "run with EVAL_MAX_COST_USD=0 of an arm not known to be free: stopped before its first call (exit 7), spent "
+        "nothing, told how to declare it free",
+        r.returncode == 7 and "COST CAP HIT" in r.stdout and "usd_per_mtok_in: 0" in r.stdout
+        and spent_of("unk_v1") == 0.0,
+        (r.returncode, spent_of("unk_v1"), (r.stdout + r.stderr)[-500:]),
+    )  # fmt: skip
+    # a project adapter's own provider name (lead) proves nothing: stopped under cap 0 until both prices are 0
+    _runstore.write_text(
+        proj,
+        "systems/lead_v1.yaml",
+        "system_id: lead_v1\nadapter: pay.py\nparams: {provider: lead, cost: 0}\n",
+    )
+    r = evh("run", "--system", "lead_v1", "--dataset", "tickets_v1", cap=0)
+    check(
+        "run with EVAL_MAX_COST_USD=0 of a project adapter's provider named lead, no prices: stopped before its first "
+        "call (exit 7) with the hint",
+        r.returncode == 7 and "usd_per_mtok_in: 0" in r.stdout and spent_of("lead_v1") == 0.0,
+        (r.returncode, (r.stdout + r.stderr)[-400:]),
+    )  # fmt: skip
+    _runstore.write_text(
+        proj,
+        "systems/lead_v1.yaml",
+        "system_id: lead_v1\nadapter: pay.py\nparams: {provider: lead, cost: 0, usd_per_mtok_in: 0, usd_per_mtok_out: 0}\n",
+    )
+    r = evh("run", "--system", "lead_v1", "--dataset", "tickets_v1", cap=0)
+    check(
+        "... and runs once its system declares both prices as 0",
+        r.returncode == 0 and any(n.startswith("lead_v1") for n in _runstore.listdir(proj, "runs")),
+        (r.returncode, (r.stdout + r.stderr)[-400:]),
+    )  # fmt: skip
+    _runstore.write_text(
+        proj,
+        "systems/unk0_v1.yaml",
+        "system_id: unk0_v1\nadapter: pay.py\nparams: {cost: 0, usd_per_mtok_in: 0, usd_per_mtok_out: 0}\n",
+    )
+    r = evh("run", "--system", "unk0_v1", "--dataset", "tickets_v1", cap=0)
+    check(
+        "... and runs under a cap of 0 once its system declares both prices as 0",
+        r.returncode == 0 and any(n.startswith("unk0_v1") for n in _runstore.listdir(proj, "runs")),
+        (r.returncode, (r.stdout + r.stderr)[-400:]),
+    )  # fmt: skip
+    r = evh("arm-smoke", *unk, "--items", "2", "--json", cap=0)
+    vals0 = (
+        (json.loads(r.stdout).get("result") or {}).get("values") or {}
+        if r.stdout.strip().startswith("{")
+        else {}
+    )
+    check(
+        "arm-smoke with EVAL_MAX_COST_USD=0 of an arm not known to be free: no call, flagged",
+        not (vals0.get("items") or []) and any("cap" in f for f in vals0.get("flags") or []),
+        (r.returncode, vals0.get("items"), vals0.get("flags"), r.stderr[-300:]),
+    )  # fmt: skip
+    system("swu", "swu_v1")
+    _runstore.write_text(proj, "systems/swu_v1.yaml", "system_id: swu_v1\nadapter: pay.py\nparams: {}\n")
+    r = evh("sweep", "--systems", "swu_v1", "--dataset", "tickets_v1", cap=0)
+    check(
+        "sweep with EVAL_MAX_COST_USD=0 over an arm not known to be free: not run, with the how-to",
+        "NOT RUN" in r.stdout and "usd_per_mtok_in: 0" in r.stdout and spent_of("swu_v1") == 0.0,
+        (r.returncode, (r.stdout + r.stderr)[-400:]),
     )  # fmt: skip
     r = evh("arm-smoke", *free, "--items", "3", "--json", cap=0)
     vals = (

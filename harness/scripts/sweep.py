@@ -62,9 +62,13 @@ def body(**inputs: Any) -> int:
             cmd.append("--dry-run")
         if args.scratch:
             cmd.append("--scratch")
-        if not args.dry_run and _spend.exhausted():
-            # The sweep's cap is spent (RFC-026 step 5): the arms after this one are not run.
-            print(f"   NOT RUN — the cap is spent (${_spend.spent():.4f} of ${_spend.cap():.4f})")
+        sys_params = SYSTEM.get(c).get("params")
+        if not args.dry_run and _spend.exhausted(sys_params):
+            # The sweep's cap is spent (RFC-026 step 5), or 0 for a system not known to be free: not run.
+            print(
+                f"   NOT RUN — the cap is spent (${_spend.spent():.4f} of ${_spend.cap():.4f})"
+                + (f": {_spend.ZERO_CAP_HINT}" if _spend.zero_blocked(_spend.cap(), sys_params) else "")
+            )
             failed.append(c)
             continue
         if args.dry_run:

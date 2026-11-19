@@ -217,3 +217,5 @@ PROVIDERS: dict[str, Callable[[str, dict[str, Any]], Result]] = {
     "echo": _echo,
     **dict.fromkeys(_providers.PROVIDERS, _hosted),
 }
+#: The bundled providers that make no paid call (a cap of 0 lets a system of one run).
+FREE_PROVIDERS = frozenset({"echo"})

@@ -824,6 +824,12 @@ again, so an adapter that reports less than its calls cost is still stopped at t
 give each child what the ones before it left (a child that is killed before it can say what it spent is counted at
 all it was given).
 
+**A cap of 0 means spend nothing.** A system runs under it only when it is known to be free before any call: a
+provider of `echo`, a recorded arm (`provider: recorded`), or both `usd_per_mtok_in: 0` and `usd_per_mtok_out: 0` in the
+system (a judge: provider `fake`); anything else, a hosted provider or a project adapter whatever it calls its provider, is
+stopped before its first call (exit 7, nothing measured) and the message says how to declare it free. A cost of 0
+reported after a call does not make a system known free.
+
 **A round's budget is enforced.** A run (or a smoke) of an arm whose system names an open round with `budget_usd`
 reserves, before its first call, the least of its own cap and what the round has left, in the round's ledger
 (`.build/rounds/<goal>/<round>.json`); it spends at most that. What a round has left is its budget, less what its
@@ -2099,7 +2105,7 @@ notebook) reads no `.env`, and the project's paths are resolved on first use, so
 | `EVAL_STORE_READONLY` | `1`: open the project's database read-only (a release is; a folder that is not writable does it without this); a write is refused, never made |
 | (see env-check) | `evh env-check` says where each set variable came from ((.env), (shell), (shell, over .env)) |
 | `EVAL_GOALS_DIR` | read goals here instead of `<data>/goals`, relative to the project (for goals kept outside the data root) |
-| `EVAL_MAX_COST_USD` | the most one command spends, every pass of `--repeat` together; the run stops, keeps its results, resumes |
+| `EVAL_MAX_COST_USD` | the most one command spends, every pass of `--repeat` together; the run stops, keeps its results, resumes; 0 runs only a system known to be free (provider echo, a recorded arm, or both prices declared 0) |
 | `EVAL_MAX_RETRIES`, `EVAL_RETRY_MAX_DELAY` | retries around every provider call |
 | `EVAL_BUILD_REF` | the identity of the system under test (default: the git SHA) |
 | `EVAL_HOST_LABEL` | a name for this machine, the runner (fingerprint v5's `runner.label`, outside its hash): latency of a model run in process, and the network part of a remote one, is comparable across runs only from the same runner |

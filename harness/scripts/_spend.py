@@ -57,9 +57,41 @@ def reached(spent: float, cap_usd: float | None) -> bool:
     return cap_usd is not None and spent > 0 and spent >= cap_usd
 
 
-def exhausted() -> bool:
-    """This process's cap (its own, or its round's share) is used up by what it spent."""
-    return reached(_SPENT[0], cap())
+ZERO_CAP_HINT = (
+    "a cap of 0 runs only what is known to be free: provider echo, a judge of provider fake, a recorded arm (provider "
+    "recorded), or a system that declares usd_per_mtok_in: 0 and usd_per_mtok_out: 0. Declare those two prices as 0, "
+    "or raise the cap."
+)
+
+
+def known_free(params: dict[str, Any] | None) -> bool:
+    """Whether a system (or a judge) is known, before any call, to spend nothing: a bundled provider that makes no paid
+    call (`adapter.FREE_PROVIDERS`; judging's `FAKE` for a judge), a recorded arm (the run's own test: it calls nothing),
+    or both prices declared 0. A project adapter's provider name proves nothing, and a cost of 0 reported after a call is
+    only known after the spending."""
+    from evaluation_harness import adapter, judging  # noqa: PLC0415
+
+    p = params or {}
+    if p.get("provider") in (*adapter.FREE_PROVIDERS, judging.FAKE, "recorded"):
+        return True
+    pin, pout = p.get("usd_per_mtok_in"), p.get("usd_per_mtok_out")
+    return all(isinstance(x, (int, float)) and not isinstance(x, bool) and x == 0 for x in (pin, pout))
+
+
+def zero_blocked(cap_usd: float | None, *params: dict[str, Any] | None) -> bool:
+    """A cap of 0 (spend nothing) with something that is not known to be free."""
+    return cap_usd is not None and cap_usd <= 0 and not all(known_free(p) for p in params)
+
+
+def stops(spent: float, cap_usd: float | None, *params: dict[str, Any] | None) -> bool:
+    """No further call: the cap is used up by what was spent, or it is 0 and `params` (the systems or judges that would
+    call) are not known to be free."""
+    return reached(spent, cap_usd) or zero_blocked(cap_usd, *params)
+
+
+def exhausted(*params: dict[str, Any] | None) -> bool:
+    """This process's cap (its own, or its round's share) stops a call by `params`."""
+    return stops(_SPENT[0], cap(), *params)
 
 
 def add(cost: float | None) -> None:

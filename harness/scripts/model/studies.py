@@ -127,24 +127,26 @@ def resolve(name: str, data: Path | None = None) -> tuple[str, str]:
 
 
 def of_goal(goal: str, study: str, data: Path | None = None) -> str:
-    """The id of a study of `goal` that is named by its id or as `study-list` prints it, `<goal>/<id>`; a study that is
-    not there (or is another goal's) is a `not-found` refusal."""
+    """The id of a study of `goal` named by its id or as `study-list` prints it, `<goal>/<id>`; another goal's, or an
+    id that is no id, is refused. Whether it exists is for the read that follows (`spec`)."""
     head, sep, sid = study.rpartition("/")
     if sep and head != goal:
         raise Problem(f"no study {study!r} of goal {goal!r}: name it {goal}/<id>, or by its id", "not-found")
-    if not _store.is_file(STUDY.under(data).path(f"{goal}/{sid}")):
-        have = [i.split("/", 1)[1] for i in ids(goal, data)]
-        raise Problem(
-            f"no study {goal}/{sid}"
-            + (f": one of {', '.join(have)}" if have else f": {goal} has no studies"),
-            "not-found",
-        )
+    STUDY.under(data).path(f"{goal}/{sid}")  # an id that is no id is refused before a path is made of it
     return sid
 
 
 def spec(goal: str, sid: str, data: Path | None = None) -> dict[str, Any]:
     """The spec, as written."""
-    doc = yaml.safe_load(_store.read_text(spec_path(goal, sid, data), encoding="utf-8")) or {}
+    path = spec_path(goal, sid, data)
+    if not _store.is_file(path):
+        have = [i.split("/", 1)[1] for i in ids(goal, data)]
+        raise Problem(
+            f"no study {f'{goal}/{sid}'!r}"
+            + (f": one of {', '.join(have)}" if have else f": {goal} has no studies"),
+            "not-found",
+        )
+    doc = yaml.safe_load(_store.read_text(path, encoding="utf-8")) or {}
     if not isinstance(doc, dict):
         _common.die(f"{spec_path(goal, sid, data)}: a mapping", "invalid-file")
     return doc

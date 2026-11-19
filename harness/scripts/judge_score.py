@@ -892,8 +892,12 @@ def run_judging(
                 if call is None:
                     stats["missing"] += 1
                     continue
-                if _spend.reached(spent, cap):
-                    raise CostCapExceeded(f"spent ${spent:.4f} of the ${cap:.4f} cap")
+                all_judges = [j["params"] for j in sc["judges"]]
+                if _spend.stops(spent, cap, *all_judges):
+                    raise CostCapExceeded(
+                        f"spent ${spent:.4f} of the ${cap:.4f} cap"
+                        + (f": {_spend.ZERO_CAP_HINT}" if _spend.zero_blocked(cap, *all_judges) else "")
+                    )
                 if msg is None:
                     msg = message_for(manifest, base, articles, outputs, item, pass_name, block)
                 n = len(item["position" if pass_name == "position" else "primary"][block])  # noqa: S105 — a judging pass, not a password
