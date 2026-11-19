@@ -99,8 +99,9 @@ evh leaderboard tickets_v1 --label gold
 Two lessons in one table. `author`, the reference everyone chased, is not first once a person's
 answers are the measure. And against what a person actually wrote, six items can almost never
 tell these arms apart: the pair that looked distinguishable on silver was the author's opinion,
-measured precisely. Rescored runs go to a separate directory, never over the originals, and each
-records both the reference it was measured against and the one it is scored against now.
+measured precisely. A re-score is a score of its own under each run, never over the original, read
+under its label (`gold` here), and it records both the reference the run was measured against and the
+one it is scored against now.
 
 ## 3. How good was the silver?
 
@@ -108,7 +109,7 @@ records both the reference it was measured against and the one it is scored agai
 gold's:
 
 ```bash
-EVAL_RUNS_DIR=data/runs-gold evh silver-calibrate --dataset-id tickets_v1
+evh silver-calibrate --dataset-id tickets_v1
 ```
 <!-- guide-check: varies author lead1 lead2 -->
 ```text
@@ -322,7 +323,7 @@ step 6.)
 Each judge's raw reply is stored under `data/judge-verdicts/`, so the same command again calls
 nothing, and `--no-calls` rebuilds the scored runs from the stored verdicts for $0. The judged
 runs read like any others: `leaderboard`, `pair-test` and `family-test` work on them unchanged,
-through `EVAL_RUNS_DIR`. The fake judges' numbers mean nothing, and the test says so: no
+under their label (`--label judged/<scorer>`). The fake judges' numbers mean nothing, and the test says so: no
 detectable arm effect.
 
 Commit what the judging wrote, as everything under `data/`:
@@ -362,7 +363,7 @@ credentials). A judge's own `base_url` or `api_key_env` in its params overrides 
 evh judge-score --dataset-id briefs_v1 --scorer briefs-judge-v1 --unvalidated --dry-run
 evh judge-score --dataset-id briefs_v1 --scorer briefs-judge-v1 --unvalidated
 evh judge-score --dataset-id briefs_v1 --scorer briefs-judge-v1 --unvalidated --retry-unparsed
-EVAL_RUNS_DIR=data/runs-judged/briefs-judge-v1 evh leaderboard briefs_v1
+evh leaderboard briefs_v1 --label judged/briefs-judge-v1
 ```
 
 Real judges sometimes reply with something that does not parse (reasoning aloud, a reply cut

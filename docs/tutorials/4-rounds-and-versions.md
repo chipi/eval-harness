@@ -289,7 +289,7 @@ same. After you change `score()` in your adapter, the preview shows each arm bef
 decision moves. Then apply the change one of two ways:
 
 - **Re-score a round**: `evh rescore --goal tickets_summary --round r2 --why "what was wrong"` re-scores the round's
-  arms at $0 into `data/runs-rescored/<scorer>/`, and the round records the scorer it is now judged by, and why.
+  arms at $0 (a score under each run, read under `rescored <scorer>`), and the round records the scorer it is now judged by, and why.
 - **Adopt it from the next round**: `evh round-open --goal tickets_summary --dataset tickets_v1 --from r2 --scoring
   "what was wrong"` opens round 3 judged by the new scorer, re-scoring every arm it carries in first.
 

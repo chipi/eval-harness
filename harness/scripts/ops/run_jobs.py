@@ -36,6 +36,7 @@ OPS = (
            "round": {"type": "string", "description": "the round of its goal the runs belong to (needs --goal)"},
            "repeat": {"type": "integer", "default": 1, "description": "run each arm N times"},
            "dry_run": {"type": "boolean", "description": "cost it without calling anything"},
+           "scratch": {"type": "boolean", "description": "a throwaway sweep: each arm written under .build/scratch/runs (evh run --scratch), no leaderboard"},
            "sort": {"type": "string", "description": "leaderboard metric"},
        }),
     Op("judge-score", "work", "re-measure frozen outputs with a validated LLM judge (--dry-run first)",

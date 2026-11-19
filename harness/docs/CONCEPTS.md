@@ -138,9 +138,9 @@ instrument arrives. There are three kinds:
 | judge scorer | the metric, delivered by a validated model | billed | `evh judge-score` ([ADR-0001](../../docs/adr/ADR-0001-judge-scorers.md), [RUNBOOK §12](RUNBOOK.md)) |
 
 Two rules hold for all three. The originals are never overwritten: a re-measurement is
-written to its own runs directory (a code re-score to one place the harness designates,
-`data/runs-rescored/<scorer>/<source>/`, which the goals and rounds then read the arm from), and the
-leaderboard is pointed at it. `evh score-preview` shows what a scoring change would move before anything is
+written as a score of its own under the run it re-read (`data/runs/<run_id>/scores/<scorer>@<reference>/`),
+read under a label (`rescored <scorer>`, `judged/<scorer>`) which the goals and rounds then read the arm from,
+and `evh leaderboard --label` reads it. `evh score-preview` shows what a scoring change would move before anything is
 written. And an
 eval's primary measurement changes only by a recorded decision, with the old one
 kept beside it. In this repository AG News and DBpedia keep the dataset's own gold as

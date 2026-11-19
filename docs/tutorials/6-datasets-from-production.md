@@ -164,8 +164,8 @@ evh arm-from-capture --dataset-id tickets_desk_v1 --capture desk_2026_10 --as de
 ```
 
 No model was called: each output is the capture's record of the same id (`--field routed`; a project's adapter
-reads it with `recorded_output(record)`), and it costs nothing. Scored against a label set, the run lands beside
-the others, in `data/runs-labels-tickets_desk_v1-desk_outcomes/`. Where was it wrong?
+reads it with `recorded_output(record)`), and it costs nothing. Scored against a label set, the run is read under
+that set's label, `labels-tickets_desk_v1-desk_outcomes`. Where was it wrong?
 
 ```bash
 evh sheet-show tickets_desk_v1 --runs desk_router_v1 --wrong-against desk_outcomes

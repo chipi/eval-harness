@@ -30,7 +30,10 @@ one CPU model, in 50 minutes, for $0.149; 1 item blocked (fixed before the relea
 about 15 of noise or polish. Fifth run: 2026-11-04, on the 0.7.0 release, through the LiteLLM proxy,
 one CPU model, in 26 minutes 38 seconds, for $0.1992 printed by the commands plus about $0.03 from arm-smoke
 calls; 1 item blocked (judge replies cut off mid-reasoning: a reasoning judge spent max_tokens thinking
-and returned nothing, fixed in 0.7.1), 10 needed a guess, about 15 of noise or polish. What is still open is listed at the end.
+and returned nothing, fixed in 0.7.1), 10 needed a guess, about 15 of noise or polish. Sixth run: 2026-11-19, on the
+0.8.0 candidate `84237576`, through the LiteLLM proxy, one CPU model, in about an hour, for $0.37 billed (the
+frontier classifier run three times and one judging pass that parsed nothing among it); 3 items blocked, 24 needed
+a guess, 15 of noise or polish. What each run fixed, and what is still open, is listed at the end.
 
 ## Rules for the run
 
@@ -93,12 +96,12 @@ One per eval in `data/goals/`, `brief_summary` and `intent_routing`
 ([RUNBOOK §4c](RUNBOOK.md#4c-the-goal-file-field-by-field) has every field and its allowed
 values): who uses the output, the decision ("which system runs it, given that a frontier model is
 too expensive to run on every item"), the measure that decides (`rouge_l`; `accuracy`), the
-dataset, the references. Every system names its goal (`goal: …`).
+dataset, the references. A system names no goal: every run names it (`evh run … --goal`).
 
 ## 3 · Adapters and arms
 
 - `adapter.py` at the project root for the summaries (tutorial 1's): a **lead** provider (the
-  first sentence; no model), an **hf** provider (a seq2seq model through
+  first `sentences` sentences, 1 by default; no model), an **hf** provider (a seq2seq model through
   `AutoModelForSeq2SeqLM.generate`), and the bundled hosted providers
   (`from evaluation_harness.adapter import PROVIDERS, Result`); `score()` returns `rouge_1`,
   `rouge_l` and `output_words`; `PRIMARY_METRIC = "rouge_l"`; `METRIC_DESCRIPTIONS`.
@@ -116,22 +119,28 @@ dataset, the references. Every system names its goal (`goal: …`).
 | frontier | `opus` (an expensive model you would not run in production) | `opus` |
 
 Every arm's first system id ends `_v1` (the frontier summariser is `briefs_opus_v1`). Give the
-frontier arm room to finish: `max_tokens: 300`. Silence the model libraries' progress bars and
-warnings in the adapter as tutorial 1's does, so the run's output is the harness's.
+frontier arm room to finish: `max_tokens: 600` (a frontier model that reasons spends part of it
+thinking; at 300 one of 32 intents replies stopped short, and a reference refuses a reply cut off).
+Silence the model libraries' progress bars and warnings in the adapter as tutorial 1's does, so the
+run's output is the harness's.
 
 ## 4 · Measure
 
 ```bash
 git add -A && git commit -qm "datasets, gold, goals, adapters, systems"
-evh run --system briefs_mistral_small_v1 --dataset briefs_v1 --goal brief_summary --dry-run   # price it first
+evh run --system briefs_mistral_small_v1 --dataset briefs_v1 --goal brief_summary --repeat 3 --dry-run   # price it first
 evh arm-smoke --system briefs_mistral_small_v1 --dataset briefs_v1   # a few items, before the full run; prints "spent $…"
-evh run --system <id> --dataset briefs_v1 --goal brief_summary       # every system
-evh run --system <hosted id> --dataset briefs_v1 --goal brief_summary --repeat 3   # the noise floor; prints "spent $…"
+evh run --system <hosted id> --dataset briefs_v1 --goal brief_summary --repeat 3   # each cheap hosted arm: its measurement and its noise floor
+evh run --system <id> --dataset briefs_v1 --goal brief_summary       # each other arm, once
 evh leaderboard briefs_v1
 evh family-test briefs_v1 --a briefs_mistral_small_v1 --against briefs_ --metric rouge_l
 ```
 
-The same for `intents_v1` (`--metric accuracy`). The smoke runs and the hosted arm's repeats both print what they spent (a few calls per arm in arm-smoke's case).
+The same for `intents_v1` (`--metric accuracy`). A hosted arm is measured once, as its `--repeat 3` set: that set
+is the arm's measurement and shows its noise. A plain run and then a repeat set of the same arm would be two
+measurements of it, and `evh run` refuses the set (to measure a run's noise afterwards, repeat that run:
+`--purpose repeat --of <run_id>`). The smoke runs and the repeats print what they spent. The slow CPU arm's
+progress lines say how long it has left.
 
 ## 5 · The frontier arm's outputs become the silver reference
 
@@ -148,53 +157,62 @@ evh leaderboard briefs_v1 --label silver    # the author's row is marked
 evh silver-calibrate --dataset-id briefs_v1                              # silver authors vs your gold
 ```
 
-**What each step writes; commit all of it** (AGENTS.md rule 3: commit `data/` as the harness writes it; the
-`.gitignore` from `evh init` leaves out only `data/materialized/`, caches, `.env` and the smoke and tune passes):
+Commit before any other run: an uncommitted label set or reference makes every run after it dirty, and
+`label-from-run` refuses a dirty run. If a frontier reply was cut off, `label-from-run` refuses it and names the fix
+(more `max_tokens`, a new system id).
 
-- Step 4: `evh run` writes `data/runs/`; `arm-smoke` records its report in the model record, `data/models/`.
+**What each step writes; commit all of it** (AGENTS.md rule 3: commit `data/` as the harness writes it; the
+`.gitignore` from `evh init` leaves out only `data/materialized/`, caches, `.env`, a pass's checkpoint and the
+`.build/` folder a `--scratch` pass writes to):
+
+- Step 4: `evh run` writes `data/runs/<run_id>/`; `arm-smoke` records its report in the model record, `data/models/`.
 - This step: `label-from-run` and `reference-promote` write `data/labels/` and `data/references/`; `rescore`
-  writes the re-scored set, `data/runs-silver/`.
-- Step 6: `judge-score` writes `data/judging-sets/`, `data/judge-verdicts/` and `data/runs-judged/<scorer_id>/`.
+  writes each run's score against silver beside its other scores, `data/runs/<run_id>/scores/<scorer>@silver.…/`.
+- Step 6: `judge-score` writes `data/judging-sets/`, `data/judge-verdicts/`, `data/judge-summaries/` and each run's
+  judged score, `data/runs/<run_id>/scores/<scorer>@…/`.
 - Step 7: `run-promote` writes `data/baselines/`.
 - Steps 8 and 9: `round-open`, `round-retire` and `round-close` write `data/rounds/`.
+- Step 11: `dataset-split` writes the two sides' datasets and references; `study-run` writes `data/studies/`.
 
-Commit each reference before the next run: an uncommitted reference makes every later run dirty,
-and `--from-run` refuses a dirty run. Gold outranks silver, so new runs keep scoring against
-gold; `data/runs-silver` holds the same runs scored against the frontier arm. On silver the
-frontier arm is the yardstick: the leaderboard marks its row and leaves it out of the ordering
-test and the frontier.
+Gold outranks silver, so new runs keep scoring against gold; each run also keeps its score against
+silver (`--label silver` reads it). On silver the frontier arm is the yardstick: the leaderboard marks its row and
+leaves it out of the ordering test and the frontier, and a goal page never tests it against the leader.
 
 ## 6 · Judge
 
 A judge scorer per dataset in `data/scorers/` (two judges from different vendor families, a
-`task` block, a prompt with `{n}`, and `explain: true` so each verdict says why), for the summaries'
-faithfulness and coverage and the classifier's label fit and reason quality. They are not validated, so:
+`task` block, `explain: true` so each verdict says why), for the summaries' faithfulness and coverage and the
+classifier's label fit and reason quality. Its prompt has `{n}`, names each of the task's dimensions and asks for
+one JSON object with a list of `{n}` numbers per dimension, as tutorial 3's prompt does: `judge-score` refuses a
+prompt that does not name them, before any call. They are not validated, so:
 
 ```bash
 evh judge-score --dataset-id briefs_v1 --scorer briefs-judge-v1 --unvalidated --dry-run
 evh judge-score --dataset-id briefs_v1 --scorer briefs-judge-v1 --unvalidated
 evh judge-score --dataset-id briefs_v1 --scorer briefs-judge-v1 --unvalidated --retry-unparsed
-EVAL_RUNS_DIR=data/runs-judged/briefs-judge-v1 evh leaderboard briefs_v1
+evh leaderboard briefs_v1 --label judged/briefs-judge-v1
 evh judge-verdicts briefs-judge-v1 --limit 10     # the lowest scores first, each with its reason
 ```
 
 The same for `intents_v1` with its scorer, then commit what the judging wrote:
 
 ```bash
-git add data/judging-sets data/judge-verdicts data/runs-judged && git commit -qm "the judged runs"
+git add data/judging-sets data/judge-verdicts data/judge-summaries data/runs && git commit -qm "the judged runs"
 ```
 
 A reply that did not parse and is not bare JSON is
 committed only as its hash; its text is in the `.withheld/` file the log names, so read why it
 failed before `--retry-unparsed`. The judged leaderboard prints the judging pass's agreement and
-its position and noise checks under its table: read them before the ranking.
+its position and noise checks under its table: read them before the ranking. A judge billed far from the prices
+its scorer declares is named at the end of the pass; correct the prices, or every later dry run estimates wrong.
 
 ## 7 · Baselines
 
 Promote, per dataset, the cheap arm closest to the frontier on gold, with a reason that says
 what the family test showed and what it costs against the frontier arm. For an arm run with
 `--repeat 3`, promote any of its repeats: the baseline records all three and their mean under
-`repeats`, the number the catalog, the inspector and the tests read.
+`repeats`, the number the catalog, the inspector and the tests read. A promotion is a decision and records who made
+it: at a terminal your login, from a script `--by person:NAME`.
 
 ```bash
 evh run-promote --run <run_id> --reason "<what the tests showed, and what it costs against the frontier arm>"
@@ -212,14 +230,15 @@ evh round-open --goal brief_summary --dataset briefs_v1 \
     --hypothesis "which of four systems, from no model to a frontier LLM, best summarises a brief in one sentence" \
     --keep briefs_lead1_v1,briefs_t5_small_v1,briefs_mistral_small_v1,briefs_opus_v1
 git add data/rounds && git commit -qm "brief_summary r1: open"
-evh round-list brief_summary                    # the evidence, and the suggested decisions
+evh round-evidence brief_summary r1             # the evidence, and the suggested decisions
 evh round-retire --goal brief_summary --round r1 --arm briefs_t5_small_v1 --reason "<what the test showed>"
 evh round-close --goal brief_summary --round r1 --conclusion "<what r1 showed, and what it decided>"
 git add data/rounds && git commit -qm "brief_summary r1: closed"
+evh round-list brief_summary                    # the goal's rounds, a line each
 ```
 
 The carried arms need no system change and no new run: `round-open` says so, and their runs
-already count. Use the commands `evh round-list` suggests (it prints each as the command that makes
+already count. Use the commands `evh round-evidence` suggests (it prints each as the command that makes
 it), and check that its verdicts are `family-test`'s for the same arms against the same leader.
 
 ## 9 · Round 2: change one thing
@@ -230,13 +249,14 @@ evh round-open --goal brief_summary --dataset briefs_v1 --from r1 \
     --change "briefs_mistral_small_v2: the prompt asks for the news and its key facts, at most 25 words" \
     --keep briefs_mistral_small_v1,briefs_opus_v1 \
     --retire briefs_lead1_v1 --reason "<why it is dropped>" --budget-usd 0.05
-# data/systems/briefs_mistral_small_v2.yaml: a new system_id, its prompt in a file:
+# data/systems/briefs_mistral_small_v2.yaml: a new system_id, its prompt in a file, at the top level of the system
+# (beside params, not in it), and no params.prompt:
 #   prompts: {summary: {file: prompts/brief_summary.txt}}
 git add -A && git commit -qm "brief_summary r2: open; mistral-small v2"
 evh run --system briefs_mistral_small_v2 --dataset briefs_v1 --goal brief_summary --round r2 --repeat 3
 git add data/runs data/prompts && git commit -qm "brief_summary r2: runs"
 evh prompt-list && evh prompt-show --name summary --text   # the version the runs used, and its text
-evh round-list brief_summary                    # r2 against r1's best, the baseline, the budget
+evh round-evidence brief_summary r2             # r2 against r1's best, the baseline, the budget
 evh chart gain-cost --goal brief_summary --round r2         # each arm's gain against its cost, named only when tested
 evh comparison-show --round r2 --goal brief_summary --baseline briefs_mistral_small_v1
 evh leaderboard briefs_v1 --round r2
@@ -246,7 +266,8 @@ git add data/rounds data/baselines && git commit -qm "brief_summary r2: closed"
 evh run --system briefs_mistral_small_v2 --dataset briefs_v1 --goal brief_summary --round r2 --dry-run   # refused: r2 is closed
 ```
 
-`--promote` only if r2 chose a new baseline; it then records the conclusion as the reason.
+`--promote` only if r2 chose a new baseline; it then records the conclusion as the reason. A closed round keeps the
+numbers it closed on: it reads the runs it recorded, and names any later run of its systems beside them.
 
 ## 10 · A new dataset version
 
@@ -259,39 +280,43 @@ mkdir -p data/sources/briefs_v2 && cp data/sources/briefs/*.txt data/sources/bri
 rm data/sources/briefs_v2/<one brief>.txt                       # the trial dropped b20_train
 $EDITOR data/sources/briefs_v2/<a new brief>.txt                # the trial added b21_ferry
 evh dataset-create --dataset-id briefs_v2 --source-dir data/sources/briefs_v2 --glob "*.txt" --from briefs_v1
+evh dataset-materialize --dataset-id briefs_v2
 evh dataset-show briefs_v2                # made from briefs_v1: 1 added, 1 removed, 0 changed
 git add data/sources data/datasets && git commit -qm "briefs_v2 from briefs_v1"
 ```
 
 ## 11 · A study on a validation set, confirmed once on a held-out test
 
-Research belongs on a validation set; a test set is read once, for the decision. Split `briefs_v1`, give each
-side its gold, and add both sides to `brief_summary`'s `datasets:` (`role: validation` and `role: test`):
+Research belongs on a validation set; a test set is read once, for the decision. Split `briefs_v1`: each side gets
+`briefs_v1`'s references on its own items, promoted from the same label sets and recorded with who split it. Add
+both sides to `brief_summary`'s `datasets:` (`role: validation` and `role: test`):
 
 ```bash
-evh dataset-split --dataset-id briefs_v1 --test 0.4 --seed 7     # briefs_v1_validation, briefs_v1_test
+evh dataset-split --dataset-id briefs_v1 --test 0.4 --seed 7 --by me     # briefs_v1_validation, briefs_v1_test, their references
 evh dataset-materialize --dataset-id briefs_v1_validation && evh dataset-materialize --dataset-id briefs_v1_test
-# each side's gold: the label-import and reference-promote of step 1, for that side's items
-git add -A && git commit -qm "briefs_v1 split, each side with its gold"
-evh run --system briefs_lead1_v1 --dataset briefs_v1_validation --goal brief_summary   # the study starts from it
+git add -A && git commit -qm "briefs_v1 split, each side with its references"
 ```
 
-The study varies how many sentences the no-model arm keeps (give the adapter's `lead` provider a `sentences`
-param, 1 by default), so it costs nothing. `lead_study.yaml`:
+The study starts from a no-model arm that keeps two sentences, `briefs_lead2_v1` (a new system: the `lead` provider
+with `sentences: 2`), and tries one and three. It costs nothing. `lead_study.yaml`, committed with the new system
+before anything runs (an uncommitted file makes a run dirty):
 
 ```yaml
 dataset: briefs_v1_validation
-baseline: {system: briefs_lead1_v1}
+baseline: {system: briefs_lead2_v1}
 measure: rouge_l
 sampler: grid
 accept: {point: {min_gain: 0}}
 stop: {trials: 5}
 space:
   groups:
-    - {name: length, reason: how much of the brief to keep, params: {sentences: [2, 3]}}
+    - {name: length, reason: how much of the brief to keep, params: {sentences: [1, 3]}}
 ```
 
 ```bash
+git add -A && git commit -qm "briefs_lead2_v1 and the lead_length study's spec"
+evh run --system briefs_lead2_v1 --dataset briefs_v1_validation --goal brief_summary   # the study starts from it
+git add data/runs && git commit -qm "lead2 on the validation side"
 evh study-run --study brief_summary/lead_length --spec lead_study.yaml --dry-run
 evh study-run --study brief_summary/lead_length --spec lead_study.yaml
 evh study-show brief_summary lead_length
@@ -302,8 +327,9 @@ evh looks                                          # the test set's looks, and t
 git add -A && git commit -qm "brief_summary: the lead_length study, confirmed"
 ```
 
-A study never promotes: the confirmation is one look at the test set's next level and suggests a promotion
-only when the outcome meets the rule. Whatever it finds is the answer; check it says so plainly.
+A study never promotes: the confirmation is one look at the test set's next level and suggests a promotion only
+when the outcome meets the rule. Whatever it finds is the answer; check it says so plainly. With no trial kept,
+`study-confirm` refuses and the test set is not read.
 
 ## 12 · A job
 
@@ -311,7 +337,7 @@ The Workbench runs its work as jobs; the terminal starts the same ones. Run the 
 as a job and follow it:
 
 ```bash
-evh jobs-start run --arg system=briefs_lead1_v1 --arg dataset=briefs_v2 --max-cost-usd 0
+evh jobs-start run --arg system=briefs_lead1_v1 --arg dataset=briefs_v2 --max-cost-usd 0.01   # a free arm spends nothing under any cap
 evh jobs-status
 evh jobs-logs <job id> --follow
 git add data/runs && git commit -qm "lead1 on briefs_v2, as a job"
@@ -329,7 +355,7 @@ evh chart gain-cost --goal brief_summary --round r2 --svg gain-cost.svg   # outs
 ```
 
 Each prints the table it draws and its caption. Check that a quadrant such as "better and cheaper" is named only for a
-difference the tests support, and that the numbers are `family-test`'s and `round-list`'s for the same arms.
+difference the tests support, and that the numbers are `family-test`'s and `round-evidence`'s for the same arms.
 
 ## 14 · The same loop in the Workbench
 
@@ -340,14 +366,16 @@ evh catalog && evh catalog-serve      # open the Workbench link it prints
 Follow [tutorial 8](../../docs/tutorials/8-the-workbench.md). Screenshot each screen
 at 1400 px and at 390 px: the home (every goal with its next step, what is running, the job from step 12);
 `brief_summary`'s steps 1 to 4 (the goal, its datasets, `briefs_v1`'s preparation and reference set, the systems);
-the eval (r1 and r2 as tabs, each with its evidence and its decisions); "Review the outputs" (two arms on
+the eval (its rounds as tabs, each with its evidence and its decisions); "Review the outputs" (two arms on
 `briefs_v1`); "A judge for this goal" (each verdict with its reason); "The held-out test" (the split from step 11,
 its look); "Every job"; "Settings". Each screen shows the command it runs: run that command in the terminal and
 check the numbers are the screen's.
 
-Then do one thing from the Workbench: open round r3 of `brief_summary` with `briefs_lead1_v1` and
-`briefs_mistral_small_v1`, run its arms as one sweep under a $0.05 cap, retire one with why, and close it. Check that
-`evh round-list brief_summary` and `evh jobs-status` show what the screens did, with your name as the actor.
+Then do one round from the Workbench: in "Choose the systems", clone `briefs_mistral_small_v1` with one thing
+changed (its temperature); in the eval, open the next round on `briefs_v1`, carrying `briefs_lead1_v1` and
+`briefs_mistral_small_v1` (tick each; carried arms are not run again), run the clone in it as a sweep under a $0.05
+cap, retire one arm with why, and close the round. Check that `evh round-evidence brief_summary <the round>` and
+`evh jobs-status` show what the screens did, with your name as the actor.
 
 ## 15 · Validate, then browse it
 
@@ -370,19 +398,19 @@ reference, so against it every other arm reads as worse, as `evh comparison-show
 judge's score; one
 item opened in each (the item itself beside the reference and every output); the inspector over r2's
 arms; and what a goal page's "test every arm against the leader" link opens. For each page, run its
-command (`evh overview-show`, `evh dataset-list`, `evh arm-list`, `evh reference-list`, `evh metric-list`, `evh goal-list
---goal …`, `evh round-list …`, `evh comparison-show --runs …`, `--item …`) and check the numbers are
-the page's.
+command (`evh overview-show`, `evh dataset-list`, `evh arm-list`, `evh reference-list`, `evh metric-list`,
+`evh goal-leaderboard <goal>`, `evh round-evidence …`, `evh comparison-show --runs …`, `evh comparison-item --runs …
+--item …`) and check the numbers are the page's.
 
 ## What to check
 
 - Every command either succeeds or refuses with a message that says what to do; no traceback
   from the harness.
-- The inspector's verdicts and p-values equal `pair-test`'s for the same pair, and `evh round-list`'
+- The inspector's verdicts and p-values equal `pair-test`'s for the same pair, and `evh round-evidence`'s
   equal the inspector's for the round's arms. `family-test`'s verdicts are the same; its p-values
   are the same up to 30 items and may differ in the third decimal above that (it says "p: a
   seeded estimate").
-- No console errors on any page.
+- No console errors on any page or screen.
 - A newcomer could tell from each page what the goal is, what was compared, against which
   reference, which run is the baseline and why, and what each round decided.
 - The spend stays under the cap and matches the sum of what each command printed.
@@ -390,10 +418,11 @@ the page's.
   nothing on a screen is cut off or scrolls the page sideways at 390 px.
 - The study's trials ran on the validation side only, its confirmation read the test side once (`evh looks`:
   one look), and every judge verdict in step 6 carries a reason or says it is missing or withheld.
-- Each goal group's recommendation follows its strategy and says why: on `intents_v1` the
-  keyword arm (0.875, free) is not significantly different from the frontier arm (1.000) but is further off
-  than the 2% margin, so `balanced` recommends the frontier arm; `evh goal-leaderboard` and the
-  home page's glance say the same.
+- A closed round keeps the numbers it closed on: a run of its systems made after it closed (the Workbench round's)
+  is named beside them, never mixed in.
+- Each goal group's recommendation follows its strategy and says why, whatever your numbers are: `evh
+  goal-leaderboard`, the goal page and the home page's glance say the same.
+- `evh validate` passes at the end.
 
 ## Open after the 2026-10-24 runs
 
@@ -503,3 +532,45 @@ Not exercised by a run yet: the direct OpenAI, Anthropic and OpenRouter paths (e
 LiteLLM proxy).
 
 The fifth run (the 0.7.0 release) confirmed that fix: `env-check` said "loaded 4 var(s)".
+
+After the sixth run (candidate `84237576`), fixed in code:
+
+- A repeat set run beside a plain run of the same arm is refused by `evh run`, before any call, with the way to
+  repeat a run instead (`--purpose repeat --of <run_id>`): two measurements of one system no longer reach `evh
+  validate` (V8).
+- The Workbench's round form carries arms one by one, and only from a round on the same dataset; a measured system
+  is carried, never run again. `round-carry` takes a measured system too.
+- A closed round reads the runs it recorded: a later run of its systems is named "since then", not mixed into its
+  numbers.
+- `dataset-split` gives each side the parent's references on its own items, recorded with who split it (`--by`).
+- `judge-score` refuses a grade prompt that does not name the task's dimensions, before any call, and an unparsed
+  grade names the keys it expected. A judge or an arm billed far from the prices its file declares is named.
+- `jobs-start` says a spending job's cap must be above 0.
+- The leaderboard says why the goal recommends what it does, under the goal's line; `family-test` prints wins,
+  losses and ties; `round-evidence`, `evh baselines` and the records print p and scores the way every command does.
+- `env-check` says where each variable came from (the shell or `.env`); a CPU arm's progress line says how long it
+  has left; `rank-stability` measures the sizes it reports.
+- The Workbench: no sideways scroll at 390 px, no console errors where a chart has nothing to draw yet (`optional=1`),
+  Home shows its commands, and the open-round form is on the last round's tab only. The catalog leaves the silver
+  author out of a leader link's test.
+
+Fixed in the docs: a run names its goal, not a system (step 2); the frontier arm's `max_tokens` is 600 (step 3); a
+hosted arm is measured once, as its `--repeat 3` set (step 4); commit after each label-from-run (step 5); the judge
+prompt names its dimensions (step 6); the actor of a decision (step 7); `round-evidence` for a round's evidence
+(steps 8 and 9); where a system's prompt file goes (step 9); `briefs_v2` is materialized (step 10); each side's
+references come with the split, and the study starts from a two-sentence arm so it has something to find (step 11);
+the job's cap (step 12); the Workbench round is the next one, whatever its number (step 14); `goal-leaderboard` and
+`comparison-item` (step 15); no removed variable or folder of runs left in any doc (`tests/check_commands.py` now
+refuses a variable nothing reads and a folder of runs beside `data/runs`).
+
+Still open from the sixth run:
+
+- `rank-stability` counts `briefs_mistral_small_v1` and `_v2` as two arms: they are two systems, by design.
+- `evh arm-list` shows the baseline arm "retired in r4" when a round retired it: accurate, kept.
+- The inspector's Conditions header was reported to leave out `t5_small_v1`; a screenshot shows the header, with
+  "baseline" on the next line in the plain text. Not reproduced.
+- The Workbench's evidence charts were reported to read "Reading the chart…" for over 2.5 s; measured at 0.15 to
+  0.47 s each. Not changed.
+- Not re-checked by a run: whether "Review the outputs" shows its command before a sheet is made, and whether a name
+  typed in the Workbench is the round record's actor when the server was started with `EVH_ACTOR` set.
+- The full-page screenshots repeat the sticky header mid-page: a capture artefact.

@@ -7,6 +7,7 @@ and ends with the leaderboard.
 
     evh sweep --systems arm_a_v1 arm_b_v1 --dataset smoke_v1 --repeat 2
     evh sweep --systems arm_a_v1 arm_b_v1 --dataset smoke_v1 --dry-run
+    evh sweep --systems arm_a_v1 arm_b_v1 --dataset smoke_v1 --scratch   # a smoke: no run kept, nothing ranked
 
 Always dry-run first. It costs nothing and tells you what the sweep will.
 """
@@ -59,6 +60,8 @@ def body(**inputs: Any) -> int:
         ]
         if args.dry_run:
             cmd.append("--dry-run")
+        if args.scratch:
+            cmd.append("--scratch")
         left = _spend.left()
         if not args.dry_run and left is not None and left <= 0:
             # The sweep's cap is spent (RFC-026 step 5): the arms after this one are not run.
@@ -94,6 +97,13 @@ def body(**inputs: Any) -> int:
     if args.dry_run:
         print("Dry run — nothing was called and nothing was spent.")
         return 0
+    if args.scratch:
+        # The leaderboard reads data/runs: after a scratch sweep it would rank the real arms, not these.
+        print(
+            "Scratch sweep — the runs are under .build/scratch/runs, which nothing that reads runs sees: no ranking."
+        )
+        _jsonout.values({"arms": configs, "not_finished": failed, "spent_usd": round(_spend.spent(), 8)})
+        return EXIT_PARTLY if failed else 0
 
     # The ranking is the operation's own, printed as the command prints it, not a command line run in another process.
     from evaluation_harness import ops  # noqa: PLC0415

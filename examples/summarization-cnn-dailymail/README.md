@@ -85,11 +85,11 @@ not committed. Run scores are written at 10 decimals, so no `make rescore` step 
 (`make rescore` exists for runs written at lower precision; `make leaderboard` warns when
 it sees them).
 
-Validating a change rather than measuring something? Use four cheap arms and a scratch
-directory, so a smoke pass cannot add repeats to a real sweep's arms:
+Validating a change rather than measuring something? Use four cheap arms in a scratch
+sweep, so a smoke pass cannot add a second measurement to a real sweep's arms:
 
 ```bash
-EVAL_RUNS_DIR=/tmp/smoke make sweep REPEAT=1 DATASET_ID=cnn_dailymail_20 \
+make sweep REPEAT=1 DATASET_ID=cnn_dailymail_20 ARGS=--scratch \
   SYSTEMS="cnn_qwen_s_v2 cnn_glm_s_v2 cnn_gemma_m_v2 cnn_mistral_s_v2"
 ```
 
@@ -258,7 +258,7 @@ any hosted model; the best of those is `llama_l` (0.378), the worst `qwen_s` (�
 case silver is actually *for*, no gold exists, so you cannot check which author you got.
 
 The frontier arm's silver is kept as `silver/cnn_dailymail_200`, by `anthropic_l` (ρ 0.327,
-lift +12.5). Ranked against it (the 29 arms re-scored for $0 into `data/runs-silver`, a group on
+lift +12.5). Ranked against it (the 29 arms re-scored for $0 against it, read under the label `silver`, a group on
 the goal page that never recommends), the author's siblings `anthropic_m` and `anthropic_s` come
 1st and 3rd of 28, and `bart_l`, the gold leader, 24th. Its texts quote the articles, so only its
 manifest is committed: they are that run's outputs byte for byte, and the manifest says to write them out from
@@ -301,7 +301,8 @@ evh reference-promote --dataset-id cnn_dailymail_200 --labels author_silver --ti
   upstream provider. It is a property of your setup, not of the model — which is
   deliberate: the same eval measures how fast *your* machine is at *this* task.
   The local arms were recorded on two machines (a 12-core Mac and a 4-core Linux box that
-  ran `bart_l` 1.7× faster); `harness/data/runs-linux/` re-times all five on one.
+  ran `bart_l` 1.7× faster); five re-timing runs (`evh run --purpose retime`, read under the label `linux`:
+  `evh leaderboard cnn_dailymail_200 --label linux`) time all five on one.
 - **Local arms.** `bart_l` (BART fine-tuned on this corpus, 1.6 GB) is not significantly different from
   the best hosted arm (gap 0.0001, p = 0.99). `lead3` ran too. Three more local arms need
   torch ≥ 2.6: two distillations, `bart_m` 0.3367 (not significantly different from `bart_l`) and

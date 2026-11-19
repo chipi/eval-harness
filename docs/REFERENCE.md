@@ -115,7 +115,7 @@ Calibration: ROUGE-1 against these experts, ρ 0.192 / τ 0.150 in [G-Eval](http
 | metric | kind | what it is |
 |---|---|---|
 | `cost_usd` | descriptive | **What the provider billed** (`usage.cost`), not a price table. See [REPORT_RETRIEVAL §7](../research/REPORT_RETRIEVAL.md) for why that distinction cost four reports a correction. |
-| `latency_ms` | descriptive | Per item, **excluding** warm-up. Index builds and model loads are reported separately as `warmup_ms`. A local arm's first one to three items still pay a one-off initialisation cost the load does not cover, so prefer the median for local arms ([`KNOWN_ISSUES.md`](../research/internal/KNOWN_ISSUES.md)). Figures from different machines are not comparable: see `harness/data/runs-linux/`. |
+| `latency_ms` | descriptive | Per item, **excluding** warm-up. Index builds and model loads are reported separately as `warmup_ms`. A local arm's first one to three items still pay a one-off initialisation cost the load does not cover, so prefer the median for local arms ([`KNOWN_ISSUES.md`](../research/internal/KNOWN_ISSUES.md)). Figures from different machines are not comparable: see the re-timing runs read under the label `linux` (`evh leaderboard cnn_dailymail_200 --label linux`). |
 | `truncated` | descriptive | The provider stopped at `max_tokens`. Distinguishes "the model is bad" from "the budget was too small". |
 | `reasoning_tokens` | descriptive | Tokens spent on hidden reasoning. All examples run `reasoning: {enabled: false}`; this verifies it took. |
 

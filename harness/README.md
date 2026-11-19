@@ -95,8 +95,8 @@ data/references/
 data/baselines/      evh run-promote — the number future work is judged against
 
 optional, later, from the same frozen outputs (the originals are never touched):
-data/runs-rescored/  evh rescore        new reference or new code scorer, $0
-data/runs-judged/    evh judge-score    a validated LLM judge, billed and capped
+  evh rescore        new reference or new code scorer, $0: a score under each run, read as 'rescored <scorer>'
+  evh judge-score    a validated LLM judge, billed and capped: a score under each run, read as judged/<scorer>
 
 beside them, also optional:
 data/goals/          what each evaluation is for; systems name one with `goal:`
@@ -194,8 +194,8 @@ evh rescore --goal my_goal --round r2 --why "the rule I fixed"   # a round's arm
 evh rescore --dataset-id my_v1 --match _v2                       # or any runs of a dataset
 ```
 
-Re-scores land in one place the harness designates, `data/runs-rescored/<scorer>/<source>/` (`--out` names
-another); the goals, the rounds and the catalog read an arm from its latest re-score, and a round records the
+A re-score is a score under the run it re-read (`data/runs/<run_id>/scores/<scorer>@<reference>/`), read under
+its own label (`rescored <scorer>`, or `--label`); the goals, the rounds and the catalog read an arm from its latest re-score, and a round records the
 scorer it is judged by, so a scoring change is a step of its own, applied to a round or adopted by the next
 (`round-open --scoring`; [RFC-022](../docs/rfc/RFC-022-scoring-that-evolves.md)). Each re-scored run records
 `derived: {kind: rescore, from, at, with}`:
@@ -311,12 +311,12 @@ measurements that must not share a row:
 ```
 evh leaderboard my_v1 --match _v2    only the v2 arms
 evh leaderboard my_v1 --round r2     only the arms in play in a round
-EVAL_RUNS_DIR=<dir> evh leaderboard my_v1   run or read somewhere else
+evh leaderboard my_v1 --label judged/my-judge   only the arms read under one label
 ```
 
-`EVAL_RUNS_DIR` is how a smoke pass avoids adding repeats to a real sweep's arms and
-silently moving numbers you have already reported. Use it whenever you are validating a
-change rather than measuring something.
+`evh run --scratch` is how a smoke pass avoids adding a second measurement to a real sweep's arms and
+silently moving numbers you have already reported: it writes under `.build/scratch/runs`, which nothing that
+reads runs looks at. Use it whenever you are validating a change rather than measuring something.
 
 **Deleting old runs to make a table shorter is not the alternative to scoping it.** That is
 how 18 arms of paid results were lost during this harness's own development.

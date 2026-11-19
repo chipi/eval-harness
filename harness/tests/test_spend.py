@@ -173,6 +173,20 @@ try:
         (r.returncode, spent_of("swa_v1"), spent_of("swb_v1"), (r.stdout + r.stderr)[-500:]),
     )
 
+    # ── a scratch sweep: a smoke that keeps no run and ranks nothing ─────────────────────────────────────────────
+    system("swc", "swc_v1")
+    r = evh("sweep", "--systems", "swc_v1", "--dataset", "tickets_v1", "--scratch")
+    scratch = proj / ".build" / "scratch" / "runs"
+    in_scratch = (
+        [p.name for p in scratch.iterdir() if p.name.startswith("swc_v1")] if scratch.is_dir() else []
+    )
+    kept = [n for n in _runstore.listdir(proj, "runs") if n.startswith("swc_v1")]
+    check(
+        "sweep --scratch: the arm's run under .build/scratch/runs, none in the project's runs, no ranking printed",
+        r.returncode == 0 and len(in_scratch) == 1 and not kept and "no ranking" in r.stdout,
+        (r.returncode, in_scratch, kept, (r.stdout + r.stderr)[-500:]),
+    )
+
     # ── a round's budget ─────────────────────────────────────────────────────────────────────────────────────────
     r = evh("round-open", "--goal", "tickets_summary", "--dataset", "tickets_v1", "--hypothesis", "the spend test",
             "--budget-usd", "0.1")  # fmt: skip

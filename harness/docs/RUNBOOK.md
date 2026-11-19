@@ -464,8 +464,8 @@ writing nothing, if the run's outputs changed since). A reference promoted from 
 too, and the same promotion rebuilds its texts from the set.
 
 Arms can be scored against a label set without promoting it, `evh rescore --dataset-id my_v1 --labels
-best_v1` (or `evh run --labels`): the runs land beside the others, in
-`data/runs-labels-<dataset>-<set>/`, and every view names the set by its source, never with a tier.
+best_v1` (or `evh run --labels`): the scores land under the runs, read under the label
+`labels-<dataset>-<set>`, and every view names the set by its source, never with a tier.
 
 Scored against silver, the arm that wrote it is graded against its own outputs: the leaderboard
 marks its row (`arm *`) and leaves it out of the ordering test and the frontier ("The ordering
@@ -634,8 +634,8 @@ A run is only attributable if it knows its build. `runs-list` marks runs from a
 dirty tree with `*` — their `build.ref` does not describe what actually ran.
 **Commit before you measure** — dataset, systems, references — so the runs you keep are
 clean the first time. Re-running an arm into `data/runs` after the fact leaves two
-measurements of one system, which `evh validate` refuses (V8); explore in a scratch
-directory instead (`EVAL_RUNS_DIR=data/runs-smoke`).
+measurements of one system, which `evh validate` refuses (V8); explore with a throwaway pass
+instead (`evh run --scratch`, written under `.build/scratch/runs`, where nothing that reads runs looks).
 
 **Prompt files, and the system's code** (RFC-028). An arm whose system reads its prompts from files declares them,
 wherever they live, and every run records the version it used:
@@ -703,19 +703,24 @@ runs the best trial and the baseline once on the test items no study saw, as one
 suggests the promotion only when the outcome meets the rule. `evh study-import --file results.tsv --goal G --study ID` brings
 a past autoresearch loop in, closed and not confirmable.
 
-**Where runs go.** Measured runs go in `data/runs`: leave `EVAL_RUNS_DIR` unset, on every
-machine, so a run made on a laptop and one made on a GPU box land in the same place. An
-ignored run is not committed, so a fresh clone, CI and the published catalog never see it.
-Two kinds of directory sit beside `data/runs` on purpose:
+**Where runs go.** Every run goes in `data/runs/<run_id>/`, on every machine, so a run made on a
+laptop and one made on a GPU box land in the same place. What is derived from a run stays with it,
+read under a label of its own so it never shares a row with the measurement it came from:
 
-- **throwaway** (`data/runs-smoke*`, `data/runs-tune*`): smoke passes and sweeps, never committed;
-- **derived sets** (`data/runs-repeats`, `data/runs-rescored/<scorer>/<source>`, `data/runs-judged/<scorer>` …):
-  re-scored or repeated runs that keep the measured runs' `system_id`s, so they cannot share
-  `data/runs` (V8).
+- **a repeat** of a measured run (`evh run --purpose repeat --of <run_id>`) is a run of its own, read under
+  `repeats` (`--repeat N` is N passes inside one run);
+- **a re-score** (`evh rescore`) is a score under the run it re-read,
+  `data/runs/<run_id>/scores/<scorer>@<reference>/`, read under `rescored <scorer>` (or `--label`);
+- **a judge's verdicts** (`evh judge-score`) are a score under each judged run, read under `judged/<scorer>`, with
+  the pass's checks in `data/judge-summaries/`.
 
-The `.gitignore` `evh init` writes ignores only the throwaway directories, so a project commits
-its derived sets like its measured runs. This repository's own `.gitignore` is stricter: it
-ignores every `data/runs-*` directory and re-allows each derived set by name.
+`evh runs-list` names the labels present, and `evh leaderboard <dataset> --label <label>` reads one. A throwaway
+pass (a smoke, a sweep you will not report) is `evh run --scratch`: written under `.build/scratch/runs`, never
+committed, read by nothing.
+
+The `.gitignore` `evh init` writes commits each run's record, outputs and scores (`run.json`, `outputs.jsonl`, and
+each score's `score.json`, `metrics.json`, `predictions.jsonl`) and ignores a pass's checkpoint, `.build/` and the
+SQLite database.
 
 **Files or SQLite** (RFC-025). A project names its store; there is no default (`evh init --store files|sqlite` writes
 it, and a project whose `config.yaml` names none is refused, `not-configured`). The files store keeps everything under
@@ -790,7 +795,7 @@ evh data-rm --path runs/<run> --dry-run          # what would go; without --dry-
 that is neither, or to one outside the project's data, and `evh validate` notes any ignored
 directory that already holds finished runs. The catalog, `evh goal-list` and `evh arm-list` read only
 the directories git keeps, so what you see locally is what a clone, CI and the published
-catalog see: a smoke pass in `data/runs-smoke*` never shows up as a result.
+catalog see: a throwaway pass (`evh run --scratch`, under `.build/`) never shows up as a result.
 
 **When the scoring changes** (RFC-022), develop it, then apply it one of two ways:
 
@@ -801,8 +806,8 @@ evh round-open --goal my_goal --dataset my_v1 --from r1 --keep all \
   --scoring "what changed, and why"                                  # or adopt it from the next round
 ```
 
-Re-scores land in `data/runs-rescored/<scorer>/<source>/`, the place the tool designates, so a new scorer never
-needs a directory of its own (or a `.gitignore` block). A re-score stands in for the run it re-read: the goal
+A re-score is a score under the run it re-read (`data/runs/<run_id>/scores/<scorer>@<reference>/`), so a new
+scorer never needs a directory of its own (or a `.gitignore` block). A re-score stands in for the run it re-read: the goal
 pages, `evh goal-list`, the rounds and the recommendation read one row per arm, from its latest re-score against the
 same reference, and say how many arms they read that way. The measured run keeps its own page, and says there, on
 the arms page and in `evh arm-list` that the goals read its re-score. A round records the scorer it is judged by, and
@@ -1140,7 +1145,7 @@ for $0 first, run [tutorial 3, step 5](../../docs/tutorials/3-frontier-reference
 ```bash
 evh judge-score --dataset-id my_v1 --scorer my-judge-v1 --dry-run   # free
 evh judge-score --dataset-id my_v1 --scorer my-judge-v1
-EVAL_RUNS_DIR=data/runs-judged/my-judge-v1 evh leaderboard my_v1
+evh leaderboard my_v1 --label judged/my-judge-v1
 ```
 
 A project needs only its own data directory, scorer, prompt and runs: the judging code, the
@@ -1223,8 +1228,8 @@ and to the news-summary judge, so neither is an `evh` command.
    $… (the provider's bill where it reports one, else the price table)", the same rule as an
    arm's cost (§4).
 6. **Read the judging pass's checks before the ranking.** The judged leaderboard
-   (`EVAL_RUNS_DIR=data/runs-judged/<id> evh leaderboard …`) prints them under its table, from
-   `data/runs-judged/<id>/summary.json`: how far the judges agree (item tau, and the Spearman of
+   (`evh leaderboard … --label judged/<id>`) prints them under its table, from
+   `data/judge-summaries/<id>@<judging set>.json`: how far the judges agree (item tau, and the Spearman of
    the arms' order), and per judge the position check (a second shuffle on a subset) and the
    noise check (the same call repeated on a subset):
 
@@ -1850,7 +1855,7 @@ evh deploy-sheet deployed_v1 --capture prod_2026_11           # did production r
 - **The sheet** (`evh sheet-show D --runs A,B,…`) shows the dataset's items down (each by the
   first arm's adapter's `title(item)` when it has one, else its start) and a column per arm across: what it wrote (the adapter's `decision(output)`, else its output, shortened; `--scores-only` leaves
   it out) and every score it has on the item: its run's metrics, and a judging pass's where one under
-  `data/runs-judged/<scorer>/` covered the run (`--metric M`, or `SCORER/M` for a judge's, picks the one the sheet
+  `judged/<scorer>` covered the run (`--metric M`, or `SCORER/M` for a judge's, picks the one the sheet
   is read on); a column per label set or reference set; the
   winner per item (the best arm on that metric, and a pick or pairwise judge's choice where one covers the run);
   the signals; the fields; and a footer per arm: its mean, its win rate (the share of the rows it was scored on
@@ -1870,7 +1875,7 @@ evh deploy-sheet deployed_v1 --capture prod_2026_11           # did production r
   `--rubric FILE`, else a plain one) and the key beside the sheet (`sheet.key.json`: which letter was which arm,
   the rubric and its sha256). A person or any AI tool fills it; `evh sheet-import --sheet sheet.csv --dataset-id D --by
   WHO` reads it back: a `label` column as a label set (`--set S`; `--kind model` when a tool filled it), a `pick`
-  (`A|B` for a tie) or `score:` columns as judged runs under `data/runs-judged/<scorer>/` (`--scorer S`), one per
+  (`A|B` for a tie) or `score:` columns as judged scores under each arm's run, read as `judged/<scorer>` (`--scorer S`), one per
   arm, with `judge_won_unvalidated` or `judge_score_unvalidated` per item: unvalidated until the same judge is
   validated as any judge is. A row or text the key does not have, a letter not on its row, a score off the scale
   and a name already used are refused, and nothing is written.
@@ -2110,7 +2115,6 @@ notebook) reads no `.env`, and the project's paths are resolved on first use, so
 | `EVAL_DATA_DIR` | the data root, when it is not `<project>/data` |
 | `EVAL_STORE` | `files` or `sqlite`: the project's store, over its `config.yaml`'s `store:` (RFC-025; above) |
 | `EVAL_STORE_READONLY` | `1`: open the project's database read-only (a release is; a folder that is not writable does it without this); a write is refused, never made |
-| `EVAL_RUNS_DIR` | read and write runs here instead of `data/runs` (`validate` too) |
 | `EVAL_GOALS_DIR` | read goals here instead of `<data>/goals`, relative to the project (for goals kept outside the data root) |
 | `EVAL_MAX_COST_USD` | the most one command spends, every pass of `--repeat` together; the run stops, keeps its results, resumes |
 | `EVAL_MAX_RETRIES`, `EVAL_RETRY_MAX_DELAY` | retries around every provider call |

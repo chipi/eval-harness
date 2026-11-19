@@ -293,6 +293,21 @@ def unread_env(text: str, code: str, skipped: set | frozenset = frozenset()) -> 
     return out
 
 
+#: A folder of runs beside data/runs: gone since format 4 (every run is data/runs/<run_id>/, what is derived from it a
+#: score under it, read under a label), and named in 22 places of the docs a year later.
+OLD_RUNS = re.compile(r"\bdata/runs-[a-z][\w<>*-]*")
+
+
+def old_run_folders(text: str, skipped: set | frozenset = frozenset()) -> list:
+    """(line, path) for each `data/runs-*` folder a doc names."""
+    return [
+        (n, m)
+        for n, line in enumerate(text.splitlines(), 1)
+        if n not in skipped
+        for m in OLD_RUNS.findall(line)
+    ]
+
+
 def self_check() -> list:
     """Each rule must fire on a line that breaks it, and stay quiet on one that does not:
     a checker that reports nothing proves nothing until it is shown to report something."""
@@ -343,6 +358,11 @@ def self_check() -> list:
         bad.append(
             f"self-check: variables nothing reads: reported {got_env}, want EVAL_RUNS_DIR, EVAL_JUDGE_NOSUCH_KEY"
         )
+    got_dirs = [
+        p for _, p in old_run_folders("`data/runs/<run_id>/` is\n`data/runs-judged/<scorer>/` is not\n")
+    ]
+    if got_dirs != ["data/runs-judged"]:
+        bad.append(f"self-check: old run folders: reported {got_dirs}, want data/runs-judged")
     return bad
 
 
@@ -378,6 +398,10 @@ def main() -> int:
             bad += [
                 f"{doc.relative_to(REPO)}:{n}: {name}: nothing reads this variable"
                 for n, name in unread_env(text, code, skipped)
+            ]
+            bad += [
+                f"{doc.relative_to(REPO)}:{n}: {path}: no such folder (every run is data/runs/<run_id>/)"
+                for n, path in old_run_folders(text, skipped)
             ]
     for b in bad:
         print(f"  {b}")
