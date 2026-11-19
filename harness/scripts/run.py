@@ -355,6 +355,35 @@ def is_priced(params: dict[str, Any]) -> bool:
     return params.get("usd_per_mtok_in") is not None and params.get("usd_per_mtok_out") is not None
 
 
+#: How far a bill may stray from the system's declared prices before a run says so (a fifth either way), as
+#: judge-score says it of a judge (judge_score.PRICE_DRIFT).
+PRICE_DRIFT = 1.2
+
+
+def price_drift(rows: Iterable[dict[str, Any]], params: dict[str, Any]) -> str | None:
+    """A note when the provider's bill for these item rows strays from what the system's declared prices give for the
+    same tokens: every dry run estimates at those prices (the 0.8.0 newcomer run's judge, billed 2.5x its prices, was
+    estimated at half its bill). None when the system declares no prices or no row carries a bill."""
+    if not is_priced(params):
+        return None
+    billed = priced = 0.0
+    for r in rows:
+        cost = ((r.get("_meta") or {}).get("usage") or {}).get("cost")
+        if cost is None:
+            continue
+        billed += float(cost)
+        priced += float(r.get("tokens_in") or 0) / 1e6 * float(params["usd_per_mtok_in"]) + float(
+            r.get("tokens_out") or 0
+        ) / 1e6 * float(params["usd_per_mtok_out"])
+    if not (billed and priced) or 1 / PRICE_DRIFT <= billed / priced <= PRICE_DRIFT:
+        return None
+    return (
+        f"NOTE: the provider billed ${billed:.6f}, {billed / priced:.2f}x what the system's declared prices give for "
+        f"the same tokens (${priced:.6f}: usd_per_mtok_in {params['usd_per_mtok_in']}, usd_per_mtok_out "
+        f"{params['usd_per_mtok_out']}); a dry run estimates at those prices, so correct them in the system"
+    )
+
+
 def cost_source(meta: dict[str, Any] | None) -> str | None:
     """The `cost_source` an adapter names in a result's meta when no bill came with it, else None."""
     meta = meta or {}
@@ -1649,6 +1678,9 @@ def _run(args: argparse.Namespace) -> int:
         sources = {s for d in made for r in _runs.item_rows(d) if (s := cost_source(r.get("_meta")))}
         basis = spend_basis(billed, max(spent - billed, 0.0), is_priced(call_cfg["params"]), sources)
         print(f"spent ${spent:.6f} ({basis})")
+        drift = price_drift((r for d in made for r in _runs.item_rows(d)), call_cfg["params"])
+        if drift:
+            print(drift)
 
     # A CAPPED RUN IS NOT A SUCCESSFUL RUN, AND AN EMPTY ONE CERTAINLY IS NOT.
     #

@@ -27,7 +27,7 @@ import _model_records  # noqa: E402
 import _runstore  # noqa: E402
 from evaluation_harness import _format  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
-from evaluation_harness.run import progress_every, progress_line  # noqa: E402
+from evaluation_harness.run import price_drift, progress_every, progress_line  # noqa: E402
 
 proj = Path(tempfile.mkdtemp(prefix="evh-progress-"))
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-progress", EVAL_MAX_RETRIES="0")
@@ -194,6 +194,20 @@ try:
             progress_line(2, 20, "b2", "ok", 16.0, 0.0, 33.0),
             progress_line(18, 20, "b18", "ok", 16.0, 0.0, 297.0),
         ),
+    )
+    # A bill far from the system's declared prices is named (the 0.8.0 newcomer run's mistral-small row: 77 tokens in,
+    # 37 out, billed $0.000013175 where its prices give $0.0000188, 0.70x); one at its prices, or a system that
+    # declares none, says nothing.
+    row = {"_meta": {"usage": {"cost": 1.3175e-05}}, "tokens_in": 77.0, "tokens_out": 37.0}
+    priced = {"usd_per_mtok_in": 0.1, "usd_per_mtok_out": 0.3}
+    at_prices = {"_meta": {"usage": {"cost": 1.88e-05}}, "tokens_in": 77.0, "tokens_out": 37.0}
+    note = price_drift([row], priced) or ""
+    check(
+        "run: a bill far from the system's declared prices is named with the ratio; one at them, or no prices, is not",
+        "the provider billed $0.000013, 0.70x" in note
+        and price_drift([at_prices], priced) is None
+        and price_drift([row], {}) is None,
+        note,
     )
 
     cfg = system("slow", adapter="calls_adapter.py", provider="echo", sleep=0.5)
