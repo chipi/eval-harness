@@ -82,9 +82,9 @@ in a `catalog` job, and the old pages are served until the new ones are whole.
 | the metrics page: what each metric measures, which way is better, where it is recorded | `evh metric-list` |
 | a metric page: what it measures, its kind, the goals it decides, per-dataset strip chart | `evh metric-show overlap_f1` |
 | the search box on every catalog page | `evh search lead2` |
-| the goals page, and one goal's page: its answer (the baseline and why), its arms per dataset, its rounds | `evh goal-list`, `evh goal-leaderboard tickets_summary`, `evh round-list tickets_summary` |
+| the goals page, and one goal's page: its answer (the baseline and why), its arms per dataset, its rounds | `evh goal-list`, `evh goal-leaderboard tickets_summary`, `evh round-list tickets_summary` and `evh round-evidence tickets_summary <round>` |
 | the period chips on any of these pages: what is new and what changed in the last 30 days, this week, … | `--period 30d` (or `week`, `month`, `all`, …) on `evh overview-show`, `activity-show`, `dataset-list`, `goal-list`, `reference-list`, `metric-list`, `arm-list` |
-| a goal page's suggested next steps, each with a copy button | the commands `evh round-list tickets_summary` prints |
+| a goal page's suggested next steps, each with a copy button | the commands `evh round-evidence tickets_summary <round>` prints |
 | a goal page's inspect button on a round: its arms against its leader ([tutorial 4](4-rounds-and-versions.md)) | `evh comparison-show --round r2` |
 | the inspector: arms tested against a baseline, and whether they ran under the same conditions | `evh comparison-show --runs tickets_lead1_v1,tickets_lead2_v1` |
 | the inspector, filtered by a field, or broken down by one | `--where area:account`, `--by deadline` |
@@ -129,7 +129,7 @@ naming it. When the goal has rounds, the page shows them newest first: each with
 button that opens its arms against its leader, the open round's suggestions each with a copy
 button, and retired arms greyed out, "retired in rN". `evh goal-leaderboard` prints the same groups,
 marks a retired arm `[retired in rN]`, and ends with one line per round (its status, arms,
-retired and conclusion); `evh round-list` has the evidence in full. (This project has no
+retired and conclusion); `evh round-evidence <goal> <round>` has a round's evidence in full. (This project has no
 rounds yet; [tutorial 4](4-rounds-and-versions.md) makes them.) Every field a goal file can
 have: [RUNBOOK §4c](../../harness/docs/RUNBOOK.md#4c-the-goal-file-field-by-field).
 

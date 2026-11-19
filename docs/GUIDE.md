@@ -295,14 +295,15 @@ evh family-test tickets_v1 --a tickets_lead2_v1 --against tickets_
   Holm step-down at alpha=0.05
   p: exact, over all 2^6 sign patterns
 
-    opponent                     delta    A wins        p   thresh   verdict
-    tickets_lead1_v1           +0.2592    6/6      0.0312   0.0250   --
-    tickets_lead2_noisy_v1     +0.1011    6/6      0.0312   0.0500   --
+    opponent                     delta   A wins-losses (ties)        p   thresh   verdict
+    tickets_lead1_v1           +0.2592           6–0 (0 ties)   0.0312   0.0250   --
+    tickets_lead2_noisy_v1     +0.1121           6–0 (0 ties)   0.0312   0.0500   --
 
     significantly different from 0 of 2 opponents; ahead on the point estimate against 2 of 2
 ```
 
-Ahead of both on every ticket (`A wins`: the items `lead2` wins), and significantly different from neither: on
+Ahead of both on every ticket (`6–0 (0 ties)`: `lead2` wins all six items, loses none, ties none), and
+significantly different from neither: on
 six items the smallest p a paired test can reach is 0.0312, and with two comparisons the first
 must beat 0.025. Up to 30 items the p is exact, and every command prints the same one; above
 that it is a seeded estimate, and the line under the header says which

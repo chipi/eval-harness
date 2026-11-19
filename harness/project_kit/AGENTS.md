@@ -82,7 +82,7 @@ run names it (`evh run ... --goal <goal_id>`), and `evh goal-leaderboard <goal_i
 and what the goal recommends, in one answer.
 
 Rounds are optional: a round is one line of investigation of a goal, with its hypothesis, its arms,
-the ones retired and a conclusion (`evh round-open`, `evh round-retire`, `evh round-list G --json`
+the ones retired and a conclusion (`evh round-open`, `evh round-retire`, `evh round-evidence G R --json`
 for what the evidence suggests next). Open the round **before** its systems run: a new one runs in it
 (`evh run ... --goal G --round rN`); one already run joins only through `round-open --keep SYSTEM_ID`.
 Closing it is your operator's (rule 5).

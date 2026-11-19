@@ -145,10 +145,10 @@ evh family-test tickets_v1 --a tickets_lead2_v1 --against tickets_ \
   Holm step-down at alpha=0.05
   p: exact, over all 2^6 sign patterns
 
-    opponent                     delta    A wins        p   thresh   verdict
-    tickets_lead1_v1           +0.0424    5/6      0.0938   0.0167   --
-    tickets_lead2_noisy_v1     +0.0146    4/6      0.1562   0.0250   --
-    tickets_author_v1          +0.0122    4/6      0.3125   0.0500   --
+    opponent                     delta   A wins-losses (ties)        p   thresh   verdict
+    tickets_lead2_noisy_v1     +0.0368           5–1 (0 ties)   0.0625   0.0167   --
+    tickets_lead1_v1           +0.0424           5–1 (0 ties)   0.0938   0.0250   --
+    tickets_author_v1          +0.0122           4–2 (0 ties)   0.3125   0.0500   --
 
     significantly different from 0 of 3 opponents; ahead on the point estimate against 3 of 3
 ```

@@ -153,7 +153,7 @@ def open_body(**inputs: Any) -> int:
     print(
         f"  On harness {h['version']}"
         + (f" at {h['commit']}" if h.get("commit") and not h.get("installed") else "")
-        + f" (code {str(h['code_sha256'])[:12]}): a run of the round on other harness code is named in evh round-list."
+        + f" (code {str(h['code_sha256'])[:12]}): a run of the round on other harness code is named in evh round-evidence."
     )
     if carried:
         print(
@@ -164,7 +164,7 @@ def open_body(**inputs: Any) -> int:
         print(f"  Dropped here: {', '.join(dropped)} ({args.reason})")
     print(
         f"  A NEW system joins it by running in it: evh run --system <id> --dataset {args.dataset} "
-        f"--goal {args.goal} --round {rid}; then: evh round-list {args.goal}"
+        f"--goal {args.goal} --round {rid}; then: evh round-evidence {args.goal} {rid}"
     )
     print("  Commit the round file before the runs: an uncommitted file makes them dirty.")
     return 0

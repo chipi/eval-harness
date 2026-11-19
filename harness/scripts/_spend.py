@@ -232,7 +232,7 @@ def reserve(rnd: dict[str, Any], command: str, run_ids: list[str] | None = None)
             _common.die(
                 f"round {rnd['round_id']} of {rnd['goal']} has spent its budget (${float(rnd['budget_usd']):.2f}, "
                 "counting what its running commands have reserved): nothing is called. Raise budget_usd in the "
-                "round, or wait for a running arm to end (`evh round-list` shows what was spent)",
+                f"round, or wait for a running arm to end (`evh round-evidence {rnd['goal']} {rnd['round_id']}` shows what was spent)",
                 "over-budget",
             )
         own = own_cap()

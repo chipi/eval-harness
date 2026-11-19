@@ -266,7 +266,7 @@ def print_goal(r: dict) -> None:
                     f"    leader against the baseline: {t['verdict']}, delta {t['delta']:+.4f}, p {fmt_p(t['p'])}{fam}"
                 )
     if r["rounds"]:
-        print("\nrounds (evh round-list " + r["goal"] + " for the evidence):")
+        print("\nrounds (evh round-evidence " + r["goal"] + " <round> for a round's evidence):")
         for x in r["rounds"]:
             print(
                 f"  {x['round']:4} {x['status']:7} {x['arms']} arm(s), {x['retired']} retired  {x['conclusion'][:70]}"

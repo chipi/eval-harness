@@ -203,7 +203,7 @@ the run, not what its author had already read when they wrote it.
 
 A number answers a question only if someone wrote the question down. A goal names who uses the
 output, the decision it informs, the measure that decides it and which way is better, and the
-datasets it rests on; each system names its goal, and every run records it. It is optional until
+datasets it rests on; a run names its goal (`evh run --goal`), and records it. It is optional until
 a project sets a date from which every run must name one (`required_from`). The catalog's goal
 page says first what the goal is for, then its answer (the latest round's conclusion, the promoted
 baseline and why, or "no decision yet"), then how it got there, round by round. Every field of a
@@ -217,7 +217,7 @@ goal file and its allowed values:
 Evals go round on round, and the reasons an arm was dropped are the first thing lost. An
 optional round ([ADR-0004](../../docs/adr/ADR-0004-eval-rounds.md)) records what it set out
 to learn, what changed, which arms it carried in and which it dropped and why, and what it
-concluded. `evh round-list` suggests the next decision from the evidence, as a command; it never
+concluded. `evh round-evidence` suggests the next decision from the evidence, as a command; it never
 makes one. A closed round refuses new runs, so its evidence cannot grow after its conclusion.
 
 A round also records the scorer it is judged by. Scoring may change between rounds (a rule the

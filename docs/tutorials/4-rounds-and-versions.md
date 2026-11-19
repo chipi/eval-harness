@@ -30,7 +30,7 @@ git add data/rounds && git commit -qm "tickets_summary r1: open"
 ```text
 data/rounds/tickets_summary/r1.yaml: round r1 of tickets_summary, open
   Carried in as they are, their runs already count: tickets_lead1_v1, tickets_lead2_v1, tickets_lead2_noisy_v1 (they need not run again).
-  A NEW system joins it by running in it: evh run --system <id> --dataset tickets_v1 --goal tickets_summary --round r1; then: evh round-list tickets_summary
+  A NEW system joins it by running in it: evh run --system <id> --dataset tickets_v1 --goal tickets_summary --round r1; then: evh round-evidence tickets_summary r1
   Commit the round file before the runs: an uncommitted file makes them dirty.
 ```
 
@@ -55,7 +55,7 @@ r1 · open · tickets_v1
 r1 on overlap_f1: 3 arm(s) in play, leader tickets_lead2_v1
   tickets_lead1_v1                 not significant    delta -0.2592  p 0.0312
   tickets_lead2_noisy_v1           not significant    delta -0.1011  p 0.0312
-  NOTE: cost per item: tickets_lead2_v1 $0.000000
+  NOTE: cost per item, the leader's and of the arms it is read against above: tickets_lead2_v1 $0.000000
   next: 2 arm(s) not significantly different from the leader (tickets_lead1_v1, tickets_lead2_noisy_v1): more items may tell them apart
         evh rank-stability tickets_v1
   next: close the round with what it showed (tickets_lead2_v1 is already the baseline)
@@ -86,7 +86,7 @@ round r1 of tickets_summary closed
 ```
 
 `--promote <run_id>` on `round-close` would also promote that run to the goal's baseline, with
-the conclusion as its reason; `lead2` already is the baseline, so `evh round-list` suggests closing
+the conclusion as its reason; `lead2` already is the baseline, so `evh round-evidence` suggests closing
 without it.
 A closed round refuses new runs.
 
@@ -94,7 +94,7 @@ A closed round refuses new runs.
 
 Round 2 continues round 1 (`--from r1`): it carries `lead2` in unchanged, drops `lead2_noisy` for
 a new version of it, and records the change and what the round sets out to learn. `--budget-usd`
-is what the round may spend; `evh round-list` sets its spend against it.
+is what the round may spend; `evh round-evidence` sets its spend against it.
 
 ```bash
 evh round-open --goal tickets_summary --dataset tickets_v1 --from r1 \
@@ -107,7 +107,7 @@ evh round-open --goal tickets_summary --dataset tickets_v1 --from r1 \
 ```text
 data/rounds/tickets_summary/r2.yaml: round r2 of tickets_summary, open
   Carried in as they are, their runs already count: tickets_lead2_v1 (they need not run again).
-  A NEW system joins it by running in it: evh run --system <id> --dataset tickets_v1 --goal tickets_summary --round r2; then: evh round-list tickets_summary
+  A NEW system joins it by running in it: evh run --system <id> --dataset tickets_v1 --goal tickets_summary --round r2; then: evh round-evidence tickets_summary r2
 ```
 
 A new system joins a round by running in it, naming the round and its goal:
@@ -150,7 +150,7 @@ r2 · open · tickets_v1 · from r1
 r2 on overlap_f1: 2 arm(s) in play, leader tickets_lead2_v1
   tickets_lead2_noisy_v2           significant: worse delta -0.0207  p 0.03125
   NOTE: spent $0.0000 of $0.01
-  NOTE: cost per item: tickets_lead2_v1 $0.000000
+  NOTE: cost per item, the leader's and of the arms it is read against above: tickets_lead2_v1 $0.000000
   next: retire tickets_lead2_noisy_v2
         evh round-retire --goal tickets_summary --round r2 --arm tickets_lead2_noisy_v2 --reason "significantly worse than tickets_lead2_v1 on overlap_f1 after Holm (p 0.0312)"
   next: close the round with what it showed (tickets_lead2_v1 is already the baseline)

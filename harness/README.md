@@ -99,7 +99,7 @@ optional, later, from the same frozen outputs (the originals are never touched):
   evh judge-score    a validated LLM judge, billed and capped: a score under each run, read as judged/<scorer>
 
 beside them, also optional:
-data/goals/          what each evaluation is for; systems name one with `goal:`
+data/goals/          what each evaluation is for; a run names one with `evh run --goal`
 data/rounds/         eval rounds of a goal: evh round-open / rounds / round-close
 data/fields/         field sets: the typed facts a project's items carry (`--fieldset`)
 data/profiles/       evh dataset-profile   what is inside a dataset, for its page (no text by default)

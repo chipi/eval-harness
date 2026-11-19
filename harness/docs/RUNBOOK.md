@@ -75,7 +75,7 @@ What [Getting started](../../docs/GUIDE.md) walks: a dataset, its reference, run
 |---|---|
 | how many items | `evh rank-stability …` |
 | pilot-slice-free result | `evh holdout --dataset-id … --exclude-dataset …` |
-| rounds (optional) | `evh round-open` · `evh round-retire` · `evh round-close` · `evh round-list …` |
+| rounds (optional) | `evh round-open` · `evh round-retire` · `evh round-close` · `evh round-list …` · `evh round-evidence …` |
 | a result with and without a set of items | `evh pair-test … --items FILE` (only the ids in the file, one per line; the rest is a second file, or `--exclude-dataset D` when the set is a dataset) · `evh comparison-show --runs A,B --where F:V` (the items with that field value; a boolean or choice field marking the set) |
 
 ### Reading results
@@ -502,8 +502,9 @@ used. Ten items is enough to rank four arms; keep the first pass cheap.
 ## 4c. The goal file, field by field
 
 A goal says what the evaluation is for ([CONCEPTS](CONCEPTS.md#a-goal-says-what-the-evaluation-is-for)).
-It is optional: one YAML file per goal, `data/goals/<goal_id>.yaml`, and each system names it
-with `goal: <goal_id>` (every run and baseline then carries it). The schema is
+It is optional: one YAML file per goal, `data/goals/<goal_id>.yaml`, and a run names it with
+`evh run … --goal <goal_id>` (the run and a baseline promoted from it carry it; a system file names no goal,
+and `evh validate` refuses one that does). The schema is
 [`goal.schema.json`](../schemas/goal.schema.json); `evh validate` checks every goal against it
 (V1, V14). A goal for a classifier:
 
@@ -564,7 +565,7 @@ references:
 | `context.audience`, `context.usage` | any string | `audience` is shown on the goal page |
 | `decision` | the decision an answer informs | the goal page and `evh goal-leaderboard` lead with it |
 | `output_contract[]` | a list of shapes, each `{format}` (required) plus optional `id`, `length`, `structure`, `language` | A system may declare `format:` (any non-empty string); when the goal has a contract, that format must be one of its `format`s (V14 fails it, and the goal page flags the arm "format f not in the contract"). `format` is your own word for a shape (`paragraph`, `label`, `json`): the harness has no list of them. A system without `format:` is not checked |
-| `success_criteria.primary.measure` | a per-item metric as the runs record it (`rouge_l`, `accuracy`, `overlap_f1`) | the goal page, `evh goal-leaderboard`, `evh round-list` and `comparison-show --round` read the arms on it; an arm that does not record it is not listed (a judged arm is shown in its judge's group, on the judge's score) |
+| `success_criteria.primary.measure` | a per-item metric as the runs record it (`rouge_l`, `accuracy`, `overlap_f1`) | the goal page, `evh goal-leaderboard`, `evh round-evidence` and `comparison-show --round` read the arms on it; an arm that does not record it is not listed (a judged arm is shown in its judge's group, on the judge's score) |
 | `success_criteria.primary.direction` | `higher`, `lower` or `non_inferior` | `higher`/`lower` rank the arms. `non_inferior` is a guard (no significant drop against a baseline) and ranks nothing. V14 fails a direction that contradicts what the runs record, or `higher` on a cost, latency or token count |
 | `success_criteria.primary.threshold` | any value | shown beside the measure on the goal page |
 | `success_criteria.primary.reduce` | `mean` (the default), `majority` or `at_least_K` | how an arm's repeats make one score per item on the goal's measure: the mean, or for 0/1 scores right when more than half (or at least K) of the repeats are right |
@@ -811,7 +812,7 @@ scorer never needs a directory of its own (or a `.gitignore` block). A re-score 
 pages, `evh goal-list`, the rounds and the recommendation read one row per arm, from its latest re-score against the
 same reference, and say how many arms they read that way. The measured run keeps its own page, and says there, on
 the arms page and in `evh arm-list` that the goals read its re-score. A round records the scorer it is judged by, and
-`evh round-list` shows it with each scoring change. A goal whose first round was run as plain runs gets one with
+`evh round-show` shows it with each scoring change. A goal whose first round was run as plain runs gets one with
 `evh round-open --goal G --dataset D --adopt`.
 
 **The dry run and the run's output.** `evh run --system S --dataset D --dry-run` calls nothing. Its `ESTIMATE` counts one
@@ -838,7 +839,7 @@ reserves, before its first call, the least of its own cap and what the round has
 runs spent, less what running commands reserved, less what a stopped or killed run's items paid (its run is not
 listed, its items were paid for). So arms started at once share the budget: give each its own
 `EVAL_MAX_COST_USD`, or the first takes all that is left. With nothing left a run is refused before any call
-(`ERROR (over-budget)`); `evh round-list` shows what is left beside what was spent.
+(`ERROR (over-budget)`); `evh round-evidence` shows what is left beside what was spent.
 
 `evh run` warns, naming the items, when outputs stop at `max_tokens` (the provider's
 `finish_reason`, or tokens out reaching the cap): they are scored as if complete. The harness
@@ -951,8 +952,8 @@ differ in the third decimal between them (32 items in the 2026-10-24 scenario: 0
 thresholds; a p that close to one is not a result either way. `pair-test` calls an arm significantly different from
 the baseline at `p ≤ threshold`, and `family-test` marks an estimated p with `~` when the family
 mixes exact and estimated rows (and a p from the normal limit with `*` when it mixes that in too). Every command prints p to four decimals, and `<0.0001` for what
-would print as 0.0000. `family-test`'s `A wins` column counts the items A wins; the inspector's
-`wins–losses` is each row's arm against the baseline.
+would print as 0.0000. `family-test`'s `A wins-losses (ties)` column counts the items A wins and loses against each
+opponent, and the ties apart; the inspector's `wins–losses` is each row's arm against the baseline.
 Without `--metric` they read the primary metric the runs recorded. Which way is better is
 inferred once for every command: a flag (`--asc`, `--desc`), else the goal the runs name, else
 the adapter's `METRIC_DIRECTIONS`, else the name (cost, latency and token metrics go down).
@@ -1396,7 +1397,8 @@ commands are its only writers, and a project that never opens one sees none of i
 ```bash
 evh round-open --goal my_goal --dataset my_v1 --hypothesis "what this round sets out to learn" \
     --keep arm_a_v1,arm_b_v1 --baseline arm_a_v1   # round 1: carry in arms already run, one as the baseline
-evh round-list my_goal                          # the evidence, and the next decisions as commands
+evh round-evidence my_goal r1                   # the evidence, and the next decisions as commands
+evh round-list my_goal                          # the goal's rounds, a line each
 evh round-retire --goal my_goal --round r1 --arm arm_b_v1 --reason "why it is dropped"
 evh round-retire --goal my_goal --round r1 --arm arm_b_v1 --label linux --reason "..."  # only the arm under that label
 evh round-close --goal my_goal --round r1 --conclusion "what it showed" [--promote <run_id>]
@@ -1412,17 +1414,17 @@ evh round-open --goal my_goal --dataset my_v1 --from r1 --change "what changed a
 - **The run a round starts from** is the dataset's promoted baseline when it has one. Without one (a goal's first
   rounds, or arms carried in with `--keep`), name it: `--baseline <system id>` takes that system's latest measured
   run on the dataset, or give a run id. `round-open` says which run the round starts from; `pair-test --round` and
-  `evh round-list` read the round's arms against it.
+  `evh round-evidence` read the round's arms against it.
 - **A round records the harness code it opened on** (its version, the project's commit and the hash of the code
   that can change a measurement, as every run records it). Harness code taken mid-round measures some arms with other
-  code than the rest: `evh round-list` names each run of the round that recorded other code (`NOTE: N run(s) ran on other
+  code than the rest: `evh round-evidence` names each run of the round that recorded other code (`NOTE: N run(s) ran on other
   harness code than the round opened on …`) and how to run it on the round's code: a worktree at the round's commit,
   or the round's version pinned when the harness is installed. Or open a new round on the new code.
-- **`evh round-list` never suggests promoting the run that already is the baseline**: its close
+- **`evh round-evidence` never suggests promoting the run that already is the baseline**: its close
   suggestion then reads "close the round with what it showed (<arm> is already the baseline)",
   with no `--promote`. `leaderboard --round` does not warn about two versions of one arm (`_v1`,
   `_v2`) in a round: comparing them is what the round is for.
-- **`evh round-list`** reads the evidence the way the inspector does (the round's arms against its
+- **`evh round-evidence`** reads the evidence the way the inspector does (the round's arms against its
   leader, Holm-corrected; its leader against the previous round's best, the baseline it started
   from and the arm that wrote a silver reference of the dataset; its spend against `--budget-usd`,
   and the cost per item), read against the reference most of its arms use (gold before silver on
@@ -1473,7 +1475,7 @@ dataset is materialized: the items' lengths, the gold's labels or shape, and eac
 its source when one is recorded; commit `data/profiles/` and a catalog built anywhere shows it.
 
 **For an agent with a shell**, every command the API serves takes `--json` (RFC-026): the views, `comparison-show`,
-`leaderboard`, `pair-test`, `family-test`, `rank-stability`, `run-compare`, `round-list`, `runs-list`, `validate`, and
+`leaderboard`, `pair-test`, `family-test`, `rank-stability`, `run-compare`, `round-list`, `round-evidence`, `runs-list`, `validate`, and
 every command that writes (`evh run`, below; a command that writes prints its text to stderr as it goes, and its
 envelope last; `catalog`, `dataset-create`, `import-run`, `run-promote`, `rescore` and `sweep` name their results in
 `values`). Stdout is then exactly one object,
