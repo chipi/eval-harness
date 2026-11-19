@@ -410,4 +410,33 @@ with tempfile.TemporaryDirectory() as proj:
         keyed.returncode == 6 and "A provider key is set" in keyed.stdout,
         keyed.stdout[-400:],
     )
+    # Where each variable came from (the 0.8.0 newcomer run could not tell its shell's keys from its .env's): one
+    # only in .env, one only exported, one in both (the exported one wins, so the file's is not used).
+    (Path(proj) / ".env").write_text(
+        "ANTHROPIC_API_KEY=test-anthropic-key-from-file\nOPENAI_API_KEY=test-openai-key-from-file\nEVAL_MAX_COST_USD=1\n"
+    )
+    mixed = subprocess.run(
+        [sys.executable, script],
+        env=dict(
+            base_env,
+            EVAL_HOME=proj,
+            OPENAI_API_KEY="test-openai-key-exported-over-env",
+            OPENROUTER_API_KEY="test-openrouter-key-exported-only",
+        ),
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    line = {
+        v: next((ln for ln in mixed.stdout.splitlines() if f" {v} " in ln), "")
+        for v in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "OPENROUTER_API_KEY")
+    }
+    check(
+        "env-check says where each variable came from: .env, the shell, or the shell over .env",
+        "(.env)" in line["ANTHROPIC_API_KEY"]
+        and "(shell, over .env)" in line["OPENAI_API_KEY"]
+        and "(shell)" in line["OPENROUTER_API_KEY"]
+        and "mid-run abort (.env)" in mixed.stdout,
+        mixed.stdout[-900:],
+    )
 sys.exit(summary())

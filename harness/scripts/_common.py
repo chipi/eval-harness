@@ -126,19 +126,34 @@ def load_dotenv(path: Path | None = None) -> int:
     them). `evh init` gitignores it.
     """
     env_path = path or (project_root() / ".env")
-    if not env_path.is_file():
-        return 0
     loaded = 0
-    for raw in env_path.read_text(encoding="utf-8").splitlines():
+    for key, val in dotenv_pairs(env_path):
+        if key not in os.environ:
+            os.environ[key] = val
+            DOTENV_SET.add(key)
+            loaded += 1
+    return loaded
+
+
+#: The variables `.env` set when this command started (one already exported was left as it was): env-check says which
+#: came from where (the 0.8.0 newcomer run could not tell its shell's keys from its .env's).
+DOTENV_SET: set[str] = set()
+
+
+def dotenv_pairs(path: Path) -> list[tuple[str, str]]:
+    """The (name, value) lines of a `.env` file, as load_dotenv reads them; [] when there is none."""
+    if not path.is_file():
+        return []
+    out = []
+    for raw in path.read_text(encoding="utf-8").splitlines():
         line = raw.strip()
         if not line or line.startswith("#") or "=" not in line:
             continue
         key, _, val = line.partition("=")
         key, val = key.strip(), val.strip().strip('"').strip("'")
-        if key and val and key not in os.environ:
-            os.environ[key] = val
-            loaded += 1
-    return loaded
+        if key and val:
+            out.append((key, val))
+    return out
 
 
 def _is_harness_command() -> bool:
