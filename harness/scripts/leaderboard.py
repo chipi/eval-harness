@@ -35,7 +35,14 @@ from evaluation_harness._common import (
     read_json,
 )
 from evaluation_harness._record import derived_with
-from evaluation_harness._runs import direction, is_repeat_set, mixed_versions, per_item, runs_on
+from evaluation_harness._runs import (
+    AMBIGUOUS_HOW,
+    direction,
+    is_repeat_set,
+    mixed_versions,
+    per_item,
+    runs_on,
+)
 from evaluation_harness.stats import kept
 
 # COST_KEYS / SPEED_KEYS / DESCRIPTIVE_KEYS now live in _common, so that
@@ -754,10 +761,7 @@ def _warn_ambiguous(by_config: dict[str, list[dict]]) -> None:
         ids = sorted(m["run_id"] for m in runs)
         if len(ids) > 1 and not is_repeat_set(ids):
             print(f"  WARNING: {len(ids)} runs claim system_id {name!r} — {', '.join(ids)}.")
-            print(
-                "           They are averaged together below. If they are different "
-                "measurement occasions, give all but one their purpose (repeat, retime, pair) in their run.json."
-            )
+            print(AMBIGUOUS_HOW)
 
 
 def _table(args: argparse.Namespace, A, group: dict, goal: dict | None) -> dict:
@@ -911,6 +915,10 @@ def _table(args: argparse.Namespace, A, group: dict, goal: dict | None) -> dict:
                 2,
             )
         )
+        # Why, as the goal page says it: a recommendation printed under "NO detectable arm effect" read as a
+        # contradiction (the 0.8.0 newcomer run) until the reasons said no contender was shown within the margin.
+        for w in dec.get("why") or []:
+            print(_wrap(w, 4))
     # A run scored against references for only some of its items: its quality mean is over those.
     partial = {
         cid: (r["reference_coverage"]["items_with_reference"], r["reference_coverage"]["items"])

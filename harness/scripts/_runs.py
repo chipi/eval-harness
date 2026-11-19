@@ -298,6 +298,16 @@ def repeat_stem(run_name: str) -> str:
     return _REPEAT.sub("", run_name)
 
 
+#: What to do about runs averaged into one row that nothing tells apart: said with the commands that do it (the 0.8.0
+#: newcomer run was told to edit run.json by hand). A second plain run of a system is refused (evh run); these are
+#: runs made before that, or copied in.
+AMBIGUOUS_HOW = (
+    "           They are averaged together below, and validate fails V8 once they are committed. Keep one measurement:\n"
+    "           delete the others (evh data-rm --path runs/<run_id>), or allow the pair in validate.json's duplicate_ok\n"
+    "           when they are one on purpose. To measure an arm again, repeat its run: evh run ... --purpose repeat --of <run_id>."
+)
+
+
 def is_repeat_set(run_names: list[str]) -> bool:
     """Whether these runs are one `--repeat` set: every name `<stem>_rN` off one stem."""
     return len({repeat_stem(n) for n in run_names}) == 1 and all(_REPEAT.search(n) for n in run_names)
@@ -412,8 +422,5 @@ def warn_on_ambiguous_runs(read_as: str = "", dataset_id: str | None = None, lab
             f"  WARNING: {len(names)} runs claim system_id {cid!r}"
             f"{' in ' + label if label else ''} — {', '.join(names)}."
         )
-        print(
-            "           They are averaged together below. If they are different "
-            "measurement occasions, give all but one their purpose (repeat, retime, pair) in their run.json."
-        )
+        print(AMBIGUOUS_HOW)
     return len(bad)
