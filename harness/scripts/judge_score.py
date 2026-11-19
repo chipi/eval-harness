@@ -1627,6 +1627,38 @@ def estimate(
     return per_judge
 
 
+#: How far a judge's bill may stray from its declared prices before the pass says so (a fifth either way).
+PRICE_DRIFT = 1.2
+
+
+def price_drift(sc: dict[str, Any], vdir: Path) -> list[str]:
+    """Per judge whose provider billed its calls: the bill against what the scorer's declared prices give for the same
+    tokens, a line when they differ by more than PRICE_DRIFT. The dry run estimates at the declared prices, so stale
+    ones make every later estimate wrong (the 0.8.0 newcomer run: eval-gpt-mini billed 2.5x the prices it was given,
+    and the dry run estimated half the bill)."""
+    out = []
+    for j in sc["judges"]:
+        pr = j.get("params") or {}
+        if "usd_per_mtok_in" not in pr or "usd_per_mtok_out" not in pr:
+            continue
+        billed = priced = 0.0
+        for f in _store.glob(vdir / j["id"], "*.json"):
+            r = read_json(f)
+            if not r.get("cost_known") or not r.get("cost_usd"):
+                continue
+            billed += float(r["cost_usd"])
+            priced += (r.get("tokens_in") or 0) / 1e6 * float(pr["usd_per_mtok_in"]) + (
+                r.get("tokens_out") or 0
+            ) / 1e6 * float(pr["usd_per_mtok_out"])
+        if billed and priced and not (1 / PRICE_DRIFT <= billed / priced <= PRICE_DRIFT):
+            out.append(
+                f"  NOTE: judge {j['id']} was billed ${billed:.4f}, {billed / priced:.2f}x what its declared prices give "
+                f"(${priced:.4f}: usd_per_mtok_in {pr['usd_per_mtok_in']}, usd_per_mtok_out {pr['usd_per_mtok_out']}); "
+                "the dry run estimates at those prices, so correct them in the scorer's judge params"
+            )
+    return out
+
+
 def effective_cap(sc: dict[str, Any]) -> float | None:
     """The smallest of the scorer's cost_cap_usd, EVAL_JUDGE_MAX_COST_USD (judging's own cap, as its keys are its own)
     and EVAL_MAX_COST_USD (a command's, a job's max_cost_usd), or None."""
@@ -1847,6 +1879,8 @@ def body(**inputs: Any) -> int:
         f"  calls {stats['calls']}, spent this run ${stats['billed_this_run']:.4f}, "
         f"stored total ${stats['spent_usd']:.4f}  (the provider's bill where it reports one, else the price table)"
     )
+    for line in price_drift(sc, vdir):
+        print(line)
     print(
         "  "
         + how(

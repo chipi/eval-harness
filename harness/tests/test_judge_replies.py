@@ -258,4 +258,24 @@ check(
     said,
 )
 
+# The same run: the dry run estimated half the bill because the scorer's declared prices were 2.5x too low. The pass
+# says when a judge's bill strays from its declared prices.
+with tempfile.TemporaryDirectory() as td:
+    vd = Path(td)
+    for jid, cost in (("dear", 0.0025), ("right", 0.002)):
+        (vd / jid).mkdir()
+        for k in range(2):
+            (vd / jid / f"i{k}.primary.b0.json").write_text(
+                json.dumps({"cost_known": True, "cost_usd": cost / 2, "tokens_in": 1000, "tokens_out": 250})
+            )
+    prices = {"usd_per_mtok_in": 0.5, "usd_per_mtok_out": 2.0}  # 2 x (1000 x 0.5 + 250 x 2.0) / 1e6 = $0.002
+    drift = js.price_drift(
+        {"judges": [{"id": "dear", "params": prices}, {"id": "right", "params": prices}]}, vd
+    )
+    check(
+        "a judge billed far from its declared prices is named, with the ratio, and one billed at them is not",
+        len(drift) == 1 and "judge dear was billed $0.0025, 1.25x" in drift[0] and "right" not in drift[0],
+        drift,
+    )
+
 sys.exit(summary())
