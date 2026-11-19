@@ -2153,15 +2153,25 @@ try:
                     for c in good
                 ]
             )
-            page.goto(f"{base_url}#goal/tickets_summary")
+            # the page is left open: the next screen's calls run in the same document, through the fetch wrapper
+            # (page.goto of a URL that differs by its hash alone may load a new document instead: the Sign-in screen)
+            page.evaluate("() => { location.hash = '#goal/tickets_summary'; }")
             page.wait_for_function(
                 "() => document.querySelector('main').textContent.includes('restarted')", timeout=20000
             )
             said = page.locator("main").inner_text()
             check(
-                "a call that answers 401 says the server was restarted and to open the link it printed",
+                "a page left open: a call that answers 401 says the server was restarted and to open the link it printed",
                 "was restarted" in said and "evh catalog-serve printed" in said,
                 said[:300],
+            )
+            page.reload()
+            page.wait_for_selector("h1:has-text('Sign in')", timeout=20000)
+            signin = page.locator("main").inner_text()
+            check(
+                "a reload with the old token shows the Sign-in screen, which says to open the link the server printed",
+                "catalog-serve" in signin and "printed" in signin,
+                signin[:300],
             )
             page.context.add_cookies(
                 [
