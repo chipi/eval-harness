@@ -604,8 +604,7 @@ def stop_reason(goal: str, sid: str, started: float, start_hash: str) -> str | N
     stop = s.get("stop") or {}
     if stop.get("trials") and len(st["trials"]) >= int(stop["trials"]):
         return f"{stop['trials']} trial(s)"
-    left = _spend.left()
-    if left is not None and left <= 0:
+    if _spend.exhausted():
         return "the dollar cap is spent"
     if stop.get("wall_h") and time.time() - started >= float(stop["wall_h"]) * 3600:
         return f"{stop['wall_h']} h of wall time"

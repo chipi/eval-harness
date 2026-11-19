@@ -504,9 +504,13 @@ def search(text: str) -> dict[str, Any]:
     if not q:
         return {"query": "", "total": 0, "paths": []}
     data = _data()
-    hits = sorted(
+    on_disk = (
         str(p.relative_to(data))
         for p in _store.rglob(data, "*")
-        if _store.is_file(p) and q in str(p.relative_to(data)).lower() and not p.name.startswith(_store.DB)
+        if _store.is_file(p) and not p.name.startswith(_store.DB)
     )
+    held = (
+        f"{folder}/{name}" for folder, names in in_tables().items() for name in names
+    )  # as a folder lists them
+    hits = sorted({rel for rel in (*on_disk, *held) if q in rel.lower()})
     return {"query": text, "total": len(hits), "paths": hits[:LIMIT]}

@@ -51,6 +51,17 @@ def left() -> float | None:
     return None if c is None else max(c - _SPENT[0], 0.0)
 
 
+def reached(spent: float, cap_usd: float | None) -> bool:
+    """The cap stops a call once something was spent and it is used up. Nothing spent is never stopped, so a cap of 0
+    means "spend nothing" and lets a free run through; the first call that spends is the last."""
+    return cap_usd is not None and spent > 0 and spent >= cap_usd
+
+
+def exhausted() -> bool:
+    """This process's cap (its own, or its round's share) is used up by what it spent."""
+    return reached(_SPENT[0], cap())
+
+
 def add(cost: float | None) -> None:
     """A call's cost, as the command's item loop counts it."""
     if cost:
@@ -116,7 +127,7 @@ def net_check() -> None:
     """Before a provider call: refused once the provider layer's own count reached the cap (an adapter that reports
     no cost to its command's loop is stopped here)."""
     c = cap()
-    if c is not None and _NET[0] >= c:
+    if reached(_NET[0], c):
         raise _common.CostCapExceeded(f"the provider layer counted ${_NET[0]:.4f} of the ${c:.4f} cap")
 
 

@@ -13,6 +13,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from evaluation_harness import _spend
 from evaluation_harness import judge_score as js
 from evaluation_harness._check import check, summary
 
@@ -53,6 +54,16 @@ check(
     "the refusal names judging's own cap",
     "EVAL_JUDGE_MAX_COST_USD"
     in (Path(js.__file__).read_text(encoding="utf-8").split("no cost cap:", 1)[1][:120]),
+    "",
+)
+
+check(
+    "a cap of 0 stops nothing that spent nothing, and the first spend; the rest stop at the cap as before",
+    not _spend.reached(0.0, 0.0)
+    and _spend.reached(0.01, 0.0)
+    and _spend.reached(0.05, 0.05)
+    and not _spend.reached(0.04, 0.05)
+    and not _spend.reached(9.0, None),
     "",
 )
 

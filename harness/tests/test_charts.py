@@ -265,6 +265,39 @@ try:
         and all(x["mean"] is not None for x in sp["rows"]),
         (sp["rows"], outs),
     )
+    # A study is named as study-list prints it (<goal>/<id>) or by its id, wherever --goal is given; one that is not
+    # there is a not-found refusal, never a traceback.
+    both = {
+        "study-progress goal/study": chart("study-progress", "--goal", "g", "--study", "g/s1"),
+        "gain-cost goal/study": chart("gain-cost", "--goal", "g", "--study", "g/s1"),
+    }
+    sh = result(evh("study-show", "g", "g/s1", "--json"))
+    check(
+        "a study named <goal>/<id> with --goal gives what its bare id gives (study-progress, gain-cost, study-show)",
+        both["study-progress goal/study"].get("rows") == sp["rows"]
+        and both["gain-cost goal/study"].get("rows") == gs["rows"]
+        and sh.get("trials") == shown.get("trials")
+        and bool(sh),
+        (both["study-progress goal/study"].get("error"), both["gain-cost goal/study"].get("error"), sh),
+    )
+    gone = {
+        "chart study-progress missing": evh("chart", "study-progress", "--goal", "g", "--study", "nope"),
+        "chart study-progress missing goal/study": evh(
+            "chart", "study-progress", "--goal", "g", "--study", "g/nope"
+        ),
+        "chart gain-cost missing": evh("chart", "gain-cost", "--goal", "g", "--study", "nope"),
+        "chart other goal's study": evh("chart", "study-progress", "--goal", "g", "--study", "h/s1"),
+        "study-show missing": evh("study-show", "g", "nope"),
+        "study-show missing goal/study": evh("study-show", "g", "g/nope"),
+    }
+    check(
+        "a study that is not there is a not-found refusal (exit 1), never a traceback",
+        all(
+            r.returncode == 1 and "not-found" in r.stderr and "Traceback" not in r.stderr
+            for r in gone.values()
+        ),
+        {k: (r.returncode, r.stderr[-200:]) for k, r in gone.items()},
+    )
     rs = got["rank-stability"]["rows"]
     check(
         "rank-stability: 24 items allow halves of 5, 10 and 12, its agreement between -1 and 1",

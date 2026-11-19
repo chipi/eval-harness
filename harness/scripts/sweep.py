@@ -62,8 +62,7 @@ def body(**inputs: Any) -> int:
             cmd.append("--dry-run")
         if args.scratch:
             cmd.append("--scratch")
-        left = _spend.left()
-        if not args.dry_run and left is not None and left <= 0:
+        if not args.dry_run and _spend.exhausted():
             # The sweep's cap is spent (RFC-026 step 5): the arms after this one are not run.
             print(f"   NOT RUN — the cap is spent (${_spend.spent():.4f} of ${_spend.cap():.4f})")
             failed.append(c)

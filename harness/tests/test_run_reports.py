@@ -138,6 +138,29 @@ try:
     )
     check("resuming it finishes the run", r.returncode == 0, (r.stdout + r.stderr)[-300:])
 
+    # A run that finished with no output (a cap or a stop before its first item) holds no outputs in either store: no
+    # empty outputs.jsonl in the files store, and `--resume` refuses it the same way in both (a resume is a run of its
+    # own, so there is nothing to carry).
+    nothing = proj / "never-back"
+    evh("run", *system("nothing", fail_on="Login", flag=str(nothing)))
+    zero = run_dir("nothing_v1")
+    with _runstore._InProject(proj):
+        _outputs.finish(zero, {}, [])
+        zero_own = _outputs.own(zero)
+    runs_before = _runstore.listdir(proj, "runs")
+    r = evh("run", "--system", "nothing_v1", "--dataset", "tickets_v1", "--resume", zero.name)
+    out = r.stdout + r.stderr
+    check(
+        "a run that wrote no output holds none: no empty outputs.jsonl, and --resume refuses it (not-found), "
+        "starting no run",
+        not zero_own
+        and "outputs.jsonl" not in _runstore.listdir(proj, f"runs/{zero.name}")
+        and r.returncode == 1
+        and "cannot resume: no outputs in" in out
+        and _runstore.listdir(proj, "runs") == runs_before,
+        (zero_own, r.returncode, out[-300:], _runstore.listdir(proj, f"runs/{zero.name}")),
+    )
+
     back = proj / "server-back"
     r = evh("run", *system("refused", refuse_on="export", flag=str(back)))
     gone = run_dir("refused_v1")

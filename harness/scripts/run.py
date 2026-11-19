@@ -507,7 +507,7 @@ def one_pass(
         # reporting success. The outputs were all present and none of them counted.
         resumed = item["item_id"] in prior_out
 
-        if not resumed and cap is not None and spent >= cap:
+        if not resumed and _spend.reached(spent, cap):
             # Check BEFORE the call: the cap is a ceiling on spend, not a report of
             # having exceeded it. A resumed item costs nothing, so the cap cannot stop it.
             capped_at = item["item_id"]

@@ -698,7 +698,10 @@ class FileStore:
         """The run's whole outputs at once, in `order`, atomically; items not in `texts` left out."""
         path = Path(run_dir) / FILE
         body = "".join(_line(item, texts[item]) + "\n" for item in order if item in texts)
-        _common.write_text_atomic(path, body)
+        if body:
+            _common.write_text_atomic(path, body)
+        else:  # no output is no file, as it is no rows in the sqlite store
+            path.unlink(missing_ok=True)
         _CACHE.pop(str(path), None)
 
     def delete(self, run_dir: Path) -> None:

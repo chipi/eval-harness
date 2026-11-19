@@ -231,6 +231,11 @@ def run_case(store: str) -> None:
         )  # fmt: skip
         check(f"{store}: a run's outputs.jsonl and a score's predictions.jsonl are listed and shown, with their sha256",
               in_listing and all(s and k == "run-file" for s, _n, k in shown.values()), (in_listing, shown))  # fmt: skip
+        found = json.dumps(
+            json.loads(cli(proj, env, "data-ls", "--find", Path(run).name, "--json").stdout)["result"]
+        )
+        check(f"{store}: data-ls --find lists a run's outputs.jsonl and its scores' predictions.jsonl as the folder does",
+              f"{run}/outputs.jsonl" in found and f"{sdir}/predictions.jsonl" in found, found[:600])  # fmt: skip
         if store == "sqlite":
             moved = {
                 f"{run}/outputs.jsonl": shown["outputs.jsonl"][0],

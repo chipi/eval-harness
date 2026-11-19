@@ -428,6 +428,12 @@ try:
         and st4.get("status") == "ended" and len(ls) == 8,
         (imp.stderr[-300:], len(ls)),
     )  # fmt: skip
+    imp2 = evh("study-import", "--file", "results.tsv", "--goal", "g", "--study", "g/karpathy2")
+    check(
+        "study-import takes the id to give as study-list prints it (<goal>/<id>) too",
+        imp2.returncode == 0 and len(study_of("g", "karpathy2").get("trials", [])) == 3,
+        imp2.stderr[-300:],
+    )
 finally:
     shutil.rmtree(proj, ignore_errors=True)
 sys.exit(summary())

@@ -39,11 +39,10 @@ def list_studies(goal: str) -> dict[str, Any]:
 def show_study(goal: str, study: str) -> dict[str, Any]:
     """One study: its spec, its state from its log, its confirmations."""
     from evaluation_harness.model import study_views  # noqa: PLC0415
-    from evaluation_harness.model.studies import STUDY  # noqa: PLC0415
+    from evaluation_harness.model.studies import of_goal  # noqa: PLC0415
 
     _goal(goal)
-    STUDY.get(f"{goal}/{study}")
-    return study_views.show_study(goal, study)
+    return study_views.show_study(goal, of_goal(goal, study))
 
 
 def say_list(r: dict[str, Any]) -> str:

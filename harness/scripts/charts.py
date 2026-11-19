@@ -456,7 +456,7 @@ def gain_cost(goal: str, round: str | None = None, study: str | None = None) -> 
         from evaluation_harness.model import studies as ms  # noqa: PLC0415
 
         scorer = ""  # a study's trials are its own systems' runs, read as they ran
-        sid = str(study)
+        sid = ms.of_goal(goal, str(study), _data())
         st, spec = ms.state(goal, sid, _data()), ms.spec(goal, sid, _data())
         ds = str(spec.get("dataset"))
         # A study decides on its own measure, in that measure's direction (as study-progress draws it): drawn on the
@@ -591,6 +591,7 @@ def study_progress(goal: str, study: str) -> dict:
     from evaluation_harness.model import studies as ms  # noqa: PLC0415
 
     A = _adapter()
+    study = ms.of_goal(goal, study, _data())
     st, spec = ms.state(goal, study, _data()), ms.spec(goal, study, _data())
     ds, metric = str(spec.get("dataset")), str(spec.get("measure"))
     base = _arm_of(A, ds, st["baseline"])

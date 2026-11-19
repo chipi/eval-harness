@@ -294,10 +294,7 @@ def _smoke(args: argparse.Namespace) -> int:
             mat / (item.get("source_path") or item["item_id"]), encoding="utf-8", errors="replace"
         )
         row: dict[str, Any] = {"item": item["item_id"]}
-        left = _spend.left()
-        if (
-            left is not None and left <= 0
-        ):  # the cap (EVAL_MAX_COST_USD, or the round's share): no further call
+        if _spend.exhausted():  # the cap (EVAL_MAX_COST_USD, or the round's share): no further call
             capped = item["item_id"]
             break
         t0 = time.perf_counter()
@@ -330,9 +327,8 @@ def _smoke(args: argparse.Namespace) -> int:
         facts = {k: v for k, v in (getattr(res, "meta", None) or {}).items() if k in ML_FACTS}
         if n == 0:
             first_output = res.output
-            left = _spend.left()
             try:
-                if left is not None and left <= 0:
+                if _spend.exhausted():
                     raise _common.CostCapExceeded("the cap is reached: item 1 is not called twice")
                 again = call_system(text, params)
                 pay(again)

@@ -390,6 +390,8 @@ def import_tsv_body(**inputs: Any) -> int:
 
     if a.goal not in load_goals():
         die(f"no goal {a.goal!r}", "not-found")
+    if a.study.startswith(f"{a.goal}/"):  # as study-list prints it
+        a.study = a.study.split("/", 1)[1]
     if not _study.STUDY_ID.fullmatch(a.study):
         die(f"--study {a.study!r}: lower-case letters, digits, '_' or '-'", "bad-argument")
     if _store.is_file(model_studies.spec_path(a.goal, a.study)):

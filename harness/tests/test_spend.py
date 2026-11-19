@@ -173,6 +173,44 @@ try:
         (r.returncode, spent_of("swa_v1"), spent_of("swb_v1"), (r.stdout + r.stderr)[-500:]),
     )
 
+    # ── a cap of 0 means spend nothing: a run that spends $0 is never stopped by it ──────────────────────────────
+    free = system("free", "free_v1", cost=0)
+    r = evh("run", *free, cap=0)
+    check(
+        "run with EVAL_MAX_COST_USD=0 of an arm that spends $0: every item scored, not stopped (exit 0)",
+        r.returncode == 0 and "COST CAP HIT" not in r.stdout
+        and any(n.startswith("free_v1") for n in _runstore.listdir(proj, "runs")),
+        (r.returncode, (r.stdout + r.stderr)[-400:]),
+    )  # fmt: skip
+    r = evh("run", *system("paid0", "paid0_v1"), cap=0)
+    check(
+        "run with EVAL_MAX_COST_USD=0 of an arm that spends: stopped after the first call (exit 4), never past it",
+        r.returncode == _common.EXIT_STOPPED and "COST CAP HIT" in r.stdout
+        and abs(spent_of("paid0_v1") - 0.01) < 1e-9,
+        (r.returncode, spent_of("paid0_v1"), (r.stdout + r.stderr)[-400:]),
+    )  # fmt: skip
+    r = evh("arm-smoke", *free, "--items", "3", "--json", cap=0)
+    vals = (
+        (json.loads(r.stdout).get("result") or {}).get("values") or {}
+        if r.stdout.strip().startswith("{")
+        else {}
+    )
+    check(
+        "arm-smoke with EVAL_MAX_COST_USD=0 of an arm that spends $0: all 3 items called, no cap flag",
+        len(vals.get("items") or []) == 3 and not any("cap" in f for f in vals.get("flags") or []),
+        (r.returncode, len(vals.get("items") or []), vals.get("flags"), r.stderr[-300:]),
+    )  # fmt: skip
+    system("swf", "swf_v1", cost=0)
+    system("swg", "swg_v1", cost=0)
+    r = evh("sweep", "--systems", "swf_v1", "swg_v1", "--dataset", "tickets_v1", cap=0)
+    check(
+        "sweep with EVAL_MAX_COST_USD=0 over two arms that spend $0: both run, none 'NOT RUN'",
+        "NOT RUN" not in r.stdout
+        and any(n.startswith("swf_v1") for n in _runstore.listdir(proj, "runs"))
+        and any(n.startswith("swg_v1") for n in _runstore.listdir(proj, "runs")),
+        (r.returncode, (r.stdout + r.stderr)[-500:]),
+    )  # fmt: skip
+
     # ── a scratch sweep: a smoke that keeps no run and ranks nothing ─────────────────────────────────────────────
     system("swc", "swc_v1")
     r = evh("sweep", "--systems", "swc_v1", "--dataset", "tickets_v1", "--scratch")

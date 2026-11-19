@@ -59,7 +59,7 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Any, Callable
 
-from evaluation_harness import _outputs, _progress, _providers, _runs, _store
+from evaluation_harness import _outputs, _progress, _providers, _runs, _spend, _store
 from evaluation_harness._codeid import content_sha256, file_sha256
 from evaluation_harness._common import (
     BOOKKEEPING_PREFIXES,
@@ -892,7 +892,7 @@ def run_judging(
                 if call is None:
                     stats["missing"] += 1
                     continue
-                if cap is not None and spent >= cap:
+                if _spend.reached(spent, cap):
                     raise CostCapExceeded(f"spent ${spent:.4f} of the ${cap:.4f} cap")
                 if msg is None:
                     msg = message_for(manifest, base, articles, outputs, item, pass_name, block)
