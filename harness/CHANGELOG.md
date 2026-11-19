@@ -965,6 +965,12 @@ that can move a result is never a patch release without saying so under **Change
 - **`evh validate`'s V12 checks a committed reason's shape**: `why` a sentence, or one per graded output, never beside
   `why_missing` or `why_withheld`; it read the reply only, so a hand-edited reason passed. Whether a reason repeats the
   source stays checked when it is written, where the source is at hand.
+- **In a SQLite project, `evh data-ls` and `evh data-show` show a run's outputs and a score's rows.** The database keeps
+  them as table rows, so `outputs.jsonl`, `predictions.jsonl` and a checkpoint's `rows.partial.jsonl` were missing from
+  a run's folder, `data-show` refused them, and the overview counted 1,728 files under `runs/` where the same project on
+  files has 2,744. Each is now listed, counted and shown as the file `data-migrate --to files` writes from it, its
+  sha256 the file's; its time is that of the file written beside it (the database keeps none for rows). Found comparing
+  every read command of this repository's data on both stores (2026-11-19).
 - **A Workbench read answered after its screen was left no longer redraws the screen opened since.** A slow read (a
   chart) landing on Settings redrew its text box while a person typed, and the rest of the typing went into the new box
   in front of the old text: the file saved held both.

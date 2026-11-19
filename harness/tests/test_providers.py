@@ -400,7 +400,7 @@ with tempfile.TemporaryDirectory() as proj:
     )
     keyed = subprocess.run(
         [sys.executable, script],
-        env=dict(base_env, EVAL_HOME=proj, OPENAI_API_KEY="sk-real-key-1234567890"),
+        env=dict(base_env, EVAL_HOME=proj, OPENAI_API_KEY="test-openai-key-from-env-setup"),
         capture_output=True,
         text=True,
         timeout=60,

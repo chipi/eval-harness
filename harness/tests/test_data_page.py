@@ -22,6 +22,7 @@ In a tutorial project with a dataset, two runs, a goal, kept as files and then m
 from __future__ import annotations
 
 import atexit
+import hashlib
 import json
 import os
 import shutil
@@ -54,6 +55,9 @@ def site() -> Path:
 
 
 GOOD_GOAL_EDIT = "# the margin a person changed on the page\n"
+#: The sqlite case's run files before they moved into the database: {path under data/: sha256}, and how many files
+#: runs/ held (`runs/ files`).
+ON_DISK: dict[str, str] = {}
 
 
 def setup(store: str) -> tuple[Path, dict]:
@@ -83,6 +87,12 @@ def setup(store: str) -> tuple[Path, dict]:
     (proj / "data/sources").mkdir(parents=True, exist_ok=True)
     (proj / "data/sources/page.html").write_text("<script>fetch('/api/data/store')</script>")
     if store == "sqlite":
+        runs = proj / "data/runs"
+        ON_DISK.update({
+            str(f.relative_to(proj / "data")): hashlib.sha256(f.read_bytes()).hexdigest()
+            for f in runs.rglob("*") if f.name in ("outputs.jsonl", "predictions.jsonl")
+        })  # fmt: skip
+        ON_DISK["runs/ files"] = str(sum(1 for f in runs.rglob("*") if f.is_file()))
         (proj / "config.yaml").write_text("store: sqlite\n")
         env["EVAL_STORE"] = "sqlite"
         evh("data-migrate", "--to", "sqlite")
@@ -200,6 +210,35 @@ def run_case(store: str) -> None:
         r = cli(proj, env, "data-show", f"{run}/run.json")
         check(f"{store}: a run's file says it is written by evh run and is not edited here",
               r.returncode == 0 and "written by evh run" in r.stdout, r.stdout[-200:])  # fmt: skip
+        # A run's outputs and a score's rows are table rows in the database: still listed, counted and shown as the
+        # files they were on disk before the move, byte for byte.
+        listed = json.loads(cli(proj, env, "data-ls", run, "--json").stdout)["result"]["listing"]["entries"]
+        score = next((e["path"] for e in listed if e["name"] == "scores"), None)
+        sdir = json.loads(cli(proj, env, "data-ls", score, "--json").stdout)["result"]["listing"]["entries"][
+            0
+        ]["path"]
+        shown = {}
+        for name, where in (("outputs.jsonl", run), ("predictions.jsonl", sdir)):
+            r = cli(proj, env, "data-show", f"{where}/{name}", "--json")
+            f = json.loads(r.stdout)["result"]["file"] if r.returncode == 0 else {}
+            shown[name] = (f.get("sha256"), f.get("size"), f.get("kind"))
+        in_listing = "outputs.jsonl" in [e["name"] for e in listed] and "predictions.jsonl" in [
+            e["name"] for e in json.loads(cli(proj, env, "data-ls", sdir, "--json").stdout)["result"]["listing"]["entries"]
+        ]  # fmt: skip
+        runs_counted = next(
+            d["files"] for d in json.loads(cli(proj, env, "data-ls", "--json").stdout)["result"]["overview"]["data"]
+            if d["folder"] == "runs"
+        )  # fmt: skip
+        check(f"{store}: a run's outputs.jsonl and a score's predictions.jsonl are listed and shown, with their sha256",
+              in_listing and all(s and k == "run-file" for s, _n, k in shown.values()), (in_listing, shown))  # fmt: skip
+        if store == "sqlite":
+            moved = {
+                f"{run}/outputs.jsonl": shown["outputs.jsonl"][0],
+                f"{sdir}/predictions.jsonl": shown["predictions.jsonl"][0],
+            }
+            check("sqlite: they are shown with the bytes they had as files, and runs/ counts the files it counted then",
+                  all(ON_DISK.get(k) == v for k, v in moved.items()) and str(runs_counted) == ON_DISK["runs/ files"],
+                  (moved, runs_counted, ON_DISK))  # fmt: skip
 
         # Checks: nothing saved on a problem.
         r = cli(

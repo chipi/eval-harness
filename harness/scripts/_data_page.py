@@ -99,7 +99,53 @@ def resolve(rel: str) -> tuple[str, Path]:
 
 def is_file(rel: str) -> bool:
     """Whether the path names a file of the project's data."""
-    return _store.is_file(resolve(rel)[1])
+    norm, f = resolve(rel)
+    return _store.is_file(f) or _held_text(norm) is not None
+
+
+def in_tables() -> dict[str, list[str]]:
+    """{folder under data/: the files it holds as rows of the sqlite store's tables}: a run's outputs, a score's rows
+    and a checkpoint, each named as the file `data-migrate --to files` writes from them. {} on the files store, where
+    they are files; so a folder lists, counts and shows the same files in either store."""
+    st = _outputs.store()
+    if not isinstance(st, _outputs.SqliteStore):
+        return {}
+    held: dict[str, list[str]] = {}
+    for key in st.runs():
+        held.setdefault(key, []).append(_outputs.FILE)
+    for key, partial in st.row_runs():
+        held.setdefault(key, []).append(_outputs.ROWS if partial else _outputs.PREDICTIONS)
+    return held
+
+
+def _held_text(norm: str) -> str | None:
+    """The text of a file the sqlite store holds as table rows (in_tables), byte for byte what `data-migrate --to files`
+    writes; None when the path is no such file."""
+    folder, _, name = norm.rpartition("/")
+    if not folder or name not in (_outputs.FILE, _outputs.PREDICTIONS, _outputs.ROWS):
+        return None
+    st = _outputs.store()
+    if st.name != "sqlite":
+        return None
+    d = _data() / folder
+    if name == _outputs.FILE:
+        lines = st.lines(d)
+        return "".join(_outputs._line(o["item_id"], o["text"]) + "\n" for o in lines) if lines else None
+    if name == _outputs.PREDICTIONS:
+        return st.stored_text(d, errors="replace") if st.has_rows(d) else None
+    return st.rows_text(d, partial=True, errors="replace")
+
+
+def _held_mtime(d: Path) -> float | None:
+    """When a held file was written, as near as the store knows: the database keeps no time for rows, so the time of
+    the file written beside them (a score's score.json, a run's run.json), else of the folder's newest file."""
+    for name in ("score.json", "run.json"):
+        if _store.is_file(d / name):
+            return _store.stat(d / name).st_mtime
+    times = (
+        [_store.stat(p).st_mtime for p in _store.iterdir(d) if _store.is_file(p)] if _store.is_dir(d) else []
+    )
+    return max(times) if times else None
 
 
 def kind_of(rel: str) -> str:
@@ -115,7 +161,7 @@ def kind_of(rel: str) -> str:
         d = _data() / rel
         if len(parts) == 2 and _store.is_dir(d) and _store.is_file(d / "run.json"):
             return "run"
-        if _store.is_file(d) and len(parts) >= 3:
+        if len(parts) >= 3 and (_store.is_file(d) or _held_text(rel) is not None):
             return "run-file"
     return "data"
 
@@ -128,8 +174,12 @@ def writer_of(rel: str) -> str:
     return WRITERS.get(top, ("", "the harness's commands"))[1]
 
 
-def _files_under(d: Path) -> int:
-    return sum(1 for f in _store.rglob(d, "*") if _store.is_file(f))
+def _files_under(d: Path, held: dict[str, list[str]] | None = None) -> int:
+    """The files under a folder, the ones the sqlite store holds as table rows counted too (in_tables)."""
+    held = in_tables() if held is None else held
+    rel = _store.rel(d) or ""
+    in_rows = sum(len(v) for k, v in held.items() if not rel or k == rel or k.startswith(rel + "/"))
+    return sum(1 for f in _store.rglob(d, "*") if _store.is_file(f)) + in_rows
 
 
 def overview() -> dict[str, Any]:
@@ -138,10 +188,13 @@ def overview() -> dict[str, Any]:
     db = data / _store.DB
     store = _common.store()
     tops = sorted(p.name for p in _store.iterdir(data)) if _store.is_dir(data) else []
+    held = in_tables()
     settings = []
     for folder, (word, _schema, _key, _named) in SETTINGS.items():
         d = data / folder
-        settings.append({"folder": folder, "kind": word, "files": _files_under(d) if _store.is_dir(d) else 0})
+        settings.append(
+            {"folder": folder, "kind": word, "files": _files_under(d, held) if _store.is_dir(d) else 0}
+        )
     settings.append(
         {"folder": POLICY, "kind": "validate policy", "files": int(_store.is_file(data / POLICY))}
     )
@@ -150,7 +203,7 @@ def overview() -> dict[str, Any]:
         if name in SETTINGS or name == POLICY or name.startswith(_store.DB) or not _store.is_dir(data / name):
             continue
         word = WRITERS.get(name, (name, ""))[0]
-        other.append({"folder": name, "kind": word, "files": _files_under(data / name)})
+        other.append({"folder": name, "kind": word, "files": _files_under(data / name, held)})
     return {
         "store": store,
         "database": str(db.relative_to(_common.ROOT)) if store == "sqlite" else None,
@@ -177,7 +230,9 @@ def listing(rel: str, offset: int = 0) -> dict[str, Any]:
         not _store.is_dir(d) and norm not in SETTINGS
     ):  # a settings folder not made yet is empty: its first file makes it
         raise Refused(f"No folder {norm or 'data/'} in the project's data.", "not-found")
+    held = in_tables()
     entries = []
+    files = []
     for p in sorted(
         _store.iterdir(d) if _store.is_dir(d) else [], key=lambda q: (not _store.is_dir(q), q.name)
     ):
@@ -185,11 +240,11 @@ def listing(rel: str, offset: int = 0) -> dict[str, Any]:
         if _store.is_dir(p):
             k = kind_of(child)
             row: dict[str, Any] = {"name": p.name, "path": child, "type": "run" if k == "run" else "folder"}
-            row.update(_run_row(p) if k == "run" else {"files": _files_under(p)})
+            row.update(_run_row(p) if k == "run" else {"files": _files_under(p, held)})
             entries.append(row)
         elif not (not norm and p.name.startswith(_store.DB)):
             st = _store.stat(p)
-            entries.append(
+            files.append(
                 {
                     "name": p.name,
                     "path": child,
@@ -199,6 +254,21 @@ def listing(rel: str, offset: int = 0) -> dict[str, Any]:
                     "modified": _when(st.st_mtime),
                 }
             )
+    for name in held.get(norm, []):
+        text = _held_text(f"{norm}/{name}")
+        if text is not None and name not in {f["name"] for f in files}:
+            when = _held_mtime(d)
+            files.append(
+                {
+                    "name": name,
+                    "path": f"{norm}/{name}",
+                    "type": "file",
+                    "kind": kind_of(f"{norm}/{name}"),
+                    "size": len(text.encode("utf-8")),
+                    "modified": _when(when) if when is not None else None,
+                }
+            )
+    entries += sorted(files, key=lambda f: f["name"])
     folder = norm.split("/")[0] if norm else ""
     return {
         "path": norm,
@@ -236,11 +306,13 @@ def runs_of_system(system_id: str) -> int:
 def show(rel: str) -> dict[str, Any]:
     """A file: its text (or that it is binary), size, date, sha256, kind, and who writes it."""
     norm, f = resolve(rel)
-    if not _store.is_file(f):
+    held = None if _store.is_file(f) else _held_text(norm)
+    if not _store.is_file(f) and held is None:
         if _store.is_dir(f):
             raise Refused(f"{norm} is a folder: list it instead.", "bad-argument")
         raise Refused(f"No file {norm} in the project's data.", "not-found")
-    raw = _store.read_bytes(f)
+    raw = _store.read_bytes(f) if held is None else held.encode("utf-8")
+    when = _store.stat(f).st_mtime if held is None else _held_mtime(f.parent)
     try:
         text: str | None = raw.decode("utf-8")
     except UnicodeDecodeError:
@@ -250,7 +322,7 @@ def show(rel: str) -> dict[str, Any]:
         "path": norm,
         "kind": k,
         "size": len(raw),
-        "modified": _when(_store.stat(f).st_mtime),
+        "modified": _when(when) if when is not None else None,
         "sha256": hashlib.sha256(raw).hexdigest(),
         "text": text,
         "editable": k == "setting",
