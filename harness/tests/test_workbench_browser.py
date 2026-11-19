@@ -14,7 +14,7 @@ Served from a static server on a free port, with Chromium:
   - round r4's results fit a desktop screen, each arm on its own Linux re-run (bart_l carried, read through its own),
     the round's answer in one line above them;
   - r4's verdicts are `evh round-list`': each arm against the leader, Holm across the arms in play, so a retire narrows
-    it; the commands carry the round (--keep, round: r4);
+    it; the commands carry the round (--keep, --round r4);
   - a retire's reason is a sentence, an empty or one-word one an error tied to its field;
   - Close needs a sentence, as round-close does; its confirm is an alertdialog, and Escape backs out of it;
   - an added clone keeps its fold and focus; Escape closes an arm's panel; a phone's chart keeps its words apart;
@@ -194,8 +194,8 @@ def check_round(browser, base: str) -> None:
     page.locator("details.cmd > summary").last.click()
     cmds = page.locator("details.cmd").last.inner_text()
     check(
-        "workbench: r4's commands carry the round: bart_l kept, each config naming round r4",
-        "--keep cnn_bart_l_n200_v1" in cmds and "round: r4" in cmds and "--promote" not in cmds,
+        "workbench: r4's commands carry the round: bart_l kept, each run naming its round (--round r4)",
+        "--keep cnn_bart_l_n200_v1" in cmds and "--round r4" in cmds and "--promote" not in cmds,
         cmds[:300],
     )
     page.locator("#r4c").fill("bart_l stays")

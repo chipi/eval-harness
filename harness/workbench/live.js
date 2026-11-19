@@ -5,18 +5,38 @@
 // wires it, never this repository's data as if it were the project's.
 (() => {
   const WB = window.WB;
-  const LIVE = { on: false, cache: {}, pending: {}, wanted: {}, failed: null };
+  const LIVE = { on: false, cache: {}, pending: {}, wanted: {}, quiet: new Set(), failed: null };
   window.LIVE = LIVE;
   const esc = WB.esc;
 
+  // A server that restarted has a new token: every call of a page left open answers 401 with the server's own words
+  // ("no valid token"). The page says what happened and what to do, wherever the answer is shown.
+  const RESTARTED = "The server was restarted, so this page's sign-in no longer works: open the Workbench link evh catalog-serve printed (it carries the new token).";
+  const realFetch = window.fetch.bind(window);
+  window.fetch = async (...a) => {
+    const r = await realFetch(...a);
+    if (r.status === 401 && String(a[0] && a[0].url || a[0]).startsWith("/api/v1")) {
+      return new Response(JSON.stringify({ error: RESTARTED }), { status: 401, headers: { "Content-Type": "application/json" } });
+    }
+    return r;
+  };
+
+  // The help layer's pieces (help.js): a ? beside a field's name, and the line under it, when help.js has the key.
+  const HELPS = () => window.HELP || {};
+  const qh = (key) => (HELPS()[key] ? WB.q(key) : "");
+  const hint = (key) => (HELPS()[key] && HELPS()[key].hint ? `<div class="hint">${esc(HELPS()[key].hint)}</div>` : "");
+  const nm = (id, text, key) => `<div class="name"><label for="${id}">${text}</label>${qh(key)}</div>`;
+
   // One API read, kept until the page reloads; a screen asks again by key and is drawn again when it lands.
-  function load(key, path, raw = false) {
+  // `quiet` (the rail's reads): the answer redraws the rail only, never the screen under a person's hand.
+  function load(key, path, raw = false, quiet = false) {
     if (key in LIVE.cache) return LIVE.cache[key];
     // An answer redraws the screen that asked for it last, never one that did not ask: a slow read (a chart) landing on
     // another screen redrew it under the person's typing, and the text box it replaced took the rest of their
     // keystrokes. A screen asking for a read already on its way (the screen before asked first) is recorded too, or
     // the read lands, redraws nothing, and the screen stays on "Reading…".
-    LIVE.wanted[key] = location.hash;
+    if (quiet) LIVE.quiet.add(key);
+    else LIVE.wanted[key] = location.hash;
     if (!LIVE.pending[key]) {
       LIVE.pending[key] = fetch(`/api/v1${path}`, { credentials: "same-origin" })
         .then(async (r) => {
@@ -30,6 +50,7 @@
           delete LIVE.pending[key];
           delete LIVE.wanted[key];
           if (location.hash === asked) WB.render();
+          else if (LIVE.quiet.delete(key) && LIVE.railArgs && `#${LIVE.railArgs[0]}` === location.hash) WB.railFor(...LIVE.railArgs);
         });
     }
     return undefined;
@@ -82,8 +103,8 @@
       <div class="tablewrap" style="margin-top:18px"><table><thead><tr><th>dataset</th><th>role</th><th>items</th><th>reference</th><th class="num">runs</th><th>baseline</th></tr></thead><tbody>${ds}</tbody></table></div>
       ${rounds ? `<h2 style="margin-top:22px">Rounds</h2><ul>${rounds}</ul>` : ""}
       ${st.running.length ? `<h2 style="margin-top:22px">Running now</h2><ul>${st.running.map((j) => `<li>${esc(j.operation)} · ${esc(j.state)}</li>`).join("")}</ul>` : ""}
-      ${chartBox("trend", { goal: id }, true)}
-      ${WB.cmd(`evh goal-status ${id}`)}
+      ${chartBox("trend", { goal: id }, true, { cmd: false, minPoints: 2 })}
+      ${WB.cmd(`evh goal-status ${id}\nevh chart trend --goal ${id}`)}
       <div class="actions"><a class="btn primary" href="#dataset/${encodeURIComponent(id)}">Add a dataset</a><a class="btn" href="#systems/${encodeURIComponent(id)}">Choose the systems</a><a class="btn" href="#eval/${encodeURIComponent(id)}">The eval</a><a class="btn" href="#review/${encodeURIComponent(id)}">Review the outputs</a><a class="btn" href="#production/${encodeURIComponent(id)}">Production</a><a class="btn" href="#heldout/${encodeURIComponent(id)}">The held-out test</a><a class="btn" href="#study/${encodeURIComponent(id)}">Studies</a><a class="btn" href="#goal-edit/${encodeURIComponent(id)}">Edit the goal</a><a class="btn" href="#home">Back to your goals</a></div></div>`;
   }
 
@@ -327,7 +348,7 @@
     const editing = !!goal;
     const ms = load("metrics", "/metrics"), rec = editing ? load(`goalrec:${goal}`, `/goals/${enc(goal)}`) : {};
     const head = `<div class="kicker">Step 1${editing ? ` · ${esc(goal)}` : ""}</div><h1>${editing ? "The goal" : "Set the goal"}</h1>
-      <p class="lead">A goal is the decision this evaluation helps you make. Everything later is measured against it.</p>`;
+      <p class="lead">A goal is the decision this evaluation helps you make. Everything later is measured against it. ${qh("goal")}</p>`;
     if (ms === undefined || rec === undefined) return `<div class="screen">${head}${loading(editing ? "the goal" : "the measures")}</div>`;
     if (ms.error || rec.error) return `<div class="screen">${head}${failed(ms.error ? ms : rec)}</div>`;
     const g = editing ? rec.record : {}, sc = g.success_criteria || {}, pr = sc.primary || {};
@@ -335,21 +356,21 @@
     const radio = (name, val, label, small, on) => `<label class="choice"><input type="radio" name="${name}" value="${val}" ${on ? "checked" : ""}> <span>${esc(label)}${small ? ` <small>${esc(small)}</small>` : ""}</span></label>`;
     const tieSel = (id, cur) => `<select id="${id}" aria-label="${id === "gf-tie1" ? "first" : "then"}">${TIES.map((t) => `<option ${cur === t ? "selected" : ""}>${t}</option>`).join("")}</select>`;
     return `<div class="screen" data-form="goal-form">${head}
-      <div class="field"><label class="name" for="gf-title">What is it?</label><div><input type="text" id="gf-title" value="${esc(g.title || "")}" placeholder="Short news summaries (CNN)">
-        <div class="hint">a short title, as you would say it to a colleague</div>
+      <div class="field">${nm("gf-title", "What is it?", "goal.title")}<div><input type="text" id="gf-title" value="${esc(g.title || "")}" placeholder="Short news summaries (CNN)">
+        ${hint("goal.title")}
         <label class="idline">id <input type="text" id="gf-id" class="idinput" value="${esc(g.goal_id || "")}" placeholder="made from the title" ${editing ? "readonly" : ""} autocapitalize="off" spellcheck="false"></label></div></div>
-      <div class="field"><label class="name" for="gf-statement">What is it for?</label><div><textarea id="gf-statement" rows="2" placeholder="Pick a model that writes a short summary of a news article, at a known cost.">${esc(g.statement || "")}</textarea>
-        <div class="hint">one sentence: what you want, for whom, so that what</div></div></div>
-      <div class="field"><label class="name" for="gf-decision">The decision</label><div><textarea id="gf-decision" rows="2" placeholder="Which models can be told apart on summary quality, and what each costs.">${esc(g.decision || "")}</textarea>
-        <div class="hint">the choice you will make from the result</div></div></div>
-      <div class="field"><label class="name" for="gf-measure">How you'll judge</label><div><input type="text" id="gf-measure" list="gf-measures" value="${esc(pr.measure || "")}" placeholder="overlap_f1" autocapitalize="off" spellcheck="false">
+      <div class="field">${nm("gf-statement", "What is it for?", "goal.statement")}<div><textarea id="gf-statement" rows="2" placeholder="Pick a model that writes a short summary of a news article, at a known cost.">${esc(g.statement || "")}</textarea>
+        ${hint("goal.statement")}</div></div>
+      <div class="field">${nm("gf-decision", "The decision", "goal.decision")}<div><textarea id="gf-decision" rows="2" placeholder="Which models can be told apart on summary quality, and what each costs.">${esc(g.decision || "")}</textarea>
+        ${hint("goal.decision")}</div></div>
+      <div class="field">${nm("gf-measure", "How you'll judge", "goal.measure")}<div><input type="text" id="gf-measure" list="gf-measures" value="${esc(pr.measure || "")}" placeholder="overlap_f1" autocapitalize="off" spellcheck="false">
         <datalist id="gf-measures">${ms.metrics.map((m) => `<option value="${esc(m.metric)}">${esc(m.description || "")}</option>`).join("")}</datalist>
         <div class="choices row" role="radiogroup" aria-label="which way is better">${radio("gf-dir", "higher", "higher is better", "", (pr.direction || "higher") === "higher")}${radio("gf-dir", "lower", "lower is better", "", pr.direction === "lower")}</div>
-        <div class="hint">the number that decides which system is better: one the project's scorers produce, or a new one</div></div></div>
-      <div class="field"><div class="name" id="gf-strategy-l">How a winner is picked</div><div><div class="choices" role="radiogroup" aria-labelledby="gf-strategy-l">${STRATEGIES.map(([v, l, sm]) => radio("gf-strategy", v, l, sm, (sc.strategy || "balanced") === v)).join("")}</div>
+        ${hint("goal.measure")}</div></div>
+      <div class="field"><div class="name"><span id="gf-strategy-l">How a winner is picked</span>${qh("goal.strategy")}</div><div><div class="choices" role="radiogroup" aria-labelledby="gf-strategy-l">${STRATEGIES.map(([v, l, sm]) => radio("gf-strategy", v, l, sm, (sc.strategy || "balanced") === v)).join("")}</div>
         <details class="adv" style="margin-top:8px"><summary>advanced: the margin, the tie-break</summary><div class="form" style="gap:12px;margin-top:12px">
-          <div class="field"><label class="name" for="gf-margin">Margin</label><div><input type="text" id="gf-margin" inputmode="decimal" value="${esc(margin ?? "")}" placeholder="the strategy's default">
-            <div class="hint">how much worse than the best an arm may be and still win, in the measure's units</div></div></div>
+          <div class="field">${nm("gf-margin", "Margin", "goal.margin")}<div><input type="text" id="gf-margin" inputmode="decimal" value="${esc(margin ?? "")}" placeholder="the strategy's default">
+            ${hint("goal.margin")}</div></div>
           <div class="field"><div class="name">Then pick by</div><div class="inline">${tieSel("gf-tie1", tie[0])}${tieSel("gf-tie2", tie[1])}</div></div></div></details></div></div>
       ${byField("gf-by")}
       <div class="actions"><button class="btn primary" type="button" id="gf-save" data-send>${editing ? "Save the goal" : "Make the goal"}</button>${mark}
@@ -450,7 +471,7 @@
     : "";
   function screenDatasetNew(goal) {
     const head = `<div class="kicker">Step 2 · ${esc(goal)}</div><h1>Add a dataset</h1>
-      <p class="lead">The examples your systems will be tested on: a frozen list of items, each with its hash, so every system sees exactly the same ones, now and later.</p>`;
+      <p class="lead">The examples your systems will be tested on: a frozen list of items, each with its hash, so every system sees exactly the same ones, now and later. ${qh("dataset")}</p>`;
     if (!goal) return `<div class="screen">${head}<p class="note">Open it from a goal.</p><div class="actions"><a class="btn" href="#home">Your goals</a></div></div>`;
     const ds = load("datasets", "/datasets"), rec = load(`goalrec:${goal}`, `/goals/${enc(goal)}`);
     if (ds === undefined || rec === undefined) return `<div class="screen wide">${head}${loading("the datasets")}</div>`;
@@ -468,15 +489,15 @@
       <section class="part"><div class="parthead"><h2>Use one you have</h2></div><div class="body">
         ${options ? `<div class="inline"><select id="ds-pick" aria-label="the project's datasets"><option value="">choose one of the project's datasets</option>${options}</select>
           <button class="btn" type="button" id="ds-use" disabled>Use it</button></div>` : '<p class="muted">The project has no other dataset.</p>'}
-        <div class="field"><div class="name" id="ds-role-l">Its role for this goal</div><div class="choices row" role="radiogroup" aria-labelledby="ds-role-l">${roles}</div></div>
+        <div class="field"><div class="name"><span id="ds-role-l">Its role for this goal</span>${qh("dataset.name")}</div><div class="choices row" role="radiogroup" aria-labelledby="ds-role-l">${roles}</div></div>
         <div id="ds-use-out" data-out></div></div></section>
       <section class="part" data-form="dataset-new"><div class="parthead"><h2>Or make one from a source</h2></div><div class="body">
-        <div class="field"><label class="name" for="ds-source">Where from</label><div><select id="ds-source"><option value="">choose a source</option>
+        <div class="field">${nm("ds-source", "Where from", "dataset.from")}<div><select id="ds-source"><option value="">choose a source</option>
           ${Object.entries(SOURCES).map(([k, [name]]) => `<option value="${k}" ${src === k ? "selected" : ""}>${esc(name)}</option>`).join("")}</select></div></div>
-        ${fields.map(([k, hint, ex]) => `<div class="field"><label class="name" for="dsq-${k}">${esc(k)}</label><div><input type="text" id="dsq-${k}" data-q="${k}" value="${esc((d.q || {})[k] ?? "")}" placeholder="${esc(ex)}" autocapitalize="off" spellcheck="false"><div class="hint">${esc(hint)}</div></div></div>`).join("")}
+        ${fields.map(([k, hint, ex]) => `<div class="field"><div class="name"><label for="dsq-${k}">${esc(k)}</label>${k === "text" ? qh("dataset.columns") : ""}</div><div><input type="text" id="dsq-${k}" data-q="${k}" value="${esc((d.q || {})[k] ?? "")}" placeholder="${esc(ex)}" autocapitalize="off" spellcheck="false"><div class="hint">${esc(hint)}</div></div></div>`).join("")}
         ${src ? `<div class="actions" style="margin-top:0"><button class="btn" type="button" id="ds-read">Read it</button><span class="muted">a job: the source's description and its first rows; nothing is saved</span></div>` : ""}
         <div id="ds-read-out" data-out>${said ? `<p class="note">${esc(JSON.stringify(said.source || {}))}${said.licence ? ` · licence ${esc(said.licence)}` : ""}</p>${rows}` : ""}</div>
-        ${src && tabular(src) ? `<h3>Its fields</h3><p class="muted">Facts about each item to slice the results by, proposed from the source's columns; keep the ones you would compare on.</p>
+        ${src && tabular(src) ? `<h3>Its fields ${qh("dataset.fields")}</h3><p class="muted">Facts about each item to slice the results by, proposed from the source's columns; keep the ones you would compare on.</p>
           <div class="actions" style="margin-top:0"><button class="btn" type="button" id="ds-fields">Propose its fields</button></div>
           <div id="ds-fields-out" data-out>${fieldRows(d.fields)}</div>` : ""}
         ${src ? `<div class="field"><label class="name" for="ds-id">Its id</label><div><input type="text" id="ds-id" value="${esc(d.id || "")}" placeholder="cnn_dailymail_200" autocapitalize="off" spellcheck="false"><div class="hint">lowercase letters, digits and _</div></div></div>
@@ -605,7 +626,7 @@
   };
   function screenSystems(goal) {
     const head = `<div class="kicker">Step 4 · ${esc(goal)}</div><h1>Choose the systems</h1>
-      <p class="lead">What is compared is a system: a model where it runs, with a prompt and settings. Each is checked on three items before it costs anything.</p>`;
+      <p class="lead">What is compared is a system: a model where it runs, with a prompt and settings. Each is checked on three items before it costs anything. ${qh("models")}</p>`;
     if (!goal) return `<div class="screen">${head}</div>`;
     const rec = load(`goalrec:${goal}`, `/goals/${enc(goal)}`), sys = load("systems", "/systems"), ms = load("models", "/models");
     if ([rec, sys, ms].includes(undefined)) return `<div class="screen wide">${head}${loading("the systems")}</div>`;
@@ -638,13 +659,13 @@
             <div id="sm-${esc(x.system)}" data-out aria-live="polite">${smokeView(smokes[`${goal}/${x.system}`])}</div><div id="cl-${esc(x.system)}"></div></td></tr>`).join("")}</tbody></table></div>
         ${byField("sm-by")}</div></section>
       <section class="part" data-form="system-new"><div class="parthead"><h2>Make a system from a model</h2></div><div class="body">
-        <div class="field"><label class="name" for="sn-model">The model</label><div><select id="sn-model"><option value="">choose a model that has somewhere to run</option>
+        <div class="field">${nm("sn-model", "The model", "models.pick")}<div><select id="sn-model"><option value="">choose a model that has somewhere to run</option>
           ${runnable.map((m) => { const b = (m.best || []).find((x) => x.goal === goal);
             return `<option value="${esc(m.model)}" ${d.model === m.model ? "selected" : ""}>${esc(m.name || m.model)} · ${esc(m.state)}${b ? ` · #${b.rank} of ${b.of} on this goal` : ""}</option>`; }).join("")}</select>
           <div class="hint">a model not here is brought in first: <a href="#model-new">Bring in a model</a></div></div></div>
         ${d.model ? `<div class="field"><label class="name" for="sn-dep">Where it runs</label><div><select id="sn-dep">${deps.map((x) => `<option ${d.deployment === x ? "selected" : ""}>${esc(x)}</option>`).join("")}</select></div></div>
-        <div class="field"><label class="name" for="sn-prompt">The prompt</label><div><textarea id="sn-prompt" rows="2" placeholder="Summarise the following in one sentence:">${esc(d.prompt)}</textarea><div class="hint">the same for every system, so a difference in the scores is the model's. It is kept as a version of <a class="mono" href="#prompts/${enc(promptName(goal))}">${esc(promptName(goal))}</a>${latest ? ` (now ${esc(latest.id)})` : ""}: a changed text is a new version, and every run records the version it sent</div></div></div>
-        <div class="field"><label class="name" for="sn-temp">Temperature</label><div><input type="text" id="sn-temp" inputmode="decimal" value="${esc(d.temperature)}" style="width:6rem"></div></div>
+        <div class="field">${nm("sn-prompt", "The prompt", "systems.prompt")}<div><textarea id="sn-prompt" rows="2" placeholder="Summarise the following in one sentence:">${esc(d.prompt)}</textarea><div class="hint">${esc((HELPS()["systems.prompt"] || {}).hint || "")} It is kept as a version of <a class="mono" href="#prompts/${enc(promptName(goal))}">${esc(promptName(goal))}</a>${latest ? ` (now ${esc(latest.id)})` : ""}: a changed text is a new version, and every run records the version it sent</div></div></div>
+        <div class="field">${nm("sn-temp", "Temperature", "models.settings")}<div><input type="text" id="sn-temp" inputmode="decimal" value="${esc(d.temperature)}" style="width:6rem"></div></div>
         <div class="field"><label class="name" for="sn-max">At most this many tokens</label><div><input type="text" id="sn-max" inputmode="numeric" value="${esc(d.max_tokens)}" placeholder="the model's default" style="width:10rem"></div></div>
         <div class="field"><label class="name" for="sn-id">Its id</label><div><input type="text" id="sn-id" value="${esc(d.idTyped ? d.id : `${d.model}_${d.deployment || deps[0] || ""}`.replace(/[^A-Za-z0-9_.-]+/g, "_"))}" autocapitalize="off" spellcheck="false"></div></div>
         ${byField("sn-by")}
@@ -757,15 +778,23 @@
   // An evidence chart (RFC-034), drawn by the server as the catalog and `evh chart` draw it: the drawing, its numbers
   // folded under it, and its command. `quiet`: a chart with too little to draw yet leaves no note behind.
   const chartArgs = (p) => Object.entries(p).filter(([, v]) => v).map(([k, v]) => `--${k} ${v}`).join(" ");
-  function chartBox(kind, params, quiet = false) {
+  // `opts.cmd: false` leaves its command to the screen (which shows it once); `opts.minPoints`: a chart of fewer points
+  // is a line of text, not a drawing.
+  function chartBox(kind, params, quiet = false, opts = {}) {
     const qs = new URLSearchParams(Object.entries(params).filter(([, v]) => v)).toString();
     const r = load(`chart:${kind}:${qs}`, `/charts/${kind}?${qs}&optional=1`);
     if (r === undefined) return `<div class="chart-box">${loading("the chart")}</div>`;
     if (r.error) return quiet ? "" : `<div class="chart-box" data-chart="${esc(kind)}"><p class="muted">No chart yet: ${esc(r.error)}</p></div>`;
     const cols = r.columns || [];
+    if (opts.minPoints) {
+      const measure = cols[4], got = (r.rows || []).filter((x) => x[measure] != null);
+      if (got.length < opts.minPoints) {
+        return got.length ? `<p class="muted" data-chart="${esc(kind)}" data-points="${got.length}">One point so far: ${esc(got[0].line)} (${typeof got[0].version === "number" ? `v${got[0].version}` : esc(got[0].version)}), ${esc(measure)} <b>${num(got[0][measure], 3)}</b>. A trend needs two.</p>` : "";
+      }
+    }
     const cell = (v) => (v == null ? "—" : typeof v === "number" ? num(v, 4) : typeof v === "object" ? esc(JSON.stringify(v)) : esc(v));
     return `<div class="chart-box" data-chart="${esc(kind)}">${r.svg}<details class="table"><summary>The numbers</summary><div class="tablewrap"><table><thead><tr>${cols.map((c) => `<th>${esc(c)}</th>`).join("")}</tr></thead>
-      <tbody>${(r.rows || []).map((x) => `<tr>${cols.map((c) => `<td>${cell(x[c])}</td>`).join("")}</tr>`).join("")}</tbody></table></div></details>${WB.cmd(`evh chart ${kind} ${chartArgs(params)}`)}</div>`;
+      <tbody>${(r.rows || []).map((x) => `<tr>${cols.map((c) => `<td>${cell(x[c])}</td>`).join("")}</tr>`).join("")}</tbody></table></div></details>${opts.cmd === false ? "" : WB.cmd(`evh chart ${kind} ${chartArgs(params)}`)}</div>`;
   }
   function screenEval(param) {
     const [goal, wanted] = String(param || "").split("/");
@@ -789,9 +818,9 @@
       : '<p class="muted" style="margin:0">None is in play.</p>';
     // The next round opens from the last one: offered on its tab, not on every closed round before it.
     const openForm = open || (last && cur !== last.round_id) ? "" : `<section class="part" data-form="round-open"><div class="parthead"><h2>Open ${rounds.length ? "the next round" : "the first round"}</h2></div><div class="body">
-        <div class="field"><label class="name" for="ro-q">The round's question</label><div><textarea id="ro-q" rows="2" placeholder="Does a cheaper hosted model match the baseline's coverage?"></textarea><div class="hint">what this round should find out, in one sentence</div></div></div>
+        <div class="field">${nm("ro-q", "The round's question", "eval.question")}<div><textarea id="ro-q" rows="2" placeholder="Does a cheaper hosted model match the baseline's coverage?"></textarea>${hint("eval.question")}</div></div>
         <div class="field"><label class="name" for="ro-ds">On</label><div><select id="ro-ds">${datasets.map((x) => `<option>${esc(x)}</option>`).join("")}</select></div></div>
-        ${last ? `<div class="field"><div class="name" id="ro-keep-l">Carry in from ${esc(last.round_id)}</div><div>${carry}<div class="hint">carried arms are not run again; on another dataset each is read through its runs there</div></div></div>` : ""}
+        ${last ? `<div class="field"><div class="name"><span id="ro-keep-l">Carry in from ${esc(last.round_id)}</span>${qh("eval.carry")}</div><div>${carry}${hint("eval.carry")}</div></div>` : ""}
         <div class="field"><label class="name" for="ro-budget">What it may spend (USD)</label><div><input type="text" id="ro-budget" inputmode="decimal" placeholder="no budget" style="width:8rem"></div></div>
         ${byField("ro-by")}
         <div class="actions" style="margin-top:0"><button class="btn primary" type="button" id="ro-open" data-send>Open the round</button>${mark}</div><div id="ro-out" data-out></div></div></section>`;
@@ -1013,9 +1042,9 @@
         <div class="field"><div class="name" id="rv-mode-l">What you will say</div><div class="choices" role="radiogroup" aria-labelledby="rv-mode-l">
           <label class="choice"><input type="radio" name="rv-mode" value="pick" checked> which is better <small>the arms hidden and shuffled per item, so the pick is not swayed</small></label>
           <label class="choice"><input type="radio" name="rv-mode" value="tags"> what went wrong <small>each output tagged with the failure modes it shows</small></label></div></div>
-        <div class="field"><label class="name" for="rv-modes">Failure modes</label><div><select id="rv-modes">${lists.map((x) => `<option>${esc(x)}</option>`).join("")}<option value="">a new list…</option></select>
+        <div class="field">${nm("rv-modes", "Failure modes", "review.modes")}<div><select id="rv-modes">${lists.map((x) => `<option>${esc(x)}</option>`).join("")}<option value="">a new list…</option></select>
           <div class="inline"><input type="text" id="rv-new-id" placeholder="its id: summaries" style="width:10rem" autocapitalize="off" spellcheck="false"><input type="text" id="rv-new-modes" placeholder="its modes: narration, overlong, truncated" style="min-width:18rem" autocapitalize="off" spellcheck="false"></div>
-          <div class="hint">for "what went wrong": a named list, so tags are counted, not re-invented in each note</div></div></div>
+          ${hint("review.modes")}</div></div>
         ${byField("rv-by")}
         <div class="actions"><button class="btn primary" type="button" id="rv-make">Make the sheet</button><a class="btn" href="#goal/${enc(goal)}">Back to the goal</a></div><div id="rv-out" data-out></div>
         <p class="muted">The expected answers are labelled on their own screen: <a href="#label/${enc(pickDs || "")}">label ${esc(pickDs || "")}'s items</a>.</p>
@@ -1317,7 +1346,7 @@
   }
   function screenPrepare(ds) {
     const head = `<div class="kicker">Step 3 · ${esc(ds)}</div><h1>Prepare the dataset</h1>
-      <p class="lead">Three things a dataset needs before anything runs: its items fetched, a look inside, and the reference set outputs are scored against.</p>`;
+      <p class="lead">Three things a dataset needs before anything runs: its items fetched, a look inside, and the reference set outputs are scored against. ${qh("prepare")}</p>`;
     if (!ds) return `<div class="screen">${head}<p class="note">Open it from a goal's dataset.</p><div class="actions"><a class="btn" href="#home">Your goals</a></div></div>`;
     const d = load(`dataset:${ds}`, `/datasets/${enc(ds)}`);
     if (d === undefined) return `<div class="screen wide">${head}${loading("the dataset")}</div>`;
@@ -2455,8 +2484,76 @@
     });
   }
 
+  // ── the step rail (UXS-005): the goal's five steps and its day-to-day screens, from what the API says of the goal ──
+  // It lives here, not in workbench.js: its states are the live reads (the goal's status, its dataset's parts) and
+  // load() redraws the screen when one lands. workbench.js's render() calls WB.railFor after every screen.
+  const RAIL_STEPS = [
+    { n: 1, id: "goal", name: "The goal" }, { n: 2, id: "dataset", name: "Add a dataset" },
+    { n: 3, id: "prepare", name: "Prepare the dataset" }, { n: 4, id: "systems", name: "Choose the systems" }, { n: 5, id: "eval", name: "Its rounds" },
+  ];
+  const RAIL_DAY = [["review", "Review the outputs"], ["production", "Production"], ["judge", "A judge for this goal"], ["heldout", "The held-out test"], ["study", "Studies"]];
+  const STEP_OF = { "goal-edit": "goal", dataset: "dataset", "dataset-hf": "dataset", prepare: "prepare", label: "prepare", reference: "prepare", systems: "systems", eval: "eval" };
+  const DAY_OF = { review: "review", production: "production", "production-live": "production", "production-labels": "production", "production-replay": "production", judge: "judge", heldout: "heldout", study: "study" };
+  const DATASET_ROUTES = ["prepare", "label", "reference"];
+  // the goal a dataset's screen belongs to: the one the person last had open when it has the dataset, else the first goal that does
+  function goalOfDataset(ds) {
+    if (LIVE.lastGoal) {
+      const st = loadQ(`status:${LIVE.lastGoal}`, `/goals/${enc(LIVE.lastGoal)}/status`);
+      if (st === undefined) return undefined;
+      if (st && !st.error && st.datasets.some((d) => d.dataset === ds)) return LIVE.lastGoal;
+    }
+    const gs = loadQ("goals", "/goals");
+    if (!gs || gs.error) return gs === undefined ? undefined : null;
+    for (const g of gs.goals) {
+      const st = loadQ(`status:${g.goal}`, `/goals/${enc(g.goal)}/status`);
+      if (st === undefined) return undefined;
+      if (st && !st.error && st.datasets.some((d) => d.dataset === ds)) return g.goal;
+    }
+    return null;
+  }
+  const loadQ = (key, path) => load(key, path, false, true);
+  WB.railFor = function railFor(route, layout, rail) {
+    LIVE.railArgs = [route, layout, rail];
+    const none = () => { layout.classList.add("no-rail"); rail.classList.remove("open"); rail.innerHTML = ""; };
+    const [base, ...rest] = route.split("/");
+    const param = rest.length ? decodeURIComponent(rest.join("/")) : "";
+    const cur = STEP_OF[base], day = DAY_OF[base], overview = base === "goal";
+    if (!cur && !day && !overview) return none();
+    const goal = DATASET_ROUTES.includes(base) ? goalOfDataset(param) : param.split("/")[0];
+    if (goal === undefined) { if (!rail.innerHTML) layout.classList.add("no-rail"); return; }
+    if (!goal) return none();
+    LIVE.lastGoal = goal;
+    const st = loadQ(`status:${goal}`, `/goals/${enc(goal)}/status`);
+    if (st && st.error) return none();
+    const rows = st ? st.datasets : [];
+    const d0 = rows.find((x) => x.decides) || rows[0];
+    const detail = d0 ? loadQ(`dataset:${d0.dataset}`, `/datasets/${enc(d0.dataset)}`) : null;
+    const parts = detail && !detail.error ? detail.parts : {};
+    const prepared = !!d0 && !!d0.materialized && !!(parts.profile || {}).present && ((detail.references || []).length > 0 || d0.references.length > 0);
+    const done = st ? {
+      goal: true, dataset: rows.length > 0, prepare: prepared, systems: !!d0 && d0.arms >= 2, eval: st.rounds.some((r) => r.status === "closed"),
+    } : {};
+    const open = { goal: true, dataset: true, prepare: !!done.dataset, systems: !!done.prepare, eval: !!done.prepare };
+    const href = (id) => (!st || open[id]
+      ? { goal: `#goal-edit/${enc(goal)}`, dataset: `#dataset/${enc(goal)}`, prepare: `#prepare/${enc(d0 ? d0.dataset : "")}`, systems: `#systems/${enc(goal)}`, eval: `#eval/${enc(goal)}` }[id]
+      : `#goal/${enc(goal)}`);
+    const here = RAIL_STEPS.find((x) => x.id === cur), dayHere = RAIL_DAY.find(([id]) => id === day);
+    const fold = here ? `Step ${here.n} of ${RAIL_STEPS.length} · ${here.name}` : dayHere ? dayHere[1] : "The steps";
+    layout.classList.remove("no-rail");
+    rail.innerHTML = `<button type="button" class="railtoggle" aria-expanded="${rail.classList.contains("open")}">${esc(fold)} ▾</button>
+      <div class="label">Goal</div><div class="goalname">${esc((st && st.title) || goal)}</div>
+      <a class="step" href="#goal/${enc(goal)}" ${overview ? 'aria-current="page"' : ""}><span class="dot">≡</span>Overview</a>
+      ${RAIL_STEPS.map((x) => {
+        const locked = !!st && !open[x.id];
+        const cls = done[x.id] ? "done" : locked ? "locked" : cur === x.id ? "now" : "";
+        return `<a class="step ${cls}" data-step="${x.id}" href="${href(x.id)}" ${cur === x.id ? 'aria-current="page"' : ""} ${locked ? 'title="Finish the step before it first"' : ""}><span class="dot">${done[x.id] ? "✓" : x.n}</span>${esc(x.name)}</a>`;
+      }).join("")}
+      <div class="label" style="margin-top:18px">Day to day</div>
+      ${RAIL_DAY.map(([id, name]) => `<a class="step" data-day="${id}" href="#${id}/${enc(goal)}" ${day === id ? 'aria-current="page"' : ""}><span class="dot">·</span>${esc(name)}</a>`).join("")}`;
+  };
+
   // ── links out: the catalog this server builds, and the harness's docs ───────────────────────
-  const DOCS = "https://evals.humancopilot.eu/docs/";
+  const DOCS = window.DOCS_BASE || "https://evals.humancopilot.eu/docs/";
   const screenOut = (title, href, what) => () => `<div class="screen"><div class="kicker">Out of the Workbench</div><h1>${esc(title)}</h1>
       <p class="lead">${esc(what)}</p><div class="actions"><a class="btn primary" href="${esc(href)}">Open it ↗</a><a class="btn" href="#home">Your goals</a></div></div>`;
 
@@ -2487,6 +2584,7 @@
     // a route the live Workbench does not have is the home
     for (const k of Object.keys(WB.routes)) if (!(k in WIRED)) WB.routes[k] = [screenHome];
     for (const [k, v] of Object.entries(WIRED)) if (v) WB.routes[k] = v;
+    Object.assign(WB.routes, OWN);
     WB.routes.start = [screenHome];
     if (!location.hash || location.hash === "#start") location.hash = "#home";
     WB.render();
@@ -2494,6 +2592,8 @@
 
   // Until the project answers, no screen is drawn. A refusal (its data at another format) is the project's: live. No
   // answer, or no API (404): the page was opened some other way, and says how to open it.
+  // the Words screen is workbench.js's own: it reads no project, so the "opening" placeholders below leave it alone
+  const OWN = { glossary: WB.routes.glossary };
   const opening = (title, text) => `<div class="screen"><h1>${title}</h1><p class="lead">${text}</p></div>`;
   for (const k of Object.keys(WB.routes)) WB.routes[k] = [() => opening("Workbench", "Opening this project…")];
   WB.render(true);

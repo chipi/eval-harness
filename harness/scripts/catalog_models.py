@@ -482,8 +482,8 @@ def yes_no(v: bool) -> str:
 
 def version_rows(rec: dict) -> list[list[str]]:
     """A code record's versions, newest first, as text: the commit, when it ran in production, what changed, and
-    how faithfully a replay reproduced it (R; "not checked" until a replay has run). The page and `evh model-list
-    --model` both read these."""
+    how faithfully a replay reproduced it (R; "not checked" until a replay has run). The page and `evh model-show <id>`
+    both read these."""
     rows = []
     for v in reversed([v for v in rec.get("versions") or [] if isinstance(v, dict)]):
         ran = "; ".join(

@@ -26,6 +26,8 @@
   // It opens with focus on its close button (it sits after the screen) and gives focus back to what opened it.
   let opener = null;
   const shut = () => { if (help.hidden) return; help.hidden = true; document.querySelectorAll(".q[aria-expanded=true]").forEach((x) => x.setAttribute("aria-expanded", "false")); if (opener && opener.isConnected) opener.focus(); opener = null; };
+  // a "more" label names a docs page of the published site (help.js: HELP_DOCS); one it does not know opens the site's start
+  const docsHref = (label) => (window.DOCS_BASE || "") + ((window.HELP_DOCS || {})[label] || "");
   function openHelp(key, btn) {
     document.querySelectorAll(".q[aria-expanded=true]").forEach((b) => b.setAttribute("aria-expanded", "false"));
     const h = H[key];
@@ -34,11 +36,12 @@
     const row = (k, v) => (v ? `<div><dt>${k}</dt><dd>${esc(v)}</dd></div>` : "");
     help.innerHTML = `<header><h2>${esc(h.title)}</h2><button type="button" data-close aria-label="Close">×</button></header>
       <dl>${row("What it is", h.what)}${row("Why it matters", h.why)}${row("Example", h.example)}${row("If it is wrong", h.wrong)}</dl>
-      ${h.more ? `<p class="more">Read more: <a href="#docs">${esc(h.more)} ↗</a></p>` : ""}`;
+      ${h.more ? `<p class="more">Read more: <a href="${esc(docsHref(h.more))}" target="_blank" rel="noopener">${esc(h.more)} ↗</a></p>` : ""}`;
     help.hidden = false;
     opener = btn || document.activeElement; help.querySelector("[data-close]").focus();
   }
   function openWord(word) {
+    if (H[word]) { openHelp(word, null); return; }
     help.innerHTML = `<header><h2>${esc(word)}</h2><button type="button" data-close aria-label="Close">×</button></header>
       <dl><div><dt>Meaning</dt><dd>${esc(G[word])}</dd></div></dl><p class="more"><a href="#glossary">Every word ↗</a></p>`;
     help.hidden = false;
@@ -57,6 +60,51 @@
     if ((e.key === "Enter" || e.key === " ") && e.target.matches("dfn[data-word]")) { e.preventDefault(); openWord(e.target.dataset.word); }
   });
 
+  // ── the help layer, over a drawn screen ──────────────────────────────────
+  // A heading that is a help.js entry's title gets its ? (the entry's key, found by the title); a screen's lead gets the
+  // ? of its step. A word of the glossary is underlined the first time it appears on the screen, in running text only.
+  const TITLE_KEY = {};
+  for (const [k, v] of Object.entries(H)) if (v.title && !(v.title in TITLE_KEY)) TITLE_KEY[v.title] = k;
+  const LEAD_KEY = { "goal-new": "goal", "goal-edit": "goal", dataset: "dataset", prepare: "prepare", systems: "models", eval: "eval", heldout: "heldout", study: "study", jobs: "jobs.what" };
+  const WORDS = Object.keys(G).filter((k) => /^[A-Za-z][A-Za-z -]*$/.test(k)).sort((a, b) => b.length - a.length);
+  const SKIP = "a, button, code, pre, dfn, h1, h2, h3, label, th, textarea, select, option, summary, svg, .kicker, .cmd, .tag, .mono, .hint, .q, [data-out], .tablewrap";
+  function helpify(base) {
+    main.querySelectorAll("h2, h3").forEach((h) => {
+      if (h.querySelector(".q") || h.closest("[data-out]")) return;
+      const text = h.textContent.trim();
+      const key = TITLE_KEY[text] || Object.keys(TITLE_KEY).find((t) => text.startsWith(`${t} on `));
+      if (key) h.insertAdjacentHTML("beforeend", ` ${q(TITLE_KEY[text] ? key : TITLE_KEY[key])}`);
+    });
+    const lead = main.querySelector(".lead");
+    if (lead && LEAD_KEY[base] && H[LEAD_KEY[base]] && !lead.querySelector(".q")) lead.insertAdjacentHTML("beforeend", ` ${q(LEAD_KEY[base])}`);
+    const seen = new Set();
+    const nodes = [];
+    const walk = document.createTreeWalker(main, NodeFilter.SHOW_TEXT);
+    for (let n = walk.nextNode(); n; n = walk.nextNode()) if (n.nodeValue.trim() && !n.parentElement.closest(SKIP)) nodes.push(n);
+    for (const node of nodes) {
+      let at = node;
+      for (;;) {
+        const left = WORDS.filter((x) => !seen.has(x));
+        if (!left.length) return;
+        const m = new RegExp(`\\b(${left.map((x) => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})(?:s|es)?\\b`, "i").exec(at.nodeValue);
+        if (!m) break;
+        const key = left.find((x) => x.toLowerCase() === m[1].toLowerCase());
+        seen.add(key);
+        const rest = at.splitText(m.index);
+        const after = rest.splitText(m[0].length);
+        const d = document.createElement("dfn");
+        d.dataset.word = key;
+        d.title = G[key];
+        d.tabIndex = 0;
+        d.setAttribute("role", "button");
+        d.textContent = rest.nodeValue;
+        rest.replaceWith(d);
+        if (H[key]) d.insertAdjacentHTML("afterend", q(key));
+        at = after;
+      }
+    }
+  }
+
   // ── the journey rail ─────────────────────────────────────────────────────
   const STEPS = [
     { n: 1, id: "goal", name: "Goal" },
@@ -70,6 +118,8 @@
   const open = (id) => ({ goal: true, dataset: !!S.goal, prepare: !!S.dataset, models: prepared(), eval: prepared() })[id];
   const OUTSIDE = ["start", "home", "jobs", "settings", "glossary", "model-new", "production-live", "production-labels", "production-replay", "catalog", "docs"];
   function drawRail(route) {
+    // the live Workbench (live.js) draws the rail from what the API says of the goal; this one is the mockup's own, from its browser state
+    if (window.WB.railFor) { window.WB.railFor(route, layout, rail); return; }
     if (!S.goal || OUTSIDE.includes(route)) { layout.classList.add("no-rail"); rail.innerHTML = ""; return; }
     layout.classList.remove("no-rail");
     const cur = route.startsWith("dataset") ? "dataset" : route === "goal-edit" ? "goal" : route;
@@ -713,7 +763,7 @@ success_criteria:
   // ── the glossary ─────────────────────────────────────────────────────────
   function screenGlossary() {
     return `<div class="screen"><div class="kicker">Words</div><h1>The harness's words</h1>
-      <p class="lead">Every screen uses these, taught where they first appear. The same text as the ? panels.</p>
+      <p class="lead">The words the screens use. On a screen the first one of each is underlined: point at it for its meaning, click it for the longer explanation where there is one.</p>
       <dl class="gloss">${Object.entries(G).map(([k, v]) => `<dt id="w-${slug(k)}">${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}</dl></div>`;
   }
   const outside = (what) => `<div class="screen"><h1>${what}</h1>${note("a link out of the Workbench; not part of the mockup.")}<div class="actions"><a class="btn" href="#hub">Back</a></div></div>`;
@@ -786,6 +836,7 @@ success_criteria:
     main.innerHTML = html;
     main.querySelectorAll("details.cmd").forEach((d) => { if ((S.openCmds || []).includes(d.querySelector("summary").textContent)) d.open = true; });
     drawRail(route);
+    if (window.WB.railFor) helpify(base); // the live Workbench only: the frozen mockup marks its own words
     retype(kept);
     if (wire) wire();
     resay(told);
@@ -838,7 +889,7 @@ success_criteria:
     shownHash = location.hash;
     // a new screen reads afresh: what a job wrote on another screen (a sweep's runs) shows here (the live pages' reads)
     if (window.LIVE) window.LIVE.cache = {};
-    help.hidden = true; render(true); window.scrollTo(0, 0);
+    help.hidden = true; rail.classList.remove("open"); render(true); window.scrollTo(0, 0);
   });
   // the screens are routes in the hash: the skip link focuses the screen without changing it
   document.querySelector("a.skip")?.addEventListener("click", (e) => { e.preventDefault(); main.focus(); });

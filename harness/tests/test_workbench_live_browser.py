@@ -157,6 +157,13 @@ try:
         ("goal-new", "tickets_summary", "--set", "title=Ticket summaries", "--set", "statement=A one-line summary of a ticket.",
          "--set", "decision=Which system writes it.", "--set", "success_criteria.primary.measure=overlap_f1",
          "--set", "success_criteria.primary.direction=higher", "--set", "datasets.0.dataset_id=tk_v1", "--set", "datasets.0.role=test"),
+        ("dataset-create", "--dataset-id", "rv1", "--source-dir", "tickets"),
+        ("goal-new", "rail_a", "--set", "title=Rail without a dataset", "--set", "statement=s.", "--set", "decision=d.",
+         "--set", "success_criteria.primary.measure=overlap_f1", "--set", "success_criteria.primary.direction=higher",
+         "--set", "datasets=[]"),
+        ("goal-new", "rail_b", "--set", "title=Rail with a dataset", "--set", "statement=s.", "--set", "decision=d.",
+         "--set", "success_criteria.primary.measure=overlap_f1", "--set", "success_criteria.primary.direction=higher",
+         "--set", "datasets.0.dataset_id=rv1", "--set", "datasets.0.role=validation"),
         ("catalog",),
     ):  # fmt: skip
         r = r if r.returncode else evh(*step)
@@ -544,6 +551,9 @@ try:
             page.wait_for_selector("h1:has-text('Choose the systems')", timeout=20000)
             page.select_option("#sn-model", "fake-1b")
             page.wait_for_selector("#sn-dep", timeout=20000)
+            page.wait_for_selector(
+                "#sn-dep option", state="attached", timeout=20000
+            )  # the model's deployments are read
             page.fill("#sn-prompt", "Summarise the ticket in one line:")
             page.fill("#sn-max", "50")
             page.fill("#sn-by", "tester")
@@ -1162,6 +1172,11 @@ try:
             check("setup: a second label set on tk_v1", r.returncode == 0, r.stderr[-300:])
             page.goto(f"http://127.0.0.1:{port}/workbench/#reference/tk_v1")
             page.wait_for_selector("#mv-go", timeout=20000)
+            # a read landing after a choice redraws the screen and resets the choice: let the screen's reads land first
+            page.wait_for_function(
+                "() => !document.querySelector('main').textContent.includes('Reading')", timeout=20000
+            )
+            page.wait_for_timeout(1500)
             now = page.locator("main").inner_text()
             check(
                 "W6 reads its reference sets and label sets (reference-list, label-set-list), with how often two agree",
@@ -1798,6 +1813,293 @@ try:
                 "the open-round form is on the last round's tab, not on a closed round before it",
                 len(rounds) >= 2 and forms == {rounds[0]: 0, rounds[-1]: 1},
                 (rounds, forms),
+            )
+            # ── the step rail, the help layer and the goal screen's own lines ────────────────────────────────────
+            base_url = f"http://127.0.0.1:{port}/workbench/"
+            RAIL_JS = (
+                "() => Object.fromEntries([...document.querySelectorAll('#rail a.step[data-step]')].map((a) => "
+                "[a.dataset.step, [a.className.replace('step', '').trim(), a.getAttribute('href'), "
+                "a.getAttribute('aria-current') || '']]))"
+            )
+
+            def rail_of(pg, screen: str, wait_for: str | None = None) -> dict:
+                """The rail's five steps on a screen: {step: [state class, href, aria-current]}, once its reads landed."""
+                pg.goto(f"{base_url}#{screen}")
+                pg.reload()  # the reads are kept until the screen changes: a new state of the project is read afresh
+                pg.wait_for_selector("#rail a.step[data-step]", state="attached", timeout=20000)
+                pg.wait_for_function(
+                    "() => !document.querySelector('main').textContent.includes('Reading')", timeout=20000
+                )
+                pg.wait_for_timeout(600)
+                return pg.evaluate(RAIL_JS)
+
+            def states(r: dict) -> dict:
+                return {k: v[0] for k, v in r.items()}
+
+            r_a = rail_of(page, "goal/rail_a")
+            check(
+                "the rail of a goal with no dataset: the goal done, Add a dataset open, the rest locked and linking to the goal",
+                states(r_a)
+                == {"goal": "done", "dataset": "", "prepare": "locked", "systems": "locked", "eval": "locked"}
+                and all(r_a[k][1] == "#goal/rail_a" for k in ("prepare", "systems", "eval"))
+                and r_a["dataset"][1] == "#dataset/rail_a"
+                and r_a["goal"][1] == "#goal-edit/rail_a",
+                r_a,
+            )
+            rail_txt = page.locator("#rail").inner_text()
+            day_links = page.evaluate(
+                "() => [...document.querySelectorAll('#rail a[data-day]')].map((a) => [a.textContent.replace('·', '').trim(), a.getAttribute('href')])"
+            )
+            check(
+                "the rail names the goal, has an Overview link to the goal screen, and the five day-to-day screens",
+                "Rail without a dataset" in rail_txt
+                and page.locator("#rail a.step:has-text('Overview')").get_attribute("aria-current") == "page"
+                and day_links == [
+                    ["Review the outputs", "#review/rail_a"], ["Production", "#production/rail_a"],
+                    ["A judge for this goal", "#judge/rail_a"], ["The held-out test", "#heldout/rail_a"],
+                    ["Studies", "#study/rail_a"],
+                ],
+                (rail_txt, day_links),
+            )  # fmt: skip
+            on_ds = rail_of(page, "dataset/rail_a")
+            on_sys = rail_of(page, "systems/tickets_summary")
+            on_day = rail_of(page, "review/tickets_summary")
+            check(
+                "the current step carries aria-current on its own screen (the dataset, the systems), and no step on a day-to-day screen",
+                on_ds["dataset"][2] == "page"
+                and sum(1 for v in on_ds.values() if v[2]) == 1
+                and on_sys["systems"][2] == "page"
+                and sum(1 for v in on_sys.values() if v[2]) == 1
+                and not any(v[2] for v in on_day.values())
+                and page.locator("#rail a[data-day=review]").get_attribute("aria-current") == "page",
+                (on_ds, on_sys, on_day),
+            )
+            (proj / "data" / "systems" / "two_v1.yaml").write_text(
+                "system_id: two_v1\nparams:\n  provider: echo\n  sentences: 2\n"
+            )
+            r_b = rail_of(page, "goal/rail_b")
+            check(
+                "the rail with a dataset named and not fetched: Add a dataset done, Prepare open and not done, the rest locked",
+                states(r_b)
+                == {"goal": "done", "dataset": "done", "prepare": "", "systems": "locked", "eval": "locked"}
+                and r_b["prepare"][1] == "#prepare/rv1",
+                r_b,
+            )
+            evh("dataset-materialize", "--dataset-id", "rv1")
+            evh("dataset-profile", "--dataset-id", "rv1")
+            r_c = rail_of(page, "prepare/rv1")
+            check(
+                "fetched and looked at but with no reference set, Prepare is not done (and, on its own screen, the rail is found by the dataset)",
+                states(r_c)["prepare"] == "now"
+                and states(r_c)["systems"] == "locked"
+                and r_c["prepare"][2] == "page"
+                and "Rail with a dataset" in page.locator("#rail").inner_text(),
+                r_c,
+            )
+            evh(
+                "label-import", "--sheet", str(KIT / "gold"), "--dataset-id", "rv1", "--set", "g", "--by", "t"
+            )
+            evh(
+                "reference-promote",
+                "--dataset-id",
+                "rv1",
+                "--labels",
+                "g",
+                "--tier",
+                "gold",
+                "--reason",
+                "for the rail test",
+                "--by",
+                "t",
+            )
+            evh("run", "--system", "one_v1", "--dataset", "rv1")
+            r_d = rail_of(page, "goal/rail_b")
+            check(
+                "prepared (fetched, a profile, a reference set), with one system's run: Prepare done, Choose the systems open and not done",
+                states(r_d)
+                == {"goal": "done", "dataset": "done", "prepare": "done", "systems": "", "eval": ""}
+                and r_d["systems"][1] == "#systems/rail_b"
+                and r_d["eval"][1] == "#eval/rail_b",
+                r_d,
+            )
+            evh("run", "--system", "two_v1", "--dataset", "rv1")
+            r_e = rail_of(page, "goal/rail_b")
+            check(
+                "two systems with runs on the dataset: Choose the systems done, Its rounds not yet",
+                states(r_e)["systems"] == "done" and states(r_e)["eval"] == "",
+                r_e,
+            )
+            evh(
+                "round-open",
+                "--goal",
+                "rail_b",
+                "--dataset",
+                "rv1",
+                "--hypothesis",
+                "is two better than one?",
+            )
+            rr = evh("round-list", "rail_b", "--json")
+            rid = json.loads(rr.stdout)["result"]["rounds"][0]["round_id"]
+            r_e2 = rail_of(page, "goal/rail_b")
+            check("an open round does not finish the eval step", states(r_e2)["eval"] == "", r_e2)
+            leader = sorted(
+                x.name for x in (proj / "data" / "runs").iterdir() if x.name.startswith("one_v1")
+            )[-1]
+            closed = evh(
+                "round-close",
+                "--goal",
+                "rail_b",
+                "--round",
+                rid,
+                "--conclusion",
+                "one is enough",
+            )
+            r_f = rail_of(page, "goal/rail_b")
+            check(
+                "a closed round: Its rounds done",
+                closed.returncode == 0
+                and states(r_f) == dict.fromkeys(("goal", "dataset", "prepare", "systems", "eval"), "done"),
+                (closed.stdout[-300:], closed.stderr[-300:], r_f),
+            )
+
+            promoted = evh(
+                "run-promote", "--run", leader, "--goal", "rail_b", "--reason", "for the trend test"
+            )
+            check(
+                "setup: one baseline version, the trend's one point",
+                promoted.returncode == 0,
+                promoted.stderr[-300:],
+            )
+            phone_rail = browser.new_context(
+                viewport={"width": 390, "height": 844}, storage_state=page.context.storage_state()
+            ).new_page()
+            rail_of(phone_rail, "systems/rail_b")
+            toggle = phone_rail.locator("#rail .railtoggle")
+            folded = phone_rail.locator("#rail a.step[data-step=eval]").is_visible()
+            toggle.click()
+            after = phone_rail.locator("#rail a.step[data-step=eval]").is_visible()
+            check(
+                "at 390 px the rail folds to one line, 'Step 4 of 5 · Choose the systems', and opening it lists the steps",
+                toggle.inner_text().strip() == "Step 4 of 5 · Choose the systems ▾"
+                and not folded
+                and after
+                and toggle.get_attribute("aria-expanded") == "true"
+                and phone_rail.evaluate("document.documentElement.scrollWidth - window.innerWidth") <= 0,
+                (toggle.inner_text(), folded, after),
+            )
+
+            # a goal's screen shows its command once; a trend of one point is a line of text, not a drawing
+            page.goto(f"{base_url}#goal/rail_b")
+            page.reload()
+            try:
+                page.wait_for_selector("[data-chart=trend]", timeout=20000)
+            except Exception:  # noqa: BLE001 - the check below says what the screen showed
+                pass
+            trend_text = (
+                page.locator("[data-chart=trend]").inner_text()
+                if page.locator("[data-chart=trend]").count()
+                else page.locator("main").inner_text()
+            )
+            cmds = page.locator("main details.cmd").count()
+            check(
+                "the goal screen shows 'the command this runs' once, both commands in it",
+                cmds == 1
+                and "evh chart trend --goal rail_b"
+                in (page.locator("main details.cmd pre").text_content() or ""),
+                cmds,
+            )
+            check(
+                "a trend with one point is a line of text ('One point so far'), with no drawing",
+                "One point so far" in trend_text
+                and page.locator("[data-chart=trend] svg").count() == 0
+                and page.locator("[data-chart=trend]").evaluate("(e) => e.getBoundingClientRect().height")
+                < 80,
+                (
+                    trend_text[:300],
+                    page.evaluate(
+                        "() => fetch('/api/v1/charts/trend?goal=rail_b&optional=1', {credentials: 'same-origin'})"
+                        ".then((r) => r.text())"
+                    )[:700],
+                ),
+            )
+
+            # the help layer: the ? opens its panel with the texts and a real docs link; a word is underlined once
+            page.goto(f"{base_url}#goal-edit/tickets_summary")
+            page.wait_for_selector("#gf-title", timeout=20000)
+            page.locator(".q[data-help='goal.title']").click()
+            panel = page.locator("#help")
+            panel_txt = panel.inner_text()
+            more = panel.locator("p.more a")
+            check(
+                "the ? beside a field opens its panel: what it is, an example, a link into the published docs",
+                panel.is_visible()
+                and "Shown on every page about this goal" in panel_txt
+                and "example" in panel_txt.lower()
+                and more.count() == 1
+                and (more.get_attribute("href") or "").startswith("https://evals.humancopilot.eu/docs/")
+                and "#docs" not in (more.get_attribute("href") or ""),
+                (panel_txt[:200], more.get_attribute("href")),
+            )
+            panel.locator("[data-close]").click()
+            dfns = page.locator("main dfn[data-word='goal']")
+            check(
+                "a glossary word is underlined the first time it appears on a screen only, with its meaning on hover",
+                dfns.count() == 1 and len(dfns.first.get_attribute("title") or "") > 20,
+                dfns.count(),
+            )
+            page.locator("main dfn[data-word='goal']").first.click()
+            check(
+                "clicking the word opens its longer explanation",
+                page.locator("#help").is_visible() and "The goal" in page.locator("#help").inner_text(),
+                None,
+            )
+            page.goto(f"{base_url}#glossary")
+            try:
+                page.wait_for_selector("dl.gloss", timeout=20000)
+            except Exception:  # noqa: BLE001 - the check below says what the screen showed
+                print("  glossary screen:", page.locator("main").inner_text()[:300], errors[:3])
+            check(
+                "the Words screen's lead says what is true: first appearance underlined, point for the meaning, click for the longer text",
+                "underlined" in page.locator("main .lead").inner_text()
+                and "same text as the ? panels" not in page.locator("main").inner_text(),
+                page.locator("main .lead").inner_text(),
+            )
+            page.goto(f"{base_url}#prepare/rv1")
+            page.wait_for_selector("main h2:has-text('Fetch its items')", timeout=20000)
+            check(
+                "the headings help.js covers carry their ? (Fetch its items opens its panel)",
+                page.locator("main h2:has-text('Fetch its items') .q").count() == 1,
+                None,
+            )
+
+            # a page left open after a server restart: the call's 401 says so, as the first-load screen does
+            good = page.context.cookies()
+            page.context.add_cookies(
+                [
+                    {
+                        "name": c["name"],
+                        "value": "not-the-new-token",
+                        "domain": c["domain"],
+                        "path": c["path"],
+                    }
+                    for c in good
+                ]
+            )
+            page.goto(f"{base_url}#goal/tickets_summary")
+            page.wait_for_function(
+                "() => document.querySelector('main').textContent.includes('restarted')", timeout=20000
+            )
+            said = page.locator("main").inner_text()
+            check(
+                "a call that answers 401 says the server was restarted and to open the link it printed",
+                "was restarted" in said and "evh catalog-serve printed" in said,
+                said[:300],
+            )
+            page.context.add_cookies(
+                [
+                    {"name": c["name"], "value": c["value"], "domain": c["domain"], "path": c["path"]}
+                    for c in good
+                ]
             )
             stranger = browser.new_context().new_page()
             stranger.goto(f"http://127.0.0.1:{port}/workbench/")

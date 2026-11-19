@@ -461,3 +461,6 @@ main .chart.evidence svg[role="img"] text { font-size: 12.5px; }
 .chart.evidence figcaption { margin-top: 6px; font-size: 13px; color: var(--ink-2); }
 .chart-box details.table { margin: 4px 0 0; font-size: 13px; }
 .chart-box details.table summary { cursor: pointer; color: var(--ink-2); }
+
+/* the rail opened on a phone lists the steps one under the other */
+@media (max-width: 900px) { .rail.open { flex-direction: column; } .rail.open .label, .rail.open .goalname { display: block; } }
