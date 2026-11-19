@@ -44,7 +44,11 @@ with `evh comparison-show --round rN`); comparing arms across datasets.
 
 `inspect.html?runs=<arm>,<arm>,...&baseline=<arm>&metric=<name>&where=<field>:<value>&by=<field>`.
 Links from the catalog may also carry `family` and `threshold`, so a verdict reached from a
-goal page matches the one that page implied. Every control rewrites the URL and reloads.
+goal page matches the one that page implied. `rescore=0` reads only what is on record (the
+re-score box unticked) and `disagree=1` keeps the items where the arms decided differently. The
+sheet's state is `dataset=<id>&sheet=1` with `only=` (once per signal kept: `wrong`, `new`,
+`disagree`, `split`, `unlabelled`), `wrong=<label set>`, `new=<dataset>` and `scores=only`.
+Every control rewrites the URL and reloads.
 `&item=<id>` opens that item's view once the comparison has loaded (a dataset page's **inspect**
 link); an item the arms do not share says so instead.
 
@@ -93,10 +97,10 @@ A project's own builder without `pick.js` keeps the plain picker: each chosen ar
   for a boolean, `min..max` or one value for numbers and durations, an exact value otherwise) and
   **Filter**; each filter becomes a chip with ×. Shown when the dataset declares fields.
 - **break down by** a `choice` or `boolean` field, or none.
-- **scored against** (0.6.0: RFC-023): the reference (its tier pill) or a label set (its source chip and
+- **scored against**: the reference (its tier pill) or a label set (its source chip and
   name) the scores are read against; arms scored against different ones
   are named and not tested, as for two references.
-- **only where they disagree** (0.6.0): a checkbox keeping the items where the chosen arms decided
+- **only where they disagree**: a checkbox keeping the items where the chosen arms decided
   differently (the adapter's `same(a, b)`), the baseline (production's recorded arm by default when it is chosen)
   against each other arm.
 
@@ -184,8 +188,7 @@ muted; the baseline `--baseline`) on every chart, never a colour by rank. A lege
 Hovering a dot shows its arm, item and value. Below 700px the charts switch to a narrow layout
 (labels above each row) rather than scroll. Past 500 items a run, a row draws 60 shaded bins instead of a dot each (the
 darker, the more items; hovering one says how many, between what values), and past 2,000 points in all the scatter
-is a shaded grid with the averages' crosses on it (PLAN_0.8.0 S3: at 10,000 items and 40 arms the dots were 1.2
-million).
+is a shaded grid with the averages' crosses on it.
 
 ## 03 per item
 
@@ -209,10 +212,10 @@ every catalog table, and only the rows shown are drawn: "show 10 more", and "sho
   judged arm, the same line gives each judge's score for that item.
 - In a catalog built by `evh catalog`, arm names (verdicts, the baseline line, average-only and
   breakdown rows) and the verdicts' metric link to their pages.
-- (0.6.0) **Every label the item has**, each with its source chip, set name, who made it and note, above the
+- **Every label the item has**, each with its source chip, set name, who made it and note, above the
   outputs (the local inspector only); a recorded arm's output is headed "production, recorded" with its capture.
 
-## 05 sheet (0.6.0: RFC-023)
+## 05 sheet
 
 Opened from a dataset ("Open its sheet", production's recorded arm chosen first) or with
 `?dataset=<id>&sheet=1[&runs=…][&item=<id>]`: one dataset's items, not a comparison. The local inspector only
@@ -265,22 +268,23 @@ browser, the same model.
 
 | on the page | in the terminal |
 | --- | --- |
-| choose arms, baseline, metric | `evh comparison-show --runs a,b [--baseline a] [--metric m]` (system ids are looked up under `--from`, default `runs`) |
+| choose arms, baseline, metric | `evh comparison-show --runs a,b [--baseline a] [--metric m]` (a system id is looked up under `--label`: "" for the plain arm, `silver`, `repeats`, "rescored <id>", `judged/<scorer>`; `evh runs-list` shows what is there) |
 | a round's arms (the goal page's **inspect** button on a round) | `evh comparison-show --round rN [--goal g]`: the goal's measure, against the round's leader; arms with no score on it are named and left out |
 | filter, breakdown | `--where field:value` (repeatable), `--by field` |
 | notes, verdicts, conditions, breakdown | printed in that order (notes as `NOTE:` lines) |
 | the item view | `evh comparison-item --runs A,B --item <item_id>`: fields, the item itself, the reference, each arm's output under `(run <run_id>)`, or `(run <run_id> · shown the latest of N repeats; the score is the mean of all N)` for a repeated arm |
 | the per-item table | `evh sheet-show D --runs a,b`: every item's score per arm (the sheet; `--scores-only` leaves the outputs out) |
-| only where they disagree (0.6.0) | `--disagree 1` (an arm scored against a label set is chosen like any) |
-| the sheet (0.6.0) | `evh sheet-show D --runs A,B [--metric M\|SCORER/M] [--wrong-against SET] [--new-vs V] [--disagree] [--split] [--unlabelled] [--where field:value] [--by field] [--scores-only]` |
-| the sheet's download (0.6.0) | `evh sheet-export --dataset-id D --runs A,B --csv FILE`; `--fill label [--choices a,b]` adds the columns to fill; `--fill pick\|scores [--seed N] [--rubric FILE] [--scale LO..HI]` writes blind columns and a key, read back by `evh sheet-import` |
-| selecting rows: the pick and sheet commands (0.6.0) | `evh pick --dataset-id D --item …`; `evh label-sheet --dataset-id D --item …` |
+| only where they disagree | `--disagree 1` (an arm scored against a label set is chosen like any) |
+| the sheet | `evh sheet-show D --runs A,B [--metric M\|SCORER/M] [--wrong-against SET] [--new-vs V] [--disagree] [--split] [--unlabelled] [--where field:value] [--by field] [--scores-only]` |
+| the sheet's download | `evh sheet-export --dataset-id D --runs A,B --csv FILE`; `--fill label [--choices a,b]` adds the columns to fill; `--fill pick\|scores [--seed N] [--rubric FILE] [--scale LO..HI]` writes blind columns and a key; `--fill tags --modes <failure-mode list>` adds a `failure_modes` column beside each arm's output and a key; all read back by `evh sheet-import` |
+| selecting rows: the pick and sheet commands | `evh pick --dataset-id D --item …`; `evh label-sheet --dataset-id D --item …` |
 | two per-item scores against each other (terminal only) | `evh comparison-crosstab --runs A --crosstab M1,M2 [--group FIELD [--group-match REGEX]] [--where F:V] [--max-ids N]`: per group of a field of the run's prediction rows (a dotted path, `_meta.gates`; a part of a packed string with `--group-match`, its first `(…)`), the items counted by `M1` (down) and `M2` (across) with totals, and the ids of each cell off the diagonal; a missing value is `none`; `--json` carries every id |
 | each item's outputs and reference together (terminal only) | `evh comparison-items --runs A,B [--disagree] [--where F:V] [--baseline A] [--max-chars N]`: per item each run's decision, whole output, scores and recorded `_meta`, the references and labels; text cuts an output at `--max-chars` (300) and leaves a JSON output's `_` keys out, `--json` is whole |
 | the analysis charts | `--analysis`: the spread per arm and the difference from the baseline, per item, as numbers; `--x <metric>` adds each arm's mean on a second metric (the scatter) |
 
 For an agent, each of these is an MCP tool named as its command: `comparison-show` (`runs`, `baseline`, `metric`,
-`where`, `by`, `disagree`, `analysis`, `x`, `round`, `goal`, `label`, `rescore`), `comparison-item` (`runs`, `item`),
+`where`, `by`, `disagree`, `analysis`, `x`, `round`, `goal`, `label`, `rescore`, `family`, `threshold`, `cluster`,
+`series`), `comparison-item` (`runs`, `item`),
 `comparison-items` (`runs`, `disagree`, `where`, `baseline`, `max_chars`), `comparison-crosstab` (`runs`, `crosstab`,
 `group`, `group_match`, `where`, `max_ids`) and `sheet-show` (`dataset`, `runs`, `scores_only`, `wrong_against`,
 `new_vs`, `split`, `unlabelled`); `sheet-export`, which writes a file (an operation run as a job: `POST /api/v1/datasets/{dataset}/sheets`), is not a

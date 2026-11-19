@@ -1,11 +1,9 @@
 # PRD-017: The Workbench, where an evaluation is set up and run
 
-- **Status**: Built, 0.8.0 (2026-11-17: every screen live). Draft from 2026-11-06 (owner: "workbench is a good name";
-  "start with the PRD and then the RFC"); rewritten 2026-11-17 against RFC-032 and the owner's decisions of that day
-  (D1 to D9, below)
+- **Status**: Implemented (0.8.0, unreleased)
 - **Authors**: Marko Dragoljevic
 - **Related PRDs**: [PRD-004](PRD-004-catalog-and-inspector.md) (the catalog and the inspector, which stay read-only),
-  [PRD-016](PRD-016-managing-project-data.md) (the Configure page, retired: the Workbench replaces it),
+  [PRD-016](PRD-016-managing-project-data.md) (the `data-*` commands the Settings screen uses),
   [PRD-005](PRD-005-goals-and-rounds.md) (goals and rounds), [PRD-014](PRD-014-datasets-from-production.md) (datasets
   from production), [PRD-015](PRD-015-models-onboarded-once.md) (models onboarded once)
 - **Related RFCs**: [RFC-032](../rfc/RFC-032-one-model-two-surfaces.md) (one data model; the API the Workbench runs on:
@@ -29,19 +27,17 @@ site explains it: a goal, data, arms, a comparison, a choice.
 ## Background & Context
 
 - Everything the Workbench does is an operation of the harness's model (RFC-032): one registry, each operation with
-  typed inputs, a kind (read, edit, decision, work) and its locks. `evh`, the API (154 route-method pairs in `evh
-  openapi`), the MCP server and jobs are surfaces over the same operations. Agents use them well (owner, 2026-11-06:
-  "the stuff works now fine for agents … but it's hard for human users"). A person must know which operations, in
-  which order, with which inputs; the site's method page explains the loop, the terminal makes you rebuild it.
-- The Configure page (PRD-016) put the project's settings into forms built from their schemas. The owner's verdict
-  on its forms, 2026-11-06: "massive", "nobody's gonna enter that": a goal's form is 5,023 px with 58 inputs, a model
-  record's 5,489 px, the validate policy's 6,194 px. It mapped every key of every file to a field, at the same
-  weight, and it only edits: it runs nothing. Two reviews (architecture and UX, 2026-11-06) found its save takes about
-  52 s (two full `evh validate` runs) with no progress shown, and no lock between two saves.
+  typed inputs, a kind (read, edit, decision, work) and its locks. `evh`, the API (`evh openapi` describes it), the
+  MCP server and jobs are surfaces over the same operations. Agents use them well; a person must know which
+  operations, in which order, with which inputs: the site's method page explains the loop, the terminal makes you
+  rebuild it.
+- A project's settings are not shown as their files' structure: a form that mapped every key of every file to a
+  field, at the same weight, is too long to use and only edits, it runs nothing. The Workbench asks only what a
+  person decides at that point (requirement 4) and runs the work.
 - The catalog's read-only rule (UXS index, rule 1) stays: the Workbench is where writing and running happen, the
   catalog where results are read. Each links to the other.
-- Since 2026-11-17 every screen of the Workbench is live, on the project's API; the static mockup, whose data is this
-  repository's (`mock.js`), is a frozen design reference in `harness/workbench/mockup/`, outside the package (D7).
+- Every screen of the Workbench is live, on the project's API; the static mockup, whose data is this repository's
+  (`mock.js`), is a frozen design reference in `harness/workbench/mockup/`, outside the package (D7).
 
 ## Goals
 
@@ -57,15 +53,14 @@ site explains it: a goal, data, arms, a comparison, a choice.
 ## Non-Goals
 
 - Replacing the catalog or the inspector: results are read there, linked from here.
-- A public, multi-user service: the Workbench runs on the person's machine (ADR-0027, as RFC-032 amends it). Several
-  people sharing one project is a later question. Behind a proxy (`--public`, `--behind-proxy`) the Workbench and
-  `/api/v1` answer 404, and stay so in 0.8.0 (D8).
+- A public, multi-user service: the Workbench runs on the person's machine (ADR-0027, as RFC-032 amends it). Behind a
+  proxy (`--public`, `--behind-proxy`) the Workbench and `/api/v1` answer 404 (D8).
 - Making a project: a project names its store at `evh init --store files|sqlite`, on the command line; the
   Workbench opens a project that exists.
 - A general YAML or file editor. The raw file can be shown; it is not the way in. The project's `config.yaml` is not
-  edited here in 0.8.0 (`data-put` writes only under `data/`; D9).
+  edited here (`data-put` writes only under `data/`; D9).
 - New evaluation capabilities: the Workbench drives the operations that exist. Where a screen needs one that does
-  not, the operation is built first, for every surface (below: "The API to build first").
+  not, the operation is built first, for every surface.
 - A new way for agents: they keep the commands and the MCP server.
 
 ## Personas
@@ -94,14 +89,17 @@ decide: retire an arm (with its reason; a retire is final), promote a baseline, 
 *Operations:* `round-open` (`from`, `keep`, `hypothesis`), `round-carry`, `system-show` and `system-new` (a clone is a
 new system), `arm-smoke`, `POST /estimate`, `sweep` (the round's systems on its dataset, in the round; D2), `rescore`,
 `judge-score`, `round-evidence`, `goal-leaderboard`, `pair-test`, `round-retire`, `run-promote`, `round-close`
-(`promote`).
+(`promote`). The open-round form is offered on the last round's tab, and lists the arms still in play in that round
+as ticks, all ticked, one by one; a carried arm is not run again, and when the new round is on another dataset each is
+read through its runs there (the rule of `round-open --keep`). A system already measured on the round's dataset is
+carried in, never run again.
 
 **W2 Review outputs, label and tag.** On a goal's dataset: the items across the arms that matter; read outputs side
 by side, say which is better, give a label, tag failure modes, leave a note; bring back a sheet filled elsewhere.
 *Operations:* `comparison-items`, `comparison-item`, `sheet-show`, `label-sheet`, `label-import`, `sheet-import`,
 `tag-set-list`, `failure-modes-list`. The screen fills a sheet and submits it when the person is done, to the
-imports as they work today (owner, 2026-11-17: not saved item by item); the blind sheet and its key as a job is to
-build (API 1).
+imports as they work today (not saved item by item); the blind sheet and its key are a job (`sheet-export`,
+`POST /datasets/{dataset}/sheets`).
 
 **W3 Learn from production** (once a goal is deployed): capture what the deployed system decided, evaluate it
 against labels, pick the rows where it was wrong or saw something new, and make the next dataset version from them.
@@ -115,8 +113,8 @@ named default), its dataset (from a source: a folder, a table, Hugging Face, Cro
 capture; previewed, fields proposed, created, materialized, profiled), its reference set, and a first system run to
 see it work.
 *Operations:* `goal-new` (sent with `datasets: []`), `dataset-create`, `fieldset-propose`, `fieldset-new`,
-`dataset-materialize`, `dataset-profile`, `reference-promote`, `system-new`, `run`, `source-preview` (API 2); the
-dataset's own answers (`"answer": COLUMN` in the query) are written as a label set at create (API 3).
+`dataset-materialize`, `dataset-profile`, `reference-promote`, `system-new`, `run`, `source-preview`; the
+dataset's own answers (`"answer": COLUMN` in the query) are written as a label set at create.
 
 **W5 Bring in a model.** A model record (what it is, its weights and licence), a deployment (where it runs, its
 endpoint and settings), onboarded (the probes, kept as dated checks); a flag that is the deployment's own nature
@@ -128,19 +126,21 @@ onboarding passed and a system on it passed its smoke: computed, never approved 
 **W6 Make or change a reference.** Promote a label set to a silver or gold reference with who and why; see what the
 change moves before re-scoring the arms on it.
 *Operations:* `label-set-list`, `reference-list`, `reference-promote`, `leaderboard` (read under another label, such
-as `silver`), `score-preview` (its result per arm, API 4), `rescore`.
+as `silver`), `score-preview` (its result per arm), `rescore`.
 
 **W7 Set up a judge.** Judges picked from onboarded models (two families at least), the prompt, the mode; its stored
 validation against people's labels shown before it may decide. Validating a judge is a tool, not an operation, and
-stays out of the Workbench in 0.8.0 (D6).
+stays out of the Workbench (D6).
 *Operations:* `scorer-list`, `scorer-new`, `scorer-set`, `POST /estimate`, `judge-score`, `cost-report`.
 
 ### One-off or rare: terse forms, or the commands
 
-**W8 Govern and maintain.** Checking the project (`validate`, a read of about 27 s: the page says "checking…"; D1),
-bringing the data to a release's format (`migrate`), moving the project between stores (`data-migrate`), publishing
-a dataset (`dataset-publish`), a file under `data/` (`data-put`, `data-rm`). The validate policy, the goal policy and
-budgets are files under `data/`; `config.yaml` stays a command-line edit (D9).
+**W8 Govern and maintain.** The Settings screen, one row each, with its command: where the project keeps its data and
+moving it to the other store (`data-migrate`); bringing the data to this release's formats (`migrate`); checking the
+project (`validate`, a read the page waits for with "checking…"; D1); the two policy files under `data/`
+(`validate.json` and `goals/policy.yaml`, shown as `data-show` shows them and saved as `data-put` saves them, checked
+first); budgets (a round's cap is set when it opens); publishing a dataset (`dataset-publish`). `config.yaml` stays a
+command-line edit (D9).
 
 ## Functional Requirements
 
@@ -162,39 +162,22 @@ budgets are files under `data/`; `config.yaml` stays a command-line edit (D9).
 6. **Checks without waiting.** An edit is checked by its operation against the entity's schema and links, and its
    problems are shown on their fields. The project's full check (`validate`) is a read the page waits for with
    "checking…", never part of a Save (D1).
-7. **Who acted and why.** Every write carries who (`by`; for an agent, the person it acts for); the name is asked once
-   and kept in the browser.
+7. **Who acted and why.** Every write carries who (`by`, as `--by` or `EVH_ACTOR` do for a command; for an agent, the
+   person it acts for); a write without it is refused. The name is asked once and kept in the browser.
    Every decision asks for its reason, as its operation does: a reference promotion (`reason`), a retire (`reason`),
    a round's close (`conclusion`), a baseline's promotion (`reason`), a deployment's accepted flag (`why`).
 8. **Parity:** every action is an operation (RFC-032), so it is also an `evh` command and an API call; the
    Workbench shows the command.
 9. **Refusals are shown as the API gives them**: an edit's problems (`{error, kind, problems}`), a job refused before
    it exists (`{error}`), a job that failed later (its state, its refusal's kind, its log), and 503 with Retry-After
-   while the project's data is moved or migrated.
-10. **On a phone.** Every screen works at 390 px (owner, 2026-11-12).
-11. **Unsent changes are shown** (owner, 2026-11-17). What a person enters is sent only by the screen's own action
+   while the project's data is moved or migrated. A read asked with `optional=1` that has nothing to show (a file the
+   project may not have, a chart without enough data) is answered 200 with why (`empty`), not as a refusal.
+10. **On a phone.** Every screen works at 390 px.
+11. **Unsent changes are shown.** What a person enters is sent only by the screen's own action
     (Save, Create, Run, Submit). Until then the screen marks it dirty, names what the action will write and asks
     before the person leaves; longer work (a labelling sheet, picked rows, a dataset's steps, models picked, a round
     being built) also counts what is pending and survives a reload in that browser. Labels, preferences and tags are
     submitted as a filled sheet, never saved item by item. The rule and the screens it covers are in UXS-005.
-
-## The API to build first (owner's order, 2026-11-17)
-
-Each blocks a screen; each is built as an operation, for every surface. The detail and the per-screen map are in
-`research/internal/WORKBENCH_GAPS_0.8.0.md`.
-
-1. The blind sheet and its key as a job (`sheet-export` as an operation), the key kept on the server for
-   `sheet-import`, so the labelling screen can submit "which is better" and tags (W2). Labels need nothing new
-   (`label-sheet`, `label-import`). Owner, 2026-11-17: labels, preferences and tags are not saved item by item;
-   the screen submits the filled sheet when the person is done, and the sets stay frozen as today. Built
-   2026-11-17: `POST /datasets/{dataset}/sheets`, the key refused by the job's files, `sheet-import`'s `export_job`.
-2. A source's preview: its description and first rows, writing nothing (W4). Built 2026-11-17 (`source-preview`).
-3. A reference from the dataset's own answers (W4: "it came with one"). Built 2026-11-17 (owner: the answer column
-   becomes a frozen label set of source `dataset` at create, promoted with `reference-promote`).
-4. `score-preview` gives a result (W6). Built 2026-11-17.
-5. The jobs list: several states per query, filters by operation and goal, offset and limit (home, jobs). Built
-   2026-11-17 (`GET /jobs`, `evh jobs-status`).
-6. A JSON answer for every unhandled error (every screen). Built 2026-11-17.
 
 ## Success Criteria
 
@@ -206,48 +189,26 @@ Each blocks a screen; each is built as an operation, for every surface. The deta
 
 ## Decisions
 
-Owner, 2026-11-06:
+The owner's:
 
 1. **One server** for both apps: the catalog and the Workbench under their own paths.
 2. **Labelling** in W2: an in-app labelling screen is the first surface; the CSV round trip (`label-sheet` /
    `label-import`, `sheet-import`) stays as an option.
 3. **Files mode:** the Workbench changes a files project as it changes a SQLite project: through the operations,
    which change only the values that changed and keep the file's comments.
-4. **The Configure page is retired** and what was built for it is thrown away (its pages, forms and routes); the
-   store (RFC-025) stays. Done.
-5. **The data model** was first worked out as a mock data model beside the mockup; RFC-032 replaces it.
-
-Owner, 2026-11-13: the real Workbench, all of W1 to W8, built on RFC-032's API (RFC-032, "RFC-026, ADR-0027 and the
-Workbench").
-
-Owner, 2026-11-17 ("accept all"), after the review of the Workbench against what 0.8.0 built:
-
+4. **The real Workbench**, all of W1 to W8, is built on RFC-032's API (RFC-032, "RFC-026, ADR-0027 and the
+   Workbench").
 - **D1** `validate` stays a read; the page says "checking…" while it runs.
-- **D2** A round's arms are run by `sweep` (its systems, the goal, the round); the `round-run` operation RFC-032
-  first proposed is not built.
+- **D2** A round's arms are run by `sweep` (its systems, the goal, the round); there is no `round-run` operation.
 - **D3** A retire is a recorded decision with its reason, not undone.
 - **D4** No "approve as vetted": vetted is computed, and the Workbench shows the rule.
 - **D5** The round's question is stored as `hypothesis`; the page says "question".
 - **D6** Validating a judge stays a tool; W7 shows the stored validation.
-- **D7** `mock.js` (this repository's data) stops shipping in the package; the mockup is kept as a frozen design
-  reference and the live screens are built from UXS-005. Built 2026-11-17: the mockup and its scripts moved to
-  `harness/workbench/mockup/`; the package ships the live Workbench's five files, the only ones `/workbench/` serves.
-- **D8** The Workbench stays refused behind a proxy in 0.8.0.
-- **D9** `config.yaml` settings (the exposure check's repos, for one) stay out of W8 in 0.8.0.
-
-## How it was decided, and the order from here
-
-Owner, 2026-11-06: agree first, then build.
-
-1. **The structure** (this PRD): what the Workbench solves, its workflows, where the UI effort goes.
-2. **Sketches** of the screens (UXS-005), then **a clickable mockup** of them with this repository's real data,
-   reviewed in eight rounds (`harness/workbench/mockup/` since D7). The mockup's pages, layout and styles are the app's own (owner:
-   "think about the mock-up as already a workbench app that you're starting, except it's just a static thing").
-3. **RFC-032** (one model, its operations, the API) and RFC-033, built.
-4. **From here** (owner's order, 2026-11-17): the API above (1 to 6) and the unsent-changes rule (requirement 11),
-   built on 2026-11-17; then the screens, wired workflow by workflow:
-   home and goal (wired), W5 (wired), W4's dataset and preparation (needs API 2 and 3), the models and systems, W1 the
-   eval, W2 (needs API 1), W3, then W6, W7 and W8 as short lists, and the held-out test and studies last.
+- **D7** `mock.js` (this repository's data) does not ship in the package; the mockup is kept as a frozen design
+  reference in `harness/workbench/mockup/` and the live screens are built from UXS-005. The package ships the live
+  Workbench's five files, the only ones `/workbench/` serves.
+- **D8** The Workbench is refused behind a proxy.
+- **D9** `config.yaml` settings (the exposure check's repos, for one) stay out of W8.
 
 ## Related Documents
 

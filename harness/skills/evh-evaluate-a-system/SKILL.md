@@ -97,20 +97,21 @@ What each item is scored against. In order of strength:
 ```evh
 RUN=$(evh run --system tickets_author_v1 --dataset tickets_v1 --json | python3 -c 'import json,sys; print(json.load(sys.stdin)["result"]["values"]["runs"][0]["run_id"])')
 evh label-from-run --run "$RUN" --set author_v1
-evh reference-promote --dataset-id tickets_v1 --labels author_v1 --tier silver --reason "the author arm ranks the others until a person writes gold" --by agent
+export EVH_ACTOR=agent:assistant EVH_FOR=person:operator
+evh reference-promote --dataset-id tickets_v1 --labels author_v1 --tier silver --reason "the author arm ranks the others until a person writes gold"
 git add -A && git commit -qm "silver/tickets_v1" --allow-empty
 ```
 
 ## 4. Run each system
 
 Cost first (`--dry-run`: one call per item, not an upper bound), a few items next (`evh arm-smoke
---system S --dataset D`, and read the replies; the dry run then shows its `MEASURED` cost, the number
+--system S --dataset D`, and read the replies; the dry run then shows its `MEASURED` cost (only when the system names a `model_record`), the number
 to cap from), then the full run. `--repeat 3` measures a system's own noise. A run names the goal it
 is for with `--goal G`.
 
 Working in rounds (one line of investigation each: `evh round-open --goal G --dataset D --hypothesis
 "..."`)? Open the round **before** its systems run: a new one runs in it (`--goal G --round rN`); one
-already run joins only when a round is opened with `--keep SYSTEM_ID`.
+already run joins through `--keep SYSTEM_ID` when the round opens or through `evh round-carry` into an open round.
 
 ```evh
 evh run --system tickets_lead1_v1 --dataset tickets_v1 --dry-run
@@ -155,7 +156,7 @@ The project already has a baseline and you changed one thing. Read the baseline 
 the system under a new `system_id` with the change and a hypothesis, commit, then measure it the way
 the baseline was measured (the same dataset, reference and repeats) and test it against the baseline.
 
-1. `evh goal-leaderboard G --json`: `values.baseline` is the baseline arm; `evh arm-show LABEL DATASET <that arm> --json`
+1. `evh goal-leaderboard G --json`: `answer[].baseline.arm` is the baseline arm of each dataset (`baseline` is null with none); `evh arm-show LABEL DATASET <that arm> --json`
    gives its system and how many repeats it has.
 2. Copy that system (`evh data-show --text systems/<it>.yaml` into a draft), give it a new
    `system_id` (and the file its name), make the one change, add the `hypothesis:` block (`against`

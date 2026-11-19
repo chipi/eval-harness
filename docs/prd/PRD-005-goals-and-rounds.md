@@ -1,6 +1,6 @@
 # PRD-005: Goals, and eval rounds
 
-- **Status**: Implemented (v0.4.0); groups scored against a label set (FR1.7) and the deploy sheet (FR3) built for 0.6.0 ([RFC-023](../rfc/RFC-023-labels-and-references.md))
+- **Status**: Implemented (v0.4.0)
 - **Authors**: Marko Dragoljevic
 - **Related UX specs**: [UXS-001](../uxs/UXS-001-catalog.md) (the goal page), [UXS-003](../uxs/UXS-003-cli-and-onboarding.md) (the round commands)
 - **Related RFC**: [RFC-004](../rfc/RFC-004-eval-rounds.md) (rounds: files, commands, the evidence)
@@ -11,21 +11,20 @@
 
 A **goal** says what an evaluation is for: who uses the output, the decision it informs, the
 measure that decides and which way is better, the output formats it accepts, and the datasets
-it is measured on. Configs name their goal, runs and baselines carry it, `validate` checks it,
-and the catalog gives each goal a page that leads with its answer so far. On top of goals,
+it is measured on. A run names its goal, baselines carry it, `validate` checks it, and the
+catalog gives each goal a page that leads with its answer so far. On top of goals,
 **rounds** are optional: a round records what it sets out to learn, what changed, which arms it
-carries in, drops (with the reason) or adds, and what it concluded. `evh round-list` reads the
-evidence and suggests the next decision as the command that makes it. A project that never
-opens a round sees none of it.
+carries in, drops (with the reason) or adds, and what it concluded. `evh round-evidence G rN` reads the
+evidence and suggests the next decision as the command that makes it; `evh round-list` gives a line per
+round and `evh round-show` the round as recorded. A project that never opens a round sees none of it.
 
 ## Background & Context
 
 Without goals, a run is a number with no question attached: nothing says which measure decides,
 so the same table can be read to support any choice. Without rounds, evals still go round
-on round (try some arms, keep what won, drop what lost, change something, compare again), but
-the harness recorded none of it: runs were a flat set per dataset, and nothing said which arms
-belonged together, why one was dropped, or what a round concluded. The newcomer scenario
-([SCENARIO](../../harness/docs/SCENARIO.md)) made that gap concrete.
+on round (try some arms, keep what won, drop what lost, change something, compare again), and
+nothing would say which arms belong together, why one was dropped, or what a round concluded.
+A round records it.
 
 ## Goals
 
@@ -58,7 +57,7 @@ belonged together, why one was dropped, or what a round concluded. The newcomer 
   each dataset and the reason._
 - _As an engineer, I can open a round with a hypothesis, carry in the arms worth keeping and drop
   the rest with a reason (`evh round-open --goal … --dataset … --keep … --retire … --reason "…"`)._
-- _As an engineer, I can ask what the evidence suggests (`evh round-list …`) and get each
+- _As an engineer, I can ask what the evidence suggests (`evh round-evidence G rN`) and get each
   suggestion as the command that acts on it._
 - _As an engineer, I can close a round with its conclusion and promote the run it chose in one
   step (`evh round-close … --conclusion "…" --promote <run_id>`)._
@@ -75,11 +74,11 @@ belonged together, why one was dropped, or what a round concluded. The newcomer 
   rather than measured on a dataset). Optional: `context` (its audience), `output_contract`,
   `references`, `measures`, `min_items` (in `success_criteria`), `links` (shown on the goal
   page and by `evh goal-leaderboard`: a web address as a link, a project path as text), `status`.
-- **FR1.2**: A system names its goal (`goal:`) and may declare its `format`; `evh run`
-  refuses an unknown goal before it spends anything. The run records both outside the
+- **FR1.2**: A run names its goal (`evh run --goal G`); a system has none, and may declare its `format`.
+  `evh run` refuses an unknown goal before it spends anything. The run records both outside the
   fingerprint; `run-promote` carries both onto the baseline.
 - **FR1.3**: `evh validate` V14 fails a goal that breaks its schema or whose `goal_id` is not its
-  file name, a system, run or baseline naming a goal that does not exist or a format the goal
+  file name, a run or baseline naming a goal that does not exist or a format the goal
   does not accept, and a goal whose direction contradicts its runs; a dataset smaller than
   `min_items` gets a note.
 - **FR1.4**: `required_from: YYYY-MM-DD` in `data/goals/policy.yaml` makes every run created
@@ -97,7 +96,7 @@ belonged together, why one was dropped, or what a round concluded. The newcomer 
   per item; speed as p50 and p95. The goal page names the recommended arm per group with the
   reasons, and the home page's glance shows it with its cost and speed against the baseline;
   the CLI says the same. Guardrails (rules in words) are shown, never computed.
-- **FR1.7** (0.6.0): Arms scored against a label set (PRD-002 FR6) form a group of their own, named by the set
+- **FR1.7**: Arms scored against a label set (PRD-002 FR6) form a group of their own, named by the set
   (`labels/<dataset>/<set>`), never a tier; the group gets its recommended arm as a reference's group does, the arm
   that made a `model` set's labels flagged. The baseline is still the arm you promote. The page heads the group by
   the set's source chip and name (UXS-001).
@@ -106,14 +105,21 @@ belonged together, why one was dropped, or what a round concluded. The newcomer 
 
 - **FR2.1**: A round is `data/rounds/<goal_id>/<round_id>.yaml` (`r1`, `r2`, ...), validated by
   `schemas/round.schema.json`: goal, dataset, `from`, hypothesis, changes, the baseline it
-  started from, arms carried in, arms retired with reason and date, an optional budget, status
-  and conclusion.
+  started from, its arms, an optional budget, status and conclusion. A round's arms are one list:
+  each a system, the runs it is read through, how it entered (`ran` in the round, or `carried`) and,
+  when dropped, its retirement with reason, date and who.
 - **FR2.2**: `evh round-open --goal G --dataset D` opens the next round; it refuses while
-  another round of the goal is open. `--from rN`, `--hypothesis`, `--change` (repeatable),
-  `--keep` (carried in, not run again), `--retire … --reason "…"`, `--budget-usd`.
+  another round of the goal is open (a study's round does not count). `--from rN`, `--hypothesis`,
+  `--change` (repeatable), `--keep` (carried in, not run again), `--retire … --reason "…"`, `--budget-usd`.
+  A carried system that was an arm of the `--from` round, when that round ran on the same dataset,
+  keeps that round's runs; any other system is read through its own plain runs on the dataset
+  (an earlier round's runs on another dataset are never read), and is refused when it has none. A
+  measured system is carried in, never run again.
 - **FR2.3**: An arm joins a round by running in it (`evh run --round rN`, with `--goal`);
   `evh run` refuses a round that does not exist, is closed, or is on another dataset.
-- **FR2.4**: `evh round-show G rN` shows each round and, for the open one, the
+  `evh round-carry --goal G --round rN --arm S [--from rM]` carries a system into the open round
+  as `--keep` does; it refuses a closed round and a system already in play.
+- **FR2.4**: `evh round-evidence G rN` reads a round's evidence: for the open one, the
   arms against its leader, its leader against the previous round's best, the baseline it started
   from and the arm that wrote a silver reference of the dataset, its spend against the budget and
   the cost per item, all read against the reference most of its arms use (gold before silver on
@@ -121,9 +127,14 @@ belonged together, why one was dropped, or what a round concluded. The newcomer 
   the arm that wrote the silver reference): retire an arm significantly worse than the leader
   (`evh round-retire …`), more items where arms are not significantly different from the leader (`evh rank-stability …`), change course when the round's best
   is not significantly better than the previous round's, and close (`evh round-close …`).
-- **FR2.5**: `evh round-retire --goal G --round rN --arm C --reason "…"` and
+  Every view of a round reads the runs the round recorded; a later run of an arm is named as
+  "since then", never read into it. `evh round-list G` gives a line per round and
+  `evh round-show G rN` the round as recorded.
+- **FR2.5**: `evh round-retire --goal G --round rN --arm S --reason "…"` and
   `evh round-close --goal G --round rN --conclusion "…" [--promote RUN_ID]` record decisions;
   a reason or conclusion must be a sentence. If the promotion is refused, the round stays open.
+  `round-close`, `run-promote` and `round-carry` refuse an unknown actor: off a terminal, give
+  `--by person:NAME` or set `EVH_ACTOR`.
 - **FR2.6**: `evh leaderboard`, `evh family-test`, `evh pair-test` and `evh comparison-show` take
   `--round` to scope to a round's arms in play; `comparison-show --round` and `pair-test --round` default
   to the goal's measure and the round's leader (`pair-test`'s B: the baseline the round started
@@ -132,7 +143,7 @@ belonged together, why one was dropped, or what a round concluded. The newcomer 
   resolve, `from` exists, a closed round has a conclusion, every run naming a round names one
   that exists.
 
-### FR3: The deploy sheet (0.6.0)
+### FR3: The deploy sheet
 
 - **FR3.1**: `evh deploy-sheet ARM` prints what production must match to run what was measured: the model
   and its build (the model record's deployment: tag, digest, server and its settings), every setting the arm
@@ -151,8 +162,7 @@ belonged together, why one was dropped, or what a round concluded. The newcomer 
 
 - `harness/tests/test_rounds.py` passes: open, run, suggest, retire, close, the next round,
   validate, the page.
-- A project with no rounds produces the same pages and tables as before rounds existed, apart
-  from paging and the goal page's order.
+- A project with no rounds is never asked for one: nothing requires a round, and its pages and tables show none.
 
 ## Related Documents
 

@@ -1,6 +1,6 @@
-# ADR-0022 — A reference set is labels you promote; the tier is chosen then (0.6.0)
+# ADR-0022 — A reference set is labels you promote; the tier is chosen then
 
-**Status:** Accepted (owner, 2026-11-01), with RFC-023; built for 0.6.0. Supersedes
+**Status:** Accepted (owner, 2026-11-01), with RFC-023; built. Supersedes
 [ADR-0020](ADR-0020-second-references-are-silver.md) and ADR-0019's references from outcomes.
 **Date:** 2026-11-01
 **Detail:** [RFC-023](../rfc/RFC-023-labels-and-references.md), [PRD-002](../prd/PRD-002-references.md),
@@ -16,9 +16,9 @@ making a reference each time.
 
 ## Decision
 
-- A **label** says what is right for one item and who said it: its **source**, `person`, `model` or `rule`,
+- A **label** says what is right for one item and who said it: its **source**, `person`, `model`, `rule` or `dataset`,
   recorded with when and the guideline followed. Labels come in **sets**, never edited, and follow an item by its
-  sha256 into any dataset holding the same item. What is right can be more than one answer (owner, 2026-11-02):
+  sha256 into any dataset holding the same item. What is right can be more than one answer:
   a label then accepts each of them, and two labels agree when they accept the same answers.
 - A **reference** is made only by **promoting** labels: chosen on purpose, with a reason, at the tier you decide.
   No rule ties the tier to the source; the promotion records the source beside the tier.

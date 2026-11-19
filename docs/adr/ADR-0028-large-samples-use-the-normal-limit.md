@@ -1,6 +1,6 @@
-# ADR-0028 — From 10,000 items a paired test's p is its normal limit, not resampled (0.8.0)
+# ADR-0028 — From 10,000 items a paired test's p is its normal limit, not resampled
 
-**Status:** Proposed (2026-11-08); built in 0.8.0 (S2).
+**Status:** Accepted (2026-11-08); built in 0.8.0 (S2).
 **Date:** 2026-11-08
 **Detail:** `harness/tools/large_sample_check.py` (the simulation, rerunnable), `stats.LARGE_SAMPLE`, the plan in
 `research/internal/PLAN_0.8.0.md` (S1, S2)
@@ -25,7 +25,7 @@ of T = (m + margin) / se, whose limit is the standard normal, so p = 1 − Φ(T)
 |z| ≈ 1 to 3.5, where decisions are made. A size counts units: items, or for the cluster kinds clusters (10,000
 clusters of 8 are 80,000 items). Each is tested both ways, the sign-flip on the units' totals as `pair-test --cluster`
 flips them: the resampled p as the harness computes it (the tool sets the threshold out of reach, so it resamples at
-every size), and the limit. Seeded: the same command prints the same table. The run below (2026-11-08) took 1,128 s on
+every size), and the limit. Seeded: the same command prints the same table. The run below took 1,128 s on
 24 processes.
 
 | size | the limit off by more than 3 Monte Carlo SE (of 40 per kind) | the worst kinds |

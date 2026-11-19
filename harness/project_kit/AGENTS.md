@@ -34,7 +34,7 @@ The procedures are skills: `evh skills-install` copies them into `.claude/skills
    costs more. Run `evh arm-smoke --system S --dataset D` (a few items), read the replies, and set the
    cap from the
    measured cost it records (the dry run then shows it as `MEASURED`) before the full run.
-5. **What you may do** (the owner's rule for agents, 2026-11-04): run arms, make labels and
+5. **What you may do:** run arms, make labels and
    references, and promote a baseline **when your operator asked for that task**, within the
    cap. A promotion's `--reason` says who asked and why. Closing a round, and anything past the
    cap, stay your operator's: hand over the exact command. **Name yourself and your operator**:
@@ -57,7 +57,7 @@ The procedures are skills: `evh skills-install` copies them into `.claude/skills
 ## From nothing to a decision
 
 ```bash
-evh init --store files|sqlite                   # done: folders, config.yaml, .gitignore, this file, prompts/judge_prompt_example.txt
+evh init --store files|sqlite                   # done: folders, config.yaml, .gitignore, AGENTS.md, CLAUDE.md, data/project.yaml, prompts/judge_prompt_example.txt
 # production records -> a dataset (or files: evh dataset-create --dataset-id D --source-dir data/sources/NAME)
 evh capture --importer jsonl --query '{"path": "prod.jsonl"}' --capture prod_c1
 evh dataset-from-capture --capture prod_c1 --dataset-id prod_v1

@@ -19,7 +19,7 @@ Pin it into your project, and start the project's folders:
 ```bash
 cd /path/to/your-project
 pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.7.2#subdirectory=harness"
-evh init --store files   # config.yaml, data/sources, data/systems, data/goals, data/fields, a .gitignore, prompts/judge_prompt_example.txt; --store sqlite is its equal
+evh init --store files   # config.yaml, data/sources, data/systems, data/goals, data/fields, .gitignore, AGENTS.md, CLAUDE.md, data/project.yaml, prompts/judge_prompt_example.txt; --store sqlite is its equal
 ```
 
 That one install is everything: the hosted-model clients (`openai`, `anthropic`), the judges, the
@@ -27,8 +27,7 @@ catalog, the inspector and the MCP server for an agent ([below](#for-an-agent-ev
 no extra to add. It needs Python 3.10 or later.
 
 Keep `data/materialized/` out of git (derived; the `.gitignore` `evh init` writes already
-does this) and decide whether to commit runs: keep each run's `metrics.json`,
-`predictions.jsonl` and `outputs.jsonl` so scores can be recomputed. A project whose own layout
+does this) and decide whether to commit runs: keep each run's `run.json`, `outputs.jsonl` and its `scores/` folder so scores can be recomputed. A project whose own layout
 puts the harness's records elsewhere sets `EVAL_DATA_DIR`.
 
 Your project **does not depend on it at runtime**, and it has no dependency on your
@@ -103,7 +102,7 @@ cannot measure, and that is a design finding, not an eval problem.
 ### If your system is plain code
 
 A filter, a router, a de-duplicator, a scheduler: code that decides, with no model in it. It is evaluated
-like any arm; seven things are different. (The triage fleet's questions, 2026-11-05; its log is the worked case.)
+like any arm; seven things are different.
 
 - **The item holds the world the code read when it decided.** Code that reads external state (an issue
   tracker, a database, the clock) is measured on what it saw then, not what is there now. Freeze it into the
@@ -130,7 +129,7 @@ like any arm; seven things are different. (The triage fleet's questions, 2026-11
 - **Outcomes are joined by time and order, not by a key the outcome may not carry.** Match what production
   wrote to the decision that wrote it by the window between the cycle's previous decision and this one: a
   reopened issue need not name the fingerprint that reopened it. Measure the clock slack between the hosts
-  involved before trusting a timestamp join: the fleet's host ran 1.6 s behind GitHub's for an hour.
+  involved before trusting a timestamp join.
 - **The code is a record of its own.** `data/models/<id>.yaml` with `kind: code` holds its `repo` and its
   `versions`: each a `commit`, when it was `deployed` (`from`, `to`), and the `faithfulness` a replay measured
   (`agreed` of `items`, the named `exceptions`). It needs no `aliases`; an arm names it with `model_record` like
@@ -249,10 +248,11 @@ its bill (`usage.cost`), the run records the bill. Which provider does:
 A system holds `system_id` (its file's name), `params`, and optionally `adapter` (a project with
 several tasks names one per system, `adapter: adapters/ner.py`), `model_record` and `deployment`
 (the model it runs, RUNBOOK §16), `format` (the output's shape, one of its goal's `output_contract`
-formats: [RUNBOOK §4c](RUNBOOK.md#4c-the-goal-file-field-by-field)) and `hypothesis` (what the change
+formats: [RUNBOOK §4c](RUNBOOK.md#4c-the-goal-file-field-by-field)), `hypothesis` (what the change
 should do against which system, committed before the run so a test of it counts as named in advance:
-[RUNBOOK §4](RUNBOOK.md#4-point-the-harness-at-your-system); checked by V20); the schema is
-`schemas/system.schema.json`, and any other key is refused by `evh validate` (V1). What a system is
+[RUNBOOK §4](RUNBOOK.md#4-point-the-harness-at-your-system); checked by V20), `prompts` (prompt versions
+by name), `prompt_root`, `code`, `replay`, and `expect_identical_to` (the system whose output this run
+must match exactly); the schema is `schemas/system.schema.json`, and any other key is refused by `evh validate` (V1). What a system is
 run for is the run's: `--dataset`, `--goal` (what the evaluation is for, `data/goals/<goal_id>.yaml`)
 and `--round` (an eval round of that goal, `rN`).
 
@@ -324,7 +324,7 @@ re-authoring what you have.
 | refusals | cross-dataset comparisons, dirty-tree promotions and unreasoned baselines are blocked, not warned about |
 | integrity | `evh validate` fails CI on a tree that has drifted |
 | re-measurement | stored outputs scored again for a new reference or scorer at $0, or by validated LLM judges, without re-running an arm |
-| goals | what each evaluation is for, named on every system and checked by `evh validate` |
+| goals | what each evaluation is for, named by each run (`evh run --goal`) and checked by `evh validate` |
 | eval rounds (optional) | round on round: what each round tried, what it kept and dropped and why, what it concluded ([tutorial 4](../../docs/tutorials/4-rounds-and-versions.md)) |
 | item fields | the facts you know about each item (typed, declared once in a field set), checked by `evh validate`; items fetched from a pinned URL |
 | a catalog and an inspector | pages over your runs, and a local server that tests any arms against a baseline and shows outputs beside references; every view is also an `evh` command |
@@ -346,7 +346,7 @@ those scored against gold.
 which references exist, what one arm wrote for one item.
 
 - **On the harness's layout, there is nothing to write.** The built-in `HarnessAdapter`
-  reads `data/runs*/`, `data/references/`, `data/datasets/` and `data/goals/`, and its arm is
+  reads `data/runs/`, `data/references/`, `data/datasets/` and `data/goals/`, and its arm is
   one system on one dataset with its repeats averaged per item, exactly as `pair-test` reads
   them, so the inspector gives the same p.
 - **With your own layout, write one adapter** and name it in your project's `config.yaml`:
@@ -390,8 +390,7 @@ which references exist, what one arm wrote for one item.
 
   Every page and comparison is also a command that asks the same adapter the same questions:
   `evh dataset-list`, `evh reference-list`, `evh metric-list`, `evh goal-list`, `evh round-list`, `evh search` and
-  `evh comparison-show --runs …` (`--analysis`, `--item`) and `evh sheet-show … --runs …` (with
-  `--adapter` for a project adapter not named in `config.yaml`). The
+  `evh comparison-show --runs …` (`--analysis`, `--item`) and `evh sheet-show … --runs …`. The
   pages are a comfort; [tutorial 5](../../docs/tutorials/5-catalog-and-inspector.md#3-every-page-and-its-command)
   maps each page to its command.
 
@@ -449,15 +448,13 @@ a team sharing one project.
 `evh mcp` serves the project's reads to an agent over MCP (the official SDK): one tool for each read
 operation, named as the operation, the command and the API's resource are (`goal-list`, `dataset-show`,
 `comparison-show`, `leaderboard`, `pair-test`, `family-test`, `rank-stability`, `run-compare`, `validate`, `data-ls`,
-`search`, ...; `evh mcp --help` and the tool list name them all): 71 on your machine, 61 on a public server, and on
-your machine the agent sampler's `study-ask` and `study-tell`. A call is answered in the server's own process, from
+`search`, ...; `evh mcp --help` and the tool list name them all): 75 on your machine, 62 on a public server. On
+your machine the agent sampler also has `study-ask` and `study-tell`, the only tools that write the study and run a trial. A call is answered in the server's own process, from
 the same operation the command and the API are made from, so the agent sees the same numbers you do; its answer is
 the operation's result, structured (the `result` of the command's `--json`), and the tool's inputs are the
-operation's own, typed. No tool writes project data, spends or runs a model: running arms, promoting a baseline and
+operation's own, typed. No other tool writes project data, spends or runs a model: running arms, promoting a baseline and
 closing a round stay commands. (What a call does write is computed answers in the project's ignored `.cache/`: the
-paired tests' p values and `family-test`'s results.) A tool name from before 0.8.0 that differs from its operation
-(`goals`, `datasets`, `inspect`, `labels`, ...) is gone, no alias; the inputs are the operation's (`dataset`, not
-`dataset-id`). The design is
+paired tests' p values and `family-test`'s results.) The design is
 [RFC-018](https://github.com/chipi/eval-harness/blob/main/docs/rfc/RFC-018-read-only-mcp-server.md).
 
 **On your machine, against your project** (stdio: the agent starts it):
@@ -483,9 +480,9 @@ catalog publish, never an item's text):
 | OpenAI Responses API | `tools=[{"type": "mcp", "server_label": "evals", "server_url": "https://evals.humancopilot.eu/mcp", "require_approval": "never"}]` |
 | Gemini CLI | `gemini mcp add --transport http evals https://evals.humancopilot.eu/mcp`, or in `~/.gemini/settings.json`: `{"mcpServers": {"evals": {"httpUrl": "https://evals.humancopilot.eu/mcp"}}}` |
 
-The Claude, Gemini and OpenAI lines follow each vendor's own documentation (checked 2026-10-29);
+The Claude, Gemini and OpenAI lines follow each vendor's own documentation;
 the ChatGPT line follows third-party guides, as OpenAI renames that menu often. The server speaks
-every protocol revision since 2025-03-26 without a session, which is what they send.
+every protocol revision without a session, which is what they send.
 
 Ask it, for example: *"Which arm leads on the news_topic_ag goal, and is the lead significant?"* The
 agent calls `goal-leaderboard` (and `arm-list` for the detail) and answers from the same table and paired test
@@ -530,8 +527,8 @@ evh label-from-run --run <that run_id> --set best_v1
 evh reference-promote --dataset-id pilot_v1 --labels best_v1 --tier silver --reason "…" --by <you>
 git add data/labels data/references && git commit -m "pilot_v1: silver, best_model's labels"
 
-evh run --system arm_a_v1 --dataset smoke_v1 --repeat 3   # + the noise floor
-evh run --system arm_b_v1 --dataset smoke_v1
+evh run --system arm_a_v1 --dataset pilot_v1 --repeat 3   # + the noise floor
+evh run --system arm_b_v1 --dataset pilot_v1
 evh run-compare --baseline <a> --candidate <b> --noise <the spread you just measured>
 ```
 

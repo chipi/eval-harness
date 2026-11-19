@@ -124,8 +124,7 @@ Every one is ahead of BARTScore. The leader is not significantly different from 
 cheapest member at $0.03 for all 100 articles. Scored against the mean of two experts, as one
 expert is against the other two, the best judges reach 93% of a human's agreement (95% interval 89–97%; the best of 24, chosen on these
 articles, and 92% when chosen on half the articles and scored on the other half), UniEval 64%, and a no-model lookup of which system wrote each summary 63% ([`human_ceiling.py`](human_ceiling.py)). The full results, the significance tests and
-what changed while measuring (a retired model, a model that forces reasoning, moved prices)
-are in [research/REPORT_SUMMEVAL.md](../../research/REPORT_SUMMEVAL.md).
+the limits of the measurement are in [research/REPORT_SUMMEVAL.md](../../research/REPORT_SUMMEVAL.md).
 
 ## Running the hosted judges
 
@@ -161,9 +160,9 @@ What they measured (2026-11-02, 100 articles; each value recomputed from the exp
 | `gemma_l` | 0.364 | 0.825 |
 | `qwen_s` | 0.263 | 0.813 |
 
-Both prompts ask for the JSON object first and nothing after it. An earlier wording that let a judge explain first
-had `qwen_s` cut off at `max_tokens` before its answer on 8–13% of picks; a later one that invited an explanation
-after the JSON made `gemma_l` write about 270 tokens a reply. On this wording a reply is about 7–11 tokens; every pick
+Both prompts ask for the JSON object first and nothing after it: a wording that lets a judge explain first
+cuts `qwen_s` off at `max_tokens` before its answer on 8–13% of picks, and one that invites an explanation
+after the JSON makes `gemma_l` write about 270 tokens a reply. On this wording a reply is about 7–11 tokens; every pick
 was readable, and 1 of `qwen_s`'s 800 pairwise replies was not.
 
 On the summarisation eval (`judge-summ-pick-v1`, 29 arms, 198 of 200 articles, $0.17), the two judges named the same

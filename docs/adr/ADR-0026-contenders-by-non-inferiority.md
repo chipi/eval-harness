@@ -1,4 +1,4 @@
-# ADR-0026 — A contender is shown no worse than the leader; a strategy is a default margin (0.8.0)
+# ADR-0026 — A contender is shown no worse than the leader; a strategy is a default margin
 
 **Status:** Accepted (owner, 2026-11-05); built in 0.8.0. Replaces the contender rules of
 [ADR-0006](ADR-0006-goal-axes-and-strategies.md); its axes, limits, leader and tie-break stand.
@@ -12,8 +12,7 @@ A contender, an arm the tie-break may pick instead of the quality leader, had to
 different" from the leader (`frugal`), and within 2% of it on the mean (`balanced`). A non-significant
 difference is not evidence of equivalence (Lakens 2017): it also comes from too few items. So the smaller or
 noisier a dataset, the more arms tied, and `frugal` then recommended the cheapest. On the committed goals,
-dbpedia had 20 contenders of 21 and triage 52. The simulations (re-run on 0.8.0's code, identical to their
-first runs) showed the shifted sign-flip test rejecting up to 30% at a nominal 2.5% on 0/1 scores.
+dbpedia had 20 contenders of 21 and triage 52. The simulations showed the shifted sign-flip test rejecting up to 30% at a nominal 2.5% on 0/1 scores.
 
 ## Decision
 
@@ -31,7 +30,7 @@ first runs) showed the shifted sign-flip test rejecting up to 30% at a nominal 2
 - **A strategy is a default margin** (owner): `quality_first` 0 (the same quality only), `balanced` 5% of the
   leader's mean, `frugal` 10%. A goal's `axes.quality.margin`, in the measure's units, always wins. 2% admitted
   only the leader on every committed goal; 10% as the general default admitted 25 on dbpedia.
-- **Every test is visible:** the decision names the margin and where it came from; `evh goal-list` and the goal
+- **Every test is visible:** the decision names the margin and where it came from; `evh goal-leaderboard` and the goal
   page show each arm's contender test (p, its Holm threshold, shown or not, or too few); `evh validate` notes each
   goal on a default margin.
 

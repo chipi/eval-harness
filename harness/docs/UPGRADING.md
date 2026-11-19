@@ -86,7 +86,7 @@ correctness bugs, not just missing features.
     judging set's id and a run's reference hash are made of them). `data/renames.json` lists each renamed id; the
     catalog redirects an old arm page to its new one. Then change your commands: `evh run --system ID --dataset ID
     [--goal G] [--round R]` (a run names its goal and round now), `evh sweep --systems … --dataset …`, `arm-smoke`,
-    `faithfulness`, `period-compare`, `periods` and `model-onboard` take `--system`/`--dataset`, `deploy-sheet` and
+    `faithfulness`, `period-compare`, `model-onboard` take `--system`/`--dataset`, `periods` takes the model positionally with `--system`/`--dataset` as optional filters, `deploy-sheet` and
     `dataset-unseal` take `--system`, `arm-from-capture --like` takes a system id, `make run SYSTEM=… DATASET_ID=…`.
   - *runs and scores* (RFC-032 step 4, format 4): every pass of a system over a dataset is one run in
     `data/runs/<run_id>/` (`run.json`, `outputs.jsonl`) and every score of it sits under it, in
@@ -115,7 +115,7 @@ correctness bugs, not just missing features.
     retired. A retirement naming some but not all of a system's runs is refused before anything is written. A
     baseline version a round promoted names the round and the arm. Then: `round-retire` retires an arm whole, every
     arm of the system in play or the one `--label` names (`--runs` is gone), `evh round-carry` carries an arm of an
-    earlier round into the open one, and `evh round-list --json` gives a round's `arms`. A run made with `--round` joins
+    earlier round into the open one, and `evh round-show --json` gives a round's `arms` (`round-list --json` gives a count). A run made with `--round` joins
     its system's arm, so the round's file changes with every run: commit it with the runs.
   - *system_id* (RFC-032 step 8, format 6): a run's `config_id` named its system, so the stored key is `system_id`
     ("config" is no longer the name of anything): in `run.json`, a score's `metrics.json` (and the `unset` list of its
@@ -136,14 +136,10 @@ correctness bugs, not just missing features.
     `run.json`'s `call`; a run whose rows differ keeps them in its rows. `_meta.usage` is cut to `cost`,
     `prompt_tokens`, `completion_tokens` and, when nonzero, `cached_tokens` and `cache_write_tokens` (the rest of the
     provider's billing object is not kept: it only comes back from the provider; a `usage` that is `null` or not an
-    object is left as it is), and rows are written as canonical text. `--dry-run` counts each. Of this repository's
-    data: 14 runs hoisted, 53,720 usage objects slimmed, 295 `predictions.jsonl` rewritten, `data/runs` 153,465,935 to
-    112,483,047 bytes, with every number the same (a large diff in git: commit it with the migration). A SQLite project's
-    database is copied first, as for every step; its per-item rows, kept until now as table `rows` (a text value per
-    line), move in one transaction into the tables `score_sets`, `metrics`, `call_facts`, `score_rows` and
-    `score_values` (RFC-033, ADR-0030), `rows` is dropped and the database is vacuumed, since the pages `rows` held stay
-    in the file until it is (on this repository's data, a format-6 database of 241.8 MB stood at 327.7 MB after the
-    move until vacuumed); a VACUUM that cannot run, for want of free disk about the size of the database, leaves the data
+    object is left as it is), and rows are written as canonical text. `--dry-run` counts each. A SQLite project's
+    database is copied first, as for every step; its per-item rows, kept as table `rows`, move into the tables
+    `score_sets`, `metrics`, `call_facts`, `score_rows` and `score_values` (RFC-033, ADR-0030); `rows` is dropped and
+    the database is vacuumed. A VACUUM that cannot run, for want of free disk about the size of the database, leaves the data
     moved and says so. A line of a score's rows that is not a JSON object with an `item_id` is refused, writing nothing:
     correct the file first. A SQLite project that an early build of this release stamped format 7 but left with
     table `rows` is finished by `evh migrate` too, and every command refuses it until then (`ERROR (old-format)`).
@@ -151,8 +147,7 @@ correctness bugs, not just missing features.
     what reads a full `usage` object from a stored row keeps only what is listed; `Result.meta` itself stays free-form,
     the slimming happens when it is written ([INTEGRATION](INTEGRATION.md)); `evh validate`'s V28 checks both.
 
-  `run-migrate`, `dataset-migrate` and `baselines-migrate` (built during 0.8.0, never released) and
-  `fingerprint-migrate` (0.6.0 to 0.7.2) are this one command now. Moving the data into SQLite is
+  `run-migrate`, `dataset-migrate`, `baselines-migrate` and `fingerprint-migrate` are this one command now. Moving the data into SQLite is
   `data-migrate`, not a format step.
 - **`evh scorer-new` makes a scorer whose judges explain** (`explain: true`, RFC-034): each verdict carries a reason,
   and costs its output tokens. Pass `--set explain=false` for one that does not. Existing scorers have no field and are
@@ -198,8 +193,8 @@ correctness bugs, not just missing features.
   `env-check`, `importer-check`, `arm-smoke`, `model-onboard` and `deploy-sheet --capture`; a partly failed
   `sweep` is `5`. A check for "non-zero" needs no change. The table: RUNBOOK, Exit codes.
 - **Who acted** (RFC-027), after `evh migrate`'s records step: a
-  promotion, `round-close` and `dataset-unseal` need a named actor off a terminal (`--by person:NAME`, or
-  `EVH_ACTOR`; an agent `EVH_ACTOR=agent:NAME` with `EVH_FOR=person:NAME`); `runs-list --baselines` is now
+  promotion, `baseline-rollback`, `round-close`, `round-carry` and `dataset-unseal` need a named actor off a terminal (`--by person:NAME`, or
+  `EVH_ACTOR`; an agent `EVH_ACTOR=agent:NAME` with `EVH_FOR=person:NAME`), and `reference-promote` needs `--by` or `EVH_ACTOR` even at a terminal; `runs-list --baselines` is now
   `evh baselines`; `dataset-split --by hash|time` is `--split-by`.
 - **Scripts matching a refusal's text:** the line is `ERROR (<kind>): <why>` (was `ERROR: <why>`). Match the
   kind (RUNBOOK, Refusals), not the wording. A project's `AGENTS.md` written by `evh init` before 0.8.0 lacks

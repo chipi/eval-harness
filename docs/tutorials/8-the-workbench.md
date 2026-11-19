@@ -48,15 +48,15 @@ every change and every job (`person:<name>`).
 | screen | what you do there | the commands it calls |
 | --- | --- | --- |
 | **Home** | every goal with where it stands and its next step; what is running | `goal-list`, `goal-status`, `jobs-status` |
-| **1 · The goal** | the decision, how you will judge, which way is better | `goal-new`, `goal-set` |
-| **2 · A dataset** | one the project has, or one from a source: its query, a preview, its fields kept, its expected answers | `source-preview`, `fieldset-propose`, `dataset-create` |
-| **3 · Prepare it** | fetch the items, look inside, make the reference set; or label the items on a sheet and submit it | `dataset-materialize`, `dataset-profile`, `label-sheet`, `label-import`, `reference-promote` |
-| **4 · The systems** | a system from a model where it runs, its prompt and settings; a clone with one thing changed; each checked on three items under a cap | `system-new`, `prompt-version`, `arm-smoke` |
-| **5 · The eval** | rounds: a question, its arms run as one sweep under a cap, the evidence, an arm retired with why, the round closed and its leader promoted | `round-open`, `sweep`, `round-carry`, `round-retire`, `round-close`, `baseline-rollback` |
+| **Set the goal** / **The goal** | the decision, how you will judge, which way is better | `goal-new`, `goal-set` |
+| **Add a dataset** | one the project has, or one from a source: its query, a preview, its fields kept, its expected answers | `source-preview`, `fieldset-propose`, `dataset-create` |
+| **Prepare the dataset** | fetch the items, look inside, make the reference set; or label the items on a sheet and submit it | `dataset-materialize`, `dataset-profile`, `label-sheet`, `label-import`, `reference-promote` |
+| **Choose the systems** | a system from a model where it runs, its prompt and settings; a clone with one thing changed; each checked on three items under a cap | `system-new`, `prompt-version`, `arm-smoke` |
+| **Its rounds** | rounds: a question, its arms run as one sweep under a cap, the evidence, an arm retired with why, the round closed and its leader promoted | `round-open`, `sweep`, `round-carry`, `round-retire`, `round-close`, `baseline-rollback` |
 | **Review the outputs** | two arms side by side: which is better (blind), or what went wrong (tags from a failure-mode list) | `sheet-export`, `sheet-import`, `failure-modes-new` |
-| **Production** | records captured and made a dataset, production's decisions scored as an arm, the rows where it was wrong picked for the next version, labels from what happened later, a replay of the code that ran | `capture`, `dataset-from-capture`, `arm-from-capture`, `sheet-show`, `pick`, `dataset-extend`, `label-from-capture`, `faithfulness` |
+| **Learn from production** | records captured and made a dataset, production's decisions scored as an arm, the rows where it was wrong picked for the next version, labels from what happened later, a replay of the code that ran | `capture`, `dataset-from-capture`, `arm-from-capture`, `sheet-show`, `pick`, `dataset-extend`, `label-from-capture`, `faithfulness` |
 | **Change the reference set** | what another label set moves before anything is promoted; promoted with why; a scoring change previewed | `rescore`, `reference-promote`, `score-preview` |
-| **A judge** | its judges and their validation as stored, its cost first, then the arms judged under a cap | `scorer-new`, `scorer-set`, `judge-score`, `cost-report` |
+| **A judge for this goal** | its judges and their validation as stored, its cost first, then the arms judged under a cap | `scorer-new`, `scorer-set`, `judge-score`, `cost-report` |
 | **The held-out test** | a dataset split and its test side sealed; its reads recorded and the leak check; counts for safety only; opened for one candidate (one look); the confirmation with the read items left out | `dataset-split`, `exposure-add`, `exposure-check`, `sealed-counts`, `dataset-unseal`, `pair-test` |
 | **Studies** | a search over one thing at a time on the validation items, its trials and best, an agent's proposals asked and told, confirmed once on a test set | `study-run`, `study-ask`, `study-tell`, `study-stop`, `study-confirm`, `study-import` |
 

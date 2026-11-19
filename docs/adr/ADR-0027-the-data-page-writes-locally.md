@@ -1,7 +1,7 @@
-# ADR-0027 — One catalog page writes: the data page, on this machine only (0.8.0)
+# ADR-0027 — One catalog page writes: the data page, on this machine only
 
-**Status:** Accepted (owner, 2026-11-06); the page it governs was retired before 0.8.0's release ([PRD-017](../prd/PRD-017-workbench.md)
-decision 4, 2026-11-11). Its rules for a write (this machine only, the `X-EVH-Data` header, no other origin) govern
+**Status:** Accepted (owner, 2026-11-06); the page it governs is retired ([PRD-017](../prd/PRD-017-workbench.md)
+decision 4). Its rules for a write (this machine only, the `X-EVH-Data` header, no other origin) govern
 the API's calls instead ([RFC-026](../rfc/RFC-026-an-api-for-every-command.md)). Amended by
 [ADR-0029](ADR-0029-one-model-two-surfaces.md): the server writes edits itself, in either store, gated by the API's token
 and `X-EVH-Data`, not by `configure: true`.
@@ -17,7 +17,11 @@ person can edit; the owner asked for a small page to manage settings and data.
 
 ## Decision
 
-- **The data page is the one page that writes.** It writes a project's settings (configs, goals, fieldsets, judge
+*Amended: the page is retired with 0.8.0's Workbench. What carries on is its Status line's rules (this machine
+only, `X-EVH-Data: 1`, no other origin) and the commands `data-ls`, `data-show`, `data-put`, `data-rm`, which
+share the page's module (`_data_page`).*
+
+- **The data page is the one page that writes.** It writes a project's settings (systems, goals, fieldsets, judge
   scorers, model records, failure-mode lists, the validate policy) and deletes runs. Everything the harness writes
   stays read-only, there as everywhere.
 - **Only on this machine.** Its write calls (`PUT /api/data/form`, a setting's values; `DELETE /api/data/file`, a
@@ -28,7 +32,7 @@ person can edit; the owner asked for a small page to manage settings and data.
 - **One implementation.** The page and `evh data-ls`, `data-show`, `data-put`, `data-rm` call the same module (`_data_page`),
   which reads and writes through `_store`, so the page and the command line refuse the same things with the same
   words.
-- **SQLite only, deployed on purpose** (owner, 2026-11-06). The page is the Configure menu of a SQLite project that
+- **SQLite only, deployed on purpose** (owner). The page is the Configure menu of a SQLite project that
   sets `configure: true`; without it the catalog is built and served with no Configure part at all, and a files
   project can never turn it on (it is edited in its files).
 

@@ -1,9 +1,6 @@
 # PRD-014: Datasets from production, and evaluating what production did
 
-- **Status**: Built for 0.6.0 for FR1 to FR3, FR5, FR6 and the Captures page (2026-10-31, the capture window and
-  sampling 2026-11-01), FR4 (labels from outcomes) FR7 (the recorded arm, agreement), FR8 (the sheet, in the terminal and the inspector), FR9 (picks) and
-  FR10 (versions from picks) built
-  ([RFC-023](../rfc/RFC-023-labels-and-references.md))
+- **Status**: Implemented (v0.6.0)
 - **Authors**: Marko Dragoljevic
 - **Related UX specs**: [UXS-001](../uxs/UXS-001-catalog.md) (the Captures, Labels and dataset pages),
   [UXS-002](../uxs/UXS-002-inspector.md) (the sheet), [UXS-003](../uxs/UXS-003-cli-and-onboarding.md) (the
@@ -18,7 +15,7 @@
 
 ## Summary
 
-A project improves a system by measuring it on what the system actually meets. The owner's flow (2026-11-01):
+A project improves a system by measuring it on what the system actually meets. The flow:
 establish references and work in rounds on the datasets you have; deploy what you settle on; let it run; take
 **datasets from production** (all of it, a sample, a selection); **evaluate on them how production works**; and,
 after many such evaluations, make the **next version** of a key dataset from a few production records that would
@@ -29,13 +26,12 @@ making a reference; exploring the results row by row shows what to keep, kept as
 
 ## Background & Context
 
-Records that live in a tracing system, a ledger or an issue tracker reached a dataset only through a script each
-project wrote. The first live test on the triage fleet (2026-11-01) found what the lane lacked: a continued capture
-took records outside the window it recorded; sampling happened after everything was captured, which cannot work
-at a billion records a day; production's own decisions could not be scored, only its model re-run; and there was
-no way to label new items, see what was worth keeping, or keep it. The case the lane is designed on: an agent fleet
-that triages observability signals into GitHub issues, every decision in a ledger, every issue closed with a
-comment that says what it was.
+Records that live in a tracing system, a ledger or an issue tracker reach a dataset only through a script each
+project writes. The lane covers what that script leaves out: a continued capture keeps to the window it recorded;
+sampling happens as records are read, since capturing everything first cannot work at a billion records a day;
+production's own decisions are scored, not only its model re-run; and new items can be labelled, explored for what
+is worth keeping, and kept. The case the lane is designed on: an agent fleet that triages observability signals into
+GitHub issues, every decision in a ledger, every issue closed with a comment that says what it was.
 
 ## Goals
 
@@ -109,7 +105,7 @@ comment that says what it was.
   against its hash. Newer outcomes of records already held are a fresh capture of the same query.
 - **FR2.6**: `evh capture-restore` rebuilds a capture's records (and the item files of the datasets made from
   it) from the recorded importer and query, a key replaceable with `--query KEY=VALUE`, re-running a recorded
-  scrubber; every hash must match or nothing is written (0.7.0, from the fleet's beta use).
+  scrubber; every hash must match or nothing is written.
 
 ### FR3: Datasets from a capture
 
@@ -119,7 +115,7 @@ comment that says what it was.
   its capture in the catalog.
 - **FR3.3**: `--from` makes a new version with the existing lineage.
 
-### FR4: Labels from outcomes (0.6.0; replaces references from outcomes)
+### FR4: Labels from outcomes
 
 - **FR4.1**: `evh label-from-capture` applies an ordered mapping of rules to the capture's outcome fields; the first
   match labels the item, no match leaves it unlabelled; the result is a `rule` label set (PRD-002), whoever wrote
@@ -131,6 +127,9 @@ comment that says what it was.
 
 - **FR5.1**: `evh dataset-split` writes validation and test as ordinary datasets, by hash (stable across versions,
   optionally grouped by a field) or by time.
+- **FR5.2**: Each side gets the parent's references (those promoted from a label set), promoted again on that
+  side from the same label set at the same tier, recorded with who split it; `--by person:NAME` is required
+  when the parent has references and no actor is stated (`EVH_ACTOR`, or a terminal).
 
 ### FR6: Text kept off public surfaces
 
@@ -138,9 +137,9 @@ comment that says what it was.
   texts, judge reasons, text and URL field values, source links) off every public surface: the catalog, the
   inspector, MCP, and a deployment's copy. Counts and scores stay.
 
-### FR7: Production as an arm, and agreement (0.6.0)
+### FR7: Production as an arm, and agreement
 
-- **FR7.1**: `evh arm-from-capture --dataset-id D --capture C --as NAME [--like CONFIG] [--field F] [--labels SET]`
+- **FR7.1**: `evh arm-from-capture --dataset-id D --capture C --as NAME [--like SYSTEM] [--field F] [--goal G] [--labels SET]`
   writes the arm's system (`provider: recorded`, the capture) and runs it with `evh run`: each item's output
   is the capture's record of the same id, read by the adapter's `recorded_output(record)` (the deployed arm's
   adapter, from --like) or from the record's field `--field`; no system is called, the cost is 0, the capture's
@@ -151,18 +150,17 @@ comment that says what it was.
   where an arm decided differently from the baseline, the same filter the inspector page offers ("only where they disagree"), and
   `evh label-sheet --items disagree` reads the same hook.
 
-### FR8: The sheet: exploring every item (0.6.0)
+### FR8: The sheet: exploring every item
 
 - **FR8.1**: `evh sheet-show D --runs P,C,…` shows the items down and a column per run across
   (the first is production's): what each wrote, every score it has, every label with its source, the winner per
   item, a footer per run (its mean, its win rate, its verdict), and the signals: **wrong** (`--wrong-against SET`),
   **disagree**, **split** (candidates disagree among themselves), **new** (`--new-vs V`: a field value the governed
   dataset has never had), **unlabelled**; each a filter and a sort, with `--where` and `--by`.
-- **FR8.2** (0.6.0): The inspector's sheet shows the same, and downloads its CSV; a selection of rows gives the
-  `evh pick` and `evh label-sheet` commands for them. The page writes nothing. It replaces the rows view and
-  the inspector's `--items`, which are gone.
+- **FR8.2**: The inspector's sheet shows the same, and downloads its CSV; a selection of rows gives the
+  `evh pick` and `evh label-sheet` commands for them. The page writes nothing.
 
-### FR9: Picks (0.6.0)
+### FR9: Picks
 
 - **FR9.1**: `evh pick --dataset-id D --item … [--for V …] [--tag k=v …] [--note "…"] [--by WHO]` appends to the
   project's one list, `data/picks.jsonl`: the item, its sha256, the dataset and capture it came from, its targets
@@ -172,7 +170,7 @@ comment that says what it was.
 - **FR9.2**: `evh picks [--for V] [--tag k=v] [--json]` lists what waits, per target and "no target yet", each with
   where it came from and its labels by source ("none yet"); an MCP read tool. The target dataset's page shows its picks waiting.
 
-### FR10: The next version of a governed dataset (0.6.0)
+### FR10: The next version of a governed dataset
 
 - **FR10.1**: `evh dataset-extend --dataset V1 --dataset-id V2 --picks|--pick ITEM …` makes V2 of V1's items and the chosen
   picks (`--picks`: those waiting for V1; `--pick ITEM` or `DATASET:ITEM`: any), each copied as it was picked (its
@@ -186,10 +184,9 @@ comment that says what it was.
 ## Success Metrics
 
 - The triage example runs end to end: capture, dataset, production as an arm, labels, the deployed system and a
-  candidate scored against them, the sheet, picks, a v2, a promoted reference set, live on the fleet.
+  candidate scored against them, the sheet, picks, a v2, a promoted reference set.
 - Every existing test passes, and each FR above has its own.
 
 ## Release Considerations
 
-- `dataset-from-capture --sample/--by/--seed` and `reference-from-outcomes` are removed (no shims); captures are
-  not supported on Windows (record ids may contain `:`).
+- Captures are not supported on Windows (record ids may contain `:`).

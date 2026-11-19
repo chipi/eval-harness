@@ -1,4 +1,4 @@
-# ADR-0021 — A deployment, not a model, is what is vetted and fingerprinted (0.6.0)
+# ADR-0021 — A deployment, not a model, is what is vetted and fingerprinted
 
 **Status:** Accepted (owner, 2026-10-31), built in 0.6.0.
 **Date:** 2026-10-31
@@ -13,7 +13,7 @@ and different decisions on another; one tag named an MLX build on one machine; a
 different upstream hosts. The fingerprint (v4) recorded the machine that ran `evh`, which for a served model is
 not the machine that answered.
 
-## Decision (proposed)
+## Decision
 
 - The unit that is onboarded, smoked and fingerprinted is a **deployment**: a model at one place, as one build,
   behind one server or route. A model record holds several; each has its own onboarding. A record whose every

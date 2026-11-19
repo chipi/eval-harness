@@ -1,6 +1,6 @@
 # PRD-004: The catalog and the run inspector
 
-- **Status**: Implemented (v0.4.0); FR6, the same views for an agent: Implemented (v0.5.0); the Captures page (FR1.13) built for 0.6.0; the port per project (FR2.7) built for 0.6.0; FR1.14 and FR2.6 built for 0.6.0 ([RFC-023](../rfc/RFC-023-labels-and-references.md))
+- **Status**: Implemented (v0.4.0)
 - **Authors**: Marko Dragoljevic
 - **Related UX specs**: [UXS-001](../uxs/UXS-001-catalog.md) (the catalog's pages),
   [UXS-002](../uxs/UXS-002-inspector.md) (the inspector), [UXS-003](../uxs/UXS-003-cli-and-onboarding.md) (the same views as commands)
@@ -20,8 +20,7 @@ the only way to see something.
 
 ## Background & Context
 
-A project that pins the harness (a private podcast evaluation repository) built a catalog, an
-inspector and goals for itself. In 0.4.0 the generic part moved into the harness, with the
+A project that pins the harness gets the catalog, the inspector and goals from it, with the
 paired test in one module, so the inspector and the CLI cannot disagree; the project keeps one
 adapter file ([ADR-0002](../adr/ADR-0002-catalog-inspector-goals.md),
 [RFC-003](../rfc/RFC-003-catalog-adapter.md)). This repository publishes its own catalog at
@@ -40,7 +39,6 @@ adapter file ([ADR-0002](../adr/ADR-0002-catalog-inspector-goals.md),
 
 - **The pages never write.** No promote, retire or close button: decisions are commands
   ([PRD-005](PRD-005-goals-and-rounds.md)). A public deployment depends on that.
-- Not a live dashboard: the server reads the runs when it starts; a new run needs a restart.
 - No account system or per-user state.
 - No report rendering: the catalog renders no project reports.
 
@@ -107,24 +105,24 @@ adapter file ([ADR-0002](../adr/ADR-0002-catalog-inspector-goals.md),
   14, 7, 30 or 90 days, this or last week or month, this year, all time), the counts with their
   trends against the period before. The tiles are grouped and coloured by subject (goals; data;
   evals; work and spend), never red or green for a direction.
-- **FR1.9** (0.4.2): A tile is a door: the page it opens shows what it counts, for the same
+- **FR1.9**: A tile is a door: the page it opens shows what it counts, for the same
   period, carried in the link. The goals, datasets, arms, references and metrics pages mark the
   rows new in the period, keep only the new or the active ones on request, and show the period's
   runs and spend against the period before; the goals page lists what happened to each goal.
-- **FR1.10** (0.4.2): An activity page shows the period's runs, spend and tokens by dataset, by
+- **FR1.10**: An activity page shows the period's runs, spend and tokens by dataset, by
   arm and by kind of call, against the period before, what moved most first.
-- **FR1.11** (0.4.2): An arms and systems page lists every arm, each saying how it was measured
+- **FR1.11**: An arms and systems page lists every arm, each saying how it was measured
   (measured, rescored, judged, re-parsed, run again), grouped by dataset, system, model, provider
   or what it is scored against, filtered to local or hosted arms or a price tier, with its role
   in each goal's decision; picks arms on one dataset to open in the inspector; lists every system
   across the datasets it ran on with its rank on each goal; and shows each goal's trade-off
   charts.
-- **FR1.12** (0.4.2): The menu groups the pages by the same subjects as the tiles, so it fits a
+- **FR1.12**: The menu groups the pages by the same subjects as the tiles, so it fits a
   desktop bar; a phone's menu lists every page.
-- **FR1.13** (0.6.0): A Captures page, under Data, lists every capture (its records, importer, sample rule, the
+- **FR1.13**: A Captures page, under Data, lists every capture (its records, importer, sample rule, the
   time its records span, what it continues) with the datasets made from each; a dataset made from a capture links
   its origin to it.
-- **FR1.14** (0.6.0):
+- **FR1.14**:
   - a tier is a large pill in its own colour wherever a reference or a tier is named; a label set is named by its
     source chip (person, model, rule), never in a tier's colours; "scored against" names one or the other, always;
   - a Labels page under Data: every label set, its source, coverage, guideline, and what was promoted from it; a
@@ -138,7 +136,7 @@ adapter file ([ADR-0002](../adr/ADR-0002-catalog-inspector-goals.md),
 
 - **FR2.1**: `evh catalog-serve [--port N]` (default: the project's own port, ADR-0024) serves the built catalog and the inspector on
   127.0.0.1, answers only to a 127.0.0.1/localhost Host header, and serves only the catalog and
-  the data tree, never a dot-folder in either.
+  the data tree, never a dot-folder in either. A local server also answers the write API (`/api/v1/`, with a token) and serves the Workbench (`/workbench/`, [PRD-017](PRD-017-workbench.md)); with `--public` or `--behind-proxy` (the whole inspector for the named hosts behind a private proxy) both answer 404.
 - **FR2.2**: It refuses arms on different `dataset_id`s, and, on a metric scored against a
   reference, does not test an arm scored against another reference than the baseline's.
 - **FR2.3**: It tests each arm against the baseline with `evaluation_harness.stats` (exact p up
@@ -150,13 +148,13 @@ adapter file ([ADR-0002](../adr/ADR-0002-catalog-inspector-goals.md),
 - **FR2.5**: It compares the arms' recorded conditions and warns when the scorer or the
   reference bytes differ, or latency is compared across deployments (where the model ran) or
   measured from different runners (RFC-021).
-- **FR2.6** (0.6.0): A label set can be what arms are scored against; the item view shows every label
+- **FR2.6**: A label set can be what arms are scored against; the item view shows every label
   with its source; `--disagree` keeps the items where the chosen arms decided differently; and the sheet
   (`evh sheet-show D --runs …`) shows the items down and a column per arm across, with what each
   wrote, its scores, the labels, the winner, the signals (wrong, disagree, split, new, unlabelled) as filters and
   sorts, and a footer per arm. A selection of rows gives the `evh pick` and `evh label-sheet` commands, and its CSV
   downloads; the page writes nothing (PRD-014 FR8).
-- **FR2.7** (0.6.0): `catalog-serve` serves each project on a stable port of its own (PRD-007 FR2.6), the next
+- **FR2.7**: `catalog-serve` serves each project on a stable port of its own (PRD-007 FR2.6), the next
   free one if that is taken, and prints the URL and the project; `--port` overrides. A local catalog (the default
   name, no `--link`) names its project in its header and tab title.
 
@@ -176,20 +174,20 @@ adapter file ([ADR-0002](../adr/ADR-0002-catalog-inspector-goals.md),
   with the same functions: `evh overview-show` (the home dashboard), `evh activity-show`, `evh dataset-list`,
   `evh arm-list` (`--where`, `--tier`, `--systems 1`; `evh arm-show`), `evh reference-list`, `evh metric-list`,
   `evh goal-list`, `evh search`, `evh comparison-show` (its comparison, `--analysis`; `comparison-item`, `sheet-show`)
-  ([UXS-003](../uxs/UXS-003-cli-and-onboarding.md)); every list takes `--period P` and prints the
-  page's period columns, from the same builder the page reads.
+  ([UXS-003](../uxs/UXS-003-cli-and-onboarding.md)); every list but `search` takes `--period P` and prints the
+  page's period columns same builder the page reads.
 - **FR4.2**: New views and actions are added to both. A decision the pages suggest is shown as
   the command that makes it.
 
 ### FR5: Any layout
 
-- **FR5.1**: On the harness's own layout (`data/runs*/`, `data/references/`, `data/datasets/`,
+- **FR5.1**: On the harness's own layout (`data/runs/`, `data/references/`, `data/datasets/`,
   `data/goals/`) no code is needed.
 - **FR5.2**: With another layout, the project writes one adapter class and names it in
   `config.yaml` (`catalog: {adapter: path/to/file.py:Class}`) or passes `--adapter`
   ([RFC-003](../rfc/RFC-003-catalog-adapter.md)).
 
-### FR6: The same views for an agent (v0.5.0)
+### FR6: The same views for an agent
 
 - **FR6.1**: `evh mcp` serves the read operations of FR4 (and `round-list`, `runs-list`, `validate`,
   `dataset-items`) as MCP tools, each call the operation itself, so FR4's parity holds for an agent
@@ -203,7 +201,7 @@ adapter file ([ADR-0002](../adr/ADR-0002-catalog-inspector-goals.md),
 
 ## Success Criteria
 
-- The inspector gives the same p as `pair-test` on the same pair (GUIDE step 12: lead2 against
+- The inspector gives the same p as `pair-test` on the same pair ([tutorial 3](../tutorials/3-frontier-reference-and-judging.md) step 4: lead2 against
   lead1 on gold, p = 0.0938).
 - The catalog and the inspector pass the headless browser check (`make browser-check`) and the
   catalog tests (`harness/tests/test_catalog.py`).

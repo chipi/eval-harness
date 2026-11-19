@@ -79,6 +79,7 @@ evh round-retire --goal tickets_summary --round r1 --arm tickets_lead1_v1 \
 evh round-close --goal tickets_summary --round r1 \
     --conclusion "lead2 is ahead of lead1 and lead2_noisy on all six tickets, not significantly at n=6; lead2 stays the baseline"
 git add data/rounds && git commit -qm "tickets_summary r1: closed"
+# From a terminal your login is the actor; with no terminal (an agent, a script, CI) add --by person:NAME or set EVH_ACTOR
 ```
 ```text
 tickets_lead1_v1 retired from r1: one sentence is behind two on every ticket

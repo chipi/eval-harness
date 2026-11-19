@@ -6,8 +6,7 @@ at all, on items of your own. The question it answers is the first one worth ask
 model: **does it beat doing nothing clever?** The loop is the same; what is new is your own
 `adapter.py`, the file that hands your system to the harness.
 
-It follows the newcomer scenario this release was tried on: one-sentence summaries of short
-local-news briefs. Your items can be anything text-shaped. Nothing here is run by
+The task: one-sentence summaries of short local-news briefs. Your items can be anything text-shaped. Nothing here is run by
 `make guide-check`: it needs the model's libraries, which are your system's, not the harness's.
 
 ## 0. A project of your own
@@ -193,6 +192,7 @@ You named the question before you looked: does the model beat the baseline?
 evh pair-test briefs_v1 --a briefs_flan_t5_small_v1 --b briefs_lead1_v1
 evh family-test briefs_v1 --a briefs_flan_t5_small_v1 --against briefs_
 evh run-promote --run <run_id> --reason "<what the tests showed, and what it costs>"
+# From a terminal your login is the actor; with no terminal (an agent, a script, CI) add --by person:NAME or set EVH_ACTOR
 ```
 
 `pair-test` is for the one pair you named in advance; once you are choosing the best of several,
@@ -200,9 +200,7 @@ evh run-promote --run <run_id> --reason "<what the tests showed, and what it cos
 three runs: promote any one of them (`_r1` will do). The baseline records that run's scores and,
 under `repeats`, all three and their mean, which is what the catalog, the inspector and the tests
 read; `run-promote` prints the two side by side. The leading sentence of a news
-brief is a strong baseline: in the scenario, on twenty briefs, the first sentence was not
-significantly different from the leading hosted LLM, and both small models were significantly below that LLM. Find
-out which holds on your items before paying for a model.
+brief is a strong baseline: test a model against it on your items before paying for the model.
 
 Next: [tutorial 2](2-hosted-llm.md) adds a hosted LLM to the same comparison, and
 [tutorial 5](5-catalog-and-inspector.md) browses it.

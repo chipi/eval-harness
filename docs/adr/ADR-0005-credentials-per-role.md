@@ -1,4 +1,4 @@
-# ADR-0005 — One provider layer; credentials per role, never identity (0.4.0)
+# ADR-0005 — One provider layer; credentials per role, never identity
 
 **Status:** Accepted (2026-10-25), as built.
 **Date:** 2026-10-25
@@ -24,8 +24,7 @@ each has its own budget and spend log; the harness offered no way to do that sho
 
 ## Decision
 
-- **One provider layer** (`evaluation_harness._providers`) for arms, judge-score's judges and
-  the judge panel: the same providers, options, cost rule (the bill, else the declared prices,
+- **One provider layer** (`evaluation_harness._providers`) for arms and judge-score's judges: the same providers, options, cost rule (the bill, else the declared prices,
   else unknown) and refusals. A call goes where its `provider:` says and nowhere else; every
   judge declares one (the scorer schema requires it).
 - **Keys by role.** A judge reads every variable as `EVAL_JUDGE_<NAME>` first, then `<NAME>`;

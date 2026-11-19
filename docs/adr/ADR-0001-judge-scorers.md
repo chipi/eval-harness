@@ -19,10 +19,13 @@ protocol it was validated with, and able to prefer its own vendor family.
   cross-run pass, `evh judge-score`, not a code scorer inside `rescore`.
 - The harness **refuses a judge** until its scorer names, for each judge, a committed run that
   validated it against human ratings; `--unvalidated` runs it with every number labelled.
-- **At least two judges from different vendor families**, listwise, blind and shuffled; position
-  and noise measured on subsets; every verdict stored, so re-reading costs $0.
-- Judged scores are **derived runs** in `data/runs-judged/<scorer_id>/`; the originals are never
-  touched, and a judged score replaces a primary metric only by a recorded decision.
+- **At least two judges from different vendor families**, blind and shuffled; the default grade mode
+  is listwise (every arm in one call), and `pick` and `pairwise` modes exist; a grade prompt that does
+  not name the task's dimensions is refused; position and noise measured on subsets; every verdict
+  stored, so re-reading costs $0.
+- Judged scores are **scores under each judged run**, `data/runs/<run_id>/scores/<scorer>@<judging set>/`,
+  read as `judged/<scorer>`; the runs' own scores are never touched, and a judged score replaces a
+  primary metric only by a recorded decision.
 
 ## Consequences
 

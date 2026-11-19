@@ -1,4 +1,4 @@
-# ADR-0029 — One data model; the command line, the API and MCP made from one registry (0.8.0)
+# ADR-0029 — One data model; the command line, the API and MCP made from one registry
 
 **Status:** Accepted (owner, 2026-11-13, [RFC-032](../rfc/RFC-032-one-model-two-surfaces.md)); built in 0.8.0, steps 1
 to 8, and of step 9 (the parts of RFC-026 this replaces) P1 to P3: the views' cache, the SQLite release, every read an
@@ -6,7 +6,7 @@ operation answered in the server's process, every job an operation and its input
 **Date:** 2026-11-15
 **Detail:** [RFC-032](../rfc/RFC-032-one-model-two-surfaces.md) (its decision blocks, step by step),
 [RFC-026](../rfc/RFC-026-an-api-for-every-command.md) (what it keeps and what it replaces),
-[ADR-0027](ADR-0027-the-data-page-writes-locally.md) (amended here), `harness/docs/UPGRADING.md` (formats 1 to 6)
+[ADR-0027](ADR-0027-the-data-page-writes-locally.md) (amended here), `harness/docs/UPGRADING.md` (formats 1 to 7)
 
 ## Context
 
@@ -15,13 +15,15 @@ held its deployments, rounds that listed retirements by folder, and 47 modules (
 paths themselves. Each `evh` command printed what it chose and the API (RFC-026) served the commands by running them as
 processes, so the command line, the API, MCP and the catalog each computed their own numbers: a round's arms were
 worked out two ways (29 against 87 on CNN r1), a round's leader by two rules, a leaderboard by a third
-implementation. The owner asked for "the CLI and the API as different surfaces around the same model" (2026-11-13).
+implementation. The owner asked for "the CLI and the API as different surfaces around the same model".
 
 ## Decision
 
 **Three layers.** `model/` holds the entities and the views; `ops/` holds the operations; the command line, the API
-(`/api/v1`) and MCP are surfaces made from the operations. Nothing outside the model builds a data path or globs a
-folder; the model reads any data directory (a deployment's copy too) through its data root.
+(`/api/v1`) and MCP are surfaces made from the operations. Runs, rounds, goals, datasets and their views are read
+through `model/`, which reads any data directory (a deployment's copy too) through its data root. The modules that still
+read data folders directly are not yet moved to the model layer: `judge_score`, `_baselines`, `family_test`,
+`dataset_split`, `_models`, `capture_restore`.
 
 **Entities.** Each has one schema, one id and one place: goal; dataset (its items, source, profile, versions, sealed
 side as parts) and fieldset; label set, tag set and reference; model and deployment (apart, with the deployment's
@@ -47,7 +49,7 @@ backup is the rollback). A key that is part of a stored hash keeps its name: the
 judging sets' arms, label sets' and silver references' sources, ids recorded at a promotion.
 
 **Amends ADR-0027.** The server writes edits itself, in either store, gated by the API's token and the
-`X-EVH-Data` header, not by `configure: true`; `evh validate` in full is a job.
+`X-EVH-Data` header, not by `configure: true`.
 
 ## Consequences
 
@@ -57,7 +59,7 @@ goal would flag possible; both fixed once). Bugs a single resolver removes: a da
 working directory, a materialized copy deleted before its rebuild, a reference promoted under another name missed.
 The Workbench and agents get typed resources instead of a command's printed tables.
 
-**Negative.** Six format steps in one release, each with a migration the project runs (`evh migrate`). Command and
+**Negative.** Seven format steps in one release, each with a migration the project runs (`evh migrate`). Command and
 tool names change where a legacy command is replaced by an operation (step 9). Every view is computed on read: its
 cost is paid per data change, which needs the cache the RFC names (measured in step 9).
 

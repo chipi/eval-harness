@@ -1,4 +1,4 @@
-# ADR-0030 — Per-item results as tables in the SQLite store; the files store stays JSONL (0.8.0)
+# ADR-0030 — Per-item results as tables in the SQLite store; the files store stays JSONL
 
 **Status:** Accepted (owner, 2026-11-15, [RFC-033](../rfc/RFC-033-per-item-results-as-a-model.md)); built in 0.8.0.
 **Date:** 2026-11-16
@@ -11,7 +11,7 @@ rows is replaced here), `harness/docs/UPGRADING.md` (format 7)
 A score set's per-item results (`predictions.jsonl`, one JSON line per item) were stored verbatim in both stores: as a
 file, and in SQLite as one text value per line (table `rows`). On this repository's data the 101.8 MiB of row JSON was
 56% key names and 16% punctuation; 37% of `_meta` was copied between the score sets of one run; the provider's whole
-billing object and three run settings were a further 42 MiB (RFC-033, measured 2026-11-15). The owner's goal was "a
+billing object and three run settings were a further 42 MiB (RFC-033). The owner's goal was "a
 model that can be queried" in both layers, not only a smaller file.
 
 ## Decision
@@ -58,7 +58,7 @@ database is vacuumed); there is no step back down, the backup is the rollback (A
 ## Alternatives considered
 
 - **Compression of each score set** (measured 9.6 MiB): the smallest, and the rows stay opaque: nothing can be queried.
-  Not chosen, and not both (owner, 2026-11-15).
+  Not chosen, and not both (owner).
 - **The byte-for-byte mirror** (RFC-025: a text value per line, the files store's bytes in a table): simple to prove, and
   it keeps the repeated key names and the copied `_meta`. Replaced for per-item rows; `files` and `outputs` stay as
   they were.
@@ -67,7 +67,7 @@ database is vacuumed); there is no step back down, the backup is the rollback (A
   would leak, and it moves coincidences such as a run whose rows all end `finish_reason: stop`. Only the three named
   settings move (owner).
 - **Hashed score-set ids** (built first, 34ce211fb): a new run's rows landed anywhere in the tables, 10.1 to 86.9 MB of
-  rsync. Replaced by the order of time (owner, 2026-11-16).
+  rsync. Replaced by the order of time (owner).
 - **`json_group_object` to assemble a row's values in SQL:** measured, 0.407 s against 0.380 s for the Python assembly it
   would replace (0.360 s with each set's rows scanned once); no gain, not adopted (RFC-033 "As built").
 - **JSONB, integer item ids, SQL aggregation in the views, modelling `outputs` or `files`:** decided out of this

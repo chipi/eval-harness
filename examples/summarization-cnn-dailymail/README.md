@@ -4,10 +4,8 @@ One task — summarise a news article in 2–3 sentences — measured across 24 
 from 8 vendors, on three axes at once: **quality, cost and wall-clock speed**.
 
 It is a worked example for [`../../harness`](../../harness), and it is also a record
-of what a small eval can and cannot tell you. Most of what is interesting here was found
-by *disbelieving the first answer*: several headline findings in
-[`research/internal/NOTES.md`](../../research/internal/NOTES.md) were retracted after the numbers were checked
-properly, including one caused by a one-line bug in this example's own scorer.
+of what a small eval can and cannot tell you. Its findings are in
+[`research/internal/NOTES.md`](../../research/internal/NOTES.md), corrections included.
 
 > **Rerun this eval** from the repository root — `EXP=summarization` / `EXP=summarization-dailymail`:
 >
@@ -173,9 +171,9 @@ paraphrase or a fabrication, and this cannot tell them apart. Read it beside ROU
 instead of it. It is not length-neutral either (ρ = +0.12).
 
 **Format compliance is computed, not eyeballed** — `fmt_narration`, `fmt_label`,
-`fmt_markdown`, `fmt_bullets`, `fmt_paragraphs`, `fmt_overlong`, on every output. This
-exists because five outputs were once read by hand and declared clean; computing it over
-all of them finds **262 of 4,800 (5.5%)** hit at least one flag — including outputs where a
+`fmt_markdown`, `fmt_bullets`, `fmt_paragraphs`, `fmt_overlong`, on every output. Reading a
+few outputs by hand misses flags; computed over
+all of them, it finds **262 of 4,800 (5.5%)** hit at least one flag — including outputs where a
 model wrote its reasoning out in the open.
 
 **Browse it, or ask it.** Every arm and run below is in the catalog, on the goal's page

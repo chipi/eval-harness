@@ -1,6 +1,6 @@
 # PRD-001: Running evals and comparing arms
 
-- **Status**: Implemented (v0.4.0); the core since 0.1.0
+- **Status**: Implemented (v0.4.0)
 - **Authors**: Marko Dragoljevic
 - **Related UX spec**: [UXS-003](../uxs/UXS-003-cli-and-onboarding.md) (the command line and the first evaluation)
 - **Related RFCs**: [RFC-001](../rfc/RFC-001-fingerprint-and-code-identity.md) (fingerprint and code identity),
@@ -60,7 +60,7 @@ the [Runbook](../../harness/docs/RUNBOOK.md); the first evaluation, step by step
 
 - _As an engineer, I can cost a run before spending anything (`--dry-run`) so that a sweep never
   surprises me._
-- _As an engineer, I can run an arm three times and see its own spread, so that a difference
+- _As an engineer, I can repeat a system's run and see its own spread (`--repeat N`, or `--purpose repeat --of <run_id>` beside a run it already has), so that a difference
   smaller than its noise is not mistaken for an improvement._
 - _As a researcher, I can test one arm against a declared family of others with Holm's
   correction, so that a "winner" claim accounts for every comparison made._
@@ -75,18 +75,18 @@ the [Runbook](../../harness/docs/RUNBOOK.md); the first evaluation, step by step
 
 - **FR1.1**: `evh dataset-create` freezes a list of items with the sha256 of each item's bytes;
   `evh dataset-materialize` builds a working copy and fails on any byte that differs.
-- **FR1.2**: An arm is a config file holding only `config_id`, `dataset_id`, `params`, and
-  optionally `adapter`, `goal`, `format` and `round`; `evh validate` (V1) fails any other key.
-- **FR1.3**: A change to an arm is a new `config_id`; a change to a dataset is a new
+- **FR1.2**: A system (an arm) is a file `data/systems/<system_id>.yaml` holding `system_id` and `params`, and optionally `adapter`, `format`, `model_record`, `deployment`, `prompts`, `prompt_root`, `code`, `replay`, `expect_identical_to` and `hypothesis`; `evh validate` (V1) fails any other key. The dataset, the goal and the round are not in the file: they are named when the system runs.
+- **FR1.3**: A change to a system is a new `system_id`; a change to a dataset is a new
   `dataset_id`.
 
 ### FR2: Runs
 
-- **FR2.1**: `evh run --system … --dataset …` runs one arm over the dataset and writes a run
-  directory: per-item outputs, per-item scores, the run record (`metrics.json`) and a
-  fingerprint (RFC-001).
-- **FR2.2**: `--dry-run` prints the calls, tokens and estimated cost and calls nothing.
-- **FR2.3**: `--repeat N` runs the arm N times so its own spread can be measured.
+- **FR2.1**: `evh run --system … --dataset …` runs one system over the dataset and writes a run
+  folder `data/runs/<run_id>/`: `run.json` (the run record), `outputs.jsonl` and, per scorer and
+  reference, `scores/<scorer>@<reference>/{score.json, metrics.json, predictions.jsonl}`; each
+  `metrics.json` carries the fingerprint (RFC-001).
+- **FR2.2**: `--dry-run` prints the calls, tokens and estimated cost and calls nothing; `--scratch` runs a throwaway pass under `.build/scratch/runs/`.
+- **FR2.3**: `--repeat N` measures a system's run-to-run spread; it is refused (would-overwrite) when the system already has a plain run on the dataset; use `--purpose repeat --of <run_id>` to repeat a run. A `--scratch` repeat is not refused.
 - **FR2.4**: The core times every call (`latency_ms`) for an adapter that does not report its
   own, and records billed cost when the provider reports it, else tokens times the system's
   prices.
@@ -105,7 +105,7 @@ the [Runbook](../../harness/docs/RUNBOOK.md); the first evaluation, step by step
 - **FR3.2**: `evh pair-test` tests one pre-named pair; `evh family-test` tests one arm against a
   declared family with Holm's correction. Both use one paired sign-flip test
   (`evaluation_harness.stats`): exact over all 2^n sign patterns at 30 items or fewer, a seeded
-  estimate above, and the output says which.
+  estimate above, the normal limit from 10,000 units ([ADR-0028](../adr/ADR-0028-large-samples-use-the-normal-limit.md)), and the output says which.
 - **FR3.3**: `evh run-compare --baseline … --candidate … [--noise …]` diffs two runs fingerprint
   first, names every field that differs, and reports a delta at or below the stated noise as
   noise.
@@ -121,10 +121,10 @@ the [Runbook](../../harness/docs/RUNBOOK.md); the first evaluation, step by step
 
 - **FR4.1**: `evh run-promote --run … --reason "…"` makes a run the dataset's baseline; it
   refuses a run from a dirty tree or an unknown build unless told otherwise
-  (`--allow-dirty`, `--allow-unknown-build`).
+  (`--allow-dirty`, `--allow-unknown-build`). A decision records who made it: it needs an actor, `--by person:NAME` or `EVH_ACTOR`, and is refused from a shell with no terminal and neither.
 - **FR4.2**: The baseline records the run's reference tier, adapter and fingerprint hash, and
   `evh validate` (V6) fails a baseline that no longer matches its run.
-- **FR4.3**: `evh validate` checks the whole data tree (V1–V23) and exits non-zero, so CI can
+- **FR4.3**: `evh validate` checks the whole data tree (V1–V28) and exits non-zero, so CI can
   hold it.
 
 ## Success Criteria

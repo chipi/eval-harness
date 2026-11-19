@@ -13,7 +13,7 @@ comparisons that **refuse** to mislead you.
 ```bash
 cd your-project
 pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.7.2#subdirectory=harness"
-evh init --store files --tutorial   # the data folders, config.yaml, a .gitignore, an example judge prompt and the tutorial kit; --store sqlite is its equal
+evh init --store files --tutorial   # the data folders, config.yaml, .gitignore, AGENTS.md, CLAUDE.md, data/project.yaml, prompts/judge_prompt_example.txt and the tutorial kit; --store sqlite is its equal
 evh --help             # the verbs, in the order you need them
 ```
 
@@ -43,8 +43,8 @@ evh run-promote --run <run_id> --reason "what the tests showed"    # the choice,
 **[Getting started](../docs/GUIDE.md)** walks it once, offline, in about fifteen minutes; the
 [tutorials](../docs/GUIDE.md#where-to-go-next) add a local model, a hosted LLM with your own
 key, a frontier reference and judges, eval rounds and dataset versions, the catalog, datasets
-from what your system did in production, and setting a model up before you test it.
-In a checkout of this repository every `evh` command is also a `make` target (`make demo` runs
+from what your system did in production, the Workbench, and setting a model up before you test it.
+In a checkout of this repository many `evh` commands are also `make` targets (`make demo` runs
 the whole loop on bundled data, no API key, no network).
 
 ## Install it as a dependency
@@ -100,14 +100,14 @@ optional, later, from the same frozen outputs (the originals are never touched):
 
 beside them, also optional:
 data/goals/          what each evaluation is for; a run names one with `evh run --goal`
-data/rounds/         eval rounds of a goal: evh round-open / rounds / round-close
+data/rounds/         eval rounds of a goal: evh round-open / round-list / round-close
 data/fields/         field sets: the typed facts a project's items carry (`--fieldset`)
 data/profiles/       evh dataset-profile   what is inside a dataset, for its page (no text by default)
 .build/catalog/      evh catalog / evh catalog-serve   pages over the runs, and the inspector
 (an agent)           evh mcp            the read commands as MCP tools
 ```
 
-`evh validate` checks the whole tree — twenty-three integrity rules (V1–V23), exits non-zero,
+`evh validate` checks the whole tree — twenty-eight integrity rules (V1–V28), exits non-zero,
 so it can gate CI.
 
 ### The three inputs
@@ -143,7 +143,7 @@ And one more, `score()`, for what "good" means in your domain. That is the
 whole integration — no refactor, no wrapper, no base class.
 
 Arms are **system files**, not code edits: four models to compare is four YAML
-files sharing a `dataset_id`.
+files, each run on the same dataset.
 
 → **[docs/INTEGRATION.md](docs/INTEGRATION.md)** — the first hour, concretely.
 
@@ -180,8 +180,7 @@ Three readings, all computed over the whole table at once:
 
 What this deliberately does **not** do is walk down the table comparing each arm to a
 running "leader". That is a sorting algorithm, not a comparison: walked bottom-up instead
-of top-down it partitions the same arms differently, and it once supported both a finding
-and its retraction from one dataset.
+of top-down it partitions the same arms differently.
 
 ## Re-measuring without re-running
 
@@ -204,8 +203,7 @@ recomputation can never be mistaken for a measurement. Latency, cost
 and token counts are carried across untouched — they describe the call that happened, not
 how it was later measured.
 
-This exists because a scorer bug survived two full sweeps: checking it would have cost a
-third. When verifying a measurement is expensive, it does not get verified.
+This exists so that fixing a scorer does not cost another paid sweep: the outputs are kept, and scored again for $0.
 
 The same frozen outputs can be measured again in three ways, and none of them is required:
 
@@ -318,8 +316,7 @@ evh leaderboard my_v1 --label judged/my-judge   only the arms read under one lab
 silently moving numbers you have already reported: it writes under `.build/scratch/runs`, which nothing that
 reads runs looks at. Use it whenever you are validating a change rather than measuring something.
 
-**Deleting old runs to make a table shorter is not the alternative to scoping it.** That is
-how 18 arms of paid results were lost during this harness's own development.
+**Deleting old runs to make a table shorter is not the alternative to scoping it.** A run is a paid result: scope the table instead.
 
 ## Docs
 
@@ -352,7 +349,7 @@ bundled adapter a pinned project has is `evaluation_harness/adapter.py`.
 | `scripts/run.py` | run an arm → scores, cost, speed, provenance |
 | `scripts/compare_runs.py` | compare two runs, or refuse |
 | `scripts/promote_baseline.py` | run → baseline, or refuse |
-| `scripts/validate_tree.py` | twenty-three integrity checks (V1–V23) |
+| `scripts/validate_tree.py` | twenty-eight integrity checks (V1–V28) |
 | `scripts/ops/records.py` | what runs and baselines exist: `evh runs-list`, `evh baselines` |
 | `schemas/` | the contracts: dataset, metrics (a run), baseline, system (an arm), goal, field set, judge scorer, judging set, verdict |
 | `scripts/_fields.py`, `scripts/_fetch.py` | item fields (types, checks, the catalog's summary) and items fetched from a pinned URL (ADR-0003) |

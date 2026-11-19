@@ -48,17 +48,18 @@ on every change, comparing each quoted output. Its order is the order a newcomer
 | 0 | set up a project with the tutorial kit | `pip install …`, `evh init --store files --tutorial` |
 | 1 | freeze a dataset | `evh dataset-create --dataset-id tickets_v1 --source-dir tutorial/tickets` |
 | 2 | materialize | `evh dataset-materialize --dataset-id tickets_v1` |
-| 3 | describe the arms, name the goal, commit | copy systems, `goal: tickets_summary` |
-| 4 | run the best arm first (a dry run prices it) | `evh run --system tickets_author_v1 --dataset tickets_v1 --goal tickets_summary [--dry-run]` |
+| 3 | describe the arms, say what the evaluation is for, commit | `cp tutorial/systems/tickets_*.yaml data/systems/`, `cp tutorial/goals/tickets_summary.yaml data/goals/` |
+| 4 | run the best arm first (a dry run prices it); the run names its goal | `evh run --system tickets_author_v1 --dataset tickets_v1 --goal tickets_summary [--dry-run]` |
 | 5 | optional: make its outputs the reference (its outputs become a model's labels, which you promote) | `evh label-from-run --run <run_id> --set author_v1`, then `evh reference-promote --dataset-id tickets_v1 --labels author_v1 --tier silver --reason "…" --by <you>` |
-| 6 | run the other arms, three times each | `evh run --system … --dataset … --repeat 3` |
+| 6 | run the other arms, three times each (a system that already has a plain run on the dataset refuses `--repeat`; it repeats the run it has) | `evh run --system … --dataset … --goal … --repeat 3`; for the system that has a run: `evh run --system … --dataset … --purpose repeat --of <run_id>` |
 | 7 | compare | `evh leaderboard`, `evh pair-test`, `evh family-test` |
 | 8 | choose: promote a baseline, then validate | `evh run-promote --run … --reason "…"`, `evh baselines`, `evh validate` |
 
 The [tutorials](../tutorials/1-local-model.md) take it on from there: a local model and its own
 adapter (1), a hosted model with the user's own key (2), gold, `silver-calibrate` and an LLM judge
-(3, run by `make guide-check`), rounds and dataset versions (4, run), and the catalog, the
-inspector and fields (5, run).
+(3), rounds and dataset versions (4), the catalog, the inspector and fields (5), datasets from
+production (6), setting up a model before it is tested (7) and the Workbench (8). `make guide-check`
+runs tutorials 3, 4, 5, 6 and 8.
 
 Goals appear at step 3 and rounds only in tutorial 4: a newcomer can ignore both. Deeper material is
 tiered behind the GUIDE: [Concepts](../../harness/docs/CONCEPTS.md) (why),
@@ -76,6 +77,9 @@ models).
   each: 0 done; 1 refused; 2 a usage error; 3 a judge scorer not validated; 4 stopped early by the cost
   cap, the partial results kept and resumable; 5 some runs of a sweep failed; 6 the checks ran and some
   failed; 7 nothing measured; 70 an error nothing caught; 75 a server not reached; 130 interrupted.
+- **Who acted:** a command that writes takes `--by person:NAME` (or `agent:NAME` with
+  `EVH_FOR=person:NAME`); the default is `EVH_ACTOR`, else the terminal's user, and `unknown` with
+  no terminal. A decision (promote, roll back, close a round, unseal) refuses `unknown`.
 - **Hints:** a command that creates something ends with `Next: <command>`, e.g. after
   `dataset-create`: `Next: evh dataset-materialize --dataset-id tickets_v1`. Through `evh` the
   hint names an evh command; in a checkout, a make target.
@@ -101,33 +105,42 @@ answer. Where the page has a `make` target in a checkout, it runs the same scrip
 | a dataset page's what's inside: items, words, the gold's shape, each item's row at its source | `evh dataset-items <id> [--item ID]` (written by `evh dataset-profile`) | `make dataset-items DATASET_ID=<id>` |
 | the goals page | `evh goal-list` | |
 | a goal page: the answer so far, arms per dataset and group (a judge's group on its score), retired marks, one line per round | `evh goal-leaderboard <id>` | |
-| a goal page: its rounds and suggestions (each suggestion's copy button copies its command) | `evh round-show <id> rN` | |
+| a goal page: one line per round, with its conclusion | `evh round-list <id>` | |
+| a goal page: a round as recorded (hypothesis, changes, harness, scorer, each arm's entry and runs, retirements, conclusion) | `evh round-show <id> rN` | |
+| a goal page: a round's evidence (leader, tests, spend against the budget, suggestions each with its command; each suggestion's copy button copies that command) | `evh round-evidence <id> rN` | |
+| a goal page's trend chart and "The evidence, drawn" (gain-cost, intervals, latency, items, rank stability, agreement) | `evh chart <kind> --goal <id> [--round rN] [--svg FILE]` | |
+| a goal page's studies | `evh study-list <id>`, `evh study-show <id> <study>` | |
 | a goal page: a round's **inspect** button | `evh comparison-show --round rN [--goal <id>]` | |
 | the arms page: every arm, grouped, filtered (local / hosted, price tier) | `evh arm-list [--where local\|hosted] [--tier T]` (grouped by dataset, three a group, with `evh dataset-arm-list D` for the rest) | |
 | the arms page: the systems, with their rank on each goal | `evh arm-list --systems 1` | |
 | an arm page: metrics, cost and speed, runs, system, conditions, rounds | `evh arm-show LABEL DATASET <arm id or system id>` | |
-| the models page: every model record, its deployments, settings, onboarding, arms (0.6.0, RFC-020) | `evh model-list [--kind K] [--where self-hosted\|hosted] [--status vetted\|onboarded\|check\|none]` | |
+| the models page: every model record, its deployments, settings, onboarding, arms | `evh model-list [--kind K] [--where self-hosted\|hosted] [--status vetted\|onboarded\|check\|none]` | |
 | a model page: its deployments and their onboarding, settings history, arms | `evh model-show <id>` | |
 | (no page action) onboarding a model's deployment, smoking an arm before its run | `evh model-onboard --model-id <id> --deployment <d>`, `evh arm-smoke --system <id> --dataset <id>` | |
-| reference set pages | `evh reference-show <id> NAME` | |
+| reference set pages | `evh reference-show <tier> <name>` | |
 | the Captures page | `evh capture-show ID [--json]` | |
-| (no page; the Configure page was retired, PRD-017) the project's data: the overview, a folder, find | `evh data-ls [PATH] [--find TEXT]` | |
+| (no page) the project's data: the overview, a folder, find | `evh data-ls [PATH] [--find TEXT]` | |
 | (no page) a file; a setting's fields | `evh data-show PATH [--fields]` | |
 | (no page) saving or creating a setting | `evh data-put --path PATH --set KEY=VALUE … [--unset KEY …] [--new] [--check]`, or a whole file: `evh data-put --path PATH --file FILE` | |
 | (no page) deleting a setting, or a whole run | `evh data-rm --path PATH [--dry-run]` | |
-| the Labels page; a dataset page's labels (0.6.0) | `evh label-set-list D` | |
-| a goal page's failure modes (0.8.0) | `evh tag-set-list D` | |
-| (no page action) labelling: a sheet to fill, then its import (0.6.0) | `evh label-sheet --dataset-id D --out sheet.csv [--items …] [--item ID …]`, `evh label-import --sheet sheet.csv --dataset-id D --set S --by NAME` | |
-| (no page action) a run's outputs, or outcome rules, as labels (0.6.0) | `evh label-from-run --run R --set S`, `evh label-from-capture --dataset-id D --capture C --map rules.yaml --set S` | |
-| a reference's "promoted from" (0.6.0) | `evh reference-promote --dataset-id D --labels S [--items …] --tier gold\|silver --reason "…"` | |
-| scored against a label set (0.6.0) | `evh rescore --labels D/S`, `evh run --labels D/S` | |
-| a recorded arm's badge (0.6.0) | `evh arm-from-capture --dataset-id D --capture C --as NAME` | |
-| the inspector's sheet, its downloads; its selection's commands (0.6.0) | `evh sheet-export --dataset-id D --runs A,B … [--csv FILE [--fill label\|pick\|scores]]`; `evh pick --dataset-id D --item … [--for V] [--tag k=v] [--note "…"]` | |
-| (no page action) a sheet filled elsewhere, read back (0.6.0) | `evh sheet-import --sheet sheet.csv --dataset-id D --by WHO [--kind person\|model] [--set S] [--scorer S]` | `make sheet-import --sheet ARGS="…"` |
-| a dataset page's picks waiting; its selection's command (0.6.0) | `evh picks [--for V] [--tag k=v]`, `evh pick --dataset-id D --item ITEM --drop`; `evh dataset-extend --dataset V1 --dataset-id V2 --picks`, `evh dataset-extend --dataset V1 --dataset-id V2 --pick ITEM` | |
-| a promoted arm's deploy sheet (0.6.0) | `evh deploy-sheet ARM [--capture C]` | |
-| the metrics page | `evh metric-list [--dataset-id <id>]` | |
-| a metric page: summary, details, goals, per-dataset strip chart and arms | `evh metric-show <metric>` | |
+| the Labels page; a dataset page's labels | `evh label-set-list D` | |
+| a dataset's failure modes (they are kept per dataset): the tag sets and how often each mode was tagged per arm | `evh tag-set-list D` | |
+| (no page action) labelling: a sheet to fill, then its import | `evh label-sheet --dataset-id D --out sheet.csv [--items …] [--item ID …]`, `evh label-import --sheet sheet.csv --dataset-id D --set S --by NAME` | |
+| (no page action) a run's outputs, or outcome rules, as labels | `evh label-from-run --run R --set S`, `evh label-from-capture --dataset-id D --capture C --map rules.yaml --set S` | |
+| a reference's "promoted from" | `evh reference-promote --dataset-id D --labels S [--items …] --tier gold\|silver --reason "…"` | |
+| scored against a label set | `evh rescore --labels D/S`, `evh run --labels D/S` | |
+| a recorded arm's badge | `evh arm-from-capture --dataset-id D --capture C --as NAME` | |
+| the inspector's sheet, its downloads; its selection's commands | `evh sheet-export --dataset-id D --runs A,B … [--csv FILE [--fill label\|pick\|scores]]`; `evh pick --dataset-id D --item … [--for V] [--tag k=v] [--note "…"]` | |
+| (no page action) a sheet filled elsewhere, read back | `evh sheet-import --sheet sheet.csv --dataset-id D --by WHO [--kind person\|model] [--set S] [--scorer S]` | `make sheet-import ARGS="--sheet …"` |
+| a dataset page's picks waiting; its selection's command | `evh picks [--for V] [--tag k=v]`, `evh pick --dataset-id D --item ITEM --drop`; `evh dataset-extend --dataset V1 --dataset-id V2 --picks`, `evh dataset-extend --dataset V1 --dataset-id V2 --pick ITEM` | |
+| a promoted arm's deploy sheet | `evh deploy-sheet ARM [--capture C]` | |
+| the metrics page | `evh metric-list [--dataset <id>]` | |
+| a metric page: summary, details, goals, per-dataset strip chart and arms | `evh metric-show <metric> [--dataset <id>]` | |
+| the prompts page; a prompt's versions; two versions compared | `evh prompt-list`, `evh prompt-show --name N [--text]`, `evh prompt-diff A B` | |
+| the scorers page; a scorer's page | `evh scorer-list`, `evh scorer-show <id>` | |
+| the baselines: a dataset page's baseline box and its history | `evh baselines [--goal G] [--dataset D] [--all-versions]` | |
+| a test set's looks | `evh looks [--dataset D]` | |
+| a model's deployed periods | `evh periods <model>` | |
 | inspector: a comparison | `evh comparison-show --runs a,b [--baseline a] [--metric m]` | |
 | inspector: filter, breakdown | `evh comparison-show --runs … --where field:value --by field` | |
 | inspector: one item | `evh comparison-item --runs … --item <item_id>` | |
@@ -145,14 +158,14 @@ answer. Where the page has a `make` target in a checkout, it runs the same scrip
 
 Every row has a command. Adding a view means adding its command in the same change.
 
-**For an agent, the same rows are MCP tools** (0.5.0, `evh mcp`,
-[RFC-018](../rfc/RFC-018-read-only-mcp-server.md)): every read command above is a tool with the
+**For an agent, the same rows are MCP tools**
+([RFC-018](../rfc/RFC-018-read-only-mcp-server.md)): every read operation above is a tool with the
 command's own options as its arguments, answering what the command prints (with `--json` where
-the command has it). A new read command is either a tool or listed, with its reason, as not one
-(`mcp_server.NOT_TOOLS`); a test fails otherwise. Not tools in 0.5.0: the commands that write,
-spend or run a model, and, not yet, the report and statistics commands (`leaderboard`,
-`pair-test`, `family-test`, `bootstrap-test`, `holdout`, `rank-stability`, `run-compare`,
-`cost-report`).
+the command has it); `leaderboard`, `pair-test`, `family-test`, `rank-stability` and
+`run-compare` are tools too. A new read command is either a tool or listed, with its reason, as
+not one (`mcp_server.NOT_TOOLS`); a test fails otherwise. Not tools: the commands that write,
+spend or run a model (among them the work operations `bootstrap-test`, `holdout` and
+`cost-report`), the `jobs-*` commands, `init`, `catalog-serve` and the like.
 
 ## The round flow
 
@@ -165,21 +178,31 @@ evh round-open --goal tickets_summary --dataset tickets_v1 \
     --keep tickets_lead1_v1,tickets_lead2_v1 --budget-usd 1
 # commit the round file, then run each new system in it: evh run --system <id> --dataset tickets_v1 --goal tickets_summary --round r1
 evh round-list tickets_summary
+evh round-show tickets_summary r1
+evh round-evidence tickets_summary r1
 evh round-retire --goal tickets_summary --round r1 --arm tickets_lead1_v1 --reason "…"
 evh round-close --goal tickets_summary --round r1 --conclusion "…" --promote <run_id>
 ```
 
-- `round-open` prints the round file it wrote, then, when it carried arms in: "Carried in as
-  they are, their runs already count: <arms> (their systems need no change and they need not run
-  again)", then "A NEW system joins it by running in it: evh run --system <id> --dataset <dataset>
-  --goal tickets_summary --round r1; then: evh round-list tickets_summary" and "Commit the round file
-  before the runs: an uncommitted file makes them dirty."
-- `evh round-list G` prints one line per round, then the open round in full: its hypothesis,
-  "on <measure>: n arm(s) in play, leader <arm>", each other arm's verdict against the leader
-  with Δ and p (four decimals, as every command prints a p), `NOTE:` lines (the spend against
-  the budget), and **suggested next**, each suggestion followed by its command, ready to paste.
-  The close suggestion carries `--promote <run_id>` only when the leader is not already the
-  baseline ("close the round with what it showed (<arm> is already the baseline)").
+- `round-open` prints the round file it wrote and "round rN of G, open", then "It starts from X."
+  (the baseline run; without one, "It starts from no baseline run (none promoted; --baseline names
+  one)."), "On harness V … code …" (the harness version, its commit when it is a checkout, the
+  first 12 characters of its code hash), and, when it carried arms in: "Carried in as they are,
+  their runs already count: <arms> (they need not run again).", then "A NEW system joins it by
+  running in it: evh run --system <id> --dataset D --goal G --round rN; then: evh round-evidence G
+  rN" and "Commit the round file before the runs: an uncommitted file makes them dirty." An arm of
+  the round before is carried with its runs only when that round was on the same dataset; any
+  other system is read through its plain runs on the round's dataset.
+- `evh round-list G` prints a line per round (status, dataset, arms in play and retired), with its
+  conclusion under it. `evh round-show G rN` prints one round as recorded: its hypothesis,
+  changes, harness, scorer, each arm (how it entered, its runs, its retirement) and its
+  conclusion. `evh round-evidence G rN` prints what the evidence says: "rN on <measure>: n arm(s)
+  in play, leader <arm>", each other arm's verdict against the leader with Δ and p (four
+  decimals, as every command prints a p), the tests of the leader against earlier arms, `NOTE:`
+  lines (the spend against the budget, runs made "since then" that the round does not read), and
+  `next:` lines, each suggestion followed by its command, ready to paste. The close suggestion
+  carries `--promote <run_id>` only when the leader is not already the baseline ("close the round
+  with what it showed (<arm> is already the baseline)").
 - A reason or a conclusion shorter than three words is refused: it must be a sentence.
 - `--promote` runs `run-promote` with the conclusion as the reason; if the promotion is refused,
   the round stays open.

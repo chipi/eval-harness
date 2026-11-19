@@ -10,30 +10,15 @@ again in the Workbench, then browse everything in the catalog and the inspector.
 keeps a friction log.
 
 **It is a smoke test of the newcomer's path, not a release ritual.** Run it when something a
-newcomer touches changed since the last recorded run: the install, getting started, the
+newcomer touches changed since it was last run: the install, getting started, the
 tutorials, or the commands and files those steps use (RELEASING step 5). When nothing on that path
 changed, skip it and say so in the release PR. One CPU model is enough to show that a local model
-runs through an adapter; more only lengthen the run (the first runs used three and took about two
-hours, most of it waiting on them).
+runs through an adapter; more only lengthen the run.
 
-`make guide-check` already proves that getting started and the offline tutorials (3, 4 and 5)
+`make guide-check` already proves that getting started and the offline tutorials 3, 4, 5, 6 and 8
 run as written. This covers what it cannot: real models, a project's own adapters, two tasks in
 one project, a frontier reference, real judges, rounds over real evidence, and what a newcomer
 has to guess.
-
-First run: 2026-10-24, on the 0.4.0 branch; it found 39 items. Second run: the same day, on the
-0.4.0 candidate `e91ff94c`, through a LiteLLM proxy, for $0.17; its friction log found nothing
-that blocked, 8 items that needed a guess and 22 of noise or polish. Third run: 2026-10-25, on the
-release candidate `80e8f3f5`, through the proxy, for $0.17; nothing blocked, 10 items needed a guess,
-23 of noise or polish. Fourth run: 2026-11-02, on the 0.6.0 candidate `797c07e5`, through the proxy,
-one CPU model, in 50 minutes, for $0.149; 1 item blocked (fixed before the release), 9 needed a guess,
-about 15 of noise or polish. Fifth run: 2026-11-04, on the 0.7.0 release, through the LiteLLM proxy,
-one CPU model, in 26 minutes 38 seconds, for $0.1992 printed by the commands plus about $0.03 from arm-smoke
-calls; 1 item blocked (judge replies cut off mid-reasoning: a reasoning judge spent max_tokens thinking
-and returned nothing, fixed in 0.7.1), 10 needed a guess, about 15 of noise or polish. Sixth run: 2026-11-19, on the
-0.8.0 candidate `84237576`, through the LiteLLM proxy, one CPU model, in about an hour, for $0.37 billed (the
-frontier classifier run three times and one judging pass that parsed nothing among it); 3 items blocked, 24 needed
-a guess, 15 of noise or polish. What each run fixed, and what is still open, is listed at the end.
 
 ## Rules for the run
 
@@ -120,7 +105,7 @@ dataset, the references. A system names no goal: every run names it (`evh run �
 
 Every arm's first system id ends `_v1` (the frontier summariser is `briefs_opus_v1`). Give the
 frontier arm room to finish: `max_tokens: 600` (a frontier model that reasons spends part of it
-thinking; at 300 one of 32 intents replies stopped short, and a reference refuses a reply cut off).
+thinking; a reference refuses a reply cut off at the token limit).
 Silence the model libraries' progress bars and warnings in the adapter as tutorial 1's does, so the
 run's output is the harness's.
 
@@ -165,7 +150,7 @@ Commit before any other run: an uncommitted label set or reference makes every r
 `.gitignore` from `evh init` leaves out only `data/materialized/`, caches, `.env`, a pass's checkpoint and the
 `.build/` folder a `--scratch` pass writes to):
 
-- Step 4: `evh run` writes `data/runs/<run_id>/`; `arm-smoke` records its report in the model record, `data/models/`.
+- Step 4: `evh run` writes `data/runs/<run_id>/`; `arm-smoke` records a check on the deployment its system names, `data/deployments/`, only when the system names a `model_record`.
 - This step: `label-from-run` and `reference-promote` write `data/labels/` and `data/references/`; `rescore`
   writes each run's score against silver beside its other scores, `data/runs/<run_id>/scores/<scorer>@silver.…/`.
 - Step 6: `judge-score` writes `data/judging-sets/`, `data/judge-verdicts/`, `data/judge-summaries/` and each run's
@@ -372,10 +357,13 @@ its look); "Every job"; "Settings". Each screen shows the command it runs: run t
 check the numbers are the screen's.
 
 Then do one round from the Workbench: in "Choose the systems", clone `briefs_mistral_small_v1` with one thing
-changed (its temperature); in the eval, open the next round on `briefs_v1`, carrying `briefs_lead1_v1` and
-`briefs_mistral_small_v1` (tick each; carried arms are not run again), run the clone in it as a sweep under a $0.05
-cap, retire one arm with why, and close the round. Check that `evh round-evidence brief_summary <the round>` and
-`evh jobs-status` show what the screens did, with your name as the actor.
+changed (its temperature). In the eval, "Open the next round" on `briefs_v1` offers only the last round's arms still
+in play, each ticked; step 9 retired `briefs_lead1_v1`, so it is not offered. Open it with the arms offered
+(carried arms are not run again), then bring in `briefs_lead1_v1` with the open round's "Carry it in" (a system
+already measured on `briefs_v1`). Run the clone in the round as a sweep under a $0.05 cap ("Run arms in it": "See the
+cost first", then "Run them"), retire one arm with why, and close the round ("Close the round"). Check that
+`evh round-evidence brief_summary <the round>` and `evh jobs-status` show what the screens did, with your name as the
+actor.
 
 ## 15 · Validate, then browse it
 
@@ -424,153 +412,14 @@ command (`evh overview-show`, `evh dataset-list`, `evh arm-list`, `evh reference
   goal-leaderboard`, the goal page and the home page's glance say the same.
 - `evh validate` passes at the end.
 
-## Open after the 2026-10-24 runs
-
-Fixed on the 0.4.0 branch: `reference-create --from-run`; references refuse empty and cut-off
-outputs; the leaderboard marks the reference's author; reference-create's gold and commit notes;
-one install calls hosted models (`openai` and `anthropic` are core, `[llm]` is gone); providers
-are documented as a choice, with the variable each reads (tutorial 2); the core times every call;
-a run that stops mid-pass names itself and its `--resume` command; `evh run` warns when
-outputs stop at `max_tokens`, and the OpenAI-compatible provider records `finish_reason`; V5 no
-longer fails two different perfect arms; the goal page groups arms by what they are scored
-against and never makes the reference's author the leader; the catalog shows the promoted
-baseline and labels judged arms "judge"; the inspector's item view shows the item; `evh init`'s
-`.gitignore` has `__pycache__/`; the README and the RUNBOOK lead with `evh` for a pinned user.
-Since then: `dataset-create --help` (`--recursive`) and the bundled adapter's retry comment carry
-no development history;
-`evh env-check` and the `litellm` provider no longer mention `.env.example`; `provider:
-openrouter` reads `OPENROUTER_API_KEY` and calls OpenRouter's address by default; with no
-reference, `experiment-run` (now `evh run`) named `reference-create --from-run` first, and `evh --help`
-described `reference-create` as making references from a run or with a system (both since replaced: a
-reference set is labels you promote, 0.6.0); `leaderboard` prints one
-table per reference and never averages across them; the bundled adapter stores `overlap_f1`
-unrounded, so the rounding note no longer fires for it; `run-promote` prints no `resumed`;
-`evh comparison-show --round` reads the goal's measure against the round's leader and names the arms it
-leaves out; judged runs are grouped by their judge, and the leaderboard's NOTE names each way
-the runs were scored rather than calling "no reference" a reference; `evh round-list` reads a round
-against the reference most of its arms use and names the arms it does not compare; the
-`pair-test --metric` and `evh --help` texts describe `--round` and the inspect views.
-
-After the second run (0.4.0 candidate `e91ff94c`), fixed in code: `run-promote` of one of an
-arm's repeats records every repeat and their mean (`repeats`); `round-open --keep` says carried
-arms need no change and no new run; `evh round-list` no longer suggests promoting the run that is
-already the baseline; `leaderboard --round` no longer warns about two versions of an arm in a
-round that compares them; a judge reply that is not committed keeps its text, git-ignored, in
-`.withheld/` beside its record, and the log names the file; the judged leaderboard has a frontier
-and prints the judging pass's agreement and position and noise checks; the silver author is left
-out of the ordering test and the frontier; the dataset page and `evh dataset-list` sort arms by what
-they are scored against; the goal page and `evh goal-leaderboard` show a judge's group, and `evh goal-list
---goal` lists the rounds and marks retired arms; every command prints p the same way (four
-decimals, `<0.0001`), and `family-test` says whether its p is exact or a seeded estimate and
-labels its column `A wins`; `evh run` prints what it spent and calls the cost and speed
-spread what it is; `judge-score` says its spend is the provider's bill where one is reported,
-else the price table; `silver-calibrate` explains rho and sibling lift; the catalog counts the
-systems behind its arms; "filed" reads "filed under this goal"; the item view says it shows the
-latest of N repeats beside their mean, and `evh comparison-item --item` prints the run and the same note;
-`evh cost-report` sees the bundled adapter's bills (`_meta.usage.cost`); `evh dataset-list` counts the
-systems behind the arms; judged arms keep their version in the inspector; a heading
-scrolled to is not hidden under the header; `env-check` names example arms only in a checkout; the
-kit's judge scorer points at tutorial 3. Fixed in the docs: every goal field and its allowed
-values (RUNBOOK §4c); what each provider records as cost (RUNBOOK §4, tutorial 2); which repeat
-to promote; family-test's p against pair-test's above 30 items; tutorial 1's adapter silences the
-model library's bars and warnings; this page's system ids (`_v1` throughout), step 10's data and
-step 11's screenshots.
-
-After the third run (candidate `80e8f3f5`), fixed in code: `evh round-list` suggests retiring the arm
-that wrote a silver reference when the round is read against gold (only on its own silver is it the
-yardstick), never suggests retiring the baseline the round started from, says "significantly worse
-than" r(n-1)'s best when it is, and suggests `--promote` only for a leader significantly better than
-the baseline it started from and not behind the previous round's best (otherwise it says why it
-promotes nothing); the goal page's "leader" mark and its "test every arm against its leader" link
-use the decision's leader, never a retired arm. Fixed in the docs: how many `--retry-unparsed`
-passes, and that a judged table is built from each arm's latest run over the parsed items
-(tutorial 3); what `score()` returns with no reference (INTEGRATION); where a provider's model
-names come from (tutorial 2); step 11 tests silver against the baseline, not its author. The
-paid-run bills are confirmed: `evh cost-report` read 1.00× on all 14 paid runs.
-
-Still open:
-
-- `family-test` and `pair-test`/the inspector read the same pair from different random streams
-  above 30 items, so their p can differ in the third decimal; documented, by design.
-- The inspector's `wins–losses` reads the row's arm against the baseline, `family-test`'s `A wins`
-  reads A against each opponent: labelled, still opposite directions.
-- Changed: "filed under this goal" now reads "filed" with the explanation in the text above each
-  table (UXS-001 §goal page). Not re-checked by a person since this change: whether it reads clearly, and the heading under the sticky header in a full-page screenshot.
-- Judged runs made before the fix have no frontier until they are rebuilt from their stored
-  verdicts (`evh judge-score … --no-calls`, $0).
-- Not exercised by a run: the direct OpenAI, Anthropic and OpenRouter paths (both runs went
-  through a LiteLLM proxy).
-
-After the fourth run (candidate `797c07e5`), fixed in code: the installed `evh` read no project
-`.env` (`env-check` said "loaded 0 var(s)"), so a key or a cost cap put there was never in force:
-the command imported the module that loads `.env` before it named the command's script, and that
-module loads it only for a harness command. `tests/test_installed_commands.py` now runs `env-check`
-through an entry script as pip installs it. What was still open from it, and what the fifth run found, is
-fixed in 0.7.1:
-
-- Judging: a reply that came back empty is withheld like any other unparsed reply, so V12 passes, and V12
-  names the command that rewrites older ones; each unparsed reply says why; a pass whose replies were cut off
-  at the token limit ends with a `HINT` (a reasoning judge's `max_tokens`); progress lines arrive as they
-  happen through a pipe.
-- The inspector names the silver reference's author and marks its row; item cards show each arm's score;
-  the goal page's "test every arm against its leader" leaves out retired arms; a judged group below the goal's
-  `min_items` says so; home tiles keep their number on one line at 1400 px.
-- `family-test --round` takes the round's leader and every other arm in play; `comparison-show --round` names the
-  round's leader as such; `silver-calibrate` says what `--ref-match` and `--arm-match` take, with an example
-  from your runs; `rescore` ends with a whole sentence and warns about outputs cut off at `max_tokens`;
-  `score-preview` says when a goal holds no measured run to re-score.
-- `evh run`'s "spent" says whether it is the provider's bill or the system's price table; no "warmed up in
-  0ms" for arms with nothing to load; the dry run counts the system's prompt; `arm-smoke` prints each reply
-  and what it spent, and the overview and the catalog count smoke spend.
-- Leaderboards fit the terminal (`--wide` for every column), and "dominated" says what it means;
-  `cost-report` names each repeat; `evh baselines` shows the repeats' mean; `evh round-list` prints a
-  round's conclusion whole; the `comparison-show` conditions table and `evh goal-leaderboard` headers no longer cut or
-  misalign.
-- Step 0: `uv venv` makes a venv with no pip; `--seed` adds it.
-
-Not exercised by a run yet: the direct OpenAI, Anthropic and OpenRouter paths (every run went through a
-LiteLLM proxy).
-
-The fifth run (the 0.7.0 release) confirmed that fix: `env-check` said "loaded 4 var(s)".
-
-After the sixth run (candidate `84237576`), fixed in code:
-
-- A repeat set run beside a plain run of the same arm is refused by `evh run`, before any call, with the way to
-  repeat a run instead (`--purpose repeat --of <run_id>`): two measurements of one system no longer reach `evh
-  validate` (V8).
-- The Workbench's round form carries arms one by one, and only from a round on the same dataset; a measured system
-  is carried, never run again. `round-carry` takes a measured system too.
-- A closed round reads the runs it recorded: a later run of its systems is named "since then", not mixed into its
-  numbers.
-- `dataset-split` gives each side the parent's references on its own items, recorded with who split it (`--by`).
-- `judge-score` refuses a grade prompt that does not name the task's dimensions, before any call, and an unparsed
-  grade names the keys it expected. A judge or an arm billed far from the prices its file declares is named.
-- `jobs-start` says a spending job's cap must be above 0.
-- The leaderboard says why the goal recommends what it does, under the goal's line; `family-test` prints wins,
-  losses and ties; `round-evidence`, `evh baselines` and the records print p and scores the way every command does.
-- `env-check` says where each variable came from (the shell or `.env`); a CPU arm's progress line says how long it
-  has left; `rank-stability` measures the sizes it reports.
-- The Workbench: no sideways scroll at 390 px, no console errors where a chart has nothing to draw yet (`optional=1`),
-  Home shows its commands, and the open-round form is on the last round's tab only. The catalog leaves the silver
-  author out of a leader link's test.
-
-Fixed in the docs: a run names its goal, not a system (step 2); the frontier arm's `max_tokens` is 600 (step 3); a
-hosted arm is measured once, as its `--repeat 3` set (step 4); commit after each label-from-run (step 5); the judge
-prompt names its dimensions (step 6); the actor of a decision (step 7); `round-evidence` for a round's evidence
-(steps 8 and 9); where a system's prompt file goes (step 9); `briefs_v2` is materialized (step 10); each side's
-references come with the split, and the study starts from a two-sentence arm so it has something to find (step 11);
-the job's cap (step 12); the Workbench round is the next one, whatever its number (step 14); `goal-leaderboard` and
-`comparison-item` (step 15); no removed variable or folder of runs left in any doc (`tests/check_commands.py` now
-refuses a variable nothing reads and a folder of runs beside `data/runs`).
-
-Still open from the sixth run:
+## Still open
 
 - `rank-stability` counts `briefs_mistral_small_v1` and `_v2` as two arms: they are two systems, by design.
-- `evh arm-list` shows the baseline arm "retired in r4" when a round retired it: accurate, kept.
+- `evh arm-list` shows the baseline arm as retired in a round when that round retired it.
 - The inspector's Conditions header was reported to leave out `t5_small_v1`; a screenshot shows the header, with
   "baseline" on the next line in the plain text. Not reproduced.
 - The Workbench's evidence charts were reported to read "Reading the chart…" for over 2.5 s; measured at 0.15 to
-  0.47 s each. Not changed.
-- Not re-checked by a run: whether "Review the outputs" shows its command before a sheet is made, and whether a name
-  typed in the Workbench is the round record's actor when the server was started with `EVH_ACTOR` set.
-- The full-page screenshots repeat the sticky header mid-page: a capture artefact.
+  0.47 s each.
+- Not re-checked by a run: whether "Review the outputs" shows its command before a sheet exists, and which actor a
+  round record names when a name is typed in the Workbench and `EVH_ACTOR` is set.
+- Full-page screenshots repeat the sticky header mid-page.

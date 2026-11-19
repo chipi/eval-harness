@@ -1,6 +1,6 @@
 # PRD-006: Datasets, versions and item fields
 
-- **Status**: Implemented (v0.4.0); frozen datasets since 0.1.0; FR4, what is inside a dataset: Implemented (v0.5.0)
+- **Status**: Implemented (v0.4.0)
 - **Authors**: Marko Dragoljevic
 - **Related UX specs**: [UXS-001](../uxs/UXS-001-catalog.md) (dataset pages: versions, fields),
   [UXS-002](../uxs/UXS-002-inspector.md) (filter and break down by a field)
@@ -11,17 +11,17 @@
 ## Summary
 
 A dataset is a frozen list of items, each with the sha256 of its bytes: the comparison
-contract. 0.4.0 adds three things around it. A new **version** records the version it was made
+contract. Three things sit around it. A new **version** records the version it was made
 from and which items it adds, removes and changes. Items can carry **fields**, typed facts a
 project declares (a title, a source, a duration, a language), kept in the frozen dataset but
 outside its identity. And an item can live at a **pinned URL** instead of a committed file.
 
 ## Background & Context
 
-A project that needs facts about its items used to keep a second registry beside the frozen
-dataset, which drifted from it. Inputs a project cannot commit (audio, PDFs, a benchmark's
-hosted copy) could not be frozen at all. And when a dataset grew, nothing linked the new
-version to the old, so its history lived in commit messages. The harness stays generic: it
+A project that needs facts about its items would keep a second registry beside the frozen
+dataset, which drifts from it. Inputs a project cannot commit (audio, PDFs, a benchmark's
+hosted copy) cannot be frozen as files at all. And when a dataset grows, nothing would link the new
+version to the old, so its history would live in commit messages. The harness stays generic: it
 defines no field, a project declares its own
 ([Concepts: fields](../../harness/docs/CONCEPTS.md#fields-describe-an-item-they-do-not-identify-it)).
 
@@ -105,7 +105,7 @@ defines no field, a project declares its own
   checks the hash, and fails on a mismatch exactly as it fails on a changed file.
 - **FR3.3**: Only http(s) URLs are fetched; any other scheme is refused before anything is read.
 
-### FR4: What is inside a dataset (0.5.0)
+### FR4: What is inside a dataset
 
 - **FR4.1**: A reader sees what a dataset holds without the dataset being republished: its item
   count and lengths, each gold reference's shape (labels and their counts, entries per item, a
@@ -121,7 +121,7 @@ defines no field, a project declares its own
 
 ## Success Criteria
 
-- The tutorial's dataset carries fields (GUIDE steps 1 and 12), two of them public and one not.
+- The tutorial's dataset carries fields ([tutorial 5](../tutorials/5-catalog-and-inspector.md) step 1), two of them public and one not.
 - `harness/tests/test_fields.py` passes, and the browser check drives a filter and a breakdown
   (`make browser-check`).
 - `harness/tests/test_dataset_profile.py` passes: shapes, links matched by sha256, the git guard on

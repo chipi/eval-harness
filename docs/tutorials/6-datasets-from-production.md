@@ -144,8 +144,7 @@ data/labels/tickets_desk_v1/desk_outcomes_2026_11: 5 of 6 item(s) labelled (1 sk
 ```
 
 The items are matched by id, so the dataset stays as it was frozen and only its labels move. A rule's
-`min_age_days` counts from the new capture, so a record too young to judge then may be judged now. On the
-triage fleet, three days later, today's outcomes labelled 7 more of 233 decisions and changed none. Each is a set
+`min_age_days` counts from the new capture, so a record too young to judge then may be judged now. Each is a set
 of its own (a set is never edited): the runs scored against the older one still read it.
 
 ## 6 · What production decided, against what happened

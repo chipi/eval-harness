@@ -19,8 +19,8 @@ another address.
 
 ## 1 · A record for the model
 
-One file per model, in `data/models/`. It says what the model is, and lists its **deployments**: each place and
-build it runs, here one, on this laptop.
+One file per model, in `data/models/`. It says what the model is; its **deployments** are separate records,
+in `data/deployments/<model_id>/<deployment_id>.yaml`, each with where and how it runs.
 
 ```yaml
 # data/models/llama3.1-8b.yaml
@@ -31,18 +31,24 @@ aliases:
 - llama3.1:8b          # the names runs record for it
 weights: open
 licence: Llama 3.1 Community License
-deployments:
-- id: laptop           # an arm names it with `deployment:`
-  where: laptop
-  tag: llama3.1:8b
-  endpoint:
-    provider: openai   # Ollama speaks the OpenAI API
-    base_url: http://127.0.0.1:11434/v1
-    model: llama3.1:8b
 ```
 
-A model that runs in several places (a laptop, a GPU server, a hosted route) gets one deployment each, because
-the same tag can be a different build on each, and each is checked on its own.
+Each place the model runs gets its own deployment record. A laptop, a GPU server, or a hosted route
+each has one, because the same tag can be a different build on each, and each is checked on its own:
+
+```yaml
+# data/deployments/llama3.1-8b/laptop.yaml
+model_id: llama3.1-8b
+deployment_id: laptop
+where: laptop
+tag: llama3.1:8b
+endpoint:
+  provider: openai     # Ollama speaks the OpenAI API
+  base_url: http://127.0.0.1:11434/v1
+  model: llama3.1:8b
+```
+
+Make one with `evh deployment-new MODEL DEPLOYMENT --set KEY=VALUE`.
 
 ## 2 · Onboard it
 
@@ -56,7 +62,7 @@ model-onboard: llama3.1-8b (llm)
   record's settings (none): 0.46 s, 19 tokens out, reasoned: False, end stop
   JSON valid: True  deterministic: True  tokens/s: 41.5
 ONBOARD PASS
-  written into data/models/llama3.1-8b.yaml (deployment laptop)
+  written into data/deployments/llama3.1-8b/laptop.yaml (its checks)
 ```
 
 It called the deployment the way an arm would and wrote what it found into the record: the **digest** of the
@@ -117,7 +123,7 @@ arm-smoke: tickets_llama_v1 on tickets_v1, 3 item(s)
   spent: unknown (the adapter reported no cost: no bill from the provider and no usd_per_mtok_in / usd_per_mtok_out in the system)
   determinism: item 1 twice gave the same output: repeats on this machine will be identical
 SMOKE PASS
-  written into data/models/llama3.1-8b.yaml
+  written into data/deployments/llama3.1-8b/laptop.yaml
 ```
 
 Three items, the arm's own settings, no run written: each item's time and reply (its first 300 characters;
@@ -147,6 +153,7 @@ evh model-list
   llama3.1-8b  llm   self-hosted  open     llama3.1:8b@46e0c10c039e  laptop       defaults  pass 2026-10-31  1
 ```
 
+The table continues with `goals` and `best result`: the goals the model's arms are on, and its place on each.
 The run's fingerprint takes the weights, the server and where it ran from the record's deployment, so two
 runs of this arm on different builds cannot pass for one measurement. `evh model-show llama3.1-8b` prints
 the record in full: each deployment, its onboarding, the settings' history, and the arms that use it. The

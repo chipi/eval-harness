@@ -14,9 +14,8 @@ which need a key ([tutorial 2](2-hosted-llm.md)).
 
 ## 1. The frontier arm, with a real model
 
-The author is a system like any other. With a hosted model it is one such as this, from
-the newcomer scenario this release was tried on (a LiteLLM proxy's model name; any provider of
-[tutorial 2](2-hosted-llm.md) works):
+The author is a system like any other. With a hosted model it is one such as this (`model:` is a
+LiteLLM proxy's model name; any provider of [tutorial 2](2-hosted-llm.md) works):
 
 ```yaml
 # data/systems/briefs_opus_v1.yaml
@@ -43,9 +42,9 @@ git add data/labels data/references && git commit -qm "silver/briefs_v1: the fro
 
 What `label-from-run` refuses, and why:
 
-- **An empty output, or one that stopped at `max_tokens`.** In the scenario's first run a
-  frontier arm at `max_tokens: 80` wrote 19 of 20 summaries cut off mid-sentence; frozen as the
-  reference, every arm would have been graded against fragments. That is why the system above
+- **An empty output, or one that stopped at `max_tokens`.** A frontier arm with too small a
+  `max_tokens` writes summaries cut off mid-sentence; frozen as the
+  reference, every arm would be graded against fragments. That is why the system above
   has room to finish. If yours stops at the cap, raise `max_tokens` in a new `system_id`
   (`briefs_opus_v2`) and run again (`--allow-cut-off` is for outputs that end at the cap by
   design). `evh run`
@@ -193,6 +192,9 @@ a deterministic stand-in that calls nothing, so this step stays offline and $0:
 scorer_id: tickets-judge-v1
 kind: judge
 dataset_id: tickets_v1
+
+# Each judge says why, inside its verdict: a short reason per summary, read with `evh judge-verdicts`.
+explain: true
 
 # What is judged. Without this block a scorer judges news summaries the way SummEval did
 # (ARTICLE, SUMMARIES, coherence/consistency/fluency/relevance, 1-5).
@@ -345,7 +347,7 @@ recorded decision, with the old score kept beside it. Why the gate exists:
 ## 6. Real judges
 
 A real judge is an ordinary model spec in the scorer's `judges` list: two or more, from different
-vendor families, so one vendor's taste is not the verdict. From the same newcomer scenario:
+vendor families, so one vendor's taste is not the verdict. For example:
 
 ```yaml
 judges:
@@ -372,26 +374,24 @@ evh leaderboard briefs_v1 --label judged/briefs-judge-v1
 
 Real judges sometimes reply with something that does not parse (reasoning aloud, a reply cut
 off); the pass reports it, and `--retry-unparsed` calls again for those blocks only. An item
-counts only when all its blocks parsed. In the scenario, 2 of 80 replies on the briefs and 15 of
-128 on the intents did not parse the first time. A reply that is not bare JSON (one JSON object,
+counts only when all its blocks parsed. A reply that is not bare JSON (one JSON object,
 a `json` code fence allowed), or that repeats the item, is committed only as its hash, so
 an item's text never reaches git by accident. Its text is kept beside its record, git-ignored,
 in `data/judge-verdicts/<scorer>/<judging set>/<judge>/.withheld/<item>.<pass>.b<block>.txt`, and
 the log line names that file: read it before you retry, to see why the reply failed.
 
 **A reasoning model can spend all of `max_tokens` thinking and reply with nothing.** That is why the
-judges above set `reasoning: {enabled: false}`. In the fifth newcomer run, a judge without it at
-`max_tokens: 400` returned empty replies, and 1 item of 20 parsed. Each unparsed line says why
+judges above set `reasoning: {enabled: false}`. A judge without it, at a small
+`max_tokens`, returns empty replies and few items parse. Each unparsed line says why
 ("empty, cut off at the token limit (finish_reason length)"), and the pass ends with a `HINT` line when
 it happens. A judge whose first 3 replies all come back that way stops the pass there (`STOPPED EARLY`),
 so the rest is not paid for; what it stored is kept. Fix it in a new scorer version (a new `scorer_id`): turn the judge's reasoning off, or raise
 its `max_tokens`. Either changes the judge, so the old verdicts are not mixed with the new. The
 `reasoning` key is sent for `provider: openai`, `openrouter` and `litellm`; `provider: anthropic`
-refuses it. A tree with such verdicts from before 0.7.1 fails `evh validate`'s V12, and the message
-names the command that rewrites them: `evh judge-score … --retry-unparsed`.
+refuses it. A tree with a committed reply that is not bare JSON fails `evh validate`'s V12, and the message
+names the command that rewrites it: `evh judge-score … --retry-unparsed`.
 
-Retry until a pass recovers nothing new (in the scenario, two passes took the intents from 26 of
-32 items to 31). An item still failing after that stays out of the judged table, which counts the
+Retry until a pass recovers nothing new. An item still failing after that stays out of the judged table, which counts the
 items it holds; if it is a large share, change the judge's prompt or `max_tokens` rather than
 retrying again. The judged table is built from one run per arm, the latest, over the items that
 parsed, so an arm's cost and speed there can differ slightly from its row on gold.

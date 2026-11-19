@@ -138,7 +138,7 @@ Each group also says what the goal recommends, and why. Beside quality, every go
 quality against each. The rule ([ADR-0006](../adr/ADR-0006-goal-axes-and-strategies.md)): an
 arm past a limit is out; a flagged or retired arm is never recommended; the goal's strategy
 says who the contenders are beside the quality leader (by default `balanced`: not significantly
-different by the paired test and within 2% of it); among the contenders, the cheaper wins, then the faster. The reasons
+different by the paired test and within 5% of it); among the contenders, the cheaper wins, then the faster. The reasons
 list each step, so the page says why it recommends what it does. A goal changes the rule in its
 `success_criteria`:
 
@@ -187,12 +187,12 @@ Same conditions: all ... recorded fields match (machine, libraries, harness, sco
 ```
 
 The same paired test as `pair-test`, from the same code, so the same p. `family-test` agrees with
-both up to 30 items, where every p is exact. Above 30 each is a seeded estimate, and
+both up to 30 items, where every p is exact. Above 30 each is a seeded estimate (from 10,000 items, the permutation distribution's normal limit), and
 `family-test` draws one random stream for its whole family where the inspector and `pair-test`
 draw one per pair, so its p can differ from theirs in the third decimal (on 32 items: 0.0297
 against 0.0327); `family-test` says which kind of p it printed. Every p is printed to four
 decimals, and `<0.0001` for what would print as 0.0000. `wins–losses` is each row's arm against
-the baseline; `family-test`'s column is `A wins`, the items its A wins against each opponent. The
+the baseline; `family-test`'s column is `A wins-losses (ties)`, the items its A wins and loses against each opponent. The
 last line compares
 the runs' fingerprints: the deployment (where the model ran), the runner (where `evh` ran) and its
 libraries, the harness, the scorer, the items and the reference's bytes. When they differ it names
@@ -283,9 +283,9 @@ per run, over the 6 row(s) shown:
 
 The winner per ticket is the best arm on the metric the sheet is read on (`--metric`, else the goal's measure,
 else the arms' primary), and the verdict is the goal's decision when a goal names the dataset, else the paired
-test against the leader. `--scores-only` leaves the outputs out; `--csv sheet.csv` writes the same sheet for a
-spreadsheet, and `--fill label`, `pick` or `scores` adds the columns to fill there, which `evh sheet-import`
-reads back ([tutorial 6](6-datasets-from-production.md)). The inspector shows the same sheet, from the dataset
+test against the leader. `evh sheet-export --dataset-id D --runs … --csv FILE [--fill label|pick|scores|tags]` writes the sheet for a
+spreadsheet, and adds columns to fill there (by person or tool), which `evh sheet-import`
+reads back ([tutorial 6](6-datasets-from-production.md)). `evh sheet-show` prints the sheet in the terminal. The inspector shows the same sheet, from the dataset
 page's "Open its sheet".
 
 ## 4. What the pages show, and what they refuse
@@ -324,18 +324,17 @@ and what it defaults to:
 - `runs=A,B,…` (`--runs`), `baseline=` (`--baseline`), `metric=` (`--metric`), `by=` (`--by`).
 - `where=FIELD:VALUE` (`--where`), once per filter: `?runs=…&where=area:account&where=deadline:true`.
 - `item=ITEM_ID` (`--item`): one item, each arm's output beside the reference.
-- `rescore=0` (`--no-rescore`): only what is on record, the page's re-score box unticked.
+- `rescore=0` (`--rescore 0`): only what is on record, the page's re-score box unticked.
 - `disagree=1` (`--disagree`): only the items where the arms decided differently, the page's "only where they
   disagree" box ticked.
-- `family=N` and `threshold=T`: set by a goal page's links, so the verdicts match the page the pair came from (the
-  Holm family it was tested in, or that row's threshold); the page says so under its table. They have no flag: the
-  command tests the arms you name as their own family.
+- `family=N` and `threshold=T` (`--family`, `--threshold`): set by a goal page's links, so the verdicts match the page the pair came from (the
+  Holm family it was tested in, or that row's threshold); the page says so under its table. The command tests the arms you name as their own family if neither is set.
 - The sheet: `sheet=1&dataset=DATASET_ID` (`evh sheet-show D`) with `runs=`; `only=` once per signal
   (`disagree`, `split`, `unlabelled`, `wrong`, `new`), `wrong=SET` (`--wrong-against`), `new=DATASET`
   (`--new-vs`) and `scores=only` (`--scores-only`).
 
 **No code needed here**, because this project keeps its data in the harness's layout
-(`data/datasets/`, `data/runs*/`, `data/references/`, `data/goals/`). If your runs live in
+(`data/datasets/`, `data/runs/`, `data/references/`, `data/goals/`). If your runs live in
 another layout, write one adapter that answers the catalog's questions (which arms exist, what
 each scored per item, which references exist, what one item looked like) and name it in
 `config.yaml`: `catalog: {adapter: path/to/file.py:Class}`. Every command above takes the same

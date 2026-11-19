@@ -58,14 +58,18 @@ evh env-check
 With only the `.env` above (and the judges' own OpenRouter key), its provider table reads:
 
 ```text
-  provider    variable             arms                               judges
-  openai      OPENAI_API_KEY       not set                            not set
-              OPENAI_BASE_URL      not set (the default address)      not set (the default address)
-  anthropic   ANTHROPIC_API_KEY    not set                            not set
-              ANTHROPIC_BASE_URL   not set (the default address)      not set (the default address)
-  openrouter  OPENROUTER_API_KEY   set (73 chars, ends …a1b2)         own: set (73 chars, ends …c3d4)
-  litellm     LITELLM_API_KEY      not set                            not set
-              LITELLM_BASE_URL     not set                            not set
+.env: loaded 3 var(s)   (/path/to/your/project/.env)
+
+hosted providers (a system's `provider:`): an arm reads <NAME>, a judge EVAL_JUDGE_<NAME>
+first and the arms' <NAME> when that is not set
+  provider    variable             arms                                           judges
+  openai      OPENAI_API_KEY       not set                                        not set
+              OPENAI_BASE_URL      not set (the default address)                  not set (the default address)
+  anthropic   ANTHROPIC_API_KEY    not set                                        not set
+              ANTHROPIC_BASE_URL   not set (the default address)                  not set (the default address)
+  openrouter  OPENROUTER_API_KEY   set (73 chars, ends …a1b2) (.env)            own: set (73 chars, ends …c3d4) (.env)
+  litellm     LITELLM_API_KEY      not set                                        not set
+              LITELLM_BASE_URL     not set                                        not set
   arms can call: openrouter
   judges can call: openrouter
 ```
@@ -86,7 +90,7 @@ params:
 ```
 
 With a LiteLLM proxy the same system is `provider: litellm` and `model:` the proxy's name for it
-(the newcomer scenario's was `eval-mistral-small`); with Anthropic directly, `provider:
+(for example `eval-mistral-small`); with Anthropic directly, `provider:
 anthropic` and an Anthropic model id. Prices live in the system, not in code: they change, and a
 run records the prices it was costed at.
 
@@ -97,7 +101,7 @@ with neither, the cost is unknown, never zero:
 | `provider:` | the run's cost |
 |---|---|
 | `openrouter` | OpenRouter's bill (the provider asks for it on every call) |
-| `litellm` | the proxy's bill when it passes `usage.cost` through, as the newcomer scenario's proxy did; else the price table |
+| `litellm` | the proxy's bill when it passes `usage.cost` through; else the price table |
 | `openai` | the price table: OpenAI's API reports tokens, not a cost (an OpenAI-compatible endpoint that returns `usage.cost` is billed) |
 | `anthropic` | the price table |
 
@@ -123,12 +127,10 @@ the items: they are scored as if complete, so raise `max_tokens` in a new `syste
 
 The leaderboard now shows each arm's quality, `total_cost_usd` and `latency_ms`, and its
 **frontier**: the arms no other arm beats on quality, cost and speed together. `evh run`
-prints what the command spent over every repeat (`spent $0.001063 (price table x tokens, or the
-provider's bill where it sends one)`), and the repeat spread names cost and speed as what they
-are (`cost, not a quality metric`), not as determinism. Each item that was billed keeps the
+prints what the command spent over every repeat (`spent $0.001063 (the provider's bill)` or `(the system's price table: tokens x usd_per_mtok_in / usd_per_mtok_out, the provider sent no bill)`), and the repeat spread names cost and speed as what they
+are (`cost, not a quality metric`), not as determinism. When the bill is more than 1.2× off the declared prices, `evh run` and `judge-score` print a NOTE saying so. Each item that was billed keeps the
 bill in its `_meta.usage.cost`, and `cost-report` sets each run's bill, summed from those, against
-the cost it recorded, listing apart the runs with no bill (priced from the table). Runs made
-before the bundled adapter kept the bill there (commit `f0c2ed3c`) read as price table only
+the cost it recorded, listing apart the runs with no bill (priced from the table)
 ([RUNBOOK §4](../../harness/docs/RUNBOOK.md#4-point-the-harness-at-your-system)). Then compare and choose as
 before (`family-test`, `run-promote`), with the cost in the reason: "as good as X at a tenth of
 the price" is a decision; "scored higher" is not yet one.

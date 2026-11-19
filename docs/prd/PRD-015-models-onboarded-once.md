@@ -1,6 +1,6 @@
 # PRD-015: Models, onboarded once, for every eval
 
-- **Status**: Built for 0.6.0 (2026-10-31); written after the build as its retrospective (the owner's request); 0.6.0
+- **Status**: Implemented (v0.6.0)
 - **Authors**: Marko Dragoljevic
 - **Related RFCs**: [RFC-020](../rfc/RFC-020-onboarding-a-model.md) (records, onboarding, arm smoke, the Models
   page), [RFC-021](../rfc/RFC-021-fingerprint-v5.md) (fingerprint v5: the deployment, the settings, the runner)
@@ -21,20 +21,19 @@ it ran on, so a result can always be traced to the weights, server and machine b
 
 ## Background & Context
 
-The triage eval of 2026-10-30/31 ran some forty arms with each server's defaults, because nothing in the
-harness asked anyone to choose them:
+Without a step that makes someone choose a model's settings, an eval runs each server's defaults, and:
 
-- reasoning models reasoned at their server's default, 300-900 tokens a turn against 55-145 for the models that
-  do not reason, so the results compared defaults as much as models;
-- gemma4:12b reasoned in a loop and never answered, until it was set up with reasoning off; it then ranked eighth;
-- one tag named an MLX build on one machine and a GGUF build on others; one host held an older build;
-- a self-hosted model at temperature 0 gave byte-identical output twice on one machine, and different decisions
-  on another: the planned repeats would have measured nothing, and the fingerprint recorded the laptop that sent
-  the requests, not the machine that answered them.
+- reasoning models reason at their server's default, many times the tokens a turn of the models that do not reason,
+  so the results compare defaults as much as models;
+- a model can reason in a loop and never answer until it is set up with reasoning off;
+- one tag can name an MLX build on one machine and a GGUF build on others, or an older build on one host;
+- a self-hosted model at temperature 0 can give byte-identical output twice on one machine and different decisions
+  on another: repeats measure nothing, and a fingerprint that records the machine that sent the requests names the
+  wrong one.
 
-Each was found late, by reading logs. The harness already let a system set `max_tokens` and `reasoning_effort`;
-what was missing was the step that makes someone choose them, the record that keeps the choice, and a
-fingerprint that names where a model really ran.
+Each is found late, by reading logs. A system can set `max_tokens` and `reasoning_effort`; what is needed is the
+step that makes someone choose them, the record that keeps the choice, and a fingerprint that names where a model
+really ran.
 
 ## Goals
 
@@ -50,8 +49,8 @@ fingerprint that names where a model really ran.
 
 - Choosing settings for a project: the harness measures and flags; a person decides and writes why.
 - Pulling models, managing servers, or switching a shared machine's mode.
-- Tuning prompts (the triage goal's 0.8.0 work).
-- Running `evh` on other machines (0.8.0); the runner is recorded so that it can.
+- Tuning prompts.
+- Running `evh` on other machines; the runner is recorded.
 
 ## Personas
 
@@ -76,12 +75,12 @@ fingerprint that names where a model really ran.
 - **FR1 Records.** `data/models/<model_id>.yaml` (schema `model.schema.json`, validate V1 and V18): kind,
   aliases, weights and licence, capabilities, settings with `settings_why`, history, and deployments, each with
   an id, where, server and settings or device and backend, the build (digest, revision or hash; quantization),
-  for a hosted one its provider id and route, an endpoint, and its own onboarding. Replaces `data/models.yaml`.
+  for a hosted one its provider id and route, an endpoint, and its own onboarding.
 - **FR2 Onboarding.** `evh model-onboard --model-id <id> --deployment <d>` probes an LLM through the deployment's endpoint:
   the digest its server reports against the record's, reasoning at the default and with the record's settings,
   JSON, determinism, speed (the last two written to the deployment, not the record), and a probe reply cut off.
   A build the server serves differently is flagged, and the record takes it with a history entry for the one
-  replaced. An ML model or a baseline is onboarded through an arm (`--config`). `ONBOARD PASS` or `ONBOARD
+  replaced. An ML model or a baseline is onboarded through an arm (`--system S --dataset D`). `ONBOARD PASS` or `ONBOARD
   CHECK`; the record's settings are never changed by it.
 - **FR3 Arm smoke.** `evh arm-smoke --system <id> --dataset <id>` runs any arm's first items and writes no run: runs, valid
   output for the scorer, a projection of the full run, build pinned, determinism, cost; for an LLM, each model
@@ -92,7 +91,7 @@ fingerprint that names where a model really ran.
   task's own (its reply cap, its call limit); the run records both.
 - **FR5 Fingerprint v5.** `instrument`, `data`, `deployment`, `settings`, each hashed, `hash` over the four; the
   runner outside the hash; `evh run-compare` names the part that moved; the inspector's speed warning tells a
-  deployment from a runner. `fingerprint-migrate` moves a project's committed runs, once (from 0.8.0 the fingerprints step of `evh migrate`).
+  deployment from a runner. `evh migrate` brings a project's fingerprints to v5 (its fingerprints step).
 - **FR6 The catalog.** The Models page, a page per model with its deployments and their onboarding, a smoke badge
   on the arms page, a models tile; `evh model-list` the same (and over `evh mcp`). A model is *vetted* only when an
   arm that names it passed its smoke; its onboarding alone makes it *onboarded*.
@@ -101,16 +100,14 @@ fingerprint that names where a model really ran.
 
 ## Success Metrics
 
-- Every arm of the triage goal's round 2 names a record and a deployment, was smoked before its run, and its
-  fingerprint's deployment source is `record`.
-- No round-2 arm needs a call limit above 60 s or runs without a reply cap; none loops until its limit.
-- A rerun of any round-2 arm on the same deployment reproduces its decisions (temperature 0).
+- A run of a system that names a model record and a deployment records that deployment in its fingerprint with
+  `source: record`.
+- `evh run-compare` names which part of the fingerprint moved between two runs.
 
 ## Limits (known, as built)
 
-- **The ML path is proved on a baseline, not on an ML model.** `model-onboard --config` is tested end to end on a
-  tutorial baseline; onboarding span_marker live needs the Few-NERD dataset materialized and its libraries in one
-  environment, which this checkout does not have.
+- **An ML model is onboarded through an arm**, not probed through an endpoint: `model-onboard --system S --dataset D`
+  runs the arm's first items.
 - **A hosted route is checked, not enforced.** `arm-smoke` flags a call served by an upstream the pinned route does
   not allow; a run does not refuse one.
 - **The upstream host and quantization behind a hosted alias** are only what the gateway and provider report; a
@@ -119,13 +116,5 @@ fingerprint that names where a model really ran.
   diverge where the probe does not.
 - **Reasoning is detected from what the server returns** (reasoning text or tokens); a server that reasons
   silently and reports neither reads as not reasoning.
-- **No committed run is `source: record` yet.** The 381 migrated runs are `adapter` or `params`; round 2's will be
-  the first.
 - The settings history has no "smoke / result before and after" columns; an arm whose model has no record is not
   on the Models page.
-
-## Release Considerations
-
-- Ships in 0.6.0 with the capture lane. Breaking for anyone with committed runs or `data/models.yaml`: UPGRADING's
-  0.5.0-to-0.6.0 section says how to migrate both.
-- The triage goal's round 2 is gated on this being built and every model onboarded (the owner, 2026-10-31).

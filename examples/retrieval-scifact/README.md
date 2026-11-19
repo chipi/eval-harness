@@ -37,7 +37,7 @@ cd ../../harness
 PYTHON=../examples/retrieval-scifact/.venv/bin/python make dataset-materialize DATASET_ID=scifact_200
 ```
 
-The fetcher writes **three** things, and the third is new to this repo:
+The fetcher writes **three** things:
 
 ```
 data/sources/scifact_<n>/<qid>.txt          the query
@@ -119,16 +119,16 @@ get *without* a better retriever".
 
 ### Three things that look like leniency and are rewards for bad behaviour
 
-Decided and asserted **before any arm ran**, because the extraction scorer in this repo
-shipped with exactly this class of bug:
+Decided and asserted **before any arm runs**, because a scorer lenient on any of these
+rewards bad behaviour:
 
 - an **unreadable answer** is not an empty ranking — it scores zero
 - a **hallucinated document id keeps its slot** — dropping it would slide real documents up
   and improve the score, making invention a strategy
 - a **duplicate is collapsed**, not counted — or one document fills the top 10
 
-The suite caught a real parser bug before any arm ran: a preamble before the JSON array
-made it return the literal string `["a","b"]` as a document id.
+A preamble before the JSON array is tolerated: the parser reads the array, not the
+line `["a","b"]` as one document id.
 
 ---
 

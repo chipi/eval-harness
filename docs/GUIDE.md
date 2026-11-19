@@ -61,7 +61,7 @@ git init -q && git add -A && git commit -qm "Start: the tutorial kit"
 ```
 ```text
   folders  data/sources, data/systems, data/goals, data/fields
-  wrote    29 file(s), the tutorial kit under tutorial/
+  wrote    30 file(s), the tutorial kit under tutorial/
 ```
 
 `data/` is where everything the harness freezes and records will live (`data/project.yaml` records its format); `tutorial/` is the
@@ -306,7 +306,7 @@ Ahead of both on every ticket (`6–0 (0 ties)`: `lead2` wins all six items, los
 significantly different from neither: on
 six items the smallest p a paired test can reach is 0.0312, and with two comparisons the first
 must beat 0.025. Up to 30 items the p is exact, and every command prints the same one; above
-that it is a seeded estimate, and the line under the header says which
+that it is a seeded estimate, and from 10,000 items the permutation distribution's normal limit. The line under the header says which
 ([RUNBOOK §7b](../harness/docs/RUNBOOK.md#7b-the-analysis-tools)). Six items
 are enough to learn the loop, not to pick a winner. `run-compare` diffs two runs' fingerprints
 and scores (`evh run-compare --baseline <run_id> --candidate <run_id> --noise <spread>`).
@@ -320,6 +320,7 @@ reason. The reason has to say what the tests showed, not what you hoped:
 evh run-promote --run <the tickets_lead2_v1 run_id> \
   --reason "lead2 is closest to the author's silver on all six tickets but differs significantly from neither arm at n=6; working baseline until the dataset grows"
 evh baselines
+# From a terminal your login is the actor; with no terminal (an agent, a script, CI) add --by person:NAME or set EVH_ACTOR
 ```
 ```text
   NOTE: tickets_lead2_v1 has 3 repeats; the catalog, the inspector and the tests read their mean.

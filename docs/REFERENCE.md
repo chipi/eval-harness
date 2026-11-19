@@ -76,7 +76,7 @@ the whole run — there is no per-item number whose mean is macro-F1. It lives i
 | `untyped_f1` | quality | The same, ignoring the type label. **The pair is the point:** `f1` asks "did it label it right", `untyped_f1` asks "did it find it at all". |
 | `type_penalty` | descriptive | `untyped_f1 − f1`. Credit lost purely to mislabelling something it did find. A type-confusion problem is fixed differently from a detection problem, and this says which you have. |
 | `tp`/`fp`/`fn` (+ untyped) | descriptive | Raw counts, so a report script can pool them into a **corpus micro-F1** — a different number from the mean of per-item F1s, answering a different question. |
-| `parsed` | quality | Could the output be read as a set. An unreadable answer scores **0**, not "found nothing" — those are different, and conflating them once paid a non-answer 1.0. |
+| `parsed` | quality | Could the output be read as a set. An unreadable answer scores **0**, not "found nothing" — those are different, and conflating them would pay a non-answer 1.0. |
 
 Background: [CoNLL-2003 shared task](https://aclanthology.org/W03-0419/) defines the
 standard exact-match entity F1 this follows.
@@ -114,7 +114,7 @@ Calibration: ROUGE-1 against these experts, ρ 0.192 / τ 0.150 in [G-Eval](http
 
 | metric | kind | what it is |
 |---|---|---|
-| `cost_usd` | descriptive | **What the provider billed** (`usage.cost`), not a price table. See [REPORT_RETRIEVAL §7](../research/REPORT_RETRIEVAL.md) for why that distinction cost four reports a correction. |
+| `cost_usd` | descriptive | **What the provider billed** (`usage.cost`), not a price table. See [REPORT_RETRIEVAL §7](../research/REPORT_RETRIEVAL.md) for why that distinction matters. |
 | `latency_ms` | descriptive | Per item, **excluding** warm-up. Index builds and model loads are reported separately as `warmup_ms`. A local arm's first one to three items still pay a one-off initialisation cost the load does not cover, so prefer the median for local arms ([`KNOWN_ISSUES.md`](../research/internal/KNOWN_ISSUES.md)). Figures from different machines are not comparable: see the re-timing runs read under the label `linux` (`evh leaderboard cnn_dailymail_200 --label linux`). |
 | `truncated` | descriptive | The provider stopped at `max_tokens`. Distinguishes "the model is bad" from "the budget was too small". |
 | `reasoning_tokens` | descriptive | Tokens spent on hidden reasoning. All examples run `reasoning: {enabled: false}`; this verifies it took. |
@@ -140,8 +140,8 @@ it.
 rule, a constant or a random draw. Most also have scores predictable in advance (`nothing`,
 `random`, `constant`, `first_k`), and those are **calibration checks on the scorer** before
 they are baselines on the task: if `nothing` does not score exactly the empty-gold rate,
-no other row in the table can be trusted. On Few-NERD this caught a gold entity that the
-normaliser deleted (the currency symbol `£`), which moved the floor by 1/280.
+no other row in the table can be trusted. A gold entity the
+normaliser deletes (the currency symbol `£`, for one) moves that floor, and this is where it shows.
 
 ---
 
@@ -377,7 +377,7 @@ the dataset is never optional in these labels.
 | **significant** | the difference survives Holm step-down at α = 0.05 (the verdicts: significant: better / worse, not significant) | "separated"; "better", which only needs a point estimate |
 | **contenders** | the arms a goal's strategy lets the tie-break choose among: the leader, and those shown no worse than it by more than the margin, a non-inferiority test (`balanced` 5% of the leader by default, `frugal` 10%), or of the same quality (`quality_first`); ADR-0026 | "tied" — a tie is per item, in a paired test (wins, losses, ties) |
 | **reference / reference set** | the expected answer a scorer reads for one item / the governed collection of them under `data/references/<tier>/<name>/`, promoted from a label set | "reference" for the set |
-| **billed** | what the provider charged (`usage.cost`) | "cost", which used to mean a price-table estimate |
+| **billed** | what the provider charged (`usage.cost`) | "cost", which can be a price-table estimate |
 | **local ML** / **open-weight** / **proprietary** | the three tiers in [REPORT_SYNTHESIS §0](../research/REPORT_SYNTHESIS.md) | "free vs paid", which conflates tiers 1 and 2 |
 
 ### The same words elsewhere
@@ -554,8 +554,6 @@ split follows publisher policy rather than importance.
 **Every citation above was verified on 2026-09-29** (SummEval's — the paper, G-Eval,
 BARTScore and the `mteb/summeval` dataset and its licence — on 2026-10-18; UniEval's paper,
 model and code on 2026-10-19) by fetching it
-and comparing the real title to the claim made about it. That check found four errors in the first draft: a
-fabricated paper title, a GitHub advisory ID pointing at an unrelated NuGet CVE, a dataset
-credited to the wrong authors, and a moved repository. One citation — Holm (1979) — could
+and comparing the real title to the claim made about it. One citation — Holm (1979) — could
 **not** be verified programmatically and is therefore given as a full text reference rather
 than a link.

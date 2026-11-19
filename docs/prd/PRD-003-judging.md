@@ -1,6 +1,6 @@
 # PRD-003: Re-measuring with a validated LLM judge
 
-- **Status**: Implemented (0.3.0); judging modes (FR5) in 0.6.0
+- **Status**: Implemented (v0.3.0)
 - **Authors**: Marko Dragoljevic
 - **Related RFC**: [RFC-005](../rfc/RFC-005-judge-scorers.md) (the judging pass, technically)
 - **Related ADR**: [ADR-0001](../adr/ADR-0001-judge-scorers.md)
@@ -24,7 +24,7 @@ the SummEval eval then showed that metric agrees with human experts far less tha
 best LLM judges do. One eval had validated a better instrument for another. The full
 reasoning, and what the first uses found, are in [RFC-005](../rfc/RFC-005-judge-scorers.md);
 how to run it is in [Runbook §12](../../harness/docs/RUNBOOK.md#12-re-measure-with-a-validated-judge)
-and step 10 of the [GUIDE](../GUIDE.md).
+and step 5 of [tutorial 3](../tutorials/3-frontier-reference-and-judging.md).
 
 ## Goals
 
@@ -57,7 +57,7 @@ and step 10 of the [GUIDE](../GUIDE.md).
 - _As a reviewer, I can see each judge's score, their agreement, and whether an arm shares a
   judge's vendor family._
 - _As an engineer, I can read judged runs with the usual commands
-  (`EVAL_RUNS_DIR=data/runs-judged/<scorer> evh leaderboard …`)._
+  (`evh leaderboard <dataset> --label judged/<scorer>`)._
 
 ## Functional Requirements
 
@@ -66,7 +66,8 @@ and step 10 of the [GUIDE](../GUIDE.md).
 - **FR1.1**: A judge scorer is a file, `data/scorers/<scorer_id>.yaml`, with `kind: judge`, the
   judges (model specs), the task (what an item is, what the outputs are, the dimensions and the
   scale), the prompt, the protocol, a `validation` block and a cost cap.
-- **FR1.2**: It needs at least two judges from different vendor families.
+- **FR1.2**: It needs at least two judges from different vendor families. A judge is given as `params` or as the
+  `system` whose params it uses (never both).
 
 ### FR2: The gate
 
@@ -85,8 +86,15 @@ and step 10 of the [GUIDE](../GUIDE.md).
 - **FR3.3**: A second shuffle on a subset measures position bias; a repeat on a subset measures
   the judge's own noise. Both are required: a scorer states both fractions, the noise check above
   0 and the position check above 0 when a call sees more than one output, or it is refused.
-- **FR3.4**: Verdicts are projected to one score per arm per item and written as runs in
-  `data/runs-judged/<scorer_id>/`; the originals are never touched.
+- **FR3.4**: Verdicts are projected to one score per arm per item and written as a score under each arm's run
+  (`scores/<scorer>@<judging set>/`, read as `judged/<scorer>`); the originals are never touched.
+- **FR3.5**: A `grade` scorer whose prompt does not name every dimension of its task is refused before any call
+  (unless `--no-calls`: a judge not told the keys answers with its own, and every reply would be paid for and unparsed). A reply that
+  parses to the wrong shape is reported unparsed, naming the keys it had and the dimension keys the prompt must ask
+  for.
+- **FR3.6**: When a provider bills a judge's calls at more than 1.2 times, or less than 1/1.2 of, what the judge's
+  declared prices (`usd_per_mtok_in`, `usd_per_mtok_out`) give for the same tokens, the pass prints a `NOTE` naming
+  the judge, because the dry run estimates at the declared prices.
 
 ### FR4: Where it shows
 
@@ -94,7 +102,7 @@ and step 10 of the [GUIDE](../GUIDE.md).
   reference-scored numbers are never ranked together
   ([UXS-001](../uxs/UXS-001-catalog.md)).
 
-### FR5: What a judge is asked (0.6.0)
+### FR5: What a judge is asked
 
 [RFC-005](../rfc/RFC-005-judge-scorers.md), "Judging modes".
 
@@ -113,7 +121,7 @@ and step 10 of the [GUIDE](../GUIDE.md).
 
 ## Success Criteria
 
-- GUIDE step 10 runs offline and free with fake judges, through the refusal, the dry run, the
+- Tutorial 3 step 5 runs offline and free with fake judges, through the refusal, the dry run, the
   pass and the leaderboard (`make guide-check`).
 - Re-reading stored verdicts reproduces the judged runs without a call.
 

@@ -55,8 +55,8 @@ and re-checked on every row it receives. A re-upload that reordered the split wo
 otherwise produce a confidently mislabelled dataset.
 
 Within each block the draw is a **seeded random** prefix of a permutation, not the first
-k. That is the fix for what AG News found: its first-k pilot slice was nested but
-unrepresentative, and one arm read 0.35 there against 0.67 on the full set — about 3 SD.
+k, because a first-k slice is nested but can be unrepresentative: on AG News one arm reads
+0.35 on its first-k slice against 0.67 on the full set — about 3 SD.
 Here the same arm reads 0.625 and 0.707, which is 1.3 SE. Nested *and* representative.
 
 It reads the split through the harness's `huggingface` source: the Hub's parquet conversion at one pinned

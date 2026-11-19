@@ -1,8 +1,6 @@
 # PRD-002: Labels, and the reference sets promoted from them
 
-- **Status**: Implemented (v0.4.0) for gold, silver and re-scoring; labels (FR2), promotion (FR3) and scoring against
-  labels (FR6) built for 0.6.0 ([RFC-023](../rfc/RFC-023-labels-and-references.md)); they replace
-  `reference-create`
+- **Status**: Implemented (v0.4.0)
 - **Authors**: Marko Dragoljevic
 - **Related UX specs**: [UXS-001](../uxs/UXS-001-catalog.md) (the Labels and Reference sets pages, the tier pills, row
   tints), [UXS-002](../uxs/UXS-002-inspector.md) (what the inspector refuses to compare; labels in the item view),
@@ -26,12 +24,10 @@ label set without promoting it.
 ## Background & Context
 
 Gold is expensive and often missing at the start; the common practice is to run the strongest model, read its
-outputs and score cheaper arms against what it wrote. Before 0.6.0 that was `reference-create`: it asked a model
-what *it would do* and made the answer the reference, so a model doing the task and someone saying what is right
-were the same command. Labelling itself lived outside the harness (the triage example's own scripts), the tier was
-taken on the user's word (`--tier gold` was accepted as "human-reviewed"), and a second reference from outcomes
-stretched "silver" to mean a third thing (ADR-0020). Evaluating production data (PRD-014) needs someone to say
-what was right on new items without making a reference each time.
+outputs and score cheaper arms against what it wrote. A model doing the task and someone saying what is right
+are different acts, so they are different commands: a label records who said what is right, and the tier is
+decided when labels are promoted, not taken on the user's word. Evaluating production data (PRD-014) needs
+someone to say what was right on new items without making a reference each time.
 
 The reasoning is in [Concepts: Gold is not silver, and a label is not a reference](../../harness/docs/CONCEPTS.md#gold-is-not-silver-and-a-label-is-not-a-reference); the analysis
 against the books in [LABELS_ANALYSIS_0.6.0](https://github.com/chipi/eval-harness/blob/main/research/internal/LABELS_ANALYSIS_0.6.0.md).
@@ -53,7 +49,7 @@ against the books in [LABELS_ANALYSIS_0.6.0](https://github.com/chipi/eval-harne
 - **No labelling in the pages.** The pages never write (PRD-004); a person labels in a sheet
   (`label-sheet`, `label-import`), and the inspector's selection gives the command that makes one.
 - **No tier rule.** Nothing makes a person's labels gold or forbids a model's: the promotion decides and records
-  the source beside the tier (owner, 2026-11-01).
+  the source beside the tier.
 - **No automatic promotion**: no command makes a reference as a side effect.
 - No redistribution of a dataset's gold where its licence does not allow it; the examples fetch it
   ([Data & licences](../DATA.md)).
@@ -81,24 +77,24 @@ against the books in [LABELS_ANALYSIS_0.6.0](https://github.com/chipi/eval-harne
 
 ### FR1: Two tiers, on references
 
-- **FR1.1**: Gold lives in `data/references/gold/<dataset_id>/<item_id>.txt`; silver in
-  `data/references/silver/<name>/`, each with a `manifest.json`.
+- **FR1.1**: A reference set lives in `data/references/<tier>/<name>/<item_id>.txt`, the tier gold or
+  silver, each set with a `manifest.json`.
 - **FR1.2**: A run records the reference it was scored against (`reference_id`, tier) and a hash of the reference's
   bytes inside its fingerprint (RFC-001), so an edited reference file shows as a different measurement.
 
-### FR2: Labels (0.6.0)
+### FR2: Labels
 
 - **FR2.1**: A label set is `data/labels/<dataset>/<set>/`: one `<item_id>.txt` per labelled item and
   `labels.json` (the dataset, the set, its source, when, each item's sha256, an optional note per item, and the
   guideline's hash when one is given).
-- **FR2.2**: The source is `person` (`--by`), `model` (the run, its system and fingerprint) or `rule` (the rule file's
-  hash).
+- **FR2.2**: The source is `person` (`--by`), `model` (the run, its system and fingerprint), `rule` (the rule file's
+  hash) or `dataset` (the dataset's own answers, read from its source column when it is created).
 - **FR2.3**: `evh label-sheet` writes a sheet of the chosen items (`--items unlabelled|all|disagree`, `--item`), with
   what production or an arm decided and an optional proposal; `evh label-import` makes a `person` set of the
   filled rows. The sheet is CSV that Excel opens and saves (UTF-8 with its mark; `,` or `;`); `--choices`
   writes the allowed answers into the label column's header and the import refuses any other; a workbook
   (.xlsx) is refused, saying how to save it as CSV. The local inspector downloads the same sheet.
-- **FR2.3b** (0.6.0): The sheet of `evh sheet-export … --csv FILE --fill label` is filled the same way, and
+- **FR2.3b**: The sheet of `evh sheet-export … --csv FILE --fill label` is filled the same way, and
   `evh sheet-import --sheet FILE --dataset-id D --by WHO --set S` makes its `label` column a set: `person`, or `model` with
   `--kind model` when a tool filled it. A filled `pick` or `score:` column is a judgement, not a label: it becomes
   unvalidated judged runs (`--scorer`, PRD-003), never a label set.
@@ -110,7 +106,7 @@ against the books in [LABELS_ANALYSIS_0.6.0](https://github.com/chipi/eval-harne
 - **FR2.7**: `evh label-set-list D` lists every set: source, coverage, guideline, and how often two sets
   agree (FR2.10); the pages show what was promoted from it (UXS-001).
 - **FR2.8**: `evh validate` V19 checks every set's labels against the sha256 it recorded.
-- **FR2.9**: A label is one right answer, or several when more than one is right for the item (owner, 2026-11-02),
+- **FR2.9**: A label is one right answer, or several when more than one is right for the item,
   written `{"accept": ["escalate", "file"]}`, sorted and without repeats; the sheet's `also right` column, a rule's
   `label: [a, b]` and a folder's text make one. A decision is wrong against a label when it is none of them; a
   scorer reads a reference through `answers()`.
@@ -119,19 +115,14 @@ against the books in [LABELS_ANALYSIS_0.6.0](https://github.com/chipi/eval-harne
   or with MASI distance when a label accepts several answers; Artstein & Poesio 2008), and the confusion matrix.
   Free-text labels are not compared as text.
 
-### FR3: Promotion (0.6.0)
+### FR3: Promotion
 
 - **FR3.1**: `evh reference-promote --dataset-id D --labels S [--items …] --tier gold|silver --by WHO --reason "…"`
   copies the chosen labels (the set on this dataset, or `DATASET/SET` on another with the same items) into
-  `references/<tier>/<name>/`; the manifest records `promoted_from` (the set, its dataset, its source), the reason,
+  `references/<tier>/<name>/` (`--name`, default the dataset's id); the manifest records `promoted_from` (the set, its dataset, its source), the reason,
   who and when, and for a `model` set who authored the texts (its system, model and run). A reason must be a
   sentence; a reference set is never overwritten.
-- **FR3.2** (0.6.0): `reference-create` and `reference-from-outcomes` are removed; `label-from-run` keeps their
-  refusals and `--not-redistributed`, `label-from-capture` their rule language.
-- **FR3.3**: Every existing reference records how it was promoted ("promoted before labels existed"), with every
-  run's fingerprint unchanged (its texts and authorship are what runs hash). Its texts kept here are copied byte for
-  byte into a label set; a reference whose texts are fetched elsewhere (a dataset's own labels, not redistributed)
-  records its source and no set (`harness/tools/migrate_references_to_labels.py`).
+- **FR3.2**: `label-from-run` takes `--not-redistributed` to keep a set's texts out of git (a `.gitignore` beside them).
 
 ### FR4: The arm whose outputs became the labels
 
@@ -149,15 +140,15 @@ against the books in [LABELS_ANALYSIS_0.6.0](https://github.com/chipi/eval-harne
 - **FR5.4**: The inspector, on a metric scored against a reference, does not test an arm scored against another
   reference than the baseline's; it names it and says why ([UXS-002](../uxs/UXS-002-inspector.md)).
 
-### FR6: Scoring against labels (0.6.0)
+### FR6: Scoring against labels
 
 - **FR6.1**: `evh rescore --dataset-id D --labels SET` and `evh run --system S --dataset D --labels SET` score against
   a label set of the run's own dataset without promoting it (a set on another dataset is refused: promote it, or
   label this one). The run records `reference_id: labels/<dataset>/<set>` and `reference_tier: labels`, and its
-  fingerprint hashes the set's files. A run scored against a set, measured or re-scored, is written beside the
-  runs, `data/runs-labels-<dataset>-<set>/`: an arm of its own, never one more run of the system's arm on gold or
-  silver, and never where a goal reads a re-score in place of a run.
-- **FR6.2** (0.6.0): Every view names it by its source (the set's source chip and name, made by whom and when on
+  fingerprint hashes the set's files. A run scored against a set, measured or re-scored, is a score under the run
+  (`data/runs/<run_id>/scores/…`), read as the label `labels-<dataset>-<set>`: an arm of its own, never one more run
+  of the system's arm on gold or silver.
+- **FR6.2**: Every view names it by its source (the set's source chip and name, made by whom and when on
   the labels page), never as a reference or with a tier; arms against different sets are never compared, as for references
   (FR5.4).
 - **FR6.3**: A goal suggests a finalist for a group scored against a label set as it does for a reference's group
@@ -166,9 +157,7 @@ against the books in [LABELS_ANALYSIS_0.6.0](https://github.com/chipi/eval-harne
 
 ## Success Criteria
 
-- A label set from a run records where it came from, and the refusals above hold (today
-  `harness/tests/test_reference_from_run.py`; its successor tests `label-from-run`).
-- The migration leaves every run's score unchanged: the reference files are the same bytes.
+- A label set from a run records where it came from, and the refusals above hold (`harness/tests/test_label_from_run.py`).
 - No table on the pages or in the terminal ranks a silver-scored arm with a gold-scored one, or arms scored against
   two different label sets.
 
