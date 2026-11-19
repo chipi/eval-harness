@@ -155,7 +155,9 @@ def filter_dirt(status: str, data_rel: str | None) -> list:
     `<data_rel>judge-summaries/` (a judging pass's summary) and `<data_rel>prompts/` (the prompt versions runs
     record, RFC-028); and a round's record under `<data_rel>rounds/`, new or changed: a run made in a round joins its
     arm there (RFC-032 step 5), so the round file changes with every run of it, and it says which arms a round
-    holds, not how anything is measured. Anything else still counts -- a modified tracked file anywhere else (a
+    holds, not how anything is measured. A study's record under `<data_rel>studies/` likewise: one study-run writes
+    its spec and log and runs every trial, so nobody could commit between them (the 0.8.0 newcomer run's trials were
+    all recorded dirty). Anything else still counts -- a modified tracked file anywhere else (a
     committed run included), and untracked files outside those, which could be code. A throwaway pass
     (`evh run --scratch`) is under `.build/`, which git ignores.
     Pure, so the rule is tested without a git tree.
@@ -165,7 +167,7 @@ def filter_dirt(status: str, data_rel: str | None) -> list:
         path = line[3:].strip().strip('"')
         under = path[len(data_rel) :] if data_rel and path.startswith(data_rel) else None
         if under is not None and (
-            under.startswith("rounds/")
+            under.startswith(("rounds/", "studies/"))
             or (line.startswith("?? ") and under.startswith(("runs/", "judge-summaries/", "prompts/")))
         ):
             continue

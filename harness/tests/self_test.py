@@ -572,6 +572,11 @@ def test_untracked_run_output_does_not_make_the_tree_dirty() -> None:
         filter_dirt(" M harness/data/rounds/g/r1.yaml\n?? harness/data/rounds/g/r2.yaml", d) == [],
     )
     check(
+        "dirty: nor a study's record, new or changed (its log grows with each trial, all in one study-run: the 0.8.0 "
+        "newcomer run's trials were all recorded dirty)",
+        filter_dirt(" M harness/data/studies/g/s1.yaml\n?? harness/data/studies/g/s2/log.jsonl", d) == [],
+    )
+    check(
         "dirty: a MODIFIED committed run still is",
         len(filter_dirt(" M harness/data/runs/x/run.json", d)) == 1,
     )
