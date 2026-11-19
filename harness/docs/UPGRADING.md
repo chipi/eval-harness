@@ -205,6 +205,24 @@ correctness bugs, not just missing features.
   kind (RUNBOOK, Refusals), not the wording. A project's `AGENTS.md` written by `evh init` before 0.8.0 lacks
   the "When a command stops" section; copy it from a new `evh init` if your agents read the file.
 
+- **A repeat set beside a plain run is refused.** A script that runs an arm once and then `--repeat N` of the same
+  system on the same dataset gets `ERROR (would-overwrite)` at the second command: run it as `--repeat N` alone, or repeat
+  the run with `--purpose repeat --of <run_id>`. Runs already committed that way still fail V8: give all but one a
+  purpose (`repeat`, `retime`, `pair`) in its `run.json`, or remove the extra one.
+- **A closed round reads the runs it recorded.** Its numbers are the ones it closed on; a later run of one of its
+  systems is listed "since then". A comparison you read from a closed round after re-running its arms can differ from
+  what 0.7.2 showed, which mixed the later runs in.
+- **`dataset-split` on a dataset with references** needs an actor (`--by person:NAME`, or `EVH_ACTOR`), and gives each
+  side the parent's references: drop any step that promoted each side's gold by hand.
+- **`round-carry` and `round-open --from` never read an earlier round's runs on another dataset**: a system is
+  carried through its runs on the round's own dataset, and refused when it has none there.
+- **A judge scorer in grade mode** whose prompt does not name each of its task's dimensions is refused by
+  `judge-score` before any call: name them in the prompt, as tutorial 3's does.
+- **Scripts reading `family-test`'s text**: the `A wins` column is `A wins-losses (ties)`; read `--json` (`wins`, and
+  now `losses` and `ties`).
+- **`rank-stability`** prints rows for halves of 5 and of half the dataset too, and its "saturated" reads from halves
+  of 10 up.
+
 ## From 0.7.1 to 0.7.2
 
 Change the pin to `@v0.7.2`. Nothing to migrate and no result moves. A deployment that serves `evh mcp --public

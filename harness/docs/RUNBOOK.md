@@ -932,7 +932,7 @@ into a *finding* is a separate verb: these are the tools behind the numbers in `
 | `evh pair-test … --reduce majority` | how an arm's repeats make one score per item: `mean` (the default), `majority` or `at_least_K` for 0/1 scores (`at_least_1`: did any of the repeats get it right). With `--round`, the goal's `primary.reduce` is the default; `family-test` takes it too |
 | `evh pair-test … --cluster FIELD` | items that share a value of FIELD count as one: one sign per cluster (and `--margin` by clusters). With `--round`, the goal's `cluster:` is the default |
 | `evh holdout --dataset-id … --exclude-dataset …` | does the result survive on the items the pilot slice never contained |
-| `evh rank-stability …` | how many items before the ordering stops moving — measured, not assumed from a power table |
+| `evh rank-stability …` | how many items before the ordering stops moving — measured, not assumed from a power table: two disjoint halves of 10, 20, 50 and 100 items where the dataset has them, plus halves of 5 and of half the dataset, so 20 items give a line (5, 10), not one point; "saturated" is read from halves of 10 up, where ties mean something |
 | `evh bootstrap-test --dataset-id … --a … --against …` | a percentile interval for a corpus-level metric that has no per-item value |
 | `evh rescore --dataset-id …` | recompute every score from stored outputs under the current scorer — or, with `--reference-id gold/…`, against a reference set that arrived later. **$0, no API calls** |
 | `evh cost-report` | what each arm actually cost, from the provider's bill (`_meta.usage.cost` in its predictions) against the cost the run recorded; runs with no bill there are listed apart (§4); then what judging cost, per scorer, judging set and judge, from the verdicts' own cost |
@@ -1553,7 +1553,10 @@ work operation is a job (below). Every call needs the token the server writes at
 /api/v1/session?token=<token>` sets; another Host or a foreign Origin is refused, and a call that is not a read needs
 `X-EVH-Data: 1`. `evh openapi` (and `GET /api/v1/openapi.json`) lists every operation with its inputs: whether it
 spends, a system id checked to exist, a file as an `upload` or as an `artifact` a job writes; what loads code or names a
-path of the server's (`--adapter`, output folders) is never taken, and a query's `path` must be inside the project. A read answers what the command answers with `--json`; `evh openapi` describes every resource. A server started `--public` or `--behind-proxy` answers no `/api/v1/` call: the API is this machine's only.
+path of the server's (`--adapter`, output folders) is never taken, and a query's `path` must be inside the project. A read answers what the command answers with `--json`; `evh openapi` describes every resource. A refusal is a 4xx with
+`{"error", "kind", "problems"}`; a read asked with `optional=1` (a page that shows the answer only when there is one,
+as the Workbench's charts do) answers a `not-enough` or `not-found` refusal with 200 and `{"result": null, "empty":
+<why>, "kind"}` instead, so a browser logs no error for "nothing yet". A server started `--public` or `--behind-proxy` answers no `/api/v1/` call: the API is this machine's only.
 
 **Jobs.** A decision or a work operation runs as a job: a POST on its own resource (`POST
 /api/v1/goals/{goal}/rounds/{round}/close`, `POST /api/v1/systems/{system}/runs`, ...; `evh openapi` lists them) with

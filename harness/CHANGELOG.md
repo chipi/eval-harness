@@ -566,6 +566,15 @@ that can move a result is never a patch release without saying so under **Change
   `make llms-check`, part of `make quality`, fails when it is stale, a link, an anchor or a path in it does not
   resolve, or an index misses one of its documents, and the guard proves each of those failures.
 
+- **`evh sweep --scratch`**: each arm a throwaway pass (`evh run --scratch`, under `.build/scratch/runs`, which nothing
+  that reads runs sees), and no leaderboard after it, which would rank the real arms. A smoke of several arms no longer
+  adds a second measurement to a real sweep's (`make sweep … ARGS=--scratch`).
+- **A price that disagrees with the bill is named.** `evh run` and `judge-score` print a NOTE after their spend when the
+  provider billed far from the prices the system's or the scorer's file declares (more than 1.2× either way), so the
+  next dry run's estimate is not trusted blindly.
+- **`evh env-check` says where each variable came from**: the shell, or the project's `.env`.
+- **A long run's progress line says how long it has left** at its pace so far, when that is 30 s or more.
+
 ### Changed
 
 - **`evh scorer-new` writes `explain: true`**: a new judge scorer's judges give their reasons. A scorer without the
@@ -918,6 +927,34 @@ that can move a result is never a patch release without saying so under **Change
   and `study-tell` run as the operation's own process. `migrate.py` run as a file is only the dry run's own child and
   refuses anywhere else.
 
+- **`evh run` refuses a repeat set beside a plain run of the same system** (`--repeat N` when the dataset already has a
+  measured run of it), before any call: the two were two measurements of one system, which `evh validate` refuses
+  (V8) once committed. Measure a hosted arm once, as its repeat set; to repeat a run afterwards, `--purpose repeat --of
+  <run_id>`. A resumed, scratch or label-set run is not refused.
+- **A closed round keeps the numbers it closed on.** Every view of a round (`round-evidence`, the goal page, the
+  inspector's `--round`, the Workbench) reads the runs the round recorded; a run of its systems made after it closed is
+  named "since then", never mixed into its means and tests.
+- **`dataset-split` gives each side the parent's references** on its own items, promoted from the same label sets and
+  recorded with who split it: with references on the parent it needs an actor (`--by`, or `EVH_ACTOR`).
+- **A round carries an arm from the round before only when that round ran on the same dataset**; any other system
+  is carried through its own runs on the round's dataset, never run again, and refused (`not-found`) when it has none
+  there (the Workbench carried a 13-item validation run into a 20-item round, and its evidence compared the two). The
+  Workbench's form carries arms one by one.
+- **`judge-score` refuses a grade prompt that does not name the task's dimensions**, before any call (a prompt that
+  does not, made both judges invent their own keys and every reply came back unparsed); `--no-calls` is not checked.
+  An unparsed grade names the keys it expected.
+- **`family-test` prints wins, losses and ties** (`A wins-losses (ties)`, was `A wins`, which read 8/32 beside a
+  positive delta when 23 items tied); `--json` adds `losses` and `ties`.
+- **`rank-stability` measures halves of 5 and of half the dataset** besides 10, 20, 50 and 100, so 20 items give a
+  line rather than one point, and reads "saturated" from halves of 10 up.
+- **A read asked with `optional=1`** answers a `not-enough` or `not-found` refusal with 200 and `{"result": null,
+  "empty", "kind"}`: the Workbench asks its charts and optional files that way, so "nothing yet" is no browser console
+  error.
+- **The leaderboard says why the goal recommends what it does**, under the goal's line; `round-open`, the round budget
+  refusal and the catalog's text view name `round-evidence` for a round's evidence and spend.
+- **A goal page's "test every arm against its leader" leaves the silver reference's author out** of the test on its
+  own silver. `catalog-serve --port 0` prints the port it bound.
+
 ### Fixed
 
 - **No log file holds the Workbench's token.** `evh catalog-serve` printed the sign-in link with its token, and its
@@ -1189,6 +1226,22 @@ that can move a result is never a patch release without saying so under **Change
   traceback. A reference manifest, capture record or label set that does not parse is named by its own check.
 - **A cancelled MCP call stops its command.** The server waited for the command to finish, so a call a client
   gave up on kept running to its timeout and held one of the server's slots.
+
+- **SQLite: `data-ls` and `data-show` list a run's `outputs.jsonl`, `predictions.jsonl` and a pass's
+  `rows.partial.jsonl`**, kept as tables, as the files store lists them.
+- **A study's records no longer make the tree dirty**: `data/studies/` is exempt like the rounds, so a study's trial
+  runs are not marked dirty by the study writing its own state.
+- **The Workbench at 390 px and on an empty project**: the eval screen's charts no longer scroll the page sideways;
+  a chart or file with nothing yet logs no console error; Home shows its commands; the open-round form is on the last
+  round's tab only.
+- **p and scores print the same way everywhere**: `round-evidence`, `evh baselines` and the records views print p to
+  four decimals and scores rounded, as every other command.
+- **`jobs-start` says a spending job's cap must be above 0**, rather than calling `--max-cost-usd 0` missing.
+- **The docs name no removed variable or folder of runs**: `EVAL_RUNS_DIR` and `data/runs-judged` (and the other
+  `data/runs-*` folders format 4 removed) were still in the README, the RUNBOOK, CONCEPTS, REFERENCE, tutorials 3, 4
+  and 6, the summarisation example and the Makefile's help; `tests/check_commands.py` now refuses both. `make
+  rescore` no longer passes `--out`, which `evh rescore` does not have.
+- **The test suite leaves no temporary folders**: 16 test files left 1,485 under the machine's shared `/tmp`.
 
 ## 0.7.2 — 2026-11-04
 
