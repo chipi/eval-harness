@@ -159,6 +159,20 @@ check(
     (r, c["caption"][:240]),
 )
 
+# no cost difference at all (review, 2026-11-19: two arms costing the same were called "better and cheaper"), and no
+# cost recorded on the items both share
+c = round_chart(
+    "higher", {"runs/d/base": scores(0.5, 0.0, cost=0.01), "runs/d/same_cost": scores(0.5, 0.2, cost=0.01)}
+)
+none_c = round_chart("higher", {"runs/d/base": scores(0.5, 0.0), "runs/d/no_cost": scores(0.5, 0.2)})
+check(
+    "a significant gain at the same cost is 'better at the same cost', with no cost recorded 'its cost not compared'; "
+    "never 'cheaper'",
+    c["rows"][0]["claim"] == "better at the same cost"
+    and none_c["rows"][0]["claim"] == "better, its cost not compared",
+    (c["rows"][0]["claim"], none_c["rows"][0]["claim"]),
+)
+
 # a study decided on a measure other than the goal's primary is drawn in the study's direction
 arms = {"runs/d/base_v1": scores(0.5, 0.0, cost=0.01), "runs/d/t1_v1": scores(0.5, 0.2, cost=0.01)}
 ms.state = lambda goal, sid, data=None: {

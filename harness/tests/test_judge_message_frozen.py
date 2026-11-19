@@ -7,7 +7,8 @@ committed judging sets (grade and pick, made before reasons existed, so `explain
 outputs hashes to what was sent, on a sample of verdicts of each pass. A change to the message a validated judge
 reads (a word, a space, the reason's request leaking in) fails here.
 
-    python tests/test_judge_message_frozen.py
+    python tests/test_judge_message_frozen.py   (needs data/materialized/cnn_dailymail_200: CI runs it after
+    `examples/reproduce.py data summarization`, in rerun.yml)
 """
 
 from __future__ import annotations

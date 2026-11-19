@@ -394,8 +394,14 @@ def _claim(filled: bool, y: float, x: float | None) -> str:
     """What a point may be called (RFC-034 §3): a quadrant only for a significant difference."""
     if not filled:
         return "no gain shown, costs more" if (x or 0) > 0 else "not separated"
-    up, right = y > 0, (x or 0) > 0
-    return cc.QUADRANTS[(0 if up else 2) + (1 if right else 0)]
+    up = y > 0
+    # A cost no different from the base's is not "cheaper": named as the same cost (review, 2026-11-19: arms with no
+    # cost at all were called "better and cheaper"), and a cost not recorded on the items both share as that.
+    if x is None:
+        return ("better" if up else "worse") + ", its cost not compared"
+    if abs(x) <= 1e-12:
+        return ("better" if up else "worse") + " at the same cost"
+    return cc.QUADRANTS[(0 if up else 2) + (1 if x > 0 else 0)]
 
 
 def gain_cost(goal: str, round: str | None = None, study: str | None = None) -> dict:

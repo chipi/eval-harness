@@ -25,7 +25,7 @@ HARNESS = Path(__file__).resolve().parents[1]
 #: Files that are not tests of the store's behaviour: a browser (needs Chromium, the browser gate runs them), the whole
 #: self-test (it runs every file here, and checks this repository's own committed data, which is files), the
 #: inspector's budget (this repository's runs, files; its own CI job; two runs at once share .build/budget-catalog), and
-#: the judges' frozen messages (this repository's committed verdicts, files).
+#: the judges' frozen messages (they need the materialized articles: CI runs them in rerun.yml's summarization job).
 SKIP = (
     "test_*_browser.py",
     "self_test.py",

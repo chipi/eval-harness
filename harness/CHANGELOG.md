@@ -951,7 +951,8 @@ that can move a result is never a patch release without saying so under **Change
   compared: no shared item", left off the drawing and named in the caption, not a crash of the command, the API and the
   Workbench's chart. A study is drawn on its own measure in that measure's direction (on a measure other than the
   goal's primary, a trial better on it was drawn down and called worse); the axis says when lower is better and the
-  mark is flipped; with no cost recorded the cost axis is tokens per item; a trial its rule dropped carries its reason.
+  mark is flipped; with no cost recorded the cost axis is tokens per item; a trial its rule dropped carries its reason;
+  a significant difference at no cost difference is "better at the same cost", not "better and cheaper".
 - **A Workbench screen that asks for a read already on its way is drawn when it lands.** Since a read only redraws the
   screen that asked for it, a screen opened while the screen before was still reading the same thing stayed on
   "Reading…" for good.

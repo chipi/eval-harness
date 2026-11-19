@@ -57,6 +57,8 @@ WORDS = [
     "password",
 ]
 QUADRANTS = ("better and cheaper", "better, costs more", "worse and cheaper", "worse, costs more")
+# what a significant point may be called: a quadrant, or, with no cost difference, the same cost (never cheaper)
+NAMED = (*QUADRANTS, "better at the same cost", "worse at the same cost")
 
 
 def evh(*args: str) -> subprocess.CompletedProcess:
@@ -236,7 +238,7 @@ try:
 
     def claim_ok(x: dict) -> bool:
         significant = x["verdict"] in ("better", "worse")
-        return (x["claim"] in QUADRANTS) == significant and (
+        return (x["claim"] in NAMED) == significant and (
             significant or x["claim"] in ("not separated", "no gain shown, costs more")
         )
 
@@ -245,7 +247,7 @@ try:
         "gain-cost on a round: each arm against the run it started from, named by its quadrant only when significant",
         gr.get("baseline", "").startswith("s1_v1") and {x["arm"].split(" ")[0] for x in gr["rows"]} == {"s1b_v1", "s2_v1", "s3_v1"}
         and all(claim_ok(x) for x in gr["rows"])
-        and any(x["claim"] == "not separated" for x in gr["rows"]) and any(x["claim"] in QUADRANTS for x in gr["rows"]),
+        and any(x["claim"] == "not separated" for x in gr["rows"]) and any(x["claim"] in NAMED for x in gr["rows"]),
         gr["rows"],
     )  # fmt: skip
     shown = result(evh("study-show", "g", "s1", "--json"))

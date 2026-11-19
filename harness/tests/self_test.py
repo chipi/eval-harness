@@ -1144,10 +1144,6 @@ def test_example_scorer_suites_pass() -> None:
             "judges that say why (RFC-034): judge-verdicts by page, filter and pass, the API's answer the same, scorer-new explains by default, the inspector's item view local only",
         ),
         (
-            "test_judge_message_frozen.py",
-            "a judge's message without reasons is what it was sent, byte for byte: committed verdicts' prompt_sha256 rebuilt",
-        ),
-        (
             "test_charts.py",
             "the evidence charts (RFC-034): every kind's numbers, drawing and refusals, a quadrant named only when significant, a lower measure turned, the API's answer, the file, the catalog's pages",
         ),

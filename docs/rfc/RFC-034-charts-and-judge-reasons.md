@@ -85,7 +85,8 @@ The quadrant names are claims, so they follow the tests the harness already make
   in a quadrant by its estimate, but the quadrant's name is not claimed for it.
 - **Names**: "better and cheaper", "better, costs more", "worse and cheaper", "worse, costs more", plus "no gain
   shown, costs more" for a hollow mark to the right of zero (EvalBench's token tax, without claiming the gain is
-  zero).
+  zero). As built: a significant difference with no cost difference is "better (or worse) at the same cost", and one
+  whose cost was not recorded on the items both share "better (or worse), its cost not compared": neither is cheaper.
 - A study's trial that its rule dropped for a limit (RFC-029: a guard metric fell beyond its limit) is drawn with
   that reason in its tooltip and table row.
 
