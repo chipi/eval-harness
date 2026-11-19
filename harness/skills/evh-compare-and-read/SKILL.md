@@ -42,7 +42,7 @@ With a goal (`data/goals/<goal_id>.yaml`), one command gives the leader, the bas
 test and what the goal's strategy recommends once its limits are applied:
 
 ```evh
-evh goal-leaderboard G --json
+evh goal-leaderboard tickets_summary --json
 ```
 
 (Use `evh goal-list --json` to list all goals with their title, status, measure, datasets, systems filed, and recommended arm.)
