@@ -58,8 +58,10 @@ env.update(
 )  # W8's publish is refused offline, with no token of this machine
 
 
-#: Seconds the fake waits before it answers: a run the jobs page stops is still running when it is stopped.
-SLOW = {"s": 0.0}
+#: A gate on the fake's answers: while "sem" is a semaphore, each call waits for one permit before it answers, so a run
+#: the jobs page stops is provably still going when it is stopped, however slow the machine (a sleep only made it
+#: likely). A call already waiting keeps the semaphore it came with: the test frees it after the stop.
+GATE: dict = {"sem": None}
 #: What each call sent as its user message: a system pointing at a prompt version sends that text.
 SENT: list[str] = []
 
@@ -82,8 +84,10 @@ class Fake(http.server.BaseHTTPRequestHandler):
         self._send({"models": [{"name": "fake:1b", "model": "fake:1b", "digest": "abc123def456" + "0" * 52}]})
 
     def do_POST(self):
-        time.sleep(SLOW["s"])
         body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
+        sem = GATE["sem"]
+        if sem is not None:
+            sem.acquire(timeout=180)
         SENT.append(str(((body.get("messages") or [{}])[-1]).get("content") or ""))
         msg = {"role": "assistant", "content": '{"answer": "yes", "reason": "17 has no divisors"}'}
         if body.get("reasoning_effort") != "none":
@@ -1661,10 +1665,12 @@ try:
                 and f"files: {', '.join(names)}" in said,
                 (names, on_disk, got, said[-300:]),
             )
-            SLOW["s"] = 1.5
+            gate1 = GATE["sem"] = threading.Semaphore(
+                0
+            )  # no call is answered until the test lets one through
 
             def start_run() -> dict:
-                """A run of the fake system as a job: each call waits 1.5 s, so it is still running when stopped."""
+                """A run of the fake system as a job: each call waits at the gate, so it is still running when stopped."""
                 return page.evaluate(
                     """() => fetch('/api/v1/jobs', {method: 'POST', credentials: 'same-origin', headers: {'Content-Type':
                     'application/json', 'X-EVH-Data': '1'}, body: JSON.stringify({operation: 'run', inputs: {system:
@@ -1699,10 +1705,13 @@ try:
                 and len(list((proj / ".build" / "jobs").iterdir())) == jobs_before,
                 (stopped, page.locator("#jb-out").inner_text()[:300]),
             )
+            gate1.release(10)  # the stopped run's call, still waiting, is let go
+            gate2 = GATE["sem"] = threading.Semaphore(0)
             started = start_run()
             page.goto(f"http://127.0.0.1:{port}/workbench/#jobs/{started.get('id')}")
             page.wait_for_selector("#jb-stop", timeout=20000)
-            deadline = time.monotonic() + 60
+            gate2.release(1)  # exactly one item is answered; the run then waits at the gate for the next
+            deadline = time.monotonic() + 120
             while done_items(started["id"]) < 1 and time.monotonic() < deadline:
                 time.sleep(0.2)
             page.click("#jb-stop")
@@ -1713,7 +1722,8 @@ try:
                 stopped.get("state") == "cancelled" and page.locator("#jb-resume").count() == 1,
                 (stopped, page.locator("main").inner_text()[:300]),
             )
-            SLOW["s"] = 0.0
+            GATE["sem"] = None
+            gate2.release(10)
             page.click("#jb-resume")
             page.wait_for_function(
                 f"() => location.hash.startsWith('#jobs/') && !location.hash.endsWith('{started['id']}')",
@@ -2153,17 +2163,46 @@ try:
                     for c in good
                 ]
             )
-            # the page is left open: the next screen's calls run in the same document, through the fetch wrapper
-            # (page.goto of a URL that differs by its hash alone may load a new document instead: the Sign-in screen)
-            page.evaluate("() => { location.hash = '#goal/tickets_summary'; }")
-            page.wait_for_function(
-                "() => document.querySelector('main').textContent.includes('restarted')", timeout=20000
+            # What the page's own fetch answers, whatever the screen or its cache does: the wrapper turns the 401 into
+            # the message (a unique query, so no cache can answer it)
+            direct = page.evaluate(
+                "() => fetch('/api/v1/goals?x=' + Math.random(), {credentials: 'same-origin'})"
+                ".then(async (r) => [r.status, (await r.json()).error || ''])"
             )
+            check(
+                "the page's own call with the old token answers 401 in words: the server was restarted, open the link it printed",
+                direct[0] == 401
+                and "was restarted" in direct[1]
+                and "evh catalog-serve printed" in direct[1],
+                direct,
+            )
+            # The same on a screen of the page left open: a screen change reads afresh (workbench.js empties the page's
+            # reads on every hashchange), in the same document, through the wrapper. A leave-screen confirm (the `stay`
+            # handler above dismisses it) would keep the old screen: nothing unsent is held here, and the failure says
+            # what the page held, its address, the dialogs and the last calls if it does.
+            net: list = []
+            page.on(
+                "response",
+                lambda r: (
+                    net.append((r.status, r.url.split("127.0.0.1")[-1][:90])) if "/api/v1" in r.url else None
+                ),
+            )
+            dialogs.clear()
+            held = page.evaluate("() => (window.WB.unsent ? window.WB.unsent() : [])")
+            page.evaluate(
+                "() => { if (window.WB.forgetUnsent) window.WB.forgetUnsent(); location.hash = '#goal/tickets_summary'; }"
+            )
+            try:
+                page.wait_for_function(
+                    "() => document.querySelector('main').textContent.includes('restarted')", timeout=20000
+                )
+            except Exception:  # noqa: BLE001 - the check below says what the screen showed
+                pass
             said = page.locator("main").inner_text()
             check(
-                "a page left open: a call that answers 401 says the server was restarted and to open the link it printed",
+                "a page left open: a screen read that answers 401 says the server was restarted and to open the link it printed",
                 "was restarted" in said and "evh catalog-serve printed" in said,
-                said[:300],
+                (said[:300], page.evaluate("location.hash"), held, dialogs, net[-8:]),
             )
             page.reload()
             page.wait_for_selector("h1:has-text('Sign in')", timeout=20000)
