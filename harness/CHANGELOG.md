@@ -999,6 +999,19 @@ that can move a result is never a patch release without saying so under **Change
   (arm-smoke, model-onboard, exposure-check: the checks ran and flagged) reads "checked, flagged" in the Workbench, in
   `evh jobs-status` and in `evh jobs-logs --follow`, from one definition (`state_label` on the job record, which the API
   carries); its stored state stays `failed` (the `--state` filter), its exit code is shown.
+- **A chart landing late redrew the whole Workbench screen** and put back what the person had just done: the arm chosen to
+  carry in went back to the first one in the list (the carry then named another arm), a ticked system was unticked, a
+  job's output box was replaced. A slow machine (CI) lands the charts after the screen is drawn and after the person, or a
+  test, has acted. A chart's answer now fills its own box only.
+- **Any read landing late put back what the person had set outside a form.** After the charts (above), the same redraw
+  came from a system's record on "Choose the systems" (the cap went back to 0.05) and a side's arms on the held-out screen
+  (the cap for the runs went back to 1). A redraw caused by a read now carries every control the person changed, in a form
+  or not (a chosen option, a ticked box, a typed value), as it already carried a dirty form's. An action's output box is
+  kept as the element it was (a copy of its text left a job still running writing into a box no longer on the screen),
+  and the clone form a person opened on "Choose the systems" survives the redraw (a clone then posted with no id).
+- **The sign-in screen could be overwritten by "Opening this project…".** On a slow machine the page's own redraw came
+  after the 401 answer and put the placeholder back over the sign-in text. The sign-in screen is now a route, as the
+  "open it from your project" screen is, so a redraw draws it again.
 - **The held-out screen asked for the paired test before the candidate had runs on the side**, and the API refused it
   (400, "only 0 shared item(s)", a console error). The confirmation now says which of the two has no run there and asks
   once both have.

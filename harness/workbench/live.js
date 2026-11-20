@@ -5,7 +5,7 @@
 // wires it, never this repository's data as if it were the project's.
 (() => {
   const WB = window.WB;
-  const LIVE = { on: false, cache: {}, pending: {}, wanted: {}, quiet: new Set(), failed: null };
+  const LIVE = { on: false, cache: {}, pending: {}, wanted: {}, quiet: new Set(), into: {}, failed: null };
   window.LIVE = LIVE;
   const esc = WB.esc;
 
@@ -42,8 +42,11 @@
 
   // One API read, kept until the page reloads; a screen asks again by key and is drawn again when it lands.
   // `quiet` (the rail's reads): the answer redraws the rail only, never the screen under a person's hand.
-  function load(key, path, raw = false, quiet = false) {
+  // `into` (a chart's read): the answer replaces the box that asked (`[data-lands=key]`), never the whole screen. A chart lands
+  // after the screen is drawn, and a redraw then put a chosen option, a ticked box and a job's output back as they were drawn.
+  function load(key, path, raw = false, quiet = false, into = null) {
     if (key in LIVE.cache) return LIVE.cache[key];
+    if (into) LIVE.into[key] = into;
     // An answer redraws the screen that asked for it last, never one that did not ask: a slow read (a chart) landing on
     // another screen redrew it under the person's typing, and the text box it replaced took the rest of their
     // keystrokes. A screen asking for a read already on its way (the screen before asked first) is recorded too, or
@@ -62,7 +65,11 @@
           const asked = LIVE.wanted[key];
           delete LIVE.pending[key];
           delete LIVE.wanted[key];
-          if (location.hash === asked) WB.render();
+          const fill = LIVE.into[key];
+          delete LIVE.into[key];
+          const box = fill && location.hash === asked ? document.querySelector(`[data-lands="${key}"]`) : null;
+          if (box) box.outerHTML = fill();
+          else if (location.hash === asked) WB.render(false, true);
           else if (LIVE.quiet.delete(key) && LIVE.railArgs && `#${LIVE.railArgs[0]}` === location.hash) WB.railFor(...LIVE.railArgs);
         });
     }
@@ -681,7 +688,7 @@
         <div class="tablewrap"><table><thead><tr><th>system</th><th>model</th><th>where it runs</th><th>its prompt</th><th>its check</th></tr></thead><tbody>
         ${mine.map((x) => `<tr><td class="mono">${esc(x.system)}</td><td>${esc(x.model || "")}</td><td>${esc(x.deployment || "")}</td><td>${promptCell(x.system)}</td>
           <td><button class="btn" type="button" data-smoke="${esc(x.system)}">Check it on three items</button> <button class="btn" type="button" data-clone="${esc(x.system)}">Clone it, change one thing</button>
-            <div id="sm-${esc(x.system)}" data-out aria-live="polite">${smokeView(smokes[`${goal}/${x.system}`], sysrec[x.system])}</div><div id="cl-${esc(x.system)}"></div></td></tr>`).join("")}</tbody></table></div>
+            <div id="sm-${esc(x.system)}" data-out aria-live="polite">${smokeView(smokes[`${goal}/${x.system}`], sysrec[x.system])}</div><div id="cl-${esc(x.system)}" data-out></div></td></tr>`).join("")}</tbody></table></div>
         ${byField("sm-by")}</div></section>
       <section class="part" data-form="system-new"><div class="parthead"><h2>Make a system from a model</h2></div><div class="body">
         <div class="field">${nm("sn-model", "The model", "models.pick")}<div><select id="sn-model"><option value="">choose a model that has somewhere to run</option>
@@ -807,8 +814,9 @@
   // is a line of text, not a drawing.
   function chartBox(kind, params, quiet = false, opts = {}) {
     const qs = new URLSearchParams(Object.entries(params).filter(([, v]) => v)).toString();
-    const r = load(`chart:${kind}:${qs}`, `/charts/${kind}?${qs}&optional=1`);
-    if (r === undefined) return `<div class="chart-box">${loading("the chart")}</div>`;
+    const key = `chart:${kind}:${qs}`;
+    const r = load(key, `/charts/${kind}?${qs}&optional=1`, false, false, () => chartBox(kind, params, quiet, opts));
+    if (r === undefined) return `<div class="chart-box" data-lands="${esc(key)}">${loading("the chart")}</div>`;
     if (r.error) return quiet ? "" : `<div class="chart-box" data-chart="${esc(kind)}"><p class="muted">No chart yet: ${esc(r.error)}</p></div>`;
     const cols = r.columns || [];
     if (opts.minPoints) {
@@ -2726,8 +2734,10 @@
       if (r.status === 404) noProject();
       else if (r.status !== 401) goLive();
       else {
-        document.querySelector("#main").innerHTML = `<div class="screen"><h1>Sign in</h1><p class="lead">Open the Workbench through the link
-          <code>evh catalog-serve</code> printed: it carries this server's token once and leaves a cookie.</p></div>`;
+        // A route, not a write into #main: workbench.js draws the routes again when the page finishes loading, and on a slow
+        // machine that came after this answer and put "Opening this project…" back over the sign-in screen.
+        for (const k of Object.keys(WB.routes)) WB.routes[k] = [() => opening("Sign in", `Open the Workbench through the link <code>evh catalog-serve</code> printed: it carries this server's token once and leaves a cookie.`)];
+        WB.render(true);
       }
     }).catch(noProject);
   }

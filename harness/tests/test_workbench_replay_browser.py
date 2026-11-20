@@ -29,6 +29,7 @@ sys.path.insert(0, str(HARNESS))
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _signin
 import _serve  # noqa: E402
 import _signin  # noqa: E402
+import _slow  # noqa: E402
 from evaluation_harness import _format  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 
@@ -117,7 +118,7 @@ try:
     try:
         link = _signin.link(lines)
         with sync_playwright() as pw:
-            browser = pw.chromium.launch()
+            browser = _slow.launch(pw)
             page = browser.new_page(viewport={"width": 1280, "height": 900})
             errors: list = []
             page.on("pageerror", lambda e: errors.append(str(e)))

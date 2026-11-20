@@ -35,6 +35,7 @@ sys.path.insert(0, str(HARNESS))
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _signin
 import _serve  # noqa: E402
 import _signin  # noqa: E402
+import _slow  # noqa: E402
 import yaml  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 
@@ -203,7 +204,7 @@ try:
     try:
         link = _signin.link(lines)
         with sync_playwright() as pw:
-            browser = pw.chromium.launch()
+            browser = _slow.launch(pw)
             page = browser.new_page(viewport={"width": 1280, "height": 900})
             errors: list = []
             page.on("pageerror", lambda e: errors.append(str(e)))
@@ -384,6 +385,32 @@ try:
                 and " no run on sup_v1_test" in page.locator("main").inner_text(),
                 (refused[asked:], console_errors[said:], page.locator("main").inner_text()[-500:]),
             )
+            # the side's arms landing after the screen is drawn must not put the cap back as drawn
+            held_arms: list = []
+
+            def hold_arms(route) -> None:
+                held_arms.append(route)
+
+            page.route("**/api/v1/datasets/sup_v1_test/arms", hold_arms)
+            page.evaluate("() => { delete LIVE.cache['arms:sup_v1_test']; }")
+            page.goto(f"{base}#jobs")
+            page.goto(f"{base}#heldout/g")
+            page.wait_for_selector("#hr-cap", timeout=20000)
+            page.fill("#hr-cap", "0.5")
+            for _attempt in range(100):  # a slowed page asks for its reads late: wait until they are held
+                if held_arms:
+                    break
+                page.wait_for_timeout(100)
+            for route in held_arms:
+                route.continue_()
+            page.unroute("**/api/v1/datasets/sup_v1_test/arms")
+            page.wait_for_timeout(2000)
+            check(
+                "the held-out screen: the side's arms landing after the screen is drawn leaves the cap the person set",
+                page.locator("#hr-cap").input_value() == "0.5" and len(held_arms) >= 1,
+                (page.locator("#hr-cap").input_value(), len(held_arms)),
+            )
+            page.fill("#hr-cap", "1")
             page.click("#hr-go")
             page.wait_for_selector("#hr-out:has-text('Done.'), #hr-out [role=alert]", timeout=120000)
             again("#hr-out")
@@ -454,6 +481,9 @@ try:
             page.select_option("#sn6-ds", "tk_val")
             page.select_option("#sn6-base", "sup_base_v1")
             page.click("#sn6-fill")
+            page.wait_for_function(  # the button reads the baseline first, then writes the spec: the check runs what it wrote
+                "() => document.querySelector('#sn6-spec').value.includes('tk_val')", timeout=20000
+            )
             page.click("#sn6-dry")
             page.wait_for_selector("#sn6-out pre, #sn6-out [role=alert]", timeout=60000)
             check(

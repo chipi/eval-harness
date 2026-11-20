@@ -38,6 +38,7 @@ sys.path.insert(0, str(HARNESS))
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _signin
 import _serve  # noqa: E402
 import _signin  # noqa: E402
+import _slow  # noqa: E402
 import yaml  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 
@@ -110,6 +111,45 @@ import _cli  # noqa: E402
 def evh(*args: str) -> subprocess.CompletedProcess:
     """`evh <args>` in the test project."""
     return _cli.run(proj, env, *args, timeout=600)
+
+
+def arm_listed(page, system: str) -> None:
+    """Wait for a carried-in arm to be listed on the round's screen; on a timeout say what the page and the jobs say."""
+    try:
+        page.wait_for_selector(f"#arms li:has-text('{system}')", timeout=60000)
+    except Exception:
+        jobs = sorted(
+            (d for d in (proj / ".build" / "jobs").iterdir() if (d / "job.json").is_file()),
+            key=lambda d: d.name,
+        )
+        for d in [
+            x
+            for x in jobs
+            if json.loads((x / "job.json").read_text()).get("operation") in ("round-open", "round-carry")
+        ][-2:]:
+            st, job = json.loads((d / "state.json").read_text()), json.loads((d / "job.json").read_text())
+            log = (d / "log").read_text()[-400:]
+            print(
+                "DIAG job",
+                d.name,
+                job.get("operation"),
+                job.get("inputs"),
+                st.get("state"),
+                st.get("exit"),
+                log,
+            )
+        r2f = proj / "data" / "rounds" / "tickets_summary" / "r2.yaml"
+        print("DIAG #arms", page.locator("#arms").inner_text() if page.locator("#arms").count() else "(none)")
+        print(
+            "DIAG #cy-arm",
+            page.locator("#cy-arm").input_value() if page.locator("#cy-arm").count() else "(none)",
+        )
+        print(
+            "DIAG #cy-out",
+            page.locator("#cy-out").inner_text() if page.locator("#cy-out").count() else "(none)",
+        )
+        print("DIAG r2.yaml", r2f.read_text() if r2f.is_file() else "(missing)")
+        raise
 
 
 def serve(*extra: str) -> tuple[subprocess.Popen, int, list[str]]:
@@ -201,7 +241,7 @@ try:
             lines,
         )
         with sync_playwright() as pw:
-            browser = pw.chromium.launch()
+            browser = _slow.launch(pw)
             page = browser.new_page(viewport={"width": 1280, "height": 900})
             errors: list = []
             page.on("pageerror", lambda e: errors.append(str(e)))
@@ -634,6 +674,56 @@ try:
                 and page.locator("[data-smoke='elsewhere_v1']").count() == 0,
                 [x.get_attribute("data-smoke") for x in page.locator("[data-smoke]").all()],
             )
+            # A read that lands after the screen is drawn (a system's record) redraws it: what the person set outside a form
+            # (the cap, here) must still be there (the redraw put the controls back as drawn).
+            held_recs: list = []
+
+            def hold_rec(route) -> None:
+                held_recs.append(route)
+
+            page.route("**/api/v1/systems/*", hold_rec)
+            page.evaluate(
+                "() => { for (const k of Object.keys(LIVE.cache)) if (k.startsWith('sysrec:')) delete LIVE.cache[k]; }"
+            )
+            page.goto(f"http://127.0.0.1:{port}/workbench/#jobs")
+            page.goto(f"http://127.0.0.1:{port}/workbench/#systems/tickets_summary")
+            page.wait_for_selector("#sm-cap", timeout=20000)
+            page.fill("#sm-cap", "0.07")
+            page.click("[data-clone='one_v1']")
+            page.fill("#cl-id-one_v1", "keep_me")
+            # a job just started writes into the (still empty) box it started with: it must be the one on the screen after the redraw
+            page.evaluate("() => { window.__box = document.querySelector('#sm-one_v1'); }")
+            for _attempt in range(100):  # a slowed page asks for its reads late: wait until they are held
+                if held_recs:
+                    break
+                page.wait_for_timeout(100)
+            for route in held_recs:
+                route.continue_()
+            page.unroute("**/api/v1/systems/*")
+            page.wait_for_timeout(2000)
+            check(
+                "Choose the systems: a system's record landing after the screen is drawn leaves the cap the person set "
+                "(a control outside a form is carried across the redraw)",
+                page.locator("#sm-cap").input_value() == "0.07" and len(held_recs) >= 1,
+                (page.locator("#sm-cap").input_value(), len(held_recs)),
+            )
+            check(
+                "Choose the systems: the clone form a person opened, and what they typed in it, survive the redraw (it is made "
+                "by a click, not drawn with the screen)",
+                page.locator("#cl-id-one_v1").count() == 1
+                and page.locator("#cl-id-one_v1").input_value() == "keep_me",
+                page.locator("#cl-one_v1").inner_html()[:200],
+            )
+            page.evaluate(
+                "() => WB.forgetUnsent()"
+            )  # the clone form is left unsent: leaving the screen would ask
+            page.evaluate("() => { window.__box.innerHTML = '<p>checking: done</p>'; }")
+            check(
+                "Choose the systems: a job's output box survives the redraw, so what the job writes later is on the screen "
+                "(the redraw kept a copy of its text, and the job went on writing to the element it left)",
+                "checking: done" in page.locator("#sm-one_v1").inner_text(),
+                page.locator("#sm-one_v1").inner_text(),
+            )
             smoke_jobs = [
                 json.loads((d / "state.json").read_text())
                 for d in sorted((proj / ".build" / "jobs").iterdir())
@@ -719,7 +809,7 @@ try:
             page.select_option("#cy-arm", "one_v1")
             page.fill("#ev-by", "tester")
             page.click("#cy-go")
-            page.wait_for_selector("#arms li:has-text('one_v1')", timeout=60000)
+            arm_listed(page, "one_v1")
             page.check("[data-run='fake-1b_here']")
             page.click("#rn-est")
             page.wait_for_selector("#rn-out pre, #rn-out [role=alert]", timeout=60000)
@@ -948,12 +1038,32 @@ try:
             for i in range(boxes.count()):
                 boxes.nth(i).uncheck()
             page.fill("#ro-by", "tester")
+            held_charts: list = []  # the new round's charts are held back, as a slow machine lands them late
+
+            def hold_chart(route) -> None:
+                held_charts.append(route)
+
+            page.route("**/api/v1/charts/**", hold_chart)
             page.click("#ro-open")
             page.wait_for_selector("#cy-arm", timeout=60000)
             page.select_option("#cy-arm", "one_v1")
             page.fill("#ev-by", "tester")
+            page.wait_for_function(
+                "() => document.querySelectorAll('[data-lands]').length >= 1", timeout=20000
+            )
+            for route in held_charts:
+                route.continue_()
+            page.unroute("**/api/v1/charts/**")
+            page.wait_for_function("() => !document.querySelector('[data-lands]')", timeout=60000)
+            page.wait_for_timeout(1000)  # a redraw, if the landing made one, has happened
+            check(
+                "a chart landing after the screen is drawn fills its own box: the arm chosen to carry in is still chosen "
+                "(a redraw put it back as drawn, and a slow machine's carry named another arm)",
+                page.locator("#cy-arm").input_value() == "one_v1",
+                (page.locator("#cy-arm").input_value(), len(held_charts)),
+            )
             page.click("#cy-go")
-            page.wait_for_selector("#arms li:has-text('one_v1')", timeout=60000)
+            arm_listed(page, "one_v1")
             r2 = yaml.safe_load((proj / "data" / "rounds" / "tickets_summary" / "r2.yaml").read_text())
             carried: dict = next((a for a in r2.get("arms") or [] if a["system"] == "one_v1"), {})
             check(
@@ -1997,6 +2107,9 @@ try:
                 pg.wait_for_function(
                     "() => !document.querySelector('main').textContent.includes('Reading')", timeout=20000
                 )
+                pg.wait_for_function(
+                    "() => !Object.keys(LIVE.pending).length", timeout=30000
+                )  # the rail's reads, slow or not
                 pg.wait_for_timeout(600)
                 return pg.evaluate(RAIL_JS)
 

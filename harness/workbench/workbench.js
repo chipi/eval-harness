@@ -787,41 +787,51 @@ success_criteria:
   // read that came back): what is typed in its forms is carried across the redraw, so the screen still shows what came
   // back. (Holding the redraw back instead left a screen on "loading" until its form was saved.)
   const unsent = () => (window.WB.unsent ? window.WB.unsent() : []);
-  const fieldKey = (el) => (el.id ? `#${el.id}` : el.name && el.type === "radio" ? `${el.name}=${el.value}` : null);
+  // A control is known by its id, by name=value (a radio or a checkbox), or by its first data- attribute (a checkbox that names a system).
+  const fieldKey = (el) => {
+    if (el.id) return `#${el.id}`;
+    if (el.name && (el.type === "radio" || el.type === "checkbox")) return `${el.name}=${el.value}`;
+    const a = [...el.attributes].find((x) => x.name.startsWith("data-") && x.name !== "data-typed");
+    return a ? `${a.name}=${a.value}` : null;
+  };
   // only what the person typed or chose is carried: a value the screen filled in is the screen's to fill again
   const FIELDS = "[data-form] input, [data-form] textarea, [data-form] select";
-  document.addEventListener("input", (e) => { if (e.target.matches && e.target.matches(FIELDS)) e.target.dataset.typed = "1"; }, true);
-  document.addEventListener("change", (e) => { if (e.target.matches && e.target.matches(FIELDS)) e.target.dataset.typed = "1"; }, true);
-  function typed() {
+  // A read landing after the screen is drawn redraws it (`render(false, true)`): then every control the person set is carried, in a
+  // form or not (a chosen option, a ticked box, a cap): the redraw put them back as drawn and the next click acted on the default.
+  const ANY = "main input, main textarea, main select";
+  document.addEventListener("input", (e) => { if (e.target.matches && e.target.matches(ANY)) e.target.dataset.typed = "1"; }, true);
+  document.addEventListener("change", (e) => { if (e.target.matches && e.target.matches(ANY)) e.target.dataset.typed = "1"; }, true);
+  function typed(landed) {
     const out = {};
-    if (!unsent().length) return out;
-    main.querySelectorAll(FIELDS).forEach((el) => {
-      const k = fieldKey(el);
+    if (!landed && !unsent().length) return out;
+    main.querySelectorAll(landed ? ANY : FIELDS).forEach((el) => {
+      const k = el.type === "file" ? null : fieldKey(el);
       if (k && el.dataset.typed) out[k] = el.type === "checkbox" || el.type === "radio" ? el.checked : el.value;
     });
     return out;
   }
   function retype(kept) {
-    main.querySelectorAll(FIELDS).forEach((el) => {
-      const k = fieldKey(el);
+    main.querySelectorAll(ANY).forEach((el) => {
+      const k = el.type === "file" ? null : fieldKey(el);
       if (!k || !(k in kept)) return;
       if (el.type === "checkbox" || el.type === "radio") el.checked = kept[k];
-      else el.value = kept[k];
+      else if (el.tagName !== "SELECT" || [...el.options].some((o) => o.value === kept[k])) el.value = kept[k];
       el.dataset.typed = "1";
     });
   }
   // what an action said (a refusal, a job's end) stays through a redraw of the same screen: a read coming back redrew
-  // the screen and wiped it, and the person never saw why nothing happened
+  // the screen and wiped it, and the person never saw why nothing happened. The box itself is kept (an empty one too), not a copy of its text: an action
+  // still running writes into the element it was started with, and a copy left it writing nowhere.
   function said() {
     const out = {};
-    main.querySelectorAll("[data-out]").forEach((el) => { if (el.id && el.innerHTML.trim()) out[el.id] = el.innerHTML; });
+    main.querySelectorAll("[data-out]").forEach((el) => { if (el.id) out[el.id] = el; });
     return out;
   }
   function resay(kept) {
-    for (const [id, html] of Object.entries(kept)) { const el = document.getElementById(id); if (el && !el.innerHTML.trim()) el.innerHTML = html; }
+    for (const [id, old] of Object.entries(kept)) { const el = document.getElementById(id); if (el && el !== old && !el.innerHTML.trim()) el.replaceWith(old); }
   }
-  function render(newScreen) {
-    const kept = newScreen ? {} : typed();
+  function render(newScreen, landed = false) {
+    const kept = newScreen ? {} : typed(landed);
     const told = newScreen ? {} : said();
     const keep = newScreen ? null : focusKey(document.activeElement);
     const route = (location.hash || "#start").slice(1);

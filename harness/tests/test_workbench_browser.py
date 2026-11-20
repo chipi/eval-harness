@@ -32,6 +32,8 @@ from pathlib import Path
 
 HARNESS = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(HARNESS))
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _slow
+import _slow  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 
 WORKBENCH = HARNESS / "workbench"
@@ -415,7 +417,7 @@ def main() -> int:
     srv, base = serve()
     try:
         with sync_playwright() as p:
-            browser = p.chromium.launch()
+            browser = _slow.launch(p)
             check_screens(browser, base)
             check_skip_link(browser, base)
             check_round(browser, base)
