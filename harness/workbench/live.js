@@ -13,9 +13,22 @@
   // ("no valid token"). The page says what happened and what to do, wherever the answer is shown.
   const RESTARTED = "The server was restarted, so this page's sign-in no longer works: open the Workbench link evh catalog-serve printed (it carries the new token).";
   const realFetch = window.fetch.bind(window);
+  // A read a screen treats as optional (a chart, the rail) swallows its refusal, so the notice cannot depend on the read
+  // that happened to be the screen's main one: the first 401 of any /api/v1 call puts it on the page, outside what a
+  // screen redraws, once.
+  function noteRestarted() {
+    if (document.getElementById("wb-restarted") || !document.body) return;
+    const el = document.createElement("div");
+    el.id = "wb-restarted";
+    el.setAttribute("role", "alert");
+    el.className = "restarted";
+    el.textContent = RESTARTED;
+    document.body.prepend(el);
+  }
   window.fetch = async (...a) => {
     const r = await realFetch(...a);
     if (r.status === 401 && String(a[0] && a[0].url || a[0]).startsWith("/api/v1")) {
+      if (LIVE.on) noteRestarted(); // before the project answered (LIVE.on), a 401 is the first visit: the Sign-in screen says so
       return new Response(JSON.stringify({ error: RESTARTED }), { status: 401, headers: { "Content-Type": "application/json" } });
     }
     return r;

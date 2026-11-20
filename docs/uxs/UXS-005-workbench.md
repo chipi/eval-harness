@@ -654,7 +654,7 @@ and `evh` give the same numbers.
 ## For every live screen
 
 - **The session.** The page opens through the Workbench link `evh catalog-serve` prints (it signs in once); the token is new at every server
-  start, so a page left open answers 401 on any call after a restart and the page says the server was restarted and to open the Workbench link it printed (it carries the new token);
+  start, so a page left open answers 401 on any call after a restart, and the page puts up one notice, over whatever screen it shows and whichever read answered (an optional chart too), that the server was restarted and to open the Workbench link it printed (it carries the new token);
   reloading the page shows "Sign in" and says to open the Workbench link the server printed.
 - **Writes.** Every call that is not a GET sends `X-EVH-Data: 1`; an upload is base64 JSON, at most 50 MB a call.
 - **Reads.** An API read that may have nothing to show takes `optional=1`: the server then answers 200 with why instead of an error, and the

@@ -871,9 +871,22 @@ try:
 
             v1_path = proj / "data" / "baselines" / "tickets_summary" / "tk_v1" / "1.json"
             v1 = json.loads(v1_path.read_text())
-            v1_path.write_text(json.dumps(v1 | {"actor": BEFORE, "migrated": True}, indent=2) + "\n")
+            # Replaced whole (the server reads the data while it runs: a truncate-then-write is a torn file to it).
+            v1_tmp = v1_path.with_name("1.json.tmp")
+            v1_tmp.write_text(json.dumps(v1 | {"actor": BEFORE, "migrated": True}, indent=2) + "\n")
+            os.replace(v1_tmp, v1_path)
             page.reload()
-            page.wait_for_selector("li:has-text('v3') .status:has-text('current')", timeout=60000)
+            try:
+                page.wait_for_selector("li:has-text('v3') .status:has-text('current')", timeout=60000)
+            except Exception:
+                # A CI failure here said only "timeout" once: say what the page showed.
+                print(
+                    "what the page showed:",
+                    page.locator("main").inner_text()[:1500],
+                    "| errors:",
+                    errors[-5:],
+                )
+                raise
             versions = page.locator(
                 "section.part", has=page.locator("h2", has_text="The baseline on")
             ).locator("li")
@@ -2189,20 +2202,44 @@ try:
             )
             dialogs.clear()
             held = page.evaluate("() => (window.WB.unsent ? window.WB.unsent() : [])")
+            # The notice is the page's own (a banner no screen redraws), shown by the first 401 of any /api/v1 call: the
+            # page's earlier call above already put it up, so it is taken down, and the page moved to a screen that
+            # reads nothing, before the goal screen's reads (which swallow some refusals as optional) are made.
             page.evaluate(
-                "() => { if (window.WB.forgetUnsent) window.WB.forgetUnsent(); location.hash = '#goal/tickets_summary'; }"
+                "() => { if (window.WB.forgetUnsent) window.WB.forgetUnsent(); location.hash = '#glossary'; }"
+            )
+            page.wait_for_function("() => location.hash === '#glossary'", timeout=20000)
+            page.evaluate(
+                "() => { document.getElementById('wb-restarted')?.remove(); location.hash = '#goal/tickets_summary'; }"
             )
             try:
-                page.wait_for_function(
-                    "() => document.querySelector('main').textContent.includes('restarted')", timeout=20000
-                )
-            except Exception:  # noqa: BLE001 - the check below says what the screen showed
+                page.wait_for_selector("#wb-restarted", state="attached", timeout=20000)
+            except Exception:  # noqa: BLE001 - the check below says what the page showed
                 pass
-            said = page.locator("main").inner_text()
+            said = page.evaluate("() => document.getElementById('wb-restarted')?.textContent || ''")
             check(
-                "a page left open: a screen read that answers 401 says the server was restarted and to open the link it printed",
+                "a page left open: a screen's reads that answer 401 put up a notice that the server was restarted and to open the link it printed",
                 "was restarted" in said and "evh catalog-serve printed" in said,
-                (said[:300], page.evaluate("location.hash"), held, dialogs, net[-8:]),
+                (
+                    said[:300],
+                    page.locator("main").inner_text()[:200],
+                    page.evaluate("location.hash"),
+                    held,
+                    dialogs,
+                    net[-8:],
+                ),
+            )
+            page.evaluate("() => document.getElementById('wb-restarted')?.remove()")
+            page.evaluate("() => fetch('/api/v1/charts/trend?goal=tickets_summary&optional=1')")
+            try:
+                page.wait_for_selector("#wb-restarted", state="attached", timeout=20000)
+            except Exception:  # noqa: BLE001
+                pass
+            check(
+                "a page left open: an optional read (a chart) that alone answers 401 shows the same notice",
+                "was restarted"
+                in page.evaluate("() => document.getElementById('wb-restarted')?.textContent || ''"),
+                net[-4:],
             )
             page.reload()
             page.wait_for_selector("h1:has-text('Sign in')", timeout=20000)
