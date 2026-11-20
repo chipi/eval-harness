@@ -35,7 +35,7 @@ from evaluation_harness._actor import ORIGINS  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 
 
-def froms(node, found):
+def origins(node, found):
     """Every `from` enum in a schema (the actor object's), however deep."""
     if isinstance(node, dict):
         if isinstance(node.get("properties"), dict) and "from" in node["properties"]:
@@ -43,16 +43,16 @@ def froms(node, found):
             if enum:
                 found.append(enum)
         for v in node.values():
-            froms(v, found)
+            origins(v, found)
     elif isinstance(node, list):
         for v in node:
-            froms(v, found)
+            origins(v, found)
     return found
 
 
 with_actor = {}
 for sp in sorted(SCHEMAS.glob("*.schema.json")):
-    enums = froms(json.loads(sp.read_text()), [])
+    enums = origins(json.loads(sp.read_text()), [])
     if enums:
         with_actor[sp.name] = enums
 check("setup: schemas with the actor object are found", len(with_actor) >= 6, sorted(with_actor))
