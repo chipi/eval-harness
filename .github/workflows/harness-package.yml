@@ -64,9 +64,9 @@ jobs:
           python -m venv /tmp/clean
           /tmp/clean/bin/pip install dist/*.whl
           /tmp/clean/bin/evh init --store files /tmp/proj
-          mkdir -p /tmp/proj/data/sources && cd /tmp/proj
+          mkdir -p /tmp/proj/data/sources/ci_v1 && cd /tmp/proj
           git init -q && git -c user.email=ci@ci -c user.name=ci commit -q --allow-empty -m init
-          for n in 1 2 3; do echo "item $n" > data/sources/item_$n.txt; done
+          for n in 1 2 3; do echo "item $n" > data/sources/ci_v1/item_$n.txt; done
           /tmp/clean/bin/evh dataset-create --dataset-id ci_v1
           /tmp/clean/bin/evh validate
           # In a project, self-test checks the installed package: its paired-test suite and the
