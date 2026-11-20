@@ -4,9 +4,9 @@
     EVH_ACTOR=agent:fleet EVH_FOR=person:ana evh run --system c --dataset d
 
 The actor is a recorded claim, not an identity: `from` says where it came from (`flag`, `environment`, `terminal`,
-`migration`). In order: a command's `--by` (`person:NAME`, `agent:NAME`, or a bare name, a person); else `EVH_ACTOR`,
+`api`, `migration`). In order: a command's `--by` (`person:NAME`, `agent:NAME`, or a bare name, a person); else `EVH_ACTOR`,
 with `EVH_FOR` required for an agent; else the operating-system user, a `person` when stdin is a terminal and
-`unknown` when it is not (an agent's shell, a script, CI, a job). A decision (promote, roll back, close a round,
+`unknown` when it is not (an agent's shell, a script, CI, a job: a job carries `EVH_ACTOR_FROM`, where its starter got the name). A decision (promote, roll back, close a round,
 unseal) refuses an `unknown` actor.
 """
 
@@ -21,6 +21,7 @@ from typing import Any
 from evaluation_harness._common import die
 
 TYPES = ("person", "agent")
+ORIGINS = ("api", "flag", "environment", "terminal")  # what a job's EVH_ACTOR_FROM may say
 _FLAG: list[str] = []  # the value of this process's --by, set by the option's action
 
 
@@ -76,7 +77,10 @@ def actor() -> dict[str, Any]:
         source = "flag"
     elif env:
         kind, name = _parse(env, "EVH_ACTOR")
-        source = "environment"
+        # A job is started with where its name came from (an API call, or the starting command's own flag, environment or
+        # terminal), recorded as that and not as the environment of the process that runs the job.
+        origin = os.environ.get("EVH_ACTOR_FROM", "").strip()
+        source = origin if origin in ORIGINS else "environment"
     else:
         terminal = sys.stdin is not None and sys.stdin.isatty()
         return {"type": "person" if terminal else "unknown", "name": _os_user(), "from": "terminal"}

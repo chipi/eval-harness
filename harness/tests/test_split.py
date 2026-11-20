@@ -14,6 +14,7 @@ from evaluation_harness._check import check, summary  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
 import _runstore  # noqa: E402
+from evaluation_harness import _format  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _tmp
 import _tmp  # noqa: E402
@@ -21,7 +22,7 @@ import _tmp  # noqa: E402
 proj = Path(_tmp.mkdtemp(prefix="evh-split-"))
 data = proj / "data"
 (data / "fields").mkdir(parents=True)
-env = dict(os.environ, EVAL_HOME=str(proj))
+env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-split")
 env.pop("EVAL_DATA_DIR", None)
 
 
@@ -210,6 +211,33 @@ check(
     and "not promoted on the sealed side" in out(r)
     and "--labels kit_v1/g --tier gold" in out(r),
     out(r)[-400:],
+)
+
+# --force overwrites "if nothing cites them yet": a run measured on a side cites it by id and its bytes.
+_runstore.write_text(
+    proj, "systems/echo_v1.yaml", "system_id: echo_v1\nparams:\n  provider: echo\n  sentences: 1\n"
+)
+_runstore.write_text(proj, _format.NAME, f"format: {_format.FORMAT}\n")
+evh("dataset-materialize", "--dataset-id", "kit_v1_validation")
+ran = evh("run", "--system", "echo_v1", "--dataset", "kit_v1_validation")
+before = (
+    _runstore.read_text(proj, "datasets/kit_v1_validation.json"),
+    _runstore.read_text(proj, "datasets/kit_v1_test.json"),
+)
+r = evh(*split, "--by", "t", "--force")
+after = (
+    _runstore.read_text(proj, "datasets/kit_v1_validation.json"),
+    _runstore.read_text(proj, "datasets/kit_v1_test.json"),
+)
+check(
+    "split --force: refused when a run cites a side (would-overwrite, naming the dataset and its run count), nothing rewritten",
+    ran.returncode == 0
+    and r.returncode != 0
+    and "would-overwrite" in out(r)
+    and "kit_v1_validation" in out(r)
+    and "run" in out(r)
+    and before == after,
+    (out(ran)[-200:], out(r)[-300:], before == after),
 )
 
 r = evh("validate")

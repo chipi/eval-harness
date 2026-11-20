@@ -235,6 +235,9 @@ params:
   usd_per_mtok_out: 15.0
 ```
 
+Quote a `prompt:` that contains `: ` (a colon and a space), as the one above is quoted: unquoted, the
+file is not YAML and `evh run` refuses it (`invalid-file`, naming the file and the line).
+
 Four models to compare is four of these files, each run on the same dataset
 (`evh run --system sonnet_v1 --dataset my_corpus_v1`). The knobs live in the system so it is
 reproducible and diffable; keeping them in code means "which settings produced this number?" has

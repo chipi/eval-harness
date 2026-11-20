@@ -169,7 +169,7 @@ def intervals(goal: str, dataset: str | None = None) -> dict:
     """Each arm's difference from the leader with its interval; the margin when the goal decides by non-inferiority."""
     grp = _group(goal, dataset)
     flip = -1.0 if grp["direction"] == "lower" else 1.0
-    rows, draw = [], []
+    rows, draw, left_out = [], [], []
     margin, against, base_row = None, "leader", None
     for a in grp["arms"]:
         vs = a.get("vs_leader") or {}
@@ -186,6 +186,13 @@ def intervals(goal: str, dataset: str | None = None) -> dict:
                 "verdict": "the leader",
             }
         elif vs.get("delta") is None:
+            # A retired arm is outside the family the decision tests (it is shown, never recommended: ADR-0006), so it
+            # has no interval against the leader: said, not dropped.
+            left_out.append(
+                f"{a['label']} (retired in {a['retired_in']})"
+                if a.get("retired_in")
+                else f"{a['label']} ({'; '.join(a.get('flags') or []) or 'no interval'})"
+            )
             continue
         else:
             ci = vs.get("ci") or [None, None]
@@ -243,6 +250,7 @@ def intervals(goal: str, dataset: str | None = None) -> dict:
         "not separated. A filled dot: a significant difference; the leader is the hollow dot at 0."
         + _through(grp["scorer"])
         + margin_said
+        + (f" Left out: {', '.join(left_out)}: not tested against the leader." if left_out else "")
     )
     svg = cc.forest(
         draw,

@@ -59,6 +59,14 @@ check(
     a == {"type": "agent", "name": "fleet", "from": "environment", "for": "ana"},
     a,
 )
+a = with_env(EVH_ACTOR="person:wb-typed", EVH_FOR=None, EVH_ACTOR_FROM="api")
+check(
+    "a name typed in an API call (the job's EVH_ACTOR_FROM=api) is recorded as from the api, not the environment",
+    a == {"type": "person", "name": "wb-typed", "from": "api"},
+    a,
+)
+a = with_env(EVH_ACTOR="person:ana", EVH_FOR=None, EVH_ACTOR_FROM="nonsense")
+check("an origin that is not `api` is not taken", a.get("from") == "environment", a)
 try:
     with_env(EVH_ACTOR="agent:fleet", EVH_FOR=None)
     refused = False

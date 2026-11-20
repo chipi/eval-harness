@@ -23,7 +23,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parents[1] / "scripts"
 KIT = HERE.parent / "tutorial"
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from evaluation_harness import _format, _store  # noqa: E402
+from evaluation_harness import _format, _outputs, _store  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
@@ -138,6 +138,41 @@ try:
     check(
         "leaderboard --wide: every column, nothing left out",
         "extra_metric_number_7" in wide.stdout.split("IS THE ORDERING")[0] and "Not shown" not in wide.stdout,
+    )
+    # a judged table: two judges and their mean, each name ending `_unvalidated`, at the 100 columns a terminal has
+    for name, cfg, s in (("jd_a", "briefs_mistral_small_v1", 4.5), ("jd_b", "briefs_lead1_v1", 3.5)):
+        write_run(
+            syn,
+            name,
+            cfg,
+            {
+                "acc": 0.5,
+                "judge_gemma_l_unvalidated": s,
+                "judge_qwen_s_unvalidated": s - 0.2,
+                "judge_score_unvalidated": s - 0.1,
+                "total_cost_usd": 0.001,
+                "latency_ms": 100.0,
+            },
+            {"dataset_id": "dsj", "primary_metric": "judge_score_unvalidated"},
+        )
+    jl = evh(syn, "leaderboard", "dsj", "--sort", "judge_score_unvalidated")
+    table = jl.stdout.split("IS THE ORDERING")[0]
+    head = " ".join(table.split("Not shown")[0].split("  arm ", 1)[-1].split())
+    check(
+        "leaderboard: both judges' columns fit in 100 columns, each name whole across two header lines",
+        max((len(ln) for ln in table.splitlines()), default=0) <= 100
+        and all(f"judge_{j}" in head for j in ("gemma_l", "qwen_s", "score"))
+        and head.count("_unvalidated") == 3
+        and "judge_qwen_s_unvalidated" not in table.split("Not shown")[-1],
+        table[:900],
+    )
+    from evaluation_harness import leaderboard as _lb
+
+    note = " ".join((_lb.runs_note(["judged/j1", "judged/j1"]) or "").split())
+    check(
+        "leaderboard: a judged table says its `runs` is the latest run of an arm (judging does not average repeats)",
+        "latest run" in note and "repeats" in note and _lb.runs_note(["silver", ""]) is None,
+        note,
     )
     js = evh(syn, "leaderboard", "dsv", "--match", "_v1", "--json")
     g = json.loads(js.stdout)["result"]["values"]["groups"][0]
@@ -563,6 +598,10 @@ try:
             json.dumps({**json.loads(_store.read_text(older / "score.json")), "scorer": "0" * 12}),
         )
         _runstore.put_rows(older, preds)
+        # the second one spent its whole budget before answering: an empty reply
+        cut_texts = _outputs.outputs(cut_run)
+        cut_texts[preds[1]["item_id"]] = ""
+        _outputs.write_all(cut_run, cut_texts, list(cut_texts))
     cutr = evh(proj, "rescore", "--dataset-id", "tickets_v1")
     flat_cut = " ".join(cutr.stdout.split())
     check(
@@ -571,6 +610,8 @@ try:
         and f"WARNING: {cut_run.name}: 2 of 6 output(s) stopped at max_tokens=99" in flat_cut
         and f"({preds[0]['item_id']}, {preds[1]['item_id']})" in flat_cut
         and "A re-score reads them as they are and scores them as if complete. Raise max_tokens (a new system_id) and run again."
+        in flat_cut
+        and f"1 of them EMPTY ({preds[1]['item_id']}): the token budget was spent before any answer"
         in flat_cut
         and flat_cut.index("WARNING: tickets_lead1")
         < flat_cut.index("the goals, the rounds and the catalog"),

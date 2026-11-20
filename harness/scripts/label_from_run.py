@@ -23,8 +23,19 @@ from typing import Any
 from evaluation_harness import _outputs, _runs, _store
 from evaluation_harness._common import die, load_dataset, read_json
 from evaluation_harness._label_sets import set_dir, write_set
+from evaluation_harness._record import empty_at_cap_note
 from evaluation_harness.model import runs as _model_runs
 from evaluation_harness.ops import legacy
+
+
+def _at_cap(tokens_out: object, max_tokens: object) -> bool:
+    """Whether an item's tokens_out reached the system's max_tokens."""
+    return (
+        isinstance(max_tokens, (int, float))
+        and max_tokens > 0
+        and isinstance(tokens_out, (int, float))
+        and tokens_out >= max_tokens
+    )
 
 
 def _unusable(rows: list[tuple[str, str, object]], max_tokens: object) -> tuple[list[str], list[str]]:
@@ -50,10 +61,13 @@ def _refuse_unusable(
     """Die on an empty output, or on outputs cut off at max_tokens unless they are allowed."""
     empty, cut = _unusable(rows, max_tokens)
     if empty:
+        spent = [item for item, _text, out in rows if item in empty and _at_cap(out, max_tokens)]
+        why = f"\n  {empty_at_cap_note(spent)}" if spent else ""
         die(
             f"REFUSED: {len(empty)} empty output(s) ({', '.join(empty[:8])}"
             + (" ..." if len(empty) > 8 else "")
-            + f").\n  An empty reference is never the right answer. {where}",
+            + f").{why}\n  An empty reference is never the right answer. Raise max_tokens\n"
+            f"  in the system (a new system id) and run it again. {where}",
             "not-enough",
         )
     if cut and not allow_cut_off:

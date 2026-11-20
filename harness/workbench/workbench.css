@@ -327,7 +327,7 @@ table.r4res td:nth-child(3) { white-space: normal; }
   table.stack.compact td:has(> input[type="checkbox"]) { order: -2; flex: 0 0 auto; }
   .parthead h2, .parthead h3 { flex: 1 1 0; min-width: 0; }
   .parthead .grow { display: none; }
-  .parthead .status { flex-basis: 100%; }
+  .parthead .status, .parthead > .muted { flex-basis: 100%; }
   .parthead .letter ~ .status { margin-left: 28px; }
 }
 
@@ -452,6 +452,14 @@ input[type=number] { max-width: 12rem; }
 :root[data-theme="light"] { --s1: #2a78d6; --s2: #e8551a; --s3: #179669; --s4: #b47a00; --s5: #e15187; --s6: #008300; --s7: #6250d6; --s8: #e34948; --local: #d95926; }
 .chart.evidence { margin: 0 0 14px; }
 .chart.evidence .scroll-x { overflow-x: auto; }
+/* a drawing wider than the screen scrolls in its own box; the shadow at an edge says there is more past it */
+.chart.evidence .scroll-x {
+  background:
+    linear-gradient(to right, var(--surface) 30%, transparent) left / 40px 100% no-repeat local,
+    linear-gradient(to left, var(--surface) 30%, transparent) right / 40px 100% no-repeat local,
+    radial-gradient(farthest-side at 0 50%, rgba(0, 0, 0, 0.28), transparent) left / 12px 100% no-repeat scroll,
+    radial-gradient(farthest-side at 100% 50%, rgba(0, 0, 0, 0.28), transparent) right / 12px 100% no-repeat scroll;
+}
 .chart.evidence svg { width: 100%; height: auto; display: block; overflow: visible; }
 .chart.evidence svg.wide { min-width: 520px; }
 .chart.evidence svg text { font: 12.5px var(--mono); fill: var(--ink-2); }

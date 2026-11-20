@@ -13,6 +13,7 @@ better; results.tsv imports as a closed study.
 
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -307,6 +308,19 @@ try:
         and looks.get("next") == 2 and "run-promote" in c.stderr,
         (d.stdout[-300:], c.stderr[-500:], conf, looks.get("next")),
     )  # fmt: skip
+    said_delta = re.search(r"; (\S+) on validation, where it was chosen", c.stderr)
+    check(
+        "study-confirm: the validation delta is rounded as the test delta is (4 significant digits)",
+        said_delta is not None and len(said_delta.group(1).lstrip("+-")) <= 7,
+        c.stderr[-500:],
+    )
+    lk = evh("looks", "--dataset", "tk_test")
+    rows = [ln for ln in lk.stdout.splitlines() if ln.startswith("  look ")]
+    check(
+        "looks: one look is one row, with the records it has (study-confirm writes two), not two rows numbered 1",
+        len(looks.get("looks") or []) == 2 and len(rows) == 1 and "2 records" in rows[0],
+        (lk.stdout, len(looks.get("looks") or [])),
+    )
 
     # ── what a sampler is shown, recorded ─────────────────────────────────────────────────────────────────────────
     evs = [json.loads(x) for x in _runstore.read_text(proj, "studies/g/s5.events.jsonl").splitlines()]

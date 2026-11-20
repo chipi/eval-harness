@@ -156,6 +156,15 @@ try:
     def empty(d, sd, m):
         _set_output(d, "t03_export", "   \n")
 
+    def empty_cut(d, sd, m):
+        m["params"]["max_tokens"] = 40
+        _set_output(d, "t03_export", "")
+        rows = _runstore.rows(sd)
+        for row in rows:
+            if row["item_id"] == "t03_export":
+                row["tokens_out"] = 40
+        _runstore.put_rows(sd, rows)
+
     def cut_off(d, sd, m):
         m["params"]["max_tokens"] = 40
         rows = _runstore.rows(sd)
@@ -169,6 +178,7 @@ try:
         ("dirty", dirty, "dirty tree"),
         ("empty", empty, "empty output"),
         ("cut_off", cut_off, "stopped at max_tokens=40"),
+        ("empty_cut", empty_cut, "token budget was spent before any answer"),
     ):
         run = clone(author, f"tickets_author_v1_{name}", edit)
         r = evh("label-from-run", "--run", run, "--set", f"s_{name}")
@@ -177,6 +187,14 @@ try:
             refused(r, text) and not _runstore.exists(proj, f"{LABELS}/s_{name}"),
             out(r)[-300:],
         )
+        if name == "empty_cut":
+            flat = " ".join(out(r).split())
+            check(
+                "label-from-run: an empty reply at the cap names the fix, as evh run's warning does",
+                "Raise max_tokens in the system (a new system id) and run it again" in flat
+                and "(t03_export)" in flat,
+                flat[-400:],
+            )
         if name == "cut_off":
             r = evh("label-from-run", "--run", run, "--set", "s_cut_ok", "--allow-cut-off")
             check("--allow-cut-off keeps outputs that end at the cap", r.returncode == 0, out(r)[-300:])

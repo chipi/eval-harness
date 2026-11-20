@@ -306,14 +306,18 @@ decision kept with its reason. This is where people spend most of their time (W1
 - **Run arms in it:** the systems that are not in the round and not yet measured on its dataset (a second measurement
   of a measured system is refused by `evh run`); ticked, with a cap, **See the cost first** is the dry run of the sweep
   (`POST /estimate`) and **Run them** is one `sweep` job for the round's arms under that cap, with its progress. A
-  system already measured is carried in, never run again.
+  system already measured is carried in, never run again. An arm never smoked has no measured cost to cap from: the dry run
+  says so ("no arm-smoke of it is recorded"), and the screen links **Choose the systems**, where **Check it on three
+  items** (`arm-smoke`, with its command printed) runs the smoke.
 - **Close the round:** the conclusion, and a checkbox to promote the leader's run to the goal's baseline with the conclusion
   as its reason; the browser asks to confirm. This checkbox is the only way to make a baseline on this screen. A conclusion
   shorter than three words is refused by `round-close`, a reason by `round-retire`.
 - **Open the next round** (on the last round's tab, and only when no round is open; the first round on a goal with none):
   the round's question (stored as `hypothesis`), the dataset, **Carry in from rN** with each arm in play of the last
-  round ticked (all ticked) and the hint "carried arms are not run again; on another dataset each is read through its
-  runs there", what it may spend (USD) and who you are. An arm carried from a round on another dataset is read through its plain runs on this one.
+  round that has plain runs on the chosen dataset ticked (all ticked) and the hint "carried arms are not run again; on another dataset each is read through its
+  runs there", what it may spend (USD) and who you are. The list follows the "On" dataset: an arm of the last round with no plain run on it is not
+  offered, and the screen says "not offered: no run on <dataset>" beside its name. A round a study opened (`study:` on the round, RFC-029)
+  says "opened by study <id>" on its tab.
 - The screen ends with the commands `evh round-list <goal>` and `evh round-evidence <goal> rN`, and a link to **A judge for this goal**.
 
   What each part calls (RFC-032):
@@ -492,7 +496,9 @@ decision kept with its reason. This is where people spend most of their time (W1
   the lowest scores first, a page at a time) and `f What it cost` (`cost-report`, a job).
 - Its judges are two families at least, from onboarded models, so one vendor's taste does not decide. The prompt is a file the scorer names
   (`prompt.file`), typed as its path, relative to `data/scorers`: its validation was measured on those bytes.
-- The validation is shown as stored; running one stays a tool (`tools/validate_judge_*.py`), not in the Workbench.
+- The validation is shown as stored; this screen does not run one. The screen says what an installed project does: a validation is an
+  ordinary eval whose arms are the judges (`evh run` on items people have rated), and the scorer's `validation` block names those runs
+  (RUNBOOK, "Validating a judge"). The repository's `tools/validate_judge_*.py` are not installed and are not named on the screen.
 - The judging job speaks as `judge-score` does: a grade scorer whose prompt does not name every dimension of its task is refused before any
   call, naming the dimensions it leaves out; a reply that is JSON of the wrong shape is reported as unparsed with the keys it had and the
   dimensions the prompt must ask for; and a note appears when a judge's bill differs from what its declared prices give for the same tokens by
@@ -523,7 +529,10 @@ decision kept with its reason. This is where people spend most of their time (W1
    with the read items kept (not the one that counts)   items │ Δ
 ```
 
-- A goal's day-to-day screen (RFC-029, RFC-031): the seal and what its counts may show; who has read it (each read by whom and
+- A goal's day-to-day screen (RFC-029, RFC-031): a test set is a goal dataset with `role: test` or a sealed side of a split, as `evh looks` and the
+  studies read it, and both are listed, each with its seal state: for a sealed side the seal and what its counts may show; for one that is
+  not sealed "not sealed: role test", its looks so far and the next one's level, and **Seal it** (the split again by its recorded rule, the same
+  items, with `--seal`, its command printed; a side no split made has no rule to seal by, and says so); who has read it (each read by whom and
   what, a read recorded by hand with who read it, and the leak check's finds, which can be recorded as reads); counts per day by the fields fixed
   at the seal, for safety only, never to judge an effect, with a field allowed by a decision with a reason (`dataset-seal-counts`); opening it for one
   candidate (`dataset-unseal`: its hypothesis committed first, one look, each later look tested at a stricter level); both arms run on it; and

@@ -113,7 +113,7 @@ def status(goal_id: str, data: Path | None = None) -> dict[str, Any]:
 
 
 def _next(goal_id: str, datasets: list[dict[str, Any]], rounds: list[dict[str, Any]]) -> dict[str, str]:
-    """The first step not taken, on the datasets that decide: made, materialized, a reference, runs, a baseline; then
+    """The first step not taken, on the datasets that decide: made, materialized, a reference, runs, a baseline (not on a `validation` or `test` side); then
     the open round to close, or a round to open."""
     for d in (x for x in datasets if x["decides"]):
         ds = d["dataset"]
@@ -131,7 +131,8 @@ def _next(goal_id: str, datasets: list[dict[str, Any]], rounds: list[dict[str, A
                 "what": f"run an arm on {ds}",
                 "command": f"evh run --system <a system> --dataset {ds} --goal {goal_id}",
             }
-        if not d["baseline"]:
+        # A study never promotes (RFC-029): a validation or test side is read, never given a baseline.
+        if not d["baseline"] and d["role"] not in ("validation", "test"):
             return {
                 "what": f"promote a baseline on {ds}",
                 "command": 'evh run-promote --run <run id> --reason "..."',

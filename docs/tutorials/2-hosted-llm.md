@@ -29,7 +29,8 @@ Every provider takes `model`, `temperature` (default 0), `max_tokens`, `base_url
 that overrides the environment's) and `api_key_env` (another variable to read the key from).
 `model` is the provider's own name for it: on OpenRouter the id on the model's page; on an
 OpenAI-compatible endpoint or a LiteLLM proxy, an id its model list returns
-(`curl -s -H "Authorization: Bearer $LITELLM_API_KEY" "$LITELLM_BASE_URL/v1/models"`).
+(`curl -s -H "Authorization: Bearer $LITELLM_API_KEY" "$LITELLM_BASE_URL/v1/models"`). The ids
+are the proxy's own, set by whoever runs it, and a proxy can serve dozens: list them, do not guess.
 The OpenAI-shaped ones (`openai`, `openrouter`, `litellm`) also send `reasoning`,
 `reasoning_effort` and `provider_routing` in the request body; `anthropic` refuses them. An arm
 also takes `prompt`, the instruction put before each item. A provider name the harness does not
@@ -89,8 +90,13 @@ params:
   usd_per_mtok_out: 0.3
 ```
 
+A `prompt:` that contains `: ` (a colon and a space) must stay quoted, as this one is: unquoted, the
+file is not YAML and `evh run` refuses it (`invalid-file`, naming the file and the line). For example,
+`prompt: "Answer in two lines: label: <intent>"`.
+
 With a LiteLLM proxy the same system is `provider: litellm` and `model:` the proxy's name for it
-(for example `eval-mistral-small`); with Anthropic directly, `provider:
+(for example `eval-mistral-small`, `eval-opus-5`, `eval-gemma-31b`, `eval-qwen-flash` or
+`eval-llama-scout`); with Anthropic directly, `provider:
 anthropic` and an Anthropic model id. Prices live in the system, not in code: they change, and a
 run records the prices it was costed at.
 

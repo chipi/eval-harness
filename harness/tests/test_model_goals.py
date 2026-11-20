@@ -89,7 +89,7 @@ GOAL = proj / "data" / "goals" / "tickets_summary.yaml"
 SETS = [
     "title=Ticket summaries", "statement=A one-line summary of a support ticket for the person triaging it.",
     "decision=Which system writes the summary.", "success_criteria.primary.measure=overlap_f1",
-    "success_criteria.primary.direction=higher", "datasets.0.dataset_id=tk_v1", "datasets.0.role=test",
+    "success_criteria.primary.direction=higher", "datasets.0.dataset_id=tk_v1", "datasets.0.role=pilot",
 ]  # fmt: skip
 
 try:
@@ -161,6 +161,16 @@ try:
         and d["baseline"] is None and st["next"]["what"] == "promote a baseline on tk_v1",
         st,
     )  # fmt: skip
+
+    for role in ("validation", "test"):
+        evh("goal-set", "tickets_summary", "--set", f"datasets.0.role={role}")
+        st_role = result(evh("goal-status", "tickets_summary", "--json"))
+        check(
+            f"goal-status: a `role: {role}` dataset is never asked for a baseline (a study never promotes on it)",
+            "baseline" not in st_role["next"]["what"] and st_role["datasets"][0]["role"] == role,
+            st_role["next"],
+        )
+    evh("goal-set", "tickets_summary", "--set", "datasets.0.role=pilot")
 
     srv, port = serve()
     try:

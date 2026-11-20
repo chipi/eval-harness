@@ -109,7 +109,7 @@ def start(argv: list[str]) -> int:
 
     add_by(ap)
     a = ap.parse_args(argv)
-    from evaluation_harness import _api  # noqa: PLC0415
+    from evaluation_harness import _actor, _api  # noqa: PLC0415
 
     with _jsonout.collect("jobs-start", a.json):
         try:
@@ -119,7 +119,9 @@ def start(argv: list[str]) -> int:
             for name, value in inputs.items():
                 if (op.inputs.get(name) or {}).get("type") == "array" and not isinstance(value, list):
                     inputs[name] = [value]
-            j = _api.start_operation(op, inputs, _who() or None, a.max_cost_usd, _for() or None)
+            j = _api.start_operation(
+                op, inputs, _who() or None, a.max_cost_usd, _for() or None, origin=_actor.actor()["from"]
+            )
         except _api.Refused as exc:
             _refused(exc)
         print(_line(j))

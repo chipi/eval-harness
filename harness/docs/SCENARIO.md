@@ -34,13 +34,17 @@ has to guess.
   `spent $…`; `judge-score`: `spent this run $…`). What that figure is, the provider's bill
   or the system's price table, depends on the provider
   ([RUNBOOK §4](RUNBOOK.md#4-point-the-harness-at-your-system)).
-- **Screenshots and logs outside the project folder.** Keep screenshots and the pip install log outside
-  the project's `evh-scenario/` folder (e.g. `~/screenshots/` or `/tmp/`) so they do not end up as
-  untracked files in the scenario's git tree when you share it.
+- **Screenshots and logs outside the project folder.** Keep screenshots, the pip install log and the
+  friction log itself (`NOTES.md`) outside the project's `evh-scenario/` folder (e.g. `~/screenshots/` or
+  `/tmp/`), or list the file in `.git/info/exclude`: an untracked file in the project makes its tree
+  dirty, and every run then says so.
 - **Screenshots of every catalog and inspector page** listed under step 15, at 1400 px wide, and of every
   Workbench screen listed under step 14, at 1400 px and at 390 px (a phone).
 
 ## 0 · A project
+
+The README, getting started and the tutorials pin the latest release (`@v…`). The scenario pins the
+candidate's sha instead, as the line below does: that is what it tests.
 
 ```bash
 mkdir evh-scenario && cd evh-scenario && git init -q
@@ -61,6 +65,16 @@ Write the items yourself, so nothing has to be fetched or licensed:
 - **intents_v1**: 32 one- or two-sentence customer messages in `data/sources/messages/`, each
   labelled billing, technical, account or shipping, in `data/sources/messages_gold/<item_id>.txt`.
   Include a couple that sit between two intents (a shipping refund is billing).
+
+A `label-import` folder is one file per item, named like the item's source file, whose whole content is the
+answer:
+
+```text
+data/sources/briefs_gold/b01_flood.txt      The river burst its banks and flooded the old market.
+data/sources/briefs_gold/b02_bakery.txt     A bakery on Mill Street won the regional bread prize.
+data/sources/messages_gold/m01.txt          billing
+data/sources/messages_gold/m02.txt          shipping
+```
 
 Your answers become a person's labels, promoted to gold with why (a reference set is only ever labels promoted on
 purpose):
@@ -96,6 +110,16 @@ dataset, the references. A system names no goal: every run names it (`evh run �
   and from the reference (gold is a bare label, silver is a model's two lines);
   `PRIMARY_METRIC = "accuracy"`.
 
+The lead provider is tutorial 1's `_lead`, which reads the system's `sentences` param (step 11 sets
+`sentences: 2`):
+
+```python
+def _lead(text: str, params: dict[str, Any]) -> Result:
+    sentences = int(params.get("sentences", 1))
+    kept = text.strip().split(". ")[:sentences]
+    return Result(output=". ".join(kept).rstrip(".") + ".", cost_usd=0.0)
+```
+
 | arm | summaries (`briefs_*`) | classifier (`intents_*`) |
 |---|---|---|
 | no model | `lead1` | `keywords` |
@@ -128,7 +152,8 @@ evh leaderboard briefs_v1
 evh family-test briefs_v1 --a briefs_mistral_small_v1 --against briefs_ --metric rouge_l
 ```
 
-The same for `intents_v1` (`--metric accuracy`). A hosted arm is measured once, as its `--repeat 3` set: that set
+The same for `intents_v1` (`--metric accuracy`). Then commit the runs of both, so the tree is clean before step 5:
+`git add data/runs && git commit -qm "the measured runs"`. A hosted arm is measured once, as its `--repeat 3` set: that set
 is the arm's measurement and shows its noise. A plain run and then a repeat set of the same arm would be two
 measurements of it, and `evh run` refuses the set (to measure a run's noise afterwards, repeat that run:
 `--purpose repeat --of <run_id>`). The smoke runs and the repeats print what they spent. The slow CPU arm's
@@ -244,9 +269,11 @@ evh round-open --goal brief_summary --dataset briefs_v1 --from r1 \
 # data/systems/briefs_mistral_small_v2.yaml: a new system_id, its prompt in a file, at the top level of the system
 # (beside params, not in it), and no params.prompt:
 #   prompts: {summary: {file: prompts/brief_summary.txt}}
+# The file's text asks for the summary only ("Reply with the summary and nothing else"): a prompt that names a word
+# limit can make the model print its own word count after the summary.
 git add -A && git commit -qm "brief_summary r2: open; mistral-small v2"
 evh run --system briefs_mistral_small_v2 --dataset briefs_v1 --goal brief_summary --round r2 --repeat 3
-git add data/runs data/prompts && git commit -qm "brief_summary r2: runs"
+git add data/runs data/prompts data/rounds && git commit -qm "brief_summary r2: runs"    # a run records itself in the round file
 evh prompt-list && evh prompt-show --name summary --text   # the version the runs used, and its text
 evh round-evidence brief_summary r2             # r2 against r1's best, the baseline, the budget
 evh chart gain-cost --goal brief_summary --round r2         # each arm's gain against its cost, named only when tested
@@ -289,6 +316,10 @@ evh dataset-materialize --dataset-id briefs_v1_validation && evh dataset-materia
 git add -A && git commit -qm "briefs_v1 split, each side with its references"
 ```
 
+Without `--seal` the test side stays open, and the scenario needs it open: a sealed side gets no references until
+`evh dataset-unseal`. The Workbench's "Hold some items out" seals by default. A dataset a goal declares with
+`role: test` is a test set whether sealed or not, so step 14's "The held-out test" shows this one as "not sealed".
+
 The study starts from a no-model arm that keeps two sentences, `briefs_lead2_v1` (a new system: the `lead` provider
 with `sentences: 2`), and tries one and three. It costs nothing. `lead_study.yaml`, committed with the new system
 before anything runs (an uncommitted file makes a run dirty):
@@ -310,7 +341,7 @@ git add -A && git commit -qm "briefs_lead2_v1 and the lead_length study's spec"
 evh run --system briefs_lead2_v1 --dataset briefs_v1_validation --goal brief_summary   # the study starts from it
 git add data/runs && git commit -qm "lead2 on the validation side"
 evh study-run --study brief_summary/lead_length --spec lead_study.yaml --dry-run
-evh study-run --study brief_summary/lead_length --spec lead_study.yaml
+evh study-run --study brief_summary/lead_length --spec lead_study.yaml    # opens round r3 of the goal on the validation set, recorded with the study
 evh study-show brief_summary lead_length
 evh chart study-progress --goal brief_summary --study lead_length
 evh study-confirm --study brief_summary/lead_length --test briefs_v1_test --rule superiority --dry-run
@@ -318,6 +349,9 @@ evh study-confirm --study brief_summary/lead_length --test briefs_v1_test --rule
 evh looks                                          # the test set's looks, and the next one's level
 git add -A && git commit -qm "brief_summary: the lead_length study, confirmed"
 ```
+
+`study-run` opens a round of the goal on the validation dataset, recorded with `study: <id>`, and closes it when the
+study ends; it does not count against the one-open-round rule, and that round becomes the goal's last round.
 
 A study never promotes: the confirmation is one look at the test set's next level and suggests a promotion only
 when the outcome meets the rule. Whatever it finds is the answer; check it says so plainly. With no trial kept,
@@ -364,8 +398,9 @@ its look); "Every job"; "Settings". Each screen shows the command it runs: run t
 check the numbers are the screen's.
 
 Then do one round from the Workbench: in "Choose the systems", clone `briefs_mistral_small_v1` with one thing
-changed (its temperature). In the eval, "Open the next round" on `briefs_v1` offers only the last round's arms still
-in play, each ticked; step 9 retired `briefs_lead1_v1`, so it is not offered. Open it with the arms offered
+changed (its temperature). In the eval, "Open the next round" on `briefs_v1` offers the arms still in play in the last
+round that have runs on the dataset the round is opened on, each ticked; the others are listed as not offered (no run
+there). The last round is the study's (step 11), so the offer follows its arms. Open it with the arms offered
 (carried arms are not run again), then bring in `briefs_lead1_v1` with the open round's "Carry it in" (a system
 already measured on `briefs_v1`). Run the clone in the round as a sweep under a $0.05 cap ("Run arms in it": "See the
 cost first", then "Run them"), retire one arm with why, and close the round ("Close the round"). Check that

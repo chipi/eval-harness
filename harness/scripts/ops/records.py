@@ -230,11 +230,22 @@ def say_looks(r: dict[str, Any]) -> str:
             f"{s['next']}, one-sided at {s['next_level']:.4%}"
             + (f"; used {s['prior_use']} time(s) before looks were counted (0.8.0)" if s["prior_use"] else "")
         )
+        # One question is one look (_looks module doc): a decision may write several records of it, as study-confirm
+        # does (the look named before its runs, the verdict after), so a look is one row.
+        by_key: dict[Any, list[dict[str, Any]]] = {}
         for x in s["looks"]:
+            by_key.setdefault(x.get("key"), []).append(x)
+        for recs in by_key.values():
+            x = recs[0]
             out.append(
                 f"  look {x.get('number')}  {x.get('level'):.4%}  {x.get('what')}  by "
                 f"{_said(x.get('actor'))}  {x.get('at') or ''}"
                 + (f"  {x['verdict']}" if x.get("verdict") else "")
+                + (
+                    f"  ({len(recs)} records of this look, the last {recs[-1].get('at') or ''})"
+                    if len(recs) > 1
+                    else ""
+                )
             )
     if not r["sets"]:
         out.append(

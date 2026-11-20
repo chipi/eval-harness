@@ -229,7 +229,7 @@ try:
             and rec["operation"] == "t-spend"
             and rec["inputs"] == {**ok, "dataset": "tk_v1", "repeat": 1, "run_id": rec["run_id"]}
             and rec["by"] == by
-            and rec["env"] == {"EVAL_MAX_COST_USD": "0.5"}
+            and rec["env"] == {"EVAL_MAX_COST_USD": "0.5", "EVH_ACTOR_FROM": "api"}
             and rec["run_id"] == f"tickets_lead1_v1_{j['id']}"
             and on_disk(j["id"], "inputs.json") == rec["inputs"],
             rec,
@@ -261,7 +261,7 @@ try:
             "shared, and an agent's job carries the person it acts for in its environment",
             "run_id" not in rec2
             and rec2["locks"] == [["project", False]]
-            and rec2["env"] == {"EVH_FOR": "person:bea"}
+            and rec2["env"] == {"EVH_FOR": "person:bea", "EVH_ACTOR_FROM": "api"}
             and rec2["by"] == "agent:bot",
             rec2,
         )
@@ -459,7 +459,7 @@ try:
             ["goal:tickets_summary", True],
             ["project", False],
         ]
-        and rec["env"] == {}
+        and rec["env"] == {"EVH_ACTOR_FROM": "api"}
         and on_disk(j["id"], "inputs.json") == rec["inputs"],
         (st, rec),
     )

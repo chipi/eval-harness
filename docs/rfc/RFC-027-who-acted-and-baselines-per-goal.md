@@ -39,7 +39,8 @@ version. `evh baselines` lists them with how to reproduce each (the `deploy-shee
   `person:<OS user>` (`getpass.getuser()`) when stdin is a terminal and `unknown:<OS user>` when it is not (an
   agent's shell, a script, CI, a job).
 - **The actor is a recorded claim, not an identity.** Anyone can type `--by` or set `EVH_ACTOR`; the record shows
-  what was claimed and how (`from`: `flag`, `environment` or `terminal`). That is the owner's rule: the harness
+  what was claimed and how (`from`: `flag`, `environment`, `terminal` or `api`: a name given in an HTTP API call; a job carries it as
+  `EVH_ACTOR_FROM=api`, and one started by `evh jobs-start` carries what that command resolved: `flag`, `environment` or `terminal`). That is the owner's rule: the harness
   records whose decision it was, it does not authenticate. Real identities and permissions come with a multi-user
   design (PRD-017's "later question"), not here.
 - **Every record a command writes carries `actor`**: runs (`metrics.json`), baselines, references, label sets,

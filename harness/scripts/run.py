@@ -71,6 +71,7 @@ from evaluation_harness._providers import secret_params
 from evaluation_harness._record import (
     aggregate_scores,
     cut_off_items,
+    empty_at_cap_note,
     run_level_scores,
     run_record,
     run_scorer,
@@ -343,7 +344,9 @@ def spend_basis(
         other = "the system's price table: tokens x usd_per_mtok_in / usd_per_mtok_out"
     else:
         other = "the adapter's own figure"
-    if billed_usd > 0 and other_usd <= 1e-12:
+    # Half the last printed digit: a run's recorded total_cost_usd is rounded to 8 places and a bill is not, so the
+    # rest is ~1e-9 of rounding, not a second source, and "$0.000000 the system's price table" read as one.
+    if billed_usd > 0 and other_usd < 5e-7:
         return "the provider's bill"
     if billed_usd <= 0:
         return f"{other}, the provider sent no bill"
@@ -710,9 +713,12 @@ def one_pass(
     cap = params.get("max_tokens")
     cut = cut_off_items(predictions, cap)
     if cut:
+        # An EMPTY reply at the cap is a model that spent the whole budget before it answered (reasoning, say).
+        blank = [i for i in cut if not (outputs.get(i) or "").strip()]
+        spent_note = f"\n    {empty_at_cap_note(blank)}" if blank else ""
         print(
             f"  WARNING: {len(cut)} of {len(predictions)} output(s) stopped at max_tokens={cap} "
-            f"({', '.join(cut[:6])}{' ...' if len(cut) > 6 else ''}).\n"
+            f"({', '.join(cut[:6])}{' ...' if len(cut) > 6 else ''}).{spent_note}\n"
             "    They are scored as if complete. Raise max_tokens (a new system_id) and run again."
         )
     resume_note = None

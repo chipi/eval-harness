@@ -160,7 +160,7 @@ try:
         ("run", "--system", "one_v1", "--dataset", "tk_v1"),
         ("goal-new", "tickets_summary", "--set", "title=Ticket summaries", "--set", "statement=A one-line summary of a ticket.",
          "--set", "decision=Which system writes it.", "--set", "success_criteria.primary.measure=overlap_f1",
-         "--set", "success_criteria.primary.direction=higher", "--set", "datasets.0.dataset_id=tk_v1", "--set", "datasets.0.role=test"),
+         "--set", "success_criteria.primary.direction=higher", "--set", "datasets.0.dataset_id=tk_v1", "--set", "datasets.0.role=pilot"),
         ("dataset-create", "--dataset-id", "rv1", "--source-dir", "tickets"),
         ("goal-new", "rail_a", "--set", "title=Rail without a dataset", "--set", "statement=s.", "--set", "decision=d.",
          "--set", "success_criteria.primary.measure=overlap_f1", "--set", "success_criteria.primary.direction=higher",
@@ -689,6 +689,26 @@ try:
                 and not list((proj / "data" / "runs").glob("fake-1b_here_*")),
                 page.locator("#rn-out").inner_text()[:300],
             )
+            (proj / "data" / "systems" / "nosmoke_v1.yaml").write_text(
+                "system_id: nosmoke_v1\nparams:\n  provider: openai\n  model: fake:1b\n  max_tokens: 20\n"
+                f"  base_url: http://127.0.0.1:{fake.server_port}/v1\n"
+            )
+            page.reload()
+            page.wait_for_selector("[data-run='nosmoke_v1']", timeout=20000)
+            page.uncheck("[data-run='fake-1b_here']")
+            page.check("[data-run='nosmoke_v1']")
+            page.click("#rn-est")
+            page.wait_for_selector("#rn-out pre, #rn-out [role=alert]", timeout=60000)
+            smoke_text = page.locator("#rn-out").inner_text()
+            check(
+                "See the cost first, for an arm never smoked: the dry run says no arm-smoke is recorded, and the screen "
+                'links the Workbench\'s own smoke (Choose the systems, "Check it on three items") right there',
+                "arm-smoke" in smoke_text
+                and page.locator("#rn-out a[href='#systems/tickets_summary']").count() == 1,
+                (smoke_text[-500:], page.locator("#rn-out a").count()),
+            )
+            page.uncheck("[data-run='nosmoke_v1']")
+            page.check("[data-run='fake-1b_here']")
             page.fill("#rn-cap", "0.05")
             page.fill("#ev-by", "tester")
             page.click("#rn-go")
@@ -754,6 +774,27 @@ try:
                 not cut,
                 cut,
             )
+            overrun = page.evaluate(
+                "() => [...document.querySelectorAll('.parthead h2')].filter((h) => h.scrollWidth > h.clientWidth + 1)"
+                ".map((h) => h.textContent)"
+            )
+            check(
+                "at a phone's width a part's heading is not run over by the text beside it (\"The evidence\" and the chart's "
+                "title wrapped onto each other)",
+                not overrun,
+                overrun,
+            )
+            uncued = page.evaluate(
+                "() => [...document.querySelectorAll('.chart.evidence .scroll-x')]"
+                ".filter((b) => b.scrollWidth > b.clientWidth + 1 && getComputedStyle(b).backgroundImage === 'none')"
+                ".map((b) => b.closest('[data-chart]')?.dataset.chart)"
+            )
+            check(
+                "at a phone's width a chart wider than the screen scrolls in its own box and shows that it does (an edge "
+                "shadow), so a cut-off heat map is not read as the whole",
+                not uncued,
+                uncued,
+            )
             page.set_viewport_size({"width": 1280, "height": 900})
             page.goto(f"http://127.0.0.1:{port}/workbench/#systems/tickets_summary")
             page.wait_for_selector("#sn-model", timeout=20000)
@@ -813,6 +854,21 @@ try:
                 boxes.count() >= 1 and boxes.evaluate_all("els => els.every(e => e.checked)"),
                 boxes.count(),
             )
+            page.select_option("#ro-ds", "notes_v1")
+            page.wait_for_function(
+                "() => !document.querySelector('#ro-carry input[value=one_v1]')", timeout=20000
+            )
+            carry_text = page.locator("#ro-carry").inner_text()
+            check(
+                "Open the next round On a dataset where an arm has no plain run: that arm is not offered, and the screen "
+                "says so (PRD-017: an arm from a round on another dataset is read through its runs there)",
+                page.locator("#ro-carry input[name=ro-keep]").count() == 0
+                and "one_v1" in carry_text
+                and "not offered: no run on notes_v1" in carry_text,
+                carry_text,
+            )
+            page.select_option("#ro-ds", "tk_v1")
+            page.wait_for_selector("#ro-carry input[name=ro-keep][value=one_v1]", timeout=20000)
             for i in range(boxes.count()):
                 boxes.nth(i).uncheck()
             page.fill("#ro-by", "tester")
@@ -1358,6 +1414,15 @@ try:
                 and "verdict(s)" in page.locator("main").inner_text()
                 and not page.locator("#ss-go").count(),
                 page.locator("main").inner_text()[:900],
+            )
+            judge_text = page.locator("main").inner_text()
+            check(
+                "the judge screen points an installed user at what installs: no repo tool (tools/validate_judge_*.py) is named, "
+                "and a validation is said to be an ordinary eval run with `evh run`",
+                "tools/validate_judge" not in judge_text
+                and "evh run" in judge_text
+                and "validation" in judge_text,
+                judge_text[judge_text.find("Shown as stored") - 50 :][:500],
             )
             # RFC-034 §5: the tutorial's judges explain, so the screen shows what they said and why, the lowest first.
             page.wait_for_selector("#why table.why tbody tr", timeout=20000)
@@ -2256,8 +2321,18 @@ try:
                 ]
             )
             stranger = browser.new_context().new_page()
+            stranger_saw: list[str] = []
+            stranger.on("console", lambda m: stranger_saw.append(f"console {m.type}: {m.text[:200]}"))
+            stranger.on("pageerror", lambda e: stranger_saw.append(f"pageerror: {str(e)[:200]}"))
+            stranger.on("response", lambda r: stranger_saw.append(f"{r.status} {r.url[-80:]}"))
             stranger.goto(f"http://127.0.0.1:{port}/workbench/")
-            stranger.wait_for_selector("h1:has-text('Sign in')", timeout=20000)
+            try:
+                stranger.wait_for_selector("h1:has-text('Sign in')", timeout=20000)
+            except Exception:
+                print(
+                    "STRANGER", stranger.url, stranger.locator("body").inner_text()[:400], stranger_saw[-12:]
+                )
+                raise
             check(
                 "a browser with no cookie is asked to sign in, and reads nothing",
                 "Ticket summaries" not in stranger.content(),

@@ -24,6 +24,7 @@ import random
 import shutil
 import statistics
 import textwrap
+from collections.abc import Iterable
 
 from evaluation_harness import _common, _jsonout, _store
 from evaluation_harness._adapter import recorded_metric_kinds
@@ -416,8 +417,27 @@ def _cell(v: float | None, kind: str | None) -> str:
     return f"{v:.0f}" if abs(v) >= 1000 else f"{v:.4f}"
 
 
+UNVALIDATED = "_unvalidated"
+
+
+def _head(k: str, split: bool) -> tuple[str, str]:
+    """A column's header as two lines. Split, the shared `_unvalidated` ending drops to the second line: a judged
+    table's three judge columns are 25 characters each and do not fit 100 columns with their name on one line."""
+    if split and k.endswith(UNVALIDATED):
+        return k[: -len(UNVALIDATED)], UNVALIDATED
+    return k, ""
+
+
+def runs_note(read_as: Iterable[str]) -> str | None:
+    """What `runs` counts in a judged table: judging scores one run of an arm, its latest (judge_score.discover_arms),
+    so an arm with repeats shows 1 here, unlike every other table."""
+    if any((x or "").startswith("judged/") for x in read_as):
+        return "runs: the judge scored the latest run of each arm; its repeats are not averaged here."
+    return None
+
+
 def _fit_columns(
-    show: list[str], rows: list[dict], kinds: dict[str, str], sort_key: str, wide: bool
+    show: list[str], rows: list[dict], kinds: dict[str, str], sort_key: str, wide: bool, split: bool = False
 ) -> list[str]:
     """The metric columns the text table has room for, in the order they matter: the ranking metric and the quality
     metrics of its family (its first word: a judged table's `judge_score_…` and each judge's `judge_<id>_…`), the
@@ -441,7 +461,7 @@ def _fit_columns(
     used = 2 + arm_w + 1 + 4 + 2
     keep: set[str] = set()
     for k in order:
-        cw = max(len(k), *(len(_cell(r.get(k), kinds.get(k))) for r in rows)) + 2
+        cw = max(*map(len, _head(k, split)), *(len(_cell(r.get(k), kinds.get(k))) for r in rows)) + 2
         if used + cw > _terminal_width() and keep:
             break
         used, keep = used + cw, keep | {k}
@@ -871,6 +891,11 @@ def _table(args: argparse.Namespace, A, group: dict, goal: dict | None) -> dict:
     show = [k for k in show if k in all_keys]
     # The text table fits the terminal; the JSON table carries every column in `show`.
     text_cols = _fit_columns(show, rows, kinds, sort_key, args.wide)
+    split = False
+    if len(text_cols) < len(show) and any(k.endswith(UNVALIDATED) for k in show):
+        tighter = _fit_columns(show, rows, kinds, sort_key, args.wide, split=True)
+        if len(tighter) > len(text_cols):
+            text_cols, split = tighter, True
     own = {n: view[n]["reference"] for n in by_config if view[n]["wrote"]}
     w = max(len(r["system_id"]) + (2 if r["system_id"] in own else 0) for r in rows) + 2
     print(f"dataset: {args.dataset_id}   ranked by: {sort_key} ({'lower' if asc else 'higher'} is better)\n")
@@ -879,14 +904,25 @@ def _table(args: argparse.Namespace, A, group: dict, goal: dict | None) -> dict:
         [[r["system_id"], r["n_runs"], r["tier"], *[r.get(k) for k in show]] for r in rows],
     ):
         cells = {k: [_cell(r.get(k), kinds.get(k)) for r in rows] for k in text_cols}
-        cw = {k: max(len(k), *(len(c) for c in cells[k])) for k in text_cols}
-        header = f"  {'arm':{w}} {'runs':>4}  " + "  ".join(f"{k:>{cw[k]}}" for k in text_cols)
+        cw = {k: max(*map(len, _head(k, split)), *(len(c) for c in cells[k])) for k in text_cols}
+        header = f"  {'arm':{w}} {'runs':>4}  " + "  ".join(
+            f"{_head(k, split)[0]:>{cw[k]}}" for k in text_cols
+        )
         print(header)
+        if split:
+            print(
+                (
+                    f"  {'':{w}} {'':>4}  " + "  ".join(f"{_head(k, split)[1]:>{cw[k]}}" for k in text_cols)
+                ).rstrip()
+            )
         print("  " + "-" * (len(header) - 2))
         for i, r in enumerate(rows):
             line = "  ".join(f"{cells[k][i]:>{cw[k]}}" for k in text_cols)
             name = r["system_id"] + (" *" if r["system_id"] in own else "")
             print(f"  {name:{w}} {r['n_runs']:>4}  {line}")
+        note = runs_note(r["read_as"] for r in view.values())
+        if note:
+            print("\n" + _wrap(note, 2))
         if len(text_cols) < len(show):
             left = [k for k in show if k not in text_cols]
             print(

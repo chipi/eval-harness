@@ -506,6 +506,40 @@ try:
         and after.get("state") == "cancelled",
         (r.returncode, r.stderr[-300:], listed, tj.get("by"), r2.stderr[-200:], after.get("state")),
     )  # fmt: skip
+    # Where the name came from is the starting command's own: jobs-start says what it resolved (EVH_ACTOR here, then --by),
+    # and only an HTTP API call says `api`.
+    froms = {}
+    for tag, extra in (("env", ()), ("flag", ("--by", "person:flagged"))):
+        rc = evh(
+            "jobs-start",
+            "prompt-version",
+            "--arg",
+            f"name=cli_{tag}",
+            "--arg",
+            "text=a",
+            "--arg",
+            "note=n",
+            "--json",
+            *extra,
+        )
+        cj = (
+            (json.loads(rc.stdout).get("result") or {}).get("values", {}).get("job", {})
+            if rc.returncode == 0
+            else {}
+        )
+        until(cj.get("id"), ("succeeded", "failed"), 60)
+        for f in (
+            _runstore.listdir(proj, f"prompts/cli_{tag}")
+            if _runstore.exists(proj, f"prompts/cli_{tag}")
+            else []
+        ):
+            if f.endswith(".json"):
+                froms[tag] = _runstore.read_json(proj, f"prompts/cli_{tag}/{f}").get("actor", {}).get("from")
+    check(
+        "a job started by jobs-start records where its name came from (environment, then flag), not `api`",
+        froms == {"env": "environment", "flag": "flag"},
+        froms,
+    )
     st, aj = op_job("run", {"system": "fast_v1", "dataset": "tk_v1"}, by="person:ana", max_cost_usd=1)
     r3 = evh("jobs-logs", aj.get("id", "none"), "--follow")
     r4 = evh("jobs-status", aj.get("id", "none"))
@@ -650,6 +684,11 @@ try:
             rec = _runstore.read_json(proj, f"prompts/who_p/{f}")
             actors[rec.get("note") + rec["sha256"][:4]] = rec.get("actor")
     got = sorted((a.get("type"), a.get("name"), a.get("for")) for a in actors.values())
+    check(
+        "a job's actor is recorded as from the api, not from the environment",
+        {a.get("from") for a in actors.values()} == {"api"},
+        actors,
+    )
     check(
         "through the API an agent names the person it acts for (refused before a job exists without it), and a job's "
         "actor is its own, never the server's EVH_ACTOR / EVH_FOR",

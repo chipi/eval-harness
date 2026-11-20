@@ -340,14 +340,23 @@ def body(
             f"  NOTE: {m['system_id']} has {len(repeats['runs'])} repeats; the catalog, the inspector and the tests read"
             f" their mean.\n        The baseline records this run's own scores and, under `repeats`, the mean:"
         )
-        w0 = max([len(k) for k in shown] + [6])
-        for k in sorted(shown):
-            if k in repeats["mean_scores"]:
-                print(
-                    f"    {k:{w0}} {shown[k]}   (mean of {len(repeats['runs'])}: {repeats['mean_scores'][k]:.6g})"
-                )
+        print("\n".join(repeats_lines(shown, repeats)))
         return 0
+    from evaluation_harness.ops.records import _num  # noqa: PLC0415
+
     w = max([len(k) for k in shown] + [6])
     for k, v in sorted(shown.items()):
-        print(f"    {k:{w}} {v}")
+        print(f"    {k:{w}} {_num(v)}")
     return 0
+
+
+def repeats_lines(shown: dict[str, Any], repeats: dict[str, Any]) -> list[str]:
+    """A score a line: this run's, then the mean of its repeats, both as `evh baselines` prints a score."""
+    from evaluation_harness.ops.records import _num  # noqa: PLC0415
+
+    w0 = max([len(k) for k in shown] + [6])
+    return [
+        f"    {k:{w0}} {_num(shown[k])}   (mean of {len(repeats['runs'])}: {_num(repeats['mean_scores'][k])})"
+        for k in sorted(shown)
+        if k in repeats["mean_scores"]
+    ]

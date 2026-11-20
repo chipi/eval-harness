@@ -116,6 +116,17 @@ def cut_off_items(predictions: list[dict[str, Any]], cap: Any) -> list[str]:
     ]
 
 
+def empty_at_cap_note(empty: list[str]) -> str:
+    """The sentence `evh run`, `evh rescore` and `label-from-run` share for replies that are EMPTY at max_tokens (a
+    model that spent its whole budget, on reasoning say, before it answered); "" when there are none."""
+    if not empty:
+        return ""
+    return (
+        f"{len(empty)} of them EMPTY ({', '.join(empty[:6])}{' ...' if len(empty) > 6 else ''}): "
+        "the token budget was spent before any answer, on reasoning, say."
+    )
+
+
 def run_record(
     *,
     run_id: str,

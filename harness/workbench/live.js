@@ -826,14 +826,27 @@
     // arm or none, so a round of two of them meant running one again.
     const lastRec = last && !open && cur === last.round_id ? load(`round:${goal}/${last.round_id}`, `/goals/${enc(goal)}/rounds/${enc(last.round_id)}`) : null;
     const inPlayLast = lastRec && !lastRec.error ? lastRec.round.arms.filter((a) => !a.retired).map((a) => a.system) : [];
-    const carry = !last ? "" : lastRec === undefined ? loading("its arms") : inPlayLast.length
-      ? `<div class="choices" role="group" aria-labelledby="ro-keep-l">${inPlayLast.map((s) => `<label class="choice"><input type="checkbox" name="ro-keep" value="${esc(s)}" checked> <span class="mono">${esc(s)}</span></label>`).join("")}</div>`
-      : '<p class="muted" style="margin:0">None is in play.</p>';
+    // An arm carried from a round on another dataset is read through its runs on this one (PRD-017): only an arm with
+    // plain runs on the chosen "On" dataset is offered; each other is named, with why.
+    const onArms = lastRec && !lastRec.error && inPlayLast.length ? datasets.map((d) => [d, load(`arms:${d}`, `/datasets/${enc(d)}/arms`)]) : [];
+    const carryFor = (ds) => {
+      const got = (onArms.find(([d]) => d === ds) || [])[1];
+      if (got === undefined) return loading("its arms");
+      if (got.error) return failed(got);
+      const has = new Set((got.arms || []).filter((a) => String(a.arm || "").startsWith(`runs/${ds}/`)).map((a) => a.system));
+      const offer = inPlayLast.filter((s) => has.has(s)), omit = inPlayLast.filter((s) => !has.has(s));
+      return (offer.length ? `<div class="choices" role="group" aria-labelledby="ro-keep-l">${offer.map((s) => `<label class="choice"><input type="checkbox" name="ro-keep" value="${esc(s)}" checked> <span class="mono">${esc(s)}</span></label>`).join("")}</div>` : '<p class="muted" style="margin:0">None is offered.</p>')
+        + omit.map((s) => `<p class="muted" style="margin:0"><span class="mono">${esc(s)}</span>: not offered: no run on ${esc(ds)}</p>`).join("");
+    };
+    LIVE.carryFor = carryFor;
+    // The chosen "On" survives a redraw (the arms of another dataset landing redraws the screen): else the select went back to the first.
+    const onDs = datasets.includes(LIVE.roDs) ? LIVE.roDs : datasets[0];
+    const carry = !last ? "" : lastRec === undefined ? loading("its arms") : inPlayLast.length ? carryFor(onDs) : '<p class="muted" style="margin:0">None is in play.</p>';
     // The next round opens from the last one: offered on its tab, not on every closed round before it.
     const openForm = open || (last && cur !== last.round_id) ? "" : `<section class="part" data-form="round-open"><div class="parthead"><h2>Open ${rounds.length ? "the next round" : "the first round"}</h2></div><div class="body">
         <div class="field">${nm("ro-q", "The round's question", "eval.question")}<div><textarea id="ro-q" rows="2" placeholder="Does a cheaper hosted model match the baseline's coverage?"></textarea>${hint("eval.question")}</div></div>
-        <div class="field"><label class="name" for="ro-ds">On</label><div><select id="ro-ds">${datasets.map((x) => `<option>${esc(x)}</option>`).join("")}</select></div></div>
-        ${last ? `<div class="field"><div class="name"><span id="ro-keep-l">Carry in from ${esc(last.round_id)}</span>${qh("eval.carry")}</div><div>${carry}${hint("eval.carry")}</div></div>` : ""}
+        <div class="field"><label class="name" for="ro-ds">On</label><div><select id="ro-ds">${datasets.map((x) => `<option ${x === onDs ? "selected" : ""}>${esc(x)}</option>`).join("")}</select></div></div>
+        ${last ? `<div class="field"><div class="name"><span id="ro-keep-l">Carry in from ${esc(last.round_id)}</span>${qh("eval.carry")}</div><div><div id="ro-carry">${carry}</div>${hint("eval.carry")}</div></div>` : ""}
         <div class="field"><label class="name" for="ro-budget">What it may spend (USD)</label><div><input type="text" id="ro-budget" inputmode="decimal" placeholder="no budget" style="width:8rem"></div></div>
         ${byField("ro-by")}
         <div class="actions" style="margin-top:0"><button class="btn primary" type="button" id="ro-open" data-send>Open the round</button>${mark}</div><div id="ro-out" data-out></div></div></section>`;
@@ -870,7 +883,7 @@
     return `<div class="screen wide">${head}${tabs}
       <h2>${esc(r.hypothesis || "(no question)")}</h2>
       ${byField("ev-by")}
-      <p class="muted">${esc(r.round_id)} · ${esc(r.status)} · on ${esc(r.dataset_id)}${r.from ? ` · from ${esc(r.from)}` : ""}${r.budget_usd != null ? ` · budget $${esc(r.budget_usd)}` : ""} · spent $${num(ev.spent_usd, 4)}</p>
+      <p class="muted">${esc(r.round_id)} · ${esc(r.status)} · on ${esc(r.dataset_id)}${r.from ? ` · from ${esc(r.from)}` : ""}${r.study ? ` · opened by study <a href="#study/${enc(goal)}/${enc(r.study)}">${esc(r.study)}</a>` : ""}${r.budget_usd != null ? ` · budget $${esc(r.budget_usd)}` : ""} · spent $${num(ev.spent_usd, 4)}</p>
       ${r.conclusion ? `<div class="answer"><div class="kicker">its conclusion</div><p>${esc(typeof r.conclusion === "string" ? r.conclusion : r.conclusion.text || JSON.stringify(r.conclusion))}</p></div>` : ""}
       <section class="part"><div class="parthead"><h2>The evidence</h2><span class="grow"></span><span class="muted">${esc(ev.metric || "")} · each arm against the leader, Holm</span></div><div class="body">
         ${chartBox("gain-cost", { goal, round: cur })}
@@ -914,6 +927,11 @@
       }
       WB.render(true);
     };
+    document.getElementById("ro-ds")?.addEventListener("change", () => {
+      const box = document.getElementById("ro-carry");
+      LIVE.roDs = v("ro-ds");
+      if (box && LIVE.carryFor) box.innerHTML = LIVE.carryFor(LIVE.roDs);
+    });
     holds("round-open", () => `Open the round`);
     document.getElementById("ro-open")?.addEventListener("click", async (ev) => {
       const out = document.getElementById("ro-out"), by = byOf("ro-by");
@@ -945,8 +963,13 @@
       out.innerHTML = '<p class="muted">estimating…</p>';
       const r = await fetch("/api/v1/estimate", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json", "X-EVH-Data": "1" }, body: JSON.stringify({ operation: "sweep", inputs: sweepInputs() }) });
       const b = await r.json().catch(() => ({}));
-      const lines = ((b.result || {}).blocks || []).flatMap((x) => x.lines || []).filter((l) => /\$|estimat|items|calls|cost/i.test(l));
-      out.innerHTML = r.ok ? `<pre class="reply">${esc(lines.join("\n") || b.text || "no cost to estimate")}</pre>` : `<p class="note" role="alert">${esc(b.error || b.text || r.status)}</p>`;
+      const fromBlocks = ((b.result || {}).blocks || []).flatMap((x) => x.lines || []);
+      const all = [...fromBlocks, ...String(b.text || "").split("\n")];
+      const lines = fromBlocks.filter((l) => /\$|estimat|items|calls|cost|MEASURED/i.test(l));
+      // An arm never smoked has no measured cost to cap from: the check on three items is on "Choose the systems".
+      const unsmoked = [...new Set(all.map((l) => /MEASURED\s+none for (\S+?):/.exec(l)).filter(Boolean).map((m) => m[1]))];
+      const smoke = unsmoked.length ? `<p class="note">No arm-smoke is recorded for ${unsmoked.map((x) => `<span class="mono">${esc(x)}</span>`).join(", ")}: check it on three items first (<code>evh arm-smoke</code>), on <a href="#systems/${enc(goal)}">Choose the systems</a>, "Check it on three items".</p>` : "";
+      out.innerHTML = r.ok ? `<pre class="reply">${esc((fromBlocks.length ? lines.join("\n") : "") || b.text || "no cost to estimate")}</pre>${smoke}` : `<p class="note" role="alert">${esc(b.error || b.text || r.status)}</p>`;
     });
     document.getElementById("rn-go")?.addEventListener("click", async (ev) => {
       const out = document.getElementById("rn-out"), by = byOr("ev-by"), cap = Number(v("rn-cap"));
@@ -1620,7 +1643,7 @@
             <div class="tablewrap"><table><thead><tr><th>judge</th><th class="num">${esc(b.metric || "agreement")}</th><th class="num">it must beat</th><th>measured by</th></tr></thead><tbody>${valRows}</tbody></table></div>` : '<p class="muted">No validation recorded: nothing measured these judges against people\'s labels.</p>'}
           ${(va.problems || []).length ? `<ul class="problems">${va.problems.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}
           ${checks ? `<p class="muted" style="margin-bottom:4px">People's checks of its judges:</p><ul>${checks}</ul>` : ""}
-          <p class="muted">Shown as stored. Measuring it is a tool, not this screen: <code>tools/validate_judge_*.py</code> writes the runs a validation names.</p>
+          <p class="muted">Shown as stored. This screen does not measure a judge: a validation is an ordinary eval whose arms are the judges, run with <code>evh run</code> on items people have already rated, and the scorer's <code>validation</code> block (<code>data/scorers/${esc(cur)}.yaml</code>) names those runs. RUNBOOK, "Validating a judge", says how.</p>
           ${(one.judging_sets || []).some((j) => j.verdicts) ? chartBox("agreement", { scorer: cur }, true) : ""}</div></section>
         <section class="part"><div class="parthead"><span class="letter">d</span><h2>Score the arms with it</h2></div><div class="body" data-form="judge-run">
           <div class="inline"><select id="js-ds" aria-label="the dataset">${opt(dss, r.dataset_id)}</select>
@@ -1974,12 +1997,15 @@
     const bad = [rec, ds, sys].find((x) => x.error);
     if (bad) return `<div class="screen wide">${head}${failed(bad)}</div>`;
     const mine = (rec.record.datasets || []).map((x) => x.dataset_id), byId = Object.fromEntries(ds.datasets.map((x) => [x.dataset, x]));
-    const sides = ds.datasets.filter((x) => x.sealed && (mine.includes(x.dataset) || mine.includes(x.parent))).map((x) => x.dataset);
+    // A test set is `role: test` or sealed (RFC-029), as `evh looks` and the studies read it.
+    const roleOf = Object.fromEntries((rec.record.datasets || []).map((x) => [x.dataset_id, x.role]));
+    const sides = ds.datasets.filter((x) => (x.sealed && (mine.includes(x.dataset) || mine.includes(x.parent))) || (mine.includes(x.dataset) && roleOf[x.dataset] === "test"))
+      .sort((a, b) => Number(!!b.sealed) - Number(!!a.sealed)).map((x) => x.dataset);
     const st = WB._ho && WB._ho.goal === goal ? WB._ho : {};
     const side = sides.includes(st.side) ? st.side : sides[0];
     const opt = (xs, sel) => xs.map((x) => `<option value="${esc(x)}" ${x === sel ? "selected" : ""}>${esc(x)}</option>`).join("");
     const sysIds = sys.systems.map((x) => x.system), splittable = mine.filter((x) => !(byId[x] || {}).parent || !/_(test|validation)$/.test(x));
-    const splitForm = `<details class="part" ${sides.length ? "" : "open"}><summary><b>Hold ${sides.length ? "another dataset" : "some items"} out</b></summary><div class="body" data-form="split">
+    const splitForm = `<details class="part" ${sides.some((x) => (byId[x] || {}).sealed) ? "" : "open"}><summary><b>Hold ${sides.length ? "another dataset" : "some items"} out</b></summary><div class="body" data-form="split">
         <p class="muted">A split makes two datasets: <span class="mono">&lt;id&gt;_validation</span> to tune on and <span class="mono">&lt;id&gt;_test</span>, sealed, to decide on once.</p>
         <div class="inline"><select id="sp-ds" aria-label="the dataset">${opt(splittable)}</select>
           <label class="choice"><input type="radio" name="sp-by" value="time" checked> by time</label><label class="choice"><input type="radio" name="sp-by" value="hash"> by hash</label></div>
@@ -1992,7 +2018,7 @@
     if (!side) return `<div class="screen wide">${head}${byField("ho-by")}<p class="muted">None of this goal's datasets is held out yet.</p>${splitForm}
       ${WB.cmd("evh dataset-split --dataset-id <dataset> --split-by time --key opened --at <T> --seal --count-by kind")}<div class="actions"><a class="btn" href="#goal/${enc(goal)}">Back to the goal</a></div></div>`;
     const d = load(`dataset:${side}`, `/datasets/${enc(side)}`), ex = load(`exposure:${side}`, `/exposure?dataset=${enc(side)}`);
-    const counts = load(`sealedcounts:${side}`, `/datasets/${enc(side)}/sealed-counts`), lk = load(`looks:${side}`, `/looks?dataset=${enc(side)}`);
+    const counts = (byId[side] || {}).sealed ? load(`sealedcounts:${side}`, `/datasets/${enc(side)}/sealed-counts`) : {}, lk = load(`looks:${side}`, `/looks?dataset=${enc(side)}`);
     if ([d, ex, counts, lk].includes(undefined)) return `<div class="screen wide">${head}${loading("the held-out side")}</div>`;
     const r = (d.record || {}), seal = r.sealed || {}, split = r.split || {}, opened = r.unsealed || [];
     const exs = ((ex.sides || []).find((x) => x.dataset_id === side)) || { items: d.n_items, exposed: 0, reads: 0, by: {}, what: {} };
@@ -2006,10 +2032,22 @@
     const tbl = (h, rows) => `<div class="tablewrap"><table><thead><tr>${h.map((x) => `<th>${esc(x)}</th>`).join("")}</tr></thead><tbody>${rows.join("")}</tbody></table></div>`;
     const part = (n, title, body, tag = "") => `<section class="part"><div class="parthead"><span class="letter">${n}</span><h2>${esc(title)}</h2><span class="grow"></span>${tag}</div><div class="body">${body}</div></section>`;
     const pct = (x) => (typeof x === "number" ? `${(x * 100).toFixed(4)}%` : "—");
+    // One question is one look: a decision may write several records of it (study-confirm names it, then adds its verdict), so a look is one row.
+    const lookGroups = (() => { const m = new Map(); for (const x of look.looks || []) m.set(x.key ?? `${x.number}/${x.at}`, [...(m.get(x.key ?? `${x.number}/${x.at}`) || []), x]); return [...m.values()]; })();
+    // Not sealed (a `role: test` side, or a split made without --seal): its state, its looks, and sealing it by the split's own rule.
+    const rule = split.from ? split : null;
+    const sealCmd = rule ? `evh dataset-split --dataset-id ${rule.from} --split-by ${rule.split_by}${rule.key ? ` --key ${rule.key}` : ""}${rule.split_by === "time" && rule.at ? ` --at ${rule.at}` : ` --test ${rule.test}`}${rule.split_by === "hash" ? ` --seed ${rule.seed ?? 0}` : ""} --seal --force` : "";
+    const unsealedPart = part(1, "The seal", `<div class="stats"><div><b>${d.n_items}</b><span>test items</span></div><div><b>not sealed</b><span>sealed</span></div><div><b>${lookGroups.length}</b><span>looks so far</span></div></div>
+        <p class="note">not sealed: role ${esc(roleOf[side] || "test")}. A run or a label on it is not stopped; it counts as a test set for its looks (each at a stricter level), not for a seal.</p>
+        ${lookGroups.length ? tbl(["look", "level", "what", "by", "at"], lookGroups.map((g) => { const x = g[0]; return `<tr><td class="num">${x.number}</td><td class="num">${pct(x.level)}</td><td>${esc(x.what || "")}${x.verdict ? ` · ${esc(x.verdict)}` : ""}${g.length > 1 ? ` <span class="muted">(${g.length} records of this look, the last ${esc(g[g.length - 1].at || "")})</span>` : ""}</td><td>${esc(x.actor && x.actor.name ? actorSaid(x.actor) : "")}</td><td class="mono">${esc(x.at || "")}</td></tr>`; })) : '<p class="muted">No look yet.</p>'}
+        <p class="muted">Next: look ${look.next ?? "?"}, one-sided at ${pct(look.next_level)}${look.limit != null ? `; at most ${look.limit} looks` : ""}.</p>
+        ${rule ? `<div data-form="seal"><p class="muted">Sealing makes the split again by its own rule (the same items), with the test side sealed: no run, score or label on it until a candidate is named in advance.</p>
+          <div class="actions" style="margin-top:0"><button class="btn primary" type="button" id="ho-seal">Seal it</button></div><div id="ho-seal-out" data-out></div>${WB.cmd(sealCmd)}</div>`
+          : '<p class="muted">It was not made by a split, so the harness has no rule to seal it by: a held-out side is sealed when it is made (<code>evh dataset-split --seal</code>).</p>'}`, '<span class="status">open</span>');
     return `<div class="screen wide">${head}<span id="ho-cur" data-side="${esc(side)}" hidden></span>
       ${sides.length > 1 ? `<div class="inline"><span class="muted">the held-out side</span><select id="ho-side" aria-label="the held-out side">${opt(sides, side)}</select></div>` : ""}
       ${byField("ho-by")}
-      ${part(1, "The seal", `<div class="stats"><div><b>${d.n_items}</b><span>held-out items</span></div><div><b>${seal.at ? esc(String(seal.at).slice(0, 10)) : "not sealed"}</b><span>sealed</span></div><div><b>${esc((seal.count_by || []).join(", ") || "—")}</b><span>what its counts may show</span></div></div>
+      ${!seal.at ? unsealedPart : part(1, "The seal", `<div class="stats"><div><b>${d.n_items}</b><span>held-out items</span></div><div><b>${seal.at ? esc(String(seal.at).slice(0, 10)) : "not sealed"}</b><span>sealed</span></div><div><b>${esc((seal.count_by || []).join(", ") || "—")}</b><span>what its counts may show</span></div></div>
         <p class="muted">${split.split_by === "time" ? `Split by time on <span class="mono">${esc(split.key || "")}</span>: every item on or after ${esc(split.at || "")} is held out` : `Split by hash${split.key ? ` on <span class="mono">${esc(split.key)}</span>` : ""}, ${Math.round((split.test || 0) * 100)}% held out`}; its other side is <span class="mono">${esc(seal.open_side || "")}</span>, to tune on. A run, a label sheet or a reference on it is refused until a candidate is named in advance.</p>`, `<span class="status ${seal.at ? "ok" : ""}">${seal.at ? "sealed" : "open"}</span>`)}
       ${part(2, "Who has read it", `<div class="stats"><div><b>${exs.exposed} of ${exs.items}</b><span>items read</span></div><div><b>${exs.reads}</b><span>reads recorded</span></div><div><b>${exs.items - exs.exposed}</b><span>still unread</span></div></div>
         ${Object.keys(exs.by || {}).length ? tbl(["who read", "reads"], Object.entries(exs.by).map(([k, v]) => `<tr><td class="mono">${esc(k)}</td><td class="num">${v}</td></tr>`)) : ""}
@@ -2020,12 +2058,12 @@
           <div class="actions" style="margin-top:0"><button class="btn" type="button" id="rd-go" data-send>Record it</button>${mark}</div><div id="rd-out" data-out></div></div>
         <h3>The leak check</h3><p class="muted">Searches the project's public repos (config.yaml's exposure) for these items' ids; a find not yet recorded can be recorded as a read. It cannot catch a paraphrase.</p>
         <div class="actions" style="margin-top:0"><button class="btn" type="button" id="lk-go">Check for leaks</button></div><div id="lk-out" data-out></div>`, `<span class="status ${exs.exposed ? "" : "ok"}">${exs.exposed} read</span>`)}
-      ${part(3, "Counts, for safety only", `${counts.error ? failed(counts) : days.length ? tbl(["day", "items", ...keys], days.map((x) => `<tr><td class="mono">${esc(x)}</td><td class="num">${cnt[x].n}</td>${keys.map((k) => `<td class="num">${cnt[x][k] || ""}</td>`).join("")}</tr>`)) : '<p class="muted">No counts.</p>'}
+      ${!seal.at ? "" : part(3, "Counts, for safety only", `${counts.error ? failed(counts) : days.length ? tbl(["day", "items", ...keys], days.map((x) => `<tr><td class="mono">${esc(x)}</td><td class="num">${cnt[x].n}</td>${keys.map((k) => `<td class="num">${cnt[x][k] || ""}</td>`).join("")}</tr>`)) : '<p class="muted">No counts.</p>'}
         <p class="muted">Never to judge an effect: whoever reads them did not choose what they show.</p>
         <div data-form="seal-counts"><div class="inline"><input type="text" id="sc-add" placeholder="allow one more field" autocapitalize="off" spellcheck="false"><input type="text" id="sc-why" placeholder="why the counts need it: a sentence" style="min-width:18rem">
           <button class="btn" type="button" id="sc-go" data-send>Allow it</button>${mark}</div><div id="sc-out" data-out></div></div>`)}
-      ${part(4, "Open it for one candidate", `<p class="muted">The candidate's hypothesis (what it is against, the measure, the direction) must be in it and committed first. Opening it is one look at this test set; each later look is tested at a stricter level.</p>
-        <p>Next: look ${look.next ?? "?"}, one-sided at ${pct(look.next_level)}; ${look.limit != null ? `at most ${look.limit} looks` : ""}${(look.looks || []).length ? ` · ${look.looks.length} so far` : ""}</p>
+      ${!seal.at ? "" : part(4, "Open it for one candidate", `<p class="muted">The candidate's hypothesis (what it is against, the measure, the direction) must be in it and committed first. Opening it is one look at this test set; each later look is tested at a stricter level.</p>
+        <p>Next: look ${look.next ?? "?"}, one-sided at ${pct(look.next_level)}; ${look.limit != null ? `at most ${look.limit} looks` : ""}${lookGroups.length ? ` · ${lookGroups.length} so far` : ""}</p>
         ${opened.length ? tbl(["look", "candidate", "against", "why", "committed", "by"], opened.map((u) => `<tr><td class="num">${(u.look || {}).number ?? ""}</td><td class="mono">${esc(u.system_id)}</td><td class="mono">${esc((u.hypothesis || {}).against || "")}</td><td>${esc(u.reason || "")}</td><td class="mono">${esc(String(u.commit || "").slice(0, 8))}</td><td>${esc(u.actor && u.actor.name ? actorSaid(u.actor) : "")}</td></tr>`)) : ""}
         <div data-form="unseal"><div class="inline"><select id="us-sys" aria-label="the candidate">${opt(sysIds)}</select><input type="text" id="us-why" placeholder="why this candidate, and why now: a sentence" style="min-width:18rem">
           ${look.limit != null && look.next > look.limit ? '<label class="choice"><input type="checkbox" id="us-extra"> look past the limit (a person only)</label>' : ""}
@@ -2126,6 +2164,14 @@
       } catch (e) { box.innerHTML = refusal(e); }
       ev.target.disabled = false;
     });
+    job("ho-seal", "ho-seal-out", "seal", () => `/datasets/${enc(((LIVE.cache[`dataset:${theSide()}`] || {}).record || {}).split.from)}/split`, () => {
+      const sp = ((LIVE.cache[`dataset:${theSide()}`] || {}).record || {}).split;
+      const b = { split_by: sp.split_by, seal: true, force: true };
+      if (sp.key) b.key = sp.key;
+      if (sp.split_by === "time" && sp.at) b.at = sp.at; else b.test = sp.test;
+      if (sp.split_by === "hash") b.seed = sp.seed ?? 0;
+      return b;
+    }, "sealing", () => ["datasets", "dataset:", `looks:${theSide()}`, `sealedcounts:${theSide()}`]);
     holds("split", () => `Split ${v("sp-ds") || "…"}`);
     job("sp-go", "sp-out", "split", () => `/datasets/${enc(v("sp-ds"))}/split`, () => {
       const b = { split_by: document.querySelector("input[name=sp-by]:checked")?.value || "time" };

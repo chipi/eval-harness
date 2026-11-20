@@ -214,7 +214,7 @@ def strip(
     for r, (name, pts) in enumerate(groups.items()):
         y = top + row * r + row / 2
         rows.append(
-            f'<text x="{left - 8}" y="{y + 4:.1f}" text-anchor="end" class="tick">{_e(name)}</text>'
+            f'<text x="{left - 8}" y="{y + 4:.1f}" text-anchor="end" class="tick"><title>{_e(name)}</title>{_e(_short(name, _room(left - 8)))}</text>'
             f'<line x1="{left}" x2="{width - RIGHT}" y1="{y:.1f}" y2="{y:.1f}" stroke="var(--axis)" stroke-width="0.5"/>'
             + "".join(
                 f'<circle cx="{x_of(v):.1f}" cy="{y:.1f}" r="4.5" fill="{colour(r)}"><title>{_e(t)}: {_e(_num(v))}</title></circle>'
@@ -427,7 +427,16 @@ def _domain(vals: list[float], pad: float = 0.08) -> tuple[float, float]:
 
 
 def _short(name: str, n: int = 22) -> str:
-    return name if len(name) <= n else name[: n - 1] + "…"
+    """`name` in at most `n` characters, the middle left out: what tells two arms apart is mostly at the end (v1, v2)."""
+    if len(name) <= n:
+        return name
+    tail = (n - 1) * 2 // 3
+    return f"{name[: n - 1 - tail]}…{name[len(name) - tail :]}"
+
+
+def _room(px: float) -> int:
+    """How many characters of a row label fit in `px` pixels."""
+    return max(4, int(px / LABEL_W))
 
 
 def _dot(x: float, y: float, filled: bool, tip: str, r: float = 5.0) -> str:
@@ -472,7 +481,7 @@ def forest(
         y = top + rh * i + rh / 2
         body.append(
             f'<text x="{left - 8}" y="{y + 4:.1f}" text-anchor="end" class="tick"><title>{_e(r["name"])}</title>'
-            f"{_e(_short(r['name']))}</text>"
+            f"{_e(_short(r['name'], _room(left - 8)))}</text>"
         )
         if r.get("lo") is not None and r.get("hi") is not None:
             body.append(
@@ -725,7 +734,7 @@ def heatmap(
         y = top + rh * i
         body.append(
             f'<text x="{left - 8}" y="{y + rh / 2 + 4:.1f}" text-anchor="end" class="tick"><title>{_e(r)}</title>'
-            f"{_e(_short(r))}</text>"
+            f"{_e(_short(r, _room(left - 8)))}</text>"
         )
         for j, c in enumerate(cols):
             x = left + cw * j

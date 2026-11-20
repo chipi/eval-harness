@@ -63,7 +63,7 @@ from evaluation_harness._common import (  # noqa: E402
 )
 from evaluation_harness._fields import fieldset_problems, load_fieldset  # noqa: E402 -- part of the adapter contract
 from evaluation_harness._fingerprint import items_digest  # noqa: E402
-from evaluation_harness._record import derived_with  # noqa: E402
+from evaluation_harness._record import cut_off_items, derived_with  # noqa: E402
 from evaluation_harness._runs import item_rows, lower_is_better_on, read_metrics, score_of  # noqa: E402
 from evaluation_harness.model import dataset_views as model_dataset_views  # noqa: E402
 from evaluation_harness.model import datasets as model_datasets  # noqa: E402
@@ -993,6 +993,12 @@ class HarnessAdapter:
             text = _outputs.output(d, item)
             if text is not None:
                 info = {"run": self._run_id(d)}
+                # A reply the run recorded as stopped at max_tokens: its score is of a cut answer (a model that spent
+                # the whole budget before answering shows 0.000 beside an empty text, with no word why).
+                cap = (self._record(d).get("params") or {}).get("max_tokens")
+                row = next((r for r in item_rows(d, strict=False) if r["item_id"] == item), None)
+                if row and cut_off_items([row], cap):
+                    info["output"] = "cut off at max_tokens" + (", empty reply" if not text.strip() else "")
                 if len(dirs) > 1:
                     # One output beside a score that is the mean of every repeat: say so.
                     info["shown"] = (
@@ -1182,7 +1188,8 @@ class HarnessAdapter:
                 bits.append(f"one per {mf['one_per']}")
             origin = ", ".join(bits)
         elif isinstance(ds.get("derived_from"), dict) and ds["derived_from"].get("dataset_id"):
-            origin = f"version of {ds['derived_from']['dataset_id']}"
+            # A noun phrase: the CLI prints "made from <origin>" and the catalog page "From <origin>."
+            origin = str(ds["derived_from"]["dataset_id"])
         return {
             "tags": {str(k): str(v) for k, v in tags.items()},
             "origin": origin,

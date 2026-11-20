@@ -11,6 +11,7 @@ many items, and how to resume or delete it, and the resume finishes the run.
 
 import json
 import os
+import re
 import shutil
 import sys
 import tempfile
@@ -50,6 +51,10 @@ def call_system(text, params):
         return SimpleNamespace(output="no decision", tokens_in=0, tokens_out=0, cost_usd=None,
                                latency_ms=None, extra={}, meta={"calls": [failed, failed]})
     time.sleep(0.01)
+    if params.get("spend_all"):
+        # a reasoning model that spent the whole budget thinking: no answer, tokens_out at the cap
+        return SimpleNamespace(output="", tokens_in=len(text.split()), tokens_out=int(params["max_tokens"]),
+                               cost_usd=None, latency_ms=None, extra={}, meta={"finish_reason": "length"})
     words = text.split()[: int(params.get("max_tokens", 1000))]
     return SimpleNamespace(output=" ".join(words), tokens_in=len(text.split()), tokens_out=len(words),
                            cost_usd=None, latency_ms=None, extra={}, meta={})
@@ -103,6 +108,29 @@ try:
         "outputs that stop at max_tokens are named in a warning",
         r.returncode == 0 and "stopped at max_tokens=12" in r.stdout,
         r.stdout[-400:],
+    )
+
+    r = evh("run", *system("spent", max_tokens=12, spend_all=True))
+    flat = " ".join(r.stdout.split())
+    check(
+        "an EMPTY reply at max_tokens says the budget was spent before any answer, and names the fix",
+        r.returncode == 0
+        and re.search(r"EMPTY.*token budget was spent before any answer", flat) is not None
+        and "Raise max_tokens (a new system_id) and run again" in flat,
+        r.stdout[-600:],
+    )
+    from evaluation_harness.catalog_adapter import HarnessAdapter
+
+    with _runstore._InProject(proj):
+        A = HarnessAdapter(proj / "data")
+        arm = next(a for a in A.arms() if "spent_v1" in a)
+        shown = A.item_view(arm, "t01_login")
+        plain = A.item_view(next(a for a in A.arms() if "plain_v1" in a), "t01_login")
+    check(
+        "inspector item view: an empty reply cut off at max_tokens says so; a whole reply says nothing of it",
+        "cut off at max_tokens, empty reply" in (shown.get("info") or {}).values()
+        and not any("cut off" in str(v) for v in (plain.get("info") or {}).values()),
+        (shown, plain.get("info")),
     )
 
     flag = proj / "provider-back"

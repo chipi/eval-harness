@@ -1274,6 +1274,49 @@ that can move a result is never a patch release without saying so under **Change
   `tests/check_commands.py` now refuses both. `make rescore` no longer passes `--out`, which `evh rescore` does not
   have.
 - **The test suite leaves no temporary folders**: 16 test files left 1,485 under the machine's shared `/tmp`.
+- **An empty reply at `max_tokens` says why, and `label-from-run` says what to do about it**: `evh run`'s and `evh
+  rescore`'s warnings name the empty items ("the token budget was spent before any answer, on reasoning, say"), one
+  sentence shared by `run`, `rescore` and `label-from-run`, whose refusal of an empty output ends, as the warnings do,
+  with "Raise max_tokens in the system (a new system id) and run it again".
+  The inspector's item view marks a reply the run recorded as stopped at `max_tokens` ("output cut off at max_tokens,
+  empty reply") instead of showing `0.000` and nothing.
+- **One fact, one format, in `spent` and `run-promote`**: the long `spent $X ($Y the provider's bill, $0.000000 the
+  system's price table ...)` form printed when the run's recorded total (rounded to 8 places) differed from the summed
+  bills by rounding; it prints only when the second figure shows at the printed precision. `run-promote`'s note on a
+  run with repeats prints scores as `evh baselines` does (`0.000019 (mean of 3: 0.000019)`, not `1.9e-05 (mean of 3:
+  1.86667e-05)`), and `study-confirm`'s validation delta is rounded like its test delta.
+- **A judged leaderboard fits both judges in 100 columns**: when the `_unvalidated` ending keeps columns out, it drops to a
+  second header line; the table says its `runs` is the latest run of an arm (judging does not average repeats).
+- **`dataset-show` no longer ends "made from version of briefs_v1"**: it says "made from briefs_v1" (as does the
+  catalog page's "From briefs_v1."). The version number was right (a removed item makes a new major, 2.0; an added-only
+  version is 1.1, as tutorial 4 shows).
+- **`evh looks` prints one row for one look**: `study-confirm` writes two records of its look (named before the runs, the
+  verdict after); the row says "(2 records of this look ...)" instead of two rows numbered 1 under a header of 1 look.
+- **The Workbench's "Open the next round" offers only arms it can carry**: the list follows the "On" dataset and names
+  each arm left out ("not offered: no run on <dataset>"), where it offered every arm in play of the last round whatever
+  the dataset and failed on opening ("no run of it on briefs_v1 to carry in"). A round a study opened says "opened by
+  study <id>" on its tab.
+- **"The held-out test" lists a `role: test` dataset that is not sealed**, as `evh looks` and the Studies screen do: its
+  seal state ("not sealed: role test"), its looks, and **Seal it** (the split again by its recorded rule, with `--seal`).
+  It said "None of this goal's datasets is held out yet" after a split made without `--seal` and a confirmation.
+- **"See the cost first" links the smoke**: an arm with no arm-smoke gets a link to "Check it on three items" on "Choose
+  the systems" beside the dry run's "no arm-smoke of it is recorded".
+- **A job started through the API records `from: api`** on the records it writes (the name typed in a call), not
+  `from: environment`, which said the name came from the server's environment. A job started by `evh jobs-start` records
+  what that command resolved (`flag`, `environment` or `terminal`), never `api`.
+- **`evh dataset-split --force` refuses a side a run cites**, as its help says ("if nothing cites them yet"); it
+  overwrote them whatever ran on them (`would-overwrite`, naming the side and its runs).
+- **The held-out screen shows one row per look**: a look `study-confirm` wrote two records of is one row, "(2 records of
+  this look, the last <time>)", as `evh looks` says it.
+- **Home and `evh goal-status` no longer ask for a baseline on a `validation` or `test` dataset**: a study's validation
+  side can never get one (a study never promotes).
+- **Charts name the arms they leave out, and keep what tells two apart**: `chart intervals` (the command and the
+  Workbench) says "Left out: <arm> (retired in rN)" instead of dropping a retired arm silently; a long row label is
+  shortened in the middle (`briefs_…al_small_v1 ×3`, not `efs_mistral_small_…`), so v1 and v2 can be told apart.
+- **The Workbench at 390 px**: "The evidence" no longer runs under the chart's title, and a chart wider than the screen
+  shows an edge shadow where it scrolls in its own box (the item heat map was read as cut off).
+- **"A judge for this goal" no longer names a tool the install lacks**: it says a validation is an ordinary eval whose
+  arms are the judges (`evh run`), named in the scorer's `validation` block, instead of `tools/validate_judge_*.py`.
 
 ## 0.7.2 — 2026-11-04
 

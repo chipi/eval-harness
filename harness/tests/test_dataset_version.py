@@ -179,6 +179,34 @@ try:
         bool(v22) and v22[0].lstrip().startswith("ok"),
         "\n".join(v22) or r.stdout[-400:],
     )
+    # --force is "if nothing cites it yet": a run measured on a dataset cites it by id and by its bytes.
+    from evaluation_harness import _format
+
+    _runstore.write_text(proj, _format.NAME, f"format: {_format.FORMAT}\n")
+    _runstore.write_text(
+        proj, "systems/echo_v1.yaml", "system_id: echo_v1\nparams:\n  provider: echo\n  sentences: 1\n"
+    )
+    r0 = evh("dataset-materialize", "--dataset-id", "t_v1")
+    ran = evh("run", "--system", "echo_v1", "--dataset", "t_v1")
+    before = _runstore.read_text(proj, "datasets/t_v1.json")
+    r = evh("dataset-create", "--dataset-id", "t_v1", "--source-dir", "src/b", "--force")
+    check(
+        "dataset-create --force: refused when a run cites the dataset (would-overwrite, naming it and its runs), nothing rewritten",
+        r0.returncode == 0
+        and ran.returncode == 0
+        and r.returncode != 0
+        and "would-overwrite" in r.stderr
+        and "t_v1" in r.stderr
+        and "1 run(s)" in r.stderr
+        and _runstore.read_text(proj, "datasets/t_v1.json") == before,
+        (ran.stderr[-200:], r.stdout[-200:], r.stderr[-300:]),
+    )
+    r = evh("dataset-create", "--dataset-id", "t_v2", "--source-dir", "src/b", "--from", "t_v1", "--force")
+    check(
+        "dataset-create --force over a dataset nothing cites still overwrites",
+        r.returncode == 0,
+        r.stderr[-300:],
+    )
 finally:
     shutil.rmtree(proj, ignore_errors=True)
 sys.exit(summary())

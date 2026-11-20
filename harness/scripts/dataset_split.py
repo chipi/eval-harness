@@ -103,6 +103,19 @@ def body(**inputs: Any) -> int:
             "(or set EVH_ACTOR)",
             "bad-argument",
         )
+    if args.force:
+        # `--force` is for a split nothing cites yet: a run is measured on a side's bytes and names it by id.
+        from evaluation_harness._runs import runs_on  # noqa: PLC0415
+
+        for part in ("validation", "test"):
+            side_id = f"{args.dataset_id}_{part}"
+            cited = len(runs_on(side_id, label=None)) if _store.exists(DATASETS / f"{side_id}.json") else 0
+            if cited:
+                die(
+                    f"{side_id} is cited by {cited} run(s): a dataset is frozen, --force is for one nothing cites. "
+                    "Make a new version of the parent instead.",
+                    "would-overwrite",
+                )
     written = []
     open_items = [dict(it) for it in items if assign[it["item_id"]] == "validation"]
     for part in ("validation", "test"):

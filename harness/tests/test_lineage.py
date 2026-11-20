@@ -87,6 +87,15 @@ try:
     evh("dataset-materialize", "--dataset-id", "tickets_v1")
     r = evh("run", "--system", "tickets_lead1_v1", "--dataset", "tickets_v1")
     check("setup: an arm runs on v1", r.returncode == 0, r.stderr[-300:])
+    evh("dataset-materialize", "--dataset-id", "tickets_v2")
+    r = evh("run", "--system", "tickets_lead1_v1", "--dataset", "tickets_v2")
+    check("setup: the same arm runs on v2", r.returncode == 0, r.stderr[-300:])
+    r = evh("dataset-show", "tickets_v2")
+    check(
+        "dataset-show: the origin line names the parent, not 'made from version of tickets_v1'",
+        "made from tickets_v1\n" in r.stdout and "version of" not in r.stdout,
+        r.stdout,
+    )
     r = evh("catalog")
     out = proj / ".build" / "catalog"
     v1 = (out / "d/tickets_v1.html").read_text() if (out / "d/tickets_v1.html").is_file() else ""

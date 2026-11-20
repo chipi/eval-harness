@@ -31,6 +31,16 @@ yourself if nothing can be fetched or licensed. The answers become a person's la
 promote them to gold, with why: a reference set is only ever labels promoted on purpose. No gold yet?
 [Tutorial 3](3-frontier-reference-and-judging.md) makes silver from a frontier model's run.
 
+The folder `label-import` reads holds one file per item, named like the item's source file, whose
+whole content is the answer:
+
+```text
+data/sources/briefs/b01_flood.txt        the brief (five sentences)
+data/sources/briefs/b02_bakery.txt
+data/sources/briefs_gold/b01_flood.txt   The river burst its banks and flooded the old market.
+data/sources/briefs_gold/b02_bakery.txt  A bakery on Mill Street won the regional bread prize.
+```
+
 <!-- guide-check: skip -->
 ```bash
 evh dataset-create --dataset-id briefs_v1 --source-dir data/sources/briefs --glob "*.txt"
@@ -66,7 +76,9 @@ METRIC_DESCRIPTIONS = {
 
 
 def _lead(text: str, params: dict[str, Any]) -> Result:
-    return Result(output=text.strip().split(". ")[0].rstrip(".") + ".", cost_usd=0.0)
+    sentences = int(params.get("sentences", 1))
+    kept = text.strip().split(". ")[:sentences]
+    return Result(output=". ".join(kept).rstrip(".") + ".", cost_usd=0.0)
 
 
 @lru_cache(maxsize=2)

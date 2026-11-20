@@ -371,6 +371,22 @@ try:
         got.get("metric") == "late",
         (got.get("metric"), c.stderr[-300:]),
     )
+    from evaluation_harness.run import spend_basis
+
+    # The scenario's mistral run: recorded total_cost_usd is rounded to 8 places, the bill is not, so the
+    # remainder was 1.1e-9: printed "$0.000000 the system's price table" beside a bill that was the whole spend.
+    check(
+        "spend line: a remainder that prints as $0.000000 is rounding, so the short form is used",
+        spend_basis(0.0010764089, 1.1e-9, True) == "the provider's bill",
+        spend_basis(0.0010764089, 1.1e-9, True),
+    )
+    check(
+        "spend line: a remainder that shows at the printed precision keeps the two figures",
+        spend_basis(0.001, 0.0005, True).startswith(
+            "$0.001000 the provider's bill, $0.000500 the system's price"
+        ),
+        spend_basis(0.001, 0.0005, True),
+    )
 finally:
     shutil.rmtree(proj, ignore_errors=True)
 

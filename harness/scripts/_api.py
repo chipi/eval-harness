@@ -238,7 +238,7 @@ def _query_paths(query: Any) -> list[str]:
 
 
 def start_operation(
-    op: Any, inputs: Any, by: Any, max_cost_usd: Any = None, for_: Any = None
+    op: Any, inputs: Any, by: Any, max_cost_usd: Any = None, for_: Any = None, origin: str = "api"
 ) -> dict[str, Any]:
     """A job of a decision or a work operation: who asked (`by`, required: every job records who acted), the cap when it
     spends, the inputs checked, its locks, started (202). A decision's reason is one of its inputs (`Op.why`)."""
@@ -248,6 +248,9 @@ def start_operation(
     if not isinstance(by, str) or not by.strip():
         raise Refused(f"{op.name}: name who asked (by: person:NAME, or agent:NAME with for; RFC-027)")
     env = _who_env(by, for_)
+    env["EVH_ACTOR_FROM"] = (
+        origin  # where `by` came from: the actor of the records the job writes says so (RFC-027)
+    )
     if op.spends:
         env.update(_spend_env(op.name, max_cost_usd))
     elif max_cost_usd is not None:

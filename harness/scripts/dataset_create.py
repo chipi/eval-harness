@@ -550,6 +550,17 @@ def body(**inputs: Any) -> int:
             "would-overwrite",
         )
 
+    if args.force and _store.exists(out):
+        # "if nothing cites it yet": a run is measured on a dataset's bytes and names it by id.
+        from evaluation_harness._runs import runs_on  # noqa: PLC0415
+
+        if cited := len(runs_on(args.dataset_id, label=None)):
+            die(
+                f"{args.dataset_id} is cited by {cited} run(s): a dataset is frozen, --force is for one nothing cites. "
+                "Make a new version (e.g. _v2) instead.",
+                "would-overwrite",
+            )
+
     if args.source_name:
         if args.manifest:
             die("--source and --manifest: one way to name the items", "bad-argument")

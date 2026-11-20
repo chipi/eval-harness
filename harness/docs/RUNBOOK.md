@@ -571,7 +571,7 @@ references:
 | `success_criteria.strategy` | `balanced` (the default), `quality_first` or `frugal` | Who the contenders are beside the quality leader: `balanced` shown no worse than the leader by more than the margin (default 5% of the leader); `quality_first` the same quality only; `frugal` the same test with a wider default margin (10%), so the cheaper arm wins more often |
 | `success_criteria.tie_break` | a list of axis names, default `[cost, speed]`; `quality` may be one | Among the contenders, the axes that pick, in order (`[cost, quality]`: the cheapest, then the best of the equally cheap). V14 fails a name the goal does not weigh |
 | `success_criteria.guardrails[]` | `{name, rule}` (required), `source` | Rules in words that no number checks: a "guardrails" row on the goal page, a line each in `evh goal-leaderboard`; never computed |
-| `datasets[]` | `{dataset_id}` (required), `role`, `cluster` (an item field: related items count once in every test), `decides` (false: the goal never decides on it), `notes`. An empty list is a goal checked by a gate rather than measured on a dataset | Each dataset gets a section on the goal page and in `evh goal-leaderboard`. `role` is free text (`validation`, `test`, `pilot`, `smoke`, `generalization`), shown beside the dataset. `cluster: FIELD` names an item field whose items are not independent (one thread's comments, one document's questions): every paired test on that dataset, on the goal page, in `evh goal-list`, the inspector and `pair-test`/`family-test --round`, flips one sign per value of it, and says so. `decides: false` makes a dataset one the goal never decides on: its groups keep their leader but recommend nothing, and the home page's glance leaves it out. `notes` is shown under it |
+| `datasets[]` | `{dataset_id}` (required), `role`, `cluster` (an item field: related items count once in every test), `decides` (false: the goal never decides on it), `notes`. An empty list is a goal checked by a gate rather than measured on a dataset | Each dataset gets a section on the goal page and in `evh goal-leaderboard`. `role` is free text (`validation`, `test`, `pilot`, `smoke`, `generalization`), shown beside the dataset. `evh goal-status` and the home page never ask for a baseline on a `validation` or `test` dataset: a study reads those and never promotes on them. `cluster: FIELD` names an item field whose items are not independent (one thread's comments, one document's questions): every paired test on that dataset, on the goal page, in `evh goal-list`, the inspector and `pair-test`/`family-test --round`, flips one sign per value of it, and says so. `decides: false` makes a dataset one the goal never decides on: its groups keep their leader but recommend nothing, and the home page's glance leaves it out. `notes` is shown under it |
 | `references[]` | `{reference_id, tier, format}`, all strings; `tier` is `gold` or `silver` by convention, `format` your word for the reference text's shape (`label` for a bare-label gold) | nothing: which reference an arm is scored against comes from its run, not from the goal |
 | `measures[]` | `{id, kind, validity}`, all strings; `validity` says how far the measure is trusted (`unvalidated`, or what it was validated against) | nothing (for the reader) |
 | `links[]` | `{url, note}` | nothing (for the reader) |
@@ -1012,7 +1012,7 @@ the two side by side:
   NOTE: tickets_lead2_v1 has 3 repeats; the catalog, the inspector and the tests read their mean.
         The baseline records this run's own scores and, under `repeats`, the mean:
     ...
-    overlap_f1     0.900088   (mean of 3: 0.900088)
+    overlap_f1     0.9001   (mean of 3: 0.9001)
 ```
 
 ```bash
@@ -1415,6 +1415,11 @@ evh round-open --goal my_goal --dataset my_v1 --from r1 --change "what changed a
   code than the rest: `evh round-evidence` names each run of the round that recorded other code (`NOTE: N run(s) ran on other
   harness code than the round opened on …`) and how to run it on the round's code: a worktree at the round's commit,
   or the round's version pinned when the harness is installed. Or open a new round on the new code.
+  The two ids identify different things. `commit` is the git commit of **your project** (in a checkout of
+  eval-harness, the harness itself) and moves with every commit you make. The `code` hash `round-open` prints
+  ("On harness V (code 3076a3525f0e)": the first 12 characters of the recorded `code_sha256`) is a hash of the
+  **harness** modules that can change a measurement; it changes only when that code does, and it is the identity
+  that survives installation. `round-open` prints the commit only for a checkout of the harness.
 - **`evh round-evidence` never suggests promoting the run that already is the baseline**: its close
   suggestion then reads "close the round with what it showed (<arm> is already the baseline)",
   with no `--promote`. `leaderboard --round` does not warn about two versions of one arm (`_v1`,

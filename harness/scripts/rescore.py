@@ -55,6 +55,7 @@ from evaluation_harness._record import (
     aggregate_scores,
     cut_off_items,
     derived_record,
+    empty_at_cap_note,
     run_level_scores,
     run_scorer,
 )
@@ -679,9 +680,11 @@ def cut_off_lines(todo: list[tuple[Path, dict]], done: list[tuple[Path, dict]]) 
         cap = (m.get("params") or {}).get("max_tokens")
         cut = cut_off_items(rows, cap)
         if cut:
+            blank = [i for i in cut if not (_outputs.output(d, i) or "").strip()]
+            spent_note = f"\n    {empty_at_cap_note(blank)}" if blank else ""
             lines.append(
                 f"  WARNING: {m['run_id']}: {len(cut)} of {len(rows)} output(s) stopped at max_tokens"
-                f"{'' if cap is None else f'={cap}'} ({', '.join(cut[:6])}{' ...' if len(cut) > 6 else ''}).\n"
+                f"{'' if cap is None else f'={cap}'} ({', '.join(cut[:6])}{' ...' if len(cut) > 6 else ''}).{spent_note}\n"
                 "    A re-score reads them as they are and scores them as if complete. Raise max_tokens "
                 "(a new system_id) and run again."
             )

@@ -13,6 +13,7 @@ is the same bytes twice; validate holds the chain.
 
 import json
 import os
+import re
 import shutil
 import sys
 import tempfile
@@ -286,6 +287,23 @@ try:
             doc["version"] == 12 and seen == [(10, 11), (11, 12)],
             seen,
         )
+
+    from evaluation_harness import promote_baseline
+
+    # run-promote's note on a run with repeats: a cost per item is tiny, and printed `1.9e-05 (mean of 3: 1.86667e-05)`
+    note = "\n".join(
+        promote_baseline.repeats_lines(
+            {"rouge_l": 0.431293, "cost_usd": 1.9e-05},
+            {"runs": ["a", "b", "c"], "mean_scores": {"rouge_l": 0.433037, "cost_usd": 1.86667e-05}},
+        )
+    )
+    check(
+        "run-promote's repeats note prints every score in fixed decimals, as `evh baselines` does",
+        "e-0" not in note
+        and re.search(r"cost_usd\s+0\.000019\s+\(mean of 3: 0\.000019\)", note) is not None
+        and re.search(r"rouge_l\s+0\.4313\s+\(mean of 3: 0\.4330\)", note) is not None,
+        note,
+    )
 finally:
     shutil.rmtree(proj, ignore_errors=True)
 sys.exit(summary())

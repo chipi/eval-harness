@@ -444,6 +444,66 @@ try:
         "tk_val/cat_a against tk_val/cat_b" in ds_page or "tk_val/cat_b against tk_val/cat_a" in ds_page,
         [p.name for p in ds_pages],
     )
+    # Two arms whose names differ only at the end stay apart when a label is shortened to fit (the tail is kept), and no
+    # label is longer than its room: text-anchor end would run it out of the drawing's left edge.
+    from evaluation_harness import catalog_charts as cc
+
+    names = ("briefs_mistral_small_v1 ×3", "briefs_mistral_small_v2 ×3")
+    named_svgs = {
+        "forest": cc.forest([{"name": n, "est": 0.1 * i, "lo": -0.1, "hi": 0.2, "word": ""} for i, n in enumerate(names)], "m", "x"),
+        "strip": cc.strip({n: [(0.1 * i, "t")] for i, n in enumerate(names)}, "m", width=cc.NARROW),
+        "heat": cc.heatmap(list(names), ["c1"], {(n, "c1"): {"value": 0.5} for n in names}, "m", 0, 1),
+    }  # fmt: skip
+    texts = {
+        k: [t for t in re.findall(r'class="tick"[^>]*>(?:<title>[^<]*</title>)?([^<]*)<', v) if "×" in t]
+        for k, v in named_svgs.items()
+    }
+    check(
+        "a long arm name is shortened in the middle: v1 and v2 stay apart and fit their room, in every chart that names rows",
+        all(
+            len(set(t)) == 2 and all(len(x) <= 18 and x.endswith(("v1 ×3", "v2 ×3")) for x in t)
+            for t in texts.values()
+        ),
+        texts,
+    )
+    # An arm a round retired has no interval against the leader (it is outside the family the decision tests): the chart
+    # names it, with the round, where it would have been drawn (ADR-0006: a retired arm is shown, never recommended).
+    opened = evh(
+        "round-open",
+        "--goal",
+        "g",
+        "--dataset",
+        "tk_val",
+        "--keep",
+        "s1_v1,s2_v1,s3_v1",
+        "--hypothesis",
+        "is three sentences too many",
+    )
+    ret = (
+        opened
+        if opened.returncode
+        else evh(
+            "round-retire",
+            "--goal",
+            "g",
+            "--round",
+            "r3",
+            "--arm",
+            "s3_v1",
+            "--reason",
+            "it keeps too much text",
+        )
+    )
+    after = chart("intervals", "--goal", "g", "--dataset", "tk_val")
+    check(
+        "intervals: an arm a round retired is named in the chart's note with its round, not dropped silently",
+        ret.returncode == 0
+        and not any(x["arm"].startswith("s3_v1") for x in after["rows"])
+        and "Left out: s3_v1" in after.get("caption", "")
+        and "retired in r3" in after.get("caption", "")
+        and "retired in r3" in after.get("svg", ""),
+        (opened.stderr[-200:], ret.stderr[-200:], after.get("caption", "")[-300:]),
+    )
 finally:
     shutil.rmtree(proj, ignore_errors=True)
 sys.exit(summary())

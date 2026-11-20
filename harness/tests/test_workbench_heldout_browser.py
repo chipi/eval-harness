@@ -222,6 +222,15 @@ try:
             page.goto(f"{base}#goal/g")
             page.click("text=The held-out test")
             page.wait_for_selector("#sp-go", timeout=20000)
+            first = page.locator("main").inner_text()
+            check(
+                "the held-out test lists a `role: test` dataset that is not sealed (RFC-029: a test set is either), saying so, "
+                "not that none is held out",
+                "None of this goal's datasets is held out" not in first
+                and "tk_test" in first
+                and "not sealed: role test" in first,
+                first[:700],
+            )
             page.fill("#ho-by", "tester")
             page.select_option("#sp-ds", "sup_v1")
             page.fill("#sp-key", "opened")
@@ -369,6 +378,45 @@ try:
                 and "2 read item(s) left out" in conf
                 and "with the read items kept" in conf,
                 (conf[-700:], {k: cli.get(k) for k in ("n", "delta", "p", "verdict", "with_exposed")}),
+            )
+
+            # a split made without --seal: its test side is a `role: test` dataset the screen offers to seal
+            r = evh("dataset-create", "--dataset-id", "uns_v1", "--source-dir", "src_val")
+            for uns_step in (
+                ("dataset-materialize", "--dataset-id", "uns_v1"),
+                ("dataset-split", "--dataset-id", "uns_v1", "--test", "0.4", "--seed", "3", "--by", "person:owner"),
+                ("goal-set", "g", "--set", "datasets.3.dataset_id=uns_v1_validation", "--set", "datasets.3.role=validation",
+                 "--set", "datasets.4.dataset_id=uns_v1_test", "--set", "datasets.4.role=test"),
+            ):  # fmt: skip
+                r = r if r.returncode else evh(*uns_step)
+            page.goto(f"{base}#heldout/g")
+            page.reload()  # the page's reads are from before the command line made these
+            page.wait_for_selector("#ho-side", timeout=20000)
+            page.select_option("#ho-side", "uns_v1_test")
+            page.wait_for_selector("#ho-seal", timeout=20000)
+            seal_text = page.locator("main").inner_text()
+            check(
+                'an unsealed split side shows its seal state and its looks, and offers "Seal it" with the command it runs',
+                r.returncode == 0
+                and "not sealed: role test" in seal_text
+                and "looks" in seal_text.lower()
+                and "evh dataset-split --dataset-id uns_v1" in (page.locator("main").text_content() or ""),
+                (r.stderr[-300:], seal_text[:600]),
+            )
+            n_before = len(json.loads((proj / "data" / "datasets" / "uns_v1_test.json").read_text())["items"])
+            page.fill("#ho-by", "tester")
+            page.click("#ho-seal")
+            page.wait_for_selector("#ho-seal-out:has-text('Done.'), #ho-seal-out [role=alert]", timeout=60000)
+            sealed_doc = json.loads((proj / "data" / "datasets" / "uns_v1_test.json").read_text())
+            check(
+                "Seal it: dataset-split again with the recorded rule and --seal, the same items, the test side sealed",
+                bool(sealed_doc.get("sealed"))
+                and sealed_doc["split"].get("seed") == 3
+                and len(sealed_doc["items"]) == n_before > 0,
+                (
+                    page.locator("#ho-seal-out").inner_text()[:400],
+                    {k: v for k, v in sealed_doc.items() if k != "items"},
+                ),
             )
 
             # ── studies ──
@@ -557,6 +605,44 @@ try:
                 and "g/s1" in page.locator("main").inner_text()
                 and not errors,
                 (page.locator("main").inner_text()[:600], errors[:2]),
+            )
+            # the round a study opened carries `study:` (RFC-029): its tab says so, so a newcomer knows where it came from
+            page.goto(f"{base}#eval/g/r1")
+            page.reload()
+            page.wait_for_selector("main h2", timeout=20000)
+            page.wait_for_function("() => !document.body.innerText.includes('Reading')", timeout=30000)
+            r1 = yaml.safe_load((proj / "data" / "rounds" / "g" / "r1.yaml").read_text())
+            check(
+                "a round a study opened says so on its tab (opened by study s1, linked), not as if a person had opened it",
+                r1.get("study") == "s1"
+                and "opened by study s1" in page.locator("main").inner_text()
+                and page.locator("main a[href='#study/g/s1']").count() >= 1,
+                (r1.get("study"), page.locator("main").inner_text()[:400]),
+            )
+            # one look is one row (study-confirm writes two records of it), as `evh looks` says it
+            lk = json.loads(evh("looks", "--json").stdout.splitlines()[-1])["result"]["sets"]
+            twice = next((x for x in lk if len(x["looks"]) > len({y["key"] for y in x["looks"]})), None)
+            page.goto(f"{base}#heldout/g")
+            page.reload()
+            page.wait_for_selector("#ho-side", timeout=20000)
+            if twice:
+                page.select_option("#ho-side", twice["dataset_id"])
+                page.wait_for_function(
+                    "(d) => document.getElementById('ho-cur')?.dataset.side === d",
+                    arg=twice["dataset_id"],
+                    timeout=20000,
+                )
+            rows = page.locator("main table:has(th:has-text('level')) tbody tr")
+            check(
+                "the held-out screen shows one row per look: a look the confirmation wrote two records of is one row, saying so",
+                twice is not None
+                and rows.count() == len({y["key"] for y in twice["looks"]})
+                and "records of this look" in page.locator("main").inner_text(),
+                (
+                    twice and twice["dataset_id"],
+                    rows.count(),
+                    [(x["dataset_id"], len(x["looks"])) for x in lk],
+                ),
             )
             phone = browser.new_context(
                 viewport={"width": 390, "height": 844}, storage_state=page.context.storage_state()
