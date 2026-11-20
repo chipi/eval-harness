@@ -487,8 +487,9 @@ def _lineage_only(args: argparse.Namespace, out: Path, previous: dict, fieldset)
 def body(**inputs: Any) -> int:
     """Freeze a dataset from source items."""
     args = legacy.namespace(inputs, "dataset-create", {"from": "from_", "source": "source_name"})
-    if args.source_dir is None:  # only the command line names one: a job reads the project's own
-        args.source_dir = SOURCES
+    if args.source_dir is None:
+        # The dataset's own folder (RUNBOOK §2, as `--help` says); a manifest's `source_path`s stay under data/sources.
+        args.source_dir = SOURCES if args.manifest else SOURCES / dataset_id_ok(args.dataset_id)
     why = _licences.problem(args.licence) if args.licence is not None else None
     if why:
         die(why, "bad-argument")

@@ -92,7 +92,7 @@ def _line(j: dict[str, Any]) -> str:
     if j.get("refusal"):
         extra += f"  refused: {j['refusal']}"
 
-    return f"{j['id']}  {j['state']:<22} {j['operation']:<18} by {j.get('by') or '-'}{extra}"
+    return f"{j['id']}  {j.get('state_label') or j['state']:<22} {j['operation']:<18} by {j.get('by') or '-'}{extra}"
 
 
 def start(argv: list[str]) -> int:
@@ -194,11 +194,11 @@ def logs(argv: list[str]) -> int:
             sys.stdout.flush()
         if not a.follow:
             return 0
-        state = _jobs.read(a.job_id)["state"]
-        if state in TERMINAL:
+        job = _jobs.read(a.job_id)
+        if job["state"] in TERMINAL:
             data, offset = _jobs.log_from(a.job_id, offset)
             sys.stdout.write(data.decode("utf-8", "replace"))
-            print(f"[{a.job_id} {state}]")
+            print(f"[{a.job_id} {job['state_label']}]")
             return 0
         time.sleep(0.5)
 

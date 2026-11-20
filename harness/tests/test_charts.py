@@ -360,6 +360,18 @@ try:
         and any("baseline" in x and "v2" in x for x in titles),
         ((rc.stdout + rc.stderr)[-300:], rows2, titles),
     )
+    from evaluation_harness import charts as _charts
+
+    one = _charts.few_points_note(1, 1, 0, 4)
+    check(
+        "trend: one point says why (one baseline version, rounds that kept it add none); two or more say nothing",
+        "Only 1 point" in one
+        and "1 baseline version" in one
+        and "0 of 4 closed rounds promoted a run" in one
+        and _charts.few_points_note(2, 2, 0, 4) == ""
+        and "Only" not in (t2.get("caption") or ""),
+        one,
+    )
 
     # ── refusals, words, the file, the API ─────────────────────────────────────
     refused = {

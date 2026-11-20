@@ -207,6 +207,15 @@ try:
         r.returncode == 0,
         r.stderr[-300:],
     )
+    # --source-dir unset: the folder is data/sources/<dataset id>, as `--help` and the RUNBOOK say (it read data/sources)
+    for name, text in (("a.txt", "first item"), ("b.txt", "second item")):
+        _runstore.write_text(proj, f"sources/dflt_v1/{name}", text)
+    r = evh("dataset-create", "--dataset-id", "dflt_v1")
+    check(
+        "dataset-create with no --source-dir reads data/sources/<dataset id>",
+        r.returncode == 0 and "2 item(s)" in r.stdout,
+        r.stdout[-300:] + r.stderr[-300:],
+    )
 finally:
     shutil.rmtree(proj, ignore_errors=True)
 sys.exit(summary())

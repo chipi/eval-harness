@@ -439,4 +439,24 @@ with tempfile.TemporaryDirectory() as proj:
         and "mid-run abort (.env)" in mixed.stdout,
         mixed.stdout[-900:],
     )
+    # The retry count env-check prints is the count the retry core uses (it printed 3 while the core made 8 attempts).
+    from evaluation_harness import _retry
+
+    tries: list[int] = []
+
+    def _always_429() -> None:
+        tries.append(1)
+        raise RuntimeError("429 rate limit exceeded, try again later")
+
+    os.environ.pop("EVAL_MAX_RETRIES", None)
+    try:
+        _retry.call_with_retries(_always_429, sleep=lambda _s: None)
+    except RuntimeError:
+        pass
+    retries_line = next((x for x in mixed.stdout.splitlines() if "EVAL_MAX_RETRIES" in x), "")
+    check(
+        "env-check prints the retry count the core uses when EVAL_MAX_RETRIES is unset",
+        len(tries) > 1 and retries_line.split() == ["EVAL_MAX_RETRIES", str(len(tries))],
+        f"core made {len(tries)} attempt(s); env-check: {retries_line!r}",
+    )
 sys.exit(summary())

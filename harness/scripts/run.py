@@ -67,7 +67,7 @@ from evaluation_harness._common import (
     warn_if_ignored,
 )
 from evaluation_harness._fingerprint import build_fingerprint
-from evaluation_harness._providers import secret_params
+from evaluation_harness._providers import priced_by_table, secret_params
 from evaluation_harness._record import (
     aggregate_scores,
     cut_off_items,
@@ -333,8 +333,8 @@ def spend_basis(
 ) -> str:
     """Where a spend came from, in the words `evh run` and `evh arm-smoke` share: a Result's cost_usd is the
     provider's bill when its meta carries one (usage.cost); the rest is the adapter's own figure when its meta names
-    a `cost_source` (a gateway key's spend, say), else tokens x the system's usd_per_mtok_in / _out when the system
-    declares both (`priced`), else the adapter's own figure."""
+    a `cost_source` (a gateway key's spend, say), else tokens x the system's usd_per_mtok_in / _out when the call was
+    priced by it (`priced`: the bundled providers mark such a call), else the adapter's own figure."""
     named = sorted({s for s in sources if s})
     # The adapter's own word on where its figure came from wins: a system declares prices for the dry run's estimate
     # whatever its adapter reports (review, 2026-11-19: a gateway's spend was called the price table's).
@@ -858,11 +858,18 @@ def _dry_run(
         )
     else:
         where = f" --system {cfg['system_id']} --dataset {cfg['dataset_id']}"
-        print(f"  MEASURED    none for {cfg['system_id']}: no arm-smoke of it is recorded")
-        print(
-            f"              run `evh arm-smoke{where}` and set a cap from what it measures"
-            + ("" if cfg.get("model_record") else " (it records into a model record; this system names none)")
-        )
+        if cfg.get("model_record"):
+            print(f"  MEASURED    none for {cfg['system_id']}: no arm-smoke of it is recorded")
+            print(f"              run `evh arm-smoke{where}` and set a cap from what it measures")
+        else:
+            # A smoke is kept on a model's deployment (RFC-032): with no model record there is nowhere to keep it.
+            print(
+                f"  MEASURED    none for {cfg['system_id']}: it names no model record, so an arm-smoke of it is not kept"
+            )
+            print(
+                f"              run `evh arm-smoke{where}` for what 3 items cost (its `full run:` line) and set a cap"
+                " from that"
+            )
     cap = env_float("EVAL_MAX_COST_USD")
     print("  cap         " + (f"${cap:.2f} (EVAL_MAX_COST_USD)" if cap else "NONE — set EVAL_MAX_COST_USD"))
     _jsonout.value(
@@ -1684,7 +1691,8 @@ def _run(args: argparse.Namespace) -> int:
 
         billed = sum(billed_and_recorded(d)[0] for d in made)
         sources = {s for d in made for r in _runs.item_rows(d) if (s := cost_source(r.get("_meta")))}
-        basis = spend_basis(billed, max(spent - billed, 0.0), is_priced(call_cfg["params"]), sources)
+        by_table = any(priced_by_table(r.get("_meta")) for d in made for r in _runs.item_rows(d))
+        basis = spend_basis(billed, max(spent - billed, 0.0), by_table, sources)
         print(f"spent ${spent:.6f} ({basis})")
         drift = price_drift((r for d in made for r in _runs.item_rows(d)), call_cfg["params"])
         if drift:

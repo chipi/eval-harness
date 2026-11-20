@@ -233,7 +233,8 @@ def _smoke(args: argparse.Namespace) -> int:
 
         atexit.register(_prompts.remove_copy, resolved)
     params = {**dict(cfg.get("params") or {}), **(resolved or {}).get("params", {})}
-    from evaluation_harness.run import cost_source, is_priced  # noqa: PLC0415
+    from evaluation_harness._providers import priced_by_table  # noqa: PLC0415
+    from evaluation_harness.run import cost_source  # noqa: PLC0415
 
     if problem := prompt_problem(adapter_path, params):
         die(f"{cfg['system_id']}: {problem}; nothing was called", "invalid-file")
@@ -272,6 +273,7 @@ def _smoke(args: argparse.Namespace) -> int:
     spent = billed = 0.0
     n_calls = unpriced = 0
     sources: set[str] = set()
+    by_table = [False]  # a call was priced by the system's table (the bundled providers mark it)
 
     def pay(res: Any) -> None:
         """Count one call's cost: what it reports, and how much of that the provider billed."""
@@ -287,6 +289,7 @@ def _smoke(args: argparse.Namespace) -> int:
         billed += min(bill, cost) if bill is not None else 0.0
         if src := cost_source(getattr(res, "meta", None)):
             sources.add(src)
+        by_table[0] = by_table[0] or priced_by_table(getattr(res, "meta", None))
 
     capped = None
     for n, item in enumerate(ds["items"][: args.items]):
@@ -355,7 +358,7 @@ def _smoke(args: argparse.Namespace) -> int:
             f"  full run: {proj['items']} items, about {proj['minutes']} min (slowest item x all: "
             f"{proj['worst_minutes']} min), about ${proj['usd']}"
         )
-    print(f"  {spend_line(spent, billed, n_calls, unpriced, is_priced(params), frozenset(sources))}")
+    print(f"  {spend_line(spent, billed, n_calls, unpriced, by_table[0], frozenset(sources))}")
     if items and items[0].get("deterministic") is True:
         print("  determinism: item 1 twice gave the same output: repeats on this machine will be identical")
     flags, accepted = _models.split_accepted(

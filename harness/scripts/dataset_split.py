@@ -11,7 +11,8 @@ goal names them with the roles it has today.
 
 --split-by hash (default): an item goes to test when the hash of (seed, its key) falls below the share.
 The key is the item id, or with --key an item field, so all items sharing a value (one fingerprint)
-land on one side. Items keep their side in every later version, and new items fall in proportion.
+land on one side. Items keep their side in every later version, and new items fall in proportion. The share is
+approximate: each item's hash picks its side on its own, nothing counts them (--test 0.4 on 20 items can give 10 and 10).
 --split-by time: the newest share by --key (a date or time field) is test, or with --at every item at or after
 that time. --seal holds the test side out (_seal): nothing runs, is scored or labelled on it until
 `evh dataset-unseal` names a candidate system whose hypothesis is committed.

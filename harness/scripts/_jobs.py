@@ -351,6 +351,7 @@ def read(job_id: str) -> dict[str, Any]:
     return {
         **job,
         **st,
+        "state_label": state_label(st),
         "operation": job.get("operation") or "unknown",
         "progress": progress,
         "spent_usd": spent(job_id),
@@ -361,6 +362,15 @@ def read(job_id: str) -> dict[str, Any]:
 
 #: The states a job is read in: its stored ones, and the two `read` works out (a supervisor gone).
 SHOWN_STATES = ("queued", "running", "running (unsupervised)", "lost", "succeeded", "failed", "cancelled")
+
+
+def state_label(job: dict[str, Any]) -> str:
+    """The state a person reads. A job that ended `failed` with exit 6 (EXIT_PROBLEMS: its checks ran and flagged
+    something, as arm-smoke, model-onboard and exposure-check do) is "checked, flagged": its flags are its answer, not a
+    failure. Every other state is the stored one. The one definition: the listings, the API and the Workbench read it."""
+    if job.get("state") == "failed" and job.get("exit") == _common.EXIT_PROBLEMS:
+        return "checked, flagged"
+    return str(job.get("state"))
 
 
 def states_of(values: list[str] | str | None) -> list[str]:

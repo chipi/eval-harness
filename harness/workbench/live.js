@@ -615,6 +615,14 @@
   const keepSys = (goal, d) => { try { localStorage.setItem(sysKey(goal), JSON.stringify(d)); } catch { /* this visit only */ } };
   const dropSys = (goal) => { try { localStorage.removeItem(sysKey(goal)); } catch { /* nothing kept */ } };
   const smokes = {};
+  // A system belongs to the goal(s) of its arms (`systems_filed`, goal-list): one measured only for another goal is not this goal's to
+  // choose or run. A system never run has no goal yet and is offered everywhere.
+  const forGoal = (systems, goal, arms) => {
+    if (!arms || arms.error) return systems;
+    const goals = new Map();
+    for (const a of arms.arms || []) if (a.goal && a.system) goals.set(a.system, (goals.get(a.system) || new Set()).add(a.goal));
+    return systems.filter((x) => !goals.has(x.system) || goals.get(x.system).has(goal));
+  };
   // A goal's systems share one prompt, kept as versions of the name `<goal>/prompt` (RFC-028): a system points at the
   // version it sends (prompts: {name: {version}}), and every run records it, so the prompts' history says which text
   // each run sent. A prompt typed here is recorded first (the same text is the same version), then pointed at.
@@ -628,12 +636,15 @@
     const done = await runJob("/prompts/versions", { name, text, note, ...(parent ? { parent } : {}), by }, box, "recording the prompt");
     return done ? (((done.result || {}).result || {}).values || {}).version : null;
   }
-  const smokeView = (r) => {
+  const smokeView = (r, sysRec) => {
     if (!r) return "";
     if (r.error) return r.error;
     const v = r.values || {}, pj = v.projection || {};
+    // A check is kept on a model's deployment (RFC-032): a system naming no model record has none to keep it on.
+    const unkept = sysRec && !sysRec.error && sysRec.record && !sysRec.record.model_record;
     return `<p><span class="status ${v.status === "pass" ? "ok" : "warn"}">${esc(v.status || "?")}</span> · ${v.calls ?? 0} call(s) · spent $${Number(v.spent_usd || 0).toFixed(5)}
       · all ${esc(pj.items ?? "?")} items ≈ $${esc(pj.usd ?? "?")}, about ${esc(pj.minutes ?? "?")} min</p>
+      ${unkept ? '<p class="muted">not kept: this system names no model record, and a check is kept on a model\'s deployment. Set the cap from the cost above.</p>' : ""}
       ${(v.flags || []).length ? `<ul>${v.flags.map((f) => `<li>${esc(f)}</li>`).join("")}</ul>` : ""}
       ${(v.items || []).map((it) => `<details><summary class="mono">${esc(it.item)}</summary><pre class="reply">${esc(it.reply || "")}</pre></details>`).join("")}`;
   };
@@ -641,8 +652,8 @@
     const head = `<div class="kicker">Step 4 · ${esc(goal)}</div><h1>Choose the systems</h1>
       <p class="lead">What is compared is a system: a model where it runs, with a prompt and settings. Each is checked on three items before it costs anything. ${qh("models")}</p>`;
     if (!goal) return `<div class="screen">${head}</div>`;
-    const rec = load(`goalrec:${goal}`, `/goals/${enc(goal)}`), sys = load("systems", "/systems"), ms = load("models", "/models");
-    if ([rec, sys, ms].includes(undefined)) return `<div class="screen wide">${head}${loading("the systems")}</div>`;
+    const rec = load(`goalrec:${goal}`, `/goals/${enc(goal)}`), sys = load("systems", "/systems"), ms = load("models", "/models"), allArms = load("arms:all", "/arms");
+    if ([rec, sys, ms, allArms].includes(undefined)) return `<div class="screen wide">${head}${loading("the systems")}</div>`;
     const bad = [rec, sys, ms].find((x) => x.error);
     if (bad) return `<div class="screen wide">${head}${failed(bad)}</div>`;
     const datasets = (rec.record.datasets || []).map((x) => x.dataset_id);
@@ -650,7 +661,8 @@
     if (pv === undefined) return `<div class="screen wide">${head}${loading("the goal's prompt")}</div>`;
     const latest = latestOf(pv);
     const d = readSys(goal) || { model: "", deployment: "", prompt: latest ? latest.text : "", temperature: "0", max_tokens: "", id: "" };
-    const sysrec = Object.fromEntries(sys.systems.map((x) => [x.system, load(`sysrec:${x.system}`, `/systems/${enc(x.system)}`)]));
+    const mine = forGoal(sys.systems, goal, allArms);
+    const sysrec = Object.fromEntries(mine.map((x) => [x.system, load(`sysrec:${x.system}`, `/systems/${enc(x.system)}`)]));
     const promptCell = (id) => {
       const r = sysrec[id];
       if (r === undefined) return "…";
@@ -667,9 +679,9 @@
         <div class="inline"><label class="name" for="sm-ds">on</label><select id="sm-ds">${datasets.map((x) => `<option>${esc(x)}</option>`).join("")}</select>
           <label class="name" for="sm-cap">spend at most (USD)</label><input type="number" id="sm-cap" min="0.01" step="0.01" value="0.05" inputmode="decimal" style="width:7rem"></div>
         <div class="tablewrap"><table><thead><tr><th>system</th><th>model</th><th>where it runs</th><th>its prompt</th><th>its check</th></tr></thead><tbody>
-        ${sys.systems.map((x) => `<tr><td class="mono">${esc(x.system)}</td><td>${esc(x.model || "")}</td><td>${esc(x.deployment || "")}</td><td>${promptCell(x.system)}</td>
+        ${mine.map((x) => `<tr><td class="mono">${esc(x.system)}</td><td>${esc(x.model || "")}</td><td>${esc(x.deployment || "")}</td><td>${promptCell(x.system)}</td>
           <td><button class="btn" type="button" data-smoke="${esc(x.system)}">Check it on three items</button> <button class="btn" type="button" data-clone="${esc(x.system)}">Clone it, change one thing</button>
-            <div id="sm-${esc(x.system)}" data-out aria-live="polite">${smokeView(smokes[`${goal}/${x.system}`])}</div><div id="cl-${esc(x.system)}"></div></td></tr>`).join("")}</tbody></table></div>
+            <div id="sm-${esc(x.system)}" data-out aria-live="polite">${smokeView(smokes[`${goal}/${x.system}`], sysrec[x.system])}</div><div id="cl-${esc(x.system)}"></div></td></tr>`).join("")}</tbody></table></div>
         ${byField("sm-by")}</div></section>
       <section class="part" data-form="system-new"><div class="parthead"><h2>Make a system from a model</h2></div><div class="body">
         <div class="field">${nm("sn-model", "The model", "models.pick")}<div><select id="sn-model"><option value="">choose a model that has somewhere to run</option>
@@ -702,7 +714,7 @@
         // arm-smoke ends 6 when it flags something: its answer, shown as one
         const res = (done.result || {}).result;
         smokes[`${goal}/${id}`] = res ? { values: res.values } : { error: await jobRefusal(done) };
-        box.innerHTML = smokeView(smokes[`${goal}/${id}`]);
+        box.innerHTML = smokeView(smokes[`${goal}/${id}`], LIVE.cache[`sysrec:${id}`]);
       } catch (e) { box.innerHTML = refusal(e); }
       b.disabled = false;
     }));
@@ -852,9 +864,9 @@
         <div class="actions" style="margin-top:0"><button class="btn primary" type="button" id="ro-open" data-send>Open the round</button>${mark}</div><div id="ro-out" data-out></div></div></section>`;
     if (!cur) return `<div class="screen wide">${head}<p class="muted">No round yet.</p>${openForm}<div class="actions"><a class="btn" href="#goal/${enc(goal)}">Back to the goal</a></div></div>`;
     const rs = load(`round:${goal}/${cur}`, `/goals/${enc(goal)}/rounds/${enc(cur)}`), ev = load(`evidence:${goal}/${cur}`, `/goals/${enc(goal)}/rounds/${enc(cur)}/evidence`);
-    const sys = load("systems", "/systems"), bl = load(`baselines:${goal}`, `/baselines?goal=${enc(goal)}`);
+    const sys = load("systems", "/systems"), bl = load(`baselines:${goal}`, `/baselines?goal=${enc(goal)}`), allArms = load("arms:all", "/arms");
     const prev = rs && !rs.error && rs.round.from ? load(`round:${goal}/${rs.round.from}`, `/goals/${enc(goal)}/rounds/${enc(rs.round.from)}`) : null;
-    if ([rs, ev, sys, bl, prev].includes(undefined)) return `<div class="screen wide">${head}${tabs}${loading("the round")}</div>`;
+    if ([rs, ev, sys, bl, prev, allArms].includes(undefined)) return `<div class="screen wide">${head}${tabs}${loading("the round")}</div>`;
     const bad = [rs, ev, sys, bl, prev].find((x) => x && x.error);
     if (bad) return `<div class="screen wide">${head}${tabs}${failed(bad)}</div>`;
     const r = rs.round, isOpen = r.status === "open";
@@ -869,7 +881,7 @@
     const dsArms = isOpen ? load(`arms:${r.dataset_id}`, `/datasets/${enc(r.dataset_id)}/arms`) : { arms: [] };
     if (dsArms === undefined) return `<div class="screen wide">${head}${tabs}${loading("the round")}</div>`;
     const measured = new Set((dsArms.arms || []).filter((a) => String(a.arm || "").startsWith(`runs/${r.dataset_id}/`)).map((a) => a.system));
-    const toRun = sys.systems.filter((x) => !have.has(x.system) && !measured.has(x.system));
+    const toRun = forGoal(sys.systems, goal, allArms).filter((x) => !have.has(x.system) && !measured.has(x.system));
     const carryable = [...new Set([...(prev ? prev.round.arms.filter((a) => !a.retired).map((a) => a.system) : []), ...measured])].filter((s) => !have.has(s)).sort();
     // a baseline line is its current version, its earlier ones in `history` (view_baselines.lines)
     const line = (bl.baselines || []).find((b) => b.dataset === r.dataset_id);
@@ -902,6 +914,7 @@
         ${toRun.length ? `<div class="choices">${toRun.map((x) => `<label class="choice"><input type="checkbox" data-run="${esc(x.system)}"> <span class="mono">${esc(x.system)}</span> <small>${esc(x.model || "")}</small></label>`).join("")}</div>
           <div class="inline"><label class="name" for="rn-cap">spend at most (USD)</label><input type="number" id="rn-cap" min="0.01" step="0.01" value="1" inputmode="decimal" style="width:7rem">
           <button class="btn" type="button" id="rn-est">See the cost first</button><button class="btn primary" type="button" id="rn-go">Run them</button></div>
+          <p class="muted">This screen wrote files into the project (a system, a round, an arm carried in). Commit them before a paid run: a run on uncommitted files is recorded <b>dirty</b>, and its commit then does not identify what ran. <code>git status</code> lists them.</p>
           <div id="rn-out" data-out aria-live="polite"></div>` : '<p class="muted">Every system of the project is in this round.</p>'}</div></section>
         <section class="part" data-form="round-close"><div class="parthead"><h2>Close the round</h2></div><div class="body">
           <div class="field"><label class="name" for="rc-text">Its conclusion</label><div><textarea id="rc-text" rows="3" placeholder="What the round showed, and what it decided, in a sentence or more."></textarea></div></div>
@@ -966,9 +979,14 @@
       const fromBlocks = ((b.result || {}).blocks || []).flatMap((x) => x.lines || []);
       const all = [...fromBlocks, ...String(b.text || "").split("\n")];
       const lines = fromBlocks.filter((l) => /\$|estimat|items|calls|cost|MEASURED/i.test(l));
-      // An arm never smoked has no measured cost to cap from: the check on three items is on "Choose the systems".
-      const unsmoked = [...new Set(all.map((l) => /MEASURED\s+none for (\S+?):/.exec(l)).filter(Boolean).map((m) => m[1]))];
-      const smoke = unsmoked.length ? `<p class="note">No arm-smoke is recorded for ${unsmoked.map((x) => `<span class="mono">${esc(x)}</span>`).join(", ")}: check it on three items first (<code>evh arm-smoke</code>), on <a href="#systems/${enc(goal)}">Choose the systems</a>, "Check it on three items".</p>` : "";
+      // An arm never smoked has no measured cost to cap from: the check on three items is on "Choose the systems". A system that names no
+      // model record has nowhere to keep a check (RFC-032: a smoke is kept on a model's deployment), so it is never "recorded": its note says so.
+      const unsmoked = new Map(all.map((l) => /MEASURED\s+none for (\S+?): (.*)/.exec(l)).filter(Boolean).map((m) => [m[1], /names no model record/.test(m[2])]));
+      const names = (xs) => xs.map((x) => `<span class="mono">${esc(x)}</span>`).join(", ");
+      const link = '<a href="#systems/' + enc(goal) + '">Choose the systems</a>, "Check it on three items"';
+      const kept = [...unsmoked].filter(([, noRecord]) => !noRecord).map(([n]) => n), unkept = [...unsmoked].filter(([, noRecord]) => noRecord).map(([n]) => n);
+      const smoke = (kept.length ? `<p class="note">No arm-smoke is recorded for ${names(kept)}: check it on three items first (<code>evh arm-smoke</code>), on ${link}.</p>` : "")
+        + (unkept.length ? `<p class="note">${names(unkept)} ${unkept.length > 1 ? "name" : "names"} no model record, so a check on three items (<code>evh arm-smoke</code>) is not kept and its cost stays unmeasured here: run it on ${link}, and set the cap from the "all N items ≈" line it shows.</p>` : "");
       out.innerHTML = r.ok ? `<pre class="reply">${esc((fromBlocks.length ? lines.join("\n") : "") || b.text || "no cost to estimate")}</pre>${smoke}` : `<p class="note" role="alert">${esc(b.error || b.text || r.status)}</p>`;
     });
     document.getElementById("rn-go")?.addEventListener("click", async (ev) => {
@@ -1882,7 +1900,8 @@
   const RUNNING = ["queued", "running", "running (unsupervised)"];
   const STATE_SETS = [["", "every state"], ["queued,running,running (unsupervised)", "running or waiting"], ["succeeded", "succeeded"], ["failed", "failed"], ["cancelled", "stopped"], ["lost", "lost"]];
   const PAGE = 50;
-  const stateTagOf = (st) => `<span class="verdict ${st === "succeeded" ? "v-lead" : RUNNING.includes(st) ? "v-ns" : "v-worse"}">${esc(st)}</span>`;
+  // The label is the server's (`state_label`: exit 6 is "checked, flagged", the command's answer, not a failure): one definition.
+  const stateTagOf = (st, label) => `<span class="verdict ${st === "succeeded" ? "v-lead" : RUNNING.includes(st) ? "v-ns" : label && label !== st ? "v-ns" : "v-worse"}">${esc(label || st)}</span>`;
   const progressOf = (p) => (p ? `${p.done ?? p.n ?? "?"} / ${p.total ?? "?"}${p.unit ? ` ${esc(p.unit)}` : ""}` : "—");
   function screenJobs(param) {
     const id = String(param || "");
@@ -1903,7 +1922,7 @@
     const goalIds = goals.error ? [] : goals.goals.map((g) => g.goal);
     const opt = (xs, sel, none) => `<option value="">${esc(none)}</option>` + xs.map((x) => `<option value="${esc(x)}" ${x === sel ? "selected" : ""}>${esc(x)}</option>`).join("");
     const from = (f.offset || 0) + 1, to = (f.offset || 0) + js.jobs.length;
-    const rows = js.jobs.map((j) => `<tr><td class="mono"><a href="#jobs/${enc(j.id)}">${esc(j.id)}</a></td><td class="mono">${esc(j.operation)}</td><td>${stateTagOf(j.state)}${j.waiting_for ? ` <small class="muted">waits for ${esc(j.waiting_for)}</small>` : ""}</td>
+    const rows = js.jobs.map((j) => `<tr><td class="mono"><a href="#jobs/${enc(j.id)}">${esc(j.id)}</a></td><td class="mono">${esc(j.operation)}</td><td>${stateTagOf(j.state, j.state_label)}${j.waiting_for ? ` <small class="muted">waits for ${esc(j.waiting_for)}</small>` : ""}</td>
       <td class="mono">${esc(j.by || "")}</td><td class="num">${esc((j.created_at || "").replace("T", " ").slice(0, 16))}</td><td class="num">${progressOf(j.progress)}</td><td class="num">${j.spent_usd ? `$${Number(j.spent_usd).toFixed(4)}` : "—"}</td></tr>`).join("");
     return `<div class="screen wide">${head}
       <div class="inline"><select id="jf-state" aria-label="state">${STATE_SETS.map(([v, t]) => `<option value="${esc(v)}" ${v === f.state ? "selected" : ""}>${esc(t)}</option>`).join("")}</select>
@@ -1921,7 +1940,7 @@
     const running = RUNNING.includes(j.state), cap = (j.env || {}).EVAL_MAX_COST_USD;
     const res = (j.result || {}).result;
     return `<div class="screen wide">${head}<h1 class="mono">${esc(j.operation)}</h1>
-      <p class="lead">${stateTagOf(j.state)}${j.waiting_for ? ` · waits for ${esc(j.waiting_for)}` : ""} · asked by <span class="mono">${esc(j.by || "?")}</span> · made ${esc((j.created_at || "").replace("T", " ").slice(0, 19))}${j.ended_at ? ` · ended ${esc(String(j.ended_at).replace("T", " ").slice(0, 19))}` : ""}${j.exit != null ? ` · exit ${esc(j.exit)}` : ""}</p>
+      <p class="lead">${stateTagOf(j.state, j.state_label)}${j.waiting_for ? ` · waits for ${esc(j.waiting_for)}` : ""} · asked by <span class="mono">${esc(j.by || "?")}</span> · made ${esc((j.created_at || "").replace("T", " ").slice(0, 19))}${j.ended_at ? ` · ended ${esc(String(j.ended_at).replace("T", " ").slice(0, 19))}` : ""}${j.exit != null ? ` · exit ${esc(j.exit)}` : ""}</p>
       <div class="tablewrap"><table><tbody>
         <tr><th>progress</th><td>${progressOf(j.progress)}</td></tr>
         <tr><th>spent</th><td>${j.spent_usd ? `$${Number(j.spent_usd).toFixed(4)}` : "$0"}${cap ? ` of at most $${Number(cap).toFixed(2)}` : ""}</td></tr>
@@ -2017,7 +2036,8 @@
         <div class="actions" style="margin-top:0"><button class="btn primary" type="button" id="sp-go" data-send>Split it</button>${mark}</div><div id="sp-out" data-out></div></div></details>`;
     if (!side) return `<div class="screen wide">${head}${byField("ho-by")}<p class="muted">None of this goal's datasets is held out yet.</p>${splitForm}
       ${WB.cmd("evh dataset-split --dataset-id <dataset> --split-by time --key opened --at <T> --seal --count-by kind")}<div class="actions"><a class="btn" href="#goal/${enc(goal)}">Back to the goal</a></div></div>`;
-    const d = load(`dataset:${side}`, `/datasets/${enc(side)}`), ex = load(`exposure:${side}`, `/exposure?dataset=${enc(side)}`);
+    // The register is a sealed side's (the API refuses a side with no seal): a `role: test` side with none is not asked for it.
+    const d = load(`dataset:${side}`, `/datasets/${enc(side)}`), ex = (byId[side] || {}).sealed ? load(`exposure:${side}`, `/exposure?dataset=${enc(side)}`) : {};
     const counts = (byId[side] || {}).sealed ? load(`sealedcounts:${side}`, `/datasets/${enc(side)}/sealed-counts`) : {}, lk = load(`looks:${side}`, `/looks?dataset=${enc(side)}`);
     if ([d, ex, counts, lk].includes(undefined)) return `<div class="screen wide">${head}${loading("the held-out side")}</div>`;
     const r = (d.record || {}), seal = r.sealed || {}, split = r.split || {}, opened = r.unsealed || [];
@@ -2027,7 +2047,10 @@
     const days = Object.keys(cnt).sort(), keys = [...new Set(days.flatMap((x) => Object.keys(cnt[x]).filter((k) => k !== "n")))].sort();
     const last = opened[opened.length - 1];
     const cand = st.cand || (last || {}).system_id, against = st.against || ((last || {}).hypothesis || {}).against, measure = ((last || {}).hypothesis || {}).measure;
-    const pt = cand && against ? load(`pairtest:${side}:${cand}:${against}`, `/datasets/${enc(side)}/pair-test?a=${enc(cand)}&b=${enc(against)}${measure ? `&metric=${enc(measure)}` : ""}&include_exposed=true`) : null;
+    // The paired test needs both on this side (`pair-test` refuses "only 0 shared items"): it is not asked for before they have runs here.
+    const armsOn = cand && against ? load(`arms:${side}`, `/datasets/${enc(side)}/arms`) : null;
+    const noRun = armsOn && !armsOn.error ? [cand, against].filter((x) => !(armsOn.arms || []).some((a) => a.system === x)) : [];
+    const pt = cand && against && armsOn !== undefined && !noRun.length ? load(`pairtest:${side}:${cand}:${against}`, `/datasets/${enc(side)}/pair-test?a=${enc(cand)}&b=${enc(against)}${measure ? `&metric=${enc(measure)}` : ""}&include_exposed=true`) : null;
     const pv = pt && !pt.error ? pt.values || {} : null;
     const tbl = (h, rows) => `<div class="tablewrap"><table><thead><tr>${h.map((x) => `<th>${esc(x)}</th>`).join("")}</tr></thead><tbody>${rows.join("")}</tbody></table></div>`;
     const part = (n, title, body, tag = "") => `<section class="part"><div class="parthead"><span class="letter">${n}</span><h2>${esc(title)}</h2><span class="grow"></span>${tag}</div><div class="body">${body}</div></section>`;
@@ -2071,7 +2094,7 @@
       ${last ? part(5, "Run the candidate and what it is against", `<p class="muted">Each on the held-out side: the runs the confirmation reads.</p>
         <div class="inline"><label>at most (USD) <input type="number" id="hr-cap" value="1" min="0.01" step="0.01" style="width:6rem"></label>
           <button class="btn" type="button" id="hr-go">Run ${esc(cand)} and ${esc(against || "")}</button></div><div id="hr-out" data-out></div>`) : ""}
-      ${last ? part(6, "The confirmation", pt === undefined ? loading("the paired test") : pt && pt.error ? failed(pt) : pv ? `${tbl(["", "items", "delta (A − B)", "p", "verdict"], [
+      ${last ? part(6, "The confirmation", armsOn === undefined ? loading("its runs here") : noRun.length ? `<p class="muted">Nothing to test yet: ${noRun.map((x) => `<span class="mono">${esc(x)}</span>`).join(" and ")} ${noRun.length > 1 ? "have" : "has"} no run on ${esc(side)}. Run them above first: the paired test needs both on the same items.</p>` : pt === undefined ? loading("the paired test") : pt && pt.error ? failed(pt) : pv ? `${tbl(["", "items", "delta (A − B)", "p", "verdict"], [
           `<tr><td><b>the number that counts</b>${Object.values(pv.left_out_exposed || {})[0] ? ` <span class="muted">(${Object.values(pv.left_out_exposed)[0]} read item(s) left out)</span>` : ""}</td><td class="num">${pv.n}</td><td class="num">${pv.delta >= 0 ? "+" : ""}${fx(pv.delta)}</td><td class="num">${fx(pv.p)}</td><td><span class="verdict ${pv.verdict === "SIGNIFICANT" ? "v-lead" : "v-ns"}">${esc(String(pv.verdict || "").toLowerCase())}</span></td></tr>`,
           pv.with_exposed ? `<tr class="muted"><td>with the read items kept (not the one that counts)</td><td class="num">${pv.with_exposed.n}</td><td class="num">${pv.with_exposed.delta >= 0 ? "+" : ""}${fx(pv.with_exposed.delta)}</td><td class="num">—</td><td></td></tr>` : "",
         ])}<details><summary>As the harness says it</summary>${blocksView(pt)}</details>` : "") : ""}
@@ -2160,7 +2183,7 @@
           const done = await watchJob(j.id, box, `running ${s}`);
           if (done.state !== "succeeded") { box.innerHTML = await jobRefusal(done); ev.target.disabled = false; return; }
         }
-        again(box, { result: {} }, [`pairtest:${theSide()}`]);
+        again(box, { result: {} }, [`pairtest:${theSide()}`, `arms:${theSide()}`]);
       } catch (e) { box.innerHTML = refusal(e); }
       ev.target.disabled = false;
     });
@@ -2652,6 +2675,27 @@
     catalog: [screenOut("The catalog", "/", "The pages this server builds over the project's runs, datasets and goals.")],
     docs: [screenOut("The docs", DOCS, "The harness's documentation: getting started, the tutorials, every command.")],
   };
+
+  // A chart wider than a phone scrolls in its own box (RFC-034); an edge shadow alone read as a cut-off drawing (scenario 080b),
+  // so a line under it says to slide it, shown only while it is wider than its box.
+  let hintQueued = false;
+  function markWideCharts() {
+    hintQueued = false;
+    for (const box of document.querySelectorAll(".chart.evidence .scroll-x")) {
+      let hint = box.nextElementSibling;
+      if (!hint || !hint.matches(".scroll-hint")) {
+        hint = document.createElement("p");
+        hint.className = "scroll-hint muted fine";
+        hint.textContent = "Wider than the screen: slide the chart sideways to read the rest.";
+        box.after(hint);
+      }
+      const wide = box.scrollWidth > box.clientWidth + 1;
+      if (hint.hidden === wide) hint.hidden = !wide;
+    }
+  }
+  const queueHints = () => { if (!hintQueued) { hintQueued = true; requestAnimationFrame(markWideCharts); } };
+  new MutationObserver(queueHints).observe(document.body, { childList: true, subtree: true });
+  window.addEventListener("resize", queueHints);
 
   function goLive() {
     LIVE.on = true;

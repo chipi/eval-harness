@@ -207,6 +207,10 @@ try:
             page = browser.new_page(viewport={"width": 1280, "height": 900})
             errors: list = []
             page.on("pageerror", lambda e: errors.append(str(e)))
+            refused: list = []  # every answer of 400 or more: a screen must not ask for what it knows is refused
+            page.on("response", lambda x: refused.append(f"{x.status} {x.url}") if x.status >= 400 else None)
+            console_errors: list = []
+            page.on("console", lambda m: console_errors.append(m.text) if m.type == "error" else None)
             page.goto(str(link))
             page.wait_for_selector("h1", timeout=20000)
             base = f"http://127.0.0.1:{port}/workbench/"
@@ -230,6 +234,12 @@ try:
                 and "tk_test" in first
                 and "not sealed: role test" in first,
                 first[:700],
+            )
+            check(
+                "the not-sealed test side asks for no exposure register (the API refuses one with 409): no refused call, "
+                "no console error (scenario 080b N8)",
+                not refused and not console_errors,
+                (refused[:3], console_errors[:3]),
             )
             page.fill("#ho-by", "tester")
             page.select_option("#sp-ds", "sup_v1")
@@ -361,8 +371,19 @@ try:
                 r.returncode == 0,
                 r.stderr[-300:],
             )
+            asked, said = len(refused), len(console_errors)
             again("#us-out")
             page.wait_for_selector("#hr-go", timeout=20000)
+            page.wait_for_timeout(1500)
+            check(
+                "opened for a candidate with no runs on the side yet, the confirmation asks for no paired test (the API refuses "
+                "'only 0 shared items' with 400): no refused call, no console error, and it says why",
+                refused[asked:] == []
+                and console_errors[said:] == []
+                and "Nothing to test yet" in page.locator("main").inner_text()
+                and " no run on sup_v1_test" in page.locator("main").inner_text(),
+                (refused[asked:], console_errors[said:], page.locator("main").inner_text()[-500:]),
+            )
             page.click("#hr-go")
             page.wait_for_selector("#hr-out:has-text('Done.'), #hr-out [role=alert]", timeout=120000)
             again("#hr-out")

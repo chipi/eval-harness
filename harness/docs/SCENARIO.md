@@ -263,14 +263,16 @@ it), and check that its verdicts are `family-test`'s for the same arms against t
 ```bash
 evh round-open --goal brief_summary --dataset briefs_v1 --from r1 \
     --hypothesis "a prompt that asks for the key facts brings mistral-small closer to the hand-written summaries" \
-    --change "briefs_mistral_small_v2: the prompt asks for the news and its key facts, at most 25 words" \
+    --change "briefs_mistral_small_v2: the prompt asks for the news and its key facts, at most 25 words, as plain text" \
     --keep briefs_mistral_small_v1,briefs_opus_v1 \
     --retire briefs_lead1_v1 --reason "<why it is dropped>" --budget-usd 0.05
 # data/systems/briefs_mistral_small_v2.yaml: a new system_id, its prompt in a file, at the top level of the system
 # (beside params, not in it), and no params.prompt:
 #   prompts: {summary: {file: prompts/brief_summary.txt}}
-# The file's text asks for the summary only ("Reply with the summary and nothing else"): a prompt that names a word
-# limit can make the model print its own word count after the summary.
+# The file's text is this one line: Summarize the news and its key facts in at most 25 words. Reply with the summary as
+# plain text and nothing else: no quotes, no heading or label, no markdown.
+# Without the plain-text part the replies come wrapped in quotes or start with "**Summary:**", which lowers the
+# ROUGE-style score; a prompt that names a word limit can also make the model print its own word count.
 git add -A && git commit -qm "brief_summary r2: open; mistral-small v2"
 evh run --system briefs_mistral_small_v2 --dataset briefs_v1 --goal brief_summary --round r2 --repeat 3
 git add data/runs data/prompts data/rounds && git commit -qm "brief_summary r2: runs"    # a run records itself in the round file
@@ -426,7 +428,8 @@ kind, the goals it decides, per-dataset strip chart); for each dataset, the insp
 arm on gold against the baseline, on silver against the baseline too (the frontier arm wrote that
 reference, so against it every other arm reads as worse, as `evh comparison-show` notes), and on the
 judge's score; one
-item opened in each (the item itself beside the reference and every output); the inspector over r2's
+item opened in each (the item itself beside the reference and every output: click its row, or add `&item=ITEM_ID`
+to the comparison's address, [RUNBOOK §14](RUNBOOK.md#14-browse-the-catalog-and-the-inspector)); the inspector over r2's
 arms; and what a goal page's "test every arm against the leader" link opens. For each page, run its
 command (`evh overview-show`, `evh dataset-list`, `evh arm-list`, `evh reference-list`, `evh metric-list`,
 `evh goal-leaderboard <goal>`, `evh round-evidence …`, `evh comparison-show --runs …`, `evh comparison-item --runs …

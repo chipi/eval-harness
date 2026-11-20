@@ -982,6 +982,32 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Fixed
 
+- **`evh validate` failed on every record the Workbench or the API wrote** (`'api' is not one of ['flag', 'environment',
+  'terminal', 'migration']`): `from: api`, which a job started from an API call records, is in the actor's `from`
+  list of every schema that has one (rounds, scores' metrics, references, datasets, baselines, models). A new test
+  (`test_validate_after_api.py`) starts jobs through the API as the Workbench does and runs `evh validate` after, and
+  checks every such schema lists every origin a job may carry.
+- **"See the cost first" asked for a check the system could not keep.** A smoke is kept on a model's deployment, so a
+  system that names no model record never had one recorded, and the screen and the dry run said "check it first" after the
+  check had run. They now say the system names no model record, so its check is not kept, and to set the cap from the
+  check's own "all N items" line; the check says "not kept" under its result.
+- **The held-out test screen asked for the exposure register of a side that is not sealed** and the API refused it
+  (409, a console error). The screen asks only for a sealed side's register.
+- **The Workbench did not say to commit what it wrote before a paid run.** The eval screen's "Run arms in it" now says the
+  screen wrote files into the project and that a run on uncommitted files is recorded dirty.
+- **The Jobs list and `evh jobs-status` showed a check that flagged something as "failed".** A job that ends with exit 6
+  (arm-smoke, model-onboard, exposure-check: the checks ran and flagged) reads "checked, flagged" in the Workbench, in
+  `evh jobs-status` and in `evh jobs-logs --follow`, from one definition (`state_label` on the job record, which the API
+  carries); its stored state stays `failed` (the `--state` filter), its exit code is shown.
+- **The held-out screen asked for the paired test before the candidate had runs on the side**, and the API refused it
+  (400, "only 0 shared item(s)", a console error). The confirmation now says which of the two has no run there and asks
+  once both have.
+- **A chart wider than a phone looked cut off** at its right edge (it scrolls in its own box, which only an edge shadow
+  said). A line under it says to slide it sideways, shown only while it is wider than the screen.
+- **"Choose the systems" and "Run arms in it" listed the systems of every goal.** A system measured only for another goal
+  is left out; a system never run is offered on every goal.
+- **The data page named `tools/validate_judge_*.py`** as what writes `judge-validation`, a script a `pip install` does not
+  ship; it names the judges' validation as an `evh run`.
 - **`pair-test --round` read the runs the round recorded and the arm's later ones**; it reads only the recorded ones,
   as every other view of a round does.
 - **`make demo` overwrote the committed `smoke_v1` dataset** (it re-created it with `--force`, sweeping the real datasets' row
@@ -1317,6 +1343,35 @@ that can move a result is never a patch release without saying so under **Change
   shows an edge shadow where it scrolls in its own box (the item heat map was read as cut off).
 - **"A judge for this goal" no longer names a tool the install lacks**: it says a validation is an ordinary eval whose
   arms are the judges (`evh run`), named in the scorer's `validation` block, instead of `tools/validate_judge_*.py`.
+- **A judged leaderboard's `runs` says `1/3` for an arm with repeats**, not a bare 1: judging scores the latest run of an
+  arm (its repeats are not averaged), and the column now reads the judged run out of the arm's runs on the dataset. The
+  note under the table says so. (The two judges' columns did fit 100 columns on the newcomer's own project, 6d3f90984's
+  fix; the bare `1` was what it kept reading as wrong.)
+- **`round-open` says what `code` is**: "(code 5be806915132, a hash of the harness code that can change a measurement,
+  not your project's commit)", and tutorial 4 says it where the command is first run.
+- **A dataset's version number is explained where tutorial 4 shows it**: adding items only is `v1.1`, removing or
+  changing any is `v2.0` (RUNBOOK §2, `_dataset_version.py`); `dataset-show` was right, the tutorial showed one case.
+- **`evh chart trend` with one point says why**: how many baseline versions there are and how many closed rounds promoted a
+  run (a round that kept the baseline adds no point).
+- **`dataset-split --test` says its share is approximate** (tutorial 6, RUNBOOK's command table, the command's docstring): each
+  item's hash picks its side on its own, so `--test 0.4` on 20 items can give 10 and 10.
+- **The inspector's `item=ITEM_ID` parameter is in RUNBOOK §14** (it was in tutorial 5 only), and SCENARIO step 15 names it.
+- **`evh env-check` prints the retry count the harness uses**: `EVAL_MAX_RETRIES` showed a default of 3 where the retry
+  core makes 8 attempts. Both read one constant (`_retry.DEFAULT_MAX_RETRIES`, `DEFAULT_RETRY_MAX_DELAY`).
+- **INTEGRATION says what a project adapter's cost is**: the harness never prices a custom adapter's tokens (the price
+  table is applied by the bundled providers and the dry run's estimate), so an adapter that returns tokens and no
+  `cost_usd` records no cost and counts nothing against `EVAL_MAX_COST_USD`. The page said the table applied.
+- **`spent` says "the system's price table" only where the table was applied**: `evh run` and `evh arm-smoke` called a
+  project adapter's own `cost_usd` the price table's whenever the system declared prices (it declares them for the dry
+  run's estimate). The bundled adapter now marks a call it priced from the table (`meta.cost_basis`), and the label
+  follows the mark; any other figure is "the adapter's own figure".
+- **A judged leaderboard keeps every judge's column on a narrow terminal**: below about 70 columns it kept the ranking
+  metric alone and dropped the judges; it now drops cost, speed and tokens first (the judges are the ranking's evidence).
+- **SCENARIO step 9 gives the round-2 prompt's full text**, which asks for plain text (no quotes, no heading or label, no
+  markdown): the replies came back wrapped in quotes or starting with "**Summary:**", which lowers the ROUGE-style score.
+- **`evh dataset-create` without `--source-dir` reads `data/sources/<dataset id>`**, as its `--help`, the API's schema and
+  RUNBOOK §2 say; it read `data/sources` itself and failed "no items matched" for a project that keeps one folder per
+  dataset. A `--manifest` keeps `data/sources` as the base of its `source_path`s.
 
 ## 0.7.2 — 2026-11-04
 

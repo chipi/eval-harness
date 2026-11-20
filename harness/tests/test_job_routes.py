@@ -281,12 +281,12 @@ try:
 
     # ── step 4: datasets ───────────────────────────────────────────────────────────────────────────────────────────
     for n in range(1, 13):
-        _runstore.write_text(proj, f"sources/item_{n}.txt", f"item {n} of the route test\n")
+        _runstore.write_text(proj, f"sources/routes_v1/item_{n}.txt", f"item {n} of the route test\n")
     st, rec, done = post("/datasets/routes_v1", {"description": "made through its route"})
     made = _runstore.read_json(proj, "datasets/routes_v1.json") if done.get("state") == "succeeded" else {}
     check(
-        "create: POST /datasets/{dataset} freezes the items of the project's data/sources (dataset-create): the part is "
-        "the dataset's id, the folder is the project's own (a job names none), the dataset's lock is held",
+        "create: POST /datasets/{dataset} freezes the items of the project's data/sources/<id> (dataset-create): the part is "
+        "the dataset's id, the folder is the dataset's own (a job names none), the dataset's lock is held",
         st == 202
         and rec["operation"] == "dataset-create"
         and rec["inputs"]

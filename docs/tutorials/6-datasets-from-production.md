@@ -102,7 +102,10 @@ data/datasets/tickets_desk_v1_test.json  (1 item(s))
 ```
 
 Each item goes to test when the hash of the seed and its key falls below the share, so it keeps its side in
-every later version. `--key F` keeps every item sharing a field value on one side (one fingerprint, one
+every later version. The share is approximate for that reason: each item's hash picks its side on its own, nothing
+counts them to reach the share, so a small dataset lands away from it (above, 0.34 of 6 items would be 2, and the
+test side got 1; `--test 0.4` on 20 items can give 10 and 10, not 12 and 8). The split is the same each time for a
+seed, and a different `--seed` gives a different one. `--key F` keeps every item sharing a field value on one side (one fingerprint, one
 customer); `--split-by time --key F` makes the newest share test.
 
 `evh validate` checks the capture too (V17): every record against the hash it was captured with.

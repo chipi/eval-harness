@@ -468,6 +468,8 @@ main .chart.evidence svg[role="img"] text { font-size: 12.5px; }
 .chart.evidence svg .t-ink { fill: var(--ink); paint-order: stroke; stroke: var(--surface); stroke-width: 3px; stroke-linejoin: round; }
 .chart.evidence svg .t-muted { fill: var(--muted); }
 .chart.evidence figcaption { margin-top: 6px; font-size: 13px; color: var(--ink-2); }
+.chart.evidence .scroll-hint { margin: 2px 0 6px; }
+.chart.evidence .scroll-hint[hidden] { display: none; }
 .chart-box details.table { margin: 4px 0 0; font-size: 13px; }
 .chart-box details.table summary { cursor: pointer; color: var(--ink-2); }
 

@@ -820,6 +820,17 @@ def _judge_agreement(scorer: str) -> dict:
 
 
 # ── over time ────────────────────────────────────────────────────────────────
+def few_points_note(points: int, versions: int, promoted: int, closed: int) -> str:
+    """Why a trend has fewer than two points: only a baseline version and a closed round that promoted a run make one,
+    so a round that kept the baseline adds none. "" when there are two or more."""
+    if points >= 2:
+        return ""
+    return (
+        f" Only {points} point: {versions} baseline version{'' if versions == 1 else 's'}, and {promoted} of {closed} "
+        f"closed round{'' if closed == 1 else 's'} promoted a run (a round that kept the baseline adds no point)."
+    )
+
+
 def trend(goal: str | None = None, model: str | None = None, dataset: str | None = None) -> dict:
     """A goal's baseline across its versions and the promoted run of each closed round; or a code record's
     faithfulness per deployed period."""
@@ -926,6 +937,7 @@ def trend(goal: str | None = None, model: str | None = None, dataset: str | None
             if rescored
             else ""
         )
+        + few_points_note(sum(len(v) for v in series.values()), versions, len(closed), len(all_closed))
     )
     svg = cc.lines(
         series,

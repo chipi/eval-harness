@@ -664,6 +664,14 @@ try:
         "harness:" in doc3 and "code_sha256:" in doc3 and "On harness " in r.stdout,
         out(r) + doc3,
     )
+    flat_open = " ".join(r.stdout.split())
+    check(
+        "round-open says what `code` is: a hash of the harness code, not the project's commit",
+        "(code " in flat_open
+        and "a hash of the harness code that can change a measurement" in flat_open
+        and "not your project's commit" in flat_open,
+        flat_open[-500:],
+    )
     # lead1 is measured again below as a repeat set beside its plain run, on purpose: refused unless the project allows
     # the pair, as the fleet's own projects do (`duplicate_ok`).
     allow([["tickets_v1", "tickets_lead1_v1"]])

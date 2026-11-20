@@ -84,9 +84,13 @@ Everything else in `meta` (a parser's `predicted`, `ranking`, `gates`, ...) stay
 **Where a cost came from.** A `Result`'s `cost_usd` is the provider's bill when `meta["usage"]["cost"]` carries one.
 An adapter that measures the cost itself (a gateway key's spend before and after the call, say) puts the figure in
 `cost_usd` and names its source in `meta["cost_source"]` (`"gateway"`, for instance): `evh run` and `evh arm-smoke`
-then say "the adapter's own figure, cost_source gateway", whatever prices the system declares. With neither, a cost is
-the system's price table (`usd_per_mtok_in` / `_out` times the tokens) when the system declares both prices, and the
-adapter's own figure when it does not.
+then say "the adapter's own figure, cost_source gateway", whatever prices the system declares. With neither, the run
+records what your `cost_usd` is: the harness never prices a custom adapter's tokens. The price table
+(`usd_per_mtok_in` / `_out` times the tokens) is applied by the bundled providers (`openai`, `anthropic`, `litellm`,
+`openrouter`), when the response carries no bill, and by the dry run's estimate. An adapter that returns tokens and no
+`cost_usd` records no cost (unknown, not zero), and `EVAL_MAX_COST_USD` counts nothing for it: the cap is enforced from
+the `cost_usd` each call reports ([RUNBOOK §4](RUNBOOK.md#4-point-the-harness-at-your-system), "What a command may
+spend"). Return the cost yourself, from your own client's bill or from the prices you hold.
 
 ### If your system is not a function call
 

@@ -43,6 +43,7 @@
             "flag",
             "environment",
             "terminal",
+            "api",
             "migration"
           ]
         }

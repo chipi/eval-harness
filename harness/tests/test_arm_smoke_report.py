@@ -47,6 +47,8 @@ def call_system(text, params):
         meta["usage"] = {"cost": 0.002}
     if params.get("source"):
         meta["cost_source"] = params["source"]
+    if params.get("table"):
+        meta["cost_basis"] = "price table"  # what the bundled providers write when they priced the call
     return SimpleNamespace(output="A" * 350 + "END", tokens_in=10, tokens_out=5, cost_usd=0.002,
                            latency_ms=None, extra={}, meta=meta)
 
@@ -96,7 +98,7 @@ try:
     r = evh(
         "arm-smoke",
         "--system",
-        system("priced", record="mrec", sleep=0.2, usd_per_mtok_in=0.5, usd_per_mtok_out=1.5),
+        system("priced", record="mrec", sleep=0.2, table=True, usd_per_mtok_in=0.5, usd_per_mtok_out=1.5),
         "--dataset",
         "tickets_v1",
         "--no-record",
@@ -197,14 +199,43 @@ try:
     r = evh(
         "run",
         "--system",
-        system("run_priced", sleep=0.0, usd_per_mtok_in=0.5, usd_per_mtok_out=1.5),
+        system("run_priced", sleep=0.0, table=True, usd_per_mtok_in=0.5, usd_per_mtok_out=1.5),
         "--dataset",
         "tickets_v1",
     )
     check(
-        "run: 'spent' says the system's price table when no bill came and the system declares prices",
+        "run: 'spent' says the system's price table when the calls were priced by it (the bundled providers' mark)",
         re.search(r"spent \$0\.012000 \(the system's price table", r.stdout) is not None,
         r.stdout[-500:],
+    )
+    # The adapter's own cost_usd on a system that declares prices (for the dry run) was called the price table's: the
+    # table was never applied to it.
+    r = evh(
+        "run",
+        "--system",
+        system("run_own_priced", sleep=0.0, usd_per_mtok_in=0.5, usd_per_mtok_out=1.5),
+        "--dataset",
+        "tickets_v1",
+    )
+    check(
+        "run: 'spent' says the adapter's own figure when the system declares prices but the table was not applied",
+        "spent $0.012000 (the adapter's own figure, the provider sent no bill)" in r.stdout
+        and "the system's price table" not in r.stdout,
+        r.stdout[-500:],
+    )
+    r = evh(
+        "arm-smoke",
+        "--system",
+        system("smoke_own_priced", sleep=0.0, usd_per_mtok_in=0.5, usd_per_mtok_out=1.5),
+        "--dataset",
+        "tickets_v1",
+        "--no-record",
+    )
+    check(
+        "arm-smoke: the adapter's own figure, not the price table, when the table was not applied",
+        "(the adapter's own figure, the provider sent no bill)" in r.stdout
+        and "the system's price table" not in r.stdout,
+        r.stdout[-900:],
     )
     # G1 (fleet, 2026-11-18): a system with no prices whose adapter reports its own cost was labelled the
     # price table's
@@ -285,6 +316,14 @@ try:
         "dry run: the system's prompt (plus the blank line after it) is counted in the input tokens, per item",
         abs((d1["input_tokens_per_pass"] - d0["input_tokens_per_pass"]) - 6 * 400 / 4) < 1e-9,
         (d0["input_tokens_per_pass"], d1["input_tokens_per_pass"]),
+    )
+    check(
+        "dry run: a system that names no model record is told its smoke is not kept there (a smoke is kept on a model's "
+        "deployment), not to run one 'first' (scenario 080b F1)",
+        "names no model record" in r0.stdout
+        and "not kept" in r0.stdout
+        and "no arm-smoke of it is recorded" not in r0.stdout,
+        r0.stdout[-700:],
     )
     check(
         "dry run: the line says what it counts",

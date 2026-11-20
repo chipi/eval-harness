@@ -34,6 +34,9 @@ import time
 from collections.abc import Iterable, Sequence
 from typing import Any, Callable
 
+DEFAULT_MAX_RETRIES = 8  # attempts when EVAL_MAX_RETRIES is unset (env-check prints this one)
+DEFAULT_RETRY_MAX_DELAY = 60  # seconds, when EVAL_RETRY_MAX_DELAY is unset
+
 #: Substrings that mark a failure as worth retrying. Matched case-insensitively against
 #: "TypeName: message", because provider SDKs disagree about everything else: some raise
 #: typed errors, some raise a generic one with the status in the text, some wrap a third
@@ -118,8 +121,12 @@ def call_with_retries(
     `sleep` is injectable so the behaviour can be tested without actually waiting — a
     retry policy whose tests are slow is a retry policy nobody tests.
     """
-    tries = max(1, attempts if attempts is not None else _env_int("EVAL_MAX_RETRIES", 8))
-    cap = max_delay if max_delay is not None else float(_env_int("EVAL_RETRY_MAX_DELAY", 60))
+    tries = max(1, attempts if attempts is not None else _env_int("EVAL_MAX_RETRIES", DEFAULT_MAX_RETRIES))
+    cap = (
+        max_delay
+        if max_delay is not None
+        else float(_env_int("EVAL_RETRY_MAX_DELAY", DEFAULT_RETRY_MAX_DELAY))
+    )
     last: BaseException | None = None
     for attempt in range(1, tries + 1):
         try:

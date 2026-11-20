@@ -232,7 +232,7 @@ After saving, the goal's page is the hub of the journey: where it stands, and th
 - Models come from the project's records with their state (`GET /models`, ADR-0021): **vetted** (every deployment's
   onboarding passed and a system on it passed its smoke), **onboarded** (onboarding passed, no system smoked yet),
   **check** (a probe flagged something to read), **none** (never probed). Vetted is computed, never approved by hand. A model
-  that is not there is brought in (W5); the screen offers only models that have somewhere to run, each with its rank on this goal.
+  that is not there is brought in (W5); the screen offers only models that have somewhere to run, each with its rank on this goal. The systems listed are this goal's: one measured only for another goal (its arms' goal) is not listed, one never run is.
 - What is compared is a **system**: a deployment, a prompt version and settings, with no dataset (RFC-032). Making one
   here is `system-new`; a system placed in a round is an arm (step 5). One prompt and one set of settings for every
   system, so a difference in the scores is the model's. The goal's prompt is one name, `<goal>/prompt`, kept as
@@ -304,11 +304,16 @@ decision kept with its reason. This is where people spend most of their time (W1
 - **The baseline** on the round's dataset: its versions with the run, who promoted each and why, the current one marked;
   an earlier version has a reason box and **Roll back** (`baseline-rollback`, a new version with its own evidence).
 - **Run arms in it:** the systems that are not in the round and not yet measured on its dataset (a second measurement
-  of a measured system is refused by `evh run`); ticked, with a cap, **See the cost first** is the dry run of the sweep
+  of a measured system is refused by `evh run`), leaving out a system measured only for another goal (its arms' goal;
+  a system never run is offered on every goal); ticked, with a cap, **See the cost first** is the dry run of the sweep
   (`POST /estimate`) and **Run them** is one `sweep` job for the round's arms under that cap, with its progress. A
   system already measured is carried in, never run again. An arm never smoked has no measured cost to cap from: the dry run
   says so ("no arm-smoke of it is recorded"), and the screen links **Choose the systems**, where **Check it on three
-  items** (`arm-smoke`, with its command printed) runs the smoke.
+  items** (`arm-smoke`, with its command printed) runs the smoke. A smoke is kept on a model's deployment (RFC-032), so a
+  system that names no model record never has one recorded: the dry run and the screen say that ("names no model record,
+  so an arm-smoke of it is not kept") and point at the check's own "all N items ≈" line to set the cap from, and the check
+  says "not kept" under its result. A note under the cap says the screen wrote files into the project and to commit them
+  before a paid run (a run on uncommitted files is recorded dirty).
 - **Close the round:** the conclusion, and a checkbox to promote the leader's run to the goal's baseline with the conclusion
   as its reason; the browser asks to confirm. This checkbox is the only way to make a baseline on this screen. A conclusion
   shorter than three words is refused by `round-close`, a reason by `round-retire`.
@@ -359,7 +364,10 @@ decision kept with its reason. This is where people spend most of their time (W1
   the page closes; it can be stopped (`jobs-stop`), and a run resumed (`jobs-resume`) with what the stopped job left
   of its cap; one that spent it all is not resumed. A job that spends carries its cap (`jobs-start --max-cost-usd`); one that
   waits for what another holds is "queued", naming it; one whose supervisor stopped is "running (unsupervised)" while
-  its process lives, "lost" after (RFC-026).
+  its process lives, "lost" after (RFC-026). A job that ends with exit 6 (its checks ran and flagged something: `arm-smoke`,
+  `model-onboard`, `exposure-check`) is listed "checked, flagged", not "failed", here and in `evh jobs-status` / `jobs-logs --follow`; the
+  label is the job record's `state_label` (`_jobs.state_label`, one definition), the stored `state` stays `failed` (it is what
+  `--state` filters on), and its exit code is on its page.
 - A job is an operation run detached (RFC-032): its record is `{id, operation, inputs, by, locks, env, run_id, state,
   progress, spent_usd, result}`. It holds no command line: the page builds the command it shows from the operation and
   its inputs. Progress (`done` of `total`) is reported by `run`, `sweep`, `rescore` and `judge-score`; the others show
@@ -531,12 +539,12 @@ decision kept with its reason. This is where people spend most of their time (W1
 
 - A goal's day-to-day screen (RFC-029, RFC-031): a test set is a goal dataset with `role: test` or a sealed side of a split, as `evh looks` and the
   studies read it, and both are listed, each with its seal state: for a sealed side the seal and what its counts may show; for one that is
-  not sealed "not sealed: role test", its looks so far and the next one's level, and **Seal it** (the split again by its recorded rule, the same
+  not sealed "not sealed: role test" (it has no exposure register, which only a sealed side has: the screen does not ask for one), its looks so far and the next one's level, and **Seal it** (the split again by its recorded rule, the same
   items, with `--seal`, its command printed; a side no split made has no rule to seal by, and says so); who has read it (each read by whom and
   what, a read recorded by hand with who read it, and the leak check's finds, which can be recorded as reads); counts per day by the fields fixed
   at the seal, for safety only, never to judge an effect, with a field allowed by a decision with a reason (`dataset-seal-counts`); opening it for one
   candidate (`dataset-unseal`: its hypothesis committed first, one look, each later look tested at a stricter level); both arms run on it; and
-  the confirmation, the read items left out and the full number beside it, marked.
+  the confirmation, the read items left out and the full number beside it, marked; until both arms have runs on the side it says which has none and asks for no paired test (`pair-test` refuses "only 0 shared items").
 - **Hold some items out** (**Hold another dataset out** once one is) is a form on the same screen: a dataset, by time (the time field and a boundary) or by hash (the test share),
   and the fields its counts may show, with a box, ticked, to seal the test side. A split makes `<id>_validation` and `<id>_test`, and both sides join the goal
   (validation to tune on, test to decide on). Each side
@@ -676,7 +684,9 @@ and `evh` give the same numbers.
 - **Kinds.** A read answers at once; an edit or a quick decision answers with what was saved; work is a job (its
   estimate first where it spends, its cap, then its progress).
 - **Phones.** Every screen is checked at 390 px: tables of four columns or more become cards; the two- and
-  three-column tables, the forms and the jobs list are checked there too.
+  three-column tables, the forms and the jobs list are checked there too. A chart is at least 520 px wide and scrolls in its
+  own box (RFC-034); while it is wider than the screen a line under it says "Wider than the screen: slide the chart
+  sideways to read the rest", and it is gone where the chart fits.
 - **Behind a proxy** the Workbench and `/api/v1` answer 404.
 - **Unsent changes.** What a person enters is sent only by the screen's own action (Save, Make, Run, Submit); until then the screen holds it
   and says so. One rule, built once, for every screen: a form is an element marked `data-form`, its button `data-send`, its mark

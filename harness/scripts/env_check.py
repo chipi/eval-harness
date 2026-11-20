@@ -19,7 +19,7 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 import argparse
 import os
 
-from evaluation_harness import _providers, _store
+from evaluation_harness import _providers, _retry, _store
 from evaluation_harness._common import (
     DOTENV_LOADED,
     DOTENV_SET,
@@ -158,8 +158,10 @@ def main() -> int:
             else "NONE — a sweep can bill without limit"
         )
     )
-    print(f"  EVAL_MAX_RETRIES       {env_int('EVAL_MAX_RETRIES', 3)}")
-    print(f"  EVAL_RETRY_MAX_DELAY   {env_int('EVAL_RETRY_MAX_DELAY', 60)}s — backoff cap")
+    print(f"  EVAL_MAX_RETRIES       {env_int('EVAL_MAX_RETRIES', _retry.DEFAULT_MAX_RETRIES)}")
+    print(
+        f"  EVAL_RETRY_MAX_DELAY   {env_int('EVAL_RETRY_MAX_DELAY', _retry.DEFAULT_RETRY_MAX_DELAY)}s — backoff cap"
+    )
     # EVAL_CONCURRENCY was reported here and read by NOTHING: a knob that printed a value
     # and changed no behaviour. The sweep is sequential. This project has already lost two
     # arms to the same shape — EVAL_MAX_RETRIES was documented and honoured only by the

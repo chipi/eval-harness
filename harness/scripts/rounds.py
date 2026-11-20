@@ -153,7 +153,8 @@ def open_body(**inputs: Any) -> int:
     print(
         f"  On harness {h['version']}"
         + (f" at {h['commit']}" if h.get("commit") and not h.get("installed") else "")
-        + f" (code {str(h['code_sha256'])[:12]}): a run of the round on other harness code is named in evh round-evidence."
+        + f" (code {str(h['code_sha256'])[:12]}, a hash of the harness code that can change a measurement, not your"
+        " project's commit): a run of the round on other harness code is named in evh round-evidence."
     )
     if carried:
         print(

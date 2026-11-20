@@ -44,7 +44,7 @@ WRITERS: dict[str, tuple[str, str]] = {
     "judge-summaries": ("judge summaries", "evh judge-score"),
     "judge-validation": (
         "judge validations",
-        "the judge-validation tools (harness/tools/validate_judge_*.py)",
+        "a validation of the judges: evh run of each judge against the people's labels (the news-summary judge's own scripts stay in the harness repository)",
     ),
     "captures": ("captures", "evh capture"),
     "profiles": ("dataset profiles", "evh dataset-profile"),

@@ -13,7 +13,7 @@
     "call": {"type": "object", "description": "The run settings (generation_config, generation_requested, encoder_window) that every row of every score of the run holds with one value, kept once here and not in the rows (RFC-033). A row that holds a setting with another value keeps it."},
     "machine": {"type": "string", "description": "The operating system a pass ran on, from its fingerprint's runner (named by a re-timing's label)."},
     "of": {"type": "string", "description": "The run a repeat, pair or retime is of, when exactly one other run of the system on the dataset exists."},
-    "actor": {"type": "object", "description": "Who acted (RFC-027): a person, or an agent and the person it acted for. A recorded claim, not an identity.", "required": ["type", "name"], "additionalProperties": false, "properties": {"type": {"enum": ["person", "agent", "unknown"]}, "name": {"type": "string"}, "for": {"type": "string", "description": "the person an agent acted for"}, "from": {"enum": ["flag", "environment", "terminal", "migration"]}}},
+    "actor": {"type": "object", "description": "Who acted (RFC-027): a person, or an agent and the person it acted for. A recorded claim, not an identity.", "required": ["type", "name"], "additionalProperties": false, "properties": {"type": {"enum": ["person", "agent", "unknown"]}, "name": {"type": "string"}, "for": {"type": "string", "description": "the person an agent acted for"}, "from": {"enum": ["flag", "environment", "terminal", "api", "migration"]}}},
     "dataset_id": {"type": "string"},
     "system_id": {"type": "string"},
     "created_at": {"type": "string", "description": "When this record's scores were computed: the measurement, or for a derived run the derivation."},

@@ -37,6 +37,11 @@ data/rounds/tickets_summary/r1.yaml: round r1 of tickets_summary, open
 The three arms are carried in as they are: they do not run again. Only a system that is new to the
 round runs in it, naming it with `--round` (step 4).
 
+`round-open` also prints "On harness 0.8.0 (code 3076a3525f0e, …)": the harness version the round opened on and
+the first 12 characters of a hash of the harness code that can change a measurement. It is not your project's
+commit; it changes only when that code does. `evh round-evidence` names any run of the round made on other harness
+code ([RUNBOOK §13](../../harness/docs/RUNBOOK.md#13-rounds-of-an-eval-optional)).
+
 A round belongs to a goal and one dataset, and is a file beside the goal,
 `data/rounds/<goal>/<round>.yaml`. The commands are its only writers.
 
@@ -252,6 +257,11 @@ tickets_v2  v1.1  7 items  (data/datasets/tickets_v2.json)
   derived from tickets_v1: 1 added, 0 removed, 0 changed
   0 arm(s) from 0 system(s) (a system rescored against silver or by a judge is an arm of its own)
 ```
+
+The version number is computed from what changed, not from the id: a version that only adds items is its parent's
+MAJOR with MINOR + 1 (`v1.0` to `v1.1`, as here); one that removes or changes any item is the next MAJOR (`v1.0` to
+`v2.0`). Had `tickets_v2` also dropped a ticket, `evh dataset-show` would print `v2.0`
+([RUNBOOK §2](../../harness/docs/RUNBOOK.md#2-freeze-a-selection): "The version number").
 
 Nothing measured on `tickets_v1` moves: its runs, references and baseline stay its own. An arm
 measured on `tickets_v2` is a run with `--dataset tickets_v2` (the same systems), and needs a reference for

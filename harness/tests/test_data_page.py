@@ -511,4 +511,12 @@ if __name__ == "__main__":
     for store in ("files", "sqlite"):
         run_case(store)
     public_case()
+    from evaluation_harness import _data_page
+
+    check(
+        "no data folder is said to be written by a script a `pip install` does not ship (tools/ stays in the repository), "
+        "scenario 080b N13",
+        not [k for k, (_name, writer) in _data_page.WRITERS.items() if "tools/" in writer],
+        {k: w for k, (_n, w) in _data_page.WRITERS.items() if "tools/" in w},
+    )
     sys.exit(summary())

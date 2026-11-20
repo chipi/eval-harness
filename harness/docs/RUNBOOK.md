@@ -47,7 +47,7 @@ What [Getting started](../../docs/GUIDE.md) walks: a dataset, its reference, run
 | the card; as Croissant 1.1 | `evh dataset-card …` · `… --format croissant --creator … > card.json` (it prints; redirect it) |
 | a new version | `evh dataset-create --dataset-id …_v2 --source-dir … --from …_v1` |
 | fields on an existing dataset | `evh dataset-create --dataset-id … --update-fields --fieldset … --fields …` |
-| validation and test | `evh dataset-split … --test 0.3 --seed 7 [--key F]` · the split rule is `--split-by hash\|time` (hash is the default, and the seed applies to hash) |
+| validation and test | `evh dataset-split … --test 0.3 --seed 7 [--key F]` · the split rule is `--split-by hash\|time` (hash is the default, and the seed applies to hash; the hash split's share is approximate, each item picking its side on its own: `--test 0.4` on 20 items can give 10 and 10) |
 | a sealed held-out side | `evh dataset-split … --split-by time --key F --at T --seal [--count-by F,…]` · Each side gets the parent's references on its own items, promoted from the same label set at the same tier, recorded with who split it; an existing reference is kept; the sealed test side gets none and the command to run after unsealing is printed. A parent with references needs `--by` or `EVH_ACTOR` (bad-argument otherwise). `evh dataset-unseal …_test --system S --reason "…"` |
 | who read a held-out item; counts only | `evh exposure-add --dataset-id …_test --item ID --what "…"` · `evh exposure` · `evh exposure-check --dataset-id …_test` · `evh sealed-counts …_test` · `evh dataset-seal-counts --dataset-id …_test --add F --reason "…"` |
 | pick for the next version | `evh pick --dataset-id … --item … --for V` · `evh picks [--for V]` |
@@ -811,7 +811,8 @@ call per item (or the adapter's declared `CALLS_PER_ITEM`), each the prompt in a
 **not** an upper bound, because an adapter that makes several calls per item, or a conversation that grows
 (each probe turn re-sends it), costs more. Beside it, `MEASURED` shows what the last `evh arm-smoke` of this
 system recorded in its model record (the cost per item, projected over the items and repeats, and when it was
-measured); with none it says so and names the command. Set `EVAL_MAX_COST_USD` from `MEASURED`, not from the
+measured); with none it says so and names the command (a system that names no model record has nowhere to keep a smoke: it
+says so, and the cap comes from the smoke's own `full run:` line). Set `EVAL_MAX_COST_USD` from `MEASURED`, not from the
 estimate. While a run goes it prints one line per finished item,
 `[3/65] <item_id> <ok | error | empty | resumed | the primary metric's value> 4.2s`, with the running cost
 once there is one, flushed as it is written even when stdout is a log file or a pipe (a detached job is watched
@@ -1474,6 +1475,12 @@ page shows what is inside it once `evh dataset-profile` has written its profile 
 dataset is materialized: the items' lengths, the gold's labels or shape, and each item's link to
 its source when one is recorded; commit `data/profiles/` and a catalog built anywhere shows it.
 
+**The inspector's page is addressed by its URL**, and each query parameter is the flag of `evh comparison-show` of the
+same name: `runs=A,B`, `baseline=`, `metric=`, `where=FIELD:VALUE`, and `item=ITEM_ID` for one item, the item beside
+the reference and each arm's output (`evh comparison-item --runs … --item ID`, the same view in the terminal). Open
+an item by clicking its row, or by adding `&item=ITEM_ID` to a comparison's address (a link, a script); the full list is in
+[tutorial 5](../../docs/tutorials/5-catalog-and-inspector.md).
+
 **For an agent with a shell**, every command the API serves takes `--json` (RFC-026): one object, `{"command", "version", "result": {...}}`. Most reads return the operation's own structured result (`result.datasets` for `dataset-list`, `result.runs` and `result.count` for `runs-list`, `result.arms`, `result.baseline`, `result.rows`, `result.conditions` and `result.notes` for `comparison-show`, and so on). Only `leaderboard`, `validate`, `cost-report`, `rank-stability`, `pair-test`, `family-test`, `sheet-show`, `comparison-item` and `run-compare` answer
 `{"command", "version", "result": {"blocks": [...], "values": {...}}}`: `blocks` is what the
 command prints (each table with `columns` and `rows`, raw numbers as NaN=null), and `values` its key results by name.
@@ -1975,7 +1982,7 @@ evh model-list                                       # what is onboarded, vetted
    per item reports them as `meta["calls"]` (the triage example does). It prints each reply (its first 300
    characters; `--replies` for all), so you read what the model wrote, and what the smoke spent, saying whether
    that is the provider's bill or the system's price table; `--json` gives the same as values. SMOKE CHECK
-   lists what to revisit.
+   lists what to revisit. SMOKE PASS exits 0 and SMOKE CHECK exits 6 ([Exit codes](#exit-codes)).
 3. **Choose the settings on purpose.**
    - *Reasoning*: off (`reasoning_effort: none`) unless the task needs it; some models only offer low,
      medium or high. Left to the default, one model reasons at length and the next not at all, and a
@@ -2111,7 +2118,7 @@ notebook) reads no `.env`, and the project's paths are resolved on first use, so
 | (see env-check) | `evh env-check` says where each set variable came from ((.env), (shell), (shell, over .env)) |
 | `EVAL_GOALS_DIR` | read goals here instead of `<data>/goals`, relative to the project (for goals kept outside the data root) |
 | `EVAL_MAX_COST_USD` | the most one command spends, every pass of `--repeat` together; the run stops, keeps its results, resumes; 0 runs only a system known to be free (provider echo, a recorded arm, or both prices declared 0) |
-| `EVAL_MAX_RETRIES`, `EVAL_RETRY_MAX_DELAY` | retries around every provider call |
+| `EVAL_MAX_RETRIES`, `EVAL_RETRY_MAX_DELAY` | retries around every provider call: 8 attempts, a 60 s backoff cap by default (`evh env-check` prints the values in force) |
 | `EVAL_BUILD_REF` | the identity of the system under test (default: the git SHA) |
 | `EVAL_HOST_LABEL` | a name for this machine, the runner (fingerprint v5's `runner.label`, outside its hash): latency of a model run in process, and the network part of a remote one, is comparable across runs only from the same runner |
 | `EVAL_FINGERPRINT_WEIGHTS` | `1`: read only by the examples' shared code (examples/_shared/hf_identity.py), not by the package — hash a local model's weight files into the fingerprint |

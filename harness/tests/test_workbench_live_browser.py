@@ -168,8 +168,21 @@ try:
         ("goal-new", "rail_b", "--set", "title=Rail with a dataset", "--set", "statement=s.", "--set", "decision=d.",
          "--set", "success_criteria.primary.measure=overlap_f1", "--set", "success_criteria.primary.direction=higher",
          "--set", "datasets.0.dataset_id=rv1", "--set", "datasets.0.role=validation"),
+        # a system filed for another goal: measured only on that goal's dataset (scenario 080b N12)
+        ("dataset-create", "--dataset-id", "ev1", "--source-dir", "tickets"),
+        ("dataset-materialize", "--dataset-id", "ev1"),
+        ("label-import", "--sheet", str(KIT / "gold"), "--dataset-id", "ev1", "--set", "g", "--by", "t"),
+        ("reference-promote", "--dataset-id", "ev1", "--labels", "g", "--tier", "gold", "--reason", "the kit's summaries, for the test", "--by", "t"),
+        ("goal-new", "other_goal", "--set", "title=Another goal", "--set", "statement=s.", "--set", "decision=d.",
+         "--set", "success_criteria.primary.measure=overlap_f1", "--set", "success_criteria.primary.direction=higher",
+         "--set", "datasets.0.dataset_id=ev1", "--set", "datasets.0.role=validation"),
+        ("run", "--system", "elsewhere_v1", "--dataset", "ev1", "--goal", "other_goal"),
         ("catalog",),
     ):  # fmt: skip
+        if "elsewhere_v1" in step and step[0] == "run":
+            (proj / "data" / "systems" / "elsewhere_v1.yaml").write_text(
+                "system_id: elsewhere_v1\nparams:\n  provider: echo\n  sentences: 1\n"
+            )
         r = r if r.returncode else evh(*step)
     check(
         "setup: a goal, its dataset, reference and run, and the catalog",
@@ -614,6 +627,33 @@ try:
                     [x[:50] for x in SENT[:3]],
                 ),
             )
+            check(
+                "Choose the systems lists this goal's systems and the ones never run, not a system filed only for another "
+                "goal (scenario 080b N12)",
+                page.locator("[data-smoke='one_v1']").count() == 1
+                and page.locator("[data-smoke='elsewhere_v1']").count() == 0,
+                [x.get_attribute("data-smoke") for x in page.locator("[data-smoke]").all()],
+            )
+            smoke_jobs = [
+                json.loads((d / "state.json").read_text())
+                for d in sorted((proj / ".build" / "jobs").iterdir())
+                if (d / "job.json").is_file()
+                and json.loads((d / "job.json").read_text()).get("operation") == "arm-smoke"
+            ]
+            page.goto(f"http://127.0.0.1:{port}/workbench/#jobs")
+            page.wait_for_selector("table tbody tr", timeout=20000)
+            smoke_row = page.locator("table tbody tr:has-text('arm-smoke')").first.inner_text()
+            check(
+                "a check whose probes flagged something (arm-smoke, exit 6) is listed as checked and flagged, not as failed: "
+                "its flags are notes (scenario 080b N10)",
+                bool(smoke_jobs)
+                and smoke_jobs[-1].get("exit") == 6
+                and "flagged" in smoke_row
+                and "failed" not in smoke_row,
+                (smoke_jobs[-1:], smoke_row),
+            )
+            page.goto(f"http://127.0.0.1:{port}/workbench/#systems/tickets_summary")
+            page.wait_for_selector("[data-clone='fake-1b_here']", timeout=20000)
             page.click("[data-clone='fake-1b_here']")
             page.fill("#cl-id-fake-1b_here", "fake-1b_here_t05")
             page.select_option("#cl-what-fake-1b_here", "temperature")
@@ -689,12 +729,25 @@ try:
                 and not list((proj / "data" / "runs").glob("fake-1b_here_*")),
                 page.locator("#rn-out").inner_text()[:300],
             )
+            run_part = page.locator("section.part:has(h2:has-text('Run arms in it'))").inner_text()
+            check(
+                "Run arms in it says to commit what the Workbench wrote before a paid run, and why (a dirty run), as the "
+                "command line's reference-promote does (scenario 080b N9)",
+                "Commit" in run_part and "dirty" in run_part,
+                run_part[-400:],
+            )
             (proj / "data" / "systems" / "nosmoke_v1.yaml").write_text(
                 "system_id: nosmoke_v1\nparams:\n  provider: openai\n  model: fake:1b\n  max_tokens: 20\n"
                 f"  base_url: http://127.0.0.1:{fake.server_port}/v1\n"
             )
             page.reload()
             page.wait_for_selector("[data-run='nosmoke_v1']", timeout=20000)
+            check(
+                "Run arms in it offers a system never run, not one filed only for another goal (scenario 080b N12)",
+                page.locator("[data-run='nosmoke_v1']").count() == 1
+                and page.locator("[data-run='elsewhere_v1']").count() == 0,
+                [x.get_attribute("data-run") for x in page.locator("[data-run]").all()],
+            )
             page.uncheck("[data-run='fake-1b_here']")
             page.check("[data-run='nosmoke_v1']")
             page.click("#rn-est")
@@ -704,6 +757,9 @@ try:
                 "See the cost first, for an arm never smoked: the dry run says no arm-smoke is recorded, and the screen "
                 'links the Workbench\'s own smoke (Choose the systems, "Check it on three items") right there',
                 "arm-smoke" in smoke_text
+                and "names no model record" in smoke_text
+                and "not kept" in smoke_text
+                and "check it on three items first" not in smoke_text
                 and page.locator("#rn-out a[href='#systems/tickets_summary']").count() == 1,
                 (smoke_text[-500:], page.locator("#rn-out a").count()),
             )
@@ -795,7 +851,27 @@ try:
                 not uncued,
                 uncued,
             )
+            page.wait_for_timeout(300)
+            unsaid = page.evaluate(
+                "() => [...document.querySelectorAll('.chart.evidence .scroll-x')]"
+                ".filter((b) => b.scrollWidth > b.clientWidth + 1 && !(b.nextElementSibling && b.nextElementSibling.matches('.scroll-hint')))"
+                ".map((b) => b.closest('[data-chart]')?.dataset.chart)"
+            )
+            check(
+                'at a phone\'s width a chart wider than the screen says so in words ("slide it sideways"), not only by an '
+                "edge shadow: a cut right edge is not read as a bug (scenario 080b N11)",
+                not unsaid and page.locator(".chart.evidence .scroll-hint").count() >= 1,
+                (unsaid, page.locator(".chart.evidence .scroll-hint").count()),
+            )
             page.set_viewport_size({"width": 1280, "height": 900})
+            page.wait_for_timeout(300)
+            check(
+                "at a desktop's width the hint is gone: no chart is wider than its box",
+                page.evaluate(
+                    "() => [...document.querySelectorAll('.chart.evidence .scroll-hint')].every((h) => h.hidden || getComputedStyle(h).display === 'none')"
+                ),
+                page.locator(".chart.evidence .scroll-hint").count(),
+            )
             page.goto(f"http://127.0.0.1:{port}/workbench/#systems/tickets_summary")
             page.wait_for_selector("#sn-model", timeout=20000)
             offered = page.locator("#sn-model option[value='fake-1b']").inner_text()

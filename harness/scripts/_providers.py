@@ -281,6 +281,16 @@ def reasoning_tokens(usage: Any) -> int | None:
     return None
 
 
+#: What the bundled adapter writes in a result's meta when a call's cost is the system's price table (`_cost` below),
+#: so `evh run` and `evh arm-smoke` call a spend the table's only where it was applied.
+PRICE_TABLE_META = {"cost_basis": "price table"}
+
+
+def priced_by_table(meta: Any) -> bool:
+    """Whether a result's meta says its cost came from the system's price table."""
+    return isinstance(meta, dict) and meta.get("cost_basis") == PRICE_TABLE_META["cost_basis"]
+
+
 def _cost(params: dict[str, Any], usage: Any, tin: int | None, tout: int | None) -> tuple[float | None, bool]:
     bill = billed(usage)
     return (bill, True) if bill is not None else (price(params, tin, tout), False)

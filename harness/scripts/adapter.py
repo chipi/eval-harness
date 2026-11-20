@@ -207,6 +207,7 @@ def _hosted(text: str, params: dict[str, Any]) -> Result:
         meta={
             **({"finish_reason": c.finish_reason} if c.finish_reason else {}),
             **({"usage": {"cost": c.cost_usd}} if c.billed else {}),
+            **(_providers.PRICE_TABLE_META if c.cost_usd is not None and not c.billed else {}),
             **({"response_model": c.response_model} if c.response_model else {}),
             **({"provider": c.upstream_provider} if c.upstream_provider else {}),
         },

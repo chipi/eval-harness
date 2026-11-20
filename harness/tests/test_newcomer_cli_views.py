@@ -166,6 +166,13 @@ try:
         and "judge_qwen_s_unvalidated" not in table.split("Not shown")[-1],
         table[:900],
     )
+    narrow = evh(syn, "leaderboard", "dsj", "--sort", "judge_score_unvalidated", COLUMNS="60")
+    ntable = narrow.stdout.split("IS THE ORDERING")[0].split("Not shown")[0]
+    check(
+        "leaderboard: both judges' columns stay on a narrow terminal, whatever the cost and speed columns do",
+        all(f"judge_{j}" in ntable for j in ("gemma_l", "qwen_s", "score")),
+        ntable[:700],
+    )
     from evaluation_harness import leaderboard as _lb
 
     note = " ".join((_lb.runs_note(["judged/j1", "judged/j1"]) or "").split())
@@ -173,6 +180,11 @@ try:
         "leaderboard: a judged table says its `runs` is the latest run of an arm (judging does not average repeats)",
         "latest run" in note and "repeats" in note and _lb.runs_note(["silver", ""]) is None,
         note,
+    )
+    check(
+        "leaderboard: a judged table's `runs` says the judged run of the arm's runs (1/3), not a bare 1",
+        _lb.runs_cell(1, 3) == "1/3" and _lb.runs_cell(1, 1) == "1" and "1/3" in note,
+        f"{_lb.runs_cell(1, 3)!r} {_lb.runs_cell(1, 1)!r} {note!r}",
     )
     js = evh(syn, "leaderboard", "dsv", "--match", "_v1", "--json")
     g = json.loads(js.stdout)["result"]["values"]["groups"][0]

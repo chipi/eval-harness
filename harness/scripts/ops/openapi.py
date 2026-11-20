@@ -624,6 +624,11 @@ def document() -> dict[str, Any]:
                         "operation": {"type": "string"},
                         "inputs": {"type": "object"},
                         "state": {"type": "string"},
+                        "state_label": {
+                            "type": "string",
+                            "description": 'the state a person reads: `state`, but "checked, flagged" for a job that '
+                            "ended failed with exit 6 (its checks ran and flagged something)",
+                        },
                         "progress": {
                             "type": ["object", "null"],
                             "description": "how far it has got, as its operation last said (run: items, sweep: arms, "
