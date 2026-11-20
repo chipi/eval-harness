@@ -103,6 +103,15 @@ def _shown(labels: dict) -> tuple[dict, str]:
     return shown_labels(labels)
 
 
+def _unscored(text: str, scorer: str) -> str:
+    """Text naming arms by their full label, read as the page shows them: the group's common scorer dropped, as
+    catalog_build.shown_labels drops it from the labels."""
+    if not scorer:
+        return text
+    drop = f" · rescored {scorer}"
+    return text.replace(f"{drop}, ", " · ").replace(drop, "")
+
+
 def _through(scorer: str) -> str:
     """The caption's sentence naming the re-score the arms are read through, once."""
     return f" Every arm is read through the re-score by scorer {scorer}." if scorer else ""
@@ -191,7 +200,7 @@ def intervals(goal: str, dataset: str | None = None) -> dict:
             left_out.append(
                 f"{a['label']} (retired in {a['retired_in']})"
                 if a.get("retired_in")
-                else f"{a['label']} ({'; '.join(a.get('flags') or []) or 'no interval'})"
+                else f"{a['label']} ({_unscored('; '.join(a.get('flags') or []) or 'no interval', grp['scorer'])})"
             )
             continue
         else:

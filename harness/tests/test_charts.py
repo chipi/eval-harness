@@ -504,6 +504,50 @@ try:
         and "retired in r3" in after.get("svg", ""),
         (opened.stderr[-200:], ret.stderr[-200:], after.get("caption", "")[-300:]),
     )
+    # A left-out arm's flags name other arms by their full label: the group's common scorer is named once, not there.
+    from unittest import mock
+
+    from evaluation_harness import charts as _charts
+
+    _fake = {
+        "direction": "higher",
+        "measure": "f1",
+        "dataset": "d",
+        "scored_against": "ref",
+        "scorer": "5f2c057c",
+        "arms": [
+            {"arm": "a", "label": "lead", "leader": True, "vs_leader": {}},
+            {
+                "arm": "z",
+                "label": "tested",
+                "leader": False,
+                "vs_leader": {"delta": -0.1, "ci": [-0.2, 0.0], "p": 0.05, "verdict": "not separated"},
+            },
+            {
+                "arm": "b",
+                "label": "other",
+                "leader": False,
+                "vs_leader": {},
+                "flags": ["worse than the baseline base_v1 · rescored 5f2c057c (p 0.03)"],
+            },
+            {
+                "arm": "c",
+                "label": "third",
+                "leader": False,
+                "vs_leader": {},
+                "flags": ["worse than base_v1 · rescored 5f2c057c, repeats ×3"],
+            },
+        ],
+    }
+    with mock.patch.object(_charts, "_group", return_value=_fake):
+        _cap = _charts.intervals("g")["caption"]
+    check(
+        "intervals: the left-out note never names the group's common scorer (the caption names it once)",
+        "Left out:" in _cap
+        and "rescored 5f2c057c" not in _cap.split("Left out:")[1]
+        and "base_v1 · repeats" in _cap,
+        _cap[-300:],
+    )
 finally:
     shutil.rmtree(proj, ignore_errors=True)
 sys.exit(summary())

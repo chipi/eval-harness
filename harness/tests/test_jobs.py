@@ -508,7 +508,7 @@ try:
     )  # fmt: skip
     # Where the name came from is the starting command's own: jobs-start says what it resolved (EVH_ACTOR here, then --by),
     # and only an HTTP API call says `api`.
-    froms = {}
+    origins = {}
     for tag, extra in (("env", ()), ("flag", ("--by", "person:flagged"))):
         rc = evh(
             "jobs-start",
@@ -534,11 +534,13 @@ try:
             else []
         ):
             if f.endswith(".json"):
-                froms[tag] = _runstore.read_json(proj, f"prompts/cli_{tag}/{f}").get("actor", {}).get("from")
+                origins[tag] = (
+                    _runstore.read_json(proj, f"prompts/cli_{tag}/{f}").get("actor", {}).get("from")
+                )
     check(
         "a job started by jobs-start records where its name came from (environment, then flag), not `api`",
-        froms == {"env": "environment", "flag": "flag"},
-        froms,
+        origins == {"env": "environment", "flag": "flag"},
+        origins,
     )
     st, aj = op_job("run", {"system": "fast_v1", "dataset": "tk_v1"}, by="person:ana", max_cost_usd=1)
     r3 = evh("jobs-logs", aj.get("id", "none"), "--follow")
