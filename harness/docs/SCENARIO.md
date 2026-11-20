@@ -102,6 +102,13 @@ dataset, the references. A system names no goal: every run names it (`evh run �
 | small model, CPU (one, the fastest) | `t5_small` | — |
 | cheap hosted | `mistral_small` | `mistral_small`, `llama_scout` |
 | frontier | `opus` (an expensive model you would not run in production) | `opus` |
+| judges (the same two for both datasets) | `eval-gemma-31b`, `eval-qwen-flash` | `eval-gemma-31b`, `eval-qwen-flash` |
+
+The judges are Gemma 31B (Google) and Qwen Flash (Alibaba), served through the LiteLLM proxy aliases
+`eval-gemma-31b` and `eval-qwen-flash`. They are two vendor families
+([ADR-0001](../../docs/adr/ADR-0001-judge-scorers.md)), and neither shares a vendor with a contender (Mistral,
+Meta, Anthropic), so no judge grades its own family. They are pinned, as the contenders are, so two runs of the
+scenario are comparable.
 
 Every arm's first system id ends `_v1` (the frontier summariser is `briefs_opus_v1`). Give the
 frontier arm room to finish: `max_tokens: 600` (a frontier model that reasons spends part of it
@@ -165,7 +172,7 @@ leaves it out of the ordering test and the frontier, and a goal page never tests
 
 ## 6 · Judge
 
-A judge scorer per dataset in `data/scorers/` (two judges from different vendor families, a
+A judge scorer per dataset in `data/scorers/` (the two judges named in step 3's table, from different vendor families, a
 `task` block, `explain: true` so each verdict says why), for the summaries' faithfulness and coverage and the
 classifier's label fit and reason quality. Its prompt has `{n}`, names each of the task's dimensions and asks for
 one JSON object with a list of `{n}` numbers per dimension, as tutorial 3's prompt does: `judge-score` refuses a
