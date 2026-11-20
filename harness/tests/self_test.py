@@ -2104,7 +2104,7 @@ def test_a_run_that_measured_nothing_is_not_a_success() -> None:
 
     Throwaway passes (`--scratch`), by run ids of their own.
     """
-    names = ("selftest_cap_control", "selftest_cap_capped")
+    names = ("selftest_cap_control", "selftest_cap_free", "selftest_cap_capped")
     drop_scratch(*names)
     try:
         _nothing_measured(names)
@@ -2146,28 +2146,41 @@ def _nothing_measured(names) -> None:
     if r2.returncode != 0:
         return
 
+    # A cap of 0 means spend nothing: a system known to be free (provider echo) runs under it ...
     r = run(
-        "scripts/cli.py",
-        "run",
-        "--system",
-        "arm_b_v1",
-        "--dataset",
-        "smoke_v1",
-        *scratch,
-        "--run-id",
-        names[1],
-        env={"EVAL_MAX_COST_USD": "0"},
-    )
+        "scripts/cli.py", "run", "--system", "arm_b_v1", "--dataset", "smoke_v1", *scratch,
+        "--run-id", names[1], env={"EVAL_MAX_COST_USD": "0"},
+    )  # fmt: skip
     out = (r.stdout or "") + (r.stderr or "")
     check(
-        "cost cap: a run that scored NO items exits 7 (nothing measured)",
+        "cost cap: a cap of 0 does not stop a system known to be free (provider echo): exit 0",
+        r.returncode == 0 and "COST CAP HIT" not in out,
+        f"exit {r.returncode}: {out[-160:]}",
+    )
+
+    # ... and one that is not (a hosted provider, no prices declared) is stopped before its first call: nothing is
+    # sent (its address is a closed port besides), nothing is measured, and the message says how to declare it free.
+    with tempfile.TemporaryDirectory() as td:
+        data = shadow_data(Path(td), own=("systems/arm_b_v1.yaml",))
+        (data / "systems" / "selftest_cap_unknown_v1.yaml").write_text(
+            "system_id: selftest_cap_unknown_v1\nparams:\n  provider: openai\n  model: m\n"
+            "  base_url: http://127.0.0.1:9\n",
+            encoding="utf-8",
+        )
+        r = run(
+            "scripts/cli.py", "run", "--system", "selftest_cap_unknown_v1", "--dataset", "smoke_v1", *scratch,
+            "--run-id", names[2], env={"EVAL_MAX_COST_USD": "0", "EVAL_DATA_DIR": str(data)},
+        )  # fmt: skip
+    out = (r.stdout or "") + (r.stderr or "")
+    check(
+        "cost cap: a system not known to be free under a cap of 0 scored NO items: exit 7 (nothing measured)",
         r.returncode == 7,
-        f"exit {r.returncode}",
+        f"exit {r.returncode}: {out[-200:]}",
     )
     check(
-        "cost cap: and says nothing was measured",
-        "scored NO items" in out or "Nothing was measured" in out,
-        out[-160:],
+        "cost cap: and says nothing was measured, and how to declare the system free",
+        ("scored NO items" in out or "Nothing was measured" in out) and "usd_per_mtok_in: 0" in out,
+        out[-300:],
     )
 
 
