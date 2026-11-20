@@ -777,4 +777,53 @@ finally:
     shutil.rmtree(bindir, ignore_errors=True)
     shutil.rmtree(live_cwd, ignore_errors=True)
 
+# --- a project that copies the example as the README says validates ---------------------------------------------------
+import yaml  # noqa: E402
+
+check(
+    "every .yaml under systems/ is a system (a mapping): the template is a .yaml.example, which evh validate never reads",
+    all(isinstance(yaml.safe_load(f.read_text()), dict) for f in (HERE / "systems").glob("*.yaml"))
+    and (HERE / "systems" / "harbor_agent_template.yaml.example").is_file(),
+    sorted(f.name for f in (HERE / "systems").iterdir()),
+)
+vproj = Path(tempfile.mkdtemp(prefix="evh-harbor-validate-"))
+try:
+    venv = {k: v for k, v in os.environ.items() if k not in ("EVAL_DATA_DIR", "EVH_ACTOR")}
+    venv.update(EVAL_HOME=str(vproj), EVAL_BUILD_REF="test-harbor-validate")
+    _runstore.write_text(vproj, _format.NAME, f"format: {_format.FORMAT}\n")
+    if not _runstore.sqlite():
+        (vproj / "data" / "systems").mkdir(parents=True)
+    shutil.copytree(HERE, vproj / "examples" / "harbor", ignore=shutil.ignore_patterns("__pycache__"))
+
+    def vevh(*a):
+        return _cli.run(vproj, venv, *a, timeout=600)
+
+    steps = [
+        ("data-put", "--new", "--path", "validate.json", "--set", 'systems=["examples/harbor/systems/harbor_*_v1.yaml"]'),
+        ("data-put", "--new", "--path", "fields/harbor_tasks.yaml", "--file", "examples/harbor/fields.yaml"),
+        ("dataset-create", "--dataset-id", "harbor_tasks_v1", "--source", "examples/harbor/source.py:Source",
+         "--query", '{"path": "examples/harbor/tasks"}', "--fieldset", "harbor_tasks"),
+        ("dataset-materialize", "--dataset-id", "harbor_tasks_v1"),
+    ]  # fmt: skip
+    done = [vevh(*s) for s in steps]
+    check(
+        "the README's setup commands run in a project that holds a copy of the example",
+        all(r.returncode == 0 for r in done),
+        [r.stderr[-200:] for r in done if r.returncode],
+    )
+    r = vevh("validate")
+    check(
+        "evh validate passes there (its systems and the template included)",
+        r.returncode == 0,
+        (r.stdout + r.stderr)[-600:],
+    )
+    r = vevh("run", "--system", "harbor_oracle_v1", "--dataset", "harbor_tasks_v1", "--dry-run")
+    check(
+        "the example's systems are found where the README put them (a dry run, no Docker)",
+        r.returncode == 0 and "calls each item once" in r.stdout,
+        (r.stdout + r.stderr)[-300:],
+    )
+finally:
+    shutil.rmtree(vproj, ignore_errors=True)
+
 sys.exit(summary())

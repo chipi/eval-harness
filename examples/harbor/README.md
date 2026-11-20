@@ -10,7 +10,7 @@ names Harbor (`test_core_stays_generic` fails when one does).
 | `source.py` | `Source`: a folder of Harbor tasks (or a registry dataset) as a dataset, one item per task |
 | `importer.py` | `Importer`: Harbor job directories as a capture, then a dataset and a recorded arm; needs neither Docker nor Harbor |
 | `adapter.py` | the system: one `harbor run -n 1 -r 0` trial per item, **called once** (`CALL_ONCE`), the trial as the artifact |
-| `systems/` | `harbor_oracle_v1`, `harbor_nop_v1`, and `harbor_agent_template.yaml` (a template, never run) |
+| `systems/` | `harbor_oracle_v1`, `harbor_nop_v1`, and `harbor_agent_template.yaml.example` (a template, never run) |
 | `tasks/` | three tiny tasks of our own: `write-greeting`, `count-lines`, `make-script` |
 | `fields.yaml` | the field set the source's fields need (`difficulty`, `category`, `agent_timeout_sec`) |
 | `fixtures/jobs/` | job directories recorded from Harbor's `oracle` and `nop` agents on those tasks (and one agent timeout), scrubbed; one is synthetic |
@@ -110,8 +110,8 @@ trials is several items; `"pick": "first"` or `"last"` in the query keeps one pe
 
 ## A model-backed agent
 
-`systems/harbor_agent_template.yaml` is a template, not a system, and nothing here runs it: an agent with a model costs
-money and needs a key. Copy it, fill it in, put the key in the environment file Harbor reads (`env_file`), set
+`systems/harbor_agent_template.yaml.example` is a template, not a system, and nothing here runs it: an agent with a model costs
+money and needs a key. Copy it to `data/systems/<id>.yaml` (the `.example` suffix keeps `evh validate` from reading a file that is no system), fill it in, put the key in the environment file Harbor reads (`env_file`), set
 `EVAL_MAX_COST_USD`, and check one task with `evh arm-smoke` first. `evh run --dry-run` cannot estimate a trial's cost: it is
 the agent's own, known after the run.
 

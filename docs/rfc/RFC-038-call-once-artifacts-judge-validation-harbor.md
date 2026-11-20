@@ -267,7 +267,7 @@ examples/harbor/README.md
 examples/harbor/source.py          class Source: Harbor tasks as items
 examples/harbor/importer.py        class Importer: Harbor job directories as records
 examples/harbor/adapter.py         call_system, score, recorded_output, CALL_ONCE
-examples/harbor/systems/           harbor_oracle_v1.yaml, harbor_nop_v1.yaml, harbor_agent_template.yaml (not run)
+examples/harbor/systems/           harbor_oracle_v1.yaml, harbor_nop_v1.yaml, harbor_agent_template.yaml.example (not run)
 examples/harbor/tasks/             three tiny local tasks (task.toml, instruction.md, environment/, solution/, tests/)
 examples/harbor/fields.yaml        the field set the source's fields need (dataset-create refuses fields without one)
 examples/harbor/_toml.py           the few task.toml keys the source and the adapter read, parsed by hand (Python 3.10: no tomllib)
@@ -386,7 +386,7 @@ Each was an open question with a recommendation; the owner took every recommenda
 6. **`--fill` on a scorer that has judged.** Refuse and name `scorer-new --supersedes`, or make the new version itself. **Decided** (the recommendation, taken): refuse; a new version is a decision with a reason (`supersedes`, `why`).
 7. **Python and TOML.** `examples/harbor/source.py` reads `task.toml`; `tomllib` is Python 3.11+, and the package's minimum version is not verified here (RFC-018 mentions 3.10). **Decided** (the recommendation, taken): if the minimum is 3.10, parse the five keys the source needs by hand in the example; add no dependency.
 8. **Fixtures from a real run.** The pass and fail fixtures come from `oracle` and `nop` runs on this machine ($0, Docker). The exception fixture is edited from the source. **Decided** (the recommendation, taken): record the first two; name the third as synthetic in the README; record a real one when one happens.
-9. **A model-backed Harbor system.** `harbor_agent_template.yaml` ships commented and never run in CI or by me. **Decided** (the recommendation, taken): ship the template only.
+9. **A model-backed Harbor system.** `harbor_agent_template.yaml.example` ships commented and never run in CI or by me. **Decided** (the recommendation, taken): ship the template only.
 
 ## Not verified
 

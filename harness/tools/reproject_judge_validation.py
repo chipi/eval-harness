@@ -4,6 +4,10 @@
     python tools/reproject_judge_validation.py            # from harness/: the eight recorded runs
     python tools/reproject_judge_validation.py --dry-run  # what it would run
 
+It can be run again: a capture and a system that exist with the same content are "kept" (not made again) and the run is
+made anew; one that exists with other content is refused, naming it, and nothing is run for it. EVAL_HOME names the
+project (default: this checkout's harness/); `--scorers` and `--sources` narrow what is read.
+
 `validate_judge_goyal.py` and `validate_judge_zhang.py` stored each judge's replies under
 `data/judge-validation/<scorer>/<source>/<judge>/`. This reads them as a capture of verdicts in the core adapter's
 output form (`scripts/judge_validation.py`, in the dataset's item order), makes a recorded system of it and runs it over
@@ -32,9 +36,15 @@ from typing import Any
 HARNESS = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(HARNESS))
 os.environ.setdefault("EVAL_HOME", str(HARNESS))
+#: The project the runs are made in: this checkout's harness/ unless EVAL_HOME names another (a test's scratch one).
+PROJECT = Path(os.environ["EVAL_HOME"]).resolve()
 
 from evaluation_harness import _store  # noqa: E402
 
+#: How a capture names this file: from the checkout's harness/, else where it is.
+IMPORTER = (
+    "tools/reproject_judge_validation.py" if HARNESS.resolve() == PROJECT else f"{Path(__file__).resolve()}"
+)
 SOURCES = {"goyal": ("goyal2022-cnn", "goyal2022_cnn_v1"), "zhang": ("zhang2023-cnndm", "zhang2023_cnndm_v1")}
 SCORERS = ("judge-summ-v1", "judge-summ-v2")
 SYSTEMS = ("gpt3", "brio", "t0")
@@ -50,7 +60,7 @@ class Importer:
     def records(self, query: dict[str, Any]) -> Iterator[dict[str, Any]]:
         """Query: scorer, judge, source (`goyal` or `zhang`)."""
         root = (
-            HARNESS
+            PROJECT
             / "data"
             / "judge-validation"
             / query["scorer"]
@@ -99,11 +109,33 @@ def system_id(source: str, scorer: str, judge: str) -> str:
     return f"{scorer}__{judge}__validation_{source}"
 
 
+def capture_kept(cap: str, query: dict[str, Any]) -> bool | None:
+    """True when the capture exists with these records (kept), False when it does not exist; None when it exists with
+    other records."""
+    from evaluation_harness.dataset_from_capture import load_capture  # noqa: PLC0415
+
+    if not _store.is_file(PROJECT / "data" / "captures" / cap / "capture.json"):
+        return False
+    _doc, have = load_capture(cap)
+    want = {r["id"]: r["body"] for r in Importer({}).records(query)}
+    return True if {r["id"]: r["body"] for r in have} == want else None
+
+
+def system_kept(sid: str, spec: dict[str, Any]) -> bool | None:
+    """True when the system exists with this content (kept), False when it does not exist; None when it differs."""
+    import yaml  # noqa: PLC0415
+
+    f = PROJECT / "data" / "systems" / f"{sid}.yaml"
+    if not _store.is_file(f):
+        return False
+    return True if yaml.safe_load(_store.read_text(f)) == spec else None
+
+
 def evh(*args: str) -> subprocess.CompletedProcess[str]:
-    """`evh <args>` in this checkout."""
+    """`evh <args>` in the project."""
     return subprocess.run(  # nosec B603 - this interpreter and the harness's own CLI
         [sys.executable, str(HARNESS / "scripts" / "cli.py"), *args],
-        cwd=HARNESS, capture_output=True, text=True, stdin=subprocess.DEVNULL, check=False,
+        cwd=PROJECT, capture_output=True, text=True, stdin=subprocess.DEVNULL, check=False,
     )  # fmt: skip
 
 
@@ -113,14 +145,19 @@ def main() -> int:
 
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--scorers", nargs="+", default=list(SCORERS), help="the scorers to read (default: both)")
+    ap.add_argument(
+        "--sources", nargs="+", choices=list(SOURCES), default=list(SOURCES), help="default: both"
+    )
     args = ap.parse_args()
-    for scorer in SCORERS:
-        sc = yaml.safe_load(_store.read_text(HARNESS / "data" / "scorers" / f"{scorer}.yaml"))
+    for scorer in args.scorers:
+        sc = yaml.safe_load(_store.read_text(PROJECT / "data" / "scorers" / f"{scorer}.yaml"))
         for j in sc["judges"]:
-            for source, (_folder, dataset) in SOURCES.items():
+            for source in args.sources:
+                _folder, dataset = SOURCES[source]
                 cap, sid = capture_id(source, scorer, j["id"]), system_id(source, scorer, j["id"])
                 steps = [
-                    ["capture", "--importer", "tools/reproject_judge_validation.py:Importer", "--capture", cap,
+                    ["capture", "--importer", f"{IMPORTER}:Importer", "--capture", cap,
                      "--query", json.dumps({"scorer": scorer, "judge": j["id"], "source": source})],
                     ["run", "--system", sid, "--dataset", dataset],
                 ]  # fmt: skip
@@ -142,20 +179,40 @@ def main() -> int:
                 }
                 if not spec["params"]["task"]:
                     del spec["params"]["task"]
-                for n, step in enumerate(steps):
-                    if n == 1:
-                        _store.write_text(
-                            HARNESS / "data" / "systems" / f"{sid}.yaml",
-                            "# A judge's committed validation records, read as a recorded arm over a rated dataset\n"
-                            "# (tools/reproject_judge_validation.py): nothing is called.\n"
-                            + yaml.safe_dump(spec, sort_keys=False),
-                        )
-                    r = evh(*step)
+                query = {"scorer": scorer, "judge": j["id"], "source": source}
+                cap_state, sys_state = capture_kept(cap, query), system_kept(sid, spec)
+                if cap_state is None or sys_state is None:
+                    which = f"capture {cap}" if cap_state is None else f"system {sid}"
+                    print(
+                        f"  REFUSED: {which} exists and differs from what the records and the scorer give; nothing is run"
+                    )
+                    return 1
+                if cap_state:
+                    print(f"  capture: kept {cap}")
+                else:
+                    r = evh(*steps[0])
                     if r.returncode:
                         print(r.stdout + r.stderr)
                         return 1
-                    last = [ln for ln in r.stdout.splitlines() if ln.strip()][-1] if r.stdout.strip() else ""
-                    print(f"  {step[0]}: {last.strip()[:200]}")
+                    print(
+                        f"  capture: {next((ln for ln in r.stdout.splitlines() if ln.strip()), '').strip()[:200]}"
+                    )
+                if sys_state:
+                    print(f"  system: kept {sid}")
+                else:
+                    _store.write_text(
+                        PROJECT / "data" / "systems" / f"{sid}.yaml",
+                        "# A judge's committed validation records, read as a recorded arm over a rated dataset\n"
+                        "# (tools/reproject_judge_validation.py): nothing is called.\n"
+                        + yaml.safe_dump(spec, sort_keys=False),
+                    )
+                    print(f"  system: wrote {sid}")
+                r = evh(*steps[1])
+                if r.returncode:
+                    print(r.stdout + r.stderr)
+                    return 1
+                last = [ln for ln in r.stdout.splitlines() if ln.strip()][-1] if r.stdout.strip() else ""
+                print(f"  run: {last.strip()[:200]}")
     return 0
 
 
