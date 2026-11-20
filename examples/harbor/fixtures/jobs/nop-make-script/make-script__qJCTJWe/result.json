@@ -1,0 +1,124 @@
+{
+    "agent_execution": {
+        "finished_at": "2026-11-20T20:40:12.008250Z",
+        "started_at": "2026-11-20T20:40:12.007729Z"
+    },
+    "agent_info": {
+        "model_info": null,
+        "name": "nop",
+        "version": "1.0.0"
+    },
+    "agent_result": {
+        "cost_usd": null,
+        "metadata": null,
+        "model_usage": null,
+        "n_cache_tokens": null,
+        "n_input_tokens": null,
+        "n_output_tokens": null,
+        "rollout_details": null
+    },
+    "agent_setup": {
+        "finished_at": "2026-11-20T20:40:12.007667Z",
+        "started_at": "2026-11-20T20:40:12.007609Z"
+    },
+    "config": {
+        "agent": {
+            "base_url": null,
+            "concurrency_group": null,
+            "extra_allowed_hosts": [],
+            "import_path": null,
+            "kwargs": {},
+            "load_trajectory": null,
+            "max_timeout_sec": null,
+            "mcp_servers": [],
+            "model_api_format": null,
+            "model_api_key_name": null,
+            "model_name": null,
+            "n_concurrent": null,
+            "name": "nop",
+            "override_setup_timeout_sec": null,
+            "override_timeout_sec": null,
+            "resume_trajectory": false,
+            "skills": [],
+            "skip_model_parsing": false
+        },
+        "agent_setup_timeout_multiplier": null,
+        "agent_timeout_multiplier": null,
+        "artifacts": [],
+        "environment": {
+            "cpu_enforcement_policy": "auto",
+            "delete": true,
+            "extra_allowed_hosts": [],
+            "extra_docker_compose": [],
+            "force_build": false,
+            "import_path": null,
+            "kwargs": {},
+            "memory_enforcement_policy": "auto",
+            "mounts": null,
+            "override_cpus": null,
+            "override_gpus": null,
+            "override_memory_mb": null,
+            "override_storage_mb": null,
+            "override_tpu": null,
+            "stream": false,
+            "type": "docker"
+        },
+        "environment_build_timeout_multiplier": null,
+        "extra_instruction_paths": [],
+        "extra_instructions": [],
+        "install_only": false,
+        "job_id": "dc5b3d0c-2739-4c35-b142-0dc3a69b531c",
+        "override_error_policy": {},
+        "schema_version": 1,
+        "source_trial": null,
+        "task": {
+            "download_dir": null,
+            "git_commit_id": null,
+            "git_url": null,
+            "name": null,
+            "overwrite": false,
+            "path": "examples/harbor/tasks/make-script",
+            "ref": null,
+            "source": null
+        },
+        "timeout_multiplier": 1.0,
+        "trial_name": "make-script__qJCTJWe",
+        "trials_dir": "jobs",
+        "user_agent": null,
+        "verifier": {
+            "disable": false,
+            "max_timeout_sec": null,
+            "override_timeout_sec": null
+        },
+        "verifier_timeout_multiplier": null
+    },
+    "environment_setup": {
+        "finished_at": "2026-11-20T20:40:12.007553Z",
+        "started_at": "2026-11-20T20:40:09.807210Z"
+    },
+    "exception_info": null,
+    "finished_at": "2026-11-20T20:40:23.286774Z",
+    "id": "9e97e482-3c93-4b93-b1a5-7013bf798ab3",
+    "reward_valid": true,
+    "schema_version": 1,
+    "source": null,
+    "started_at": "2026-11-20T20:40:09.795289Z",
+    "step_results": null,
+    "task_checksum": "d11ecf12b87a3b25b1f168e06fc8a47f82355f43a72e8c392089607996f58a35",
+    "task_id": {
+        "path": "examples/harbor/tasks/make-script"
+    },
+    "task_name": "make-script",
+    "trial_name": "make-script__qJCTJWe",
+    "trial_uri": null,
+    "verifier": {
+        "finished_at": "2026-11-20T20:40:12.358272Z",
+        "started_at": "2026-11-20T20:40:12.147889Z"
+    },
+    "verifier_environment_mode": "shared",
+    "verifier_result": {
+        "rewards": {
+            "reward": 0.0
+        }
+    }
+}

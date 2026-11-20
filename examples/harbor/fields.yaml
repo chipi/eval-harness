@@ -1,0 +1,21 @@
+# The fields a Harbor task carries that `source.py` reads from its task.toml. Copy it to the project's data/fields/ and pass
+# `--fieldset harbor_tasks` to `evh dataset-create`: the harness defines no field, a project declares its own.
+fieldset_id: harbor_tasks
+description: Facts about a Harbor task, read from its task.toml.
+fields:
+  - name: difficulty
+    type: text
+    label: Difficulty
+    description: The task's own word for how hard it is ([metadata] difficulty), when it says one.
+    public: true
+  - name: category
+    type: text
+    label: Category
+    description: What kind of task it is ([metadata] category), when it says one.
+    public: true
+  - name: agent_timeout_sec
+    type: number
+    label: Agent timeout
+    unit: seconds
+    description: How long the agent may work on it ([agent] timeout_sec).
+    public: true

@@ -27,6 +27,7 @@ from evaluation_harness import _common, _store
 from evaluation_harness._common import (
     BUNDLED_ADAPTER_ID,
     CODE,
+    CORE_ADAPTER_IDS,
     ModuleNotLoadable,
     adapter_search_dirs,
     die,
@@ -47,10 +48,10 @@ def module_at(path: Path) -> Any:
     (ModuleNotLoadable when the file has no import spec)."""
     key = Path(path).resolve()
     if key not in _LOADED:
-        if key == BUNDLED.resolve():
+        if key.parent == CODE.resolve() and key.name in {i.rpartition("/")[2] for i in CORE_ADAPTER_IDS}:
             # The package's own module, so a test that patches `evaluation_harness.adapter`
             # patches what runs; never registered as a bare `adapter`, which is a project's name.
-            _LOADED[key] = importlib.import_module("evaluation_harness.adapter")
+            _LOADED[key] = importlib.import_module(f"evaluation_harness.{key.stem}")
         else:
             digest = hashlib.sha256(str(key).encode()).hexdigest()[:8]
             _LOADED[key] = load_module(key, f"evh_adapter_{key.stem}_{digest}")
@@ -173,6 +174,17 @@ def calls_per_item(adapter_path: Path | None, params: dict[str, Any] | None = No
     fn = getattr(module, "calls_per_item", None)
     got = fn(dict(params or {})) if callable(fn) else getattr(module, "CALLS_PER_ITEM", None)
     return got if isinstance(got, int) and not isinstance(got, bool) and got >= 1 else None
+
+
+def call_once(adapter_path: Path | None, params: dict[str, Any] | None = None) -> bool:
+    """Whether each item is called exactly once, with no retry, because the adapter says so (RFC-038): its
+    `call_once(params)` when it has one (per system, from its params; it wins), else its `CALL_ONCE` constant, else
+    False. A property of the adapter's code, never of the system file or the machine: an adapter whose call has side
+    effects must not be made retryable by whoever writes a system."""
+    module = _module_or_none(adapter_path)
+    fn = getattr(module, "call_once", None)
+    got = fn(dict(params or {})) if callable(fn) else getattr(module, "CALL_ONCE", False)
+    return got is True
 
 
 def metric_directions(adapter_path: Path | None) -> dict[str, str]:
@@ -313,6 +325,8 @@ def _portable_id(path: Path) -> str:
 
 def _find_adapter(spec: str, config_path: Path | None) -> Path:
     """The file an `adapter:` entry names: relative to the system first, then the project."""
+    if spec in CORE_ADAPTER_IDS:
+        return CODE / spec.rpartition("/")[2]
     path = Path(spec)
     candidates = [path] if path.is_absolute() else []
     if not path.is_absolute():

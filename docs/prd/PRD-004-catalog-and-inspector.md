@@ -173,7 +173,7 @@ adapter file ([ADR-0002](../adr/ADR-0002-catalog-inspector-goals.md),
 - **FR4.1**: Every page and comparison is also a command that asks the same adapter and computes
   with the same functions: `evh overview-show` (the home dashboard), `evh activity-show`, `evh dataset-list`,
   `evh arm-list` (`--where`, `--tier`, `--systems 1`; `evh arm-show`), `evh reference-list`, `evh metric-list`,
-  `evh goal-list`, `evh search`, `evh comparison-show` (its comparison, `--analysis`; `comparison-item`, `sheet-show`)
+  `evh goal-list`, `evh search`, `evh comparison-show` (its comparison, `--analysis`; `comparison-item`, which also prints the artifact an item left, and `sheet-show`)
   ([UXS-003](../uxs/UXS-003-cli-and-onboarding.md)); every list but `search` takes `--period P` and prints the
   page's period columns same builder the page reads.
 - **FR4.2**: New views and actions are added to both. A decision the pages suggest is shown as

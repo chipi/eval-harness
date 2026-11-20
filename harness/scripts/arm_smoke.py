@@ -25,7 +25,7 @@ import time
 from typing import Any
 
 from evaluation_harness import _common, _jsonout, _models, _store
-from evaluation_harness._adapter import load_adapter, score_wants_source
+from evaluation_harness._adapter import call_once, load_adapter, score_wants_source
 from evaluation_harness._common import DATA, EXIT_PROBLEMS, MATERIALIZED, die, load_dataset, now
 from evaluation_harness.ops import legacy
 
@@ -36,6 +36,19 @@ LONG_FACTOR, LONG_FLOOR, LONG_MIN_CALLS = 3, 64, 3
 ML_FACTS = ("device", "precision", "load_ms", "batch_size", "dtype")
 #: How much of a reply is printed (`--replies` prints all of it).
 REPLY_EXCERPT = 300
+
+
+def artifact_of(meta: Any) -> dict[str, Any] | None:
+    """The artifact a call's `meta` names (RFC-038), as a run keeps it and an item view links it ({path, kind, url}); None
+    when it names none, or none inside the project (a run drops that one, so does the smoke)."""
+    from evaluation_harness import _artifact  # noqa: PLC0415
+
+    rel, _why = (
+        _artifact.normalise(meta.get(_artifact.KEY))
+        if isinstance(meta, dict) and _artifact.KEY in meta
+        else (None, None)
+    )
+    return _artifact.link(rel, _artifact.served_prefixes(_common.DATA)) if rel else None
 
 
 def calls_of(res: Any, wall_s: float | None = None) -> list[dict[str, Any]]:
@@ -251,7 +264,12 @@ def _smoke(args: argparse.Namespace) -> int:
     from evaluation_harness.run import _reference_for  # noqa: PLC0415
 
     ref_dir, _tier = _reference_for(ds["dataset_id"])
+    once = call_once(adapter_path, params)
     print(f"arm-smoke: {cfg['system_id']} on {ds['dataset_id']}, {args.items} item(s)")
+    if once:
+        print(
+            "  call once (the adapter declares CALL_ONCE): each item is called once, and every call is a real one"
+        )
     shown = {
         k: params[k]
         for k in (
@@ -309,14 +327,21 @@ def _smoke(args: argparse.Namespace) -> int:
             break
         except Exception as exc:  # noqa: BLE001  (a smoke reports a failure, it does not stop on it)
             row.update(s=round(time.perf_counter() - t0, 2), error=f"{type(exc).__name__}: {exc}")
+            if found := artifact_of(getattr(exc, "meta", None)):  # what the failed call left to open
+                row["artifact"] = found
             items.append(row)
-            print(f"  {item['item_id'][:48]:<48} FAILED {row['error'][:80]}")
+            print(
+                f"  {item['item_id'][:48]:<48} FAILED {row['error'][:80]}"
+                + (f"  artifact {found['path']}" if found else "")
+            )
             continue
         row["s"] = round((getattr(res, "latency_ms", None) or wall * 1000) / 1000, 2)
         pay(res)
         replies[item["item_id"]] = res.output or ""
         row["output_chars"] = len(res.output or "")
         row["cost_usd"] = getattr(res, "cost_usd", None)
+        if found := artifact_of(getattr(res, "meta", None)):
+            row["artifact"] = found
         ref = None
         if ref_dir is not None and _store.is_file(ref_dir / f"{item['item_id']}.txt"):
             ref = _store.read_text(ref_dir / f"{item['item_id']}.txt", encoding="utf-8", errors="replace")
@@ -328,7 +353,10 @@ def _smoke(args: argparse.Namespace) -> int:
         item_calls = calls_of(res, wall)
         calls += item_calls
         facts = {k: v for k, v in (getattr(res, "meta", None) or {}).items() if k in ML_FACTS}
-        if n == 0:
+        if n == 0 and once:
+            row["deterministic"] = None
+            print("  call once: item 1 not called twice, determinism not checked")
+        elif n == 0:
             first_output = res.output
             try:
                 if _spend.exhausted(params):
@@ -344,6 +372,7 @@ def _smoke(args: argparse.Namespace) -> int:
             + (f"  {len(item_calls)} call(s)" if item_calls else "")
             + (f"  {facts}" if facts else "")
             + ("" if row.get("scored", True) else "  NOT SCORABLE")
+            + (f"  artifact {row['artifact']['path']}" if row.get("artifact") else "")
         )
         print(reply_text(res.output or "", args.replies))
         for c in item_calls:
@@ -359,6 +388,8 @@ def _smoke(args: argparse.Namespace) -> int:
             f"{proj['worst_minutes']} min), about ${proj['usd']}"
         )
     print(f"  {spend_line(spent, billed, n_calls, unpriced, by_table[0], frozenset(sources))}")
+    if once:
+        print(f"  call once: {n_calls} real call(s), each an item's one call")
     if items and items[0].get("deterministic") is True:
         print("  determinism: item 1 twice gave the same output: repeats on this machine will be identical")
     flags, accepted = _models.split_accepted(

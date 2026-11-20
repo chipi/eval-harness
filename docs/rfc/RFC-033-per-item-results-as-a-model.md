@@ -251,7 +251,8 @@ RFC-019 §4, out of this RFC: today's list is kept.
 ### Not changed
 
 `files` and `outputs` tables; output texts and their hashes; the fingerprint; judging sets; `metrics.json` means;
-adapters (`Result.meta` stays free-form); the row dicts readers see, except the three run settings (now on the run); the
+adapters (`Result.meta` stays free-form; [RFC-038](RFC-038-call-once-artifacts-judge-validation-harbor.md) reserves one key
+in it, `artifact`, and adds no schema); the row dicts readers see, except the three run settings (now on the run); the
 files store's layout.
 
 ### Not done (decided)

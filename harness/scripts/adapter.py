@@ -99,7 +99,9 @@ def call_system(text: str, params: dict[str, Any]) -> Result:
 # `run` wraps every `call_system` in its own retry loop (EVAL_MAX_RETRIES), for
 # every adapter. Do not add a second loop in an adapter: the two multiply, and a failing item
 # on a paid provider is then attempted many times over. To make more errors retryable, declare
-# `TRANSIENT_MARKERS` (substrings of the error message); the core honours them.
+# `TRANSIENT_MARKERS` (substrings of the error message); the core honours them. A system whose call has an effect that a
+# retry would repeat (an agent run, a deploy) declares `CALL_ONCE = True` instead: the core then calls each item once and
+# never retries, and neither may the adapter (docs/INTEGRATION.md, RFC-038).
 
 
 # ── 2. HOW GOOD WAS IT ───────────────────────────────────────────────────────

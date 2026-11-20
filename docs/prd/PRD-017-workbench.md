@@ -101,8 +101,10 @@ carried in, never run again.
 
 **W2 Review outputs, label and tag.** On a goal's dataset: the items across the arms that matter; read outputs side
 by side, say which is better, give a label, tag failure modes, leave a note; bring back a sheet filled elsewhere.
-*Operations:* `comparison-items`, `comparison-item`, `sheet-show`, `label-sheet`, `label-import`, `sheet-import`,
-`tag-set-list`, `failure-modes-list`. The screen fills a sheet and submits it when the person is done, to the
+*Operations:* `dataset-arm-list`, `sheet-export`, `sheet-import`, `label-sheet`, `label-import`, `failure-modes-list`,
+`failure-modes-show`, `failure-modes-new`. The screen reads no item through `comparison-item(s)` or `sheet-show`: a sheet
+hides which arm wrote what, so a link to an arm's artifact (its trial directory) would unblind it; a finished run's item,
+with its artifact link, is read in the inspector and by `evh comparison-item` (UXS-005 W2 is the screen as built). The screen fills a sheet and submits it when the person is done, to the
 imports as they work today (not saved item by item); the blind sheet and its key are a job (`sheet-export`,
 `POST /datasets/{dataset}/sheets`).
 

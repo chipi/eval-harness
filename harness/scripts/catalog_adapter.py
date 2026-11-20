@@ -47,6 +47,7 @@ from typing import Any, Protocol
 HERE = Path(__file__).resolve().parent
 
 from evaluation_harness import (  # noqa: E402
+    _artifact,
     _common,
     _label_sets,
     _outputs,
@@ -1010,12 +1011,36 @@ class HarnessAdapter:
                     for k, v in sorted(self.scores(arm).items()):
                         if k.startswith("judge_") and item in v["values"]:
                             info[k.removeprefix("judge_")] = f"{v['values'][item]:.3g}"
-                return {
-                    "kind": "text",
-                    "text": text,
-                    "info": info,
+                view = {"kind": "text", "text": text, "info": info}
+                self._with_artifact(view, row)
+                return view
+        # An item whose call failed has no output, and may have left what a person wants to open (a trial's directory).
+        for d in reversed(dirs):
+            row = next((r for r in item_rows(d, strict=False) if r["item_id"] == item), None)
+            if row and row.get("failed") == 1.0:
+                view = {
+                    "kind": "none",
+                    "note": "This item's call failed, so no output was stored.",
+                    "info": {"run": self._run_id(d)},
                 }
+                self._with_artifact(view, row)
+                return view
         return {"kind": "none", "note": "No stored output for this item (the run's outputs.jsonl)."}
+
+    def _with_artifact(self, view: dict, row: dict | None) -> None:
+        """The link to the artifact the item's row stored (RFC-038) on `view`: `artifact` ({path, kind, url}) and its path
+        as text in `info`, which is what the command line prints. A row with none leaves the view as it is."""
+        got = _artifact.link(
+            ((row or {}).get("_meta") or {}).get(_artifact.KEY),
+            _artifact.served_prefixes(self.data_dir, getattr(self, "served_dirs", ())),
+        )
+        if got is not None:
+            if got["kind"] == "missing" and _store.is_file(self.data_dir / "release.json"):
+                got["why"] = "not in this deployment"  # a release's copy leaves artifacts/ out
+            view["artifact"] = got
+            view.setdefault("info", {})["artifact"] = (
+                got["path"] if got["kind"] != "refused" else "refused: not a path inside the project"
+            )
 
     def reference_view(self, ref: str, item: str) -> dict:
         """Return one reference's text for one item."""

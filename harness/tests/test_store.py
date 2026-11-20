@@ -675,6 +675,7 @@ ALLOWED = {
     "examples/_shared/gateway.py": "reads examples/models.json beside the code",
     "examples/_shared/hf_identity.py": "reads the Hugging Face cache, outside the project",
     "examples/triage-fleet/*.py": "reads and writes the sheets and decision files a person names",
+    "examples/harbor/*.py": "reads the Harbor tasks and job directories a person names and the fixtures beside its code, writes the fixtures and the fake harbor's copies: none of it is data/ (RFC-038)",
     "examples/replay-filing/system/*/filing.py": "the example's system under test: its own ledger file, which a replay points at a temp file",
     "examples/replay-filing/*.py": "makes the example's system repository and frozen history in a folder a person names, outside data/; data files go through _store (RFC-030)",
     "examples/audit_locks.py": "checks the examples' lock files",

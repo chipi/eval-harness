@@ -1,0 +1,22 @@
+{
+    "results": {
+        "summary": {
+            "failed": 2,
+            "passed": 0,
+            "tests": 2
+        },
+        "tests": [
+            {
+                "name": "script_is_executable",
+                "status": "failed"
+            },
+            {
+                "name": "script_prints_hi_there",
+                "status": "failed"
+            }
+        ],
+        "tool": {
+            "name": "shell"
+        }
+    }
+}

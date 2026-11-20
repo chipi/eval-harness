@@ -272,7 +272,7 @@ browser, the same model.
 | a round's arms (the goal page's **inspect** button on a round) | `evh comparison-show --round rN [--goal g]`: the goal's measure, against the round's leader; arms with no score on it are named and left out |
 | filter, breakdown | `--where field:value` (repeatable), `--by field` |
 | notes, verdicts, conditions, breakdown | printed in that order (notes as `NOTE:` lines) |
-| the item view | `evh comparison-item --runs A,B --item <item_id>`: fields, the item itself, the reference, each arm's output under `(run <run_id>)`, or `(run <run_id> · shown the latest of N repeats; the score is the mean of all N)` for a repeated arm |
+| the item view | `evh comparison-item --runs A,B --item <item_id>`: fields, the item itself, the reference, each arm's output under `(run <run_id>)`, or `(run <run_id> · shown the latest of N repeats; the score is the mean of all N)` for a repeated arm; an item whose adapter left something to open (a trial's directory: `meta["artifact"]`) adds `· artifact artifacts/…` to that line, and the page draws it as a link to the directory the server serves read-only (a path not served, one not on this machine and one refused are said as text; `--json` carries `views[arm].artifact` and `artifacts`) |
 | the per-item table | `evh sheet-show D --runs a,b`: every item's score per arm (the sheet; `--scores-only` leaves the outputs out) |
 | only where they disagree | `--disagree 1` (an arm scored against a label set is chosen like any) |
 | the sheet | `evh sheet-show D --runs A,B [--metric M\|SCORER/M] [--wrong-against SET] [--new-vs V] [--disagree] [--split] [--unlabelled] [--where field:value] [--by field] [--scores-only]` |

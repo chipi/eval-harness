@@ -136,6 +136,34 @@ def judged_scores(scorer_id: str | None = None, data: Path | None = None) -> lis
     return out
 
 
+def validation_runs(scorer_id: str, data: Path | None = None) -> list[dict[str, Any]]:
+    """The runs of the scorer's validation systems, `<scorer>__<judge>__validation` (what `evh judge-validate` writes; its
+    floor is the judge `random`): {run, system, judge, dataset, metric, value, n_items}, by run id."""
+    prefix, out = f"{scorer_id}__", []
+    for rid in _runs.run_ids(data):
+        sd = _runs.first_score(rid, data)
+        rec = (_runs.record(sd) if sd else None) or {}
+        system = str(rec.get("system_id") or "")
+        judge, sep, _tail = system.removeprefix(prefix).partition("__validation")
+        if not system.startswith(prefix) or not sep:
+            continue
+        metric = rec.get("primary_metric")
+        scores = rec.get("scores") or {}
+        out.append(
+            {
+                "run": rid,
+                "dimensions": sorted(k.removeprefix("tau_") for k in scores if k.startswith("tau_")),
+                "system": system,
+                "judge": judge,
+                "dataset": rec.get("dataset_id"),
+                "metric": metric,
+                "value": (rec.get("scores") or {}).get(metric),
+                "n_items": rec.get("n_items"),
+            }
+        )
+    return out
+
+
 def _data(data: Path | None) -> Path:
     return _common.DATA if data is None else Path(data)
 

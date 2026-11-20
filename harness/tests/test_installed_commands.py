@@ -146,6 +146,27 @@ def main() -> int:
         # gold a script builds, for reference-manifest below: the texts where a fetch script would put them
         for f in sorted((proj / "tutorial/gold").glob("*.txt"))[:2]:
             put(proj, f"references/gold/tickets_pilot_v1/{f.name}", f.read_bytes())
+        # a rated dataset (RFC-038: items {source, outputs}, the people's ratings as their reference) for judge-validate
+        (proj / "rated_source.py").write_text(
+            "import json\n\n\nclass Source:\n    def __init__(self, options):\n        pass\n\n"
+            "    def describe(self, query):\n        return {'source': {'provider': 'test'}}\n\n"
+            "    def items(self, query):\n        for i, lens in enumerate([[1, 2, 3], [3, 1, 2]]):\n"
+            "            outs = [' '.join(f'w{i}{k}' for k in range(n)) for k, n in enumerate(lens)]\n"
+            "            r = {d: [float(n) for n in lens] for d in ('accuracy', 'usefulness')}\n"
+            "            yield {'item_id': f'r{i}', 'text': json.dumps({'source': f'ticket {i}', 'outputs': outs}),\n"
+            "                   'answer': json.dumps({'ratings': r, 'raters': [r, r]})}\n"
+        )
+        setup(
+            "dataset-create",
+            "--dataset-id",
+            "rated_v1",
+            "--source",
+            "rated_source.py:Source",
+            "--query",
+            '{"answer": "answer"}',
+        )
+        setup("dataset-materialize", "--dataset-id", "rated_v1")
+        setup("reference-promote", "--dataset-id", "rated_v1", "--labels", "answers", "--tier", "gold", "--reason", "people rated them", "--by", "owner")  # fmt: skip
         for arm in ("lead1", "lead2", "lead2_noisy", "author"):
             setup("run", "--system", f"tickets_{arm}_v1", "--dataset", "tickets_v1", "--repeat", "2")
         for f in sorted((proj / "tutorial/scorers").rglob("*")):
@@ -655,6 +676,14 @@ def main() -> int:
             ("catalog-serve", [], "ok"),  # started, its address read, stopped
             # A stdio server: --help here; tests/test_mcp_server.py talks to it through the SDK.
             ("mcp", ["--help"], "ok:the harness's reads as MCP tools"),
+            # after the prompt cases: a run records the prompt its adapter declares as a version.
+            # The tutorial's two fake judges, validated on the rated dataset: the systems it writes name the core adapter
+            # by its id, which a pinned project resolves in the package, not under its own root
+            (
+                "judge-validate",
+                ["--scorer", "tickets-judge-v1", "--dataset", "rated_v1"],
+                "ok:the `validation` block",
+            ),
             ("validate", [], "ok"),
             ("self-test", [], "ok"),
         ]

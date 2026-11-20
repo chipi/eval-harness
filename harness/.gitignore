@@ -143,6 +143,19 @@ data/sources/summeval_*/
 data/references/gold/summeval_*/*
 data/references/silver/summeval_*/*
 
+# The two published human evaluations the judge-validation sources build rated datasets from (Goyal et al. 2022, CC BY 4.0;
+# Zhang et al. 2024, no licence stated). The items carry CNN/DailyMail articles and model summaries and the references the
+# people's ratings, individual ones included: none of it ours to redistribute. The datasets' records, the references'
+# manifests (their checksums) and the runs (verdicts and scores, no text) are committed.
+data/sources/goyal2022_*/
+data/sources/zhang2023_*/
+data/labels/goyal2022_*/
+data/labels/zhang2023_*/
+data/references/gold/goyal2022_*/*
+data/references/gold/zhang2023_*/*
+!data/references/gold/goyal2022_*/manifest.json
+!data/references/gold/zhang2023_*/manifest.json
+
 # Every run is in data/runs since RFC-032 step 4: a re-run's purpose (repeat, retime, pair) and a score's label
 # (silver, rescored, judged) are fields, not folders. A throwaway pass is `evh run --scratch`, under .build/. A
 # data/runs-* folder is format 3 data that `evh migrate` has not moved yet: never committed as it is.

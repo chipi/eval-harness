@@ -954,6 +954,11 @@ def item_view(A, args) -> None:
     if got.get("error"):
         die(got["error"], "bad-argument")
     _jsonout.value("item", got)
+    # The artifact each arm left for this item (RFC-038): one list, for a screen that draws a link per arm.
+    _jsonout.value(
+        "artifacts",
+        [{"arm": a, **v["artifact"]} for a, v in got["views"].items() if v.get("artifact")],
+    )
     for f in got.get("fields") or []:
         print(f"  {f.get('label') or f['name']}: {f['value']}")
     src = got.get("source") or {}

@@ -867,6 +867,18 @@ directory (until one or the other, `validate` fails V7 on it). A resumed pass **
 it again**, rather than skipping it — so the new run is complete, not a fragment — and
 calls the model only for the items that are missing.
 
+**An arm that calls each item once** (its adapter declares `CALL_ONCE`, or `call_once(params)`, for a call with an effect a
+retry would repeat: an agent run in a container, a deploy; [INTEGRATION](INTEGRATION.md#the-second-function)) is never retried,
+a transient failure included, and says so when it starts (`evh run --dry-run` too). A failed item keeps the `meta` and the
+cost its exception carried (a trial's directory). Its `--resume` differs in one thing: it does not call again an item that
+**may already have had its effect**. An item with an output is read and scored again; an item never attempted (no row, no
+start mark) is called; an item whose row says `failed`, and an item with a start mark and no row (the process died during
+its call), are listed by id with their error, stay failed items of the new run, and are not called. `evh run … --resume RUN
+--recall-failed` calls exactly those, once each, and the run records them (`recalled`, in `run.json`); the flag is refused
+on an arm that is not call-once and without `--resume`. The start mark is one synced line of the run's checkpoint, written
+before each call (`rows.partial.jsonl`, or the `rows_partial` table), read in both stores. `evh arm-smoke` of such an arm
+calls item 1 once and does not check determinism; `--repeat N` is allowed, each repeat N more real calls. `--resume RUN --dry-run` says what the resume would call (and prices only that), with and without `--recall-failed`; the Workbench's job screen lists the held items of a finished run with the same dry run and the decision to call them again.
+
 Three things worth knowing:
 
 - **It costs nothing to replay.** Items read from disk make no API call, and the cost
@@ -1150,11 +1162,16 @@ evh leaderboard my_v1 --label judged/my-judge-v1
 ```
 
 A project needs only its own data directory, scorer, prompt and runs: the judging code, the
-prompt builder and the judge client are all in `evaluation_harness`.
+prompt builder and the judge client are all in `evaluation_harness`, and so is the check of a judge
+against people, `evh judge-validate` ("Validating a judge", below).
 `validate_judge_goyal.py` and `validate_judge_zhang.py`, which check a scorer against the Goyal
-et al. human preferences and the Zhang et al. crowd ratings (CNN/DailyMail articles), stay
-scripts of this repository: each is specific to its download
-and to the news-summary judge, so neither is an `evh` command.
+et al. human preferences and the Zhang et al. crowd ratings (CNN/DailyMail articles), predate it and
+stay scripts of this repository, outside the package, as the evidence of `research/REPORT_SUMMARIZATION.md`: their published
+figures are defined differently from the command's, so each is specific to its download and to the news-summary judge, and
+neither is an `evh` command; an installed project uses `evh judge-validate`. Their two downloads are also dataset sources
+for the command, `examples/judge-validation-goyal/` and `examples/judge-validation-zhang/`, and their committed records are
+read as eight recorded runs of those datasets (`tools/reproject_judge_validation.py`, $0; `evh scorer-show judge-summ-v1`
+lists them).
 
 1. **The scorer** is `data/scorers/<id>.yaml`: two or more judges from different vendor
    families, the task, the prompt, the protocol, a `validation` block and a cost cap. The
@@ -1291,8 +1308,8 @@ evh judge-verdicts <scorer> --item <id> --order item # one item, every arm and j
 ```
 
 A judge asked for its reason is a different judge (its message changes), so the gate compares `explain` with its
-validation runs: validate it with `explain: true` in the judge arm's params (the SummEval adapter asks in the same
-words). A scorer without the field gives no reasons and keeps its judging sets and messages as they were.
+validation runs: validate it with `explain: true` in the judge arm's params (`evh judge-validate` sets it from the scorer, and the
+SummEval adapter asks in the same words). A scorer without the field gives no reasons and keeps its judging sets and messages as they were.
 
 ### Validating a judge: what the gate needs
 
@@ -1300,7 +1317,53 @@ A validation is an ordinary eval whose **arms are the judges** and whose items c
 human ratings. Each judge runs as an arm (same `model`, `temperature`, `reasoning`,
 `max_tokens`, `provider` and prompt file as in the scorer) over items people have already
 rated, and its score is how well it agrees with them: rank correlation for ratings, accuracy
-for preferences. The scorer's `validation` block then names those runs:
+for preferences.
+
+**`evh judge-validate` does the route, every step by the harness.** It takes the scorer and a
+*rated dataset*: each item is one JSON document `{"source": text, "outputs": [text, ...]}`, and its
+reference (gold or silver) is `{"ratings": {dimension: [one number per output]}, "raters": [{dimension:
+[...]}, ...]}`, the mean of the people's ratings over the scorer's `task.dimensions`, or over some of them when the
+people did not rate all (the same in every item; only their order is used, so any scale) and, optionally, each person's own. A dataset source writes that shape and
+hands the ratings on as the dataset's own answers (`dataset-create --query '{"answer": ...}'`, then
+`reference-promote`): the two sources in `examples/judge-validation-goyal/` and
+`examples/judge-validation-zhang/` are worked ones.
+
+```bash
+evh judge-validate --scorer my-judge-v1 --dataset my_rated_v1 --dry-run     # the calls, the estimate and the cap; free
+evh judge-validate --scorer my-judge-v1 --dataset my_rated_v1               # the runs, and the block they make
+evh judge-validate --scorer my-judge-v1 --dataset my_rated_v1 --fill --reason "..." --by person:ana
+```
+
+It writes one system per judge, `data/systems/<scorer>__<judge>__validation.yaml` (its params the
+judge's, and the scorer's mode, `explain`, prompt and protocol; its adapter the core's
+`scripts/judge_validation.py`, so the judge is sent the message `judge-score` sends, block by
+block), and a floor of seeded random verdicts at $0, `<scorer>__random__validation` (`--floor-run
+RUN` names the best free scorer's run instead). It runs each as `evh run` does, in the scorer's mode
+(grade: `tau`, tau-b of the judge's scores with the ratings per dimension, averaged; pick: `top1`
+beside `top1_chance`; pairwise: `pair_agreement` over eight seeded pairs per item that people rank
+apart): the cap (`cost_cap_usd` or the environment, and it refuses to call without one), the
+fingerprint, the progress, `--resume` (a finished run is used as it is, one that stopped is
+continued). The outputs are shown to the judge in a blinded order seeded by `order_seed` and the item, as `judge-score` shows its arms (`order: original` in a hand-written system shows them as the item lists them). That is why a figure from the command differs from one made in the original order: `gemma_l` on SummEval's 100 articles is tau 0.5156 blinded, 0.5360 in the original order and 0.5384 in the committed hand-made run (RFC-038 section 8). A run stores each verdict in the item's own order and, for a reply that does not parse,
+only its sha256, finish reason and length: a reply can quote the rated item. With `raters`,
+`human_tau` (`human_top1`, `human_pair_agreement`) is scored beside the judge: one person against the
+mean of the others, which is how well people agree with people. It prints, per judge, the metric,
+the floor, the run and the `validation` block these runs make. `--fill` writes that block and
+`prompt.sha256_at_16` into the scorer through the scorer's own operation, as a decision (`--reason`
+goes into the block's `why`, `--by` into the scorer's history), then prints what the gate
+(`validation_problems`) answers. It refuses before any call: a dataset that is not rated (an item that
+is not `{source, outputs}`, a reference without `ratings`, a dimension of the scorer the ratings lack,
+a list that is not one number per output), a pairwise scorer with an item of one output, a pick scorer
+whose `outputs_per_call` is below the outputs, a grade prompt that does not name every dimension, no
+cost cap; and `--fill`: a `provider: fake` judge (its runs are allowed, as a test of the plumbing for
+$0), a scorer that has judged (a new version is `scorer-new --set supersedes=...`), a block already there
+without `--replace`, only some of the judges. A dimension of the task the ratings do not carry is not averaged in: the block records
+the ones it validates (`validation.dimensions`), the gate names the rest (`dimension fluency: not validated on <dataset>
+(its ratings carry ...)`), and `evh scorer-show` and the Workbench say the same for each validation run. `evh scorer-show`
+lists the validation runs and the
+datasets that are rated for the scorer; the Workbench's "A judge for this goal" does the same steps (the
+cost first, the runs, the write) and prints the commands.
+
+The scorer's `validation` block then names those runs:
 
 ```yaml
 validation:
@@ -1313,7 +1376,8 @@ validation:
 ```
 
 A pick or pairwise scorer adds `mode: pick` (or `pairwise`) to the block, and its `metric` is the validation
-run's in that mode: `top1` or `pair_agreement` in the SummEval example (below).
+run's in that mode: `top1` or `pair_agreement` (the command's, and the SummEval example's, below).
+`evh judge-validate --fill` writes the block, with `why` (who validated it and why), so nobody types the values.
 
 The gate reads each named run's `metrics.json` and refuses unless the metric equals
 `value`, is at least `min_metric` (set it to the best free scorer's score on the same data,
@@ -1480,6 +1544,14 @@ same name: `runs=A,B`, `baseline=`, `metric=`, `where=FIELD:VALUE`, and `item=IT
 the reference and each arm's output (`evh comparison-item --runs … --item ID`, the same view in the terminal). Open
 an item by clicking its row, or by adding `&item=ITEM_ID` to a comparison's address (a link, a script); the full list is in
 [tutorial 5](../../docs/tutorials/5-catalog-and-inspector.md).
+
+**An item's artifact** (what its adapter left to open: an agent's trial directory, a report; `meta["artifact"]`, a path
+inside the project, [INTEGRATION](INTEGRATION.md#the-one-function)) is a link under the arm's output in the inspector, a
+`(run R · artifact artifacts/…)` line under it in `evh comparison-item` (`--json`: `views[arm].artifact` and
+`artifacts`, `{arm, path, kind, url}`), and under the reply of each item of `evh arm-smoke` and of the Workbench's check on
+three items. Its URL is under a directory the local inspector serves read-only (`artifacts/` at the project root, `data/`
+and the adapter's `served_dirs`), with `nosniff` and `sandbox`, and a symlink out of it is a 404. A path outside the
+project, a stored one a hand edited, is `refused`, never linked. A public server shows no artifact, a release of a hidden dataset drops the path from its rows (and is refused when it lies under `data/runs/`), and any other release copies the row without the directory (`artifacts/` is not under `data/`; the copy carries `release.json`, and there a missing artifact reads "not in this deployment").
 
 **For an agent with a shell**, every command the API serves takes `--json` (RFC-026): one object, `{"command", "version", "result": {...}}`. Most reads return the operation's own structured result (`result.datasets` for `dataset-list`, `result.runs` and `result.count` for `runs-list`, `result.arms`, `result.baseline`, `result.rows`, `result.conditions` and `result.notes` for `comparison-show`, and so on). Only `leaderboard`, `validate`, `cost-report`, `rank-stability`, `pair-test`, `family-test`, `sheet-show`, `comparison-item` and `run-compare` answer
 `{"command", "version", "result": {"blocks": [...], "values": {...}}}`: `blocks` is what the
@@ -1909,8 +1981,9 @@ each item at the commit that ran it, and scores the replay only once it is shown
   commit). At a change it imports the version with `_codeload.use(path, [modules])`, which drops every module of
   another version first, and sets its seams again; state kept across items lives in files or the adapter, never in
   the system's modules. `support` names the adapter's own modules beside it (a stand-in world), hashed with it.
-- **A replay run** calls each item once (a retry would repeat side effects) and refuses `--resume`, `--items` and
-  `--repeat` above 1. It sets `EVH_REPLAY=1`, so a system can refuse real calls under it. Its fingerprint's
+- **A replay run** calls each item once (a retry would repeat side effects, the rule an adapter's `CALL_ONCE` gives any
+  arm, `--resume` ("When a run dies partway", above)) and, because its items depend on each other, refuses `--resume`,
+  `--items` and `--repeat` above 1. It sets `EVH_REPLAY=1`, so a system can refuse real calls under it. Its fingerprint's
   `deployment.code` names the record, the deployments' hash and each commit with its item count.
 - **A candidate**: `replay: {…, commit: <sha>}` runs every item at that commit; the arm a change is measured as.
 - **Faithfulness**: `evh faithfulness --system REPLAY --dataset D --production RUN` replays every item at the recorded commits and

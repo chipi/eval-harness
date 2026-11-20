@@ -294,10 +294,10 @@ def parse_pairwise(output: str | None) -> int | str | None:
     return None
 
 
-def parse_block(
+def parse_columns(
     output: str, n: int, dims: Sequence[str] = DIMS, scale: Sequence[float] = (1, 5)
-) -> list[float] | None:
-    """Per-output mean of the dimensions, or None.
+) -> dict[str, list[float]] | None:
+    """Each dimension's `n` scores, or None.
 
     Lenient about wrapping (a fence, a sentence before the JSON), strict about content: a
     dimension counts only with exactly `n` numbers, and a block counts only with every
@@ -313,7 +313,7 @@ def parse_block(
         return None
     if not isinstance(obj, dict):
         return None
-    cols = []
+    cols: dict[str, list[float]] = {}
     for d in dims:
         v = obj.get(d)
         if not isinstance(v, list) or len(v) != n:
@@ -324,8 +324,18 @@ def parse_block(
         f = [float(x) for x in v]
         if any(not (lo <= x <= hi) for x in f):
             return None
-        cols.append(f)
-    return [statistics.fmean(c[i] for c in cols) for i in range(n)]
+        cols[d] = f
+    return cols
+
+
+def parse_block(
+    output: str, n: int, dims: Sequence[str] = DIMS, scale: Sequence[float] = (1, 5)
+) -> list[float] | None:
+    """Per-output mean of the dimensions, or None (`parse_columns` says what a block must hold)."""
+    cols = parse_columns(output, n, dims, scale)
+    if cols is None:
+        return None
+    return [statistics.fmean(c[i] for c in cols.values()) for i in range(n)]
 
 
 # ── rank statistics ──────────────────────────────────────────────────────────

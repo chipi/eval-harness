@@ -323,7 +323,7 @@ try:
             and len(list((proj / ".build/jobs").iterdir())) == jobs_before,
             r,
         )
-        jr = start("t-spend", {**ok}, max_cost_usd=1)
+        jr = start("t-spend", {**ok, "recall_failed": True}, max_cost_usd=1)
         (proj / ".build/jobs" / jr["id"] / "state.json").write_text(
             json.dumps({"state": "failed", "exit": 1})
         )
@@ -346,6 +346,13 @@ try:
             and recn["locks"] == on_disk(jr["id"])["locks"]
             and recn["by"] == by,
             recn,
+        )
+        check(
+            "a resume does not carry `recall_failed`: the items that job recalled were called by it, a person names them again "
+            "(RFC-038)",
+            on_disk(jr["id"])["inputs"].get("recall_failed") is True
+            and "recall_failed" not in recn["inputs"],
+            (on_disk(jr["id"])["inputs"], recn["inputs"]),
         )
         (proj / ".build/jobs" / new["id"] / "state.json").write_text(
             json.dumps({"state": "succeeded", "exit": 0})

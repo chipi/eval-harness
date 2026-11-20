@@ -1,0 +1,11 @@
+# A judge's committed validation records, read as a recorded arm over a rated dataset
+# (tools/reproject_judge_validation.py): nothing is called.
+system_id: judge-summ-v2__openai_l__validation_zhang
+adapter: scripts/judge_validation.py
+params:
+  provider: recorded
+  capture: zhang_judge_summ_v2_openai_l
+  scorer: judge-summ-v2
+  judge: openai_l
+  mode: grade
+  recorded_from: data/judge-validation/judge-summ-v2/zhang2023-cnndm/openai_l

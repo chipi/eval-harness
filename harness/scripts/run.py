@@ -32,8 +32,9 @@ from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _common, _jsonout, _outputs, _progress, _spend, _store
+from evaluation_harness import _artifact, _common, _jsonout, _outputs, _progress, _spend, _store
 from evaluation_harness._adapter import (
+    call_once,
     calls_per_item,
     load_adapter,
     metric_descriptions,
@@ -149,6 +150,89 @@ class _Resumed:
         }
         self.meta: dict[str, Any] = dict(prior.get("_meta") or {})
         self.meta["resumed_from_disk"] = True
+
+
+#: What a call-once item the earlier run's process died in is called: a start mark and no row (RFC-038 1.3).
+IN_DOUBT = "in doubt: its call started and the run stopped before it ended"
+#: What a run of a call-once arm says first (and what its dry run says too).
+CALL_ONCE_LINE = (
+    "  calls each item once (the adapter declares CALL_ONCE): no retry, a failure is a failed item, and --resume\n"
+    "  does not call a failed or in-doubt item again unless --recall-failed names them"
+)
+#: How many of the items a resume does not call again a run lists one by one.
+HELD_LISTED = 20
+
+
+def _held_items(
+    items: list[dict[str, Any]],
+    prior_out: dict[str, str],
+    prior_rows: dict[str, dict[str, Any]],
+    started: set[str],
+) -> dict[str, str]:
+    """{item_id: why} of the items a call-once run's earlier attempt called and did not finish with an output (RFC-038
+    1.3), in dataset order: one whose row says it failed (its call raised: its effect may have happened) and one with a
+    start mark and no row (the process died during its call). An item with an output, and one never attempted, are not
+    in it."""
+    held: dict[str, str] = {}
+    for it in items:
+        iid = it["item_id"]
+        if iid in prior_out:
+            continue
+        row = prior_rows.get(iid)
+        if row is not None and row.get("failed") == 1.0:
+            held[iid] = str((row.get("_meta") or {}).get("call_error") or "failed (its error was not kept)")
+        elif row is None and iid in started:
+            held[iid] = IN_DOUBT
+    return held
+
+
+def _say_held(held: dict[str, str], recall: bool) -> None:
+    """The items a resume of a call-once run does not call (or, with `--recall-failed`, calls again), by id and why."""
+    if not held:
+        return
+    if recall:
+        print(
+            f"  --recall-failed: {len(held)} item(s) called once already are called again, once each "
+            "(their side effects happen again)"
+        )
+    else:
+        print(
+            f"  {len(held)} item(s) were called once already and not again: --recall-failed calls them again, "
+            "and repeats their side effects"
+        )
+    for iid, why in list(held.items())[:HELD_LISTED]:
+        print(f"      {iid}  {why}")
+    if len(held) > HELD_LISTED:
+        print(f"      ... and {len(held) - HELD_LISTED} more (the run record lists them all)")
+
+
+def _failed_result(exc: BaseException, once: bool) -> Any:
+    """The empty `Result` of an item whose call raised: with the `meta` and `cost_usd` the exception carried (a
+    trial's directory, what the call spent), and under call once the error itself, which `--resume` lists."""
+    from evaluation_harness.adapter import Result  # noqa: PLC0415
+
+    meta = dict(getattr(exc, "meta", None) or {})
+    if once:
+        meta["call_error"] = f"{type(exc).__name__}: {str(exc)[:300]}"
+    return Result(output="", meta=meta, cost_usd=getattr(exc, "cost_usd", None))
+
+
+def _keep_artifact(res: Any, said: set[str]) -> None:
+    """The artifact an item's `meta` names (RFC-038), as the row keeps it: a clean path relative to the project, or, when
+    it does not name a place inside it, dropped with `artifact_refused` saying why (the item's answer is good, so it is
+    not failed). A stored path is something a server reads later, so what was given is never stored. Said once per why."""
+    meta = getattr(res, "meta", None)
+    if not isinstance(meta, dict) or _artifact.KEY not in meta:
+        return
+    rel, why = _artifact.normalise(meta.pop(_artifact.KEY))
+    if rel is not None:
+        meta[_artifact.KEY] = rel
+        return
+    reason = why or "not a path"
+    meta[_artifact.REFUSED] = reason
+    if reason not in said:
+        said.add(reason)
+        print(f"  artifact dropped: {reason}")
 
 
 def _timed(call_system: Any) -> Any:
@@ -433,6 +517,7 @@ def one_pass(
     per_item: Any = None,
     once: bool = False,
     same: Any = None,
+    recall: bool = False,
 ) -> dict[str, Any]:
     """One pass over the dataset. ``score_failure`` is the adapter's optional score_failure(reference): what an item
     whose call failed scores (A5); without it, an empty answer's score. ``scored_against`` is (the folder, its tier) the caller chose: a label set with
@@ -441,7 +526,8 @@ def one_pass(
     imported at module scope, because which adapter runs is a property of the arm now. ``primary`` names the metric
     each item's progress line shows. ``per_item(item)`` gives params added to an item's call (a replay's item and code,
     RFC-030); with ``once`` each item is called exactly once, a failure recorded and never retried (a retry would
-    repeat a replay's side effects)."""
+    repeat a replay's side effects). A resumed pass with ``once`` does not call again an item the earlier run called
+    once and did not finish (a failed row, a start mark with no row) unless ``recall`` names them (RFC-038)."""
     mat = MATERIALIZED / ds["dataset_id"]
     if not _store.is_dir(mat):
         die(
@@ -492,6 +578,13 @@ def one_pass(
     live = _outputs.writer(live_dir) if live_dir is not None else None
     # The previous attempt's outputs (RFC-024: its outputs.jsonl), read once.
     prior_out = _outputs.outputs(resume_dir) if resume_dir is not None else {}
+    held: dict[str, str] = {}
+    if once and resume_dir is not None:
+        held = _held_items(ds["items"], prior_out, prior_rows or {}, _outputs.started(resume_dir))
+        _say_held(held, recall)
+    n_failed_called = 0
+    stop_after: str | None = None
+    artifact_said: set[str] = set()
 
     n_items = len(ds["items"])
     every = progress_every(n_items)
@@ -508,7 +601,8 @@ def one_pass(
         # produced no prediction row and no score. A fully-resumed run therefore emitted
         # an empty `predictions.jsonl` and a metrics file with no scores in it, while
         # reporting success. The outputs were all present and none of them counted.
-        resumed = item["item_id"] in prior_out
+        carried = item["item_id"] in held and not recall
+        resumed = item["item_id"] in prior_out or carried
 
         if not resumed and _spend.stops(spent, cap, cfg.get("params")):
             # Check BEFORE the call: the cap is a ceiling on spend, not a report of
@@ -522,7 +616,10 @@ def one_pass(
 
         commit_here: str | None = None  # a replay's commit for this item (RFC-030), on its row
         if resumed:
-            res: Any = _Resumed(prior_out[item["item_id"]], (prior_rows or {}).get(item["item_id"]))
+            res: Any = _Resumed(prior_out.get(item["item_id"], ""), (prior_rows or {}).get(item["item_id"]))
+            if carried:  # called once already, not again: still a failed item of this run, with its error
+                res.meta["call_error"] = held[item["item_id"]]
+                failed_items.append({"item_id": item["item_id"], "error": held[item["item_id"]]})
         elif recorded is not None:
             from evaluation_harness.adapter import Result  # noqa: PLC0415
 
@@ -533,6 +630,10 @@ def one_pass(
             # single upstream 429 discarded an arm mid-sweep along with the items
             # already paid for.
             n_called += 1
+            if (
+                once and live_dir is not None
+            ):  # on disk before the call: a kill during it leaves the item in doubt
+                _outputs.mark_started(live_dir, item["item_id"])
             try:
                 call_params = {**params, **per_item(item)} if per_item is not None else params
                 commit_here = (call_params.get("code") or {}).get("commit") if per_item is not None else None
@@ -548,11 +649,19 @@ def one_pass(
                 )
             except SystemExit:
                 raise
-            except _common.CostCapExceeded:
+            except _common.CostCapExceeded as exc:
                 # The provider layer's own count reached the cap (an adapter that reported less than it paid):
-                # stopped as at the cap, before this item's output is written, so --resume calls it again.
-                capped_at = item["item_id"]
-                break
+                # stopped as at the cap, before this item's output is written, so --resume calls it again. A call-once
+                # item was called, so it is a failed item (its effect may have happened) and the run stops after it.
+                if not once:
+                    capped_at = item["item_id"]
+                    break
+                failed_items.append(
+                    {"item_id": item["item_id"], "error": f"{type(exc).__name__}: {str(exc)[:300]}"}
+                )
+                print(f"      FAILED item {item['item_id'][:8]}: {type(exc).__name__}: {str(exc)[:160]}")
+                res = _failed_result(exc, once)
+                stop_after = item["item_id"]
             except Exception as exc:  # an item's failure is recorded, not raised (A5)
                 if not once and is_transient(exc, extra_transient):
                     # The provider kept failing past every retry: weather, not this item. Stop, as for an
@@ -564,14 +673,14 @@ def one_pass(
                     {"item_id": item["item_id"], "error": f"{type(exc).__name__}: {str(exc)[:300]}"}
                 )
                 print(f"      FAILED item {item['item_id'][:8]}: {type(exc).__name__}: {str(exc)[:160]}")
-                if len(failed_items) > FAILED_STOP_COUNT and len(failed_items) > FAILED_STOP_SHARE * n_called:
+                n_failed_called += 1
+                if n_failed_called > FAILED_STOP_COUNT and n_failed_called > FAILED_STOP_SHARE * n_called:
                     raise SystematicFailure(
-                        f"{len(failed_items)} of the {n_called} items called failed (the last: "
+                        f"{n_failed_called} of the {n_called} items called failed (the last: "
                         f"{failed_items[-1]['error']}): an adapter or configuration error, not the items"
                     ) from exc
-                from evaluation_harness.adapter import Result  # noqa: PLC0415
-
-                res = Result(output="", cost_usd=None)
+                res = _failed_result(exc, once)
+            _keep_artifact(res, artifact_said)
             if res.cost_usd:
                 spent += res.cost_usd
                 _spend.add(res.cost_usd)
@@ -666,7 +775,9 @@ def one_pass(
         #
         # Appended per item, so a kill at item k leaves k rows. Not atomic-per-file
         # because it is an append, but a torn final line is discarded on read.
-        if live_dir is not None and not resumed:
+        if live_dir is not None and (
+            not resumed or carried
+        ):  # a carried failure too: a stopped resume keeps it
             _outputs.append_partial(live_dir, row)
         _progress.step(n, n_items)
 
@@ -676,13 +787,16 @@ def one_pass(
                     n,
                     n_items,
                     item["item_id"],
-                    _outcome(res, scored, primary, resumed),
+                    "called once already" if carried else _outcome(res, scored, primary, resumed),
                     time.perf_counter() - item_started,
                     spent,
                     time.perf_counter() - pass_started,
                 ),
                 flush=True,
             )
+        if stop_after is not None:
+            capped_at = stop_after
+            break
 
     # A replay's history confound (RFC-031 P1) is counted over every item of the run, as its note says: an adapter
     # may mark only the items where production acted, and the mean over those alone said 5 of 34 where the note said
@@ -739,6 +853,7 @@ def one_pass(
         "spent_usd": round(spent, 8),
         "failed_items": failed_items,
         "not_scorable": not_scorable,
+        "recalled": list(held) if recall else [],
     }
 
 
@@ -776,6 +891,9 @@ def _dry_run(
     repeat: int,
     adapter_path: Path | None = None,
     config_path: Path | None = None,
+    once: bool = False,
+    only: int | None = None,
+    note: str | None = None,
 ) -> int:
     """Shape and cost the sweep without calling anything.
 
@@ -807,7 +925,10 @@ def _dry_run(
     est_out = int(params.get("max_tokens", 600)) * len(items)
     declared = calls_per_item(adapter_path, params)
     per_item = declared or 1
-    calls = len(items) * repeat * per_item
+    calls = len(items) * repeat * per_item if only is None else only * per_item
+    share = (
+        1.0 if only is None else only / max(len(items), 1)
+    )  # a resume pays for the items it calls, not all of them
 
     print("DRY RUN — nothing was called\n")
     print(
@@ -817,6 +938,10 @@ def _dry_run(
     )
     print(f"  dataset     {ds['dataset_id']}  ({len(items)} items)")
     print(f"  repeats     {repeat}")
+    if once:
+        print(CALL_ONCE_LINE)
+    if note:
+        print(f"  {note}")
     print(f"  API calls   {calls}")
     print(
         f"              {per_item} per item, declared by the adapter (CALLS_PER_ITEM)"
@@ -837,7 +962,7 @@ def _dry_run(
         print("\n  No price in the system, so no estimate. Add usd_per_mtok_in /")
         print("  usd_per_mtok_out and the run will record what it actually cost.")
     else:
-        est = (est_in / 1e6 * float(pin) + est_out / 1e6 * float(pout)) * repeat * per_item
+        est = (est_in / 1e6 * float(pin) + est_out / 1e6 * float(pout)) * repeat * per_item * share
         print(
             f"\n  ESTIMATE    ~${est:.4f}  ({per_item} call(s) per item, each the prompt in and max_tokens out;"
             " NOT an upper bound:"
@@ -1183,6 +1308,23 @@ def _run(args: argparse.Namespace) -> int:
                 "invalid-file",
             )
     plan = _replay.prepare(cfg, args.config, ds, adapter_path)
+    # CALL ONCE (RFC-038): the adapter says each item's call has an effect that a retry would repeat. A recorded arm calls
+    # nothing, so it is not call-once whatever its adapter says.
+    declared_once = recorded is None and call_once(adapter_path, dict(cfg.get("params") or {}))
+    once = plan is not None or declared_once
+    if args.recall_failed:
+        if not args.resume:
+            die(
+                "--recall-failed names the items an earlier run called once and did not finish, to call them again: "
+                "it goes with --resume RUN",
+                "bad-argument",
+            )
+        if not declared_once:
+            die(
+                f"--recall-failed: {cfg['system_id']} is not call-once (its adapter declares no CALL_ONCE or "
+                "call_once(params)): its failed items were retried, and --resume calls them again without a flag",
+                "bad-argument",
+            )
     if args.items is not None:
         if not _store.is_file(args.items):
             die(f"--items {args.items}: no such file", "not-found")
@@ -1271,7 +1413,23 @@ def _run(args: argparse.Namespace) -> int:
     )
 
     if args.dry_run:
-        return _dry_run(ds, cfg, args.repeat, adapter_path, args.config)
+        calls_only, note = None, None
+        if args.resume and declared_once:  # what the resume would call, not the whole dataset
+            rdir, prows = _resume_source(args.resume, cfg, runs)
+            assert rdir is not None
+            done = _outputs.outputs(rdir)
+            held = _held_items(ds["items"], done, prows, _outputs.started(rdir))
+            fresh = [it for it in ds["items"] if it["item_id"] not in done and it["item_id"] not in held]
+            calls_only = len(fresh) + (len(held) if args.recall_failed else 0)
+            note = (
+                f"resume {args.resume}: {len(done)} done (read, not called), {len(held)} called once already "
+                f"({'CALLED AGAIN, --recall-failed: their side effects repeat' if args.recall_failed else 'not called; --recall-failed would call them'}), "
+                f"{len(fresh)} never attempted (called): {calls_only} call(s) in all"
+            )
+        return _dry_run(ds, cfg, args.repeat, adapter_path, args.config, declared_once, calls_only, note)
+
+    if declared_once:
+        print(CALL_ONCE_LINE)
 
     # WARM UP once per arm, before anything is timed. Two jobs in one:
     #
@@ -1449,6 +1607,7 @@ def _run(args: argparse.Namespace) -> int:
             "purpose": args.purpose,
             "build": build,  # a crashed run still says which build made it (V3)
             **({"of": args.of} if args.of else {}),
+            **({"call_once": True} if declared_once else {}),
         }
         _model_runs.write_run(run_id, identity, scratch=args.scratch)
         try:
@@ -1468,8 +1627,9 @@ def _run(args: argparse.Namespace) -> int:
                 recorded=recorded,
                 primary=primary_metric(adapter_path, cfg.get("params") or {}),
                 per_item=_replay.item_params(plan) if plan is not None else None,
-                once=plan is not None,
+                once=once,
                 same=same_at(adapter_path),
+                recall=args.recall_failed,
             )
         except BaseException as exc:
             _say_stopped(
@@ -1542,6 +1702,8 @@ def _run(args: argparse.Namespace) -> int:
             # replayed items nothing could.
             resume=result.get("resume") or None,
             failed_items=result.get("failed_items") or None,
+            call_once=True if declared_once else None,
+            recalled=result.get("recalled") or None,
             not_scorable=result.get("not_scorable") or None,
             history_confound=_confound(result["predictions"]),
             repeat_index=(i + 1) if args.repeat > 1 else None,
@@ -1617,6 +1779,8 @@ def _run(args: argparse.Namespace) -> int:
                 "n_items": metrics["n_items"],
                 "total_cost_usd": result["scores"].get("total_cost_usd"),
                 "capped_at": result["capped_at"] or None,
+                "call_once": declared_once,
+                "failed_items": result.get("failed_items") or [],
             }
         )
         per_repeat.append(result["scores"])

@@ -631,10 +631,23 @@
     return out;
   }
 
+  // What an item left for a person to open (RFC-038), served read-only by this server: a link only from a url that is one
+  // path on this origin (a single leading slash), its text and attribute escaped; a path the server does not serve, one that
+  // is not on this machine and one the read refused are said as text.
+  function artifactLine(a) {
+    if (!a) return '';
+    const url = typeof a.url === 'string' && /^\/(?![\/\\])/.test(a.url) ? a.url : '';
+    if (a.kind === 'refused') return '<p class="small muted">artifact refused: not a path inside the project</p>';
+    if (a.kind === 'missing') return `<p class="small muted">artifact ${esc(a.path)}: ${esc(a.why || 'not found on this machine')}</p>`;
+    if (url) return `<p class="small">artifact <a href="${esc(url)}" rel="noopener" target="_blank">${esc(a.path)}</a></p>`;
+    return `<p class="small muted">artifact ${esc(a.path)}: not served by this inspector</p>`;
+  }
+
   function view(v, base) {
-    if (!v || v.kind === 'none') return `<p class="muted">${esc((v && v.note) || 'No stored output.')}</p>`;
+    if (!v || v.kind === 'none') return `<p class="muted">${esc((v && v.note) || 'No stored output.')}</p>${artifactLine(v && v.artifact)}`;
     const show = x => typeof x === 'number' ? (x >= 100 ? x.toFixed(0) : x.toFixed(1)) : x;
-    const info = v.info && Object.keys(v.info).length ? `<p class="small muted">${esc(Object.entries(v.info).map(([k, x]) => k.replace(/_/g, ' ') + ' ' + show(x)).join(' · '))}</p>` : '';
+    const shown = Object.entries(v.info || {}).filter(([k]) => !(k === 'artifact' && v.artifact));
+    const info = (shown.length ? `<p class="small muted">${esc(shown.map(([k, x]) => k.replace(/_/g, ' ') + ' ' + show(x)).join(' · '))}</p>` : '') + artifactLine(v.artifact);
     if (v.kind === 'text') {
       const t = DIFF && base && base.kind === 'text' && base !== v ? diff(base.text, v.text) : esc(v.text);
       return info + `<div class="outtext">${t}</div><p class="small muted">${String(v.text || '').split(/\s+/).filter(Boolean).length} words</p>`;

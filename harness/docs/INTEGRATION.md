@@ -81,6 +81,16 @@ model that answered), which `evh run` stores under the row's `_meta`. Two things
 
 Everything else in `meta` (a parser's `predicted`, `ranking`, `gates`, ...) stays in the row's `_meta`.
 
+**An artifact: something a person should open.** One key of `meta` is the harness's own: `artifact`, a path to a directory
+or a file inside the project (an agent's trial directory, a rendered report): `meta["artifact"] = "artifacts/<system>/<trial>"`.
+`evh run` keeps it as a clean POSIX path relative to the project (an absolute path inside the project is made relative, a
+symlink is followed). A value that does not name a place inside the project (a `..`, an absolute path elsewhere, a symlink
+that leads out, not a string) is dropped, with `meta["artifact_refused"]` saying why; the run prints it once and the item
+is not failed, since its answer is good. Write what you leave under `artifacts/` at the project root: the inspector serves
+that directory read-only without configuration (anything else needs `served_dirs`, below). The item's view then carries a link
+(the inspector, `evh comparison-item`, `evh arm-smoke`, the Workbench's check on three items). A link is never public: a
+public server shows no artifact, and a release leaves out a hidden dataset's.
+
 **Where a cost came from.** A `Result`'s `cost_usd` is the provider's bill when `meta["usage"]["cost"]` carries one.
 An adapter that measures the cost itself (a gateway key's spend before and after the call, say) puts the figure in
 `cost_usd` and names its source in `meta["cost_source"]` (`"gateway"`, for instance): `evh run` and `evh arm-smoke`
@@ -98,6 +108,9 @@ spend"). Return the cost yourself, from your own client's bill or from the price
 - **An HTTP service** — `httpx.post(...)`, return the response field.
 - **A pipeline stage** — call the stage directly. You usually do not need the
   whole pipeline; you need the stage you are changing.
+- **An agent run in a container, a deploy, anything whose call has an effect** — declare it `CALL_ONCE` (below) so the
+  harness never retries it, and name what it leaves in `meta["artifact"]`. [`examples/harbor`](../../examples/harbor/README.md)
+  does both for Harbor trials (`harbor run`, one trial per item).
 
 If calling one stage in isolation turns out to be hard, that is worth knowing
 on its own. A stage you cannot invoke without booting everything is a stage you
@@ -191,6 +204,19 @@ estimate; without it the dry run counts one per item, and says so. It does not m
 (a conversation that grows costs more than four first calls), so set a cost cap from what `evh arm-smoke`
 measured. The adapter file is hashed into a run's fingerprint: adding the line is an edit like any other.
 
+**An adapter whose call has an effect** (an agent that spends money, a container, a deploy, a message sent) must not be
+retried: a retry repeats the effect. Declare it, beside `CALLS_PER_ITEM`: `CALL_ONCE = True`, or `call_once(params)`
+returning it per system from its params (the function wins over the constant). `evh run` then calls each item once, with no
+retry (the core's retry of a transient failure, `EVAL_MAX_RETRIES`, is not used for it, and a failure of any kind, a
+timeout included, is a failed item and not exit 75); the adapter must not retry inside `call_system` either. It is a fact of
+the adapter's code, hashed into the fingerprint with it: a system file cannot turn it off, and no environment variable turns
+it on. The warm-up is still retried (it makes no item's effect). A failed item keeps what its exception carried: put
+`meta` (a trial's `artifact`) and `cost_usd` on the exception as attributes and the row has them. `--resume` of a call-once
+run never repeats what may have happened: an item with an output is read and scored again, an item never attempted is
+called, and an item that was called and has no output (its row says `failed`, or the process died during its call: a start
+mark and no row) is listed and not called, until `evh run --resume RUN --recall-failed` names them (once each, recorded as
+`recalled` in the run). `evh arm-smoke` calls item 1 once and does not check determinism; `evh env-check` says so.
+
 **A metric of the whole run**, which no mean of per-item scores can be (precision and recall over the pairs a
 grouping makes, a calibration error, a coverage of distinct answers): define `score_run(items)` beside `score()`.
 It is called once, after every item is scored, with each item's `item_id`, `output`, `reference` (or None) and
@@ -262,6 +288,13 @@ by name), `prompt_root`, `code`, `replay`, and `expect_identical_to` (the system
 must match exactly); the schema is `schemas/system.schema.json`, and any other key is refused by `evh validate` (V1). What a system is
 run for is the run's: `--dataset`, `--goal` (what the evaluation is for, `data/goals/<goal_id>.yaml`)
 and `--round` (an eval round of that goal, `rN`).
+
+`adapter:` names a file, or one of the package's own adapters by the id a run records: the bundled
+`scripts/adapter.py`, and `scripts/judge_validation.py`, the adapter of `evh judge-validate`. The
+second measures a judge against people's ratings: its system's `params` are the judge's plus the
+scorer's mode, prompt and protocol, its items are `{"source": text, "outputs": [text, ...]}`, its
+reference is `{"ratings": {dimension: [one number per output]}}` (RUNBOOK §12, "Validating a judge");
+the command writes those systems, so a project names it by hand only to run one of them again.
 
 ---
 
@@ -379,7 +412,7 @@ which references exist, what one arm wrote for one item.
   | what each item is (optional) | `item_fields(dataset)`: `{"fieldset": <field set>, "values": {item_id: {field: value}}}` |
   | how big each dataset is (optional) | `dataset_items(dataset)`: its item count; without it the catalog shows the most items any arm scored |
   | words and places | `item_word` (e.g. `"episode"`), `data_dir` |
-  | more files the pages link (optional) | `served_dirs`: further directories under the project the inspector serves read-only, beside `data_dir` (a project's reports) |
+  | more files the pages link (optional) | `served_dirs`: further directories under the project the inspector serves read-only, beside `data_dir` (a project's reports). `artifacts/` at the project root is always served, with no setting. Every served directory but the catalog's own pages is sent with `X-Content-Type-Options: nosniff` and `Content-Security-Policy: sandbox` (an HTML file there cannot call the write API), and a path that reaches outside its directory through a symlink is a 404; a report with scripts of its own is shown without them |
   | what each metric measures (optional) | `metric_descriptions()`: `{metric: sentence}` or `{metric: {"summary": sentence, "details": explanation}}`; without it the metrics page describes only the harness's own metrics |
   | what a row is scored against (optional keys) | `describe(arm)`: `"reference"`, `"judge"`, `"wrote_reference"`; `references()`: `"items"`, `"author"`, `"from_run"`, `"model"`, `"created_at"` |
   | what an arm was measured under (optional) | `conditions(arm)`: `{"machine.platform": …, "library.torch": …, "deployment.machine": …, "harness.version": …, "scorer.sha256": …, "data.items_sha256": …, "reference.sha256": …}` (`machine.*` and `library.*` are the runner, where `evh` ran; `deployment.*` is where the system under test ran; both come from the run's fingerprint, v5); the inspector lists what differs between the arms it compares, and warns when it is the scorer, the reference or, for latency, the machine |
@@ -393,7 +426,7 @@ which references exist, what one arm wrote for one item.
   | labels (optional, RFC-023) | `label_sets()`: every set, `{dataset, set, id, source, n_items, guideline, created_at, items}`; `label_coverage(dataset)`: the sets covering a dataset's items (by their sha256) and how often two agree; `item_labels(dataset, item)`: every label one item has, with its source; the Labels page, a dataset page's labels and the inspector's item view read them. `describe(arm)` may add `"labels_source"` (an arm scored against a label set) and `references()` `"promoted_from"`, `"reason"`, `"promoted_by"` |
   | production (optional, RFC-019, RFC-023) | `captures()`: every capture, as `evh capture-list` lists them (the Captures page); `dataset_meta(dataset)`: its tags and where it came from (a capture, or the version it was derived from); `describe(arm)["recorded"]`: the capture a recorded arm read production's decisions from; `same_output(arm)`: whether two outputs are one decision (the adapter's `same(a, b)`), for agreement and the sheet |
   | picks and the deploy sheet (optional, ADR-0023) | `picks_waiting(dataset)`: the picks naming a dataset as their target; `deploy_sheet(arm)`: what production must match to run a promoted arm, and what each capture says it ran |
-  | the inspector's view kinds | `item_view` returns `{"kind": "text", "text"}`, `{"kind": "none", "note"}`, or a structured `insights` (`items` of `{text, grounded}`, `quotes`), `nodes` (`groups`) or `entities` (`items`); any may carry `info` |
+  | the inspector's view kinds | `item_view` returns `{"kind": "text", "text"}`, `{"kind": "none", "note"}`, or a structured `insights` (`items` of `{text, grounded}`, `quotes`), `nodes` (`groups`) or `entities` (`items`); any may carry `info`, and `artifact`: `{"path", "kind" (`dir`, `file`, `missing`, `refused`), "url"}` (the url only when the path lies under a served prefix), which the inspector draws as a link (the harness's own adapter reads it off the row's `meta["artifact"]`) |
 
   Every page and comparison is also a command that asks the same adapter the same questions:
   `evh dataset-list`, `evh reference-list`, `evh metric-list`, `evh goal-list`, `evh round-list`, `evh search` and

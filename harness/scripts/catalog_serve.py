@@ -70,6 +70,7 @@ from urllib.parse import parse_qs, unquote, urlparse
 HERE = Path(__file__).resolve().parent
 
 from evaluation_harness import (  # noqa: E402
+    _artifact,
     _common,
     _store,
     _visibility,
@@ -156,6 +157,18 @@ def item(params: dict) -> dict:
         out = {"item": it, "views": {a: dict(withheld) for a in arms}}
     else:
         out = {"item": it, "views": {a: A.item_view(a, it) for a in arms}}
+        if public:  # an artifact is never public: its directory quotes the items (RFC-038)
+            out["views"] = {
+                a: {
+                    **{k: v for k, v in view.items() if k != "artifact"},
+                    **(
+                        {"info": {k: v for k, v in view["info"].items() if k != "artifact"}}
+                        if "info" in view
+                        else {}
+                    ),
+                }
+                for a, view in out["views"].items()
+            }
     decl, values = _fields_of(dataset)
     out["fields"] = [
         dict(f, value=values.get(it, {})[f["name"]])
@@ -460,13 +473,16 @@ def warm(build_dir: Path) -> int:
 
 
 def served(build_dir: Path, data_dir: Path, also: tuple = ()) -> tuple:
-    """The URL prefixes readable over HTTP: the built catalog, the data tree and any directory
-    the adapter names in `served_dirs` (a project whose pages link its reports), all under the
-    project root (the server's document root)."""
+    """The URL prefixes readable over HTTP: the built catalog, the data tree, any directory
+    the adapter names in `served_dirs` (a project whose pages link its reports) and `artifacts/`
+    (where an adapter writes what an item leaves for a person to open, RFC-038: served whether or not it exists yet),
+    all under the project root (the server's document root)."""
     out = []
-    for p in (build_dir, data_dir, *also):
+    for p in (build_dir, data_dir, *also, ROOT / _artifact.DIR):
         try:
-            out.append("/" + p.resolve().relative_to(ROOT.resolve()).as_posix().strip("/") + "/")
+            prefix = "/" + p.resolve().relative_to(ROOT.resolve()).as_posix().strip("/") + "/"
+            if prefix not in out:
+                out.append(prefix)
         except ValueError:
             # The server's document root is the project: it serves the catalog and the data
             # tree from inside it, and nothing outside, so a directory elsewhere has no URL.
@@ -603,6 +619,11 @@ def allowed(path: str, host: str, port: int, prefixes: tuple) -> int:
     if prefix is None:
         return 404
     if any(seg.startswith(".") for seg in p[len(prefix) :].split("/")):
+        return 404
+    # The file server follows a symlink, and an agent's trial directory may hold one to /etc: a path that lands outside
+    # its prefix's own directory, once the links are followed, is not served (RFC-038).
+    base = (ROOT / prefix.strip("/")).resolve()
+    if not (ROOT / p.lstrip("/")).resolve().is_relative_to(base):
         return 404
     return 0
 
@@ -1515,9 +1536,12 @@ class Handler(SimpleHTTPRequestHandler):
     def end_headers(self) -> None:
         """A file of the project's data is shown, never run as one of this server's pages: an .html or .svg under
         data/ (a fetched source page, a capture record) could otherwise call the Configure page's write API from this
-        origin (advisor review, 2026-11-06). sandbox gives it an origin of its own; nosniff keeps its type."""
-        prefix = _data_url_prefix()
-        if prefix and urlparse(self.path).path.startswith(prefix):
+        origin (advisor review, 2026-11-06). sandbox gives it an origin of its own; nosniff keeps its type. The same for
+        every served prefix but the catalog's own pages (their scripts must run): `served_dirs` and `artifacts/` hold files
+        a project or an agent wrote, an agent's trial directory among them (RFC-038)."""
+        path = urlparse(self.path).path
+        shown = (*self.prefixes[1:], _data_url_prefix())  # the first prefix is the catalog's pages
+        if any(x and path.startswith(x) for x in shown):
             self.send_header("X-Content-Type-Options", "nosniff")
             self.send_header("Content-Security-Policy", "sandbox")
         super().end_headers()

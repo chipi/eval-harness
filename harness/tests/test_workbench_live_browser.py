@@ -742,6 +742,151 @@ try:
                 and "failed" not in smoke_row,
                 (smoke_jobs[-1:], smoke_row),
             )
+            # RFC-038: where the Workbench shows an item's output (the check on three items), what the item left to open is
+            # a link, served read-only by this server, with the command beneath
+            (proj / "art.py").write_text(
+                "from pathlib import Path\n\nfrom evaluation_harness.adapter import Result, score  # noqa: F401\n\n\n"
+                "def call_system(text, params):\n    d = Path(params['make'])\n    d.mkdir(parents=True, exist_ok=True)\n"
+                "    (d / 'log.txt').write_text('ok')\n"
+                "    return Result(output=text[:60], cost_usd=0.0, meta={'artifact': params['artifact']})\n"
+            )
+            (proj / "data" / "systems" / "art_v1.yaml").write_text(
+                "system_id: art_v1\nadapter: art.py\nparams: {artifact: artifacts/h1/trial, make: artifacts/h1/trial}\n"
+            )
+            page.goto(f"http://127.0.0.1:{port}/workbench/#systems/tickets_summary")
+            page.reload()
+            page.wait_for_selector("[data-smoke='art_v1']", timeout=20000)
+            page.select_option("#sm-ds", "tk_v1")
+            page.fill("#sm-cap", "0.01")
+            page.fill("#sm-by", "tester")
+            page.click("[data-smoke='art_v1']")
+            page.wait_for_selector("#sm-art_v1 details", timeout=120000)
+            art_link = page.locator("#sm-art_v1 a[href='/artifacts/h1/trial/']")
+            check(
+                "Check it on three items: an item that left an artifact shows its path as a link to the directory this server "
+                "serves read-only (RFC-038), and the screen prints the command beneath",
+                art_link.count() >= 1
+                and art_link.first.get_attribute("rel") == "noopener"
+                and art_link.first.text_content() == "artifacts/h1/trial"
+                and "evh arm-smoke" in (page.locator("main").text_content() or ""),
+                ((page.locator("#sm-art_v1").text_content() or "")[:300], art_link.count()),
+            )
+
+            # a url the server never makes, handed to the page by a stub: the page must not turn it into a link
+            def _bad_artifact_urls(node):
+                if isinstance(node, dict):
+                    for k, v in node.items():
+                        if k == "artifact" and isinstance(v, dict) and "url" in v:
+                            v["url"] = "//evil.example/x"
+                        else:
+                            _bad_artifact_urls(v)
+                elif isinstance(node, list):
+                    for v in node:
+                        _bad_artifact_urls(v)
+
+            def _stub_job(route):
+                resp = route.fetch()
+                doc = resp.json()
+                _bad_artifact_urls(doc)
+                route.fulfill(response=resp, json=doc)
+
+            page.route("**/api/v1/jobs/**", _stub_job)
+            page.click("[data-smoke='art_v1']")
+            try:  # the old result is on the screen until the new job's answer replaces it
+                page.wait_for_function(
+                    "document.querySelectorAll('#sm-art_v1 a').length === 0 && document.querySelectorAll('#sm-art_v1 details').length > 0",
+                    timeout=120000,
+                )
+            except Exception:  # noqa: BLE001 - the check below says what the screen shows
+                pass
+            check(
+                "Check it on three items: a url that is not one path on this origin is never made a link (it is said as text)",
+                page.locator("#sm-art_v1 a").count() == 0
+                and "not served by this inspector" in (page.locator("#sm-art_v1").text_content() or ""),
+                (
+                    (page.locator("#sm-art_v1").text_content() or "")[:300],
+                    page.locator("#sm-art_v1 a").count(),
+                ),
+            )
+            page.unroute("**/api/v1/jobs/**")
+            # RFC-038: a call-once run that left an item called once and not finished lists it, and calling it again is a
+            # decision with its cost first and its command beneath
+            calls_log = proj / "once_calls.log"
+            (proj / "once.py").write_text(
+                "from evaluation_harness.adapter import Result, score  # noqa: F401\n\nCALL_ONCE = True\n\n\n"
+                "def call_system(text, params):\n"
+                "    with open(params['log'], 'a') as fh:\n        fh.write(text[:12].replace(chr(10), ' ') + chr(10))\n"
+                "    if 'invoice' in text.lower() and not __import__('os').path.exists(params['log'] + '.ok'):\n"
+                "        raise ValueError('400: this input is refused')\n"
+                "    return Result(output=text[:40], cost_usd=0.0)\n"
+            )
+            (proj / "data" / "systems" / "once_v1.yaml").write_text(
+                f"system_id: once_v1\nadapter: once.py\nparams: {{log: '{calls_log}'}}\n"
+            )
+            # a dataset of its own: the run's failed item must not meet the re-scores of the goal's dataset below
+            made = [
+                evh("dataset-create", "--dataset-id", "tk_once_v1", "--source-dir", "tickets"),
+                evh("dataset-materialize", "--dataset-id", "tk_once_v1"),
+            ]
+            check(
+                "setup: a dataset for the call-once run",
+                all(m.returncode == 0 for m in made),
+                [m.stderr[-200:] for m in made],
+            )
+            started = page.evaluate(
+                """async () => { const r = await fetch('/api/v1/systems/once_v1/runs', {method: 'POST', credentials: 'same-origin',
+                headers: {'Content-Type': 'application/json', 'X-EVH-Data': '1'},
+                body: JSON.stringify({dataset: 'tk_once_v1', by: 'person:tester', max_cost_usd: 1})}); return await r.json(); }"""
+            )
+            first = (started.get("result") or started)["id"]
+            page.goto(f"http://127.0.0.1:{port}/workbench/#jobs/{first}")
+            page.wait_for_selector("#rc-est", timeout=120000)
+            held_rows = page.locator(
+                "h2:has-text('Called once and not finished') ~ .tablewrap tbody tr"
+            ).all_inner_texts()
+            n_calls = len(calls_log.read_text().splitlines())
+            check(
+                "a call-once run's job lists the item it called once and did not finish, with what happened, and the decision",
+                len(held_rows) == 1 and "refused" in held_rows[0] and page.locator("#rc-go").is_visible(),
+                held_rows,
+            )
+            page.click("#rc-est")
+            page.wait_for_function(
+                "document.getElementById('rc-out').innerText.includes('call(s) in all')", timeout=60000
+            )
+            est = page.locator("#rc-out").inner_text()
+            check(
+                "the cost first: the dry run of the recall prices only the held item, says it is called again, and calls nothing",
+                "1 call(s) in all" in est
+                and "CALLED AGAIN" in est
+                and len(calls_log.read_text().splitlines()) == n_calls,
+                est[:400],
+            )
+            cmds_text = page.locator("main").text_content() or ""
+            check(
+                "the screen prints the command it runs: evh run … --resume RUN --recall-failed, its dry run too",
+                "--recall-failed --dry-run" in cmds_text
+                and "evh run --system once_v1 --dataset tk_once_v1 --resume" in cmds_text,
+                cmds_text[-500:],
+            )
+            (proj / "once_calls.log.ok").write_text("the item is fine now\n")
+            page.fill("#rc-by", "tester")
+            page.click("#rc-go")
+            page.wait_for_url("**#jobs/*", timeout=20000)
+            page.wait_for_function(f"location.hash !== '#jobs/{first}'", timeout=20000)
+            for _try in range(120):
+                if len(calls_log.read_text().splitlines()) > n_calls:
+                    break
+                page.wait_for_timeout(500)
+            page.wait_for_function(
+                "document.querySelector('main').innerText.includes('succeeded')", timeout=120000
+            )
+            lines = calls_log.read_text().splitlines()
+            check(
+                "calling it again runs the resume with the flag: exactly the held item is called, once more",
+                len(lines) == n_calls + 1 and lines.count(lines[-1]) == 2,
+                (n_calls, lines),
+            )
             page.goto(f"http://127.0.0.1:{port}/workbench/#systems/tickets_summary")
             page.wait_for_selector("[data-clone='fake-1b_here']", timeout=20000)
             page.click("[data-clone='fake-1b_here']")
@@ -1523,6 +1668,41 @@ try:
                 .read_text()
                 .replace("dataset_id: tickets_v1", "dataset_id: tk_v1")
             )
+            # RFC-038 §3.4: a rated dataset (items {source, outputs}, the people's ratings as their reference) for the
+            # scorer's dimensions, which the judge screen offers to validate on
+            (proj / "rated_source.py").write_text(
+                "import json\n\n\nclass Source:\n    def __init__(self, options):\n        pass\n\n"
+                "    def describe(self, query):\n        return {'source': {'provider': 'test'}}\n\n"
+                "    def items(self, query):\n        for i, lens in enumerate([[1, 2, 3, 4], [4, 1, 3, 2], [2, 4, 1, 3]]):\n"
+                "            outs = [' '.join(f'w{i}{k}' for k in range(n)) for k, n in enumerate(lens)]\n"
+                "            r = {d: [float(n) for n in lens] for d in ('accuracy', 'usefulness')}\n"
+                "            yield {'item_id': f'r{i}', 'text': json.dumps({'source': f'ticket {i}', 'outputs': outs}),\n"
+                "                   'answer': json.dumps({'ratings': r, 'raters': [r, r]})}\n"
+            )
+            made = evh(
+                "dataset-create",
+                "--dataset-id",
+                "rated_v1",
+                "--source",
+                "rated_source.py:Source",
+                "--query",
+                '{"answer": "answer"}',
+            )
+            made = made if made.returncode else evh("dataset-materialize", "--dataset-id", "rated_v1")
+            made = made if made.returncode else evh("reference-promote", "--dataset-id", "rated_v1", "--labels", "answers", "--tier", "gold", "--reason", "people rated them", "--by", "tester")  # fmt: skip
+            check(
+                "setup: a rated dataset for the judge screen", made.returncode == 0, made.stdout + made.stderr
+            )
+            # the same, rated on one of the scorer's two dimensions only: what is not validated on it is said, not averaged in
+            (proj / "rated_sub_source.py").write_text(
+                (proj / "rated_source.py")
+                .read_text()
+                .replace("for d in ('accuracy', 'usefulness')", "for d in ('accuracy',)")
+            )
+            sub = evh("dataset-create", "--dataset-id", "rated_sub_v1", "--source", "rated_sub_source.py:Source", "--query", '{"answer": "answer"}')  # fmt: skip
+            sub = sub if sub.returncode else evh("dataset-materialize", "--dataset-id", "rated_sub_v1")
+            sub = sub if sub.returncode else evh("reference-promote", "--dataset-id", "rated_sub_v1", "--labels", "answers", "--tier", "gold", "--reason", "people rated accuracy", "--by", "tester")  # fmt: skip
+            check("setup: a dataset rated on one dimension", sub.returncode == 0, sub.stdout + sub.stderr)
             page.goto(f"http://127.0.0.1:{port}/workbench/#eval/tickets_summary/r2")
             page.click("text=A judge for this goal")
             page.wait_for_selector("h1:has-text('A judge for this goal')", timeout=20000)
@@ -1540,6 +1720,65 @@ try:
                 shown[:900],
             )
             page.fill("#jd-by", "tester")
+            check(
+                "W7 part c offers the rated datasets of the project (the scorer-show's rated_datasets), and not the plain ones",
+                page.locator("#jv-ds option").all_inner_texts() == ["rated_sub_v1", "rated_v1"],
+                page.locator("#jv-ds option").all_inner_texts(),
+            )
+            page.fill("#jv-cap", "0.5")
+            page.click("#jv-est")
+            page.wait_for_selector("#jv-out:has-text('DRY RUN'), #jv-out [role=alert]", timeout=60000)
+            vest = page.locator("#jv-out").inner_text()
+            check(
+                "Validate it, the cost first: judge-validate's dry run through POST /estimate says its calls and the cap, and writes nothing",
+                "DRY RUN" in vest
+                and "calls" in vest
+                and "cap $" in vest
+                and not (proj / "data" / "systems" / "tickets-judge-v1__judge_a__validation.yaml").exists(),
+                vest[:500],
+            )
+            page.click("#jv-go")
+            page.wait_for_selector("#jv-out:has-text('Done.'), #jv-out [role=alert]", timeout=120000)
+            vruns = sorted(
+                x.name.split("_2026")[0] for x in (proj / "data" / "runs").glob("tickets-judge-v1__*")
+            )
+            check(
+                "Validate it: judge-validate as a job under the cap runs each judge and the floor as ordinary runs of systems it wrote, and shows the block",
+                "Done." in page.locator("#jv-out").inner_text()
+                and vruns
+                == [
+                    "tickets-judge-v1__judge_a__validation",
+                    "tickets-judge-v1__judge_b__validation",
+                    "tickets-judge-v1__random__validation",
+                ]
+                and "validation:" in page.locator("#jv-out").inner_text(),
+                (page.locator("#jv-out").inner_text()[:500], vruns),
+            )
+            page.select_option("#jv-ds", "rated_sub_v1")
+            page.fill("#jv-cap", "0.5")
+            page.click("#jv-go")
+            page.wait_for_function(
+                "() => /Done\\./.test(document.querySelector('#jv-out').innerText) && /usefulness: not validated on rated_sub_v1/.test(document.querySelector('#jv-out').innerText)",
+                timeout=120000,
+            )
+            check(
+                "Validate it on a dataset rated on one dimension: the screen says which dimension is not validated on it",
+                "usefulness: not validated on rated_sub_v1" in page.locator("#jv-out").inner_text(),
+                page.locator("#jv-out").inner_text()[:500],
+            )
+            page.fill("#jv-why", "the fake judges, to see the plumbing")
+            page.click("#jv-fill")
+            page.wait_for_selector(
+                "#jv-fill-out [role=alert], #jv-fill-out:has-text('Done.')", timeout=120000
+            )
+            check(
+                "Write it into the scorer: a fake judge's validation is refused, saying why, and the scorer is as it was",
+                "fake" in page.locator("#jv-fill-out").inner_text()
+                and "validation"
+                not in yaml.safe_load((proj / "data" / "scorers" / "tickets-judge-v1.yaml").read_text()),
+                page.locator("#jv-fill-out").inner_text()[:400],
+            )
+            page.evaluate("WB.forgetUnsent()")  # the refused write's typed reason is a form nobody will send
             page.fill("#ss-cap", "0.02")
             check(
                 "changing it is a form with unsent changes",
@@ -1602,13 +1841,20 @@ try:
                 page.locator("main").inner_text()[:900],
             )
             judge_text = page.locator("main").inner_text()
+            cmd_text = page.locator("main").text_content() or ""
             check(
                 "the judge screen points an installed user at what installs: no repo tool (tools/validate_judge_*.py) is named, "
-                "and a validation is said to be an ordinary eval run with `evh run`",
+                "the validation runs are listed and the commands that make them are printed",
                 "tools/validate_judge" not in judge_text
-                and "evh run" in judge_text
-                and "validation" in judge_text,
-                judge_text[judge_text.find("Shown as stored") - 50 :][:500],
+                and "evh judge-validate --scorer tickets-judge-v1" in cmd_text
+                and "Its judges on rated datasets" in judge_text
+                and "usefulness: not validated on rated_sub_v1" in judge_text
+                and "tickets-judge-v1__judge_a__validation" in judge_text,
+                judge_text[:700],
+            )
+            check(
+                "once it has judged, its validation is not rewritten: no write form, a new version offered instead",
+                page.locator("#jv-new").count() == 1 and page.locator("#jv-fill").count() == 0,
             )
             # RFC-034 §5: the tutorial's judges explain, so the screen shows what they said and why, the lowest first.
             page.wait_for_selector("#why table.why tbody tr", timeout=20000)

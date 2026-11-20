@@ -25,6 +25,7 @@ OPS = (
            "items": {"type": "string", "format": "path", "x-metavar": "FILE", "description": "run only these item ids (one per line) of the dataset: a study's confirmation leaves out the items its study saw (RFC-029). The fingerprint's items are then these; a test set's looks are still the whole set's", "x-file": "upload"},
            "dry_run": {"type": "boolean", "description": "cost and shape the sweep WITHOUT calling anything"},
            "resume": {"type": "string", "x-metavar": "RUN_ID", "description": "the run to continue: the outputs it already produced are reused, only what is missing is paid for"},
+           "recall_failed": {"type": "boolean", "description": "with --resume, on a call-once arm (its adapter declares CALL_ONCE, RFC-038): call again the items the run called once and did not finish (a failed item, or one the process died in), once each; their side effects happen again, and the run records which items it recalled"},
            "unfaithful": {"type": "boolean", "description": "a replay (RFC-030) whose faithfulness record does not agree with production is scored anyway, by a person (an agent is refused); the run and every page showing it say so"},
        }),
     Op("sweep", "work", "run several arms, then the leaderboard",

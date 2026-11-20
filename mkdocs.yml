@@ -101,6 +101,7 @@ nav:
           - "RFC-035: Scenarios, evaluating what takes several steps (draft, 0.9.0)": rfc/RFC-035-scenarios.md
           - "RFC-036: Agentic scenarios, tools, stations and the path (draft, 0.9.0)": rfc/RFC-036-agentic-scenarios.md
           - "RFC-037: Conversational scenarios, a user who talks back (draft)": rfc/RFC-037-conversational-scenarios.md
+          - "RFC-038: Call once, artifact links, judge validation and a Harbor example (accepted, 0.8.0)": rfc/RFC-038-call-once-artifacts-judge-validation-harbor.md
       - Decisions (ADRs):
           - Index: adr/index.md
           - "ADR-0001: Judge scorers: re-measuring frozen outputs with a validated LLM judge": adr/ADR-0001-judge-scorers.md

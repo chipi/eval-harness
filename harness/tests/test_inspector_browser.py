@@ -158,6 +158,72 @@ def project(tmp: Path) -> tuple:
     return proj, env
 
 
+ARTIFACT_ADAPTER = """from pathlib import Path
+
+from evaluation_harness.adapter import Result, score  # noqa: F401
+
+
+def call_system(text, params):
+    d = Path(params["make"])
+    d.mkdir(parents=True, exist_ok=True)
+    (d / "log.txt").write_text("ok\\n")
+    return Result(output=text.split(".")[0], cost_usd=0.0, meta={"artifact": params["artifact"]})
+"""
+ARTIFACT_ARMS = {
+    "artlink": "artifacts/h1/trial",
+    "artmark": "artifacts/h1/a<i>b",
+    "artplain": "reports/x",
+    "artgone": "artifacts/h1/none",
+}
+
+
+def artifact_project(tmp: Path, env: dict) -> Path:
+    """A second, small project (RFC-038): the tutorial's tickets with four arms whose items leave an artifact, one served,
+    one whose path holds markup, one outside every served prefix and one that is not on this machine. Their adapter is their
+    own. A project of their own, so the first project's pickers and pages list the three arms they were written for."""
+    proj = tmp / "proj_art"
+    proj.mkdir()
+
+    def evh(*args: str) -> None:
+        r = subprocess.run(
+            [sys.executable, "-m", "evaluation_harness", *args],
+            cwd=proj,
+            env=env,
+            capture_output=True,
+            text=True,
+        )
+        if r.returncode:
+            raise SystemExit(f"setup: evh {' '.join(args)} failed:\n{r.stdout}{r.stderr}")
+
+    evh("init", "--store", store_under_test(), "--tutorial")
+    evh("dataset-create", "--dataset-id", "tickets_v1", "--source-dir", "tutorial/tickets")
+    evh("dataset-materialize", "--dataset-id", "tickets_v1")
+    evh(
+        "label-import",
+        "--sheet",
+        "tutorial/gold",
+        "--dataset-id",
+        "tickets_v1",
+        "--set",
+        "owner_gold",
+        "--by",
+        "owner",
+    )
+    evh(
+        "reference-promote", "--dataset-id", "tickets_v1", "--labels", "owner_gold", "--tier", "gold",
+        "--reason", "The kit's hand-written summaries decide.", "--by", "owner",
+    )  # fmt: skip
+    (proj / "art.py").write_text(ARTIFACT_ADAPTER)
+    for name, path in ARTIFACT_ARMS.items():
+        (proj / "data" / "systems" / f"tickets_{name}_v1.yaml").write_text(
+            f"system_id: tickets_{name}_v1\nadapter: art.py\nparams: {{artifact: {json.dumps(path)}, make: {json.dumps(path)}}}\n"
+        )
+        evh("run", "--system", f"tickets_{name}_v1", "--dataset", "tickets_v1")
+    shutil.rmtree(proj / "artifacts" / "h1" / "none")  # not on this machine any more
+    evh("catalog")
+    return proj
+
+
 def serve(proj: Path, env: dict, log: Path) -> tuple:
     with socket.socket() as s:
         s.bind(("127.0.0.1", 0))
@@ -180,7 +246,7 @@ def serve(proj: Path, env: dict, log: Path) -> tuple:
     return p, f"http://127.0.0.1:{port}/.build/catalog/"
 
 
-def drive(base: str, overview: str = "") -> None:
+def drive(base: str, overview: str = "", art_base: str = "") -> None:
     from playwright.sync_api import sync_playwright  # noqa: PLC0415
 
     with sync_playwright() as pw:
@@ -441,6 +507,76 @@ def drive(base: str, overview: str = "") -> None:
             "inspector: ?item= (a dataset page's inspect link) opens that item",
             page.locator("tr.eprow.on").get_attribute("data-ep") == ep,
         )
+
+        art_arms = ",".join(f"runs/tickets_v1/tickets_{a}_v1" for a in ARTIFACT_ARMS)
+        page.goto(f"{art_base}inspect.html?runs={art_arms}&item=t01_login")
+        page.wait_for_selector(".outgrid", timeout=15000)
+        link = page.locator('.outcol a[href^="/artifacts/h1/trial"]')
+        check(
+            "inspector (RFC-038): an item's artifact is a link to its directory, served by this server",
+            link.count() == 1
+            and link.get_attribute("href") == "/artifacts/h1/trial/"
+            and link.get_attribute("rel") == "noopener",
+            [link.count(), link.get_attribute("href") if link.count() else None],
+        )
+        got = page.request.get(f"{art_base.split('/.build')[0]}{link.get_attribute('href')}")
+        check(
+            "... and the directory it links to is served with nosniff and sandbox",
+            got.status == 200
+            and got.headers.get("content-security-policy") == "sandbox"
+            and got.headers.get("x-content-type-options") == "nosniff",
+            [got.status, dict(got.headers)],
+        )
+        grid = page.locator(".outgrid").inner_text()
+        check(
+            "... a path with markup is shown as text, never as elements",
+            "artifacts/h1/a<i>b" in grid and page.locator(".outgrid i").count() == 0,
+            grid[:400],
+        )
+        check(
+            "... a path under no served prefix is text, 'not served by this inspector', and no link",
+            "reports/x: not served by this inspector" in grid
+            and page.locator('.outgrid a[href*="reports"]').count() == 0,
+            grid[:400],
+        )
+        check(
+            "... a path that is not on this machine says so",
+            "artifacts/h1/none: not found on this machine" in grid,
+            grid[:400],
+        )
+        check(
+            "... the artifact is not repeated in the info line when the link is drawn",
+            not any(
+                "artifact artifacts/h1/trial" in x and "run " in x
+                for x in page.locator(".outcol .small.muted").all_inner_texts()
+            ),
+            page.locator(".outcol .small.muted").all_inner_texts(),
+        )
+
+        # A url the server never makes, handed to the page by a stub: the page must not turn it into a link.
+        bad_urls = ["//evil.example/x", "javascript:alert(1)", "/\\evil.example/x", "https://evil.example/x"]
+
+        def stub(route):
+            resp = route.fetch()
+            doc = resp.json()
+            for n_, view in enumerate(doc.get("views", {}).values()):
+                view["artifact"] = {
+                    "path": "artifacts/h1/trial",
+                    "kind": "dir",
+                    "url": bad_urls[n_ % len(bad_urls)],
+                }
+            route.fulfill(response=resp, json=doc)
+
+        page.route("**/api/item?*", stub)
+        page.goto(f"{art_base}inspect.html?runs={art_arms}&item=t01_login")
+        page.wait_for_selector(".outgrid", timeout=15000)
+        grid = page.locator(".outgrid").inner_text()
+        check(
+            "inspector: a url that is not one path on this origin (//host, javascript:, /\\host, https:) is never made a link",
+            page.locator(".outgrid a").count() == 0 and grid.count("not served by this inspector") == 4,
+            (page.locator(".outgrid a").count(), grid[:300]),
+        )
+        page.unroute("**/api/item?*")
 
         page.goto(base + "d/tickets_v1.html")
         ftable = page.locator("table#fields").inner_text()
@@ -915,19 +1051,21 @@ def main() -> int:
         print("  FAIL Playwright is not installed: `make browser-install` (requirements-browser.txt)")
         return 1
     tmp = Path(tempfile.mkdtemp(prefix="evh-browser-"))
-    server = None
+    server = art_server = None
     try:
         proj, env = project(tmp)
         server, base = serve(proj, env, tmp / "serve.log")
+        art_server, art_base = serve(artifact_project(tmp, env), env, tmp / "serve-art.log")
         ov = subprocess.run(
             [sys.executable, "-m", "evaluation_harness", "overview-show", "--period", "14d"],
             cwd=proj, env=env, capture_output=True, text=True,
         )  # fmt: skip
-        drive(base, ov.stdout)
+        drive(base, ov.stdout, art_base)
     finally:
-        if server is not None:
-            os.killpg(server.pid, signal.SIGTERM)
-            server.wait(timeout=10)
+        for s in (server, art_server):
+            if s is not None:
+                os.killpg(s.pid, signal.SIGTERM)
+                s.wait(timeout=10)
         shutil.rmtree(tmp, ignore_errors=True)
     return summary()
 

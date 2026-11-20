@@ -160,6 +160,9 @@ def main() -> int:
     )
     print(f"  EVAL_MAX_RETRIES       {env_int('EVAL_MAX_RETRIES', _retry.DEFAULT_MAX_RETRIES)}")
     print(
+        "                         (an arm whose adapter declares CALL_ONCE does not use it: that arm calls each item once)"
+    )
+    print(
         f"  EVAL_RETRY_MAX_DELAY   {env_int('EVAL_RETRY_MAX_DELAY', _retry.DEFAULT_RETRY_MAX_DELAY)}s — backoff cap"
     )
     # EVAL_CONCURRENCY was reported here and read by NOTHING: a knob that printed a value

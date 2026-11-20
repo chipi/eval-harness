@@ -1,0 +1,8 @@
+# Harbor's `nop` agent: it does nothing. The verifier then runs on an untouched container and should give reward 0: the
+# floor, and the proof that a pass is not free (a verifier that passes here checks nothing).
+system_id: harbor_nop_v1
+adapter: ../adapter.py
+params:
+  provider: harbor
+  agent: nop
+  jobs_dir: artifacts/harbor_nop_v1

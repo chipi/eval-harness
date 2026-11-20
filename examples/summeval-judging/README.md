@@ -171,6 +171,28 @@ winner on 0.36 of the articles; a re-shuffle of the order kept the pick on 0.55 
 win rates as a ranking of what these judges prefer, beside `judge-summ-v1`'s grades and the experts, not instead of
 them.
 
+## The same validation, by the command
+
+`evh judge-validate` ([RUNBOOK §12](../../harness/docs/RUNBOOK.md#validating-a-judge-what-the-gate-needs)) does for any
+scorer what the arms above do by hand: one system per judge, a seeded random floor, the runs, and the scorer's
+`validation` block. It reads a rated dataset, `{"source": ..., "outputs": [...]}` with the people's ratings as the
+reference, and this example's items are its own shape (`article`, `summaries`, `references`), so
+[`rated_source.py`](rated_source.py) builds the rated copy of the same 100 articles and expert scores:
+
+```bash
+evh dataset-create --dataset-id summeval_rated_100 \
+    --source examples/summeval-judging/rated_source.py:Source --query '{"answer": "answer"}'
+evh dataset-materialize --dataset-id summeval_rated_100
+evh reference-promote --dataset-id summeval_rated_100 --labels answers --tier gold \
+    --reason "three experts' mean scores decide, as fetch.py takes them" --by person:NAME
+evh judge-validate --scorer judge-summ-v1 --judges gemma_l --dataset summeval_rated_100 --dry-run
+```
+
+The core adapter builds the message with `judging.build_message`, the same function `judge-score` calls, which is this
+example's message byte for byte at 16 summaries; it shows them in a blinded, seeded order of its own, so a judge's tau
+is not the committed one to the digit: `gemma_l` scores 0.5156 blinded and 0.5360 with the summaries in their original
+order (`order: original` in a hand-written system), against the committed 0.5384 (RFC-038, section 8).
+
 ## What this cannot say
 
 - **No leaderboard run pinned a provider.** OpenRouter chose who served every judge, though

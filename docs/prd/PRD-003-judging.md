@@ -73,6 +73,10 @@ and step 5 of [tutorial 3](../tutorials/3-frontier-reference-and-judging.md).
 
 - **FR2.1**: A scorer runs only if its `validation` block names, for each judge, a committed run
   whose metric equals the stated value and whose model, settings and prompt are the judge's.
+- **FR2.1a**: `evh judge-validate` makes those runs: it measures each judge of a scorer against people's ratings on a rated
+  dataset, as ordinary runs beside a random floor, in the scorer's mode, and with `--fill` writes the `validation` block and
+  the prompt's sha256 into the scorer as a decision (who, why), refusing a scorer that has judged and a fake judge. The
+  Workbench's judge screen does the same steps, the cost first (RFC-038 section 3).
 - **FR2.2**: `--unvalidated` overrides the gate and every number then carries the label
   "unvalidated judge". `provider: fake` judges (offline, for testing a scorer) never pass it.
 

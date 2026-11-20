@@ -305,6 +305,9 @@ def resume_job(job_id: str) -> dict[str, Any]:
     resume_input, run_input = op.resume
     new_run = f"{inputs.get('system') or 'run'}_{new_id}"
     inputs |= {resume_input: j["run_id"], run_input: new_run}
+    inputs.pop(
+        "recall_failed", None
+    )  # the items it recalled were called by that job: a person names them again
     _jobs.create(op.name, inputs, j.get("by"), [(k, bool(x)) for k, x in j["locks"]], env, new_run, new_id)
     _jobs.start(new_id)
     return _jobs.read(new_id)

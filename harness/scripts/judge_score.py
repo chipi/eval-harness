@@ -440,6 +440,15 @@ def validation_problems(
             "prompt.sha256_at_16 does not match the prompt file: the text the "
             "judges were validated on has changed"
         )
+    # Nothing is averaged in silently: a dimension the validation's ratings did not carry is not validated on this dataset.
+    carried = v.get("dimensions")
+    if isinstance(carried, list) and carried:
+        out += [
+            f"dimension {d}: not validated on {v.get('dataset_id') or 'the validation dataset'} "
+            f"(its ratings carry {', '.join(map(str, carried))})"
+            for d in task_for(sc)["dimensions"]
+            if d not in carried
+        ]
     for j in sc["judges"]:
         r = named.get(j["id"])
         if not r:

@@ -18,7 +18,7 @@ lists them by resource).
 | D3 | "A retire can be undone until the round closes" (UXS-005, the mockup): no operation un-retires | drop it: a retire is a recorded decision with a reason |
 | D4 | "Approve as vetted" (PRD-017, UXS-005, the mockup): vetted is computed (every deployment's onboarding passed and an arm smoke passed); no operation approves | drop the Approve step; show the rule |
 | D5 | The round's question is stored as `hypothesis`; the UI and UXS say "question" | keep `hypothesis` in the model, say "question" on the page (renaming needs your yes) |
-| D6 | W7 "validate the judge here": the validators are tools (`tools/validate_judge_*.py`), not operations | cut from v1; show the stored validation only |
+| D6 | W7 "validate the judge here": the validators are tools (`tools/validate_judge_*.py`), not operations | was cut from v1; built later in 0.8.0 as the operation `judge-validate` (RFC-038), and W7's part c validates and writes |
 | D7 | `mock.js` (169,824 bytes of this repository's data) ships in the package and loads on every installed project's `/workbench/`; `mock_data.py` cannot run on format 7 (no `data/configs`, no `data/runs-linux`) | stop shipping it; keep the mockup as a frozen design reference and build the live screens from UXS-005 |
 | D8 | The Workbench behind a proxy: `/api/v1` and `/workbench` answer 404 under `--public` and `--behind-proxy` | stays refused for 0.8.0 |
 | D9 | config.yaml settings in W8 (e.g. exposure repos): `data-put` writes only under `data/` | out of v1 |

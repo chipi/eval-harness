@@ -1,0 +1,2 @@
+/tests/test.sh: line 8: /app/data.txt: No such file or directory
+/tests/test.sh: line 8: /app/count.txt: No such file or directory

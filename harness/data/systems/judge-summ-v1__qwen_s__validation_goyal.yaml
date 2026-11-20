@@ -1,0 +1,11 @@
+# A judge's committed validation records, read as a recorded arm over a rated dataset
+# (tools/reproject_judge_validation.py): nothing is called.
+system_id: judge-summ-v1__qwen_s__validation_goyal
+adapter: scripts/judge_validation.py
+params:
+  provider: recorded
+  capture: goyal_judge_summ_v1_qwen_s
+  scorer: judge-summ-v1
+  judge: qwen_s
+  mode: grade
+  recorded_from: data/judge-validation/judge-summ-v1/goyal2022-cnn/qwen_s

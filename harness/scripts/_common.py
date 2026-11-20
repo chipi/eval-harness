@@ -755,6 +755,10 @@ def item_path(dataset_id: str, item_id: str) -> Path | None:
 
 #: The id a run records when it used the adapter bundled with the harness.
 BUNDLED_ADAPTER_ID = "scripts/adapter.py"
+#: The adapters that are the package's own, named by the id a system writes under `adapter:` and a run records: the
+#: bundled one and the judge validation's (`evh judge-validate`). A project that pins the package has no such file
+#: under its root, and the package's copy is the one that ran.
+CORE_ADAPTER_IDS = (BUNDLED_ADAPTER_ID, "scripts/judge_validation.py")
 
 
 def in_checkout() -> bool:
@@ -781,16 +785,17 @@ def resolve_adapter_path(spec: str | None) -> Path | None:
     the classification report's label parser)."""
     if not spec:
         return None
-    # The bundled id names the package's own copy wherever a project runs it; a stray
-    # `scripts/adapter.py` under the project is not the code that ran.
-    if spec == BUNDLED_ADAPTER_ID and not in_checkout() and (CODE / "adapter.py").is_file():
-        return CODE / "adapter.py"
+    # A core id names the package's own copy wherever a project runs it; a stray `scripts/adapter.py` under the
+    # project is not the code that ran.
+    core = CODE / spec.rpartition("/")[2] if spec in CORE_ADAPTER_IDS else None
+    if core is not None and not in_checkout() and core.is_file():
+        return core
     for base in adapter_search_dirs():
         cand = Path(spec) if Path(spec).is_absolute() else base / spec
         if cand.is_file():
             return cand
-    if spec == BUNDLED_ADAPTER_ID and (CODE / "adapter.py").is_file():
-        return CODE / "adapter.py"
+    if core is not None and core.is_file():
+        return core
     return None
 
 

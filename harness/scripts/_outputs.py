@@ -1443,6 +1443,22 @@ def append_partial(run_dir: Path, row: dict[str, Any]) -> None:
     store().append_row(Path(run_dir), row_line(_results.slim_row(row)))
 
 
+#: The key of a start mark: a checkpoint line `{"_started": "<item id>"}`, which is not a row (it has no `item_id`).
+STARTED = "_started"
+
+
+def mark_started(run_dir: Path, item_id: str) -> None:
+    """A call-once item's start mark (RFC-038), on disk before its call: the checkpoint line that lets `--resume` tell an
+    item the process died in (a mark and no row: it may have had its effect) from one never attempted. Not a row, so
+    nothing that reads rows sees it; dropped with the checkpoint by `finish`."""
+    store().append_row(Path(run_dir), json.dumps({STARTED: item_id}) + "\n")
+
+
+def started(run_dir: Path) -> set[str]:
+    """The item ids a run's checkpoint holds a start mark for."""
+    return {r[STARTED] for r in rows(Path(run_dir), partial=True, errors="replace") or () if STARTED in r}
+
+
 def item_across(run_dirs: Iterable[Path], item_id: str) -> dict[Path, dict[str, Any]]:
     """{run_dir: its row for this item} over many runs: one query in the sqlite store, each run's rows indexed once in
     the files store (the index kept apart from the rows: `_ROWS_INDEX`). A run without a row for the item is left out."""

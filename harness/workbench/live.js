@@ -643,6 +643,14 @@
     const done = await runJob("/prompts/versions", { name, text, note, ...(parent ? { parent } : {}), by }, box, "recording the prompt");
     return done ? (((done.result || {}).result || {}).values || {}).version : null;
   }
+  // What an item left to open (RFC-038): a link only from a url that is one path on this origin (one leading slash), the path
+  // escaped; a path that is not served, or not on this machine, is said as text.
+  const artifactLink = (a) => {
+    if (!a) return "";
+    const url = typeof a.url === "string" && /^\/(?![\/\\])/.test(a.url) ? a.url : "";
+    if (a.kind === "missing") return `<p class="muted">artifact <span class="mono">${esc(a.path)}</span>: ${esc(a.why || "not found on this machine")}</p>`;
+    return url ? `<p>artifact <a class="mono" href="${esc(url)}" rel="noopener" target="_blank">${esc(a.path)}</a></p>` : `<p class="muted">artifact <span class="mono">${esc(a.path)}</span>: not served by this inspector</p>`;
+  };
   const smokeView = (r, sysRec) => {
     if (!r) return "";
     if (r.error) return r.error;
@@ -653,7 +661,7 @@
       · all ${esc(pj.items ?? "?")} items ≈ $${esc(pj.usd ?? "?")}, about ${esc(pj.minutes ?? "?")} min</p>
       ${unkept ? '<p class="muted">not kept: this system names no model record, and a check is kept on a model\'s deployment. Set the cap from the cost above.</p>' : ""}
       ${(v.flags || []).length ? `<ul>${v.flags.map((f) => `<li>${esc(f)}</li>`).join("")}</ul>` : ""}
-      ${(v.items || []).map((it) => `<details><summary class="mono">${esc(it.item)}</summary><pre class="reply">${esc(it.reply || "")}</pre></details>`).join("")}`;
+      ${(v.items || []).map((it) => `<details><summary class="mono">${esc(it.item)}</summary><pre class="reply">${esc(it.reply || "")}</pre>${artifactLink(it.artifact)}</details>`).join("")}`;
   };
   function screenSystems(goal) {
     const head = `<div class="kicker">Step 4 · ${esc(goal)}</div><h1>Choose the systems</h1>
@@ -1659,17 +1667,31 @@
         : `<p class="note">It has made ${one.judged_scores} judged score(s), so it stays as it judged. <button class="btn" type="button" id="ss-new">Make a new version of it</button></p>`;
       const valRows = (b.runs || []).map((x) => `<tr><td class="mono">${esc(x.judge)}</td><td class="num">${fx(x.value)}</td><td class="num">${fx(x.min_metric ?? b.min_metric)}</td><td class="mono">${esc(x.run)}</td></tr>`).join("");
       const checks = (one.checks || []).map((c) => `<li>${esc(typeof c === "string" ? c : JSON.stringify(c))}</li>`).join("");
+      const rated = one.rated_datasets || [];
+      const vr = one.validation_runs || [];
+      const vruns = vr.length ? `<p class="muted" style="margin-bottom:4px">Its judges on rated datasets:</p><div class="tablewrap"><table><thead><tr><th>judge</th><th>dataset</th><th>metric</th><th class="num">value</th><th class="num">items</th><th>not validated</th><th>run</th></tr></thead><tbody>${vr.map((x) => `<tr><td class="mono">${esc(x.judge)}</td><td class="mono">${esc(x.dataset)}</td><td>${esc(x.metric)}</td><td class="num">${fx(x.value)}</td><td class="num">${esc(x.n_items)}</td><td>${(x.not_validated || []).map((d) => esc(`${d}: not validated on ${x.dataset}`)).join("<br>") || '<span class="muted">none</span>'}</td><td class="mono">${esc(x.run)}</td></tr>`).join("")}</tbody></table></div>` : "";
       shown = `<section class="part"><div class="parthead"><span class="letter">b</span><h2>How ${esc(cur)} judges</h2></div><div class="body">
           <p><b>${esc((MODES.find(([m]) => m === (r.mode || "grade")) || [])[1] || r.mode)}</b> · ${r.explain === true ? "each judge says why" : "no reasons asked"} · on <span class="mono">${esc(r.dataset_id)}</span> · the prompt <span class="mono">${esc(dig(r, "prompt.file") || "—")}</span> · at most $${esc(r.cost_cap_usd ?? "—")} a pass</p>
           <p class="muted">${guards}</p>
           <div class="tablewrap"><table><thead><tr><th>judge</th><th>model or system</th><th>family</th></tr></thead><tbody>${(one.judges || []).map((j) => `<tr><td class="mono">${esc(j.judge)}</td><td class="mono">${esc(j.model || j.system || "")}</td><td>${esc(j.family || "—")}</td></tr>`).join("")}</tbody></table></div>
           ${one.problem ? `<p class="note" role="alert">${esc(one.problem)}</p>` : ""}${edit}</div></section>
         <section class="part"><div class="parthead"><span class="letter">c</span><h2>Does it agree with people?</h2><span class="grow"></span>${va.validated ? '<span class="status ok">validated</span>' : '<span class="status">not validated</span>'}</div><div class="body">
-          ${valRows ? `<p class="muted">${esc(b.what || "")}${b.metric ? ` · ${esc(b.metric)} on ${esc(b.dataset_id)}` : ""}${b.differs_from_this_use ? ` · differs from this use: ${esc(b.differs_from_this_use)}` : ""}</p>
+          ${valRows ? `<p class="muted">${esc(b.what || "")}${b.metric ? ` · ${esc(b.metric)} on ${esc(b.dataset_id)}${b.dimensions ? ` over ${esc(b.dimensions.join(", "))}` : ""}` : ""}${b.differs_from_this_use ? ` · differs from this use: ${esc(b.differs_from_this_use)}` : ""}</p>
             <div class="tablewrap"><table><thead><tr><th>judge</th><th class="num">${esc(b.metric || "agreement")}</th><th class="num">it must beat</th><th>measured by</th></tr></thead><tbody>${valRows}</tbody></table></div>` : '<p class="muted">No validation recorded: nothing measured these judges against people\'s labels.</p>'}
           ${(va.problems || []).length ? `<ul class="problems">${va.problems.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}
           ${checks ? `<p class="muted" style="margin-bottom:4px">People's checks of its judges:</p><ul>${checks}</ul>` : ""}
-          <p class="muted">Shown as stored. This screen does not measure a judge: a validation is an ordinary eval whose arms are the judges, run with <code>evh run</code> on items people have already rated, and the scorer's <code>validation</code> block (<code>data/scorers/${esc(cur)}.yaml</code>) names those runs. RUNBOOK, "Validating a judge", says how.</p>
+          ${vruns}
+          <div data-form="judge-validate">
+            <p class="muted">Measure each judge against people's ratings: it runs as a system over a rated dataset, beside a random floor, as an ordinary run: the cost first, then the runs under a cap, then the validation block they make written into the scorer.</p>
+            ${rated.length ? `<div class="inline"><select id="jv-ds" aria-label="the rated dataset">${opt(rated, b.dataset_id)}</select>
+              <input type="text" id="jv-floor" placeholder="floor: a run of the best free scorer (optional)" autocapitalize="off" spellcheck="false" style="min-width:16rem">
+              <label>at most (USD) <input type="number" id="jv-cap" value="${esc(r.cost_cap_usd ?? 1)}" step="0.01" min="0.01" inputmode="decimal" style="width:6rem"></label></div>
+              <div class="actions" style="margin-top:0"><button class="btn" type="button" id="jv-est">The cost first (a dry run)</button><button class="btn primary" type="button" id="jv-go" data-send>Validate it</button>${mark}</div>
+              <div id="jv-out" data-out></div>
+              ${editable ? `<div class="inline"><input type="text" id="jv-why" placeholder="why these runs validate it: a sentence" autocapitalize="off" spellcheck="false" style="min-width:18rem"><input type="text" id="jv-differs" placeholder="how the rated outputs differ from the ones it will judge" autocapitalize="off" spellcheck="false" style="min-width:18rem"><button class="btn" type="button" id="jv-fill">Write it into the scorer</button></div><div id="jv-fill-out" data-out></div>`
+                : '<p class="note">It has judged, so its validation is not rewritten: <button class="btn" type="button" id="jv-new">make a new version with it</button></p>'}`
+              : "<p class=\"muted\">No dataset of this project has the rated shape for this scorer's dimensions: items {source, outputs}, with the people's ratings as their reference. A dataset source builds one (examples/judge-validation-goyal).</p>"}
+          </div>
           ${(one.judging_sets || []).some((j) => j.verdicts) ? chartBox("agreement", { scorer: cur }, true) : ""}</div></section>
         <section class="part"><div class="parthead"><span class="letter">d</span><h2>Score the arms with it</h2></div><div class="body" data-form="judge-run">
           <div class="inline"><select id="js-ds" aria-label="the dataset">${opt(dss, r.dataset_id)}</select>
@@ -1689,7 +1711,7 @@
       <section class="part"><div class="parthead"><span class="letter">f</span><h2>What it cost</h2></div><div class="body">
         <p class="muted">The billed cost of each arm, and what judging cost, from the runs and the judges' verdicts.</p>
         <div class="inline"><select id="cr-ds" aria-label="the dataset">${opt(dss)}</select><button class="btn" type="button" id="cr-go">Show the costs</button></div><div id="cr-out" data-out></div></div></section>
-      ${WB.cmd(`evh scorer-list\nevh scorer-new <id> --set dataset_id=... --set judges.0.system=... --set prompt.file=...\nevh judge-score --dataset-id <d> --scorer ${cur || "<id>"} --dry-run\nevh judge-score --dataset-id <d> --scorer ${cur || "<id>"}\nevh cost-report --dataset-id <d>`)}
+      ${WB.cmd(`evh scorer-list\nevh scorer-new <id> --set dataset_id=... --set judges.0.system=... --set prompt.file=...\nevh judge-validate --scorer ${cur || "<id>"} --dataset <rated> --dry-run\nevh judge-validate --scorer ${cur || "<id>"} --dataset <rated>\nevh judge-validate --scorer ${cur || "<id>"} --dataset <rated> --fill --reason "..."\nevh judge-score --dataset-id <d> --scorer ${cur || "<id>"} --dry-run\nevh judge-score --dataset-id <d> --scorer ${cur || "<id>"}\nevh cost-report --dataset-id <d>`)}
       <div class="actions"><a class="btn" href="#eval/${enc(goal)}">The eval</a><a class="btn" href="#goal/${enc(goal)}">Back to the goal</a></div></div>`;
   }
   // What the judges said and why (RFC-034 §5), the lowest scores first: what failed, and the judge's reason for it.
@@ -1776,6 +1798,38 @@
       } catch (e) { box.innerHTML = refusal(e); }
       ev.target.disabled = false;
     });
+    const validateInputs = () => {
+      const i = { dataset: v("jv-ds") };
+      if (v("jv-floor")) i.floor_run = v("jv-floor");
+      return i;
+    };
+    document.getElementById("jv-est")?.addEventListener("click", async (ev) => {
+      const box = document.getElementById("jv-out");
+      box.innerHTML = '<p class="muted">costing it…</p>';
+      ev.target.disabled = true;
+      const r = await fetch("/api/v1/estimate", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json", "X-EVH-Data": "1" }, body: JSON.stringify({ operation: "judge-validate", inputs: { scorer: cur(), ...validateInputs() } }) });
+      const b = await r.json().catch(() => ({}));
+      box.innerHTML = r.ok ? blocksView(b.result) : `<p class="note" role="alert">${esc(b.error || b.text || r.status)}</p>`;
+      ev.target.disabled = false;
+    });
+    holds("judge-validate", () => `Validate ${cur()}`);
+    const validated = async (ev, boxId, extra, what) => {
+      const box = document.getElementById(boxId), who_ = by(), cap = Number(v("jv-cap"));
+      if (!who_) return needWho(box);
+      if (!(cap > 0)) { box.innerHTML = '<p class="note" role="alert">Say the most it may spend first.</p>'; return; }
+      ev.target.disabled = true;
+      try {
+        const done = await runJob(`/scorers/${enc(cur())}/validation`, { ...validateInputs(), ...extra, by: who_, max_cost_usd: cap }, box, what);
+        if (done) { sent("judge-validate"); forget(`scorer:${cur()}`); forget("scorers"); box.innerHTML = `<p class="note">Done.</p>${blocksView((done.result || {}).result)}`; }
+      } catch (e) { box.innerHTML = refusal(e); }
+      ev.target.disabled = false;
+    };
+    document.getElementById("jv-go")?.addEventListener("click", (ev) => validated(ev, "jv-out", {}, "validating"));
+    document.getElementById("jv-fill")?.addEventListener("click", (ev) => {
+      if (!v("jv-why")) { document.getElementById("jv-fill-out").innerHTML = '<p class="note" role="alert">Say why these runs validate it: a validation is a decision, with who made it and why.</p>'; return; }
+      return validated(ev, "jv-fill-out", { fill: true, resume: true, reason: v("jv-why"), ...(v("jv-differs") ? { differs: v("jv-differs") } : {}) }, "writing the validation");
+    });
+    document.getElementById("jv-new")?.addEventListener("click", () => { st().supersedes = cur(); WB.render(); document.getElementById("jn-id")?.closest("details")?.setAttribute("open", ""); });
     document.getElementById("cr-go")?.addEventListener("click", async (ev) => {
       const box = document.getElementById("cr-out"), who_ = by();
       if (!who_) return needWho(box);
@@ -1940,6 +1994,20 @@
       <div class="actions">${f.offset ? '<button class="btn" type="button" id="jf-prev">Newer</button>' : ""}${to < js.total ? '<button class="btn" type="button" id="jf-next">Older</button>' : ""}<a class="btn" href="#home">Your goals</a></div>
       ${WB.cmd("evh jobs-status [--state running] [--operation run] [--goal <goal>]\nevh jobs-status <job>\nevh jobs-logs <job> --follow\nevh jobs-stop <job>\nevh jobs-resume <job>")}</div>`;
   }
+  // A call-once run (its adapter declares CALL_ONCE, RFC-038) that left items called once and not finished: a resume does not
+  // call them, because their effect may have happened. The decision to call them again is a person's, cost first.
+  function recallPart(j) {
+    const runs = ((((j.result || {}).result || {}).values || {}).runs) || [];
+    const r = runs.find((x) => x.run_id === j.run_id) || runs[0];
+    if (!r || !r.call_once || !(r.failed_items || []).length || RUNNING.includes(j.state)) return "";
+    const inp = j.inputs || {}, base = `evh run --system ${inp.system} --dataset ${inp.dataset} --resume ${j.run_id} --recall-failed`;
+    return `<h2>Called once and not finished</h2>
+      <p class="note">This run's adapter calls each item once. ${r.failed_items.length} item(s) were called and did not finish; a resume does not call them again, because what the call did may have happened. Calling them again repeats it, once each.</p>
+      <div class="tablewrap"><table><thead><tr><th>item</th><th>what happened</th></tr></thead><tbody>${r.failed_items.map((x) => `<tr><td class="mono">${esc(x.item_id)}</td><td>${esc(x.error)}</td></tr>`).join("")}</tbody></table></div>
+      <div class="inline"><label>at most (USD) <input type="number" id="rc-cap" value="1" min="0.01" step="0.01" style="width:7rem"></label></div>${byField("rc-by")}
+      <div class="actions"><button class="btn" type="button" id="rc-est">See the cost first</button><button class="btn primary" type="button" id="rc-go" data-send>Call them again</button></div><div id="rc-out" data-out></div>
+      ${WB.cmd(`${base} --dry-run\n${base}`)}`;
+  }
   function screenJob(id) {
     const head = `<div class="kicker"><a href="#jobs">Jobs</a> · ${esc(id)}</div>`;
     const j = load(`job:${id}`, `/jobs/${enc(id)}`, true);
@@ -1958,6 +2026,7 @@
       </tbody></table></div>
       <div class="actions">${running ? '<button class="btn" type="button" id="jb-stop">Stop it</button>' : ""}${j.run_id && !running && j.state !== "succeeded" ? '<button class="btn primary" type="button" id="jb-resume">Resume the run</button>' : ""}</div><div id="jb-out" data-out></div>
       ${res ? `<h2>Its result</h2>${blocksView(res)}` : ""}
+      ${recallPart(j)}
       ${(j.files || []).length ? `<h2>Its files</h2><ul>${j.files.map((n) => `<li><a class="mono" href="/api/v1/jobs/${enc(id)}/files/${enc(n)}" download="${esc(n)}">${esc(n)}</a></li>`).join("")}</ul>` : ""}
       <h2>Its log</h2><pre class="reply" id="jb-log">reading…</pre>
       ${WB.cmd(`evh jobs-status ${id}\nevh jobs-logs ${id}${running ? " --follow" : ""}${running ? `\nevh jobs-stop ${id}` : ""}`)}
@@ -1998,6 +2067,25 @@
       }
     };
     follow();
+    const recall = () => ({ system: (j.inputs || {}).system, dataset: (j.inputs || {}).dataset, resume: j.run_id, recall_failed: true });
+    document.getElementById("rc-est")?.addEventListener("click", async () => {
+      const out = document.getElementById("rc-out");
+      out.innerHTML = '<p class="muted">planning…</p>';
+      const r = await fetch("/api/v1/estimate", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json", "X-EVH-Data": "1" }, body: JSON.stringify({ operation: "run", inputs: recall() }) });
+      const b = await r.json().catch(() => ({}));
+      out.innerHTML = r.ok ? blocksView(b.result) : `<p class="note" role="alert">${esc(b.error || b.text || r.status)}</p>`;
+    });
+    document.getElementById("rc-go")?.addEventListener("click", async (ev) => {
+      const out = document.getElementById("rc-out"), by = byOf("rc-by") || (who() ? `person:${who()}` : null), cap = Number(document.getElementById("rc-cap").value);
+      if (!by) { out.innerHTML = '<p class="note" role="alert">Say who you are: calling them again names who decided.</p>'; return; }
+      if (!(cap > 0)) { out.innerHTML = '<p class="note" role="alert">Say the most it may spend first.</p>'; return; }
+      ev.target.disabled = true;
+      try {
+        const { system, ...rest } = recall();
+        const n = await send("POST", `/systems/${enc(system)}/runs`, { ...rest, by, max_cost_usd: cap });
+        forget("jobs:"); location.hash = `#jobs/${enc(n.id)}`;
+      } catch (e) { out.innerHTML = refusal(e); ev.target.disabled = false; }
+    });
     const act = (btn, path, what, after) => document.getElementById(btn)?.addEventListener("click", async (ev) => {
       const box = document.getElementById("jb-out");
       ev.target.disabled = true;

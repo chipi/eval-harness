@@ -247,7 +247,7 @@ REFUSED: judge scorer tickets-judge-v1 is not validated:
 
 **The harness refuses a judge nobody has checked.** A judge is a model's opinion, as silver is,
 so before its scores count it must be validated: a `validation` block names the committed runs
-that measured each judge against human ratings, on data like yours. Fake judges can never pass.
+that measured each judge against human ratings, on data like yours (`evh judge-validate` makes them, RUNBOOK §12). Fake judges can never pass.
 To try the pass anyway, say so, and every number is labelled. Price it first; `--dry-run` calls
 nothing:
 

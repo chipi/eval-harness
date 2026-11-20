@@ -13,6 +13,29 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Added
 
+- **An adapter can say "call each item once"** (RFC-038): `CALL_ONCE = True`, or `call_once(params)` per system, for a call
+  with an effect a retry would repeat (an agent run in a container, a deploy). `evh run` then calls each item once, with no
+  retry, and a failure of any kind (a timeout included) is a failed item, not exit 75; the failed item keeps the `meta` and
+  `cost_usd` its exception carried. `--resume` of such a run never repeats what may already have happened: an item whose row
+  says `failed`, or the process died in (a start mark in the checkpoint, written before each call, in both stores, and no
+  row), is listed with its error and not called; `evh run --resume RUN --recall-failed` calls exactly those, once each, and
+  records them (`recalled`; `call_once` is on the run). `evh arm-smoke` calls item 1 once and does not check determinism,
+  `evh run --dry-run` and the run's first line say it; the dry run of a `--resume` prices only what it would call, and the Workbench's job screen lists the held items of a finished run with that dry run and **Call them again**. It is the adapter's code, hashed with it: no system field, no
+  environment variable.
+- **An item can link to what it left behind** (RFC-038): the key `artifact` of `Result.meta`, a path inside the project, is
+  kept as a clean relative path (or dropped, with `artifact_refused` and a line saying so, never failing the item) and shown
+  as a link under the item's output in the inspector, as `artifact …` in `evh comparison-item` (`--json`: `views[arm].artifact`
+  and `artifacts`), in `evh arm-smoke` and in the Workbench's check on three items. `artifacts/` at the project root is served
+  read-only without configuration; every served directory but the catalog's pages now sends `nosniff` and
+  `Content-Security-Policy: sandbox` (a `served_dirs` report with scripts of its own is shown without them), and a path that
+  leaves its directory through a symlink is a 404. A public server shows no artifact; a release refuses a hidden dataset's run
+  whose artifact lies under `data/runs/`; a release's copy carries `release.json`, and there a missing artifact reads "not in this deployment".
+- **`examples/harbor/`** (RFC-038): Harbor tasks as a dataset (`source.py`), Harbor job directories as a capture, a dataset and
+  a recorded arm (`importer.py`), and an adapter that runs one `harbor run` trial per item, called once, the trial's directory
+  as the artifact, `reward` an extra metric, a cost that says where it comes from. Three tiny tasks, jobs recorded from
+  Harbor's own `oracle` (every task passes) and `nop` (every task fails) agents, which need no model and no key, and a fake
+  `harbor`, so its tests run without Docker. A template system for an agent with a model is shipped and never run. The core
+  names nothing of Harbor.
 - **`evh init` writes an example judge prompt** (`prompts/judge_prompt_example.txt`, without `--tutorial` too): a worked
   prompt to copy for a first judge scorer, with the dimensions named, `{n}` and one JSON list per dimension. A newcomer
   whose prompt did not name its scorer's dimensions got 80 unparsed replies; `judge-score` now refuses such a prompt, and
@@ -35,6 +58,26 @@ that can move a result is never a patch release without saying so under **Change
   `GET /scorers/{scorer}/verdicts`); the Workbench's judge screen and the inspector's item view show them. The validation
   gate compares `explain` (a judge asked for its reason is validated with it), and the SummEval validation adapter asks
   in the same words; the dry run counts the reasons' tokens.
+- **`evh judge-validate`: a judge measured against people's ratings, as ordinary runs** (RFC-038). Given a scorer and a rated
+  dataset (items `{source, outputs}`, the people's ratings as their reference, over the scorer's dimensions), it writes one
+  system per judge (`<scorer>__<judge>__validation`, its adapter the core's `scripts/judge_validation.py`, so the judge
+  is sent the message `judge-score` sends, block by block) and a seeded random floor at $0, runs each as `evh run` does
+  (the cap it refuses to go without, the fingerprint, `--resume`; `--dry-run` counts the calls and the estimate first),
+  scores `tau`, `top1` or `pair_agreement` by the scorer's mode with the people's own agreement beside it, and prints the
+  `validation` block those runs make. `--fill --reason ... --by ...` writes the block and the prompt's sha256 into the
+  scorer through its own operation, as a decision, and prints what the gate answers; it refuses a scorer that has
+  judged, a fake judge and a block already there. A reply that does not parse is stored as its hash, finish reason and
+  length, never its text. `evh scorer-show` lists the validation runs and the datasets rated for the scorer; the
+  Workbench's "A judge for this goal" validates and writes, with the cost first, and prints the commands (also
+  `POST /scorers/{scorer}/validation`, a job that spends). Dataset sources build the rated shape from the Goyal et al. and
+  Zhang et al. downloads (`examples/judge-validation-goyal/`, `examples/judge-validation-zhang/`) and from SummEval
+  (`examples/summeval-judging/rated_source.py`). A system's
+  `adapter:` can name a core adapter by its id, `scripts/judge_validation.py`, as a run records the bundled one. A dataset
+  rated on some of the scorer's dimensions is validated on those: the block records them (`validation.dimensions`), the
+  gate says `dimension fluency: not validated on <dataset>` for the rest, and `scorer-show` and the Workbench say it per
+  validation run; nothing is averaged in. The adapter reads a capture's verdicts as a recorded arm (`recorded_output`),
+  and the committed Goyal and Zhang records of both judge scorers are read that way as eight runs at $0
+  (`tools/reproject_judge_validation.py`); the two research tools and their reports stay where they were.
 
 - **Tutorial 8, the Workbench** (`docs/tutorials/8-the-workbench.md`, run by `make guide-check`): opening it from
   `evh catalog-serve`, every screen in the order a goal goes through them with the commands it calls, what it keeps for

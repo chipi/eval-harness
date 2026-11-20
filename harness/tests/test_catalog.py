@@ -664,14 +664,14 @@ try:
     cs.ROOT = tmp
     prefixes = cs.served(out, data)
     check(
-        "served: the catalog and the data tree, nothing else",
-        prefixes == ("/.build/catalog/", "/data/"),
+        "served: the catalog, the data tree and artifacts/ (RFC-038, always), nothing else",
+        prefixes == ("/.build/catalog/", "/data/", "/artifacts/"),
         prefixes,
     )
     (tmp / "docs").mkdir(exist_ok=True)
     check(
         "served: a directory the adapter names in served_dirs, and only that",
-        cs.served(out, data, (tmp / "docs",)) == ("/.build/catalog/", "/data/", "/docs/"),
+        cs.served(out, data, (tmp / "docs",)) == ("/.build/catalog/", "/data/", "/docs/", "/artifacts/"),
         cs.served(out, data, (tmp / "docs",)),
     )
     cs.Handler.prefixes = prefixes

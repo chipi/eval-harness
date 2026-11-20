@@ -117,6 +117,7 @@ answer. Where the page has a `make` target in a checkout, it runs the same scrip
 | the models page: every model record, its deployments, settings, onboarding, arms | `evh model-list [--kind K] [--where self-hosted\|hosted] [--status vetted\|onboarded\|check\|none]` | |
 | a model page: its deployments and their onboarding, settings history, arms | `evh model-show <id>` | |
 | (no page action) onboarding a model's deployment, smoking an arm before its run | `evh model-onboard --model-id <id> --deployment <d>`, `evh arm-smoke --system <id> --dataset <id>` | |
+| (no page action) resuming an arm that calls each item once (its adapter's `CALL_ONCE`): what may already have had its effect is listed and not called; calling those again, once each | `evh run --system <id> --dataset <id> --resume <run>`, then `… --resume <run> --recall-failed` | |
 | reference set pages | `evh reference-show <tier> <name>` | |
 | the Captures page | `evh capture-show ID [--json]` | |
 | (no page) the project's data: the overview, a folder, find | `evh data-ls [PATH] [--find TEXT]` | |

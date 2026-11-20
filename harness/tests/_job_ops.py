@@ -35,6 +35,7 @@ SPEND = Op(
         "repeat": {"type": "integer", "default": 1, "description": "how many times"},
         "resume": {"type": "string", "description": "the run to continue"},
         "run_id": {"type": "string", "description": "the run it writes"},
+        "recall_failed": {"type": "boolean", "description": "call again what the run called once and did not finish"},
         "kind": {"type": "string", "enum": ["a", "b"], "description": "which kind"},
         "name": {"type": "string", "pattern": "^[a-z]+$", "description": "a name"},
         "sheet": {"type": "string", "x-file": "upload", "description": "a sheet the call carries"},

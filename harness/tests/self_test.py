@@ -834,6 +834,18 @@ def test_example_scorer_suites_pass() -> None:
             "test_failed_items.py",
             "a failed item is scored 0 and listed, the run goes on; weather and a broken adapter stop it",
         ),
+        (
+            "test_call_once.py",
+            "CALL_ONCE: each item called once, a failure a failed item that keeps its meta; resume never repeats what may have happened (a failed row, a start mark), --recall-failed does, once",
+        ),
+        (
+            "test_artifact.py",
+            "an item's artifact link: the path rules, the item view, the read-only hardened serving (nosniff, sandbox, no symlink out), no link in public or in a hidden release",
+        ),
+        (
+            "../examples/harbor/test_harbor.py",
+            "the Harbor example: its source, its importer on recorded jobs, the adapter through a fake harbor (call once, a hang, resume), a recorded arm equal to the live one",
+        ),
         ("test_scores_once.py", "each arm's scores read once per view and per build"),
         ("test_skills.py", "the agent skills: valid, installed, every evh block runs as written"),
         (
@@ -1285,6 +1297,22 @@ def test_example_scorer_suites_pass() -> None:
         (
             "../examples/triage-fleet/test_triage.py",
             "the triage example: its scorer, its importer on the fleet's export, the adapter if the fleet is here",
+        ),
+        (
+            "test_judge_validate.py",
+            "evh judge-validate: the core adapter's message and scores, the runs, the block --fill writes and the gate's answer",
+        ),
+        (
+            "../examples/judge-validation-goyal/test_goyal.py",
+            "the Goyal et al. source: the archive's format in, a rated dataset out",
+        ),
+        (
+            "../examples/judge-validation-zhang/test_zhang.py",
+            "the Zhang et al. source: the ratings' format in, a rated dataset out",
+        ),
+        (
+            "../examples/summeval-judging/test_rated_source.py",
+            "SummEval as a rated dataset: the Hub's rows in, the rated shape out",
         ),
         ("test_axes.py", "a goal's axes and strategy: limits, the tie, the tie-break, the ratios"),
         (

@@ -1,0 +1,22 @@
+{
+    "results": {
+        "summary": {
+            "failed": 2,
+            "passed": 0,
+            "tests": 2
+        },
+        "tests": [
+            {
+                "name": "file_exists",
+                "status": "failed"
+            },
+            {
+                "name": "content_is_hello",
+                "status": "failed"
+            }
+        ],
+        "tool": {
+            "name": "shell"
+        }
+    }
+}

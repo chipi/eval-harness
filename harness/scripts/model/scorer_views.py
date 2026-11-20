@@ -23,6 +23,7 @@ from evaluation_harness.model.scorers import (
     judging_set_file,
     judging_sets_of,
     summary_file,
+    validation_runs,
     verdicts_dir,
 )
 
@@ -48,6 +49,26 @@ def _validation(sc: dict[str, Any] | None, data: Path | None = None) -> list[str
         return js.validation_problems(sc, runs_dir=runs_root(data=data))
     except SystemExit as exc:
         return [str(exc.code).partition("): ")[2] or str(exc.code)]
+
+
+def _said_dimensions(runs: list[dict[str, Any]], sc: dict[str, Any] | None) -> list[dict[str, Any]]:
+    """Each validation run with the scorer's dimensions its ratings did not carry (`not_validated`): graded runs name the
+    dimensions they scored, a pick or a pairwise run none (it is read over the dimensions as a whole)."""
+    from evaluation_harness import judge_score as js  # noqa: PLC0415
+
+    dims = js.task_for(sc)["dimensions"] if sc is not None else []
+    return [
+        {**r, "not_validated": [d for d in dims if r["dimensions"] and d not in r["dimensions"]]}
+        for r in runs
+    ]
+
+
+def _rated_datasets(sc: dict[str, Any] | None, data: Path | None) -> list[str]:
+    """The project's datasets a judge of this scorer can be validated on (`evh judge-validate`): those whose items and
+    ratings have the rated shape for its dimensions. Of the project's own data only (a deployment's copy has no items)."""
+    from evaluation_harness import judge_validate  # noqa: PLC0415
+
+    return judge_validate.rated_datasets(sc) if sc is not None and data is None else []
 
 
 def _judges(rec: dict[str, Any], sc: dict[str, Any] | None) -> list[dict[str, Any]]:
@@ -265,8 +286,8 @@ def verdicts(
 
 def show_scorer(scorer_id: str, data: Path | None = None, check_format: bool = True) -> dict[str, Any]:
     """One scorer: its record, its judges with their fingerprints, its validation (the block, and why it passes the gate
-    or not), the judging sets it judged with their verdicts and summaries counted, the runs it judged, and the people's
-    checks of its judges. `data`: another data directory than the project's (the catalog reads a deployment's copy)."""
+    or not), the runs of its judges on rated datasets (`evh judge-validate`), the judging sets it judged with their
+    verdicts and summaries counted, the runs it judged, and the people's checks of its judges. `data`: another data directory than the project's (the catalog reads a deployment's copy)."""
     scorers = SCORER.under(data)
     rec = _record(scorers, scorer_id, check_format)
     sc, why = _loaded(scorer_id, data)
@@ -293,5 +314,7 @@ def show_scorer(scorer_id: str, data: Path | None = None, check_format: bool = T
             }
             for s in made
         ],
+        "validation_runs": _said_dimensions(validation_runs(scorer_id, data), sc),
+        "rated_datasets": _rated_datasets(sc, data),
         "checks": checks_of(scorer_id, data),
     }

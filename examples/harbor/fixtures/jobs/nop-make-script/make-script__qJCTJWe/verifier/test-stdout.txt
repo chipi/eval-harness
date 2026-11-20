@@ -1,0 +1,1 @@
+/tests/test.sh: line 8: /app/hi.sh: No such file or directory

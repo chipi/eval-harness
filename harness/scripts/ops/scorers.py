@@ -40,6 +40,23 @@ OPS = (
            "limit": {"type": "integer", "default": 20, "description": "rows on the page (default 20)"},
            "offset": {"type": "integer", "default": 0, "description": "the first row of the page"},
        }, public_dropped="the judges' reasons describe the outputs they judged"),
+    Op("judge-validate", "work", "validate a scorer's judges against people's ratings: each judge runs as a system over a rated dataset, and the validation block they make is printed (--fill writes it into the scorer)",
+       "POST", "/scorers/{scorer}/validation", "evaluation_harness.judge_validate:body", "",
+       locks=(("scorer:{scorer}", True), ("dataset:{dataset}", False)), spends=True, required=("scorer", "dataset",),
+       exclusive=(("floor", "floor_run"),), inputs={
+           "scorer": {"type": "string", "description": "the judge scorer whose judges are validated: its id (evh scorer-list)"},
+           "dataset": {"type": "string", "description": "the rated dataset: items {source, outputs}, each with the people's ratings as its reference ({ratings: {dimension: [one number per output]}}, optionally raters), over the scorer's dimensions"},
+           "judges": {"type": "string", "description": "comma-separated judge ids: validate only these (default: every judge of the scorer; --fill needs every one)"},
+           "floor": {"enum": ["random"], "description": "the floor a judge must beat: seeded random verdicts, at no cost (the default)"},
+           "floor_run": {"type": "string", "x-metavar": "RUN_ID", "description": "instead of the random floor, the run of the best free scorer on the same dataset, scored on the judges' metric"},
+           "dry_run": {"type": "boolean", "description": "the calls, the tokens and the estimated cost, and the cap; call nothing and write nothing"},
+           "resume": {"type": "boolean", "description": "use the latest finished run of each system on the dataset as it is, and continue one that did not finish: only what is missing is paid for"},
+           "fill": {"type": "boolean", "description": "write the validation block and the prompt's sha256 into the scorer, as a decision (needs --reason and --by), and say what the gate answers; refused for a scorer that has judged, and for a fake judge"},
+           "replace": {"type": "boolean", "description": "with --fill, replace a validation block the scorer already has"},
+           "reason": {"type": "string", "description": "with --fill: why the judges are validated by these runs, recorded in the block as `why` (who made it, `--by`, goes in the scorer's history)"},
+           "what": {"type": "string", "description": "the block's `what`: how the metric is measured (default: said from the dataset)"},
+           "differs": {"type": "string", "description": "the block's `differs_from_this_use`: how far the rated outputs are from the ones the scorer will judge"},
+       }),
 )  # fmt: skip
 
 
@@ -137,7 +154,8 @@ def say_scorers(r: dict[str, Any]) -> str:
 
 
 def say_scorer(r: dict[str, Any]) -> str:
-    """scorer-show's answer as text: its judges, its validation, what it judged and the people's checks."""
+    """scorer-show's answer as text: its judges, its validation and the runs of its judges on rated datasets, what it judged
+    and the people's checks."""
     rec = r["record"]
     lines = [f"{r['scorer']}  {rec.get('mode') or 'grade'}  ({r['file']})"]
     if r["problem"]:
@@ -155,6 +173,16 @@ def say_scorer(r: dict[str, Any]) -> str:
         f"  made         {r['judged_scores']} judged score(s)"
         + (f", {r['other_version']} with another version of it" if r["other_version"] else "")
     )
+    for x in r.get("validation_runs") or []:
+        value = f"{x['value']:.4f}" if isinstance(x["value"], (int, float)) else "no value"
+        lines.append(
+            f"  validated by {x['judge']} on {x['dataset']}: {x['metric']} {value} over {x['n_items']} items, run {x['run']}"
+        )
+        lines += [f"    {d}: not validated on {x['dataset']}" for d in x.get("not_validated") or []]
+    if r.get("rated_datasets"):
+        lines.append(
+            f"  rated datasets  {', '.join(r['rated_datasets'])}  (evh judge-validate --scorer {r['scorer']} --dataset <one>)"
+        )
     for s in r["judging_sets"]:
         summ = s["summary"]
         lines.append(

@@ -223,12 +223,18 @@ After saving, the goal's page is the hub of the journey: where it stands, and th
    deepseek_m    deepseek    openrouter      p_3f9a…      [ Check it on three items ] [ Clone it, change one thing ]
                                                           pass · 3 call(s) · spent $0.00092 · all 200 items ≈ $0.04
                                                           ▸ item 1 · its reply
+                                                            artifact artifacts/h1/trial_ab12   (a link)
  Make a system from a model
    The model [ deepseek-4.1-flash · vetted · #2 of 29 on this goal ▾ ]   Where it runs [ openrouter ▾ ]
    The prompt [ … ]   Temperature [ 0 ]   At most this many tokens [ ]   Its id [ … ]   Who you are [ … ]
                                                                            [ Make the system ]
 ```
 
+- **An item that left something to open** (its adapter's `meta["artifact"]`, RFC-038: an agent's trial directory) shows it
+  under its reply as a link to the directory the server serves read-only (`artifacts/` at the project root, with `nosniff`
+  and `sandbox`); a path not served or not on this machine is said as text. The check is the only Workbench screen that shows
+  one item's output of a system; the command beneath is `evh arm-smoke`, which prints the same path
+  (`evh comparison-item` shows an item of a finished run the same way, and its `--json` carries `artifacts`).
 - Models come from the project's records with their state (`GET /models`, ADR-0021): **vetted** (every deployment's
   onboarding passed and a system on it passed its smoke), **onboarded** (onboarding passed, no system smoked yet),
   **check** (a probe flagged something to read), **none** (never probed). Vetted is computed, never approved by hand. A model
@@ -377,7 +383,7 @@ decision kept with its reason. This is where people spend most of their time (W1
 - **Jobs** lists every job a page at a time (**Newer**, **Older**), filtered by state (several at once), operation and goal,
   with the total found: **job**, **operation**, **state** (and what it waits for), **who**, **made**, **progress**,
   **spent**. A job's page shows its operation, state, who asked, when it was made and ended, progress, spent against its cap,
-  the locks it holds, its run, its inputs, **Stop it** while it runs, **Resume the run** for a stopped run job, its result, its
+  the locks it holds, its run, its inputs, **Stop it** while it runs, **Resume the run** for a stopped run job, its result (for a finished run of a call-once arm that left items called once and not finished: those items with what happened, **See the cost first** (the recall's own dry run, `POST /estimate`: only what it would call) and **Call them again**, `run --resume RUN --recall-failed` as a job under a cap, by a named person, with the command beneath), its
   files as downloads and its log, followed while it runs.
 
 ### W2 Review and label
@@ -412,6 +418,9 @@ decision kept with its reason. This is where people spend most of their time (W1
   - leaving the screen, closing the page or opening another sheet asks first;
   - a reload keeps the answers, in this browser only, and the screen says so;
   - on success the mark clears and the screen says what was written; on a refusal the mark stays and nothing is written.
+- **No artifact links here.** The sheet hides the arms, and an arm's artifact (RFC-038: a trial's directory) names it; a finished
+  run's item with its artifact link is read in the inspector and with `evh comparison-item`, and a system's check on three
+  items (step 4) shows it too.
 - The failure modes are a named list (`failure-modes-list`, `failure-modes-show`), so tags are counted; a new list is made on the screen
   (`failure-modes-new`).
 - **Labelling the items** (the expected answer) is the labelling screen (`#label/<dataset>`, "Label the items"): choose the
@@ -498,15 +507,23 @@ decision kept with its reason. This is where people spend most of their time (W1
 - `#judge/<goal>`, "A judge for this goal": `a Its judge scorers` (`scorer-list`: each with its judges, families, whether validated and the
   judged scores it made; a form to make one with systems as its judges, `scorer-new`), `b How it judges` (`scorer-show`: its prompt file,
   guards and cap, its judges; changed while it has judged nothing, `scorer-set`, only what changed sent, else a new version started from it,
-  `scorer-new` with `supersedes`), `c Does it agree with people?` (its validation as stored, with the reasons it is not validated and the
-  people's checks of its judges), `d Score the arms with it` (the cost first, a dry run, `POST /estimate` on `judge-score`; then the judging
+  `scorer-new` with `supersedes`), `c Does it agree with people?` (its validation as stored, with the reasons it is not validated, the runs of its judges on rated datasets
+  with, for each, the dimensions of the scorer its ratings did not carry ("fluency: not validated on zhang2023_cnndm_v1") and
+  the people's checks of its judges; and the form that makes them, below), `d Score the arms with it` (the cost first, a dry run, `POST /estimate` on `judge-score`; then the judging
   as a job under a cap, an unvalidated judge only when asked and labelled so; what it judged), `e What it said, and why` (`judge-verdicts`,
   the lowest scores first, a page at a time) and `f What it cost` (`cost-report`, a job).
 - Its judges are two families at least, from onboarded models, so one vendor's taste does not decide. The prompt is a file the scorer names
   (`prompt.file`), typed as its path, relative to `data/scorers`: its validation was measured on those bytes.
-- The validation is shown as stored; this screen does not run one. The screen says what an installed project does: a validation is an
-  ordinary eval whose arms are the judges (`evh run` on items people have rated), and the scorer's `validation` block names those runs
-  (RUNBOOK, "Validating a judge"). The repository's `tools/validate_judge_*.py` are not installed and are not named on the screen.
+- Part c validates the judges (`judge-validate`, RFC-038): a rated dataset to choose (those of the project whose items are `{source,
+  outputs}` and whose reference is the people's ratings over the scorer's dimensions, the scorer-show's `rated_datasets`; none: a line says what
+  a rated dataset is), a floor (a random one, or the run of the best free scorer) and a cap; "The cost first" is a dry run (`POST /estimate`
+  on `judge-validate`: the calls, the tokens, the estimate, the cap, nothing written), "Validate it" a job under the cap that runs each judge and
+  the floor as ordinary runs and shows what the command prints: per judge its metric, the floor, the run and the block these runs make.
+  "Write it into the scorer" (`--fill`, who and why, the why recorded in the block) is offered only while the scorer has judged nothing, and
+  then prints what the gate answers; once it has judged, "make a new version with it" starts a new version from it (`scorer-new` with
+  `supersedes`) as part b does. A fake judge's runs are allowed ($0, a test of the plumbing) and its write is refused. The screen prints the
+  commands (`judge-validate --dry-run`, `judge-validate`, `judge-validate --fill`); the repository's `tools/validate_judge_*.py` are not
+  installed and are not named on the screen.
 - The judging job speaks as `judge-score` does: a grade scorer whose prompt does not name every dimension of its task is refused before any
   call, naming the dimensions it leaves out; a reply that is JSON of the wrong shape is reported as unparsed with the keys it had and the
   dimensions the prompt must ask for; and a note appears when a judge's bill differs from what its declared prices give for the same tokens by
@@ -662,7 +679,7 @@ and `evh` give the same numbers.
 | W2 Review, label, tag | `dataset-arm-list`, `failure-modes-list`, `failure-modes-show`, `failure-modes-new`, `sheet-export`, `sheet-import` (`export_job`) | two arms compared on a sheet made as a job, "which is better" blind, or "what went wrong" with a failure-mode list; answers kept in this browser until submitted |
 | W3 Production | `capture-list`, `capture`, `dataset-from-capture`, `dataset-materialize`, `arm-from-capture`, `sheet-show` (`wrong_against`), `pick`, `dataset-extend`, `label-from-capture`, `label-coverage-show`, `periods`, `faithfulness-show`, `faithfulness` | records captured and made a dataset; production's decisions scored as an arm; the rows where it was wrong picked; the next version made from the picks; labels from what happened later; a code record's periods and faithfulness, a replay |
 | W6 Reference | `reference-list`, `label-set-list`, `reference-promote`, `leaderboard`, `score-preview`, `rescore` | what a label set moves, a promotion with why and the arms re-scored against it, a scoring change previewed and applied to a round with why |
-| W7 Judge | `scorer-list`, `scorer-show`, `scorer-new`, `scorer-set`, `judge-score`, `judge-verdicts`, `POST /estimate`, `cost-report` | the goal's judge scorers and one shown; changed until it judges, then a new version from it; the cost first, then judging as a job under a cap; its verdicts and what it cost |
+| W7 Judge | `scorer-list`, `scorer-show`, `scorer-new`, `scorer-set`, `judge-validate`, `judge-score`, `judge-verdicts`, `POST /estimate`, `cost-report` | the goal's judge scorers and one shown; changed until it judges, then a new version from it; its judges measured against people's ratings, the cost first, the runs, the block written; the cost first, then judging as a job under a cap; its verdicts and what it cost |
 | W8 Settings | `data-ls`, `validate`, `migrate`, `data-migrate`, `data-show`, `data-put`, `dataset-publish` | the store and moving the data into it, formats, the check, the two policies, publishing ([UXS-004](UXS-004-data-page.md)) |
 | Held-out test | `dataset-split`, `exposure`, `exposure-add`, `exposure-check`, `sealed-counts`, `dataset-seal-counts`, `dataset-unseal`, `looks`, `pair-test` | a dataset split and sealed; reads and the leak check; the counts for safety; the side opened for one candidate; the confirmation |
 | Studies | `study-list`, `study-show`, `study-run`, `study-ask`, `study-tell`, `study-stop`, `study-confirm`, `study-import` | a study written as YAML, checked (the dry run) and run; its trials and best; the agent sampler; stopped; confirmed on a test set (one look); a past loop imported |

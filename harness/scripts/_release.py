@@ -57,6 +57,8 @@ from evaluation_harness.model.results import CALL_META, RUN_SETTINGS
 #: against catalog_adapter.py), copied besides data/runs.
 #: An exposure row's `what` on a hidden dataset, in the deployment's copy.
 HIDDEN_WHAT = "(not published: the dataset's text is hidden)"
+#: A release's own mark, written by copy_data (RFC-038): a missing artifact reads "not in this deployment" where it is.
+RELEASED = "release.json"
 COPIED_DIRS = (
     "references",
     "datasets",
@@ -81,7 +83,7 @@ COPIED_DIRS = (
     "faithfulness",
 )
 #: The data's format (RFC-032): the deploy checks it; the systems a migration renamed: the catalog redirects them.
-COPIED_FILES: tuple[str, ...] = ("project.yaml", "renames.json")
+COPIED_FILES: tuple[str, ...] = ("project.yaml", "renames.json", RELEASED)
 
 
 def _tracked(src: Path) -> set[str] | None:
@@ -160,6 +162,22 @@ def plan_problems(src: Path) -> list[str]:
                 bad.append(
                     f"hidden run's run.json call holds {', '.join(extra)}, not just the run settings: "
                     f"{(run / 'run.json').relative_to(src)}"
+                )
+            # Every file under runs/ is copied (outputs aside), so an artifact a hidden run's item left there would
+            # publish what the item quoted (RFC-038): it belongs under artifacts/, which a release does not copy.
+            at = next(
+                (
+                    art
+                    for held, partial in ((run, True), *((s, False) for s in _score_dirs(run)))
+                    for row in _outputs.rows(held, partial=partial, errors="replace") or ()
+                    if isinstance(art := (row.get("_meta") or {}).get("artifact"), str)
+                    and (_common.ROOT / art).resolve().is_relative_to((src / "runs").resolve())
+                ),
+                None,
+            )
+            if at is not None:
+                bad.append(
+                    f"hidden run's artifact lies under runs/, which is copied: {at} ({run.relative_to(src)})"
                 )
     return bad
 
@@ -289,7 +307,7 @@ def _call_only_line(line: str) -> str:
         row = json.loads(line)
     except ValueError:
         return ""
-    return json.dumps(_call_only(row)) + "\n" if isinstance(row, dict) else ""
+    return json.dumps(_call_only(row)) + "\n" if isinstance(row, dict) and "item_id" in row else ""
 
 
 def copy_data(src: Path, dst: Path) -> dict:
@@ -528,6 +546,8 @@ def copy_data(src: Path, dst: Path) -> dict:
     for name in COPIED_FILES:
         if _store.is_file(src / name):
             _store.copy_file(src / name, dst / name)
+    # What says this data is a deployment's copy: the files a project keeps outside data/ (an item's artifact) are not in it.
+    _store.write_text(dst / RELEASED, json.dumps({"released": True}) + "\n", encoding="utf-8")
     return counts
 
 

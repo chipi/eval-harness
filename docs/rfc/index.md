@@ -46,6 +46,7 @@ Other statuses: **Rejected** and **Withdrawn**, each with the reason kept.
 | [RFC-035](RFC-035-scenarios.md) | Scenarios: evaluating what takes several steps | — | Draft (0.9.0) | the base: an item can be a scenario and a run records a transcript; a runner outside the harness runs the system (a scenario in, a transcript out); the outcome check, trials, pass^k and paired tests on scenarios |
 | [RFC-036](RFC-036-agentic-scenarios.md) | Agentic scenarios: tools, stations and the path | — | Draft (0.9.0) | actions with their results, stations and episodes, the path and forbidden paths, per-station scores, recorded tool results; any agent through a runner; the first runner is Flotilla's offline path, part of its acceptance |
 | [RFC-037](RFC-037-conversational-scenarios.md) | Conversational scenarios: a user who talks back | — | Draft (waits for its first case) | the session runner; the user played by a script, a person or a simulated user (any model); real conversations as scenarios |
+| [RFC-038](RFC-038-call-once-artifacts-judge-validation-harbor.md) | Call once, artifact links, judge validation and a Harbor example | — | Accepted (0.8.0) | an adapter that says "call each item once" and a resume that never repeats what may have happened; a per-item artifact link served read-only; `evh judge-validate` in place of the two validation tools; examples/harbor |
 
 ## Completed RFCs
 
