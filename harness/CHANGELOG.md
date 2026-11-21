@@ -1025,6 +1025,7 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Fixed
 
+- **Moving a pin to another commit of the same version did nothing**: both report `0.8.0.dev0`, so a plain `pip install` says "Requirement already satisfied". UPGRADING and SCENARIO now say to use `--force-reinstall --no-deps`, and how to read the installed commit (`direct_url.json`).
 - **`evh validate` failed on every record the Workbench or the API wrote** (`'api' is not one of ['flag', 'environment',
   'terminal', 'migration']`): `from: api`, which a job started from an API call records, is in the actor's `from`
   list of every schema that has one (rounds, scores' metrics, references, datasets, baselines, models). A new test

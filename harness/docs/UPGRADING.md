@@ -8,8 +8,14 @@ correctness bugs, not just missing features.
 ## From 0.7.2 to 0.8.0 (unreleased)
 
 - **Before the release**, a pin on a commit of the 0.8.0 branch installs `0.8.0.dev0`, the version every commit of it
-  carries until the release: moving such a pin from one commit to another takes `pip install --force-reinstall`, as
-  pip keeps an installed copy of the same version.
+  carries until the release. Moving such a pin from one commit to another does nothing with a plain `pip install`: both
+  report the same version, so pip says "Requirement already satisfied" and keeps the old commit. Use
+  `pip install --force-reinstall --no-deps "evaluation-harness @ git+https://github.com/chipi/eval-harness@<new commit>#subdirectory=harness"`
+  (`--no-deps` keeps pip from reinstalling every dependency). The same holds for any two commits of one version. To see
+  which commit is installed, read the install's record of its source:
+  `python -c "import importlib.metadata as m; print(m.distribution('evaluation-harness').read_text('direct_url.json'))"`
+  prints the `url` and, for a git install, `vcs_info.commit_id`. `evh --version` shows only the version, which does
+  not tell two commits of it apart.
 - **The legacy read commands and MCP tools are gone, no alias** (RFC-032 step 9). A script, a Makefile, a skill or an
   agent's configuration that runs the commands `overview`, `activity`, `arms`, `datasets`, `references`, `metrics`, `goals`,
   `rounds`, `inspect`, `labels`, `tags`, `captures`, `models`, `prompts`, `studies` or `label-coverage`, or that

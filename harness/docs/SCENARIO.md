@@ -44,7 +44,8 @@ has to guess.
 ## 0 · A project
 
 The README, getting started and the tutorials pin the latest release (`@v…`). The scenario pins the
-candidate's sha instead, as the line below does: that is what it tests.
+candidate's sha instead, as the line below does: that is what it tests. Moving an existing install to
+another sha needs `--force-reinstall --no-deps`, see [UPGRADING](UPGRADING.md#from-072-to-080-unreleased).
 
 ```bash
 mkdir evh-scenario && cd evh-scenario && git init -q
