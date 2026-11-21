@@ -1,8 +1,0 @@
-```json
-[
-  {
-    "text": "Japanese",
-    "type": "other"
-  }
-]
-```

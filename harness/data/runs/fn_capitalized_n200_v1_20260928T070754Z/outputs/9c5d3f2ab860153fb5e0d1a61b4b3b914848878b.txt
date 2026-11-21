@@ -1,1 +1,0 @@
-[{"text": "The University", "type": "location"}, {"text": "New Zealand Act", "type": "location"}, {"text": "University", "type": "location"}]

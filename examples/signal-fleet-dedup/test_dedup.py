@@ -19,6 +19,7 @@ ROOT = HERE.parents[1] / "harness"
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(HERE))
 import adapter  # noqa: E402
+from evaluation_harness import _store  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 
 SIGNALS = ROOT / "data" / "sources" / "fleet_dedup_v1.hf" / "signals.jsonl"
@@ -34,7 +35,7 @@ check(
 )
 check("score: no reference, nothing scored", adapter.score('{"norm_key":"a"}', None) == {})
 
-if not SRC or not (Path(SRC) / "mvp" / "filing.py").is_file() or not SIGNALS.is_file():
+if not SRC or not _store.is_file(Path(SRC) / "mvp" / "filing.py") or not _store.is_file(SIGNALS):
     print("  --   the fleet's functions: skipped (needs TRIAGE_FLEET_SRC and fetch.py's signals)")
     sys.exit(summary())
 
@@ -60,7 +61,7 @@ def answers(src: str) -> list:
             check=True,
         ).stdout
     finally:
-        os.unlink(f.name)
+        _store.unlink(f.name)
     return json.loads(out)
 
 
@@ -72,10 +73,12 @@ with tempfile.TemporaryDirectory() as td:
     planted = Path(td) / "signal-fleet"
     shutil.copytree(SRC, planted, ignore=shutil.ignore_patterns("__pycache__"))
     f = planted / "mvp" / "filing.py"
-    s = f.read_text()
+    s = _store.read_text(f)
     marker = "def normalized_key(signal, event_summary=None):"
     check("setup: the fleet's normalized_key is where the test expects it", marker in s)
-    f.write_text(s.replace(marker, marker + "\n    return 'planted:' + str(signal.get('alertname'))\n", 1))
+    _store.write_text(
+        f, s.replace(marker, marker + "\n    return 'planted:' + str(signal.get('alertname'))\n", 1)
+    )
     c = answers(str(planted))
 matched = sum(x["norm_key"] == y["norm_key"] for x, y in zip(a, c))
 check(

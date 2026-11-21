@@ -1,0 +1,12 @@
+{
+  "run_id": "epsilon_20261101T000000Z",
+  "dataset_id": "ds",
+  "system_id": "sys_epsilon",
+  "purpose": "run",
+  "call": {
+    "generation_config": {
+      "max_tokens": 300,
+      "temperature": 0
+    }
+  }
+}

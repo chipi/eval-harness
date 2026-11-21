@@ -1,0 +1,13 @@
+model_id: nemotron-3.5-super-120b
+deployment_id: x3
+order: 0
+where: x3
+tag: nemotron-3.5-super:120b
+endpoint:
+  provider: openai
+  base_url: http://127.0.0.1:11434/v1
+  model: nemotron-3.5-super:120b
+server: ollama 0.40.13
+digest: 8a58f3e6008244525e5d6e2df9fb0485e4dde9a88da61c25953818cf8c051f6d
+quantization: Q4_K_M
+checks: []

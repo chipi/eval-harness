@@ -115,6 +115,12 @@ class ClassificationTask:
             self._prompt_cache[key] = path.read_text(encoding="utf-8").strip()
         return self._prompt_cache[key]
 
+    def prompts(self, params: Dict[str, Any]) -> Dict[str, str]:
+        """The prompt a call sends, by name (`<example>/<prompt file>`), the text `prompt_sha256` hashes: the
+        harness records it as a prompt version of the run (RFC-032 step 4b)."""
+        base = self.prompt_dir or Path.cwd()
+        return {f"{base.name}/{Path(str(params.get('prompt_file') or 'prompt.txt')).stem}": self.prompt(params)}
+
     def prompt_sha256(self, params: Dict[str, Any]) -> str:
         return hashlib.sha256(self.prompt(params).encode()).hexdigest()
 

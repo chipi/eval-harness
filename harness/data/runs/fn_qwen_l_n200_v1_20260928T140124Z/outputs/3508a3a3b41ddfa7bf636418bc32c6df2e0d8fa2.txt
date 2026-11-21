@@ -1,6 +1,0 @@
-[
-  {"text": "1921", "type": "event"},
-  {"text": "the Haugh", "type": "location"},
-  {"text": "A. Brownlie", "type": "person"},
-  {"text": "Timber Merchants", "type": "organization"}
-]

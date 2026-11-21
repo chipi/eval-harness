@@ -14,13 +14,17 @@ import json
 import os
 import subprocess
 import sys
-import tempfile
 import traceback
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
+from evaluation_harness import _common
 from evaluation_harness._check import check, summary
 from evaluation_harness.stats import EXACT_UP_TO, fmt_p
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runfix
+import _runstore
 
 ROOT = Path(__file__).resolve().parents[1]
 PY = sys.executable
@@ -39,6 +43,12 @@ def run_script(*args: str, env: dict | None = None, cwd: Path | None = None) -> 
     return subprocess.run([PY, *resolved_args], cwd=cwd or ROOT, capture_output=True, text=True, env=e)
 
 
+def project(meta: dict) -> Path:
+    """The test project a fixture goes into. _runstore aims at one project per process: forget the last one's root."""
+    _common.project_root.cache_clear()
+    return meta["tmp"]
+
+
 def setup_runs_tree(tmp: Path) -> dict:
     """Build a temp directory tree with runs, references, materialized, etc.
     Returns metadata dict with the paths and config for assertions."""
@@ -49,8 +59,9 @@ def setup_runs_tree(tmp: Path) -> dict:
         "refs": tmp / "data" / "references",
         "mat": tmp / "data" / "materialized",
     }
-    meta["refs"].mkdir(parents=True, exist_ok=True)
-    meta["mat"].mkdir(parents=True, exist_ok=True)
+    if not _runstore.sqlite():
+        meta["refs"].mkdir(parents=True, exist_ok=True)
+        meta["mat"].mkdir(parents=True, exist_ok=True)
     return meta
 
 
@@ -58,22 +69,18 @@ def write_run(
     meta: dict,
     run_id: str,
     dataset_id: str,
-    config_id: str,
+    system_id: str,
     scores: dict,
     outputs: dict | None = None,
     ref_id: str | None = None,
     adapter: str | None = None,
+    extra: dict | None = None,
 ) -> None:
-    """Write a single run with metrics.json and predictions.jsonl."""
-    run_dir = meta["runs"] / run_id
-    run_dir.mkdir(parents=True, exist_ok=True)
-    (run_dir / "outputs").mkdir(exist_ok=True)
-
-    # metrics.json with scores
+    """Write a single run: its run.json, and a score of it with metrics.json and predictions.jsonl."""
     metrics = {
         "run_id": run_id,
         "dataset_id": dataset_id,
-        "config_id": config_id,
+        "system_id": system_id,
         "build": {"ref": "abc123def456"},
         "scores": scores,
         "metric_kinds": dict.fromkeys(scores, "quality"),
@@ -86,25 +93,24 @@ def write_run(
     }
     if adapter:
         metrics["adapter"] = adapter
-    (run_dir / "metrics.json").write_text(json.dumps(metrics))
+    metrics.update(extra or {})
 
     # predictions.jsonl with per-item scores
     pred_rows = []
     for item_id, item_scores in (outputs or {}).items():
         row = {"item_id": item_id, **item_scores}
         pred_rows.append(json.dumps(row))
-    if pred_rows:
-        (run_dir / "predictions.jsonl").write_text("\n".join(pred_rows) + "\n")
-    else:
-        (run_dir / "predictions.jsonl").write_text("")
+    with _runstore._InProject(project(meta)) as data:
+        _runfix.put_run(data, metrics, "\n".join(pred_rows) + "\n" if pred_rows else "")
 
 
 def write_reference(meta: dict, ref_type: str, dataset_id: str, items: dict) -> None:
     """Write reference texts for a dataset. items: {item_id: text}."""
     ref_dir = meta["refs"] / ref_type / dataset_id
-    ref_dir.mkdir(parents=True, exist_ok=True)
+    if not _runstore.sqlite():
+        ref_dir.mkdir(parents=True, exist_ok=True)
     for item_id, text in items.items():
-        (ref_dir / f"{item_id}.txt").write_text(text)
+        _runstore.write_text(project(meta), f"references/{ref_type}/{dataset_id}/{item_id}.txt", text)
 
     # For silver, write manifest
     if ref_type.startswith("silver"):
@@ -114,36 +120,37 @@ def write_reference(meta: dict, ref_type: str, dataset_id: str, items: dict) -> 
             "model": "test-model",
             "tier": "silver",
         }
-        (ref_dir / "manifest.json").write_text(json.dumps(manifest))
+        _runstore.write_text(
+            project(meta), f"references/{ref_type}/{dataset_id}/manifest.json", json.dumps(manifest)
+        )
 
 
 def write_materialized(meta: dict, dataset_id: str, items: dict) -> None:
     """Write materialized source texts."""
     mat_dir = meta["mat"] / dataset_id
-    mat_dir.mkdir(parents=True, exist_ok=True)
+    if not _runstore.sqlite():
+        mat_dir.mkdir(parents=True, exist_ok=True)
     for item_id, text in items.items():
-        (mat_dir / f"{item_id}.txt").write_text(text)
+        _runstore.write_text(project(meta), f"materialized/{dataset_id}/{item_id}.txt", text)
+
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _tmp
+import _tmp  # noqa: E402
 
 
 def test_compare_runs_identical_builds() -> int:
     """compare_runs detects identical builds (same code, delta is noise)."""
-    tmp = Path(tempfile.mkdtemp(prefix="evh-compare-"))
+    tmp = Path(_tmp.mkdtemp(prefix="evh-compare-"))
     meta = setup_runs_tree(tmp)
 
     # Two runs, identical build, different scores
-    write_run(meta, "run_a", "ds1", "arm_a", {"f1": 0.850, "precision": 0.880})
-    write_run(meta, "run_b", "ds1", "arm_a", {"f1": 0.855, "precision": 0.875})
-
-    # Force both to have identical build hash
-    for run_id in ["run_a", "run_b"]:
-        mj = meta["runs"] / run_id / "metrics.json"
-        m = json.loads(mj.read_text())
-        m["build"]["ref"] = "same_build_hash_xyz"
-        mj.write_text(json.dumps(m))
+    same = {"build": {"ref": "same_build_hash_xyz"}}  # both on one build
+    write_run(meta, "run_a", "ds1", "arm_a", {"f1": 0.850, "precision": 0.880}, extra=same)
+    write_run(meta, "run_b", "ds1", "arm_a", {"f1": 0.855, "precision": 0.875}, extra=same)
 
     env = {"EVAL_HOME": str(tmp)}
     result = run_script(
-        "scripts/compare_runs.py", "--baseline", "run_a", "--candidate", "run_b", env=env, cwd=tmp
+        "scripts/cli.py", "run-compare", "--baseline", "run_a", "--candidate", "run_b", env=env, cwd=tmp
     )
 
     check(
@@ -157,7 +164,7 @@ def test_compare_runs_identical_builds() -> int:
 
 def test_compare_runs_different_datasets() -> int:
     """compare_runs refuses different dataset_ids."""
-    tmp = Path(tempfile.mkdtemp(prefix="evh-compare-"))
+    tmp = Path(_tmp.mkdtemp(prefix="evh-compare-"))
     meta = setup_runs_tree(tmp)
 
     write_run(meta, "run_a", "ds1", "arm_a", {"f1": 0.850})
@@ -165,7 +172,7 @@ def test_compare_runs_different_datasets() -> int:
 
     env = {"EVAL_HOME": str(tmp)}
     result = run_script(
-        "scripts/compare_runs.py", "--baseline", "run_a", "--candidate", "run_b", env=env, cwd=tmp
+        "scripts/cli.py", "run-compare", "--baseline", "run_a", "--candidate", "run_b", env=env, cwd=tmp
     )
 
     check(
@@ -179,7 +186,7 @@ def test_compare_runs_different_datasets() -> int:
 
 def test_compare_runs_with_noise_floor() -> int:
     """compare_runs respects --noise flag for detecting significance."""
-    tmp = Path(tempfile.mkdtemp(prefix="evh-compare-"))
+    tmp = Path(_tmp.mkdtemp(prefix="evh-compare-"))
     meta = setup_runs_tree(tmp)
 
     # Two runs with a small delta (0.005)
@@ -188,7 +195,15 @@ def test_compare_runs_with_noise_floor() -> int:
 
     env = {"EVAL_HOME": str(tmp)}
     result = run_script(
-        "scripts/compare_runs.py", "--baseline", "run_a", "--candidate", "run_b", "--noise", "0.01", env=env
+        "scripts/cli.py",
+        "run-compare",
+        "--baseline",
+        "run_a",
+        "--candidate",
+        "run_b",
+        "--noise",
+        "0.01",
+        env=env,
     )
 
     check(
@@ -202,7 +217,7 @@ def test_compare_runs_with_noise_floor() -> int:
 
 def test_bootstrap_test_basic() -> int:
     """bootstrap_test computes p-values and confidence intervals for macro-F1."""
-    tmp = Path(tempfile.mkdtemp(prefix="evh-boot-"))
+    tmp = Path(_tmp.mkdtemp(prefix="evh-boot-"))
     meta = setup_runs_tree(tmp)
 
     dataset_id = "ds_clf"
@@ -224,7 +239,8 @@ def test_bootstrap_test_basic() -> int:
 
     env = {"EVAL_HOME": str(tmp)}
     result = run_script(
-        "scripts/bootstrap_test.py",
+        "scripts/cli.py",
+        "bootstrap-test",
         "--dataset-id",
         dataset_id,
         "--a",
@@ -244,7 +260,7 @@ def test_bootstrap_test_basic() -> int:
 
 def test_bootstrap_test_refuses_non_classification() -> int:
     """bootstrap_test refuses datasets with too many distinct labels (free text)."""
-    tmp = Path(tempfile.mkdtemp(prefix="evh-boot-"))
+    tmp = Path(_tmp.mkdtemp(prefix="evh-boot-"))
     meta = setup_runs_tree(tmp)
 
     dataset_id = "ds_free"
@@ -262,7 +278,8 @@ def test_bootstrap_test_refuses_non_classification() -> int:
 
     env = {"EVAL_HOME": str(tmp)}
     result = run_script(
-        "scripts/bootstrap_test.py",
+        "scripts/cli.py",
+        "bootstrap-test",
         "--dataset-id",
         dataset_id,
         "--a",
@@ -282,7 +299,7 @@ def test_bootstrap_test_refuses_non_classification() -> int:
 
 def test_holdout_significance_basic() -> int:
     """holdout_significance runs significance tests on a subset (excluding items from prior dataset)."""
-    tmp = Path(tempfile.mkdtemp(prefix="evh-hold-"))
+    tmp = Path(_tmp.mkdtemp(prefix="evh-hold-"))
     meta = setup_runs_tree(tmp)
 
     dataset_id = "ds_main"
@@ -307,7 +324,8 @@ def test_holdout_significance_basic() -> int:
 
     env = {"EVAL_HOME": str(tmp)}
     result = run_script(
-        "scripts/holdout_significance.py",
+        "scripts/cli.py",
+        "holdout",
         "--dataset-id",
         dataset_id,
         "--exclude-dataset",
@@ -322,7 +340,7 @@ def test_holdout_significance_basic() -> int:
 
 def test_silver_calibrate_basic() -> int:
     """silver_calibrate measures how well silver references rank arms vs gold."""
-    tmp = Path(tempfile.mkdtemp(prefix="evh-silver-"))
+    tmp = Path(_tmp.mkdtemp(prefix="evh-silver-"))
     meta = setup_runs_tree(tmp)
 
     dataset_id = "ds_cal"
@@ -344,17 +362,17 @@ def test_silver_calibrate_basic() -> int:
     }
 
     # Write two versions of each arm (ref and arm sides)
-    # Use config_id with the version suffix so --ref-match and --arm-match work
+    # Use system_id with the version suffix so --ref-match and --arm-match work
     for arm_name, scores in arm_scores.items():
         for version in ["_v1", "_v2"]:
             run_id = f"{arm_name}{version}"
-            config_id = f"{arm_name}{version}"
+            system_id = f"{arm_name}{version}"
             outputs = {f"i{i:02d}": {"metric": s} for i, s in enumerate(scores)}
             write_run(
                 meta,
                 run_id,
                 dataset_id,
-                config_id,
+                system_id,
                 {"overlap_f1": sum(scores) / len(scores)},
                 outputs=outputs,
                 ref_id=f"gold/{dataset_id}",
@@ -362,7 +380,8 @@ def test_silver_calibrate_basic() -> int:
 
     env = {"EVAL_HOME": str(tmp)}
     result = run_script(
-        "scripts/silver_calibrate.py",
+        "scripts/cli.py",
+        "silver-calibrate",
         "--dataset-id",
         dataset_id,
         "--ref-match",
@@ -385,7 +404,7 @@ def test_silver_calibrate_basic() -> int:
 
 def test_silver_calibrate_refuses_too_few_arms() -> int:
     """silver_calibrate refuses <4 arms (needs 4: author + 3 subjects)."""
-    tmp = Path(tempfile.mkdtemp(prefix="evh-silver-"))
+    tmp = Path(_tmp.mkdtemp(prefix="evh-silver-"))
     meta = setup_runs_tree(tmp)
 
     dataset_id = "ds_few"
@@ -397,13 +416,13 @@ def test_silver_calibrate_refuses_too_few_arms() -> int:
     for arm_name in ["arm_a", "arm_b", "arm_c"]:
         for version in ["_v1", "_v2"]:
             run_id = f"{arm_name}{version}"
-            config_id = f"{arm_name}{version}"
+            system_id = f"{arm_name}{version}"
             outputs = {f"i{i:02d}": {"metric": 0.8} for i in range(10)}
             write_run(
                 meta,
                 run_id,
                 dataset_id,
-                config_id,
+                system_id,
                 {"overlap_f1": 0.8},
                 outputs=outputs,
                 ref_id=f"gold/{dataset_id}",
@@ -411,7 +430,8 @@ def test_silver_calibrate_refuses_too_few_arms() -> int:
 
     env = {"EVAL_HOME": str(tmp)}
     result = run_script(
-        "scripts/silver_calibrate.py",
+        "scripts/cli.py",
+        "silver-calibrate",
         "--dataset-id",
         dataset_id,
         "--ref-match",
@@ -432,14 +452,14 @@ def test_silver_calibrate_refuses_too_few_arms() -> int:
 
 def test_compare_runs_missing_run() -> int:
     """compare_runs refuses non-existent runs."""
-    tmp = Path(tempfile.mkdtemp(prefix="evh-compare-"))
+    tmp = Path(_tmp.mkdtemp(prefix="evh-compare-"))
     meta = setup_runs_tree(tmp)
 
     write_run(meta, "run_a", "ds1", "arm_a", {"f1": 0.850})
 
     env = {"EVAL_HOME": str(tmp)}
     result = run_script(
-        "scripts/compare_runs.py", "--baseline", "run_a", "--candidate", "nonexistent", env=env, cwd=tmp
+        "scripts/cli.py", "run-compare", "--baseline", "run_a", "--candidate", "nonexistent", env=env, cwd=tmp
     )
 
     check("compare_runs missing run: exit non-zero", result.returncode != 0)
@@ -453,7 +473,7 @@ def test_compare_runs_missing_run() -> int:
 
 def test_bootstrap_test_missing_opponent() -> int:
     """bootstrap_test refuses when no opponent matches the family."""
-    tmp = Path(tempfile.mkdtemp(prefix="evh-boot-"))
+    tmp = Path(_tmp.mkdtemp(prefix="evh-boot-"))
     meta = setup_runs_tree(tmp)
 
     dataset_id = "ds_clf"
@@ -469,7 +489,8 @@ def test_bootstrap_test_missing_opponent() -> int:
 
     env = {"EVAL_HOME": str(tmp)}
     result = run_script(
-        "scripts/bootstrap_test.py",
+        "scripts/cli.py",
+        "bootstrap-test",
         "--dataset-id",
         dataset_id,
         "--a",
@@ -491,7 +512,7 @@ def test_bootstrap_test_missing_opponent() -> int:
 
 def mutation_test_compare_runs() -> int:
     """Mutation test: break the delta computation in compare_runs."""
-    tmp = Path(tempfile.mkdtemp(prefix="evh-mut-compare-"))
+    tmp = Path(_tmp.mkdtemp(prefix="evh-mut-compare-"))
     meta = setup_runs_tree(tmp)
 
     write_run(meta, "run_a", "ds1", "arm_a", {"f1": 0.850, "acc": 0.780})
@@ -501,7 +522,7 @@ def mutation_test_compare_runs() -> int:
 
     # First run: check that it reports the correct delta
     result_ok = run_script(
-        "scripts/compare_runs.py", "--baseline", "run_a", "--candidate", "run_b", env=env, cwd=tmp
+        "scripts/cli.py", "run-compare", "--baseline", "run_a", "--candidate", "run_b", env=env, cwd=tmp
     )
     check("mutation compare_runs baseline: runs ok", result_ok.returncode == 0)
     check(
@@ -515,7 +536,7 @@ def mutation_test_compare_runs() -> int:
 
 def mutation_test_silver_calibrate() -> int:
     """Mutation test: break the spearman correlation computation."""
-    tmp = Path(tempfile.mkdtemp(prefix="evh-mut-silver-"))
+    tmp = Path(_tmp.mkdtemp(prefix="evh-mut-silver-"))
     meta = setup_runs_tree(tmp)
 
     dataset_id = "ds_mut"
@@ -535,13 +556,13 @@ def mutation_test_silver_calibrate() -> int:
     for arm_name, scores in arm_scores.items():
         for version in ["_v1", "_v2"]:
             run_id = f"{arm_name}{version}"
-            config_id = f"{arm_name}{version}"
+            system_id = f"{arm_name}{version}"
             outputs = {f"i{i:02d}": {"metric": s} for i, s in enumerate(scores)}
             write_run(
                 meta,
                 run_id,
                 dataset_id,
-                config_id,
+                system_id,
                 {"overlap_f1": sum(scores) / len(scores)},
                 outputs=outputs,
                 ref_id=f"gold/{dataset_id}",
@@ -549,7 +570,8 @@ def mutation_test_silver_calibrate() -> int:
 
     env = {"EVAL_HOME": str(tmp)}
     result = run_script(
-        "scripts/silver_calibrate.py",
+        "scripts/cli.py",
+        "silver-calibrate",
         "--dataset-id",
         dataset_id,
         "--ref-match",
@@ -573,7 +595,7 @@ def mutation_test_silver_calibrate() -> int:
 
 def mutation_test_bootstrap_test() -> int:
     """Mutation test: verify bootstrap_test correctly computes p-values."""
-    tmp = Path(tempfile.mkdtemp(prefix="evh-mut-boot-"))
+    tmp = Path(_tmp.mkdtemp(prefix="evh-mut-boot-"))
     meta = setup_runs_tree(tmp)
 
     dataset_id = "ds_mut"
@@ -594,7 +616,8 @@ def mutation_test_bootstrap_test() -> int:
 
     env = {"EVAL_HOME": str(tmp)}
     result = run_script(
-        "scripts/bootstrap_test.py",
+        "scripts/cli.py",
+        "bootstrap-test",
         "--dataset-id",
         dataset_id,
         "--a",
@@ -618,7 +641,7 @@ def mutation_test_bootstrap_test() -> int:
 
 def mutation_test_holdout() -> int:
     """Mutation test: verify holdout_significance excludes correct items."""
-    tmp = Path(tempfile.mkdtemp(prefix="evh-mut-hold-"))
+    tmp = Path(_tmp.mkdtemp(prefix="evh-mut-hold-"))
     meta = setup_runs_tree(tmp)
 
     exclude_dataset_id = "ds_prior"
@@ -643,7 +666,8 @@ def mutation_test_holdout() -> int:
 
     env = {"EVAL_HOME": str(tmp)}
     result = run_script(
-        "scripts/holdout_significance.py",
+        "scripts/cli.py",
+        "holdout",
         "--dataset-id",
         dataset_id,
         "--exclude-dataset",
@@ -660,7 +684,7 @@ def mutation_test_holdout() -> int:
 def json_tree() -> tuple[Path, dict, dict]:
     """40 items and four arms that win on 40, 30, 20 and 10 of them (acc), so every p is known; arm_d is also the
     dearest and slowest, so it is off the frontier. Returns (tmp, meta, env)."""
-    tmp = Path(tempfile.mkdtemp(prefix="evh-json-"))
+    tmp = Path(_tmp.mkdtemp(prefix="evh-json-"))
     meta = setup_runs_tree(tmp)
     ids = [f"i{i:02d}" for i in range(40)]
     for arm, wins, cost, latency in (
@@ -671,12 +695,11 @@ def json_tree() -> tuple[Path, dict, dict]:
     ):
         rows = {i: {"acc": 1.0 if n < wins else 0.0} for n, i in enumerate(ids)}
         scores = {"acc": wins / 40, "total_cost_usd": cost, "latency_ms": latency}
-        write_run(meta, f"run_{arm}", "dsj", arm, scores, outputs=rows)
-        mj = meta["runs"] / f"run_{arm}" / "metrics.json"
-        m = json.loads(mj.read_text())
-        m["metric_kinds"] = {"acc": "quality", "total_cost_usd": "cost", "latency_ms": "speed"}
-        m["created_at"] = "2026-11-01T10:00:00Z"
-        mj.write_text(json.dumps(m))
+        extra = {
+            "metric_kinds": {"acc": "quality", "total_cost_usd": "cost", "latency_ms": "speed"},
+            "created_at": "2026-11-01T10:00:00Z",
+        }
+        write_run(meta, f"run_{arm}", "dsj", arm, scores, outputs=rows, extra=extra)
     return tmp, meta, {"EVAL_HOME": str(tmp), "EVAL_NO_CACHE": "1"}
 
 
@@ -697,7 +720,7 @@ def table_rows(env_: dict, first_column: str) -> list[dict]:
 def test_json_pair_test() -> int:
     """pair-test --json: the text's numbers by name; the text itself is unchanged."""
     tmp, _meta, env = json_tree()
-    base = ["scripts/pair_test.py", "--dataset-id", "dsj", "--a", "arm_a", "--b", "arm_b"]
+    base = ["scripts/cli.py", "pair-test", "dsj", "--a", "arm_a", "--b", "arm_b"]
     text = run_script(*base, env=env, cwd=tmp)
     js = run_script(*base, "--json", env=env, cwd=tmp)
     e = parsed(js)
@@ -768,7 +791,7 @@ def test_json_pair_test() -> int:
 def test_json_family_test() -> int:
     """family-test --json: the opponents as a table, Holm's adjusted p beside the text's threshold."""
     tmp, _meta, env = json_tree()
-    base = ["scripts/family_test.py", "--dataset-id", "dsj", "--a", "arm_a", "--against", "arm_"]
+    base = ["scripts/cli.py", "family-test", "dsj", "--a", "arm_a", "--against", "arm_"]
     text = run_script(*base, env=env, cwd=tmp)
     js = run_script(*base, "--json", env=env, cwd=tmp)
     e = parsed(js)
@@ -832,7 +855,7 @@ def test_json_family_test() -> int:
 def test_json_leaderboard() -> int:
     """leaderboard --json: the ranking, the ordering test and the frontier as numbers."""
     tmp, _meta, env = json_tree()
-    base = ["scripts/leaderboard.py", "--dataset-id", "dsj"]
+    base = ["scripts/cli.py", "leaderboard", "dsj"]
     text = run_script(*base, env=env, cwd=tmp)
     js = run_script(*base, "--json", env=env, cwd=tmp)
     e = parsed(js)
@@ -846,16 +869,16 @@ def test_json_leaderboard() -> int:
     arms = g["arms"]
     check(
         "leaderboard --json: arms in rank order, with runs and acc as numbers",
-        [a["config_id"] for a in arms] == ["arm_a", "arm_b", "arm_c", "arm_d"]
+        [a["system_id"] for a in arms] == ["arm_a", "arm_b", "arm_c", "arm_d"]
         and [a["metrics"]["acc"] for a in arms] == [1.0, 0.75, 0.5, 0.25]
         and [a["n_runs"] for a in arms] == [1, 1, 1, 1]
         and (g["sort_by"], g["direction"]) == ("acc", "higher"),
         arms,
     )
-    rows = table_rows(e, "config_id")
+    rows = table_rows(e, "system_id")
     check(
         "leaderboard --json: the table's rows are the text's, raw (a number, not 16 characters of it)",
-        [r["config_id"] for r in rows] == [a["config_id"] for a in arms]
+        [r["system_id"] for r in rows] == [a["system_id"] for a in arms]
         and all(f"{r['acc']:.4f}" in text.stdout for r in rows)
         and all(isinstance(r["acc"], float) for r in rows),
         rows,
@@ -895,7 +918,7 @@ def test_json_leaderboard() -> int:
         "leaderboard --json: the printed lines are the text's lines (the tables aside)",
         all(ln in text.stdout for ln in printed_lines(e)),
     )
-    bad = run_script("scripts/leaderboard.py", "--dataset-id", "no_such_ds", "--json", env=env, cwd=tmp)
+    bad = run_script("scripts/cli.py", "leaderboard", "no_such_ds", "--json", env=env, cwd=tmp)
     check(
         "leaderboard --json: a refusal is on stderr, nothing on stdout, exit non-zero",
         bad.returncode != 0 and bad.stdout == "" and "no runs on dataset" in bad.stderr,
@@ -907,7 +930,7 @@ def test_json_leaderboard() -> int:
 def test_json_run_compare() -> int:
     """run-compare --json: the fingerprint result, the metric rows and the noise verdict."""
     tmp, meta, env = json_tree()
-    base = ["scripts/compare_runs.py", "--baseline", "run_arm_a", "--candidate", "run_arm_b"]
+    base = ["scripts/cli.py", "run-compare", "--baseline", "run_arm_a", "--candidate", "run_arm_b"]
     text = run_script(*base, "--noise", "0.1", env=env, cwd=tmp)
     js = run_script(*base, "--noise", "0.1", "--json", env=env, cwd=tmp)
     e = parsed(js)
@@ -944,10 +967,10 @@ def test_json_run_compare() -> int:
         and wide["result"]["values"]["moved_beyond_noise"] == 0,
         wide["result"]["values"],
     )
-    mj = meta["runs"] / "run_arm_b" / "metrics.json"
-    m = json.loads(mj.read_text())
+    rel = "runs/run_arm_b/run.json"
+    m = _runstore.read_json(project(meta), rel)
     del m["fingerprint"]
-    mj.write_text(json.dumps(m))
+    _runstore.write_text(project(meta), rel, json.dumps(m))
     old = parsed(run_script(*base, "--json", env=env, cwd=tmp))["result"]["values"]
     check(
         "run-compare --json: a run that predates fingerprinting is not comparable, and says why",
@@ -958,13 +981,13 @@ def test_json_run_compare() -> int:
         old,
     )
     write_run(meta, "run_other", "other_ds", "arm_a", {"acc": 0.5})
-    bad = run_script(*base[:3], "--candidate", "run_other", "--json", env=env, cwd=tmp)
+    bad = run_script(*base[:4], "--candidate", "run_other", "--json", env=env, cwd=tmp)
     check(
         "run-compare --json: different datasets are REFUSED on stderr, nothing on stdout",
         bad.returncode != 0 and bad.stdout == "" and "REFUSED" in bad.stderr,
         (bad.stdout, bad.stderr),
     )
-    trav = run_script(*base[:3], "--candidate", "../data/runs/run_arm_b", "--json", env=env, cwd=tmp)
+    trav = run_script(*base[:4], "--candidate", "../data/runs/run_arm_b", "--json", env=env, cwd=tmp)
     check(
         "run-compare: a run id that is a path is refused, not read",
         trav.returncode != 0 and trav.stdout == "" and "not a path" in trav.stderr,
@@ -976,7 +999,7 @@ def test_json_run_compare() -> int:
 def test_json_rank_stability() -> int:
     """rank-stability --json: its table and conclusion; too few items is a refusal under --json."""
     tmp, meta, env = json_tree()
-    base = ["scripts/rank_stability.py", "--dataset-id", "dsj", "--draws", "30"]
+    base = ["scripts/cli.py", "rank-stability", "dsj", "--draws", "30"]
     text = run_script(*base, env=env, cwd=tmp)
     js = run_script(*base, "--json", env=env, cwd=tmp)
     e = parsed(js)
@@ -989,14 +1012,14 @@ def test_json_rank_stability() -> int:
     )
     check(
         "rank-stability --json: arms, items, draws, the sizes measured and the leader",
-        (v["arms"], v["items"], v["draws"], v["sizes"], v["leader"]) == (4, 40, 30, [10, 20], "arm_a")
+        (v["arms"], v["items"], v["draws"], v["sizes"], v["leader"]) == (4, 40, 30, [5, 10, 20], "arm_a")
         and "4 arms, 40 items, metric=acc, 30 draws per size" in text.stdout
         and f"full-40 ordering's leader: {v['leader']}" in text.stdout,
         v,
     )
     check(
         "rank-stability --json: one row per size, rho and the tie count as the text prints them",
-        [r["n_per_half"] for r in rows] == [10, 20]
+        [r["n_per_half"] for r in rows] == [5, 10, 20]
         and all(
             f"{r['n_per_half']:>11} {r['rho_mean']:>21.3f} {r['rho_5th_pct']:>9.3f}" in text.stdout
             for r in rows
@@ -1009,44 +1032,53 @@ def test_json_rank_stability() -> int:
         v["saturated"] == ("WARNING: up to" in text.stdout) and v["saturated"] == (v["worst_ties"] >= 2.0),
         v,
     )
-    ids = [f"j{i:02d}" for i in range(12)]
+    ids = [f"j{i:02d}" for i in range(8)]
     for arm in ("s_a", "s_b", "s_c"):
         write_run(meta, f"run_{arm}", "dss", arm, {"acc": 0.5}, outputs={i: {"acc": 1.0} for i in ids})
-    small = ["scripts/rank_stability.py", "--dataset-id", "dss"]
+    small = ["scripts/cli.py", "rank-stability", "dss"]
     t = run_script(*small, env=env, cwd=tmp)
     j = run_script(*small, "--json", env=env, cwd=tmp)
     check(
         "rank-stability: too few items prints its message on stdout and exits 1, as ever",
-        t.returncode == 1 and "too few for two disjoint halves of 10" in t.stdout,
+        t.returncode == 1 and "too few for two disjoint halves of 5" in t.stdout,
         t.stdout,
     )
     check(
         "rank-stability --json: too few items is a refusal: stderr, nothing on stdout, exit 1",
-        j.returncode == 1 and j.stdout == "" and "too few for two disjoint halves of 10" in j.stderr,
+        j.returncode == 1 and j.stdout == "" and "too few for two disjoint halves of 5" in j.stderr,
         (j.stdout, j.stderr),
     )
-    return 7
+    # The 0.8.0 newcomer run: 20 items gave one row, no line to flatten. The fixed sizes are drawn first, in their
+    # order, so adding sizes moves none of their numbers; then the smallest half and the largest one.
+    from evaluation_harness.rank_stability import sizes_for  # noqa: PLC0415
+
+    check(
+        "rank-stability: the sizes fit the dataset, the fixed ones drawn first (20 items: 10, then 5; 280: up to 140)",
+        sizes_for(20) == [10, 5]
+        and sizes_for(280) == [10, 20, 50, 100, 5, 140]
+        and sizes_for(9) == []
+        and sizes_for(12) == [5, 6],
+        (sizes_for(20), sizes_for(280), sizes_for(9), sizes_for(12)),
+    )
+    return 8
 
 
 def test_json_runs_list() -> int:
     """runs-list --json: a row per run, a row per baseline."""
     tmp, meta, env = json_tree()
-    text = run_script("scripts/list_runs.py", env=env, cwd=tmp)
-    js = run_script("scripts/list_runs.py", "--json", env=env, cwd=tmp)
+    text = run_script("scripts/cli.py", "runs-list", env=env, cwd=tmp)
+    js = run_script("scripts/cli.py", "runs-list", "--json", env=env, cwd=tmp)
     e = parsed(js)
-    rows = table_rows(e, "run_id")
+    rows = e["result"]["runs"]
     check(
-        "runs-list --json: one envelope, a row per run, count in values",
-        js.returncode == 0
-        and len(rows) == 4
-        and e["result"]["values"] == {"kind": "runs", "count": 4}
-        and e["command"] == "runs-list",
-        e["result"]["values"],
+        "runs-list --json: one envelope, a row per run, the count beside them",
+        js.returncode == 0 and len(rows) == 4 and e["result"]["count"] == 4 and e["command"] == "runs-list",
+        e["result"]["count"],
     )
     a = next(r for r in rows if r["run_id"] == "run_arm_a")
     check(
-        "runs-list --json: run_id, config_id, dataset_id, created_at, build, directory and the scores as numbers",
-        (a["config_id"], a["dataset_id"], a["created_at"], a["build_ref"], a["dirty"])
+        "runs-list --json: run_id, system_id, dataset_id, created_at, build, directory and the scores as numbers",
+        (a["system_id"], a["dataset_id"], a["created_at"], a["build_ref"], a["dirty"])
         == ("arm_a", "dsj", "2026-11-01T10:00:00Z", "abc123def456", False)
         and a["directory"] == "data/runs/run_arm_a"
         and a["scores"] == {"acc": 1.0, "latency_ms": 400.0, "total_cost_usd": 4.0},
@@ -1057,18 +1089,21 @@ def test_json_runs_list() -> int:
         all(r["run_id"] in text.stdout for r in rows) and len(rows) == len(rows_of_text(text.stdout)),
         text.stdout,
     )
-    none = parsed(run_script("scripts/list_runs.py", "--baselines", "--json", env=env, cwd=tmp))
+    none = parsed(run_script("scripts/cli.py", "baselines", "--json", env=env, cwd=tmp))["result"]
     check(
-        "runs-list --baselines --json: no baselines is an empty table and a count of 0",
-        none["result"]["values"] == {"kind": "baselines", "count": 0}
-        and table_rows(none, "baseline_id") == [],
+        "evh baselines --json: no baselines is an empty list",
+        none == {"schema": "evh-baselines/1", "baselines": []},
         none,
     )
-    (meta["data"] / "baselines").mkdir()
-    (meta["data"] / "baselines" / "dsj_baseline.json").write_text(
+    if not _runstore.sqlite():
+        (meta["data"] / "baselines" / "_dataset" / "dsj").mkdir(parents=True)
+    _runstore.write_text(
+        project(meta),
+        "baselines/_dataset/dsj/1.json",
         json.dumps(
             {
-                "baseline_id": "dsj_baseline",
+                "version": 1,
+                "goal": None,
                 "dataset_id": "dsj",
                 "promoted_from": "run_arm_a",
                 "build": {"ref": "abc123def456"},
@@ -1077,14 +1112,14 @@ def test_json_runs_list() -> int:
                 "reason": "the best of four",
                 "scores": {"acc": 1.0, "n_items": 40},
             }
-        )
+        ),
     )
-    bl = parsed(run_script("scripts/list_runs.py", "--baselines", "--json", env=env, cwd=tmp))
-    brow = table_rows(bl, "baseline_id")
-    bl_text = run_script("scripts/list_runs.py", "--baselines", env=env, cwd=tmp).stdout
+    bl = parsed(run_script("scripts/cli.py", "baselines", "--json", env=env, cwd=tmp))["result"]
+    brow = bl["baselines"]
+    bl_text = run_script("scripts/cli.py", "baselines", env=env, cwd=tmp).stdout
     check(
-        "runs-list --baselines --json: a row per baseline, its scores as numbers, the text unchanged",
-        bl["result"]["values"] == {"kind": "baselines", "count": 1}
+        "evh baselines --json: one entry per baseline, its scores as numbers; the text says the same",
+        len(brow) == 1
         and (brow[0]["promoted_from"], brow[0]["reason"], brow[0]["scores"]["acc"])
         == ("run_arm_a", "the best of four", 1.0)
         and "why      the best of four" in bl_text

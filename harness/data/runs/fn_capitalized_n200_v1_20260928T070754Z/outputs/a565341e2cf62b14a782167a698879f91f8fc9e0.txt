@@ -1,1 +1,0 @@
-[{"text": "On November", "type": "location"}, {"text": "Fly", "type": "location"}, {"text": "Cochise County", "type": "location"}, {"text": "January", "type": "location"}]

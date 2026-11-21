@@ -3,9 +3,314 @@ goal: news_topic_ag
 dataset_id: ag_news_200
 hypothesis: Which of 24 hosted LLMs (8 vendors × 3 price tiers), three fine-tuned BERTs, a zero-shot NLI
   model, regex rules and a constant labels AG News best, and at what cost?
+arms:
+- system: ag_anthropic_l_v1
+  runs:
+  - ag_anthropic_l_n200_v1_20260927T084208Z
+  entered:
+    how: ran
+    at: '2026-09-27T08:48:44Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: ag_anthropic_m_v1
+  runs:
+  - ag_anthropic_m_n200_v1_20260927T084844Z
+  entered:
+    how: ran
+    at: '2026-09-27T08:48:44Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: ag_anthropic_s_v1
+  runs:
+  - ag_anthropic_s_n200_v1_20260927T085511Z
+  entered:
+    how: ran
+    at: '2026-09-27T08:48:44Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: ag_bart_mnli_v1
+  runs:
+  - ag_bart_mnli_n200_v1_20260927T085832Z
+  entered:
+    how: ran
+    at: '2026-09-27T08:48:44Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: ag_bert_base_fy_v1
+  runs:
+  - ag_bert_base_fy_n200_v1_20260930T094519Z
+  entered:
+    how: ran
+    at: '2026-09-27T08:48:44Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: ag_bert_base_ta_v1
+  runs:
+  - ag_bert_base_ta_n200_v1_20260930T094555Z
+  entered:
+    how: ran
+    at: '2026-09-27T08:48:44Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: ag_bert_mini_v1
+  runs:
+  - ag_bert_mini_n200_v1_20260927T090317Z
+  entered:
+    how: ran
+    at: '2026-09-27T08:48:44Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: ag_constant_v1
+  runs:
+  - ag_constant_n200_v1_20260927T090323Z
+  entered:
+    how: ran
+    at: '2026-09-27T08:48:44Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: ag_deepseek_l_v1
+  runs:
+  - ag_deepseek_l_n200_v1_20260927T090324Z
+  entered:
+    how: ran
+    at: '2026-09-27T08:48:44Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: ag_deepseek_m_v1
+  runs:
+  - ag_deepseek_m_n200_v1_20260927T090752Z
+  entered:
+    how: ran
+    at: '2026-09-27T08:48:44Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: ag_deepseek_s_v1
+  runs:
+  - ag_deepseek_s_n200_v1_20260927T091053Z
+  entered:
+    how: ran
+    at: '2026-09-27T08:48:44Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: ag_gemma_l_v1
+  runs:
+  - ag_gemma_l_n200_v1_20260927T091617Z
+  entered:
+    how: ran
+    at: '2026-09-27T08:48:44Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: ag_gemma_m_v1
+  runs:
+  - ag_gemma_m_n200_v1_20260927T091922Z
+  entered:
+    how: ran
+    at: '2026-09-27T08:48:44Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: ag_gemma_s_v1
+  runs:
+  - ag_gemma_s_n200_v1_20260927T092138Z
+  entered:
+    how: ran
+    at: '2026-09-27T08:48:44Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: ag_glm_l_v1
+  runs:
+  - ag_glm_l_n200_v1_20260927T092352Z
+  entered:
+    how: ran
+    at: '2026-09-27T08:48:44Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: ag_glm_m_v1
+  runs:
+  - ag_glm_m_n200_v1_20260927T093014Z
+  entered:
+    how: ran
+    at: '2026-09-27T08:48:44Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: ag_glm_s_v1
+  runs:
+  - ag_glm_s_n200_v1_20260927T093749Z
+  entered:
+    how: ran
+    at: '2026-09-27T08:48:44Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: ag_keyword_v1
+  runs:
+  - ag_keyword_n200_v1_20260927T094143Z
+  entered:
+    how: ran
+    at: '2026-09-27T08:48:44Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: ag_llama_l_v1
+  runs:
+  - ag_llama_l_n200_v1_20260927T094143Z
+  entered:
+    how: ran
+    at: '2026-09-27T08:48:44Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: ag_llama_m_v1
+  runs:
+  - ag_llama_m_n200_v1_20260927T094427Z
+  entered:
+    how: ran
+    at: '2026-09-27T08:48:44Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: ag_llama_s_v1
+  runs:
+  - ag_llama_s_n200_v1_20260927T094827Z
+  entered:
+    how: ran
+    at: '2026-09-27T08:48:44Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: ag_mistral_l_v1
+  runs:
+  - ag_mistral_l_n200_v1_20260927T095106Z
+  entered:
+    how: ran
+    at: '2026-09-27T08:48:44Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: ag_mistral_m_v1
+  runs:
+  - ag_mistral_m_n200_v1_20260927T102213Z
+  entered:
+    how: ran
+    at: '2026-09-27T08:48:44Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: ag_mistral_s_v1
+  runs:
+  - ag_mistral_s_n200_v1_20260927T102342Z
+  entered:
+    how: ran
+    at: '2026-09-27T08:48:44Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: ag_openai_l_v1
+  runs:
+  - ag_openai_l_n200_v1_20260927T102611Z
+  entered:
+    how: ran
+    at: '2026-09-27T08:48:44Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: ag_openai_m_v1
+  runs:
+  - ag_openai_m_n200_v1_20260927T103015Z
+  entered:
+    how: ran
+    at: '2026-09-27T08:48:44Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: ag_openai_s_v1
+  runs:
+  - ag_openai_s_n200_v1_20260927T103359Z
+  entered:
+    how: ran
+    at: '2026-09-27T08:48:44Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: ag_qwen_l_v1
+  runs:
+  - ag_qwen_l_n200_v1_20260927T103653Z
+  entered:
+    how: ran
+    at: '2026-09-27T08:48:44Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: ag_qwen_m_v1
+  runs:
+  - ag_qwen_m_n200_v1_20260927T104625Z
+  entered:
+    how: ran
+    at: '2026-09-27T08:48:44Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: ag_qwen_s_v1
+  runs:
+  - ag_qwen_s_n200_v1_20260927T104930Z
+  entered:
+    how: ran
+    at: '2026-09-27T08:48:44Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
 status: closed
 opened_at: '2026-09-27T08:48:44Z'
 closed_at: '2026-09-30T09:46:23Z'
+actor:
+  type: unknown
+  name: before 0.8.0
+  from: migration
 conclusion:
   text: Against the dataset's gold, three public BERT fine-tunes (0.9600, 0.9500, 0.9450) score above
     all 24 hosted LLMs (0.835–0.910); that lead is AG News's filing convention. If your labels follow

@@ -108,17 +108,23 @@ def render_prompt(base: str, n: int) -> str:
     a, b = "16 numbered summaries", "a list of 16 integers"
     if COUNT in base:
         if a in base or b in base:
-            raise SystemExit(
+            from evaluation_harness._common import die  # noqa: PLC0415
+
+            die(
                 f"the prompt has both {COUNT} and SummEval's fixed count phrases "
-                f"({a!r} / {b!r}); the phrases would keep saying 16. Use one or the other"
+                f"({a!r} / {b!r}); the phrases would keep saying 16. Use one or the other",
+                "invalid-file",
             )
         return base.replace(COUNT, str(n))
     if n == 16:
         return base
     if a not in base or b not in base:
-        raise SystemExit(
+        from evaluation_harness._common import die  # noqa: PLC0415
+
+        die(
             f"the prompt has no {COUNT} where the count goes, and not SummEval's two "
-            f"count phrases ({a!r}, {b!r}); it cannot be rendered for {n} outputs"
+            f"count phrases ({a!r}, {b!r}); it cannot be rendered for {n} outputs",
+            "invalid-file",
         )
     if n == 1:
         # Singular grammar, and an example showing one value per key: the 16-wide example
@@ -128,8 +134,11 @@ def render_prompt(base: str, n: int) -> str:
             '"fluency": [4, 4, ...], "relevance": [2, 3, ...]}'
         )
         if ex not in base:
-            raise SystemExit(
-                "the prompt no longer contains the example line this pass rewrites for one summary"
+            from evaluation_harness._common import die  # noqa: PLC0415
+
+            die(
+                "the prompt no longer contains the example line this pass rewrites for one summary",
+                "invalid-file",
             )
         return (
             base.replace(a, "1 numbered summary")
@@ -167,6 +176,43 @@ PAIR_REMINDER = (
     'Begin your reply with the JSON object: {"better": 1}, {"better": 2} or {"better": "tie"}; '
     "write nothing after it."
 )
+
+
+def explain_reminder(
+    mode: str, n: int, source_label: str = "ARTICLE", output_label: str = "SUMMARIES"
+) -> str:
+    """What a scorer with `explain: true` adds to every message (RFC-034 §5): the reason goes inside the same JSON
+    object, after the verdict, so a reply is still one object and its verdict parses as before."""
+    src, outs = source_label.lower(), output_label.lower()
+    if mode == "grade":
+        what = f'"why": a list of {n} short sentences, one per numbered output in order, each saying what decided its scores'
+    elif mode == "pick":
+        what = '"why": one or two sentences saying what made the outputs you named the best'
+    else:
+        what = '"why": one or two sentences saying what made the better one better, or why they tie'
+    return (
+        f"Inside the same JSON object, after your verdict, add {what}. Do not copy sentences from the {src} "
+        f"or the {outs}: name what you saw in your own words."
+    )
+
+
+def with_reason(
+    message: str, mode: str, n: int, source_label: str = "ARTICLE", output_label: str = "SUMMARIES"
+) -> str:
+    """The message with `explain_reminder` after it."""
+    return f"{message}\n\n{explain_reminder(mode, n, source_label, output_label)}"
+
+
+def parse_why(output: str | None, mode: str, n: int) -> str | list[str] | None:
+    """The reason a reply gives (RFC-034 §5), or None: for `grade` one non-empty sentence per output, in order; for
+    `pick` and `pairwise` one non-empty string. A reason never decides whether the verdict parsed."""
+    obj = _object(output)
+    w = obj.get("why") if obj else None
+    if mode == "grade":
+        if isinstance(w, list) and len(w) == n and all(isinstance(x, str) and x.strip() for x in w):
+            return [x.strip() for x in w]
+        return None
+    return w.strip() if isinstance(w, str) and w.strip() else None
 
 
 def _layout(prompt: str, source: str, outputs: Sequence[str], source_label: str, output_label: str) -> str:
@@ -248,10 +294,10 @@ def parse_pairwise(output: str | None) -> int | str | None:
     return None
 
 
-def parse_block(
+def parse_columns(
     output: str, n: int, dims: Sequence[str] = DIMS, scale: Sequence[float] = (1, 5)
-) -> list[float] | None:
-    """Per-output mean of the dimensions, or None.
+) -> dict[str, list[float]] | None:
+    """Each dimension's `n` scores, or None.
 
     Lenient about wrapping (a fence, a sentence before the JSON), strict about content: a
     dimension counts only with exactly `n` numbers, and a block counts only with every
@@ -267,7 +313,7 @@ def parse_block(
         return None
     if not isinstance(obj, dict):
         return None
-    cols = []
+    cols: dict[str, list[float]] = {}
     for d in dims:
         v = obj.get(d)
         if not isinstance(v, list) or len(v) != n:
@@ -278,8 +324,18 @@ def parse_block(
         f = [float(x) for x in v]
         if any(not (lo <= x <= hi) for x in f):
             return None
-        cols.append(f)
-    return [statistics.fmean(c[i] for c in cols) for i in range(n)]
+        cols[d] = f
+    return cols
+
+
+def parse_block(
+    output: str, n: int, dims: Sequence[str] = DIMS, scale: Sequence[float] = (1, 5)
+) -> list[float] | None:
+    """Per-output mean of the dimensions, or None (`parse_columns` says what a block must hold)."""
+    cols = parse_columns(output, n, dims, scale)
+    if cols is None:
+        return None
+    return [statistics.fmean(c[i] for c in cols.values()) for i in range(n)]
 
 
 # ── rank statistics ──────────────────────────────────────────────────────────
@@ -344,17 +400,23 @@ def quotes_source(output: str, source: set) -> bool:
 _FENCE = re.compile(r"^```(?:json)?\s*(.*?)\s*```$", re.S)
 
 
-def json_only(output: str | None) -> bool:
-    """A reply that is one JSON object and nothing else (a ```json fence allowed)."""
+def json_object(output: str | None) -> dict | None:
+    """The reply's one JSON object when it is that and nothing else (a ```json fence allowed), else None."""
     t = (output or "").strip()
     m = _FENCE.match(t)
     t = m.group(1) if m else t
     if not (t.startswith("{") and t.endswith("}")):
-        return False
+        return None
     try:
-        return isinstance(json.loads(t), dict)
+        got = json.loads(t)
     except json.JSONDecodeError:
-        return False
+        return None
+    return got if isinstance(got, dict) else None
+
+
+def json_only(output: str | None) -> bool:
+    """A reply that is one JSON object and nothing else (a ```json fence allowed)."""
+    return json_object(output) is not None
 
 
 def withheld_reason(output: str | None, source: set) -> str | None:
@@ -413,14 +475,23 @@ def _fake_call(message: str, params: dict[str, Any]) -> JudgeResult:
             lo + int(hashlib.sha256(f"{model}|{x}".encode()).hexdigest()[:8], 16) % (hi - lo + 1)
             for x in sums
         ]
-        out = json.dumps(dict.fromkeys(task["dimensions"], s))
+        reply: dict[str, Any] = dict.fromkeys(task["dimensions"], s)
+        if params.get("_explain"):
+            reply["why"] = [
+                f"output {i} rated {v} on every dimension by the fake judge" for i, v in enumerate(s, 1)
+            ]
+        out = json.dumps(reply)
     else:
-        keys = _fake_keys(sums, str(params.get("prefer", "longer")))
+        prefer = str(params.get("prefer", "longer"))
+        keys = _fake_keys(sums, prefer)
         top = max(keys)
         if mode == "pick":
-            out = json.dumps({"best": [i + 1 for i, k in enumerate(keys) if k == top]})
+            reply = {"best": [i + 1 for i, k in enumerate(keys) if k == top]}
         else:
-            out = json.dumps({"better": "tie" if keys[0] == keys[1] else 1 + keys.index(top)})
+            reply = {"better": "tie" if keys[0] == keys[1] else 1 + keys.index(top)}
+        if params.get("_explain"):
+            reply["why"] = f"the fake judge prefers the {prefer} output"
+        out = json.dumps(reply)
     tin, tout = max(1, len(message) // 4), max(1, len(out) // 4)
     return JudgeResult(
         output=out,

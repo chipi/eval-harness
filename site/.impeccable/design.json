@@ -1,0 +1,536 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-12T21:58:27Z",
+  "title": "Design System: eval-harness, the public site",
+  "extensions": {
+    "colorMeta": {
+      "ink-black": {
+        "role": "neutral",
+        "displayName": "Ink Black",
+        "canonical": "#0b0b0a",
+        "tonalRamp": [
+          "#272725",
+          "#464641",
+          "#65655c",
+          "#848478",
+          "#9f9f97",
+          "#bbbbb5",
+          "#d6d6d4",
+          "#f3f3f2"
+        ]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Surface",
+        "canonical": "#141413",
+        "tonalRamp": [
+          "#272726",
+          "#454542",
+          "#63635e",
+          "#81817a",
+          "#9d9d99",
+          "#b9b9b7",
+          "#d6d6d4",
+          "#f2f2f2"
+        ]
+      },
+      "surface-raised": {
+        "role": "neutral",
+        "displayName": "Surface Raised",
+        "canonical": "#1c1c1a",
+        "tonalRamp": [
+          "#272725",
+          "#454541",
+          "#64645d",
+          "#828279",
+          "#9e9e97",
+          "#babab6",
+          "#d6d6d4",
+          "#f3f3f2"
+        ]
+      },
+      "paper-ink": {
+        "role": "neutral",
+        "displayName": "Paper Ink",
+        "canonical": "#f0efec",
+        "tonalRamp": [
+          "#292823",
+          "#4a473d",
+          "#6b6656",
+          "#8c856f",
+          "#a5a090",
+          "#bfbbb1",
+          "#d9d7d2",
+          "#f3f3f1"
+        ]
+      },
+      "ink-secondary": {
+        "role": "neutral",
+        "displayName": "Ink Secondary",
+        "canonical": "#b9b7ad",
+        "tonalRamp": [
+          "#282824",
+          "#48463f",
+          "#67655a",
+          "#888474",
+          "#a2a094",
+          "#bcbbb3",
+          "#d7d7d3",
+          "#f3f3f2"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Muted",
+        "canonical": "#8a8880",
+        "tonalRamp": [
+          "#272725",
+          "#464541",
+          "#64635d",
+          "#838179",
+          "#9f9d97",
+          "#bab9b6",
+          "#d6d6d4",
+          "#f3f2f2"
+        ]
+      },
+      "hairline": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "#2a2a27",
+        "tonalRamp": [
+          "#272725",
+          "#454541",
+          "#64645d",
+          "#828279",
+          "#9e9e97",
+          "#babab6",
+          "#d6d6d4",
+          "#f3f3f2"
+        ]
+      },
+      "axis": {
+        "role": "neutral",
+        "displayName": "Axis",
+        "canonical": "#3a3a36",
+        "tonalRamp": [
+          "#272725",
+          "#454541",
+          "#64645d",
+          "#828279",
+          "#9e9e98",
+          "#babab6",
+          "#d6d6d4",
+          "#f3f3f2"
+        ]
+      },
+      "highlighter-lime": {
+        "role": "primary",
+        "displayName": "Highlighter Lime",
+        "canonical": "#c8ff3d",
+        "tonalRamp": [
+          "#32400c",
+          "#5a780e",
+          "#86b70b",
+          "#b4fb01",
+          "#c2f540",
+          "#d1f17f",
+          "#e2f2b8",
+          "#f6faeb"
+        ]
+      },
+      "proprietary-blue": {
+        "role": "secondary",
+        "displayName": "Proprietary Blue",
+        "canonical": "#3987e5",
+        "tonalRamp": [
+          "#12243a",
+          "#1b406c",
+          "#1f5aa3",
+          "#1e75de",
+          "#5594e0",
+          "#8cb4e4",
+          "#bfd3ec",
+          "#ecf2f8"
+        ]
+      },
+      "local-ember": {
+        "role": "secondary",
+        "displayName": "Local Ember",
+        "canonical": "#d95926",
+        "tonalRamp": [
+          "#391e14",
+          "#69331e",
+          "#9d4724",
+          "#d55826",
+          "#da7f5b",
+          "#e0a790",
+          "#eaccc1",
+          "#f8f0ed"
+        ]
+      },
+      "open-weights-green": {
+        "role": "secondary",
+        "displayName": "Open-Weights Green",
+        "canonical": "#199e70",
+        "tonalRamp": [
+          "#13392c",
+          "#1d6a4f",
+          "#229f74",
+          "#23d89a",
+          "#59ddaf",
+          "#8fe1c5",
+          "#c0eadc",
+          "#edf8f4"
+        ]
+      },
+      "baseline-grey": {
+        "role": "secondary",
+        "displayName": "Baseline Grey",
+        "canonical": "#6f6d66",
+        "tonalRamp": [
+          "#272725",
+          "#464541",
+          "#64635d",
+          "#838178",
+          "#9f9d97",
+          "#bab9b6",
+          "#d6d6d4",
+          "#f3f2f2"
+        ]
+      },
+      "paper-light": {
+        "role": "neutral",
+        "displayName": "Paper Light",
+        "canonical": "#f6f5f1",
+        "tonalRamp": [
+          "#2c2a21",
+          "#4f4a38",
+          "#736c4e",
+          "#998e63",
+          "#aea787",
+          "#c4bfac",
+          "#dbd9cf",
+          "#f4f3f1"
+        ]
+      },
+      "surface-light": {
+        "role": "neutral",
+        "displayName": "Surface Light",
+        "canonical": "#fcfcfb",
+        "tonalRamp": [
+          "#2a2a23",
+          "#4b4b3c",
+          "#6d6d54",
+          "#90906c",
+          "#a8a88e",
+          "#c0c0b0",
+          "#d9d9d1",
+          "#f3f3f1"
+        ]
+      },
+      "ink-light": {
+        "role": "neutral",
+        "displayName": "Ink Light",
+        "canonical": "#0b0b0b",
+        "tonalRamp": [
+          "#262626",
+          "#434343",
+          "#616161",
+          "#7e7e7e",
+          "#9b9b9b",
+          "#b8b8b8",
+          "#d5d5d5",
+          "#f2f2f2"
+        ]
+      },
+      "ink-secondary-light": {
+        "role": "neutral",
+        "displayName": "Ink Secondary Light",
+        "canonical": "#4a4945",
+        "tonalRamp": [
+          "#272725",
+          "#454542",
+          "#64625e",
+          "#828079",
+          "#9e9d98",
+          "#bab9b6",
+          "#d6d6d4",
+          "#f3f2f2"
+        ]
+      },
+      "hairline-light": {
+        "role": "neutral",
+        "displayName": "Hairline Light",
+        "canonical": "#dddbd3",
+        "tonalRamp": [
+          "#2a2823",
+          "#4a473d",
+          "#6c6756",
+          "#8e876e",
+          "#a6a28f",
+          "#bfbcb1",
+          "#d9d7d1",
+          "#f3f3f1"
+        ]
+      },
+      "muted-light": {
+        "role": "neutral",
+        "displayName": "Muted Light",
+        "canonical": "#66645e",
+        "tonalRamp": [
+          "#272725",
+          "#464441",
+          "#64625d",
+          "#838079",
+          "#9f9d97",
+          "#bab9b6",
+          "#d6d6d4",
+          "#f3f2f2"
+        ]
+      },
+      "highlighter-olive-light": {
+        "role": "primary",
+        "displayName": "Highlighter Olive (light theme)",
+        "canonical": "#3d5c00",
+        "tonalRamp": [
+          "#2f400c",
+          "#55780e",
+          "#7db70b",
+          "#a6fb01",
+          "#b8f540",
+          "#cbf17f",
+          "#dff2b8",
+          "#f5faeb"
+        ]
+      },
+      "proprietary-blue-light": {
+        "role": "neutral",
+        "displayName": "Proprietary Blue Light",
+        "canonical": "#2a78d6",
+        "tonalRamp": [
+          "#152538",
+          "#1f4067",
+          "#265b9b",
+          "#2976d2",
+          "#5e95d8",
+          "#91b4de",
+          "#c1d3e9",
+          "#edf2f7"
+        ]
+      },
+      "local-ember-light": {
+        "role": "neutral",
+        "displayName": "Local Ember Light",
+        "canonical": "#de4f16",
+        "tonalRamp": [
+          "#3c1d11",
+          "#6f3118",
+          "#a7421a",
+          "#e45217",
+          "#e57b51",
+          "#e7a489",
+          "#edcbbd",
+          "#f8f0ec"
+        ]
+      },
+      "open-weights-green-light": {
+        "role": "neutral",
+        "displayName": "Open Weights Green Light",
+        "canonical": "#179568",
+        "tonalRamp": [
+          "#13392c",
+          "#1c6a4f",
+          "#22a073",
+          "#22d998",
+          "#59ddae",
+          "#8ee2c4",
+          "#c0ebdb",
+          "#edf8f4"
+        ]
+      },
+      "baseline-grey-light": {
+        "role": "neutral",
+        "displayName": "Baseline Grey Light",
+        "canonical": "#858278",
+        "tonalRamp": [
+          "#282725",
+          "#464541",
+          "#65635c",
+          "#848177",
+          "#9f9d96",
+          "#bbbab5",
+          "#d7d6d4",
+          "#f3f2f2"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "The hero question on each page."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "A section's claim."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "A card's eval name, a finding's heading."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Running text."
+      },
+      "lede": {
+        "displayName": "Lede",
+        "purpose": "The paragraph under a headline."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Kickers, eyebrows, table heads, navigation."
+      },
+      "number": {
+        "displayName": "Number",
+        "purpose": "A headline statistic, tabular figures."
+      }
+    },
+    "shadows": [
+      {
+        "name": "float",
+        "value": "0 8px 24px rgba(0, 0, 0, .18)",
+        "purpose": "The menu and the search results only."
+      }
+    ],
+    "motion": [
+      {
+        "name": "reveal",
+        "value": "opacity .7s ease, transform .7s ease (18px rise)",
+        "purpose": "A section entering view; none under prefers-reduced-motion."
+      },
+      {
+        "name": "tooltip",
+        "value": "opacity .12s, transform .12s",
+        "purpose": "A chart tooltip appearing."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "phone",
+        "value": "640px"
+      },
+      {
+        "name": "tablet",
+        "value": "760px"
+      },
+      {
+        "name": "two-column",
+        "value": "900px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one action a page asks for: a lime pill.",
+      "html": "<a class=\"ds-btn-primary\" href=\"#\">Use it on your data</a>",
+      "css": ".ds-btn-primary { display: inline-block; font: 600 13px/1 ui-monospace, 'SF Mono', Menlo, monospace; letter-spacing: .03em; padding: 14px 18px; border-radius: 999px; border: 1px solid var(--accent, #c8ff3d); background: var(--accent, #c8ff3d); color: var(--accent-ink, #0b0b0a); text-decoration: none; } .ds-btn-primary:hover { filter: brightness(1.06); } .ds-btn-primary:focus-visible { outline: 2px solid var(--accent, #c8ff3d); outline-offset: 3px; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Every other action: a hairline pill.",
+      "html": "<a class=\"ds-btn\" href=\"#\">Read the method</a>",
+      "css": ".ds-btn { display: inline-block; font: 600 13px/1 ui-monospace, 'SF Mono', Menlo, monospace; letter-spacing: .03em; padding: 14px 18px; border-radius: 999px; border: 1px solid var(--hair, #2a2a27); color: var(--ink, #f0efec); text-decoration: none; } .ds-btn:hover { color: var(--accent, #c8ff3d); } .ds-btn:focus-visible { outline: 2px solid var(--accent, #c8ff3d); outline-offset: 3px; }"
+    },
+    {
+      "name": "Eval Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "One eval: task label, name, finding, ruled meta row.",
+      "html": "<a class=\"ds-card\" href=\"#\"><span class=\"ds-card-task\">Classification</span><h3>AG News</h3><p>Small models lead, largely on disputed labels.</p><span class=\"ds-card-meta\"><span>29 arms</span><span>200 items</span></span></a>",
+      "css": ".ds-card { display: flex; flex-direction: column; gap: 14px; padding: 26px; border: 1px solid var(--hair, #2a2a27); border-radius: 14px; background: var(--surface, #141413); color: var(--ink, #f0efec); text-decoration: none; max-width: 360px; } .ds-card:hover { border-color: var(--accent, #c8ff3d); } .ds-card-task { font: 500 11px/1 ui-monospace, Menlo, monospace; letter-spacing: .14em; text-transform: uppercase; color: var(--muted, #7d7b74); } .ds-card h3 { margin: 0; font: 800 30px/1.02 'Inter Tight', Inter, system-ui, sans-serif; letter-spacing: -0.035em; } .ds-card p { margin: 0; color: var(--ink-2, #b9b7ad); font-size: 15px; } .ds-card-meta { display: flex; justify-content: space-between; font: 500 12px/1.3 ui-monospace, Menlo, monospace; color: var(--ink-2, #b9b7ad); border-top: 1px solid var(--hair, #2a2a27); padding-top: 14px; }"
+    },
+    {
+      "name": "Note",
+      "kind": "custom",
+      "refersTo": "",
+      "description": "A marked aside: a lime rule on the left, quiet text.",
+      "html": "<p class=\"ds-note\">This is ongoing work: the harness and its method are the point.</p>",
+      "css": ".ds-note { border-left: 2px solid var(--accent, #c8ff3d); padding: 4px 0 4px 18px; color: var(--ink-2, #b9b7ad); font-size: 15px; max-width: 66ch; margin: 0; }"
+    },
+    {
+      "name": "Kicker",
+      "kind": "custom",
+      "refersTo": "",
+      "description": "The monospace line above a headline, its lead word in lime.",
+      "html": "<div class=\"ds-kicker\"><b>Classification</b> \u00b7 AG News</div>",
+      "css": ".ds-kicker { font: 500 12px/1.4 ui-monospace, Menlo, monospace; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-2, #b9b7ad); } .ds-kicker b { color: var(--accent, #c8ff3d); font-weight: 600; }"
+    },
+    {
+      "name": "Icon Button",
+      "kind": "button",
+      "refersTo": "icon-button",
+      "description": "Search, theme and menu in the bar: a hairline circle.",
+      "html": "<button class=\"ds-icon\" type=\"button\" aria-label=\"Theme\"><svg viewBox=\"0 0 16 16\" width=\"14\" height=\"14\" aria-hidden=\"true\"><circle cx=\"8\" cy=\"8\" r=\"6.5\" fill=\"none\" stroke=\"currentColor\"/><path d=\"M8 1.5a6.5 6.5 0 0 1 0 13z\" fill=\"currentColor\"/></svg></button>",
+      "css": ".ds-icon { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 50%; border: 1px solid var(--hair, #2a2a27); background: none; color: var(--ink-2, #b9b7ad); cursor: pointer; } .ds-icon:hover, .ds-icon:focus-visible { color: var(--accent, #c8ff3d); border-color: var(--accent, #c8ff3d); outline: none; }"
+    },
+    {
+      "name": "Terminal",
+      "kind": "custom",
+      "refersTo": "terminal",
+      "description": "A command to copy, in monospace, scrolling inside itself.",
+      "html": "<pre class=\"ds-term\"><span>$ </span>pip install \"evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.7.2#subdirectory=harness\"</pre>",
+      "css": ".ds-term { background: rgba(127,127,127,.08); border: 1px solid var(--hair, #2a2a27); border-radius: 6px; padding: 18px 20px; margin: 0; overflow-x: auto; font: 13.5px/1.7 ui-monospace, Menlo, monospace; color: var(--ink, #f0efec); } .ds-term span { color: var(--muted, #7d7b74); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Lab Notebook",
+    "overview": "The site reads like a working scientist's notebook made public. Every page states a finding in the largest type it can hold, then shows the measurement underneath: the number, what it was measured against, whether it is significant. The one colour that is not ink is a highlighter, used the way a person marks the line they want read again, and it never stands for data.\n\nThe voice is confident and plain. Headlines state findings (\"Small models lead, largely on disputed labels.\"), text underneath is quiet and grey, and nothing decorative appears unless it carries meaning: the faint grid behind the hero is graph paper, the glow is the highlighter's bleed. It is dark-first, on near-black, with a warm-paper light theme that keeps every role.\n\n- Very large, tightly set display headlines (800 weight, -0.035em), usually one clause turned in Highlighter Lime. - Monospace for every label, kicker, eyebrow, navigation link and number; a humanist sans for reading. - Flat surfaces separated by hairlines and a single tone step, never by shadow. - Three categorical colours for the kinds of model, kept apart from the accent. - No web fonts, and no external request but the cookieless analytics PRODUCT.md names: the type falls back to the system's sans and mono.",
+    "keyCharacteristics": [
+      "Very large, tightly set display headlines (800 weight, -0.035em), usually one clause turned in Highlighter Lime.",
+      "Monospace for every label, kicker, eyebrow, navigation link and number; a humanist sans for reading.",
+      "Flat surfaces separated by hairlines and a single tone step, never by shadow.",
+      "Three categorical colours for the kinds of model, kept apart from the accent.",
+      "No web fonts, and no external request but the cookieless analytics PRODUCT.md names: the type falls back to the"
+    ],
+    "rules": [
+      {
+        "name": "The Highlighter Rule",
+        "body": "The accent marks what to read; it never encodes a value. A chart never uses it for a series, and a table never uses it for a number.",
+        "section": "colors"
+      },
+      {
+        "name": "The Three Kinds Rule",
+        "body": "Blue, ember and green always mean proprietary, local and open weights, wherever they appear, and nothing else.",
+        "section": "colors"
+      },
+      {
+        "name": "The Mono Means Exact Rule",
+        "body": "Anything a reader might copy, count or click to navigate is set in monospace: commands, ids, numbers, labels, links in the bar. Prose never is.",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat-By-Default Rule",
+        "body": "A card, a chart and a table sit on the page with a hairline. A shadow means the element floats above the page and will close.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** state the finding in the headline and turn one clause of it in Highlighter Lime.",
+      "**Do** set every label, number, command and id in monospace with tabular figures.",
+      "**Do** separate surfaces with a 1px hairline and one tone step.",
+      "**Do** keep blue, ember and green for proprietary, local and open-weights arms only.",
+      "**Do** keep both themes complete: every colour is a token defined for dark and light."
+    ],
+    "donts": [
+      "**Don't** use the lime accent for a data series, a value or a status.",
+      "**Don't** add a shadow to a card, a chart or a table; only a floating panel has one.",
+      "**Don't** load a web font or any other external resource (the cookieless analytics excepted).",
+      "**Don't** add decoration that carries no meaning: the grid is graph paper, the glow is the highlighter."
+    ]
+  }
+}

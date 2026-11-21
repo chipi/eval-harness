@@ -2,7 +2,7 @@
 # planted defects, must name each one (harness/tests/test_checks_can_fail.py, `make guard-check`).
 #
 # It proves the checkers' code, so it runs the guard only when that code changes: the checkers
-# (harness/tools/, harness/scripts/validate_tree.py), the harness package they import
+# (harness/tools/, harness/scripts/validate_tree.py, tools/llms_txt.py), the harness package they import
 # (harness/scripts/), the validation policy and schemas, or this test. A change to the reports,
 # the runs or the docs is checked by `make verify` in reproduce.yml and does not need it.
 #
@@ -61,7 +61,7 @@ jobs:
         env:
           BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
         run: |
-          guarded='^(harness/(tools|scripts|schemas)/|harness/data/validate\.json$|harness/tests/test_checks_can_fail\.py$|\.github/workflows/guards\.yml$)'
+          guarded='^(tools/|harness/(tools|scripts|schemas)/|harness/data/validate\.json$|harness/tests/test_checks_can_fail\.py$|\.github/workflows/guards\.yml$)'
           if [ -z "$BASE" ] || ! git cat-file -e "${BASE}^{commit}" 2>/dev/null; then
             echo "no base to compare with (a dispatch, a new branch): the guard runs"
             echo "run=true" >> "$GITHUB_OUTPUT"

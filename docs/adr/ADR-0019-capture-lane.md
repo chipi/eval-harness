@@ -1,6 +1,6 @@
-# ADR-0019 — Datasets from production: a capture lane beside the method (0.6.0)
+# ADR-0019 — Datasets from production: a capture lane beside the method
 
-**Status:** Accepted (2026-10-30), built in 0.6.0. Its references from outcomes are replaced (2026-11-01) by
+**Status:** Accepted (2026-10-30), built in 0.6.0. Its references from outcomes are replaced by
 [ADR-0022](ADR-0022-references-are-promoted-labels.md): outcomes become a `rule` label set, promoted like any.
 **Date:** 2026-10-30
 **Detail:** [PRD-014](../prd/PRD-014-datasets-from-production.md) (requirements),
@@ -18,7 +18,7 @@ fates are all recorded.
 
 ## Decision
 
-- **A lane, not a rewrite.** New commands (`capture`, `capture-scrub`, `captures`,
+- **A lane, not a rewrite.** New commands (`capture`, `capture-scrub`, `capture-list`,
   `dataset-from-capture`, `reference-from-outcomes`, `dataset-split`, `importer-check`) end in the
   files the method already reads: a dataset with lineage, a reference. No existing command changes
   its arguments or its output for data without the new optional fields (a dataset's `tags`,

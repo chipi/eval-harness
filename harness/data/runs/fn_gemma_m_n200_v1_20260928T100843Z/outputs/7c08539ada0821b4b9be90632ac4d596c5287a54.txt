@@ -1,6 +1,0 @@
-[
-  {
-    "text": "Cartoon Planet",
-    "type": "other"
-  }
-]

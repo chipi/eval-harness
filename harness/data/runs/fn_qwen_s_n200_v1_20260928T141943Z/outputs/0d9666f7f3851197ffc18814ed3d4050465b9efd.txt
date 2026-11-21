@@ -1,6 +1,0 @@
-[
-  {
-    "text": "14thcentury",
-    "type": "event"
-  }
-]

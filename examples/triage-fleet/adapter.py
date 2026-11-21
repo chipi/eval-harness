@@ -42,6 +42,8 @@ from pathlib import Path
 from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "harness"))
+os.environ.setdefault("EVAL_HOME", str(Path(__file__).resolve().parents[2] / "harness"))
+from evaluation_harness import _store  # noqa: E402
 from evaluation_harness.adapter import Result, answers  # noqa: E402
 
 PRIMARY_METRIC = "triage_cost"
@@ -64,7 +66,7 @@ METRIC_DIRECTIONS = {
     "model_false_alarm": "lower",
     "model_escalated": "lower",
 }
-#: What each metric measures (the catalog's metric pages and `evh metrics`), from score() and run() below.
+#: What each metric measures (the catalog's metric pages and `evh metric-list`), from score() and run() below.
 METRIC_DESCRIPTIONS = {
     "triage_cost": {
         "summary": "One decision's cost: 5 for a missed real problem, 1 for a false alarm, 0 when right; lower is better."
@@ -112,7 +114,7 @@ def _fleet() -> Any:
         return _FLEET["triage"]
     src = os.environ.get("TRIAGE_FLEET_SRC", "")
     mvp = Path(src) / "mvp" if src else None
-    if mvp is None or not (mvp / "triage.py").is_file():
+    if mvp is None or not _store.is_file(mvp / "triage.py"):
         raise RuntimeError(
             f"TRIAGE_FLEET_SRC must name the fleet's signal-fleet folder (with mvp/triage.py); got {src!r}"
         )
@@ -190,6 +192,12 @@ def _fleet() -> Any:
 FLEET_MODULES = ("triage.py", "probes.py", "guards.py", "config.py")
 
 
+def prompts(params: dict[str, Any]) -> dict[str, str]:
+    """The fleet's system prompt, the text this adapter's fingerprint hashes as `prompt_sha256`: the harness records
+    it as a prompt version of the run (RFC-032 step 4b)."""
+    return {"triage-fleet/system": _fleet()._sys()}
+
+
 def fingerprint(params: dict[str, Any]) -> dict[str, Any]:
     """What the replay is, for the run's fingerprint: the fleet's code by content, its commit when
     TRIAGE_FLEET_COMMIT or the arm's `fleet_commit` names it (the checkout's git is not read: a pinned checkout
@@ -202,7 +210,7 @@ def fingerprint(params: dict[str, Any]) -> dict[str, Any]:
     code = hashlib.sha256()
     for name in FLEET_MODULES:
         f = mvp / name
-        code.update(name.encode() + b"\0" + (f.read_bytes() if f.is_file() else b""))
+        code.update(name.encode() + b"\0" + (_store.read_bytes(f) if _store.is_file(f) else b""))
     commit = os.environ.get("TRIAGE_FLEET_COMMIT") or params.get("fleet_commit")
     return {
         "id": params.get("model") or params.get("provider"),

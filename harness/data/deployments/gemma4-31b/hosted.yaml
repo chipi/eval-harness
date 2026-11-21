@@ -1,0 +1,148 @@
+model_id: gemma4-31b
+deployment_id: hosted
+order: 3
+where: homelab LiteLLM (the fleet's gateway)
+tag: eval-gemma-31b
+endpoint:
+  provider: litellm
+  base_url: http://homelab:4001/v1
+  model: eval-gemma-31b
+checked_at: '2026-10-31T14:09:48Z'
+accepted:
+  where it ran: a hosted gateway serves the provider's current build; there is no digest, revision or hash to pin
+  determinism: a hosted provider batches requests, so temperature 0 does not repeat exactly; repeats measure it
+checks:
+- kind: onboarding
+  status: pass
+  at: '2026-10-31T14:09:48Z'
+  where: homelab LiteLLM (the fleet's gateway)
+  flags: []
+  report:
+    endpoint:
+      provider: litellm
+      base_url: http://homelab:4001/v1
+      model: eval-gemma-31b
+    digest_found: null
+    default:
+      s: 1.41
+      tokens_out: 23
+      reasoned: false
+      finish: stop
+    chosen:
+      s: 1.28
+      tokens_out: 23
+      reasoned: false
+      finish: stop
+      settings:
+        reasoning_effort: none
+    tokens_per_s: 17.9
+    deterministic: true
+    json_valid: true
+- kind: smoke
+  system: triage_hosted_gemma4_31b_v2
+  status: pass
+  at: '2026-10-31T14:44:56Z'
+  flags: []
+  report:
+    items:
+    - item: orrery-ORRERY-STAGING-14-2026-07-30T13:43:09Z
+      s: 8.84
+      output_chars: 1518
+      cost_usd: 0.0011564000000000001
+      scored: true
+      deterministic: false
+    - item: orrery-ORRERY-J-2026-08-06T21:52:38Z
+      s: 9.38
+      output_chars: 1978
+      cost_usd: 0.0012188000000000001
+      scored: true
+    - item: orrery-ORRERY-STAGING-13-2026-08-07T04:32:42Z
+      s: 14.85
+      output_chars: 1816
+      cost_usd: 0.0012084
+      scored: true
+    calls:
+    - tokens_out: 45
+      reasoning_tokens: 0
+      reasoning_chars: 0
+      finish_reason: stop
+      answered: true
+      s: 1.53
+    - tokens_out: 55
+      reasoning_tokens: 0
+      reasoning_chars: 0
+      finish_reason: stop
+      answered: true
+      s: 1.73
+    - tokens_out: 82
+      reasoning_tokens: 0
+      reasoning_chars: 0
+      finish_reason: stop
+      answered: true
+      s: 3.15
+    - tokens_out: 113
+      reasoning_tokens: 0
+      reasoning_chars: 0
+      finish_reason: stop
+      answered: true
+      s: 2.42
+    - tokens_out: 30
+      reasoning_tokens: 0
+      reasoning_chars: 0
+      finish_reason: stop
+      answered: true
+      s: 1.52
+    - tokens_out: 58
+      reasoning_tokens: 0
+      reasoning_chars: 0
+      finish_reason: stop
+      answered: true
+      s: 1.7
+    - tokens_out: 78
+      reasoning_tokens: 0
+      reasoning_chars: 0
+      finish_reason: stop
+      answered: true
+      s: 2.0
+    - tokens_out: 170
+      reasoning_tokens: 0
+      reasoning_chars: 0
+      finish_reason: stop
+      answered: true
+      s: 4.15
+    - tokens_out: 47
+      reasoning_tokens: 0
+      reasoning_chars: 0
+      finish_reason: stop
+      answered: true
+      s: 1.2
+    - tokens_out: 54
+      reasoning_tokens: 0
+      reasoning_chars: 0
+      finish_reason: stop
+      answered: true
+      s: 2.1
+    - tokens_out: 74
+      reasoning_tokens: 0
+      reasoning_chars: 0
+      finish_reason: stop
+      answered: true
+      s: 2.03
+    - tokens_out: 172
+      reasoning_tokens: 0
+      reasoning_chars: 0
+      finish_reason: stop
+      answered: true
+      s: 9.53
+    projection:
+      items: 65
+      minutes: 11.9
+      worst_minutes: 16.1
+      usd: 0.0776
+    settings:
+      model: eval-gemma-31b
+      reasoning_effort: none
+      max_tokens: 1024
+  accepted:
+  - 'determinism: item 1 twice gave different outputs (repeats will vary)'
+  - 'where it ran: the build is not pinned (no digest, revision or hash in the model record''s deployment)'

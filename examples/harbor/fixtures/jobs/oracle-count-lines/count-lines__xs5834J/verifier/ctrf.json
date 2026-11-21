@@ -1,0 +1,22 @@
+{
+    "results": {
+        "summary": {
+            "failed": 0,
+            "passed": 2,
+            "tests": 2
+        },
+        "tests": [
+            {
+                "name": "data_has_three_lines",
+                "status": "passed"
+            },
+            {
+                "name": "count_is_three",
+                "status": "passed"
+            }
+        ],
+        "tool": {
+            "name": "shell"
+        }
+    }
+}

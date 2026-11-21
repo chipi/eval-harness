@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """What a scoring change would move, before anything is written (RFC-022).
 
     evh score-preview --goal <goal_id> [--round rN] [--json]
@@ -13,16 +12,8 @@ scoring. Then `evh rescore --goal G --round rN --why "..."` applies it to a roun
 
 from __future__ import annotations
 
-import sys as _sys
-from pathlib import Path as _Path
-
-if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
-    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
-
-import argparse
 import contextlib
 import io
-import sys
 import tempfile
 from pathlib import Path
 from typing import Any
@@ -31,30 +22,33 @@ from evaluation_harness import _common, _jsonout, _rounds
 from evaluation_harness import catalog_build as cb
 from evaluation_harness import rescore as rs
 from evaluation_harness._common import die, load_goals
+from evaluation_harness._runs import runs_on
 from evaluation_harness.catalog_adapter import HarnessAdapter, load_catalog_adapter
+from evaluation_harness.model import goal_views as gv
+from evaluation_harness.ops import legacy
 
 
 def decisions(A, goal: dict) -> dict[str, dict[str, Any]]:
-    """{dataset: {"rows": {config_id: {"arm", "label", "mean", "out"}}, "leader", "contenders", "recommended"}}: the
-    goal's decision on each dataset's gold group (else its first group), as `evh goals` reads it."""
+    """{dataset: {"rows": {system_id: {"arm", "label", "mean", "out"}}, "leader", "contenders", "recommended"}}: the
+    goal's decision on each dataset's gold group (else its first group), as `evh goal-list` reads it."""
     by_ds = cb.collect(A)
-    retired_in = cb.retired_in_of(A, goal)
+    retired_in = gv.retired_in_of(A, goal)
     out: dict[str, dict[str, Any]] = {}
-    for ans in cb.goal_answers(goal, by_ds):
+    for ans in gv.goal_answers(goal, by_ds):
         ds = ans["dataset"]
         if not ans["groups"]:
             continue
         tiers = {r["id"]: r["tier"] for r in (by_ds.get(ds) or {}).get("refs", [])}
         grp = next((g for g in ans["groups"] if g["key"].startswith("gold/")), ans["groups"][0])
         gm = (grp["rows"][0].get("measure") if grp["rows"] else None) or ""
-        dec = cb.group_decision(
+        dec = gv.group_decision(
             A,
             goal,
             ds,
             grp["rows"],
             gm,
             retired_in,
-            cb.gold_beside(tiers, ans["groups"], grp["key"]),
+            gv.gold_beside(tiers, ans["groups"], grp["key"]),
         )
         rows = {}
         for r in grp["rows"]:
@@ -70,7 +64,7 @@ def decisions(A, goal: dict) -> dict[str, dict[str, Any]]:
             "measure": gm,
             "rows": rows,
             "leader": label.get(dec.get("leader") or "", ""),
-            # the contenders beside the leader, as `evh goals` counts them: the leader is not one of them
+            # the contenders beside the leader, as `evh goal-list` counts them: the leader is not one of them
             "contenders": sorted(
                 label.get(a, a) for a in dec.get("contenders") or [] if a != dec.get("leader")
             ),
@@ -80,26 +74,22 @@ def decisions(A, goal: dict) -> dict[str, dict[str, Any]]:
 
 
 def _set_of(arm: str) -> str:
-    """ " (repeats)" for an arm read from a repeat set, so a config's first pass and its later ones stay apart."""
+    """ " (repeats)" for an arm read from a repeat set, so a system's first pass and its later ones stay apart."""
     return " (repeats)" if "repeats" in arm.rsplit("/", 2)[0] else ""
 
 
-def main() -> int:
-    """Print what the scorer in this tree would change in a goal's decision; write nothing."""
-    argv, as_json = _jsonout.take_flag(sys.argv[1:])
-    ap = argparse.ArgumentParser(prog="evh score-preview", description=__doc__.splitlines()[0])
-    ap.add_argument("--goal", required=True)
-    ap.add_argument("--round", dest="round_id", help="only this round's arms (its own and those it carried)")
-    args = ap.parse_args(argv)
+def body(**inputs: Any) -> int:
+    """Print what the scorer in this tree would change in a goal's decision, and give it as values; write nothing."""
+    args = legacy.namespace(inputs, "score-preview", {"round": "round_id"})
     goal = load_goals().get(args.goal)
     if goal is None:
-        die(f"no goal {args.goal!r}")
+        die(f"no goal {args.goal!r}", "not-found")
     datasets = [d["dataset_id"] for d in goal.get("datasets") or [] if d.get("dataset_id")]
     configs = None
     if args.round_id:
         rnd = _rounds.find(args.goal, args.round_id)
         if rnd is None:
-            die(f"no round {args.round_id} of {args.goal}")
+            die(f"no round {args.round_id} of {args.goal}", "not-found")
         datasets, configs = [rnd["dataset_id"]], set(_rounds.arms_of(rnd))
     before = decisions(load_catalog_adapter(None), goal)
     with tempfile.TemporaryDirectory(prefix="evh-score-preview-") as tmp:
@@ -107,36 +97,65 @@ def main() -> int:
         adapters: dict = {}
         n = 0
         per_ds: dict[str, int] = {}
+        # The scratch root (model.runs) is where a preview's runs and scores go: pointed at the temporary directory
+        # for this process, so the catalog below reads them as it reads data/runs.
+        _common.SCRATCH_RUNS = root
         with contextlib.redirect_stdout(io.StringIO()):
             for ds in datasets:
                 per_ds[ds] = 0
                 for d, m in rs.measured_runs(ds, configs):
-                    try:
-                        rel = d.parent.resolve().relative_to(_common.DATA.resolve()).as_posix()
-                    except ValueError:
-                        rel = d.parent.name
-                    if rs.rescore_one(d, m, out_dir=root / rel, adapters=adapters, quiet=True):
+                    if rs.rescore_one(d, m, adapters=adapters, quiet=True, preview=True):
                         n += 1
                         per_ds[ds] += 1
         after = decisions(HarnessAdapter(runs_root=root), goal)
         scorer = next((rs.current_scorer({"adapter": k}, adapters) for k in adapters), "")
-    if as_json:
-        with _jsonout.collect("score-preview"):
-            _print(args.goal, scorer, n, before, after, per_ds)
-        return 0
     _print(args.goal, scorer, n, before, after, per_ds)
+    _jsonout.values(result(args.goal, scorer, n, before, after, per_ds))
     return 0
+
+
+def result(
+    goal: str, scorer: str, n: int, before: dict, after: dict, per_ds: dict[str, int]
+) -> dict[str, Any]:
+    """What the preview found, as values (a job's `result`, the Workbench's W6): per dataset each arm's deciding mean
+    now and after, how far it moved, whether it is within the goal's limits now and after, and the leader, the
+    recommendation and how many contenders, now and after. A dataset with nothing to re-score says why
+    (`rescored: 0`, `derived`: the re-scores the goal reads, which a preview leaves alone)."""
+    out: dict[str, Any] = {}
+    for ds in sorted(set(before) | set(after)):
+        b, a = before.get(ds) or {"rows": {}}, after.get(ds) or {"rows": {}}
+        rows = []
+        for k in sorted(set(b["rows"]) | set(a["rows"])):
+            rb, ra = b["rows"].get(k) or {}, a["rows"].get(k) or {}
+            mb, ma = rb.get("mean"), ra.get("mean")
+            rows.append(
+                {
+                    "arm": k,
+                    "now": mb,
+                    "after": ma,
+                    "moved": None if mb is None or ma is None else ma - mb,
+                    "within_limits_now": (not rb.get("out")) if rb else None,
+                    "within_limits_after": (not ra.get("out")) if ra else None,
+                }
+            )
+        out[ds] = {
+            "measure": a.get("measure") or b.get("measure") or "",
+            "rescored": per_ds.get(ds, 0),
+            "arms": rows if per_ds.get(ds) else [],
+            **({} if per_ds.get(ds) else {"derived": _derived_on(ds)}),
+            **{what: {"now": b.get(what), "after": a.get(what)} for what in ("leader", "recommended")},
+            "contenders": {"now": len(b.get("contenders") or []), "after": len(a.get("contenders") or [])},
+        }
+    return {"goal": goal, "scorer": scorer, "rescored": n, "written": False, "datasets": out}
 
 
 def _derived_on(dataset_id: str) -> int:
     """How many re-scored (derived) runs on the dataset the goal can read: what score-preview leaves alone."""
-    n = 0
-    bases = [b for b in sorted(_common.DATA.glob("runs*")) if b.name != rs.RESCORED]
-    bases += sorted((_common.DATA / rs.RESCORED).glob("*/*"))
-    for base in bases:
-        if base.is_dir() and not _common.ignored_by_git(base):
-            n += sum(1 for _d, m in rs.runs_on(dataset_id, runs_dir=base) if m.get("derived"))
-    return n
+    return sum(
+        1
+        for _d, m in runs_on(dataset_id, label=None)
+        if (m.get("derived") or {}).get("kind") in ("rescore", "reparse")
+    )
 
 
 def _print(goal: str, scorer: str, n: int, before: dict, after: dict, per_ds: dict[str, int]) -> None:
@@ -152,9 +171,6 @@ def _print(goal: str, scorer: str, n: int, before: dict, after: dict, per_ds: di
             print(
                 f"{ds}: no measured runs to re-score here, so nothing was compared. The {_derived_on(ds)} run(s) "
                 "this goal reads are themselves re-scores, and a re-score is not re-scored again by a preview.\n"
-                f"  To check them against the scorer in this tree: evh rescore --dataset-id {ds} --out <a directory of "
-                "your own>, then evh leaderboard --dataset-id "
-                f"{ds} with EVAL_RUNS_DIR=<that directory>.\n"
             )
             continue
         b, a = before.get(ds) or {"rows": {}}, after.get(ds) or {"rows": {}}
@@ -187,7 +203,3 @@ def _print(goal: str, scorer: str, n: int, before: dict, after: dict, per_ds: di
         'Apply it: evh rescore --goal G --round rN --why "..." (re-score a round), or evh round-open --from rN '
         '--scoring "..." (adopt it from the next round).'
     )
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())

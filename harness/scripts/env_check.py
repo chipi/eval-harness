@@ -19,8 +19,18 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 import argparse
 import os
 
-from evaluation_harness import _providers
-from evaluation_harness._common import DOTENV_LOADED, ROOT, env_float, env_int, in_checkout
+from evaluation_harness import _providers, _retry, _store
+from evaluation_harness._common import (
+    DOTENV_LOADED,
+    DOTENV_SET,
+    EXIT_PROBLEMS,
+    ROOT,
+    dotenv_pairs,
+    env_float,
+    env_int,
+    evh_prog,
+    in_checkout,
+)
 
 
 def _state(raw: str, secret: bool) -> str:
@@ -30,6 +40,14 @@ def _state(raw: str, secret: bool) -> str:
     if len(raw) < 20:
         return f"SET BUT SUSPICIOUS ({len(raw)} chars)"
     return f"set ({len(raw)} chars, ends …{raw[-4:]})"
+
+
+def _source(var: str) -> str:
+    """Where a set variable came from: the project's .env, the shell, or the shell over a .env value (an exported
+    variable wins, so the file's is not used: the 0.8.0 newcomer run could not tell which keys were its .env's)."""
+    if var in DOTENV_SET:
+        return ".env"
+    return "shell, over .env" if var in {k for k, _v in dotenv_pairs(ROOT / ".env")} else "shell"
 
 
 def _probe(base: str) -> str:
@@ -48,23 +66,23 @@ def _probe(base: str) -> str:
 
 def main() -> int:
     """Report configured environment variables before a sweep."""
-    argparse.ArgumentParser(description=__doc__.splitlines()[0]).parse_args()
+    argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0]).parse_args()
     env_file = ROOT / ".env"
     # DOTENV_LOADED is the count from the FIRST load, at import. Calling
     # load_dotenv() again here would report 0 — everything is already in the
     # environment by then — which read as "your .env did nothing".
     print(
-        f".env: {'loaded ' + str(DOTENV_LOADED) + ' var(s)' if env_file.is_file() else 'NOT PRESENT'}"
+        f".env: {'loaded ' + str(DOTENV_LOADED) + ' var(s)' if _store.is_file(env_file) else 'NOT PRESENT'}"
         f"   ({env_file})"
     )
-    if not env_file.is_file():
+    if not _store.is_file(env_file):
         print("      create it with the keys your providers read, one NAME=value per line\n")
 
     print(
-        "\nhosted providers (a config's `provider:`): an arm reads <NAME>, a judge EVAL_JUDGE_<NAME>"
+        "\nhosted providers (a system's `provider:`): an arm reads <NAME>, a judge EVAL_JUDGE_<NAME>"
         "\nfirst and the arms' <NAME> when that is not set"
     )
-    print(f"  {'provider':11} {'variable':20} {'arms':34} judges")
+    print(f"  {'provider':11} {'variable':20} {'arms':46} judges")
     ready: dict[str, list[str]] = {"arm": [], "judge": []}
     probed: set[str] = set()
     for name, spec in _providers.SPECS.items():
@@ -75,16 +93,16 @@ def main() -> int:
             arm = os.environ.get(var, "")
             own = os.environ.get(_providers.JUDGE_PREFIX + var, "")
             arm_s = (
-                _state(arm, secret)
+                f"{_state(arm, secret)} ({_source(var)})"
                 if arm
                 else ("not set" if secret or spec.base_required else "not set (the default address)")
             )
             judge_s = (
-                f"own: {_state(own, secret)}"
+                f"own: {_state(own, secret)} ({_source(_providers.JUDGE_PREFIX + var)})"
                 if own
                 else ("the arms'" if arm else ("not set" if secret else arm_s))
             )
-            print(f"  {name if secret else '':11} {var:20} {arm_s:34} {judge_s}")
+            print(f"  {name if secret else '':11} {var:20} {arm_s:46} {judge_s}")
         for role in ready:
             if not _providers.problems({"provider": name, "model": "-"}, role):
                 ready[role].append(name)
@@ -134,10 +152,19 @@ def main() -> int:
     cap = env_float("EVAL_MAX_COST_USD")
     print(
         "  EVAL_MAX_COST_USD      "
-        + (f"${cap:.2f} — mid-run abort" if cap else "NONE — a sweep can bill without limit")
+        + (
+            f"${cap:.2f} — mid-run abort ({_source('EVAL_MAX_COST_USD')})"
+            if cap
+            else "NONE — a sweep can bill without limit"
+        )
     )
-    print(f"  EVAL_MAX_RETRIES       {env_int('EVAL_MAX_RETRIES', 3)}")
-    print(f"  EVAL_RETRY_MAX_DELAY   {env_int('EVAL_RETRY_MAX_DELAY', 60)}s — backoff cap")
+    print(f"  EVAL_MAX_RETRIES       {env_int('EVAL_MAX_RETRIES', _retry.DEFAULT_MAX_RETRIES)}")
+    print(
+        "                         (an arm whose adapter declares CALL_ONCE does not use it: that arm calls each item once)"
+    )
+    print(
+        f"  EVAL_RETRY_MAX_DELAY   {env_int('EVAL_RETRY_MAX_DELAY', _retry.DEFAULT_RETRY_MAX_DELAY)}s — backoff cap"
+    )
     # EVAL_CONCURRENCY was reported here and read by NOTHING: a knob that printed a value
     # and changed no behaviour. The sweep is sequential. This project has already lost two
     # arms to the same shape — EVAL_MAX_RETRIES was documented and honoured only by the
@@ -150,7 +177,7 @@ def main() -> int:
         # failing there would train people to ignore this command.
         print("\n  A provider key is set and EVAL_MAX_COST_USD is NOT.")
         print("  The cap is the only thing between a wrong price and an unbounded bill.")
-        return 1
+        return EXIT_PROBLEMS
     return 0
 
 

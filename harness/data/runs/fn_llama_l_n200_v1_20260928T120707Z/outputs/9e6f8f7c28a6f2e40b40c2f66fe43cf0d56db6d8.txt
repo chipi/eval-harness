@@ -1,4 +1,0 @@
-[
-  {"text": "Ruby", "type": "product"},
-  {"text": "Current TV", "type": "organization"}
-]

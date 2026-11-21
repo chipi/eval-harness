@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Paired bootstrap over items, for metrics that have no per-item value.
 
     python scripts/bootstrap_test.py --dataset-id dbpedia_280 \
@@ -64,26 +63,18 @@ THE HONESTY CONDITION IS THE SAME
 
 from __future__ import annotations
 
-import sys as _sys
-from pathlib import Path as _Path
-
-if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
-    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
-
-import argparse
 import random
-from pathlib import Path
+from typing import Any
 
-HERE = Path(__file__).resolve().parent
-
-from evaluation_harness._common import (  # noqa: E402
-    RUNS,
+from evaluation_harness._common import (
     die,
+    item_clusters,
     item_selection,
 )
-from evaluation_harness._labels import per_class, predictions, reference_labels  # noqa: E402
-from evaluation_harness._runs import warn_on_ambiguous_runs  # noqa: E402
-from evaluation_harness.stats import holm  # noqa: E402 -- one Holm: p equal to its threshold is significant
+from evaluation_harness._labels import per_class, predictions, reference_labels
+from evaluation_harness._runs import warn_on_ambiguous_runs
+from evaluation_harness.ops import legacy
+from evaluation_harness.stats import holm
 
 
 def _macro_f1(pairs: list, labels: list) -> float:
@@ -98,24 +89,12 @@ def _accuracy(pairs: list, labels: list) -> float:
 METRICS = {"macro_f1": _macro_f1, "accuracy": _accuracy}
 
 
-def main() -> int:
+def body(**inputs: Any) -> int:
     """Run bootstrap resampling test."""
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--dataset-id", required=True)
-    ap.add_argument("--a", required=True, help="config_id of the arm under test")
-    ap.add_argument(
-        "--against", required=True, help="substring selecting the opponent family, declared in advance"
-    )
-    ap.add_argument("--metric", default="macro_f1", choices=sorted(METRICS))
-    ap.add_argument("--draws", type=int, default=5000)
-    ap.add_argument("--alpha", type=float, default=0.05)
-    ap.add_argument("--seed", type=int, default=20260927)
-    ap.add_argument("--exclude-dataset", help="drop items this dataset also contains")
-    ap.add_argument("--items", type=Path, help="file of item_ids; restrict to exactly these")
-    args = ap.parse_args()
-    # Two runs sharing a config_id are averaged together below without
+    args = legacy.namespace(inputs, "bootstrap-test")
+    # Two runs sharing a system_id are averaged together below without
     # saying so. See _runs.warn_on_ambiguous_runs.
-    warn_on_ambiguous_runs(RUNS, args.dataset_id, label=RUNS.name)
+    warn_on_ambiguous_runs("", args.dataset_id)
 
     gold = reference_labels(args.dataset_id, "gold")
     labels = sorted(set(gold.values()))
@@ -126,19 +105,21 @@ def main() -> int:
         die(
             f"bootstrap-test is for classification: {args.dataset_id}'s gold has {len(labels)} distinct "
             f"labels over {len(gold)} items, so it reads as free text, not labels. For a per-item "
-            "score, pair-test and family-test are the exact tests."
+            "score, pair-test and family-test are the exact tests.",
+            "not-allowed",
         )
     preds = predictions(args.dataset_id, None)
     if args.a not in preds:
-        die(f"no runs for {args.a} on {args.dataset_id}")
+        die(f"no runs for {args.a} on {args.dataset_id}", "not-found")
 
     drop, keep = item_selection(args.exclude_dataset, args.items)
 
     opponents = sorted(c for c in preds if c != args.a and args.against in c and preds[c])
     if not opponents:
-        die(f"no opponents matching {args.against!r}")
+        die(f"no opponents matching {args.against!r}", "not-found")
 
     fn = METRICS[args.metric]
+    keys = item_clusters(args.dataset_id, args.cluster) if args.cluster else {}
     rng = random.Random(args.seed)
     rows = []
     for opp in opponents:
@@ -153,10 +134,17 @@ def main() -> int:
 
         deltas = []
         n = len(items)
+        # The unit resampled: an item, or with --cluster every item of a cluster together (an item with
+        # no value for the field is a cluster of its own).
+        groups: dict = {}
+        for i in items:
+            groups.setdefault(keys.get(i, ("item", i)), []).append(i)
+        # Without --cluster the units are the items in their order, so the draws are the ones 0.7 made.
+        units = [groups[k] for k in sorted(groups, key=str)] if keys else [[i] for i in items]
         for _ in range(args.draws):
             # ONE resample, BOTH arms. Drawing separately for each arm would throw away
             # the pairing and inflate the variance of the difference by roughly two.
-            draw = [items[rng.randrange(n)] for _ in range(n)]
+            draw = [i for _ in range(len(units)) for i in units[rng.randrange(len(units))]]
             deltas.append(fn([a_pairs[i] for i in draw], labels) - fn([b_pairs[i] for i in draw], labels))
         deltas.sort()
         lo = deltas[int(0.025 * len(deltas))]
@@ -165,12 +153,13 @@ def main() -> int:
         # Two-sided, and floored at 1/draws: a bootstrap cannot report a p smaller than
         # its own resolution, and printing 0.0000 would claim precision it does not have.
         p = max(2 * min(below, 1 - below), 1.0 / args.draws)
-        rows.append({"opp": opp, "n": n, "delta": observed, "lo": lo, "hi": hi, "p": p})
+        rows.append({"opp": opp, "n": n, "units": len(units), "delta": observed, "lo": lo, "hi": hi, "p": p})
 
     if not rows:
         die(
             f"no opponent shares at least 10 items with {args.a} (a percentile bootstrap needs them); "
-            f"opponents tried: {', '.join(opponents)}"
+            f"opponents tried: {', '.join(opponents)}",
+            "not-enough",
         )
 
     m = len(rows)
@@ -181,6 +170,10 @@ def main() -> int:
 
     print(f"  {args.a}  vs family '{args.against}'   metric={args.metric}  {rows[0]['n']} items")
     print(f"  paired bootstrap, {args.draws} draws, seed {args.seed}")
+    if args.cluster:
+        print(
+            f"  resampling clusters by {args.cluster}: {rows[0]['units']} clusters, items of one cluster drawn together"
+        )
     print(f"  family size m={m}, declared before the p-values were read")
     print(f"  Holm step-down at alpha={args.alpha}\n")
     w = max(len(r["opp"]) for r in rows) + 2
@@ -200,7 +193,3 @@ def main() -> int:
     print(f"    {spans} of {m} intervals span zero — those arms are not ordered by this data,")
     print("    whatever the point estimates say.")
     return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())

@@ -13,7 +13,7 @@ comparisons that **refuse** to mislead you.
 ```bash
 cd your-project
 pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.7.2#subdirectory=harness"
-evh init --tutorial    # the data folders, a .gitignore, and the tutorial kit
+evh init --store files --tutorial   # the data folders, config.yaml, .gitignore, AGENTS.md, CLAUDE.md, data/project.yaml, prompts/judge_prompt_example.txt and the tutorial kit; --store sqlite is its equal
 evh --help             # the verbs, in the order you need them
 ```
 
@@ -30,21 +30,21 @@ the best arm's run), compare, choose:
 ```bash
 evh dataset-create --dataset-id my_v1 --source-dir data/sources/my_v1
 evh dataset-materialize --dataset-id my_v1
-evh run --config data/configs/best_model.yaml          # the arm that writes the reference
+evh run --system best_model_v1 --dataset my_v1          # the system that writes the reference
 evh label-from-run --run <its run_id> --set best_v1                 # optional: its outputs as a model's labels
 evh reference-promote --dataset-id my_v1 --labels best_v1 --tier silver \
     --reason "the best system we have ranks the rest" --by me          # ...promoted to silver
-evh run --config data/configs/arm_a.yaml --repeat 3     # + the arm's own noise
-evh leaderboard --dataset-id my_v1                                 # the ranking, and whether it is real
-evh family-test --dataset-id my_v1 --a arm_a_v1 --against arm_     # is the winner significantly better?
+evh run --system <id> --dataset my_v1 --repeat 3        # + its own noise
+evh leaderboard my_v1                                 # the ranking, and whether it is real
+evh family-test my_v1 --a arm_a_v1 --against arm_     # is the winner significantly better?
 evh run-promote --run <run_id> --reason "what the tests showed"    # the choice, with why
 ```
 
 **[Getting started](../docs/GUIDE.md)** walks it once, offline, in about fifteen minutes; the
 [tutorials](../docs/GUIDE.md#where-to-go-next) add a local model, a hosted LLM with your own
 key, a frontier reference and judges, eval rounds and dataset versions, the catalog, datasets
-from what your system did in production, and setting a model up before you test it.
-In a checkout of this repository every `evh` command is also a `make` target (`make demo` runs
+from what your system did in production, the Workbench, and setting a model up before you test it.
+In a checkout of this repository many `evh` commands are also `make` targets (`make demo` runs
 the whole loop on bundled data, no API key, no network).
 
 ## Install it as a dependency
@@ -89,25 +89,25 @@ data/materialized/   derived, regenerable, disposable
 data/runs/
       ↓  evh label-from-run / label-import / label-from-capture   labels: a model's, a person's, a rule's
 data/labels/
-      ↓  evh reference-promote       ground truth to score against: labels promoted (gold | silver), with a reason
+      ↓  evh reference-promote       ground truth to score against: labels promoted (gold | silver), with a reason (--by or EVH_ACTOR is required, even at a terminal)
 data/references/
       ↓  evh leaderboard / pair-test / family-test / run-compare
 data/baselines/      evh run-promote — the number future work is judged against
 
 optional, later, from the same frozen outputs (the originals are never touched):
-data/runs-rescored/  evh rescore        new reference or new code scorer, $0
-data/runs-judged/    evh judge-score    a validated LLM judge, billed and capped
+  evh rescore        new reference or new code scorer, $0: a score under each run, read as 'rescored <scorer>'
+  evh judge-score    a validated LLM judge, billed and capped: a score under each run, read as judged/<scorer>
 
 beside them, also optional:
-data/goals/          what each evaluation is for; configs name one with `goal:`
-data/rounds/         eval rounds of a goal: evh round-open / rounds / round-close
+data/goals/          what each evaluation is for; a run names one with `evh run --goal`
+data/rounds/         eval rounds of a goal: evh round-open / round-list / round-close
 data/fields/         field sets: the typed facts a project's items carry (`--fieldset`)
 data/profiles/       evh dataset-profile   what is inside a dataset, for its page (no text by default)
 .build/catalog/      evh catalog / evh catalog-serve   pages over the runs, and the inspector
 (an agent)           evh mcp            the read commands as MCP tools
 ```
 
-`evh validate` checks the whole tree — twenty integrity rules (V1–V20), exits non-zero,
+`evh validate` checks the whole tree — twenty-eight integrity rules (V1–V28), exits non-zero,
 so it can gate CI.
 
 ### The three inputs
@@ -115,7 +115,7 @@ so it can gate CI.
 Every run records three things, and is worthless without all of them:
 
 - **system under test** — `build.ref`, set by `EVAL_BUILD_REF` or the git SHA
-- **instrument** — `config_id`, the arm you ran
+- **system** — `system_id` (the system's id), what you ran
 - **data** — `dataset_id`, what it was measured on
 
 Drop any one and a delta cannot be attributed to anything.
@@ -125,7 +125,7 @@ Drop any one and a delta cannot be attributed to anything.
 ## Integrating your system
 
 One function, `call_system()`, in `adapter.py` at your project's root. An arm whose
-config names no `adapter:` uses it; a project with several tasks names one per arm
+system names no `adapter:` uses it; a project with several tasks names one per arm
 (`adapter: adapters/ner.py`):
 
 ```python
@@ -142,8 +142,8 @@ def call_system(text, params):
 And one more, `score()`, for what "good" means in your domain. That is the
 whole integration — no refactor, no wrapper, no base class.
 
-Arms are **config files**, not code edits: four models to compare is four YAML
-files sharing a `dataset_id`.
+Arms are **system files**, not code edits: four models to compare is four YAML
+files, each run on the same dataset.
 
 → **[docs/INTEGRATION.md](docs/INTEGRATION.md)** — the first hour, concretely.
 
@@ -180,8 +180,7 @@ Three readings, all computed over the whole table at once:
 
 What this deliberately does **not** do is walk down the table comparing each arm to a
 running "leader". That is a sorting algorithm, not a comparison: walked bottom-up instead
-of top-down it partitions the same arms differently, and it once supported both a finding
-and its retraction from one dataset.
+of top-down it partitions the same arms differently.
 
 ## Re-measuring without re-running
 
@@ -194,8 +193,8 @@ evh rescore --goal my_goal --round r2 --why "the rule I fixed"   # a round's arm
 evh rescore --dataset-id my_v1 --match _v2                       # or any runs of a dataset
 ```
 
-Re-scores land in one place the harness designates, `data/runs-rescored/<scorer>/<source>/` (`--out` names
-another); the goals, the rounds and the catalog read an arm from its latest re-score, and a round records the
+A re-score is a score under the run it re-read (`data/runs/<run_id>/scores/<scorer>@<reference>/`), read under
+its own label (`rescored <scorer>`, or `--label`); the goals, the rounds and the catalog read an arm from its latest re-score, and a round records the
 scorer it is judged by, so a scoring change is a step of its own, applied to a round or adopted by the next
 (`round-open --scoring`; [RFC-022](../docs/rfc/RFC-022-scoring-that-evolves.md)). Each re-scored run records
 `derived: {kind: rescore, from, at, with}`:
@@ -204,8 +203,7 @@ recomputation can never be mistaken for a measurement. Latency, cost
 and token counts are carried across untouched — they describe the call that happened, not
 how it was later measured.
 
-This exists because a scorer bug survived two full sweeps: checking it would have cost a
-third. When verifying a measurement is expensive, it does not get verified.
+This exists so that fixing a scorer does not cost another paid sweep: the outputs are kept, and scored again for $0.
 
 The same frozen outputs can be measured again in three ways, and none of them is required:
 
@@ -235,12 +233,12 @@ once, in a record (`data/models/<id>.yaml`) with a deployment per place it runs,
 eval uses it:
 
 ```bash
-evh model-onboard my-model --deployment laptop   # its build, whether it reasons, JSON, determinism, speed
-evh arm-smoke --config data/configs/my_arm.yaml  # a few items with the arm's own settings, before the full run
-evh models                                       # which models are onboarded, vetted, and where they run
+evh model-onboard --model-id my-model --deployment laptop   # its build, whether it reasons, JSON, determinism, speed
+evh arm-smoke --system my_system_v1 --dataset my_v1   # a few items with the system's own settings, before the full run
+evh model-list                                       # which models are onboarded, vetted, and where they run
 ```
 
-`model-onboard` and `arm-smoke` call the model (a few calls each, billed like any other); `models`
+`model-onboard` and `arm-smoke` call the model (a few calls each, billed like any other); `model-list` and `model-show`
 reads.
 
 An arm names the record and deployment (`model_record:`, `deployment:`), and its run's fingerprint takes the
@@ -254,10 +252,10 @@ What a system did in production is the most realistic test there is, and what ha
 
 ```bash
 evh capture --importer jsonl --query '{"path": "export.jsonl"}' --capture prod_2026_10   # the records, hashed
-evh dataset-from-capture prod_2026_10 --dataset-id prod_v1 --tag source=prod             # a frozen selection
+evh dataset-from-capture --capture prod_2026_10 --dataset-id prod_v1 --tag source=prod             # a frozen selection
 evh label-from-capture --dataset-id prod_v1 --capture prod_2026_10 \
     --map outcomes.yaml --set prod_outcomes                                              # labels from what happened
-evh dataset-split prod_v1 --test 0.3 --seed 7                                         # validation and test
+evh dataset-split --dataset-id prod_v1 --test 0.3 --seed 7                                         # validation and test
 evh capture --importer jsonl --query '{"path": "export.jsonl"}' --capture prod_2026_11 \
     --since-capture prod_2026_10                                                         # later: what came since
 ```
@@ -267,7 +265,7 @@ of the same query and make a new label set from it (tutorial 6 §5).
 
 Labels are not reference sets: arms are scored against a label set as it is, and a reference set is labels promoted on
 purpose, at the tier chosen then. Production's own decisions become an arm (`evh arm-from-capture`), scored like any;
-`evh inspect --sheet --dataset-id prod_v1 --runs …` shows each item's outputs, scores, labels and signals (wrong,
+`evh sheet-show prod_v1 --runs …` shows each item's outputs, scores, labels and signals (wrong,
 disagree, new) to pick the ones worth keeping (`evh pick`); `evh dataset-extend` makes the next version of a governed dataset from
 them; `evh deploy-sheet` says what production must match to run what you promoted, and whether a capture shows it
 did. Importers for
@@ -305,21 +303,20 @@ wrote it.
 
 ## Scoping a dataset that has grown
 
-A dataset accumulates arms across config versions, and v1 and v2 of one arm are different
+A dataset accumulates arms across system versions, and v1 and v2 of one arm are different
 measurements that must not share a row:
 
 ```
-evh leaderboard --dataset-id my_v1 --match _v2    only the v2 arms
-evh leaderboard --dataset-id my_v1 --round r2     only the arms in play in a round
-EVAL_RUNS_DIR=<dir> evh leaderboard --dataset-id my_v1   run or read somewhere else
+evh leaderboard my_v1 --match _v2    only the v2 arms
+evh leaderboard my_v1 --round r2     only the arms in play in a round
+evh leaderboard my_v1 --label judged/my-judge   only the arms read under one label
 ```
 
-`EVAL_RUNS_DIR` is how a smoke pass avoids adding repeats to a real sweep's arms and
-silently moving numbers you have already reported. Use it whenever you are validating a
-change rather than measuring something.
+`evh run --scratch` is how a smoke pass avoids adding a second measurement to a real sweep's arms and
+silently moving numbers you have already reported: it writes under `.build/scratch/runs`, which nothing that
+reads runs looks at. Use it whenever you are validating a change rather than measuring something.
 
-**Deleting old runs to make a table shorter is not the alternative to scoping it.** That is
-how 18 arms of paid results were lost during this harness's own development.
+**Deleting old runs to make a table shorter is not the alternative to scoping it.** A run is a paid result: scope the table instead.
 
 ## Docs
 
@@ -334,30 +331,6 @@ how 18 arms of paid results were lost during this harness's own development.
 | **[SCENARIO.md](docs/SCENARIO.md)** | the newcomer scenario, a smoke test run when the newcomer's path changes: two evals, real models, one CPU model, under $1 |
 | **[UPGRADING.md](docs/UPGRADING.md)** | from one release to the next (what can move a number), and for a copy of the harness taken before October 2026 |
 | **[CONCEPTS.md](docs/CONCEPTS.md)** | why each refusal exists, and the failure it prevents |
-
----
-
-## The judge panel
-
-The harness this grew around, and not the same thing as `evh judge-score` above: the
-panel judges finalists one at a time and keeps no verdicts; the judge scorer judges every
-arm, listwise and blind, behind a validation gate, and stores every verdict. Given many
-candidate runs (`runs_from:` reads them where every command does, ranked by their primary
-metric), the panel narrows to finalists (top-K per stratum + floor + global cap), scores
-each finalist's stored outputs with an LLM judge, **aborts mid-run** if a cost cap is hit,
-aggregates to per-dimension means, and flags finalists where two judges disagree.
-
-```bash
-evh judge --config tutorial/judge_panel.yaml --use-fake-judge   # no API key (`evh init --tutorial`)
-ANTHROPIC_API_KEY=... evh judge --config judge_panel.yaml        # your own config
-```
-
-Use it when the cheap metric is known to be biased in your domain but you have
-an expensive judge you trust: cheap metric for triage, judge for the answer.
-
-Cost discipline is a **mid-run abort, not a pre-flight estimate** — estimates
-are usually wrong, and an abort stops the bill the moment the cap is hit, with
-partial results preserved so a blown budget still yields a usable report.
 
 ---
 
@@ -376,21 +349,22 @@ bundled adapter a pinned project has is `evaluation_harness/adapter.py`.
 | `scripts/run.py` | run an arm → scores, cost, speed, provenance |
 | `scripts/compare_runs.py` | compare two runs, or refuse |
 | `scripts/promote_baseline.py` | run → baseline, or refuse |
-| `scripts/validate_tree.py` | twenty integrity checks (V1–V20) |
-| `scripts/list_runs.py` | what runs and baselines exist |
-| `schemas/` | the contracts: dataset, metrics (a run), baseline, config (an arm), goal, field set, judge scorer, judging set, verdict |
+| `scripts/validate_tree.py` | twenty-eight integrity checks (V1–V28) |
+| `scripts/ops/records.py` | what runs and baselines exist: `evh runs-list`, `evh baselines` |
+| `schemas/` | the contracts: dataset, metrics (a run), baseline, system (an arm), goal, field set, judge scorer, judging set, verdict |
 | `scripts/_fields.py`, `scripts/_fetch.py` | item fields (types, checks, the catalog's summary) and items fetched from a pinned URL (ADR-0003) |
 | `scripts/stats.py` | the one paired test: `pair-test`, `family-test` and the inspector all call it |
 | `scripts/rescore.py` | re-score stored outputs for a new reference or scorer, $0 |
 | `scripts/judge_score.py`, `scripts/judging.py` | the judge scorer: gate, judging set, verdicts, projection; prompt, parser, judge client |
 | `scripts/catalog_build.py`, `scripts/catalog_serve.py`, `catalog_assets/` | the catalog's pages, and the run inspector; `catalog_periods.py` the period (from today) and the trends, `catalog_arms.py` the arms page |
 | `scripts/catalog_adapter.py` | what the catalog asks of a project's data, and `HarnessAdapter`, the answer for this layout |
-| `scripts/catalog_views.py`, `scripts/view_*.py` | the catalog and the inspector in the terminal: `evh overview`, `activity`, `datasets`, `arms`, `references`, `metrics`, `goals`, `inspect` |
+| `scripts/catalog_views.py`, `scripts/ops/views.py`, `scripts/model/*_views.py` | the catalog and the inspector in the terminal: `evh overview-show`, `activity-show`, `dataset-list`, `arm-list`, `reference-list`, `metric-list`, `goal-list`, `comparison-show` |
 | `tests/` | this repository's tests (`make test`, `tests/self_test.py`) and the GUIDE and the offline tutorials run in a fresh project (`make guide-check`); not in the package. The ones that run `evh` install the real wheel (`tools/_wheel.py`, which the deploy uses too). `scripts/test_stats.py` ships: `evh self-test` runs it |
 | `tools/` | this repository's report checks (`check_report_claims.py` and friends), judge validations and `*_report.py` tables; not in the package |
 | `tests/test_inspector_browser.py`, `requirements-browser.txt` | the catalog and the inspector in headless Chromium: `make browser-install`, then `make browser-check` |
+| `tests/test_workbench_browser.py` | the frozen Workbench mockup (`workbench/mockup/`) in headless Chromium (every screen, its skip link, help focus, a round's results): part of `make browser-check` |
+| `tests/test_workbench_live_browser.py`, `test_workbench_replay_browser.py`, `test_workbench_store_browser.py`, `test_workbench_heldout_browser.py` | the live Workbench behind a real `evh catalog-serve`, every screen against the project's API, at a desktop's and a phone's width: part of `make browser-check` |
 | `requirements-dev.txt` | the code-quality tools; from the repository root, `make quality-install`, then `make quality` |
-| `scripts/judge_panel.py`, `scripts/panel_judges.py` | the judge panel (`evh judge`) |
 
 Bundled providers: `echo` (no network), `openai` (OpenAI or any OpenAI-compatible endpoint),
 `openrouter` (`OPENROUTER_API_KEY`, OpenRouter's address), `anthropic` and `litellm` (a LiteLLM

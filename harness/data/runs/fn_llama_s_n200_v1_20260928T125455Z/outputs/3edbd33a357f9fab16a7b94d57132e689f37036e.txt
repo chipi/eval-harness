@@ -1,7 +1,0 @@
-```
-[
-  {"text": "Chashma", "type": "location"},
-  {"text": "Mangla", "location": "location"},
-  {"text": "Tarbela", "type": "location"}
-]
-```

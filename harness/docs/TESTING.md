@@ -9,8 +9,8 @@ reproduces it.
 |---|---|---|---|
 | **unit** | one function's answer: the paired test against the brute-force sign enumeration, Holm, the intervals; the periods and their trends; a scorer, a parser | `scripts/test_stats.py` (ships: `evh self-test` runs it), `tests/test_*.py` for one module (`test_axes`, `test_codeid`, `test_ner_parser`, ...) | `make test` (all), or `python tests/test_<x>.py` |
 | **integration** | the modules together on files: a run made and read back, a catalog built from fixture runs and its pages read, every `evh` command in a project that pins the installed wheel, `catalog-serve` answering over HTTP, `--hooks` called | `tests/test_catalog.py`, `tests/test_goals.py`, `tests/test_installed_commands.py`, `tests/test_serve_hooks.py`, `tests/test_dataset_profile.py`, `tests/test_p_cache.py`, `tests/test_mcp_server.py` (`evh mcp` through the SDK's stdio client), `tests/test_mcp_http.py` (`--http`, `--public`, the rates, the refusals), `tests/self_test.py` (runs them all) | `make test`, `make ci` |
-| **end to end** | what a reader sees: a tutorial project built from the wheel, its catalog and the inspector in headless Chromium (charts, filters, the period chips, the tiles against `evh overview`, the period bounds against Python's on 118 days, no console error, no page wider than a phone, every menu page among them); the same pages on this repository's own catalog, hundreds of arms (the arms page's counts, groups and filters, the datasets and metrics groups, the activity order, the inspector on its largest comparison); the GUIDE and the tutorials run as written; the public site with production's headers | `tests/test_inspector_browser.py`, `tests/test_catalog_real_browser.py`, `tests/check_guide.py`, `site/test_browser.py` | `make browser-check`, `make browser-real-check`, `make guide-check` |
-| **commands** | the report tools compute what they say on data whose answer is worked out by hand (micro and per-item F1, the retrieval ceiling, macro-F1 and the worst class) and refuse when the gold references are not fetched; `goal_decisions` agrees with `evh goals`; `compare-runs`, `bootstrap-test` and `holdout` print the numbers and refusals their inputs call for; `init`, `runs-list`, `self-test`, `sweep`, `judge` (the fake judge) and `cost-report` do what a user asks of them | `tests/test_report_tools.py`, `tests/test_stat_commands.py` (in `self_test`), `tests/test_ops_commands.py` | `make commands-check` |
+| **end to end** | what a reader sees: a tutorial project built from the wheel, its catalog and the inspector in headless Chromium (charts, filters, the period chips, the tiles against `evh overview-show`, the period bounds against Python's on 118 days, no console error, no page wider than a phone, every menu page among them); the same pages on this repository's own catalog, hundreds of arms (the arms page's counts, groups and filters, the datasets and metrics groups, the activity order, the inspector on its largest comparison); the GUIDE and the tutorials run as written; the public site with production's headers | `tests/test_inspector_browser.py`, `tests/test_catalog_real_browser.py`, `tests/check_guide.py`, `site/test_browser.py` | `make browser-check`, `make browser-real-check`, `make guide-check` |
+| **commands** | the report tools compute what they say on data whose answer is worked out by hand (micro and per-item F1, the retrieval ceiling, macro-F1 and the worst class) and refuse when the gold references are not fetched; `goal_decisions` agrees with `evh goal-list`; `compare-runs`, `bootstrap-test` and `holdout` print the numbers and refusals their inputs call for; `init`, `runs-list`, `self-test`, `sweep`, `judge` (the fake judge) and `cost-report` do what a user asks of them | `tests/test_report_tools.py`, `tests/test_stat_commands.py` (in `self_test`), `tests/test_ops_commands.py` | `make commands-check` |
 | **resources** | the inspector on this repository's real runs, as the deployment runs it: memory under `--warm` below 200 MB (prod's container has 384 MiB since 0.5.0, 256 MiB before), a cached answer in milliseconds, a cold one in seconds; again with the deployment's hooks and SDKs | `tests/test_inspector_budget.py` | `make budget-check` (from the root, with the hooks) |
 | **the checks can fail** | every checker goes red on the defects it exists to catch: a wrong number in a report row, a cell, a code block or prose, a wrong ratio, count or latency, a broken link, a wrong licence, a scorer or parser change the runs predate, a broken, duplicated or truncated run. All of a checker's defects are planted at once in a copy of the repository and it runs once; its output must name each | `tests/test_checks_can_fail.py` | `make guard-check` |
 
@@ -43,6 +43,13 @@ run concludes success, which is what the deploy and the release read. Chromium a
   each with a copy of the expected number.
 - **Limits leave room for a slow runner** and say why they are what they are (prod's 384 MiB, 256 before 0.5.0; a
   cached answer is a dictionary lookup).
+- **The rows the cache shares are frozen under test** (RFC-033). `tests/self_test.py` sets `EVH_FREEZE_ROWS=1` (unless
+  it is already set) for the whole suite and every process it starts, and `tools/store_matrix.py` (`make stores-check`,
+  the suite on SQLite) sets it for each test file it runs. Every row the kept-rows cache holds is then frozen: a view or
+  a command that changes a row it shares with every other reader fails its test with a `TypeError` at the line that
+  does, instead of changing what the next reader sees in a server that lives on. A copy (`copy.deepcopy`, `dict(row)`)
+  is a plain dict. Without the variable the cache's rows are plain dicts; `tests/test_rows_frozen.py` tests the
+  safeguard in both stores.
 - **Absence is a failure, not a skip** ([CONTRIBUTING](https://github.com/chipi/eval-harness/blob/main/CONTRIBUTING.md)).
 
 ## Measured
@@ -53,8 +60,8 @@ run concludes success, which is what the deploy and the release read. Chromium a
   the same code (2026-10-27, 0.4.2). The browser, budget and guard tests are not in that figure.
   The least reached (measured before their `--arm` views got checks): `tools/extraction_report.py` 44% (its consensus pass needs three learned
   arms), `tools/classification_report.py` 60%, `tools/nemenyi_table.py` 66%, then `cli.py`,
-  `check_links.py`, `env_check.py`, `catalog_serve.py` (public mode's edge cases), `list_runs.py`
-  and `judge_panel.py` at 71-78%. A first measurement read 81% with the commands at 22-45%: it
+  `check_links.py`, `env_check.py`, `catalog_serve.py` (public mode's edge cases), and
+  `list_runs.py` at 71-78%. A first measurement read 81% with the commands at 22-45%: it
   counted only the checkout's `scripts/`, so everything the installed-package tests ran (where
   `evh` runs each command's file) read as never run.
 - **Prod's inspector** (0.4.1, 2026-10-27, cAdvisor on VictoriaMetrics): a peak of 145 MiB

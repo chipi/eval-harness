@@ -1,8 +1,0 @@
-```json
-[
-    {
-        "text": "OMS",
-        "type": "organization"
-    }
-]
-```

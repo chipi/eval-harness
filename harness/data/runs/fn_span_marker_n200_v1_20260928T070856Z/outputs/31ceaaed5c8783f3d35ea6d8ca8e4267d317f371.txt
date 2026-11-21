@@ -1,1 +1,0 @@
-[{"text": "Czech", "type": "location"}, {"text": "samopal", "type": "product"}]

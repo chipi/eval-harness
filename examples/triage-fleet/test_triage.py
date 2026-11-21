@@ -13,10 +13,14 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parents[1] / "harness"))
+os.environ.setdefault("EVAL_HOME", str(HERE.parents[1] / "harness"))
 sys.path.insert(0, str(HERE))
 import adapter  # noqa: E402
 import importer  # noqa: E402
-from evaluation_harness import _importers  # noqa: E402
+from evaluation_harness import (  # noqa: E402
+    _importers,
+    _store,
+)
 from evaluation_harness._check import check, summary  # noqa: E402
 
 
@@ -192,7 +196,7 @@ rows = [
 ]
 with tempfile.TemporaryDirectory() as td:
     p = Path(td) / "x.jsonl"
-    p.write_text("".join(json.dumps(r) + "\n" for r in rows))
+    _store.write_text(p, "".join(json.dumps(r) + "\n" for r in rows))
     recs = {
         r["id"].split("-")[2]: r
         for r in importer.Importer({}).records({"path": str(p), "test_signals": True, "prompt_fields": True})
@@ -205,7 +209,7 @@ with tempfile.TemporaryDirectory() as td:
         "evidence_rebuilt": "partial",
         "last_seen_source": "server-received",
     }
-    p.write_text("".join(json.dumps(r) + "\n" for r in rows))
+    _store.write_text(p, "".join(json.dumps(r) + "\n" for r in rows))
     v2 = {
         r["id"].split("-")[2]: r
         for r in importer.Importer({}).records({"path": str(p), "test_signals": True, "v2_fields": True})
@@ -215,10 +219,10 @@ with tempfile.TemporaryDirectory() as td:
         for r in importer.Importer({}).records({"path": str(p), "test_signals": True})
     }
     rows[4]["fleet_decision"]["ts"] = "2026-10-05T00:00:00Z"
-    p.write_text("".join(json.dumps(r) + "\n" for r in rows))
+    _store.write_text(p, "".join(json.dumps(r) + "\n" for r in rows))
     plain = [r["id"].split("-")[2] for r in importer.Importer({}).records({"path": str(p)})]
     rows[3]["fleet_decision"]["ts"] = "2026-10-04T00:00:00Z"
-    p.write_text("".join(json.dumps(r) + "\n" for r in rows))
+    _store.write_text(p, "".join(json.dumps(r) + "\n" for r in rows))
     windowed = [
         r["id"].split("-")[2]
         for r in importer.Importer({}).records(
@@ -330,9 +334,8 @@ check(
 )
 
 # ── the adapter through the fleet's code (stand-in model) ──────────────────────────────────
-if (
-    os.environ.get("TRIAGE_FLEET_SRC")
-    and (Path(os.environ["TRIAGE_FLEET_SRC"]) / "mvp" / "triage.py").is_file()
+if os.environ.get("TRIAGE_FLEET_SRC") and _store.is_file(
+    Path(os.environ["TRIAGE_FLEET_SRC"]) / "mvp" / "triage.py"
 ):
     res = adapter.call_system(json.dumps(r1["body"]), {"provider": "stub", "stub_disposition": "escalate"})
     got = json.loads(res.output)

@@ -1,0 +1,204 @@
+"""The judge scorers' operations (RFC-032 step 7): `evh scorer-list`, `scorer-show`, `scorer-new`, `scorer-set`, and the
+resources under /api/v1/scorers. A scorer that has made judged scores is not changed (a new version is a new scorer, a
+new id with `supersedes`); `scorer-set` refuses it, as `data-put` does. The judging itself is `evh judge-score`."""
+
+from __future__ import annotations
+
+from typing import Any
+
+from evaluation_harness.ops.datasets import _table
+from evaluation_harness.ops.registry import Op
+
+_SET = {
+    "type": "object",
+    "description": "fields to set, by dotted key; the command takes KEY=VALUE",
+    "additionalProperties": True,
+}
+_UNSET = {"type": "array", "items": {"type": "string"}, "description": "fields to remove, by dotted key"}
+_S = "evaluation_harness.ops.scorers"
+_D = "evaluation_harness.ops.datasets"
+
+OPS = (
+    Op("scorer-list", "read", "every judge scorer: its mode, its judges, whether it is validated, the judged scores it made and how many of them with another version of it",
+       "GET", "/scorers", f"{_S}:list_scorers", f"{_S}:say_scorers"),
+    Op("scorer-show", "read", "one judge scorer: its record, judges, validation, the judging sets and runs it judged, its summaries, and the people's checks of its judges",
+       "GET", "/scorers/{scorer}", f"{_S}:show_scorer", f"{_S}:say_scorer"),
+    Op("scorer-new", "edit", "make a judge scorer (data/scorers/<id>.yaml), checked against its schema; a new version of one that judged is a new id with `supersedes`",
+       "POST", "/scorers/{scorer}", f"{_S}:new_scorer", f"{_D}:say_saved", inputs={"set": _SET}, required=("set",)),
+    Op("scorer-set", "edit", "change a judge scorer's fields, checked; its comments kept; refused once it has made judged scores",
+       "PATCH", "/scorers/{scorer}", f"{_S}:set_scorer", f"{_D}:say_saved", inputs={"set": _SET, "unset": _UNSET}),
+    Op("judge-verdicts", "read", "a judge scorer's verdicts with their reasons (RFC-034): what each judge said of each arm and why, the lowest scores first",
+       "GET", "/scorers/{scorer}/verdicts", f"{_S}:judge_verdicts", f"{_S}:say_verdicts",
+       inputs={
+           "set": {"type": "string", "description": "one judging set (default: every set the scorer judged)"},
+           "item": {"type": "string", "description": "one item"},
+           "arm": {"type": "string", "description": "one arm (its system id in the judging set)"},
+           "judge": {"type": "string", "description": "one judge"},
+           "judging_pass": {"x-flag": "--pass", "enum": ["primary", "position", "noise"], "default": "primary",
+                            "description": "the pass: primary (default), or a control's"},
+           "order": {"enum": ["low", "item"], "default": "low", "description": "low: the lowest graded scores first; item: the set's order"},
+           "limit": {"type": "integer", "default": 20, "description": "rows on the page (default 20)"},
+           "offset": {"type": "integer", "default": 0, "description": "the first row of the page"},
+       }, public_dropped="the judges' reasons describe the outputs they judged"),
+    Op("judge-validate", "work", "validate a scorer's judges against people's ratings: each judge runs as a system over a rated dataset, and the validation block they make is printed (--fill writes it into the scorer)",
+       "POST", "/scorers/{scorer}/validation", "evaluation_harness.judge_validate:body", "",
+       locks=(("scorer:{scorer}", True), ("dataset:{dataset}", False)), spends=True, required=("scorer", "dataset",),
+       exclusive=(("floor", "floor_run"),), inputs={
+           "scorer": {"type": "string", "description": "the judge scorer whose judges are validated: its id (evh scorer-list)"},
+           "dataset": {"type": "string", "description": "the rated dataset: items {source, outputs}, each with the people's ratings as its reference ({ratings: {dimension: [one number per output]}}, optionally raters), over the scorer's dimensions"},
+           "judges": {"type": "string", "description": "comma-separated judge ids: validate only these (default: every judge of the scorer; --fill needs every one)"},
+           "floor": {"enum": ["random"], "description": "the floor a judge must beat: seeded random verdicts, at no cost (the default)"},
+           "floor_run": {"type": "string", "x-metavar": "RUN_ID", "description": "instead of the random floor, the run of the best free scorer on the same dataset, scored on the judges' metric"},
+           "dry_run": {"type": "boolean", "description": "the calls, the tokens and the estimated cost, and the cap; call nothing and write nothing"},
+           "resume": {"type": "boolean", "description": "use the latest finished run of each system on the dataset as it is, and continue one that did not finish: only what is missing is paid for"},
+           "fill": {"type": "boolean", "description": "write the validation block and the prompt's sha256 into the scorer, as a decision (needs --reason and --by), and say what the gate answers; refused for a scorer that has judged, and for a fake judge"},
+           "replace": {"type": "boolean", "description": "with --fill, replace a validation block the scorer already has"},
+           "reason": {"type": "string", "description": "with --fill: why the judges are validated by these runs, recorded in the block as `why` (who made it, `--by`, goes in the scorer's history)"},
+           "what": {"type": "string", "description": "the block's `what`: how the metric is measured (default: said from the dataset)"},
+           "differs": {"type": "string", "description": "the block's `differs_from_this_use`: how far the rated outputs are from the ones the scorer will judge"},
+       }),
+)  # fmt: skip
+
+
+def judge_verdicts(
+    scorer: str,
+    set: str | None = None,
+    item: str | None = None,
+    arm: str | None = None,
+    judge: str | None = None,
+    judging_pass: str = "primary",  # noqa: S107 — a judging pass, not a password
+    order: str = "low",
+    limit: int = 20,
+    offset: int = 0,
+) -> dict[str, Any]:
+    """The verdicts and their reasons, a page at a time."""
+    from evaluation_harness.model import scorer_views as v  # noqa: PLC0415
+
+    return v.verdicts(scorer, set, item, arm, judge, judging_pass, order, limit, offset)
+
+
+def say_verdicts(r: dict[str, Any]) -> str:
+    """judge-verdicts' answer as text: a line per arm judged, its reason under it."""
+    if not r["rows"]:
+        return f"{r['scorer']}: no verdicts on the {r['pass']} pass match"
+    order = "lowest scores first" if r["order"] == "low" else "in the set order"
+    rows = f"rows {r['offset'] + 1}-{r['offset'] + len(r['rows'])} of {r['total']}"
+    lines = [f"{r['scorer']}, {r['pass']} pass: {rows} ({r['explained']} with a reason; {order})"]
+    for x in r["rows"]:
+        said = f"{x['said']:.2f}" if isinstance(x["said"], float) else str(x["said"])
+        lines.append(f"  {x['item']}  {x['arm']}  {x['judge']}  {said}")
+        if x["why"]:
+            lines.append(f"      why: {x['why']}")
+        elif x["why_status"] in ("missing", "withheld"):
+            lines.append(
+                f"      why: {x['why_status']}"
+                + (" (it repeated the source)" if x["why_status"] == "withheld" else "")
+            )
+    return "\n".join(lines)
+
+
+def list_scorers() -> dict[str, Any]:
+    """Every scorer with its judges and what it made."""
+    from evaluation_harness.model import scorer_views as v  # noqa: PLC0415
+
+    return {"scorers": v.list_scorers()}
+
+
+def show_scorer(scorer: str) -> dict[str, Any]:
+    """The scorer: record, judges, validation, what it judged and the people's checks."""
+    from evaluation_harness.model import scorer_views as v  # noqa: PLC0415
+
+    return v.show_scorer(scorer)
+
+
+def new_scorer(scorer: str, set: dict[str, Any], by: str) -> dict[str, Any]:
+    """Make the scorer from its fields."""
+    from evaluation_harness.model.scorers import SCORER  # noqa: PLC0415
+
+    # A new scorer's judges give their reasons (RFC-034 §5) unless it says `explain=false`.
+    return SCORER.make(scorer, {"scorer_id": scorer, "kind": "judge", "explain": True}, list(set.items()), by)
+
+
+def set_scorer(
+    scorer: str, by: str, set: dict[str, Any] | None = None, unset: list[str] | None = None
+) -> dict[str, Any]:
+    """Change the scorer's fields."""
+    from evaluation_harness.model.scorers import SCORER  # noqa: PLC0415
+
+    return SCORER.patch(scorer, list((set or {}).items()), list(unset or []), by)
+
+
+def say_scorers(r: dict[str, Any]) -> str:
+    """scorer-list's answer as text: one scorer a line."""
+    if not r["scorers"]:
+        return "no judge scorers yet: evh scorer-new <id> --set dataset_id=<dataset> --set judges.0.id=<judge> ..."
+    rows: list[tuple[str, ...]] = []
+    for s in r["scorers"]:
+        if "judged_scores" not in s:
+            rows.append((s["scorer"], "", "does not read", "", s["problem"]))
+            continue
+        judges = ", ".join(f"{j['judge']} ({j['model']})" for j in s["judges"]) or "no judges"
+        made = f"{s['judged_scores']} judged score(s)"
+        if s["other_version"]:
+            made += f", {s['other_version']} with another version"
+        rows.append(
+            (
+                s["scorer"],
+                s["mode"],
+                "validated" if s["validated"] else "unvalidated",
+                judges,
+                made + (f"; does not load: {s['problem']}" if s["problem"] else ""),
+            )
+        )
+    return _table(rows)
+
+
+def say_scorer(r: dict[str, Any]) -> str:
+    """scorer-show's answer as text: its judges, its validation and the runs of its judges on rated datasets, what it judged
+    and the people's checks."""
+    rec = r["record"]
+    lines = [f"{r['scorer']}  {rec.get('mode') or 'grade'}  ({r['file']})"]
+    if r["problem"]:
+        lines.append(f"  does not load: {r['problem']}")
+    if rec.get("supersedes"):
+        lines.append(f"  supersedes   {rec['supersedes']}" + (f": {rec['why']}" if rec.get("why") else ""))
+    lines.append(f"  sha256       {r['sha256']}")
+    for j in r["judges"]:
+        via = f" (system {j['system']})" if j["system"] else ""
+        lines.append(f"  judge        {j['judge']}  {j['model']}  {j['family']}{via}  fp {j['fingerprint']}")
+    v = r["validation"]
+    lines.append(f"  validation   {'validated' if v['validated'] else 'not validated'}")
+    lines += [f"    {p}" for p in v["problems"]]
+    lines.append(
+        f"  made         {r['judged_scores']} judged score(s)"
+        + (f", {r['other_version']} with another version of it" if r["other_version"] else "")
+    )
+    for x in r.get("validation_runs") or []:
+        value = f"{x['value']:.4f}" if isinstance(x["value"], (int, float)) else "no value"
+        lines.append(
+            f"  validated by {x['judge']} on {x['dataset']}: {x['metric']} {value} over {x['n_items']} items, run {x['run']}"
+        )
+        lines += [f"    {d}: not validated on {x['dataset']}" for d in x.get("not_validated") or []]
+    if r.get("rated_datasets"):
+        lines.append(
+            f"  rated datasets  {', '.join(r['rated_datasets'])}  (evh judge-validate --scorer {r['scorer']} --dataset <one>)"
+        )
+    for s in r["judging_sets"]:
+        summ = s["summary"]
+        lines.append(
+            f"  judging set  {s['set']}: {s['arms']} arms, {s['items']} items, {s['verdicts']} verdicts, "
+            f"{s['judged_scores']} judged score(s)"
+            + (
+                ""
+                if summ is None
+                else f"; summary {'of this version' if summ['current'] else 'of another version'}"
+            )
+        )
+    for c in r["checks"]:
+        judges = ", ".join(f"{j['judge']} {j['records']}" for j in c["judges"])
+        lines.append(
+            f"  checked by   {c['source']}: {c['articles'] or '?'} articles, {c['records']} records ({judges})"
+            + ("" if c["report"] else "; no report")
+            + ("" if c["current"] or not c["report"] else "; report of another version")
+        )
+    return "\n".join(lines)

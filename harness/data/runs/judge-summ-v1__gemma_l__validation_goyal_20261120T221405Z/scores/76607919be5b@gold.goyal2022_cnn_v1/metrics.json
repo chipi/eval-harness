@@ -1,0 +1,51 @@
+{
+  "scores": {
+    "cost_usd": 0.0,
+    "failed": 0.0,
+    "human_tau": 0.300084,
+    "parsed": 1.0,
+    "resumed": 0.0,
+    "rho": 0.218319,
+    "rho_coherence": 0.271865,
+    "rho_consistency": 0.115263,
+    "rho_fluency": 0.049641,
+    "rho_relevance": 0.436506,
+    "tau": 0.205349,
+    "tau_coherence": 0.254798,
+    "tau_consistency": 0.111481,
+    "tau_fluency": 0.04766,
+    "tau_relevance": 0.407457,
+    "total_cost_usd": 0.0
+  },
+  "metric_kinds": {
+    "tau": "quality",
+    "rho": "quality",
+    "top1": "quality",
+    "pair_agreement": "quality",
+    "top1_chance": "descriptive",
+    "n_pairs": "descriptive",
+    "parsed": "descriptive",
+    "human_tau": "descriptive",
+    "human_top1": "descriptive",
+    "human_pair_agreement": "descriptive",
+    "truncated": "descriptive",
+    "reasoning_tokens": "descriptive",
+    "resumed": "descriptive",
+    "failed": "descriptive"
+  },
+  "metric_directions": {},
+  "metric_descriptions": {
+    "tau": "Kendall's tau-b between the judge's scores and the people's ratings of an item's outputs, per dimension, averaged over the dimensions: how well the judge orders outputs as people do. A dimension the judge did not return counts 0.",
+    "rho": "Spearman's rho between the judge's scores and the people's ratings, averaged over the dimensions: kept for comparison with the literature.",
+    "top1": "Pick mode: how often the judge's pick of the best output of an item is one people rate best (highest mean over the dimensions; ties among people form the best set). 1 for a correct single pick; a pick of several scores the share of them that are correct; an unreadable pick scores 0.",
+    "top1_chance": "Pick mode: what a random pick scores on the item, the share of its outputs people rate best.",
+    "pair_agreement": "Pairwise mode: among the sampled pairs of an item's outputs that people rank apart, the share where the judge preferred the output people prefer; a tie counts half and an unreadable answer 0. Chance is 0.5.",
+    "n_pairs": "Pairwise mode: how many of the item's sampled pairs people ranked apart, the pairs pair_agreement is averaged over.",
+    "parsed": "The share of the judge's replies the item took that could be read as an answer in the mode's shape.",
+    "human_tau": "What one person's ratings agree with the mean of the others' by tau, rotating over the people: the ceiling a judge is read against (only when the ratings come with each person's own).",
+    "human_top1": "What one person's best outputs agree with the best of the others' by top1, rotating.",
+    "human_pair_agreement": "What one person's order of the sampled pairs agrees with the others' mean, rotating."
+  },
+  "primary_metric": "tau",
+  "reference_tier": "gold"
+}

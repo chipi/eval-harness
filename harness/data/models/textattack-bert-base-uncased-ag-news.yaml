@@ -3,3 +3,7 @@ kind: ml
 aliases:
 - textattack/bert-base-uncased-ag-news
 weights: open
+actor:
+  type: unknown
+  name: before 0.8.0
+  from: migration

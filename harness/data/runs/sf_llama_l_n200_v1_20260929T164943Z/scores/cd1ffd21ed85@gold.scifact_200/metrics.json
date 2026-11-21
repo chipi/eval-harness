@@ -1,0 +1,58 @@
+{
+  "derived": {
+    "at": "2026-10-23T13:59:00Z",
+    "from": "sf_llama_l_n200_v1_20260929T164943Z",
+    "kind": "reparse",
+    "with": {
+      "parser": "examples/_shared/retrieval.parse_ranking",
+      "scorer_sha256": "a534747b2a5d9712a1965473ab8e1d60b82aa2f73cf385c789d0fb4e83a51cd3"
+    }
+  },
+  "metric_kinds": {
+    "confidence": "descriptive",
+    "duplicate_ids": "descriptive",
+    "found_any": "descriptive",
+    "llm_named_unknown": "descriptive",
+    "llm_parsed": "descriptive",
+    "mrr_10": "quality",
+    "n_relevant": "descriptive",
+    "n_returned": "descriptive",
+    "ndcg_10": "quality",
+    "parsed": "quality",
+    "rank_of_first": "descriptive",
+    "reasoning_tokens": "descriptive",
+    "recall_10": "quality",
+    "recall_100": "quality",
+    "resumed": "descriptive",
+    "truncated": "descriptive",
+    "unknown_ids": "descriptive"
+  },
+  "primary_metric": "ndcg_10",
+  "reference_tier": "gold",
+  "scores": {
+    "cost_usd": 0.0008458699,
+    "duplicate_ids": 0.0,
+    "found_any": 0.865,
+    "latency_ms": 11385.92771,
+    "llm_named_unknown": 0.025,
+    "llm_parsed": 0.865,
+    "mrr_10": 0.7044126984,
+    "n_relevant": 1.135,
+    "n_returned": 100.0,
+    "ndcg_10": 0.7154955431,
+    "parsed": 1.0,
+    "rank_of_first": 2.745,
+    "reasoning_tokens": 0.0,
+    "recall_10": 0.79175,
+    "recall_100": 0.8585833333,
+    "resumed": 0.0,
+    "tokens_in": 3848.265,
+    "tokens_out": 132.43,
+    "total_cost_usd": 0.16917399,
+    "total_tokens_in": 769653.0,
+    "total_tokens_out": 26486.0,
+    "truncated": 0.0,
+    "unknown_ids": 0.0
+  },
+  "source_created_at": "2026-09-29T17:27:43Z"
+}

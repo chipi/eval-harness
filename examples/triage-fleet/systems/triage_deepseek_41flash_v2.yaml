@@ -1,0 +1,13 @@
+# Round 3: triage_deepseek_41flash_v1 again, with deepseek-4.1-flash's onboarded settings
+# The record supplies reasoning_effort (its settings_why says why); the arm sets the task's own: a reply cap
+# (a triage decision is 64-414 tokens; 1024 bounds a runaway) and the call limit round 1 used.
+system_id: triage_deepseek_41flash_v2
+adapter: ../adapter.py
+model_record: deepseek-4.1-flash
+deployment: hosted
+params:
+  provider: gateway
+  model: eval-deepseek-41flash
+  usd_per_mtok_in: 0.045
+  usd_per_mtok_out: 0.5
+  max_tokens: 1024

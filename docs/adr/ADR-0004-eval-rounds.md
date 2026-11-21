@@ -1,8 +1,7 @@
-# ADR-0004 — Eval rounds, and a catalog that guides them (0.4.0)
+# ADR-0004 — Eval rounds, and a catalog that guides them
 
-**Status:** Accepted (2026-10-24), as built. Two parts of the proposal were not built in 0.4.0: a
-round picker inside the web inspector (the goal page's per-round **inspect** button opens a round's
-arms in it instead) and a progress line per round in the rounds overview;
+**Status:** Accepted (2026-10-24), as built. The goal page's per-round **inspect** button opens a round's
+arms in it;
 [RFC-004](../rfc/RFC-004-eval-rounds.md) lists what was and was not built.
 **Date:** 2026-10-24
 **Detail:** [PRD-005](../prd/PRD-005-goals-and-rounds.md) (what and why),
@@ -20,17 +19,20 @@ read-only, decisions as commands run locally.
 ## Decision
 
 - **Rounds are optional**: a project that never opens one sees no change.
-- **A round is a file** per goal, `data/rounds/<goal_id>/<round_id>.yaml`; an arm joins by naming
-  the round in its config, and its runs record it.
+- **A round is a file** per goal, `data/rounds/<goal_id>/<round_id>.yaml`; a run joins a round with
+  `evh run --goal G --round R`; its record names the round, and the round file stores its arms.
 - **Decisions are commands**: `evh round-open`, `round-retire`, `round-close` (which can promote);
-  `round-retire --runs-dir` retires one copy of a config (its runs in another runs directory, such
-  as a re-timing on another machine) and leaves the arm in the project's runs directory in play;
-  `evh rounds` shows the evidence and suggests the next decision, each as the command that makes
-  it. The pages never write.
+  `round-retire --label L` retires one reading of a system (a re-timing on another machine, say) and
+  leaves the other readings in play; `evh round-evidence` shows the evidence and suggests the next
+  decision, each as the command that makes it (`evh round-list` lists the rounds). The pages never write.
 - **The goal page leads with the answer**, then the rounds, then the arms grouped by what they
   are scored against.
 - Decided with it and built: **dataset lineage** (`dataset-create --from`) and the inspector's
   **conditions check**.
+
+## Amended by ADR-0029 / PRD-017
+
+The Workbench writes rounds through the local API; the catalog's static pages and a public server do not write.
 
 ## Consequences
 

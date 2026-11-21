@@ -1,6 +1,0 @@
-```json
-[
-  {"text": "Ammerallikere", "type": "location"},
-  {"text": "tank", "type": "other"}
-]
-```

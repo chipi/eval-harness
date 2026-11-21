@@ -1,6 +1,0 @@
-```json
-[
-    {"text": "PSIS Semarang", "type": "organization"},
-    {"text": "2006", "type": "other"}
-]
-```

@@ -1,1 +1,0 @@
-{"low_signal": false, "norm_key": "v1:e0b06b00c24c", "operational": false, "test": false}

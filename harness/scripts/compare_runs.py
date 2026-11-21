@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Compare two runs — and REFUSE when the comparison would be meaningless.
 
 The refusals are the feature. A tool that always produces a number teaches you
@@ -12,30 +11,24 @@ to trust numbers that mean nothing:
   * a delta smaller than the arm's own spread -> flagged as noise, with the
     command that measures that spread.
 
-    python scripts/compare_runs.py --baseline <run_id> --candidate <run_id>
-    python scripts/compare_runs.py --baseline <run_id> --candidate <run_id> --noise 0.01
+    evh run-compare --baseline <run_id> --candidate <run_id>
+    evh run-compare --baseline <run_id> --candidate <run_id> --noise 0.01
 """
 
 from __future__ import annotations
 
-import sys as _sys
-from pathlib import Path as _Path
-
-if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
-    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
-
 import argparse
 from pathlib import Path
 
-from evaluation_harness import _jsonout
+from evaluation_harness import _jsonout, _store
 from evaluation_harness._adapter import recorded_metric_kinds
 from evaluation_harness._common import (
     RUNS,
     die,
     how,
-    read_json,
     verdict_for,
 )
+from evaluation_harness.model import runs as model_runs
 
 
 def _short(v: object, n: int = 40) -> str:
@@ -164,39 +157,19 @@ def _report_fingerprint_delta(a: dict, b: dict) -> None:
 
 
 def load(run_id: str) -> dict:
-    """Load metrics.json for a run; die if not found."""
+    """A run's record, as its first score reads it; die if there is no such run or it has no score."""
     # A run is a directory of the runs folder: an id that names a path ("../x") is not one (the MCP tool
     # takes ids from an agent).
     if run_id in ("", ".", "..") or run_id != Path(run_id).name:
-        die(f"no run {run_id!r}: a run id names a directory of {RUNS.name}, not a path")
-    p = RUNS / run_id / "metrics.json"
-    if not p.is_file():
-        die(f"no run {run_id!r} (looked for {p})")
-    return read_json(p)
-
-
-def main() -> int:
-    """Load and summarize a single run."""
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--baseline", required=True)
-    ap.add_argument("--candidate", required=True)
-    ap.add_argument(
-        "--noise",
-        type=float,
-        default=None,
-        help="the arm's own spread; deltas at or below it are reported as noise. "
-        "0 is a real answer — it means the arm is deterministic — so it is not "
-        "the same as omitting the flag.",
-    )
-    ap.add_argument(
-        "--json",
-        action="store_true",
-        help="the same answer as one JSON object: the printed lines as blocks, the metric table as data, "
-        "and the result by name under result.values (fingerprint, worth, ...)",
-    )
-    args = ap.parse_args()
-    with _jsonout.collect("run-compare", args.json):
-        return _run(args)
+        die(f"no run {run_id!r}: a run id names a directory of {RUNS.name}, not a path", "bad-argument")
+    d = RUNS / run_id
+    if not _store.is_file(d / model_runs.RUN):
+        die(f"no run {run_id!r} (looked for {d / model_runs.RUN})", "not-found")
+    sd = model_runs.first_score(d) or next(iter(model_runs.scores_of(d)), None)
+    rec = model_runs.record(sd) if sd else None
+    if rec is None:
+        die(f"run {run_id!r} has no score to compare", "not-found")
+    return rec
 
 
 def _run(args: argparse.Namespace) -> int:
@@ -209,8 +182,9 @@ def _run(args: argparse.Namespace) -> int:
             f"    {args.candidate:32} {b['dataset_id']}\n"
             "  A metric compared across two datasets is not a comparison, it is a\n"
             "  coincidence. Re-run one arm on the other's dataset_id. For two versions of one\n"
-            "  dataset (same item ids, same reference), `evh pair-test --dataset-id D1 --a A --b B\n"
-            "  --b-dataset D2` is the comparison."
+            "  dataset (same item ids, same reference), `evh pair-test D1 --a A --b B\n"
+            "  --b-dataset D2` is the comparison.",
+            "mismatch",
         )
 
     print(f"dataset_id : {a['dataset_id']}")
@@ -288,11 +262,10 @@ def _run(args: argparse.Namespace) -> int:
         print(
             "\n  --noise was not given, so nothing was judged against the arm's own\n"
             "  spread. Measure it first:  "
-            + how("evh run --config … --repeat 3", "make run CONFIG=... REPEAT=3")
+            + how(
+                "evh run --system <id> --dataset <id> --repeat 3",
+                "make run SYSTEM=<id> DATASET_ID=<id> REPEAT=3",
+            )
         )
     print(f"\n  {worth} metric(s) moved beyond the stated noise floor")
     return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())

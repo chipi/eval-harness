@@ -47,6 +47,7 @@ import itertools
 import json
 import random
 import re
+import os
 import sys
 import time
 from dataclasses import dataclass, field
@@ -55,6 +56,9 @@ from typing import Any, Dict, List, Optional
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent / "_shared"))
+sys.path.insert(0, str(HERE.parents[1] / "harness"))  # the evaluation_harness package: its store reads data/
+os.environ.setdefault("EVAL_HOME", str(HERE.parents[1] / "harness"))
+from evaluation_harness import _store  # noqa: E402
 import gateway  # noqa: E402
 from codehash import code_digest  # noqa: E402
 
@@ -107,6 +111,22 @@ PAIR_REMINDER = (
 TIE_EPS = 1e-9
 
 
+def _explain(message: str, mode: str, n: int, params: Dict[str, Any]) -> str:
+    """With `explain: true` (docs/rfc/RFC-034 §5) the message ends with the reason's request, in the words
+    judging.explain_reminder uses (tests/test_judge_score.py holds them equal), so a judge that gives its reason
+    is validated on the message judge-score sends it."""
+    if params.get("explain") is not True:
+        return message
+    if mode == "grade":
+        what = f'"why": a list of {n} short sentences, one per numbered output in order, each saying what decided its scores'
+    elif mode == "pick":
+        what = '"why": one or two sentences saying what made the outputs you named the best'
+    else:
+        what = '"why": one or two sentences saying what made the better one better, or why they tie'
+    return (f"{message}\n\nInside the same JSON object, after your verdict, add {what}. Do not copy sentences "
+            "from the article or the summaries: name what you saw in your own words.")
+
+
 def _mode(params: Dict[str, Any]) -> str:
     mode = params.get("mode") or "grade"
     if mode not in MODES:
@@ -136,14 +156,14 @@ def _pick_message(item: Dict[str, Any], params: Dict[str, Any]) -> str:
     """Article and the 16 numbered summaries, as `_judge_message` lays them out, then the
     instruction to answer only the JSON. The prompt's `{n}` is the count."""
     summaries = "\n".join(f"{i}. {s.strip()}" for i, s in enumerate(item["summaries"], 1))
-    return (f"{_prompt(params).replace('{n}', str(N_SUMMARIES))}\n\nARTICLE:\n{item['article'].strip()}"
-            f"\n\nSUMMARIES:\n{summaries}\n\n{PICK_REMINDER}")
+    return _explain(f"{_prompt(params).replace('{n}', str(N_SUMMARIES))}\n\nARTICLE:\n{item['article'].strip()}"
+                    f"\n\nSUMMARIES:\n{summaries}\n\n{PICK_REMINDER}", "pick", N_SUMMARIES, params)
 
 
 def _pair_message(item: Dict[str, Any], first: int, second: int, params: Dict[str, Any]) -> str:
     summaries = "\n".join(f"{i}. {item['summaries'][k].strip()}" for i, k in enumerate((first, second), 1))
-    return (f"{_prompt(params).replace('{n}', '2')}\n\nARTICLE:\n{item['article'].strip()}"
-            f"\n\nSUMMARIES:\n{summaries}\n\n{PAIR_REMINDER}")
+    return _explain(f"{_prompt(params).replace('{n}', '2')}\n\nARTICLE:\n{item['article'].strip()}"
+                    f"\n\nSUMMARIES:\n{summaries}\n\n{PAIR_REMINDER}", "pairwise", 2, params)
 
 
 def _reply_object(output: Optional[str]) -> Optional[Dict[str, Any]]:
@@ -204,9 +224,9 @@ def _prompt(params: Dict[str, Any]) -> str:
         return str(params["prompt"])
     path = (HERE / str(params.get("prompt_file") or "prompt.txt")).resolve()
     if str(path) not in _PROMPT_CACHE:
-        if not path.is_file():
+        if not _store.is_file(path):
             raise SystemExit(f"prompt file not found: {path}")
-        _PROMPT_CACHE[str(path)] = path.read_text(encoding="utf-8").strip()
+        _PROMPT_CACHE[str(path)] = _store.read_text(path, encoding="utf-8").strip()
     return _PROMPT_CACHE[str(path)]
 
 
@@ -218,7 +238,8 @@ def _judge_message(item: Dict[str, Any], params: Dict[str, Any]) -> str:
     """Article and numbered summaries. The human references are deliberately left out:
     a judge shown them would be doing ROUGE's job, and that is a different arm."""
     summaries = "\n".join(f"{i}. {s.strip()}" for i, s in enumerate(item["summaries"], 1))
-    return f"{_prompt(params)}\n\nARTICLE:\n{item['article'].strip()}\n\nSUMMARIES:\n{summaries}"
+    return _explain(f"{_prompt(params)}\n\nARTICLE:\n{item['article'].strip()}\n\nSUMMARIES:\n{summaries}",
+                    "grade", len(item["summaries"]), params)
 
 
 # ── the hosted judge ─────────────────────────────────────────────────────────
@@ -503,13 +524,13 @@ _PUNKT_OK = False
 
 
 def _cached(path: Path, url: str, sha256: str) -> Path:
-    if not path.is_file():
+    if not _store.is_file(path):
         import urllib.request  # noqa: PLC0415
 
-        path.parent.mkdir(parents=True, exist_ok=True)
+        _store.mkdir(path.parent, parents=True, exist_ok=True)
         with urllib.request.urlopen(url, timeout=120) as r:  # noqa: S310 — a pinned https URL, its bytes checked by sha256  # nosec B310
-            path.write_bytes(r.read())
-    got = hashlib.sha256(path.read_bytes()).hexdigest()
+            _store.write_bytes(path, r.read())
+    got = hashlib.sha256(_store.read_bytes(path)).hexdigest()
     if got != sha256:
         raise RuntimeError(f"{path.name}: sha256 {got} is not the pinned {sha256}; "
                            f"{url} no longer serves the file the runs used")
@@ -518,8 +539,8 @@ def _cached(path: Path, url: str, sha256: str) -> Path:
 
 def punkt_english_digest(folder: Path) -> str:
     h = hashlib.sha256()
-    for f in sorted(folder.iterdir()):
-        h.update(f.name.encode() + b"\x00" + f.read_bytes() + b"\x1e")
+    for f in sorted(_store.iterdir(folder)):
+        h.update(f.name.encode() + b"\x00" + _store.read_bytes(f) + b"\x1e")
     return h.hexdigest()
 
 
@@ -553,7 +574,7 @@ def _unieval_model(params: Dict[str, Any]) -> Any:
         if params["model"] == UNIEVAL_MODEL:
             from transformers import PreTrainedTokenizerFast  # noqa: PLC0415
 
-            if hashlib.sha256(UNIEVAL_TOKENIZER.read_bytes()).hexdigest() != UNIEVAL_TOKENIZER_SHA256:
+            if hashlib.sha256(_store.read_bytes(UNIEVAL_TOKENIZER)).hexdigest() != UNIEVAL_TOKENIZER_SHA256:
                 raise SystemExit(f"{UNIEVAL_TOKENIZER}: not the pinned sha256 {UNIEVAL_TOKENIZER_SHA256}")
             tok = PreTrainedTokenizerFast(tokenizer_file=str(UNIEVAL_TOKENIZER), eos_token="</s>",  # noqa: S106 — special tokens, not passwords
                                           unk_token="<unk>", pad_token="<pad>", model_max_length=512)  # noqa: S106 — special tokens
@@ -588,14 +609,14 @@ def _unieval_published() -> Any:
         by_text: Dict[str, set] = {}
         orig = _cached(SOURCES / "summeval_original" / "model_annotations.aligned.jsonl", ORIGINAL_URL,
                        ORIGINAL_SHA256)
-        for line in orig.read_text(encoding="utf-8").splitlines():
+        for line in _store.read_text(orig, encoding="utf-8").splitlines():
             if line.strip():
                 r = json.loads(line)
                 by_text.setdefault(norm(r["decoded"]), set()).add((r["id"].split("-test-")[1], r["model_id"]))
         rows = {}
         ue = _cached(SOURCES / "summeval_unieval" / "summeval.json", UNIEVAL_INPUTS_URL,
                      UNIEVAL_INPUTS_SHA256)
-        for r in json.loads(ue.read_text(encoding="utf-8")):
+        for r in json.loads(_store.read_text(ue, encoding="utf-8")):
             rows[(r["doc_id"].split("-test-")[1], r["system_id"])] = r
         _UE_PUBLISHED = (norm, by_text, rows)
     return _UE_PUBLISHED
@@ -696,6 +717,12 @@ def warmup(params: Dict[str, Any]) -> None:
     score(_broadcast([float(i) for i in range(N_SUMMARIES)]), gold)
 
 
+def prompts(params: Dict[str, Any]) -> Dict[str, str]:
+    """The prompt a call sends, by name (`<example>/<prompt file>`), the text this adapter's fingerprint hashes as
+    `prompt_sha256`: the harness records it as a prompt version of the run (RFC-032 step 4b)."""
+    return {f"{HERE.name}/{Path(str(params.get('prompt_file') or 'prompt.txt')).stem}": _prompt(params)}
+
+
 def fingerprint(params: Dict[str, Any]) -> Dict[str, Any]:
     provider = params.get("provider", "litellm")
     code = {"rouge": _rouge, "coverage": _coverage, "length": _length, "random": _random}
@@ -741,7 +768,7 @@ def fingerprint(params: Dict[str, Any]) -> Dict[str, Any]:
             fp["original_release_sha256"] = ORIGINAL_SHA256
             ue = SOURCES / "summeval_unieval" / "summeval.json"
             fp["unieval_inputs_url"] = UNIEVAL_INPUTS_URL
-            fp["unieval_inputs_sha256"] = hashlib.sha256(ue.read_bytes()).hexdigest() if ue.is_file() else None
+            fp["unieval_inputs_sha256"] = hashlib.sha256(_store.read_bytes(ue)).hexdigest() if _store.is_file(ue) else None
         return fp
     alias = params.get("model")
     upstream, id_source = gateway.resolve_upstream(alias)

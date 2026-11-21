@@ -1,6 +1,0 @@
-[
-  {
-    "text": "Multi-Purpose Bayonet",
-    "type": "product"
-  }
-]

@@ -3,7 +3,8 @@
 
     python examples/retrieval-scifact/fetch.py --n 200
 
-STDLIB ONLY, like the other three fetchers: the HuggingFace datasets-server rows API.
+It reads the split through the harness's `huggingface` source (examples/_shared/hf_rows.py): the Hub's
+parquet conversion at one pinned commit, each file checked against the sha256 the Hub lists.
 
 THIS FETCHER WRITES THREE THINGS, AND THE THIRD IS NEW
   The other examples write items and references. Retrieval needs a third: the documents
@@ -70,7 +71,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2] / "harness"
 DATASET = "BeIR/scifact"
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "_shared"))
-from hf_rows import DEFAULT_DELAY, Sources  # noqa: E402
+from hf_rows import Sources  # noqa: E402
 from hf_rows import page as _rows_page  # noqa: E402 - the one retry/pacing schedule
 
 QRELS = "BeIR/scifact-qrels"
@@ -79,17 +80,15 @@ N_CORPUS = 5183  # re-checked at fetch time
 PAGE = 100  # the rows API's maximum
 
 
-def _get(
-    dataset: str, config: str, split: str, offset: int, length: int, delay: float = DEFAULT_DELAY
-) -> list[dict]:
-    return _rows_page(dataset, config, split, offset, length, delay=delay, timeout=90)
+def _get(dataset: str, config: str, split: str, offset: int, length: int) -> list[dict]:
+    return _rows_page(dataset, config, split, offset, length)
 
 
-def _page_all(dataset: str, config: str, split: str, delay: float, label: str) -> list[dict]:
+def _page_all(dataset: str, config: str, split: str, label: str) -> list[dict]:
     out: list[dict] = []
     offset = 0
     while True:
-        batch = _get(dataset, config, split, offset, PAGE, delay)
+        batch = _get(dataset, config, split, offset, PAGE)
         if not batch:
             break
         out.extend(batch)
@@ -126,7 +125,6 @@ def main() -> int:
     ap.add_argument(
         "--seed", type=int, default=20260928, help="draw seed; same --n and --seed reproduce the same queries"
     )
-    ap.add_argument("--delay", type=float, default=DEFAULT_DELAY)
     ap.add_argument("--force", action="store_true", help="overwrite an existing slice")
     ap.add_argument(
         "--skip-corpus",
@@ -150,7 +148,7 @@ def main() -> int:
         print(f"corpus: reusing {len(docs)} document(s) already on disk")
     else:
         print(f"corpus: downloading all {N_CORPUS} documents (~52 requests)")
-        raw = _page_all(DATASET, "corpus", "corpus", args.delay, "corpus")
+        raw = _page_all(DATASET, "corpus", "corpus", "corpus")
         docs = [
             {"doc_id": str(r["_id"]), "title": r.get("title") or "", "text": r.get("text") or ""} for r in raw
         ]
@@ -185,14 +183,14 @@ def main() -> int:
 
     # ── qrels define the test set, so they come before the queries ───────────
     print("qrels: downloading the test judgments")
-    qrels_rows = _page_all(QRELS, "default", "test", args.delay, "qrels")
+    qrels_rows = _page_all(QRELS, "default", "test", "qrels")
     rel: dict = collections.defaultdict(list)
     for r in qrels_rows:
         rel[str(r["query-id"])].append({"doc_id": str(r["corpus-id"]), "score": int(r["score"])})
     print(f"  {len(qrels_rows)} judgment(s) over {len(rel)} query/queries")
 
     print("queries: downloading")
-    q_rows = _page_all(DATASET, "queries", "queries", args.delay, "queries")
+    q_rows = _page_all(DATASET, "queries", "queries", "queries")
     text_of = {str(r["_id"]): (r.get("text") or "").strip() for r in q_rows}
     row_of = {str(r["_id"]): r for r in q_rows}
     test_ids = sorted(qid for qid in rel if text_of.get(qid))

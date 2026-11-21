@@ -132,6 +132,14 @@ def drive(base: str) -> None:
             f"{before!r} -> {after!r}",
         )
         check("theme: the choice survives a reload", kept == after, f"{after!r} then {kept!r}")
+        page.click("#theme")
+        back = page.evaluate("[document.documentElement.dataset.theme || '', localStorage.getItem('theme')]")
+        page.reload()
+        check(
+            "theme: pressed again, the page follows the system again, after a reload too",
+            back == ["", None] and page.evaluate("document.documentElement.dataset.theme || ''") == "",
+            back,
+        )
 
         # The lifecycle explorer on use.html: live, a panel shown, another on click.
         page.goto(base + "use.html")

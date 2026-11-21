@@ -21,29 +21,27 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parents[1] / "scripts"
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from evaluation_harness import _common, _models  # noqa: E402
-from evaluation_harness._check import check, summary  # noqa: E402
+from evaluation_harness._check import check, store_under_test, summary  # noqa: E402
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _serve
+import _serve  # noqa: E402
 
 top = Path(tempfile.mkdtemp(prefix="evh-parallel-"))
 env = {k: v for k, v in os.environ.items() if not k.startswith("EVAL_")}
 
 
+import _cli  # noqa: E402
+
+
 def evh(proj: Path, *args: str, extra: dict | None = None) -> subprocess.CompletedProcess:
-    return subprocess.run(
-        [sys.executable, str(HERE / "cli.py"), *args],
-        cwd=proj,
-        # Each project is its own: run from a checkout, the harness would take the checkout as the project.
-        env={**env, "EVAL_HOME": str(proj), **(extra or {})},
-        capture_output=True,
-        text=True,
-        timeout=600,
-    )
+    return _cli.run(proj, {**env, "EVAL_HOME": str(proj), **(extra or {})}, *args, timeout=600)
 
 
 projects = {}
 for name in ("alpha", "beta"):
     p = top / name
     p.mkdir()
-    r = evh(p, "init", "--tutorial")
+    r = evh(p, "init", "--store", store_under_test(), "--tutorial")
     check(f"init {name}", r.returncode == 0, (r.stdout + r.stderr)[-300:])
     r = evh(p, "catalog")
     check(f"catalog {name}", r.returncode == 0, (r.stdout + r.stderr)[-300:])
@@ -67,6 +65,7 @@ def serve(proj: Path, *args: str) -> tuple[subprocess.Popen, str]:
         url = m.group(0) if m else ""
         if not line and p.poll() is not None:
             break
+    _serve.drain(p, [])  # the rest, as it comes: left in the pipe, the access log would block the server
     return p, url
 
 
@@ -135,13 +134,13 @@ check(
 )
 
 # ── EVAL_HOME pointing at another project ─────────────────────────────────────────────────────
-r = evh(projects["beta"], "datasets", extra={"EVAL_HOME": str(projects["alpha"])})
+r = evh(projects["beta"], "dataset-list", extra={"EVAL_HOME": str(projects["alpha"])})
 check(
     "a shell's EVAL_HOME at another project is named",
     "note: EVAL_HOME is" in r.stderr and "alpha" in r.stderr and "beta" in r.stderr,
     r.stderr[-300:],
 )
-r = evh(projects["alpha"], "datasets", extra={"EVAL_HOME": str(projects["alpha"])})
+r = evh(projects["alpha"], "dataset-list", extra={"EVAL_HOME": str(projects["alpha"])})
 check("no note when EVAL_HOME is the project you are in", "EVAL_HOME" not in r.stderr, r.stderr[-300:])
 
 # ── model records: locked by their own path ───────────────────────────────────────────────────

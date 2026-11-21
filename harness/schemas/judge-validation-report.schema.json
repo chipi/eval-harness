@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "judge validation report",
+  "description": "A scorer's judges against one source of human ratings: data/judge-validation/<scorer>/<source>/report.json, written by harness/tools/validate_judge_goyal.py and validate_judge_zhang.py from the records beside it. These are the fields both sources have; each source adds its own numbers (best-pick agreement, system means, rankings). The scorer's `validation` block names the runs that measured its judges; this is the check against people.",
+  "type": "object",
+  "required": ["source", "scorer", "articles", "judges", "inputs", "human_baseline"],
+  "properties": {
+    "source": {"type": "string", "minLength": 1, "description": "Who rated, and where the ratings are from."},
+    "scorer": {"type": "string", "minLength": 1, "description": "The scorer whose judges were checked; the folder's."},
+    "articles": {"type": "integer", "minimum": 1},
+    "provenance_note": {"type": "string"},
+    "judges": {
+      "type": "object",
+      "minProperties": 1,
+      "description": "By the scorer's judge id.",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["billed_usd", "unparsed", "records_sha256"],
+        "properties": {
+          "billed_usd": {"type": "number", "minimum": 0},
+          "unparsed": {"type": "integer", "minimum": 0, "description": "Replies that did not parse."},
+          "records_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$", "description": "One hash over the judge's records (judge_score.records_sha256), so the report is checked against them where the human data is absent."}
+        }
+      }
+    },
+    "inputs": {
+      "type": "object",
+      "required": ["scorer_sha256"],
+      "properties": {
+        "scorer_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$", "description": "The hash of the scorer's content (the parsed YAML) when the judges were checked."}
+      }
+    },
+    "human_baseline": {"type": "object", "description": "How well people agree with each other on this source: what the judges are held to."}
+  }
+}

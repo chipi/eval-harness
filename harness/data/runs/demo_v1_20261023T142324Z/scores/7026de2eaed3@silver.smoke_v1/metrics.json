@@ -1,0 +1,16 @@
+{
+  "metric_directions": {},
+  "metric_kinds": {
+    "resumed": "descriptive"
+  },
+  "primary_metric": "overlap_f1",
+  "reference_tier": "silver",
+  "scores": {
+    "cost_usd": 0.0,
+    "latency_ms": 0.009,
+    "output_words": 34.8,
+    "overlap_f1": 0.415895,
+    "resumed": 0.0,
+    "total_cost_usd": 0.0
+  }
+}

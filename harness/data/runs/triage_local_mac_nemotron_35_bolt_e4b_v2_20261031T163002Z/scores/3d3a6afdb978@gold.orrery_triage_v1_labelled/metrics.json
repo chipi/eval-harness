@@ -1,0 +1,49 @@
+{
+  "metric_directions": {
+    "deferred": "lower",
+    "escalated": "lower",
+    "false_alarm": "lower",
+    "false_dismiss": "lower",
+    "model_escalated": "lower",
+    "model_false_alarm": "lower",
+    "model_false_dismiss": "lower",
+    "model_triage_cost": "lower",
+    "no_decision": "lower",
+    "silent_drop": "lower",
+    "table_miss": "lower",
+    "triage_cost": "lower",
+    "triage_cost_p10": "lower",
+    "triage_cost_p3": "lower"
+  },
+  "metric_kinds": {
+    "resumed": "descriptive"
+  },
+  "primary_metric": "triage_cost",
+  "reference_tier": "gold",
+  "scores": {
+    "correct": 0.661538,
+    "cost_usd": 0.0,
+    "deferred": 0.0,
+    "escalated": 0.353846,
+    "false_alarm": 0.580645,
+    "false_dismiss": 0.117647,
+    "latency_ms": 5883.093661,
+    "model_correct": 0.538462,
+    "model_escalated": 0.0,
+    "model_false_alarm": 0.354839,
+    "model_false_dismiss": 0.529412,
+    "model_triage_cost": 1.553846,
+    "n_probes": 2.676923,
+    "no_decision": 0.0,
+    "resumed": 0.0,
+    "table_miss": 0.0,
+    "tokens_in": 5386.784615,
+    "tokens_out": 309.353846,
+    "total_cost_usd": 0.0,
+    "total_tokens_in": 350141.0,
+    "total_tokens_out": 20108.0,
+    "triage_cost": 0.584615,
+    "triage_cost_p10": 0.892308,
+    "triage_cost_p3": 0.461538
+  }
+}

@@ -4,7 +4,7 @@
     python tests/test_sheet.py
 
 In a throwaway project built from the tutorial ($0, offline): three arms run on the six tickets, a person labels
-three of them, a smaller governed dataset stands for v1; `evh inspect --sheet --dataset-id D` then shows every row,
+three of them, a smaller governed dataset stands for v1; `evh sheet-show D` then shows every row,
 and each signal (wrong, disagree, split, new, unlabelled) filters to exactly the items it should, together with
 `--where`; rows are sorted by how many signals they carry; a picked row says so; the sheet carries each arm's
 scores and the judge's, the winner per row on the chosen metric (ties named, the direction respected) and per
@@ -17,7 +17,6 @@ import io
 import json
 import os
 import shutil
-import subprocess
 import sys
 import tempfile
 from pathlib import Path
@@ -25,23 +24,40 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parents[1] / "scripts"
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 KIT = HERE.parent / "tutorial"
+from evaluation_harness import _outputs, _store  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runfix  # noqa: E402
+import _runstore  # noqa: E402
+import _runview  # noqa: E402
+from evaluation_harness import _format  # noqa: E402
+from evaluation_harness.model import runs as _R  # noqa: E402
+
+
+def _set_output(run, item, text):
+    """Change one output of a run in place (None removes it), as a hand edit of its outputs.jsonl would."""
+    with _runstore._InProject(proj) as data:
+        d = data / "runs" / run
+        texts = _outputs.outputs(d)
+        texts.pop(item, None)
+        if text is not None:
+            texts[item] = text
+        _outputs.write_all(d, texts, list(texts))
+
 
 proj = Path(tempfile.mkdtemp(prefix="evh-rows-"))
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-rows")
-for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_MAX_COST_USD", "EVH_PUBLIC"):
+for k in ("EVAL_DATA_DIR", "EVAL_MAX_COST_USD", "EVH_PUBLIC"):
     env.pop(k, None)
 D = "tickets_v1"
 
 
+import _cli  # noqa: E402
+
+
 def evh(*args, extra=None):
-    return subprocess.run(
-        [sys.executable, str(HERE / "cli.py"), *args],
-        cwd=proj,
-        env={**env, **(extra or {})},
-        capture_output=True,
-        text=True,
-    )
+    return _cli.run(proj, {**env, **(extra or {})}, *args)
 
 
 def out(r):
@@ -58,7 +74,7 @@ def blocks_of(r):
 
 def sheet_of(*args, runs=None):
     """The sheet's blocks: (the process, its rows in order each {column: value}, the footer {line: {arm: value}})."""
-    r = evh("inspect", "--sheet", "--dataset-id", D, "--runs", runs or RUNS, *args, "--json")
+    r = evh("sheet-show", D, "--runs", runs or RUNS, *args, "--json")
     blocks = blocks_of(r)
     table = next((b for b in blocks if "columns" in b and b["columns"][0] == "item_id"), {"rows": []})
     foot = next((b for b in blocks if "columns" in b and b["columns"][0] == "per arm"), {"rows": []})
@@ -85,14 +101,31 @@ def n_signals(row):
 
 
 def snapshot():
-    return {str(p.relative_to(proj)): p.stat().st_mtime_ns for p in proj.rglob("*") if p.is_file()}
+    """Every file of the project with its mtime; the sqlite store's database changes on any write, so its files are
+    compared by content instead."""
+    db = _runstore.sqlite()
+    snap = {
+        str(p.relative_to(proj)): p.stat().st_mtime_ns
+        for p in proj.rglob("*")
+        if p.is_file() and not (db and p.name.startswith("project.sqlite"))
+    }
+    if db:
+        snap.update({f"data/{f}": _runstore.read_bytes(proj, f) for f in _runstore.files_under(proj)})
+        # a run's outputs and rows are rows of the database, not files: they are compared too
+        with _runstore._InProject(proj) as data:
+            for run in sorted({p.parent for p in _store.rglob(data, "metrics.json")}):
+                key = run.relative_to(data).as_posix()
+                snap[f"outputs:{key}"] = json.dumps(_outputs.outputs(run), sort_keys=True).encode()
+                snap[f"rows:{key}"] = (_outputs.rows_text(run) or "").encode()
+    return snap
 
 
 try:
     data = proj / "data"
-    (data / "configs").mkdir(parents=True)
+    (data / "systems").mkdir(parents=True)
+    _runstore.write_text(proj, _format.NAME, f"format: {_format.FORMAT}\n")
     (data / "fields").mkdir()
-    shutil.copy(KIT / "fields" / "tickets.yaml", data / "fields")
+    _runstore.write_bytes(proj, "fields/tickets.yaml", (KIT / "fields" / "tickets.yaml").read_bytes())
     shutil.copytree(KIT / "tickets", proj / "tutorial" / "tickets")
     r = evh(
         "dataset-create",
@@ -128,7 +161,9 @@ try:
     )
     check("setup: the governed dataset (three tickets)", r.returncode == 0, out(r)[-300:])
     (data / "goals").mkdir()
-    shutil.copy(KIT / "goals" / "tickets_summary.yaml", data / "goals")
+    _runstore.write_bytes(
+        proj, "goals/tickets_summary.yaml", (KIT / "goals" / "tickets_summary.yaml").read_bytes()
+    )
     # What each run decided, set per item (the first run stands for production; None: no output), so that every
     # signal has an item only it marks: t02 and t03 disagree with one candidate each (split), t04 with both (not
     # split), t06 with the one candidate that answered (not split).
@@ -159,15 +194,16 @@ try:
         },
     }
     for arm, by_item in decided.items():
-        cfg = data / "configs" / f"tickets_{arm}.yaml"
-        cfg.write_text((KIT / "configs" / f"tickets_{arm}.yaml").read_text() + "goal: tickets_summary\n")
-        r = evh("run", "--config", f"data/configs/tickets_{arm}.yaml")
+        _runstore.write_text(
+            proj,
+            f"systems/tickets_{arm}_v1.yaml",
+            (KIT / "systems" / f"tickets_{arm}_v1.yaml").read_text(),
+        )
+        r = evh("run", "--system", f"tickets_{arm}_v1", "--dataset", D, "--goal", "tickets_summary")
         check(f"setup: the {arm} arm runs", r.returncode == 0, out(r)[-300:])
-        run = next(p for p in (data / "runs").glob(f"tickets_{arm}_v1_*"))
+        run = next(n for n in _runstore.listdir(proj, "runs") if n.startswith(f"tickets_{arm}_v1_"))
         for item, text in by_item.items():
-            (run / "outputs" / f"{item}.txt").unlink(missing_ok=True)
-            if text is not None:
-                (run / "outputs" / f"{item}.txt").write_text(text + "\n")
+            _set_output(run, item, None if text is None else text + "\n")
     RUNS = "tickets_lead1_v1,tickets_author_v1,tickets_lead2_noisy_v1"
     every = sorted(decided["lead1"])
     # A person labels three tickets: production right on t01 and t03, wrong on t02.
@@ -175,7 +211,7 @@ try:
         sheet = csv.writer(f)
         sheet.writerow(["item_id", "label"])
         sheet.writerows([["t01_login", "A"], ["t02_invoice", "B"], ["t03_export", "A"]])
-    r = evh("label-import", "sheet.csv", "--dataset-id", D, "--set", "owner", "--by", "owner")
+    r = evh("label-import", "--sheet", "sheet.csv", "--dataset-id", D, "--set", "owner", "--by", "owner")
     check("setup: a person labels three tickets", r.returncode == 0, out(r)[-300:])
     r = evh("pick", "--dataset-id", D, "--item", "t04_api", "--for", "tickets_gov", "--tag", "case=api")
     check("setup: one ticket is picked", r.returncode == 0, out(r)[-300:])
@@ -239,8 +275,18 @@ try:
     # is two sets, and reading the first one found was a guess.
     with (proj / "gov.csv").open("w", newline="") as f:
         csv.writer(f).writerows([["item_id", "label"], ["t02_invoice", "A"]])
-    r = evh("label-import", "gov.csv", "--dataset-id", "tickets_gov", "--set", "owner", "--by", "someone")
-    amb = evh("inspect", "--sheet", "--dataset-id", D, "--runs", RUNS, "--wrong-against", "owner")
+    r = evh(
+        "label-import",
+        "--sheet",
+        "gov.csv",
+        "--dataset-id",
+        "tickets_gov",
+        "--set",
+        "owner",
+        "--by",
+        "someone",
+    )
+    amb = evh("sheet-show", D, "--runs", RUNS, "--wrong-against", "owner")
     r2, rs = rows("--wrong-against", f"{D}/owner")
     check(
         "--wrong-against: a bare name two datasets' sets share is refused, naming both; DATASET/SET still reads one",
@@ -251,11 +297,11 @@ try:
         and sorted(ids(rs)) == want,
         out(r)[-200:] + out(amb)[-300:],
     )
-    shutil.rmtree(data / "labels" / "tickets_gov")
+    _runstore.rmtree(proj, "labels/tickets_gov")
     (proj / "gov.csv").unlink()
     # A label accepting both answers on t02: production's A is one of them, so not wrong; the rows show both.
     (proj / "two.csv").write_text("item_id,label,also right\nt02_invoice,B,A\n")
-    r = evh("label-import", "two.csv", "--dataset-id", D, "--set", "owner_two", "--by", "owner")
+    r = evh("label-import", "--sheet", "two.csv", "--dataset-id", D, "--set", "owner_two", "--by", "owner")
     r2, rs = rows("--wrong-against", "owner_two")
     _, every_row = rows()
     t02: dict = next((x for x in every_row if x["item_id"] == "t02_invoice"), {})
@@ -267,7 +313,7 @@ try:
         and label_col(t02, "owner_two") == "A or B",
         out(r)[-200:] + out(r2)[-300:] + str(t02)[:300],
     )
-    shutil.rmtree(proj / "data" / "labels" / D / "owner_two")
+    _runstore.rmtree(proj, f"labels/{D}/owner_two")
     (proj / "two.csv").unlink()  # the view-writes-nothing check compares the project to before
     r, rs = rows("--new-vs", "tickets_gov")
     by = {x["item_id"]: x for x in rs}
@@ -288,7 +334,7 @@ try:
     check("signals and --where together: an item needs every one", ids(rs) == ["t05_delete"], out(r)[-300:])
 
     # ── the commands for what it shows, and --by ─────────────────────────────────────────────
-    r = evh("inspect", "--sheet", "--dataset-id", D, "--runs", RUNS, "--unlabelled", "--by", "area")
+    r = evh("sheet-show", D, "--runs", RUNS, "--unlabelled", "--by", "area")
     check(
         "the view prints the pick and label-sheet commands for the rows it shows",
         r.returncode == 0
@@ -344,21 +390,24 @@ try:
         "def same(a, b):\n"
         "    return json.loads(a)['disposition'] == json.loads(b)['disposition']\n"
     )
-    (data / "configs" / "jsonish.yaml").write_text(
-        "config_id: jsonish_v1\ndataset_id: tickets_v1\nadapter: jsonish.py\nparams:\n  provider: echo\n"
+    _runstore.write_text(
+        proj,
+        "systems/jsonish_v1.yaml",
+        "system_id: jsonish_v1\nadapter: jsonish.py\nparams:\n  provider: echo\n",
     )
     r = evh(
         "run",
-        "--config",
-        "data/configs/jsonish.yaml",
+        "--system",
+        "jsonish_v1",
+        "--dataset",
+        "tickets_v1",
         "--run-id",
         "jsonish",
         extra={"PYTHONPATH": str(HERE.parent)},
     )
-    jout = {
-        p.stem: json.loads(p.read_text())["disposition"]
-        for p in (data / "runs" / "jsonish" / "outputs").glob("t*.txt")
-    }
+    with _runstore._InProject(proj) as data_:
+        jsonish_out = _outputs.outputs(data_ / "runs" / "jsonish")
+    jout = {k: json.loads(v)["disposition"] for k, v in jsonish_out.items() if k.startswith("t")}
     # Right on two, wrong on one, by construction: the label is the output's disposition, or the other one.
     flip = {"file": "dismiss", "dismiss": "file"}
     bare = {
@@ -370,9 +419,9 @@ try:
         wr = csv.writer(fh)
         wr.writerow(["item_id", "label"])
         wr.writerows(bare.items())
-    r2 = evh("label-import", "bare.csv", "--dataset-id", D, "--set", "bare", "--by", "owner")
+    r2 = evh("label-import", "--sheet", "bare.csv", "--dataset-id", D, "--set", "bare", "--by", "owner")
     r3 = evh(
-        "inspect", "--sheet", "--dataset-id", D, "--runs", "jsonish_v1", "--wrong-against", "bare", "--json",
+        "sheet-show", D, "--runs", "jsonish_v1", "--wrong-against", "bare", "--json",
         extra={"PYTHONPATH": str(HERE.parent)},
     )  # fmt: skip
     got = []
@@ -407,14 +456,15 @@ try:
         "t05_delete": (10, 20, 5),
         "t06_mobile": (10, 20, 30),
     }
-    run_dirs = {k: next((data / "runs").glob(f"{T[k]}_*")) for k in T}
-    for n, k in enumerate(T):
-        lines = []
-        for line in (run_dirs[k] / "predictions.jsonl").read_text().splitlines():
-            row = json.loads(line)
-            row["overlap_f1"], row["latency_ms"] = f1[row["item_id"]][n], lat[row["item_id"]][n]
-            lines.append(json.dumps(row, sort_keys=True))
-        (run_dirs[k] / "predictions.jsonl").write_text("\n".join(lines) + "\n")
+    run_names = {k: next(n for n in _runstore.listdir(proj, "runs") if n.startswith(f"{T[k]}_")) for k in T}
+    with _runstore._InProject(proj) as data_:
+        for n, k in enumerate(T):
+            run_dir = _R.first_score(run_names[k])
+            assert run_dir is not None, f"{run_names[k]} has no first score"
+            edited = _runstore.rows(run_dir)
+            for row in edited:
+                row["overlap_f1"], row["latency_ms"] = f1[row["item_id"]][n], lat[row["item_id"]][n]
+            _runstore.put_rows(run_dir, edited)
 
     def footer_label(r, start):
         table = next((b for b in blocks_of(r) if b.get("columns", [""])[0] == "per arm"), {"rows": []})
@@ -489,10 +539,11 @@ try:
         == ["contender", "contender", "leader"],
         json.dumps(foot["verdict"]),
     )
-    goal_file = data / "goals" / "tickets_summary.yaml"
-    shutil.move(goal_file, proj / "goal_aside.yaml")
+    goal_rel = "goals/tickets_summary.yaml"
+    goal_aside = _runstore.read_bytes(proj, goal_rel)
+    _runstore.unlink(proj, goal_rel)
     r, rs, foot = sheet_of()
-    shutil.move(proj / "goal_aside.yaml", goal_file)
+    _runstore.write_bytes(proj, goal_rel, goal_aside)
     check(
         "footer verdict with no goal: the paired test of each arm against the leader (the best mean)",
         r.returncode == 0
@@ -511,23 +562,28 @@ try:
 
     # ── judged runs: the judge's scores in the cells, a winner per pick/pairwise scorer ─────────────
     def judged(scorer, metric, values):
-        for k, d in run_dirs.items():
-            jd = data / "runs-judged" / scorer / d.name
-            jd.mkdir(parents=True)
-            m = json.loads((d / "metrics.json").read_text())
+        for k, name in run_names.items():
+            _, m = _runview.record_of(proj, name)
             m["derived"] = {
                 "kind": "judge",
-                "from": d.name,
+                "from": name,
                 "at": m["created_at"],
                 "with": {"scorer_id": scorer},
             }
             m["primary_metric"] = metric
-            (jd / "metrics.json").write_text(json.dumps(m))
-            (jd / "predictions.jsonl").write_text(
-                "".join(
-                    json.dumps({"item_id": i, metric: v[list(T).index(k)]}) + "\n" for i, v in values.items()
+            with _runstore._InProject(proj) as data_:
+                _runfix.put_run(
+                    data_,
+                    m,
+                    "".join(
+                        json.dumps({"item_id": i, metric: v[list(T).index(k)]}) + "\n"
+                        for i, v in values.items()
+                    ),
+                    label=f"judged/{scorer}",
+                    scorer=scorer,
+                    reference="set1",
+                    first=False,
                 )
-            )
 
     grade = {i: (n % 5 + 1.0, (n * 2) % 5 + 1.0, (n * 3) % 5 + 1.0) for n, i in enumerate(f1)}
     judged("judge_a", "judge_score", grade)
@@ -584,7 +640,7 @@ try:
         and abs(jr.get(T["author"], 0) - 2 / 6) < 1e-9,
         json.dumps(jr) + str(by.get("t06_mobile", {}).get("winner: judge_b")),
     )
-    r, rs, foot = sheet_of("--from", "runs-judged/judge_b", runs=two_shown)
+    r, rs, foot = sheet_of("--label", "judged/judge_b", runs=two_shown)
     by = {x["item_id"]: x for x in rs}
     jr = foot.get("win rate · winner: judge_won", {})
     check(
@@ -595,7 +651,7 @@ try:
         and abs(jr.get(T["author"], 0) - 2 / 6) < 1e-9,
         json.dumps(jr) + json.dumps(by.get("t06_mobile", {}))[:300],
     )
-    r = evh("inspect", "--sheet", "--dataset-id", D, "--runs", RUNS, "--metric", "judge_score")
+    r = evh("sheet-show", D, "--runs", RUNS, "--metric", "judge_score")
     check("refused: a metric two scorers judged, naming them", refused(r, "judge_a, judge_c"), out(r)[-300:])
     r, rs, foot = sheet_of("--metric", "judge_a/judge_score")
     check(
@@ -627,7 +683,7 @@ try:
         text = (proj / name).read_text("utf-8-sig") if (proj / name).is_file() else ""
         return list(csv.DictReader(io.StringIO(text, newline=""))), next(csv.reader(io.StringIO(text)), [])
 
-    r = evh("inspect", "--sheet", "--dataset-id", D, "--runs", RUNS, "--csv", "out.csv")
+    r = evh("sheet-export", "--dataset-id", D, "--runs", RUNS, "--csv", "out.csv")
     raw = (proj / "out.csv").read_bytes() if (proj / "out.csv").is_file() else b""
     body, head = read_sheet("out.csv")
     items_ = [x for x in body if not x["item_id"].startswith("#")]
@@ -646,14 +702,14 @@ try:
         and items_[0][T["lead1"]],
         out(r)[-300:] + str(head),
     )
-    r = evh("inspect", "--sheet", "--dataset-id", D, "--runs", RUNS, "--csv", "out.csv")
+    r = evh("sheet-export", "--dataset-id", D, "--runs", RUNS, "--csv", "out.csv")
     check(
         "--csv never overwrites a sheet (it may have been filled)",
         refused(r, "not overwritten"),
         out(r)[-200:],
     )
     r = evh(
-        "inspect", "--sheet", "--dataset-id", D, "--runs", RUNS, "--csv", "lab.csv", "--fill", "label",
+        "sheet-export", "--dataset-id", D, "--runs", RUNS, "--csv", "lab.csv", "--fill", "label",
         "--choices", "A,B",
     )  # fmt: skip
     lab_rows, lab_head = read_sheet("lab.csv")
@@ -666,7 +722,7 @@ try:
         out(r)[-300:] + str(lab_head[-4:]),
     )
     r = evh(
-        "inspect", "--sheet", "--dataset-id", D, "--runs", RUNS, "--csv", "sc.csv", "--scores-only", "--unlabelled"
+        "sheet-export", "--dataset-id", D, "--runs", RUNS, "--csv", "sc.csv", "--scores-only", "--unlabelled"
     )  # fmt: skip
     sc_rows, sc_head = read_sheet("sc.csv")
     check(
@@ -678,13 +734,13 @@ try:
         == ["t04_api", "t05_delete", "t06_mobile"],
         out(r)[-200:],
     )
-    r = evh("inspect", "--sheet", "--dataset-id", D, "--runs", RUNS, "--seed", "3")
+    r = evh("sheet-export", "--dataset-id", D, "--runs", RUNS, "--csv", "seed.csv", "--seed", "3")
     check("refused: --seed without a blind fill", refused(r, "--fill pick or scores"), out(r)[-200:])
     for made in ("out.csv", "lab.csv", "sc.csv"):
         (proj / made).unlink(missing_ok=True)
-    r, rs, foot = sheet_of("--from", "runs-judged/judge_a", runs=T["lead1"])
+    r, rs, foot = sheet_of("--label", "judged/judge_a", runs=T["lead1"])
     check(
-        "--from DIR looks the config ids up there: a judging pass read as the run itself, its score the primary",
+        "--label LABEL looks the config ids up there: a judging pass read as the run itself, its score the primary",
         r.returncode == 0
         and rs
         and "mean judge_score" in foot
@@ -692,19 +748,19 @@ try:
         and f"{T['lead1']}: overlap_f1" not in rs[0],
         out(r)[-300:],
     )
-    r2, rs2, foot2 = sheet_of(runs=f"runs-judged/judge_a/{D}/{T['lead1']}")
+    r2, rs2, foot2 = sheet_of(runs=f"judged-judge-a/{D}/{T['lead1']}")
     check(
-        "an arm id as the catalog names it, under a nested folder (runs-judged/<scorer>/<dataset>/<config>): the same sheet as --from",
+        "an arm id as the catalog names it (judged-<scorer>/<dataset>/<config>): the same sheet as --label",
         r2.returncode == 0
         and rs2
         and "mean judge_score" in foot2
         and [x["item_id"] for x in rs2] == [x["item_id"] for x in rs],
         out(r2)[-300:],
     )
-    r2 = evh("inspect", "--sheet", "--dataset-id", D, "--runs", f"runs-judged/judge_a/other_v1/{T['lead1']}")
+    r2 = evh("sheet-show", D, "--runs", f"judged-judge-a/other_v1/{T['lead1']}")
     check("refused: a nested arm id on another dataset", refused(r2, f"not an arm on {D}"), out(r2)[-200:])
-    r = evh("inspect", "--sheet", "--dataset-id", D, "--runs", T["lead1"], "--from", "runs-judged/no_such")
-    check("refused: a --from that holds no such run", refused(r, "no run of that config"), out(r)[-200:])
+    r = evh("sheet-show", D, "--runs", T["lead1"], "--label", "judged/no_such")
+    check("refused: a --label that holds no such run", refused(r, "no run of that system"), out(r)[-200:])
     # A metric an arm has on some rows only: its win rate is over the rows it was scored on, and an arm scored on
     # none has no win rate (it was never compared, not always beaten).
     part: dict[str, tuple] = dict.fromkeys(f1, (None, 2.0, None))
@@ -734,50 +790,49 @@ try:
         "nothing to compare" in str(vr.get(T["lead1"], "")) and "recommended" not in json.dumps(vr),
         json.dumps(vr),
     )
-    shutil.rmtree(data / "runs-judged")
+    for name in run_names.values():
+        for key, lbl, _rec in _runview.scores_of(proj, name):
+            if lbl.startswith("judged/"):
+                _runstore.rmtree(proj, f"runs/{name}/scores/{key}")
 
     # ── refusals ─────────────────────────────────────────────────────────────────────────────
     two = "tickets_lead1_v1,tickets_author_v1"
     for args, text, what in (
         (["--runs", two, "--split"], "--split needs 3", "--split with fewer than three runs"),
         (["--runs", "tickets_lead1_v1", "--disagree"], "--disagree needs 2", "--disagree with one run"),
-        (["--wrong-against", "owner"], "--wrong-against needs 1", "--wrong-against with no run"),
         (["--runs", two, "--wrong-against", "no_such"], "no such label set", "an unknown label set"),
         (["--runs", two, "--new-vs", "no_such_dataset"], "no_such_dataset", "an unknown --new-vs dataset"),
         (["--runs", two, "--where", "nope:x"], "no field 'nope'", "a --where on no field"),
         (["--runs", two, "--metric", "no_such_metric"], "no run in --runs records it", "an unknown --metric"),
-        (["--runs", two, "--item", "t01_login"], "not with --sheet", "--item with --sheet"),
-        (["--runs", two, "--fill", "pick"], "with --csv", "--fill without --csv"),
-        (
-            ["--runs", two, "--csv", "x.csv", "--fill", "scores", "--scale", "5"],
-            "LO..HI",
-            "a --scale that is no range",
-        ),
         (["--runs", "no_such_run_v1"], "no run with that id", "a run that does not exist"),
     ):
-        r = evh("inspect", "--sheet", "--dataset-id", D, *args)
+        r = evh("sheet-show", D, *args)
         check(f"refused: {what}", refused(r, text), out(r)[-200:])
-    r = evh("inspect", "--sheet", "--runs", two)
-    check("refused: --sheet without --dataset-id", refused(r, "--dataset-id"), out(r)[-200:])
-    r = evh("inspect", "--dataset-id", D, "--runs", two)
-    check("refused: --dataset-id without --sheet", refused(r, "--sheet"), out(r)[-200:])
-    r = evh("inspect", "--dataset-id", D, "--runs", two, "--unlabelled")
-    check("refused: a sheet filter without --sheet", refused(r, "--sheet"), out(r)[-200:])
-    r = evh("inspect", "--runs", two, "--scores-only")
-    check("refused: --scores-only without --sheet", refused(r, "--sheet"), out(r)[-200:])
-    r = evh("inspect", "--sheet", "--dataset-id", D, "--round", "r1")
-    check("refused: --sheet with --round", refused(r, "--runs"), out(r)[-200:])
-    r = evh("inspect", "--sheet", "--dataset-id", D, "--runs", two, extra={"EVH_PUBLIC": "1"})
+    r = evh(
+        "sheet-export", "--dataset-id", D, "--runs", two, "--csv", "x.csv", "--fill", "scores", "--scale", "5"
+    )
+    check("refused: a --scale that is no range", refused(r, "LO..HI"), out(r)[-200:])
+    r = evh("sheet-show", "--runs", two)
+    check(
+        "refused: the sheet's dataset is its argument",
+        r.returncode != 0 and "dataset" in out(r),
+        out(r)[-200:],
+    )
+    r = evh("sheet-show", D)
+    check(
+        "refused: the sheet's runs are its argument", r.returncode != 0 and "--runs" in out(r), out(r)[-200:]
+    )
+    r = evh("sheet-show", D, "--runs", two, extra={"EVH_PUBLIC": "1"})
     check(
         "refused publicly: the sheet carries outputs and labels",
         refused(r, "not served publicly"),
         out(r)[-200:],
     )
-    r = evh("inspect", "--baseline", "x")
-    check("inspect still needs --runs, --round or --sheet", refused(r, "--runs"), out(r)[-200:])
-    r = evh("inspect", "--runs", two, "--items")
+    r = evh("comparison-show", "--baseline", "x")
+    check("comparison-show still needs runs or a round", refused(r, "runs"), out(r)[-200:])
+    r = evh("comparison-show", "--runs", two, "--items")
     check("--items is gone (the sheet replaces it)", r.returncode != 0 and "--items" in out(r), out(r)[-200:])
-    r = evh("inspect", "--dataset-id", D, "--rows", "--runs", two)
+    r = evh("comparison-show", "--rows", "--runs", two)
     check("--rows is gone (the sheet replaces it)", r.returncode != 0 and "--rows" in out(r), out(r)[-200:])
 
     # ── the decision, not the whole output (UXS-002): an adapter's decision(output) is what a row shows ───
@@ -790,19 +845,21 @@ try:
         "def title(item):\n"
         "    return 'TITLE ' + item.split()[0]\n"
     )
-    (data / "configs" / "tickets_decider.yaml").write_text(
-        "config_id: tickets_decider_v1\ndataset_id: tickets_v1\nadapter: decide.py\nparams:\n  provider: echo\n"
+    _runstore.write_text(
+        proj,
+        "systems/tickets_decider_v1.yaml",
+        "system_id: tickets_decider_v1\nadapter: decide.py\nparams:\n  provider: echo\n",
     )
     r = evh(
         "run",
-        "--config",
-        "data/configs/tickets_decider.yaml",
+        "--system",
+        "tickets_decider_v1",
+        "--dataset",
+        "tickets_v1",
         extra={"PYTHONPATH": str(HERE.parent)},
     )
     check("setup: an arm whose adapter has decision()", r.returncode == 0, out(r)[-300:])
-    r = evh(
-        "inspect", "--sheet", "--dataset-id", D, "--runs", "tickets_decider_v1,tickets_lead1_v1", "--json"
-    )
+    r = evh("sheet-show", D, "--runs", "tickets_decider_v1,tickets_lead1_v1", "--json")
     table = next(
         (b for b in blocks_of(r) if "columns" in b and b["columns"][0] == "item_id"),
         {"rows": [], "columns": []},
@@ -817,9 +874,7 @@ try:
         and "disagree" not in str(first.get("signals")),
         out(r)[-400:] + json.dumps(table.get("columns")),
     )
-    rest = evh(
-        "inspect", "--sheet", "--dataset-id", D, "--runs", "tickets_lead1_v1,tickets_decider_v1", "--json"
-    )
+    rest = evh("sheet-show", D, "--runs", "tickets_lead1_v1,tickets_decider_v1", "--json")
     rest_rows: list = next(
         (b for b in blocks_of(rest) if "columns" in b and b["columns"][0] == "item_id"), {"rows": []}
     )["rows"]

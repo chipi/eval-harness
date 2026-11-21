@@ -3,12 +3,297 @@ goal: entities_few_nerd
 dataset_id: few_nerd_280
 hypothesis: Which of 24 hosted LLMs, a fine-tuned and a zero-shot span tagger and two non-learned baselines
   tags Few-NERD's eight coarse types best, and at what cost?
+arms:
+- system: fn_anthropic_l_v1
+  runs:
+  - fn_anthropic_l_n200_v1_20260928T084918Z
+  entered:
+    how: ran
+    at: '2026-09-28T07:07:54Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: fn_anthropic_m_v1
+  runs:
+  - fn_anthropic_m_n200_v1_20260928T090215Z
+  entered:
+    how: ran
+    at: '2026-09-28T07:07:54Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: fn_anthropic_s_v1
+  runs:
+  - fn_anthropic_s_n200_v1_20260928T091452Z
+  entered:
+    how: ran
+    at: '2026-09-28T07:07:54Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: fn_capitalized_v1
+  runs:
+  - fn_capitalized_n200_v1_20260928T070754Z
+  entered:
+    how: ran
+    at: '2026-09-28T07:07:54Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: fn_deepseek_l_v1
+  runs:
+  - fn_deepseek_l_n200_v1_20260928T092110Z
+  entered:
+    how: ran
+    at: '2026-09-28T07:07:54Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: fn_deepseek_m_v1
+  runs:
+  - fn_deepseek_m_n200_v1_20260928T093838Z
+  entered:
+    how: ran
+    at: '2026-09-28T07:07:54Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: fn_deepseek_s_v1
+  runs:
+  - fn_deepseek_s_n200_v1_20260928T094424Z
+  entered:
+    how: ran
+    at: '2026-09-28T07:07:54Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: fn_gemma_l_v1
+  runs:
+  - fn_gemma_l_n200_v1_20260928T095505Z
+  entered:
+    how: ran
+    at: '2026-09-28T07:07:54Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: fn_gemma_m_v1
+  runs:
+  - fn_gemma_m_n200_v1_20260928T100843Z
+  entered:
+    how: ran
+    at: '2026-09-28T07:07:54Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: fn_gemma_s_v1
+  runs:
+  - fn_gemma_s_n200_v1_20260928T102259Z
+  entered:
+    how: ran
+    at: '2026-09-28T07:07:54Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: fn_gliner_v1
+  runs:
+  - fn_gliner_n200_v1_20260928T070755Z
+  entered:
+    how: ran
+    at: '2026-09-28T07:07:54Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: fn_glm_l_v1
+  runs:
+  - fn_glm_l_n200_v1_20260928T105047Z
+  entered:
+    how: ran
+    at: '2026-09-28T07:07:54Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: fn_glm_m_v1
+  runs:
+  - fn_glm_m_n200_v1_20260928T114006Z
+  entered:
+    how: ran
+    at: '2026-09-28T07:07:54Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: fn_glm_s_v1
+  runs:
+  - fn_glm_s_n200_v1_20260928T115713Z
+  entered:
+    how: ran
+    at: '2026-09-28T07:07:54Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: fn_llama_l_v1
+  runs:
+  - fn_llama_l_n200_v1_20260928T120707Z
+  entered:
+    how: ran
+    at: '2026-09-28T07:07:54Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: fn_llama_m_v1
+  runs:
+  - fn_llama_m_n200_v1_20260928T122934Z
+  entered:
+    how: ran
+    at: '2026-09-28T07:07:54Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: fn_llama_s_v1
+  runs:
+  - fn_llama_s_n200_v1_20260928T125455Z
+  entered:
+    how: ran
+    at: '2026-09-28T07:07:54Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: fn_mistral_l_v1
+  runs:
+  - fn_mistral_l_n200_v1_20261001T130836Z
+  entered:
+    how: ran
+    at: '2026-09-28T07:07:54Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: fn_mistral_m_v1
+  runs:
+  - fn_mistral_m_n200_v1_20260928T132552Z
+  entered:
+    how: ran
+    at: '2026-09-28T07:07:54Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: fn_mistral_s_v1
+  runs:
+  - fn_mistral_s_n200_v1_20260928T132936Z
+  entered:
+    how: ran
+    at: '2026-09-28T07:07:54Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: fn_nothing_v1
+  runs:
+  - fn_nothing_n200_v1_20260928T070754Z
+  entered:
+    how: ran
+    at: '2026-09-28T07:07:54Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: fn_openai_l_v1
+  runs:
+  - fn_openai_l_n200_v1_20260928T133917Z
+  entered:
+    how: ran
+    at: '2026-09-28T07:07:54Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: fn_openai_m_v1
+  runs:
+  - fn_openai_m_n200_v1_20260928T134813Z
+  entered:
+    how: ran
+    at: '2026-09-28T07:07:54Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: fn_openai_s_v1
+  runs:
+  - fn_openai_s_n200_v1_20260928T135544Z
+  entered:
+    how: ran
+    at: '2026-09-28T07:07:54Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: fn_qwen_l_v1
+  runs:
+  - fn_qwen_l_n200_v1_20260928T140124Z
+  entered:
+    how: ran
+    at: '2026-09-28T07:07:54Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: fn_qwen_m_v1
+  runs:
+  - fn_qwen_m_n200_v1_20260928T140913Z
+  entered:
+    how: ran
+    at: '2026-09-28T07:07:54Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: fn_qwen_s_v1
+  runs:
+  - fn_qwen_s_n200_v1_20260928T141943Z
+  entered:
+    how: ran
+    at: '2026-09-28T07:07:54Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: fn_span_marker_v1
+  runs:
+  - fn_span_marker_n200_v1_20260928T070856Z
+  entered:
+    how: ran
+    at: '2026-09-28T07:07:54Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
 status: closed
 opened_at: '2026-09-28T07:07:54Z'
 closed_at: '2026-10-01T14:21:01Z'
+actor:
+  type: unknown
+  name: before 0.8.0
+  from: migration
 conclusion:
   text: span_marker (fine-tuned on Few-NERD's training split; 499 MB, CPU, $0) scores 0.7674 against 0.6864
-    for the best of 24 zero-shot hosted LLMs (openai_m) and differs significantly from all 27 other arms. With
-    labelled data in a fixed taxonomy, fine-tune a small tagger; if you rent, take the cheapest of the
-    arms openai_m is not significantly different from, gemma_m. (REPORT_NER, executive summary.)
+    for the best of 24 zero-shot hosted LLMs (openai_m) and differs significantly from all 27 other arms.
+    With labelled data in a fixed taxonomy, fine-tune a small tagger; if you rent, take the cheapest of
+    the arms openai_m is not significantly different from, gemma_m. (REPORT_NER, executive summary.)
   promoted_run: fn_span_marker_n200_v1_20260928T070856Z

@@ -6,8 +6,7 @@
 Fake `openai` and `anthropic` modules record what each call was built with. Before one layer:
 `provider: openrouter` read OPENAI_API_KEY and called OpenAI's address unless the arm set both
 `base_url` and `api_key_env`; a judge ignored its declared `provider:` and went wherever the
-environment's proxy or OpenRouter key pointed; the judge panel called only Anthropic, priced
-Sonnet in code, and ran its fake judge when the key was missing.
+environment's proxy or OpenRouter key pointed.
 """
 
 import json
@@ -81,7 +80,7 @@ fake_anthropic.Anthropic = _Anthropic  # type: ignore[attr-defined]
 sys.modules["openai"] = fake_openai
 sys.modules["anthropic"] = fake_anthropic
 
-from evaluation_harness import _fingerprint, _providers, adapter, judging, panel_judges  # noqa: E402
+from evaluation_harness import _fingerprint, _providers, adapter, judging  # noqa: E402
 
 VARS = (
     "OPENAI_API_KEY",
@@ -298,7 +297,7 @@ with tempfile.TemporaryDirectory() as td:
         "dataset": {"dataset_id": "d", "items": []},
         "reference_id": None,
         "reference_tier": None,
-        "config_id": "c",
+        "system_id": "c",
         "adapter_id": "bundled",
         "adapter_path": None,
     }
@@ -311,41 +310,6 @@ with tempfile.TemporaryDirectory() as td:
         a_fp["hash"] == b_fp["hash"] and "api_key_env" not in json.dumps(b_fp),
         str(b_fp["settings"]),
     )
-
-# ── the judge panel ──────────────────────────────────────────────────────────
-spec = {
-    "id": "j1",
-    "provider": "anthropic",
-    "model": "claude-x",
-    "usd_per_mtok_in": 3.0,
-    "usd_per_mtok_out": 15.0,
-}
-msg = refused(lambda: panel_judges.build_judge(spec))
-check(
-    "panel: a hosted judge with no key stops before any call, never a fake judge in its place",
-    "EVAL_JUDGE_ANTHROPIC_API_KEY or ANTHROPIC_API_KEY" in msg and "--use-fake-judge" in msg,
-    msg,
-)
-check(
-    "panel: --use-fake-judge is the only way to a fake judge",
-    isinstance(panel_judges.build_judge(spec, use_fake=True), panel_judges.FakeJudge),
-)
-check(
-    "panel: a judge named only by a model string is refused (provider and prices are required)",
-    "provider" in refused(lambda: panel_judges.build_judge("claude-sonnet-4-6")),  # type: ignore[arg-type]
-)
-os.environ["EVAL_JUDGE_ANTHROPIC_API_KEY"] = "sk-ant-judging"
-pj = panel_judges.build_judge(spec)
-assert pj is not None
-sc = pj.score(run_id="r", item_id="i", item_content="out", dimensions=["accuracy"])
-check(
-    "panel: a hosted judge goes through the layer on the judge's own key, priced from its spec",
-    seen.get("sdk") == "anthropic"
-    and seen.get("api_key") == "sk-ant-judging"
-    and sc.total_cost_usd == round(10 * 3 / 1e6 + 20 * 15 / 1e6, 8)
-    and sc.per_dimension == {"accuracy": 4},
-    f"{seen} {sc}",
-)
 
 # A key written into a config is never shown, and is named so evh run can refuse it.
 params = {"api_key": "sk-1", "api_key_env": "X", "max_tokens": 300, "authorization": "Bearer x", "model": "m"}
@@ -436,14 +400,63 @@ with tempfile.TemporaryDirectory() as proj:
     )
     keyed = subprocess.run(
         [sys.executable, script],
-        env=dict(base_env, EVAL_HOME=proj, OPENAI_API_KEY="sk-real-key-1234567890"),
+        env=dict(base_env, EVAL_HOME=proj, OPENAI_API_KEY="test-openai-key-from-env-setup"),
         capture_output=True,
         text=True,
         timeout=60,
     )
     check(
         "env-check: a real key with no cap still fails, as before",
-        keyed.returncode == 1 and "A provider key is set" in keyed.stdout,
+        keyed.returncode == 6 and "A provider key is set" in keyed.stdout,
         keyed.stdout[-400:],
+    )
+    # Where each variable came from (the 0.8.0 newcomer run could not tell its shell's keys from its .env's): one
+    # only in .env, one only exported, one in both (the exported one wins, so the file's is not used).
+    (Path(proj) / ".env").write_text(
+        "ANTHROPIC_API_KEY=test-anthropic-key-from-file\nOPENAI_API_KEY=test-openai-key-from-file\nEVAL_MAX_COST_USD=1\n"
+    )
+    mixed = subprocess.run(
+        [sys.executable, script],
+        env=dict(
+            base_env,
+            EVAL_HOME=proj,
+            OPENAI_API_KEY="test-openai-key-exported-over-env",
+            OPENROUTER_API_KEY="test-openrouter-key-exported-only",
+        ),
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    line = {
+        v: next((ln for ln in mixed.stdout.splitlines() if f" {v} " in ln), "")
+        for v in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "OPENROUTER_API_KEY")
+    }
+    check(
+        "env-check says where each variable came from: .env, the shell, or the shell over .env",
+        "(.env)" in line["ANTHROPIC_API_KEY"]
+        and "(shell, over .env)" in line["OPENAI_API_KEY"]
+        and "(shell)" in line["OPENROUTER_API_KEY"]
+        and "mid-run abort (.env)" in mixed.stdout,
+        mixed.stdout[-900:],
+    )
+    # The retry count env-check prints is the count the retry core uses (it printed 3 while the core made 8 attempts).
+    from evaluation_harness import _retry
+
+    tries: list[int] = []
+
+    def _always_429() -> None:
+        tries.append(1)
+        raise RuntimeError("429 rate limit exceeded, try again later")
+
+    os.environ.pop("EVAL_MAX_RETRIES", None)
+    try:
+        _retry.call_with_retries(_always_429, sleep=lambda _s: None)
+    except RuntimeError:
+        pass
+    retries_line = next((x for x in mixed.stdout.splitlines() if "EVAL_MAX_RETRIES" in x), "")
+    check(
+        "env-check prints the retry count the core uses when EVAL_MAX_RETRIES is unset",
+        len(tries) > 1 and retries_line.split() == ["EVAL_MAX_RETRIES", str(len(tries))],
+        f"core made {len(tries)} attempt(s); env-check: {retries_line!r}",
     )
 sys.exit(summary())

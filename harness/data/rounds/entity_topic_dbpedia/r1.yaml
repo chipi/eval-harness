@@ -3,12 +3,297 @@ goal: entity_topic_dbpedia
 dataset_id: dbpedia_280
 hypothesis: Which of 24 hosted LLMs (8 vendors × 3 price tiers), a fine-tuned BERT, a zero-shot NLI model,
   regex rules and a constant labels DBpedia-14 best, and at what cost?
+arms:
+- system: db_anthropic_l_v1
+  runs:
+  - db_anthropic_l_n200_v1_20260927T134239Z
+  entered:
+    how: ran
+    at: '2026-09-27T13:57:11Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: db_anthropic_m_v1
+  runs:
+  - db_anthropic_m_n200_v1_20260927T135712Z
+  entered:
+    how: ran
+    at: '2026-09-27T13:57:11Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: db_anthropic_s_v1
+  runs:
+  - db_anthropic_s_n200_v1_20260927T140747Z
+  entered:
+    how: ran
+    at: '2026-09-27T13:57:11Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: db_bart_mnli_v1
+  runs:
+  - db_bart_mnli_n200_v1_20260927T180303Z
+  entered:
+    how: ran
+    at: '2026-09-27T13:57:11Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: db_bert_base_fy_v1
+  runs:
+  - db_bert_base_fy_n200_v1_20260930T091006Z
+  entered:
+    how: ran
+    at: '2026-09-27T13:57:11Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: db_constant_v1
+  runs:
+  - db_constant_n200_v1_20260927T141254Z
+  entered:
+    how: ran
+    at: '2026-09-27T13:57:11Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: db_deepseek_l_v1
+  runs:
+  - db_deepseek_l_n200_v1_20260927T141255Z
+  entered:
+    how: ran
+    at: '2026-09-27T13:57:11Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: db_deepseek_m_v1
+  runs:
+  - db_deepseek_m_n200_v1_20260927T142117Z
+  entered:
+    how: ran
+    at: '2026-09-27T13:57:11Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: db_deepseek_s_v1
+  runs:
+  - db_deepseek_s_n200_v1_20260927T142553Z
+  entered:
+    how: ran
+    at: '2026-09-27T13:57:11Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: db_gemma_l_v1
+  runs:
+  - db_gemma_l_n200_v1_20260927T143310Z
+  entered:
+    how: ran
+    at: '2026-09-27T13:57:11Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: db_gemma_m_v1
+  runs:
+  - db_gemma_m_n200_v1_20260927T143833Z
+  entered:
+    how: ran
+    at: '2026-09-27T13:57:11Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: db_gemma_s_v1
+  runs:
+  - db_gemma_s_n200_v1_20260927T144235Z
+  entered:
+    how: ran
+    at: '2026-09-27T13:57:11Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: db_glm_l_v1
+  runs:
+  - db_glm_l_n200_v1_20260927T144539Z
+  entered:
+    how: ran
+    at: '2026-09-27T13:57:11Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: db_glm_m_v1
+  runs:
+  - db_glm_m_n200_v1_20260927T145455Z
+  entered:
+    how: ran
+    at: '2026-09-27T13:57:11Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: db_glm_s_v1
+  runs:
+  - db_glm_s_n200_v1_20260927T150359Z
+  entered:
+    how: ran
+    at: '2026-09-27T13:57:11Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: db_keyword_v1
+  runs:
+  - db_keyword_n200_v1_20260927T150933Z
+  entered:
+    how: ran
+    at: '2026-09-27T13:57:11Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: db_llama_l_v1
+  runs:
+  - db_llama_l_n200_v1_20260927T150934Z
+  entered:
+    how: ran
+    at: '2026-09-27T13:57:11Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: db_llama_m_v1
+  runs:
+  - db_llama_m_n200_v1_20260927T151241Z
+  entered:
+    how: ran
+    at: '2026-09-27T13:57:11Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: db_llama_s_v1
+  runs:
+  - db_llama_s_n200_v1_20260927T152147Z
+  entered:
+    how: ran
+    at: '2026-09-27T13:57:11Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: db_mistral_l_v1
+  runs:
+  - db_mistral_l_n200_v1_20260927T152816Z
+  entered:
+    how: ran
+    at: '2026-09-27T13:57:11Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: db_mistral_m_v1
+  runs:
+  - db_mistral_m_n200_v1_20260927T162406Z
+  entered:
+    how: ran
+    at: '2026-09-27T13:57:11Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: db_mistral_s_v1
+  runs:
+  - db_mistral_s_n200_v1_20260927T162611Z
+  entered:
+    how: ran
+    at: '2026-09-27T13:57:11Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: db_openai_l_v1
+  runs:
+  - db_openai_l_n200_v1_20260927T163038Z
+  entered:
+    how: ran
+    at: '2026-09-27T13:57:11Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: db_openai_m_v1
+  runs:
+  - db_openai_m_n200_v1_20260927T163635Z
+  entered:
+    how: ran
+    at: '2026-09-27T13:57:11Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: db_openai_s_v1
+  runs:
+  - db_openai_s_n200_v1_20260927T164208Z
+  entered:
+    how: ran
+    at: '2026-09-27T13:57:11Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: db_qwen_l_v1
+  runs:
+  - db_qwen_l_n200_v1_20260927T164626Z
+  entered:
+    how: ran
+    at: '2026-09-27T13:57:11Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: db_qwen_m_v1
+  runs:
+  - db_qwen_m_n200_v1_20260927T165414Z
+  entered:
+    how: ran
+    at: '2026-09-27T13:57:11Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: db_qwen_s_v1
+  runs:
+  - db_qwen_s_n200_v1_20260927T165815Z
+  entered:
+    how: ran
+    at: '2026-09-27T13:57:11Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
 status: closed
 opened_at: '2026-09-27T13:57:11Z'
 closed_at: '2026-09-30T09:10:50Z'
+actor:
+  type: unknown
+  name: before 0.8.0
+  from: migration
 conclusion:
   text: 'The top eleven arms (0.9786–0.9929) sit within 4 items of each other across a 115× price range;
-    the leader qwen_m differs significantly from only 8 of the 27 others. Take the cheapest arm you can run at
-    0.9857: gemma_m (~$12 per 1M items), qwen_s (~$26) or the fine-tuned bert_base_fy ($0 marginal). (REPORT_CLASSIFICATION,
-    executive summary.)'
+    the leader qwen_m differs significantly from only 8 of the 27 others. Take the cheapest arm you can
+    run at 0.9857: gemma_m (~$12 per 1M items), qwen_s (~$26) or the fine-tuned bert_base_fy ($0 marginal).
+    (REPORT_CLASSIFICATION, executive summary.)'
   promoted_run: db_bert_base_fy_n200_v1_20260930T091006Z

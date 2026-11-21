@@ -1,0 +1,38 @@
+model_id: llama4-scout
+deployment_id: dgx
+order: 1
+where: dgx
+tag: llama4:scout
+endpoint:
+  provider: openai
+  base_url: http://100.69.49.126:11434/v1
+  model: llama4:scout
+digest: bf31604e25c25d964e250bcf28a82bfbdbe88af5f236257fabb27629bb24c7f3
+checked_at: '2026-10-31T14:09:06Z'
+server: ollama 0.40.13
+checks:
+- kind: onboarding
+  status: pass
+  at: '2026-10-31T14:09:06Z'
+  where: dgx
+  flags: []
+  report:
+    endpoint:
+      provider: openai
+      base_url: http://100.69.49.126:11434/v1
+      model: llama4:scout
+    digest_found: bf31604e25c25d964e250bcf28a82bfbdbe88af5f236257fabb27629bb24c7f3
+    default:
+      s: 14.33
+      tokens_out: 22
+      reasoned: false
+      finish: stop
+    chosen:
+      s: 1.29
+      tokens_out: 22
+      reasoned: false
+      finish: stop
+      settings: {}
+    tokens_per_s: 17.1
+    deterministic: true
+    json_valid: true

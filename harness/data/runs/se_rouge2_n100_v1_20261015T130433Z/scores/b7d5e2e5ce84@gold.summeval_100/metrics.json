@@ -1,0 +1,40 @@
+{
+  "metric_kinds": {
+    "input_truncated": "descriptive",
+    "parsed": "descriptive",
+    "reasoning_tokens": "descriptive",
+    "resumed": "descriptive",
+    "rho": "quality",
+    "rho_coherence": "quality",
+    "rho_consistency": "quality",
+    "rho_fluency": "quality",
+    "rho_relevance": "quality",
+    "tau": "quality",
+    "tau_coherence": "quality",
+    "tau_consistency": "quality",
+    "tau_fluency": "quality",
+    "tau_relevance": "quality",
+    "tie_rate": "descriptive",
+    "truncated": "descriptive"
+  },
+  "primary_metric": "tau",
+  "reference_tier": "gold",
+  "scores": {
+    "cost_usd": 0.0,
+    "latency_ms": 180.86322,
+    "parsed": 1.0,
+    "resumed": 0.0,
+    "rho": 0.200928,
+    "rho_coherence": 0.182859,
+    "rho_consistency": 0.177644,
+    "rho_fluency": 0.153682,
+    "rho_relevance": 0.289528,
+    "tau": 0.157781,
+    "tau_coherence": 0.138267,
+    "tau_consistency": 0.148158,
+    "tau_fluency": 0.124267,
+    "tau_relevance": 0.220433,
+    "tie_rate": 0.011583,
+    "total_cost_usd": 0.0
+  }
+}

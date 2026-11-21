@@ -11,6 +11,7 @@ or skipped every branch reported green while asserting nothing.
 
 from __future__ import annotations
 
+import os as _os
 import sys as _sys
 from pathlib import Path as _Path
 
@@ -39,3 +40,9 @@ def summary(noun: str = "assertions") -> int:
     if failed:
         print("FAILED:", *failed, sep="\n  ")
     return 1 if failed else 0
+
+
+def store_under_test() -> str:
+    """The store a test file runs under, for the `evh init --store` it makes: EVAL_STORE (the store matrix sets it
+    for each file), else files, a file run on its own."""
+    return _os.environ.get("EVAL_STORE") or "files"

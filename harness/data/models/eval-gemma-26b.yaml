@@ -4,3 +4,7 @@ aliases:
 - eval-gemma-26b
 weights: open
 licence: Apache-2.0
+actor:
+  type: unknown
+  name: before 0.8.0
+  from: migration

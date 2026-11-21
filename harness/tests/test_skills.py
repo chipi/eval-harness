@@ -17,7 +17,7 @@ HARNESS = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(HARNESS))  # the evaluation_harness package
 sys.path.insert(0, str(HARNESS / "tools"))  # _wheel, shared with the deploy
 import _wheel  # noqa: E402
-from evaluation_harness._check import check, summary  # noqa: E402
+from evaluation_harness._check import check, store_under_test, summary  # noqa: E402
 from evaluation_harness._version import __version__  # noqa: E402
 
 SKILLS = HARNESS / "skills"
@@ -73,7 +73,7 @@ def main() -> int:
             "GIT_COMMITTER_NAME": "skills",
             "GIT_COMMITTER_EMAIL": "skills@example.invalid",
         }
-        for k in ("EVAL_HOME", "EVAL_DATA_DIR", "EVAL_RUNS_DIR", "OPENROUTER_API_KEY", "EVAL_MAX_COST_USD"):
+        for k in ("EVAL_HOME", "EVAL_DATA_DIR", "OPENROUTER_API_KEY", "EVAL_MAX_COST_USD"):
             env.pop(k, None)
 
         def sh(script: str) -> subprocess.CompletedProcess:
@@ -86,7 +86,9 @@ def main() -> int:
                 timeout=900,
             )
 
-        r = sh("evh init --tutorial >/dev/null && git init -q && git add -A && git commit -qm start")
+        r = sh(
+            f"evh init --store {store_under_test()} --tutorial >/dev/null && git init -q && git add -A && git commit -qm start"
+        )
         check("skills: a fresh tutorial project", r.returncode == 0, r.stderr[-400:])
 
         r = sh("evh skills-install")

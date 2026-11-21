@@ -49,7 +49,8 @@ services:
     # catalog_serve.py in --public mode. The stock Python image runs the release's copy of the
     # package (installed from its wheel by render.sh, with PyYAML's pure-Python package beside it
     # for the goals) from the read-only mount: nothing is built or installed on the box.
-    # It reads the release's copy of the runs and references; it calls out to nothing.
+    # It reads the release's copy of the runs and references, in the store the release's own config.yaml names (a
+    # SQLite release is one read-only file, opened immutable: its folder is not writable); it calls out to nothing.
     image: python:3.12.14-alpine3.23@sha256:d339953547bb5bc57eb5c1ff3224c40890ce56e494b13a52a574658e5a0f888a
     container_name: evals-inspector
     user: "65534:65534"
@@ -65,6 +66,9 @@ services:
       PYTHONUNBUFFERED: "1"
       # The observability SDKs render.sh vendored for hooks.py (not the harness's dependencies).
       PYTHONPATH: /srv/evals/current/inspector/vendor
+      # The goals' tests, precomputed by render.sh as the MCP server's are: the server's own default is a file under
+      # the release's .cache/, which the read-only mount cannot hold, so every restart drew them again (~10 s).
+      EVH_P_CACHE: /srv/evals/current/inspector/cache/evh-p.jsonl
     # ADR-0010 (agentic-ai-homelab): the identity every collector copies.
     labels:
       telemetry.service: evals-inspector
@@ -124,9 +128,9 @@ services:
       options: { max-size: "10m", max-file: "3" }
 
   mcp:
-    # The harness's MCP server (evals.humancopilot.eu/mcp, RFC-018): the project's read commands as
-    # tools for any agent, over Streamable HTTP, stateless. Read-only by construction: its tools are
-    # the commands that only read (no tool writes, spends or runs a model), --public leaves out the
+    # The harness's MCP server (evals.humancopilot.eu/mcp, RFC-018): the project's read operations as
+    # tools for any agent, over Streamable HTTP, stateless, answered in the server's own process.
+    # Read-only by construction: its tools are the operations that only read (no tool writes, spends or runs a model), --public leaves out the
     # options that answer with an item's text, and it reads the release's public copy of the data
     # from the read-only mount. No authentication: anyone may read what the site and the catalog
     # already publish. The same stock image and package as the inspector; the MCP SDK and its
@@ -142,7 +146,7 @@ services:
       PYTHONDONTWRITEBYTECODE: "1"
       PYTHONUNBUFFERED: "1"
       PYTHONPATH: /srv/evals/current/inspector/pkg:/srv/evals/current/inspector/mcpvendor:/srv/evals/current/inspector/vendor
-      # The goals' tests, precomputed by render.sh: each tool call is a fresh process.
+      # The goals' tests, precomputed by render.sh: the server answers in its own process, which starts empty.
       EVH_P_CACHE: /srv/evals/current/inspector/cache/evh-p.jsonl
     labels:
       telemetry.service: evals-mcp
@@ -180,17 +184,14 @@ services:
       - "65536"
       - --max-connections
       - "64"
-      # Two commands at once at most: each is a process of up to ~60 MB, inside mem_limit.
+      # Two calls computed at once at most, in the server's own process; a call given up on (--timeout, cancelled) keeps
+      # its slot until its work ends, so no more than two ever run.
       - --concurrent
       - "2"
       - --timeout
       - "60"
       - --hooks
       - /srv/evals/current/inspector/mcp_hooks.py
-      # The tools that take no argument, answered ahead by render.sh: at cpus 0.5 a fresh process took
-      # 33 s for goals, the first time after each start and each hour.
-      - --answers
-      - /srv/evals/current/inspector/cache/mcp-answers.jsonl
     ports:
       - "127.0.0.1:${MCP_PORT:-8098}:8080"
     volumes:
@@ -201,8 +202,11 @@ services:
       - /tmp:size=16m,nr_inodes=4096,uid=65534,gid=65534,mode=0700
     cap_drop: [ALL]
     security_opt: ["no-new-privileges:true"]
-    # A hard limit (the box has no swap and a nightly pipeline): the server and two commands.
-    mem_limit: 384m
+    # A hard limit (the box has no swap and a nightly pipeline). Measured 2026-11-16 in these limits, the release without
+    # its answers file, two callers at once each calling every tool that takes no argument and three datasets'
+    # leaderboards: the process peaked at 271-280 MiB (VmHWM), the cgroup with its page cache at 366-394 MiB, never
+    # killed. Not measured: two of the heaviest calls with arguments (pair-test, comparison-show) at the same moment.
+    mem_limit: 512m
     cpus: 0.5
     pids_limit: 64
     restart: unless-stopped

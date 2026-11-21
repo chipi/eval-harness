@@ -569,7 +569,12 @@
   ],
   "source": {
     "config": "supervised",
-    "name": "DFKI-SLT/few-nerd",
+    "description_sha256": null,
+    "gated": null,
+    "item_url": "https://huggingface.co/datasets/DFKI-SLT/few-nerd/viewer/supervised/test?row={row}",
+    "provider": "huggingface",
+    "ref": "DFKI-SLT/few-nerd",
+    "revision": null,
     "split": "test",
     "url": "https://huggingface.co/datasets/DFKI-SLT/few-nerd"
   }

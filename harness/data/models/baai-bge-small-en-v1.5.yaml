@@ -4,3 +4,7 @@ aliases:
 - BAAI/bge-small-en-v1.5
 weights: open
 licence: MIT
+actor:
+  type: unknown
+  name: before 0.8.0
+  from: migration

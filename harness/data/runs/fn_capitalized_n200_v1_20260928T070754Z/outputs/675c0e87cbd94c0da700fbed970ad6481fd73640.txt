@@ -1,1 +1,0 @@
-[{"text": "Knights", "type": "location"}, {"text": "New Revelation", "type": "location"}]

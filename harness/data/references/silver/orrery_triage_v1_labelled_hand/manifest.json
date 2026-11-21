@@ -1,4 +1,9 @@
 {
+  "actor": {
+    "from": "migration",
+    "name": "before 0.8.0",
+    "type": "unknown"
+  },
   "caveat": "FIXTURE: the triage fleet's own earlier hand labels (2026-07), carried to these decisions by fingerprint; not the owner's verdicts. Shown beside gold, never deciding.",
   "created_at": "2026-10-30T12:24:57Z",
   "dataset_id": "orrery_triage_v1_labelled",

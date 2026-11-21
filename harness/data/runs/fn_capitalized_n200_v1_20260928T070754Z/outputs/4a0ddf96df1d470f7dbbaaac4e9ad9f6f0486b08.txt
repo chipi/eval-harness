@@ -1,1 +1,0 @@
-[{"text": "People", "type": "location"}, {"text": "TV", "type": "location"}, {"text": "Soviet", "type": "location"}]

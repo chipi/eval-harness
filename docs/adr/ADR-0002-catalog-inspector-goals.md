@@ -1,8 +1,7 @@
-# ADR-0002 — Catalog, run inspector and goals in the harness (0.4.0)
+# ADR-0002 — Catalog, run inspector and goals in the harness
 
 **Status:** Accepted (2026-10-21). Built: the paired-test module, the catalog and inspector, goals,
-and this repository's deployment. Open: the podcast repository running on the harness's copy (its
-layer 4) and the 0.4.0 release.
+and this repository's deployment.
 **Date:** 2026-10-21
 **Detail:** [PRD-004](../prd/PRD-004-catalog-and-inspector.md) (catalog and inspector),
 [PRD-005](../prd/PRD-005-goals-and-rounds.md) (goals), [UXS-001](../uxs/UXS-001-catalog.md),
@@ -22,8 +21,8 @@ Carlo estimate. The owner decided these become the main content of 0.4.0.
 2. **A generic core with a project adapter**: the catalog and the inspector only ask an
    `Adapter` protocol; the built-in `HarnessAdapter` reads the harness's layout, so a project on
    it writes no code.
-3. **Goals are first-class**: a schema, `goal:` on configs, carried by runs and baselines,
-   checked by `validate`, optional until a project sets a date.
+3. **Goals are first-class**: a schema; a run names its goal (`evh run --goal`), carried by runs and baselines (a
+   system has no goal), checked by `validate`, optional until a project sets a date.
 4. **The static pages never carry item text**; the inspector binds 127.0.0.1 and checks the Host.
 5. **This repository is deployed as a full harness deployment** (catalog and public inspector
    beside the site); the owner's four answers: exact p in the CLI, a cut-over date the project

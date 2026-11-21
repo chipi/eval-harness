@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "goal policy",
+  "description": "data/goals/policy.yaml, read by _common.goal_policy: from `required_from` on, every new run must name a goal (validate V14). Absent, goals stay optional.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "required_from": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$", "description": "YYYY-MM-DD: runs created on or after it must name a goal."}
+  }
+}

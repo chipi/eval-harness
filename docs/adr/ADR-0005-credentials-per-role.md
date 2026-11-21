@@ -1,4 +1,4 @@
-# ADR-0005 — One provider layer; credentials per role, never identity (0.4.0)
+# ADR-0005 — One provider layer; credentials per role, never identity
 
 **Status:** Accepted (2026-10-25), as built.
 **Date:** 2026-10-25
@@ -13,7 +13,7 @@ The harness called hosted models three ways. The bundled adapter dispatched on a
 `provider:` (`openai`, `anthropic`, `openrouter`, `litellm`). Judge-score's judges ignored the
 `provider:` their scorer declared: a judge went to a LiteLLM proxy when `LITELLM_BASE_URL` was
 set, else to OpenRouter with its model looked up in a `models.json` alias table, while its
-records named the declared provider. The judge panel (`evh judge`) called only Anthropic, priced
+records named the declared provider. The judge panel (since removed) called only Anthropic, priced
 every call at Sonnet's prices written in the code, and ran its fake judge when
 `ANTHROPIC_API_KEY` was missing.
 
@@ -24,8 +24,7 @@ each has its own budget and spend log; the harness offered no way to do that sho
 
 ## Decision
 
-- **One provider layer** (`evaluation_harness._providers`) for arms, judge-score's judges and
-  the judge panel: the same providers, options, cost rule (the bill, else the declared prices,
+- **One provider layer** (`evaluation_harness._providers`) for arms and judge-score's judges: the same providers, options, cost rule (the bill, else the declared prices,
   else unknown) and refusals. A call goes where its `provider:` says and nowhere else; every
   judge declares one (the scorer schema requires it).
 - **Keys by role.** A judge reads every variable as `EVAL_JUDGE_<NAME>` first, then `<NAME>`;

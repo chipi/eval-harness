@@ -1,6 +1,0 @@
-[
-  {
-    "text": "Islam",
-    "type": "organization"
-  }
-]

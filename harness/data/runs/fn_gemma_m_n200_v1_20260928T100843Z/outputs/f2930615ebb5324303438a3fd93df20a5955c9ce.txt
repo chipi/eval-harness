@@ -1,6 +1,0 @@
-[
-  {
-    "text": "United Methodist seminary",
-    "type": "organization"
-  }
-]

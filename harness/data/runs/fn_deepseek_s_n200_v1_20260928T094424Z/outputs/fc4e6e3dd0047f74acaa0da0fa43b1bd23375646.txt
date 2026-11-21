@@ -1,4 +1,0 @@
-[
-    {"text": "Angry Birds Space", "type": "product"},
-    {"text": "Angry Birds Space", "type": "product"}
-]

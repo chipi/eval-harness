@@ -1,0 +1,6 @@
+# System "author": the system we trust enough to write SILVER references. It is also measured
+# as a system, which is how the tutorial shows what silver does to the one who wrote it.
+system_id: tickets_author_v1
+params:
+  provider: echo
+  sentences: 3

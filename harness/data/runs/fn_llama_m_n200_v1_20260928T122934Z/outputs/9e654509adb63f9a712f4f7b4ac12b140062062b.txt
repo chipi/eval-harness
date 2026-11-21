@@ -1,6 +1,0 @@
-[
-  {
-    "text": "Magazines",
-    "type": "product"
-  }
-]

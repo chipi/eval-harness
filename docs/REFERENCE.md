@@ -76,7 +76,7 @@ the whole run — there is no per-item number whose mean is macro-F1. It lives i
 | `untyped_f1` | quality | The same, ignoring the type label. **The pair is the point:** `f1` asks "did it label it right", `untyped_f1` asks "did it find it at all". |
 | `type_penalty` | descriptive | `untyped_f1 − f1`. Credit lost purely to mislabelling something it did find. A type-confusion problem is fixed differently from a detection problem, and this says which you have. |
 | `tp`/`fp`/`fn` (+ untyped) | descriptive | Raw counts, so a report script can pool them into a **corpus micro-F1** — a different number from the mean of per-item F1s, answering a different question. |
-| `parsed` | quality | Could the output be read as a set. An unreadable answer scores **0**, not "found nothing" — those are different, and conflating them once paid a non-answer 1.0. |
+| `parsed` | quality | Could the output be read as a set. An unreadable answer scores **0**, not "found nothing" — those are different, and conflating them would pay a non-answer 1.0. |
 
 Background: [CoNLL-2003 shared task](https://aclanthology.org/W03-0419/) defines the
 standard exact-match entity F1 this follows.
@@ -114,8 +114,8 @@ Calibration: ROUGE-1 against these experts, ρ 0.192 / τ 0.150 in [G-Eval](http
 
 | metric | kind | what it is |
 |---|---|---|
-| `cost_usd` | descriptive | **What the provider billed** (`usage.cost`), not a price table. See [REPORT_RETRIEVAL §7](../research/REPORT_RETRIEVAL.md) for why that distinction cost four reports a correction. |
-| `latency_ms` | descriptive | Per item, **excluding** warm-up. Index builds and model loads are reported separately as `warmup_ms`. A local arm's first one to three items still pay a one-off initialisation cost the load does not cover, so prefer the median for local arms ([`KNOWN_ISSUES.md`](../research/internal/KNOWN_ISSUES.md)). Figures from different machines are not comparable: see `harness/data/runs-linux/`. |
+| `cost_usd` | descriptive | **What the provider billed** (`usage.cost`), not a price table. See [REPORT_RETRIEVAL §7](../research/REPORT_RETRIEVAL.md) for why that distinction matters. |
+| `latency_ms` | descriptive | Per item, **excluding** warm-up. Index builds and model loads are reported separately as `warmup_ms`. A local arm's first one to three items still pay a one-off initialisation cost the load does not cover, so prefer the median for local arms ([`KNOWN_ISSUES.md`](../research/internal/KNOWN_ISSUES.md)). Figures from different machines are not comparable: see the re-timing runs read under the label `linux` (`evh leaderboard cnn_dailymail_200 --label linux`). |
 | `truncated` | descriptive | The provider stopped at `max_tokens`. Distinguishes "the model is bad" from "the budget was too small". |
 | `reasoning_tokens` | descriptive | Tokens spent on hidden reasoning. All examples run `reasoning: {enabled: false}`; this verifies it took. |
 
@@ -140,8 +140,8 @@ it.
 rule, a constant or a random draw. Most also have scores predictable in advance (`nothing`,
 `random`, `constant`, `first_k`), and those are **calibration checks on the scorer** before
 they are baselines on the task: if `nothing` does not score exactly the empty-gold rate,
-no other row in the table can be trusted. On Few-NERD this caught a gold entity that the
-normaliser deleted (the currency symbol `£`), which moved the floor by 1/280.
+no other row in the table can be trusted. A gold entity the
+normaliser deletes (the currency symbol `£`, for one) moves that floor, and this is where it shows.
 
 ---
 
@@ -320,6 +320,15 @@ Ranking arms by a mean is not a result until you know which gaps survive noise.
 | `bootstrap_test.py` | Confidence interval for macro-F1, which has no per-item value | Paired percentile [bootstrap](https://en.wikipedia.org/wiki/Bootstrapping_(statistics)). **Documented as anti-conservative** — 11 significant differences against the exact test's 8. |
 | `rescore.py` | What would this look like under a different scorer? | Recomputes from stored outputs. **No API calls, no money.** This is why a scorer bug costs nothing to fix. |
 
+**When items are not independent:** comments of one thread, questions about one document, decisions on
+one incident share a cause, and testing them one by one counts that cause several times: p and the interval
+come out too small ([Miller 2024](https://arxiv.org/abs/2411.00640) measured clustered errors 1.1 to 3 times
+the naive ones). Name the item field that groups them, `--cluster FIELD` on `pair-test`, `family-test` and
+`bootstrap-test`, or `cluster:` on a goal's dataset: the sign-flip test then flips one sign per cluster on the
+cluster's summed difference, the interval is the cluster-robust one above 30 clusters, and the bootstrap
+draws whole clusters. With one item per cluster it is the item test exactly. Fewer clusters mean fewer sign
+patterns: below 6 clusters nothing can be significant at 0.05.
+
 **Why Holm and not Bonferroni:** Holm is uniformly more powerful and controls the same
 family-wise error rate. **Why permutation and not a t-test:** these per-item scores are not
 normal — `correct` is Bernoulli, `ndcg_10` on a single-relevant query takes one of eleven
@@ -361,14 +370,14 @@ the dataset is never optional in these labels.
 | **arm** | one configuration under test — a model *plus* its prompt, parameters and parsing | "model", which is only part of an arm |
 | **eval** | one task on one dataset, with its own report section — OpenAI's "eval", inspect_ai's "task" | "experiment", which Braintrust and LangSmith use for one run; "dataset" or "task" alone |
 | **run** | one arm over one dataset: `evh run`; Braintrust and LangSmith call it an experiment | "experiment" |
-| **comparison** | several runs of one eval side by side, in the inspector or `evh inspect` | "experiment" |
+| **comparison** | several runs of one eval side by side, in the inspector or `evh comparison-show` | "experiment" |
 | **pilot slice / test slice** | a small slice INSIDE the test slice, where prompts and parsers were tuned and a pilot ranking was read (not a validation split: its items are also measured) / the frozen set results are reported on | "dev slice / measurement slice"; "train/test", which implies we trained something |
 | **validation / test** | a goal's dataset roles: the set an arm is tuned on, and the set it is reported on (`evh dataset-split` writes `<D>_validation` and `<D>_test`) | "dev / heldout" |
 | **floor** | a non-model arm (rule, constant or random: `lead3`, `keyword`, `constant`, `nothing`, `capitalized`, `random`, `first_k`); those with a score predictable in advance double as scorer calibration checks | "baseline" — the predictable ones are scorer checks first |
 | **significant** | the difference survives Holm step-down at α = 0.05 (the verdicts: significant: better / worse, not significant) | "separated"; "better", which only needs a point estimate |
-| **contenders** | the arms a goal's strategy lets the tie-break choose among: the leader, and those not significantly different from it (`frugal`), also within the quality margin (`balanced`, the default), or of the same quality (`quality_first`) | "tied" — a tie is per item, in a paired test (wins, losses, ties) |
+| **contenders** | the arms a goal's strategy lets the tie-break choose among: the leader, and those shown no worse than it by more than the margin, a non-inferiority test (`balanced` 5% of the leader by default, `frugal` 10%), or of the same quality (`quality_first`); ADR-0026 | "tied" — a tie is per item, in a paired test (wins, losses, ties) |
 | **reference / reference set** | the expected answer a scorer reads for one item / the governed collection of them under `data/references/<tier>/<name>/`, promoted from a label set | "reference" for the set |
-| **billed** | what the provider charged (`usage.cost`) | "cost", which used to mean a price-table estimate |
+| **billed** | what the provider charged (`usage.cost`) | "cost", which can be a price-table estimate |
 | **local ML** / **open-weight** / **proprietary** | the three tiers in [REPORT_SYNTHESIS §0](../research/REPORT_SYNTHESIS.md) | "free vs paid", which conflates tiers 1 and 2 |
 
 ### The same words elsewhere
@@ -397,22 +406,33 @@ What other tools call the same things. A cell is a name read in that tool's own 
 | **significant** | — | — | — | — | — | — | — | — |
 | **capture** | — | — | — | — | production traces added to a dataset | traces turned into examples | traces added to a dataset | — |
 | **validation / test** | — | `validation_split` / `test_split` | `VALID_SPLIT` / `TEST_SPLIT` | — | — | — | — | `validation` / `test` splits |
+| **repeat** (`--repeat`, a goal's `reduce`) | `epochs`, reduced by `mean`, `median`, `mode`, `majority`, `max`, `pass_at_{k}`, `pass_k_{k}`, `at_least_{k}` | — | — | — | — | — | — | — |
+| **several right answers** (`{"accept": […]}`) | a `target` that is a `list[str]` | — | — | — | — | — | — | — |
+| **card** (`dataset-card`) | — | — | — | — | — | — | — | dataset card |
+| **cluster** (`cluster: FIELD`) | — | — | — | — | — | — | — | — |
 
 Where the same word means something else:
 
 - **adapter** is not HELM's *Adapter*, which turns a scenario's instances into requests (prompts) for
   the model. Ours is a project's code that calls the system under test and scores what it returns.
 - **floor** is a trivial baseline: a constant, a random answer or a rule, no model.
-- **config** is an arm's YAML file, not a Hugging Face dataset *config* (a named subset of a dataset,
-  as in `load_dataset("PolyAI/minds14", "fr-FR")`).
+- **system** is what you evaluate, a YAML file under `data/systems/`; a Hugging Face dataset *config* is a named
+  subset of a dataset, as in `load_dataset("PolyAI/minds14", "fr-FR")`.
 - **governed vs production** data is offline vs online evaluation in LangSmith, Langfuse and
   Braintrust: offline scores a fixed dataset before shipping, online scores live production traces.
+- **cluster** is the statistician's word (clustered standard errors), as Miller (2024) uses it for
+  evals: items that share a source count as one when a difference is tested.
+- **derived_from** (a dataset made from another) is PROV-O's `prov:wasDerivedFrom`, the word Croissant 1.1
+  uses for provenance; `dataset-card --format croissant` writes it so. The **card**'s keys are Croissant
+  RAI 1.0's property names, without the `rai:` prefix.
 
 Read in: [inspect_ai](https://inspect.aisi.org.uk/), [lm-evaluation-harness task guide](https://github.com/EleutherAI/lm-evaluation-harness/blob/main/docs/task_guide.md),
 [HELM](https://crfm-helm.readthedocs.io/en/latest/code/), [OpenAI evals](https://developers.openai.com/api/docs/guides/evals),
 [Braintrust](https://docs.braintrust.dev/core/experiments), [LangSmith](https://docs.langchain.com/langsmith/evaluation-concepts),
 [Langfuse](https://langfuse.com/docs/evaluation/overview), [Hugging Face datasets](https://huggingface.co/docs/datasets/load_hub),
-[evaluate](https://huggingface.co/docs/evaluate/a_quick_tour) and [lighteval](https://huggingface.co/docs/lighteval/index).
+[evaluate](https://huggingface.co/docs/evaluate/a_quick_tour) and [lighteval](https://huggingface.co/docs/lighteval/index);
+inspect_ai's `epochs` and reducers in its [scoring metrics](https://inspect.aisi.org.uk/metrics.html) page, its
+`target` type in [datasets](https://inspect.aisi.org.uk/datasets.html) (both read 2026-11-05).
 
 ### Spelling
 
@@ -511,8 +531,9 @@ Underlying architectures: [BART](https://arxiv.org/abs/1910.13461),
 Hosted inference is routed through [OpenRouter](https://openrouter.ai/), which resells
 capacity from Anthropic, OpenAI, Google, Meta, Mistral, DeepSeek, Alibaba (Qwen), Z.ai and
 their serving partners (Novita, DeepInfra, Nebius, Parasail and others). Dataset slices are
-fetched through the [HuggingFace datasets-server](https://huggingface.co/docs/datasets-server), and from the
-Hub's parquet conversion of the same split when its `/rows` is down (`examples/_shared/hf_rows.py`).
+read from the Hugging Face Hub's parquet conversion of each split at one pinned commit, each file checked against
+the sha256 the Hub lists (the harness's `huggingface` source, through `examples/_shared/hf_rows.py`); the rerun
+workflow checks those rows against the [datasets-server](https://huggingface.co/docs/datasets-server)'s `/rows`.
 
 ### Method
 
@@ -533,8 +554,6 @@ split follows publisher policy rather than importance.
 **Every citation above was verified on 2026-09-29** (SummEval's — the paper, G-Eval,
 BARTScore and the `mteb/summeval` dataset and its licence — on 2026-10-18; UniEval's paper,
 model and code on 2026-10-19) by fetching it
-and comparing the real title to the claim made about it. That check found four errors in the first draft: a
-fabricated paper title, a GitHub advisory ID pointing at an unrelated NuGet CVE, a dataset
-credited to the wrong authors, and a moved repository. One citation — Holm (1979) — could
+and comparing the real title to the claim made about it. One citation — Holm (1979) — could
 **not** be verified programmatically and is therefore given as a full text reference rather
 than a link.

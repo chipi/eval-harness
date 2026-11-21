@@ -1,6 +1,0 @@
-```json
-[
-  {"text": "Aleš Hemský", "type": "person"},
-  {"text": "play-offs", "type": "event"}
-]
-```

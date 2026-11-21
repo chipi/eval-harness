@@ -1,6 +1,0 @@
-[
-  {"text": "Grebler", "type": "person"},
-  {"text": "tower", "type": "building"},
-  {"text": "Jenga", "type": "product"},
-  {"text": "Leslie Scott", "type": "person"}
-]

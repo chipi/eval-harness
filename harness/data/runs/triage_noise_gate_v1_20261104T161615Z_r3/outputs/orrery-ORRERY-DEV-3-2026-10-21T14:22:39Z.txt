@@ -1,1 +1,0 @@
-{"_probe_trace": [], "certainty": "high", "disposition": "cleanup", "marker": "zz-probe-dev-throw", "model_disposition": "cleanup", "reason": "The error name 'zz-probe-dev-throw' is an explicit test probe marker, indicating a synthetic error injected for monitoring validation in the development environment."}

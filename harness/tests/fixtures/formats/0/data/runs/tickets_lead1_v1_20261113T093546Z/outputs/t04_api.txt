@@ -1,0 +1,1 @@
+Since the release on Tuesday, calls to the orders endpoint return HTTP 429 after about 50 requests per minute, although the documentation states a limit of 300 per minute for their plan.

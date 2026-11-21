@@ -1706,7 +1706,12 @@
   ],
   "source": {
     "config": "queries",
-    "name": "BeIR/scifact",
+    "description_sha256": null,
+    "gated": null,
+    "item_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row={row}",
+    "provider": "huggingface",
+    "ref": "BeIR/scifact",
+    "revision": null,
     "split": "queries",
     "url": "https://huggingface.co/datasets/BeIR/scifact"
   }

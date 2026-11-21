@@ -243,7 +243,12 @@
   ],
   "source": {
     "config": "default",
-    "name": "fancyzhx/ag_news",
+    "description_sha256": null,
+    "gated": null,
+    "item_url": "https://huggingface.co/datasets/fancyzhx/ag_news/viewer/default/test?row={row}",
+    "provider": "huggingface",
+    "ref": "fancyzhx/ag_news",
+    "revision": null,
     "split": "test",
     "url": "https://huggingface.co/datasets/fancyzhx/ag_news"
   }

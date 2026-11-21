@@ -1,1 +1,0 @@
-[{"text": "Additions", "type": "event"}, {"text": "stone effigies", "type": "art"}, {"text": "knight", "type": "person"}]

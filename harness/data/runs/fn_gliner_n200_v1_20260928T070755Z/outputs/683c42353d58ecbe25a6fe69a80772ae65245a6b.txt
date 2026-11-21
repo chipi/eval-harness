@@ -1,1 +1,0 @@
-[{"text": "The Great Sphinx", "type": "building"}, {"text": "man", "type": "person"}]

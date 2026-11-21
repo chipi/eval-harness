@@ -1,1 +1,0 @@
-[{"text": "After", "type": "location"}, {"text": "Cleo Lemon", "type": "location"}, {"text": "September", "type": "location"}, {"text": "Jyles", "type": "location"}, {"text": "BC Lions", "type": "location"}, {"text": "September", "type": "location"}]

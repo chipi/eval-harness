@@ -1,0 +1,146 @@
+{
+  "created_at": "2026-10-25T15:10:05Z",
+  "derived": {
+    "at": "2026-10-25T15:10:05Z",
+    "from": "ag_bert_base_ta_n200_v1_20260930T094555Z",
+    "from_dir": "runs/ag_bert_base_ta_n200_v1_20260930T094555Z",
+    "kind": "rescore",
+    "with": {
+      "adapter": "examples/classification-ag-news/adapter.py",
+      "sha256": "ee92fea1f9920fd82b44a05ca1f35823d17f67adc3bf0bb73f07d357d0e583bd"
+    }
+  },
+  "fingerprint": {
+    "arm": {
+      "config_id": "ag_bert_base_ta_v1",
+      "labels": {
+        "family": "bert",
+        "price_tier": "free"
+      }
+    },
+    "data": {
+      "dataset_id": "ag_news_200",
+      "items_sha256": "d7bf61eb3b27e79d492bbe5a445659813dfcacf6fadcae4d26255c45291bedd2",
+      "n_items": 200,
+      "reference_id": "gold/ag_news_200_adj1",
+      "reference_id_at_measurement": "gold/ag_news_200",
+      "reference_tier": "gold",
+      "reference_tier_at_measurement": "gold",
+      "references_sha256": "636e963d2e500587d0642c40b48ac32040d237eb160bf00e20696ccea4649534",
+      "references_sha256_at_measurement": "e671b1a159664de82a0a5f35d36150d81abc99d45ac19e7df8ec1d66164bcc04"
+    },
+    "data_sha256": "5f960d37e68d6cacd7850691b01c342690a21bb175321128c73ce2eb610e87a7",
+    "deployment": {
+      "declared": {
+        "encoder_window": 512,
+        "label_order": [
+          "World",
+          "Sports",
+          "Business",
+          "Sci/Tech"
+        ],
+        "labels": [
+          "World",
+          "Sports",
+          "Business",
+          "Sci/Tech"
+        ],
+        "labels_sha256": "c7a1ee508b78c0e92f28d159d340a6537ac31ff70ff566430fe2507da58464a3",
+        "parser_sha256": "f8adae1bc43c3446a7ba737f6d22c89f8f2685a18cadd64ecd79dec453260390",
+        "provider": "hf_local",
+        "weight_files": [
+          "pytorch_model.bin:437991539"
+        ]
+      },
+      "hosted": null,
+      "id": "textattack/bert-base-uncased-ag-news",
+      "in_process": true,
+      "libraries": {
+        "numpy": "1.26.4",
+        "openai": "3.19.2",
+        "torch": "2.14.0",
+        "transformers": "4.55.4"
+      },
+      "model": "textattack/bert-base-uncased-ag-news",
+      "provider": "hf_local",
+      "server": null,
+      "source": "adapter",
+      "weights": {
+        "digest": null,
+        "file_hash": null,
+        "precision": "fp32",
+        "quantization": null,
+        "revision": "fe417ad660b1657142f66353a184dc0c7e6d2e48",
+        "revision_source": "hf-snapshot"
+      },
+      "where": {
+        "backend": null,
+        "device": "cpu",
+        "machine": null
+      }
+    },
+    "deployment_sha256": "14d914feacef3566c86fe61d94374b3a9e70d7a6f63d1e63eb0d237882be0884",
+    "hash": null,
+    "hash_invalid_because": "scores were recomputed by a different scorer than the one this fingerprint was built from; see derived.with",
+    "instrument": {
+      "adapter": {
+        "id": "examples/classification-ag-news/adapter.py",
+        "sha256": "ee92fea1f9920fd82b44a05ca1f35823d17f67adc3bf0bb73f07d357d0e583bd"
+      },
+      "harness": {
+        "commit": "4068ea23007d",
+        "dirty": false
+      }
+    },
+    "instrument_sha256": "cdec71ac0739190e10c68874977e48b6b4d863fcc29700f4b8d380451255279d",
+    "runner": {
+      "cpu_count": 4,
+      "label": null,
+      "libraries": null,
+      "platform": "Linux/x86_64",
+      "processor": "x86_64",
+      "python": "3.11.15",
+      "release": "6.18.44-fc-v50"
+    },
+    "settings": {
+      "label_order": [
+        "World",
+        "Sports",
+        "Business",
+        "Sci/Tech"
+      ]
+    },
+    "settings_sha256": "43d3d5a6236eb57db905910b73121f6449b8eae837538ab3505a6cb90bcc9f29",
+    "version": 5
+  },
+  "metric_kinds": {
+    "answer_words": "descriptive",
+    "confidence": "descriptive",
+    "correct": "quality",
+    "correct_after_repair": "descriptive",
+    "fmt_markdown": "descriptive",
+    "fmt_verbose": "descriptive",
+    "parsed": "quality",
+    "reasoning_tokens": "descriptive",
+    "resumed": "descriptive",
+    "truncated": "descriptive"
+  },
+  "primary_metric": "correct",
+  "reference_tier": "gold",
+  "rescore_dropped_metrics": [
+    "confidence"
+  ],
+  "scores": {
+    "answer_words": 1.0,
+    "correct": 0.905,
+    "correct_after_repair": 0.0,
+    "cost_usd": 0.0,
+    "fmt_markdown": 0.0,
+    "fmt_verbose": 0.0,
+    "latency_ms": 76.28544,
+    "parsed": 1.0,
+    "resumed": 0.0,
+    "total_cost_usd": 0.0
+  },
+  "source_created_at": "2026-09-30T09:46:23Z"
+}

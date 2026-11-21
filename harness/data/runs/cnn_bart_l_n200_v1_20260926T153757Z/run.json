@@ -1,0 +1,202 @@
+{
+  "actor": {
+    "from": "migration",
+    "name": "before 0.8.0",
+    "type": "unknown"
+  },
+  "adapter": "examples/summarization-cnn-dailymail/adapter.py",
+  "build": {
+    "dirty": false,
+    "ref": "fb7366a0a69479db793d52bd04e310e8a564b9f4",
+    "source": "git"
+  },
+  "system_id": "cnn_bart_l_v1",
+  "created_at": "2026-09-26T16:14:46Z",
+  "dataset_id": "cnn_dailymail_200",
+  "fingerprint": {
+    "arm": {
+      "config_id": "cnn_bart_l_v1",
+      "labels": {
+        "family": "bart",
+        "price_tier": "free"
+      }
+    },
+    "data": {
+      "dataset_id": "cnn_dailymail_200",
+      "items_sha256": "257feda902391b934b8cde940c15e91201096dbe96ec5a81337e9da007ce3ec7",
+      "n_items": 200,
+      "reference_id": "gold/cnn_dailymail_200",
+      "reference_tier": "gold",
+      "references_sha256": "5d0b02c3798017535572d24dd3ce0592332938a0c91e93684d163963a60a7cd9"
+    },
+    "data_sha256": "a9b234845c4f4d69a498556c1f6324f5839721e805795a1f3d5946301307a0e8",
+    "deployment": {
+      "declared": {
+        "weight_files": [
+          "model.safetensors:1625222120"
+        ]
+      },
+      "hosted": null,
+      "id": "facebook/bart-large-cnn",
+      "in_process": true,
+      "libraries": {
+        "numpy": "1.26.4",
+        "openai": "3.19.2",
+        "rouge-score": "0.1.2",
+        "torch": "2.2.2",
+        "transformers": "4.55.4"
+      },
+      "model": "facebook/bart-large-cnn",
+      "provider": "hf_local",
+      "server": null,
+      "source": "adapter",
+      "weights": {
+        "digest": null,
+        "file_hash": null,
+        "precision": "fp32",
+        "quantization": null,
+        "revision": "37f520fa929c961707657b28798b30c003dd100b",
+        "revision_source": "hf-snapshot"
+      },
+      "where": {
+        "backend": null,
+        "device": "cpu",
+        "machine": null
+      }
+    },
+    "deployment_sha256": "9a715dbdf7a18d3da1eb9f12a23554047363042207b32c2eca3455e678016812",
+    "hash": "6756ec211ef1152e2c0c65d245c100dbe2ceb3133f8cd6f756cb3317175b2d01",
+    "instrument": {
+      "adapter": {
+        "id": "examples/summarization-cnn-dailymail/adapter.py",
+        "sha256": "51a7b06b1a2eec722a3bd024b7ed832746d06ef44683dd0e9fa8abc5c18d5618"
+      },
+      "harness": {
+        "commit": "fb7366a0a694",
+        "dirty": false
+      }
+    },
+    "instrument_sha256": "a1b7f00047d90546cfc527d6441095e77a3a970cee2532755338a75549f6ca0a",
+    "runner": {
+      "cpu_count": 12,
+      "label": "mac-dev",
+      "libraries": null,
+      "platform": "Darwin/x86_64",
+      "processor": "i386",
+      "python": "3.11.8",
+      "release": "24.6.0"
+    },
+    "settings": {
+      "early_stopping": true,
+      "length_penalty": 2.0,
+      "max_length": 142,
+      "min_length": 56,
+      "no_repeat_ngram_size": 3,
+      "num_beams": 4
+    },
+    "settings_sha256": "656435dcd94a2e6c1a0f2804bc3184adf0e955e8cf36a710519ed655ba6ac508",
+    "version": 5
+  },
+  "goal": "news_summary_cnn",
+  "n_items": 200,
+  "params": {
+    "device": "cpu",
+    "early_stopping": true,
+    "family": "bart",
+    "length_penalty": 2.0,
+    "max_length": 142,
+    "min_length": 56,
+    "model": "facebook/bart-large-cnn",
+    "no_repeat_ngram_size": 3,
+    "num_beams": 4,
+    "precision": "fp32",
+    "price_tier": "free",
+    "provider": "hf_local"
+  },
+  "providers_seen": {},
+  "round": "r1",
+  "run_id": "cnn_bart_l_n200_v1_20260926T153757Z",
+  "warmup_ms": 5146.059,
+  "purpose": "run",
+  "machine": "darwin",
+  "call": {
+    "generation_config": {
+      "_from_model_config": true,
+      "assistant_confidence_threshold": 0.4,
+      "assistant_early_exit": null,
+      "assistant_lookbehind": 10,
+      "bad_words_ids": null,
+      "begin_suppress_tokens": null,
+      "bos_token_id": 0,
+      "cache_config": null,
+      "cache_implementation": null,
+      "constraints": null,
+      "decoder_start_token_id": 2,
+      "disable_compile": false,
+      "diversity_penalty": 0.0,
+      "do_sample": false,
+      "dola_layers": null,
+      "early_stopping": true,
+      "encoder_no_repeat_ngram_size": 0,
+      "encoder_repetition_penalty": 1.0,
+      "eos_token_id": 2,
+      "epsilon_cutoff": 0.0,
+      "eta_cutoff": 0.0,
+      "exponential_decay_length_penalty": null,
+      "force_words_ids": null,
+      "forced_bos_token_id": 0,
+      "forced_eos_token_id": 2,
+      "guidance_scale": null,
+      "is_assistant": false,
+      "length_penalty": 2.0,
+      "low_memory": null,
+      "max_length": 142,
+      "max_matching_ngram_size": null,
+      "max_new_tokens": null,
+      "max_time": null,
+      "min_length": 56,
+      "min_new_tokens": null,
+      "min_p": null,
+      "no_repeat_ngram_size": 3,
+      "num_assistant_tokens": 20,
+      "num_assistant_tokens_schedule": "constant",
+      "num_beam_groups": 1,
+      "num_beams": 4,
+      "num_return_sequences": 1,
+      "output_attentions": false,
+      "output_hidden_states": false,
+      "output_logits": null,
+      "output_scores": false,
+      "pad_token_id": 1,
+      "penalty_alpha": null,
+      "prefill_chunk_size": null,
+      "prompt_lookup_num_tokens": null,
+      "remove_invalid_values": false,
+      "renormalize_logits": false,
+      "repetition_penalty": 1.0,
+      "return_dict_in_generate": false,
+      "return_legacy_cache": null,
+      "sequence_bias": null,
+      "stop_strings": null,
+      "suppress_tokens": null,
+      "target_lookbehind": 10,
+      "temperature": 1.0,
+      "token_healing": false,
+      "top_k": 50,
+      "top_p": 1.0,
+      "transformers_version": "4.55.4",
+      "typical_p": 1.0,
+      "use_cache": true,
+      "watermarking_config": null
+    },
+    "generation_requested": {
+      "early_stopping": true,
+      "length_penalty": 2.0,
+      "max_length": 142,
+      "min_length": 56,
+      "no_repeat_ngram_size": 3,
+      "num_beams": 4
+    },
+    "encoder_window": 1024
+  }
+}

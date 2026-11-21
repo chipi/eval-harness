@@ -1,8 +1,7 @@
-#!/usr/bin/env python3
 """What production must match to run what was measured (RFC-023, PRD-005 FR3), and whether a capture says it did.
 
-    evh deploy-sheet --config triage_baseline_pro_v1
-    evh deploy-sheet --config triage_baseline_pro_v1 --capture orrery_2026_11
+    evh deploy-sheet triage_baseline_pro_v1
+    evh deploy-sheet triage_baseline_pro_v1 --capture orrery_2026_11
 
 The sheet is read from the run the arm was promoted with (the latest baseline whose run is the arm's), else the
 arm's latest run: the model, its record and the deployment (tag, endpoint, server, build), every setting the arm
@@ -18,23 +17,15 @@ differs or is not recorded. Nothing is written.
 
 from __future__ import annotations
 
-import sys as _sys
-from pathlib import Path as _Path
-
-if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
-    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
-
-import argparse
-import json
 from collections import Counter
 from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _models
+from evaluation_harness import _models, _runs, _store
 from evaluation_harness._adapter import adapter_module
-from evaluation_harness._common import BASELINES, DATA, RUNS, die, read_json
-from evaluation_harness._runs import runs_on
+from evaluation_harness._common import DATA, die
 from evaluation_harness.dataset_from_capture import load_capture
+from evaluation_harness.model import runs as _model_runs
 
 #: A `_meta` key is shown as what the system reported when its items give at most this many values (a model, a
 #: prompt's hash), not a per-item account (the gates each item passed).
@@ -42,48 +33,57 @@ FEW = 3
 
 
 def promoted_run(
-    config_id: str, data_dir: Path | None = None, runs_dir: Path | None = None
+    system_id: str, data_dir: Path | None = None, runs_dir: Path | None = None
 ) -> tuple[Path, dict[str, Any] | None]:
-    """(the run, the baseline it was promoted as, or None): the latest baseline whose run is this arm's, else the
-    arm's latest run. The project's directories, or `data_dir` and `runs_dir` (the catalog's)."""
-    baselines = (data_dir / "baselines") if data_dir else BASELINES
-    runs = runs_dir or RUNS
+    """(the run as the score it made when it ran, the baseline it was promoted as, or None): of the current baselines
+    of every goal and every dataset's own (RFC-027), the latest whose run is this arm's, else the arm's latest run.
+    The project's directories, or `data_dir` and `runs_dir` (the catalog's)."""
+    from evaluation_harness import _baselines  # noqa: PLC0415
+
+    runs = runs_dir or _model_runs.root()
     best: tuple[str, Path, dict[str, Any]] | None = None
-    for f in sorted(baselines.glob("*.json")) if baselines.is_dir() else []:
-        b = read_json(f)
-        run = runs / str(b.get("promoted_from") or "")
+    for b in _baselines.all_current(data_dir):
+        first = _model_runs.first_score(runs / str(b.get("promoted_from") or "x"))
+        rec = _model_runs.record(first) if first else None
         if (
             b.get("promoted_from")
-            and (run / "metrics.json").is_file()
-            and read_json(run / "metrics.json").get("config_id") == config_id
+            and first is not None
+            and rec is not None
+            and rec.get("system_id") == system_id
             and (best is None or str(b.get("promoted_at")) > best[0])
         ):
-            best = (str(b.get("promoted_at")), run, b)
+            best = (str(b.get("promoted_at")), first, b)
     if best:
         return best[1], best[2]
-    found = runs_on(config_id=config_id, runs_dir=runs)
+    found = []
+    for run in sorted(_store.iterdir(runs)) if _store.is_dir(runs) else []:
+        first = _model_runs.first_score(run)
+        rec = _model_runs.record(first) if first else None
+        if first is None or rec is None:
+            continue
+        if rec.get("system_id") == system_id and _model_runs.label(first, rec) == "":
+            found.append(first)
     if not found:
-        die(f"--config {config_id}: no run of that config (evh runs-list)")
-    return found[-1][0], None
+        die(f"--system {system_id}: no run of that system (evh runs-list)", "not-found")
+    return found[-1], None
 
 
 def reported(run: Path) -> dict[str, list[str]]:
     """{key: values}: what the system reported per item (`_meta` in predictions.jsonl), the keys with few values."""
     seen: dict[str, set[str]] = {}
-    f = run / "predictions.jsonl"
-    for line in f.read_text(encoding="utf-8").splitlines() if f.is_file() else []:
-        meta = (json.loads(line) if line.strip() else {}).get("_meta") or {}
+    for row in _runs.item_rows(run):
+        meta = row.get("_meta") or {}
         for k, v in meta.items():
             if isinstance(v, (str, int, float)) and not isinstance(v, bool):
                 seen.setdefault(k, set()).add(str(v))
     return {k: sorted(v) for k, v in sorted(seen.items()) if len(v) <= FEW}
 
 
-def sheet(config_id: str, data_dir: Path | None = None, runs_dir: Path | None = None) -> dict[str, Any]:
+def sheet(system_id: str, data_dir: Path | None = None, runs_dir: Path | None = None) -> dict[str, Any]:
     """Everything production must match, as a dict."""
-    run, base = promoted_run(config_id, data_dir, runs_dir)
+    run, base = promoted_run(system_id, data_dir, runs_dir)
     data_root = data_dir or DATA
-    m = read_json(run / "metrics.json")
+    m = _model_runs.record(run) or {}
     fp = m.get("fingerprint") or {}
     params = m.get("params") or {}
     not_sent = set(((fp.get("arm") or {}).get("labels") or {}).keys())
@@ -103,11 +103,11 @@ def sheet(config_id: str, data_dir: Path | None = None, runs_dir: Path | None = 
     rec_settings = (rec or {}).get("settings") or {}
     weights = dep.get("weights") or {}
     return {
-        "config_id": config_id,
-        "run_id": run.name,
+        "system_id": system_id,
+        "run_id": m.get("run_id"),
         "promoted": None
         if base is None
-        else {k: base.get(k) for k in ("baseline_id", "dataset_id", "promoted_at", "reason")},
+        else {k: base.get(k) for k in ("goal", "version", "dataset_id", "promoted_at", "reason")},
         "dataset_id": data.get("dataset_id") or m.get("dataset_id"),
         "reference": {"id": data.get("reference_id"), "tier": data.get("reference_tier")},
         "model": {
@@ -153,7 +153,8 @@ def check(s: dict[str, Any], capture_id: str, captures_dir: Path | None = None) 
     if not callable(fn):
         die(
             f"--capture: the adapter {s['_adapter_spec']} has no production_ran(record): it cannot say what production"
-            " ran"
+            " ran",
+            "invalid-file",
         )
     _, recs = load_capture(capture_id, captures_dir)
     per: dict[str, dict[str, Any]] = {}
@@ -170,87 +171,3 @@ def check(s: dict[str, Any], capture_id: str, captures_dir: Path | None = None) 
             else:
                 row["differ"][str(v)] += 1
     return {"capture": capture_id, "records": len(recs), "keys": per}
-
-
-def main() -> int:
-    """Print the deploy sheet, and the capture check."""
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--config", required=True, help="the arm's config_id (its promoted run, else its latest)")
-    ap.add_argument(
-        "--capture", help="a capture whose records say what production ran (the adapter's production_ran)"
-    )
-    ap.add_argument("--json", action="store_true", help="print JSON")
-    args = ap.parse_args()
-
-    s = sheet(args.config)
-    c = check(s, args.capture) if args.capture else None
-    ok = c is None or (
-        bool(c["keys"]) and all(not k["differ"] and not k["missing"] for k in c["keys"].values())
-    )
-    if args.json:
-        out = {k: v for k, v in s.items() if not k.startswith("_")}
-        if c is not None:
-            out["capture_check"] = {**c, "ok": ok}
-        print(json.dumps(out, indent=2, default=dict))
-        return 0 if ok else 1
-    p = s["promoted"]
-    print(f"deploy sheet: {s['config_id']}")
-    ref = s.get("reference") or {}
-    against = f"{ref['id']} ({ref.get('tier') or 'no tier'})" if ref.get("id") else "no reference"
-    print(f"  measured by   {s['run_id']} on {s['dataset_id']}, against {against}")
-    print(
-        f"  promoted      as {p['baseline_id']} on {p['dataset_id']}, {p['promoted_at']}"
-        if p
-        else "  promoted      no: this is the arm's latest run, not a baseline"
-    )
-    mm = s["model"]
-    print(f"\nmodel\n  sent          {mm['sent']}")
-    print(f"  record        {mm['record'] or '(no model record names it)'}")
-    if mm["deployment"]:
-        for k, v in mm["deployment"].items():
-            print(f"  {k:<13} {json.dumps(v) if isinstance(v, dict) else v}")
-    print(f"  provider      {mm['provider']}")
-    print(f"  server        {mm['server'] or '(not recorded)'}")
-    print(f"  build         {mm['build'] or '(none recorded: a hosted model has no digest)'}")
-    print("\nsettings the arm sent")
-    for k, v in s["sent"].items():
-        print(f"  {k:<22} {v}")
-    if s["not_sent"]:
-        print(f"  (bookkeeping, not sent: {', '.join(s['not_sent'])})")
-    for k, v in s["record_settings_not_sent"].items():
-        print(f"  NOTE: the record sets {k}: {v}; this arm did not send it (it names no model_record)")
-    print("\ndeclared")
-    for part, kv in s["declared"].items():
-        for k, v in kv.items():
-            print(f"  {part}.{k:<14} {v}")
-    print("\nwhat the system reported per item")
-    for k, vs in s["reported"].items():
-        print(f"  {k:<22} {', '.join(vs)}")
-    if not s["reported"]:
-        print("  (nothing: the adapter records no _meta)")
-    print(f"\nadapter         {s['adapter'].get('id')} {s['adapter'].get('sha256') or ''}".rstrip())
-    print(f"harness         {s['harness']['version']} {s['harness']['commit'] or ''}".rstrip())
-    if c is not None:
-        print(f"\ncapture {c['capture']}: {c['records']} record(s)")
-        for k, row in c["keys"].items():
-            if row["missing"] == c["records"] and not row["match"] and not row["differ"]:
-                print(f"  {k:<12} production recorded none, so it cannot be checked")
-                continue
-            line = f"  {k:<12} {row['match']} match"
-            if row["differ"]:
-                line += "; differ: " + ", ".join(f"{v} ({n})" for v, n in row["differ"].most_common(5))
-            if row["missing"]:
-                line += f"; not recorded: {row['missing']}"
-            print(line + f"   (expected: {', '.join(row['expected']) or 'nothing the run reported'})")
-        if not c["keys"]:
-            print("  the adapter's production_ran said nothing for any record")
-        print(
-            "\nevery captured decision was made by the promoted model and prompt"
-            if ok
-            else "\nNOT every captured decision was made by the promoted model and prompt (above: what differs)"
-        )
-    return 0 if ok else 1
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())

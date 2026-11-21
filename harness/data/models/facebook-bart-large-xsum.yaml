@@ -3,3 +3,7 @@ kind: ml
 aliases:
 - facebook/bart-large-xsum
 weights: open
+actor:
+  type: unknown
+  name: before 0.8.0
+  from: migration

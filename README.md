@@ -61,7 +61,7 @@ It was built to answer four questions anyone building with AI ends up asking:
 | you want to | go to |
 |---|---|
 | **see what it is** | **[evals.humancopilot.eu](https://evals.humancopilot.eu/)**: the harness, what it does, and what it found |
-| **measure your own system** | [**Getting started**](docs/GUIDE.md): the loop once, offline, in fifteen minutes: a dataset, arms, a reference set from the best arm's labels, a comparison, a choice. Then the [**tutorials**](docs/GUIDE.md#where-to-go-next): a local model, a hosted LLM with your own key, a frontier reference and judges, rounds, the catalog, datasets from production and evaluating what production did, setting a model up. Or [**Use it on your problem**](https://evals.humancopilot.eu/use.html), the patterns |
+| **measure your own system** | [**Getting started**](docs/GUIDE.md): the loop once, offline, in fifteen minutes: a dataset, arms, a reference set from the best arm's labels, a comparison, a choice. Then the [**tutorials**](docs/GUIDE.md#where-to-go-next): a local model, a hosted LLM with your own key, a frontier reference and judges, rounds, the catalog, datasets from production and evaluating what production did, setting a model up, and the Workbench. Or [**Use it on your problem**](https://evals.humancopilot.eu/use.html), the patterns |
 | **learn the method** | [**The method**](https://evals.humancopilot.eu/method.html): six habits for measuring AI systems, as these evals taught them |
 | **read what it found** | [**The evals**](https://evals.humancopilot.eu/evals.html): 24 LLMs, fine-tunes and baselines on six benchmarks, generated from the runs in this repository, so every number on it is checked |
 | **check it yourself** | [**Reproduce it**](docs/REPRODUCE.md): five levels, from recomputing every number ($0, one command) to rerunning every model with one OpenRouter key |
@@ -80,30 +80,32 @@ model provider you use is your choice, with your own key.
 cd your-project
 python3 -m venv .venv && . .venv/bin/activate
 pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.7.2#subdirectory=harness"
-evh init                                                # folders, .gitignore, AGENTS.md
+evh init --store files                                  # folders, config.yaml, .gitignore, AGENTS.md; --store sqlite is its equal
 evh dataset-create --dataset-id my_v1 --source-dir data/sources/my_v1
 evh dataset-materialize --dataset-id my_v1
 # write adapter.py at the project root -> call_system() talks to YOUR system
-git add -A && git commit -m "dataset and arms"           # a run records the commit it ran from
-evh run --config data/configs/best_model.yaml           # the best system you have
+git add -A && git commit -m "dataset and systems"        # a run records the commit it ran from
+evh run --system best_model_v1 --dataset my_v1          # the best system you have (data/systems/best_model_v1.yaml)
 evh label-from-run --run <its run_id> --set best_v1                  # optional: its outputs as a model's labels
 evh reference-promote --dataset-id my_v1 --labels best_v1 --tier silver \
-    --reason "the best system we have ranks the rest" --by me           # ...promoted: the reference set
-evh run --config data/configs/arm_a.yaml --repeat 3      # each arm, with its own noise
-evh leaderboard --dataset-id my_v1                                  # the ranking, and whether it is real
-evh family-test --dataset-id my_v1 --a arm_a_v1 --against arm_      # does the winner differ significantly?
+    --reason "the best system we have ranks the rest" --by me           # ...promoted: the reference set (from terminal; use --by person:NAME or EVH_ACTOR if no terminal)
+evh run --system S --dataset my_v1 --purpose repeat --of <run_id>  # measure the best system's noise by repeating its run
+evh run --system <id> --dataset my_v1 --repeat 3         # each other system
+evh leaderboard my_v1                                  # the ranking, and whether it is real
+evh family-test my_v1 --a arm_a_v1 --against arm_      # does the winner differ significantly?
 evh run-promote --run <run_id> --reason "what the tests showed"     # the choice, recorded with why
 ```
 
-**[Getting started](docs/GUIDE.md)** walks it once on a six-ticket kit (`evh init --tutorial`),
+**[Getting started](docs/GUIDE.md)** walks it once on a six-ticket kit (`evh init --store files --tutorial`),
 offline, with the real output of every command. The tutorials take it further:
 [a local model against a baseline](docs/tutorials/1-local-model.md),
 [a hosted LLM with your own key](docs/tutorials/2-hosted-llm.md),
 [a frontier model's run as the reference, gold and judging](docs/tutorials/3-frontier-reference-and-judging.md),
 [eval rounds and dataset versions](docs/tutorials/4-rounds-and-versions.md),
 [the catalog and the inspector](docs/tutorials/5-catalog-and-inspector.md),
-[datasets from production and evaluating what production did](docs/tutorials/6-datasets-from-production.md), and
-[setting a model up](docs/tutorials/7-set-up-a-model.md). Then
+[datasets from production and evaluating what production did](docs/tutorials/6-datasets-from-production.md),
+[setting a model up](docs/tutorials/7-set-up-a-model.md), and
+[the Workbench](docs/tutorials/8-the-workbench.md). Then
 [`harness/docs/INTEGRATION.md`](harness/docs/INTEGRATION.md) to drop it into your project and
 [`harness/docs/RUNBOOK.md`](harness/docs/RUNBOOK.md) for every command and flag.
 
@@ -111,14 +113,14 @@ offline, with the real output of every command. The tutorials take it further:
 
 | command | answers |
 | --- | --- |
-| `evh leaderboard --dataset-id my_v1` | rank arms on quality, cost and speed, and whether the order is real |
-| `evh pair-test --dataset-id my_v1 --a … --b …` | one comparison you named in advance, without paying the multiplicity price for 275 you didn't |
+| `evh leaderboard my_v1` | rank arms on quality, cost and speed, and whether the order is real |
+| `evh pair-test my_v1 --a … --b …` | one comparison you named in advance, without paying the multiplicity price for 275 you didn't |
 | `evh holdout --dataset-id my_v1 --exclude-dataset …` | the same test minus items a smaller dataset already contained |
-| `evh rank-stability --dataset-id my_v1` | how many items before the ordering stops moving: measured, not assumed |
+| `evh rank-stability my_v1` | how many items before the ordering stops moving: measured, not assumed |
 | `evh silver-calibrate --dataset-id my_v1` | is a silver reference usable? How far it drifts from gold, read against the ceiling it prints |
-| `evh rescore --dataset-id my_v1 --out data/runs-rescored` | recompute scores from stored outputs, no API calls |
+| `evh rescore --dataset-id my_v1` | recompute scores from stored outputs, no API calls |
 | `evh judge-score --dataset-id my_v1 --scorer …` | optional: re-measure stored outputs with LLM judges that grade each output, pick the best or compare two (the scorer's `mode`), refused until they are validated against people in that mode ([tutorial 3](docs/tutorials/3-frontier-reference-and-judging.md)) |
-| `evh inspect --sheet --dataset-id my_v1 --runs …` | one sheet: every item, what each arm wrote and its scores, the labels, the winner and a footer per arm; `--csv FILE --fill label\|pick\|scores` for a person or a tool to fill, `evh sheet-import` to read it back |
+| `evh sheet-export --dataset-id my_v1 --runs … --csv FILE [--fill label\|pick\|scores\|tags]` | one sheet: every item, what each arm wrote and its scores, the labels, the winner and a footer per arm; written to FILE for a person or a tool to fill, `evh sheet-import` to read it back; `evh sheet-show` prints it in the terminal |
 | `evh catalog-serve` | browse every run and test any arms against a baseline, item by item; every view is also a command ([tutorial 5](docs/tutorials/5-catalog-and-inspector.md)) |
 
 `evh --help` lists every verb. **The catalog and MCP are optional.** `evh catalog` and
@@ -146,12 +148,11 @@ system lives in one file, `adapter.py`, with two functions, `call_system` and `s
   Friedman permutation test and a Nemenyi critical difference over every pair at once, and
   says plainly when nothing is distinguishable.
 - **Re-scoring for $0.** `evh rescore` recomputes metrics from stored outputs. Checking a
-  metric should not cost another sweep; when it did, a broken metric survived two.
+  metric should not cost another sweep.
 - **A catalog and an inspector.** Pages over your runs, and a local server that tests any arms
   against a baseline with the same paired test and shows outputs beside references. No code
   on the harness's layout; one adapter on yours.
-- **Goals, and rounds if you want them.** Each config names what its evaluation is for, and
-  validation checks it; an optional round records what each iteration tried, kept, dropped and
+- **Goals, and rounds if you want them.** Each run names the goal it is measured for (--goal); validate checks it; an optional round records what each iteration tried, kept, dropped and
   concluded.
 
 And it **refuses** to mislead: it won't compare runs measured on different data, it won't
@@ -167,7 +168,7 @@ package alone runs on 3.10).
 ```bash
 git clone https://github.com/chipi/eval-harness && cd eval-harness/harness
 make install       # creates harness/.venv; the make targets use it from then on
-make demo          # the whole loop on bundled synthetic data: no API key, no network
+make demo          # the whole loop on bundled synthetic data: no API key, no network, --scratch pass (nothing added to committed data)
 make leaderboard   # the ranking, and whether it is real
 ```
 
@@ -317,9 +318,6 @@ Which model, build or buy, own or rent: the questions this harness answers are t
 he helps teams answer on their own data. Principles for engineers who build end to end:
 **[DevWhateverOps](https://devwhateverops.com/?utm_source=eval-harness&utm_medium=github&utm_campaign=launch&utm_content=readme)**.
 
-`research/internal/NOTES.md` is the append-only journal, corrections included. Findings
-have been retracted along the way, several caused by bugs in this harness's own scorer.
-The retraction rate is itself a result: it measures how much of a first-pass evaluation is
-instrument rather than signal.
+`research/internal/NOTES.md` is the append-only journal, corrections included.
 
 No corpus is committed; examples ship a download recipe. What *is* committed, each dataset's licence, and what it asks of you: **[docs/DATA.md](docs/DATA.md)**.

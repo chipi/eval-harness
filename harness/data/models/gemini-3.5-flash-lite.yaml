@@ -4,40 +4,10 @@ name: Gemini 3.5 Flash Lite
 aliases:
 - eval-gemini-35-flash-lite
 weights: proprietary
-deployments:
-- id: hosted
-  where: homelab LiteLLM (the fleet's gateway)
-  tag: eval-gemini-35-flash-lite
-  endpoint:
-    provider: litellm
-    base_url: http://homelab:4001/v1
-    model: eval-gemini-35-flash-lite
-  checked_at: '2026-10-31T13:54:35Z'
-  onboarding:
-    status: pass
-    at: '2026-10-31T13:54:35Z'
-    where: homelab LiteLLM (the fleet's gateway)
-    flags: []
-    report:
-      endpoint:
-        provider: litellm
-        base_url: http://homelab:4001/v1
-        model: eval-gemini-35-flash-lite
-      digest_found: null
-      default:
-        s: 1.11
-        tokens_out: 22
-        reasoned: false
-        finish: stop
-      chosen:
-        s: 0.85
-        tokens_out: 24
-        reasoned: false
-        finish: stop
-        settings: {}
-      tokens_per_s: 28.1
-      deterministic: false
-      json_valid: true
 capabilities:
   reasons: false
   json_mode: true
+actor:
+  type: unknown
+  name: before 0.8.0
+  from: migration

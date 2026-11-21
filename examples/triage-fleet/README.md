@@ -11,17 +11,17 @@ what the operator later said it was.
 (2026-07-25 to 2026-10-29) and `verdicts.jsonl`, the labels with who gave each. Git holds the ids and hashes;
 `fetch.py` downloads the pinned revision and restores the rest.
 
-**v2: the same decisions without the rebuild's hindsight** (revision `v2`, 2026-11-04). Most of v1's evidence
-was rebuilt from the stores after the fact, and some of what the rebuild wrote describes that day instead of the
-decision's. A replay found it: 7 of the baseline's 18 false dismissals cite a probe answer production never saw,
+**v2: the same decisions without the rebuild's hindsight** (revision `v2`). Most of v1's evidence
+was rebuilt from the stores after the fact, and some of what the rebuild wrote describes the day of the rebuild
+instead of the decision's: 7 of the baseline's 18 false dismissals on v1 cite a probe answer production never saw,
 "GlitchTip issue X no longer exists". v2 is built from v1 by the fleet's
 `signal-fleet/datasets/build_orrery_items_v2.py`, which changes only that:
 
-- an answer the rebuild could not recover states no outcome: `<UNAVAILABLE: not captured>` (it was "issue X no
+- an answer the rebuild could not recover states no outcome: `<UNAVAILABLE: not captured>` (in v1 it read "issue X no
   longer exists", "short id X now belongs to a newer issue", "<store> holds nothing before <date>", or a trace
-  lookup that failed only today);
-- `lastSeen` is GlitchTip's server receive time, not the browser-set event timestamp (2023-11-14 on four items,
-  midnight on ten);
+  lookup that failed only on the day of the rebuild);
+- `lastSeen` is GlitchTip's server receive time, not the browser-set event timestamp (which reads 2023-11-14 on
+  four items and midnight on ten in v1);
 - `firstRelease`/`lastRelease` are the releases of the events at or before the decision, never one created after
   it (two items);
 - issue fields the decision could not have had (stats, comment counts, assignment) are dropped.
@@ -40,7 +40,7 @@ not other models.
 | `adapter.py` | replays a decision through the fleet's `investigate()`, tracing off, every call tagged `evh-eval`; an arm may name its own server (`url`, for a self-hosted Ollama). `score()` gives `triage_cost` (a missed real problem costs 5 false alarms; `_p3` and `_p10` beside it), `false_dismiss`, `false_alarm`, `correct`, `escalated` as the fleet decided, and `model_*` the same for the model's own decision before the gates |
 | `label_sheet.py`, `label_with_model.py`, `write_verdicts.py`, `labels_from_verdicts.py` | how the labels were made: a sheet of the operator's issue verdicts, a labeller model's proposal for each exact decision (answered by the operator where it disagreed), `verdicts.jsonl`, and a source's labels from it, one file per item, for `evh label-import`; the owner's are promoted to gold (`evh reference-promote`) |
 | `outcomes.yaml` | the rules from an outcome to a label: `silver/…_outcomes`, shown beside gold, never deciding |
-| `configs/` | hosted arms (proprietary, and open-weight models' hosted twins); `configs/local/` the same open-weight models self-hosted (Ollama 0.40.13) on three machines. Ollama 0.40 hands gpt-oss's every answer back as a tool call to `assistant`, with no text; its arms set `reply_in_tool_call: assistant` so the adapter reads it (production on that server would get nothing) |
+| `systems/` | hosted arms (proprietary, and open-weight models' hosted twins); `systems/local/` the same open-weight models self-hosted (Ollama 0.40.13) on three machines. Ollama 0.40 hands gpt-oss's every answer back as a tool call to `assistant`, with no text; its arms set `reply_in_tool_call: assistant` so the adapter reads it (production on that server would get nothing) |
 | `test_triage.py` | the scorer, the importer, the adapter through the fleet's code |
 
 The goal and the item fields are the project's own, one copy each: `harness/data/goals/triage_orrery.yaml`
@@ -49,8 +49,8 @@ The goal and the item fields are the project's own, one copy each: `harness/data
 ```bash
 python examples/triage-fleet/fetch.py                       # needs the revision public, or a token
 evh dataset-materialize --dataset-id orrery_triage_v1_labelled
-TRIAGE_FLEET_SRC=/path/to/signal-fleet evh run --config examples/triage-fleet/configs/<arm>.yaml
-evh goals --goal triage_orrery
+TRIAGE_FLEET_SRC=/path/to/signal-fleet evh run --system <id> --dataset orrery_triage_v1_labelled --goal triage_orrery
+evh goal-leaderboard triage_orrery
 ```
 
 The fleet's code is not copied here: `TRIAGE_FLEET_SRC` names the `signal-fleet` folder of its repository, at
@@ -58,14 +58,14 @@ the commit the runs record. Each run's fingerprint carries the fleet's code hash
 `TRIAGE_FLEET_COMMIT=<sha>` (or `fleet_commit` in an arm's params) for it to carry the commit too. What the eval taught about the fleet itself is in
 the fleet's own repository, [signal-fleet/EVAL-LESSONS-0.6.0.md](https://github.com/chipi/agentic-ai-homelab/blob/main/signal-fleet/EVAL-LESSONS-0.6.0.md).
 
-**On the X3, a second Ollama shares the GPU.** Since 2026-11-03 the homelab assistant runs there as the systemd user
+**On the X3, a second Ollama shares the GPU.** The homelab assistant runs there as the systemd user
 unit `ollama-assistant` (100.92.54.65:11435, the same binary and model directory as the arms' Ollama on
 127.0.0.1:11434), and keeps a 21.8 GB model loaded. Beside a large model it skews the numbers (gpt-oss:120b beside it
 ran 37% on the CPU, swap 16 → 41 GB). So for an arm whose model is over about 35 GB:
 
 ```bash
 systemctl --user stop ollama-assistant     # before the run; nothing depends on it until the homelab's failover
-evh run --config examples/triage-fleet/configs/local/<arm>.yaml
+evh run --system <id, in systems/local/> --dataset orrery_triage_v1_labelled --goal triage_orrery
 systemctl --user start ollama-assistant    # after; its alert x3-assistant-down fires after 15 minutes stopped
 ```
 

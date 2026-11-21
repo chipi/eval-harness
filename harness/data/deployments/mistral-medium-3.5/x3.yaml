@@ -1,0 +1,39 @@
+model_id: mistral-medium-3.5
+deployment_id: x3
+order: 0
+where: x3
+tag: mistral-medium-3.5:128b
+endpoint:
+  provider: openai
+  base_url: http://127.0.0.1:11434/v1
+  model: mistral-medium-3.5:128b
+server: ollama 0.40.13
+digest: 0341632adb051badc332bd814779ab931ab78619750bebe3b7c7b1401e9d70df
+quantization: Q4_K_M
+checked_at: '2026-10-31T14:01:59Z'
+checks:
+- kind: onboarding
+  status: pass
+  at: '2026-10-31T14:01:59Z'
+  where: x3
+  flags: []
+  report:
+    endpoint:
+      provider: openai
+      base_url: http://127.0.0.1:11434/v1
+      model: mistral-medium-3.5:128b
+    digest_found: 0341632adb051badc332bd814779ab931ab78619750bebe3b7c7b1401e9d70df
+    default:
+      s: 70.11
+      tokens_out: 25
+      reasoned: false
+      finish: stop
+    chosen:
+      s: 12.32
+      tokens_out: 25
+      reasoned: false
+      finish: stop
+      settings: {}
+    tokens_per_s: 2.0
+    deterministic: true
+    json_valid: true

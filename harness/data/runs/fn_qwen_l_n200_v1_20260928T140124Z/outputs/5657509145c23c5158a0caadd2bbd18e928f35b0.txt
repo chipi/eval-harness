@@ -1,5 +1,0 @@
-[
-  {"text": "Progressive-era", "type": "other"},
-  {"text": "Seventeenth Amendment", "type": "art"},
-  {"text": "United States Constitution", "type": "art"}
-]

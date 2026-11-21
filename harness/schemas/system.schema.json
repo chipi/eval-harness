@@ -1,0 +1,203 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "system",
+  "description": "What is evaluated (RFC-032): an adapter, its settings and the model it runs, run on any dataset with `evh run --system <id> --dataset <id>` and placed in any round. data/systems/<system_id>.yaml, or a folder validate.json's `systems` names. The knobs of the system go in `params`, which the adapter interprets; nothing else is read, so an unknown top-level key is a typo.",
+  "type": "object",
+  "required": [
+    "system_id",
+    "params"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "system_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+      "description": "The system's identity, its file's name; a run records it and is named after it."
+    },
+    "params": {
+      "type": "object",
+      "description": "Passed to the adapter's call_system() as is. Prices (`usd_per_mtok_in`, `usd_per_mtok_out`) live here."
+    },
+    "adapter": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The adapter file, relative to the system's file, then the project. Absent: <project>/adapter.py, else the bundled one."
+    },
+    "prompts": {
+      "type": "object",
+      "description": "The prompt files the system reads (RFC-028): a name and its file. Each run records the file's version in data/prompts/<name>/ and its hash in the fingerprint's settings; the adapter gets params.prompts.",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "oneOf": [
+          {
+            "required": [
+              "file"
+            ]
+          },
+          {
+            "required": [
+              "version"
+            ]
+          }
+        ],
+        "properties": {
+          "file": {
+            "type": "string",
+            "minLength": 1
+          },
+          "version": {
+            "type": "string",
+            "pattern": "/[0-9a-f]{16}$",
+            "description": "a recorded version by its id (a study's trial, RFC-029)"
+          }
+        }
+      }
+    },
+    "prompt_root": {
+      "type": "object",
+      "description": "The directory the system loads prompts from (RFC-028): the files in `vary` are versioned; the adapter gets params.prompt_root, a per-run copy of the directory.",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "path"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "include": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "vary": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "versions": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "a study's trial (RFC-029): a varied file's version to put in the run's copy, by its id"
+        }
+      }
+    },
+    "code": {
+      "type": "object",
+      "description": "The system's own code (RFC-028): a git checkout whose remote, commit and changed files each run records as deployment.code.",
+      "additionalProperties": false,
+      "required": [
+        "path"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "replay": {
+      "type": "object",
+      "description": "A replay (RFC-030; `model_record` names a kind: code record): items run in `order`, each at the version deployed when its `time_field` (a datetime field) falls, or the commit its `version_field` names, or every item at `commit` (a candidate); each called once. `support` lists the adapter's own modules beside it, hashed with it.",
+      "additionalProperties": false,
+      "required": [
+        "order"
+      ],
+      "properties": {
+        "order": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
+        },
+        "time_field": {
+          "type": "string"
+        },
+        "version_field": {
+          "type": "string"
+        },
+        "support": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "commit": {
+          "type": "string",
+          "minLength": 4
+        },
+        "hide": {
+          "type": "object",
+          "description": "Production's own writes of these kinds, made inside the replayed window, hidden from the replay (RFC-031 P1); part of the adapter's identity, so the faithfulness record must be made with it.",
+          "additionalProperties": false,
+          "required": [
+            "kinds"
+          ],
+          "properties": {
+            "kinds": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string"
+              }
+            },
+            "window": {
+              "const": "replayed"
+            }
+          }
+        }
+      }
+    },
+    "model_record": {
+      "type": "string",
+      "description": "The model record this system runs (RFC-020, optional): data/models/<id>.yaml. Its settings go under the system's params (the system wins); `model` comes from its first alias when params give none."
+    },
+    "deployment": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]*$",
+      "description": "Which of the model's deployments this system runs (RFC-021, RFC-032; needs `model_record`): data/deployments/<model>/<id>.yaml. The run's fingerprint takes the deployment's weights, server and hardware from it, and an arm smoke is kept as its check."
+    },
+    "format": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The output shape, matched against the goal's output_contract."
+    },
+    "expect_identical_to": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._-]+$",
+      "description": "A regression guard (fleet feedback 28): the system whose runs this arm must reproduce item for item, output for output (the same code at another commit). validate V5 then reads the pair as expected, not as an inert knob, and fails it when they differ. Outside the fingerprint."
+    },
+    "hypothesis": {
+      "type": "object",
+      "description": "What this system is expected to do, written before its run (ADR-0025, optional). A run records it and whether it was committed before the run; pair-test says so. Not part of the fingerprint. Its keys (against, measure, direction better|worse|no-worse, statement, optional items) are checked by validate V20 and by evh run, which say what is wrong in words.",
+      "properties": {
+        "against": {
+          "description": "The system it is compared with."
+        },
+        "measure": {
+          "description": "The metric the prediction is about."
+        },
+        "direction": {
+          "description": "better, worse or no-worse (not significantly worse) than `against` on `measure`."
+        },
+        "statement": {
+          "description": "The prediction in words."
+        },
+        "items": {
+          "description": "Optional: a file of item ids expected to flip."
+        }
+      }
+    }
+  }
+}

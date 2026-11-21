@@ -1,0 +1,110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "study",
+  "description": "A study's spec (RFC-029, RFC-032 step 7): data/studies/<goal>/<study_id>.yaml, written once by a person or an agent (`evh study-run --spec`). Its id is `<goal>/<study_id>`; the spec names neither. The study's state is read from its log (<study_id>.events.jsonl), never stored apart. A study imported from a results.tsv (`evh study-import`) has a spec of `imported`, `source`, `measure`, `direction` and `note` only.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "dataset": {"type": "string", "description": "The validation dataset trials run on; a test set is refused."},
+    "baseline": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["system"],
+      "properties": {"system": {"type": "string", "description": "The system the study starts from."}}
+    },
+    "measure": {"type": "string", "description": "The metric the study is decided on."},
+    "direction": {"enum": ["lower", "higher"], "description": "Which way is better when the goal's own primary measure is not this one."},
+    "sampler": {
+      "description": "grid, agent, or a program speaking ask/tell over stdio.",
+      "oneOf": [
+        {"enum": ["grid", "agent"]},
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["command"],
+          "properties": {"command": {"type": "string"}}
+        }
+      ]
+    },
+    "accept": {
+      "description": "The rule a trial is kept by: `test` (separated as better than the best so far) or a point rule.",
+      "oneOf": [
+        {"const": "test"},
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "point": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "min_gain": {"type": "number"},
+                "relative": {"type": "boolean", "description": "The gain needed is a share of the best so far's."}
+              }
+            },
+            "rule": {"const": "test"},
+            "margin": {"type": "number", "description": "The goal's non-inferiority margin for a trial kept on its tie-break."},
+            "tie_break": {"type": "string", "description": "What a trial no better is kept for, when it is non-inferior to the baseline."}
+          }
+        }
+      ]
+    },
+    "limits": {
+      "type": "array",
+      "description": "Metrics no trial may let fall beyond a limit, against the baseline.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["metric", "limit"],
+        "properties": {
+          "metric": {"type": "string"},
+          "direction": {"enum": ["lower", "higher"]},
+          "limit": {"type": "number"}
+        }
+      }
+    },
+    "stop": {
+      "type": "object",
+      "description": "When the study stops: `trials`, or (to run until stopped) both `usd` and `wall_h`.",
+      "additionalProperties": false,
+      "properties": {
+        "trials": {"type": "integer", "minimum": 1},
+        "usd": {"type": "number", "exclusiveMinimum": 0},
+        "wall_h": {"type": "number", "exclusiveMinimum": 0},
+        "patience": {"type": "integer", "minimum": 1, "description": "Trials in a row without a kept one."},
+        "ask_timeout_h": {"type": "number", "exclusiveMinimum": 0, "description": "How long an agent's ask stays open; default 2."}
+      }
+    },
+    "space": {
+      "type": "object",
+      "description": "What a sampler may change.",
+      "additionalProperties": false,
+      "properties": {
+        "groups": {
+          "type": "array",
+          "description": "The grid sampler's groups, tried in order a value at a time from the best so far.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "name": {"type": "string"},
+              "reason": {"type": "string"},
+              "enabled": {"type": "boolean"},
+              "move_on_after": {"type": "integer", "minimum": 1, "description": "Trials without a kept one that end the group."},
+              "params": {"type": "object", "description": "{dotted path: [values] or {low, high, step}}."}
+            }
+          }
+        },
+        "prompts": {"type": "array", "items": {"type": "string"}, "description": "The prompts an agent may change."},
+        "max_candidates": {"type": "integer", "minimum": 1}
+      }
+    },
+    "repeats": {"type": "integer", "minimum": 1, "description": "How often each trial's system runs; averaged per item."},
+    "show_items": {"type": "integer", "minimum": 0, "description": "How many of the best so far's weakest validation items a sampler is shown; default 5."},
+    "frozen": {"type": "array", "items": {"type": "string"}, "description": "Files hashed with the spec: a change stops the study."},
+    "directions": {"type": "string", "description": "The person's instructions to an agent sampler."},
+    "imported": {"const": true, "description": "Brought in from a past loop's results.tsv: closed, one number per trial, not confirmable."},
+    "source": {"type": "string", "description": "An imported study's file."},
+    "note": {"type": "string"}
+  }
+}

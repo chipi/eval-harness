@@ -1,1 +1,0 @@
-[{"text": "Kennedy", "type": "person"}, {"text": "elevated racial tensions", "type": "event"}, {"text": "wave of African - American protests", "type": "event"}, {"text": "spring of 1963", "type": "event"}]

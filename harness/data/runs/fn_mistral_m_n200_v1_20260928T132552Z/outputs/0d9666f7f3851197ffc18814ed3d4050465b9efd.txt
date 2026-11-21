@@ -1,5 +1,0 @@
-```json
-[
-  {"text": "14thcentury", "type": "other"}
-]
-```

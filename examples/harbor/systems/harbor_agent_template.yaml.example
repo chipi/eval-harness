@@ -1,0 +1,16 @@
+# A TEMPLATE, not a system (the .example suffix keeps evh validate from reading it): it is never run here, and nothing in this repository runs it. Copy it to your project's
+# data/systems/, name it, fill the <...> and run it on a dataset of tasks. A model-backed agent costs money: set
+# EVAL_MAX_COST_USD first, and read the cost first with `evh run --dry-run` (it estimates nothing for a trial: the cost is
+# the agent's own, which Harbor reports after the run), then `evh arm-smoke` on one task.
+#
+# The agent's key goes in the environment file Harbor reads (`env_file`), never in this file: a key written into a system is
+# copied into every run record, and the harness refuses to run one.
+#
+# system_id: <agent>_<model>_v1
+# adapter: <path to>/examples/harbor/adapter.py
+# params:
+#   agent: <claude-code | codex | terminus-2 | ...: `harbor agents list`>
+#   model: <provider/model>
+#   jobs_dir: artifacts/<system_id>
+#   env_file: <path to the .env that names the agent's key>
+#   timeout_s: <seconds one trial may take; default the task's own timeouts plus 120>

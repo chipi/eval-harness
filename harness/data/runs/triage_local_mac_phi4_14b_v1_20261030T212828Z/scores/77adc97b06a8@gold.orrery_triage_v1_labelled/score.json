@@ -1,0 +1,8 @@
+{
+  "scorer": "77adc97b06a8",
+  "reference": "gold.orrery_triage_v1_labelled",
+  "label": "rescored 77adc97b",
+  "unset": [
+    "actor"
+  ]
+}

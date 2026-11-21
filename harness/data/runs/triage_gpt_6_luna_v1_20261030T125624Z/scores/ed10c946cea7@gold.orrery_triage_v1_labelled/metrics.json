@@ -1,0 +1,37 @@
+{
+  "metric_directions": {
+    "escalated": "lower",
+    "false_alarm": "lower",
+    "false_dismiss": "lower",
+    "model_escalated": "lower",
+    "model_false_alarm": "lower",
+    "model_false_dismiss": "lower",
+    "silent_drop": "lower",
+    "table_miss": "lower"
+  },
+  "metric_kinds": {
+    "resumed": "descriptive"
+  },
+  "primary_metric": "false_dismiss",
+  "reference_tier": "gold",
+  "scores": {
+    "correct": 0.6,
+    "cost_usd": 0.000715,
+    "escalated": 0.2,
+    "false_alarm": 0.741935,
+    "false_dismiss": 0.088235,
+    "latency_ms": 12200.498642,
+    "model_correct": 0.630769,
+    "model_escalated": 0.046154,
+    "model_false_alarm": 0.483871,
+    "model_false_dismiss": 0.147059,
+    "n_probes": 2.107692,
+    "resumed": 0.0,
+    "table_miss": 0.0,
+    "tokens_in": 4166.553846,
+    "tokens_out": 597.338462,
+    "total_cost_usd": 0.0464961,
+    "total_tokens_in": 270826.0,
+    "total_tokens_out": 38827.0
+  }
+}

@@ -23,12 +23,15 @@ HERE = Path(__file__).resolve().parents[1] / "scripts"  # the core modules (this
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tests/
 KIT = HERE.parent / "tutorial"
+import _model_records  # noqa: E402
+import _runstore  # noqa: E402
+from evaluation_harness import _format  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
-from evaluation_harness.run import progress_every, progress_line  # noqa: E402
+from evaluation_harness.run import price_drift, progress_every, progress_line  # noqa: E402
 
 proj = Path(tempfile.mkdtemp(prefix="evh-progress-"))
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-progress", EVAL_MAX_RETRIES="0")
-for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_MAX_COST_USD"):
+for k in ("EVAL_DATA_DIR", "EVAL_MAX_COST_USD"):
     env.pop(k, None)
 
 ADAPTER = """
@@ -49,25 +52,27 @@ PRIMARY_METRIC = "words"
 """
 
 
+import _cli  # noqa: E402
+
+
 def evh(*args):
-    return subprocess.run(
-        [sys.executable, str(HERE / "cli.py"), *args], cwd=proj, env=env, capture_output=True, text=True
-    )
+    return _cli.run(proj, env, *args)
 
 
-def config(name, adapter=None, record=None, **params):
-    p = proj / "data" / "configs" / f"{name}.yaml"
+def system(name, adapter=None, record=None, **params):
     body = "".join(f"  {k}: {json.dumps(v)}\n" for k, v in params.items())
-    head = f"config_id: {name}_v1\ndataset_id: tickets_v1\n"
+    head = f"system_id: {name}_v1\n"
     head += f"adapter: {adapter}\n" if adapter else ""
     head += f"model_record: {record}\n" if record else ""
-    p.write_text(head + "params:\n" + body)
-    return f"data/configs/{name}.yaml"
+    _runstore.write_text(proj, f"systems/{name}_v1.yaml", head + "params:\n" + body)
+    return ["--system", f"{name}_v1", "--dataset", "tickets_v1"]
 
 
 try:
-    (proj / "data" / "configs").mkdir(parents=True)
-    (proj / "data" / "models").mkdir()
+    _runstore.write_text(proj, _format.NAME, f"format: {_format.FORMAT}\n")
+    if not _runstore.sqlite():
+        (proj / "data" / "systems").mkdir(parents=True)
+        (proj / "data" / "models").mkdir()
     shutil.copytree(KIT / "tickets", proj / "tutorial" / "tickets")
     (proj / "calls_adapter.py").write_text(ADAPTER)
     r = evh("dataset-create", "--dataset-id", "tickets_v1", "--source-dir", "tutorial/tickets")
@@ -76,7 +81,7 @@ try:
 
     # the dry run: a one-call adapter
     priced = {"provider": "echo", "usd_per_mtok_in": 1.0, "usd_per_mtok_out": 2.0, "max_tokens": 100}
-    r = evh("run", "--config", config("one", **priced), "--repeat", "3", "--dry-run", "--json")
+    r = evh("run", *system("one", **priced), "--repeat", "3", "--dry-run", "--json")
     dry = (json.loads(r.stdout).get("result", {}).get("values", {}) if r.returncode == 0 else {}).get(
         "dry_run", {}
     )
@@ -104,7 +109,7 @@ try:
     check(
         "dry run: no arm-smoke of the config, so it says so and names the command to run before a cap",
         "MEASURED    none for one_v1" in text
-        and "evh arm-smoke --config data/configs/one.yaml" in text
+        and "evh arm-smoke --system one_v1 --dataset tickets_v1" in text
         and dry.get("measured_usd_per_item") is None,
         text[-700:],
     )
@@ -112,8 +117,7 @@ try:
     # the dry run: an adapter that declares its calls
     r = evh(
         "run",
-        "--config",
-        config("multi", adapter="calls_adapter.py", **priced),
+        *system("multi", adapter="calls_adapter.py", **priced),
         "--repeat",
         "2",
         "--dry-run",
@@ -133,15 +137,30 @@ try:
     )
 
     # the dry run: a measured cost from an arm-smoke, read from the model record
-    (proj / "data" / "models" / "mrec.yaml").write_text(
-        "model_id: mrec\nkind: llm\naliases: [mrec:1b]\nsmokes:\n  measured_v1:\n    status: pass\n"
-        "    at: '2026-11-03T10:00:00Z'\n    flags: []\n    report:\n      items:\n"
-        "      - {item: a, s: 1.0, cost_usd: 0.004}\n      - {item: b, s: 1.0, cost_usd: 0.008}\n"
-        "      projection: {items: 6, usd: 0.036}\n"
+    _model_records.put(
+        proj,
+        {
+            "model_id": "mrec",
+            "kind": "llm",
+            "aliases": ["mrec:1b"],
+            "deployments": [{"id": "here", "where": "here"}],
+            "smokes": {
+                "measured_v1": {
+                    "status": "pass",
+                    "at": "2026-11-03T10:00:00Z",
+                    "flags": [],
+                    "report": {
+                        "items": [
+                            {"item": "a", "s": 1.0, "cost_usd": 0.004},
+                            {"item": "b", "s": 1.0, "cost_usd": 0.008},
+                        ],
+                        "projection": {"items": 6, "usd": 0.036},
+                    },
+                }
+            },
+        },
     )
-    r = evh(
-        "run", "--config", config("measured", record="mrec", **priced), "--repeat", "3", "--dry-run", "--json"
-    )
+    r = evh("run", *system("measured", record="mrec", **priced), "--repeat", "3", "--dry-run", "--json")
     meas = (json.loads(r.stdout).get("result", {}).get("values", {}) if r.returncode == 0 else {}).get(
         "dry_run", {}
     )
@@ -166,11 +185,36 @@ try:
         progress_line(2, 6, "t2", "words=31", 1.234, 0.0) == "  [2/6] t2 words=31 1.2s"
         and progress_line(2, 6, "t2", "ok", 1.0, 0.0123).endswith("1.0s  $0.0123 so far"),
     )
+    check(
+        "progress: the time left at the pass's pace once it is 30 s or more (the 0.8.0 newcomer run's CPU model said "
+        "nothing of its 5.7 minutes); a fast pass's line as before",
+        progress_line(2, 20, "b2", "ok", 16.0, 0.0, 33.0) == "  [2/20] b2 ok 16.0s  about 5 min left"
+        and progress_line(18, 20, "b18", "ok", 16.0, 0.0, 297.0).endswith("about 33 s left")
+        and progress_line(2, 6, "t2", "ok", 0.1, 0.0, 0.2) == "  [2/6] t2 ok 0.1s",
+        (
+            progress_line(2, 20, "b2", "ok", 16.0, 0.0, 33.0),
+            progress_line(18, 20, "b18", "ok", 16.0, 0.0, 297.0),
+        ),
+    )
+    # A bill far from the system's declared prices is named (the 0.8.0 newcomer run's mistral-small row: 77 tokens in,
+    # 37 out, billed $0.000013175 where its prices give $0.0000188, 0.70x); one at its prices, or a system that
+    # declares none, says nothing.
+    row = {"_meta": {"usage": {"cost": 1.3175e-05}}, "tokens_in": 77.0, "tokens_out": 37.0}
+    priced = {"usd_per_mtok_in": 0.1, "usd_per_mtok_out": 0.3}
+    at_prices = {"_meta": {"usage": {"cost": 1.88e-05}}, "tokens_in": 77.0, "tokens_out": 37.0}
+    note = price_drift([row], priced) or ""
+    check(
+        "run: a bill far from the system's declared prices is named with the ratio; one at them, or no prices, is not",
+        "the provider billed $0.000013, 0.70x" in note
+        and price_drift([at_prices], priced) is None
+        and price_drift([row], {}) is None,
+        note,
+    )
 
-    cfg = config("slow", adapter="calls_adapter.py", provider="echo", sleep=0.5)
+    cfg = system("slow", adapter="calls_adapter.py", provider="echo", sleep=0.5)
     started = time.perf_counter()
     p = subprocess.Popen(
-        [sys.executable, str(HERE / "cli.py"), "run", "--config", cfg],
+        [sys.executable, str(HERE / "cli.py"), "run", *cfg],
         cwd=proj,
         env=env,
         stdout=subprocess.PIPE,
@@ -198,7 +242,7 @@ try:
         (prog[0][0] if prog else None, ended),
     )
 
-    r = evh("run", "--config", cfg, "--json", "--run-id", "slow_json")
+    r = evh("run", *cfg, "--json", "--run-id", "slow_json")
     done = [ln.split()[0] for ln in r.stderr.splitlines() if ln.lstrip().startswith("[")]
     check(
         "progress under --json: the lines are on stderr, and stdout is one JSON object",
@@ -213,30 +257,30 @@ try:
     # the same second shared one directory: the second wrote over the first, a committed run included. The
     # directories of the next few seconds are made first, each with a marker; the run must land in a new one.
     cid = "one_v1"
-    runs = proj / "data" / "runs"
     marked = []
     t0 = time.time()
     for s in range(4):
         stamp = time.strftime("%Y%m%dT%H%M%SZ", time.gmtime(t0 + s))
-        (runs / f"{cid}_{stamp}").mkdir(parents=True, exist_ok=True)
-        (runs / f"{cid}_{stamp}" / "MARKER").write_text("an earlier run\n")
-        marked.append(runs / f"{cid}_{stamp}")
-    r = evh("run", "--config", "data/configs/one.yaml", "--json")
+        if not _runstore.sqlite():
+            (proj / "data" / "runs" / f"{cid}_{stamp}").mkdir(parents=True, exist_ok=True)
+        _runstore.write_text(proj, f"runs/{cid}_{stamp}/MARKER", "an earlier run\n")
+        marked.append(f"{cid}_{stamp}")
+    r = evh("run", "--system", "one_v1", "--dataset", "tickets_v1", "--json")
     made = json.loads(r.stdout)["result"]["values"]["runs"][0]["run_id"] if r.returncode == 0 else ""
     check(
         "run: an id already taken (a run started in the same second) is never written into: the run takes a new one",
         r.returncode == 0
         and made
-        and all(m.name != made for m in marked)
-        and all(sorted(p.name for p in m.iterdir()) == ["MARKER"] for m in marked),
+        and all(m != made for m in marked)
+        and all(_runstore.listdir(proj, f"runs/{m}") == ["MARKER"] for m in marked),
         (r.stderr[-300:], made),
     )
-    r = evh("run", "--config", "data/configs/one.yaml", "--run-id", marked[0].name)
+    r = evh("run", "--system", "one_v1", "--dataset", "tickets_v1", "--run-id", marked[0])
     check(
         "run: --run-id naming a directory that exists is refused, and nothing is written into it",
         r.returncode != 0
         and "never written into another" in (r.stdout + r.stderr)
-        and sorted(p.name for p in marked[0].iterdir()) == ["MARKER"],
+        and _runstore.listdir(proj, f"runs/{marked[0]}") == ["MARKER"],
         (r.stdout + r.stderr)[-300:],
     )
 finally:

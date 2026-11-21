@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """The significance block, restricted to items a previous dataset did NOT contain.
 
     python scripts/holdout_significance.py --dataset-id cnn_dailymail_200 \
@@ -18,35 +17,21 @@ WHY THIS EXISTS
 
 from __future__ import annotations
 
-import sys as _sys
-from pathlib import Path as _Path
+from typing import Any
 
-if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
-    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
-
-import argparse
-from pathlib import Path
-
-HERE = Path(__file__).resolve().parent
-
-from evaluation_harness import leaderboard as lb  # noqa: E402
-from evaluation_harness._common import RUNS, dataset_item_ids, die  # noqa: E402
-from evaluation_harness._runs import default_metric, direction, matrix, runs_on, warn_on_ambiguous_runs  # noqa: E402  # noqa: E402
+from evaluation_harness import _outputs
+from evaluation_harness import leaderboard as lb
+from evaluation_harness._common import dataset_item_ids, die
+from evaluation_harness._runs import default_metric, direction, matrix, runs_on, warn_on_ambiguous_runs
+from evaluation_harness.ops import legacy
 
 
-def main() -> int:
+def body(**inputs: Any) -> int:
     """The significance tests, on only the items a previous dataset did not contain."""
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--dataset-id", required=True)
-    ap.add_argument("--exclude-dataset", help="drop every item this dataset also contains")
-    ap.add_argument("--metric", help="default: the primary metric the runs recorded")
-    ap.add_argument("--match", help="only config_ids containing this substring")
-    ap.add_argument("--asc", action="store_true", help="lower is better (default: inferred)")
-    ap.add_argument("--desc", action="store_true", help="higher is better, whatever the runs declare")
-    args = ap.parse_args()
-    # Two runs sharing a config_id are averaged together below without
+    args = legacy.namespace(inputs, "holdout")
+    # Two runs sharing a system_id are averaged together below without
     # saying so. See _runs.warn_on_ambiguous_runs.
-    warn_on_ambiguous_runs(RUNS, args.dataset_id, label=RUNS.name)
+    warn_on_ambiguous_runs("", args.dataset_id)
 
     args.metric = args.metric or default_metric(args.dataset_id, args.match)
     keep = None
@@ -60,15 +45,11 @@ def main() -> int:
             f"{len(keep)} held out"
         )
 
-    runs = [r for r in runs_on(args.dataset_id, match=args.match) if (r[0] / "predictions.jsonl").is_file()]
+    runs = [r for r in runs_on(args.dataset_id, match=args.match) if _outputs.has_rows(r[0])]
     raw: list[float] = []
     M = matrix(runs, args.metric, keep=keep, raw=raw)
     if not M:
-        die("no runs matched")
+        die("no runs matched", "not-found")
     print(f"  {len(runs)} run(s), {len(M)} arm(s)")
     lb.significance(M, args.metric, asc=direction(runs, args.metric, args.asc, args.desc), raw_values=raw)
     return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())

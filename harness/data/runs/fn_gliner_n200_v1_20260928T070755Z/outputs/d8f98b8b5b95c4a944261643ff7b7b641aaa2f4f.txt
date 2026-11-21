@@ -1,1 +1,0 @@
-[{"text": "village", "type": "location"}, {"text": "1993 and 2000", "type": "event"}]

@@ -1,7 +1,6 @@
-#!/usr/bin/env python3
 """Migrate every committed run's fingerprint from version 4 to version 5 (RFC-021), once.
 
-    evh fingerprint-migrate [--data-dir data] [--dry-run]
+The fingerprints step of `evh migrate` (`--dry-run` counts what would change).
 
 Rewrites only the `fingerprint` of each `<data>/runs*/**/metrics.json`, and the `fingerprint_hash` a
 baseline carries from its run (validate V6 compares the two):
@@ -20,19 +19,13 @@ nothing. Run outputs and predictions are not touched. Prints the counts before a
 
 from __future__ import annotations
 
-import sys as _sys
-from pathlib import Path as _Path
-
-if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
-    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
-
-import argparse
 import json
 from collections import Counter
 from pathlib import Path
 from typing import Any
 
 from evaluation_harness import _fingerprint as fpmod
+from evaluation_harness import _store
 from evaluation_harness._common import DATA, write_text_atomic
 
 DEPLOYMENT_PARTS = ("deployment", "settings", "runner")
@@ -94,26 +87,19 @@ def _dump(doc: dict[str, Any]) -> str:
 
 def run_files(data: Path) -> list[Path]:
     """Every run's metrics.json under data/runs*/."""
-    return sorted(p for d in data.glob("runs*") if d.is_dir() for p in d.rglob("metrics.json"))
-
-
-def main() -> int:
-    """Migrate, print the counts before and after; exit 0."""
-    ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    ap.add_argument(
-        "--data-dir",
-        type=Path,
-        default=DATA,
-        help="the project's data root (default: this project's, EVAL_DATA_DIR)",
+    return sorted(
+        p for d in _store.glob(data, "runs*") if _store.is_dir(d) for p in _store.rglob(d, "metrics.json")
     )
-    ap.add_argument("--dry-run", action="store_true", help="count what would change; write nothing")
-    args = ap.parse_args()
-    data = args.data_dir.resolve()
+
+
+def step(dry_run: bool, data: Path = DATA) -> None:
+    """`evh migrate`'s fingerprints step: migrate, print the counts before and after."""
+    data = data.resolve()
 
     docs: dict[Path, dict[str, Any]] = {}
     before: Counter[str] = Counter()
     for f in run_files(data):
-        text = f.read_text(encoding="utf-8")
+        text = _store.read_text(f, encoding="utf-8")
         doc = json.loads(text)
         docs[f] = doc
         fp = doc.get("fingerprint")
@@ -158,13 +144,15 @@ def main() -> int:
         after["no fingerprint" if not isinstance(fp, dict) else f"v{fp.get('version')}"] += 1
         if f in migrated:
             by_source[migrated[f]["fingerprint"]["deployment"]["source"]] += 1
-    if not args.dry_run:
+    if not dry_run:
         for f, doc in migrated.items():
             write_text_atomic(f, _dump(doc))
 
     baselines = 0
-    for b in sorted((data / "baselines").glob("*.json")) if (data / "baselines").is_dir() else []:
-        doc = json.loads(b.read_text(encoding="utf-8"))
+    for b in (
+        sorted(_store.glob(data / "baselines", "*/*/*.json")) if _store.is_dir(data / "baselines") else []
+    ):
+        doc = json.loads(_store.read_text(b, encoding="utf-8"))
         runs = [
             f
             for f in migrated
@@ -173,18 +161,13 @@ def main() -> int:
         new_hash = migrated[runs[0]]["fingerprint"]["hash"] if len(runs) == 1 else None
         if new_hash:
             baselines += 1
-            if not args.dry_run:
+            if not dry_run:
                 write_text_atomic(b, _dump({**doc, "fingerprint_hash": new_hash}))
 
-    print(f"fingerprint v5 migration of {data}{' (dry run: nothing written)' if args.dry_run else ''}")
+    print(f"fingerprint v5 migration of {data}{' (dry run: nothing written)' if dry_run else ''}")
     print("  before:", ", ".join(f"{n} {k}" for k, n in sorted(before.items())) or "no runs")
     print("  after: ", ", ".join(f"{n} {k}" for k, n in sorted(after.items())) or "no runs")
     print(f"  runs migrated: {len(migrated)}")
     for src in ("record", "adapter", "params"):
         print(f"    deployment source {src}: {by_source.get(src, 0)}")
     print(f"  baselines whose fingerprint_hash was updated: {baselines}")
-    return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())

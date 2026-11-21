@@ -1,1 +1,0 @@
-[{"text": "band", "type": "organization"}, {"text": "support tour", "type": "event"}]

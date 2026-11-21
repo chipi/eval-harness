@@ -8,7 +8,6 @@ nothing of theirs goes on sys.path and a project's own `stats.py` stays the proj
 Where the data lives is the PROJECT's business, not the package's:
   EVAL_HOME       the project root (default: the nearest directory up from here with data/)
   EVAL_DATA_DIR   the data root, relative to EVAL_HOME (default: data)
-  EVAL_RUNS_DIR   runs only, for a throwaway pass (default: <data>/runs)
 """
 
 from __future__ import annotations
@@ -22,6 +21,7 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 import os
 import runpy
 import sys
+import traceback
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -30,174 +30,41 @@ HERE = Path(__file__).resolve().parent
 COMMANDS = {
     "init": (
         "init_project.py",
-        "start a project: data folders, a .gitignore, AGENTS.md; --tutorial adds the GUIDE's kit",
+        "start a project: --store files|sqlite (required), data folders, a .gitignore, AGENTS.md; --tutorial adds the GUIDE's kit",
     ),
     "skills-install": (
         "skills_install.py",
         "copy the agent skills (evaluate, compare, promote) into .claude/skills/ or --target",
     ),
     "env-check": ("env_check.py", "check the Python environment and keys"),
-    "dataset-create": ("dataset_create.py", "freeze a dataset: item list + per-item sha256"),
-    "dataset-materialize": ("materialize.py", "hash-checked working copy of a dataset"),
-    "dataset-profile": (
-        "dataset_profile.py",
-        "what is inside a dataset: items, lengths, the gold's shape, a link per item (text only with --with-text)",
-    ),
-    "dataset-items": (
-        "dataset_items.py",
-        "a dataset's profile: its shape, then one row per item (--item for one)",
-    ),
-    "reference-promote": (
-        "reference_promote.py",
-        "promote a label set's labels to a reference set, at a tier, with a reason",
-    ),
-    "reference-manifest": (
-        "reference_manifest.py",
-        "the checksummed manifest of a reference set a fetch script built",
-    ),
-    "run": ("run.py", "run one arm over a dataset (--dry-run to cost it)"),
-    "arm-smoke": (
-        "arm_smoke.py",
-        "smoke an arm on a few items before its full run: checks, projection, flags",
-    ),
-    "model-onboard": (
-        "model_onboard.py",
-        "onboard a model once: probe a deployment, write what was found into its record",
-    ),
-    "fingerprint-migrate": (
-        "fingerprint_migrate.py",
-        "migrate the committed runs' fingerprints to version 5, once (idempotent)",
-    ),
-    "sweep": ("sweep.py", "run several arms, then the leaderboard"),
-    "runs-list": ("list_runs.py", "list runs (or baselines)"),
-    "rescore": ("rescore.py", "re-score stored outputs, a round's or a dataset's, for $0"),
-    "score-preview": (
-        "score_preview.py",
-        "what the scorer in this tree would move in a goal's decision; writes nothing",
-    ),
-    "judge": (
-        "judge_panel.py",
-        "the judge panel: promote finalists on a cheap metric, judge their stored outputs",
-    ),
-    "judge-score": (
-        "judge_score.py",
-        "re-measure frozen outputs with a validated LLM judge (--dry-run first)",
-    ),
-    "silver-calibrate": ("silver_calibrate.py", "how far silver reference sets drift from gold"),
-    "cost-report": ("cost_report.py", "billed cost per arm, with projections"),
-    "leaderboard": ("leaderboard.py", "rank arms, with Friedman/Nemenyi before any order"),
-    "pair-test": ("pair_test.py", "paired permutation test, two arms"),
-    "family-test": ("family_test.py", "one arm against a declared family, Holm-corrected"),
-    "bootstrap-test": ("bootstrap_test.py", "bootstrap intervals for corpus-level metrics"),
-    "holdout": ("holdout_significance.py", "tune on a pilot slice, confirm on the rest"),
-    "rank-stability": ("rank_stability.py", "how many items a ranking needs"),
-    "import-run": ("import_run.py", "per-item scores from another tool, as a run the tests can read"),
-    "importer-check": (
-        "importer_check.py",
-        "check an importer: its records are well-formed, ids unique, two reads the same",
-    ),
-    "capture": ("capture.py", "keep a production system's records as a capture (data/captures/)"),
-    "dataset-split": (
-        "dataset_split.py",
-        "split a dataset into <id>_validation and <id>_test, stable across versions",
-    ),
-    "capture-restore": (
-        "capture_restore.py",
-        "read a capture's records again from its source, and the items of the datasets made from it, every hash checked",
-    ),
     "capture-scrub": (
         "capture_scrub.py",
         "run the project's own scrubber over a capture's records, and record it",
     ),
-    "captures": ("view_captures.py", "every capture, or one: what was read, when, the datasets made from it"),
-    "labels": (
-        "view_labels.py",
-        "every label set, or a dataset's: source, coverage, guideline, how often two agree",
+    "jobs-start": (
+        "jobs_start.py",
+        "start an operation as a job: detached, with its locks, log and state (RFC-026)",
     ),
-    "label-sheet": (
-        "label_sheet.py",
-        "a sheet of a dataset's items to label, with what production or an arm decided",
-    ),
-    "label-import": ("label_import.py", "a filled label sheet as a person's label set"),
-    "sheet-import": (
-        "sheet_import.py",
-        "a sheet filled elsewhere, read back: labels as a label set, picks or scores as judged runs",
-    ),
-    "label-from-run": (
-        "label_from_run.py",
-        "a finished run's outputs as a model's label set (calls nothing)",
-    ),
-    "label-from-capture": (
-        "label_from_capture.py",
-        "rules over a capture's recorded outcomes as a rule label set",
-    ),
-    "pick": ("pick.py", "pick production items for the next version of governed datasets, or drop a pick"),
-    "picks": (
-        "view_picks.py",
-        "the picks waiting: per target, where each came from, its labels, tags and note",
-    ),
-    "dataset-extend": (
-        "dataset_extend.py",
-        "the next version of a dataset: its items and the picks you choose",
-    ),
-    "deploy-sheet": (
-        "deploy_sheet.py",
-        "what production must match to run a promoted arm, and whether a capture says it did",
-    ),
-    "arm-from-capture": (
-        "arm_from_capture.py",
-        "production's recorded decisions as an arm, scored like any (no call)",
-    ),
-    "dataset-from-capture": (
-        "dataset_from_capture.py",
-        "make a dataset version from a capture: choose records, freeze their bodies as items",
-    ),
-    "run-compare": ("compare_runs.py", "diff two runs, fingerprint first"),
-    "run-promote": ("promote_baseline.py", "promote a run to a baseline, with a reason"),
-    "round-open": (
-        "round_open.py",
-        "open a round of a goal (optional): its hypothesis, changes, arms kept or dropped",
-    ),
-    "round-retire": ("round_retire.py", "drop an arm from the open round, with the reason"),
-    "round-close": ("round_close.py", "close a round with its conclusion, promoting the run it chose"),
-    "rounds": ("round_status.py", "a goal's rounds, and what the evidence suggests next"),
-    "overview": (
-        "view_overview.py",
-        "the catalog's home page: goals at a glance, activity, spend, coverage, what was recorded",
-    ),
-    "datasets": ("view_datasets.py", "every dataset, or one: its versions, reference sets and arms"),
-    "arms": ("view_arms.py", "every arm, or one: its metrics, runs, config, conditions and rounds"),
-    "models": (
-        "view_models.py",
-        "every model record, or one: its deployments, onboarding, settings history and arms",
-    ),
-    "references": (
-        "view_references.py",
-        "every reference set, or one: who wrote it, what is scored against it",
-    ),
-    "metrics": ("view_metrics.py", "what each metric measures, or one in full with the arms recording it"),
-    "goals": ("view_goals.py", "every goal, or one: its arms on each of its datasets"),
-    "activity": (
-        "view_activity.py",
-        "the activity page: runs, spend and tokens by dataset, arm and kind, in a period",
-    ),
-    "search": ("view_search.py", "the catalog's search: datasets, arms, reference sets, metrics, goals"),
-    "inspect": (
-        "view_inspect.py",
-        "the inspector in the terminal: verdicts, conditions, a breakdown, one item, the charts, the sheet of a dataset",
-    ),
-    "catalog": ("catalog_build.py", "build the catalog: static pages over the runs, by dataset"),
+    "jobs-status": ("jobs_status.py", "the jobs, or one job: its state, what it waits for, how it ended"),
+    "jobs-logs": ("jobs_logs.py", "a job's log, from a byte on, or followed until it ends"),
+    "jobs-stop": ("jobs_stop.py", "stop a job: its process group, cancelled"),
+    "jobs-resume": ("jobs_resume.py", "resume a stopped or lost run job, as a new job"),
+    "openapi": ("openapi_doc.py", "the API's OpenAPI 3.1 description, made from the operations, as JSON"),
     "catalog-serve": ("catalog_serve.py", "serve the catalog and the run inspector on 127.0.0.1"),
     "mcp": (
         "mcp_server.py",
         "the project's read commands as MCP tools for an agent (stdio, or --http for a team; none writes the project or spends)",
     ),
-    "validate": ("validate_tree.py", "schema and integrity checks over the data tree"),
     "self-test": (
         "self_check.py",
         "does the installed harness work here? (in a checkout: the full test suite)",
     ),
 }
+# The commands made from the model's operations (RFC-032): one script runs each, told which by EVH_COMMAND. The ops
+# package imports no project code, so reading it here loads no .env early.
+from evaluation_harness import ops as _ops  # noqa: E402
+
+COMMANDS.update({name: ("op_command.py", op.about) for name, op in _ops.OPS.items()})
 
 
 def _usage() -> str:
@@ -235,10 +102,17 @@ def main(argv: list[str] | None = None) -> int:
     sys.argv = [str(script), *rest]
     # The scripts' "next, run this" hints read it: `evh …` here, `make …` in a checkout.
     os.environ["EVAL_VIA_EVH"] = "1"
-    from evaluation_harness._common import stray_home  # noqa: PLC0415
+    os.environ["EVH_COMMAND"] = name  # which operation op_command.py runs
+    from evaluation_harness._common import stray_home, use_p_cache  # noqa: PLC0415
 
     if note := stray_home():
         print(note, file=sys.stderr)
+    # Every estimated p kept in the project's ignored .cache/, as `evh mcp` keeps them: each command is a new
+    # process, and without it `goals` right after `catalog` drew every test again (PLAN_0.8.0 S1, 142 s at 1,000
+    # items). EVH_P_CACHE names another file; an empty value turns it off.
+    use_p_cache()
+    from evaluation_harness._common import EXIT_INTERNAL, EXIT_INTERRUPTED, EXIT_REFUSED  # noqa: PLC0415
+
     try:
         runpy.run_path(str(script), run_name="__main__")
     except SystemExit as exc:
@@ -248,7 +122,18 @@ def main(argv: list[str] | None = None) -> int:
         if isinstance(code, int):
             return code
         print(code, file=sys.stderr)
-        return 1
+        return EXIT_REFUSED
+    except KeyboardInterrupt:
+        print("\ninterrupted", file=sys.stderr)
+        return EXIT_INTERRUPTED
+    except Exception:  # noqa: BLE001 -- anything uncaught, told apart from a refusal (1) by its number
+        traceback.print_exc()
+        print(
+            f"evh {name}: stopped by an error nothing caught (exit {EXIT_INTERNAL}); the traceback above says "
+            "where: the harness, or the project's own code (an adapter, a scorer)",
+            file=sys.stderr,
+        )
+        return EXIT_INTERNAL
     return 0
 
 

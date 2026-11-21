@@ -1,6 +1,9 @@
 # RFC-018: A read-only MCP server in 0.5.0
 
 - **Status**: Completed (v0.5.0), 2026-10-29; accepted that day: a small read-only MCP server, with Python 3.9 dropped for it
+- **Amended** (2026-11-16, RFC-032 step 9, P2): the tools are the registry's reads, each named as its operation, and a call is
+  answered in the server's own process, not by a child process; the tool names, the arguments and the answers below are
+  those of 0.5.0 to 0.7, kept for the record
 - **Authors**: Marko Dragoljevic
 - **Related RFCs**: 0.8.0's RFC-013 (one declaration per command, `--json`, exit codes) and RFC-016 (the MCP server,
   skills, consent), on branch `070`: this is their first, read-only step, shipped early
@@ -17,10 +20,10 @@
 `evh mcp` serves one project to an agent over MCP, on the official Python SDK: over **stdio** for an agent on the
 machine that holds the project (a laptop, a workstation), or over **Streamable HTTP** (`--http`) for a shared server
 (a team's, or this repository's public one at `https://evals.humancopilot.eu/mcp`). Its tools are the harness's
-read commands, the same commands a person runs: the catalog's views (`overview`, `datasets`, `dataset-items`, `arms`,
-`goals`, `references`, `metrics`, `activity`, `search`), the inspector in the terminal (`inspect`), `rounds`,
-`runs-list` and `validate`. Each call runs the command as a child process, so a tool answers exactly what the command
-prints. No tool writes project data, spends or runs a model (the one file a call writes is the goals' p cache
+read operations, the same a person runs as commands: the catalog's views (`overview-show`, `dataset-list`, `dataset-items`, `arm-list`,
+`goal-list`, `reference-list`, `metric-list`, `activity-show`, `search`), the inspector in the terminal (`comparison-show`), `round-list`,
+`runs-list` and `validate`. Each call runs the operation in the server's own process, so a tool answers what the operation
+returns. No tool writes project data, spends or runs a model (the one file a call writes is the goals' p cache
 in the project's ignored `.cache/`, below): running arms, promoting, retiring, judging and everything with a
 consequence stay commands a person runs, until 0.8.0 brings the declarations, the actor and consent they need.
 
@@ -45,6 +48,12 @@ consequence stay commands a person runs, until 0.8.0 brings the declarations, th
 - `evh mcp [--project DIR]` (default: the project the working directory is in, as every command finds it) starts a
   stdio server on the SDK's low-level `Server` (`on_list_tools`, `on_call_tool`; `mcp.server.stdio.stdio_server`).
   Server name `evaluation-harness`, its version the harness's.
+- **As built, 0.8.0 (RFC-032 step 9):** the tools are the registry's read operations, named as the operation
+  (`goal-list`, `comparison-show`, ...), and a call runs the operation in the server's own process: no child process,
+  no argparse-derived schema. An input is the operation's own, typed, and is checked against the tool's JSON Schema
+  before anything runs; the answer is the operation's structured result in the envelope `{"command", "version",
+  "result"}`. The bullets below describe the first (0.5.0) design, which built each tool from a command's parser and
+  ran it as a child process; the full change is in the [changelog](../../harness/CHANGELOG.md).
 - **The tools** are a fixed list in `mcp_server.READ_TOOLS`: the thirteen commands above. Not tools: anything that
   writes, spends or never returns (`evh run`, `sweep`, `judge`, `rescore`, `run-promote`, the round commands,
   `dataset-create`, `dataset-materialize`, `dataset-profile`, `reference-create`, `catalog`, `catalog-serve`, `init`,
@@ -82,7 +91,7 @@ consequence stay commands a person runs, until 0.8.0 brings the declarations, th
   `{"command": "datasets", "version": "0.5.0", "result": {"blocks": [{"lines": [...]}, {"columns": …, "rows": …}]}}`.
   It is the envelope RFC-013 names (`command`, `version`, `result`), and because it is the printing path, the JSON
   and the text cannot disagree.
-- `dataset-items --json` keeps the profile it already prints (inside the envelope). `rounds`, `runs-list` and
+- `dataset-items --json` keeps the profile it already prints (inside the envelope). `round-list`, `runs-list` and
   `validate` print text only in 0.5.0; their tools return the text.
 - **What 0.8.0 changes**: RFC-013 gives each command its own result and schema, computed before it is printed; the
   generic `blocks` form goes then. 0.5.0's release notes say so, so nothing builds on its shape.
@@ -106,7 +115,7 @@ nothing.
   bind beyond it is refused unless `--allowed-host` names the host it answers (repeatable); `--allowed-origin` names
   the browser origins it accepts (a request without an Origin, which agents send, passes).
 - **`--public`**, for a server anyone can reach: the options that answer with an item's text or an arm's output are
-  left out of the schemas (`inspect --item`, `dataset-items --item`), and `validate` is not offered (a public copy of
+  left out of the schemas (`comparison-item --item`, `dataset-items --item`), and `validate` is not offered (a public copy of
   the data is not a whole project, so it would only report what was left out).
 - **Load**: `--concurrent N` commands at once (a call waiting 30 s for a slot is refused, "busy"), `--timeout` per
   call, `--rate N` calls a minute per caller and `--rate-total N` for all callers together, and over HTTP one call
@@ -127,7 +136,7 @@ nothing.
 - **Speed**: each call is a fresh process, and a view that shows the goals runs their paired tests (~500 here, ~50 s).
   `stats` keeps each estimated p on disk when `EVH_P_CACHE` names a file (the p read back exactly; a torn last line
   skipped); the server sets it to the project's ignored `.cache/evh-p.jsonl` unless the deployment names its own.
-  `goals`, `overview` and `arms` went from ~52 s to ~1.6 s.
+  `goals`, `overview` and `arms` (measured then; now `goal-list`, `overview-show` and `arm-list`) went from ~52 s to ~1.6 s.
 - **Observability**, the deployment's (`--hooks`, the inspector's shape: `start`, `request` after every call,
   `error`, `routes` served beside the endpoint): a call is reported as its tool, its arguments' names (never their
   values), how it ended, its time, and to the hooks only, the caller's address and user agent. One JSON line per
@@ -144,7 +153,7 @@ nothing.
   sizing), 127.0.0.1:8098. Caddy sends `/mcp` and `/mcp/*` to it, nothing else (its `/metrics` stays on the loopback).
 - `render.sh` vendors the SDK and its dependencies, pinned (`infra/mcp/requirements.txt`, resolved for x86_64 musl),
   as wheels beside the package, and fills the p cache during the catalog build, so the release carries it read-only.
-- `deploy.sh` recreates it with the rest, checks `/mcp/health` and a real `goals` call (up to 120 s; a warning past
+- `deploy.sh` recreates it with the rest, checks `/mcp/health` and a real `goal-list` call (up to 120 s; a warning past
   30 s, which means the precomputed cache was not read), and rolls the release back when either does not answer
   (removing the container when the previous release had none). The workflow then checks `/mcp/health` through the
   public host.
@@ -184,8 +193,8 @@ put it behind what the team already uses (a VPN, an authenticating proxy).
 
 - `harness/tests/test_mcp_server.py` (offline, the tutorial project): the server starts through the SDK's own stdio
   client; `tools/list` holds exactly `READ_TOOLS`, each read-only, each schema without `--adapter` or `--json`;
-  `datasets` returns the same text as `evh datasets` and a `structuredContent` whose tables hold its rows; a call with
-  an unknown property is refused before it runs; a refusal (`goals` with an unknown goal) comes back as `isError` with
+  `dataset-list` returns the same text as `evh dataset-list` and a `structuredContent` whose tables hold its rows; a call with
+  an unknown property is refused before it runs; a refusal (`goal-leaderboard` with an unknown goal) comes back as `isError` with
   the command's message; every command is in `READ_TOOLS` or in the list of commands that are not tools.
 - `harness/tests/test_mcp_http.py` (the SDK's streamable HTTP client): health; another Host refused (421);
   `--public` hides the text options and `validate`; a missing required argument refused before it runs; `--rate 3`
@@ -195,4 +204,4 @@ put it behind what the team already uses (a VPN, an authenticating proxy).
 - `test_installed_commands.py`: `evh mcp --help` from the installed wheel.
 - The package job runs the suite on 3.10, 3.11 and 3.14.
 - The deployment, rehearsed before it ships: the rendered release in the pinned Alpine image on Docker, run as
-  `compose.yml` runs it (user 65534, read-only root, 384m): health 200, `goals` in 5 s, 55 MB resident.
+  `compose.yml` runs it (user 65534, read-only root, 384m): health 200, `goals` in 5 s (measured then; now `goal-list`), 55 MB resident.

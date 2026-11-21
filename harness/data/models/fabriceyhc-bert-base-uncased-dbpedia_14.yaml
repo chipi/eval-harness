@@ -3,3 +3,7 @@ kind: ml
 aliases:
 - fabriceyhc/bert-base-uncased-dbpedia_14
 weights: open
+actor:
+  type: unknown
+  name: before 0.8.0
+  from: migration

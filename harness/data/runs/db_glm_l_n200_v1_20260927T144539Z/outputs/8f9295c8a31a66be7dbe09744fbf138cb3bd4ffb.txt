@@ -1,1 +1,0 @@
-The abstract describes a lake in Finland. A lake is a natural place. The category should be NaturalPlace.NaturalPlace

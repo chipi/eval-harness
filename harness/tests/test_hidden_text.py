@@ -27,13 +27,16 @@ KIT = HERE.parent / "tutorial"
 proj = Path(tempfile.mkdtemp(prefix="evh-hidden-"))
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-hidden")
 env.pop("EVAL_DATA_DIR", None)
-env.pop("EVAL_RUNS_DIR", None)
 env.pop("EVH_PUBLIC", None)
 # The in-process surfaces below resolve the project's paths on first read: set before any import.
 os.environ.clear()
 os.environ.update(env)
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from evaluation_harness._check import check, summary  # noqa: E402
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runstore  # noqa: E402
+from evaluation_harness import _format, _store  # noqa: E402
 
 MARK = {"s": "Shownmarkerword", "h": "Hiddenmarkerword"}
 FIELDSET = """fieldset_id: notes
@@ -44,14 +47,11 @@ fields:
 """
 
 
+import _cli  # noqa: E402
+
+
 def evh(*args, extra_env=None):
-    return subprocess.run(
-        [sys.executable, str(HERE / "cli.py"), *args],
-        cwd=proj,
-        env={**env, **(extra_env or {})},
-        capture_output=True,
-        text=True,
-    )
+    return _cli.run(proj, {**env, **(extra_env or {})}, *args)
 
 
 def said(r):
@@ -73,9 +73,10 @@ def found(root: Path, word: str) -> list[str]:
 
 try:
     data = proj / "data"
-    for d in ("configs", "goals", "fields"):
+    for d in ("systems", "goals", "fields"):
         (data / d).mkdir(parents=True)
-    (data / "fields" / "notes.yaml").write_text(FIELDSET)
+    _runstore.write_text(proj, _format.NAME, f"format: {_format.FORMAT}\n")
+    _runstore.write_text(proj, "fields/notes.yaml", FIELDSET)
     for k, word in MARK.items():
         ds = f"tickets_{k}"
         src = proj / "tutorial" / ds
@@ -103,7 +104,17 @@ try:
         shutil.copytree(KIT / "gold", answers)
         for f in answers.glob("*.txt"):
             f.write_text(f"{word} gold. " + f.read_text())
-        r = evh("label-import", f"{ds}_gold", "--dataset-id", ds, "--set", "owner_gold", "--by", "owner")
+        r = evh(
+            "label-import",
+            "--sheet",
+            f"{ds}_gold",
+            "--dataset-id",
+            ds,
+            "--set",
+            "owner_gold",
+            "--by",
+            "owner",
+        )
         r = (
             r
             if r.returncode
@@ -123,12 +134,13 @@ try:
         )
         check(f"setup: {ds}'s gold, imported and promoted", r.returncode == 0, said(r)[-300:])
         for c in ("tickets_lead1", "tickets_lead2"):
-            cfg = data / "configs" / f"{c}_{k}.yaml"
-            text = (KIT / "configs" / f"{c}.yaml").read_text()
-            cfg.write_text(
-                text.replace("tickets_v1", ds).replace(f"config_id: {c}_v1", f"config_id: {c}_{k}_v1")
+            text = (KIT / "systems" / f"{c}_v1.yaml").read_text()
+            _runstore.write_text(
+                proj,
+                f"systems/{c}_{k}_v1.yaml",
+                text.replace(f"system_id: {c}_v1", f"system_id: {c}_{k}_v1"),
             )
-            r = evh("run", "--config", str(cfg))
+            r = evh("run", "--system", f"{c}_{k}_v1", "--dataset", ds)
             check(f"setup: {c} runs on {ds}", r.returncode == 0, said(r)[-300:])
     git("init", "-q")
     git("add", "-A")
@@ -141,11 +153,15 @@ try:
         "setup: both profiles are written with their text",
         r.returncode == 0
         and r2.returncode == 0
-        and MARK["h"] in (data / "profiles" / "tickets_h.json").read_text(),
+        and MARK["h"] in _runstore.read_text(proj, "profiles/tickets_h.json"),
         said(r)[-300:] + said(r2)[-300:],
     )
-    f = data / "datasets" / "tickets_h.json"
-    f.write_text(json.dumps({**json.loads(f.read_text()), "text": "hidden"}, indent=2) + "\n")
+    _runstore.write_text(
+        proj,
+        "datasets/tickets_h.json",
+        json.dumps({**_runstore.read_json(proj, "datasets/tickets_h.json"), "text": "hidden"}, indent=2)
+        + "\n",
+    )
     r = evh("dataset-profile", "--dataset-id", "tickets_h", "--with-text")
     check(
         "dataset-profile --with-text is refused on a hidden dataset",
@@ -174,7 +190,7 @@ try:
 
     # ── the inspector's item answer, in process ────────────────────────────────────────────
     from evaluation_harness import catalog_serve as cs
-    from evaluation_harness.catalog_views import load_catalog_adapter
+    from evaluation_harness.catalog_adapter import load_catalog_adapter
 
     cs.set_adapter(load_catalog_adapter(None))
     item = "t01_login"
@@ -210,24 +226,25 @@ try:
     cs.LIMITS.update(hosts=(), publish=())
 
     # ── a public MCP server's command ──────────────────────────────────────────────────────
-    from evaluation_harness.mcp_server import run_command
+    sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _ops
+    import _ops
 
-    rc, out, err = run_command(proj, "dataset-items", ["--dataset-id", "tickets_s"], public=True)
+    run_command = _ops.mcp
+
+    rc, out, err = run_command(proj, "dataset-items", {"dataset": "tickets_s"})
     check(
-        "MCP public: dataset-items shows the shown dataset's text",
-        rc == 0 and MARK["s"] in out,
+        "MCP public: dataset-items serves the shown dataset's rows, never a profile's item text (L2)",
+        rc == 0 and "t01_login" in out and MARK["s"] not in out,
         (out + err)[-300:],
     )
-    rc, out, err = run_command(proj, "dataset-items", ["--dataset-id", "tickets_h"], public=True)
+    rc, out, err = run_command(proj, "dataset-items", {"dataset": "tickets_h"})
     check(
         "MCP public: dataset-items answers on the hidden dataset",
         rc == 0 and "t01_login" in out,
         (out + err)[-300:],
     )
     check("MCP public: with none of its text", MARK["h"] not in out + err, out[-300:])
-    rc, out, err = run_command(
-        proj, "dataset-items", ["--dataset-id", "tickets_h", "--item", item], public=True
-    )
+    rc, out, err = run_command(proj, "dataset-items", {"dataset": "tickets_h", "item": item})
     check(
         "MCP public: dataset-items --item on the hidden dataset is refused",
         rc != 0 and MARK["h"] not in out + err,
@@ -237,15 +254,15 @@ try:
     # On a hidden dataset its label values are per-item labels (§4): a reference's text if a set is promoted.
     for k in MARK:
         ds = f"tickets_{k}"
-        ids = sorted(
-            x["item_id"] for x in json.loads((data / "datasets" / f"{ds}.json").read_text())["items"]
-        )
+        ids = sorted(x["item_id"] for x in _runstore.read_json(proj, f"datasets/{ds}.json")["items"])
         for name, extra in (("short_a", ""), ("short_b", " two")):
             folder = proj / f"{ds}_{name}"
             folder.mkdir()
             for n, i in enumerate(ids):
                 (folder / f"{i}.txt").write_text(f"{MARK[k]}{extra if n % 2 else ''}\n")
-            r = evh("label-import", str(folder), "--dataset-id", ds, "--set", name, "--by", "owner")
+            r = evh(
+                "label-import", "--sheet", str(folder), "--dataset-id", ds, "--set", name, "--by", "owner"
+            )
             check(f"setup: {ds}'s short label set {name}", r.returncode == 0, said(r)[-300:])
     cat2 = proj / "cat2"
     r = evh("catalog", "--out", str(cat2))
@@ -261,15 +278,15 @@ try:
         "how often two sets agree" in page_h and MARK["h"] not in page_h,
         [ln for ln in page_h.splitlines() if MARK["h"] in ln][:2],
     )
-    rc, out, err = run_command(proj, "labels", ["--dataset-id", "tickets_s", "--confusion"], public=True)
+    rc, out, err = run_command(proj, "label-set-list", {"dataset": "tickets_s"})
     check(
-        "MCP public: labels --confusion names the shown dataset's labels",
+        "MCP public: label-set-list names the shown dataset's labels",
         rc == 0 and MARK["s"] in out,
         out[-300:],
     )
-    rc, out, err = run_command(proj, "labels", ["--dataset-id", "tickets_h", "--confusion"], public=True)
+    rc, out, err = run_command(proj, "label-set-list", {"dataset": "tickets_h"})
     check(
-        "MCP public: labels --confusion on the hidden dataset answers, with none of its labels' text",
+        "MCP public: label-set-list on the hidden dataset answers, with none of its labels' text",
         rc == 0 and "tickets_h" in out and MARK["h"] not in out + err,
         (out + err)[-400:],
     )
@@ -278,11 +295,13 @@ try:
     from evaluation_harness._release import copy_data
 
     # A label set on the hidden dataset (RFC-023): its record is copied, its label text never.
-    lab = data / "labels" / "tickets_h" / "l1"
-    lab.mkdir(parents=True)
-    (lab / f"{item}.txt").write_text(f"a label quoting {MARK['h']}\n")
+    lab = "labels/tickets_h/l1"
+    _store.mkdir(data / lab, parents=True)
+    _runstore.write_text(proj, f"{lab}/{item}.txt", f"a label quoting {MARK['h']}\n")
     # Its record carries a person's notes from the sheet (free text: RFC-019 §4's adjudication notes).
-    (lab / "labels.json").write_text(
+    _runstore.write_text(
+        proj,
+        f"{lab}/labels.json",
         json.dumps(
             {
                 "dataset_id": "tickets_h",
@@ -290,15 +309,206 @@ try:
                 "n_items": 1,
                 "notes": {item: f"a note quoting {MARK['h']}"},
             }
-        )
+        ),
     )
-    rc, out, err = run_command(proj, "labels", [], public=False)
-    check("labels, local: a hidden set's notes are listed on this machine", MARK["h"] in out, out[-300:])
-    rc, out, err = run_command(proj, "labels", [], public=True)
+    # A tag set on the hidden dataset (PLAN_0.8.0 D1): its modes are counted, a person's note on an output is its text.
+    tag = "tags/tickets_h/t1"
+    _store.mkdir(data / tag, parents=True)
+    _runstore.write_text(
+        proj,
+        f"{tag}/tags.json",
+        json.dumps(
+            {
+                "kind": "tag-set",
+                "dataset_id": "tickets_h",
+                "set": "t1",
+                "failure_modes": "m",
+                "n_tagged": 1,
+                "runs": {"r1": {item: {"modes": ["too-long"], "note": f"it repeats {MARK['h']}"}}},
+            }
+        ),
+    )
+    rc, out, err = run_command(proj, "tag-set-list", {"dataset": "tickets_h"})
     check(
-        "MCP public: labels lists the hidden dataset's sets, never their notes",
+        "MCP public: tag-set-list counts the hidden dataset's modes, never a note",
+        rc == 0 and "too-long" in out and MARK["h"] not in out + err,
+        (out + err)[-300:],
+    )
+    rc, out, err = run_command(proj, "label-set-list", {"dataset": "tickets_h"}, public=False)
+    check(
+        "label-set-list, local: a hidden set's notes are listed on this machine", MARK["h"] in out, out[-300:]
+    )
+    rc, out, err = run_command(proj, "label-set-list", {"dataset": "tickets_h"})
+    check(
+        "MCP public: label-set-list lists the hidden dataset's sets, never their notes",
         rc == 0 and "tickets_h" in out and MARK["h"] not in out + err,
         (out + err)[-300:],
+    )
+    # A study run on each dataset (RFC-029, RFC-032 step 7): the agent's hypotheses, rationales and instructions may quote
+    # the items it was shown; the goal's page and the release copy show a hidden dataset's study without them.
+    _runstore.write_text(
+        proj,
+        "goals/studies_g.yaml",
+        "goal_id: studies_g\ntitle: t\nstatement: s\ndecision: d\n"
+        "success_criteria: {primary: {measure: overlap_f1, direction: higher}}\n"
+        "datasets:\n  - {dataset_id: tickets_s, role: validation}\n  - {dataset_id: tickets_h, role: validation}\n",
+    )
+    for k, word in MARK.items():
+        _runstore.write_text(
+            proj,
+            f"studies/studies_g/study_{k}.yaml",
+            f"dataset: tickets_{k}\nbaseline: {{system: tickets_lead1_{k}_v1}}\nmeasure: overlap_f1\nsampler: agent\n"
+            f"accept: {{point: {{min_gain: 0}}}}\nstop: {{trials: 3}}\ndirections: look at what {word} wrote\n",
+        )
+        events = [
+            {"event": "start", "round": "r1", "baseline": f"tickets_lead1_{k}_v1", "instruction": f"read {word} first"},
+            {"event": "trial", "k": 1, "system_id": f"study_{k}-t1", "outcome": "kept", "reason": "beat the best so far",
+             "hypothesis": f"{word} items are long", "rationale": f"{word} said so", "change": {"params": {"sentences": 2}, "prompts": []},
+             "vs_best": {"delta": 0.2}, "cost_usd": 0, "shown": [{"item_id": item, "sha256": "a" * 64}]},
+            {"event": "end", "reason": "3 trial(s)", "summary": "1 trial(s), 1 kept"},
+        ]  # fmt: skip
+        _runstore.write_text(
+            proj,
+            f"studies/studies_g/study_{k}.events.jsonl",
+            "".join(json.dumps(e) + "\n" for e in events),
+        )
+        _runstore.write_text(
+            proj,
+            f"studies/studies_g/study_{k}/study_{k}-t1.yaml",
+            f"system_id: study_{k}-t1\nparams: {{provider: echo, sentences: 2}}\n",
+        )
+    # A faithfulness record of a replay on each dataset: what production and the replay answered quote the item.
+    for k, word in MARK.items():
+        rec = {"n": 1, "model_id": f"fleet_{k}", "system_id": "replay_v1", "dataset_id": f"tickets_{k}", "items_sha256": "a" * 64,
+               "versions_sha256": "a" * 64, "adapter_sha256": None, "commits": {"c" * 40: 1}, "production_run": "prod",
+               "counts": {"items": 1, "agree": 0, "differ": 1, "replay_errors": 0, "production_missing": 0}, "coverage": {},
+               "disagreements": [{"item_id": item, "kind": "differ", "commit": "c" * 40, "production": f"{word} p", "replay": f"{word} r", "error": f"{word} e"}],
+               "at": "2026-11-14T00:00:00Z", "actor": {"type": "person", "name": "t"}}  # fmt: skip
+        _runstore.write_text(proj, f"faithfulness/fleet_{k}/1.json", json.dumps(rec))
+        _runstore.write_text(
+            proj,
+            f"faithfulness/fleet_{k}/1.exceptions.jsonl",
+            json.dumps(
+                {
+                    "item_id": item,
+                    "cause": f"{word} cause",
+                    "actor": {"type": "person", "name": "t"},
+                    "at": "x",
+                }
+            )
+            + "\n",
+        )
+    cat3 = proj / "cat3"
+    r = evh("catalog", "--out", str(cat3))
+    goal_page = next(iter(cat3.rglob("studies_g.html")), None)
+    text = goal_page.read_text() if goal_page else ""
+    check(
+        "catalog: a study on the shown dataset is on its goal page with its hypothesis; one on the hidden dataset is there, "
+        "its hypothesis never",
+        r.returncode == 0
+        and "study_s" in text
+        and "study_h" in text
+        and f"{MARK['s']} items are long" in text
+        and not found(cat3, MARK["h"])
+        and "kept" in text,
+        (said(r)[-300:], found(cat3, MARK["h"])),
+    )
+    # A judging of a hidden run is another score of it (runs/<run>/scores/<judge>@<set>) and its rows carry the source
+    # row's `_meta`, which can quote the item: the release cuts them to the call too.
+    hrun = next(
+        d
+        for d in _runstore.listdir(proj, "runs")
+        if _runstore.is_file(proj, f"runs/{d}/run.json")
+        and _runstore.read_json(proj, f"runs/{d}/run.json").get("dataset_id") == "tickets_h"
+    )
+    jrel = f"runs/{hrun}/scores/j1@judging-set"
+    jdir = data / jrel
+    _store.mkdir(jdir, parents=True)
+    _runstore.write_text(
+        proj,
+        f"{jrel}/score.json",
+        json.dumps({"scorer": "j1", "reference": "judging-set", "label": "judged/j1"}),
+    )
+    _runstore.write_text(
+        proj, f"{jrel}/metrics.json", json.dumps({"derived": {"kind": "judge", "from": hrun}})
+    )
+    _runstore.put_rows(
+        jdir,
+        [{"item_id": item, "judge_x": 1.0, "_meta": {"usage": {"t": 1}, "prompt": f"quoting {MARK['h']}"}}],
+    )
+    # ── a judge scorer that judged on both datasets (RFC-032 step 8): its pages carry counts, never a reply ──────────
+    shutil.copy(KIT / "judge_prompt.txt", proj / "judge_prompt.txt")
+    judges = (
+        "[{id: ja, params: {provider: fake, model: fake-a, family: vendor_a, usd_per_mtok_in: 0, usd_per_mtok_out: 0}}, "
+        "{id: jb, params: {provider: fake, model: fake-b, family: vendor_b, usd_per_mtok_in: 0, usd_per_mtok_out: 0}}]"
+    )
+    r = evh(
+        "scorer-new", "jx_v1", "--set", "dataset_id=tickets_h", "--set", f"judges={judges}",
+        "--set", "prompt.file=judge_prompt.txt", "--set", "protocol.outputs_per_call=2",
+        "--set", "protocol.position_check_fraction=0.5", "--set", "protocol.noise_check_fraction=0.5",
+    )  # fmt: skip
+    check("setup: a judge scorer", r.returncode == 0, said(r)[-300:])
+    jx_sha = json.loads(evh("scorer-show", "jx_v1", "--json").stdout)["result"]["sha256"]
+    for k in MARK:
+        run_k = next(
+            d
+            for d in _runstore.listdir(proj, "runs")
+            if _runstore.is_file(proj, f"runs/{d}/run.json")
+            and _runstore.read_json(proj, f"runs/{d}/run.json").get("dataset_id") == f"tickets_{k}"
+        )
+        sd = f"runs/{run_k}/scores/jx_v1@js_{k}"
+        _store.mkdir(data / sd, parents=True)
+        _runstore.write_text(
+            proj,
+            f"{sd}/score.json",
+            json.dumps({"scorer": "jx_v1", "reference": f"js_{k}", "label": "judged/jx_v1"}),
+        )
+        _runstore.write_text(
+            proj, f"{sd}/metrics.json",
+            json.dumps({"scores": {"judge_score": 4.0},
+                        "derived": {"kind": "judge", "with": {"scorer_id": "jx_v1", "scorer_sha256": jx_sha}}}),
+        )  # fmt: skip
+        _runstore.write_text(
+            proj, f"judging-sets/js_{k}.json",
+            json.dumps({"judging_set_id": f"js_{k}", "dataset_id": f"tickets_{k}", "arms": [{"config_id": "a"}], "items": [{"item_id": "i1"}]}),
+        )  # fmt: skip
+        for j in ("ja", "jb"):
+            _runstore.write_text(
+                proj,
+                f"judge-verdicts/jx_v1/js_{k}/{j}/i1.primary.b0.json",
+                json.dumps({"reply": f"{MARK[k]} said so"}),
+            )
+        _runstore.write_text(
+            proj, f"judge-summaries/jx_v1@js_{k}.json",
+            json.dumps({"scorer_id": "jx_v1", "scorer_sha256": jx_sha, "label": "unvalidated judge", "validated": False,
+                        "partial": False, "items_scored": 1}),
+        )  # fmt: skip
+        _runstore.write_text(
+            proj,
+            f"judge-validation/jx_v1/src_{k}/ja/a.json",
+            json.dumps({"article_id": "1", "output": f"{MARK[k]} checked"}),
+        )
+    out_j = proj / ".build" / "catalog-judges"
+    r = evh("catalog", "--out", str(out_j))
+    pj = (
+        (out_j / "scorers" / "jx_v1.html").read_text() if (out_j / "scorers" / "jx_v1.html").is_file() else ""
+    )
+    check(
+        "catalog: the Scorers pages build with a scorer that judged a hidden dataset",
+        r.returncode == 0 and bool(pj),
+        said(r)[-400:],
+    )
+    check(
+        "catalog: the scorer's page counts its judging sets on both datasets (the hidden one's verdicts too), and names no reply",
+        all(x in pj for x in ("js_h", "js_s", "tickets_h", "tickets_s", 'data-v="2"'))
+        and not found(out_j, f"{MARK['h']} said") and not found(out_j, f"{MARK['s']} said")
+        and not found(out_j, f"{MARK['h']} checked") and not found(out_j, f"{MARK['s']} checked"),
+        (found(out_j, f"{MARK['h']} said"), found(out_j, f"{MARK['s']} said"), found(out_j, f"{MARK['h']} checked")),
+    )  # fmt: skip
+    check(
+        "catalog: no page, the scorer's included, carries the hidden dataset's text",
+        not found(out_j, MARK["h"]),
+        found(out_j, MARK["h"]),
     )
     rel = proj / ".release"
     counts = copy_data(data, rel)
@@ -310,8 +520,78 @@ try:
         if (rel / "labels").exists()
         else "no labels/",
     )
+    t1 = rel / "tags" / "tickets_h" / "t1" / "tags.json"
+    check(
+        "release: a hidden dataset's tag set is copied with its modes, without its notes",
+        t1.is_file() and '"too-long"' in t1.read_text() and MARK["h"] not in t1.read_text(),
+        t1.read_text()[:300] if t1.is_file() else "no tags.json",
+    )
     check("release: the shown dataset's outputs and gold texts are copied", bool(found(rel, MARK["s"])))
+    check(
+        "release: the verdicts of a judging set on the shown dataset are copied, those on the hidden dataset never",
+        (rel / "judge-verdicts" / "jx_v1" / "js_s" / "ja" / "i1.primary.b0.json").is_file()
+        and not (rel / "judge-verdicts" / "jx_v1" / "js_h").exists()
+        and counts["hidden_verdicts"] == 1,
+        counts,
+    )
+    relp = proj / ".release-proj"
+    copy_data(data, relp / "data")
+    shutil.copy(proj / "judge_prompt.txt", relp / "judge_prompt.txt")
+    r = evh(
+        "catalog", "--out", str(relp / "catalog"), extra_env={"EVAL_HOME": str(relp), "EVAL_STORE": "files"}
+    )
+    pr = relp / "catalog" / "scorers" / "jx_v1.html"
+    check(
+        "release: the catalog built from the copy has the scorer's page, the hidden set's verdicts none, the shown set's counted, nothing of the hidden text",
+        r.returncode == 0 and pr.is_file() and "js_h" in pr.read_text() and "js_s" in pr.read_text()
+        and not found(relp / "catalog", MARK["h"]) and not found(relp / "catalog", f"{MARK['s']} said"),
+        (said(r)[-300:], found(relp / "catalog", MARK["h"])),
+    )  # fmt: skip
     check("release: nothing of the hidden dataset's text", not found(rel, MARK["h"]), found(rel, MARK["h"]))
+    jv = sorted((rel / "judge-validation").rglob("*.json")) if (rel / "judge-validation").is_dir() else []
+    jrecs = [json.loads(p.read_text()) for p in jv]
+    check(
+        "release: the people's checks are copied, every record without the judge's reply, its hash kept",
+        len(jv) == 2
+        and all("output" not in r and r.get("output_withheld") is True and len(r.get("output_sha256", "")) == 64 for r in jrecs)
+        and not found(rel / "judge-validation", MARK["s"]),
+        [str(p.relative_to(rel)) for p in jv],
+    )  # fmt: skip
+    check(
+        "release: the scorer's page built from the copy lists the same checks as the project's (sources, judges)",
+        all(x in pr.read_text() and x in pj for x in ("<code>src_h</code>", "<code>src_s</code>", "<code>ja</code>"))
+        and "No check of the judges" not in pr.read_text(),
+        pr.read_text()[:0],
+    )  # fmt: skip
+    sl, sh = rel / "studies" / "studies_g", rel / "faithfulness"
+    check(
+        "release: a study on the shown dataset is copied whole; one on the hidden dataset keeps its outcomes, reasons and "
+        "counts, its hypotheses, rationales and instructions a mark",
+        MARK["s"] in (sl / "study_s.events.jsonl").read_text()
+        and MARK["s"] in (sl / "study_s.yaml").read_text()
+        and counts["hidden_studies"] == 1
+        and "beat the best so far" in (sl / "study_h.events.jsonl").read_text()
+        and "(not published" in (sl / "study_h.events.jsonl").read_text()
+        and "(not published" in (sl / "study_h.yaml").read_text()
+        and (sl / "study_h" / "study_h-t1.yaml").is_file()
+        and '"vs_best"' in (sl / "study_h.events.jsonl").read_text(),
+        (counts, (sl / "study_h.events.jsonl").read_text()[:400]),
+    )
+    fh, fs = (sh / "fleet_h" / "1.json").read_text(), (sh / "fleet_s" / "1.json").read_text()
+    check(
+        "release: a faithfulness record of a replay on the shown dataset is copied whole; on the hidden dataset it keeps "
+        "the item, its kind and who named it, never what was answered or the cause",
+        MARK["s"] in fs
+        and MARK["s"] in (sh / "fleet_s" / "1.exceptions.jsonl").read_text()
+        and counts["hidden_faithfulness"] == 1
+        and '"item_id"' in fh
+        and '"differ"' in fh
+        and json.loads(fh)["disagreements"][0]["production"] is None
+        and "(not published" in fh
+        and "(not published" in (sh / "fleet_h" / "1.exceptions.jsonl").read_text()
+        and '"person"' in (sh / "fleet_h" / "1.exceptions.jsonl").read_text(),
+        (counts, fh[:400]),
+    )
     check(
         "release: the hidden dataset's runs, reference (manifest only) and profile are there, numbers only",
         counts["hidden_runs"] == 2
@@ -326,13 +606,46 @@ try:
         + " "
         + str(sorted(str(p.relative_to(rel)) for p in rel.rglob("*") if "runs" not in str(p))),
     )
-    (data / "references" / "gold" / "tickets_s" / "t99_extra.txt").write_text("untracked")
-    try:
-        copy_data(data, proj / ".release2")
-        refused = ""
-    except SystemExit as exc:
-        refused = str(exc)
-    check("release: a reference text git does not track is refused", "t99_extra.txt" in refused, refused)
+    if not _runstore.sqlite():
+        _runstore.write_text(proj, "references/gold/tickets_s/t99_extra.txt", "untracked")
+        try:
+            copy_data(data, proj / ".release2")
+            refused = ""
+        except SystemExit as exc:
+            refused = str(exc)
+        check("release: a reference text git does not track is refused", "t99_extra.txt" in refused, refused)
+    else:
+        # In the database there is no git to say what is published: a reference whose manifest says its texts are
+        # not redistributed (their licence) is what a release must refuse, as git refuses them when ignored.
+        man = "references/gold/tickets_s/manifest.json"
+        doc = _runstore.read_json(proj, man)
+        doc["redistributed"] = False
+        _runstore.write_text(proj, man, json.dumps(doc, indent=1))
+        try:
+            copy_data(data, proj / ".release2")
+            refused = ""
+        except SystemExit as exc:
+            refused = str(exc)
+        check(
+            "release: the texts of a reference not redistributed (its manifest) are refused, in the database too",
+            "not redistributed" in refused and "references/gold/tickets_s/" in refused,
+            refused,
+        )
+        for text, says in (
+            (json.dumps({**doc, "redistributed": "false"}), "'false', not true or false"),
+            ("{", "cannot be read"),
+        ):
+            _runstore.write_text(proj, man, text)
+            try:
+                copy_data(data, proj / ".release3")
+                refused = ""
+            except SystemExit as exc:
+                refused = str(exc)
+            check(
+                f"release: a manifest that cannot say ({says}): its texts refused, never published",
+                says in refused,
+                refused,
+            )
 finally:
     shutil.rmtree(proj, ignore_errors=True)
 

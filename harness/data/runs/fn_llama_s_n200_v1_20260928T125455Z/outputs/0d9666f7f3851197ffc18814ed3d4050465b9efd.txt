@@ -1,8 +1,0 @@
-```
-[
-  {
-    "text": "14th century",
-    "type": "other"
-  }
-]
-```

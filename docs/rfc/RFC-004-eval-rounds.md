@@ -8,7 +8,7 @@
 - **Related ADR**: [ADR-0004](../adr/ADR-0004-eval-rounds.md)
 - **Code**: `harness/scripts/_rounds.py` (records, membership, checks), `rounds.py` (the
   commands and the evidence), `round_open.py`, `round_retire.py`, `round_close.py`,
-  `round_status.py` (entry points), `harness/schemas/round.schema.json`; test
+  `ops/rounds.py` (the read operations `round-list`, `round-show`, `round-evidence`), `harness/schemas/round.schema.json`; test
   `harness/tests/test_rounds.py`
 
 ## Abstract
@@ -67,11 +67,11 @@ open and be on the config's dataset.
 - `evh round-close --goal G --round rN --conclusion "…" [--promote RUN_ID]`: refuses a closed
   round and a conclusion under three words; `--promote` runs `run-promote` with the conclusion
   as the reason, and a refused promotion leaves the round open.
-- `evh rounds --goal G [--round rN]`: every round, then one (the open one, else the last) in
+- `evh round-show G rN`: every round, then one (the open one, else the last) in
   full with its evidence and suggestions.
 - `--round` (with `--goal` when several goals have that round) on `evh leaderboard`,
-  `evh family-test` (opponents in play), `evh pair-test` and `evh inspect` scopes to the arms in
-  play. `evh inspect --round` reads the goal's measure against the round's leader (`--metric`,
+  `evh family-test` (opponents in play), `evh pair-test` and `evh comparison-show` scopes to the arms in
+  play. `evh comparison-show --round` reads the goal's measure against the round's leader (`--metric`,
   `--baseline` override) and names the arms with no score on it, leaving them out.
   `evh pair-test --round` defaults A to the round's leader, B to the baseline it started from and
   the metric to the goal's measure, and refuses an arm not in play.
@@ -101,7 +101,7 @@ Suggestions, each a sentence and a command:
 | when | suggestion | command |
 | --- | --- | --- |
 | an arm is `significant: worse` against the leader after Holm, and did not write a silver reference | retire it, with the test as the reason | `evh round-retire … --reason "significantly worse than <leader> on <measure> after Holm (p …)"` |
-| arms are `not significant` against the leader | more items may tell them apart | `evh rank-stability --dataset-id D` |
+| arms are `not significant` against the leader | more items may tell them apart | `evh rank-stability D` |
 | the round's best is not significantly better than the previous round's | change course, or close | (none) |
 | always | close the round with what it showed | `evh round-close … --conclusion "..."`, with `--promote <leader's run>` only for a leader significantly better than the baseline (corrected for its selection from the round's arms), separated from the other arms and measured by the same scorer (amended 2026-11-04) |
 
@@ -111,7 +111,7 @@ The goal page shows the rounds newest first, and, for the open round, the sugges
 commands, each with a copy button ([UXS-001](../uxs/UXS-001-catalog.md#the-goal-page)).
 Suggestions are computed only when the catalog is built with `HarnessAdapter` over the project's
 data. Each round with a leader and two or more arms has an **inspect** button that opens the
-inspector on its arms against its leader, on the goal's measure (`evh inspect --round`). Arms
+inspector on its arms against its leader, on the goal's measure (`evh comparison-show --round`). Arms
 retired in a round carry a "retired in rN" label in the goal's tables, and their rows are greyed
 out.
 
@@ -131,9 +131,9 @@ way into the inspector for a round. Not in 0.4.0:
 
 - a round picker inside the web inspector (`round=`). The way in is the goal page's **inspect**
   button on each round, which opens the inspector on that round's arms; the terminal has
-  `evh inspect --round`;
+  `evh comparison-show --round`;
 - a progress line per round in the rounds overview (the cost per item is printed only with the
-  open round's evidence, by `evh rounds` and on the goal page).
+  open round's evidence, by `evh round-list` and on the goal page).
 
 ## Alternatives Considered
 

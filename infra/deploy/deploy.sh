@@ -56,7 +56,8 @@ prune() {
 # 0a. Only the live release and this one stay: what an earlier failed deploy or dry run left goes,
 # before the room is measured, so a box short of room frees what a prune can.
 prune
-# 0b. Room: a release is ~400 MB and ~69k files (fewer, once unchanged files are hard-linked).
+# 0b. Room: a release is ~400 MB and ~69k files (fewer, once unchanged files are hard-linked). With its data in one
+# SQLite file (render.sh's default) it is ~320 MB and the data is one file: the floors below hold for either.
 free_kb="$(df --output=avail -k "$BASE" | tail -1 | tr -d ' ')"
 free_inodes="$(df --output=iavail "$BASE" | tail -1 | tr -d ' ')"
 [ "$free_kb" -ge 2097152 ] || { echo "::error::$BASE has $((free_kb / 1024)) MB free, under 2 GB: refusing to deploy"; exit 1; }
@@ -160,7 +161,7 @@ if [ -n "$q2" ]; then
 fi
 echo "  inspector ok"
 # The MCP server: its health, then a real tool call as a client sends it (stateless JSON-RPC over
-# HTTP, the protocol revision most clients speak). `goals` runs the goals' tests: a few seconds with the
+# HTTP, the protocol revision most clients speak). `goal-list` runs the goals' tests: a few seconds with the
 # release's precomputed p cache (render.sh), about 50 s without it, so a slow answer is a warning, not a
 # rollback; no answer within 120 s is.
 code="$(curl -s -o /dev/null -w '%{http_code}' -H "Host: $SITE_HOST" "http://127.0.0.1:$MPORT/mcp/health")" || code=000
@@ -169,13 +170,13 @@ t0=$(date +%s)
 body="$(curl -s -m 120 -X POST "http://127.0.0.1:$MPORT/mcp" -H "Host: $SITE_HOST" \
   -H 'Content-Type: application/json' -H 'Accept: application/json, text/event-stream' \
   -H 'MCP-Protocol-Version: 2025-06-18' \
-  -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"goals","arguments":{}}}')" || body=""
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"goal-list","arguments":{}}}')" || body=""
 secs=$(( $(date +%s) - t0 ))
 if ! { grep -q '"result"' <<<"$body" && ! grep -Eq '"isError": *true' <<<"$body"; }; then
-  rollback "health check failed: the MCP server did not answer goals within 120 s (${body:0:200})"
+  rollback "health check failed: the MCP server did not answer goal-list within 120 s (${body:0:200})"
 fi
-[ "$secs" -le 30 ] || echo "::warning::the MCP server took ${secs} s to answer goals: is the release's p cache missing?"
-echo "  mcp ok (goals in ${secs} s)"
+[ "$secs" -le 30 ] || echo "::warning::the MCP server took ${secs} s to answer goal-list (7 to 8 s expected at cpus 0.5): is the release's p cache missing?"
+echo "  mcp ok (goal-list in ${secs} s)"
 
 # 5. The inspector after its --warm: the health check above passes while warm still runs, and a
 # warm that outgrew the memory limit OOM-looped it with the deploy reported green (an independent

@@ -21,6 +21,7 @@ import urllib.request
 from pathlib import Path
 from urllib.parse import urlparse
 
+from evaluation_harness import _store
 from evaluation_harness._common import ITEM_CACHE
 from evaluation_harness._common import sha256 as _sha256  # `sha256` is fetch()'s parameter name
 from evaluation_harness._retry import call_with_retries
@@ -62,7 +63,7 @@ def _download_once(url: str) -> Path:
                     break
                 out.write(chunk)
     except BaseException:
-        Path(tmp).unlink(missing_ok=True)
+        _store.unlink(Path(tmp), missing_ok=True)
         raise
     return Path(tmp)
 
@@ -71,7 +72,7 @@ def _download(url: str) -> Path:
     """The URL's bytes in a temporary file inside the cache directory. A transient failure
     (429, 5xx, a timeout, a dropped connection) is retried as the harness retries a provider
     (_retry.py: EVAL_MAX_RETRIES, EVAL_RETRY_MAX_DELAY); a 404 or 403 is not."""
-    ITEM_CACHE.mkdir(parents=True, exist_ok=True)
+    _store.mkdir(ITEM_CACHE, parents=True, exist_ok=True)
     try:
         return call_with_retries(_download_once, (url,), label=urlparse(url).hostname or url)
     except FetchError:
@@ -89,18 +90,18 @@ def fetch(url: str, sha256: str | None) -> tuple:
         raise FetchError(f"{url}: only http:// and https:// URLs can be items")
     if sha256:
         cached = ITEM_CACHE / sha256
-        if cached.is_file() and _sha256(cached) == sha256:
+        if _store.is_file(cached) and _sha256(cached) == sha256:
             return cached, sha256
     tmp = _download(url)
     got = _sha256(tmp)
     if sha256 and got != sha256:
-        tmp.unlink(missing_ok=True)
+        _store.unlink(tmp, missing_ok=True)
         raise FetchError(
             f"{url}: the bytes hash to {got[:12]}, not the pinned {sha256[:12]}. "
             "The file at that URL changed; that is a new dataset version, not this one."
         )
     dst = ITEM_CACHE / got
-    os.replace(tmp, dst)
+    _store.replace(tmp, dst)
     return dst, got
 
 

@@ -21,18 +21,23 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parents[1] / "scripts"  # the core modules (this file is in tests/)
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
 KIT = HERE.parent / "tutorial"
+from evaluation_harness import _format  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runstore  # noqa: E402
 
 proj = Path(tempfile.mkdtemp(prefix="evh-pair-versions-"))
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-pair-versions")
-for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_MAX_COST_USD", "EVAL_GOALS_DIR"):
+for k in ("EVAL_DATA_DIR", "EVAL_MAX_COST_USD", "EVAL_GOALS_DIR"):
     env.pop(k, None)
 
 
+import _cli  # noqa: E402
+
+
 def evh(*args):
-    return subprocess.run(
-        [sys.executable, str(HERE / "cli.py"), *args], cwd=proj, env=env, capture_output=True, text=True
-    )
+    return _cli.run(proj, env, *args)
 
 
 def out(r):
@@ -44,7 +49,7 @@ def version(ds: str, tickets: Path, gold: Path, arm: str = "lead1") -> subproces
     r = evh("dataset-create", "--dataset-id", ds, "--source-dir", str(tickets.relative_to(proj)))
     for step in (
         ("dataset-materialize", "--dataset-id", ds),
-        ("label-import", str(gold), "--dataset-id", ds, "--set", "owner_gold", "--by", "owner"),
+        ("label-import", "--sheet", str(gold), "--dataset-id", ds, "--set", "owner_gold", "--by", "owner"),
         (
             "reference-promote", "--dataset-id", ds, "--labels", "owner_gold", "--tier", "gold",
             "--reason", "The kit's hand-written summaries decide.", "--by", "owner",
@@ -54,23 +59,22 @@ def version(ds: str, tickets: Path, gold: Path, arm: str = "lead1") -> subproces
     if r.returncode:
         return r
     goal = (KIT / "goals" / "tickets_summary.yaml").read_text().replace("tickets_v1", ds)
-    (proj / "data" / "goals" / f"{ds}.yaml").write_text(
-        goal.replace("goal_id: tickets_summary", f"goal_id: {ds}")
-    )
+    _runstore.write_text(proj, f"goals/{ds}.yaml", goal.replace("goal_id: tickets_summary", f"goal_id: {ds}"))
     return arm_on(ds, arm)
 
 
 def arm_on(ds: str, arm: str) -> subprocess.CompletedProcess:
     """The tutorial's arm run on this dataset, as tickets_<arm>_<its suffix>."""
-    cfg = (KIT / "configs" / f"tickets_{arm}.yaml").read_text()
-    cfg = cfg.replace("tickets_v1", ds).replace(f"tickets_{arm}_v1", f"tickets_{arm}_{ds.split('_')[-1]}")
-    path = proj / "data" / "configs" / f"{ds}_{arm}.yaml"
-    path.write_text(cfg + f"goal: {ds}\n")
-    return evh("run", "--config", str(path.relative_to(proj)))
+    cfg = (KIT / "systems" / f"tickets_{arm}_v1.yaml").read_text()
+    sid = f"tickets_{arm}_{ds.split('_')[-1]}"
+    cfg = cfg.replace(f"tickets_{arm}_v1", sid)
+    _runstore.write_text(proj, f"systems/{sid}.yaml", cfg)
+    return evh("run", "--system", sid, "--dataset", ds, "--goal", ds)
 
 
 try:
-    (proj / "data" / "configs").mkdir(parents=True)
+    (proj / "data" / "systems").mkdir(parents=True)
+    _runstore.write_text(proj, _format.NAME, f"format: {_format.FORMAT}\n")
     (proj / "data" / "goals").mkdir()
     t1 = proj / "tutorial" / "tickets"
     shutil.copytree(KIT / "tickets", t1)
@@ -102,7 +106,6 @@ try:
         check(f"setup: {ds} with its gold and an arm on it", r.returncode == 0, out(r)[-300:])
     base = [
         "pair-test",
-        "--dataset-id",
         "tickets_v1",
         "--metric",
         "overlap_f1",
@@ -148,8 +151,8 @@ try:
         and ids_b[0].startswith("tickets_lead1_v2_")
         and f"runs of A          {ids_a[0]}" in r.stdout
         and f"runs of B          {ids_b[0]}" in r.stdout
-        and "read from          " in r.stdout
-        and "--runs-dir" in r.stdout,
+        and "read as            runs" in r.stdout
+        and "--label" in r.stdout,
         (ids_a, ids_b, r.stdout[-600:]),
     )
     missing = [a if a != "overlap_f1" else "no_such_measure" for a in base]
@@ -198,10 +201,11 @@ try:
     )
 
     # A reference whose text is gone still compares by its recorded checksums.
-    ref2 = proj / "data" / "references" / "gold" / "tickets_v2"
-    kept = {f.name: f.read_text() for f in ref2.glob("*.txt")}
-    for f in ref2.glob("*.txt"):
-        f.unlink()
+    ref2 = "references/gold/tickets_v2"
+    texts = [n for n in _runstore.listdir(proj, ref2) if n.endswith(".txt")]
+    kept = {n: _runstore.read_text(proj, f"{ref2}/{n}") for n in texts}
+    for n in texts:
+        _runstore.unlink(proj, f"{ref2}/{n}")
     r = evh(*base, "tickets_lead1_v2", "--b-dataset", "tickets_v2")
     check(
         "reference texts not on this machine: compared by the checksums the manifest records",
@@ -209,7 +213,7 @@ try:
         out(r),
     )
     for name, text in kept.items():
-        (ref2 / name).write_text(text)
+        _runstore.write_text(proj, f"{ref2}/{name}", text)
 
     # Other refusals.
     r = evh(*base, "tickets_lead1_v1", "--b-dataset", "tickets_v1")
@@ -229,13 +233,15 @@ try:
         out(r),
     )
     r = evh(*base, "tickets_lead1_v2", "--b-dataset", "tickets_v2", "--round", "r1")
-    check("--b-dataset with --round: refused", r.returncode == 2 and "cannot be combined" in r.stderr, out(r))
-    r = evh("pair-test", "--dataset-id", "tickets_v1", "--a", "tickets_lead1_v1", "--b-dataset", "tickets_v2")
-    check("--b-dataset without --b: refused", r.returncode == 2 and "needs --a and --b" in r.stderr, out(r))
+    check("--b-dataset with --round: refused", r.returncode == 1 and "cannot be combined" in r.stderr, out(r))
+    r = evh("pair-test", "tickets_v1", "--a", "tickets_lead1_v1", "--b-dataset", "tickets_v2")
+    check("--b-dataset without --b: refused", r.returncode == 1 and "needs a and b" in r.stderr, out(r))
 
     # An arm scored against a different metric direction on each side.
-    goal2 = proj / "data" / "goals" / "tickets_v2.yaml"
-    goal2.write_text(goal2.read_text().replace("direction: higher", "direction: lower"))
+    goal2 = _runstore.read_text(proj, "goals/tickets_v2.yaml")
+    _runstore.write_text(
+        proj, "goals/tickets_v2.yaml", goal2.replace("direction: higher", "direction: lower")
+    )
     r = evh(*base, "tickets_lead1_v2", "--b-dataset", "tickets_v2")
     check(
         "a metric that is higher-is-better for one arm and lower-is-better for the other: refused",

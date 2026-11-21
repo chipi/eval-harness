@@ -4,3 +4,7 @@ aliases:
 - sentence-transformers/all-MiniLM-L6-v2
 weights: open
 licence: apache-2.0
+actor:
+  type: unknown
+  name: before 0.8.0
+  from: migration

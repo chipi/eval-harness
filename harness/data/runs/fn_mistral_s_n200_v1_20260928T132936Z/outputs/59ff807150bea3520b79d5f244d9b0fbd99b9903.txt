@@ -1,9 +1,0 @@
-```json
-[
-  {"text": "inauguration ceremony", "type": "event"},
-  {"text": "Germany", "type": "location"},
-  {"text": "Chancellor Gerhard Schröder", "type": "person"},
-  {"text": "Hitler", "type": "person"},
-  {"text": "Hitler's underground bunker", "type": "building"}
-]
-```

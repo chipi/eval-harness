@@ -1,4 +1,4 @@
-# ADR-0006 — A goal weighs cost, quality and speed; a strategy picks (0.4.0)
+# ADR-0006 — A goal weighs cost, quality and speed; a strategy picks
 
 **Status:** Accepted (2026-10-25), as built.
 **Date:** 2026-10-25
@@ -38,7 +38,7 @@ set is not evidence that they are equally good.
   arm a round retired are shown and never recommended.
 - **The leader** is the best eligible arm on quality; among equal values the first by label,
   so the order the arms come in never decides.
-- **A strategy says who the contenders are** beside the quality leader (`success_criteria.strategy`):
+- **A strategy says who the contenders are** beside the quality leader (`success_criteria.strategy`). *Amended by [ADR-0026](ADR-0026-contenders-by-non-inferiority.md): a contender is shown no worse than the leader by more than the margin, and a strategy is a default margin (balanced 5%, frugal 10%).* The rules this decision recorded:
   - `balanced` (the default): not significantly different from the leader by the paired test AND within the quality margin
     (`axes.quality.margin`; by default 2% of the leader's mean, so it means the same on a 0-1
     rate and a 1-5 score, and 2% of the group's range when the leader is 0, where a share of
@@ -48,8 +48,7 @@ set is not evidence that they are equally good.
   - `frugal`: anything the paired test finds not significantly different.
   Identical per-item scores are contenders in every strategy. A judge's group decides on the judge's
   score, so the goal's quality limit and margin (written for its own measure) do not apply there; it
-  shows its leader beside the group the goal decides on and recommends nothing (0.6.1: one recommendation per
-  goal and dataset, from the goal's own measure).
+  shows its leader beside the group the goal decides on; one recommendation per goal and dataset comes from the goal's own measure.
 - **A tie-break picks among the contenders** (`success_criteria.tie_break`, default cost then speed,
   any axis the goal weighs, quality included: `frugal` with `[cost, quality]` is "the cheapest,
   then the best of the equally cheap"; validate's V14 refuses an axis it does not weigh).
@@ -63,7 +62,7 @@ set is not evidence that they are equally good.
   group scored against silver beside a gold group on its dataset (gold decides; silver favours
   its author's family), and a group measured by unvalidated judges (a trial, not a measurement).
 - **Guardrails stay words** (`{name, rule, source}`): shown on the goal page and by
-  `evh goals --goal`, never computed.
+  `evh goal-leaderboard`, never computed.
 - **`secondary` is removed**; its entries become axes.
 - The rule recommends. Promoting a baseline is still `evh run-promote`, a person's decision.
 
@@ -73,7 +72,7 @@ set is not evidence that they are equally good.
   the contenders were, who was out and for what. Beside the reasons it shows each arm's cost and speed, and
   a chart of quality against each axis. The home page's glance gains the recommended arm with
   its cost and speed against the baseline; the dataset and arm pages show cost and speed; the
-  inspector's scatter takes cost and tokens. `evh goals --goal` and `evh overview` print the
+  inspector's scatter takes cost and tokens. `evh goal-leaderboard` and `evh overview-show` print the
   same. A project adds its own axis with one line.
 - **Negative.** A goal with `secondary:` fails validation until it is moved to `axes:`
   (UPGRADING). The default margin is a convention: a goal whose measure has a natural
