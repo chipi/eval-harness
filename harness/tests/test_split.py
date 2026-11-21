@@ -100,6 +100,14 @@ check(
     r.returncode == 0 and dev | held == ids("base_v2") and not dev & held and 60 <= len(held) <= 120,
     f"{len(dev)} validation, {len(held)} test; " + out(r)[-200:],
 )
+text = out(r)
+check(
+    "split: the output states the counts it made and that a hash split is approximate",
+    f"{len(dev)} validation and {len(held)} test of 300 item(s)" in text
+    and "asked for a 0.3 test share" in text
+    and "approximate" in text,
+    text[-400:],
+)
 sp = ds("base_v2_test").get("split", {})
 check(
     "split: each side records the rule, its parent's version and its lineage; it is 1.0 itself",

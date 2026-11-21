@@ -315,12 +315,18 @@ def systems_filed(by_ds: dict, g: dict) -> int:
 
 
 def retired_in_of(A, g: dict) -> dict:
-    """{arm id: round_id} for every arm a round of this goal retired (its `retired_arms`)."""
+    """{arm id: round_id} for every arm a round of this goal retired (its `retired_arms`) and no later round has back in
+    play: a retirement is a round's decision (ADR-0006, RFC-004), so an arm carried into a later round is in play."""
     rfn = getattr(A, "rounds", None)
     out: dict = {}
     for r in rfn() if callable(rfn) else []:
         if r.get("goal") != g["goal_id"]:
             continue
+        for k in r.get("arms") or []:
+            # with its re-scored siblings (the same dataset and system under another label), retired with it
+            tail = k.split("/", 1)[-1]
+            for gone in [x for x in out if x.split("/", 1)[-1] == tail]:
+                del out[gone]
         for k in r.get("retired_arms") or []:
             out[k] = r["round_id"]
     return out

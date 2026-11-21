@@ -1740,8 +1740,9 @@ opening line as the description); `--card URL` adds the image a shared link show
 **In the terminal:** every view has a command. `evh overview-show [--period P]` for the home page,
 `evh activity-show` for the activity page, `evh arm-list` (`--systems 1`) for the arms page,
 `evh dataset-list`, `evh arm-show LABEL DATASET …`, `evh reference-list`, `evh metric-show …` and
-`evh goal-leaderboard …` for the others, `evh comparison-show --runs …` (`--analysis` for the charts; `evh comparison-item --runs … --item <id>`
-for one item) for the inspector, `evh label-set-list D` and `evh capture-list` for the Labels and Captures pages,
+`evh goal-leaderboard …` for the others, `evh comparison-show --runs …` (arms by arm id or by system id; a system measured on two datasets is refused as
+ambiguous and the message lists its arm ids, `runs/<dataset>/<system>`; `--analysis` for the charts;
+`evh comparison-item --runs … --item <id>` for one item) for the inspector, `evh label-set-list D` and `evh capture-list` for the Labels and Captures pages,
 `evh sheet-show … --runs …` for a dataset's sheet (the inspector's per-item scores too),
 `evh comparison-crosstab --runs … --crosstab M1,M2` and `evh comparison-items` for the two per-item reads above,
 `evh picks` for the picks waiting and `evh deploy-sheet …` for a goal's deploy sheet.

@@ -167,10 +167,39 @@ try:
         st_role = result(evh("goal-status", "tickets_summary", "--json"))
         check(
             f"goal-status: a `role: {role}` dataset is never asked for a baseline (a study never promotes on it)",
-            "baseline" not in st_role["next"]["what"] and st_role["datasets"][0]["role"] == role,
+            "promote a baseline" not in st_role["next"]["what"] and st_role["datasets"][0]["role"] == role,
+            st_role["next"],
+        )
+        check(
+            f"goal-status: with no baseline ever promoted ({role} dataset), the next step says so, then the step",
+            st_role["next"]["what"]
+            == "no baseline promoted yet; to test a change, open a round with a question",
             st_role["next"],
         )
     evh("goal-set", "tickets_summary", "--set", "datasets.0.role=pilot")
+    run_id = sorted(p.name for p in (proj / "data" / "runs").iterdir() if p.name.startswith("one_v1_"))[0]
+    promoted = evh(
+        "run-promote", "--run", run_id, "--goal", "tickets_summary", "--reason", "the goal test's baseline"
+    )
+    st_base = result(evh("goal-status", "tickets_summary", "--json"))
+    check(
+        "goal-status: after a baseline is promoted and no round is open, the next step names where the goal stands, "
+        "then the step",
+        promoted.returncode == 0
+        and st_base["next"]["what"] == "baseline one_v1 (v1); to test a change, open a round with a question",
+        (promoted.stderr[-200:], st_base["next"]),
+    )
+    from evaluation_harness.model import goals as mg
+
+    closed = [
+        {"round_id": "r1", "status": "closed", "conclusion": {"text": "x", "promoted_run": None}},
+        {"round_id": "r2", "status": "closed", "conclusion": {"text": "y", "promoted_run": run_id}},
+    ]
+    check(
+        "goal-status: 'since rN' names the closed round whose conclusion promoted the baseline's run",
+        mg._since(closed, run_id) == "r2" and mg._since(closed, "other_run") is None,
+        mg._since(closed, run_id),
+    )
 
     srv, port = serve()
     try:

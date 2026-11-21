@@ -1428,6 +1428,37 @@ that can move a result is never a patch release without saying so under **Change
 - **`evh dataset-create` without `--source-dir` reads `data/sources/<dataset id>`**, as its `--help`, the API's schema and
   RUNBOOK §2 say; it read `data/sources` itself and failed "no items matched" for a project that keeps one folder per
   dataset. A `--manifest` keeps `data/sources` as the base of its `source_path`s.
+- **SCENARIO step 3 pins `max_tokens: 1500` for the frontier arm**: with 600 the `intents_opus` reply to item m13 was cut
+  off again (its reasoning took 583 of the 600), and the documented run needed a second opus run. The re-run of the same
+  item finished in 272 tokens (214 of them reasoning); 1500 is 5.5 times that.
+- **`evh dataset-split` prints the counts it made and says a hash split is approximate** (`split: 10 validation and 10
+  test of 20 item(s); you asked for a 0.4 test share, a hash split is approximate: ...`); SCENARIO step 11 says so where it
+  runs the command.
+- **`comparison-show --runs` with a system id measured on two datasets is documented as ambiguous**: SCENARIO step 15
+  tells to name arms by arm id (`runs/briefs_v1/briefs_lead1_v1`), and tutorial 5, RUNBOOK §14 and UXS-002 say that a bare
+  system id works when one arm has it and is refused, with the arm ids listed, when it matches two.
+- **The catalog's goal page prints a study confirmation's deltas as the command does** (`delta +0.101 on the test items,
+  +0.2047 on validation`), not as stored (`0.10104079548933029`); one formatter (`_study.fmt_delta`) serves both.
+- **An arm a later round carries in is in play there, not "retired in r2"**: a retirement is a round's decision (ADR-0006,
+  RFC-004), so the goal page's tables and the eval screen's and `chart intervals`' "left out" lines name an arm as retired
+  only while no later round has it back in play.
+- **The latency chart's p50 and p95 labels no longer overprint** where two marks of an arm are nearer than a label is
+  wide: the earlier label ends at its tick, the later starts at its.
+- **"Choose the systems" has no empty "where it runs" column**: it is left out when no system names a deployment, and a
+  system that names none reads "not recorded" when another does.
+- **Dataset pages in the catalog sit in the same gutter as the goal, arm and metric pages** (the arms index keeps its wide
+  table); and the inspector's "what the judges said" is a table again (its class matched the home page's two-column cards,
+  which put the header at the left and the rows in the right half). A dataset page's cost and speed cells stay on one line.
+- **An arm carried back into a later round brings its re-scored siblings with it** (the same dataset and system under
+  another label): they were still read as retired in the round that retired them.
+- **A profile is optional in the Workbench's step rail**: Prepare the dataset is done when the items are fetched and a
+  reference set is promoted, and "not looked at yet" is no longer listed as lacking (the Prepare screen marks "Look
+  inside" optional until done). Choose the systems and Its rounds are done only once Prepare is, so a check mark and a
+  lock never disagree. UXS-005 and PRD-017 say so.
+- **The next step, with no round open, says where the goal stands**: `goal-status`, the Workbench's home and its goal
+  screen read "baseline briefs_mistral_small_v1 (v1, since r2); to test a change, open a round with a question" (since rN
+  only when a closed round's conclusion promoted that baseline), or "no baseline promoted yet; ...", not the bare
+  "open a round with a question" after four closed rounds.
 
 ## 0.7.2 — 2026-11-04
 

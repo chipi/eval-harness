@@ -128,7 +128,7 @@ EVENTS = [
     {"event": "end", "reason": "the space is exhausted", "spent_usd": 0.02, "summary": "2 trial(s), 1 kept"},
     {"event": "confirm", "phase": "named", "trial": 1, "test": "tk_test", "rule": "superiority", "items": 2},
     {"event": "confirm", "phase": "verdict", "trial": 1, "test": "tk_test", "rule": "superiority", "outcome": "better",
-     "delta": 0.3, "validation_delta": 0.25, "look": LOOK, "actor": {"type": "person", "name": "owner"}},
+     "delta": 0.10104079548933029, "validation_delta": 0.2047038824636694, "look": LOOK, "actor": {"type": "person", "name": "owner"}},
 ]  # fmt: skip
 
 try:
@@ -397,6 +397,12 @@ try:
         and "<b>better</b>" in block
         and "sentences = 4" not in block,
         block[:600],
+    )
+    check(
+        "the block prints a confirmation's deltas rounded as the command does (+0.101 / +0.2047), not as stored",
+        "delta +0.101 on the test items, +0.2047 on validation" in block
+        and "0.10104079548933029" not in block,
+        block[block.find("confirmed on") :][:300],
     )
 
     # ── the operations, on the command line and through the API ───────────────────────────────────────────────────

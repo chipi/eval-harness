@@ -478,6 +478,17 @@ try:
         ),
         texts,
     )
+    # Two marks of one row closer than a label is wide (a p50 and a p95 a few ms apart) lean apart, so the labels read.
+    lat = cc.strip(
+        {"near": [(1.0, "a"), (100.0, "b")], "far": [(1.0, "a"), (100.0, "b")]}, "m",
+        marks={"near": [(2.0, "p50"), (3.0, "p95")], "far": [(20.0, "p50"), (90.0, "p95")]}, width=cc.NARROW,
+    )  # fmt: skip
+    labels = re.findall(r'text-anchor="(\w+)" class="tick">(p\d\d)<', lat)
+    check(
+        "a p50 and a p95 drawn nearer than a label's width are anchored away from each other; far apart, centred",
+        labels == [("end", "p50"), ("start", "p95"), ("middle", "p50"), ("middle", "p95")],
+        labels,
+    )
     # An arm a round retired has no interval against the leader (it is outside the family the decision tests): the chart
     # names it, with the round, where it would have been drawn (ADR-0006: a retired arm is shown, never recommended).
     opened = evh(

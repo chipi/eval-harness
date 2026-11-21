@@ -3,6 +3,7 @@ where it stands, which every surface reads (the Workbench's home and hub, `evh g
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from typing import Any
 
@@ -108,13 +109,38 @@ def status(goal_id: str, data: Path | None = None) -> dict[str, Any]:
         "datasets": datasets,
         "rounds": rounds,
         "running": running,
-        "next": _next(goal_id, datasets, rounds),
+        "next": _next(goal_id, datasets, rounds, _standing(datasets, _rounds.load_rounds(goal_id, data))),
     }
 
 
-def _next(goal_id: str, datasets: list[dict[str, Any]], rounds: list[dict[str, Any]]) -> dict[str, str]:
+def _since(rounds: list[dict[str, Any]], run: str | None) -> str | None:
+    """The first closed round whose conclusion promoted `run`, or None (the baseline came from a run, not a round)."""
+    return next(
+        (
+            r.get("round_id")
+            for r in rounds
+            if r.get("status") == "closed" and run and (r.get("conclusion") or {}).get("promoted_run") == run
+        ),
+        None,
+    )
+
+
+def _standing(datasets: list[dict[str, Any]], round_docs: list[dict[str, Any]]) -> str:
+    """Where the goal stands, as the baseline of the first deciding dataset that has one: `baseline <system> (v1, since
+    r2)`, or that none was ever promoted."""
+    for d in (x for x in datasets if x["decides"] and x["baseline"]):
+        run = d["baseline"]["run"] or ""
+        system = re.sub(r"_\d{8}T\d{6}Z(_r\d+)?$", "", run) or run
+        since = _since(round_docs, run)
+        return f"baseline {system} (v{d['baseline']['version']}{f', since {since}' if since else ''})"
+    return "no baseline promoted yet"
+
+
+def _next(
+    goal_id: str, datasets: list[dict[str, Any]], rounds: list[dict[str, Any]], standing: str = ""
+) -> dict[str, str]:
     """The first step not taken, on the datasets that decide: made, materialized, a reference, runs, a baseline (not on a `validation` or `test` side); then
-    the open round to close, or a round to open."""
+    the open round to close, or, with none open, where the goal stands (`standing`) and a round to open."""
     for d in (x for x in datasets if x["decides"]):
         ds = d["dataset"]
         if not d["made"]:
@@ -145,6 +171,8 @@ def _next(goal_id: str, datasets: list[dict[str, Any]], rounds: list[dict[str, A
             "command": f"evh round-show {goal_id} {r}",
         }
     return {
-        "what": "open a round with a question",
+        "what": f"{standing}; to test a change, open a round with a question"
+        if standing
+        else "open a round with a question",
         "command": f'evh round-open --goal {goal_id} --hypothesis "..." ...',
     }

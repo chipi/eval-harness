@@ -677,6 +677,7 @@
     const latest = latestOf(pv);
     const d = readSys(goal) || { model: "", deployment: "", prompt: latest ? latest.text : "", temperature: "0", max_tokens: "", id: "" };
     const mine = forGoal(sys.systems, goal, allArms);
+    const anyDep = mine.some((x) => x.deployment);
     const sysrec = Object.fromEntries(mine.map((x) => [x.system, load(`sysrec:${x.system}`, `/systems/${enc(x.system)}`)]));
     const promptCell = (id) => {
       const r = sysrec[id];
@@ -693,8 +694,8 @@
       <section class="part"><div class="parthead"><h2>Check each on three items</h2></div><div class="body">
         <div class="inline"><label class="name" for="sm-ds">on</label><select id="sm-ds">${datasets.map((x) => `<option>${esc(x)}</option>`).join("")}</select>
           <label class="name" for="sm-cap">spend at most (USD)</label><input type="number" id="sm-cap" min="0.01" step="0.01" value="0.05" inputmode="decimal" style="width:7rem"></div>
-        <div class="tablewrap"><table><thead><tr><th>system</th><th>model</th><th>where it runs</th><th>its prompt</th><th>its check</th></tr></thead><tbody>
-        ${mine.map((x) => `<tr><td class="mono">${esc(x.system)}</td><td>${esc(x.model || "")}</td><td>${esc(x.deployment || "")}</td><td>${promptCell(x.system)}</td>
+        <div class="tablewrap"><table><thead><tr><th>system</th><th>model</th>${anyDep ? "<th>where it runs</th>" : ""}<th>its prompt</th><th>its check</th></tr></thead><tbody>
+        ${mine.map((x) => `<tr><td class="mono">${esc(x.system)}</td><td>${esc(x.model || "")}</td>${anyDep ? `<td>${x.deployment ? esc(x.deployment) : '<span class="muted">not recorded</span>'}</td>` : ""}<td>${promptCell(x.system)}</td>
           <td><button class="btn" type="button" data-smoke="${esc(x.system)}">Check it on three items</button> <button class="btn" type="button" data-clone="${esc(x.system)}">Clone it, change one thing</button>
             <div id="sm-${esc(x.system)}" data-out aria-live="polite">${smokeView(smokes[`${goal}/${x.system}`], sysrec[x.system])}</div><div id="cl-${esc(x.system)}" data-out></div></td></tr>`).join("")}</tbody></table></div>
         ${byField("sm-by")}</div></section>
@@ -1416,7 +1417,7 @@
   }
   function screenPrepare(ds) {
     const head = `<div class="kicker">Step 3 · ${esc(ds)}</div><h1>Prepare the dataset</h1>
-      <p class="lead">Three things a dataset needs before anything runs: its items fetched, a look inside, and the reference set outputs are scored against. ${qh("prepare")}</p>`;
+      <p class="lead">What a dataset needs before anything runs: its items fetched and the reference set outputs are scored against; a look inside is offered. ${qh("prepare")}</p>`;
     if (!ds) return `<div class="screen">${head}<p class="note">Open it from a goal's dataset.</p><div class="actions"><a class="btn" href="#home">Your goals</a></div></div>`;
     const d = load(`dataset:${ds}`, `/datasets/${enc(ds)}`);
     if (d === undefined) return `<div class="screen wide">${head}${loading("the dataset")}</div>`;
@@ -1432,7 +1433,7 @@
       <section class="part"><div class="parthead"><span class="letter">a</span><h2>Fetch its items</h2><span class="grow"></span>${done(fetched)}</div><div class="body">
         <p class="muted">Downloads every item and checks it against its hash, so a run reads exactly the frozen items.</p>
         ${fetched ? "" : `<div class="actions" style="margin-top:0"><button class="btn primary" type="button" id="pp-fetch">Fetch them</button></div>`}<div id="pp-fetch-out" data-out></div></div></section>
-      <section class="part"><div class="parthead"><span class="letter">b</span><h2>Look inside</h2><span class="grow"></span>${done(looked)}</div><div class="body">
+      <section class="part"><div class="parthead"><span class="letter">b</span><h2>Look inside</h2><span class="grow"></span>${looked ? done(true) : '<span class="status">optional</span>'}</div><div class="body">
         <p class="muted">How many items, how long, each field's values: most surprises show here, before anything runs.</p>
         ${looked ? `<p><a href="${catalogPage(ds)}">Open its page in the catalog ↗</a></p>` : `<div class="actions" style="margin-top:0"><button class="btn primary" type="button" id="pp-look" ${fetched ? "" : "disabled"}>Profile it</button>${fetched ? "" : '<span class="muted">after it is fetched</span>'}</div>`}
         <div id="pp-look-out" data-out></div></div></section>
@@ -2707,10 +2708,11 @@
     // the dataset the states are about: the one the screen is on (its prepare, label and reference screens), else the first that decides
     const d0 = (DATASET_ROUTES.includes(base) && rows.find((x) => x.dataset === param)) || rows.find((x) => x.decides) || rows[0];
     const detail = d0 ? loadQ(`dataset:${d0.dataset}`, `/datasets/${enc(d0.dataset)}`) : null;
-    const parts = detail && !detail.error ? detail.parts : {};
-    const prepared = !!d0 && !!d0.materialized && !!(parts.profile || {}).present && ((detail.references || []).length > 0 || d0.references.length > 0);
+    // a profile ("look inside") is offered on the prepare screen and never holds the step open (UXS-005)
+    const prepared = !!d0 && !!d0.materialized && (((detail && !detail.error && detail.references) || []).length > 0 || d0.references.length > 0);
     const done = st ? {
-      goal: true, dataset: rows.length > 0, prepare: prepared, systems: !!d0 && d0.arms >= 2, eval: st.rounds.some((r) => r.status === "closed"),
+      // a step after Prepare is done only once Prepare is: the check marks and the locks read the same fact
+      goal: true, dataset: rows.length > 0, prepare: prepared, systems: prepared && d0.arms >= 2, eval: prepared && st.rounds.some((r) => r.status === "closed"),
     } : {};
     const loaded = !!detail && !detail.error;
     const nRefs = loaded ? (detail.references || []).length : d0 ? d0.references.length : 0;
@@ -2720,7 +2722,7 @@
       if (id === "dataset") return "no dataset named";
       if (id === "prepare") {
         if (!d0) return "no dataset to prepare";
-        return [!d0.materialized && "not fetched", loaded && !(parts.profile || {}).present && "not looked at yet", !nRefs && "no reference set"].filter(Boolean).join(", ");
+        return [!d0.materialized && "not fetched", !nRefs && "no reference set"].filter(Boolean).join(", ");
       }
       if (id === "systems") return `${d0 ? d0.arms : 0} of 2 systems with runs`;
       return "no round closed";

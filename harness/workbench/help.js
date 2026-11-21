@@ -100,7 +100,7 @@ window.HELP = {
   },
   prepare: {
     title: "Prepare",
-    hint: "Three things the dataset needs before anything runs.",
+    hint: "What the dataset needs before anything runs: its items and a reference set; a look inside is optional.",
     what: "Each is done once per dataset.",
     more: "Datasets",
   },

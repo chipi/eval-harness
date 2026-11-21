@@ -578,6 +578,44 @@ def drive(base: str, overview: str = "", art_base: str = "") -> None:
         )
         page.unroute("**/api/item?*")
 
+        # What the judges said (RFC-034) is a table: its header over its rows (the table's class once matched the home
+        # page's two-column `.why` cards, which put the header left and the rows in the right half; scenario 080c U6).
+        def with_verdicts(route):
+            resp = route.fetch()
+            doc = resp.json()
+            doc["verdicts"] = [
+                {
+                    "scorer": "j1",
+                    "judge": "judge-a",
+                    "arm": "runs/tickets_v1/a",
+                    "said": 0.5,
+                    "why": "it skips the ask",
+                },
+                {
+                    "scorer": "j1",
+                    "judge": "judge-a",
+                    "arm": "runs/tickets_v1/b",
+                    "said": 1.0,
+                    "why": "it covers the ask",
+                },
+            ]
+            route.fulfill(response=resp, json=doc)
+
+        page.route("**/api/item?*", with_verdicts)
+        page.goto(f"{art_base}inspect.html?runs={art_arms}&item=t01_login")
+        page.wait_for_selector("div.scroll-x table.data tbody tr td", timeout=15000)
+        lay = page.evaluate(
+            """() => { const t = [...document.querySelectorAll('table.data')].find(x => x.closest('div.scroll-x') && x.querySelector('th')?.textContent === 'scorer');
+              const th = t.querySelector('th').getBoundingClientRect(), td = t.querySelector('td').getBoundingClientRect();
+              return {display: getComputedStyle(t).display, thLeft: Math.round(th.left), tdLeft: Math.round(td.left)}; }"""
+        )
+        check(
+            "inspector: 'what the judges said' is a table, its first row under its header's left edge",
+            lay["display"] == "table" and abs(lay["thLeft"] - lay["tdLeft"]) <= 2,
+            lay,
+        )
+        page.unroute("**/api/item?*")
+
         page.goto(base + "d/tickets_v1.html")
         ftable = page.locator("table#fields").inner_text()
         check("dataset page: element ids are unique", page.locator('[id="fields"]').count() == 1)

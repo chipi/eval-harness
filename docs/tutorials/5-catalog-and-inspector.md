@@ -186,6 +186,10 @@ overlap_f1 (higher is better) · baseline tickets_lead1_v1 ×3: mean 0.641 · Ho
 Same conditions: all ... recorded fields match (machine, libraries, harness, scorer, items, reference bytes).
 ```
 
+A system id names the arm when only one arm has it. A system measured on two datasets (or read under two labels) is
+ambiguous: `--runs` refuses it with `not-found` and lists the arm ids, and you name one, as the arms page's command does:
+`runs/<dataset>/<system>`.
+
 The same paired test as `pair-test`, from the same code, so the same p. `family-test` agrees with
 both up to 30 items, where every p is exact. Above 30 each is a seeded estimate (from 10,000 items, the permutation distribution's normal limit), and
 `family-test` draws one random stream for its whole family where the inspector and `pair-test`

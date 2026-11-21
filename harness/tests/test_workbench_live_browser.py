@@ -606,6 +606,14 @@ try:
             # step 4 (UXS-005): a system made from a model where it runs, then checked on three items
             page.goto(f"http://127.0.0.1:{port}/workbench/#systems/tickets_summary")
             page.wait_for_selector("h1:has-text('Choose the systems')", timeout=20000)
+            page.wait_for_selector("[data-smoke='one_v1']", timeout=20000)
+            heads_0 = [h.strip().lower() for h in page.locator("table").first.locator("th").all_inner_texts()]
+            check(
+                "Choose the systems: no system names a deployment yet, so there is no empty 'where it runs' column "
+                "(scenario 080c U5)",
+                "system" in heads_0 and "where it runs" not in heads_0,
+                heads_0,
+            )
             page.select_option("#sn-model", "fake-1b")
             page.wait_for_selector("#sn-dep", timeout=20000)
             page.wait_for_selector(
@@ -623,6 +631,19 @@ try:
             page.click("#sn-make")
             page.wait_for_selector("td.mono:has-text('fake-1b_here')", timeout=20000)
             sysrec = yaml.safe_load((proj / "data" / "systems" / "fake-1b_here.yaml").read_text())
+            heads_1 = [h.strip().lower() for h in page.locator("table").first.locator("th").all_inner_texts()]
+            wcol = heads_1.index("where it runs") if "where it runs" in heads_1 else -1
+            cells = {
+                r.locator("td").nth(0).inner_text().strip(): r.locator("td").nth(wcol).inner_text().strip()
+                for r in page.locator("table").first.locator("tbody tr").all()
+                if r.locator("td.mono").count() and wcol >= 0 and r.locator("[data-smoke]").count()
+            }
+            check(
+                "Choose the systems: once one system names a deployment the column is there, and a system that names "
+                "none says 'not recorded' instead of an empty cell (scenario 080c U5)",
+                cells.get("fake-1b_here") == "here" and cells.get("one_v1") == "not recorded",
+                (heads_1, cells),
+            )
             check(
                 "Make the system: system-new names the model record and the deployment, and carries its endpoint and settings",
                 sysrec.get("model_record") == "fake-1b"
@@ -2427,16 +2448,15 @@ try:
                 r_b,
             )
             check(
-                "an unfetched dataset: Prepare says not fetched, not looked at yet, no reference set",
-                lacks(r_b)["prepare"] == "not fetched, not looked at yet, no reference set"
+                "an unfetched dataset: Prepare says not fetched, no reference set (a profile is optional, never lacking)",
+                lacks(r_b)["prepare"] == "not fetched, no reference set"
                 and "rv1" in page.locator("#rail .railds").inner_text(),
                 lacks(r_b),
             )
             evh("dataset-materialize", "--dataset-id", "rv1")
-            evh("dataset-profile", "--dataset-id", "rv1")
             r_c = rail_of(page, "prepare/rv1")
             check(
-                "fetched and looked at but with no reference set, Prepare is not done (and, on its own screen, the rail is found by the dataset)",
+                "fetched, with no reference set, Prepare is not done (and, on its own screen, the rail is found by the dataset)",
                 states(r_c)["prepare"] == "now"
                 and states(r_c)["systems"] == "locked"
                 and r_c["prepare"][2] == "page"
@@ -2444,7 +2464,7 @@ try:
                 r_c,
             )
             check(
-                "fetched and looked at: Prepare lacks only the reference set",
+                "fetched, never profiled: Prepare lacks only the reference set, not the profile",
                 lacks(r_c)["prepare"] == "no reference set",
                 lacks(r_c),
             )
@@ -2467,7 +2487,7 @@ try:
             evh("run", "--system", "one_v1", "--dataset", "rv1")
             r_d = rail_of(page, "goal/rail_b")
             check(
-                "prepared (fetched, a profile, a reference set), with one system's run: Prepare done, Choose the systems open and not done",
+                "prepared (fetched, a reference set; no profile), with one system's run: Prepare done, Choose the systems open and not done",
                 states(r_d)
                 == {"goal": "done", "dataset": "done", "prepare": "done", "systems": "", "eval": ""}
                 and r_d["systems"][1] == "#systems/rail_b"
@@ -2541,7 +2561,7 @@ try:
                 and states(c_one)["prepare"] == "done"
                 and "rv2" in ds_two
                 and states(c_two)["prepare"] == "now"
-                and lacks(c_two)["prepare"] == "not fetched, not looked at yet, no reference set"
+                and lacks(c_two)["prepare"] == "not fetched, no reference set"
                 and c_two["prepare"][1] == "#prepare/rv2",
                 (ds_goal, ds_one, ds_two, lacks(c_two)),
             )

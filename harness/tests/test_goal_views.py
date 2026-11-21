@@ -278,4 +278,24 @@ check(
     and arm("bare_v1") not in {r["arm"] for g in read for r in g["rows"]},
 )
 
+
+class _Rounds:
+    """r2 retired two arms; r4 carries one of them back in (ADR-0006, RFC-004: a retirement is a round's decision)."""
+
+    def rounds(self) -> list[dict]:
+        a, b = arm("gone_v1"), arm("also_gone_v1")
+        # a re-score of the same system is retired with it (`rounds.retired_arms`), and comes back with it
+        return [
+            {"goal": "g", "round_id": "r2", "retired_arms": [a, b, arm("gone_v1", "rescored-x")], "arms": []},
+            {"goal": "g", "round_id": "r3", "retired_arms": [], "arms": []},
+            {"goal": "g", "round_id": "r4", "retired_arms": [], "arms": [a]},
+        ]
+
+
+check(
+    "retired_in_of: an arm a later round carries in is in play there; its re-scored sibling too; the one nobody carried stays retired in r2",
+    gv.retired_in_of(_Rounds(), GOAL) == {arm("also_gone_v1"): "r2"},
+    gv.retired_in_of(_Rounds(), GOAL),
+)
+
 sys.exit(summary())

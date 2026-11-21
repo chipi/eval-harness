@@ -268,7 +268,7 @@ browser, the same model.
 
 | on the page | in the terminal |
 | --- | --- |
-| choose arms, baseline, metric | `evh comparison-show --runs a,b [--baseline a] [--metric m]` (a system id is looked up under `--label`: "" for the plain arm, `silver`, `repeats`, "rescored <id>", `judged/<scorer>`; `evh runs-list` shows what is there) |
+| choose arms, baseline, metric | `evh comparison-show --runs a,b [--baseline a] [--metric m]` (a system id is looked up under `--label`: "" for the plain arm, `silver`, `repeats`, "rescored <id>", `judged/<scorer>`; `evh runs-list` shows what is there; a system measured on two datasets matches twice, so it is refused as ambiguous with the arm ids listed, and you name one as `runs/<dataset>/<system>`) |
 | a round's arms (the goal page's **inspect** button on a round) | `evh comparison-show --round rN [--goal g]`: the goal's measure, against the round's leader; arms with no score on it are named and left out |
 | filter, breakdown | `--where field:value` (repeatable), `--by field` |
 | notes, verdicts, conditions, breakdown | printed in that order (notes as `NOTE:` lines) |

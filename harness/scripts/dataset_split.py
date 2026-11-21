@@ -166,6 +166,16 @@ def body(**inputs: Any) -> int:
                 else ""
             )
         )
+    counts = dict(written)
+    n_val, n_test = counts[f"{args.dataset_id}_validation"], counts[f"{args.dataset_id}_test"]
+    print(f"  split: {n_val} validation and {n_test} test of {len(items)} item(s)", end="")
+    if args.split_by == "hash":
+        print(
+            f"; you asked for a {args.test:g} test share, a hash split is approximate: each item picks its side on "
+            "its own and nothing counts them"
+        )
+    else:
+        print()
     for out_id, _n in written:
         _promote_on_side(args, out_id, carry, sealed=args.seal and out_id.endswith("_test"))
     return 0

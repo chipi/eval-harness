@@ -808,7 +808,8 @@ try:
         and "r1" in page
         and "r2" in page
         and "suggested next" in page
-        and "retired in r1" in page,
+        # lead1 was retired in r1 and r3 keeps it: in play there, so no table calls it retired (a retirement is a round's)
+        and "retired in r1" not in page,
     )
     check(
         "catalog: each round is one folded section headed by its row (no rounds table), retirements grouped by reason",

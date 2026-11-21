@@ -26,7 +26,7 @@ from urllib.parse import quote
 
 HERE = Path(__file__).resolve().parent
 
-from evaluation_harness import _common, _exposure, _fields, _jsonout, _looks, _store, _visibility  # noqa: E402
+from evaluation_harness import _common, _exposure, _fields, _jsonout, _looks, _store, _study, _visibility  # noqa: E402
 from evaluation_harness._common import ROOT, die  # noqa: E402
 from evaluation_harness.axes import (  # noqa: E402
     STRATEGIES,
@@ -2859,7 +2859,8 @@ def _studies_block(A: Adapter, g: dict) -> str:
         conf = "".join(
             f"<li>confirmed on {e(str(c.get('test')))}: <b>{e(str(c.get('outcome')))}</b> ({e(str(c.get('rule')))}, look "
             f"{(c.get('look') or {}).get('number')} at {float((c.get('look') or {}).get('level') or 0):.4%}; delta "
-            f"{c.get('delta')} on the test items, {c.get('validation_delta')} on validation)</li>"
+            f"{_study.fmt_delta(c.get('delta'))} on the test items, {_study.fmt_delta(c.get('validation_delta'))} "
+            "on validation)</li>"
             for c in s["confirms"]
         )
         parts.append(

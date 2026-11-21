@@ -875,7 +875,9 @@ span.selfref { display: inline-block; margin: 2px 4px 2px 0; padding: 2px 7px; b
 .facet-chips .kindgroup { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; margin-right: 10px; }
 .facet-chips .kindgroup .kind { margin-left: 0; }
 details.arm-tools { margin-top: 14px; }
-body:has(#arms) .wrap { max-width: 1400px; }
+body:has(#arms[data-period-rows]) .wrap { max-width: 1400px; }
+/* a dataset page keeps the goal pages' gutter, so its arms table's figures stay on one line and its names wrap */
+@media (min-width: 900px) { table#arms:not([data-period-rows]) td:has(> span[data-v]) { white-space: nowrap; } }
 nav.jump { margin: 18px 0 0; color: var(--muted); }
 nav.jump a { margin: 0 2px; }
 /* on a phone a chart's names would overlap at a readable size: the frontier stays drawn, its names are in the folded

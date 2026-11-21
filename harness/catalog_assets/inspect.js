@@ -679,7 +679,7 @@
     // What the judges said of this item and why (RFC-034): the local inspector only.
     const said = x => typeof x.said === 'number' ? fmt(x.said) : esc(x.said == null ? '—' : x.said);
     const whyOf = x => x.why ? esc(x.why) : `<span class="muted">${x.why_status === 'withheld' ? 'withheld: it repeated the source' : esc(x.why_status)}</span>`;
-    const judged = (d.verdicts || []).length ? `<h3 class="sub">what the judges said · ${d.verdicts.length}</h3><div class="scroll-x"><table class="data why"><thead><tr><th>scorer</th><th>judge</th><th>arm</th><th class="num">said</th><th>why</th></tr></thead><tbody>${d.verdicts.map(x =>
+    const judged = (d.verdicts || []).length ? `<h3 class="sub">what the judges said · ${d.verdicts.length}</h3><div class="scroll-x"><table class="data verdicts"><thead><tr><th>scorer</th><th>judge</th><th>arm</th><th class="num">said</th><th>why</th></tr></thead><tbody>${d.verdicts.map(x =>
       `<tr><td><code>${esc(x.scorer)}</code></td><td><code>${esc(x.judge)}</code></td><td><code>${esc(x.arm)}</code></td><td class="num">${said(x)}</td><td>${whyOf(x)}</td></tr>`).join('')}</tbody></table></div>` : '';
     const refcol = d.reference && d.reference.view && d.reference.view.kind !== 'none' ? `<div class="outcol refcol"><h3>${esc(d.reference.id)} <small class="muted">reference</small></h3>${view(d.reference.view, null)}</div>` : '';
     const hasText = Object.values(d.views).some(v => v && v.kind === 'text');

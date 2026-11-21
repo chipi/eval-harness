@@ -41,7 +41,7 @@ The live Workbench is `harness/workbench/index.html` (the shell), `workbench.js`
    ≡ Overview
    ✓ The goal
    ✓ Add a dataset
-   3 Prepare the dataset      not looked at yet, no reference set
+   3 Prepare the dataset      no reference set
    4 Choose the systems       0 of 2 systems with runs
    5 Its rounds               no round closed
    Day to day
@@ -53,12 +53,12 @@ The live Workbench is `harness/workbench/index.html` (the shell), `workbench.js`
     goal the person last had open when that goal names it, else the first goal that does.
   - **Overview** is the goal's page. The five steps are **The goal**, **Add a dataset**, **Prepare the dataset**, **Choose the
     systems** and **Its rounds**; each is `done` (a check mark), `current` (the screen it is on), `open` or `locked`. Done is read
-    from live data: the goal exists; it names a dataset; that dataset is fetched, has a profile ("looked at") and has a
-    reference set; two or more systems have runs on it; a round is closed. Adding a dataset is open from the start; Prepare is
-    open once a dataset is named; Choose the systems and Its rounds are open once the dataset is prepared. A locked step links
-    to the goal's page.
-  - A step not done says what it lacks, under its name and as its tooltip: "no dataset named"; for Prepare "not fetched", "not
-    looked at yet", "no reference set" (those that apply, comma-separated; "no dataset to prepare" with no dataset); for the
+    from live data: the goal exists; it names a dataset; that dataset is fetched and has a
+    reference set (a profile, "look inside", is offered and optional: it never holds Prepare open); two or more systems have
+    runs on it; a round is closed. Adding a dataset is open from the start; Prepare is
+    open once a dataset is named; Choose the systems and Its rounds are open once the dataset is prepared, and are never done before it is (a locked step
+    cannot show a check mark). A locked step links to the goal's page.
+  - A step not done says what it lacks, under its name and as its tooltip: "no dataset named"; for Prepare "not fetched", "no reference set" (those that apply, comma-separated; "no dataset to prepare" with no dataset); for the
     systems "N of 2 systems with runs"; for the rounds "no round closed".
   - The day-to-day group links to **Review the outputs**, **Production**, **A judge for this goal**, **The held-out test** and
     **Studies**; the screen the person is on is marked.
@@ -133,7 +133,7 @@ After saving, the goal's page is the hub of the journey: where it stands, and th
  [ The held-out test ] [ Studies ] [ Edit the goal ] [ Back to your goals ]
 ```
 
-- The next-step box and the table come from `goal-status`; a dataset reads "made, fetched", "made, not fetched" or
+- The next-step box and the table come from `goal-status`. With no round open, once the datasets are ready, the next step says where the goal stands, then the step: "baseline <system> (v1, since r2); to test a change, open a round with a question" ("since rN" only when a closed round's conclusion promoted that baseline), or "no baseline promoted yet; ...". A dataset reads "made, fetched", "made, not fetched" or
   "not made", and "does not decide" beside a role it does not decide on. Running jobs and rounds show only when there are some.
 - The trend chart is `evh chart trend --goal <id>`, its numbers folded under it; it is left out until there is something to draw. With fewer than two points it is one line ("One point so far: <line> (v<n>), <measure> <value>. A trend needs two."). The goal screen shows its commands (`goal-status` and `chart trend`) in one folded block, once.
 
@@ -204,9 +204,10 @@ After saving, the goal's page is the hub of the journey: where it stands, and th
   [ rank stability chart ]  [ agreement chart ]
 ```
 
-- One screen with the three things a dataset needs before an eval; each is a job or a small choice, done in
+- One screen with what a dataset needs before an eval, and one thing offered: each is a job or a small choice, done in
   order, each showing its result: a `dataset-materialize` job (**Fetch them**), a `dataset-profile` job (**Profile it**, after
-  the fetch), then the reference set.
+  the fetch; marked "optional" until done, it only fills the page's "what's inside" and never holds the step open), then the reference set. The
+  step is done when the items are fetched and a reference set is promoted.
 - **Promote a label set** lists the dataset's label sets, the one `dataset-create` wrote from the answer column (source
   `dataset`) among them, each with a tier choice (gold or silver) and a reason: `reference-promote`, a decision, which records who and why.
 - **Label it here** opens the labelling screen (below, W2). Importing a filled CSV is `label-import` on the command line.

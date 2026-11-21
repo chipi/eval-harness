@@ -353,8 +353,8 @@ def _confirm(a: argparse.Namespace, require_named: Any) -> int:
         "delta": v.get("delta"), "p_one_sided": lv.get("p_one_sided"), "n": v.get("n"), "runs": runs,
         "validation_delta": vs.get("delta"), "look": {x: val for x, val in look.items() if x != "reused"},
     })  # fmt: skip
-    on_validation = f"{vs['delta']:+.4g}" if isinstance(vs.get("delta"), (int, float)) else "none"
-    print(f"  outcome: {outcome} (delta {v.get('delta'):+.4g} on the test items; {on_validation} on validation, "
+    print(f"  outcome: {outcome} (delta {_study.fmt_delta(v.get('delta'))} on the test items; "
+          f"{_study.fmt_delta(vs.get('delta'))} on validation, "
           "where it was chosen: the optimizer's curse makes that one larger)")  # fmt: skip
     if outcome in ("better", "non-inferior"):
         print(f"  suggested (never run): evh run-promote --run {runs[trial_cid][-1]} --goal {goal} "

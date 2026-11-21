@@ -316,6 +316,38 @@ def check_home_tiles(browser, base: str) -> None:
     page.close()
 
 
+def check_gutters(browser, base: str, sub: list) -> None:
+    """At 1400 px the goal, dataset, arm and metric pages start their content at the same left edge (scenario 080c U6:
+    the dataset pages ran edge to edge, 24 px, the others sat in a 134 px gutter); the arms index keeps its wide table."""
+    page = browser.new_page(viewport={"width": 1400, "height": 900})
+    lefts = {}
+    for path in sub:
+        page.goto(base + path)
+        page.wait_for_selector("h1", timeout=30000)
+        lefts[path.split("/")[0]] = page.evaluate(
+            "() => Math.round(document.querySelector('main h1, h1').getBoundingClientRect().left)"
+        )
+    check(
+        "1400 px: the goal, dataset, arm and metric pages share one left gutter",
+        len(set(lefts.values())) == 1,
+        str(lefts),
+    )
+    page.goto(base + "d/cnn_dailymail_200.html")
+    page.wait_for_selector("table#arms tbody tr", timeout=30000)
+    wrapped = page.evaluate(
+        """() => [...document.querySelectorAll('table#arms td')].filter(td => /^(\\$|p50)/.test(td.innerText.trim()))
+          .map(td => { const r = document.createRange(); r.selectNodeContents(td);
+            return {text: td.innerText.trim(), lines: new Set([...r.getClientRects()].filter(x => x.width > 0).map(x => Math.round(x.top))).size}; })
+          .filter(x => x.lines > 1)"""
+    )
+    check(
+        "1400 px: a dataset page's cost and speed cells each sit on one line (the narrower gutter must not wrap them)",
+        not wrapped,
+        str(wrapped[:3]),
+    )
+    page.close()
+
+
 def drive(cat: Path, base: str) -> None:
     from playwright.sync_api import sync_playwright  # noqa: PLC0415
 
@@ -358,6 +390,7 @@ def drive(cat: Path, base: str) -> None:
         )
 
         check_home_tiles(browser, base)
+        check_gutters(browser, base, sub)
         check_arms_sort_and_kinds(browser, base)
         check_arms_default_view(browser, base)
         check_arms_skip_and_address(browser, base)

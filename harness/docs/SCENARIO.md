@@ -135,8 +135,9 @@ Meta, Anthropic), so no judge grades its own family. They are pinned, as the con
 scenario are comparable.
 
 Every arm's first system id ends `_v1` (the frontier summariser is `briefs_opus_v1`). Give the
-frontier arm room to finish: `max_tokens: 600` (a frontier model that reasons spends part of it
-thinking; a reference refuses a reply cut off at the token limit).
+frontier arm room to finish: `max_tokens: 1500` (a frontier model that reasons spends part of it
+thinking: one `intents_opus` reply needed 272 tokens, 214 of them reasoning, and another run of the same
+item was cut off at 600; a reference refuses a reply cut off at the token limit).
 Silence the model libraries' progress bars and warnings in the adapter as tutorial 1's does, so the
 run's output is the harness's.
 
@@ -318,6 +319,9 @@ evh dataset-materialize --dataset-id briefs_v1_validation && evh dataset-materia
 git add -A && git commit -qm "briefs_v1 split, each side with its references"
 ```
 
+The command prints the counts it made. A hash split is approximate: each item picks its side on its own and nothing
+counts them, so `--test 0.4` on 20 items can give 10 and 10, not 12 and 8. Use the counts it prints.
+
 Without `--seal` the test side stays open, and the scenario needs it open: a sealed side gets no references until
 `evh dataset-unseal`. The Workbench's "Hold some items out" seals by default. A dataset a goal declares with
 `role: test` is a test set whether sealed or not, so step 14's "The held-out test" shows this one as "not sealed".
@@ -433,7 +437,9 @@ to the comparison's address, [RUNBOOK §14](RUNBOOK.md#14-browse-the-catalog-and
 arms; and what a goal page's "test every arm against the leader" link opens. For each page, run its
 command (`evh overview-show`, `evh dataset-list`, `evh arm-list`, `evh reference-list`, `evh metric-list`,
 `evh goal-leaderboard <goal>`, `evh round-evidence …`, `evh comparison-show --runs …`, `evh comparison-item --runs …
---item …`) and check the numbers are the page's.
+--item …`) and check the numbers are the page's. Name each arm in `--runs` by its arm id,
+`runs/briefs_v1/briefs_lead1_v1`: after step 12 `briefs_lead1_v1` is measured on `briefs_v1` and `briefs_v2`, and the bare
+system id is refused as ambiguous (the message lists the arm ids).
 
 ## What to check
 

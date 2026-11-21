@@ -36,6 +36,13 @@ from evaluation_harness.model.studies import (
 )
 
 SAMPLERS = ("grid", "command", "agent")
+
+
+def fmt_delta(v: Any) -> str:
+    """A confirmation's delta as the command and the catalog print it: signed, four significant digits."""
+    return f"{v:+.4g}" if isinstance(v, (int, float)) else "none"
+
+
 STUDY_ID = re.compile(r"[a-z0-9][a-z0-9_-]{0,60}")
 
 

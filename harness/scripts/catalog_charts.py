@@ -210,9 +210,20 @@ def strip(
     def x_of(v: float) -> float:
         return left + (width - left - RIGHT) * (v - lo) / (hi - lo)
 
+    def anchors(ms: list[tuple[float, str]]) -> list[str]:
+        """Each mark's label anchor: centred, unless the next mark is nearer than a label is wide, then the pair leans
+        apart (the earlier ends at its tick, the later starts at its)."""
+        out = ["middle"] * len(ms)
+        order = sorted(range(len(ms)), key=lambda i: ms[i][0])
+        for a, b in zip(order, order[1:]):
+            if x_of(ms[b][0]) - x_of(ms[a][0]) < 28:
+                out[a], out[b] = "end", "start"
+        return out
+
     rows = []
     for r, (name, pts) in enumerate(groups.items()):
         y = top + row * r + row / 2
+        ms = (marks or {}).get(name, [])
         rows.append(
             f'<text x="{left - 8}" y="{y + 4:.1f}" text-anchor="end" class="tick"><title>{_e(name)}</title>{_e(_short(name, _room(left - 8)))}</text>'
             f'<line x1="{left}" x2="{width - RIGHT}" y1="{y:.1f}" y2="{y:.1f}" stroke="var(--axis)" stroke-width="0.5"/>'
@@ -223,8 +234,8 @@ def strip(
             + "".join(
                 f'<line x1="{x_of(v):.1f}" x2="{x_of(v):.1f}" y1="{y - 11:.1f}" y2="{y + 11:.1f}" stroke="var(--ink)" '
                 f'stroke-width="2"><title>{_e(name)} {_e(m)}: {_e(_num(v))}</title></line>'
-                f'<text x="{x_of(v):.1f}" y="{y - 13:.1f}" text-anchor="middle" class="tick">{_e(m)}</text>'
-                for v, m in (marks or {}).get(name, [])
+                f'<text x="{x_of(v) + {"end": -4, "start": 4}.get(an, 0):.1f}" y="{y - 13:.1f}" text-anchor="{an}" class="tick">{_e(m)}</text>'
+                for (v, m), an in zip(ms, anchors(ms))
             )
         )
     ends = (
