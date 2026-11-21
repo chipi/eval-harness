@@ -1,11 +1,11 @@
 {
     "agent_execution": {
-        "finished_at": "2026-11-20T20:40:28.466638Z",
-        "started_at": "2026-11-20T20:40:28.466137Z"
+        "finished_at": "2026-11-21T00:37:13.212861Z",
+        "started_at": "2026-11-21T00:37:13.055588Z"
     },
     "agent_info": {
         "model_info": null,
-        "name": "nop",
+        "name": "oracle",
         "version": "1.0.0"
     },
     "agent_result": {
@@ -18,8 +18,8 @@
         "rollout_details": null
     },
     "agent_setup": {
-        "finished_at": "2026-11-20T20:40:28.466077Z",
-        "started_at": "2026-11-20T20:40:28.466021Z"
+        "finished_at": "2026-11-21T00:37:13.055527Z",
+        "started_at": "2026-11-21T00:37:13.055467Z"
     },
     "config": {
         "agent": {
@@ -35,7 +35,7 @@
             "model_api_key_name": null,
             "model_name": null,
             "n_concurrent": null,
-            "name": "nop",
+            "name": "oracle",
             "override_setup_timeout_sec": null,
             "override_timeout_sec": null,
             "resume_trajectory": false,
@@ -67,7 +67,7 @@
         "extra_instruction_paths": [],
         "extra_instructions": [],
         "install_only": false,
-        "job_id": "011ab30e-d15f-413c-bdc4-fb2d75852df8",
+        "job_id": "f1f8b2ce-ac64-43f8-ab38-e7a7a056162c",
         "override_error_policy": {},
         "schema_version": 1,
         "source_trial": null,
@@ -82,7 +82,7 @@
             "source": null
         },
         "timeout_multiplier": 1.0,
-        "trial_name": "write-greeting__uGs4Zsv",
+        "trial_name": "write-greeting__JHsDRin",
         "trials_dir": "jobs",
         "user_agent": null,
         "verifier": {
@@ -93,32 +93,32 @@
         "verifier_timeout_multiplier": null
     },
     "environment_setup": {
-        "finished_at": "2026-11-20T20:40:28.465966Z",
-        "started_at": "2026-11-20T20:40:26.232780Z"
+        "finished_at": "2026-11-21T00:37:13.055407Z",
+        "started_at": "2026-11-21T00:37:10.830479Z"
     },
     "exception_info": null,
-    "finished_at": "2026-11-20T20:40:40.108521Z",
-    "id": "6b1bf1ce-5861-4da4-8cb5-8699ffa51a0e",
+    "finished_at": "2026-11-21T00:37:25.209192Z",
+    "id": "f1b9ec41-bc34-49b4-883c-d5e00295d9e0",
     "reward_valid": true,
     "schema_version": 1,
     "source": null,
-    "started_at": "2026-11-20T20:40:26.220182Z",
+    "started_at": "2026-11-21T00:37:10.818694Z",
     "step_results": null,
-    "task_checksum": "164e61291520d562eb40ffce6c800effc62347716a5f68b49d966dd4df43d80c",
+    "task_checksum": "e3b437ce47df55d8c1c27f95f36c9af4511b4a6e2ef893a3ca13626b0c31a774",
     "task_id": {
         "path": "examples/harbor/tasks/write-greeting"
     },
     "task_name": "write-greeting",
-    "trial_name": "write-greeting__uGs4Zsv",
+    "trial_name": "write-greeting__JHsDRin",
     "trial_uri": null,
     "verifier": {
-        "finished_at": "2026-11-20T20:40:28.812133Z",
-        "started_at": "2026-11-20T20:40:28.606261Z"
+        "finished_at": "2026-11-21T00:37:13.570426Z",
+        "started_at": "2026-11-21T00:37:13.358704Z"
     },
     "verifier_environment_mode": "shared",
     "verifier_result": {
         "rewards": {
-            "reward": 0.0
+            "reward": 1.0
         }
     }
 }

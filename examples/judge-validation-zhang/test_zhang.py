@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import json
 import os
+import subprocess
 import sys
 import tempfile
 from pathlib import Path
@@ -139,6 +140,36 @@ check(
 from evaluation_harness import judge_validate as jv  # noqa: E402
 
 items, refs = jv._load_rated("zhang_t")
+
+
+def tree(sub: str) -> dict[str, bytes]:
+    return {x.name: _store.read_bytes(x) for x in _store.glob(proj / "data" / sub / "zhang_t", "*.txt")}
+
+
+kept = {"sources": tree("sources"), "gold": tree("references/gold")}
+fetched = subprocess.run(
+    [
+        sys.executable,
+        str(HERE / "fetch.py"),
+        "--dataset-id",
+        "zhang_t",
+        "--query",
+        json.dumps({"file": str(fpath)}),
+    ],
+    env=os.environ,
+    capture_output=True,
+    text=True,
+    stdin=subprocess.DEVNULL,
+    timeout=600,
+    check=False,
+)
+check(
+    "fetch.py brings back the item texts and the gold texts byte for byte as dataset-create and reference-promote wrote them",
+    fetched.returncode == 0
+    and kept["gold"]
+    and kept == {"sources": tree("sources"), "gold": tree("references/gold")},
+    fetched.stdout + fetched.stderr,
+)
 three = {
     "scorer_id": "s3",
     "kind": "judge",

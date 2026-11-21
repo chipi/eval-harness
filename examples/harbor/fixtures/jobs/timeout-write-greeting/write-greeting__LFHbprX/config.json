@@ -44,7 +44,7 @@
     "extra_instruction_paths": [],
     "extra_instructions": [],
     "install_only": false,
-    "job_id": "68fba155-36f6-47c0-8c79-593a479ad6be",
+    "job_id": "db6ca654-d831-4a9e-acbf-eb4752d9980e",
     "override_error_policy": {},
     "schema_version": 1,
     "source_trial": null,
@@ -59,7 +59,7 @@
         "source": null
     },
     "timeout_multiplier": 1.0,
-    "trial_name": "write-greeting__T2YafVs",
+    "trial_name": "write-greeting__LFHbprX",
     "trials_dir": "jobs",
     "user_agent": null,
     "verifier": {

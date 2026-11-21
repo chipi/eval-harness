@@ -1,7 +1,7 @@
 {
     "agent_execution": {
-        "finished_at": "2026-11-20T20:39:22.557965Z",
-        "started_at": "2026-11-20T20:39:22.399337Z"
+        "finished_at": "2026-11-21T00:36:37.899897Z",
+        "started_at": "2026-11-21T00:36:37.711764Z"
     },
     "agent_info": {
         "model_info": null,
@@ -18,8 +18,8 @@
         "rollout_details": null
     },
     "agent_setup": {
-        "finished_at": "2026-11-20T20:39:22.399276Z",
-        "started_at": "2026-11-20T20:39:22.399219Z"
+        "finished_at": "2026-11-21T00:36:37.711700Z",
+        "started_at": "2026-11-21T00:36:37.711641Z"
     },
     "config": {
         "agent": {
@@ -67,7 +67,7 @@
         "extra_instruction_paths": [],
         "extra_instructions": [],
         "install_only": false,
-        "job_id": "758bfaa8-c2cf-431c-9b84-d8cf04b027e0",
+        "job_id": "81120290-2487-4edf-85dc-fcab1a460bd9",
         "override_error_policy": {},
         "schema_version": 1,
         "source_trial": null,
@@ -77,12 +77,12 @@
             "git_url": null,
             "name": null,
             "overwrite": false,
-            "path": "examples/harbor/tasks/make-script",
+            "path": "examples/harbor/tasks/count-lines",
             "ref": null,
             "source": null
         },
         "timeout_multiplier": 1.0,
-        "trial_name": "make-script__4KuAwJc",
+        "trial_name": "count-lines__xs5834J",
         "trials_dir": "jobs",
         "user_agent": null,
         "verifier": {
@@ -93,27 +93,27 @@
         "verifier_timeout_multiplier": null
     },
     "environment_setup": {
-        "finished_at": "2026-11-20T20:39:22.399165Z",
-        "started_at": "2026-11-20T20:39:20.165047Z"
+        "finished_at": "2026-11-21T00:36:37.711581Z",
+        "started_at": "2026-11-21T00:36:35.368974Z"
     },
     "exception_info": null,
-    "finished_at": "2026-11-20T20:39:33.742414Z",
-    "id": "ed5c8cf4-3201-4107-965a-8e573b64d405",
+    "finished_at": "2026-11-21T00:36:51.051431Z",
+    "id": "16252068-c18b-4f94-b674-114db58c4201",
     "reward_valid": true,
     "schema_version": 1,
     "source": null,
-    "started_at": "2026-11-20T20:39:20.152626Z",
+    "started_at": "2026-11-21T00:36:35.354571Z",
     "step_results": null,
-    "task_checksum": "d11ecf12b87a3b25b1f168e06fc8a47f82355f43a72e8c392089607996f58a35",
+    "task_checksum": "c7e229181fa3d1339437d3e63b659b8687308e09e19aeced9a2675b6f70a6562",
     "task_id": {
-        "path": "examples/harbor/tasks/make-script"
+        "path": "examples/harbor/tasks/count-lines"
     },
-    "task_name": "make-script",
-    "trial_name": "make-script__4KuAwJc",
+    "task_name": "count-lines",
+    "trial_name": "count-lines__xs5834J",
     "trial_uri": null,
     "verifier": {
-        "finished_at": "2026-11-20T20:39:22.921790Z",
-        "started_at": "2026-11-20T20:39:22.698803Z"
+        "finished_at": "2026-11-21T00:36:38.299415Z",
+        "started_at": "2026-11-21T00:36:38.065875Z"
     },
     "verifier_environment_mode": "shared",
     "verifier_result": {

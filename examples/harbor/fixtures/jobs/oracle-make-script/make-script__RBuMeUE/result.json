@@ -1,7 +1,7 @@
 {
     "agent_execution": {
-        "finished_at": "2026-11-20T20:39:39.191419Z",
-        "started_at": "2026-11-20T20:39:39.033302Z"
+        "finished_at": "2026-11-21T00:36:56.588467Z",
+        "started_at": "2026-11-21T00:36:56.423846Z"
     },
     "agent_info": {
         "model_info": null,
@@ -18,8 +18,8 @@
         "rollout_details": null
     },
     "agent_setup": {
-        "finished_at": "2026-11-20T20:39:39.033225Z",
-        "started_at": "2026-11-20T20:39:39.033146Z"
+        "finished_at": "2026-11-21T00:36:56.423783Z",
+        "started_at": "2026-11-21T00:36:56.423722Z"
     },
     "config": {
         "agent": {
@@ -67,7 +67,7 @@
         "extra_instruction_paths": [],
         "extra_instructions": [],
         "install_only": false,
-        "job_id": "68fba155-36f6-47c0-8c79-593a479ad6be",
+        "job_id": "ff4ccf92-160f-4925-b981-51e5728e38a4",
         "override_error_policy": {},
         "schema_version": 1,
         "source_trial": null,
@@ -77,12 +77,12 @@
             "git_url": null,
             "name": null,
             "overwrite": false,
-            "path": "examples/harbor/tasks/write-greeting",
+            "path": "examples/harbor/tasks/make-script",
             "ref": null,
             "source": null
         },
         "timeout_multiplier": 1.0,
-        "trial_name": "write-greeting__T2YafVs",
+        "trial_name": "make-script__RBuMeUE",
         "trials_dir": "jobs",
         "user_agent": null,
         "verifier": {
@@ -93,27 +93,27 @@
         "verifier_timeout_multiplier": null
     },
     "environment_setup": {
-        "finished_at": "2026-11-20T20:39:39.033086Z",
-        "started_at": "2026-11-20T20:39:36.812961Z"
+        "finished_at": "2026-11-21T00:36:56.423662Z",
+        "started_at": "2026-11-21T00:36:54.196455Z"
     },
     "exception_info": null,
-    "finished_at": "2026-11-20T20:39:50.450848Z",
-    "id": "48e35ec2-5ef7-49e8-9b65-06300a106443",
+    "finished_at": "2026-11-21T00:37:07.792712Z",
+    "id": "a7e84824-c995-4b1d-9e6a-d864aac61107",
     "reward_valid": true,
     "schema_version": 1,
     "source": null,
-    "started_at": "2026-11-20T20:39:36.801104Z",
+    "started_at": "2026-11-21T00:36:54.183932Z",
     "step_results": null,
-    "task_checksum": "164e61291520d562eb40ffce6c800effc62347716a5f68b49d966dd4df43d80c",
+    "task_checksum": "341c5e0107926e50a7725d06cd3bbb9a282a39558f5d4c3fd3b3db9b0409f89d",
     "task_id": {
-        "path": "examples/harbor/tasks/write-greeting"
+        "path": "examples/harbor/tasks/make-script"
     },
-    "task_name": "write-greeting",
-    "trial_name": "write-greeting__T2YafVs",
+    "task_name": "make-script",
+    "trial_name": "make-script__RBuMeUE",
     "trial_uri": null,
     "verifier": {
-        "finished_at": "2026-11-20T20:39:39.542511Z",
-        "started_at": "2026-11-20T20:39:39.333168Z"
+        "finished_at": "2026-11-21T00:36:56.954100Z",
+        "started_at": "2026-11-21T00:36:56.731572Z"
     },
     "verifier_environment_mode": "shared",
     "verifier_result": {

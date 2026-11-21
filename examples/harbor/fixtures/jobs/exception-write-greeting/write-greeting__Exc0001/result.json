@@ -1,7 +1,7 @@
 {
     "agent_execution": {
-        "finished_at": "2026-11-20T20:39:39.191419Z",
-        "started_at": "2026-11-20T20:39:39.033302Z"
+        "finished_at": "2026-11-21T00:37:13.212861Z",
+        "started_at": "2026-11-21T00:37:13.055588Z"
     },
     "agent_info": {
         "model_info": null,
@@ -18,8 +18,8 @@
         "rollout_details": null
     },
     "agent_setup": {
-        "finished_at": "2026-11-20T20:39:39.033225Z",
-        "started_at": "2026-11-20T20:39:39.033146Z"
+        "finished_at": "2026-11-21T00:37:13.055527Z",
+        "started_at": "2026-11-21T00:37:13.055467Z"
     },
     "config": {
         "agent": {
@@ -67,7 +67,7 @@
         "extra_instruction_paths": [],
         "extra_instructions": [],
         "install_only": false,
-        "job_id": "68fba155-36f6-47c0-8c79-593a479ad6be",
+        "job_id": "f1f8b2ce-ac64-43f8-ab38-e7a7a056162c",
         "override_error_policy": {},
         "schema_version": 1,
         "source_trial": null,
@@ -93,23 +93,23 @@
         "verifier_timeout_multiplier": null
     },
     "environment_setup": {
-        "finished_at": "2026-11-20T20:39:39.033086Z",
-        "started_at": "2026-11-20T20:39:36.812961Z"
+        "finished_at": "2026-11-21T00:37:13.055407Z",
+        "started_at": "2026-11-21T00:37:10.830479Z"
     },
     "exception_info": {
         "exception_message": "Environment start timed out after 300.0 seconds (a synthetic fixture, not recorded)",
         "exception_traceback": "(synthetic: the shape of harbor.models.trial.result.ExceptionInfo, edited in)",
         "exception_type": "EnvironmentStartTimeoutError",
-        "occurred_at": "2026-11-20T20:39:50.450848Z"
+        "occurred_at": "2026-11-21T00:37:25.209192Z"
     },
-    "finished_at": "2026-11-20T20:39:50.450848Z",
-    "id": "48e35ec2-5ef7-49e8-9b65-06300a106443",
+    "finished_at": "2026-11-21T00:37:25.209192Z",
+    "id": "f1b9ec41-bc34-49b4-883c-d5e00295d9e0",
     "reward_valid": false,
     "schema_version": 1,
     "source": null,
-    "started_at": "2026-11-20T20:39:36.801104Z",
+    "started_at": "2026-11-21T00:37:10.818694Z",
     "step_results": null,
-    "task_checksum": "164e61291520d562eb40ffce6c800effc62347716a5f68b49d966dd4df43d80c",
+    "task_checksum": "e3b437ce47df55d8c1c27f95f36c9af4511b4a6e2ef893a3ca13626b0c31a774",
     "task_id": {
         "path": "examples/harbor/tasks/write-greeting"
     },
@@ -117,8 +117,8 @@
     "trial_name": "write-greeting__Exc0001",
     "trial_uri": null,
     "verifier": {
-        "finished_at": "2026-11-20T20:39:39.542511Z",
-        "started_at": "2026-11-20T20:39:39.333168Z"
+        "finished_at": "2026-11-21T00:37:13.570426Z",
+        "started_at": "2026-11-21T00:37:13.358704Z"
     },
     "verifier_environment_mode": "shared",
     "verifier_result": null

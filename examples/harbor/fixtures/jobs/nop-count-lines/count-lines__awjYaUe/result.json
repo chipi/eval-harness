@@ -1,11 +1,11 @@
 {
     "agent_execution": {
-        "finished_at": "2026-11-20T20:39:05.855790Z",
-        "started_at": "2026-11-20T20:39:05.652601Z"
+        "finished_at": "2026-11-21T00:37:30.336678Z",
+        "started_at": "2026-11-21T00:37:30.335846Z"
     },
     "agent_info": {
         "model_info": null,
-        "name": "oracle",
+        "name": "nop",
         "version": "1.0.0"
     },
     "agent_result": {
@@ -18,8 +18,8 @@
         "rollout_details": null
     },
     "agent_setup": {
-        "finished_at": "2026-11-20T20:39:05.652528Z",
-        "started_at": "2026-11-20T20:39:05.652461Z"
+        "finished_at": "2026-11-21T00:37:30.335756Z",
+        "started_at": "2026-11-21T00:37:30.335654Z"
     },
     "config": {
         "agent": {
@@ -35,7 +35,7 @@
             "model_api_key_name": null,
             "model_name": null,
             "n_concurrent": null,
-            "name": "oracle",
+            "name": "nop",
             "override_setup_timeout_sec": null,
             "override_timeout_sec": null,
             "resume_trajectory": false,
@@ -67,7 +67,7 @@
         "extra_instruction_paths": [],
         "extra_instructions": [],
         "install_only": false,
-        "job_id": "eea997d1-eb33-4714-8d91-d6b0e08fc809",
+        "job_id": "c0ebf07a-a6c3-46d4-bbd7-02744a724c20",
         "override_error_policy": {},
         "schema_version": 1,
         "source_trial": null,
@@ -82,7 +82,7 @@
             "source": null
         },
         "timeout_multiplier": 1.0,
-        "trial_name": "count-lines__pxNNDu4",
+        "trial_name": "count-lines__awjYaUe",
         "trials_dir": "jobs",
         "user_agent": null,
         "verifier": {
@@ -93,32 +93,32 @@
         "verifier_timeout_multiplier": null
     },
     "environment_setup": {
-        "finished_at": "2026-11-20T20:39:05.652388Z",
-        "started_at": "2026-11-20T20:39:03.258488Z"
+        "finished_at": "2026-11-21T00:37:30.335562Z",
+        "started_at": "2026-11-21T00:37:28.094897Z"
     },
     "exception_info": null,
-    "finished_at": "2026-11-20T20:39:17.087350Z",
-    "id": "fd5c6310-1311-4600-9996-606e9b16982e",
+    "finished_at": "2026-11-21T00:37:41.583230Z",
+    "id": "b11c5cd5-ee02-4a57-bc3a-39145b64885e",
     "reward_valid": true,
     "schema_version": 1,
     "source": null,
-    "started_at": "2026-11-20T20:39:03.245680Z",
+    "started_at": "2026-11-21T00:37:28.082981Z",
     "step_results": null,
-    "task_checksum": "2bf6975327746efd38611a9761f175eb7c7c3f60a117712c566296c512a49109",
+    "task_checksum": "c7e229181fa3d1339437d3e63b659b8687308e09e19aeced9a2675b6f70a6562",
     "task_id": {
         "path": "examples/harbor/tasks/count-lines"
     },
     "task_name": "count-lines",
-    "trial_name": "count-lines__pxNNDu4",
+    "trial_name": "count-lines__awjYaUe",
     "trial_uri": null,
     "verifier": {
-        "finished_at": "2026-11-20T20:39:06.239040Z",
-        "started_at": "2026-11-20T20:39:06.008440Z"
+        "finished_at": "2026-11-21T00:37:30.700075Z",
+        "started_at": "2026-11-21T00:37:30.488574Z"
     },
     "verifier_environment_mode": "shared",
     "verifier_result": {
         "rewards": {
-            "reward": 1.0
+            "reward": 0.0
         }
     }
 }

@@ -124,5 +124,7 @@
     }
   },
   "reason": "three annotators ranked each article's summaries (Goyal et al. 2022): their ranks decide",
+  "redistributed": false,
+  "source": "examples/judge-validation-goyal/fetch.py",
   "tier": "gold"
 }

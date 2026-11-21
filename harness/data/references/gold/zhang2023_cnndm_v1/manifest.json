@@ -125,5 +125,7 @@
     }
   },
   "reason": "three crowd raters rated each summary (Zhang et al. 2024): their ratings decide",
+  "redistributed": false,
+  "source": "examples/judge-validation-zhang/fetch.py",
   "tier": "gold"
 }

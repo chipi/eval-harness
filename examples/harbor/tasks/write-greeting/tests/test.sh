@@ -3,13 +3,16 @@ mkdir -p /logs/verifier
 passed=0
 total=0
 results=""
+# check NAME: runs the function of that name and records whether it succeeded
 check() {
   total=$((total + 1))
-  if eval "$2"; then passed=$((passed + 1)); s=passed; else s=failed; fi
+  if "$1"; then passed=$((passed + 1)); s=passed; else s=failed; fi
   results="$results{\"name\": \"$1\", \"status\": \"$s\"},"
 }
-check file_exists 'test -f /app/greeting.txt'
-check content_is_hello '[ "$(cat /app/greeting.txt)" = hello ]'
+file_exists() { test -f /app/greeting.txt; }
+content_is_hello() { [ "$(cat /app/greeting.txt)" = hello ]; }
+check file_exists
+check content_is_hello
 failed=$((total - passed))
 printf '{"results": {"tool": {"name": "shell"}, "summary": {"tests": %d, "passed": %d, "failed": %d}, "tests": [%s]}}\n' \
   "$total" "$passed" "$failed" "${results%,}" > /logs/verifier/ctrf.json

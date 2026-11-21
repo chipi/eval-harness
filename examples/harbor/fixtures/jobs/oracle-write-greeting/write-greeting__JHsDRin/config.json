@@ -12,7 +12,7 @@
         "model_api_key_name": null,
         "model_name": null,
         "n_concurrent": null,
-        "name": "nop",
+        "name": "oracle",
         "override_setup_timeout_sec": null,
         "override_timeout_sec": null,
         "resume_trajectory": false,
@@ -44,7 +44,7 @@
     "extra_instruction_paths": [],
     "extra_instructions": [],
     "install_only": false,
-    "job_id": "011ab30e-d15f-413c-bdc4-fb2d75852df8",
+    "job_id": "f1f8b2ce-ac64-43f8-ab38-e7a7a056162c",
     "override_error_policy": {},
     "schema_version": 1,
     "source_trial": null,
@@ -59,7 +59,7 @@
         "source": null
     },
     "timeout_multiplier": 1.0,
-    "trial_name": "write-greeting__uGs4Zsv",
+    "trial_name": "write-greeting__JHsDRin",
     "trials_dir": "jobs",
     "user_agent": null,
     "verifier": {

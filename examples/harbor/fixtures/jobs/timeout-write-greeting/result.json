@@ -1,16 +1,16 @@
 {
-    "finished_at": "2026-11-20T21:40:59.437649",
-    "id": "3f6e2560-a133-4549-93c5-f4e4aad9fdda",
+    "finished_at": "2026-11-21T01:38:37.213914",
+    "id": "db6ca654-d831-4a9e-acbf-eb4752d9980e",
     "n_total_trials": 1,
     "schema_version": 1,
-    "started_at": "2026-11-20T21:40:42.961432",
+    "started_at": "2026-11-21T01:38:20.293779",
     "stats": {
         "cost_usd": null,
         "evals": {
             "oracle__adhoc": {
                 "exception_stats": {
                     "AgentTimeoutError": [
-                        "write-greeting__TYZ5v33"
+                        "write-greeting__LFHbprX"
                     ]
                 },
                 "metrics": [
@@ -24,7 +24,7 @@
                 "reward_stats": {
                     "reward": {
                         "0.0": [
-                            "write-greeting__TYZ5v33"
+                            "write-greeting__LFHbprX"
                         ]
                     }
                 }
@@ -40,5 +40,5 @@
         "n_retries": 0,
         "n_running_trials": 0
     },
-    "updated_at": "2026-11-20T21:40:59.437649"
+    "updated_at": "2026-11-21T01:38:37.213914"
 }
