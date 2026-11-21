@@ -486,9 +486,9 @@ try:
         lambda: shape((good_items, only)) == [],
     )
     attempt("rated shape: ratings that carry none of the scorer's dimensions are refused, naming them",
-            lambda: any("none of" in p and "accuracy" in p for p in shape((good_items, {k: json.dumps({"ratings": {"wit": [1, 2, 3, 4]}}) for k in good_refs}))))  # fmt: skip
+            lambda: any("none of" in p and "accuracy" in p for p in shape((good_items, {k: json.dumps({"ratings": {"witness": [1, 2, 3, 4]}}) for k in good_refs}))))  # fmt: skip
     attempt("rated shape: a dimension the scorer does not judge is named, not ignored",
-            lambda: any("wit" in p for p in shape((good_items, {**good_refs, "r0": json.dumps({"ratings": {**json.loads(good_refs["r0"])["ratings"], "wit": [1, 2, 3, 4]}})}))))  # fmt: skip
+            lambda: any("witness" in p for p in shape((good_items, {**good_refs, "r0": json.dumps({"ratings": {**json.loads(good_refs["r0"])["ratings"], "witness": [1, 2, 3, 4]}})}))))  # fmt: skip
     attempt("rated shape: items whose ratings carry different dimensions are named",
             lambda: any("r1" in p and "same" in p for p in shape((good_items, {**only, "r1": good_refs["r1"]}))))  # fmt: skip
     attempt("rated shape: a ratings list that is not one per output is named",

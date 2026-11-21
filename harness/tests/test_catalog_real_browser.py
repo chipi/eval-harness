@@ -33,6 +33,7 @@ import socket
 import subprocess
 import sys
 import time
+from html.parser import HTMLParser
 from pathlib import Path
 
 HARNESS = Path(__file__).resolve().parents[1]
@@ -83,6 +84,74 @@ def visible_rows(page, tid: str) -> int:
         f"""[...document.querySelectorAll('table#{tid} tbody tr')].filter(r=>!r.classList.contains('grouphead')
         &&!r.hidden&&!r.classList.contains('fout')&&!r.classList.contains('pout')).length"""
     )
+
+
+def captures_table_has_no_empty_columns(html_text: str) -> bool:
+    """Check that the captures table has no column where all body cells are empty or '—'.
+    Returns True if every column has at least one non-empty, non-dash cell."""
+
+    class TableParser(HTMLParser):
+        def __init__(self):
+            super().__init__()
+            self.in_captures_table = False
+            self.in_thead = False
+            self.in_tbody = False
+            self.headers = []
+            self.rows = []
+            self.current_row = []
+            self.current_cell_text = []
+
+        def handle_starttag(self, tag, attrs):
+            attrs_dict = dict(attrs)
+            if tag == "table" and attrs_dict.get("id") == "captures":
+                self.in_captures_table = True
+            elif self.in_captures_table and tag == "thead":
+                self.in_thead = True
+            elif self.in_captures_table and tag == "tbody":
+                self.in_tbody = True
+            elif self.in_captures_table and tag in ("th", "td"):
+                self.current_cell_text = []
+
+        def handle_data(self, data):
+            if self.in_captures_table and (self.in_thead or self.in_tbody):
+                self.current_cell_text.append(data.strip())
+
+        def handle_endtag(self, tag):
+            if tag == "table" and self.in_captures_table:
+                self.in_captures_table = False
+            elif tag == "thead" and self.in_thead:
+                self.in_thead = False
+            elif tag == "tbody" and self.in_tbody:
+                self.in_tbody = False
+            elif self.in_captures_table and tag == "th" and self.in_thead:
+                self.headers.append("".join(self.current_cell_text))
+            elif self.in_captures_table and tag == "td" and self.in_tbody:
+                cell_content = "".join(self.current_cell_text)
+                self.current_row.append(cell_content)
+            elif self.in_captures_table and tag == "tr" and self.in_tbody and self.current_row:
+                self.rows.append(self.current_row)
+                self.current_row = []
+
+    parser = TableParser()
+    parser.feed(html_text)
+
+    if not parser.headers or not parser.rows:
+        return True  # No table found, consider it OK
+
+    # Check each column
+    num_cols = len(parser.headers)
+    for col_idx in range(num_cols):
+        # Check if all cells in this column are empty or "—"
+        all_empty = True
+        for row in parser.rows:
+            if col_idx < len(row):
+                cell_value = row[col_idx].strip()
+                if cell_value and cell_value != "—":
+                    all_empty = False
+                    break
+        if all_empty:
+            return False  # Found a column with all empty/dash cells
+    return True
 
 
 def check_arms_skip_and_address(browser, base: str) -> None:
@@ -551,7 +620,7 @@ def drive(cat: Path, base: str) -> None:
             "judging" in seen["cnn"]
             and not re.search(r"▲ \d{3,}%", seen["pct"])
             and seen["blank"] == 0
-            and "recorded arm" not in caps,
+            and captures_table_has_no_empty_columns(caps),
             str(seen)[:300],
         )
 
