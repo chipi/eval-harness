@@ -27,7 +27,7 @@ The owner decides scope and order.
 3. **The process**: P1 (production deploys on every push), P2 (the size of a release's notes), P3 (`make site`
    without a store).
 4. **Small items**: S1 to S4.
-5. **The one new feature**: F1, only if the owner wants it in 0.8.1.
+5. **The one new feature**: F1 (in 0.8.1, the owner's decision of 2026-11-22).
 
 A patch release should not move a result. Each item below says whether it can. If one does, it goes to 0.9.0 or
 the owner decides.
@@ -152,11 +152,16 @@ Makefile says so.
 - **Deploys can surprise.** The deploy before it failed safely, at its Alloy check, before switching releases. A
   push of 0.8.0's merge was a deploy nobody had asked for in so many words.
 
-**Done when** the owner picks one:
+**Decided (owner, 2026-11-22):** auto-deploy is off; a deploy is its own step, run from make.
 
-- keep auto-deploy, and say in RELEASING.md and the deploy recipe that a merge to main is a production deploy;
-- or turn it off (the variable unset) and deploy by `workflow_dispatch` with `dry_run: true` first;
-- or gate the `prod` environment on a reviewer.
+**Done when:**
+
+- `deploy-prod.yml` has no `push:` trigger, only `workflow_dispatch`, so `PROD_AUTO_DEPLOY` no longer decides
+  anything;
+- `make deploy-dry` dispatches the workflow with `dry_run: true` and watches it to its end;
+- `make deploy` dispatches the real deploy, and refuses unless a dry run of the same commit passed;
+- RELEASING.md, the deploy recipe and the workflow's header say a merge to main deploys nothing;
+- the repository variable `PROD_AUTO_DEPLOY` is deleted, on the owner's go (a change to the live repository).
 
 **Moves a result:** no.
 
@@ -170,8 +175,11 @@ Makefile says so.
 - **Nobody reads that much.** A section that size is not read, and the docs site and the site's release-notes page
   show all of it.
 
-**Done when** the owner decides how long a release section may be (a cap, or a short section that links to a longer
-one in `docs/`), and RELEASING.md and `site/releases.py` follow.
+**Decided (owner, 2026-11-22):** a short CHANGELOG section that links to the full notes in `docs/`, not a cap.
+
+**Done when:** a release's CHANGELOG section is short and links to its full notes in `docs/`; RELEASING.md says
+so, `site/releases.py` and the docs site show the short section with the link, and `harness-release.yml`'s cut
+is no longer reached by a release written this way.
 
 **Moves a result:** no.
 
@@ -201,9 +209,14 @@ variable, or read the store from the repository's own `harness/config.yaml`. A t
   - **Done when:** the label moves to a leader line or the legend when no clear place exists.
   - **Moves a result:** no.
 - **S3. `check_hf_source.py` and a Hugging Face 502.** On 2026-11-21 a 502 failed the ag-news rerun job once, and
-  rerunning that one job passed. The owner was asked whether `examples/_shared/check_hf_source.py` should retry on a
-  5xx, and has not answered.
-  - **Done when:** the owner answers. A retry with a bounded backoff, logged, for 5xx only, never for 4xx.
+  rerunning that one job passed (run `44822094401`, attempt 1). The 502 came from the datasets-server's `/rows`,
+  which the script reads only to compare (`rows_api`, line 57), and `rows_api` already retried it: 4 tries, 30 s of
+  sleeps, on any exception, a 4xx included.
+  - **Decided (owner, 2026-11-22):** retry 5xx and connection errors only, with a longer bounded backoff (about
+    2 min), each retry logged; a 4xx fails at once; still 5xx at the end exits 1 with one line ("datasets-server
+    /rows unavailable (502) after N tries: not a difference"), never a skip.
+  - **Done when:** a test with a stubbed `urlopen` proves 502, 502, 200 passes; 404 fails with no retry; 502 every
+    time fails with that line.
   - **Moves a result:** no.
 - **S4. Leftovers that are harmless and should go.**
   - **Mockup text:** dead mockup text in `harness/workbench/workbench.js`, and `0.8.0.dev0` in
@@ -212,7 +225,7 @@ variable, or read the store from the repository's own `harness/config.yaml`. A t
     ignore it or stop it being written.
   - **Done when:** they are gone or ignored, with `make quality` green.
 
-## F. A feature, if the owner wants it in 0.8.1
+## F. A feature (in 0.8.1: owner, 2026-11-22)
 
 ### F1. Where the judge and the gold disagree, on the inspector
 
@@ -221,7 +234,7 @@ but not whether the judge agreed with the gold on that item. A marker per item, 
 the gold", would let a reader find the items that make a judge's validation figure.
 
 - **Scope:** UXS-002 first, then the page.
-- **Moves a result:** no, but it is new behaviour, so the owner may prefer 0.9.0.
+- **Moves a result:** no. It is new behaviour; the owner wants it in 0.8.1 all the same.
 
 ## Not in this plan
 
