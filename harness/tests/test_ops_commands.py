@@ -329,9 +329,60 @@ def test_runs_list_legend() -> None:
     check("runs-list: the legend when a run is starred", "* = produced by a dirty tree" in dirty, dirty)
 
 
+def test_runs_list_unknown_dirty() -> None:
+    """A build whose tree was never checked (EVAL_BUILD_REF) is `?`, not clean: `dirty` stays null in --json."""
+    from unittest import mock  # noqa: PLC0415
+
+    from evaluation_harness.model import runs as model_runs  # noqa: PLC0415
+    from evaluation_harness.ops import records  # noqa: PLC0415
+
+    def rec(run_id: str, build: dict | None) -> tuple[Path, dict]:
+        m = {"run_id": run_id, "dataset_id": "d", "scores": {"acc": 1.0}}
+        if build is not None:
+            m["build"] = build
+        return Path("/nowhere") / run_id, m
+
+    found = [
+        rec("r_dirty", {"ref": "a" * 40, "dirty": True}),
+        rec("r_clean", {"ref": "b" * 40, "dirty": False}),
+        rec("r_unknown", {"ref": "v2.3.1", "dirty": None, "source": "EVAL_BUILD_REF"}),
+        rec("r_nobuild", None),
+    ]
+    with (
+        mock.patch("evaluation_harness._runs.runs_on", return_value=found),
+        mock.patch.object(model_runs, "labels", return_value=[]),
+        mock.patch.object(model_runs, "run_of", side_effect=lambda d: d),
+    ):
+        answer = records.runs_list()
+    rows = {r["run_id"]: r["dirty"] for r in answer["runs"]}
+    check(
+        "runs-list --json: dirty is true, false, or null (unknown), never coerced",
+        rows == {"r_dirty": True, "r_clean": False, "r_unknown": None, "r_nobuild": None},
+        rows,
+    )
+    text = records.say_runs_list(answer)
+    lines = {ln.split()[0]: ln for ln in text.splitlines() if ln.startswith("r_")}
+    check("runs-list: a dirty run is starred", "a" * 12 + "*" in lines["r_dirty"], lines["r_dirty"])
+    check("runs-list: a clean run has no mark", "b" * 12 + " " in lines["r_clean"], lines["r_clean"])
+    check("runs-list: an unknown run is marked ?", "v2.3.1?" in lines["r_unknown"], lines["r_unknown"])
+    check("runs-list: a run with no build is unknown too", "??" in lines["r_nobuild"], lines["r_nobuild"])
+    check(
+        "runs-list: the legends for * and ?",
+        "* = produced by a dirty tree; its build ref does not describe what ran" in text
+        and "? = the tree was not checked (EVAL_BUILD_REF set, or an imported run); whether it was dirty is unknown"
+        in text,
+        text,
+    )
+    known = records.say_runs_list(
+        {"runs": [r for r in answer["runs"] if r["dirty"] is not None], "labels": []}
+    )
+    check("runs-list: no ? legend when no row is unknown", "unknown" not in known, known)
+
+
 def main() -> int:
     """Run all operational command tests."""
     test_runs_list_legend()
+    test_runs_list_unknown_dirty()
     tmp = Path(tempfile.mkdtemp(prefix="evh-ops-"))
     try:
         test_init(tmp / "init")

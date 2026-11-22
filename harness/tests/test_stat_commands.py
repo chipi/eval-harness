@@ -81,7 +81,7 @@ def write_run(
         "run_id": run_id,
         "dataset_id": dataset_id,
         "system_id": system_id,
-        "build": {"ref": "abc123def456"},
+        "build": {"ref": "abc123def456", "dirty": False},
         "scores": scores,
         "metric_kinds": dict.fromkeys(scores, "quality"),
         "fingerprint": {

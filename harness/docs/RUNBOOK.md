@@ -626,7 +626,8 @@ evh runs-list
 ```
 
 A run is only attributable if it knows its build. `runs-list` marks runs from a
-dirty tree with `*` — their `build.ref` does not describe what actually ran.
+dirty tree with `*` — their `build.ref` does not describe what actually ran — and a run whose tree was never checked
+(`EVAL_BUILD_REF` set, a run brought in by `evh import-run`, or no build recorded) with `?`; `--json` gives `dirty: true | false | null`, null being unknown.
 **Commit before you measure** — dataset, systems, references — so the runs you keep are
 clean the first time. Re-running an arm into `data/runs` after the fact leaves two
 measurements of one system, which `evh validate` refuses (V8) unless `duplicate_ok` lists the pair; explore with a throwaway pass
@@ -2244,7 +2245,7 @@ refuses one — a baseline that names no system cannot be acted on.
 In order, because each is cheaper than the next:
 
 1. `evh validate` — is the tree even consistent?
-2. `evh runs-list` — was the run from a dirty tree?
+2. `evh runs-list` — was the run from a dirty tree (`*`), or is that unknown (`?`)?
 3. `--repeat 3` — is the delta inside the arm's own spread?
 4. Same `dataset_id` on both sides? (`run-compare` refuses, but check the ids)
 5. Scored against **silver**? A run's `metrics.json` records `reference_tier` — silver

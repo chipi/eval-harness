@@ -561,8 +561,8 @@ def runs_list(label: str | None = None) -> dict[str, Any]:
                 "system_id": m.get("system_id"),
                 "dataset_id": m["dataset_id"],
                 "created_at": m.get("created_at"),
-                "build_ref": m["build"].get("ref"),
-                "dirty": bool(m["build"].get("dirty")),
+                "build_ref": (m.get("build") or {}).get("ref"),
+                "dirty": (m.get("build") or {}).get("dirty"),
                 "directory": data_rel(model_runs.run_of(d)),
                 "scores": {
                     k: v for k, v in sorted(m["scores"].items()) if not k.startswith(BOOKKEEPING_PREFIXES)
@@ -584,10 +584,15 @@ def say_runs_list(r: dict[str, Any]) -> str:
     out = [f"{'run_id':44} {'dataset_id':18} {'build':14} scores"]
     for m in r["runs"]:
         scores = "  ".join(f"{k}={_num(v)}" for k, v in m["scores"].items())
-        dirty = "*" if m["dirty"] else " "
+        dirty = "?" if m["dirty"] is None else "*" if m["dirty"] else " "
         out.append(f"{m['run_id']:44} {m['dataset_id']:18} {(m['build_ref'] or '?')[:12]}{dirty} {scores}")
     if any(m["dirty"] for m in r["runs"]):
         out.append("\n  * = produced by a dirty tree; its build ref does not describe what ran")
+    if any(m["dirty"] is None for m in r["runs"]):
+        out.append(
+            ("" if any(m["dirty"] for m in r["runs"]) else "\n")
+            + "  ? = the tree was not checked (EVAL_BUILD_REF set, or an imported run); whether it was dirty is unknown"
+        )
     if r["labels"]:
         out.append(f"  also present under --label: {', '.join(repr(x) for x in r['labels'])}")
     return "\n".join(out)

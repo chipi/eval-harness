@@ -9,6 +9,19 @@ The version lives in `scripts/_version.py`; a release is the git tag `v<version>
 release workflow refuses a tag that disagrees with that file or has no section here. A change
 that can move a result is never a patch release without saying so under **Changed**.
 
+## 0.8.1 — unreleased
+
+`evh runs-list` showed a run whose tree was never checked as if it were clean. No result moves.
+
+### Fixed
+
+- **`evh runs-list` tells an unknown tree from a clean one.** A run made with `EVAL_BUILD_REF` set records
+  `build.dirty: null` (the tree was never looked at), and `runs-list` turned that into `false`: the text table marked it
+  like a clean run and `--json` said `dirty: false`. The table now marks it `?` after the build ref, with a legend line
+  when a row has it, and `--json` carries `dirty: true | false | null`. A run brought in by `evh import-run` (which records `dirty: null`) and a record with no `build` at all are unknown too
+  (it raised a `KeyError` before). Anything that read `dirty` from `runs-list --json` as a boolean should treat null as
+  "unknown".
+
 ## 0.8.0 — 2026-11-22
 
 This release adds the Workbench, a local app where a round is set up and run; a judge measured against people's ratings, with `evh judge-validate`; and a project's data in one SQLite file (`evh init --store files|sqlite`); an adapter can say "call each item once" (the Harbor example); and every read command is now an operation shared by the CLI, the API and MCP. Upgrading changes results in two places, both under **Changed**: a goal's recommendation can move, because a contender is now shown no worse than the leader by a non-inferiority test ([ADR-0026](https://github.com/chipi/eval-harness/blob/main/docs/adr/ADR-0026-contenders-by-non-inferiority.md)), and from 10,000 items a paired test's p is its normal limit ([ADR-0028](https://github.com/chipi/eval-harness/blob/main/docs/adr/ADR-0028-large-samples-use-the-normal-limit.md)). Stored runs are not re-scored: `evh migrate` brings a project's formats forward, and moves a fingerprint only for a run still at version 4 (as `fingerprint-migrate` did from 0.6.0). The legacy read commands are gone; see [UPGRADING](https://github.com/chipi/eval-harness/blob/main/harness/docs/UPGRADING.md).
