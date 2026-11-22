@@ -296,7 +296,9 @@ Change the pin to `@v0.6.0`. Two formats change, and both are migrated by a scri
   your committed runs once, from your project's root:
   `fingerprint-migrate` in 0.6.0 to 0.7.2, the fingerprints step of `evh migrate` from 0.8.0 (`--dry-run`
   counts first; it is idempotent and prints its counts; a baseline's `fingerprint_hash` follows its run). Code that read `fingerprint.host` reads `fingerprint.runner`;
-  `fingerprint.system_under_test.model` is `fingerprint.deployment` (an adapter's `fingerprint(params)` hook keeps
+  `fingerprint.system_under_test.model` is `fingerprint.deployment`; `fingerprint.arm.params` is gone (`arm` keeps only
+  `config_id` and `labels`): its params are `fingerprint.settings`, minus the deployment keys, credentials and labels, so
+  an imported run's `source` is `fingerprint.settings.source`, and also `fingerprint.imported.source` (an adapter's `fingerprint(params)` hook keeps
   its vocabulary; what it declares about the prompt is now `settings.declared`).
 - **`data/models.yaml` is replaced by `data/models/<model_id>.yaml`** (RFC-020): one record per model, its key in
   the old file the record's alias. Write a record per entry (`model_id`, `kind`, `aliases`, `weights`,
