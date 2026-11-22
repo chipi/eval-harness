@@ -79,6 +79,15 @@ Then one real run of under $0.05 in a scenario project, read by eye.
 - RELEASING.md says the ruleset blocks updates and deletions "so a released tag cannot move under its users".
 - No Release existed for the old tag, so nothing pinned was broken.
 
+**Cause (found 2026-11-23, `gh api repos/chipi/eval-harness/rulesets/rule-suites?ref=refs/tags/v0.8.0`):** the
+delete was not refused, it was bypassed. Rule suite `5291225265` (16:34:45): `result: bypass`, its `deletion` rule
+`fail` ("Cannot delete this tag"), let through by the bypass actor (repository role 5, admin, `always`; the only
+collaborator, `chipi`, is admin). Rule suite `5291225643` (16:34:47): `pass`, `before=0000000 after=094aa680a`: a tag
+created anew, and the ruleset has no `creation` rule. So an admin can move any release tag: delete (bypassed), then
+create. Recommended: remove the bypass actor (a mistaken tag is then fixed by editing the ruleset on purpose, which
+leaves a trace), keep creation allowed (the release workflow creates tags), and RELEASING.md says so. A change to the
+live repository: the owner's go.
+
 **Done when:** the cause is known from GitHub's rule evaluation (the ruleset's insights page or its API), and either:
 
 - the ruleset holds against an admin's push too (bypass only on a pull request, or none), or
