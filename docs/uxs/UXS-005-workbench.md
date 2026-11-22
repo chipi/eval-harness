@@ -313,7 +313,10 @@ decision kept with its reason. This is where people spend most of their time (W1
 - **Run arms in it:** the systems that are not in the round and not yet measured on its dataset (a second measurement
   of a measured system is refused by `evh run`), leaving out a system measured only for another goal (its arms' goal;
   a system never run is offered on every goal); ticked, with a cap, **See the cost first** is the dry run of the sweep
-  (`POST /estimate`) and **Run them** is one `sweep` job for the round's arms under that cap, with its progress. A
+  (`POST /estimate`): it shows each arm's `ESTIMATE ~$…` line and the cap from the field (the one **Run them** sends; the dry
+  run's own cap line is the estimate's, which runs with none) first, as a short summary in view without
+  scrolling (a sweep's answer carries each arm's lines in its text, not in its blocks), and the whole dry run under
+  "the whole dry run", folded. **Run them** is one `sweep` job for the round's arms under that cap, with its progress. A
   system already measured is carried in, never run again. An arm never smoked has no measured cost to cap from: the dry run
   says so ("no arm-smoke of it is recorded"), and the screen links **Choose the systems**, where **Check it on three
   items** (`arm-smoke`, with its command printed) runs the smoke. A smoke is kept on a model's deployment (RFC-032), so a

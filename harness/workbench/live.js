@@ -1045,7 +1045,21 @@
       const b = await r.json().catch(() => ({}));
       const fromBlocks = ((b.result || {}).blocks || []).flatMap((x) => x.lines || []);
       const all = [...fromBlocks, ...String(b.text || "").split("\n")];
-      const lines = fromBlocks.filter((l) => /\$|estimat|items|calls|cost|MEASURED/i.test(l));
+      // The figure a person decides on is the per-arm ESTIMATE and the cap, and the dry run is long (the .reply box scrolls at 252px and they
+      // sit below its fold): each arm's ESTIMATE line and the cap are lifted out above it, the whole dry run kept under a fold. A sweep's
+      // own blocks hold only its header and trailer, each arm's text is its child's, on stderr: so the lines are read from both, in order.
+      // The cap shown is the field's, the one Run them sends: the dry run's own "cap" line is the estimate's, which runs with none.
+      let arm = "";
+      const figures = [];
+      for (const l of [...new Set(fromBlocks), ...String(b.text || "").split("\n")]) {
+        const h = /^── \[\d+\/\d+\] (\S+)/.exec(l);
+        if (h) arm = h[1];
+        else if (/^\s*ESTIMATE\s/.test(l)) figures.push(`${arm ? arm + ": " : ""}${l.trim().replace(/\s{2,}\(.*$/, "")}`);
+      }
+      const typed = Number(v("rn-cap"));
+      const capLine = typed > 0 ? `spend at most $${typed}: Run them stops there, or sooner if the round's budget runs out` : "no cap set: Run them needs one";
+      const whole = b.text || fromBlocks.join("\n") || "no cost to estimate";
+      const summary = figures.length ? `<div class="mono" id="rn-figures">${[...figures, capLine].map((l) => `<p>${esc(l)}</p>`).join("")}</div><details><summary>the whole dry run</summary><pre class="reply">${esc(whole)}</pre></details>` : `<pre class="reply">${esc(whole)}</pre>`;
       // An arm never smoked has no measured cost to cap from: the check on three items is on "Choose the systems". A system that names no
       // model record has nowhere to keep a check (RFC-032: a smoke is kept on a model's deployment), so it is never "recorded": its note says so.
       const unsmoked = new Map(all.map((l) => /MEASURED\s+none for (\S+?): (.*)/.exec(l)).filter(Boolean).map((m) => [m[1], /names no model record/.test(m[2])]));
@@ -1054,7 +1068,7 @@
       const kept = [...unsmoked].filter(([, noRecord]) => !noRecord).map(([n]) => n), unkept = [...unsmoked].filter(([, noRecord]) => noRecord).map(([n]) => n);
       const smoke = (kept.length ? `<p class="note">No arm-smoke is recorded for ${names(kept)}: check it on three items first (<code>evh arm-smoke</code>), on ${link}.</p>` : "")
         + (unkept.length ? `<p class="note">${names(unkept)} ${unkept.length > 1 ? "name" : "names"} no model record, so a check on three items (<code>evh arm-smoke</code>) is not kept and its cost stays unmeasured here: run it on ${link}, and set the cap from the "all N items ≈" line it shows.</p>` : "");
-      out.innerHTML = r.ok ? `<pre class="reply">${esc((fromBlocks.length ? lines.join("\n") : "") || b.text || "no cost to estimate")}</pre>${smoke}` : `<p class="note" role="alert">${esc(b.error || b.text || r.status)}</p>`;
+      out.innerHTML = r.ok ? `${summary}${smoke}` : `<p class="note" role="alert">${esc(b.error || b.text || r.status)}</p>`;
     });
     document.getElementById("rn-go")?.addEventListener("click", async (ev) => {
       const out = document.getElementById("rn-out"), by = byOr("ev-by"), cap = Number(v("rn-cap"));

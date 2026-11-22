@@ -147,6 +147,37 @@ def dollars(text: str) -> str | None:
     return m.group(1) if m else None
 
 
+#: Where a reader sees a line of #rn-out's answer: its text range's box, tested against the viewport and the client box of
+#: every ancestor that clips (the .reply box scrolls), after the section is scrolled into view. Not seen: no box (inside a
+#: closed <details>) or one outside a clipping ancestor.
+SEEN_JS = """(re) => {
+  const out = document.getElementById('rn-out');
+  out.scrollIntoView({block: 'start'});
+  const w = document.createTreeWalker(out, NodeFilter.SHOW_TEXT);
+  const res = [];
+  for (let n = w.nextNode(); n; n = w.nextNode()) {
+    const m = new RegExp(re).exec(n.nodeValue);
+    if (!m) continue;
+    const rg = document.createRange(); rg.setStart(n, m.index); rg.setEnd(n, m.index + m[0].length);
+    const r = rg.getBoundingClientRect();
+    let ok = r.height > 0 && r.top >= 0 && r.bottom <= innerHeight && r.left >= 0 && r.right <= innerWidth;
+    for (let e = n.parentElement; e && e !== document.body; e = e.parentElement) {
+      const c = getComputedStyle(e);
+      if (c.overflowY !== 'visible' || c.overflowX !== 'visible') {
+        const b = e.getBoundingClientRect();
+        if (r.top < b.top - 0.5 || r.bottom > b.bottom + 0.5) ok = false;
+      }
+    }
+    res.push({text: m[0], ok});
+  }
+  return res;
+}"""
+
+
+def seen(page, rx: str) -> list:
+    return page.evaluate(SEEN_JS, rx)
+
+
 GOAL, DS, BUDGET, CAP1, CAP2 = "tickets_summary", "tk_v1", 0.30, 1.00, 0.50
 try:
     r = evh("init", "--store", "files", "--tutorial")
@@ -199,15 +230,38 @@ try:
                 page.reload()
                 page.wait_for_selector(f"[data-run='{system}']", timeout=30000)
                 page.check(f"[data-run='{system}']")
-                page.click("#rn-est")
-                page.wait_for_selector("#rn-out pre, #rn-out [role=alert]", timeout=60000)
-                shown = page.locator("#rn-out").inner_text()
                 page.fill("#rn-cap", str(cap))
+                page.click("#rn-est")
+                page.wait_for_selector("#rn-out pre, #rn-out [role=alert]", state="attached", timeout=60000)
+                shown = page.locator("#rn-out").inner_text()
+                api_est = page.evaluate(
+                    "(i) => fetch('/api/v1/estimate', {method: 'POST', credentials: 'same-origin', headers: {'Content-Type': 'application/json', 'X-EVH-Data': '1'}, body: JSON.stringify({operation: 'sweep', inputs: i})}).then((r) => r.json())",
+                    {"systems": [system], "dataset": DS, "goal": GOAL, "round": "r1"},
+                )
+                evidence(
+                    "1a",
+                    f"estimate answer: result={json.dumps(api_est.get('result'))[:600]} text_lines={len(str(api_est.get('text')).splitlines())}",
+                )
+                reach = {}
+                for w_, h_ in ((1280, 900), (390, 800)):
+                    page.set_viewport_size({"width": w_, "height": h_})
+                    reach[w_] = {
+                        k: seen(page, rx)
+                        for k, rx in (
+                            ("estimate", r"ESTIMATE\s+~\$[0-9.]+"),
+                            ("cap", rf"spend at most \${cap:g}\b"),
+                        )
+                    }
+                figures = (
+                    page.locator("#rn-figures").inner_text() if page.locator("#rn-figures").count() else ""
+                )
+                reach["figures"] = figures
+                page.set_viewport_size({"width": 1280, "height": 900})
                 page.fill("#ev-by", "tester")
                 page.click("#rn-go")
                 page.wait_for_selector(f"#arms li:has-text('{system}')", timeout=180000)
                 jd, job = last_job("sweep")
-                return {"shown": shown, "job_dir": jd, "job": job, "cap": cap}
+                return {"shown": shown, "reach": reach, "job_dir": jd, "job": job, "cap": cap}
 
             # run 1: its system file is written after the commit and left uncommitted
             system_yaml("paid_a")
@@ -220,6 +274,20 @@ try:
                 "1 estimate: the page shows a positive dollar figure, equal to `evh run --dry-run`'s for the arm",
                 page_est is not None and float(page_est) > 0 and page_est == cli_est,
                 (a["shown"], cli.stdout[-600:], cli.stderr[-300:]),
+            )
+
+            figures = a["reach"].pop("figures")
+            for w_, got in a["reach"].items():
+                evidence("1b", f"{w_}px: {got}")
+                check(
+                    f"1b visible: at {w_} px the ESTIMATE line and the typed cap are in view without scrolling the reply box",
+                    all(any(x["ok"] for x in got[k]) for k in ("estimate", "cap")),
+                    (got, a["shown"]),
+                )
+            check(
+                "1c the summary's cap is the one Run them uses, never the dry run's own (NONE: the estimate runs with no cap)",
+                "NONE" not in figures and f"${CAP1:g}" in figures,
+                figures,
             )
 
             jenv = a["job"].get("env") or {}

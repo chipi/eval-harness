@@ -58,6 +58,16 @@ Then one real run of under $0.05 in a scenario project, read by eye.
 
 **Moves a result:** no.
 
+**Found by the real run (2026-11-22, `/work/evh-scenario-081t1`, $0.00017 on `eval-mistral-small`):**
+
+- **T1a. The estimate's dollar figure is hidden.** "See the cost first" shows the whole dry run in a `.reply` box capped
+  at 252 px (`workbench.css:486`); the `ESTIMATE ~$…` and `cap` lines are below its fold, at 1400 px and at 390 px. The
+  filter to the cost lines (`live.js:1048`) applies only to `result.blocks`, and the sweep estimate's answer had none,
+  so the page fell back to the full text. The browser test read the text, not what is visible, so it passed.
+  - **Done when:** the estimate and the cap are visible without scrolling the box, at 1400 and 390 px, proved by a
+    browser check that fails before the fix.
+- **T1b. `runs-list` showed an unknown tree as clean.** Fixed in `663fc3265` (`?` and `dirty: null`).
+
 ### T2. Can a release tag move?
 
 **What is open.** On 2026-11-22 the `release tags` ruleset (target `refs/tags/v*`, rules `deletion`,

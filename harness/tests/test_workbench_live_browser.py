@@ -979,7 +979,7 @@ try:
             arm_listed(page, "one_v1")
             page.check("[data-run='fake-1b_here']")
             page.click("#rn-est")
-            page.wait_for_selector("#rn-out pre, #rn-out [role=alert]", timeout=60000)
+            page.wait_for_selector("#rn-out pre, #rn-out [role=alert]", state="attached", timeout=60000)
             check(
                 "See the cost first: the sweep's dry run (POST /estimate), nothing run",
                 page.locator("#rn-out pre").count() == 1
@@ -1040,7 +1040,7 @@ try:
             page.uncheck("[data-run='fake-1b_here']")
             page.check("[data-run='nosmoke_v1']")
             page.click("#rn-est")
-            page.wait_for_selector("#rn-out pre, #rn-out [role=alert]", timeout=60000)
+            page.wait_for_selector("#rn-out pre, #rn-out [role=alert]", state="attached", timeout=60000)
             smoke_text = page.locator("#rn-out").inner_text()
             check(
                 "See the cost first, for an arm never smoked: the dry run says no arm-smoke is recorded, and the screen "
