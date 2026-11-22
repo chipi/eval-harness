@@ -28,6 +28,7 @@ import argparse
 import json
 import os
 import re
+import shutil
 import signal
 import socket
 import subprocess
@@ -1132,6 +1133,23 @@ def drive(cat: Path, base: str) -> None:
         browser.close()
 
 
+def sqlite_copy(cat: Path) -> Path:
+    """This repository's data as a SQLite store (a copy: the tracked files stay as they are), and the catalog built over
+    it, in .build/real-sqlite/. The process then reads it: a SQLite store is not the repository's files, so serving
+    the files' catalog on it left every comparison with no runs to answer from."""
+    root = HARNESS / ".build" / "real-sqlite"
+    shutil.rmtree(root, ignore_errors=True)
+    root.mkdir(parents=True)
+    shutil.copytree(HARNESS / "data", root / "data")
+    os.environ.update(EVAL_DATA_DIR=str(root / "data"), EVAL_STORE="sqlite")
+    cli = [sys.executable, str(HARNESS / "scripts" / "cli.py")]
+    for args in (["data-migrate", "--to", "sqlite"], ["catalog", "--out", str(root / "catalog")]):
+        r = subprocess.run(cli + args, cwd=HARNESS, capture_output=True, text=True, check=False)  # nosec B603
+        if r.returncode:
+            raise SystemExit(f"setup: evh {' '.join(args)} failed:\n{r.stdout}{r.stderr}")
+    return root / "catalog"
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--catalog", type=Path, default=HARNESS / ".build" / "budget-catalog")
@@ -1145,6 +1163,8 @@ def main() -> int:
         print("  FAIL Playwright is not installed: `make browser-install` (requirements-browser.txt)")
         return 1
     cat = args.catalog.resolve()
+    if os.environ.get("EVAL_STORE", "").strip() == "sqlite":
+        cat = sqlite_copy(cat)
     if not (cat / "index.html").is_file():
         print(f"  FAIL no catalog at {cat}: `make browser-real-check` builds one")
         return 1

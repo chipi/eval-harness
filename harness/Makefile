@@ -112,8 +112,11 @@ browser-install:
 budget-check:
 	$(PYTHON) tests/test_inspector_budget.py $(ARGS)
 
+# The inspector's test runs on both stores (the store matrix skips every *_browser.py, so
+# this is where the SQLite store meets a browser, as does browser-real-check); the workbench tests below are files only.
 browser-check:
-	$(PYTHON) tests/test_inspector_browser.py
+	EVAL_STORE=files $(PYTHON) tests/test_inspector_browser.py
+	EVAL_STORE=sqlite $(PYTHON) tests/test_inspector_browser.py
 	$(PYTHON) tests/test_workbench_browser.py
 	$(PYTHON) tests/test_workbench_live_browser.py
 	$(PYTHON) tests/test_workbench_replay_browser.py
@@ -125,7 +128,8 @@ browser-check:
 # pages at the size the deployment serves. Reuses budget-check's catalog, else builds it.
 browser-real-check:
 	@test -f .build/budget-catalog/index.html || $(PYTHON) scripts/cli.py catalog --out .build/budget-catalog
-	$(PYTHON) tests/test_catalog_real_browser.py --catalog .build/budget-catalog
+	EVAL_STORE=files $(PYTHON) tests/test_catalog_real_browser.py --catalog .build/budget-catalog
+	EVAL_STORE=sqlite $(PYTHON) tests/test_catalog_real_browser.py --catalog .build/budget-catalog
 
 # The checks can fail: every checker, run once over a copy of the repository with all its planted
 # defects, must name each one (tests/test_checks_can_fail.py). Not in `make ci`: it proves the
