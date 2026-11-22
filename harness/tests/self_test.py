@@ -1364,6 +1364,10 @@ def test_example_scorer_suites_pass() -> None:
             "test_hf_rows.py",
             "the examples' Hub reader through the huggingface source: pages, pinned commit, rows map",
         ),
+        (
+            "test_check_hf_source.py",
+            "the /rows comparison: a 5xx or a dropped connection is retried, a 4xx is not, never a difference",
+        ),
         ("test_render_data.py", "the deployment copies every part of data/ the catalog reads"),
         ("test_runs_adapter.py", "run reading, direction, adapter loading"),
         ("check_report_claims.py", "report claims vs committed runs"),
