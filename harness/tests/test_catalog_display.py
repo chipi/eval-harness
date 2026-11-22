@@ -331,6 +331,69 @@ check(
     (alltext(sc)[:200], cut(s)),
 )
 
+
+# -- a crowded corner: a name lies over no dot; with no clear place it goes to a leader line or the legend (0.8.1 S2) ---
+def dots_of(s: ET.Element) -> list:
+    return [
+        (float(c.get("cx", 0)), float(c.get("cy", 0)), float(c.get("r", 0))) for c in s.iter(NS + "circle")
+    ]
+
+
+def over_dots(s: ET.Element, prefix: str) -> list:
+    """The names (`prefix...`) with a dot under their drawn box."""
+    out = []
+    for x0, x1, y0, y1, txt in boxes(s):
+        if not txt.startswith(prefix):
+            continue
+        for cx, cy, r in dots_of(s):
+            if x0 - r < cx < x1 + r and y0 - r < cy < y1 + r:
+                out.append((txt, round(cx), round(cy)))
+    return out
+
+
+LEADS = ("briefs_lead1", "briefs_top")
+
+
+def crowded(xs: list, ys: list) -> str:
+    """lead1 (the cheapest) and a top arm on the frontier; a grid of dots, each beaten by the top arm, across xs x ys."""
+    pts = [(0.0, 3.0, "briefs_lead1_v1", "t"), (0.000001, 5.0, "briefs_top_v1", "t")]
+    return cc.scatter(
+        pts + [(x, y, f"briefs_g{i}_{j}", "t") for i, x in enumerate(xs) for j, y in enumerate(ys)],
+        "cost (USD per item)",
+        "judge_score",
+        fmt_x=axes.fmt_usd,
+        width=520,
+    )
+
+
+def named_ok(sc: str) -> bool:
+    s = svg_of(sc)
+    legend = re.sub(r"<[^>]+>", "", sc.split("<figcaption")[1])
+    return (
+        not over_dots(s, "briefs_")
+        and not overlaps(boxes(s))
+        and not cut(s)
+        and all(any(b_[4].startswith(n) for b_ in boxes(s)) or n in legend for n in LEADS)
+    )
+
+
+# a block of dots right of lead1 (a name beside it would lie over them), open ground further right: a leader line
+sc = crowded([0.00002 * k for k in range(1, 16)], [3.0 + 0.12 * k for k in range(15)])
+check(
+    "scatter: in a crowded corner no name lies over a dot; with no clear place beside its dot it goes to a leader line",
+    named_ok(sc) and 'class="leader"' in sc,
+    (over_dots(svg_of(sc), "briefs_"), sc.count('class="leader"')),
+)
+# dots everywhere: no clear ground at all, so the names go to the caption
+sc = crowded([0.00005 * k for k in range(1, 55)], [3.0 + 2 * k / 24 for k in range(25)])
+check(
+    "scatter: with no clear ground at all the names go to the legend (the caption), over no dot",
+    named_ok(sc)
+    and "No clear place on the chart for" in sc
+    and "briefs_lead1_v1" in sc.split("<figcaption")[1],
+    (over_dots(svg_of(sc), "briefs_"), sc.split("<figcaption")[1][-200:]),
+)
+
 # -- arm pages: no reference, rounds of a re-read arm ----------------------------------------------------------------
 a0 = {
     "arm": "runs/briefs_v2/briefs_lead1_v1",

@@ -25,7 +25,9 @@ The signals, each a filter (given together, an item needs all of them) and the s
 - split: the other runs (the candidates) decided differently among themselves;
 - new: a field value the dataset in --new-vs has never had: its choice and yes/no fields, and its text fields with at
   most NEW_MAX values there (an alert name, a source), never a date or a number (each new day would read new);
-- unlabelled: no label in any set yet.
+- unlabelled: no label in any set yet;
+- judge: a run of a judge on a validation (`evh judge-validate`) disagrees with the people's ratings on the item: its
+  own term of the validation figure is under its chance level (`judge_validation.agreement`).
 
 "Decided the same" is the first run's adapter's `same(a, b)` (the same text when it has none). Nothing is written:
 the view ends with the `evh pick` and `evh label-sheet` commands for the rows it shows.
@@ -63,7 +65,7 @@ from evaluation_harness._sheets import ALSO, NOTE, label_header
 from evaluation_harness.label_sheet import run_dir, view
 from evaluation_harness.model import runs as _model_runs
 
-SIGNALS = ("wrong", "disagree", "split", "new", "unlabelled")
+SIGNALS = ("wrong", "disagree", "split", "new", "unlabelled", "judge")
 #: --new-vs compares a field only when the governed dataset has at most this many values for it (a choice, an
 #: alert name, a source), not a free text where every value is new.
 NEW_MAX = 30
@@ -417,6 +419,9 @@ def build(
     run_of = {a["token"]: _model_runs.run_of(a["dir"]).name for a in arms}
     tag_arms = [a["token"] for a in arms if run_of[a["token"]] in tagged]
     wanted = set(items) if items is not None else None
+    from evaluation_harness import judge_validation as jva  # noqa: PLC0415
+
+    validating = [a for a in arms if jva.is_validation(a["metrics"].get("adapter"))]
     out = []
     # Each arm's outputs read once, not once an item: 50 arms on 10,000 items were 500,000 lookups, each finding the
     # run's source again (in the SQLite store, 4 path resolutions a lookup: 121 of a 146 s sheet, PLAN_0.8.0 S3).
@@ -448,6 +453,13 @@ def build(
             sig["new"] = ", ".join(new[i])
         if not mine:
             sig["unlabelled"] = ""
+        against = [
+            a["token"]
+            for a in validating
+            if (g := jva.agreement(a["per_item"].get(i, {}))) is not None and not g["agrees"]
+        ]
+        if against:
+            sig["judge"] = ", ".join(against)
         winners: dict[str, list[str]] = {}
         # {pick or pairwise column: {arm: its judge_won on this row}}: the win rate credits each arm its own share.
         judged_on: dict[str, dict[str, float]] = {}

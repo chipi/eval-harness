@@ -123,6 +123,8 @@ browser-check:
 	$(PYTHON) tests/test_workbench_store_browser.py
 	$(PYTHON) tests/test_workbench_heldout_browser.py
 	$(PYTHON) tests/test_workbench_paid_browser.py
+	$(PYTHON) tests/test_inspector_names_browser.py
+	$(PYTHON) tests/test_judge_gold_browser.py
 
 # The catalog of this repository's own runs in Chromium (tests/test_catalog_real_browser.py): the
 # pages at the size the deployment serves. Reuses budget-check's catalog, else builds it.

@@ -56,6 +56,7 @@ OPS = (
            "wrong_against": {"type": "string", "x-metavar": "SET", "description": "only the items where the first run's decision is not this label set's (SET or DATASET/SET)"},
            "new_vs": {"type": "string", "x-metavar": "DATASET", "description": "only the items with a field value this dataset has never had"},
            "unlabelled": {"type": "boolean", "description": "only the items no label set labels yet"},
+           "judge_disagrees": {"type": "boolean", "description": "only the items where a judge on a validation disagrees with the people's ratings (its term of the validation figure is under chance)"},
            "scores_only": {"type": "boolean", "description": "leave the runs' outputs out, keep their scores"},
            "fill": {"type": "string", "enum": ["label", "pick", "scores", "tags"], "description": "add the columns to fill. label: label, also right, note. pick, scores: the outputs as blind columns A, B, C... shuffled per row, a key beside the sheet (sheet.key.json), the rubric as its first row; tags: a failure_modes column beside each arm's output (with --modes), a key beside the sheet; evh sheet-import --sheet reads it back"},
            "modes": {"type": "string", "description": "with --fill tags: the failure-mode list the tags name (data/failure-modes/<id>.yaml)"},

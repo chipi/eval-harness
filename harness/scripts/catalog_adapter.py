@@ -1011,6 +1011,15 @@ class HarnessAdapter:
                     for k, v in sorted(self.scores(arm).items()):
                         if k.startswith("judge_") and item in v["values"]:
                             info[k.removeprefix("judge_")] = f"{v['values'][item]:.3g}"
+                # A judge on a validation (evh judge-validate): whether it agreed with the people on this item.
+                from evaluation_harness import judge_validation as jva  # noqa: PLC0415
+
+                if jva.is_validation(self._metrics(arm).get("adapter")):
+                    mark = jva.mark_of(
+                        {k: v["values"][item] for k, v in self.scores(arm).items() if item in v["values"]}
+                    )
+                    if mark:
+                        info[jva.MARK] = mark
                 view = {"kind": "text", "text": text, "info": info, "repeats": len(dirs)}
                 self._with_artifact(view, row)
                 return view

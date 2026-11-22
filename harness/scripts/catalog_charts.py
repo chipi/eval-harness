@@ -384,8 +384,10 @@ def scatter(
     flat_note = f"{fmt_y(ys[0])} · the same for every dot"
     if flat_y:
         placed.append((left + 8, left + 8 + LABEL_W * len(flat_note), y_of(ys[0]) - 8))
+    dots = [(x_of(p[0]), y_of(p[1]), 5 if i in front else 4) for i, p in enumerate(points)]
     # Names are drawn after every dot: a dot drawn later would cover a name placed before it.
     names: list[str] = []
+    unnamed: list[str] = []
     for i, (x, y, lab, tip) in enumerate(points):
         on = i in front
         marks.append(
@@ -395,41 +397,77 @@ def scatter(
         if on:
             # Named beside the dot on the side the name fits inside the plot (never cut off, never over
             # the y axis: a name too long for either side is shortened, the dot's tooltip keeps it
-            # whole), moved up or down a line when it would cover a name already placed or a stretch of the line.
+            # whole), moved up or down a line when it would cover a name already placed, a dot or a stretch of the line.
             room_r, room_l = width - RIGHT - (x_of(x) + 7), x_of(x) - 7 - left
             need = LABEL_W * len(lab)
             prefer_left = need > room_r and (need <= room_l or room_l > room_r)
-            # a side where the whole name fits first (the nearer to the dot's preferred side), a shortened one last;
-            # a place clear of the line first, one the line crosses (the halo keeps it readable) only when none is
+            # a side where the whole name fits first (the nearer to the dot's preferred side); a place clear of the line
+            # first, one the line crosses (the halo keeps it readable) only when none is; a name is never drawn over a
+            # dot. With no clear place beside the dot: the name goes where there is one, a leader line to its dot; then
+            # a shortened name beside it; where there is none, the caption names it (the tooltip and the points table too)
             done = False
-            for strict in (True, False):
-                for left_side in sorted(
-                    (True, False), key=lambda ls: (need > (room_l if ls else room_r), ls != prefer_left)
-                ):
-                    room = room_l if left_side else room_r
-                    text = lab if need <= room else lab[: max(1, int(room / LABEL_W) - 1)] + "…"
-                    tx = x_of(x) + (-7 if left_side else 7)
-                    x0, x1 = (tx - LABEL_W * len(text), tx) if left_side else (tx, tx + LABEL_W * len(text))
-                    ty = label_y(
-                        y_of(y) - 6,
-                        x0,
-                        x1,
+            for whole_only in (True, False):
+                if not whole_only:
+                    spot = _leader_spot(
+                        (x_of(x), y_of(y)),
+                        need,
+                        dots,
                         placed,
-                        TOP + 2,
-                        h - bottom - 4,
-                        (lambda yy, x0=x0, x1=x1: not _crossed(segments, x0, x1, yy)) if strict else None,
+                        segments,
+                        (left + 4, width - RIGHT - 4, TOP + 14, h - bottom - 4),
                     )
-                    if ty is not None:
-                        placed.append((x0, x1, ty))
+                    if spot is not None:
+                        x0, ty, sx, sy, ex, ey = spot
+                        placed.append((x0, x0 + need, ty))
                         names.append(
-                            f'<text x="{tx:.1f}" y="{ty:.1f}" class="tick name"'
-                            f"{END if left_side else ''}>{_e(text)}</text>"
+                            f'<line x1="{sx:.1f}" y1="{sy:.1f}" x2="{ex:.1f}" y2="{ey:.1f}" class="leader" '
+                            f'stroke="var(--muted)" stroke-width="1"/>'
+                            f'<text x="{x0:.1f}" y="{ty:.1f}" class="tick name">{_e(lab)}</text>'
                         )
                         done = True
                         break
+                for strict in (True, False):
+                    for left_side in sorted(
+                        (True, False), key=lambda ls: (need > (room_l if ls else room_r), ls != prefer_left)
+                    ):
+                        room = room_l if left_side else room_r
+                        if whole_only and need > room:
+                            continue
+                        keep = max(1, int(room / LABEL_W) - 1)
+                        if need > room and keep < min(5, len(lab) - 1):
+                            continue  # "b…" names nothing: the caption does
+                        text = lab if need <= room else lab[:keep] + "…"
+                        tx = x_of(x) + (-7 if left_side else 7)
+                        x0, x1 = (
+                            (tx - LABEL_W * len(text), tx) if left_side else (tx, tx + LABEL_W * len(text))
+                        )
+                        ty = label_y(
+                            y_of(y) - 6,
+                            x0,
+                            x1,
+                            placed,
+                            TOP + 2,
+                            h - bottom - 4,
+                            lambda yy, x0=x0, x1=x1, strict=strict: (
+                                not _dot_under(dots, x0, x1, yy)
+                                and not (strict and _crossed(segments, x0, x1, yy))
+                            ),
+                            NEAR,
+                        )
+                        if ty is not None:
+                            placed.append((x0, x1, ty))
+                            names.append(
+                                f'<text x="{tx:.1f}" y="{ty:.1f}" class="tick name"'
+                                f"{END if left_side else ''}>{_e(text)}</text>"
+                            )
+                            done = True
+                            break
+                    if done:
+                        break
                 if done:
                     break
-            # no clear line on either side: the dot stays, its tooltip and the points table name it
+            if not done:
+                unnamed.append(f"{lab} ({fmt_x(x)}, {fmt_y(y)})")
     marks.extend(names)
     corner = ("left" if lower_x else "right") + (" top" if higher_y else " bottom")
     if flat_x:
@@ -461,7 +499,9 @@ def scatter(
         f'<figure class="chart"><svg width="{width}" viewBox="0 0 {width} {h}" role="img" aria-label="{_e(y_label)} against {_e(x_label)}">'
         f"{frame}{''.join(marks)}</svg>"
         f'<figcaption class="small muted">{_e(y_label)} against {_e(x_label)}: better is {corner}. '
-        "Named and joined: the frontier, the arms no other arm beats on both.</figcaption></figure>"
+        "Named and joined: the frontier, the arms no other arm beats on both."
+        + (f" No clear place on the chart for: {_e('; '.join(unnamed))} (hover its dot)." if unnamed else "")
+        + "</figcaption></figure>"
     )
 
 
@@ -473,10 +513,12 @@ END = ' text-anchor="end"'
 LABEL_W = 7.8
 #: The height of one label line.
 LABEL_H = 16.0
+#: How many lines a name may move from its dot (up or down) before it goes to a leader line.
+NEAR = 4
 
 
 def label_y(
-    want: float, x0: float, x1: float, placed: list, top: float, bottom: float, ok=None
+    want: float, x0: float, x1: float, placed: list, top: float, bottom: float, ok=None, reach: int = 12
 ) -> float | None:
     """Where a label spanning x0..x1 goes: at `want` if no label already placed covers it, else the
     nearest line above or below that is clear, within top..bottom; None when no line is clear (the label is
@@ -488,7 +530,7 @@ def label_y(
             ok is None or ok(y)
         )
 
-    for k in range(12):
+    for k in range(reach):
         for y in (want,) if k == 0 else (want + k * LABEL_H, want - k * LABEL_H):
             if top <= y <= bottom and clear(y):
                 return y
@@ -587,6 +629,50 @@ def _left_for(names: list[str], base: float, width: float, frac: float = 0.34) -
     longest = max((len(n) for n in names), default=0)
     left = int(min(max(base, longest * LABEL_W + 14), max(base, width * frac)))
     return left, _room(left - 8)
+
+
+def _dot_under(dots: list, x0: float, x1: float, yy: float) -> bool:
+    """Whether any dot (cx, cy, r) is under a label spanning x0..x1 at baseline yy (the box _crossed uses)."""
+    return any(x0 - r < cx < x1 + r and yy - 13 - r < cy < yy + 5 + r for cx, cy, r in dots)
+
+
+def _leader_spot(
+    dot: tuple[float, float],
+    w: float,
+    dots: list,
+    placed: list,
+    segments: list,
+    bounds: tuple[float, float, float, float],
+) -> tuple[float, float, float, float, float, float] | None:
+    """The nearest place for a label `w` wide, clear of every dot, name and stretch of the line, and a straight leader
+    to it clear of the other dots: (x0, baseline, leader start at the dot's edge, leader end), or None."""
+    cx, cy = dot
+    xa, xb, ya, yb = bounds
+    best: tuple[float, tuple[float, float, float, float, float, float]] | None = None
+    x0 = xa
+    while x0 + w <= xb:
+        for y in range(int(ya), int(yb) + 1, 8):
+            if (
+                _dot_under(dots, x0, x0 + w, y)
+                or _crossed(segments, x0, x0 + w, y)
+                or any(abs(y - py) < LABEL_H and x0 < px1 and x0 + w > px0 for px0, px1, py in placed)
+            ):
+                continue
+            ex, ey = min(max(cx, x0), x0 + w), min(max(cy, y - 13), y + 5)
+            d = math.hypot(ex - cx, ey - cy)
+            if d == 0 or (best is not None and d >= best[0]):
+                continue
+            sx, sy = cx + (ex - cx) / d * 5, cy + (ey - cy) / d * 5
+            along = [(sx + (ex - sx) * k / 20, sy + (ey - sy) * k / 20) for k in range(21)]
+            if any(
+                math.hypot(px - ox, py - oy) < r + 1.5 and (ox, oy) != (cx, cy)
+                for px, py in along
+                for ox, oy, r in dots
+            ):
+                continue
+            best = (d, (x0, y, sx, sy, ex, ey))
+        x0 += 6
+    return best[1] if best else None
 
 
 def _crossed(segments: list, x0: float, x1: float, y: float) -> bool:

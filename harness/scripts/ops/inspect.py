@@ -75,6 +75,7 @@ OPS = (
            "wrong_against": {"type": "string", "description": "only the items where the first run's decision is not this label set's (SET or DATASET/SET)"},
            "new_vs": {"type": "string", "description": "only the items with a field value this dataset has never had"},
            "unlabelled": {"type": "boolean", "description": "only the items no label set labels yet"},
+           "judge_disagrees": {"type": "boolean", "description": "only the items where a judge on a validation disagrees with the people's ratings (its term of the validation figure is under chance)"},
            "scores_only": {"type": "boolean", "description": "leave the runs' outputs out, keep their scores"},
        }, required=("runs",), public_dropped="the sheet shows the items' outputs and labels"),
 )  # fmt: skip
@@ -177,6 +178,7 @@ def _sheet_show_body(dataset: str, runs: str, **given: Any) -> int:
         wrong_against=given.get("wrong_against"),
         new_vs=given.get("new_vs"),
         unlabelled=bool(given.get("unlabelled")),
+        judge_disagrees=bool(given.get("judge_disagrees")),
         scores_only=bool(given.get("scores_only")),
     )
     return catalog_views.sheet_view(_adapter(), args)

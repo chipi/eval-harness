@@ -988,7 +988,7 @@ def _show(heads: list, rows: list) -> None:
 
 def sheet_view(A, args) -> int:
     """The dataset's items down, a column per run, printed (RFC-023, _sheet); `args`: dataset_id, runs, metric, label, where,
-    by, disagree, split, wrong_against, new_vs, unlabelled, scores_only."""
+    by, disagree, split, wrong_against, new_vs, unlabelled, judge_disagrees, scores_only."""
     from evaluation_harness import _picks  # noqa: PLC0415
 
     if _visibility.public_env():
@@ -1023,6 +1023,7 @@ def sheet_view(A, args) -> int:
             ("split", args.split),
             ("new", args.new_vs),
             ("unlabelled", args.unlabelled),
+            ("judge", args.judge_disagrees),
         )
         if on
     ]

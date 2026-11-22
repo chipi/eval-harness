@@ -47,7 +47,7 @@ Links from the catalog may also carry `family` and `threshold`, so a verdict rea
 goal page matches the one that page implied. `rescore=0` reads only what is on record (the
 re-score box unticked) and `disagree=1` keeps the items where the arms decided differently. The
 sheet's state is `dataset=<id>&sheet=1` with `only=` (once per signal kept: `wrong`, `new`,
-`disagree`, `split`, `unlabelled`), `wrong=<label set>`, `new=<dataset>` and `scores=only`.
+`disagree`, `split`, `unlabelled`, `judge`), `wrong=<label set>`, `new=<dataset>` and `scores=only`.
 Every control rewrites the URL and reloads.
 `&item=<id>` opens that item's view once the comparison has loaded (a dataset page's **inspect**
 link); an item the arms do not share says so instead.
@@ -229,6 +229,18 @@ every catalog table, and only the rows shown are drawn: "show 10 more", and "sho
   breakdown rows) and the verdicts' metric link to their pages.
 - **Every label the item has**, each with its source chip, set name, who made it and note, above the
   outputs (the local inspector only); a recorded arm's output is headed "production, recorded" with its capture.
+- **Where the judge and the gold disagree** (a judge on a validation, `evh judge-validate`: a run whose adapter is
+  `judge_validation.py`, over a dataset the people rated). Above the arm's output, in the line that already names its
+  run, one more entry, **judge vs gold**: `agrees (top1 1, chance 0.25)` or `disagrees (top1 0, chance 0.25)`; the page
+  and `evh comparison-item` print it the same way. **What agreement is** is the validation figure's own term for the
+  item, nothing added: the run's headline for the mode (`tau` for grade, `top1` for pick, `pair_agreement` for
+  pairwise) is the mean of the item values, so the item's value is what it contributes to that figure; the item
+  *disagrees* when its value is under the figure's chance level for it (`judge_validation.agreement`): `tau` under 0
+  (unrelated orders), `top1` under the item's own `top1_chance` (what a random pick scores on it), `pair_agreement`
+  under 0.5 (a coin; a tie counts half). An item the judge gave no readable verdict has no line (the run counts it 0 on
+  the quality metrics; `parsed` says so). **Public:** the line compares the verdict, which a deployment may serve, with
+  the reference, which it may not, so a public server shows it only when it publishes both (`--publish
+  outputs,references`) and never for a `text: hidden` dataset; otherwise the entry is absent, not blank.
 
 ## 05 sheet
 
@@ -243,7 +255,7 @@ browser, the same model.
   subject); the **signals**, next to it because they are why a row matters: **wrong**
   (the first run's decision wrong against the chosen label set), **disagree** (another chosen arm decided
   differently), **split** (the candidates disagree among themselves), **new** (a field value the dataset chosen
-  in "new against" has never had), **unlabelled** (no label in any set); then per arm its output (the adapter's
+  in "new against" has never had), **unlabelled** (no label in any set), **judge ≠ gold** (a judge on a validation disagrees with the people on the item, below); then per arm its output (the adapter's
   `decision(output)`, else the output, shortened; the item view has it whole; the first is headed "first:
   production") and a column per score it has on the item (its run's metrics, and a judging pass's where one
   covered the run); a column per label set with its source chip (named by the set, its dataset only when two sets share
@@ -260,7 +272,9 @@ browser, the same model.
   verdict (the goal's
   decision when a goal names the dataset, else the paired test against the leader).
 - **Controls**: the arms (chips, as above), "read on" (the metric), "wrong against" (a label set), "new
-  against" (a dataset), one checkbox per signal to keep only those rows, "scores only" (hides the outputs; kept
+  against" (a dataset), one checkbox per signal to keep only those rows (the last, "only where the judge disagrees with
+  the gold", keeps what the **judge ≠ gold** marker marks: the items of a validation run where the judge's term of
+  the figure is under chance, the same definition as in 04; `--judge-disagrees` in the terminal), "scores only" (hides the outputs; kept
   in the address as `scores=only`), the field filters and breakdown above, and a sort by any column.
 - **A row opens** the item view (04) for that item.
 - **Downloads**: "download (CSV)" for every row shown, with a box to add the empty label columns to fill
@@ -293,7 +307,7 @@ browser, the same model.
 | the item view | `evh comparison-item --runs A,B --item <item_id>`: fields, the item itself, the reference, each arm's output under `(run <run_id>)`, or `(run <run_id> · shown the latest of N repeats; the score is the mean of all N)` for a repeated arm; an item whose adapter left something to open (a trial's directory: `meta["artifact"]`) adds `· artifact artifacts/…` to that line, and the page draws it as a link to the directory the server serves read-only (a path not served, one not on this machine and one refused are said as text; `--json` carries `views[arm].artifact` and `artifacts`) |
 | the per-item table | `evh sheet-show D --runs a,b`: every item's score per arm (the sheet; `--scores-only` leaves the outputs out) |
 | only where they disagree | `--disagree 1` (an arm scored against a label set is chosen like any) |
-| the sheet | `evh sheet-show D --runs A,B [--metric M\|SCORER/M] [--wrong-against SET] [--new-vs V] [--disagree] [--split] [--unlabelled] [--where field:value] [--by field] [--scores-only]` |
+| the sheet | `evh sheet-show D --runs A,B [--metric M\|SCORER/M] [--wrong-against SET] [--new-vs V] [--disagree] [--split] [--unlabelled] [--judge-disagrees] [--where field:value] [--by field] [--scores-only]` |
 | the sheet's download | `evh sheet-export --dataset-id D --runs A,B --csv FILE`; `--fill label [--choices a,b]` adds the columns to fill; `--fill pick\|scores [--seed N] [--rubric FILE] [--scale LO..HI]` writes blind columns and a key; `--fill tags --modes <failure-mode list>` adds a `failure_modes` column beside each arm's output and a key; all read back by `evh sheet-import` |
 | selecting rows: the pick and sheet commands | `evh pick --dataset-id D --item …`; `evh label-sheet --dataset-id D --item …` |
 | two per-item scores against each other (terminal only) | `evh comparison-crosstab --runs A --crosstab M1,M2 [--group FIELD [--group-match REGEX]] [--where F:V] [--max-ids N]`: per group of a field of the run's prediction rows (a dotted path, `_meta.gates`; a part of a packed string with `--group-match`, its first `(…)`), the items counted by `M1` (down) and `M2` (across) with totals, and the ids of each cell off the diagonal; a missing value is `none`; `--json` carries every id |

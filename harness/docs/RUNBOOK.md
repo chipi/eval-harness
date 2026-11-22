@@ -1944,7 +1944,7 @@ evh deploy-sheet deployed_v1 --capture prod_2026_11           # did production r
   shown it is the judging pass's own win rate) and its verdict (the goal's decision when a goal names the dataset, else the paired test
   against the leader). The signals: **wrong** (the first run against a label set, `--wrong-against`),
   **disagree**, **split** (the candidates among themselves), **new** (a field value the dataset in `--new-vs` never
-  had), **unlabelled**. Each is a filter (`--disagree`, `--split`, `--unlabelled`, beside `--where` and `--by`);
+  had), **unlabelled**, **judge** (a judge on a validation, `evh judge-validate`, whose term of the validation figure on the item is under chance: it disagrees with the people). Each is a filter (`--disagree`, `--split`, `--unlabelled`, `--judge-disagrees`, beside `--where` and `--by`);
   the sheet ends with the `evh pick` and `evh label-sheet` commands for its rows. `--csv FILE` writes it (UTF-8
   with the mark Excel needs). The inspector shows the same (the dataset page's "Open its sheet"), with downloads
   of the CSV for the rows shown or ticked (the local inspector only; the page writes nothing).

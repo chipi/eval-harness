@@ -158,11 +158,16 @@ def item(params: dict) -> dict:
     else:
         out = {"item": it, "views": {a: A.item_view(a, it) for a in arms}}
         if public:  # an artifact is never public: its directory quotes the items (RFC-038)
+            # Nor is the judge's agreement with the gold unless the references are published too: it compares the
+            # verdict, which is served, with the reference, which is not, and says which of the two it sides with.
+            from evaluation_harness import judge_validation  # noqa: PLC0415
+
+            drop = {"artifact"} | (set() if "references" in published else {judge_validation.MARK})
             out["views"] = {
                 a: {
                     **{k: v for k, v in view.items() if k != "artifact"},
                     **(
-                        {"info": {k: v for k, v in view["info"].items() if k != "artifact"}}
+                        {"info": {k: v for k, v in view["info"].items() if k not in drop}}
                         if "info" in view
                         else {}
                     ),
