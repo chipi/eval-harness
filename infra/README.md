@@ -13,7 +13,7 @@ Everything on the VPS follows the box's tenant pattern, copied from chipi/humanc
 (owner of the edge: podcast_scraper, its ADR-114):
 - the shared Caddy edge in front;
 - each tenant with its own compose project, containers, loopback ports and `/srv/<tenant>`;
-- releases deployed from GitHub Actions over the tailnet as `deploy@`.
+- releases deployed from GitHub Actions over the tailnet as `deploy@`, only when dispatched (`make deploy-dry`, then `make deploy`): a merge to main deploys nothing.
 
 ```
 infra/
@@ -227,12 +227,12 @@ the project (the handbook's superuser recipe), and put its security endpoint in
 
 ## Cutover, in this order
 
-The deploy workflow runs only from `main`: the prod environment allows no other branch. Two
-repository variables keep the merge itself from changing anything public: a push deploys to the
-VPS only once `PROD_AUTO_DEPLOY` is `true`, and publishes the docs to Pages only once
-`DOCS_ON_OWN_DOMAIN` is `true`. Both start unset, so after the merge GitHub Pages keeps serving
-the harness site on `evals.humancopilot.eu` until step 5 moves it. A dispatch of either workflow
-always runs.
+The deploy workflow runs only from `main`: the prod environment allows no other branch. **A merge
+or push to `main` deploys nothing** (since 0.8.1 `deploy-prod.yml` has no push trigger; the repository
+variable `PROD_AUTO_DEPLOY` that once gated it no longer decides anything). A deploy is its own step:
+`make deploy-dry`, then `make deploy` (below). Publishing the docs to Pages waits for
+`DOCS_ON_OWN_DOMAIN` being `true`; it starts unset, so GitHub Pages keeps serving the harness site on
+`evals.humancopilot.eu` until step 5 moves it. A dispatch of `pages.yml` always runs.
 
 **Already done (2026-10-22):**
 
@@ -247,23 +247,23 @@ always runs.
 
 0. **Before the merge** (operator). PR #22's checks are green and its review is done.
 1. **Merge PR #22** (operator). Nothing deploys and nothing public changes.
-   - *Confirm:* the merge commit's `deploy-prod` and `pages` deploy jobs show as skipped.
+   - *Confirm:* no `deploy-prod` run started for the merge commit (it has no push trigger), and the `pages`
+     deploy job shows as skipped.
 2. **Release** (operator; after layer 4, before the first deploy). Date the CHANGELOG section,
    tag `v0.4.0` (`harness/docs/RELEASING.md`). The deployed pages show `@v0.4.0` install lines,
    which work only once the tag exists.
    - *Confirm:* the `harness-release` run on the tag is green, and
      `pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.4.0#subdirectory=harness"`
      installs in a fresh venv.
-3. **First deploy, by hand** (operator or this repo's session; tell the prod session first, it
+3. **First deploy** (`make deploy-dry`, then `make deploy`) (operator or this repo's session; tell the prod session first, it
    watches the box).
-   - `gh workflow run deploy-prod.yml -R chipi/eval-harness -f dry_run=true`: uploads and
-     validates on the box (port preflight, `nginx -t`), switches nothing.
-   - `gh workflow run deploy-prod.yml -R chipi/eval-harness`: goes live on the loopback ports
+   - `make deploy-dry`: dispatches `deploy-prod.yml` with `dry_run=true` on `origin/main`'s head and watches
+     it; uploads and validates on the box (port preflight, `nginx -t`), switches nothing.
+   - `make deploy`: refuses unless that dry run of the same commit passed, then dispatches the real
+     deploy and watches it. The first one goes live on the loopback ports
      only (`enabled.txt` is empty). The on-box health check is the gate: both sites 200 on `/`
      and 404 on a missing page, the inspector's `/api/health`, one single-arm comparison and one
      group comparison (`deploy/probe_link.sh`).
-   - Then `gh variable set PROD_AUTO_DEPLOY --body true -R chipi/eval-harness`: later pushes
-     deploy.
    - *Confirm:* both runs green; the log ends `== release <sha> live on 127.0.0.1:8096 (nginx)
      and 127.0.0.1:8097 (inspector)`.
    - *If it fails:* nothing public has changed and the box rolled itself back. Read the run's
@@ -284,7 +284,7 @@ always runs.
      sitemap URL answer on `evals.humancopilot.eu/docs`).
 6. **Enable the vhosts** (this repo's session, with the operator's go; tell the prod session, it
    watches certificate issuance). Add `evals` and `catalog` to `infra/caddy/enabled.txt` and
-   push. The deploy installs both vhosts; Caddy gets their certificates over HTTP-01 through
+   merge, then `make deploy-dry` and `make deploy`. The deploy installs both vhosts; Caddy gets their certificates over HTTP-01 through
    Cloudflare's proxy. Never before step 4: `install_vhosts.sh` checks that a name resolves, not
    where, and Caddy would burn Let's Encrypt attempts on a name that still points at GitHub.
    - *Confirm:* `curl -sI https://evals.humancopilot.eu/` and `curl -sI
@@ -297,8 +297,15 @@ always runs.
    - GlitchTip `evals-web` stays empty in normal use: an issue there is a page loading
      something the CSP blocks.
 
-Later deploys need none of this: a push to `main` that touches what ships redeploys, docs and
-site changes included, once CI on that commit is green.
+Later deploys need none of this: after a merge, `make deploy-dry` then `make deploy`, from the
+repository root with an authenticated `gh`. Merging deploys nothing. `infra/deploy/dispatch.sh` does
+the work: it dispatches `deploy-prod.yml` on `origin/main`'s head and watches the run (`gh run watch
+--exit-status`); `make deploy` first looks for a `workflow_dispatch` run of that same head sha that
+concluded `success` and whose title says `dry_run=true sha=<that sha>` (the workflow's `run-name`
+carries both, because `gh run list` does not return a dispatch's inputs), and dispatches nothing without
+one. The sha is passed as the workflow's required `sha` input, and its first step fails the job (before
+render, upload or any secret) unless the commit the run got is that sha, so a main that moves between the
+check and the dispatch cannot deploy a commit nobody dry-ran. The workflow itself still waits for CI on that commit to be green before it uploads.
 
 **What happened instead of steps 4 and 5:** the docs were never moved to Pages under this
 domain. `render.sh` builds them into each release, so `evals.humancopilot.eu/docs` is served by
@@ -307,6 +314,7 @@ custom domain, by `pages.yml` on every push to `main` that touches them.
 
 **Rollback:**
 - a bad release: re-run an older successful `deploy-prod` run (it redeploys that sha), or
-  `git revert` on `main`;
-- one host off the edge: remove its name from `enabled.txt` and push;
-- stop pushes deploying: `gh variable delete PROD_AUTO_DEPLOY -R chipi/eval-harness`.
+  `git revert` on `main` and `make deploy-dry`, `make deploy`;
+- one host off the edge: remove its name from `enabled.txt`, merge, and deploy;
+- pushes no longer deploy; the leftover repository variable `PROD_AUTO_DEPLOY` is unused (the owner deletes it:
+  `gh variable delete PROD_AUTO_DEPLOY -R chipi/eval-harness`).

@@ -21,35 +21,29 @@ name: Deploy evals to prod VPS
 # This repository is public: nothing here runs for a pull request, the job only runs on
 # refs/heads/main, and the environment's branch rule keeps the secrets from any other ref.
 #
+# A MERGE OR PUSH TO main DEPLOYS NOTHING: there is no push trigger. A deploy is its own step,
+# `make deploy-dry` and then `make deploy` from the repository root (infra/deploy/dispatch.sh), which
+# dispatch this workflow on origin/main's head; `make deploy` refuses unless a dry run of that same
+# commit passed. The script passes the sha it validated as the required `sha` input, and the first step
+# fails the job unless the commit this run got is that sha: if main moves between the check and the
+# dispatch, GitHub runs the new head and the guard stops it before render, upload or any secret. The
+# run-name carries dry_run and the sha so the script, and anyone reading the Actions list, can tell a
+# dry run from a real deploy and of which commit.
+#
 # Rollback: "Re-run all jobs" on an older successful run (redeploys its sha); or `git revert` on
-# main; or, to take a host off the edge, remove it from infra/caddy/enabled.txt and push.
+# main and a new `make deploy-dry`, `make deploy`; or, to take a host off the edge, remove it from
+# infra/caddy/enabled.txt and deploy.
 # A failed deploy rolls itself back on the box (deploy.sh steps 3-4).
 
+run-name: Deploy evals to prod VPS (dry_run=${{ inputs.dry_run }} sha=${{ inputs.sha }})
+
 on:
-  push:
-    branches: [main]
-    paths:
-      # The site, its build hooks and analytics tag; the docs (built into the release by
-      # render.sh and served from the VPS at /docs/), the changelog they include, and the
-      # examples whose METRIC_DESCRIPTIONS the catalog's metric pages read.
-      - "site/**"
-      - "docs/**"
-      - "harness/docs/**"
-      - "harness/CHANGELOG.md"
-      - "mkdocs.yml"
-      - "examples/**"
-      - "harness/scripts/**"
-      # The inspector is the package, installed from its wheel (render.sh): what builds it.
-      - "harness/pyproject.toml"
-      - "harness/schemas/**"
-      - "harness/tools/_wheel.py"
-      - "harness/catalog_assets/**"
-      - "harness/data/**"
-      - "infra/**"
-      - ".github/workflows/deploy-prod.yml"
-      - ".github/actions/prod-ssh-key/**"
   workflow_dispatch:
     inputs:
+      sha:
+        description: The full commit sha this deploy is for (make deploy and make deploy-dry pass origin/main's head); the run fails if it is not the commit the run got
+        type: string
+        required: true
       dry_run:
         description: Upload and validate on the box (port preflight + nginx -t), then stop before switching anything
         type: boolean
@@ -68,14 +62,20 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     environment: prod
-    # A push deploys only once the repository variable PROD_AUTO_DEPLOY is "true". It is unset
-    # until the first deploy has been dispatched (a dry run, then a real one) and has passed, so
-    # merging the branch that adds this workflow deploys nothing by itself (infra/README.md,
-    # "Cutover"). A dispatch always runs.
-    if: >-
-      github.ref == 'refs/heads/main'
-      && (github.event_name == 'workflow_dispatch' || vars.PROD_AUTO_DEPLOY == 'true')
+    # Only a dispatch starts this workflow; the environment's branch rule and this check keep it to main.
+    if: github.ref == 'refs/heads/main'
     steps:
+      - name: "Guard: this run is the commit that was validated"
+        env:
+          RUN_SHA: ${{ github.sha }}
+          INPUT_SHA: ${{ inputs.sha }}
+        run: |
+          if [ -z "$INPUT_SHA" ] || [ "$RUN_SHA" != "$INPUT_SHA" ]; then
+            echo "::error::this run is commit $RUN_SHA, but the deploy was dispatched for $INPUT_SHA (main moved after it was checked); nothing was rendered or uploaded. Run make deploy-dry, then make deploy again"
+            exit 1
+          fi
+          echo "guard: this run is $RUN_SHA, the commit that was dispatched for"
+
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6
 
       - name: Pre-flight — required secrets and variables present
