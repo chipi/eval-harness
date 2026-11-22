@@ -4,10 +4,8 @@ One task — summarise a news article in 2–3 sentences — measured across 24 
 from 8 vendors, on three axes at once: **quality, cost and wall-clock speed**.
 
 It is a worked example for [`../../harness`](../../harness), and it is also a record
-of what a small eval can and cannot tell you. Most of what is interesting here was found
-by *disbelieving the first answer*: several headline findings in
-[`research/internal/NOTES.md`](../../research/internal/NOTES.md) were retracted after the numbers were checked
-properly, including one caused by a one-line bug in this example's own scorer.
+of what a small eval can and cannot tell you. Its findings are in
+[`research/internal/NOTES.md`](../../research/internal/NOTES.md), corrections included.
 
 > **Rerun this eval** from the repository root — `EXP=summarization` / `EXP=summarization-dailymail`:
 >
@@ -68,14 +66,15 @@ what makes the silver eval below possible.
 cp ../../harness/.env.example ../../harness/.env      # OPENROUTER_API_KEY, or your proxy
 cd ../../harness
 
-make run-dry-run CONFIG=../summarization-cnn-dailymail/configs/arm_qwen_s_n200.yaml
-make sweep CONFIGS="../summarization-cnn-dailymail/configs/arm_*_n200.yaml" REPEAT=1
+make run-dry-run SYSTEM=cnn_qwen_s_v2 DATASET_ID=cnn_dailymail_200
+make sweep SYSTEMS="$(ls ../examples/summarization-cnn-dailymail/systems | sed 's/\.yaml$//' | tr '\n' ' ')" \
+  DATASET_ID=cnn_dailymail_200 REPEAT=1
 make leaderboard DATASET_ID=cnn_dailymail_200
 ```
 
-`arm_*_n200.yaml` matches all 29 arms on the 200-article slice, the five local ones included
-(those need `uv sync --extra local`). A sweep refuses configs that do not share one
-`dataset_id`, so the unsuffixed `arm_*.yaml` files (the 20-article pilot slice) cannot be mixed in.
+`systems/` holds all 29 systems, the five local ones included (those need `uv sync --extra
+local`). A system names no dataset: the same files ran on the 200-article slice, the 20-article
+pilot slice and the DailyMail slice, and a sweep runs them all on the one dataset it is given.
 
 Dry-run first; it costs nothing and tells you what the sweep will. The committed result is
 one pass per arm: 24 hosted arms × 200 articles = 4,800 calls, **$5.74 billed**. The
@@ -84,12 +83,12 @@ not committed. Run scores are written at 10 decimals, so no `make rescore` step 
 (`make rescore` exists for runs written at lower precision; `make leaderboard` warns when
 it sees them).
 
-Validating a change rather than measuring something? Use four cheap arms and a scratch
-directory, so a smoke pass cannot add repeats to a real sweep's arms:
+Validating a change rather than measuring something? Use four cheap arms in a scratch
+sweep, so a smoke pass cannot add a second measurement to a real sweep's arms:
 
 ```bash
-EVAL_RUNS_DIR=/tmp/smoke make sweep REPEAT=1 \
-  CONFIGS="../summarization-cnn-dailymail/configs/arm_{qwen_s,glm_s,gemma_m,mistral_s}.yaml"
+make sweep REPEAT=1 DATASET_ID=cnn_dailymail_20 ARGS=--scratch \
+  SYSTEMS="cnn_qwen_s_v2 cnn_glm_s_v2 cnn_gemma_m_v2 cnn_mistral_s_v2"
 ```
 
 ## What is held constant
@@ -172,9 +171,9 @@ paraphrase or a fabrication, and this cannot tell them apart. Read it beside ROU
 instead of it. It is not length-neutral either (ρ = +0.12).
 
 **Format compliance is computed, not eyeballed** — `fmt_narration`, `fmt_label`,
-`fmt_markdown`, `fmt_bullets`, `fmt_paragraphs`, `fmt_overlong`, on every output. This
-exists because five outputs were once read by hand and declared clean; computing it over
-all of them finds **262 of 4,800 (5.5%)** hit at least one flag — including outputs where a
+`fmt_markdown`, `fmt_bullets`, `fmt_paragraphs`, `fmt_overlong`, on every output. Reading a
+few outputs by hand misses flags; computed over
+all of them, it finds **262 of 4,800 (5.5%)** hit at least one flag — including outputs where a
 model wrote its reasoning out in the open.
 
 **Browse it, or ask it.** Every arm and run below is in the catalog, on the goal's page
@@ -223,7 +222,7 @@ rank candidates against those. Here gold exists, so the proxy can be *measured*,
 the stored outputs (REPORT_SUMMARIZATION §3.5):
 
 ```bash
-evh silver-calibrate --dataset-id cnn_dailymail_200 --ref-match _n200_v1 --arm-match _n200_v1
+evh silver-calibrate --dataset-id cnn_dailymail_200 --ref-match cnn_ --arm-match cnn_
 ```
 
 It costs nothing: "author silver with model X using the same prompt and settings as the
@@ -257,11 +256,11 @@ any hosted model; the best of those is `llama_l` (0.378), the worst `qwen_s` (�
 case silver is actually *for*, no gold exists, so you cannot check which author you got.
 
 The frontier arm's silver is kept as `silver/cnn_dailymail_200`, by `anthropic_l` (ρ 0.327,
-lift +12.5). Ranked against it (the 29 arms re-scored for $0 into `data/runs-silver`, a group on
+lift +12.5). Ranked against it (the 29 arms re-scored for $0 against it, read under the label `silver`, a group on
 the goal page that never recommends), the author's siblings `anthropic_m` and `anthropic_s` come
 1st and 3rd of 28, and `bart_l`, the gold leader, 24th. Its texts quote the articles, so only its
-manifest is committed: they are that run's outputs byte for byte, and the manifest says to copy them from
-`data/runs/cnn_anthropic_l_n200_v1_20260926T063645Z/outputs/` (V16 checks them against its checksums).
+manifest is committed: they are that run's outputs byte for byte, and the manifest says to write them out from
+`data/runs/cnn_anthropic_l_n200_v1_20260926T063645Z/outputs.jsonl` (V16 checks them against its checksums).
 
 A new silver made the same way is a model's labels, promoted, its texts kept out of git:
 
@@ -278,11 +277,9 @@ evh reference-promote --dataset-id cnn_dailymail_200 --labels author_silver --ti
 | `fetch.py` | download recipe — stdlib only, writes sources + gold |
 | `prompt.txt` | the one prompt, shared by every arm, hashed into every fingerprint |
 | `adapter.py` | the integration seam: `call_system`, `score`, `warmup`, `fingerprint` |
-| `configs/arm_*_n200.yaml` | the 29 arms on the 200-article slice (24 hosted, 5 local); among the hosted, only `model` and the price fields differ |
-| `configs/arm_*.yaml` | the 20-article pilot slice: 24 hosted arms plus `bart_l` and `lead3` |
-| `configs/arm_*_dm200.yaml` | the DailyMail slice: five local arms, which were run, and four hosted (`deepseek_m`, `llama_l`, `llama_m`, `llama_s`), which were not |
+| `systems/<id>.yaml` | the 29 systems (24 hosted, 5 local); among the hosted, only `model` and the price fields differ. Each ran on the 200-article slice; 24 hosted plus `bart_l` and `lead3` on the 20-article pilot slice; the five local ones on the DailyMail slice (four hosted were planned there and not run) |
 | `model_provenance.json` | what each proxy alias resolved to upstream |
-| `reference/` | configs for authoring a silver reference set, and when not to |
+| `reference/` | systems for authoring a silver reference set, and when not to |
 | `pyproject.toml`, `uv.lock` | isolated environment; `uv sync` provisions its own Python |
 
 ## Not covered
@@ -302,7 +299,8 @@ evh reference-promote --dataset-id cnn_dailymail_200 --labels author_silver --ti
   upstream provider. It is a property of your setup, not of the model — which is
   deliberate: the same eval measures how fast *your* machine is at *this* task.
   The local arms were recorded on two machines (a 12-core Mac and a 4-core Linux box that
-  ran `bart_l` 1.7× faster); `harness/data/runs-linux/` re-times all five on one.
+  ran `bart_l` 1.7× faster); five re-timing runs (`evh run --purpose retime`, read under the label `linux`:
+  `evh leaderboard cnn_dailymail_200 --label linux`) time all five on one.
 - **Local arms.** `bart_l` (BART fine-tuned on this corpus, 1.6 GB) is not significantly different from
   the best hosted arm (gap 0.0001, p = 0.99). `lead3` ran too. Three more local arms need
   torch ≥ 2.6: two distillations, `bart_m` 0.3367 (not significantly different from `bart_l`) and

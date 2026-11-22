@@ -1,0 +1,434 @@
+#!/usr/bin/env python3
+"""What a command may spend (RFC-026 step 5), $0 and offline: an adapter that reports a cost per item and calls
+nothing.
+
+    python tests/test_spend.py
+
+`run --repeat 3` stops at one cap in total, not one a pass; the provider layer stops an adapter that reports less than
+its calls cost; `arm-smoke` stops at the cap; `sweep` gives each arm what the arms before it left. A round's budget:
+a run spends at most what the round has left; two runs started at once share it, never both all of it; a killed
+run's paid items count against it; with nothing left a run is refused before its first call; a job's run that is
+stopped has its reservation closed by the supervisor. `POST /api/v1/estimate` answers a job command's --dry-run.
+"""
+
+import json
+import os
+import shutil
+import signal
+import socket
+import subprocess
+import sys
+import tempfile
+import time
+import urllib.error
+import urllib.request
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parents[1] / "scripts"
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+KIT = HERE.parent / "tutorial"
+from evaluation_harness import _common, _providers  # noqa: E402
+from evaluation_harness._check import check, summary  # noqa: E402
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runstore  # noqa: E402
+import _runview  # noqa: E402
+from evaluation_harness import _format  # noqa: E402
+
+# ── the provider layer's own net, in this process ──────────────────────────────────────────────────────────────────
+os.environ["EVAL_MAX_COST_USD"] = "0.03"
+saved = dict(_providers._SHAPES)
+shape = _providers.SPECS["openai"].shape
+_providers._SHAPES[shape] = lambda prompt, params, r: _providers.Completion(text="ok", cost_usd=0.01)
+calls, stopped = 0, None
+try:
+    for _ in range(10):
+        _providers.complete(
+            "x",
+            {"provider": "openai", "model": "m", "base_url": "http://127.0.0.1:9"},
+            role="arm",
+            max_tokens=5,
+        )
+        calls += 1
+except _common.CostCapExceeded as exc:
+    stopped = str(exc)
+finally:
+    _providers._SHAPES.clear()
+    _providers._SHAPES.update(saved)
+    os.environ.pop("EVAL_MAX_COST_USD")
+check(
+    "the provider layer stops a process at the cap by its own count, before the call (an adapter reporting nothing)",
+    calls == 3 and stopped is not None and "provider layer" in stopped,
+    (calls, stopped),
+)
+
+proj = Path(tempfile.mkdtemp(prefix="evh-spend-"))
+env = dict(os.environ, EVH_ACTOR="person:test", EVAL_HOME=str(proj), EVAL_BUILD_REF="test-spend")
+for k in ("EVAL_DATA_DIR", "EVAL_MAX_COST_USD", "EVH_FOR", "EVH_SPENT_TO"):
+    env.pop(k, None)
+
+PAY = """import time
+from evaluation_harness.adapter import Result, score  # noqa: F401
+def call_system(text, params):
+    time.sleep(float(params.get("sleep", 0)))
+    return Result(output=text.split(".")[0] + ".", cost_usd=float(params.get("cost", 0.01)))
+"""
+
+
+def evh(*args, cap=None, background=False):
+    e = dict(env)
+    if cap is not None:
+        e["EVAL_MAX_COST_USD"] = str(cap)
+    cmd = [sys.executable, str(HERE / "cli.py"), *args]
+    if background:
+        return subprocess.Popen(cmd, cwd=proj, env=e, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+                                stdin=subprocess.DEVNULL, start_new_session=True)  # fmt: skip
+    return subprocess.run(cmd, cwd=proj, env=e, capture_output=True, text=True, stdin=subprocess.DEVNULL)
+
+
+def system(name, cid, **extra):
+    lines = [f"system_id: {cid}", "adapter: pay.py"]
+    goal_args = [x for k in ("goal", "round") if k in extra for x in (f"--{k}", str(extra[k]))]
+    params = {k: v for k, v in extra.items() if k not in ("goal", "round")}
+    lines.append("params:\n  provider: echo" + "".join(f"\n  {k}: {v}" for k, v in params.items()))
+    _runstore.write_text(proj, f"systems/{cid}.yaml", "\n".join(lines) + "\n")
+    return ["--system", cid, "--dataset", "tickets_v1", *goal_args]
+
+
+def spent_of(prefix):
+    """What the finished runs of this config spent (their first score's record), in either store."""
+    total = 0.0
+    for name in _runstore.listdir(proj, "runs"):
+        if name.startswith(prefix) and _runstore.exists(proj, f"runs/{name}/scores"):
+            m = _runview.record_of(proj, name)[1]
+            total += float((m.get("scores") or {}).get("total_cost_usd") or 0)
+    return round(total, 6)
+
+
+try:
+    _runstore.write_text(proj, _format.NAME, f"format: {_format.FORMAT}\n")
+    (proj / "data" / "systems").mkdir(parents=True)
+    shutil.copytree(KIT / "tickets", proj / "tickets")
+    (proj / "pay.py").write_text(PAY)
+    r = evh("dataset-create", "--dataset-id", "tickets_v1", "--source-dir", "tickets")
+    r = r if r.returncode else evh("dataset-materialize", "--dataset-id", "tickets_v1")
+    r = (
+        r
+        if r.returncode
+        else evh(
+            "label-import",
+            "--sheet",
+            str(KIT / "gold"),
+            "--dataset-id",
+            "tickets_v1",
+            "--set",
+            "g",
+            "--by",
+            "t",
+        )
+    )
+    r = r if r.returncode else evh(
+        "reference-promote", "--dataset-id", "tickets_v1", "--labels", "g", "--tier", "gold",
+        "--reason", "the kit's summaries, for the spend test", "--by", "t",
+    )  # fmt: skip
+    _runstore.write_text(
+        proj, "goals/tickets_summary.yaml", (KIT / "goals" / "tickets_summary.yaml").read_text()
+    )
+    check("setup: a dataset of 6 items, its gold, the goal", r.returncode == 0, (r.stdout + r.stderr)[-400:])
+
+    # ── run --repeat 3: one cap in all ──────────────────────────────────────────────────────────────────────────
+    rep = system("rep", "rep_v1")
+    r = evh("run", *rep, "--repeat", "3", cap=0.08)
+    check(
+        "run --repeat 3 with a $0.08 cap and $0.06 a pass: $0.08 in all, not $0.18 (exit 4, stopped)",
+        r.returncode == _common.EXIT_STOPPED and abs(spent_of("rep_v1") - 0.08) < 1e-9,
+        (r.returncode, spent_of("rep_v1"), (r.stdout + r.stderr)[-300:]),
+    )
+
+    # ── arm-smoke stops at the cap ───────────────────────────────────────────────────────────────────────────────
+    r = evh("arm-smoke", *rep, "--items", "3", "--json", cap=0.015)
+    env_out = json.loads(r.stdout) if r.stdout.strip().startswith("{") else {}
+    vals = (env_out.get("result") or {}).get("values") or {}
+    check(
+        "arm-smoke with a $0.015 cap: item 1 and its repeat ($0.02), then stopped, flagged, items 2-3 not called",
+        abs(float(vals.get("spent_usd") or 0) - 0.02) < 1e-9
+        and len(vals.get("items") or []) == 1
+        and any("stopped at the cap" in f for f in vals.get("flags") or []),
+        (
+            r.returncode,
+            vals.get("spent_usd"),
+            len(vals.get("items") or []),
+            vals.get("flags"),
+            r.stderr[-300:],
+        ),
+    )
+
+    # ── sweep: each arm what the ones before it left ─────────────────────────────────────────────────────────────
+    system("swa", "swa_v1")
+    system("swb", "swb_v1")
+    r = evh("sweep", "--systems", "swa_v1", "swb_v1", "--dataset", "tickets_v1", cap=0.08)
+    check(
+        "sweep with a $0.08 cap over two $0.06 arms: the first spends $0.06, the second the $0.02 left",
+        abs(spent_of("swa_v1") - 0.06) < 1e-9 and abs(spent_of("swb_v1") - 0.02) < 1e-9,
+        (r.returncode, spent_of("swa_v1"), spent_of("swb_v1"), (r.stdout + r.stderr)[-500:]),
+    )
+
+    # ── a cap of 0 means spend nothing: a run that spends $0 is never stopped by it ──────────────────────────────
+    free = system("free", "free_v1", cost=0)
+    r = evh("run", *free, cap=0)
+    check(
+        "run with EVAL_MAX_COST_USD=0 of an arm that spends $0: every item scored, not stopped (exit 0)",
+        r.returncode == 0 and "COST CAP HIT" not in r.stdout
+        and any(n.startswith("free_v1") for n in _runstore.listdir(proj, "runs")),
+        (r.returncode, (r.stdout + r.stderr)[-400:]),
+    )  # fmt: skip
+    # an arm not known to be free (no provider named, no prices declared) is stopped before its first call, and the
+    # message says how to declare it free; the two prices as 0 make it known free
+    _runstore.write_text(proj, "systems/unk_v1.yaml", "system_id: unk_v1\nadapter: pay.py\nparams: {}\n")
+    unk = ["--system", "unk_v1", "--dataset", "tickets_v1"]
+    r = evh("run", *unk, cap=0)
+    check(
+        "run with EVAL_MAX_COST_USD=0 of an arm not known to be free: stopped before its first call (exit 7), spent "
+        "nothing, told how to declare it free",
+        r.returncode == 7 and "COST CAP HIT" in r.stdout and "usd_per_mtok_in: 0" in r.stdout
+        and spent_of("unk_v1") == 0.0,
+        (r.returncode, spent_of("unk_v1"), (r.stdout + r.stderr)[-500:]),
+    )  # fmt: skip
+    # a project adapter's own provider name (lead) proves nothing: stopped under cap 0 until both prices are 0
+    _runstore.write_text(
+        proj,
+        "systems/lead_v1.yaml",
+        "system_id: lead_v1\nadapter: pay.py\nparams: {provider: lead, cost: 0}\n",
+    )
+    r = evh("run", "--system", "lead_v1", "--dataset", "tickets_v1", cap=0)
+    check(
+        "run with EVAL_MAX_COST_USD=0 of a project adapter's provider named lead, no prices: stopped before its first "
+        "call (exit 7) with the hint",
+        r.returncode == 7 and "usd_per_mtok_in: 0" in r.stdout and spent_of("lead_v1") == 0.0,
+        (r.returncode, (r.stdout + r.stderr)[-400:]),
+    )  # fmt: skip
+    _runstore.write_text(
+        proj,
+        "systems/lead_v1.yaml",
+        "system_id: lead_v1\nadapter: pay.py\nparams: {provider: lead, cost: 0, usd_per_mtok_in: 0, usd_per_mtok_out: 0}\n",
+    )
+    r = evh("run", "--system", "lead_v1", "--dataset", "tickets_v1", cap=0)
+    check(
+        "... and runs once its system declares both prices as 0",
+        r.returncode == 0 and any(n.startswith("lead_v1") for n in _runstore.listdir(proj, "runs")),
+        (r.returncode, (r.stdout + r.stderr)[-400:]),
+    )  # fmt: skip
+    _runstore.write_text(
+        proj,
+        "systems/unk0_v1.yaml",
+        "system_id: unk0_v1\nadapter: pay.py\nparams: {cost: 0, usd_per_mtok_in: 0, usd_per_mtok_out: 0}\n",
+    )
+    r = evh("run", "--system", "unk0_v1", "--dataset", "tickets_v1", cap=0)
+    check(
+        "... and runs under a cap of 0 once its system declares both prices as 0",
+        r.returncode == 0 and any(n.startswith("unk0_v1") for n in _runstore.listdir(proj, "runs")),
+        (r.returncode, (r.stdout + r.stderr)[-400:]),
+    )  # fmt: skip
+    r = evh("arm-smoke", *unk, "--items", "2", "--json", cap=0)
+    vals0 = (
+        (json.loads(r.stdout).get("result") or {}).get("values") or {}
+        if r.stdout.strip().startswith("{")
+        else {}
+    )
+    check(
+        "arm-smoke with EVAL_MAX_COST_USD=0 of an arm not known to be free: no call, flagged",
+        not (vals0.get("items") or []) and any("cap" in f for f in vals0.get("flags") or []),
+        (r.returncode, vals0.get("items"), vals0.get("flags"), r.stderr[-300:]),
+    )  # fmt: skip
+    system("swu", "swu_v1")
+    _runstore.write_text(proj, "systems/swu_v1.yaml", "system_id: swu_v1\nadapter: pay.py\nparams: {}\n")
+    r = evh("sweep", "--systems", "swu_v1", "--dataset", "tickets_v1", cap=0)
+    check(
+        "sweep with EVAL_MAX_COST_USD=0 over an arm not known to be free: not run, with the how-to",
+        "NOT RUN" in r.stdout and "usd_per_mtok_in: 0" in r.stdout and spent_of("swu_v1") == 0.0,
+        (r.returncode, (r.stdout + r.stderr)[-400:]),
+    )  # fmt: skip
+    r = evh("arm-smoke", *free, "--items", "3", "--json", cap=0)
+    vals = (
+        (json.loads(r.stdout).get("result") or {}).get("values") or {}
+        if r.stdout.strip().startswith("{")
+        else {}
+    )
+    check(
+        "arm-smoke with EVAL_MAX_COST_USD=0 of an arm that spends $0: all 3 items called, no cap flag",
+        len(vals.get("items") or []) == 3 and not any("cap" in f for f in vals.get("flags") or []),
+        (r.returncode, len(vals.get("items") or []), vals.get("flags"), r.stderr[-300:]),
+    )  # fmt: skip
+    system("swf", "swf_v1", cost=0)
+    system("swg", "swg_v1", cost=0)
+    r = evh("sweep", "--systems", "swf_v1", "swg_v1", "--dataset", "tickets_v1", cap=0)
+    check(
+        "sweep with EVAL_MAX_COST_USD=0 over two arms that spend $0: both run, none 'NOT RUN'",
+        "NOT RUN" not in r.stdout
+        and any(n.startswith("swf_v1") for n in _runstore.listdir(proj, "runs"))
+        and any(n.startswith("swg_v1") for n in _runstore.listdir(proj, "runs")),
+        (r.returncode, (r.stdout + r.stderr)[-500:]),
+    )  # fmt: skip
+
+    # ── a scratch sweep: a smoke that keeps no run and ranks nothing ─────────────────────────────────────────────
+    system("swc", "swc_v1")
+    r = evh("sweep", "--systems", "swc_v1", "--dataset", "tickets_v1", "--scratch")
+    scratch = proj / ".build" / "scratch" / "runs"
+    in_scratch = (
+        [p.name for p in scratch.iterdir() if p.name.startswith("swc_v1")] if scratch.is_dir() else []
+    )
+    kept = [n for n in _runstore.listdir(proj, "runs") if n.startswith("swc_v1")]
+    check(
+        "sweep --scratch: the arm's run under .build/scratch/runs, none in the project's runs, no ranking printed",
+        r.returncode == 0 and len(in_scratch) == 1 and not kept and "no ranking" in r.stdout,
+        (r.returncode, in_scratch, kept, (r.stdout + r.stderr)[-500:]),
+    )
+
+    # ── a round's budget ─────────────────────────────────────────────────────────────────────────────────────────
+    r = evh("round-open", "--goal", "tickets_summary", "--dataset", "tickets_v1", "--hypothesis", "the spend test",
+            "--budget-usd", "0.1")  # fmt: skip
+    check(
+        "setup: round r1 of tickets_summary, with a $0.10 budget",
+        r.returncode == 0,
+        (r.stdout + r.stderr)[-400:],
+    )
+    slow = system("ra", "ra_v1", goal="tickets_summary", round="r1", sleep=1.0)
+    slow_b = system("rb", "rb_v1", goal="tickets_summary", round="r1", sleep=1.0)
+    pa = evh("run", *slow, cap=0.04, background=True)
+    ledger = proj / ".build" / "rounds" / "tickets_summary" / "r1.json"
+    for _ in range(100):
+        if ledger.is_file() and json.loads(ledger.read_text()).get("entries"):
+            break
+        time.sleep(0.1)
+    pb = evh("run", *slow_b, background=True)  # no cap of its own: what the round has left
+    out_a, _ = pa.communicate(timeout=120)
+    out_b, _ = pb.communicate(timeout=120)
+    check(
+        "two runs of a round at once: A reserves its $0.04 cap, B (no cap) the $0.06 left, never both all of it",
+        "$0.0400 of its budget reserved" in out_a
+        and "$0.0600 of its budget reserved" in out_b
+        and spent_of("ra_v1") <= 0.04 + 1e-9
+        and spent_of("rb_v1") <= 0.06 + 1e-9,
+        (out_a[-300:], out_b[-300:], spent_of("ra_v1"), spent_of("rb_v1")),
+    )
+    r = evh("run", *slow_b)
+    check(
+        "the round's budget spent: the next run is refused before its first call (over-budget), nothing written",
+        r.returncode != 0 and "ERROR (over-budget)" in r.stderr and spent_of("rb_v1") <= 0.06 + 1e-9,
+        (r.returncode, r.stderr[-300:]),
+    )
+
+    # A killed run's paid items count against the budget; its reservation is read from what it wrote.
+    r = evh("round-close", "--goal", "tickets_summary", "--round", "r1", "--conclusion", "the budget held")
+    r = r if r.returncode else evh("round-open", "--goal", "tickets_summary", "--dataset", "tickets_v1", "--from", "r1",
+            "--hypothesis", "after the kill", "--budget-usd", "0.1")  # fmt: skip
+    check("setup: round r2, a $0.10 budget", r.returncode == 0, (r.stdout + r.stderr)[-300:])
+    k = system("rk", "rk_v1", goal="tickets_summary", round="r2", sleep=1.0)
+    log = proj / "killed.log"
+    with open(log, "w") as fh:
+        e = dict(env)
+        pk = subprocess.Popen([sys.executable, str(HERE / "cli.py"), "run", *k], cwd=proj, env=e,
+                              stdout=fh, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, start_new_session=True)  # fmt: skip
+    # Killed once two items are paid and written (its progress line says so, in either store).
+    for _ in range(600):
+        time.sleep(0.1)
+        if "[2/6]" in log.read_text():
+            break
+    os.killpg(pk.pid, signal.SIGKILL)
+    pk.wait(timeout=30)
+    rv = evh("round-evidence", "tickets_summary", "r2")
+    check(
+        "evh round-evidence names what the round has left, counting the killed run's paid items",
+        "left, counting what running or stopped commands hold" in rv.stdout,
+        rv.stdout[-600:],
+    )
+    nk = system("rn", "rn_v1", goal="tickets_summary", round="r2")
+    r = evh("run", *nk)
+    reserved = next((ln for ln in r.stdout.splitlines() if "of its budget reserved" in ln), "")
+    left = float(reserved.split("$")[1].split()[0]) if "$" in reserved else None
+    check(
+        "a killed run's paid items count: the next run of the round is given the budget less what the killed one paid",
+        left is not None and 0.0 < left < 0.1 - 0.015,
+        (reserved, r.stdout[-300:], r.stderr[-300:]),
+    )
+
+    # ── as jobs: the supervisor closes a stopped run's reservation; the estimate is the command's --dry-run ─────────
+    r = evh(
+        "round-close", "--goal", "tickets_summary", "--round", "r2", "--conclusion", "the kill was counted"
+    )
+    r = r if r.returncode else evh("round-open", "--goal", "tickets_summary", "--dataset", "tickets_v1", "--from", "r2",
+                                   "--hypothesis", "as a job", "--budget-usd", "0.1")  # fmt: skip
+    r = r if r.returncode else evh("catalog")
+    check("setup: round r3 ($0.10) and the catalog", r.returncode == 0, (r.stdout + r.stderr)[-300:])
+    system("rj", "rj_v1", goal="tickets_summary", round="r3", sleep=1.0)
+    with socket.socket() as so:
+        so.bind(("127.0.0.1", 0))
+        port = so.getsockname()[1]
+    srv = subprocess.Popen([sys.executable, str(HERE / "cli.py"), "catalog-serve", "--port", str(port)], cwd=proj,
+                           env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, stdin=subprocess.DEVNULL)  # fmt: skip
+    try:
+        for _ in range(200):
+            try:
+                with socket.create_connection(("127.0.0.1", port), timeout=0.2):
+                    break
+            except OSError:
+                time.sleep(0.1)
+        time.sleep(0.5)
+        token = (proj / ".build" / "api-token").read_text().strip()
+
+        def call(method, path, body=None):
+            h = {"Host": f"127.0.0.1:{port}", "Authorization": f"Bearer {token}", "X-EVH-Data": "1"}
+            data = json.dumps(body).encode() if body is not None else None
+            req = urllib.request.Request(
+                f"http://127.0.0.1:{port}{path}", data=data, headers=h, method=method
+            )
+            try:
+                with urllib.request.urlopen(req, timeout=120) as resp:  # noqa: S310  # nosec B310
+                    return resp.status, json.loads(resp.read() or b"{}")
+            except urllib.error.HTTPError as exc:
+                return exc.code, json.loads(exc.read() or b"{}")
+
+        round_inputs = {"system": "rj_v1", "dataset": "tickets_v1", "goal": "tickets_summary", "round": "r3"}
+        st, est = call("POST", "/api/v1/estimate", {"operation": "run", "inputs": round_inputs})
+        st2, none = call("POST", "/api/v1/estimate", {"operation": "arm-smoke", "inputs": round_inputs})
+        st3, old = call("POST", "/api/v1/estimate", {"command": "run", "args": round_inputs})
+        check(
+            "the estimate: run's dry run, what it would call and its cap, its answer as data too; an operation with no "
+            "dry run is 404; a command and its args is refused (an estimate is an operation and its inputs)",
+            st == 200 and est.get("exit") == 0 and "cap" in est.get("text", "") and est.get("operation") == "run"
+            and isinstance(est.get("result"), dict)
+            and st2 == 404 and "no dry run" in none.get("error", "")
+            and st3 == 400 and "an estimate is {operation, inputs}" in old.get("error", ""),
+            (st, str(est)[:300], st2, none, st3, old),
+        )  # fmt: skip
+        st, j = call("POST", "/api/v1/jobs", {"operation": "run", "inputs": {"system": "rj_v1", "dataset": "tickets_v1", "goal": "tickets_summary", "round": "r3"}, "by": "person:ana",
+                                              "max_cost_usd": 0.05})  # fmt: skip
+        ledger3 = proj / ".build" / "rounds" / "tickets_summary" / "r3.json"
+        for _ in range(300):
+            time.sleep(0.1)
+            _st, cur = call("GET", f"/api/v1/jobs/{j.get('id')}/log")
+            if ledger3.is_file() and "[2/6]" in cur.get("log", ""):
+                break
+        call("POST", f"/api/v1/jobs/{j.get('id')}/stop")
+        end = {}
+        for _ in range(100):
+            _st, end = call("GET", f"/api/v1/jobs/{j.get('id')}")
+            if end.get("state") in ("cancelled", "lost"):
+                break
+            time.sleep(0.2)
+        time.sleep(1.0)
+        entries = json.loads(ledger3.read_text()).get("entries", []) if ledger3.is_file() else []
+        mine = [e for e in entries if e.get("job") == j.get("id")]
+        check(
+            "a stopped run job: the supervisor closes its reservation with what its written items paid (not 0, not "
+            "all it reserved)",
+            st == 202 and end.get("state") == "cancelled" and len(mine) == 1 and mine[0].get("closed_at")
+            and 0.0 < float(mine[0].get("spent") or 0) < float(mine[0].get("reserved") or 0),
+            (st, end.get("state"), mine),
+        )  # fmt: skip
+    finally:
+        srv.terminate()
+        srv.wait(timeout=10)
+finally:
+    shutil.rmtree(proj, ignore_errors=True)
+sys.exit(summary())

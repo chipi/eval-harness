@@ -1,1 +1,0 @@
-[{"text":"Microsoft","type":"organization"},{"text":"the game","type":"product"}]

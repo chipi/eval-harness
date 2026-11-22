@@ -1,0 +1,23 @@
+{
+  "adapter": "scripts/adapter.py",
+  "baseline_id": "tickets_v1_baseline",
+  "build": {
+    "dirty": null,
+    "ref": "format-0-fixture",
+    "source": "EVAL_BUILD_REF"
+  },
+  "dataset_id": "tickets_v1",
+  "fingerprint_hash": "6c6796293cf3d624224b5f1d83f6713f882734a86ac50b5aa4564c125328c343",
+  "promoted_at": "2026-11-13T09:35:47Z",
+  "promoted_from": "tickets_lead2_v1_20261113T093546Z",
+  "reason": "lead2 covers more of the reference than lead1 on the kit's tickets",
+  "reference_tier": "gold",
+  "scores": {
+    "cost_usd": 0.0,
+    "latency_ms": 0.010167,
+    "output_words": 28.5,
+    "overlap_f1": 0.243426,
+    "resumed": 0.0,
+    "total_cost_usd": 0.0
+  }
+}

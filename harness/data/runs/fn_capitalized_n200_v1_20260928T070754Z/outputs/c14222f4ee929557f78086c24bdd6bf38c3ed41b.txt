@@ -1,1 +1,0 @@
-[{"text": "Kennedy", "type": "location"}, {"text": "African", "type": "location"}, {"text": "American", "type": "location"}]

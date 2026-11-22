@@ -1,1 +1,0 @@
-[{"text": "War", "type": "location"}, {"text": "Independence", "type": "location"}, {"text": "Israeli", "type": "location"}]

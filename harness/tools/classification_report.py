@@ -33,16 +33,18 @@ WHY MACRO AND NOT MICRO
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 from collections import Counter, defaultdict
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parents[1] / "scripts"  # the core modules (this file is in tools/)
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
+os.environ.setdefault("EVAL_HOME", str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tools/
 
+from evaluation_harness import _store  # noqa: E402
 from evaluation_harness._common import (  # noqa: E402
-    RUNS,
     die,
     item_path,
 )
@@ -92,7 +94,7 @@ def _report_consensus_misses(rows: list, gold: dict, dataset_id: str, threshold:
         print(f"      gold {gold[item]}   predicted {tally}")
         f = item_path(dataset_id, item)
         if f is not None:
-            snippet = " ".join(f.read_text(encoding="utf-8").split())[:150]
+            snippet = " ".join(_store.read_text(f, encoding="utf-8").split())[:150]
             print(f"      {snippet}")
 
 
@@ -100,7 +102,7 @@ def main() -> int:
     """Report classification metrics and analysis."""
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--dataset-id", required=True)
-    ap.add_argument("--match", help="only config_ids containing this substring")
+    ap.add_argument("--match", help="only system_ids containing this substring")
     ap.add_argument("--arm", help="print this arm's full confusion matrix")
     ap.add_argument("--sort", default="macro_f1", choices=("macro_f1", "accuracy"))
     ap.add_argument(
@@ -110,15 +112,15 @@ def main() -> int:
         help="flag items missed by at least this share of learned arms",
     )
     args = ap.parse_args()
-    # Two runs sharing a config_id are averaged together below without
+    # Two runs sharing a system_id are averaged together below without
     # saying so. See _runs.warn_on_ambiguous_runs.
-    warn_on_ambiguous_runs(RUNS, args.dataset_id, label=RUNS.name)
+    warn_on_ambiguous_runs("", args.dataset_id)
 
     gold = reference_labels(args.dataset_id, "gold")
     labels = sorted(set(gold.values()))
     preds = predictions(args.dataset_id, args.match)
     if not preds:
-        die(f"no runs for {args.dataset_id}" + (f" matching {args.match}" if args.match else ""))
+        die(f"no runs for {args.dataset_id}" + (f" matching {args.match}" if args.match else ""), "not-found")
 
     rows = []
     for cid, by_item in sorted(preds.items()):
@@ -145,7 +147,7 @@ def main() -> int:
             }
         )
     if not rows:
-        die(f"no run on {args.dataset_id} scored an item the gold references have")
+        die(f"no run on {args.dataset_id} scored an item the gold references have", "not-enough")
     rows.sort(key=lambda r: -r[args.sort])
 
     width = max(len(r["arm"]) for r in rows) + 2
@@ -171,7 +173,7 @@ def main() -> int:
     if args.arm:
         row = next((r for r in rows if r["arm"] == args.arm), None)
         if row is None:
-            die(f"no run for arm {args.arm}")
+            die(f"no run for arm {args.arm}", "not-found")
         print(f"\n  CONFUSION MATRIX — {args.arm}   rows = gold, columns = predicted")
         cols = [*labels, UNPARSED]
         cw = max(len(c) for c in cols) + 2

@@ -3,9 +3,9 @@
 
     python examples/summarization-cnn-dailymail/fetch.py --n 50
 
-STDLIB ONLY. It reads the HuggingFace datasets-server rows API over HTTPS rather than
-using the `datasets` library, so getting the data costs no pyarrow, no pandas and no
-2GB of transitive dependencies. For a 50-row eval slice that is the whole job.
+It reads the split through the harness's `huggingface` source (examples/_shared/hf_rows.py): the Hub's
+parquet conversion at one pinned commit, each file checked against the sha256 the Hub lists.
+No `datasets` library, no pandas: for a 50-row eval slice that is the whole job.
 
 WHY THIS DATASET
   abisee/cnn_dailymail is apache-2.0 — the only clearly-licensed option among the usual

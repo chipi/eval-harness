@@ -1,12 +1,10 @@
-#!/usr/bin/env python3
 """Re-measure a frozen eval with a validated LLM judge (docs/adr/ADR-0001).
 
     make judge-score DATASET_ID=cnn_dailymail_200 SCORER=judge-summ-v1 ARGS=--dry-run
     make judge-score DATASET_ID=cnn_dailymail_200 SCORER=judge-summ-v1
-    EVAL_RUNS_DIR=data/runs-judged/judge-summ-v1 make leaderboard DATASET_ID=cnn_dailymail_200
+    make leaderboard DATASET_ID=cnn_dailymail_200 ARGS='--label judged/judge-summ-v1'
 
-`evh judge` is the older judge PANEL (judge_panel.py): pointwise, finalists only, verdicts not
-stored. This is the judging PASS: listwise, every arm, verdicts stored as a frozen record.
+The judging PASS: listwise, every arm, verdicts stored as a frozen record.
 
 THE PASS, IN ORDER
   1. gate       the scorer must name a committed run that validates each judge (or
@@ -22,8 +20,9 @@ THE PASS, IN ORDER
                 skips what is stored (resume) and re-reading costs $0. Cost-capped mid-run;
                 what was bought is kept.
   4. projection one score per arm per item (mean of the task's dimensions, per judge; the
-                primary is the mean over judges) written as scored runs, shaped like
-                rescore's, plus summary.json with the controls.
+                primary is the mean over judges) written as a score under each judged
+                run (key <scorer>@<judging set>, label judged/<scorer>), plus
+                data/judge-summaries/<scorer>@<judging set>.json with the controls.
 
 THE TASK. What is judged comes from the scorer's optional `task` block: the label of the
 source item, the label of the numbered outputs, the dimensions and the scale. Without one it
@@ -48,19 +47,11 @@ position check tests it: its second shuffle re-forms the blocks.
 
 from __future__ import annotations
 
-import sys as _sys
-from pathlib import Path as _Path
-
-if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
-    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
-
-import argparse
 import hashlib
 import itertools
 import json
 import math
 import random
-import shutil
 import statistics
 import sys
 import time
@@ -68,14 +59,16 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Any, Callable
 
-from evaluation_harness import _providers
+from evaluation_harness import _outputs, _progress, _providers, _runs, _spend, _store
 from evaluation_harness._codeid import content_sha256, file_sha256
 from evaluation_harness._common import (
     BOOKKEEPING_PREFIXES,
     DATA,
+    EXIT_NOTHING,
+    EXIT_STOPPED,
+    EXIT_UNVALIDATED,
     MATERIALIZED,
     ROOT,
-    RUNS,
     CostCapExceeded,
     classify_metrics,
     dataset_id_ok,
@@ -86,7 +79,6 @@ from evaluation_harness._common import (
     now,
     read_json,
     write_json,
-    write_text_atomic,
 )
 from evaluation_harness._fingerprint import seal
 from evaluation_harness._providers import identity_params
@@ -102,27 +94,35 @@ from evaluation_harness.judging import (
     build_pairwise_message,
     build_pick_message,
     call_judge,
+    json_object,
     json_only,
     kendall_tau_b,
     parse_block,
     parse_pairwise,
     parse_pick,
+    parse_why,
+    quotes_source,
     render_prompt,  # noqa: F401 — re-exported: validate_tree and the tests call js.render_prompt
     shingles,
     spearman,
     task_of,
+    with_reason,
     withheld_reason,
 )
+from evaluation_harness.model import runs as _model_runs
+from evaluation_harness.model import scorers as _scorers
+from evaluation_harness.model.entity import Problem
+from evaluation_harness.ops import legacy
 
 try:
     import yaml
 except ImportError:  # pragma: no cover
-    die("pyyaml is required — pip install -r requirements.txt")
+    die("pyyaml is required — pip install -r requirements.txt", "missing-dependency")
 
 SCORERS = DATA / "scorers"
 SETS = DATA / "judging-sets"
 VERDICTS = DATA / "judge-verdicts"
-JUDGED = DATA / "runs-judged"
+SUMMARIES = DATA / "judge-summaries"
 
 PASSES = ("primary", "position", "noise")
 
@@ -147,7 +147,16 @@ class JudgeCallFailed(Exception):
 
 #: Describe the CALL that made an arm's output, not how it was measured: carried across as
 #: rescore.py carries them.
-CARRY = ("latency_ms", "tokens_in", "tokens_out", "cost_usd", "truncated", "reasoning_tokens", "resumed")
+CARRY = (
+    "latency_ms",
+    "tokens_in",
+    "tokens_out",
+    "cost_usd",
+    "truncated",
+    "reasoning_tokens",
+    "resumed",
+    "failed",
+)
 #: Reply size per summary for the dry-run estimate: SummEval's gemma_l returned 217.5 tokens
 #: for 16 summaries x 4 dimensions (committed run se_gemma_l_n100_v1, scores.tokens_out).
 #: A task with other dimensions scales it by their number.
@@ -155,6 +164,10 @@ OUT_TOKENS_PER_SUMMARY = 14
 OUT_TOKENS_FIXED = 10
 #: A pick or pairwise reply is one short JSON object ({"best": [3, 7]}, {"better": "tie"}).
 OUT_TOKENS_ANSWER = 12
+#: A reason (RFC-034 §5), estimated: a short sentence per graded output, one or two for a pick or a pair. Not
+#: measured yet; a judging smoke's tokens_out replaces the guess.
+OUT_TOKENS_WHY_PER_OUTPUT = 20
+OUT_TOKENS_WHY = 40
 CHARS_PER_TOKEN = 4
 
 
@@ -162,16 +175,30 @@ def _keep_withheld(record: Path, text: str) -> Path:
     """A withheld reply's text in `<record dir>/.withheld/<record>.txt`, a directory that
     ignores itself in git: the record keeps only the hash, the text stays on this machine."""
     d = record.parent / ".withheld"
-    d.mkdir(parents=True, exist_ok=True)
-    (d / ".gitignore").write_text("*\n", encoding="utf-8")
+    _store.mkdir(d, parents=True, exist_ok=True)
+    _store.write_text(d / ".gitignore", "*\n", encoding="utf-8")
     out = d / f"{record.stem}.txt"
-    out.write_text(text, encoding="utf-8")
+    _store.write_text(out, text, encoding="utf-8")
     return out
 
 
-def unparsed_cause(output: str | None, finish_reason: Any, mode: str) -> str:
+def unnamed_dimensions(sc: dict[str, Any], prompt: str) -> list[str]:
+    """A grade scorer's dimensions its prompt does not name (case aside): asked for scores without the keys, a judge
+    invents its own, and every reply comes back unparsed (the 0.8.0 newcomer run paid for 80). A pick or a pairwise
+    message carries its own shape, so they need none."""
+    if mode_of(sc) != DEFAULT_MODE:
+        return []
+    text = prompt.lower()
+    return [d for d in task_for(sc)["dimensions"] if str(d).lower() not in text]
+
+
+def unparsed_cause(
+    output: str | None, finish_reason: Any, mode: str, dimensions: list[str] | None = None
+) -> str:
     """Why a reply gave no verdict, for the line judge-score prints: empty, cut off at the
-    token limit, not JSON, or JSON of the wrong shape, with its character count."""
+    token limit, not JSON, or JSON of the wrong shape, with its character count. Of the wrong shape, a grade names the
+    keys the reply had and the dimensions the prompt must ask for (the 0.8.0 newcomer run: a prompt that did not name
+    them got 80 replies of the judges' own keys, every one unparsed, and the line did not say what was expected)."""
     n = len(output or "")
     cut = finish_reason == "length"
     if not output:
@@ -183,8 +210,28 @@ def unparsed_cause(output: str | None, finish_reason: Any, mode: str) -> str:
     if cut:
         return f"cut off at the token limit (finish_reason length), {n} chars"
     if not json_only(output):
+        body = output.strip().rstrip("`").rstrip()
+        if output.strip().startswith(("{", "```")) and not body.endswith("}"):
+            return (
+                f"cut off: JSON that stops before its closing brace (the reply ran out; finish_reason "
+                f"{finish_reason}), {n} chars"
+            )
         return f"not JSON, {n} chars"
+    if mode == "grade" and dimensions:
+        keys = ", ".join(map(str, json_object(output) or {})) or "none"
+        return (
+            f"JSON, but not the expected scores: its keys are {keys}; the prompt must ask for one list of numbers per "
+            f"dimension, keyed {', '.join(dimensions)}, {n} chars"
+        )
     return f"JSON, but not the expected {VERDICT_KEY[mode]} (the shape the prompt asks for), {n} chars"
+
+
+#: A judge whose first this-many replies all come back empty at the token limit stops the pass (JudgeCutOff).
+EARLY_CUTOFF = 3
+
+
+class JudgeCutOff(Exception):
+    """A judge's first replies all came back empty at the token limit: the rest would too."""
 
 
 def cutoff_hint(cut_empty: int, calls: int, sc: dict[str, Any]) -> str:
@@ -210,8 +257,8 @@ def records_sha256(vdir: Path) -> str:
     """One hash over a judge's stored validation records (names and bytes, sorted), so a
     report built from them can be checked against them where the human data is absent."""
     h = hashlib.sha256()
-    for f in sorted(p for p in vdir.glob("*.json") if p.name != "report.json"):
-        h.update(f.name.encode() + b"\0" + f.read_bytes() + b"\0")
+    for f in sorted(p for p in _store.glob(vdir, "*.json") if p.name != "report.json"):
+        h.update(f.name.encode() + b"\0" + _store.read_bytes(f) + b"\0")
     return h.hexdigest()
 
 
@@ -220,24 +267,32 @@ def _canon(obj: Any) -> str:
 
 
 # ── the scorer artifact and the validation gate ──────────────────────────────
-def load_scorer(path: Path) -> dict[str, Any]:
-    """Load and validate a judge scorer YAML file; die on schema or missing judges."""
-    if not path.is_file():
-        die(f"no such scorer: {path}")
-    sc = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+def load_scorer(path: Path, data: Path | None = None) -> dict[str, Any]:
+    """Load and validate a judge scorer YAML file; die on schema or missing judges. A judge that names a system is read
+    from `data` when it is another data directory than the project's (the catalog reads a deployment's copy)."""
+    if not _store.is_file(path):
+        die(f"no such scorer: {path}", "not-found")
+    sc = yaml.safe_load(_store.read_text(path, encoding="utf-8")) or {}
     # Its content, not its bytes: a comment in the YAML is documentation and changes no judgement.
     sc["_sha256"] = content_sha256(sc)
     sc["_dir"] = str(path.resolve().parent)
     if sc.get("kind") != "judge":
-        die(f"{path.name}: kind must be 'judge', got {sc.get('kind')!r}")
+        die(f"{path.name}: kind must be 'judge', got {sc.get('kind')!r}", "invalid-file")
     for k in ("scorer_id", "dataset_id", "judges", "prompt", "protocol"):
         if not sc.get(k):
-            die(f"{path.name}: missing {k!r}")
+            die(f"{path.name}: missing {k!r}", "invalid-file")
+    try:
+        _scorers.resolve_judges(sc, data)
+    except Problem as exc:
+        if exc.kind == "not-found":
+            die(f"{path.name}: {exc}", "not-found")
+        die(f"{path.name}: {exc}", "invalid-file")
     fams = {j["params"].get("family") for j in sc["judges"]}
     if len(sc["judges"]) < 2 or len(fams) < 2:
         die(
             f"{path.name}: needs at least two judges from different vendor families "
-            f"(ADR-0001 §4); got {sorted(map(str, fams))}"
+            f"(ADR-0001 §4); got {sorted(map(str, fams))}",
+            "invalid-file",
         )
     # The controls are part of the pass, not optional (ADR-0001 §4): a scorer states both, so a
     # forgotten field cannot switch them off. Position needs an order, so it may be 0 only when
@@ -245,27 +300,41 @@ def load_scorer(path: Path) -> dict[str, Any]:
     pr = sc["protocol"]
     for k in ("position_check_fraction", "noise_check_fraction"):
         if k not in pr:
-            die(f"{path.name}: protocol.{k} is required (ADR-0001 §4: the controls are not optional)")
+            die(
+                f"{path.name}: protocol.{k} is required (ADR-0001 §4: the controls are not optional)",
+                "invalid-file",
+            )
     if not pr["noise_check_fraction"] > 0:
-        die(f"{path.name}: protocol.noise_check_fraction must be above 0: the judge's own noise is measured")
+        die(
+            f"{path.name}: protocol.noise_check_fraction must be above 0: the judge's own noise is measured",
+            "invalid-file",
+        )
     if int(pr.get("outputs_per_call", 1)) > 1 and not pr["position_check_fraction"] > 0:
         die(
             f"{path.name}: protocol.position_check_fraction must be above 0 when a call sees "
-            f"{pr['outputs_per_call']} outputs: their order can move a verdict"
+            f"{pr['outputs_per_call']} outputs: their order can move a verdict",
+            "invalid-file",
         )
     bad = mode_problems(sc)
     if bad:
-        die(f"{path.name}: {bad[0]}")
+        die(f"{path.name}: {bad[0]}", "invalid-file")
     try:
         sc["_task"] = task_of(sc)
     except ValueError as exc:
-        die(f"{path.name}: {exc}")
+        die(f"{path.name}: {exc}", "invalid-file")
     return sc
 
 
 def mode_of(doc: dict[str, Any]) -> str:
     """What a judge is asked: the scorer's (or a frozen set's) `mode`, `grade` when it has none."""
     return doc.get("mode") or DEFAULT_MODE
+
+
+def explain_of(doc: dict[str, Any]) -> bool:
+    """Whether a judge gives its reason inside the verdict (RFC-034 §5): the scorer's (or a frozen set's) `explain`.
+    A scorer without the field gives none, so a scorer judged before reasons existed sends the message it was
+    validated on, byte for byte; `scorer-new` writes `explain: true`."""
+    return doc.get("explain") is True
 
 
 def mode_problems(sc: dict[str, Any]) -> list[str]:
@@ -301,7 +370,7 @@ def task_for(sc: dict[str, Any]) -> dict[str, Any]:
         try:
             sc["_task"] = task_of(sc)
         except ValueError as exc:
-            die(f"scorer {sc.get('scorer_id')}: {exc}")
+            die(f"scorer {sc.get('scorer_id')}: {exc}", "invalid-file")
     return sc["_task"]
 
 
@@ -312,6 +381,7 @@ def judge_params(sc: dict[str, Any], j: dict[str, Any]) -> dict[str, Any]:
     if p.get("provider") == FAKE:
         p["_task"] = task_for(sc)
         p["_mode"] = mode_of(sc)
+        p["_explain"] = explain_of(sc)
     return p
 
 
@@ -339,10 +409,13 @@ def prompt_candidates(sc: dict[str, Any], root: Path | None = None) -> list[Path
 def prompt_text(sc: dict[str, Any], root: Path | None = None) -> str:
     """Read the scorer's prompt file; die if it is not found."""
     cands = prompt_candidates(sc, root)
-    p = next((c for c in cands if c.is_file()), None)
+    p = next((c for c in cands if _store.is_file(c)), None)
     if p is None:
-        die(f"prompt file not found: {sc['prompt']['file']} (looked in {', '.join(str(c) for c in cands)})")
-    return p.read_text(encoding="utf-8").strip()
+        die(
+            f"prompt file not found: {sc['prompt']['file']} (looked in {', '.join(str(c) for c in cands)})",
+            "not-found",
+        )
+    return _store.read_text(p, encoding="utf-8").strip()
 
 
 #: Params that change what a judge says. The validation run recorded them; the scorer must
@@ -351,9 +424,10 @@ OUTPUT_PARAMS = ("provider", "model", "temperature", "reasoning", "max_tokens")
 
 
 def validation_problems(
-    sc: dict[str, Any], runs_dir: Path = RUNS, prompt_root: Path | None = None
+    sc: dict[str, Any], prompt_root: Path | None = None, runs_dir: Path | None = None
 ) -> list[str]:
-    """Why this scorer is not validated; empty means it is."""
+    """Why this scorer is not validated; empty means it is. The validation runs are run ids under `runs_dir`
+    (default data/runs), each read as the score it made when it ran."""
     fakes = [j["id"] for j in sc["judges"] if j["params"].get("provider") == FAKE]
     if fakes:
         return [f"judge {i!r} uses provider: fake, a stand-in that can never be validated" for i in fakes]
@@ -372,16 +446,25 @@ def validation_problems(
             "prompt.sha256_at_16 does not match the prompt file: the text the "
             "judges were validated on has changed"
         )
+    # Nothing is averaged in silently: a dimension the validation's ratings did not carry is not validated on this dataset.
+    carried = v.get("dimensions")
+    if isinstance(carried, list) and carried:
+        out += [
+            f"dimension {d}: not validated on {v.get('dataset_id') or 'the validation dataset'} "
+            f"(its ratings carry {', '.join(map(str, carried))})"
+            for d in task_for(sc)["dimensions"]
+            if d not in carried
+        ]
     for j in sc["judges"]:
         r = named.get(j["id"])
         if not r:
             out.append(f"judge {j['id']!r}: no validation run names it")
             continue
-        d = runs_dir / str(r.get("run", ""))
-        if not (d / "metrics.json").is_file():
-            out.append(f"judge {j['id']!r}: validation run {r.get('run')!r} is not in {runs_dir}")
+        first = _model_runs.first_score((runs_dir or _model_runs.root()) / str(r.get("run", "")))
+        m = _model_runs.record(first) if first else None
+        if m is None:
+            out.append(f"judge {j['id']!r}: validation run {r.get('run')!r} is not in data/runs")
             continue
-        m = read_json(d / "metrics.json")
         if v.get("dataset_id") and m.get("dataset_id") != v["dataset_id"]:
             out.append(
                 f"judge {j['id']!r}: run {r['run']} is on {m.get('dataset_id')!r}, not {v['dataset_id']!r}"
@@ -397,6 +480,11 @@ def validation_problems(
                 f"judge {j['id']!r}: run {r['run']} has {metric}={got}, below the scorer's min_metric {floor}"
             )
         rec = m.get("params") or {}
+        if explain_of(rec) != explain_of(sc):
+            out.append(
+                f"judge {j['id']!r}: run {r['run']} measured explain={explain_of(rec)}, the scorer uses "
+                f"explain={explain_of(sc)}: a judge asked for its reason is another judge, validated as such"
+            )
         if mode_of(rec) != mode_of(sc):
             out.append(
                 f"judge {j['id']!r}: run {r['run']} measured mode={mode_of(rec)!r}, "
@@ -488,22 +576,23 @@ def pick_subset(item_ids: Sequence[str], frac: float, seed: Any, salt: str) -> l
 
 
 # ── arms and the judging set ─────────────────────────────────────────────────
-def discover_arms(dataset_id: str, match: str, runs_dir: Path = RUNS) -> list[dict[str, Any]]:
-    """The primary run of every arm on the dataset: config_id contains `match`, latest wins."""
+def discover_arms(dataset_id: str, match: str) -> list[dict[str, Any]]:
+    """The primary run of every arm on the dataset: system_id contains `match`, latest wins. `dir` is the score the
+    run made, whose outputs and rows are read."""
     latest: dict[str, tuple[str, Path, dict[str, Any]]] = {}
     # One run per arm, the latest, on purpose: judging scores an arm's outputs, so repeats
     # are not averaged as they are everywhere else (_runs.per_item).
-    for d, m in runs_on(dataset_id, runs_dir=runs_dir, match=match or None):
-        cid = m["config_id"]
-        key = m.get("created_at", "") + d.name
+    for d, m in runs_on(dataset_id, match=match or None):
+        cid = m["system_id"]
+        key = m.get("created_at", "") + m["run_id"]
         if cid not in latest or key > latest[cid][0]:
             latest[cid] = (key, d, m)
     arms = []
     for cid, (_k, d, m) in sorted(latest.items()):
         arms.append(
             {
-                "config_id": cid,
-                "run": d.name,
+                "system_id": cid,
+                "run": m["run_id"],
                 "dir": d,
                 "family": (m.get("params") or {}).get("family")
                 or (m.get("fingerprint", {}).get("settings") or {}).get("family"),
@@ -515,34 +604,58 @@ def discover_arms(dataset_id: str, match: str, runs_dir: Path = RUNS) -> list[di
 def config_versions(arms: Sequence[dict[str, Any]]) -> list[str]:
     """The `_vN` endings of each arm present at more than one version (`_runs.mixed_versions`,
     the leaderboard's rule): v1 and v2 of one arm, judged as two. [] when there is no such arm."""
-    return sorted({v for vs in mixed_versions(a["config_id"] for a in arms).values() for v in vs})
+    return sorted({v for vs in mixed_versions(a["system_id"] for a in arms).values() for v in vs})
 
 
 def select_arms(arms: Sequence[dict[str, Any]], spec: str) -> list[dict[str, Any]]:
-    """Restrict to the comma-separated tokens: an exact config_id, else a substring of one.
+    """Restrict to the comma-separated tokens: an exact system_id, else a substring of one.
     A token that matches nothing is an error, not a smaller set."""
     keep: list[dict[str, Any]] = []
     for tok in [t.strip() for t in spec.split(",") if t.strip()]:
-        exact = [a for a in arms if a["config_id"] == tok]
-        hit = exact or [a for a in arms if tok in a["config_id"]]
+        exact = [a for a in arms if a["system_id"] == tok]
+        hit = exact or [a for a in arms if tok in a["system_id"]]
         if not hit:
-            die(f"--arms {tok!r} matches none of the {len(arms)} discovered arms")
+            die(f"--arms {tok!r} matches none of the {len(arms)} discovered arms", "not-found")
         keep += [a for a in hit if a not in keep]
-    return sorted(keep, key=lambda a: a["config_id"])
+    return sorted(keep, key=lambda a: a["system_id"])
 
 
 def read_outputs(arm: dict[str, Any], item_ids: Sequence[str]) -> dict[str, str]:
     """All outputs of one arm; die if any item's file is missing."""
     out = {}
     for i in item_ids:
-        f = Path(arm["dir"]) / "outputs" / f"{i}.txt"
-        if not f.is_file():
+        text = _outputs.output(Path(arm["dir"]), i)
+        if text is None:
             die(
                 f"{arm['run']}: no stored output for {i} — the judging set needs every "
-                f"arm's output for every item"
+                f"arm's output for every item",
+                "not-enough",
             )
-        out[i] = f.read_text(encoding="utf-8")
+        out[i] = text
     return out
+
+
+def as_judged(dataset_id: str, arms: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """The arms under the ids a stored judging set of exactly these runs gave them, when there is one (owner,
+    2026-11-13: a judging set is frozen evidence and keeps the ids it was judged under, RFC-032 step 3). Its arm order
+    and its blocks are made of those ids, so the set rebuilt from them is the stored one and its verdicts are found;
+    a judged run still takes its run's own id (its metrics are its source run's)."""
+    runs = {a["run"] for a in arms}
+    for f in sorted(_store.glob(SETS, f"{dataset_id}-*.json")) if _store.is_dir(SETS) else []:
+        # a stored set names an arm by config_id (its id hashes the key); a system id is read from it
+        by_run = {x.get("run"): x.get("config_id") for x in read_json(f).get("arms") or []}
+        if set(by_run) == runs and any(by_run[a["run"]] != a["system_id"] for a in arms):
+            return sorted(({**a, "system_id": by_run[a["run"]]} for a in arms), key=lambda a: a["system_id"])
+    return arms
+
+
+def set_arms(manifest: dict[str, Any]) -> list[dict[str, Any]]:
+    """A stored judging set's arms as the rest of the harness reads an arm: the `config_id` the set keeps (its id
+    hashes the key) is the arm's `system_id`."""
+    return [
+        {**{k: v for k, v in a.items() if k != "config_id"}, "system_id": a["config_id"]}
+        for a in manifest["arms"]
+    ]
 
 
 def build_manifest(
@@ -555,20 +668,21 @@ def build_manifest(
     outputs: dict[str, dict[str, str]],
     base_prompt: str,
 ) -> dict[str, Any]:
-    """The frozen judging set. `outputs[config_id][item_id]` is that arm's text."""
+    """The frozen judging set. `outputs[system_id][item_id]` is that arm's text."""
     pr = sc["protocol"]
     seed, per_call = pr.get("order_seed", 0), int(pr["outputs_per_call"])
-    arm_ids = [a["config_id"] for a in arms]
+    arm_ids = [a["system_id"] for a in arms]
     if len(arm_ids) < 2:
-        die("a judging set needs at least two arms")
+        die("a judging set needs at least two arms", "not-enough")
     mode = mode_of(sc)
     if mode not in MODES:
-        die(f"mode must be one of {', '.join(MODES)}, got {mode!r}")
+        die(f"mode must be one of {', '.join(MODES)}, got {mode!r}", "invalid-file")
     if mode == "pick" and per_call < len(arm_ids):
         die(
             f"a pick scorer needs protocol.outputs_per_call of at least the number of arms "
             f"({len(arm_ids)}), got {per_call}: a pick made in blocks would name each block's winner, "
-            f"not the item's. Raise outputs_per_call, or judge fewer arms (--match, --arms)"
+            f"not the item's. Raise outputs_per_call, or judge fewer arms (--match, --arms)",
+            "not-enough",
         )
     items = []
     for i in item_ids:
@@ -584,10 +698,10 @@ def build_manifest(
         "dataset_items_sha256": items_sha256,
         "arms": [
             {
-                "config_id": a["config_id"],
+                "config_id": a["system_id"],  # the set id hashes this key: stored sets keep its name
                 "run": a["run"],
                 "family": a.get("family"),
-                "outputs_sha256": _sha(_canon([[i, _sha(outputs[a["config_id"]][i])] for i in item_ids])),
+                "outputs_sha256": _sha(_canon([[i, _sha(outputs[a["system_id"]][i])] for i in item_ids])),
             }
             for a in arms
         ],
@@ -601,6 +715,7 @@ def build_manifest(
         # Only a declared task and a declared mode are hashed, so a grade scorer keeps the set id it had.
         **({"task": task_for(sc)} if sc.get("task") else {}),
         **({"mode": mode} if mode != DEFAULT_MODE else {}),
+        **({"explain": True} if explain_of(sc) else {}),
         "items": items,
         "position_items": pick_subset(list(item_ids), pr["position_check_fraction"], seed, "position-subset"),
         "noise_items": pick_subset(list(item_ids), pr["noise_check_fraction"], seed, "noise-subset"),
@@ -636,21 +751,27 @@ def message_for(
     build = {"pick": build_pick_message, "pairwise": build_pairwise_message}.get(
         mode_of(manifest), build_message
     )
-    return build(
+    msg = build(
         base,
         articles[item["item_id"]],
         [outputs[a][item["item_id"]] for a in arm_ids],
         task["source_label"],
         task["output_label"],
     )
+    if not explain_of(manifest):
+        return msg
+    return with_reason(msg, mode_of(manifest), len(arm_ids), task["source_label"], task["output_label"])
 
 
 def freeze(manifest: dict[str, Any], sets_dir: Path = SETS) -> Path:
     """Write the manifest once; an existing one with the same id must match byte for byte."""
     path = sets_dir / f"{manifest['judging_set_id']}.json"
-    if path.is_file():
+    if _store.is_file(path):
         if read_json(path).get("judging_set_sha256") != manifest["judging_set_sha256"]:
-            die(f"{path.name} exists with a different hash: a frozen judging set is never rewritten")
+            die(
+                f"{path.name} exists with a different hash: a frozen judging set is never rewritten",
+                "would-overwrite",
+            )
     else:
         write_json(path, manifest)
     return path
@@ -700,7 +821,7 @@ def tasks(manifest: dict[str, Any]) -> list[tuple[dict[str, Any], str, int]]:
 def stored_cost(vdir: Path) -> float:
     """Sum cost_usd over all verdicts in the judge directory."""
     total = 0.0
-    for f in vdir.glob("*/*.json"):
+    for f in _store.glob(vdir, "*/*.json"):
         try:
             total += float(read_json(f).get("cost_usd") or 0.0)
         except (OSError, ValueError):
@@ -716,6 +837,20 @@ def parse_reply(mode: str, output: str, n: int, task: dict[str, Any]) -> dict[st
     if mode == "pairwise":
         return {"better": parse_pairwise(output)}
     return {"scores": parse_block(output, n, task["dimensions"], task["scale"])}
+
+
+def reason_fields(manifest: dict[str, Any], output: str | None, n: int, source: set) -> dict[str, Any]:
+    """What a verdict stores of the judge's reason (RFC-034 §5): `why` when the set asks for one and the reply gives
+    it, `why_missing` when it does not, and `why_withheld` instead of a reason that repeats the source (V12: the
+    source's text stays out of git; the whole reply is then kept only locally, its scores still committed)."""
+    if not explain_of(manifest):
+        return {}
+    w = parse_why(output, mode_of(manifest), n)
+    if w is None:
+        return {"why": None, "why_missing": True}
+    if quotes_source(" ".join(w) if isinstance(w, list) else w, source):
+        return {"why": None, "why_withheld": "repeats the source"}
+    return {"why": w}
 
 
 def verdict_parsed(rec: dict[str, Any]) -> bool:
@@ -748,29 +883,36 @@ def run_judging(
         "billed_this_run": 0.0,
     }
     cut_empty = 0
+    first_replies: dict[str, list[bool]] = {}  # per judge: its first replies, empty at the token limit
     work = tasks(manifest)
     try:
-        for item, pass_name, block in work:
+        for k, (item, pass_name, block) in enumerate(work):
+            _progress.step(k, len(work))
             msg = None
             for j in sc["judges"]:
                 path = verdict_path(vdir, j["id"], item["item_id"], pass_name, block)
-                if path.is_file():
+                if _store.is_file(path):
                     old = read_json(path)
                     if old.get("judge_fp") != judge_fingerprint(j):
                         die(
                             f"{path}: stored by a different judge definition than "
-                            f"{j['id']!r} in the scorer now; refusing to mix them"
+                            f"{j['id']!r} in the scorer now; refusing to mix them",
+                            "not-allowed",
                         )
                     if old.get("set_id") != manifest["judging_set_id"]:
-                        die(f"{path}: belongs to judging set {old.get('set_id')}")
+                        die(f"{path}: belongs to judging set {old.get('set_id')}", "mismatch")
                     if old.get(VERDICT_KEY[mode_of(manifest)]) is not None or not retry_unparsed:
                         stats["skipped"] += 1
                         continue
                 if call is None:
                     stats["missing"] += 1
                     continue
-                if cap is not None and spent >= cap:
-                    raise CostCapExceeded(f"spent ${spent:.4f} of the ${cap:.4f} cap")
+                all_judges = [j["params"] for j in sc["judges"]]
+                if _spend.stops(spent, cap, *all_judges):
+                    raise CostCapExceeded(
+                        f"spent ${spent:.4f} of the ${cap:.4f} cap"
+                        + (f": {_spend.ZERO_CAP_HINT}" if _spend.zero_blocked(cap, *all_judges) else "")
+                    )
                 if msg is None:
                     msg = message_for(manifest, base, articles, outputs, item, pass_name, block)
                 n = len(item["position" if pass_name == "position" else "primary"][block])  # noqa: S105 — a judging pass, not a password
@@ -800,16 +942,15 @@ def run_judging(
                 meta = getattr(res, "meta", None) or {}
                 answer = parse_reply(mode_of(manifest), res.output, n, task_for(sc))
                 arms = item["position" if pass_name == "position" else "primary"][block]  # noqa: S105 — a judging pass, not a password
-                why = withheld_reason(
-                    res.output,
-                    shingles([articles[item["item_id"]], *(outputs[a][item["item_id"]] for a in arms)]),
-                )
+                source = shingles([articles[item["item_id"]], *(outputs[a][item["item_id"]] for a in arms)])
+                why = withheld_reason(res.output, source)
+                reason = reason_fields(manifest, res.output, n, source)
                 # Nothing to quote is still not bare JSON: V12 refuses a committed `""`.
                 if not why and not res.output:
                     why = "empty reply"
                 # A retried block replaces the stored reply; the earlier calls were paid for
                 # too, so their cost stays in the record (and in every bill read from it).
-                prior = read_json(path) if path.is_file() else {}
+                prior = read_json(path) if _store.is_file(path) else {}
                 earlier = float(prior.get("cost_usd") or 0.0)
                 write_json(
                     path,
@@ -827,6 +968,7 @@ def run_judging(
                         "output_withheld": bool(why),
                         **({"withheld_reason": why} if why else {}),
                         **answer,
+                        **reason,
                         "tokens_in": res.tokens_in,
                         "tokens_out": res.tokens_out,
                         "cost_usd": cost + earlier,
@@ -867,15 +1009,38 @@ def run_judging(
                 if all(v is None for v in answer.values()):
                     fr = meta.get("finish_reason")
                     cut_empty += 1 if (not res.output and fr == "length") else 0
+                    # A judge whose first replies all come back empty at the token limit will do so for the whole
+                    # pass (a reasoning model spending its max_tokens thinking): stop after EARLY_CUTOFF calls, not
+                    # after paying for every one (the 0.7.1 newcomer run: tutorial 3's thinking judge at 400).
+                    first = first_replies.setdefault(j["id"], [])
+                    if len(first) < EARLY_CUTOFF:
+                        first.append(not res.output and fr == "length")
+                        if len(first) == EARLY_CUTOFF and all(first):
+                            raise JudgeCutOff(
+                                f"{j['id']}: its first {EARLY_CUTOFF} replies came back empty at the token limit"
+                            )
                     log(
                         f"    unparsed reply: {j['id']} {item['item_id'][:8]} {pass_name} b{block}: "
-                        f"{unparsed_cause(res.output, fr, mode_of(manifest))}"
+                        f"{unparsed_cause(res.output, fr, mode_of(manifest), task_for(sc).get('dimensions'))}"
                     )
-                elif stats["calls"] % 25 == 0:
-                    log(f"    {stats['calls']} calls, ${spent:.4f}")
+                else:
+                    parsed = first_replies.setdefault(j["id"], [])
+                    if len(parsed) < EARLY_CUTOFF:
+                        parsed.append(
+                            False
+                        )  # a reply that parsed: this judge is not one that always runs out
+                    if stats["calls"] % 25 == 0:
+                        log(f"    {stats['calls']} calls, ${spent:.4f}")
     except CostCapExceeded as exc:
         stats["aborted"] = True
         log(f"  COST CAP: {exc}. Stopping; every stored verdict is kept and re-read for $0.")
+    except JudgeCutOff as exc:
+        stats["aborted"] = True
+        stats["cut_off_early"] = str(exc)
+        log(
+            f"  STOPPED EARLY: {exc}, so the rest of the pass would too. Every stored verdict is kept; "
+            "fix the judge (below) and run again."
+        )
     except JudgeCallFailed as exc:
         stats["aborted"] = True
         stats["call_failed"] = str(exc)
@@ -883,6 +1048,7 @@ def run_judging(
             f"  JUDGE CALL FAILED after retries or refused: {exc}\n  Stopping; every stored verdict is kept. "
             "Fix the cause and run the same command again: it resumes where it stopped."
         )
+    _progress.step(len(work) if not stats["aborted"] else k, len(work))
     stats["spent_usd"] = spent
     if cut_empty:
         log(cutoff_hint(cut_empty, stats["calls"], sc))
@@ -912,7 +1078,7 @@ def load_readings(
                 blocks = it["position" if p == "position" else "primary"]
                 for b, arm_ids in enumerate(blocks):
                     f = verdict_path(vdir, j["id"], it["item_id"], p, b)
-                    v = read_json(f).get(VERDICT_KEY[mode]) if f.is_file() else None
+                    v = read_json(f).get(VERDICT_KEY[mode]) if _store.is_file(f) else None
                     if v is not None:
                         out[j["id"]][p].setdefault(it["item_id"], {})[b] = block_outcome(mode, arm_ids, v)
     return out
@@ -965,7 +1131,7 @@ def load_scores(
                 ok = True
                 for b, arm_ids in enumerate(it[key]):
                     f = verdict_path(vdir, j["id"], it["item_id"], p, b)
-                    s = read_json(f).get("scores") if f.is_file() else None
+                    s = read_json(f).get("scores") if _store.is_file(f) else None
                     if s is None:
                         ok = False
                         break
@@ -1149,8 +1315,10 @@ def summarise(
     label: str,
     validated: bool,
     vdir: Path,
+    lengths: dict[str, dict[str, int]] | None = None,
 ) -> dict[str, Any]:
-    """Summarize the judging: per-arm scores, judge agreement, controls, and cost. For pick and
+    """Summarize the judging: per-arm scores, judge agreement, controls, and cost. `lengths` ({system_id: {item:
+    words}}) gives each judge's length bias: how far its score follows how long an output is. For pick and
     pairwise the per-arm number is the win rate (mean `won`), with Bradley-Terry strengths beside
     it, and the controls are how often the position and noise checks kept the verdict."""
     mode = mode_of(manifest)
@@ -1162,7 +1330,7 @@ def summarise(
     thr = float(sc["protocol"].get("contested_threshold", 0.5 if graded else 0.25))
     per_arm: dict = {}
     for a in arms:
-        cid = a["config_id"]
+        cid = a["system_id"]
         col = {j: _mean([proj[i][cid][j] for i in proj]) for j in jids}
         pm = _mean([proj[i][cid]["_mean"] for i in proj])
         vals = [v for v in col.values() if v is not None]
@@ -1222,6 +1390,24 @@ def summarise(
             if own and oth
             else None,
         }
+    # Length bias (C2): Spearman's rho of each judge's score with the output's length in words, over every (item,
+    # arm) judged. Judges are known to favour longer answers; a rho well above 0 says this one may.
+    length_bias: dict[str, Any] = {}
+    for j in jids:
+        pairs = [
+            (lengths[c][i], proj[i][c][j])
+            for i in proj
+            for c in proj[i]
+            if lengths and c in lengths and i in lengths[c] and proj[i][c].get(j) is not None
+        ]
+        length_bias[j] = (
+            {
+                "n": len(pairs),
+                "spearman_length": round(spearman([a for a, _ in pairs], [b for _, b in pairs]), 4),
+            }
+            if len(pairs) > 2
+            else None
+        )
     ctrl = {}
     for j in jids if graded else []:
         p = scores[j]
@@ -1263,7 +1449,7 @@ def summarise(
         }
     calls = {}
     for j in jids:
-        files = sorted((vdir / j).glob("*.json")) if (vdir / j).is_dir() else []
+        files = sorted(_store.glob(vdir / j, "*.json")) if _store.is_dir(vdir / j) else []
         vs = [read_json(f) for f in files]
         calls[j] = {
             "verdicts": len(vs),
@@ -1288,6 +1474,7 @@ def summarise(
         "per_arm": per_arm,
         "judge_agreement": agreement,
         "self_family_gap": self_gap,
+        "length_bias": length_bias,
         "controls": ctrl,
         **({} if graded else {"mode": mode, **bt_meta}),
         "notes": [
@@ -1319,13 +1506,13 @@ def write_scored_runs(
     sc: dict[str, Any],
     arms: Sequence[dict[str, Any]],
     proj: dict[str, dict[str, dict[str, float]]],
-    out_root: Path,
     label: str,
     validated: bool,
     self_path: Path = Path(__file__),
 ) -> list[Path]:
-    """One directory per original run, same name, predictions.jsonl + metrics.json, shaped
-    like rescore's so leaderboard / family_test / pair_test read them with EVAL_RUNS_DIR."""
+    """One score under each judged run (key <scorer>@<judging set>, read as `judged/<scorer>`), so leaderboard /
+    family_test / pair_test read them with `--label judged/<scorer>`. A pass run again over more stored verdicts
+    replaces its own earlier score of the same key; the same rows are not written twice. The scores' directories."""
     sfx = "" if validated else "_unvalidated"
     mode = mode_of(manifest)
     primary = f"{'judge_score' if mode == DEFAULT_MODE else 'judge_won'}{sfx}"
@@ -1333,13 +1520,9 @@ def write_scored_runs(
     fam = {j["id"]: j["params"].get("family") for j in sc["judges"]}
     written = []
     for a in arms:
-        cid, src = a["config_id"], Path(a["dir"])
-        m = read_json(src / "metrics.json")
-        old_rows = {}
-        for line in (src / "predictions.jsonl").read_text(encoding="utf-8").splitlines():
-            if line.strip():
-                r = json.loads(line)
-                old_rows[r["item_id"]] = r
+        cid, src = a["system_id"], Path(a["dir"])
+        m = _model_runs.record(src) or {}
+        old_rows = {r["item_id"]: r for r in _runs.item_rows(src)}
         rows = []
         for i in manifest["items"]:
             iid = i["item_id"]
@@ -1368,20 +1551,13 @@ def write_scored_runs(
                 if k.startswith(BOOKKEEPING_PREFIXES)
                 else kinds.get(k) or known.get(k) or ("quality" if k.startswith("judge_") else "descriptive")
             )
-        run_dir = out_root / src.name
-        (run_dir / "outputs").mkdir(parents=True, exist_ok=True)
-        for f in (src / "outputs").glob("*.txt"):
-            shutil.copy2(f, run_dir / "outputs" / f.name)
-        write_text_atomic(
-            run_dir / "predictions.jsonl", "".join(json.dumps(r, sort_keys=True) + "\n" for r in rows)
-        )
         # A judge reads no reference, so the source run's tier does not describe these scores;
         # it is kept, as the source's, in derived.with.
         source_tier = m.get("reference_tier")
         new = derived_record(
             m,
             kind="judge",
-            source_dir=src.name,
+            source_dir=a["run"],
             scores=scores,
             n_items=len(rows),
             drop=("reference_tier",),
@@ -1424,8 +1600,19 @@ def write_scored_runs(
                 "was built from; see derived.with"
             )
             new["fingerprint"] = fp
-        write_json(run_dir / "metrics.json", new)
-        written.append(run_dir)
+        key = _model_runs.key(sc["scorer_id"], manifest["judging_set_id"])
+        held = _model_runs.run_dir(a["run"]) / "scores" / key
+        text = _outputs.rows_as_written(held, rows)
+        if _model_runs.record(held) is None or _outputs.rows_text(held) != text:
+            held = _model_runs.write_score(
+                a["run"],
+                sc["scorer_id"],
+                manifest["judging_set_id"],
+                new,
+                label_as=f"judged/{sc['scorer_id']}",
+            )
+            _outputs.write_rows(held, rows)  # no outputs of its own: they are its run's (RFC-024)
+        written.append(held)
     return written
 
 
@@ -1447,17 +1634,18 @@ def estimate(
         n = len(item["position" if p == "position" else "primary"][b])
         for j in sc["judges"]:
             e = per_judge[j["id"]]
-            if verdict_path(vdir, j["id"], item["item_id"], p, b).is_file():
+            if _store.is_file(verdict_path(vdir, j["id"], item["item_id"], p, b)):
                 e["stored"] += 1
                 continue
             e["calls"] += 1
             e["tokens_in"] += math.ceil(len(msg) / CHARS_PER_TOKEN)
+            grade = mode_of(manifest) == DEFAULT_MODE
             e["tokens_out"] += (
                 OUT_TOKENS_FIXED
                 + math.ceil(OUT_TOKENS_PER_SUMMARY * len(task_for(sc)["dimensions"]) / len(DIMS)) * n
-                if mode_of(manifest) == DEFAULT_MODE
+                if grade
                 else OUT_TOKENS_ANSWER
-            )
+            ) + ((OUT_TOKENS_WHY_PER_OUTPUT * n if grade else OUT_TOKENS_WHY) if explain_of(manifest) else 0)
     for j in sc["judges"]:
         e, pr = per_judge[j["id"]], j["params"]
         e["est_cost_usd"] = round(
@@ -1468,9 +1656,50 @@ def estimate(
     return per_judge
 
 
+#: How far a judge's bill may stray from its declared prices before the pass says so (a fifth either way).
+PRICE_DRIFT = 1.2
+
+
+def price_drift(sc: dict[str, Any], vdir: Path) -> list[str]:
+    """Per judge whose provider billed its calls: the bill against what the scorer's declared prices give for the same
+    tokens, a line when they differ by more than PRICE_DRIFT. The dry run estimates at the declared prices, so stale
+    ones make every later estimate wrong (the 0.8.0 newcomer run: eval-gpt-mini billed 2.5x the prices it was given,
+    and the dry run estimated half the bill)."""
+    out = []
+    for j in sc["judges"]:
+        pr = j.get("params") or {}
+        if "usd_per_mtok_in" not in pr or "usd_per_mtok_out" not in pr:
+            continue
+        billed = priced = 0.0
+        for f in _store.glob(vdir / j["id"], "*.json"):
+            r = read_json(f)
+            if not r.get("cost_known") or not r.get("cost_usd"):
+                continue
+            billed += float(r["cost_usd"])
+            priced += (r.get("tokens_in") or 0) / 1e6 * float(pr["usd_per_mtok_in"]) + (
+                r.get("tokens_out") or 0
+            ) / 1e6 * float(pr["usd_per_mtok_out"])
+        if billed and priced and not (1 / PRICE_DRIFT <= billed / priced <= PRICE_DRIFT):
+            out.append(
+                f"  NOTE: judge {j['id']} was billed ${billed:.4f}, {billed / priced:.2f}x what its declared prices give "
+                f"(${priced:.4f}: usd_per_mtok_in {pr['usd_per_mtok_in']}, usd_per_mtok_out {pr['usd_per_mtok_out']}); "
+                "the dry run estimates at those prices, so correct them in the scorer's judge params"
+            )
+    return out
+
+
 def effective_cap(sc: dict[str, Any]) -> float | None:
-    """The smaller of the scorer's cost_cap_usd and EVAL_MAX_COST_USD, or None."""
-    caps = [c for c in (sc.get("cost_cap_usd"), env_float("EVAL_MAX_COST_USD")) if c is not None]
+    """The smallest of the scorer's cost_cap_usd, EVAL_JUDGE_MAX_COST_USD (judging's own cap, as its keys are its own)
+    and EVAL_MAX_COST_USD (a command's, a job's max_cost_usd), or None."""
+    caps = [
+        c
+        for c in (
+            sc.get("cost_cap_usd"),
+            env_float("EVAL_JUDGE_MAX_COST_USD"),
+            env_float("EVAL_MAX_COST_USD"),
+        )
+        if c is not None
+    ]
     return min(float(c) for c in caps) if caps else None
 
 
@@ -1520,40 +1749,9 @@ def real_call(message: str, params: dict[str, Any]) -> Any:
     return call_judge(message, params)
 
 
-def main() -> int:
+def body(**inputs: Any) -> int:
     """Re-measure a frozen eval with a validated LLM judge."""
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--dataset-id", required=True)
-    ap.add_argument("--scorer", required=True, help="scorer id (data/scorers/<id>.yaml)")
-    ap.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="build the judging set; print calls, tokens and estimated cost; call nothing",
-    )
-    ap.add_argument(
-        "--unvalidated",
-        action="store_true",
-        help="run a scorer the gate refuses; every number is labelled 'unvalidated judge'",
-    )
-    ap.add_argument(
-        "--no-calls", action="store_true", help="project from stored verdicts only; never call a judge ($0)"
-    )
-    ap.add_argument(
-        "--retry-unparsed",
-        action="store_true",
-        help="call again for stored verdicts whose reply did not parse",
-    )
-    ap.add_argument(
-        "--match",
-        help="arm set: config_id substring (default: the scorer's arms_match, else every arm on the dataset)",
-    )
-    ap.add_argument(
-        "--arms",
-        help="comma-separated config_ids or substrings: judge only these "
-        "arms (a subset is its own judging set id)",
-    )
-    ap.add_argument("--out", type=Path, default=JUDGED)
-    args = ap.parse_args()
+    args = legacy.namespace(inputs, "judge-score")
     # Piped or redirected to a log, stdout is block-buffered and the progress lines came all at once at the end
     # (as in `evh run`): a line is written when it is printed.
     for stream in (sys.stdout, sys.stderr):
@@ -1562,7 +1760,10 @@ def main() -> int:
 
     sc = load_scorer(SCORERS / f"{args.scorer}.yaml")
     if sc["dataset_id"] != args.dataset_id:
-        die(f"scorer {sc['scorer_id']} is for dataset {sc['dataset_id']!r}, not {args.dataset_id!r}")
+        die(
+            f"scorer {sc['scorer_id']} is for dataset {sc['dataset_id']!r}, not {args.dataset_id!r}",
+            "mismatch",
+        )
     problems = validation_problems(sc)
     validated = not problems
     if problems and not args.unvalidated:
@@ -1573,7 +1774,7 @@ def main() -> int:
             "  Fix the `validation` block, or pass --unvalidated to run it labelled 'unvalidated judge'.",
             file=sys.stderr,
         )
-        return 3
+        return EXIT_UNVALIDATED
     label = validated_label(sc) if validated else "unvalidated judge"
     if not validated:
         print(f"WARNING: UNVALIDATED JUDGE. Every number is labelled; {len(problems)} problem(s):")
@@ -1581,8 +1782,8 @@ def main() -> int:
             print(f"  - {p}")
 
     ds_file = DATA / "datasets" / f"{dataset_id_ok(args.dataset_id)}.json"
-    if not ds_file.is_file():
-        die(f"no dataset {args.dataset_id}")
+    if not _store.is_file(ds_file):
+        die(f"no dataset {args.dataset_id}", "not-found")
     ds = read_json(ds_file)
     items = ds["items"]
     item_ids = [it["item_id"] for it in items]
@@ -1590,28 +1791,39 @@ def main() -> int:
     articles = {}
     for it in items:
         f = mat / (it.get("source_path") or f"{it['item_id']}.txt")
-        if not f.is_file():
+        if not _store.is_file(f):
             die(
                 f"{f} is missing: materialize the dataset first "
-                f"({how(f'evh dataset-materialize --dataset-id {args.dataset_id}', f'make dataset-materialize DATASET_ID={args.dataset_id}')})"
+                f"({how(f'evh dataset-materialize --dataset-id {args.dataset_id}', f'make dataset-materialize DATASET_ID={args.dataset_id}')})",
+                "not-materialized",
             )
-        articles[it["item_id"]] = f.read_text(encoding="utf-8", errors="replace")
+        articles[it["item_id"]] = _store.read_text(f, encoding="utf-8", errors="replace")
     arms = discover_arms(args.dataset_id, args.match or sc.get("arms_match", ""))
     if args.arms:
         arms = select_arms(arms, args.arms)
     if len(arms) < 2:
-        die(f"found {len(arms)} arm run(s) on {args.dataset_id} in {RUNS}")
+        die(f"found {len(arms)} arm run(s) on {args.dataset_id} in data/runs", "not-enough")
     vers = config_versions(arms)
     if len(vers) > 1:
         print(
-            f"WARNING: the arm set mixes config versions {', '.join(vers)}: v1 and v2 of one arm are "
+            f"WARNING: the arm set mixes system versions {', '.join(vers)}: v1 and v2 of one arm are "
             "judged as two arms. Narrow it with --match _v2 (or the scorer's arms_match) if that "
             "is not what you mean."
         )
-    outputs = {a["config_id"]: read_outputs(a, item_ids) for a in arms}
+    arms = as_judged(args.dataset_id, arms)
+    outputs = {a["system_id"]: read_outputs(a, item_ids) for a in arms}
     base = prompt_text(sc)
+    unnamed = [] if args.no_calls else unnamed_dimensions(sc, base)
+    if unnamed:
+        die(
+            f"{sc['scorer_id']}: its prompt does not name the dimension(s) {', '.join(unnamed)}. A grade is one JSON "
+            "object with a list of numbers per dimension, keyed by its name (the scorer's task.dimensions), and a judge "
+            "not told the names answers with keys of its own: every reply would come back unparsed, and paid for. Name "
+            "each dimension in the prompt, with the object's shape (tutorial 3's prompt shows one).",
+            "invalid-file",
+        )
     items_sha = (
-        read_json(RUNS / arms[0]["run"] / "metrics.json")
+        (_model_runs.record(Path(arms[0]["dir"])) or {})
         .get("fingerprint", {})
         .get("data", {})
         .get("items_sha256")
@@ -1668,41 +1880,54 @@ def main() -> int:
     call = None if args.no_calls else real_call
     if call and blocked:
         die(
-            "a judge cannot be called (MISSING above): nothing was sent. `evh env-check` shows what each role reads."
+            "a judge cannot be called (MISSING above): nothing was sent. `evh env-check` shows what each role reads.",
+            "not-configured",
         )
     freeze(manifest)
     if call and cap is None:
-        die("no cost cap: set cost_cap_usd in the scorer or EVAL_MAX_COST_USD")
+        die("no cost cap: set cost_cap_usd in the scorer, or EVAL_JUDGE_MAX_COST_USD", "not-configured")
     stats = run_judging(
         manifest, sc, base, articles, outputs, vdir, call, cap, retry_unparsed=args.retry_unparsed
     )
     scores = load_scores(manifest, sc, vdir)
     proj = project(sc, scores, item_ids)
-    out_root = args.out / sc["scorer_id"]
     if not proj:
         print("no item has a complete verdict from every judge; nothing to project")
-        return 2 if stats["aborted"] else 1
-    summ = summarise(manifest, sc, arms, scores, proj, stats, label, validated, vdir)
-    written = write_scored_runs(manifest, sc, arms, proj, out_root, label, validated)
-    write_json(out_root / "summary.json", summ)
-    print(f"\n{len(written)} scored run(s) -> {out_root}  ({len(proj)}/{len(item_ids)} items, {label})")
+        return EXIT_STOPPED if stats["aborted"] else EXIT_NOTHING
+    if sc.get("supersedes"):
+        print(f"  {sc['scorer_id']} supersedes {sc['supersedes']}: {sc.get('why')}")
+    words = {c: {i: len(str(t).split()) for i, t in o.items()} for c, o in outputs.items()}
+    summ = summarise(manifest, sc, arms, scores, proj, stats, label, validated, vdir, lengths=words)
+    written = write_scored_runs(manifest, sc, arms, proj, label, validated)
+    summary = SUMMARIES / f"{_model_runs.key(sc['scorer_id'], sid)}.json"
+    _store.mkdir(SUMMARIES, parents=True, exist_ok=True)
+    write_json(summary, summ)
+    for j, lb in (summ.get("length_bias") or {}).items():
+        if lb:
+            print(
+                f"  judge {j}: its score against the output's length in words, Spearman {lb['spearman_length']:+.2f} over {lb['n']}"
+            )
+    print(
+        f"\n{len(written)} score(s) under their runs, read as judged/{sc['scorer_id']}  "
+        f"({len(proj)}/{len(item_ids)} items, {label}); summary {summary.relative_to(DATA)}"
+    )
     if mode != DEFAULT_MODE:
         print_win_summary(summ)
     print(
         f"  calls {stats['calls']}, spent this run ${stats['billed_this_run']:.4f}, "
         f"stored total ${stats['spent_usd']:.4f}  (the provider's bill where it reports one, else the price table)"
     )
+    for line in price_drift(sc, vdir):
+        print(line)
     print(
-        f"  EVAL_RUNS_DIR={out_root} "
+        "  "
         + how(
-            f"evh leaderboard --dataset-id {args.dataset_id}",
-            f"make leaderboard DATASET_ID={args.dataset_id}",
+            f"evh leaderboard {args.dataset_id} --label judged/{sc['scorer_id']}",
+            f"make leaderboard DATASET_ID={args.dataset_id} ARGS='--label judged/{sc['scorer_id']}'",
         )
     )
+    if explain_of(sc):
+        print(f"  the judges' reasons, the lowest scores first: evh judge-verdicts {sc['scorer_id']}")
     if stats["aborted"]:
-        return 2
+        return EXIT_STOPPED
     return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())

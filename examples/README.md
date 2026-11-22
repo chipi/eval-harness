@@ -37,13 +37,31 @@ gitignored.
 | [`retrieval-scifact`](retrieval-scifact) | find the abstract supporting a claim | **a ranked list** over a 5,183-doc corpus | the corpus is not the items, so nothing in the fingerprint identified it | [METHOD](retrieval-scifact/METHOD.md) | [report](../research/REPORT_RETRIEVAL.md) |
 | [`summeval-judging`](summeval-judging) | grade 16 summaries of an article like an expert would | **a vector of judgements**, scored by **rank correlation** with experts | the first eval whose answer is a judgement of other systems' outputs, and whose arms include this repository's own metrics | [METHOD](summeval-judging/METHOD.md) | [report](../research/REPORT_SUMMEVAL.md) |
 
-Two more examples are not benchmarks: the harness on a production system of its author's, the
-homelab's triage fleet (an agent that triages production error signals with an LLM).
+Three more examples are not benchmarks: two on a production system of its author's, the
+homelab's triage fleet (an agent that triages production error signals with an LLM), and one on a synthetic system
+made to show how its code is replayed.
 
 | Example | What it measures |
 |---|---|
 | [`triage-fleet`](triage-fleet) | the fleet's real decisions replayed through its own code with other models, scored against what the operator later said each signal was; its goal, baseline and runs are committed |
 | [`signal-fleet-dedup`](signal-fleet-dedup) | a regression guard for the fleet's de-duplication: 100 real signals through its filing-stage functions, against a pinned commit; no model, no cost |
+| [`replay-filing`](replay-filing) | a filing stage's own code replayed over its history, each decision at the commit that ran it, proven faithful to production before it is scored (RFC-030); synthetic, made by a script, $0 |
+
+Two more are dataset sources, not evals: each turns a published human evaluation of news summaries into a rated dataset
+for `evh judge-validate` ([RUNBOOK §12](../harness/docs/RUNBOOK.md#validating-a-judge-what-the-gate-needs)), the check of
+a judge against people.
+
+| Example | What it builds |
+|---|---|
+| [`judge-validation-goyal`](judge-validation-goyal) | Goyal, Li & Durrett 2022 (CC BY 4.0): GPT-3's, BRIO's and T0's summaries of 100 CNN articles, three annotators' best and worst as ratings |
+| [`judge-validation-zhang`](judge-validation-zhang) | Zhang et al. 2024: crowd ratings of 19 summarisers on 100 CNN/DailyMail articles, three ratings per summary |
+
+One more is an integration, not an eval: a system that is a program with an effect, called once, whose result is a
+directory to open.
+
+| Example | What it shows |
+|---|---|
+| [`harbor`](harbor) | [Harbor](harbor/README.md) agent tasks as items and `harbor run` trials as a system: the adapter declares `CALL_ONCE` (no retry, `--resume` never repeats what may have happened), each trial's directory is the item's artifact link, `reward` an extra metric; recorded job directories import as a capture and a recorded arm. Runs for $0 with Harbor's `oracle` and `nop` agents (no model, no key), and its tests need no Docker |
 
 Shared scoring code lives in [`_shared/`](_shared): `classification.py`, `extraction.py`,
 `retrieval.py`, plus `hf_identity.py` for pinning local model weights.
@@ -200,8 +218,8 @@ uv run fetch.py --n <N>
 cd ../../harness
 make dataset-create DATASET_ID=<id> ARGS='--source-dir data/sources/<id>'
 make dataset-materialize DATASET_ID=<id>
-for f in ../examples/<name>/configs/arm_*_n200.yaml; do
-  ../examples/<name>/.venv/bin/python scripts/run.py --config "$f"
+for s in ../examples/<name>/systems/*.yaml; do
+  ../examples/<name>/.venv/bin/python scripts/cli.py run --system "$(basename "$s" .yaml)" --dataset <id> --goal <goal>
 done
 ```
 

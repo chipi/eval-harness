@@ -42,7 +42,7 @@ from classification import (  # noqa: E402
     ClassificationTask,
 )
 
-__all__ = ["call_system", "score", "warmup", "fingerprint",
+__all__ = ["call_system", "prompts", "score", "warmup", "fingerprint",
            "PRIMARY_METRIC", "METRIC_KINDS", "TRANSIENT_MARKERS"]
 
 #: The dataset's own label order. Index IS the stored integer, and these strings are what
@@ -106,6 +106,10 @@ def score(output: str, reference: Optional[str], source: Optional[str] = None) -
 
 def warmup(params: Dict[str, Any]) -> None:
     TASK.warmup(params)
+
+
+def prompts(params: Dict[str, Any]) -> Dict[str, str]:
+    return TASK.prompts(params)
 
 
 def fingerprint(params: Dict[str, Any]) -> Dict[str, Any]:

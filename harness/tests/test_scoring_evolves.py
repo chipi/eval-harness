@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Scoring that evolves (RFC-022): a round recorded from runs made before it (--adopt), a scoring change previewed
-without writing anything, applied to a round (rescore --round) into the place the tool designates, adopted from
+without writing anything, applied to a round (rescore --round) as a score under each run, adopted from
 the next round (round-open --scoring, the carried arms re-scored), read by the goal and the round alike, and a
 round whose arms one adapter scored in two versions noted by validate.
 
@@ -10,6 +10,7 @@ In a throwaway project from the tutorial ($0, offline, the echo provider), with 
 bundled one and adds BONUS to overlap_f1: editing BONUS is a scoring change, with a new code hash.
 """
 
+import json
 import os
 import re
 import shutil
@@ -21,11 +22,16 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parents[1] / "scripts"
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 KIT = HERE.parent / "tutorial"
+from evaluation_harness import _format  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runstore  # noqa: E402
+import _runview  # noqa: E402
+
 proj = Path(tempfile.mkdtemp(prefix="evh-scoring-"))
-env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-scoring")
-for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_MAX_COST_USD", "EVAL_GOALS_DIR"):
+env = dict(os.environ, EVH_ACTOR="person:test", EVAL_HOME=str(proj), EVAL_BUILD_REF="test-scoring")
+for k in ("EVAL_DATA_DIR", "EVAL_MAX_COST_USD", "EVAL_GOALS_DIR"):
     env.pop(k, None)
 ADAPTER = '''"""The bundled adapter, with BONUS added to overlap_f1: editing BONUS changes the scoring."""
 from evaluation_harness.adapter import *  # noqa: F401,F403
@@ -44,10 +50,11 @@ def score(output, reference):
 '''
 
 
+import _cli  # noqa: E402
+
+
 def evh(*args):
-    return subprocess.run(
-        [sys.executable, str(HERE / "cli.py"), *args], cwd=proj, env=env, capture_output=True, text=True
-    )
+    return _cli.run(proj, env, *args)
 
 
 def out(r):
@@ -58,8 +65,18 @@ def set_bonus(b: float) -> None:
     (proj / "bonus_adapter.py").write_text(ADAPTER.format(bonus=b))
 
 
-def files_under(p: Path) -> set[str]:
-    return {str(x.relative_to(p)) for x in p.rglob("*") if x.is_file()}
+def files_under() -> set[str]:
+    return set(_runstore.files_under(proj))
+
+
+def rescored_scores() -> list:
+    """[(run id, label, record)] of every score read as "rescored <scorer>" under the project's runs."""
+    return [
+        (rid, lb, rec)
+        for rid in _runstore.listdir(proj, "runs")
+        for _k, lb, rec in _runview.scores_of(proj, rid)
+        if lb.startswith("rescored ")
+    ]
 
 
 # A module edited within the second to a value of the same length is loaded as edited: a stale .pyc (trusted while
@@ -77,14 +94,19 @@ check("load_module: an edit within the same second, same length, is what runs", 
 
 try:
     data = proj / "data"
-    (data / "configs").mkdir(parents=True)
-    (data / "goals").mkdir()
+    if not _runstore.sqlite():
+        (data / "systems").mkdir(parents=True)
+        (data / "goals").mkdir()
+    _runstore.write_text(proj, _format.NAME, f"format: {_format.FORMAT}\n")
     shutil.copytree(KIT / "tickets", proj / "tutorial" / "tickets")
-    shutil.copy(KIT / "goals" / "tickets_summary.yaml", data / "goals")
+    _runstore.write_text(
+        proj, "goals/tickets_summary.yaml", (KIT / "goals" / "tickets_summary.yaml").read_text()
+    )
     r = evh("dataset-create", "--dataset-id", "tickets_v1", "--source-dir", "tutorial/tickets")
     r = r if r.returncode else evh("dataset-materialize", "--dataset-id", "tickets_v1")
     r = evh(
         "label-import",
+        "--sheet",
         str(KIT / "gold"),
         "--dataset-id",
         "tickets_v1",
@@ -113,11 +135,13 @@ try:
     check("setup: the kit's gold, imported and promoted", r.returncode == 0, (r.stdout + r.stderr)[-300:])
     set_bonus(0.0)
     for arm in ("lead1", "lead2"):
-        cfg = (KIT / "configs" / f"tickets_{arm}.yaml").read_text()
-        (data / "configs" / f"{arm}.yaml").write_text(
-            cfg + "adapter: ../../bonus_adapter.py\ngoal: tickets_summary\n"
+        cfg = (KIT / "systems" / f"tickets_{arm}_v1.yaml").read_text()
+        _runstore.write_text(
+            proj, f"systems/tickets_{arm}_v1.yaml", cfg + "adapter: ../../bonus_adapter.py\n"
         )
-        r = evh("run", "--config", f"data/configs/{arm}.yaml")
+        r = evh(
+            "run", "--system", f"tickets_{arm}_v1", "--dataset", "tickets_v1", "--goal", "tickets_summary"
+        )
     check("setup: two arms run through the project adapter", r.returncode == 0, out(r)[-400:])
 
     # r1 from the runs made before any round was opened
@@ -131,7 +155,7 @@ try:
         "--hypothesis",
         "lead sentences",
     )
-    r1 = (data / "rounds" / "tickets_summary" / "r1.yaml").read_text() if r.returncode == 0 else ""
+    r1 = _runstore.read_text(proj, "rounds/tickets_summary/r1.yaml") if r.returncode == 0 else ""
     check(
         "round-open --adopt: r1 carries the arms already run for the goal",
         "tickets_lead1_v1" in r1 and "tickets_lead2_v1" in r1,
@@ -146,7 +170,7 @@ try:
 
     # preview a scoring change: nothing written
     set_bonus(0.5)
-    before = files_under(data)
+    before = files_under()
     r = evh("score-preview", "--goal", "tickets_summary")
     check(
         "score-preview: each arm before and after the change, and the decision",
@@ -156,16 +180,30 @@ try:
         and "nothing written" in r.stdout,
         out(r)[-900:],
     )
-    check("score-preview: writes nothing to the project", files_under(data) == before)
+    check("score-preview: writes nothing to the project", files_under() == before)
+    r = evh("score-preview", "--goal", "tickets_summary", "--json")
+    got = json.loads(r.stdout).get("result", {}).get("values", {}) if r.returncode == 0 else {}
+    arms = (got.get("datasets") or {}).get("tickets_v1", {}).get("arms") or []
+    check(
+        "score-preview --json (a job's result, the Workbench's W6): per dataset each arm's mean now and after and how "
+        "far it moved (the bonus, +0.5), the leader now and after, nothing written",
+        got.get("goal") == "tickets_summary"
+        and got.get("written") is False
+        and got.get("rescored", 0) > 0
+        and arms
+        and all(a["moved"] is not None and abs(a["moved"] - 0.5) < 1e-9 for a in arms)
+        and set(got["datasets"]["tickets_v1"]["leader"]) == {"now", "after"},
+        (r.returncode, r.stderr[-300:], got),
+    )
 
-    # apply it to r1: the designated place, the round's record
+    # apply it to r1: a score under each run, the round's record
     r = evh(
         "rescore", "--goal", "tickets_summary", "--round", "r1", "--why", "a bonus to see the scoring move"
     )
-    placed = sorted((data / "runs-rescored").glob("*/runs/*/metrics.json"))
-    r1 = (data / "rounds" / "tickets_summary" / "r1.yaml").read_text()
+    placed = rescored_scores()
+    r1 = _runstore.read_text(proj, "rounds/tickets_summary/r1.yaml")
     check(
-        "rescore --round: writes runs-rescored/<scorer>/runs/, one re-score per run",
+        "rescore --round: writes a score under each run, read as rescored <scorer>, one re-score per run",
         r.returncode == 0 and len(placed) == 2,
         out(r)[-600:],
     )
@@ -174,13 +212,43 @@ try:
         "scoring:" in r1 and "a bonus to see the scoring move" in r1,
         r1,
     )
-    g = evh("goals", "--goal", "tickets_summary")
+
+    # G3 (fleet, 2026-11-18): a goal whose measure only a re-score carries; `evh chart trend` said it had no
+    # baseline versions or closed rounds with that measure while the leaderboard read it.
+    _runstore.write_text(
+        proj, "goals/seen.yaml",
+        "goal_id: seen\ntitle: seen\nstatement: s\ndecision: d\n"
+        "success_criteria: {primary: {measure: bonus_seen, direction: higher}}\n"
+        "datasets:\n  - {dataset_id: tickets_v1, role: validation}\n",
+    )  # fmt: skip
+    seen_run = placed[0][0] if placed else ""
+    r = evh(
+        "run-promote", "--run", seen_run, "--goal", "seen", "--reason", "a measure only its re-score carries"
+    )
+    tr = evh("chart", "trend", "--goal", "seen", "--json")
+    rows = (json.loads(tr.stdout or "{}").get("result") or {}).get("rows") or []
     check(
-        "the goal reads the re-score: one row per arm, from runs-rescored",
+        "chart trend: a measure only a re-score carries is read from the re-score, as the leaderboard reads it",
+        r.returncode == 0 and tr.returncode == 0 and [x.get("bonus_seen") for x in rows] == [0.5],
+        (out(r)[-300:], out(tr)[-400:]),
+    )
+    import yaml
+
+    arms1 = yaml.safe_load(r1)["arms"]
+    check(
+        "rescore --round: each arm is read under the label its runs were re-scored as, through those runs",
+        len(arms1) == 2
+        and all(a["label"].startswith("rescored ") and len(a["runs"]) == 1 for a in arms1)
+        and len({a["label"] for a in arms1}) == 1,
+        arms1,
+    )
+    g = evh("goal-leaderboard", "tickets_summary")
+    check(
+        "the goal reads the re-score: one row per arm, from its re-score",
         g.stdout.count("rescored") >= 2,
         g.stdout[-900:],
     )
-    rs = evh("rounds", "--goal", "tickets_summary", "--round", "r1")
+    rs = evh("round-evidence", "tickets_summary", "r1")
     check(
         "the round reads the re-score as the goal does",
         "read from their re-score by" in rs.stdout,
@@ -192,15 +260,14 @@ try:
         if cat.returncode == 0
         else ""
     )
-    m = re.search(r'<span data-v="(\d+)">\d+ arms</span>', page)
+    m = re.search(r'<span data-v="(\d+)">\d+ arms? in play</span>', page)
     check(
-        "the catalog counts a re-scored round's arms once each, as evh rounds does (a re-score is the same arm)",
+        "the catalog counts a re-scored round's arms once each, as evh round-list does (a re-score is the same arm)",
         m is not None and m.group(1) == "2",
         (m.group(0) if m else out(cat)[-300:]),
     )
     pt = evh(
         "pair-test",
-        "--dataset-id",
         "tickets_v1",
         "--round",
         "r1",
@@ -251,8 +318,8 @@ try:
         "round-open", "--goal", "tickets_summary", "--dataset", "tickets_v1", "--from", "r1", "--keep", "all",
         "--scoring", "a larger bonus, adopted from this round",
     )  # fmt: skip
-    r2 = (data / "rounds" / "tickets_summary" / "r2.yaml").read_text() if r.returncode == 0 else ""
-    scorers = sorted(p.name for p in (data / "runs-rescored").iterdir())
+    r2 = _runstore.read_text(proj, "rounds/tickets_summary/r2.yaml") if r.returncode == 0 else ""
+    scorers = {lb for _rid, lb, _rec in rescored_scores()}
     check(
         "round-open --scoring: the carried arms re-scored by this tree's scorer, before and after printed",
         r.returncode == 0
@@ -266,9 +333,17 @@ try:
         "scorer:" in r2 and "scoring: a larger bonus" in r2 and "tickets_lead1_v1" in r2,
         r2,
     )
-    rs2 = evh("rounds", "--goal", "tickets_summary", "--round", "r2")
+    arms2 = yaml.safe_load(r2)["arms"] if r2 else []
     check(
-        "evh rounds: the scorer a round is judged by, and its scoring change, as the goal page lists them",
+        "round-open --scoring: the carried arms are read under the new scorer's label, carried from r1",
+        len(arms2) == 2
+        and all(a["entered"]["how"] == "carried" and a["entered"]["from"] == "r1" for a in arms2)
+        and all(a["label"].startswith("rescored ") and a["label"] != arms1[0]["label"] for a in arms2),
+        arms2,
+    )
+    rs2 = evh("round-show", "tickets_summary", "r2")
+    check(
+        "evh round-show: the scorer a round is judged by, and its scoring change, as the goal page lists them",
         "judged by:" in rs2.stdout and "scoring " in rs2.stdout and "a larger bonus" in rs2.stdout,
         rs2.stdout[-900:],
     )
@@ -283,20 +358,53 @@ try:
     for arm, bonus in (("author", 1.0), ("author2", 2.0)):
         set_bonus(bonus)
         cfg = (
-            (KIT / "configs" / "tickets_lead2.yaml")
+            (KIT / "systems" / "tickets_lead2_v1.yaml")
             .read_text()
             .replace("tickets_lead2_v1", f"tickets_{arm}_v1")
         )
-        (data / "configs" / f"{arm}.yaml").write_text(
-            cfg + "adapter: ../../bonus_adapter.py\ngoal: tickets_summary\nround: r2\n"
+        _runstore.write_text(
+            proj,
+            f"systems/tickets_{arm}_v1.yaml",
+            cfg + "adapter: ../../bonus_adapter.py\n",
         )
-        evh("run", "--config", f"data/configs/{arm}.yaml")
+        evh(
+            "run",
+            "--system",
+            f"tickets_{arm}_v1",
+            "--dataset",
+            "tickets_v1",
+            "--goal",
+            "tickets_summary",
+            "--round",
+            "r2",
+        )
     v = evh("validate")
     check(
         "validate: a round whose arms one adapter scored in two versions is noted, with what to run",
         "versions of that adapter" in v.stdout
         and "evh score-preview --goal tickets_summary --round r2" in v.stdout,
         v.stdout[-1200:],
+    )
+
+    # The trend reads a round's promoted run as it was when it ran (review, 2026-11-19: it read the latest re-score
+    # first, so the chart said "the evidence ... at the time" and drew today's scoring). The run carried into r2 has its
+    # own overlap_f1 (no bonus, at most 1) and re-scores with a bonus of 0.5 and of 1.0.
+    carried = placed[0][0] if placed else ""
+    rc = evh(
+        "round-close", "--goal", "tickets_summary", "--round", "r2", "--conclusion",
+        "The bonus moved every arm alike.", "--promote", carried, "--by", "t",
+    )  # fmt: skip
+    tr = evh("chart", "trend", "--goal", "tickets_summary", "--json")
+    rows = (json.loads(tr.stdout or "{}").get("result") or {}).get("rows") or []
+    r2_rows = [x for x in rows if x.get("version") == "r2"]
+    check(
+        "chart trend: a round's promoted run as it was when it ran (its own score), not its latest re-score",
+        rc.returncode == 0
+        and len(r2_rows) == 1
+        and r2_rows[0]["read"] == "the run's own score"
+        and r2_rows[0]["overlap_f1"] is not None
+        and r2_rows[0]["overlap_f1"] <= 1.0,
+        (out(rc)[-300:], r2_rows),
     )
 finally:
     shutil.rmtree(proj, ignore_errors=True)

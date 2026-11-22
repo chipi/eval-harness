@@ -1,0 +1,116 @@
+{
+  "run_id": "judge-summ-v1__qwen_s__validation_goyal_20261120T221407Z",
+  "dataset_id": "goyal2022_cnn_v1",
+  "system_id": "judge-summ-v1__qwen_s__validation_goyal",
+  "created_at": "2026-11-20T22:14:09Z",
+  "build": {
+    "ref": "a77fd6dd3c0bb722c8b3b0d2dfcea5fbb94ee560",
+    "dirty": false,
+    "source": "git"
+  },
+  "n_items": 100,
+  "params": {
+    "provider": "recorded",
+    "capture": "goyal_judge_summ_v1_qwen_s",
+    "scorer": "judge-summ-v1",
+    "judge": "qwen_s",
+    "mode": "grade",
+    "recorded_from": "data/judge-validation/judge-summ-v1/goyal2022-cnn/qwen_s",
+    "capture_sha256": "bd2428cb3c0e17442f3948166345f6e76f4a3a8c36a7ca528c3033c061297004"
+  },
+  "adapter": "scripts/judge_validation.py",
+  "providers_seen": {},
+  "fingerprint": {
+    "version": 5,
+    "instrument": {
+      "harness": {
+        "commit": "a77fd6dd3c0b",
+        "dirty": false,
+        "version": "0.8.0.dev0",
+        "code_sha256": "133a239aba51fef631b398048970bcba29e0ef71004c1fb239532f6f832e8395",
+        "installed": false
+      },
+      "adapter": {
+        "id": "scripts/judge_validation.py",
+        "sha256": "76607919be5b875ef9ebf4ccb9cda7b52468a92a13530a8e54a95a5f531e922b"
+      }
+    },
+    "data": {
+      "dataset_id": "goyal2022_cnn_v1",
+      "items_sha256": "959dd1cbcbaeb2a23c995b718ced29fbde57c20ede0728b06e981573d7c496c0",
+      "n_items": 100,
+      "reference_id": "gold/goyal2022_cnn_v1",
+      "reference_tier": "gold",
+      "references_sha256": "9a5d0ea86756c1c896200d9dddbcf8adfe98b5d9f2d658ac9df6ea80b9e47335"
+    },
+    "deployment": {
+      "id": "recorded",
+      "model": "recorded",
+      "source": "params",
+      "weights": {
+        "digest": null,
+        "revision": null,
+        "revision_source": "not-a-model",
+        "file_hash": null,
+        "quantization": null,
+        "precision": null
+      },
+      "server": null,
+      "where": {
+        "machine": null,
+        "backend": null,
+        "device": null
+      },
+      "hosted": null,
+      "provider": "recorded",
+      "in_process": true,
+      "libraries": {
+        "numpy": "2.5.4",
+        "openai": "3.46.0",
+        "anthropic": "2.5.0",
+        "rouge-score": "0.1.2"
+      },
+      "declared": {
+        "provider": "recorded",
+        "mode": "grade",
+        "kind": "a judge's recorded verdicts, read from a capture: nothing was called",
+        "seed": 20261015
+      }
+    },
+    "settings": {
+      "capture": "goyal_judge_summ_v1_qwen_s",
+      "scorer": "judge-summ-v1",
+      "judge": "qwen_s",
+      "mode": "grade",
+      "recorded_from": "data/judge-validation/judge-summ-v1/goyal2022-cnn/qwen_s",
+      "capture_sha256": "bd2428cb3c0e17442f3948166345f6e76f4a3a8c36a7ca528c3033c061297004"
+    },
+    "runner": {
+      "label": null,
+      "platform": "Linux/x86_64",
+      "release": "7.2.5-3-omarchy",
+      "processor": null,
+      "cpu_count": 32,
+      "python": "3.14.7",
+      "libraries": null
+    },
+    "arm": {
+      "config_id": "judge-summ-v1__qwen_s__validation_goyal",
+      "labels": null
+    },
+    "instrument_sha256": "7f873aabd2719def70086be39993602830b9e038f12225812e3cb40932fd55b7",
+    "data_sha256": "dbec85b70bd8ced3e7851cc125124d7240a915b4650e05607eb7c76621142a98",
+    "deployment_sha256": "cb501249df263df4003af75fb313be084a02b039bd64a378ca34e0a7f65b9837",
+    "settings_sha256": "16c1267c0795cdd2dda8ea921beb2a0852942c7c0d3468080d3f4e65cffec6a4",
+    "hash": "2050013a731a11b9aafe33c545840848d6a81579d5d2ea67d4d8d1a657551699"
+  },
+  "actor": {
+    "type": "agent",
+    "name": "implementer",
+    "from": "environment",
+    "for": "marko"
+  },
+  "started_at": "2026-11-20T22:14:08Z",
+  "purpose": "run",
+  "machine": "linux"
+}

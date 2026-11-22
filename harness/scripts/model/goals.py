@@ -1,0 +1,178 @@
+"""The goal (RFC-032's first entity): the decision an evaluation helps make, `data/goals/<goal_id>.yaml`, and the view of
+where it stands, which every surface reads (the Workbench's home and hub, `evh goal-status`)."""
+
+from __future__ import annotations
+
+import re
+from pathlib import Path
+from typing import Any
+
+from evaluation_harness import _store
+from evaluation_harness.model import datasets as _datasets
+from evaluation_harness.model import runs as _model_runs
+from evaluation_harness.model.entity import Entity, Problem
+
+
+def _reference_there(ref: str) -> bool:
+    """Whether the reference `<tier>/<name>` has its folder."""
+    try:
+        return _store.is_dir(_datasets.reference_dir(ref))
+    except Problem:  # not a reference id
+        return False
+
+
+def _links(record: dict[str, Any]) -> list[dict[str, Any]]:
+    """Every dataset and reference the goal names exists."""
+    out = []
+    for i, d in enumerate(record.get("datasets") or []):
+        ds = d.get("dataset_id") if isinstance(d, dict) else None
+        if ds and not _store.is_file(_datasets.record_file(ds)):
+            out.append(
+                {"path": ["datasets", i, "dataset_id"], "message": f"no dataset {ds!r} in this project"}
+            )
+    for i, r in enumerate(record.get("references") or []):
+        ref = r.get("reference_id") if isinstance(r, dict) else None
+        if ref and not _reference_there(ref):
+            out.append(
+                {
+                    "path": ["references", i, "reference_id"],
+                    "message": f"no reference {ref!r} in this project",
+                }
+            )
+    return out
+
+
+GOAL = Entity(
+    name="goal",
+    plural="goals",
+    folder="goals",
+    id_field="goal_id",
+    schema="goal.schema.json",
+    skip=frozenset({"policy.yaml"}),
+    links=_links,
+)
+
+
+def status(goal_id: str, data: Path | None = None) -> dict[str, Any]:
+    """Where a goal stands: each of its datasets (made, materialized, its reference, its runs and arms, its baseline),
+    its rounds, the jobs working on it, and the next step, with the command that takes it. Read from `data` (another
+    data directory than the project's, a deployment's copy of it), else the project's."""
+    from evaluation_harness import _baselines, _jobs, _rounds  # noqa: PLC0415
+    from evaluation_harness.model import rounds as model_rounds  # noqa: PLC0415
+
+    g = GOAL.under(data).get(goal_id)
+    refs = [r.get("reference_id") for r in g.get("references") or [] if isinstance(r, dict)]
+    rounds = [
+        {
+            "round": r.get("round_id"),
+            "status": r.get("status"),
+            "dataset": r.get("dataset_id"),
+            "question": r.get("hypothesis"),
+            "arms": len(model_rounds.in_play(r)),
+            "retired": len(model_rounds.arms(r)) - len(model_rounds.in_play(r)),
+        }
+        for r in _rounds.load_rounds(goal_id, data)
+    ]
+    datasets, keys = [], {f"goal:{goal_id}"}
+    for d in g.get("datasets") or []:
+        ds = d.get("dataset_id")
+        keys.add(f"dataset:{ds}")
+        runs = _model_runs.scored(ds, label_is="", data=data)
+        base = _baselines.current(goal_id, ds, data)
+        # by the dataset a manifest names: `gold/ag_news_200_adj1`, promoted under another name, is ag_news_200's
+        on = _datasets.references_of(ds, data)
+        datasets.append(
+            {
+                "dataset": ds,
+                "role": d.get("role"),
+                "decides": d.get("decides", True) is not False,
+                "made": _store.is_file(_datasets.record_file(ds, data)),
+                "materialized": _store.is_dir(_datasets.materialized_dir(ds, data)),
+                "references": sorted(r for r in on if r in refs or r in (f"gold/{ds}", f"silver/{ds}")),
+                "runs": len(runs),
+                "arms": len({m["system_id"] for _, m in runs}),
+                "baseline": {"version": base.get("version"), "run": base.get("promoted_from")}
+                if base
+                else None,
+            }
+        )
+    running = [
+        {"job": j.get("id") or j.get("job_id"), "operation": j["operation"], "state": j.get("state")}
+        for j in _jobs.list_jobs()
+        if str(j.get("state", "")).startswith(("running", "queued"))
+        and any(k in keys for k, _ in j.get("locks") or [])
+    ]
+    return {
+        "goal": goal_id,
+        "title": g.get("title"),
+        "measure": (g.get("success_criteria") or {}).get("primary"),
+        "datasets": datasets,
+        "rounds": rounds,
+        "running": running,
+        "next": _next(goal_id, datasets, rounds, _standing(datasets, _rounds.load_rounds(goal_id, data))),
+    }
+
+
+def _since(rounds: list[dict[str, Any]], run: str | None) -> str | None:
+    """The first closed round whose conclusion promoted `run`, or None (the baseline came from a run, not a round)."""
+    return next(
+        (
+            r.get("round_id")
+            for r in rounds
+            if r.get("status") == "closed" and run and (r.get("conclusion") or {}).get("promoted_run") == run
+        ),
+        None,
+    )
+
+
+def _standing(datasets: list[dict[str, Any]], round_docs: list[dict[str, Any]]) -> str:
+    """Where the goal stands, as the baseline of the first deciding dataset that has one: `baseline <system> (v1, since
+    r2)`, or that none was ever promoted."""
+    for d in (x for x in datasets if x["decides"] and x["baseline"]):
+        run = d["baseline"]["run"] or ""
+        system = re.sub(r"_\d{8}T\d{6}Z(_r\d+)?$", "", run) or run
+        since = _since(round_docs, run)
+        return f"baseline {system} (v{d['baseline']['version']}{f', since {since}' if since else ''})"
+    return "no baseline promoted yet"
+
+
+def _next(
+    goal_id: str, datasets: list[dict[str, Any]], rounds: list[dict[str, Any]], standing: str = ""
+) -> dict[str, str]:
+    """The first step not taken, on the datasets that decide: made, materialized, a reference, runs, a baseline (not on a `validation` or `test` side); then
+    the open round to close, or, with none open, where the goal stands (`standing`) and a round to open."""
+    for d in (x for x in datasets if x["decides"]):
+        ds = d["dataset"]
+        if not d["made"]:
+            return {"what": f"make the dataset {ds}", "command": f"evh dataset-create --dataset-id {ds} ..."}
+        if not d["materialized"]:
+            return {"what": f"fetch {ds}'s items", "command": f"evh dataset-materialize --dataset-id {ds}"}
+        if not d["references"]:
+            return {
+                "what": f"promote a reference for {ds}",
+                "command": f"evh reference-promote --dataset-id {ds} ...",
+            }
+        if not d["runs"]:
+            return {
+                "what": f"run an arm on {ds}",
+                "command": f"evh run --system <a system> --dataset {ds} --goal {goal_id}",
+            }
+        # A study never promotes (RFC-029): a validation or test side is read, never given a baseline.
+        if not d["baseline"] and d["role"] not in ("validation", "test"):
+            return {
+                "what": f"promote a baseline on {ds}",
+                "command": 'evh run-promote --run <run id> --reason "..."',
+            }
+    open_ = [r for r in rounds if r["status"] == "open"]
+    if open_:
+        r = open_[-1]["round"]
+        return {
+            "what": f"read round {r}'s evidence, then close it",
+            "command": f"evh round-show {goal_id} {r}",
+        }
+    return {
+        "what": f"{standing}; to test a change, open a round with a question"
+        if standing
+        else "open a round with a question",
+        "command": f'evh round-open --goal {goal_id} --hypothesis "..." ...',
+    }

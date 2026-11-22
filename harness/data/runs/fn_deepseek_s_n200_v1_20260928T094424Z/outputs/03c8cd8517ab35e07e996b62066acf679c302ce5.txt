@@ -1,6 +1,0 @@
-```json
-[
-  {"text": "November 11 , 2011", "type": "event"},
-  {"text": "Twitter", "type": "product"}
-]
-```

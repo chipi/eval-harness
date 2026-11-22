@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Promote the labels a script builds (a fetch script's gold) where they are, and write their manifest.
 
     evh reference-manifest --reference-id gold/<dataset> --source examples/<example>/fetch.py \\
@@ -12,63 +11,33 @@ even when the text is not: anyone who rebuilds the reference proves they rebuilt
 Labels a person, a model or a rule gives in the harness are promoted with `evh reference-promote`.
 """
 
-import sys as _sys
-from pathlib import Path as _Path
+from typing import Any
 
-if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
-    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
-
-import argparse
-
-from evaluation_harness import _common
+from evaluation_harness import _common, _store
+from evaluation_harness._actor import stated
 from evaluation_harness._common import die, now
 from evaluation_harness._label_sets import source_line
 from evaluation_harness._references import write_manifest
+from evaluation_harness.ops import legacy
 from evaluation_harness.reference_promote import CAVEAT
 
 
-def main() -> int:
+def body(**inputs: Any) -> int:
     """Write the manifest of the named reference from the texts in its directory."""
-    ap = argparse.ArgumentParser(
-        prog="evh reference-manifest",
-        description="Write the manifest of a reference set built outside the harness.",
-    )
-    ap.add_argument("--reference-id", required=True, help="<tier>/<dataset_id>, e.g. gold/ag_news_200")
-    ap.add_argument(
-        "--source",
-        required=True,
-        help="how to rebuild its text, e.g. examples/classification-ag-news/fetch.py",
-    )
-    ap.add_argument(
-        "--not-redistributed",
-        action="store_true",
-        help="the text is not committed (its licence, or the project's choice); the manifest is",
-    )
-    ap.add_argument(
-        "--dataset-id",
-        help="the dataset it is a reference set for, when its name is not the dataset's (a second gold "
-        "for one dataset, e.g. gold/ag_news_200_adj1 for ag_news_200); default: the name",
-    )
-    ap.add_argument(
-        "--labelled-by", required=True, help='whose labels they are, e.g. "the dataset\'s authors"'
-    )
-    ap.add_argument(
-        "--kind", choices=("person", "model", "rule"), default="person", help="the labels' source"
-    )
-    ap.add_argument("--reason", required=True, help="why these labels are the yardstick (a sentence)")
-    ap.add_argument("--by", required=True, help="who promotes (recorded in the manifest)")
-    args = ap.parse_args()
+    args = legacy.namespace(inputs, "reference-manifest")
+    args.by = stated("evh reference-manifest")
     if len(args.reason.split()) < 3:
         die(
-            'REFUSED: --reason must be a sentence, not a word. It answers "why is this the yardstick?" later.'
+            'REFUSED: --reason must be a sentence, not a word. It answers "why is this the yardstick?" later.',
+            "bad-argument",
         )
     tier, _, name = args.reference_id.partition("/")
     if tier not in ("gold", "silver") or not name:
-        die(f"--reference-id {args.reference_id!r}: expected gold/<name> or silver/<name>")
+        die(f"--reference-id {args.reference_id!r}: expected gold/<name> or silver/<name>", "bad-argument")
     dataset_id = args.dataset_id or name
     ref_dir = _common.DATA / "references" / tier / name
-    if not any(ref_dir.glob("*.txt")):
-        die(f"{ref_dir} has no reference texts: build them first ({args.source})")
+    if not any(_store.glob(ref_dir, "*.txt")):
+        die(f"{ref_dir} has no reference texts: build them first ({args.source})", "not-found")
     source = {"kind": args.kind, "by": args.labelled_by, "via": args.source}
     doc = write_manifest(
         ref_dir,
@@ -86,7 +55,3 @@ def main() -> int:
         f"{ref_dir / 'manifest.json'}  ({doc['n_items']} item(s), {tier}, promoted from {source_line(source)})"
     )
     return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())

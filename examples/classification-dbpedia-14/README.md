@@ -55,12 +55,12 @@ and re-checked on every row it receives. A re-upload that reordered the split wo
 otherwise produce a confidently mislabelled dataset.
 
 Within each block the draw is a **seeded random** prefix of a permutation, not the first
-k. That is the fix for what AG News found: its first-k pilot slice was nested but
-unrepresentative, and one arm read 0.35 there against 0.67 on the full set — about 3 SD.
+k, because a first-k slice is nested but can be unrepresentative: on AG News one arm reads
+0.35 on its first-k slice against 0.67 on the full set — about 3 SD.
 Here the same arm reads 0.625 and 0.707, which is 1.3 SE. Nested *and* representative.
 
-It also retries, with a separate backoff ladder for HTTP 429 and a `--delay` between
-requests.
+It reads the split through the harness's `huggingface` source: the Hub's parquet conversion at one pinned
+commit, each file checked against the sha256 the Hub lists.
 
 ### Licence
 
@@ -75,12 +75,10 @@ slice downloads to whoever runs the fetcher and is gitignored.
 ```bash
 cd ../../harness
 PY=../examples/classification-dbpedia-14/.venv/bin/python
-CFG=../examples/classification-dbpedia-14/configs
-
-$PY scripts/run.py --config $CFG/arm_qwen_m_n200.yaml --dry-run
+$PY scripts/cli.py run --system db_qwen_m_v1 --dataset dbpedia_280 --goal entity_topic_dbpedia --dry-run
 $PY tools/classification_report.py --dataset-id dbpedia_280
-$PY scripts/family_test.py --dataset-id dbpedia_280 --a db_qwen_m_n200_v1 \
-     --against _n200_v1 --metric correct
+$PY scripts/cli.py family-test dbpedia_280 --a db_qwen_m_v1 \
+     --against db_ --metric correct
 ```
 
 The 24 hosted arms bill **$1.17** in all, dominated by the two most expensive —

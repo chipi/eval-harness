@@ -1,1 +1,0 @@
-[{"text": "In Week", "type": "location"}, {"text": "Family Teams", "type": "location"}, {"text": "Blue Team", "type": "location"}, {"text": "Black Team", "type": "location"}]

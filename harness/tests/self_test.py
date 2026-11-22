@@ -12,6 +12,7 @@ are tested rather than asserted in a README.
 from __future__ import annotations
 
 import json
+import os
 import pathlib
 import re
 import subprocess
@@ -43,12 +44,111 @@ def at(script: str) -> str:
     return f"scripts/{script}"
 
 
+# A project a test makes with a temporary folder and EVAL_HOME has no config.yaml, and a project that names no store is
+# refused: the tests run in files, as the store matrix (tools/store_matrix.py) runs them in sqlite.
+os.environ.setdefault("EVAL_STORE", "files")
+# The rows the cache shares are frozen for the whole suite (every test runs under it, in this process and in the ones it
+# starts): a view or a command that changes one fails where it does (RFC-033 step d, `_outputs.FREEZE_ENV`).
+os.environ.setdefault("EVH_FREEZE_ROWS", "1")
+
+from evaluation_harness import _outputs  # noqa: E402
 from evaluation_harness._check import check, results  # noqa: E402
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore, _tmp
+import _runstore  # noqa: E402
+import _tmp  # noqa: E402
+
+_tmp.use_root()  # before the first temporary folder: outside /tmp and outside any git repository
+from evaluation_harness.model import runs as model_runs  # noqa: E402
+
+
+def real_scores(label: str | None = "") -> list[tuple[Path, dict]]:
+    """Every score of this repository's data/runs read under `label` ("": the plain runs' own; None: any), each with
+    its record: the run's facts with the score's over them."""
+    return model_runs.scored(label_is=label)
+
+
+def scratch_runs() -> Path:
+    """Where `evh run --scratch` writes in this repository: throwaway passes, outside the data."""
+    return ROOT / ".build" / "scratch" / "runs"
+
+
+def drop_scratch(*run_ids: str) -> None:
+    """The named throwaway passes removed: the others there are another test's, or another session's."""
+    import shutil  # noqa: PLC0415
+
+    for rid in run_ids:
+        shutil.rmtree(scratch_runs() / rid, ignore_errors=True)
+
+
+def shadow_data(td: Path, own: tuple[str, ...] = ()) -> Path:
+    """A data folder of a test's own, made of this repository's: every folder and file of data/ linked, except
+    data/runs and data/judge-summaries (empty, the test's), and the files named in `own` (as under data/), copied so
+    a test may change them. `EVAL_DATA_DIR=<it>` points a command at it, the code and its relative paths staying this
+    repository's; a command that writes a folder it links writes this repository's."""
+    import shutil  # noqa: PLC0415
+
+    real, data = ROOT / "data", Path(td) / "data"
+    data.mkdir(parents=True)
+    folders = {Path(f).parts[0] for f in own}
+    for child in sorted(real.iterdir()):
+        if child.name in ("runs", "judge-summaries") or child.name.startswith(_store_db_prefix()):
+            continue
+        if child.name in folders:
+            (data / child.name).mkdir()
+            for f in sorted(child.iterdir()):
+                if f"{child.name}/{f.name}" in own:
+                    shutil.copy2(f, data / child.name / f.name)
+                else:
+                    (data / child.name / f.name).symlink_to(f)
+        else:
+            (data / child.name).symlink_to(child)
+    (data / "runs").mkdir()
+    return data
+
+
+def _store_db_prefix() -> str:
+    from evaluation_harness import _store  # noqa: PLC0415
+
+    return _store.DB
+
+
+def add_run(data: Path, src: Path, new_id: str | None = None, first_only: bool = True) -> Path:
+    """A run copied into a data folder's runs, its outputs and its scores' rows with it, named `new_id` (its run.json
+    says so too); the scores but the first are left out unless `first_only` is False. Returns the copy."""
+    import shutil  # noqa: PLC0415
+
+    dst = data / "runs" / (new_id or src.name)
+    _runstore.copy_run(src, dst)
+    keep = model_runs.first_score(src)
+    for sd in model_runs.scores_of(dst):
+        if first_only and keep is not None and sd.name != keep.name:
+            shutil.rmtree(sd)
+    rec = json.loads((dst / "run.json").read_text(encoding="utf-8"))
+    (dst / "run.json").write_text(json.dumps({**rec, "run_id": dst.name}, indent=2) + "\n", encoding="utf-8")
+    return dst
+
+
+def run_own_tmp(script: str) -> subprocess.CompletedProcess:
+    """A test file run with a TMPDIR of its own, removed when it ends, whatever the file leaves there: temporary
+    projects test files did not remove filled /tmp's inodes, shared by every session on a machine (6,762 projects,
+    222,380 inodes, 2026-11-11). Under ~/.cache/evh-tests/: on the main disk, and outside any git checkout (a project
+    inside one reads only the runs git keeps, so one under the harness's ignored .build/ had no arms). The name is
+    short: a test's Unix sockets live under it."""
+    import secrets  # noqa: PLC0415
+    import shutil  # noqa: PLC0415
+
+    own = Path.home() / ".cache" / "evh-tests" / secrets.token_hex(3)
+    own.mkdir(parents=True)
+    try:
+        return run(script, env={"TMPDIR": str(own)})
+    finally:
+        shutil.rmtree(own, ignore_errors=True)
 
 
 def run(*args: str, env: dict | None = None) -> subprocess.CompletedProcess:
     """Run a harness script. `env` adds to the inherited environment, it does not
-    replace it -- a test that needs EVAL_RUNS_DIR still needs PATH and HOME."""
+    replace it -- a test that needs EVAL_DATA_DIR still needs PATH and HOME."""
     import os  # noqa: PLC0415
 
     e = {**os.environ, **(env or {})}
@@ -141,7 +241,7 @@ def test_score_handles_absent_reference() -> None:
 
 
 def test_compare_refuses_cross_dataset() -> None:
-    r = run("scripts/compare_runs.py", "--baseline", "nope_a", "--candidate", "nope_b")
+    r = run("scripts/cli.py", "run-compare", "--baseline", "nope_a", "--candidate", "nope_b")
     check("compare: unknown run is an error", r.returncode != 0)
 
 
@@ -164,36 +264,55 @@ _EXAMPLE_ONLY_MODULES = frozenset(
 )
 
 
+#: The scripts of a checkout that are still run as files (`--help` says what each takes): a command that is an operation is
+#: no script, and is checked below by its command.
+SCRIPTS_WITH_HELP = (
+    "env_check",
+    "classification_report",
+    "extraction_report",
+    "retrieval_report",
+    "check_terminology",
+    "check_report_claims",
+    "check_links",
+    "check_model_facts",
+)
+
+
+def help_problem(script_args: tuple[str, ...]) -> str:
+    """Why `--help` of this script or command is no help: it failed, or it said nothing (a module with no run-as-file block
+    exits 0 and prints nothing, which an exit-code check alone takes for a pass; and a script that cannot import the
+    package when run as a file fails where the editable install of a checkout hides it)."""
+    r = run(*script_args, "--help")
+    if r.returncode != 0:
+        return f"exit {r.returncode}: {r.stderr.strip()[:80]}"
+    if "usage:" not in r.stdout:
+        return f"no usage line in {r.stdout.strip()[:60]!r}"
+    return ""
+
+
 def test_cli_help_works() -> None:
-    for script in (
-        "dataset_create",
-        "materialize",
-        "run",
-        "compare_runs",
-        "promote_baseline",
-        "validate_tree",
-        "list_runs",
-        "reference_promote",
-        "reference_manifest",
+    from evaluation_harness import ops  # noqa: PLC0415
+
+    for script in SCRIPTS_WITH_HELP:
+        problem = help_problem((at(f"{script}.py"),))
+        check(f"{script}.py --help", not problem, problem)
+    # every command that is an operation (the reads, the edits, the jobs): its command's help, which names the command
+    for command in (
+        "run-compare",
+        "validate",
+        "runs-list",
         "leaderboard",
-        "sweep",
-        "env_check",
-        "holdout_significance",
-        "pair_test",
-        "family_test",
-        "classification_report",
-        "bootstrap_test",
-        "rank_stability",
-        "extraction_report",
-        "retrieval_report",
-        "rescore",
-        "check_terminology",
-        "check_report_claims",
-        "check_links",
-        "check_model_facts",
+        "pair-test",
+        "family-test",
+        "rank-stability",
+        *(op.name for op in ops.OPS.values() if op.is_job()),
     ):
-        r = run(at(f"{script}.py"), "--help")
-        check(f"{script}.py --help", r.returncode == 0, r.stderr.strip()[:80])
+        r = run(at("cli.py"), command, "--help")
+        check(
+            f"evh {command} --help",
+            r.returncode == 0 and f"usage: evh {command}" in r.stdout,
+            r.stderr.strip()[:80],
+        )
 
 
 def test_metric_direction_is_not_always_up() -> None:
@@ -264,7 +383,7 @@ def test_no_absolute_home_path_in_committed_data() -> None:
     # files outside its own subject teaches people to ignore it.
     #
     # This is not a narrowing to make a failure go away: the cause -- run.py
-    # writing an absolute adapter path into every metrics.json -- is fixed at source in
+    # writing an absolute adapter path into every run.json -- is fixed at source in
     # `_portable_id`. This check still catches the real case, including someone choosing
     # to track `data/runs/` (the private eval repo does exactly that).
     import subprocess  # noqa: PLC0415
@@ -296,8 +415,8 @@ def test_no_absolute_home_path_in_committed_data() -> None:
 def test_no_committed_artifact_depends_on_an_ignored_one() -> None:
     """The rule that decides what ships.
 
-    datasets, configs and baselines are COMMITTED, and so are runs now (metrics,
-    predictions and outputs). materialized is IGNORED because a command regenerates it.
+    datasets, configs and baselines are COMMITTED, and so are runs now (each run's record and outputs, each
+    score's metrics and rows). materialized is IGNORED because a command regenerates it.
     The one place the two sets touched was a baseline's `promoted_from`, which named a
     run — so a committed artifact depended on an ignored one, and V6 ("every baseline's
     source run still exists") could not hold on a fresh clone OR after `make clean`,
@@ -322,7 +441,7 @@ def test_no_committed_artifact_depends_on_an_ignored_one() -> None:
     """
     import subprocess  # noqa: PLC0415
 
-    baselines = sorted((ROOT / "data" / "baselines").glob("*.json"))
+    baselines = sorted((ROOT / "data" / "baselines").glob("*/*/*.json"))  # RFC-027: <goal>/<dataset>/<n>.json
     check("consistency: a baseline ships", bool(baselines), "none found")
     for b in baselines:
         promoted_from = json.loads(b.read_text()).get("promoted_from")
@@ -331,7 +450,7 @@ def test_no_committed_artifact_depends_on_an_ignored_one() -> None:
         run_dir = ROOT / "data" / "runs" / promoted_from
         tracked = (
             subprocess.run(
-                ["git", "ls-files", "--error-unmatch", str(run_dir / "metrics.json")],
+                ["git", "ls-files", "--error-unmatch", str(run_dir / "run.json")],
                 cwd=ROOT,
                 capture_output=True,
             ).returncode
@@ -355,8 +474,8 @@ def test_no_committed_artifact_depends_on_an_ignored_one() -> None:
     ).stdout.split()
     tracked_ref_ids = {pathlib.Path(f).parent.name for f in tracked_refs}
     needs_fetch = set()
-    for mj in sorted((ROOT / "data" / "runs").glob("*/metrics.json")):
-        rid = ((json.loads(mj.read_text()).get("fingerprint") or {}).get("data") or {}).get("reference_id")
+    for _sd, rec in real_scores():
+        rid = ((rec.get("fingerprint") or {}).get("data") or {}).get("reference_id")
         if rid and pathlib.Path(rid).name not in tracked_ref_ids:
             needs_fetch.add(pathlib.Path(rid).name)
     print(
@@ -438,7 +557,7 @@ def test_untracked_run_output_does_not_make_the_tree_dirty() -> None:
 
     Every run after the first on a machine was recorded `dirty: true`, because the first
     run's directory was an untracked file. The rule is narrow on purpose: only UNTRACKED
-    paths under data/runs* are ignored.
+    paths under data/runs/ (and a judging pass's summary) are ignored.
     """
     from evaluation_harness._fingerprint import filter_dirt  # noqa: PLC0415
 
@@ -448,16 +567,29 @@ def test_untracked_run_output_does_not_make_the_tree_dirty() -> None:
         filter_dirt("?? harness/data/runs/demo_v1_20260929T110901Z_r1/", d) == [],
     )
     check(
-        "dirty: nor one in another runs directory",
-        filter_dirt("?? harness/data/runs-linux/cnn_bart_s_n200_v1_X/", d) == [],
+        "dirty: nor a judging pass's summary",
+        filter_dirt("?? harness/data/judge-summaries/judge-summ-v1@set.json", d) == [],
+    )
+    check(
+        "dirty: nor a round's record, new or changed (a run made in a round joins its arm there)",
+        filter_dirt(" M harness/data/rounds/g/r1.yaml\n?? harness/data/rounds/g/r2.yaml", d) == [],
+    )
+    check(
+        "dirty: nor a study's record, new or changed (its log grows with each trial, all in one study-run: the 0.8.0 "
+        "newcomer run's trials were all recorded dirty)",
+        filter_dirt(" M harness/data/studies/g/s1.yaml\n?? harness/data/studies/g/s2/log.jsonl", d) == [],
     )
     check(
         "dirty: a MODIFIED committed run still is",
-        len(filter_dirt(" M harness/data/runs/x/metrics.json", d)) == 1,
+        len(filter_dirt(" M harness/data/runs/x/run.json", d)) == 1,
     )
     check(
         "dirty: an untracked file outside the runs directories still is",
         len(filter_dirt("?? harness/scripts/new_scorer.py\n?? harness/data/datasets/x.json", d)) == 2,
+    )
+    check(
+        "dirty: a runs-* folder is not the runs directory (format 3's layout is no run output)",
+        len(filter_dirt("?? harness/data/runs-linux/cnn_bart_s_n200_v1_X/", d)) == 1,
     )
     check(
         "dirty: a modified script beside an untracked run is still dirty",
@@ -600,7 +732,7 @@ def test_fingerprint_hash_changes_when_anything_does() -> None:
         "dataset": ds,
         "reference_id": None,
         "reference_tier": None,
-        "config_id": "c1",
+        "system_id": "c1",
         "adapter_id": "scripts/adapter.py",
         "adapter_path": HERE / "adapter.py",
         "model_hook": None,
@@ -650,6 +782,14 @@ def test_example_scorer_suites_pass() -> None:
         ("test_catalog.py", "catalog and run inspector"),
         ("test_serve_hooks.py", "catalog-serve --hooks: called, never breaking a request, off by default"),
         (
+            "test_serve_error_json.py",
+            "catalog-serve: an unhandled error answered as a JSON 500 without --hooks too, its traceback on stderr",
+        ),
+        (
+            "test_declared_prompt.py",
+            "a system pointing at a recorded prompt version sends that text in the smoke and the run, records it, and the bundled adapter refuses two",
+        ),
+        (
             "test_goals.py",
             "goals: config, run, baseline, V14, pages, --arms/--top, the test against the leader",
         ),
@@ -661,7 +801,51 @@ def test_example_scorer_suites_pass() -> None:
         ("test_mcp_server.py", "evh mcp: the read commands as tools, through the SDK's own client"),
         ("test_p_cache.py", "the on-disk p cache: the same p, read back by a fresh process"),
         ("test_mcp_http.py", "evh mcp --http: health, Host check, --public, --rate, hooks"),
-        ("test_mcp_answers.py", "evh mcp --write-answers and --answers: a release's answers written ahead"),
+        ("test_mcp_cancel.py", "evh mcp: a cancelled call stops being waited for and gives its slot back"),
+        (
+            "test_mcp_in_process.py",
+            "evh mcp: a read is answered in the server's own process, no command started",
+        ),
+        ("test_help_names.py", "every evh <command> --help names the command, not its script"),
+        (
+            "test_exit_codes.py",
+            "exit codes: the cost cap 4, nothing measured 7, usage 2, refusal 1, validate 6",
+        ),
+        ("test_refusal_kinds.py", "every refusal names its kind, the kinds as the Runbook lists them"),
+        (
+            "test_clusters.py",
+            "the clustered paired test: the item test with one item per cluster, its level held when items cluster",
+        ),
+        (
+            "test_cluster_commands.py",
+            "--cluster and a goal's cluster: through pair-test, family-test, goals, the inspector, validate",
+        ),
+        (
+            "test_noninferiority.py",
+            "non-inferiority: Tango for 0/1, the bootstrap-t from 100 units, its level at the margin",
+        ),
+        (
+            "test_reducers.py",
+            "repeats made one score per item: mean, majority, at_least_K; a goal's primary.reduce",
+        ),
+        ("test_alpha_all.py", "Krippendorff's alpha over any number of label sets, with its interval"),
+        ("test_scorer_supersedes.py", "a changed rubric names the scorer it supersedes, and why"),
+        (
+            "test_failed_items.py",
+            "a failed item is scored 0 and listed, the run goes on; weather and a broken adapter stop it",
+        ),
+        (
+            "test_call_once.py",
+            "CALL_ONCE: each item called once, a failure a failed item that keeps its meta; resume never repeats what may have happened (a failed row, a start mark), --recall-failed does, once",
+        ),
+        (
+            "test_artifact.py",
+            "an item's artifact link: the path rules, the item view, the read-only hardened serving (nosniff, sandbox, no symlink out), no link in public or in a hidden release",
+        ),
+        (
+            "../examples/harbor/test_harbor.py",
+            "the Harbor example: its source, its importer on recorded jobs, the adapter through a fake harbor (call once, a hang, resume), a recorded arm equal to the live one",
+        ),
         ("test_scores_once.py", "each arm's scores read once per view and per build"),
         ("test_skills.py", "the agent skills: valid, installed, every evh block runs as written"),
         (
@@ -686,6 +870,10 @@ def test_example_scorer_suites_pass() -> None:
         ("test_models.py", "model records: the weights facts, and what V18 catches"),
         ("test_arm_smoke.py", "evh arm-smoke: the calls it reads, the projection, every flag"),
         (
+            "test_compare_default.py",
+            "comparison-show with no metric named: the arms' own primary among the metrics all score, a missing primary said",
+        ),
+        (
             "test_arm_smoke_report.py",
             "evh arm-smoke and run: spend and its basis, replies, call time, warm-up, dry-run input",
         ),
@@ -699,17 +887,17 @@ def test_example_scorer_suites_pass() -> None:
         ),
         (
             "test_triage_results_doc.py",
-            "the triage results table is the harness's, and evh goals prints a dataset's notes",
+            "the triage results table is the harness's, and evh goal-leaderboard prints a dataset's notes",
         ),
         (
             "test_runs_location.py",
-            "where runs land: a warning for a git-ignored runs directory, and validate's note",
+            "where runs land: init's .gitignore rules for data/runs, a warning for a git-ignored runs directory, validate's note",
         ),
         (
             "test_fingerprint_v5.py",
             "fingerprint v5: the parts and their hashes, the runner outside the hash, the deployment sources, the migration, run-compare",
         ),
-        ("test_catalog_models.py", "the Models page, a page per model, the arms badge, evh models"),
+        ("test_catalog_models.py", "the Models page, a page per model, the arms badge, evh model-list"),
         (
             "test_site_releases.py",
             "the site's release notes: nested bullets, bold holding code and italics, code never emphasis",
@@ -723,6 +911,358 @@ def test_example_scorer_suites_pass() -> None:
             "label sets: from a run, a sheet and its import, a capture's outcomes; never edited; they follow the item; V19",
         ),
         (
+            "test_dataset_version.py",
+            "a dataset's version MAJOR.MINOR from its lineage: 1.10 after 1.9, splits 1.0, V22, evh migrate",
+        ),
+        (
+            "test_licences.py",
+            "a dataset's licence: evh licences, dataset-create --licence, dataset-describe, V22",
+        ),
+        (
+            "test_source.py",
+            "where items came from: a fetcher's rows file as the source block, item links, V22, evh migrate",
+        ),
+        (
+            "test_card.py",
+            "a dataset's card: the datasheet questions in Croissant RAI's words; template, --card, V22",
+        ),
+        (
+            "test_sources.py",
+            "dataset sources: folder as --source-dir, a project's own with rows, licence, card; manifest; refusals",
+        ),
+        (
+            "test_croissant.py",
+            "a dataset as Croissant 1.1 (licence, card as rai:, files with sha256, typed fields) and its text card",
+        ),
+        (
+            "test_croissant_in.py",
+            "a dataset read from a Croissant description: rows, source, licence, card; sha256, parquet, fields refused",
+        ),
+        (
+            "test_fieldset_propose.py",
+            "a field set proposed from a source's features: choices from sampled values, --write, used as it is",
+        ),
+        (
+            "test_hf_source.py",
+            "the huggingface source on a local Hub: pinned to the parquet commit, licence, card, rows; sha256 checked",
+        ),
+        (
+            "test_publish.py",
+            "publishing to the Hub against a fake API: one commit, read back by sha256; hidden and unmaterialized refused",
+        ),
+        (
+            "test_zenodo_openml.py",
+            "the zenodo and openml sources on local APIs: a record's CSV (md5 checked), a dataset's parquet copy",
+        ),
+        (
+            "test_kaggle.py",
+            "the kaggle source on a local API: a version's zip, its one table, the licence name mapped; no kagglehub",
+        ),
+        (
+            "test_outputs.py",
+            "a run's outputs in one file (RFC-024): append, a torn line, finish, resume, a derived run reads its source's; both stores",
+        ),
+        (
+            "test_rows_api.py",
+            "a score's rows as dicts in both stores (RFC-033 step c): canonical text derived, a line that is no row refused, the checkpoint exempt, the files reader tolerant and V28 reporting it, the cache keeping dicts and text together",
+        ),
+        (
+            "test_results_tables.py",
+            "a score's per-item results as SQLite tables (RFC-033 step d): the schema, every type round-tripped (int and float, -0.0, bool, None, NaN, infinities, past int64), `_meta` and call facts, ids (the next after the highest), one transaction, deletes, the item index, V9 in SQLite with each failure planted, data-migrate there and back",
+        ),
+        (
+            "test_results_order.py",
+            "the order the SQLite tables are built in (RFC-033): score sets, outputs and metric ids by the run's time then the key, a run with no time first, a zone counted, the same data the same tables, a set added to an old run sitting with it",
+        ),
+        (
+            "test_rows_frozen.py",
+            "the safeguard for the rows the cache shares (EVH_FREEZE_ROWS=1): every kind of change raises at its line, copies are plain, both stores",
+        ),
+        (
+            "test_store.py",
+            "the project's store (RFC-025): the setting, _store on both, data-migrate there and back, never both (V23), concurrent writers, the release, the path-I/O guard",
+        ),
+        (
+            "test_checkout_scripts_project.py",
+            "the repository's scripts that import the harness name harness/ as their project, run from anywhere",
+        ),
+        (
+            "test_jsonl_lines.py",
+            "JSON-lines files read whole when a line holds U+2028, U+2029 or U+0085: the exposure register, picks, a record's history (outputs: test_store)",
+        ),
+        (
+            "test_store_choice.py",
+            "a project names its store, no default: init --store required and explained, config.yaml, a project with none refused, EVAL_STORE, no project needed for help",
+        ),
+        (
+            "test_store_readonly.py",
+            "a database nothing may write (RFC-032 step 9): read-only open, every read works, every write refuses as not-allowed",
+        ),
+        (
+            "test_release_store.py",
+            "a release in either store (RFC-032 step 9): built and sealed, the same data, every render check failing on its planted leak",
+        ),
+        (
+            "test_actor.py",
+            "who acted (RFC-027): --by, EVH_ACTOR, EVH_FOR, the terminal user; decisions need a name",
+        ),
+        (
+            "test_actor_wording.py",
+            "who acted, in words, wherever an actor is shown: a migrated record names nobody (the fleet's G6)",
+        ),
+        (
+            "test_baselines.py",
+            "baselines per goal, in versions (RFC-027): the evidence frozen in, rollback, the migration, evh baselines",
+        ),
+        (
+            "test_write_order.py",
+            "what a reader sees while a command writes (RFC-026 step 1): whole files, the order",
+        ),
+        (
+            "test_api.py",
+            "the API (RFC-026): the registry, the token, refusals, every read equal to its --json",
+        ),
+        (
+            "test_jobs.py",
+            "jobs (RFC-026): locks, queue, stop, resume, unsupervised and lost; catalog as a swap, a migration's 503",
+        ),
+        (
+            "test_op_declarations.py",
+            "what a decision or a work operation declares (RFC-032 step 9 P3): locks, route, why, a word on every file input, no two routes alike, each rule failing on its planted defect; the command line made from the schema, a positional refused, the old parsers' parity",
+        ),
+        (
+            "test_job_operations.py",
+            "a job names an operation and its typed inputs (P3): the record, locks, files, resume; cost-report and round-close through their routes, POST /jobs and jobs-start, refusals before a job exists, the OpenAPI document",
+        ),
+        (
+            "test_job_routes.py",
+            "one POST of each shape of route (P3 steps 3 to 5): creating, acting on a part, no part, an upload, an artifact; each answers 202 with a job naming the operation, the merged inputs and its locks",
+        ),
+        (
+            "test_spend.py",
+            "what a command may spend (RFC-026): one cap across passes, the provider's net, sweep, a round's budget",
+        ),
+        (
+            "test_study.py",
+            "studies (RFC-029): grid, agent (CLI and MCP) and command samplers, the round, a changed spec, the confirmation, results.tsv",
+        ),
+        (
+            "test_looks.py",
+            "test-set looks (RFC-029): levels from decisions, one look per question, the limit and consent, V25",
+        ),
+        (
+            "test_picks_concurrent.py",
+            "the one pick list under writers at once, both stores: every line kept (the SQLite store's setup serialised)",
+        ),
+        (
+            "test_replay.py",
+            "replay and faithfulness (RFC-030): each item at the commit that ran it, the gate, coverage, the example's mutants",
+        ),
+        (
+            "test_prompts.py",
+            "prompt versions and code_ref (RFC-028): recorded once by content, given to the adapter, in the settings' hash",
+        ),
+        (
+            "test_settings_form.py",
+            "a setting as a form (UXS-004): every setting of this repository checks, writes back byte for byte, and keeps its comments through one-value edits",
+        ),
+        (
+            "test_large_sample.py",
+            "the paired tests from 10,000 items: their normal limit (ADR-0028), resampled below as before",
+        ),
+        (
+            "test_prefetch.py",
+            "resampled tests drawn at once in child processes: the same p's bit for bit, capped by a container's CPU quota",
+        ),
+        (
+            "test_item_index.py",
+            "an item's copy found once per item, the dataset record read once, read again when it changes",
+        ),
+        (
+            "test_items_paged.py",
+            "a dataset's catalog page at 10,000 items: its items paged, every item on one page",
+        ),
+        (
+            "test_why_lines.py",
+            "a goal page's reasons with many arms: the scorer named once, a long list of contenders or undecided as a count",
+        ),
+        (
+            "test_settings_save.py",
+            "a setting's save on a running server: one write at a time, a delete never between a save's checks, one evh validate a save",
+        ),
+        (
+            "test_data_page.py",
+            "evh data-*: list, show, check, put, rm on both stores; no /api/data route (the Configure page retired); 80 concurrent requests",
+        ),
+        (
+            "test_model_goals.py",
+            "the goal through the model: the command line and the API alike, edits keep comments, checks, history, status, refusals, the lock, the format",
+        ),
+        (
+            "test_model_ops.py",
+            "models and deployments through the model: the command line and the API alike, a deployment's checks its history, accept with why, refusals",
+        ),
+        (
+            "test_model_systems.py",
+            "systems and prompt versions through the model: a system's own file with no dataset, run on any dataset, refusals, the API alike",
+        ),
+        (
+            "test_model_runs.py",
+            "runs and scores: format 3's folders migrated to one runs/ collection, every record read back as it was, a copy kept once, refusals",
+        ),
+        (
+            "test_goal_views.py",
+            "the goal's decision, made once: one leader rule for rounds and goals, the leader against the baseline corrected, goal-leaderboard",
+        ),
+        (
+            "test_model_data_root.py",
+            "the model's runs, rounds and goals take a data root, one listing per entity: a copy of a project's data gives the project's evidence, status and listings",
+        ),
+        (
+            "test_view_ops.py",
+            "the catalog's views as API resources: overview, arms, metrics, activity, a comparison, label coverage; each the command's text and JSON",
+        ),
+        (
+            "test_data_root_reads.py",
+            "exposure, seals, looks, prompts and spend read any data directory: a copy's register, not the project's",
+        ),
+        (
+            "test_catalog_fresh.py",
+            "the catalog never goes stale: a write refreshes the server and rebuilds the pages, one rebuild waiting at most",
+        ),
+        (
+            "test_catalog_scorers.py",
+            "the scorers page: each judge scorer, its judges, validation and checks, read through the data root, no verdict text",
+        ),
+        (
+            "test_api_query.py",
+            "an API read's query inputs typed by the operation's schema, its path parts decoded",
+        ),
+        ("test_promote_hold.py", "a round's leader held for a test with no p says so, never crashes"),
+        (
+            "test_openapi.py",
+            "the API's OpenAPI description, made from the operations: every route, its inputs and refusals, the token; the removed read routes answer 404",
+        ),
+        (
+            "test_model_system_id.py",
+            "a run's config_id is its system_id: format 6 renames every stored record that is not hashed, keeps the hashed keys and their hashes, refuses both keys and a value that is no system",
+        ),
+        (
+            "test_model_rounds.py",
+            "rounds store their arms: format 4's rounds migrated, each arm's label, runs, entry and retirement, a baseline's round, refusals",
+        ),
+        (
+            "test_model_scorers.py",
+            "judge scorers through both surfaces: list and show with the people's checks, an edit refused once judged, V13's hash check, schemas, the API",
+        ),
+        (
+            "test_scorer_system.py",
+            "a judge that names a system: its settings, fingerprint, judging with the fake provider, refusals",
+        ),
+        (
+            "test_judge_verdicts.py",
+            "judges that say why (RFC-034): judge-verdicts by page, filter and pass, the API's answer the same, scorer-new explains by default, the inspector's item view local only",
+        ),
+        (
+            "test_charts.py",
+            "the evidence charts (RFC-034): every kind's numbers, drawing and refusals, a quadrant named only when significant, a lower measure turned, the API's answer, the file, the catalog's pages",
+        ),
+        (
+            "test_charts_gain_cost.py",
+            "the gain-cost chart on stub data: an arm sharing no item, the flip, a study's own measure, filled and hollow, the tokens axis",
+        ),
+        (
+            "test_charts_intervals.py",
+            "the intervals chart's margin from the arm contenders are tested against, filled only when significant; agreement's empty cells",
+        ),
+        (
+            "test_judge_cap.py",
+            "what a judging pass may spend: the smallest of its scorer's cap, EVAL_JUDGE_MAX_COST_USD and EVAL_MAX_COST_USD",
+        ),
+        (
+            "test_view_cache.py",
+            "the view cache: kept, cleared by any write, another process's write seen, bounded",
+        ),
+        ("test_view_cache_views.py", "every view with the cache on and off, in either store"),
+        ("test_p_cache_serve.py", "catalog-serve keeps the paired tests' p cache"),
+        ("test_view_bench.py", "tools/view_bench.py: what a view costs in both stores"),
+        (
+            "test_as_judged.py",
+            "a judging set's stored arm ids: live arms re-keyed to them, on a fixture and this repository's three sets",
+        ),
+        (
+            "test_cost_judging.py",
+            "cost-report counts judging spend from the verdicts: per scorer, set and judge; the dataset filter; --json",
+        ),
+        (
+            "test_model_studies.py",
+            "studies through the model: layout, state from the log, schema, a copy read through the data root, V27, study-list and study-show on the command line and the API",
+        ),
+        (
+            "test_model_faithfulness.py",
+            "faithfulness records through the model: the newest record answers for a version, the data root, the Models page and evh periods on a copy",
+        ),
+        (
+            "test_model_datasets.py",
+            "datasets and what belongs to them in the model: ids by their place, a dataset's references by its manifest, its item folder from any directory, the label rule, checked links",
+        ),
+        (
+            "test_model_datasets_ops.py",
+            "datasets and what hangs on them through both surfaces: lists and shows with parts and lineage, fieldsets and failure-mode lists made and changed, refusals, the API equal to the command line",
+        ),
+        (
+            "test_dataset_source.py",
+            "where a dataset's item files are (one reader), a failed materialize leaves what was there, an outside folder is copied into data/sources",
+        ),
+        (
+            "test_goal_references.py",
+            "a goal's status lists a dataset's references by the dataset their manifest names",
+        ),
+        (
+            "test_release_exposure.py",
+            "the deployment's data copy carries a sealed side's exposure register, a hidden dataset's notes not published",
+        ),
+        (
+            "test_validate_records.py",
+            "validate: V2 capture link, V19/V21 schemas, V22 exposure and pick-list schemas, each bad record named",
+        ),
+        (
+            "test_format.py",
+            "the data's format: init stamps it, migrate --check refuses old and newer, steps stamp it, a SQLite backup, the deploy's gate, 0.7.2's frozen project keeps its numbers",
+        ),
+        (
+            "test_m0002.py",
+            "evh migrate's format 2 step finds a config in a folder config.yaml's `configs:` names, so its smoke becomes a check of the deployment the config names; a smoke whose config names none is still refused",
+        ),
+        (
+            "test_m0003.py",
+            "evh migrate's format 3 step: configs only in a config.yaml folder and no validate.json: validate.json is written with the `systems` globs of the folders they moved to, the later steps find them; an existing validate.json keeps its keys",
+        ),
+        (
+            "test_migrate_dry_run.py",
+            "evh migrate --dry-run of a format-0 project runs the real steps on a scratch copy: every step's counts are the real migration's, the project byte-identical after it (no .build/ left), a refusal is the migration's",
+        ),
+        (
+            "test_run_migrate.py",
+            "evh migrate's runs steps: outputs/ to outputs.jsonl byte for byte, then every run and score into data/runs, an orphan refused, idempotent, non-UTF-8 refused",
+        ),
+        (
+            "test_results.py",
+            "per-item results as a model (RFC-033): the usage slim, the run settings a run's rows share, rows written without them (first and later scores), run.json `call` and its schema, validate V28",
+        ),
+        (
+            "test_results_e2e.py",
+            "format 7 end to end, both stores: a run that died and was resumed (and a finished one resumed) gives an uninterrupted run's rows and `call`; rescore, judge-score and sheet-import add score sets without the run's settings, 'already scored' on a second run",
+        ),
+        (
+            "test_m0007.py",
+            "evh migrate's format 7 step: settings hoisted to run.json `call`, usage slimmed, rows canonical, an interrupted run resumed, refusals; a SQLite project of format 6 (or of an early format 7, table `rows`) moved into the results tables in one transaction, equal to what data-migrate makes",
+        ),
+        (
+            "test_tags.py",
+            "failure modes: a tag sheet from sheet-export, its import as a tag set, evh tag-set-list counts per arm; refusals",
+        ),
+        (
             "test_picks.py",
             "picks: the append-only list, retarget, drop; dataset-extend from chosen picks, its lineage, labels following",
         ),
@@ -732,7 +1272,7 @@ def test_example_scorer_suites_pass() -> None:
         ),
         (
             "test_inspect_crosstab.py",
-            "evh inspect --crosstab (two per-item scores by a recorded field, the off-diagonal items named) and --items-out (each run's whole output beside the reference), on the triage runs",
+            "evh comparison-crosstab (two per-item scores by a recorded field, the off-diagonal items named) and comparison-items (each run's whole output beside the reference), on the triage runs",
         ),
         (
             "test_sheet_import.py",
@@ -740,7 +1280,7 @@ def test_example_scorer_suites_pass() -> None:
         ),
         (
             "test_deploy_sheet.py",
-            "the deploy sheet: what production must match; a capture checked against it, what differs, exit 1",
+            "the deploy sheet: what production must match; a capture checked against it, what differs, exit 6",
         ),
         (
             "test_catalog_labels.py",
@@ -757,6 +1297,22 @@ def test_example_scorer_suites_pass() -> None:
         (
             "../examples/triage-fleet/test_triage.py",
             "the triage example: its scorer, its importer on the fleet's export, the adapter if the fleet is here",
+        ),
+        (
+            "test_judge_validate.py",
+            "evh judge-validate: the core adapter's message and scores, the runs, the block --fill writes and the gate's answer",
+        ),
+        (
+            "../examples/judge-validation-goyal/test_goyal.py",
+            "the Goyal et al. source: the archive's format in, a rated dataset out",
+        ),
+        (
+            "../examples/judge-validation-zhang/test_zhang.py",
+            "the Zhang et al. source: the ratings' format in, a rated dataset out",
+        ),
+        (
+            "../examples/summeval-judging/test_rated_source.py",
+            "SummEval as a rated dataset: the Hub's rows in, the rated shape out",
         ),
         ("test_axes.py", "a goal's axes and strategy: limits, the tie, the tie-break, the ratios"),
         (
@@ -804,19 +1360,26 @@ def test_example_scorer_suites_pass() -> None:
             "test_no_shadowing.py",
             "a project's stats.py or adapter.py never replaces the harness's, nor the reverse",
         ),
-        ("test_hf_rows.py", "the examples' datasets-server fetcher: pacing, retries, each row's source"),
+        (
+            "test_hf_rows.py",
+            "the examples' Hub reader through the huggingface source: pages, pinned commit, rows map",
+        ),
         ("test_render_data.py", "the deployment copies every part of data/ the catalog reads"),
-        ("test_runs_adapter.py", "run reading, direction, adapter loading, the judge panel"),
+        ("test_runs_adapter.py", "run reading, direction, adapter loading"),
         ("check_report_claims.py", "report claims vs committed runs"),
         ("check_links.py", "markdown links and anchors"),
         ("check_terminology.py", "eval tables use the canonical Task · Dataset labels"),
         ("test_summeval_analysis.py", "SummEval split-half: a tied top is undecided"),
         ("check_commands.py", "documented commands: every make target, evh command and flag exists"),
+        (
+            "check_shown_commands.py",
+            "shown commands: every `evh` command the Workbench, catalog and CLI messages show exists and fits",
+        ),
         ("check_model_facts.py", "model facts vs the evidence capture"),
     )
     present = [script for script, _ in suites if (ROOT / at(script)).is_file()]
     with ThreadPoolExecutor(max_workers=os.cpu_count() or 4) as pool:
-        ran = dict(zip(present, pool.map(lambda script: run(at(script)), present)))
+        ran = dict(zip(present, pool.map(lambda script: run_own_tmp(at(script)), present)))
     for script, subject in suites:
         # A MISSING CHECKER IS A FAILURE, NOT A SKIP. `continue` here meant deleting
         # test_retrieval_scorer.py removed it from `make ci` silently -- the suite went
@@ -871,7 +1434,7 @@ def test_fingerprint_version_is_read_somewhere() -> None:
         dataset={"dataset_id": "d", "items": []},
         reference_id=None,
         reference_tier=None,
-        config_id="c",
+        system_id="c",
         params={},
         adapter_id="a",
         adapter_path=None,
@@ -945,7 +1508,7 @@ def test_fingerprint_covers_reference_bytes() -> None:
             "dataset": ds,
             "reference_id": "gold/t1",
             "reference_tier": "gold",
-            "config_id": "c",
+            "system_id": "c",
             "params": {},
             "adapter_id": "a",
             "adapter_path": None,
@@ -979,46 +1542,74 @@ def test_resume_scores_and_persists() -> None:
     reporting success -- and outputs were only written after the whole pass returned, so
     a crash at item k discarded all k paid outputs AND left the resume path nothing to
     read. The recovery command the cost cap prints was the broken one.
+
+    The passes are throwaway (`--scratch`, under .build/scratch/runs, which nothing that reads runs sees), each by
+    a run id of its own, removed at the end.
     """
     import shutil  # noqa: PLC0415
 
-    runs = HERE.parent / "data" / "runs-selftest-resume"
-    shutil.rmtree(runs, ignore_errors=True)
-    env = {"EVAL_RUNS_DIR": str(runs.relative_to(HERE.parent))}
-    r = run("scripts/run.py", "--config", "data/configs/arm_b.yaml", env=env)
+    runs = scratch_runs()
+    names = [
+        "selftest_resume_src",
+        "selftest_resume_res",
+        "selftest_resume_crashed",
+        "selftest_resume_crash_res",
+        "selftest_resume_fx_src",
+        "selftest_resume_fx_res",
+        "selftest_resume_anonymous",
+    ]
+    drop_scratch(*names)
+    fixture = runs.parent / "selftest-resume-fixture"
+    shutil.rmtree(fixture, ignore_errors=True)
+    try:
+        _resume_scores_and_persists(runs, fixture)
+    finally:
+        drop_scratch(*names)
+        shutil.rmtree(fixture, ignore_errors=True)
+
+
+def _resume_scores_and_persists(runs: Path, fixture: Path) -> None:
+    import shutil  # noqa: PLC0415
+
+    env: dict = {}
+    scratch = ("--scratch",)
+    src = "selftest_resume_src"
+    r = run(
+        "scripts/cli.py",
+        "run",
+        "--system",
+        "arm_b_v1",
+        "--dataset",
+        "smoke_v1",
+        *scratch,
+        "--run-id",
+        src,
+        env=env,
+    )
     if r.returncode != 0:
         print("  --   resume: skipped (demo arm did not run)")
-        shutil.rmtree(runs, ignore_errors=True)
         return
-    src = sorted(p.name for p in runs.iterdir() if p.is_dir())[0]
-    outs = sorted((runs / src / "outputs").glob("*.txt"))
+    outs = sorted(_outputs.outputs(runs / src))
     check("resume: outputs are on disk after a pass", len(outs) > 0, str(len(outs)))
 
-    # THE PROPERTY A CRASH ACTUALLY DEPENDS ON: outputs are written AS THEY ARE
-    # PRODUCED, not gathered up at the end. The simulated crash below (deleting files
-    # and resuming) exercises the resume path but would pass just as happily against a
-    # version that wrote everything in one go after the last item -- which is the
-    # version that lost a whole pass of paid outputs.
-    #
-    # Checked by mtime, which is the observable this leaves behind: every output must
-    # predate metrics.json, and the first must predate the last, because they were
-    # written one at a time while the pass ran.
-    mj = runs / src / "metrics.json"
-    if len(outs) > 1 and mj.is_file():
-        t_out = sorted(f.stat().st_mtime for f in outs)
-        check(
-            "resume: outputs are written DURING the pass, not after it",
-            t_out[-1] <= mj.stat().st_mtime and t_out[0] <= t_out[-1],
-            f"last output {t_out[-1]:.3f}, metrics {mj.stat().st_mtime:.3f}",
-        )
+    # Outputs are written AS THEY ARE PRODUCED (one synced line per item, RFC-024), not gathered at the end: proved
+    # on a pass that really stopped, in test_run_reports.py (the stopped run keeps its outputs and rows).
 
     # Simulate a crash: drop all but one output, as if the pass died at item 2.
-    for f in outs[1:]:
-        f.unlink()
-    r2 = run("scripts/run.py", "--config", "data/configs/arm_b.yaml", "--resume", src, env=env)
+    kept = _outputs.outputs(runs / src)
+    _outputs.write_all(runs / src, {outs[0]: kept[outs[0]]}, outs[:1])
+    res = "selftest_resume_res"
+    r2 = run(
+        "scripts/cli.py", "run", "--system", "arm_b_v1", "--dataset", "smoke_v1", *scratch,
+        "--resume", src, "--run-id", res, env=env,
+    )  # fmt: skip
     check("resume: the resumed pass exits 0", r2.returncode == 0, (r2.stderr or "")[-160:])
-    newest = max((p for p in runs.iterdir() if p.is_dir()), key=lambda p: p.stat().st_mtime)
-    rows = [ln for ln in (newest / "predictions.jsonl").read_text().splitlines() if ln.strip()]
+    newest = runs / res
+    rows = [
+        ln
+        for ln in (_outputs.rows_text(model_runs.first_score(newest) or newest) or "").splitlines()
+        if ln.strip()
+    ]
     check(
         "resume: every item is SCORED, not skipped",
         len(rows) == len(outs),
@@ -1035,10 +1626,8 @@ def test_resume_scores_and_persists() -> None:
     import json as _json  # noqa: PLC0415
 
     src_rows = {}
-    for line in (runs / src / "predictions.jsonl").read_text().splitlines():
-        if line.strip():
-            r = _json.loads(line)
-            src_rows[r["item_id"]] = r
+    for src_row in _runstore.run_rows(runs / src):
+        src_rows[src_row["item_id"]] = src_row
     replayed = [_json.loads(ln) for ln in rows if _json.loads(ln).get("resumed") == 1.0]
     check(
         "resume: at least one item was actually replayed",
@@ -1064,40 +1653,39 @@ def test_resume_scores_and_persists() -> None:
                 f"orig keys {sorted(o['_meta'])} now {sorted(r.get('_meta') or {})}",
             )
 
-    # THE ACTUAL CRASH SHAPE: outputs/ and run.json, no metrics.json, no
-    # predictions.jsonl -- because both are written only after the pass returns.
+    # THE ACTUAL CRASH SHAPE: outputs.jsonl, the row checkpoint and run.json, no score -- because the score (its
+    # metrics and rows) is written only after the pass returns.
     #
     # Round 2 taught resume to carry each replayed item's cost, tokens and _meta
     # forward FROM predictions.jsonl, which by construction does not exist in the one
     # case resume is for. So the feature worked for a tidy re-run and not for a crash,
     # and the mtime assertion above could not tell: it proves outputs are written
     # during the pass, not that anything else is. Found by external review.
-    crash = runs / "crashed"
+    crash = runs / "selftest_resume_crashed"
     shutil.rmtree(crash, ignore_errors=True)
-    shutil.copytree(runs / src, crash)
-    (crash / "metrics.json").unlink(missing_ok=True)
-    (crash / "predictions.jsonl").unlink(missing_ok=True)
+    _runstore.copy_run(runs / src, crash)
+    # What the pass had appended when it died: its rows (a finished run drops the checkpoint; a real stop keeps it,
+    # test_run_reports.py).
+    _runstore.put_partial_text(crash, "".join(f"{_json.dumps(x)}\n" for x in _runstore.run_rows(crash)))
+    shutil.rmtree(crash / "scores", ignore_errors=True)
+    rec = _json.loads((crash / "run.json").read_text())
+    (crash / "run.json").write_text(_json.dumps({**rec, "run_id": crash.name}))
     check(
-        "resume: a crashed run still carries its identity (run.json)",
-        (crash / "run.json").is_file(),
+        "resume: a crashed run still carries its identity (run.json) and no score",
+        (crash / "run.json").is_file() and not model_runs.scores_of(crash),
         "run.json must be written before the first item, not after the pass",
     )
-    check(
-        "resume: and its per-item rows (outputs/_rows.jsonl)",
-        (crash / "outputs" / "_rows.jsonl").is_file(),
-        "rows must be appended during the pass, not written at the end",
-    )
 
-    r3 = run("scripts/run.py", "--config", "data/configs/arm_b.yaml", "--resume", "crashed", env=env)
+    r3 = run(
+        "scripts/cli.py", "run", "--system", "arm_b_v1", "--dataset", "smoke_v1", *scratch,
+        "--resume", crash.name, "--run-id", "selftest_resume_crash_res", env=env,
+    )  # fmt: skip
     check(
         "resume: an outputs-only crashed run resumes",
         r3.returncode == 0,
         ((r3.stderr or "") + (r3.stdout or ""))[-200:],
     )
-    newest = max(
-        (p for p in runs.iterdir() if p.is_dir() and p.name != "crashed"), key=lambda p: p.stat().st_mtime
-    )
-    rows3 = [_json.loads(ln) for ln in (newest / "predictions.jsonl").read_text().splitlines() if ln.strip()]
+    rows3 = _runstore.run_rows(runs / "selftest_resume_crash_res")
     replayed3 = [r for r in rows3 if r.get("resumed") == 1.0]
     check(
         "resume: after a CRASH, replayed rows still carry their measurements",
@@ -1119,9 +1707,8 @@ def test_resume_scores_and_persists() -> None:
     # alone, reported as measured. Both passes' values are deliberately different --
     # `call_flag` 1.0 then 2.0, `old_metric` present then absent -- because a constant
     # cannot tell a carried value from a freshly computed one.
-    fx = runs / "fixture"
-    fx.mkdir(parents=True, exist_ok=True)
-    (fx / "fx_adapter.py").write_text(
+    fixture.mkdir(parents=True, exist_ok=True)
+    (fixture / "fx_adapter.py").write_text(
         "import os\n"
         "from dataclasses import dataclass, field\n"
         "from typing import Any, Dict, Optional\n"
@@ -1146,76 +1733,94 @@ def test_resume_scores_and_persists() -> None:
         "        out['old_metric'] = 1.0\n"
         "    return out\n"
     )
-    (fx / "arm_fx.yaml").write_text(
-        "config_id: fx_extra_v1\ndataset_id: smoke_v1\nadapter: fx_adapter.py\nparams:\n  provider: fixture\n"
+    # The fixture system beside the project's own for the test, removed with its runs (a system is found by its id).
+    fx_system = HERE.parent / "data" / "systems" / "fx_extra_v1.yaml"
+    fx_system.write_text(
+        "system_id: fx_extra_v1\nadapter: ../../.build/scratch/selftest-resume-fixture/fx_adapter.py\n"
+        "params:\n  provider: fixture\n"
     )
-    cfg_fx = str((fx / "arm_fx.yaml").relative_to(HERE.parent))
-    rf = run("scripts/run.py", "--config", cfg_fx, "--run-id", "fx_src", env={**env, "FX_PASS": "1"})
-    if rf.returncode != 0:
-        check(
-            "resume: the extra-carrying fixture arm runs",
-            False,
-            ((rf.stderr or "") + (rf.stdout or ""))[-200:],
-        )
-    else:
-        fx_outs = sorted((runs / "fx_src" / "outputs").glob("*.txt"))
-        for f in fx_outs[1:]:
-            f.unlink()
-        (runs / "fx_src" / "metrics.json").unlink(missing_ok=True)
-        (runs / "fx_src" / "predictions.jsonl").unlink(missing_ok=True)
-        rr = run(
-            "scripts/run.py",
-            "--config",
-            cfg_fx,
+    try:
+        fx_arm = ("--system", "fx_extra_v1", "--dataset", "smoke_v1", *scratch)
+        rf = run(
+            "scripts/cli.py",
+            "run",
+            *fx_arm,
             "--run-id",
-            "fx_res",
-            "--resume",
-            "fx_src",
-            env={**env, "FX_PASS": "2"},
+            "selftest_resume_fx_src",
+            env={**env, "FX_PASS": "1"},
         )
-        fx_rows = (
-            [
-                _json.loads(ln)
-                for ln in (runs / "fx_res" / "predictions.jsonl").read_text().splitlines()
-                if ln.strip()
-            ]
-            if rr.returncode == 0
-            else []
-        )
-        fx_rep = [r for r in fx_rows if r.get("resumed") == 1.0]
-        fx_new = [r for r in fx_rows if r.get("resumed") == 0.0]
-        check(
-            "resume: replayed rows keep the adapter's extra metrics FROM THEIR OWN PASS",
-            bool(fx_rep)
-            and all(r.get("call_flag") == 1.0 for r in fx_rep)
-            and bool(fx_new)
-            and all(r.get("call_flag") == 2.0 for r in fx_new),
-            f"replayed call_flag={[r.get('call_flag') for r in fx_rep][:3]} "
-            f"fresh call_flag={[r.get('call_flag') for r in fx_new][:3]}",
-        )
-        fx_m = (
-            _json.loads((runs / "fx_res" / "metrics.json").read_text())
-            if (runs / "fx_res" / "metrics.json").is_file()
-            else {}
-        )
-        check(
-            "resume: a score the current scorer no longer emits is NOT carried",
-            bool(fx_rows)
-            and not any("old_metric" in r for r in fx_rows)
-            and "old_metric" not in (fx_m.get("scores") or {}),
-            f"old_metric on {sum('old_metric' in r for r in fx_rows)} row(s); "
-            f"in scores: {'old_metric' in (fx_m.get('scores') or {})}",
-        )
-        check(
-            "resume: the run records which extras it carried",
-            (fx_m.get("resume") or {}).get("carried_extra_keys") == ["call_flag"],
-            f"resume note: {fx_m.get('resume')}",
-        )
+        if rf.returncode != 0:
+            check(
+                "resume: the extra-carrying fixture arm runs",
+                False,
+                ((rf.stderr or "") + (rf.stdout or ""))[-200:],
+            )
+        else:
+            fx_src = runs / "selftest_resume_fx_src"
+            fx_texts = _outputs.outputs(fx_src)
+            fx_first = sorted(fx_texts)[0]
+            _outputs.write_all(fx_src, {fx_first: fx_texts[fx_first]}, [fx_first])
+            # What the pass had appended when it died: its rows (a finished run drops the checkpoint).
+            _runstore.put_partial_text(
+                fx_src, "".join(f"{_json.dumps(x)}\n" for x in _runstore.run_rows(fx_src))
+            )
+            shutil.rmtree(fx_src / "scores", ignore_errors=True)
+            rr = run(
+                "scripts/cli.py",
+                "run",
+                *fx_arm,
+                "--run-id",
+                "selftest_resume_fx_res",
+                "--resume",
+                "selftest_resume_fx_src",
+                env={**env, "FX_PASS": "2"},
+            )
+            fx_res = runs / "selftest_resume_fx_res"
+            fx_rows = _runstore.run_rows(fx_res) if rr.returncode == 0 else []
+            fx_rep = [r for r in fx_rows if r.get("resumed") == 1.0]
+            fx_new = [r for r in fx_rows if r.get("resumed") == 0.0]
+            check(
+                "resume: replayed rows keep the adapter's extra metrics FROM THEIR OWN PASS",
+                bool(fx_rep)
+                and all(r.get("call_flag") == 1.0 for r in fx_rep)
+                and bool(fx_new)
+                and all(r.get("call_flag") == 2.0 for r in fx_new),
+                f"replayed call_flag={[r.get('call_flag') for r in fx_rep][:3]} "
+                f"fresh call_flag={[r.get('call_flag') for r in fx_new][:3]}",
+            )
+            fx_first_score = model_runs.first_score(fx_res)
+            fx_m = (model_runs.record(fx_first_score) or {}) if fx_first_score else {}
+            check(
+                "resume: a score the current scorer no longer emits is NOT carried",
+                bool(fx_rows)
+                and not any("old_metric" in r for r in fx_rows)
+                and "old_metric" not in (fx_m.get("scores") or {}),
+                f"old_metric on {sum('old_metric' in r for r in fx_rows)} row(s); "
+                f"in scores: {'old_metric' in (fx_m.get('scores') or {})}",
+            )
+            check(
+                "resume: the run records which extras it carried",
+                (fx_m.get("resume") or {}).get("carried_extra_keys") == ["call_flag"],
+                f"resume note: {fx_m.get('resume')}",
+            )
+    finally:
+        fx_system.unlink(missing_ok=True)
 
     # RESUMING FROM ANOTHER ARM MUST BE REFUSED. `--resume` took a run id and read its
     # outputs; nothing compared the arms, so one mistyped id replayed a different
     # model's answers and recorded them under this one, with a valid fingerprint.
-    other = run("scripts/run.py", "--config", "data/configs/arm_a.yaml", "--resume", src, env=env)
+    other = run(
+        "scripts/cli.py",
+        "run",
+        "--system",
+        "arm_a_v1",
+        "--dataset",
+        "smoke_v1",
+        *scratch,
+        "--resume",
+        src,
+        env=env,
+    )
     msg = (other.stderr or "") + (other.stdout or "")
     check(
         "resume: another arm's outputs are refused",
@@ -1226,19 +1831,19 @@ def test_resume_scores_and_persists() -> None:
     # AND REFUSED EVEN WHEN THE SOURCE CANNOT BE IDENTIFIED. This used to WARN and
     # continue, so `arm_a --resume <crashed arm_b run>` exited 0 having recorded arm_a
     # with arm_b's answers.
-    anon = runs / "anonymous"
+    anon = runs / "selftest_resume_anonymous"
     shutil.rmtree(anon, ignore_errors=True)
-    (anon / "outputs").mkdir(parents=True)
-    (anon / "outputs" / "item_01.txt").write_text("from who knows where")
-    r4 = run("scripts/run.py", "--config", "data/configs/arm_a.yaml", "--resume", "anonymous", env=env)
+    _outputs.writer(anon).add("item_01", "from who knows where")
+    r4 = run(
+        "scripts/cli.py", "run", "--system", "arm_a_v1", "--dataset", "smoke_v1", *scratch,
+        "--resume", anon.name, env=env,
+    )  # fmt: skip
     m4 = (r4.stderr or "") + (r4.stdout or "")
     check(
         "resume: an unidentifiable source is refused, not warned about",
         r4.returncode != 0 and "cannot be identified" in m4,
         m4[-200:],
     )
-    shutil.rmtree(anon, ignore_errors=True)
-    shutil.rmtree(runs, ignore_errors=True)
 
 
 def test_writes_leave_no_partial_file() -> None:
@@ -1338,67 +1943,62 @@ def test_rescore_rehashes_the_references_it_actually_read() -> None:
     fingerprint exists to make, about the wrong bytes.
 
     Built by injecting a reference hash that cannot match, which is what a changed gold
-    set looks like from here.
+    set looks like from here. The run is copied into a data folder of the test's own
+    (this repository's, linked), and the re-score is a second score of that copy.
     """
     import json as _json  # noqa: PLC0415
-    import shutil  # noqa: PLC0415
+    import tempfile as _tf  # noqa: PLC0415
 
     src = None
-    for d in sorted((HERE.parent / "data" / "runs").glob("fn_*")):
-        m = d / "metrics.json"
-        if m.is_file() and (d / "outputs").is_dir():
-            j = _json.loads(m.read_text())
-            if ((j.get("fingerprint") or {}).get("data") or {}).get("reference_id"):
-                src = d
-                break
+    for sd, j in real_scores():
+        d = model_runs.run_of(sd)
+        has_ref = ((j.get("fingerprint") or {}).get("data") or {}).get("reference_id")
+        if _outputs.has_outputs(d) and has_ref and not j.get("derived"):
+            src = d
+            break
     if src is None:
         print("  --   rescore/refhash: skipped (no run with references on disk)")
         return
 
-    runs = HERE.parent / "data" / "runs-selftest-refhash"
-    shutil.rmtree(runs, ignore_errors=True)
-    dst = runs / src.name
-    dst.mkdir(parents=True)
-    for n in ("metrics.json", "predictions.jsonl"):
-        shutil.copy2(src / n, dst / n)
-    shutil.copytree(src / "outputs", dst / "outputs")
-    j = _json.loads((dst / "metrics.json").read_text())
-    j["fingerprint"]["data"]["references_sha256"] = "0" * 64  # cannot match
-    (dst / "metrics.json").write_text(_json.dumps(j))
+    with _tf.TemporaryDirectory() as td:
+        data = shadow_data(Path(td))
+        dst = add_run(data, src)
+        j = _json.loads((dst / "run.json").read_text())
+        j["fingerprint"]["data"]["references_sha256"] = "0" * 64  # cannot match
+        (dst / "run.json").write_text(_json.dumps(j))
 
-    env = {"EVAL_RUNS_DIR": str(runs.relative_to(HERE.parent))}
-    out = runs / "out"
-    r = run(
-        "scripts/rescore.py",
-        "--dataset-id",
-        str(j.get("dataset_id")),
-        "--out",
-        str(out.relative_to(HERE.parent)),
-        env=env,
-    )
-    mf = out / src.name / "metrics.json"
-    _out = (r.stderr or "") + (r.stdout or "")
-    if "NOT ONE of its" in _out or "reference files exists" in _out:
-        # A fresh clone has no corpus, so rescore refuses -- which is the behaviour a
-        # DIFFERENT test asserts. Skipping here is honest; calling it a failure would
-        # make `make ci` red in every clone for doing the right thing.
-        print("  --   rescore/refhash: skipped (references not fetched on this machine)")
-    elif r.returncode != 0 or not mf.is_file():
-        check("rescore: rehashing references did not break rescore", False, _out[-160:])
-    else:
-        data = _json.loads(mf.read_text())["fingerprint"]["data"]
-        check(
-            "rescore: references_sha256 is recomputed, not copied",
-            data.get("references_sha256") not in (None, "0" * 64),
-            f"got {str(data.get('references_sha256'))[:24]}",
+        before = {p.name for p in model_runs.scores_of(dst)}
+        r = run(
+            "scripts/cli.py",
+            "rescore",
+            "--dataset-id",
+            str(j.get("dataset_id")),
+            "--match",
+            j["system_id"],
+            env={"EVAL_DATA_DIR": str(data)},
         )
-        check(
-            "rescore: and a changed gold set is flagged, not silently overwritten",
-            data.get("references_changed_since_measurement") is True
-            and data.get("references_sha256_at_measurement") == "0" * 64,
-            f"keys present: {sorted(k for k in data if 'reference' in k)}",
-        )
-    shutil.rmtree(runs, ignore_errors=True)
+        added = [p for p in model_runs.scores_of(dst) if p.name not in before]
+        _out = (r.stderr or "") + (r.stdout or "")
+        if "NOT ONE of its" in _out or "reference files exists" in _out:
+            # A fresh clone has no corpus, so rescore refuses -- which is the behaviour a
+            # DIFFERENT test asserts. Skipping here is honest; calling it a failure would
+            # make `make ci` red in every clone for doing the right thing.
+            print("  --   rescore/refhash: skipped (references not fetched on this machine)")
+        elif r.returncode != 0 or not added:
+            check("rescore: rehashing references did not break rescore", False, _out[-160:])
+        else:
+            data_fp = (model_runs.record(added[0]) or {})["fingerprint"]["data"]
+            check(
+                "rescore: references_sha256 is recomputed, not copied",
+                data_fp.get("references_sha256") not in (None, "0" * 64),
+                f"got {str(data_fp.get('references_sha256'))[:24]}",
+            )
+            check(
+                "rescore: and a changed gold set is flagged, not silently overwritten",
+                data_fp.get("references_changed_since_measurement") is True
+                and data_fp.get("references_sha256_at_measurement") == "0" * 64,
+                f"keys present: {sorted(k for k in data_fp if 'reference' in k)}",
+            )
 
 
 def test_rescore_takes_source_path_from_the_dataset() -> None:
@@ -1419,15 +2019,18 @@ def test_rescore_takes_source_path_from_the_dataset() -> None:
     number is affected. This test therefore MAKES a dataset where they differ -- pointing
     two items at each other's source file -- and asserts the scores move. Against the old
     code they do not move at all, because the dataset's `source_path` was never consulted.
+    The dataset is a copy in a data folder of the test's own.
     """
     import json as _json  # noqa: PLC0415
     import shutil  # noqa: PLC0415
+    import tempfile as _tf  # noqa: PLC0415
 
     ds_file = HERE.parent / "data" / "datasets" / "cnn_dailymail_200.json"
     mat = HERE.parent / "data" / "materialized" / "cnn_dailymail_200"
     src = None
-    for d in sorted((HERE.parent / "data" / "runs").glob("cnn_*_n200_v1_*")):
-        if (d / "metrics.json").is_file() and (d / "outputs").is_dir():
+    for sd, _m in real_scores():
+        d = model_runs.run_of(sd)
+        if d.name.startswith("cnn_") and "_n200_v1_" in d.name and _outputs.has_outputs(d):
             src = d
             break
     if src is None or not ds_file.is_file() or not mat.is_dir():
@@ -1439,105 +2042,106 @@ def test_rescore_takes_source_path_from_the_dataset() -> None:
         )
         return
 
-    tmp = HERE.parent / "data" / "runs-selftest-srcpath"
-    shutil.rmtree(tmp, ignore_errors=True)
-    dst = tmp / src.name
-    dst.mkdir(parents=True)
-    for n in ("metrics.json", "predictions.jsonl"):
-        shutil.copy2(src / n, dst / n)
-    shutil.copytree(src / "outputs", dst / "outputs")
-
-    env = {"EVAL_RUNS_DIR": str(tmp.relative_to(HERE.parent))}
-    base = run(
-        "scripts/rescore.py",
-        "--dataset-id",
-        "cnn_dailymail_200",
-        "--out",
-        str((tmp / "out-base").relative_to(HERE.parent)),
-        env=env,
-    )
-    if base.returncode != 0:
-        err = (base.stderr or "") + (base.stdout or "")
-        # A MISSING DEPENDENCY IS A SKIP; ANYTHING ELSE IS THE BUG. The summarisation
-        # scorer needs rouge_score, which lives in that example's venv, so running the
-        # suite on the harness venv legitimately cannot do this one.
-        #
-        # Every other failure is a real one, and this is where the worst of them
-        # surfaced: 24 committed cnn_dailymail_200 runs recorded their adapter as
-        # "summarization-cnn-dailymail/adapter.py" -- relative to the examples root,
-        # which rescore did not try -- so the entire summarisation sweep could not be
-        # rescored. It skipped here as "baseline rescore failed" and said nothing.
-        if "ModuleNotFoundError" in err or "No module named" in err:
-            print("  --   rescore/source_path: skipped (needs the example's venv)")
-        else:
-            lines = [ln for ln in err.splitlines() if ln.strip()]
-            detail = next(
-                (ln for ln in lines if ln.startswith(("ERROR", "Traceback")) or "Error" in ln),
-                lines[-1] if lines else "no output",
-            )
-            check("rescore: a committed run can be rescored at all", False, detail[:200])
-        shutil.rmtree(tmp, ignore_errors=True)
-        return
-
-    # Swap two items' source_path. The files still exist; each item now points at the
-    # other's text, so any scorer that reads the source must produce different numbers.
-    ds = _json.loads(ds_file.read_text())
-    items = [i for i in ds.get("items", []) if i.get("source_path")]
-    original = ds_file.read_text()
-    try:
-        items[0]["source_path"], items[1]["source_path"] = (items[1]["source_path"], items[0]["source_path"])
-        ds_file.write_text(_json.dumps(ds))
-        swapped = run(
-            "scripts/rescore.py",
+    with _tf.TemporaryDirectory() as td:
+        data = shadow_data(Path(td), own=("datasets/cnn_dailymail_200.json",))
+        dst = add_run(data, src)
+        env = {"EVAL_DATA_DIR": str(data)}
+        args = (
+            "scripts/cli.py",
+            "rescore",
             "--dataset-id",
             "cnn_dailymail_200",
-            "--out",
-            str((tmp / "out-swap").relative_to(HERE.parent)),
-            env=env,
+            "--match",
+            src.name.split("_n200")[0],
         )
-    finally:
-        ds_file.write_text(original)
 
-    def scores(where):
-        f = where / src.name / "metrics.json"
-        return _json.loads(f.read_text())["scores"] if f.is_file() else None
+        def rescored_scores() -> dict | None:
+            """What the re-score of the copy measured (its score is the one the run did not have)."""
+            first = model_runs.first_score(dst)
+            assert first is not None, f"{dst.name} has no first score"
+            made = [p for p in model_runs.scores_of(dst) if p.name != first.name]
+            return (model_runs.record(made[0]) or {}).get("scores") if made else None
 
-    a, b = scores(tmp / "out-base"), scores(tmp / "out-swap")
-    if a is None:
-        print("  --   rescore/source_path: skipped (rescore produced no metrics: no corpus here)")
-    elif b is None:
-        # The base rescore worked and the swapped one did not: a failure, not a skip.
-        check(
-            "rescore: the run with swapped source_paths produced metrics",
-            False,
-            ((swapped.stdout or "") + (swapped.stderr or ""))[-300:],
-        )
-    else:
-        check(
-            "rescore: the dataset's source_path is what selects the source text",
-            a != b,
-            "swapping two items' source_path changed nothing — the dataset's source_path is being ignored",
-        )
-    shutil.rmtree(tmp, ignore_errors=True)
+        base = run(*args, env=env)
+        if base.returncode != 0:
+            err = (base.stderr or "") + (base.stdout or "")
+            # A MISSING DEPENDENCY IS A SKIP; ANYTHING ELSE IS THE BUG. The summarisation
+            # scorer needs rouge_score, which lives in that example's venv, so running the
+            # suite on the harness venv legitimately cannot do this one.
+            #
+            # Every other failure is a real one, and this is where the worst of them
+            # surfaced: 24 committed cnn_dailymail_200 runs recorded their adapter as
+            # "summarization-cnn-dailymail/adapter.py" -- relative to the examples root,
+            # which rescore did not try -- so the entire summarisation sweep could not be
+            # rescored. It skipped here as "baseline rescore failed" and said nothing.
+            if "ModuleNotFoundError" in err or "No module named" in err:
+                print("  --   rescore/source_path: skipped (needs the example's venv)")
+            else:
+                lines = [ln for ln in err.splitlines() if ln.strip()]
+                detail = next(
+                    (ln for ln in lines if ln.startswith(("ERROR", "Traceback")) or "Error" in ln),
+                    lines[-1] if lines else "no output",
+                )
+                check("rescore: a committed run can be rescored at all", False, detail[:200])
+            return
+        a = rescored_scores()
+        first = model_runs.first_score(dst)
+        assert first is not None, f"{dst.name} has no first score"
+        for p in model_runs.scores_of(dst):  # the base re-score out of the way: the swapped one is the next
+            if p.name != first.name:
+                shutil.rmtree(p)
+
+        # Swap two items' source_path. The files still exist; each item now points at the
+        # other's text, so any scorer that reads the source must produce different numbers.
+        ds_copy = data / "datasets" / "cnn_dailymail_200.json"
+        ds = _json.loads(ds_copy.read_text())
+        items = [i for i in ds.get("items", []) if i.get("source_path")]
+        items[0]["source_path"], items[1]["source_path"] = (items[1]["source_path"], items[0]["source_path"])
+        ds_copy.write_text(_json.dumps(ds))
+        swapped = run(*args, env=env)
+        b = rescored_scores()
+
+        if a is None:
+            print("  --   rescore/source_path: skipped (rescore produced no metrics: no corpus here)")
+        elif b is None:
+            # The base rescore worked and the swapped one did not: a failure, not a skip.
+            check(
+                "rescore: the run with swapped source_paths produced metrics",
+                False,
+                ((swapped.stdout or "") + (swapped.stderr or ""))[-300:],
+            )
+        else:
+            check(
+                "rescore: the dataset's source_path is what selects the source text",
+                a != b,
+                "swapping two items' source_path changed nothing — the dataset's source_path is being ignored",
+            )
 
 
 def test_a_run_that_measured_nothing_is_not_a_success() -> None:
     """`EVAL_MAX_COST_USD=0` wrote an empty run and exited 0.
 
-    The directory looked like every other run -- metrics.json, predictions.jsonl,
-    outputs/ -- and held `"scores": {}` with zero prediction rows. A sweep script or CI
+    The directory looked like every other run -- run.json, outputs, a score with
+    predictions.jsonl -- and held `"scores": {}` with zero prediction rows. A sweep script or CI
     job saw exit 0 and moved on. Nothing was measured and nothing said so.
 
     Partial results are still kept and the resume hint still prints; that was
     deliberate. What changed is the exit code, because "the cap stopped me after 3 of
-    200 items" and "I measured 200 items" must not both be success. 1 = nothing
-    measured, 2 = stopped early with usable partial results, 0 = complete.
-    """
-    import shutil  # noqa: PLC0415
+    200 items" and "I measured 200 items" must not both be success. 7 = nothing
+    measured, 4 = stopped early with usable partial results, 0 = complete (RUNBOOK, Exit codes).
 
-    runs = HERE.parent / "data" / "runs-selftest-cap"
-    shutil.rmtree(runs, ignore_errors=True)
-    env = {"EVAL_RUNS_DIR": str(runs.relative_to(HERE.parent))}
+    Throwaway passes (`--scratch`), by run ids of their own.
+    """
+    names = ("selftest_cap_control", "selftest_cap_free", "selftest_cap_capped")
+    drop_scratch(*names)
+    try:
+        _nothing_measured(names)
+    finally:
+        drop_scratch(*names)
+
+
+def _nothing_measured(names) -> None:
+    scratch = ("--scratch",)
 
     # THE CONTROL RUNS FIRST, and decides whether this test can run at all. Ordering it
     # after the capped run meant a clone -- where `smoke_v1` is not materialized,
@@ -1545,11 +2149,20 @@ def test_a_run_that_measured_nothing_is_not_a_success() -> None:
     # assertions with nothing measured and FAILED on the control. A test that is green
     # on the author's laptop and red in a fresh clone is the exact shape of bug this
     # review found elsewhere, so it must skip honestly instead.
-    r2 = run("scripts/run.py", "--config", "data/configs/arm_b.yaml", env=env)
+    r2 = run(
+        "scripts/cli.py",
+        "run",
+        "--system",
+        "arm_b_v1",
+        "--dataset",
+        "smoke_v1",
+        *scratch,
+        "--run-id",
+        names[0],
+    )
     out2 = (r2.stdout or "") + (r2.stderr or "")
     if r2.returncode != 0 and "is not materialized" in out2:
         print("  --   cost cap: skipped (smoke_v1 is not materialized in this checkout)")
-        shutil.rmtree(runs, ignore_errors=True)
         return
     # Any other failure of the control is a failure, not a skip.
     why = out2.strip().splitlines()
@@ -1559,25 +2172,44 @@ def test_a_run_that_measured_nothing_is_not_a_success() -> None:
         f"exit {r2.returncode}: {why[-1][:90] if why else 'no output'}",
     )
     if r2.returncode != 0:
-        shutil.rmtree(runs, ignore_errors=True)
         return
-    shutil.rmtree(runs, ignore_errors=True)
 
+    # A cap of 0 means spend nothing: a system known to be free (provider echo) runs under it ...
     r = run(
-        "scripts/run.py",
-        "--config",
-        "data/configs/arm_b.yaml",
-        env={**env, "EVAL_MAX_COST_USD": "0"},
-    )
+        "scripts/cli.py", "run", "--system", "arm_b_v1", "--dataset", "smoke_v1", *scratch,
+        "--run-id", names[1], env={"EVAL_MAX_COST_USD": "0"},
+    )  # fmt: skip
     out = (r.stdout or "") + (r.stderr or "")
-    check("cost cap: a run that scored NO items exits non-zero", r.returncode != 0, f"exit {r.returncode}")
     check(
-        "cost cap: and says nothing was measured",
-        "scored NO items" in out or "Nothing was measured" in out,
-        out[-160:],
+        "cost cap: a cap of 0 does not stop a system known to be free (provider echo): exit 0",
+        r.returncode == 0 and "COST CAP HIT" not in out,
+        f"exit {r.returncode}: {out[-160:]}",
     )
 
-    shutil.rmtree(runs, ignore_errors=True)
+    # ... and one that is not (a hosted provider, no prices declared) is stopped before its first call: nothing is
+    # sent (its address is a closed port besides), nothing is measured, and the message says how to declare it free.
+    with tempfile.TemporaryDirectory() as td:
+        data = shadow_data(Path(td), own=("systems/arm_b_v1.yaml",))
+        (data / "systems" / "selftest_cap_unknown_v1.yaml").write_text(
+            "system_id: selftest_cap_unknown_v1\nparams:\n  provider: openai\n  model: m\n"
+            "  base_url: http://127.0.0.1:9\n",
+            encoding="utf-8",
+        )
+        r = run(
+            "scripts/cli.py", "run", "--system", "selftest_cap_unknown_v1", "--dataset", "smoke_v1", *scratch,
+            "--run-id", names[2], env={"EVAL_MAX_COST_USD": "0", "EVAL_DATA_DIR": str(data)},
+        )  # fmt: skip
+    out = (r.stdout or "") + (r.stderr or "")
+    check(
+        "cost cap: a system not known to be free under a cap of 0 scored NO items: exit 7 (nothing measured)",
+        r.returncode == 7,
+        f"exit {r.returncode}: {out[-200:]}",
+    )
+    check(
+        "cost cap: and says nothing was measured, and how to declare the system free",
+        ("scored NO items" in out or "Nothing was measured" in out) and "usd_per_mtok_in: 0" in out,
+        out[-300:],
+    )
 
 
 def test_adapter_declaration_beats_a_stale_run() -> None:
@@ -1599,49 +2231,56 @@ def test_adapter_declaration_beats_a_stale_run() -> None:
     against the old code too.
     """
     import json as _json  # noqa: PLC0415
-    import shutil  # noqa: PLC0415
+    import tempfile as _tf  # noqa: PLC0415
 
     src = None
-    for d in sorted((HERE.parent / "data" / "runs").glob("sf_*")):
-        if (d / "metrics.json").is_file() and (d / "predictions.jsonl").is_file():
-            m = _json.loads((d / "metrics.json").read_text())
-            if "llm_named_unknown" in (m.get("scores") or {}):
-                src = d
-                break
+    for sd, m in real_scores():
+        d = model_runs.run_of(sd)
+        if (
+            d.name.startswith("sf_")
+            and _outputs.has_rows(sd)
+            and "llm_named_unknown" in (m.get("scores") or {})
+        ):
+            src = d
+            break
     if src is None:
         print("  --   metric kinds: skipped (no reranking run on disk)")
         return
 
-    runs = HERE.parent / "data" / "runs-selftest-kinds"
-    shutil.rmtree(runs, ignore_errors=True)
-    dst = runs / src.name
-    dst.mkdir(parents=True)
-    for name in ("metrics.json", "predictions.jsonl"):
-        shutil.copy2(src / name, dst / name)
-    m = _json.loads((dst / "metrics.json").read_text())
-    m.setdefault("metric_kinds", {})["llm_named_unknown"] = "quality"  # the stale state
-    (dst / "metrics.json").write_text(_json.dumps(m))
+    with _tf.TemporaryDirectory() as td:
+        data = shadow_data(Path(td))
+        dst = add_run(data, src)
+        first = model_runs.first_score(dst)
+        assert first is not None
+        m = _json.loads((first / "metrics.json").read_text())
+        m.setdefault("metric_kinds", {})["llm_named_unknown"] = "quality"  # the stale state
+        (first / "metrics.json").write_text(_json.dumps(m))
+        dataset_id = (model_runs.record(first) or {}).get("dataset_id")
 
-    env = {"EVAL_RUNS_DIR": str(runs.relative_to(HERE.parent))}
-    # --wide: every metric column, so the order of the kinds is what is read, not the terminal's width.
-    r = run("scripts/leaderboard.py", "--dataset-id", str(m.get("dataset_id")), "--wide", env=env)
-    # The COLUMN header, not the "ranked by: ndcg_10" caption above it -- both contain
-    # the metric name, and matching the caption made this fail for the wrong reason.
-    header = next(
-        (ln for ln in (r.stdout or "").splitlines() if "ndcg_10" in ln and ln.split()[:1] == ["arm"]), ""
-    )
-    cols = header.split()
-    ok = (
-        "llm_named_unknown" in cols
-        and "recall_100" in cols
-        and cols.index("llm_named_unknown") > cols.index("recall_100")
-    )
-    check(
-        "metric kinds: the adapter's 'descriptive' overrides a run's stale 'quality'",
-        ok,
-        f"columns: {cols[:14]}",
-    )
-    shutil.rmtree(runs, ignore_errors=True)
+        # --wide: every metric column, so the order of the kinds is what is read, not the terminal's width.
+        r = run(
+            "scripts/cli.py",
+            "leaderboard",
+            str(dataset_id),
+            "--wide",
+            env={"EVAL_DATA_DIR": str(data)},
+        )
+        # The COLUMN header, not the "ranked by: ndcg_10" caption above it -- both contain
+        # the metric name, and matching the caption made this fail for the wrong reason.
+        header = next(
+            (ln for ln in (r.stdout or "").splitlines() if "ndcg_10" in ln and ln.split()[:1] == ["arm"]), ""
+        )
+        cols = header.split()
+        ok = (
+            "llm_named_unknown" in cols
+            and "recall_100" in cols
+            and cols.index("llm_named_unknown") > cols.index("recall_100")
+        )
+        check(
+            "metric kinds: the adapter's 'descriptive' overrides a run's stale 'quality'",
+            ok,
+            f"columns: {cols[:14]}",
+        )
 
 
 def test_a_rescored_run_carries_the_current_parse() -> None:
@@ -1661,9 +2300,12 @@ def test_a_rescored_run_carries_the_current_parse() -> None:
     """
     import json as _json  # noqa: PLC0415
 
-    base = HERE.parent / "data" / "runs"
     gold_dir = HERE.parent / "data" / "references" / "gold" / "few_nerd_280"
-    if not base.is_dir() or not gold_dir.is_dir() or not any(gold_dir.glob("*.txt")):
+    if (
+        not (HERE.parent / "data" / "runs").is_dir()
+        or not gold_dir.is_dir()
+        or not any(gold_dir.glob("*.txt"))
+    ):
         print("  --   rescored parse: the gold corpus is absent — skipped")
         return
     sys.path.insert(0, str(HERE.parents[1] / "examples" / "_shared"))
@@ -1695,14 +2337,14 @@ def test_a_rescored_run_carries_the_current_parse() -> None:
         return tot / n if n else None
 
     checked, stale = 0, []
-    for mj in sorted(base.glob("fn_*/metrics.json")):
-        m = _json.loads(mj.read_text(encoding="utf-8"))
+    for sd, m in real_scores():
+        if not model_runs.run_of(sd).name.startswith("fn_"):
+            continue
         if m.get("dataset_id") != "few_nerd_280":
             continue
-        pj = mj.parent / "predictions.jsonl"
-        if not pj.is_file():
+        if not _outputs.has_rows(sd):
             continue
-        rows = [_json.loads(x) for x in pj.read_text(encoding="utf-8").splitlines() if x.strip()]
+        rows = _runstore.rows(sd)
         if not rows or "predicted" not in (rows[0].get("_meta") or {}):
             continue
         got = mean_item_f1({r["item_id"]: (r.get("_meta") or {}).get("predicted") for r in rows})
@@ -1711,7 +2353,7 @@ def test_a_rescored_run_carries_the_current_parse() -> None:
         checked += 1
         want = m["scores"]["f1"]
         if abs(got - want) > 0.0002:
-            stale.append(f"{m['config_id']}: stored {want:.4f}, its own _meta parses to {got:.4f}")
+            stale.append(f"{m['system_id']}: stored {want:.4f}, its own _meta parses to {got:.4f}")
     if not checked:
         print("  --   rescored parse: no run records _meta.predicted — skipped")
         return
@@ -1807,8 +2449,9 @@ def test_v10_fails_when_a_derived_run_states_no_scorer() -> None:
         "v.v10_derived_runs_carry_the_current_scorer()\n"
         "raise SystemExit(1 if v.problems else 0)"
     )
-    base = HERE.parent / "data" / "runs"
-    mjs = sorted(base.glob("fn_*/metrics.json"))
+    mjs = sorted(
+        sd / "metrics.json" for sd, _m in real_scores() if model_runs.run_of(sd).name.startswith("fn_")
+    )
     if not mjs:
         print("  --   V10 provenance: no rescored runs — skipped")
         return
@@ -1821,12 +2464,12 @@ def test_v10_fails_when_a_derived_run_states_no_scorer() -> None:
         r = run("-c", v10_only)
         out = (r.stdout or "") + (r.stderr or "")
         check(
-            "V10 fails when a derived run states no scorer at all",
+            "V10 fails when a derived score states no scorer at all",
             # On a FAIL line: the hash comparison after it fails too (nothing left to compare),
             # so the exit code and the phrase alone held when this check passed the silent runs.
             r.returncode != 0
             and any(
-                ln.lstrip().startswith("FAIL V10") and "every run states its scorer" in ln
+                ln.lstrip().startswith("FAIL V10") and "every score states its scorer" in ln
                 for ln in out.splitlines()
             ),
             f"exit {r.returncode}",
@@ -1890,72 +2533,72 @@ def test_nemenyi_table_is_computed_not_copied() -> None:
     )
 
 
-def test_two_runs_sharing_a_config_id_are_refused() -> None:
+def test_two_runs_sharing_a_system_id_are_refused() -> None:
     """A second run of the same arm must stop the tools, not be picked by luck.
 
-    Three SciFact arms were re-run, so three config_ids existed twice in data/runs.
+    Three SciFact arms were re-run, so three system_ids existed twice in data/runs.
     `check_report_claims.py` globbed for a run in five places -- three took the last
     hit, two the first, and one had a different exclusion rule -- so its answer depended
     on the order the filesystem returned directories in. 29/29 on APFS, 28/29 on ext4,
     and the failure was real: two cost cells genuinely still held price-table figures.
     `make ci` was called green for a week on the only machine anyone ran it on.
 
-    The re-runs now live in `data/runs-repeats/`. This asserts the tools refuse rather
-    than guess if that ever happens again.
+    The re-runs are runs of their own now, with a purpose (`repeat`) that reads them under another label, so
+    they never share an arm with the run. This asserts the tools refuse rather than guess if two runs of one arm
+    ever do.
 
     `--repeat N` writes `<id>_r1.._rN`, which IS one arm measured N times and must keep
     working; the second half of this test pins that, or the fix would forbid the
     feature it was meant to protect.
     """
     import json as _json  # noqa: PLC0415
-    import shutil  # noqa: PLC0415
+    import tempfile as _tf  # noqa: PLC0415
 
-    from evaluation_harness._runs import AmbiguousRuns, runs_by_arm  # noqa: PLC0415
-
-    src = next(
-        (d for d in sorted((HERE.parent / "data" / "runs").glob("sf_*")) if (d / "metrics.json").is_file()),
-        None,
-    )
+    src = None
+    for sd, m in real_scores():
+        d = model_runs.run_of(sd)
+        if d.name.startswith("sf_"):
+            src, ds = d, m["dataset_id"]
+            break
     if src is None:
         print("  --   duplicate runs: skipped (no SciFact run on disk)")
         return
 
-    runs = HERE.parent / "data" / "runs-selftest-dupe"
-    shutil.rmtree(runs, ignore_errors=True)
-    for name in (src.name, src.name.replace("2026", "2027", 1)):
-        d = runs / name
-        d.mkdir(parents=True)
-        for f in ("metrics.json", "predictions.jsonl"):
-            if (src / f).is_file():
-                shutil.copy2(src / f, d / f)
-
-    ds = _json.loads((src / "metrics.json").read_text())["dataset_id"]
-    raised = False
-    try:
-        runs_by_arm(runs, ds, prefix="sf_", strip="_n200_v1")
-    except AmbiguousRuns as exc:
-        raised = "claim config_id" in str(exc)
-    check(
-        "duplicate runs: two runs sharing a config_id are refused, not picked",
-        raised,
-        "runs_by_arm returned a winner instead of raising",
+    probe = (
+        "import json, sys\n"
+        "from evaluation_harness._runs import AmbiguousRuns, runs_by_arm\n"
+        "try:\n"
+        f"    got = runs_by_arm('', {ds!r}, prefix='sf_', strip='_n200_v1')\n"
+        "    print(json.dumps({'raised': False, 'runs': sum(len(v) for v in got.values()), 'got': str(got)}))\n"
+        "except AmbiguousRuns as exc:\n"
+        "    print(json.dumps({'raised': 'claim system_id' in str(exc), 'runs': 0, 'got': str(exc)}))\n"
     )
 
-    # The control: a --repeat set shares a config_id BY DESIGN and must still load.
-    shutil.rmtree(runs, ignore_errors=True)
-    for i in (1, 2, 3):
-        d = runs / f"{src.name}_r{i}"
-        d.mkdir(parents=True)
-        for f in ("metrics.json", "predictions.jsonl"):
-            if (src / f).is_file():
-                shutil.copy2(src / f, d / f)
-    try:
-        got = runs_by_arm(runs, ds, prefix="sf_", strip="_n200_v1")
-        ok, detail = sum(len(v) for v in got.values()) == 3, str(got)
-    except AmbiguousRuns as exc:
-        ok, detail = False, str(exc)
-    check("duplicate runs: but a --repeat set still loads as one arm", ok, detail[:150])
-    shutil.rmtree(runs, ignore_errors=True)
+    def asked(names: list[str]) -> dict:
+        with _tf.TemporaryDirectory() as td:
+            data = shadow_data(Path(td))
+            for name in names:
+                add_run(data, src, name)
+            r = run("-c", probe, env={"EVAL_DATA_DIR": str(data)})
+        try:
+            return _json.loads((r.stdout or "").strip().splitlines()[-1])
+        except (ValueError, IndexError):
+            return {"raised": False, "runs": 0, "got": (r.stdout or "") + (r.stderr or "")}
+
+    got = asked([src.name, src.name.replace("2026", "2027", 1)])
+    check(
+        "duplicate runs: two runs sharing a system_id are refused, not picked",
+        got["raised"],
+        "runs_by_arm returned a winner instead of raising: " + got["got"][:150],
+    )
+
+    # The control: a --repeat set shares a system_id BY DESIGN and must still load.
+    got = asked([f"{src.name}_r{i}" for i in (1, 2, 3)])
+    check(
+        "duplicate runs: but a --repeat set still loads as one arm",
+        not got["raised"] and got["runs"] == 3,
+        got["got"][:150],
+    )
 
 
 def test_the_reports_significance_counts_are_real() -> None:
@@ -1975,30 +2618,32 @@ def test_the_reports_significance_counts_are_real() -> None:
     import re as _re  # noqa: PLC0415
 
     reparsed = HERE.parent / "data" / "runs"
-    if not any(reparsed.glob("sf_glm_s_n200_v1_*/predictions.jsonl")):
+    if not any(
+        _outputs.has_rows(sd)
+        for sd, _m in real_scores()
+        if model_runs.run_of(sd).name.startswith("sf_glm_s_n200_v1_")
+    ):
         print("  --   significance counts: skipped (no reparsed SciFact runs on disk)")
         return
 
     # Only the 2026-09-28 sweep: the re-runs duplicate arms and would double the family.
-    import shutil  # noqa: PLC0415
     import tempfile as _tf  # noqa: PLC0415
 
     with _tf.TemporaryDirectory() as td:
-        scope = pathlib.Path(td) / "runs"
-        scope.mkdir()
-        for d in reparsed.glob("sf_*_n200_v1_20260928*"):
-            shutil.copytree(d, scope / d.name)
+        data = shadow_data(Path(td))
+        for d in sorted(reparsed.glob("sf_*_n200_v1_20260928*")):
+            add_run(data, d)
         r = run(
-            "scripts/family_test.py",
-            "--dataset-id",
+            "scripts/cli.py",
+            "family-test",
             "scifact_200",
             "--a",
-            "sf_glm_s_n200_v1",
+            "sf_glm_s_v1",
             "--against",
-            "_n200_v1",
+            "sf_",
             "--metric",
             "ndcg_10",
-            env={"EVAL_RUNS_DIR": str(scope)},
+            env={"EVAL_DATA_DIR": str(data)},
         )
 
     m = _re.search(r"significantly different from (\d+) of (\d+) opponents", r.stdout or "")
@@ -2058,30 +2703,24 @@ def test_the_reports_significance_counts_are_real() -> None:
     )
 
 
-def test_promote_reads_its_reason_from_the_env() -> None:
-    """`--reason-from-env` must run. It raised NameError on every invocation.
+def test_promote_refuses_a_missing_reason() -> None:
+    """`evh run-promote` needs a reason, and a blank one is refused, not crashed.
 
-    Added in round 1 to close a backtick injection in `make run-promote`, and shipped
-    broken: `promote_baseline.py` called `os.environ.get` without importing `os`, so
-    the documented command in RUNBOOK:170 died with
-    `NameError: name 'os' is not defined` before doing anything at all.
-
-    It survived because the only test of this script was `--help`, which never reaches
-    the flag. A `--help` test proves a file parses; it proves nothing about the path a
-    user takes. Both assertions here reach line 48 and neither writes a baseline.
+    The reason was once read from the environment (`--reason-from-env`, to keep a backtick in it from the shell) and
+    shipped broken, a NameError on every call. The reason is an input now, required, and `make run-promote` passes
+    `"$$EVAL_PROMOTE_REASON"` as one word. A `--help` test proves a file parses; these reach the check a person
+    meets, and neither writes a baseline.
     """
     r = run(
-        "scripts/promote_baseline.py", "--reason-from-env", "--run", "nope", env={"EVAL_PROMOTE_REASON": ""}
+        "scripts/cli.py", "run-promote", "--run", "nope", "--reason", " ", env={"EVH_ACTOR": "person:test"}
     )
     out = (r.stderr or "") + (r.stdout or "")
     check(
-        "promote: an empty EVAL_PROMOTE_REASON is refused, not crashed",
+        "promote: a blank reason is refused, not crashed",
         r.returncode != 0 and "NameError" not in out,
         out[-160:],
     )
-    # NOT just `"reason" in out`: the NameError traceback echoes the offending source
-    # line, which contains the word "reason", so that assertion passed against the
-    # broken code. It has to be the ERROR MESSAGE, and no traceback.
+    # NOT just `"reason" in out`: a traceback echoes the offending source line, which contains the word "reason".
     check(
         "promote: and it says a reason is required",
         "a reason is required" in out and "Traceback" not in out,
@@ -2089,16 +2728,18 @@ def test_promote_reads_its_reason_from_the_env() -> None:
     )
 
     r = run(
-        "scripts/promote_baseline.py",
-        "--reason-from-env",
+        "scripts/cli.py",
+        "run-promote",
         "--run",
         "_no_such_run_selftest_",
-        env={"EVAL_PROMOTE_REASON": "a reason"},
+        "--reason",
+        "a reason",
+        env={"EVH_ACTOR": "person:test"},
     )
     out = (r.stderr or "") + (r.stdout or "")
     check(
-        "promote: with the env reason set it gets PAST the env read to the run lookup",
-        "NameError" not in out and "no run" in out.lower(),
+        "promote: with a reason it gets past the reason check to the run lookup",
+        "NameError" not in out and "no scored run" in out.lower(),
         out[-160:],
     )
 
@@ -2107,7 +2748,7 @@ def test_rescore_refuses_a_missing_reference_set() -> None:
     """Rescoring with no references must DIE, not score against an empty gold set.
 
     Found by cloning this repo and running rescore in the clone, which is the thing
-    committing outputs/ was supposed to make possible. It ran, it exited 0, and it
+    committing outputs was supposed to make possible. It ran, it exited 0, and it
     reported f1 = 0.1071 for an arm whose recorded f1 is 0.6798.
 
     The cause was an asymmetry two lines apart in rescore.py: a missing OUTPUT called
@@ -2121,54 +2762,53 @@ def test_rescore_refuses_a_missing_reference_set() -> None:
     item. Zero found against a declared reference_id cannot be legitimate.
     """
     import json as _json  # noqa: PLC0415
-    import shutil  # noqa: PLC0415
+    import tempfile as _tf  # noqa: PLC0415
 
     src = None
-    for d in sorted((HERE.parent / "data" / "runs").glob("*")):
-        mj = d / "metrics.json"
-        if not (mj.is_file() and (d / "outputs").is_dir()):
-            continue
-        m = _json.loads(mj.read_text())
-        if ((m.get("fingerprint") or {}).get("data") or {}).get("reference_id"):
+    for sd, m in real_scores():
+        d = model_runs.run_of(sd)
+        if _outputs.has_outputs(d) and ((m.get("fingerprint") or {}).get("data") or {}).get("reference_id"):
             src = d
             break
     if src is None:
         print("  --   rescore/missing-refs: skipped (no committed run declares a reference_id)")
         return
 
-    runs = HERE.parent / "data" / "runs-selftest-rescore"
-    shutil.rmtree(runs, ignore_errors=True)
-    dst = runs / src.name
-    dst.mkdir(parents=True)
-    for name in ("metrics.json", "predictions.jsonl"):
-        shutil.copy2(src / name, dst / name)
-    shutil.copytree(src / "outputs", dst / "outputs")
+    with _tf.TemporaryDirectory() as td:
+        data = shadow_data(Path(td))
+        dst = add_run(data, src)
+        # Point the copy at a reference_id that cannot exist. Equivalent to a fresh clone,
+        # where the real one is absent because the corpus is gitignored -- and it does not
+        # touch the real references, so a crash here cannot damage them.
+        m = _json.loads((dst / "run.json").read_text())
+        m["fingerprint"]["data"]["reference_id"] = "gold/_selftest_absent_reference"
+        (dst / "run.json").write_text(_json.dumps(m))
 
-    # Point the copy at a reference_id that cannot exist. Equivalent to a fresh clone,
-    # where the real one is absent because the corpus is gitignored -- and it does not
-    # touch the real references, so a crash here cannot damage them.
-    m = _json.loads((dst / "metrics.json").read_text())
-    m["fingerprint"]["data"]["reference_id"] = "gold/_selftest_absent_reference"
-    (dst / "metrics.json").write_text(_json.dumps(m))
-
-    env = {"EVAL_RUNS_DIR": str(runs.relative_to(HERE.parent))}
-    r = run(
-        "scripts/rescore.py", "--dataset-id", str(m.get("dataset_id")), "--out", str(runs / "out"), env=env
-    )
-    check(
-        "rescore: a declared-but-absent reference set is refused, not scored",
-        r.returncode != 0,
-        f"exit {r.returncode}",
-    )
-    check(
-        "rescore: and it says the references are what is missing",
-        "reference" in ((r.stderr or "") + (r.stdout or "")).lower(),
-        ((r.stderr or "") + (r.stdout or ""))[-160:],
-    )
-    check(
-        "rescore: it writes no partial rescored run", not (runs / "out" / src.name / "metrics.json").is_file()
-    )
-    shutil.rmtree(runs, ignore_errors=True)
+        before = {p.name for p in model_runs.scores_of(dst)}
+        r = run(
+            "scripts/cli.py",
+            "rescore",
+            "--dataset-id",
+            str(m.get("dataset_id")),
+            "--match",
+            m["system_id"],
+            env={"EVAL_DATA_DIR": str(data)},
+        )
+        check(
+            "rescore: a declared-but-absent reference set is refused, not scored",
+            r.returncode != 0,
+            f"exit {r.returncode}",
+        )
+        check(
+            "rescore: and it says the references are what is missing",
+            "reference" in ((r.stderr or "") + (r.stdout or "")).lower(),
+            ((r.stderr or "") + (r.stdout or ""))[-160:],
+        )
+        check(
+            "rescore: it writes no partial score",
+            {p.name for p in model_runs.scores_of(dst)} == before,
+            sorted(p.name for p in model_runs.scores_of(dst)),
+        )
 
 
 def test_spearman_is_tie_correct() -> None:
@@ -2221,7 +2861,6 @@ def test_rank_stability_ranks_the_right_way_up() -> None:
     """rank-stability ranked every metric highest-first, so for a lower-is-better one
     (latency, cost) it named the SLOWEST arm the leader. Three arms with known latencies on
     20 items: the leader must be the fastest."""
-    import json as _json  # noqa: PLC0415
     import os  # noqa: PLC0415
     import shutil  # noqa: PLC0415
     import tempfile  # noqa: PLC0415
@@ -2229,22 +2868,24 @@ def test_rank_stability_ranks_the_right_way_up() -> None:
     tmp = Path(tempfile.mkdtemp(prefix="harness-rankdir-"))
     try:
         for arm, ms in (("fast", 1.0), ("mid", 2.0), ("slow", 3.0)):
-            d = tmp / "data" / "runs" / f"{arm}_run"
-            d.mkdir(parents=True)
-            (d / "metrics.json").write_text(
-                _json.dumps({"dataset_id": "rd_v1", "config_id": arm, "primary_metric": "latency_ms"})
-            )
-            (d / "predictions.jsonl").write_text(
-                "".join(
-                    _json.dumps({"item_id": f"i{k:02d}", "latency_ms": ms + k / 100}) + "\n"
-                    for k in range(20)
-                )
+            _runstore.make_run(
+                tmp / "data" / "runs",
+                f"{arm}_run",
+                {"dataset_id": "rd_v1", "system_id": arm},
+                scores=[
+                    {
+                        "scorer": "s",
+                        "first": True,
+                        "metrics": {"primary_metric": "latency_ms"},
+                        "rows": [{"item_id": f"i{k:02d}", "latency_ms": ms + k / 100} for k in range(20)],
+                    }
+                ],
             )
         r = subprocess.run(
-            [PY, str(HERE / "rank_stability.py"), "--dataset-id", "rd_v1", "--draws", "20"],
+            [PY, str(HERE / "cli.py"), "rank-stability", "rd_v1", "--draws", "20"],
             capture_output=True,
             text=True,
-            env={**os.environ, "EVAL_HOME": str(tmp), "EVAL_DATA_DIR": "data", "EVAL_RUNS_DIR": ""},
+            env={**os.environ, "EVAL_HOME": str(tmp), "EVAL_DATA_DIR": "data"},
         )
         check(
             "rank-stability: on a lower-is-better metric the leader is the lowest",
@@ -2268,7 +2909,7 @@ def test_v5_tells_a_tie_from_a_copy() -> None:
     is the failure mode this test exists to prevent: a tie must pass, and a real copy must
     still fail.
 
-    V5 itself on a runs directory, in this process: four whole validate_tree runs to read one
+    V5 itself on one arm's scores, in this process: four whole validate_tree runs to read one
     check took 55 s of every `make ci`.
     """
     import shutil  # noqa: PLC0415
@@ -2279,36 +2920,47 @@ def test_v5_tells_a_tie_from_a_copy() -> None:
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
 
-        def make(name: str, model: str, correct_items: list) -> None:
-            d = root / name
-            d.mkdir()
-            (d / "metrics.json").write_text(
-                json.dumps(
+        def make(name: str, model: str, correct_items: list, **extra) -> None:
+            _runstore.make_run(
+                root,
+                name,
+                {
+                    "system_id": name,
+                    "dataset_id": "ds_v1",
+                    "params": {"model": model},
+                    "build": {"ref": "test"},
+                    **extra,
+                },
+                scores=[
                     {
-                        "config_id": name,
-                        "dataset_id": "ds_v1",
-                        "scores": scores,
-                        "params": {"model": model},
-                        "build": {"ref": "test"},
+                        "scorer": "s",
+                        "first": True,
+                        "metrics": {"scores": scores},
+                        "rows": [
+                            {"item_id": f"i{i}", "correct": float(c)} for i, c in enumerate(correct_items)
+                        ],
                     }
-                )
+                ],
             )
-            (d / "predictions.jsonl").write_text(
-                "\n".join(
-                    json.dumps({"item_id": f"i{i}", "correct": float(c)}) for i, c in enumerate(correct_items)
-                )
-            )
+
+        def arm_scores() -> list:
+            """The arm's scores as V5 reads them: (score directory, record)."""
+            return [
+                (sd, model_runs.record(sd))
+                for rd in sorted(root.iterdir())
+                for sd in model_runs.scores_of(rd)
+            ]
 
         # Same mean (2 of 4), DIFFERENT items right. Two measurements.
         make("arm_a", "model-a", [1, 1, 0, 0])
         make("arm_b", "model-b", [0, 0, 1, 1])
-        dupes = vt._v5_in(root)
+        dupes = vt._v5_in("runs", arm_scores())
         check("V5: same mean, different items -> not flagged", not dupes, str(dupes)[:200])
 
         # A real copy: same mean AND the same items right, under different params.
         shutil.rmtree(root / "arm_b")
         make("arm_b", "model-b", [1, 1, 0, 0])
-        dupes = vt._v5_in(root)
+        dupes = vt._v5_in("runs", arm_scores())
         check("V5: same mean, same items, different params -> flagged", len(dupes) == 1, str(dupes)[:200])
 
         # A saturated metric: both arms right on every item, so the items agree too. Different
@@ -2317,15 +2969,37 @@ def test_v5_tells_a_tie_from_a_copy() -> None:
         for name, text in (("arm_a", "label: billing"), ("arm_b", "label: billing\nreason: a refund")):
             shutil.rmtree(root / name)
             make(name, f"model-{name}", [1, 1, 1, 1])
-            (root / name / "outputs").mkdir()
-            for i in range(4):
-                (root / name / "outputs" / f"i{i}.txt").write_text(text)
-        dupes = vt._v5_in(root)
+            _outputs.write_all(root / name, {f"i{i}": text for i in range(4)}, [f"i{i}" for i in range(4)])
+        dupes = vt._v5_in("runs", arm_scores())
         check("V5: all items right, different outputs -> not flagged", not dupes, str(dupes)[:200])
-        for i in range(4):
-            (root / "arm_b" / "outputs" / f"i{i}.txt").write_text("label: billing")
-        dupes = vt._v5_in(root)
+        _outputs.write_all(
+            root / "arm_b", {f"i{i}": "label: billing" for i in range(4)}, [f"i{i}" for i in range(4)]
+        )
+        dupes = vt._v5_in("runs", arm_scores())
         check("V5: all items right, the same outputs -> flagged", len(dupes) == 1, str(dupes)[:200])
+
+        # A regression guard (fleet feedback 28): the same code at another commit declares
+        # `expect_identical_to`, so the identical pair is what was asked for, not an inert knob; and a
+        # guard that does NOT reproduce its config fails.
+        m = json.loads((root / "arm_b" / "run.json").read_text())
+        m["expect_identical_to"] = "arm_a"
+        (root / "arm_b" / "run.json").write_text(json.dumps(m))
+        dupes = vt._v5_in("runs", arm_scores())
+        n, bad = vt._v5_guards("runs", arm_scores())
+        check(
+            "V5: the same outputs, one declaring expect_identical_to the other -> not flagged, the guard holds",
+            not dupes and n == 1 and not bad,
+            (dupes, n, bad),
+        )
+        _outputs.write_all(
+            root / "arm_b", {f"i{i}": "label: refund" for i in range(4)}, [f"i{i}" for i in range(4)]
+        )
+        n, bad = vt._v5_guards("runs", arm_scores())
+        check(
+            "V5: a guard whose outputs differ from the config it must reproduce -> failed, named",
+            n == 1 and len(bad) == 1 and "must reproduce arm_a" in bad[0] and "outputs differ" in bad[0],
+            bad,
+        )
 
 
 def test_rescore_can_move_runs_onto_a_new_reference_set() -> None:
@@ -2334,106 +3008,120 @@ def test_rescore_can_move_runs_onto_a_new_reference_set() -> None:
 
     Fixture: a committed demo run scored against silver/smoke_v1, re-scored against a
     throwaway "gold" set made of that run's own outputs -- so the score must become 1.0,
-    which no copied or stale score could produce.
+    which no copied or stale score could produce. The run is a copy in a data folder of the test's own: the
+    re-score is a second score of the copy.
     """
     import json as _json  # noqa: PLC0415
     import shutil  # noqa: PLC0415
 
     base = HERE.parent / "data"
     # The worked example the repository ships: the run its demo baseline was promoted from.
-    shipped = _json.loads((base / "baselines" / "smoke_v1_baseline.json").read_text())["promoted_from"]
+    shipped = _json.loads((base / "baselines" / "_dataset" / "smoke_v1" / "1.json").read_text())[
+        "promoted_from"
+    ]
     src = base / "runs" / shipped
     check("rescore/reference-id: the committed fixture run exists", src.is_dir())
     if not src.is_dir():
         return
-    runs, gold = base / "runs-selftest-refid", base / "references" / "gold" / "selftest_refid"
+    gold = base / "references" / "gold" / "selftest_refid"
     labels = base / "labels" / "smoke_v1" / "selftest_refid"
-    for d in (runs, gold, labels):
+    for d in (gold, labels):
         shutil.rmtree(d, ignore_errors=True)
-    try:
-        shutil.copytree(src, runs / src.name)
-        # the run's outputs, as a person's labels promoted to gold (RFC-023: a reference is only promoted labels)
-        made = run(
-            "scripts/label_import.py",
-            str((src / "outputs").relative_to(HERE.parent)),
-            "--dataset-id",
-            "smoke_v1",
-            "--set",
-            "selftest_refid",
-            "--by",
-            "self-test",
-        )
-        made = (
-            made
-            if made.returncode
-            else run(
-                "scripts/reference_promote.py",
+    with tempfile.TemporaryDirectory() as td:
+        data = shadow_data(Path(td))
+        env = {"EVAL_DATA_DIR": str(data)}
+        try:
+            dst = add_run(data, src)
+            # the run's outputs, as a person's labels promoted to gold (RFC-023: a reference is only promoted labels):
+            # label-import reads a folder of <item_id>.txt, so they are written out as one first
+            as_labels = Path(td) / "_as_labels"
+            as_labels.mkdir(parents=True, exist_ok=True)
+            for item, text in _outputs.outputs(src).items():
+                (as_labels / f"{item}.txt").write_text(text, encoding="utf-8")
+            made = run(
+                "scripts/cli.py",
+                "label-import",
+                "--sheet",
+                str(as_labels),
                 "--dataset-id",
                 "smoke_v1",
-                "--labels",
+                "--set",
                 "selftest_refid",
-                "--tier",
-                "gold",
-                "--name",
-                "selftest_refid",
-                "--reason",
-                "the run's own outputs, so the score must become 1.0",
                 "--by",
                 "self-test",
+                env=env,
             )
-        )
-        check(
-            "rescore/reference-id: the new set, imported and promoted",
-            made.returncode == 0,
-            ((made.stderr or "") + (made.stdout or ""))[-200:],
-        )
-        out = runs / "out"
-        r = run(
-            "scripts/rescore.py",
-            "--dataset-id",
-            "smoke_v1",
-            "--reference-id",
-            "gold/selftest_refid",
-            "--out",
-            str(out.relative_to(HERE.parent)),
-            env={"EVAL_RUNS_DIR": str(runs.relative_to(HERE.parent))},
-        )
-        mf = out / src.name / "metrics.json"
-        if r.returncode != 0 or not mf.is_file():
-            check("rescore/reference-id: ran", False, ((r.stderr or "") + (r.stdout or ""))[-200:])
-            return
-        m = _json.loads(mf.read_text())
-        data = m["fingerprint"]["data"]
-        check(
-            "rescore/reference-id: scored against the new set (own outputs -> 1.0)",
-            abs(m["scores"].get("overlap_f1", 0) - 1.0) < 1e-9,
-            str(m["scores"].get("overlap_f1")),
-        )
-        check(
-            "rescore/reference-id: the run now says gold, in both places",
-            m.get("reference_tier") == "gold"
-            and data.get("reference_id") == "gold/selftest_refid"
-            and data.get("reference_tier") == "gold",
-            f"{m.get('reference_tier')} {data.get('reference_id')}",
-        )
-        check(
-            "rescore/reference-id: and keeps what it was measured against",
-            data.get("reference_id_at_measurement") == "silver/smoke_v1",
-        )
-        bad = run(
-            "scripts/rescore.py",
-            "--dataset-id",
-            "smoke_v1",
-            "--reference-id",
-            "gold/no_such_set",
-            "--out",
-            str(out.relative_to(HERE.parent)),
-            env={"EVAL_RUNS_DIR": str(runs.relative_to(HERE.parent))},
-        )
-        check("rescore/reference-id: a missing set is refused", bad.returncode != 0)
-    finally:
-        for d in (runs, gold, labels):
-            shutil.rmtree(d, ignore_errors=True)
+            made = (
+                made
+                if made.returncode
+                else run(
+                    "scripts/cli.py",
+                    "reference-promote",
+                    "--dataset-id",
+                    "smoke_v1",
+                    "--labels",
+                    "selftest_refid",
+                    "--tier",
+                    "gold",
+                    "--name",
+                    "selftest_refid",
+                    "--reason",
+                    "the run's own outputs, so the score must become 1.0",
+                    "--by",
+                    "self-test",
+                    env=env,
+                )
+            )
+            check(
+                "rescore/reference-id: the new set, imported and promoted",
+                made.returncode == 0,
+                ((made.stderr or "") + (made.stdout or ""))[-200:],
+            )
+            before = {p.name for p in model_runs.scores_of(dst)}
+            r = run(
+                "scripts/cli.py",
+                "rescore",
+                "--dataset-id",
+                "smoke_v1",
+                "--reference-id",
+                "gold/selftest_refid",
+                env=env,
+            )
+            added = [p for p in model_runs.scores_of(dst) if p.name not in before]
+            if r.returncode != 0 or not added:
+                check("rescore/reference-id: ran", False, ((r.stderr or "") + (r.stdout or ""))[-200:])
+                return
+            m = model_runs.record(added[0]) or {}
+            fp = m["fingerprint"]["data"]
+            check(
+                "rescore/reference-id: scored against the new set (own outputs -> 1.0)",
+                abs(m["scores"].get("overlap_f1", 0) - 1.0) < 1e-9,
+                str(m["scores"].get("overlap_f1")),
+            )
+            check(
+                "rescore/reference-id: the run now says gold, in both places",
+                m.get("reference_tier") == "gold"
+                and fp.get("reference_id") == "gold/selftest_refid"
+                and fp.get("reference_tier") == "gold",
+                f"{m.get('reference_tier')} {fp.get('reference_id')}",
+            )
+            check(
+                "rescore/reference-id: and keeps what it was measured against",
+                fp.get("reference_id_at_measurement") == "silver/smoke_v1",
+            )
+            bad = run(
+                "scripts/cli.py",
+                "rescore",
+                "--dataset-id",
+                "smoke_v1",
+                "--reference-id",
+                "gold/no_such_set",
+                env=env,
+            )
+            check("rescore/reference-id: a missing set is refused", bad.returncode != 0)
+        finally:
+            for d in (gold, labels):
+                shutil.rmtree(d, ignore_errors=True)
 
 
 def test_the_reproduction_tables_agree_with_the_configs_and_runs() -> None:
@@ -2447,17 +3135,17 @@ def test_the_reproduction_tables_agree_with_the_configs_and_runs() -> None:
     ex = ROOT.parent / "examples"
     table = json.loads((ex / "models.json").read_text())["aliases"]
     used = set()
-    for cfg in ex.glob("*/configs/*.yaml"):
+    for cfg in ex.glob("*/systems/*.yaml"):
         model = ((yaml.safe_load(cfg.read_text()) or {}).get("params") or {}).get("model", "")
         if str(model).startswith("eval-"):
             used.add(model)
     check(
-        "models.json: every alias a config uses is mapped",
+        "models.json: every alias a system uses is mapped",
         not used - set(table),
         f"unmapped: {sorted(used - set(table))}",
     )
     check(
-        "models.json: maps no alias that no config uses",
+        "models.json: maps no alias that no system uses",
         not set(table) - used,
         f"unused: {sorted(set(table) - used)}",
     )
@@ -2467,12 +3155,10 @@ def test_the_reproduction_tables_agree_with_the_configs_and_runs() -> None:
     }
     check("litellm.config.yaml serves exactly models.json", proxy == table)
     wrong = []
-    for d in ("runs", "runs-pair", "runs-repeats", "runs-linux"):
-        for f in (ROOT / "data" / d).glob("*/metrics.json"):
-            m = json.loads(f.read_text())
-            sut = _declared_identity(m)
-            if sut.get("id_source") == "proxy-model-info" and sut.get("id") != table.get(sut.get("alias")):
-                wrong.append(f.parent.name)
+    for sd, m in real_scores(None):
+        sut = _declared_identity(m)
+        if sut.get("id_source") == "proxy-model-info" and sut.get("id") != table.get(sut.get("alias")):
+            wrong.append(model_runs.run_of(sd).name)
     check("models.json: agrees with every upstream id a committed run resolved", not wrong, f"{wrong[:3]}")
 
     reg = json.loads((ex / "evals.json").read_text())["evals"]
@@ -2481,17 +3167,17 @@ def test_the_reproduction_tables_agree_with_the_configs_and_runs() -> None:
 
     for e in reg:
         arms = reproduce.committed(e)
-        cfg_ids = set(reproduce.configs(e))
+        system_ids = set(reproduce.systems(e))
         check(
             f"evals.json {e['slug']}: has committed runs and its leader among them",
             bool(arms) and e["leader"] in arms,
             f"{len(arms)} arms",
         )
-        missing = sorted(a for a, v in arms.items() if v["cid"] not in cfg_ids)
+        missing = sorted(a for a, v in arms.items() if v["cid"] not in system_ids)
         check(
-            f"evals.json {e['slug']}: every measured arm has a config to rerun it",
+            f"evals.json {e['slug']}: every measured arm has a system to rerun it",
             not missing,
-            f"no config for {missing}",
+            f"no system for {missing}",
         )
         unknown = [d for d in e["datasets"] if not (ROOT / "data" / "datasets" / f"{d}.json").is_file()]
         check(f"evals.json {e['slug']}: every dataset it fetches is frozen", not unknown, f"{unknown}")
@@ -2509,13 +3195,12 @@ def test_the_reproduction_tables_agree_with_the_configs_and_runs() -> None:
 
     pins = json.loads((ex / "local_models.json").read_text())["revisions"]
     clash = []
-    for d in ("runs", "runs-pair", "runs-repeats", "runs-linux"):
-        for f in (ROOT / "data" / d).glob("*/metrics.json"):
-            sut = _declared_identity(json.loads(f.read_text()))
-            if sut.get("revision_source") in ("hf-snapshot", "loaded-model"):
-                got = sut.get("loaded_revision") or sut.get("revision")
-                if sut.get("id") in pins and pins[sut["id"]] != got:
-                    clash.append(f"{f.parent.name}: {str(got)[:12]}")
+    for sd, m in real_scores(None):
+        sut = _declared_identity(m)
+        if sut.get("revision_source") in ("hf-snapshot", "loaded-model"):
+            got = sut.get("loaded_revision") or sut.get("revision")
+            if sut.get("id") in pins and pins[sut["id"]] != got:
+                clash.append(f"{model_runs.run_of(sd).name}: {str(got)[:12]}")
     check("local_models.json: agrees with every revision a committed run recorded", not clash, f"{clash[:3]}")
     ref = (ROOT.parent / "docs" / "REFERENCE.md").read_text()
     off = [
@@ -2642,23 +3327,29 @@ def test_family_test_cache_never_serves_a_stale_answer() -> None:
     be the recomputed one, not the replay."""
     import tempfile as _tf  # noqa: PLC0415
 
-    def write(root: Path, cid: str, scores: list[float]) -> None:
-        d = root / f"{cid}_20260101T000000Z"
-        d.mkdir(parents=True, exist_ok=True)
-        (d / "metrics.json").write_text(json.dumps({"config_id": cid, "dataset_id": "tds"}), encoding="utf-8")
-        (d / "predictions.jsonl").write_text(
-            "".join(json.dumps({"item_id": f"i{i}", "m": v}) + "\n" for i, v in enumerate(scores)),
-            encoding="utf-8",
+    def write(runs: Path, cid: str, scores: list[float], **extra) -> None:
+        _runstore.make_run(
+            runs,
+            f"{cid}_20260101T000000Z",
+            {"system_id": cid, "dataset_id": "tds", **extra},
+            scores=[
+                {
+                    "scorer": "s",
+                    "first": True,
+                    "rows": [{"item_id": f"i{i}", "m": v} for i, v in enumerate(scores)],
+                }
+            ],
         )
 
     with _tf.TemporaryDirectory() as td:
-        root = Path(td)
+        root = Path(td) / "data" / "runs"
         write(root, "a_x", [1, 1, 1, 1, 1, 1, 1, 1])
         write(root, "b_x", [0, 0, 0, 0, 0, 0, 0, 0])
         write(root, "c_x", [1, 1, 1, 1, 0, 1, 1, 1])
+        env = {"EVAL_HOME": td}
         argv = (
-            "scripts/family_test.py",
-            "--dataset-id",
+            "scripts/cli.py",
+            "family-test",
             "tds",
             "--a",
             "a_x",
@@ -2666,17 +3357,15 @@ def test_family_test_cache_never_serves_a_stale_answer() -> None:
             "_x",
             "--metric",
             "m",
-            "--runs-dir",
-            str(root),
             "--permutations",
             "500",
         )
-        first = run(*argv).stdout
-        again = run(*argv).stdout
+        first = run(*argv, env=env).stdout
+        again = run(*argv, env=env).stdout
         check("family-test cache: a repeat replays the identical answer", first == again and "b_x" in first)
         write(root, "b_x", [1, 1, 1, 1, 1, 1, 1, 0])  # the data moves under the stored answer
-        after = run(*argv).stdout
-        fresh = run(*argv, env={"EVAL_NO_CACHE": "1"}).stdout
+        after = run(*argv, env=env).stdout
+        fresh = run(*argv, env={**env, "EVAL_NO_CACHE": "1"}).stdout
         check("family-test cache: changed scores miss the cache", after != first, after[-300:])
         check("family-test cache: the answer after a change is the recomputed one", after == fresh)
 
@@ -2685,9 +3374,7 @@ def test_family_test_cache_never_serves_a_stale_answer() -> None:
         proj = Path(td)
         runs = proj / "data" / "runs"
         for cid, scores in (("a_x", [1.0] * 6 + [0.0] * 2), ("b_x", [0.0] * 6 + [1.0] * 2)):
-            write(runs, cid, scores)
-            mj = runs / f"{cid}_20260101T000000Z" / "metrics.json"
-            mj.write_text(json.dumps({**json.loads(mj.read_text()), "goal": "g"}), encoding="utf-8")
+            write(runs, cid, scores, goal="g")
         goal = proj / "data" / "goals" / "g.yaml"
         goal.parent.mkdir(parents=True)
 
@@ -2697,10 +3384,10 @@ def test_family_test_cache_never_serves_a_stale_answer() -> None:
                 encoding="utf-8",
             )
 
-        env = {"EVAL_HOME": str(proj), "EVAL_DATA_DIR": "", "EVAL_RUNS_DIR": ""}
+        env = {"EVAL_HOME": str(proj), "EVAL_DATA_DIR": ""}
         gargv = (
-            "scripts/family_test.py",
-            "--dataset-id",
+            "scripts/cli.py",
+            "family-test",
             "tds",
             "--a",
             "a_x",
@@ -2740,9 +3427,15 @@ def test_a_project_elsewhere_imports_runs_and_tests_them() -> None:
     (data / "sources").mkdir(parents=True)
     for n in range(1, 5):
         (data / "sources" / f"ep_{n}.txt").write_text(f"episode {n}\n", encoding="utf-8")
-    env = {"EVAL_HOME": str(proj), "EVAL_DATA_DIR": "data/eval/stats", "EVAL_RUNS_DIR": ""}
+    env = {"EVAL_HOME": str(proj), "EVAL_DATA_DIR": "data/eval/stats"}
     made = run(
-        "scripts/dataset_create.py", "--dataset-id", "proj_v1", "--source-dir", str(data / "sources"), env=env
+        "scripts/cli.py",
+        "dataset-create",
+        "--dataset-id",
+        "proj_v1",
+        "--source-dir",
+        str(data / "sources"),
+        env=env,
     )
     check(
         "project elsewhere: dataset frozen under EVAL_DATA_DIR",
@@ -2761,7 +3454,9 @@ def test_a_project_elsewhere_imports_runs_and_tests_them() -> None:
     for i in ids:
         (answers / f"{i}.txt").write_text(f"reference {i}\n", encoding="utf-8")
     made = run(
-        "scripts/label_import.py",
+        "scripts/cli.py",
+        "label-import",
+        "--sheet",
         str(answers),
         "--dataset-id",
         "proj_v1",
@@ -2775,7 +3470,8 @@ def test_a_project_elsewhere_imports_runs_and_tests_them() -> None:
         made
         if made.returncode
         else run(
-            "scripts/reference_promote.py",
+            "scripts/cli.py",
+            "reference-promote",
             *("--dataset-id", "proj_v1", "--labels", "owner", "--tier", "gold"),
             *("--reason", "the owner's answers decide", "--by", "t"),
             env=env,
@@ -2801,10 +3497,11 @@ def test_a_project_elsewhere_imports_runs_and_tests_them() -> None:
 
     def imp(arm: str, f: Path, *extra: str):
         return run(
-            "scripts/import_run.py",
+            "scripts/cli.py",
+            "import-run",
             "--dataset-id",
             "proj_v1",
-            "--config-id",
+            "--system-id",
             arm,
             "--scores",
             str(f),
@@ -2833,8 +3530,10 @@ def test_a_project_elsewhere_imports_runs_and_tests_them() -> None:
     )
     ref = imp("arm_ref", scores("ref", 0.2), "--reference-id", "gold/proj_v1", "--reference-tier", "gold")
     fp_ref: dict = {}
-    for mj in (data / "runs").glob("arm_ref_*/metrics.json"):
-        fp_ref = _json.loads(mj.read_text()).get("fingerprint") or {}
+    for rd in (data / "runs").glob("arm_ref_*"):
+        first = model_runs.first_score(rd)
+        assert first is not None, f"{rd.name} has no first score"
+        fp_ref = (model_runs.record(first) or {}).get("fingerprint") or {}
     check(
         "fingerprint under EVAL_DATA_DIR: the references' bytes are hashed, not recorded as none",
         ref.returncode == 0 and bool((fp_ref.get("data") or {}).get("references_sha256")),
@@ -2859,14 +3558,16 @@ def test_a_project_elsewhere_imports_runs_and_tests_them() -> None:
     alien = imp("arm_alien", scores("alien", 0, [{"item_id": "not_an_item", "wer": 0.1}]))
     check("import-run: refuses an item the dataset does not have", alien.returncode != 0)
     sub = imp("arm_sub", scores("sub", 0, [{"item_id": ids[0], "wer": 0.1}]), "--allow-subset")
-    m = next((data / "runs").glob("arm_sub_*/metrics.json"), None)
+    sub_run = next((data / "runs").glob("arm_sub_*"), None)
+    sub_first = model_runs.first_score(sub_run) if sub_run else None
+    m = (model_runs.record(sub_first) or {}) if sub_first else None
     check(
         "import-run: --allow-subset records the coverage on the run",
-        sub.returncode == 0 and m is not None and _json.loads(m.read_text())["imported"]["items_scored"] == 1,
+        sub.returncode == 0 and m is not None and m["imported"]["items_scored"] == 1,
     )
     check(
         "import-run: the imported bytes are hashed on the record",
-        m is not None and len(_json.loads(m.read_text())["imported"].get("scores_sha256") or "") == 64,
+        m is not None and len(m["imported"].get("scores_sha256") or "") == 64,
     )
     hashes = {}
     scorer_files = {}
@@ -2884,10 +3585,12 @@ def test_a_project_elsewhere_imports_runs_and_tests_them() -> None:
     for arm, sf in scorer_files.items():
         # The same arm and scores each time; only the scoring code differs.
         imp("arm_s", scores("s", 0.2), "--scorer-file", str(sf), "--run-id", arm)
-        smj = next((data / "runs").glob(f"{arm}/metrics.json"), None)
-        fp_s = _json.loads(smj.read_text())["fingerprint"] if smj else {}
+        srun = data / "runs" / arm
+        srun_first = model_runs.first_score(srun) if srun.is_dir() else None
+        fp_s = (model_runs.record(srun_first) or {}).get("fingerprint") or {} if srun_first else {}
         hashes[arm] = (fp_s.get("hash"), (fp_s.get("instrument") or {}).get("adapter", {}).get("sha256"))
-        shutil.rmtree(smj.parent, ignore_errors=True) if smj else None
+        shutil.rmtree(srun, ignore_errors=True)
+        sf.unlink(missing_ok=True)  # beside the project, not in it: its rmtree does not take it
     check(
         "import-run: the scoring code's hash is the adapter's, inside the fingerprint hash",
         bool(hashes["arm_s1"][1]) and hashes["arm_s1"][0] != hashes["arm_s2"][0],
@@ -2900,8 +3603,8 @@ def test_a_project_elsewhere_imports_runs_and_tests_them() -> None:
     )
 
     pt = run(
-        "scripts/pair_test.py",
-        "--dataset-id",
+        "scripts/cli.py",
+        "pair-test",
         "proj_v1",
         "--a",
         "arm_lo",
@@ -2918,8 +3621,8 @@ def test_a_project_elsewhere_imports_runs_and_tests_them() -> None:
         pt.stdout[-300:],
     )
     ft = run(
-        "scripts/family_test.py",
-        "--dataset-id",
+        "scripts/cli.py",
+        "family-test",
         "proj_v1",
         "--a",
         "arm_lo",
@@ -2951,7 +3654,7 @@ def test_hints_name_the_command_the_user_has() -> None:
     repository has. A project that pins the package has `evh`, so its first step, GUIDE step
     1, ended "Next: make dataset-materialize DATASET_ID=tickets_v1", and four of the hints
     named targets no project has (`make promote`, `make demo`). Through `evh` each hint is an
-    `evh` command; run as a checkout's script it stays `make`."""
+    `evh` command."""
     import os  # noqa: PLC0415
     import shutil  # noqa: PLC0415
     import tempfile  # noqa: PLC0415
@@ -2969,7 +3672,6 @@ def test_hints_name_the_command_the_user_has() -> None:
             **os.environ,
             "EVAL_HOME": str(proj),
             "EVAL_DATA_DIR": "data",
-            "EVAL_RUNS_DIR": "",
             "PYTHONPATH": str(site),
             "PYTHONDONTWRITEBYTECODE": "1",
         }
@@ -2981,23 +3683,10 @@ def test_hints_name_the_command_the_user_has() -> None:
             )
             return r.stdout + r.stderr
 
-        def script(name: str, *args: str) -> str:
-            r = subprocess.run(
-                [PY, str(site / "evaluation_harness" / name), *args],
-                cwd=proj,
-                capture_output=True,
-                text=True,
-                env=env,
-            )
-            return r.stdout + r.stderr
-
         created = evh("dataset-create", "--dataset-id", "h_v1", "--source-dir", "data/sources/h_v1")
-        base = evh("runs-list", "--baselines")
+        base = evh("baselines")
         none = evh("runs-list")
-        missing = evh("leaderboard", "--dataset-id", "nope_v1")
-        direct = script(
-            "dataset_create.py", "--dataset-id", "h_v1", "--source-dir", "data/sources/h_v1", "--force"
-        )
+        missing = evh("leaderboard", "nope_v1")
         outs = (created, base, none, missing)
         check(
             "hints: through evh, the next step is an evh command",
@@ -3011,11 +3700,6 @@ def test_hints_name_the_command_the_user_has() -> None:
         )
         check(
             "hints: promoting a baseline is `evh run-promote`", "evh run-promote --run" in base, base[-200:]
-        )
-        check(
-            "hints: a checkout's script keeps the make form",
-            "Next: make dataset-materialize DATASET_ID=h_v1" in direct,
-            direct[-300:],
         )
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
@@ -3044,7 +3728,10 @@ def test_rescore_finds_the_bundled_adapter_from_an_installed_package() -> None:
         proj = tmp / "project"
         data = proj / "data"
         (data / "sources" / "rs_v1").mkdir(parents=True)
-        (data / "configs").mkdir(parents=True)
+        (data / "systems").mkdir(parents=True)
+        from evaluation_harness import _format  # noqa: PLC0415
+
+        (data / "project.yaml").write_text(f"format: {_format.FORMAT}\n")  # as evh init stamps it
         for i in ("t1", "t2", "t3"):
             (data / "sources" / "rs_v1" / f"{i}.txt").write_text(
                 f"Ticket {i} cannot log in. It fails twice. The user reset the password. Support replied.\n"
@@ -3052,14 +3739,13 @@ def test_rescore_finds_the_bundled_adapter_from_an_installed_package() -> None:
         # Four arms: silver-calibrate needs three to rank plus the one authoring the silver.
         for n in (1, 2, 3, 4):
             name = "arm_echo" if n == 1 else f"arm_echo{n}"
-            (data / "configs" / f"{name}.yaml").write_text(
-                f"config_id: {name}_v1\ndataset_id: rs_v1\nparams:\n  provider: echo\n  sentences: {n}\n"
+            (data / "systems" / f"{name}_v1.yaml").write_text(
+                f"system_id: {name}_v1\nparams:\n  provider: echo\n  sentences: {n}\n"
             )
         env = {
             **os.environ,
             "EVAL_HOME": str(proj),
             "EVAL_DATA_DIR": "data",
-            "EVAL_RUNS_DIR": "",
             "PYTHONPATH": str(site),
             "PYTHONDONTWRITEBYTECODE": "1",
             "EVAL_MAX_COST_USD": "",
@@ -3073,7 +3759,7 @@ def test_rescore_finds_the_bundled_adapter_from_an_installed_package() -> None:
         steps = [
             evh("dataset-create", "--dataset-id", "rs_v1", "--source-dir", str(data / "sources" / "rs_v1")),
             evh("dataset-materialize", "--dataset-id", "rs_v1"),
-            evh("run", "--config", str(data / "configs" / "arm_echo4.yaml"), "--run-id", "author"),
+            evh("run", "--system", "arm_echo4_v1", "--dataset", "rs_v1", "--run-id", "author"),
         ]
         # silver first, so the runs are scored against it and rescore moves them to gold: arm_echo4's outputs as
         # a model's labels, promoted (RFC-023)
@@ -3092,14 +3778,32 @@ def test_rescore_finds_the_bundled_adapter_from_an_installed_package() -> None:
                 "--by",
                 "self-test",
             ),
-            *(evh("run", "--config", str(c)) for c in sorted((data / "configs").glob("*.yaml"))),
+            *(
+                evh("run", "--system", c.stem, "--dataset", "rs_v1")
+                for c in sorted((data / "systems").glob("*.yaml"))
+            ),
         ]
         check(
             "installed rescore: a run made with the bundled adapter",
             all(s.returncode == 0 for s in steps),
             "".join(s.stderr for s in steps)[-300:],
         )
-        made = [json.loads(p.read_text()) for p in (data / "runs").glob("arm_echo_v1_*/metrics.json")]
+
+        def echo_scores(reference: str | None = None) -> list[dict]:
+            """The records of arm_echo_v1's scores (those against `reference`, when named), read from the project's
+            own files."""
+            out = []
+            for rd in sorted((data / "runs").glob("arm_echo_v1_*")):
+                for sd in model_runs.scores_of(rd):
+                    rec = model_runs.record(sd) or {}
+                    if (
+                        reference is None
+                        or ((rec.get("fingerprint") or {}).get("data") or {}).get("reference_id") == reference
+                    ):
+                        out.append(rec)
+            return out
+
+        made = echo_scores()
         check(
             "bundled adapter: its runs record a primary metric (the catalog's headline, the "
             "leaderboard's sort, the inspector's default)",
@@ -3111,7 +3815,15 @@ def test_rescore_finds_the_bundled_adapter_from_an_installed_package() -> None:
         for i in ("t1", "t2", "t3"):
             (answers / f"{i}.txt").write_text(f"Ticket {i}: cannot log in.\n")
         r = evh(
-            "label-import", str(answers), "--dataset-id", "rs_v1", "--set", "owner_gold", "--by", "self-test"
+            "label-import",
+            "--sheet",
+            str(answers),
+            "--dataset-id",
+            "rs_v1",
+            "--set",
+            "owner_gold",
+            "--by",
+            "self-test",
         )
         r = (
             r
@@ -3134,15 +3846,7 @@ def test_rescore_finds_the_bundled_adapter_from_an_installed_package() -> None:
             "installed rescore: gold, imported and promoted", r.returncode == 0, (r.stdout + r.stderr)[-300:]
         )
         gold = data / "references" / "gold" / "rs_v1"
-        r = evh(
-            "rescore",
-            "--dataset-id",
-            "rs_v1",
-            "--reference-id",
-            "gold/rs_v1",
-            "--out",
-            str(data / "runs-gold"),
-        )
+        r = evh("rescore", "--dataset-id", "rs_v1", "--reference-id", "gold/rs_v1")
         out = r.stdout + r.stderr
         check(
             "installed rescore: it finds the bundled adapter inside the package",
@@ -3150,14 +3854,11 @@ def test_rescore_finds_the_bundled_adapter_from_an_installed_package() -> None:
             out[-300:],
         )
         check(
-            "installed rescore: the re-scored run is written",
-            any((data / "runs-gold").glob("arm_echo_v1_*/metrics.json")),
+            "installed rescore: the re-score is written, a second score of each run",
+            bool(echo_scores("gold/rs_v1")),
             out[-300:],
         )
-        moved = [
-            json.loads(p.read_text())["fingerprint"]["data"]
-            for p in (data / "runs-gold").glob("arm_echo_v1_*/metrics.json")
-        ]
+        moved = [rec["fingerprint"]["data"] for rec in echo_scores("gold/rs_v1")]
         # Moving runs onto another reference set is not the reference files changing: the
         # old and the new set are different files, so their hashes always differ. The flag
         # was set, and "CHANGED" printed, on every deliberate move (0.3.0 and before).
@@ -3176,44 +3877,20 @@ def test_rescore_finds_the_bundled_adapter_from_an_installed_package() -> None:
                 for f in moved
             ],
         )
-        # ...while the same set's files changing under a run is still called out.
+        # ...while the same set's files changing under a run is still called out: the score it was scored by is
+        # not written over with other rows, and the refusal says why.
+        kept = echo_scores("gold/rs_v1")
         (gold / "t1.txt").write_text("Ticket t1: login fails twice.\n")
-        again = subprocess.run(
-            [
-                PY,
-                "-m",
-                "evaluation_harness",
-                "rescore",
-                "--dataset-id",
-                "rs_v1",
-                "--reference-id",
-                "gold/rs_v1",
-                "--out",
-                str(data / "runs-gold2"),
-            ],
-            cwd=proj,
-            capture_output=True,
-            text=True,
-            env={**env, "EVAL_RUNS_DIR": str(data / "runs-gold")},
-        )
-        changed = [
-            json.loads(p.read_text())["fingerprint"]["data"]
-            for p in (data / "runs-gold2").glob("arm_echo_v1_*/metrics.json")
-        ]
+        again = evh("rescore", "--dataset-id", "rs_v1", "--reference-id", "gold/rs_v1")
         check(
-            "rescore against the same reference after its files changed: flagged and warned",
-            changed
-            and all(f.get("references_changed_since_measurement") is True for f in changed)
-            and "CHANGED" in again.stdout,
-            (again.stdout + again.stderr)[-200:],
+            "rescore against the same reference after its files changed: refused, the stored score kept",
+            again.returncode != 0
+            and "ERROR (would-overwrite)" in again.stderr
+            and "its references or outputs changed under the same scorer" in again.stderr
+            and echo_scores("gold/rs_v1") == kept,
+            (again.stdout + again.stderr)[-300:],
         )
-        sc = subprocess.run(
-            [PY, "-m", "evaluation_harness", "silver-calibrate", "--dataset-id", "rs_v1"],
-            cwd=proj,
-            capture_output=True,
-            text=True,
-            env={**env, "EVAL_RUNS_DIR": str(data / "runs-gold")},
-        )
+        sc = evh("silver-calibrate", "--dataset-id", "rs_v1")
         check(
             "installed silver-calibrate: it finds the bundled adapter inside the package",
             sc.returncode == 0
@@ -3279,7 +3956,6 @@ def test_judge_score_runs_from_an_installed_package() -> None:
         env = {
             "EVAL_HOME": str(proj),
             "EVAL_DATA_DIR": "data",
-            "EVAL_RUNS_DIR": "",
             **({} if installed else {"PYTHONPATH": str(site)}),
             "PYTHONDONTWRITEBYTECODE": "1",
             "LITELLM_BASE_URL": "",
@@ -3306,27 +3982,30 @@ def test_judge_score_runs_from_an_installed_package() -> None:
             (made.stderr + mat.stderr)[-300:],
         )
         for arm, fam in (("arm_a", "gemma"), ("arm_b", "qwen")):
-            d = data / "runs" / f"{arm}_20260101T000000Z"
-            (d / "outputs").mkdir(parents=True)
-            for i in ids:
-                (d / "outputs" / f"{i}.txt").write_text(f"{arm} summary of {i}\n")
-            (d / "predictions.jsonl").write_text(
-                "".join(_json.dumps({"item_id": i, "rouge1": 0.3}) + "\n" for i in ids)
-            )
-            (d / "metrics.json").write_text(
-                _json.dumps(
+            _runstore.make_run(
+                data / "runs",
+                f"{arm}_20260101T000000Z",
+                {
+                    "system_id": arm,
+                    "dataset_id": "jds_v1",
+                    "created_at": "2026-01-01T00:00:00Z",
+                    "params": {"family": fam},
+                    "n_items": 3,
+                },
+                outputs={i: f"{arm} summary of {i}\n" for i in ids},
+                scores=[
                     {
-                        "config_id": arm,
-                        "dataset_id": "jds_v1",
-                        "created_at": "2026-01-01T00:00:00Z",
-                        "params": {"family": fam},
-                        "n_items": 3,
-                        "primary_metric": "rouge1",
-                        "reference_tier": "silver",
-                        "scores": {"rouge1": 0.3},
-                        "metric_kinds": {"rouge1": "quality"},
+                        "scorer": "a1b2c3d4e5f6",
+                        "first": True,
+                        "metrics": {
+                            "primary_metric": "rouge1",
+                            "reference_tier": "silver",
+                            "scores": {"rouge1": 0.3},
+                            "metric_kinds": {"rouge1": "quality"},
+                        },
+                        "rows": [{"item_id": i, "rouge1": 0.3} for i in ids],
                     }
-                )
+                ],
             )
         (proj / "prompts").mkdir()
         shutil.copy2(
@@ -3357,12 +4036,20 @@ def test_judge_score_runs_from_an_installed_package() -> None:
                 }
             )
         )
-        judged = data / "runs-judged" / "judge-fake-v1"
+
+        def judged_scores(scorer: str) -> list[Path]:
+            """The scores a judging pass wrote: under each run, keyed by the judge scorer and the judging set."""
+            return sorted(
+                sd
+                for rd in sorted((data / "runs").glob("arm_*"))
+                for sd in model_runs.scores_of(rd)
+                if sd.name.startswith(f"{scorer}@")
+            )
 
         refused = evh("judge-score", "--dataset-id", "jds_v1", "--scorer", "judge-fake-v1")
         check(
             "installed judge-score: a fake-judge scorer is refused without --unvalidated",
-            refused.returncode == 3 and "REFUSED" in refused.stderr and not judged.exists(),
+            refused.returncode == 3 and "REFUSED" in refused.stderr and not judged_scores("judge-fake-v1"),
             refused.stderr[-300:],
         )
         dry = evh(
@@ -3372,13 +4059,13 @@ def test_judge_score_runs_from_an_installed_package() -> None:
             "installed judge-score: --dry-run counts the calls and writes nothing",
             dry.returncode == 0
             and "DRY RUN" in dry.stdout
-            and not judged.exists()
+            and not judged_scores("judge-fake-v1")
             and not (data / "judge-verdicts").exists(),
             (dry.stderr + dry.stdout)[-300:],
         )
         ran = evh("judge-score", "--dataset-id", "jds_v1", "--scorer", "judge-fake-v1", "--unvalidated")
-        runs = sorted(judged.glob("arm_*/metrics.json"))
-        m = _json.loads(runs[0].read_text()) if runs else {}
+        runs = judged_scores("judge-fake-v1")
+        m = (model_runs.record(runs[0]) or {}) if runs else {}
         check(
             "installed judge-score: scored runs land in the project's data dir, labelled unvalidated",
             ran.returncode == 0
@@ -3396,15 +4083,23 @@ def test_judge_score_runs_from_an_installed_package() -> None:
         check("installed judge-score: nothing was written beside the package code", listing() == before)
         check(
             "installed judge-score: nothing was written into this checkout's data",
-            not (ROOT / "data" / "runs-judged" / "judge-fake-v1" / "arm_a_20260101T000000Z").exists()
+            not list((ROOT / "data" / "runs").glob("arm_a_20260101T000000Z"))
             and not list((ROOT / "data" / "judging-sets").glob("jds_v1-*")),
         )
         board = subprocess.run(
-            [ipy, "-m", "evaluation_harness", "leaderboard", "--dataset-id", "jds_v1"],
+            [
+                ipy,
+                "-m",
+                "evaluation_harness",
+                "leaderboard",
+                "jds_v1",
+                "--label",
+                "judged/judge-fake-v1",
+            ],
             cwd=proj,
             capture_output=True,
             text=True,
-            env={**os.environ, **env, "EVAL_RUNS_DIR": str(judged)},
+            env={**os.environ, **env},
         )
         check(
             "installed judge-score: leaderboard reads the scored runs",
@@ -3465,12 +4160,11 @@ def test_judge_score_runs_from_an_installed_package() -> None:
             )
         )
         task_ran = evh("judge-score", "--dataset-id", "jds_v1", "--scorer", "judge-task-v1", "--unvalidated")
-        tjudged = data / "runs-judged" / "judge-task-v1"
         tvals = [
-            _json.loads(line)["judge_score_unvalidated"]
-            for f in sorted(tjudged.glob("arm_*/predictions.jsonl"))
-            for line in f.read_text().splitlines()
-            if line.strip()
+            r["judge_score_unvalidated"]
+            for d in judged_scores("judge-task-v1")
+            if _outputs.has_rows(d)
+            for r in _runstore.rows(d)
         ]
         tsets = [_json.loads(f.read_text()) for f in (data / "judging-sets").glob("jds_v1-*.json")]
         tverd = [
@@ -3532,9 +4226,9 @@ def main() -> int:
         test_v4_neither_skips_a_missing_file_nor_hides_what_it_did_not_check,
         test_v10_fails_when_a_derived_run_states_no_scorer,
         test_nemenyi_table_is_computed_not_copied,
-        test_two_runs_sharing_a_config_id_are_refused,
+        test_two_runs_sharing_a_system_id_are_refused,
         test_the_reports_significance_counts_are_real,
-        test_promote_reads_its_reason_from_the_env,
+        test_promote_refuses_a_missing_reason,
         test_rescore_refuses_a_missing_reference_set,
         test_spearman_is_tie_correct,
         test_rank_stability_ranks_the_right_way_up,

@@ -19,6 +19,9 @@ import tempfile
 from pathlib import Path
 from types import SimpleNamespace
 
+# Reads this repository's committed data (scorers, runs, verdicts), which is files.
+os.environ["EVAL_STORE"] = "files"
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tests/
 sys.path.insert(1, str(Path(__file__).resolve().parents[1] / "tools"))  # validate_judge_*
@@ -26,11 +29,25 @@ import functools
 import operator
 
 from evaluation_harness import judge_score as js
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runfix
+import _runstore
 from evaluation_harness import judging
 from evaluation_harness._common import load_module
+from evaluation_harness.model import runs as model_runs
 
 HERE = Path(__file__).resolve().parents[1] / "scripts"  # the core modules (this file is in tests/)
+from evaluation_harness import _outputs  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
+
+
+def cli_main(argv: list[str]) -> int:
+    """`evh judge-score` on this line, in this process (the exit code the command gives)."""
+    from evaluation_harness import ops  # noqa: PLC0415
+    from evaluation_harness.ops import cli as ops_cli  # noqa: PLC0415
+
+    return ops_cli.main(ops.OPS["judge-score"], argv)
 
 
 def _exit(fn):
@@ -55,11 +72,11 @@ N_ARMS = 20
 ITEMS = ["itemA", "itemB", "itemC"]
 FAMILIES = ["gemma", "qwen", "other", "other"]
 ARMS: list[dict] = [
-    {"config_id": f"arm{k:02d}_v1", "run": f"arm{k:02d}_v1_2026", "dir": None, "family": FAMILIES[k % 4]}
+    {"system_id": f"arm{k:02d}_v1", "run": f"arm{k:02d}_v1_2026", "dir": None, "family": FAMILIES[k % 4]}
     for k in range(N_ARMS)
 ]
 ARTICLES = {i: f"Article text for {i}. It is long enough to be an article." for i in ITEMS}
-OUTPUTS = {a["config_id"]: {i: f"summary q{k:02d} about {i}" for i in ITEMS} for k, a in enumerate(ARMS)}
+OUTPUTS = {a["system_id"]: {i: f"summary q{k:02d} about {i}" for i in ITEMS} for k, a in enumerate(ARMS)}
 
 
 def scorer(**over):
@@ -259,7 +276,7 @@ check(
     != m1["judging_set_id"],
 )
 bumped = {a: dict(o) for a, o in OUTPUTS.items()}
-bumped[ARMS[3]["config_id"]]["itemB"] += " changed"
+bumped[ARMS[3]["system_id"]]["itemB"] += " changed"
 check(
     "one changed output is a different set",
     manifest_for(outputs=bumped)["judging_set_id"] != m1["judging_set_id"],
@@ -271,7 +288,7 @@ check(
 check(
     "every arm sits in exactly one block per item, in every pass",
     all(
-        sorted(functools.reduce(operator.iadd, it[k], [])) == sorted(a["config_id"] for a in ARMS)
+        sorted(functools.reduce(operator.iadd, it[k], [])) == sorted(a["system_id"] for a in ARMS)
         for it in m1["items"]
         for k in ("primary", "position")
     ),
@@ -312,7 +329,7 @@ msgs = [
     for p in ("primary", "position")
     for b in range(2)
 ]
-names = [a["config_id"] for a in ARMS] + [a["run"] for a in ARMS] + ["gemma", "qwen"]
+names = [a["system_id"] for a in ARMS] + [a["run"] for a in ARMS] + ["gemma", "qwen"]
 check("no arm id, run name or family appears in any prompt", not any(n in m for m in msgs for n in names))
 check(
     "summaries are numbered by position only",
@@ -349,7 +366,7 @@ with tempfile.TemporaryDirectory() as tmp:
     sc = scorer()
     scores = js.load_scores(m1, sc, Path(td))
     proj = js.project(sc, scores, ITEMS)
-    k_of = {a["config_id"]: k for k, a in enumerate(ARMS)}
+    k_of = {a["system_id"]: k for k, a in enumerate(ARMS)}
     check(
         "projection: judge A's score for an arm is the mean of its four dimensions",
         all(abs(proj[i][c]["ja"] - expected_a(k)) < 1e-9 for i in ITEMS for c, k in k_of.items()),
@@ -620,10 +637,10 @@ with tempfile.TemporaryDirectory() as tmp:
 real_runs = HERE.parent / "data" / "runs"
 check(
     "the committed scorer passes the gate against the committed SummEval runs",
-    js.validation_problems(real, real_runs) == [],
+    js.validation_problems(real) == [],
 )
 no_val = {k: v for k, v in real.items() if k != "validation"}
-check("no validation block: refused", js.validation_problems(no_val, real_runs) != [])
+check("no validation block: refused", js.validation_problems(no_val) != [])
 ghost = dict(
     real,
     validation=dict(
@@ -632,14 +649,14 @@ ghost = dict(
 )
 check(
     "a validation that names no committed run: refused",
-    any("is not in" in p for p in js.validation_problems(ghost, real_runs)),
+    any("is not in" in p for p in js.validation_problems(ghost)),
 )
 wrong = dict(
     real, validation=dict(real["validation"], runs=[dict(r, value=0.9) for r in real["validation"]["runs"]])
 )
 check(
     "a claimed value that the committed run does not have: refused",
-    any("claims" in p for p in js.validation_problems(wrong, real_runs)),
+    any("claims" in p for p in js.validation_problems(wrong)),
 )
 swap = dict(
     real,
@@ -653,20 +670,18 @@ swap = dict(
 )
 check(
     "a run that measured a different model than the judge: refused",
-    any("measured model" in p for p in js.validation_problems(swap, real_runs)),
+    any("measured model" in p for p in js.validation_problems(swap)),
 )
 partial = dict(real, validation=dict(real["validation"], runs=real["validation"]["runs"][:1]))
 check(
     "a judge no validation run names: refused",
-    any("no validation run names it" in p for p in js.validation_problems(partial, real_runs)),
+    any("no validation run names it" in p for p in js.validation_problems(partial)),
 )
 check(
     "a prompt that is not the validated one: refused",
     any(
         "sha256_at_16" in p
-        for p in js.validation_problems(
-            dict(real, prompt=dict(real["prompt"], sha256_at_16="0" * 64)), real_runs
-        )
+        for p in js.validation_problems(dict(real, prompt=dict(real["prompt"], sha256_at_16="0" * 64)))
     ),
 )
 for k_, v_, what_ in (
@@ -682,12 +697,12 @@ for k_, v_, what_ in (
     )
     check(
         f"gate: a scorer whose judge differs from the validated run in {what_}: refused",
-        any(f"{k_}=" in p for p in js.validation_problems(changed, real_runs)),
+        any(f"{k_}=" in p for p in js.validation_problems(changed)),
     )
 no_sha = dict(real, prompt={k: v for k, v in real["prompt"].items() if k != "sha256_at_16"})
 check(
     "gate: a validation block without prompt.sha256_at_16: refused",
-    any("required" in p for p in js.validation_problems(no_sha, real_runs)),
+    any("required" in p for p in js.validation_problems(no_sha)),
 )
 with tempfile.TemporaryDirectory() as tmp:
     td = Path(tmp)
@@ -702,7 +717,6 @@ with tempfile.TemporaryDirectory() as tmp:
             "prompt file" in p
             for p in js.validation_problems(
                 dict(real, prompt=dict(real["prompt"], file="examples/summeval-judging/other.txt")),
-                real_runs,
                 Path(td),
             )
         ),
@@ -713,7 +727,7 @@ floor = dict(
 )
 check(
     "gate: a judge whose validation metric is below min_metric: refused",
-    sum("below the scorer's min_metric" in p for p in js.validation_problems(floor, real_runs)) == 2,
+    sum("below the scorer's min_metric" in p for p in js.validation_problems(floor)) == 2,
 )
 check(
     "the committed scorer sets min_metric on every judge",
@@ -729,19 +743,19 @@ with tempfile.TemporaryDirectory() as tmp:
     rd = Path(td) / "runs"
     for r_ in real["validation"]["runs"]:
         shutil.copytree(real_runs / r_["run"], rd / r_["run"])
-    mf = rd / real["validation"]["runs"][0]["run"] / "metrics.json"
+    mf = rd / real["validation"]["runs"][0]["run"] / "run.json"
     mj_ = json.loads(mf.read_text())
     mj_["fingerprint"]["settings"]["declared"]["prompt_sha256"] = "0" * 64
     mf.write_text(json.dumps(mj_))
     check(
         "gate: a validation run that used a different prompt: refused",
-        any("used prompt" in p for p in js.validation_problems(real, rd)),
+        any("used prompt" in p for p in js.validation_problems(real, runs_dir=rd)),
     )
     del mj_["fingerprint"]["settings"]["declared"]["prompt_sha256"]
     mf.write_text(json.dumps(mj_))
     check(
         "gate: a validation run that recorded no prompt sha: refused",
-        any("records no prompt sha256" in p for p in js.validation_problems(real, rd)),
+        any("records no prompt sha256" in p for p in js.validation_problems(real, runs_dir=rd)),
     )
 
 one_family = dict(real, judges=[real["judges"][0], real["judges"][0]])
@@ -788,14 +802,13 @@ with tempfile.TemporaryDirectory() as tmp:
     )
     old = (js.SCORERS, sys.argv)
     js.SCORERS = Path(td)
-    sys.argv = ["judge_score.py", "--dataset-id", real["dataset_id"], "--scorer", "judge-test-unval"]
     try:
         import contextlib
         import io
 
         buf = io.StringIO()
         with contextlib.redirect_stderr(buf):
-            rc = js.main()
+            rc = cli_main(["--dataset-id", real["dataset_id"], "--scorer", "judge-test-unval"])
     finally:
         js.SCORERS, sys.argv = old
     check("CLI: an unvalidated scorer exits 3 and says REFUSED", rc == 3 and "REFUSED" in buf.getvalue())
@@ -803,29 +816,29 @@ with tempfile.TemporaryDirectory() as tmp:
 # ── scored runs: shape, provenance, originals untouched, readable by the leaderboard ──
 with tempfile.TemporaryDirectory() as tmp:
     td = Path(tmp)
-    runs = td / "runs"
-    arms = []
-    for a in ARMS:
-        d = runs / a["run"]
-        (d / "outputs").mkdir(parents=True)
-        rows = []
-        for i in ITEMS:
-            (d / "outputs" / f"{i}.txt").write_text(OUTPUTS[a["config_id"]][i])
-            rows.append(
+    # a throwaway project of its own: model.runs reads and writes the process's project, which is this one for the block
+    with _runstore._InProject(td / "proj") as data_dir:
+        runs = data_dir / "runs"
+        arms = []
+        for a in ARMS:
+            d = runs / a["run"]
+            rows = []
+            for i in ITEMS:
+                _outputs.writer(d).add(i, OUTPUTS[a["system_id"]][i])
+                rows.append(
+                    {
+                        "item_id": i,
+                        "coverage": 0.3,
+                        "cost_usd": 0.001,
+                        "latency_ms": 5.0,
+                        "tokens_in": 10.0,
+                        "_meta": {"usage": {"cost": 0.001}},
+                    }
+                )
+            sd = _runfix.put_run(
+                data_dir,
                 {
-                    "item_id": i,
-                    "coverage": 0.3,
-                    "cost_usd": 0.001,
-                    "latency_ms": 5.0,
-                    "tokens_in": 10.0,
-                    "_meta": {"usage": {"cost": 0.001}},
-                }
-            )
-        (d / "predictions.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rows))
-        (d / "metrics.json").write_text(
-            json.dumps(
-                {
-                    "config_id": a["config_id"],
+                    "system_id": a["system_id"],
                     "run_id": a["run"],
                     "dataset_id": "ds",
                     "created_at": "2026",
@@ -836,78 +849,96 @@ with tempfile.TemporaryDirectory() as tmp:
                     "fingerprint": {
                         "hash": "abc",
                         "instrument": {"adapter": {"id": "old"}},
-                        "arm": {"config_id": a["config_id"]},
+                        "arm": {"config_id": a["system_id"]},
                     },
-                }
+                },
+                rows,
             )
+            arms.append(dict(a, dir=sd))
+        found = js.discover_arms("ds", "_v1")
+        check(
+            "discover_arms finds one primary run per arm",
+            [a["system_id"] for a in found] == sorted(a["system_id"] for a in ARMS),
         )
-        arms.append(dict(a, dir=d))
-    found = js.discover_arms("ds", "_v1", runs)
-    check(
-        "discover_arms finds one primary run per arm",
-        [a["config_id"] for a in found] == sorted(a["config_id"] for a in ARMS),
-    )
-    before = {p: p.read_bytes() for p in runs.rglob("*") if p.is_file()}
-    sc = scorer()
-    vdir = td / "v"
-    run_all(vdir, call=fake_judge())
-    proj = js.project(sc, js.load_scores(m1, sc, vdir), ITEMS)
-    out = td / "judged" / sc["scorer_id"]
-    js.write_scored_runs(m1, sc, arms, proj, out, "validated judge", True)
-    r0 = out / arms[0]["run"]
-    check(
-        "scored runs land in a separate dir, one per original run, same name",
-        sorted(p.name for p in out.iterdir()) == sorted(a["run"] for a in ARMS),
-    )
-    check("the originals are untouched (byte for byte)", all(p.read_bytes() == b for p, b in before.items()))
-    pr = [json.loads(x) for x in (r0 / "predictions.jsonl").read_text().splitlines()]
-    mj = json.loads((r0 / "metrics.json").read_text())
-    check(
-        "predictions carry the primary, per-judge columns and the CARRY fields",
-        len(pr) == 3
-        and {"judge_score", "judge_ja", "judge_jb", "cost_usd", "latency_ms"} <= set(pr[0])
-        and pr[0]["cost_usd"] == 0.001
-        and "coverage" not in pr[0],
-    )
-    check(
-        "metrics.json: primary_metric, scores, provenance, fingerprint hash invalidated",
-        mj["primary_metric"] == "judge_score"
-        and abs(mj["scores"]["judge_score"] - (expected_a(0) + expected_b(0)) / 2) < 1e-9
-        and mj["derived"]["kind"] == "judge"
-        and mj["derived"]["from"] == arms[0]["run"]
-        and mj["derived"]["with"]["judging_set_id"] == m1["judging_set_id"]
-        and mj["fingerprint"]["hash"] is None
-        and "coverage" not in mj["scores"],
-    )
-    check("metrics.json: kinds mark judge columns quality", mj["metric_kinds"]["judge_score"] == "quality")
-    check(
-        "metrics.json: the source's cost and speed keep their kinds (the judged leaderboard has a frontier)",
-        mj["metric_kinds"].get("cost_usd") == "cost" and mj["metric_kinds"].get("latency_ms") == "speed",
-        str(mj["metric_kinds"]),
-    )
-    js.write_scored_runs(m1, sc, arms, proj, td / "unval", "unvalidated judge", False)
-    mu = json.loads((td / "unval" / arms[0]["run"] / "metrics.json").read_text())
-    check(
-        "--unvalidated: the primary metric and the label say so",
-        mu["primary_metric"] == "judge_score_unvalidated"
-        and mu["derived"]["with"]["label"] == "unvalidated judge"
-        and mu["derived"]["with"]["validated"] is False,
-    )
-    # Python of the running interpreter: the same one that ran these assertions.
-    env = dict(os.environ, EVAL_RUNS_DIR=str(out))
-    lb_run = subprocess.run(
-        [sys.executable, str(HERE / "leaderboard.py"), "--dataset-id", "ds"],
-        cwd=HERE.parent,
-        env=env,
-        capture_output=True,
-        text=True,
-    )
-    check(
-        "leaderboard reads the scored runs with EVAL_RUNS_DIR (exit 0, shows judge_score)",
-        lb_run.returncode == 0 and "judge_score" in lb_run.stdout,
-    )
-    if lb_run.returncode != 0:
-        print((lb_run.stdout + lb_run.stderr)[-600:])
+        before = {p: p.read_bytes() for p in runs.rglob("*") if p.is_file()}
+        sc = scorer()
+        vdir = td / "v"
+        run_all(vdir, call=fake_judge())
+        proj = js.project(sc, js.load_scores(m1, sc, vdir), ITEMS)
+        written = js.write_scored_runs(m1, sc, arms, proj, "validated judge", True)
+        r0 = next(sd for sd in written if model_runs.run_of(sd).name == arms[0]["run"])
+        check(
+            "scored runs land under their runs, one each, keyed <scorer>@<judging set> and read as judged/<scorer>",
+            sorted(model_runs.run_of(sd).name for sd in written) == sorted(a["run"] for a in ARMS)
+            and all(sd.name == f"{sc['scorer_id']}@{m1['judging_set_id']}" for sd in written)
+            and all(model_runs.label(sd) == f"judged/{sc['scorer_id']}" for sd in written),
+        )
+        check(
+            "the originals are untouched (byte for byte)", all(p.read_bytes() == b for p, b in before.items())
+        )
+        mtimes = {p: p.stat().st_mtime_ns for p in r0.rglob("*") if p.is_file()}
+        js.write_scored_runs(m1, sc, arms, proj, "validated judge", True)
+        check(
+            "the same pass again writes nothing (the score has those rows)",
+            mtimes == {p: p.stat().st_mtime_ns for p in r0.rglob("*") if p.is_file()},
+        )
+        pr = _runstore.rows(r0)
+        mj = json.loads((r0 / "metrics.json").read_text())
+        check(
+            "predictions carry the primary, per-judge columns and the CARRY fields",
+            len(pr) == 3
+            and {"judge_score", "judge_ja", "judge_jb", "cost_usd", "latency_ms"} <= set(pr[0])
+            and pr[0]["cost_usd"] == 0.001
+            and "coverage" not in pr[0],
+        )
+        check(
+            "metrics.json: primary_metric, scores, provenance, fingerprint hash invalidated",
+            mj["primary_metric"] == "judge_score"
+            and abs(mj["scores"]["judge_score"] - (expected_a(0) + expected_b(0)) / 2) < 1e-9
+            and mj["derived"]["kind"] == "judge"
+            and mj["derived"]["from"] == arms[0]["run"]
+            and mj["derived"]["with"]["judging_set_id"] == m1["judging_set_id"]
+            and mj["fingerprint"]["hash"] is None
+            and "coverage" not in mj["scores"],
+        )
+        check(
+            "metrics.json: kinds mark judge columns quality", mj["metric_kinds"]["judge_score"] == "quality"
+        )
+        check(
+            "metrics.json: the source's cost and speed keep their kinds (the judged leaderboard has a frontier)",
+            mj["metric_kinds"].get("cost_usd") == "cost" and mj["metric_kinds"].get("latency_ms") == "speed",
+            str(mj["metric_kinds"]),
+        )
+        # Python of the running interpreter: the same one that ran these assertions.
+        lb_run = subprocess.run(
+            [
+                sys.executable,
+                str(HERE / "cli.py"),
+                "leaderboard",
+                "ds",
+                "--label",
+                f"judged/{sc['scorer_id']}",
+            ],
+            cwd=HERE.parent,
+            env=dict(os.environ),
+            capture_output=True,
+            text=True,
+        )
+        check(
+            "leaderboard reads the judged scores with --label judged/<scorer> (exit 0, shows judge_score)",
+            lb_run.returncode == 0 and "judge_score" in lb_run.stdout,
+        )
+        if lb_run.returncode != 0:
+            print((lb_run.stdout + lb_run.stderr)[-600:])
+        # An unvalidated pass of the same set is the same key: it replaces the score, as the pass run again does.
+        js.write_scored_runs(m1, sc, arms, proj, "unvalidated judge", False)
+        mu = json.loads((r0 / "metrics.json").read_text())
+        check(
+            "--unvalidated: the primary metric and the label say so",
+            mu["primary_metric"] == "judge_score_unvalidated"
+            and mu["derived"]["with"]["label"] == "unvalidated judge"
+            and mu["derived"]["with"]["validated"] is False,
+        )
 
 
 # ── one summary per call (the pointwise eval) ────────────────────────────────
@@ -948,7 +979,7 @@ with tempfile.TemporaryDirectory() as tmp:
     check(
         "N=1: a fake judge's pointwise verdicts parse and project for both arms",
         st["calls"] == 2 * len(js.tasks(m_one))
-        and sorted(pr1["itemA"]) == sorted(a["config_id"] for a in ARMS[:2])
+        and sorted(pr1["itemA"]) == sorted(a["system_id"] for a in ARMS[:2])
         and abs(pr1["itemA"]["arm00_v1"]["ja"] - expected_a(0)) < 1e-9,
     )
 
@@ -956,11 +987,11 @@ with tempfile.TemporaryDirectory() as tmp:
 sub = js.select_arms(ARMS, "arm03_v1,arm07")
 check(
     "--arms: an exact id and a substring both select",
-    [a["config_id"] for a in sub] == ["arm03_v1", "arm07_v1"],
+    [a["system_id"] for a in sub] == ["arm03_v1", "arm07_v1"],
 )
 check(
     "--arms: an exact id wins over substrings that also match",
-    [a["config_id"] for a in js.select_arms([*ARMS, dict(ARMS[0], config_id="arm00_v1_x")], "arm00_v1")]
+    [a["system_id"] for a in js.select_arms([*ARMS, dict(ARMS[0], system_id="arm00_v1_x")], "arm00_v1")]
     == ["arm00_v1"],
 )
 check(
@@ -1025,17 +1056,16 @@ check(
 )
 check(
     "pointwise scorer: no validation block, so the gate refuses it",
-    "validation" not in pw and js.validation_problems(pw, real_runs) != [],
+    "validation" not in pw and js.validation_problems(pw) != [],
 )
 argv0 = sys.argv
-sys.argv = ["judge_score.py", "--dataset-id", pw["dataset_id"], "--scorer", pw["scorer_id"]]
 try:
     import contextlib
     import io
 
     buf = io.StringIO()
     with contextlib.redirect_stderr(buf):
-        rc = js.main()
+        rc = cli_main(["--dataset-id", pw["dataset_id"], "--scorer", pw["scorer_id"]])
 finally:
     sys.argv = argv0
 check(
@@ -1504,8 +1534,8 @@ fake_sc = scorer(
 )
 check(
     "a provider: fake scorer can never pass the gate, validation block or not",
-    js.validation_problems({**fake_sc, "validation": real["validation"]}, real_runs) != []
-    and all("fake" in p_ for p_ in js.validation_problems(fake_sc, real_runs)),
+    js.validation_problems({**fake_sc, "validation": real["validation"]}) != []
+    and all("fake" in p_ for p_ in js.validation_problems(fake_sc)),
 )
 msg_ = js.build_message(BASE, "An article.", ["one", "two", "three"])
 r1, r2 = (
@@ -1852,8 +1882,7 @@ check(
 
 # The default arm set: every config on the dataset, latest run per config; another dataset's
 # runs are not in it; a mix of config versions is reported.
-with tempfile.TemporaryDirectory() as td_:
-    rd = Path(td_)
+with tempfile.TemporaryDirectory() as td_, _runstore._InProject(Path(td_) / "proj") as rd:
     for name, cid, ds, at in (
         ("a_v1_r1", "a_v1", "ds", "2026-01-01"),
         ("a_v1_r2", "a_v1", "ds", "2026-01-02"),
@@ -1861,25 +1890,31 @@ with tempfile.TemporaryDirectory() as td_:
         ("a_v2_r1", "a_v2", "ds", "2026-01-03"),
         ("c_v1_r1", "c_v1", "other", "2026-01-01"),
     ):
-        (rd / name).mkdir()
-        (rd / name / "metrics.json").write_text(
-            json.dumps({"config_id": cid, "dataset_id": ds, "created_at": at, "params": {"family": "x"}})
+        _runfix.put_run(
+            rd,
+            {
+                "system_id": cid,
+                "run_id": name,
+                "dataset_id": ds,
+                "created_at": at,
+                "params": {"family": "x"},
+            },
         )
-    found = js.discover_arms("ds", "", rd)
+    found = js.discover_arms("ds", "")
     check(
         "default arms: every config on the dataset, none from another dataset",
-        [a["config_id"] for a in found] == ["a_v1", "a_v2", "b_v1"],
+        [a["system_id"] for a in found] == ["a_v1", "a_v2", "b_v1"],
     )
     check(
         "default arms: repeat runs of one config are one arm, the latest",
-        next(a for a in found if a["config_id"] == "a_v1")["run"] == "a_v1_r2",
+        next(a for a in found if a["system_id"] == "a_v1")["run"] == "a_v1_r2",
     )
     check(
         "default arms: a mix of config versions is reported",
         js.config_versions(found) == ["_v1", "_v2"]
-        and js.config_versions([a for a in found if a["config_id"] != "a_v2"]) == []
+        and js.config_versions([a for a in found if a["system_id"] != "a_v2"]) == []
         # different arms at different versions are not a mix (the newcomer trial's opus_v2 beside mistral_v1)
-        and js.config_versions([{"config_id": "opus_v2"}, {"config_id": "mistral_v1"}]) == [],
+        and js.config_versions([{"system_id": "opus_v2"}, {"system_id": "mistral_v1"}]) == [],
     )
 
 # A real judge is never handed the fake judge's task, whatever run_judging does.
@@ -2016,7 +2051,7 @@ import yaml  # noqa: E402
 SCHEMAS = HERE.parent / "schemas"
 EXAMPLE = HERE.parents[1] / "examples" / "summeval-judging"
 MARMS = ARMS[:4]
-MIDS = [a["config_id"] for a in MARMS]
+MIDS = [a["system_id"] for a in MARMS]
 MITEMS = [f"it{n}" for n in range(6)]
 MARTICLES = {i: f"Article {i}. It is long enough to be an article." for i in MITEMS}
 
@@ -2024,7 +2059,7 @@ MARTICLES = {i: f"Article {i}. It is long enough to be an article." for i in MIT
 def m_outputs(extra=None):
     """arm k's text is 'summary' plus k + 1 w's; `extra` maps arm index -> w's, to make ties."""
     w = {k: k + 1 for k in range(4)} | (extra or {})
-    return {a["config_id"]: {i: f"summary {'w' * w[k]} {i}" for i in MITEMS} for k, a in enumerate(MARMS)}
+    return {a["system_id"]: {i: f"summary {'w' * w[k]} {i}" for i in MITEMS} for k, a in enumerate(MARMS)}
 
 
 PICK_BASE = (EXAMPLE / "prompt_pick.txt").read_text(encoding="utf-8").strip()
@@ -2912,24 +2947,17 @@ with tempfile.TemporaryDirectory() as tmp:
     vdir = td / "v"
     mrun(vdir, sc, man)
     proj = mproj(sc, man, vdir)
-    runs = td / "runs"
-    arms_d = []
-    for a in MARMS:
-        d = runs / a["run"]
-        (d / "outputs").mkdir(parents=True)
-        outs = m_outputs()
-        for i in MITEMS:
-            (d / "outputs" / f"{i}.txt").write_text(outs[a["config_id"]][i])
-        (d / "predictions.jsonl").write_text(
-            "".join(
-                json.dumps({"item_id": i, "coverage": 0.3, "cost_usd": 0.001, "latency_ms": 5.0}) + "\n"
-                for i in MITEMS
-            )
-        )
-        (d / "metrics.json").write_text(
-            json.dumps(
+    with _runstore._InProject(td / "proj") as data_dir:
+        arms_d = []
+        for a in MARMS:
+            d = data_dir / "runs" / a["run"]
+            outs = m_outputs()
+            for i in MITEMS:
+                _outputs.writer(d).add(i, outs[a["system_id"]][i])
+            sd = _runfix.put_run(
+                data_dir,
                 {
-                    "config_id": a["config_id"],
+                    "system_id": a["system_id"],
                     "run_id": a["run"],
                     "dataset_id": "ds",
                     "created_at": "2026",
@@ -2940,57 +2968,70 @@ with tempfile.TemporaryDirectory() as tmp:
                     "fingerprint": {
                         "hash": "abc",
                         "instrument": {"adapter": {"id": "old"}},
-                        "arm": {"config_id": a["config_id"]},
+                        "arm": {"config_id": a["system_id"]},
                     },
-                }
+                },
+                [{"item_id": i, "coverage": 0.3, "cost_usd": 0.001, "latency_ms": 5.0} for i in MITEMS],
             )
+            arms_d.append(dict(a, dir=sd))
+        written = js.write_scored_runs(man, sc, arms_d, proj, "unvalidated judge", False)
+        win_dir = next(sd for sd in written if model_runs.run_of(sd).name == MARMS[3]["run"])
+        rows = _runstore.rows(win_dir)
+        mj = json.loads((win_dir / "metrics.json").read_text())
+        check(
+            "pick judged runs: the primary is judge_won (judge_won_unvalidated while unvalidated), with per-judge columns",
+            mj["primary_metric"] == "judge_won_unvalidated"
+            and rows[0]["judge_won_unvalidated"] == 1.0
+            and {"judge_ja_unvalidated", "judge_jb_unvalidated", "cost_usd"} <= set(rows[0])
+            and "judge_score_unvalidated" not in rows[0]
+            and mj["scores"]["judge_won_unvalidated"] == 1.0
+            and mj["derived"]["with"]["mode"] == "pick",
         )
-        arms_d.append(dict(a, dir=d))
-    out = td / "judged" / sc["scorer_id"]
-    js.write_scored_runs(man, sc, arms_d, proj, out, "unvalidated judge", False)
-    win_dir = out / MARMS[3]["run"]
-    rows = [json.loads(x) for x in (win_dir / "predictions.jsonl").read_text().splitlines()]
-    mj = json.loads((win_dir / "metrics.json").read_text())
-    check(
-        "pick judged runs: the primary is judge_won (judge_won_unvalidated while unvalidated), with per-judge columns",
-        mj["primary_metric"] == "judge_won_unvalidated"
-        and rows[0]["judge_won_unvalidated"] == 1.0
-        and {"judge_ja_unvalidated", "judge_jb_unvalidated", "cost_usd"} <= set(rows[0])
-        and "judge_score_unvalidated" not in rows[0]
-        and mj["scores"]["judge_won_unvalidated"] == 1.0
-        and mj["derived"]["with"]["mode"] == "pick",
-    )
-    js.write_scored_runs(man, sc, arms_d, proj, td / "judged2", "validated judge", True)
-    mv = json.loads((td / "judged2" / MARMS[0]["run"] / "metrics.json").read_text())
-    check(
-        "pick judged runs: validated, the primary is judge_won and a quality metric; a loser scores 0",
-        mv["primary_metric"] == "judge_won"
-        and mv["scores"]["judge_won"] == 0.0
-        and mv["metric_kinds"]["judge_won"] == "quality"
-        and mv["metric_kinds"]["judge_ja"] == "quality",
-    )
-    env_ = dict(os.environ, EVAL_RUNS_DIR=str(td / "judged2"))
-    lb_pick = subprocess.run(
-        [sys.executable, str(HERE / "leaderboard.py"), "--dataset-id", "ds"],
-        cwd=HERE.parent,
-        env=env_,
-        capture_output=True,
-        text=True,
-    )
-    check(
-        "pick judged runs: the leaderboard reads them (exit 0, shows judge_won)",
-        lb_pick.returncode == 0 and "judge_won" in lb_pick.stdout,
-        (lb_pick.stdout + lb_pick.stderr)[-300:],
-    )
-    # a grade scorer's judged run carries no mode in its provenance
-    gsc = mscorer("grade")
-    del gsc["mode"]
-    gman = mmanifest(gsc)
-    gv = td / "gv"
-    mrun(gv, gsc, gman, outputs=m_outputs())
-    gproj = js.project(gsc, js.load_scores(gman, gsc, gv), MITEMS)
-    js.write_scored_runs(gman, gsc, arms_d, gproj, td / "gjudged", "validated judge", True)
-    gm = json.loads((td / "gjudged" / MARMS[0]["run"] / "metrics.json").read_text())
+        written = js.write_scored_runs(man, sc, arms_d, proj, "validated judge", True)
+        mv = json.loads(
+            next(sd for sd in written if model_runs.run_of(sd).name == MARMS[0]["run"])
+            .joinpath("metrics.json")
+            .read_text()
+        )
+        check(
+            "pick judged runs: validated, the primary is judge_won and a quality metric; a loser scores 0",
+            mv["primary_metric"] == "judge_won"
+            and mv["scores"]["judge_won"] == 0.0
+            and mv["metric_kinds"]["judge_won"] == "quality"
+            and mv["metric_kinds"]["judge_ja"] == "quality",
+        )
+        lb_pick = subprocess.run(
+            [
+                sys.executable,
+                str(HERE / "cli.py"),
+                "leaderboard",
+                "ds",
+                "--label",
+                f"judged/{sc['scorer_id']}",
+            ],
+            cwd=HERE.parent,
+            env=dict(os.environ),
+            capture_output=True,
+            text=True,
+        )
+        check(
+            "pick judged runs: the leaderboard reads them (exit 0, shows judge_won)",
+            lb_pick.returncode == 0 and "judge_won" in lb_pick.stdout,
+            (lb_pick.stdout + lb_pick.stderr)[-300:],
+        )
+        # a grade scorer's judged run carries no mode in its provenance
+        gsc = mscorer("grade")
+        del gsc["mode"]
+        gman = mmanifest(gsc)
+        gv = td / "gv"
+        mrun(gv, gsc, gman, outputs=m_outputs())
+        gproj = js.project(gsc, js.load_scores(gman, gsc, gv), MITEMS)
+        gwritten = js.write_scored_runs(gman, gsc, arms_d, gproj, "validated judge", True)
+        gm = json.loads(
+            next(sd for sd in gwritten if model_runs.run_of(sd).name == MARMS[0]["run"])
+            .joinpath("metrics.json")
+            .read_text()
+        )
     check(
         "grade judged runs are as before: primary judge_score, no mode in their provenance",
         gm["primary_metric"] == "judge_score" and "mode" not in gm["derived"]["with"],
@@ -3033,7 +3074,9 @@ for sid_ in ("judge-summ-v1", "judge-summ-v2"):
     sc_ = js.load_scorer(HERE.parent / "data" / "scorers" / f"{sid_}.yaml")
     sdir_ = next((HERE.parent / "data" / "judge-verdicts" / sid_).iterdir())
     man_ = json.loads((HERE.parent / "data" / "judging-sets" / f"{sdir_.name}.json").read_text())
-    old_summ = json.loads((HERE.parent / "data" / "runs-judged" / sid_ / "summary.json").read_text())
+    old_summ = json.loads(
+        (HERE.parent / "data" / "judge-summaries" / f"{sid_}@{sdir_.name}.json").read_text()
+    )
     st_ = js.run_judging(man_, sc_, js.prompt_text(sc_), {}, {}, sdir_, None, None, log=lambda *_: None)
     got_ = js.load_scores(man_, sc_, sdir_)
     proj_ = js.project(sc_, got_, [it["item_id"] for it in man_["items"]])
@@ -3042,9 +3085,27 @@ for sid_ in ("judge-summ-v1", "judge-summ-v2"):
         st_["calls"] == 0 and st_["missing"] == 0 and len(proj_) == old_summ["items_scored"],
         str(st_),
     )
-    arms_ = [{"config_id": c, "family": a["family"]} for c, a in old_summ["per_arm"].items()]
+    arms_ = [{"system_id": c, "family": a["family"]} for c, a in old_summ["per_arm"].items()]
+    # The outputs' lengths, as judge-score reads them, for each judge's length bias.
+    found_ = {a["system_id"]: a for a in js.discover_arms(sc_["dataset_id"], sc_.get("arms_match", ""))}
+    # the committed summary keeps the ids its arms had; the runs are found under the systems' current ids
+    renamed_ = json.loads((HERE.parent / "data" / "renames.json").read_text())["systems"]
+    ids_ = [it["item_id"] for it in man_["items"]]
+    words_ = {
+        c: {i: len(t.split()) for i, t in js.read_outputs(found_[renamed_.get(c, c)], ids_).items()}
+        for c in old_summ["per_arm"]
+    }
     new_summ = js.summarise(
-        man_, sc_, arms_, got_, proj_, old_summ["cost"], old_summ["label"], old_summ["validated"], sdir_
+        man_,
+        sc_,
+        arms_,
+        got_,
+        proj_,
+        old_summ["cost"],
+        old_summ["label"],
+        old_summ["validated"],
+        sdir_,
+        lengths=words_,
     )
     check(
         f"{sid_}: re-summarising the committed verdicts gives the committed summary.json, key for key",
@@ -3295,5 +3356,229 @@ check(
     and "Begin your reply with the JSON object" in judging.PICK_REMINDER
     and "Begin your reply with the JSON object" in judging.PAIR_REMINDER,
 )
+
+# ── reasons inside the verdict (RFC-034 §5) ──────────────────────────────────
+for mode_, mine_, theirs_ in (
+    (
+        "grade",
+        judging.with_reason(
+            judging.build_message(BASE, ad_item["article"], ad_item["summaries"]), "grade", 16
+        ),
+        ad._judge_message(ad_item, {"prompt": BASE, "explain": True}),
+    ),
+    (
+        "pick",
+        judging.with_reason(
+            judging.build_pick_message(PICK_BASE, ad_item["article"], ad_item["summaries"]), "pick", 16
+        ),
+        ad._pick_message(ad_item, {"prompt": PICK_BASE, "explain": True}),
+    ),
+    (
+        "pairwise",
+        judging.with_reason(
+            judging.build_pairwise_message(PAIR_BASE, ad_item["article"], ad_item["summaries"][3:5]),
+            "pairwise",
+            2,
+        ),
+        ad._pair_message(ad_item, 3, 4, {"prompt": PAIR_BASE, "explain": True}),
+    ),
+):
+    check(
+        f"explain, {mode_}: the reason's request is the same words in the package and the adapter",
+        mine_ == theirs_,
+    )
+check(
+    "explain absent or false: the adapter's messages are the ones validated before reasons existed",
+    ad._judge_message(ad_item, {"prompt": BASE})
+    == ad._judge_message(ad_item, {"prompt": BASE, "explain": False})
+    == judging.build_message(BASE, ad_item["article"], ad_item["summaries"]),
+)
+for reply_, mode_, n_, want_ in (
+    ('{"coherence": [3, 4], "why": ["clear", "drifts"]}', "grade", 2, ["clear", "drifts"]),
+    ('{"coherence": [3, 4], "why": ["clear"]}', "grade", 2, None),
+    ('{"coherence": [3, 4], "why": ["clear", ""]}', "grade", 2, None),
+    ('{"coherence": [3, 4]}', "grade", 2, None),
+    ('{"best": [2], "why": " keeps the facts "}', "pick", 3, "keeps the facts"),
+    ('{"better": "tie", "why": ["a list"]}', "pairwise", 2, None),
+    ("no JSON at all", "pick", 3, None),
+):
+    check(f"parse_why({reply_!r}, {mode_}) is {want_!r}", judging.parse_why(reply_, mode_, n_) == want_)
+check(
+    "a reason never decides whether the verdict parsed: scores with a broken why still parse",
+    judging.parse_block(
+        '{"coherence": [3], "consistency": [3], "fluency": [3], "relevance": [3], "why": 7}', 1
+    )
+    == [3.0],
+)
+m_why = manifest_for(scorer(explain=True))
+check(
+    "the judging set hashes explain only when it is on: a set made before keeps its id",
+    "explain" not in m1 and m_why.get("explain") is True and m_why["judging_set_id"] != m1["judging_set_id"],
+)
+msg_on = js.message_for(m_why, BASE, ARTICLES, OUTPUTS, m_why["items"][0], "primary", 0)
+msg_off = js.message_for(m1, BASE, ARTICLES, OUTPUTS, m1["items"][0], "primary", 0)
+check(
+    "message_for: with explain the message ends with the reason's request, without it it is unchanged",
+    msg_on.startswith(msg_off)
+    and msg_on.endswith("name what you saw in your own words.")
+    and '"why"' not in msg_off,
+)
+
+
+def explaining_judge(quote_item=None, drop_why=False):
+    """fake_judge's scores, plus a reason per summary; for `quote_item` the reason repeats its article."""
+    base_call = fake_judge()
+
+    def call(message, params):
+        res = base_call(message, params)
+        d = json.loads(res.output)
+        n = len(d["coherence"])
+        if not drop_why:
+            item = next(i for i in ITEMS if ARTICLES[i].strip() in message)
+            d["why"] = [
+                ARTICLES[item] if item == quote_item else f"summary {k} reads cleanly"
+                for k in range(1, n + 1)
+            ]
+        res.output = json.dumps(d)
+        return res
+
+    return call
+
+
+with tempfile.TemporaryDirectory() as tmp:
+    td = Path(tmp)
+    js.run_judging(m_why, scorer(explain=True), BASE, ARTICLES, OUTPUTS, td, explaining_judge(quote_item="itemB"), None,
+                   log=lambda *_: None)  # fmt: skip
+    rec_a = json.loads(js.verdict_path(td, "ja", "itemA", "primary", 0).read_text())
+    rec_b = json.loads(js.verdict_path(td, "ja", "itemB", "primary", 0).read_text())
+    check(
+        "a verdict stores its reasons, one per output, beside its scores",
+        rec_a.get("why") == [f"summary {k} reads cleanly" for k in range(1, rec_a["n"] + 1)]
+        and rec_a.get("scores") is not None
+        and rec_a.get("output") is not None,
+    )
+    check(
+        "a reason that repeats the source is withheld, and so is the reply, while its scores are committed",
+        rec_b.get("why") is None
+        and rec_b.get("why_withheld") == "repeats the source"
+        and rec_b.get("output") is None
+        and rec_b.get("output_withheld") is True
+        and rec_b.get("scores") is not None,
+    )
+    check("V12 accepts both", not vt.reply_problems(rec_a) and not vt.reply_problems(rec_b))
+    # A hand-edited reason is caught by its shape (review, 2026-11-19: V12 never read `why`).
+    hand = {
+        "empty why": dict(rec_a, why=""),
+        "a list with an empty sentence": dict(rec_a, why=["fine", " "]),
+        "a number": dict(rec_a, why=3),
+        "why beside why_withheld": dict(rec_b, why="kept anyway"),
+        "an unknown withholding": dict(rec_b, why_withheld="too long"),
+    }
+    check(
+        "V12 refuses a reason out of shape: empty, not sentences, kept beside its withholding, an unknown withholding",
+        all(vt.reply_problems(r) for r in hand.values()),
+        {k: vt.reply_problems(r) for k, r in hand.items()},
+    )
+with tempfile.TemporaryDirectory() as tmp:
+    td = Path(tmp)
+    js.run_judging(m_why, scorer(explain=True), BASE, ARTICLES, OUTPUTS, td, explaining_judge(drop_why=True), None,
+                   log=lambda *_: None)  # fmt: skip
+    rec_c = json.loads(js.verdict_path(td, "ja", "itemA", "primary", 0).read_text())
+    check(
+        "a reply without its reason keeps its scores and says the reason is missing",
+        rec_c.get("scores") is not None and rec_c.get("why") is None and rec_c.get("why_missing") is True,
+    )
+# pick and pairwise, end to end on the fake provider (review, 2026-11-19: only grade was tested): the reason is one
+# string, stored beside the verdict, and each judged output's cell says what the judge said of it, with that reason.
+from evaluation_harness.model.scorer_views import _verdict_cells  # noqa: E402
+
+for mode_ in ("pick", "pairwise"):
+    sc_w = mscorer(mode_, explain=True)
+    man_w = mmanifest(sc_w)
+    with tempfile.TemporaryDirectory() as tmp:
+        mrun(tmp, sc_w, man_w)
+        it0 = man_w["items"][0]["item_id"]
+        rec_w = json.loads(js.verdict_path(Path(tmp), "ja", it0, "primary", 0).read_text())
+        n_w = rec_w["n"]
+        cells = _verdict_cells(rec_w, [f"arm{k}" for k in range(n_w)])
+        said_w = [c["said"] for c in cells]
+        if mode_ == "pick":
+            said_ok = set(said_w) <= {"best", "not best"} and "best" in said_w
+            verdict_ok = isinstance(rec_w.get("best"), list) and all(
+                (c["said"] == "best") == (c["position"] in rec_w["best"]) for c in cells
+            )
+        else:
+            b = rec_w.get("better")
+            said_ok = n_w == 2 and (
+                said_w == ["tie", "tie"] if b == "tie" else sorted(said_w) == ["better", "worse"]
+            )
+            verdict_ok = b == "tie" or cells[int(b) - 1]["said"] == "better"
+        check(
+            f"explain, {mode_}: the reason is one string stored beside the verdict, each output's cell says what the "
+            "judge said of it, with that reason",
+            isinstance(rec_w.get("why"), str)
+            and rec_w["why"].startswith("the fake judge prefers")
+            and said_ok
+            and verdict_ok
+            and all(c["why"] == rec_w["why"] and c["why_status"] == "given" for c in cells),
+            (rec_w.get("why"), rec_w.get("best"), rec_w.get("better"), cells),
+        )
+with tempfile.TemporaryDirectory() as tmp:
+    td = Path(tmp)
+    js.run_judging(m1, scorer(), BASE, ARTICLES, OUTPUTS, td, fake_judge(), None, log=lambda *_: None)
+    rec_d = json.loads(js.verdict_path(td, "ja", "itemA", "primary", 0).read_text())
+    check(
+        "without explain a verdict has no reason fields at all (its record is as before)",
+        not any(k.startswith("why") for k in rec_d),
+    )
+with tempfile.TemporaryDirectory() as tmp:
+    e_off = js.estimate(m1, scorer(), BASE, ARTICLES, OUTPUTS, Path(tmp))
+    e_on = js.estimate(m_why, scorer(explain=True), BASE, ARTICLES, OUTPUTS, Path(tmp))
+    # Exactly what RFC-034 §5 says the estimate adds (review, 2026-11-19: a `>` let any number pass): 20 tokens out per
+    # graded output (judge_score.OUT_TOKENS_WHY_PER_OUTPUT), and in the reason's request on every call.
+    graded = sum(len(it["position" if p == "position" else "primary"][b]) for it, p, b in js.tasks(m_why))
+    calls = len(js.tasks(m_why))
+    check(
+        "the dry run counts the reasons' tokens: 20 out per graded output, the request in on every call",
+        all(e_on[j]["tokens_out"] - e_off[j]["tokens_out"] == 20 * graded for j in e_off)
+        and all(e_on[j]["tokens_in"] - e_off[j]["tokens_in"] >= calls * 10 for j in e_off),
+        (
+            {
+                j: (
+                    e_on[j]["tokens_out"] - e_off[j]["tokens_out"],
+                    e_on[j]["tokens_in"] - e_off[j]["tokens_in"],
+                )
+                for j in e_off
+            },
+            graded,
+            calls,
+        ),
+    )
+    sc_p = mscorer("pick", explain=True)
+    sc_p0 = mscorer("pick")
+    with tempfile.TemporaryDirectory() as tmp2:
+        p_on = js.estimate(mmanifest(sc_p), sc_p, PICK_BASE, MARTICLES, m_outputs(), Path(tmp2))
+        p_off = js.estimate(mmanifest(sc_p0), sc_p0, PICK_BASE, MARTICLES, m_outputs(), Path(tmp2))
+    pick_calls = len(js.tasks(mmanifest(sc_p)))
+    check(
+        "the dry run counts a pick's reason as 40 tokens out a call",
+        all(p_on[j]["tokens_out"] - p_off[j]["tokens_out"] == 40 * pick_calls for j in p_off),
+        ({j: p_on[j]["tokens_out"] - p_off[j]["tokens_out"] for j in p_off}, pick_calls),
+    )
+check(
+    "the gate: a scorer that asks for reasons is not validated by runs made without them",
+    any("explain=" in p for p in js.validation_problems(dict(real, explain=True))),
+)
+for mode_, n_ in (("grade", 3), ("pick", 3), ("pairwise", 2)):
+    fake_msg = judging.build_message(BASE, "An article.", [f"s{i}" for i in range(n_)]) if mode_ == "grade" else (
+        judging.build_pick_message(PICK_BASE, "An article.", [f"s{i}" for i in range(n_)]) if mode_ == "pick"
+        else judging.build_pairwise_message(PAIR_BASE, "An article.", ["s0", "s1"])
+    )  # fmt: skip
+    out_ = judging.call_judge(
+        fake_msg, {"provider": "fake", "model": "f", "_mode": mode_, "_explain": True}
+    ).output
+    check(
+        f"the fake judge gives a reason that parses ({mode_})", judging.parse_why(out_, mode_, n_) is not None
+    )
 
 sys.exit(summary())

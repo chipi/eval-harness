@@ -14,14 +14,12 @@ which need a key ([tutorial 2](2-hosted-llm.md)).
 
 ## 1. The frontier arm, with a real model
 
-The author is an arm like any other. With a hosted model it is a config such as this one, from
-the newcomer scenario this release was tried on (a LiteLLM proxy's model name; any provider of
-[tutorial 2](2-hosted-llm.md) works):
+The author is a system like any other. With a hosted model it is one such as this (`model:` is a
+LiteLLM proxy's model name; any provider of [tutorial 2](2-hosted-llm.md) works):
 
 ```yaml
-# data/configs/briefs_opus.yaml
-config_id: briefs_opus_v1
-dataset_id: briefs_v1
+# data/systems/briefs_opus_v1.yaml
+system_id: briefs_opus_v1
 params:
   provider: litellm
   model: eval-opus-5
@@ -30,13 +28,12 @@ params:
   prompt: "Summarise the following news brief in one sentence."
   usd_per_mtok_in: 5.0
   usd_per_mtok_out: 25.0
-goal: brief_summary
 ```
 
 <!-- guide-check: skip -->
 ```bash
-evh run --config data/configs/briefs_opus.yaml --dry-run     # price it first
-evh run --config data/configs/briefs_opus.yaml
+evh run --system briefs_opus_v1 --dataset briefs_v1 --goal brief_summary --dry-run     # price it first
+evh run --system briefs_opus_v1 --dataset briefs_v1 --goal brief_summary
 evh label-from-run --run <the briefs_opus_v1 run_id> --set opus_v1
 evh reference-promote --dataset-id briefs_v1 --labels opus_v1 --tier silver \
     --reason "The frontier arm's summaries rank the cheaper arms." --by me
@@ -45,10 +42,10 @@ git add data/labels data/references && git commit -qm "silver/briefs_v1: the fro
 
 What `label-from-run` refuses, and why:
 
-- **An empty output, or one that stopped at `max_tokens`.** In the scenario's first run a
-  frontier arm at `max_tokens: 80` wrote 19 of 20 summaries cut off mid-sentence; frozen as the
-  reference, every arm would have been graded against fragments. That is why the config above
-  has room to finish. If yours stops at the cap, raise `max_tokens` in a new `config_id`
+- **An empty output, or one that stopped at `max_tokens`.** A frontier arm with too small a
+  `max_tokens` writes summaries cut off mid-sentence; frozen as the
+  reference, every arm would be graded against fragments. That is why the system above
+  has room to finish. If yours stops at the cap, raise `max_tokens` in a new `system_id`
   (`briefs_opus_v2`) and run again (`--allow-cut-off` is for outputs that end at the cap by
   design). `evh run`
   already warns, naming the items, when outputs stop at the cap.
@@ -68,7 +65,7 @@ Gold is a person's labels, promoted at gold. Write them in a sheet (`evh label-s
 those you would sign. The kit has six, written by hand:
 
 ```bash
-evh label-import tutorial/gold --dataset-id tickets_v1 --set owner_gold --by owner
+evh label-import --sheet tutorial/gold --dataset-id tickets_v1 --set owner_gold --by owner
 evh reference-promote --dataset-id tickets_v1 --labels owner_gold --tier gold \
     --reason "The owner's own summaries are what the arms are judged by." --by owner
 git add data/labels data/references && git commit -qm "tickets_v1: gold, the owner's labels"
@@ -82,8 +79,8 @@ wins over silver, and the run records which it used). The runs you already have 
 paid for again: their outputs are stored, so re-scoring is arithmetic.
 
 ```bash
-evh rescore --dataset-id tickets_v1 --reference-id gold/tickets_v1 --out data/runs-gold
-EVAL_RUNS_DIR=data/runs-gold evh leaderboard --dataset-id tickets_v1
+evh rescore --dataset-id tickets_v1 --reference-id gold/tickets_v1 --label gold
+evh leaderboard tickets_v1 --label gold
 ```
 <!-- guide-check: varies lead2_noisy author global distinguishable sorted ordering -->
 ```text
@@ -101,8 +98,9 @@ EVAL_RUNS_DIR=data/runs-gold evh leaderboard --dataset-id tickets_v1
 Two lessons in one table. `author`, the reference everyone chased, is not first once a person's
 answers are the measure. And against what a person actually wrote, six items can almost never
 tell these arms apart: the pair that looked distinguishable on silver was the author's opinion,
-measured precisely. Rescored runs go to a separate directory, never over the originals, and each
-records both the reference it was measured against and the one it is scored against now.
+measured precisely. A re-score is a score of its own under each run, never over the original, read
+under its label (`gold` here), and it records both the reference the run was measured against and the
+one it is scored against now.
 
 ## 3. How good was the silver?
 
@@ -110,7 +108,7 @@ records both the reference it was measured against and the one it is scored agai
 gold's:
 
 ```bash
-EVAL_RUNS_DIR=data/runs-gold evh silver-calibrate --dataset-id tickets_v1
+evh silver-calibrate --dataset-id tickets_v1
 ```
 <!-- guide-check: varies author lead1 lead2 -->
 ```text
@@ -137,8 +135,8 @@ rank by silver, check it against a gold slice. How big a gold set must be is a m
 ## 4. Is the winner significantly better, on gold?
 
 ```bash
-evh family-test --dataset-id tickets_v1 --a tickets_lead2_v1 --against tickets_ \
-    --runs-dir data/runs-gold
+evh family-test tickets_v1 --a tickets_lead2_v1 --against tickets_ \
+    --label gold
 ```
 <!-- guide-check: varies tickets_lead1_v1 tickets_author_v1 lead2_noisy ahead -->
 ```text
@@ -146,10 +144,10 @@ evh family-test --dataset-id tickets_v1 --a tickets_lead2_v1 --against tickets_ 
   Holm step-down at alpha=0.05
   p: exact, over all 2^6 sign patterns
 
-    opponent                     delta    A wins        p   thresh   verdict
-    tickets_lead1_v1           +0.0424    5/6      0.0938   0.0167   --
-    tickets_lead2_noisy_v1     +0.0146    4/6      0.1562   0.0250   --
-    tickets_author_v1          +0.0122    4/6      0.3125   0.0500   --
+    opponent                     delta   A wins-losses (ties)        p   thresh   verdict
+    tickets_lead2_noisy_v1     +0.0368           5–1 (0 ties)   0.0625   0.0167   --
+    tickets_lead1_v1           +0.0424           5–1 (0 ties)   0.0938   0.0250   --
+    tickets_author_v1          +0.0122           4–2 (0 ties)   0.3125   0.0500   --
 
     significantly different from 0 of 3 opponents; ahead on the point estimate against 3 of 3
 ```
@@ -195,6 +193,9 @@ scorer_id: tickets-judge-v1
 kind: judge
 dataset_id: tickets_v1
 
+# Each judge says why, inside its verdict: a short reason per summary, read with `evh judge-verdicts`.
+explain: true
+
 # What is judged. Without this block a scorer judges news summaries the way SummEval did
 # (ARTICLE, SUMMARIES, coherence/consistency/fluency/relevance, 1-5).
 task:
@@ -229,6 +230,10 @@ cost_cap_usd: 0.01
 The two check fractions are required: a scorer without them is refused. The noise check must be
 above 0, and so must the position check whenever a call sees more than one output.
 
+The prompt must name each dimension in `task.dimensions` as a JSON key of the reply, or `judge-score` refuses it. For a
+judge of your own, `evh init` wrote a worked prompt to copy into any project: `prompts/judge_prompt_example.txt`. It is
+sent to the judge as it is, so change its dimensions and scale to the scorer's `task`.
+
 ```bash
 mkdir -p data/scorers && cp tutorial/scorers/tickets-judge-v1.yaml data/scorers/
 evh judge-score --dataset-id tickets_v1 --scorer tickets-judge-v1
@@ -242,7 +247,7 @@ REFUSED: judge scorer tickets-judge-v1 is not validated:
 
 **The harness refuses a judge nobody has checked.** A judge is a model's opinion, as silver is,
 so before its scores count it must be validated: a `validation` block names the committed runs
-that measured each judge against human ratings, on data like yours. Fake judges can never pass.
+that measured each judge against human ratings, on data like yours (`evh judge-validate` makes them, RUNBOOK §12). Fake judges can never pass.
 To try the pass anyway, say so, and every number is labelled. Price it first; `--dry-run` calls
 nothing:
 
@@ -269,11 +274,11 @@ verdict?) and a repeat on half (the **noise** check: does the judge agree with i
 
 ```bash
 evh judge-score --dataset-id tickets_v1 --scorer tickets-judge-v1 --unvalidated
-EVAL_RUNS_DIR=data/runs-judged/tickets-judge-v1 evh leaderboard --dataset-id tickets_v1 --wide
+evh leaderboard tickets_v1 --label "judged/tickets-judge-v1" --wide
 ```
 <!-- guide-check: varies tickets_ global FRONTIER agree reshuffled -->
 ```text
-4 scored run(s) -> .../data/runs-judged/tickets-judge-v1  (6/6 items, unvalidated judge)
+4 scored run(s) -> .../data/runs (6/6 items, unvalidated judge)
   calls 24, spent this run $0.0000, stored total $0.0000  (the provider's bill where it reports one, else the price table)
   ...
 dataset: tickets_v1   ranked by: judge_score_unvalidated (higher is better)
@@ -291,10 +296,23 @@ dataset: tickets_v1   ranked by: judge_score_unvalidated (higher is better)
   ...
   Scored by an LLM judge, not against references: tickets-judge-v1, unvalidated judge.
   ...
-  The judging pass (tickets-judge-v1, 6/6 items, unvalidated judge), from summary.json:
+  The judging pass (tickets-judge-v1, 6/6 items, unvalidated judge), from data/judge-summaries:
     judges judge_a and judge_b agree: item tau 0.040, arm order spearman 0.400
     judge_a: reshuffled outputs tau 1.000 (position), the same call repeated tau 1.000 (noise)
   ...
+```
+
+Each judge also said **why**: the tutorial's scorer has `explain: true`, so every verdict carries a short reason
+(here the fake judges' stand-in words; a real judge writes what decided its score). The lowest scores come first,
+which is where to start reading:
+
+```bash
+evh judge-verdicts tickets-judge-v1 --limit 3
+```
+<!-- guide-check: varies tickets_ rated -->
+```text
+tickets-judge-v1, primary pass: rows 1-3 of 48 (48 with a reason; lowest scores first)
+...
 ```
 
 Your judging-set id, token counts, scores and p-value will differ from these: `lead2_noisy` is
@@ -311,8 +329,14 @@ step 6.)
 Each judge's raw reply is stored under `data/judge-verdicts/`, so the same command again calls
 nothing, and `--no-calls` rebuilds the scored runs from the stored verdicts for $0. The judged
 runs read like any others: `leaderboard`, `pair-test` and `family-test` work on them unchanged,
-through `EVAL_RUNS_DIR`. The fake judges' numbers mean nothing, and the test says so: no
+under their label (`--label judged/<scorer>`). The fake judges' numbers mean nothing, and the test says so: no
 detectable arm effect.
+
+Commit what the judging wrote, as everything under `data/`:
+
+```bash
+git add data/judging-sets data/judge-verdicts data/runs data/judge-summaries && git commit -qm "tickets_v1: judged by tickets-judge-v1"
+```
 
 **When a real judge's scores disagree with your primary metric**, nothing changes until you
 decide it should. The primary metric stays what it was; making a judge's score primary is a
@@ -323,7 +347,7 @@ recorded decision, with the old score kept beside it. Why the gate exists:
 ## 6. Real judges
 
 A real judge is an ordinary model spec in the scorer's `judges` list: two or more, from different
-vendor families, so one vendor's taste is not the verdict. From the same newcomer scenario:
+vendor families, so one vendor's taste is not the verdict. For example:
 
 ```yaml
 judges:
@@ -345,30 +369,30 @@ credentials). A judge's own `base_url` or `api_key_env` in its params overrides 
 evh judge-score --dataset-id briefs_v1 --scorer briefs-judge-v1 --unvalidated --dry-run
 evh judge-score --dataset-id briefs_v1 --scorer briefs-judge-v1 --unvalidated
 evh judge-score --dataset-id briefs_v1 --scorer briefs-judge-v1 --unvalidated --retry-unparsed
-EVAL_RUNS_DIR=data/runs-judged/briefs-judge-v1 evh leaderboard --dataset-id briefs_v1
+evh leaderboard briefs_v1 --label judged/briefs-judge-v1
 ```
 
 Real judges sometimes reply with something that does not parse (reasoning aloud, a reply cut
 off); the pass reports it, and `--retry-unparsed` calls again for those blocks only. An item
-counts only when all its blocks parsed. In the scenario, 2 of 80 replies on the briefs and 15 of
-128 on the intents did not parse the first time. A reply that is not bare JSON (one JSON object,
+counts only when all its blocks parsed. A reply that is not bare JSON (one JSON object,
 a `json` code fence allowed), or that repeats the item, is committed only as its hash, so
 an item's text never reaches git by accident. Its text is kept beside its record, git-ignored,
 in `data/judge-verdicts/<scorer>/<judging set>/<judge>/.withheld/<item>.<pass>.b<block>.txt`, and
 the log line names that file: read it before you retry, to see why the reply failed.
 
 **A reasoning model can spend all of `max_tokens` thinking and reply with nothing.** That is why the
-judges above set `reasoning: {enabled: false}`. In the fifth newcomer run, a judge without it at
-`max_tokens: 400` returned empty replies, and 1 item of 20 parsed. Each unparsed line says why
-("empty, cut off at the token limit (finish_reason length)"), and the pass ends with a `HINT` line when
-it happens. Fix it in a new scorer version (a new `scorer_id`): turn the judge's reasoning off, or raise
+judges above set `reasoning: {enabled: false}`. A judge without it, at a small
+`max_tokens`, returns empty replies and few items parse. Each unparsed line says why
+("empty, cut off at the token limit (finish_reason length)", "cut off: JSON that stops before its closing brace",
+"not JSON", or the wrong shape), and the pass ends with a `HINT` line when
+it happens. A judge whose first 3 replies all come back that way stops the pass there (`STOPPED EARLY`),
+so the rest is not paid for; what it stored is kept. Fix it in a new scorer version (a new `scorer_id`): turn the judge's reasoning off, or raise
 its `max_tokens`. Either changes the judge, so the old verdicts are not mixed with the new. The
 `reasoning` key is sent for `provider: openai`, `openrouter` and `litellm`; `provider: anthropic`
-refuses it. A tree with such verdicts from before 0.7.1 fails `evh validate`'s V12, and the message
-names the command that rewrites them: `evh judge-score … --retry-unparsed`.
+refuses it. A tree with a committed reply that is not bare JSON fails `evh validate`'s V12, and the message
+names the command that rewrites it: `evh judge-score … --retry-unparsed`.
 
-Retry until a pass recovers nothing new (in the scenario, two passes took the intents from 26 of
-32 items to 31). An item still failing after that stays out of the judged table, which counts the
+Retry until a pass recovers nothing new. An item still failing after that stays out of the judged table, which counts the
 items it holds; if it is a large share, change the judge's prompt or `max_tokens` rather than
 retrying again. The judged table is built from one run per arm, the latest, over the items that
 parsed, so an arm's cost and speed there can differ slightly from its row on gold.

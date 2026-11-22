@@ -29,7 +29,8 @@ Every provider takes `model`, `temperature` (default 0), `max_tokens`, `base_url
 that overrides the environment's) and `api_key_env` (another variable to read the key from).
 `model` is the provider's own name for it: on OpenRouter the id on the model's page; on an
 OpenAI-compatible endpoint or a LiteLLM proxy, an id its model list returns
-(`curl -s -H "Authorization: Bearer $LITELLM_API_KEY" "$LITELLM_BASE_URL/v1/models"`).
+(`curl -s -H "Authorization: Bearer $LITELLM_API_KEY" "$LITELLM_BASE_URL/v1/models"`). The ids
+are the proxy's own, set by whoever runs it, and a proxy can serve dozens: list them, do not guess.
 The OpenAI-shaped ones (`openai`, `openrouter`, `litellm`) also send `reasoning`,
 `reasoning_effort` and `provider_routing` in the request body; `anthropic` refuses them. An arm
 also takes `prompt`, the instruction put before each item. A provider name the harness does not
@@ -58,24 +59,27 @@ evh env-check
 With only the `.env` above (and the judges' own OpenRouter key), its provider table reads:
 
 ```text
-  provider    variable             arms                               judges
-  openai      OPENAI_API_KEY       not set                            not set
-              OPENAI_BASE_URL      not set (the default address)      not set (the default address)
-  anthropic   ANTHROPIC_API_KEY    not set                            not set
-              ANTHROPIC_BASE_URL   not set (the default address)      not set (the default address)
-  openrouter  OPENROUTER_API_KEY   set (73 chars, ends …a1b2)         own: set (73 chars, ends …c3d4)
-  litellm     LITELLM_API_KEY      not set                            not set
-              LITELLM_BASE_URL     not set                            not set
+.env: loaded 3 var(s)   (/path/to/your/project/.env)
+
+hosted providers (a system's `provider:`): an arm reads <NAME>, a judge EVAL_JUDGE_<NAME>
+first and the arms' <NAME> when that is not set
+  provider    variable             arms                                           judges
+  openai      OPENAI_API_KEY       not set                                        not set
+              OPENAI_BASE_URL      not set (the default address)                  not set (the default address)
+  anthropic   ANTHROPIC_API_KEY    not set                                        not set
+              ANTHROPIC_BASE_URL   not set (the default address)                  not set (the default address)
+  openrouter  OPENROUTER_API_KEY   set (73 chars, ends …a1b2) (.env)              own: set (73 chars, ends …c3d4) (.env)
+  litellm     LITELLM_API_KEY      not set                                        not set
+              LITELLM_BASE_URL     not set                                        not set
   arms can call: openrouter
   judges can call: openrouter
 ```
 
-## 2. The arm
+## 2. The system
 
 ```yaml
-# data/configs/briefs_mistral_small.yaml
-config_id: briefs_mistral_small_v1
-dataset_id: briefs_v1
+# data/systems/briefs_mistral_small_v1.yaml
+system_id: briefs_mistral_small_v1
 params:
   provider: openrouter
   model: mistralai/mistral-small-3.2-24b-instruct
@@ -84,22 +88,26 @@ params:
   prompt: "Summarise the following news brief in one sentence."
   usd_per_mtok_in: 0.1        # so the run records what it cost
   usd_per_mtok_out: 0.3
-goal: brief_summary
 ```
 
-With a LiteLLM proxy the same arm is `provider: litellm` and `model:` the proxy's name for it
-(the newcomer scenario's was `eval-mistral-small`); with Anthropic directly, `provider:
-anthropic` and an Anthropic model id. Prices live in the config, not in code: they change, and a
+A `prompt:` that contains `: ` (a colon and a space) must stay quoted, as this one is: unquoted, the
+file is not YAML and `evh run` refuses it (`invalid-file`, naming the file and the line). For example,
+`prompt: "Answer in two lines: label: <intent>"`.
+
+With a LiteLLM proxy the same system is `provider: litellm` and `model:` the proxy's name for it
+(for example `eval-mistral-small`, `eval-opus-5`, `eval-gemma-31b`, `eval-qwen-flash` or
+`eval-llama-scout`); with Anthropic directly, `provider:
+anthropic` and an Anthropic model id. Prices live in the system, not in code: they change, and a
 run records the prices it was costed at.
 
 **What a run records as cost.** For each call, the provider's bill when the response carries one
-(`usage.cost`), else the config's price table (tokens × `usd_per_mtok_in` / `usd_per_mtok_out`);
+(`usage.cost`), else the system's price table (tokens × `usd_per_mtok_in` / `usd_per_mtok_out`);
 with neither, the cost is unknown, never zero:
 
 | `provider:` | the run's cost |
 |---|---|
 | `openrouter` | OpenRouter's bill (the provider asks for it on every call) |
-| `litellm` | the proxy's bill when it passes `usage.cost` through, as the newcomer scenario's proxy did; else the price table |
+| `litellm` | the proxy's bill when it passes `usage.cost` through; else the price table |
 | `openai` | the price table: OpenAI's API reports tokens, not a cost (an OpenAI-compatible endpoint that returns `usage.cost` is billed) |
 | `anthropic` | the price table |
 
@@ -111,26 +119,24 @@ the two differed by 0.67× to 3.76× per arm.
 
 <!-- guide-check: skip -->
 ```bash
-git add -A && git commit -qm "briefs: the hosted arm"
-evh run --config data/configs/briefs_mistral_small.yaml --dry-run    # calls nothing
-evh run --config data/configs/briefs_mistral_small.yaml --repeat 3
-evh leaderboard --dataset-id briefs_v1
+git add -A && git commit -qm "briefs: the hosted system"
+evh run --system briefs_mistral_small_v1 --dataset briefs_v1 --goal brief_summary --dry-run    # calls nothing
+evh run --system briefs_mistral_small_v1 --dataset briefs_v1 --goal brief_summary --repeat 3
+evh leaderboard briefs_v1
 evh cost-report
 ```
 
 The dry run prints the calls, the estimated cost and the cap. `--repeat 3` measures the arm's own
 noise: a hosted model at temperature 0 is often not deterministic, and a difference smaller than
 its spread is not a difference. If outputs stop at `max_tokens`, `evh run` warns and names
-the items: they are scored as if complete, so raise `max_tokens` in a new `config_id`.
+the items: they are scored as if complete, so raise `max_tokens` in a new `system_id`.
 
 The leaderboard now shows each arm's quality, `total_cost_usd` and `latency_ms`, and its
 **frontier**: the arms no other arm beats on quality, cost and speed together. `evh run`
-prints what the command spent over every repeat (`spent $0.001063 (price table x tokens, or the
-provider's bill where it sends one)`), and the repeat spread names cost and speed as what they
-are (`cost, not a quality metric`), not as determinism. Each item that was billed keeps the
+prints what the command spent over every repeat (`spent $0.001063 (the provider's bill)` or `(the system's price table: tokens x usd_per_mtok_in / usd_per_mtok_out, the provider sent no bill)`), and the repeat spread names cost and speed as what they
+are (`cost, not a quality metric`), not as determinism. When the bill is more than 1.2× off the declared prices, `evh run` and `judge-score` print a NOTE saying so. Each item that was billed keeps the
 bill in its `_meta.usage.cost`, and `cost-report` sets each run's bill, summed from those, against
-the cost it recorded, listing apart the runs with no bill (priced from the table). Runs made
-before the bundled adapter kept the bill there (commit `f0c2ed3c`) read as price table only
+the cost it recorded, listing apart the runs with no bill (priced from the table)
 ([RUNBOOK §4](../../harness/docs/RUNBOOK.md#4-point-the-harness-at-your-system)). Then compare and choose as
 before (`family-test`, `run-promote`), with the cost in the reason: "as good as X at a tenth of
 the price" is a decision; "scored higher" is not yet one.
@@ -138,12 +144,13 @@ the price" is a decision; "scored higher" is not yet one.
 ## When a run stops partway
 
 A 429 that outlasts the retries, a crash, or the cost cap leaves the finished items on disk; each
-output is written as it arrives. The run prints which run stopped, after how many items, and the
+output is written as it arrives. (One item the provider refuses does not stop it: that item is scored 0, listed in
+the run's `failed_items`, and called again on resume.) The run prints which run stopped, after how many items, and the
 exact command to continue it:
 
 <!-- guide-check: skip -->
 ```bash
-evh run --config data/configs/briefs_mistral_small.yaml --resume <run_id>
+evh run --system briefs_mistral_small_v1 --dataset briefs_v1 --goal brief_summary --resume <run_id>
 ```
 
 A resumed pass calls the model only for the items that are missing. Or delete the run directory;

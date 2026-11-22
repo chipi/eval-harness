@@ -25,24 +25,25 @@ sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parent / "examples" / "triage-fleet"))
 import adapter  # noqa: E402
 from evaluation_harness import _fingerprint as fpmod  # noqa: E402
+from evaluation_harness._runs import item_rows  # noqa: E402
+from evaluation_harness.model import runs as model_runs  # noqa: E402
 
 DATA = HERE / "data"
-DIRS = ("runs", "runs-repeats", "runs-rescored/cd35dc1ffccc/runs", "runs-rescored/cd35dc1ffccc/runs-repeats")
 COMMIT, PROMPT_SHA = "f07efa9", "c2ece738"
 
 
-def item_prompt_shas(run: Path) -> set:
-    """The fleet's prompt hashes the run's decided items recorded."""
+def item_prompt_shas(score: Path) -> set:
+    """The fleet's prompt hashes the decided items of a run's score recorded."""
     shas = set()
-    for line in (run / "predictions.jsonl").read_text(encoding="utf-8").splitlines():
-        sha = (json.loads(line).get("_meta") or {}).get("prompt_sha")
+    for row in item_rows(score):
+        sha = (row.get("_meta") or {}).get("prompt_sha")
         if sha:
             shas.add(sha)
     return shas
 
 
 def backfill(m: dict) -> dict:
-    """The run's metrics with the fleet in its fingerprint; refuses any other change."""
+    """The run's record (run.json) with the fleet in its fingerprint; refuses any other change."""
     fp = json.loads(json.dumps(m["fingerprint"]))
     params = m.get("params") or {}
     cfg = {"model_record": m.get("model_record"), "deployment": m.get("deployment_id")}
@@ -76,20 +77,22 @@ def main() -> int:
             f"TRIAGE_FLEET_SRC is not the fleet the runs used: prompt {adapter._fleet().PROMPT_SHA}"
         )
     counts = {"backfilled": 0, "already": 0}
-    for d in DIRS:
-        for p in sorted((DATA / d).glob("triage_*/metrics.json")):
-            m = json.loads(p.read_text(encoding="utf-8"))
-            if item_prompt_shas(p.parent) != {PROMPT_SHA}:
-                raise SystemExit(
-                    f"{p.parent.name}: items recorded {item_prompt_shas(p.parent)}, not {PROMPT_SHA}"
-                )
-            new = backfill(m)
-            if new == m:
-                counts["already"] += 1
-                continue
-            counts["backfilled"] += 1
-            if args.apply:
-                p.write_text(json.dumps(new, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    for rid in model_runs.run_ids():
+        if not rid.startswith("triage_"):
+            continue
+        m = model_runs.run(rid)
+        first = model_runs.first_score(rid)
+        if m is None or first is None:
+            continue
+        if item_prompt_shas(first) != {PROMPT_SHA}:
+            raise SystemExit(f"{rid}: items recorded {item_prompt_shas(first)}, not {PROMPT_SHA}")
+        new = backfill(m)
+        if new == m:
+            counts["already"] += 1
+            continue
+        counts["backfilled"] += 1
+        if args.apply:
+            model_runs.write_run(rid, new)
     print(("applied" if args.apply else "dry run"), counts)
     return 0
 

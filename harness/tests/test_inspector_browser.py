@@ -27,6 +27,7 @@ import csv
 import io
 import json
 import os
+import re
 import shutil
 import signal
 import socket
@@ -42,8 +43,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the ev
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tests/
 HARNESS = HERE.parent
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))  # _wheel, shared with the deploy
+import _slow  # noqa: E402
 import _wheel  # noqa: E402
-from evaluation_harness._check import check, summary  # noqa: E402
+from evaluation_harness._check import check, store_under_test, summary  # noqa: E402
 
 
 def project(tmp: Path) -> tuple:
@@ -57,7 +59,7 @@ def project(tmp: Path) -> tuple:
         "PYTHONDONTWRITEBYTECODE": "1",
         "EVAL_BUILD_REF": "browser-check",
     }
-    for k in ("EVAL_HOME", "EVAL_DATA_DIR", "EVAL_RUNS_DIR"):
+    for k in ("EVAL_HOME", "EVAL_DATA_DIR"):
         env.pop(k, None)
 
     def evh(*args: str) -> None:
@@ -71,7 +73,7 @@ def project(tmp: Path) -> tuple:
         if r.returncode:
             raise SystemExit(f"setup: evh {' '.join(args)} failed:\n{r.stdout}{r.stderr}")
 
-    evh("init", "--tutorial")
+    evh("init", "--store", store_under_test(), "--tutorial")
     shutil.copy(proj / "tutorial/fields/tickets.yaml", proj / "data/fields/")
     evh(
         "dataset-create",
@@ -85,9 +87,19 @@ def project(tmp: Path) -> tuple:
         "tutorial/ticket_fields.csv",
     )
     evh("dataset-materialize", "--dataset-id", "tickets_v1")
-    for f in (proj / "tutorial/configs").glob("tickets_*.yaml"):
-        shutil.copy(f, proj / "data/configs/")
-    evh("label-import", "tutorial/gold", "--dataset-id", "tickets_v1", "--set", "owner_gold", "--by", "owner")
+    for f in (proj / "tutorial/systems").glob("tickets_*.yaml"):
+        shutil.copy(f, proj / "data/systems/")
+    evh(
+        "label-import",
+        "--sheet",
+        "tutorial/gold",
+        "--dataset-id",
+        "tickets_v1",
+        "--set",
+        "owner_gold",
+        "--by",
+        "owner",
+    )
     evh(
         "reference-promote",
         "--dataset-id",
@@ -102,7 +114,7 @@ def project(tmp: Path) -> tuple:
         "owner",
     )
     for arm in ("lead1", "lead2", "author"):
-        evh("run", "--config", f"data/configs/tickets_{arm}.yaml")
+        evh("run", "--system", f"tickets_{arm}_v1", "--dataset", "tickets_v1")
     # A goal with an open round: the goal page then carries its suggestions, each with a copy button.
     shutil.copy(proj / "tutorial/goals/tickets_summary.yaml", proj / "data/goals/")
     evh(
@@ -127,13 +139,89 @@ def project(tmp: Path) -> tuple:
         "--capture",
         "prod_c1",
     )
-    evh("dataset-from-capture", "prod_c1", "--dataset-id", "prod_v1")
+    evh("dataset-from-capture", "--capture", "prod_c1", "--dataset-id", "prod_v1")
     evh("pick", "--dataset-id", "prod_v1", "--item", "p1", "--item", "p2", "--for", "tickets_v1")
     # A person's labels on two tickets: the sheet's wrong signal against them marks those two.
     (proj / "sheet.csv").write_text("item_id,label\nt01_login,Login fails.\nt02_invoice,Invoice wrong.\n")
-    evh("label-import", "sheet.csv", "--dataset-id", "tickets_v1", "--set", "owner_v1", "--by", "owner")
+    evh(
+        "label-import",
+        "--sheet",
+        "sheet.csv",
+        "--dataset-id",
+        "tickets_v1",
+        "--set",
+        "owner_v1",
+        "--by",
+        "owner",
+    )
     evh("catalog")
     return proj, env
+
+
+ARTIFACT_ADAPTER = """from pathlib import Path
+
+from evaluation_harness.adapter import Result, score  # noqa: F401
+
+
+def call_system(text, params):
+    d = Path(params["make"])
+    d.mkdir(parents=True, exist_ok=True)
+    (d / "log.txt").write_text("ok\\n")
+    return Result(output=text.split(".")[0], cost_usd=0.0, meta={"artifact": params["artifact"]})
+"""
+ARTIFACT_ARMS = {
+    "artlink": "artifacts/h1/trial",
+    "artmark": "artifacts/h1/a<i>b",
+    "artplain": "reports/x",
+    "artgone": "artifacts/h1/none",
+}
+
+
+def artifact_project(tmp: Path, env: dict) -> Path:
+    """A second, small project (RFC-038): the tutorial's tickets with four arms whose items leave an artifact, one served,
+    one whose path holds markup, one outside every served prefix and one that is not on this machine. Their adapter is their
+    own. A project of their own, so the first project's pickers and pages list the three arms they were written for."""
+    proj = tmp / "proj_art"
+    proj.mkdir()
+
+    def evh(*args: str) -> None:
+        r = subprocess.run(
+            [sys.executable, "-m", "evaluation_harness", *args],
+            cwd=proj,
+            env=env,
+            capture_output=True,
+            text=True,
+        )
+        if r.returncode:
+            raise SystemExit(f"setup: evh {' '.join(args)} failed:\n{r.stdout}{r.stderr}")
+
+    evh("init", "--store", store_under_test(), "--tutorial")
+    evh("dataset-create", "--dataset-id", "tickets_v1", "--source-dir", "tutorial/tickets")
+    evh("dataset-materialize", "--dataset-id", "tickets_v1")
+    evh(
+        "label-import",
+        "--sheet",
+        "tutorial/gold",
+        "--dataset-id",
+        "tickets_v1",
+        "--set",
+        "owner_gold",
+        "--by",
+        "owner",
+    )
+    evh(
+        "reference-promote", "--dataset-id", "tickets_v1", "--labels", "owner_gold", "--tier", "gold",
+        "--reason", "The kit's hand-written summaries decide.", "--by", "owner",
+    )  # fmt: skip
+    (proj / "art.py").write_text(ARTIFACT_ADAPTER)
+    for name, path in ARTIFACT_ARMS.items():
+        (proj / "data" / "systems" / f"tickets_{name}_v1.yaml").write_text(
+            f"system_id: tickets_{name}_v1\nadapter: art.py\nparams: {{artifact: {json.dumps(path)}, make: {json.dumps(path)}}}\n"
+        )
+        evh("run", "--system", f"tickets_{name}_v1", "--dataset", "tickets_v1")
+    shutil.rmtree(proj / "artifacts" / "h1" / "none")  # not on this machine any more
+    evh("catalog")
+    return proj
 
 
 def serve(proj: Path, env: dict, log: Path) -> tuple:
@@ -158,11 +246,11 @@ def serve(proj: Path, env: dict, log: Path) -> tuple:
     return p, f"http://127.0.0.1:{port}/.build/catalog/"
 
 
-def drive(base: str, overview: str = "") -> None:
+def drive(base: str, overview: str = "", art_base: str = "") -> None:
     from playwright.sync_api import sync_playwright  # noqa: PLC0415
 
     with sync_playwright() as pw:
-        browser = pw.chromium.launch()
+        browser = _slow.launch(pw)
         ctx = browser.new_context(permissions=["clipboard-read", "clipboard-write"])
         page = ctx.new_page()
         errors: list = []
@@ -190,7 +278,7 @@ def drive(base: str, overview: str = "") -> None:
             if ln.startswith("  ")
         }
         check(
-            "home: every tile is what `evh overview` prints for the same period, from today",
+            "home: every tile is what `evh overview-show` prints for the same period, from today",
             bool(cli) and all(shown.get(k) == v for k, v in cli.items()),
             f"page {shown} cli {cli}",
         )
@@ -216,7 +304,7 @@ def drive(base: str, overview: str = "") -> None:
                 ):
                     bad.append((d.isoformat(), k, js, py))
         check(
-            f"home: the browser's periods are evh overview's, on {len(days)} days and every period",
+            f"home: the browser's periods are evh overview-show's, on {len(days)} days and every period",
             not bad,
             str(bad[:3]),
         )
@@ -259,7 +347,14 @@ def drive(base: str, overview: str = "") -> None:
         )
         page.click('#period button.chip[data-period="all"]')
         page.goto(base + "datasets.html#plastmonth")
-        page.click('.row-chips [data-rows="active"]')
+        # new and active both 0: one chip says both (a new row has run in the period, so equal counts are one set)
+        merged = page.locator('.row-chips [data-rows="new"]')
+        check(
+            "datasets page: when new and active count the same, one chip says both",
+            "new and active" in merged.inner_text()
+            and not page.locator('.row-chips [data-rows="active"]').is_visible(),
+        )
+        merged.click()
         check(
             "datasets page: last month (the tutorial ran today) has no active dataset, and says so",
             page.locator("p.pempty").first.is_visible() and not page.locator("table#datasets").is_visible(),
@@ -267,9 +362,9 @@ def drive(base: str, overview: str = "") -> None:
         page.goto(base + "index.html")
         page.click('.nav details.navgroup[data-group="arms"] > summary')
         check(
-            "menu: Arms opens Arms, Configs, Models and Metrics",
+            "menu: Arms opens Arms, Systems, Models, Prompts, Scorers and Metrics",
             page.locator('.nav details.navgroup[data-group="arms"] .navlist a').all_inner_texts()
-            == ["Arms", "Configs", "Models", "Metrics"],
+            == ["Arms", "Systems", "Models", "Prompts", "Scorers", "Metrics"],
         )
         page.goto(base + "arms.html#p30d")
         rows = page.locator("table#arms tbody tr:not(.grouphead)")
@@ -277,11 +372,12 @@ def drive(base: str, overview: str = "") -> None:
             "arms page: every arm a row, each saying how it was measured",
             rows.count() >= 3 and "measured" in page.locator("table#arms").inner_text(),
         )
-        page.click('.group-chips [data-group-by="dataset"]')
+        page.click('.group-chips [data-group-by="set"]')
+        heads = page.locator("table#arms tr.grouphead:not(.emptyrow)").all_inner_texts()
         check(
-            "arms page: grouped by dataset, one heading naming it and its arms",
-            page.locator("table#arms tr.grouphead").count() == 1
-            and "tickets_v1" in page.locator("table#arms tr.grouphead").inner_text(),
+            "arms page: grouped by dataset, each heading naming it, how its arms are scored and the measure",
+            bool(heads) and all("tickets_v1" in h and ("against" in h or "judged" in h) for h in heads),
+            heads,
         )
         page.locator("table#arms input.pick").nth(0).check()
         page.locator("table#arms input.pick").nth(1).check()
@@ -307,8 +403,8 @@ def drive(base: str, overview: str = "") -> None:
         check("goals page: loads", page.locator("main").count() == 1)
         page.goto(base + "g/tickets_summary.html")
         check(
-            "goal page: the open round opens in the inspector (evh inspect --round)",
-            page.locator('a[title^="evh inspect --round r1"]').count() == 1,
+            "goal page: the open round opens in the inspector (evh comparison-show --round)",
+            page.locator('a[title^="evh comparison-show --round r1"]').count() == 1,
         )
         # Each round is a folded section: open the open one, as a reader does, to reach its suggestions.
         page.click("details.roundcard.t-open > summary")
@@ -375,7 +471,7 @@ def drive(base: str, overview: str = "") -> None:
         foot = page.locator("[data-elsewhere=term]").inner_text()
         check(
             "inspector: the footer names the comparison picked as its command",
-            foot == f"evh inspect --runs {arms} --baseline runs/tickets_v1/tickets_lead1_v1",
+            foot == f"evh comparison-show --runs {arms} --baseline runs/tickets_v1/tickets_lead1_v1",
             foot,
         )
         with page.expect_navigation():
@@ -412,6 +508,418 @@ def drive(base: str, overview: str = "") -> None:
             page.locator("tr.eprow.on").get_attribute("data-ep") == ep,
         )
 
+        art_arms = ",".join(f"runs/tickets_v1/tickets_{a}_v1" for a in ARTIFACT_ARMS)
+        page.goto(f"{art_base}inspect.html?runs={art_arms}&item=t01_login")
+        page.wait_for_selector(".outgrid", timeout=15000)
+        link = page.locator('.outcol a[href^="/artifacts/h1/trial"]')
+        check(
+            "inspector (RFC-038): an item's artifact is a link to its directory, served by this server",
+            link.count() == 1
+            and link.get_attribute("href") == "/artifacts/h1/trial/"
+            and link.get_attribute("rel") == "noopener",
+            [link.count(), link.get_attribute("href") if link.count() else None],
+        )
+        got = page.request.get(f"{art_base.split('/.build')[0]}{link.get_attribute('href')}")
+        check(
+            "... and the directory it links to is served with nosniff and sandbox",
+            got.status == 200
+            and got.headers.get("content-security-policy") == "sandbox"
+            and got.headers.get("x-content-type-options") == "nosniff",
+            [got.status, dict(got.headers)],
+        )
+        grid = page.locator(".outgrid").inner_text()
+        check(
+            "... a path with markup is shown as text, never as elements",
+            "artifacts/h1/a<i>b" in grid and page.locator(".outgrid i").count() == 0,
+            grid[:400],
+        )
+        check(
+            "... a path under no served prefix is text, 'not served by this inspector', and no link",
+            "reports/x: not served by this inspector" in grid
+            and page.locator('.outgrid a[href*="reports"]').count() == 0,
+            grid[:400],
+        )
+        check(
+            "... a path that is not on this machine says so",
+            "artifacts/h1/none: not found on this machine" in grid,
+            grid[:400],
+        )
+        check(
+            "... the artifact is not repeated in the info line when the link is drawn",
+            not any(
+                "artifact artifacts/h1/trial" in x and "run " in x
+                for x in page.locator(".outcol .small.muted").all_inner_texts()
+            ),
+            page.locator(".outcol .small.muted").all_inner_texts(),
+        )
+
+        # A url the server never makes, handed to the page by a stub: the page must not turn it into a link.
+        bad_urls = ["//evil.example/x", "javascript:alert(1)", "/\\evil.example/x", "https://evil.example/x"]
+
+        def stub(route):
+            resp = route.fetch()
+            doc = resp.json()
+            for n_, view in enumerate(doc.get("views", {}).values()):
+                view["artifact"] = {
+                    "path": "artifacts/h1/trial",
+                    "kind": "dir",
+                    "url": bad_urls[n_ % len(bad_urls)],
+                }
+            route.fulfill(response=resp, json=doc)
+
+        page.route("**/api/item?*", stub)
+        page.goto(f"{art_base}inspect.html?runs={art_arms}&item=t01_login")
+        page.wait_for_selector(".outgrid", timeout=15000)
+        grid = page.locator(".outgrid").inner_text()
+        check(
+            "inspector: a url that is not one path on this origin (//host, javascript:, /\\host, https:) is never made a link",
+            page.locator(".outgrid a").count() == 0 and grid.count("not served by this inspector") == 4,
+            (page.locator(".outgrid a").count(), grid[:300]),
+        )
+        page.unroute("**/api/item?*")
+
+        # What the judges said (RFC-034) is a table: its header over its rows (the table's class once matched the home
+        # page's two-column `.why` cards, which put the header left and the rows in the right half; scenario 080c U6).
+        def with_verdicts(route):
+            resp = route.fetch()
+            doc = resp.json()
+            doc["verdicts"] = [
+                {
+                    "scorer": "j1",
+                    "judge": "judge-a",
+                    "arm": "runs/tickets_v1/a",
+                    "said": 0.5,
+                    "why": "it skips the ask",
+                },
+                {
+                    "scorer": "j1",
+                    "judge": "judge-a",
+                    "arm": "runs/tickets_v1/b",
+                    "said": 1.0,
+                    "why": "it covers the ask",
+                },
+            ]
+            route.fulfill(response=resp, json=doc)
+
+        # The reasons say "the first answer" (blind positions); the rows of an arm whose output is not on the page are
+        # that arm's grades. The page says both (UXS-002 04; RFC-005 step 2: arm identities hidden, order shuffled),
+        # names the scale, a repeat's text beside the mean, and counts "1 word" (080d inspector #1, #2, #3, inspector3 #7).
+        def with_blind(route):
+            resp = route.fetch()
+            doc = resp.json()
+            first = next(iter(doc["views"]))
+            doc["views"][first]["repeats"] = 3
+            doc["views"][first]["text"] = "one"
+            shown_arm = first.rsplit("/", 1)[-1]
+            doc["verdicts"] = [
+                {
+                    "scorer": "j1",
+                    "judge": "judge-a",
+                    "arm": shown_arm,
+                    "position": 2,
+                    "scale": [1, 5],
+                    "said": 4,
+                    "why": "The second answer is complete.",
+                },
+                {
+                    "scorer": "j1",
+                    "judge": "judge-a",
+                    "arm": "elsewhere_v1",
+                    "position": 1,
+                    "scale": [1, 5],
+                    "said": 2,
+                    "why": "The first answer misses the ask.",
+                },
+            ]
+            route.fulfill(response=resp, json=doc)
+
+        page.route("**/api/item?*", with_blind)
+        page.goto(f"{art_base}inspect.html?runs={art_arms}&item=t01_login")
+        page.wait_for_selector("table.verdicts", timeout=15000)
+        vt = page.locator("table.verdicts").inner_text().lower()
+        drill_text = page.locator("#drill").inner_text()
+        check(
+            "inspector: the judges' table names the scale and each arm's position, and says the judge saw the outputs "
+            "blind and shuffled",
+            "position" in vt
+            and "said (1–5)" in vt
+            and "without arm names" in drill_text
+            and "shuffled" in drill_text,
+            (vt[:200], drill_text[:400]),
+        )
+        check(
+            "inspector: a judge row for an arm whose output is not on the page says so; the shown arm's does not",
+            vt.count("output not shown") == 1,
+            vt,
+        )
+        check(
+            "inspector: a score of several repeats says it is their mean beside the text of one of them",
+            "mean of 3 repeats" in drill_text and "1 words" not in drill_text and "1 word" in drill_text,
+            drill_text[:600],
+        )
+        page.unroute("**/api/item?*")
+
+        page.route("**/api/item?*", with_verdicts)
+        page.goto(f"{art_base}inspect.html?runs={art_arms}&item=t01_login")
+        page.wait_for_selector("div.scroll-x table.data tbody tr td", timeout=15000)
+        lay = page.evaluate(
+            """() => { const t = [...document.querySelectorAll('table.data')].find(x => x.closest('div.scroll-x') && x.querySelector('th')?.textContent === 'scorer');
+              const th = t.querySelector('th').getBoundingClientRect(), td = t.querySelector('td').getBoundingClientRect();
+              return {display: getComputedStyle(t).display, thLeft: Math.round(th.left), tdLeft: Math.round(td.left)}; }"""
+        )
+        check(
+            "inspector: 'what the judges said' is a table, its first row under its header's left edge",
+            lay["display"] == "table" and abs(lay["thLeft"] - lay["tdLeft"]) <= 2,
+            lay,
+        )
+        page.unroute("**/api/item?*")
+
+        # An arm's name is one rule, whatever the number of arms open: only the dataset id's prefix is dropped, the
+        # " · reading" tail and the ×N repeat mark stay; the full name is the tooltip.
+        def with_silver(route):
+            resp = route.fetch()
+            doc = resp.json()
+            doc["dataset"] = "intents_v1"
+            for arm in doc.get("arms", []):
+                arm["dataset"] = "intents_v1"
+                arm["label"] = f"intents_{arm['id'].rsplit('_v1', 1)[0].rsplit('_', 1)[-1]}_v1 · silver ×3"
+            route.fulfill(response=resp, json=doc)
+
+        def drawn_names():
+            return page.evaluate(
+                "[...document.querySelectorAll('figure.chart svg text.rl')].map(t => t.textContent)"
+            )
+
+        page.route("**/api/compare**", with_silver)
+        page.goto(f"{base}inspect.html?runs=runs/tickets_v1/tickets_lead1_v1&metric=overlap_f1")
+        page.wait_for_selector("figure.chart svg text.rl", timeout=15000)
+        names_one = drawn_names()
+        page.goto(
+            f"{base}inspect.html?runs={arms}&baseline=runs/tickets_v1/tickets_lead1_v1&metric=overlap_f1"
+        )
+        page.wait_for_selector("figure.chart svg text.rl", timeout=15000)
+        names_three = drawn_names()
+        check(
+            "inspector: an arm's name is the same with 1 arm open and with 3, without the dataset prefix, with its "
+            "' · silver ×3' tail",
+            "lead1_v1 · silver ×3" in names_one
+            and "lead1_v1 · silver ×3" in names_three
+            and not any("intents_" in n for n in names_one + names_three)
+            and all("silver ×3" in n for n in names_three),
+            (names_one, names_three),
+        )
+        page.unroute("**/api/compare**")
+
+        # The difference chart's right column writes a score's mean difference as the table does (three decimals), so
+        # no difference is "+0"; a time metric keeps its own precision.
+        def with_zero_delta(route):
+            resp = route.fetch()
+            doc = resp.json()
+            base_id = doc["baseline"]
+            other = next(a for a in doc["series"] if a != base_id)
+            doc["series"][other] = dict(doc["series"][base_id])
+            route.fulfill(response=resp, json=doc)
+
+        page.route("**/api/compare**", with_zero_delta)
+        page.goto(
+            f"{base}inspect.html?runs={arms}&baseline=runs/tickets_v1/tickets_lead1_v1&metric=overlap_f1"
+        )
+        page.wait_for_selector("figure.chart svg text.rv", timeout=15000)
+        rv_texts = page.evaluate(
+            "[...document.querySelectorAll('figure.chart svg text.rv')].map(t => t.textContent)"
+        )
+        check(
+            "inspector: a zero mean difference in the difference chart reads '+0.000', as the table writes it",
+            any(t.strip().startswith("+0.000") for t in rv_texts)
+            and not any(t.strip().startswith("+0 ") for t in rv_texts),
+            rv_texts,
+        )
+        page.unroute("**/api/compare**")
+
+        def with_half_ms(route):
+            resp = route.fetch()
+            doc = resp.json()
+            base_id = doc["baseline"]
+            other = next(a for a in doc["series"] if a != base_id)
+            doc["series"][other] = {k: v + 0.5 for k, v in doc["series"][base_id].items()}
+            route.fulfill(response=resp, json=doc)
+
+        page.route("**/api/compare**", with_half_ms)
+        page.goto(
+            f"{base}inspect.html?runs={arms}&baseline=runs/tickets_v1/tickets_lead1_v1&metric=latency_ms"
+        )
+        page.wait_for_selector("figure.chart svg text.rv", timeout=15000)
+        rv_ms = page.evaluate(
+            "[...document.querySelectorAll('figure.chart svg text.rv')].map(t => t.textContent)"
+        )
+        check(
+            "inspector: a latency difference keeps the time precision ('+0.5', not '+0.500')",
+            any(t.strip().startswith("+0.5 ") for t in rv_ms),
+            rv_ms,
+        )
+        page.unroute("**/api/compare**")
+
+        # The verdict table writes its difference with a sign, as the chart beside it does ("+0.094", not "0.094").
+        def with_gain(route):
+            resp = route.fetch()
+            doc = resp.json()
+            for r in doc["rows"]:
+                r["delta"] = 0.094
+            route.fulfill(response=resp, json=doc)
+
+        page.route("**/api/compare**", with_gain)
+        page.goto(
+            f"{base}inspect.html?runs={arms}&baseline=runs/tickets_v1/tickets_lead1_v1&metric=overlap_f1"
+        )
+        page.wait_for_selector("figure.chart svg text.rv", timeout=15000)
+        deltas = page.evaluate(
+            "[...document.querySelectorAll('table.data')[0].querySelectorAll('tbody tr')].map(r => r.cells[4].textContent.trim())"
+        )
+        check(
+            "inspector: the verdict table's difference carries its sign ('+0.094')",
+            bool(deltas) and all(t == "+0.094" for t in deltas),
+            deltas,
+        )
+        page.unroute("**/api/compare**")
+
+        # A centroid's name sits clear of its own arm's dots (080d recheck: the mistral name was written over its dots).
+        def with_band(route):
+            resp = route.fetch()
+            doc = resp.json()
+            ids = list(doc["series"])
+            items = doc["items"]
+            doc["series"] = {
+                a: {i: (0.4935 + 0.013 * (k % 2)) if n == 0 else 0.9 - 0.2 * n for k, i in enumerate(items)}
+                for n, a in enumerate(ids)
+            }
+            doc["shape"] = {
+                "latency_ms": {
+                    a: {i: (300.0 + 6.0 * k if n == 0 else 20.0 + n) for k, i in enumerate(items)}
+                    for n, a in enumerate(ids)
+                }
+            }
+            route.fulfill(response=resp, json=doc)
+
+        page.route("**/api/compare**", with_band)
+        page.goto(
+            f"{base}inspect.html?runs={arms}&baseline=runs/tickets_v1/tickets_lead1_v1&metric=overlap_f1"
+        )
+        page.wait_for_selector("#scatterbox g.centroid text.cl", timeout=15000)
+        over = page.evaluate(
+            """() => { const out = []; let seen = 0;
+              for (const g of document.querySelectorAll('#scatterbox g.centroid')) {
+                const t = g.querySelector('text.cl'); if (!t) continue;
+                const b = t.getBBox(), col = g.querySelector('path').getAttribute('stroke');
+                for (const c of document.querySelectorAll('#scatterbox circle.dot')) {
+                  if (c.getAttribute('fill') !== col) continue;
+                  seen++;
+                  const x = +c.getAttribute('cx'), y = +c.getAttribute('cy');
+                  if (x > b.x - 4.5 && x < b.x + b.width + 4.5 && y > b.y - 4.5 && y < b.y + b.height + 4.5) out.push(t.textContent);
+                }
+              } return {seen, out}; }"""
+        )
+        check(
+            "inspector: a scatter's centroid name covers none of its own arm's dots",
+            over["seen"] >= 6 and not over["out"],
+            over,
+        )
+        page.unroute("**/api/compare**")
+
+        # The metric select's long option text must not widen the page (080d recheck: 39 px sideways at 390 px).
+        def with_long_metric(route):
+            resp = route.fetch()
+            doc = resp.json()
+            doc["metrics"] = [
+                {
+                    "name": "judge_score_unvalidated",
+                    "format": "1-5 scale",
+                    "lower_is_better": False,
+                    "arms": 3,
+                    "archived": True,
+                }
+            ] + [m for m in doc["metrics"] if m["name"] != "judge_score_unvalidated"]
+            doc["metric"] = "judge_score_unvalidated"
+            route.fulfill(response=resp, json=doc)
+
+        narrow = browser.new_page(viewport={"width": 390, "height": 844})
+        narrow.route("**/api/compare**", with_long_metric)
+        narrow.goto(f"{base}inspect.html?runs={arms}&baseline=runs/tickets_v1/tickets_lead1_v1")
+        narrow.wait_for_selector("#metric", timeout=15000)
+        wide = narrow.evaluate("document.documentElement.scrollWidth - window.innerWidth")
+        check(
+            "phone width: a long metric option does not scroll the inspector sideways", wide <= 1, f"{wide}px"
+        )
+        narrow.close()
+
+        # The sheet's arm cell shows the adapter's decision; the whole output (its reason) is the cell's tooltip.
+        def with_decision(route):
+            resp = route.fetch()
+            doc = resp.json()
+            cell = next(iter(doc["rows"][0]["cells"].values()))
+            cell["output"] = "billing"
+            cell["full"] = "label: billing\nreason: The customer reports a double charge."
+            route.fulfill(response=resp, json=doc)
+
+        page.route("**/api/sheet**", with_decision)
+        page.goto(f"{base}inspect.html?dataset=tickets_v1&sheet=1&runs={arms}")
+        page.wait_for_selector("#sheettable tbody tr td.outc", timeout=15000)
+        tip = page.locator("#sheettable tbody tr").first.locator("td.outc").first.get_attribute("title")
+        check(
+            "sheet: a decision shown in an arm's cell has the whole output (its reason) as the tooltip",
+            bool(tip) and "reason: The customer reports" in tip,
+            tip,
+        )
+        page.unroute("**/api/sheet**")
+
+        # One arm open: no empty verdict table, said in words (080d inspector #10); the spread's numbers are written as
+        # the table's (4.500, not 4.5); a difference row ends in no bare mark (inspector3 #3).
+        page.goto(f"{base}inspect.html?runs=runs/tickets_v1/tickets_lead1_v1")
+        page.wait_for_selector("#metric", timeout=15000)
+        one = page.locator("#app").inner_text()
+        check(
+            "inspector: one arm open says there is no verdict to give, in words, with no empty verdict table",
+            "Only the baseline has this metric" not in one
+            and "Holm across 0" not in one
+            and "no verdict to give" in one,
+            one[:500],
+        )
+        page.wait_for_selector("table.eps tbody tr", timeout=15000)
+        widths = page.evaluate(
+            "(() => { const t = document.querySelector('table.eps');"
+            " return [t.getBoundingClientRect().width, t.closest('.scroll-x').getBoundingClientRect().width]; })()"
+        )
+        check(
+            "inspector: on one arm the per-item table fills its container's width",
+            widths[1] > 0 and widths[0] >= 0.9 * widths[1],
+            widths,
+        )
+        page.goto(f"{art_base}inspect.html?runs={art_arms}")
+        page.wait_for_selector("#metric", timeout=15000)
+        rv = page.evaluate(
+            "[...document.querySelectorAll('figure.chart svg text.rv')].map(t => t.textContent)"
+        )
+        check(
+            "inspector: the charts' right columns carry no bare '·', and the spread's means are written to 3 decimals",
+            rv
+            and not any(t.strip().endswith("·") for t in rv)
+            and re.fullmatch(r"-?\d+\.\d{3}|-?\d{2,}\.\d", rv[0].strip()) is not None,
+            rv[:6],
+        )
+        page.goto(f"{base}inspect.html?dataset=tickets_v1&sheet=1&runs={arms}")
+        page.wait_for_selector("#sheettable", timeout=15000)
+        empty = page.evaluate(
+            """() => { const t = document.querySelector('#sheettable'), out = [];
+              [...t.tHead.rows[0].cells].forEach((th, i) => { const name = th.textContent.trim().toLowerCase();
+                if (!['signals', 'picked', 'fields'].includes(name)) return;
+                if (![...t.tBodies[0].rows].some(r => (r.cells[i]?.textContent || '').trim())) out.push(name); });
+              return out; }"""
+        )
+        check(
+            "sheet: a signals, picked or fields column that is empty on every row is not drawn",
+            empty == [],
+            empty,
+        )
+
         page.goto(base + "d/tickets_v1.html")
         ftable = page.locator("table#fields").inner_text()
         check("dataset page: element ids are unique", page.locator('[id="fields"]').count() == 1)
@@ -432,7 +940,8 @@ def drive(base: str, overview: str = "") -> None:
         page.locator('#picks input.cmdsel[value="prod_v1:p2"]').check()
         check(
             "picks waiting: a ticked row gives the dataset-extend command, to copy",
-            pickcmd.inner_text() == "evh dataset-extend tickets_v1 --dataset-id <next> --pick prod_v1:p2"
+            pickcmd.inner_text()
+            == "evh dataset-extend --dataset tickets_v1 --dataset-id <next> --pick prod_v1:p2"
             and page.locator("#picks button.copy").is_visible(),
             pickcmd.inner_text(),
         )
@@ -477,6 +986,43 @@ def drive(base: str, overview: str = "") -> None:
             paged,
         )
 
+        # A time per item's p50 and p95 marks are the leaderboard's (axes.percentile, linear between the closest
+        # ranks), as `evh chart latency` gives them (review, 2026-11-19: n=4 times gave p50 30 here and 25 there).
+        page.goto(
+            f"{base}inspect.html?runs={arms}&baseline=runs/tickets_v1/tickets_lead1_v1&metric=latency_ms"
+        )
+        page.wait_for_selector("[data-tip*=' p95 ']", state="attached", timeout=15000)
+        tips = page.eval_on_selector_all(
+            "[data-tip*=' p50 '], [data-tip*=' p95 ']", "es => es.map(e => e.dataset.tip)"
+        )
+        series = page.evaluate(
+            """async (q) => (await (await fetch((document.body.dataset.api || '/api/') + 'compare?' + q)).json()).series""",
+            f"runs={arms}&baseline=runs/tickets_v1/tickets_lead1_v1&metric=latency_ms",
+        )
+        import math  # noqa: PLC0415
+
+        from evaluation_harness.axes import percentile  # noqa: PLC0415
+
+        def near(
+            shown: str, v: float
+        ) -> bool:  # the tooltip's rounding (inspect.js tfmt): 0, 1 or 3 decimals
+            tol = 0.5 if abs(v) >= 100 else 0.05 if abs(v) >= 10 else 0.0005
+            return math.isfinite(v) and abs(float(shown) - v) <= tol + 1e-9
+
+        marks_ok, seen = bool(series), []
+        for tip in tips:
+            m = re.match(r"(.+) (p50|p95) (\S+)$", tip)
+            arm_id = next((a for a in (series or {}) if m and a.endswith(m.group(1).split(" ")[0])), None)
+            if not m or arm_id is None:
+                continue
+            want = percentile(list(series[arm_id].values()), 50 if m.group(2) == "p50" else 95)
+            seen.append((m.group(1), m.group(2), m.group(3), round(want, 3)))
+            marks_ok = marks_ok and near(m.group(3), want)
+        check(
+            "inspector: a time's p50 and p95 marks are the leaderboard's percentiles (linear between ranks)",
+            marks_ok and len(seen) >= 2 * len(arms.split(",")),
+            (seen, tips[:6]),
+        )
         page.goto(f"{base}inspect.html?runs={arms}&baseline=runs/tickets_v1/tickets_lead1_v1")
         page.wait_for_selector("#wfield", timeout=15000)
         opts = page.locator("#wfield option").all_inner_texts()
@@ -728,6 +1274,114 @@ def drive(base: str, overview: str = "") -> None:
             phone.wait_for_selector(ready, timeout=15000)
             wide = phone.evaluate("document.documentElement.scrollWidth - window.innerWidth")
             check(f"phone width: no sideways scroll on {path.split('?')[0]}", wide <= 1, f"{wide}px too wide")
+
+        # At scale (PLAN_0.8.0 S3): this comparison as the server answers it, stretched to 10,000 items and 40 arms.
+        # The page overflowed the call stack there (Math.min over 400,000 values: no verdicts, ever) and drew all
+        # 10,000 rows, 3.2 million elements; now it shows its verdicts and draws only the rows it shows.
+        def stretch(route) -> None:
+            got = route.fetch()
+            d = got.json()
+            base_arm = d["baseline"]
+            other = next(a for a in d["series"] if a != base_arm)
+            items = [f"x{k:05d}" for k in range(10000)]
+            row = next(r for r in d["rows"] if r["arm"] == other)
+            arm = next(x for x in d.get("arms") or [] if x.get("id") == other)
+            copies = [f"{other}~{j}" for j in range(39)]
+            d["items"] = items
+            d["series"] = {base_arm: {i: (k % 7) / 7 for k, i in enumerate(items)}}
+            for j, c in enumerate(copies):
+                d["series"][c] = {i: ((k + j) % 9) / 9 for k, i in enumerate(items)}
+            d["rows"] = [{**row, "arm": c, "n": len(items)} for c in copies]
+            d["arms"] = [x for x in d.get("arms") or [] if x.get("id") == base_arm] + [
+                {**arm, "id": c} for c in copies
+            ]
+            d["shape"] = {
+                "latency_ms": {a: {i: 100.0 + (k % 50) for k, i in enumerate(items)} for a in d["series"]}
+            }
+            route.fulfill(response=got, body=json.dumps(d))
+
+        big = browser.new_page()
+        big_errors: list = []
+        big.on("pageerror", lambda e: big_errors.append(str(e)))
+        big.route("**/api/compare**", stretch)
+        big.goto(base + f"inspect.html?runs={arms}")
+        big.wait_for_function(
+            "document.querySelectorAll('table.data')[0]?.querySelectorAll('tbody tr').length >= 39",
+            timeout=60000,
+        )
+        drawn = big.locator("table.eps tbody tr").count()
+        elements = big.evaluate("document.getElementsByTagName('*').length")
+        pager = big.locator("#eps-pager").inner_text()
+        check(
+            "inspector at 10,000 items and 40 arms: 39 verdicts, no page error, 10 rows of the per-item table drawn",
+            not big_errors and drawn == 10 and elements < 20000 and "Showing 10 of 10000" in pager,
+            (big_errors[:1], drawn, elements, pager),
+        )
+        bins, dots = big.locator("svg rect.bin").count(), big.locator("svg circle.dot").count()
+        check(
+            "... its charts drawn from bins (the spread, the differences, the scatter's grid), not 1.2 million dots",
+            bins > 100 and dots == 0 and big.locator("#scatterbox rect.bin").count() > 0,
+            (bins, dots),
+        )
+        big.locator("#eps-pager [data-more]").click()
+        check("... show 10 more draws ten more", big.locator("table.eps tbody tr").count() == 20)
+        bulk = big.locator("#eps-pager [data-bulk]").inner_text()
+        big.locator("#eps-pager [data-bulk]").click()
+        check(
+            "... past 1,000 items there is no show all, a thousand more instead",
+            bulk == "show 1000 more" and big.locator("table.eps tbody tr").count() == 1020,
+            (bulk, big.locator("table.eps tbody tr").count()),
+        )
+        big.goto(base + f"inspect.html?runs={arms}&item=x04321")
+        big.wait_for_selector("tr.eprow.on", timeout=60000)
+        check(
+            "... ?item= far down the list: the table is drawn down to it and it opens",
+            big.locator("tr.eprow.on").get_attribute("data-ep") == "x04321"
+            and big.locator("table.eps tbody tr").count() == 4322,
+            big.locator("table.eps tbody tr").count(),
+        )
+        big.close()
+
+        # The sheet at 10,000 rows: drawn on demand too (it was 940,000 elements at 40 arms); select all still takes
+        # every row of the sheet, and a sort orders all of them, not only the rows drawn.
+        def stretch_sheet(route) -> None:
+            got = route.fetch()
+            d = got.json()
+            row = d["rows"][0]
+            d["rows"] = [{**row, "item": f"x{k:05d}"} for k in range(10000)]
+            d["total"] = len(d["rows"])
+            route.fulfill(response=got, body=json.dumps(d))
+
+        sheet = browser.new_page()
+        sheet_errors: list = []
+        sheet.on("pageerror", lambda e: sheet_errors.append(str(e)))
+        sheet.route("**/api/sheet**", stretch_sheet)
+        sheet.goto(base + f"inspect.html?dataset=tickets_v1&sheet=1&runs={arms}")
+        sheet.wait_for_selector("#sheettable tbody tr", timeout=60000)
+        sheet_rows = sheet.locator("#sheettable tbody tr").count()
+        check(
+            "sheet at 10,000 rows: 10 drawn, the pager says how many, no page error",
+            sheet_rows == 10
+            and "Showing 10 of 10000" in sheet.locator("#sheet-pager").inner_text()
+            and not sheet_errors,
+            (sheet_rows, sheet_errors[:1]),
+        )
+        sheet.locator("#sall").check()
+        check(
+            "... select all takes every row of the sheet, drawn or not",
+            sheet.locator("#sn").inner_text() == "10000"
+            and "--item x09999" in sheet.locator("#spick").inner_text(),
+            sheet.locator("#sn").inner_text(),
+        )
+        sheet.locator("#sheettable thead th.item").click()
+        sheet.locator("#sheettable thead th.item").click()
+        top = sheet.locator("#sheettable tbody tr").first.get_attribute("data-ep")
+        check(
+            "... a sort orders all 10,000 rows, not the 10 drawn (descending: x09999 first)",
+            top == "x09999",
+            top,
+        )
+        sheet.close()
         check("no console errors", not errors, " | ".join(errors))
         browser.close()
 
@@ -739,19 +1393,21 @@ def main() -> int:
         print("  FAIL Playwright is not installed: `make browser-install` (requirements-browser.txt)")
         return 1
     tmp = Path(tempfile.mkdtemp(prefix="evh-browser-"))
-    server = None
+    server = art_server = None
     try:
         proj, env = project(tmp)
         server, base = serve(proj, env, tmp / "serve.log")
+        art_server, art_base = serve(artifact_project(tmp, env), env, tmp / "serve-art.log")
         ov = subprocess.run(
-            [sys.executable, "-m", "evaluation_harness", "overview", "--period", "14d"],
+            [sys.executable, "-m", "evaluation_harness", "overview-show", "--period", "14d"],
             cwd=proj, env=env, capture_output=True, text=True,
         )  # fmt: skip
-        drive(base, ov.stdout)
+        drive(base, ov.stdout, art_base)
     finally:
-        if server is not None:
-            os.killpg(server.pid, signal.SIGTERM)
-            server.wait(timeout=10)
+        for s in (server, art_server):
+            if s is not None:
+                os.killpg(s.pid, signal.SIGTERM)
+                s.wait(timeout=10)
         shutil.rmtree(tmp, ignore_errors=True)
     return summary()
 

@@ -1,7 +1,0 @@
-```json
-[
-  {"text": "Mayor Tiangco", "type": "person"},
-  {"text": "congressional post", "type": "other"},
-  {"text": "Lone District", "type": "location"}
-]
-```

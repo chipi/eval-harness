@@ -34,6 +34,13 @@ def on_config(config):
     v = re.search(
         r'__version__ = "([^"]+)"', (ROOT / "harness" / "scripts" / "_version.py").read_text()
     ).group(1)
+    if ".dev" in v:  # before a release: the newest release the CHANGELOG dates (site/build.py does the same)
+        dated = re.search(
+            r"^## (\d+\.\d+\.\d+) — \d{4}-\d{2}-\d{2}$",
+            (ROOT / "harness" / "CHANGELOG.md").read_text(),
+            re.MULTILINE,
+        )
+        v = dated.group(1) if dated else v
     config["copyright"] = f"{config['copyright']} · v{v} · build: local"
     return config
 

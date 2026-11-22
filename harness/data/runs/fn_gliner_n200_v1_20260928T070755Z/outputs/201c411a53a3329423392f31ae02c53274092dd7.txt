@@ -1,1 +1,0 @@
-[{"text": "Debian project", "type": "organization"}, {"text": "derivatives", "type": "other"}, {"text": "derivatives", "type": "other"}]

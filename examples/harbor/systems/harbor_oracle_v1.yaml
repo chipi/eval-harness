@@ -1,0 +1,10 @@
+# Harbor's `oracle` agent: it runs the task's own solution (solution/solve.sh) in the task's container. No model is called,
+# no key is needed, nothing is spent, and every task whose solution is right passes: the ceiling a real agent is measured
+# against, and the proof that the verifier can pass. Run from the project's root: the trials land under artifacts/, which
+# the inspector serves.
+system_id: harbor_oracle_v1
+adapter: ../adapter.py
+params:
+  provider: harbor
+  agent: oracle
+  jobs_dir: artifacts/harbor_oracle_v1

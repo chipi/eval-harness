@@ -1,3 +1,0 @@
-[
-  {"text": "Bazhov", "type": "person"}
-]

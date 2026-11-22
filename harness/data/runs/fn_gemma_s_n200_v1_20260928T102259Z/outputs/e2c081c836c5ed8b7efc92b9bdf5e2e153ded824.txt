@@ -1,8 +1,0 @@
-```json
-[
-  {"text": "Iron Age", "type": "other"},
-  {"text": "Hellenistic", "type": "other"},
-  {"text": "Roman", "type": "other"},
-  {"text": "Islamic", "type": "other"}
-]
-```

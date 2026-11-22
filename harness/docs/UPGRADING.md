@@ -5,6 +5,231 @@ change the pin, then check what it says can move. **If you copied `harness/` int
 repository** before October 2026, read the rest of this page first: your copy has
 correctness bugs, not just missing features.
 
+## From 0.7.2 to 0.8.0
+
+- **A pin on a commit of the 0.8.0 branch, from before the release, installed `0.8.0.dev0`**, the version every commit of
+  it carried. Move it to `@v0.8.0`: that reports `0.8.0`, so a plain `pip install` replaces it. The general rule holds for
+  any two commits that report one version: moving such a pin from one commit to another does nothing with a plain
+  `pip install`, because pip says "Requirement already satisfied" and keeps the old commit. Use
+  `pip install --force-reinstall --no-deps "evaluation-harness @ git+https://github.com/chipi/eval-harness@<new commit>#subdirectory=harness"`
+  (`--no-deps` keeps pip from reinstalling every dependency). To see which commit is installed, read the install's record
+  of its source:
+  `python -c "import importlib.metadata as m; print(m.distribution('evaluation-harness').read_text('direct_url.json'))"`
+  prints the `url` and, for a git install, `vcs_info.commit_id`. `evh --version` shows only the version, which does
+  not tell two commits of it apart.
+- **The legacy read commands and MCP tools are gone, no alias** (RFC-032 step 9). A script, a Makefile, a skill or an
+  agent's configuration that runs the commands `overview`, `activity`, `arms`, `datasets`, `references`, `metrics`, `goals`,
+  `rounds`, `inspect`, `labels`, `tags`, `captures`, `models`, `prompts`, `studies` or `label-coverage`, or that
+  calls an MCP tool of one of those names, takes the operation instead: the CHANGELOG's 0.8.0 "Changed" entry lists
+  each with its replacement (`goals --goal G` is `evh goal-leaderboard G`; `inspect --runs A,B` is `evh
+  comparison-show --runs A,B`, where A and B are now arm or system ids, not run ids: a run id is refused with
+  `not-found`, and `evh arm-list` names the arms; `inspect --sheet --dataset-id D --runs A,B` is `evh sheet-show D --runs A,B`, and
+  with `--csv` it is `evh sheet-export --dataset-id D --runs A,B --csv FILE`). Where these hide in a project made
+  before 0.8.0:
+  - **its `AGENTS.md`**: the one `evh init` wrote up to 0.7.2 runs the old `overview`, `goals --goal G`, `datasets`,
+    `arms`, `rounds --goal G` and `inspect --runs A,B`, and an agent that follows it runs commands that no longer
+    exist. `evh init` never overwrites the file: run `evh init --store files` in an empty folder
+    and carry the new `AGENTS.md` over, keeping your own additions;
+  - **its installed skills** (`.claude/skills/`, from `evh skills-install`): two of 0.7.2's run the old reads;
+    `evh skills-install --force` replaces them with this release's (it overwrites copies you changed);
+  - **its own Makefile targets, README examples and scripts**.
+
+  `grep -rnE "evh[[:space:]]+(overview|activity|arms|datasets|references|metrics|goals|rounds|inspect|labels|tags|captures|models|prompts|studies|label-coverage)([^a-z-]|$)|evh[[:space:]]+leaderboard[[:space:]]+--dataset-id" AGENTS.md CLAUDE.md .claude/skills Makefile README.md`
+  finds them (add your scripts' folders). The reads that kept their name take the
+  dataset, system or model as their argument (`evh leaderboard D`, `evh deploy-sheet S`, `evh periods M`), and what
+  they print in `--json` is the operation's structured result (`result.runs` for `runs-list`, `result.sets` for
+  `looks`, `result.schema` and `result.baselines` for `baselines`). MCP clients: a tool is named as its operation, and
+  takes the operation's inputs.
+- **The commands that work on the project take named options, and a job is an operation and its inputs** (RFC-032 step
+  9). What was a positional of a command that runs as a job is a named option: `evh data-put PATH FILE` is `evh data-put
+  --path PATH --file FILE` (`--file -` reads standard input), `evh data-put PATH --set K=V` is `evh data-put --path PATH
+  --set K=V`, `evh data-rm PATH` is `evh data-rm --path PATH`; each command's `--help` names them. A script or Makefile that
+  ran a harness script by its path (`scripts/catalog_build.py`, `migrate.py`, `data_migrate.py`, `data_put.py`, ...)
+  runs `evh` instead (`evh catalog --out DIR`, `evh migrate --check`). `evh jobs-start` names an operation and has no
+  `--reason`: a decision's reason is one of its inputs (`--arg reason=...`, `--arg conclusion=...` for `round-close`).
+  Through the API a job is `{"operation", "inputs", "by", "for", "max_cost_usd"}` (or a POST on the operation's own
+  resource), an input named as the operation names it (`dataset_id`, not `dataset-id`), and an estimate is
+  `{"operation", "inputs"}`; `{"command", "args"}` is refused. Jobs recorded before this in a project's `.build/jobs/`
+  name a command the harness no longer runs: let them end, then delete the folder.
+- **`evh mcp`'s `--write-answers` and `--answers` are gone** (RFC-032 step 9): a deployment that wrote answers ahead and
+  served them drops both (the server answers the first `goal-list` in 7 to 8 s at cpus 0.5 without them); a stale
+  `mcp-answers.jsonl` beside the release is read by nothing and can be deleted.
+- **Run `evh migrate` once** (`--dry-run` first shows what each step will do, running the real steps on a copy of the data
+  under the project's `.build/`, as large as the data while it runs and deleted after; a second run changes nothing). It
+  brings the data to format 7 and records it in `data/project.yaml` (RFC-032): from 0.8.0 a project's data has a
+  format, `evh migrate --check` compares it with the release's, and a deploy runs that check (the RUNBOOK's "The
+  data's format"). A SQLite project's database is copied beside it first, as `data/project.sqlite-before-format-<n>-<time>`: the undo, to delete once the project works on format 7. Commit `data/project.yaml` with the
+  migrated data. Its steps, in order:
+  - *runs* (RFC-024): a run's outputs become one `outputs.jsonl` instead of an `outputs/` folder of `<item>.txt`,
+    a derived run whose outputs are byte copies of its source's keeps none of its own, and the leftover row
+    checkpoint goes. Each run is checked byte for byte before its folder is removed; nothing in a fingerprint
+    moves. Then let git see the new files: a `.gitignore` that re-admits `outputs/**` in a run directory needs
+    `!…/outputs.jsonl` instead (this repository's `harness/.gitignore` shows the pattern). The old layout is not
+    read after the upgrade.
+  - *datasets* (E3): each dataset record's `version` is recomputed from its lineage and a record without a
+    `source` block gets the one its committed profile recorded; `validate` V22 then holds the records to the
+    0.8.0 format. Item ids and hashes do not change, so no run or fingerprint moves.
+  - *records* (RFC-027): each `data/baselines/<dataset>_baseline.json` becomes version 1 of the goal it names
+    (`data/baselines/<goal>/<dataset>/1.json`), or of the dataset's own (`_dataset/`) when it names none, marked
+    "promoted before 0.8.0, evidence not recorded"; every record without an actor gets `before 0.8.0`; a split
+    side's `split.by` becomes `split.split_by`. No fingerprint moves.
+  - *fingerprints* (RFC-021): a run still at version 4 moves to 5 (none left once `fingerprint-migrate` ran on 0.6.0).
+  - *deployments* (RFC-032 step 2, format 2): each model record's `deployments` become
+    `data/deployments/<model>/<deployment>.yaml`, in the order the record listed them, each with its onboarding as
+    its first check; each of the record's `smokes` becomes a check of the deployment its arm's config names (or the
+    model's only deployment). A smoke whose deployment is neither is refused before anything is written, naming the
+    config: set its `deployment:` and migrate again. The model record keeps its comments and loses only those two
+    keys. `evh model-list` and the catalog's model pages read the same as before.
+  - *systems* (RFC-032 step 3, format 3): each config becomes a system, `<folder>/<system_id>.yaml` (a folder named
+    `configs` becomes `systems`: `data/systems/`, and the folders validate.json's `systems` globs name, which were its
+    `configs` globs; config.yaml's `configs:` folders are added to them), with `system_id` and without `dataset_id`,
+    `goal` or `round`, its comments kept. Configs in one folder whose ids differ only by a dataset token (`_n200`,
+    `_n100`, `_dm200`) and their version, on different datasets and alike in every other key, become one system
+    whose id drops the token and keeps the highest version; any other group is left as it is, and a group on different
+    datasets that differs in another key is refused, naming the key. Every live reference to a renamed id is renamed
+    with it (runs' `config_id`, rounds' carried and retired arms, smoke checks, which name `system:` now, a sealed
+    dataset's unseals, study specs, whose `baseline.config` becomes `baseline.system`, faithfulness records,
+    validate.json); judging sets with their verdicts, and reference manifests, keep the ids they were made with (a
+    judging set's id and a run's reference hash are made of them). `data/renames.json` lists each renamed id; the
+    catalog redirects an old arm page to its new one. Then change your commands: `evh run --system ID --dataset ID
+    [--goal G] [--round R]` (a run names its goal and round now), `evh sweep --systems … --dataset …`, `arm-smoke`,
+    `faithfulness`, `model-onboard` take `--system`/`--dataset`, `period-compare` takes the system positionally and `--dataset`, `periods` takes the model positionally with `--system`/`--dataset` as optional filters, `deploy-sheet` and
+    `dataset-unseal` take `--system`, `arm-from-capture --like` takes a system id, `make run SYSTEM=… DATASET_ID=…`.
+  - *runs and scores* (RFC-032 step 4, format 4): every pass of a system over a dataset is one run in
+    `data/runs/<run_id>/` (`run.json`, `outputs.jsonl`) and every score of it sits under it, in
+    `scores/<scorer>@<reference>/` (`score.json`, `metrics.json`, `predictions.jsonl`). The folders `runs-linux`,
+    `runs-pair` and `runs-repeats` become a run's `purpose` (`retime`, `pair`, `repeat`, with `machine` and, when
+    there is exactly one other run of the system on the dataset, `of`); `runs-silver`, `runs-adjudicated`,
+    `runs-rescored/<scorer>/<folder>`, `runs-judged/<scorer>` and `runs-labels-*` become scores of the runs they
+    re-scored, each read under the label its folder gave it ("silver", "rescored cd35dc1f", "judged/<scorer>"). A
+    judging pass's `summary.json` moves to `data/judge-summaries/`. A record reads back exactly as its metrics.json
+    did; a re-score by the scorer a run already had, with the same rows, is the same measurement and is kept once. A
+    round's retirement names its runs instead of a folder; validate.json's `committed`, `floors` and
+    `scorer_sources` name arms by label (`runs`, `linux`, `silver`, `judged-<scorer>`), `scorer_sources[].dir`
+    becomes `arms`. A pass in a folder whose purpose is not one of those is refused before anything is written:
+    move it into one, or delete it, and migrate again. `data/renames.json` lists each arm whose id changed, and the
+    catalog redirects its old page. Then: a `.gitignore` that re-admits run files names the new ones (this
+    repository's `harness/.gitignore` shows the pattern), and change your commands: `EVAL_RUNS_DIR` is gone (a
+    throwaway pass is `evh run --scratch`; a re-run is `evh run --purpose repeat|retime|pair [--of RUN_ID]`),
+    `--runs-dir` (pair-test, family-test) and the inspector's `--from` are `--label`, `round-retire --runs-dir` is `--label`
+    (below), and `rescore`/`judge-score` write under the runs they score (no `--out`; `rescore --label` names what its
+    scores are read as).
+  - *rounds* (RFC-032 step 5, format 5): a round stores its arms, `arms:` in its record, each a system, the label it
+    is read under, the runs it is read through, how and when it entered (`ran` in the round, or `carried` from an
+    earlier one) and its retirement (when, why, who); `carried` and `retired` go. Each round's arms are what it read
+    before: the systems whose plain runs name it and those it carried, less the retired, read under the re-score its
+    `scoring` last wrote; a retirement of a re-timing, a repeat or a pair run is an arm read under that label,
+    retired. A retirement naming some but not all of a system's runs is refused before anything is written. A
+    baseline version a round promoted names the round and the arm. Then: `round-retire` retires an arm whole, every
+    arm of the system in play or the one `--label` names (`--runs` is gone), `evh round-carry` carries an arm of an
+    earlier round into the open one, and `evh round-show --json` gives a round's `arms` (`round-list --json` gives a count). A run made with `--round` joins
+    its system's arm, so the round's file changes with every run: commit it with the runs.
+  - *system_id* (RFC-032 step 8, format 6): a run's `config_id` named its system, so the stored key is `system_id`
+    ("config" is no longer the name of anything): in `run.json`, a score's `metrics.json` (and the `unset` list of its
+    `score.json`), a faithfulness record, a study log's trial lines and a sealed dataset's unseals. Each file is written
+    as it was, only the key changed. The keys inside a hash keep their name, so no hash moves: the fingerprint's
+    `arm.config_id` (a run's hash), a judging set's `arms[].config_id` (the set's id), a label set's `source.config_id`
+    (a set is hashed whole into every fingerprint of a run scored against it) and a reference manifest's
+    `from_run.config_id` and `promoted_from.source.config_id`. A record holding both keys, or a `config_id` that is not
+    the id of a system of the project, is refused before anything is written, naming it: add the system (or delete the
+    run) and migrate again. Then change what reads the JSON answers: `system_id` replaces `config_id` in `evh leaderboard
+    --json` (its rows and its column list), `evh runs-list --json`, `evh run --json` (the dry run and the run written),
+    `evh baselines`, `evh prompt-show --json`'s runs, an arm's `config` block (`evh arm-show --json`), the compare answer
+    of `catalog-serve`, the key file `evh sheet-export` writes and, for a catalog adapter, the `{"system_id", ...}`
+    its `arm_config(arm)` returns; the table headers follow, and `evh arm-show` says `system` where it said `config`.
+    `evh validate`'s V8 is "no two runs share a system_id".
+  - *results* (RFC-033, format 7, both stores): the three run settings in a row's `_meta` (`generation_config`,
+    `generation_requested`, `encoder_window`) that every row of every score of a run holds with one value move to
+    `run.json`'s `call`; a run whose rows differ keeps them in its rows. `_meta.usage` is cut to `cost`,
+    `prompt_tokens`, `completion_tokens` and, when nonzero, `cached_tokens` and `cache_write_tokens` (the rest of the
+    provider's billing object is not kept: it only comes back from the provider; a `usage` that is `null` or not an
+    object is left as it is), and rows are written as canonical text. `--dry-run` counts each (a large diff in git: commit it with the migration). A SQLite project's
+    database is copied first, as for every step; its per-item rows, kept as table `rows`, move into the tables
+    `score_sets`, `metrics`, `call_facts`, `score_rows` and `score_values` (RFC-033, ADR-0030); `rows` is dropped and
+    the database is vacuumed. A VACUUM that cannot run, for want of free disk about the size of the database, leaves the data
+    moved and says so. A line of a score's rows that is not a JSON object with an `item_id` is refused, writing nothing:
+    correct the file first. A SQLite project that an early build of this release stamped format 7 but left with
+    table `rows` is finished by `evh migrate` too, and every command refuses it until then (`ERROR (old-format)`).
+    What reads a row's `_meta.generation_config` (or the other two) from a stored row reads the run's `call` instead;
+    what reads a full `usage` object from a stored row keeps only what is listed; `Result.meta` itself stays free-form,
+    the slimming happens when it is written ([INTEGRATION](INTEGRATION.md)); `evh validate`'s V28 checks both.
+
+  `run-migrate`, `dataset-migrate`, `baselines-migrate` and `fingerprint-migrate` are this one command now. Moving the data into SQLite is
+  `data-migrate`, not a format step.
+- **`evh scorer-new` makes a scorer whose judges explain** (`explain: true`, RFC-034): each verdict carries a reason,
+  and costs its output tokens. Pass `--set explain=false` for one that does not. Existing scorers have no field and are
+  unchanged; to get reasons from one that has judged, make a new version (`supersedes`), and validate it with reasons.
+- **`goal-leaderboard`'s `vs_leader` has a fourth key, `ci`** (the test's 95% interval, before Holm): a reader that
+  checked the keys exactly reads it now.
+- **A system on the bundled adapter that declares its prompt now sends it.** A system whose `prompts:` names one
+  prompt (a file or a recorded version) and has no `params.prompt` was sent "Summarise:" before 0.8.0; it now sends the
+  declared text, so its outputs, and the numbers on them, change. Its fingerprint already held the declared prompt's
+  hash, so the runs before and after differ only there. A system on it declaring two prompts is refused (the bundled
+  adapter sends one); a system with `params.prompt` is as before.
+- **A study whose baseline has no run on its dataset is refused**, its dry run too (`evh run --system <baseline>
+  --dataset <dataset>` first): every trial of such a study was run, paid for and dropped as compared with nothing.
+- **`evh jobs-resume` refuses a run that stopped before it wrote anything** (it started a job that then failed):
+  start the run again.
+- **The Workbench is served from the package** (`/workbench/`, its five files): the mockup's data no longer ships;
+  nothing to do.
+- **Three new dependencies** install with the package: `ruamel.yaml` (a setting saved keeps its comments),
+  `pyarrow` (tables and Hugging Face parquet) and `huggingface_hub` (Hub datasets in and out). `pip install` of the
+  new pin brings them; nothing to enable.
+- **Every `evh` command keeps the paired tests' p's** in `<project>/.cache/evh-p.jsonl`, as `evh mcp` already did:
+  keep `.cache/` ignored (`evh init`'s `.gitignore` does). `EVH_P_CACHE=` (empty) turns it off; set it to another
+  file to keep them elsewhere.
+- **Scripts reading a paired test's JSON:** from 10,000 items (or clusters) its p is the normal limit (ADR-0028):
+  `pair-test`'s `method` is `"normal limit"` (was `"sampled"`) and `permutations` is `null`; `family-test`'s
+  `method` can be `"normal limit"` or `"mixed"` and its rows have a `p_method`. Such a p can be `0.0`. Below 10,000
+  every p is what it was.
+- **A project's data can live in SQLite** (RFC-025), if you want it: nothing changes unless `config.yaml` says
+  `store: sqlite` (or `EVAL_STORE=sqlite`). Then `evh data-migrate --to sqlite` moves everything under `data/` into
+  `data/project.sqlite`; `--to files` moves it back. Python under `data/` moves out first (it is never in the
+  database).
+- **A goal's recommendation can move.** Contenders are now the arms shown no worse than the leader by more than
+  the margin (ADR-0026), and the default margins are 5% (`balanced`) and 10% (`frugal`) of the leader. Read
+  `evh goal-leaderboard G` after upgrading. A goal that wants its old breadth back sets `axes.quality.margin` in the
+  measure's units; one on fewer than 100 items with a continuous measure now recommends its leader and says
+  "too few items to call a tie". `evh validate` notes every goal on a default margin. No run, score or
+  fingerprint changes.
+- **A run with one failing item now finishes** and scores that item 0 (`failed_items` in metrics.json, `failed`
+  on its row): a script that expected the run to stop reads those instead. A provider error that outlasts its
+  retries exits `75`.
+- **Scripts and CI that branch on exit codes:** the cost cap is `4` (was `2`), nothing measured `7` (was `1`), an
+  unreachable server `75` (was `1`), and a check that found problems `6` (was `1`) for `validate`, `self-test`,
+  `env-check`, `importer-check`, `arm-smoke`, `model-onboard` and `deploy-sheet --capture`; a partly failed
+  `sweep` is `5`. A check for "non-zero" needs no change. The table: RUNBOOK, Exit codes.
+- **Who acted** (RFC-027), after `evh migrate`'s records step: a
+  promotion, `baseline-rollback`, `round-close`, `round-carry` and `dataset-unseal` need a named actor off a terminal (`--by person:NAME`, or
+  `EVH_ACTOR`; an agent `EVH_ACTOR=agent:NAME` with `EVH_FOR=person:NAME`), and `reference-promote` needs `--by` or `EVH_ACTOR` even at a terminal; `runs-list --baselines` is now
+  `evh baselines`; `dataset-split --by hash|time` is `--split-by`.
+- **Scripts matching a refusal's text:** the line is `ERROR (<kind>): <why>` (was `ERROR: <why>`). Match the
+  kind (RUNBOOK, Refusals), not the wording. A project's `AGENTS.md` written by `evh init` before 0.8.0 lacks
+  the "When a command stops" section; copy it from a new `evh init` if your agents read the file.
+
+- **A repeat set beside a plain run is refused.** A script that runs an arm once and then `--repeat N` of the same
+  system on the same dataset gets `ERROR (would-overwrite)` at the second command: run it as `--repeat N` alone, or repeat
+  the run with `--purpose repeat --of <run_id>`. Runs already committed that way still fail V8: give all but one a
+  purpose (`repeat`, `retime`, `pair`) in its `run.json`, or remove the extra one.
+- **A closed round reads the runs it recorded.** Its numbers are the ones it closed on; a later run of one of its
+  systems is listed "since then". A comparison you read from a closed round after re-running its arms can differ from
+  what 0.7.2 showed, which mixed the later runs in.
+- **`dataset-split` on a dataset with references** needs an actor (`--by person:NAME`, or `EVH_ACTOR`), and gives each
+  side the parent's references: drop any step that promoted each side's gold by hand.
+- **`round-carry` and `round-open --from` never read an earlier round's runs on another dataset**: a system is
+  carried through its runs on the round's own dataset, and refused when it has none there.
+- **A judge scorer in grade mode** whose prompt does not name each of its task's dimensions is refused by
+  `judge-score` before any call: name them in the prompt, as tutorial 3's does.
+- **Scripts reading `family-test`'s text**: the `A wins` column is `A wins-losses (ties)`; read `--json` (`wins`, and
+  now `losses` and `ties`).
+- **`rank-stability`** prints rows for halves of 5 and of half the dataset too, and its "saturated" reads from halves
+  of 10 up.
+- **A goal's `datasets:` entry takes only `dataset_id`, `role`, `cluster`, `decides` and `notes`.** Any other key
+  (`n: 25`, `real: false`) is now refused; 0.7.2 accepted it silently, which let a YAML mis-parse (an unquoted comma
+  in a note, say) become a stray key nobody saw. `evh validate` fails `V14 goals` with "Additional properties are
+  not allowed ('n', 'real' were unexpected)", one per goal file; `evh migrate` does not touch goal files. Move the
+  value into `notes`, or delete it.
+
 ## From 0.7.1 to 0.7.2
 
 Change the pin to `@v0.7.2`. Nothing to migrate and no result moves. A deployment that serves `evh mcp --public
@@ -23,7 +248,7 @@ Change the pin to `@v0.7.1`. No format changes; no committed run's scores or fin
   **Changed**): `family-test --round`'s p (it now reads re-scores in place, as the round does), the billed
   figure (arm smokes counted), and `runs-list --baselines` (the repeats' mean).
 - **Scripts reading `--json`:** the leaderboard's text table shows the columns that fit the terminal (the JSON
-  keeps all); `evh goals --goal`'s last table column is `decision`, not `""`.
+  keeps all); `evh goal-leaderboard`'s last table column is `decision`, not `""`.
 
 ## From 0.6.2 to 0.7.0
 
@@ -35,7 +260,7 @@ What can read differently (the [changelog](https://github.com/chipi/eval-harness
 
 - **`pair-test --round` and a round's promotion gate correct for the pick**, so a leader that was significant can
   read not significant. A round whose leader is tied, or whose arms were scored differently, now holds instead of
-  promoting; its baseline is read re-scored. Re-read an open round's status (`evh rounds --goal G`).
+  promoting; its baseline is read re-scored. Re-read an open round's status (`evh round-list G`).
 - **A new run never reuses a directory.** A script that passes `--run-id` for a run that exists is refused; name a
   new id.
 - **`dataset-from-capture --from` and `--fieldset`** make a version that differs from what 0.6.2 made from the same
@@ -70,9 +295,11 @@ Change the pin to `@v0.6.0`. Two formats change, and both are migrated by a scri
 - **Fingerprints are version 5** (RFC-021): `instrument`, `data`, `deployment`, `settings`, each hashed, and the
   machine `evh` ran on as `runner`, outside the hash. A run made with 0.6.0 compares with a v4 run on no hash. Move
   your committed runs once, from your project's root:
-  `evh fingerprint-migrate` (`--dry-run` counts first; it is idempotent and prints its counts; a
-  baseline's `fingerprint_hash` follows its run). Code that read `fingerprint.host` reads `fingerprint.runner`;
-  `fingerprint.system_under_test.model` is `fingerprint.deployment` (an adapter's `fingerprint(params)` hook keeps
+  `fingerprint-migrate` in 0.6.0 to 0.7.2, the fingerprints step of `evh migrate` from 0.8.0 (`--dry-run`
+  counts first; it is idempotent and prints its counts; a baseline's `fingerprint_hash` follows its run). Code that read `fingerprint.host` reads `fingerprint.runner`;
+  `fingerprint.system_under_test.model` is `fingerprint.deployment`; `fingerprint.arm.params` is gone (`arm` keeps only
+  `config_id` and `labels`): its params are `fingerprint.settings`, minus the deployment keys, credentials and labels, so
+  an imported run's `source` is `fingerprint.settings.source`, and also `fingerprint.imported.source` (an adapter's `fingerprint(params)` hook keeps
   its vocabulary; what it declares about the prompt is now `settings.declared`).
 - **`data/models.yaml` is replaced by `data/models/<model_id>.yaml`** (RFC-020): one record per model, its key in
   the old file the record's alias. Write a record per entry (`model_id`, `kind`, `aliases`, `weights`,
@@ -96,20 +323,20 @@ Renamed to the field's words, with no alias (the old names stop working):
   prints `SIGNIFICANT` or `NOT-SIGNIFICANT`, `family_test` and `bootstrap_test` `SIGNIFICANT`. A script that
   matched the old strings matches the new ones.
 - **A goal's arms that may win the tie-break are its contenders**: the decision's key is `contenders` (was
-  `tied`), and `evh arms --quality contender|below` (was `ties|below`).
+  `tied`), and `evh arm-list --quality contender|below` (was `ties|below`).
 
 A goal's dataset `role:` is free text and keeps whatever you wrote; the docs now say validation, test and pilot
 (were dev and heldout).
 
 Seven behaviours change without a migration:
 
-- **The `--items` flag of `evh inspect` is gone**, replaced by the sheet: `evh inspect --sheet --dataset-id D --runs A,B`
+- **The `--items` flag of `evh comparison-show` is gone**, replaced by the sheet: `evh sheet-show D --runs A,B`
   shows every item's scores per arm, beside what each wrote, the labels and the winner (`--scores-only` for the
   scores alone). A script that parsed `--items` reads `--sheet --csv FILE` instead.
 
 - **A reference folder with no manifest fails `validate` (V16).** Texts copied into `data/references/<tier>/<id>/`
   by hand said nothing of where they came from, and runs scored against them as if promoted. Import them as a
-  person's labels where they are and promote them (`evh label-import data/references/<tier>/<id> --dataset-id D
+  person's labels where they are and promote them (`evh label-import --sheet data/references/<tier>/<id> --dataset-id D
   --set S --by WHO`, then `evh reference-promote … --tier … --reason …`): the promotion adopts the folder, its
   texts being the labels', so no run's reference moves.
 - **`evh reference-manifest` is a promotion too**: it takes `--labelled-by` (whose labels a script builds),
@@ -127,15 +354,15 @@ Seven behaviours change without a migration:
 - **`evh rescore` writes to one designated place**, `data/runs-rescored/<scorer>/<source>/`, unless `--out` names
   another; the catalog, the goals and the rounds read an arm from its latest re-score there.
 
-Everything else is added and optional: the capture lane (`evh capture`, `importer-check`, `captures`,
+Everything else is added and optional: the capture lane (`evh capture`, `importer-check`, `capture-list`,
 `capture-scrub`, `dataset-from-capture`, `dataset-split`, `text: hidden`; RFC-019); evaluating what production did
-(`evh labels`, a label accepting more than one answer, `{"accept": [...]}`, read by `answers(reference)` from
-`evaluation_harness.adapter`, scoring against a label set with `--labels`, `evh arm-from-capture`, `inspect --disagree` and
-the sheet (`inspect --sheet`, `--csv`, `--fill`, read back by `evh sheet-import`), `evh pick`, `evh picks`,
+(`evh dataset-list`, a label accepting more than one answer, `{"accept": [...]}`, read by `answers(reference)` from
+`evaluation_harness.adapter`, scoring against a label set with `--labels`, `evh arm-from-capture`, `comparison-show --disagree 1` and
+the sheet (`sheet-show`, `sheet-export --csv`, `--fill`, read back by `evh sheet-import`), `evh pick`, `evh picks`,
 `evh dataset-extend`, `evh deploy-sheet`; the catalog's Labels page; an adapter's optional `same(a, b)`,
 `decision(output)`, `title(item)`, `recorded_output(record)` and `production_ran(record)`; RFC-023); judging modes (a scorer's
 `mode: pick` or `pairwise`, validated in that mode; RFC-005) and an adapter's optional `primary_metric(params)`;
-model onboarding (`evh model-onboard`, `evh arm-smoke`, `evh models`, `model_record:` and `deployment:` in a
+model onboarding (`evh model-onboard`, `evh arm-smoke`, `evh model-list`, `model_record:` and `deployment:` in a
 config; RFC-020); scoring that evolves (`evh score-preview`, `evh rescore --goal --round --why`,
 `round-open --keep all --scoring` and `--adopt`, a goal axis's `limit: baseline`; RFC-022); `call_timeout_s` for
 the built-in providers. `evh init`'s `.gitignore` now ignores `data/runs-smoke*/` and `data/runs-tune*/`; add the
@@ -156,7 +383,7 @@ Change the pin to `@v0.5.0`. No record, hash or p-value moves. Three things to c
 
 A dataset id must now be a name (letters, digits, `.`, `_`, `-`): an id with `/` or `..` is
 refused by every command that reads or writes a dataset's file. An arm's params as a page or
-`evh arms --arm` shows them hide a URL's user and password and a nested credential-named key
+`evh arm-show` shows them hide a URL's user and password and a nested credential-named key
 (`headers: {Authorization: …}`), so a page can differ from 0.4.4's where a config held one.
 Everything else is added and optional: `evh mcp`, `--json` on the views, `evh catalog --mcp`; `evh dataset-profile` and a committed `data/profiles/<id>.json` give a dataset page its
 "what's inside"; an adapter may answer `dataset_profile(dataset)`.
@@ -176,7 +403,7 @@ any `/api/` path that is not one of its endpoints, where 0.4.2 could serve a fil
 ## From 0.4.1 to 0.4.2
 
 Change the pin to `@v0.4.2`. No record, hash or p-value moves. One command line changes:
-**`evh overview` no longer takes `--all`**: `evh overview --period all` says the same (`--period P` on every list now,
+**`evh overview-show` no longer takes `--all`**: `evh overview-show --period all` says the same (`--period P` on every list now,
 counted from today). Everything else is added and optional: an adapter may answer
 `dataset_created(dataset)` and `model_facts()` (each model's weights, open or proprietary; the
 harness's own adapter reads an optional `data/models.yaml`), `spend()` events may name an `arm`,
@@ -236,8 +463,8 @@ so check these before you trust a `validate`:
   each is what the tutorial's scorer uses).
 - **`--resume`** takes a run made by 0.4.0 (rows with `_extra`); `--resume-unverified` is
   gone.
-- **`evh judge`** is the judge panel (it sat beside the package and could not run from a pin);
-  the tutorial kit ships `tutorial/judge_panel.yaml`.
+- **The judge panel** is a command (it sat beside the package and could not run from a pin; removed in 0.8.0,
+  RFC-032 step 7); the tutorial kit shipped its config.
 - **Your adapter**: put it at the project root as `adapter.py` and an arm with no `adapter:`
   uses it. Code that imported `catalog_adapter.load_adapter` imports `load_catalog_adapter`;
   a script that relied on importing the package to read `.env` loads it itself
@@ -291,7 +518,7 @@ so check these before you trust a `validate`:
   its own table and tests, gold first, under `=== scored against <ref> ===` (judged runs:
   `=== scored by judge <scorer_id> ===`), and nothing is averaged across them. Before, they were averaged into one row and one ranking. The
   catalog and the inspector read an arm against the reference of its latest run and say which
-  earlier runs they leave out; `evh rounds` reads a round against the reference most of its arms
+  earlier runs they leave out; `evh round-list` reads a round against the reference most of its arms
   use and names the arms it does not compare. With one reference the output is unchanged.
 - **The bundled adapter stores `overlap_f1` unrounded** (it rounded to 6 decimals); a new run's
   mean can differ from an older one's in the sixth decimal, and the leaderboard's rounding note
@@ -304,8 +531,8 @@ so check these before you trust a `validate`:
 - **The catalog and the run inspector** (`evh catalog`, `evh catalog-serve`). On the
   harness's own data layout they need no code; with another layout, write one adapter
   ([tutorial 5](https://evals.humancopilot.eu/docs/tutorials/5-catalog-and-inspector/)). Every
-  view is also a command: `evh overview`, `evh datasets`, `evh arms`, `evh references`,
-  `evh metrics`, `evh goals`, `evh search`, `evh inspect` (with `--items` for the per-item table
+  view is also a command: `evh overview-show`, `evh dataset-list`, `evh arm-list`, `evh reference-list`,
+  `evh metric-list`, `evh goal-list`, `evh search`, `evh comparison-show` (with `--items` for the per-item table
   and `--analysis` for the charts as numbers). **The home page** is now a dashboard (index.html
   moved, the datasets table is datasets.html). **Metric links** now go to m/<metric>.html pages
   (metrics.html#m-<metric> anchors still exist for compatibility). A project's own catalog
@@ -313,9 +540,9 @@ so check these before you trust a `validate`:
   exist (`pages=True` parameter).
 - **Goals** (`data/goals/<goal_id>.yaml`, `goal:` on configs, validate V14). Nothing is
   required of an upgrading project until it sets `required_from` in `data/goals/policy.yaml`.
-- **Eval rounds** (`evh round-open`, `evh round-retire`, `evh round-close`, `evh rounds`;
+- **Eval rounds** (`evh round-open`, `evh round-retire`, `evh round-close`, `evh round-list`;
   `round: rN` on configs; validate V14). `--round rN` on `leaderboard`, `family-test`,
-  `pair-test` and `inspect`: `inspect --round` and `pair-test --round` default to the goal's
+  `pair-test` and `comparison-show`: `comparison-show --round` and `pair-test --round` default to the goal's
   measure and the round's leader (`pair-test`'s B: the baseline the round started from). A
   project that never opens a round sees none of it
   ([tutorial 4](https://evals.humancopilot.eu/docs/tutorials/4-rounds-and-versions/)).

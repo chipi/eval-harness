@@ -1,1 +1,0 @@
-[{"text": "Corsica", "type": "location"}, {"text": "crews", "type": "organization"}, {"text": "Shakedown", "type": "event"}]

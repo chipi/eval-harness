@@ -23,18 +23,23 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parents[1] / "scripts"
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 KIT = HERE.parent / "tutorial"
+from evaluation_harness import _format  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runstore  # noqa: E402
+
 proj = Path(tempfile.mkdtemp(prefix="evh-catlabels-"))
-env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-catalog-labels")
-for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_MAX_COST_USD", "EVH_PUBLIC"):
+env = dict(os.environ, EVH_ACTOR="person:test", EVAL_HOME=str(proj), EVAL_BUILD_REF="test-catalog-labels")
+for k in ("EVAL_DATA_DIR", "EVAL_MAX_COST_USD", "EVH_PUBLIC"):
     env.pop(k, None)
 
 
+import _cli  # noqa: E402
+
+
 def evh(*args):
-    return subprocess.run(
-        [sys.executable, str(HERE / "cli.py"), *args], cwd=proj, env=env, capture_output=True, text=True
-    )
+    return _cli.run(proj, env, *args)
 
 
 def out(r):
@@ -43,7 +48,7 @@ def out(r):
 
 def page(rel):
     p = proj / "cat" / rel
-    return p.read_text(encoding="utf-8") if p.is_file() else ""
+    return p.read_text(encoding="utf-8").replace("<wbr>", "") if p.is_file() else ""
 
 
 def row_of(html, needle):
@@ -53,19 +58,24 @@ def row_of(html, needle):
 
 try:
     data = proj / "data"
-    (data / "configs").mkdir(parents=True)
+    (data / "systems").mkdir(parents=True)
+    _runstore.write_text(proj, _format.NAME, f"format: {_format.FORMAT}\n")
     shutil.copytree(KIT / "tickets", proj / "tutorial" / "tickets")
     r = evh("dataset-create", "--dataset-id", "tickets_v1", "--source-dir", "tutorial/tickets")
     r = r if r.returncode else evh("dataset-materialize", "--dataset-id", "tickets_v1")
     check("setup: the tutorial dataset", r.returncode == 0, out(r)[-300:])
     (data / "goals").mkdir()
-    shutil.copy(KIT / "goals" / "tickets_summary.yaml", data / "goals")
+    _runstore.write_text(
+        proj, "goals/tickets_summary.yaml", (KIT / "goals" / "tickets_summary.yaml").read_text()
+    )
     for arm in ("lead1", "author"):
-        cfg = data / "configs" / f"tickets_{arm}.yaml"
-        cfg.write_text((KIT / "configs" / f"tickets_{arm}.yaml").read_text() + "goal: tickets_summary\n")
-        r = evh("run", "--config", f"data/configs/tickets_{arm}.yaml")
+        text = (KIT / "systems" / f"tickets_{arm}_v1.yaml").read_text()
+        _runstore.write_text(proj, f"systems/tickets_{arm}_v1.yaml", text)
+        r = evh(
+            "run", "--system", f"tickets_{arm}_v1", "--dataset", "tickets_v1", "--goal", "tickets_summary"
+        )
         check(f"setup: the {arm} arm runs", r.returncode == 0, out(r)[-300:])
-    author = next(p.name for p in (data / "runs").glob("tickets_author_v1_*"))
+    author = next(n for n in _runstore.listdir(proj, "runs") if n.startswith("tickets_author_v1_"))
     r = evh("label-from-run", "--run", author, "--set", "author_v1")
     check("setup: a model's label set", r.returncode == 0, out(r)[-300:])
     with (proj / "sheet.csv").open("w", newline="") as f:
@@ -74,7 +84,17 @@ try:
         w.writerows(
             [["t01_login", "Login fails."], ["t02_invoice", "Invoice wrong."], ["t03_export", "Export."]]
         )
-    r = evh("label-import", "sheet.csv", "--dataset-id", "tickets_v1", "--set", "owner_v1", "--by", "owner")
+    r = evh(
+        "label-import",
+        "--sheet",
+        "sheet.csv",
+        "--dataset-id",
+        "tickets_v1",
+        "--set",
+        "owner_v1",
+        "--by",
+        "owner",
+    )
     check("setup: a person's label set", r.returncode == 0, out(r)[-300:])
     r = evh(
         "reference-promote",
@@ -90,7 +110,10 @@ try:
         "owner",
     )
     check("setup: the person's set promoted to gold", r.returncode == 0, out(r)[-300:])
-    r = evh("run", "--config", "data/configs/tickets_lead1.yaml", "--labels", "tickets_v1/author_v1")
+    r = evh(
+        "run", "--system", "tickets_lead1_v1", "--dataset", "tickets_v1", "--goal", "tickets_summary",
+        "--labels", "tickets_v1/author_v1",
+    )  # fmt: skip
     check("setup: an arm scored against the model's label set", r.returncode == 0, out(r)[-300:])
     rows = [
         {
@@ -111,7 +134,7 @@ try:
         "--capture",
         "prod_c1",
     )
-    r = r if r.returncode else evh("dataset-from-capture", "prod_c1", "--dataset-id", "prod_v1")
+    r = r if r.returncode else evh("dataset-from-capture", "--capture", "prod_c1", "--dataset-id", "prod_v1")
     r = r if r.returncode else evh("dataset-materialize", "--dataset-id", "prod_v1")
     check("setup: a capture and its dataset", r.returncode == 0, out(r)[-300:])
     r = evh(
@@ -129,7 +152,11 @@ try:
     r = evh(
         "pick", "--dataset-id", "prod_v1", "--item", "p1", "--for", "tickets_v1", "--note", "nothing like it"
     )
-    r = r if r.returncode else evh("dataset-extend", "tickets_v1", "--dataset-id", "tickets_v2", "--picks")
+    r = (
+        r
+        if r.returncode
+        else evh("dataset-extend", "--dataset", "tickets_v1", "--dataset-id", "tickets_v2", "--picks")
+    )
     check("setup: a version made from a pick", r.returncode == 0, out(r)[-300:])
     r = evh(
         "pick",
@@ -145,7 +172,7 @@ try:
         "owner",
     )
     check("setup: a pick waiting", r.returncode == 0, out(r)[-300:])
-    lead = sorted(p.name for p in (data / "runs").glob("tickets_lead1_v1_*"))[0]
+    lead = sorted(n for n in _runstore.listdir(proj, "runs") if n.startswith("tickets_lead1_v1_"))[0]
     r = evh("run-promote", "--run", lead, "--reason", "The lead sentence is enough, for the catalog's test.")
     check("setup: a baseline promoted", r.returncode == 0, out(r)[-300:])
     r = evh("catalog", "--out", "cat")
@@ -222,7 +249,7 @@ try:
         and "capture prod_c1" in pick_row
         and "case=new" in pick_row
         and "owner" in pick_row
-        and 'data-prefix="evh dataset-extend tickets_v1 --dataset-id &lt;next&gt;"' in dp
+        and 'data-prefix="evh dataset-extend --dataset tickets_v1 --dataset-id &lt;next&gt;"' in dp
         and 'data-flag="--pick"' in dp
         and "sheet=1&item=p2" in pick_row,
         pick_row[:700],
@@ -302,7 +329,7 @@ try:
         "a promoted arm's page: its deploy sheet (what was sent, the bookkeeping not sent, the command)",
         'id="deploy-sheet"' in bp
         and "settings sent" in bp
-        and "evh deploy-sheet --config tickets_lead1_v1" in bp
+        and "evh deploy-sheet tickets_lead1_v1" in bp
         and "No capture here says what production ran" in bp,
         "",
     )

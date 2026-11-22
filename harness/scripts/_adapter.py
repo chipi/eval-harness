@@ -23,10 +23,11 @@ import importlib
 from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _common
+from evaluation_harness import _common, _store
 from evaluation_harness._common import (
     BUNDLED_ADAPTER_ID,
     CODE,
+    CORE_ADAPTER_IDS,
     ModuleNotLoadable,
     adapter_search_dirs,
     die,
@@ -34,7 +35,7 @@ from evaluation_harness._common import (
     resolve_adapter_path,
 )
 
-#: The adapter bundled with the harness, used when a config names none.
+#: The adapter bundled with the harness, used when a system names none.
 BUNDLED = CODE / "adapter.py"
 
 _LOADED: dict[Path, Any] = {}
@@ -47,10 +48,10 @@ def module_at(path: Path) -> Any:
     (ModuleNotLoadable when the file has no import spec)."""
     key = Path(path).resolve()
     if key not in _LOADED:
-        if key == BUNDLED.resolve():
+        if key.parent == CODE.resolve() and key.name in {i.rpartition("/")[2] for i in CORE_ADAPTER_IDS}:
             # The package's own module, so a test that patches `evaluation_harness.adapter`
             # patches what runs; never registered as a bare `adapter`, which is a project's name.
-            _LOADED[key] = importlib.import_module("evaluation_harness.adapter")
+            _LOADED[key] = importlib.import_module(f"evaluation_harness.{key.stem}")
         else:
             digest = hashlib.sha256(str(key).encode()).hexdigest()[:8]
             _LOADED[key] = load_module(key, f"evh_adapter_{key.stem}_{digest}")
@@ -110,7 +111,15 @@ def same_of(adapter_spec: str | None) -> Any:
     """`same(a, b)` from the adapter a run recorded (RFC-023): whether two outputs are one decision, for agreement and
     `--disagree`; else, when the adapter says what an output's decision is (`decision`), the same decision; else the
     same text (also when the adapter cannot be imported here)."""
-    module = adapter_module(adapter_spec)
+    return _same_in(adapter_module(adapter_spec))
+
+
+def same_at(adapter_path: Path | None) -> Any:
+    """`same(a, b)` from the adapter file at `adapter_path`, as `same_of` reads it (RFC-030's faithfulness)."""
+    return _same_in(_module_or_none(adapter_path))
+
+
+def _same_in(module: Any) -> Any:
     fn = getattr(module, "same", None)
     if callable(fn):
         return fn
@@ -142,6 +151,7 @@ def _kinds_of(module: Any) -> dict[str, str]:
     # reads higher as better -- and "was not actually run this pass" would sort to the
     # top. Declared here rather than asked of every adapter, because the core owns them.
     out.setdefault("resumed", "descriptive")
+    out.setdefault("failed", "descriptive")
     return out
 
 
@@ -164,6 +174,17 @@ def calls_per_item(adapter_path: Path | None, params: dict[str, Any] | None = No
     fn = getattr(module, "calls_per_item", None)
     got = fn(dict(params or {})) if callable(fn) else getattr(module, "CALLS_PER_ITEM", None)
     return got if isinstance(got, int) and not isinstance(got, bool) and got >= 1 else None
+
+
+def call_once(adapter_path: Path | None, params: dict[str, Any] | None = None) -> bool:
+    """Whether each item is called exactly once, with no retry, because the adapter says so (RFC-038): its
+    `call_once(params)` when it has one (per system, from its params; it wins), else its `CALL_ONCE` constant, else
+    False. A property of the adapter's code, never of the system file or the machine: an adapter whose call has side
+    effects must not be made retryable by whoever writes a system."""
+    module = _module_or_none(adapter_path)
+    fn = getattr(module, "call_once", None)
+    got = fn(dict(params or {})) if callable(fn) else getattr(module, "CALL_ONCE", False)
+    return got is True
 
 
 def metric_directions(adapter_path: Path | None) -> dict[str, str]:
@@ -226,6 +247,26 @@ def primary_metric(adapter_path: Path | None, params: dict[str, Any] | None = No
     return value if isinstance(value, str) and value else None
 
 
+def prompt_problem(adapter_path: Path | None, params: dict[str, Any]) -> str | None:
+    """What keeps the bundled adapter from sending the system's prompt (it sends one: two declared is refused before
+    anything is called, not met at the first item); None for another adapter, which reads its prompts its own way."""
+    if adapter_path is None or Path(adapter_path).resolve() != Path(BUNDLED).resolve():
+        return None
+    try:
+        module_at(BUNDLED).prompt_of(params)
+    except ValueError as exc:
+        return str(exc)
+    return None
+
+
+def prompts(adapter_path: Path | None, params: dict[str, Any]) -> dict[str, str]:
+    """{name: text} of the prompts the adapter's `prompts(params)` says a call sends (RFC-032 step 4b), the text
+    exactly as the adapter hashes it for its fingerprint's `prompt_sha256`; {} without the hook."""
+    fn = getattr(_module_or_none(adapter_path), "prompts", None)
+    got = fn(dict(params)) if callable(fn) else None
+    return {str(k): str(v) for k, v in got.items()} if isinstance(got, dict) else {}
+
+
 def load_recorded_adapter(spec: str) -> tuple | None:
     """The adapter a finished run recorded, for scoring it again (rescore, silver-calibrate),
     or None if it cannot be found.
@@ -263,7 +304,7 @@ def score_wants_source(score: Any) -> bool:
 def _portable_id(path: Path) -> str:
     """A path safe to write into a run record: relative, resolved, never a home directory.
 
-    This is recorded in `metrics.json` and hashed into the fingerprint, so an absolute
+    This is recorded in the run record and hashed into the fingerprint, so an absolute
     path both leaks the author's username into anything published and makes two identical
     runs on two machines look different.
 
@@ -283,7 +324,9 @@ def _portable_id(path: Path) -> str:
 
 
 def _find_adapter(spec: str, config_path: Path | None) -> Path:
-    """The file an `adapter:` entry names: relative to the config first, then the project."""
+    """The file an `adapter:` entry names: relative to the system first, then the project."""
+    if spec in CORE_ADAPTER_IDS:
+        return CODE / spec.rpartition("/")[2]
     path = Path(spec)
     candidates = [path] if path.is_absolute() else []
     if not path.is_absolute():
@@ -291,22 +334,22 @@ def _find_adapter(spec: str, config_path: Path | None) -> Path:
             candidates.append(config_path.resolve().parent / path)
         candidates.append(_common.ROOT / path)
     for candidate in candidates:
-        if candidate.is_file():
+        if _store.is_file(candidate):
             return candidate
-    die(f"adapter not found: {spec}\n" + "".join(f"  looked in: {c}\n" for c in candidates))
+    die(f"adapter not found: {spec}\n" + "".join(f"  looked in: {c}\n" for c in candidates), "not-found")
 
 
 def load_adapter(
     spec: str | None, config_path: Path | None = None
 ) -> tuple[Any, Any, str, Path | None, Any, Any]:
-    """``(call_system, score, adapter_id)`` for the adapter a config names.
+    """``(call_system, score, adapter_id)`` for the adapter a system names.
 
-    A config names its adapter:
+    A system names its adapter:
 
         adapter: adapter.py
 
-    relative to the config first, then the project root. An example's arm sits beside its
-    adapter, so the two travel together. A config that names none uses the project's own
+    relative to the system first, then the project root. An example's arm sits beside its
+    adapter, so the two travel together. A system that names none uses the project's own
     ``<project>/adapter.py`` when there is one, else the adapter bundled with the harness
     (``scripts/adapter.py``, token overlap: the worked example's).
 
@@ -314,12 +357,12 @@ def load_adapter(
     summarisation scores ROUGE, classification macro-F1, and neither is the bundled overlap.
 
     The returned id is recorded on the run. It has to be: a scorer is half of what a number
-    means, so two runs sharing a config_id but scored by different adapters are no more
+    means, so two runs sharing a system_id but scored by different adapters are no more
     comparable than two runs on different datasets. run-compare refuses across it.
     """
     if spec:
         path = _find_adapter(spec, config_path)
-    elif (_common.ROOT / "adapter.py").is_file():
+    elif _store.is_file(_common.ROOT / "adapter.py"):
         path = _common.ROOT / "adapter.py"
     else:
         default = module_at(BUNDLED)
@@ -334,10 +377,10 @@ def load_adapter(
     try:
         module = module_at(path)
     except ModuleNotLoadable:
-        die(f"adapter is not importable: {path}")
+        die(f"adapter is not importable: {path}", "invalid-file")
     for required in ("call_system", "score"):
         if not hasattr(module, required):
-            die(f"adapter {path} defines no {required}()")
+            die(f"adapter {path} defines no {required}()", "invalid-file")
     adapter_id = _portable_id(path)
     return (
         module.call_system,

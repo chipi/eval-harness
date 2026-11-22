@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "failure modes",
+  "description": "A project's failure modes: data/failure-modes/<failure_modes_id>.yaml (PLAN_0.8.0 D1). The ways an output can be wrong, named once, so tags on outputs are counted, not re-invented in each note (error analysis: open notes first, then a named taxonomy).",
+  "type": "object",
+  "required": ["failure_modes_id", "modes"],
+  "additionalProperties": false,
+  "properties": {
+    "failure_modes_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9_.-]{0,99}$", "description": "Equals the file name."},
+    "description": {"type": "string"},
+    "modes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$", "description": "What a sheet's cell names, e.g. invented-fact."},
+          "label": {"type": "string"},
+          "description": {"type": "string", "description": "When an output has it: what a tagger reads before tagging."}
+        }
+      }
+    }
+  }
+}

@@ -1,1 +1,0 @@
-[{"text": "Kowloon Tong Station", "type": "location"}, {"text": "Exhibition Station", "type": "location"}, {"text": "Admiralty Station", "type": "location"}, {"text": "Wan Chai", "type": "location"}, {"text": "Admiralty", "type": "location"}, {"text": "Central district", "type": "location"}, {"text": "Hong Kong Island", "type": "location"}]

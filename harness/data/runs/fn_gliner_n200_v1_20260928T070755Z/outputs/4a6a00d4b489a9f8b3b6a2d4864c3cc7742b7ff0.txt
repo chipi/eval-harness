@@ -1,1 +1,0 @@
-[{"text": "These churches", "type": "building"}, {"text": "conflicts", "type": "event"}, {"text": "Calvinist Church", "type": "organization"}, {"text": "United States", "type": "location"}]

@@ -1,6 +1,6 @@
 # PRD-003: Re-measuring with a validated LLM judge
 
-- **Status**: Implemented (0.3.0); judging modes (FR5) in 0.6.0
+- **Status**: Implemented (v0.3.0)
 - **Authors**: Marko Dragoljevic
 - **Related RFC**: [RFC-005](../rfc/RFC-005-judge-scorers.md) (the judging pass, technically)
 - **Related ADR**: [ADR-0001](../adr/ADR-0001-judge-scorers.md)
@@ -24,7 +24,7 @@ the SummEval eval then showed that metric agrees with human experts far less tha
 best LLM judges do. One eval had validated a better instrument for another. The full
 reasoning, and what the first uses found, are in [RFC-005](../rfc/RFC-005-judge-scorers.md);
 how to run it is in [Runbook §12](../../harness/docs/RUNBOOK.md#12-re-measure-with-a-validated-judge)
-and step 10 of the [GUIDE](../GUIDE.md).
+and step 5 of [tutorial 3](../tutorials/3-frontier-reference-and-judging.md).
 
 ## Goals
 
@@ -41,8 +41,6 @@ and step 10 of the [GUIDE](../GUIDE.md).
   decision ([Concepts](../../harness/docs/CONCEPTS.md#re-measuring-a-frozen-eval)).
 - The gate checks that a validation exists and is current, not that it transfers to the
   user's outputs.
-- Not the older judge **panel** (`evh judge`), which narrows finalists on a cheap metric and
-  judges them pointwise; it stays a triage tool.
 - No human-rating collection tool.
 
 ## Personas
@@ -59,7 +57,7 @@ and step 10 of the [GUIDE](../GUIDE.md).
 - _As a reviewer, I can see each judge's score, their agreement, and whether an arm shares a
   judge's vendor family._
 - _As an engineer, I can read judged runs with the usual commands
-  (`EVAL_RUNS_DIR=data/runs-judged/<scorer> evh leaderboard --dataset-id …`)._
+  (`evh leaderboard <dataset> --label judged/<scorer>`)._
 
 ## Functional Requirements
 
@@ -68,12 +66,17 @@ and step 10 of the [GUIDE](../GUIDE.md).
 - **FR1.1**: A judge scorer is a file, `data/scorers/<scorer_id>.yaml`, with `kind: judge`, the
   judges (model specs), the task (what an item is, what the outputs are, the dimensions and the
   scale), the prompt, the protocol, a `validation` block and a cost cap.
-- **FR1.2**: It needs at least two judges from different vendor families.
+- **FR1.2**: It needs at least two judges from different vendor families. A judge is given as `params` or as the
+  `system` whose params it uses (never both).
 
 ### FR2: The gate
 
 - **FR2.1**: A scorer runs only if its `validation` block names, for each judge, a committed run
   whose metric equals the stated value and whose model, settings and prompt are the judge's.
+- **FR2.1a**: `evh judge-validate` makes those runs: it measures each judge of a scorer against people's ratings on a rated
+  dataset, as ordinary runs beside a random floor, in the scorer's mode, and with `--fill` writes the `validation` block and
+  the prompt's sha256 into the scorer as a decision (who, why), refusing a scorer that has judged and a fake judge. The
+  Workbench's judge screen does the same steps, the cost first (RFC-038 section 3).
 - **FR2.2**: `--unvalidated` overrides the gate and every number then carries the label
   "unvalidated judge". `provider: fake` judges (offline, for testing a scorer) never pass it.
 
@@ -87,8 +90,15 @@ and step 10 of the [GUIDE](../GUIDE.md).
 - **FR3.3**: A second shuffle on a subset measures position bias; a repeat on a subset measures
   the judge's own noise. Both are required: a scorer states both fractions, the noise check above
   0 and the position check above 0 when a call sees more than one output, or it is refused.
-- **FR3.4**: Verdicts are projected to one score per arm per item and written as runs in
-  `data/runs-judged/<scorer_id>/`; the originals are never touched.
+- **FR3.4**: Verdicts are projected to one score per arm per item and written as a score under each arm's run
+  (`scores/<scorer>@<judging set>/`, read as `judged/<scorer>`); the originals are never touched.
+- **FR3.5**: A `grade` scorer whose prompt does not name every dimension of its task is refused before any call
+  (unless `--no-calls`: a judge not told the keys answers with its own, and every reply would be paid for and unparsed). A reply that
+  parses to the wrong shape is reported unparsed, naming the keys it had and the dimension keys the prompt must ask
+  for.
+- **FR3.6**: When a provider bills a judge's calls at more than 1.2 times, or less than 1/1.2 of, what the judge's
+  declared prices (`usd_per_mtok_in`, `usd_per_mtok_out`) give for the same tokens, the pass prints a `NOTE` naming
+  the judge, because the dry run estimates at the declared prices.
 
 ### FR4: Where it shows
 
@@ -96,7 +106,7 @@ and step 10 of the [GUIDE](../GUIDE.md).
   reference-scored numbers are never ranked together
   ([UXS-001](../uxs/UXS-001-catalog.md)).
 
-### FR5: What a judge is asked (0.6.0)
+### FR5: What a judge is asked
 
 [RFC-005](../rfc/RFC-005-judge-scorers.md), "Judging modes".
 
@@ -107,7 +117,7 @@ and step 10 of the [GUIDE](../GUIDE.md).
   the scorer is refused. A pick scorer whose `outputs_per_call` cannot hold every arm, and a pairwise one whose
   `outputs_per_call` is not 2, are refused.
 - **FR5.3**: Pick and pairwise project `won` per arm per item (judged runs' primary `judge_won`), read by goals,
-  rounds, `inspect` and the sheet as `judge_score` is; the pass reports each arm's win rate and Bradley-Terry
+  rounds, `comparison-show` and the sheet as `judge_score` is; the pass reports each arm's win rate and Bradley-Terry
   strength with an interval, and the position and noise checks as the share of verdicts that held.
 - **FR5.4**: The SummEval example validates judges in each mode as arms (`top1` for pick, `pair_agreement` for
   pairwise), with a random arm as the floor; an adapter may name an arm's primary metric by its params
@@ -115,7 +125,7 @@ and step 10 of the [GUIDE](../GUIDE.md).
 
 ## Success Criteria
 
-- GUIDE step 10 runs offline and free with fake judges, through the refusal, the dry run, the
+- Tutorial 3 step 5 runs offline and free with fake judges, through the refusal, the dry run, the
   pass and the leaderboard (`make guide-check`).
 - Re-reading stored verdicts reproduces the judged runs without a call.
 

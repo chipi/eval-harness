@@ -1,7 +1,0 @@
-```
-[
-  {
-    "text": "Larry Flynt",
-    "type": "person"
-  }
-]

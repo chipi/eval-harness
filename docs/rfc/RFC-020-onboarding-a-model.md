@@ -79,7 +79,7 @@ records (`weights`, `licence`, and `aliases`: the ids runs record for the model,
 `gemma4:31b` alike), the file and its schema go, and the weights filter reads the records. No second file and no
 shim: the committed data is migrated (0.6.0's rule for formats nobody depends on yet).
 
-### 2. Onboarding: `evh model-onboard <model_id> --deployment <id>`
+### 2. Onboarding: `evh model-onboard --model-id <model_id> --deployment <id>`
 
 Task-independent, once per deployment, and again when its build changes. It probes the model through that
 deployment's endpoint with a few fixed requests of its kind and writes the result into the deployment (an ML
@@ -103,7 +103,7 @@ the record's settings, override what the task must, and add its own (its reply c
 records `model_record` and `deployment_id`, and its fingerprint's deployment part comes from that deployment
 (RFC-021), so a result can always be traced to the build and the machine it ran on.
 
-### 4. `evh arm-smoke --config <arm> [--items 3]`
+### 4. `evh arm-smoke --system <id> --dataset <id> [--items 3]`
 
 Task-specific, once per arm before its first full run: runs the arm's first items the way `evh run`
 would and writes no run. Every arm gets the general checks, from what every run already produces (the `Result`):
@@ -151,7 +151,7 @@ arms were smoked, and a model counts as vetted once one of them passed.
   onboarding report; the settings' history (`at`, `what`, `from`, `to`, `why`); its arms, each with its arm smoke.
 - **The arms page** gets a badge per arm that has a record: its record and deployment, and "smoked", "smoke:
   check" or "not smoked".
-- **CLI parity**: `evh models [--kind] [--where] [--status]` lists the same; `evh models --model <id>` shows one.
+- **CLI parity**: `evh model-list [--kind] [--where] [--status]` lists the same; `evh model-show <id>` shows one.
 
 *Added while onboarding the triage models (2026-10-31):* a record's `accepted` names flag kinds a person accepted
 as the model's own nature, with why (gpt-oss cannot stop reasoning; `low` is the least it takes): onboarding and arm

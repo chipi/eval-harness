@@ -1,7 +1,0 @@
-```json
-[
-  {"text": "Germany", "type": "location"},
-  {"text": "Chancellor Gerhard Schröder", "type": "person"},
-  {"text": "Hitler", "type": "person"}
-]
-```

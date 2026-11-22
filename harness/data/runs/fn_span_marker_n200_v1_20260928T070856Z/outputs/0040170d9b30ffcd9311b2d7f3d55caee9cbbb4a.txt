@@ -1,1 +1,0 @@
-[{"text": "Mohamed Farrah Aidid", "type": "person"}, {"text": "Ali Mahdi Muhammad", "type": "person"}]

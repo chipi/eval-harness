@@ -1,8 +1,0 @@
-```json
-[
-    {
-        "text": "Fomalhaut b",
-        "type": "other"
-    }
-]
-```

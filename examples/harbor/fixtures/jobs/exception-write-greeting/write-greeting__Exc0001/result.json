@@ -1,0 +1,125 @@
+{
+    "agent_execution": {
+        "finished_at": "2026-11-21T00:37:13.212861Z",
+        "started_at": "2026-11-21T00:37:13.055588Z"
+    },
+    "agent_info": {
+        "model_info": null,
+        "name": "oracle",
+        "version": "1.0.0"
+    },
+    "agent_result": {
+        "cost_usd": null,
+        "metadata": null,
+        "model_usage": null,
+        "n_cache_tokens": null,
+        "n_input_tokens": null,
+        "n_output_tokens": null,
+        "rollout_details": null
+    },
+    "agent_setup": {
+        "finished_at": "2026-11-21T00:37:13.055527Z",
+        "started_at": "2026-11-21T00:37:13.055467Z"
+    },
+    "config": {
+        "agent": {
+            "base_url": null,
+            "concurrency_group": null,
+            "extra_allowed_hosts": [],
+            "import_path": null,
+            "kwargs": {},
+            "load_trajectory": null,
+            "max_timeout_sec": null,
+            "mcp_servers": [],
+            "model_api_format": null,
+            "model_api_key_name": null,
+            "model_name": null,
+            "n_concurrent": null,
+            "name": "oracle",
+            "override_setup_timeout_sec": null,
+            "override_timeout_sec": null,
+            "resume_trajectory": false,
+            "skills": [],
+            "skip_model_parsing": false
+        },
+        "agent_setup_timeout_multiplier": null,
+        "agent_timeout_multiplier": null,
+        "artifacts": [],
+        "environment": {
+            "cpu_enforcement_policy": "auto",
+            "delete": true,
+            "extra_allowed_hosts": [],
+            "extra_docker_compose": [],
+            "force_build": false,
+            "import_path": null,
+            "kwargs": {},
+            "memory_enforcement_policy": "auto",
+            "mounts": null,
+            "override_cpus": null,
+            "override_gpus": null,
+            "override_memory_mb": null,
+            "override_storage_mb": null,
+            "override_tpu": null,
+            "stream": false,
+            "type": "docker"
+        },
+        "environment_build_timeout_multiplier": null,
+        "extra_instruction_paths": [],
+        "extra_instructions": [],
+        "install_only": false,
+        "job_id": "f1f8b2ce-ac64-43f8-ab38-e7a7a056162c",
+        "override_error_policy": {},
+        "schema_version": 1,
+        "source_trial": null,
+        "task": {
+            "download_dir": null,
+            "git_commit_id": null,
+            "git_url": null,
+            "name": null,
+            "overwrite": false,
+            "path": "examples/harbor/tasks/write-greeting",
+            "ref": null,
+            "source": null
+        },
+        "timeout_multiplier": 1.0,
+        "trial_name": "write-greeting__Exc0001",
+        "trials_dir": "jobs",
+        "user_agent": null,
+        "verifier": {
+            "disable": false,
+            "max_timeout_sec": null,
+            "override_timeout_sec": null
+        },
+        "verifier_timeout_multiplier": null
+    },
+    "environment_setup": {
+        "finished_at": "2026-11-21T00:37:13.055407Z",
+        "started_at": "2026-11-21T00:37:10.830479Z"
+    },
+    "exception_info": {
+        "exception_message": "Environment start timed out after 300.0 seconds (a synthetic fixture, not recorded)",
+        "exception_traceback": "(synthetic: the shape of harbor.models.trial.result.ExceptionInfo, edited in)",
+        "exception_type": "EnvironmentStartTimeoutError",
+        "occurred_at": "2026-11-21T00:37:25.209192Z"
+    },
+    "finished_at": "2026-11-21T00:37:25.209192Z",
+    "id": "f1b9ec41-bc34-49b4-883c-d5e00295d9e0",
+    "reward_valid": false,
+    "schema_version": 1,
+    "source": null,
+    "started_at": "2026-11-21T00:37:10.818694Z",
+    "step_results": null,
+    "task_checksum": "e3b437ce47df55d8c1c27f95f36c9af4511b4a6e2ef893a3ca13626b0c31a774",
+    "task_id": {
+        "path": "examples/harbor/tasks/write-greeting"
+    },
+    "task_name": "write-greeting",
+    "trial_name": "write-greeting__Exc0001",
+    "trial_uri": null,
+    "verifier": {
+        "finished_at": "2026-11-21T00:37:13.570426Z",
+        "started_at": "2026-11-21T00:37:13.358704Z"
+    },
+    "verifier_environment_mode": "shared",
+    "verifier_result": null
+}

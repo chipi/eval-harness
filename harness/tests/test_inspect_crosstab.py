@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""`evh inspect --crosstab` and `--items-out`, on the committed triage runs ($0, offline).
+"""`evh comparison-crosstab --crosstab` and `--items-out`, on the committed triage runs ($0, offline).
 
     python tests/test_inspect_crosstab.py
 
@@ -27,15 +27,30 @@ DOWN = "downgraded (no corroboration)"
 env = {k: v for k, v in os.environ.items() if not k.startswith(("EVAL_", "EVH_"))}
 
 
-def evh(*args, public=False):
+def run_cmd(command, *args, public=False):
     e = dict(env, EVH_PUBLIC="1") if public else env
     return subprocess.run(
-        [sys.executable, str(CLI), "inspect", *args], cwd=ROOT, env=e, capture_output=True, text=True
+        [sys.executable, str(CLI), command, *args], cwd=ROOT, env=e, capture_output=True, text=True
     )
+
+
+def evh(*args, public=False):
+    """`evh comparison-crosstab`."""
+    return run_cmd("comparison-crosstab", *args, public=public)
+
+
+def items(*args, public=False):
+    """`evh comparison-items`."""
+    return run_cmd("comparison-items", *args, public=public)
 
 
 def js(*args):
     r = evh(*args, "--json")
+    return r, (json.loads(r.stdout)["result"]["values"] if r.returncode == 0 else {})
+
+
+def js_items(*args):
+    r = items(*args, "--json")
     return r, (json.loads(r.stdout)["result"]["values"] if r.returncode == 0 else {})
 
 
@@ -129,15 +144,13 @@ for what, args, text in (
         ("--crosstab", "correct,escalated", "--group", "nope.x"),
         "no per-item 'nope'",
     ),
-    ("--group-match alone", ("--crosstab", "correct,escalated", "--group-match", "x"), "with --group FIELD"),
+    ("--group-match alone", ("--crosstab", "correct,escalated", "--group-match", "x"), "with group FIELD"),
     (
         "a bad regex",
         ("--crosstab", "correct,escalated", "--group", "_meta.gates", "--group-match", "("),
         "--group-match",
     ),
-    ("--group alone", ("--group", "_meta.gates"), "--group: with --crosstab"),
-    ("--max-chars alone", ("--max-chars", "5"), "--max-chars: with --items-out"),
-    ("both views", ("--crosstab", "correct,escalated", "--items-out"), "one at a time"),
+    ("--group alone", ("--group", "_meta.gates"), "--crosstab"),
     ("--disagree", ("--crosstab", "correct,escalated", "--disagree"), "--disagree"),
     ("an unknown field to filter", ("--crosstab", "correct,escalated", "--where", "nope:1"), "nope"),
 ):
@@ -170,7 +183,7 @@ for name in ("_meta", "_extra"):
         )
 
 # ── the items, with their outputs ────────────────────────────────────────────────────────────────
-r, v = js("--runs", f"{BASE},{OTHER}", "--items-out")
+r, v = js_items("--runs", f"{BASE},{OTHER}")
 check("items-out: runs", r.returncode == 0, r.stderr[-300:])
 io = v["items_out"]
 check(
@@ -198,16 +211,16 @@ check(
 )
 check("items-out: both runs on every item", set(rec["arms"]) == {BASE, OTHER} and OTHER in rec["arms"])
 
-vd = js("--runs", f"{BASE},{OTHER}", "--items-out", "--disagree")[1]["items_out"]["items"]
+vd = js_items("--runs", f"{BASE},{OTHER}", "--disagree")[1]["items_out"]["items"]
 check(
     "items-out: --disagree keeps the items the runs decided differently (17 on this pair)",
     0 < len(vd) < 65 and all(i["signals"].get("disagree") for i in vd),
     len(vd),
 )
-vw = js("--runs", f"{BASE},{OTHER}", "--items-out", "--where", "decision_kind:model")[1]["items_out"]["items"]
+vw = js_items("--runs", f"{BASE},{OTHER}", "--where", "decision_kind:model")[1]["items_out"]["items"]
 check("items-out: --where keeps the items whose field matches", 0 < len(vw) < 65, len(vw))
 
-r = evh("--runs", BASE, "--items-out", "--max-chars", "120", "--where", "decision_kind:model")
+r = items("--runs", BASE, "--max-chars", "120", "--where", "decision_kind:model")
 check(
     "items-out text: an output cut at --max-chars with its length, the probe trace left out, the reference and label shown",
     r.returncode == 0
@@ -217,33 +230,35 @@ check(
     and "label " in r.stdout,
     r.stdout[:800],
 )
-whole = evh("--runs", BASE, "--items-out", "--max-chars", "0").stdout
+whole = items("--runs", BASE, "--max-chars", "0").stdout
 check(
     "items-out text: --max-chars 0 cuts nothing",
     "chars)" not in whole and "dismiss gate: no independent" in whole,
 )
-r = evh("--runs", f"{OTHER},{BASE}", "--baseline", BASE, "--items-out", "--disagree")
+r = items("--runs", f"{OTHER},{BASE}", "--baseline", BASE, "--disagree")
 check(
     "items-out: --baseline puts a run first",
     r.returncode == 0 and r.stdout.index(f"[{BASE}]") < r.stdout.index(f"[{OTHER}]"),
 )
 
 REFUSALS: list[tuple[str, tuple[str, ...], str]] = [
-    ("--disagree on one run", ("--runs", BASE, "--items-out", "--disagree"), "two runs or more"),
-    ("--round", ("--round", "r1", "--items-out"), "--round"),
-    ("--sheet", ("--runs", BASE, "--items-out", "--sheet"), "--sheet"),
-    ("no --runs", ("--items-out",), "--runs"),
+    ("--disagree on one run", ("--runs", BASE, "--disagree"), "two runs or more"),
+    ("--round", ("--runs", BASE, "--round", "r1"), "--round"),
+    ("--sheet", ("--runs", BASE, "--sheet"), "--sheet"),
+    ("no --runs", (), "--runs"),
     (
         "a baseline not among the runs",
-        ("--runs", BASE, "--baseline", OTHER, "--items-out"),
+        ("--runs", BASE, "--baseline", OTHER),
         "not among --runs",
     ),
 ]
 for what, refused_argv, text in REFUSALS:
-    check(f"items-out refuses {what}", refused(evh(*refused_argv), text), evh(*refused_argv).stderr[-200:])
+    check(
+        f"items-out refuses {what}", refused(items(*refused_argv), text), items(*refused_argv).stderr[-200:]
+    )
 check(
     "items-out, public: an item's text is never served",
-    refused(evh("--runs", BASE, "--items-out", public=True), "not served publicly"),
+    refused(items("--runs", BASE, public=True), "not served publicly"),
 )
 
 sys.exit(summary())

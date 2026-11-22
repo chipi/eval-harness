@@ -1,4 +1,9 @@
 {
+  "actor": {
+    "from": "migration",
+    "name": "before 0.8.0",
+    "type": "unknown"
+  },
   "created_at": "2026-10-30T12:23:40Z",
   "dataset_id": "orrery_triage_v1_labelled",
   "description": "The decisions the owner labelled, one per fingerprint (the newest): independent items for the paired test.",

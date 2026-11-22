@@ -10,7 +10,7 @@ tickets, with when each arrived, its channel, where the desk's router sent it, a
 every command is in the [RUNBOOK §15](../../harness/docs/RUNBOOK.md#15-datasets-from-production-the-capture-lane)
 and [§15b](../../harness/docs/RUNBOOK.md#15b-evaluating-what-production-did).
 
-Start from a project with the kit, under version control: `evh init --tutorial`, then `git init -q && git add -A
+Start from a project with the kit, under version control: `evh init --store files --tutorial`, then `git init -q && git add -A
 && git commit -qm kit`.
 
 ## 1 · Capture
@@ -30,12 +30,13 @@ beside each close) and `langfuse` (traces) come with the harness, and your own i
 method (`evh importer-check` tests it against the contract).
 
 ```bash
-evh captures
+evh capture-list
+evh capture-show desk_2026_10
 ```
 ```text
-desk_2026_10: 6 record(s) from jsonl, captured ...
+desk_2026_10  6 records  ...  datasets: none; label sets: 0
+desk_2026_10  6 records from jsonl, captured ...
   records from 2026-10-01T08:12:00Z to 2026-10-05T10:00:00Z
-  datasets made from it: none
 ```
 
 A production source is often far larger than a test needs: `--sample-rate 0.001 --seed 7` keeps one record in
@@ -48,7 +49,7 @@ A production export can hold what must not leave the project: `evh capture-scrub
 ## 2 · A dataset from the capture
 
 ```bash
-evh dataset-from-capture desk_2026_10 --dataset-id tickets_desk_v1 --tag source=support-desk --tag channel=all
+evh dataset-from-capture --capture desk_2026_10 --dataset-id tickets_desk_v1 --tag source=support-desk --tag channel=all
 evh dataset-materialize --dataset-id tickets_desk_v1
 ```
 ```text
@@ -59,9 +60,9 @@ data/materialized/tickets_desk_v1  (6 item(s), all hashes verified)
 Only the body becomes the item: what the system received, nothing about what happened next. A selection is
 part of the dataset's record: `--where channel:email`, `--one-per F` (one record per value, the newest, for
 independent items), `--dedup text`. Tags label the dataset outside its identity; the
-catalog's datasets page groups by them, and `evh datasets --tag source=support-desk` filters by them.
+catalog's datasets page groups by them, and `evh dataset-list --tag source=support-desk` filters by them.
 
-The six-ticket arms of Getting started run on it unchanged: copy a config and set `dataset_id:
+The systems of Getting started run on it unchanged: `evh run --system tickets_lead2_v1 --dataset
 tickets_desk_v1`.
 
 ## 3 · Labels from outcomes
@@ -71,7 +72,7 @@ evh label-from-capture --dataset-id tickets_desk_v1 --capture desk_2026_10 \
     --map tutorial/production/outcomes.yaml --set desk_outcomes
 ```
 ```text
-data/labels/tickets_desk_v1/desk_outcomes: 5 of 6 item(s) labelled (1 skipped, 0 matched no rule, 0 not in the capture)
+data/labels/tickets_desk_v1/desk_outcomes: 5 of 6 item(s) labelled (1 skipped, 0 matched no rule, 0 not yet mature, 0 not in the capture)
 ```
 
 `outcomes.yaml` is a rule list, first match wins:
@@ -93,7 +94,7 @@ need engineering?") would be scored against, beside a person's labels; the six-t
 ## 4 · Validation and test
 
 ```bash
-evh dataset-split tickets_desk_v1 --test 0.34 --seed 7
+evh dataset-split --dataset-id tickets_desk_v1 --test 0.34 --seed 7
 ```
 ```text
 data/datasets/tickets_desk_v1_validation.json  (5 item(s))
@@ -101,8 +102,11 @@ data/datasets/tickets_desk_v1_test.json  (1 item(s))
 ```
 
 Each item goes to test when the hash of the seed and its key falls below the share, so it keeps its side in
-every later version. `--key F` keeps every item sharing a field value on one side (one fingerprint, one
-customer); `--by time --key F` makes the newest share test.
+every later version. The share is approximate for that reason: each item's hash picks its side on its own, nothing
+counts them to reach the share, so a small dataset lands away from it (above, 0.34 of 6 items would be 2, and the
+test side got 1; `--test 0.4` on 20 items can give 10 and 10, not 12 and 8). The split is the same each time for a
+seed, and a different `--seed` gives a different one. `--key F` keeps every item sharing a field value on one side (one fingerprint, one
+customer); `--split-by time --key F` makes the newest share test.
 
 `evh validate` checks the capture too (V17): every record against the hash it was captured with.
 
@@ -139,12 +143,11 @@ evh label-from-capture --dataset-id tickets_desk_v1 --capture desk_2026_11_outco
 ```
 ```text
 data/captures/desk_2026_11_outcomes: 6 record(s) from jsonl
-data/labels/tickets_desk_v1/desk_outcomes_2026_11: 5 of 6 item(s) labelled (1 skipped, 0 matched no rule, 0 not in the capture)
+data/labels/tickets_desk_v1/desk_outcomes_2026_11: 5 of 6 item(s) labelled (1 skipped, 0 matched no rule, 0 not yet mature, 0 not in the capture)
 ```
 
 The items are matched by id, so the dataset stays as it was frozen and only its labels move. A rule's
-`min_age_days` counts from the new capture, so a record too young to judge then may be judged now. On the
-triage fleet, three days later, today's outcomes labelled 7 more of 233 decisions and changed none. Each is a set
+`min_age_days` counts from the new capture, so a record too young to judge then may be judged now. Each is a set
 of its own (a set is never edited): the runs scored against the older one still read it.
 
 ## 6 · What production decided, against what happened
@@ -163,11 +166,11 @@ evh arm-from-capture --dataset-id tickets_desk_v1 --capture desk_2026_10 --as de
 ```
 
 No model was called: each output is the capture's record of the same id (`--field routed`; a project's adapter
-reads it with `recorded_output(record)`), and it costs nothing. Scored against a label set, the run lands beside
-the others, in `data/runs-labels-tickets_desk_v1-desk_outcomes/`. Where was it wrong?
+reads it with `recorded_output(record)`), and it costs nothing. Scored against a label set, the run is read under
+that set's label, `labels-tickets_desk_v1-desk_outcomes`. Where was it wrong?
 
 ```bash
-evh inspect --sheet --dataset-id tickets_desk_v1 --runs desk_router_v1 --wrong-against desk_outcomes
+evh sheet-show tickets_desk_v1 --runs desk_router_v1 --wrong-against desk_outcomes
 ```
 ```text
 tickets_desk_v1: 2 of 6 item(s) (wrong) · wrong 2 · read on overlap_f1 (higher is better)
@@ -184,11 +187,11 @@ Say the routing set you govern was frozen from the email tickets only. The route
 an API ticket it does not hold: pick them for it, and make its next version from the picks.
 
 ```bash
-evh dataset-from-capture desk_2026_10 --dataset-id tickets_routing_v1 --where channel:email
+evh dataset-from-capture --capture desk_2026_10 --dataset-id tickets_routing_v1 --where channel:email
 evh pick --dataset-id tickets_desk_v1 --item t01_login --item t04_api --for tickets_routing_v1 \
     --tag case=misrouted --note "routed to support; it needed engineering"
 evh picks --for tickets_routing_v1
-evh dataset-extend tickets_routing_v1 --dataset-id tickets_routing_v2 --picks
+evh dataset-extend --dataset tickets_routing_v1 --dataset-id tickets_routing_v2 --picks
 ```
 ```text
 picked 2 item(s) of tickets_desk_v1 for tickets_routing_v1; evh picks lists what waits
@@ -201,7 +204,7 @@ data/datasets/tickets_routing_v2.json  (4 item(s): 2 of tickets_routing_v1, 2 pi
 A pick waits in `data/picks.jsonl` (append-only; the latest line for an item wins, `pick --drop` takes one off)
 until a version uses it. `tickets_routing_v2` holds v1's tickets and the two picked, each with where it came from
 (`extended_from`), and their labels follow them; nothing is promoted by it. What you promote stays your decision:
-the deploy sheet (`evh deploy-sheet --config ARM [--capture C]`) then says what production must match to run it,
+the deploy sheet (`evh deploy-sheet ID [--capture C]`) then says what production must match to run it,
 and whether a capture shows it did ([RUNBOOK §15b](../../harness/docs/RUNBOOK.md#15b-evaluating-what-production-did)).
 
 ## Data you may measure but not publish

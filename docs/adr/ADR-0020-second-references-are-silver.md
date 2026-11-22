@@ -1,7 +1,7 @@
-# ADR-0020 — A dataset's second reference is silver, with a caveat that says what it is (0.6.0)
+# ADR-0020 — A dataset's second reference is silver, with a caveat that says what it is
 
 **Status:** Accepted (owner, 2026-10-31), built in 0.6.0. Proposed 2026-10-30 as the owner's vocabulary call.
-Superseded (2026-11-01) by [ADR-0022](ADR-0022-references-are-promoted-labels.md) ([RFC-023](../rfc/RFC-023-labels-and-references.md)), built in 0.6.0's steps: a
+Superseded by [ADR-0022](ADR-0022-references-are-promoted-labels.md) ([RFC-023](../rfc/RFC-023-labels-and-references.md)): a
 label's source is recorded on it, and the tier is chosen when labels are promoted to a reference.
 **Date:** 2026-10-30
 **Detail:** [RFC-019](../rfc/RFC-019-datasets-from-production.md) (references from outcomes),
@@ -16,7 +16,7 @@ the tier from the name: `reference-manifest` requires `<gold|silver>/<name>`, `r
 the tier from the prefix, and the catalog lists only the two folders. On the goal page, every
 gold reference gets its own decision; silver groups are shown beside gold and never decide.
 
-## Decision (proposed)
+## Decision
 
 - The reference a goal decides on is `gold/<dataset>`, as today.
 - Every other reference on the dataset is `silver/<name>`, and its manifest's caveat says what it

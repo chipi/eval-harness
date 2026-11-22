@@ -6,7 +6,7 @@
   [PRD-006](../prd/PRD-006-datasets-versions-fields.md) (fields), [PRD-002](../prd/PRD-002-references.md) (references)
 - **Related RFC**: [RFC-003](../rfc/RFC-003-catalog-adapter.md) (the server, its API and limits)
 - **Related UX specs**: [UXS-001](UXS-001-catalog.md) (shell, tokens, tints, paging),
-  [UXS-003](UXS-003-cli-and-onboarding.md) (`evh inspect`)
+  [UXS-003](UXS-003-cli-and-onboarding.md) (`evh comparison-show`)
 - **Implementation paths**: `harness/catalog_assets/inspect.js` (the page),
   `harness/scripts/catalog_serve.py` (`/api/compare`, `/api/item`),
   `harness/scripts/catalog_build.py` (`render_inspect`: the shell and `runs.js`)
@@ -25,7 +25,7 @@ Its state lives in the URL, so every link from the catalog opens a ready compari
 - **The verdict first, then the evidence for it.** Charts and items explain a verdict; they do
   not replace it.
 - **The same test as the command line.** The page calls the server, the server calls
-  `evaluation_harness.stats`; `evh inspect` calls the same function.
+  `evaluation_harness.stats`; `evh comparison-show` calls the same function.
 - **Refuse and say why.** Arms that cannot be tested against the baseline are set aside with a
   note, never tested anyway.
 - **Item text only here.** The static pages never carry it, unless the repository already publishes it (a profile written `--with-text`, refused unless git has committed every item's file). A public deployment never returns the
@@ -38,13 +38,17 @@ Its state lives in the URL, so every link from the catalog opens a ready compari
 breakdown), the analysis charts, the per-item table, the item view.
 
 **Non-goals:** writing anything; choosing a round (the page has no round picker: scope a round
-with `evh inspect --round rN`); comparing arms across datasets.
+with `evh comparison-show --round rN`); comparing arms across datasets.
 
 ## State in the URL
 
 `inspect.html?runs=<arm>,<arm>,...&baseline=<arm>&metric=<name>&where=<field>:<value>&by=<field>`.
 Links from the catalog may also carry `family` and `threshold`, so a verdict reached from a
-goal page matches the one that page implied. Every control rewrites the URL and reloads.
+goal page matches the one that page implied. `rescore=0` reads only what is on record (the
+re-score box unticked) and `disagree=1` keeps the items where the arms decided differently. The
+sheet's state is `dataset=<id>&sheet=1` with `only=` (once per signal kept: `wrong`, `new`,
+`disagree`, `split`, `unlabelled`), `wrong=<label set>`, `new=<dataset>` and `scores=only`.
+Every control rewrites the URL and reloads.
 `&item=<id>` opens that item's view once the comparison has loaded (a dataset page's **inspect**
 link); an item the arms do not share says so instead.
 
@@ -58,13 +62,13 @@ In the catalog `evh catalog` builds (it writes `pick.js`), it has two steps:
    (one with no arms is disabled); at most 60 are shown, then "N more: type to narrow". A goal
    with one dataset picks it.
 2. **Its arms** on the dataset picked (the inspector compares arms on one dataset): a filter box
-   (config, model, how); facet chips, shown where they divide the arms, for **where** (hosted,
+   (system, model, how); facet chips, shown where they divide the arms, for **where** (hosted,
    local), **how** (measured, rescored, judged, run again, re-parsed) and **scored against**
    (the reference's tier, or judge); chips within a facet are alternatives, facets combine.
    **Tick the N shown** ticks every arm shown, the first 40 when more. **add** suggestions: the
-   dataset's baseline, leader and recommended arm, then, from what is ticked, the same config
-   scored other ways and the same model in other configs. Each arm is a row with a checkbox:
-   config (and its roles), model and where, how, its value on the deciding measure.
+   dataset's baseline, leader and recommended arm, then, from what is ticked, the same system
+   scored other ways and the same model in other systems. Each arm is a row with a checkbox:
+   system (and its roles), model and where, how, its value on the deciding measure.
 
 Under them: what is ticked, by name, each chip with × (the first 8, then "+N"), **Clear**, and
 **Inspect N arms** (disabled with nothing ticked or over 40). Inspect opens the ticked arms,
@@ -93,10 +97,10 @@ A project's own builder without `pick.js` keeps the plain picker: each chosen ar
   for a boolean, `min..max` or one value for numbers and durations, an exact value otherwise) and
   **Filter**; each filter becomes a chip with ×. Shown when the dataset declares fields.
 - **break down by** a `choice` or `boolean` field, or none.
-- **scored against** (0.6.0: RFC-023): the reference (its tier pill) or a label set (its source chip and
+- **scored against**: the reference (its tier pill) or a label set (its source chip and
   name) the scores are read against; arms scored against different ones
   are named and not tested, as for two references.
-- **only where they disagree** (0.6.0): a checkbox keeping the items where the chosen arms decided
+- **only where they disagree**: a checkbox keeping the items where the chosen arms decided
   differently (the adapter's `same(a, b)`), the baseline (production's recorded arm by default when it is chosen)
   against each other arm.
 
@@ -153,9 +157,15 @@ reference bytes):
 Among the comparison's warnings, above the verdicts: when the baseline is the arm that wrote the
 reference the arms are scored against, "<baseline> wrote the reference these arms are scored
 against: it is graded against its own outputs, so every other arm reads as worse. Compare the
-others to each other with another baseline." `evh inspect` prints the same.
+others to each other with another baseline." `evh comparison-show` prints the same.
 
 ## Average only
+
+With one arm open there is nothing to test it against: the verdicts table is not drawn, and the page says in words that
+there is no verdict to give (with the baseline's mean beneath). In "Difference from the baseline" a row not
+significant after Holm ends with no mark; ✓ better and ✗ worse are the only ones. A metric that carries an unvalidated judge
+(`judge_score_unvalidated`) is named "judge_score (unvalidated judge)"; a condition that is a model's name reads "no model"
+for an arm that calls none.
 
 Arms that recorded only a run-level average: a table "Average only · n: no per-item scores, so
 no test", with each recorded average and its difference from the baseline's mean. Never tested.
@@ -182,13 +192,16 @@ muted; the baseline `--baseline`) on every chart, never a colour by rank. A lege
   quality–cost or quality–tokens trade-off.
 
 Hovering a dot shows its arm, item and value. Below 700px the charts switch to a narrow layout
-(labels above each row) rather than scroll.
+(labels above each row) rather than scroll. Past 500 items a run, a row draws 60 shaded bins instead of a dot each (the
+darker, the more items; hovering one says how many, between what values), and past 2,000 points in all the scatter
+is a shaded grid with the averages' crosses on it.
 
 ## 03 per item
 
 "per item · n": one row per item, one column per arm (the baseline's marked), each cell the
 score with ▲ or ▼ where it beats or trails the baseline on that item. Paged 10 at a time like
-every catalog table. A row opens on click, Enter or Space.
+every catalog table, and only the rows shown are drawn: "show 10 more", and "show all" up to 1,000 items (past that,
+"show 1000 more"); a link to an item (`?item=`) draws down to it. A row opens on click, Enter or Space.
 
 ## 04 the item view
 
@@ -201,19 +214,28 @@ every catalog table. A row opens on click, Enter or Space.
   between near-identical outputs;
 - columns: the reference (when the metric names one, else the baseline's), then each arm's
   output with its word count, the baseline's marked. Above each output, the run it comes from;
-  for an arm with repeats, "the latest of N repeats; the score is the mean of all N". For a
-  judged arm, the same line gives each judge's score for that item.
+  for an arm with repeats, "the latest of N repeats; the score is the mean of all N", and the score line above the
+  text says it too ("the mean of N repeats; the text below is one of them"). For a
+  judged arm, the same line gives each judge's score for that item. A text of one word reads "1 word".
+- **What the judges said**, under the labels (the local inspector only): one row per judge, per arm the judging set
+  graded for this item: scorer, judge, arm, **position**, **said** (its header names the scorer's scale, "said (1–5)")
+  and **why**. A judging set grades every arm it holds, so it has rows for arms whose output is not on the page (a
+  single-arm view shows one output and the rows of all of them): those rows say "output not shown" beside the arm's
+  name, and the note above the table says they are the judges' grades of those arms. The judges are blind
+  ([RFC-005](../rfc/RFC-005-judge-scorers.md) pass step 2: "Arm identities are hidden and their order shuffled per
+  item"): a reason says "the first answer" or "answer 3", never an arm's name, and **position** is the arm's place in
+  that judge's list, which maps the reason to the arm; the note above the table says so.
 - In a catalog built by `evh catalog`, arm names (verdicts, the baseline line, average-only and
   breakdown rows) and the verdicts' metric link to their pages.
-- (0.6.0) **Every label the item has**, each with its source chip, set name, who made it and note, above the
+- **Every label the item has**, each with its source chip, set name, who made it and note, above the
   outputs (the local inspector only); a recorded arm's output is headed "production, recorded" with its capture.
 
-## 05 sheet (0.6.0: RFC-023)
+## 05 sheet
 
 Opened from a dataset ("Open its sheet", production's recorded arm chosen first) or with
 `?dataset=<id>&sheet=1[&runs=…][&item=<id>]`: one dataset's items, not a comparison. The local inspector only
 (`/api/sheet`): it carries outputs and labels, so a public server refuses it. With no arm chosen, a row (or
-`&item=`, a pick's link) still opens the item, its fields and its labels. It is `evh inspect --sheet` in the
+`&item=`, a pick's link) still opens the item, its fields and its labels. It is `evh sheet-show` in the
 browser, the same model.
 
 - **The items down, a column per arm across**, in the terminal's order: **item** (short id, the full id in its
@@ -224,9 +246,12 @@ browser, the same model.
   in "new against" has never had), **unlabelled** (no label in any set); then per arm its output (the adapter's
   `decision(output)`, else the output, shortened; the item view has it whole; the first is headed "first:
   production") and a column per score it has on the item (its run's metrics, and a judging pass's where one
-  covered the run); a column per label set with its source chip and per reference set; the **winner** columns
+  covered the run); a column per label set with its source chip (named by the set, its dataset only when two sets share
+  a name; where the adapter has a `decision(output)`, a label that is a whole output shows its decision, as the arm's
+  column does) and per reference set; the **winner** columns
   (on the metric the sheet is read on, and per pick or pairwise judge); **picked** (for which datasets); and the
-  item's **fields**, last. The best score per row on the chosen metric is marked.
+  item's **fields**, last. The best score per row on the chosen metric is marked. A signals, picked or fields column
+  that is empty on every row is not drawn.
 - **The select box and the item column stay in place** as the arms scroll across.
 - **The footer**, under each arm's columns: its mean on the chosen metric (and which way is better), its win
   rate per winner column (the share of the rows it was scored on that it wins, a shared win split, "—" for an arm scored on none; on a pick
@@ -239,18 +264,20 @@ browser, the same model.
   in the address as `scores=only`), the field filters and breakdown above, and a sort by any column.
 - **A row opens** the item view (04) for that item.
 - **Downloads**: "download (CSV)" for every row shown, with a box to add the empty label columns to fill
-  (`fill=label`); built by the server as `evh inspect --sheet … --csv` builds it (`/api/sheet?…&format=csv`), a
+  (`fill=label`); built by the server as `evh sheet-export … --csv` builds it (`/api/sheet?…&format=csv`), a
   read: the page writes nothing (PRD-004).
 - **Selecting**: a box per row and "select all shown"; with rows selected, a panel gives two commands to copy:
   `evh pick --dataset-id <id> --item … --item … --for <dataset> --tag <key=value> --note "…"` (the target, tags
   and note typed in the panel fill the command) and `evh label-sheet --dataset-id <id> --item … --out sheet.csv`,
   with "download these rows (CSV)" beside it.
-- Paged 10 at a time like every catalog table; the counts above the table ("412 items · 9 wrong · 31 disagree ·
-  4 new") and the metric it is read on.
+- Paged 10 at a time like every catalog table, and only the rows shown are drawn: "show 10 more", and "show all" up
+  to 1,000 rows (past that, "show 1000 more"); a sort orders every row, and "select all shown" takes every row of the
+  sheet, drawn or not. The counts above the table ("412 items · 9 wrong · 31 disagree · 4 new") and the metric it is
+  read on.
 
 ## Checklist for a change to the inspector
 
-- `evh inspect` gives the same verdicts, conditions and breakdown, or gains the change too.
+- `evh comparison-show` gives the same verdicts, conditions and breakdown, or gains the change too.
 - The verdict and breakdown tables stay unpaged; the per-item table pages.
 - No inline script or style (the pages run under a CSP without `'unsafe-inline'`).
 - `make browser-check` passes (`harness/tests/test_inspector_browser.py`).
@@ -259,24 +286,27 @@ browser, the same model.
 
 | on the page | in the terminal |
 | --- | --- |
-| choose arms, baseline, metric | `evh inspect --runs a,b [--baseline a] [--metric m]` (config ids are looked up under `--from`, default `runs`) |
-| a round's arms (the goal page's **inspect** button on a round) | `evh inspect --round rN [--goal g]`: the goal's measure, against the round's leader; arms with no score on it are named and left out |
+| choose arms, baseline, metric | `evh comparison-show --runs a,b [--baseline a] [--metric m]` (a system id is looked up under `--label`: "" for the plain arm, `silver`, `repeats`, "rescored <id>", `judged/<scorer>`; `evh runs-list` shows what is there; a system measured on two datasets matches twice, so it is refused as ambiguous with the arm ids listed, and you name one as `runs/<dataset>/<system>`) |
+| a round's arms (the goal page's **inspect** button on a round) | `evh comparison-show --round rN [--goal g]`: the goal's measure, against the round's leader; arms with no score on it are named and left out |
 | filter, breakdown | `--where field:value` (repeatable), `--by field` |
 | notes, verdicts, conditions, breakdown | printed in that order (notes as `NOTE:` lines) |
-| the item view | `--item <item_id>`: fields, the item itself, the reference, each arm's output under `(run <run_id>)`, or `(run <run_id> · shown the latest of N repeats; the score is the mean of all N)` for a repeated arm |
-| the per-item table | `evh inspect --sheet --dataset-id D --runs a,b`: every item's score per arm (the sheet; `--scores-only` leaves the outputs out) |
-| only where they disagree (0.6.0) | `--disagree` (an arm scored against a label set is chosen like any) |
-| the sheet (0.6.0) | `evh inspect --sheet --dataset-id D --runs A,B [--metric M\|SCORER/M] [--wrong-against SET] [--new-vs V] [--disagree] [--split] [--unlabelled] [--where field:value] [--by field] [--scores-only]` |
-| the sheet's download (0.6.0) | `--csv FILE`; `--fill label [--choices a,b]` adds the columns to fill; `--fill pick\|scores [--seed N] [--rubric FILE] [--scale LO..HI]` writes blind columns and a key, read back by `evh sheet-import` |
-| selecting rows: the pick and sheet commands (0.6.0) | `evh pick --dataset-id D --item …`; `evh label-sheet --dataset-id D --item …` |
-| two per-item scores against each other (terminal only) | `--runs A --crosstab M1,M2 [--group FIELD [--group-match REGEX]] [--where F:V] [--max-ids N]`: per group of a field of the run's prediction rows (a dotted path, `_meta.gates`; a part of a packed string with `--group-match`, its first `(…)`), the items counted by `M1` (down) and `M2` (across) with totals, and the ids of each cell off the diagonal; a missing value is `none`; `--json` carries every id |
-| each item's outputs and reference together (terminal only) | `--runs A,B --items-out [--disagree] [--where F:V] [--baseline A] [--max-chars N]`: per item each run's decision, whole output, scores and recorded `_meta`, the references and labels; text cuts an output at `--max-chars` (300) and leaves a JSON output's `_` keys out, `--json` is whole |
+| the item view | `evh comparison-item --runs A,B --item <item_id>`: fields, the item itself, the reference, each arm's output under `(run <run_id>)`, or `(run <run_id> · shown the latest of N repeats; the score is the mean of all N)` for a repeated arm; an item whose adapter left something to open (a trial's directory: `meta["artifact"]`) adds `· artifact artifacts/…` to that line, and the page draws it as a link to the directory the server serves read-only (a path not served, one not on this machine and one refused are said as text; `--json` carries `views[arm].artifact` and `artifacts`) |
+| the per-item table | `evh sheet-show D --runs a,b`: every item's score per arm (the sheet; `--scores-only` leaves the outputs out) |
+| only where they disagree | `--disagree 1` (an arm scored against a label set is chosen like any) |
+| the sheet | `evh sheet-show D --runs A,B [--metric M\|SCORER/M] [--wrong-against SET] [--new-vs V] [--disagree] [--split] [--unlabelled] [--where field:value] [--by field] [--scores-only]` |
+| the sheet's download | `evh sheet-export --dataset-id D --runs A,B --csv FILE`; `--fill label [--choices a,b]` adds the columns to fill; `--fill pick\|scores [--seed N] [--rubric FILE] [--scale LO..HI]` writes blind columns and a key; `--fill tags --modes <failure-mode list>` adds a `failure_modes` column beside each arm's output and a key; all read back by `evh sheet-import` |
+| selecting rows: the pick and sheet commands | `evh pick --dataset-id D --item …`; `evh label-sheet --dataset-id D --item …` |
+| two per-item scores against each other (terminal only) | `evh comparison-crosstab --runs A --crosstab M1,M2 [--group FIELD [--group-match REGEX]] [--where F:V] [--max-ids N]`: per group of a field of the run's prediction rows (a dotted path, `_meta.gates`; a part of a packed string with `--group-match`, its first `(…)`), the items counted by `M1` (down) and `M2` (across) with totals, and the ids of each cell off the diagonal; a missing value is `none`; `--json` carries every id |
+| each item's outputs and reference together (terminal only) | `evh comparison-items --runs A,B [--disagree] [--where F:V] [--baseline A] [--max-chars N]`: per item each run's decision, whole output, scores and recorded `_meta`, the references and labels; text cuts an output at `--max-chars` (300) and leaves a JSON output's `_` keys out, `--json` is whole |
 | the analysis charts | `--analysis`: the spread per arm and the difference from the baseline, per item, as numbers; `--x <metric>` adds each arm's mean on a second metric (the scatter) |
 
-For an agent, `evh inspect` is the MCP tool `inspect`, with the same options (`runs`, `baseline`,
-`metric`, `where`, `by`, `disagree`, `analysis`, `x`, `round`, `goal`, `from`, `no-rescore`, `item`, and the
-sheet's `sheet`, `dataset-id`, `scores-only`, `wrong-against`, `new-vs`, `split`, `unlabelled`); the options that
-write a file (`csv`, `fill`, `choices`, `seed`, `rubric`, `scale`) are not offered. The crosstab's `crosstab`, `group`,
-`group-match`, `max-ids` and `items-out`, `max-chars` are. A public server (`evh mcp
---public`, and this repository's at `/mcp`) leaves out `item`, the sheet, `items-out` and `group` (a recorded field can
-hold text), as the public inspector serves no item text, output or label; `crosstab` of two scores stays.
+For an agent, each of these is an MCP tool named as its command: `comparison-show` (`runs`, `baseline`, `metric`,
+`where`, `by`, `disagree`, `analysis`, `x`, `round`, `goal`, `label`, `rescore`, `family`, `threshold`, `cluster`,
+`series`), `comparison-item` (`runs`, `item`),
+`comparison-items` (`runs`, `disagree`, `where`, `baseline`, `max_chars`), `comparison-crosstab` (`runs`, `crosstab`,
+`group`, `group_match`, `where`, `max_ids`) and `sheet-show` (`dataset`, `runs`, `scores_only`, `wrong_against`,
+`new_vs`, `split`, `unlabelled`); `sheet-export`, which writes a file (an operation run as a job: `POST /api/v1/datasets/{dataset}/sheets`), is not a
+tool. A public server
+(`evh mcp --public`, and this repository's at `/mcp`) offers `comparison-show` and, without `group` and `group_match`
+(a recorded field can hold text), `comparison-crosstab`, as the public inspector serves no item text, output or
+label; `crosstab` of two scores stays.

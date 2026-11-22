@@ -1,0 +1,6 @@
+# A stand-in, no model and no network: always dismisses. For wiring the path through.
+system_id: triage_stub_dismiss_v1
+adapter: ../adapter.py
+params:
+  provider: stub
+  stub_disposition: dismiss

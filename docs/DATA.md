@@ -13,7 +13,7 @@ each dataset's own page is what binds.*
 |---|---|---|
 | **The corpora** (articles, snippets, abstracts, sentences) | **no** | yes, with each example's `fetch.py`, from the public source |
 | **Gold and silver references** for the six evals | **no**, only each gold reference's `manifest.json` (the checksum of every item) | rebuilt by `fetch.py`, byte for byte (seeded); `evh validate` checks the copy against the manifest |
-| **Run outputs** (`outputs/`, `predictions.jsonl`) | **yes**: what each system produced, and its scores | — |
+| **Run outputs** (`outputs.jsonl`, `predictions.jsonl`) | **yes**: what each system produced, and its scores | — |
 | **Scores, costs, fingerprints** (`metrics.json`) | yes | — |
 | **Dataset profiles** (`data/profiles/`): item counts and lengths, the gold's shape, and per item its length, its gold **when the gold is a label** (a few short values that repeat, as AG News' classes; any other gold only as a count) and a link to its row in the source's viewer | yes: **no item text**, only what describes it, so a reader can see what a dataset holds and open any item at its source. A label per item is the one piece of a gold reference published, as in the source dataset itself | — |
 | **Demo and tutorial data** (`harness/data/sources`, `harness/tutorial/`) | yes: synthetic or invented, written for this repository | — |
@@ -49,8 +49,8 @@ the datasets, so each one's licence follows its data:
 | [BEIR SciFact](https://huggingface.co/datasets/BeIR/scifact) | CC BY-SA 4.0 | The same: attribute, and share-alike for redistributed text. |
 | [SummEval](https://huggingface.co/datasets/mteb/summeval) | MIT ([original repo](https://github.com/Yale-LILY/SummEval) also MIT) | Keep the MIT notice when you redistribute the annotations. Each item also carries a CNN/DailyMail article and its human references, so those follow CNN/DailyMail's terms. |
 | [UniEval's SummEval inputs](https://github.com/maszhongming/UniEval/tree/d33e7b6cfebe97b2bafe435adbd818230d5a416a/reproduce/data/summarization) | MIT (the UniEval repository) | Downloaded by the SummEval adapter for its `unievalpub` arm, pinned to a commit and hashed into the run. It is SummEval's own text, tokenised and cased differently, so SummEval's and CNN/DailyMail's terms apply to its content as well. |
-| [Goyal, Li & Durrett 2022 human annotations](https://tagoyal.github.io/zero-shot-explorer/human_annotations.zip) | CC BY 4.0 (the archive's `LICENSE.txt`) | Attribute the authors. Its items are CNN articles, so CNN/DailyMail's terms apply to them too. Downloaded by `validate_judge_goyal.py` (sha256 pinned) and not committed; the committed records hold article ids, our judges' replies and scores, and hashes. |
-| [Zhang et al. 2024 human ratings](https://github.com/Tiiiger/benchmark_llm_summarization) | not stated by the authors | Cite the paper (Zhang, Ladhak, Durmus, Liang, McKeown & Hashimoto, TACL 2024). Its items are CNN/DailyMail articles, so CNN/DailyMail's terms apply to them too. Downloaded by `validate_judge_zhang.py` (pinned to a commit and its sha256) and not committed; the committed records hold article ids, our judges' replies and scores, and hashes, never the articles, summaries or individual ratings (`report.json` holds aggregates): a reply that is not bare JSON scores, or that repeats 8 consecutive words of the article or a summary, is kept only as its hash. |
+| [Goyal, Li & Durrett 2022 human annotations](https://tagoyal.github.io/zero-shot-explorer/human_annotations.zip) | CC BY 4.0 (the archive's `LICENSE.txt`) | Attribute the authors. Its items are CNN articles, so CNN/DailyMail's terms apply to them too. Downloaded by the dataset source `examples/judge-validation-goyal/source.py` (`evh judge-validate`'s rated dataset; sha256 pinned, kept in the project's item cache) and by `validate_judge_goyal.py`, and not committed; the committed records hold article ids, our judges' replies and scores, and hashes. |
+| [Zhang et al. 2024 human ratings](https://github.com/Tiiiger/benchmark_llm_summarization) | not stated by the authors | Cite the paper (Zhang, Ladhak, Durmus, Liang, McKeown & Hashimoto, TACL 2024). Its items are CNN/DailyMail articles, so CNN/DailyMail's terms apply to them too. Downloaded by the dataset source `examples/judge-validation-zhang/source.py` (`evh judge-validate`'s rated dataset) and by `validate_judge_zhang.py` (both pinned to a commit and its sha256, the source's kept in the project's item cache) and not committed; the committed records hold article ids, our judges' replies and scores, and hashes, never the articles, summaries or individual ratings (`report.json` holds aggregates): a reply that is not bare JSON scores, or that repeats 8 consecutive words of the article or a summary, is kept only as its hash. |
 
 Licence was a selection criterion, not an afterthought: Few-NERD was chosen over a corpus
 closer to the original application because that one is licensed `other`. Sources, papers
@@ -80,7 +80,8 @@ carry use conditions. Each is listed, read from the publisher, in
 ## Your own data
 
 When you point the harness at your own system, your data stays where you put it: datasets,
-references and runs are files under your project's `data/` directory (or `EVAL_HOME`). It goes nowhere unless you configure
+references and runs are in your project's `data/` directory (or `EVAL_HOME`): with `store: sqlite` one file,
+`data/project.sqlite`; with `store: files`, the files in that folder. It goes nowhere unless you configure
 a hosted model, and then each item is sent to that provider (via OpenRouter or your own gateway),
 under that provider's terms. Read them before you send anything confidential, and prefer a
 local model for data that cannot leave your machine.

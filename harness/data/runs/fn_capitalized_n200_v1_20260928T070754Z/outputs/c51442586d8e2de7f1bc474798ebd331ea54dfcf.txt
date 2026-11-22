@@ -1,1 +1,0 @@
-[{"text": "David Wenham", "type": "location"}, {"text": "Bryan Brown", "type": "location"}, {"text": "Claudia Karvan", "type": "location"}, {"text": "Remy Hii", "type": "location"}]

@@ -3,22 +3,56 @@ goal: scientific_retrieval_scifact
 dataset_id: scifact_200
 from: r2
 hypothesis: How much does a reranker's score move when it is run again?
+arms:
+- system: sf_llama_l_v1
+  label: repeats
+  runs:
+  - sf_llama_l_n200_v1_20260929T164943Z
+  entered:
+    how: ran
+    at: '2026-09-29T17:27:43Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+  retired:
+    at: '2026-09-29T18:04:00Z'
+    reason: a second run of the record's config; data/runs is the record
+- system: sf_llama_s_v1
+  label: repeats
+  runs:
+  - sf_llama_s_n200_v1_20260929T172744Z
+  entered:
+    how: ran
+    at: '2026-09-29T17:27:43Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+  retired:
+    at: '2026-09-29T18:04:00Z'
+    reason: a second run of the record's config; data/runs is the record
+- system: sf_qwen_s_v1
+  label: repeats
+  runs:
+  - sf_qwen_s_n200_v1_20260929T174401Z
+  entered:
+    how: ran
+    at: '2026-09-29T17:27:43Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+  retired:
+    at: '2026-09-29T18:04:00Z'
+    reason: a second run of the record's config; data/runs is the record
 status: closed
 opened_at: '2026-09-29T17:27:43Z'
 closed_at: '2026-09-29T18:04:00Z'
-retired:
-- config_id: sf_llama_l_n200_v1
-  runs_dir: runs-repeats
-  reason: a second run of the record's config; data/runs is the record
-  at: '2026-09-29T18:04:00Z'
-- config_id: sf_llama_s_n200_v1
-  runs_dir: runs-repeats
-  reason: a second run of the record's config; data/runs is the record
-  at: '2026-09-29T18:04:00Z'
-- config_id: sf_qwen_s_n200_v1
-  runs_dir: runs-repeats
-  reason: a second run of the record's config; data/runs is the record
-  at: '2026-09-29T18:04:00Z'
+actor:
+  type: unknown
+  name: before 0.8.0
+  from: migration
 conclusion:
   text: 'Second runs moved nDCG@10 by −0.0126 (llama_l), −0.0047 (llama_s) and +0.0004 (qwen_s), each
     mixed with an adapter difference: between-run variance is still unmeasured. (REPORT_RETRIEVAL, between-run

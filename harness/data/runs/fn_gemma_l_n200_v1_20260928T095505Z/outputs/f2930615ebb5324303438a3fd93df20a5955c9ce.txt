@@ -1,8 +1,0 @@
-```json
-[
-  {
-    "text": "United Methodist seminary libraries",
-    "type": "organization"
-  }
-]
-```

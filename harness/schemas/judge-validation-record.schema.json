@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "judge validation record",
+  "description": "One judge's reply to one article of a source of human ratings: data/judge-validation/<scorer>/<source>/<judge>/<record>.json, written by harness/tools/validate_judge_goyal.py and validate_judge_zhang.py. A source rates a set of summaries of an article; the judge is asked to rate them as it is for the scorer. V12 checks that the reply is bare JSON or withheld.",
+  "type": "object",
+  "oneOf": [
+    {
+      "title": "a source that rates three summaries per article (Goyal et al. 2022): the scores are the judge's mean per summary",
+      "required": ["article_id", "order", "output", "scores", "cost_usd", "latency_ms", "judge_fp", "prompt_sha"],
+      "not": {"required": ["block"]}
+    },
+    {
+      "title": "a source that rates a block of summaries per article (Zhang et al. 2024): the dims are the judge's ratings per dimension",
+      "required": ["article_id", "block", "order", "output", "output_sha256", "output_withheld", "dims", "cost_usd", "cost_known", "latency_ms", "judge_fp", "prompt_sha"]
+    }
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "article_id": {"type": "string", "minLength": 1},
+    "block": {"type": "integer", "minimum": 0, "description": "Which block of the article's summaries."},
+    "order": {"type": "array", "minItems": 1, "items": {"type": "string"}, "description": "The summaries' systems in the order the judge saw them."},
+    "output": {"type": ["string", "null"], "description": "The judge's reply; null when it is withheld."},
+    "output_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "output_withheld": {"type": "boolean"},
+    "withheld_reason": {"type": "string"},
+    "scores": {"type": "array", "items": {"type": "number"}},
+    "dims": {"type": ["object", "null"], "additionalProperties": {"type": "array", "items": {"type": "number"}}, "description": "Each dimension's rating per summary; null when the reply did not parse."},
+    "cost_usd": {"type": "number", "minimum": 0},
+    "cost_known": {"type": "boolean", "description": "False: the cost is counted from the scorer's price table, the provider gave none."},
+    "latency_ms": {"type": "number", "minimum": 0},
+    "judge_fp": {"type": "string", "pattern": "^[0-9a-f]{16}$", "description": "The judge's fingerprint (judge_score.judge_fingerprint) when the reply was made."},
+    "prompt_sha": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "provenance_backfilled": {"type": "boolean", "description": "judge_fp and prompt_sha were stamped on a record that predates them (the report's provenance_note says how)."}
+  }
+}

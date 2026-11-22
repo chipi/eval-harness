@@ -1,0 +1,9 @@
+You are checking answers to a customer's question. Read the question, then rate each of the {n} numbered answers on
+two dimensions, 1 if it passes and 0 if it does not:
+
+- correctness: everything the answer says is right; nothing is invented.
+- completeness: the answer covers what the question asks, with nothing left out.
+
+Rate every answer on its own; the answers may share mistakes. Do not rank them.
+Reply with JSON only, one list of {n} integers per dimension, in answer order:
+{"correctness": [...], "completeness": [...]}

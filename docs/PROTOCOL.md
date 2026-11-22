@@ -12,8 +12,8 @@ test differences for significance rather than read rank order. It is not enough 
 number comparable to a paper's. So each eval also carries a **calibration row**: one
 known model or baseline, run by this repo's own code on the benchmark's full test set (or a
 large seeded sample of it), against the value its authors published. The calibration rows
-are the evidence that the instrument measures what the field measures. They are how the
-one sampling defect found so far was found.
+are the evidence that the instrument measures what the field measures, and they expose a sample that does not
+represent its benchmark.
 
 ## At a glance
 

@@ -1,1 +1,0 @@
-[{"text": "Amazing Stories", "type": "art"}, {"text": "Michael Joseph", "type": "person"}]

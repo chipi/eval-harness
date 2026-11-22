@@ -1,0 +1,7 @@
+{
+  "config_id": "tickets_lead2_v1",
+  "dataset_id": "tickets_v1",
+  "note": "written before the first item so a crashed run can still be identified; metrics.json is written only on a clean exit",
+  "run_id": "tickets_lead2_v1_20261113T093546Z",
+  "started_at": "2026-11-13T09:35:47Z"
+}

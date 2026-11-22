@@ -3,8 +3,8 @@
 
     python examples/summeval-judging/fetch.py
 
-STDLIB ONLY, like every fetch recipe here: the HuggingFace datasets-server rows API over
-HTTPS, no `datasets` library.
+It reads the split through the harness's `huggingface` source (examples/_shared/hf_rows.py): the Hub's
+parquet conversion at one pinned commit, each file checked against the sha256 the Hub lists.
 
 WHAT AN ITEM IS
   One CNN/DailyMail test article, the 16 machine summaries SummEval collected for it (from

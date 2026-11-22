@@ -33,6 +33,7 @@ INPUTS = (
     "catalog_assets",
     "tutorial",
     "project_kit",
+    "workbench",
     "skills",
 )
 _BUILT: dict = {}

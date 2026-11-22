@@ -1,6 +1,0 @@
-```json
-[
-  {"text": "Ichimaru", "type": "organization"},
-  {"text": "135 casemates", "type": "building"}
-]
-```

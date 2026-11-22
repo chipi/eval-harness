@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "A prompt version (RFC-028): data/prompts/<name>/<sha16>.json, beside its bytes in <sha16>.txt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "name", "sha256", "parent", "note", "actor", "created_at", "source", "extension", "bytes"],
+  "properties": {
+    "id": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+(/[A-Za-z0-9_.-]+)*/[0-9a-f]{16}$"},
+    "name": {"type": "string", "minLength": 1},
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "parent": {"type": ["string", "null"]},
+    "note": {"type": "string"},
+    "actor": {"type": "object"},
+    "created_at": {"type": "string"},
+    "source": {"type": "object"},
+    "extension": {"type": "string"},
+    "bytes": {"type": "integer", "minimum": 0}
+  }
+}

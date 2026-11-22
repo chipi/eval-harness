@@ -13,7 +13,7 @@ Every run records three things:
 | input | field | drop it and… |
 | --- | --- | --- |
 | **system under test** | `build.ref` | you cannot tell a code change from an eval change |
-| **instrument** | `config_id` | you cannot tell a config change from a code change |
+| **system** | `system_id` (the system's id) | you cannot tell a change to what was evaluated from a code change |
 | **data** | `dataset_id` | you cannot compare anything to anything |
 
 `evh validate` fails on a run missing any of them. `EVAL_BUILD_REF` sets the
@@ -73,7 +73,7 @@ corrected together: a group is held to a stricter threshold than it would be alo
 ## Measure the arm's own noise before believing any delta
 
 ```bash
-evh run --config ... --repeat 3
+evh run --system ... --dataset ... --repeat 3
 ```
 
 ```text
@@ -81,10 +81,7 @@ Arm spread over 3 repeats (max - min on identical input):
   overlap_f1   spread=0.043888   treat deltas below 0.043888 as noise
 ```
 
-A real case from the project this came from: an ASR model showed **0.058 WER
-spread on byte-identical input** — wider than most of the deltas people were
-arguing about. Every one of those arguments was about noise, and nobody knew,
-because nobody had measured the arm against itself.
+Noise can be wider than the deltas under discussion, and only an arm measured against itself shows it: run `--repeat 3` before trusting a delta.
 
 `run-compare` takes `--noise` and marks anything at or below it as noise. Omit it
 and the tool nags, because a delta judged against nothing is not evidence.
@@ -138,9 +135,9 @@ instrument arrives. There are three kinds:
 | judge scorer | the metric, delivered by a validated model | billed | `evh judge-score` ([ADR-0001](../../docs/adr/ADR-0001-judge-scorers.md), [RUNBOOK §12](RUNBOOK.md)) |
 
 Two rules hold for all three. The originals are never overwritten: a re-measurement is
-written to its own runs directory (a code re-score to one place the harness designates,
-`data/runs-rescored/<scorer>/<source>/`, which the goals and rounds then read the arm from), and the
-leaderboard is pointed at it. `evh score-preview` shows what a scoring change would move before anything is
+written as a score of its own under the run it re-read (`data/runs/<run_id>/scores/<scorer>@<reference>/`),
+read under a label (`rescored <scorer>`, `judged/<scorer>`) which the goals and rounds then read the arm from,
+and `evh leaderboard --label` reads it. `evh score-preview` shows what a scoring change would move before anything is
 written. And an
 eval's primary measurement changes only by a recorded decision, with the old one
 kept beside it. In this repository AG News and DBpedia keep the dataset's own gold as
@@ -157,10 +154,10 @@ B scores higher and costs 4× per item" are different findings, and only one of
 them is a decision.
 
 A call's cost is the provider's bill when its response carries one (OpenRouter, and a LiteLLM
-proxy that passes `usage.cost` through), and otherwise the config's prices × tokens. Prices live
-in the arm's config, not in code, so a run records the prices it was costed at. A figure
+proxy that passes `usage.cost` through), and otherwise the system's prices × tokens. Prices live
+in the arm's system, not in code, so a run records the prices it was costed at. A figure
 computed from today's price list is not comparable to one from last quarter without saying so.
-Which provider records which: [RUNBOOK §4](RUNBOOK.md#4-point-the-harness-at-your-system).
+An adapter that measures the cost itself names its source in the result's `meta["cost_source"]` (a gateway key's spend, say), and the run says so where it reports its spend. Which provider records which: [RUNBOOK §4](RUNBOOK.md#4-point-the-harness-at-your-system).
 
 ---
 
@@ -174,10 +171,12 @@ Which provider records which: [RUNBOOK §4](RUNBOOK.md#4-point-the-harness-at-yo
 - a **reason under three words** — because *"why is this the baseline?"* must have an
   answer in six months
 
-A baseline is never edited. Promoting a new one replaces it, and git keeps the old one:
-the commit history is the record of what the baseline was, and when. It carries what its number
-means (the reference tier it was scored against, the adapter, the run's fingerprint), so a
-baseline scored against silver cannot pass for one scored against gold.
+A baseline is a goal's line on a dataset: `data/baselines/<goal>/<dataset>/<n>.json`, or
+`data/baselines/_dataset/<dataset>/<n>.json` for a dataset's own, a run with no goal. A version is written once and
+never edited; a promotion is the next version, and `evh baseline-rollback` restores an earlier one as a new version,
+with its own evidence. The current one is the highest, and the versions keep what the baseline was, and when. A
+baseline carries what its number means (the reference tier it was scored against, the adapter, the run's
+fingerprint), so a baseline scored against silver cannot pass for one scored against gold.
 
 ---
 
@@ -187,12 +186,11 @@ A paired test answers one question, and its p-value means that only if the quest
 before the answer was seen. Pick the best of eighty arms after reading the table and the same test
 is a search: some pair will look different. So the harness corrects what it chose itself
 (`pair-test --round` tests the round's leader corrected for the arms in play), and leaves the
-uncorrected test to the comparison that was named in advance. Nothing used to record the naming;
-the `hypothesis:` block in an arm's config does. It sits beside the change it predicts (against
-which config, on which measure, in which direction, and why), and a run copies it into its record
+uncorrected test to the comparison that was named in advance. The `hypothesis:` block in an arm's system records the naming. It sits beside the change it predicts (against
+which system, on which measure, in which direction, and why), and a run copies it into its record
 together with whether the commit that last changed it came before the run. `pair-test` then says
 "named in advance: yes (committed 1a2b3c4d before the run)", `no`, or `not determinable` (outside
-git, or on a dirty tree, where the config on disk may not be the committed one), and whether the
+git, or on a dirty tree, where the system on disk may not be the committed one), and whether the
 result agrees with the stated direction. A hypothesis does not change what was measured, so it is
 not in the fingerprint. It is a record, not a proof: it shows the prediction was committed before
 the run, not what its author had already read when they wrote it.
@@ -203,7 +201,7 @@ the run, not what its author had already read when they wrote it.
 
 A number answers a question only if someone wrote the question down. A goal names who uses the
 output, the decision it informs, the measure that decides it and which way is better, and the
-datasets it rests on; each config names its goal, and every run records it. It is optional until
+datasets it rests on; a run names its goal (`evh run --goal`), and records it. It is optional until
 a project sets a date from which every run must name one (`required_from`). The catalog's goal
 page says first what the goal is for, then its answer (the latest round's conclusion, the promoted
 baseline and why, or "no decision yet"), then how it got there, round by round. Every field of a
@@ -217,8 +215,9 @@ goal file and its allowed values:
 Evals go round on round, and the reasons an arm was dropped are the first thing lost. An
 optional round ([ADR-0004](../../docs/adr/ADR-0004-eval-rounds.md)) records what it set out
 to learn, what changed, which arms it carried in and which it dropped and why, and what it
-concluded. `evh rounds` suggests the next decision from the evidence, as a command; it never
-makes one. A closed round refuses new runs, so its evidence cannot grow after its conclusion.
+concluded. `evh round-evidence` suggests the next decision from the evidence, as a command; it never
+makes one. A closed round refuses new runs, so its evidence cannot grow after its conclusion. A later run
+of one of its arms' systems is named "since then" and not read into the round.
 
 A round also records the scorer it is judged by. Scoring may change between rounds (a rule the
 evaluation got wrong, found by looking): the change is a step of its own, re-scoring the round's arms
@@ -278,15 +277,17 @@ a shell, or a team's, reads them through `evh mcp`
 ([INTEGRATION](INTEGRATION.md#for-an-agent-evh-mcp)). Either way each answer comes from the
 command itself, so the agent's numbers are yours, refusals included.
 
-What an agent may do (the owner's rule, 2026-11-04, written into the `AGENTS.md` `evh init`
+What an agent may do (the rule written into the `AGENTS.md` `evh init`
 gives every project): run arms, make labels and references, and promote a baseline, **when its
 operator asked for that task**, and only under a spending cap (`EVAL_MAX_COST_USD`). A
 promotion's reason says who asked and why, so the record shows whose decision it was. Closing a
 round fixes its evidence, and anything past the cap spends what was not agreed: those stay the
-operator's, and the agent hands over the exact command. `evh mcp` writes no project data: its tools read. (What a call does write is
+operator's, and the agent hands over the exact command. `evh mcp`'s tools read; only `study-ask` and `study-tell`, a local server's agent sampler for a study, write (the study, and a trial it runs). (What a call does write is
 computed answers in the project's ignored `.cache/`: the paired tests' p values and `family-test`'s results.)
-Consent recorded by the harness itself, rather than by the operator's instruction, is 0.8.0's to
-design.
+Every record also says who acted (RFC-027): a person, or an agent and the person it acted for
+(`EVH_ACTOR=agent:NAME`, `EVH_FOR=person:NAME`, or `--by`). It is a recorded claim, not an
+identity, and the harness records rather than asks for consent: a decision (promoting, closing a
+round, unsealing) only needs a named actor, never an `unknown` one.
 
 A shared server answers anyone who can reach it, so `--public` holds back what a project may not
 redistribute (an item's text), and the rates bound what a script can cost the machine.
@@ -295,15 +296,11 @@ redistribute (an item's text), and the rates bound what a script can cost the ma
 
 ## Two arms cannot agree to full precision
 
-`evh validate` fails when two different configs report byte-identical scores and per-item results on
+`evh validate` fails when two different systems report byte-identical scores and per-item results on
 the same dataset. Independent arms do not agree to seventeen significant
 figures; when they do, one of them is not its own measurement — a copied number,
 a mis-wired arm, a cached result. Two arms that are both perfect on a binary metric agree on
 every score too, so their outputs decide: different outputs are two measurements, not a copy.
-
-This check exists because exactly that happened: a published figure for one
-model turned out to be another model's output, identical to the last digit,
-sitting in a report for months.
 
 ---
 

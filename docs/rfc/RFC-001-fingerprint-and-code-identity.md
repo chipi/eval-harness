@@ -77,7 +77,7 @@ item ids and their `source_sha256` only ([RFC-006](RFC-006-item-fields-and-url-i
 ### Who reads it
 
 - `evh run-compare` names every differing dotted path (`differing_paths`).
-- The inspector and `evh inspect` flatten each arm's fingerprints into conditions (`machine.*`,
+- The inspector and `evh comparison-show` flatten each arm's fingerprints into conditions (`machine.*`,
   `library.*`, `harness.version`, `harness.code_sha256`, `scorer.id`, `scorer.sha256`,
   `data.items_sha256`, `reference.sha256`, `fingerprint.version`) and warn on a different scorer,
   different reference bytes, different item bytes, or latency across machines

@@ -22,18 +22,19 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parents[1] / "scripts"
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _runstore  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 
 proj = Path(tempfile.mkdtemp(prefix="evh-profile-"))
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-profile")
 env.pop("EVAL_DATA_DIR", None)
-env.pop("EVAL_RUNS_DIR", None)
+
+
+import _cli  # noqa: E402
 
 
 def evh(*args):
-    return subprocess.run(
-        [sys.executable, str(HERE / "cli.py"), *args], cwd=proj, env=env, capture_output=True, text=True
-    )
+    return _cli.run(proj, env, *args)
 
 
 def dataset(ds: str, texts: dict[str, str], gold: dict[str, str]) -> None:
@@ -48,7 +49,17 @@ def dataset(ds: str, texts: dict[str, str], gold: dict[str, str]) -> None:
     g.mkdir(parents=True)
     for k, t in gold.items():
         (g / f"{k}.txt").write_text(t, encoding="utf-8")
-    r = evh("label-import", f"src/{ds}_gold", "--dataset-id", ds, "--set", "gold_answers", "--by", "owner")
+    r = evh(
+        "label-import",
+        "--sheet",
+        f"src/{ds}_gold",
+        "--dataset-id",
+        ds,
+        "--set",
+        "gold_answers",
+        "--by",
+        "owner",
+    )
     r = (
         r
         if r.returncode
@@ -70,15 +81,22 @@ def dataset(ds: str, texts: dict[str, str], gold: dict[str, str]) -> None:
 
 
 def items_of(ds: str) -> list[dict]:
-    return json.loads((proj / "data" / "datasets" / f"{ds}.json").read_text())["items"]
+    return _runstore.read_json(proj, f"datasets/{ds}.json")["items"]
 
 
 def item_ids(ds: str) -> list[str]:
     return [it["item_id"] for it in items_of(ds)]
 
 
+# A project as `evh init` makes it carries its data's format: the model's reads (a page's `evh scorer-list`) refuse one
+# that does not.
+from evaluation_harness import _format  # noqa: E402
+
+(proj / "data").mkdir(parents=True, exist_ok=True)
+_runstore.write_text(proj, "project.yaml", f"format: {_format.FORMAT}\n")
+
 try:
-    (proj / "data").mkdir()
+    (proj / "data").mkdir(exist_ok=True)
     dataset(
         "topics",
         {
@@ -105,8 +123,11 @@ try:
     long_ref = " ".join(["word"] * 12)
     dataset("notes", {"a": "one two three", "b": "four five"}, {"a": long_ref, "b": long_ref + " more"})
     ids = item_ids("topics")
-    (proj / "data" / "sources").mkdir(parents=True, exist_ok=True)
-    (proj / "data" / "sources" / "topics.rows.json").write_text(
+    if not _runstore.sqlite():
+        (proj / "data" / "sources").mkdir(parents=True, exist_ok=True)
+    _runstore.write_text(
+        proj,
+        "sources/topics.rows.json",
         json.dumps(
             {
                 "source": {"name": "acme/news", "url": "https://example.org/acme/news"},
@@ -117,11 +138,14 @@ try:
                     for i, it in enumerate(items_of("topics"))
                 },
             }
-        )
+        ),
     )
+    # dataset-create reads a fetcher's rows file into the record (E1): freeze topics again, the same items.
+    r = evh("dataset-create", "--dataset-id", "topics", "--source-dir", "src/topics", "--force")
+    check("setup: topics frozen again with its rows file", r.returncode == 0, (r.stdout + r.stderr)[-300:])
 
     r = evh("dataset-profile", "--dataset-id", "topics")
-    p = json.loads((proj / "data" / "profiles" / "topics.json").read_text()) if r.returncode == 0 else {}
+    p = _runstore.read_json(proj, "profiles/topics.json") if r.returncode == 0 else {}
     check("profile: written for a materialized dataset", r.returncode == 0, (r.stdout + r.stderr)[-300:])
     check(
         "profile: counts the items and their words",
@@ -134,15 +158,15 @@ try:
         json.dumps(gold),
     )
     check(
-        "profile: each item links to its row from the rows map, and the source is named",
-        p.get("source", {}).get("name") == "acme/news"
+        "profile: each item links to its row from the record's source block, and the source is named",
+        (p.get("source") or {}).get("ref") == "acme/news"
         and all(
             r_["source_url"] == f"https://example.org/acme/news?row={ids.index(r_['item_id'])}"
             for r_ in p["rows"]
         ),
     )
     evh("dataset-profile", "--dataset-id", "answers")
-    pa = (proj / "data" / "profiles" / "answers.json").read_text()
+    pa = _runstore.read_text(proj, "profiles/answers.json")
     check(
         "profile: short answers that do not repeat are summarised, never listed per item",
         json.loads(pa)["references"][0]["shape"] == "text" and "Paris" not in pa and "Pacific" not in pa,
@@ -151,7 +175,7 @@ try:
     check("profile: no text unless asked for", not any("text" in r_ for r_ in p.get("rows", [])))
 
     evh("dataset-profile", "--dataset-id", "ents")
-    pe = json.loads((proj / "data" / "profiles" / "ents.json").read_text())
+    pe = _runstore.read_json(proj, "profiles/ents.json")
     check(
         "profile: a JSON-list gold reads as entries per item",
         pe["references"][0]["shape"] == "lists" and pe["references"][0]["entries"]["max"] == 2,
@@ -159,7 +183,7 @@ try:
     )
     check("profile: an item with no source has no link", not any("source_url" in r_ for r_ in pe["rows"]))
     evh("dataset-profile", "--dataset-id", "notes")
-    pn = json.loads((proj / "data" / "profiles" / "notes.json").read_text())
+    pn = _runstore.read_json(proj, "profiles/notes.json")
     check(
         "profile: a gold of longer text reads as words per reference", pn["references"][0]["shape"] == "text"
     )
@@ -187,7 +211,7 @@ try:
     git = ["git", "-c", "user.name=t", "-c", "user.email=t@example.test", "-c", "commit.gpgsign=false"]
     subprocess.run([*git, "commit", "-qm", "items"], cwd=proj, check=True)
     r = evh("dataset-profile", "--dataset-id", "topics", "--with-text")
-    pt = json.loads((proj / "data" / "profiles" / "topics.json").read_text())
+    pt = _runstore.read_json(proj, "profiles/topics.json")
     check(
         "--with-text: adds each item's text once git tracks it",
         r.returncode == 0 and all(r_.get("text") for r_ in pt["rows"]),
@@ -195,7 +219,7 @@ try:
     )
     evh("dataset-profile", "--dataset-id", "topics")
 
-    r = evh("dataset-items", "--dataset-id", "topics")
+    r = evh("dataset-items", "topics")
     check(
         "dataset-items: prints the shape and a row per item",
         r.returncode == 0
@@ -204,14 +228,14 @@ try:
         and r.stdout.count("example.org") >= 6,
         r.stdout[-400:],
     )
-    r = evh("dataset-items", "--dataset-id", "topics", "--item", ids[0][:10])
+    r = evh("dataset-items", "topics", "--item", ids[0][:10])
     check(
         "dataset-items --item: one item, with its text when it is materialized here",
         r.returncode == 0
         and any(t in r.stdout for t in ("the market fell", "the team won", "a new chip", "rates rose")),
         r.stdout[-300:],
     )
-    r = evh("dataset-items", "--dataset-id", "nothing")
+    r = evh("dataset-items", "nothing")
     check(
         "dataset-items: no profile is refused, saying how to write one",
         r.returncode != 0 and "dataset-profile" in r.stderr,
@@ -222,11 +246,10 @@ try:
     check("V1: the profiles match profile.schema.json", "ok" in v1, v1 or r.stdout[-300:])
 
     # A profile of another version of the items: the page says it is stale.
-    prof = proj / "data" / "profiles" / "notes.json"
-    doc = json.loads(prof.read_text())
+    doc = _runstore.read_json(proj, "profiles/notes.json")
     doc["items_sha256"] = "0" * 64
-    prof.write_text(json.dumps(doc))
-    (proj / "data" / "profiles" / "ents.json").unlink()
+    _runstore.write_text(proj, "profiles/notes.json", json.dumps(doc))
+    _runstore.unlink(proj, "profiles/ents.json")
     out = proj / "catalog"
     r = evh("catalog", "--out", str(out))
     check("catalog: builds", r.returncode == 0, (r.stdout + r.stderr)[-300:])
@@ -248,14 +271,16 @@ try:
     ents = (out / "d" / "ents.html").read_text() if (out / "d" / "ents.html").is_file() else ""
     check(
         "page: without a profile, it says how to write one",
-        "No profile yet" in ents and "dataset-profile" in ents,
+        "A profile is optional" in ents and "dataset-profile" in ents,
     )
 
     # Every page names the read command that answers it; with --mcp, the same as a tool call.
     import html as _html
     import re
 
-    from evaluation_harness.mcp_server import READ_TOOLS
+    from evaluation_harness import ops
+
+    READ_TOOLS = {op.name for op in ops.of_kind("read")}
 
     term = re.compile(r"<span data-elsewhere=term>(.*?)</span>")
     lines = {
@@ -291,7 +316,7 @@ try:
         "--mcp: each page names its tool call, the server and how to connect",
         r.returncode == 0
         and "From an agent: the tool" in d
-        and "<code>datasets</code> with <code>{&quot;dataset-id&quot;: &quot;topics&quot;}</code>" in d
+        and "<code>dataset-show</code> with <code>{&quot;dataset&quot;: &quot;topics&quot;}</code>" in d
         and "https://evals.example.test/mcp" in d
         and "how to connect" in d,
         d.split("<footer>")[-1][:600],

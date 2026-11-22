@@ -45,7 +45,7 @@ characters where it names a directory. Nothing new is recorded on the runs: ever
 
 `evh rescore` without `--out` writes to **`data/runs-rescored/<scorer>/<source>/`**: `<scorer>` the 12-character id
 of the scorer doing the re-scoring, `<source>` the runs directory the run came from (`runs`, `runs-repeats`, …),
-so a repeat set never sits beside a first pass of the same config (V8). The catalog, `evh goals`, rounds and
+so a repeat set never sits beside a first pass of the same config (V8). The catalog, `evh goal-list`, rounds and
 `validate` read it like `runs-judged/<scorer>/`. A project made with `evh init` keeps it (nothing ignores it); this
 repository re-allows it once in `.gitignore`, for every scorer to come. `--out` still names any other directory
 (a re-score against another reference keeps its own name: `runs-adjudicated`, `runs-silver`).
@@ -70,12 +70,12 @@ and its page then shows the scorer it was concluded under beside the one it is n
 
 The new round records `scorer` (the working tree's) and the `why` among its `changes`. Every carried arm whose runs
 were scored by another scorer is re-scored into §2's place before the round opens ($0), so the round compares like
-with like; the round's page and `evh rounds` list each carried arm's deciding measure under the old scorer
+with like; the round's page and `evh round-list` list each carried arm's deciding measure under the old scorer
 and the new.
 
 ### 6. Rounds read what the goal reads
 
-A round's evidence (`evh rounds`, its page) reads each arm through the same rule as the goal view: a measured
+A round's evidence (`evh round-list`, its page) reads each arm through the same rule as the goal view: a measured
 arm every run of which was re-scored against the same reference is read from its latest re-score.
 
 ### 7. A round says when its arms were judged by different scorers
@@ -94,7 +94,7 @@ when the goal already has a round.
 
 A goal's axis may set `limit: baseline` instead of a number: an arm is within it when the paired test does not find
 it worse than the goal's baseline arm on that measure (the goal's paired test, p < 0.05, each arm on its own). Without a
-promoted baseline the axis says so and applies no limit. `evh goals` and the goal page show "no worse than
+promoted baseline the axis says so and applies no limit. `evh goal-list` and the goal page show "no worse than
 <baseline> (paired test)" as the limit.
 
 ## The use case: the triage fleet
@@ -131,12 +131,12 @@ promoted baseline the axis says so and applies no limit. `evh goals` and the goa
   counts as a new scorer too. That is the conservative side: a re-score is never skipped for a scoring change, and
   `score-preview` says whether anything moved. `validate`'s note (§7) groups a round's arms **by adapter**: arms
   with different adapters (a hosted LLM's and a fine-tune's) were never one scorer.
-- **`--keep all`** carries every arm of `--from` (the round's arms, as `evh rounds` lists them).
+- **`--keep all`** carries every arm of `--from` (the round's arms, as `evh round-list` lists them).
 - **§9's paired test gates each arm on its own** (owner, 2026-10-31): p < 0.05 against the baseline, not corrected
   across the arms, as a numeric limit gates each arm. Built first with Holm across the group, it ruled out nothing in
   the triage round (56 arms, 31 noise items), not even the arm that escalates everything; per arm it rules out two.
   Holm stays where the decision claims one arm beats the others (the contenders).
-- **A round's evidence notes how many arms it reads from a re-score**, and `evh rounds` prints the round's scorer
+- **A round's evidence notes how many arms it reads from a re-score**, and `evh round-list` prints the round's scorer
   and each scoring change, as the goal page's round section lists them.
 - **Found while building:** adapters and hooks were imported through Python's bytecode cache, which trusts a `.pyc`
   while the source's mtime (whole seconds) and size match; a scorer edited within the second to a value of the same

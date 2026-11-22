@@ -1,9 +1,8 @@
-#!/usr/bin/env python3
 """What is inside a dataset, without its text: `evh dataset-profile` writes it, `evh dataset-items` reads it.
 
     evh dataset-profile --dataset-id ag_news_200          # data/profiles/ag_news_200.json
-    evh dataset-items --dataset-id ag_news_200            # its shape, then one row per item
-    evh dataset-items --dataset-id ag_news_200 --item 00ea08cd9ddbc99f   # one item (its text when it is here)
+    evh dataset-items ag_news_200            # its shape, then one row per item
+    evh dataset-items ag_news_200 --item 00ea08cd9ddbc99f   # one item (its text when it is here)
 
 A dataset's text often cannot be redistributed (docs/DATA.md), so the published catalog never
 had it, and a reader could not see what an item looks like. A profile is what can be published:
@@ -12,35 +11,29 @@ many of each, the entries per item, or how long a reference is), and per item it
 reference, and where it can be read at its source. It is computed where the items are
 materialized and committed, so a catalog built anywhere shows it.
 
-Where an item can be read comes from the dataset itself, never guessed: an item fetched from a
-`source_url` links there; otherwise a fetcher may write `data/sources/<dataset_id>.rows.json`
-(`{"source": {"name", "url"}, "item_url": "...{row}...", "rows": {item_id: {"row", "sha256"}}}`),
-as this repository's Hugging Face fetchers do; an entry counts only when its sha256 is the item's.
-Only an http(s) address is a link. Without either, an item has no link.
+Where an item can be read comes from the dataset record, never guessed: an item fetched from a
+`source_url` links there; otherwise the record's `source.item_url` filled with the item's `source_row`
+(dataset-create reads both from a fetcher's `data/sources/<dataset_id>.rows.json`, as this repository's
+Hugging Face fetchers write). Only an http(s) address is a link. Without either, an item has no link.
 
 `--with-text` adds each item's text, and refuses unless every item's source file is tracked by
 git: it publishes only what the repository already does (a project's own synthetic data).
 """
 
-import sys as _sys
-from pathlib import Path as _Path
-
-if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
-    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
-
-import argparse
 import json
 import subprocess
-import sys
 from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 
-from evaluation_harness import _common, _visibility
+from evaluation_harness import _common, _jsonout, _store
 from evaluation_harness._common import die, read_json, write_json
 from evaluation_harness._fingerprint import items_digest
 from evaluation_harness._version import __version__
 from evaluation_harness.catalog_adapter import HarnessAdapter
+from evaluation_harness.model import datasets as _datasets
+from evaluation_harness.ops import legacy
 
 #: A gold reference reads as labels when it takes at most this many distinct values, each short.
 MAX_LABELS = 30
@@ -128,30 +121,13 @@ def gold_references(dataset_id: str) -> list[tuple[str, Path]]:
 
 
 def source_links(dataset: dict) -> tuple[dict | None, dict[str, str]]:
-    """The dataset's source and a URL per item: an item's own source_url, else a rows map entry
-    whose sha256 is the item's frozen one (an id alone may recur in another dataset)."""
-    items = dataset.get("items") or []
-    urls = {it["item_id"]: it["source_url"] for it in items if web(it.get("source_url"))}
-    sha = {it["item_id"]: it.get("source_sha256") for it in items}
-    source, best = None, 0
-    for f in sorted(_common.SOURCES.glob("*.rows.json")):
-        doc = read_json(f)
-        rows = {
-            k: v["row"]
-            for k, v in (doc.get("rows") or {}).items()
-            if isinstance(v, dict) and sha.get(k) and v.get("sha256") == sha[k]
-        }
-        if not rows:
-            continue
-        for item, row in rows.items():
-            url = str(doc.get("item_url") or "").replace("{row}", str(row))
-            if web(url):
-                urls.setdefault(item, url)
-        if len(rows) > best:
-            best, source = len(rows), doc.get("source")
-    if source and not web(source.get("url")):
-        source = {k: v for k, v in source.items() if k != "url"}
-    return source, urls
+    """The dataset's source block and a URL per item: its own source_url, else the source's item_url filled with its
+    row or id (E1). Nothing is guessed: an item with neither has no link."""
+    from evaluation_harness import _source  # noqa: PLC0415
+
+    src = dataset.get("source") or None
+    urls = {it["item_id"]: u for it in dataset.get("items") or [] if (u := _source.item_link(src, it))}
+    return src, urls
 
 
 def web(url) -> bool:
@@ -194,29 +170,35 @@ def profile(dataset_id: str, with_text: bool) -> dict:
     texts: dict[str, str] = {}
     for it in items:
         p = mat / (it.get("source_path") or it["item_id"])
-        if not p.is_file():
+        if not _store.is_file(p):
             die(
                 f"{dataset_id} is not materialized here ({p} is missing): a profile is computed from the items. "
                 f"Fetch and materialize it first (`evh dataset-materialize --dataset-id {dataset_id}`, or in "
-                "this repository `make data EXP=<eval>`)."
+                "this repository `make data EXP=<eval>`).",
+                "not-materialized",
             )
-        texts[it["item_id"]] = p.read_text(encoding="utf-8", errors="replace")
+        texts[it["item_id"]] = _store.read_text(p, encoding="utf-8", errors="replace")
     if with_text and ds.get("text") == "hidden":
-        die(f"{dataset_id} is `text: hidden`: its profile carries no text (RFC-019)")
+        die(f"{dataset_id} is `text: hidden`: its profile carries no text (RFC-019)", "not-public")
     if with_text:
-        src_dir = _common.ROOT / ds.get("source_dir", "data/sources")
+        src_dir = _datasets.source_dir(ds)
         files = [src_dir / (it.get("source_path") or it["item_id"]) for it in items]
         missing = tracked(files)
         if missing:
             die(
                 f"--with-text publishes item text, and {len(missing)} of {dataset_id}'s source files are not "
-                f"tracked by git (e.g. {missing[0]}): only text the repository already holds may be published."
+                f"tracked by git (e.g. {missing[0]}): only text the repository already holds may be published.",
+                "not-public",
             )
     words = {k: words_of(t) for k, t in texts.items()}
     refs: list[dict] = []
     per_item: dict[str, dict[str, str]] = {}
     for ref_id, d in gold_references(dataset_id):
-        got = {k: (d / f"{k}.txt").read_text(encoding="utf-8") for k in texts if (d / f"{k}.txt").is_file()}
+        got = {
+            k: _store.read_text(d / f"{k}.txt", encoding="utf-8")
+            for k in texts
+            if _store.is_file(d / f"{k}.txt")
+        }
         if not got:
             refs.append(
                 {
@@ -276,19 +258,22 @@ def render(p: dict, item: str | None) -> str:
         )
     ]
     if p.get("source"):
-        out.append(f"source: {p['source']['name']}  {p['source']['url']}")
+        src = p["source"]
+        out.append(
+            "source: " + "  ".join(str(x) for x in (src.get("provider"), src.get("ref"), src.get("url")) if x)
+        )
     for r in p["references"]:
         out.append(f"gold {r['id']}: {_shape_line(r)}")
     rows = [r for r in p["rows"] if not item or r["item_id"].startswith(item)]
     if item and not rows:
-        die(f"no item {item!r} in {p['dataset_id']}")
+        die(f"no item {item!r} in {p['dataset_id']}", "not-found")
     out.append("")
     for r in rows:
         ref = "; ".join(f"{v}" for v in r["reference"].values())
         out.append(f"{r['item_id'][:16]}  {r['words']:>6} words  {ref}  {r.get('source_url', '')}".rstrip())
         if item:
             local = _common.item_path(p["dataset_id"], r["item_id"])
-            text = local.read_text(encoding="utf-8", errors="replace") if local else r.get("text")
+            text = _store.read_text(local, encoding="utf-8", errors="replace") if local else r.get("text")
             out.append("")
             out.append(
                 text if text else "(its text is not on this machine, and the profile does not carry it)"
@@ -299,71 +284,21 @@ def render(p: dict, item: str | None) -> str:
 def load_profile(dataset_id: str) -> dict:
     """data/profiles/<dataset_id>.json, or a refusal saying how to write it."""
     f = _common.DATA / "profiles" / f"{_common.dataset_id_ok(dataset_id)}.json"
-    if not f.is_file():
+    if not _store.is_file(f):
         die(
             f"no profile for {dataset_id} ({f}): write one with `evh dataset-profile --dataset-id {dataset_id}` "
-            "where the dataset is materialized."
+            "where the dataset is materialized.",
+            "not-materialized",
         )
     return read_json(f)
 
 
-def main_profile(argv: list[str] | None = None) -> int:
-    """evh dataset-profile."""
-    ap = argparse.ArgumentParser(prog="evh dataset-profile", description=__doc__.split("\n\n")[0])
-    ap.add_argument("--dataset-id", required=True)
-    ap.add_argument(
-        "--with-text",
-        action="store_true",
-        help="add each item's text (only when git has committed every item's file)",
-    )
-    ap.add_argument(
-        "--json",
-        action="store_true",
-        help='the profile written, as JSON: {"command", "version", "result": <the profile>}',
-    )
-    args = ap.parse_args(argv)
+def body(**inputs: Any) -> int:
+    """evh dataset-profile: write the profile, say what is inside; its answer is the profile (`values.profile`)."""
+    args = legacy.namespace(inputs, "dataset-profile")
     p = profile(args.dataset_id, args.with_text)
     out = _common.DATA / "profiles" / f"{_common.dataset_id_ok(args.dataset_id)}.json"
     write_json(out, p)
-    if args.json:
-        print(json.dumps({"command": "dataset-profile", "version": __version__, "result": p}, indent=1))
-    else:
-        print(f"wrote {out}\n" + render(p, None).split("\n\n")[0])
+    print(f"wrote {out}\n" + render(p, None).split("\n\n")[0])
+    _jsonout.value("profile", p)
     return 0
-
-
-def main_items(argv: list[str] | None = None) -> int:
-    """evh dataset-items."""
-    ap = argparse.ArgumentParser(prog="evh dataset-items", description=__doc__.split("\n\n")[0])
-    ap.add_argument("--dataset-id", required=True)
-    ap.add_argument("--item", help="one item: its id, or the start of it; its text when it is here")
-    ap.add_argument(
-        "--json",
-        action="store_true",
-        help='the profile as JSON: {"command", "version", "result": <the profile>}',
-    )
-    args = ap.parse_args(argv)
-    p = load_profile(args.dataset_id)
-    hide = _visibility.public_env() and _visibility.hidden(args.dataset_id)
-    if hide:  # a public server's command, on a `text: hidden` dataset: ids and lengths only
-        if args.item:
-            die(f"{args.dataset_id} is `text: hidden`: no item is shown here")
-        p = _visibility.public_profile(p)
-    if args.json:
-        if args.item:
-            rows = [dict(r) for r in p["rows"] if r["item_id"].startswith(args.item)]
-            if not rows:
-                die(f"no item {args.item!r} in {p['dataset_id']}")
-            for r in rows:  # its text when it is here, as the printed form shows it
-                local = _common.item_path(p["dataset_id"], r["item_id"])
-                if local:
-                    r["text"] = local.read_text(encoding="utf-8", errors="replace")
-            p = dict(p, rows=rows)
-        print(json.dumps({"command": "dataset-items", "version": __version__, "result": p}, indent=1))
-    else:
-        print(render(p, args.item))
-    return 0
-
-
-if __name__ == "__main__":
-    sys.exit(main_profile())

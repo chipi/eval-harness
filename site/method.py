@@ -28,7 +28,7 @@ TUTORIAL7 = "docs/tutorials/7-set-up-a-model.md"
 CATALOG_STEP = {
     "dataset": ("datasets.html", "Every dataset, its versions and items"),
     "references": ("references.html", "Every reference, who wrote it, what is scored against it"),
-    "arms": ("arms.html#configs", "Every config, across the datasets it ran on"),
+    "arms": ("arms.html#systems", "Every system, across the datasets it ran on"),
     "runs": ("arms.html", "Every arm, how it was measured, its cost and speed"),
     "baseline": ("goals.html", "Every goal, its promoted baseline and its reason"),
     "remeasure": ("arms.html", "Re-scored and judged arms beside the originals"),
@@ -110,14 +110,14 @@ NODES = [
     (
         "arms",
         "Arms",
-        "one config each",
+        "one system each",
         (
             "One system under test: provider, model, prompt, settings, in a YAML file. Change one "
-            "thing, bump the config_id — the fingerprint will prove what moved. An arm can name a model "
+            "thing, bump the system_id — the fingerprint will prove what moved. An arm can name a model "
             "record, set up once where it runs, and is smoked on a few items before its full run."
         ),
-        "data/configs/*.yaml · data/models/&lt;id&gt;.yaml",
-        "evh arm-smoke --config …",
+        "data/systems/*.yaml · data/models/&lt;id&gt;.yaml",
+        "evh arm-smoke --system …",
         (GUIDE, "3-describe-your-arms"),
     ),
     (
@@ -129,7 +129,7 @@ NODES = [
             "latency, and a fingerprint of instrument, data, deployment and settings. Repeat it to measure noise."
         ),
         "data/runs/&lt;run_id&gt;/",
-        "evh run --config … --repeat 3",
+        "evh run --system … --dataset … --repeat 3",
         (GUIDE, "6-run-the-other-arms-three-times-each"),
     ),
     (
@@ -141,7 +141,7 @@ NODES = [
             "A claim means significant, not scored higher."
         ),
         "your terminal",
-        "evh family-test --dataset-id … --a … --against …",
+        "evh family-test … --a … --against …",
         (GUIDE, "7-compare"),
     ),
     (
@@ -169,7 +169,7 @@ NODES = [
             "primary metric changes only by a recorded decision. A new scoring rule is previewed first, "
             "then re-scores a round, which records the scorer it is judged by."
         ),
-        "data/runs-rescored/&lt;scorer&gt;/ · data/runs-judged/&lt;scorer&gt;/",
+        "data/runs/&lt;run_id&gt;/scores/&lt;scorer&gt;@&lt;reference&gt;/",
         "evh score-preview --goal … · evh rescore --goal … --round …",
         (TUTORIAL4, "7-when-the-scoring-changes"),
     ),
@@ -237,7 +237,7 @@ FLOWS = {
         ("Gold", "decides"),
     ],
     "noise": [
-        ("One arm", "one config"),
+        ("One arm", "one system"),
         ("Three runs", "the same items"),
         ("Its spread", "the noise floor"),
         ("A difference", "only past it"),
@@ -481,6 +481,10 @@ def chapters(H, f: dict) -> list:
                 "once. Not significant means the test could not tell two arms apart at this many items, "
                 "not that they are equal. Intervals elsewhere (the human ceiling) are "
                 "bootstrapped, and the price slopes are fits, not tests.</p>"
+                "<p>The charts keep the same rule: a mark is filled, and a quadrant such as “better and "
+                "cheaper” is named, only when the test supports the difference (<code>evh chart</code>). And a "
+                "test set is spent by reading it: a study searches on a validation set, its winner is confirmed on "
+                "a test set, and every look at a test set counts against its limit.</p>"
             ),
             "habit": "Decide the comparisons before reading the table, correct for how many you "
             "made, and report a tie as a tie.",
@@ -513,6 +517,8 @@ def chapters(H, f: dict) -> list:
                 "<p>The lab notebook records the findings that were retracted along the way, "
                 "several caused by this harness's own scorer; the reports state today's figures, "
                 "and git keeps every earlier version.</p>"
+                "<p>A promoted baseline keeps the test it was promoted on and who promoted it, in versions that "
+                "can be rolled back, and a judge's verdict keeps its reason beside its scores.</p>"
             ),
             "habit": "Hash and test the scorer, re-score stored outputs when it changes, and "
             "promote a baseline only with a reason that says what the tests showed.",
@@ -565,7 +571,7 @@ LASTING = [
             "deployed system decides, against new candidates. Each round records what it set out to learn and what it "
             "concluded."
         ),
-        "evh round-open --from · evh rounds",
+        "evh round-open --from · evh round-list",
         "docs/tutorials/4-rounds-and-versions/#after-deploy",
     ),
 ]
@@ -796,8 +802,8 @@ STEPS = [
     (
         "Set up",
         "A new folder, the harness pinned to a release, and the tutorial kit copied in.",
-        'pip install "evaluation-harness @ git+{repo}@v{version}#subdirectory=harness"\nevh init --tutorial',
-        "wrote    26 file(s), the tutorial kit under tutorial/",
+        'pip install "evaluation-harness @ git+{repo}@v{version}#subdirectory=harness"\nevh init --store files --tutorial',
+        "wrote    29 file(s), the tutorial kit under tutorial/",
         GUIDE,
         "0-set-up",
     ),
@@ -812,7 +818,7 @@ STEPS = [
     (
         "Describe your arms",
         "One YAML per candidate. Change one thing; bump the id.",
-        "cp tutorial/configs/tickets_*.yaml data/configs/",
+        "cp tutorial/systems/tickets_*.yaml data/systems/",
         "",
         GUIDE,
         "3-describe-your-arms",
@@ -828,7 +834,7 @@ STEPS = [
     (
         "Run the best arm; optionally its outputs become the reference set",
         "Your best system answers first; its answers become a model's labels, promoted to silver, and the others are measured by how close they come.",
-        "evh run --config data/configs/tickets_author.yaml\nevh label-from-run --run … --set author_v1\nevh reference-promote --dataset-id tickets_v1 --labels author_v1 --tier silver --reason … --by me",
+        "evh run --system tickets_author_v1 --dataset tickets_v1 --goal tickets_summary\nevh label-from-run --run … --set author_v1\nevh reference-promote --dataset-id tickets_v1 --labels author_v1 --tier silver --reason … --by me",
         "data/references/silver/tickets_v1: 6 of 6 item(s), silver, promoted from tickets_v1/author_v1",
         GUIDE,
         "5-make-its-outputs-the-reference-optional",
@@ -836,7 +842,7 @@ STEPS = [
     (
         "Run the others — three times",
         "The spread is how far an arm disagrees with itself.",
-        "evh run --config data/configs/tickets_lead2_noisy.yaml --repeat 3",
+        "evh run --system tickets_lead2_noisy_v1 --dataset tickets_v1 --goal tickets_summary --repeat 3",
         "overlap_f1     spread=0.029372   treat deltas below 0.029372 as noise",
         GUIDE,
         "6-run-the-other-arms-three-times-each",
@@ -844,7 +850,7 @@ STEPS = [
     (
         "Compare",
         "Read the significance block, not the row numbers.",
-        "evh leaderboard --dataset-id tickets_v1",
+        "evh leaderboard tickets_v1",
         "pairs distinguishable: 1 of 3",
         GUIDE,
         "7-compare",
@@ -882,7 +888,7 @@ STEPS = [
         (
             "evh label-import tutorial/gold --dataset-id tickets_v1 --set owner_gold --by owner\n"
             "evh reference-promote --dataset-id tickets_v1 --labels owner_gold --tier gold --reason … --by owner\n"
-            "evh rescore --dataset-id tickets_v1 --reference-id gold/tickets_v1 --out data/runs-gold"
+            "evh rescore --dataset-id tickets_v1 --reference-id gold/tickets_v1"
         ),
         "NO detectable arm effect · pairs distinguishable: 0 of 6",
         TUTORIAL3,
@@ -895,7 +901,7 @@ STEPS = [
             "harness refuses a judge nobody validated; the tutorial's are fake, so it runs labelled."
         ),
         "evh judge-score --dataset-id tickets_v1 --scorer tickets-judge-v1 --unvalidated",
-        "data/runs-judged/tickets-judge-v1  (6/6 items, unvalidated judge)",
+        "judged/tickets-judge-v1  (6/6 items, unvalidated judge)",
         TUTORIAL3,
         "5-re-measure-with-an-llm-judge-optional",
     ),
@@ -946,14 +952,14 @@ def use_page(H, f: dict) -> str:
 <section class="block" id="patterns" data-nav="Patterns"><div class="wrap">
   <div class="eyebrow"><span class="num">02</span>Patterns</div>
   <h2>Your question is probably one of these.</h2>
-  <p class="lede">Each maps to an eval in this repository you can copy — its adapter, its configs, its scorer — and change the data. The idea underneath all of them — build a private leaderboard for your own application instead of trusting a public one — is Chip Huyen's, from <i>AI Engineering</i> (<a href="docs/INFLUENCES/">influences</a>).</p>
+  <p class="lede">Each maps to an eval in this repository you can copy — its adapter, its systems, its scorer — and change the data. The idea underneath all of them — build a private leaderboard for your own application instead of trusting a public one — is Chip Huyen's, from <i>AI Engineering</i> (<a href="docs/INFLUENCES/">influences</a>).</p>
   <div class="patterns">{cards}</div>
 </div></section>
 
 <section class="block" id="steps" data-nav="Steps"><div class="wrap">
   <div class="eyebrow"><span class="num">03</span>Step by step</div>
   <h2>Seven steps and five optional ones, on a real example.</h2>
-  <p class="lede">The tutorial kit ships six support tickets and summaries a person wrote. Every output below is what the command printed.</p>
+  <p class="lede">The tutorial kit ships six support tickets and summaries a person wrote. Every output below is what the command printed. Each step is also a screen of the Workbench, which <code>evh catalog-serve</code> opens on your machine, and each screen shows the command it runs (<a href="docs/tutorials/8-the-workbench/">tutorial 8</a>).</p>
   <ol class="findings steps">{steps}</ol>
 </div></section>
 
@@ -968,12 +974,12 @@ def use_page(H, f: dict) -> str:
         <div class="t-row" role="listitem"><span class="t-path">scripts/adapter.py</span><span class="t-what"><code>call_system()</code> sends one input to your system; <code>score()</code> compares an output with a reference</span></div>
         <div class="t-row" role="listitem"><span class="t-path">data/sources/</span><span class="t-what">your inputs: real ones, sampled on purpose</span></div>
         <div class="t-row" role="listitem"><span class="t-path">data/labels/</span><span class="t-what">the answers: gold for a slice you can check, silver from a model you trust</span></div>
-        <div class="t-row" role="listitem"><span class="t-path">data/configs/*.yaml</span><span class="t-what">one per candidate: model, prompt, settings, price</span></div>
+        <div class="t-row" role="listitem"><span class="t-path">data/systems/*.yaml</span><span class="t-what">one per candidate: model, prompt, settings, price</span></div>
         <div class="t-row t-last" role="listitem"><span class="t-path">data/goals/*.yaml</span><span class="t-what">what it is for: the measure that decides, limits, how a tie is broken</span></div>
       </div>
     </div>
     <div class="byo-col"><h3>The harness gives you</h3>
-      <p class="byo-sub">Ten things you would otherwise build, or skip.</p>
+      <p class="byo-sub">Twelve things you would otherwise build, or skip.</p>
       <div class="byo-tiles">
         <div class="tile"><b>Frozen datasets</b><span>by content hash, re-checked on every use</span></div>
         <div class="tile"><b>A fingerprint per run</b><span>instrument, data, deployment, settings</span></div>
@@ -983,8 +989,10 @@ def use_page(H, f: dict) -> str:
         <div class="tile"><b>Re-scoring for $0</b><span>from stored outputs; validation for CI</span></div>
         <div class="tile"><b>A recommendation</b><span>per goal, with its reasons, beside the baseline</span></div>
         <div class="tile"><b>A catalog</b><span>every goal, dataset, arm and run, and an inspector (<a href="{H.CATALOG}">ours</a>)</span></div>
+        <div class="tile"><b>A Workbench</b><span>the whole loop in a browser, each screen with its command</span></div>
+        <div class="tile"><b>Evidence charts</b><span>a quadrant named only when the test supports it</span></div>
         <div class="tile"><b>MCP tools</b><span><code>evh mcp</code> for an agent (<a href="docs/harness/INTEGRATION/#for-an-agent-evh-mcp">how</a>)</span></div>
-        <div class="tile"><b>Validated judges</b><span>optional, refused until checked against people</span></div>
+        <div class="tile"><b>Validated judges</b><span>optional, refused until checked against people; each verdict with its reason</span></div>
       </div>
     </div>
     <div class="byo-col"><h3>Start on Monday</h3>
@@ -993,7 +1001,7 @@ def use_page(H, f: dict) -> str:
         <li>Write the question as a goal: <i>can ticket routing move to the cheaper model?</i></li>
         <li>Collect real inputs; freeze them.</li>
         <li>Write gold answers for a slice yourself.</li>
-        <li>Write the adapter; one config per candidate.</li>
+        <li>Write the adapter; one system per candidate.</li>
         <li>Dry-run; set a cost cap.</li>
         <li>Run each arm three times; note its noise.</li>
         <li>Test the comparison you named; promote with a reason; put <code>evh validate</code> in CI.</li>
@@ -1038,12 +1046,12 @@ def landing_teaser(H, f: dict, num: str = "03") -> str:
         for i, c in enumerate(chs, 1)
     )
     return f"""
-<section class="block" id="method" data-nav="Method"><div class="wrap">
+<section class="block" id="method" data-nav="Habits"><div class="wrap">
   <div class="eyebrow"><span class="num">{num}</span>The method</div>
   <h2>The harness enforces a method.</h2>
   <p class="lede">Nothing here needed special access or a big budget. It took six habits — each learned by getting something wrong first — and a harness that enforces them. They work on any problem you can put into a dataset. The framing builds on Chip Huyen's <i>AI Engineering</i> and <i>Designing Machine Learning Systems</i>.</p>
   <div class="habits">{habits}</div>
-  <div class="btns"><a class="btn primary" href="method.html">Read the method</a><a class="btn" href="use.html">Use it on your problem</a></div>
+  <div class="btns"><a class="btn primary" href="method.html">Read the method</a></div>
 </div></section>
 """
 

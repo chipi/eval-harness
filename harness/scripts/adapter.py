@@ -30,7 +30,7 @@ from dataclasses import dataclass, field
 from typing import Any, Callable
 
 # The hosted providers, shared with the judges: one way to call them, read their keys and cost
-# a call (the bill when the response carries one, else the config's prices, else unpriced).
+# a call (the bill when the response carries one, else the system's prices, else unpriced).
 from evaluation_harness import _providers
 
 # A reference with several right answers ({"accept": [...]}) read as its answers: `score` reads references through it.
@@ -47,8 +47,8 @@ class Result:
     cost_usd: float | None = None
     latency_ms: float | None = None
     extra: dict[str, float] = field(default_factory=dict)
-    # Raw provider metadata, kept verbatim and never averaged: the `usage` object,
-    # `finish_reason`, the model string the provider actually reports back. Anything
+    # Raw provider metadata, never averaged: the `usage` object (kept to cost and the token counts at write,
+    # RFC-033), `finish_reason`, the model string the provider actually reports back. Anything
     # numeric belongs in `extra` (it becomes a metric); anything you want preserved
     # for forensics belongs here. Without this the harness could not answer "were
     # reasoning tokens billed?" or "was this output cut off at max_tokens?" -- both
@@ -60,8 +60,8 @@ class Result:
 def call_system(text: str, params: dict[str, Any]) -> Result:
     """Run YOUR system over one item. Replace the body.
 
-    `params` is whatever the arm's config put under `params:` — model name,
-    temperature, prompt version, thresholds. Keep the knobs in the config, not
+    `params` is whatever the arm's system put under `params:` — model name,
+    temperature, prompt version, thresholds. Keep the knobs in the system, not
     in here, so an arm is a YAML file rather than a code edit.
 
     The default dispatches on `params["provider"]` so the bundled demo and the
@@ -79,10 +79,12 @@ def call_system(text: str, params: dict[str, Any]) -> Result:
         return Result(output=summarise(text, model=params["model"]))
     """
     provider = params.get("provider", "echo")
-    # An unknown provider is an error. It fell back to echo, so a typo in a config recorded
+    # An unknown provider is an error. It fell back to echo, so a typo in a system recorded
     # the echoed input as that model's output.
     if provider not in PROVIDERS:
-        raise SystemExit(f"unknown provider {provider!r}; this adapter knows {', '.join(sorted(PROVIDERS))}")
+        from evaluation_harness._common import die  # noqa: PLC0415
+
+        die(f"unknown provider {provider!r}; this adapter knows {', '.join(sorted(PROVIDERS))}", "not-found")
     fn: Callable[[str, dict[str, Any]], Result] = PROVIDERS[provider]
     started = time.perf_counter()
     # No retry wrapper here: the core retries every adapter. See the note below.
@@ -97,7 +99,9 @@ def call_system(text: str, params: dict[str, Any]) -> Result:
 # `run` wraps every `call_system` in its own retry loop (EVAL_MAX_RETRIES), for
 # every adapter. Do not add a second loop in an adapter: the two multiply, and a failing item
 # on a paid provider is then attempted many times over. To make more errors retryable, declare
-# `TRANSIENT_MARKERS` (substrings of the error message); the core honours them.
+# `TRANSIENT_MARKERS` (substrings of the error message); the core honours them. A system whose call has an effect that a
+# retry would repeat (an agent run, a deploy) declares `CALL_ONCE = True` instead: the core then calls each item once and
+# never retries, and neither may the adapter (docs/INTEGRATION.md, RFC-038).
 
 
 # ── 2. HOW GOOD WAS IT ───────────────────────────────────────────────────────
@@ -152,7 +156,7 @@ def _echo(text: str, params: dict[str, Any]) -> Result:
     `noise` (0.0 default) makes it genuinely non-deterministic by dropping each word
     with that probability, so repeats differ in both output_words and overlap_f1.
 
-    That parameter had to be added. `data/configs/demo_noisy.yaml` set `noise: 0.05`
+    That parameter had to be added. `data/systems/demo_noisy.yaml` set `noise: 0.05`
     and described itself as showing "a non-zero spread — and `make run-compare` can
     flag a delta as noise", but nothing read the key: measured at REPEAT=3 it reported
     overlap_f1 spread=0.000000, deterministic. The bundled example for the harness's
@@ -174,12 +178,26 @@ def _echo(text: str, params: dict[str, Any]) -> Result:
     return Result(output=out, cost_usd=0.0)
 
 
+def prompt_of(params: dict[str, Any]) -> str:
+    """The prompt the arm sends: its `prompt`, else the one prompt it declares (RFC-028: a recorded version or a file,
+    whose text the harness gives as `params["prompts"]`), else "Summarise:". This adapter sends one prompt: a system
+    declaring several is refused, not sent the first."""
+    if isinstance(params.get("prompt"), str):
+        return params["prompt"]
+    declared = params.get("prompts") or {}
+    if len(declared) > 1:
+        raise ValueError(
+            f"the bundled adapter sends one prompt; the system declares {len(declared)} ({', '.join(sorted(declared))})"
+        )
+    if declared:
+        return str(next(iter(declared.values())).get("text") or "")
+    return "Summarise:"
+
+
 def _hosted(text: str, params: dict[str, Any]) -> Result:
     """A hosted model, through the harness's providers (openai, anthropic, openrouter, litellm):
-    the arm's `prompt`, then the item. Keys, addresses and cost: `evaluation_harness._providers`."""
-    c = _providers.complete(
-        params.get("prompt", "Summarise:") + "\n\n" + text, params, role="arm", max_tokens=600
-    )
+    the arm's prompt (`prompt_of`), then the item. Keys, addresses and cost: `evaluation_harness._providers`."""
+    c = _providers.complete(prompt_of(params) + "\n\n" + text, params, role="arm", max_tokens=600)
     return Result(
         output=c.text,
         tokens_in=c.tokens_in,
@@ -191,6 +209,7 @@ def _hosted(text: str, params: dict[str, Any]) -> Result:
         meta={
             **({"finish_reason": c.finish_reason} if c.finish_reason else {}),
             **({"usage": {"cost": c.cost_usd}} if c.billed else {}),
+            **(_providers.PRICE_TABLE_META if c.cost_usd is not None and not c.billed else {}),
             **({"response_model": c.response_model} if c.response_model else {}),
             **({"provider": c.upstream_provider} if c.upstream_provider else {}),
         },
@@ -201,3 +220,5 @@ PROVIDERS: dict[str, Callable[[str, dict[str, Any]], Result]] = {
     "echo": _echo,
     **dict.fromkeys(_providers.PROVIDERS, _hosted),
 }
+#: The bundled providers that make no paid call (a cap of 0 lets a system of one run).
+FREE_PROVIDERS = frozenset({"echo"})

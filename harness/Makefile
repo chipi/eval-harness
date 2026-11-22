@@ -9,23 +9,23 @@
 PYTHON ?= $(shell [ -x .venv/bin/python ] && echo .venv/bin/python || echo python3)
 VENV ?= .venv
 DATASET_ID ?= smoke_v1
-CONFIG ?= data/configs/demo.yaml
+SYSTEM ?= demo_v1
 REPEAT ?= 1
 OUT ?=
 NOISE ?=
 TIER ?= silver
 
-.PHONY: help demo init env-check install venv-init catalog catalog-serve \
-        overview activity datasets arms references metrics goals inspect round-open round-retire round-close rounds \
+.PHONY: help demo init env-check install venv-init catalog catalog-serve serve \
+        round-open round-carry round-retire round-close \
         dataset-create dataset-materialize dataset-profile dataset-items reference-manifest \
         mcp search self-test \
-        reference-promote arm-smoke model-onboard fingerprint-migrate score-preview importer-check capture \
-        dataset-split capture-scrub captures labels label-sheet label-import sheet-import label-from-run label-from-capture pick \
-        picks dataset-extend deploy-sheet arm-from-capture dataset-from-capture models \
+        reference-promote arm-smoke model-onboard score-preview importer-check capture \
+        dataset-split capture-scrub label-sheet label-import sheet-import label-from-run label-from-capture pick \
+        picks dataset-extend deploy-sheet arm-from-capture dataset-from-capture \
         holdout pair-test rank-stability \
         run-dry-run run sweep \
-        runs-list baselines-list run-compare leaderboard run-promote \
-        validate judge judge-score check guide-check browser-install browser-check budget-check browser-real-check guard-check commands-check coverage ci test smoke-fixture cost-report clean clean-cache \
+        runs-list run-compare leaderboard run-promote \
+        validate format-check judge judge-score check guide-check browser-install browser-check budget-check browser-real-check guard-check commands-check stores-check coverage ci test smoke-fixture cost-report clean clean-cache \
         bootstrap-test family-test import-run rescore silver-calibrate site site-check docs
 
 # ── getting started ─────────────────────────────────────────────────────────
@@ -47,9 +47,9 @@ help:
 	@echo "     evh reference-promote --dataset-id my_v1 --labels best_v1 --tier silver --reason \"…\" --by <you>"
 	@echo ""
 	@echo "MEASURE  (dry-run first — it costs nothing and tells you what the sweep will)"
-	@echo "  make run-dry-run CONFIG=data/configs/arm_a.yaml"
-	@echo "  make run     CONFIG=data/configs/arm_a.yaml REPEAT=3"
-	@echo "  make sweep CONFIGS=\"data/configs/arm_*.yaml\" REPEAT=2"
+	@echo "  make run-dry-run SYSTEM=arm_a_v1 DATASET_ID=smoke_v1"
+	@echo "  make run     SYSTEM=arm_a_v1 DATASET_ID=smoke_v1 REPEAT=3"
+	@echo "  make sweep SYSTEMS=\"arm_a_v1 arm_b_v1\" DATASET_ID=smoke_v1 REPEAT=2"
 	@echo ""
 	@echo "TRUST THE REFERENCE?  (free — no API calls)"
 	@echo "  make silver-calibrate DATASET_ID=my_v1 REF_MATCH=_v1 ARM_MATCH=_v2"
@@ -59,12 +59,12 @@ help:
 	@echo ""
 	@echo "RE-MEASURE  (free — recomputes scores from stored outputs, no API calls)"
 	@echo "  make rescore DATASET_ID=my_v1 MATCH=_v2   after changing a metric (or GOAL=g ROUND=r1 WHY=\"...\")"
-	@echo "  EVAL_RUNS_DIR=data/runs-rescored/<scorer>/runs make leaderboard DATASET_ID=my_v1"
+	@echo "  make leaderboard DATASET_ID=my_v1 ARGS='--label \"rescored <scorer>\"'   the re-scores, under their label"
 	@echo ""
 	@echo "RE-MEASURE WITH A VALIDATED JUDGE  (BILLED and cost-capped; --dry-run first, it is free)"
 	@echo "  make judge-score DATASET_ID=my_v1 SCORER=<id> ARGS=--dry-run   calls, tokens, estimated cost"
 	@echo "  make judge-score DATASET_ID=my_v1 SCORER=<id>                  resumable; verdicts are stored"
-	@echo "  EVAL_RUNS_DIR=data/runs-judged/<id> make leaderboard DATASET_ID=my_v1"
+	@echo "  make leaderboard DATASET_ID=my_v1 ARGS='--label judged/<id>'          the verdicts, under their label"
 	@echo ""
 	@echo "ASK ONE QUESTION  (free — no API calls)"
 	@echo "  make pair-test DATASET_ID=my_v1 A=<arm> B=<arm> [FAMILY=n]"
@@ -84,11 +84,11 @@ help:
 	@echo "INSPECT / GATE"
 	@echo "  make runs-list | baselines-list | validate | judge (the panel)"
 	@echo "  make catalog | catalog-serve   pages over the runs; the run inspector on 127.0.0.1"
+	@echo "  make serve [STORE=sqlite] [FRESH=1]   the catalog on 127.0.0.1; in SQLite a copy of data/"
 	@echo ""
-	@echo "SCOPING  (a dataset accumulates arms across config versions)"
+	@echo "SCOPING  (a dataset accumulates arms across system versions)"
 	@echo "  make leaderboard DATASET_ID=my_v1 MATCH=_v2   only v2 arms"
-	@echo "  EVAL_RUNS_DIR=<dir>                           run/read elsewhere, e.g. a"
-	@echo "                                                smoke pass or a rescore"
+	@echo "  make leaderboard DATASET_ID=my_v1 ARGS='--label <label>'   one label's arms (runs-list names them)"
 	@echo "  make check                    validate + test + guide-check"
 	@echo ""
 	@echo "Read docs/INTEGRATION.md first, then docs/RUNBOOK.md."
@@ -114,11 +114,16 @@ budget-check:
 
 browser-check:
 	$(PYTHON) tests/test_inspector_browser.py
+	$(PYTHON) tests/test_workbench_browser.py
+	$(PYTHON) tests/test_workbench_live_browser.py
+	$(PYTHON) tests/test_workbench_replay_browser.py
+	$(PYTHON) tests/test_workbench_store_browser.py
+	$(PYTHON) tests/test_workbench_heldout_browser.py
 
 # The catalog of this repository's own runs in Chromium (tests/test_catalog_real_browser.py): the
 # pages at the size the deployment serves. Reuses budget-check's catalog, else builds it.
 browser-real-check:
-	@test -f .build/budget-catalog/index.html || $(PYTHON) scripts/catalog_build.py --out .build/budget-catalog
+	@test -f .build/budget-catalog/index.html || $(PYTHON) scripts/cli.py catalog --out .build/budget-catalog
 	$(PYTHON) tests/test_catalog_real_browser.py --catalog .build/budget-catalog
 
 # The checks can fail: every checker, run once over a copy of the repository with all its planted
@@ -134,6 +139,11 @@ commands-check:
 	$(PYTHON) tests/test_report_tools.py
 	$(PYTHON) tests/test_ops_commands.py
 
+# Every test file on the sqlite store (RFC-025), each in its own process: the self-test runs them on files, and the
+# store's other mode is exactly as safe as the tests that run on it (architecture review, 2026-11-06).
+stores-check:
+	$(PYTHON) tools/store_matrix.py --store sqlite --jobs 4
+
 # Line coverage under the whole self-test and commands-check, subprocesses included (pyproject.toml's
 # [tool.coverage.*]): which code no test runs. Needs `coverage` (requirements-dev.txt). Measured on
 # demand, not a gate; harness/docs/TESTING.md records the last result.
@@ -145,7 +155,7 @@ coverage:
 	HARNESS=$(CURDIR) COVERAGE_FILE=$(CURDIR)/.build/coverage/data $(PYTHON) -m coverage combine -q
 	HARNESS=$(CURDIR) COVERAGE_FILE=$(CURDIR)/.build/coverage/data $(PYTHON) -m coverage report
 
-# A new project beside this checkout: make init DIR=../my-evals ARGS=--tutorial
+# A new project beside this checkout: make init DIR=../my-evals ARGS="--store files --tutorial" (--store files|sqlite is required)
 init:
 	$(PYTHON) scripts/init_project.py $(DIR) $(ARGS)
 
@@ -157,124 +167,112 @@ demo:
 	  echo "make demo needs the bundled sample data in data/sources/."; \
 	  echo "If you stripped it for a real project, start at step 1 of docs/RUNBOOK.md:"; \
 	  echo "  make dataset-create DATASET_ID=my_v1"; exit 1; }
-	@$(MAKE) --no-print-directory dataset-create DATASET_ID=$(DATASET_ID) ARGS="--force"
+	@test -f data/datasets/$(DATASET_ID).json || \
+	  $(MAKE) --no-print-directory dataset-create DATASET_ID=$(DATASET_ID) ARGS="--glob '*.txt'"
 	@$(MAKE) --no-print-directory dataset-materialize DATASET_ID=$(DATASET_ID)
-	@$(MAKE) --no-print-directory run CONFIG=$(CONFIG) REPEAT=3
+	@$(MAKE) --no-print-directory run SYSTEM=$(SYSTEM) DATASET_ID=$(DATASET_ID) REPEAT=3 ARGS="--scratch"
 	@$(MAKE) --no-print-directory validate
 	@echo ""
-	@echo "Now: make runs-list, then make leaderboard DATASET_ID=$(DATASET_ID)"
+	@echo "Now: read the spread the run printed above. It is a scratch pass under .build/scratch/runs: runs-list and leaderboard do not read it."
 
 # ── data lifecycle ──────────────────────────────────────────────────────────
 dataset-create:
-	$(PYTHON) scripts/dataset_create.py --dataset-id $(DATASET_ID) $(ARGS)
+	$(PYTHON) scripts/cli.py dataset-create --dataset-id $(DATASET_ID) $(ARGS)
 
 dataset-materialize:
-	$(PYTHON) scripts/materialize.py --dataset-id $(DATASET_ID) $(ARGS)
+	$(PYTHON) scripts/cli.py dataset-materialize --dataset-id $(DATASET_ID) $(ARGS)
 
 # What is inside a dataset, without its text (data/profiles/<id>.json): written where it is
 # materialized, committed, read by the dataset page and dataset-items.
 dataset-profile:
-	$(PYTHON) scripts/dataset_profile.py --dataset-id $(DATASET_ID) $(ARGS)
+	$(PYTHON) scripts/cli.py dataset-profile --dataset-id $(DATASET_ID) $(ARGS)
 
 dataset-items:
-	$(PYTHON) scripts/dataset_items.py --dataset-id $(DATASET_ID) $(ARGS)
+	$(PYTHON) scripts/cli.py dataset-items $(DATASET_ID) $(ARGS)
 
 # Gold a fetch script builds, promoted where it is: its manifest, with whose labels they are and why.
 reference-manifest:
-	$(PYTHON) scripts/reference_manifest.py $(ARGS)
+	$(PYTHON) scripts/cli.py reference-manifest $(ARGS)
 
 # ── the commands added in 0.5.0 and 0.6.0, each with its own flags in ARGS ─────────────────────────────
 # promote a label set's labels to a reference, at a tier, with a reason
 reference-promote:
-	$(PYTHON) scripts/reference_promote.py $(ARGS)
+	$(PYTHON) scripts/cli.py reference-promote $(ARGS)
 
 # smoke an arm on a few items before its full run: checks, projection, flags
 arm-smoke:
-	$(PYTHON) scripts/arm_smoke.py $(ARGS)
+	$(PYTHON) scripts/cli.py arm-smoke $(ARGS)
 
 # onboard a model once: probe a deployment, write what was found into its record
 model-onboard:
-	$(PYTHON) scripts/model_onboard.py $(ARGS)
-
-# migrate the committed runs' fingerprints to version 5, once (idempotent)
-fingerprint-migrate:
-	$(PYTHON) scripts/fingerprint_migrate.py $(ARGS)
+	$(PYTHON) scripts/cli.py model-onboard $(ARGS)
 
 # what the scorer in this tree would move in a goal's decision; writes nothing
 score-preview:
-	$(PYTHON) scripts/score_preview.py $(ARGS)
+	$(PYTHON) scripts/cli.py score-preview $(ARGS)
 
 # check an importer: its records are well-formed, ids unique, two reads the same
 importer-check:
-	$(PYTHON) scripts/importer_check.py $(ARGS)
+	$(PYTHON) scripts/cli.py importer-check $(ARGS)
 
 # keep a production system's records as a capture (data/captures/)
 capture:
-	$(PYTHON) scripts/capture.py $(ARGS)
+	$(PYTHON) scripts/cli.py capture $(ARGS)
 
 # split a dataset into <id>_validation and <id>_test, stable across versions
 dataset-split:
-	$(PYTHON) scripts/dataset_split.py $(ARGS)
+	$(PYTHON) scripts/cli.py dataset-split $(ARGS)
 
 # run the project's own scrubber over a capture's records, and record it
 capture-scrub:
 	$(PYTHON) scripts/capture_scrub.py $(ARGS)
 
-# every capture, or one: what was read, when, the datasets made from it
-captures:
-	$(PYTHON) scripts/view_captures.py $(ARGS)
 
-# every label set, or a dataset's: source, coverage, guideline, how often two agree
-labels:
-	$(PYTHON) scripts/view_labels.py $(ARGS)
 
 # a sheet of a dataset's items to label, with what production or an arm decided
 label-sheet:
-	$(PYTHON) scripts/label_sheet.py $(ARGS)
+	$(PYTHON) scripts/cli.py label-sheet $(ARGS)
 
 # a filled label sheet as a person's label set
 label-import:
-	$(PYTHON) scripts/label_import.py $(ARGS)
+	$(PYTHON) scripts/cli.py label-import $(ARGS)
 
 # a sheet filled elsewhere, read back: labels as a label set, picks or scores as judged runs
 sheet-import:
-	$(PYTHON) scripts/sheet_import.py $(ARGS)
+	$(PYTHON) scripts/cli.py sheet-import $(ARGS)
 
 # a finished run's outputs as a model's label set (calls nothing)
 label-from-run:
-	$(PYTHON) scripts/label_from_run.py $(ARGS)
+	$(PYTHON) scripts/cli.py label-from-run $(ARGS)
 
 # rules over a capture's recorded outcomes as a rule label set
 label-from-capture:
-	$(PYTHON) scripts/label_from_capture.py $(ARGS)
+	$(PYTHON) scripts/cli.py label-from-capture $(ARGS)
 
 # pick production items for the next version of governed datasets, or drop a pick
 pick:
-	$(PYTHON) scripts/pick.py $(ARGS)
+	$(PYTHON) scripts/cli.py pick $(ARGS)
 
 # the picks waiting: per target, where each came from, its labels, tags and note
 picks:
-	$(PYTHON) scripts/view_picks.py $(ARGS)
+	$(PYTHON) scripts/cli.py picks $(ARGS)
 
 # the next version of a dataset: its items and the picks you choose
 dataset-extend:
-	$(PYTHON) scripts/dataset_extend.py $(ARGS)
+	$(PYTHON) scripts/cli.py dataset-extend $(ARGS)
 
 # what production must match to run a promoted arm, and whether a capture says it did
 deploy-sheet:
-	$(PYTHON) scripts/deploy_sheet.py $(ARGS)
+	$(PYTHON) scripts/cli.py deploy-sheet $(SYSTEM) $(ARGS)
 
 # production's recorded decisions as an arm, scored like any (no call)
 arm-from-capture:
-	$(PYTHON) scripts/arm_from_capture.py $(ARGS)
+	$(PYTHON) scripts/cli.py arm-from-capture $(ARGS)
 
 # make a dataset version from a capture: choose records, freeze their bodies as items
 dataset-from-capture:
-	$(PYTHON) scripts/dataset_from_capture.py $(ARGS)
+	$(PYTHON) scripts/cli.py dataset-from-capture $(ARGS)
 
-# every model record, or one: its deployments, onboarding, settings history and arms
-models:
-	$(PYTHON) scripts/view_models.py $(ARGS)
 
 
 # Does the installed harness work here? (in a checkout: the full test suite)
@@ -283,22 +281,20 @@ self-test:
 
 # ── evals ───────────────────────────────────────────────────────────────────
 run-dry-run:
-	$(PYTHON) scripts/run.py --config $(CONFIG) --repeat $(REPEAT) --dry-run
+	$(PYTHON) scripts/cli.py run --system $(SYSTEM) --dataset $(DATASET_ID) --repeat $(REPEAT) --dry-run
 
 run:
-	$(PYTHON) scripts/run.py --config $(CONFIG) --repeat $(REPEAT) $(ARGS)
+	$(PYTHON) scripts/cli.py run --system $(SYSTEM) --dataset $(DATASET_ID) --repeat $(REPEAT) $(ARGS)
 
-# CONFIGS is a glob: make sweep CONFIGS="data/configs/arm_*.yaml"
+# SYSTEMS is a list of system ids: make sweep SYSTEMS="arm_a_v1 arm_b_v1" DATASET_ID=smoke_v1
 sweep:
-	@test -n "$(CONFIGS)" || { echo 'CONFIGS="data/configs/arm_*.yaml" is required'; exit 1; }
-	$(PYTHON) scripts/sweep.py --configs $(CONFIGS) --repeat $(REPEAT) $(ARGS)
+	@test -n "$(SYSTEMS)" || { echo 'SYSTEMS="arm_a_v1 arm_b_v1" is required'; exit 1; }
+	$(PYTHON) scripts/cli.py sweep --systems $(SYSTEMS) --dataset $(DATASET_ID) --repeat $(REPEAT) $(ARGS)
 
 # ── inspect and decide ──────────────────────────────────────────────────────
 runs-list:
-	@$(PYTHON) scripts/list_runs.py
+	@$(PYTHON) scripts/cli.py runs-list
 
-baselines-list:
-	@$(PYTHON) scripts/list_runs.py --baselines
 
 # Re-score finished runs from their stored outputs. No API calls, no money: the outputs
 # are the expensive part, the scores are arithmetic over them. Writes to a SEPARATE
@@ -308,28 +304,28 @@ baselines-list:
 # same prompt and settings" is exactly what X produced. Read the result against the
 # CEILING it prints -- two runs against the same gold do not agree perfectly either.
 silver-calibrate:
-	$(PYTHON) scripts/silver_calibrate.py --dataset-id $(DATASET_ID) \
+	$(PYTHON) scripts/cli.py silver-calibrate --dataset-id $(DATASET_ID) \
 	  $(if $(REF_MATCH),--ref-match $(REF_MATCH),) $(if $(ARM_MATCH),--arm-match $(ARM_MATCH),) \
 	  $(if $(METRIC),--metric $(METRIC),) $(if $(GROUP_BY),--group-by $(GROUP_BY),)
 
 # Without OUT the re-scores land where the tool designates (data/runs-rescored/<scorer>/<source>/, RFC-022).
 rescore:
-	$(PYTHON) scripts/rescore.py $(if $(ROUND),--goal $(GOAL) --round $(ROUND) --why "$(WHY)",--dataset-id $(DATASET_ID)) $(if $(MATCH),--match $(MATCH),) $(if $(REFERENCE),--reference-id $(REFERENCE),) $(if $(OUT),--out $(OUT),)
+	$(PYTHON) scripts/cli.py rescore $(if $(ROUND),--goal $(GOAL) --round $(ROUND) --why "$(WHY)",--dataset-id $(DATASET_ID)) $(if $(MATCH),--match $(MATCH),) $(if $(REFERENCE),--reference-id $(REFERENCE),)
 
 # What each arm actually cost, from `_meta.usage.cost` rather than the price table in
 # its yaml. Added because RUNBOOK §7b documented this verb before it existed.
 cost-report:
-	$(PYTHON) scripts/cost_report.py $(ARGS)
+	$(PYTHON) scripts/cli.py cost-report $(ARGS)
 
 
 leaderboard:
-	$(PYTHON) scripts/leaderboard.py --dataset-id $(DATASET_ID) $(if $(MATCH),--match $(MATCH),) $(ARGS)
+	$(PYTHON) scripts/cli.py leaderboard $(DATASET_ID) $(if $(MATCH),--match $(MATCH),) $(ARGS)
 
 # A dataset grown from a smaller one contains it. Arms chosen on the small set are being
 # re-measured on a set that still holds the items that chose them, so "it replicated" can
 # only be read on the rest.
 holdout:
-	$(PYTHON) scripts/holdout_significance.py --dataset-id $(DATASET_ID) \
+	$(PYTHON) scripts/cli.py holdout --dataset-id $(DATASET_ID) \
 	  $(if $(EXCLUDE),--exclude-dataset $(EXCLUDE),) $(if $(METRIC),--metric $(METRIC),) \
 	  $(if $(MATCH),--match $(MATCH),)
 
@@ -337,7 +333,7 @@ holdout:
 # independently, correlated against each other — neither treated as truth. Free: it reads
 # runs already on disk. The answer here was sobering, which is the point.
 rank-stability:
-	$(PYTHON) scripts/rank_stability.py --dataset-id $(DATASET_ID) \
+	$(PYTHON) scripts/cli.py rank-stability $(DATASET_ID) \
 	  $(if $(METRIC),--metric $(METRIC),) $(if $(MATCH),--match $(MATCH),)
 
 # ONE pair, named before the table was read. The leaderboard's Nemenyi line prices in all
@@ -347,9 +343,9 @@ rank-stability:
 # ITEMS=<file> restricts the test to one stratum, one item_id per line.
 pair-test:
 	@test -n "$(A)" -a -n "$(B)" || { echo 'A=<config_id> B=<config_id> are required'; exit 1; }
-	$(PYTHON) scripts/pair_test.py --dataset-id $(DATASET_ID) --a $(A) --b $(B) \
+	$(PYTHON) scripts/cli.py pair-test $(DATASET_ID) --a $(A) --b $(B) \
 	  $(if $(METRIC),--metric $(METRIC),) $(if $(EXCLUDE),--exclude-dataset $(EXCLUDE),) \
-	  $(if $(FAMILY),--family $(FAMILY),) $(if $(RUNS_DIR),--runs-dir $(RUNS_DIR),) \
+	  $(if $(FAMILY),--family $(FAMILY),) \
 	  $(if $(ITEMS),--items $(ITEMS),) $(if $(ASC),--asc,)
 
 # MACRO-F1 and friends: metrics with no per-item value, so the sign-flip test cannot
@@ -357,7 +353,7 @@ pair-test:
 # test (11 vs 8 separations on the same data) -- read the interval, not the p-value.
 bootstrap-test:
 	@test -n "$(A)" -a -n "$(AGAINST)" || { echo 'A=<config_id> AGAINST=<substring> are required'; exit 1; }
-	$(PYTHON) scripts/bootstrap_test.py --dataset-id $(DATASET_ID) --a $(A) --against $(AGAINST) \
+	$(PYTHON) scripts/cli.py bootstrap-test --dataset-id $(DATASET_ID) --a $(A) --against $(AGAINST) \
 	  $(if $(METRIC),--metric $(METRIC),) $(if $(EXCLUDE),--exclude-dataset $(EXCLUDE),) \
 	  $(if $(ITEMS),--items $(ITEMS),) $(if $(DRAWS),--draws $(DRAWS),)
 
@@ -367,20 +363,20 @@ bootstrap-test:
 # naming it before reading the p-values is the honesty condition the correction assumes.
 family-test:
 	@test -n "$(A)" -a -n "$(AGAINST)" || { echo 'A=<config_id> AGAINST=<substring> are required'; exit 1; }
-	$(PYTHON) scripts/family_test.py --dataset-id $(DATASET_ID) --a $(A) --against $(AGAINST) \
+	$(PYTHON) scripts/cli.py family-test $(DATASET_ID) --a $(A) --against $(AGAINST) \
 	  $(if $(METRIC),--metric $(METRIC),) $(if $(EXCLUDE),--exclude-dataset $(EXCLUDE),) \
-	  $(if $(RUNS_DIR),--runs-dir $(RUNS_DIR),) $(if $(ITEMS),--items $(ITEMS),) \
+	  $(if $(ITEMS),--items $(ITEMS),) \
 	  $(if $(ASC),--asc,)
 
 # Per-item scores made by ANOTHER tool, written as a run the tests above can read. Every
-# flag is required except where marked; see scripts/import_run.py for what it refuses.
+# flag is required except where marked; see scripts/cli.py import-run for what it refuses.
 import-run:
-	$(PYTHON) scripts/import_run.py $(ARGS)
+	$(PYTHON) scripts/cli.py import-run $(ARGS)
 
 run-compare:
 	@test -n "$(BASE)" || { echo "BASE=<run_id> is required (see: make runs-list)"; exit 1; }
 	@test -n "$(CAND)" || { echo "CAND=<run_id> is required (see: make runs-list)"; exit 1; }
-	$(PYTHON) scripts/compare_runs.py --baseline $(BASE) --candidate $(CAND) \
+	$(PYTHON) scripts/cli.py run-compare --baseline $(BASE) --candidate $(CAND) \
 	  $(if $(NOISE),--noise $(NOISE),) $(ARGS)
 
 # REASON reaches the script through the ENVIRONMENT, not the command line. Interpolated
@@ -392,20 +388,40 @@ run-promote: export EVAL_PROMOTE_REASON = $(REASON)
 run-promote:
 	@test -n "$(RUN)" || { echo "RUN=<run_id> is required (see: make runs-list)"; exit 1; }
 	@test -n "$$EVAL_PROMOTE_REASON" || { echo 'REASON="why this run earned it" is required'; exit 1; }
-	$(PYTHON) scripts/promote_baseline.py --run $(RUN) --reason-from-env $(ARGS)
+	$(PYTHON) scripts/cli.py run-promote --run $(RUN) --reason "$$EVAL_PROMOTE_REASON" $(ARGS)
 
 # ── gates ───────────────────────────────────────────────────────────────────
 validate:
-	$(PYTHON) scripts/validate_tree.py
+	$(PYTHON) scripts/cli.py validate
+
+# The data is in the format this release reads (RFC-032): the deploy's gate (render.sh), met here first.
+format-check:
+	$(PYTHON) scripts/cli.py migrate --check
 
 # THE CATALOG AND THE RUN INSPECTOR (ADR-0002): static pages over the runs, by dataset, into
 # .build/catalog/ (counts and means only; item text only where a profile publishes it); then a server on 127.0.0.1
 # that tests any arms on one dataset against a baseline with the same paired test as pair-test.
 catalog:
-	$(PYTHON) scripts/catalog_build.py $(ARGS)
+	$(PYTHON) scripts/cli.py catalog $(ARGS)
 
 catalog-serve: catalog
 	$(PYTHON) scripts/catalog_serve.py $(ARGS)
+
+# The whole thing on 127.0.0.1, to try it: the catalog and the run inspector over this project's data. STORE=sqlite
+# serves a SQLite copy of data/ (.build/serve-sqlite/data/project.sqlite, made once by data-migrate; FRESH=1 makes it
+# again), so trying it never touches the tracked files.
+SERVE_COPY := .build/serve-sqlite
+serve:
+ifeq ($(STORE),sqlite)
+	@if [ -n "$(FRESH)" ] || [ ! -f $(SERVE_COPY)/data/project.sqlite ]; then \
+	  rm -rf $(SERVE_COPY) && mkdir -p $(SERVE_COPY) && cp -r data $(SERVE_COPY)/data && \
+	  EVAL_DATA_DIR=$(SERVE_COPY)/data EVAL_STORE=sqlite $(PYTHON) scripts/cli.py data-migrate --to sqlite; fi
+	EVAL_DATA_DIR=$(SERVE_COPY)/data EVAL_STORE=sqlite $(PYTHON) scripts/cli.py catalog --out $(SERVE_COPY)/catalog
+	EVAL_DATA_DIR=$(SERVE_COPY)/data EVAL_STORE=sqlite $(PYTHON) scripts/catalog_serve.py --build-dir $(SERVE_COPY)/catalog $(ARGS)
+else
+	$(PYTHON) scripts/cli.py catalog
+	$(PYTHON) scripts/catalog_serve.py $(ARGS)
+endif
 
 # The read commands as MCP tools, for an agent (RFC-018): stdio, or ARGS="--http ..." for a team.
 mcp:
@@ -414,50 +430,31 @@ mcp:
 # The catalog's search in the terminal: TEXT="words".
 search:
 	@test -n "$(TEXT)" || { echo "TEXT=<words> is required"; exit 1; }
-	$(PYTHON) scripts/view_search.py $(TEXT) $(ARGS)
+	$(PYTHON) scripts/cli.py search $(TEXT) $(ARGS)
 
-# The catalog's pages and the inspector's comparison in the terminal (scripts/catalog_views.py):
-# the same adapter and the same computation, so a number here is the number on the page.
-overview:
-	$(PYTHON) scripts/view_overview.py $(ARGS)
 
-activity:
-	$(PYTHON) scripts/view_activity.py $(ARGS)
 
-arms:
-	$(PYTHON) scripts/view_arms.py $(if $(DATASET_ID),--dataset-id $(DATASET_ID),) $(if $(ARM),--arm $(ARM),) $(ARGS)
 
-datasets:
-	$(PYTHON) scripts/view_datasets.py $(if $(DATASET_ID),--dataset-id $(DATASET_ID),) $(ARGS)
 
-references:
-	$(PYTHON) scripts/view_references.py $(if $(REFERENCE),--reference-id $(REFERENCE),) $(ARGS)
 
-metrics:
-	$(PYTHON) scripts/view_metrics.py $(if $(DATASET_ID),--dataset-id $(DATASET_ID),) $(if $(METRIC),--metric $(METRIC),) $(ARGS)
 
-goals:
-	$(PYTHON) scripts/view_goals.py $(if $(GOAL),--goal $(GOAL),) $(ARGS)
 
-inspect:
-	@test -n "$(RUNS)" || { echo "RUNS=<arm>,<arm>,... is required (config ids, or arm ids from make datasets)"; exit 1; }
-	$(PYTHON) scripts/view_inspect.py --runs $(RUNS) $(if $(BASELINE),--baseline $(BASELINE),) $(ARGS)
 
 # EVAL ROUNDS (ADR-0004), optional: a round of a goal, its decisions as commands.
 # make round-open GOAL=g DATASET_ID=d ARGS='--from r1 --hypothesis "..." --keep a,b --retire c --reason "..."'
 round-open:
 	@test -n "$(GOAL)" -a -n "$(DATASET_ID)" || { echo "GOAL=<goal_id> DATASET_ID=<dataset> are required"; exit 1; }
-	$(PYTHON) scripts/round_open.py --goal $(GOAL) --dataset $(DATASET_ID) $(ARGS)
+	$(PYTHON) scripts/cli.py round-open --goal $(GOAL) --dataset $(DATASET_ID) $(ARGS)
+
+round-carry:
+	$(PYTHON) scripts/cli.py round-carry --goal $(GOAL) --round $(ROUND) $(ARGS)
 
 round-retire:
-	$(PYTHON) scripts/round_retire.py --goal $(GOAL) --round $(ROUND) $(ARGS)
+	$(PYTHON) scripts/cli.py round-retire --goal $(GOAL) --round $(ROUND) $(ARGS)
 
 round-close:
-	$(PYTHON) scripts/round_close.py --goal $(GOAL) --round $(ROUND) $(ARGS)
+	$(PYTHON) scripts/cli.py round-close --goal $(GOAL) --round $(ROUND) $(ARGS)
 
-rounds:
-	@test -n "$(GOAL)" || { echo "GOAL=<goal_id> is required"; exit 1; }
-	$(PYTHON) scripts/round_status.py --goal $(GOAL) $(if $(ROUND),--round $(ROUND),) $(ARGS)
 
 # MATERIALIZE THE DEMO DATASET FIRST, or eleven assertions silently skip.
 #
@@ -470,12 +467,12 @@ rounds:
 #
 # `-` so a machine that cannot materialize still runs the rest of the suite.
 smoke-fixture:
-	@test -d data/materialized/smoke_v1 || $(PYTHON) scripts/materialize.py --dataset-id smoke_v1 >/dev/null 2>&1 || true
+	@test -d data/materialized/smoke_v1 || $(PYTHON) scripts/cli.py dataset-materialize --dataset-id smoke_v1 >/dev/null 2>&1 || true
 # ...and the summarisation slice when its sources are present, because the two
 # corpus tests need it materialized as well as fetched. The setup note said
 # `fetch.py` was enough; it is not. Found by external review.
 	@test ! -d data/sources/cnn_dailymail_200 || test -d data/materialized/cnn_dailymail_200 || \
-	  $(PYTHON) scripts/materialize.py --dataset-id cnn_dailymail_200 >/dev/null 2>&1 || true
+	  $(PYTHON) scripts/cli.py dataset-materialize --dataset-id cnn_dailymail_200 >/dev/null 2>&1 || true
 
 test: smoke-fixture
 	$(PYTHON) tests/self_test.py
@@ -485,7 +482,7 @@ test: smoke-fixture
 guide-check:
 	$(PYTHON) tests/check_guide.py
 
-check: validate test guide-check
+check: format-check validate test guide-check
 	@echo ""
 	@echo "check: tree valid, self-tests pass, the GUIDE runs as written"
 
@@ -510,16 +507,10 @@ ci: check site-check
 # The judging PASS (ADR-0001): a validated LLM judge re-measures every arm's frozen outputs,
 # listwise and blind, into data/runs-judged/<SCORER>/. Billed, capped (the scorer's
 # cost_cap_usd, EVAL_MAX_COST_USD), resumable. ARGS=--dry-run prices it without calling
-# anything; ARGS=--no-calls re-reads stored verdicts for $0. Not `make judge`, which is the
-# panel below.
+# anything; ARGS=--no-calls re-reads stored verdicts for $0.
 judge-score:
 	@test -n "$(SCORER)" || { echo 'SCORER=<id in data/scorers/> is required'; exit 1; }
-	$(PYTHON) scripts/judge_score.py --dataset-id $(DATASET_ID) --scorer $(SCORER) $(ARGS)
-
-# The judge panel: promote -> judge -> aggregate -> report over candidate runs.
-# Keyless by default (FakeJudge).
-judge:
-	$(PYTHON) scripts/judge_panel.py --config config.example.yaml --use-fake-judge $(ARGS)
+	$(PYTHON) scripts/cli.py judge-score --dataset-id $(DATASET_ID) --scorer $(SCORER) $(ARGS)
 
 # ── housekeeping ────────────────────────────────────────────────────────────
 clean:

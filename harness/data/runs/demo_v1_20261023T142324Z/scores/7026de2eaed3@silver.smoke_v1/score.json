@@ -1,0 +1,10 @@
+{
+  "scorer": "7026de2eaed3",
+  "reference": "silver.smoke_v1",
+  "label": "",
+  "first": true,
+  "unset": [
+    "note",
+    "started_at"
+  ]
+}

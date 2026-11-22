@@ -1,1 +1,0 @@
-[{"text": "Yuri Larionov", "type": "location"}, {"text": "Furosemide", "type": "location"}, {"text": "Though", "type": "location"}, {"text": "December", "type": "location"}]

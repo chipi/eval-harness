@@ -1,1 +1,0 @@
-[{"text": "In Mexico", "type": "location"}, {"text": "NdeM", "type": "location"}]

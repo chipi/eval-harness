@@ -1,7 +1,0 @@
-```json
-[
-  {"text": "English Language group", "type": "organization"},
-  {"text": "1923", "type": "other"},
-  {"text": "Calcutta University", "type": "organization"}
-]
-```

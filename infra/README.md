@@ -23,7 +23,8 @@ infra/
   nginx/                 nginx.conf, one server block per host, the security headers
   caddy/                 evals.caddy, catalog.caddy, enabled.txt (which ones are live)
   sites/<host>.cfg       per-host public settings (the CSP report address)
-  inspector/             hooks.py (the inspector's observability)
+  inspector/             hooks.py (the inspector's observability), hooks_env.py (prod or dev, for both
+                         servers' hooks)
   catalog/               about.html (the overview's paragraph, --about)
   observability/         evals.alloy: the three containers' logs to VictoriaLogs (app=evals; service
                          evals-web for nginx, evals-inspector, evals-mcp; `release` and, on
@@ -61,7 +62,9 @@ infra/
     harness's generic hook point. It reports errors to GlitchTip through the Sentry SDK
     (environment `prod`, release `sha-<7>` from `RELEASE`), sends one OpenTelemetry span per API
     request to VictoriaTraces (service `evals-inspector`, namespace `evals`), and serves
-    `/metrics` (requests and latency per route and status, the caches, resident memory) on the
+    `/metrics` (requests and latency per route and status, an `/api/v1` request under its route's template
+    such as `/api/v1/goals/{goal}`, the caches, the view cache's hits, misses, waits, evictions and invalidations
+    and its weight against the budget, resident memory) on the
     container's port, which only the box's Alloy scrapes (`observability/evals.alloy`): Caddy
     forwards nothing but `/catalog/api/` to the inspector. The SDKs
     (`infra/inspector/requirements.txt`, pinned, pure-Python wheels) are vendored by `render.sh`
@@ -107,16 +110,50 @@ infra/
   - **Observability:** `inspector/mcp_hooks.py` (from `infra/mcp/hooks.py`) as `--hooks`: errors
     to GlitchTip project `evals-mcp` (`MCP_SENTRY_DSN` in `observability.env`, from the secret
     `EVALS_SENTRY_DSN_MCP`), one span per tool call to VictoriaTraces (service `evals-mcp`),
-    `/metrics` on the container's port only (Caddy forwards nothing but `/mcp`), and one Umami event
+    `/metrics` on the container's port only (calls per tool and outcome, the view cache's events and weight;
+    Caddy forwards nothing but `/mcp`), and one Umami event
     per call (`mcp:<tool>`, on the site's website; `UMAMI_SEND_URL`, the homelab Umami on the
     tailnet, rendered like the traces endpoint; a call the command itself refuses, exit 1 with its
     `ERROR:` line, is outcome `refused:command` and sends no event). To prove the error path, run
     `docker exec evals-mcp python /srv/evals/current/inspector/mcp_probe.py "homelab-probe evals-mcp
     <UTC time>"` (`infra/mcp/probe_error.py`): one labelled exception through the server's own hooks,
     its event id printed, to read back and delete. `evals.alloy` adds a `_msg` to each call line
-    (`mcp goals exit=0 12ms`), which VictoriaLogs needs. A call is logged as one JSON line: the tool, its
+    (`mcp goal-list exit=0 12ms`), which VictoriaLogs needs. A call is logged as one JSON line: the tool, its
     arguments' names (never their values), how it ended, its time; never the caller's address or
     user agent (those go to the hooks only, for the Umami visitor count).
+
+## Dev observability, on a workstation
+
+The same hooks report a branch's dev runs to the dev side of the homelab's observability (the contract:
+agentic-ai-homelab `docs/recipes/o11y-dev.md`), so the agent on that branch reads what its change did before a PR
+(the `o11y-dev` skill) and nothing of it reaches prod's reviews or the triage fleet.
+
+    make serve-dev  [ARGS="--port N"]   the catalog and inspector, with infra/inspector/hooks.py
+    make mcp-dev    [ARGS="--port N"]   the MCP server over HTTP, with infra/mcp/hooks.py
+
+Both vendor the SDKs into `harness/.build/vendor` (`make obs-vendor`, as `render.sh` does for prod; nothing goes
+into the venv) and set `EVALS_ENV=dev`. `infra/inspector/hooks_env.py` holds what differs from prod:
+
+- **Settings:** `~/.config/evals/observability-dev.env` (mode 600, never in the repository; `EVALS_OBS_ENV` names
+  another): `SENTRY_DSN_FILE` (the file homelab handed the GlitchTip `evals-dev` DSN in, `SENTRY_DSN=...`) or
+  `SENTRY_DSN`; `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT`, the tailnet's VictoriaTraces TLS node
+  (`/insert/opentelemetry/v1/traces`); `EVALS_LOGS_URL`, the tailnet's VictoriaLogs TLS node (`/insert/jsonline`).
+  The hosts are in the homelab handbook (`agent-access.md`, section 5); a workstation sends to the TLS nodes, not
+  the host ports.
+- **Labels:** GlitchTip events in `evals-dev` (40), environment `dev`, tags `service` and `worktree` (the git
+  branch; `EVALS_WORKTREE` overrides), release `dev-<7>` of the checkout's commit; spans with the resource
+  attributes `deployment.environment=dev` and `worktree`; one log line per request or tool call and per error, its
+  stream `service`, `environment=dev`, `worktree`, with `level`. In prod the box's collector reads the logs from
+  stdout, so the hooks push none.
+- **Refusals:** a dev run with a prod GlitchTip project (`evals-web` 36, `evals-inspector` 37, `evals-mcp` 38), or
+  a prod run with `evals-dev`, sends nothing to GlitchTip and says so at start; `EVALS_ENV` other than `prod` or
+  `dev` turns everything but `/metrics` off. Umami counts prod's callers only.
+- **Proof:** `infra/inspector/test_hooks_env.py` (in `make budget-check`): the labels, the refusals, prod unchanged,
+  the lines sent at exit. Checked live on 2026-11-16 from a workstation: a dev error, log lines and traces of both
+  servers read back by branch (`worktree:080`), and prod's spans of the same services still `prod` with no worktree.
+
+A dev error never becomes a GitHub issue, and a dev agent never resolves, ignores or deletes one: `evals-dev` issues
+close on their own three days after they were last seen.
 
 ## What `deploy.sh` checks before a release counts as live
 
@@ -131,7 +168,7 @@ infra/
    `/api/health` and two real comparisons taken from the catalog's own links: one arm, and
    the first group of arms on one metric (`deploy/probe_link.sh` picks it; `make -C harness
    test` runs the same probe against the tutorial project). Both must come back with verdict
-   rows. The MCP server answers `/mcp/health` and a real `goals` call (up to 120 s; a warning
+   rows. The MCP server answers `/mcp/health` and a real `goal-list` call (up to 120 s; a warning
    past 30 s, which means the precomputed p cache was not read: without it the call takes ~50 s).
 5. The inspector once `--warm` is done (its log line, up to 300 s): running, never restarted,
    under 80% of its memory limit, else the release rolls back.
@@ -141,7 +178,13 @@ infra/
 
 Any failure in 3 or 4 rolls back to the previous release: the symlink, the containers (the MCP
 server removed when the previous release had none) and
-the config. Then the Alloy drop-in and the Caddy vhosts are installed, each validated with
+the config. The release's data is in the store its own `inspector/config.yaml` names, so a
+rollback may cross from a SQLite release to a files one and back: `render.sh` makes the SQLite
+release by default (`inspector/data/project.sqlite` alone, sealed, with `store: sqlite`;
+`EVALS_STORE=files` makes the files layout), both services open it read-only from the read-only
+mount (`EVAL_STORE_READONLY`, or a folder that is not writable: no lock file, nothing created),
+and the inspector keeps the goals' tests in the release's `inspector/cache/evh-p.jsonl` as the
+MCP server does. Then the Alloy drop-in and the Caddy vhosts are installed, each validated with
 the whole shared set and restored on failure.
 
 Verified before the first deploy: the release rendered, then deploy.sh steps 1–4 run on a

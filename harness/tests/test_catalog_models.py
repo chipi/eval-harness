@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The catalog's Models page, a page per model, the arms page's badge and `evh models` (RFC-020, UXS-001).
+"""The catalog's Models page, a page per model, the arms page's badge and `evh model-list` (RFC-020, UXS-001).
 
 python tests/test_catalog_models.py
 
@@ -8,8 +8,6 @@ LLM that needs a check, an ML model nobody onboarded, a bare record no arm uses,
 record), and on a copy of the project's committed records (the migrated ones and gemma4-12b).
 """
 
-import contextlib
-import io
 import json
 import re
 import shutil
@@ -21,20 +19,24 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import yaml
 from evaluation_harness import catalog_build as cb
 from evaluation_harness import catalog_models as cm
-from evaluation_harness import catalog_views as cv
 from evaluation_harness._check import check, summary
 from evaluation_harness.catalog_adapter import HarnessAdapter
+from evaluation_harness.model.entity import Problem
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _catalog_fixture as fx
+import _model_records
+import _ops
 
 COMMITTED = Path(__file__).resolve().parents[1] / "data" / "models"
+COMMITTED_DEPLOYMENTS = COMMITTED.parent / "deployments"
 
 
 def run(data, run_id, config, params, record=None, deployment=None):
-    d = data / "runs" / run_id
-    (d / "outputs").mkdir(parents=True)
     m = {
         "run_id": run_id,
         "dataset_id": "ds1",
-        "config_id": config,
+        "system_id": config,
         "primary_metric": "acc",
         "metric_kinds": {"acc": "quality"},
         "fingerprint": {"data": {"reference_id": "gold/ds1"}},
@@ -45,34 +47,33 @@ def run(data, run_id, config, params, record=None, deployment=None):
         m["model_record"] = record
     if deployment:
         m["deployment_id"] = deployment
-    (d / "metrics.json").write_text(json.dumps(m))
-    (d / "predictions.jsonl").write_text(
-        "".join(json.dumps({"item_id": f"i{i}", "acc": 0.5}) + "\n" for i in range(4))
+    fx.put(
+        data,
+        run_id,
+        m,
+        "".join(json.dumps({"item_id": f"i{i}", "acc": 0.5}) + "\n" for i in range(4)),
+        outputs={"i0": "out"},
     )
-    (d / "outputs" / "i0.txt").write_text("out")
 
 
 def record(data, doc):
-    (data / "models").mkdir(exist_ok=True)
-    (data / "models" / f"{doc['model_id']}.yaml").write_text(yaml.safe_dump(doc))
+    _model_records.write(data, doc)
 
 
 def view(A, argv):
-    buf = io.StringIO()
-    real = cv.load_catalog_adapter
-    cv.load_catalog_adapter = lambda spec=None: A
-    try:
-        with contextlib.redirect_stdout(buf):
-            cv.VIEWS[argv[0]](argv[1:])
-    finally:
-        cv.load_catalog_adapter = real
-    return buf.getvalue()
+    """What `evh model-list` / `model-show` / `arm-list` print, read through A: ["models", "--kind", "ml"], ["arms"]."""
+    if argv[0] == "arms":
+        return _ops.view("arm-list", A)
+    kw = {k[2:]: v for k, v in zip(argv[1::2], argv[2::2])}
+    if "model" in kw:
+        return _ops.view("model-show", A, model=kw["model"])
+    return _ops.view("model-list", A, **kw)
 
 
 def refused(A, argv):
     try:
         view(A, argv)
-    except SystemExit as e:
+    except Problem as e:
         return str(e)
     return ""
 
@@ -388,8 +389,8 @@ with tempfile.TemporaryDirectory() as td:
     check(
         "arms page: the model once, linked to its record, with smoked / smoke: check; no chip where no smoke ran",
         'href="models/gem.html"' in a_row
-        and '<span class="role">smoked</span>' in a_row
-        and '<span class="role">smoke: check</span>' in b_row
+        and '<span class="smoke">smoked</span>' in a_row
+        and '<span class="smoke">smoke: check</span>' in b_row
         and "not smoked" not in c_row
         and 'href="models/span.html"' in c_row,
     )
@@ -410,11 +411,15 @@ with tempfile.TemporaryDirectory() as td:
         counts,
     )
     nav = re.findall(r'<nav class="nav">(.*?)</nav>', home)[0]
-    check("nav: Models is under Arms", ">Models<" in nav and nav.count("<a ") == 12)
+    check(
+        "nav: Models is under Arms",
+        ">Models<" in nav and nav.count("<a ") == 14,
+        nav.count("<a "),
+    )
 
     listing = view(A, ["models"])
     check(
-        "evh models: a row per record with kind, where, settings, onboarding and arms",
+        "evh model-list: a row per record with kind, where, settings, onboarding and arms",
         all(k in listing for k in ("gem", "hosted-x", "span", "bare"))
         and "reasoning off" in listing
         and "pass 2026-10-31" in listing
@@ -424,7 +429,7 @@ with tempfile.TemporaryDirectory() as td:
     )
     names = lambda text: {ln.split()[0] for ln in text.splitlines()[2:] if ln.strip()}  # noqa: E731
     check(
-        "evh models --kind / --where / --status: the page's chips",
+        "evh model-list --kind / --where / --status: the page's chips",
         names(view(A, ["models", "--kind", "ml"])) == {"span"}
         and names(view(A, ["models", "--where", "hosted"])) == {"hosted-x"}
         and names(view(A, ["models", "--where", "self-hosted"])) == {"gem"}
@@ -433,13 +438,17 @@ with tempfile.TemporaryDirectory() as td:
         and names(view(A, ["models", "--status", "vetted"])) == {"gem"},
     )
     check(
-        "evh models: a filter nothing matches says so",
+        "evh model-list: a filter nothing matches says so",
         "no model matches" in view(A, ["models", "--kind", "baseline", "--status", "vetted"]),
     )
     one = view(A, ["models", "--model", "gem"])
-    check("evh models --model: each arm's own settings, as on its page", "max_tokens 2048" in one, one[-800:])
     check(
-        "evh models --model: facts, deployments with what differs, each one's onboarding, history, arms with their smoke",
+        "evh model-list --model: each arm's own settings, as on its page",
+        "max_tokens 2048" in one,
+        one[-800:],
+    )
+    check(
+        "evh model-list --model: facts, deployments with what differs, each one's onboarding, history, arms with their smoke",
         all(
             x in one
             for x in (
@@ -462,12 +471,12 @@ with tempfile.TemporaryDirectory() as td:
         one,
     )
     check(
-        "evh models --model: an unknown record is refused",
+        "evh model-list --model: an unknown record is refused",
         "no model 'nope'" in refused(A, ["models", "--model", "nope"]),
     )
     arms_cli = view(A, ["arms"])
     check(
-        "evh arms: a model record column with the smoke, only when an arm has a record",
+        "evh arm-list: a model record column with the smoke, only when an arm has a record",
         "model record" in arms_cli and "gem@mac (smoked)" in arms_cli and "span (not smoked)" in arms_cli,
         arms_cli,
     )
@@ -479,7 +488,7 @@ with tempfile.TemporaryDirectory() as td:
     shutil.rmtree(tmp / "site_empty", ignore_errors=True)
     cb.build(E, tmp / "site_empty")
     check(
-        "no records: the page says how to add one, the tile counts 0, evh models says none",
+        "no records: the page says how to add one, the tile counts 0, evh model-list says none",
         "No model record yet" in (tmp / "site_empty" / "models.html").read_text()
         and 'title="0 models"' in (tmp / "site_empty" / "index.html").read_text()
         and "no model records" in view(E, ["models"]),
@@ -488,6 +497,8 @@ with tempfile.TemporaryDirectory() as td:
 with tempfile.TemporaryDirectory() as td:
     committed = Path(td) / "data"
     shutil.copytree(COMMITTED, committed / "models")
+    shutil.copytree(COMMITTED_DEPLOYMENTS, committed / "deployments")
+    _model_records.stamp(committed)
     n = len(list(COMMITTED.glob("*.yaml")))
     A = HarnessAdapter(committed)
     out = Path(td) / "site"
@@ -525,7 +536,7 @@ with tempfile.TemporaryDirectory() as td:
     )
     cli = view(A, ["models", "--model", "gemma4-12b"])
     check(
-        "evh models --model gemma4-12b: its facts, build and history",
+        "evh model-show gemma4-12b: its facts, build and history",
         all(
             x in cli
             for x in (
@@ -537,6 +548,107 @@ with tempfile.TemporaryDirectory() as td:
         ),
         cli,
     )
-    check("evh models: every committed record listed", len(view(A, ["models"]).splitlines()) == n + 2)
+    check("evh model-list: every committed record listed", len(view(A, ["models"]).splitlines()) == n + 2)
+
+# Code under test as a record of its own (the fleet's feedback 27): kind code, its repo and versions, no aliases;
+# an arm names it with model_record like any record; its page and `evh model-list --model` show the versions.
+import jsonschema  # noqa: E402
+from evaluation_harness import _models  # noqa: E402
+
+SCHEMA = json.loads((Path(__file__).resolve().parents[1] / "schemas" / "model.schema.json").read_text())
+fleet = {
+    "model_id": "triage-fleet",
+    "kind": "code",
+    "name": "The triage fleet",
+    "repo": "https://github.com/chipi/agentic-ai-homelab",
+    "versions": [
+        {
+            "commit": "f07efa9",
+            "deployed": [{"from": "2026-10-02T00:00:00Z", "to": "2026-10-20T00:00:00Z"}],
+            "note": "the dedup key",
+        },
+        {
+            "commit": "9a318e61",
+            "deployed": [{"from": "2026-10-20T00:00:00Z"}],
+        },
+    ],
+}
+FULL = "9a318e61" + "0" * 32  # the commit a replay recorded, which the version names by its start
+#: The records a replay and a person's naming write (RFC-030): 135 items at the second version, two differing, both named.
+FAITHFULNESS = {
+    "n": 1, "model_id": "triage-fleet", "system_id": "fleet_replay_v1", "dataset_id": "ds1", "items_sha256": "a" * 64,
+    "versions_sha256": "a" * 64, "adapter_sha256": None, "commits": {FULL: 135}, "production_run": "prod", "at": "2026-11-05",
+    "counts": {"items": 135, "agree": 133, "differ": 2, "replay_errors": 0, "production_missing": 0}, "coverage": {},
+    "disagreements": [{"item_id": i, "kind": "differ", "commit": FULL} for i in ("clock slack", "a reopen")],
+    "actor": {"type": "person", "name": "t"},
+}  # fmt: skip
+check(
+    "code record: valid without aliases", not list(jsonschema.Draft202012Validator(SCHEMA).iter_errors(fleet))
+)
+check(
+    "code record: an llm without aliases is still refused",
+    any(
+        "aliases" in x.message
+        for x in jsonschema.Draft202012Validator(SCHEMA).iter_errors({"model_id": "m", "kind": "llm"})
+    ),
+)
+with tempfile.TemporaryDirectory() as td:
+    data = Path(td) / "data"
+    (data / "runs").mkdir(parents=True)
+    record(data, fleet)
+    (data / "faithfulness" / "triage-fleet").mkdir(parents=True)
+    (data / "faithfulness" / "triage-fleet" / "1.json").write_text(json.dumps(FAITHFULNESS))
+    (data / "faithfulness" / "triage-fleet" / "1.exceptions.jsonl").write_text(
+        "".join(
+            json.dumps({"item_id": i, "cause": "c", "actor": {"type": "person", "name": "t"}, "at": "x"})
+            + "\n"
+            for i in ("clock slack", "a reopen")
+        )
+    )
+    run(data, "fleet_guard_v1_20261105", "fleet_guard_v1", {"repo": "signal-fleet"}, record="triage-fleet")
+    A = HarnessAdapter(data)
+    out = Path(td) / "site"
+    cb.build(A, out)
+    page = (out / "models" / "triage-fleet.html").read_text()
+    check(
+        "code record page: its repo and its versions, newest first, faithfulness where a replay checked it",
+        "chipi/agentic-ai-homelab" in page
+        and page.find("9a318e61") < page.find("f07efa9")
+        and "133 of 135 agreed, 2 named" in page
+        and "not checked" in page
+        and "2026-10-20 to now" in page
+        and "model-onboard" not in page,
+        page[page.find("versions") :][:600],
+    )
+    models = (out / "models.html").read_text()
+    row = rows_of(models, "triage-fleet")
+    check(
+        "code record: listed on the Models page with its latest version and versions checked, its arm counted, never 'not onboarded'",
+        'href="models/triage-fleet.html"' in models
+        and "9a318e61" in row
+        and "2 version(s)" in row
+        and "1 checked for faithfulness" in row
+        and 'href="arms.html?q=triage-fleet"' in row
+        and "not onboarded" not in row,
+        row,
+    )
+    cli = view(A, ["models", "--model", "triage-fleet"])
+    check(
+        "evh model-list --model: a code record's repository and versions, no onboarding",
+        "repository" in cli and "9a318e61" in cli and "133 of 135 agreed" in cli and "onboarding" not in cli,
+        cli,
+    )
+    listed = view(A, ["models"])
+    check(
+        "evh model-list: the code record's row says its versions, never that it was not onboarded",
+        "2 version(s), 1 checked for faithfulness" in listed,
+        listed,
+    )
+    dup = {**fleet, "versions": [*fleet["versions"], {"commit": "f07efa9"}]}
+    record(data, dup)
+    check(
+        "code record: a version listed twice is named (V18)",
+        any("version 'f07efa9' is listed more than once" in x for x in _models.problems(data)),
+    )
 
 sys.exit(summary())

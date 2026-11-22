@@ -58,6 +58,7 @@ TUTORIALS = [
         "4-rounds-and-versions.md",
         "5-catalog-and-inspector.md",
         "6-datasets-from-production.md",
+        "8-the-workbench.md",
     )
 ]
 FENCE = re.compile(r"^```(\w*)\s*$")
@@ -109,6 +110,8 @@ def setup(tmp: Path) -> tuple:
     proj.mkdir()
     env = {
         **os.environ,
+        # The guide is typed by a person at a terminal; run here it has none, so it names that person.
+        "EVH_ACTOR": "person:reader",
         "PATH": f"{bindir}{os.pathsep}{os.environ.get('PATH', '')}",
         "PYTHONPATH": str(site),
         "PYTHONDONTWRITEBYTECODE": "1",
@@ -121,7 +124,6 @@ def setup(tmp: Path) -> tuple:
     for k in (
         "EVAL_HOME",
         "EVAL_DATA_DIR",
-        "EVAL_RUNS_DIR",
         "OPENROUTER_API_KEY",
         "LITELLM_BASE_URL",
         "EVAL_MAX_COST_USD",

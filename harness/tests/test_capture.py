@@ -10,7 +10,6 @@ check going red on each kind of bad record; a capture's files and hashes; no ove
 
 import json
 import os
-import shutil
 import subprocess
 import sys
 import tempfile
@@ -18,19 +17,24 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parents[1] / "scripts"
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from evaluation_harness import _importers  # noqa: E402
+from evaluation_harness import _common, _format, _importers, _store  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runstore  # noqa: E402
 
 proj = Path(tempfile.mkdtemp(prefix="evh-capture-"))
 (proj / "data").mkdir()
+_runstore.write_text(proj, _format.NAME, f"format: {_format.FORMAT}\n")
 env = dict(os.environ, EVAL_HOME=str(proj))
 env.pop("EVAL_DATA_DIR", None)
 
 
+import _cli  # noqa: E402
+
+
 def evh(*args):
-    return subprocess.run(
-        [sys.executable, str(HERE / "cli.py"), *args], cwd=proj, env=env, capture_output=True, text=True
-    )
+    return _cli.run(proj, env, *args)
 
 
 def out(r):
@@ -95,13 +99,13 @@ check(
 )
 
 # ── importer-check ──────────────────────────────────────────────────────────────────────────
-r = evh("importer-check", "jsonl", "--query", json.dumps({"path": "rows.jsonl"}))
+r = evh("importer-check", "--importer", "jsonl", "--query", json.dumps({"path": "rows.jsonl"}))
 check("importer-check: a good file passes", r.returncode == 0 and r.stdout.rstrip().endswith("PASS"), out(r))
 
 
 def bad_file(name, lines):
     (proj / name).write_text("".join(json.dumps(x) + "\n" for x in lines))
-    return evh("importer-check", "jsonl", "--query", json.dumps({"path": name}))
+    return evh("importer-check", "--importer", "jsonl", "--query", json.dumps({"path": name}))
 
 
 for label, lines, says in (
@@ -112,7 +116,7 @@ for label, lines, says in (
     ("no body and no fields", [{"id": "e", "body": None}], "every record is well-formed"),
 ):
     r = bad_file("bad.jsonl", lines)
-    check(f"importer-check: red on {label}", r.returncode == 1 and f"FAIL {says}" in out(r), out(r)[-300:])
+    check(f"importer-check: red on {label}", r.returncode == 6 and f"FAIL {says}" in out(r), out(r)[-300:])
 
 (proj / "flaky.py").write_text(
     "import random\n"
@@ -121,13 +125,13 @@ for label, lines, says in (
     "    def records(self, query):\n"
     "        yield {'id': 'f', 'body': str(random.random())}\n"
 )
-r = evh("importer-check", "flaky.py:Importer", "--query", "{}")
+r = evh("importer-check", "--importer", "flaky.py:Importer", "--query", "{}")
 check(
     "importer-check: red when two reads differ",
-    r.returncode == 1 and "FAIL two reads" in out(r),
+    r.returncode == 6 and "FAIL two reads" in out(r),
     out(r)[-300:],
 )
-r = evh("importer-check", "../escape", "--query", "{}")
+r = evh("importer-check", "--importer", "../escape", "--query", "{}")
 check(
     "importer-check: a name that would leave data/ is refused",
     r.returncode != 0 and "lowercase" in out(r),
@@ -137,16 +141,20 @@ check(
 # ── capture ─────────────────────────────────────────────────────────────────────────────────
 q = json.dumps({"path": "rows.jsonl", "until": "2026-10-06"})
 r = evh("capture", "--importer", "jsonl", "--query", q, "--capture", "c1")
-cap = proj / "data" / "captures" / "c1"
-doc = json.loads((cap / "capture.json").read_text()) if (cap / "capture.json").is_file() else {}
+_common.project_root.cache_clear()  # the importers above resolved this process's project; _runstore aims by EVAL_HOME
+doc = (
+    _runstore.read_json(proj, "captures/c1/capture.json")
+    if _runstore.is_file(proj, "captures/c1/capture.json")
+    else {}
+)
 check(
     "capture: the records in the window, each a file, each hashed",
     r.returncode == 0
     and doc.get("n_records") == 2
-    and sorted(p.name for p in (cap / "records").iterdir()) == ["a1.json", "a2.json"],
+    and _runstore.listdir(proj, "captures/c1/records") == ["a1.json", "a2.json"],
     out(r),
 )
-rec = json.loads((cap / "records" / "a1.json").read_text()) if doc else {}
+rec = _runstore.read_json(proj, "captures/c1/records/a1.json") if doc else {}
 check(
     "capture: capture.json holds the importer, its code hash, the query and the window",
     doc.get("importer") == "jsonl"
@@ -172,9 +180,7 @@ r = evh(
     "--since-capture",
     "c1",
 )
-doc2 = (
-    json.loads((proj / "data" / "captures" / "c2" / "capture.json").read_text()) if r.returncode == 0 else {}
-)
+doc2 = _runstore.read_json(proj, "captures/c2/capture.json") if r.returncode == 0 else {}
 check(
     "capture --since-capture: starts where the earlier one ended, skips what it holds",
     doc2.get("query", {}).get("since") == "2026-10-06"
@@ -185,7 +191,7 @@ check(
 r = evh("capture", "--importer", "jsonl", "--query", json.dumps({"path": "bad.jsonl"}), "--capture", "c3")
 check(
     "capture: malformed records write nothing",
-    r.returncode != 0 and not (proj / "data" / "captures" / "c3").exists(),
+    r.returncode != 0 and not _runstore.exists(proj, "captures/c3"),
     out(r)[-200:],
 )
 
@@ -199,16 +205,16 @@ check(
     " ('a2', '2026-10-05T10:00:00Z'), ('a3', '2026-10-09T10:00:00Z')):\n"
     "            yield {'id': i, 'body': i, 'created_at': t}\n"
 )
-r = evh("importer-check", "deaf.py:Importer", "--query", "{}")
+r = evh("importer-check", "--importer", "deaf.py:Importer", "--query", "{}")
 check(
     "importer-check: red on an importer that ignores since",
-    r.returncode == 1 and "FAIL it keeps to since" in out(r),
+    r.returncode == 6 and "FAIL it keeps to since" in out(r),
     out(r)[-300:],
 )
-r = evh("importer-check", "deaf.py:Importer", "--query", json.dumps({"since": "2026-10-04"}))
+r = evh("importer-check", "--importer", "deaf.py:Importer", "--query", json.dumps({"since": "2026-10-04"}))
 check(
     "importer-check: red when a record falls outside the query's own window",
-    r.returncode == 1 and "FAIL every record is inside the window" in out(r) and "a0" in out(r),
+    r.returncode == 6 and "FAIL every record is inside the window" in out(r) and "a0" in out(r),
     out(r)[-300:],
 )
 r = evh(
@@ -219,7 +225,7 @@ check(
     r.returncode != 0
     and "a0: before since" in out(r)
     and "--late" in out(r)
-    and not (proj / "data" / "captures" / "c4").exists(),
+    and not _runstore.exists(proj, "captures/c4"),
     out(r)[-300:],
 )
 r = evh(
@@ -234,15 +240,13 @@ r = evh(
     "c1",
     "--late",
 )
-doc4 = (
-    json.loads((proj / "data" / "captures" / "c4" / "capture.json").read_text()) if r.returncode == 0 else {}
-)
+doc4 = _runstore.read_json(proj, "captures/c4/capture.json") if r.returncode == 0 else {}
 check(
     "capture --late: a record older than since that the earlier capture lacks is kept, listed as late",
     doc4.get("late") == ["a0"] and sorted(x["id"] for x in doc4.get("records", [])) == ["a0", "a3"],
     out(r)[-300:] + json.dumps(doc4)[:300],
 )
-shutil.rmtree(proj / "data" / "captures" / "c4")
+_runstore.rmtree(proj, "captures/c4")
 
 # ── dataset-from-capture ────────────────────────────────────────────────────────────────────
 more = [{"id": f"m{i}", "body": f"Same  text {i % 3}", "kind": "abc"[i % 3]} for i in range(12)]
@@ -250,21 +254,21 @@ more.append({"id": "m_dup", "body": "same text 0", "kind": "a"})
 (proj / "more.jsonl").write_text("".join(json.dumps(x) + "\n" for x in more))
 evh("capture", "--importer", "jsonl", "--query", json.dumps({"path": "more.jsonl"}), "--capture", "m")
 (proj / "data" / "fields").mkdir(exist_ok=True)
-(proj / "data" / "fields" / "kinds.yaml").write_text(
+_runstore.write_text(
+    proj,
+    "fields/kinds.yaml",
     "fieldset_id: kinds\ndescription: test\nfields:\n"
-    "  - {name: kind, type: choice, values: [a, b, c, x, y, ''], label: Kind, description: a kind, public: true}\n"
+    "  - {name: kind, type: choice, values: [a, b, c, x, y, ''], label: Kind, description: a kind, public: true}\n",
 )
-ds_dir = proj / "data" / "datasets"
 
 
 def ds(name):
-    return json.loads((ds_dir / f"{name}.json").read_text())
+    return _runstore.read_json(proj, f"datasets/{name}.json")
 
 
-r = evh("dataset-from-capture", "c1", "--dataset-id", "cap_v1")
+r = evh("dataset-from-capture", "--capture", "c1", "--dataset-id", "cap_v1")
 d = ds("cap_v1") if r.returncode == 0 else {}
-src = proj / "data" / "sources" / "cap_v1"
-cap1 = json.loads((proj / "data" / "captures" / "c1" / "capture.json").read_text())
+cap1 = _runstore.read_json(proj, "captures/c1/capture.json")
 check(
     "from-capture: every record's body is an item, its hash the capture's body_sha256",
     sorted(it["item_id"] for it in d.get("items", [])) == ["a1", "a2"]
@@ -274,7 +278,11 @@ check(
 )
 check(
     "from-capture: only the body: the outcome is nowhere in the item's bytes",
-    src.is_dir() and all("fixed" not in p.read_text() for p in src.iterdir()),
+    _runstore.exists(proj, "sources/cap_v1")
+    and all(
+        "fixed" not in _runstore.read_text(proj, f"sources/cap_v1/{n}")
+        for n in _runstore.listdir(proj, "sources/cap_v1")
+    ),
 )
 check(
     "from-capture: made_from records the capture, its hash and the rules",
@@ -288,13 +296,13 @@ check("from-capture: the dataset materializes, hashes checked", r.returncode == 
 r = evh("validate")
 check("from-capture: validate passes (V1 schema, V2, V4)", r.returncode == 0, out(r)[-400:])
 
-r = evh("dataset-from-capture", "m", "--dataset-id", "m_where", "--where", "kind:b")
+r = evh("dataset-from-capture", "--capture", "m", "--dataset-id", "m_where", "--where", "kind:b")
 check(
     "from-capture --where on a field",
     r.returncode == 0 and {it["item_id"] for it in ds("m_where")["items"]} == {"m1", "m4", "m7", "m10"},
     out(r)[-200:],
 )
-r = evh("dataset-from-capture", "m", "--dataset-id", "m_text", "--dedup", "text")
+r = evh("dataset-from-capture", "--capture", "m", "--dataset-id", "m_text", "--dedup", "text")
 check(
     "from-capture --dedup text: case and whitespace folded, the first kept",
     r.returncode == 0
@@ -302,16 +310,37 @@ check(
     and "m_dup" not in {it["item_id"] for it in ds("m_text")["items"]},
     out(r)[-200:],
 )
-r = evh("dataset-from-capture", "m", "--dataset-id", "m_exact", "--dedup", "exact")
+r = evh("dataset-from-capture", "--capture", "m", "--dataset-id", "m_exact", "--dedup", "exact")
 check(
     "from-capture --dedup exact: only identical bodies",
     r.returncode == 0 and len(ds("m_exact")["items"]) == 4,
 )
-r = evh("dataset-from-capture", "m", "--dataset-id", "m_nos", "--sample", "3")
+r = evh("dataset-from-capture", "--capture", "m", "--dataset-id", "m_nos", "--sample", "3")
 check(
     "from-capture no longer samples: the capture does",
     r.returncode != 0 and "--sample" in out(r),
     out(r)[-200:],
+)
+# The fleet's beta (2026-11-12): the folder a dataset's items go in held the capture's own export, and it was deleted
+# without a word. A file the harness did not write there is refused, and stays.
+_runstore.write_text(proj, "sources/m_own/export.jsonl", '{"id": "x"}\n')
+r = evh("dataset-from-capture", "--capture", "m", "--dataset-id", "m_own")
+check(
+    "from-capture: a folder holding a file the harness did not write is refused, the file kept",
+    r.returncode != 0
+    and "export.jsonl" in out(r)
+    and _runstore.exists(proj, "sources/m_own/export.jsonl")
+    and not _runstore.exists(proj, "datasets/m_own.json"),
+    out(r)[-300:],
+)
+r = evh("dataset-from-capture", "--capture", "m", "--dataset-id", "m_where", "--where", "kind:b", "--force")
+check("from-capture --force: the dataset's own items are replaced", r.returncode == 0, out(r)[-300:])
+_runstore.write_text(proj, "sources/m_where/notes.txt", "mine\n")
+r = evh("dataset-from-capture", "--capture", "m", "--dataset-id", "m_where", "--where", "kind:b", "--force")
+check(
+    "from-capture --force: a file beside the dataset's items that it did not write is refused, kept",
+    r.returncode != 0 and "notes.txt" in out(r) and _runstore.exists(proj, "sources/m_where/notes.txt"),
+    out(r)[-300:],
 )
 
 # ── a sample is the capture's (owner, 2026-11-01: 1 billion records a day are sampled as they are read) ──
@@ -325,7 +354,7 @@ want = sorted(x["id"] for x in logs if x["created_at"] < "2026-10-11" and _impor
 
 
 def capture_ids(cid):
-    d = json.loads((proj / "data" / "captures" / cid / "capture.json").read_text())
+    d = _runstore.read_json(proj, f"captures/{cid}/capture.json")
     return d, sorted(x["id"] for x in d["records"])
 
 
@@ -414,12 +443,13 @@ check(
     r.returncode != 0 and "keeps it" in out(r),
     out(r)[-200:],
 )
-r = evh("captures", "--capture", "s1")
+r = evh("capture-show", "s1")
 check("captures: names the sample", "a sample: rate 0.1, seed 7" in out(r), out(r)[-300:])
 for c in ("s1", "s2", "s3", "s4"):
-    shutil.rmtree(proj / "data" / "captures" / c)
+    _runstore.rmtree(proj, f"captures/{c}")
 r = evh(
     "dataset-from-capture",
+    "--capture",
     "m",
     "--dataset-id",
     "m_f",
@@ -435,7 +465,7 @@ check(
     r.returncode == 0 and all(it.get("fields") == {"kind": "a"} for it in ds("m_f")["items"]),
     out(r)[-300:],
 )
-r = evh("dataset-from-capture", "c2", "--dataset-id", "cap_v2", "--from", "cap_v1")
+r = evh("dataset-from-capture", "--capture", "c2", "--dataset-id", "cap_v2", "--from", "cap_v1")
 lin = ds("cap_v2").get("derived_from", {}) if r.returncode == 0 else {}
 check(
     "from-capture --from: the earlier version's items stay, the new are added, lineage recorded",
@@ -449,7 +479,7 @@ check(
 # correct an item's body, kept the old body and reported "0 changed".
 (proj / "fix.jsonl").write_text(json.dumps({"id": "a1", "body": "The corrected body of a1."}) + "\n")
 evh("capture", "--importer", "jsonl", "--query", json.dumps({"path": "fix.jsonl"}), "--capture", "c_fix")
-r = evh("dataset-from-capture", "c_fix", "--dataset-id", "cap_fixed", "--from", "cap_v1")
+r = evh("dataset-from-capture", "--capture", "c_fix", "--dataset-id", "cap_fixed", "--from", "cap_v1")
 lin = ds("cap_fixed").get("derived_from", {}) if r.returncode == 0 else {}
 a1: dict = (
     next(
@@ -463,13 +493,23 @@ check(
     "from-capture --from: a captured record replaces the earlier version's item of its id, counted changed",
     lin.get("changed") == ["a1"]
     and lin.get("added") == []
-    and "corrected body" in (proj / "data" / "sources" / "cap_fixed" / a1.get("source_path", "-")).read_text()
+    and "corrected body" in _runstore.read_text(proj, f"sources/cap_fixed/{a1.get('source_path', '-')}")
     if a1
     else False,
     out(r)[-300:],
 )
 # and a field set alone keeps the fields it declares (it kept none, silently)
-r = evh("dataset-from-capture", "m", "--dataset-id", "m_fs", "--fieldset", "kinds", "--where", "kind:b")
+r = evh(
+    "dataset-from-capture",
+    "--capture",
+    "m",
+    "--dataset-id",
+    "m_fs",
+    "--fieldset",
+    "kinds",
+    "--where",
+    "kind:b",
+)
 check(
     "from-capture --fieldset alone: every field the set declares is kept",
     r.returncode == 0
@@ -477,15 +517,15 @@ check(
     and all(it.get("fields") == {"kind": "b"} for it in ds("m_fs")["items"]),
     out(r)[-300:],
 )
-r = evh("dataset-from-capture", "c1", "--dataset-id", "cap_v1")
+r = evh("dataset-from-capture", "--capture", "c1", "--dataset-id", "cap_v1")
 check(
     "from-capture: a dataset is never overwritten without --force", r.returncode != 0 and "frozen" in out(r)
 )
-rec_file = proj / "data" / "captures" / "c1" / "records" / "a1.json"
-rec_doc = json.loads(rec_file.read_text())
+REC = "captures/c1/records"
+rec_doc = _runstore.read_json(proj, f"{REC}/a1.json")
 rec_doc["outcome"] = {"verdict": "noise"}
-rec_file.write_text(json.dumps(rec_doc))
-r = evh("dataset-from-capture", "c1", "--dataset-id", "cap_tampered")
+_runstore.write_text(proj, f"{REC}/a1.json", json.dumps(rec_doc))
+r = evh("dataset-from-capture", "--capture", "c1", "--dataset-id", "cap_tampered")
 check(
     "from-capture: a record edited since the capture is refused",
     r.returncode != 0 and "does not match the hash" in out(r),
@@ -500,28 +540,35 @@ check(
     out(r)[-400:],
 )
 rec_doc["outcome"] = {"verdict": "fixed"}  # put it back as it was
-rec_file.write_text(json.dumps(rec_doc))
+_runstore.write_text(proj, f"{REC}/a1.json", json.dumps(rec_doc))
+
+
+def put_record(name, content):
+    # the directory may be gone (files store); the store makes it where it keeps directories
+    with _runstore._InProject(proj) as data:
+        _store.mkdir(data / REC, parents=True, exist_ok=True)
+        _store.write_bytes(data / REC / name, content)
+
 
 # ── V17: a capture whose records are not fetched is named, not failed; a partial one fails ─────
-recs_dir = rec_file.parent
-aside = proj / "records-aside"
-shutil.move(str(recs_dir), str(aside))
+aside = {n: _runstore.read_bytes(proj, f"{REC}/{n}") for n in _runstore.listdir(proj, REC)}
+_runstore.rmtree(proj, REC)
 r = evh("validate")
 check(
     "V17: a capture with no record files (not fetched) is named, not failed",
     "not fetched here" in out(r) and "c1" in out(r) and "FAIL V17" not in out(r),
     out(r)[-400:],
 )
-recs_dir.mkdir()
-shutil.copy(aside / "a2.json", recs_dir / "a2.json")
+put_record("a2.json", aside["a2.json"])
 r = evh("validate")
 check(
     "V17: a capture with some records missing still fails",
     r.returncode != 0 and "FAIL V17" in out(r) and "record file missing" in out(r),
     out(r)[-400:],
 )
-shutil.rmtree(recs_dir)
-shutil.move(str(aside), str(recs_dir))
+_runstore.rmtree(proj, REC)
+for name, content in aside.items():
+    put_record(name, content)
 
 # ── capture-scrub ──────────────────────────────────────────────────────────────────────────
 (proj / "scrub.py").write_text(
@@ -533,9 +580,9 @@ shutil.move(str(aside), str(recs_dir))
     "        f.write_text(json.dumps(r))\n"
     "print('scrubbed what it found')\n"
 )
-before = json.loads((proj / "data" / "captures" / "m" / "capture.json").read_text())
+before = _runstore.read_json(proj, "captures/m/capture.json")
 r = evh("capture-scrub", "m", "--command", f"{sys.executable} scrub.py {{records}}")
-after = json.loads((proj / "data" / "captures" / "m" / "capture.json").read_text())
+after = _runstore.read_json(proj, "captures/m/capture.json")
 changed = [e for e in after["records"] if "sha256_before_scrub" in e]
 check(
     "capture-scrub: the records changed are re-hashed, their old hash kept, the command recorded",
@@ -555,21 +602,28 @@ check("capture-scrub: V17 passes on the scrubbed capture", r.returncode == 0, ou
 (proj / "bad_scrub.py").write_text(
     "import pathlib, sys\nfor f in pathlib.Path(sys.argv[1]).glob('*.json'):\n    f.write_text('not json')\n"
 )
-snap = {p.name: p.read_text() for p in (proj / "data" / "captures" / "m" / "records").iterdir()}
+snap = {
+    n: _runstore.read_text(proj, f"captures/m/records/{n}")
+    for n in _runstore.listdir(proj, "captures/m/records")
+}
 r = evh("capture-scrub", "m", "--command", f"{sys.executable} bad_scrub.py {{records}}")
 check(
     "capture-scrub: a scrubber that breaks the records is undone, nothing recorded",
     r.returncode != 0
     and "as they were" in out(r)
-    and snap == {p.name: p.read_text() for p in (proj / "data" / "captures" / "m" / "records").iterdir()},
+    and snap
+    == {
+        n: _runstore.read_text(proj, f"captures/m/records/{n}")
+        for n in _runstore.listdir(proj, "captures/m/records")
+    },
     out(r)[-300:],
 )
 r = evh("capture-scrub", "m", "--command", "true")
 check("capture-scrub: a command without {records} is refused", r.returncode != 0 and "{records}" in out(r))
 
-# ── evh captures ───────────────────────────────────────────────────────────────────────────
-r = evh("captures", "--json")
-caps = {c["capture"]: c for c in json.loads(r.stdout)["captures"]} if r.returncode == 0 else {}
+# ── evh capture-list ───────────────────────────────────────────────────────────────────────────
+r = evh("capture-list", "--json")
+caps = {c["capture"]: c for c in json.loads(r.stdout)["result"]["captures"]} if r.returncode == 0 else {}
 check(
     "captures: each capture, its importer, scrubbed or not, and the datasets made from it",
     set(caps) == {"c1", "c2", "m", "c_fix"}
@@ -579,11 +633,11 @@ check(
     and caps["c2"]["continues"] == "c1",
     r.stdout[-400:],
 )
-r = evh("captures", "--capture", "../x")
+r = evh("capture-show", "../x")
 check("captures: a path as the id is refused", r.returncode != 0)
 
 # ── --one-per, --where !=, --tag ───────────────────────────────────────────────────────────
-r = evh("dataset-from-capture", "m", "--dataset-id", "m_one", "--one-per", "kind")
+r = evh("dataset-from-capture", "--capture", "m", "--dataset-id", "m_one", "--one-per", "kind")
 check(
     "--one-per: one record per value of the field, the newest (by time, then id)",
     r.returncode == 0
@@ -591,7 +645,17 @@ check(
     and ds("m_one")["made_from"]["one_per"] == "kind",
     out(r)[-300:],
 )
-r = evh("dataset-from-capture", "m", "--dataset-id", "m_not", "--where", "kind!=a", "--where", "kind!=b")
+r = evh(
+    "dataset-from-capture",
+    "--capture",
+    "m",
+    "--dataset-id",
+    "m_not",
+    "--where",
+    "kind!=a",
+    "--where",
+    "kind!=b",
+)
 check(
     "--where FIELD!=VALUE drops the matching records",
     r.returncode == 0 and {it["item_id"] for it in ds("m_not")["items"]} == {"m2", "m5", "m8", "m11"},
@@ -599,6 +663,7 @@ check(
 )
 r = evh(
     "dataset-from-capture",
+    "--capture",
     "c1",
     "--dataset-id",
     "cap_tagged",
@@ -612,7 +677,7 @@ check(
     r.returncode == 0 and ds("cap_tagged").get("tags") == {"source": "fleet", "environment": "prod"},
     out(r)[-300:],
 )
-r = evh("dataset-from-capture", "c1", "--dataset-id", "cap_badtag", "--tag", "noequals")
+r = evh("dataset-from-capture", "--capture", "c1", "--dataset-id", "cap_badtag", "--tag", "noequals")
 check("--tag without KEY=VALUE is refused", r.returncode != 0 and "KEY=VALUE" in out(r))
 r = evh("validate")
 check("validate passes with tags and one_per (V1)", r.returncode == 0, out(r)[-300:])
@@ -622,7 +687,8 @@ from evaluation_harness import catalog_build as cb  # noqa: E402
 from evaluation_harness.catalog_adapter import HarnessAdapter  # noqa: E402
 
 site = proj / "catalog"
-cb.build(HarnessAdapter(proj / "data"), site)
+with _runstore._InProject(proj):
+    cb.build(HarnessAdapter(proj / "data"), site)
 page = (site / "captures.html").read_text() if (site / "captures.html").exists() else ""
 check(
     "catalog: a Captures page lists each capture, what continues what, and links the datasets made from it",
@@ -630,12 +696,13 @@ check(
     and "continues c1" in page
     and 'cap_v1 <small class="muted">no runs yet</small>' in page
     and 'href="d/cap_v1.html"' not in page
-    and "evh captures" in page
+    and "evh capture-list" in page
     and 'href="captures.html"' in (site / "index.html").read_text(),
     page[-600:],
 )
 # Only datasets with runs have a catalog page, so the origin's link is checked on the helper the page uses.
-meta = HarnessAdapter(proj / "data").dataset_meta("cap_v1")
+with _runstore._InProject(proj):
+    meta = HarnessAdapter(proj / "data").dataset_meta("cap_v1")
 check(
     "catalog: a dataset frozen from a capture links its origin to the capture",
     meta.get("capture") == "c1"
@@ -643,6 +710,35 @@ check(
     and cb.origin_html({"origin": "version of x"}) == "version of x",
     str(meta),
 )
+# A version made from another and from a capture says both, on its page and in the list (owner, 2026-11-14).
+lin = {"dataset_id": "x_v1", "added": [], "removed": [], "changed": ["i1"]}
+by_ds = {
+    "x_v1": {"parent": None, "children": ["x_v2"]},
+    "x_v2": {"parent": lin, "children": [], "origin": "capture c1, where a:b", "capture": "c1"},
+    "y_v1": {"parent": None, "children": [], "origin": "capture c1, where a:b", "capture": "c1"},
+}
+both, only_cap, only_ver = (cb._version_links(by_ds, d, "../") for d in ("x_v2", "y_v1", "x_v1"))
+check(
+    "catalog: a dataset's page says where it came from, the capture and the version it was made from, each linked",
+    both[0] == "origin and versions" and 'capture <a href="../captures.html#capture-c1">c1</a>' in both[1]
+    and 'Made from <a class="cell-link" href="../d/x_v1.html">' in both[1]
+    and only_cap[0] == "origin" and "c1</a>" in only_cap[1] and "Made from" not in only_cap[1]
+    and only_ver[0] == "versions" and "Made into" in only_ver[1] and "capture" not in only_ver[1],
+    [both, only_cap, only_ver],
+)  # fmt: skip
+import _runfix  # noqa: E402
+
+for d in ("cap_v1", "cap_v2"):
+    _runfix.put_run(proj / "data", {"run_id": f"{d}_run", "system_id": "sys_a", "dataset_id": d, "scores": {"acc": 1.0},
+                                    "primary_metric": "acc"}, [{"item_id": "i1", "acc": 1.0}])  # fmt: skip
+said = {d: evh("dataset-show", d) for d in ("cap_v1", "cap_v2")}
+check(
+    "evh dataset-show: a capture-made dataset says its capture; one made from a version and a capture says both",
+    all(r.returncode == 0 for r in said.values())
+    and "made from capture c1" in said["cap_v1"].stdout and "derived from cap_v1:" in said["cap_v2"].stdout
+    and "from capture c2" in said["cap_v2"].stdout,
+    {d: (r.stdout + r.stderr)[-400:] for d, r in said.items()},
+)  # fmt: skip
 
 # 2026-11-04 (a beta agent): an importer named by a path relative to the project was not found when the
 # command ran from another directory, though a capture records the path as given.
@@ -655,7 +751,15 @@ check(
     "               'source': {'system': 's'}, 'outcome': {}}\n"
 )
 r = subprocess.run(
-    [sys.executable, str(HERE / "cli.py"), "importer-check", "tools/imp.py:Importer", "--query", "{}"],
+    [
+        sys.executable,
+        str(HERE / "cli.py"),
+        "importer-check",
+        "--importer",
+        "tools/imp.py:Importer",
+        "--query",
+        "{}",
+    ],
     cwd=proj / "data",
     env=env,
     capture_output=True,

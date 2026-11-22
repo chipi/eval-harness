@@ -1,0 +1,102 @@
+{
+  "metric_descriptions": {
+    "correct": {
+      "summary": "1 when the decision is one the label accepts (file, dismiss, escalate or cleanup), else 0."
+    },
+    "deferred": {
+      "summary": "1 when the fleet deferred the decision twice for the same reason, so none was reached."
+    },
+    "escalated": {
+      "summary": "1 when the decision hands the signal to a person (escalate), labelled or not."
+    },
+    "false_alarm": {
+      "summary": "1 when noise (the label: dismiss or cleanup) was filed or escalated."
+    },
+    "false_dismiss": {
+      "summary": "1 when a real problem (the label: file or escalate) was dismissed or cleaned up: a miss."
+    },
+    "model_correct": {
+      "summary": "correct, for the model's own decision before the fleet's gates."
+    },
+    "model_escalated": {
+      "summary": "escalated, for the model's own decision before the fleet's gates."
+    },
+    "model_false_alarm": {
+      "summary": "false_alarm of the model's own decision, before the fleet's gates."
+    },
+    "model_false_dismiss": {
+      "summary": "false_dismiss of the model's own decision, before the fleet's gates."
+    },
+    "model_triage_cost": {
+      "summary": "triage_cost of the model's own decision, before the fleet's gates changed it."
+    },
+    "n_probes": {
+      "summary": "How many probes the model asked for before it decided."
+    },
+    "no_decision": {
+      "summary": "1 when the fleet reached no decision (an empty last reply, or the same deferral twice); scored as wrong both ways."
+    },
+    "silent_drop": {
+      "summary": "1 when a signal the label says needs a person (correct_autonomous: escalate) was dismissed."
+    },
+    "table_miss": {
+      "summary": "1 when the model asked for a probe the item's frozen probe table does not hold."
+    },
+    "triage_cost": {
+      "summary": "One decision's cost: 5 for a missed real problem, 1 for a false alarm, 0 when right; lower is better."
+    },
+    "triage_cost_p10": {
+      "summary": "triage_cost with a missed real problem priced at 10 false alarms instead of 5."
+    },
+    "triage_cost_p3": {
+      "summary": "triage_cost with a missed real problem priced at 3 false alarms instead of 5."
+    }
+  },
+  "metric_directions": {
+    "deferred": "lower",
+    "escalated": "lower",
+    "false_alarm": "lower",
+    "false_dismiss": "lower",
+    "model_escalated": "lower",
+    "model_false_alarm": "lower",
+    "model_false_dismiss": "lower",
+    "model_triage_cost": "lower",
+    "no_decision": "lower",
+    "silent_drop": "lower",
+    "table_miss": "lower",
+    "triage_cost": "lower",
+    "triage_cost_p10": "lower",
+    "triage_cost_p3": "lower"
+  },
+  "metric_kinds": {
+    "resumed": "descriptive"
+  },
+  "primary_metric": "triage_cost",
+  "reference_tier": "gold",
+  "scores": {
+    "correct": 0.569231,
+    "cost_usd": 0.005398,
+    "deferred": 0.0,
+    "escalated": 0.276923,
+    "false_alarm": 0.677419,
+    "false_dismiss": 0.205882,
+    "latency_ms": 19257.610871,
+    "model_correct": 0.553846,
+    "model_escalated": 0.015385,
+    "model_false_alarm": 0.387097,
+    "model_false_dismiss": 0.441176,
+    "model_triage_cost": 1.338462,
+    "n_probes": 1.753846,
+    "no_decision": 0.0,
+    "resumed": 0.0,
+    "table_miss": 0.0,
+    "tokens_in": 3788.384615,
+    "tokens_out": 1413.538462,
+    "total_cost_usd": 0.35088408,
+    "total_tokens_in": 246245.0,
+    "total_tokens_out": 91880.0,
+    "triage_cost": 0.861538,
+    "triage_cost_p10": 1.4,
+    "triage_cost_p3": 0.646154
+  }
+}

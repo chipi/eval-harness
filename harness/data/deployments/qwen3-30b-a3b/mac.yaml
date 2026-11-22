@@ -1,0 +1,39 @@
+model_id: qwen3-30b-a3b
+deployment_id: mac
+order: 2
+where: mac
+tag: qwen3:30b-a3b-instruct-2507-q4_K_M
+endpoint:
+  provider: openai
+  base_url: http://127.0.0.1:11435/v1
+  model: qwen3:30b-a3b-instruct-2507-q4_K_M
+server: ollama 0.40.13
+digest: 19e422b0231392335cfc49cfd172de7034bb1aeabb08aa307cce745c60b272fe
+quantization: Q4_K_M
+checked_at: '2026-10-31T13:56:29Z'
+checks:
+- kind: onboarding
+  status: pass
+  at: '2026-10-31T13:56:29Z'
+  where: mac
+  flags: []
+  report:
+    endpoint:
+      provider: openai
+      base_url: http://127.0.0.1:11435/v1
+      model: qwen3:30b-a3b-instruct-2507-q4_K_M
+    digest_found: 19e422b0231392335cfc49cfd172de7034bb1aeabb08aa307cce745c60b272fe
+    default:
+      s: 16.47
+      tokens_out: 23
+      reasoned: false
+      finish: stop
+    chosen:
+      s: 0.41
+      tokens_out: 23
+      reasoned: false
+      finish: stop
+      settings: {}
+    tokens_per_s: 56.5
+    deterministic: true
+    json_valid: true

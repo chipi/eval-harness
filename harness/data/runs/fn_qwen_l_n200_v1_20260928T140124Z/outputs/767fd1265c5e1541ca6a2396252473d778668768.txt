@@ -1,5 +1,0 @@
-[
-  {"text": "Tower Peak", "type": "location"},
-  {"text": "Tucson Mountains", "type": "location"},
-  {"text": "Saguaro National Park", "type": "location"}
-]

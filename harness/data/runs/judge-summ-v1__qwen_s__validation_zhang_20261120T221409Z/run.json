@@ -1,0 +1,116 @@
+{
+  "run_id": "judge-summ-v1__qwen_s__validation_zhang_20261120T221409Z",
+  "dataset_id": "zhang2023_cnndm_v1",
+  "system_id": "judge-summ-v1__qwen_s__validation_zhang",
+  "created_at": "2026-11-20T22:14:10Z",
+  "build": {
+    "ref": "a77fd6dd3c0bb722c8b3b0d2dfcea5fbb94ee560",
+    "dirty": false,
+    "source": "git"
+  },
+  "n_items": 100,
+  "params": {
+    "provider": "recorded",
+    "capture": "zhang_judge_summ_v1_qwen_s",
+    "scorer": "judge-summ-v1",
+    "judge": "qwen_s",
+    "mode": "grade",
+    "recorded_from": "data/judge-validation/judge-summ-v1/zhang2023-cnndm/qwen_s",
+    "capture_sha256": "2bd12c2857945e6470868c418772b0fce8738ad8dd2a647b3bb1b46e7b81763c"
+  },
+  "adapter": "scripts/judge_validation.py",
+  "providers_seen": {},
+  "fingerprint": {
+    "version": 5,
+    "instrument": {
+      "harness": {
+        "commit": "a77fd6dd3c0b",
+        "dirty": false,
+        "version": "0.8.0.dev0",
+        "code_sha256": "133a239aba51fef631b398048970bcba29e0ef71004c1fb239532f6f832e8395",
+        "installed": false
+      },
+      "adapter": {
+        "id": "scripts/judge_validation.py",
+        "sha256": "76607919be5b875ef9ebf4ccb9cda7b52468a92a13530a8e54a95a5f531e922b"
+      }
+    },
+    "data": {
+      "dataset_id": "zhang2023_cnndm_v1",
+      "items_sha256": "bc06433769527dac1b710aa87393018346aeed50bf1f887f14b9e13c2e95464a",
+      "n_items": 100,
+      "reference_id": "gold/zhang2023_cnndm_v1",
+      "reference_tier": "gold",
+      "references_sha256": "e512422f252cdde722bec519f384332bda78db22877f4e0d3081005278259cb2"
+    },
+    "deployment": {
+      "id": "recorded",
+      "model": "recorded",
+      "source": "params",
+      "weights": {
+        "digest": null,
+        "revision": null,
+        "revision_source": "not-a-model",
+        "file_hash": null,
+        "quantization": null,
+        "precision": null
+      },
+      "server": null,
+      "where": {
+        "machine": null,
+        "backend": null,
+        "device": null
+      },
+      "hosted": null,
+      "provider": "recorded",
+      "in_process": true,
+      "libraries": {
+        "numpy": "2.5.4",
+        "openai": "3.46.0",
+        "anthropic": "2.5.0",
+        "rouge-score": "0.1.2"
+      },
+      "declared": {
+        "provider": "recorded",
+        "mode": "grade",
+        "kind": "a judge's recorded verdicts, read from a capture: nothing was called",
+        "seed": 20261015
+      }
+    },
+    "settings": {
+      "capture": "zhang_judge_summ_v1_qwen_s",
+      "scorer": "judge-summ-v1",
+      "judge": "qwen_s",
+      "mode": "grade",
+      "recorded_from": "data/judge-validation/judge-summ-v1/zhang2023-cnndm/qwen_s",
+      "capture_sha256": "2bd12c2857945e6470868c418772b0fce8738ad8dd2a647b3bb1b46e7b81763c"
+    },
+    "runner": {
+      "label": null,
+      "platform": "Linux/x86_64",
+      "release": "7.2.5-3-omarchy",
+      "processor": null,
+      "cpu_count": 32,
+      "python": "3.14.7",
+      "libraries": null
+    },
+    "arm": {
+      "config_id": "judge-summ-v1__qwen_s__validation_zhang",
+      "labels": null
+    },
+    "instrument_sha256": "7f873aabd2719def70086be39993602830b9e038f12225812e3cb40932fd55b7",
+    "data_sha256": "e263bfb6f53294bebfa6ea831b3a02888eb3a072af942146c5ef20866ecd8cbe",
+    "deployment_sha256": "cb501249df263df4003af75fb313be084a02b039bd64a378ca34e0a7f65b9837",
+    "settings_sha256": "1deca7bb0b085f1d24231d705d3d4bd352d06695db1cde5e750fc9c822c5296b",
+    "hash": "c25535e5b32f705fd31cea1624146405ee44d202b5807aafac25f80884693c39"
+  },
+  "actor": {
+    "type": "agent",
+    "name": "implementer",
+    "from": "environment",
+    "for": "marko"
+  },
+  "started_at": "2026-11-20T22:14:09Z",
+  "purpose": "run",
+  "machine": "linux"
+}

@@ -1,4 +1,4 @@
-# ADR-0003 — Item fields and items fetched from a URL (0.4.0)
+# ADR-0003 — Item fields and items fetched from a URL
 
 **Status:** Accepted (2026-10-22)
 **Date:** 2026-10-22
@@ -27,5 +27,4 @@ drifted from the frozen dataset. The harness must stay generic.
 ## Consequences
 
 A project's metadata lives in the frozen dataset, typed and checked, and a comparison can be read
-per group with one Holm correction. This repository's own evals carry no fields: the
-truthful candidates are gold classes, which are not redistributed here.
+per group with one Holm correction.

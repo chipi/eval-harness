@@ -14,12 +14,64 @@ changes:
   failures are filed, not dismissed'
 - 'candidate: prompt fb78ec9c (agentic-ai-homelab 13856f9), injected extension code, too-old browsers
   and mirrored bundles named as not our defect'
+arms:
+- system: triage_noise_gate_v1
+  runs:
+  - triage_noise_gate_v1_20261104T161615Z_r1
+  - triage_noise_gate_v1_20261104T161615Z_r2
+  - triage_noise_gate_v1_20261104T161615Z_r3
+  entered:
+    how: ran
+    at: '2026-11-04T14:46:12Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_prompt_noise_classes_v1
+  runs:
+  - triage_prompt_noise_classes_v1_20261104T144624Z_r1
+  - triage_prompt_noise_classes_v1_20261104T144624Z_r2
+  - triage_prompt_noise_classes_v1_20261104T144624Z_r3
+  entered:
+    how: ran
+    at: '2026-11-04T14:46:12Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_prompt_own_code_loads_v1
+  runs:
+  - triage_prompt_own_code_loads_v1_20261104T144618Z_r1
+  - triage_prompt_own_code_loads_v1_20261104T144618Z_r2
+  - triage_prompt_own_code_loads_v1_20261104T144618Z_r3
+  entered:
+    how: ran
+    at: '2026-11-04T14:46:12Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_baseline_pro_v2data_v1
+  runs:
+  - triage_baseline_pro_v2data_v1_20261104T133857Z_r1
+  - triage_baseline_pro_v2data_v1_20261104T133857Z_r2
+  - triage_baseline_pro_v2data_v1_20261104T133857Z_r3
+  entered:
+    how: carried
+    at: '2026-11-04T14:46:12Z'
+    from: r3
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
 budget_usd: 4.0
-carried:
-- triage_baseline_pro_v2data_v1
 status: closed
 opened_at: '2026-11-04T14:46:12Z'
 closed_at: '2026-11-04T19:20:27Z'
+actor:
+  type: unknown
+  name: before 0.8.0
+  from: migration
 conclusion:
   text: 'Closed by the owner 2026-11-04. On v2 (v1''s decisions without the rebuild''s hindsight), filing
     the app''s failures to load its own code (triage_prompt_own_code_loads_v1) cut triage_cost from 0.872

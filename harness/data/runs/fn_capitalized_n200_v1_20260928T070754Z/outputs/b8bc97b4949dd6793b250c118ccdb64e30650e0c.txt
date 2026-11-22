@@ -1,1 +1,0 @@
-[{"text": "Dechlorination", "type": "location"}, {"text": "United States", "type": "location"}]

@@ -8,7 +8,7 @@ what it printed (`make guide-check` runs this page in a fresh project on every c
 You work in a project of your own, as you will for real: a new folder, the harness installed
 as a package, and the tutorial kit copied in. The running example is a support-ticket
 summariser. The kit ([`harness/tutorial/`](../harness/tutorial/README.md) in this repository)
-has six invented tickets, four arm configs and a goal. The "systems" are the harness's offline
+has six invented tickets, four systems and a goal. The "systems" are the harness's offline
 `echo` provider, which returns the first *n* sentences of its input: a stand-in that behaves
 like a model without needing one. A real model, local or hosted, is the
 [tutorials](#where-to-go-next)' subject.
@@ -19,14 +19,14 @@ like a model without needing one. A real model, local or hosted, is the
  sources/ ──dataset-create──▶ datasets/<id>.json ──dataset-materialize──▶ materialized/<id>/
  (your items)                 (item list + sha256)                         (hash-checked copy)
 
- configs/<arm>.yaml ──evh run──▶ runs/<run_id>/   outputs, per-item scores, cost, speed,
- (one system = one arm)                                   fingerprint: data + code + model + build
+ systems/<id>.yaml ──evh run──▶ runs/<run_id>/   outputs, per-item scores, cost, speed,
+ (what you evaluate)   (on a dataset)             fingerprint: data + code + model + build
                                               │
     label-from-run ──▶ labels/<id>/<set>/ ──reference-promote──▶ references/silver/<id>/   (optional)
                                               │
                          leaderboard · pair-test · family-test
                                               │
-                              run-promote ──▶ baselines/<id>_baseline.json  (a decision + why)
+                    run-promote ──▶ baselines/<goal>/<id>/<n>.json  (a decision + why + its test)
 ```
 
 | term | what it is | lives in | edited? |
@@ -34,7 +34,7 @@ like a model without needing one. A real model, local or hosted, is the
 | **source** | one input item, any file | `data/sources/` or anywhere | never, once frozen |
 | **dataset** | a frozen list of items with the sha256 of each: the comparison contract | `data/datasets/<id>.json` | never; a change is `_v2` |
 | **materialized** | a hash-checked working copy of the dataset | `data/materialized/<id>/` | derived; delete freely |
-| **arm** | one system under test: a config naming provider, model, prompt, settings | `data/configs/*.yaml` | a change is a new `config_id` |
+| **system** | what you evaluate: provider, model, prompt, settings; no dataset (a run names it) | `data/systems/<system_id>.yaml` | a change is a new `system_id` |
 | **run** | one pass of an arm over a dataset: outputs, scores, fingerprint | `data/runs/<run_id>/` | never |
 | **label** | what is right for one item, and who said it: a person, a model or a rule; in sets | `data/labels/<dataset>/<set>/` | never; a correction is a new set |
 | **reference** | what each item is scored against: labels promoted at **gold** (the yardstick) or **silver** (good for ranking) | `data/references/<tier>/<id>/` | never; a change is a new one |
@@ -50,21 +50,21 @@ everything: the hosted-model clients, the judges, the catalog. Nothing else to a
 ```bash
 mkdir my-evals && cd my-evals
 python3 -m venv .venv && . .venv/bin/activate
-pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.7.2#subdirectory=harness"
+pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.8.0#subdirectory=harness"
 ```
 
-Then the project's folders and the tutorial kit, under version control from the start:
+Then the project's folders and the tutorial kit, under version control from the start. `--store` is required and has no default: `files` keeps every run, label and score as a file under `data/`, in git; `sqlite` keeps the data in one database file, `data/project.sqlite`, out of git. They are equal choices (this guide uses `files`; `evh data-migrate` switches later).
 
 ```bash
-evh init --tutorial
+evh init --store files --tutorial
 git init -q && git add -A && git commit -qm "Start: the tutorial kit"
 ```
 ```text
-  folders  data/sources, data/configs, data/goals, data/fields
-  wrote    28 file(s), the tutorial kit under tutorial/
+  folders  data/sources, data/systems, data/goals, data/fields
+  wrote    30 file(s), the tutorial kit under tutorial/
 ```
 
-`data/` is where everything the harness freezes and records will live; `tutorial/` is the
+`data/` is where everything the harness freezes and records will live (`data/project.yaml` records its format); `tutorial/` is the
 kit; `.gitignore` already keeps out what the harness derives (materialized copies, the
 catalog build, caches, your `.env`). `AGENTS.md` (and `CLAUDE.md`, which imports it) tells an
 agent working in the project its rules, the loop and how to read results; edit it to add what is
@@ -102,37 +102,40 @@ data/materialized/tickets_v1  (6 item(s), all hashes verified)
 A working copy, re-checked against the frozen hashes. If a source changed since the freeze,
 this fails instead of quietly measuring different bytes.
 
-## 3 · Describe your arms
+## 3 · Describe your systems
 
-An arm is a YAML file. Everything that defines the system goes in `params`, so two arms differ
-only where their configs do, and the run's fingerprint will say exactly where.
+A system is a YAML file, named by its id. Everything that defines it goes in `params`, so two
+systems differ only where their files do, and the run's fingerprint will say exactly where. It
+names no dataset: a run puts it on one, and the same system runs on any.
 
 ```yaml
-# data/configs/tickets_lead2.yaml
-config_id: tickets_lead2_v1     # unique, versioned: change the system, bump the id
-dataset_id: tickets_v1          # the contract it is measured on
+# data/systems/tickets_lead2_v1.yaml
+system_id: tickets_lead2_v1     # unique, versioned: change the system, bump the id
 params:
   provider: echo                # your adapter decides what these mean
   sentences: 2
 ```
 
 ```bash
-cp tutorial/configs/tickets_*.yaml data/configs/
+cp tutorial/systems/tickets_*.yaml data/systems/
 ```
 
-The four arms: `lead1` (one sentence), `lead2` (two), `lead2_noisy` (two, with random word
+In a `--store sqlite` project `data/` holds only `project.sqlite`, so `cp` has no folder to copy
+into. Put each file with `evh data-put --path systems/<file> --file tutorial/systems/<file>`,
+which works in both stores (for the goal below: `--path goals/tickets_summary.yaml`).
+
+The four systems: `lead1` (one sentence), `lead2` (two), `lead2_noisy` (two, with random word
 drops: what a model at temperature > 0 looks like), and `author` (three), the most thorough
 system we have, which will write the reference.
 
 **Say what the evaluation is for.** A goal names who uses the output, the decision it informs,
 the measure that decides it and which direction is better, and the datasets it rests on. It is
-optional, and worth the minute: every run that names it records it, and the catalog's goal page
+optional, and worth the minute: every run that names it (`--goal`) records it, and the catalog's goal page
 leads with the decision. Every field a goal file can have, and its allowed values:
 [RUNBOOK §4c](../harness/docs/RUNBOOK.md#4c-the-goal-file-field-by-field).
 
 ```bash
 cp tutorial/goals/tickets_summary.yaml data/goals/
-for f in data/configs/tickets_*.yaml; do echo "goal: tickets_summary" >> "$f"; done
 ```
 
 ## 4 · Run the best arm first
@@ -142,19 +145,19 @@ does not describe what ran, and the run cannot become a reference or a baseline.
 directories themselves never count as dirt.)
 
 ```bash
-git add -A && git commit -qm "tickets_v1: dataset, arms, goal"
+git add -A && git commit -qm "tickets_v1: dataset, systems, goal"
 ```
 
 A dry run calls nothing and shows what a pass will cost:
 
 ```bash
-evh run --config data/configs/tickets_author.yaml --dry-run
+evh run --system tickets_author_v1 --dataset tickets_v1 --goal tickets_summary --dry-run
 ```
 ```text
-  config      tickets_author_v1  (echo)
+  system      tickets_author_v1  (echo)
   dataset     tickets_v1  (6 items)
   API calls   6
-  No price in the config, so no estimate. Add usd_per_mtok_in /
+  No price in the system, so no estimate. Add usd_per_mtok_in /
   usd_per_mtok_out and the run will record what it actually cost.
   cap         NONE — set EVAL_MAX_COST_USD
 ```
@@ -165,7 +168,7 @@ would not run in production, and let its outputs be the answers the others are m
 against:
 
 ```bash
-evh run --config data/configs/tickets_author.yaml
+evh run --system tickets_author_v1 --dataset tickets_v1 --goal tickets_summary
 ```
 ```text
   no reference set for tickets_v1 — quality cannot be scored.
@@ -192,13 +195,13 @@ git add data/labels data/references && git commit -qm "silver/tickets_v1: the au
 ```
 ```text
 data/labels/tickets_v1/author_v1: 6 label(s), source model · tickets_author_v1_...
-  every set on it: evh labels --dataset-id tickets_v1
+  every set on it: evh label-set-list tickets_v1
 .../my-evals/data/references/silver/tickets_v1: 6 of 6 item(s), silver, promoted from tickets_v1/author_v1 (model · tickets_author_v1_...)
   commit it before the next run: an untracked reference marks every run scored against it dirty
 ```
 
 `evh runs-list` prints the run ids. `label-from-run` copies the run's outputs and calls nothing,
-and the labels record the run, its config and its fingerprint. Promoted as **silver**, they are
+and the labels record the run, its system and its fingerprint. Promoted as **silver**, they are
 consistent, cheap, and *not correct*: they encode the author's opinion, mistakes included, good
 enough to rank the other arms by how close they come to it, and every run scored against them
 says so. The step is optional: if you already have answers a person wrote (**gold**), import
@@ -210,7 +213,7 @@ what silver got wrong).
 
 ```bash
 for a in lead1 lead2 lead2_noisy; do
-  evh run --config data/configs/tickets_$a.yaml --repeat 3
+  evh run --system tickets_${a}_v1 --dataset tickets_v1 --goal tickets_summary --repeat 3
 done
 ```
 <!-- guide-check: varies treat -->
@@ -240,19 +243,20 @@ metric`. A run that spent money prints `spent $…` after them.)
 **All arms at once:**
 
 ```bash
-evh leaderboard --dataset-id tickets_v1
+evh leaderboard tickets_v1
 ```
 <!-- guide-check: varies lead2_noisy global distinguishable -->
 ```text
-  NOTE: these runs are scored 2 different ways (scored against silver/tickets_v1, scored against no reference);
-        one table for each, never averaged across them.
+dataset: tickets_v1   ranked by: overlap_f1 (higher is better)
 
-=== scored against silver/tickets_v1 ===
   arm                      runs  overlap_f1  output_words  cost_usd  latency_ms  total_cost_usd
-  tickets_lead2_v1            3      0.9001       28.5000  0.000000         0.0        0.000000
-  tickets_lead2_noisy_v1      3      0.7909       22.2222  0.000000         0.0        0.000000
-  tickets_lead1_v1            3      0.6409       16.0000  0.000000         0.0        0.000000
   ...
+  tickets_lead2_v1            3      0.9001       28.5000  0.000000         0.0        0.000000
+  tickets_lead2_noisy_v1      3      0.8009       22.9444  0.000000         0.0        0.000000
+  tickets_lead1_v1            3      0.6409       16.0000  0.000000         0.0        0.000000
+
+  goal tickets_summary: leader tickets_lead2_v1, recommended tickets_lead2_v1
+
   IS THE ORDERING REAL?   metric=overlap_f1  k=3 arms  N=6 items
     global test (permutation on within-item ranks): p = 0.0002  ->  an arm effect exists
     ...
@@ -260,24 +264,19 @@ evh leaderboard --dataset-id tickets_v1
   ...
   Scored against SILVER references (consistent, not correct). Good for ranking
   these arms against each other; not a claim that any of them is correct.
-
-=== scored against no reference ===
-  ...
-  arm                 runs  output_words  cost_usd  latency_ms  total_cost_usd
-  tickets_author_v1      1       35.1667  0.000000         0.0        0.000000
-  ...
 ```
 
 The leaderboard *sorts*; the block underneath says how much of the order is real. Read that
-block, not the row numbers. Runs scored against different references are never ranked
-together: the leaderboard prints one table for each way of scoring. The `author` run was made
-before there was a reference, so it sits alone under "no reference", with no quality score. The
-table also carries each arm's cost and speed (all zero here: `echo` is free and instant).
+block, not the row numbers. It ranks the arms as the goal does, and names the goal's leader and
+the arm it recommends. Runs scored against different references are never ranked together: each
+reference gets its own table. The `author` run wrote the silver reference and has no quality
+score, so it is not ranked. The table also carries each arm's cost and speed (all zero here:
+`echo` is free and instant).
 
 **One pair you named in advance**, tested item by item:
 
 ```bash
-evh pair-test --dataset-id tickets_v1 --a tickets_lead2_v1 --b tickets_lead1_v1
+evh pair-test tickets_v1 --a tickets_lead2_v1 --b tickets_lead1_v1
 ```
 ```text
     items A wins       6/6
@@ -292,7 +291,7 @@ leaderboard, the `pair-test` p-value above is wrong; `family-test` corrects for 
 comparison you could have made:
 
 ```bash
-evh family-test --dataset-id tickets_v1 --a tickets_lead2_v1 --against tickets_
+evh family-test tickets_v1 --a tickets_lead2_v1 --against tickets_
 ```
 <!-- guide-check: varies lead2_noisy ahead -->
 ```text
@@ -300,17 +299,18 @@ evh family-test --dataset-id tickets_v1 --a tickets_lead2_v1 --against tickets_
   Holm step-down at alpha=0.05
   p: exact, over all 2^6 sign patterns
 
-    opponent                     delta    A wins        p   thresh   verdict
-    tickets_lead1_v1           +0.2592    6/6      0.0312   0.0250   --
-    tickets_lead2_noisy_v1     +0.1011    6/6      0.0312   0.0500   --
+    opponent                     delta   A wins-losses (ties)        p   thresh   verdict
+    tickets_lead1_v1           +0.2592           6–0 (0 ties)   0.0312   0.0250   --
+    tickets_lead2_noisy_v1     +0.1121           6–0 (0 ties)   0.0312   0.0500   --
 
     significantly different from 0 of 2 opponents; ahead on the point estimate against 2 of 2
 ```
 
-Ahead of both on every ticket (`A wins`: the items `lead2` wins), and significantly different from neither: on
+Ahead of both on every ticket (`6–0 (0 ties)`: `lead2` wins all six items, loses none, ties none), and
+significantly different from neither: on
 six items the smallest p a paired test can reach is 0.0312, and with two comparisons the first
 must beat 0.025. Up to 30 items the p is exact, and every command prints the same one; above
-that it is a seeded estimate, and the line under the header says which
+that it is a seeded estimate, and from 10,000 items the permutation distribution's normal limit. The line under the header says which
 ([RUNBOOK §7b](../harness/docs/RUNBOOK.md#7b-the-analysis-tools)). Six items
 are enough to learn the loop, not to pick a winner. `run-compare` diffs two runs' fingerprints
 and scores (`evh run-compare --baseline <run_id> --candidate <run_id> --noise <spread>`).
@@ -323,26 +323,28 @@ reason. The reason has to say what the tests showed, not what you hoped:
 ```bash
 evh run-promote --run <the tickets_lead2_v1 run_id> \
   --reason "lead2 is closest to the author's silver on all six tickets but differs significantly from neither arm at n=6; working baseline until the dataset grows"
-evh runs-list --baselines
+evh baselines
+# From a terminal your login is the actor; with no terminal (an agent, a script, CI) add --by person:NAME or set EVH_ACTOR
 ```
 ```text
   NOTE: tickets_lead2_v1 has 3 repeats; the catalog, the inspector and the tests read their mean.
         The baseline records this run's own scores and, under `repeats`, the mean:
     ...
-    overlap_f1     0.900088   (mean of 3: 0.900088)
+    overlap_f1     0.9001   (mean of 3: 0.9001)
     ...
-tickets_v1_baseline
-    dataset  tickets_v1
+tickets_summary's baseline on tickets_v1: version 1
     ...
-    scored   silver references, adapter scripts/adapter.py
     why      lead2 is closest to the author's silver on all six tickets but differs significantly from neither arm at n=6; working baseline until the dataset grows
+    scores (mean of 3 repeats)   ...
+    evidence the first version: nothing to compare with
 ```
 
 `lead2` ran three times; any of its repeats can be promoted, and the baseline records every
 repeat and their mean under `repeats`, the number the catalog, the inspector and the tests read.
 Refused if the run came from a dirty tree, if its build is unknown, or if the reason is under
-three words: six months from now, "why is this the baseline?" must have an answer. The next
-promotion replaces this baseline, and git keeps it.
+three words: six months from now, "why is this the baseline?" must have an answer. The baseline
+is the goal's (`tickets_summary`), version 1; the next promotion writes version 2 beside it, with
+the paired test of the new arm against this one frozen in, and `evh baseline-rollback` goes back.
 
 Last, check that everything recorded still holds together. Run it in CI; it exits non-zero:
 
@@ -375,6 +377,7 @@ Each tutorial starts from where this page ends, or from a project of your own:
 | [**5 · The catalog and the inspector**](tutorials/5-catalog-and-inspector.md) | pages over your runs, an inspector that tests arms item by item, and the `evh` command behind every view |
 | [**6 · Datasets from production**](tutorials/6-datasets-from-production.md) | what your system did in production, kept as a capture: a dataset from it, labels from what happened afterwards, validation and test; then production's own decisions scored against those labels, the rows where it was wrong picked, and the next version of a dataset you govern made from them |
 | [**7 · Set up a model before you test it**](tutorials/7-set-up-a-model.md) | a model record, onboarding it where it runs (its build, whether it reasons, JSON, determinism), an arm that names it, a smoke before the full run; on your own machine with Ollama |
+| [**8 · The Workbench**](tutorials/8-the-workbench.md) | the same loop on screens: a goal, its dataset, systems, rounds, reviews, production, the reference set, a judge, the held-out test and studies; every screen calling the command it shows |
 
 And the references, for when you know what you are looking for:
 [INTEGRATION](../harness/docs/INTEGRATION.md) (your system in the harness: the adapter, what
@@ -384,7 +387,7 @@ command, flag, environment variable and exit code), [CONCEPTS](../harness/docs/C
 
 And for an agent: `evh init` wrote `AGENTS.md`, its rules and this loop in brief. An agent with a
 shell runs the commands above itself and reads them with `--json` (`evh runs-list --json`,
-`evh leaderboard --json`, `evh pair-test --json`, `evh goals --json`); it needs neither the
+`evh leaderboard --json`, `evh pair-test --json`, `evh goal-list --json`); it needs neither the
 catalog nor MCP. `evh mcp` serves the same read commands as tools to an agent that cannot run
 them, Claude, ChatGPT, the OpenAI API, Gemini or any MCP client, on your project or for a team;
 this repository's own evals answer at `https://evals.humancopilot.eu/mcp`, without sign-in

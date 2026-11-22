@@ -1,0 +1,14 @@
+{
+  "metric_directions": {
+    "class_match": "higher",
+    "key_match": "higher"
+  },
+  "metric_kinds": {
+    "resumed": "descriptive"
+  },
+  "primary_metric": "key_match",
+  "scores": {
+    "latency_ms": 0.17378,
+    "resumed": 0.0
+  }
+}

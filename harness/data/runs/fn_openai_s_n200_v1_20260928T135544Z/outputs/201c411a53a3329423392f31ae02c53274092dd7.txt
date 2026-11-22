@@ -1,1 +1,0 @@
-[{"text":"The Debian project","type":"organization"},{"text":"Debian","type":"organization"}]

@@ -19,8 +19,8 @@ another address.
 
 ## 1 · A record for the model
 
-One file per model, in `data/models/`. It says what the model is, and lists its **deployments**: each place and
-build it runs, here one, on this laptop.
+One file per model, in `data/models/`. It says what the model is; its **deployments** are separate records,
+in `data/deployments/<model_id>/<deployment_id>.yaml`, each with where and how it runs.
 
 ```yaml
 # data/models/llama3.1-8b.yaml
@@ -31,32 +31,39 @@ aliases:
 - llama3.1:8b          # the names runs record for it
 weights: open
 licence: Llama 3.1 Community License
-deployments:
-- id: laptop           # an arm names it with `deployment:`
-  where: laptop
-  tag: llama3.1:8b
-  endpoint:
-    provider: openai   # Ollama speaks the OpenAI API
-    base_url: http://127.0.0.1:11434/v1
-    model: llama3.1:8b
 ```
 
-A model that runs in several places (a laptop, a GPU server, a hosted route) gets one deployment each, because
-the same tag can be a different build on each, and each is checked on its own.
+Each place the model runs gets its own deployment record. A laptop, a GPU server, or a hosted route
+each has one, because the same tag can be a different build on each, and each is checked on its own:
+
+```yaml
+# data/deployments/llama3.1-8b/laptop.yaml
+model_id: llama3.1-8b
+deployment_id: laptop
+where: laptop
+tag: llama3.1:8b
+endpoint:
+  provider: openai     # Ollama speaks the OpenAI API
+  base_url: http://127.0.0.1:11434/v1
+  model: llama3.1:8b
+```
+
+Make one with `evh deployment-new MODEL DEPLOYMENT --set KEY=VALUE`.
 
 ## 2 · Onboard it
 
 ```bash
-evh model-onboard llama3.1-8b --deployment laptop
+evh model-onboard --model-id llama3.1-8b --deployment laptop
 ```
 ```text
 model-onboard: llama3.1-8b (llm)
+  laptop (laptop): http://127.0.0.1:11434/v1
   build: the server reports 46e0c10c039e, the record None
   default settings: 2.86 s, 19 tokens out, reasoned: False, end stop
   record's settings (none): 0.46 s, 19 tokens out, reasoned: False, end stop
   JSON valid: True  deterministic: True  tokens/s: 41.5
 ONBOARD PASS
-  written into data/models/llama3.1-8b.yaml (deployment laptop)
+  written into data/deployments/llama3.1-8b/laptop.yaml (its checks)
 ```
 
 It called the deployment the way an arm would and wrote what it found into the record: the **digest** of the
@@ -78,12 +85,11 @@ What a model cannot change (gpt-oss reasons at every setting; `low` is the least
 why, so it is reported and passes rather than failing every check: `accepted: {reasoning: "<why>"}`, on the
 record, or on one deployment for what only that one raises (a hosted gateway has no build to pin).
 
-## 3 · An arm that names it
+## 3 · A system that names it
 
 ```yaml
-# data/configs/tickets_llama.yaml
-config_id: tickets_llama_v1
-dataset_id: tickets_v1
+# data/systems/tickets_llama_v1.yaml
+system_id: tickets_llama_v1
 model_record: llama3.1-8b
 deployment: laptop
 params:
@@ -94,18 +100,18 @@ params:
   max_tokens: 200          # a summary is two sentences; 200 bounds a runaway
 ```
 
-The record supplies the model's own settings; the arm adds the task's (its reply cap, its call limit), with a
-comment saying why. A record refuses those: they would reach every other eval's arms. Commit the record
-and the arm before running, so the run records a clean tree:
+The record supplies the model's own settings; the system adds the task's (its reply cap, its call limit), with a
+comment saying why. A record refuses those: they would reach every other eval's systems. Commit the record
+and the system before running, so the run records a clean tree:
 
 ```bash
-git add -A && git commit -qm "llama3.1-8b, set up; an arm that names it"
+git add -A && git commit -qm "llama3.1-8b, set up; a system that names it"
 ```
 
 ## 4 · Smoke it
 
 ```bash
-evh arm-smoke --config data/configs/tickets_llama.yaml
+evh arm-smoke --system tickets_llama_v1 --dataset tickets_v1
 ```
 ```text
 arm-smoke: tickets_llama_v1 on tickets_v1, 3 item(s)
@@ -115,10 +121,10 @@ arm-smoke: tickets_llama_v1 on tickets_v1, 3 item(s)
       call   2.14 s  out    77 tok  reasoning      0  end stop
   ...  (t02_invoice, t03_export the same way)
   full run: 6 items, about 0.2 min (slowest item x all: 0.2 min), about $0.0
-  spent: unknown (the adapter reported no cost: no bill from the provider and no usd_per_mtok_in / usd_per_mtok_out in the config)
+  spent: unknown (the adapter reported no cost: no bill from the provider and no usd_per_mtok_in / usd_per_mtok_out in the system)
   determinism: item 1 twice gave the same output: repeats on this machine will be identical
 SMOKE PASS
-  written into data/models/llama3.1-8b.yaml
+  written into data/deployments/llama3.1-8b/laptop.yaml
 ```
 
 Three items, the arm's own settings, no run written: each item's time and reply (its first 300 characters;
@@ -140,16 +146,17 @@ A passed smoke makes the model **vetted**: onboarded, and shown to work on a tas
 ## 5 · Run it, and see it
 
 ```bash
-evh run --config data/configs/tickets_llama.yaml
-evh models
+evh run --system tickets_llama_v1 --dataset tickets_v1
+evh model-list
 ```
 ```text
   model        kind  where        weights  build                     deployments  settings  onboarding       arms
   llama3.1-8b  llm   self-hosted  open     llama3.1:8b@46e0c10c039e  laptop       defaults  pass 2026-10-31  1
 ```
 
+The table continues with `goals` and `best result`: the goals the model's arms are on, and its place on each.
 The run's fingerprint takes the weights, the server and where it ran from the record's deployment, so two
-runs of this arm on different builds cannot pass for one measurement. `evh models --model llama3.1-8b` prints
+runs of this arm on different builds cannot pass for one measurement. `evh model-show llama3.1-8b` prints
 the record in full: each deployment, its onboarding, the settings' history, and the arms that use it. The
 catalog shows the same on its **Models** page and a page per model (`evh catalog`, then
 [tutorial 5](5-catalog-and-inspector.md)).

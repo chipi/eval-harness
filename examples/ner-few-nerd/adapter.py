@@ -54,7 +54,7 @@ from extraction import (  # noqa: E402
     scorer_sha256,
 )
 
-__all__ = ["call_system", "score", "warmup", "fingerprint", "scorer_id",
+__all__ = ["call_system", "prompts", "score", "warmup", "fingerprint", "scorer_id",
            "PRIMARY_METRIC", "METRIC_KINDS", "TRANSIENT_MARKERS"]
 
 TRANSIENT_MARKERS = ("model is warming up", "no instances available", "upstream")
@@ -589,6 +589,12 @@ def scorer_id() -> Dict[str, str]:
         "normalizer_sha256": normalizer_sha256(),
         "parser_sha256": _parser_sha256(),
     }
+
+
+def prompts(params: Dict[str, Any]) -> Dict[str, str]:
+    """The prompt a call sends, by name (`<example>/<prompt file>`), the text this adapter's fingerprint hashes as
+    `prompt_sha256`: the harness records it as a prompt version of the run (RFC-032 step 4b)."""
+    return {f"{HERE.name}/{Path(str(params.get('prompt_file') or 'prompt.txt')).stem}": _prompt(params)}
 
 
 def fingerprint(params: Dict[str, Any]) -> Dict[str, Any]:

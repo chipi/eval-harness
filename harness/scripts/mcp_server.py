@@ -1,16 +1,15 @@
 #!/usr/bin/env python3
-"""evh mcp: the project's read commands as MCP tools, for an agent (RFC-018).
+"""evh mcp: the harness's reads as MCP tools, for an agent (RFC-018, RFC-032 step 9).
 
     evh mcp                       # stdio, the project the working directory is in
     evh mcp --project path/to/project
 
-An MCP client (Claude Code, Claude Desktop, any agent) starts this as a stdio server. Its tools are
-the commands a person reads the project with: the catalog's views, the inspector in the terminal,
-the rounds, the runs, validate. Each call runs the command as a child process (`evh <command> …`,
-with `--json` where the command has it), so a tool answers exactly what the command prints. No tool
-writes the project, spends or runs a model: those stay commands a person runs (0.8.0 adds them, with
-consent). Two keep an answer they computed in the project's ignored .cache/ (family-test its whole
-answer, the views their p-values) and nothing else.
+An MCP client (Claude Code, Claude Desktop, any agent) starts this as a stdio server. Its tools are the read operations of
+the harness (the `evh` commands that read; the same names as the command line and the API's resources): the catalog's views, the rounds,
+the runs, the statistics. Each call is answered in the server's own process, from the data the project holds, and the answer
+is the operation's result, structured: `{"command", "version", "result"}`. No tool writes the project, spends or runs a model:
+those stay commands a person runs (0.8.0 adds them, with consent). The server keeps what it computed in memory, for as long as
+the data is what it was computed from, and the paired tests of the goals in the project's ignored .cache/.
 
 For Claude Code, in the project:  claude mcp add evh -- evh mcp
 """
@@ -22,120 +21,59 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
 import argparse
-import contextlib
+import contextvars
 import json
-import math
 import os
-import re
-import runpy
-import signal
 import subprocess
 import sys
+import threading
 import time
 from collections import OrderedDict
 from pathlib import Path
 from typing import Any
 
-HERE = Path(__file__).resolve().parent
-
-#: The commands that are tools: they only read. Every other command is in NOT_TOOLS with the
-#: reason (tests/test_mcp_server.py fails on a command in neither).
-READ_TOOLS = (
-    "overview",
-    "datasets",
-    "dataset-items",
-    "arms",
-    "models",
-    "goals",
-    "references",
-    "metrics",
-    "activity",
-    "search",
-    "inspect",
-    "rounds",
-    "runs-list",
-    "leaderboard",
-    "pair-test",
-    "family-test",
-    "rank-stability",
-    "run-compare",
-    "validate",
-    "captures",
-    "labels",
-    "picks",
-    "deploy-sheet",
+from evaluation_harness import ops as _ops  # the model's operations (RFC-032), no project code
+from evaluation_harness._cmdline import (
+    MAX_VALUE,
+    MAX_VALUES,
+    PATH_VARS,
+    TIMEOUT_S,
+    kill_group,
+    public_error,
+    run_operation,
 )
+
+HERE = Path(__file__).resolve().parent
+MAX_OUT = 1_000_000
+
+#: Tools that write, for the agent sampler of a study alone (owner, 2026-11-09, RFC-029): offered by a local server
+#: only, never a public one, and named as not read-only. They are work operations, each run as its own process
+#: (_cmdline.run_operation), as a job's is: never its body in the server's. Every other write is the command line's or a
+#: job's.
+AGENT_TOOLS = ("study-ask", "study-tell")
+
 NOT_TOOLS = {
+    "jobs-start": "starts a job: the agents act through the command line or the API (RFC-026)",
+    "jobs-status": "the jobs of this machine's project, not its data",
+    "jobs-logs": "a job's log, which can hold anything its command printed",
+    "jobs-stop": "stops a job",
+    "jobs-resume": "starts a job",
     "init": "writes a project",
     "skills-install": "writes the skills into a project",
     "env-check": "reads the environment and keys, not the project",
-    "dataset-create": "writes",
-    "dataset-materialize": "writes",
-    "dataset-profile": "writes",
-    "reference-manifest": "writes",
-    "run": "runs a system and may spend",
-    "arm-smoke": "runs a system on a few items, may spend, and writes the model record",
-    "model-onboard": "calls a model and writes the model record",
-    "fingerprint-migrate": "rewrites the committed runs' fingerprints",
-    "sweep": "runs systems and may spend",
-    "rescore": "writes runs",
-    "score-preview": "runs the project's own scoring code",
-    "judge": "calls models and spends",
-    "judge-score": "calls models and spends",
-    "silver-calibrate": "writes",
-    "cost-report": "a report tool; not yet a tool",
-    "bootstrap-test": "a statistics command; not yet a tool",
-    "holdout": "a statistics command; not yet a tool",
-    "import-run": "writes runs",
-    "importer-check": "reads a production system, not the project",
-    "capture": "reads a production system and writes",
-    "dataset-from-capture": "writes",
-    "label-sheet": "writes a sheet",
-    "label-import": "writes a label set",
-    "sheet-import": "writes a label set or judged runs",
-    "label-from-run": "writes a label set",
-    "label-from-capture": "writes a label set",
-    "reference-promote": "writes a reference",
-    "arm-from-capture": "writes a config and a run",
-    "pick": "writes the pick list",
-    "dataset-extend": "writes a dataset",
-    "dataset-split": "writes",
     "capture-scrub": "runs a project's command and writes",
-    "capture-restore": "reads a source and writes records and item files",
-    "run-promote": "a decision: a person's",
-    "round-open": "a decision: a person's",
-    "round-retire": "a decision: a person's",
-    "round-close": "a decision: a person's",
-    "catalog": "writes the pages",
     "catalog-serve": "never returns",
     "self-test": "runs the test suite",
     "mcp": "this server",
+    "openapi": "the API's own description, made from the operations (RFC-032)",
 }
-#: The commands that take --json (catalog_views via _jsonout; dataset-items its profile; the statistics
-#: commands, runs-list and rounds hand their key results over by name, under result.values).
-JSON = {
-    "overview",
-    "datasets",
-    "arms",
-    "models",
-    "goals",
-    "references",
-    "metrics",
-    "activity",
-    "search",
-    "inspect",
-}
-JSON |= {"dataset-items", "captures", "labels", "picks", "deploy-sheet"}
-JSON |= {"runs-list", "rounds", "leaderboard", "pair-test", "family-test", "rank-stability", "run-compare"}
-#: Left out of every schema: the server uses the project's own adapter (an agent must not load an
-#: arbitrary file), and sets --json itself.
-HIDDEN = {"--adapter", "--json", "--help"}
-TIMEOUT_S = 300
-MAX_OUT = 1_000_000
-#: A tool argument's bounds: no command takes a longer value (an id, a period, a search's words),
-#: and a megabyte of argument only reached the kernel's limit and an error naming the interpreter.
-MAX_VALUE = 512
-MAX_VALUES = 64
+NOT_TOOLS.update(
+    dict.fromkeys(
+        (op.name for op in _ops.of_kind("edit", "decision", "work") if op.name not in AGENT_TOOLS),
+        "a write of the model: the command line, or its API resource (RFC-032)",
+    )
+)
+
 #: The request body the HTTP endpoint reads (--max-body): a tool call is a few hundred bytes, and
 #: the SDK's 4 MiB default let a few parallel bodies take the container past its memory limit.
 MAX_BODY = 64 * 1024
@@ -146,310 +84,6 @@ ANSWERS_BYTES = 16 * 1024 * 1024
 #: An answer kept is dropped after an hour: a view's default period (the last 14 days) moves with
 #: the date, and a server runs for days.
 ANSWERS_TTL = 3600
-
-
-class _Parser(Exception):
-    def __init__(self, parser: argparse.ArgumentParser):
-        self.parser = parser
-
-
-def parser_of(command: str) -> argparse.ArgumentParser:
-    """The command's argparse parser, read without running it: its script runs until it parses
-    its arguments, and the parser is handed back there."""
-    from evaluation_harness.cli import COMMANDS  # noqa: PLC0415
-
-    script = HERE / COMMANDS[command][0]
-    real = argparse.ArgumentParser.parse_args
-
-    def grab(self, *_a, **_k):
-        raise _Parser(self)
-
-    argparse.ArgumentParser.parse_args = grab  # type: ignore[method-assign]
-    argv = sys.argv
-    sys.argv = [str(script)]
-    try:
-        # stdout is the protocol's channel: nothing the script prints may reach it.
-        with contextlib.redirect_stdout(sys.stderr):
-            runpy.run_path(str(script), run_name="__main__")
-    except _Parser as got:
-        return got.parser
-    finally:
-        argparse.ArgumentParser.parse_args = real  # type: ignore[method-assign]
-        sys.argv = argv
-    raise RuntimeError(f"{command}: its script never parsed arguments")
-
-
-def _name(a: argparse.Action) -> str:
-    longest = max(a.option_strings, key=len) if a.option_strings else a.dest
-    return longest.lstrip("-")
-
-
-def _actions(parser: argparse.ArgumentParser) -> list[argparse.Action]:
-    return [
-        a
-        for a in parser._actions
-        if not isinstance(a, argparse._HelpAction) and not (set(a.option_strings) & HIDDEN)
-    ]
-
-
-def input_schema(parser: argparse.ArgumentParser) -> dict:
-    """A JSON Schema for the parser's options: a property per option, named as on the command line."""
-    props: dict[str, Any] = {}
-    required = []
-    for a in _actions(parser):
-        if isinstance(a, (argparse._StoreTrueAction, argparse._StoreFalseAction)):
-            p: dict[str, Any] = {"type": "boolean"}
-        else:
-            t = {int: "integer", float: "number"}.get(a.type, "string")  # type: ignore[call-overload]
-            p = {"type": t}
-            if a.choices:
-                p["enum"] = list(a.choices)
-            if a.nargs in ("*", "+") or isinstance(a, argparse._AppendAction):
-                p = {"type": "array", "items": p}
-        if a.help and a.help != argparse.SUPPRESS:
-            p["description"] = a.help % {"default": a.default} if "%(default)" in a.help else a.help
-        props[_name(a)] = p
-        if a.required or not a.option_strings:
-            required.append(_name(a))
-    schema: dict[str, Any] = {"type": "object", "properties": props, "additionalProperties": False}
-    if required:
-        schema["required"] = required
-    return schema
-
-
-def argv_of(parser: argparse.ArgumentParser, arguments: dict) -> list[str]:
-    """The command line a person would type for these arguments; a name the schema does not have
-    is refused before anything runs."""
-    by = {_name(a): a for a in _actions(parser)}
-    unknown = sorted(set(arguments) - set(by))
-    if unknown:
-        raise ValueError(
-            f"unknown argument(s): {', '.join(unknown)}; this tool takes {', '.join(sorted(by)) or 'none'}"
-        )
-    missing = sorted(k for k, a in by.items() if (a.required or not a.option_strings) and k not in arguments)
-    if missing:
-        raise ValueError(f"missing argument(s): {', '.join(missing)}")
-    out: list[str] = []
-    tail: list[str] = []
-    for k, v in sorted(arguments.items()):
-        a = by[k]
-        if isinstance(a, (argparse._StoreTrueAction, argparse._StoreFalseAction)):
-            if not isinstance(v, bool):
-                raise ValueError(f"{k}: true or false, not {type(v).__name__}")
-            if v:
-                out.append(max(a.option_strings, key=len))
-            continue
-        many = a.nargs in ("*", "+") or isinstance(a, argparse._AppendAction)
-        if isinstance(v, list) and not many:
-            raise ValueError(f"{k}: one value, not a list")
-        vals = v if isinstance(v, list) else [v]
-        if any(isinstance(x, (bool, dict, list)) or x is None for x in vals):
-            raise ValueError(f"{k}: each value is a string or a number")
-        vals = [str(x) for x in vals]
-        if any("\0" in x for x in vals):
-            raise ValueError(f"{k}: a value may not hold a NUL byte")
-        if len(vals) > MAX_VALUES or any(len(x) > MAX_VALUE for x in vals):
-            raise ValueError(f"{k}: at most {MAX_VALUES} values of {MAX_VALUE} characters")
-        # A value that starts with "-" would be read by the command as an option of its own (a
-        # positional `["x", "--adapter", "mod:fn"]` would load code the schema leaves out): refused.
-        bad = [x for x in vals if x.startswith("-")]
-        if bad:
-            raise ValueError(f"{k}: a value may not start with '-' ({bad[0][:40]!r})")
-        if not a.option_strings:
-            tail.extend(vals)
-        elif isinstance(a, argparse._AppendAction):
-            for x in vals:
-                out += [max(a.option_strings, key=len), x]
-        else:
-            out += [max(a.option_strings, key=len), *vals]
-    # Positionals after "--": whatever they hold, the command reads them as values, never options.
-    return out + (["--", *tail] if tail else [])
-
-
-def public_error(text: str, project: Path) -> str:
-    """A command's refusal as a public caller is told it: its own message, with no server path and
-    no traceback (a crash is "internal error"; the log and the error tracker have the rest)."""
-    if "Traceback (most recent call last)" in text:
-        return "internal error: the command failed; it is reported to the server's maintainers"
-    lines = [ln for ln in text.splitlines() if ln.strip()]
-    msg = next((ln for ln in reversed(lines) if ln.startswith("ERROR")), lines[-1] if lines else "")
-    for root in sorted({str(project), str(project.resolve()), str(HERE.parent)}, key=len, reverse=True):
-        msg = msg.replace(root + "/", "").replace(root, ".")
-    return re.sub(r"/(?:[\w.-]+/)+", "", msg)[:2000]
-
-
-#: The environment variables that name a path from where a command stands (EVAL_DATA_DIR and EVAL_RUNS_DIR are
-#: relative to the project root, _common._paths, so they stay as they are).
-PATH_VARS = ("EVAL_HOME", "EVH_P_CACHE")
-
-
-def run_command(
-    project: Path, command: str, argv: list[str], timeout: float = TIMEOUT_S, public: bool = False
-) -> tuple[int, str, str]:
-    """`evh <command> <argv>` in the project, in its own process group, stdin closed, with a timeout
-    that kills the group. `public`: the command runs as a public server's would (EVH_PUBLIC), so it
-    sees only the fields marked public."""
-    cmd = [sys.executable, str(HERE / "cli.py"), command, *(["--json"] if command in JSON else []), *argv]
-    # The goals' tests are the slow part of a view (~50 s for this repository's runs); each call is a
-    # fresh process, so they are kept on disk (stats.EVH_P_CACHE), in the project's ignored .cache/
-    # unless the deployment names its own precomputed file.
-    env = dict(os.environ)
-    # The command runs in the project, so a relative path the caller set is made absolute from where the
-    # caller stands: render.sh ran `EVAL_HOME=_release/inspector`, the commands resolved it inside the project
-    # and read an empty one, and every answer written ahead for 0.6.2 to 0.7.1 said there were no goals.
-    for k in PATH_VARS:
-        if env.get(k) and not os.path.isabs(env[k]):
-            env[k] = os.path.abspath(env[k])
-    env.setdefault("EVH_P_CACHE", str(project / ".cache" / "evh-p.jsonl"))
-    env.pop("EVH_PUBLIC", None)
-    if public:
-        env["EVH_PUBLIC"] = "1"
-    p = subprocess.Popen(
-        cmd,
-        cwd=project,
-        env=env,
-        stdin=subprocess.DEVNULL,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-        start_new_session=True,
-    )
-    try:
-        out, err = p.communicate(timeout=timeout)
-    except subprocess.TimeoutExpired:
-        os.killpg(p.pid, signal.SIGKILL)
-        out, err = p.communicate()
-        return 124, out, err + f"\n(stopped after {timeout:g} s)"
-    return p.returncode, out, err
-
-
-#: Options no tool offers: they write a file (the sheet's CSV and its key), and a tool writes nothing.
-TOOL_HIDDEN = {
-    "inspect": {"--csv", "--fill", "--choices", "--seed", "--rubric", "--scale"},
-    # Both name a path of the server's: another runs folder, a file of item ids.
-    "pair-test": {"--runs-dir", "--items"},
-    "family-test": {"--runs-dir", "--items"},
-}
-#: In --public mode, the options that would answer with an item's text, an arm's output or a label (the
-#: sheet): a public server answers with numbers and ids only, as catalog-serve --public does without
-#: --publish.
-PUBLIC_HIDDEN = {
-    "inspect": {
-        "--item",
-        "--sheet",
-        "--dataset-id",
-        "--scores-only",
-        "--wrong-against",
-        "--new-vs",
-        "--split",
-        "--unlabelled",
-        # --items-out serves outputs and references; --group names a recorded field, which can hold text.
-        "--items-out",
-        "--max-chars",
-        "--group",
-        "--group-match",
-    },
-    "dataset-items": {"--item"},
-    # The statistics answer with numbers and ids only; what a public caller must not set is how long they run.
-    "pair-test": {"--permutations"},
-    "family-test": {"--permutations"},
-    "rank-stability": {"--draws"},
-}
-#: In --public mode, the tools left out, and why: a public server serves a copy of the data, not a
-#: whole project (no corpora, no example code), so validate would only ever report what is not there.
-PUBLIC_DROPPED = {"validate": "a public copy is not a whole project: validate fails by design"}
-
-
-def tools_for(public: bool) -> tuple:
-    """The tools this server offers."""
-    return tuple(c for c in READ_TOOLS if not (public and c in PUBLIC_DROPPED))
-
-
-#: The tools whose answer with no argument depends on today's date (a period counted from today, by default):
-#: never written ahead, since an answer kept past the day would read the wrong period.
-DATED = {"overview", "activity"}
-
-
-def answerable_ahead(public: bool) -> list[str]:
-    """The tools whose answer can be written ahead for a release that never changes (--write-answers): each one
-    that takes no required argument, but those whose default depends on the date (DATED)."""
-    out = []
-    for c in tools_for(public):
-        if c in DATED:
-            continue
-        try:
-            argv_of(parser_of(c), {})
-        except ValueError:  # it needs an argument: a call names what to answer
-            continue
-        out.append(c)
-    return out
-
-
-def write_answers(project: Path, path: Path, public: bool, timeout: float = TIMEOUT_S) -> int:
-    """--write-answers: each tool answerable ahead, run once with no argument as a call runs it, its answer one JSON
-    line {tool, argv, out, harness}. A tool that fails or answers past MAX_OUT is left out: a call runs it. A fresh
-    `evh` process a call takes several seconds of CPU (every arm's scores read again); a deployment that limits
-    the server's CPU paid it in tens of seconds on the first call after each start and after each hour."""
-    from evaluation_harness._version import __version__  # noqa: PLC0415
-
-    lines, left = [], []
-    calls: list[tuple[str, list[str]]] = [(c, []) for c in answerable_ahead(public)]
-    # A tool whose one argument is a dataset is answerable ahead for each dataset: a finite set. The first public
-    # `leaderboard --dataset-id` took 47-60 s on 2026-11-04 (a seeded permutation test, 5 s of CPU here).
-    tools = tools_for(public)
-    for c in (t for t in BY_DATASET if t in tools):
-        calls += [(c, argv_of(parser_of(c), {"dataset-id": ds})) for ds in dataset_ids(project)]
-    no_runs, failed, large = 0, [], 0
-    for c, argv in calls:
-        code, out, err = run_command(project, c, argv, timeout, public)
-        if code != 0 or len(out) > MAX_OUT:
-            if not argv:
-                left.append(f"{c} (exit {code})" if code else f"{c} ({len(out):,} bytes)")
-            elif code == 0:
-                large += 1
-            elif "no runs on dataset" in err:  # nothing to say about it: a call answers that itself
-                no_runs += 1
-            else:  # named, so a broken render says why (every one failed from 0.6.2 to 0.7.1, unnoticed)
-                failed.append(
-                    f"{c} {' '.join(argv)} (exit {code}: {(err.strip().splitlines() or [''])[-1][:120]})"
-                )
-            continue
-        lines.append(json.dumps({"tool": c, "argv": argv, "out": out, "harness": __version__}))
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text("".join(x + "\n" for x in lines), encoding="utf-8")
-    print(
-        f"{path}: {len(lines)} answer(s) written ahead"
-        + (f"; left out: {', '.join(left)}" if left else "")
-        + (f"; {no_runs} per-dataset call(s) on a dataset with no runs" if no_runs else "")
-        + (f"; {large} too large to keep" if large else "")
-        + (f"; {len(failed)} FAILED: {'; '.join(failed[:3])}" if failed else "")
-    )
-    return 1 if failed else 0
-
-
-#: The tools written ahead once per dataset (--write-answers), with `dataset-id` their only argument.
-BY_DATASET = ("leaderboard",)
-
-
-def dataset_ids(project: Path) -> list[str]:
-    """The project's dataset ids (data/datasets/*.json), sorted."""
-    return sorted(p.stem for p in (project / "data" / "datasets").glob("*.json"))
-
-
-def _answer(types, name: str, out: str, public: bool):
-    """A command's output as the tool's answer: its text, and its JSON as structured content when it has one."""
-    structured = None
-    if name in JSON:
-        try:
-            structured = json.loads(out)
-        except ValueError:
-            structured = None
-    if public and name == "dataset-items" and isinstance(structured, dict):
-        # L2: a profile written --with-text carries item text; a public server serves none.
-        for r in (structured.get("result") or {}).get("rows") or []:
-            r.pop("text", None)
-        out = json.dumps(structured, indent=1)
-    return types.CallToolResult(content=[types.TextContent(text=out)], structured_content=structured)
 
 
 #: What the log line leaves out of a call: who made it (its address, its user agent). The hooks
@@ -526,6 +160,117 @@ def caller_key(addr: str) -> str:
     return str(ipaddress.ip_network(f"{ip}/64", strict=False)) if ip.version == 6 else str(ip)
 
 
+def read_ops(public: bool) -> list[Any]:
+    """The registry's reads this server offers: every read, but those a public server does not offer (`public_dropped`)."""
+    return [op for op in _ops.of_kind("read") if not (public and op.public_dropped)]
+
+
+def tools_for(public: bool) -> tuple:
+    """The tools this server offers: a read operation each, named as the operation (the name the command line and the API
+    use), and for a local server the agent sampler's two."""
+    return tuple(op.name for op in read_ops(public)) + (() if public else AGENT_TOOLS)
+
+
+def tool_schema(op: Any, public: bool) -> dict:
+    """An operation's input as the tool's JSON Schema: the parts of its route, then its own inputs (and the inputs of which
+    a call names one, `anyOf`)."""
+    own = op.schema(public)
+    parts = op.path_params()
+    return {
+        "type": "object",
+        "properties": {
+            **{p: {"type": "string", "description": f"the {p.replace('_', ' ')}'s id"} for p in parts},
+            **own["properties"],
+        },
+        "required": [*parts, *own["required"]],
+        **({"anyOf": own["anyOf"]} if "anyOf" in own else {}),
+        "additionalProperties": False,
+    }
+
+
+def check_arguments(op: Any, arguments: dict, public: bool) -> None:
+    """A call's arguments against the tool's schema: a name the schema does not have, a missing one, a wrong type, a value
+    longer than any input takes, are refused before anything runs. ValueError says which."""
+    import jsonschema  # noqa: PLC0415
+
+    schema = tool_schema(op, public)
+    try:
+        jsonschema.validate(arguments, schema)
+    except jsonschema.ValidationError as exc:
+        unknown = sorted(set(arguments) - set(schema["properties"]))
+        if unknown:
+            raise ValueError(
+                f"unknown argument(s): {', '.join(unknown)}; this tool takes {', '.join(sorted(schema['properties'])) or 'none'}"
+            ) from None
+        from evaluation_harness.ops.registry import input_problem  # noqa: PLC0415
+
+        raise ValueError(input_problem(exc)) from None
+
+    def strings(v: Any) -> list[str]:
+        return [x for x in (v if isinstance(v, list) else [v]) if isinstance(x, str)]
+
+    for k, v in arguments.items():
+        vals = strings(v)
+        if any("\0" in x for x in vals):
+            raise ValueError(f"{k}: a value may not hold a NUL byte")
+        if len(vals) > MAX_VALUES or any(len(x) > MAX_VALUE for x in vals):
+            raise ValueError(f"{k}: at most {MAX_VALUES} values of {MAX_VALUE} characters")
+
+
+def check_agent_arguments(op: Any, arguments: dict) -> None:
+    """An agent tool's arguments (a work operation, a local server's only) against the operation's schema, which leaves
+    out what only the command line takes (study-tell's --proposal: a path of the server's; a call sends proposal_json):
+    refused before anything runs, ValueError saying which."""
+    import jsonschema  # noqa: PLC0415
+    from evaluation_harness.ops.registry import input_problem  # noqa: PLC0415
+
+    try:
+        jsonschema.validate(arguments, op.job_schema())
+    except jsonschema.ValidationError as exc:
+        raise ValueError(input_problem(exc)) from None
+
+
+def run_op(op: Any, arguments: dict, public: bool) -> dict:
+    """An operation answered in this process, as the public flag of the server says: its result, as the envelope every
+    surface gives it (`command`, `version`, `result`), as JSON holds it (NaN and infinities as null)."""
+    from evaluation_harness import _jsonout, _visibility  # noqa: PLC0415
+    from evaluation_harness._version import __version__  # noqa: PLC0415
+    from evaluation_harness.ops.legacy import refusing  # noqa: PLC0415
+
+    parts = {p: arguments[p] for p in op.path_params()}
+    inputs = {k: v for k, v in arguments.items() if k not in parts}
+    try:
+        with _visibility.public_call(public), _jsonout.own_notes(), refusing():
+            result = op.call(**parts, **inputs)
+    except SystemExit as exc:  # a command's exit that is not a refusal: a crash, not the server's end
+        raise RuntimeError(f"{op.name} exited: {exc.code}") from None
+    return _jsonout.plain({"command": op.name, "version": __version__, "result": result})
+
+
+def _answer(types, envelope: dict | None, text: str):
+    """An answer as the tool gives it: its text, and the envelope as structured content."""
+    return types.CallToolResult(content=[types.TextContent(text=text)], structured_content=envelope)
+
+
+def use_project(project: Path) -> None:
+    """Make this process the project's: its working directory, EVAL_HOME, the paired tests' cache and its .env, as a command
+    run in the project had them. A relative path the caller set is made absolute from where the caller stands first."""
+    for k in PATH_VARS:
+        if os.environ.get(k) and not os.path.isabs(os.environ[k]):
+            os.environ[k] = os.path.abspath(os.environ[k])
+    os.chdir(project)
+    os.environ["EVAL_HOME"] = str(project)
+    os.environ["EVAL_VIA_EVH"] = (
+        "1"  # the hints an answer gives name `evh <command>`: an agent has no Makefile
+    )
+    from evaluation_harness import _common  # noqa: PLC0415
+
+    _common.project_root.cache_clear()
+    _common._paths.cache_clear()
+    _common.load_dotenv()
+    _common.use_p_cache()
+
+
 def build_server(
     project: Path,
     *,
@@ -536,67 +281,60 @@ def build_server(
     rate_total: int = 0,
     client_header: str | None = None,
     hooks: Hooks | None = None,
-    answers_file: Path | None = None,
 ):
-    """The MCP server: its tools, and how a call runs. `public`: no option that answers with text;
-    `concurrent`: how many commands run at once (a call that waits 30 s for a slot is refused);
-    `rate`: calls a minute per caller, `rate_total`: from all callers together (0: no limit; nothing
-    in front of a public server throttles for it, and a caller who can rotate its address is still
-    held by the total). `answers_file` (--public): answers written ahead for this release (--write-answers),
-    served without running the command; a line another harness version wrote is not read."""
+    """The MCP server: its tools, and how a call is answered. Every read operation of the registry is a tool, answered in this
+    process (`public`: the call is a public server's, so what a public server must not show stays hidden, and the operations
+    that show it are not offered); `concurrent`: how many calls are answered at once (a call that waits 30 s for a slot is
+    refused); `rate`: calls a minute per caller, `rate_total`: from all callers together (0: no limit; nothing in front of a
+    public server throttles for it, and a caller who can rotate its address is still held by the total)."""
     hooks = hooks or Hooks()
     recent: dict[str, list[float]] = {}
     everyone: list[float] = []
-    answers: OrderedDict = OrderedDict()  # (tool, argv) -> its result, --public only
+    answers: OrderedDict = OrderedDict()  # (tool, args as JSON) -> its result, --public only
     answers_size = [0]
     inflight: dict[str, int] = {}
     import anyio  # noqa: PLC0415
     import mcp.types as types  # noqa: PLC0415
     from evaluation_harness._version import __version__  # noqa: PLC0415
-    from evaluation_harness.cli import COMMANDS  # noqa: PLC0415
+    from evaluation_harness.model.entity import Problem  # noqa: PLC0415
     from mcp.server import Server  # noqa: PLC0415
 
-    parsers = {c: parser_of(c) for c in tools_for(public)}
-    if public and answers_file is not None:
-        for line in answers_file.read_text(encoding="utf-8").splitlines():
-            try:
-                rec = json.loads(line)
-            except ValueError:
-                continue  # a torn line: that tool is run when called
-            if (
-                not isinstance(rec, dict)
-                or rec.get("harness") != __version__
-                or rec.get("tool") not in parsers
-            ):
-                continue
-            res = _answer(types, rec["tool"], str(rec.get("out") or ""), public)
-            # Written for this release, which never changes under the server: kept for as long as it runs,
-            # never past ANSWERS_TTL (its time is infinitely recent).
-            answers[(rec["tool"], tuple(rec.get("argv") or []))] = (math.inf, res)
-            answers_size[0] += len(res.content[0].text)
-    for c, flags in TOOL_HIDDEN.items():
-        if c in parsers:
-            parsers[c]._actions = [a for a in parsers[c]._actions if not set(a.option_strings) & flags]
-    if public:
-        for c, flags in PUBLIC_HIDDEN.items():
-            p = parsers[c]
-            p._actions = [a for a in p._actions if not set(a.option_strings) & flags]
-    slots = anyio.CapacityLimiter(concurrent)
+    ops = {op.name: op for op in read_ops(public)}
+    agent = {} if public else {c: _ops.OPS[c] for c in AGENT_TOOLS}
+    known_tools = {*ops, *agent}
+
+    def key_of(name: str, arguments: dict) -> tuple:
+        return (name, json.dumps(arguments, sort_keys=True, ensure_ascii=False))
+
+    # Held by a call's work, released by that work when it ends, not when its caller stops waiting: a call answered in this
+    # process cannot be stopped, so a slot freed at the timeout let repeated slow calls run past --concurrent (and the
+    # callers' one-at-a-time with them), unbounded, on a server with half a CPU.
+    slots = threading.BoundedSemaphore(concurrent)
+    tally = threading.Lock()  # inflight, which a call's work changes from its own thread
     tools = [
         types.Tool(
-            name=c,
-            description=f"{COMMANDS[c][1]}."
-            + (f" {parsers[c].description}" if parsers[c].description else ""),
-            input_schema=input_schema(parsers[c]),
+            name=op.name,
+            description=op.about,
+            input_schema=tool_schema(op, public),
             annotations=types.ToolAnnotations(
                 read_only_hint=True, destructive_hint=False, idempotent_hint=True, open_world_hint=False
             ),
         )
-        for c in tools_for(public)
+        for op in ops.values()
+    ] + [
+        types.Tool(
+            name=c,
+            description=agent[c].about,
+            input_schema=agent[c].job_schema(),
+            annotations=types.ToolAnnotations(
+                read_only_hint=False, destructive_hint=False, idempotent_hint=False, open_world_hint=False
+            ),
+        )
+        for c in agent
     ]
 
     async def list_tools(_ctx, _params) -> types.ListToolsResult:
-        """tools/list: the read commands."""
+        """tools/list: the read operations."""
         return types.ListToolsResult(tools=tools)
 
     def refuse(text: str, info: dict) -> types.CallToolResult:
@@ -605,18 +343,31 @@ def build_server(
         hooks("request", info)
         return types.CallToolResult(content=[types.TextContent(text=text)], is_error=True)
 
+    def remember(k: tuple, res) -> None:
+        if k not in answers:
+            answers[k] = (time.monotonic(), res)
+            answers_size[0] += len(res.content[0].text)
+        while answers and answers_size[0] > ANSWERS_BYTES:
+            _, (_t, old) = answers.popitem(last=False)
+            answers_size[0] -= len(old.content[0].text)
+
     async def call_tool(ctx, params) -> types.CallToolResult:
-        """tools/call: the command, run as a child process."""
+        """tools/call: the operation, answered in this process."""
         name, arguments = params.name, params.arguments or {}
-        client, agent = _client(ctx, client_header)
+        client, agent_name = _client(ctx, client_header)
         key = caller_key(client)
         # What is recorded of a call: the tool (a name the server does not have is "unknown": a
         # client's string never becomes a metric label, an event or a log key), the names of its
         # arguments (at most 16, never their values), how it ended. The caller's address goes to
         # the hooks (analytics derive a visitor from it), and neither it nor the user agent into the log line.
-        known = name in parsers
+        known = name in known_tools
         args = [str(k)[:40] for k in sorted(arguments)[:16]] if known else []
-        info: dict = {"tool": name if known else "unknown", "args": args, "agent": agent, "client": client}
+        info: dict = {
+            "tool": name if known else "unknown",
+            "args": args,
+            "agent": agent_name,
+            "client": client,
+        }
         try:
             # The rate counts every call, refused ones too: refusals are the cheap way to flood.
             if rate:
@@ -633,25 +384,29 @@ def build_server(
             if not known:
                 return refuse(f"no tool {name[:60]!r}", {**info, "refused": "tool"})
             try:
-                argv = argv_of(parsers[name], arguments)
+                if name in agent:
+                    check_agent_arguments(agent[name], arguments)
+                else:
+                    check_arguments(ops[name], arguments, public)
             except ValueError as exc:
                 return refuse(str(exc), {**info, "refused": "arguments"})
-            # M2: a public server reads a release that never changes under it, so an answer is
-            # kept by its exact command line: a repeated heavy view costs nothing the second time.
-            kept = answers.get((name, tuple(argv))) if public else None
+            # M2: a public server reads a release that never changes under it, so an answer is kept by what was asked: a
+            # repeated heavy view costs nothing the second time.
+            answer_key = key_of(name, arguments)
+            kept = answers.get(answer_key) if public and name in ops else None
             if kept is not None and time.monotonic() - kept[0] > ANSWERS_TTL:
-                answers.pop((name, tuple(argv)), None)
+                answers.pop(answer_key, None)
                 answers_size[0] -= len(kept[1].content[0].text)
                 kept = None
             hit = kept[1] if kept is not None else None
             if hit is not None:
-                answers.move_to_end((name, tuple(argv)))
-                _log(**{k: v for k, v in info.items() if k not in PRIVATE}, exit=0, cached=True)
+                answers.move_to_end(answer_key)
+                _log(**{k2: v for k2, v in info.items() if k2 not in PRIVATE}, exit=0, cached=True)
                 hooks(
                     "request", {**info, "exit": 0, "ms": 0, "bytes": len(hit.content[0].text), "cached": True}
                 )
                 return hit
-            # The total counts the calls that run a command: a flood of refusals (which costs
+            # The total counts the calls that are answered: a flood of refusals (which costs
             # nothing) is held by the caller's own rate and never locks everyone else out.
             if rate_total:
                 now = time.monotonic()
@@ -662,35 +417,93 @@ def build_server(
                         {**info, "refused": "rate_total"},
                     )
                 everyone.append(now)
-            if (
-                client and inflight.get(key, 0) >= 1
-            ):  # over HTTP: a local stdio client may run tools in parallel
+            with tally:  # over HTTP: a local stdio client may run tools in parallel
+                busy = bool(client) and inflight.get(key, 0) >= 1
+                if not busy:
+                    inflight[key] = inflight.get(key, 0) + 1
+            if busy:
                 return refuse(
                     "one call at a time per caller: wait for the last to answer", {**info, "refused": "busy"}
                 )
-            inflight[key] = inflight.get(key, 0) + 1
+
+            def caller_done() -> None:
+                """The caller's call is over: another may start (one at a time per caller)."""
+                with tally:
+                    inflight[key] -= 1
+                    if not inflight[key]:
+                        del inflight[key]
+
+            code, err, out, envelope = 0, "", "", None
+            acquired = handed = False
             try:
                 t0 = time.monotonic()
-                with anyio.move_on_after(30) as waited:
-                    await slots.acquire()
-                if waited.cancelled_caught:
+                with anyio.move_on_after(30):
+                    while not (acquired := slots.acquire(blocking=False)):
+                        await anyio.sleep(0.05)
+                if not acquired:
                     return refuse("the server is busy: try again in a minute", {**info, "refused": "busy"})
+                started: list[subprocess.Popen] = []
+                result: dict[str, Any] = {}
+                finished = threading.Event()
+
+                def work() -> None:
+                    """The call's work, in its own thread: the slot and the caller's count are given back when it ends."""
+                    try:
+                        if name in agent:
+                            result["value"] = run_operation(project, name, arguments, timeout, started)
+                        else:
+                            result["value"] = run_op(ops[name], arguments, public)
+                    except Exception as exc:  # noqa: BLE001 - handed to the call waiting for it, raised there
+                        result["error"] = exc
+                    finally:
+                        slots.release()
+                        caller_done()
+                        finished.set()
+
+                # The call's own thread, in a copy of this context: from here the slot and the caller's count are the
+                # work's, given back when it ends.
+                worker = threading.Thread(target=contextvars.copy_context().run, args=(work,), daemon=True)
+                worker.start()
+                handed = True
                 try:
-                    code, out, err = await anyio.to_thread.run_sync(
-                        run_command, project, name, argv, timeout, public
-                    )
-                finally:
-                    slots.release()
+                    # A cancelled call (notifications/cancelled, or the client gone) stops being waited for, as does one
+                    # past --timeout; what has begun in this process runs to its end, holding its slot.
+                    with anyio.fail_after(None if name in agent else timeout):
+                        while not finished.is_set():
+                            await anyio.sleep(0.02)
+                    if "error" in result:
+                        raise result["error"]
+                    if name in agent:
+                        code, out, err = result["value"]
+                    else:
+                        envelope = result["value"]
+                except TimeoutError:
+                    code, err = 124, f"(stopped waiting after {timeout:g} s)"
+                except (
+                    Problem
+                ) as exc:  # the operation's own refusal: a thing that is not there, an input that is wrong
+                    code, err = 1, f"ERROR ({exc.kind}): {exc}"
+                except anyio.get_cancelled_exc_class():
+                    for p in started:
+                        kill_group(p)
+                    _log(**{k2: v for k2, v in info.items() if k2 not in PRIVATE}, cancelled=True)
+                    raise
+                except Exception as exc:  # noqa: BLE001 -- a crash is the server's: told to the hooks, "internal error" to a public caller
+                    hooks("error", exc, info)
+                    code, err = 70, f"{type(exc).__name__}: {exc}"
             finally:
-                inflight[key] -= 1
-                if not inflight[key]:
-                    del inflight[key]
+                if not handed:
+                    if acquired:
+                        slots.release()
+                    caller_done()
+            if envelope is not None:
+                out = json.dumps(envelope, ensure_ascii=False)
             done = {**info, "exit": code, "ms": round((time.monotonic() - t0) * 1000), "bytes": len(out)}
-            # A command that refuses (exit 1, its ERROR: line, no traceback: a dataset id that is a
-            # path, a goal that does not exist) answered as designed; a crash is the error.
-            if code == 1 and "ERROR" in err and "Traceback" not in err:
+            # An operation that refuses (exit 1, its ERROR: line: a dataset id that is a path, a goal that does not exist)
+            # answered as designed; a crash is the error.
+            if code == 1 and "ERROR" in err:
                 done["refused"] = "command"
-            _log(**{k: v for k, v in done.items() if k not in PRIVATE})
+            _log(**{k2: v for k2, v in done.items() if k2 not in PRIVATE})
             hooks("request", done)
         except Exception as exc:
             hooks("error", exc, info)
@@ -698,34 +511,36 @@ def build_server(
         if code != 0:
             text = (err.strip() or out.strip() or f"exit {code}")[-65536:]
             if public:
-                text = public_error(text, project)
-            return types.CallToolResult(
-                content=[types.TextContent(text=f"{text}\n(exit {code})")], is_error=True
-            )
+                text = (
+                    public_error(text, project)
+                    if code != 70
+                    else "internal error: the call failed; it is reported to the server's maintainers"
+                )
+            return types.CallToolResult(content=[types.TextContent(text=text)], is_error=True)
         if len(out) > MAX_OUT:
             return types.CallToolResult(
                 content=[
                     types.TextContent(
-                        text=f"the answer is {len(out):,} bytes, over {MAX_OUT:,}: narrow it with the command's filters"
+                        text=f"the answer is {len(out):,} bytes, over {MAX_OUT:,}: narrow it with the tool's filters"
                     )
                 ],
                 is_error=True,
             )
-        res = _answer(types, name, out, public)
-        if public:
-            if (name, tuple(argv)) not in answers:
-                answers[(name, tuple(argv))] = (time.monotonic(), res)
-                answers_size[0] += len(res.content[0].text)
-            while answers and answers_size[0] > ANSWERS_BYTES:
-                _, (_t, old) = answers.popitem(last=False)
-                answers_size[0] -= len(old.content[0].text)
+        if name in agent:
+            try:
+                envelope = json.loads(out)
+            except ValueError:
+                envelope = None
+        res = _answer(types, envelope, out)
+        if public and name in ops:
+            remember(answer_key, res)
         return res
 
     return Server(
         "evaluation-harness",
         version=__version__,
-        instructions="The evaluation harness's read commands for this project: its datasets, goals, arms, "
-        "runs and comparisons. Each tool is an `evh` command; none writes or spends.",
+        instructions="The evaluation harness's reads for this project: its datasets, goals, arms, runs and comparisons. "
+        "Each tool is an operation of the harness, named as `evh <operation>` and its API resource; none writes or spends.",
         on_list_tools=list_tools,
         on_call_tool=call_tool,
     )
@@ -763,13 +578,13 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument(
         "--public",
         action="store_true",
-        help="no option that answers with an item's text or an arm's output, and no validate tool "
-        "(for a server anyone can reach)",
+        help="no tool that answers with an item's text, an arm's output or a label, none that reads the project's files, "
+        "and no input that would (for a server anyone can reach)",
     )
     ap.add_argument(
         "--timeout", type=float, default=TIMEOUT_S, help=f"seconds per call (default: {TIMEOUT_S})"
     )
-    ap.add_argument("--concurrent", type=int, default=4, help="commands run at once (default: 4)")
+    ap.add_argument("--concurrent", type=int, default=4, help="calls answered at once (default: 4)")
     ap.add_argument(
         "--rate", type=int, default=0, help="--http: calls a minute per caller (default: no limit)"
     )
@@ -806,25 +621,15 @@ def main(argv: list[str] | None = None) -> int:
         "--hooks",
         help="a deployment's observability: path/to/file.py[:NAME] or module[:NAME] (start, request, error, routes)",
     )
-    ap.add_argument(
-        "--write-answers",
-        type=Path,
-        metavar="FILE",
-        help="write ahead the answer of every tool that takes no argument and does not depend on the date, then "
-        "exit: for a release that never changes, served with --answers",
-    )
-    ap.add_argument(
-        "--answers",
-        type=Path,
-        metavar="FILE",
-        help="--public: serve the answers --write-answers wrote for this release without running the command "
-        "(a line another harness version wrote is not read)",
-    )
     args = ap.parse_args(argv)
-    if args.write_answers:
-        return write_answers(args.project.resolve(), args.write_answers, args.public, args.timeout)
-    if args.answers and not args.public:
-        raise SystemExit("--answers serves a release that never changes: it needs --public")
+    # The project and a file the caller names are where the caller stands, read before use_project moves this process
+    # into the project (a deployment passes them relative to its own folder).
+    args.project = args.project.resolve()
+    if args.hooks:
+        where, sep, name = args.hooks.partition(":")
+        if where.endswith(".py"):
+            args.hooks = os.path.abspath(where) + sep + name
+    use_project(args.project.resolve())
     if args.http and args.port is None:
         from evaluation_harness._common import project_port  # noqa: PLC0415
 
@@ -833,9 +638,12 @@ def main(argv: list[str] | None = None) -> int:
 
     project = args.project.resolve()
     if args.http and args.bind not in LOOPBACK and not args.allowed_host:
-        raise SystemExit(
+        from evaluation_harness._common import die  # noqa: PLC0415
+
+        die(
             f"--bind {args.bind} reaches beyond this machine: name the Host it answers with --allowed-host "
-            "(the server checks it against DNS rebinding)"
+            "(the server checks it against DNS rebinding)",
+            "not-allowed",
         )
     hooks = Hooks()
     if args.hooks:
@@ -851,7 +659,6 @@ def main(argv: list[str] | None = None) -> int:
         rate_total=args.rate_total,
         client_header=args.client_header,
         hooks=hooks,
-        answers_file=args.answers,
     )
     from evaluation_harness._version import __version__  # noqa: PLC0415
 

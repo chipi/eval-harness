@@ -2,16 +2,21 @@
 name: evh-evaluate-a-system
 description: Measure a system with eval-harness (evh) from nothing to a recorded decision — freeze a dataset (from files or from production records), make a reference, run each version of the system as an arm, compare them with paired tests, and promote the winner with a reason. Use when asked to "evaluate", "measure", "benchmark", "compare versions of" or "improve" a system with evh, or when starting evh in a project.
 metadata:
-  harness-version: "0.7.2"
+  harness-version: "0.8.0"
 ---
 
 # Evaluate a system with evh
 
-The loop: **dataset → reference → arms → runs → comparison → decision.** Each step writes files
+The loop: **dataset → reference → systems → runs → comparison → decision.** Each step writes files
 under `data/` that are frozen once written; a change is a new id. The project's `AGENTS.md`
 (written by `evh init`) holds the rules; read it first. This skill is the procedure.
 
-The blocks below run as written on the tutorial kit (`evh init --tutorial`: six support tickets,
+A project keeps `data/` as files, or in one database (`store: sqlite`, RFC-025). Put a setting in
+with `evh data-put --path <path under data/> --file <file>` and read one with `evh data-show --text <path>`, never
+with `cp` or `cat` on `data/`: those work in both stores, and they check a setting before it is
+kept. Edit a copy outside `data/` (here in a fresh temporary folder, `$D`), then put it in.
+
+The blocks below run as written on the tutorial kit (`evh init --store files --tutorial`: six support tickets,
 offline arms); use your own names in a real project. Every command takes `--help`.
 
 ## 0. Before anything
@@ -36,42 +41,48 @@ From production records (a JSON-lines export; also `tsv`, `github`, `langfuse` i
 
 ```evh
 evh capture --importer jsonl --query '{"path": "tutorial/production/desk_export.jsonl"}' --capture desk_c1
-evh dataset-from-capture desk_c1 --dataset-id tickets_desk_v1
+evh dataset-from-capture --capture desk_c1 --dataset-id tickets_desk_v1
 evh dataset-materialize --dataset-id tickets_desk_v1
 ```
 
 `evh dataset-create --limit 10` keeps a first pass cheap. Ten items is a smoke test, not evidence.
 
-## 2. Arms, committed
+## 2. Systems, committed
 
-An arm is one version of the system: a YAML config in `data/configs/` naming the provider (or your
-`adapter.py`), the model, the prompt and the settings, and a unique `config_id`. One change, one new
-`config_id`; never edit a config that has runs.
+A system is one version of what you evaluate: a YAML file in `data/systems/`, named by its unique
+`system_id`, naming the provider (or your `adapter.py`), the model, the prompt and the settings. It
+names no dataset: a run puts it on one (`evh run --system ID --dataset D`). One change, one new
+`system_id`; never edit a system that has runs.
 
-An arm that is a change you expect to matter carries its prediction: a `hypothesis:` block in its
-config (`against` the config it is compared with, the `measure`, the `direction` better, worse or
-no-worse, and a `statement`), written before the run and committed with it. The run records it and
-whether it was committed first, and `pair-test` then reports "named in advance: yes". `evh validate`
-and `evh run` refuse a block that names no such config or measure.
+A system that is a change you expect to matter carries its prediction: a `hypothesis:` block in it
+(`against` the system it is compared with, the `measure`, the `direction` better, worse or no-worse,
+and a `statement`), written before the run and committed with it. The run records it and whether it
+was committed first, and `pair-test` then reports "named in advance: yes". `evh validate` and
+`evh run` refuse a block that names no such system or measure. "Named in advance" is told from
+git, so it needs a project that keeps its data as files in git: in the database store a setting is
+not in git, and the run records it as not determinable.
 
-If your system's code lives outside this tree, pin its commit in the arm's params
+If your system's code lives outside this tree, pin its commit in the system's params
 (`system_commit: <sha>`): the run records only this project's commit, and params are part of what
 was measured.
 
 ```evh
-cp tutorial/configs/tickets_*.yaml data/configs/
-cat >> data/configs/tickets_lead2.yaml <<'EOF'
+D=$(mktemp -d) && cp tutorial/systems/tickets_*.yaml "$D"/
+cat >> "$D"/tickets_lead2_v1.yaml <<'EOF'
 hypothesis:
   against: tickets_lead1_v1
   measure: overlap_f1
   direction: better
   statement: "two leading sentences recover more of a ticket's gold summary than one"
 EOF
-git add -A && git commit -qm "tickets_v1: dataset and arms"
+for f in "$D"/tickets_*.yaml; do evh data-put --path "systems/$(basename "$f")" --file "$f"; done
+rm -r "$D"
+git add -A && git commit -qm "tickets_v1: dataset and systems" --allow-empty
 ```
 
 Commit before every run: a run records the commit it ran from, and one from a dirty tree is refused
-later.
+later. (In the database store the commit holds the project's code, not its data: `--allow-empty`
+keeps the step the same there.)
 
 ## 3. A reference
 
@@ -84,27 +95,29 @@ What each item is scored against. In order of strength:
   claiming correctness.
 
 ```evh
-RUN=$(evh run --config data/configs/tickets_author.yaml --json | python3 -c 'import json,sys; print(json.load(sys.stdin)["result"]["values"]["runs"][0]["run_id"])')
+RUN=$(evh run --system tickets_author_v1 --dataset tickets_v1 --json | python3 -c 'import json,sys; print(json.load(sys.stdin)["result"]["values"]["runs"][0]["run_id"])')
 evh label-from-run --run "$RUN" --set author_v1
-evh reference-promote --dataset-id tickets_v1 --labels author_v1 --tier silver --reason "the author arm ranks the others until a person writes gold" --by agent
-git add -A && git commit -qm "silver/tickets_v1"
+export EVH_ACTOR=agent:assistant EVH_FOR=person:operator
+evh reference-promote --dataset-id tickets_v1 --labels author_v1 --tier silver --reason "the author arm ranks the others until a person writes gold"
+git add -A && git commit -qm "silver/tickets_v1" --allow-empty
 ```
 
-## 4. Run each arm
+## 4. Run each system
 
-Cost first (`--dry-run`: one call per item, not an upper bound), a few items next (`evh arm-smoke --config C`,
-and read the replies; the dry run then shows its `MEASURED` cost, the number to cap from), then
-the full run. `--repeat 3` measures an arm's own noise.
+Cost first (`--dry-run`: one call per item, not an upper bound), a few items next (`evh arm-smoke
+--system S --dataset D`, and read the replies; the dry run then shows its `MEASURED` cost (only when the system names a `model_record`), the number
+to cap from), then the full run. `--repeat 3` measures a system's own noise. A run names the goal it
+is for with `--goal G`.
 
 Working in rounds (one line of investigation each: `evh round-open --goal G --dataset D --hypothesis
-"..."`)? Open the round **before** its arms run: a new arm names it in its config (`round: rN`,
-beside `goal:`); an arm already run joins only when a round is opened with `--keep CONFIG_ID`.
+"..."`)? Open the round **before** its systems run: a new one runs in it (`--goal G --round rN`); one
+already run joins through `--keep SYSTEM_ID` when the round opens or through `evh round-carry` into an open round.
 
 ```evh
-evh run --config data/configs/tickets_lead1.yaml --dry-run
-evh run --config data/configs/tickets_lead1.yaml --repeat 3
-evh run --config data/configs/tickets_lead2.yaml --repeat 3
-git add -A && git commit -qm "tickets_v1: runs"
+evh run --system tickets_lead1_v1 --dataset tickets_v1 --dry-run
+evh run --system tickets_lead1_v1 --dataset tickets_v1 --repeat 3
+evh run --system tickets_lead2_v1 --dataset tickets_v1 --repeat 3
+git add -A && git commit -qm "tickets_v1: runs" --allow-empty
 ```
 
 ## 5. Compare, then decide
@@ -113,8 +126,8 @@ Use the skill `evh-compare-and-read`: the leaderboard says whether any order is 
 answers one comparison named in advance; `family-test` one arm against several, corrected.
 
 ```evh
-evh leaderboard --dataset-id tickets_v1 --json
-evh pair-test --dataset-id tickets_v1 --a tickets_lead2_v1 --b tickets_lead1_v1 --json
+evh leaderboard tickets_v1 --json
+evh pair-test tickets_v1 --a tickets_lead2_v1 --b tickets_lead1_v1 --json
 ```
 
 `values.hypothesis` says whether the pair was named in advance (the `hypothesis:` of step 2, committed
@@ -126,8 +139,8 @@ or from evidence that gave the answer away. List the items the two arms decided 
 a few:
 
 ```evh
-evh inspect --runs tickets_lead1_v1,tickets_lead2_v1 --disagree --json
-evh inspect --runs tickets_lead1_v1,tickets_lead2_v1 --item t01_login
+evh comparison-show --runs tickets_lead1_v1,tickets_lead2_v1 --disagree 1 --json
+evh comparison-item --runs tickets_lead1_v1,tickets_lead2_v1 --item t01_login
 ```
 
 Check that the frozen evidence holds only what the system could see when it decided. Evidence
@@ -139,37 +152,41 @@ Then `evh-promote-with-evidence` to record the choice, and `evh validate` before
 
 ## Measure one change against an existing baseline
 
-The project already has a baseline and you changed one thing. Read the baseline and its config, copy
-the config under a new `config_id` with the change and a hypothesis, commit, then measure it the way
+The project already has a baseline and you changed one thing. Read the baseline and its system, copy
+the system under a new `system_id` with the change and a hypothesis, commit, then measure it the way
 the baseline was measured (the same dataset, reference and repeats) and test it against the baseline.
 
-1. `evh goals --goal G --json`: `values.baseline` is the baseline arm; `evh arms --arm <that arm> --json`
-   gives its config and how many repeats it has.
-2. Copy that config, give it a new `config_id`, make the one change, and add the `hypothesis:` block
-   (`against` the baseline's `config_id`). Commit.
-3. `evh run --config C --dry-run`, then `evh arm-smoke --config C` and read the replies, then
-   `evh run --config C --repeat N` with the baseline's number of repeats.
-4. `evh pair-test --dataset-id D --a NEW --b BASELINE --json`, and read the items (step 5).
+1. `evh goal-leaderboard G --json`: `answer[].baseline.arm` is the baseline arm of each dataset (`baseline` is null with none); `evh arm-show LABEL DATASET <that arm> --json`
+   gives its system and how many repeats it has.
+2. Copy that system (`evh data-show --text systems/<it>.yaml` into a draft), give it a new
+   `system_id` (and the file its name), make the one change, add the `hypothesis:` block (`against`
+   the baseline's `system_id`), and put it in with `evh data-put`. Commit.
+3. `evh run --system S --dataset D --dry-run`, then `evh arm-smoke --system S --dataset D` and read the
+   replies, then `evh run --system S --dataset D --goal G --repeat N` with the baseline's number of
+   repeats.
+4. `evh pair-test D --a NEW --b BASELINE --json`, and read the items (step 5).
 
 The same on the tutorial kit, with `tickets_lead1_v1` standing as the baseline:
 
 ```evh
-cp tutorial/goals/tickets_summary.yaml data/goals/
-evh goals --goal tickets_summary --json
-sed -e 's/tickets_lead1_v1/tickets_lead3_v1/' -e 's/sentences: 1/sentences: 3/' data/configs/tickets_lead1.yaml > data/configs/tickets_lead3.yaml
-cat >> data/configs/tickets_lead3.yaml <<'EOF'
+evh data-put --path goals/tickets_summary.yaml --file tutorial/goals/tickets_summary.yaml
+evh goal-leaderboard tickets_summary --json
+D=$(mktemp -d)
+evh data-show --text systems/tickets_lead1_v1.yaml | sed -e 's/tickets_lead1_v1/tickets_lead3_v1/' -e 's/sentences: 1/sentences: 3/' > "$D"/tickets_lead3_v1.yaml
+cat >> "$D"/tickets_lead3_v1.yaml <<'EOF'
 hypothesis:
   against: tickets_lead1_v1
   measure: overlap_f1
   direction: better
   statement: "three leading sentences recover more of the gold summary than one"
 EOF
-git add -A && git commit -qm "tickets_lead3_v1: one change against lead1, its hypothesis"
-evh run --config data/configs/tickets_lead3.yaml --dry-run
-evh arm-smoke --config data/configs/tickets_lead3.yaml
-evh run --config data/configs/tickets_lead3.yaml --repeat 3
-git add -A && git commit -qm "tickets_lead3_v1: runs"
-evh pair-test --dataset-id tickets_v1 --a tickets_lead3_v1 --b tickets_lead1_v1 --json
+evh data-put --path systems/tickets_lead3_v1.yaml --file "$D"/tickets_lead3_v1.yaml && rm -r "$D"
+git add -A && git commit -qm "tickets_lead3_v1: one change against lead1, its hypothesis" --allow-empty
+evh run --system tickets_lead3_v1 --dataset tickets_v1 --dry-run
+evh arm-smoke --system tickets_lead3_v1 --dataset tickets_v1
+evh run --system tickets_lead3_v1 --dataset tickets_v1 --goal tickets_summary --repeat 3
+git add -A && git commit -qm "tickets_lead3_v1: runs" --allow-empty
+evh pair-test tickets_v1 --a tickets_lead3_v1 --b tickets_lead1_v1 --json
 ```
 
 ## When to stop and ask

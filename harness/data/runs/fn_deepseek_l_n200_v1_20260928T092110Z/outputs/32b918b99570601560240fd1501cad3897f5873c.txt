@@ -1,6 +1,0 @@
-[
-  {
-    "text": "MJ",
-    "type": "other"
-  }
-]

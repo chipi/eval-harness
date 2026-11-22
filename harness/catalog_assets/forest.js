@@ -3,6 +3,10 @@
 // them). The interval is the one that agrees with the paired test; below 6 items no interval
 // exists, so the range of per-item differences is drawn instead. Reads /api/compare.
 (function () {
+  // The least and the greatest of a list, by a loop: Math.min(...xs) passes every value as an argument, and at
+  // 10,000 items and 40 arms (400,000 values) that overflows the call stack and the page never draws.
+  const minOf = xs => { let m = Infinity; for (const v of xs) if (v < m) m = v; return m; };
+  const maxOf = xs => { let m = -Infinity; for (const v of xs) if (v > m) m = v; return m; };
   // Where the API answers: the page says (catalog_build --api), /api/ under evh catalog-serve.
   const API = document.body.dataset.api || '/api/';
   const ITEM = document.body.dataset.item || 'item', ITEMS = ITEM + 's';
@@ -61,8 +65,8 @@
     // A silver can favour its author's own family: mark answers from that family.
     const refFam = authors[(d.metric.split(' vs ')[1] || '')] || '';
     const sameFam = arm => refFam && families[arm.split('#')[0]] === refFam;
-    const ext = tested.flatMap(r => { if (r.ci) return r.ci; const ds = deltasOf(r.arm); return ds.length ? [Math.min(...ds), Math.max(...ds)] : [r.delta]; });
-    const lo = Math.min(0, ...ext, ...avgs.map(a => a.delta)), hi = Math.max(0, ...ext, ...avgs.map(a => a.delta));
+    const ext = tested.flatMap(r => { if (r.ci) return r.ci; const ds = deltasOf(r.arm); return ds.length ? [minOf(ds), maxOf(ds)] : [r.delta]; });
+    const lo = minOf([0, ...ext, ...avgs.map(a => a.delta)]), hi = maxOf([0, ...ext, ...avgs.map(a => a.delta)]);
     const pad = (hi - lo) * 0.06 || 0.01, x0 = lo - pad, x1 = hi + pad;
     // Below 700px: labels above each row and the right column on the label line, so it fits.
     const NARROW = window.matchMedia('(max-width: 700px)').matches;
@@ -102,13 +106,13 @@
         } else {
           const ds = deltasOf(r.arm), [w, cls] = word(r);
           const href = '../inspect.html?' + new URLSearchParams({runs: [r.arm, base].join(','), baseline: base, metric: d.metric, rescore: '1', family: String(d.family_size), ...(r.threshold ? {threshold: String(r.threshold)} : {})});
-          const iv = r.ci ? `95% interval ${sgn(r.ci[0])} to ${sgn(r.ci[1])}` : `no interval on ${r.n} ${ITEMS}; per-${ITEM} range ${ds.length ? sgn(Math.min(...ds)) + ' to ' + sgn(Math.max(...ds)) : '—'}`;
+          const iv = r.ci ? `95% interval ${sgn(r.ci[0])} to ${sgn(r.ci[1])}` : `no interval on ${r.n} ${ITEMS}; per-${ITEM} range ${ds.length ? sgn(minOf(ds)) + ' to ' + sgn(maxOf(ds)) : '—'}`;
           const tip = `${name}\n${d.metric}: ${fmt(r.mean)} vs ${fmt(r.baseline_mean)} (Δ ${sgn(r.delta)}) on ${r.n} ${ITEMS}; ${iv}\nwins–losses ${r.wins}–${r.losses}${r.ties ? ' (' + r.ties + ' tied)' : ''}; ${r.verdict}${r.p != null ? ', p ' + pfmt(r.p) : ''} (Holm across ${d.family_size})\nscore: ${src || 'unknown source'}`;
           g += `<a href="${esc(href)}"><g class="frow"><title>${esc(tip)}</title><rect x="0" y="${y}" width="${W}" height="${RH}" class="hit"/>`
             + `<text class="rl" x="0" y="${ry(cy)}">${esc(short(name))}</text>`;
           const dy = NARROW ? cy + 6 : cy;
           if (r.ci) g += `<line class="ci" x1="${x(r.ci[0])}" x2="${x(r.ci[1])}" y1="${dy}" y2="${dy}"/>`;
-          else if (ds.length > 1) g += `<line class="range" x1="${x(Math.min(...ds))}" x2="${x(Math.max(...ds))}" y1="${dy}" y2="${dy}"/>`;
+          else if (ds.length > 1) g += `<line class="range" x1="${x(minOf(ds))}" x2="${x(maxOf(ds))}" y1="${dy}" y2="${dy}"/>`;
           g += `<circle class="pt ${cls}" cx="${x(r.delta)}" cy="${dy}" r="5"/>`;
           const tag = (src.startsWith('re-scored') ? ' ↻' : '') + (sameFam(r.arm) ? ' ⚑' : '');
           g += `<text class="rv" x="${vx}" y="${ry(cy)}"${va}>${sgn(r.delta)}  ${r.wins}–${r.losses}  ${esc(w)}${tag}</text></g></a>`;

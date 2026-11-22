@@ -32,7 +32,7 @@ nothing.
 | --- | --- | --- |
 | `run.json` | before the first item | run id, config, dataset, start time: a crashed run can still be identified |
 | `predictions.jsonl` | one row per item, as it is measured | `item_id`, every per-item metric (score, `cost_usd`, `latency_ms`, `output_words`, ...), `_extra` (the numeric extras the adapter attached at call time, which rescore and judge-score carry) and `_meta` (provider metadata: the bill in `_meta.usage.cost`, `finish_reason`, kept verbatim) |
-| `outputs/` | per item | what the arm wrote for each item |
+| `outputs.jsonl` | one line per item, as it is produced | what the arm wrote for each item (RFC-024: one file; a derived run has none of its own and reads its source's) |
 | `metrics.json` | only on a clean exit | the run record |
 
 `evh run --resume` continues a stopped run from its rows; it refuses rows written before

@@ -51,7 +51,7 @@ python examples/summeval-judging/fetch.py      # or, from the root: make data EX
 | `bartscore` | log-likelihood of the summary given the article under `facebook/bart-large-cnn` ([Yuan et al. 2021](https://arxiv.org/abs/2106.11520)), pinned to the revision the summarisation eval measured; local, CPU |
 | `length` | the summary's word count: a confound to rule out, not a judge |
 | `random` | seeded random scores: the floor, near τ = 0 |
-| `gemma_l`, `qwen_s`, `random` in pick and pairwise mode | the judges of the summarisation scorer, validated in the other two judging modes ([RFC-005](../../docs/rfc/RFC-005-judge-scorers.md), "Judging modes"): `mode: pick` names the best of the 16 summaries ([prompt_pick.txt](prompt_pick.txt)), scored `top1` beside `top1_chance`; `mode: pairwise` says which of two is better for 8 seeded pairs an article ([prompt_pairwise.txt](prompt_pairwise.txt)), scored `pair_agreement` (with `n_pairs`); the `random` arm in each mode is the floor. Configs `configs/arm_*_pick_n100.yaml` and `arm_*_pairwise_n100.yaml` |
+| `gemma_l`, `qwen_s`, `random` in pick and pairwise mode | the judges of the summarisation scorer, validated in the other two judging modes ([RFC-005](../../docs/rfc/RFC-005-judge-scorers.md), "Judging modes"): `mode: pick` names the best of the 16 summaries ([prompt_pick.txt](prompt_pick.txt)), scored `top1` beside `top1_chance`; `mode: pairwise` says which of two is better for 8 seeded pairs an article ([prompt_pairwise.txt](prompt_pairwise.txt)), scored `pair_agreement` (with `n_pairs`); the `random` arm in each mode is the floor. Systems `systems/se_*_n100_pick_v1.yaml` and `se_*_n100_pairwise_v1.yaml` |
 
 A reference-based metric gives one number per summary; it stands for all four dimensions.
 
@@ -124,8 +124,7 @@ Every one is ahead of BARTScore. The leader is not significantly different from 
 cheapest member at $0.03 for all 100 articles. Scored against the mean of two experts, as one
 expert is against the other two, the best judges reach 93% of a human's agreement (95% interval 89–97%; the best of 24, chosen on these
 articles, and 92% when chosen on half the articles and scored on the other half), UniEval 64%, and a no-model lookup of which system wrote each summary 63% ([`human_ceiling.py`](human_ceiling.py)). The full results, the significance tests and
-what changed while measuring (a retired model, a model that forces reasoning, moved prices)
-are in [research/REPORT_SUMMEVAL.md](../../research/REPORT_SUMMEVAL.md).
+the limits of the measurement are in [research/REPORT_SUMMEVAL.md](../../research/REPORT_SUMMEVAL.md).
 
 ## Running the hosted judges
 
@@ -135,8 +134,8 @@ With `OPENROUTER_API_KEY` in `harness/.env`, from `harness/` (about $7 for all 2
 for a in anthropic_s anthropic_m anthropic_l openai_s openai_m openai_l \
          deepseek_s deepseek_m deepseek_l gemma_s gemma_m gemma_l glm_s glm_m glm_l \
          llama_s llama_m llama_l mistral_s mistral_m mistral_l qwen_s qwen_m qwen37max; do
-  ../examples/summeval-judging/.venv/bin/python scripts/run.py \
-    --config ../examples/summeval-judging/configs/arm_${a}_n100.yaml; done
+  ../examples/summeval-judging/.venv/bin/python scripts/cli.py run \
+    --system se_${a}_n100_v1 --dataset summeval_100 --goal summary_judge_summeval; done
 make leaderboard DATASET_ID=summeval_100
 ```
 
@@ -144,8 +143,8 @@ The pick and pairwise validations, the same way (the `random` arms call nothing)
 
 ```bash
 for a in gemma_l qwen_s random; do for m in pick pairwise; do
-  ../examples/summeval-judging/.venv/bin/python scripts/run.py \
-    --config ../examples/summeval-judging/configs/arm_${a}_${m}_n100.yaml; done; done
+  ../examples/summeval-judging/.venv/bin/python scripts/cli.py run \
+    --system se_${a}_n100_${m}_v1 --dataset summeval_100 --goal summary_judge_summeval; done; done
 ```
 
 Each arm's primary is its mode's metric (`tau`, `top1` or `pair_agreement`: the adapter's `primary_metric(params)`).
@@ -161,9 +160,9 @@ What they measured (2026-11-02, 100 articles; each value recomputed from the exp
 | `gemma_l` | 0.364 | 0.825 |
 | `qwen_s` | 0.263 | 0.813 |
 
-Both prompts ask for the JSON object first and nothing after it. An earlier wording that let a judge explain first
-had `qwen_s` cut off at `max_tokens` before its answer on 8–13% of picks; a later one that invited an explanation
-after the JSON made `gemma_l` write about 270 tokens a reply. On this wording a reply is about 7–11 tokens; every pick
+Both prompts ask for the JSON object first and nothing after it: a wording that lets a judge explain first
+cuts `qwen_s` off at `max_tokens` before its answer on 8–13% of picks, and one that invites an explanation
+after the JSON makes `gemma_l` write about 270 tokens a reply. On this wording a reply is about 7–11 tokens; every pick
 was readable, and 1 of `qwen_s`'s 800 pairwise replies was not.
 
 On the summarisation eval (`judge-summ-pick-v1`, 29 arms, 198 of 200 articles, $0.17), the two judges named the same
@@ -171,6 +170,28 @@ winner on 0.36 of the articles; a re-shuffle of the order kept the pick on 0.55 
 20, and a repeat on 0.75 and 0.95. A pick among 29 summaries depends on their order about half the time: read the
 win rates as a ranking of what these judges prefer, beside `judge-summ-v1`'s grades and the experts, not instead of
 them.
+
+## The same validation, by the command
+
+`evh judge-validate` ([RUNBOOK §12](../../harness/docs/RUNBOOK.md#validating-a-judge-what-the-gate-needs)) does for any
+scorer what the arms above do by hand: one system per judge, a seeded random floor, the runs, and the scorer's
+`validation` block. It reads a rated dataset, `{"source": ..., "outputs": [...]}` with the people's ratings as the
+reference, and this example's items are its own shape (`article`, `summaries`, `references`), so
+[`rated_source.py`](rated_source.py) builds the rated copy of the same 100 articles and expert scores:
+
+```bash
+evh dataset-create --dataset-id summeval_rated_100 \
+    --source examples/summeval-judging/rated_source.py:Source --query '{"answer": "answer"}'
+evh dataset-materialize --dataset-id summeval_rated_100
+evh reference-promote --dataset-id summeval_rated_100 --labels answers --tier gold \
+    --reason "three experts' mean scores decide, as fetch.py takes them" --by person:NAME
+evh judge-validate --scorer judge-summ-v1 --judges gemma_l --dataset summeval_rated_100 --dry-run
+```
+
+The core adapter builds the message with `judging.build_message`, the same function `judge-score` calls, which is this
+example's message byte for byte at 16 summaries; it shows them in a blinded, seeded order of its own, so a judge's tau
+is not the committed one to the digit: `gemma_l` scores 0.5156 blinded and 0.5360 with the summaries in their original
+order (`order: original` in a hand-written system), against the committed 0.5384 (RFC-038, section 8).
 
 ## What this cannot say
 

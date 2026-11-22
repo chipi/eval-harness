@@ -1,7 +1,0 @@
-```json
-[
-    {"text": "The Pueblo Revolt", "type": "event"},
-    {"text": "Spaniards", "type": "other"},
-    {"text": "settlers", "type": "other"}
-]
-```

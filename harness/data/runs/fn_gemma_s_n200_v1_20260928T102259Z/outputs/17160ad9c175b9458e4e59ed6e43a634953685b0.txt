@@ -1,3 +1,0 @@
-[
-  {"text": "post office", "type": "building"}
-]

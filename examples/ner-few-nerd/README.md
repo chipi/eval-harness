@@ -62,13 +62,13 @@ which is what `holdout_significance --exclude-dataset` needs to be honest.
 
 ### Degenerate items are filtered, and that is not cherry-picking
 
-`--min-tokens 3` drops sentences too short to pose the task. The pilot slice contained one
-whose entire text was the single character `p`.
+`--min-tokens 3` drops sentences too short to pose the task. The split has a row whose
+entire text is the single character `p`.
 
 It is a real row, and keeping it would be defensible on faithfulness grounds — except for
-what it measures. Three of 24 hosted arms failed it, and the two that failed **worst** were
-right: they replied "You didn't provide the sentence." One arm tagged the letter `p` as an
-entity and scored better for it. An arm that blindly answers `[]` scores 1.0.
+what it measures. An arm that replies "You didn't provide the sentence." scores worst on it,
+an arm that tags the letter `p` as an entity scores better, and an arm that blindly answers
+`[]` scores 1.0.
 
 The item rewards not looking and punishes noticing. That is different from the label noise
 the classification examples deliberately kept — a mislabelled item still poses the task.
@@ -88,8 +88,9 @@ that relevance is what this example gives up to keep the licence clean.
 
 ```bash
 cd "$(git rev-parse --show-toplevel)/harness"     # from anywhere in the repo
-for f in ../examples/ner-few-nerd/configs/arm_*_n200.yaml; do
-  ../examples/ner-few-nerd/.venv/bin/python scripts/run.py --config "$f"
+for s in ../examples/ner-few-nerd/systems/*.yaml; do
+  ../examples/ner-few-nerd/.venv/bin/python scripts/cli.py run --system "$(basename "$s" .yaml)" \
+    --dataset few_nerd_280 --goal entities_few_nerd
 done
 ```
 
@@ -100,8 +101,8 @@ Then the analysis — all of it $0, all of it from the stored runs:
 
 ```bash
 python tools/extraction_report.py --dataset-id few_nerd_280 --match fn_
-python scripts/family_test.py --dataset-id few_nerd_280 --a fn_span_marker_n200_v1 \
-    --against _n200_v1 --metric f1
+python scripts/cli.py family-test few_nerd_280 --a fn_span_marker_v1 \
+    --against fn_ --metric f1
 ```
 
 ---

@@ -1,4 +1,9 @@
 {
+  "actor": {
+    "from": "migration",
+    "name": "before 0.8.0",
+    "type": "unknown"
+  },
   "created_at": "2026-10-30T12:33:32Z",
   "dataset_id": "orrery_triage_smoke",
   "description": "Two exact, owner-labelled decisions: the arms' smoke test.",

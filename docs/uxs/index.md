@@ -18,11 +18,11 @@ RFC, not a UXS.
 
 ## The rules every surface keeps
 
-These hold across all three specifications below; a change that breaks one needs a decision
+These hold across all five specifications below; a change that breaks one needs a decision
 (an ADR), not just a UXS edit.
 
-1. **The catalog is read-only.** No page writes to the data tree. A decision the pages suggest
-   is shown as the command that makes it, run locally.
+1. **The catalog is read-only**: no page writes to the data tree. A decision the pages suggest
+   is shown as the command that makes it, run locally. Data is managed with commands ([UXS-004](UXS-004-data-page.md)).
 2. **Command-line parity.** Every view and every action in the UI also exists as an `evh`
    command that asks the same adapter and computes with the same functions, so a number on a
    page is the number in the terminal. New surfaces add both. The table is in
@@ -55,6 +55,8 @@ algorithms. When a rule could live in either, it goes in the RFC and the UXS lin
 | [UXS-001](UXS-001-catalog.md) | The catalog | Active | [PRD-004](../prd/PRD-004-catalog-and-inspector.md), [PRD-005](../prd/PRD-005-goals-and-rounds.md), [PRD-006](../prd/PRD-006-datasets-versions-fields.md); [RFC-003](../rfc/RFC-003-catalog-adapter.md) | The shared shell and tokens; home, dataset, goal (answer first, rounds), reference and metrics pages; tints, paging, search |
 | [UXS-002](UXS-002-inspector.md) | The run inspector | Active | [PRD-004](../prd/PRD-004-catalog-and-inspector.md), [PRD-006](../prd/PRD-006-datasets-versions-fields.md); [RFC-003](../rfc/RFC-003-catalog-adapter.md) | Choosing arms, testing against a baseline, conditions, fields, the analysis charts, the per-item table, one item side by side |
 | [UXS-003](UXS-003-cli-and-onboarding.md) | The command line and the first evaluation | Active | [PRD-001](../prd/PRD-001-evals-and-comparison.md), [PRD-007](../prd/PRD-007-packaging-and-providers.md) | The onboarding path, how commands speak (refusals, hints, exit codes), the parity table, the round flow |
+| [UXS-004](UXS-004-data-page.md) | Data management commands | Active | [PRD-016](../prd/PRD-016-managing-project-data.md); [RFC-025](../rfc/RFC-025-runs-in-sqlite.md) | The four commands `evh data-ls`, `data-show`, `data-put`, `data-rm` for browsing and editing project data files, and the Workbench's Settings screen |
+| [UXS-005](UXS-005-workbench.md) | The Workbench | Active | [PRD-017](../prd/PRD-017-workbench.md), [RFC-026](../rfc/RFC-026-an-api-for-every-command.md) | Steps 0 to 5, the home, jobs, models, prompts, the help layer, W2, W3, W5 to W8, the held-out test and studies, each sketched; the live files in `harness/workbench/`, the frozen mockup in `harness/workbench/mockup/` |
 
 ## Adding one
 
