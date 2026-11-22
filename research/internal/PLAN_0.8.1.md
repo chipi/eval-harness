@@ -27,7 +27,7 @@ The owner decides scope and order.
 3. **The process**: P1 (production deploys on every push), P2 (the size of a release's notes), P3 (`make site`
    without a store).
 4. **Small items**: S1 to S4.
-5. **The one new feature**: F1 (in 0.8.1, the owner's decision of 2026-11-22).
+5. **The new features**: F1 and F2 (both in 0.8.1, the owner's decisions of 2026-11-22 and 2026-11-23).
 
 A patch release should not move a result. Each item below says whether it can. If one does, it goes to 0.9.0 or
 the owner decides.
@@ -235,7 +235,7 @@ variable, or read the store from the repository's own `harness/config.yaml`. A t
     ignore it or stop it being written.
   - **Done when:** they are gone or ignored, with `make quality` green.
 
-## F. A feature (in 0.8.1: owner, 2026-11-22)
+## F. Features (in 0.8.1: owner, 2026-11-22 and 2026-11-23)
 
 ### F1. Where the judge and the gold disagree, on the inspector
 
@@ -245,6 +245,39 @@ the gold", would let a reader find the items that make a judge's validation figu
 
 - **Scope:** UXS-002 first, then the page.
 - **Moves a result:** no. It is new behaviour; the owner wants it in 0.8.1 all the same.
+
+### F2. The Workbench, read-only, on the deployed site
+
+**Decided (owner, 2026-11-23):** a visitor who is not signed in sees the Workbench as a viewer: everything readable,
+nothing written, nothing spent, no token. This amends PRD-017's non-goal "a public, multi-user service" and D8 ("the
+Workbench is refused behind a proxy"), so a decision record (an RFC or ADR amending D8, `new-doc`) comes first.
+
+**What is there now.** `catalog_serve.py:617-623` answers 404 for `/api/v1/` and `/workbench/` on any public or
+proxied server. Writes and spends already need the server's token, and operations already split reads from jobs
+(`op.is_job()`; MCP marks the reads `read_only_hint`).
+
+**What the deployed copy holds (checked 2026-11-23),** so what a viewer could read: no item text (dataset records
+carry row numbers and hashes; `data/materialized/` is gitignored, `harness/.gitignore:5`); the arms' outputs (313
+`outputs.jsonl`, already published by `--publish outputs`); gold references as manifests, except 132 one-word Orrery
+triage labels; no dataset is `text: hidden`. For this site nothing private is exposed. For a project that commits
+text, the reads must still follow the public text rules.
+
+**Done when:**
+
+- the decision record amends D8 and PRD-017, and UXS-005 describes the viewer;
+- on a public server, `/workbench/` and the `/api/v1` read operations answer without a token; every job (write,
+  spend, run a model) and `POST /estimate` (it starts a child process) is refused without one, tested at the server,
+  not only in the page;
+- with no token, the page shows no control that acts (open, run, estimate, close, retire, carry in, promote, the
+  screens that exist only to act) and says it is a read-only view and how to run your own;
+- every read served publicly applies `_visibility.text_shown(..., public=True)` and the `--publish` setting, as the
+  public inspector does: a browser test on a fixture with a `text: hidden` dataset shows none of its text, and a
+  request for the sheet or an item's input is refused;
+- the reads are under the public inspector's rate limit and memory budget (256 MiB, `budget-check`);
+- `infra/` serves it on evals.humancopilot.eu (compose and Caddy), the site and catalog link to it, and
+  `deploy-verify` passes after the deploy.
+
+**Moves a result:** no.
 
 ## Not in this plan
 
