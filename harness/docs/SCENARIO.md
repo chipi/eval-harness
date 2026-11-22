@@ -51,7 +51,7 @@ another sha needs `--force-reinstall --no-deps`, see [UPGRADING](UPGRADING.md#fr
 mkdir evh-scenario && cd evh-scenario && git init -q
 python3 -m venv .venv && . .venv/bin/activate        # or: uv venv --seed --python 3.11 (--seed adds pip)
 pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@<candidate sha>#subdirectory=harness"
-evh init --store files
+evh init --store files     # no --tutorial: the README's quickstart adds the tutorial kit, which this scenario does not use
 pip install torch --index-url https://download.pytorch.org/whl/cpu    # the small models' runtime
 pip install transformers sentencepiece rouge-score
 ```
@@ -105,11 +105,14 @@ dataset, the references. A system names no goal: every run names it (`evh run �
   `AutoModelForSeq2SeqLM.generate`), and the bundled hosted providers
   (`from evaluation_harness.adapter import PROVIDERS, Result`); `score()` returns `rouge_1`,
   `rouge_l` and `output_words`; `PRIMARY_METRIC = "rouge_l"`; `METRIC_DESCRIPTIONS`.
-- `adapters/intent.py` for the classifier, named by each intents system (`adapter:`): keyword
+- `adapters/intent.py` for the classifier, named by each intents system with `adapter: adapters/intent.py` at the top
+  level of its YAML (beside `params:`, not in it; INTEGRATION "What a system is"): keyword
   rules, and the hosted providers asked to
   answer `label: <intent>` / `reason: <one sentence>`; `score()` reads the label from the output
   and from the reference (gold is a bare label, silver is a model's two lines);
-  `PRIMARY_METRIC = "accuracy"`.
+  `PRIMARY_METRIC = "accuracy"`. Give it a `decision(output)` that returns the bare label (`billing`): the sheet and
+  the inspector show a decision where an output is long, and a label set made from the frontier arm's runs holds
+  whole outputs (`label: billing` and a `reason:` line), which would fill the sheet's column.
 
 The lead provider is tutorial 1's `_lead`, which reads the system's `sentences` param (step 11 sets
 `sentences: 2`):
@@ -148,6 +151,8 @@ run's output is the harness's.
 git add -A && git commit -qm "datasets, gold, goals, adapters, systems"
 evh run --system briefs_mistral_small_v1 --dataset briefs_v1 --goal brief_summary --repeat 3 --dry-run   # price it first
 evh arm-smoke --system briefs_mistral_small_v1 --dataset briefs_v1   # a few items, before the full run; prints "spent $…"
+# exit 6 (SMOKE CHECK) is a flag, not a failure: a hosted model at temperature 0 can still answer item 1 differently
+# twice ("determinism: ... repeats will vary"). Do not chain arm-smoke with && in front of the run; read the flags.
 evh run --system <hosted id> --dataset briefs_v1 --goal brief_summary --repeat 3   # each cheap hosted arm: its measurement and its noise floor
 evh run --system <id> --dataset briefs_v1 --goal brief_summary       # each other arm, once
 evh leaderboard briefs_v1
@@ -203,7 +208,10 @@ A judge scorer per dataset in `data/scorers/` (the two judges named in step 3's 
 `task` block, `explain: true` so each verdict says why), for the summaries' faithfulness and coverage and the
 classifier's label fit and reason quality. Its prompt has `{n}`, names each of the task's dimensions and asks for
 one JSON object with a list of `{n}` numbers per dimension, as tutorial 3's prompt does: `judge-score` refuses a
-prompt that does not name them, before any call. They are not validated, so:
+prompt that does not name them, before any call. Describe each dimension in the words of the items (a judge repeats
+the prompt's vocabulary in its reasons: a prompt that says "the right queue" gives reasons about a queue the message
+never mentions), and expect a reason to speak of positions ("the first answer"): the judge sees the outputs without arm
+names, in a shuffled order. They are not validated, so:
 
 ```bash
 evh judge-score --dataset-id briefs_v1 --scorer briefs-judge-v1 --unvalidated --dry-run
@@ -227,11 +235,16 @@ its scorer declares is named at the end of the pass; correct the prices, or ever
 
 ## 7 · Baselines
 
-Promote, per dataset, the cheap arm closest to the frontier on gold, with a reason that says
-what the family test showed and what it costs against the frontier arm. For an arm run with
+Promote, per dataset, the cheap hosted LLM arm closest to the frontier on gold (`briefs_mistral_small_v1` and
+`intents_mistral_small_v1` in the table above), with a reason that says what the family test showed and what it costs
+against the frontier arm. Pick among the hosted arms only: the no-model arm (`briefs_lead1_v1`) can beat the frontier on
+gold (0.641 against 0.347 in the trial), which makes it the leader of the leaderboard, not the baseline to improve:
+the baseline is the model-based system you would ship, the one the rounds try to beat. Say in the reason that the
+no-model arm scored higher, and why it is not the baseline. For an arm run with
 `--repeat 3`, promote any of its repeats: the baseline records all three and their mean under
 `repeats`, the number the catalog, the inspector and the tests read. A promotion is a decision and records who made
-it: at a terminal your login, from a script `--by person:NAME`.
+it: at a terminal your login, from a script `--by person:NAME`. So are `round-retire`, `round-close` and
+`study-confirm` (not its `--dry-run`, which decides nothing): each refuses without a named actor.
 
 ```bash
 evh run-promote --run <run_id> --reason "<what the tests showed, and what it costs against the frontier arm>"
@@ -367,10 +380,11 @@ when the outcome meets the rule. Whatever it finds is the answer; check it says 
 ## 12 · A job
 
 The Workbench runs its work as jobs; the terminal starts the same ones. Run the no-model arm over `briefs_v2`
-as a job and follow it:
+as a job and follow it. A job records who asked: `--by person:NAME` goes before the operation (`jobs-start`'s own
+flag; without it, `evh jobs-start` refuses and says so):
 
 ```bash
-evh jobs-start run --arg system=briefs_lead1_v1 --arg dataset=briefs_v2 --max-cost-usd 0.01   # a free arm spends nothing under any cap
+evh jobs-start --by person:NAME run --arg system=briefs_lead1_v1 --arg dataset=briefs_v2 --max-cost-usd 0.01   # a free arm spends nothing under any cap
 evh jobs-status
 evh jobs-logs <job id> --follow
 git add data/runs && git commit -qm "lead1 on briefs_v2, as a job"
@@ -404,7 +418,9 @@ the eval (its rounds as tabs, each with its evidence and its decisions); "Review
 its look); "Every job"; "Settings". Each screen shows the command it runs: run that command in the terminal and
 check the numbers are the screen's.
 
-Then do one round from the Workbench: in "Choose the systems", clone `briefs_mistral_small_v1` with one thing
+Then do one round from the Workbench. Commit what each screen writes before the paid run: the clone, the round file and
+the carried arm are files (`git add -A && git commit`), and a run made over uncommitted files is recorded dirty. In
+"Choose the systems", clone `briefs_mistral_small_v1` with one thing
 changed (its temperature). In the eval, "Open the next round" on `briefs_v1` offers the arms still in play in the last
 round that have runs on the dataset the round is opened on, each ticked; the others are listed as not offered (no run
 there). The last round is the study's (step 11), so the offer follows its arms. Open it with the arms offered

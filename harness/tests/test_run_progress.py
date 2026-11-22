@@ -95,6 +95,11 @@ try:
         text[-700:],
     )
     check(
+        "dry run: the estimate says it assumes every reply is max_tokens long, so real replies cost less (080d N3)",
+        "assumes every reply is max_tokens long" in text and "usually costs less" in text,
+        text[-700:],
+    )
+    check(
         "dry run --json: the old fields stay, and the estimate says it is not an upper bound",
         dry.get("api_calls") == 18
         and dry.get("items") == 6

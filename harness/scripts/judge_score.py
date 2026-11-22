@@ -210,6 +210,12 @@ def unparsed_cause(
     if cut:
         return f"cut off at the token limit (finish_reason length), {n} chars"
     if not json_only(output):
+        body = output.strip().rstrip("`").rstrip()
+        if output.strip().startswith(("{", "```")) and not body.endswith("}"):
+            return (
+                f"cut off: JSON that stops before its closing brace (the reply ran out; finish_reason "
+                f"{finish_reason}), {n} chars"
+            )
         return f"not JSON, {n} chars"
     if mode == "grade" and dimensions:
         keys = ", ".join(map(str, json_object(output) or {})) or "none"

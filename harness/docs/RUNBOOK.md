@@ -327,7 +327,8 @@ rebuilds it. If something in there cannot be rebuilt, it is in the wrong place.
 Write **one function**, `call_system()`, in `adapter.py` at the project root. An arm whose
 system names no `adapter:` uses it (and records `adapter.py`); without one, the adapter
 bundled with the harness runs. A project with several tasks names one per arm,
-`adapter: adapters/ner.py`, relative to the system or the project:
+`adapter: adapters/ner.py` (a top-level key of the system's YAML, beside `params:`, not in it), relative to the
+system or the project:
 
 ```python
 from evaluation_harness.adapter import Result
@@ -694,7 +695,8 @@ ask id, `evh study-tell --study <study> --ask ID --proposal-json '{"params": {..
 runs it (both also MCP tools, for an agent with `EVH_ACTOR=agent:NAME` and `EVH_FOR=person:NAME`). `evh study-show`,
 `evh goal-list`, `evh study-stop`. A study never promotes: `evh study-confirm --study <study> --test <test set> --rule superiority`
 runs the best trial and the baseline once on the test items no study saw, as one look at the set's next level, and
-suggests the promotion only when the outcome meets the rule. `evh study-import --file results.tsv --goal G --study ID` brings
+suggests the promotion only when the outcome meets the rule. It is a decision and needs a named actor (`--by`), except
+under `--dry-run`, which prints the look and decides nothing. `evh study-import --file results.tsv --goal G --study ID` brings
 a past autoresearch loop in, closed and not confirmable.
 
 **Where runs go.** Every run goes in `data/runs/<run_id>/`, on every machine, so a run made on a
@@ -807,9 +809,10 @@ the arms page and in `evh arm-list` that the goals read its re-score. A round re
 `evh round-open --goal G --dataset D --adopt`.
 
 **The dry run and the run's output.** `evh run --system S --dataset D --dry-run` calls nothing. Its `ESTIMATE` counts one
-call per item (or the adapter's declared `CALLS_PER_ITEM`), each the prompt in and `max_tokens` out; it is
-**not** an upper bound, because an adapter that makes several calls per item, or a conversation that grows
-(each probe turn re-sends it), costs more. Beside it, `MEASURED` shows what the last `evh arm-smoke` of this
+call per item (or the adapter's declared `CALLS_PER_ITEM`), each the prompt in and `max_tokens` out: it assumes every reply fills `max_tokens`, so for a model that answers in a
+sentence it is a ceiling many times the bill (a frontier arm at `max_tokens: 1500` was estimated at $0.76 and billed
+$0.05). It is still **not** an upper bound for the whole run, because an adapter that makes several calls per item, or a
+conversation that grows (each probe turn re-sends it), costs more. Beside it, `MEASURED` shows what the last `evh arm-smoke` of this
 system recorded in its model record (the cost per item, projected over the items and repeats, and when it was
 measured); with none it says so and names the command (a system that names no model record has nowhere to keep a smoke: it
 says so, and the cap comes from the smoke's own `full run:` line). Set `EVAL_MAX_COST_USD` from `MEASURED`, not from the
@@ -1236,7 +1239,8 @@ lists them).
    stored; `--no-calls` projects from them for $0. At the cost cap the pass stops and
    keeps everything bought; raise the cap to continue. A reply that does not parse (wrong
    shape, missing dimension, a score off the scale) is stored and reported as
-   `unparsed reply: …`; an item counts only when every one of its primary blocks parsed. A
+   `unparsed reply: …` (with the cause: empty, cut off at the token limit, JSON that stops before its closing brace,
+   not JSON, or the wrong shape); an item counts only when every one of its primary blocks parsed. A
    reply that is not bare JSON scores (a judge reasoning aloud, a reply cut off) or that
    repeats 8 consecutive words of the item or an output is committed only as its hash, so the
    source's text is never committed by accident; `validate` V12 checks every committed reply.
@@ -1458,7 +1462,7 @@ evh round-evidence my_goal r1                   # the evidence, and the next dec
 evh round-list my_goal                          # the goal's rounds, a line each
 evh round-show my_goal r1                       # the stored round: hypothesis, changes, harness, scorer, scoring changes, each arm with its runs, how it entered and its retirement
 evh round-carry --goal my_goal --round r2 --arm arm_a_v1  # carry an arm of the round before, or a system measured on the round's dataset, into the open round
-evh round-retire --goal my_goal --round r1 --arm arm_b_v1 --reason "why it is dropped"
+evh round-retire --goal my_goal --round r1 --arm arm_b_v1 --reason "why it is dropped"   # a decision, like round-close: it names who made it (at a terminal your login; a script --by person:NAME)
 evh round-retire --goal my_goal --round r1 --arm arm_b_v1 --label linux --reason "..."  # only the arm under that label
 evh round-close --goal my_goal --round r1 --conclusion "what it showed" [--promote <run_id>]
 evh round-open --goal my_goal --dataset my_v1 --from r1 --change "what changed and why" \
@@ -1649,7 +1653,8 @@ whose lock is held waits, `queued`, saying which job holds it. The command holds
 the supervisor: a job whose supervisor died reads `running (unsupervised)` while its command lives, `lost` after.
 The terminal has the same jobs, no server needed: `evh jobs-start OPERATION --arg NAME=VALUE ...` (the operation's
 input names, as the operation's `--help` shows them with underscores; repeated for a list, `@FILE` uploads a file;
-`--max-cost-usd`, `--by`),
+`--max-cost-usd`, `--by`: a job records who asked, and the flag goes before the operation,
+`evh jobs-start --by person:NAME run --arg ...`; without one the command refuses and says so),
 `evh jobs-status [JOB]`, `evh jobs-logs JOB [--follow]`, `evh jobs-stop JOB`, `evh jobs-resume JOB`. A job started
 there is listed and stopped by the API, and one the Workbench started is followed there.
 `POST /api/v1/estimate` with `{"operation", "inputs"}` runs a job operation's own dry run (`run`, `sweep`,
@@ -2056,7 +2061,9 @@ evh model-list                                       # what is onboarded, vetted
    per item reports them as `meta["calls"]` (the triage example does). It prints each reply (its first 300
    characters; `--replies` for all), so you read what the model wrote, and what the smoke spent, saying whether
    that is the provider's bill or the system's price table; `--json` gives the same as values. SMOKE CHECK
-   lists what to revisit. SMOKE PASS exits 0 and SMOKE CHECK exits 6 ([Exit codes](#exit-codes)).
+   lists what to revisit. SMOKE PASS exits 0 and SMOKE CHECK exits 6 ([Exit codes](#exit-codes)). A flag is not a failure: a hosted model at
+   temperature 0 can answer item 1 differently twice (`determinism: ... repeats will vary`) and the smoke exits 6, so a
+   shell chain `evh arm-smoke ... && evh run ...` stops there; run them as separate commands.
 3. **Choose the settings on purpose.**
    - *Reasoning*: off (`reasoning_effort: none`) unless the task needs it; some models only offer low,
      medium or high. Left to the default, one model reasons at length and the next not at all, and a

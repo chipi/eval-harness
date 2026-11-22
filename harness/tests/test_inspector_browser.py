@@ -601,6 +601,64 @@ def drive(base: str, overview: str = "", art_base: str = "") -> None:
             ]
             route.fulfill(response=resp, json=doc)
 
+        # The reasons say "the first answer" (blind positions); the rows of an arm whose output is not on the page are
+        # that arm's grades. The page says both (UXS-002 04; RFC-005 step 2: arm identities hidden, order shuffled),
+        # names the scale, a repeat's text beside the mean, and counts "1 word" (080d inspector #1, #2, #3, inspector3 #7).
+        def with_blind(route):
+            resp = route.fetch()
+            doc = resp.json()
+            first = next(iter(doc["views"]))
+            doc["views"][first]["repeats"] = 3
+            doc["views"][first]["text"] = "one"
+            shown_arm = first.rsplit("/", 1)[-1]
+            doc["verdicts"] = [
+                {
+                    "scorer": "j1",
+                    "judge": "judge-a",
+                    "arm": shown_arm,
+                    "position": 2,
+                    "scale": [1, 5],
+                    "said": 4,
+                    "why": "The second answer is complete.",
+                },
+                {
+                    "scorer": "j1",
+                    "judge": "judge-a",
+                    "arm": "elsewhere_v1",
+                    "position": 1,
+                    "scale": [1, 5],
+                    "said": 2,
+                    "why": "The first answer misses the ask.",
+                },
+            ]
+            route.fulfill(response=resp, json=doc)
+
+        page.route("**/api/item?*", with_blind)
+        page.goto(f"{art_base}inspect.html?runs={art_arms}&item=t01_login")
+        page.wait_for_selector("table.verdicts", timeout=15000)
+        vt = page.locator("table.verdicts").inner_text().lower()
+        drill_text = page.locator("#drill").inner_text()
+        check(
+            "inspector: the judges' table names the scale and each arm's position, and says the judge saw the outputs "
+            "blind and shuffled",
+            "position" in vt
+            and "said (1–5)" in vt
+            and "without arm names" in drill_text
+            and "shuffled" in drill_text,
+            (vt[:200], drill_text[:400]),
+        )
+        check(
+            "inspector: a judge row for an arm whose output is not on the page says so; the shown arm's does not",
+            vt.count("output not shown") == 1,
+            vt,
+        )
+        check(
+            "inspector: a score of several repeats says it is their mean beside the text of one of them",
+            "mean of 3 repeats" in drill_text and "1 words" not in drill_text and "1 word" in drill_text,
+            drill_text[:600],
+        )
+        page.unroute("**/api/item?*")
+
         page.route("**/api/item?*", with_verdicts)
         page.goto(f"{art_base}inspect.html?runs={art_arms}&item=t01_login")
         page.wait_for_selector("div.scroll-x table.data tbody tr td", timeout=15000)
@@ -615,6 +673,140 @@ def drive(base: str, overview: str = "", art_base: str = "") -> None:
             lay,
         )
         page.unroute("**/api/item?*")
+
+        # An arm's name is one rule, whatever the number of arms open: only the dataset id's prefix is dropped, the
+        # " · reading" tail and the ×N repeat mark stay; the full name is the tooltip.
+        def with_silver(route):
+            resp = route.fetch()
+            doc = resp.json()
+            doc["dataset"] = "intents_v1"
+            for arm in doc.get("arms", []):
+                arm["dataset"] = "intents_v1"
+                arm["label"] = f"intents_{arm['id'].rsplit('_v1', 1)[0].rsplit('_', 1)[-1]}_v1 · silver ×3"
+            route.fulfill(response=resp, json=doc)
+
+        def drawn_names():
+            return page.evaluate(
+                "[...document.querySelectorAll('figure.chart svg text.rl')].map(t => t.textContent)"
+            )
+
+        page.route("**/api/compare**", with_silver)
+        page.goto(f"{base}inspect.html?runs=runs/tickets_v1/tickets_lead1_v1&metric=overlap_f1")
+        page.wait_for_selector("figure.chart svg text.rl", timeout=15000)
+        names_one = drawn_names()
+        page.goto(
+            f"{base}inspect.html?runs={arms}&baseline=runs/tickets_v1/tickets_lead1_v1&metric=overlap_f1"
+        )
+        page.wait_for_selector("figure.chart svg text.rl", timeout=15000)
+        names_three = drawn_names()
+        check(
+            "inspector: an arm's name is the same with 1 arm open and with 3, without the dataset prefix, with its "
+            "' · silver ×3' tail",
+            "lead1_v1 · silver ×3" in names_one
+            and "lead1_v1 · silver ×3" in names_three
+            and not any("intents_" in n for n in names_one + names_three)
+            and all("silver ×3" in n for n in names_three),
+            (names_one, names_three),
+        )
+        page.unroute("**/api/compare**")
+
+        # The difference chart's right column writes a score's mean difference as the table does (three decimals), so
+        # no difference is "+0"; a time metric keeps its own precision.
+        def with_zero_delta(route):
+            resp = route.fetch()
+            doc = resp.json()
+            base_id = doc["baseline"]
+            other = next(a for a in doc["series"] if a != base_id)
+            doc["series"][other] = dict(doc["series"][base_id])
+            route.fulfill(response=resp, json=doc)
+
+        page.route("**/api/compare**", with_zero_delta)
+        page.goto(
+            f"{base}inspect.html?runs={arms}&baseline=runs/tickets_v1/tickets_lead1_v1&metric=overlap_f1"
+        )
+        page.wait_for_selector("figure.chart svg text.rv", timeout=15000)
+        rv_texts = page.evaluate(
+            "[...document.querySelectorAll('figure.chart svg text.rv')].map(t => t.textContent)"
+        )
+        check(
+            "inspector: a zero mean difference in the difference chart reads '+0.000', as the table writes it",
+            any(t.strip().startswith("+0.000") for t in rv_texts)
+            and not any(t.strip().startswith("+0 ") for t in rv_texts),
+            rv_texts,
+        )
+        page.unroute("**/api/compare**")
+
+        def with_half_ms(route):
+            resp = route.fetch()
+            doc = resp.json()
+            base_id = doc["baseline"]
+            other = next(a for a in doc["series"] if a != base_id)
+            doc["series"][other] = {k: v + 0.5 for k, v in doc["series"][base_id].items()}
+            route.fulfill(response=resp, json=doc)
+
+        page.route("**/api/compare**", with_half_ms)
+        page.goto(
+            f"{base}inspect.html?runs={arms}&baseline=runs/tickets_v1/tickets_lead1_v1&metric=latency_ms"
+        )
+        page.wait_for_selector("figure.chart svg text.rv", timeout=15000)
+        rv_ms = page.evaluate(
+            "[...document.querySelectorAll('figure.chart svg text.rv')].map(t => t.textContent)"
+        )
+        check(
+            "inspector: a latency difference keeps the time precision ('+0.5', not '+0.500')",
+            any(t.strip().startswith("+0.5 ") for t in rv_ms),
+            rv_ms,
+        )
+        page.unroute("**/api/compare**")
+
+        # One arm open: no empty verdict table, said in words (080d inspector #10); the spread's numbers are written as
+        # the table's (4.500, not 4.5); a difference row ends in no bare mark (inspector3 #3).
+        page.goto(f"{base}inspect.html?runs=runs/tickets_v1/tickets_lead1_v1")
+        page.wait_for_selector("#metric", timeout=15000)
+        one = page.locator("#app").inner_text()
+        check(
+            "inspector: one arm open says there is no verdict to give, in words, with no empty verdict table",
+            "Only the baseline has this metric" not in one
+            and "Holm across 0" not in one
+            and "no verdict to give" in one,
+            one[:500],
+        )
+        page.wait_for_selector("table.eps tbody tr", timeout=15000)
+        widths = page.evaluate(
+            "(() => { const t = document.querySelector('table.eps');"
+            " return [t.getBoundingClientRect().width, t.closest('.scroll-x').getBoundingClientRect().width]; })()"
+        )
+        check(
+            "inspector: on one arm the per-item table fills its container's width",
+            widths[1] > 0 and widths[0] >= 0.9 * widths[1],
+            widths,
+        )
+        page.goto(f"{art_base}inspect.html?runs={art_arms}")
+        page.wait_for_selector("#metric", timeout=15000)
+        rv = page.evaluate(
+            "[...document.querySelectorAll('figure.chart svg text.rv')].map(t => t.textContent)"
+        )
+        check(
+            "inspector: the charts' right columns carry no bare '·', and the spread's means are written to 3 decimals",
+            rv
+            and not any(t.strip().endswith("·") for t in rv)
+            and re.fullmatch(r"-?\d+\.\d{3}|-?\d{2,}\.\d", rv[0].strip()) is not None,
+            rv[:6],
+        )
+        page.goto(f"{base}inspect.html?dataset=tickets_v1&sheet=1&runs={arms}")
+        page.wait_for_selector("#sheettable", timeout=15000)
+        empty = page.evaluate(
+            """() => { const t = document.querySelector('#sheettable'), out = [];
+              [...t.tHead.rows[0].cells].forEach((th, i) => { const name = th.textContent.trim().toLowerCase();
+                if (!['signals', 'picked', 'fields'].includes(name)) return;
+                if (![...t.tBodies[0].rows].some(r => (r.cells[i]?.textContent || '').trim())) out.push(name); });
+              return out; }"""
+        )
+        check(
+            "sheet: a signals, picked or fields column that is empty on every row is not drawn",
+            empty == [],
+            empty,
+        )
 
         page.goto(base + "d/tickets_v1.html")
         ftable = page.locator("table#fields").inner_text()

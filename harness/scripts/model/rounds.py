@@ -200,6 +200,23 @@ def _best(A, arms: list[str], metric: str, lower: bool, goal: dict | None = None
     return goal_views.leader(A, goal, arms, metric, lower)
 
 
+def _held_back(A, arms: list[str], metric: str, goal: dict, round_id: str) -> str:
+    """Why a round has no leader although its arms record the measure: each is held back from leading by what the
+    goal holds against it (`goal_views.flags_of`: too few items, a format, having written its reference). "" when no
+    arm records the measure at all (then the round has nothing to read yet)."""
+    held = []
+    for a in arms:
+        vals = (A.scores(a).get(metric) or {}).get("values") or {}
+        if not vals:
+            continue
+        d = A.describe(a)
+        flags = goal_views.flags_of(goal, len(vals), d.get("format", ""), bool(d.get("wrote_reference")))
+        held.append(f"{a.rsplit('/', 1)[-1]} ({', '.join(flags) or 'not read as a leader'})")
+    if not held:
+        return ""
+    return f"no arm of {round_id} can lead, though they record {metric}: every one is held back: {'; '.join(held)}"
+
+
 def _arm(A, dataset: str, system_id: str) -> str:
     """The adapter's arm id for a system (arm_of), else the harness's layout."""
     fn = getattr(A, "arm_of", None)
@@ -404,7 +421,8 @@ def _evidence(goal: str, rnd: dict, A: Any, data: Path | None, g: dict, metric: 
     out["leader"] = leader
     if not leader:
         out["notes"].append(
-            f"no arm in {rnd['round_id']} records {metric} yet: run them (evh run --system <id> --dataset <id> --goal {rnd['goal']} --round {rnd['round_id']})"
+            _held_back(A, arms, metric, {**g, "goal_id": goal}, rnd["round_id"])
+            or f"no arm in {rnd['round_id']} records {metric} yet: run them (evh run --system <id> --dataset <id> --goal {rnd['goal']} --round {rnd['round_id']})"
         )
         return out
     # The arm the round started from: the goal's promoted baseline, never suggested for retirement.

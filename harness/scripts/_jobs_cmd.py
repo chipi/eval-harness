@@ -119,6 +119,13 @@ def start(argv: list[str]) -> int:
             for name, value in inputs.items():
                 if (op.inputs.get(name) or {}).get("type") == "array" and not isinstance(value, list):
                     inputs[name] = [value]
+            if not _who():
+                die(
+                    f"{op.name}: name who asked: evh jobs-start --by person:NAME {op.name} ... (the flag goes before "
+                    "the operation), or set EVH_ACTOR=person:NAME; an agent: agent:NAME with EVH_FOR=person:NAME "
+                    "(RFC-027)",
+                    "bad-argument",
+                )
             j = _api.start_operation(
                 op, inputs, _who() or None, a.max_cost_usd, _for() or None, origin=_actor.actor()["from"]
             )

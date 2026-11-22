@@ -48,7 +48,7 @@ def out(r):
 
 def page(rel):
     p = proj / "cat" / rel
-    return p.read_text(encoding="utf-8") if p.is_file() else ""
+    return p.read_text(encoding="utf-8").replace("<wbr>", "") if p.is_file() else ""
 
 
 def row_of(html, needle):

@@ -318,8 +318,20 @@ def test_cost_report(tmp: Path) -> None:
     )
 
 
+def test_runs_list_legend() -> None:
+    """The dirty-tree legend is printed only when a row carries the star (080d scenario N4)."""
+    from evaluation_harness.ops import records  # noqa: PLC0415
+
+    row = {"run_id": "r1", "dataset_id": "d", "build_ref": "abc", "scores": {"m": 1.0}}
+    clean = records.say_runs_list({"runs": [{**row, "dirty": False}], "labels": []})
+    dirty = records.say_runs_list({"runs": [{**row, "dirty": True}], "labels": []})
+    check("runs-list: no legend when no run is starred", "dirty tree" not in clean, clean)
+    check("runs-list: the legend when a run is starred", "* = produced by a dirty tree" in dirty, dirty)
+
+
 def main() -> int:
     """Run all operational command tests."""
+    test_runs_list_legend()
     tmp = Path(tempfile.mkdtemp(prefix="evh-ops-"))
     try:
         test_init(tmp / "init")

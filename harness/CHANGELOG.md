@@ -1025,6 +1025,38 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Fixed
 
+- **Inspector: an arm has one name whether one arm is open or three**: only its dataset id's prefix ("intents_") is dropped; the " · …" tail (the reading, the repeat mark: "silver ×3") always shows, and the full name stays in the tooltip.
+- **Inspector: the difference chart's mean difference is written as the table writes it** (three decimals), so no score difference prints as "+0" ("+0.000"); times keep their own precision.
+- **A dataset page without a profile says the profile is optional**: "A profile is optional", what one adds and the command (`evh dataset-profile`), not "No profile yet" as if it were a gap (UXS-001 says the same).
+- **Inspector, CLI and docs from the 080d review**: the item view's "what the judges said" names the scale ("said (1–5)"),
+  gives each arm's position in the judge's list (the reasons say "the first answer": the judges are blind and shuffled,
+  and the page says so), marks the rows of arms whose output is not on the page, and a score of several repeats says it
+  is their mean beside the text of one; "1 word"; a single-arm view says in words there is no verdict to give instead of
+  drawing an empty table; the spread's means are written as the table's; no bare "·" ends a difference row; a metric
+  with an unvalidated judge and a condition of a no-model arm are named; the sheet leaves out signals, picked and fields
+  columns that are empty, names a label set once, and shows the adapter's decision of a label that is a whole output;
+  `round-retire` and `study-confirm` (not `--dry-run`) need a named actor, as `round-close` does (RFC-027);
+  `jobs-start` without an actor names the flag and its place (`evh jobs-start --by person:NAME run ...`); an unparsed
+  judge reply that is JSON stopping before its closing brace says so; `evh runs-list` prints its dirty-tree legend only
+  when a run is starred; the dry run's estimate says it assumes every reply fills `max_tokens`; a comparison's note on
+  a primary metric no arm scores per item says what to do. SCENARIO, the README, tutorial 1, tutorial 3, the RUNBOOK and
+  UXS-002 say the same (which arm step 7 promotes, `arm-smoke`'s exit 6, committing before a Workbench run, `adapter:`'s
+  place, the judge prompt's wording).
+- **Catalog pages and charts from the 080d review**: a chart never draws a number over another or cuts a label (the
+  item heat maps widen their cells to hold their values, or draw none and keep them in the tooltips; a row's name wraps at
+  a separator instead of an ellipsis; a trend's x label is whole; a scatter's names avoid the frontier line and each other;
+  the inspector's scatter names every arm whole where it fits, never over another arm's cross); a value that is the same
+  everywhere gets an axis that says so ("the same for every point: $0") instead of a +-0.5 range; one cost format
+  (`$0`, `$0.000018`, `$0.0027`, `$1.00`) and one latency precision (three significant digits, whole from 100) on every
+  page, chart and period figure; ratios read `<0.01×`, never `2.7e-06×`; ids in tables break after `_ / - .` (`<wbr>`
+  in the link, never mid-word) on goal, dataset, reference, metric and label pages; cost and speed cells stay on one
+  line; one gutter on every page type (the arms list too); a phone's charts keep their size and scroll sideways; an arm
+  with no reference says why it has no score; an arm's rounds list covers the rounds that ran its system on its dataset
+  (a silver or judged reading of it too); the rounds table says "1 arm in play" and its counts add up; the goal's answer
+  card says where the rule recommends another arm than the baseline; an empty note column is dropped from the scorers
+  list; a metric only judges record counts their passes in the period; a label set's address marks its row; `code` uses
+  the catalog's mono. Checks: `tests/test_catalog_display.py`, `test_catalog_real_browser.py` (`check_display`),
+  `test_charts.py`.
 - **Moving a pin to another commit of the same version did nothing**: both report `0.8.0.dev0`, so a plain `pip install` says "Requirement already satisfied". UPGRADING and SCENARIO now say to use `--force-reinstall --no-deps`, and how to read the installed commit (`direct_url.json`).
 - **`evh validate` failed on every record the Workbench or the API wrote** (`'api' is not one of ['flag', 'environment',
   'terminal', 'migration']`): `from: api`, which a job started from an API call records, is in the actor's `from`
@@ -1460,6 +1492,18 @@ that can move a result is never a patch release without saying so under **Change
   screen read "baseline briefs_mistral_small_v1 (v1, since r2); to test a change, open a round with a question" (since rN
   only when a closed round's conclusion promoted that baseline), or "no baseline promoted yet; ...", not the bare
   "open a round with a question" after four closed rounds.
+- **Workbench screens from the 080d screenshot review**: a round whose arms record the measure but are all held back
+  from leading says so and why (`round-evidence` note), not "no arm records it yet", and the screen no longer says "No
+  chart yet" beside charts that draw; a job nobody asked for (the server's catalog rebuild) is not "asked by ?", and the
+  jobs list and a job's page show spend alike; a job's result is not repeated beside an identical log; production,
+  studies and the held-out split offer the goal's own datasets and systems (as the systems screens do), a new study
+  starts from the goal's baseline, and a new round's question placeholder names the goal's measure; a goal's primary
+  button is its next step; the Studies table counts a confirmation once (`study-list` too); a look's level shows two
+  significant digits; "Run arms in it" puts the commit note before the Run button and leaves out a study's trial
+  systems; the Models screen says what a model record is; a split side lists its parent's label sets; the prepare
+  screen's charts sit in cards; ids do not break mid-word; code words in a judge's problems are code; form spacing,
+  cut placeholders, text boxes that grow with their text and 40 px phone targets are fixed, each with a check in
+  the live and held-out browser tests.
 
 ## 0.7.2 — 2026-11-04
 

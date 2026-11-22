@@ -35,6 +35,8 @@ from evaluation_harness.axes import (  # noqa: E402
     builtin_axes,
     cell_of,
     cell_text,
+    fmt_ms,
+    fmt_usd,
     strategy_of,
     tie_break_of,
 )
@@ -262,7 +264,7 @@ def metric_link(metric: str, up: str = "") -> str:
     """A metric's name, linked to its page."""
     if not metric:
         return "—"
-    return f'<a class="cell-link" href="{up}{metric_page(metric)}">{e(metric)}</a>'
+    return f'<a class="cell-link" href="{up}{metric_page(metric)}">{breakable(metric)}</a>'
 
 
 def reference_page(ref: str) -> str:
@@ -272,7 +274,7 @@ def reference_page(ref: str) -> str:
 
 def reference_link(ref: str, up: str = "") -> str:
     """A reference's id, linked to its page."""
-    return f'<a class="cell-link" href="{up}{reference_page(ref)}">{e(ref)}</a>' if ref else "—"
+    return f'<a class="cell-link" href="{up}{reference_page(ref)}">{breakable(ref)}</a>' if ref else "—"
 
 
 def arm_page(arm: str) -> str:
@@ -292,12 +294,13 @@ SCORER_PAGES: set[str] = set()
 
 
 def breakable(text: str) -> str:
-    """An id, escaped, that may break after each underscore: `triage_local_dgx_vllm_qwen3_30b_a3b_nvfp4_v1` has no
-    other place to break, so a column holding it could not be narrower than all of it. Copying it copies the id."""
-    return e(text).replace("_", "_<wbr>")
+    """An id, escaped, that may break after each separator (_ / - .): `triage_local_dgx_vllm_qwen3_30b_a3b_nvfp4_v1`
+    has no other place to break, so a column holding it could not be narrower than all of it, and without a <wbr> the
+    browser broke "briefs_v1_validati|on" inside a word. Copying it copies the id."""
+    return re.sub(r"([_/.\-])", r"\1<wbr>", e(text))
 
 
-def arm_link(arm: str, label: str, up: str = "", wrap: bool = False) -> str:
+def arm_link(arm: str, label: str, up: str = "", wrap: bool = True) -> str:
     """An arm's label, linked to its page; a recorded arm (production's decisions) carries its badge. `wrap`: the
     label may break after an underscore (breakable), for a table that would otherwise run past its edge."""
     badge = (
@@ -340,7 +343,7 @@ def labels_page_anchor(set_id: str) -> str:
 def label_set_html(set_id: str, kind: str, up: str = "") -> str:
     """A label set: its source chip, then its name linked to its row on the labels page."""
     name = set_id.rsplit("/", 1)[-1]
-    return f'{source_chip(kind)} <a class="cell-link" href="{up}{labels_page_anchor(set_id)}"><code>{e(name)}</code></a>'
+    return f'{source_chip(kind)} <a class="cell-link" href="{up}{labels_page_anchor(set_id)}"><code>{breakable(name)}</code></a>'
 
 
 def promoted_from_html(r: dict, up: str = "", arm: str = "") -> str:
@@ -369,7 +372,7 @@ def dataset_page(ds: str) -> str:
     return f"d/{slug(ds or 'none')}.html"
 
 
-def dataset_link(ds: str, up: str = "", wrap: bool = False) -> str:
+def dataset_link(ds: str, up: str = "", wrap: bool = True) -> str:
     """A dataset's id, linked to its page; `wrap`: it may break after an underscore (breakable)."""
     text = breakable(ds) if wrap and ds else e(ds or "(no dataset_id)")
     return f'<a class="cell-link" href="{up}{dataset_page(ds)}">{text}</a>'
@@ -410,7 +413,7 @@ def scored_against(a: dict, up: str) -> str:
     if ref.startswith("labels/"):
         return label_set_html(ref.removeprefix("labels/"), a.get("labels_source") or "", up)
     tier = ref.split("/", 1)[0]
-    return f'<a class="cell-link" href="{up}{reference_page(ref)}">{e(ref)}</a> {tier_pill(tier)}'.rstrip()
+    return f'<a class="cell-link" href="{up}{reference_page(ref)}">{breakable(ref)}</a> {tier_pill(tier)}'.rstrip()
 
 
 ROW_KEY = (
@@ -788,7 +791,7 @@ def period_metrics(A: Adapter, by_ds: dict) -> dict:
     idx = cp.arm_index(by_ds)
     out = {}
     for m in metric_index(A, by_ds):
-        runs = cp.runs_of([a for v in by_ds.values() for a in v["arms"] if m in a["means"]], idx)
+        runs = cp.runs_of([a for v in by_ds.values() for a in v["arms"] if m in a["means"]], idx, judged=True)
         out[m] = {"runs": runs, "made": min((r[0] for r in runs), default="")}
     return out
 
@@ -1178,10 +1181,10 @@ def spend_by_day(spend: list[dict], since: str, unit: str = "usd") -> dict:
 
 
 def fmt_amount(v: float, unit: str) -> str:
-    """An amount of spend: dollars to four decimals under one, tokens whole with separators."""
+    """An amount of spend: dollars as everywhere (axes.fmt_usd), tokens whole with separators."""
     if unit == "tokens":
         return f"{round(v):,} tokens"
-    return f"${v:.4f}" if v < 1 else f"${v:.2f}"
+    return fmt_usd(v)
 
 
 def glance_verdict(r: dict) -> str:
@@ -1974,7 +1977,13 @@ def render_labels_of(A: Adapter, ds: str, v: dict) -> str:
                     "<small>α</small>",
                 ],
                 [
-                    {"cells": [f"<code>{e(a['a'])}</code>", f"<code>{e(a['b'])}</code>", *agreement_cells(a)]}
+                    {
+                        "cells": [
+                            f"<code>{breakable(a['a'])}</code>",
+                            f"<code>{breakable(a['b'])}</code>",
+                            *agreement_cells(a),
+                        ]
+                    }
                     for a in cov["agreement"]
                 ],
             )
@@ -2198,8 +2207,8 @@ def render_inside(
     p = fn(ds) if callable(fn) else None
     if not p:
         return (
-            f'<p class="muted">No profile yet. Where the dataset is materialized, '
-            f"<code>evh dataset-profile --dataset-id {e(ds)}</code> writes one: its {e(A.item_word)}s, how long "
+            f'<p class="muted">A profile is optional. Where the dataset is materialized, '
+            f"<code>evh dataset-profile --dataset-id {e(ds)}</code> adds one: its {e(A.item_word)}s, how long "
             f"they are, the gold's shape and where each can be read.</p>"
         ), []
     hide = _visibility.hidden(ds)
@@ -2535,6 +2544,14 @@ def _answer(A: Adapter, g: dict, by_ds: dict, measure: str) -> str:
         key=lambda r: str(r.get("closed_at") or ""),
     )
     latest = closed[-1] if closed else None
+    # Where the rule recommends another arm than the baseline, the answer says so here, not only further down: the card
+    # reads "the baseline stays X" and the dataset's section "Recommended: Y" (found 2026-11-21, scenario 080d).
+    differs: dict = {}
+    for ans in decided(A, g, by_ds):
+        for grp in ans["groups"]:
+            note = baseline_gap(A, grp["dec"], grp["rows"], grp["measure"])
+            if note and ans["dataset"] not in differs:
+                differs[ans["dataset"]] = note
     for d in g.get("datasets") or []:
         ds = d.get("dataset_id", "")
         v = by_ds.get(ds) or {}
@@ -2578,7 +2595,13 @@ def _answer(A: Adapter, g: dict, by_ds: dict, measure: str) -> str:
                 )
                 + "</div>"
             )
-        else:
+        if bl and ds in differs:
+            parts[-1] = (
+                parts[-1][: -len("</div>")]
+                + f'<p class="small differs"><b>The rule\'s recommendation differs from the baseline.</b> '
+                f"{e(differs[ds])} The dataset's section below has the comparison.</p></div>"
+            )
+        if not bl:
             parts.append(
                 f'<div class="answer"><p class="small muted">{head}</p><p>No decision yet. When the tests '
                 "separate an arm worth keeping, promote its run with the reason they give: "
@@ -2670,7 +2693,7 @@ def _rounds_block(A: Adapter, g: dict, measure: str, above: str = "") -> str:
     rows, details = [], []
     for r in sorted(rounds, key=lambda r: -int(r["round_id"][1:] or 0)):
         arm, mean = best(r)
-        n_cfg = len(r.get("arms") or [])
+        n_cfg = len([x for x in r.get("arm_records") or [] if not x.get("retired")])
         prev_id = r.get("from") or ""
         prev_best = next(
             (
@@ -2707,8 +2730,8 @@ def _rounds_block(A: Adapter, g: dict, measure: str, above: str = "") -> str:
                     # Arms, best and the comparison in one narrow cell: three columns of mostly "—" took the width
                     # the conclusion needs (owner, 2026-10-31).
                     # The arms in play and the arms retired, as the round stores them.
-                    f'<div class="armsbest"><span data-v="{n_cfg}">{n_cfg} arms</span>'
-                    + (f" <small>({n_retired} retired)</small>" if n_retired else "")
+                    f'<div class="armsbest"><span data-v="{n_cfg}">{n_cfg} arm{"" if n_cfg == 1 else "s"} in play</span>'
+                    + (f" <small>· {n_retired} retired</small>" if n_retired else "")
                     # The round's arms in the inspector, against its leader: `evh comparison-show --round`.
                     + (
                         f' <a class="btn small" title="evh comparison-show --round {e(r["round_id"])} --goal {e(g["goal_id"])}" '
@@ -2737,6 +2760,11 @@ def _rounds_block(A: Adapter, g: dict, measure: str, above: str = "") -> str:
             x["system"]
             for x in r.get("arm_records") or []
             if (x.get("entered") or {}).get("how") == "carried" and not x.get("retired")
+        ]
+        ran = [
+            x["system"]
+            for x in r.get("arm_records") or []
+            if (x.get("entered") or {}).get("how") != "carried" and not x.get("retired")
         ]
         arms_li = [
             f"<li><b>retired {len(cs)}</b>: {e(why)}<br><small>{', '.join(_config_link(A, r, c) for c in cs)}</small></li>"
@@ -2786,6 +2814,7 @@ def _rounds_block(A: Adapter, g: dict, measure: str, above: str = "") -> str:
                 f"{len(r.get('changes') or [])} change(s)" if r.get("changes") else "",
                 f"{n_retired} retired" if n_retired else "",
                 f"{len(carried)} carried" if carried else "",
+                f"{len(ran)} ran in it" if ran else "",
                 f"judged by {e(str(r['scorer'])[:12])}" if r.get("scorer") else "",
                 "suggested next" if sugg else "",
             )
@@ -2852,7 +2881,7 @@ def _studies_block(A: Adapter, g: dict) -> str:
                 '<span class="muted">not shown</span>' if s.get("text_hidden") else e(r["hypothesis"]),
                 f'<b>{e(str(r["outcome"]))}</b><br><small class="muted">{e(r["reason"])}</small>',
                 f"{r['delta']:+.4g}" if isinstance(r["delta"], (int, float)) else "—",
-                f"${r['cost_usd']:.4f}" if isinstance(r["cost_usd"], (int, float)) else "—",
+                fmt_usd(r["cost_usd"]) if isinstance(r["cost_usd"], (int, float)) else "—",
             ]
             for r in s["rows"]
         ]
@@ -2866,7 +2895,7 @@ def _studies_block(A: Adapter, g: dict) -> str:
         parts.append(
             f'<h3 id="study-{e(s["study"])}">{e(s["study"])}</h3>'
             f'<p class="small muted">{e(s["status"])}, from {e(str(s["baseline"]))}, round {e(str(s["round"]))}, '
-            f"${s['spent_usd']:.4f} spent" + (f"; ended: {e(str(s['end']))}" if s["end"] else "") + ". Research: its "
+            f"{fmt_usd(s['spent_usd'])} spent" + (f"; ended: {e(str(s['end']))}" if s["end"] else "") + ". Research: its "
             "p values are nominal; only a confirmation on a test set is evidence."
             + (" Its hypotheses are not shown: the dataset's text is hidden." if s.get("text_hidden") else "")
             + "</p>"
@@ -3259,7 +3288,7 @@ def axis_cell(ax: dict, cell: dict) -> str:
         + (f"; contender test: {_goal_view.ni_text(ni)}" if ni else "")
         + ("; past the limit" if over else "")
     )
-    attrs = f'data-v="{v if v is not None else ""}"' + (' class="over"' if over else "")
+    attrs = f'data-v="{v if v is not None else ""}" class="ax{" over" if over else ""}"'
     attrs += f' title="{e(title)}"' if title else ""
     return f"<span {attrs}>{e(cell_text(ax, cell))}</span>"
 
@@ -3376,10 +3405,18 @@ def decision_html(dec: dict, labels: dict, g: dict, up: str, gap: str = "", said
 def axis_fmt(ax: dict):
     """How an axis's value reads: dollars to four places for cost, ms or s for milliseconds, else fmt."""
     if ax["name"] == "cost" and ax["measure"] == "cost_usd":
-        return lambda v: "$0" if v == 0 else f"${v:.4f}"
+        return fmt_usd
     if ax.get("unit") == "ms":
-        return lambda v: f"{v / 1000:.1f} s" if v >= 1000 else f"{v:.0f} ms"
+        return lambda v: f"{fmt_ms(v)} ms"
     return fmt
+
+
+def _arm_head(label: str) -> str:
+    """An arm's label without what it is scored against: "intents_mistral_small_v1 · silver ×3" reads
+    "intents_mistral_small_v1 ×3"."""
+    head, _, rest = label.partition(" · ")
+    times = re.search(r" ×\d+$", label)
+    return head + (times.group(0) if rest and times else "")
 
 
 def tradeoff_charts(dec: dict, labels: dict, quality_name: str) -> str:
@@ -3414,12 +3451,15 @@ def tradeoff_charts(dec: dict, labels: dict, quality_name: str) -> str:
         unit = f" ({ax['unit']})" if ax.get("unit") and not ms else ""
         if len(pts) > 1 and len({p[0] for p in pts}) == 1:
             # Every arm the same on this axis (all free): no trade-off to draw, and the drawn one had a "$-1" axis.
-            usd = ax["name"] == "cost" and ax["measure"] == "cost_usd"
-            same = f"${pts[0][0]:.6f}".rstrip("0").rstrip(".") if usd else fmt(pts[0][0])
+            same = axis_fmt(ax)(pts[0][0])
             notes.append(f"{ax['name']}: {same} for every arm, so no trade-off to draw")
             continue
+        # The chart's names are the arms': what each is scored against is the group's heading above, and a tooltip and the
+        # table below carry the full label (a long name was cut, "intents_mistral_small_v1 · silver …").
+        heads = [_arm_head(p[2]) for p in pts]
+        spts = pts if len(set(heads)) < len(heads) else [(*p[:2], h, p[3]) for p, h in zip(pts, heads)]
         svg = ch.scatter(
-            pts,
+            spts,
             f"{ax['name']}{stat}{unit}",
             quality_name,
             lower_x=ax["direction"] == "lower",
@@ -3427,11 +3467,8 @@ def tradeoff_charts(dec: dict, labels: dict, quality_name: str) -> str:
             # a number draws its line; the baseline limit is a paired test, not a line
             x_limit=ax.get("limit") if isinstance(ax.get("limit"), (int, float)) else None,
             y_limit=q.get("limit") if isinstance(q.get("limit"), (int, float)) else None,
-            fmt_x=(lambda v: f"${v:.4f}")
-            if ax["name"] == "cost" and ax["measure"] == "cost_usd"
-            else (lambda v: f"{v / 1000:.1f} s" if v >= 1000 else f"{v:.0f} ms")
-            if ms
-            else None,
+            fmt_x=axis_fmt(ax) if (ax["name"] == "cost" and ax["measure"] == "cost_usd") or ms else None,
+            fmt_y=fmt,
             width=HALF,
             # a speed spanning more than 100x (0.06 ms to 57 s) crowds every point at one end on a linear axis
             log_x=ms
@@ -3804,21 +3841,70 @@ def deploy_sheet_html(sh: dict, up: str) -> str:
     )
 
 
+def arm_reading(a: dict, ds: str, up: str = "../") -> tuple[str, str]:
+    """An arm's "scored against" and "headline" cells. An arm on a dataset with no reference set has no quality score:
+    the cells say so instead of a bare "—" and a metric with no value."""
+    unscored = not (a.get("judge") or a.get("reference"))
+    scored = (
+        f"nothing: {dataset_link(ds, up)} has no reference set, so there is no quality score to make"
+        if unscored
+        else scored_against(a, up)
+    )
+    if a["mean"] is not None:
+        value = f" {fmt(a['mean'])}"
+    elif unscored:
+        value = ' <span class="muted">not scored: it needs a reference to score against</span>'
+    else:
+        value = ' <span class="muted">not scored yet</span>'
+    return scored, metric_link(a["metric"], up) + value
+
+
+def arm_rounds_html(A: Adapter, a: dict, ds: str, goals: dict) -> str:
+    """The rounds an arm's system took part in on its dataset, one sentence each: a round is about a system on a dataset,
+    so an arm scored another way (silver, a judge, a re-score) of a system a round ran lists that round too, and says it
+    is read there another way. "" when the system was in none."""
+    rfn = getattr(A, "rounds", None)
+    system = a["arm"].split("/", 2)[-1]
+    rnds = []
+    for r in rfn() if callable(rfn) else []:
+        mine = [x for x in r.get("arm_records") or [] if x.get("system") == system]
+        if r.get("dataset_id", ds) != ds or not mine:
+            continue
+        direct = a["arm"] in (r.get("arms") or []) or a["arm"] in retired_arms(r)
+        rnds.append((r, direct, all(x.get("retired") for x in mine)))
+    if not rnds:
+        return ""
+    # A sentence, not "r1 of … · in play · closed": what the round was and what it did with this arm.
+    lis = "".join(
+        f"<li>Round <b>{e(r['round_id'])}</b> of "
+        f"{goal_link(goals[r['goal']], '../') if r.get('goal') in goals else e(r.get('goal', ''))}"
+        + (f", {e(r['status'])}" if r.get("status") else "")
+        + (": <b>retired</b> in it" if gone else ": one of its arms")
+        + (
+            ""
+            if direct
+            else f" (the round reads {e(system)} scored another way than this page's arm: this arm is a "
+            "re-reading of the same runs)"
+        )
+        + ".</li>"
+        for r, direct, gone in rnds
+    )
+    return f"<ul>{lis}</ul>"
+
+
 def render_arm(A: Adapter, a: dict, ds: str, by_ds: dict, out: Path, nav: list) -> None:
     """One arm: what it is scored against and for which goal, every metric it records, its runs,
     its system, the conditions it ran under, and the same system scored other ways."""
     v = by_ds[ds]
     tiers = {r["id"]: r["tier"] for r in v["refs"]}
     goals = {g["goal_id"]: g for g in A.goals()}
+    scored, headline = arm_reading(a, ds)
     facts = [
         ("dataset", dataset_link(ds, "../")),
-        ("scored against", scored_against(a, "../")),
+        ("scored against", scored),
         ("goal", goal_link(goals[a["goal"]], "../") if a.get("goal") in goals else e(a.get("goal") or "")),
         ("runs", str(a["runs"])),
-        (
-            "headline",
-            metric_link(a["metric"], "../") + (f" {fmt(a['mean'])}" if a["mean"] is not None else ""),
-        ),
+        ("headline", headline),
         ("last run", e(a["last"][:16].replace("T", " "))),
     ]
     if a.get("wrote"):
@@ -3945,7 +4031,7 @@ def render_arm(A: Adapter, a: dict, ds: str, by_ds: dict, out: Path, nav: list) 
                 f'<span data-v="{e(r.get("created_at") or "")}">{e((r.get("created_at") or "")[:16].replace("T", " "))}</span>',
                 f'<span data-v="{r.get("items") or ""}">{r.get("items") if r.get("items") is not None else "—"}</span>',
                 f'<span data-v="{r.get("cost_usd") if r.get("cost_usd") is not None else ""}">'
-                + (f"${r['cost_usd']:.6f}" if isinstance(r.get("cost_usd"), (int, float)) else "—")
+                + (fmt_usd(r["cost_usd"]) if isinstance(r.get("cost_usd"), (int, float)) else "—")
                 + "</span>",
                 e(r.get("derived") or "measured"),
             ]
@@ -4017,23 +4103,9 @@ def render_arm(A: Adapter, a: dict, ds: str, by_ds: dict, out: Path, nav: list) 
             ROW_KEY + table("siblings", ["arm", "scored against", "headline", "mean"], srows),
         )
         n += 1
-    rfn = getattr(A, "rounds", None)
-    rnds = [
-        r
-        for r in (rfn() if callable(rfn) else [])
-        if a["arm"] in (r.get("arms") or []) or a["arm"] in retired_arms(r)
-    ]
-    if rnds:
-        # A sentence, not "r1 of … · in play · closed": what the round was and what it did with this arm.
-        lis = "".join(
-            f"<li>Round <b>{e(r['round_id'])}</b> of "
-            f"{goal_link(goals[r['goal']], '../') if r.get('goal') in goals else e(r.get('goal', ''))}"
-            + (f", {e(r['status'])}" if r.get("status") else "")
-            + (": <b>retired</b> in it" if a["arm"] in retired_arms(r) else ": one of its arms")
-            + ".</li>"
-            for r in rnds
-        )
-        body += block(f"{n:02d}", "rounds", f"<ul>{lis}</ul>")
+    rounds_ul = arm_rounds_html(A, a, ds, goals)
+    if rounds_ul:
+        body += block(f"{n:02d}", "rounds", rounds_ul)
         n += 1
     notes = A.notes(a["arm"]) if callable(getattr(A, "notes", None)) else []
     if notes:
@@ -4069,11 +4141,23 @@ def cost_or_speed(A: Adapter, m: str) -> str | None:
     return None
 
 
+def strip_fmt(A: Adapter, m: str):
+    """How a metric's values read on a chart's axis: dollars as everywhere, milliseconds with their unit, else None
+    (the chart's own)."""
+    if cost_or_speed(A, m) == "cost" and "usd" in m:
+        return fmt_usd
+    if m == "latency_ms":
+        return lambda v: f"{fmt_ms(v)} ms"
+    return None
+
+
 def metric_value(A: Adapter, m: str, v) -> str:
     """A metric's mean for a table: dollars to six places (a cheap model's $0.000012 is not
     0.000), everything else as fmt."""
     if v is not None and cost_or_speed(A, m) == "cost" and "usd" in m:
-        return f"${v:.6f}"
+        return fmt_usd(v)
+    if v is not None and m == "latency_ms":
+        return fmt_ms(v)
     return fmt(v)
 
 
@@ -4159,7 +4243,12 @@ def render_metric(A: Adapter, m: str, where: dict, by_ds: dict, project: dict, o
             key = f"judge {a['judge']}" if a["judge"] else (a.get("reference") or "no reference")
             groups.setdefault(key, []).append((a["means"][m][0], a["label"]))
         chart = (
-            ch.strip(groups, f"{m} per arm on {ds}, by what each is scored against", lower=lower)
+            ch.strip(
+                groups,
+                f"{m} per arm on {ds}, by what each is scored against",
+                lower=lower,
+                fmt=strip_fmt(A, m),
+            )
             + (
                 f'<p class="small muted">Not drawn: {e(", ".join(authors))}, scored against the reference it '
                 "wrote (its row is in the table).</p>"

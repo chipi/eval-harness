@@ -230,14 +230,14 @@ def _primary_not_read(arms: list, metric: str, per_arm: dict) -> str | None:
             nowhere.append(_label(a))
     said = (
         f"The arms' primary metric, {primary}, has no score per {A.item_word} for "
-        f"{', '.join(_label(a) for a in lacking)} as read, so it cannot be tested across them; compared on "
-        f"{metric or 'nothing'} instead."
+        f"{', '.join(_label(a) for a in lacking)} as read, so it cannot be tested across them; "
+        + (f"compared on {metric} instead." if metric else "there is no other metric to compare them on.")
     )
     said += "".join(f" It is scored for {', '.join(xs)} under --label {lb}." for lb, xs in where.items())
     if nowhere and callable(read_as):
         said += (
-            f" It is not scored for {', '.join(nowhere)} in any reading: a re-score against a reference that "
-            "scores it would."
+            f" It is not scored for {', '.join(nowhere)} in any reading: no reference scores it (evh rescore "
+            "scores the runs against one that does)."
         )
     return said
 

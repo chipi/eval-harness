@@ -297,6 +297,7 @@ def retire_body(**inputs: Any) -> int:
         die(f"round {args.round} is closed", "not-allowed")
     if len(args.reason.split()) < 3:
         die("--reason must be a sentence: what did the tests show?", "bad-argument")
+    require_named("round-retire")
     gone = 0
     while model_rounds.retire(rnd, args.arm, args.reason, actor(), args.label) is not None:
         gone += 1  # every arm of the system in play (or the one under --label)

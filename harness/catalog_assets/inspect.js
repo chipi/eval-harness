@@ -182,10 +182,19 @@
       const v = document.getElementById('addrun').value.trim(); if (!v) return;
       P.set('runs', [...new Set([...runs(), v])].join(',')); go(); };
   }
-
-  // Strip what every selected run's label shares, at a _ / · boundary; the full name stays in a tooltip.
-  function shorten(full) {
+  // An arm's name on the comparison page: its dataset id's prefix dropped ("intents_" of runs/intents_v1), whatever
+  // the number of arms open; the " · reading" tail and the ×N repeat mark always stay; the full name is the tooltip.
+  // `dsOf` maps an id to its dataset; without it (the sheet, whose names are paths) what every name shares is cut.
+  function shorten(full, dsOf) {
     const ids = Object.keys(full), names = ids.map(i => full[i]);
+    if (dsOf) {
+      const out = {};
+      ids.forEach((id, k) => {
+        const pre = String(dsOf[id] || '').replace(/_v\d+$/, '') + '_';
+        out[id] = pre.length > 1 && names[k].startsWith(pre) && names[k].length > pre.length ? names[k].slice(pre.length) : names[k];
+      });
+      return out;
+    }
     if (names.length < 2) return full;
     const cut = (a, b) => { let i = 0; while (i < a.length && i < b.length && a[i] === b[i]) i++; return i; };
     let pre = names.reduce((n, x) => Math.min(n, cut(names[0], x)), Infinity);
@@ -227,7 +236,7 @@
       return;
     }
     if (d.error) { app.innerHTML = `<p class="note"><b>${esc(d.error)}</b></p>`; return; }
-    const label = shorten(Object.fromEntries((d.arms || []).map(a => [a.id, a.label])));
+    const label = shorten(Object.fromEntries((d.arms || []).map(a => [a.id, a.label])), Object.fromEntries((d.arms || []).map(a => [a.id, a.dataset || d.dataset])));
     const warn = (d.warnings || []).map(w => `<p class="note">${esc(w)}</p>`).join('');
     if (!d.metrics || !d.metrics.length || d.state === 'not scorable') {
       const pickable = (d.metrics || []).map(m => `<a class="btn" href="?${new URLSearchParams({...Object.fromEntries(P), metric: m.name})}">compare ${esc(m.name)}</a>`).join('');
@@ -237,7 +246,8 @@
       return;
     }
     const arrow = d.higher_is_better ? '↑ higher is better' : '↓ lower is better';
-    const mopts = d.metrics.map(m => `<option value="${esc(m.name)}" ${m.name === d.metric ? 'selected' : ''}>${esc(m.name)}${m.format ? ' (' + esc(m.format) + ')' : ''}${m.archived ? ' (archived reference)' : ''} ${m.lower_is_better ? '↓' : '↑'} · ${m.arms} arm(s)</option>`).join('');
+    const mshow = n => /_unvalidated$/.test(n) ? n.replace(/_unvalidated$/, '') + ' (unvalidated judge)' : n;
+    const mopts = d.metrics.map(m => `<option value="${esc(m.name)}" ${m.name === d.metric ? 'selected' : ''}>${esc(mshow(m.name))}${m.format ? ' (' + esc(m.format) + ')' : ''}${m.archived ? ' (archived reference)' : ''} ${m.lower_is_better ? '↓' : '↑'} · ${m.arms} arm(s)</option>`).join('');
     const bopts = Object.keys(d.series).map(a => `<option value="${esc(a)}" ${a === d.baseline ? 'selected' : ''}>${esc(label[a] || a)}</option>`).join('');
     const resc = P.get('rescore') !== '0';
     const controls = `<div class="controls">
@@ -260,8 +270,10 @@
       <td class="num">${r.wins}–${r.losses}${r.ties ? ' (' + r.ties + ' ties)' : ''}</td>
       <td class="num">${fmtp(r.p)}</td><td class="num">${r.threshold ? r.threshold.toFixed(4) : '—'}</td></tr>`).join('');
     const baseMean = d.items.length ? (() => { const v = Object.values(d.series[d.baseline]); return v.reduce((a, b) => a + b, 0) / v.length; })() : null;
-    const verdicts = `<div class="scroll-x"><table class="data" data-nopage><thead><tr><th>run vs baseline</th><th>verdict</th><th>${ITEMS}</th><th>mean</th><th>Δ vs baseline</th><th>95% CI of Δ</th><th>wins–losses</th><th>p (exact ≤30)</th><th>Holm threshold</th></tr></thead>
-      <tbody>${vt || '<tr><td colspan="9" class="muted">Only the baseline has this metric.</td></tr>'}</tbody></table></div>
+    const only = !vt;
+    const verdicts = only ? `<p class="small">One arm is open, so there is no verdict to give: a verdict tests an arm against a baseline. Add an arm (change, above) to see one.</p>
+      <p class="small muted">Baseline ${armName(d.baseline, label[d.baseline] || d.baseline)}: mean ${fmt(baseMean)}; ${esc(arrow)}. Scores come from: ${esc([...new Set(d.arms.map(a => a.source).filter(Boolean))].join('; '))}.</p>` : `<div class="scroll-x"><table class="data" data-nopage><thead><tr><th>run vs baseline</th><th>verdict</th><th>${ITEMS}</th><th>mean</th><th>Δ vs baseline</th><th>95% CI of Δ</th><th>wins–losses</th><th>p (exact ≤30)</th><th>Holm threshold</th></tr></thead>
+      <tbody>${vt}</tbody></table></div>
       <p class="small muted">Baseline ${armName(d.baseline, label[d.baseline] || d.baseline)}: mean ${fmt(baseMean)}. Holm across ${d.family_size} comparison(s)${P.get('threshold') ? ' (this row\'s threshold carried from the page you came from, so the verdict matches it)' : P.get('family') ? ' (family carried from the page you came from)' : ''}; ${esc(arrow)}. Scores come from: ${esc([...new Set(d.arms.map(a => a.source).filter(Boolean))].join('; '))}.</p>`;
 
     const arms = Object.keys(d.series), better = d.higher_is_better ? 1 : -1;
@@ -285,9 +297,9 @@
         `<tr><td class="mono">${armName(a, label[a] || a)}</td><td class="num">${fmt(v)}</td><td class="num">${baseMean == null ? '—' : (v - baseMean >= 0 ? '+' : '') + fmt(v - baseMean)}</td></tr>`).join('')}</tbody></table></div>`;
     const mslug = slug(d.metric.split(' vs ')[0]);
     // The metric's own page where the catalog has one; else its row on a metrics page; else plain.
-    const mlink = window.CATALOG_PAGES ? `<a class="cell-link" href="${UP}m/${mslug}.html">${esc(d.metric)}</a>`
+    const mlink = window.CATALOG_PAGES ? `<a class="cell-link" href="${UP}m/${mslug}.html">${esc(mshow(d.metric))}</a>`
       : document.querySelector('nav.nav a[href$="metrics.html"]')
-      ? `<a class="cell-link" href="${UP}metrics.html#m-${mslug}">${esc(d.metric)}</a>` : esc(d.metric);
+      ? `<a class="cell-link" href="${UP}metrics.html#m-${mslug}">${esc(mshow(d.metric))}</a>` : esc(mshow(d.metric));
     app.innerHTML = controls + warn + `<p class="eyebrow"><span class="num">01</span>verdicts · ${mlink}</p>` + verdicts + conditions(d, label) + avgTable
       + breakdown(d, label)
       + `<p class="eyebrow gap"><span class="num">02</span>analysis</p>` + charts(d, label)
@@ -400,7 +412,7 @@
     const head = arms.map(a => `<th>${esc(label[a] || a)}${a === d.baseline ? '<br><small>baseline</small>' : ''}</th>`).join('');
     const body = c.differ.map(f => {
       const base = f.values[d.baseline];
-      return `<tr><td class="mono">${esc(f.name)}</td>${arms.map(a => `<td class="mono${a !== d.baseline && f.values[a] !== base ? ' diff' : ''}" title="${esc(f.values[a] ?? '')}">${esc(short(f.values[a]))}</td>`).join('')}</tr>`;
+      return `<tr><td class="mono">${esc(f.name)}</td>${arms.map(a => `<td class="mono${a !== d.baseline && f.values[a] !== base ? ' diff' : ''}" title="${esc(f.values[a] ?? (/model$/.test(f.name) ? 'no model: this arm calls none' : ''))}">${f.values[a] == null && /model$/.test(f.name) ? 'no model' : esc(short(f.values[a]))}</td>`).join('')}</tr>`;
     }).join('');
     const warns = (c.warnings || []).map(w => `<p class="note">${esc(w)}</p>`).join('');
     return `<h3 class="sub">Conditions · ${c.differ.length} of ${c.fields} fields differ <small>(${what})</small></h3>`
@@ -465,11 +477,18 @@
     return ticks(lo, hi).map(t => `<line class="grid" x1="${x(t)}" x2="${x(t)}" y1="${top}" y2="${bottom}"/>
       <text class="tick" x="${x(t)}" y="${bottom + 16}" text-anchor="middle">${tfmt(t)}</text>`).join('');
   }
+  // A row's name is whole: wrapped at a separator over two lines (one line on a phone, where it has the width).
   function rowLabel(y, text, full, color) {
-    const max = NARROW ? 40 : 34, t = text.length > max ? text.slice(0, max - 1) + '…' : text;
-    const ly = NARROW ? y - 13 : y + 4, cy = NARROW ? y - 17 : y;
+    const max = NARROW ? 56 : 34, lines = [];
+    let rest = text;
+    while (rest.length > max && lines.length < 1) {
+      const cut = Math.max(rest.lastIndexOf('_', max - 1), rest.lastIndexOf(' ', max - 1), rest.lastIndexOf('/', max - 1), rest.lastIndexOf('-', max - 1));
+      const at = cut > 8 ? cut + 1 : max; lines.push(rest.slice(0, at).trimEnd()); rest = rest.slice(at).trimStart();
+    }
+    lines.push(rest);
+    const ly = (NARROW ? y - 13 : y + 4) - (lines.length - 1) * 6, cy = NARROW ? y - 17 : y, x = NARROW ? 14 : 24;
     return `<g><title>${esc(full)}</title><circle cx="${NARROW ? 5 : 12}" cy="${cy}" r="5" fill="${color}"/>
-      <text class="rl" x="${NARROW ? 14 : 24}" y="${ly}">${esc(t)}</text></g>`;
+      <text class="rl" x="${x}" y="${ly}">${lines.map((t, k) => `<tspan x="${x}" y="${ly + k * 13}">${esc(t)}</tspan>`).join('')}</text></g>`;
   }
   const dot = (cx, cy, color, tip, r = 4.5) =>
     `<circle class="dot" cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${r}" fill="${color}" data-tip="${esc(tip)}"><title>${esc(tip)}</title></circle>`;
@@ -515,7 +534,7 @@
         for (const [f, nm] of [[0.5, 'p50'], [0.95, 'p95']]) g += `<line class="ci" x1="${x(at(f))}" x2="${x(at(f))}" y1="${y - 8}" y2="${y + 8}" stroke="var(--ink)" stroke-width="2" data-tip="${esc((label[a] || a) + ' ' + nm + ' ' + tfmt(at(f)))}"/><text class="tick" x="${x(at(f))}" y="${y - 10}" text-anchor="middle" font-size="10">${nm}</text>`;
       }
       if (ys.length) g += `<line class="meanmark" x1="${x(mean(ys))}" x2="${x(mean(ys))}" y1="${y - 11}" y2="${y + 11}" data-tip="${esc((label[a] || a) + ' mean ' + tfmt(mean(ys)))}"/>`
-        + rowValue(y, W - RIGHT - 66, tfmt(mean(ys)));
+        + rowValue(y, W - RIGHT - 66, fmt(mean(ys)));
     });
     return `<figure class="chart"><figcaption><b>Spread per run</b> · every ${ITEM}'s ${esc(d.metric)}, one row per run, baseline first, then best mean first; the bar and the number are the run's mean, the dashed line the baseline's mean${binNote}.</figcaption>
       <div class="scroll-x"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Spread of per-${ITEM} scores per run">${g}</svg></div></figure>`;
@@ -544,11 +563,12 @@
       if (ci) g += `<line class="ci" x1="${x(ci[0])}" x2="${x(ci[1])}" y1="${y + 14}" y2="${y + 14}" stroke="var(--ink)" stroke-width="2" data-tip="${esc((label[a] || a) + ': 95% interval ' + tfmt(ci[0]) + ' to ' + tfmt(ci[1]) + ' (before Holm)')}"/>`;
       // Words, not arrows: for a lower-is-better metric an up-arrow beside a negative number reads wrong.
       const v = r.verdict || '';
-      const word = !v.startsWith('significant') ? '·' : d.neutral ? (mu > 0 ? 'higher' : 'lower') : v.includes('better') ? '✓ better' : '✗ worse';
-      g += rowValue(y, W - RIGHT - 150, `${mu >= 0 ? '+' : ''}${tfmt(mu)} ${r.wins != null ? r.wins + '–' + r.losses : ''} ${word}`);
+      const word = !v.startsWith('significant') ? '' : d.neutral ? (mu > 0 ? 'higher' : 'lower') : v.includes('better') ? '✓ better' : '✗ worse';
+      const muFmt = LATENCY.test(d.metric) ? tfmt(mu) : fmt(mu);
+      g += rowValue(y, W - RIGHT - 150, `${mu >= 0 ? '+' : ''}${muFmt} ${r.wins != null ? r.wins + '–' + r.losses : ''} ${word}`);
     });
     const side = d.neutral ? '← lower · higher →' : d.higher_is_better ? '← worse · better →' : '← better · worse →';
-    return `<figure class="chart"><figcaption><b>Difference from the baseline</b> · each ${ITEM}'s ${esc(d.metric)} minus the baseline's (${esc(label[d.baseline] || d.baseline)}); bar = mean difference; the line under it, its 95% interval from the paired test (before Holm); right column: mean difference, wins–losses, and ✓ better / ✗ worse when significant after Holm${binNote}. <span class="muted">${side}</span></figcaption>
+    return `<figure class="chart"><figcaption><b>Difference from the baseline</b> · each ${ITEM}'s ${esc(d.metric)} minus the baseline's (${esc(label[d.baseline] || d.baseline)}); bar = mean difference; the line under it, its 95% interval from the paired test (before Holm); right column: mean difference, wins–losses, and ✓ better / ✗ worse when significant after Holm (no mark: not significant)${binNote}. <span class="muted">${side}</span></figcaption>
       <div class="scroll-x"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Per-${ITEM} difference from the baseline">${g}</svg></div></figure>`;
   }
 
@@ -573,12 +593,31 @@
           + `<title>${c} ${c === 1 ? ITEM : ITEMS} of all runs</title></rect>`; }).join('') + '</g>';
     } else g += '<g class="faded">' + pts.map(([a, ep, xv, yv]) => dot(x(xv), y(yv), col[a], `${label[a] || a} · ${ep}: ${tfmt(yv)} at ${tfmt(xv)} ${esc(xm)}`, 5)).join('') + '</g>';
     // Each run's average position: its trade-off (length, speed, cost) against the score.
+    // Each name is whole (the tooltip is not the only place it is read) and sits where it covers no cross and no other
+    // name: right of its cross, else left, else a line above or below, within the plot.
+    const cents = [];
     Object.keys(d.series).forEach(a => {
       const mine = pts.filter(p => p[0] === a); if (!mine.length) return;
-      const cx = x(mean(mine.map(p => p[2]))), cy = y(mean(mine.map(p => p[3])));
-      g += `<g class="centroid" data-tip="${esc((label[a] || a) + ' average: ' + tfmt(mean(mine.map(p => p[3]))) + ' at ' + tfmt(mean(mine.map(p => p[2]))))}">`
-        + `<path d="M${cx - 9} ${cy}H${cx + 9}M${cx} ${cy - 9}V${cy + 9}" stroke="${col[a]}"/>`
-        + `<text class="cl" x="${cx + 11}" y="${cy - 6}">${esc((label[a] || a).slice(0, 24))}</text></g>`;
+      cents.push({a, cx: x(mean(mine.map(p => p[2]))), cy: y(mean(mine.map(p => p[3]))), mx: mean(mine.map(p => p[2])), my: mean(mine.map(p => p[3]))});
+    });
+    const CW = 6.9, LH = 14, boxes = cents.map(c => [c.cx - 10, c.cy - 10, c.cx + 10, c.cy + 10]);
+    const hit = (b, o) => b[0] < o[2] && o[0] < b[2] && b[1] < o[3] && o[1] < b[3];
+    cents.forEach(c => {
+      const name = label[c.a] || c.a, w = CW * name.length;
+      let pick = null;
+      for (const k of [0, 1, -1, 2, -2, 3, -3, 4, -4, 5, -5, 6, -6, 7, -7, 8, -8]) for (const side of [1, -1]) {
+        if (pick) break;
+        const tx = side > 0 ? c.cx + 12 : c.cx - 12 - w, ty = c.cy - 6 + k * LH;
+        const b = [tx, ty - 11, tx + w, ty + 3];
+        if (tx < L || tx + w > W - RIGHT || ty - 11 < top || ty + 3 > bottom) continue;
+        if (boxes.some(o => hit(b, o))) continue;
+        pick = {tx, ty, b}; break;
+      }
+      // no clear place in a crowd: the cross stays, its tooltip names it, rather than a name over another
+      if (pick) boxes.push(pick.b);
+      g += `<g class="centroid" data-tip="${esc(name + ' average: ' + tfmt(c.my) + ' at ' + tfmt(c.mx))}">`
+        + `<path d="M${c.cx - 9} ${c.cy}H${c.cx + 9}M${c.cx} ${c.cy - 9}V${c.cy + 9}" stroke="${col[c.a]}"/>`
+        + (pick ? `<text class="cl" x="${pick.tx.toFixed(1)}" y="${pick.ty.toFixed(1)}">${esc(name)}</text>` : '') + `<title>${esc(name)}</title></g>`;
     });
     g += `<text class="axl" x="${(L + W - RIGHT) / 2}" y="${H - 6}" text-anchor="middle">${esc(xm)} (per ${ITEM})</text>`;
     return `<div class="scroll-x"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Score against ${esc(xm)}">${g}</svg></div>`;
@@ -650,7 +689,8 @@
     const info = (shown.length ? `<p class="small muted">${esc(shown.map(([k, x]) => k.replace(/_/g, ' ') + ' ' + show(x)).join(' · '))}</p>` : '') + artifactLine(v.artifact);
     if (v.kind === 'text') {
       const t = DIFF && base && base.kind === 'text' && base !== v ? diff(base.text, v.text) : esc(v.text);
-      return info + `<div class="outtext">${t}</div><p class="small muted">${String(v.text || '').split(/\s+/).filter(Boolean).length} words</p>`;
+      const n = String(v.text || '').split(/\s+/).filter(Boolean).length;
+      return info + `<div class="outtext">${t}</div><p class="small muted">${n} word${n === 1 ? '' : 's'}</p>`;
     }
     if (v.kind === 'insights') return info + `<p class="small muted">${v.items.length} insights · ${v.quotes} quotes</p><ol class="outlist">${v.items.map(x => `<li>${x.grounded ? '<span title="grounded" class="up">●</span> ' : '<span title="not grounded" class="muted">○</span> '}${esc(x.text)}</li>`).join('')}</ol>`;
     if (v.kind === 'nodes') return info + Object.entries(v.groups).map(([k, xs]) => `<p class="small"><b>${esc(k)}</b> · ${xs.length}</p><p class="chips">${xs.map(x => `<span class="chip">${esc(x)}</span>`).join('')}</p>`).join('');
@@ -671,7 +711,8 @@
     const base = d.views[baseline];
     const rec = d.recorded || {};
     const score = (a, v) => { const s = scores && scores.series[a] && scores.series[a][ep];
-      return s == null ? "" : `<p class="itemscore"><b class="num">${fmt(s)}</b> <small class="muted">${esc(scores.metric)} on this ${ITEM}</small></p>`; };
+      const reps = v && v.repeats > 1 ? ` · the mean of ${v.repeats} repeats; the text below is one of them` : '';
+      return s == null ? "" : `<p class="itemscore"><b class="num">${fmt(s)}</b> <small class="muted">${esc(scores.metric)} on this ${ITEM}${reps}</small></p>`; };
     const cols = Object.entries(d.views).map(([a, v]) => `<div class="outcol"><h3>${rec[a] ? 'production, recorded <small class="muted">capture ' + esc(rec[a]) + '</small> · ' : ''}${esc(label[a] || a)}${a === baseline ? ' <small class="muted">baseline</small>' : ''}</h3>${score(a, v)}${view(v, a === baseline ? null : base)}</div>`).join('');
     const labs = (d.labels || []).length ? `<h3 class="sub">labels · ${d.labels.length}</h3><ul class="labels">${d.labels.map(l =>
       `<li>${chip(l.kind)} <code>${esc(l.set.split('/').pop())}</code>${l.by ? ' <small class="muted">' + esc(l.by) + '</small>' : ''}${l.note ? ' <small>' + esc(l.note) + '</small>' : ''}<div class="outtext">${l.text == null ? '<span class="muted">(its text is not here)</span>' : esc(l.text)}</div></li>`).join('')}</ul>`
@@ -679,8 +720,14 @@
     // What the judges said of this item and why (RFC-034): the local inspector only.
     const said = x => typeof x.said === 'number' ? fmt(x.said) : esc(x.said == null ? '—' : x.said);
     const whyOf = x => x.why ? esc(x.why) : `<span class="muted">${x.why_status === 'withheld' ? 'withheld: it repeated the source' : esc(x.why_status)}</span>`;
-    const judged = (d.verdicts || []).length ? `<h3 class="sub">what the judges said · ${d.verdicts.length}</h3><div class="scroll-x"><table class="data verdicts"><thead><tr><th>scorer</th><th>judge</th><th>arm</th><th class="num">said</th><th>why</th></tr></thead><tbody>${d.verdicts.map(x =>
-      `<tr><td><code>${esc(x.scorer)}</code></td><td><code>${esc(x.judge)}</code></td><td><code>${esc(x.arm)}</code></td><td class="num">${said(x)}</td><td>${whyOf(x)}</td></tr>`).join('')}</tbody></table></div>` : '';
+    // A judging set grades every arm it holds, so rows can be of arms whose output is not on this page (RFC-005 step 2:
+    // arm identities hidden, their order shuffled per item; UXS-002 04). Say which rows are which, and what a position is.
+    const onPage = new Set(Object.keys(d.views).map(k => k.split('/').pop()));
+    const offPage = (d.verdicts || []).filter(x => !onPage.has(String(x.arm).split('/').pop())).length;
+    const scale = (d.verdicts || []).map(x => x.scale).find(Boolean);
+    const blind = `<p class="small muted">The judges saw the outputs without arm names, in a shuffled order: where a reason says "the first answer" or "answer 3", the position column says which arm that was. ${offPage ? 'Rows marked "output not shown" are the judges\' grades of arms whose output is not on this page; they say nothing about the arms shown here.' : ''}</p>`;
+    const judged = (d.verdicts || []).length ? `<h3 class="sub">what the judges said · ${d.verdicts.length}</h3>${blind}<div class="scroll-x"><table class="data verdicts"><thead><tr><th>scorer</th><th>judge</th><th>arm</th><th class="num">position</th><th class="num">said${Array.isArray(scale) && scale.length === 2 ? ` (${esc(scale[0])}–${esc(scale[1])})` : ''}</th><th>why</th></tr></thead><tbody>${d.verdicts.map(x =>
+      `<tr><td class="nowrap"><code>${esc(x.scorer)}</code></td><td><code>${esc(x.judge)}</code></td><td><code>${esc(x.arm)}</code>${onPage.has(String(x.arm).split('/').pop()) ? '' : ' <small class="muted">output not shown</small>'}</td><td class="num">${x.position ?? '—'}</td><td class="num">${said(x)}</td><td>${whyOf(x)}</td></tr>`).join('')}</tbody></table></div>` : '';
     const refcol = d.reference && d.reference.view && d.reference.view.kind !== 'none' ? `<div class="outcol refcol"><h3>${esc(d.reference.id)} <small class="muted">reference</small></h3>${view(d.reference.view, null)}</div>` : '';
     const hasText = Object.values(d.views).some(v => v && v.kind === 'text');
     const toggle = hasText ? `<label class="tick small"><input type="checkbox" id="difft" ${DIFF ? 'checked' : ''}> mark what each run <ins>adds</ins> and <del>drops</del> against the baseline (useful between near-identical outputs, noisy between independent ones)</label>` : '';
@@ -730,7 +777,11 @@
     // The terminal's order: the signals next to the item (they are why a row matters), each arm's output and scores,
     // the labels, the winners, and the fields last.
     const arms = d.arms;
-    const heads = [['sel', '<input type="checkbox" id="sall" aria-label="select all shown">'], ['item', ITEM], ['start', 'the start'], ['', 'signals']];
+    // A column that is empty on every row is not drawn (signals, picked, the fields): it only widened the table.
+    const hasSignals = d.rows.some(r => Object.keys(r.signals).length), hasPicked = d.rows.some(r => r.picked.length),
+      hasFields = d.rows.some(r => Object.keys(r.fields).length);
+    const heads = [['sel', '<input type="checkbox" id="sall" aria-label="select all shown">'], ['item', ITEM], ['start', 'the start']];
+    if (hasSignals) heads.push(['', 'signals']);
     // An arm by what sets it apart from the others shown (shorten: "baseline_pro_v1", not
     // "rescored-5f2c057c/orrery_triage_v1_labelled/triage_baseline_pro_v1"), the whole id in its title.
     // A break is offered after each '/' of what is left.
@@ -743,10 +794,14 @@
       a.scores.forEach(ref => heads.push(['scc', (scoresOnly ? armHead(a.token) + '<br>' : '')
         + `<small title="${esc(a.token)}">${esc(ref)}</small>`]));
     });
-    d.label_cols.forEach(c => heads.push(['', `label ${chip(c.kind)} ${esc(c.name)}`]));
+    // One name for a label set: the set's own, its dataset only when two sets share one (a split side reads its parent's).
+    const tail = c => c.name.split('/').pop(), dup = new Set(d.label_cols.map(tail).filter((n, i, xs) => xs.indexOf(n) !== i));
+    const lname = c => dup.has(tail(c)) ? c.name : tail(c);
+    d.label_cols.forEach(c => heads.push(['', `label ${chip(c.kind)} <span title="${esc(c.key)}">${esc(lname(c))}</span>`]));
     d.ref_cols.forEach(c => heads.push(['', 'reference<br><small>' + esc(c.key) + '</small>']));
     d.winner_cols.forEach(w => heads.push(['', esc(w.header)]));
-    heads.push(['', 'picked'], ['', 'fields']);
+    if (hasPicked) heads.push(['', 'picked']);
+    if (hasFields) heads.push(['', 'fields']);
     const fieldsOf = r => Object.entries(r.fields).map(([k, v]) => `${k}=${v}`).join(', ');
     const win = (r, t, ref) => ref === d.metric && (r.winners['winner: ' + d.metric] || []).includes(t) ? ' win' : '';
     // Each column as [its cell, the text a sort reads], in the order of `heads`: the sort works on the data, so only the
@@ -756,7 +811,7 @@
       [r => `<td class="sel"><input type="checkbox" class="ssel" value="${esc(r.item)}" aria-label="select ${esc(r.item)}"${picked.has(r.item) ? ' checked' : ''}></td>`, () => ''],
       [r => `<td class="item mono" title="${esc(r.item)}">${esc(r.item.length > 28 ? r.item.slice(0, 27) + '…' : r.item)}</td>`, r => r.item],
       [r => `<td class="small start" title="${esc(r.text)}">${esc(r.text.length > 60 ? r.text.slice(0, 59) + '…' : r.text)}</td>`, r => r.text],
-      [r => `<td>${Object.entries(r.signals).map(([s, x]) => `<span class="chip sig sig-${s}" title="${esc(x)}">${s}</span>`).join(' ')}</td>`, r => Object.keys(r.signals).join(' ')],
+      ...(hasSignals ? [[r => `<td>${Object.entries(r.signals).map(([s, x]) => `<span class="chip sig sig-${s}" title="${esc(x)}">${s}</span>`).join(' ')}</td>`, r => Object.keys(r.signals).join(' ')]] : []),
       ...arms.flatMap(a => [
         [r => `<td class="small outc">${dash(r.cells[a.token].output)}</td>`, r => r.cells[a.token].output ?? ''],
         ...a.scores.map(ref => [r => `<td class="num scc${win(r, a.token, ref)}">${fmt(r.cells[a.token].scores[ref])}</td>`, r => fmt(r.cells[a.token].scores[ref])]),
@@ -764,13 +819,14 @@
       ...d.label_cols.map(c => [r => `<td class="small">${dash(r.labels[c.key])}</td>`, r => r.labels[c.key] ?? '']),
       ...d.ref_cols.map(c => [r => `<td class="small">${dash(r.references[c.key])}</td>`, r => r.references[c.key] ?? '']),
       ...d.winner_cols.map(w => { const who = r => (r.winners[w.key] || []).map(t => named[t] || short(t)).join(' = '); return [r => `<td class="small">${esc(who(r))}</td>`, who]; }),
-      [r => `<td class="small">${esc(r.picked.join(', '))}</td>`, r => r.picked.join(', ')],
-      [r => `<td class="small"><div class="clamp2" title="${esc(fieldsOf(r))}">${esc(fieldsOf(r))}</div></td>`, fieldsOf],
+      ...(hasPicked ? [[r => `<td class="small">${esc(r.picked.join(', '))}</td>`, r => r.picked.join(', ')]] : []),
+      ...(hasFields ? [[r => `<td class="small"><div class="clamp2" title="${esc(fieldsOf(r))}">${esc(fieldsOf(r))}</div></td>`, fieldsOf]] : []),
     ];
     const picked = new Set(), order = [...d.rows];
     const body = rs => rs.map(r => `<tr class="eprow" data-ep="${esc(r.item)}" tabindex="0">${cols.map(c => c[0](r)).join('')}</tr>`).join('');
     // The footer, per arm: under the arm's columns. Its cells span the arm's columns (the output's too, unless hidden).
-    const f = d.footer, before = 4, after = d.label_cols.length + d.ref_cols.length + d.winner_cols.length + 2;
+    const f = d.footer, before = 3 + (hasSignals ? 1 : 0),
+      after = d.label_cols.length + d.ref_cols.length + d.winner_cols.length + (hasPicked ? 1 : 0) + (hasFields ? 1 : 0);
     const line = (label, cell) => `<tr><th colspan="${before}" class="small">${label}</th>${arms.map(a =>
       `<td class="small foot" data-n="${a.scores.length}">${cell(a.token)}</td>`).join('')}<td colspan="${after}"></td></tr>`;
     const way = d.lower_is_better ? 'lower' : 'higher';

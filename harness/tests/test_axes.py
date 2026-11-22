@@ -487,7 +487,7 @@ from evaluation_harness.catalog_charts import LABEL_W, RIGHT, scatter  # noqa: E
 long_name = "triage_local_dgx_vllm_qwen3_30b_a3b_nvfp4_v1 · rescored 3d3a6afd"
 svg = scatter([(0.0, 0.0, "a", ""), (0.55, 1.0, long_name, ""), (1.0, 0.5, "z", "")], "x", "y", width=HALF)
 spans = []
-for m in re.finditer(r'<text x="([0-9.]+)"[^>]*class="tick name"( text-anchor=end)?>([^<]*)<', svg):
+for m in re.finditer(r'<text x="([0-9.]+)"[^>]*class="tick name"( text-anchor="end")?>([^<]*)<', svg):
     x, end, name = float(m.group(1)), bool(m.group(2)), unescape(m.group(3))
     spans.append((x - LABEL_W * len(name), x) if end else (x, x + LABEL_W * len(name)))
 check(

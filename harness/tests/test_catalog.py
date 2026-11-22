@@ -295,7 +295,7 @@ try:
     )
     out3 = tmp / ".build" / "catalog3"
     cb.build(HarnessAdapter(data3), out3)
-    ds3 = (out3 / "d/ds3.html").read_text()
+    ds3 = (out3 / "d/ds3.html").read_text().replace("<wbr>", "")
     check(
         "dataset page: rows tinted by what they are scored against",
         re.search(r'<tr class="t-author"><td><a class="cell-link" href="\.\./a/[^"]+">arm_s<', ds3)
@@ -376,7 +376,7 @@ try:
     check("no switcher without --link: a catalog on its own", 'class="sections"' not in home)
     dsp = (out3 / "datasets.html").read_text()
     check("datasets page: every dataset, linked", 'href="d/ds3.html"' in dsp)
-    refs_idx = (out3 / "references.html").read_text()
+    refs_idx = (out3 / "references.html").read_text().replace("<wbr>", "")
     check(
         "references page: every reference, its tier, dataset and author linked to the author's arm",
         'href="r/silver-ds3.html"' in refs_idx

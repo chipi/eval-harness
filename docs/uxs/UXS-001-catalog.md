@@ -368,7 +368,8 @@ tiles open it.
     at least two arms). A **text** column only when the
     profile carries text, which `--with-text` writes only when git has committed every item's file
     (it is refused otherwise);
-  - without a profile: "No profile yet", and the command that writes one.
+  - without a profile (it is optional): "A profile is optional", what one adds (the items, their
+    lengths, the gold's shape, where each can be read) and the command that writes it.
 - The sections after `02` are numbered in order and each is shown only when it has something: with no
   lineage, `03 reference sets` and `04 labels` follow `02 what's inside`, then the rest.
 - `versions`, when the dataset has lineage: "Made from `<parent>`: a added, r removed, c changed"

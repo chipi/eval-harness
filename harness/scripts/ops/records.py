@@ -586,7 +586,8 @@ def say_runs_list(r: dict[str, Any]) -> str:
         scores = "  ".join(f"{k}={_num(v)}" for k, v in m["scores"].items())
         dirty = "*" if m["dirty"] else " "
         out.append(f"{m['run_id']:44} {m['dataset_id']:18} {(m['build_ref'] or '?')[:12]}{dirty} {scores}")
-    out.append("\n  * = produced by a dirty tree; its build ref does not describe what ran")
+    if any(m["dirty"] for m in r["runs"]):
+        out.append("\n  * = produced by a dirty tree; its build ref does not describe what ran")
     if r["labels"]:
         out.append(f"  also present under --label: {', '.join(repr(x) for x in r['labels'])}")
     return "\n".join(out)

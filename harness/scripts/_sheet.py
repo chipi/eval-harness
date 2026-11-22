@@ -485,7 +485,12 @@ def build(
                     t: {k: series[t][k][i] for k in score_refs[t] if i in series[t][k]} for t in series
                 },
                 "labels": mine,
-                "label_text": {f"{x['dataset_id']}/{x['set']}": label_line(x["text"]) for x in mine},
+                "label_text": {
+                    f"{x['dataset_id']}/{x['set']}": shown(
+                        deciders.get(tokens[0]) if tokens else None, label_line(x["text"])
+                    )
+                    for x in mine
+                },
                 "references": {
                     rid: txt
                     for rid, d in refs.items()

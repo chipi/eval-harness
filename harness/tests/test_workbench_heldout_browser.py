@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shutil
 import socket
 import subprocess
@@ -36,6 +37,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _signin
 import _serve  # noqa: E402
 import _signin  # noqa: E402
 import _slow  # noqa: E402
+import _wblayout as L  # noqa: E402
 import yaml  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 
@@ -695,10 +697,80 @@ try:
                     [(x["dataset_id"], len(x["looks"])) for x in lk],
                 ),
             )
+            # the 080d screenshot review (workbench.md #10, #11, #12): counts that agree, words that fit, numbers a person reads
+            held_text = page.locator("main").inner_text()
+            level_cells = page.locator(
+                "main table:has(th:has-text('level')) tbody tr td:nth-child(2)"
+            ).all_inner_texts()
+            sig = lambda t: len(re.sub(r"[^0-9]", "", t).lstrip("0"))  # noqa: E731
+            n_looks = len({y["key"] for y in twice["looks"]}) if twice else 0
+            stat = (
+                page.locator(f"main .stats div:has(b:text-is('{n_looks}')) span").all_inner_texts()
+                if twice
+                else []
+            )
+            check(
+                "review #10/#12: the held-out screen counts one look as '1 look so far' (not '1 looks'), and a look's level has "
+                "two significant digits (1.5%, not 1.5198%)",
+                twice is not None
+                and not re.search(r"\b1 looks\b", held_text)
+                and (n_looks != 1 or any(s.strip() == "look so far" for s in stat))
+                and bool(level_cells)
+                and all(sig(c) <= 2 for c in level_cells)
+                and all(sig(m) <= 2 for m in re.findall(r"one-sided at ([0-9.]+)%", held_text)),
+                (level_cells, stat, held_text[:700]),
+            )
+            L.settled(page)
+            cut, touch = L.cut_placeholders(page), L.touching(page)
+            check(
+                "review #12: the split form's inputs show their placeholders whole, and 'Record read(s)' does not touch the input above it",
+                not cut and not touch,
+                (cut, touch),
+            )
+            page.goto(f"{base}#study/g")
+            page.wait_for_selector("#sn6-go", timeout=20000)
+            L.settled(page)
+            conf_cell = (
+                page.locator("main table tbody tr:has(a:text-is('g/s1')) td").last.inner_text().strip()
+            )
+            s1 = (
+                values(evh("study-show", "g", "s1", "--json"))
+                or json.loads(evh("study-show", "g", "s1", "--json").stdout.splitlines()[-1])["result"]
+            )
+            n_verdicts = len([c for c in s1.get("confirms", []) if c.get("outcome")])
+            check(
+                "review #10: the Studies table's confirmed count is the number of confirmations (one per look), as the study's own page counts them",
+                conf_cell == str(n_verdicts) and n_verdicts >= 1,
+                (conf_cell, n_verdicts),
+            )
+            page.goto(f"{base}#study/g/s1")
+            page.wait_for_selector("#cf-go", timeout=20000)
+            L.settled(page)
+            change_cells = page.locator(
+                "main table:has(th:has-text('what changed')) tbody tr td:nth-child(2)"
+            ).all_inner_texts()
+            dup = [
+                c
+                for c in change_cells
+                if any(a != b and b.startswith(a) for a in c.split("\n") for b in c.split("\n") if a and b)
+            ]
+            cut, touch = L.cut_placeholders(page), L.touching(page)
+            gap_label = page.evaluate(
+                "() => [...document.querySelectorAll('main label:has(> input[type=number])')].map((l) => {"
+                " const i = l.querySelector('input'), w = document.createTreeWalker(l, NodeFilter.SHOW_TEXT), r = document.createRange();"
+                " let last = null; while (w.nextNode()) last = w.currentNode; if (!last) return 99;"
+                " r.selectNodeContents(last); return Math.round(i.getBoundingClientRect().left - r.getBoundingClientRect().right); })"
+            )
+            check(
+                "review #11: a trial's 'what changed' says each thing once, the confirm form's placeholders fit, and a label is not touching its input",
+                not dup and not cut and not touch and all(g >= 4 for g in gap_label),
+                (change_cells, dup, cut, touch, gap_label),
+            )
             phone = browser.new_context(
                 viewport={"width": 390, "height": 844}, storage_state=page.context.storage_state()
             ).new_page()
             wide = {}
+            phone_layout: dict = {}
             for screen, h1 in (
                 ("heldout/g", "The held-out test"),
                 ("study/g", "Studies"),
@@ -712,10 +784,18 @@ try:
                     "() => !document.querySelector('.chart-box [role=status]')", timeout=30000
                 )
                 wide[screen] = phone.evaluate("document.documentElement.scrollWidth - window.innerWidth")
+                L.settled(phone)
+                phone_layout[screen] = (L.cut_placeholders(phone), L.touching(phone), L.small_targets(phone))
             check(
                 "at a phone's width the held-out test and the studies do not scroll sideways",
                 all(v <= 0 for v in wide.values()),
                 wide,
+            )
+            check(
+                "review #11/#12/#27: at a phone's width the held-out test and the studies have no placeholder cut off, no "
+                "controls touching, and every control at least 40 px high",
+                all(not any(x) for x in phone_layout.values()),
+                phone_layout,
             )
             browser.close()
     finally:

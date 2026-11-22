@@ -30,7 +30,9 @@ return (pct>0?'▲':pct<0?'▼':'=')+' '+Math.abs(pct).toFixed(0)+'%';}
 /* short form for a badge: ▲ 12%, ▲ ×32, ▲ from 0 (nothing the period before), none */
 const short=t=>/%$|×/.test(t)?t:t.startsWith('new')?'▲ from 0':t?'none':'';
 const daysOf=(a,b)=>{const out=[];for(let t=at(a);t<=at(b);t+=DAY)out.push(iso(t));return out;};
-const amount=(v,unit)=>unit==='tokens'?Math.round(v).toLocaleString('en-US')+' tokens':v<1?'$'+v.toFixed(4):'$'+v.toFixed(2);
+/* axes.fmt_usd: "$0" for none, two significant digits under a cent, four places to a dollar, two above */
+const usd=v=>v===0?'$0':Math.abs(v)>=1?'$'+v.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):'$'+v.toFixed(Math.max(4,1-Math.floor(Math.log10(Math.abs(v)))));
+const amount=(v,unit)=>unit==='tokens'?Math.round(v).toLocaleString('en-US')+' tokens':usd(v);
 const label=Object.fromEntries(P.periods.map(([k,l,c])=>[k,[l,c]]));
 const keys=P.periods.map(p=>p[0]);
 const listeners=[];let key=P.default;

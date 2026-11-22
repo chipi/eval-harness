@@ -477,3 +477,31 @@ main .chart.evidence svg[role="img"] text { font-size: 12.5px; }
 @media (max-width: 900px) { .rail.open { flex-direction: column; } .rail.open .label, .rail.open .goalname, .rail.open .railds { display: block; } .rail .railds { display: none; } }
 .rail .railds { font-size: 12px; color: var(--muted); margin: -8px 0 12px; }
 .rail .why { display: block; font-size: 12px; color: var(--muted); }
+
+/* the screenshot review of 2026-11-21 (scenario 080d) */
+/* a phone's folded step bar: the desktop rail rule above re-added its right border after the phone rule took it off, and a
+   short page (a label page) stretched its row to the screen's height, so the bar was taller there */
+@media (max-width: 900px) { .rail { border-right: 0; } .layout, .layout.no-rail { align-content: start; } }
+/* a text box ends on a whole line (12px at 1.5 is 18px: 14 lines), and a heading has room above it */
+.reply { max-height: 252px; }
+.screen > h2 + .reply, .screen > h2 + div > .reply:first-child { margin-top: 12px; }
+/* form rows: room between fields, under a field's control and above a card that follows */
+.screen > .field + .field { margin-top: 20px; }
+.field > div > .hint { margin-top: 6px; }
+.field > div > .inline, .field > div > select + .inline { margin-top: 8px; }
+.field .choices { gap: 10px; }
+.part .body [data-form]:not(.inline) { display: flex; flex-direction: column; gap: 12px; }
+.screen > :not(.part) + .part { margin-top: 18px; }
+label:has(> input:not([type=checkbox]):not([type=radio])) { display: inline-flex; align-items: center; gap: 8px; }
+td > button.btn { margin: 0 6px 6px 0; }
+th.num, td.num, th.nw, td.nw { white-space: nowrap; }
+@media (min-width: 641px) { table.why td.mono { white-space: nowrap; overflow-wrap: normal; } }
+/* a finger: the "?" keeps its 24px ring and takes a 40px target, the controls are 40px high */
+@media (max-width: 900px) {
+  .q { width: 40px; height: 40px; border: 0; margin: -8px; position: relative; }
+  .q::before { content: ""; position: absolute; inset: 8px; border: 1px solid var(--axis); border-radius: 50%; }
+  .q:hover::before, .q[aria-expanded="true"]::before { border-color: var(--accent); }
+  .menubtn, .railtoggle { min-height: 40px; }
+  select, input[type=text], input[type=number], input[type=file] { min-height: 40px; }
+}
+.screen > * + .field { margin-top: 18px; }

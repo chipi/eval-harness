@@ -470,23 +470,38 @@ try:
         k: [t for t in re.findall(r'class="tick"[^>]*>(?:<title>[^<]*</title>)?([^<]*)<', v) if "×" in t]
         for k, v in named_svgs.items()
     }
+    # A forest, a strip and a heat map make room for a row's name and wrap it at a separator: never cut (scenario 080d).
+    whole = {
+        k: ["".join(re.findall(r"<tspan[^>]*>([^<]*)</tspan>", chunk)).replace(" ", "") for chunk in re.findall(r"<text[^>]*>(?:<title>[^<]*</title>)?((?:<tspan[^>]*>[^<]*</tspan>)+)</text>", named_svgs[k])]
+        for k in ("forest", "strip", "heat")
+    }  # fmt: skip
     check(
-        "a long arm name is shortened in the middle: v1 and v2 stay apart and fit their room, in every chart that names rows",
-        all(
-            len(set(t)) == 2 and all(len(x) <= 18 and x.endswith(("v1 ×3", "v2 ×3")) for x in t)
-            for t in texts.values()
-        ),
-        texts,
+        "a long arm name in a forest, a strip or a heat map is whole (wrapped at a separator), v1 and v2 apart",
+        all(set(v) >= {n.replace(" ", "") for n in names} and "…" not in "".join(v) for v in whole.values()),
+        whole,
     )
     # Two marks of one row closer than a label is wide (a p50 and a p95 a few ms apart) lean apart, so the labels read.
     lat = cc.strip(
         {"near": [(1.0, "a"), (100.0, "b")], "far": [(1.0, "a"), (100.0, "b")]}, "m",
         marks={"near": [(2.0, "p50"), (3.0, "p95")], "far": [(20.0, "p50"), (90.0, "p95")]}, width=cc.NARROW,
     )  # fmt: skip
-    labels = re.findall(r'text-anchor="(\w+)" class="tick">(p\d\d)<', lat)
+    labels = re.findall(r'text-anchor="(\w+)" class="tick">(p\d\d[^<]*)<', lat)
     check(
-        "a p50 and a p95 drawn nearer than a label's width are anchored away from each other; far apart, centred",
-        labels == [("end", "p50"), ("start", "p95"), ("middle", "p50"), ("middle", "p95")],
+        "a p50 and a p95 drawn nearer than a label's width with no room to lean left are one label ('p50 · p95' over "
+        "the row's name otherwise); far apart, centred",
+        labels == [("start", "p50 · p95"), ("middle", "p50"), ("middle", "p95")],
+        labels,
+    )
+    mid = cc.strip(
+        {"near": [(1.0, "a"), (100.0, "b")]},
+        "m",
+        marks={"near": [(50.0, "p50"), (52.0, "p95")]},
+        width=cc.NARROW,
+    )
+    labels = re.findall(r'text-anchor="(\w+)" class="tick">(p\d\d[^<]*)<', mid)
+    check(
+        "a p50 and a p95 drawn nearer than a label's width with room at the left lean apart",
+        labels == [("end", "p50"), ("start", "p95")],
         labels,
     )
     # An arm a round retired has no interval against the leader (it is outside the family the decision tests): the chart

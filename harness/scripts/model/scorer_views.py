@@ -143,6 +143,7 @@ def list_scorers(data: Path | None = None, check_format: bool = True) -> list[di
                 "scorer": sid,
                 "mode": js.mode_of(rec),
                 "dataset": rec.get("dataset_id"),
+                "scale": (rec.get("task") or {}).get("scale"),
                 "supersedes": rec.get("supersedes"),
                 "judges": _judges(rec, sc),
                 "validated": not _validation(sc, data),

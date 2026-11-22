@@ -198,7 +198,7 @@ try:
     )
     r = evh("catalog")
     page = proj / ".build" / "catalog" / "g" / "tickets_summary.html"
-    html = page.read_text() if page.is_file() else ""
+    html = page.read_text().replace("<wbr>", "") if page.is_file() else ""
     check("catalog: a page per goal", r.returncode == 0 and page.is_file(), r.stderr[-300:])
     check(
         "catalog: the goal page shows its links, a web address as a link and a project path as text",

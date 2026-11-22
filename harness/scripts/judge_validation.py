@@ -161,6 +161,7 @@ def _block_sizes(n: int, per_call: int) -> list[int]:
 
 
 def pairs_per_item(params: dict[str, Any], n: int) -> int:
+    """The pairs one item is judged in: `pairs_per_item` (else the default), never more than its n outputs make."""
     k = params.get("pairs_per_item", PAIRS_PER_ITEM)
     if isinstance(k, bool) or not isinstance(k, int) or k < 1:
         raise ValueError(f"pairs_per_item must be a whole number above 0, got {k!r}")

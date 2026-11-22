@@ -318,17 +318,18 @@ def check_home_tiles(browser, base: str) -> None:
 
 def check_gutters(browser, base: str, sub: list) -> None:
     """At 1400 px the goal, dataset, arm and metric pages start their content at the same left edge (scenario 080c U6:
-    the dataset pages ran edge to edge, 24 px, the others sat in a 134 px gutter); the arms index keeps its wide table."""
+    the dataset pages ran edge to edge, 24 px, the others sat in a 134 px gutter); the arms index too (scenario 080d: it ran 24 px from the edges while every other page sat in 134 px; one rule now: the
+    content column is the page's .wrap, a table wider than it scrolls inside its own box)."""
     page = browser.new_page(viewport={"width": 1400, "height": 900})
     lefts = {}
-    for path in sub:
+    for path in ("arms.html", *sub):
         page.goto(base + path)
         page.wait_for_selector("h1", timeout=30000)
-        lefts[path.split("/")[0]] = page.evaluate(
+        lefts[path.split("/")[0].split(".")[0]] = page.evaluate(
             "() => Math.round(document.querySelector('main h1, h1').getBoundingClientRect().left)"
         )
     check(
-        "1400 px: the goal, dataset, arm and metric pages share one left gutter",
+        "1400 px: the arms index, goal, dataset, arm and metric pages share one left gutter",
         len(set(lefts.values())) == 1,
         str(lefts),
     )
@@ -344,6 +345,154 @@ def check_gutters(browser, base: str, sub: list) -> None:
         "1400 px: a dataset page's cost and speed cells each sit on one line (the narrower gutter must not wrap them)",
         not wrapped,
         str(wrapped[:3]),
+    )
+    page.close()
+
+
+#: Every unrotated text of every chart of a page, as the browser drew it: [svg index, text, left, top, right, bottom].
+CHART_TEXTS = """() => [...document.querySelectorAll('figure.chart svg')].flatMap((svg, k) => {
+  const box = svg.getBoundingClientRect();
+  return [...svg.querySelectorAll('text')].filter(t => !t.getAttribute('transform')
+      && getComputedStyle(t).display !== 'none' && (t.textContent || '').trim())
+    .map(t => { const r = t.getBoundingClientRect();
+      return [k, t.textContent.trim().slice(0, 40), r.left, r.top, r.right, r.bottom, box.left, box.top, box.right, box.bottom]; }); })"""
+
+#: Each id link and code in a table, with the places its lines break: a break not after _ / - . is mid-word.
+ID_BREAKS = """() => [...document.querySelectorAll('main table a.cell-link, main table td code')].flatMap(a => {
+  const lines = []; let top = null, cur = '';
+  const w = document.createTreeWalker(a, NodeFilter.SHOW_TEXT);
+  while (w.nextNode()) { const n = w.currentNode;
+    for (let i = 0; i < n.length; i++) { const r = document.createRange(); r.setStart(n, i); r.setEnd(n, i + 1);
+      const q = r.getClientRects()[0]; if (!q) continue;
+      if (top !== null && q.top > top + 2) { lines.push(cur); cur = ''; }
+      top = q.top; cur += n.data[i]; } }
+  lines.push(cur);
+  return lines.slice(0, -1).some(l => !/[_\\/.\\-]$/.test(l.trimEnd()) && !/\\s$/.test(l)) ? [lines.join(' | ')] : []; })"""
+
+
+def check_display(browser, base: str, cat: Path) -> None:
+    """How the catalog reads (scenario 080d review): no chart text over another or cut at any width, an id breaks at a
+    separator and never inside a word, a section's heading has room above what it heads, the code font is the page's own,
+    a row linked by its address is marked, and the jump links of the arms page land below the bar."""
+    pages = [
+        p.relative_to(cat).as_posix() for sub in ("g", "d", "m") for p in sorted((cat / sub).glob("*.html"))
+    ][:40]
+    for width in (1400, 390):
+        page = browser.new_page(viewport={"width": width, "height": 900})
+        bad_over, bad_cut, charts, bad_ids = [], [], 0, []
+        for path in pages:
+            page.goto(base + path)
+            page.wait_for_selector("main", timeout=30000)
+            page.wait_for_timeout(150)
+            texts = page.evaluate(CHART_TEXTS)
+            charts += len({t[0] for t in texts})
+            for i, a in enumerate(texts):
+                if a[2] < a[6] - 1 or a[4] > a[8] + 1 or a[3] < a[7] - 1 or a[5] > a[9] + 1:
+                    bad_cut.append((path, a[1]))
+                for b in texts[i + 1 :]:
+                    if (
+                        a[0] == b[0]
+                        and a[2] < b[4] + 1
+                        and b[2] < a[4] + 1
+                        and a[3] < b[5] - 2
+                        and b[3] < a[5] - 2
+                    ):
+                        bad_over.append((path, a[1], b[1]))
+            bad_ids += [(path, x) for x in page.evaluate(ID_BREAKS)]
+        check(
+            f"{width} px: no chart text drawn over another, on {len(pages)} pages ({charts} charts)",
+            charts > 0 and not bad_over,
+            str(bad_over[:4]),
+        )
+        check(f"{width} px: no chart text cut off by its drawing's edge", not bad_cut, str(bad_cut[:4]))
+        for path in ("goals.html", "datasets.html", "labels.html", "metrics.html", "arms.html"):
+            page.goto(base + path)
+            page.wait_for_selector("main", timeout=30000)
+            bad_ids += [(path, x) for x in page.evaluate(ID_BREAKS)]
+        check(
+            f"{width} px: an id in a table breaks after _ / - . and never inside a word",
+            not bad_ids,
+            str(bad_ids[:4]),
+        )
+        page.close()
+    page = browser.new_page(viewport={"width": 1400, "height": 900})
+    broken = []
+    for path in ("arms.html", *pages):
+        page.goto(base + path)
+        page.wait_for_selector("main", timeout=30000)
+        broken += [
+            (path, x)
+            for x in page.evaluate(
+                """() => [...document.querySelectorAll('main table td')].filter(e => e.offsetParent
+                    && /^(\\$[0-9.]+( · [0-9,]+ tok)?|p50 [0-9.,]+ · p95 [0-9.,]+ ms|[0-9.,]+ ms)$/.test(e.innerText.trim().split('\\n')[0])).map(e => {
+                  const r = document.createRange(); r.selectNodeContents(e);
+                  return [e.innerText.trim(), new Set([...r.getClientRects()].filter(x => x.width > 0).map(x => Math.round(x.top))).size]; })
+                  .filter(x => x[1] > 1)"""
+            )
+        ]
+    check(
+        "1400 px: a cost, speed or axis cell on the arms, goal, dataset and metric pages sits on one line",
+        not broken,
+        str(broken[:4]),
+    )
+    page.goto(base + "captures.html")
+    page.wait_for_selector("main", timeout=30000)
+    fonts = page.evaluate(
+        """() => { const f = s => { const e = document.querySelector(s); return e ? getComputedStyle(e).fontFamily : null; };
+        return [f('main code'), f('h2.eyebrow')]; }"""
+    )
+    check(
+        "code is set in the catalog's mono, the heading's, not the browser's generic monospace",
+        fonts[0] is not None and fonts[0] == fonts[1],
+        str(fonts),
+    )
+    gaps = []
+    for path in ("goals.html", "activity.html", *pages[:2]):
+        page.goto(base + path)
+        page.wait_for_selector("main", timeout=30000)
+        gaps += [
+            (path, g)
+            for g in page.evaluate(
+                """() => [...document.querySelectorAll('section.block h2.eyebrow')].map(h => {
+                  let n = h.nextElementSibling; while (n && n.offsetHeight === 0) n = n.nextElementSibling;
+                  return n ? Math.round(n.getBoundingClientRect().top - h.getBoundingClientRect().bottom) : 99; })"""
+            )
+            if g < 12
+        ]
+    check(
+        "a section's eyebrow has at least 12 px above what it heads (goals, activity, a goal, a dataset)",
+        not gaps,
+        str(gaps[:4]),
+    )
+    anchors = re.findall(
+        r'href="(labels\.html#set-[^"]+)"',
+        "".join(p.read_text(encoding="utf-8") for p in cat.rglob("*.html")),
+    )
+    if anchors:
+        page.goto(base + anchors[0])
+        page.wait_for_selector("tr:has(:target)", timeout=30000)
+        marked = page.evaluate(
+            """() => { const r = document.querySelector('tr:has(:target)'); const c = getComputedStyle(r.cells[0]).backgroundColor;
+            return [c, r.getBoundingClientRect().top]; }"""
+        )
+        check(
+            "a label set's address (labels.html#set-...) marks its row and scrolls it into view",
+            marked[0] not in ("rgba(0, 0, 0, 0)", "transparent") and 0 <= marked[1] < 900,
+            str(marked),
+        )
+    page.goto(base + "arms.html#bygoal")
+    page.wait_for_selector("table#arms tbody tr", timeout=30000)
+    page.wait_for_timeout(300)
+    landed = page.evaluate(
+        """() => { const h = document.getElementById('bygoal'); const bar = document.querySelector('.bar').getBoundingClientRect();
+        return [h ? h.getBoundingClientRect().top : null, bar.bottom,
+          [...document.querySelectorAll('#arms tr.grouphead')].filter(r => !r.hidden && !r.textContent.trim()).length]; }"""
+    )
+    check(
+        "arms page: a jump link (#bygoal) lands below the bar, and no group heading is empty (a full-page screenshot "
+        "taken after the jump shows the sticky head and headings where they stuck, not where the page has them)",
+        landed[0] is not None and landed[0] >= landed[1] - 1 and landed[2] == 0,
+        str(landed),
     )
     page.close()
 
@@ -389,6 +538,7 @@ def drive(cat: Path, base: str) -> None:
             str(broken[:3]),
         )
 
+        check_display(browser, base, cat)
         check_home_tiles(browser, base)
         check_gutters(browser, base, sub)
         check_arms_sort_and_kinds(browser, base)
@@ -557,6 +707,41 @@ def drive(cat: Path, base: str) -> None:
             rows > 0 and not unnamed,
             f"not named: {unnamed[:5]}",
         )
+        # The inspector's charts: no name cut with an ellipsis or at the drawing's edge, none over another or over a cross
+        # (scenario 080d inspector review: "intents_llama_scout_v1 ×" lost its 3, labels covered another arm's cross).
+        page.wait_for_selector("#scatterbox svg, figure.chart svg", timeout=60000)
+        names = page.evaluate(
+            """() => [...document.querySelectorAll('#app figure.chart svg')].flatMap((svg, k) => {
+              const b = svg.getBoundingClientRect();
+              return [...svg.querySelectorAll('text.cl, text.rl')].map(t => { const r = t.getBoundingClientRect();
+                return [k, t.textContent.trim(), r.left, r.top, r.right, r.bottom, b.left, b.top, b.right, b.bottom]; }); })"""
+        )
+        crosses = page.evaluate(
+            """() => [...document.querySelectorAll('#app figure.chart svg')].flatMap((svg, k) =>
+              [...svg.querySelectorAll('.centroid path')].map(p => { const r = p.getBoundingClientRect(); return [k, r.left, r.top, r.right, r.bottom]; }))"""
+        )
+        bad = [n[1] for n in names if "…" in n[1] or n[2] < n[6] - 1 or n[4] > n[8] + 1]
+        bad += [
+            f"{a[1]} over {b[1]} {[round(v) for v in a[2:6] + b[2:6]]}"
+            for i, a in enumerate(names)
+            for b in names[i + 1 :]
+            if a[0] == b[0] and a[2] < b[4] and b[2] < a[4] and a[3] < b[5] - 1 and b[3] < a[5] - 1
+        ]
+        bad += [
+            f"{n[1]} over a cross"
+            for n in names
+            if n[1]
+            and any(
+                c[0] == n[0] and n[2] < c[3] - 1 and c[1] + 1 < n[4] and n[3] < c[4] - 1 and c[2] + 1 < n[5]
+                for c in crosses
+                if not (abs((c[1] + c[3]) / 2 - n[2]) < 14)  # its own cross sits at its label's start
+            )
+        ]
+        check(
+            "inspector: chart names are whole, none over another name or another arm's cross",
+            not bad,
+            str(bad[:4]),
+        )
         # Every system on the arms page has the day it was first run, as the home page's systems tile counts them:
         # an undated row (a system whose runs were all re-parsed) never counts as new there.
         ct = (cat / "arms.html").read_text(encoding="utf-8")
@@ -590,7 +775,7 @@ def drive(cat: Path, base: str) -> None:
 
         # One recommendation per goal and dataset, from the goal's own measure (judged groups are shown, never
         # recommend), and a round's best read as the goal decides: on gold, never the arm that wrote silver.
-        cnn = (cat / "g" / "news_summary_cnn.html").read_text(encoding="utf-8")
+        cnn = (cat / "g" / "news_summary_cnn.html").read_text(encoding="utf-8").replace("<wbr>", "")
         recs = sorted(set(re.findall(r"Recommended: <b><a [^>]*>([^<]+)</a>", cnn)))
         best = re.findall(r"best</small> <a class=\"cell-link\"[^>]*>([a-z0-9_]+)</a>", cnn)
         check(
@@ -631,7 +816,7 @@ def drive(cat: Path, base: str) -> None:
             and "in play" not in arm_p
             and not raw
             and "MASI distance" in tri
-            and "No profile yet" not in tri,
+            and "A profile is optional" not in tri,
             f"raw booleans on {raw[:3]}",
         )
 
@@ -950,6 +1135,9 @@ def drive(cat: Path, base: str) -> None:
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--catalog", type=Path, default=HARNESS / ".build" / "budget-catalog")
+    ap.add_argument(
+        "--display-only", action="store_true", help="only how the pages read (any catalog, a small one too)"
+    )
     args = ap.parse_args()
     try:
         import playwright  # noqa: F401, PLC0415
@@ -963,7 +1151,15 @@ def main() -> int:
     log = HARNESS / ".build" / "real-browser-serve.log"
     server, base = serve(cat, log)
     try:
-        drive(cat, base)
+        if args.display_only:
+            from playwright.sync_api import sync_playwright  # noqa: PLC0415
+
+            with sync_playwright() as pw:
+                browser = pw.chromium.launch()
+                check_display(browser, base, cat)
+                browser.close()
+        else:
+            drive(cat, base)
     finally:
         os.killpg(server.pid, signal.SIGTERM)
         server.wait(timeout=10)

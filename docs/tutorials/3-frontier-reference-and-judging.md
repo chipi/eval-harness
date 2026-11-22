@@ -383,7 +383,8 @@ the log line names that file: read it before you retry, to see why the reply fai
 **A reasoning model can spend all of `max_tokens` thinking and reply with nothing.** That is why the
 judges above set `reasoning: {enabled: false}`. A judge without it, at a small
 `max_tokens`, returns empty replies and few items parse. Each unparsed line says why
-("empty, cut off at the token limit (finish_reason length)"), and the pass ends with a `HINT` line when
+("empty, cut off at the token limit (finish_reason length)", "cut off: JSON that stops before its closing brace",
+"not JSON", or the wrong shape), and the pass ends with a `HINT` line when
 it happens. A judge whose first 3 replies all come back that way stops the pass there (`STOPPED EARLY`),
 so the rest is not paid for; what it stored is kept. Fix it in a new scorer version (a new `scorer_id`): turn the judge's reasoning off, or raise
 its `max_tokens`. Either changes the judge, so the old verdicts are not mixed with the new. The

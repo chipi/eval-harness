@@ -389,6 +389,8 @@ try:
         "    return {} if reference is None else {'correct': float(d == reference.strip())}\n"
         "def same(a, b):\n"
         "    return json.loads(a)['disposition'] == json.loads(b)['disposition']\n"
+        "def decision(output):\n"
+        "    return json.loads(output)['disposition']\n"
     )
     _runstore.write_text(
         proj,
@@ -435,6 +437,24 @@ try:
         "--wrong-against: a bare label against an output's JSON, read by the adapter's score (correct 0), not as text",
         r.returncode == 0 and r2.returncode == 0 and got == want == ["t02_invoice"],
         f"got {got}, want {want}; {out(r3)[-300:]}",
+    )
+
+    # A label set made from a run holds the run's whole output: its column shows the adapter's decision, as the arm's does
+    # (080d inspector #7: "label: billing reason: The customer reports ..." beside the clean gold "billing").
+    whole = json.dumps({"disposition": jout.get("t01_login", "file"), "reason": "because"})
+    with (proj / "whole.csv").open("w", newline="") as fh:
+        wr = csv.writer(fh)
+        wr.writerow(["item_id", "label"])
+        wr.writerow(["t01_login", whole])
+    r2 = evh("label-import", "--sheet", "whole.csv", "--dataset-id", D, "--set", "whole", "--by", "owner")
+    r3 = evh("sheet-show", D, "--runs", "jsonish_v1", "--json", extra={"PYTHONPATH": str(HERE.parent)})
+    table = next((b for b in blocks_of(r3) if "columns" in b and b["columns"][0] == "item_id"), {"rows": []})
+    cell: dict = next((x for x in table["rows"] if x["item_id"] == "t01_login"), {})
+    got = [v for k, v in cell.items() if k.startswith("label: whole")]
+    check(
+        "the sheet's label column shows the adapter's decision of a label that is a whole output",
+        r2.returncode == 0 and got == [jout.get("t01_login", "file")],
+        (got, out(r3)[-300:]),
     )
 
     # ── scores, winners, the footer ──────────────────────────────────────────────────────────

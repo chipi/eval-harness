@@ -275,13 +275,14 @@ def arm_index(by_ds: dict) -> dict:
     return {a: i for i, a in enumerate(sorted(a["arm"] for v in by_ds.values() for a in v["arms"]))}
 
 
-def runs_of(arms: list[dict], idx: dict) -> list[list]:
-    """[[day, arm number]] for every measured run of these arms (repeats one by one)."""
+def runs_of(arms: list[dict], idx: dict, judged: bool = False) -> list[list]:
+    """[[day, arm number]] for every measured run of these arms (repeats one by one). `judged`: a judge's pass over a
+    run counts too: a judge's score exists only as that pass (the measured run is the arm's own, scored by no judge)."""
     return sorted(
         [(r.get("created_at") or "")[:10], idx[a["arm"]]]
         for a in arms
         for r in a["run_list"]
-        if r.get("created_at") and (not r.get("derived") or r.get("in_place"))
+        if r.get("created_at") and (not r.get("derived") or r.get("in_place") or (judged and a.get("judge")))
     )
 
 

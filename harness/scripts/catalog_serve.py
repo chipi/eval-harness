@@ -222,7 +222,7 @@ def _judged(dataset: str, item_id: str) -> list[dict]:
             r = scorer_views.verdicts(s["scorer"], item=item_id, order="item", limit=500)
         except Problem:
             continue
-        out += [dict(x, scorer=s["scorer"]) for x in r["rows"]]
+        out += [dict(x, scorer=s["scorer"], scale=s.get("scale")) for x in r["rows"]]
     return out
 
 

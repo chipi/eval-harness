@@ -27,6 +27,7 @@ from collections.abc import Iterator
 from typing import Any
 
 from evaluation_harness import catalog_charts as cc
+from evaluation_harness.axes import fmt_ms
 from evaluation_harness.model.entity import Problem
 
 KINDS = (
@@ -314,7 +315,13 @@ def latency(goal: str, dataset: str | None = None) -> dict:
         "machines are not comparable: the goal never tie-breaks on them then." + _through(grp["scorer"])
     )
     svg = cc.strip(
-        groups, f"latency per {A.item_word}", lower=True, marks=marks, width=cc.NARROW, caption=cc._e(caption)
+        groups,
+        f"latency per {A.item_word}",
+        lower=True,
+        marks=marks,
+        width=cc.NARROW,
+        caption=cc._e(caption),
+        fmt=lambda v: f"{fmt_ms(v)} ms",
     )
     return _out(
         "latency",

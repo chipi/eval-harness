@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import html
 
+from evaluation_harness.axes import fmt_ms
 from evaluation_harness.model import goal_views as gv
 
 #: Providers that bill per call over the network. An arm is hosted when it runs through one of
@@ -317,13 +318,7 @@ def render_arms(A, by_ds: dict, out, nav: list, rows: list[dict] | None = None) 
     # The page opens grouped by dataset, three rows a group (owner, 2026-11-12): within a dataset the arms a goal
     # decided on come first (recommended, leader, baseline, contender), then the best on the deciding measure.
     for r in sorted(rows, key=_reading_order):
-        latency = (
-            "—"
-            if not r["latency"]
-            else f"{r['latency'] / 1000:.1f} s"
-            if r["latency"] >= 1000
-            else f"{r['latency']:.0f} ms"
-        )
+        latency = "—" if not r["latency"] else f"{fmt_ms(r['latency'])} ms"
         badges = "".join(
             f'<span class="role{_role_tint(x)}">{e(x)}</span>' for x in dict.fromkeys(r["roles"])
         )
@@ -399,8 +394,8 @@ def render_arms(A, by_ds: dict, out, nav: list, rows: list[dict] | None = None) 
                     if r["measure"] and r["value"] is not None
                     else "—",
                     f'<span data-v="{r["repeats"]}">{r["repeats"]}</span>',
-                    f'<span data-v="{r["cost"] if r["cost"] is not None else ""}">{"$0" if r["cost"] == 0 else cb.fmt_amount(r["cost"], "usd") if r["cost"] is not None else "—"}</span>',
-                    f'<span data-v="{r["latency"] if r["latency"] is not None else ""}">{latency}</span>',
+                    f'<span class="ax" data-v="{r["cost"] if r["cost"] is not None else ""}">{cb.fmt_amount(r["cost"], "usd") if r["cost"] is not None else "—"}</span>',
+                    f'<span class="ax" data-v="{r["latency"] if r["latency"] is not None else ""}">{latency}</span>',
                     f'<span data-flow="runs" data-line>{len(period_rows[r["arm"]]["runs"])}</span>',
                     '<span data-flow="usd">—</span>',
                 ],

@@ -55,7 +55,8 @@ version. `evh baselines` lists them with how to reproduce each (the `deploy-shee
   The owner's rule is the opposite: an agent acts when its operator asked. An agent's decision carries `for` (whose
   decision it was) and its reason says what was asked.
 - **A decision needs a named actor** (owner, 2026-11-09): `run-promote`, `baseline-rollback`, `round-close` (also when
-  it promotes) and `dataset-unseal` refuse an `unknown` actor, saying how to name one (`--by`, or `EVH_ACTOR` with
+  it promotes), `round-retire`, `study-confirm` (its `--dry-run` decides nothing and names nobody) and `dataset-unseal`
+  refuse an `unknown` actor, saying how to name one (`--by`, or `EVH_ACTOR` with
   `EVH_FOR`). Runs, labels and every other record take `unknown` and go ahead. An RFC-026 job has no terminal: its
   supervisor sets `EVH_ACTOR` / `EVH_FOR` from the job's `by`, and the API refuses a decision job without `by`.
 - **The MCP server stays read-only.** Agents promote and label through the command line or RFC-026 jobs, never

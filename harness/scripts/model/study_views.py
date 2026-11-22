@@ -72,7 +72,8 @@ def row(goal: str, sid: str, data: Path | None = None) -> dict[str, Any]:
         "trials": len(st["trials"]),
         "kept": sum(1 for t in st["trials"] if t.get("outcome") == "kept"),
         "spent_usd": st["spent_usd"],
-        "confirms": len(st["confirms"]),
+        # a confirmation writes two lines (the one naming it, then its verdict): it is counted once, by its verdict
+        "confirms": sum(1 for c in st["confirms"] if c.get("phase") == "verdict"),
     }
 
 

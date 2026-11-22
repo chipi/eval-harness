@@ -232,6 +232,13 @@ try:
         json.dumps(local)[:500],
     )
     check(
+        "the item view's verdicts name the scale the judges graded on and each arm's position in the judge's list "
+        "(the reasons say 'the first answer': 080d inspector #2-3)",
+        all(x.get("scale") == [1, 5] or x.get("scale") for x in lv)
+        and sorted({x["position"] for x in lv if x["judge"] == lv[0]["judge"]}) == [1, 2, 3],
+        json.dumps(lv)[:400],
+    )
+    check(
         "a public server's item view carries no verdicts: the reasons describe the outputs",
         "verdicts" not in public and "error" not in public,
         json.dumps(public)[:400],

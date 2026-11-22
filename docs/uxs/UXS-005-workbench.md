@@ -239,7 +239,7 @@ After saving, the goal's page is the hub of the journey: where it stands, and th
 - Models come from the project's records with their state (`GET /models`, ADR-0021): **vetted** (every deployment's
   onboarding passed and a system on it passed its smoke), **onboarded** (onboarding passed, no system smoked yet),
   **check** (a probe flagged something to read), **none** (never probed). Vetted is computed, never approved by hand. A model
-  that is not there is brought in (W5); the screen offers only models that have somewhere to run, each with its rank on this goal. The systems listed are this goal's: one measured only for another goal (its arms' goal) is not listed, one never run is.
+  that is not there is brought in (W5); the screen offers only models that have somewhere to run, each with its rank on this goal. The systems listed are this goal's: one measured only for another goal (its arms' goal) is not listed, one never run is. Datasets follow the same rule on every screen that offers them: a goal's own, plus those no goal uses yet (a dataset made from another, a split side or a next version, is its parent's goal's).
 - What is compared is a **system**: a deployment, a prompt version and settings, with no dataset (RFC-032). Making one
   here is `system-new`; a system placed in a round is an arm (step 5). One prompt and one set of settings for every
   system, so a difference in the scores is the model's. The goal's prompt is one name, `<goal>/prompt`, kept as
@@ -456,6 +456,7 @@ decision kept with its reason. This is where people spend most of their time (W1
   (`pick`); the next version made from the picks (`dataset-extend`); labels from what happened afterwards, rules tried in order, the first
   that matches deciding (`label-from-capture`, with its coverage from `label-coverage-show`); a code record's periods and
   faithfulness (`periods`, `faithfulness-show`), and a replay's plan first, then the replay as a job (`faithfulness`).
+- The datasets and systems its selects offer are this goal's own, plus those no goal uses yet (the systems screens' rule, step 4): a capture's dataset not yet added to a goal is offered, another goal's is not.
 - The rows checked and their reason are unsent until **Pick them** ("For every live screen": unsent changes).
 
 ### W5 Bring in a model
@@ -555,6 +556,7 @@ decision kept with its reason. This is where people spend most of their time (W1
    with the read items kept (not the one that counts)   items │ Δ
 ```
 
+- The candidate's select and the split's dataset offer this goal's own systems and datasets, plus those no goal uses yet (step 4's rule).
 - A goal's day-to-day screen (RFC-029, RFC-031): a test set is a goal dataset with `role: test` or a sealed side of a split, as `evh looks` and the
   studies read it, and both are listed, each with its seal state: for a sealed side the seal and what its counts may show; for one that is
   not sealed "not sealed: role test" (it has no exposure register, which only a sealed side has: the screen does not ask for one), its looks so far and the next one's level, and **Seal it** (the split again by its recorded rule, the same
@@ -578,6 +580,7 @@ decision kept with its reason. This is where people spend most of their time (W1
   an agent-sampled study `3 Propose the next trial` (ask its state, then tell a proposal that runs as the next trial: `study-ask`, `study-tell`), and
   `Confirm it on a test set: one look` (the rule given before any test item is read; what it would read first; `study-confirm`). **Stop it**
   (`study-stop`) and **Continue it** under a cap end or resume it.
+- **A new study** offers this goal's own systems and validation datasets, plus those no goal uses yet (step 4's rule), and starts from the goal's promoted baseline system when it has one, else the first offered.
 - A study is research on validation items and never promotes; only its confirmation on a test set is evidence.
 
 ## Help, for someone who is new to this

@@ -294,4 +294,22 @@ check(
     js.unnamed_dimensions(kit_sc, (kit / "judge_prompt.txt").read_text()),
 )
 
+# The 0.8.0 newcomer run (080d): a reply that was JSON stopped before its closing brace said only "not JSON, 536 chars".
+cut_json = (
+    '{"faithfulness": [5, 4], "coverage": [2, 5], "why": ["It omits the core subject.", "It accurately capt'
+)
+said = js.unparsed_cause(cut_json, "stop", "grade", ["faithfulness", "coverage"])
+check(
+    "an unparsed reply that is JSON cut off before its closing brace says so, not 'not JSON'",
+    "cut off" in said
+    and "closing brace" in said
+    and "not JSON" not in said
+    and f"{len(cut_json)} chars" in said,
+    said,
+)
+check(
+    "prose is still 'not JSON'",
+    js.unparsed_cause("The summaries are fine.", "stop", "grade", ["faithfulness"]).startswith("not JSON"),
+)
+
 sys.exit(summary())

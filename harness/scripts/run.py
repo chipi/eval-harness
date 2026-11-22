@@ -968,6 +968,10 @@ def _dry_run(
             " NOT an upper bound:"
         )
         print("              a conversation that grows, or an adapter that calls more than that, costs more)")
+        print(
+            "              It assumes every reply is max_tokens long: a model that answers in a sentence usually costs"
+            " less (an arm-smoke measures it)."
+        )
     measured = _smoke_cost(cfg)
     projected = None
     if measured:

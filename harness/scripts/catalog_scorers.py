@@ -60,6 +60,14 @@ def validated_cell(s: dict) -> str:
     return "yes" if s.get("validated") else '<span class="muted">no</span>'
 
 
+def without_empty_note(heads: list, rows: list) -> tuple[list, list]:
+    """The table without its last column (the note) when no row has one: a header over blank cells reads as missing
+    data."""
+    if rows and not any(r[-1] for r in rows):
+        return heads[:-1], [r[:-1] for r in rows]
+    return heads, rows
+
+
 def render_scorers(A, by_ds: dict, out, nav: list) -> None:
     """Write scorers.html and a page per scorer."""
     from evaluation_harness import catalog_build as cb  # noqa: PLC0415
@@ -102,12 +110,13 @@ def render_scorers(A, by_ds: dict, out, nav: list) -> None:
         "changed: a new version is a new scorer (<code>supersedes</code>), since every judged score records the "
         "scorer it was made with.",
     )
+    heads, rows = without_empty_note(["scorer", "mode", "judges", "validated", "judged scores", "note"], rows)
     body += cb.block(
         "01",
         "judge scorers",
         cb.table(
             "scorers",
-            ["scorer", "mode", "judges", "validated", "judged scores", "note"],
+            heads,
             rows,
             "filter scorers",
         )

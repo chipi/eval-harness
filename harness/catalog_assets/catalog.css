@@ -170,7 +170,7 @@ footer code { font: .9em var(--mono); }
 .pick .filter { margin-top: 14px; }
 .controls { display: flex; flex-wrap: wrap; gap: 18px; align-items: center; margin-bottom: 26px; font: 500 12px/1 var(--mono); color: var(--muted); }
 .controls select { font: 500 13px/1 var(--mono); color: var(--ink); background: var(--surface); border: 1px solid var(--hair);
-  border-radius: 10px; padding: 9px 12px; margin-left: 8px; max-width: 46ch; }
+  border-radius: 10px; padding: 9px 12px; margin-left: 8px; max-width: 100%; }
 .controls .tick input { margin-right: 6px; vertical-align: middle; }
 /* The field filter (ADR-0003): picker, value and button wrap onto the next line on a phone. */
 .controls .filter { flex-wrap: wrap; margin-bottom: 0; }
@@ -797,7 +797,7 @@ dl.df-view dl.df-view { padding-left: 12px; border-left: 2px solid var(--hair); 
 
 /* the arms page's critique (2026-11-12) */
 section.block h2.eyebrow { font: 500 12px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted);
-  margin: 0; max-width: none; }
+  margin: 0 0 20px; max-width: none; }
 section.block h2.eyebrow .num { color: var(--accent); font-weight: 700; font-size: 13px; }
 th .sortbtn { background: none; border: 0; padding: 0; margin: 0; font: inherit; letter-spacing: inherit; text-transform: inherit;
   color: inherit; text-align: inherit; cursor: pointer; min-height: 24px; }
@@ -845,7 +845,9 @@ span.smoke { display: inline-block; margin: 0 4px 2px 0; padding: 0 6px; border-
 .filter input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 details.chart-table { margin-top: 8px; }
 details.chart-table summary { cursor: pointer; font: 500 12px/1.4 var(--mono); color: var(--muted); }
-@media (max-width: 640px) { figure.chart svg text, figure.chart svg .tick { font-size: 19.5px; } }
+/* on a phone a chart keeps its drawn size and its box scrolls sideways: scaled down to the screen its text was either too
+   small to read or, enlarged to read, over its neighbours and cut at the edges (scenario 080d) */
+@media (max-width: 640px) { figure.chart svg { width: auto; min-width: 0; max-width: none; } }
 /* a group's heading is a header cell for its rows (scope=rowgroup) but reads as the body text it was */
 table.data tr.grouphead th { font: 400 14px/1.5 var(--text); letter-spacing: 0; text-transform: none; color: var(--ink); padding: 18px 12px 10px 0; }
 table.data tr.grouphead th small { display: inline; }
@@ -875,11 +877,17 @@ span.selfref { display: inline-block; margin: 2px 4px 2px 0; padding: 2px 7px; b
 .facet-chips .kindgroup { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; margin-right: 10px; }
 .facet-chips .kindgroup .kind { margin-left: 0; }
 details.arm-tools { margin-top: 14px; }
-body:has(#arms[data-period-rows]) .wrap { max-width: 1400px; }
-/* a dataset page keeps the goal pages' gutter, so its arms table's figures stay on one line and its names wrap */
+/* One gutter for every page type: the content column is the .wrap's (1180px, 24px padding). A table wider than it scrolls
+   inside its own box (arms.js keeps its head in view while it fits). A figure stays on one line and a name wraps. */
 @media (min-width: 900px) { table#arms:not([data-period-rows]) td:has(> span[data-v]) { white-space: nowrap; } }
 nav.jump { margin: 18px 0 0; color: var(--muted); }
 nav.jump a { margin: 0 2px; }
 /* on a phone a chart's names would overlap at a readable size: the frontier stays drawn, its names are in the folded
    points table ("on the frontier") */
-@media (max-width: 640px) { figure.chart svg text.name { display: none; } }
+
+/* a cost, a speed or an axis cell stays on one line ("$0.000018 · 118 tok" broke in two) */
+td > span.ax { white-space: nowrap; }
+/* inline code in the catalog's own mono, not the browser's generic monospace (the captures page read as another font) */
+code, kbd, samp { font-family: var(--mono); font-size: .88em; }
+/* a row linked to by its address (labels.html#set-...) is marked where the page opens on it */
+tr:has(:target) > td, tr:has(:target) > th, tr:target > td, tr:target > th { background: color-mix(in srgb, var(--accent) 16%, transparent); }

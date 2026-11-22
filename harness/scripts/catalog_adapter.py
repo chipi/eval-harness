@@ -1011,7 +1011,7 @@ class HarnessAdapter:
                     for k, v in sorted(self.scores(arm).items()):
                         if k.startswith("judge_") and item in v["values"]:
                             info[k.removeprefix("judge_")] = f"{v['values'][item]:.3g}"
-                view = {"kind": "text", "text": text, "info": info}
+                view = {"kind": "text", "text": text, "info": info, "repeats": len(dirs)}
                 self._with_artifact(view, row)
                 return view
         # An item whose call failed has no output, and may have left what a person wants to open (a trial's directory).

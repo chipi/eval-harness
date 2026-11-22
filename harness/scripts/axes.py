@@ -564,9 +564,9 @@ def value_text(axis: dict, v: float | None) -> str:
     if v is None:
         return "not recorded"
     if axis["name"] == "cost" and axis["measure"] == "cost_usd":
-        return f"${v:.6f}"
+        return fmt_usd(v)
     if axis["name"] == "speed" and axis["measure"] == "latency_ms":
-        return f"{v:,.0f} ms"
+        return f"{fmt_ms(v)} ms"
     return _num(v) + (f" {axis['unit']}" if axis.get("unit") else "")
 
 
@@ -575,13 +575,13 @@ def cell_text(axis: dict, cell: dict) -> str:
     p50 and p95, a project axis as its statistic. "not recorded" when the arm has no number."""
     if axis["name"] == "cost" and axis["measure"] == "cost_usd":
         tok = (cell.get("tokens") or {}).get("mean")
-        usd = f"${cell['mean']:.6f}" if cell.get("mean") is not None else ""
+        usd = fmt_usd(cell["mean"]) if cell.get("mean") is not None else ""
         both = " · ".join(x for x in (usd, f"{tok:,.0f} tok" if tok is not None else "") if x)
         return both or "not recorded"
     if cell.get("n", 0) == 0:
         return "not recorded"
     if axis["name"] == "speed" and axis["measure"] == "latency_ms":
-        return f"p50 {_ms(cell['p50'])} · p95 {_ms(cell['p95'])} ms"
+        return f"p50 {fmt_ms(cell['p50'])} · p95 {fmt_ms(cell['p95'])} ms"
     stat = "" if axis["stat"] == "mean" else f"{axis['stat']} "
     return f"{stat}{_num(cell['value'])}" + (f" {axis['unit']}" if axis.get("unit") else "")
 
@@ -602,9 +602,24 @@ def axis_title(axis: dict) -> str:
     return head
 
 
-def _ms(v: float) -> str:
-    """Milliseconds: whole above 10, else significant digits (a keyword match takes 0.03 ms, not 0)."""
-    return f"{v:,.0f}" if v >= 10 else f"{v:.2g}"
+def fmt_usd(v: float) -> str:
+    """A cost in dollars, the one format everywhere: "$0" for none, two significant digits under a cent ("$0.000018"),
+    four places up to a dollar ("$0.0027", "$0.1992"), two above."""
+    if v == 0:
+        return "$0"
+    if abs(v) >= 1:
+        return f"${v:,.2f}"
+    return f"${v:.{max(4, 1 - math.floor(math.log10(abs(v))))}f}"
+
+
+def fmt_ms(v: float) -> str:
+    """Milliseconds, the one precision everywhere: three significant digits ("0.00350", "1.23", "12.5"), whole from 100 up
+    with separators ("1,988"); never scientific (a keyword match takes 0.004 ms)."""
+    if v == 0:
+        return "0"
+    if abs(v) >= 100:
+        return f"{v:,.0f}"
+    return f"{v:.{max(0, 2 - math.floor(math.log10(abs(v))))}f}"
 
 
 def _num(v: float | None) -> str:

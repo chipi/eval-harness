@@ -53,7 +53,8 @@ evh reference-promote --dataset-id briefs_v1 --labels my_gold --tier gold \
 ## 2. Your adapter
 
 `adapter.py` at the project root is the integration seam: an arm whose system names no
-`adapter:` uses it. Two functions: `call_system` runs your system on one item, `score` says how
+`adapter:` uses it (a system picks another with `adapter: adapters/other.py`, a top-level key of its YAML beside
+`params:`, not inside it). Two functions: `call_system` runs your system on one item, `score` says how
 good one output is. This one has a **baseline** that uses no model (the brief's first sentence)
 and a seq2seq model through `transformers`; the hosted providers bundled with the harness are
 imported too, for [tutorial 2](2-hosted-llm.md).

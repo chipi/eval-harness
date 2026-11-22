@@ -594,6 +594,18 @@ try:
         and yaml.safe_load(_runstore.read_text(proj, "rounds/tickets_summary/r2.yaml"))["status"] == "closed",
         (r.returncode, r.stderr[-300:], td.get("state"), trec),
     )
+    nobody = subprocess.run(
+        [sys.executable, str(HERE / "cli.py"), "jobs-start", "round-close", "--arg", "goal=g"],
+        cwd=proj, env={k: v for k, v in env.items() if k != "EVH_ACTOR"},
+        capture_output=True, text=True, stdin=subprocess.DEVNULL,
+    )  # fmt: skip
+    check(
+        "jobs-start without an actor names the flag and where it goes (080d scenario F2)",
+        nobody.returncode != 0
+        and "evh jobs-start --by person:NAME round-close" in nobody.stderr
+        and "before the operation" in nobody.stderr,
+        nobody.stderr[-300:],
+    )
     r2 = evh("jobs-start", "round-close", "--arg", "goal=g", "--reason", "x", "--by", "person:cara")
     r3 = evh("jobs-start", "round-close", "--arg", "goal=g", "--by", "person:cara")
     check(

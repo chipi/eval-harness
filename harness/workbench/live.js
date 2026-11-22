@@ -39,6 +39,11 @@
   const qh = (key) => (HELPS()[key] ? WB.q(key) : "");
   const hint = (key) => (HELPS()[key] && HELPS()[key].hint ? `<div class="hint">${esc(HELPS()[key].hint)}</div>` : "");
   const nm = (id, text, key) => `<div class="name"><label for="${id}">${text}</label>${qh(key)}</div>`;
+  // An id (a run's, a reference's) may break where it has an underscore or a slash, never inside a word: on a phone it was
+  // cut mid-token ("…T071144Z_r" / "1").
+  const idw = (s) => esc(s).replace(/([_/])/g, "$1<wbr>");
+  // The server's words keep their code words in backticks: shown as code, never as raw backticks.
+  const md = (s) => esc(s).replace(/`([^`]+)`/g, "<code>$1</code>");
 
   // One API read, kept until the page reloads; a screen asks again by key and is drawn again when it lands.
   // `quiet` (the rail's reads): the answer redraws the rail only, never the screen under a person's hand.
@@ -71,6 +76,12 @@
           if (box) box.outerHTML = fill();
           else if (location.hash === asked) WB.render(false, true);
           else if (LIVE.quiet.delete(key) && LIVE.railArgs && `#${LIVE.railArgs[0]}` === location.hash) WB.railFor(...LIVE.railArgs);
+          // A note that waited for another read (`data-unless`) is shown when that read failed too, dropped when it drew
+          document.querySelectorAll("[data-unless]").forEach((el) => {
+            const other = LIVE.cache[el.dataset.unless];
+            if (other === undefined) return;
+            if (other.error) el.hidden = false; else el.remove();
+          });
         });
     }
     return undefined;
@@ -117,6 +128,14 @@
       <td>${d.made ? (d.materialized ? "made, fetched" : "made, not fetched") : "not made"}</td><td>${d.references.length ? d.references.map(esc).join(", ") : "—"}</td>
       <td class="num">${d.runs} run(s) · ${d.arms} arm(s)</td><td>${d.baseline ? `v${d.baseline.version}` : "—"}</td></tr>`).join("");
     const rounds = st.rounds.map((r) => `<li><b>${esc(r.round)}</b> ${esc(r.status)}: ${esc(r.question || "")}</li>`).join("");
+    // The primary button is the next step of the journey, as the rail reads it (a dataset named, fetched with a reference
+    // set, two systems with runs), not always the first step.
+    const d0 = st.datasets.find((d) => d.decides) || st.datasets[0];
+    const nextKey = !d0 ? "dataset" : !(d0.materialized && d0.references.length) ? "prepare" : d0.arms < 2 ? "systems" : "eval";
+    const step = (key, href, text) => `<a class="btn${nextKey === key ? " primary" : ""}" href="${href}">${text}</a>`;
+    const actions = step("dataset", `#dataset/${encodeURIComponent(id)}`, "Add a dataset")
+      + (nextKey === "prepare" ? step("prepare", `#prepare/${encodeURIComponent(d0.dataset)}`, "Prepare the dataset") : "")
+      + step("systems", `#systems/${encodeURIComponent(id)}`, "Choose the systems") + step("eval", `#eval/${encodeURIComponent(id)}`, "The eval");
     return `<div class="screen wide">${head}<h1>${esc(st.title || id)}</h1>
       <p class="lead">Decides on ${esc(m.measure || "")} (${esc(m.direction || "")} is better).</p>
       <div class="answer"><div class="kicker">next step</div><p>${esc(st.next.what)}</p><p class="source"><code>${esc(st.next.command)}</code></p></div>
@@ -125,7 +144,7 @@
       ${st.running.length ? `<h2 style="margin-top:22px">Running now</h2><ul>${st.running.map((j) => `<li>${esc(j.operation)} · ${esc(j.state)}</li>`).join("")}</ul>` : ""}
       ${chartBox("trend", { goal: id }, true, { cmd: false, minPoints: 2 })}
       ${WB.cmd(`evh goal-status ${id}\nevh chart trend --goal ${id}`)}
-      <div class="actions"><a class="btn primary" href="#dataset/${encodeURIComponent(id)}">Add a dataset</a><a class="btn" href="#systems/${encodeURIComponent(id)}">Choose the systems</a><a class="btn" href="#eval/${encodeURIComponent(id)}">The eval</a><a class="btn" href="#review/${encodeURIComponent(id)}">Review the outputs</a><a class="btn" href="#production/${encodeURIComponent(id)}">Production</a><a class="btn" href="#heldout/${encodeURIComponent(id)}">The held-out test</a><a class="btn" href="#study/${encodeURIComponent(id)}">Studies</a><a class="btn" href="#goal-edit/${encodeURIComponent(id)}">Edit the goal</a><a class="btn" href="#home">Back to your goals</a></div></div>`;
+      <div class="actions">${actions}<a class="btn" href="#review/${encodeURIComponent(id)}">Review the outputs</a><a class="btn" href="#production/${encodeURIComponent(id)}">Production</a><a class="btn" href="#heldout/${encodeURIComponent(id)}">The held-out test</a><a class="btn" href="#study/${encodeURIComponent(id)}">Studies</a><a class="btn" href="#goal-edit/${encodeURIComponent(id)}">Edit the goal</a><a class="btn" href="#home">Back to your goals</a></div></div>`;
   }
 
   // ── writes: who acted, the data header, and the model's refusal shown as it is ──────────────────────
@@ -194,11 +213,17 @@
       compares comes with its systems.</p>`;
     if (ms === undefined) return `<div class="screen wide">${head}${loading("the models")}</div>`;
     if (ms.error) return `<div class="screen wide">${head}${failed(ms)}</div>`;
+    // No records is not "no models": a project's systems send model names that no record describes (a gateway alias, a
+    // Hugging Face repo), and run without one.
+    const sysl = ms.models.length ? null : load("systems", "/systems");
+    const sent = sysl && !sysl.error ? [...new Set(sysl.systems.map((x) => x.model).filter(Boolean))] : [];
+    const none = `<div class="note"><p><b>No model records yet.</b> A model record says what a model is (its kind, its weights, its licence) and where it runs (each deployment, with its probes and checks); every goal can use it.</p>
+      <p>${sent.length ? `This project's systems send ${sent.map((x) => `<span class="mono">${esc(x)}</span>`).join(", ")}, which no record describes: they run without one.` : "A system can run without one."} Bring a model in to onboard it, and to keep the check on three items on its deployment.</p></div>`;
     const rows = ms.models.map((m) => `<tr><td><a href="#model/${enc(m.model)}"><b>${esc(m.name || m.model)}</b></a>${m.name && m.name !== m.model ? `<div class="mono muted">${esc(m.model)}</div>` : ""}</td>
       <td>${esc(m.kind || "")}</td><td>${esc(m.weights || "")}</td><td class="num">${m.deployments}</td><td>${stateTag(m.state)}</td></tr>`).join("");
     return `<div class="screen wide">${head}
       ${ms.models.length ? `<div class="tablewrap"><table><thead><tr><th>model</th><th>kind</th><th>weights</th><th class="num">deployments</th><th>state</th></tr></thead><tbody>${rows}</tbody></table></div>`
-        : '<p class="muted">No models yet.</p>'}
+        : none}
       <div class="actions"><a class="btn primary" href="#model-new">Bring in a model</a></div>
       ${WB.cmd("evh model-list")}</div>`;
   }
@@ -331,6 +356,7 @@
       <div class="field"><label class="name" for="nm-aliases">The ids runs record</label><div><input type="text" id="nm-aliases" placeholder="gemma4:12b, eval-gemma-12b">
         <div class="hint">the model name an arm sends, comma-separated: a gateway alias, an Ollama tag, a Hugging Face repo</div></div></div>
       <div class="field"><div class="name" id="nm-weights-l">Its weights</div><div class="choices" role="radiogroup" aria-labelledby="nm-weights-l">
+        <label class="choice"><input type="radio" name="nm-weights" value="" checked> not said <small>leave it out for now</small></label>
         <label class="choice"><input type="radio" name="nm-weights" value="open"> open <small>they can be downloaded</small></label>
         <label class="choice"><input type="radio" name="nm-weights" value="proprietary"> proprietary <small>only its vendor serves it</small></label></div></div>
       <div class="field"><label class="name" for="nm-licence">Licence</label><div><input type="text" id="nm-licence" placeholder="Apache-2.0"></div></div>
@@ -340,14 +366,14 @@
       ${WB.cmd("evh model-new <id> --set kind=llm --set aliases.0=<the id runs record>")}</div>`;
   }
   function wireModelNew() {
-    holds("model-new", () => `Make model ${(document.getElementById("nm-id")?.value || "").trim() || "…"}`);
+    holds("model-new", () => { const id = (document.getElementById("nm-id")?.value || "").trim(); return id ? `Make model ${id}` : "Make the model"; });
     document.getElementById("nm-save")?.addEventListener("click", async () => {
       const out = document.getElementById("nm-out"), v = (x) => document.getElementById(x).value.trim(), by = byOf("nm-by");
       if (!by) { out.innerHTML = '<p class="note" role="alert">Say who you are: a change names who made it.</p>'; return; }
       const id = v("nm-id"), set = { kind: document.querySelector("input[name=nm-kind]:checked").value };
       v("nm-aliases").split(",").map((a) => a.trim()).filter(Boolean).forEach((a, i) => { set[`aliases.${i}`] = a; });
       const wts = document.querySelector("input[name=nm-weights]:checked");
-      if (wts) set.weights = wts.value;
+      if (wts && wts.value) set.weights = wts.value;
       if (v("nm-name")) set.name = v("nm-name");
       if (v("nm-licence")) set.licence = v("nm-licence");
       try {
@@ -411,7 +437,7 @@
       const dir = m && ["higher", "lower"].includes(m.better) ? m.better : null;
       if (dir) document.querySelector(`input[name=gf-dir][value=${dir}]`).checked = true;
     });
-    holds("goal-form", () => (editing ? `Save goal ${goal}` : `Make goal ${v("gf-id") || "…"}`));
+    holds("goal-form", () => (editing ? `Save goal ${goal}` : v("gf-id") ? `Make goal ${v("gf-id")}` : "Make the goal"));
     document.getElementById("gf-save").addEventListener("click", async () => {
       const out = document.getElementById("gf-out"), by = byOf("gf-by");
       if (!by) { out.innerHTML = '<p class="note" role="alert">Say who you are: a change names who made it.</p>'; return; }
@@ -630,6 +656,19 @@
     for (const a of arms.arms || []) if (a.goal && a.system) goals.set(a.system, (goals.get(a.system) || new Set()).add(a.goal));
     return systems.filter((x) => !goals.has(x.system) || goals.get(x.system).has(goal));
   };
+  // The same rule for datasets (UXS-005, the day-to-day screens): a goal's own, and one no goal names (a capture's dataset not
+  // yet added to one). A dataset made from another (a split side, a next version) is its parent's goal's.
+  const forGoalDatasets = (datasets, goal, goals) => {
+    if (!goals || goals.error) return datasets;
+    const by = Object.fromEntries(datasets.map((d) => [d.dataset, d]));
+    const owners = (id, seen = new Set()) => {
+      if (seen.has(id)) return new Set();
+      seen.add(id);
+      const own = goals.goals.filter((g) => (g.datasets || []).some((d) => (d.dataset_id || d.dataset || d) === id)).map((g) => g.goal);
+      return own.length ? new Set(own) : (by[id] || {}).parent ? owners(by[id].parent, seen) : new Set();
+    };
+    return datasets.filter((d) => { const o = owners(d.dataset); return !o.size || o.has(goal); });
+  };
   // A goal's systems share one prompt, kept as versions of the name `<goal>/prompt` (RFC-028): a system points at the
   // version it sends (prompts: {name: {version}}), and every run records it, so the prompts' history says which text
   // each run sent. A prompt typed here is recorded first (the same text is the same version), then pointed at.
@@ -695,7 +734,7 @@
         <div class="inline"><label class="name" for="sm-ds">on</label><select id="sm-ds">${datasets.map((x) => `<option>${esc(x)}</option>`).join("")}</select>
           <label class="name" for="sm-cap">spend at most (USD)</label><input type="number" id="sm-cap" min="0.01" step="0.01" value="0.05" inputmode="decimal" style="width:7rem"></div>
         <div class="tablewrap"><table><thead><tr><th>system</th><th>model</th>${anyDep ? "<th>where it runs</th>" : ""}<th>its prompt</th><th>its check</th></tr></thead><tbody>
-        ${mine.map((x) => `<tr><td class="mono">${esc(x.system)}</td><td>${esc(x.model || "")}</td>${anyDep ? `<td>${x.deployment ? esc(x.deployment) : '<span class="muted">not recorded</span>'}</td>` : ""}<td>${promptCell(x.system)}</td>
+        ${mine.map((x) => `<tr><td class="mono">${esc(x.system)}</td><td>${x.model ? esc(x.model) : '<span class="muted">—</span>'}</td>${anyDep ? `<td>${x.deployment ? esc(x.deployment) : '<span class="muted">not recorded</span>'}</td>` : ""}<td>${promptCell(x.system)}</td>
           <td><button class="btn" type="button" data-smoke="${esc(x.system)}">Check it on three items</button> <button class="btn" type="button" data-clone="${esc(x.system)}">Clone it, change one thing</button>
             <div id="sm-${esc(x.system)}" data-out aria-live="polite">${smokeView(smokes[`${goal}/${x.system}`], sysrec[x.system])}</div><div id="cl-${esc(x.system)}" data-out></div></td></tr>`).join("")}</tbody></table></div>
         ${byField("sm-by")}</div></section>
@@ -821,12 +860,21 @@
   const chartArgs = (p) => Object.entries(p).filter(([, v]) => v).map(([k, v]) => `--${k} ${v}`).join(" ");
   // `opts.cmd: false` leaves its command to the screen (which shows it once); `opts.minPoints`: a chart of fewer points
   // is a line of text, not a drawing.
+  const chartQs = (params) => new URLSearchParams(Object.entries(params).filter(([, v]) => v)).toString();
+  const chartKey = (kind, params) => `chart:${kind}:${chartQs(params)}`;
   function chartBox(kind, params, quiet = false, opts = {}) {
-    const qs = new URLSearchParams(Object.entries(params).filter(([, v]) => v)).toString();
-    const key = `chart:${kind}:${qs}`;
+    const qs = chartQs(params), key = chartKey(kind, params);
     const r = load(key, `/charts/${kind}?${qs}&optional=1`, false, false, () => chartBox(kind, params, quiet, opts));
-    if (r === undefined) return `<div class="chart-box" data-lands="${esc(key)}">${loading("the chart")}</div>`;
-    if (r.error) return quiet ? "" : `<div class="chart-box" data-chart="${esc(kind)}"><p class="muted">No chart yet: ${esc(r.error)}</p></div>`;
+    // `opts.part`: the chart sits in a card of its own, under the chart's own title; with nothing to draw there is no card
+    if (r === undefined) return `<div class="chart-box" data-lands="${esc(key)}"${opts.part ? " hidden" : ""}>${loading("the chart")}</div>`;
+    if (r.error) {
+      if (quiet) return "";
+      // `opts.unlessDrawn`: the read of another chart of the same arms. This chart's "no chart yet" is said only if that
+      // one failed too: beside a drawing of those arms it read as a contradiction (the review of 2026-11-21).
+      const other = opts.unlessDrawn ? LIVE.cache[opts.unlessDrawn] : { error: true };
+      if (other && !other.error) return "";
+      return `<div class="chart-box" data-chart="${esc(kind)}"${opts.unlessDrawn ? ` data-unless="${esc(opts.unlessDrawn)}"${other === undefined ? " hidden" : ""}` : ""}><p class="muted">No chart yet: ${esc(r.error)}</p></div>`;
+    }
     const cols = r.columns || [];
     if (opts.minPoints) {
       const measure = cols[4], got = (r.rows || []).filter((x) => x[measure] != null);
@@ -835,8 +883,9 @@
       }
     }
     const cell = (v) => (v == null ? "—" : typeof v === "number" ? num(v, 4) : typeof v === "object" ? esc(JSON.stringify(v)) : esc(v));
-    return `<div class="chart-box" data-chart="${esc(kind)}">${r.svg}<details class="table"><summary>The numbers</summary><div class="tablewrap"><table><thead><tr>${cols.map((c) => `<th>${esc(c)}</th>`).join("")}</tr></thead>
+    const box = `<div class="chart-box" data-chart="${esc(kind)}">${r.svg}<details class="table"><summary>The numbers</summary><div class="tablewrap"><table><thead><tr>${cols.map((c) => `<th>${esc(c)}</th>`).join("")}</tr></thead>
       <tbody>${(r.rows || []).map((x) => `<tr>${cols.map((c) => `<td>${cell(x[c])}</td>`).join("")}</tr>`).join("")}</tbody></table></div></details>${opts.cmd === false ? "" : WB.cmd(`evh chart ${kind} ${chartArgs(params)}`)}</div>`;
+    return opts.part ? `<section class="part"><div class="parthead"><h2>${esc(r.title || kind)}</h2></div><div class="body">${box}</div></section>` : box;
   }
   function screenEval(param) {
     const [goal, wanted] = String(param || "").split("/");
@@ -873,7 +922,7 @@
     const carry = !last ? "" : lastRec === undefined ? loading("its arms") : inPlayLast.length ? carryFor(onDs) : '<p class="muted" style="margin:0">None is in play.</p>';
     // The next round opens from the last one: offered on its tab, not on every closed round before it.
     const openForm = open || (last && cur !== last.round_id) ? "" : `<section class="part" data-form="round-open"><div class="parthead"><h2>Open ${rounds.length ? "the next round" : "the first round"}</h2></div><div class="body">
-        <div class="field">${nm("ro-q", "The round's question", "eval.question")}<div><textarea id="ro-q" rows="2" placeholder="Does a cheaper hosted model match the baseline's coverage?"></textarea>${hint("eval.question")}</div></div>
+        <div class="field">${nm("ro-q", "The round's question", "eval.question")}<div><textarea id="ro-q" rows="2" placeholder="Does a change beat the baseline on ${esc(((rec.record.success_criteria || {}).primary || {}).measure || "its measure")}?"></textarea>${hint("eval.question")}</div></div>
         <div class="field"><label class="name" for="ro-ds">On</label><div><select id="ro-ds">${datasets.map((x) => `<option ${x === onDs ? "selected" : ""}>${esc(x)}</option>`).join("")}</select></div></div>
         ${last ? `<div class="field"><div class="name"><span id="ro-keep-l">Carry in from ${esc(last.round_id)}</span>${qh("eval.carry")}</div><div><div id="ro-carry">${carry}</div>${hint("eval.carry")}</div></div>` : ""}
         <div class="field"><label class="name" for="ro-budget">What it may spend (USD)</label><div><input type="text" id="ro-budget" inputmode="decimal" placeholder="no budget" style="width:8rem"></div></div>
@@ -898,7 +947,8 @@
     const dsArms = isOpen ? load(`arms:${r.dataset_id}`, `/datasets/${enc(r.dataset_id)}/arms`) : { arms: [] };
     if (dsArms === undefined) return `<div class="screen wide">${head}${tabs}${loading("the round")}</div>`;
     const measured = new Set((dsArms.arms || []).filter((a) => String(a.arm || "").startsWith(`runs/${r.dataset_id}/`)).map((a) => a.system));
-    const toRun = forGoal(sys.systems, goal, allArms).filter((x) => !have.has(x.system) && !measured.has(x.system));
+    // A study's trial systems (their files are the study's) are its own to run, never a round's to pick.
+    const toRun = forGoal(sys.systems, goal, allArms).filter((x) => !have.has(x.system) && !measured.has(x.system) && !String(x.file || "").startsWith("data/studies/"));
     const carryable = [...new Set([...(prev ? prev.round.arms.filter((a) => !a.retired).map((a) => a.system) : []), ...measured])].filter((s) => !have.has(s)).sort();
     // a baseline line is its current version, its earlier ones in `history` (view_baselines.lines)
     const line = (bl.baselines || []).find((b) => b.dataset === r.dataset_id);
@@ -915,23 +965,23 @@
       <p class="muted">${esc(r.round_id)} · ${esc(r.status)} · on ${esc(r.dataset_id)}${r.from ? ` · from ${esc(r.from)}` : ""}${r.study ? ` · opened by study <a href="#study/${enc(goal)}/${enc(r.study)}">${esc(r.study)}</a>` : ""}${r.budget_usd != null ? ` · budget $${esc(r.budget_usd)}` : ""} · spent $${num(ev.spent_usd, 4)}</p>
       ${r.conclusion ? `<div class="answer"><div class="kicker">its conclusion</div><p>${esc(typeof r.conclusion === "string" ? r.conclusion : r.conclusion.text || JSON.stringify(r.conclusion))}</p></div>` : ""}
       <section class="part"><div class="parthead"><h2>The evidence</h2><span class="grow"></span><span class="muted">${esc(ev.metric || "")} · each arm against the leader, Holm</span></div><div class="body">
-        ${chartBox("gain-cost", { goal, round: cur })}
+        ${chartBox("gain-cost", { goal, round: cur }, !ev.leader)}
         ${rows ? `<p class="muted">The leader: <b class="mono">${esc(short(ev.leader))}</b>. A verdict holds when the raw p is under its threshold.</p>
           <div class="tablewrap"><table><thead><tr><th>arm</th><th class="num">mean</th><th class="num">Δ</th><th class="num">raw p</th><th class="num">threshold</th><th>verdict</th></tr></thead><tbody>${rows}</tbody></table></div>` : ""}
         ${(ev.notes || []).length ? `<ul>${ev.notes.map((n) => `<li class="muted">${esc(n)}</li>`).join("")}</ul>` : ""}</div></section>
       <section class="part"><div class="parthead"><h2>Where the arms stand</h2></div><div class="body">
         <p class="muted">Every arm of the goal on ${esc(r.dataset_id)}, this round's and before.</p>
-        ${chartBox("intervals", { goal, dataset: r.dataset_id })}${chartBox("items", { goal, dataset: r.dataset_id })}${chartBox("latency", { goal, dataset: r.dataset_id }, true)}</div></section>
+        ${chartBox("intervals", { goal, dataset: r.dataset_id }, false, { unlessDrawn: chartKey("items", { goal, dataset: r.dataset_id }) })}${chartBox("items", { goal, dataset: r.dataset_id })}${chartBox("latency", { goal, dataset: r.dataset_id }, true)}</div></section>
       <section class="part"><div class="parthead"><h2>Its arms</h2></div><div class="body"><ul id="arms">${arms || '<li class="muted">none yet</li>'}</ul>
         ${isOpen ? `<div id="rt-box"></div>` : ""}
         ${isOpen && carryable.length ? `<div class="inline"><label class="name" for="cy-arm">Carry in</label><select id="cy-arm">${carryable.map((x) => `<option>${esc(x)}</option>`).join("")}</select>
           <button class="btn" type="button" id="cy-go">Carry it in</button><span class="muted">an arm of an earlier round, or a system already measured on ${esc(r.dataset_id)}: unchanged, not run again</span></div><div id="cy-out" data-out></div>` : ""}</div></section>
       ${baseline}
       ${isOpen ? `<section class="part"><div class="parthead"><h2>Run arms in it</h2></div><div class="body">
-        ${toRun.length ? `<div class="choices">${toRun.map((x) => `<label class="choice"><input type="checkbox" data-run="${esc(x.system)}"> <span class="mono">${esc(x.system)}</span> <small>${esc(x.model || "")}</small></label>`).join("")}</div>
+        ${toRun.length ? `<p class="muted">This screen wrote files into the project (a system, a round, an arm carried in). Commit them before a paid run: a run on uncommitted files is recorded <b>dirty</b>, and its commit then does not identify what ran. <code>git status</code> lists them.</p>
+          <div class="choices">${toRun.map((x) => `<label class="choice"><input type="checkbox" data-run="${esc(x.system)}"> <span class="mono">${esc(x.system)}</span>${x.model ? ` <small>model ${esc(x.model)}</small>` : ""}</label>`).join("")}</div>
           <div class="inline"><label class="name" for="rn-cap">spend at most (USD)</label><input type="number" id="rn-cap" min="0.01" step="0.01" value="1" inputmode="decimal" style="width:7rem">
           <button class="btn" type="button" id="rn-est">See the cost first</button><button class="btn primary" type="button" id="rn-go">Run them</button></div>
-          <p class="muted">This screen wrote files into the project (a system, a round, an arm carried in). Commit them before a paid run: a run on uncommitted files is recorded <b>dirty</b>, and its commit then does not identify what ran. <code>git status</code> lists them.</p>
           <div id="rn-out" data-out aria-live="polite"></div>` : '<p class="muted">Every system of the project is in this round.</p>'}</div></section>
         <section class="part" data-form="round-close"><div class="parthead"><h2>Close the round</h2></div><div class="body">
           <div class="field"><label class="name" for="rc-text">Its conclusion</label><div><textarea id="rc-text" rows="3" placeholder="What the round showed, and what it decided, in a sentence or more."></textarea></div></div>
@@ -1114,7 +1164,7 @@
           <label class="choice"><input type="radio" name="rv-mode" value="pick" checked> which is better <small>the arms hidden and shuffled per item, so the pick is not swayed</small></label>
           <label class="choice"><input type="radio" name="rv-mode" value="tags"> what went wrong <small>each output tagged with the failure modes it shows</small></label></div></div>
         <div class="field">${nm("rv-modes", "Failure modes", "review.modes")}<div><select id="rv-modes">${lists.map((x) => `<option>${esc(x)}</option>`).join("")}<option value="">a new list…</option></select>
-          <div class="inline"><input type="text" id="rv-new-id" placeholder="its id: summaries" style="width:10rem" autocapitalize="off" spellcheck="false"><input type="text" id="rv-new-modes" placeholder="its modes: narration, overlong, truncated" style="min-width:18rem" autocapitalize="off" spellcheck="false"></div>
+          <div class="inline" id="rv-new" ${lists.length ? "hidden" : ""}><input type="text" id="rv-new-id" placeholder="its id: ${esc(goal)}_modes" aria-label="the new list's id" style="width:14rem" autocapitalize="off" spellcheck="false"><input type="text" id="rv-new-modes" placeholder="its modes, comma-separated" aria-label="the new list's modes" style="min-width:18rem" autocapitalize="off" spellcheck="false"></div>
           ${hint("review.modes")}</div></div>
         ${byField("rv-by")}
         <div class="actions"><button class="btn primary" type="button" id="rv-make">Make the sheet</button><a class="btn" href="#goal/${enc(goal)}">Back to the goal</a></div><div id="rv-out" data-out></div>
@@ -1151,6 +1201,8 @@
     const goal = WB.param || "";
     const v = (id) => (document.getElementById(id)?.value || "").trim();
     document.getElementById("rv-ds")?.addEventListener("change", () => { keepRev(goal, { dataset: v("rv-ds") }); WB.render(true); });
+    // the boxes of a new list are there when "a new list…" is chosen, not under a list already chosen
+    document.getElementById("rv-modes")?.addEventListener("change", () => { document.getElementById("rv-new").hidden = v("rv-modes") !== ""; });
     document.getElementById("rv-make")?.addEventListener("click", async (ev) => {
       const out = document.getElementById("rv-out"), by = byOf("rv-by") || (who() ? `person:${who()}` : null);
       if (!by) { out.innerHTML = '<p class="note" role="alert">Say who you are: a job names who asked.</p>'; return; }
@@ -1255,10 +1307,12 @@
       <p class="lead">What the deployed system decided, kept as a capture; scored like an arm against the labels; the rows where it was wrong picked for the next version of the dataset.</p>`;
     if (!goal) return `<div class="screen">${head}</div>`;
     const caps = load("captures", "/captures"), sys = load("systems", "/systems"), ds = load("datasets", "/datasets"), rec = load(`goalrec:${goal}`, `/goals/${enc(goal)}`);
-    if ([caps, sys, ds, rec].includes(undefined)) return `<div class="screen wide">${head}${loading("the captures")}</div>`;
+    const goals = load("goals", "/goals"), allArms = load("arms:all", "/arms");
+    if ([caps, sys, ds, rec, goals, allArms].includes(undefined)) return `<div class="screen wide">${head}${loading("the captures")}</div>`;
     const bad = [caps, sys, ds, rec].find((x) => x.error);
     if (bad) return `<div class="screen wide">${head}${failed(bad)}</div>`;
-    const capIds = caps.captures.map((c) => c.capture), dsIds = ds.datasets.map((x) => x.dataset), sysIds = sys.systems.map((x) => x.system);
+    // this goal's datasets and systems (and ones no goal has), as the systems screens offer them
+    const capIds = caps.captures.map((c) => c.capture), dsIds = forGoalDatasets(ds.datasets, goal, goals).map((x) => x.dataset), sysIds = forGoal(sys.systems, goal, allArms).map((x) => x.system);
     const ms = load("models", "/models");
     const codeIds = ms && !ms.error ? ms.models.filter((m) => m.kind === "code").map((m) => m.model) : [];
     const rp = WB._replay || {};
@@ -1444,7 +1498,7 @@
         ${sets.length ? `<h3>Promote a label set</h3>${promote}` : '<p class="muted">No label set yet.</p>'}
         <h3>Or label it</h3><div class="actions" style="margin-top:0"><a class="btn" href="#label/${enc(ds)}">Label it here</a></div>
         ${byField("pp-by")}</div></section>
-      ${chartBox("rank-stability", { dataset: ds }, true)}${chartBox("agreement", { dataset: ds }, true)}
+      ${chartBox("rank-stability", { dataset: ds }, true, { part: true })}${chartBox("agreement", { dataset: ds }, true, { part: true })}
       ${WB.cmd(`evh dataset-materialize --dataset-id ${ds}\nevh dataset-profile --dataset-id ${ds}\nevh reference-promote --dataset-id ${ds} --labels <set> --tier gold --reason "..."`)}
       <div class="actions"><a class="btn" href="#home">Your goals</a></div></div>`;
   }
@@ -1516,6 +1570,9 @@
     const sp = WB._sp && WB._sp.ds === ds ? WB._sp : {}, spGoal = sp.goal || readers[0];
     const rounds = spGoal ? load(`rounds:${spGoal}`, `/goals/${enc(spGoal)}/rounds`) : null;
     const roundIds = rounds && !rounds.error ? rounds.rounds.map((r) => r.round_id) : [];
+    // A split side's label sets are its parent's, covering its items (label-set-list's `coverage`): its own list is empty
+    // while "how often two sets agree" is read from them, so they are listed too.
+    const inherited = (ls.coverage || []).filter((c) => c.dataset_id && c.dataset_id !== ds);
     const agree = (ls.agreement || []).map((a) => `<li><span class="mono">${esc(a.a)}</span> and <span class="mono">${esc(a.b)}</span>: ${a.both} item(s) in both${a.kappa != null ? `, kappa ${fx(a.kappa)}` : ""}${a.alpha != null ? `, alpha ${fx(a.alpha)}` : ""} (${esc(a.kind || "")})</li>`).join("");
     const spView = sp.values ? Object.entries(sp.values.datasets || {}).map(([d, x]) => `<h3>${esc(d)} · ${esc(x.measure)}, now → with the scorer in this tree</h3>
       <div class="tablewrap"><table class="cmp"><thead><tr><th>arm</th><th class="num">now</th><th class="num">after</th><th class="num">moved</th><th>within the limits</th></tr></thead><tbody>${x.arms.map((a) => `<tr><td class="mono">${esc(a.arm)}</td><td class="num">${fx(a.now)}</td><td class="num">${fx(a.after)}</td><td class="num ${a.moved > 0 ? "v-lead" : a.moved < 0 ? "v-worse" : ""}">${a.moved > 0 ? "+" : ""}${a.moved.toFixed(4)}</td><td>${a.within_limits_now ? "yes" : "no"} → ${a.within_limits_after ? "yes" : "no"}</td></tr>`).join("")}</tbody></table></div>
@@ -1524,8 +1581,9 @@
     return `<div class="screen wide">${head}
       ${byField("rf6-by")}
       <section class="part"><div class="parthead"><span class="letter">a</span><h2>Its reference sets now</h2></div><div class="body">
-        ${mine.length ? `<div class="tablewrap"><table><thead><tr><th>reference</th><th class="num">items</th><th>from</th><th>by</th><th>when</th><th class="num">arms scored</th></tr></thead><tbody>${mine.map((r) => `<tr><td class="mono"><span class="tag ${esc(r.tier)}">${esc(r.tier)}</span> ${esc(r.reference)}</td><td class="num">${r.items}</td><td class="mono">${esc(r.label_set || "—")} <span class="muted">${esc(r.kind || "")}${r.author ? ` · written by ${esc(r.author)}` : ""}</span></td><td>${esc(r.promoted_by || "")}</td><td>${esc((r.created_at || "").slice(0, 10))}</td><td class="num">${r.scored}</td></tr>`).join("")}</tbody></table></div>` : '<p class="muted">None yet: promote a label set below.</p>'}
-        <h3>Its label sets</h3>${ls.label_sets.length ? `<ul>${ls.label_sets.map((x) => `<li><b class="mono">${esc(x.set)}</b> · ${x.items} item(s) · ${esc(x.kind)}${x.actor && x.actor.name ? ` · by ${esc(actorSaid(x.actor))}` : ""} · ${esc((x.created_at || "").slice(0, 10))}</li>`).join("")}</ul>` : '<p class="muted">None yet. <a href="#label/' + enc(ds) + '">Label it here</a>.</p>'}
+        ${mine.length ? `<div class="tablewrap"><table><thead><tr><th>reference</th><th class="num">items</th><th>from</th><th>by</th><th class="nw">when</th><th class="num">arms scored</th></tr></thead><tbody>${mine.map((r) => `<tr><td><span class="tag ${esc(r.tier)}">${esc(r.tier)}</span> <span class="mono">${idw(r.reference)}</span></td><td class="num">${r.items}</td><td class="mono">${idw(r.label_set || "—")} <span class="muted">${esc(r.kind || "")}${r.author ? ` · written by ${esc(r.author)}` : ""}</span></td><td>${esc(r.promoted_by || "")}</td><td class="nw">${esc((r.created_at || "").slice(0, 10))}</td><td class="num">${r.scored}</td></tr>`).join("")}</tbody></table></div>` : '<p class="muted">None yet: promote a label set below.</p>'}
+        <h3>Its label sets</h3>${ls.label_sets.length ? `<ul>${ls.label_sets.map((x) => `<li><b class="mono">${esc(x.set)}</b> · ${x.items} item(s) · ${esc(x.kind)}${x.actor && x.actor.name ? ` · by ${esc(actorSaid(x.actor))}` : ""} · ${esc((x.created_at || "").slice(0, 10))}</li>`).join("")}</ul>` : inherited.length ? '<p class="muted">None of its own.</p>' : '<p class="muted">None yet. <a href="#label/' + enc(ds) + '">Label it here</a>.</p>'}
+        ${inherited.length ? `<p class="muted" style="margin-bottom:4px">Covering its items, from the dataset it was made from:</p><ul>${inherited.map((c) => `<li><b class="mono">${idw(`${c.dataset_id}/${c.set}`)}</b> · ${(c.items || []).length} of its item(s)${(c.source || {}).kind ? ` · ${esc(c.source.kind)}` : ""}${(c.source || {}).by ? ` · by ${esc(c.source.by)}` : ""} · ${esc((c.created_at || "").slice(0, 10))}</li>`).join("")}</ul>` : ""}
         ${agree ? `<p class="muted" style="margin-bottom:4px">How often two sets agree:</p><ul>${agree}</ul>` : ""}</div></section>
       <section class="part"><div class="parthead"><span class="letter">b</span><h2>What it moves</h2></div><div class="body">
         ${sets.length ? `<div class="inline"><select id="mv-set" aria-label="the label set">${opt(sets, st.set)}</select>
@@ -1535,14 +1593,14 @@
       <section class="part"><div class="parthead"><span class="letter">c</span><h2>Promote it</h2></div><div class="body">
         ${sets.length ? `<div data-form="ref-promote"><div class="inline"><select id="rp6-set" aria-label="the label set">${opt(sets, st.set)}</select><select id="rp6-tier" aria-label="tier"><option value="gold">gold</option><option value="silver">silver</option></select>
           <input type="text" id="rp6-name" placeholder="its name: ${esc(ds)}" autocapitalize="off" spellcheck="false" aria-label="the reference set's name"></div>
-          <input type="text" id="rp6-why" placeholder="why these answers are the yardstick: a sentence" aria-label="why it is promoted" style="width:100%;margin-top:8px">
+          <input type="text" id="rp6-why" placeholder="why these answers are the yardstick" aria-label="why these answers are the yardstick: a sentence" style="width:100%;margin-top:8px">
           <div class="actions" style="margin-top:8px"><button class="btn primary" type="button" id="rp6-go" data-send>Promote</button>${mark}<span class="muted" style="font-size:13px">then the arms are re-scored against it: stored outputs, no calls, $0</span></div></div><div id="rp6-out" data-out></div>` : '<p class="muted">No label set to promote.</p>'}</div></section>
       <section class="part"><div class="parthead"><span class="letter">d</span><h2>When the scoring changes</h2></div><div class="body">
         <p class="muted">The scorer in this tree, run over a goal's stored outputs in a temporary folder: each arm now and after, and whether the leader, the recommendation or the contenders change. Nothing is written.</p>
         ${readers.length ? `<div class="inline"><select id="sp-goal" aria-label="the goal">${opt(readers, spGoal)}</select><select id="sp-round" aria-label="the round"><option value="">every arm</option>${opt(roundIds, sp.round)}</select>
           <button class="btn" type="button" id="sp-go">Preview the change</button></div><div id="sp-out" data-out>${spView}</div>
           ${roundIds.length ? `<div data-form="rescore-round"><h3>Apply it to a round</h3><div class="inline"><select id="rr-round" aria-label="the round">${opt(roundIds, sp.round)}</select>
-            <input type="text" id="rr-why" placeholder="why the scoring changed, recorded on the round" style="min-width:20rem"><button class="btn primary" type="button" id="rr-go" data-send>Re-score the round</button>${mark}</div><div id="rr-out" data-out></div></div>` : ""}`
+            <input type="text" id="rr-why" placeholder="why the scoring changed" aria-label="why the scoring changed, recorded on the round" style="min-width:20rem"><button class="btn primary" type="button" id="rr-go" data-send>Re-score the round</button>${mark}</div><div id="rr-out" data-out></div></div>` : ""}`
           : '<p class="muted">No goal reads this dataset.</p>'}</div></section>
       ${WB.cmd(`evh rescore --dataset-id ${ds} --labels <set>\nevh leaderboard ${ds}\nevh reference-promote --dataset-id ${ds} --labels <set> --tier gold --reason "..."\nevh rescore --dataset-id ${ds} --reference-id gold/${ds}\nevh score-preview --goal <goal>\nevh rescore --goal <goal> --round rN --why "..."`)}
       <div class="actions"><a class="btn" href="#prepare/${enc(ds)}">Back to prepare</a></div></div>`;
@@ -1675,11 +1733,11 @@
           <p><b>${esc((MODES.find(([m]) => m === (r.mode || "grade")) || [])[1] || r.mode)}</b> · ${r.explain === true ? "each judge says why" : "no reasons asked"} · on <span class="mono">${esc(r.dataset_id)}</span> · the prompt <span class="mono">${esc(dig(r, "prompt.file") || "—")}</span> · at most $${esc(r.cost_cap_usd ?? "—")} a pass</p>
           <p class="muted">${guards}</p>
           <div class="tablewrap"><table><thead><tr><th>judge</th><th>model or system</th><th>family</th></tr></thead><tbody>${(one.judges || []).map((j) => `<tr><td class="mono">${esc(j.judge)}</td><td class="mono">${esc(j.model || j.system || "")}</td><td>${esc(j.family || "—")}</td></tr>`).join("")}</tbody></table></div>
-          ${one.problem ? `<p class="note" role="alert">${esc(one.problem)}</p>` : ""}${edit}</div></section>
+          ${one.problem ? `<p class="note" role="alert">${md(one.problem)}</p>` : ""}${edit}</div></section>
         <section class="part"><div class="parthead"><span class="letter">c</span><h2>Does it agree with people?</h2><span class="grow"></span>${va.validated ? '<span class="status ok">validated</span>' : '<span class="status">not validated</span>'}</div><div class="body">
           ${valRows ? `<p class="muted">${esc(b.what || "")}${b.metric ? ` · ${esc(b.metric)} on ${esc(b.dataset_id)}${b.dimensions ? ` over ${esc(b.dimensions.join(", "))}` : ""}` : ""}${b.differs_from_this_use ? ` · differs from this use: ${esc(b.differs_from_this_use)}` : ""}</p>
             <div class="tablewrap"><table><thead><tr><th>judge</th><th class="num">${esc(b.metric || "agreement")}</th><th class="num">it must beat</th><th>measured by</th></tr></thead><tbody>${valRows}</tbody></table></div>` : '<p class="muted">No validation recorded: nothing measured these judges against people\'s labels.</p>'}
-          ${(va.problems || []).length ? `<ul class="problems">${va.problems.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}
+          ${(va.problems || []).length ? `<ul class="problems">${va.problems.map((x) => `<li>${md(x)}</li>`).join("")}</ul>` : ""}
           ${checks ? `<p class="muted" style="margin-bottom:4px">People's checks of its judges:</p><ul>${checks}</ul>` : ""}
           ${vruns}
           <div data-form="judge-validate">
@@ -1720,8 +1778,8 @@
     const r = load(`verdicts:${cur}:${offset}`, `/scorers/${enc(cur)}/verdicts?limit=10&offset=${offset}`);
     const body = r === undefined ? loading("the verdicts") : r.error ? failed(r) : !r.rows.length ? '<p class="muted">No verdicts on the primary pass.</p>'
       : `<p class="muted">${r.offset + 1}–${r.offset + r.rows.length} of ${r.total} · ${r.explained} with a reason · the lowest scores first</p>
-        <div class="tablewrap"><table class="why"><thead><tr><th>item</th><th>arm</th><th>judge</th><th class="num">said</th><th>why</th></tr></thead><tbody>${r.rows.map((x) => `<tr><td class="mono">${esc(x.item)}</td><td class="mono">${esc(x.arm)}</td><td class="mono">${esc(x.judge)}</td><td class="num">${typeof x.said === "number" ? fx(x.said) : esc(x.said ?? "—")}</td><td>${x.why ? esc(x.why) : `<span class="muted">${esc(x.why_status === "withheld" ? "withheld: it repeated the source" : x.why_status === "missing" ? "missing" : "not asked")}</span>`}</td></tr>`).join("")}</tbody></table></div>
-        <div class="actions" style="margin-top:0">${r.offset > 0 ? '<button class="btn" type="button" id="why-prev">Lower</button>' : ""}${r.offset + r.rows.length < r.total ? '<button class="btn" type="button" id="why-next">Higher</button>' : ""}</div>`;
+        <div class="tablewrap"><table class="why"><thead><tr><th>item</th><th>arm</th><th>judge</th><th class="num">said</th><th>why</th></tr></thead><tbody>${r.rows.map((x) => `<tr><td class="mono">${idw(x.item)}</td><td class="mono">${idw(x.arm)}</td><td class="mono">${idw(x.judge)}</td><td class="num">${typeof x.said === "number" ? fx(x.said) : esc(x.said ?? "—")}</td><td>${x.why ? esc(x.why) : `<span class="muted">${esc(x.why_status === "withheld" ? "withheld: it repeated the source" : x.why_status === "missing" ? "missing" : "not asked")}</span>`}</td></tr>`).join("")}</tbody></table></div>
+        <div class="actions" style="margin-top:0">${r.offset > 0 ? '<button class="btn" type="button" id="why-prev">Lower scores</button>' : ""}${r.offset + r.rows.length < r.total ? '<button class="btn" type="button" id="why-next">Higher scores</button>' : ""}</div>`;
     return `<section class="part" id="why"><div class="parthead"><span class="letter">e</span><h2>What it said, and why</h2></div><div class="body">${body}
       ${WB.cmd(`evh judge-verdicts ${cur}`)}</div></section>`;
   }
@@ -1966,6 +2024,12 @@
   // The label is the server's (`state_label`: exit 6 is "checked, flagged", the command's answer, not a failure): one definition.
   const stateTagOf = (st, label) => `<span class="verdict ${st === "succeeded" ? "v-lead" : RUNNING.includes(st) ? "v-ns" : label && label !== st ? "v-ns" : "v-worse"}">${esc(label || st)}</span>`;
   const progressOf = (p) => (p ? `${p.done ?? p.n ?? "?"} / ${p.total ?? "?"}${p.unit ? ` ${esc(p.unit)}` : ""}` : "—");
+  // What a job spent, one way on the list and on its page. A job nobody asked for is the server's own: the catalog's
+  // rebuild when the data changes (catalog_serve starts it with no one named).
+  const usd = (x) => (x ? `$${Number(x).toFixed(4)}` : "$0");
+  const SERVER_JOBS = ["catalog"];
+  const sameLines = (a, b) => { const n = (t) => String(t).split("\n").map((x) => x.trim()).filter(Boolean).join("\n"); return n(a) === n(b); };
+  const askedBy = (j) => (j.by ? `asked by <span class="mono">${esc(j.by)}</span>` : SERVER_JOBS.includes(j.operation) ? "started by the server, which rebuilds the catalog when the data changes" : "asked by nobody recorded");
   function screenJobs(param) {
     const id = String(param || "");
     if (id) return screenJob(id);
@@ -1986,7 +2050,7 @@
     const opt = (xs, sel, none) => `<option value="">${esc(none)}</option>` + xs.map((x) => `<option value="${esc(x)}" ${x === sel ? "selected" : ""}>${esc(x)}</option>`).join("");
     const from = (f.offset || 0) + 1, to = (f.offset || 0) + js.jobs.length;
     const rows = js.jobs.map((j) => `<tr><td class="mono"><a href="#jobs/${enc(j.id)}">${esc(j.id)}</a></td><td class="mono">${esc(j.operation)}</td><td>${stateTagOf(j.state, j.state_label)}${j.waiting_for ? ` <small class="muted">waits for ${esc(j.waiting_for)}</small>` : ""}</td>
-      <td class="mono">${esc(j.by || "")}</td><td class="num">${esc((j.created_at || "").replace("T", " ").slice(0, 16))}</td><td class="num">${progressOf(j.progress)}</td><td class="num">${j.spent_usd ? `$${Number(j.spent_usd).toFixed(4)}` : "—"}</td></tr>`).join("");
+      <td class="mono">${esc(j.by || (SERVER_JOBS.includes(j.operation) ? "the server" : "—"))}</td><td class="num">${esc((j.created_at || "").replace("T", " ").slice(0, 16))}</td><td class="num">${progressOf(j.progress)}</td><td class="num">${j.spent_usd == null ? "—" : usd(j.spent_usd)}</td></tr>`).join("");
     return `<div class="screen wide">${head}
       <div class="inline"><select id="jf-state" aria-label="state">${STATE_SETS.map(([v, t]) => `<option value="${esc(v)}" ${v === f.state ? "selected" : ""}>${esc(t)}</option>`).join("")}</select>
         <select id="jf-op" aria-label="operation">${opt(ops, f.operation, "every operation")}</select><select id="jf-goal" aria-label="goal">${opt(goalIds, f.goal, "every goal")}</select></div>
@@ -2017,16 +2081,16 @@
     const running = RUNNING.includes(j.state), cap = (j.env || {}).EVAL_MAX_COST_USD;
     const res = (j.result || {}).result;
     return `<div class="screen wide">${head}<h1 class="mono">${esc(j.operation)}</h1>
-      <p class="lead">${stateTagOf(j.state, j.state_label)}${j.waiting_for ? ` · waits for ${esc(j.waiting_for)}` : ""} · asked by <span class="mono">${esc(j.by || "?")}</span> · made ${esc((j.created_at || "").replace("T", " ").slice(0, 19))}${j.ended_at ? ` · ended ${esc(String(j.ended_at).replace("T", " ").slice(0, 19))}` : ""}${j.exit != null ? ` · exit ${esc(j.exit)}` : ""}</p>
+      <p class="lead">${stateTagOf(j.state, j.state_label)}${j.waiting_for ? ` · waits for ${esc(j.waiting_for)}` : ""} · ${askedBy(j)} · made ${esc((j.created_at || "").replace("T", " ").slice(0, 19))}${j.ended_at ? ` · ended ${esc(String(j.ended_at).replace("T", " ").slice(0, 19))}` : ""}${j.exit != null ? ` · exit ${esc(j.exit)}` : ""}</p>
       <div class="tablewrap"><table><tbody>
         <tr><th>progress</th><td>${progressOf(j.progress)}</td></tr>
-        <tr><th>spent</th><td>${j.spent_usd ? `$${Number(j.spent_usd).toFixed(4)}` : "$0"}${cap ? ` of at most $${Number(cap).toFixed(2)}` : ""}</td></tr>
+        <tr><th>spent</th><td>${usd(j.spent_usd)}${cap ? ` of at most $${Number(cap).toFixed(2)}` : ""}</td></tr>
         <tr><th>holds</th><td class="mono">${(j.locks || []).map(([k, ex]) => `${esc(k)}${ex ? " (alone)" : ""}`).join(", ") || "—"}</td></tr>
         ${j.run_id ? `<tr><th>its run</th><td class="mono">${esc(j.run_id)}</td></tr>` : ""}
         <tr><th>inputs</th><td><pre class="reply">${esc(JSON.stringify(j.inputs || {}, null, 2))}</pre></td></tr>
       </tbody></table></div>
       <div class="actions">${running ? '<button class="btn" type="button" id="jb-stop">Stop it</button>' : ""}${j.run_id && !running && j.state !== "succeeded" ? '<button class="btn primary" type="button" id="jb-resume">Resume the run</button>' : ""}</div><div id="jb-out" data-out></div>
-      ${res ? `<h2>Its result</h2>${blocksView(res)}` : ""}
+      ${res ? `<h2>Its result</h2><div id="jb-result">${blocksView(res)}</div>` : ""}
       ${recallPart(j)}
       ${(j.files || []).length ? `<h2>Its files</h2><ul>${j.files.map((n) => `<li><a class="mono" href="/api/v1/jobs/${enc(id)}/files/${enc(n)}" download="${esc(n)}">${esc(n)}</a></li>`).join("")}</ul>` : ""}
       <h2>Its log</h2><pre class="reply" id="jb-log">reading…</pre>
@@ -2059,6 +2123,9 @@
           pre.textContent += b.log;
           next = b.next ?? next;
           if (!pre.textContent) pre.textContent = "(nothing printed yet)";
+          // what a command printed is both its result and its log: shown once, in the log
+          const res = document.getElementById("jb-result");
+          if (res && !RUNNING.includes(j.state) && sameLines(res.innerText, pre.textContent)) res.innerHTML = '<p class="muted">The same text as its log, below.</p>';
         }
         if (!RUNNING.includes(j.state)) return;
         await new Promise((ok) => setTimeout(ok, 1000));
@@ -2108,8 +2175,8 @@
     const head = `<div class="kicker">Day to day · ${esc(goal)}</div><h1>The held-out test</h1>
       <p class="lead">Items kept back from tuning until one candidate is named, so the last number is a fair one. A seal stops runs and labels on them; reads it cannot stop are recorded, and every score on them leaves the read items out.</p>`;
     if (!goal) return `<div class="screen">${head}</div>`;
-    const rec = load(`goalrec:${goal}`, `/goals/${enc(goal)}`), ds = load("datasets", "/datasets"), sys = load("systems", "/systems");
-    if ([rec, ds, sys].includes(undefined)) return `<div class="screen wide">${head}${loading("the goal's datasets")}</div>`;
+    const rec = load(`goalrec:${goal}`, `/goals/${enc(goal)}`), ds = load("datasets", "/datasets"), sys = load("systems", "/systems"), allArms = load("arms:all", "/arms");
+    if ([rec, ds, sys, allArms].includes(undefined)) return `<div class="screen wide">${head}${loading("the goal's datasets")}</div>`;
     const bad = [rec, ds, sys].find((x) => x.error);
     if (bad) return `<div class="screen wide">${head}${failed(bad)}</div>`;
     const mine = (rec.record.datasets || []).map((x) => x.dataset_id), byId = Object.fromEntries(ds.datasets.map((x) => [x.dataset, x]));
@@ -2120,16 +2187,16 @@
     const st = WB._ho && WB._ho.goal === goal ? WB._ho : {};
     const side = sides.includes(st.side) ? st.side : sides[0];
     const opt = (xs, sel) => xs.map((x) => `<option value="${esc(x)}" ${x === sel ? "selected" : ""}>${esc(x)}</option>`).join("");
-    const sysIds = sys.systems.map((x) => x.system), splittable = mine.filter((x) => !(byId[x] || {}).parent || !/_(test|validation)$/.test(x));
+    const sysIds = forGoal(sys.systems, goal, allArms).map((x) => x.system), splittable = mine.filter((x) => !(byId[x] || {}).parent || !/_(test|validation)$/.test(x));
     const splitForm = `<details class="part" ${sides.some((x) => (byId[x] || {}).sealed) ? "" : "open"}><summary><b>Hold ${sides.length ? "another dataset" : "some items"} out</b></summary><div class="body" data-form="split">
         <p class="muted">A split makes two datasets: <span class="mono">&lt;id&gt;_validation</span> to tune on and <span class="mono">&lt;id&gt;_test</span>, sealed, to decide on once.</p>
         <div class="inline"><select id="sp-ds" aria-label="the dataset">${opt(splittable)}</select>
           <label class="choice"><input type="radio" name="sp-by" value="time" checked> by time</label><label class="choice"><input type="radio" name="sp-by" value="hash"> by hash</label></div>
-        <div class="inline"><input type="text" id="sp-key" placeholder="the time field: opened (by hash: one value to one side)" autocapitalize="off" spellcheck="false" style="min-width:16rem">
-          <input type="text" id="sp-at" placeholder="by time: the boundary, 2026-11-02T00:00:00Z" autocapitalize="off" spellcheck="false" style="min-width:16rem">
-          <input type="number" id="sp-test" placeholder="by hash: the test share, 0.3" step="0.05" min="0.05" max="0.95" style="width:12rem"></div>
-        <div class="inline"><label class="choice"><input type="checkbox" id="sp-seal" checked> seal the test side</label>
-          <input type="text" id="sp-count" placeholder="fields its counts may show: kind (fixed now)" autocapitalize="off" spellcheck="false" style="min-width:16rem"></div>
+        <div class="field"><label class="name" for="sp-key">The field it splits on</label><div><input type="text" id="sp-key" placeholder="opened" autocapitalize="off" spellcheck="false"><div class="hint">by time: the time field; by hash: one value goes to one side</div></div></div>
+        <div class="field"><label class="name" for="sp-at">The boundary, by time</label><div><input type="text" id="sp-at" placeholder="2026-11-02T00:00:00Z" autocapitalize="off" spellcheck="false"></div></div>
+        <div class="field"><label class="name" for="sp-test">The test share, by hash</label><div><input type="number" id="sp-test" placeholder="0.3" step="0.05" min="0.05" max="0.95" style="width:12rem"></div></div>
+        <div class="field"><label class="name" for="sp-count">The fields its counts may show</label><div><input type="text" id="sp-count" placeholder="kind" autocapitalize="off" spellcheck="false"><div class="hint">fixed now</div></div></div>
+        <label class="choice"><input type="checkbox" id="sp-seal" checked> seal the test side</label>
         <div class="actions" style="margin-top:0"><button class="btn primary" type="button" id="sp-go" data-send>Split it</button>${mark}</div><div id="sp-out" data-out></div></div></details>`;
     if (!side) return `<div class="screen wide">${head}${byField("ho-by")}<p class="muted">None of this goal's datasets is held out yet.</p>${splitForm}
       ${WB.cmd("evh dataset-split --dataset-id <dataset> --split-by time --key opened --at <T> --seal --count-by kind")}<div class="actions"><a class="btn" href="#goal/${enc(goal)}">Back to the goal</a></div></div>`;
@@ -2151,13 +2218,14 @@
     const pv = pt && !pt.error ? pt.values || {} : null;
     const tbl = (h, rows) => `<div class="tablewrap"><table><thead><tr>${h.map((x) => `<th>${esc(x)}</th>`).join("")}</tr></thead><tbody>${rows.join("")}</tbody></table></div>`;
     const part = (n, title, body, tag = "") => `<section class="part"><div class="parthead"><span class="letter">${n}</span><h2>${esc(title)}</h2><span class="grow"></span>${tag}</div><div class="body">${body}</div></section>`;
-    const pct = (x) => (typeof x === "number" ? `${(x * 100).toFixed(4)}%` : "—");
+    // two significant digits: a look's level is 1.5%, then 0.38%, not 1.5198% (the numbers differ by a factor, not by digits)
+    const pct = (x) => (typeof x === "number" ? `${Number((x * 100).toPrecision(2))}%` : "—");
     // One question is one look: a decision may write several records of it (study-confirm names it, then adds its verdict), so a look is one row.
     const lookGroups = (() => { const m = new Map(); for (const x of look.looks || []) m.set(x.key ?? `${x.number}/${x.at}`, [...(m.get(x.key ?? `${x.number}/${x.at}`) || []), x]); return [...m.values()]; })();
     // Not sealed (a `role: test` side, or a split made without --seal): its state, its looks, and sealing it by the split's own rule.
     const rule = split.from ? split : null;
     const sealCmd = rule ? `evh dataset-split --dataset-id ${rule.from} --split-by ${rule.split_by}${rule.key ? ` --key ${rule.key}` : ""}${rule.split_by === "time" && rule.at ? ` --at ${rule.at}` : ` --test ${rule.test}`}${rule.split_by === "hash" ? ` --seed ${rule.seed ?? 0}` : ""} --seal --force` : "";
-    const unsealedPart = part(1, "The seal", `<div class="stats"><div><b>${d.n_items}</b><span>test items</span></div><div><b>not sealed</b><span>sealed</span></div><div><b>${lookGroups.length}</b><span>looks so far</span></div></div>
+    const unsealedPart = part(1, "The seal", `<div class="stats"><div><b>${d.n_items}</b><span>test items</span></div><div><b>not sealed</b><span>sealed</span></div><div><b>${lookGroups.length}</b><span>${lookGroups.length === 1 ? "look" : "looks"} so far</span></div></div>
         <p class="note">not sealed: role ${esc(roleOf[side] || "test")}. A run or a label on it is not stopped; it counts as a test set for its looks (each at a stricter level), not for a seal.</p>
         ${lookGroups.length ? tbl(["look", "level", "what", "by", "at"], lookGroups.map((g) => { const x = g[0]; return `<tr><td class="num">${x.number}</td><td class="num">${pct(x.level)}</td><td>${esc(x.what || "")}${x.verdict ? ` · ${esc(x.verdict)}` : ""}${g.length > 1 ? ` <span class="muted">(${g.length} records of this look, the last ${esc(g[g.length - 1].at || "")})</span>` : ""}</td><td>${esc(x.actor && x.actor.name ? actorSaid(x.actor) : "")}</td><td class="mono">${esc(x.at || "")}</td></tr>`; })) : '<p class="muted">No look yet.</p>'}
         <p class="muted">Next: look ${look.next ?? "?"}, one-sided at ${pct(look.next_level)}${look.limit != null ? `; at most ${look.limit} looks` : ""}.</p>
@@ -2185,7 +2253,7 @@
       ${!seal.at ? "" : part(4, "Open it for one candidate", `<p class="muted">The candidate's hypothesis (what it is against, the measure, the direction) must be in it and committed first. Opening it is one look at this test set; each later look is tested at a stricter level.</p>
         <p>Next: look ${look.next ?? "?"}, one-sided at ${pct(look.next_level)}; ${look.limit != null ? `at most ${look.limit} looks` : ""}${lookGroups.length ? ` · ${lookGroups.length} so far` : ""}</p>
         ${opened.length ? tbl(["look", "candidate", "against", "why", "committed", "by"], opened.map((u) => `<tr><td class="num">${(u.look || {}).number ?? ""}</td><td class="mono">${esc(u.system_id)}</td><td class="mono">${esc((u.hypothesis || {}).against || "")}</td><td>${esc(u.reason || "")}</td><td class="mono">${esc(String(u.commit || "").slice(0, 8))}</td><td>${esc(u.actor && u.actor.name ? actorSaid(u.actor) : "")}</td></tr>`)) : ""}
-        <div data-form="unseal"><div class="inline"><select id="us-sys" aria-label="the candidate">${opt(sysIds)}</select><input type="text" id="us-why" placeholder="why this candidate, and why now: a sentence" style="min-width:18rem">
+        <div data-form="unseal"><div class="inline"><select id="us-sys" aria-label="the candidate">${opt(sysIds)}</select><input type="text" id="us-why" placeholder="why this candidate, and why now" aria-label="why this candidate, and why now: a sentence" style="min-width:18rem">
           ${look.limit != null && look.next > look.limit ? '<label class="choice"><input type="checkbox" id="us-extra"> look past the limit (a person only)</label>' : ""}
           <button class="btn primary" type="button" id="us-go" data-send>Open it for this candidate</button>${mark}</div><div id="us-out" data-out></div></div>`, opened.length ? `<span class="status">look ${opened.length}</span>` : "")}
       ${last ? part(5, "Run the candidate and what it is against", `<p class="muted">Each on the held-out side: the runs the confirmation reads.</p>
@@ -2324,24 +2392,28 @@
       <p class="lead">A search over one thing at a time, each trial measured against the best so far on the validation items; it never promotes. Its best is confirmed once on a test set: one look.</p>`;
     if (!goal) return `<div class="screen">${head}</div>`;
     const rec = load(`goalrec:${goal}`, `/goals/${enc(goal)}`), list = load(`studies:${goal}`, `/goals/${enc(goal)}/studies`), sys = load("systems", "/systems"), dsl = load("datasets", "/datasets");
-    if ([rec, list, sys, dsl].includes(undefined)) return `<div class="screen wide">${head}${loading("the studies")}</div>`;
+    const allArms = load("arms:all", "/arms"), bls = load(`baselines:${goal}`, `/baselines?goal=${enc(goal)}`);
+    if ([rec, list, sys, dsl, allArms, bls].includes(undefined)) return `<div class="screen wide">${head}${loading("the studies")}</div>`;
     const bad = [rec, list, sys, dsl].find((x) => x.error);
     if (bad) return `<div class="screen wide">${head}${failed(bad)}</div>`;
     const dss = rec.record.datasets || [], roleOf = (r) => dss.filter((x) => x.role === r).map((x) => x.dataset_id);
     const sealed = dsl.datasets.filter((x) => x.sealed && dss.some((d) => d.dataset_id === x.dataset || d.dataset_id === x.parent)).map((x) => x.dataset);
     const tests = [...new Set(roleOf("test").concat(sealed))], vals = roleOf("validation").length ? roleOf("validation") : dss.map((x) => x.dataset_id);
     const measure = ((rec.record.success_criteria || {}).primary || {}).measure || "";
-    const sysIds = sys.systems.map((x) => x.system);
+    // This goal's systems (and ones never run), as the systems screens offer them; a new study starts from the goal's
+    // baseline (the system of the run it promoted) when it has one, else the first.
+    const sysIds = forGoal(sys.systems, goal, allArms).map((x) => x.system);
+    const blSys = ((bls.baselines || []).map((b) => (b.reproduce || {}).system_id).find((s) => sysIds.includes(s))) || sysIds[0];
     const opt = (xs, sel) => xs.map((x) => `<option value="${esc(x)}" ${x === sel ? "selected" : ""}>${esc(x)}</option>`).join("");
     const tbl = (h, rows) => `<div class="tablewrap"><table><thead><tr>${h.map((x) => `<th>${esc(x)}</th>`).join("")}</tr></thead><tbody>${rows.join("")}</tbody></table></div>`;
     const part = (n, title, body, tag = "") => `<section class="part"><div class="parthead"><span class="letter">${n}</span><h2>${esc(title)}</h2><span class="grow"></span>${tag}</div><div class="body">${body}</div></section>`;
     const cmd = WB.cmd(`evh study-run --study ${goal}/<id> --spec study.yaml --dry-run\nevh study-run --study ${goal}/<id> --spec study.yaml\nevh study-list ${goal}\nevh study-ask --study ${goal}/<id>\nevh study-tell --study ${goal}/<id> --ask <id> --proposal-json '{...}'\nevh study-stop --study ${goal}/<id>\nevh study-confirm --study ${goal}/<id> --test <test set> --rule superiority`);
     if (!sid) {
-      const draft = (WB._study || {})[goal] || specOf(vals[0] || "<dataset>", sysIds[0] || "<system>", measure, "grid");
+      const draft = (WB._study || {})[goal] || specOf(vals[0] || "<dataset>", blSys || "<system>", measure, "grid");
       return `<div class="screen wide">${head}${byField("st6-by")}
         ${list.studies.length ? tbl(["study", "state", "on", "from", "trials", "kept", "spent", "confirmed"], list.studies.map((x) => `<tr><td class="mono"><a href="#study/${enc(goal)}/${enc(x.study.split("/").pop())}">${esc(x.study)}</a></td><td>${esc(x.status)}</td><td class="mono">${esc(x.dataset)}</td><td class="mono">${esc(x.baseline)}</td><td class="num">${x.trials}</td><td class="num">${x.kept}</td><td class="num">$${Number(x.spent_usd || 0).toFixed(4)}</td><td class="num">${x.confirms}</td></tr>`)) : '<p class="muted">No study yet.</p>'}
         ${part("a", "A new study", `<div data-form="study-new"><div class="inline"><input type="text" id="sn6-id" placeholder="its id: s1" autocapitalize="off" spellcheck="false">
-            <select id="sn6-ds" aria-label="the validation dataset">${opt(vals)}</select><select id="sn6-base" aria-label="the system it starts from">${opt(sysIds)}</select>
+            <select id="sn6-ds" aria-label="the validation dataset">${opt(vals)}</select><select id="sn6-base" aria-label="the system it starts from">${opt(sysIds, blSys)}</select>
             <select id="sn6-sampler" aria-label="how it chooses"><option value="grid">grid: every value in turn</option><option value="agent">agent: proposals asked and told</option></select>
             <button class="btn" type="button" id="sn6-fill">Write the spec from these</button></div>
           <textarea id="sn6-spec" rows="10" style="width:100%" class="mono" aria-label="the spec" spellcheck="false">${esc(draft)}</textarea>
@@ -2363,7 +2435,7 @@
       ${part(1, "What it searches", `<div class="stats"><div><b>${esc(one.baseline || "")}</b><span>from</span></div><div><b>${esc(sp.sampler || "")}</b><span>how it chooses</span></div><div><b>${(one.trials || []).length}</b><span>trials</span></div><div><b>${esc(one.status || "")}</b><span>its state</span></div></div>
         <p class="muted">On <span class="mono">${esc(sp.dataset || "")}</span>, decided on ${esc(sp.measure || "")}; round ${esc(one.round || "")}; spent $${Number(one.spent_usd || 0).toFixed(4)}.${one.end ? ` Ended: ${esc(one.end)}.` : ""}</p>
         <details><summary>Its spec</summary><pre class="reply">${esc(JSON.stringify(sp, null, 2))}</pre></details>`)}
-      ${part(2, "Its trials", `${(one.trials || []).length ? chartBox("study-progress", { goal, study: sid }) + chartBox("gain-cost", { goal, study: sid }) : ""}${(one.rows || []).length ? tbl(["trial", "what changed", "outcome", "why", "vs the best", "cost"], one.rows.map((x) => `<tr><td class="mono">t${x.k}</td><td>${esc(x.change || "")}${x.hypothesis && x.hypothesis !== x.change ? `<div class="muted">${esc(x.hypothesis)}</div>` : ""}</td><td><span class="verdict ${x.outcome === "kept" ? "v-lead" : "v-ns"}">${esc(x.outcome || "")}</span></td><td>${esc(x.reason || "")}</td><td class="num">${typeof x.delta === "number" ? (x.delta >= 0 ? "+" : "") + x.delta.toFixed(4) : "—"}</td><td class="num">$${Number(x.cost_usd || 0).toFixed(4)}</td></tr>`)) : '<p class="muted">No trial yet.</p>'}
+      ${part(2, "Its trials", `${(one.trials || []).length ? chartBox("study-progress", { goal, study: sid }) + chartBox("gain-cost", { goal, study: sid }) : ""}${(one.rows || []).length ? tbl(["trial", "what changed", "outcome", "why", "vs the best", "cost"], one.rows.map((x) => `<tr><td class="mono">t${x.k}</td><td>${esc(x.change || "")}${x.hypothesis && x.hypothesis !== x.change ? `<div class="muted">${esc(x.change && x.hypothesis.startsWith(x.change) ? x.hypothesis.slice(x.change.length).trim() : x.hypothesis)}</div>` : ""}</td><td><span class="verdict ${x.outcome === "kept" ? "v-lead" : "v-ns"}">${esc(x.outcome || "")}</span></td><td>${esc(x.reason || "")}</td><td class="num">${typeof x.delta === "number" ? (x.delta >= 0 ? "+" : "") + x.delta.toFixed(4) : "—"}</td><td class="num">$${Number(x.cost_usd || 0).toFixed(4)}</td></tr>`)) : '<p class="muted">No trial yet.</p>'}
         <p class="note">Best so far: <span class="mono">${esc(one.best || one.baseline || "")}</span>. Research on validation items: no evidence until it is confirmed.</p>
         ${open ? `<div class="actions" style="margin-top:0"><button class="btn" type="button" id="so-stop">Stop it</button>${agent ? "" : '<label>at most (USD) <input type="number" id="so-cap" value="1" min="0.01" step="0.01" style="width:6rem"></label><button class="btn" type="button" id="so-resume">Continue it</button>'}</div><div id="so-out" data-out></div>` : ""}`)}
       ${agent && open ? part(3, "Propose the next trial", `<p class="muted">The agent sampler: ask for the study's state (its weakest items, what was tried), then tell a proposal, which runs as the next trial.</p>
@@ -2374,7 +2446,7 @@
         <p class="muted">The rule is given before any test item is read; each look at a test set is tested at a stricter level.</p>
         <div data-form="confirm"><div class="inline"><select id="cf-test" aria-label="the test set">${opt(tests)}</select>
           <select id="cf-rule" aria-label="the rule"><option value="superiority">better than where it started</option><option value="noninferiority">no worse, within a margin</option></select>
-          <input type="number" id="cf-margin" placeholder="the margin (no worse)" step="any" style="width:10rem"><input type="number" id="cf-trial" placeholder="trial (default: the best)" min="1" style="width:10rem">
+          <input type="number" id="cf-margin" placeholder="the margin (no worse)" aria-label="the margin (no worse)" step="any" style="width:12rem"><input type="number" id="cf-trial" placeholder="trial (default: the best)" aria-label="the trial (default: the best)" min="1" style="width:12rem">
           <label>at most (USD) <input type="number" id="cf-cap" value="1" min="0.01" step="0.01" style="width:6rem"></label></div>
           <div class="actions" style="margin-top:0"><button class="btn" type="button" id="cf-dry">What it would read (nothing runs)</button><button class="btn primary" type="button" id="cf-go" data-send>Confirm it</button>${mark}</div><div id="cf-out" data-out></div></div>`, verdicts.length ? `<span class="status ok">${verdicts.length} confirmed</span>` : "")}
       ${cmd}<div class="actions"><a class="btn" href="#study/${enc(goal)}">Every study</a><a class="btn" href="#goal/${enc(goal)}">Back to the goal</a></div></div>`;
@@ -2493,7 +2565,7 @@
       <section class="part"><div class="parthead"><span class="letter">1</span><h2>Its versions</h2></div><div class="body">
         ${vs.map((x) => `<details class="version" ${x === last ? "open" : ""}><summary><b>v${x.n}</b> <span class="mono">${esc(x.id)}</span> · ${esc(String(x.created_at || "").slice(0, 16).replace("T", " "))} · by ${esc(actorSaid(x.actor))}${x.parent ? ` · from <span class="mono">${esc(x.parent)}</span>` : ""} · ${x.runs.length} run(s)</summary>
           <p class="muted">${esc(x.note || "")}</p><pre class="reply">${esc(x.text || "")}</pre>
-          ${x.runs.length ? tbl(["run", "measure", "score"], x.runs.map((r) => `<tr><td class="mono">${esc(r.run_id)}</td><td>${esc(r.metric || "")}</td><td class="num">${typeof r.score === "number" ? r.score.toFixed(4) : esc(r.score ?? "")}</td></tr>`)) : '<p class="muted">No run sent it yet.</p>'}</details>`).join("")}</div></section>
+          ${x.runs.length ? tbl(["run", "measure", "score"], x.runs.map((r) => `<tr><td class="mono">${idw(r.run_id)}</td><td>${esc(r.metric || "")}</td><td class="num">${typeof r.score === "number" ? r.score.toFixed(4) : esc(r.score ?? "")}</td></tr>`)) : '<p class="muted">No run sent it yet.</p>'}</details>`).join("")}</div></section>
       <section class="part"><div class="parthead"><span class="letter">2</span><h2>What changed between two</h2></div><div class="body">
         ${ids.length > 1 ? `<div class="inline"><select id="pd-a" aria-label="from">${opt((df || {}).a || ids[ids.length - 2])}</select><span class="muted">to</span><select id="pd-b" aria-label="to">${opt((df || {}).b || ids[ids.length - 1])}</select><button class="btn" type="button" id="pd-go">Compare</button></div>
           <div id="pd-out" data-out>${df && df.diff ? `<pre class="reply diff">${esc(df.diff)}</pre>` : ""}</div>` : '<p class="muted">One version: nothing to compare yet.</p>'}</div></section>
@@ -2777,8 +2849,16 @@
   // A chart wider than a phone scrolls in its own box (RFC-034); an edge shadow alone read as a cut-off drawing (scenario 080b),
   // so a line under it says to slide it, shown only while it is wider than its box.
   let hintQueued = false;
+  // A text box grows to its text: two rows cut a longer sentence at its third line with nothing to say there was more.
+  const grow = (ta) => {
+    if (!ta.offsetParent || ta.classList.contains("mono")) return;
+    ta.style.height = "auto";
+    if (ta.scrollHeight > ta.clientHeight + 1) ta.style.height = `${ta.scrollHeight + 2}px`;
+  };
+  document.addEventListener("input", (e) => { if (e.target.matches && e.target.matches("textarea")) grow(e.target); });
   function markWideCharts() {
     hintQueued = false;
+    document.querySelectorAll("main textarea").forEach(grow);
     for (const box of document.querySelectorAll(".chart.evidence .scroll-x")) {
       let hint = box.nextElementSibling;
       if (!hint || !hint.matches(".scroll-hint")) {

@@ -477,6 +477,20 @@ try:
         r.returncode != 0 and "needs who made it" in out(r),
         out(r),
     )
+    r = subprocess.run(
+        [sys.executable, str(HERE / "cli.py"), "round-retire", "--goal", "tickets_summary", "--round", "r2",
+         "--arm", "tickets_lead1_v1", "--reason", "one sentence drops what the ticket asks"],
+        cwd=proj,
+        env={k: v for k, v in env.items() if k != "EVH_ACTOR"},
+        capture_output=True,
+        text=True,
+        stdin=subprocess.DEVNULL,
+    )  # fmt: skip
+    check(
+        "round-retire is a decision (RFC-027): it needs who made it, as round-close and round-carry do",
+        r.returncode != 0 and "round-retire is a decision and needs who made it" in out(r),
+        out(r),
+    )
     r = evh("round-open", "--goal", "tickets_summary", "--dataset", "tickets_v1")
     check("only one round of a goal is open at a time", r.returncode != 0 and "still open" in out(r), out(r))
 
@@ -1004,6 +1018,21 @@ try:
         and off_views[2].returncode == 0
         and not any("nothing caught" in out(v) for v in off_views),
         [out(v)[-400:] for v in off_views],
+    )
+    # Arms that DO record the measure, every one held back from leading (fewer items than the goal's min_items): the
+    # evidence says that and why, not "no arm records it yet: run them" (review 080d #2: that line sat above charts that
+    # drew those very arms).
+    held = evh("goal-set", "tickets_summary", "--set", "success_criteria.min_items=1000")
+    held_ev = evh("round-evidence", "tickets_summary", "r1", "--json")
+    held_notes = (json.loads(held_ev.stdout.splitlines()[-1]).get("result") or {}).get("notes") or []
+    check(
+        "round-evidence, arms that record the measure but are all held back by min_items: says which and why, never "
+        "that no arm records it",
+        held.returncode == 0
+        and held_ev.returncode == 0
+        and any("held back" in n and "min_items 1000" in n for n in held_notes)
+        and not any("records" in n and "yet" in n for n in held_notes),
+        held_notes,
     )
 finally:
     shutil.rmtree(proj, ignore_errors=True)

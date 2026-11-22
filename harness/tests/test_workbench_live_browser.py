@@ -39,6 +39,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _signin
 import _serve  # noqa: E402
 import _signin  # noqa: E402
 import _slow  # noqa: E402
+import _wbreview  # noqa: E402
 import yaml  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 
@@ -507,7 +508,7 @@ try:
             )
             # the models: bring one in, add where it runs, onboard it as a job, accept what it raises
             page.goto(f"http://127.0.0.1:{port}/workbench/#models")
-            page.wait_for_selector("text=No models yet.", timeout=20000)
+            page.wait_for_selector("text=No model records yet.", timeout=20000)
             page.click("text=Bring in a model")
             page.wait_for_selector("h1:has-text('Bring in a model')", timeout=20000)
             page.fill("#nm-id", "Bad Id")
@@ -1004,6 +1005,38 @@ try:
                 and page.locator("[data-run='elsewhere_v1']").count() == 0,
                 [x.get_attribute("data-run") for x in page.locator("[data-run]").all()],
             )
+            before_run = page.evaluate(
+                "() => { const n = [...document.querySelectorAll('section.part p')].find((p) => /Commit them/.test(p.textContent)),"
+                " b = document.getElementById('rn-go'); return !!n && !!b && !!(n.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING); }"
+            )
+            check(
+                "scenario 080d F3: the note to commit what the screen wrote comes before the Run button, where it is read "
+                "before a paid run (UXS-005 step 5, Run arms in it)",
+                before_run,
+                run_part[-300:],
+            )
+
+            def add_trial(b: dict) -> None:
+                b["result"]["systems"].append(
+                    {"system": "trial_t1", "adapter": None, "model": None, "deployment": None,
+                     "file": "data/studies/tickets_summary/s1/trial_t1.yaml"}
+                )  # fmt: skip
+
+            _wbreview.patch(page, "**/api/v1/systems", add_trial)
+            page.reload()
+            page.wait_for_selector("[data-run='nosmoke_v1']", timeout=20000)
+            model_label = page.locator("label.choice:has([data-run='fake-1b_here'])").inner_text()
+            check(
+                "scenario 080d N8: Run arms in it does not offer a study's trial systems (they belong to their study), and a "
+                "system's model is named as one, not left a stray line",
+                page.locator("[data-run='trial_t1']").count() == 0
+                and page.locator("[data-run='nosmoke_v1']").count() == 1
+                and "model " in model_label,
+                (model_label, [x.get_attribute("data-run") for x in page.locator("[data-run]").all()]),
+            )
+            page.unroute_all()
+            page.reload()
+            page.wait_for_selector("[data-run='nosmoke_v1']", timeout=20000)
             page.uncheck("[data-run='fake-1b_here']")
             page.check("[data-run='nosmoke_v1']")
             page.click("#rn-est")
@@ -1538,7 +1571,7 @@ try:
                 [v["id"] for v in vers][:2] == [pv1, pv2]
                 and "Summarise the ticket in one line a support engineer" in text
                 and len(vers[0]["runs"]) >= 1
-                and vers[0]["runs"][0]["run_id"] in page.content(),
+                and vers[0]["runs"][0]["run_id"] in (page.locator("main").text_content() or ""),
                 ([(v["id"], len(v["runs"])) for v in vers], text[:600]),
             )
             page.select_option("#pd-a", pv1)
@@ -2355,6 +2388,7 @@ try:
                 len(rounds) >= 2 and forms == {rounds[0]: 0, rounds[-1]: 1},
                 (rounds, forms),
             )
+            _wbreview.run(page, phone, port, check, evh, proj)
             # ── the step rail, the help layer and the goal screen's own lines ────────────────────────────────────
             base_url = f"http://127.0.0.1:{port}/workbench/"
             RAIL_JS = (

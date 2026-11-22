@@ -391,7 +391,8 @@ try:
         "comparison-show: when the arms' primary has no score per item as read, it says so and names the metric used",
         "primary metric, late, has no score per item" in note
         and "compared on words instead" in note
-        and "not scored for late_a_v1, late_b_v1 in any reading" in note,
+        and "not scored for late_a_v1, late_b_v1 in any reading" in note
+        and "no reference scores it (evh rescore" in note,
         note,
     )
     r = evh("rescore", "--dataset-id", "tickets_v1", "--labels", "g", "--match", "late_a", "--by", "t")

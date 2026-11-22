@@ -161,6 +161,12 @@ others to each other with another baseline." `evh comparison-show` prints the sa
 
 ## Average only
 
+With one arm open there is nothing to test it against: the verdicts table is not drawn, and the page says in words that
+there is no verdict to give (with the baseline's mean beneath). In "Difference from the baseline" a row not
+significant after Holm ends with no mark; ✓ better and ✗ worse are the only ones. A metric that carries an unvalidated judge
+(`judge_score_unvalidated`) is named "judge_score (unvalidated judge)"; a condition that is a model's name reads "no model"
+for an arm that calls none.
+
 Arms that recorded only a run-level average: a table "Average only · n: no per-item scores, so
 no test", with each recorded average and its difference from the baseline's mean. Never tested.
 
@@ -208,8 +214,17 @@ every catalog table, and only the rows shown are drawn: "show 10 more", and "sho
   between near-identical outputs;
 - columns: the reference (when the metric names one, else the baseline's), then each arm's
   output with its word count, the baseline's marked. Above each output, the run it comes from;
-  for an arm with repeats, "the latest of N repeats; the score is the mean of all N". For a
-  judged arm, the same line gives each judge's score for that item.
+  for an arm with repeats, "the latest of N repeats; the score is the mean of all N", and the score line above the
+  text says it too ("the mean of N repeats; the text below is one of them"). For a
+  judged arm, the same line gives each judge's score for that item. A text of one word reads "1 word".
+- **What the judges said**, under the labels (the local inspector only): one row per judge, per arm the judging set
+  graded for this item: scorer, judge, arm, **position**, **said** (its header names the scorer's scale, "said (1–5)")
+  and **why**. A judging set grades every arm it holds, so it has rows for arms whose output is not on the page (a
+  single-arm view shows one output and the rows of all of them): those rows say "output not shown" beside the arm's
+  name, and the note above the table says they are the judges' grades of those arms. The judges are blind
+  ([RFC-005](../rfc/RFC-005-judge-scorers.md) pass step 2: "Arm identities are hidden and their order shuffled per
+  item"): a reason says "the first answer" or "answer 3", never an arm's name, and **position** is the arm's place in
+  that judge's list, which maps the reason to the arm; the note above the table says so.
 - In a catalog built by `evh catalog`, arm names (verdicts, the baseline line, average-only and
   breakdown rows) and the verdicts' metric link to their pages.
 - **Every label the item has**, each with its source chip, set name, who made it and note, above the
@@ -231,9 +246,12 @@ browser, the same model.
   in "new against" has never had), **unlabelled** (no label in any set); then per arm its output (the adapter's
   `decision(output)`, else the output, shortened; the item view has it whole; the first is headed "first:
   production") and a column per score it has on the item (its run's metrics, and a judging pass's where one
-  covered the run); a column per label set with its source chip and per reference set; the **winner** columns
+  covered the run); a column per label set with its source chip (named by the set, its dataset only when two sets share
+  a name; where the adapter has a `decision(output)`, a label that is a whole output shows its decision, as the arm's
+  column does) and per reference set; the **winner** columns
   (on the metric the sheet is read on, and per pick or pairwise judge); **picked** (for which datasets); and the
-  item's **fields**, last. The best score per row on the chosen metric is marked.
+  item's **fields**, last. The best score per row on the chosen metric is marked. A signals, picked or fields column
+  that is empty on every row is not drawn.
 - **The select box and the item column stay in place** as the arms scroll across.
 - **The footer**, under each arm's columns: its mean on the chosen metric (and which way is better), its win
   rate per winner column (the share of the rows it was scored on that it wins, a shared win split, "—" for an arm scored on none; on a pick

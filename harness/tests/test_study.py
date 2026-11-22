@@ -297,6 +297,34 @@ try:
 
     # ── the confirmation ──────────────────────────────────────────────────────────────────────────────────────────
     d = evh("study-confirm", "--study", "g/s1", "--test", "tk_test", "--rule", "superiority", "--dry-run")
+    nobody = {k: v for k, v in env.items() if k != "EVH_ACTOR"}
+    dn = _cli.run(
+        proj,
+        nobody,
+        "study-confirm",
+        "--study",
+        "g/s1",
+        "--test",
+        "tk_test",
+        "--rule",
+        "superiority",
+        "--dry-run",
+    )
+    check(
+        "study-confirm --dry-run decides nothing, so it names nobody; the look itself (no --dry-run) still needs who",
+        dn.returncode == 0
+        and "Nothing" not in dn.stderr[-200:]
+        and "needs who made it" not in dn.stderr + dn.stdout,
+        (dn.returncode, dn.stderr[-300:]),
+    )
+    rn = _cli.run(
+        proj, nobody, "study-confirm", "--study", "g/s1", "--test", "tk_test", "--rule", "superiority"
+    )
+    check(
+        "study-confirm without --dry-run is a decision: it needs who made it",
+        rn.returncode != 0 and "study-confirm is a decision and needs who made it" in rn.stderr,
+        (rn.returncode, rn.stderr[-300:]),
+    )
     c = evh("study-confirm", "--study", "g/s1", "--test", "tk_test", "--rule", "superiority", "--json")
     conf = values(c).get("confirm") or {}
     looks = (result_of(evh("looks", "--dataset", "tk_test", "--json")).get("sets") or [{}])[0]

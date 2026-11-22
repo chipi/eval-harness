@@ -271,7 +271,7 @@ try:
     ents = (out / "d" / "ents.html").read_text() if (out / "d" / "ents.html").is_file() else ""
     check(
         "page: without a profile, it says how to write one",
-        "No profile yet" in ents and "dataset-profile" in ents,
+        "A profile is optional" in ents and "dataset-profile" in ents,
     )
 
     # Every page names the read command that answers it; with --mcp, the same as a tool call.

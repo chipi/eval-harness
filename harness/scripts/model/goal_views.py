@@ -345,6 +345,18 @@ def retired_arms(r: dict) -> set:
     return set(r.get("retired_arms") or [])
 
 
+def ratio_text(r: float) -> str:
+    """A ratio for a person: whole from 10 up ("209×"), two significant digits to 0.01 ("2.5×", "0.35×"), "<0.01×"
+    under a hundredth (a rule-based arm's speed against a model's), "0×" for none; never scientific notation."""
+    if r == 0:
+        return "0×"
+    if r >= 10:
+        return f"{r:,.0f}×"
+    if r < 0.01:
+        return "<0.01×"
+    return f"{r:.2g}×"
+
+
 def axis_ratios(dec: dict, arm: str, base: str) -> list[str]:
     """The arm against the baseline on each axis beside quality, as ratios ("cost 0.1×"). An axis
     either has no number for is left out; two zeros read "same"."""
@@ -360,7 +372,7 @@ def axis_ratios(dec: dict, arm: str, base: str) -> list[str]:
             out.append(f"{ax['name']}{stat} same" if a == 0 else f"{ax['name']}{stat} from 0")
         else:
             r = a / b
-            out.append(f"{ax['name']}{stat} {r:,.0f}×" if r >= 10 else f"{ax['name']}{stat} {r:.2g}×")
+            out.append(f"{ax['name']}{stat} {ratio_text(r)}")
     return out
 
 

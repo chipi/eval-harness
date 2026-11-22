@@ -248,12 +248,14 @@ try:
     )
     lst = sv.list_studies("g")
     check(
-        "study-list's rows: both studies, the one nothing has run as not started",
+        "study-list's rows: both studies, the one nothing has run as not started; a confirmation (its named line and its "
+        "verdict line) counts once, as the study's own page counts it (review 080d #10)",
         [(x["study"], x["status"], x["trials"], x["kept"]) for x in lst]
         == [("g/s1", "ended", 2, 1), ("g/s2", "not started", 0, 0)]
         and lst[0]["dataset"] == "tk_val"
         and lst[0]["measure"] == "overlap_f1"
-        and lst[0]["confirms"] == 2,
+        and lst[0]["confirms"] == 1
+        and lst[1]["confirms"] == 0,
         lst,
     )
     show = sv.show_study("g", "s1")
