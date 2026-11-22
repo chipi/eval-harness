@@ -87,6 +87,17 @@ jobs:
         run: |
           ver="${GITHUB_REF_NAME#v}"
           awk -v v="## $ver" '$0 == v || index($0, v " ")==1 {on=1; next} on && /^## / {exit} on' harness/CHANGELOG.md > notes.md
+          # GitHub caps a release body at 125000 characters: past a safe margin, keep the
+          # opening, a link to the full section and its headings
+          if [ "$(LC_ALL=C.UTF-8 wc -m < notes.md)" -gt 120000 ]; then
+            mv notes.md section.md
+            {
+              awk '/^### / {exit} {print}' section.md
+              echo "The full release notes are in [harness/CHANGELOG.md](https://github.com/chipi/eval-harness/blob/${GITHUB_REF_NAME}/harness/CHANGELOG.md)."
+              echo ""
+              awk '/^### / {sub(/^### /, "- "); print}' section.md
+            } > notes.md
+          fi
           {
             echo ""
             echo "### Install"

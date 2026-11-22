@@ -38,7 +38,9 @@ Pin a release tag:
    Open it with a short paragraph a reader can take in at once: what the release lets you do,
    and whether upgrading changes any result. The section is the release notes in three places:
    the GitHub Release (the workflow copies it), the docs site and the harness site's release
-   notes page. Use absolute links: the GitHub Release cannot resolve relative ones.
+   notes page. A section longer than GitHub's release-body limit is cut, in the GitHub Release
+   only, to its opening, its headings and a link to the full section. Use absolute links: the
+   GitHub Release cannot resolve relative ones.
 3. **Move every install pin to the new tag** (`@vX.Y.Z#subdirectory=harness`): the READMEs,
    the getting-started guide, the tutorials and these docs. `make -C harness site-check` fails on a
    pin that names an older release than the changelog's newest dated section, so dating the
