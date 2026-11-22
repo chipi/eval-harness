@@ -903,6 +903,10 @@ def test_example_scorer_suites_pass() -> None:
             "the site's release notes: nested bullets, bold holding code and italics, code never emphasis",
         ),
         (
+            "test_site_build_atomic.py",
+            "the site build is swapped in whole: a failure part-way leaves site/public as it was; no store is refused",
+        ),
+        (
             "test_parallel_projects.py",
             "two projects at once: a port each, the same every time; each catalog names its project; EVAL_HOME noted",
         ),

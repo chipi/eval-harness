@@ -47,6 +47,7 @@ nav:
       - Integration: harness/INTEGRATION.md
       - Runbook: harness/RUNBOOK.md
       - Release notes: harness/CHANGELOG.md
+      - "Release 0.8.0, in full": releases/0.8.0.md
       - Releasing: harness/RELEASING.md
       - Newcomer scenario: harness/SCENARIO.md
       - Upgrading: harness/UPGRADING.md

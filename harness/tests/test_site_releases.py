@@ -70,4 +70,44 @@ check(
     next((p[:300] for p in pages if "**" in p or ". - " in p), ""),
 )
 
+
+# A release's section is short and links to its full notes (docs/releases/<version>.md): the size is checked, the link
+# resolves both ways. Releases before 0.8.0 are exempt (their sections are long, and stay).
+import tempfile  # noqa: E402
+
+LINK = "https://github.com/chipi/eval-harness/blob/main/docs/releases/9.9.0.md"
+short = f"# Changelog\n\n## 9.9.0 — 2030-01-01\n\nOne paragraph.\n\nFull notes: [9.9.0]({LINK}).\n"
+long_ = "# Changelog\n\n## 9.9.0 — 2030-01-01\n\n" + "A very long line of notes. " * 400 + "\n"
+legacy = "# Changelog\n\n## 0.7.0 — 2026-11-04\n\n" + "A very long line of notes. " * 400 + "\n"
+with tempfile.TemporaryDirectory() as d:
+    notes = Path(d)
+    check(
+        "a section over the limit is a problem",
+        bool(R.check_sections(long_, notes)),
+        str(R.check_sections(long_, notes)),
+    )
+    check(
+        "a long section before 0.8.0 is not",
+        R.check_sections(legacy, notes) == [],
+        str(R.check_sections(legacy, notes)),
+    )
+    check("a link to a notes page that does not exist is a problem", bool(R.check_sections(short, notes)))
+    (notes / "9.9.0.md").write_text("# 9.9.0\n", encoding="utf-8")
+    check(
+        "a short section linking to an existing notes page is fine",
+        R.check_sections(short, notes) == [],
+        str(R.check_sections(short, notes)),
+    )
+    bare = short.replace(f"Full notes: [9.9.0]({LINK}).\n", "")
+    check(
+        "a notes page the section does not link to is a problem",
+        bool(R.check_sections(bare, notes)),
+        str(R.check_sections(bare, notes)),
+    )
+check(
+    "the real changelog: every section from 0.8.0 is short and its notes link resolves",
+    R.check_sections((ROOT / "harness" / "CHANGELOG.md").read_text(encoding="utf-8")) == [],
+    str(R.check_sections((ROOT / "harness" / "CHANGELOG.md").read_text(encoding="utf-8"))),
+)
+
 sys.exit(summary())
