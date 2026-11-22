@@ -1130,9 +1130,10 @@ def test_json_runs_list() -> int:
 
 
 def rows_of_text(text: str) -> list[str]:
-    """The run rows of runs-list's text: after the header, before the blank line and the footnote."""
+    """The run rows of runs-list's text: after the header, before the blank line and the footnote (none when no run is starred)."""
     lines = text.splitlines()
-    return [ln for ln in lines[1 : lines.index("")] if ln.strip()]
+    end = lines.index("") if "" in lines else len(lines)
+    return [ln for ln in lines[1:end] if ln.strip()]
 
 
 def main() -> int:

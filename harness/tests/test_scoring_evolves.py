@@ -260,7 +260,7 @@ try:
         if cat.returncode == 0
         else ""
     )
-    m = re.search(r'<span data-v="(\d+)">\d+ arms</span>', page)
+    m = re.search(r'<span data-v="(\d+)">\d+ arms? in play</span>', page)
     check(
         "the catalog counts a re-scored round's arms once each, as evh round-list does (a re-score is the same arm)",
         m is not None and m.group(1) == "2",
