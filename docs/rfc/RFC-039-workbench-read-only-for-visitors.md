@@ -140,7 +140,7 @@ When the page is served by a public server (`GET /api/v1/session` answers 401, o
 - no control that acts: open, run, estimate, close, retire, carry in, promote, save, delete, and the screens that exist
   only to act (Jobs, Settings, bringing in a model, and the editing forms);
 - a line on every screen: "This is a read-only view of a published project." with how to run your own (`pip install`,
-  `evh init`, `evh workbench`, linked to the install page);
+  `evh init`, `evh catalog-serve`, linked to the install page);
 - each screen's command still shown as text, as UXS-005 requires everywhere, so a reader can see what the action would be.
 
 The page hides a control; it does not decide what is allowed. A request the page would not send is refused by the server.

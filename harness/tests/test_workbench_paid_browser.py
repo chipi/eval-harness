@@ -255,13 +255,19 @@ try:
                 figures = (
                     page.locator("#rn-figures").inner_text() if page.locator("#rn-figures").count() else ""
                 )
-                reach["figures"] = figures
                 page.set_viewport_size({"width": 1280, "height": 900})
                 page.fill("#ev-by", "tester")
                 page.click("#rn-go")
                 page.wait_for_selector(f"#arms li:has-text('{system}')", timeout=180000)
                 jd, job = last_job("sweep")
-                return {"shown": shown, "reach": reach, "job_dir": jd, "job": job, "cap": cap}
+                return {
+                    "shown": shown,
+                    "reach": reach,
+                    "figures": figures,
+                    "job_dir": jd,
+                    "job": job,
+                    "cap": cap,
+                }
 
             # run 1: its system file is written after the commit and left uncommitted
             system_yaml("paid_a")
@@ -276,7 +282,7 @@ try:
                 (a["shown"], cli.stdout[-600:], cli.stderr[-300:]),
             )
 
-            figures = a["reach"].pop("figures")
+            figures = a["figures"]
             for w_, got in a["reach"].items():
                 evidence("1b", f"{w_}px: {got}")
                 check(

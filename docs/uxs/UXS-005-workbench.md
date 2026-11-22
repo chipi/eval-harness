@@ -595,7 +595,7 @@ owner, 2026-11-23). The same screens, read-only; the server refuses every write,
 
 ```text
  evh workbench                    Home   Models   Prompts   Words   Catalog ↗   [x] hints   ◐
- This is a read-only view of a published project. To run your own: pip install ..., evh init, evh workbench.
+ This is a read-only view of a published project. To run your own: pip install ..., evh init, evh catalog-serve.
 ```
 
 - **A banner on every screen** says it is a read-only view, and how to run your own (the install page and the three
