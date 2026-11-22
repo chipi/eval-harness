@@ -319,8 +319,9 @@ decision kept with its reason. This is where people spend most of their time (W1
   items** (`arm-smoke`, with its command printed) runs the smoke. A smoke is kept on a model's deployment (RFC-032), so a
   system that names no model record never has one recorded: the dry run and the screen say that ("names no model record,
   so an arm-smoke of it is not kept") and point at the check's own "all N items ≈" line to set the cap from, and the check
-  says "not kept" under its result. A note under the cap says the screen wrote files into the project and to commit them
-  before a paid run (a run on uncommitted files is recorded dirty).
+  says "not kept" under its result. A note above the systems to tick, the cap and **Run them** says the screen wrote files
+  into the project and to commit them before a paid run (a run on uncommitted files is recorded dirty). It shows
+  whenever there is an arm to run, whatever the state of the tree.
 - **Close the round:** the conclusion, and a checkbox to promote the leader's run to the goal's baseline with the conclusion
   as its reason; the browser asks to confirm. This checkbox is the only way to make a baseline on this screen. A conclusion
   shorter than three words is refused by `round-close`, a reason by `round-retire`.
