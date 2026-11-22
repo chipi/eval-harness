@@ -29,11 +29,21 @@ if [ -f "$DIR/$NAME" ] && cmp -s "$SRC" "$DIR/$NAME"; then changed=0; else chang
 cp "$DIR"/*.alloy "$CAND"/
 cp "$SRC" "$CAND/$NAME"
 chmod 0755 "$CAND"; chmod 0644 "$CAND"/*.alloy
-if docker exec alloy alloy validate "/rootfs$CAND" >/dev/null 2>&1; then
+# The set must load in the Alloy that is RUNNING, so validate at its --stability.level; the
+# validate default (generally-available) refuses other tenants' public-preview components.
+running_stability() {
+  docker inspect -f '{{range .Args}}{{println .}}{{end}}{{range .Config.Entrypoint}}{{println .}}{{end}}{{range .Config.Cmd}}{{println .}}{{end}}' alloy 2>/dev/null \
+    | awk 'prev == "--stability.level" { v = $0 } /^--stability\.level=/ { v = substr($0, 19) } { prev = $0 } END { if (v != "") print v }' || true
+}
+level="$(running_stability)"
+vflags=()
+if [ -n "$level" ]; then vflags=(--stability.level="$level"); echo "  validating at the running alloy's stability level: $level"
+else echo "  validating at the default stability level"; fi
+if docker exec alloy alloy validate ${vflags[@]+"${vflags[@]}"} "/rootfs$CAND" >/dev/null 2>&1; then
   echo "  alloy set valid with $NAME ($(find "$CAND" -name '*.alloy' | wc -l) files)"
 else
   echo "::error::alloy set INVALID with $NAME; nothing installed, no HUP"
-  docker exec alloy alloy validate "/rootfs$CAND" 2>&1 | head -30 >&2 || true
+  docker exec alloy alloy validate ${vflags[@]+"${vflags[@]}"} "/rootfs$CAND" 2>&1 | head -30 >&2 || true
   exit 1
 fi
 
