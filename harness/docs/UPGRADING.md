@@ -5,14 +5,15 @@ change the pin, then check what it says can move. **If you copied `harness/` int
 repository** before October 2026, read the rest of this page first: your copy has
 correctness bugs, not just missing features.
 
-## From 0.7.2 to 0.8.0 (unreleased)
+## From 0.7.2 to 0.8.0
 
-- **Before the release**, a pin on a commit of the 0.8.0 branch installs `0.8.0.dev0`, the version every commit of it
-  carries until the release. Moving such a pin from one commit to another does nothing with a plain `pip install`: both
-  report the same version, so pip says "Requirement already satisfied" and keeps the old commit. Use
+- **A pin on a commit of the 0.8.0 branch, from before the release, installed `0.8.0.dev0`**, the version every commit of
+  it carried. Move it to `@v0.8.0`: that reports `0.8.0`, so a plain `pip install` replaces it. The general rule holds for
+  any two commits that report one version: moving such a pin from one commit to another does nothing with a plain
+  `pip install`, because pip says "Requirement already satisfied" and keeps the old commit. Use
   `pip install --force-reinstall --no-deps "evaluation-harness @ git+https://github.com/chipi/eval-harness@<new commit>#subdirectory=harness"`
-  (`--no-deps` keeps pip from reinstalling every dependency). The same holds for any two commits of one version. To see
-  which commit is installed, read the install's record of its source:
+  (`--no-deps` keeps pip from reinstalling every dependency). To see which commit is installed, read the install's record
+  of its source:
   `python -c "import importlib.metadata as m; print(m.distribution('evaluation-harness').read_text('direct_url.json'))"`
   prints the `url` and, for a git install, `vcs_info.commit_id`. `evh --version` shows only the version, which does
   not tell two commits of it apart.

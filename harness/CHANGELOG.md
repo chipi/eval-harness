@@ -9,7 +9,9 @@ The version lives in `scripts/_version.py`; a release is the git tag `v<version>
 release workflow refuses a tag that disagrees with that file or has no section here. A change
 that can move a result is never a patch release without saying so under **Changed**.
 
-## 0.8.0 — unreleased
+## 0.8.0 — 2026-11-22
+
+This release adds the Workbench, a local app where a round is set up and run; a judge measured against people's ratings, with `evh judge-validate`; and a project's data in one SQLite file (`evh init --store files|sqlite`); an adapter can say "call each item once" (the Harbor example); and every read command is now an operation shared by the CLI, the API and MCP. Upgrading changes results in two places, both under **Changed**: a goal's recommendation can move, because a contender is now shown no worse than the leader by a non-inferiority test ([ADR-0026](https://github.com/chipi/eval-harness/blob/main/docs/adr/ADR-0026-contenders-by-non-inferiority.md)), and from 10,000 items a paired test's p is its normal limit ([ADR-0028](https://github.com/chipi/eval-harness/blob/main/docs/adr/ADR-0028-large-samples-use-the-normal-limit.md)). Stored runs are not re-scored: `evh migrate` brings a project's formats forward, and moves a fingerprint only for a run still at version 4 (as `fingerprint-migrate` did from 0.6.0). The legacy read commands are gone; see [UPGRADING](https://github.com/chipi/eval-harness/blob/main/harness/docs/UPGRADING.md).
 
 ### Added
 
@@ -900,7 +902,7 @@ that can move a result is never a patch release without saying so under **Change
   row, listed in metrics.json's `failed_items`, and called again by `--resume`; the run goes on. A 429 or a timeout
   that outlasts the retries now stops the run with `75` like an unreachable server (it used to end in a traceback),
   and more than 5 failures that are also over 20% of the items called stop it with `ERROR (failed)`.
-- **A contender is shown no worse than the leader** ([ADR-0026](../docs/adr/ADR-0026-contenders-by-non-inferiority.md)).
+- **A contender is shown no worse than the leader** ([ADR-0026](https://github.com/chipi/eval-harness/blob/main/docs/adr/ADR-0026-contenders-by-non-inferiority.md)).
   It had to be "not significantly different", which more arms are the fewer items there are, and `frugal` then
   recommended the cheapest. Now a one-sided non-inferiority test against the leader decides, Holm across the
   candidates: Tango's score test for 0/1 scores at any size, the bootstrap-t from 100 items or clusters for other
@@ -909,14 +911,14 @@ that can move a result is never a patch release without saying so under **Change
   wins, and `validate` notes each goal on a default. **Recommendations move** on goals whose contenders the old
   rule over- or under-counted: on this repository's 7 goals, scifact recommends deepseek_s (was the free e5_base, not
   shown within 10% once 18 arms are corrected for), ag_news bert_base_ta and triage its leader (both were undecided).
-- **Each exit code has one meaning** ([RUNBOOK, Exit codes](docs/RUNBOOK.md#exit-codes)). The cost cap that stops
+- **Each exit code has one meaning** ([RUNBOOK, Exit codes](https://github.com/chipi/eval-harness/blob/main/harness/docs/RUNBOOK.md#exit-codes)). The cost cap that stops
   `evh run` or `judge-score` early exits `4` (was `2`, which is also a usage error); a run that measured nothing
   exits `7` (was `1`, which is also a refusal); a server that could not be reached exits `75` (was `1`); a check
   that ran and found problems exits `6` (was `1`): `validate`, `self-test`, `env-check`, `importer-check`,
   `arm-smoke`, `model-onboard`, `deploy-sheet --capture`; a `sweep` in which some runs failed exits `5` (was `1`).
   `evh` exits `70` for an error nothing caught (a traceback) and `130` on Ctrl-C, without a traceback.
 - **Every refusal names its kind:** `ERROR (<kind>): <why>`, the kind one of fourteen
-  ([RUNBOOK, Refusals](docs/RUNBOOK.md#refusals)): `not-found`, `bad-argument`, `would-overwrite`, `mismatch`,
+  ([RUNBOOK, Refusals](https://github.com/chipi/eval-harness/blob/main/harness/docs/RUNBOOK.md#refusals)): `not-found`, `bad-argument`, `would-overwrite`, `mismatch`,
   `invalid-file`, `not-materialized`, `not-enough`, `not-public`, `not-allowed`, `not-configured`, `failed`,
   `missing-dependency`, `over-budget`, `old-format`. A script or an agent reads the kind, which stays when a message is reworded. The
   project's `AGENTS.md` (`evh init`) says what to do for each exit code and the common kinds.

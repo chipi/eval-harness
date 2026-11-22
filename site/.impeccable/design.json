@@ -483,7 +483,7 @@
       "kind": "custom",
       "refersTo": "terminal",
       "description": "A command to copy, in monospace, scrolling inside itself.",
-      "html": "<pre class=\"ds-term\"><span>$ </span>pip install \"evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.7.2#subdirectory=harness\"</pre>",
+      "html": "<pre class=\"ds-term\"><span>$ </span>pip install \"evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.8.0#subdirectory=harness\"</pre>",
       "css": ".ds-term { background: rgba(127,127,127,.08); border: 1px solid var(--hair, #2a2a27); border-radius: 6px; padding: 18px 20px; margin: 0; overflow-x: auto; font: 13.5px/1.7 ui-monospace, Menlo, monospace; color: var(--ink, #f0efec); } .ds-term span { color: var(--muted, #7d7b74); }"
     }
   ],

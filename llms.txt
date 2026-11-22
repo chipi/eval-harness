@@ -94,7 +94,7 @@ What a change in each part of the code should read first.
 - **The MCP server** (`harness/scripts/mcp_server.py`):
 - [RFC-018: A read-only MCP server in 0.5.0](docs/rfc/RFC-018-read-only-mcp-server.md): the server and its limits (status: Completed (v0.5.0), 2026-10-29)
 - **The Workbench** (`harness/workbench/`):
-- [PRD-017: The Workbench, where an evaluation is set up and run](docs/prd/PRD-017-workbench.md): what it is for (status: Implemented (0.8.0, unreleased))
+- [PRD-017: The Workbench, where an evaluation is set up and run](docs/prd/PRD-017-workbench.md): what it is for (status: Implemented (0.8.0))
 - [UXS-005: The Workbench](docs/uxs/UXS-005-workbench.md): the sketches and the mockup (status: Active)
 - **Tests and releases** (`harness/tests/`):
 - [Testing the harness](harness/docs/TESTING.md): how the harness is tested, and the gates

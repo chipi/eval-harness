@@ -1,6 +1,6 @@
 # PRD-016: Managing a project's data
 
-- **Status**: Implemented (0.8.0, unreleased)
+- **Status**: Implemented (0.8.0)
 - **Authors**: Marko Dragoljevic
 - **Related RFCs**: [RFC-025](../rfc/RFC-025-runs-in-sqlite.md) (a project's data in files or one database, read and
   written through `_store`)

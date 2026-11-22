@@ -1,6 +1,6 @@
 # PRD-017: The Workbench, where an evaluation is set up and run
 
-- **Status**: Implemented (0.8.0, unreleased)
+- **Status**: Implemented (0.8.0)
 - **Authors**: Marko Dragoljevic
 - **Related PRDs**: [PRD-004](PRD-004-catalog-and-inspector.md) (the catalog and the inspector, which stay read-only),
   [PRD-016](PRD-016-managing-project-data.md) (the `data-*` commands the Settings screen uses),
