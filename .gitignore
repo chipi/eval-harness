@@ -46,3 +46,6 @@ docs/papers/*.pdf
 
 # MkDocs output (mkdocs build); published by .github/workflows/pages.yml, never committed
 /build/
+
+# Package builds (python -m build); never committed
+/dist/
