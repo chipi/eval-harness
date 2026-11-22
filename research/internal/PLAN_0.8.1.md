@@ -262,8 +262,8 @@ nothing written, nothing spent, no token. This amends PRD-017's non-goal "a publ
 Workbench is refused behind a proxy"), so a decision record (an RFC or ADR amending D8, `new-doc`) comes first.
 
 **What is there now.** `catalog_serve.py:617-623` answers 404 for `/api/v1/` and `/workbench/` on any public or
-proxied server. Writes and spends already need the server's token, and operations already split reads from jobs
-(`op.is_job()`; MCP marks the reads `read_only_hint`).
+proxied server. A public server has no token (`API_TOKEN` is set only for a local one), so nothing can write there today. Operations carry a kind: 73 are `read`; 15 are not jobs and still write (14 `edit`, and `deployment-accept`), so "not a job" is not "a read": the test is `op.kind == "read"` (RFC-039).
+(The public MCP server already serves 62 of the 73 reads, `mcp_server.read_ops(public=True)`.)
 
 **What the deployed copy holds (checked 2026-11-23),** so what a viewer could read: no item text (dataset records
 carry row numbers and hashes; `data/materialized/` is gitignored, `harness/.gitignore:5`); the arms' outputs (313
@@ -282,7 +282,7 @@ text, the reads must still follow the public text rules.
 - every read served publicly applies `_visibility.text_shown(..., public=True)` and the `--publish` setting, as the
   public inspector does: a browser test on a fixture with a `text: hidden` dataset shows none of its text, and a
   request for the sheet or an item's input is refused;
-- the reads are under the public inspector's rate limit and memory budget (256 MiB, `budget-check`);
+- the reads are under the public inspector's rate limit and memory budget (`mem_limit: 384m` in `infra/compose.yml`, `budget-check`);
 - `infra/` serves it on evals.humancopilot.eu (compose and Caddy), the site and catalog link to it, and
   `deploy-verify` passes after the deploy.
 

@@ -3,7 +3,8 @@
 - **Status**: Active
 - **Authors**: Marko Dragoljevic
 - **Related PRDs**: [PRD-017](../prd/PRD-017-workbench.md) (the Workbench: workflows, decisions)
-- **Related RFCs**: [RFC-032](../rfc/RFC-032-one-model-two-surfaces.md) (the entities and operations every screen
+- **Related RFCs**: [RFC-039](../rfc/RFC-039-workbench-read-only-for-visitors.md) (the read-only viewer on the deployed
+  site), [RFC-032](../rfc/RFC-032-one-model-two-surfaces.md) (the entities and operations every screen
   calls), [RFC-033](../rfc/RFC-033-per-item-results-as-a-model.md) (per-item results)
 - **Related UX specs**: [UXS-001](UXS-001-catalog.md) (the catalog: shell, tokens), [UXS-002](UXS-002-inspector.md)
   (the inspector), [UXS-003](UXS-003-cli-and-onboarding.md) (commands), [UXS-004](UXS-004-data-page.md) (the Settings screen)
@@ -586,6 +587,31 @@ decision kept with its reason. This is where people spend most of their time (W1
   (`study-stop`) and **Continue it** under a cap end or resume it.
 - **A new study** offers this goal's own systems and validation datasets, plus those no goal uses yet (step 4's rule), and starts from the goal's promoted baseline system when it has one, else the first offered.
 - A study is research on validation items and never promotes; only its confirmation on a test set is evidence.
+
+## The viewer
+
+The deployed site serves the Workbench to a visitor who is not signed in ([RFC-039](../rfc/RFC-039-workbench-read-only-for-visitors.md),
+owner, 2026-11-23). The same screens, read-only; the server refuses every write, whatever the page shows.
+
+```text
+ evh workbench                    Home   Models   Prompts   Words   Catalog ↗   [x] hints   ◐
+ This is a read-only view of a published project. To run your own: pip install ..., evh init, evh workbench.
+```
+
+- **A banner on every screen** says it is a read-only view, and how to run your own (the install page and the three
+  commands). It cannot be dismissed.
+- **No control that acts.** Open, run, estimate, close, retire, carry in, promote, save, delete, the editing forms and
+  the unsent-changes guard are not drawn. Where a screen's main job is to act (Jobs, Settings, Bring in a model, the label
+  and reference editors) the menu leaves it out and its address shows the banner and a link home.
+- **Every read stays.** Home, a goal and its step rail, rounds and their evidence, datasets, systems, models, runs,
+  the leaderboards and the tests, as far as the public rules allow. A screen that needs a refused read (the sheet, an
+  item's input, a judge's reasons, the held-out test) shows "not shown publicly" in that place, with the reason.
+- **The command stays.** Each screen still prints the `evh` command that does what it shows, as text a reader can copy.
+- **No token, no sign-in, no cookie.** A visitor is never asked for either.
+- **Text follows the public rules** (`text: hidden`, `--publish`): the page shows what the API answers and adds nothing.
+
+Tested in a browser on a fixture with a `text: hidden` dataset: no marker word appears, no acting control is present,
+and a request for the sheet or an item's input is refused.
 
 ## Help, for someone who is new to this
 

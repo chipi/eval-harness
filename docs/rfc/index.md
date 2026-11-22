@@ -47,6 +47,7 @@ Other statuses: **Rejected** and **Withdrawn**, each with the reason kept.
 | [RFC-036](RFC-036-agentic-scenarios.md) | Agentic scenarios: tools, stations and the path | — | Draft (0.9.0) | actions with their results, stations and episodes, the path and forbidden paths, per-station scores, recorded tool results; any agent through a runner; the first runner is Flotilla's offline path, part of its acceptance |
 | [RFC-037](RFC-037-conversational-scenarios.md) | Conversational scenarios: a user who talks back | — | Draft (waits for its first case) | the session runner; the user played by a script, a person or a simulated user (any model); real conversations as scenarios |
 | [RFC-038](RFC-038-call-once-artifacts-judge-validation-harbor.md) | Call once, artifact links, judge validation and a Harbor example | — | Accepted (0.8.0) | an adapter that says "call each item once" and a resume that never repeats what may have happened; a per-item artifact link served read-only; `evh judge-validate` in place of the two validation tools; examples/harbor |
+| [RFC-039](RFC-039-workbench-read-only-for-visitors.md) | The Workbench as a read-only viewer for visitors who are not signed in | [PRD-017](../prd/PRD-017-workbench.md) | Accepted as a decision (0.8.1, not built) | owner, 2026-11-23: on the deployed site, the Workbench and the `/api/v1` reads without a token; every write, job and estimate refused at the server; the public text rules; amends PRD-017 D8 |
 
 ## Completed RFCs
 

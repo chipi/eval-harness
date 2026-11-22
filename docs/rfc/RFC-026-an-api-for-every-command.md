@@ -107,7 +107,7 @@ server starts, written to `.build/api-token` (mode 600, the project owner's only
 Workbench's address, as `http://127.0.0.1:PORT/workbench/?token=…`. The page trades it for a cookie (`HttpOnly`,
 `SameSite=Strict`, this host only) on the first load; a script sends `Authorization: Bearer …`. Also: the Host must be
 the server's own (DNS rebinding), a foreign `Origin` is refused, and every call that is not a read carries
-`X-EVH-Data: 1`. A server started with `--public` answers none of `/api/v1/`, and (owner, 2026-11-09) nor does
+`X-EVH-Data: 1`. *Amended by [RFC-039](RFC-039-workbench-read-only-for-visitors.md) (owner, 2026-11-23): a server started with `--public` serves the API's reads and the Workbench without a token; every write and job stays refused.* A server started with `--public` answered none of `/api/v1/`, and (owner, 2026-11-09) nor does
 one started with `--behind-proxy`, which serves the inspector to a team's
 proxy (and whose `allowed()` accepts the proxy's Host names, so "the Host must be the server's own" does not hold
 there); the data routes are already refused in both modes. Every job runs as the server's operating-system user, so
