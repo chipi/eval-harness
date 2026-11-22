@@ -321,6 +321,12 @@ def sheet(params: dict) -> dict:
                 "cells": {
                     t: {
                         "output": None if r["shown"].get(t) is None else short(r["shown"][t]),
+                        # the whole output behind a decision (its reason), the cell's tooltip
+                        "full": (
+                            r["decisions"][t][:600]
+                            if r["shown"].get(t) is not None and r["decisions"].get(t) != r["shown"][t]
+                            else None
+                        ),
                         "scores": r["scores"][t],
                     }
                     for t in tokens

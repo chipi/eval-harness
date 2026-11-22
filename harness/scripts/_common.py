@@ -107,6 +107,12 @@ def stray_home() -> str:
     return f"note: EVAL_HOME is {target}, so this command acts on that project, not on {mine} where you are"
 
 
+def imported_scorer_key(scorer_id: str) -> str:
+    """The key of the score of an import made without a scorer file, which has no instrument hash: the scorer's id,
+    hashed, stands in (`evh import-run`, and `evh migrate` for an import made before it did)."""
+    return hashlib.sha256(f"imported:{scorer_id}".encode()).hexdigest()[:12]
+
+
 def how(evh: str, make: str) -> str:
     """The command a hint should name: `evh …` when the harness runs as the installed tool,
     the Makefile target in a checkout. A pinned project has no Makefile, so a `make …` hint

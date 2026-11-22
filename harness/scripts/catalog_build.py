@@ -2729,9 +2729,8 @@ def _rounds_block(A: Adapter, g: dict, measure: str, above: str = "") -> str:
                     '<div class="hyp">' + e(r.get("hypothesis", "") or "—") + "</div>",
                     # Arms, best and the comparison in one narrow cell: three columns of mostly "—" took the width
                     # the conclusion needs (owner, 2026-10-31).
-                    # The arms in play and the arms retired, as the round stores them.
+                    # The arms in play, as the round stores them; the retired count is said once, in the line under the row.
                     f'<div class="armsbest"><span data-v="{n_cfg}">{n_cfg} arm{"" if n_cfg == 1 else "s"} in play</span>'
-                    + (f" <small>· {n_retired} retired</small>" if n_retired else "")
                     # The round's arms in the inspector, against its leader: `evh comparison-show --round`.
                     + (
                         f' <a class="btn small" title="evh comparison-show --round {e(r["round_id"])} --goal {e(g["goal_id"])}" '
@@ -3116,7 +3115,10 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
                                     else axis_cell(ax, dec["rows"][r["arm"]][ax["name"]])
                                     for ax in shown
                                 ),
-                                e(as_named("; ".join(r["flags"] + dec["out"].get(r["arm"], []))) or "—"),
+                                # the baseline's id in a flag breaks after its underscores: whole, it set the column's width
+                                e(
+                                    as_named("; ".join(r["flags"] + dec["out"].get(r["arm"], []))) or "—"
+                                ).replace("_", "_<wbr>"),
                                 link,
                             ],
                         }

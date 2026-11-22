@@ -223,6 +223,11 @@ correctness bugs, not just missing features.
   now `losses` and `ties`).
 - **`rank-stability`** prints rows for halves of 5 and of half the dataset too, and its "saturated" reads from halves
   of 10 up.
+- **A goal's `datasets:` entry takes only `dataset_id`, `role`, `cluster`, `decides` and `notes`.** Any other key
+  (`n: 25`, `real: false`) is now refused; 0.7.2 accepted it silently, which let a YAML mis-parse (an unquoted comma
+  in a note, say) become a stray key nobody saw. `evh validate` fails `V14 goals` with "Additional properties are
+  not allowed ('n', 'real' were unexpected)", one per goal file; `evh migrate` does not touch goal files. Move the
+  value into `notes`, or delete it.
 
 ## From 0.7.1 to 0.7.2
 

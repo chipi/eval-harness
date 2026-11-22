@@ -1025,7 +1025,14 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Fixed
 
+- **`evh migrate` step 4 no longer refuses a run imported without `--scorer-file`**: such a run records its scorer's id and no hash (`imported.scorer_sha256` null), and its score is now keyed by the same hash of that id that `evh import-run` writes; a run with neither a hash nor an imported scorer id is still refused.
+- **`evh migrate` step 6 keeps an imported run's id as its `system_id` when no system file has that id**: `evh import-run` never checks for one, so the step no longer refuses such a run; a run that is not imported and names no system is still refused.
 - **Inspector: an arm has one name whether one arm is open or three**: only its dataset id's prefix ("intents_") is dropped; the " · …" tail (the reading, the repeat mark: "silver ×3") always shows, and the full name stays in the tooltip.
+- **Inspector: the verdict table's difference carries its sign** ("+0.094", as the chart beside it writes it), not "0.094".
+- **The goal page's rounds table says a round's retired arms once**: the arms cell reads "N arms in play" and the count line under it carries "k retired", not both ("1 arm in play · 1 retired" beside "1 retired · 1 carried").
+- **Inspector: a scatter's centroid name keeps clear of its own arm's dots**, not only of the crosses and the other names; with no clear place it may still sit on them rather than go unwritten.
+- **Inspector: a long metric option no longer scrolls the page sideways at 390 px**: the controls' labels give way to the width the row has.
+- **Sheet: an arm's cell that shows an adapter's decision carries the whole output (its reason) as the cell's tooltip**, so "billing" shows and "label: billing reason: ..." is one hover away (an adapter with no `decision(output)` still shows its whole output).
 - **Inspector: the difference chart's mean difference is written as the table writes it** (three decimals), so no score difference prints as "+0" ("+0.000"); times keep their own precision.
 - **A dataset page without a profile says the profile is optional**: "A profile is optional", what one adds and the command (`evh dataset-profile`), not "No profile yet" as if it were a gap (UXS-001 says the same).
 - **Inspector, CLI and docs from the 080d review**: the item view's "what the judges said" names the scale ("said (1–5)"),

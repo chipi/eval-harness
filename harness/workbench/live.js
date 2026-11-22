@@ -1341,7 +1341,7 @@
           <button class="btn" type="button" id="ca-go" data-send>Score its decisions</button>${mark}</div><div id="ca-out" data-out></div>` : '<p class="muted">Capture production\'s records first.</p>'}</div></section>
       <section class="part"><div class="parthead"><span class="letter">3</span><h2>Pick the rows for the next version</h2></div><div class="body">
         <div class="inline"><select id="wr-ds" aria-label="the dataset">${opt(dsIds, pv.dataset)}</select><select id="wr-run" aria-label="production's arm">${opt(sysIds, pv.run)}</select>
-          <input type="text" id="wr-set" value="${esc(pv.against || "")}" placeholder="against a label set: SET or DATASET/SET" autocapitalize="off" spellcheck="false"><button class="btn" type="button" id="wr-show">Show where it was wrong</button></div>
+          <input type="text" id="wr-set" value="${esc(pv.against || "")}" placeholder="a label set: SET or DATASET/SET" aria-label="score against a label set: SET or DATASET/SET" autocapitalize="off" spellcheck="false"><button class="btn" type="button" id="wr-show">Show where it was wrong</button></div>
         <div id="wr-out" data-out>${wrong}</div>
         ${pv.rows && pv.rows.length ? `<div data-form="pick"><div class="inline"><input type="text" id="pk-for" placeholder="the dataset they may join (optional)" autocapitalize="off" spellcheck="false">
           <input type="text" id="pk-note" placeholder="why they are worth keeping" style="min-width:18rem"><button class="btn primary" type="button" id="pk-go" data-send>Pick them</button>${mark}</div><div id="pk-out" data-out></div></div>` : ""}</div></section>
@@ -1353,7 +1353,7 @@
       <section class="part"><div class="parthead"><span class="letter">5</span><h2>Labels from what happened later</h2></div><div class="body">
         <p class="muted">Rules over each record's outcome (what production recorded afterwards) give the item its label, or skip it; tried in order, the first that matches decides.</p>
         ${capIds.length ? `<div data-form="outcome-labels"><div class="inline"><select id="ol-cap" aria-label="the capture">${opt(capIds)}</select><select id="ol-ds" aria-label="the dataset">${opt(dsIds, pv.dataset)}</select>
-          <input type="text" id="ol-set" placeholder="the label set's name: outcomes_2026_11" autocapitalize="off" spellcheck="false"></div>
+          <input type="text" id="ol-set" placeholder="its name: outcomes_2026_11" aria-label="the label set's name" autocapitalize="off" spellcheck="false"></div>
           <textarea id="ol-rules" rows="6" style="width:100%" aria-label="the rules" placeholder="${esc(RULES_EXAMPLE)}"></textarea>
           <div class="actions" style="margin-top:0"><button class="btn" type="button" id="ol-go" data-send>Label from the outcomes</button>${mark}</div></div><div id="ol-out" data-out></div>` : '<p class="muted">Capture production\'s records first.</p>'}</div></section>
       <section class="part"><div class="parthead"><span class="letter">6</span><h2>Replay the code that ran</h2></div><div class="body">
@@ -1743,7 +1743,7 @@
           <div data-form="judge-validate">
             <p class="muted">Measure each judge against people's ratings: it runs as a system over a rated dataset, beside a random floor, as an ordinary run: the cost first, then the runs under a cap, then the validation block they make written into the scorer.</p>
             ${rated.length ? `<div class="inline"><select id="jv-ds" aria-label="the rated dataset">${opt(rated, b.dataset_id)}</select>
-              <input type="text" id="jv-floor" placeholder="floor: a run of the best free scorer (optional)" autocapitalize="off" spellcheck="false" style="min-width:16rem">
+              <input type="text" id="jv-floor" placeholder="floor: a free scorer's run (optional)" aria-label="floor: a run of the best free scorer (optional)" autocapitalize="off" spellcheck="false" style="min-width:16rem">
               <label>at most (USD) <input type="number" id="jv-cap" value="${esc(r.cost_cap_usd ?? 1)}" step="0.01" min="0.01" inputmode="decimal" style="width:6rem"></label></div>
               <div class="actions" style="margin-top:0"><button class="btn" type="button" id="jv-est">The cost first (a dry run)</button><button class="btn primary" type="button" id="jv-go" data-send>Validate it</button>${mark}</div>
               <div id="jv-out" data-out></div>
@@ -2241,8 +2241,8 @@
         ${Object.keys(exs.by || {}).length ? tbl(["who read", "reads"], Object.entries(exs.by).map(([k, v]) => `<tr><td class="mono">${esc(k)}</td><td class="num">${v}</td></tr>`)) : ""}
         ${Object.keys(exs.what || {}).length ? tbl(["what was read", "reads"], Object.entries(exs.what).map(([k, v]) => `<tr><td>${esc(k)}</td><td class="num">${v}</td></tr>`)) : ""}
         <div data-form="read"><h3>Record a read</h3><div class="inline"><input type="text" id="rd-items" placeholder="the items read: t02, t05" autocapitalize="off" spellcheck="false">
-          <input type="text" id="rd-what" placeholder="what was read: the decision and its reason" style="min-width:16rem">
-          <input type="text" id="rd-who" placeholder="who read it: agent:homelab (default: you)" autocapitalize="off" spellcheck="false"></div>
+          <input type="text" id="rd-what" placeholder="what was read: decision, reason" aria-label="what was read: the decision and its reason" style="min-width:16rem">
+          <input type="text" id="rd-who" placeholder="who: agent:homelab (default: you)" aria-label="who read it: agent:homelab (default: you)" autocapitalize="off" spellcheck="false"></div>
           <div class="actions" style="margin-top:0"><button class="btn" type="button" id="rd-go" data-send>Record it</button>${mark}</div><div id="rd-out" data-out></div></div>
         <h3>The leak check</h3><p class="muted">Searches the project's public repos (config.yaml's exposure) for these items' ids; a find not yet recorded can be recorded as a read. It cannot catch a paraphrase.</p>
         <div class="actions" style="margin-top:0"><button class="btn" type="button" id="lk-go">Check for leaks</button></div><div id="lk-out" data-out></div>`, `<span class="status ${exs.exposed ? "" : "ok"}">${exs.exposed} read</span>`)}
@@ -2446,7 +2446,7 @@
         <p class="muted">The rule is given before any test item is read; each look at a test set is tested at a stricter level.</p>
         <div data-form="confirm"><div class="inline"><select id="cf-test" aria-label="the test set">${opt(tests)}</select>
           <select id="cf-rule" aria-label="the rule"><option value="superiority">better than where it started</option><option value="noninferiority">no worse, within a margin</option></select>
-          <input type="number" id="cf-margin" placeholder="the margin (no worse)" aria-label="the margin (no worse)" step="any" style="width:12rem"><input type="number" id="cf-trial" placeholder="trial (default: the best)" aria-label="the trial (default: the best)" min="1" style="width:12rem">
+          <input type="number" id="cf-margin" placeholder="margin (no worse)" aria-label="the margin (no worse)" step="any" style="width:12rem"><input type="number" id="cf-trial" placeholder="trial (default: best)" aria-label="the trial (default: the best)" min="1" style="width:12rem">
           <label>at most (USD) <input type="number" id="cf-cap" value="1" min="0.01" step="0.01" style="width:6rem"></label></div>
           <div class="actions" style="margin-top:0"><button class="btn" type="button" id="cf-dry">What it would read (nothing runs)</button><button class="btn primary" type="button" id="cf-go" data-send>Confirm it</button>${mark}</div><div id="cf-out" data-out></div></div>`, verdicts.length ? `<span class="status ok">${verdicts.length} confirmed</span>` : "")}
       ${cmd}<div class="actions"><a class="btn" href="#study/${enc(goal)}">Every study</a><a class="btn" href="#goal/${enc(goal)}">Back to the goal</a></div></div>`;

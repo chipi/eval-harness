@@ -171,6 +171,9 @@ footer code { font: .9em var(--mono); }
 .controls { display: flex; flex-wrap: wrap; gap: 18px; align-items: center; margin-bottom: 26px; font: 500 12px/1 var(--mono); color: var(--muted); }
 .controls select { font: 500 13px/1 var(--mono); color: var(--ink); background: var(--surface); border: 1px solid var(--hair);
   border-radius: 10px; padding: 9px 12px; margin-left: 8px; max-width: 100%; }
+/* a long option (the metric select's) gives way to the row's width instead of widening the page at 390 px */
+.controls > label { min-width: 0; max-width: 100%; }
+.controls > label select { max-width: calc(100% - 8px); }
 .controls .tick input { margin-right: 6px; vertical-align: middle; }
 /* The field filter (ADR-0003): picker, value and button wrap onto the next line on a phone. */
 .controls .filter { flex-wrap: wrap; margin-bottom: 0; }
@@ -887,6 +890,9 @@ nav.jump a { margin: 0 2px; }
 
 /* a cost, a speed or an axis cell stays on one line ("$0.000018 · 118 tok" broke in two) */
 td > span.ax { white-space: nowrap; }
+/* the goal page's "test vs leader" button may wrap in two: with the cost and speed cells whole it was the widest cell
+   that could still give, and the answers table needed 95 px more than before at another machine's fonts */
+table[id^="ans"] td > a.btn.small { white-space: normal; }
 /* inline code in the catalog's own mono, not the browser's generic monospace (the captures page read as another font) */
 code, kbd, samp { font-family: var(--mono); font-size: .88em; }
 /* a row linked to by its address (labels.html#set-...) is marked where the page opens on it */

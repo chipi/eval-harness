@@ -115,6 +115,11 @@ def _scorer(rec: dict, judged: bool) -> str:
     sha = w.get("sha256") or (
         (((rec.get("fingerprint") or {}).get("instrument") or {}).get("adapter")) or {}
     ).get("sha256")
+    if not sha:
+        # An import made without a scorer file (0.4.x) records its scorer's id and no hash
+        imp = rec.get("imported") or (rec.get("fingerprint") or {}).get("imported") or {}
+        if isinstance(imp, dict) and imp.get("scorer_id"):
+            return _common.imported_scorer_key(str(imp["scorer_id"]))
     return str(sha or "")[:12]
 
 

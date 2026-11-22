@@ -265,7 +265,7 @@
     const author = id => ((d.arms || []).find(x => x.id === id) || {}).wrote_reference ? ' <small class="muted">wrote the reference</small>' : '';
     const vt = rows.map(r => `<tr class="${kind(r.arm)}"><td class="mono">${armName(r.arm, label[r.arm] || r.arm)}${author(r.arm)}</td>
       <td>${verdictChip(r.verdict)}${r.n && r.min_p > 0.05 ? ' <small class="muted">' + r.n + ' ' + ITEMS + ' cannot reach 0.05</small>' : ''}</td>
-      <td class="num">${r.n}</td><td class="num">${fmt(r.mean)}</td><td class="num">${fmt(r.delta)}</td>
+      <td class="num">${r.n}</td><td class="num">${fmt(r.mean)}</td><td class="num">${r.delta != null && r.delta >= 0 ? '+' : ''}${fmt(r.delta)}</td>
       <td class="num">${r.ci ? (r.ci[0] >= 0 ? '+' : '') + r.ci[0].toFixed(3) + ' to ' + (r.ci[1] >= 0 ? '+' : '') + r.ci[1].toFixed(3) : '—'}</td>
       <td class="num">${r.wins}–${r.losses}${r.ties ? ' (' + r.ties + ' ties)' : ''}</td>
       <td class="num">${fmtp(r.p)}</td><td class="num">${r.threshold ? r.threshold.toFixed(4) : '—'}</td></tr>`).join('');
@@ -602,15 +602,19 @@
     });
     const CW = 6.9, LH = 14, boxes = cents.map(c => [c.cx - 10, c.cy - 10, c.cx + 10, c.cy + 10]);
     const hit = (b, o) => b[0] < o[2] && o[0] < b[2] && b[1] < o[3] && o[1] < b[3];
+    const drawn = pts.length <= DOTS_MAX * 4;
     cents.forEach(c => {
       const name = label[c.a] || c.a, w = CW * name.length;
+      // Its own dots too (when they are drawn): a name over them reads as theirs. With no place clear of them it may
+      // sit on them, rather than go unwritten.
+      const own = drawn ? pts.filter(p => p[0] === c.a).map(p => [x(p[2]) - 5.5, y(p[3]) - 5.5, x(p[2]) + 5.5, y(p[3]) + 5.5]) : [];
       let pick = null;
-      for (const k of [0, 1, -1, 2, -2, 3, -3, 4, -4, 5, -5, 6, -6, 7, -7, 8, -8]) for (const side of [1, -1]) {
+      for (const clear of [own, []]) for (const k of [0, 1, -1, 2, -2, 3, -3, 4, -4, 5, -5, 6, -6, 7, -7, 8, -8]) for (const side of [1, -1]) {
         if (pick) break;
         const tx = side > 0 ? c.cx + 12 : c.cx - 12 - w, ty = c.cy - 6 + k * LH;
         const b = [tx, ty - 11, tx + w, ty + 3];
         if (tx < L || tx + w > W - RIGHT || ty - 11 < top || ty + 3 > bottom) continue;
-        if (boxes.some(o => hit(b, o))) continue;
+        if (boxes.some(o => hit(b, o)) || clear.some(o => hit(b, o))) continue;
         pick = {tx, ty, b}; break;
       }
       // no clear place in a crowd: the cross stays, its tooltip names it, rather than a name over another
@@ -813,7 +817,7 @@
       [r => `<td class="small start" title="${esc(r.text)}">${esc(r.text.length > 60 ? r.text.slice(0, 59) + '…' : r.text)}</td>`, r => r.text],
       ...(hasSignals ? [[r => `<td>${Object.entries(r.signals).map(([s, x]) => `<span class="chip sig sig-${s}" title="${esc(x)}">${s}</span>`).join(' ')}</td>`, r => Object.keys(r.signals).join(' ')]] : []),
       ...arms.flatMap(a => [
-        [r => `<td class="small outc">${dash(r.cells[a.token].output)}</td>`, r => r.cells[a.token].output ?? ''],
+        [r => `<td class="small outc"${r.cells[a.token].full ? ` title="${esc(r.cells[a.token].full)}"` : ''}>${dash(r.cells[a.token].output)}</td>`, r => r.cells[a.token].output ?? ''],
         ...a.scores.map(ref => [r => `<td class="num scc${win(r, a.token, ref)}">${fmt(r.cells[a.token].scores[ref])}</td>`, r => fmt(r.cells[a.token].scores[ref])]),
       ]),
       ...d.label_cols.map(c => [r => `<td class="small">${dash(r.labels[c.key])}</td>`, r => r.labels[c.key] ?? '']),

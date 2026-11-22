@@ -759,6 +759,118 @@ def drive(base: str, overview: str = "", art_base: str = "") -> None:
         )
         page.unroute("**/api/compare**")
 
+        # The verdict table writes its difference with a sign, as the chart beside it does ("+0.094", not "0.094").
+        def with_gain(route):
+            resp = route.fetch()
+            doc = resp.json()
+            for r in doc["rows"]:
+                r["delta"] = 0.094
+            route.fulfill(response=resp, json=doc)
+
+        page.route("**/api/compare**", with_gain)
+        page.goto(
+            f"{base}inspect.html?runs={arms}&baseline=runs/tickets_v1/tickets_lead1_v1&metric=overlap_f1"
+        )
+        page.wait_for_selector("figure.chart svg text.rv", timeout=15000)
+        deltas = page.evaluate(
+            "[...document.querySelectorAll('table.data')[0].querySelectorAll('tbody tr')].map(r => r.cells[4].textContent.trim())"
+        )
+        check(
+            "inspector: the verdict table's difference carries its sign ('+0.094')",
+            bool(deltas) and all(t == "+0.094" for t in deltas),
+            deltas,
+        )
+        page.unroute("**/api/compare**")
+
+        # A centroid's name sits clear of its own arm's dots (080d recheck: the mistral name was written over its dots).
+        def with_band(route):
+            resp = route.fetch()
+            doc = resp.json()
+            ids = list(doc["series"])
+            items = doc["items"]
+            doc["series"] = {
+                a: {i: (0.4935 + 0.013 * (k % 2)) if n == 0 else 0.9 - 0.2 * n for k, i in enumerate(items)}
+                for n, a in enumerate(ids)
+            }
+            doc["shape"] = {
+                "latency_ms": {
+                    a: {i: (300.0 + 6.0 * k if n == 0 else 20.0 + n) for k, i in enumerate(items)}
+                    for n, a in enumerate(ids)
+                }
+            }
+            route.fulfill(response=resp, json=doc)
+
+        page.route("**/api/compare**", with_band)
+        page.goto(
+            f"{base}inspect.html?runs={arms}&baseline=runs/tickets_v1/tickets_lead1_v1&metric=overlap_f1"
+        )
+        page.wait_for_selector("#scatterbox g.centroid text.cl", timeout=15000)
+        over = page.evaluate(
+            """() => { const out = []; let seen = 0;
+              for (const g of document.querySelectorAll('#scatterbox g.centroid')) {
+                const t = g.querySelector('text.cl'); if (!t) continue;
+                const b = t.getBBox(), col = g.querySelector('path').getAttribute('stroke');
+                for (const c of document.querySelectorAll('#scatterbox circle.dot')) {
+                  if (c.getAttribute('fill') !== col) continue;
+                  seen++;
+                  const x = +c.getAttribute('cx'), y = +c.getAttribute('cy');
+                  if (x > b.x - 4.5 && x < b.x + b.width + 4.5 && y > b.y - 4.5 && y < b.y + b.height + 4.5) out.push(t.textContent);
+                }
+              } return {seen, out}; }"""
+        )
+        check(
+            "inspector: a scatter's centroid name covers none of its own arm's dots",
+            over["seen"] >= 6 and not over["out"],
+            over,
+        )
+        page.unroute("**/api/compare**")
+
+        # The metric select's long option text must not widen the page (080d recheck: 39 px sideways at 390 px).
+        def with_long_metric(route):
+            resp = route.fetch()
+            doc = resp.json()
+            doc["metrics"] = [
+                {
+                    "name": "judge_score_unvalidated",
+                    "format": "1-5 scale",
+                    "lower_is_better": False,
+                    "arms": 3,
+                    "archived": True,
+                }
+            ] + [m for m in doc["metrics"] if m["name"] != "judge_score_unvalidated"]
+            doc["metric"] = "judge_score_unvalidated"
+            route.fulfill(response=resp, json=doc)
+
+        narrow = browser.new_page(viewport={"width": 390, "height": 844})
+        narrow.route("**/api/compare**", with_long_metric)
+        narrow.goto(f"{base}inspect.html?runs={arms}&baseline=runs/tickets_v1/tickets_lead1_v1")
+        narrow.wait_for_selector("#metric", timeout=15000)
+        wide = narrow.evaluate("document.documentElement.scrollWidth - window.innerWidth")
+        check(
+            "phone width: a long metric option does not scroll the inspector sideways", wide <= 1, f"{wide}px"
+        )
+        narrow.close()
+
+        # The sheet's arm cell shows the adapter's decision; the whole output (its reason) is the cell's tooltip.
+        def with_decision(route):
+            resp = route.fetch()
+            doc = resp.json()
+            cell = next(iter(doc["rows"][0]["cells"].values()))
+            cell["output"] = "billing"
+            cell["full"] = "label: billing\nreason: The customer reports a double charge."
+            route.fulfill(response=resp, json=doc)
+
+        page.route("**/api/sheet**", with_decision)
+        page.goto(f"{base}inspect.html?dataset=tickets_v1&sheet=1&runs={arms}")
+        page.wait_for_selector("#sheettable tbody tr td.outc", timeout=15000)
+        tip = page.locator("#sheettable tbody tr").first.locator("td.outc").first.get_attribute("title")
+        check(
+            "sheet: a decision shown in an arm's cell has the whole output (its reason) as the tooltip",
+            bool(tip) and "reason: The customer reports" in tip,
+            tip,
+        )
+        page.unroute("**/api/sheet**")
+
         # One arm open: no empty verdict table, said in words (080d inspector #10); the spread's numbers are written as
         # the table's (4.500, not 4.5); a difference row ends in no bare mark (inspector3 #3).
         page.goto(f"{base}inspect.html?runs=runs/tickets_v1/tickets_lead1_v1")

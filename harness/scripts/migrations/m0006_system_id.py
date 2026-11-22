@@ -65,9 +65,16 @@ def _systems() -> set[str]:
 
 
 def _check(
-    where: str, rec: dict[str, Any], systems: set[str], refused: list[str], *, imported: bool = False
+    where: str,
+    rec: dict[str, Any],
+    systems: set[str],
+    refused: list[str],
+    *,
+    imported: bool = False,
+    keep: bool = False,
 ) -> bool:
-    """Whether `rec` carries the old key; refuses a record holding both and a value that is no system's id."""
+    """Whether `rec` carries the old key; refuses a record holding both and a value that is no system's id, unless
+    `keep` (an imported run: `evh import-run` writes a system_id that names no system file)."""
     if OLD not in rec:
         return False
     if NEW in rec:
@@ -75,6 +82,8 @@ def _check(
         return False
     value = rec[OLD]
     if imported and not value:
+        return True
+    if keep and isinstance(value, str) and value:
         return True
     if not isinstance(value, str) or value not in systems:
         refused.append(f"{where}: `{OLD}` is {value!r}, which is not the id of a system of this project")
@@ -103,9 +112,14 @@ def plan() -> dict[str, Any]:
             changes.append((p, _dump_like(text, doc)(new)))
             counts[kind] += 1
 
-    def top(where: Path) -> Any:
+    def top(where: Path, *, run_record: bool = False) -> Any:
         def fix(doc: Any) -> Any:
-            if isinstance(doc, dict) and _check(_rel(where), doc, systems, refused):
+            if not isinstance(doc, dict):
+                return None
+            is_import = run_record and bool(
+                doc.get("imported") or (doc.get("fingerprint") or {}).get("imported")
+            )
+            if _check(_rel(where), doc, systems, refused, keep=is_import):
                 return _rename(doc)
             return None
 
@@ -116,11 +130,11 @@ def plan() -> dict[str, Any]:
         if not _store.is_dir(d):
             continue
         if _store.is_file(d / "run.json"):
-            whole(d / "run.json", "run records", top(d / "run.json"))
+            whole(d / "run.json", "run records", top(d / "run.json", run_record=True))
         sdir = d / "scores"
         for s in sorted(_store.iterdir(sdir)) if _store.is_dir(sdir) else []:
             if _store.is_file(s / "metrics.json"):
-                whole(s / "metrics.json", "score records", top(s / "metrics.json"))
+                whole(s / "metrics.json", "score records", top(s / "metrics.json", run_record=True))
             if _store.is_file(s / "score.json"):
 
                 def unset(doc: Any) -> Any:

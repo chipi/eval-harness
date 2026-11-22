@@ -47,6 +47,7 @@ from evaluation_harness._common import (
     ROOT,
     dataset_id_ok,
     die,
+    imported_scorer_key,
     jsonl_lines,
     now,
     read_json,
@@ -202,10 +203,7 @@ def body(**inputs: Any) -> int:
     )
     # An import without scorer files has no instrument hash: the scorer's id stands in, hashed, so the score has
     # a key.
-    scorer = (
-        _model_runs.scorer_of(metrics_doc)
-        or hashlib.sha256(f"imported:{args.scorer_id}".encode()).hexdigest()[:12]
-    )
+    scorer = _model_runs.scorer_of(metrics_doc) or imported_scorer_key(args.scorer_id)
     score_dir = _model_runs.write_score(run_id, scorer, args.reference_id, metrics_doc, first=True)
     _outputs.write_rows(score_dir, rows)
     cover = f"{len(seen)}/{len(known)} items" + (" (subset)" if missing else "")

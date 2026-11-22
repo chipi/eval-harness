@@ -450,8 +450,8 @@ The page explains the goal, then answers, then shows how it got there and the ev
    - one line of column names (round · concluded · set out to learn · arms · best on <measure>),
      then **one folded section per round**, newest first, folded even when open. Its header is the
      round's row: **round** (its status, "from rN" under it), **concluded** (the conclusion, or
-     *open*; the widest column), **set out to learn** (the hypothesis), and **arms · best**: "N arms
-     (k retired)", an **inspect** button when the round has a leader and two or more arms (the
+     *open*; the widest column), **set out to learn** (the hypothesis), and **arms · best**: "N arms in play",
+     an **inspect** button when the round has a leader and two or more arms (the
      inspector on the round's arms, at most 40, against its leader, on the goal's measure; its
      tooltip is `evh comparison-show --round rN --goal <id>`), "best" with the arm and its mean, a **vs rN's
      best** button when the best changed, and a line counting what is inside ("k change(s) · k
@@ -676,7 +676,7 @@ tile opens it grouped by system (`arms.html?group=system`).
   **spend in period**. Filterable.
 - `03 what changed in the period`: **when**, **arm**, **what** (first run, how it was measured,
   promoted as the baseline, retired in a round and why), only the period's. Three or more arms of
-  one dataset re-measured the same way on one day (a rescore of every arm) are one line, "N arms
+  one dataset re-measured the same way on one day (a rescore of every arm) are one line, "N arms in play"
   on `<dataset>`", so they do not bury the rest.
 - `04 cost and quality, by goal`: a goal list; the goal's trade-off charts (its quality against
   cost and against speed, the frontier drawn), as on its goal page, one goal at a time, under the reference it is

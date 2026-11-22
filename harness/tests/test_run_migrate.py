@@ -220,6 +220,95 @@ try:
         and not (b / _outputs.FILE).exists(),
         a3.stderr[-300:],
     )
+    # An import made without --scorer-file (0.4.x) has no scorer hash: its score is keyed as `evh import-run` keys it
+    # now, by the hash of the scorer's id. A record with neither is still refused.
+    shutil.rmtree(proj / "data")
+    (proj / "data" / "datasets").mkdir(parents=True)
+    (proj / "data" / "datasets" / "ds1.json").write_text(
+        json.dumps(
+            {
+                "dataset_id": "ds1",
+                "created_at": "2026-11-01T00:00:00Z",
+                "version": 1,
+                "items": [{"item_id": "t01", "source_sha256": "0" * 64}],
+            }
+        )
+    )
+    (proj / "data" / "systems").mkdir()
+    (proj / "data" / "systems" / "arm_v1.yaml").write_text("system_id: arm_v1\nparams: {}\n")
+    scorer_id = "podcast_scraper scripts/measure/naming_gate.py"
+    adapter_fp = {"fingerprint": {"instrument": {"adapter": {"sha256": "c" * 64}}}}
+    imp = proj / "data" / "runs" / "arm_v1_20261102T000000Z"
+    bare = proj / "data" / "runs" / "arm_v1_20261103T000000Z"
+    old_run(
+        imp,
+        {"t01": "x"},
+        {
+            "run_id": imp.name,
+            "dataset_id": "ds1",
+            "config_id": "elsewhere_v1",
+            "created_at": "2026-11-02T00:00:00Z",
+            "scores": {"acc": 1.0},
+            "n_items": 1,
+            "build": {"ref": "abc1234", "dirty": False, "source": "git"},
+            "imported": {
+                "source": "elsewhere",
+                "scorer_id": scorer_id,
+                "scorer_sha256": None,
+                "scorer_sha256_unrecoverable_at_v4": True,
+            },
+        },
+    )
+    old_run(bare, {"t01": "x"}, {"run_id": bare.name, "dataset_id": "ds1", "config_id": "arm_v1"})
+    d = evh("migrate", "--dry-run")
+    check(
+        "a run with no scorer hash and no imported scorer id is refused, naming it",
+        d.returncode != 0 and bare.name in d.stderr and "records no scorer" in d.stderr,
+        d.stdout[-300:] + d.stderr[-300:],
+    )
+    shutil.rmtree(bare)
+    # 0.8's import-run writes a system_id naming no system file: the imported run's config_id names none either, and
+    # it keeps its value; a run that is not imported with an unknown id is still refused.
+    stray = proj / "data" / "runs" / "stray_v1_20261104T000000Z"
+    old_run(
+        stray,
+        {"t01": "x"},
+        {
+            "run_id": stray.name,
+            "dataset_id": "ds1",
+            "config_id": "stray_v1",
+            "created_at": "2026-11-04T00:00:00Z",
+            "scores": {"acc": 1.0},
+            "n_items": 1,
+            "build": {"ref": "abc1234", "dirty": False, "source": "git"},
+            **adapter_fp,
+        },
+    )
+    d = evh("migrate", "--dry-run")
+    check(
+        "a run that is not imported, its config_id no system's, is refused; the imported one is not",
+        d.returncode != 0
+        and "stray_v1" in d.stderr
+        and "not the id of a system" in d.stderr
+        and "elsewhere_v1" not in d.stderr,
+        d.stdout[-300:] + d.stderr[-400:],
+    )
+    shutil.rmtree(stray)
+    key = hashlib.sha256(f"imported:{scorer_id}".encode()).hexdigest()[:12]
+    a4 = evh("migrate")
+    check(
+        "an imported run with no scorer hash migrates: its score is keyed as import-run keys it",
+        a4.returncode == 0 and (imp / "scores" / f"{key}@none").is_dir(),
+        a4.stdout[-300:] + a4.stderr[-300:] + str(sorted(p.name for p in (imp / "scores").glob("*"))),
+    )
+    rec = model_runs.run(imp.name) or {}
+    check(
+        "the imported run keeps its id as system_id though no system has it",
+        rec.get("system_id") == "elsewhere_v1" and "config_id" not in rec,
+        rec,
+    )
+    v = evh("validate")
+    check("validate after migrating an imported run: no failure", v.returncode == 0, v.stdout[-900:])
 finally:
     shutil.rmtree(proj, ignore_errors=True)
 sys.exit(summary())

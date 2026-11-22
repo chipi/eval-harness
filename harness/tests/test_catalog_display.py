@@ -460,7 +460,7 @@ R2 = rnd(
 with mock.patch.object(model_rounds, "evidence", return_value={}):
     block = cb._rounds_block(stub([R4, R2]), {"goal_id": "g"}, "rouge_l")
 check(
-    "rounds: '1 arm in play', never '1 arms'; the retired count beside it",
+    "rounds: '1 arm in play', never '1 arms'",
     "1 arm in play" in block and "1 arms" not in block and "3 arms in play" in block,
     re.findall(r"\d+ arms?[^<]*", block),
 )
