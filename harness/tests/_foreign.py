@@ -42,9 +42,11 @@ class Build:
         self.proj, self.env = proj, env
 
     def evh(self, *args: Any) -> Any:
+        """Run `evh <args>` in the project and give back the finished process."""
         return _cli.run(self.proj, self.env, *args)
 
     def must(self, *args: Any) -> Any:
+        """Run `evh <args>`; raise RuntimeError with the output's tail when it exits non-zero."""
         r = self.evh(*args)
         if r.returncode != 0:
             raise RuntimeError(
@@ -53,9 +55,11 @@ class Build:
         return r
 
     def put(self, rel: str, text: str) -> None:
+        """Write a file of the project through the store, so a sqlite store holds it too."""
         _runstore.write_text(self.proj, rel, text)
 
     def init(self) -> None:
+        """Write the format marker, and the systems folder a file store needs."""
         self.put(_format.NAME, f"format: {_format.FORMAT}\n")
         if not _runstore.sqlite():
             (self.proj / "data" / "systems").mkdir(parents=True, exist_ok=True)
@@ -87,6 +91,7 @@ IMPORTED_ARMS = 64
 
 
 def imported(proj: Path, env: dict[str, str]) -> dict[str, Any]:
+    """Build the imported-shape project; return its run ids per dataset, its datasets and its goals."""
     b = Build(proj, env)
     b.init()
     sets = {
@@ -183,6 +188,7 @@ def _fleet_system(b: Build, name: str, sentences: int) -> str:
 
 
 def fleet(proj: Path, env: dict[str, str]) -> dict[str, Any]:
+    """Build the fleet-shape project in git, with runs, a promoted baseline per goal and an open round; return the names a test asserts on."""
     b = Build(proj, env)
     b.init()
     # A project in git, as the fleet's is: a run records the commit and `dirty: true` (the data is not committed).
@@ -323,6 +329,7 @@ BAKEOFF_SMALL, BAKEOFF_BIG = "task_set_small_v1", "task_set_wide_v1"
 
 
 def bakeoff(proj: Path, env: dict[str, str]) -> dict[str, Any]:
+    """Build the bake-off-shape project with a custom adapter and zero-price systems; return its runs, datasets, goals and systems."""
     b = Build(proj, {**env, "EVAL_BUILD_REF": "bakeoff-fixture-1"})
     b.init()
     (proj / "adapter.py").write_text(BAKEOFF_ADAPTER)

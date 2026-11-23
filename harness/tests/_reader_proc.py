@@ -27,6 +27,7 @@ import facts_dump as FD  # noqa: E402
 
 
 def mcp(out: Path) -> int:
+    """Write the facts the MCP server's read operations give to `out` as JSON; return 0."""
     from evaluation_harness import mcp_server  # noqa: PLC0415
     from evaluation_harness.ops import OPS  # noqa: PLC0415
 
@@ -54,6 +55,7 @@ def mcp(out: Path) -> int:
 
 
 def main(argv: list[str]) -> int:
+    """Apply the `--stub` first, then run the subcommand (`build`, `mcp`, `evh`); print the usage and return 2 for any other."""
     stub = None
     if "--stub" in argv:
         i = argv.index("--stub")

@@ -39,4 +39,5 @@ STUBS: dict[str, Callable[[], None]] = {
 
 
 def apply(name: str) -> None:
+    """Patch the running process with the stub called `name`; KeyError for an unknown name."""
     STUBS[name]()

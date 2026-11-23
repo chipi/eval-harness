@@ -231,6 +231,7 @@ def check_pin_claim(tmp: Path, env: dict, prev: str) -> None:
 
 
 def main() -> int:
+    """Install the previous release, upgrade it to this tree and check the pinned install moves; return 0 when every check passed."""
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--previous", help="the release tag to upgrade from (default: the latest GitHub Release)")
     ap.add_argument("--keep", action="store_true", help="keep the scratch folder and print it")
