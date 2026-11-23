@@ -27,6 +27,7 @@ from typing import Any
 from evaluation_harness import _common, _jsonout, _models, _store
 from evaluation_harness._adapter import call_once, load_adapter, score_wants_source
 from evaluation_harness._common import DATA, EXIT_PROBLEMS, MATERIALIZED, die, load_dataset, now
+from evaluation_harness._record import non_number
 from evaluation_harness.ops import legacy
 
 #: A reply is long when it is this many times the arm's median reply (RFC-020: "far longer than the arm's
@@ -349,7 +350,12 @@ def _smoke(args: argparse.Namespace) -> int:
             ref = _store.read_text(ref_dir / f"{item['item_id']}.txt", encoding="utf-8", errors="replace")
         try:
             scored = score(res.output, ref, text) if score_wants_source(score) else score(res.output, ref)
-            row["scored"] = bool(scored)
+            if (
+                bad := non_number(scored)
+            ) is not None:  # RFC-041 F7: the smoke says so, as evh run fails the item
+                row.update(scored=False, score_error=bad)
+            else:
+                row["scored"] = bool(scored)
         except Exception as exc:  # noqa: BLE001
             row.update(scored=False, score_error=f"{type(exc).__name__}: {exc}")
         item_calls = calls_of(res, wall)

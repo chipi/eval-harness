@@ -871,6 +871,11 @@ directory (until one or the other, `validate` fails V7 on it). A resumed pass **
 it again**, rather than skipping it — so the new run is complete, not a fragment — and
 calls the model only for the items that are missing.
 
+An item whose score is not a number (NaN, an infinity, None; the adapter's `score()` returned it) is a failed item, with its reason
+(`score q is not a number: nan`), scored as a failed item is and never averaged; the run goes on, and `--resume` calls it again
+(RFC-041 F7). `rescore`, `judge-score`, `sheet-import` and `import-run` refuse such a score by name; `arm-smoke` says the
+item was not scored.
+
 **An arm that calls each item once** (its adapter declares `CALL_ONCE`, or `call_once(params)`, for a call with an effect a
 retry would repeat: an agent run in a container, a deploy; [INTEGRATION](INTEGRATION.md#the-second-function)) is never retried,
 a transient failure included, and says so when it starts (`evh run --dry-run` too). A failed item keeps the `meta` and the

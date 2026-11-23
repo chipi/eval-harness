@@ -22,6 +22,7 @@ A chart with too little to draw refuses (`not-enough`) with the reason, never an
 from __future__ import annotations
 
 import contextlib
+import math
 import statistics
 from collections.abc import Iterator
 from typing import Any
@@ -88,7 +89,22 @@ def _goal(A, goal: str) -> dict[str, Any]:
 
 
 def _values(A, arm: str, metric: str) -> dict[str, float]:
+    """The arm's per-item values of the metric that are numbers: a NaN or an infinity (an adapter's own, or a run from
+    before RFC-041 F7) is left out of every chart, as an item the arm has no value for (`_values_dropped` counts them)."""
+    return {i: v for i, v in _raw_values(A, arm, metric).items() if _isfinite(v)}
+
+
+def _raw_values(A, arm: str, metric: str) -> dict:
     return dict((A.scores(arm).get(metric) or {}).get("values") or {})
+
+
+def _isfinite(v) -> bool:
+    return isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v)
+
+
+def _values_dropped(A, arm: str, metric: str) -> int:
+    """How many of the arm's values of the metric are not numbers, so not in `_values`."""
+    return sum(1 for v in _raw_values(A, arm, metric).values() if not _isfinite(v))
 
 
 def _mean(xs) -> float | None:
@@ -338,6 +354,8 @@ def items(goal: str, dataset: str | None = None, href=None) -> dict:
     A = _adapter()
     grp = _group(goal, dataset)
     m = grp["measure"]
+    dropped = sum(_values_dropped(A, a["arm"], m) for a in grp["arms"])
+    left_out = f" {dropped} value(s) that are not numbers are left out." if dropped else ""
     series = {a["label"]: _values(A, a["arm"], m) for a in grp["arms"]}
     series = {k: v for k, v in series.items() if v}
     if len(series) < 2:
@@ -364,7 +382,7 @@ def items(goal: str, dataset: str | None = None, href=None) -> dict:
     caption = (
         f"{m} per {A.item_word} and arm on {grp['dataset']}, the darker the higher ({'lower' if lower else 'higher'} "
         f"is better). The {len(shown)} of {len(shared)} {A.item_word}s where the arms differ most, most first: where "
-        "to read outputs side by side." + _through(grp["scorer"])
+        "to read outputs side by side." + _through(grp["scorer"]) + left_out
     )
     svg = cc.heatmap(
         list(series), shown, cells, f"{m} by arm and {A.item_word}", lo, hi, caption=cc._e(caption)

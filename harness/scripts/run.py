@@ -73,6 +73,7 @@ from evaluation_harness._record import (
     aggregate_scores,
     cut_off_items,
     empty_at_cap_note,
+    non_number,
     run_level_scores,
     run_record,
     run_scorer,
@@ -693,11 +694,6 @@ def one_pass(
                 raise ServerUnreachable(f"item {item['item_id']}: every model call failed: {unreachable}")
         failed = bool(failed_items) and failed_items[-1]["item_id"] == item["item_id"]
         outputs[item["item_id"]] = res.output
-        # A failed item's output is not written: --resume calls it again.
-        if live is not None and not resumed and not failed:
-            # One synced line per item: `--resume` treats a complete line as proof the item is done, and a torn
-            # last line (a kill mid-append) as not done, so a half-written output is never replayed and scored.
-            live.add(item["item_id"], res.output)
 
         reference = None
         if ref_dir is not None:
@@ -711,21 +707,56 @@ def one_pass(
         # hallucination check simply never ran and nothing said so.
         # A failed item scores as an empty answer (0 on most measures), or as the adapter's score_failure(reference)
         # says when it has one: a failure never makes an arm look better.
-        if (
-            item["item_id"] in bound
-            and not failed
-            and not (same or (lambda a, b: a.strip() == b.strip()))(res.output, bound[item["item_id"]])
-        ):
-            scored = {}
-            not_scorable.append(item["item_id"])
-        elif failed and score_failure is not None:
-            scored = score_failure(reference)
-        else:
-            scored = (
-                score(res.output, reference, source_text)
-                if score_wants_source(score)
-                else score(res.output, reference)
-            )
+        try:
+            if (
+                item["item_id"] in bound
+                and not failed
+                and not (same or (lambda a, b: a.strip() == b.strip()))(res.output, bound[item["item_id"]])
+            ):
+                scored = {}
+                not_scorable.append(item["item_id"])
+            elif failed and score_failure is not None:
+                scored = score_failure(reference)
+            else:
+                scored = (
+                    score(res.output, reference, source_text)
+                    if score_wants_source(score)
+                    else score(res.output, reference)
+                )
+        except (
+            BaseException
+        ):  # the scorer raised: the output is kept all the same, as when it was written first
+            if live is not None and not resumed and not failed:
+                live.add(item["item_id"], res.output)
+            raise
+        if (bad := non_number(scored)) is not None:
+            # RFC-041 F7: a score that is not a number (NaN, an infinity, None) is a failed item, never a mean's term:
+            # recorded with its reason, scored as a failed item is, its output not written (--resume calls it again).
+            if not failed:
+                failed_items.append({"item_id": item["item_id"], "error": bad})
+                print(f"      FAILED item {item['item_id'][:8]}: {bad}")
+                if not resumed and recorded is None:
+                    n_failed_called += 1
+                    if n_failed_called > FAILED_STOP_COUNT and n_failed_called > FAILED_STOP_SHARE * n_called:
+                        raise SystematicFailure(
+                            f"{n_failed_called} of the {n_called} items called failed (the last: {bad}): "
+                            "an adapter or configuration error, not the items"
+                        )
+                failed = True
+                scored = (
+                    score_failure(reference)
+                    if score_failure is not None
+                    else score("", reference, source_text)
+                    if score_wants_source(score)
+                    else score("", reference)
+                )
+            # what the failed item's own score holds that is a number stays; no metric of it is a NaN
+            scored = {k: v for k, v in scored.items() if non_number({k: v}) is None}
+        # A failed item's output is not written: --resume calls it again.
+        if live is not None and not resumed and not failed:
+            # One synced line per item: `--resume` treats a complete line as proof the item is done, and a torn
+            # last line (a kill mid-append) as not done, so a half-written output is never replayed and scored.
+            live.add(item["item_id"], res.output)
         row: dict[str, Any] = {"item_id": item["item_id"], **scored}
         if by_run is not None:
             run_items.append(
