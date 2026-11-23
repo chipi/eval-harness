@@ -1107,6 +1107,10 @@ def test_example_scorer_suites_pass() -> None:
             "a spending cap's three meanings printed one way: no command formats a cap or asks its truth itself",
         ),
         (
+            "test_reader_agreement.py",
+            "every reader says the same of a fact (CLI, API, MCP, catalog export, inspector) on the tutorial and three look-alikes of the beta projects; a reader that works one out itself is caught",
+        ),
+        (
             "test_foreign_projects.py",
             "three look-alike projects of the beta projects' shapes (an import with prose goals, a fleet's repeat set, a zero-price bake-off): every read command and RFC-041's facts, asserted by hand",
         ),
