@@ -194,6 +194,80 @@ refused(
     "r9",
 )
 
+print("\n-- already refused by name, held here so a writer that stops refusing is seen")
+(P / "nan.jsonl").write_text('{"item_id": "t01_login", "wer": NaN}\n')
+(P / "inf.jsonl").write_text('{"item_id": "t01_login", "wer": Infinity}\n')
+(P / "str.jsonl").write_text('{"item_id": "t01_login", "wer": 0.1, "cost_usd": "free"}\n')
+for what, name in (("NaN", "nan"), ("infinity", "inf"), ("a text cost", "str")):
+    refused(
+        f"import-run row with {what}",
+        P,
+        E,
+        import_args(scores=f"{name}.jsonl"),
+        "invalid-file",
+        "not a number",
+    )
+put(
+    P, "goals/elsewhere.yaml",
+    "goal_id: elsewhere\nschema_version: '0.1'\ntitle: t\nstatement: s\ndecision: d\nstatus: active\n"
+    "success_criteria:\n  primary:\n    measure: overlap_f1\n    direction: higher\n"
+    "datasets:\n  - {dataset_id: nowhere_v1, role: validation}\n",
+)  # fmt: skip
+PROMOTE = ("run-promote", "--run", FIRST_Y, "--allow-dirty", "--reason", REASON)
+refused(
+    "run-promote for a goal on a dataset the goal does not list",
+    P,
+    E,
+    (*PROMOTE, "--goal", "elsewhere"),
+    "mismatch",
+    DS,
+)
+refused("run-promote for a goal that is not there", P, E, (*PROMOTE, "--goal", "nope"), "not-found", "nope")
+refused("evh run --goal that is not there", P, E, (*RUN, "--goal", "nope"), "not-found", "nope")
+refused("evh run --labels that are not there", P, E, (*RUN, "--labels", "nope"), "not-found", "nope")
+refused(
+    "rescore --reference-id that is not there",
+    P,
+    E,
+    ("rescore", "--dataset-id", DS, "--reference-id", "gold/nope"),
+    "not-found",
+    "nope",
+)
+refused(
+    "rescore --labels that are not there",
+    P,
+    E,
+    ("rescore", "--dataset-id", DS, "--labels", "nope"),
+    "not-found",
+    "nope",
+)
+refused(
+    "reference-promote of labels that are not there", P, E,
+    ("reference-promote", "--dataset-id", DS, "--labels", "nope", "--tier", "silver", "--reason", REASON),
+    "not-found", "nope",
+)  # fmt: skip
+refused(
+    "label-from-run of a run that is not there",
+    P,
+    E,
+    ("label-from-run", "--run", "nope", "--set", "s1"),
+    "not-found",
+    "nope",
+)
+refused(
+    "label-from-run --set with unicode", P, E, ("label-from-run", "--run", FIRST_Y, "--set", "café", "--allow-dirty"),
+    "bad-argument", "label set",
+)  # fmt: skip
+refused(
+    "goal-new naming a dataset that is not there", P, E,
+    (
+        "goal-new", "g_lost", "--set", "title=t", "--set", "statement=s", "--set", "decision=d", "--set", "status=active",
+        "--set", "success_criteria.primary.measure=overlap_f1", "--set", "success_criteria.primary.direction=higher",
+        "--set", 'datasets=[{"dataset_id":"ghost_v1","role":"validation"}]',
+    ),
+    "invalid-file", "ghost_v1",
+)  # fmt: skip
+
 # ── a run with no goal, after the project says every run names one ──────────────────────────────────────────────
 print("\n-- a run with no goal, once goals/policy.yaml says every run names one")
 P2, E2 = fresh()
