@@ -149,9 +149,11 @@ def validate(p: Project, goals: list[str]) -> list[str]:
     margin = {
         m.group(1) for n in notes if (m := re.match(r"note: V14 goal (\w+): contenders are decided on", n))
     }
+    # RFC-041 F1's notes: a goal measure no run records, a direction that is a decision rule (asserted below).
+    measured = [n for n in notes if re.match(r"note: V14 goal \w+: primary (measure|direction) ", n)]
     check(
-        f"now: {p.name}: validate: the only notes are V14's margin note, one per goal",
-        margin == set(goals) and len(notes) == len(goals),
+        f"now: {p.name}: validate: the only notes are V14's margin note, one per goal, and its direction notes",
+        margin == set(goals) and len(notes) == len(goals) + len(measured),
         notes,
     )
     return lines
@@ -265,12 +267,12 @@ def imported() -> None:
         if "V14 goal" in ln and "contenders are decided on" not in ln and not ln.startswith("  ok")
     ]
     for gid, word in (
-        ("english_transcription", "prose"),
-        ("speaker_attribution", "prose"),
+        ("english_transcription", "is recorded by no run"),
+        ("speaker_attribution", "is recorded by no run"),
         ("regression_detection", "non_inferior"),
     ):
         check(
-            f"RFC-041 F1: validate V14 warns about goal {gid} ({word}: a measure no run records / a rule, not a direction)",
+            f"RFC-041 F1: validate V14 warns about goal {gid} ({word})",
             any(gid in ln and word in ln for ln in v14),
             v14[:3],
         )
