@@ -1154,6 +1154,10 @@ def test_example_scorer_suites_pass() -> None:
             "three look-alike projects of the beta projects' shapes (an import with prose goals, a fleet's repeat set, a zero-price bake-off): every read command and RFC-041's facts, asserted by hand",
         ),
         (
+            "test_data_mutations.py",
+            "real-looking data changed (no goal, cost 0 or none, dirty null, unicode ids, _r1 names, missing and extra fields, two baselines, far time zones, a public environment, a gone reference, an unrecorded measure) on the tutorial and the three look-alikes: no traceback, every reader agrees, validate names it",
+        ),
+        (
             "test_item_index.py",
             "an item's copy found once per item, the dataset record read once, read again when it changes",
         ),

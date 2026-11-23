@@ -2328,6 +2328,24 @@ def note_uncommitted_runs() -> None:
         )
 
 
+def note_missing_references() -> None:
+    """A note, never a failure (V16): scores read against a gold or silver reference that is not under data/references. A
+    reference's manifest is committed even when its text is not, so a folder that is gone altogether is a reference that
+    was deleted or never made here: the numbers read against it cannot be checked."""
+    missing: dict[str, set[str]] = {}
+    for _label, sd, _rec in all_scores():
+        ref = str(_mr.meta(sd).get("reference") or "")
+        if ref.startswith(("gold/", "silver/")) and not _store.is_dir(DATA / "references" / ref):
+            missing.setdefault(ref, set()).add(_mr.run_of(sd).name)
+    for ref, runs in sorted(missing.items()):
+        shown = sorted(runs)
+        notes.append(
+            f"V16 references: {len(runs)} run(s) scored against {ref}, which is not under data/references "
+            f"({', '.join(shown[:3])}{', ...' if len(shown) > 3 else ''}): what they measured cannot be re-checked. "
+            "Restore the folder (evh reference-promote), or re-score against a reference that is here."
+        )
+
+
 def note_round_scorers() -> None:
     """A note, never a failure (RFC-022): a round whose arms through one adapter were scored by more than one version
     of it may compare them on different rules (the adapter's code is the scorer's identity, so an edit to its calling
@@ -2392,6 +2410,7 @@ def body() -> int:
         v28_rows_in_format_7,
         v29_repeats_and_the_arms_that_read_them,
         note_uncommitted_runs,
+        note_missing_references,
         note_round_scorers,
     ):
         fn()
