@@ -65,7 +65,7 @@ def serve():
                 break
         except OSError:
             time.sleep(0.1)
-    return port, (proj / ".build" / "api-token").read_text().strip()
+    return port, (proj / ".build" / "api-token").read_text(encoding="utf-8").strip()
 
 
 def call(method, path, body=None, data_header=True):
@@ -97,7 +97,7 @@ def until(job_id, states=("succeeded", "failed", "cancelled", "lost"), seconds=1
 
 
 def rec_of(job_id):
-    return json.loads((proj / ".build" / "jobs" / job_id / "job.json").read_text())
+    return json.loads((proj / ".build" / "jobs" / job_id / "job.json").read_text(encoding="utf-8"))
 
 
 def post(path, body, by="person:ana"):
@@ -111,7 +111,7 @@ def post(path, body, by="person:ana"):
 def log_tail(rec, done):
     """What a job printed last, for a failure's message."""
     p = proj / ".build" / "jobs" / rec.get("id", "none") / "log"
-    return p.read_text()[-300:] if p.is_file() else ""
+    return p.read_text(encoding="utf-8")[-300:] if p.is_file() else ""
 
 
 def locks_of(rec):
@@ -125,7 +125,9 @@ try:
     _runstore.write_text(proj, _format.NAME, f"format: {_format.FORMAT}\n")
     shutil.copytree(KIT / "tickets", proj / "tutorial" / "tickets")
     _runstore.write_text(
-        proj, "goals/tickets_summary.yaml", (KIT / "goals" / "tickets_summary.yaml").read_text()
+        proj,
+        "goals/tickets_summary.yaml",
+        (KIT / "goals" / "tickets_summary.yaml").read_text(encoding="utf-8"),
     )
     r = evh("dataset-create", "--dataset-id", "tickets_v1", "--source-dir", "tutorial/tickets")
     r = r if r.returncode else evh("dataset-materialize", "--dataset-id", "tickets_v1")
@@ -154,7 +156,9 @@ try:
     )  # fmt: skip
     for arm in ("lead1", "lead2"):
         _runstore.write_text(
-            proj, f"systems/tickets_{arm}_v1.yaml", (KIT / "systems" / f"tickets_{arm}_v1.yaml").read_text()
+            proj,
+            f"systems/tickets_{arm}_v1.yaml",
+            (KIT / "systems" / f"tickets_{arm}_v1.yaml").read_text(encoding="utf-8"),
         )
         r = r if r.returncode else evh("run", "--system", f"tickets_{arm}_v1", "--dataset", "tickets_v1")
     r = r if r.returncode else evh("catalog")
@@ -365,7 +369,7 @@ try:
         st == 202
         and rec["inputs"]["card"].startswith(".build/uploads/")
         and kept is not None
-        and kept.read_text() == card
+        and kept.read_text(encoding="utf-8") == card
         and done.get("state") == "succeeded"
         and _runstore.read_json(proj, "datasets/routes_v1.json").get("card")
         == {"dataUseCases": "to test the route"},
@@ -414,7 +418,7 @@ try:
         {"id": f"r{i}", "body": f"row {i}", "kind": "x", "created_at": f"2026-10-0{i}T10:00:00Z"}
         for i in range(1, 7)
     ]
-    (proj / "rows.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rows))
+    (proj / "rows.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8")
     st, rec, done = post("/captures/rc1", {"importer": "jsonl", "query": json.dumps({"path": "rows.jsonl"})})
     check(
         "create: POST /captures/{capture} keeps a production system's records (capture): the captures' lock, exclusive",
@@ -699,7 +703,9 @@ try:
     # tee, which is not a terminal; it stopped on `stream.isatty()` (exit 70) before anything was judged.
     shutil.copy2(KIT / "judge_prompt.txt", proj / "tutorial" / "judge_prompt.txt")
     _runstore.write_text(
-        proj, "scorers/tickets-judge-v1.yaml", (KIT / "scorers" / "tickets-judge-v1.yaml").read_text()
+        proj,
+        "scorers/tickets-judge-v1.yaml",
+        (KIT / "scorers" / "tickets-judge-v1.yaml").read_text(encoding="utf-8"),
     )
     st, rec, done = post(
         "/scorers/tickets-judge-v1/judge",

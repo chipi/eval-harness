@@ -64,7 +64,7 @@ def serve() -> tuple[subprocess.Popen, int]:
 
 def call(port: int, method: str, path: str, body: dict | None = None) -> tuple[int, dict]:
     """One API call with the server's token."""
-    token = (proj / ".build" / "api-token").read_text().strip()
+    token = (proj / ".build" / "api-token").read_text(encoding="utf-8").strip()
     h = {"Host": f"127.0.0.1:{port}", "Authorization": f"Bearer {token}", "X-EVH-Data": "1"}
     raw = json.dumps(body).encode() if body is not None else None
     if raw is not None:
@@ -86,7 +86,7 @@ DEP = proj / "data" / "deployments" / "gem" / "mac.yaml"
 
 
 def stored(p: Path) -> dict:
-    return yaml.safe_load(p.read_text()) if p.is_file() else {}
+    return yaml.safe_load(p.read_text(encoding="utf-8")) if p.is_file() else {}
 
 
 try:
@@ -124,17 +124,21 @@ try:
         and not (proj / "data" / "deployments" / "nope").exists(),
         orphan.stderr[-300:],
     )
-    before = DEP.read_text()
+    before = DEP.read_text(encoding="utf-8")
     hand = evh("deployment-set", "gem", "mac", "--set", "checks.0.kind=smoke")
     check(
         "deployment-set refuses the checks: they are the deployment's history; nothing written",
-        hand.returncode == 1 and "ERROR (not-allowed)" in hand.stderr and DEP.read_text() == before,
+        hand.returncode == 1
+        and "ERROR (not-allowed)" in hand.stderr
+        and DEP.read_text(encoding="utf-8") == before,
         hand.stderr[-300:],
     )
     short = evh("deployment-accept", "gem", "mac", "--flag", "reasoning: 3 calls", "--why", "fine")
     check(
         "deployment-accept refuses a why that is not a sentence; nothing written",
-        short.returncode == 1 and "must be a sentence" in short.stderr and DEP.read_text() == before,
+        short.returncode == 1
+        and "must be a sentence" in short.stderr
+        and DEP.read_text(encoding="utf-8") == before,
         short.stderr[-300:],
     )
     acc = evh(
@@ -201,7 +205,7 @@ try:
             code == 200 and last.get("by") == "person:api" and last.get("accepted") == ["where it ran"],
             (code, body),
         )
-        before = DEP.read_text()
+        before = DEP.read_text(encoding="utf-8")
         code, _ = call(
             port,
             "PATCH",
@@ -211,7 +215,7 @@ try:
         missing = call(port, "GET", "/models/gem/deployments/nope")[0]
         check(
             "the API refuses: the checks edited by hand, a deployment that does not exist; nothing written",
-            400 <= code < 500 and missing == 404 and DEP.read_text() == before,
+            400 <= code < 500 and missing == 404 and DEP.read_text(encoding="utf-8") == before,
             (code, missing),
         )
     finally:

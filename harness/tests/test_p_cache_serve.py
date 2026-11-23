@@ -36,7 +36,8 @@ ThreadingHTTPServer.serve_forever = lambda self, *a, **k: None
 sys.argv = ["catalog_serve.py", "--public", "localhost", "--port", "0"]
 catalog_serve.main()
 print("P_CACHE=" + repr(os.environ.get("EVH_P_CACHE")))
-"""
+""",
+    encoding="utf-8",
 )
 
 
@@ -46,7 +47,7 @@ def serve_env(**set_: str) -> str:
     env.update(EVAL_HOME=str(proj), EVAL_BUILD_REF="test-p-cache-serve", **set_)
     r = subprocess.run(
         [sys.executable, str(script)], cwd=proj, env=env, capture_output=True, text=True, timeout=120,
-        stdin=subprocess.DEVNULL,
+        stdin=subprocess.DEVNULL, encoding="utf-8",
     )  # fmt: skip
     lines = [x for x in r.stdout.splitlines() if x.startswith("P_CACHE=")]
     return lines[-1].removeprefix("P_CACHE=") if lines else f"NO ANSWER: {(r.stdout + r.stderr)[-300:]}"

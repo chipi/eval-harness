@@ -349,13 +349,13 @@ try:
         {"id": f"d{i}", "body": "x", "created_at": "2026-01-01T00:00:00Z", "outcome": {"verdict": v}}
         for i, v in enumerate(["y", "n", "y"])
     ]
-    (proj / "dec.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rows))
+    (proj / "dec.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8")
     made = evh(
         "capture", "--importer", "jsonl", "--query", json.dumps({"path": "dec.jsonl"}), "--capture", "dec"
     )
     check("setup: a capture of three decisions", made.returncode == 0, (made.stdout + made.stderr)[-300:])
     (proj / "rules.yaml").write_text(
-        "- {when: {verdict: y}, label: file}\n- {when: {verdict: n}, label: dismiss}\n"
+        "- {when: {verdict: y}, label: file}\n- {when: {verdict: n}, label: dismiss}\n", encoding="utf-8"
     )
     lc = NEW["label-coverage-show"]
     cov = lc.call(dataset="dec_v1", capture="dec", map="rules.yaml")

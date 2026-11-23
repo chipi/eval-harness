@@ -82,8 +82,10 @@ def evh(*args, cap=None, background=False):
     cmd = [sys.executable, str(HERE / "cli.py"), *args]
     if background:
         return subprocess.Popen(cmd, cwd=proj, env=e, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
-                                stdin=subprocess.DEVNULL, start_new_session=True)  # fmt: skip
-    return subprocess.run(cmd, cwd=proj, env=e, capture_output=True, text=True, stdin=subprocess.DEVNULL)
+                                stdin=subprocess.DEVNULL, start_new_session=True, encoding="utf-8")  # fmt: skip
+    return subprocess.run(
+        cmd, cwd=proj, env=e, capture_output=True, text=True, stdin=subprocess.DEVNULL, encoding="utf-8"
+    )
 
 
 def system(name, cid, **extra):
@@ -109,7 +111,7 @@ try:
     _runstore.write_text(proj, _format.NAME, f"format: {_format.FORMAT}\n")
     (proj / "data" / "systems").mkdir(parents=True)
     shutil.copytree(KIT / "tickets", proj / "tickets")
-    (proj / "pay.py").write_text(PAY)
+    (proj / "pay.py").write_text(PAY, encoding="utf-8")
     r = evh("dataset-create", "--dataset-id", "tickets_v1", "--source-dir", "tickets")
     r = r if r.returncode else evh("dataset-materialize", "--dataset-id", "tickets_v1")
     r = (
@@ -132,7 +134,9 @@ try:
         "--reason", "the kit's summaries, for the spend test", "--by", "t",
     )  # fmt: skip
     _runstore.write_text(
-        proj, "goals/tickets_summary.yaml", (KIT / "goals" / "tickets_summary.yaml").read_text()
+        proj,
+        "goals/tickets_summary.yaml",
+        (KIT / "goals" / "tickets_summary.yaml").read_text(encoding="utf-8"),
     )
     check("setup: a dataset of 6 items, its gold, the goal", r.returncode == 0, (r.stdout + r.stderr)[-400:])
 
@@ -297,7 +301,7 @@ try:
     pa = evh("run", *slow, cap=0.04, background=True)
     ledger = proj / ".build" / "rounds" / "tickets_summary" / "r1.json"
     for _ in range(100):
-        if ledger.is_file() and json.loads(ledger.read_text()).get("entries"):
+        if ledger.is_file() and json.loads(ledger.read_text(encoding="utf-8")).get("entries"):
             break
         time.sleep(0.1)
     pb = evh("run", *slow_b, background=True)  # no cap of its own: what the round has left
@@ -325,14 +329,14 @@ try:
     check("setup: round r2, a $0.10 budget", r.returncode == 0, (r.stdout + r.stderr)[-300:])
     k = system("rk", "rk_v1", goal="tickets_summary", round="r2", sleep=1.0)
     log = proj / "killed.log"
-    with open(log, "w") as fh:
+    with open(log, "w", encoding="utf-8") as fh:
         e = dict(env)
         pk = subprocess.Popen([sys.executable, str(HERE / "cli.py"), "run", *k], cwd=proj, env=e,
                               stdout=fh, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, start_new_session=True)  # fmt: skip
     # Killed once two items are paid and written (its progress line says so, in either store).
     for _ in range(600):
         time.sleep(0.1)
-        if "[2/6]" in log.read_text():
+        if "[2/6]" in log.read_text(encoding="utf-8"):
             break
     os.killpg(pk.pid, signal.SIGKILL)
     pk.wait(timeout=30)
@@ -374,7 +378,7 @@ try:
             except OSError:
                 time.sleep(0.1)
         time.sleep(0.5)
-        token = (proj / ".build" / "api-token").read_text().strip()
+        token = (proj / ".build" / "api-token").read_text(encoding="utf-8").strip()
 
         def call(method, path, body=None):
             h = {"Host": f"127.0.0.1:{port}", "Authorization": f"Bearer {token}", "X-EVH-Data": "1"}
@@ -417,7 +421,9 @@ try:
                 break
             time.sleep(0.2)
         time.sleep(1.0)
-        entries = json.loads(ledger3.read_text()).get("entries", []) if ledger3.is_file() else []
+        entries = (
+            json.loads(ledger3.read_text(encoding="utf-8")).get("entries", []) if ledger3.is_file() else []
+        )
         mine = [e for e in entries if e.get("job") == j.get("id")]
         check(
             "a stopped run job: the supervisor closes its reservation with what its written items paid (not 0, not "

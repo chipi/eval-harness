@@ -43,13 +43,13 @@ def run(*args: str, home: Path | None = None) -> subprocess.CompletedProcess:
         e["EVAL_HOME"] = str(home)
     return subprocess.run(
         [sys.executable, str(TOOL), "--project", str(proj), "--scratch", str(scratch), *args],
-        cwd=tmp, env=e, capture_output=True, text=True, stdin=subprocess.DEVNULL, timeout=600,
+        cwd=tmp, env=e, capture_output=True, text=True, stdin=subprocess.DEVNULL, timeout=600, encoding="utf-8",
     )  # fmt: skip
 
 
 init = subprocess.run(
     [sys.executable, str(HARNESS / "scripts" / "cli.py"), "init", "--store", "files"], cwd=proj, env=env, capture_output=True, text=True,
-    stdin=subprocess.DEVNULL, timeout=300,
+    stdin=subprocess.DEVNULL, timeout=300, encoding="utf-8",
 )  # fmt: skip
 check(
     "setup: a project", init.returncode == 0 and (proj / "data").is_dir(), (init.stdout + init.stderr)[-300:]
@@ -98,7 +98,7 @@ check(
 )
 check(
     "the sqlite copy's config says store: sqlite",
-    "store: sqlite" in (scratch / "sqlite" / "config.yaml").read_text(),
+    "store: sqlite" in (scratch / "sqlite" / "config.yaml").read_text(encoding="utf-8"),
 )
 
 # the copies are kept while the source is what they were made from, made again when it changed
@@ -108,7 +108,7 @@ time.sleep(0.05)
 r = run("--views", "goal-list", "--rounds", "1", "--stores", "sqlite", "--json")
 now = (marker.stat().st_mtime_ns, (scratch / "sqlite" / "data" / "project.sqlite").stat().st_ino)
 check("a second run reuses the copies", r.returncode == 0 and now == was, (was, now))
-(proj / "data" / "a_new_file.txt").write_text("the source changed")
+(proj / "data" / "a_new_file.txt").write_text("the source changed", encoding="utf-8")
 r = run("--views", "goal-list", "--rounds", "1", "--stores", "sqlite", "--json")
 check(
     "the source's data/ changed: the copy is made again (and holds the new file)",

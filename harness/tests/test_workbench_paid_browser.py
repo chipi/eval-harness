@@ -89,7 +89,11 @@ def evh(*args: str) -> subprocess.CompletedProcess:
 
 def git(*args: str) -> subprocess.CompletedProcess:
     return subprocess.run(
-        ["git", "-C", str(proj), *args], capture_output=True, text=True, stdin=subprocess.DEVNULL
+        ["git", "-C", str(proj), *args],
+        capture_output=True,
+        text=True,
+        stdin=subprocess.DEVNULL,
+        encoding="utf-8",
     )
 
 
@@ -97,7 +101,8 @@ def system_yaml(name: str) -> None:
     (proj / "data" / "systems" / f"{name}.yaml").write_text(
         f"system_id: {name}\nparams:\n  provider: openai\n  model: fake:1b\n  max_tokens: 400\n"
         f"  base_url: http://127.0.0.1:{fake.server_port}/v1\n"
-        f"  usd_per_mtok_in: {PRICE_IN}\n  usd_per_mtok_out: {PRICE_OUT}\n"
+        f"  usd_per_mtok_in: {PRICE_IN}\n  usd_per_mtok_out: {PRICE_OUT}\n",
+        encoding="utf-8",
     )
 
 
@@ -111,7 +116,7 @@ def serve() -> tuple[subprocess.Popen, int, list[str]]:
         port = s.getsockname()[1]
     p = subprocess.Popen(
         [sys.executable, str(HERE / "cli.py"), "catalog-serve", "--port", str(port)], cwd=proj, env=env,
-        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, stdin=subprocess.DEVNULL,
+        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, stdin=subprocess.DEVNULL, encoding="utf-8",
     )  # fmt: skip
     for _ in range(300):
         try:
@@ -124,7 +129,7 @@ def serve() -> tuple[subprocess.Popen, int, list[str]]:
 
 def last_job(operation: str) -> tuple[Path, dict]:
     jobs = [
-        (d, json.loads((d / "job.json").read_text()))
+        (d, json.loads((d / "job.json").read_text(encoding="utf-8")))
         for d in sorted((proj / ".build" / "jobs").iterdir())
         if (d / "job.json").is_file()
     ]
@@ -136,9 +141,9 @@ def metrics_of(system: str) -> dict:
     found = sorted((proj / "data" / "runs").glob(f"{system}_*"))
     if not found:
         return {}
-    rec = json.loads((found[-1] / "run.json").read_text())
+    rec = json.loads((found[-1] / "run.json").read_text(encoding="utf-8"))
     for m in sorted(found[-1].rglob("metrics.json")):
-        rec.update(json.loads(m.read_text()))
+        rec.update(json.loads(m.read_text(encoding="utf-8")))
     return rec
 
 
@@ -305,7 +310,7 @@ try:
             )
 
             ledger_f = proj / ".build" / "rounds" / GOAL / "r1.json"
-            ledger = json.loads(ledger_f.read_text()) if ledger_f.is_file() else {}
+            ledger = json.loads(ledger_f.read_text(encoding="utf-8")) if ledger_f.is_file() else {}
             ents = [e for e in ledger.get("entries", []) if e.get("job") == a["job_dir"].name]
             e1 = ents[0] if ents else {}
             lesser = min(BUDGET, CAP1)

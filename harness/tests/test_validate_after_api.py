@@ -52,7 +52,7 @@ def origins(node, found):
 
 with_actor = {}
 for sp in sorted(SCHEMAS.glob("*.schema.json")):
-    enums = origins(json.loads(sp.read_text()), [])
+    enums = origins(json.loads(sp.read_text(encoding="utf-8")), [])
     if enums:
         with_actor[sp.name] = enums
 check("setup: schemas with the actor object are found", len(with_actor) >= 6, sorted(with_actor))
@@ -88,7 +88,7 @@ def serve():
                 break
         except OSError:
             time.sleep(0.1)
-    return port, (proj / ".build" / "api-token").read_text().strip()
+    return port, (proj / ".build" / "api-token").read_text(encoding="utf-8").strip()
 
 
 def call(method, path, body=None):
@@ -113,9 +113,7 @@ def job(path, body):
         if rec.get("state") in ("succeeded", "failed", "cancelled", "lost"):
             if rec["state"] != "succeeded":
                 log = proj / ".build" / "jobs" / j["id"] / "log"
-                return (
-                    f"{rec['state']} {rec.get('refusal')} {log.read_text()[-400:] if log.is_file() else ''}"
-                )
+                return f"{rec['state']} {rec.get('refusal')} {log.read_text(encoding='utf-8')[-400:] if log.is_file() else ''}"
             return rec["state"]
         time.sleep(0.2)
     return "timeout"
@@ -127,7 +125,9 @@ try:
     _runstore.write_text(proj, _format.NAME, f"format: {_format.FORMAT}\n")
     shutil.copytree(KIT / "tickets", proj / "tutorial" / "tickets")
     _runstore.write_text(
-        proj, "goals/tickets_summary.yaml", (KIT / "goals" / "tickets_summary.yaml").read_text()
+        proj,
+        "goals/tickets_summary.yaml",
+        (KIT / "goals" / "tickets_summary.yaml").read_text(encoding="utf-8"),
     )
     r = evh("dataset-create", "--dataset-id", "tickets_v1", "--source-dir", "tutorial/tickets")
     r = r if r.returncode else evh("dataset-materialize", "--dataset-id", "tickets_v1")
@@ -140,14 +140,16 @@ try:
     )  # fmt: skip
     for arm in ("lead1", "lead2"):
         _runstore.write_text(
-            proj, f"systems/tickets_{arm}_v1.yaml", (KIT / "systems" / f"tickets_{arm}_v1.yaml").read_text()
+            proj,
+            f"systems/tickets_{arm}_v1.yaml",
+            (KIT / "systems" / f"tickets_{arm}_v1.yaml").read_text(encoding="utf-8"),
         )
         r = r if r.returncode else evh("run", "--system", f"tickets_{arm}_v1", "--dataset", "tickets_v1")
     _runstore.write_text(
         proj,
         "systems/tickets_lead3_v1.yaml",
         (KIT / "systems" / "tickets_lead2_v1.yaml")
-        .read_text()
+        .read_text(encoding="utf-8")
         .replace("tickets_lead2_v1", "tickets_lead3_v1"),
     )  # not run yet: its run through the API is its first (two runs of one system fail V8)
     r = r if r.returncode else evh("catalog")

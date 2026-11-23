@@ -47,10 +47,10 @@ try:
     )
     (proj / "src").mkdir()
     for n in "abc":
-        (proj / "src" / f"{n}.txt").write_text(f"item {n}\n")
-    (proj / "f.csv").write_text("item_id,words,channel\na,2,email\nb,2,chat\nc,2,email\n")
+        (proj / "src" / f"{n}.txt").write_text(f"item {n}\n", encoding="utf-8")
+    (proj / "f.csv").write_text("item_id,words,channel\na,2,email\nb,2,chat\nc,2,email\n", encoding="utf-8")
     r = evh("dataset-create", "--dataset-id", "n_v1", "--source-dir", "src", "--licence", "CC-BY-4.0")
-    (proj / "src" / "d.txt").write_text("item d\n")
+    (proj / "src" / "d.txt").write_text("item d\n", encoding="utf-8")
     r = (
         r
         if r.returncode
@@ -70,7 +70,9 @@ try:
             "CC-BY-4.0",
         )
     )
-    (proj / "card.yaml").write_text("dataUseCases: Testing the export.\ndataBiases: Four short notes.\n")
+    (proj / "card.yaml").write_text(
+        "dataUseCases: Testing the export.\ndataBiases: Four short notes.\n", encoding="utf-8"
+    )
     r = r if r.returncode else evh("dataset-describe", "--dataset-id", "n_v2", "--card", "card.yaml")
     check(
         "setup: a dataset with a licence, a card, fields and a parent",

@@ -72,7 +72,7 @@ def serve():
                 break
         except OSError:
             time.sleep(0.1)
-    return port, (proj / ".build" / "api-token").read_text().strip()
+    return port, (proj / ".build" / "api-token").read_text(encoding="utf-8").strip()
 
 
 def call(method, path, body=None, data_header=True):
@@ -100,7 +100,7 @@ def until(job_id, states=("succeeded", "failed", "cancelled", "lost"), seconds=1
 
 
 def on_disk(job_id, name="job.json"):
-    return json.loads((proj / ".build" / "jobs" / job_id / name).read_text())
+    return json.loads((proj / ".build" / "jobs" / job_id / name).read_text(encoding="utf-8"))
 
 
 def log_of(job_id):
@@ -123,7 +123,9 @@ try:
     _runstore.write_text(proj, _format.NAME, f"format: {_format.FORMAT}\n")
     shutil.copytree(KIT / "tickets", proj / "tutorial" / "tickets")
     _runstore.write_text(
-        proj, "goals/tickets_summary.yaml", (KIT / "goals" / "tickets_summary.yaml").read_text()
+        proj,
+        "goals/tickets_summary.yaml",
+        (KIT / "goals" / "tickets_summary.yaml").read_text(encoding="utf-8"),
     )
     r = evh("dataset-create", "--dataset-id", "tickets_v1", "--source-dir", "tutorial/tickets")
     r = r if r.returncode else evh("dataset-materialize", "--dataset-id", "tickets_v1")
@@ -152,7 +154,9 @@ try:
     )  # fmt: skip
     for arm in ("lead1", "lead2"):
         _runstore.write_text(
-            proj, f"systems/tickets_{arm}_v1.yaml", (KIT / "systems" / f"tickets_{arm}_v1.yaml").read_text()
+            proj,
+            f"systems/tickets_{arm}_v1.yaml",
+            (KIT / "systems" / f"tickets_{arm}_v1.yaml").read_text(encoding="utf-8"),
         )
         r = r if r.returncode else evh("run", "--system", f"tickets_{arm}_v1", "--dataset", "tickets_v1")
     check(
@@ -311,7 +315,7 @@ try:
         # resume: the stopped job's cap, less what it spent; a new run id; the run it continues
         jn = start("t-spend", {**ok}, max_cost_usd=1)
         (proj / ".build/jobs" / jn["id"] / "state.json").write_text(
-            json.dumps({"state": "failed", "exit": 1})
+            json.dumps({"state": "failed", "exit": 1}), encoding="utf-8"
         )
         jobs_before = len(list((proj / ".build/jobs").iterdir()))
         r = refused(_api.resume_job, jn["id"])
@@ -325,14 +329,16 @@ try:
         )
         jr = start("t-spend", {**ok, "recall_failed": True}, max_cost_usd=1)
         (proj / ".build/jobs" / jr["id"] / "state.json").write_text(
-            json.dumps({"state": "failed", "exit": 1})
+            json.dumps({"state": "failed", "exit": 1}), encoding="utf-8"
         )
         wrote = (
             _common.RUNS / on_disk(jr["id"])["run_id"]
         )  # the stopped run wrote one output before it stopped
         _store.mkdir(wrote, parents=True, exist_ok=True)
         _outputs.store().add(wrote, "t01_login", "a summary")
-        (proj / ".build/jobs" / jr["id"] / "spent.json").write_text(json.dumps({"spent_usd": 0.25}))
+        (proj / ".build/jobs" / jr["id"] / "spent.json").write_text(
+            json.dumps({"spent_usd": 0.25}), encoding="utf-8"
+        )
         new = _api.resume_job(jr["id"])
         recn = on_disk(new["id"])
         check(
@@ -355,7 +361,7 @@ try:
             (on_disk(jr["id"])["inputs"], recn["inputs"]),
         )
         (proj / ".build/jobs" / new["id"] / "state.json").write_text(
-            json.dumps({"state": "succeeded", "exit": 0})
+            json.dumps({"state": "succeeded", "exit": 0}), encoding="utf-8"
         )
         r = refused(_api.resume_job, new["id"])
         check(
@@ -365,13 +371,15 @@ try:
         )
         jq = start("t-spend", {**ok, "repeat": 3}, max_cost_usd=1)
         (proj / ".build/jobs" / jq["id"] / "state.json").write_text(
-            json.dumps({"state": "failed", "exit": 1})
+            json.dumps({"state": "failed", "exit": 1}), encoding="utf-8"
         )
         r = refused(_api.resume_job, jq["id"])
         check(
             "a run with repeat above 1 is not resumed", r is not None and r[0] == 409 and "repeat" in r[1], r
         )
-        (proj / ".build/jobs" / jr["id"] / "spent.json").write_text(json.dumps({"spent_usd": 1}))
+        (proj / ".build/jobs" / jr["id"] / "spent.json").write_text(
+            json.dumps({"spent_usd": 1}), encoding="utf-8"
+        )
         r = refused(_api.resume_job, jr["id"])
         check(
             "a job that spent all its cap is not resumed",
@@ -380,7 +388,7 @@ try:
         )
         jp = start("t-plain", {})
         (proj / ".build/jobs" / jp["id"] / "state.json").write_text(
-            json.dumps({"state": "failed", "exit": 1})
+            json.dumps({"state": "failed", "exit": 1}), encoding="utf-8"
         )
         r = refused(_api.resume_job, jp["id"])
         check(
@@ -597,7 +605,7 @@ try:
     nobody = subprocess.run(
         [sys.executable, str(HERE / "cli.py"), "jobs-start", "round-close", "--arg", "goal=g"],
         cwd=proj, env={k: v for k, v in env.items() if k != "EVH_ACTOR"},
-        capture_output=True, text=True, stdin=subprocess.DEVNULL,
+        capture_output=True, text=True, stdin=subprocess.DEVNULL, encoding="utf-8",
     )  # fmt: skip
     check(
         "jobs-start without an actor names the flag and where it goes (080d scenario F2)",

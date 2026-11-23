@@ -157,7 +157,7 @@ try:
     srv, port, srv_out = serve()
     try:
         tok_file = proj / ".build" / "api-token"
-        token = tok_file.read_text().strip() if tok_file.exists() else ""
+        token = tok_file.read_text(encoding="utf-8").strip() if tok_file.exists() else ""
         check(
             "the token: written to .build/api-token, readable by its owner only",
             bool(token) and (tok_file.stat().st_mode & 0o777) == 0o600,
@@ -304,7 +304,7 @@ try:
         from evaluation_harness import _models
 
         outside = Path(tempfile.mkdtemp(prefix="evh-outside-"))
-        (outside / "m.yaml").write_text("model_id: m\nkind: llm\n")
+        (outside / "m.yaml").write_text("model_id: m\nkind: llm\n", encoding="utf-8")
         check(
             "a model is found by its id only: a path to a record outside the project names none",
             _models.find(proj / "data", str(outside / "m")) is None
@@ -368,7 +368,7 @@ try:
                     shown_tty += os.read(master, 4096).decode(errors="replace")
                 except OSError:
                     break
-        tty_token = (proj / ".build" / "api-token").read_text().strip()
+        tty_token = (proj / ".build" / "api-token").read_text(encoding="utf-8").strip()
         line = next((ln for ln in shown_tty.splitlines() if "Workbench:" in ln), "")
         check(
             "catalog-serve: printed to a terminal, the Workbench link carries this server's token",
@@ -407,7 +407,7 @@ try:
 
     any_port = subprocess.Popen(
         [sys.executable, str(HERE / "cli.py"), "catalog-serve", "--port", "0"],
-        cwd=proj, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, stdin=subprocess.DEVNULL,
+        cwd=proj, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, stdin=subprocess.DEVNULL, encoding="utf-8",
     )  # fmt: skip
     try:
         started = _serve.startup(any_port, [])

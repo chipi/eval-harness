@@ -176,7 +176,7 @@ def manual_not_tools(source: str) -> set[str]:
     raise AssertionError("no NOT_TOOLS dictionary in mcp_server.py")
 
 
-mcp_source = (Path(__file__).resolve().parents[1] / "scripts" / "mcp_server.py").read_text()
+mcp_source = (Path(__file__).resolve().parents[1] / "scripts" / "mcp_server.py").read_text(encoding="utf-8")
 check(
     "the MCP server's hand-written NOT_TOOLS names no operation (an operation is a tool, or not one, by its kind)",
     not manual_not_tools(mcp_source) & set(OPS),
@@ -399,10 +399,12 @@ check("a required array is required", ns is None and "--systems" in err[1], err)
 # ── what the supervisor starts a job's command with ────────────────────────────────────────────────────────────────
 with tempfile.TemporaryDirectory() as tmp:
     f = Path(tmp) / "inputs.json"
-    f.write_text(json.dumps({"goal": "g", "round": "r1", "conclusion": "three whole words"}))
+    f.write_text(
+        json.dumps({"goal": "g", "round": "r1", "conclusion": "three whole words"}), encoding="utf-8"
+    )
     ok = cli._inputs_file(close, str(f))
     g = Path(tmp) / "s.json"
-    g.write_text(json.dumps({"system": "s"}))
+    g.write_text(json.dumps({"system": "s"}), encoding="utf-8")
     check(
         "--inputs-file: the inputs of the file, the schema's defaults filled",
         ok == {"goal": "g", "round": "r1", "conclusion": "three whole words"}
@@ -420,13 +422,13 @@ with tempfile.TemporaryDirectory() as tmp:
         "a required input missing": {"goal": "g", "round": "r"},
         "not a JSON object": ["g"],
     }.items():
-        f.write_text(json.dumps(doc))
+        f.write_text(json.dumps(doc), encoding="utf-8")
         try:
             cli._inputs_file(close, str(f))
             refusals[what] = None
         except SystemExit as exc:
             refusals[what] = str(exc)
-    f.write_text("{not json")
+    f.write_text("{not json", encoding="utf-8")
     try:
         cli._inputs_file(close, str(f))
         refusals["a file that is not JSON"] = None
@@ -441,7 +443,9 @@ check(
 
 with tempfile.TemporaryDirectory() as tmp:
     f = Path(tmp) / "inputs.json"
-    f.write_text(json.dumps({"goal": "g", "round": "r1", "conclusion": "three whole words"}))
+    f.write_text(
+        json.dumps({"goal": "g", "round": "r1", "conclusion": "three whole words"}), encoding="utf-8"
+    )
     err = io.StringIO()
     with contextlib.redirect_stderr(err):
         try:

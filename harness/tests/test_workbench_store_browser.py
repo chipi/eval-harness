@@ -54,7 +54,7 @@ def serve() -> tuple[subprocess.Popen, int, list[str]]:
         port = s.getsockname()[1]
     p = subprocess.Popen(
         [sys.executable, str(HERE / "cli.py"), "catalog-serve", "--port", str(port)], cwd=proj, env=env,
-        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, stdin=subprocess.DEVNULL,
+        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, stdin=subprocess.DEVNULL, encoding="utf-8",
     )  # fmt: skip
     lines: list[str] = []
     assert p.stdout is not None
@@ -71,14 +71,14 @@ try:
     r = evh("init", "--store", "files", "--tutorial")
     r = r if r.returncode else evh("catalog")
     cfg = proj / "config.yaml"
-    text = cfg.read_text()
+    text = cfg.read_text(encoding="utf-8")
     check(
         "setup: a project in the files store, with the tutorial's settings, and its catalog",
         r.returncode == 0 and "store: files" in text,
         r.stderr[-300:],
     )
     cfg.write_text(
-        re.sub(r"^store: files\b", "store: sqlite", text, count=1, flags=re.M)
+        re.sub(r"^store: files\b", "store: sqlite", text, count=1, flags=re.M), encoding="utf-8"
     )  # the person's edit
     before = sorted(str(x.relative_to(proj / "data")) for x in (proj / "data").rglob("*") if x.is_file())
     cli = evh("data-migrate", "--to", "sqlite", "--dry-run", "--json")

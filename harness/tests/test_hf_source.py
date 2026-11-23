@@ -112,7 +112,7 @@ def evh(*args):
 try:
     (proj / "data" / "fields").mkdir(parents=True)
     (proj / "data" / "fields" / "notes.yaml").write_text(
-        "fieldset_id: notes\nfields:\n  - {name: label, type: integer}\n"
+        "fieldset_id: notes\nfields:\n  - {name: label, type: integer}\n", encoding="utf-8"
     )
     _runstore.migrate_in(proj)
     q = {"ref": REF, "split": "test", "text": "text", "fields": ["label"], "offset": 1, "limit": 3}

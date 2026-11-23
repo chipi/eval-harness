@@ -16,5 +16,5 @@ def link(lines: list[str]) -> str | None:
     """The sign-in link, the token read from the file the startup line names; None when no line names one."""
     for ln in lines:
         if m := SHOWN.search(ln):
-            return m.group(1) + Path(m.group(2)).read_text().strip() + m.group(3)
+            return m.group(1) + Path(m.group(2)).read_text(encoding="utf-8").strip() + m.group(3)
     return None

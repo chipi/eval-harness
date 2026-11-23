@@ -55,7 +55,8 @@ try:
     del os.environ["EVH_PUBLIC"]
     check(
         "the comparison keeps no copy of the rule",
-        not hasattr(compare, "public") and "def public(" not in Path(compare.__file__).read_text(),
+        not hasattr(compare, "public")
+        and "def public(" not in Path(compare.__file__).read_text(encoding="utf-8"),
     )
 
     # ── an in-process public call is refused an item's text by the inspector's own route ─────────────────────────

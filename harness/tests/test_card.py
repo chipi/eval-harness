@@ -52,11 +52,12 @@ try:
     )
     (proj / "src").mkdir()
     for n in "ab":
-        (proj / "src" / f"{n}.txt").write_text(f"item {n}\n")
+        (proj / "src" / f"{n}.txt").write_text(f"item {n}\n", encoding="utf-8")
     r = evh("dataset-create", "--dataset-id", "c_v1", "--source-dir", "src")
     before = ds("c_v1")
     (proj / "card.yaml").write_text(
-        "dataUseCases: Testing the card.\ndataBiases: ''\ndataLimitations: Two items only.\n"
+        "dataUseCases: Testing the card.\ndataBiases: ''\ndataLimitations: Two items only.\n",
+        encoding="utf-8",
     )
     r = evh("dataset-describe", "--dataset-id", "c_v1", "--card", "card.yaml")
     after = ds("c_v1")
@@ -68,7 +69,7 @@ try:
         and after["version"] == before["version"],
         (r.stdout + r.stderr)[-300:] + json.dumps(after.get("card")),
     )
-    (proj / "bad.yaml").write_text("motivation: not a Croissant key\n")
+    (proj / "bad.yaml").write_text("motivation: not a Croissant key\n", encoding="utf-8")
     r = evh("dataset-describe", "--dataset-id", "c_v1", "--card", "bad.yaml")
     check(
         "a key that is not a card key is refused, and nothing is written",

@@ -33,7 +33,9 @@ def aim(proj: Path) -> Path:
 
 def kit_system(proj: Path, name: str) -> None:
     """A tutorial system copied from the project's kit into its systems."""
-    _runstore.write_text(aim(proj), f"systems/{name}", (proj / "tutorial/systems" / name).read_text())
+    _runstore.write_text(
+        aim(proj), f"systems/{name}", (proj / "tutorial/systems" / name).read_text(encoding="utf-8")
+    )
 
 
 def system_ids(proj: Path) -> list[str]:
@@ -56,6 +58,7 @@ def evh_run(
         capture_output=True,
         text=True,
         timeout=timeout,
+        encoding="utf-8",
     )
 
 
@@ -205,6 +208,7 @@ def test_self_check(tmp: Path) -> None:
         capture_output=True,
         text=True,
         timeout=900,
+        encoding="utf-8",
     )
     check(
         "self-test: exit 0, the installed package's check (the tutorial in a scratch folder), not the checkout's suite",

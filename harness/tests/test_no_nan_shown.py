@@ -65,8 +65,8 @@ try:
     src = proj / "tutorial" / "items"
     src.mkdir(parents=True)
     for n in range(12):
-        (src / f"t{n:02d}.txt").write_text(f"item {n}\n")
-    (proj / "free_adapter.py").write_text(ADAPTER)
+        (src / f"t{n:02d}.txt").write_text(f"item {n}\n", encoding="utf-8")
+    (proj / "free_adapter.py").write_text(ADAPTER, encoding="utf-8")
     r = evh("dataset-create", "--dataset-id", "free_v1", "--source-dir", "tutorial/items")
     r = r if r.returncode else evh("dataset-materialize", "--dataset-id", "free_v1")
     check("setup: a frozen dataset of 12 items", r.returncode == 0, r.stderr[-300:])
@@ -146,7 +146,7 @@ def py_sites() -> dict[str, list[int]]:
     for f in sorted((HARNESS / "scripts").rglob("*.py")):
         toks = [
             t
-            for t in tokenize.generate_tokens(io.StringIO(f.read_text()).readline)
+            for t in tokenize.generate_tokens(io.StringIO(f.read_text(encoding="utf-8")).readline)
             if t.type
             not in (tokenize.COMMENT, tokenize.NL, tokenize.NEWLINE, tokenize.INDENT, tokenize.DEDENT)
         ]
@@ -182,7 +182,7 @@ def js_sites() -> dict[str, list[int]]:
     found: dict[str, list[int]] = {}
     for d in ("catalog_assets", "workbench"):
         for f in sorted((HARNESS / d).glob("*.js")):
-            for n, ln in enumerate(f.read_text().splitlines(), 1):
+            for n, ln in enumerate(f.read_text(encoding="utf-8").splitlines(), 1):
                 code = re.sub(r"/\*.*?\*/|//.*$", "", ln)
                 if re.search(r"\bNaN\b|\bInfinity\b|\bisNaN\b", code):
                     found.setdefault(f.name, []).append(n)

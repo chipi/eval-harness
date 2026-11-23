@@ -87,7 +87,7 @@ try:
         )
     )  # fmt: skip
     check("setup: a dataset with gold", r.returncode == 0, out(r)[-300:])
-    (proj / "adapter.py").write_text(ADAPTER)
+    (proj / "adapter.py").write_text(ADAPTER, encoding="utf-8")
     for cid, n in (("one_v1", 1), ("two_v1", 2)):
         _runstore.write_text(
             proj,
@@ -171,7 +171,7 @@ try:
     check("pair-test: a per-item metric of the same runs still tests", r.returncode == 0, out(r)[-300:])
 
     (proj / "adapter.py").write_text(
-        ADAPTER.replace('"items_seen": len(items)', '"items_seen": len(items) + 100')
+        ADAPTER.replace('"items_seen": len(items)', '"items_seen": len(items) + 100'), encoding="utf-8"
     )
     r = evh("rescore", "--match", "one_v1", "--dataset-id", "tickets_v1")
     rs = [rec for _k, lb, rec in _runview.scores_of(proj, name) if lb.startswith("rescored ")]
@@ -181,7 +181,7 @@ try:
         r.returncode == 0 and (rm.get("scores") or {}).get("items_seen") == 106 and rm.get("run_metrics"),
         out(r)[-400:] + json.dumps(rm.get("scores")),
     )
-    (proj / "adapter.py").write_text(ADAPTER)
+    (proj / "adapter.py").write_text(ADAPTER, encoding="utf-8")
 
     for bad, said in (
         ('{"overlap_f1": 1.0}', "also a per-item metric"),
@@ -189,7 +189,7 @@ try:
         ("1 / 0", "score_run() raised"),
     ):
         (proj / "adapter.py").write_text(
-            ADAPTER.split("def score_run")[0] + f"def score_run(items):\n    return {bad}\n"
+            ADAPTER.split("def score_run")[0] + f"def score_run(items):\n    return {bad}\n", encoding="utf-8"
         )
         r = evh("run", "--system", "one_v1", "--dataset", "tickets_v1")
         check(

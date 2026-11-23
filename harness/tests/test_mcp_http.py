@@ -56,7 +56,8 @@ def start(info): _w("start", info)
 def request(info): _w("request", info)
 def error(exc, info): _w("error", info)
 routes = {{"/metrics": lambda q: (200, "text/plain", b"evals_mcp_calls_total 1\\n")}}
-"""
+""",
+    encoding="utf-8",
 )
 with socket.socket() as s:
     s.bind(("127.0.0.1", 0))
@@ -68,7 +69,7 @@ cmd = [sys.executable, str(HERE / "cli.py"), "mcp", "--http", "--port", str(port
 # moves into the project.
 cmd += ["--allowed-host", "evals.example.test", "--project", tmp.name, "--hooks", f"{tmp.name}/hooks.py"]
 srv = subprocess.Popen(
-    cmd, cwd=tmp.parent, env=env, stderr=subprocess.PIPE, text=True, start_new_session=True
+    cmd, cwd=tmp.parent, env=env, stderr=subprocess.PIPE, text=True, start_new_session=True, encoding="utf-8"
 )
 base = f"http://127.0.0.1:{port}"
 
@@ -150,7 +151,7 @@ try:
             )
 
     anyio.run(session)
-    lines = [json.loads(ln) for ln in seen.read_text().splitlines()] if seen.is_file() else []
+    lines = [json.loads(ln) for ln in seen.read_text(encoding="utf-8").splitlines()] if seen.is_file() else []
     starts = [x for x in lines if x["kind"] == "start"]
     calls = [x for x in lines if x["kind"] == "request"]
     check(
@@ -160,13 +161,15 @@ try:
     )
     check(
         "hooks: an unknown tool is told as 'unknown', never the client's string",
-        any(c["tool"] == "unknown" for c in calls) and "forged" not in seen.read_text(),
+        any(c["tool"] == "unknown" for c in calls) and "forged" not in seen.read_text(encoding="utf-8"),
         [c["tool"] for c in calls],
     )
     calls = [c for c in calls if c["tool"] == "dataset-show"]
     check(
         "hooks: each call, its tool and argument names, never their values",
-        len(calls) == 4 and all(c["args"] == ["dataset"] for c in calls) and "d0" not in seen.read_text(),
+        len(calls) == 4
+        and all(c["args"] == ["dataset"] for c in calls)
+        and "d0" not in seen.read_text(encoding="utf-8"),
         calls,
     )
     check("hooks: the caller's address", all(c.get("client") == "127.0.0.1" for c in calls), calls)
@@ -216,7 +219,9 @@ cmd2 = [
     "--hooks",
     str(tmp / "hooks.py"),
 ]
-srv2 = subprocess.Popen(cmd2, cwd=tmp, env=env, stderr=subprocess.DEVNULL, text=True, start_new_session=True)
+srv2 = subprocess.Popen(
+    cmd2, cwd=tmp, env=env, stderr=subprocess.DEVNULL, text=True, start_new_session=True, encoding="utf-8"
+)
 base = f"http://127.0.0.1:{port2}"
 try:
     for _ in range(100):
@@ -269,7 +274,7 @@ try:
             )
 
     anyio.run(total)
-    told = [json.loads(ln) for ln in seen.read_text().splitlines() if ln.strip()]
+    told = [json.loads(ln) for ln in seen.read_text(encoding="utf-8").splitlines() if ln.strip()]
     mine = [
         x for x in told if x.get("kind") == "request" and x.get("tool") == "dataset-items" and "exit" in x
     ]
@@ -330,6 +335,7 @@ r = subprocess.run(
     capture_output=True,
     text=True,
     timeout=60,
+    encoding="utf-8",
 )
 check(
     "a bind beyond the loopback needs --allowed-host",

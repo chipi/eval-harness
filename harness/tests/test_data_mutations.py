@@ -175,7 +175,7 @@ class Copy(RA.Project):
         env["EVAL_BUILD_REF"] = "mutation-fixture"
         r = subprocess.run(  # nosec B603 - this interpreter and the test's own helper
             [sys.executable, str(HERE / "_mutations.py"), *args, str(self.proj)],
-            cwd=self.proj, env=env, capture_output=True, text=True, stdin=subprocess.DEVNULL, timeout=900, check=False,
+            cwd=self.proj, env=env, capture_output=True, text=True, stdin=subprocess.DEVNULL, timeout=900, check=False, encoding="utf-8",
         )  # fmt: skip
         if r.returncode != 0:
             raise RuntimeError(f"_mutations.py {' '.join(args)} failed: {(r.stdout + r.stderr)[-700:]}")
@@ -346,7 +346,9 @@ def public_pass(c: Copy, o: Outcome) -> dict[str, Any]:
     srv, port, _out = _serve.start(c.proj, c.env)
     try:
         tok = c.proj / ".build" / "api-token"
-        api = RA.Http(port, tok.read_text().strip() if tok.exists() else None, f"127.0.0.1:{port}")
+        api = RA.Http(
+            port, tok.read_text(encoding="utf-8").strip() if tok.exists() else None, f"127.0.0.1:{port}"
+        )
         for ds, items in hidden.items():
             if not items:
                 continue

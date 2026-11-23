@@ -64,7 +64,7 @@ def evh(*args: str) -> subprocess.CompletedProcess[str]:
 def tool(*args: str) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         [sys.executable, str(TOOL), "--scorers", "t-v1", "--sources", "goyal", *args],
-        cwd=proj, env=ENV, capture_output=True, text=True, stdin=subprocess.DEVNULL, timeout=600, check=False,
+        cwd=proj, env=ENV, capture_output=True, text=True, stdin=subprocess.DEVNULL, timeout=600, check=False, encoding="utf-8",
     )  # fmt: skip
 
 
@@ -95,7 +95,7 @@ try:
             {"scorer_id": "t-v1", "kind": "judge", "judges": [{"id": "ja", "params": {"model": "m"}}]}
         ),
     )
-    (proj / "src.py").write_text(SOURCE_PY)
+    (proj / "src.py").write_text(SOURCE_PY, encoding="utf-8")
     write_records()
     r = r if r.returncode else evh("dataset-create", "--dataset-id", "goyal2022_cnn_v1", "--source", "src.py:Source", "--query", '{"answer": "answer"}')  # fmt: skip
     r = r if r.returncode else evh("dataset-materialize", "--dataset-id", "goyal2022_cnn_v1")

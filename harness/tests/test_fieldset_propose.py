@@ -45,7 +45,7 @@ def col(c):
 
 
 try:
-    (proj / "notes.csv").write_text(CSV)
+    (proj / "notes.csv").write_text(CSV, encoding="utf-8")
     desc = {
         "@type": "sc:Dataset",
         "name": "notes",
@@ -62,7 +62,7 @@ try:
             ]}
         ],
     }  # fmt: skip
-    (proj / "croissant.json").write_text(json.dumps(desc))
+    (proj / "croissant.json").write_text(json.dumps(desc), encoding="utf-8")
     q = json.dumps({"path": "croissant.json", "text": "text", "id": "id"})
     r = evh("fieldset-propose", "--source", "croissant", "--query", q, "--fieldset-id", "notes")
     doc = yaml.safe_load(r.stdout) if r.returncode == 0 else {}

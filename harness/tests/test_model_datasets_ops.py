@@ -69,7 +69,7 @@ def serve() -> tuple[subprocess.Popen, int]:
 
 def call(port: int, method: str, path: str, body: dict | None = None) -> tuple[int, dict]:
     """One API call with the server's token."""
-    token = (proj / ".build" / "api-token").read_text().strip()
+    token = (proj / ".build" / "api-token").read_text(encoding="utf-8").strip()
     h = {"Host": f"127.0.0.1:{port}", "Authorization": f"Bearer {token}", "X-EVH-Data": "1"}
     raw = json.dumps(body).encode() if body is not None else None
     if raw is not None:
@@ -229,7 +229,7 @@ try:
     )
     path = proj / "data" / "fields" / "f1.yaml"
     if path.is_file():
-        path.write_text("# the facts\n" + path.read_text())
+        path.write_text("# the facts\n" + path.read_text(encoding="utf-8"), encoding="utf-8")
     else:
         _runstore.write_text(proj, "fields/f1.yaml", "# the facts\n" + stored("fields/f1.yaml"))
     before = stored("fields/f1.yaml")
@@ -308,7 +308,7 @@ try:
     with_items = result(evh("label-set-show", "ds_v1", "rule_cap", "--items", "--json"))
     public_items = subprocess.run(
         [sys.executable, str(HERE / "cli.py"), "label-set-show", "ds_v1", "rule_cap", "--items", "--json"],
-        cwd=proj, env={**env, "EVH_PUBLIC": "1"}, capture_output=True, text=True, stdin=subprocess.DEVNULL, timeout=600,
+        cwd=proj, env={**env, "EVH_PUBLIC": "1"}, capture_output=True, text=True, stdin=subprocess.DEVNULL, timeout=600, encoding="utf-8",
     )  # fmt: skip
     lss_op = registry.get("label-set-show")
     check(

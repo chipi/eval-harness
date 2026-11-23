@@ -73,7 +73,11 @@ try:
     r = evh("catalog", "--out", out)
     check("setup: the catalog builds", r.returncode == 0, r.stderr[-300:])
     for goal, arm in WANT.items():
-        page = (out / "g" / f"{goal}.html").read_text() if (out / "g" / f"{goal}.html").exists() else ""
+        page = (
+            (out / "g" / f"{goal}.html").read_text(encoding="utf-8")
+            if (out / "g" / f"{goal}.html").exists()
+            else ""
+        )
         tagged = []
         for row in re.findall(r"<tr[^>]*>.*?</tr>", page, re.S):
             if 'tag-base">baseline' in row:

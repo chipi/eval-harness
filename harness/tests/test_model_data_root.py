@@ -278,7 +278,8 @@ try:
         "".join(
             json.dumps({"item_id": i, "acc": float(s), "cost_usd": 0.001}) + "\n"
             for i, s in zip(ITEMS, [0, 0, 0, 0, 0, 1])
-        )
+        ),
+        encoding="utf-8",
     )
     shutil.rmtree(CD / "materialized")
     shutil.rmtree(CD / "runs" / "c_1")
@@ -426,7 +427,7 @@ try:
         and [x["text"] for x in cd.item_labels("ds_v1", "i0")] == [None, None],
         cd.label_coverage("ds_v1"),
     )
-    ds1 = json.loads((CD / "datasets" / "ds_v1.json").read_text())
+    ds1 = json.loads((CD / "datasets" / "ds_v1.json").read_text(encoding="utf-8"))
     ds1["items"] = [it for it in ds1["items"] if it["item_id"] != "i3"]
     putj(CD, "datasets/ds_v1.json", ds1)
     only = [t for *_, t in _label_sets.matches("ds_v1", DATA, only="i0")]
@@ -499,7 +500,7 @@ try:
 
     # -- layering ------------------------------------------------------------------------------------------------------
     def imports(rel: str) -> set[str]:
-        tree = ast.parse((HARNESS / "scripts" / rel).read_text())
+        tree = ast.parse((HARNESS / "scripts" / rel).read_text(encoding="utf-8"))
         out: set[str] = set()
         for n in ast.walk(tree):
             if isinstance(n, ast.ImportFrom):

@@ -93,7 +93,7 @@ def verdict_fps(sid: str, items: list, arms: list, articles: dict, outputs: dict
     )
     out: dict[str, set] = {}
     for f in sorted(vdir.glob("*/*.json")):
-        out.setdefault(f.parent.name, set()).add(json.loads(f.read_text())["judge_fp"])
+        out.setdefault(f.parent.name, set()).add(json.loads(f.read_text(encoding="utf-8"))["judge_fp"])
     out["_calls"] = {st["calls"]}
     return out
 
@@ -218,7 +218,7 @@ try:
     )
 
     # -- the schema
-    schema = json.loads((HARNESS / "schemas" / "scorer.schema.json").read_text())
+    schema = json.loads((HARNESS / "schemas" / "scorer.schema.json").read_text(encoding="utf-8"))
     ok = jsonschema.Draft202012Validator(schema)
     doc = yaml.safe_load(_runstore.read_text(proj, "scorers/by_system_v1.yaml"))
     neither = {**doc, "judges": [{"id": "ja"}, doc["judges"][1]]}

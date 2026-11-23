@@ -28,7 +28,7 @@ def served(A: Any):
     if data is not None:
         mark = data / _format.NAME
         if not mark.exists() and data.is_dir():
-            mark.write_text(f"format: {_format.FORMAT}\n")
+            mark.write_text(f"format: {_format.FORMAT}\n", encoding="utf-8")
         os.environ["EVAL_DATA_DIR"] = str(data)
         os.environ["EVAL_STORE"] = "files"
         _common._paths.cache_clear()

@@ -24,8 +24,8 @@ from evaluation_harness._check import check, summary  # noqa: E402
 
 proj = Path(tempfile.mkdtemp(prefix="evh-shadow-"))
 try:
-    (proj / "stats.py").write_text("WHO = 'the project'\n")
-    (proj / "adapter.py").write_text("WHO = 'the project'\n")
+    (proj / "stats.py").write_text("WHO = 'the project'\n", encoding="utf-8")
+    (proj / "adapter.py").write_text("WHO = 'the project'\n", encoding="utf-8")
     probe = proj / "probe.py"
     probe.write_text(
         "import sys\n"
@@ -38,10 +38,13 @@ try:
         "a.module_at(a.BUNDLED)\n"  # the bundled adapter, as a run without one loads it
         "import stats, adapter\n"
         "print('bare stats is the project:', getattr(stats, 'WHO', None) == 'the project')\n"
-        "print('bare adapter is the project:', getattr(adapter, 'WHO', None) == 'the project')\n"
+        "print('bare adapter is the project:', getattr(adapter, 'WHO', None) == 'the project')\n",
+        encoding="utf-8",
     )
     env = {k: v for k, v in os.environ.items() if not k.startswith("EVAL_") and k != "PYTHONPATH"}
-    r = subprocess.run([sys.executable, str(probe)], cwd=proj, env=env, capture_output=True, text=True)
+    r = subprocess.run(
+        [sys.executable, str(probe)], cwd=proj, env=env, capture_output=True, text=True, encoding="utf-8"
+    )
     out = r.stdout + r.stderr
     check(
         "the harness's judging uses the harness's stats, not a project's stats.py",

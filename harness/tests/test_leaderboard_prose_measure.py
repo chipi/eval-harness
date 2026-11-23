@@ -84,8 +84,8 @@ try:
     src = proj / "tutorial" / "items"
     src.mkdir(parents=True)
     for n in range(6):
-        (src / f"t{n:02d}.txt").write_text(f"item {n}\n")
-    (proj / "prose_adapter.py").write_text(ADAPTER)
+        (src / f"t{n:02d}.txt").write_text(f"item {n}\n", encoding="utf-8")
+    (proj / "prose_adapter.py").write_text(ADAPTER, encoding="utf-8")
     r = evh("dataset-create", "--dataset-id", "prose_v1", "--source-dir", "tutorial/items")
     r = r if r.returncode else evh("dataset-materialize", "--dataset-id", "prose_v1")
     check("setup: a frozen dataset", r.returncode == 0, r.stderr[-300:])
@@ -164,7 +164,7 @@ try:
     check("goal-leaderboard: the text says so too", r.returncode == 0 and "V14" in r.stdout, r.stdout[-500:])
     out = proj / "catalog"
     r = evh("catalog", "--out", out)
-    pages = {p.name: p.read_text() for p in out.rglob("*.html")} if r.returncode == 0 else {}
+    pages = {p.name: p.read_text(encoding="utf-8") for p in out.rglob("*.html")} if r.returncode == 0 else {}
     goal_page = next((t for n, t in pages.items() if "g_prose" in n), "")
     check(
         "catalog: builds, and the goal's page says why it has no table",

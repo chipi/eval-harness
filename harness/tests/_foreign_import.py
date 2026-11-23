@@ -16,7 +16,7 @@ from evaluation_harness.ops.registry import OPS
 # The hash of the harness code is the same for every call of this process, and takes 0.4 s to work out each time.
 _fingerprint.harness_code_sha256 = functools.cache(_fingerprint.harness_code_sha256)
 
-for spec in json.loads(Path(sys.argv[1]).read_text()):
+for spec in json.loads(Path(sys.argv[1]).read_text(encoding="utf-8")):
     with contextlib.redirect_stdout(io.StringIO()) as out:
         code = OPS["import-run"].body(**spec)
     if code:

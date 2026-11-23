@@ -109,7 +109,9 @@ try:
         proj, "goals/tickets_summary.yaml", (KIT / "goals" / "tickets_summary.yaml").read_bytes()
     )
     for c in ("tickets_lead1", "tickets_lead2"):
-        _runstore.write_text(proj, f"systems/{c}_v1.yaml", (KIT / "systems" / f"{c}_v1.yaml").read_text())
+        _runstore.write_text(
+            proj, f"systems/{c}_v1.yaml", (KIT / "systems" / f"{c}_v1.yaml").read_text(encoding="utf-8")
+        )
         r = evh("run", "--system", f"{c}_v1", "--dataset", "tickets_v1", "--goal", "tickets_summary")
         check(f"setup: {c} runs", r.returncode == 0, said(r)[-300:])
 
@@ -118,10 +120,11 @@ try:
         {"id": iid, "body": "x", "outcome": {"verdict": ["noise", "fixed", "open"][i % 3]}}
         for i, iid in enumerate(items)
     ]
-    (proj / "out.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rows))
+    (proj / "out.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8")
     evh("capture", "--importer", "jsonl", "--query", json.dumps({"path": "out.jsonl"}), "--capture", "oc")
     (proj / "map.yaml").write_text(
-        "- {when: {verdict: open}, skip: true}\n- {when: {verdict: fixed}, label: file}\n- {when: {verdict: noise}, label: dismiss}\n"
+        "- {when: {verdict: open}, skip: true}\n- {when: {verdict: fixed}, label: file}\n- {when: {verdict: noise}, label: dismiss}\n",
+        encoding="utf-8",
     )
     r = evh(
         "label-from-capture",
@@ -160,7 +163,8 @@ try:
     # A rule naming more than one right answer: a fixed one was right to file or to escalate.
     (proj / "map_two.yaml").write_text(
         "- {when: {verdict: open}, skip: true}\n- {when: {verdict: fixed}, label: [file, escalate]}\n"
-        "- {when: {verdict: noise}, label: dismiss}\n"
+        "- {when: {verdict: noise}, label: dismiss}\n",
+        encoding="utf-8",
     )
     r = evh(
         "label-from-capture",
@@ -188,7 +192,7 @@ try:
         said(r)[-300:],
     )
     _runstore.rmtree(proj, two)
-    (proj / "map_empty.yaml").write_text("- {when: {verdict: fixed}, label: []}\n")
+    (proj / "map_empty.yaml").write_text("- {when: {verdict: fixed}, label: []}\n", encoding="utf-8")
     r = evh(
         "label-from-capture",
         "--dataset-id",
@@ -219,11 +223,12 @@ try:
         {"id": iid, "body": "x", "created_at": ago(a), "outcome": o}
         for iid, o, a in zip(items[:5], outs, ages, strict=True)
     ]  # items[5] is not in the capture
-    (proj / "out2.jsonl").write_text("".join(json.dumps(r) + "\n" for r in recs))
+    (proj / "out2.jsonl").write_text("".join(json.dumps(r) + "\n" for r in recs), encoding="utf-8")
     evh("capture", "--importer", "jsonl", "--query", json.dumps({"path": "out2.jsonl"}), "--capture", "oc2")
     (proj / "map_age.yaml").write_text(
         "- {when: {verdict: open}, skip: true}\n- {when: {verdict: fixed}, min_age_days: 14, label: file}\n"
-        "- {when: {verdict: noise}, label: dismiss}\n"
+        "- {when: {verdict: noise}, label: dismiss}\n",
+        encoding="utf-8",
     )
     r = evh("label-coverage-show", "tickets_v1", "--capture", "oc2", "--map", "map_age.yaml", "--json")
     cov = json.loads(r.stdout).get("result") or {} if r.returncode == 0 else {}
@@ -326,7 +331,11 @@ try:
     r = evh("dataset-show", "tickets_v1")
     check("evh dataset-show: its tags", "tags: source=support" in r.stdout, said(r)[:500])
     r = evh("catalog")
-    page = (proj / ".build" / "catalog" / "datasets.html").read_text() if r.returncode == 0 else ""
+    page = (
+        (proj / ".build" / "catalog" / "datasets.html").read_text(encoding="utf-8")
+        if r.returncode == 0
+        else ""
+    )
     check(
         "the catalog's datasets page: a tags column and a group-by chip per tag key",
         'data-group-by="tag-source"' in page and "source: support" in page,

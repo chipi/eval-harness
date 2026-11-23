@@ -89,9 +89,9 @@ try:
         )
     )
     check("setup: the kit's gold, imported and promoted", r.returncode == 0, (r.stdout + r.stderr)[-300:])
-    _runstore.write_text(proj, GOAL, (KIT / "goals" / "tickets_summary.yaml").read_text())
+    _runstore.write_text(proj, GOAL, (KIT / "goals" / "tickets_summary.yaml").read_text(encoding="utf-8"))
 
-    cfg = (KIT / "systems" / "tickets_lead2_v1.yaml").read_text()
+    cfg = (KIT / "systems" / "tickets_lead2_v1.yaml").read_text(encoding="utf-8")
     L2 = "systems/tickets_lead2_v1.yaml"
     RUN_L2 = ("run", "--system", "tickets_lead2_v1", "--dataset", "tickets_v1")
     _runstore.write_text(proj, L2, cfg)
@@ -198,7 +198,7 @@ try:
     )
     r = evh("catalog")
     page = proj / ".build" / "catalog" / "g" / "tickets_summary.html"
-    html = page.read_text().replace("<wbr>", "") if page.is_file() else ""
+    html = page.read_text(encoding="utf-8").replace("<wbr>", "") if page.is_file() else ""
     check("catalog: a page per goal", r.returncode == 0 and page.is_file(), r.stderr[-300:])
     check(
         "catalog: the goal page shows its links, a web address as a link and a project path as text",
@@ -213,7 +213,7 @@ try:
         str(proj / ".build" / "catalog-repo"),
     )
     repo_html = (
-        (proj / ".build" / "catalog-repo" / "g" / "tickets_summary.html").read_text()
+        (proj / ".build" / "catalog-repo" / "g" / "tickets_summary.html").read_text(encoding="utf-8")
         if r.returncode == 0
         else ""
     )
@@ -233,7 +233,7 @@ try:
     )
     check(
         "catalog: the goals index links it",
-        "g/tickets_summary.html" in (proj / ".build/catalog/goals.html").read_text(),
+        "g/tickets_summary.html" in (proj / ".build/catalog/goals.html").read_text(encoding="utf-8"),
     )
     answer = html.find("the answer so far")
     check(
@@ -247,7 +247,7 @@ try:
         in html
         and 'class="tag-base"' in html,
     )
-    ds_page = (proj / ".build/catalog/d/tickets_v1.html").read_text()
+    ds_page = (proj / ".build/catalog/d/tickets_v1.html").read_text(encoding="utf-8")
     check(
         "catalog: the dataset page shows its baseline and reason, and tags the row",
         "lead2 answers the triage goal on six tickets" in ds_page and 'class="tag-base"' in ds_page,
@@ -280,7 +280,7 @@ try:
         "evh overview-show: the glance has the recommended column",
         r.returncode == 0 and "recommended" in r.stdout,
     )
-    goals_page = (proj / ".build/catalog/goals.html").read_text()
+    goals_page = (proj / ".build/catalog/goals.html").read_text(encoding="utf-8")
     check(
         "catalog: the goals page counts systems, not scorings, and shows each goal's recommendation",
         "systems filed" in goals_page and "arms filed" not in goals_page and ">recommended<" in goals_page,
@@ -292,7 +292,7 @@ try:
         r.stdout,
     )
     cost_page = proj / ".build/catalog/m/cost_usd.html"
-    cp = cost_page.read_text() if cost_page.is_file() else ""
+    cp = cost_page.read_text(encoding="utf-8") if cost_page.is_file() else ""
     check(
         "catalog: cost is its own kind, and the page names the goals that weigh it",
         "cost: what an item cost" in cp
@@ -308,7 +308,7 @@ try:
     )
 
     # A goal with many arms (evh goal-leaderboard G --arms/--top): the table can be cut down, never the decision.
-    lead1 = (KIT / "systems" / "tickets_lead1_v1.yaml").read_text()
+    lead1 = (KIT / "systems" / "tickets_lead1_v1.yaml").read_text(encoding="utf-8")
     for i in range(1, 7):
         _runstore.write_text(
             proj,
@@ -431,7 +431,7 @@ try:
         line,
     )
     evh("catalog")
-    html = page.read_text()
+    html = page.read_text(encoding="utf-8")
     check(
         "catalog: the goal page shows its guardrails in words, with their source",
         "<dt>guardrails</dt>" in html and "never quote an email address" in html and "privacy review" in html,
@@ -452,7 +452,7 @@ try:
         proj, GOAL, original.replace("  min_items: 6\n", "  min_items: 6\n  axes: {quality: {limit: 0.99}}\n")
     )
     evh("catalog")
-    arms_page = (proj / ".build/catalog/arms.html").read_text()
+    arms_page = (proj / ".build/catalog/arms.html").read_text(encoding="utf-8")
     r = evh("arm-list")
     check(
         "catalog: an arm below the goal's quality limit is badged over a limit, on the page and in evh arm-list",
@@ -521,8 +521,8 @@ try:
     check(
         "catalog: its page says what non_inferior means, not 'non_inferior is better'",
         gate.is_file()
-        and "no significant drop against the baseline" in gate.read_text()
-        and "non_inferior is better" not in gate.read_text(),
+        and "no significant drop against the baseline" in gate.read_text(encoding="utf-8")
+        and "non_inferior is better" not in gate.read_text(encoding="utf-8"),
         r.stderr[-300:],
     )
 finally:

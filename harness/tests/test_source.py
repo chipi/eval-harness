@@ -53,7 +53,7 @@ try:
     src = proj / "data" / "sources" / "s_v1"
     src.mkdir(parents=True)
     for n in "abc":
-        (src / f"{n}.txt").write_text(f"item {n}\n")
+        (src / f"{n}.txt").write_text(f"item {n}\n", encoding="utf-8")
     rows = {"a": {"row": 4, "sha256": sha(src / "a.txt")}, "b": {"row": 9, "sha256": "0" * 64}}
     (proj / "data" / "sources" / "s_v1.rows.json").write_text(
         json.dumps(
@@ -67,7 +67,8 @@ try:
                 "item_url": TEMPLATE,
                 "rows": rows,
             }
-        )
+        ),
+        encoding="utf-8",
     )
     _runstore.migrate_in(proj)
     r = evh("dataset-create", "--dataset-id", "s_v1", "--source-dir", "data/sources/s_v1")

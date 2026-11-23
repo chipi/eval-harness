@@ -60,7 +60,7 @@ def serve() -> tuple[subprocess.Popen, int, list[str]]:
         port = s.getsockname()[1]
     p = subprocess.Popen(
         [sys.executable, str(HERE / "cli.py"), "catalog-serve", "--port", str(port)], cwd=proj, env=env,
-        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, stdin=subprocess.DEVNULL,
+        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, stdin=subprocess.DEVNULL, encoding="utf-8",
     )  # fmt: skip
     lines: list[str] = []
     assert p.stdout is not None
@@ -79,7 +79,7 @@ try:
     shutil.copytree(EXAMPLE, MINE, ignore=shutil.ignore_patterns("__pycache__"))
     made = subprocess.run(
         [sys.executable, str(MINE / "make_history.py"), "--out", "replay-filing"], cwd=proj, env=env,
-        capture_output=True, text=True, stdin=subprocess.DEVNULL, timeout=600,
+        capture_output=True, text=True, stdin=subprocess.DEVNULL, timeout=600, encoding="utf-8",
     )  # fmt: skip
     steps = [
         ("capture", "--importer", "jsonl", "--query", json.dumps({"path": "replay-filing/rows.jsonl"}), "--capture", "filing_prod"),

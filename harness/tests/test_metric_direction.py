@@ -75,7 +75,7 @@ try:
 
     out = proj / "catalog"
     r = evh("catalog", "--out", out)
-    page = (out / "metrics.html").read_text() if (out / "metrics.html").exists() else ""
+    page = (out / "metrics.html").read_text(encoding="utf-8") if (out / "metrics.html").exists() else ""
     row = page[page.find('id="m-der"') :][:3000] if 'id="m-der"' in page else ""
     row = row[: row.find("</tr>")]
     check(
@@ -83,7 +83,7 @@ try:
         r.returncode == 0 and ">lower<" in row and ">higher<" not in row,
         r.stderr[-400:] + row[-800:],
     )
-    own = (out / "m" / "der.html").read_text() if (out / "m" / "der.html").exists() else ""
+    own = (out / "m" / "der.html").read_text(encoding="utf-8") if (out / "m" / "der.html").exists() else ""
     check(
         "the catalog's page for der says lower is better",
         ">lower<" in own and ">higher<" not in own,

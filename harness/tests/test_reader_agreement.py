@@ -86,7 +86,7 @@ class Project:
         t = time.time()
         r = subprocess.run(  # nosec B603 - this interpreter and the test's own helper
             [sys.executable, str(PROC), "build", name, str(self.proj)],
-            cwd=self.proj, env=self.env, capture_output=True, text=True, stdin=subprocess.DEVNULL, timeout=1800, check=False,
+            cwd=self.proj, env=self.env, capture_output=True, text=True, stdin=subprocess.DEVNULL, timeout=1800, check=False, encoding="utf-8",
         )  # fmt: skip
         if r.returncode != 0:
             raise RuntimeError(f"building {name} failed: {(r.stdout + r.stderr)[-800:]}")
@@ -149,7 +149,11 @@ def api_reader(p: Project) -> Any:
     srv2, port2, _out2 = _serve.start(p.proj, p.env, "--public", "a.example", "--rate", "1000000")
     try:
         tok_file = p.proj / ".build" / "api-token"
-        local = Http(port, tok_file.read_text().strip() if tok_file.exists() else None, f"127.0.0.1:{port}")
+        local = Http(
+            port,
+            tok_file.read_text(encoding="utf-8").strip() if tok_file.exists() else None,
+            f"127.0.0.1:{port}",
+        )
         shown = Http(port2, None, "a.example")
 
         def read(op: str, public: bool = False, **params: Any) -> dict[str, Any]:
@@ -171,7 +175,11 @@ def api_inspector(p: Project, cli_facts: FactMap) -> tuple[dict[str, FactMap], d
     srv, port, _out = _serve.start(p.proj, p.env)
     try:
         tok_file = p.proj / ".build" / "api-token"
-        api = Http(port, tok_file.read_text().strip() if tok_file.exists() else None, f"127.0.0.1:{port}")
+        api = Http(
+            port,
+            tok_file.read_text(encoding="utf-8").strip() if tok_file.exists() else None,
+            f"127.0.0.1:{port}",
+        )
         arms: dict[str, list[str]] = {}
         for (kind, key), v in sorted(cli_facts.items()):
             if kind == "arms":
@@ -230,11 +238,11 @@ def mcp_reader(p: Project, stub: str | None = None) -> Any:
     out = p.proj / "mcp-facts.json"
     r = subprocess.run(  # nosec B603 - this interpreter and the test's own helper
         [sys.executable, str(PROC), "mcp", str(out), *(["--stub", stub] if stub else [])],
-        cwd=p.proj, env=p.env, capture_output=True, text=True, stdin=subprocess.DEVNULL, timeout=900, check=False,
+        cwd=p.proj, env=p.env, capture_output=True, text=True, stdin=subprocess.DEVNULL, timeout=900, check=False, encoding="utf-8",
     )  # fmt: skip
     if r.returncode != 0:
         raise RuntimeError(f"the MCP reader failed: {(r.stdout + r.stderr)[-600:]}")
-    doc = json.loads(out.read_text())
+    doc = json.loads(out.read_text(encoding="utf-8"))
     return (
         {f"mcp:{rd}": {(k, tuple(key)): v for k, key, v in facts} for rd, facts in doc["facts"].items()},
         {f"mcp:{rd}": w for rd, w in doc["why"].items()},
@@ -460,6 +468,7 @@ def catalog_reader(p: Project, stub: str | None = None) -> tuple[dict[str, FactM
         stdin=subprocess.DEVNULL,
         timeout=900,
         check=False,
+        encoding="utf-8",
     )
     if r.returncode != 0:
         raise RuntimeError(f"catalog --out failed: {(r.stdout + r.stderr)[-600:]}")
@@ -638,7 +647,7 @@ def dumper_checks(p: Project) -> None:
     def dump(out: Path) -> subprocess.CompletedProcess:
         return subprocess.run(  # nosec B603 - this interpreter and the tool under test
             [sys.executable, str(HARNESS / "tools" / "facts_dump.py"), "--project", str(p.proj), "--evh", p.evh, "--out", str(out)],
-            cwd=p.proj, env=p.env, capture_output=True, text=True, stdin=subprocess.DEVNULL, timeout=600, check=False,
+            cwd=p.proj, env=p.env, capture_output=True, text=True, stdin=subprocess.DEVNULL, timeout=600, check=False, encoding="utf-8",
         )  # fmt: skip
 
     a, b = p.proj / "dump-a.json", p.proj / "dump-b.json"
@@ -648,9 +657,9 @@ def dumper_checks(p: Project) -> None:
         ra.returncode == 0 and rb.returncode == 0,
         (ra.stderr + rb.stderr)[-400:],
     )
-    text_a = a.read_text()
+    text_a = a.read_text(encoding="utf-8")
     doc = json.loads(text_a)
-    check("facts_dump: the same document twice (stable order)", text_a == b.read_text())
+    check("facts_dump: the same document twice (stable order)", text_a == b.read_text(encoding="utf-8"))
     check(
         "facts_dump: sorted keys",
         text_a == json.dumps(doc, indent=1, sort_keys=True, ensure_ascii=False) + "\n",
@@ -685,9 +694,9 @@ def dumper_checks(p: Project) -> None:
     doc2["datasets"][first]["arms"][arm]["n_runs"]["value"] = 99
     doc2["evh_version"] = "9.9.9"
     c = p.proj / "dump-c.json"
-    c.write_text(json.dumps(doc2))
-    same = subprocess.run([sys.executable, str(HARNESS / "tools" / "facts_dump.py"), "--diff", str(a), str(b)], capture_output=True, text=True, check=False)  # fmt: skip # nosec B603
-    diff = subprocess.run([sys.executable, str(HARNESS / "tools" / "facts_dump.py"), "--diff", str(a), str(c)], capture_output=True, text=True, check=False)  # fmt: skip # nosec B603
+    c.write_text(json.dumps(doc2), encoding="utf-8")
+    same = subprocess.run([sys.executable, str(HARNESS / "tools" / "facts_dump.py"), "--diff", str(a), str(b)], capture_output=True, text=True, check=False, encoding="utf-8")  # fmt: skip # nosec B603
+    diff = subprocess.run([sys.executable, str(HARNESS / "tools" / "facts_dump.py"), "--diff", str(a), str(c)], capture_output=True, text=True, check=False, encoding="utf-8")  # fmt: skip # nosec B603
     check(
         "facts_dump --diff: a dump against itself says 0 changed and exits 0",
         same.returncode == 0 and " 0 changed" in same.stdout,

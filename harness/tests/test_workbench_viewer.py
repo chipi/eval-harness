@@ -116,7 +116,7 @@ try:
     # ── the local server, as it was: the control for the marker, and for "unchanged" ──────────────────────────────
     lsrv, lport, _lines = _serve.start(proj, env)
     try:
-        token = (proj / ".build" / "api-token").read_text().strip()
+        token = (proj / ".build" / "api-token").read_text(encoding="utf-8").strip()
         bearer = {"Authorization": f"Bearer {token}"}
         st, _b, _h = call(lport, "GET", "/api/v1/goals")
         check("local: no token, 401", st == 401, st)

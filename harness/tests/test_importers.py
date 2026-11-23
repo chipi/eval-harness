@@ -35,7 +35,8 @@ def read_list(name: str, query: dict) -> list:
     "occurrence_id\tts\tdisposition\treason\n"
     "o1\t2026-10-01T00:00:00Z\tdismiss\tnoise\n"
     "o2\t2026-10-02T00:00:00Z\tfile\ta bug\n"
-    "o3\t\tescalate\tunsure\n"
+    "o3\t\tescalate\tunsure\n",
+    encoding="utf-8",
 )
 recs = read_list(
     "tsv",
@@ -54,7 +55,7 @@ check(
     and recs[0]["created_at"] == "2026-10-01T00:00:00Z",
     recs,
 )
-(tmp / "ledger.csv").write_text("id,x\na,1\n")
+(tmp / "ledger.csv").write_text("id,x\na,1\n", encoding="utf-8")
 recs = read_list("tsv", {"path": str(tmp / "ledger.csv"), "delimiter": ","})
 check("tsv: delimiter reads a comma-separated file", [r["id"] for r in recs] == ["a"])
 
@@ -128,7 +129,7 @@ pages = [
         "nodes": [issue(3, "2026-10-09T00:00:00Z", state="OPEN")],
     },
 ]
-(tmp / "pages.json").write_text(json.dumps(pages))
+(tmp / "pages.json").write_text(json.dumps(pages), encoding="utf-8")
 calls = tmp / "calls.log"
 fake = tmp / "gh"
 fake.write_text(
@@ -137,7 +138,8 @@ fake.write_text(
     f"open({str(calls)!r}, 'a').write(' '.join(sys.argv[1:]) + '\\n')\n"
     f"pages = json.load(open({str(tmp / 'pages.json')!r}))\n"
     "page = pages[1] if any(a == 'after=P2' for a in sys.argv) else pages[0]\n"
-    "print(json.dumps({'data': {'repository': {'issues': page}}}))\n"
+    "print(json.dumps({'data': {'repository': {'issues': page}}}))\n",
+    encoding="utf-8",
 )
 fake.chmod(fake.stat().st_mode | stat.S_IEXEC)
 os.environ["EVH_GH"] = str(fake)
@@ -170,13 +172,13 @@ check(
     and (o2["reopen_events"][0]["comment"] or "").startswith("Recurred"),
     o2,
 )
-check("github: the labels variable passed as an array", "labels[]=l1" in calls.read_text())
-calls.write_text("")
+check("github: the labels variable passed as an array", "labels[]=l1" in calls.read_text(encoding="utf-8"))
+calls.write_text("", encoding="utf-8")
 recs = read_list("github", {"repo": "o/r", "until": "2026-10-02T00:00:00Z"})
 check(
     "github: stops at `until`, without reading the next page",
-    [r["id"] for r in recs] == ["1"] and calls.read_text().count("graphql") == 1,
-    calls.read_text(),
+    [r["id"] for r in recs] == ["1"] and calls.read_text(encoding="utf-8").count("graphql") == 1,
+    calls.read_text(encoding="utf-8"),
 )
 try:
     read_list("github", {"repo": "no-slash"})

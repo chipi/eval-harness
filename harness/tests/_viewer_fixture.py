@@ -51,14 +51,14 @@ def build(proj: Path, env: dict) -> None:
     shutil.copytree(KIT / "tickets", src)
     shutil.copytree(KIT / "gold", gold)
     for f in src.glob("*.txt"):
-        f.write_text(f"{MARK} reported this. " + f.read_text())
+        f.write_text(f"{MARK} reported this. " + f.read_text(encoding="utf-8"), encoding="utf-8")
     for f in gold.glob("*.txt"):
-        f.write_text(f"{MARK} gold. " + f.read_text())
+        f.write_text(f"{MARK} gold. " + f.read_text(encoding="utf-8"), encoding="utf-8")
     _runstore.write_text(proj, "fields/notes.yaml", FIELDSET)
     rows = ["item_id,note,link"] + [
         f"{f.stem},{MARK} note,https://example.org/{MARK}/{f.stem}" for f in sorted(src.glob("*.txt"))
     ]
-    (proj / "h_fields.csv").write_text("\n".join(rows) + "\n")
+    (proj / "h_fields.csv").write_text("\n".join(rows) + "\n", encoding="utf-8")
     for step in (
         ("dataset-create", "--dataset-id", DS, "--source-dir", "src_h", "--fieldset", "notes", "--fields", "h_fields.csv"),
         ("dataset-materialize", "--dataset-id", DS),
@@ -155,7 +155,7 @@ def serve_public(proj: Path, env: dict, *extra: str) -> tuple[subprocess.Popen, 
     p = subprocess.Popen(
         [sys.executable, str(_cli.CLI), "catalog-serve", "--port", str(port), "--public",
          f"127.0.0.1:{port},localhost:{port}", "--rate", "0", *extra],
-        cwd=proj, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, stdin=subprocess.DEVNULL,
+        cwd=proj, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, stdin=subprocess.DEVNULL, encoding="utf-8",
     )  # fmt: skip
     lines = _serve.drain(p, [])
     for _ in range(300):

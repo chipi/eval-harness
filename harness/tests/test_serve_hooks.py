@@ -80,6 +80,7 @@ def serve(tmp: Path, hooks: bool, **env) -> tuple:
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
+        encoding="utf-8",
     )
     for _ in range(100):
         try:
@@ -124,7 +125,7 @@ import _tmp  # noqa: E402
 
 def main() -> int:
     tmp = Path(_tmp.mkdtemp(prefix="evh-hooks-"))
-    (tmp / "hooks.py").write_text(HOOKS)
+    (tmp / "hooks.py").write_text(HOOKS, encoding="utf-8")
     log = tmp / "log.jsonl"
 
     proc, p = serve(tmp, hooks=True)
@@ -137,7 +138,7 @@ def main() -> int:
     # health, then the four above) and for the 500's own entry, before stopping the server. Waiting for any four
     # stopped it before /x/boom's entry was written on CI's runner (2026-11-15).
     def logged_requests() -> list[dict]:
-        lines = log.read_text().splitlines() if log.exists() else []
+        lines = log.read_text(encoding="utf-8").splitlines() if log.exists() else []
         return [c["info"] for c in map(json.loads, filter(None, lines)) if c.get("kind") == "request"]
 
     deadline = time.monotonic() + 10
@@ -146,7 +147,7 @@ def main() -> int:
     ):
         time.sleep(0.05)
     stop(proc)
-    calls = [json.loads(x) for x in log.read_text().splitlines()]
+    calls = [json.loads(x) for x in log.read_text(encoding="utf-8").splitlines()]
     starts = [c for c in calls if c["kind"] == "start"]
     reqs = [c["info"] for c in calls if c["kind"] == "request"]
     errs = [c for c in calls if c["kind"] == "error"]

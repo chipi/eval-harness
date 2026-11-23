@@ -145,7 +145,7 @@ try:
         (sorted(_exposure.exposed("ds_v1")), sorted(_exposure.exposed("ds_v1", CD))),
     )
     other = CD / "datasets" / "ds_open.json"
-    other.write_text(json.dumps({"dataset_id": "ds_open", "items": []}))
+    other.write_text(json.dumps({"dataset_id": "ds_open", "items": []}), encoding="utf-8")
     sealed_here = CD / "datasets" / "ds_sealed_here.json"
     sealed_here.write_text(
         json.dumps(
@@ -155,7 +155,8 @@ try:
                 "sealed": {"at": "x"},
                 "unsealed": [{"system_id": "c1", "at": "y", "look": {"key": "uk", "number": 1, "set": "z"}}],
             }
-        )
+        ),
+        encoding="utf-8",
     )
     put(CD, "exposure/ds_sealed_here.jsonl", json.dumps({"item_id": "x1", "what": "read", "by": "x"}) + "\n")
     check(

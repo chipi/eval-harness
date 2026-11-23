@@ -63,7 +63,7 @@ try:
         (proj / "data" / "models").mkdir()
     shutil.copytree(HARNESS / "tutorial" / "tickets", proj / "tutorial" / "tickets")
     (proj / "adapters").mkdir()
-    (proj / "adapters" / "mine.py").write_text(ADAPTER)
+    (proj / "adapters" / "mine.py").write_text(ADAPTER, encoding="utf-8")
     r = evh("dataset-create", "--dataset-id", "tickets_v1", "--source-dir", "tutorial/tickets")
     r = r if r.returncode else evh("dataset-materialize", "--dataset-id", "tickets_v1")
     check("setup: a frozen dataset", r.returncode == 0, r.stderr[-300:])

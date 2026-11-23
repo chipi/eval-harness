@@ -129,7 +129,7 @@ try:
         (proj / "data" / "models").mkdir()
     shutil.copytree(HARNESS / "tutorial" / "tickets", proj / "tutorial" / "tickets")
     (proj / "adapters").mkdir()
-    (proj / "adapters" / "headline.py").write_text(ADAPTER)
+    (proj / "adapters" / "headline.py").write_text(ADAPTER, encoding="utf-8")
     r = evh("dataset-create", "--dataset-id", "headlines_v1", "--source-dir", "tutorial/tickets")
     r = r if r.returncode else evh("dataset-materialize", "--dataset-id", "headlines_v1")
     _runstore.write_text(
@@ -218,12 +218,12 @@ ASKS = (
     "leaderboard.py",
     "model/compare.py",
 )
-missing = [f for f in ASKS if "deciding_metric(" not in (SCRIPTS / f).read_text()]
+missing = [f for f in ASKS if "deciding_metric(" not in (SCRIPTS / f).read_text(encoding="utf-8")]
 check("source: each reader that picks a default metric asks deciding_metric", not missing, missing)
 old = [
     f.relative_to(SCRIPTS).as_posix()
     for f in sorted(SCRIPTS.rglob("*.py"))
-    if re.search(r"\bdefault_metric\(", f.read_text()) and f.name != "compare.py"
+    if re.search(r"\bdefault_metric\(", f.read_text(encoding="utf-8")) and f.name != "compare.py"
 ]
 check(
     "source: `_runs.default_metric` is gone (one function answers)",

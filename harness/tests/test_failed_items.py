@@ -102,7 +102,7 @@ try:
         )
     )
     check("setup: the tutorial dataset and its gold", r.returncode == 0, (r.stdout + r.stderr)[-300:])
-    (proj / "flaky.py").write_text(ADAPTER)
+    (proj / "flaky.py").write_text(ADAPTER, encoding="utf-8")
     for mode in ("one", "all", "weather"):
         _runstore.write_text(
             proj,

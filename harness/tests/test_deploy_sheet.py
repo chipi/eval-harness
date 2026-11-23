@@ -75,12 +75,14 @@ try:
         '                  meta={"model": params.get("model"), "prompt_sha": "p1", "gates": text[:12]})\n'
         "def production_ran(record):\n"
         '    f = record.get("fields") or {}\n'
-        '    return {"model": f.get("model"), "prompt_sha": f.get("prompt_sha")}\n'
+        '    return {"model": f.get("model"), "prompt_sha": f.get("prompt_sha")}\n',
+        encoding="utf-8",
     )
     (proj / "plain.py").write_text(
         "from evaluation_harness.adapter import Result, score  # noqa: F401\n"
         "def call_system(text, params):\n"
-        '    return Result(output=text.split(".")[0] + ".", cost_usd=0.0)\n'
+        '    return Result(output=text.split(".")[0] + ".", cost_usd=0.0)\n',
+        encoding="utf-8",
     )
     put(
         proj,
@@ -116,17 +118,19 @@ try:
         {"id": "d3", "body": "z", "created_at": "2026-11-01T02:00:00Z", "model": "m-two", "prompt_sha": "p2"},
         {"id": "d4", "body": "w", "created_at": "2026-11-01T03:00:00Z", "model": "m-one"},
     ]
-    (proj / "prod.jsonl").write_text("".join(json.dumps(x) + "\n" for x in rows))
+    (proj / "prod.jsonl").write_text("".join(json.dumps(x) + "\n" for x in rows), encoding="utf-8")
     r = evh(
         "capture", "--importer", "jsonl", "--query", json.dumps({"path": "prod.jsonl"}), "--capture", "prod"
     )
     check("setup: a capture of what production ran", r.returncode == 0, out(r)[-300:])
-    (proj / "good.jsonl").write_text("".join(json.dumps(x) + "\n" for x in rows[:2]))
+    (proj / "good.jsonl").write_text("".join(json.dumps(x) + "\n" for x in rows[:2]), encoding="utf-8")
     r = evh(
         "capture", "--importer", "jsonl", "--query", json.dumps({"path": "good.jsonl"}), "--capture", "good"
     )
     check("setup: a capture where production ran the promoted arm", r.returncode == 0, out(r)[-300:])
-    (proj / "partial.jsonl").write_text("".join(json.dumps(x) + "\n" for x in (rows[0], rows[3])))
+    (proj / "partial.jsonl").write_text(
+        "".join(json.dumps(x) + "\n" for x in (rows[0], rows[3])), encoding="utf-8"
+    )
     r = evh(
         "capture",
         "--importer",

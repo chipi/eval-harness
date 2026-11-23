@@ -123,7 +123,7 @@ def filled(prefix, how):
     """The blind sheet with its key, filled by `how(row, key_row)` -> {column: value}; written as <prefix>_f.csv
     (its key copied beside it)."""
     rows, head, _ = read(f"{prefix}.csv")
-    key = json.loads((proj / f"{prefix}.key.json").read_text())
+    key = json.loads((proj / f"{prefix}.key.json").read_text(encoding="utf-8"))
     mine = []
     for r in rows:
         if r["item_id"].startswith("#"):
@@ -145,7 +145,9 @@ try:
     (data / "systems").mkdir(parents=True)
     _runstore.write_text(proj, _format.NAME, f"format: {_format.FORMAT}\n")
     (data / "fields").mkdir()
-    _runstore.write_text(proj, "fields/tickets.yaml", (KIT / "fields" / "tickets.yaml").read_text())
+    _runstore.write_text(
+        proj, "fields/tickets.yaml", (KIT / "fields" / "tickets.yaml").read_text(encoding="utf-8")
+    )
     shutil.copytree(KIT / "tickets", proj / "tutorial" / "tickets")
     r = evh(
         "dataset-create", "--dataset-id", D, "--source-dir", "tutorial/tickets", "--fieldset", "tickets",
@@ -155,7 +157,9 @@ try:
     check("setup: the tutorial dataset, materialized", r.returncode == 0, out(r)[-300:])
     for arm in ARMS:
         _runstore.write_text(
-            proj, f"systems/tickets_{arm}_v1.yaml", (KIT / "systems" / f"tickets_{arm}_v1.yaml").read_text()
+            proj,
+            f"systems/tickets_{arm}_v1.yaml",
+            (KIT / "systems" / f"tickets_{arm}_v1.yaml").read_text(encoding="utf-8"),
         )
         r = evh("run", "--system", f"tickets_{arm}_v1", "--dataset", D)
         check(f"setup: the {arm} arm runs", r.returncode == 0, out(r)[-300:])
@@ -249,7 +253,7 @@ try:
     r, name = fill("pick", "pick", seed=7)
     rows, head, raw = read(name)
     text = raw.decode("utf-8-sig")
-    key = json.loads((proj / "pick.key.json").read_text())
+    key = json.loads((proj / "pick.key.json").read_text(encoding="utf-8"))
     rub = next(x for x in rows if x["item_id"] == "#rubric")
     body = [x for x in rows if not x["item_id"].startswith("#")]
     check(
@@ -275,8 +279,8 @@ try:
     )
     r2, _ = fill("pick_again", "pick", seed=7)
     r3, _ = fill("pick_other", "pick", seed=8)
-    again = json.loads((proj / "pick_again.key.json").read_text())["rows"]
-    other = json.loads((proj / "pick_other.key.json").read_text())["rows"]
+    again = json.loads((proj / "pick_again.key.json").read_text(encoding="utf-8"))["rows"]
+    other = json.loads((proj / "pick_other.key.json").read_text(encoding="utf-8"))["rows"]
     check(
         "the same seed gives the same order; another seed another",
         r2.returncode == r3.returncode == 0 and again == key["rows"] and other != key["rows"],
@@ -436,10 +440,12 @@ try:
     refuses("nothing filled", nothing, "nothing filled", "r6")
 
     # ── scores: the rubric file, the scale, the round trip ───────────────────────────────────
-    (proj / "rubric.md").write_text("Score the summary for what a person triaging needs to know.\n")
+    (proj / "rubric.md").write_text(
+        "Score the summary for what a person triaging needs to know.\n", encoding="utf-8"
+    )
     r, name = fill("sc", "scores", "--scale", "1..10", "--rubric", "rubric.md", seed=3)
     rows, head, _ = read(name)
-    key = json.loads((proj / "sc.key.json").read_text())
+    key = json.loads((proj / "sc.key.json").read_text(encoding="utf-8"))
     rub = next(x for x in rows if x["item_id"] == "#rubric")
     check(
         "--fill scores: blind columns and a score column each, the rubric file's words, the scale in the key",

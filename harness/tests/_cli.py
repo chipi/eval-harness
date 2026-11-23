@@ -31,4 +31,5 @@ def run(cwd: Any, env: Any, *args: Any, timeout: float = TIMEOUT) -> subprocess.
         text=True,
         stdin=subprocess.DEVNULL,
         timeout=timeout,
+        encoding="utf-8",
     )

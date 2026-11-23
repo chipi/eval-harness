@@ -34,7 +34,7 @@ from evaluation_harness.model import view_cache as vc  # noqa: E402
 STORE = os.environ["EVAL_STORE"]
 data = proj / "data"
 data.mkdir()
-(proj / "config.yaml").write_text("catalog: {}\n")
+(proj / "config.yaml").write_text("catalog: {}\n", encoding="utf-8")
 _store.write_text(data / "a.txt", "one")
 
 
@@ -61,7 +61,7 @@ def other_process_writes(name: str, text: str) -> None:
         c.commit()
         c.close()
     else:
-        (data / name).write_text(text)
+        (data / name).write_text(text, encoding="utf-8")
 
 
 # ── a value is kept ────────────────────────────────────────────────────────────────────────────────────────────────
@@ -152,7 +152,7 @@ if STORE == "files":
         vc._print = real_print
 
 # ── the project's own files that decide what is read ───────────────────────────────────────────────────────────────
-(proj / "config.yaml").write_text("catalog: {}\n# changed\n")
+(proj / "config.yaml").write_text("catalog: {}\n# changed\n", encoding="utf-8")
 vc.begin()
 vc.get("k", c)
 check("config.yaml changed: the next look drops what was kept", c.n == 7, c.n)

@@ -286,7 +286,7 @@ def replace(f: Path, text: str) -> None:
 def run_in(shadow: Path, script: str) -> str:
     """Run a checker in the shadow; V7 and V9 read the real git index, read only."""
     gitdir = subprocess.run(
-        ["git", "rev-parse", "--absolute-git-dir"], cwd=REPO, capture_output=True, text=True
+        ["git", "rev-parse", "--absolute-git-dir"], cwd=REPO, capture_output=True, text=True, encoding="utf-8"
     ).stdout.strip()
     env = {**os.environ, "GIT_DIR": gitdir, "GIT_WORK_TREE": str(shadow), "GIT_OPTIONAL_LOCKS": "0"}
     # `evh validate` is what scripts/validate_tree.py's checks answer to now: the shadow's own command
@@ -305,6 +305,7 @@ def run_in(shadow: Path, script: str) -> str:
         capture_output=True,
         text=True,
         env=env,
+        encoding="utf-8",
     )
     out = (r.stdout or "") + (r.stderr or "")
     check(f"{script} exits non-zero", r.returncode != 0, f"exit {r.returncode}")
@@ -420,6 +421,7 @@ def main() -> int:
             cwd=fake,
             capture_output=True,
             text=True,
+            encoding="utf-8",
         )
         check("check_terminology with no markdown exits non-zero", r.returncode != 0, f"exit {r.returncode}")
     return summary("guard checks")

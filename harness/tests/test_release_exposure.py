@@ -45,7 +45,7 @@ ROW = {
 
 def run(*cmd, e):
     return subprocess.run(
-        list(cmd), cwd=proj, env=e, capture_output=True, text=True, stdin=subprocess.DEVNULL
+        list(cmd), cwd=proj, env=e, capture_output=True, text=True, stdin=subprocess.DEVNULL, encoding="utf-8"
     )
 
 
@@ -81,7 +81,11 @@ try:
     check(
         "the copy holds the register, row for row",
         (copy / "exposure" / "held_v1.jsonl").is_file()
-        and [json.loads(x) for x in (copy / "exposure" / "held_v1.jsonl").read_text().splitlines()] == [ROW],
+        and [
+            json.loads(x)
+            for x in (copy / "exposure" / "held_v1.jsonl").read_text(encoding="utf-8").splitlines()
+        ]
+        == [ROW],
         sorted(str(p.relative_to(copy)) for p in copy.rglob("*") if p.is_file())[:20],
     )
     from evaluation_harness._release import HIDDEN_WHAT
@@ -90,8 +94,9 @@ try:
     check(
         "a hidden dataset's register is copied with what was written of its item replaced, ids and who kept",
         hid.is_file()
-        and [json.loads(x) for x in hid.read_text().splitlines()] == [{**ROW, "what": HIDDEN_WHAT}],
-        hid.read_text() if hid.is_file() else "no copy",
+        and [json.loads(x) for x in hid.read_text(encoding="utf-8").splitlines()]
+        == [{**ROW, "what": HIDDEN_WHAT}],
+        hid.read_text(encoding="utf-8") if hid.is_file() else "no copy",
     )
     on_copy = dict(env, EVAL_HOME=str(dest), EVAL_STORE="files")
     r = run(sys.executable, str(HERE / "cli.py"), "exposure", "--dataset", "held_v1", "--json", e=on_copy)

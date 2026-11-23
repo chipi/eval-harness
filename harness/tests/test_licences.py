@@ -60,7 +60,7 @@ try:
     src = proj / "src"
     src.mkdir()
     for n in "abc":
-        (src / f"{n}.txt").write_text(f"item {n}\n")
+        (src / f"{n}.txt").write_text(f"item {n}\n", encoding="utf-8")
     r = evh("dataset-create", "--dataset-id", "l_v1", "--source-dir", "src", "--licence", "cc-by-4.0")
     check(
         "dataset-create --licence records it in SPDX's spelling",

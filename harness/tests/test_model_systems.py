@@ -65,7 +65,7 @@ def serve() -> tuple[subprocess.Popen, int]:
 
 def call(port: int, method: str, path: str, body: dict | None = None) -> tuple[int, dict]:
     """One API call with the server's token."""
-    token = (proj / ".build" / "api-token").read_text().strip()
+    token = (proj / ".build" / "api-token").read_text(encoding="utf-8").strip()
     h = {"Host": f"127.0.0.1:{port}", "Authorization": f"Bearer {token}", "X-EVH-Data": "1"}
     raw = json.dumps(body).encode() if body is not None else None
     if raw is not None:
@@ -96,7 +96,7 @@ try:
     check("setup: a project with two datasets", r.returncode == 0, (r.stdout + r.stderr)[-300:])
 
     made = evh("system-new", "lead1_v1", "--set", "params.provider=echo", "--set", "params.sentences=1")
-    doc = yaml.safe_load(SYSTEM.read_text()) if SYSTEM.is_file() else {}
+    doc = yaml.safe_load(SYSTEM.read_text(encoding="utf-8")) if SYSTEM.is_file() else {}
     check(
         "system-new makes the system's own file, named by its id, with no dataset",
         made.returncode == 0 and doc.get("system_id") == "lead1_v1" and "dataset_id" not in doc,
@@ -108,7 +108,7 @@ try:
         again.returncode == 1 and "ERROR (would-overwrite)" in again.stderr,
         again.stderr[-200:],
     )
-    before = SYSTEM.read_text()
+    before = SYSTEM.read_text(encoding="utf-8")
     bad = evh("system-set", "lead1_v1", "--set", "dataset_id=tk_v1")
     bad_goal = evh("system-set", "lead1_v1", "--set", "goal=g")
     check(
@@ -117,12 +117,15 @@ try:
         and "dataset_id" in bad.stderr
         and bad_goal.returncode == 1
         and "goal" in bad_goal.stderr
-        and SYSTEM.read_text() == before,
+        and SYSTEM.read_text(encoding="utf-8") == before,
         (bad.stderr[-200:], bad_goal.stderr[-200:]),
     )
-    SYSTEM.write_text(SYSTEM.read_text().replace("system_id:", "# the terse one\nsystem_id:", 1))
+    SYSTEM.write_text(
+        SYSTEM.read_text(encoding="utf-8").replace("system_id:", "# the terse one\nsystem_id:", 1),
+        encoding="utf-8",
+    )
     s = evh("system-set", "lead1_v1", "--set", "params.sentences=2")
-    text = SYSTEM.read_text()
+    text = SYSTEM.read_text(encoding="utf-8")
     check(
         "system-set changes one setting and keeps the file's comments",
         s.returncode == 0 and "# the terse one" in text and yaml.safe_load(text)["params"]["sentences"] == 2,
@@ -145,7 +148,7 @@ try:
     )
 
     note = proj / "p.txt"
-    note.write_text("Summarise the ticket in one sentence.\n")
+    note.write_text("Summarise the ticket in one sentence.\n", encoding="utf-8")
     pv = evh(
         "prompt-version", "--name", "tickets/summary", "--from-file", str(note), "--note", "the first wording"
     )
@@ -197,7 +200,7 @@ try:
             "a system made through the API is checked by the same model and records who sent it",
             code == 200
             and (proj / "data" / "systems" / "lead2_v1.yaml").is_file()
-            and '"person:api"' in (hist.read_text() if hist.is_file() else ""),
+            and '"person:api"' in (hist.read_text(encoding="utf-8") if hist.is_file() else ""),
             (code, body),
         )
         bad_code, _ = call(

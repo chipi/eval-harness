@@ -138,7 +138,9 @@ try:
     check("setup: the kit's gold, imported and promoted", r.returncode == 0, (r.stdout + r.stderr)[-300:])
     for arm in ("lead1", "author"):
         _runstore.write_text(
-            proj, f"systems/tickets_{arm}_v1.yaml", (KIT / "systems" / f"tickets_{arm}_v1.yaml").read_text()
+            proj,
+            f"systems/tickets_{arm}_v1.yaml",
+            (KIT / "systems" / f"tickets_{arm}_v1.yaml").read_text(encoding="utf-8"),
         )
         r = evh("run", "--system", f"tickets_{arm}_v1", "--dataset", "tickets_v1")
         check(f"setup: the {arm} arm runs", r.returncode == 0, out(r)[-300:])

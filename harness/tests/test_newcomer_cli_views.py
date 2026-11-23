@@ -258,12 +258,12 @@ try:
     # the repository's own rounds, copied into the synthetic project so the store under test is the one that reads them
     rounds_src = HERE.parent / "data" / "rounds" / "triage_orrery"
     for f in sorted(rounds_src.glob("*.yaml")):
-        _runstore.write_text(syn, f"rounds/triage_orrery/{f.name}", f.read_text())
+        _runstore.write_text(syn, f"rounds/triage_orrery/{f.name}", f.read_text(encoding="utf-8"))
     goal_src = HERE.parent / "data" / "goals" / "triage_orrery.yaml"
     if goal_src.is_file():
-        _runstore.write_text(syn, "goals/triage_orrery.yaml", goal_src.read_text())
+        _runstore.write_text(syn, "goals/triage_orrery.yaml", goal_src.read_text(encoding="utf-8"))
     texts = [
-        (yaml.safe_load(f.read_text()).get("conclusion") or {}).get("text", "")
+        (yaml.safe_load(f.read_text(encoding="utf-8")).get("conclusion") or {}).get("text", "")
         for f in sorted(rounds_src.glob("r*.yaml"))
     ]
     rl = evh(syn, "round-list", "triage_orrery")
@@ -280,7 +280,10 @@ try:
     from evaluation_harness import silver_calibrate as sc
 
     h = subprocess.run(
-        [PY, str(HERE / "cli.py"), "silver-calibrate", "--help"], capture_output=True, text=True
+        [PY, str(HERE / "cli.py"), "silver-calibrate", "--help"],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
     ).stdout
     flat = " ".join(h.split())
     check(
@@ -377,7 +380,9 @@ try:
     proj = tutorial_proj
     _runstore.write_text(proj, _format.NAME, f"format: {_format.FORMAT}\n")
     _runstore.write_text(
-        proj, "goals/tickets_summary.yaml", (KIT / "goals" / "tickets_summary.yaml").read_text()
+        proj,
+        "goals/tickets_summary.yaml",
+        (KIT / "goals" / "tickets_summary.yaml").read_text(encoding="utf-8"),
     )
     shutil.copytree(KIT / "tickets", proj / "tutorial" / "tickets")
     r = evh(proj, "dataset-create", "--dataset-id", "tickets_v1", "--source-dir", "tutorial/tickets")
@@ -418,7 +423,7 @@ try:
     )
     check("setup: the kit's dataset and gold", r.returncode == 0, out(r)[-300:])
     for cfg in ("lead1", "lead2", "lead2_noisy"):
-        text = (KIT / "systems" / f"tickets_{cfg}_v1.yaml").read_text()
+        text = (KIT / "systems" / f"tickets_{cfg}_v1.yaml").read_text(encoding="utf-8")
         _runstore.write_text(proj, f"systems/tickets_{cfg}_v1.yaml", text)
         r = evh(
             proj,
@@ -680,7 +685,9 @@ try:
             shutil.copy(f, jp / "src" / f"{k:02d}_{f.name}")
         _runstore.write_text(jp, _format.NAME, f"format: {_format.FORMAT}\n")
         _runstore.write_text(
-            jp, "scorers/tickets-judge-v1.yaml", (KIT / "scorers" / "tickets-judge-v1.yaml").read_text()
+            jp,
+            "scorers/tickets-judge-v1.yaml",
+            (KIT / "scorers" / "tickets-judge-v1.yaml").read_text(encoding="utf-8"),
         )
         (jp / "tutorial").mkdir()
         shutil.copy(KIT / "judge_prompt.txt", jp / "tutorial")
@@ -690,7 +697,9 @@ try:
         steps += [("dataset-materialize", "--dataset-id", "tickets_v1")]
         for cfg in ("lead1", "lead2"):
             _runstore.write_text(
-                jp, f"systems/tickets_{cfg}_v1.yaml", (KIT / "systems" / f"tickets_{cfg}_v1.yaml").read_text()
+                jp,
+                f"systems/tickets_{cfg}_v1.yaml",
+                (KIT / "systems" / f"tickets_{cfg}_v1.yaml").read_text(encoding="utf-8"),
             )
             steps.append(("run", "--system", f"tickets_{cfg}_v1", "--dataset", "tickets_v1"))
         bad = [out(r)[-300:] for r in (evh(jp, *a) for a in steps) if r.returncode]
@@ -710,7 +719,8 @@ try:
             "js.real_call = slow\n"
             "from evaluation_harness import ops\n"
             "from evaluation_harness.ops import cli\n"
-            "sys.exit(cli.main(ops.OPS['judge-score'], ['--dataset-id', 'tickets_v1', '--scorer', 'tickets-judge-v1', '--unvalidated']))\n"
+            "sys.exit(cli.main(ops.OPS['judge-score'], ['--dataset-id', 'tickets_v1', '--scorer', 'tickets-judge-v1', '--unvalidated']))\n",
+            encoding="utf-8",
         )
         started = time.perf_counter()
         pr = subprocess.Popen(
@@ -720,6 +730,7 @@ try:
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
+            encoding="utf-8",
         )
         assert pr.stdout is not None
         seen = [(time.perf_counter() - started, ln.rstrip("\n")) for ln in pr.stdout]

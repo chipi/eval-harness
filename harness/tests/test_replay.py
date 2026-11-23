@@ -68,7 +68,7 @@ def metrics(rid):
 
 def py(script, *args):
     return subprocess.run([sys.executable, str(MINE / script), *args], cwd=proj, env=env, capture_output=True,
-                          text=True, stdin=subprocess.DEVNULL)  # fmt: skip
+                          text=True, stdin=subprocess.DEVNULL, encoding="utf-8")  # fmt: skip
 
 
 #: The example as a person uses it: copied into the project, so its adapter is the project's.
@@ -132,7 +132,7 @@ try:
         and sorted((plan.get("commits") or {}).values()) == [6, 6, 8],
         (dry.stdout[-300:], dry.stderr[-300:]),
     )
-    (proj / "two.txt").write_text("d01\nd02\n")
+    (proj / "two.txt").write_text("d01\nd02\n", encoding="utf-8")
     refused = [
         evh(
             "run",
@@ -254,8 +254,12 @@ try:
     buggy_dir = proj / "buggy"
     buggy_dir.mkdir()
     shutil.copy(MINE / "replay_world.py", buggy_dir / "replay_world.py")
-    text = (MINE / "replay_filing.py").read_text().replace('READ_AT = "started"', 'READ_AT = "ts"')
-    (buggy_dir / "replay_filing.py").write_text(text)
+    text = (
+        (MINE / "replay_filing.py")
+        .read_text(encoding="utf-8")
+        .replace('READ_AT = "started"', 'READ_AT = "ts"')
+    )
+    (buggy_dir / "replay_filing.py").write_text(text, encoding="utf-8")
     cfg = _runstore.read_text(proj, "systems/filing_replay_v1.yaml")
     adapter_line = next(x for x in cfg.splitlines() if x.startswith("adapter:"))
     _runstore.write_text(
@@ -342,7 +346,7 @@ try:
     flaky_dir = proj / "flaky"
     flaky_dir.mkdir()
     shutil.copy(MINE / "replay_world.py", flaky_dir / "replay_world.py")
-    flaky = (MINE / "replay_filing.py").read_text()
+    flaky = (MINE / "replay_filing.py").read_text(encoding="utf-8")
     anchor = '    code, fields = params["code"], params["item"]["fields"]\n'
     flaky = flaky.replace(
         anchor,
@@ -352,7 +356,7 @@ try:
         + '            fh.write("d05\\n")\n'
         + '        raise TimeoutError("the tracker timed out")\n',
     )
-    (flaky_dir / "replay_filing.py").write_text(flaky)
+    (flaky_dir / "replay_filing.py").write_text(flaky, encoding="utf-8")
     _runstore.write_text(
         proj,
         "systems/filing_flaky.yaml",
@@ -372,7 +376,11 @@ try:
         "--json",
     )
     mf = metrics(run_id(fr)) if run_id(fr) else {}
-    calls = (flaky_dir / "calls.txt").read_text().split() if (flaky_dir / "calls.txt").is_file() else []
+    calls = (
+        (flaky_dir / "calls.txt").read_text(encoding="utf-8").split()
+        if (flaky_dir / "calls.txt").is_file()
+        else []
+    )
     check(
         "a replay calls a failing item once (a timeout, which a model run retries): recorded as failed, the pass goes on",
         anchor in flaky
@@ -384,7 +392,7 @@ try:
     )
 
     # ── the gate closes again when what the record was made with moves ───────────────────────────────────────────
-    with (buggy_dir / "replay_world.py").open("a") as fh:
+    with (buggy_dir / "replay_world.py").open("a", encoding="utf-8") as fh:
         fh.write("\nEXTRA_RULE = 1\n")
     moved = evh("run", "--system", "filing_buggy", "--dataset", "filing_history_v1", "--goal", "filing")
     import yaml
@@ -496,11 +504,13 @@ try:
     cat = evh("catalog")
     site = proj / ".build" / "catalog"
     model_page = (
-        (site / "models" / "toy_filing.html").read_text()
+        (site / "models" / "toy_filing.html").read_text(encoding="utf-8")
         if (site / "models" / "toy_filing.html").is_file()
         else ""
     )
-    pages = {f.name: f.read_text() for f in site.rglob("*.html")} if cat.returncode == 0 else {}
+    pages = (
+        {f.name: f.read_text(encoding="utf-8") for f in site.rglob("*.html")} if cat.returncode == 0 else {}
+    )
     buggy = [t for n, t in pages.items() if "filing_buggy" in n]
     replay_arm = [t for n, t in pages.items() if "filing_replay_v1" in n]
     check(

@@ -50,7 +50,7 @@ print(json.dumps([adapter.classify(r) for r in rows], sort_keys=True))
 
 def answers(src: str) -> list:
     """The filing stage's answers for every signal, from the fleet's code at `src` (a fresh process)."""
-    with tempfile.NamedTemporaryFile("w", suffix=".py", delete=False) as f:
+    with tempfile.NamedTemporaryFile("w", suffix=".py", delete=False, encoding="utf-8") as f:
         f.write(RUN)
     try:
         out = subprocess.run(
@@ -59,6 +59,7 @@ def answers(src: str) -> list:
             capture_output=True,
             text=True,
             check=True,
+            encoding="utf-8",
         ).stdout
     finally:
         _store.unlink(f.name)

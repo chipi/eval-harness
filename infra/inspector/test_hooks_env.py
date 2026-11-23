@@ -113,9 +113,9 @@ def case(name: str) -> dict:
             for d in (DEV_DSN, PROD_DSN, MCP_PROD_DSN, "http://k@127.0.0.1:9/1")
         }
         with tempfile.TemporaryDirectory() as td:
-            (Path(td) / "dsn.env").write_text(f"SENTRY_DSN={DEV_DSN}\n")
+            (Path(td) / "dsn.env").write_text(f"SENTRY_DSN={DEV_DSN}\n", encoding="utf-8")
             (Path(td) / "dev.env").write_text(
-                f"SENTRY_DSN_FILE={td}/dsn.env\nEVALS_LOGS_URL=http://x/insert/jsonline\n"
+                f"SENTRY_DSN_FILE={td}/dsn.env\nEVALS_LOGS_URL=http://x/insert/jsonline\n", encoding="utf-8"
             )
             os.environ["EVALS_OBS_ENV"] = f"{td}/dev.env"
             out["settings"] = env.settings("dev", ("EVALS_LOGS_URL",))
@@ -126,7 +126,7 @@ def case(name: str) -> dict:
         del os.environ["EVALS_WORKTREE"]
         out["worktree_git"] = env.worktree()
         with tempfile.TemporaryDirectory() as td:
-            (Path(td) / "RELEASE").write_text("0123456789abcdef\n")
+            (Path(td) / "RELEASE").write_text("0123456789abcdef\n", encoding="utf-8")
             out["release_file"] = env.release(Path(td) / "RELEASE", "prod")
         out["release_dev"] = env.release(Path("/nonexistent"), "dev")
         out["release_prod"] = env.release(Path("/nonexistent"), "prod")
@@ -165,7 +165,7 @@ def case(name: str) -> dict:
         d = Path(tempfile.mkdtemp())
         shutil.copy(INFRA / "mcp" / "hooks.py", d / "mcp_hooks.py")
         shutil.copy(HERE / "hooks_env.py", d / "hooks_env.py")
-        (d / "mcp_umami.json").write_text('{"website_id": "w"}')
+        (d / "mcp_umami.json").write_text('{"website_id": "w"}', encoding="utf-8")
         os.environ["UMAMI_SEND_URL"] = "https://127.0.0.1:9/api/send"
         hooks = _load(d / "mcp_hooks.py", "mcp_hooks")
         hooks.start({"tools": ["goal-list"]})
@@ -197,6 +197,7 @@ def run(name: str, extra: dict | None = None) -> dict:
         text=True,
         env={**env, **(extra or {})},
         timeout=120,
+        encoding="utf-8",
     )
     try:
         return json.loads(r.stdout.strip().splitlines()[-1])
@@ -228,7 +229,10 @@ def main() -> int:
         u.get("settings"),
     )
     branch = subprocess.run(
-        ["git", "-C", str(HERE), "rev-parse", "--abbrev-ref", "HEAD"], capture_output=True, text=True
+        ["git", "-C", str(HERE), "rev-parse", "--abbrev-ref", "HEAD"],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
     ).stdout.strip()
     check(
         "the release: sha-<7> from the release's file; with none, dev-<7> of this commit in dev, unknown in prod",
@@ -236,7 +240,10 @@ def main() -> int:
         and u.get("release_dev")
         == "dev-"
         + subprocess.run(
-            ["git", "-C", str(HERE), "rev-parse", "--short=7", "HEAD"], capture_output=True, text=True
+            ["git", "-C", str(HERE), "rev-parse", "--short=7", "HEAD"],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
         ).stdout.strip()
         and u.get("release_prod") == "unknown",
         (u.get("release_file"), u.get("release_dev"), u.get("release_prod")),

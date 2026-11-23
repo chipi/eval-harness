@@ -52,7 +52,7 @@ def free_port() -> int:
 
 
 def rss_mb(pid: int) -> float:
-    for line in Path(f"/proc/{pid}/status").read_text().splitlines():
+    for line in Path(f"/proc/{pid}/status").read_text(encoding="utf-8").splitlines():
         if line.startswith("VmRSS:"):
             return int(line.split()[1]) / 1024
     return 0.0
@@ -103,7 +103,12 @@ def main() -> int:
             *(["--hooks", args.hooks] if args.hooks else []),
         ]
         proc = subprocess.Popen(
-            cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, env=os.environ.copy()
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            env=os.environ.copy(),
+            encoding="utf-8",
         )
         lines: list = []
         threading.Thread(target=lambda: lines.extend(proc.stdout or ()), daemon=True).start()

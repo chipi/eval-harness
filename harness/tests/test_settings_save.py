@@ -104,7 +104,7 @@ try:
     calls.update(n=0)
     code = proj / "scorers" / "mine.py"
     code.parent.mkdir()
-    code.write_text("x = 1\n")
+    code.write_text("x = 1\n", encoding="utf-8")
     save(f1, "goal_id: a\ntitle: once more\n")
     check(
         "a file outside data/ changed (a scorer): the next save checks the project before it again",
@@ -127,7 +127,9 @@ try:
 
     calls.update(n=0)
     told: list[str] = []
-    GOAL = (HARNESS / "data" / "goals" / "news_topic_ag.yaml").read_text()  # a committed goal: valid as it is
+    GOAL = (HARNESS / "data" / "goals" / "news_topic_ag.yaml").read_text(
+        encoding="utf-8"
+    )  # a committed goal: valid as it is
 
     def put_new() -> None:
         try:

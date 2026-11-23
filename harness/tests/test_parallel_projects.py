@@ -57,6 +57,7 @@ def serve(proj: Path, *args: str) -> tuple[subprocess.Popen, str]:
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
+        encoding="utf-8",
     )
     deadline, url = time.time() + 60, ""
     while time.time() < deadline and not url:

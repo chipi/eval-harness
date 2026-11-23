@@ -15,7 +15,9 @@ def run(cmd: list, timeout: float = 300, **kw) -> subprocess.CompletedProcess:
     """subprocess.run(cmd, capture_output=True, text=True), but a child past `timeout` has its threads' stacks
     printed and the test fails with them (subprocess.TimeoutExpired, its stderr holding the stacks)."""
     env = dict(kw.pop("env", None) or os.environ, PYTHONFAULTHANDLER="1")
-    p = subprocess.Popen(cmd, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, **kw)
+    p = subprocess.Popen(
+        cmd, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding="utf-8", **kw
+    )
     try:
         out, err = p.communicate(timeout=timeout)
     except subprocess.TimeoutExpired:

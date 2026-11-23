@@ -253,7 +253,7 @@ def imported() -> None:
         next((m["better"] for m in listed.get("metrics", []) if m["metric"] == "wer"), "") == "lower",
         None,
     )
-    page = (out / "metrics.html").read_text() if (out / "metrics.html").exists() else ""
+    page = (out / "metrics.html").read_text(encoding="utf-8") if (out / "metrics.html").exists() else ""
     row = page[page.find('id="m-wer"') :][:3000]
     row = row[: row.find("</tr>")]
     check(
@@ -362,7 +362,7 @@ def fleet() -> None:
     of_x = sorted(r["run_id"] for r in listed if r["system_id"] == x)
     check(f"RFC-041 F2: runs-list: {x}'s 3 runs, the joined repeat among them", of_x == mine, of_x)
     arm = out / "a" / f"runs-{ds}-{x}.html"
-    txt = text_of(arm.read_text()) if arm.exists() else ""
+    txt = text_of(arm.read_text(encoding="utf-8")) if arm.exists() else ""
     check(
         f"RFC-041 F2: catalog: the arm page of {x} says 3 runs and no repeats page exists for it",
         " runs 3 " in txt and not (out / "a" / f"repeats-{ds}-{x}.html").exists(),
@@ -391,7 +391,7 @@ def fleet() -> None:
     )
 
     print("   RFC-041 F6 (the baseline per goal)")
-    page = (out / "datasets.html").read_text() if (out / "datasets.html").exists() else ""
+    page = (out / "datasets.html").read_text(encoding="utf-8") if (out / "datasets.html").exists() else ""
     heads = [text_of(h) for h in re.findall(r"<th>(.*?)</th>", page[page.find("<thead>") :][:2000], re.S)]
     cells = table_row(page, ds)
     cell = cells[heads.index("baseline")] if "baseline" in heads and len(cells) == len(heads) else ""
@@ -430,7 +430,7 @@ def bakeoff() -> None:
 
     print("   RFC-041 F3 (unknown, none and zero)")
     sys_ = "local_alpha"
-    page = (out / "arms.html").read_text() if (out / "arms.html").exists() else ""
+    page = (out / "arms.html").read_text(encoding="utf-8") if (out / "arms.html").exists() else ""
     cells = table_row(page, f"c:{sys_}")
     spend = cells[4] if len(cells) > 4 else ""
     check(
@@ -440,7 +440,7 @@ def bakeoff() -> None:
     )
     runs_page = out / "a" / f"runs-{f['datasets'][0]}-{sys_}.html"
     row = (
-        re.search(rf"{f['runs'][0]} \S+ \S+ \d+ (\S+)", text_of(runs_page.read_text()))
+        re.search(rf"{f['runs'][0]} \S+ \S+ \d+ (\S+)", text_of(runs_page.read_text(encoding="utf-8")))
         if runs_page.exists()
         else None
     )

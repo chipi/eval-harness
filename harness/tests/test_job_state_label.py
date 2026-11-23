@@ -45,12 +45,13 @@ try:
         d = proj / ".build" / "jobs" / jid
         d.mkdir(parents=True)
         (d / "job.json").write_text(
-            json.dumps({"id": jid, "operation": "arm-smoke", "inputs": {}, "by": "person:t"})
+            json.dumps({"id": jid, "operation": "arm-smoke", "inputs": {}, "by": "person:t"}),
+            encoding="utf-8",
         )
         (d / "state.json").write_text(
-            json.dumps({"state": state, "exit": code, "ended_at": "2026-11-20T10:00:00Z"})
+            json.dumps({"state": state, "exit": code, "ended_at": "2026-11-20T10:00:00Z"}), encoding="utf-8"
         )
-        (d / "log").write_text("")
+        (d / "log").write_text("", encoding="utf-8")
     from evaluation_harness import _jobs
 
     os.environ["EVAL_HOME"] = str(proj)

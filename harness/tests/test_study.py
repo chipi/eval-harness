@@ -89,7 +89,7 @@ def system(name, sentences):
 
 def spec(name, text):
     p = proj / f"{name}.yaml"
-    p.write_text(text)
+    p.write_text(text, encoding="utf-8")
     return str(p)
 
 
@@ -103,8 +103,8 @@ try:
                 f"Ticket{i} " + " ".join(WORDS[(i + j * 3 + w) % len(WORDS)] for w in range(5)) + "."
                 for j in range(4)
             ]
-            (src / f"t{i:02d}.txt").write_text(" ".join(s) + "\n")
-            (gold / f"t{i:02d}.txt").write_text(" ".join(s[:2]) + "\n")
+            (src / f"t{i:02d}.txt").write_text(" ".join(s) + "\n", encoding="utf-8")
+            (gold / f"t{i:02d}.txt").write_text(" ".join(s[:2]) + "\n", encoding="utf-8")
     (proj / "data" / "systems").mkdir(parents=True)
     _runstore.write_text(proj, _format.NAME, f"format: {_format.FORMAT}\n")
     r = None
@@ -271,7 +271,7 @@ try:
     (proj / "sampler.py").write_text(
         "import json, sys\nsent = [2]\nfor line in sys.stdin:\n    msg = json.loads(line)\n"
         "    if 'ask' in msg:\n        out = {'params': {'sentences': sent.pop()}, 'hypothesis': 'from a program'} if sent else {'stop': 'done'}\n"
-        "    else:\n        out = {}\n    print(json.dumps(out), flush=True)\n"
+        "    else:\n        out = {}\n    print(json.dumps(out), flush=True)\n", encoding="utf-8"
     )  # fmt: skip
     cmd = spec("cmd", "dataset: tk_val\nbaseline: {system: one_v1}\nmeasure: overlap_f1\n"
                f"sampler: {{command: '{sys.executable} sampler.py'}}\naccept: {{point: {{min_gain: 0}}}}\nstop: {{trials: 4}}\n")  # fmt: skip
@@ -286,7 +286,7 @@ try:
     # A spec that came with a job's call (an upload, under .build/uploads) never names a program for the server to run.
     up = proj / ".build" / "uploads" / ("0" * 64) / "cmd.yaml"
     up.parent.mkdir(parents=True, exist_ok=True)
-    up.write_text(Path(cmd).read_text())
+    up.write_text(Path(cmd).read_text(encoding="utf-8"), encoding="utf-8")
     r = evh("study-run", "--study", "g/s9", "--spec", str(up.relative_to(proj)), "--dry-run")
     check(
         "a spec sent with a call (an upload) that names a command sampler is refused, and nothing is written",
@@ -366,8 +366,8 @@ try:
     # ── a prompt root's varied file changed by a trial ────────────────────────────────────────────────────────────
     lib = proj / "lib"
     (lib / "sub").mkdir(parents=True)
-    (lib / "sub" / "b.txt").write_text("system v1\n")
-    (lib / "a.txt").write_text("fixed\n")
+    (lib / "sub" / "b.txt").write_text("system v1\n", encoding="utf-8")
+    (lib / "a.txt").write_text("fixed\n", encoding="utf-8")
     _runstore.write_text(proj, "systems/root_v1.yaml", "system_id: root_v1\n"
                          "prompt_root: {name: lib, path: lib, vary: [sub/b.txt]}\nparams:\n  provider: echo\n  sentences: 1\n")  # fmt: skip
     rr = evh("run", "--system", "root_v1", "--dataset", "tk_val", "--goal", "g")
@@ -399,7 +399,7 @@ try:
     (proj / "wrap.py").write_text(
         "import time\nfrom evaluation_harness.adapter import Result, score  # noqa: F401\n"
         "from evaluation_harness.adapter import call_system as _call\n"
-        "def call_system(text, params):\n    time.sleep(float(params.get('sleep', 0)))\n    return _call(text, params)\n"
+        "def call_system(text, params):\n    time.sleep(float(params.get('sleep', 0)))\n    return _call(text, params)\n", encoding="utf-8"
     )  # fmt: skip
     _runstore.write_text(proj, "systems/wrap_v1.yaml", "system_id: wrap_v1\nadapter: wrap.py\n"
                          "params:\n  provider: echo\n  sentences: 1\n")  # fmt: skip
@@ -407,7 +407,9 @@ try:
     wspec = spec("wrapspec", "dataset: tk_val\nbaseline: {system: wrap_v1}\nmeasure: overlap_f1\nsampler: agent\n"
                  "accept: {point: {min_gain: 0}}\nstop: {trials: 3}\n")  # fmt: skip
     evh("study-run", "--study", "g/s7", "--spec", wspec)
-    (proj / "wrap.py").write_text((proj / "wrap.py").read_text() + "LIMIT = 3\n")
+    (proj / "wrap.py").write_text(
+        (proj / "wrap.py").read_text(encoding="utf-8") + "LIMIT = 3\n", encoding="utf-8"
+    )
     sc = evh("study-ask", "--study", "g/s7")
     st7 = study_of("g", "s7")
     check("the scoring code changed mid-study (the baseline's adapter): the study stops, saying so",
@@ -424,7 +426,7 @@ try:
                  "accept: {point: {min_gain: 0}}\nstop: {trials: 3}\n"
                  "space:\n  groups:\n    - {name: length, reason: how much, params: {sentences: [2, 3]}}\n")  # fmt: skip
     log = proj / "s8.log"
-    with open(log, "w") as fh:
+    with open(log, "w", encoding="utf-8") as fh:
         pk = subprocess.Popen([sys.executable, str(HERE / "cli.py"), "study-run", "--study", "g/s8", "--spec", kspec], cwd=proj, env=env,
                               stdout=fh, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, start_new_session=True)  # fmt: skip
     for _ in range(300):
@@ -448,7 +450,11 @@ try:
     # ── the goal's page and evh goal-list show the studies ────────────────────────────────────────────────────────────
     gv = evh("goal-leaderboard", "g")
     cat = evh("catalog")
-    page = (proj / ".build" / "catalog" / "g" / "g.html").read_text() if cat.returncode == 0 else ""
+    page = (
+        (proj / ".build" / "catalog" / "g" / "g.html").read_text(encoding="utf-8")
+        if cat.returncode == 0
+        else ""
+    )
     check(
         "the goal's page: each study's trials (change, hypothesis, outcome, why), its confirmation; evh goal-list too",
         "studies: research, then one confirmation" in page and "sentences = 2" in page and "confirmed on tk_test" in page
@@ -459,7 +465,7 @@ try:
     # ── results.tsv ───────────────────────────────────────────────────────────────────────────────────────────────
     (proj / "results.tsv").write_text(
         "commit\tval_bpb\tmemory_gb\tstatus\tdescription\n"
-        "a1b2c3d\t0.997\t44.0\tkeep\tbaseline\nb2c3d4e\t0.993\t44.2\tkeep\tbigger lr\nc3d4e5f\t1.005\t44.0\tdiscard\tswiglu\n"
+        "a1b2c3d\t0.997\t44.0\tkeep\tbaseline\nb2c3d4e\t0.993\t44.2\tkeep\tbigger lr\nc3d4e5f\t1.005\t44.0\tdiscard\tswiglu\n", encoding="utf-8"
     )  # fmt: skip
     imp = evh("study-import", "--file", "results.tsv", "--goal", "g", "--study", "karpathy")
     st4 = study_of("g", "karpathy")

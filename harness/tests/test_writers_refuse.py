@@ -135,7 +135,7 @@ def import_args(**more: object) -> tuple:
 
 # ── the writers refuse what no reader can read ───────────────────────────────────────────────────────────────────
 P, E = fresh()
-(P / "s.jsonl").write_text(SCORES)
+(P / "s.jsonl").write_text(SCORES, encoding="utf-8")
 RUN = ("run", "--system", "arm_z_v1", "--dataset", DS)
 
 print("\n-- an id with unicode, a space or a path in it")
@@ -195,9 +195,9 @@ refused(
 )
 
 print("\n-- already refused by name, held here so a writer that stops refusing is seen")
-(P / "nan.jsonl").write_text('{"item_id": "t01_login", "wer": NaN}\n')
-(P / "inf.jsonl").write_text('{"item_id": "t01_login", "wer": Infinity}\n')
-(P / "str.jsonl").write_text('{"item_id": "t01_login", "wer": 0.1, "cost_usd": "free"}\n')
+(P / "nan.jsonl").write_text('{"item_id": "t01_login", "wer": NaN}\n', encoding="utf-8")
+(P / "inf.jsonl").write_text('{"item_id": "t01_login", "wer": Infinity}\n', encoding="utf-8")
+(P / "str.jsonl").write_text('{"item_id": "t01_login", "wer": 0.1, "cost_usd": "free"}\n', encoding="utf-8")
 for what, name in (("NaN", "nan"), ("infinity", "inf"), ("a text cost", "str")):
     refused(
         f"import-run row with {what}",
@@ -271,7 +271,7 @@ refused(
 # ── a run with no goal, after the project says every run names one ──────────────────────────────────────────────
 print("\n-- a run with no goal, once goals/policy.yaml says every run names one")
 P2, E2 = fresh()
-(P2 / "s.jsonl").write_text(SCORES)
+(P2 / "s.jsonl").write_text(SCORES, encoding="utf-8")
 put(P2, "goals/policy.yaml", "required_from: 2026-01-01\n")
 refused("evh run with no goal under the policy", P2, E2, RUN, "bad-argument", "--goal")
 refused("import-run with no goal under the policy", P2, E2, import_args(), "bad-argument", "--goal")
@@ -289,7 +289,7 @@ check(
 # ── a reference the run is scored against is the one it names; a tier follows the id ───────────────────────────
 print("\n-- import-run records the tier of the reference it names")
 P3, E3 = fresh()
-(P3 / "s.jsonl").write_text(SCORES)
+(P3 / "s.jsonl").write_text(SCORES, encoding="utf-8")
 r = evh(P3, E3, *import_args(reference_id=REF, run_id="with_ref"))
 rec = score_record(P3, "with_ref")
 check(
@@ -324,7 +324,7 @@ def score(output, reference=None):
     return {"n": 1.0}
 '''
 P4, E4 = fresh()
-(P4 / "adapter.py").write_text(COST_ADAPTER)
+(P4 / "adapter.py").write_text(COST_ADAPTER, encoding="utf-8")
 for mode in ("zero", "none", "mixed"):
     put(
         P4,

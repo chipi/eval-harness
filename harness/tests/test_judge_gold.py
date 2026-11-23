@@ -61,12 +61,14 @@ def serve(proj: Path, env: dict, log: Path, *args: str) -> tuple:
             start_new_session=True,
         )
     for _ in range(150):
-        if "catalog:" in log.read_text() or "inspector API on" in log.read_text():
+        if "catalog:" in log.read_text(encoding="utf-8") or "inspector API on" in log.read_text(
+            encoding="utf-8"
+        ):
             return p, port
         if p.poll() is not None:
-            raise SystemExit(f"catalog-serve exited:\n{log.read_text()}")
+            raise SystemExit(f"catalog-serve exited:\n{log.read_text(encoding='utf-8')}")
         time.sleep(0.1)
-    raise SystemExit(f"catalog-serve did not start:\n{log.read_text()}")
+    raise SystemExit(f"catalog-serve did not start:\n{log.read_text(encoding='utf-8')}")
 
 
 def get(port: int, path: str, host: str | None = None) -> tuple:

@@ -92,7 +92,9 @@ def legacy_db(src_data, proj, extra=None):
             continue
         rel = p.relative_to(src_data)
         if p.name in ("predictions.jsonl", "rows.partial.jsonl"):
-            lines[(rel.parent.as_posix(), int(p.name == "rows.partial.jsonl"))] = p.read_text()
+            lines[(rel.parent.as_posix(), int(p.name == "rows.partial.jsonl"))] = p.read_text(
+                encoding="utf-8"
+            )
         else:
             b = p.read_bytes()
             c.execute(
@@ -191,8 +193,8 @@ try:
     junk = base / "junk"
     shutil.copytree(FIXTURE, junk / "data")
     zp = junk / "data" / "runs/zeta_20261101T000000Z/scores/aaaaaaaaaaaa@gold.ds/predictions.jsonl"
-    zl_ = zp.read_text().splitlines()
-    zp.write_text("\n".join([*zl_[:2], "not a json row", *zl_[2:]]) + "\n")
+    zl_ = zp.read_text(encoding="utf-8").splitlines()
+    zp.write_text("\n".join([*zl_[:2], "not a json row", *zl_[2:]]) + "\n", encoding="utf-8")
     held = tree(junk / "data")
     r = evh(junk, "files", "migrate")
     check(
@@ -348,9 +350,9 @@ try:
     refused = base / "refused"
     shutil.copytree(FIXTURE, refused / "data")
     held_rj = refused / "data" / "runs" / "alpha_20261101T000000Z" / "run.json"
-    doc = json.loads(held_rj.read_text())
+    doc = json.loads(held_rj.read_text(encoding="utf-8"))
     doc["call"] = "nope"
-    held_rj.write_text(json.dumps(doc, indent=2) + "\n")
+    held_rj.write_text(json.dumps(doc, indent=2) + "\n", encoding="utf-8")
     held = tree(refused / "data")
     r = evh(refused, "files", "migrate")
     check(
@@ -360,7 +362,9 @@ try:
         and tree(refused / "data") == held,
         r.stdout + r.stderr[-300:],
     )
-    held_rj.write_text(json.dumps({k: v for k, v in doc.items() if k != "call"}, indent=2) + "\n")
+    held_rj.write_text(
+        json.dumps({k: v for k, v in doc.items() if k != "call"}, indent=2) + "\n", encoding="utf-8"
+    )
     (
         refused
         / "data"
@@ -467,7 +471,10 @@ try:
     }
     for name, fields in when.items():
         run_json = timed / "src" / "runs" / f"{name}_20261101T000000Z" / "run.json"
-        run_json.write_text(json.dumps({**json.loads(run_json.read_text()), **dict(fields)}, indent=2) + "\n")
+        run_json.write_text(
+            json.dumps({**json.loads(run_json.read_text(encoding="utf-8")), **dict(fields)}, indent=2) + "\n",
+            encoding="utf-8",
+        )
     tsql = timed / "sql"
     legacy_db(timed / "src", tsql)
     r1_ = evh(tsql, "sqlite", "migrate")
@@ -565,7 +572,8 @@ try:
         "        raise RuntimeError('crash while the rows move')\n"
         "    return real(conn, key, rows)\n"
         "m._write_set = crashing\n"
-        "m.run(False)\n"
+        "m.run(False)\n",
+        encoding="utf-8",
     )
     c = sqlite3.connect(crash2 / "data" / "project.sqlite")
     n_before = c.execute("SELECT count(*) FROM rows").fetchone()[0]
@@ -574,7 +582,7 @@ try:
     env.update(EVAL_HOME=str(crash2), EVAL_STORE="sqlite")
     r = subprocess.run(
         [sys.executable, str(helper2)], cwd=crash2, env=env, capture_output=True, text=True, stdin=subprocess.DEVNULL,
-        timeout=300,
+        timeout=300, encoding="utf-8",
     )  # fmt: skip
     c = sqlite3.connect(crash2 / "data" / "project.sqlite")
     tables = {r_[0] for r_ in c.execute("SELECT name FROM sqlite_master WHERE type = 'table'")}
@@ -646,13 +654,14 @@ try:
         "        return getattr(self.s, name)\n"
         "_outputs.store = lambda: Crashing(real())\n"
         "from evaluation_harness.migrations import m0007_results\n"
-        "m0007_results.run(False)\n"
+        "m0007_results.run(False)\n",
+        encoding="utf-8",
     )
     env = {k: v for k, v in os.environ.items() if k not in ("EVAL_DATA_DIR",)}
     env.update(EVAL_HOME=str(crash), EVAL_STORE="files")
     r = subprocess.run(
         [sys.executable, str(helper)], cwd=crash, env=env, capture_output=True, text=True, stdin=subprocess.DEVNULL,
-        timeout=300,
+        timeout=300, encoding="utf-8",
     )  # fmt: skip
     mid = tree(crash / "data")
     first_run = "runs/alpha_20261101T000000Z/run.json"

@@ -66,7 +66,7 @@ def serve() -> tuple[subprocess.Popen, int]:
 
 def call(port: int, method: str, path: str, body: dict | None = None, data: bool = True) -> tuple[int, dict]:
     """One API call with the server's token."""
-    token = (proj / ".build" / "api-token").read_text().strip()
+    token = (proj / ".build" / "api-token").read_text(encoding="utf-8").strip()
     h = {"Host": f"127.0.0.1:{port}", "Authorization": f"Bearer {token}"}
     if data:
         h["X-EVH-Data"] = "1"
@@ -103,7 +103,7 @@ try:
     ):  # fmt: skip
         r = r if r.returncode else evh(*step)
     (proj / "data" / "systems" / "one_v1.yaml").write_text(
-        "system_id: one_v1\nparams:\n  provider: echo\n  sentences: 1\n"
+        "system_id: one_v1\nparams:\n  provider: echo\n  sentences: 1\n", encoding="utf-8"
     )
     r = r if r.returncode else evh("run", "--system", "one_v1", "--dataset", "tk_v1")
     r = r if r.returncode else evh("catalog")
@@ -124,15 +124,18 @@ try:
         again.stderr[-200:],
     )
 
-    GOAL.write_text(GOAL.read_text().replace("title:", "# what a person calls it\ntitle:", 1))
+    GOAL.write_text(
+        GOAL.read_text(encoding="utf-8").replace("title:", "# what a person calls it\ntitle:", 1),
+        encoding="utf-8",
+    )
     s = evh("goal-set", "tickets_summary", "--set", "status=active")
-    text = GOAL.read_text()
+    text = GOAL.read_text(encoding="utf-8")
     check(
         "goal-set changes one field and keeps the file's comments",
         s.returncode == 0 and "# what a person calls it" in text and "status: active" in text,
         (s.stderr[-200:], text[:300]),
     )
-    before = GOAL.read_text()
+    before = GOAL.read_text(encoding="utf-8")
     bad = evh("goal-set", "tickets_summary", "--set", "datasets.0.dataset_id=nope_v1", "--json")
     bad2 = evh("goal-set", "tickets_summary", "--set", "success_criteria.primary.direction=sideways")
     check(
@@ -142,7 +145,7 @@ try:
         and "datasets.0.dataset_id: no dataset 'nope_v1'" in bad.stderr
         and bad2.returncode == 1
         and "success_criteria.primary.direction" in bad2.stderr
-        and GOAL.read_text() == before,
+        and GOAL.read_text(encoding="utf-8") == before,
         (bad.stderr[-300:], bad2.stderr[-300:]),
     )
     h = result(evh("goal-history", "tickets_summary", "--json"))
@@ -268,10 +271,16 @@ try:
         "from evaluation_harness import _jobs\n"
         "with _jobs.holding([('goal:tickets_summary', True)], 'job-x'):\n"
         "    print('held', flush=True)\n"
-        "    time.sleep(60)\n"
+        "    time.sleep(60)\n",
+        encoding="utf-8",
     )
     held = subprocess.Popen(
-        [sys.executable, str(holder), str(HARNESS)], cwd=proj, env=env, stdout=subprocess.PIPE, text=True
+        [sys.executable, str(holder), str(HARNESS)],
+        cwd=proj,
+        env=env,
+        stdout=subprocess.PIPE,
+        text=True,
+        encoding="utf-8",
     )
     try:
         assert held.stdout is not None
@@ -287,10 +296,10 @@ try:
         held.wait(timeout=10)
 
     stamp = proj / "data" / "project.yaml"
-    kept = stamp.read_text()
+    kept = stamp.read_text(encoding="utf-8")
     stamp.unlink()
     old = evh("goal-list")
-    stamp.write_text(kept)
+    stamp.write_text(kept, encoding="utf-8")
     check(
         "data in an older format is refused by the model",
         old.returncode == 1 and "ERROR (old-format)" in old.stderr,

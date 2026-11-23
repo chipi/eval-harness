@@ -104,7 +104,7 @@ def catalog_jobs() -> list[str]:
     out = []
     for d in sorted(root.iterdir()) if root.is_dir() else []:
         try:
-            if json.loads((d / "job.json").read_text()).get("operation") == "catalog":
+            if json.loads((d / "job.json").read_text(encoding="utf-8")).get("operation") == "catalog":
                 out.append(d.name)
         except (OSError, ValueError, KeyError):
             pass
@@ -297,7 +297,7 @@ try:
     # ── the catalog's own folders: a page the data no longer has is gone ──────────────────────────────────────────
     for rel in ("g/removed_goal.html", "a/old-arm.html", "d/gone_v1.html", "goals-old.html"):
         (build_dir / rel).parent.mkdir(parents=True, exist_ok=True)
-        (build_dir / rel).write_text("<html>an old export</html>")
+        (build_dir / rel).write_text("<html>an old export</html>", encoding="utf-8")
     gone = {rel: page(port, rel)[0] for rel in ("g/removed_goal.html", "a/old-arm.html", "d/gone_v1.html")}
     check(
         "a file an old export left under the catalog's own folders is not served: 404, the data has no such page",
@@ -384,7 +384,7 @@ try:
     job_id = json.loads(body).get("id") if st == 202 else None
     check(
         "the job ends, and the arms page lists the new arm",
-        waiting(lambda: job_id and json.loads((proj / ".build" / "jobs" / job_id / "state.json").read_text()).get("state") == "succeeded")
+        waiting(lambda: job_id and json.loads((proj / ".build" / "jobs" / job_id / "state.json").read_text(encoding="utf-8")).get("state") == "succeeded")
         and waiting(lambda: shows(port, "two_v1", "arms.html")),
         job_id,
     )  # fmt: skip
@@ -397,14 +397,14 @@ try:
     # ── a real process ──────────────────────────────────────────────────────────────────────────────────────────────
     log_file = proj / "serve.log"
     port2 = free_port()
-    with open(log_file, "w") as logf:
+    with open(log_file, "w", encoding="utf-8") as logf:
         srv = subprocess.Popen(
             [sys.executable, str(HERE / "cli.py"), "catalog-serve", "--port", str(port2), "--brand", "Fresh brand"],
-            cwd=proj, env=env, stdout=logf, stderr=subprocess.STDOUT, text=True, stdin=subprocess.DEVNULL,
+            cwd=proj, env=env, stdout=logf, stderr=subprocess.STDOUT, text=True, stdin=subprocess.DEVNULL, encoding="utf-8",
         )  # fmt: skip
         try:
-            check("setup: catalog-serve started", wait_up(port2), log_file.read_text()[-500:])
-            started = log_file.read_text()
+            check("setup: catalog-serve started", wait_up(port2), log_file.read_text(encoding="utf-8")[-500:])
+            started = log_file.read_text(encoding="utf-8")
             prefix = re.search(r"catalog: http://127\.0\.0\.1:\d+(\S*)", started)
             pre = prefix.group(1) if prefix else "/"
             check(
@@ -427,9 +427,12 @@ try:
             check(
                 "a change by the command line is on the next page",
                 r.returncode == 0 and shows(port2, "Fresh seven", prefix=pre),
-                (r.stderr, log_file.read_text()[-400:]),
+                (r.stderr, log_file.read_text(encoding="utf-8")[-400:]),
             )
-            check("and the log says the data changed", "the data changed" in log_file.read_text())
+            check(
+                "and the log says the data changed",
+                "the data changed" in log_file.read_text(encoding="utf-8"),
+            )
         finally:
             srv.terminate()
             srv.wait(timeout=30)
@@ -438,17 +441,17 @@ try:
     r = evh("goal-set", GOAL, "--set", "title=Fresh eight")
     port4 = free_port()
     log4 = proj / "serve4.log"
-    with open(log4, "w") as logf:
+    with open(log4, "w", encoding="utf-8") as logf:
         srv = subprocess.Popen(
             [sys.executable, str(HERE / "cli.py"), "catalog-serve", "--port", str(port4)],
-            cwd=proj, env=env, stdout=logf, stderr=subprocess.STDOUT, text=True, stdin=subprocess.DEVNULL,
+            cwd=proj, env=env, stdout=logf, stderr=subprocess.STDOUT, text=True, stdin=subprocess.DEVNULL, encoding="utf-8",
         )  # fmt: skip
         try:
             wait_up(port4)
             check(
                 "a server started after the data changed shows it on its first page, with no rebuild",
                 r.returncode == 0 and shows(port4, "Fresh eight", prefix=pre) and catalog_jobs() == [],
-                (r.stderr, log4.read_text()[-400:]),
+                (r.stderr, log4.read_text(encoding="utf-8")[-400:]),
             )
         finally:
             srv.terminate()

@@ -65,7 +65,7 @@ def sh(cmd: list, cwd: Path | None = None, env: dict | None = None, timeout: int
     """Run a command, both streams captured together."""
     r = subprocess.run(
         [str(c) for c in cmd], cwd=cwd, env=env, text=True, timeout=timeout,
-        stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, encoding="utf-8",
     )  # fmt: skip
     return r.returncode, r.stdout
 
@@ -88,12 +88,12 @@ def first(pattern: str, text: str, flags: int = 0) -> str:
 
 def tree_version() -> str:
     """The version this tree reports."""
-    return first(r'__version__ = "([^"]+)"', (HARNESS / "scripts/_version.py").read_text())
+    return first(r'__version__ = "([^"]+)"', (HARNESS / "scripts/_version.py").read_text(encoding="utf-8"))
 
 
 def tree_format() -> int:
     """The data format this tree reads."""
-    return int(first(r"^FORMAT = (\d+)", (HARNESS / "scripts/_format.py").read_text(), re.M))
+    return int(first(r"^FORMAT = (\d+)", (HARNESS / "scripts/_format.py").read_text(encoding="utf-8"), re.M))
 
 
 def package_digest(files: dict) -> str:
@@ -123,7 +123,7 @@ def pinned_commit(venv: Path) -> str:
     """The commit a git install records (direct_url.json), '' when it is not one."""
     site = next((venv / "lib").glob("python*/site-packages"))
     for p in site.glob("evaluation_harness-*.dist-info/direct_url.json"):
-        return json.loads(p.read_text()).get("vcs_info", {}).get("commit_id", "")
+        return json.loads(p.read_text(encoding="utf-8")).get("vcs_info", {}).get("commit_id", "")
     return ""
 
 
