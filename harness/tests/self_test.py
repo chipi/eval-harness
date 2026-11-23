@@ -871,6 +871,10 @@ def test_example_scorer_suites_pass() -> None:
             "test_public_leak.py",
             "a sentinel in every field that may carry private text, searched in every public read, page and export under each --publish; RFC-041 F4's public env with no hosts",
         ),
+        (
+            "test_stats_edges.py",
+            "the statistics on one item, all items failed, identical arms, disjoint items, singleton and single clusters, 3 items, half of 22, a nan or None score: a named verdict, no traceback, no nan",
+        ),
         ("test_models.py", "model records: the weights facts, and what V18 catches"),
         ("test_arm_smoke.py", "evh arm-smoke: the calls it reads, the projection, every flag"),
         (
