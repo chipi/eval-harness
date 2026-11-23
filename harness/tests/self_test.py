@@ -1103,6 +1103,10 @@ def test_example_scorer_suites_pass() -> None:
             "unknown, none and zero kept apart: a build git could not read, a $0 spend, a study's stop of $0",
         ),
         (
+            "test_public_gate.py",
+            "whether a call is public is one function: an in-process public call is refused an item's text, an unreadable dataset is hidden",
+        ),
+        (
             "test_why_lines.py",
             "a goal page's reasons with many arms: the scorer named once, a long list of contenders or undecided as a count",
         ),

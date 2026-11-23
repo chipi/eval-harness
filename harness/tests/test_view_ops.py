@@ -50,7 +50,6 @@ from evaluation_harness import catalog_serve as cs  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 from evaluation_harness.catalog_adapter import load_catalog_adapter, scores_once  # noqa: E402
 from evaluation_harness.cli import COMMANDS  # noqa: E402
-from evaluation_harness.model import compare as compare_model  # noqa: E402
 from evaluation_harness.model.entity import Problem  # noqa: E402
 from evaluation_harness.ops import cli as ops_cli  # noqa: E402
 from evaluation_harness.ops import legacy, registry, views  # noqa: E402
@@ -391,10 +390,10 @@ try:
     with _visibility.public_call(True):
         public = refused(lc.call, dataset="dec_v1", capture="dec", map="rules.yaml")[0]
         NEW["comparison-show"].call(runs="runs/ds1/arm_a,runs/ds1/arm_b")
-        limited = compare_model.public()
+        limited = _visibility.public()
     check(
         "on a public call label coverage is refused, and a comparison is held to the public rules; a local call is not",
-        public == "not-allowed" and limited and not compare_model.public(),
+        public == "not-allowed" and limited and not _visibility.public(),
         (public, limited),
     )
 

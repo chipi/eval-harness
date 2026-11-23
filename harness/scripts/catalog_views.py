@@ -991,7 +991,7 @@ def sheet_view(A, args) -> int:
     by, disagree, split, wrong_against, new_vs, unlabelled, judge_disagrees, scores_only."""
     from evaluation_harness import _picks  # noqa: PLC0415
 
-    if _visibility.public_env():
+    if _visibility.public():
         die("--sheet shows the items' outputs and labels: not served publicly", "not-public")
     if not args.dataset_id:
         die("--sheet: name the dataset with --dataset-id", "bad-argument")

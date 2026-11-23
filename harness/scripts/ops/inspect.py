@@ -116,7 +116,7 @@ def _comparison_crosstab_body(
     from evaluation_harness import _visibility, catalog_views  # noqa: PLC0415
     from evaluation_harness._common import die  # noqa: PLC0415
 
-    if _visibility.public_env() and group:
+    if _visibility.public() and group:
         # A recorded field can hold text; the counts of two scores are numbers and ids.
         die("group shows recorded texts: not served publicly", "not-public")
     if group_match and not group:
@@ -147,7 +147,7 @@ def _comparison_items_body(
     from evaluation_harness import _visibility, catalog_views  # noqa: PLC0415
     from evaluation_harness._common import die  # noqa: PLC0415
 
-    if _visibility.public_env():
+    if _visibility.public():
         die("items shows recorded texts: not served publicly", "not-public")
     catalog_views._items_out(
         _adapter(),

@@ -26,9 +26,9 @@ HERE = Path(__file__).resolve().parents[1] / "scripts"  # the core modules (this
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tests/
 
+from evaluation_harness import _visibility, stats  # noqa: E402
 from evaluation_harness import catalog_build as cb  # noqa: E402
 from evaluation_harness import catalog_serve as cs  # noqa: E402
-from evaluation_harness import stats  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 from evaluation_harness.catalog_adapter import HarnessAdapter  # noqa: E402
 from evaluation_harness.model import goal_views as gv  # noqa: E402
@@ -825,6 +825,11 @@ try:
         srv.shutdown()
         cs.LIMITS["proxy_hosts"] = ()
 
+    # A public server serves the text of a dataset only when its record can be read and does not say hidden. This
+    # fixture's data is not the project's, so the record is looked up here.
+    (data / "datasets").mkdir()
+    (data / "datasets" / "ds1.json").write_text(json.dumps({"dataset_id": "ds1", "items": []}))
+    _visibility.record_file = lambda ds, data_dir=None: data / "datasets" / f"{ds}.json"  # type: ignore[assignment]
     # PUBLIC mode: the API only, to the named host, rate-limited, arms capped, answers cached
     cs.LIMITS.update(hosts=("catalog.example.org",), rate=5, max_arms=2)
     cs.Handler.prefixes = ()
@@ -956,7 +961,6 @@ try:
         "  - {name: size, type: number}\n"
         "  - {name: customer, type: text}\n"
     )
-    (data / "datasets").mkdir()
     (data / "datasets" / "ds1.json").write_text(
         json.dumps(
             {

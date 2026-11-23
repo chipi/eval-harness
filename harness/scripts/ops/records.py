@@ -805,12 +805,12 @@ def dataset_items(dataset: str, item: str | None = None) -> dict[str, Any]:
 
     with legacy.refusing():
         p = load_profile(dataset)
-    if _visibility.public_env() and _visibility.hidden(dataset):
+    if _visibility.public() and _visibility.hidden(dataset):
         if item:
             raise Problem(f"{dataset} is `text: hidden`: no item is shown here", "not-public")
         p = _visibility.public_profile(p)
     if (
-        _visibility.public_env()
+        _visibility.public()
     ):  # a profile written --with-text carries item text: a public server serves none (L2)
         p = {**p, "rows": [{k: v for k, v in r.items() if k != "text"} for r in p["rows"]]}
     if not item:

@@ -207,7 +207,7 @@ def result(name: str, args: dict[str, Any], compute: Callable[[], T]) -> T:
         name,
         json.dumps(args, sort_keys=True, default=str),
         date.today().toordinal(),
-        _visibility.public_env(),
+        _visibility.public(),
     )
     blob = get(key, build, weigh=lambda b: len(b or b"") // 64 + 1)
     if box:  # this call computed it: the caller gets what was computed, as without the cache
