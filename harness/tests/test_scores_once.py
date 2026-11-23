@@ -23,9 +23,27 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _ops
 import _ops
 from evaluation_harness import catalog_build as cb
 from evaluation_harness._check import check, summary
+from evaluation_harness._rounds import load_rounds
 from evaluation_harness.catalog_adapter import HarnessAdapter, scores_once
+from evaluation_harness.model import rounds as model_rounds
 
 READS: Counter = Counter()  # each arm's scores reads, by Counting
+
+
+def narrowed() -> Counter:
+    """How many rounds read each arm through only the runs they recorded, fewer than the arm has (a later run joined to
+    it, a repeat of the same measurement, RFC-041 F2): each such round view reads the arm's scores once for itself."""
+    found: Counter = Counter()
+    adapter = HarnessAdapter()
+    for rnd in load_rounds():
+        for a in model_rounds.arms(rnd):
+            arm = model_rounds.arm_id(rnd, a)
+            if a.get("runs") and {adapter._run_id(d) for d in adapter._dirs(arm)} - set(a["runs"]):
+                found[arm] += 1
+    return found
+
+
+EXTRA = narrowed()
 
 
 class Counting(HarnessAdapter):
@@ -52,7 +70,7 @@ check(
 # project's shared adapter does).
 READS.clear()
 _ops.result("goal-list", scores_once(Counting()))
-twice = {a: n for a, n in READS.items() if n > 1}
+twice = {a: n for a, n in READS.items() if n > 1 + EXTRA[a]}
 check(
     f"evh goal-list: no arm's scores read twice ({len(READS)} arms read)",
     READS and not twice,
@@ -63,9 +81,9 @@ check(
 READS.clear()
 with tempfile.TemporaryDirectory() as out:
     cb.build(Counting(), Path(out) / "catalog")
-twice = {a: n for a, n in READS.items() if n > 1}
+twice = {a: n for a, n in READS.items() if n > 1 + EXTRA[a]}
 check(
-    f"catalog build: no arm's scores read twice ({len(READS)} arms read)",
+    f"catalog build: no arm's scores read twice, but once for each round that reads it narrower ({len(READS)} arms read)",
     READS and not twice,
     dict(list(twice.items())[:5]),
 )

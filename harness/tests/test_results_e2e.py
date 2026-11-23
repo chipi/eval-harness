@@ -307,6 +307,13 @@ def resumed(store: str) -> None:
             )
             d = p.evh("data-rm", "--path", f"runs/{c}")
             check(f"{store}: {label}: the crashed run, resumed, is discarded", d.returncode == 0, tail(d))
+        # Three plain runs of each system (the uninterrupted run, its resume, a finished run resumed), two measurements of
+        # one system on purpose: what the project says in `duplicate_ok`. Their names (`_r1`..`_r3`) make no set.
+        _runstore.write_text(
+            p.dir,
+            "validate.json",
+            json.dumps({"duplicate_ok": [["tickets_v1", "res_const_v1"], ["tickets_v1", "res_vary_v1"]]}),
+        )
         bad, out = p.v28()
         v = p.validate()
         check(
