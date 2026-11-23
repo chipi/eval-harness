@@ -48,6 +48,7 @@ def by_dataset(A, datasets: set[str] | None = None) -> dict:
                 "reference": d.get("reference", ""),
                 "judge": d.get("judge", ""),
                 "wrote": bool(d.get("wrote_reference")),
+                "failed_every_item": bool(d.get("failed_every_item")),
                 "labels_source": d.get("labels_source", ""),
                 "recorded": d.get("recorded", ""),
                 "replay": d.get("replay"),

@@ -697,6 +697,9 @@ class HarnessAdapter:
             "recorded": str(params.get("capture") or "") if params.get("provider") == "recorded" else "",
             # A replay of a system's code (RFC-030): its code record, a candidate's commit, and its faithfulness.
             "replay": _replay_of(m),
+            # Every item of its latest run failed (its `failed` mean is 1): its scores are the failures' own (0 on most
+            # measures), not a result: the goal page says so (a flag; the arm stays as eligible as its scores make it).
+            "failed_every_item": (m.get("scores") or {}).get("failed") == 1.0,
         }
 
     # -- scores -------------------------------------------------------------------------

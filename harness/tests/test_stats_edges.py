@@ -16,10 +16,11 @@ commands, as the code names it (stats.py `_set_verdict`, charts `_word`, the ref
 - `stats.compare` gives the verdict the data has, and the functions give probabilities and finite intervals on the
   lists the shapes make (none, one, all zero, three, a nan).
 
-A failure is a finding: the NaN and None shapes fail on branch 081 (see the test's output). The checks that start
-"observation:" ask for more than the verdict word (why an arm is out, that an arm failed everything). Shapes whose
-runs break the catalog build come last, each with its own build, so one crash does not hide the pages before it.
-`EDGES_KEEP=1` leaves the project for a look.
+A score that is not a number (NaN, an infinity, None) makes its item a failed item (RFC-041 F7: a writer records a
+number or refuses), so no new run holds one; the "old data" checks give the readers a run recorded before that, a NaN
+in an item and in the run's mean. The checks that start "observation:" ask for more than the verdict word (why an arm
+is out, that an arm failed everything, what the smallest p is). Shapes whose runs break the catalog build come last,
+each with its own build, so one crash does not hide the pages before it. `EDGES_KEEP=1` leaves the project for a look.
 """
 
 import html
@@ -238,6 +239,17 @@ def check_shape(name: str, out: Path) -> None:
         "q=nan" not in sp["runs"]["a"].stdout and "q=nan" not in sp["runs"]["b"].stdout,
         "the run line says q=nan",
     )
+    if name in ("nan_scores", "none_scores"):
+        # RFC-041 F7: a score that is not a number is a failed item of the run, named, and never in a mean
+        said = sp["runs"]["a"].stdout + sp["runs"]["a"].stderr
+        word = "nan" if name == "nan_scores" else "None"
+        check(w("evh run: the item whose score is not a number is a failed item, with its reason"),
+              "FAILED item i0" in said and f"score q is not a number: {word}" in said, said[-400:])  # fmt: skip
+        rid = next(x for x in _runstore.listdir(proj, "runs") if x.startswith(f"e_{name}_a_"))
+        rec = _runstore.record_of(proj, rid)
+        check(w("evh run: the run record lists it in failed_items and its mean is over finite scores"),
+              [f["error"] for f in rec.get("failed_items") or []] == [f"score q is not a number: {word}"]
+              and math.isfinite(rec["scores"]["q"]), json.dumps(rec.get("failed_items"))[:200])  # fmt: skip
     # pair-test
     doc, text, r = pair(name)
     check(w("pair-test: no traceback; exit 0, or a named refusal"),
@@ -371,6 +383,33 @@ try:
         )
         for name in names:
             check_shape(name, proj / ".build" / f"edges-{stage}")
+
+    # ── old data: a run recorded before RFC-041 F7 holds a NaN in an item and in its mean ──────────────────────────
+    rid = next(x for x in _runstore.listdir(proj, "runs") if x.startswith("e_nan_scores_a_"))
+    with _runstore._InProject(proj) as data:
+        sd = _runstore.model_runs.first_score(data / "runs" / rid)
+        assert sd is not None
+        rows = _runstore.rows(sd)
+        for row in rows:
+            if row["item_id"] == "i02":
+                row["q"] = float("nan")
+        _runstore.put_rows(sd, rows)
+        mj = json.loads(_runstore._store.read_text(sd / "metrics.json"))
+        mj["scores"]["q"] = float("nan")
+        _runstore._store.write_text(sd / "metrics.json", json.dumps(mj))
+    old = "old data (a NaN already recorded)"
+    doc, text, r = cmd_json("leaderboard", "e_nan_scores")
+    check(f"{old}: leaderboard: no traceback, strict JSON, no nan or inf in a cell or a sentence",
+          "Traceback" not in text and r.returncode == 0 and doc is not None and not has_nan(text) and "NaN" not in r.stdout,
+          [ln for ln in text.splitlines() if has_nan(ln)][:3] or text[-300:])  # fmt: skip
+    doc, text, r = pair("nan_scores")
+    check(f"{old}: pair-test: a verdict with a p that is a probability, no nan",
+          r.returncode == 0 and 0 <= (p_of(text) or -1) <= 1 and not has_nan(text), text[-400:])  # fmt: skip
+    ro = evh("catalog", "--out", str(proj / ".build" / "edges-old"))
+    check(f"{old}: the catalog builds", "Traceback" not in ro.stderr and ro.returncode == 0,
+          " | ".join(ro.stderr.strip().splitlines()[-3:]))  # fmt: skip
+    raw, page = page_of(proj / ".build" / "edges-old", "nan_scores")
+    check(f"{old}: the goal page has no nan or inf", bool(raw) and not has_nan(page), [ln for ln in page.splitlines() if has_nan(ln)][:3])  # fmt: skip
 
     # ── the writer that takes numbers from outside refuses a nan by name ───────────────────────────────────────────
     (proj / "nan.jsonl").write_text(

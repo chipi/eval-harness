@@ -609,6 +609,7 @@ owner, 2026-11-23). The same screens, read-only; the server refuses every write,
 - **The command stays.** Each screen still prints the `evh` command that does what it shows, as text a reader can copy.
 - **No token, no sign-in, no cookie.** A visitor is never asked for either.
 - **Text follows the public rules** (`text: hidden`, `--publish`): the page shows what the API answers and adds nothing.
+  A system's `params.prompt` is a prompt and shows only with `--publish prompts`; a reference's promotion reason and a prompt version's note stay public (owner, 2026-11-23).
 
 Tested in a browser on a fixture with a `text: hidden` dataset: no marker word appears, no acting control is present,
 and a request for the sheet or an item's input is refused.

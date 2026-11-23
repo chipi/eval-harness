@@ -15,10 +15,12 @@ reason, a capture's records. Then every surface that is public is searched for e
 - the deployment's copy of the data (`_release.copy_data`).
 
 A sentinel may appear only where the rules say its field is public (`server_allows`, `catalog_allows`, `copy_allows`:
-each cites the doc it comes from); a field the docs leave unsaid is asserted not shown and its checks start "docs
-silent:". The checks that start "RFC-041 F4:" fail until F4 lands: the public env set with no public hosts (the
-inspector's item view and the reads a public MCP leaves out serve text), and `_visibility.hidden` failing open. A control
-for each sentinel: a person's own reads carry it, or a search that finds nothing proves nothing.
+each cites the doc it comes from). The owner's decision of 2026-11-23 settled the two fields the docs left unsaid, and
+their checks start "owner 2026-11-23:": a system's own prompt parameter is a prompt (shown only with `--publish
+prompts` / `catalog: {publish: [prompts]}`); a reference's promotion reason and a prompt version's note are project
+notes (public). The checks that start "RFC-041 F4:" are F4's: the public env set with no public hosts (the inspector's
+item view and the reads a public MCP leaves out serve text), and `_visibility.hidden` failing open. A control for each
+sentinel: a person's own reads carry it, or a search that finds nothing proves nothing.
 """
 
 import json
@@ -206,7 +208,13 @@ def build() -> None:
 # ── what is asked ───────────────────────────────────────────────────────────────────────────────────────────────────
 ALL = {s(f, t): (f, t) for f in FIELDS for t in "HS"} | {s(p): (p, "") for p in PROJECT}
 DS = {"H": "lk_h", "S": "lk_s"}
-SETTINGS = ((), ("outputs",), ("references",), ("outputs", "references"))  # `catalog-serve --publish`
+SETTINGS = (
+    (),
+    ("outputs",),
+    ("references",),
+    ("outputs", "references"),
+    ("prompts",),
+)  # `catalog-serve --publish`
 ARMS = {t: f"runs/{DS[t]}/lk_a_v1,runs/{DS[t]}/lk_b_v1" for t in "HS"}
 #: What a path part is in the fixture; each of a list is asked for in turn.
 PART: dict[str, list] = {
@@ -386,8 +394,8 @@ def server_allows(k: str, publish: tuple) -> bool:
     never; a shown dataset's field values yes, its outputs only with `outputs`, its references only with `references`,
     its items' inputs, labels and judge reasons never (an item's input is a non-goal; the labels and reasons are
     `public_dropped` or not taken); a goal's, a round's and a prompt's own words yes (RFC-039, open question 1: a
-    prompt is the project's, served); what the docs leave unsaid (a system's own prompt parameter, a reference's
-    promotion reason, a capture's records) is taken as not shown."""
+    prompt is the project's, served); owner, 2026-11-23: a system's own prompt parameter only with `prompts`, a
+    reference's promotion reason always; a capture's records are not shown."""
     field, tag = ALL[k]
     if tag == "H":
         return False
@@ -397,20 +405,25 @@ def server_allows(k: str, publish: tuple) -> bool:
             or (field == "OUTPUT" and "outputs" in publish)
             or (field == "REFERENCE" and "references" in publish)
         )
-    return field in ("NOTE-GOAL", "NOTE-ROUND", "NOTE-PROMPT", "PROMPT-TEXT")
+    return field in ("NOTE-GOAL", "NOTE-ROUND", "NOTE-PROMPT", "PROMPT-TEXT", "NOTE-REFERENCE") or (
+        field == "SYSTEM-PROMPT" and "prompts" in publish
+    )
 
 
 def catalog_allows(k: str, prompts: bool) -> bool:
     """A sentinel on a page of the export (`evh catalog`, always public: catalog_build's docstring, RFC-019 §4, ADR-0002):
     counts and means only; an item's text only where the project publishes it (a profile written `--with-text`, shown
     datasets only); outputs and references only through the inspector's server; a prompt's text only with
-    `catalog: {publish: [prompts]}`; a goal's and a round's own words yes; the rest as above, not shown."""
+    `catalog: {publish: [prompts]}`, and so a system's own prompt parameter (owner, 2026-11-23); a goal's and a round's
+    own words, a prompt version's note and a reference's promotion reason yes; the rest as above, not shown."""
     field, tag = ALL[k]
     if tag == "H":
         return False
     if tag == "S":
         return field in ("ITEM-INPUT", "FIELD-TEXT", "FIELD-URL")
-    return field in ("NOTE-GOAL", "NOTE-ROUND") or (prompts and field in ("NOTE-PROMPT", "PROMPT-TEXT"))
+    return field in ("NOTE-GOAL", "NOTE-ROUND", "NOTE-PROMPT", "NOTE-REFERENCE") or (
+        prompts and field in ("PROMPT-TEXT", "SYSTEM-PROMPT")
+    )
 
 
 def copy_allows(k: str) -> bool:
@@ -423,17 +436,17 @@ def copy_allows(k: str) -> bool:
     return field not in ("CAPTURE-BODY", "CAPTURE-OUTCOME")
 
 
-#: Fields the docs say nothing of, so taken as not shown: a system's own prompt parameter, a reference's promotion reason.
-SILENT = ("SYSTEM-PROMPT", "NOTE-REFERENCE")
+#: The fields the owner decided on 2026-11-23, the docs having been silent: a system's own prompt parameter (a prompt),
+#: a reference's promotion reason and a prompt version's note (project notes).
+DECIDED = ("SYSTEM-PROMPT", "NOTE-REFERENCE", "NOTE-PROMPT")
 
 
-def judge(surface: str, seen: dict, allows, must: tuple = (), f4: tuple = (), silent: tuple = SILENT) -> None:
+def judge(surface: str, seen: dict, allows, must: tuple = (), f4: tuple = ()) -> None:
     """One check a sentinel for the surface: found only where `allows`. `must`: sentinels the surface has to carry (the
-    control that the search can find one); `f4`: sentinels whose failure is RFC-041 F4's; `silent`: those whose rule the
-    docs leave unsaid (a failure there is a question for the owner, not a leak the docs forbid)."""
+    control that the search can find one); `f4`: sentinels whose failure is RFC-041 F4's."""
     for k in ALL:
         ok = bool(allows(k)) or k not in seen
-        prefix = "RFC-041 F4: " if k in f4 else "docs silent: " if ALL[k][0] in silent else ""
+        prefix = "RFC-041 F4: " if k in f4 else "owner 2026-11-23: " if ALL[k][0] in DECIDED else ""
         check(
             f"{prefix}{surface}: {k} is {'allowed here' if allows(k) else 'not shown'}",
             ok,
@@ -507,7 +520,8 @@ try:
         name = f"public server --publish {','.join(publish) or 'nothing'}"
         seen, got = over_http(publish)
         covered(name, got, MUST_ANSWER, lambda x: x == 200)
-        must = [s("NOTE-GOAL"), s("FIELD-TEXT", "S")]
+        must = [s("NOTE-GOAL"), s("FIELD-TEXT", "S"), s("NOTE-REFERENCE")]
+        must += [s("SYSTEM-PROMPT")] if "prompts" in publish else []
         must += [s("OUTPUT", "S")] if "outputs" in publish else []
         must += [s("REFERENCE", "S")] if "references" in publish else []
         judge(name, seen, lambda k, p=publish: server_allows(k, p), must=tuple(must))
@@ -520,6 +534,12 @@ try:
         seen, got = {}, {}
         in_process(served, False, seen, got)
         judge("public env, no hosts, the reads a public MCP offers", seen, lambda k: server_allows(k, ()))
+        cs.LIMITS["publish"] = ("prompts",)
+        seen, got = {}, {}
+        in_process(served, False, seen, got)
+        judge("public env, no hosts, prompts published, the reads a public MCP offers", seen,
+              lambda k: server_allows(k, ("prompts",)), must=(s("SYSTEM-PROMPT"),))  # fmt: skip
+        cs.LIMITS["publish"] = ()
         seen, got = {}, {}
         in_process([o for o in reads if o.public_dropped], False, seen, got)
         judge(
@@ -570,8 +590,8 @@ try:
         )
         seen = in_files(out, "catalog")
         judge(f"catalog export (publish prompts: {prompts})", seen, lambda k, p=prompts: catalog_allows(k, p),
-              must=(s("NOTE-GOAL"), s("ITEM-INPUT", "S")),
-              silent=SILENT + (() if prompts else ("NOTE-PROMPT",)))  # fmt: skip
+              must=(s("NOTE-GOAL"), s("ITEM-INPUT", "S"), s("NOTE-REFERENCE"), s("NOTE-PROMPT"))
+              + ((s("SYSTEM-PROMPT"),) if prompts else ()))  # fmt: skip
     cfg.write_text(plain, encoding="utf-8")
 
     # ── the export: the deployment's copy of the data ────────────────────────────────────────────────────────────

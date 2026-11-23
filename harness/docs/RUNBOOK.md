@@ -871,6 +871,11 @@ directory (until one or the other, `validate` fails V7 on it). A resumed pass **
 it again**, rather than skipping it — so the new run is complete, not a fragment — and
 calls the model only for the items that are missing.
 
+An item whose score is not a number (NaN, an infinity, None; the adapter's `score()` returned it) is a failed item, with its reason
+(`score q is not a number: nan`), scored as a failed item is and never averaged; the run goes on, and `--resume` calls it again
+(RFC-041 F7). `rescore`, `judge-score`, `sheet-import` and `import-run` refuse such a score by name; `arm-smoke` says the
+item was not scored.
+
 **An arm that calls each item once** (its adapter declares `CALL_ONCE`, or `call_once(params)`, for a call with an effect a
 retry would repeat: an agent run in a container, a deploy; [INTEGRATION](INTEGRATION.md#the-second-function)) is never retried,
 a transient failure included, and says so when it starts (`evh run --dry-run` too). A failed item keeps the `meta` and the
@@ -1709,7 +1714,7 @@ must be on one dataset. Not served by `--public`.
 
 **Public deployments** (`--public HOST`): the server answers only the named hosts, each client
 gets `--rate` requests per minute, and at most `--max-arms` arms per comparison. `--publish`
-names what text to serve besides numbers: `outputs`, `references`, or both. The item itself is
+names what text to serve besides numbers: `outputs`, `references`, `prompts` (a system's `params.prompt`, as `catalog: {publish: [prompts]}` does for the pages and the public MCP), or any of them. The item itself is
 never served publicly. `--client-header NAME` names the header that identifies each client (e.g.
 `CF-Connecting-IP` behind Cloudflare), trusted only when a reverse proxy you control sets it on
 requests from an origin no one else can reach. A public server also serves the Workbench at `/workbench/`, read-only:

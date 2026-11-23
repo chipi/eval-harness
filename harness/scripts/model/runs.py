@@ -19,6 +19,7 @@ score's and the run's purpose's joined ("rescored cd35dc1f, repeats")."""
 from __future__ import annotations
 
 import json
+import math
 import re
 from collections.abc import Iterable, Iterator
 from pathlib import Path
@@ -133,6 +134,14 @@ def record(score_dir: Path) -> dict[str, Any] | None:
     unset = set(meta(sd).get("unset") or ())
     out = {k: v for k, v in r.items() if k not in unset}
     out.update(s)
+    scores = out.get("scores")
+    if isinstance(scores, dict) and any(
+        isinstance(v, float) and not math.isfinite(v) for v in scores.values()
+    ):
+        # a mean that is NaN (a run recorded before RFC-041 F7): no mean for that metric, not a "nan" in a table
+        out["scores"] = {
+            k: v for k, v in scores.items() if not (isinstance(v, float) and not math.isfinite(v))
+        }
     return out
 
 

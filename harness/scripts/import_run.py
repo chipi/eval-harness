@@ -36,7 +36,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import math
 from pathlib import Path
 from typing import Any
 
@@ -54,7 +53,7 @@ from evaluation_harness._common import (
     sha256,
 )
 from evaluation_harness._fingerprint import build_fingerprint
-from evaluation_harness._record import run_record
+from evaluation_harness._record import non_number, run_record
 from evaluation_harness.model import runs as _model_runs
 from evaluation_harness.ops import legacy
 
@@ -88,7 +87,8 @@ def body(**inputs: Any) -> int:
     known = {it["item_id"] for it in dataset["items"]}
 
     rows = _rows(args.scores)
-    seen, metrics = set(), set()
+    seen: set[str] = set()
+    metrics: set[str] = set()
     for row in rows:
         iid = row["item_id"]
         if iid in seen:
@@ -96,12 +96,11 @@ def body(**inputs: Any) -> int:
         if iid not in known:
             die(f"item {iid!r} is not in dataset {args.dataset_id}", "not-found")
         seen.add(iid)
-        for k, v in row.items():
-            if k == "item_id" or k.startswith("_"):
-                continue
-            if isinstance(v, bool) or not isinstance(v, (int, float)) or math.isnan(v):
-                die(f"item {iid!r}: {k}={v!r} is not a number", "invalid-file")
-            metrics.add(k)
+        if (
+            bad := non_number(row)
+        ) is not None:  # the one test of every writer (infinity too: the old one let it by)
+            die(f"item {iid!r}: {bad}", "invalid-file")
+        metrics.update(k for k in row if k != "item_id" and not k.startswith("_"))
     if args.primary_metric not in metrics:
         die(
             f"--primary-metric {args.primary_metric!r} is not among the scored metrics: {sorted(metrics)}",

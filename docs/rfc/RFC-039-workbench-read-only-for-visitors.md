@@ -108,7 +108,7 @@ dataset whose file says `"text": "hidden"` (RFC-019), and then nothing that come
 whatever `--publish` says: its items' sources, every arm's outputs, its references' texts and labels, judge reasons, text
 and URL fields. For a dataset that is not hidden, `--publish` decides: outputs and references are served only when named
 (`--publish outputs`, `--publish references`), as the item view does today (`catalog_serve.py:136-190`). An artifact is
-never public (RFC-038). Counts, scores and ids stay.
+never public (RFC-038). Counts, scores and ids stay. A system's `params.prompt` (any prompt text its yaml carries) is a prompt: served, in the public MCP and in the catalog export only with `--publish prompts` / `catalog: {publish: [prompts]}`; a reference's promotion reason and a prompt version's note are project notes and stay public (owner, 2026-11-23).
 
 **What the deployed copy holds** (checked 2026-11-23, `research/internal/PLAN_0.8.1.md`, F2): no item text (dataset
 records carry row numbers and hashes; `data/materialized/` is gitignored); the arms' outputs (313 `outputs.jsonl`,

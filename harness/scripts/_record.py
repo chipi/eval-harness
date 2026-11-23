@@ -25,22 +25,40 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
 import json
+import math
 import statistics
 from pathlib import Path
 from typing import Any
 
-from evaluation_harness._common import now
+from evaluation_harness._common import die, now
 from evaluation_harness.model.runs import RUN_ONLY
 
 #: The kinds of derivation, and what each one's `with` names.
 DERIVED_KINDS = ("rescore", "judge", "reparse")
 
 
+def non_number(row: dict[str, Any]) -> str | None:
+    """What a score row holds that is not a finite number, said by name ("score q is not a number: nan"), or None
+    (RFC-041 F7: a writer records a number or refuses; a NaN, an infinity or a None is never averaged). The one test of
+    every writer: evh run makes the item a failed item, import-run, rescore, judge-score and sheet-import refuse, arm-smoke
+    says the item was not scored."""
+    for k, v in row.items():
+        if k == "item_id" or k.startswith("_"):
+            continue
+        if isinstance(v, bool) or not isinstance(v, (int, float)) or not math.isfinite(v):
+            return f"score {k} is not a number: {v!r}"
+    return None
+
+
 def aggregate_scores(rows: list[dict[str, Any]], digits: int = 10) -> dict[str, float]:
     """A run's `scores` from its per-item rows: each metric's mean over the rows that carry
     it, and totals, not means, for what is billed (`total_cost_usd`, `total_tokens_in`,
     `total_tokens_out`). Keys starting with `_` are not metrics. evh run rounds means
-    to 6 digits, as its runs always have; the derived records to 10."""
+    to 6 digits, as its runs always have; the derived records to 10. A row that holds a score that is not a
+    number refuses the record, naming the item (`non_number`); evh run has made such an item a failed item before."""
+    for r in rows:
+        if (bad := non_number(r)) is not None:
+            die(f"item {r.get('item_id')!r}: {bad}", "failed")
     keys = sorted({k for r in rows for k in r if k != "item_id" and not k.startswith("_")})
     scores = {k: round(statistics.fmean(float(r[k]) for r in rows if k in r), digits) for k in keys}
     for k in ("cost_usd", "tokens_in", "tokens_out"):
@@ -65,10 +83,6 @@ def run_level_scores(fn: Any, items: list[dict[str, Any]], per_item: dict[str, f
     """`score_run(items)` called once over every item ({item_id, output, reference, scores}), checked: a dict of
     finite numbers whose names are new (a per-item metric's name would be overwritten by a number of another
     kind). Refused, naming what is wrong, otherwise."""
-    import math  # noqa: PLC0415
-
-    from evaluation_harness._common import die  # noqa: PLC0415
-
     try:
         got = fn(items)
     except Exception as exc:  # noqa: BLE001

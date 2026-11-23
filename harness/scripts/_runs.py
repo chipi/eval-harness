@@ -21,6 +21,7 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
 import contextvars
+import math
 import re
 import statistics
 import sys
@@ -101,9 +102,10 @@ def item_rows(run_dir: Path, strict: bool = True, meta: bool = True) -> Iterator
 
 
 def score_of(row: dict, metric: str) -> float | None:
-    """The row's value for `metric` when it is a number; a boolean is not a score."""
+    """The row's value for `metric` when it is a number; a boolean is not a score, nor is a NaN or an infinity (a run
+    recorded before RFC-041 F7 can hold one: the item is read as not scored, as one the arm has no row for)."""
     v = row.get(metric)
-    if isinstance(v, bool) or not isinstance(v, (int, float)):
+    if isinstance(v, bool) or not isinstance(v, (int, float)) or not math.isfinite(v):
         return None
     return float(v)
 

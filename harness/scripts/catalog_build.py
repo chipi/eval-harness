@@ -3187,7 +3187,14 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
                                 ),
                                 # the baseline's id in a flag breaks after its underscores: whole, it set the column's width
                                 e(
-                                    as_named("; ".join(r["flags"] + dec["out"].get(r["arm"], []))) or "—"
+                                    as_named(
+                                        "; ".join(
+                                            r["flags"]
+                                            + dec["out"].get(r["arm"], [])
+                                            + (["failed every item"] if r.get("failed_every_item") else [])
+                                        )
+                                    )
+                                    or "—"
                                 ).replace("_", "_<wbr>"),
                                 link,
                             ],
@@ -4145,7 +4152,7 @@ def render_arm(A: Adapter, a: dict, ds: str, by_ds: dict, out: Path, nav: list) 
     elif cfg.get("params"):
         kv = "".join(
             f"<dt>{e(k)}</dt><dd><code>{e(json.dumps(x) if not isinstance(x, str) else x)}</code></dd>"
-            for k, x in sorted(cfg["params"].items())
+            for k, x in sorted(_visibility.without_prompts(cfg["params"], on=True).items())
         )
         extra = (
             f'<p class="small muted">system <code>{e(cfg.get("system_id", ""))}</code>'
