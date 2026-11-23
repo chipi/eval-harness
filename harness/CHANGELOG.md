@@ -26,7 +26,9 @@ What 0.8.0 left open. No result moves: no scorer, statistic, fingerprint or data
   `evh runs-list` marks a run whose tree was never checked `?`, and `--json` says `dirty: null` for it,
   not `false`: read null as "unknown". The inspector names arms by one rule everywhere; a scatter's names never cover a
   dot or another name; "See the cost first" shows each arm's estimate and the cap the Workbench sends.
-- **Fixed:** the examples' `/rows` check retries a 5xx, not a 4xx; an interrupted `make site` leaves the site as it was.
+- **Fixed:** the examples' `/rows` check retries a 5xx, not a 4xx; an interrupted `make site` leaves the site as it was;
+  a cap of 0 is shown as `$0.00` (spend nothing), not `NONE`; a measure only a goal names goes the goal's way on
+  `metric-list`, `metric-show` and the metric pages, not "higher".
 - **The repository:** a merge to main no longer deploys (`make deploy-dry`, then `make deploy`); a release's section
   here is short and links its full notes; the browser tests use one bundled font and wait on state, not time.
 
