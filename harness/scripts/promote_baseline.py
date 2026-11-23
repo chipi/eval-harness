@@ -279,6 +279,14 @@ def body(
                 "mismatch",
             )
 
+    if goal_doc is not None:
+        measure = ((goal_doc.get("success_criteria") or {}).get("primary") or {}).get("measure")
+        if measure and measure not in m["scores"]:
+            print(
+                f"  WARNING: goal {goal_id}'s primary measure {measure!r} is none of the scores of {m['run_id']} "
+                f"({', '.join(k for k in m['scores'] if not k.startswith(BOOKKEEPING_PREFIXES))}): this baseline "
+                "answers nothing on it"
+            )
     look_ctx: dict = {}
     in_round: dict = {}
     if args.round and goal_id:

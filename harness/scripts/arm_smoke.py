@@ -219,9 +219,28 @@ def body(**inputs: Any) -> int:
     return _smoke(args)
 
 
+def _refuse_unnamed_goal_and_round(args: argparse.Namespace) -> None:
+    """The goal and round a smoke is for are the project's: a round spends the smoke on its budget, and one that is not
+    there, or that names no goal, would drop the spend without a word (RFC-041 F7). A closed round stays allowed."""
+    from evaluation_harness import _rounds  # noqa: PLC0415
+
+    if args.round and not args.goal:
+        die(f"--round {args.round}: name its goal too (--goal; a round belongs to a goal)", "bad-argument")
+    if args.goal and _store.is_dir(_common.GOALS) and args.goal not in _common.load_goals():
+        known = ", ".join(sorted(_common.load_goals())) or "none"
+        die(f"--goal {args.goal!r} is not in {_common.GOALS} (known: {known})", "not-found")
+    if args.round and _rounds.find(args.goal, args.round) is None:
+        die(
+            f"--round {args.round}: no round {args.round!r} for goal {args.goal!r} at "
+            f"{_rounds.path_of(args.goal, args.round)}",
+            "not-found",
+        )
+
+
 def _smoke(args: argparse.Namespace) -> int:
     from evaluation_harness.model.systems import arm_of  # noqa: PLC0415
 
+    _refuse_unnamed_goal_and_round(args)
     cfg, args.config = arm_of(args.system, args.dataset, args.goal, args.round)
     try:
         cfg = _models.resolve(cfg, DATA)

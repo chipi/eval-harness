@@ -72,6 +72,13 @@
       "additionalProperties": false,
       "properties": {"items_with_reference": {"type": "integer", "minimum": 0}, "items": {"type": "integer", "minimum": 1}}
     },
+    "cost_coverage": {
+      "type": "object",
+      "description": "Recorded when only some items that were not failed reported a cost (RFC-041 F7): total_cost_usd is the cost of items_with_cost items, not of all. No cost reported by any item records no total (unknown), a cost of 0 on every item records 0.0.",
+      "required": ["items_with_cost", "items"],
+      "additionalProperties": false,
+      "properties": {"items_with_cost": {"type": "integer", "minimum": 1}, "items": {"type": "integer", "minimum": 2}}
+    },
     "fingerprint": {"type": "object", "description": "What the number depended on, and one hash over it (scripts/_fingerprint.py)."},
     "warmup_ms": {"type": ["number", "null"], "description": "The adapter's warm-up, kept out of the per-item latency."},
     "providers_seen": {"type": "object", "description": "Which upstream providers answered, and how often."},

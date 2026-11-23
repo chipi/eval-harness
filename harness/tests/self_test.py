@@ -1158,6 +1158,10 @@ def test_example_scorer_suites_pass() -> None:
             "real-looking data changed (no goal, cost 0 or none, dirty null, unicode ids, _r1 names, missing and extra fields, two baselines, far time zones, a public environment, a gone reference, an unrecorded measure) on the tutorial and the three look-alikes: no traceback, every reader agrees, validate names it",
         ),
         (
+            "test_writers_refuse.py",
+            "every writer records the fact or refuses by name (an id with a path or unicode, a repeat with no of, a reference not there, a goal the policy requires, a cost some items did not report), and validate names each broken link with its file",
+        ),
+        (
             "test_item_index.py",
             "an item's copy found once per item, the dataset record read once, read again when it changes",
         ),

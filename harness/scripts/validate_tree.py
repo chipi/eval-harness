@@ -72,6 +72,11 @@ Each check exists because its absence let a real defect through somewhere:
   V28 rows           a stored row holding a run setting (generation_config, generation_requested,
                      encoder_window) equal to its run's `call`, or a usage key outside the kept set
                      (format 7, RFC-033)
+  V29 repeats        a repeat's `of` naming a run of another system or dataset, a round arm that records
+                     a repeat where it is no longer read (RFC-041 F2); a repeat whose `of` is not there is
+                     a note naming its run.json
+  V30 recorded links a goal naming a dataset that does not exist, a score whose reference (gold or silver) or
+                     label set is not there: each named with the file that holds the link (RFC-041 F7)
 
 Exit 1 on any failure, so it can gate.
 
@@ -1399,22 +1404,16 @@ def v14_goals() -> None:
                         f"in the second, on {', '.join(where)}"
                     )
     # A NOTE, never a failure: a direction that is not one (`non_inferior` is a decision rule) is read as the runs and the name table say, and a
-    # primary measure no run records (a prose name for the metric) decides on nothing the runs hold.
+    # primary measure no run records (a prose name for the metric) decides on nothing the runs hold. The words are the
+    # ones goal-new and goal-set say when they save the goal (model.goals).
+    from evaluation_harness.model import goals as _model_goals  # noqa: PLC0415
+
     for gid, g in sorted(goals.items()):
-        primary = (g.get("success_criteria") or {}).get("primary") or {}
-        measure, says = primary.get("measure"), primary.get("direction")
-        if says is not None and says not in ("lower", "higher"):
-            notes.append(
-                f"V14 goal {gid}: primary direction {says!r} is neither lower nor higher, so {measure} is read as "
-                "the runs and the name table say; a decision rule is not a direction"
-            )
         on = goal_datasets(g)
         on_record = set().union(*(recorded_on.get(d, set()) for d in on)) if on else set()
-        if measure and on_record and measure not in on_record:
-            notes.append(
-                f"V14 goal {gid}: primary measure {measure!r} is recorded by no run on {', '.join(on)}; "
-                f"those runs record {', '.join(sorted(on_record))}"
-            )
+        for w in (_model_goals.direction_warning(g), _model_goals.measure_warning(g, on_record)):
+            if w:
+                notes.append(f"V14 goal {gid}: {w}")
     # A direction nobody declared is the default, higher (`_runs.ASSUMED`): a note for each goal primary measure and each
     # primary_metric a run records whose direction is that, so a ranking on it is a choice somebody made.
     for gid, g in sorted(goals.items()):
@@ -2159,8 +2158,8 @@ def v28_rows_in_format_7() -> None:
 
 
 def v29_repeats_and_the_arms_that_read_them() -> None:
-    """V29: a repeat's `of` names a run of its own system and dataset (a repeat of another system's run is no repeat of
-    it), and a round arm's runs are still read in the arm the round names (RFC-041 F2): a repeat of the same
+    """V29: a run's `of` (a repeat's, a re-timing's, a pair's) names a run of its own system and dataset (a repeat of
+    another system's run is no repeat of it), and a round arm's runs are still read in the arm the round names (RFC-041 F2): a repeat of the same
     measurement as the run it repeats is read in that run's arm, so a round that recorded it under `repeats` no longer
     reads it there."""
     from evaluation_harness import _rounds  # noqa: PLC0415
@@ -2170,17 +2169,21 @@ def v29_repeats_and_the_arms_that_read_them() -> None:
     repeats = 0
     for rid in _mr.run_ids():
         rj = _mr.run(rid) or {}
-        if (rj.get("purpose") or "run") != "repeat" or not rj.get("of"):
+        if not rj.get("of"):
             continue
+        what = rj.get("purpose") or "run"
         repeats += 1
         of = _mr.run(str(rj["of"]))
         if of is None:
-            notes.append(f"run {rid} is a repeat of {rj['of']}, which is not there: it is read under repeats")
+            notes.append(
+                f"run {rid} is a {what} of {rj['of']}, which is not there (runs/{rid}/run.json)"
+                + (": it is read under `repeats`" if what == "repeat" else "")
+            )
             continue
         wrong = [k for k, w in (("system", "system_id"), ("dataset", "dataset_id")) if of.get(w) != rj.get(w)]
         if wrong:
             bad.append(
-                f"run {rid} is a repeat of {rj['of']}, a run of {of.get('system_id')} on {of.get('dataset_id')} "
+                f"run {rid} is a {what} of {rj['of']}, a run of {of.get('system_id')} on {of.get('dataset_id')} "
                 f"({' and '.join(wrong)} differ)"
             )
     for rnd in _rounds.load_rounds():
@@ -2201,8 +2204,65 @@ def v29_repeats_and_the_arms_that_read_them() -> None:
     if len(bad) > 10:
         print(f"       ... and {len(bad) - 10} more")
     check(
-        f"V29 repeats — {repeats} name the run they repeat, which is one of their own system and dataset, and every "
+        f"V29 repeats — {repeats} name the run they re-do, which is one of their own system and dataset, and every "
         "round reads the runs it recorded where it recorded them",
+        not bad,
+        f"{len(bad)} problem(s)",
+    )
+
+
+def v30_recorded_links() -> None:
+    """V30: a goal's datasets are there, and so is the reference or label set a score was measured against. The score's
+    record names it
+    (`fingerprint.data.reference_id`, the one every reader follows: `gold/<name>`, `silver/<name>`, or
+    `labels/<dataset>/<set>`); one that was removed leaves a number that says what it was scored against and cannot be
+    checked (RFC-041 F7). A reference fetched elsewhere keeps its folder, with its manifest, so it is there. The link is
+    named with the file that holds it: the score's metrics.json for a score that has a fingerprint of its own (a
+    re-score), else its run's run.json."""
+    from evaluation_harness._common import scored_against_dir  # noqa: PLC0415
+
+    found: dict[str, bool] = {}
+    bad: list[str] = []
+    named = 0
+    listed = 0
+    for gid, g in sorted(load_goals().items()):
+        for ds in goal_datasets(g):
+            listed += 1
+            if not _store.is_file(DATASETS / f"{ds}.json"):
+                bad.append(f"goals/{gid}.yaml: dataset {ds!r} does not exist")
+    for rid in _mr.run_ids():
+        for sd in _mr.scores_of(rid):
+            rec = _mr.record(sd)
+            ref = _mr.reference_of(rec) if rec else ""
+            if not ref:
+                continue
+            named += 1
+            if ref not in found:
+                where = scored_against_dir(ref)
+                found[ref] = bool(
+                    where is not None
+                    and (
+                        _store.is_file(where / "labels.json")
+                        if ref.startswith("labels/")
+                        else _store.is_dir(where)
+                    )
+                )
+            if not found[ref]:
+                held = (
+                    f"runs/{rid}/scores/{sd.name}/{_mr.METRICS}"
+                    if "fingerprint" in (parsed(sd / _mr.METRICS) or {})
+                    else f"runs/{rid}/{_mr.RUN}"
+                )
+                bad.append(
+                    f"{held}: {'label set' if ref.startswith('labels/') else 'reference'} {ref!r} is not there"
+                )
+    for b in bad[:10]:
+        print(f"       {b}")
+    if len(bad) > 10:
+        print(f"       ... and {len(bad) - 10} more")
+    check(
+        f"V30 recorded links — {listed} goal dataset(s) and {named} score reference(s) or label set(s), and every one "
+        "is there",
         not bad,
         f"{len(bad)} problem(s)",
     )
@@ -2409,6 +2469,7 @@ def body() -> int:
         v27_studies,
         v28_rows_in_format_7,
         v29_repeats_and_the_arms_that_read_them,
+        v30_recorded_links,
         note_uncommitted_runs,
         note_missing_references,
         note_round_scorers,

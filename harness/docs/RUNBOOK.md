@@ -876,6 +876,18 @@ An item whose score is not a number (NaN, an infinity, None; the adapter's `scor
 (RFC-041 F7). `rescore`, `judge-score`, `sheet-import` and `import-run` refuse such a score by name; `arm-smoke` says the
 item was not scored.
 
+A writer records a fact a reader will follow, or refuses it by name (RFC-041 F7), before it spends or writes: a `--run-id` (and
+import-run's `--system-id`, and reference-promote's `--name`) is a plain name, ASCII letters, digits, `.`, `_`, `-`, never a path,
+a space or unicode (`bad-argument`); `--purpose repeat` names its run with `--of` (`bad-argument`), and an `--of` of any purpose
+names a run of the same system and dataset (`mismatch`); import-run's `--reference-id` is a reference that is there
+(`not-found`), its tier is the id's (`gold/x` is gold; a `--reference-tier` that contradicts it is `mismatch`, one with no
+reference is `bad-argument`), and `--goal` names the goal the run answers, which `evh run` and import-run both require from the
+date `data/goals/policy.yaml` gives as `required_from` (`bad-argument` without one); `arm-smoke` refuses a `--goal` or `--round`
+that is not there, or a `--round` with no `--goal`. A cost no item reported is no `total_cost_usd` (unknown, never `0`); every item
+reporting `0` is `0.0`; only some items reporting one records `cost_coverage: {items_with_cost, items}` (the total is of those).
+`goal-new` and `goal-set` say when the goal's primary measure is recorded by no run on its datasets, or its direction is neither
+`lower` nor `higher`, and so does `run-promote` for a run that records no value of the goal's measure.
+
 **An arm that calls each item once** (its adapter declares `CALL_ONCE`, or `call_once(params)`, for a call with an effect a
 retry would repeat: an agent run in a container, a deploy; [INTEGRATION](INTEGRATION.md#the-second-function)) is never retried,
 a transient failure included, and says so when it starts (`evh run --dry-run` too). A failed item keeps the `meta` and the
@@ -1085,7 +1097,7 @@ lists whole (`tests/test_write_order.py` checks the three that matter by stoppin
 evh validate
 ```
 
-Twenty-eight checks (V1–V28): schema conformance (datasets, runs, baselines, systems, judge
+Thirty checks (V1–V30): schema conformance (datasets, runs, baselines, systems, judge
 scorers, judging sets, verdicts, dataset profiles), every run's `dataset_id` resolves, every run
 identifies its build, materialized copies still match their hashes, no two
 systems reporting byte-identical scores and per-item results (two arms with different outputs
@@ -1098,7 +1110,7 @@ every run that must name one, every item field declared, typed and matching its 
 reference made by promotion (a manifest saying where it came from) with texts matching its checksums, every capture's
 records matching the hashes it recorded, every model record and the systems naming it consistent, and every label set
 matching its hashes and its dataset, every `hypothesis:` in a system sound (V20), and every failure-mode list well formed with every tag set naming its modes and its dataset's items (V21), and every dataset's version the one its lineage gives, its licence
-on the list, its source block in form and its card's keys Croissant RAI's (V22); V24 checks every prompt version against its bytes, V25 reports a look number two questions took, V26 checks every faithfulness record and the systems naming it, and V27 examines every study and V28 names a row that is not a JSON object with an `item_id`. V4
+on the list, its source block in form and its card's keys Croissant RAI's (V22); V24 checks every prompt version against its bytes, V25 reports a look number two questions took, V26 checks every faithfulness record and the systems naming it, and V27 examines every study and V28 names a row that is not a JSON object with an `item_id`. V29 holds a run's `of` to a run of its own system and dataset, and V30 names a goal's dataset that does not exist and a score whose reference or label set is gone (each broken link is named with the file that holds it, as V6 names a baseline's run and V14 a round's run). V4
 checks only datasets materialized on this machine, and names each one it could not check (a CI
 job without the sources checks none: materialize first where the copy matters). Every run's outputs are readable: a derived run finds its source's (V23).
 

@@ -124,7 +124,7 @@ the [Runbook](../../harness/docs/RUNBOOK.md); the first evaluation, step by step
   (`--allow-dirty`, `--allow-unknown-build`). A decision records who made it: it needs an actor, `--by person:NAME` or `EVH_ACTOR`, and is refused from a shell with no terminal and neither.
 - **FR4.2**: The baseline records the run's reference tier, adapter and fingerprint hash, and
   `evh validate` (V6) fails a baseline that no longer matches its run.
-- **FR4.3**: `evh validate` checks the whole data tree (V1–V28) and exits non-zero, so CI can
+- **FR4.3**: `evh validate` checks the whole data tree (V1–V30) and exits non-zero, so CI can
   hold it.
 
 ## Success Criteria

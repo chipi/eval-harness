@@ -62,10 +62,12 @@ from evaluation_harness._common import (
     classify_metrics,
     die,
     env_float,
+    goal_required_from,
     how,
     load_dataset,
     load_goals,
     now,
+    plain_id_ok,
     warn_if_ignored,
 )
 from evaluation_harness._fingerprint import build_fingerprint
@@ -892,6 +894,15 @@ def one_pass(
     }
 
 
+def _cost_coverage(rows: list[dict[str, Any]]) -> dict[str, int] | None:
+    """How many of the items that did not fail reported a cost, when only some did (a failed item is named in
+    `failed_items`); None when all did or none did: no cost reported is unknown, and the run then records no total, so
+    a total is never the sum of some items passed off as all (RFC-041 F7)."""
+    done = [r for r in rows if not r.get("failed")]
+    known = sum(1 for r in done if "cost_usd" in r)
+    return {"items_with_cost": known, "items": len(done)} if 0 < known < len(done) else None
+
+
 def _confound(rows: list[dict[str, Any]]) -> dict[str, int] | None:
     """A replay's history confound (RFC-031 P1): how many rows its adapter marked, of how many; None when it marks none."""
     marked = [r for r in rows if "history_confound" in r]
@@ -1160,11 +1171,9 @@ def _prompt_versions(
     return out
 
 
-def _repeat_reading(
-    of: str, fingerprint: dict[str, Any], cfg: dict[str, Any], label_as: str
-) -> dict[str, Any]:
-    """Where a `--purpose repeat --of <run>` run will be read (model.runs.repeat_reading), after refusing, before any
-    call, an `--of` that names a run of another system or dataset: it is no repeat of it."""
+def _refuse_unrelated_of(of: str, cfg: dict[str, Any], purpose: str) -> None:
+    """Refuse, before any call, an `--of` that names a run of another system or dataset: a `purpose` of that run is no
+    re-run of it (RFC-041 F7: `of` is a link the readers follow, so a writer records only one that holds)."""
     of_rec = _model_runs.run(of) or {}
     wrong = [
         k for k, w in (("system", "system_id"), ("dataset", "dataset_id")) if of_rec.get(w) != cfg.get(w)
@@ -1172,10 +1181,16 @@ def _repeat_reading(
     if wrong:
         die(
             f"--of {of}: a run of {of_rec.get('system_id')} on {of_rec.get('dataset_id')}, and this run is of "
-            f"{cfg['system_id']} on {cfg['dataset_id']}: a repeat names a run of its own system and dataset "
-            f"({' and '.join(wrong)} differ). Name that run, or make this one without --purpose repeat.",
+            f"{cfg['system_id']} on {cfg['dataset_id']}: a {purpose} names a run of its own system and dataset "
+            f"({' and '.join(wrong)} differ). Name that run, or make this one without --purpose {purpose}.",
             "mismatch",
         )
+
+
+def _repeat_reading(
+    of: str, fingerprint: dict[str, Any], cfg: dict[str, Any], label_as: str
+) -> dict[str, Any]:
+    """Where a `--purpose repeat --of <run>` run will be read (model.runs.repeat_reading)."""
     mine = {"dataset_id": cfg["dataset_id"], "system_id": cfg["system_id"], "fingerprint": fingerprint}
     return _model_runs.repeat_reading(of, mine, label_as)
 
@@ -1363,6 +1378,9 @@ def body(**inputs: Any) -> int:
 def _run(args: argparse.Namespace) -> int:
     from evaluation_harness.model.systems import arm_of  # noqa: PLC0415
 
+    if args.run_id:
+        plain_id_ok(args.run_id, "--run-id")
+
     cfg, args.config = arm_of(args.system, args.dataset, args.goal, args.round)
     # A system may name a model record (RFC-020, optional): its settings come from the record, under the
     # system's own params, so every arm of that model runs the way it was onboarded. With `deployment:` it
@@ -1398,6 +1416,12 @@ def _run(args: argparse.Namespace) -> int:
         die(
             f"--goal {cfg['goal']!r} is not in {GOALS} (known: {', '.join(sorted(load_goals())) or 'none'})",
             "not-found",
+        )
+    if not cfg.get("goal") and not args.scratch and (since := goal_required_from()):
+        die(
+            f"goals are required from {since} (data/goals/policy.yaml): name the goal this run answers with --goal "
+            "(evh goal-list)",
+            "bad-argument",
         )
     # A run may name a round of its goal (ADR-0004, optional): refused before a cent is spent
     # when the round does not exist, is closed, or runs on another dataset.
@@ -1478,6 +1502,14 @@ def _run(args: argparse.Namespace) -> int:
     label_as = _datasets.label_of(ref_id.removeprefix(LABELS_PREFIX)) if args.labels and ref_id else ""
     if args.of and not _model_runs.run(args.of):
         die(f"--of {args.of}: no run of that id in {runs}", "not-found")
+    if args.of and args.purpose != "run":
+        _refuse_unrelated_of(args.of, cfg, args.purpose)
+    if args.purpose == "repeat" and not args.of and not args.scratch:
+        die(
+            "--purpose repeat names the run it repeats: add --of RUN (a run with no --of is read under `repeats`, "
+            "joined to no arm, so nothing says what it repeats)",
+            "bad-argument",
+        )
     if args.purpose == "run" and args.of:
         die("--of names the run a re-run re-does: give its --purpose (repeat, retime, pair)", "bad-argument")
     if args.purpose == "run" and args.repeat > 1 and not args.resume and not args.scratch and not args.labels:
@@ -1830,6 +1862,7 @@ def _run(args: argparse.Namespace) -> int:
             recalled=result.get("recalled") or None,
             not_scorable=result.get("not_scorable") or None,
             history_confound=_confound(result["predictions"]),
+            cost_coverage=_cost_coverage(result["predictions"]),
             repeat_index=(i + 1) if args.repeat > 1 else None,
             faithfulness=faith,
         )
