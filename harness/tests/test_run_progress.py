@@ -118,6 +118,22 @@ try:
         and dry.get("measured_usd_per_item") is None,
         text[-700:],
     )
+    # A cap of 0 is a cap ("spend nothing", _spend.reached); the dry run printed it as NONE and asked for one.
+    r = _cli.run(
+        proj, dict(env, EVAL_MAX_COST_USD="0"), "run", *system("one", **priced), "--dry-run", "--json"
+    )
+    zero = (json.loads(r.stdout).get("result", {}).get("values", {}) if r.returncode == 0 else {}).get(
+        "dry_run", {}
+    )
+    cap_line = next((ln for ln in r.stderr.splitlines() if ln.strip().startswith("cap ")), "")
+    check(
+        "dry run: a cap of 0 is shown as $0.00 that spends nothing, never as NONE",
+        "$0.00" in cap_line
+        and "spend nothing" in cap_line
+        and "NONE" not in cap_line
+        and zero.get("cap_usd") == 0,
+        f"{cap_line!r} cap_usd={zero.get('cap_usd')!r}",
+    )
 
     # the dry run: an adapter that declares its calls
     r = evh(

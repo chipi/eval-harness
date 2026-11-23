@@ -153,9 +153,11 @@ def main() -> int:
     print(
         "  EVAL_MAX_COST_USD      "
         + (
-            f"${cap:.2f} — mid-run abort ({_source('EVAL_MAX_COST_USD')})"
-            if cap
-            else "NONE — a sweep can bill without limit"
+            "NONE — a sweep can bill without limit"
+            if cap is None
+            else f"$0.00 — spend nothing: only what is known to be free runs ({_source('EVAL_MAX_COST_USD')})"
+            if cap <= 0
+            else f"${cap:.2f} — mid-run abort ({_source('EVAL_MAX_COST_USD')})"
         )
     )
     print(f"  EVAL_MAX_RETRIES       {env_int('EVAL_MAX_RETRIES', _retry.DEFAULT_MAX_RETRIES)}")

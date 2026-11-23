@@ -410,6 +410,26 @@ with tempfile.TemporaryDirectory() as proj:
         keyed.returncode == 6 and "A provider key is set" in keyed.stdout,
         keyed.stdout[-400:],
     )
+    # A cap of 0 is a cap: it spends nothing (_spend.reached). env-check passed but printed it as NONE, billing without
+    # limit.
+    zero = subprocess.run(
+        [sys.executable, script],
+        env=dict(
+            base_env, EVAL_HOME=proj, OPENAI_API_KEY="test-openai-key-from-env-setup", EVAL_MAX_COST_USD="0"
+        ),
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    cap_line = next((ln for ln in zero.stdout.splitlines() if ln.strip().startswith("EVAL_MAX_COST_USD")), "")
+    check(
+        "env-check: a cap of 0 is shown as $0.00 that spends nothing, never as NONE, and passes",
+        zero.returncode == 0
+        and "$0.00" in cap_line
+        and "spend nothing" in cap_line
+        and "NONE" not in cap_line,
+        f"exit {zero.returncode}: {cap_line!r}",
+    )
     # Where each variable came from (the 0.8.0 newcomer run could not tell its shell's keys from its .env's): one
     # only in .env, one only exported, one in both (the exported one wins, so the file's is not used).
     (Path(proj) / ".env").write_text(

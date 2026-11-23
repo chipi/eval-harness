@@ -885,6 +885,15 @@ def _smoke_cost(cfg: dict[str, Any]) -> dict[str, Any] | None:
     }
 
 
+def _cap_shown(cap: float | None) -> str:
+    if cap is None:
+        return "NONE — set EVAL_MAX_COST_USD"
+    if cap <= 0:
+        # A cap of 0 is a cap: _spend.zero_blocked refuses anything not known to be free.
+        return "$0.00 (EVAL_MAX_COST_USD) — spend nothing: only what is known to be free runs"
+    return f"${cap:.2f} (EVAL_MAX_COST_USD)"
+
+
 def _dry_run(
     ds: dict[str, Any],
     cfg: dict[str, Any],
@@ -1000,7 +1009,7 @@ def _dry_run(
                 " from that"
             )
     cap = env_float("EVAL_MAX_COST_USD")
-    print("  cap         " + (f"${cap:.2f} (EVAL_MAX_COST_USD)" if cap else "NONE — set EVAL_MAX_COST_USD"))
+    print("  cap         " + _cap_shown(cap))
     _jsonout.value(
         "dry_run",
         {
@@ -1030,7 +1039,7 @@ def _dry_run(
                 if measured
                 else None
             ),
-            "cap_usd": cap or None,
+            "cap_usd": cap,
         },
     )
     return 0
