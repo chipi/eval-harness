@@ -124,7 +124,8 @@ def item(params: dict) -> dict:
     it = params.get("item", [""])[0]
     refs = _known()[1]
     # No arm chosen, a dataset named (the sheet, RFC-023; the local inspector only): the item, its fields, labels.
-    alone = params.get("dataset", [""])[0] if not arms and not LIMITS["hosts"] else ""
+    public = _visibility.public()
+    alone = params.get("dataset", [""])[0] if not arms and not public else ""
     if alone:
         from evaluation_harness._common import DATASETS  # noqa: PLC0415
 
@@ -138,7 +139,6 @@ def item(params: dict) -> dict:
     # can quote its input (an extractive arm returns the article's own sentences) and a reference
     # can be a dataset's licensed text, so a public server serves numbers unless the deployment
     # has decided to publish them. The local inspector shows everything, on this machine.
-    public = bool(LIMITS["hosts"])
     published = LIMITS.get("publish") or ()
     dataset = alone or A.describe(A.arms_of(arms[0])[0]).get("dataset", "")
     if not _visibility.text_shown(dataset, public=public):
@@ -201,16 +201,16 @@ def item(params: dict) -> dict:
     # the local inspector shows it: a public deployment never serves a dataset's inputs, which a
     # project may not be free to redistribute.
     src = getattr(A, "item_text", None)
-    if callable(src) and not LIMITS["hosts"]:
+    if callable(src) and not public:
         out["source"] = src(dataset, it)
     # Every label the item has (RFC-023), and which output is production's recorded one: the local inspector only.
     lab = getattr(A, "item_labels", None)
-    if callable(lab) and not LIMITS["hosts"]:
+    if callable(lab) and not public:
         out["labels"] = lab(dataset, it)
     out["recorded"] = {a: rec for a in arms if (rec := A.describe(A.arms_of(a)[0]).get("recorded"))}
     # What the judges said of this item and why (RFC-034 §5): the local inspector only, as the reasons describe the
     # outputs they judged.
-    if not LIMITS["hosts"]:
+    if not public:
         out["verdicts"] = _judged(dataset, it)
     return out
 
@@ -268,7 +268,7 @@ def _error(exc: SystemExit) -> dict:
 def sheet_csv(query: str) -> tuple[int, bytes, str]:
     """The sheet as a download (RFC-023): the CSV `evh sheet-export --csv` writes, built in memory by the same
     code, so the page still writes nothing. The local inspector only: a sheet carries item text and outputs."""
-    if LIMITS["hosts"]:
+    if _visibility.public():
         return 403, b"the sheet shows item text and outputs: not served publicly", "text/plain; charset=utf-8"
     from evaluation_harness import _sheet  # noqa: PLC0415
     from evaluation_harness._sheets import write_csv  # noqa: PLC0415
@@ -296,7 +296,7 @@ def sheet(params: dict) -> dict:
     """The sheet (RFC-023, UXS-002 05): one dataset's items down, a column per arm across (the first stands for
     production): outputs and scores, a column per label set, the winners, the signals, the footer per arm;
     `evh sheet-show D` in the browser. The local inspector only: it carries outputs and labels."""
-    if LIMITS["hosts"]:
+    if _visibility.public():
         return {"error": "the sheet shows outputs and labels: not served publicly"}
     from evaluation_harness import _picks, _sheet  # noqa: PLC0415
     from evaluation_harness._common import DATASETS  # noqa: PLC0415
@@ -777,11 +777,9 @@ def _wait_job(job_id: str) -> dict:
 def current_site():
     """A model of the data at least as new as it was when this was called: the one kept, the one another request was
     preparing meanwhile, or one prepared now (one at a time). Raises what preparing it raised."""
-    from datetime import date  # noqa: PLC0415
-
     from evaluation_harness import catalog_build  # noqa: PLC0415
 
-    day = date.today().isoformat()
+    day = _common.today().isoformat()
 
     def kept(asked: int):
         s = SITE["site"]
@@ -1231,7 +1229,7 @@ class Handler(SimpleHTTPRequestHandler):
         from evaluation_harness._version import __version__  # noqa: PLC0415
         from evaluation_harness.model.entity import Problem  # noqa: PLC0415
 
-        public = bool(LIMITS["hosts"])
+        public = _visibility.public()
 
         def say(code: int, body: dict | bytes) -> bool:
             self._json(code, body, cache=False)

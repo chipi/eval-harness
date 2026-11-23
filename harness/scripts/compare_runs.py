@@ -26,6 +26,7 @@ from evaluation_harness._common import (
     RUNS,
     die,
     how,
+    tree_state,
     verdict_for,
 )
 from evaluation_harness.model import runs as model_runs
@@ -193,8 +194,13 @@ def _run(args: argparse.Namespace) -> int:
     if a["build"]["ref"] == b["build"]["ref"]:
         print("\n  NOTE: identical build on both sides — any delta here is the")
         print("  instrument or run-to-run noise, not a code change.")
-    if a["build"].get("dirty") or b["build"].get("dirty"):
+    states = [tree_state(a["build"]), tree_state(b["build"])]
+    if True in states:
         print("\n  NOTE: a build was DIRTY — its ref does not identify what ran.")
+    elif None in states:
+        print(
+            "\n  NOTE: git could not say whether a build's tree was clean — its ref may not identify what ran."
+        )
 
     _report_fingerprint_delta(a, b)
 
@@ -252,7 +258,7 @@ def _run(args: argparse.Namespace) -> int:
             "baseline_build": a["build"]["ref"],
             "candidate_build": b["build"]["ref"],
             "same_build": a["build"]["ref"] == b["build"]["ref"],
-            "dirty_build": bool(a["build"].get("dirty") or b["build"].get("dirty")),
+            "dirty_build": True if True in states else (None if None in states else False),
             "noise": args.noise,
             "moved_beyond_noise": worth,
         }

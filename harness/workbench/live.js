@@ -2057,6 +2057,8 @@
   // What a job spent, one way on the list and on its page. A catalog job nobody asked for is the server's own, from before
   // 0.8.1: it rebuilt the pages when the data changed; since RFC-040 it renders them on request and starts none.
   const usd = (x) => (x ? `$${Number(x).toFixed(4)}` : "$0");
+  // A study's or a trial's cost: "—" when none was recorded, $0.0000 when $0 was.
+  const spent = (x) => (x == null ? "—" : `$${Number(x).toFixed(4)}`);
   const SERVER_JOBS = ["catalog"];
   const sameLines = (a, b) => { const n = (t) => String(t).split("\n").map((x) => x.trim()).filter(Boolean).join("\n"); return n(a) === n(b); };
   const askedBy = (j) => (j.by ? `asked by <span class="mono">${esc(j.by)}</span>` : SERVER_JOBS.includes(j.operation) ? "started by the server, which rebuilt the catalog when the data changed (before 0.8.1)" : "asked by nobody recorded");
@@ -2368,6 +2370,7 @@
     document.getElementById("hr-go")?.addEventListener("click", async (ev) => {
       const box = document.getElementById("hr-out"), who_ = by(), cap = Number(v("hr-cap"));
       if (!who_) return needWho(box);
+      if (!(cap > 0)) { box.innerHTML = '<p class="note" role="alert">Say the most it may spend first.</p>'; return; }
       const u = (((LIVE.cache[`dataset:${theSide()}`] || {}).record || {}).unsealed || []).slice(-1)[0] || {};
       ev.target.disabled = true;
       try {
@@ -2441,7 +2444,7 @@
     if (!sid) {
       const draft = (WB._study || {})[goal] || specOf(vals[0] || "<dataset>", blSys || "<system>", measure, "grid");
       return `<div class="screen wide">${head}${byField("st6-by")}
-        ${list.studies.length ? tbl(["study", "state", "on", "from", "trials", "kept", "spent", "confirmed"], list.studies.map((x) => `<tr><td class="mono"><a href="#study/${enc(goal)}/${enc(x.study.split("/").pop())}">${esc(x.study)}</a></td><td>${esc(x.status)}</td><td class="mono">${esc(x.dataset)}</td><td class="mono">${esc(x.baseline)}</td><td class="num">${x.trials}</td><td class="num">${x.kept}</td><td class="num">$${Number(x.spent_usd || 0).toFixed(4)}</td><td class="num">${x.confirms}</td></tr>`)) : '<p class="muted">No study yet.</p>'}
+        ${list.studies.length ? tbl(["study", "state", "on", "from", "trials", "kept", "spent", "confirmed"], list.studies.map((x) => `<tr><td class="mono"><a href="#study/${enc(goal)}/${enc(x.study.split("/").pop())}">${esc(x.study)}</a></td><td>${esc(x.status)}</td><td class="mono">${esc(x.dataset)}</td><td class="mono">${esc(x.baseline)}</td><td class="num">${x.trials}</td><td class="num">${x.kept}</td><td class="num">${spent(x.spent_usd)}</td><td class="num">${x.confirms}</td></tr>`)) : '<p class="muted">No study yet.</p>'}
         ${part("a", "A new study", `<div data-form="study-new"><div class="inline"><input type="text" id="sn6-id" placeholder="its id: s1" autocapitalize="off" spellcheck="false">
             <select id="sn6-ds" aria-label="the validation dataset">${opt(vals)}</select><select id="sn6-base" aria-label="the system it starts from">${opt(sysIds, blSys)}</select>
             <select id="sn6-sampler" aria-label="how it chooses"><option value="grid">grid: every value in turn</option><option value="agent">agent: proposals asked and told</option></select>
@@ -2463,9 +2466,9 @@
     const agent = sp.sampler === "agent", open = one.status !== "ended";
     return `<div class="screen wide">${head}<span id="st6-cur" data-study="${esc(goal)}/${esc(sid)}" hidden></span>${byField("st6-by")}
       ${part(1, "What it searches", `<div class="stats"><div><b>${esc(one.baseline || "")}</b><span>from</span></div><div><b>${esc(sp.sampler || "")}</b><span>how it chooses</span></div><div><b>${(one.trials || []).length}</b><span>trials</span></div><div><b>${esc(one.status || "")}</b><span>its state</span></div></div>
-        <p class="muted">On <span class="mono">${esc(sp.dataset || "")}</span>, decided on ${esc(sp.measure || "")}; round ${esc(one.round || "")}; spent $${Number(one.spent_usd || 0).toFixed(4)}.${one.end ? ` Ended: ${esc(one.end)}.` : ""}</p>
+        <p class="muted">On <span class="mono">${esc(sp.dataset || "")}</span>, decided on ${esc(sp.measure || "")}; round ${esc(one.round || "")}; spent ${spent(one.spent_usd)}.${one.end ? ` Ended: ${esc(one.end)}.` : ""}</p>
         <details><summary>Its spec</summary><pre class="reply">${esc(JSON.stringify(sp, null, 2))}</pre></details>`)}
-      ${part(2, "Its trials", `${(one.trials || []).length ? chartBox("study-progress", { goal, study: sid }) + chartBox("gain-cost", { goal, study: sid }) : ""}${(one.rows || []).length ? tbl(["trial", "what changed", "outcome", "why", "vs the best", "cost"], one.rows.map((x) => `<tr><td class="mono">t${x.k}</td><td>${esc(x.change || "")}${x.hypothesis && x.hypothesis !== x.change ? `<div class="muted">${esc(x.change && x.hypothesis.startsWith(x.change) ? x.hypothesis.slice(x.change.length).trim() : x.hypothesis)}</div>` : ""}</td><td><span class="verdict ${x.outcome === "kept" ? "v-lead" : "v-ns"}">${esc(x.outcome || "")}</span></td><td>${esc(x.reason || "")}</td><td class="num">${typeof x.delta === "number" ? (x.delta >= 0 ? "+" : "") + x.delta.toFixed(4) : "—"}</td><td class="num">$${Number(x.cost_usd || 0).toFixed(4)}</td></tr>`)) : '<p class="muted">No trial yet.</p>'}
+      ${part(2, "Its trials", `${(one.trials || []).length ? chartBox("study-progress", { goal, study: sid }) + chartBox("gain-cost", { goal, study: sid }) : ""}${(one.rows || []).length ? tbl(["trial", "what changed", "outcome", "why", "vs the best", "cost"], one.rows.map((x) => `<tr><td class="mono">t${x.k}</td><td>${esc(x.change || "")}${x.hypothesis && x.hypothesis !== x.change ? `<div class="muted">${esc(x.change && x.hypothesis.startsWith(x.change) ? x.hypothesis.slice(x.change.length).trim() : x.hypothesis)}</div>` : ""}</td><td><span class="verdict ${x.outcome === "kept" ? "v-lead" : "v-ns"}">${esc(x.outcome || "")}</span></td><td>${esc(x.reason || "")}</td><td class="num">${typeof x.delta === "number" ? (x.delta >= 0 ? "+" : "") + x.delta.toFixed(4) : "—"}</td><td class="num">${spent(x.cost_usd)}</td></tr>`)) : '<p class="muted">No trial yet.</p>'}
         <p class="note">Best so far: <span class="mono">${esc(one.best || one.baseline || "")}</span>. Research on validation items: no evidence until it is confirmed.</p>
         ${open ? `<div class="actions" style="margin-top:0"><button class="btn" type="button" id="so-stop">Stop it</button>${agent ? "" : '<label>at most (USD) <input type="number" id="so-cap" value="1" min="0.01" step="0.01" style="width:6rem"></label><button class="btn" type="button" id="so-resume">Continue it</button>'}</div><div id="so-out" data-out></div>` : ""}`)}
       ${agent && open ? part(3, "Propose the next trial", `<p class="muted">The agent sampler: ask for the study's state (its weakest items, what was tried), then tell a proposal, which runs as the next trial.</p>
@@ -2494,6 +2497,12 @@
       try {
         const b = body();
         if (b === null) { ev.target.disabled = false; return; }
+        // An empty box is Number("") = 0, which the server refuses with "above 0": say what is missing instead.
+        if ("max_cost_usd" in b && !(b.max_cost_usd > 0)) {
+          box.innerHTML = '<p class="note" role="alert">Say the most it may spend first.</p>';
+          ev.target.disabled = false;
+          return;
+        }
         const done = await runJob(typeof path === "function" ? path() : path, { ...b, by: who_ }, box, what);
         if (done) {
           if (form) sent(form);

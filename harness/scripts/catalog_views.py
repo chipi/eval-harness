@@ -708,7 +708,7 @@ def print_arms(d: dict) -> None:
                     c["provider"] or "—",
                     ", ".join(c["datasets"]),
                     c["arms"],
-                    cb.fmt_amount(c["usd"], "usd") if c["usd"] else "—",
+                    cb.fmt_spend(c["usd"]),
                     "; ".join(f"{r['goal']} #{r['rank']} of {r['of']}" for r in c["ranks"]) or "—",
                     *(_pcells(per[f"c:{c['system']}"], flows) if per else []),
                 ]
@@ -991,7 +991,7 @@ def sheet_view(A, args) -> int:
     by, disagree, split, wrong_against, new_vs, unlabelled, judge_disagrees, scores_only."""
     from evaluation_harness import _picks  # noqa: PLC0415
 
-    if _visibility.public_env():
+    if _visibility.public():
         die("--sheet shows the items' outputs and labels: not served publicly", "not-public")
     if not args.dataset_id:
         die("--sheet: name the dataset with --dataset-id", "bad-argument")

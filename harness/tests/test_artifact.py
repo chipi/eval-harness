@@ -39,7 +39,7 @@ import _catalog_fixture as fx  # noqa: E402
 import _cli  # noqa: E402
 import _runstore  # noqa: E402
 import _serve  # noqa: E402
-from evaluation_harness import _artifact, _common, _format  # noqa: E402
+from evaluation_harness import _artifact, _common, _format, _visibility  # noqa: E402
 from evaluation_harness import catalog_serve as cs  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 from evaluation_harness.catalog_adapter import HarnessAdapter  # noqa: E402
@@ -444,6 +444,11 @@ try:
     fx.put(data, "a_1", {"run_id": "a_1", "dataset_id": "ds1", "system_id": "arm_a", "primary_metric": "acc",
                          "metric_kinds": {"acc": "quality"}, "fingerprint": {"data": {"reference_id": "gold/ds1"}}},
            "\n".join(json.dumps(x) for x in rows) + "\n", outputs={"i00": "an output", "i01": "another"})  # fmt: skip
+    # A public server serves a dataset's text only when its record can be read; this fixture's data is not the project's.
+    (data / "datasets").mkdir()
+    (data / "datasets" / "ds1.json").write_text(json.dumps({"dataset_id": "ds1", "items": []}))
+    real_record_file = _visibility.record_file
+    _visibility.record_file = lambda ds, data_dir=None: data / "datasets" / f"{ds}.json"  # type: ignore[assignment]
     old_root = _common.ROOT
     _common.ROOT = tmp
     cs.ROOT = tmp
@@ -589,6 +594,7 @@ try:
         srv.shutdown()
     finally:
         del _common.ROOT  # the project's own again, resolved lazily as before
+        _visibility.record_file = real_record_file
         cs.ROOT = old_root
         cs.Handler.prefixes = ()
         shutil.rmtree(tmp, ignore_errors=True)

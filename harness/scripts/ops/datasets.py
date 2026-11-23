@@ -243,7 +243,7 @@ def list_label_sets(dataset: str, contested: bool = False) -> dict[str, Any]:
         pairs = agreement(dataset)
         together = agreement_all(dataset)
         disputed = contested_items(dataset) if contested else None
-    if not _visibility.text_shown(dataset, public=_visibility.public_env()):
+    if not _visibility.text_shown(dataset, public=_visibility.public()):
         pairs = [{k: x for k, x in p.items() if k != "confusion"} for p in pairs]
     out: dict[str, Any] = {
         "dataset": dataset,

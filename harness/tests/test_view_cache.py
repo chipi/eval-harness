@@ -323,7 +323,7 @@ check(
 
 
 class Day:
-    """date.today() as another day."""
+    """_common.today() as another day."""
 
     n = 1
 
@@ -335,8 +335,8 @@ class Day:
         return Day.n
 
 
-real_date = vc.date
-vc.date = Day  # type: ignore[assignment,misc]
+real_today = vc._common.today if hasattr(vc._common, "today") else None
+vc._common.today = Day.today  # type: ignore[assignment]
 try:
     runs[0] = 0
     vc.result("daily", {}, answer)
@@ -344,7 +344,7 @@ try:
     Day.n = 2
     vc.result("daily", {}, answer)
 finally:
-    vc.date = real_date  # type: ignore[misc]
+    vc._common.today = real_today  # type: ignore[assignment]
 check(
     "a view that counts back from today is another view tomorrow: kept for the day it was computed",
     runs[0] == 2,

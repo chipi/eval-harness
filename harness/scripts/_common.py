@@ -18,7 +18,7 @@ import socket
 import subprocess
 import sys
 import tempfile
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any, NoReturn
 
@@ -382,6 +382,12 @@ def now() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
+def today() -> date:
+    """Today's date in UTC: the zone runs are stamped in (`now`) and periods compare `created_at[:10]` in. The only way a
+    reader asks which day it is: the machine's local date is another day for some hours of each (test_today.py)."""
+    return datetime.now(timezone.utc).date()
+
+
 def sha256(path: Path) -> str:
     """Return the SHA-256 digest of a file's contents."""
     from evaluation_harness import _store  # noqa: PLC0415
@@ -511,9 +517,19 @@ def build_info() -> dict[str, Any]:
     dirt = tree_dirt(project_root(), _paths()["DATA"])
     return {
         "ref": ref or "unknown",
-        "dirty": bool(dirt),
+        # None when git could not say (a timeout, no repository): not False, which claims a clean tree
+        "dirty": bool(dirt) if dirt is not None else None,
         "source": "git",
     }
+
+
+def tree_state(build: dict[str, Any]) -> bool | None:
+    """Whether a run's build came from a dirty tree: True when it did, None when git was asked and could not say, False
+    when it was clean or the ref is one its owner declared (EVAL_BUILD_REF, an import), whose tree nobody looked at."""
+    dirty = build.get("dirty")
+    if dirty is None and build.get("source") == "git":
+        return None
+    return bool(dirty)
 
 
 def system_now(system_id: Any) -> Any:

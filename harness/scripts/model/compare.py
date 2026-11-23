@@ -10,7 +10,7 @@ from __future__ import annotations
 from collections import Counter
 from functools import lru_cache
 
-from evaluation_harness import _fields, stats
+from evaluation_harness import _fields, _visibility, stats
 from evaluation_harness._common import SPEED_KEYS
 from evaluation_harness.catalog_adapter import Adapter, item_fields
 
@@ -20,13 +20,6 @@ STATES = ("compared", "average only", "no shared metric", "not scorable")
 A: Adapter = None  # type: ignore[assignment]  # set by set_adapter()
 #: Set by the server's main(): the public mode's limits. max_arms applies locally too (a URL is not a query).
 LIMITS: dict = {"max_arms": 40, "rate": 0, "hosts": (), "proxy_hosts": ()}
-
-
-def public() -> bool:
-    """Whether this comparison is a public server's: the inspector's --public, or an MCP call made for a public server."""
-    from evaluation_harness import _visibility  # noqa: PLC0415
-
-    return bool(LIMITS["hosts"]) or _visibility.public_env()
 
 
 def set_adapter(adapter: Adapter) -> None:
@@ -356,7 +349,7 @@ def _fields_of(dataset: str) -> tuple:
     show, the public API may show, and a filter on a hidden field would leak it through counts."""
     fl = item_fields(A, dataset) if dataset else {"fieldset": None, "values": {}}
     decl = {f["name"]: f for f in (fl["fieldset"] or {}).get("fields") or []}
-    if public():
+    if _visibility.public():
         decl = {n: f for n, f in decl.items() if f.get("public")}
     values = {i: {n: v for n, v in vs.items() if n in decl} for i, vs in fl["values"].items()}
     return decl, values
@@ -381,7 +374,7 @@ def _filter(series: dict, decl: dict, values: dict, wheres: list):
     for w in wheres:
         name, _, want = w.partition(":")
         if name not in decl:
-            return None, f"no field {name!r} to filter by" + (" here" if public() else "")
+            return None, f"no field {name!r} to filter by" + (" here" if _visibility.public() else "")
         try:
             keep = {i for i, vs in values.items() if _fields.matches(decl[name], vs.get(name), want)}
         except ValueError as exc:

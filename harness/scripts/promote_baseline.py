@@ -225,6 +225,18 @@ def body(
             "  (--allow-unknown-build overrides, but then the baseline names no system.)",
             "not-configured",
         )
+    # No ref at all (not a git project) was refused above, and --allow-unknown-build already says so: one flag, not two.
+    if (
+        _common.tree_state(build) is None
+        and build.get("ref", "unknown") != "unknown"
+        and not args.allow_dirty
+    ):
+        die(
+            f"REFUSED — git could not say whether the tree run {args.run} came from was clean.\n"
+            f"  build.ref={build.get('ref', '?')[:12]} is not proven to describe what actually ran.\n"
+            "  Re-run where git works and promote that — or --allow-dirty and say why in --reason.",
+            "not-allowed",
+        )
     if build.get("dirty") and not args.allow_dirty:
         die(
             f"REFUSED — run {args.run} was produced by a DIRTY tree.\n"

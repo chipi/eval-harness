@@ -1099,6 +1099,18 @@ def test_example_scorer_suites_pass() -> None:
             "a dataset's catalog page at 10,000 items: its items paged, every item on one page",
         ),
         (
+            "test_unknown_and_zero.py",
+            "unknown, none and zero kept apart: a build git could not read, a $0 spend, a study's stop of $0",
+        ),
+        (
+            "test_public_gate.py",
+            "whether a call is public is one function: an in-process public call is refused an item's text, an unreadable dataset is hidden",
+        ),
+        (
+            "test_today.py",
+            "which day it is is the UTC date from one function: staleness, the page cache and the view cache, no date.today() elsewhere",
+        ),
+        (
             "test_why_lines.py",
             "a goal page's reasons with many arms: the scorer named once, a long list of contenders or undecided as a count",
         ),
