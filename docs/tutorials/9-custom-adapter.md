@@ -126,11 +126,13 @@ The commit keeps the tree clean: a run from a dirty tree records that its code i
 evh run --system headline_6w_v1 --dataset headlines_v1 --dry-run
 ```
 ```text
+  system      headline_6w_v1  (adapter adapters/headline.py)
   API calls   6
               1 per item, declared by the adapter (CALLS_PER_ITEM)
 ```
 
-Its dollar estimate is made for a model's reply of up to `max_tokens`; for a stub it says nothing, and the run
+The system line names what runs: this project's adapter. (The bundled adapter's systems say the provider they call, `echo`
+unless the system names another.) Its dollar estimate is made for a model's reply of up to `max_tokens`; for a stub it says nothing, and the run
 records what the adapter reports. The runs name the goal, so each records what it was for:
 
 ```bash
