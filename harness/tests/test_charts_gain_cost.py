@@ -24,6 +24,7 @@ from evaluation_harness._check import check, summary
 from evaluation_harness.model import compare as mc
 from evaluation_harness.model import rounds as mr
 from evaluation_harness.model import studies as ms
+from evaluation_harness.model.entity import Problem
 from evaluation_harness.ops import rounds as orr
 
 N = 40
@@ -173,13 +174,21 @@ check(
 c = round_chart(
     "higher", {"runs/d/base": scores(0.5, 0.0, cost=0.01), "runs/d/same_cost": scores(0.5, 0.2, cost=0.01)}
 )
-none_c = round_chart("higher", {"runs/d/base": scores(0.5, 0.0), "runs/d/no_cost": scores(0.5, 0.2)})
 check(
-    "a significant gain at the same cost is 'better at the same cost', with no cost recorded 'its cost not compared'; "
-    "never 'cheaper'",
-    c["rows"][0]["claim"] == "better at the same cost"
-    and none_c["rows"][0]["claim"] == "better, its cost not compared",
-    (c["rows"][0]["claim"], none_c["rows"][0]["claim"]),
+    "a significant gain at the same cost is 'better at the same cost', never 'cheaper'",
+    c["rows"][0]["claim"] == "better at the same cost",
+    c["rows"][0]["claim"],
+)
+# RFC-041 F3: no arm with a known cost is no cost axis; an unknown cost is not drawn at 0, the chart refuses
+try:
+    round_chart("higher", {"runs/d/base": scores(0.5, 0.0), "runs/d/no_cost": scores(0.5, 0.2)})
+    refusal = None
+except Problem as exc:
+    refusal = (exc.kind, str(exc))
+check(
+    "RFC-041 F3: no arm has a known cost: the chart refuses (not-enough), saying so, and draws nothing at 0",
+    refusal is not None and refusal[0] == "not-enough" and "no arm has a known cost" in refusal[1],
+    refusal,
 )
 
 # an arm whose cost is unknown is not a free arm (RFC-041 F3, RUNBOOK 886-887): it is left off the cost axis and named in
@@ -202,11 +211,6 @@ check(
     and urows["unpriced"]["cost_delta_per_item"] is None
     and urows["free"]["cost_delta_per_item"] == -0.01,
     (circles(u["svg"]), u["caption"][-240:], urows["unpriced"]),
-)
-check(
-    "no arm priced, none with tokens: the caption says the cost is unknown, not zero, and why the marks sit at 0",
-    "cost is unknown, not zero" in none_c["caption"] and "cost axis is flat" not in none_c["caption"],
-    none_c["caption"][-260:],
 )
 t = round_chart(
     "higher",
@@ -258,6 +262,19 @@ check(
     and "up is better on m2" in c["caption"]
     and "flipped" not in c["caption"],
     (r, c["caption"][:200]),
+)
+
+# every reader counts a score as `_number` says: NaN, inf and None are a failed item's 0, a boolean or text is no score
+odd = Stub(
+    "higher", {"runs/d/x": {"m": {"values": {"a": 0.5, "b": float("nan"), "c": None, "d": True, "e": "t"}}}}
+)
+with charts.using(odd):
+    got = charts._values(odd, "runs/d/x", "m")
+    dropped = charts._values_dropped(odd, "runs/d/x", "m")
+check(
+    "charts._values: NaN and None count as 0 (a failed item), a boolean and text are left out and counted",
+    got == {"a": 0.5, "b": 0.0, "c": 0.0} and dropped == 2,
+    (got, dropped),
 )
 
 sys.exit(summary())

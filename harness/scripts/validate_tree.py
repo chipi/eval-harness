@@ -2193,11 +2193,16 @@ def v29_repeats_and_the_arms_that_read_them() -> None:
                 recs = [(sd, _mr.record(sd)) for sd in _mr.scores_of(rid)]
                 read_in = {_mr.arm_of(sd, rec) for sd, rec in recs if rec}
                 joined = next((j for sd, rec in recs if rec and (j := _mr.joins(sd, rec))), None)
-                if joined and want not in read_in:
+                repeat = next((rec["of"] for sd, rec in recs if rec and _mr._is_repeat(rec)), None)
+                if (joined or repeat) and want not in read_in:
+                    why = (
+                        f"it is a repeat of the same measurement as {joined}, read in that run's arm"
+                        if joined
+                        else f"it is a repeat of {repeat}, which is not the run it joined"
+                    )
                     notes.append(
                         f"round {rnd['round_id']} of {rnd['goal']} records {rid} in its arm {want}, where it is no "
-                        f"longer read: it is a repeat of the same measurement as {joined}, read in that run's arm "
-                        f"({', '.join(sorted(read_in))}). The round reads what it recorded"
+                        f"longer read: {why} ({', '.join(sorted(read_in))}). The round reads what it recorded"
                     )
     for b in bad[:10]:
         print(f"       {b}")

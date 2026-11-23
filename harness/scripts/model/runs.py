@@ -143,8 +143,9 @@ def record(score_dir: Path) -> dict[str, Any] | None:
 def _means_counted(score_dir: Path, scores: dict[str, Any]) -> dict[str, Any]:
     """A run's means with every one that is not a number (a run recorded before RFC-041 F7, whose mean over an item with
     no number in it is NaN) worked again over its items, each item's score as `_number.counted` reads it (a failed
-    item's 0), as `evh run` records the mean now. A mean that no item row carries (a run-level metric) is left out: no
-    "nan" in a table."""
+    item's 0), as `evh run` records the mean now. A mean that no item row carries (a run-level metric, `score_run`,
+    whose mean is NaN) is left out and read as unknown: there are no items to count as failed, and `aggregate_scores`
+    refuses such a mean at write time. No "nan" in a table."""
     from evaluation_harness import _outputs  # noqa: PLC0415
 
     rows = _outputs.rows(Path(score_dir), errors="replace", meta=False) or []
@@ -302,10 +303,10 @@ def label(score_dir: Path, rec: dict[str, Any] | None = None) -> str:
 
 
 def read_under(score_dir: Path, lbl: str) -> bool:
-    """Whether a score is read under the label `lbl`; or is a repeat that now joins its original's arm while `lbl` is the
-    label a round recorded it under (`repeats`): a round reads what it recorded, and no migration relabels it (RFC-041
-    F2, RUNBOOK 1531), so that is no problem of the round."""
-    return label(score_dir) == lbl or (lbl == PURPOSE_LABEL["repeat"] and joins(score_dir) is not None)
+    """Whether a score is read under the label `lbl`; or is a repeat, which a round recorded where it was read then and
+    is read elsewhere now (it joined its original's arm, or its original was removed): a round reads what it recorded,
+    and no migration relabels it (RFC-041 F2, RUNBOOK 1531), so that is no problem of the round (V29 notes it)."""
+    return label(score_dir) == lbl or _is_repeat(record(score_dir) or {})
 
 
 def arm_prefix(lbl: str) -> str:

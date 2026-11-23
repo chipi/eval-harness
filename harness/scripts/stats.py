@@ -43,7 +43,7 @@ from itertools import chain, compress
 from typing import Any
 
 from evaluation_harness._number import counted as _counted
-from evaluation_harness._number import is_number
+from evaluation_harness._number import is_number, is_scored
 
 PERMUTATIONS = 20000
 SEED = 20260926
@@ -110,9 +110,10 @@ def _signed_sums(xs: list) -> list:
 
 def counted(xs: list) -> list:
     """The values as the tests count them (`_number.counted`): a number as it is, a NaN, an infinity or a None as 0, the
-    score of a failed item. A run recorded before a score that is not a number became a failed item (RFC-041 F7) can
-    still hold one, and the tests read it as `evh run` records it now, instead of answering a p above 1 or NaN."""
-    return [_counted(x) for x in xs]
+    score of a failed item; a boolean or text is no score and is left out, as `_runs.score_of` leaves it. A run recorded
+    before a score that is not a number became a failed item (RFC-041 F7) can still hold one, and the tests read it as
+    `evh run` records it now, instead of answering a p above 1 or NaN."""
+    return [_counted(x) for x in xs if is_scored(x)]
 
 
 def exact_p(deltas: list) -> float:
@@ -632,7 +633,8 @@ def cluster_ci(totals: list, sizes: list, alpha: float = ALPHA):
     the clusters' residuals, G/(G-1), G-1 degrees of freedom). With one item per cluster both are the
     item-level interval exactly. None below 2 clusters, or when no shift can be rejected (5 clusters
     and fewer, where the smallest attainable p is over alpha)."""
-    totals = counted(totals)
+    kept_ = [(_counted(t), m) for t, m in zip(totals, sizes, strict=True) if is_scored(t)]
+    totals, sizes = [t for t, _ in kept_], [m for _, m in kept_]
     g, n = len(totals), sum(sizes)
     if g < 2 or min_attainable_p(g) > alpha:
         return None
@@ -1060,7 +1062,7 @@ def compare(
     for arm, scores in arms.items():
         if arm == baseline:
             continue
-        both = sorted(set(scores) & set(base))
+        both = sorted(i for i in set(scores) & set(base) if is_scored(scores[i]) and is_scored(base[i]))
         mine = {i: _counted(scores[i]) for i in both}
         theirs = {i: _counted(base[i]) for i in both}
         deltas = [mine[i] - theirs[i] for i in both]

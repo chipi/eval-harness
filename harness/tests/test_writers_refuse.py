@@ -464,9 +464,9 @@ def lose_baseline_run(proj: Path, env: dict[str, str]) -> None:
 
 def lose_of(proj: Path, env: dict[str, str]) -> None:
     """A repeat's `of`, made to name a run that is not there."""
-    rec = _runstore.record_of(proj, F["changed_run"])
+    rec = _runstore.record_of(proj, F["joined"])
     rec["of"] = "ghost_run"
-    put(proj, f"runs/{F['changed_run']}/run.json", json.dumps(rec, indent=2) + "\n")
+    put(proj, f"runs/{F['joined']}/run.json", json.dumps(rec, indent=2) + "\n")
 
 
 def lose_goal_dataset(proj: Path, env: dict[str, str]) -> None:
@@ -495,7 +495,7 @@ broken(
 )  # fmt: skip
 broken(
     "a repeat's `of` that is not there",
-    lose_of, "V29", [f"runs/{F['changed_run']}/run.json", "ghost_run"], fails=False,
+    lose_of, "V29", [f"runs/{F['joined']}/run.json", "ghost_run"], fails=False,
 )  # fmt: skip
 broken(
     "a goal's dataset that is not there",

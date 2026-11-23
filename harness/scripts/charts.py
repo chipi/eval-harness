@@ -22,12 +22,12 @@ A chart with too little to draw refuses (`not-enough`) with the reason, never an
 from __future__ import annotations
 
 import contextlib
-import math
 import statistics
 from collections.abc import Iterator
 from typing import Any
 
 from evaluation_harness import catalog_charts as cc
+from evaluation_harness._number import counted, is_scored
 from evaluation_harness.axes import fmt_ms
 from evaluation_harness.model.entity import Problem
 
@@ -89,22 +89,19 @@ def _goal(A, goal: str) -> dict[str, Any]:
 
 
 def _values(A, arm: str, metric: str) -> dict[str, float]:
-    """The arm's per-item values of the metric that are numbers: a NaN or an infinity (an adapter's own, or a run from
-    before RFC-041 F7) is left out of every chart, as an item the arm has no value for (`_values_dropped` counts them)."""
-    return {i: v for i, v in _raw_values(A, arm, metric).items() if _isfinite(v)}
+    """The arm's per-item values of the metric, as every reader counts them (`_number`): a NaN, an infinity or a None (an
+    adapter's own, or a run from before RFC-041 F7) is a failed item's 0; a boolean or text is no score and is left out
+    (`_values_dropped` counts them)."""
+    return {i: counted(v) for i, v in _raw_values(A, arm, metric).items() if is_scored(v)}
 
 
 def _raw_values(A, arm: str, metric: str) -> dict:
     return dict((A.scores(arm).get(metric) or {}).get("values") or {})
 
 
-def _isfinite(v) -> bool:
-    return isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v)
-
-
 def _values_dropped(A, arm: str, metric: str) -> int:
     """How many of the arm's values of the metric are not numbers, so not in `_values`."""
-    return sum(1 for v in _raw_values(A, arm, metric).values() if not _isfinite(v))
+    return sum(1 for v in _raw_values(A, arm, metric).values() if not is_scored(v))
 
 
 def _mean(xs) -> float | None:
@@ -355,7 +352,7 @@ def items(goal: str, dataset: str | None = None, href=None) -> dict:
     grp = _group(goal, dataset)
     m = grp["measure"]
     dropped = sum(_values_dropped(A, a["arm"], m) for a in grp["arms"])
-    left_out = f" {dropped} value(s) that are not numbers are left out." if dropped else ""
+    left_out = f" {dropped} value(s) that are no scores (a boolean, text) are left out." if dropped else ""
     series = {a["label"]: _values(A, a["arm"], m) for a in grp["arms"]}
     series = {k: v for k, v in series.items() if v}
     if len(series) < 2:
@@ -555,10 +552,16 @@ def gain_cost(goal: str, round: str | None = None, study: str | None = None) -> 
     for r in rows:
         r.pop("_significant", None)
     known = [r for r in drawn if r[x_key] is not None]
+    if not known:
+        raise Problem(
+            f"{round or study}: no arm has a known cost (nor tokens) per {A.item_word} to set against {base_name}: "
+            "an unknown cost is not drawn as 0",
+            "not-enough",
+        )
     points = []
-    for r in known or drawn:
+    for r in known:
         filled = not r["claim"].startswith(("not separated", "no gain"))
-        x = r[x_key] if r[x_key] is not None else 0.0
+        x = r[x_key]
         cost = f"{x:+.0f} tokens" if by_tokens else f"{x:+.6f} USD"
         points.append(
             {
@@ -573,7 +576,7 @@ def gain_cost(goal: str, round: str | None = None, study: str | None = None) -> 
             }
         )
     left_out = [r["arm"] for r in rows if r["quality_delta"] is None]
-    unknown = [r["arm"] for r in drawn if r[x_key] is None] if known else []
+    unknown = [r["arm"] for r in drawn if r[x_key] is None]
     flipped = " (lower is better: flipped, so up is better)" if lower else ""
     caption = (
         f"Against {base_name} ({against}) on {ds}: up is better on {metric}{flipped}, with the 95% interval as a "
@@ -585,9 +588,6 @@ def gain_cost(goal: str, round: str | None = None, study: str | None = None) -> 
             ""
             if priced or by_tokens
             else " No arm recorded a cost or tokens different from the baseline's: the cost axis is flat."
-            if known
-            else " No arm recorded a cost or tokens: their cost is unknown, not zero, and the marks sit at 0 only because "
-            "the axis has no measure."
         )
         + (
             f" Not drawn, sharing no {A.item_word} with the baseline: {', '.join(left_out)}."

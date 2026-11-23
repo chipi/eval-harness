@@ -431,6 +431,36 @@ try:
               (verdict_of(text), p_of(text)) == new_facts, (verdict_of(text), p_of(text)))  # fmt: skip
         check(f"old data, {shape} in item i02: the leaderboard ranks the arms and gives their q as that run does",
               board_q() == new_board, (board_q(), new_board))  # fmt: skip
+    # a boolean in an item is no score (`score_of` leaves it out): pair-test and the leaderboard both read N=7
+    with _runstore._InProject(proj) as data:
+        sd = _runstore.model_runs.first_score(data / "runs" / rid)
+        assert sd is not None
+        rows = [dict(row) for row in written]
+        for row in rows:
+            if row["item_id"] == "i02":
+                row["q"] = True
+        _runstore.put_rows(sd, rows)
+    _doc, text, _r = pair("nan_scores")
+    _d, board, _r = cmd_json("leaderboard", "e_nan_scores")
+    n_pair = re.search(r"N=(\d+)", text)
+    n_board = re.search(r"N=(\d+) items", board)
+    check(
+        "a boolean item score is left out, as `score_of` leaves it: pair-test and the leaderboard read the same N (7) and verdict",
+        n_pair is not None
+        and n_board is not None
+        and n_pair.group(1) == n_board.group(1) == "7"
+        and verdict_of(text) == "SIGNIFICANT"
+        and "NO detectable arm effect" not in board,
+        (n_pair and n_pair.group(0), n_board and n_board.group(0), verdict_of(text)),
+    )
+    with _runstore._InProject(proj) as data:
+        sd = _runstore.model_runs.first_score(data / "runs" / rid)
+        assert sd is not None
+        rows = [dict(row) for row in written]
+        for row in rows:
+            if row["item_id"] == "i02":
+                row["q"] = float("nan")
+        _runstore.put_rows(sd, rows)
     old = "old data (a NaN already recorded)"
     doc, text, r = cmd_json("leaderboard", "e_nan_scores")
     check(f"{old}: leaderboard: no traceback, strict JSON, no nan or inf in a cell or a sentence",
@@ -476,6 +506,25 @@ try:
             ok,
             said,
         )
+    d7 = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7]
+    row = stats.compare(
+        {
+            "a": {f"i{k}": v for k, v in enumerate([*d7, True, "x"])},
+            "b": dict.fromkeys((f"i{k}" for k in range(9)), 0.0),
+        },
+        "b",
+    )["rows"][0]
+    check(
+        "stats: a boolean or text is no score, left out as `score_of` leaves it (N=7), where a NaN counts as 0",
+        stats.exact_p([*d7, True, "x"]) == stats.exact_p(d7)
+        and stats.sign_flip_p([*d7, True]) == stats.sign_flip_p(d7)
+        and row["n"] == 7
+        and stats.compare({"a": {"i0": float("nan"), "i1": 0.5}, "b": {"i0": 0.4, "i1": 0.5}}, "b")["rows"][
+            0
+        ]["n"]
+        == 2,
+        (row["n"], stats.exact_p([*d7, True, "x"]), stats.exact_p(d7)),
+    )
     units, sizes = stats.clustered({}, {})
     check(
         "stats on no clusters: clustered gives nothing, cluster_ci None",

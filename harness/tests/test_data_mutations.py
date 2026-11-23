@@ -156,7 +156,7 @@ MUTATIONS: tuple[Mutation, ...] = (
         "no_fingerprint",
         "every second run has no fingerprint (a repeat that joined its run through it joins no more)",
         "no_fingerprint",
-        names={"fleet": r"is not scored under 'the plain runs'"},
+        names={"fleet": r"where it is no longer read: it is a repeat of \S+, which is not the run it joined"},
     ),
 )
 BY_NAME = {m.name: m for m in MUTATIONS}
