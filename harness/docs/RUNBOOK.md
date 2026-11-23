@@ -1714,7 +1714,7 @@ must be on one dataset. Not served by `--public`.
 
 **Public deployments** (`--public HOST`): the server answers only the named hosts, each client
 gets `--rate` requests per minute, and at most `--max-arms` arms per comparison. `--publish`
-names what text to serve besides numbers: `outputs`, `references`, `prompts` (a system's `params.prompt`, as `catalog: {publish: [prompts]}` does for the pages and the public MCP), or any of them. The item itself is
+names what text to serve besides numbers: `outputs`, `references`, `prompts` (a system's `params.prompt` and a recorded prompt file's text, as `catalog: {publish: [prompts]}` does for the pages and the public MCP), or any of them. The item itself is
 never served publicly. `--client-header NAME` names the header that identifies each client (e.g.
 `CF-Connecting-IP` behind Cloudflare), trusted only when a reverse proxy you control sets it on
 requests from an origin no one else can reach. A public server also serves the Workbench at `/workbench/`, read-only:

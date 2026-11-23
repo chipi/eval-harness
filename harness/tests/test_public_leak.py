@@ -405,8 +405,8 @@ def server_allows(k: str, publish: tuple) -> bool:
             or (field == "OUTPUT" and "outputs" in publish)
             or (field == "REFERENCE" and "references" in publish)
         )
-    return field in ("NOTE-GOAL", "NOTE-ROUND", "NOTE-PROMPT", "PROMPT-TEXT", "NOTE-REFERENCE") or (
-        field == "SYSTEM-PROMPT" and "prompts" in publish
+    return field in ("NOTE-GOAL", "NOTE-ROUND", "NOTE-PROMPT", "NOTE-REFERENCE") or (
+        field in ("SYSTEM-PROMPT", "PROMPT-TEXT") and "prompts" in publish
     )
 
 
@@ -438,7 +438,7 @@ def copy_allows(k: str) -> bool:
 
 #: The fields the owner decided on 2026-11-23, the docs having been silent: a system's own prompt parameter (a prompt),
 #: a reference's promotion reason and a prompt version's note (project notes).
-DECIDED = ("SYSTEM-PROMPT", "NOTE-REFERENCE", "NOTE-PROMPT")
+DECIDED = ("SYSTEM-PROMPT", "PROMPT-TEXT", "NOTE-REFERENCE", "NOTE-PROMPT")
 
 
 def judge(surface: str, seen: dict, allows, must: tuple = (), f4: tuple = ()) -> None:
@@ -521,7 +521,7 @@ try:
         seen, got = over_http(publish)
         covered(name, got, MUST_ANSWER, lambda x: x == 200)
         must = [s("NOTE-GOAL"), s("FIELD-TEXT", "S"), s("NOTE-REFERENCE")]
-        must += [s("SYSTEM-PROMPT")] if "prompts" in publish else []
+        must += [s("SYSTEM-PROMPT"), s("PROMPT-TEXT")] if "prompts" in publish else []
         must += [s("OUTPUT", "S")] if "outputs" in publish else []
         must += [s("REFERENCE", "S")] if "references" in publish else []
         judge(name, seen, lambda k, p=publish: server_allows(k, p), must=tuple(must))
@@ -538,7 +538,7 @@ try:
         seen, got = {}, {}
         in_process(served, False, seen, got)
         judge("public env, no hosts, prompts published, the reads a public MCP offers", seen,
-              lambda k: server_allows(k, ("prompts",)), must=(s("SYSTEM-PROMPT"),))  # fmt: skip
+              lambda k: server_allows(k, ("prompts",)), must=(s("SYSTEM-PROMPT"), s("PROMPT-TEXT")))  # fmt: skip
         cs.LIMITS["publish"] = ()
         seen, got = {}, {}
         in_process([o for o in reads if o.public_dropped], False, seen, got)
@@ -591,7 +591,7 @@ try:
         seen = in_files(out, "catalog")
         judge(f"catalog export (publish prompts: {prompts})", seen, lambda k, p=prompts: catalog_allows(k, p),
               must=(s("NOTE-GOAL"), s("ITEM-INPUT", "S"), s("NOTE-REFERENCE"), s("NOTE-PROMPT"))
-              + ((s("SYSTEM-PROMPT"),) if prompts else ()))  # fmt: skip
+              + ((s("SYSTEM-PROMPT"), s("PROMPT-TEXT")) if prompts else ()))  # fmt: skip
     cfg.write_text(plain, encoding="utf-8")
 
     # ── the export: the deployment's copy of the data ────────────────────────────────────────────────────────────
