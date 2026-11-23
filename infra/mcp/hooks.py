@@ -161,7 +161,7 @@ def start(info: dict) -> None:
             print(f"hooks: traces off: {type(exc).__name__}: {exc}", flush=True)
     # The site's analytics count prod's callers only: a dev run is not a visit.
     umami = HERE / "mcp_umami.json"
-    cfg = json.loads(umami.read_text()) if umami.is_file() else {}
+    cfg = json.loads(umami.read_text(encoding="utf-8")) if umami.is_file() else {}
     if env == "prod" and s.get("UMAMI_SEND_URL", "").startswith("https://") and cfg.get("website_id"):
         _state["umami"] = {"send_url": s["UMAMI_SEND_URL"], "website_id": cfg["website_id"]}
         threading.Thread(target=_umami_worker, daemon=True, name="umami").start()
@@ -283,7 +283,7 @@ def error(exc: BaseException, info: dict) -> None:
 
 def _rss_bytes() -> int:
     try:
-        for line in Path("/proc/self/status").read_text().splitlines():
+        for line in Path("/proc/self/status").read_text(encoding="utf-8").splitlines():
             if line.startswith("VmRSS:"):
                 return int(line.split()[1]) * 1024
     except OSError:

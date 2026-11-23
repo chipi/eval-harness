@@ -111,7 +111,7 @@ def add(cost: float | None) -> None:
         if _common.SPENT_LIVE:
             with contextlib.suppress(OSError):
                 tmp = Path(_common.SPENT_LIVE + ".tmp")
-                tmp.write_text(json.dumps({"spent_usd": round(_SPENT[0], 8)}) + "\n")
+                tmp.write_text(json.dumps({"spent_usd": round(_SPENT[0], 8)}) + "\n", encoding="utf-8")
                 os.replace(tmp, _common.SPENT_LIVE)
 
 
@@ -122,7 +122,9 @@ def _report() -> None:
     if not _common.SPENT_TO:
         return
     with contextlib.suppress(OSError):
-        Path(_common.SPENT_TO).write_text(json.dumps({"spent_usd": round(_SPENT[0], 8)}) + "\n")
+        Path(_common.SPENT_TO).write_text(
+            json.dumps({"spent_usd": round(_SPENT[0], 8)}) + "\n", encoding="utf-8"
+        )
 
 
 def run_child(cmd: list[str], **kw: Any) -> tuple[Any, float]:
@@ -186,7 +188,7 @@ def _alive(pid: Any) -> bool:
         pid = int(pid)
         stat = Path(f"/proc/{pid}/stat")
         if stat.exists():
-            return stat.read_text().rsplit(")", 1)[1].split()[0] != "Z"
+            return stat.read_text(encoding="utf-8").rsplit(")", 1)[1].split()[0] != "Z"
         os.kill(pid, 0)
     except (OSError, ValueError, TypeError, IndexError):
         return False

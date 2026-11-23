@@ -49,7 +49,9 @@ def main() -> int:
         "arms": {},
     }
     for arm, pub in ARMS.items():
-        params = yaml.safe_load((HERE / "systems" / f"ag_{arm}_v1.yaml").read_text())["params"]
+        params = yaml.safe_load((HERE / "systems" / f"ag_{arm}_v1.yaml").read_text(encoding="utf-8"))[
+            "params"
+        ]
         adapter.warmup(params)
         acc = cal.accuracy(
             lambda t, params=params: adapter.call_system(t, params).output,

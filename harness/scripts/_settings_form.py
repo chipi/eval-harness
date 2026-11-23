@@ -502,10 +502,11 @@ def project_check() -> dict[str, list[str]]:
     try:
         # The package's own cli.py by its path, not `-m evaluation_harness`: a checkout that was never installed has
         # no importable module (CI's stores job), and every save it checked was refused.
+        # the child prints in its console's encoding: UTF-8 with replacement, never a crash here
         r = subprocess.run(  # nosec B603
             [sys.executable, str(Path(__file__).resolve().parent / "cli.py"), "validate"],
             cwd=_common.ROOT, capture_output=True, text=True, stdin=subprocess.DEVNULL, env=dict(os.environ),
-            check=False, timeout=VALIDATE_TIMEOUT_S,
+            check=False, timeout=VALIDATE_TIMEOUT_S, encoding="utf-8", errors="replace",
         )  # fmt: skip
     except subprocess.TimeoutExpired:
         raise _data_page.Refused(

@@ -43,6 +43,8 @@ from __future__ import annotations
 
 import argparse
 import math
+import sys
+from pathlib import Path
 
 SQRT2 = math.sqrt(2.0)
 
@@ -137,4 +139,8 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
+    from evaluation_harness._console import degrade_unencodable
+
+    degrade_unencodable()
     raise SystemExit(main())

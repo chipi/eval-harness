@@ -471,6 +471,7 @@ def _family(exp: dict, runs: list, cids: dict, arm: str | None = None) -> tuple[
             text=True,
             cwd=HARNESS,
             env={**os.environ, "EVAL_HOME": str(home)},
+            encoding="utf-8",
         )
     if r.returncode != 0:
         raise SystemExit(f"family test failed:\n{r.stderr[-800:]}")

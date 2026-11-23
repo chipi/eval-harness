@@ -166,7 +166,11 @@ def _git_commit(path: Path) -> str | None:
 
     try:
         r = subprocess.run(  # nosec B603 B607 - git, read-only, no shell
-            ["git", "-C", str(path.parent), "rev-parse", "HEAD"], capture_output=True, text=True, check=False
+            ["git", "-C", str(path.parent), "rev-parse", "HEAD"],
+            capture_output=True,
+            text=True,
+            check=False,
+            encoding="utf-8",
         )
     except OSError:
         return None

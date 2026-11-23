@@ -31,6 +31,7 @@ import subprocess  # nosec B404 - the point of this tool: `evh <command> --json`
 import sys
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
 from typing import Any
 
 SCHEMA = "evh-facts-dump/1"
@@ -107,7 +108,7 @@ class Cli:
         try:
             p = subprocess.run(  # nosec B603 - the operator's own evh
                 argv, cwd=self.project, env=env, capture_output=True, text=True, stdin=subprocess.DEVNULL,
-                timeout=900, check=False,
+                timeout=900, check=False, encoding="utf-8",
             )  # fmt: skip
         except (OSError, subprocess.TimeoutExpired) as exc:
             raise Unavailable(f"evh {op}: {type(exc).__name__}: {exc}") from None
@@ -505,7 +506,7 @@ def cli_collect(evh: str, project: str | None, jobs: int) -> Collected:
     try:
         p = subprocess.run(  # nosec B603
             [*cli.evh, "--version"], cwd=project, capture_output=True, text=True, stdin=subprocess.DEVNULL,
-            timeout=120, check=False,
+            timeout=120, check=False, encoding="utf-8",
         )  # fmt: skip
         c.meta["evh_version"] = p.stdout.strip() or {"unavailable": p.stderr.strip()[:200]}
     except (OSError, subprocess.TimeoutExpired) as exc:
@@ -715,4 +716,8 @@ def main(argv: list[str] | None = None) -> int:
 
 
 if __name__ == "__main__":
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
+    from evaluation_harness._console import degrade_unencodable
+
+    degrade_unencodable()
     sys.exit(main())

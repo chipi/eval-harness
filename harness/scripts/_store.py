@@ -157,7 +157,7 @@ def connect(create: bool = True) -> sqlite3.Connection | None:
         # the database's, as its -wal does), never project data.
         import fcntl  # noqa: PLC0415
 
-        with open(path.with_name(f"{DB}-setup-lock"), "a") as fh:
+        with open(path.with_name(f"{DB}-setup-lock"), "a", encoding="utf-8") as fh:
             fcntl.flock(fh, fcntl.LOCK_EX)
             try:
                 conn.execute("PRAGMA journal_mode=WAL")

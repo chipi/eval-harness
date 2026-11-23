@@ -138,6 +138,7 @@ def _not_significant(exp: dict) -> list:
         capture_output=True,
         text=True,
         cwd=HARNESS,
+        encoding="utf-8",
     )
     if r.returncode != 0:
         raise SystemExit(f"family test failed for {exp['slug']}:\n{r.stderr[-800:]}")
@@ -444,6 +445,7 @@ def goal_decisions(exps: list) -> None:
             text=True,
             cwd=HARNESS,
             check=True,
+            encoding="utf-8",
         ).stdout
     )
     by_ds = {r["dataset"]: r for r in rows}
@@ -478,6 +480,7 @@ def compute() -> dict:
         capture_output=True,
         text=True,
         cwd=HARNESS,
+        encoding="utf-8",
     ).stdout
     m = re.search(r"(\d+)/(\d+) claims verified", claims)
     if not m or m.group(1) != m.group(2):

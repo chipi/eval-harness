@@ -86,6 +86,9 @@ def _run(
         stderr=subprocess.PIPE,
         text=True,
         start_new_session=True,
+        # the child prints in its console's encoding: UTF-8 with replacement, never a crash here
+        encoding="utf-8",
+        errors="replace",
     )
     if started is not None:
         started.append(p)

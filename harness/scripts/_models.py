@@ -160,7 +160,7 @@ def _locked_write(
     from evaluation_harness import _common  # noqa: PLC0415
     from evaluation_harness._actor import actor  # noqa: PLC0415
 
-    with _store.open_file(lock_path(f), "w") as fh:
+    with _store.open_file(lock_path(f), "w", encoding="utf-8") as fh:
         fcntl.flock(fh, fcntl.LOCK_EX)
         try:
             doc = (_read(f) if _store.is_file(f) else None) or dict(start)

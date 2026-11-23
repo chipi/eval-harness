@@ -109,7 +109,9 @@ def _git(root: Path, *args: str, strip: bool = True) -> str | None:
     --porcelain`, whose first line starts with a space that is part of its two-letter status: stripped, its path
     lost a letter (" M app.py" read as "pp.py")."""
     try:
-        r = subprocess.run(["git", *args], cwd=root, capture_output=True, text=True, timeout=10)
+        r = subprocess.run(
+            ["git", *args], cwd=root, capture_output=True, text=True, timeout=10, encoding="utf-8"
+        )
     except (OSError, subprocess.SubprocessError):
         return None
     if r.returncode != 0:

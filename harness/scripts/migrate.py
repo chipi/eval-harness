@@ -65,6 +65,7 @@ def _backup(have: int) -> None:
             timeout=60,
             check=False,
             cwd=_common.DATA,
+            encoding="utf-8",
         )
     except (OSError, subprocess.TimeoutExpired):
         print("backup: git not found; the files have no undo but a copy you make", file=sys.stderr)
@@ -157,6 +158,9 @@ def _dry_run(todo: list[Any]) -> None:
             stdin=subprocess.DEVNULL,
             timeout=None,
             check=False,
+            # the child prints in its console's encoding: UTF-8 with replacement, never a crash here
+            encoding="utf-8",
+            errors="replace",
         )
         out, err = (t.replace(str(scratch), str(root)) for t in (done.stdout, done.stderr))
         sys.stdout.write(out)
@@ -226,4 +230,7 @@ def _steps_on_copy() -> int:
 
 
 if __name__ == "__main__":
+    from evaluation_harness._console import degrade_unencodable
+
+    degrade_unencodable()
     raise SystemExit(_steps_on_copy())

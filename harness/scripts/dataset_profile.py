@@ -155,6 +155,7 @@ def tracked(paths: list[Path]) -> list[Path]:
             capture_output=True,
             text=True,
             check=True,
+            encoding="utf-8",
         ).stdout
     except (OSError, subprocess.CalledProcessError, ValueError):
         return paths

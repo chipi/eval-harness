@@ -52,9 +52,10 @@ def run(test: Path, store: str, log: Path) -> tuple[str, str, int, float]:
     env["TMPDIR"] = str(own)
     t0 = time.time()
     try:
+        # a child prints in its own console encoding: decoded with replacement, never a crash
         r = subprocess.run(  # nosec B603 - this interpreter and our own test files
             [sys.executable, str(test)], cwd=HARNESS, env=env, capture_output=True, text=True,
-            stdin=subprocess.DEVNULL, timeout=1800, check=False,
+            stdin=subprocess.DEVNULL, timeout=1800, check=False, encoding="utf-8", errors="replace",
         )  # fmt: skip
         code, out = r.returncode, r.stdout + r.stderr
     except subprocess.TimeoutExpired as e:
@@ -65,7 +66,7 @@ def run(test: Path, store: str, log: Path) -> tuple[str, str, int, float]:
         code, out = 124, f"{text(e.stdout)}{text(e.stderr)}\nTIMEOUT after 1800 s"
     finally:
         shutil.rmtree(own, ignore_errors=True)
-    (log / f"{test.stem}.{store}.log").write_text(out if isinstance(out, str) else str(out))
+    (log / f"{test.stem}.{store}.log").write_text(out if isinstance(out, str) else str(out), encoding="utf-8")
     return test.name, store, code, time.time() - t0
 
 
@@ -107,7 +108,7 @@ def main() -> int:
         if c == 0:
             continue
         logf = log / f"{Path(n).stem}.{s}.log"
-        lines = logf.read_text(errors="replace").splitlines() if logf.is_file() else []
+        lines = logf.read_text(errors="replace", encoding="utf-8").splitlines() if logf.is_file() else []
         said = [ln for ln in lines if ln.lstrip().startswith("FAIL")][:10]
         print(f"\n--- {n} ({s}): its failed checks, then its last lines ---")
         print("\n".join([*said, "  ...", *lines[-15:]]))
@@ -117,4 +118,8 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
+    from evaluation_harness._console import degrade_unencodable
+
+    degrade_unencodable()
     raise SystemExit(main())

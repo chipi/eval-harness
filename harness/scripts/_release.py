@@ -97,12 +97,14 @@ def _tracked(src: Path) -> set[str] | None:
             capture_output=True,
             text=True,
             check=True,
+            encoding="utf-8",
         ).stdout.strip()
         out = subprocess.run(
             ["git", "-C", top, "ls-files", "-z", "--", str(src.resolve().relative_to(Path(top).resolve()))],
             capture_output=True,
             text=True,
             check=True,
+            encoding="utf-8",
         ).stdout
     except (OSError, subprocess.CalledProcessError, ValueError):
         return None
@@ -621,4 +623,7 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    from evaluation_harness._console import degrade_unencodable
+
+    degrade_unencodable()
     raise SystemExit(main())

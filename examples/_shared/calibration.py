@@ -55,7 +55,7 @@ def verdict(measured: float, ci95: float, published: float, tolerance: float) ->
 def write(eval_slug: str, result: dict) -> Path:
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     path = OUT_DIR / f"{eval_slug}.json"
-    path.write_text(json.dumps(result, indent=2) + "\n")
+    path.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
     return path
 
 

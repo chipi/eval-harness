@@ -89,6 +89,9 @@ def to_sqlite(data: Path) -> None:
         capture_output=True,
         text=True,
         check=False,
+        # the child prints in its console's encoding: UTF-8 with replacement, never a crash here
+        encoding="utf-8",
+        errors="replace",
     )
     if done.returncode:
         _common.die(

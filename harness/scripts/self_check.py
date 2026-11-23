@@ -55,7 +55,16 @@ def main() -> int:
     results = []
 
     def step(label: str, cmd: list, cwd: Path, env: dict) -> bool:
-        r = subprocess.run(cmd, cwd=cwd, env=env, capture_output=True, text=True, timeout=900)
+        r = subprocess.run(
+            cmd,
+            cwd=cwd,
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=900,
+            encoding="utf-8",
+            errors="replace",
+        )
         out = r.stdout + r.stderr
         good = r.returncode == 0 and "Traceback" not in out
         results.append(good)
@@ -188,4 +197,7 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    from evaluation_harness._console import degrade_unencodable
+
+    degrade_unencodable()
     sys.exit(main())

@@ -48,4 +48,7 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    from evaluation_harness._console import degrade_unencodable
+
+    degrade_unencodable()
     raise SystemExit(main())

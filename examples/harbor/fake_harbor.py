@@ -118,7 +118,7 @@ def main(argv: list[str]) -> int:
     if mode in ("hang", "stubborn"):
         trial = job / f"{task}__hang001"
         trial.mkdir(parents=True)
-        (trial / "config.json").write_text("{}")
+        (trial / "config.json").write_text("{}", encoding="utf-8")
         child = subprocess.Popen(["sleep", "300"])
         if os.environ.get("FAKE_HARBOR_PIDS"):
             with open(os.environ["FAKE_HARBOR_PIDS"], "a", encoding="utf-8") as fh:

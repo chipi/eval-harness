@@ -511,7 +511,12 @@ def build_info() -> dict[str, Any]:
     def git(*args: str) -> str | None:
         try:
             out = subprocess.run(
-                ["git", *args], cwd=project_root(), capture_output=True, text=True, timeout=5
+                ["git", *args],
+                cwd=project_root(),
+                capture_output=True,
+                text=True,
+                timeout=5,
+                encoding="utf-8",
             )
             return out.stdout.strip() if out.returncode == 0 else None
         except (OSError, subprocess.SubprocessError):

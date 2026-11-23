@@ -86,11 +86,16 @@ def keep(job: Path, out: Path, scratch: str, renames: tuple[tuple[str, str], ...
         dst.parent.mkdir(parents=True, exist_ok=True)
         if src.suffix == ".json":
             dst.write_text(
-                json.dumps(scrub(json.loads(src.read_text()), scratch, renames), indent=4, sort_keys=True)
-                + "\n"
+                json.dumps(
+                    scrub(json.loads(src.read_text(encoding="utf-8")), scratch, renames),
+                    indent=4,
+                    sort_keys=True,
+                )
+                + "\n",
+                encoding="utf-8",
             )
         else:
-            dst.write_text(src.read_text().replace(scratch, JOBS))
+            dst.write_text(src.read_text(encoding="utf-8").replace(scratch, JOBS), encoding="utf-8")
         bad = problems(dst, scratch)
         if bad:
             raise SystemExit("refusing to record:\n  " + "\n  ".join(bad))
@@ -102,15 +107,20 @@ def record_timeout(root: Path, scratch: str) -> None:
     copy = Path(scratch) / "tasks" / "write-greeting"
     shutil.copytree(TASKS / "write-greeting", copy)
     (copy / "task.toml").write_text(
-        (copy / "task.toml").read_text().replace("[agent]\ntimeout_sec = 120.0", "[agent]\ntimeout_sec = 3.0")
+        (copy / "task.toml")
+        .read_text(encoding="utf-8")
+        .replace("[agent]\ntimeout_sec = 120.0", "[agent]\ntimeout_sec = 3.0"),
+        encoding="utf-8",
     )
-    (copy / "solution" / "solve.sh").write_text("#!/bin/bash\nsleep 30\necho hello > /app/greeting.txt\n")
+    (copy / "solution" / "solve.sh").write_text(
+        "#!/bin/bash\nsleep 30\necho hello > /app/greeting.txt\n", encoding="utf-8"
+    )
     cmd = [
         "harbor", "run", "-p", str(copy), "-a", "oracle", "-o", scratch,
         "--job-name", "timeout-write-greeting", "-n", "1", "-r", "0", "-q", "-y",
     ]  # fmt: skip
     print(" ".join(cmd))
-    r = subprocess.run(cmd, cwd=root, capture_output=True, text=True, check=False)
+    r = subprocess.run(cmd, cwd=root, capture_output=True, text=True, check=False, encoding="utf-8")
     if r.returncode:
         raise SystemExit(r.stdout + r.stderr)
     out = FIXTURES / "timeout-write-greeting"
@@ -128,18 +138,18 @@ def synthetic_exception(out: Path) -> None:
     src = FIXTURES / "oracle-write-greeting"
     shutil.rmtree(out, ignore_errors=True)
     shutil.copytree(src, out)
-    job_text = (out / "result.json").read_text()
+    job_text = (out / "result.json").read_text(encoding="utf-8")
     for trial in list(out.glob("*__*")):
         name = f"write-greeting__{EXCEPTION_ID}"  # a trial of its own: a capture's record ids are trial names
         job_text = job_text.replace(trial.name, name)
         trial = trial.rename(trial.parent / name)
-        result = json.loads((trial / "result.json").read_text())
+        result = json.loads((trial / "result.json").read_text(encoding="utf-8"))
         result["trial_name"] = name
         if isinstance(result.get("config"), dict):
             result["config"]["trial_name"] = name
-        cfg = json.loads((trial / "config.json").read_text())
+        cfg = json.loads((trial / "config.json").read_text(encoding="utf-8"))
         cfg["trial_name"] = name
-        (trial / "config.json").write_text(json.dumps(cfg, indent=4, sort_keys=True) + "\n")
+        (trial / "config.json").write_text(json.dumps(cfg, indent=4, sort_keys=True) + "\n", encoding="utf-8")
         result["verifier_result"] = None
         result["reward_valid"] = False
         result["exception_info"] = {
@@ -148,11 +158,13 @@ def synthetic_exception(out: Path) -> None:
             "exception_traceback": "(synthetic: the shape of harbor.models.trial.result.ExceptionInfo, edited in)",
             "occurred_at": result.get("finished_at"),
         }
-        (trial / "result.json").write_text(json.dumps(result, indent=4, sort_keys=True) + "\n")
+        (trial / "result.json").write_text(
+            json.dumps(result, indent=4, sort_keys=True) + "\n", encoding="utf-8"
+        )
         shutil.rmtree(trial / "verifier", ignore_errors=True)
     job = json.loads(job_text)
     job["n_errored_trials"] = 1  # the job's counts are not read; kept plausible
-    (out / "result.json").write_text(json.dumps(job, indent=4, sort_keys=True) + "\n")
+    (out / "result.json").write_text(json.dumps(job, indent=4, sort_keys=True) + "\n", encoding="utf-8")
 
 
 def main() -> int:
@@ -175,7 +187,9 @@ def main() -> int:
                     "--job-name", name, "-n", "1", "-r", "0", "-q", "-y",
                 ]  # fmt: skip
                 print(" ".join(cmd))
-                r = subprocess.run(cmd, cwd=root, capture_output=True, text=True, check=False)
+                r = subprocess.run(
+                    cmd, cwd=root, capture_output=True, text=True, check=False, encoding="utf-8"
+                )
                 if r.returncode:
                     print(r.stdout + r.stderr)
                     return r.returncode

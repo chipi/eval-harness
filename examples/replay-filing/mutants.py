@@ -32,7 +32,9 @@ MUTANTS = [
 
 
 def git(cwd: Path, *args: str) -> str:
-    return subprocess.run(["git", *args], cwd=cwd, capture_output=True, text=True, check=True).stdout.strip()
+    return subprocess.run(
+        ["git", *args], cwd=cwd, capture_output=True, text=True, check=True, encoding="utf-8"
+    ).stdout.strip()
 
 
 def mutate(system: Path, dest: Path, old: str, new: str) -> dict[str, str]:
@@ -46,7 +48,7 @@ def mutate(system: Path, dest: Path, old: str, new: str) -> dict[str, str]:
     out = {}
     for c in commits:
         text = git(system, "show", f"{c}:filing.py") + "\n"
-        (dest / "filing.py").write_text(text.replace(old, new))
+        (dest / "filing.py").write_text(text.replace(old, new), encoding="utf-8")
         git(dest, "add", "filing.py")
         git(dest, "commit", "-q", "--allow-empty", "-m", f"mutant of {c[:12]}")
         out[c] = git(dest, "rev-parse", "HEAD")
@@ -105,7 +107,7 @@ def main() -> int:
             args.production,
             "--json",
         ]
-        r = subprocess.run(cmd, capture_output=True, text=True, stdin=subprocess.DEVNULL)
+        r = subprocess.run(cmd, capture_output=True, text=True, stdin=subprocess.DEVNULL, encoding="utf-8")
         try:
             got = (json.loads(r.stdout).get("result") or {}).get("values", {}).get("faithfulness") or {}
         except ValueError:

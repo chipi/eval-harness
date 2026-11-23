@@ -30,10 +30,12 @@ from evaluation_harness._common import (
     no_options,
 )
 from evaluation_harness._common import system_now as _system_now
+from evaluation_harness._console import degrade_unencodable
 from evaluation_harness._runs import AmbiguousRuns, item_rows, read_metrics, runs_by_arm, runs_on
 from evaluation_harness.cost_report import billed_and_recorded
 from evaluation_harness.model import runs as _model_runs
 
+degrade_unencodable()
 _ARGS = no_options(__doc__, "--print-judge-figures")  # --help prints this; anything else is refused
 
 HERE = Path(__file__).resolve().parents[1] / "scripts"  # the core modules (this file is in tools/)
@@ -281,6 +283,7 @@ def _family_on(dataset_id, held, argv):
             capture_output=True,
             text=True,
             env=env,
+            encoding="utf-8",
         )
     return r.stdout if r.returncode == 0 else None
 
@@ -902,6 +905,7 @@ def _not_significant(leader, runs_dir, dataset_id, metric):
         ],
         capture_output=True,
         text=True,
+        encoding="utf-8",
     )
     if r.returncode != 0:
         return None
@@ -1155,6 +1159,7 @@ if "bert_mini" in _AG and "qwen_m" in _DB:
         ],
         capture_output=True,
         text=True,
+        encoding="utf-8",
     )
     _rows_f = [
         ln.split()
@@ -2342,6 +2347,7 @@ _ft = _subp.run(
     ],
     capture_output=True,
     text=True,
+    encoding="utf-8",
 )
 _tied_rows = [
     ln.split()
@@ -2380,6 +2386,7 @@ _bft = _subp.run(
     ],
     capture_output=True,
     text=True,
+    encoding="utf-8",
 )
 _bart = {
     ln.split()[0][3:-8]: (float(ln.split()[1]), ln.split()[-1], ln.split()[2])
@@ -2422,6 +2429,7 @@ for _u in ("unievalpub", "unieval"):
         ],
         capture_output=True,
         text=True,
+        encoding="utf-8",
     )
     _ue[_u] = {
         ln.split()[0][3:-8]: (float(ln.split()[1]), ln.split()[-1], ln.split()[2], _pf(ln.split()[-3]))
@@ -2766,6 +2774,7 @@ _rs = _subp.run(
     capture_output=True,
     text=True,
     cwd=str(HERE.parent),
+    encoding="utf-8",
 )
 _rs20 = [ln.split() for ln in _rs.stdout.splitlines() if ln.split()[:1] == ["20"]]
 check(

@@ -195,7 +195,11 @@ def tracked_arms() -> list[str]:
         tracked = {
             f.rsplit("/", 1)[0]
             for f in subprocess.run(
-                ["git", "ls-files", data_rel(RUNS)], cwd=ROOT, capture_output=True, text=True
+                ["git", "ls-files", data_rel(RUNS)],
+                cwd=ROOT,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
             ).stdout.split()
             if f.endswith("/metrics.json")
         }
@@ -673,7 +677,7 @@ def all_scores() -> list[tuple[str, Path, dict]]:
 def _tracked_files() -> list[str]:
     """Every file of data/runs git tracks, as paths from the project root."""
     return subprocess.run(
-        ["git", "ls-files", data_rel(RUNS)], cwd=ROOT, capture_output=True, text=True
+        ["git", "ls-files", data_rel(RUNS)], cwd=ROOT, capture_output=True, text=True, encoding="utf-8"
     ).stdout.split()
 
 
@@ -760,6 +764,7 @@ def v9_no_committed_evidence_is_missing() -> None:
         cwd=ROOT,
         capture_output=True,
         text=True,
+        encoding="utf-8",
     )
     tracked = listed.stdout.split()
     missing, incomplete = [], []
@@ -770,7 +775,7 @@ def v9_no_committed_evidence_is_missing() -> None:
     if listed.returncode != 0:
         no_repo = (
             subprocess.run(
-                ["git", "rev-parse", "--git-dir"], cwd=ROOT, capture_output=True, text=True
+                ["git", "rev-parse", "--git-dir"], cwd=ROOT, capture_output=True, text=True, encoding="utf-8"
             ).returncode
             != 0
         )
@@ -2377,6 +2382,7 @@ def note_uncommitted_runs() -> None:
             capture_output=True,
             text=True,
             timeout=60,
+            encoding="utf-8",
         )
     except (OSError, subprocess.SubprocessError):
         return

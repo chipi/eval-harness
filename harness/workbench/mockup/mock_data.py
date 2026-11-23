@@ -47,10 +47,13 @@ def table(lines: list[str], start: int) -> list[dict]:
     return rows
 
 
-goal = yaml.safe_load((D / "goals" / "news_summary_cnn.yaml").read_text())
+goal = yaml.safe_load((D / "goals" / "news_summary_cnn.yaml").read_text(encoding="utf-8"))
 measures = sorted(
     {
-        (yaml.safe_load(f.read_text()) or {}).get("success_criteria", {}).get("primary", {}).get("measure")
+        (yaml.safe_load(f.read_text(encoding="utf-8")) or {})
+        .get("success_criteria", {})
+        .get("primary", {})
+        .get("measure")
         for f in (D / "goals").glob("*.yaml")
         if f.name != "policy.yaml"
     }
@@ -59,9 +62,9 @@ measures = sorted(
 )
 datasets = []
 for f in sorted((D / "datasets").glob("*.json")):
-    doc = json.loads(f.read_text())
+    doc = json.loads(f.read_text(encoding="utf-8"))
     datasets.append({"id": doc.get("dataset_id", f.stem), "items": len(doc.get("items") or [])})
-rows = json.loads((D / "sources" / "cnn_dailymail_200.rows.json").read_text())
+rows = json.loads((D / "sources" / "cnn_dailymail_200.rows.json").read_text(encoding="utf-8"))
 first = sorted(rows["rows"].items(), key=lambda kv: kv[1]["row"])[:N_ITEMS]
 items = []
 for iid, r in first:
@@ -71,15 +74,15 @@ for iid, r in first:
         {
             "id": iid,
             "row": r["row"],
-            "article": art.read_text()[:600].replace("\n", " ") if art.is_file() else None,
-            "highlights": ref.read_text().replace("\n", " ") if ref.is_file() else None,
+            "article": art.read_text(encoding="utf-8")[:600].replace("\n", " ") if art.is_file() else None,
+            "highlights": ref.read_text(encoding="utf-8").replace("\n", " ") if ref.is_file() else None,
         }
     )
-prof = json.loads((D / "profiles" / "cnn_dailymail_200.json").read_text())
+prof = json.loads((D / "profiles" / "cnn_dailymail_200.json").read_text(encoding="utf-8"))
 words = prof["items"].get("words") or {}
 
 # the models, as `evh model-list` prints them
-mlines = (H / "build" / "models.txt").read_text().splitlines()
+mlines = (H / "build" / "models.txt").read_text(encoding="utf-8").splitlines()
 models = []
 for r in table(mlines, next(i for i, x in enumerate(mlines) if x.strip().startswith("model "))):
     rank = re.search(r"news_summary_cnn #(\d+) of (\d+)", r.get("best result", ""))
@@ -96,7 +99,7 @@ for r in table(mlines, next(i for i, x in enumerate(mlines) if x.strip().startsw
     )
 
 # the goal's arms on cnn_dailymail_200 (gold), as `evh goal-leaderboard news_summary_cnn` prints them
-glines = (H / "build" / "goal_cnn.txt").read_text().splitlines()
+glines = (H / "build" / "goal_cnn.txt").read_text(encoding="utf-8").splitlines()
 g0 = next(i for i, x in enumerate(glines) if "scored against gold/cnn_dailymail_200" in x)
 arm_rows = [r for r in table(glines, g0 + 1) if "retired" not in r["arm"]]
 rec = next(i for i, x in enumerate(glines) if x.strip().startswith("recommended:"))
@@ -114,10 +117,16 @@ arms = []
 for rank, r in enumerate(arm_rows, 1):
     cid = r["arm"].split(" ")[0]
     rd = run_dir(cid)
-    met = json.loads((rd / "metrics.json").read_text())
+    met = json.loads((rd / "metrics.json").read_text(encoding="utf-8"))
     p = met["params"]
-    outs = {o["item_id"]: o["text"] for o in map(json.loads, (rd / "outputs.jsonl").read_text().splitlines())}
-    preds = {o["item_id"]: o for o in map(json.loads, (rd / "predictions.jsonl").read_text().splitlines())}
+    outs = {
+        o["item_id"]: o["text"]
+        for o in map(json.loads, (rd / "outputs.jsonl").read_text(encoding="utf-8").splitlines())
+    }
+    preds = {
+        o["item_id"]: o
+        for o in map(json.loads, (rd / "predictions.jsonl").read_text(encoding="utf-8").splitlines())
+    }
     vs = r["vs leader (paired test)"]
     m = re.match(r"(-?[\d.]+), p ([<\d.]+), (.*)", vs)
     speed = re.match(r"p50 ([\d,.]+)", r["speed per item"])
@@ -160,7 +169,7 @@ for rank, r in enumerate(arm_rows, 1):
 
 rounds = []
 for f in sorted((D / "rounds" / "news_summary_cnn").glob("r*.yaml")):
-    rd = yaml.safe_load(f.read_text())
+    rd = yaml.safe_load(f.read_text(encoding="utf-8"))
     rounds.append(
         {
             "id": rd["round_id"],
@@ -180,8 +189,10 @@ home = []
 for f in sorted((D / "goals").glob("*.yaml")):
     if f.name == "policy.yaml":
         continue
-    gd = yaml.safe_load(f.read_text())
-    rs = [yaml.safe_load(x.read_text()) for x in sorted((D / "rounds" / f.stem).glob("r*.yaml"))]
+    gd = yaml.safe_load(f.read_text(encoding="utf-8"))
+    rs = [
+        yaml.safe_load(x.read_text(encoding="utf-8")) for x in sorted((D / "rounds" / f.stem).glob("r*.yaml"))
+    ]
     sc = gd.get("success_criteria") or {}
     home.append(
         {
@@ -196,7 +207,7 @@ for f in sorted((D / "goals").glob("*.yaml")):
             "open": [r["round_id"] for r in rs if r.get("status") == "open"],
             "last": rs[-1]["round_id"] if rs else None,
             "deployed": any(
-                '"capture": "' in (D / "datasets" / f"{x['dataset_id']}.json").read_text()
+                '"capture": "' in (D / "datasets" / f"{x['dataset_id']}.json").read_text(encoding="utf-8")
                 for x in gd.get("datasets") or []
                 if (D / "datasets" / f"{x['dataset_id']}.json").is_file()
             ),
@@ -206,7 +217,7 @@ for f in sorted((D / "goals").glob("*.yaml")):
 
 # W5: a model onboarded (pass) and one flagged (check), from their records
 def record(mid: str) -> dict:
-    r = yaml.safe_load((D / "models" / f"{mid}.yaml").read_text())
+    r = yaml.safe_load((D / "models" / f"{mid}.yaml").read_text(encoding="utf-8"))
     return {
         "id": r["model_id"],
         "name": r.get("name"),
@@ -245,7 +256,9 @@ for k, r in enumerate(table(glines, s0 + 1), 1):
             "p": m.group(2) if m else None,
         }
     )
-sman = json.loads((D / "references" / "silver" / "cnn_dailymail_200" / "manifest.json").read_text())
+sman = json.loads(
+    (D / "references" / "silver" / "cnn_dailymail_200" / "manifest.json").read_text(encoding="utf-8")
+)
 silver = {
     "rows": silver_rows,
     "authored_by": sman["authored_by"].removeprefix("cnn_").removesuffix("_n200_v1"),
@@ -255,10 +268,12 @@ silver = {
 }
 
 # W7: the judge scorer and its validations
-js = yaml.safe_load((D / "scorers" / "judge-summ-v2.yaml").read_text())
+js = yaml.safe_load((D / "scorers" / "judge-summ-v2.yaml").read_text(encoding="utf-8"))
 jv = {}
 for src in ("goyal2022-cnn",):
-    rep = json.loads((D / "judge-validation" / "judge-summ-v2" / src / "report.json").read_text())
+    rep = json.loads(
+        (D / "judge-validation" / "judge-summ-v2" / src / "report.json").read_text(encoding="utf-8")
+    )
     jv[src] = {
         "source": rep["source"],
         "articles": rep["articles"],
@@ -290,8 +305,8 @@ judge = {
 }
 
 # W3: production on the deployed triage goal
-cap = json.loads((D / "captures" / "orrery_2026_10_v2" / "capture.json").read_text())
-tlines = (H / "build" / "goal_triage.txt").read_text().splitlines()
+cap = json.loads((D / "captures" / "orrery_2026_10_v2" / "capture.json").read_text(encoding="utf-8"))
+tlines = (H / "build" / "goal_triage.txt").read_text(encoding="utf-8").splitlines()
 t0 = next(i for i, x in enumerate(tlines) if "scored against gold/orrery_triage_v1_labelled_v2" in x)
 triage_rows = [
     {
@@ -317,7 +332,7 @@ production = {
 }
 
 # W2: the failure modes proposed from the CNN adapter's own format checks
-src = (EX / "adapter.py").read_text()
+src = (EX / "adapter.py").read_text(encoding="utf-8")
 modes = []
 for key in (
     "fmt_narration",
@@ -333,11 +348,11 @@ for key in (
     modes.append({"id": key.removeprefix("fmt_"), "description": text})
 
 # the other sources as they answered (workbench/read_sources.py)
-sources = json.loads((H / "build" / "source_previews.json").read_text())
+sources = json.loads((H / "build" / "source_previews.json").read_text(encoding="utf-8"))
 
 # a round's own runs: the local arms re-run on one Linux machine, and the paired test against bart_l re-run there
 pairs, cur = {}, None
-for line in (H / "build" / "pair_linux.txt").read_text().splitlines():
+for line in (H / "build" / "pair_linux.txt").read_text(encoding="utf-8").splitlines():
     if line.startswith("== "):
         cur = line[3:].strip()
     elif cur and "delta (A - B)" in line:
@@ -346,9 +361,10 @@ for line in (H / "build" / "pair_linux.txt").read_text().splitlines():
         pairs.setdefault(cur, {})["p"] = line.split("sign-flip p")[1].split("(")[0].strip()
 reruns = {}
 for rd in sorted((D / "runs-linux").glob("cnn_*")):
-    met = json.loads((rd / "metrics.json").read_text())
+    met = json.loads((rd / "metrics.json").read_text(encoding="utf-8"))
     lat = sorted(
-        o.get("latency_ms") or 0 for o in map(json.loads, (rd / "predictions.jsonl").read_text().splitlines())
+        o.get("latency_ms") or 0
+        for o in map(json.loads, (rd / "predictions.jsonl").read_text(encoding="utf-8").splitlines())
     )
     reruns[met["config_id"]] = {
         "run_id": met["run_id"],
@@ -380,24 +396,28 @@ sheet = (H / "build" / "label_sheet_cnn200.csv").read_text(encoding="utf-8-sig")
 
 def r5(name: str) -> dict:
     """A round-5 input's values (a command's --json answer, saved by round5_inputs.py)."""
-    doc = json.loads((H / "build" / "round5" / f"{name}.json").read_text())
+    doc = json.loads((H / "build" / "round5" / f"{name}.json").read_text(encoding="utf-8"))
     return (doc.get("result") or {}).get("values") or doc
 
 
 def r5_lines(name: str) -> list[str]:
-    doc = json.loads((H / "build" / "round5" / f"{name}.json").read_text())
+    doc = json.loads((H / "build" / "round5" / f"{name}.json").read_text(encoding="utf-8"))
     return [x for b in (doc.get("result") or {}).get("blocks") or [] for x in b.get("lines") or []]
 
 
-replay_runs = json.loads((H / "build" / "round5" / "replay_runs.json").read_text())
-label_doc = json.loads((H / "build" / "round5" / "label_set_doc.json").read_text())
+replay_runs = json.loads((H / "build" / "round5" / "replay_runs.json").read_text(encoding="utf-8"))
+label_doc = json.loads((H / "build" / "round5" / "label_set_doc.json").read_text(encoding="utf-8"))
 code_rows = [
     row
-    for b in json.loads((H / "build" / "round5" / "models_code.json").read_text())["result"]["blocks"]
+    for b in json.loads((H / "build" / "round5" / "models_code.json").read_text(encoding="utf-8"))["result"][
+        "blocks"
+    ]
     for row in b.get("rows") or []
     if row.get("kind") == "code"
 ]
-this_baselines = json.loads((H / "build" / "round5" / "baselines.json").read_text())["baselines"]
+this_baselines = json.loads((H / "build" / "round5" / "baselines.json").read_text(encoding="utf-8"))[
+    "baselines"
+]
 cnn_base = next((b for b in this_baselines if b.get("goal") == "news_summary_cnn"), None)
 round5 = {
     "baseline": {
@@ -489,9 +509,13 @@ out = {
     "source": rows["source"]
     | {
         "rows": len(rows["rows"]),
-        "licence": json.loads((D / "datasets" / "cnn_dailymail_200.json").read_text()).get("licence"),
+        "licence": json.loads((D / "datasets" / "cnn_dailymail_200.json").read_text(encoding="utf-8")).get(
+            "licence"
+        ),
         "split_rows": json.loads(
-            (H.parent / "docs" / "evidence" / "calibration" / "summarization.json").read_text()
+            (H.parent / "docs" / "evidence" / "calibration" / "summarization.json").read_text(
+                encoding="utf-8"
+            )
         )["split_rows"],
     },
     "items": items,
@@ -507,7 +531,7 @@ out = {
         "histogram": words.get("histogram") or [],
     },
     "models": models,
-    "prompt": (EX / "prompt.txt").read_text().strip(),
+    "prompt": (EX / "prompt.txt").read_text(encoding="utf-8").strip(),
     "arms": arms,
     "rounds": rounds,
     "answer": answer,

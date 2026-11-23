@@ -129,7 +129,9 @@ class Tracker:
 
 def git(cwd: Path, *args: str) -> str:
     env = dict(os.environ, GIT_AUTHOR_DATE="2026-10-01T00:00:00Z", GIT_COMMITTER_DATE="2026-10-01T00:00:00Z")
-    r = subprocess.run(["git", *args], cwd=cwd, capture_output=True, text=True, env=env, check=True)
+    r = subprocess.run(
+        ["git", *args], cwd=cwd, capture_output=True, text=True, env=env, check=True, encoding="utf-8"
+    )
     return r.stdout.strip()
 
 
@@ -224,10 +226,10 @@ def main() -> int:
     actions, stray = production_actions.actions(decisions, issues)
     (out / "frozen").mkdir(exist_ok=True)
     (out / "frozen" / "decisions.jsonl").write_text(
-        "".join(json.dumps(d, sort_keys=True) + "\n" for d in decisions)
+        "".join(json.dumps(d, sort_keys=True) + "\n" for d in decisions), encoding="utf-8"
     )
     (out / "frozen" / "issues.jsonl").write_text(
-        "".join(json.dumps(i, sort_keys=True) + "\n" for i in issues)
+        "".join(json.dumps(i, sort_keys=True) + "\n" for i in issues), encoding="utf-8"
     )
     rows = [
         {
@@ -241,12 +243,16 @@ def main() -> int:
         }
         for d in decisions
     ]
-    (out / "rows.jsonl").write_text("".join(json.dumps(r, sort_keys=True) + "\n" for r in rows))
+    (out / "rows.jsonl").write_text(
+        "".join(json.dumps(r, sort_keys=True) + "\n" for r in rows), encoding="utf-8"
+    )
     gold = out / "gold"
     shutil.rmtree(gold, ignore_errors=True)
     gold.mkdir()
     for d in decisions:
-        (gold / f"{d['id']}.txt").write_text(GOLD_FIXES.get(d["id"], actions[d["id"]]) + "\n")
+        (gold / f"{d['id']}.txt").write_text(
+            GOLD_FIXES.get(d["id"], actions[d["id"]]) + "\n", encoding="utf-8"
+        )
     print(
         f"made {out}: {len(commits)} commits, {len(decisions)} decisions, {len(issues)} issues, {len(stray)} stray write(s)"
     )

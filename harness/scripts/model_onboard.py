@@ -248,7 +248,10 @@ def body(**inputs: Any) -> int:
         ]
         from evaluation_harness import _spend  # noqa: PLC0415
 
-        out, _paid = _spend.run_child(cmd, capture_output=True, text=True)  # given what is left of the cap
+        # a child prints in its console's encoding: UTF-8 with replacement, never a crash
+        out, _paid = _spend.run_child(
+            cmd, capture_output=True, text=True, encoding="utf-8", errors="replace"
+        )  # given what is left of the cap
         print(out.stdout.rstrip())
         flags = [ln.strip()[2:] for ln in out.stdout.splitlines() if ln.startswith("  - ")]
         report = {"via_arm": args.system, "smoke": out.stdout[-4000:]}
