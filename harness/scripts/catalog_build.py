@@ -27,7 +27,17 @@ from urllib.parse import quote
 
 HERE = Path(__file__).resolve().parent
 
-from evaluation_harness import _common, _exposure, _fields, _jsonout, _looks, _store, _study, _visibility  # noqa: E402
+from evaluation_harness import (  # noqa: E402
+    _common,
+    _exposure,
+    _fields,
+    _jsonout,
+    _looks,
+    _models,
+    _store,
+    _study,
+    _visibility,
+)
 from evaluation_harness._common import ROOT, die  # noqa: E402
 from evaluation_harness.axes import (  # noqa: E402
     STRATEGIES,
@@ -4921,6 +4931,7 @@ class Site:
         self._pages: dict[str, str] = {}
         self._rendered: set[str] = set()
         self._decisions: dict = {}  # this state's group decisions, made once for every page that shows them
+        self._records: dict = {}  # this state's model records, read once for every page that shows them
 
     def groups(self) -> list[str]:
         """Every group, in the order a build has always written them."""
@@ -4963,7 +4974,7 @@ class Site:
                 self.scorer_pages,
             )
             try:
-                with goal_views.decisions_kept(self._decisions):
+                with goal_views.decisions_kept(self._decisions), _models.records_kept(self._records):
                     self._call(group)
                 pages = _RENDER.pages
             finally:

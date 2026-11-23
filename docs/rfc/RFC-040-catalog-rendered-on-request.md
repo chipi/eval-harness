@@ -203,37 +203,46 @@ what makes a served page the exported file. `render_goals` lost its goal pages t
   built first; health says `catalog: {mode: "on request", state: idle|failed, built_at, prepared, failed}`.
 - `stats` collected a page's tests on a module-wide stack: on a server, a page rendered on another thread could take
   a stand-in p of 1.0. The stack is per thread (`test_stats_threads.py`, failing before the fix).
+- The model records (`_models.records_kept`), held by a Site while it renders like the decisions: each goal page's
+  deploy sheet looked its model up by alias, which read and parsed every record (0.5 s a page here, 16 reads of one
+  record in one model). Now each record is read once per state, each caller getting its own copy.
+- The chart labels' collision check (`catalog_charts._crossed`, 36,180 calls over the goal pages) skips a line
+  segment whose box misses the label's: the same answer for every input, cheaper. No chart is drawn twice for one
+  state (counted), so the charts are not memoized: there is nothing to keep.
+- A request that comes while the pages are rendered ahead waits for the render under way only: the renders' lock goes
+  to it between two pages (`test_catalog_warm.py`, with renders that keep the interpreter busy).
 
 **Measured (this repository, files store, p-values cached, 2026-11-23).**
 
 | | before | after |
 | --- | --- | --- |
-| `evh catalog` | 13 s | 11 s (the memo) |
+| `evh catalog` | 13 s | 8 s (the memos) |
 | its 1,917 files | | identical, but for the footer's time (compared file by file with a build of the code before) |
-| the model, on the first page after a change | (a 13 s rebuild job) | 2.3 s |
+| the model, on the first page after a change | (a 13 s rebuild job) | 2.3-2.6 s |
 | home page | | 0.29 s |
-| a goal page | | 0.38-1.25 s (0.53-1.93 s without the memo); rendered ahead after a change |
+| a goal page | | 0.25-0.84 s (0.45-1.26 s before the records memo and the collision check; 0.53-1.93 s without the decisions memo); rendered ahead after a change |
 | goals page, an arm page, datasets page | | 0.02 s, under 0.01 s, 0.02 s |
 
 **Tests.** `test_catalog_render.py` (tests 1, 2 and 4 in a tutorial project, both stores, 13 checks),
 `test_catalog_render_real.py` (this repository: all 1,906 pages rendered on their own in a shuffled order equal the
-export, each one's group the one its path names), `test_catalog_fresh.py` rewritten for test 3 (39 checks, both
+export, each one's group the one its path names, each model record read once), `test_catalog_fresh.py` rewritten for test 3 (39 checks, both
 stores: a write on the next page, no `catalog` job in any of it, many reads during writes each one whole page of one
 state, a burst of requests after a change preparing one model, a failed render answering 500 and recovering, a page
 gone under new data answering 404, HEAD, the address without its slash, `--brand` on a served page),
-`test_stats_threads.py` (two threads collecting tests at once each get their own p).
+`test_stats_threads.py` (two threads collecting tests at once each get their own p), `test_catalog_warm.py` (a request
+during the rendering ahead waits for one render at most; every page still rendered ahead).
+
+A review's finding that `goal_views._KEPT` could be dropped by one thread while another read it does not hold: it is
+`threading.local()`, so each thread has its own, and renders take `_RENDER_LOCK`.
 
 ## Not covered
 
-- Pages are rendered one at a time per process: a request waits behind another's render, at most a goal page (1.25 s
-  here). Not measured under concurrent load beyond the fresh test's six readers.
+- Pages are rendered one at a time per process: a request for a page not yet rendered waits for the render under way,
+  at most a goal page (0.84 s here). A page already rendered is served without the lock. Not measured under concurrent
+  load beyond the fresh test's six readers.
 - The day in the cache's key is the server's local date, as `date.today()` is in the models page.
-- The deployment (`--public`) is unchanged: it serves the export from nginx. The homelab's compose file
-  (`infra/fleet-evals/docker-compose.yml`) also builds a static catalog for nginx; the server's page options are for a
-  live server there, which is not set up.
-- A review found that `goal_views._KEPT`, the decisions memo, could be read by one thread while another Site's render
-  dropped it. It did not reproduce (renders take `_RENDER_LOCK`, and the memo is per thread); a check is kept as a
-  guard, and the race is not claimed fixed.
-- `catalog_charts.py` was read only through the profile; the charts are not memoized.
+- The deployment (`--public`) is unchanged: it serves the export from nginx. The homelab (`agentic-ai-homelab`,
+  `infra/fleet-evals`) builds a static catalog from a read-only copy of its data and rebuilds it when the data is
+  updated, so its pages are never behind its data: nothing there writes in place.
 - The measurements are from one repository on one machine; the per-page times on a project with more goals or rounds
   are not known.

@@ -1139,6 +1139,10 @@ def test_example_scorer_suites_pass() -> None:
             "the catalog never goes stale: each page rendered when asked for, a write on the next read, no rebuild job",
         ),
         (
+            "test_catalog_warm.py",
+            "the slowest pages rendered ahead after a change: a reader waits for at most the one render under way",
+        ),
+        (
             "test_catalog_render.py",
             "one renderer, two drivers (RFC-040): every page rendered on its own is the exported file, on threads too",
         ),

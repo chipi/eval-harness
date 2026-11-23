@@ -15,11 +15,12 @@ import shutil
 import sys
 import tempfile
 import time
+from collections import Counter
 from pathlib import Path
 
 HARNESS = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(HARNESS))
-from evaluation_harness import _common  # noqa: E402
+from evaluation_harness import _common, _models  # noqa: E402
 from evaluation_harness import catalog_build as cb  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 from evaluation_harness.catalog_adapter import load_catalog_adapter  # noqa: E402
@@ -58,13 +59,30 @@ try:
 
     order = sorted(exported)
     random.Random(40).shuffle(order)
+    reads: Counter = Counter()
+    read = _models._read
+
+    def counted(f: Path):
+        reads[Path(f).as_posix()] += 1
+        return read(f)
+
+    _models._read = counted
     t = time.monotonic()
-    differ = [p for p in order if fresh.page(p) != exported[p]]
+    try:
+        differ = [p for p in order if fresh.page(p) != exported[p]]
+    finally:
+        _models._read = read
     served_s = time.monotonic() - t
     check(
         f"every page rendered on its own, in a shuffled order, is the exported file ({served_s:.0f} s)",
         not differ,
         differ[:5],
+    )
+    again = sorted(f for f, n in reads.items() if n > 1)
+    check(
+        "a model's record is read once per model of the data, not once per page that shows it (a goal's deploy sheet)",
+        bool(reads) and not again,
+        (len(reads), again[:3], max(reads.values(), default=0)),
     )
     check("an arm that is not there is no page", fresh.page("a/no-such-arm.html") is None)
 finally:
