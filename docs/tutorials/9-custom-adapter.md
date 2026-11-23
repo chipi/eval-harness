@@ -203,11 +203,14 @@ evh metric-show words_out
 words in the headline
 better       lower
 kind         quality: measured against a reference or by a judge
-decides      headline_short
+decides      goal headline_short (its primary measure)
+weighed as an axis by  no goal
 ```
 
 The sentence is the adapter's `METRIC_DESCRIPTIONS`, the direction is the goal's and the kind is `METRIC_KINDS`'s: the
 metrics page of the catalog (`.build/catalog/m/words_out.html`) shows the same.
+`decides` names the goals whose primary measure it is. `weighed as an axis by` names the goals that take it as one of
+their other axes (cost, speed or their own), so a measure that a goal decides on has none: that is not a contradiction.
 
 ## 7 · A call that has an effect
 

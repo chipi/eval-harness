@@ -551,9 +551,9 @@ def print_metrics(d: dict) -> None:
         )
         print("    recorded on: " + ", ".join(f"{ds} ({n} arms)" for ds, n in sorted(m["datasets"].items())))
         if m["decides"]:
-            print("    decides: " + ", ".join(m["decides"]))
+            print("    decides: " + cb.decides_phrase(m["decides"]))
         if m["weighs"]:
-            print("    weighed by: " + ", ".join(m["weighs"]))
+            print(f"    {cb.WEIGHED_LABEL}: " + ", ".join(m["weighs"]))
         if m["period"]:
             p = m["period"]
             print(
@@ -570,8 +570,8 @@ def print_metric(d: dict) -> None:
             print(textwrap.fill(text, width=96, initial_indent="  ", subsequent_indent="  ") + "\n")
     print(f"  better       {d['better']}")
     print(f"  kind         {d['kind']}")
-    print("  decides      " + (", ".join(d["decides"]) or "no goal"))
-    print("  weighed by   " + (", ".join(d["weighs"]) or "no goal"))
+    print("  decides      " + cb.decides_phrase(d["decides"]))
+    print(f"  {cb.WEIGHED_LABEL}  " + (", ".join(d["weighs"]) or "no goal"))
     for ds in d["datasets"]:
         print(f"\non {ds['dataset']}:")
         _table(

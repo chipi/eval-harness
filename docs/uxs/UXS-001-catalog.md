@@ -571,8 +571,9 @@ over the project's data; with a project adapter the rounds table and details sti
   it to the adapter's `METRIC_DESCRIPTIONS`"; the adapter as it is today, over what the runs
   recorded), **better** (lower, higher, or "neutral: a description" when every dataset that
   records it declares it descriptive), **recorded on** (each dataset, linked, with its arm count), **decides · weighs** (the
-  goals whose primary measure it is; then, muted, "weighed by" and the goals that weigh it as an
-  axis: cost, speed or their own), **arms recording it in period** (with its trend and line).
+  goals whose primary measure it is; then, muted, "weighed as an axis by" and the goals that take it
+  as an axis: cost, speed or their own; a measure that one goal decides on is weighed by none, and the words say
+  so), **arms recording it in period** (with its trend and line).
   Filterable.
 - Command: `evh metric-list [--dataset <id>] [--period P]`.
 
@@ -844,8 +845,8 @@ carries a judge's reply, a verdict or an item's text.
   reference", "speed: how long an item took, by the clock; needs no reference", descriptive, or
   quality; a metric declared quality on some datasets and descriptive on others is a quality
   that names the others, "quality: … (descriptive on summeval_100)", and each dataset's tables
-  read it by that dataset's declaration), **decides** (the goals whose primary measure it is), **weighed by** (the goals that
-  weigh it as an axis), **recorded on** (its datasets). A cost in USD is shown to six places
+  read it by that dataset's declaration), **decides** (the goals whose primary measure it is), **weighed as an axis by** (the goals that
+  take it as an axis; "no goal" beside a **decides** goal is not a contradiction), **recorded on** (its datasets). A cost in USD is shown to six places
   ($0.000012) in its tables, here and on the arm page.
 - `01 what it measures, and how`: the one-line summary, then the longer explanation: the
   project's `METRIC_DESCRIPTIONS` `details`, else the harness's own for its metrics. A project
