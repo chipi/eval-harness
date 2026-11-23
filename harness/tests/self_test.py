@@ -1111,6 +1111,10 @@ def test_example_scorer_suites_pass() -> None:
             "a ratio or a correlation nobody could work out is a dash, never nan or inf; a nan or an infinity only where a source check lists it",
         ),
         (
+            "test_leaderboard_prose_measure.py",
+            "a goal whose measure no arm records does not stop a dataset being ranked: evh leaderboard reads each arm on its own headline and says so; --goal refuses, saying what the arms record; the goal's own views say why they are empty",
+        ),
+        (
             "test_public_gate.py",
             "whether a call is public is one function: an in-process public call is refused an item's text, an unreadable dataset is hidden",
         ),

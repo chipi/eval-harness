@@ -690,6 +690,18 @@ def _run(args: argparse.Namespace) -> int:
     A = scores_once(load_catalog_adapter(None))
     goal, keep = _goal_read(args, A)
     by_ds = goal_views.by_dataset(A, {ds})
+    # A goal that nobody asked for and whose measure no arm records (V14 warns: a prose name for the metric) is not a
+    # reason to refuse the dataset: it is read as when no goal names it, on each arm's own headline, and says so first.
+    seen = goal_views.unrecorded(goal, by_ds, ds) if goal else None
+    note = None
+    if goal and seen is not None and not args.goal and not args.round:
+        measure = goal["success_criteria"]["primary"]["measure"]
+        note = (
+            f"goal {goal['goal_id']} reads {measure!r} on {ds}, which no arm here records (the arms record "
+            f"{', '.join(seen)}); each arm is read on its own headline. `evh validate` warns about it (V14)."
+        )
+        print(f"  NOTE: {note}")
+        goal, seen = None, None
     # ONE TABLE PER REFERENCE. Runs scored against silver and against gold were averaged into
     # one row and one ranking (0.90 silver beside 0.24 gold, the table labelled silver): two
     # different measurements read as one. Each reference gets its own table and its own tests;
@@ -711,6 +723,12 @@ def _run(args: argparse.Namespace) -> int:
         die(
             (
                 f"no arm on dataset {ds!r} records {measure}, which goal {goal['goal_id']} reads"
+                + (
+                    f"; the arms record {', '.join(seen)}.\n  Read the dataset without the goal: evh leaderboard {ds} "
+                    "(no --goal or --round); `evh validate` warns about the goal's measure (V14)"
+                    if seen is not None
+                    else ""
+                )
                 if goal and arms and args.label is None and not args.match and keep is None
                 else f"no runs on dataset {ds!r}"
                 + (f" matching {args.match!r}" if args.match else "")
@@ -743,7 +761,9 @@ def _run(args: argparse.Namespace) -> int:
                 **_table(args, A, groups[key], goal),
             }
         )
-    _jsonout.values({"dataset_id": ds, "goal": goal["goal_id"] if goal else None, "groups": out})
+    _jsonout.values(
+        {"dataset_id": ds, "goal": goal["goal_id"] if goal else None, "note": note, "groups": out}
+    )
     return 0
 
 
