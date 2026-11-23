@@ -33,7 +33,7 @@ from pathlib import Path
 from typing import Any
 
 from evaluation_harness import _models
-from evaluation_harness._common import DATA, EXIT_PROBLEMS, die, now
+from evaluation_harness._common import DATA, EXIT_PROBLEMS, die, now, today
 from evaluation_harness.ops import legacy
 
 PROBE = (
@@ -210,7 +210,7 @@ def body(**inputs: Any) -> int:
             # its history keeps the one it replaced.
             rec.setdefault("history", []).append(
                 {
-                    "at": now()[:10],
+                    "at": today().isoformat(),
                     "what": f"deployment {dep['id']}: digest",
                     "from": dep["digest"],
                     "to": found,

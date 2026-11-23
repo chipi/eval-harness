@@ -139,11 +139,11 @@ def item(params: dict) -> dict:
     # can quote its input (an extractive arm returns the article's own sentences) and a reference
     # can be a dataset's licensed text, so a public server serves numbers unless the deployment
     # has decided to publish them. The local inspector shows everything, on this machine.
-    published = LIMITS.get("publish") or ()
+    published = _visibility.published()
     dataset = alone or A.describe(A.arms_of(arms[0])[0]).get("dataset", "")
     if not _visibility.text_shown(dataset, public=public):
         # `text: hidden` (RFC-019): nothing that comes from this dataset's text, whatever is published.
-        published = ()
+        published = frozenset()
     if not public or "outputs" in published:
         from evaluation_harness import _exposure  # noqa: PLC0415
 
@@ -417,7 +417,7 @@ def answer(path: str, query: str) -> tuple:
             )
             code = 400 if "error" in body else 200
         except Exception as exc:  # noqa: BLE001 — report, don't kill the server
-            body = {"error": "internal error" if LIMITS["hosts"] else f"{type(exc).__name__}: {exc}"}
+            body = {"error": "internal error" if _visibility.public() else f"{type(exc).__name__}: {exc}"}
             code = 500
     data = json.dumps(body).encode()
     _keep(key, code, data)

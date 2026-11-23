@@ -1114,6 +1114,10 @@ def test_example_scorer_suites_pass() -> None:
             "a spending cap's three meanings printed one way: no command formats a cap or asks its truth itself",
         ),
         (
+            "test_one_source.py",
+            "no reader works out which way is better, which runs make an arm, an unknown cost, the public gate, the day or a goal's baseline itself: each is asked of its owner, and each check bites on a probe",
+        ),
+        (
             "test_reader_agreement.py",
             "every reader says the same of a fact (CLI, API, MCP, catalog export, inspector) on the tutorial and three look-alikes of the beta projects; a reader that works one out itself is caught",
         ),

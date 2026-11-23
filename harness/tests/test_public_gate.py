@@ -156,6 +156,29 @@ try:
         and _visibility.text_shown(None, public=True) is True,
         None,
     )
+
+    # ── an error's text is not served to a public call either ────────────────────────────────────────────────────
+    def boom(_params: dict) -> dict:
+        raise RuntimeError("secret path /srv/data/x")
+
+    real_compare = cs.compare
+    cs.compare = boom  # type: ignore[assignment]
+    try:
+        cs.cache_clear()
+        local_err = json.loads(cs.answer("/api/compare", "a=1")[1])["error"]
+        os.environ["EVH_PUBLIC"] = "1"
+        cs.cache_clear()
+        public_err = json.loads(cs.answer("/api/compare", "a=1")[1])["error"]
+    finally:
+        os.environ.pop("EVH_PUBLIC", None)
+        cs.compare = real_compare
+        cs.cache_clear()
+    check("locally an API error names its exception", "secret path" in local_err, local_err)
+    check(
+        "an in-process public call (EVH_PUBLIC, no hosts) is told only 'internal error', as a server with hosts is",
+        public_err == "internal error",
+        public_err,
+    )
 finally:
     shutil.rmtree(tmp, ignore_errors=True)
 

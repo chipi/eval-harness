@@ -50,6 +50,14 @@ check(
     proj,
 )
 
+free = arm_smoke.projection([{"s": 6.0, "cost_usd": 0.0}, {"s": 12.0, "cost_usd": 0.0}], 65)
+unpriced = arm_smoke.projection([{"s": 6.0, "cost_usd": None}, {"s": 12.0}], 65)
+check(
+    "projection: a cost of $0 is $0, and a cost nobody recorded is unknown, not $0 (RFC-041 F3)",
+    free.get("usd") == 0.0 and "usd" in unpriced and unpriced["usd"] is None,
+    (free, unpriced),
+)
+
 # the flags
 clean_items = [{"s": 5.0, "output_chars": 300, "scored": True, "deterministic": True}]
 clean_calls = [
