@@ -12,16 +12,21 @@ that can move a result is never a patch release without saying so under **Change
 
 ## 0.8.1 — unreleased
 
-`evh runs-list` showed a run whose tree was never checked as if it were clean. No result moves.
+What 0.8.0 left open. No result moves: no scorer, statistic, fingerprint or data format changed.
 
-### Fixed
+- **Added:** the Workbench, read-only, for visitors to a deployment
+  ([RFC-039](https://github.com/chipi/eval-harness/blob/main/docs/rfc/RFC-039-workbench-read-only-for-visitors.md)):
+  the reads the public MCP server answers, under the same text rules; everything that writes, spends or runs a model is
+  refused at the server. And where the judge disagrees with the gold, per item, in the inspector and the sheet
+  (`--judge-disagrees`).
+- **Changed:** `evh runs-list` marks a run whose tree was never checked `?`, and `--json` says `dirty: null` for it,
+  not `false`: read null as "unknown". The inspector names arms by one rule everywhere; a scatter's names never cover a
+  dot or another name; "See the cost first" shows each arm's estimate and the cap the Workbench sends.
+- **Fixed:** the examples' `/rows` check retries a 5xx, not a 4xx; an interrupted `make site` leaves the site as it was.
+- **The repository:** a merge to main no longer deploys (`make deploy-dry`, then `make deploy`); a release's section
+  here is short and links its full notes; the browser tests use one bundled font and wait on state, not time.
 
-- **`evh runs-list` tells an unknown tree from a clean one.** A run made with `EVAL_BUILD_REF` set records
-  `build.dirty: null` (the tree was never looked at), and `runs-list` turned that into `false`: the text table marked it
-  like a clean run and `--json` said `dirty: false`. The table now marks it `?` after the build ref, with a legend line
-  when a row has it, and `--json` carries `dirty: true | false | null`. A run brought in by `evh import-run` (which records `dirty: null`) and a record with no `build` at all are unknown too
-  (it raised a `KeyError` before). Anything that read `dirty` from `runs-list --json` as a boolean should treat null as
-  "unknown".
+The full notes are in [docs/releases/0.8.1.md](https://github.com/chipi/eval-harness/blob/main/docs/releases/0.8.1.md).
 
 ## 0.8.0 — 2026-11-22
 
