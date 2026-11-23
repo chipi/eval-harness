@@ -39,10 +39,11 @@ from evaluation_harness._common import (
 from evaluation_harness._record import derived_with
 from evaluation_harness._runs import (
     AMBIGUOUS_HOW,
+    better_word,
     deciding_metric,
     mixed_versions,
     per_item,
-    ranks_lower,
+    ranks_direction,
     runs_on,
 )
 from evaluation_harness.model.runs import is_set
@@ -867,7 +868,8 @@ def _table(args: argparse.Namespace, A, group: dict, goal: dict | None) -> dict:
         or primary
         or (quality[0] if quality else (descriptive[0] if descriptive else all_keys[0]))
     )
-    asc = ranks_lower(found, sort_key, args.asc, args.desc)
+    which = ranks_direction(found, sort_key, args.asc, args.desc)
+    asc = which == "lower"
     # SAY SO when the headline metric was picked alphabetically. Runs written before
     # adapters declared PRIMARY_METRIC carry none, so this falls through to whichever
     # quality metric sorts first by name -- for one set of runs here that is `grounding`,
@@ -928,7 +930,8 @@ def _table(args: argparse.Namespace, A, group: dict, goal: dict | None) -> dict:
             text_cols, split = tighter, True
     own = {n: view[n]["reference"] for n in by_config if view[n]["wrote"]}
     w = max(len(r["system_id"]) + (2 if r["system_id"] in own else 0) for r in rows) + 2
-    print(f"dataset: {args.dataset_id}   ranked by: {sort_key} ({'lower' if asc else 'higher'} is better)\n")
+    better = better_word(which) if which == "neutral" else f"{which} is better"
+    print(f"dataset: {args.dataset_id}   ranked by: {sort_key} ({better})\n")
     if not _jsonout.table(
         ["system_id", "n_runs", "tier", *show],
         [[r["system_id"], r["n_runs"], r["tier"], *[r.get(k) for k in show]] for r in rows],
@@ -1064,7 +1067,7 @@ def _table(args: argparse.Namespace, A, group: dict, goal: dict | None) -> dict:
         )
     return {
         "sort_by": sort_key,
-        "direction": "lower" if asc else "higher",
+        "direction": which,
         "ranked_on_descriptive": ranking_on_descriptive,
         "metrics": show,
         "kinds": {k: kinds.get(k) for k in show},

@@ -393,17 +393,23 @@ def lower_is_better_on(runs: Iterable[Run], metric: str, goals: dict | None = No
     return direction(metric, runs=runs, goals=goals) == "lower"
 
 
-def ranks_lower(runs: Iterable[Run], metric: str, asc: bool = False, desc: bool = False) -> bool:
-    """True when lower is better for `metric` on these runs: `asc` / `desc` when the caller
-    passed one, else `lower_is_better_on`. Every command that counts wins or ranks arms asks
-    this, so "A wins 180/200" on latency means A was faster without anyone remembering --asc."""
+def ranks_direction(runs: Iterable[Run], metric: str, asc: bool = False, desc: bool = False) -> str:
+    """ "lower", "higher" or "neutral" for `metric` on these runs: `asc` / `desc` when the caller passed one, else
+    `direction`. What a ranking prints beside its heading: a count that is only a description is neutral, not higher."""
     if asc and desc:
         from evaluation_harness._common import die  # noqa: PLC0415
 
         die("--asc and --desc contradict each other", "bad-argument")
     if asc or desc:
-        return asc
-    return lower_is_better_on(runs, metric)
+        return "lower" if asc else "higher"
+    return direction(metric, runs=runs)
+
+
+def ranks_lower(runs: Iterable[Run], metric: str, asc: bool = False, desc: bool = False) -> bool:
+    """True when lower is better for `metric` on these runs: `asc` / `desc` when the caller
+    passed one, else `lower_is_better_on`. Every command that counts wins or ranks arms asks
+    this, so "A wins 180/200" on latency means A was faster without anyone remembering --asc."""
+    return ranks_direction(runs, metric, asc, desc) == "lower"
 
 
 def mixed_versions(system_ids: Iterable[str]) -> dict[str, list[str]]:
