@@ -288,6 +288,24 @@ text, the reads must still follow the public text rules.
 
 **Moves a result:** no.
 
+### F3. The catalog's pages fresh on a local or proxied server
+
+**Decided (owner, 2026-11-23):** in 0.8.1. "I want whenever I go to my catalog to be fresh with the latest data", and the
+static export stays. The design, the measurements and the risks are in
+[RFC-040](../../docs/rfc/RFC-040-catalog-rendered-on-request.md): one renderer, an export driver (`evh catalog`, as
+today) and a serve driver (a page rendered on request, kept until the data changes; no `catalog` job on a write).
+
+**What is there now.** A write is seen within 0.25 s; then a background `catalog` job rebuilds all 1,906 pages and swaps
+them in, and until it ends a page shows the data from before the write. Measured 2026-11-23: `collect()` 1.7 s; with
+the p-values cached, the home page 0.58 s, a goal page 1.4-4.0 s, every other page under 0.1 s.
+
+**Open (owner):** which of RFC-040's six steps 0.8.1 ships (the advisor recommends steps 1-2 and the decisions memo, the
+serve driver in 0.9.0); whether a goal page may be warmed in the background after a change.
+
+**Done when:** RFC-040's tests 1-4 pass on both stores, for the steps 0.8.1 ships.
+
+**Moves a result:** no.
+
 ## Not in this plan
 
 - **The Qwen subscription** as a judge or an arm. The owner, 2026-11-21: "leave this as it is right now".
