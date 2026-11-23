@@ -34,7 +34,7 @@ checked from the code.
 **Today.** `_runs.lower_is_better_on` takes a goal's `direction` only through `goal_direction`, which counts only the
 goals the runs name (`m["goal"]`). Two more derivations ignore goals entirely:
 
-- `_common.verdict_for`, used by `evh compare-runs` (`compare_runs.py:232`), reads the name table only.
+- `_common.verdict_for`, used by `evh run-compare` (`compare_runs.py:232`), reads the name table only.
 - `_study.lower_is_better` reads the goal only (callers add the study's own `direction`). It knows neither the adapter
   nor the name table, so a study on `cost_usd` keeps the trial that costs more.
 
@@ -208,7 +208,7 @@ Each fact gets a failing test before its fix:
 
 - **Its rule** on an input that shows the bug.
 - **Its consistency:** every reader gives the same answer on one fixture (the goal page, the leaderboard,
-  `compare-runs`, the inspector, `metric-list` and the study on F1; the catalog arm, the leaderboard, `pair-test`,
+  `run-compare`, the inspector, `metric-list` and the study on F1; the catalog arm, the leaderboard, `pair-test`,
   `runs-list` and the round on F2).
 - **A source check, where the shape can be found in the code:** no reader tests a cap's truth (built);
   `date.today()` only in `_common.today`; `lower_is_better(` and `is_neutral(` only through `_runs.direction`; the `_rN`
