@@ -28,7 +28,8 @@ from collections.abc import Iterable, Iterator
 from pathlib import Path
 
 from evaluation_harness import _common, _outputs
-from evaluation_harness._common import lower_is_better
+from evaluation_harness._common import is_descriptive, lower_is_better
+from evaluation_harness.axes import BUILTIN, axes_of
 from evaluation_harness.model import runs as _model_runs
 
 Run = tuple[Path, dict]
@@ -238,33 +239,128 @@ def recorded_direction(runs: Iterable[Run], metric: str) -> str | None:
     return next(iter(said), None)
 
 
-def goal_direction(runs: Iterable[Run], metric: str, goals: dict | None = None) -> str | None:
-    """ "lower" / "higher" from a goal these runs name whose primary measure is `metric`."""
-    from evaluation_harness._common import load_goals  # noqa: PLC0415
-
-    named = {str(m["goal"]) for _d, m in runs if m.get("goal")}
-    if not named:
-        return None
-    goals = load_goals() if goals is None else goals
-    for gid in sorted(named):
-        primary = ((goals.get(gid) or {}).get("success_criteria") or {}).get("primary") or {}
-        if primary.get("measure") == metric and primary.get("direction") in ("lower", "higher"):
-            return str(primary["direction"])
+def _declared_by(goal: dict, metric: str) -> str | None:
+    """ "lower" / "higher" where `goal` itself says which way `metric` goes: as its primary measure, or as an axis that
+    carries a direction of its own. A primary `direction` that is neither (`non_inferior`: a decision rule) says
+    nothing, and an axis with none, or a built-in axis left at its default, is no declaration either."""
+    crit = goal.get("success_criteria") or {}
+    prim = crit.get("primary") or {}
+    if prim.get("measure") == metric and prim.get("direction") in ("lower", "higher"):
+        return str(prim["direction"])
+    own = crit.get("axes") or {}
+    for ax in axes_of(goal, lambda _m: "undeclared"):
+        if ax["name"] == "quality" or ax["measure"] != metric or ax["role"] == "ignore":
+            continue
+        if ax["direction"] in ("lower", "higher") and (
+            ax["name"] not in BUILTIN or (own.get(ax["name"]) or {}).get("direction")
+        ):
+            return str(ax["direction"])
     return None
 
 
-def lower_is_better_on(runs: Iterable[Run], metric: str, goals: dict | None = None) -> bool:
-    """Whether a decrease in `metric` is an improvement on these runs, by one precedence: the
-    goal they name, then what the adapter declared (recorded on the run), then the name table
-    (a cost, speed or token count). A goal and the runs could disagree, so the goal page
-    ranked lowest first while the inspector one click away counted the leader as losing; V14
-    now fails a goal that contradicts its runs."""
+def goal_declarations(goal: dict) -> dict[str, str]:
+    """{measure: "lower" | "higher"} for each measure `goal` declares a direction for (V14 reads it)."""
+    crit = goal.get("success_criteria") or {}
+    measures = {(crit.get("primary") or {}).get("measure"), *(a["measure"] for a in axes_of(goal))}
+    said = {m: _declared_by(goal, str(m)) for m in measures if m}
+    return {m: d for m, d in said.items() if d}
+
+
+def goal_datasets(goal: dict) -> list[str]:
+    """The datasets a goal lists ([] when it lists none: it applies to any)."""
+    return [
+        str(d["dataset_id"])
+        for d in goal.get("datasets") or []
+        if isinstance(d, dict) and d.get("dataset_id")
+    ]
+
+
+def direction_source(
+    metric: str,
+    *,
+    dataset: str | None = None,
+    runs: Iterable[Run] = (),
+    goals: dict | None = None,
+    kinds: dict[str, str] | None = None,
+) -> tuple[str, str]:
+    """`direction`, and what decided it: "goal <id>", "the runs' directions", "the runs' kinds" or "the name table"."""
     runs = list(runs)
-    said = goal_direction(runs, metric, goals) or recorded_direction(runs, metric)
-    return said == "lower" if said else lower_is_better(metric)
+    if dataset is None:
+        shared = {str(m["dataset_id"]) for _d, m in runs if m.get("dataset_id")}
+        dataset = next(iter(shared)) if len(shared) == 1 else None
+    goals = _common.load_goals() if goals is None else goals
+    named = {str(m["goal"]) for _d, m in runs if m.get("goal")}
+    listing = {g for g, doc in goals.items() if dataset and dataset in goal_datasets(doc or {})}
+    # A question about a dataset is answered by the goals that list it and the goals the runs name: a goal on another
+    # dataset says nothing about this one. Any goal answers only a question with no dataset.
+    tiers = (sorted(listing), sorted(named & goals.keys() - listing)) + (
+        (sorted(goals),) if dataset is None else ()
+    )
+    for tier in tiers:
+        for gid in tier:
+            said = _declared_by(goals[gid] or {}, metric)
+            if said:
+                return said, f"goal {gid}"
+    said = recorded_direction(runs, metric)
+    if said:
+        return said, "the runs' directions"
+    seen = [k for _d, m in runs if (k := (m.get("metric_kinds") or {}).get(metric))]
+    kind = (kinds or {}).get(metric) or ("descriptive" if "descriptive" in seen else next(iter(seen), None))
+    if kind == "descriptive" or (kind is None and is_descriptive(metric)):
+        return "neutral", "the runs' kinds" if kind else "the name table"
+    return ("lower" if lower_is_better(metric) else "higher"), "the name table"
 
 
-def direction(runs: Iterable[Run], metric: str, asc: bool = False, desc: bool = False) -> bool:
+def direction(
+    metric: str,
+    *,
+    dataset: str | None = None,
+    runs: Iterable[Run] = (),
+    goals: dict | None = None,
+    kinds: dict[str, str] | None = None,
+) -> str:
+    """Which way is better for `metric`: "lower", "higher" or "neutral". The one answer every reader gives (RFC-041):
+
+      1. a goal that declares it, as its primary measure or as an axis with a direction: for a question about
+         `dataset`, a goal listing it first, then the goals the runs name (a goal on another dataset says nothing
+         about this one); for a question with no dataset, then any goal (V14 fails two that disagree on one dataset);
+      2. what the runs record: the adapter's directions (`metric_directions`, `import-run --asc`), then the kinds
+         they declare (`metric_kinds`; `kinds` overrides them, for the adapter's declaration as it is today): a
+         descriptive kind is neutral;
+      3. the name table (`_common`): cost, speed, tokens and error rates are lower, the descriptive keys neutral, the
+         rest higher.
+
+    A declared direction beats neutral: a project that says which way a count goes has said it is not neutral.
+    `dataset` is the dataset asked about; left out, it is the one the runs share. `goals` is {goal_id: goal}, read
+    from the project when None.
+    """
+    return direction_source(metric, dataset=dataset, runs=runs, goals=goals, kinds=kinds)[0]
+
+
+def combine(directions: Iterable[str]) -> str:
+    """One measure's directions on several datasets, as one: lower if any dataset says so, neutral only when every one
+    does, else higher."""
+    said = list(directions)
+    return (
+        "lower" if "lower" in said else "neutral" if said and all(d == "neutral" for d in said) else "higher"
+    )
+
+
+#: The words every page prints for a direction.
+BETTER_WORDS = {"lower": "lower", "higher": "higher", "neutral": "neutral: a description"}
+
+
+def better_word(which: str) -> str:
+    """The word that says which way is better, for a `direction` ("neutral: a description" for a count)."""
+    return BETTER_WORDS[which]
+
+
+def lower_is_better_on(runs: Iterable[Run], metric: str, goals: dict | None = None) -> bool:
+    """Whether a decrease in `metric` is an improvement on these runs: `direction` says "lower"."""
+    return direction(metric, runs=runs, goals=goals) == "lower"
+
+
+def ranks_lower(runs: Iterable[Run], metric: str, asc: bool = False, desc: bool = False) -> bool:
     """True when lower is better for `metric` on these runs: `asc` / `desc` when the caller
     passed one, else `lower_is_better_on`. Every command that counts wins or ranks arms asks
     this, so "A wins 180/200" on latency means A was faster without anyone remembering --asc."""

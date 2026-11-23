@@ -11,6 +11,7 @@ from typing import Any
 from evaluation_harness import catalog_arms as ca
 from evaluation_harness import catalog_build as cb
 from evaluation_harness.axes import axis_title, builtin_axes, cell_of, cell_text
+from evaluation_harness.catalog_adapter import direction_on
 from evaluation_harness.model import goal_views as gv
 from evaluation_harness.model import period_views
 from evaluation_harness.model import runs as model_runs
@@ -175,9 +176,7 @@ def arm(A, by_ds: dict, arm_id: str) -> dict[str, Any]:
                 "mean": mean,
                 "shown": cb.metric_value(A, m, mean),
                 "n": k,
-                "better": "lower"
-                if A.lower_is_better(m, ds)
-                else ("neutral" if A.is_neutral(m, ds) else "higher"),
+                "better": direction_on(A, m, ds),
             }
             for m, (mean, k) in sorted(a["means"].items(), key=lambda kv: (kv[0] != a["metric"], kv[0]))
         ],

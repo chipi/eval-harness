@@ -62,8 +62,8 @@ from evaluation_harness._common import (  # noqa: E402
 )
 from evaluation_harness._runs import (  # noqa: E402
     default_metric,
-    direction,
     per_item,
+    ranks_lower,
     refuse_run_level,
     repeat_agreement,
     runs_on,
@@ -369,8 +369,8 @@ def _run(args: argparse.Namespace, ap: Any) -> int:
     if cross:
         arm_a = [r for r in runs if r[1]["system_id"] == args.a]
         arm_b = [r for r in runs_b if r[1]["system_id"] == args.b]
-        lower = direction(arm_a, args.metric, args.asc, args.desc)
-        lower_b = direction(arm_b, args.metric, args.asc, args.desc)
+        lower = ranks_lower(arm_a, args.metric, args.asc, args.desc)
+        lower_b = ranks_lower(arm_b, args.metric, args.asc, args.desc)
         if lower != lower_b:
             die(
                 f"{args.metric} is {'lower' if lower else 'higher'}-is-better for {args.a} on {args.dataset_id} "
@@ -398,7 +398,7 @@ def _run(args: argparse.Namespace, ap: Any) -> int:
                     "not-enough",
                 )
     else:
-        lower = direction(runs, args.metric, args.asc, args.desc)
+        lower = ranks_lower(runs, args.metric, args.asc, args.desc)
 
         def scores_now() -> tuple[dict, dict]:
             if values is not None:

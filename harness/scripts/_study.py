@@ -345,10 +345,15 @@ def _mean(run_ids: list[str], metric: str) -> float | None:
     return sum(vals) / len(vals) if vals else None
 
 
-def lower_is_better(goal: str, metric: str) -> bool:
-    """Whether the study's measure is better lower: the goal's primary direction when it is that measure."""
-    prim = ((_common.load_goals().get(goal) or {}).get("success_criteria") or {}).get("primary") or {}
-    return prim.get("measure") == metric and prim.get("direction") == "lower"
+def lower_is_better(goal: str, metric: str, dataset: str | None = None) -> bool:
+    """Whether the study's measure is better lower, by the rule every reader uses (`_runs.direction`), the study's
+    goal named first: its declaration, else the name table (a study on cost_usd keeps the cheaper trial)."""
+    from evaluation_harness import _runs  # noqa: PLC0415
+
+    return (
+        _runs.direction(metric, dataset=dataset, runs=[(Path(), {"goal": goal})], goals=_common.load_goals())
+        == "lower"
+    )
 
 
 def trial(
@@ -367,7 +372,7 @@ def trial(
     cid = write_trial_system(goal, sid, k, best_cid, proposal)
     code, paid, runs = run_system(cid, s["dataset"], goal, st["round"], int(s.get("repeats") or 1))
     metric = str(s["measure"])
-    lower = lower_is_better(goal, metric) or s.get("direction") == "lower"
+    lower = lower_is_better(goal, metric, s.get("dataset")) or s.get("direction") == "lower"
     line: dict[str, Any] = {
         "event": "trial",
         "k": k,
@@ -433,7 +438,7 @@ def weakest(goal: str, sid: str, best_cid: str, n: int) -> list[dict[str, Any]]:
         return []
     s = spec(goal, sid)
     metric = str(s["measure"])
-    lower = lower_is_better(goal, metric) or s.get("direction") == "lower"
+    lower = lower_is_better(goal, metric, s.get("dataset")) or s.get("direction") == "lower"
     runs = _runs.runs_on(s["dataset"], system_id=best_cid)
     if not runs:
         return []

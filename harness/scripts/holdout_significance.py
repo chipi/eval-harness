@@ -22,7 +22,7 @@ from typing import Any
 from evaluation_harness import _outputs
 from evaluation_harness import leaderboard as lb
 from evaluation_harness._common import dataset_item_ids, die
-from evaluation_harness._runs import default_metric, direction, matrix, runs_on, warn_on_ambiguous_runs
+from evaluation_harness._runs import default_metric, matrix, ranks_lower, runs_on, warn_on_ambiguous_runs
 from evaluation_harness.ops import legacy
 
 
@@ -51,5 +51,5 @@ def body(**inputs: Any) -> int:
     if not M:
         die("no runs matched", "not-found")
     print(f"  {len(runs)} run(s), {len(M)} arm(s)")
-    lb.significance(M, args.metric, asc=direction(runs, args.metric, args.asc, args.desc), raw_values=raw)
+    lb.significance(M, args.metric, asc=ranks_lower(runs, args.metric, args.asc, args.desc), raw_values=raw)
     return 0

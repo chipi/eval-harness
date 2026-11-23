@@ -58,14 +58,13 @@ from evaluation_harness import (  # noqa: E402
 from evaluation_harness._common import (  # noqa: E402
     BOOKKEEPING_PREFIXES,
     ModuleNotLoadable,
-    is_descriptive,
     load_goals,
     load_module,
 )
 from evaluation_harness._fields import fieldset_problems, load_fieldset  # noqa: E402 -- part of the adapter contract
 from evaluation_harness._fingerprint import items_digest  # noqa: E402
 from evaluation_harness._record import cut_off_items, derived_with  # noqa: E402
-from evaluation_harness._runs import item_rows, lower_is_better_on, read_metrics, score_of  # noqa: E402
+from evaluation_harness._runs import combine, direction, item_rows, read_metrics, score_of  # noqa: E402
 from evaluation_harness.model import dataset_views as model_dataset_views  # noqa: E402
 from evaluation_harness.model import datasets as model_datasets  # noqa: E402
 from evaluation_harness.model import goals as model_goals  # noqa: E402
@@ -207,6 +206,12 @@ class Adapter(Protocol):
     def notes(self, arm: str) -> list[str]:
         """Why something could not be scored, or which of its runs were left out, in words."""
 
+    def direction(self, metric: str, dataset: str | None = None) -> str:
+        """Which way is better for this metric on `dataset`: "lower", "higher" or "neutral" (a measurement with no
+        better direction: length, counts). With no dataset, every dataset that records it, combined. The answer
+        `lower_is_better` and `is_neutral` read; `direction_on` asks an adapter that has no `direction` by them."""
+        ...
+
     def lower_is_better(self, metric: str, dataset: str | None = None) -> bool:
         """Whether a decrease in this metric is an improvement."""
         ...
@@ -324,6 +329,17 @@ def item_fields(A, dataset: str) -> dict:
     fn = getattr(A, "item_fields", None)
     got = fn(dataset) if callable(fn) else None
     return got if isinstance(got, dict) and got.get("fieldset") else {"fieldset": None, "values": {}}
+
+
+def direction_on(A, metric: str, dataset: str | None = None) -> str:
+    """Which way is better for `metric`, asked of an adapter: its `direction`, or for one written before that existed
+    what its `lower_is_better` and `is_neutral` say. Every page that prints the word asks this."""
+    fn = getattr(A, "direction", None)
+    if callable(fn):
+        return str(fn(metric, dataset))
+    if A.lower_is_better(metric, dataset):
+        return "lower"
+    return "neutral" if A.is_neutral(metric, dataset) else "higher"
 
 
 def _flat_conditions(fp: dict) -> dict[str, str]:
@@ -757,11 +773,15 @@ class HarnessAdapter:
             return {}
 
     @_memo
-    def lower_is_better(self, metric: str, dataset: str | None = None) -> bool:
-        """Whether a decrease in this metric is an improvement, by the rule every command uses
-        (`_runs.lower_is_better_on`: the goal, then the adapter's declaration, then the name
-        table), over the runs on `dataset`. Over every dataset, a declaration on one flipped
-        the metric's direction on another."""
+    def direction(self, metric: str, dataset: str | None = None) -> str:
+        """Which way is better for `metric` ("lower", "higher" or "neutral"), by the rule every reader uses
+        (`_runs.direction`) over the runs on `dataset`: a declaration on one dataset must not flip another's.
+        With no dataset, the answers of the datasets that record it, combined (`_runs.combine`); a measure no
+        run records goes by the goals and the name table."""
+        if dataset is None:
+            on = sorted(self._recorded_on(metric))
+            if on:
+                return combine(self.direction(metric, ds) for ds in on)
         runs = [
             (d, m)
             for arm, ds in self._index().items()
@@ -770,7 +790,27 @@ class HarnessAdapter:
             for m in [self._record(d)]
         ]
         goals = {g["goal_id"]: g for g in self.goals()}
-        return lower_is_better_on(runs, metric, goals)
+        return direction(metric, dataset=dataset, runs=runs, goals=goals)
+
+    @_memo
+    def _recorded_on(self, metric: str) -> frozenset:
+        """The datasets where a run records `metric`: a score, a declared kind or a declared direction."""
+        out = set()
+        for arm, ds in self._index().items():
+            for d in ds:
+                m = self._record(d)
+                if any(metric in (m.get(k) or {}) for k in ("scores", "metric_kinds", "metric_directions")):
+                    out.add(arm.rsplit("/", 2)[-2])
+                    break
+        return frozenset(out)
+
+    def lower_is_better(self, metric: str, dataset: str | None = None) -> bool:
+        """Whether a decrease in this metric is an improvement: `direction` says "lower"."""
+        return self.direction(metric, dataset) == "lower"
+
+    def is_neutral(self, metric: str, dataset: str | None = None) -> bool:
+        """Whether this metric is neither better nor worse (a description of the output): `direction` says "neutral"."""
+        return self.direction(metric, dataset) == "neutral"
 
     @_memo
     @_memo
@@ -787,19 +827,6 @@ class HarnessAdapter:
 
     def _descriptive(self) -> frozenset:
         return frozenset(k for seen in self._descriptive_by_dataset().values() for k, d in seen.items() if d)
-
-    def is_neutral(self, metric: str, dataset: str | None = None) -> bool:
-        """Whether this metric is descriptive (neither better nor worse) on `dataset`, as its
-        runs declare it, else by the harness's names. With no dataset: descriptive on every
-        dataset that declares it. One adapter's declaration made a metric neutral on every other
-        dataset: SummEval's descriptive `parsed` hid the classifiers' quality `parsed`."""
-        if is_descriptive(metric):
-            return True
-        by_ds = self._descriptive_by_dataset()
-        if dataset is not None:
-            return bool(by_ds.get(dataset, {}).get(metric))
-        declared = [seen[metric] for seen in by_ds.values() if metric in seen]
-        return bool(declared) and all(declared)
 
     def arm_of(self, dataset: str, system_id: str) -> str:
         """The arm id of a system's runs on a dataset, read as a goal reads them (the plain label):

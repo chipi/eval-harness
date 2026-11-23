@@ -8,6 +8,7 @@ from datetime import date
 from typing import Any
 
 from evaluation_harness import catalog_build as cb
+from evaluation_harness._runs import better_word
 from evaluation_harness.model import arm_views, period_views
 from evaluation_harness.model.entity import Problem
 
@@ -37,11 +38,10 @@ def metrics(
         where = idx[m]
         if dataset and dataset not in where["datasets"]:
             continue
-        lower = cb.metric_lower(A, m, where)
         out.append(
             {
                 "metric": m,
-                "better": "lower" if lower else ("neutral" if A.is_neutral(m) else "higher"),
+                "better": cb.metric_direction(A, m, where),
                 "description": cb.describe_metric(m, project) or None,
                 "datasets": dict(sorted(where["datasets"].items())),
                 "decides": [g["goal_id"] for g in where["goals"]],
@@ -61,7 +61,8 @@ def metric(A, by_ds: dict, name: str, dataset: str | None = None) -> dict[str, A
     where = idx.get(name)
     if where is None:
         raise Problem(f"no metric {name!r} is recorded: one of {', '.join(sorted(idx))}", "not-found")
-    lower = cb.metric_lower(A, name, where)
+    which = cb.metric_direction(A, name, where)
+    lower = which == "lower"
     on = []
     for ds in sorted(where["datasets"]):
         if dataset and ds != dataset:
@@ -94,7 +95,7 @@ def metric(A, by_ds: dict, name: str, dataset: str | None = None) -> dict[str, A
         )
     return {
         "metric": name,
-        "better": "lower" if lower else ("neutral: a description" if A.is_neutral(name) else "higher"),
+        "better": better_word(which),
         "description": cb.describe_metric(name, project) or None,
         "details": cb.metric_details(name, project),
         "kind": cb._kind_of(A, name, where["datasets"]),
