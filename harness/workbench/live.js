@@ -2054,12 +2054,12 @@
   // The label is the server's (`state_label`: exit 6 is "checked, flagged", the command's answer, not a failure): one definition.
   const stateTagOf = (st, label) => `<span class="verdict ${st === "succeeded" ? "v-lead" : RUNNING.includes(st) ? "v-ns" : label && label !== st ? "v-ns" : "v-worse"}">${esc(label || st)}</span>`;
   const progressOf = (p) => (p ? `${p.done ?? p.n ?? "?"} / ${p.total ?? "?"}${p.unit ? ` ${esc(p.unit)}` : ""}` : "—");
-  // What a job spent, one way on the list and on its page. A job nobody asked for is the server's own: the catalog's
-  // rebuild when the data changes (catalog_serve starts it with no one named).
+  // What a job spent, one way on the list and on its page. A catalog job nobody asked for is the server's own, from before
+  // 0.8.1: it rebuilt the pages when the data changed; since RFC-040 it renders them on request and starts none.
   const usd = (x) => (x ? `$${Number(x).toFixed(4)}` : "$0");
   const SERVER_JOBS = ["catalog"];
   const sameLines = (a, b) => { const n = (t) => String(t).split("\n").map((x) => x.trim()).filter(Boolean).join("\n"); return n(a) === n(b); };
-  const askedBy = (j) => (j.by ? `asked by <span class="mono">${esc(j.by)}</span>` : SERVER_JOBS.includes(j.operation) ? "started by the server, which rebuilds the catalog when the data changes" : "asked by nobody recorded");
+  const askedBy = (j) => (j.by ? `asked by <span class="mono">${esc(j.by)}</span>` : SERVER_JOBS.includes(j.operation) ? "started by the server, which rebuilt the catalog when the data changed (before 0.8.1)" : "asked by nobody recorded");
   function screenJobs(param) {
     const id = String(param || "");
     if (id) return screenJob(id);

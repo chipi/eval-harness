@@ -19,6 +19,7 @@ import html
 import json
 import re
 import statistics
+import threading
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -287,10 +288,31 @@ def _label_of(by_ds: dict, ds: str, arm: str) -> str:
     return next((a["label"] for a in (by_ds.get(ds) or {}).get("arms", []) if a["arm"] == arm), arm)
 
 
-#: {arm: capture}: production's recorded arms (RFC-023), filled by collect(); arm_link badges them.
+#: {arm: capture}: production's recorded arms (RFC-023), filled by collect(); arm_link badges them. A page rendered by a
+#: Site reads its model's own (_recorded): a server renders on several threads, and two models can be alive at once.
 RECORDED: dict[str, str] = {}
 #: The judge scorers that have a page (scorers/<id>.html), set by `build`: where the catalog names one it links there.
 SCORER_PAGES: set[str] = set()
+#: What the page being rendered on this thread belongs to (RFC-040): its Site's pages so far, the time in its footer, its
+#: recorded arms and scorer pages. Empty outside a Site's render: `write` then writes to disk, as a project's builder expects.
+_RENDER = threading.local()
+
+
+def _now() -> str:
+    """The time a page says it was built, to the minute."""
+    return datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+
+
+def _recorded() -> dict[str, str]:
+    """The recorded arms of the model being rendered on this thread, else the module's."""
+    got = getattr(_RENDER, "recorded", None)
+    return RECORDED if got is None else got
+
+
+def _scorer_pages() -> set[str]:
+    """The scorers with a page in the model being rendered on this thread, else the module's."""
+    got = getattr(_RENDER, "scorer_pages", None)
+    return SCORER_PAGES if got is None else got
 
 
 def breakable(text: str) -> str:
@@ -303,9 +325,10 @@ def breakable(text: str) -> str:
 def arm_link(arm: str, label: str, up: str = "", wrap: bool = True) -> str:
     """An arm's label, linked to its page; a recorded arm (production's decisions) carries its badge. `wrap`: the
     label may break after an underscore (breakable), for a table that would otherwise run past its edge."""
+    recorded = _recorded()
     badge = (
-        f' <span class="badge recorded" title="production\'s decisions, from the capture {e(RECORDED[arm])}">recorded</span>'
-        if arm in RECORDED
+        f' <span class="badge recorded" title="production\'s decisions, from the capture {e(recorded[arm])}">recorded</span>'
+        if arm in recorded
         else ""
     )
     text = breakable(label) if wrap else e(label)
@@ -328,7 +351,7 @@ def source_chip(kind: str) -> str:
 def scorer_link(scorer_id: str, up: str = "", code: bool = True) -> str:
     """A judge scorer's id, linked to its page when the catalog has one (as code, or as plain text)."""
     text = f'<code class="small">{e(scorer_id)}</code>' if code else e(scorer_id)
-    if scorer_id not in SCORER_PAGES:
+    if scorer_id not in _scorer_pages():
         return text
     from evaluation_harness.catalog_scorers import scorer_page  # noqa: PLC0415
 
@@ -508,7 +531,8 @@ def page(
         if local
         else f"<span>{e(brand)}</span>"
     )
-    built = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    # The model's time, so a page the server renders later says what the export would have (RFC-040).
+    built = getattr(_RENDER, "built", None) or _now()
     foot = footer or (
         f"Built {built} by <code>evh catalog</code>. The pages carry counts and means only, "
         f"and an {e(item)}'s text only where the project publishes it; the inspector shows the rest "
@@ -639,15 +663,25 @@ def group_chips(tid: str, groups: tuple) -> str:
 
 
 def write(out: Path, rel: str, content: str) -> None:
-    """Write content to a relative path within output directory."""
+    """Write content to a relative path within output directory; inside a Site's render, keep it as that render's page
+    instead (RFC-040: the export writes the pages a render keeps, the server answers with them)."""
+    pages = getattr(_RENDER, "pages", None)
+    if pages is not None:
+        pages[rel] = content
+        return
     p = out / rel
     _store.mkdir(p.parent, parents=True, exist_ok=True)
     _store.write_text(p, content, encoding="utf-8")
 
 
 def _redirect(out: Path, rel: str, to: str, was: str, now: str) -> None:
-    """A page at `rel` that sends the reader to `to`; nothing is written over a page that exists."""
-    if _store.exists(out / rel):
+    """A page at `rel` that sends the reader to `to`; nothing is written over a page that exists (inside a Site's
+    render: a page its model names, or one this render already kept)."""
+    pages = getattr(_RENDER, "pages", None)
+    if pages is not None:
+        if rel in pages or rel in _RENDER.taken:
+            return
+    elif _store.exists(out / rel):
         return
     write(
         out,
@@ -2390,8 +2424,17 @@ def render_fields(A: Adapter, ds: str) -> str:
     return intro + table("fields", ["field", "type", "filled", "description", "values"], rows)
 
 
-def render_goals(A: Adapter, by_ds: dict, out: Path, nav: list) -> int:
-    """Render the goals page and one page per goal; return the number rendered."""
+def render_goal_page(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
+    """One goal's page. Its charts (RFC-034) read the goal's leaderboard once for all its datasets and studies."""
+    from evaluation_harness import charts  # noqa: PLC0415
+
+    with charts.using(A):
+        render_goal(A, g, by_ds, out, nav)
+
+
+def render_goals(A: Adapter, by_ds: dict, out: Path, nav: list, pages: bool = True) -> int:
+    """Render the goals page and, with `pages`, one page per goal (a Site renders each on its own); return the number
+    of goals."""
     from evaluation_harness import catalog_periods as cp  # noqa: PLC0415
 
     goals = A.goals()
@@ -2435,11 +2478,8 @@ def render_goals(A: Adapter, by_ds: dict, out: Path, nav: list) -> int:
                 ],
             }
         )
-        # The page's charts (RFC-034) read the goal's leaderboard once for all its datasets and studies.
-        from evaluation_harness import charts  # noqa: PLC0415
-
-        with charts.using(A):
-            render_goal(A, g, by_ds, out, nav)
+        if pages:
+            render_goal_page(A, g, by_ds, out, nav)
     write_period_rows(out, "goals", period_rows)
     # What happened, one row per change; the period keeps the rows of its own days.
     feed = sorted(
@@ -4414,12 +4454,12 @@ def render_captures(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
                     [
                         ", ".join(
                             arm_link(a, a.rsplit("/", 1)[-1])
-                            for a, cap in sorted(RECORDED.items())
+                            for a, cap in sorted(_recorded().items())
                             if cap == c["capture"]
                         )
                         or "—"
                     ]
-                    if RECORDED
+                    if _recorded()
                     else []
                 ),
             ]
@@ -4444,7 +4484,7 @@ def render_captures(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
                 "records from – to",
                 "datasets made from it",
                 # Only when a capture has one: a column of "—" on every row says nothing.
-                *(["recorded arm"] if RECORDED else []),
+                *(["recorded arm"] if _recorded() else []),
             ],
             rows,
             "filter captures",
@@ -4810,59 +4850,233 @@ def search_index(A: Adapter, by_ds: dict) -> list[dict]:
     return idx
 
 
-def build(A: Adapter, out: Path, sections: tuple = ()) -> dict:
+#: One page rendered at a time in a process (RFC-040): the renders share module caches (the p-values' `stats._KEPT`)
+#: that take no lock of their own. A goal page is the longest, 1.4-4 s; every other page under 0.1 s.
+_RENDER_LOCK = threading.RLock()
+#: The pages at the top of the catalog, by the group that writes them. Every other page is named from the model (a
+#: goal's, an arm's, a metric's) or by its folder; test_catalog_render.py checks each against the group that wrote it.
+_TOP = {
+    "periods.js": "periods",
+    "home.js": "home",
+    "index.html": "home",
+    "activity.html": "activity",
+    "activity-rows.js": "activity",
+    "arms.html": "arms",
+    "arms-rows.js": "arms",
+    "models.html": "models",
+    "scorers.html": "scorers",
+    "datasets.html": "datasets",
+    "datasets-rows.js": "datasets",
+    "goals.html": "goals",
+    "goals-rows.js": "goals",
+    "metrics.html": "metrics",
+    "metrics-rows.js": "metrics",
+    "references.html": "reference-index",
+    "references-rows.js": "reference-index",
+    "captures.html": "captures",
+    "prompts.html": "prompts",
+    "labels.html": "labels",
+    "search.js": "search",
+    "pick.js": "pick",
+    "runs.js": "inspect",
+    "inspect.html": "inspect",
+}
+_DATASET_PAGE = re.compile(r"d/(.+?)(?:~items-\d+)?\.html")
+
+
+class Site:
+    """The catalog of one state of the data, rendered a group of pages at a time (RFC-040). A group is what one render
+    call writes: a goal's page, an arm's, a dataset's (with its item pages), the home page and home.js. `export` writes
+    every group to a folder (`evh catalog`); `page` renders the group a path belongs to when it is first asked for and
+    keeps its pages (catalog-serve). Both run the same render calls, so a page served is the page exported."""
+
+    def __init__(self, A: Adapter, built: str | None = None, once: bool = True) -> None:
+        from evaluation_harness.catalog_arms import arm_rows  # noqa: PLC0415
+        from evaluation_harness.catalog_scorers import page_ids  # noqa: PLC0415
+
+        # one model: each arm's scores read once, not for every page that asks (a server's adapter holds them itself)
+        self.A = scores_once(A) if once else A
+        self.built = built or _now()
+        self.scorer_pages = set(page_ids(self.A))
+        self.by_ds = collect(self.A)
+        self.recorded = {
+            a["arm"]: a["recorded"] for v in self.by_ds.values() for a in v["arms"] if a["recorded"]
+        }
+        for ds, v in self.by_ds.items():
+            v["versions"] = _version_links(self.by_ds, ds, "../")
+        self.arms_rows = arm_rows(self.A, self.by_ds)
+        self.goals = {g["goal_id"]: g for g in self.A.goals()}
+        fn = getattr(self.A, "metric_descriptions", None)
+        self.project = fn() if callable(fn) else {}
+        self.metrics = metric_index(self.A, self.by_ds)
+        self.arms = {a["arm"]: (ds, a) for ds, v in self.by_ds.items() for a in v["arms"]}
+        named = {
+            **{goal_page(gid): f"goal:{gid}" for gid in self.goals},
+            **{arm_page(arm): f"arm:{arm}" for arm in self.arms},
+            **{metric_page(m): f"metric:{m}" for m in self.metrics},
+        }
+        self._named = {**_TOP, **named}
+        self._datasets = {slug(ds or "none"): ds for ds in self.by_ds}
+        self._arm_pages = {arm_page(arm) for arm in self.arms}
+        self._pages: dict[str, str] = {}
+        self._rendered: set[str] = set()
+        self._decisions: dict = {}  # this state's group decisions, made once for every page that shows them
+
+    def groups(self) -> list[str]:
+        """Every group, in the order a build has always written them."""
+        return [
+            "periods", "home", "activity", "arms", "models", "scorers", "datasets",
+            *(g for ds, v in self.by_ds.items() for g in (f"dataset:{ds}", *(f"arm:{a['arm']}" for a in v["arms"]))),
+            "redirects", "goals", *(f"goal:{gid}" for gid in self.goals), "metrics",
+            *(f"metric:{m}" for m in self.metrics),
+            "references", "captures", "prompts", "labels", "reference-index", "search", "pick", "inspect",
+        ]  # fmt: skip
+
+    def owner(self, path: str) -> str | None:
+        """The group whose render writes `path`, from the model and the path alone (nothing rendered); None for none."""
+        if path in self._named:
+            return self._named[path]
+        if path.startswith("assets/"):
+            return "assets"
+        if m := _DATASET_PAGE.fullmatch(path):
+            ds = self._datasets.get(m.group(1))
+            return None if ds is None else f"dataset:{ds}"
+        if path.startswith("a/") and path.endswith(".html"):
+            return "redirects"
+        for folder, group in (("models/", "models"), ("scorers/", "scorers"), ("r/", "references")):
+            if path.startswith(folder):
+                return group
+        return None
+
+    def render(self, group: str, keep: bool = True) -> dict[str, str]:
+        """{path: page} for every page `group` writes, rendered now; `keep`: kept for `page`."""
+        with _RENDER_LOCK:
+            _RENDER.pages, _RENDER.taken = {}, self._arm_pages
+            _RENDER.built, _RENDER.recorded, _RENDER.scorer_pages = (
+                self.built,
+                self.recorded,
+                self.scorer_pages,
+            )
+            try:
+                with goal_views.decisions_kept(self._decisions):
+                    self._call(group)
+                pages = _RENDER.pages
+            finally:
+                for k in ("pages", "taken", "built", "recorded", "scorer_pages"):
+                    delattr(_RENDER, k)
+            if keep:
+                self._pages.update(pages)
+                self._rendered.add(group)
+            return pages
+
+    def page(self, path: str) -> str | None:
+        """The page at `path`, rendered with its group the first time it is asked for; None when there is none."""
+        if path in self._pages:
+            return self._pages[path]
+        group = self.owner(path)
+        if group == "assets":
+            name = path.removeprefix("assets/")
+            if name == "head.js":
+                return HEAD_JS_SRC
+            return _store.read_text(ASSET_DIR / name, encoding="utf-8") if name in ASSETS else None
+        if group is None:
+            return None
+        with _RENDER_LOCK:
+            if group not in self._rendered:
+                self.render(group)
+        return self._pages.get(path)
+
+    @property
+    def addresses(self) -> dict[str, str]:
+        """{path: group} of every page this model has, the assets included: every group rendered (and kept)."""
+        for group in self.groups():
+            if group not in self._rendered:
+                self.render(group)
+        return {
+            **{p: self.owner(p) or "" for p in self._pages},
+            **{f"assets/{a}": "assets" for a in (*ASSETS, "head.js")},
+        }
+
+    def export(self, out: Path) -> dict[str, str]:
+        """Write every page to `out` (with the assets), each group rendered and written, none kept; {path: group}."""
+        copy_assets(out)
+        wrote: dict[str, str] = {}
+        for group in self.groups():
+            for rel, content in self.render(group, keep=False).items():
+                write(out, rel, content)
+                wrote[rel] = group
+        return wrote
+
+    def counts(self) -> dict:
+        """What `evh catalog` says it built."""
+        return {
+            "goals": len(self.goals),
+            "datasets": len(self.by_ds),
+            "arms": sum(len(v["arms"]) for v in self.by_ds.values()),
+            "systems": _n_systems(self.by_ds),
+            "references": sum(len(v["refs"]) for v in self.by_ds.values()),
+        }
+
+    def _call(self, group: str) -> None:
+        """The render call that writes `group`'s pages (into the render's pages, see `write`)."""
+        from evaluation_harness.catalog_arms import render_arms  # noqa: PLC0415
+        from evaluation_harness.catalog_models import render_models  # noqa: PLC0415
+        from evaluation_harness.catalog_scorers import render_scorers  # noqa: PLC0415
+
+        A, by_ds, out, nav = self.A, self.by_ds, Path("."), NAV
+        kind, _, key = group.partition(":")
+        whole = {
+            "periods": lambda: write_periods(A, by_ds, out),
+            "home": lambda: render_home(A, by_ds, out, nav),
+            "activity": lambda: render_activity(A, by_ds, out, nav),
+            "arms": lambda: render_arms(A, by_ds, out, nav, self.arms_rows),
+            "models": lambda: render_models(A, by_ds, out, nav, self.arms_rows),
+            "scorers": lambda: render_scorers(A, by_ds, out, nav),
+            "datasets": lambda: render_datasets(A, by_ds, out, nav),
+            "redirects": lambda: write_redirects(A, by_ds, out),
+            "goals": lambda: render_goals(A, by_ds, out, nav, pages=False),
+            "metrics": lambda: render_metrics(A, by_ds, out, nav),
+            "references": lambda: render_references(A, by_ds, out, nav),
+            "captures": lambda: render_captures(A, by_ds, out, nav),
+            "prompts": lambda: render_prompts(A, out, nav),
+            "labels": lambda: render_labels(A, by_ds, out, nav),
+            "reference-index": lambda: render_reference_index(A, by_ds, out, nav),
+            "search": lambda: write_search(A, by_ds, out),
+            "pick": lambda: write_pick(A, by_ds, out, self.arms_rows),
+            "inspect": lambda: render_inspect(A, out, nav=nav, pages=True, pick=True),
+        }
+        if kind == "dataset":
+            render_dataset(A, key, by_ds[key], out, nav)
+        elif kind == "arm":
+            ds, a = self.arms[key]
+            render_arm(A, a, ds, by_ds, out, nav)
+        elif kind == "goal":
+            render_goal_page(A, self.goals[key], by_ds, out, nav)
+        elif kind == "metric":
+            render_metric(A, key, self.metrics[key], by_ds, self.project, out, nav)
+        else:
+            whole[group]()
+
+
+def prepare(A: Adapter, built: str | None = None, once: bool = True) -> Site:
+    """The catalog of the data as it is now (RFC-040): read once, rendered a group at a time. `built`: the time its
+    footers say (now, by default); `once`: wrap the adapter to read each arm's scores once (a server's holds them)."""
+    return Site(A, built=built, once=once)
+
+
+def build(A: Adapter, out: Path, sections: tuple = (), built: str | None = None) -> dict:
     """Build all catalog pages and return statistics. `sections` are the parts of the publication
     the catalog belongs to, (label, url) each, "." for the catalog itself: the header's switcher."""
     global SECTIONS
     SECTIONS = tuple(sections)
-    nav = NAV
     if _store.exists(out):
         _store.rmtree(out)
-    copy_assets(out)
-    A = scores_once(A)  # one build: each arm's scores read once, not for every page that asks
-    from evaluation_harness.catalog_scorers import page_ids, render_scorers  # noqa: PLC0415
-
+    site = prepare(A, built=built)
+    # A project's own builder may call arm_link or scorer_link after a build, outside a Site's render.
     SCORER_PAGES.clear()
-    SCORER_PAGES.update(page_ids(A))
-    by_ds = collect(A)
-    write_periods(A, by_ds, out)
-    render_home(A, by_ds, out, nav)
-    render_activity(A, by_ds, out, nav)
-    from evaluation_harness.catalog_arms import arm_rows, render_arms  # noqa: PLC0415
-    from evaluation_harness.catalog_models import render_models  # noqa: PLC0415
-
-    arms_rows = arm_rows(A, by_ds)
-    render_arms(A, by_ds, out, nav, arms_rows)
-    render_models(A, by_ds, out, nav, arms_rows)
-    render_scorers(A, by_ds, out, nav)
-    render_datasets(A, by_ds, out, nav)
-    for ds, v in by_ds.items():
-        v["versions"] = _version_links(by_ds, ds, "../")
-        render_dataset(A, ds, v, out, nav)
-        for a in v["arms"]:
-            render_arm(A, a, ds, by_ds, out, nav)
-    write_redirects(A, by_ds, out)
-    n_goals = render_goals(A, by_ds, out, nav)
-    render_metrics(A, by_ds, out, nav)
-    fn = getattr(A, "metric_descriptions", None)
-    project = fn() if callable(fn) else {}
-    for m, where in metric_index(A, by_ds).items():
-        render_metric(A, m, where, by_ds, project, out, nav)
-    render_references(A, by_ds, out, nav)
-    render_captures(A, by_ds, out, nav)
-    render_prompts(A, out, nav)
-    render_labels(A, by_ds, out, nav)
-    render_reference_index(A, by_ds, out, nav)
-    write_search(A, by_ds, out)
-    write_pick(A, by_ds, out, arms_rows)
-    render_inspect(A, out, nav=nav, pages=True, pick=True)
-    return {
-        "goals": n_goals,
-        "datasets": len(by_ds),
-        "arms": sum(len(v["arms"]) for v in by_ds.values()),
-        "systems": _n_systems(by_ds),
-        "references": sum(len(v["refs"]) for v in by_ds.values()),
-    }
+    SCORER_PAGES.update(site.scorer_pages)
+    site.export(out)
+    return site.counts()
 
 
 #: Where the run inspector's API answers, written into every page (data-api) for its scripts:

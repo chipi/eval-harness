@@ -414,7 +414,7 @@ format-check:
 catalog:
 	$(PYTHON) scripts/cli.py catalog $(ARGS)
 
-catalog-serve: catalog
+catalog-serve:  # renders its pages on request (RFC-040): nothing to build first
 	$(PYTHON) scripts/catalog_serve.py $(ARGS)
 
 # The whole thing on 127.0.0.1, to try it: the catalog and the run inspector over this project's data. STORE=sqlite

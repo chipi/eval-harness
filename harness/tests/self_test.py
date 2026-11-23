@@ -1132,7 +1132,15 @@ def test_example_scorer_suites_pass() -> None:
         ),
         (
             "test_catalog_fresh.py",
-            "the catalog never goes stale: a write refreshes the server and rebuilds the pages, one rebuild waiting at most",
+            "the catalog never goes stale: each page rendered when asked for, a write on the next read, no rebuild job",
+        ),
+        (
+            "test_catalog_render.py",
+            "one renderer, two drivers (RFC-040): every page rendered on its own is the exported file, on threads too",
+        ),
+        (
+            "test_catalog_render_real.py",
+            "this repository's catalog: every page rendered on its own, in a shuffled order, is the exported file",
         ),
         (
             "test_catalog_scorers.py",

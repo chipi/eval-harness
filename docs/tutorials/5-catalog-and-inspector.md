@@ -54,13 +54,14 @@ evh catalog-serve
 ```text
 catalog: http://127.0.0.1:18xxx/.build/catalog/   (Ctrl-C to stop)
   the project .../my-evals, on a port of its own
-  the pages are rebuilt when the data changes: a write through the API at once, any other on the next read
+  each page is rendered when it is asked for, from the data as it is then: a write shows on the next read
 ```
 
 Open the address it prints. The port is this project's own, between 18000 and 18999 and the same
-every time, the next free one if another program holds it (`--port` picks one). It keeps the pages
-current: a new run or any other change to the data (made here or on the command line) rebuilds them
-in a `catalog` job, and the old pages are served until the new ones are whole.
+every time, the next free one if another program holds it (`--port` picks one). It needs no
+`evh catalog` first, and its pages are never stale: each is rendered when you open it, from the
+data as it is then, so a new run or any other change (made here or on the command line) is on the
+next page you open. `evh catalog` writes the same pages as files, for a host with no server.
 
 ## 3. Every page, and its command
 

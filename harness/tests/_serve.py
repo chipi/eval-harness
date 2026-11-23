@@ -47,7 +47,7 @@ def startup(p: subprocess.Popen, lines: list[str]) -> list[str]:
     assert p.stdout is not None
     while line := p.stdout.readline():
         lines.append(line.rstrip())
-        if "rebuilt when the data changes" in line:
+        if "rendered when it is asked for" in line:
             break
     drain(p, lines)
     return lines

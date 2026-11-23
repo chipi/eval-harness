@@ -8,7 +8,11 @@ references and the baselines say, and the decision is made from that."""
 
 from __future__ import annotations
 
+import copy
 import statistics
+import threading
+from collections.abc import Iterator
+from contextlib import contextmanager
 
 from evaluation_harness.axes import strategy_of
 from evaluation_harness.catalog_adapter import item_fields
@@ -386,7 +390,54 @@ def goal_clusters(A, g: dict, ds: str) -> tuple[dict | None, str | None]:
     return {i: v[field] for i, v in values.items() if v.get(field) not in (None, "")}, field
 
 
+#: The decisions kept while a catalog Site renders one state of the data (RFC-040): the home page's glance, the goals
+#: page and a goal's own page decide the same groups, 96 decisions on this repository's catalog, 5 of its 30 s.
+_KEPT = threading.local()
+
+
+@contextmanager
+def decisions_kept(memo: dict) -> Iterator[None]:
+    """Within the block, on this thread, a group's decision is made once and kept in `memo`: for one state of the data
+    only (a new state needs a new memo). Each caller gets its own copy, as it would get its own decision."""
+    prev = getattr(_KEPT, "memo", None)
+    _KEPT.memo = memo
+    try:
+        yield
+    finally:
+        _KEPT.memo = prev
+
+
 def group_decision(
+    A,
+    g: dict,
+    ds: str,
+    rows: list,
+    gm: str,
+    retired_in: dict,
+    gold: str | None = None,
+) -> dict:
+    """`_group_decision`, kept within `decisions_kept`: keyed on everything it is given; what it reads from the adapter
+    (the scores, the goal's clusters, a measure's direction) one state of the data fixes."""
+    memo = getattr(_KEPT, "memo", None)
+    if memo is None:
+        return _group_decision(A, g, ds, rows, gm, retired_in, gold)
+    key = (
+        repr(g),
+        ds,
+        tuple(
+            (r["arm"], r["label"], tuple(r["flags"]), r.get("machine", ""), bool(r.get("baseline")))
+            for r in rows
+        ),
+        gm,
+        repr(sorted(retired_in.items())),
+        gold,
+    )
+    if key not in memo:
+        memo[key] = _group_decision(A, g, ds, rows, gm, retired_in, gold)
+    return copy.deepcopy(memo[key])
+
+
+def _group_decision(
     A,
     g: dict,
     ds: str,

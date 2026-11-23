@@ -1,6 +1,6 @@
 # RFC-040: The catalog rendered on request, and exported: one renderer, two drivers
 
-- **Status**: Accepted (0.8.1, planned). In 0.8.1, all six steps (owner, 2026-11-23); `research/internal/PLAN_0.8.1.md`, F3.
+- **Status**: Accepted and built (0.8.1): all six steps (owner, 2026-11-23); `research/internal/PLAN_0.8.1.md`, F3. "Built in 0.8.1" below.
 - **Authors**: Marko Dragoljevic
 - **Related RFCs**: [RFC-026](RFC-026-an-api-for-every-command.md) (the server's freshness: a write starts a `catalog`
   job, the pages are swapped in whole), [RFC-003](RFC-003-catalog-adapter.md) (the adapter the pages read),
@@ -170,11 +170,57 @@ the same fingerprint; it has three callers today, and the decisions are not amon
 - **Goal pages at 1.4-4.0 s.** Step 6 is part of "everything": if a goal page is still over about 1 s after the memo, the
   server warms it in the background after a data change, and a request that comes first renders it itself.
 
+## Built in 0.8.1
+
+**How, and where it differs from the design above.** The render functions were not split into "make the bytes" and
+"write" one by one (about thirty of them, in four modules). Every page already goes through one function,
+`write(out, rel, content)` (`catalog_build.py`); inside a Site's render it keeps the page instead of writing it. So the
+unit the server renders is a *group*: what one existing render call writes (a goal's page, an arm's, a dataset's page
+with its item pages, the home page with `home.js`, the redirects). The export and the server run the same calls, which is
+what makes a served page the exported file. `render_goals` lost its goal pages to `render_goal_page`, one group each.
+
+- `catalog_build.Site` (`prepare(A, built=…)`): the model (`collect`, the versions links, `arm_rows`, the metric index,
+  the recorded arms, the scorer pages), `owner(path)` (a group from the path alone: the top-level names in `_TOP`, the
+  goal, arm and metric pages from the model, a dataset's `~items-k` pages and the redirects by their folder),
+  `render(group)`, `page(path)` (rendered with its group the first time, then kept), `export(out)`, `addresses`.
+  `build()` is `prepare` and `export`; its output is unchanged (below).
+- What a render reads that was a module global is the Site's, per thread: the footer's time (`built`), the recorded
+  arms, the scorer pages, the pages so far (`_RENDER`). The module's globals stay for a project's builder that calls
+  `arm_link` outside a render. Renders take one lock per process (`_RENDER_LOCK`, risk 3): the p-values' cache takes
+  none of its own.
+- The decisions memo (step 4) is `goal_views.decisions_kept`, held by a Site while it renders: a group's decision made
+  once per state, keyed on everything `group_decision` is given, each caller getting its own deep copy.
+- The server (`catalog_serve.py`): one current Site, prepared on the first page after a change (one at a time; a
+  generation counter keeps a model prepared across a change from being kept) and dropped on the next change or a new
+  day. `fresh_check`, `data_changed` and a server job's end drop it (`renew`) where they started a `catalog` job; the
+  home page, the goals page and each goal's page are rendered ahead in a thread (step 6). A path the Site does not
+  render falls through to the folder, so a page a project's builder wrote there is still served. The server needs no
+  catalog built first; health says `catalog: {mode: "on request", state: idle|failed, built_at, prepared, failed}`.
+
+**Measured (this repository, files store, p-values cached, 2026-11-23).**
+
+| | before | after |
+| --- | --- | --- |
+| `evh catalog` | 13 s | 11 s (the memo) |
+| its 1,917 files | | identical, but for the footer's time (compared file by file with a build of the code before) |
+| the model, on the first page after a change | (a 13 s rebuild job) | 2.3 s |
+| home page | | 0.29 s |
+| a goal page | | 0.38-1.25 s (0.53-1.93 s without the memo); rendered ahead after a change |
+| goals page, an arm page, datasets page | | 0.02 s, under 0.01 s, 0.02 s |
+
+**Tests.** `test_catalog_render.py` (tests 1, 2 and 4 in a tutorial project, both stores, 13 checks),
+`test_catalog_render_real.py` (this repository: all 1,906 pages rendered on their own in a shuffled order equal the
+export, each one's group the one its path names), `test_catalog_fresh.py` rewritten for test 3 (33 checks, both
+stores: a write on the next page, no `catalog` job in any of it, many reads during writes each one whole page of one
+state, a failed render answering 500 and recovering).
+
 ## Not covered
 
-- The server and the browser tests were not run against any of this; nothing is built.
-- The thread-safety of `stats._KEPT` is not verified.
-- `catalog_charts.py` was read only through the profile.
-- The equality test's time on the SQLite store was not measured.
-- The measurements are from one repository on one machine, partly taken while a browser test ran alongside; the
-  per-page times on a project with more goals or rounds are not known.
+- Pages are rendered one at a time per process: a request waits behind another's render, at most a goal page (1.25 s
+  here). Not measured under concurrent load beyond the fresh test's six readers.
+- The day in the cache's key is the server's local date, as `date.today()` is in the models page.
+- The deployment (`--public`) is unchanged: it serves the export from nginx. The server's pages use its default options
+  (`--api`, `--brand`, …): the rebuild job it replaces passed none either.
+- `catalog_charts.py` was read only through the profile; the charts are not memoized.
+- The measurements are from one repository on one machine; the per-page times on a project with more goals or rounds
+  are not known.

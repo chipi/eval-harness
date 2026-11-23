@@ -211,7 +211,8 @@ file. Between the files of one command a reader can see some written and some no
 (a run appears with its `metrics.json`, last), and the rest is named in the build (step 1).
 
 `catalog` builds into the folder `catalog-serve` serves (`.build/catalog`, `build()` empties it first): as a job it
-builds beside it and swaps it in, as the server's own **Rebuild the catalog** already does, so the pages never
+builds beside it and swaps it in, as the server's own **Rebuild the catalog** already does (until [RFC-040](RFC-040-catalog-rendered-on-request.md), 0.8.1:
+the server now renders each page on request and starts no build), so the pages never
 disappear, and holds `catalog` so two builds never empty each other's folder. Built (step 4): the command itself
 builds beside (a folder of its own per process) and swaps, from the terminal too. The swap is one system call on
 Linux (`renameat2`, `RENAME_EXCHANGE`) and macOS (`renamex_np`, `RENAME_SWAP`), through ctypes: two renames left the
