@@ -137,6 +137,18 @@ try:
         r.returncode == 0,
         out(r)[-300:],
     )
+    # import-run writes `dirty: null` with its own source, and a record older than `source` has neither: neither is
+    # "git was asked and could not say", so each promotes (and labels) as before.
+    for name, build in (
+        ("imported", {"ref": "abc123def456", "dirty": None, "source": "import-run --build-ref"}),
+        ("declared", {"ref": "v1.2.3", "dirty": None, "source": "EVAL_BUILD_REF"}),
+        ("legacy", {"ref": "abc123def456", "dirty": None}),
+    ):
+        run = clone(two, f"two_v1_{name}", build)
+        r = evh("run-promote", "--run", run, "--reason", f"a {name} build, dirty unknown by its source")
+        check(f"run-promote takes a {name} build whose dirty is null", r.returncode == 0, out(r)[-300:])
+    r = evh("label-from-run", "--run", "two_v1_imported", "--set", "s_imported")
+    check("label-from-run takes an imported build too", r.returncode == 0, out(r)[-300:])
 
     r = evh("label-from-run", "--run", a, "--set", "s_unknown")
     check(
