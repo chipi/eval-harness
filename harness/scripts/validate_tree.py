@@ -72,9 +72,9 @@ Each check exists because its absence let a real defect through somewhere:
   V28 rows           a stored row holding a run setting (generation_config, generation_requested,
                      encoder_window) equal to its run's `call`, or a usage key outside the kept set
                      (format 7, RFC-033)
-  V29 repeats        a repeat's `of` naming a run of another system or dataset, a round arm that records
-                     a repeat where it is no longer read (RFC-041 F2); a repeat whose `of` is not there is
-                     a note naming its run.json
+  V29 repeats        a repeat's `of` naming a run of another system or dataset (RFC-041 F2); a repeat
+                     whose `of` is not there, and a round arm that records a repeat where it is no longer
+                     read, are notes (a round reads what it recorded)
   V30 recorded links a goal naming a dataset that does not exist, a score whose reference (gold or silver) or
                      label set is not there: each named with the file that holds the link (RFC-041 F7)
 
@@ -2161,7 +2161,7 @@ def v29_repeats_and_the_arms_that_read_them() -> None:
     """V29: a run's `of` (a repeat's, a re-timing's, a pair's) names a run of its own system and dataset (a repeat of
     another system's run is no repeat of it), and a round arm's runs are still read in the arm the round names (RFC-041 F2): a repeat of the same
     measurement as the run it repeats is read in that run's arm, so a round that recorded it under `repeats` no longer
-    reads it there."""
+    reads it there. A round reads what it recorded and there is no migration (RUNBOOK 1531): a note, never a failure."""
     from evaluation_harness import _rounds  # noqa: PLC0415
     from evaluation_harness.model import rounds as _model_rounds  # noqa: PLC0415
 
@@ -2194,10 +2194,10 @@ def v29_repeats_and_the_arms_that_read_them() -> None:
                 read_in = {_mr.arm_of(sd, rec) for sd, rec in recs if rec}
                 joined = next((j for sd, rec in recs if rec and (j := _mr.joins(sd, rec))), None)
                 if joined and want not in read_in:
-                    bad.append(
+                    notes.append(
                         f"round {rnd['round_id']} of {rnd['goal']} records {rid} in its arm {want}, where it is no "
                         f"longer read: it is a repeat of the same measurement as {joined}, read in that run's arm "
-                        f"({', '.join(sorted(read_in))}). The round's arm needs relabelling (a migration)"
+                        f"({', '.join(sorted(read_in))}). The round reads what it recorded"
                     )
     for b in bad[:10]:
         print(f"       {b}")

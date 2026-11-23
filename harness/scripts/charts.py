@@ -435,7 +435,7 @@ def _tokens(A, arm: str) -> dict[str, float]:
 def _claim(filled: bool, y: float, x: float | None) -> str:
     """What a point may be called (RFC-034 §3): a quadrant only for a significant difference."""
     if not filled:
-        return "no gain shown, costs more" if (x or 0) > 0 else "not separated"
+        return "no gain shown, costs more" if x is not None and x > 0 else "not separated"
     up = y > 0
     # A cost no different from the base's is not "cheaper": named as the same cost (review, 2026-11-19: arms with no
     # cost at all were called "better and cheaper"), and a cost not recorded on the items both share as that.
@@ -547,15 +547,16 @@ def gain_cost(goal: str, round: str | None = None, study: str | None = None) -> 
             f"{round or study}: no arm or trial shares an {A.item_word} with {base_name}: nothing to compare",
             "not-enough",
         )
-    priced = any((r["cost_delta_per_item"] or 0) != 0 for r in drawn)
-    by_tokens = not priced and any((r["tokens_delta_per_item"] or 0) != 0 for r in drawn)
+    priced = any(r["cost_delta_per_item"] not in (None, 0) for r in drawn)
+    by_tokens = not priced and any(r["tokens_delta_per_item"] not in (None, 0) for r in drawn)
     x_key = "tokens_delta_per_item" if by_tokens else "cost_delta_per_item"
     for r in drawn:  # the quadrant named on the axis drawn: cost, else tokens
         r["claim"] = _claim(r["_significant"], r["quality_delta"], r[x_key])
     for r in rows:
         r.pop("_significant", None)
+    known = [r for r in drawn if r[x_key] is not None]
     points = []
-    for r in drawn:
+    for r in known or drawn:
         filled = not r["claim"].startswith(("not separated", "no gain"))
         x = r[x_key] if r[x_key] is not None else 0.0
         cost = f"{x:+.0f} tokens" if by_tokens else f"{x:+.6f} USD"
@@ -572,6 +573,7 @@ def gain_cost(goal: str, round: str | None = None, study: str | None = None) -> 
             }
         )
     left_out = [r["arm"] for r in rows if r["quality_delta"] is None]
+    unknown = [r["arm"] for r in drawn if r[x_key] is None] if known else []
     flipped = " (lower is better: flipped, so up is better)" if lower else ""
     caption = (
         f"Against {base_name} ({against}) on {ds}: up is better on {metric}{flipped}, with the 95% interval as a "
@@ -583,10 +585,18 @@ def gain_cost(goal: str, round: str | None = None, study: str | None = None) -> 
             ""
             if priced or by_tokens
             else " No arm recorded a cost or tokens different from the baseline's: the cost axis is flat."
+            if known
+            else " No arm recorded a cost or tokens: their cost is unknown, not zero, and the marks sit at 0 only because "
+            "the axis has no measure."
         )
         + (
             f" Not drawn, sharing no {A.item_word} with the baseline: {', '.join(left_out)}."
             if left_out
+            else ""
+        )
+        + (
+            f" Not drawn, its {'tokens' if by_tokens else 'cost'} unknown: {', '.join(unknown)}."
+            if unknown
             else ""
         )
         + _through(scorer)

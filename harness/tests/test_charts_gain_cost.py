@@ -182,6 +182,51 @@ check(
     (c["rows"][0]["claim"], none_c["rows"][0]["claim"]),
 )
 
+# an arm whose cost is unknown is not a free arm (RFC-041 F3, RUNBOOK 886-887): it is left off the cost axis and named in
+# the caption; an arm that recorded $0 is drawn at its difference from the base's
+u = round_chart(
+    "higher",
+    {
+        "runs/d/base": scores(0.5, 0.0, cost=0.01),
+        "runs/d/priced": scores(0.5, 0.2, cost=0.02),
+        "runs/d/free": scores(0.5, 0.2, cost=0.0),
+        "runs/d/unpriced": scores(0.5, 0.2),
+    },
+)
+urows = {r["arm"]: r for r in u["rows"]}
+check(
+    "an arm with no recorded cost is not drawn on the cost axis and the caption names it; a recorded $0 is drawn",
+    set(circles(u["svg"])) == {"priced", "free"}
+    and "its cost unknown: unpriced" in u["caption"]
+    and urows["unpriced"]["claim"] == "better, its cost not compared"
+    and urows["unpriced"]["cost_delta_per_item"] is None
+    and urows["free"]["cost_delta_per_item"] == -0.01,
+    (circles(u["svg"]), u["caption"][-240:], urows["unpriced"]),
+)
+check(
+    "no arm priced, none with tokens: the caption says the cost is unknown, not zero, and why the marks sit at 0",
+    "cost is unknown, not zero" in none_c["caption"] and "cost axis is flat" not in none_c["caption"],
+    none_c["caption"][-260:],
+)
+t = round_chart(
+    "higher",
+    {
+        "runs/d/base": scores(0.5, 0.0, tokens=100.0),
+        "runs/d/terse": scores(0.5, 0.2, tokens=60.0),
+        "runs/d/uncounted": scores(0.5, 0.2),
+    },
+)
+check(
+    "on the tokens axis an arm with no tokens recorded is left off and named, the same",
+    set(circles(t["svg"])) == {"terse"} and "its tokens unknown: uncounted" in t["caption"],
+    (circles(t["svg"]), t["caption"][-200:]),
+)
+check(
+    "a gain that is not separated, with no cost known on either side, is 'not separated': an unknown cost is not 'costs more'",
+    charts._claim(False, 0.1, None) == "not separated" and charts._claim(False, 0.1, 0.0) == "not separated",
+    (charts._claim(False, 0.1, None), charts._claim(False, 0.1, 0.0)),
+)
+
 # a study decided on a measure other than the goal's primary is drawn in the study's direction
 arms = {"runs/d/base_v1": scores(0.5, 0.0, cost=0.01), "runs/d/t1_v1": scores(0.5, 0.2, cost=0.01)}
 ms.state = lambda goal, sid, data=None: {

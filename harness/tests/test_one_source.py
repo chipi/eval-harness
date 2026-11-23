@@ -539,12 +539,6 @@ ALLOWED: dict[tuple[str, str, str], str] = {
     "`spent_usd`; a smoke of no spend adds no event",
     (
         "F3/cost-or-zero",
-        "charts.py",
-        "_claim",
-    ): "a gain with no cost difference to draw reads the same unknown or zero",
-    ("F3/cost-or-zero", "charts.py", "gain_cost"): "the same: whether any arm has a price difference to draw",
-    (
-        "F3/cost-or-zero",
         "cost_report.py",
         "billed_and_recorded",
     ): "a total of recorded costs, beside the billed ones",
@@ -586,21 +580,37 @@ ALLOWED: dict[tuple[str, str, str], str] = {
         "F4/hosts",
         "catalog_serve.py",
         "allowed",
-    ): "which host names this listener answers to, and whether a token is "
-    "asked: the transport, not whether a read is public (an in-process EVH_PUBLIC call has no listener)",
-    ("F4/hosts", "catalog_serve.py", "_api"): "the origins a viewer's page may call from",
-    ("F4/hosts", "catalog_serve.py", "do_HEAD"): "a listener with hosts serves no file: nginx does",
+    ): "transport: the listener's host allow-list, not whether the surface is public; it decides which host names "
+    "this listener answers to and whether a token is asked (an in-process EVH_PUBLIC call has no listener)",
+    (
+        "F4/hosts",
+        "catalog_serve.py",
+        "_api",
+    ): "transport: the listener's host allow-list, not whether the surface is public; the origins a viewer's page may "
+    "call from",
+    (
+        "F4/hosts",
+        "catalog_serve.py",
+        "do_HEAD",
+    ): "transport: the listener's host allow-list, not whether the surface is public; a listener with hosts serves no "
+    "file: nginx does",
     (
         "F4/hosts",
         "catalog_serve.py",
         "_get",
-    ): "trusts a client header only behind the named hosts: the transport",
+    ): "transport: the listener's host allow-list, not whether the surface is public; a client header is trusted only "
+    "behind the named hosts",
     (
         "F4/hosts",
         "catalog_serve.py",
         "_json",
-    ): "tells the Workbench's page it is a viewer, on a listener with hosts",
-    ("F4/hosts", "catalog_serve.py", "main"): "sets the hosts from `--public`",
+    ): "transport: the listener's host allow-list, not whether the surface is public; it tells the Workbench's page it "
+    "is a viewer, on a listener with hosts",
+    (
+        "F4/hosts",
+        "catalog_serve.py",
+        "main",
+    ): "transport: the listener's host allow-list, not whether the surface is public; sets the hosts from `--public`",
     (
         "F4/publish",
         "catalog_serve.py",

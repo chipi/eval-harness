@@ -724,24 +724,25 @@ def _run(args: argparse.Namespace) -> int:
     if not groups:
         arms = (by_ds.get(ds) or {}).get("arms")
         measure = ((goal or {}).get("success_criteria") or {}).get("primary", {}).get("measure")
-        die(
-            (
+        if goal and arms and args.label is None and not args.match and keep is None:
+            die(
                 f"no arm on dataset {ds!r} records {measure}, which goal {goal['goal_id']} reads"
                 + (
                     f"; the arms record {', '.join(seen)}.\n  Read the dataset without the goal: evh leaderboard {ds} "
                     "(no --goal or --round); `evh validate` warns about the goal's measure (V14)"
                     if seen is not None
                     else ""
-                )
-                if goal and arms and args.label is None and not args.match and keep is None
-                else f"no runs on dataset {ds!r}"
-                + (f" matching {args.match!r}" if args.match else "")
-                + (f" read as {args.label!r}" if args.label else "")
-                + (f" in round {args.round}" if args.round else "")
-                + ".\n  "
-                + how("evh runs-list", "make runs-list")
-                + "   to see what exists"
-            ),
+                ),
+                "nothing-measured",
+            )
+        die(
+            f"no runs on dataset {ds!r}"
+            + (f" matching {args.match!r}" if args.match else "")
+            + (f" read as {args.label!r}" if args.label else "")
+            + (f" in round {args.round}" if args.round else "")
+            + ".\n  "
+            + how("evh runs-list", "make runs-list")
+            + "   to see what exists",
             "not-found",
         )
     rank = {"gold": 0, "silver": 1, "judge": 3}

@@ -413,21 +413,28 @@ def line_of(out: str, tag: str) -> list[str]:
 
 
 def broken(label: str, mutate, tag: str, names: list[str], fails: bool = True) -> None:
-    """On a copy of the project, `mutate` breaks one link; check `tag` fails (or only notes, `fails` False) and
-    names every string of `names`."""
+    """On a copy of the project, `mutate` breaks one link; check `tag` fails (or, with `fails` False, only notes: no
+    `FAIL tag`, exit 0, and a `note:` line) and names every string of `names`."""
     proj, env = fresh()
     mutate(proj, env)
-    out = validate(proj, env)
-    shown = " ".join(line_of(out, tag)) if fails else out
+    r = evh(proj, env, "validate")
+    out = r.stdout + r.stderr
+    shown = (
+        " ".join(line_of(out, tag))
+        if fails
+        else " ".join(ln for ln in out.splitlines() if ln.lstrip().startswith("note:"))
+    )
     check(
         f"validate: {label}: {tag + ' fails' if fails else 'a note'}, naming {', '.join(names)}",
-        (f"FAIL {tag}" in out if fails else True)
+        (f"FAIL {tag}" in out if fails else f"FAIL {tag}" not in out)
         and all(n in shown for n in names)
         and "Traceback" not in out,
         shown[-600:],
     )
     if fails:
         check(f"validate: {label}: the run exits non-zero", "VALIDATION FAILED" in out, out[-200:])
+    else:
+        check(f"validate: {label}: the run exits 0", r.returncode == 0, f"exit {r.returncode}: {out[-300:]}")
 
 
 def scored_run(proj: Path, run_id: str = FIRST_Y) -> str:
@@ -457,9 +464,9 @@ def lose_baseline_run(proj: Path, env: dict[str, str]) -> None:
 
 def lose_of(proj: Path, env: dict[str, str]) -> None:
     """A repeat's `of`, made to name a run that is not there."""
-    rec = _runstore.record_of(proj, F["joined"])
+    rec = _runstore.record_of(proj, F["changed_run"])
     rec["of"] = "ghost_run"
-    put(proj, f"runs/{F['joined']}/run.json", json.dumps(rec, indent=2) + "\n")
+    put(proj, f"runs/{F['changed_run']}/run.json", json.dumps(rec, indent=2) + "\n")
 
 
 def lose_goal_dataset(proj: Path, env: dict[str, str]) -> None:
@@ -488,7 +495,7 @@ broken(
 )  # fmt: skip
 broken(
     "a repeat's `of` that is not there",
-    lose_of, "V29", [f"runs/{F['joined']}/run.json", "ghost_run"], fails=False,
+    lose_of, "V29", [f"runs/{F['changed_run']}/run.json", "ghost_run"], fails=False,
 )  # fmt: skip
 broken(
     "a goal's dataset that is not there",

@@ -136,13 +136,14 @@ try:
         rows,
     )
 
-    # -- --goal G keeps the refusal, and says more -----------------------------------------------------------------
+    # -- --goal G stops, and says more: the goal is there, nothing it reads was measured (exit 7, RUNBOOK) ------------
     r = evh("leaderboard", "prose_v1", "--goal", "g_prose")
     err = r.stdout + r.stderr
     check(
-        "--goal: still refuses (not-found), naming the measure, what the arms record and how to read without the goal",
-        r.returncode != 0
-        and "not-found" in err
+        "--goal: stops with exit 7, nothing measured (not not-found), naming the measure, what the arms record and how to read without the goal",
+        r.returncode == 7
+        and "ERROR (nothing-measured)" in r.stderr
+        and "not-found" not in err
         and PROSE in err
         and "which goal g_prose reads" in err
         and "wer" in err

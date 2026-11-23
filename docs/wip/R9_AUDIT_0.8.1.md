@@ -246,6 +246,24 @@ A writer bug and a reader bug cancel in these. Each is marked with what, if anyt
 12. **Two `ALLOWED` exceptions in `test_one_source.py` with no document.** `catalog_serve` reading `LIMITS["hosts"]` as "transport" (RFC-041:146-149 says every reader calls `_visibility.public()`), and `charts._claim`/`gain_cost` reading an unknown cost as zero (RUNBOOK:886-887). Rows P6, U15.
 13. **A study's `stop`:** `{"usd": 1}` alone is a problem and needs `wall_h`; RUNBOOK:685's example gives `usd` with `trials`, and RFC-041:136 says only `is not None`. Row U6.
 
+## 4b. Decided (owner, 2026-11-23)
+
+The owner delegated to the recommendations. Decisions 3, 4, 7, 9 and 10 are the docs agent's (`081-docs`); the others are in `081-r9`.
+
+1. A repeat whose `of` names a run that is not there: V29 prints a note, not a FAIL (`data-rm` is documented). Row M21.
+2. A round that recorded a repeat under `repeats` which now joins its arm: V29 notes it and does not fail, and V14 no longer names the arm: a round reads what it recorded (RUNBOOK 1531), and there is no migration. Row M12.
+3. docs.
+4. docs.
+5. `primary.direction` is required, as `goal.schema.json` and RUNBOOK 531/566 say. The three tests that write goals without it also assert that `evh validate` fails naming `direction`. No schema changed. Row D27.
+6. One rule for a score that is not a number, on read as on write: `_common.counted` (a number as it is, 0 for a NaN, an infinity, a None, a boolean or text, the score of a failed item). `_record.non_number` (write), `_runs.score_of`, `model.runs.record` (a non-finite mean is worked again over the items), `stats.exact_p`, `sign_flip_p`, `exact_ci` and `compare()` (read) use it. Row S8.
+7. docs.
+8. A legacy run (`dirty: null`, no `source`) is an unknown build: `run-promote` and `label-from-run` refuse it without `--allow-dirty` (`_common.tree_state`). An imported or declared (`EVAL_BUILD_REF`) build is still accepted (RFC-041 F3). Row U3.
+9. docs.
+10. docs.
+11. `leaderboard --goal G`, where G exists and no run records its measure: `ERROR (nothing-measured)`, exit 7, not `not-found`. Row D33.
+12. `charts._claim` and `charts.gain_cost` no longer read an unknown cost as zero: an arm with an unknown cost is left off the cost axis and named in the caption. The `catalog_serve` `LIMITS["hosts"]` entries stay allowed, each reason saying "transport: the listener's host allow-list, not whether the surface is public". Rows U15, P6.
+13. A study's `stop` needs at least one bound (`trials`, `usd` or `wall_h`); `{"usd": 1}` alone is valid. Row U6.
+
 ## 5. Documents that disagree with the code and the tests (fix the document)
 
 | document:line | says | now |
