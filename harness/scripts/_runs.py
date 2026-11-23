@@ -476,7 +476,8 @@ def deciding_metric(
     runs: Iterable[Run] | None = ...,
     goals: dict | None = ...,
     refuse: Literal[True] = ...,
-) -> str: ...
+) -> str:
+    """The deciding metric: a name, or the refusal (`refuse=True`, the default)."""
 
 
 @overload
@@ -488,7 +489,8 @@ def deciding_metric(
     runs: Iterable[Run] | None = ...,
     goals: dict | None = ...,
     refuse: bool,
-) -> str | None: ...
+) -> str | None:
+    """The deciding metric, or None when `refuse` is False and none decides."""
 
 
 def deciding_metric(
