@@ -15,6 +15,7 @@ from __future__ import annotations
 import html
 from datetime import date, timedelta
 
+from evaluation_harness import _common
 from evaluation_harness.model.models import deployments_of, status_of
 
 #: A deployment last checked longer ago than this is shown muted: it may no longer be what runs there.
@@ -161,7 +162,7 @@ def stale(b: dict, today: date | None = None) -> bool:
     """Whether a deployment's build was last checked more than STALE_DAYS ago."""
     d = day(b.get("checked_at"))
     try:
-        return date.fromisoformat(d) < (today or date.today()) - timedelta(days=STALE_DAYS)
+        return date.fromisoformat(d) < (today or _common.today()) - timedelta(days=STALE_DAYS)
     except ValueError:
         return False
 
@@ -319,7 +320,7 @@ def render_models(A, by_ds: dict, out, nav: list, arms_rows: list[dict] | None =
     rows = sorted(
         model_rows(A, by_ds, arms_rows), key=lambda r: (order.get(r["status"], 4), r["name"].lower())
     )
-    today = date.today()
+    today = _common.today()
     trs = []
     for r in rows:
         # One line per cell (owner, 2026-10-31): the deployments by their short ids, where each runs on hover.

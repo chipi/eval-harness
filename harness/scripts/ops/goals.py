@@ -57,9 +57,7 @@ def list_goals(period: str | None = None) -> dict[str, Any]:
     """Every goal: its id, title, status and primary measure, its datasets, how many systems were filed for it, the arm each
     of its decisions recommends (with what it costs and how fast it is against the baseline), and its studies; with
     `period`, each goal's runs and spend in the period against the one before, and what happened in it."""
-    from datetime import date  # noqa: PLC0415
-
-    from evaluation_harness import _jsonout  # noqa: PLC0415
+    from evaluation_harness import _common, _jsonout  # noqa: PLC0415
     from evaluation_harness import catalog_build as cb  # noqa: PLC0415
     from evaluation_harness import catalog_periods as cp  # noqa: PLC0415
     from evaluation_harness.model import goal_views as gv  # noqa: PLC0415
@@ -106,7 +104,7 @@ def list_goals(period: str | None = None) -> dict[str, Any]:
         got = period_views.rows_in(A, by_ds, rows_p, key)
         for row in out["goals"]:
             row["period"] = _jsonout.plain(got["rows"].get(row["goal"]))
-        b = cp.bounds(key, date.today(), cb.window(A, by_ds)["first"])
+        b = cp.bounds(key, _common.today(), cb.window(A, by_ds)["first"])
         out["period"] = {
             "key": key,
             "line": got["line"],

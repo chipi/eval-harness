@@ -33,7 +33,6 @@ import pickle  # nosec B403 - the answers this process kept, never bytes from el
 import threading
 from collections import OrderedDict
 from collections.abc import Callable, Hashable, Iterator
-from datetime import date
 from pathlib import Path
 from typing import Any, TypeVar
 
@@ -206,7 +205,7 @@ def result(name: str, args: dict[str, Any], compute: Callable[[], T]) -> T:
         "result",
         name,
         json.dumps(args, sort_keys=True, default=str),
-        date.today().toordinal(),
+        _common.today().toordinal(),
         _visibility.public(),
     )
     blob = get(key, build, weigh=lambda b: len(b or b"") // 64 + 1)

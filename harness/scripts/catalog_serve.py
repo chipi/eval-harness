@@ -777,11 +777,9 @@ def _wait_job(job_id: str) -> dict:
 def current_site():
     """A model of the data at least as new as it was when this was called: the one kept, the one another request was
     preparing meanwhile, or one prepared now (one at a time). Raises what preparing it raised."""
-    from datetime import date  # noqa: PLC0415
-
     from evaluation_harness import catalog_build  # noqa: PLC0415
 
-    day = date.today().isoformat()
+    day = _common.today().isoformat()
 
     def kept(asked: int):
         s = SITE["site"]

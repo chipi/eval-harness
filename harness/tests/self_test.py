@@ -1107,6 +1107,10 @@ def test_example_scorer_suites_pass() -> None:
             "whether a call is public is one function: an in-process public call is refused an item's text, an unreadable dataset is hidden",
         ),
         (
+            "test_today.py",
+            "which day it is is the UTC date from one function: staleness, the page cache and the view cache, no date.today() elsewhere",
+        ),
+        (
             "test_why_lines.py",
             "a goal page's reasons with many arms: the scorer named once, a long list of contenders or undecided as a count",
         ),

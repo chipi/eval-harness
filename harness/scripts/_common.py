@@ -18,7 +18,7 @@ import socket
 import subprocess
 import sys
 import tempfile
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any, NoReturn
 
@@ -380,6 +380,12 @@ def warn_if_ignored(run_dir: Path) -> None:
 def now() -> str:
     """Return the current UTC time in ISO 8601 format."""
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def today() -> date:
+    """Today's date in UTC: the zone runs are stamped in (`now`) and periods compare `created_at[:10]` in. The only way a
+    reader asks which day it is: the machine's local date is another day for some hours of each (test_today.py)."""
+    return datetime.now(timezone.utc).date()
 
 
 def sha256(path: Path) -> str:

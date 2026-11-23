@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from datetime import date
 
+from evaluation_harness import _common
 from evaluation_harness import catalog_build as cb
 from evaluation_harness import catalog_periods as cp
 
@@ -36,6 +37,6 @@ def rows_in(A, by_ds: dict, rows: dict, key: str | None, today: date | None = No
     """{"rows": each row's period numbers, "line": the line that says the period}, or empty without a period."""
     if not key:
         return {"rows": {}, "line": ""}
-    today = today or date.today()
+    today = today or _common.today()
     first = cb.window(A, by_ds)["first"]
     return {"rows": cp.in_period(rows, key, today, first), "line": says(span(key, today, first))}
