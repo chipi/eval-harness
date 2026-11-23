@@ -113,6 +113,8 @@ from evaluation_harness._common import (
     system_files,
 )
 from evaluation_harness._runs import (
+    ASSUMED,
+    assumed_note,
     direction,
     direction_source,
     goal_datasets,
@@ -1413,6 +1415,27 @@ def v14_goals() -> None:
                 f"V14 goal {gid}: primary measure {measure!r} is recorded by no run on {', '.join(on)}; "
                 f"those runs record {', '.join(sorted(on_record))}"
             )
+    # A direction nobody declared is the default, higher (`_runs.ASSUMED`): a note for each goal primary measure and each
+    # primary_metric a run records whose direction is that, so a ranking on it is a choice somebody made.
+    for gid, g in sorted(goals.items()):
+        primary = (g.get("success_criteria") or {}).get("primary") or {}
+        measure = primary.get("measure")
+        if (
+            not measure or primary.get("direction") is not None
+        ):  # a direction that is no direction has its own note
+            continue
+        by = direction_source(measure, runs=filed.get(gid, []), goals={gid: g})[1]
+        if line := assumed_note(measure, by):
+            notes.append(f"V14 goal {gid}: primary {line}")
+    assumed_on: dict[str, list[str]] = defaultdict(list)
+    for ds, found in sorted(runs_on_ds.items()):
+        for measure in sorted({str(m["primary_metric"]) for _d, m in found if m.get("primary_metric")}):
+            if assumed_note(measure, direction_source(measure, dataset=ds, runs=found, goals=goals)[1]):
+                assumed_on[measure].append(ds)
+    for measure, dss in sorted(assumed_on.items()):
+        notes.append(
+            f"V14 runs: {assumed_note(measure, ASSUMED)} (the primary_metric recorded on {', '.join(dss)})"
+        )
     # A goal says nothing about a dataset it does not list. Where its measure is recorded on one, another goal, the runs
     # or the name table answer, and a note names both when the answer differs.
     for gid, g in sorted(goals.items()):

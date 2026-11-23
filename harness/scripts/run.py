@@ -1226,12 +1226,12 @@ def _refuse_repeat_beside_run(system_id: str, dataset_id: str, repeat: int) -> N
     allowed = {tuple(x) for x in ((policy if isinstance(policy, dict) else {}).get("duplicate_ok") or [])}
     if (dataset_id, system_id) in allowed:
         return
-    have = sorted(
-        {_model_runs.run_of(sd).name for sd, _rec in _model_runs.scored(dataset_id, system_id=system_id)}
-    )
-    if not have:
+    found = _model_runs.scored(dataset_id, system_id=system_id)
+    newest = _model_runs.latest(found)
+    if newest is None:
         return
-    last = have[-1]
+    have = sorted({_model_runs.run_of(sd).name for sd, _rec in found})
+    last = _model_runs.run_of(newest[0]).name
     die(
         f"{system_id} already has a measured run on {dataset_id}: {', '.join(have)}. A --repeat {repeat} set beside it "
         "would be a second measurement of the same arm: every reader averages them, and validate fails V8 once they "

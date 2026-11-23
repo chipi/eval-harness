@@ -151,7 +151,9 @@ def filter_dirt(status: str, data_rel: str | None) -> list:
     "commit after every run". All six local ML arms of 2026-09-30 needed
     their runs written outside the tree to get an honest flag.
 
-    Run output is not code. An UNTRACKED path under `<data_rel>runs/` is ignored, and under
+    Run output is not code. An UNTRACKED path under `<data_rel>runs/` is ignored (only that folder: the format-3
+    `runs-linux/`, `runs-pair/` and the like became runs of `runs/` by migration m0004, so in the current format
+    such a folder is a stray one, which could hold anything, and counts), and under
     `<data_rel>judge-summaries/` (a judging pass's summary) and `<data_rel>prompts/` (the prompt versions runs
     record, RFC-028); and a round's record under `<data_rel>rounds/`, new or changed: a run made in a round joins its
     arm there (RFC-032 step 5), so the round file changes with every run of it, and it says which arms a round

@@ -588,6 +588,13 @@ def test_untracked_run_output_does_not_make_the_tree_dirty() -> None:
         len(filter_dirt("?? harness/scripts/new_scorer.py\n?? harness/data/datasets/x.json", d)) == 2,
     )
     check(
+        "dirty: nor a prompt version recorded by a run (RFC-028), untracked only",
+        filter_dirt("?? harness/data/prompts/summary/ab12cd.json", d) == []
+        and len(filter_dirt(" M harness/data/prompts/summary/ab12cd.json", d)) == 1,
+    )
+    # Runs live in `runs/` only since migration m0004 folded format 3's runs-linux, runs-pair and runs-repeats into it
+    # (purpose retime, pair, repeat): the first rule matched `runs*` (RFC-028's wording), the code now matches `runs/` only.
+    check(
         "dirty: a runs-* folder is not the runs directory (format 3's layout is no run output)",
         len(filter_dirt("?? harness/data/runs-linux/cnn_bart_s_n200_v1_X/", d)) == 1,
     )

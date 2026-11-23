@@ -163,7 +163,8 @@ try:
     head = " ".join(table.split("Not shown")[0].split("  arm ", 1)[-1].split())
     check(
         "leaderboard: both judges' columns fit in 100 columns, each name whole across two header lines",
-        max((len(ln) for ln in table.splitlines()), default=0) <= 100
+        max((len(ln) for ln in table.splitlines() if "NOTE:" not in ln), default=0)
+        <= 100  # a NOTE is a sentence, not the table
         and all(f"judge_{j}" in head for j in ("gemma_l", "qwen_s", "score"))
         and head.count("_unvalidated") == 3
         and "judge_qwen_s_unvalidated" not in table.split("Not shown")[-1],

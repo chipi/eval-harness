@@ -29,6 +29,7 @@ from evaluation_harness._common import (
     tree_state,
     verdict_for,
 )
+from evaluation_harness._runs import note_assumed
 from evaluation_harness.model import runs as model_runs
 
 
@@ -241,6 +242,7 @@ def _run(args: argparse.Namespace) -> int:
             # it inflated the number a reader uses to decide whether to care.
             if verdict in ("better", "worse"):
                 worth += 1
+                note_assumed(k, kinds=kinds)
         shown.append((k, av, bv, d, verdict))
 
     if not _jsonout.table(["metric", "baseline", "candidate", "delta", "verdict"], shown):

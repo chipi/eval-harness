@@ -1917,6 +1917,32 @@ with tempfile.TemporaryDirectory() as td_, _runstore._InProject(Path(td_) / "pro
         and js.config_versions([{"system_id": "opus_v2"}, {"system_id": "mistral_v1"}]) == [],
     )
 
+# An arm's latest run is model.runs.latest (created_at first): neither the run id's order nor a created_at that is
+# the prefix of another (a date, then a timestamp of the same day) picks it.
+with tempfile.TemporaryDirectory() as td_, _runstore._InProject(Path(td_) / "proj") as rd:
+    for name, cid, at in (
+        ("z_old", "k_v1", "2026-01-02"),
+        ("a_new", "k_v1", "2026-01-02T08:00:00"),
+        ("b_first", "m_v1", "2026-02-01"),
+        ("a_last", "m_v1", "2026-03-01"),
+    ):
+        _runfix.put_run(
+            rd,
+            {
+                "system_id": cid,
+                "run_id": name,
+                "dataset_id": "ds",
+                "created_at": at,
+                "params": {"family": "x"},
+            },
+        )
+    found_ = {a["system_id"]: a["run"] for a in js.discover_arms("ds", "")}
+    check(
+        "default arms: the latest run is the one created last, not the one whose id sorts last",
+        found_ == {"k_v1": "a_new", "m_v1": "a_last"},
+        str(found_),
+    )
+
 # A real judge is never handed the fake judge's task, whatever run_judging does.
 with tempfile.TemporaryDirectory() as td_:
     handed: list = []

@@ -22,7 +22,7 @@ import re
 import statistics
 import textwrap
 
-from evaluation_harness import _jsonout, _outputs, _runs, _sheet, _visibility
+from evaluation_harness import _common, _jsonout, _outputs, _runs, _sheet, _visibility
 from evaluation_harness import catalog_arms as ca
 from evaluation_harness import catalog_build as cb
 from evaluation_harness import catalog_models as cm
@@ -145,6 +145,10 @@ def print_goal(r: dict) -> None:
     print(f"{r['title']}\n")
     print(textwrap.fill(r["statement"], width=96))
     print(f"\n  decision   {r['decision']}\n  decides    {r['measure']}, {r['direction']} is better")
+    if r["measure"] and (
+        own := _common.load_goals().get(r["goal"])
+    ):  # the line that printed "higher" is the goal's own
+        _runs.note_assumed(r["measure"], goals={r["goal"]: own})
     print(f"  strategy   {r['strategy']}: {r['strategy_about']}")
     print(f"  tie-break  {', '.join(r['tie_break'])}")
     for gr in r["guardrails"]:
