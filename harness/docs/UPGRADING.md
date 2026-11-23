@@ -50,7 +50,8 @@ has two new checks (V29 for every `of`, V30), and a note for each measure whose 
     how many (`non_finite`), so the verdict on old data with a NaN can move: an arm that was significant on N-1 items can
     stop being so on N.
   - **A cost nobody reported is unknown, not `$0`.** `arm-smoke`'s full-run projection says "cost unknown" instead of
-    `about $0`, the cost charts leave an arm with an unknown cost off the cost axis and name it (they read it as 0), and a
+    `about $0`, the cost charts leave an arm with an unknown cost off the cost axis and name it (they read it as 0), and refuse
+    (`not-enough`) when no arm has a known cost, where they drew every arm at 0; and a
     run where only some items reported a cost records `cost_coverage` (its `total_cost_usd` is of those items). A recorded
     cost of 0 shows `$0` where a table showed "—".
 - **What a script or a pipeline must change** (each is refused by name, before anything is spent or written):
@@ -64,8 +65,8 @@ has two new checks (V29 for every `of`, V30), and a note for each measure whose 
     `_`, `-`; `bad-argument`).
   - `run-promote` of a run whose build records `dirty: null` and no `source` (a run from before 0.8.0, which says nothing of
     its tree): it refused only a build git could not read; `--allow-dirty` overrides, as for `label-from-run`.
-  - `evh leaderboard --goal G` where no run records the goal's measure: exit 7 (it measured nothing), naming what the runs
-    record. Without `--goal` it ranks each arm on its own headline with one `NOTE`.
+  - `evh leaderboard --goal G` where no run records the goal's measure: exit 7, `ERROR (nothing-measured)`, naming what
+    the runs record. It was `not-found` (exit 1): a script that matched `not-found` there must match the new kind. Without `--goal` it ranks each arm on its own headline with one `NOTE`.
   - `import-run` with a `--reference-id` that is not there (`not-found`), a `--reference-tier` that contradicts the id
     (`mismatch`; the id says the tier: `gold/x`), or a tier with no reference (`bad-argument`).
   - `arm-smoke` with a `--goal` or `--round` that is not there (`not-found`), or a `--round` with no `--goal`.
