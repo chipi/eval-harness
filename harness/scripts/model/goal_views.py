@@ -286,6 +286,9 @@ def _goal_rows(goal: dict, by_ds: dict) -> list:
         moved = [
             a for a in arms if a.get("superseded_by") and not any(r.get("derived") for r in a["run_list"])
         ]
+        # The baseline is the goal's own (RFC-041 F6): the arm `baseline_read` gives for this goal, not any arm another goal
+        # on the dataset promoted (`by_dataset` flags an arm for every goal, for the arm's own page).
+        bl, base = baseline_read(by_ds.get(ds) or {}, goal["goal_id"])
         notes = d.get("notes", "")
         if moved:
             notes = (notes.rstrip(". ") + ". " if notes else "") + (
@@ -305,7 +308,18 @@ def _goal_rows(goal: dict, by_ds: dict) -> list:
                 use = a["metric"] if a["metric"] in a["means"] else next(iter(sorted(a["means"])), "")
             mean, n = a["means"].get(use, (0.0, a["n"]))
             flags = flags_of(goal, n, a["format"], a["wrote"])
-            rows.append(dict(a, mean=mean, n=n, measure=use, filed=a["goal"] == goal["goal_id"], flags=flags))
+            mine = bl[-1] if bl and a["arm"] == base else None
+            rows.append(
+                dict(
+                    a,
+                    mean=mean,
+                    n=n,
+                    measure=use,
+                    filed=a["goal"] == goal["goal_id"],
+                    flags=flags,
+                    baseline=mine,
+                )
+            )
         seen = unrecorded(goal, by_ds, ds)
         if seen is not None:
             notes = (notes.rstrip(". ") + ". " if notes else "") + (
