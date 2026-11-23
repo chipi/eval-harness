@@ -47,13 +47,23 @@ Checked: a goal saying `der` is lower gives lower = False when the runs name no 
 `"lower"`, `"higher"` or `"neutral"`, by this precedence:
 
 1. A goal that declares the measure: as its primary measure (`success_criteria.primary`) or as one of its axes (`axes_of`).
-   For a question about one dataset, only a goal that lists that dataset, or a goal the runs name, decides. A goal on
-   another dataset does not, and V14 warns when it disagrees with the answer. A question with no dataset (a measure no
-   run records: `metric-list`, `metric-show`, its metric page) is decided by any goal that declares it.
-   Goals that disagree on one dataset are a V14 failure, so a project never has two answers.
+   For a question about one dataset, the goals that decide are, in this order (owner, 2026-11-23):
+   1. a goal that lists that dataset;
+   2. a goal the runs name.
+
+   They are not equals. A goal that names the dataset speaks for it; a run's `goal` only says what the run was made for,
+   and the run may be on a dataset that goal does not decide. A goal on another dataset says nothing about this one, and
+   V14 notes when it disagrees with the answer. A goal with `datasets: []` (checked by a gate, not measured on a
+   dataset; RUNBOOK 4c) lists no dataset, so it is never in the first tier: for a question about a dataset it is heard
+   only when a run names it. A question with no dataset (a measure no run records: `metric-list`, `metric-show`, its
+   metric page) is decided by any goal that declares it, a goal with `datasets: []` included.
+   Goals that disagree on one dataset are a V14 failure, so a project never has two answers: two goals that both list the
+   dataset, or two that list none. A goal with `datasets: []` beside a goal that lists a dataset does not clash with it.
 2. What the runs record (`metric_directions`: the adapter's `METRIC_DIRECTIONS`, `import-run --asc`), then their
    declared kinds (`metric_kinds`: descriptive is neutral).
 3. The name table (`_common`: cost, speed, tokens; descriptive keys; error rates `wer`, `cer`, `der` lower).
+4. The default: a measure nothing declares and no name says is read as higher (`_runs.ASSUMED`, "the default (nothing
+   declares it)"). The readers that rank on it print a `NOTE`; the result of every ranking on it is as before.
 
 A declared direction wins over "neutral": a project that says which way a count goes has said it is not neutral.
 `lower_is_better_on`, `verdict_for`, `_study.lower_is_better`, `A.lower_is_better` and `A.is_neutral` become thin
@@ -64,10 +74,14 @@ the same arms.
 **Validation (V14).**
 
 - **Fails** when two goals declare opposite directions for one measure on one dataset.
-- **Warns, and does not fail,** when a goal's `direction` is neither `lower` nor `higher`. The podcast project's
-  `regression_detection` says `non_inferior`, which `axes_of` reads as higher; that is a decision rule, not a direction.
-- **Warns** when a goal's primary measure is recorded by no run on any of its datasets, and names the measures they do
+- **Notes, and does not fail** (`evh validate` prints `note: V14 goal <id>: ...`; `goal-new` and `goal-set` say the same
+  words when they save the goal), when a goal's `direction` is neither `lower` nor `higher`. The podcast project's
+  `regression_detection` says `non_inferior`, which is a decision rule, not a direction: it counts as no declaration, and
+  the measure is read as the runs and the name table say.
+- **Notes** when a goal's primary measure is recorded by no run on any of its datasets, and names the measures they do
   record. The podcast project's goals name `DER` and `WER vs human transcript (ascii-v1)`; its runs record `wer`.
+- **Notes** each goal measure and each recorded `primary_metric` whose direction nothing declares (the default, higher:
+  `_runs.ASSUMED`), so a ranking on it is a choice somebody made.
 
 ### F2. Which runs make up an arm
 
@@ -97,14 +111,18 @@ run recorded:
     And the hash is not unique to an arm: in one beta project, 13 imported systems share one hash on one dataset.
     A different harness build joins, and is named where the arm's runs are listed.
   - **`of` names a run of the same system and dataset,** or `evh run` refuses it, and validate fails it once
-    committed.
+    committed (V29, for a `retime` and a `pair` run as well as a repeat).
   - **A repeat of a repeat** follows `of` to the root, with a cycle guard. A missing link, or a link that did not join,
-    leaves it under `repeats`, with the reason.
+    leaves it under `repeats`, with the reason; validate notes a missing link (V29, with the file that holds it) and
+    fails only an `of` of another system or dataset.
   - **No fingerprint, or another fingerprint version,** on either side: under `repeats`, with the reason.
   - **A closed round's numbers never change.** A repeat that joins after the round closed is listed in its
-    "since then". In an open round, a repeat of a retired arm's run is refused: today `add_run` brings the arm back
+    "since then". A round that recorded such a repeat under `repeats` (a 0.8.0 round) reads it there; V29 notes it and
+    does not fail it (owner, 2026-11-23). In an open round, a repeat of a retired arm's run is refused: today `add_run` brings the arm back
     without a word.
-- **A repeat with no `of`:** under `repeats`, as today.
+- **A repeat with no `of`:** refused at write time (owner, 2026-11-23): `evh run --purpose repeat` without `--of` stops
+  with `bad-argument`, since a run that names nothing is joined to no arm. A throwaway `--scratch` pass is exempt. A
+  repeat with no `of` that is already recorded is read as before, under `repeats`.
 - **`retime` and `pair`:** under their own labels, as today. Another machine and another configuration really are
   other measurements.
 
@@ -131,9 +149,9 @@ The cap was one case. The same shape elsewhere:
 | Where | Today | The rule |
 | --- | --- | --- |
 | `_common.py:514` `build.dirty = bool(dirt)` | git failing records `false`: clean | `null` when git cannot say, as `_fingerprint` already does, recorded so it can be told apart from a run with no tree (`EVAL_BUILD_REF`, `import-run`, which also record `null`); only "git was asked and could not say" counts as not proven clean (promotion refuses it); `runs-list` shows `?` for every `null` |
-| `catalog_arms.py:418`, `catalog_views.py:87,711` cost cells | `$0.00` shows `—`, as "not recorded" | `$0.00` shows `$0.00`; `—` only when not recorded, as `catalog_build.py:2931` already does |
+| `catalog_arms.py:418`, `catalog_views.py:87,711` cost cells | a recorded cost of 0 shows `—`, as "not recorded" | zero shows `$0`, as `axes.fmt_usd` writes every amount (`$0` for none, two significant digits under a cent, four places up to a dollar, two above); `—` only when not recorded, as `catalog_build.py:2931` already does |
 | `workbench/live.js` trial costs | unknown shows `$0.0000` | unknown shows `—` |
-| `_study.py:128` `stop.usd and stop.wall_h` | `usd: 0` refused as no stop rule | `is not None`, as `open_study` reads it |
+| `_study.py:128` `stop.usd and stop.wall_h` | `usd: 0` refused as no stop rule, and a stop with one bound (`usd` alone) refused | any one bound is a stop (`trials`, `usd` or `wall_h`, tested `is not None`), as `open_study` reads it (owner, 2026-11-23) |
 | `run.py:1557` the identical-passes note | an unset temperature read as 0 | the provider's default, from `_providers` |
 
 The cap is printed by `_spend.shown` only, built in 0.8.1 (`test_cap_shown.py` reads the tokens of every command).
@@ -176,8 +194,21 @@ the readers rely on:
   stated.
 - A `repeat_index` set is whole and consistent.
 - `dirty: null` comes with how the build was given.
-- A goal's measure is recorded by some run on its datasets (a warning).
-- Declared directions are `lower` or `higher` (a warning).
+- A goal's measure is recorded by some run on its datasets (a note).
+- Declared directions are `lower` or `higher` (a note).
+- A score is a finite number, or the item failed. `evh run` records an item whose score is NaN, an infinity or None as a
+  failed item, scored as a failed item is (0 on most measures, or the adapter's `score_failure`); `rescore`, `judge-score`,
+  `sheet-import` and `import-run` refuse such a score by name. A run recorded before this can hold one, and every reader
+  reads it the same way: as a failed item scored 0, on read as on write (owner, 2026-11-23). The tests used to leave such an
+  item out and say how many (`non_finite`), so the verdict on old data with such a score can move.
+- A cost is known or unknown, never read as zero: a run records no `total_cost_usd` when no item reported a cost,
+  and `cost_coverage` when only some did. The cost charts leave an arm whose cost is unknown off the cost axis and name it,
+  where they read it as 0.
+- `run-promote` refuses a build recorded with `dirty: null` and no `source` (a run from before 0.8.0 recorded no
+  telling) as it refuses one git could not read, as `label-from-run` does: `--allow-dirty` overrides (owner,
+  2026-11-23).
+- `evh leaderboard --goal G` where no run records the goal's measure refuses with exit 7 (it measured nothing), naming
+  what the runs record; without `--goal` it ranks each arm on its own headline with one `NOTE`.
 
 `evh run` and `import-run` refuse at write time what validate would fail.
 
@@ -190,8 +221,8 @@ the readers rely on:
     scores (the first and three rescores): 673 arms become 669, and the arm reads two runs.
     - 355 of 1,909 exported files change, nearly all from the count "92 → 88 arms scored the same way".
     - `research/internal/TRIAGE_RESULTS_LIVE.md` loses its "(later passes)" row, and the ranks after it renumber.
-    - The three scifact repeats record no part hashes and stay under `repeats`. The twelve triage `_rN` repeats name
-      no `of`.
+    - The three scifact repeats differ from their originals in deployment and adapter (`same_measurement` names both) and
+      stay under `repeats`. The eight triage `--repeat 3` sets (24 runs) name no `of`.
   - F3 to F6: display, and promotion only for a run whose build git could not read. On this repository's export:
     `arms.html` shows `$0` for 99 rows of local models (was `—`), and `datasets.html` names the goal beside each
     baseline.

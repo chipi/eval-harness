@@ -31,7 +31,11 @@ the deployment, so `run-compare` names a code change as the variable.
   changed but not from what to what, and nothing lists which runs used which text.
 - The code of a system that is not the adapter (a pipeline library, a service) has no standard place: a hook may put a
   commit under `deployment.declared`, by any key it likes; the fleet put its code version in an item field.
-- `filter_dirt` ignores untracked run output under `data/runs*` only (`_fingerprint.py:116`).
+- `filter_dirt` ignores an untracked path under `data/runs/` (only that folder: a format-3 `runs-linux/` became a run of
+  `runs/` by migration m0004, so in the current format such a folder is a stray one and counts), under
+  `data/judge-summaries/` and under `data/prompts/` (`_fingerprint.py`); and a round's or a study's record under
+  `rounds/` and `studies/`, new or changed, since a run made in a round and a study's trials rewrite those files as
+  they go.
 
 ## Design
 

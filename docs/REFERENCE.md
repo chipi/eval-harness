@@ -26,11 +26,21 @@ enforced in code, not convention: `harness/scripts/leaderboard.py` never picks a
 descriptive metric to rank by while a quality metric exists, and when told to rank on one
 (`--sort`, or runs with no quality metric) it says so under the table.
 
-Which way is better is decided once, the same for every command and the inspector: a
-`--asc`/`--desc` flag, else the goal the runs name (`success_criteria.primary.direction`),
-else the adapter's `METRIC_DIRECTIONS` (`{"wer": "lower"}`, recorded on each run), else the
-name: costs, latencies and token counts go down, everything else up. `validate` (V14) fails a
-goal that contradicts its runs.
+Which way is better is decided once, the same for every command and the inspector, by the first of these
+that answers ([RUNBOOK](../harness/docs/RUNBOOK.md#7-compare-with-the-noise-floor-you-measured), RFC-041):
+
+1. a `--asc`/`--desc` flag;
+2. a goal that declares the measure (`success_criteria.primary.direction`, or an axis's): for a dataset, a goal that
+   lists it first, then a goal the runs name;
+3. what the runs record: the adapter's `METRIC_DIRECTIONS` (`{"wer": "lower"}`), `import-run --asc`, then the
+   declared `METRIC_KINDS` (descriptive is neutral);
+4. the name. **Lower is better:** `cost_usd`, `total_cost_usd`, `tokens_in`, `tokens_out`, `total_tokens_in`,
+   `total_tokens_out`, `latency_ms`, `latency_s`, `wer`, `cer`, `der`. **Neutral** (descriptive: what the output was,
+   not whether it was good): `output_words`, `output_chars`, `lines`, `chars`, `n_items`, `reasoning_tokens`;
+5. the default, for a measure nothing declares: higher, with a `NOTE` where a ranking rests on it.
+
+`validate` (V14) fails two goals that give one measure opposite directions on one dataset, and a goal that
+contradicts its runs.
 
 ### Summarisation — continuous overlap
 
