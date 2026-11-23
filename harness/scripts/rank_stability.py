@@ -33,7 +33,7 @@ HERE = Path(__file__).resolve().parent
 
 from evaluation_harness import _jsonout  # noqa: E402
 from evaluation_harness._common import die  # noqa: E402
-from evaluation_harness._runs import default_metric, matrix, ranks_lower, runs_on, warn_on_ambiguous_runs  # noqa: E402  # noqa: E402
+from evaluation_harness._runs import deciding_metric, matrix, ranks_lower, runs_on, warn_on_ambiguous_runs  # noqa: E402  # noqa: E402
 from evaluation_harness.stats import spearman  # noqa: E402 - midranks of midranks are the midranks: same rho
 
 #: The half sizes always measured (two disjoint halves of n items each). They are drawn first, in this order, so
@@ -146,7 +146,7 @@ def measure(
     arms; `rows` is empty with too few items for two halves of SMALLEST."""
     from evaluation_harness.model.entity import Problem  # noqa: PLC0415
 
-    metric = metric or default_metric(dataset, match)
+    metric = metric or deciding_metric(dataset, match=match)
     M = load(dataset, metric, match)
     if ranks_lower(runs_on(dataset, match=match), metric, asc, desc):
         # Ranked best first, whichever way is better: for cost or latency the best is the

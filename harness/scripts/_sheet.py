@@ -60,7 +60,7 @@ from evaluation_harness._common import (
     scored_against_dir,
 )
 from evaluation_harness._label_sets import answers, label_line, labels_for, sets, source_line
-from evaluation_harness._runs import item_rows, lower_is_better_on, read_metrics
+from evaluation_harness._runs import deciding_metric, item_rows, lower_is_better_on, read_metrics
 from evaluation_harness._sheets import ALSO, NOTE, label_header
 from evaluation_harness.label_sheet import run_dir, view
 from evaluation_harness.model import runs as _model_runs
@@ -225,9 +225,9 @@ def _goal_for(dataset_id: str, arms: list[dict[str, Any]]) -> tuple[str, dict] |
     return None
 
 
-def _resolve_metric(arms: list[dict[str, Any]], spec: str | None, goal: dict | None) -> str | None:
-    """The metric ref the sheet is read on: `--metric` (a run's metric, or SCORER/metric), else the goal's primary
-    measure when an arm records it, else the first arm's primary metric."""
+def _resolve_metric(arms: list[dict[str, Any]], spec: str | None, dataset_id: str) -> str | None:
+    """The metric ref the sheet is read on: `--metric` (a run's metric, or SCORER/metric), else the metric that decides
+    on the dataset (`_runs.deciding_metric`: its goal's measure, else the runs' primary metric) among the runs read."""
     own = {k for a in arms for r in a["per_item"].values() for k in r}
     judged: dict[str, set[str]] = {}
     for a in arms:
@@ -259,18 +259,23 @@ def _resolve_metric(arms: list[dict[str, Any]], spec: str | None, goal: dict | N
             f"--metric {spec}: no run in --runs records it (recorded: {', '.join(known) or 'none'})",
             "not-found",
         )
-    measure = ((goal or {}).get("success_criteria") or {}).get("primary", {}).get("measure")
-    if measure and find(measure):
-        return find(measure)
-    for a in arms:
-        p = a["metrics"].get("primary_metric")
-        if p and p in own:
-            return str(p)
-    if arms and own:
-        return sorted(own)[0]
-    if arms:
+    if arms and not own:
         die("no run in --runs records a per-item metric: nothing to read the sheet on", "not-enough")
-    return None
+    if not arms:
+        return None
+    decided = deciding_metric(dataset_id, runs=_runs_of(arms, ""), refuse=False)
+    got = find(decided) if decided else None
+    if got:
+        return got
+    # A sheet reads items: a metric that decides but is scored for the run as a whole (or by no run) leaves the first
+    # per-item metric by name, and the sheet says so instead of choosing it silently.
+    first = sorted(own)[0]
+    print(
+        f"  NOTE: {decided + ' decides on ' + dataset_id + ', but no run in --runs scores it per item' if decided else 'no goal or primary metric decides on ' + dataset_id}; "
+        f"the sheet is read on {first} (the first by name). --metric names another.",
+        file=_sys.stderr,
+    )
+    return first
 
 
 def _shown_names(a: dict[str, Any], chosen: str | None) -> list[str]:
@@ -318,7 +323,7 @@ def build(
         die("--runs names an arm twice", "bad-argument")
     arms = [_arm(t, dataset_id, label) for t in tokens]
     found_goal = _goal_for(dataset_id, arms)
-    ref = _resolve_metric(arms, metric, found_goal[1] if found_goal else None)
+    ref = _resolve_metric(arms, metric, dataset_id)
     lower = bool(ref) and lower_is_better_on(_runs_of(arms, str(ref)), str(ref).rpartition("/")[2])
 
     spec = arms[0]["metrics"].get("adapter") if arms else None

@@ -61,7 +61,7 @@ from evaluation_harness._common import (  # noqa: E402
 )
 from evaluation_harness._fingerprint import measuring_modules  # noqa: E402
 from evaluation_harness._runs import (  # noqa: E402 -- one implementation of "score per item"
-    default_metric,
+    deciding_metric,
     per_item,
     ranks_lower,
     refuse_run_level,
@@ -279,7 +279,7 @@ def _run(args) -> int:
     # Two runs sharing a system_id are averaged together below without
     # saying so. See _runs.warn_on_ambiguous_runs.
     warn_on_ambiguous_runs(args.label, args.dataset_id)
-    args.metric = args.metric or default_metric(args.dataset_id, label=args.label)
+    args.metric = args.metric or deciding_metric(args.dataset_id, label=args.label)
     runs = runs_on(args.dataset_id, label=args.label)
     refuse_run_level(runs, args.metric, "family-test")
     values = None

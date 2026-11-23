@@ -65,7 +65,7 @@ OPS = (
            "period": {"type": "integer", "description": "the code record's deployed period, by number (evh periods)"},
            "from": {"type": "string", "description": "the period's start (ISO, with an offset)"},
            "to": {"type": "string", "description": "its end (default: now)"},
-           "metric": {"type": "string", "description": "the measure (default: the replay run's primary metric)"},
+           "metric": {"type": "string", "description": "the measure (default: the metric that decides on the dataset: its goal's measure, else the replay run's primary metric)"},
        }, required=("dataset", "candidate")),
     Op("faithfulness-show", "read", "a faithfulness record of a code record: its counts, every disagreement and who named which, and its coverage (RFC-030)",
        "GET", "/models/{model}/faithfulness", f"{_R}:faithfulness_show", f"{_R}:say_blocks", output=legacy.BLOCKS,

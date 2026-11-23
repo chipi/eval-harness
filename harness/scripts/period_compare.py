@@ -97,13 +97,7 @@ def body(system: str, dataset: str, candidate: str, **given: Any) -> int:
         die(f"no item of {ds['dataset_id']} falls in {called}", "not-enough")
     rd, rm = _latest(ds["dataset_id"], cfg["system_id"])
     cd, cm = _latest(ds["dataset_id"], args.candidate)
-    metric = (
-        args.metric
-        or rm.get("primary_metric")
-        or _runs.default_metric(ds["dataset_id"], match=cfg["system_id"])
-    )
-    if not metric:
-        die("--metric: the replay run names no primary metric", "bad-argument")
+    metric = args.metric or _runs.deciding_metric(ds["dataset_id"], runs=[(rd, rm)])
     same = same_of(rm.get("adapter"))
     counts = True
     disagree: list[str] = []

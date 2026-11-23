@@ -968,7 +968,9 @@ the baseline at `p ≤ threshold`, and `family-test` marks an estimated p with `
 mixes exact and estimated rows (and a p from the normal limit with `*` when it mixes that in too). Every command prints p to four decimals, and `<0.0001` for what
 would print as 0.0000. `family-test`'s `A wins-losses (ties)` column counts the items A wins and loses against each
 opponent, and the ties apart; the inspector's `wins–losses` is each row's arm against the baseline.
-Without `--metric` they read the primary metric the runs recorded. Which way is better is
+Without `--metric` they read the metric that decides on the dataset, one answer for every command: the goal that
+lists the dataset, when a run records its measure, else the primary metric the runs recorded (the adapter's
+`PRIMARY_METRIC`); with neither, they refuse and name what is recorded. Which way is better is
 inferred once for every command: a flag (`--asc`, `--desc`), else the goal the runs name, else
 the adapter's `METRIC_DIRECTIONS`, else the name (cost, latency and token metrics go down).
 `leaderboard`, `family-test`, `pair-test` and `comparison-show` take `--round rN` for the arms in play in

@@ -26,6 +26,7 @@ import statistics
 import sys
 from collections.abc import Iterable, Iterator
 from pathlib import Path
+from typing import Literal, overload
 
 from evaluation_harness import _common, _outputs
 from evaluation_harness._common import is_descriptive, lower_is_better
@@ -433,19 +434,70 @@ class AmbiguousRuns(Exception):
     """Two runs claim the same system_id and nothing says which one to read."""
 
 
-def default_metric(dataset_id: str, match: str | None = None, label: str | None = "") -> str:
-    """The metric a command reads when none is named: the primary metric the matching runs
-    on this dataset recorded, the most common one. It used to be `coverage`, the
-    summarisation example's metric, hard-coded: every other project got "no arms" or a
-    crash unless it passed --metric."""
+@overload
+def deciding_metric(
+    dataset_id: str,
+    *,
+    match: str | None = ...,
+    label: str | None = ...,
+    runs: Iterable[Run] | None = ...,
+    goals: dict | None = ...,
+    refuse: Literal[True] = ...,
+) -> str: ...
+
+
+@overload
+def deciding_metric(
+    dataset_id: str,
+    *,
+    match: str | None = ...,
+    label: str | None = ...,
+    runs: Iterable[Run] | None = ...,
+    goals: dict | None = ...,
+    refuse: bool,
+) -> str | None: ...
+
+
+def deciding_metric(
+    dataset_id: str,
+    *,
+    match: str | None = None,
+    label: str | None = "",
+    runs: Iterable[Run] | None = None,
+    goals: dict | None = None,
+    refuse: bool = True,
+) -> str | None:
+    """The metric that decides on a dataset: what every command reads when none is named (RFC-041).
+
+      1. the goal that lists the dataset (the first by id; else a goal the runs name) and whose primary measure a run
+         records: its measure. A goal whose measure no run records (V14 warns) decides nothing;
+      2. else the primary metric the runs record (the most common one: the adapter's PRIMARY_METRIC);
+      3. else a refusal that names what is recorded and the measures a goal reads that nothing records (`refuse`; None
+         when False).
+
+    `runs` is what is read (the dataset's under `label` and `match` by default); `goals` {goal_id: goal} the project's.
+    It used to be `default_metric`, the runs' primary alone: `pair-test` refused where `leaderboard` read the goal."""
     from collections import Counter  # noqa: PLC0415
 
+    runs = list(runs_on(dataset_id, label=label, match=match) if runs is None else runs)
+    goals = _common.load_goals() if goals is None else goals
+    recorded: set[str] = set()
     primary: Counter = Counter()
-    seen: set = set()
-    for _d, m in runs_on(dataset_id, label=label, match=match):
+    for _d, m in runs:
+        recorded |= set((m.get("scores") or {}).keys())
         if m.get("primary_metric"):
             primary[m["primary_metric"]] += 1
-        seen |= set((m.get("scores") or {}).keys())
+    named = {str(m["goal"]) for _d, m in runs if m.get("goal")}
+    listing = [g for g in sorted(goals) if dataset_id in goal_datasets(goals[g] or {})]
+    unread: list[str] = []
+    for gid in [*listing, *sorted((named & goals.keys()) - set(listing))]:
+        measure = str(
+            (((goals[gid] or {}).get("success_criteria") or {}).get("primary") or {}).get("measure") or ""
+        )
+        if measure in recorded:
+            return measure
+        if measure:
+            unread.append(f"goal {gid} reads {measure!r}")
     if primary:
         if len(primary) > 1:
             print(
@@ -453,12 +505,16 @@ def default_metric(dataset_id: str, match: str | None = None, label: str | None 
                 f"using the most common. Pass --metric to choose.",
                 file=sys.stderr,
             )
-        return primary.most_common(1)[0][0]
+        return str(primary.most_common(1)[0][0])
+    if not refuse:
+        return None
     from evaluation_harness._common import die  # noqa: PLC0415
 
     die(
-        f"no run on {dataset_id} records a primary metric: pass --metric"
-        + (f" (recorded: {', '.join(sorted(seen))})" if seen else ""),
+        f"no run on {dataset_id} records a primary metric"
+        + (f", and no goal reads a measure a run records ({'; '.join(unread)})" if unread else "")
+        + ": pass --metric"
+        + (f" (recorded: {', '.join(sorted(recorded))})" if recorded else ""),
         "not-found",
     )
 

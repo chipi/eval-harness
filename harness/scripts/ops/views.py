@@ -70,7 +70,10 @@ _COMPARE = {
         "type": "string",
         "description": "the arm the others are tested against (default: a round's leader, else the first)",
     },
-    "metric": {"type": "string", "description": "the metric compared (default: the arms' primary metric)"},
+    "metric": {
+        "type": "string",
+        "description": "the metric compared (default: the metric that decides on the dataset: its goal's measure, else the arms' primary metric)",
+    },
     "where": {
         "type": "array",
         "items": {"type": "string"},
