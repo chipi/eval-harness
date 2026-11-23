@@ -2646,11 +2646,17 @@ def test_two_runs_sharing_a_system_id_are_refused() -> None:
         "    print(json.dumps({'raised': 'claim system_id' in str(exc), 'runs': 0, 'got': str(exc)}))\n"
     )
 
-    def asked(names: list[str]) -> dict:
+    def asked(names: list[str], as_set: bool = False) -> dict:
         with _tf.TemporaryDirectory() as td:
             data = shadow_data(Path(td))
-            for name in names:
-                add_run(data, src, name)
+            for i, name in enumerate(names, 1):
+                dst = add_run(data, src, name)
+                if as_set:
+                    # A set is what `--repeat N` records (`repeat_index`, RFC-041 F2), not the `_rN` in a name.
+                    rec = json.loads((dst / "run.json").read_text(encoding="utf-8"))
+                    (dst / "run.json").write_text(
+                        json.dumps({**rec, "repeat_index": i}, indent=2) + "\n", encoding="utf-8"
+                    )
             r = run("-c", probe, env={"EVAL_DATA_DIR": str(data)})
         try:
             return _json.loads((r.stdout or "").strip().splitlines()[-1])
@@ -2665,10 +2671,16 @@ def test_two_runs_sharing_a_system_id_are_refused() -> None:
     )
 
     # The control: a --repeat set shares a system_id BY DESIGN and must still load.
-    got = asked([f"{src.name}_r{i}" for i in (1, 2, 3)])
+    got = asked([f"{src.name}_r{i}" for i in (1, 2, 3)], as_set=True)
     check(
         "duplicate runs: but a --repeat set still loads as one arm",
         not got["raised"] and got["runs"] == 3,
+        got["got"][:150],
+    )
+    got = asked([f"{src.name}_r{i}" for i in (1, 2, 3)])
+    check(
+        "duplicate runs: three runs named _r1.._r3 that record no repeat_index are not a set, and are refused",
+        got["raised"],
         got["got"][:150],
     )
 
