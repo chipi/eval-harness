@@ -231,7 +231,7 @@ the project (the handbook's superuser recipe), and put its security endpoint in
 
 The deploy workflow runs only from `main`: the prod environment allows no other branch. **A merge
 or push to `main` deploys nothing** (since 0.8.1 `deploy-prod.yml` has no push trigger; the repository
-variable `PROD_AUTO_DEPLOY` that once gated it no longer decides anything). A deploy is its own step:
+variable `PROD_AUTO_DEPLOY` that once gated it is deleted). A deploy is its own step:
 `make deploy-dry`, then `make deploy` (below). Publishing the docs to Pages waits for
 `DOCS_ON_OWN_DOMAIN` being `true`; it starts unset, so GitHub Pages keeps serving the harness site on
 `evals.humancopilot.eu` until step 5 moves it. A dispatch of `pages.yml` always runs.
@@ -317,6 +317,4 @@ custom domain, by `pages.yml` on every push to `main` that touches them.
 **Rollback:**
 - a bad release: re-run an older successful `deploy-prod` run (it redeploys that sha), or
   `git revert` on `main` and `make deploy-dry`, `make deploy`;
-- one host off the edge: remove its name from `enabled.txt`, merge, and deploy;
-- pushes no longer deploy; the leftover repository variable `PROD_AUTO_DEPLOY` is unused (the owner deletes it:
-  `gh variable delete PROD_AUTO_DEPLOY -R chipi/eval-harness`).
+- one host off the edge: remove its name from `enabled.txt`, merge, and deploy.

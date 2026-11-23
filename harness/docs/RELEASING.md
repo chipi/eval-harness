@@ -94,14 +94,20 @@ Pin a release tag:
    step checks against the commit it got, so a main that moves meanwhile deploys nothing
    (`infra/README.md`, "Cutover").
 
-A failed release leaves no Release behind. Fix the problem, delete the tag
-(`git push --delete origin vX.Y.Z`) and tag again. **Never move a tag that has a Release:**
-someone may already have pinned it. Cut the next patch version instead.
+A failed release leaves no Release behind. Fix the problem and cut the next patch version: the
+`release tags` ruleset refuses deleting or moving a `v*` tag for everyone, an admin included (it
+has no bypass list since 2026-11-23). To reuse the number of a tag that has no Release, a maintainer
+sets the ruleset's enforcement to Disabled (Settings → Rules → Rulesets → `release tags`), deletes
+the tag (`git push --delete origin vX.Y.Z`), sets it back to Active, and tags again: moving a tag
+is a change to the ruleset made on purpose. **Never move a tag that has a Release:** someone may
+already have pinned it. Cut the next patch version instead.
 
 ## One-time repository settings (done by a maintainer in GitHub)
 
 - **Settings → Rules → Rulesets → New tag ruleset.** Target `v*`, and block updates and
-  deletions, so a released tag cannot move under its users.
+  deletions, so a released tag cannot move under its users. Leave its bypass list empty, so it
+  holds for an admin too: a bypass lets a tag be deleted and then created again on another commit
+  (the ruleset has no creation rule, because the release creates tags).
 - **Settings → Actions → General → Workflow permissions** must allow the workflow token to
   write contents, or the release step cannot create the Release (the workflow asks for
   `contents: write`).

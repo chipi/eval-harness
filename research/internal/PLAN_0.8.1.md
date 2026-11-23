@@ -88,6 +88,10 @@ create. Recommended: remove the bypass actor (a mistaken tag is then fixed by ed
 leaves a trace), keep creation allowed (the release workflow creates tags), and RELEASING.md says so. A change to the
 live repository: the owner's go.
 
+**Done (owner's go, 2026-11-23):** the bypass list is empty (`gh api repos/chipi/eval-harness/rulesets/25502568`:
+`"bypass_actors":[]`, rules `deletion`, `non_fast_forward`, `update`, `active`). RELEASING.md says the ruleset holds
+for an admin and how a tag with no Release is fixed (enforcement off, delete, on, tag again).
+
 **Done when:** the cause is known from GitHub's rule evaluation (the ruleset's insights page or its API), and either:
 
 - the ruleset holds against an admin's push too (bypass only on a pull request, or none), or
@@ -181,6 +185,9 @@ Makefile says so.
 - `make deploy` dispatches the real deploy, and refuses unless a dry run of the same commit passed;
 - RELEASING.md, the deploy recipe and the workflow's header say a merge to main deploys nothing;
 - the repository variable `PROD_AUTO_DEPLOY` is deleted, on the owner's go (a change to the live repository).
+  **Done 2026-11-23** (`gh variable delete`; `gh variable list` shows none). Until 081 merges, main's
+  `deploy-prod.yml` still has its push trigger, but its condition needs the variable, so a push to main no longer
+  deploys.
 
 **Moves a result:** no.
 
