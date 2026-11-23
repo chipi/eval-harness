@@ -56,7 +56,7 @@ def serve(proj: Path, env: dict, log: Path) -> tuple:
 
 
 def api(base: str, path: str) -> dict:
-    with urllib.request.urlopen(base + path, timeout=60) as r:  # noqa: S310
+    with urllib.request.urlopen(base + path, timeout=60) as r:  # noqa: S310 - the test's own server  # nosec B310
         return json.loads(r.read())
 
 

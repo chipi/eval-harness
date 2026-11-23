@@ -74,38 +74,44 @@ def get(port: int, path: str, host: str | None = None) -> tuple:
     if host:
         req.add_header("Host", host)
     try:
-        with urllib.request.urlopen(req, timeout=60) as r:  # noqa: S310
+        with urllib.request.urlopen(req, timeout=60) as r:  # noqa: S310 - the test's own server  # nosec B310
             return r.status, json.loads(r.read())
     except urllib.error.HTTPError as e:
         return e.code, {}
 
 
+def agrees(term: dict) -> bool | None:
+    """The item's verdict, None when it has none."""
+    a = jva.agreement(term)
+    return None if a is None else a["agrees"]
+
+
 # ── the definition ────────────────────────────────────────────────────────────────────────────────────────────────────
 check(
     "agreement, grade: tau against 0 (a tau under 0 disagrees, 0 and over does not)",
-    jva.agreement({"tau": -0.2, "parsed": 1.0})["agrees"] is False
-    and jva.agreement({"tau": 0.0, "parsed": 1.0})["agrees"] is True
-    and jva.agreement({"tau": 0.4, "parsed": 1.0})["agrees"] is True,
+    agrees({"tau": -0.2, "parsed": 1.0}) is False
+    and agrees({"tau": 0.0, "parsed": 1.0}) is True
+    and agrees({"tau": 0.4, "parsed": 1.0}) is True,
 )
 check(
     "agreement, pick: top1 against the item's own top1_chance",
-    jva.agreement({"top1": 0.0, "top1_chance": 0.25})["agrees"] is False
-    and jva.agreement({"top1": 0.5, "top1_chance": 0.25})["agrees"] is True
-    and jva.agreement({"top1": 1.0, "top1_chance": 1.0})["agrees"] is True,
+    agrees({"top1": 0.0, "top1_chance": 0.25}) is False
+    and agrees({"top1": 0.5, "top1_chance": 0.25}) is True
+    and agrees({"top1": 1.0, "top1_chance": 1.0}) is True,
 )
 check(
     "agreement, pairwise: pair_agreement against 0.5 (a tie counts half: all ties agree)",
-    jva.agreement({"pair_agreement": 0.25, "n_pairs": 4.0})["agrees"] is False
-    and jva.agreement({"pair_agreement": 0.5, "n_pairs": 4.0})["agrees"] is True,
+    agrees({"pair_agreement": 0.25, "n_pairs": 4.0}) is False
+    and agrees({"pair_agreement": 0.5, "n_pairs": 4.0}) is True,
 )
 check(
     "agreement: an unreadable verdict, or a score of another kind, has none",
     jva.agreement({"parsed": 0.0}) is None and jva.agreement({"acc": 0.3}) is None,
 )
-a = jva.agreement({"top1": 0.0, "top1_chance": 0.25})
+a = jva.agreement({"top1": 0.0, "top1_chance": 0.25}) or {}
 check(
     "agreement: names the figure's metric, its value and its chance level",
-    (a["metric"], a["value"], a["chance"]) == ("top1", 0.0, 0.25),
+    (a.get("metric"), a.get("value"), a.get("chance")) == ("top1", 0.0, 0.25),
     a,
 )
 

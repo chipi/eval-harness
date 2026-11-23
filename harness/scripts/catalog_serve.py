@@ -1130,7 +1130,7 @@ class Handler(SimpleHTTPRequestHandler):
             return
         port = int(self.server.server_address[1])  # type: ignore[index]  # an AF_INET (host, port)
         origin = self.headers.get("Origin")
-        own = (f"http://127.0.0.1:{port}", f"http://localhost:{port}")
+        own: tuple[str, ...] = (f"http://127.0.0.1:{port}", f"http://localhost:{port}")
         if LIMITS["hosts"]:  # a viewer's page is on the site's own origin
             own = tuple(f"{scheme}://{h}" for h in LIMITS["hosts"] for scheme in ("https", "http"))
         if origin is not None and origin not in own:

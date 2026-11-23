@@ -22,6 +22,7 @@ import sys
 import tempfile
 from itertools import chain, compress
 from pathlib import Path
+from typing import IO, Any, cast
 
 HARNESS = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(HARNESS))
@@ -74,7 +75,11 @@ class _Spy:
 class _SpyPopen(_Popen):
     def __init__(self, *a, **kw) -> None:
         super().__init__(*a, **kw)
-        self.stdin, self.stdout = _Spy(self.stdin, self.pid), _Spy(self.stdout, self.pid)
+        # The spies pass every call through to the pipe they wrap; mypy sees only that they are not an IO.
+        self.stdin, self.stdout = (
+            cast(IO[Any], _Spy(self.stdin, self.pid)),
+            cast(IO[Any], _Spy(self.stdout, self.pid)),
+        )
 
 
 fresh()

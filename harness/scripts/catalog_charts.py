@@ -441,7 +441,7 @@ def scatter(
                         x0, x1 = (
                             (tx - LABEL_W * len(text), tx) if left_side else (tx, tx + LABEL_W * len(text))
                         )
-                        ty = label_y(
+                        at = label_y(
                             y_of(y) - 6,
                             x0,
                             x1,
@@ -454,10 +454,10 @@ def scatter(
                             ),
                             NEAR,
                         )
-                        if ty is not None:
-                            placed.append((x0, x1, ty))
+                        if at is not None:
+                            placed.append((x0, x1, at))
                             names.append(
-                                f'<text x="{tx:.1f}" y="{ty:.1f}" class="tick name"'
+                                f'<text x="{tx:.1f}" y="{at:.1f}" class="tick name"'
                                 f"{END if left_side else ''}>{_e(text)}</text>"
                             )
                             done = True

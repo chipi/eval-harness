@@ -44,6 +44,7 @@ class Source:
 
 
 def evh(proj: Path, env: dict, *args: str) -> subprocess.CompletedProcess:
+    """`evh` in `proj` with `env`, its output captured."""
     return subprocess.run(
         [sys.executable, "-m", "evaluation_harness", *args],
         cwd=proj,
@@ -56,6 +57,7 @@ def evh(proj: Path, env: dict, *args: str) -> subprocess.CompletedProcess:
 
 
 def build(proj: Path, env: dict) -> dict[str, Any]:
+    """The rated dataset, the judge and its run; returns {"dataset", "system", "arm", "items"}."""
     (proj / "rated_source.py").write_text(SOURCE_PY)
     for args in (
         ("init", "--store", "files"),
@@ -114,4 +116,5 @@ def build(proj: Path, env: dict) -> dict[str, Any]:
 
 
 def verdict_of(text: str) -> dict:
+    """A judge reply's verdict, read as JSON."""
     return json.loads(text)

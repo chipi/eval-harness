@@ -148,7 +148,7 @@ try:
     before = snapshot()
     srv, port, _lines = fx.serve_public(proj, env, "--publish", "outputs,references")
     try:
-        # statics
+        # the static files
         st, b, h = call(port, "GET", "/workbench/")
         check(
             "public: /workbench/ is served, with no token",
