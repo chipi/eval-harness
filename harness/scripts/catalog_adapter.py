@@ -15,7 +15,7 @@ Without one, HarnessAdapter reads the harness's own layout:
     <data>/references/<tier>/<dataset_id>/<item_id>.txt
 
 An ARM is a string id the adapter chooses. HarnessAdapter's is `<label prefix>/<dataset_id>/<system id>`
-(model.runs.arm_id): every score of a system on a dataset read under one label, averaged per item, exactly as
+(model.runs.arm_of): every score of a system on a dataset read under one label, averaged per item, exactly as
 `pair-test` and `family-test` read them, so the inspector and the command line give the same p.
 
 Item text (outputs, references) is only ever returned by item_view / reference_view. The static
@@ -478,13 +478,11 @@ class HarnessAdapter:
     @_memo
     def _index(self) -> dict[str, list[Path]]:
         """{arm id: [score dirs]}: every score of every run, grouped by the label it is read under, its dataset and
-        its system (model.runs.arm_id). A run git ignores is not read: the local catalog shows what a clone, CI and the
+        its system (model.runs.arm_of). A run git ignores is not read: the local catalog shows what a clone, CI and the
         published one show, never runs that exist on this disk only. Outside a git checkout every run is read."""
         out: dict[str, list[Path]] = {}
         runs = [self.runs_root / rid for rid in model_runs.run_ids(base=self.runs_root)]
         skipped = _ignored_runs([r / model_runs.RUN for r in runs])
-        refs: dict[Path, str] = {}
-        made: dict[Path, str] = {}
         # What each score's record says, read once; and the label each arm is read under. Kept on the adapter only
         # when the index is whole (below): a server that refreshes while a request reads them never shows half.
         rec: dict[Path, dict] = {}
@@ -498,13 +496,11 @@ class HarnessAdapter:
                 m = model_runs.record(d)
                 if not m or not m.get("dataset_id") or not m.get("system_id"):
                     continue
-                arm = model_runs.arm_id(d, m)
+                arm = model_runs.arm_of(d, m)
                 rec[d] = m
                 label[arm] = model_runs.label(d, m)
                 every.append((m["dataset_id"], d, m, arm))
                 out.setdefault(arm, []).append(d)
-                refs[d] = ((m.get("fingerprint") or {}).get("data") or {}).get("reference_id") or ""
-                made[d] = m.get("created_at") or ""
         out = dict(sorted(out.items(), key=lambda kv: (not kv[0].startswith("runs/"), kv[0])))
         for arm, keep in (self._only or {}).items():
             if arm in out:
@@ -512,17 +508,16 @@ class HarnessAdapter:
                 # none of the runs it recorded is of this arm here: in this view it has no run
                 if not out[arm]:
                     del out[arm]
-        # ONE REFERENCE PER ARM: the one its latest run was scored against. An arm's runs were
+        # ONE REFERENCE PER ARM: the one its latest run was scored against (model.runs.runs_of_arm). An arm's runs were
         # averaged whatever they were scored against, so a run on silver and a run on gold read
         # as two repeats of one measurement. Runs on another reference are left out, and said so.
         stale: dict[str, list[str]] = {}
         for arm, dirs in out.items():
-            # Latest by when it was measured, not by its run id (a --run-id can be anything).
-            ref = refs[max(dirs, key=lambda d: (made[d], rec[d]["run_id"]))]
-            old = [d for d in dirs if refs[d] != ref]
+            kept, old = model_runs.runs_of_arm([(d, rec[d]) for d in dirs])
             if old:
-                out[arm] = [d for d in dirs if refs[d] == ref]
-                was = sorted({refs[d] or "no reference" for d in old})
+                out[arm] = [d for d, _m in kept]
+                ref = model_runs.reference_of(kept[0][1])
+                was = sorted({model_runs.reference_of(m) or "no reference" for _d, m in old})
                 stale[arm] = [
                     (
                         f"{len(old)} earlier run(s) scored against {', '.join(was)} left out: this arm is read "
@@ -614,7 +609,13 @@ class HarnessAdapter:
         # Once per arm, for as long as the index it is read from: an inspector answer read every arm's
         # record again (7,370 reads for 40 answers, a third of each). Callers only read it.
         ds = self._dirs(arm)
-        return self._record(ds[-1]) if ds else {}
+        return self._record(self._latest(ds)) if ds else {}
+
+    def _latest(self, dirs: list[Path]) -> Path:
+        """The latest of an arm's scores (model.runs.latest), not the last the index listed."""
+        found = model_runs.latest([(d, self._record(d)) for d in dirs])
+        assert found is not None
+        return found[0]
 
     def _record(self, d: Path) -> dict:
         """A score's record, as the index read it (read now for a directory it did not list)."""
@@ -779,7 +780,7 @@ class HarnessAdapter:
         latest run."""
         out: dict = {}
         for arm, ds in self._index().items():
-            m = self._record(ds[-1])
+            m = self._record(self._latest(ds))
             seen = out.setdefault(arm.rsplit("/", 2)[-2], {})
             for k, v in (m.get("metric_kinds") or {}).items():
                 seen[k] = seen.get(k, False) or v == "descriptive"
@@ -810,7 +811,7 @@ class HarnessAdapter:
     def _kinds(self) -> dict:
         out: dict = {}
         for ds in self._index().values():
-            out.update(self._record(ds[-1]).get("metric_kinds") or {})
+            out.update(self._record(self._latest(ds)).get("metric_kinds") or {})
         return out
 
     def reference_free(self, metric: str) -> bool:
@@ -990,7 +991,8 @@ class HarnessAdapter:
         if not _plain_name(item):
             return {"kind": "none", "note": "not an item id"}
         dirs = self._dirs(arm)
-        for d in reversed(dirs):  # the latest repeat
+        newest_first = sorted(dirs, key=lambda d: model_runs.latest_key(self._record(d)), reverse=True)
+        for d in newest_first:  # the latest repeat
             text = _outputs.output(d, item)
             if text is not None:
                 info = {"run": self._run_id(d)}
@@ -1024,7 +1026,7 @@ class HarnessAdapter:
                 self._with_artifact(view, row)
                 return view
         # An item whose call failed has no output, and may have left what a person wants to open (a trial's directory).
-        for d in reversed(dirs):
+        for d in newest_first:
             row = next((r for r in item_rows(d, strict=False) if r["item_id"] == item), None)
             if row and row.get("failed") == 1.0:
                 view = {

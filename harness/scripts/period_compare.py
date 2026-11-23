@@ -20,6 +20,7 @@ from typing import Any
 from evaluation_harness import _coderec, _fields, _jsonout, _outputs, _runs
 from evaluation_harness._adapter import same_of
 from evaluation_harness._common import die, load_dataset
+from evaluation_harness.model import runs as _model_runs
 
 
 def _latest(dataset_id: str, name: str) -> tuple[Any, dict]:
@@ -29,13 +30,13 @@ def _latest(dataset_id: str, name: str) -> tuple[Any, dict]:
     by_id = [(d, m) for d, m in runs if m["run_id"] == name]
     if by_id:
         return by_id[0]
-    of_config = [(d, m) for d, m in runs if m.get("system_id") == name]
-    if not of_config:
+    newest = _model_runs.latest([(d, m) for d, m in runs if m.get("system_id") == name])
+    if newest is None:
         die(
             f"no run of {name} on {dataset_id}, by run id or system id: run it first (evh run --system …)",
             "not-found",
         )
-    return of_config[-1]
+    return newest
 
 
 def window_of(rec: dict, period: int | None, start: str | None, end: str | None) -> tuple[Any, Any, str]:

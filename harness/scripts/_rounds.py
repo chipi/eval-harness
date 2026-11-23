@@ -188,7 +188,13 @@ def arms_of(rnd: dict[str, Any]) -> list[str]:
 
 
 def join(
-    goal: str, round_id: str, system: str, run_id: str, label: str = "", who: dict[str, Any] | None = None
+    goal: str,
+    round_id: str,
+    system: str,
+    run_id: str,
+    label: str = "",
+    who: dict[str, Any] | None = None,
+    joined: bool = False,
 ) -> dict[str, Any] | None:
     """A run made in the round joins its system's arm read under the label of the run's own score, or adds that arm
     (model.rounds.add_run); None when the round reads the system under a re-score the run is not yet. The round is
@@ -201,7 +207,7 @@ def join(
         rnd = find(goal, round_id)
         if rnd is None:
             return None
-        arm = model_rounds.add_run(rnd, system, run_id, who, label)
+        arm = model_rounds.add_run(rnd, system, run_id, who, label, joined)
         if arm is not None:
             save(rnd)
         return arm

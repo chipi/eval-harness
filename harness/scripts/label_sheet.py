@@ -37,16 +37,16 @@ VIEW = 160
 def run_dir(name: str, dataset_id: str, label: str = "") -> Path:
     """The score a run id, or a system's latest run on the dataset, is read as under `label` ("": a plain run's own
     score, else that of a run scored against a label set of the dataset, where a run scored against labels lands).
-    An arm id, as the catalog names it (<prefix>/<dataset>/<system>, model.runs.arm_id), is that arm's latest run."""
+    An arm id, as the catalog names it (<prefix>/<dataset>/<system>, model.runs.arm_of), is that arm's latest run."""
     scores = runs_on(dataset_id, label=None)
     if name.count("/") >= 2:
         _prefix, ds, _system_id = name.rsplit("/", 2)
         if ds != dataset_id:
             die(f"--runs {name}: not an arm on {dataset_id}", "not-found")
-        found = [d for d, m in scores if _model_runs.arm_id(d, m) == name]
-        if not found:
+        newest = _model_runs.latest([(d, m) for d, m in scores if _model_runs.arm_of(d, m) == name])
+        if newest is None:
             die(f"--runs {name}: no run of that arm", "not-found")
-        return found[-1]
+        return newest[0]
     # In the order they are looked up: the label asked for, then (for the plain one) the label sets' own.
     own = [(d, m) for d, m in scores if _model_runs.label(d, m) == label]
     sets_ = (
@@ -59,9 +59,9 @@ def run_dir(name: str, dataset_id: str, label: str = "") -> Path:
             if m["run_id"] == name:
                 return d
     for group in (own, sets_):
-        found = [d for d, m in group if m["system_id"] == name]
-        if found:
-            return found[-1]
+        newest = _model_runs.latest([(d, m) for d, m in group if m["system_id"] == name])
+        if newest is not None:
+            return newest[0]
     if any(m["run_id"] == name for _d, m in runs_on(label=None)) and not any(
         m["run_id"] == name and m.get("dataset_id") == dataset_id for _d, m in scores
     ):
