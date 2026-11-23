@@ -394,6 +394,35 @@ check(
     (over_dots(svg_of(sc), "briefs_"), sc.split("<figcaption")[1][-200:]),
 )
 
+# Two names on one line never touch: a real font is wider than LABEL_W, so a name ending where the next begins is drawn over
+# it (the goal page of news_topic_ag, speed chart, whose points these are as fractions of the axes).
+AG = [
+    (0.8166, 1.0, "ag_anthropic_l_v1"), (0.784, 0.9933, "ag_openai_m_v1"), (0.7937, 0.9866, "ag_openai_l_v1"),
+    (0.8119, 0.9732, "ag_anthropic_m_v1"), (0.8388, 0.9732, "ag_llama_m_v1"), (0.7847, 0.9671, "ag_gemma_s_v1"),
+    (0.7746, 0.9671, "ag_qwen_m_v1"), (0.7996, 0.9671, "ag_qwen_s_v1"), (0.8145, 0.9604, "ag_deepseek_l_v1"),
+    (0.798, 0.9604, "ag_gemma_l_v1"), (0.8462, 0.9604, "ag_qwen_l_v1"), (1.0, 0.9537, "ag_mistral_l_v1"),
+    (0.8445, 0.947, "ag_glm_l_v1"), (0.8684, 0.947, "ag_glm_m_v1"), (0.746, 0.947, "ag_mistral_m_v1"),
+    (0.7708, 0.947, "ag_openai_s_v1"), (0.7741, 0.9404, "ag_gemma_m_v1"), (0.8041, 0.9342, "ag_glm_s_v1"),
+    (0.7769, 0.9275, "ag_mistral_s_v1"), (0.7767, 0.9208, "ag_anthropic_s_v1"), (0.7904, 0.9208, "ag_deepseek_m_v1"),
+    (0.8386, 0.9208, "ag_deepseek_s_v1"), (0.7921, 0.9208, "ag_llama_l_v1"), (0.7904, 0.9142, "ag_llama_s_v1"),
+    (0.6408, 0.8946, "ag_bert_base_fy_v1"), (0.6387, 0.8946, "ag_bert_base_ta_v1"), (0.5069, 0.8946, "ag_bert_mini_v1"),
+    (0.8164, 0.6973, "ag_bart_mnli_v1"), (0.2216, 0.5853, "ag_keyword_v1"), (0.0, 0.0, "ag_constant_v1"),
+]  # fmt: skip
+sc = cc.scatter([(x, y, n, "t") for x, y, n in AG], "speed", "correct", width=560)
+s = svg_of(sc)
+bs = [b_ for b_ in boxes(s) if b_[4].startswith("ag_")]
+close = [
+    (a[4], b[4])
+    for i, a in enumerate(bs)
+    for b in bs[i + 1 :]
+    if a[0] < b[1] + 2 and b[0] < a[1] + 2 and a[2] < b[3] and b[2] < a[3]
+]
+check(
+    "scatter: two names on one line keep a gap (none within 2 units of another), and none lies over a dot",
+    not close and not over_dots(s, "ag_"),
+    (close, over_dots(s, "ag_")[:3]),
+)
+
 # -- arm pages: no reference, rounds of a re-read arm ----------------------------------------------------------------
 a0 = {
     "arm": "runs/briefs_v2/briefs_lead1_v1",

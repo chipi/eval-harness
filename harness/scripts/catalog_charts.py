@@ -515,6 +515,8 @@ LABEL_W = 7.8
 LABEL_H = 16.0
 #: How many lines a name may move from its dot (up or down) before it goes to a leader line.
 NEAR = 4
+#: The clear space between two names on one line: a real font is wider than LABEL_W, so names that only touch overlap.
+LABEL_GAP = 6.0
 
 
 def label_y(
@@ -526,9 +528,10 @@ def label_y(
     drawn there)."""
 
     def clear(y: float) -> bool:
-        return all(abs(y - py) >= LABEL_H or x1 <= px0 or x0 >= px1 for px0, px1, py in placed) and (
-            ok is None or ok(y)
-        )
+        return all(
+            abs(y - py) >= LABEL_H or x1 + LABEL_GAP <= px0 or x0 >= px1 + LABEL_GAP
+            for px0, px1, py in placed
+        ) and (ok is None or ok(y))
 
     for k in range(reach):
         for y in (want,) if k == 0 else (want + k * LABEL_H, want - k * LABEL_H):
@@ -655,7 +658,10 @@ def _leader_spot(
             if (
                 _dot_under(dots, x0, x0 + w, y)
                 or _crossed(segments, x0, x0 + w, y)
-                or any(abs(y - py) < LABEL_H and x0 < px1 and x0 + w > px0 for px0, px1, py in placed)
+                or any(
+                    abs(y - py) < LABEL_H and x0 < px1 + LABEL_GAP and x0 + w + LABEL_GAP > px0
+                    for px0, px1, py in placed
+                )
             ):
                 continue
             ex, ey = min(max(cx, x0), x0 + w), min(max(cy, y - 13), y + 5)
