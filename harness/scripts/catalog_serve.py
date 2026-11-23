@@ -1773,7 +1773,7 @@ def main() -> int:
         "--publish",
         default="",
         metavar="WHAT",
-        help="public mode: text to serve besides the numbers, comma-separated: outputs, references "
+        help="public mode: text to serve besides the numbers, comma-separated: outputs, references, prompts "
         "(default: none; the item itself is never served publicly)",
     )
     ap.add_argument(
@@ -1846,9 +1846,12 @@ def main() -> int:
         LIMITS["rate"] = args.rate
         LIMITS["client_header"] = args.client_header
         LIMITS["publish"] = tuple(x.strip() for x in args.publish.split(",") if x.strip())
-        bad = set(LIMITS["publish"]) - {"outputs", "references"}
+        bad = set(LIMITS["publish"]) - {"outputs", "references", "prompts"}
         if bad:
-            die(f"--publish takes outputs and/or references, not {', '.join(sorted(bad))}", "bad-argument")
+            die(
+                f"--publish takes outputs, references and/or prompts, not {', '.join(sorted(bad))}",
+                "bad-argument",
+            )
         if not (args.catalog_at.startswith("/") and args.catalog_at.endswith("/")):
             die(
                 f"--catalog-at is a path that starts and ends with /, not {args.catalog_at!r}", "bad-argument"

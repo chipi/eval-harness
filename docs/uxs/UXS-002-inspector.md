@@ -31,6 +31,7 @@ Its state lives in the URL, so every link from the catalog opens a ready compari
 - **Item text only here.** The static pages never carry it, unless the repository already publishes it (a profile written `--with-text`, refused unless git has committed every item's file). A public deployment never returns the
   item itself, and shows an arm's output or a reference's text only when it publishes them
   (`catalog-serve --publish outputs,references`); otherwise the item view says which it withholds.
+  A system's `params.prompt` is a prompt: shown on a public server only with `--publish prompts` (owner, 2026-11-23); a reference's promotion reason and a prompt version's note stay public.
 
 ## Scope
 

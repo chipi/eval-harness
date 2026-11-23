@@ -441,7 +441,7 @@ which references exist, what one arm wrote for one item.
   when it names them (`--publish outputs`, `--publish references`, or both), and never the item
   itself. An output can quote its input (an extractive arm returns the article's own sentences),
   and a reference can be text a project may not redistribute, so a public deployment publishes
-  neither until it says so.
+  neither until it says so. A system's `params.prompt` is a prompt: it is shown only with `--publish prompts` (public MCP and catalog: `catalog: {publish: [prompts]}`); a reference's promotion reason and a prompt version's note are public (owner, 2026-11-23).
 
   A private deployment for a team behind its own proxy (a tailnet's Caddy, a VPN) is the local
   inspector, not a public one: `evh catalog-serve --behind-proxy HOST[,HOST] --bind 0.0.0.0` in a

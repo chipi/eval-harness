@@ -8,6 +8,7 @@ from __future__ import annotations
 from datetime import date
 from typing import Any
 
+from evaluation_harness import _visibility
 from evaluation_harness import catalog_arms as ca
 from evaluation_harness import catalog_build as cb
 from evaluation_harness.axes import axis_title, builtin_axes, cell_of, cell_text
@@ -190,7 +191,10 @@ def arm(A, by_ds: dict, arm_id: str) -> dict[str, Any]:
             }
             for r in a["run_list"]
         ],
-        "config": {k: cfg.get(k) for k in ("system_id", "adapter", "deployment", "params")}
+        "config": {
+            k: (_visibility.without_prompts(cfg.get(k)) if k == "params" else cfg.get(k))
+            for k in ("system_id", "adapter", "deployment", "params")
+        }
         if cfg.get("params")
         else None,
         "conditions": (cond_fn(a["arm"]) if callable(cond_fn) else {}) or {},

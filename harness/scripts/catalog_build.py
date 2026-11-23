@@ -4145,7 +4145,7 @@ def render_arm(A: Adapter, a: dict, ds: str, by_ds: dict, out: Path, nav: list) 
     elif cfg.get("params"):
         kv = "".join(
             f"<dt>{e(k)}</dt><dd><code>{e(json.dumps(x) if not isinstance(x, str) else x)}</code></dd>"
-            for k, x in sorted(cfg["params"].items())
+            for k, x in sorted(_visibility.without_prompts(cfg["params"], on=True).items())
         )
         extra = (
             f'<p class="small muted">system <code>{e(cfg.get("system_id", ""))}</code>'
