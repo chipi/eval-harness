@@ -1009,11 +1009,10 @@ def v8_no_duplicate_system_ids() -> None:
     the situation instead, which is one rule in one place and covers every tool that
     has not been written yet.
 
-    `--repeat N` writes `<id>_r1.._rN`: one arm measured N times, averaged on purpose,
-    and not ambiguous.
+    A repeat set is one arm measured N times, averaged on purpose, and not ambiguous: the runs `--repeat N` made
+    (their record's `repeat_index`) and the repeats joined to the run they repeat (`--purpose repeat --of`, with the
+    same fingerprint hash), as `model.runs.set_of` says. What a run is called says nothing.
     """
-    import re as _re  # noqa: PLC0415
-
     #: The arms whose runs back a report. A throwaway pass (`evh run --scratch`) is outside the data.
     # The `linux` arm was omitted when it was added, so the sixth committed arm was the one place a duplicate
     # system_id could still land -- and the latency claims read it by filesystem order, so a duplicate changed the
@@ -1029,14 +1028,13 @@ def v8_no_duplicate_system_ids() -> None:
         groups: dict = {}
         for sd, m in by_arm.get(arm, []):
             key = (m.get("dataset_id"), m.get("system_id"))
-            rid = _mr.run_of(sd).name
-            if key[1] and rid not in groups.setdefault(key, []):
-                groups[key].append(rid)
-        for (ds, cid), names in sorted(groups.items()):
+            if key[1] and all(_mr.run_of(sd) != _mr.run_of(x) for x, _m in groups.setdefault(key, [])):
+                groups[key].append((sd, m))
+        for (ds, cid), found in sorted(groups.items()):
+            names = [_mr.run_of(sd).name for sd, _m in found]
             if len(names) < 2:
                 continue
-            stems = {_re.sub(r"_r\d+$", "", n) for n in names}
-            if len(stems) == 1 and all(_re.search(r"_r\d+$", n) for n in names):
+            if _mr.is_set(found):
                 continue
             if (ds, cid) in ALLOWED:
                 notes.append(
@@ -2137,6 +2135,56 @@ def v28_rows_in_format_7() -> None:
     )
 
 
+def v29_repeats_and_the_arms_that_read_them() -> None:
+    """V29: a repeat's `of` names a run of its own system and dataset (a repeat of another system's run is no repeat of
+    it), and a round arm's runs are still read in the arm the round names (RFC-041 F2): a repeat of the same
+    measurement as the run it repeats is read in that run's arm, so a round that recorded it under `repeats` no longer
+    reads it there."""
+    from evaluation_harness import _rounds  # noqa: PLC0415
+    from evaluation_harness.model import rounds as _model_rounds  # noqa: PLC0415
+
+    bad: list[str] = []
+    repeats = 0
+    for rid in _mr.run_ids():
+        rj = _mr.run(rid) or {}
+        if (rj.get("purpose") or "run") != "repeat" or not rj.get("of"):
+            continue
+        repeats += 1
+        of = _mr.run(str(rj["of"]))
+        if of is None:
+            notes.append(f"run {rid} is a repeat of {rj['of']}, which is not there: it is read under repeats")
+            continue
+        wrong = [k for k, w in (("system", "system_id"), ("dataset", "dataset_id")) if of.get(w) != rj.get(w)]
+        if wrong:
+            bad.append(
+                f"run {rid} is a repeat of {rj['of']}, a run of {of.get('system_id')} on {of.get('dataset_id')} "
+                f"({' and '.join(wrong)} differ)"
+            )
+    for rnd in _rounds.load_rounds():
+        for a in _model_rounds.arms(rnd):
+            want = _model_rounds.arm_id(rnd, a)
+            for rid in a.get("runs") or []:
+                recs = [(sd, _mr.record(sd)) for sd in _mr.scores_of(rid)]
+                read_in = {_mr.arm_of(sd, rec) for sd, rec in recs if rec}
+                joined = next((j for sd, rec in recs if rec and (j := _mr.joins(sd, rec))), None)
+                if joined and want not in read_in:
+                    bad.append(
+                        f"round {rnd['round_id']} of {rnd['goal']} records {rid} in its arm {want}, where it is no "
+                        f"longer read: it is a repeat of the same measurement as {joined}, read in that run's arm "
+                        f"({', '.join(sorted(read_in))}). The round's arm needs relabelling (a migration)"
+                    )
+    for b in bad[:10]:
+        print(f"       {b}")
+    if len(bad) > 10:
+        print(f"       ... and {len(bad) - 10} more")
+    check(
+        f"V29 repeats — {repeats} name the run they repeat, which is one of their own system and dataset, and every "
+        "round reads the runs it recorded where it recorded them",
+        not bad,
+        f"{len(bad)} problem(s)",
+    )
+
+
 def v23_run_outputs() -> None:
     """V23: every run's outputs can be read (RFC-024): none is left in the old layout (an outputs/ folder), and a
     score derived from them has them. And the project is files or its database, never both
@@ -2319,6 +2367,7 @@ def body() -> int:
         v26_faithfulness,
         v27_studies,
         v28_rows_in_format_7,
+        v29_repeats_and_the_arms_that_read_them,
         note_uncommitted_runs,
         note_round_scorers,
     ):

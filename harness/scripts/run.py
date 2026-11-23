@@ -80,6 +80,7 @@ from evaluation_harness._record import (
 from evaluation_harness._retry import call_with_retries, is_transient
 from evaluation_harness.model import datasets as _datasets
 from evaluation_harness.model import results as _results
+from evaluation_harness.model import rounds as _model_rounds
 from evaluation_harness.model import runs as _model_runs
 from evaluation_harness.ops import legacy
 
@@ -1117,6 +1118,64 @@ def _prompt_versions(
     return out
 
 
+def _repeat_reading(
+    of: str, fingerprint: dict[str, Any], cfg: dict[str, Any], label_as: str
+) -> dict[str, Any]:
+    """Where a `--purpose repeat --of <run>` run will be read (model.runs.repeat_reading), after refusing, before any
+    call, an `--of` that names a run of another system or dataset: it is no repeat of it."""
+    of_rec = _model_runs.run(of) or {}
+    wrong = [
+        k for k, w in (("system", "system_id"), ("dataset", "dataset_id")) if of_rec.get(w) != cfg.get(w)
+    ]
+    if wrong:
+        die(
+            f"--of {of}: a run of {of_rec.get('system_id')} on {of_rec.get('dataset_id')}, and this run is of "
+            f"{cfg['system_id']} on {cfg['dataset_id']}: a repeat names a run of its own system and dataset "
+            f"({' and '.join(wrong)} differ). Name that run, or make this one without --purpose repeat.",
+            "mismatch",
+        )
+    mine = {"dataset_id": cfg["dataset_id"], "system_id": cfg["system_id"], "fingerprint": fingerprint}
+    return _model_runs.repeat_reading(of, mine, label_as)
+
+
+def _says_repeat(of: str, reading: dict[str, Any]) -> tuple[str, str]:
+    """What a `--purpose repeat --of <run>` run tells, before its first call and again as its last line: whether it will
+    be read in the arm of the run it repeats (the same measurement taken again), or under `repeats` as another one, and
+    what differs (RFC-041 F2)."""
+    arm = reading["arm"]
+    build = f" (the {_model_runs.HARNESS} differs)" if reading["notes"] else ""
+    if reading["joins"]:
+        return (
+            (
+                f"  repeat of {of}: the same measurement (data, deployment, settings, adapter), so this run joins its "
+                f"arm {arm} and is averaged with it{build}"
+            ),
+            f"  repeat of {of}: joined {arm}{build}",
+        )
+    what = ", ".join(reading["why"])
+    return (
+        (
+            f"  repeat of {of}: not the same measurement ({what}), so this run is read under `repeats` ({arm}), a "
+            f"separate arm, and is not averaged with {of}; to join its arm, run it again as {of} was run"
+        ),
+        f"  repeat of {of}: read under `repeats` ({arm}), not in {of}'s arm: {what}",
+    )
+
+
+def _refuse_repeat_of_retired(rnd: dict[str, Any], system_id: str, label: str, of: str) -> None:
+    """Refuse, before any call, a repeat that joins the arm of a run the round retired: a run made in a round brings
+    its system back into play, and a repeat of a retired arm's run is not a reason to (the round's arm would come back
+    silently)."""
+    arm = _model_rounds.retired_arm(rnd, system_id, label)
+    if arm is not None:
+        die(
+            f"--of {of}: {system_id}'s arm in round {rnd['round_id']} is retired ({(arm.get('retired') or {}).get('reason') or 'no reason'}), "
+            "and this repeat would join it and bring it back into play. Repeat the run outside the round (leave out "
+            "--round), or bring the arm back on purpose with a run of its own.",
+            "bad-argument",
+        )
+
+
 def _refuse_repeat_beside_run(system_id: str, dataset_id: str, repeat: int) -> None:
     """Refuse, before any call, a --repeat set of a system on a dataset where it already has a plain run: the set is
     meant to be the arm's measurement, so beside the run it makes two measurements of one system id, which every
@@ -1148,6 +1207,9 @@ def _refuse_repeat_beside_run(system_id: str, dataset_id: str, repeat: int) -> N
         "are committed.\n"
         f"  To measure its noise, repeat the run it has, once per repeat: evh run --system {system_id} --dataset "
         f"{dataset_id} --purpose repeat --of {last}\n"
+        "  Run as that run was run (the same data, deployment, settings and adapter), each repeat joins its arm: the arm is "
+        "then read as one measurement over all its runs. A repeat that differs in any of them is read under `repeats`, as "
+        "another measurement.\n"
         f"  To measure it as a set from the start, delete that run first: evh data-rm --path runs/{last}",
         "would-overwrite",
     )
@@ -1510,6 +1572,14 @@ def _run(args: argparse.Namespace) -> int:
         replay=plan,
     )
     print(f"  fingerprint {fingerprint['hash'][:12]}")
+    repeat_says, repeat_joins = None, False
+    if args.purpose == "repeat" and args.of and not args.scratch:
+        reading = _repeat_reading(args.of, fingerprint, cfg, label_as)
+        repeat_joins = reading["joins"]
+        if reading["joins"] and rnd is not None:
+            _refuse_repeat_of_retired(rnd, cfg["system_id"], reading["label"], args.of)
+        repeat_says = _says_repeat(args.of, reading)
+        print(repeat_says[0])
     prompt_versions = {} if args.scratch else _prompt_versions(adapter_path, adapter_id, cfg, fingerprint)
     # A DIRTY TREE IS NOT A VERSION. The fingerprint records it, but a field nobody reads
     # is not a warning: a 72-run sweep completed with `harness.dirty: true` throughout, so
@@ -1774,6 +1844,7 @@ def _run(args: argparse.Namespace) -> int:
                 run_id,
                 _model_runs.label(score_dir),
                 _actor.actor(),
+                repeat_joins,
             )
             if joined is None:
                 print(
@@ -1898,4 +1969,6 @@ def _run(args: argparse.Namespace) -> int:
         return EXIT_STOPPED
     if not args.scratch:
         warn_if_ignored(runs)
+    if repeat_says:
+        print(repeat_says[1])
     return 0

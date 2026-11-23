@@ -867,7 +867,9 @@ try:
     )
 
     # ── agreement: --disagree keeps the items the arms decided differently (step 5) ──────────────
-    # the same run once more, as a repeat of it (its own arm): two of one system that decided differently
+    # the same run once more, as a repeat of it with a setting changed (another fingerprint hash, so it is read under
+    # `repeats`, its own arm: a repeat of the same measurement joins its original's arm, test_arm_membership): two of one
+    # system that decided differently
     alt_id = lead + "_alt"
     alt = data / "runs" / alt_id
     with _runstore._InProject(proj):
@@ -877,7 +879,16 @@ try:
         _runstore.copy_run(src_first, alt / "scores" / src_first.name)
         alt_rec = _R.run(alt)
         assert alt_rec is not None, f"{alt_id} was not copied"
-        _R.write_run(alt_id, {**alt_rec, "run_id": alt_id, "purpose": "repeat", "of": lead})
+        fp = alt_rec.get("fingerprint") or {}
+        moved = {
+            **fp,
+            "settings": {**(fp.get("settings") or {}), "temperature": 0.7},
+            "settings_sha256": "e" * 64,
+            "hash": "e" * 64,
+        }
+        _R.write_run(
+            alt_id, {**alt_rec, "run_id": alt_id, "purpose": "repeat", "of": lead, "fingerprint": moved}
+        )
         changed = sorted(_outputs.outputs(alt))[:2]
     for i in changed:
         _set_output(alt, i, "a different decision")

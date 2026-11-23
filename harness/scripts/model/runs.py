@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import json
 import re
-from collections.abc import Iterator
+from collections.abc import Iterable, Iterator
 from pathlib import Path
 from typing import Any
 
@@ -136,13 +136,147 @@ def record(score_dir: Path) -> dict[str, Any] | None:
     return out
 
 
+#: What `same_measurement` names when two runs' harness code differs: said, never a reason to read them apart.
+HARNESS = "harness build"
+
+
+def same_measurement(a: dict[str, Any], b: dict[str, Any]) -> tuple[bool, list[str]]:
+    """Whether run `b` taken again is `a`: (the same measurement, what differs). `a` and `b` are two runs' own records
+    (run.json, never a score's: a re-score or a judging keeps no fingerprint hash, its parts were not measured
+    together). The same measurement is the same system on the same dataset, with equal data, deployment and settings
+    (the fingerprint's `data_sha256`, `deployment_sha256`, `settings_sha256`) and the same adapter (its own
+    `instrument.adapter.sha256`: the scorer). The harness's own code (`instrument.harness.code_sha256`) may differ: a
+    repeat made on a later build of the harness joins, and the difference is named (HARNESS), last. What blocks it
+    is named: "system", "dataset", "data", "deployment", "settings", "adapter", "fingerprint version", and a part
+    or a fingerprint one side never recorded ("settings (not recorded)", "fingerprint (not recorded)")."""
+    why = [k for k, w in (("system", "system_id"), ("dataset", "dataset_id")) if a.get(w) != b.get(w)]
+    fa, fb = a.get("fingerprint") or {}, b.get("fingerprint") or {}
+    if not fa or not fb:
+        why.append("fingerprint (not recorded)")
+        return False, why
+    if not fa.get("version") or fa.get("version") != fb.get("version"):
+        why.append("fingerprint version")
+        return False, why
+    for part in ("data", "deployment", "settings"):
+        x, y = fa.get(f"{part}_sha256"), fb.get(f"{part}_sha256")
+        if not x or not y:
+            why.append(f"{part} (not recorded)")
+        elif x != y:
+            why.append(part)
+    ax, ay = ((f.get("instrument") or {}).get("adapter", {}).get("sha256") for f in (fa, fb))
+    if not ax or not ay:
+        why.append("adapter (not recorded)")
+    elif ax != ay:
+        why.append("adapter")
+    hx, hy = ((f.get("instrument") or {}).get("harness", {}).get("code_sha256") for f in (fa, fb))
+    ok = not why
+    if hx and hy and hx != hy:
+        why.append(HARNESS)
+    return ok, why
+
+
+def _resolve(
+    base: Path, rj: dict[str, Any], seen: tuple[str, ...] = ()
+) -> tuple[dict[str, Any] | None, list[str], list[str]]:
+    """What a repeat joins: (the run record it is read with, why it joins none, what differs without keeping it from
+    joining). A repeat names the run it repeats (`of`) and joins it when that run is there and is the same measurement
+    (`same_measurement`); a repeat of a repeat follows `of` to the run at the root, and joins only when every link
+    does, a link read under `repeats` (or missing, or looping back) being the end of it. None, [], [] for a run that
+    is no repeat."""
+    of = rj.get("of")
+    me = str(rj.get("run_id") or "")
+    if (rj.get("purpose") or "run") != "repeat" or not of:
+        return None, [], []
+    if of in seen or of == me:
+        return None, [f"`of` {of} loops back"], []
+    target = run(base / str(of))
+    if target is None:
+        return None, [f"{of} is not there"], []
+    ok, diff = same_measurement(rj, target)
+    if not ok:
+        return None, [d for d in diff if d != HARNESS], []
+    if (target.get("purpose") or "run") == "repeat" and target.get("of"):
+        root_, why, _ = _resolve(base, target, (*seen, me))
+        if root_ is None:
+            return None, [f"{of} is itself read under repeats ({'; '.join(why)})"], []
+    return target, [], [d for d in diff if d == HARNESS]
+
+
+def _by_purpose(base: Path, rj: dict[str, Any], seen: tuple[str, ...] = ()) -> str:
+    """What a run's purpose adds to the label of the arm it is read in: a repeat that joins the run it repeats adds
+    what that run adds (a repeat of a re-timing is read in the re-timing's arm)."""
+    target, _why, _note = _resolve(base, rj, seen)
+    if target is not None:
+        return _by_purpose(base, target, (*seen, str(rj.get("run_id"))))
+    purpose = rj.get("purpose") or "run"
+    return (rj.get("machine") or "") if purpose == "retime" else PURPOSE_LABEL.get(purpose, purpose)
+
+
+def repeat_reading(
+    of_id: str, mine: dict[str, Any], label_as: str = "", scratch: bool = False
+) -> dict[str, Any]:
+    """Where a repeat of run `of_id` will be read, before it has run. `mine`: the repeat's dataset_id, system_id and
+    fingerprint; `label_as`: the label its score will carry. {"joins": whether it is read in the arm of the run it
+    repeats, "why": what keeps it from it (named as `same_measurement` names them), "notes": what differs and does not
+    keep it (the harness build), "arm": the arm it is read in, "label": its label}."""
+    rj = {**mine, "purpose": "repeat", "of": of_id, "run_id": ""}
+    target, why, notes = _resolve(root(scratch), rj)
+    by = _by_purpose(root(scratch), target) if target is not None else "repeats"
+    lbl = ", ".join(x for x in (label_as, by) if x)
+    return {
+        "joins": target is not None,
+        "why": why,
+        "notes": notes,
+        "arm": f"{arm_prefix(lbl)}/{mine.get('dataset_id')}/{mine.get('system_id')}",
+        "label": lbl,
+    }
+
+
+def _run_record(score_dir: Path, rec: dict[str, Any]) -> dict[str, Any]:
+    """The pass a score is of, as run.json says it (a re-score's own record holds no fingerprint hash: its parts were
+    not measured together), else the record given."""
+    return (run(run_of(Path(score_dir))) if is_score(Path(score_dir)) else None) or rec
+
+
+def _is_repeat(rec: dict[str, Any]) -> bool:
+    """Whether a record is of a repeat that names the run it repeats: the only run that reads another run."""
+    return (rec.get("purpose") or "run") == "repeat" and bool(rec.get("of"))
+
+
+def joined(score_dir: Path, rec: dict[str, Any] | None = None) -> tuple[str, list[str]] | None:
+    """(the run this run is a repeat of, what differs and does not keep it from being read in that run's arm: the harness
+    build) when it is read in that run's arm, else None."""
+    rec = rec if rec is not None else record(score_dir) or {}
+    if not _is_repeat(rec):
+        return None
+    rj = _run_record(score_dir, rec)
+    target, _why, notes = _resolve(run_of(Path(score_dir)).parent, rj)
+    return (str(rj["of"]), notes) if target is not None else None
+
+
+def joins(score_dir: Path, rec: dict[str, Any] | None = None) -> str | None:
+    """The id of the run this run is a repeat of, when it is read in that run's arm: a `--purpose repeat --of X` run that
+    is the same measurement as X (`same_measurement`), X itself a plain run or a repeat that joins one. None for any
+    other run, and for a repeat of a run that is gone or measured something else: that one is read under `repeats`."""
+    found = joined(score_dir, rec)
+    return found[0] if found else None
+
+
 def label(score_dir: Path, rec: dict[str, Any] | None = None) -> str:
     """The label of the arm a score is read in: the score's own and the run's purpose's, joined ("" for a run's first
-    score of a plain run)."""
+    score of a plain run). A repeat that joins the run it repeats (`joins`) takes what that run's purpose adds, so it
+    is read where that run is, under its own score's label."""
     rec = rec if rec is not None else record(score_dir) or {}
-    purpose = rec.get("purpose") or "run"
     own = str(meta(score_dir).get("label") or "")
-    by_purpose = (rec.get("machine") or "") if purpose == "retime" else PURPOSE_LABEL.get(purpose, purpose)
+    purpose = rec.get("purpose") or "run"
+    if _is_repeat(rec):
+        by_purpose = _by_purpose(
+            run_of(Path(score_dir)).parent, {**_run_record(score_dir, rec), "purpose": purpose}
+        )
+    else:
+        by_purpose = (
+            (rec.get("machine") or "") if purpose == "retime" else PURPOSE_LABEL.get(purpose, purpose)
+        )
     return ", ".join(x for x in (own, by_purpose) if x)
 
 
@@ -151,10 +285,73 @@ def arm_prefix(lbl: str) -> str:
     return "runs" if not lbl else re.sub(r"[^a-z0-9]+", "-", lbl.lower()).strip("-")
 
 
-def arm_id(score_dir: Path, rec: dict[str, Any] | None = None) -> str:
-    """`<prefix>/<dataset>/<system>`: the arm a score is read in."""
+def arm_of(score_dir: Path, rec: dict[str, Any] | None = None) -> str:
+    """`<prefix>/<dataset>/<system>`: the arm a score is read in. The one place that says it (RFC-041 F2)."""
     rec = rec if rec is not None else record(score_dir) or {}
     return f"{arm_prefix(label(score_dir, rec))}/{rec.get('dataset_id')}/{rec.get('system_id')}"
+
+
+def latest_key(rec: dict[str, Any]) -> tuple[str, str]:
+    """What orders runs by how late they were measured: (created_at, run_id). A run id can be anything (`--run-id`), so
+    it only breaks a tie."""
+    return str(rec.get("created_at") or ""), str(rec.get("run_id") or "")
+
+
+def latest(runs: Iterable[tuple[Path, dict[str, Any]]]) -> tuple[Path, dict[str, Any]] | None:
+    """The latest of these scored runs: the greatest (created_at, run_id), None for none. The one reading of "the
+    latest run"; no reader orders by name or by the order the directory lists them."""
+    return max(runs, key=lambda x: latest_key(x[1]), default=None)
+
+
+def reference_of(rec: dict[str, Any]) -> str:
+    """The reference a scored run was read against, "" for none."""
+    return str(((rec.get("fingerprint") or {}).get("data") or {}).get("reference_id") or "")
+
+
+def runs_of_arm(
+    runs: Iterable[tuple[Path, dict[str, Any]]],
+) -> tuple[list[tuple[Path, dict[str, Any]]], list[tuple[Path, dict[str, Any]]]]:
+    """(kept, left out) of the scores `arm_of` puts in one arm: the ones scored against the reference of its latest run,
+    in the order given. Runs scored against another were averaged in whatever they measured against (a run on silver
+    and a run on gold read as repeats of one measurement); they are left out, and the caller names them."""
+    runs = list(runs)
+    last = latest(runs)
+    if last is None:
+        return [], []
+    ref = reference_of(last[1])
+    return [x for x in runs if reference_of(x[1]) == ref], [x for x in runs if reference_of(x[1]) != ref]
+
+
+def read_arms(
+    scores: Iterable[tuple[Path, dict[str, Any]]],
+) -> tuple[list[tuple[Path, dict[str, Any]]], list[tuple[Path, dict[str, Any]]]]:
+    """(read, left out) of any scores, arm by arm (`runs_of_arm`), each in the order given."""
+    scores = list(scores)
+    groups: dict[str, list[tuple[Path, dict[str, Any]]]] = {}
+    for sd, rec in scores:
+        groups.setdefault(arm_of(sd, rec), []).append((sd, rec))
+    left = {sd for xs in groups.values() for sd, _rec in runs_of_arm(xs)[1]}
+    return [x for x in scores if x[0] not in left], [x for x in scores if x[0] in left]
+
+
+def set_of(runs: Iterable[tuple[Path, dict[str, Any]]]) -> list[tuple[Path, dict[str, Any]]]:
+    """The runs of one arm that make up its repeat set: those whose record has `repeat_index` (`evh run --repeat N`),
+    those that join the run they repeat (`joins`), and the runs those name. What the run is called says nothing: a
+    user's `--run-id foo_r1` and `foo_r2` are two plain runs."""
+    runs = list(runs)
+    joining = {run_of(sd).name: joins(sd, rec) for sd, rec in runs}
+    named = {j for j in joining.values() if j}
+    return [
+        (sd, rec)
+        for sd, rec in runs
+        if rec.get("repeat_index") or joining[run_of(sd).name] or run_of(sd).name in named
+    ]
+
+
+def is_set(runs: Iterable[tuple[Path, dict[str, Any]]]) -> bool:
+    """Whether these runs, read as one arm, are one repeat set: each is a member (`set_of`)."""
+    runs = list(runs)
+    return bool(runs) and len(set_of(runs)) == len(runs)
 
 
 def run_ids(data: Path | None = None, base: Path | None = None) -> list[str]:

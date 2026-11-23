@@ -50,7 +50,35 @@ def runs_on(
 ) -> list[Run]:
     """Every score read under `label` ("": a plain run's own score, the arm a goal reads; None: any) with its
     record, by run id; optionally only one dataset, system_ids containing `match`, or exactly `system_id`."""
-    return _model_runs.scored(dataset_id, label_is=label, system_id=system_id, match=match)
+    return _model_runs.read_arms(
+        _model_runs.scored(dataset_id, label_is=label, system_id=system_id, match=match)
+    )[0]
+
+
+def left_out(
+    dataset_id: str | None = None,
+    *,
+    label: str | None = "",
+    match: str | None = None,
+    system_id: str | None = None,
+) -> list[str]:
+    """What `runs_on` leaves out, one line a arm, named: an arm's runs scored against another reference than its latest
+    run's are never averaged in (`model.runs.runs_of_arm`). [] when no arm has any."""
+    scores = _model_runs.scored(dataset_id, label_is=label, system_id=system_id, match=match)
+    groups: dict[str, list[Run]] = {}
+    for d, m in scores:
+        groups.setdefault(_model_runs.arm_of(d, m), []).append((d, m))
+    lines = []
+    for arm, found in sorted(groups.items()):
+        kept, left = _model_runs.runs_of_arm(found)
+        if left:
+            ref = _model_runs.reference_of(kept[0][1])
+            was = sorted({_model_runs.reference_of(m) or "no reference" for _d, m in left})
+            lines.append(
+                f"{arm}: {', '.join(sorted(m['run_id'] for _d, m in left))} scored against {', '.join(was)}, left out: "
+                f"the arm is read against {ref or 'no reference'}, the reference of its latest run"
+            )
+    return lines
 
 
 def by_arm(runs: Iterable[Run]) -> dict[str, list[Run]]:
@@ -377,10 +405,6 @@ def ranks_lower(runs: Iterable[Run], metric: str, asc: bool = False, desc: bool 
     return lower_is_better_on(runs, metric)
 
 
-#: `--repeat N` writes `<id>_r1 .. <id>_rN`: one arm measured N times, not N arms.
-_REPEAT = re.compile(r"_r\d+$")
-
-
 def mixed_versions(system_ids: Iterable[str]) -> dict[str, list[str]]:
     """{arm: its `_vN` endings} for each arm present at more than one version: v1 and v2 of one
     arm are two measurements side by side. Different arms at different versions (opus_v2 beside
@@ -393,24 +417,16 @@ def mixed_versions(system_ids: Iterable[str]) -> dict[str, list[str]]:
     return {base: sorted(v) for base, v in sorted(seen.items()) if len(v) > 1}
 
 
-def repeat_stem(run_name: str) -> str:
-    """The run name without its `_rN` repeat suffix."""
-    return _REPEAT.sub("", run_name)
-
-
 #: What to do about runs averaged into one row that nothing tells apart: said with the commands that do it (the 0.8.0
 #: newcomer run was told to edit run.json by hand). A second plain run of a system is refused (evh run); these are
 #: runs made before that, or copied in.
 AMBIGUOUS_HOW = (
     "           They are averaged together below, and validate fails V8 once they are committed. Keep one measurement:\n"
     "           delete the others (evh data-rm --path runs/<run_id>), or allow the pair in validate.json's duplicate_ok\n"
-    "           when they are one on purpose. To measure an arm again, repeat its run: evh run ... --purpose repeat --of <run_id>."
+    "           when they are one on purpose. To measure an arm again, repeat its run as it was run:\n"
+    "           evh run ... --purpose repeat --of <run_id> joins the arm when nothing it measures differs; a repeat that\n"
+    "           differs in its data, deployment, settings or adapter is read under `repeats`, as another measurement."
 )
-
-
-def is_repeat_set(run_names: list[str]) -> bool:
-    """Whether these runs are one `--repeat` set: every name `<stem>_rN` off one stem."""
-    return len({repeat_stem(n) for n in run_names}) == 1 and all(_REPEAT.search(n) for n in run_names)
 
 
 class AmbiguousRuns(Exception):
@@ -459,12 +475,14 @@ def runs_by_arm(label: str, dataset_id: str, prefix: str = "", strip: str = "") 
     on the order the filesystem returned directories in: green on APFS, red on ext4.
     `make ci` was reported green for a week on the only machine anyone had run it on.
 
-    REPEATS ARE NOT AMBIGUITY. `--repeat 3` writes `<id>_r1.._r3`, all one measurement
-    of one arm, and averaging them is the point. Those come back together. Anything
-    ELSE sharing a system_id is two different measurement occasions wearing one name,
+    REPEATS ARE NOT AMBIGUITY. `--repeat 3` writes three runs, all one measurement of
+    one arm, and so does a repeat of a run made with the same fingerprint (`--purpose
+    repeat --of`); averaging them is the point. Those come back together
+    (`model.runs.set_of`). Anything ELSE sharing a system_id is two different
+    measurement occasions wearing one name,
     and this raises rather than picking one, because there is no correct pick.
     """
-    groups: dict[str, list[tuple[str, Path]]] = {}
+    groups: dict[str, list[Run]] = {}
     for d, m in runs_on(dataset_id, label=label):
         cid = m["system_id"]
         if prefix and not cid.startswith(prefix):
@@ -472,22 +490,22 @@ def runs_by_arm(label: str, dataset_id: str, prefix: str = "", strip: str = "") 
         key = cid[len(prefix) :] if prefix else cid
         if strip and key.endswith(strip):
             key = key[: -len(strip)]
-        groups.setdefault(key, []).append((m["run_id"], d))
+        groups.setdefault(key, []).append((d, m))
 
     for key, found in groups.items():
         if len(found) < 2:
             continue
-        if is_repeat_set([rid for rid, _d in found]):
+        if _model_runs.is_set(found):
             continue
         raise AmbiguousRuns(
             f"{len(found)} runs read as {label or 'runs'} claim system_id {key!r} on "
-            f"{dataset_id}: {sorted(rid for rid, _d in found)}.\n"
+            f"{dataset_id}: {sorted(m['run_id'] for _d, m in found)}.\n"
             f"  These are different measurement occasions sharing one name, so any "
             f"tool reading them picks one by run id.\n"
             f"  A run that is not the record is a re-run: its run.json's purpose says which "
             f"(repeat, retime, pair), as the SciFact re-runs' do."
         )
-    return {k: [d for _rid, d in sorted(v)] for k, v in sorted(groups.items())}
+    return {k: [d for d, _m in sorted(v, key=lambda x: x[1]["run_id"])] for k, v in sorted(groups.items())}
 
 
 def warn_on_ambiguous_runs(read_as: str = "", dataset_id: str | None = None, label: str = "") -> int:
@@ -504,23 +522,25 @@ def warn_on_ambiguous_runs(read_as: str = "", dataset_id: str | None = None, lab
     leaderboard someone is reading interactively. This warns instead and returns the
     count, so the number on screen is still explained.
 
-    A `--repeat N` set (`<id>_r1.._rN`) is one arm measured N times and is not
-    ambiguous; averaging those is the point.
+    A repeat set (`--repeat N`, and repeats joined to the run they repeat) is one arm
+    measured N times and is not ambiguous; averaging those is the point.
     """
-    groups: dict[str, list[str]] = {}
-    for _d, m in runs_on(dataset_id or None, label=read_as):
-        groups.setdefault(m["system_id"], []).append(m["run_id"])
+    groups: dict[str, list[Run]] = {}
+    for d, m in runs_on(dataset_id or None, label=read_as):
+        groups.setdefault(m["system_id"], []).append((d, m))
     bad = []
-    for cid, names in sorted(groups.items()):
-        if len(names) < 2:
+    for cid, found in sorted(groups.items()):
+        if len(found) < 2:
             continue
-        if is_repeat_set(names):
+        if _model_runs.is_set(found):
             continue
-        bad.append((cid, sorted(names)))
+        bad.append((cid, sorted(m["run_id"] for _d, m in found)))
     for cid, names in bad:
         print(
             f"  WARNING: {len(names)} runs claim system_id {cid!r}"
             f"{' in ' + label if label else ''} — {', '.join(names)}."
         )
         print(AMBIGUOUS_HOW)
+    for line in left_out(dataset_id or None, label=read_as):
+        print(f"  WARNING: {line}.")
     return len(bad)

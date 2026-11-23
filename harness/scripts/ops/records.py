@@ -546,14 +546,16 @@ _RUN_COLUMNS = (
 def runs_list(label: str | None = None) -> dict[str, Any]:
     """The runs read under `label` (the plain runs by default), each with its build and its scores; the labels present."""
     from evaluation_harness._common import BOOKKEEPING_PREFIXES, data_rel  # noqa: PLC0415
-    from evaluation_harness._runs import runs_on  # noqa: PLC0415
+    from evaluation_harness._runs import left_out, runs_on  # noqa: PLC0415
     from evaluation_harness.model import runs as model_runs  # noqa: PLC0415
 
     label = label or ""
     metrics = runs_on(label=label)
+    left = left_out(label=label)
     return {
         "label": label,
         "labels": [x for x in model_runs.labels() if x != label],
+        **({"left_out": left} if left else {}),
         "count": len(metrics),
         "runs": [
             {
@@ -567,10 +569,18 @@ def runs_list(label: str | None = None) -> dict[str, Any]:
                 "scores": {
                     k: v for k, v in sorted(m["scores"].items()) if not k.startswith(BOOKKEEPING_PREFIXES)
                 },
+                **_joined_note(d, m, model_runs),
             }
             for d, m in metrics
         ],
     }
+
+
+def _joined_note(d: Any, m: dict[str, Any], model_runs: Any) -> dict[str, Any]:
+    """`{"joined": {"of": run, "differs": [...]}}` for a repeat read in the arm of the run it repeats, when the harness
+    build it ran on differs from that run's: said where the arm's runs are listed, never a reason to read them apart."""
+    found = model_runs.joined(d, m)
+    return {"joined": {"of": found[0], "differs": found[1]}} if found and found[1] else {}
 
 
 def say_runs_list(r: dict[str, Any]) -> str:
@@ -595,6 +605,12 @@ def say_runs_list(r: dict[str, Any]) -> str:
         )
     if r["labels"]:
         out.append(f"  also present under --label: {', '.join(repr(x) for x in r['labels'])}")
+    out.extend(
+        f"  {m['run_id']} is read in the arm of {m['joined']['of']}, and its {', '.join(m['joined']['differs'])} differs"
+        for m in r["runs"]
+        if m.get("joined")
+    )
+    out.extend(f"  WARNING: {line}." for line in r.get("left_out") or [])
     return "\n".join(out)
 
 

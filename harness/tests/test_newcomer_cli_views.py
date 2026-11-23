@@ -77,14 +77,17 @@ def write_run(proj: Path, name: str, config: str, scores: dict, extra: dict | No
 syn = Path(tempfile.mkdtemp(prefix="evh-views-syn-"))
 tutorial_proj = Path(tempfile.mkdtemp(prefix="evh-views-tut-"))
 try:
-    # three repeats of one arm, one run of another, each with a provider bill
-    for name, cfg in (
-        ("rep_x_r1", "arm_rep_v1"),
-        ("rep_x_r2", "arm_rep_v1"),
-        ("rep_x_r3", "arm_rep_v1"),
-        ("single", "arm_one_v1"),
+    # three repeats of one arm (what `--repeat 3` records: a repeat_index each, the names say nothing), one run of
+    # another, each with a provider bill
+    for name, cfg, index in (
+        ("rep_x_r1", "arm_rep_v1", 1),
+        ("rep_x_r2", "arm_rep_v1", 2),
+        ("rep_x_r3", "arm_rep_v1", 3),
+        ("single", "arm_one_v1", None),
     ):
-        sd = write_run(syn, name, cfg, {"acc": 0.5, "total_cost_usd": 0.004})
+        sd = write_run(
+            syn, name, cfg, {"acc": 0.5, "total_cost_usd": 0.004}, {"repeat_index": index} if index else None
+        )
         with _runstore._InProject(syn):  # in the suite's store, as `evh` reads it
             _runstore.put_rows(
                 sd,
@@ -117,7 +120,7 @@ try:
     check(
         "leaderboard: the default text fits a normal terminal (<= 100 characters a line)",
         widest <= 100,
-        widest,
+        [ln for ln in lb.stdout.splitlines() if len(ln) > 100],
     )
     check(
         "leaderboard: the columns left out are named, with how to see them",

@@ -267,13 +267,14 @@ def _listed(problems: list[str]) -> str:
 
 
 def _latest_run(sid: str, dataset_id: str) -> str | None:
-    """The newest run of this system on this dataset (run ids end in their start's stamp), or None."""
-    runs = [
-        r
+    """The latest run of this system on this dataset (model.runs.latest), or None. The system is the record's own, not
+    a run id's prefix: `smoke`'s runs are not `smoke_v1`'s."""
+    found = _model_runs.latest(
+        (_model_runs.run_dir(r), rec)
         for r in _model_runs.run_ids()
-        if r.startswith(f"{sid}_") and (_model_runs.run(r) or {}).get("dataset_id") == dataset_id
-    ]
-    return max(runs) if runs else None
+        if (rec := _model_runs.run(r)) and rec.get("system_id") == sid and rec.get("dataset_id") == dataset_id
+    )
+    return found[1]["run_id"] if found else None
 
 
 def _scores_of(run_id: str) -> dict[str, Any] | None:

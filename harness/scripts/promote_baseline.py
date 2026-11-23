@@ -45,18 +45,28 @@ def run_record(run_id: str) -> dict | None:
 
 
 def _repeats(m: dict) -> dict | None:
-    """The repeats of the promoted run's arm (same system, same base run id, `repeat_index` set):
-    their run ids and the mean of each score over them; None for a run that is not a repeat."""
-    import re  # noqa: PLC0415
+    """The repeat set of the promoted run's arm (`model.runs.set_of`: the runs `--repeat` made and the repeats joined to
+    the run they repeat): their run ids and the mean of each score over them; None for a run that is not in one."""
     import statistics  # noqa: PLC0415
 
-    if not m.get("repeat_index"):
+    d = RUNS / m["run_id"]
+    mine = model_runs.first_score(d) or next(iter(model_runs.scores_of(d)), None)
+    if mine is None:
         return None
-    base = re.sub(r"_r\d+$", "", m["run_id"])
+    arm = model_runs.arm_of(mine, m)
+    members = model_runs.set_of(
+        [
+            (sd, rec)
+            for sd, rec in model_runs.scored(m["dataset_id"], system_id=m["system_id"], label_is=None)
+            if model_runs.arm_of(sd, rec) == arm
+        ]
+    )
+    if m["run_id"] not in {rec["run_id"] for _sd, rec in members}:
+        return None
     sibs = []
-    for d in sorted(_store.glob(RUNS, f"{base}_r*")):
-        mm = run_record(d.name) or {}
-        if mm.get("system_id") == m["system_id"] and mm.get("repeat_index"):
+    for run_id in sorted({rec["run_id"] for _sd, rec in members}):
+        mm = run_record(run_id) or {}
+        if mm.get("system_id") == m["system_id"]:
             sibs.append(mm)
     if len(sibs) < 2:
         return None

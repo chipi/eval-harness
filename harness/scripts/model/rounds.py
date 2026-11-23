@@ -1,7 +1,7 @@
 """Rounds (RFC-032 step 5): a round's arms as it stores them, and its evidence, computed once.
 
 A round (data/rounds/<goal>/<r>.yaml) keeps its arms: each a system read under one label (the arm's id is
-`<label prefix>/<dataset>/<system>`, model/runs.arm_id), the runs it is read through, how and when it entered, and its
+`<label prefix>/<dataset>/<system>`, model/runs.arm_of), the runs it is read through, how and when it entered, and its
 retirement. `evidence(goal, round)` is what every view of a round reads: `evh round-list`, the goal page, the inspector's
 `--round`, pair-test's and family-test's `--round` and the API (owner, 2026-11-13). Its leader is read as a goal
 decides: among the gold-scored arms where there are any, never a judged arm, never the arm that wrote the reference it
@@ -22,7 +22,7 @@ from evaluation_harness.model import datasets as model_datasets
 from evaluation_harness.model import goal_views
 from evaluation_harness.model import goals as model_goals
 from evaluation_harness.model import runs as model_runs
-from evaluation_harness.model.entity import Entity
+from evaluation_harness.model.entity import Entity, Problem
 from evaluation_harness.stats import fmt_p
 
 #: A round: data/rounds/<goal>/<round>.yaml, written by the round commands (`_rounds.save`), read through its goal.
@@ -130,13 +130,20 @@ def entered(how: str, who: dict[str, Any] | None = None, frm: str | None = None)
 
 
 def add_run(
-    rnd: dict[str, Any], system: str, run_id: str, who: dict[str, Any] | None = None, label: str = ""
+    rnd: dict[str, Any],
+    system: str,
+    run_id: str,
+    who: dict[str, Any] | None = None,
+    label: str = "",
+    joined: bool = False,
 ) -> dict[str, Any] | None:
     """A run made in the round joins its system's arm read under `label`, the label of the run's own score (a
-    re-timing on another machine is read as "linux", not as the plain runs), or adds that arm; returns the arm. A
-    retired arm the run joins is back in play: a run made after the retirement brings the system back. None, and
-    nothing changed, when the round reads the system under a re-score and the run is not one yet: it is read in the
-    round once the round's runs are re-scored (`evh rescore --goal G --round R`)."""
+    re-timing on another machine is read as "linux", not as the plain runs; a repeat of the same measurement as the
+    arm of the run it repeats: `model.runs.label`), or adds that arm; returns the arm. A retired arm the run joins is
+    back in play: a run made after the retirement brings the system back. Not a repeat that `joined` its original's
+    arm: a repeat of a retired arm's run is refused (`retired_arm`), never a way to revive it. None, and nothing
+    changed, when the round reads the system under a re-score and the run is not one yet: it is read in the round once
+    the round's runs are re-scored (`evh rescore --goal G --round R`)."""
     same = [a for a in arms(rnd) if a["system"] == system and str(a.get("label") or "") == label]
     rescored = [
         a for a in in_play(rnd) if a["system"] == system and str(a.get("label") or "").startswith("rescored ")
@@ -144,6 +151,11 @@ def add_run(
     if not same and rescored and not label:
         return None
     arm = next((a for a in same if not a.get("retired")), same[0] if same else None)
+    if joined and retired_arm(rnd, system, label) is not None:
+        raise Problem(
+            f"{system}'s arm in round {rnd.get('round_id')} is retired: a repeat of its run does not bring it back",
+            "bad-argument",
+        )
     if arm is None:
         arm = {
             "system": system,
@@ -156,6 +168,12 @@ def add_run(
         arm["runs"].append(run_id)
     arm.pop("retired", None)
     return arm
+
+
+def retired_arm(rnd: dict[str, Any], system: str, label: str) -> dict[str, Any] | None:
+    """The round's arm of `system` read under `label` when it is retired and has no arm in play, else None."""
+    same = [a for a in arms(rnd) if a["system"] == system and str(a.get("label") or "") == label]
+    return same[0] if same and all(a.get("retired") for a in same) else None
 
 
 def carry(
