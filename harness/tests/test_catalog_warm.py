@@ -4,8 +4,8 @@
   python tests/test_catalog_warm.py
 
 - a page asked for while the pages are being rendered ahead waits for at most the one render under way, not for the
-  rest of them: the renders' lock goes to the waiting request between two pages (a render keeps the interpreter busy,
-  as a real one does);
+  rest of them: rendering ahead starts no page while a request waits. The renders keep the interpreter busy, as real
+  ones do, and three other threads want it too: the renders' lock alone let rendering ahead take it back first;
 - rendering ahead still renders every page it was going to once nobody is waiting.
 """
 
@@ -30,18 +30,26 @@ class Site:
     def __init__(self) -> None:
         self.goals = GOALS
         self.rendered: list[str] = []
+        self.starts: list[float] = []
         self.started = threading.Event()
 
     def page(self, path: str) -> str:
         with cb._RENDER_LOCK:
             if path.startswith("a/"):
                 return "arm"
+            self.starts.append(time.monotonic())
             self.started.set()
             end = time.monotonic() + SLOW_S
             while time.monotonic() < end:  # busy, holding the interpreter as a real render does
                 pass
             self.rendered.append(path)
             return path
+
+
+def busy(until: float) -> None:
+    """Another thread wanting the interpreter, as the API's threads and a loaded machine do."""
+    while time.monotonic() < until:
+        pass
 
 
 site = Site()
@@ -51,17 +59,21 @@ threading.Thread(target=cs._pages_warmer, daemon=True).start()
 cs._WARM.set()
 check("the pages began to be rendered ahead", site.started.wait(10))
 
-time.sleep(SLOW_S / 2)  # inside a render
-waits = []
+load_until = time.monotonic() + 3
 for _ in range(3):
+    threading.Thread(target=busy, args=(load_until,), daemon=True).start()
+time.sleep(SLOW_S / 2)  # inside a render
+overtaken = []
+for _ in range(6):
     t0 = time.monotonic()
     _, got = cs.site_page("a/one.html")
-    waits.append(time.monotonic() - t0)
+    t1 = time.monotonic()
+    overtaken.append(sum(1 for s in site.starts if t0 < s < t1))
     time.sleep(SLOW_S / 3)
 check(
-    "a page asked for during the rendering ahead waits for at most the render under way",
-    got == "arm" and max(waits) < SLOW_S * 1.6,
-    [round(w, 2) for w in waits],
+    "a page asked for during the rendering ahead waits for the render under way only: none starts while it waits",
+    got == "arm" and not any(overtaken),
+    overtaken,
 )
 
 want = 2 + len(GOALS)

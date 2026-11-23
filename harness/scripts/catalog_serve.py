@@ -712,6 +712,10 @@ _WARM = threading.Event()
 #: After a change, the pages are rendered ahead once the data has been still this long: a run in another terminal
 #: writes for minutes, and rendering ahead for each of its writes renders pages nobody reads.
 WARM_QUIET_S = 1.0
+#: The requests waiting for a page: rendering ahead starts no page while one waits. The renders' lock is not fair, and
+#: under load the thread rendering ahead took it again before the request (7 goal pages ahead of it, in the test).
+_ASKING = {"n": 0}
+_ASKING_CV = threading.Condition()
 
 
 def data_state(first: bool = False) -> tuple[tuple, int]:
@@ -803,6 +807,8 @@ def current_site():
 def site_page(rel: str) -> tuple[Any, str | None]:
     """(the model, the catalog's page at `rel` rendered from it, None for none). A failure is said, in the log and on
     health, and raised."""
+    with _ASKING_CV:
+        _ASKING["n"] += 1
     try:
         site = current_site()
         got = site.page(rel)
@@ -812,6 +818,10 @@ def site_page(rel: str) -> tuple[Any, str | None]:
             SITE["failed"] = {"at": _common.now(), "why": why}
         say(f"catalog: {rel} could not be rendered: {why}", err=True)
         raise
+    finally:
+        with _ASKING_CV:
+            _ASKING["n"] -= 1
+            _ASKING_CV.notify_all()
     if got is not None:
         with _SITE_LOCK:
             SITE["failed"] = None
@@ -829,8 +839,17 @@ def renew(why: str) -> None:
 def _pages_warmer() -> None:
     """Prepare the model and render the pages that take longest (the home page, the goals and each goal's page, 0.3-2 s
     each) once the data is still, so the first person to open one does not wait; a request that comes first renders it
-    itself. A change while it runs starts it again."""
+    itself. A change while it runs starts it again. It starts no page while a request waits for one."""
     from evaluation_harness import catalog_build  # noqa: PLC0415
+
+    def render_ahead(site, path: str) -> None:
+        while True:
+            with _ASKING_CV:
+                _ASKING_CV.wait_for(lambda: _ASKING["n"] == 0)
+            with catalog_build._RENDER_LOCK:
+                if _ASKING["n"] == 0:  # looked at under the lock: a request that came meanwhile goes first
+                    site.page(path)
+                    return
 
     while True:
         _WARM.wait()
@@ -843,7 +862,7 @@ def _pages_warmer() -> None:
             for path in ("index.html", "goals.html", *(catalog_build.goal_page(g) for g in site.goals)):
                 if _WARM.is_set():
                     break
-                site.page(path)
+                render_ahead(site, path)
         except Exception as exc:  # noqa: BLE001 -- said; a request renders what it asks for and says the same
             say(f"catalog: the pages could not be rendered ahead: {type(exc).__name__}: {exc}", err=True)
 

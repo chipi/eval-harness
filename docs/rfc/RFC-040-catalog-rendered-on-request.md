@@ -209,8 +209,9 @@ what makes a served page the exported file. `render_goals` lost its goal pages t
 - The chart labels' collision check (`catalog_charts._crossed`, 36,180 calls over the goal pages) skips a line
   segment whose box misses the label's: the same answer for every input, cheaper. No chart is drawn twice for one
   state (counted), so the charts are not memoized: there is nothing to keep.
-- A request that comes while the pages are rendered ahead waits for the render under way only: the renders' lock goes
-  to it between two pages (`test_catalog_warm.py`, with renders that keep the interpreter busy).
+- A request that comes while the pages are rendered ahead waits for the render under way only: rendering ahead starts
+  no page while a request waits (`catalog_serve._ASKING`). The renders' lock is not fair: under load, rendering ahead
+  took it back first, up to 7 goal pages ahead of a request (`test_catalog_warm.py`, failing before the fix).
 
 **Measured (this repository, files store, p-values cached, 2026-11-23).**
 
@@ -229,8 +230,8 @@ export, each one's group the one its path names, each model record read once), `
 stores: a write on the next page, no `catalog` job in any of it, many reads during writes each one whole page of one
 state, a burst of requests after a change preparing one model, a failed render answering 500 and recovering, a page
 gone under new data answering 404, HEAD, the address without its slash, `--brand` on a served page),
-`test_stats_threads.py` (two threads collecting tests at once each get their own p), `test_catalog_warm.py` (a request
-during the rendering ahead waits for one render at most; every page still rendered ahead).
+`test_stats_threads.py` (two threads collecting tests at once each get their own p), `test_catalog_warm.py` (under
+load, no page rendered ahead starts while a request waits; every page still rendered ahead).
 
 A review's finding that `goal_views._KEPT` could be dropped by one thread while another read it does not hold: it is
 `threading.local()`, so each thread has its own, and renders take `_RENDER_LOCK`.
