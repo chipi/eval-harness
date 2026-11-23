@@ -114,7 +114,8 @@ def _from_run(run_id: str, dataset_id: str, items: list[dict], args: argparse.Na
             "  (--allow-unknown-build overrides).",
             "not-configured",
         )
-    if tree_state(build) is None and not args.allow_dirty:
+    # No ref at all (not a git project) was refused above, and --allow-unknown-build already says so: one flag, not two.
+    if tree_state(build) is None and build.get("ref", "unknown") != "unknown" and not args.allow_dirty:
         die(
             f"REFUSED: git could not say whether the tree run {run_id} came from was clean; "
             f"build.ref={str(build.get('ref', '?'))[:12]}\n"

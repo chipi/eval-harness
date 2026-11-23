@@ -147,6 +147,29 @@ try:
         run = clone(two, f"two_v1_{name}", build)
         r = evh("run-promote", "--run", run, "--reason", f"a {name} build, dirty unknown by its source")
         check(f"run-promote takes a {name} build whose dirty is null", r.returncode == 0, out(r)[-300:])
+    # A project outside git has no ref and no tree status: the unknown build is what is refused, and one flag allows it.
+    nogit = clone(two, "two_v1_nogit", {"ref": "unknown", "dirty": None, "source": "git"})
+    r = evh("run-promote", "--run", nogit, "--reason", "a project outside git, its build unknown")
+    check(
+        "run-promote: no git at all is refused as an unknown build",
+        r.returncode != 0 and "does not identify its build" in out(r),
+        out(r)[-300:],
+    )
+    r = evh(
+        "run-promote",
+        "--run",
+        nogit,
+        "--reason",
+        "a project outside git, its build unknown",
+        "--allow-unknown-build",
+    )
+    check(
+        "... and --allow-unknown-build alone takes it, not also --allow-dirty",
+        r.returncode == 0,
+        out(r)[-300:],
+    )
+    r = evh("label-from-run", "--run", nogit, "--set", "s_nogit", "--allow-unknown-build")
+    check("label-from-run: the same, one flag", r.returncode == 0, out(r)[-300:])
     r = evh("label-from-run", "--run", "two_v1_imported", "--set", "s_imported")
     check("label-from-run takes an imported build too", r.returncode == 0, out(r)[-300:])
 
