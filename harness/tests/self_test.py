@@ -1473,7 +1473,7 @@ def test_example_scorer_suites_pass() -> None:
             continue
         # Show the FAIL lines, not the tail. The tail is the summary footer, so a
         # second failure below the first was invisible.
-        fails = [ln for ln in out.splitlines() if "FAIL" in ln][:3]
+        fails = [ln for ln in out.splitlines() if _printed_fail(ln)][:3]
         detail = " | ".join(f.strip() for f in fails) or out.strip()[-160:]
         check(f"{subject}: all assertions pass", r.returncode == 0, detail)
         # AND THE EXIT CODE MUST AGREE WITH WHAT IT PRINTED. A checker that prints FAIL
@@ -1482,9 +1482,38 @@ def test_example_scorer_suites_pass() -> None:
         # sys.exit(0) turned a red baseline green.
         check(
             f"{subject}: exits non-zero if it printed FAIL",
-            not (any("FAIL" in ln for ln in out.splitlines()) and r.returncode == 0),
+            not (any(_printed_fail(ln) for ln in out.splitlines()) and r.returncode == 0),
             "printed FAIL and exited 0",
         )
+
+
+#: A failure line as the checkers print one: `FAIL label` (`_check`), a `FAILED` footer, `MATRIX: FAIL`. A label
+#: or note that names the word ("validate: no FAIL line", "0 FAIL, 0 warning") is not one: the bare substring read
+#: test_foreign_projects' passing run as a failure.
+_FAIL_LINE = re.compile(r"^\s*FAIL(?:ED)?\b|\bFAILED\b|:\s*FAIL\b")
+
+
+def _printed_fail(line: str) -> bool:
+    return bool(_FAIL_LINE.search(line))
+
+
+def test_a_failure_line_is_told_from_a_label_naming_fail() -> None:
+    for line in (
+        "  FAIL x",
+        "FAIL  no assertions ran at all",
+        "3 FAILED: a, b",
+        "STORE MATRIX: FAIL",
+        "UPGRADE-INSTALL: FAIL (2)",
+        "VALIDATION FAILED — 1 check(s)",
+        "FAILED:",
+    ):
+        check(f"printed FAIL: {line!r} is a failure line", _printed_fail(line))
+    for line in (
+        "  ok   now: imported: validate: no FAIL line and no warning",
+        "      imported: validate exit 0: 0 FAIL, 0 warning, 7 note",
+        "118/118 assertions passed",
+    ):
+        check(f"printed FAIL: {line!r} is not a failure line", not _printed_fail(line))
 
 
 def test_fingerprint_version_is_read_somewhere() -> None:
@@ -4296,6 +4325,7 @@ def main() -> int:
         test_cli_help_works,
         test_family_test_cache_never_serves_a_stale_answer,
         test_example_scorer_suites_pass,
+        test_a_failure_line_is_told_from_a_label_naming_fail,
         test_fingerprint_version_is_read_somewhere,
         test_verdict_honours_declared_kinds,
         test_fingerprint_covers_reference_bytes,
