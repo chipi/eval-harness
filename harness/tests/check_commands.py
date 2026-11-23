@@ -16,8 +16,8 @@ hit it. This checks, in every fenced block and inline code span of the current d
     (not checked in the
     upgrade notes or the design records, which name variables as they were or as proposed).
 
-History is not checked: the research journal and the CHANGELOG describe commands as they
-were when written. Nor is a proposal: an ADR or RFC whose status is Proposed or Draft describes commands
+History is not checked: the research journal, the CHANGELOG and a release's full notes (docs/releases/, the
+CHANGELOG's long form since 0.8.1) describe commands as they were when written. Nor is a proposal: an ADR or RFC whose status is Proposed or Draft describes commands
 that do not exist yet; it is checked once accepted. Nor is a part of a shipped doc marked planned: a heading,
 list item (with what is indented under it), table row or paragraph that says "(0.6.0, planned" describes work
 still to be built, and is checked once the build takes the marker off. Exits 1 on any problem.
@@ -47,7 +47,7 @@ DOCS = [
     *sorted((REPO / "examples").glob("*/README.md")),
     HARNESS / "project_kit" / "AGENTS.md",
 ]
-SKIP = {HARNESS / "CHANGELOG.md"}
+SKIP = {HARNESS / "CHANGELOG.md", *(REPO / "docs" / "releases").glob("*.md")}
 FENCE = re.compile(r"^```(\w*)")
 PLANNED = re.compile(r"\(\d+\.\d+(?:\.\d+)?, planned\b")
 ITEM = re.compile(r"^(\s*)(?:[-*]|\d+\.)\s")
