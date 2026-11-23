@@ -8,6 +8,7 @@ from datetime import date
 from typing import Any
 
 from evaluation_harness import catalog_build as cb
+from evaluation_harness._runs import better_word
 from evaluation_harness.model import arm_views, period_views
 from evaluation_harness.model.entity import Problem
 
@@ -24,7 +25,7 @@ def metrics(
 ) -> dict[str, Any]:
     """Every metric recorded (on `dataset`, when given): {"metrics": [{"metric", "better", "description", "datasets":
     {dataset: arms}, "decides": [goal], "weighs": [goal], "period": {"arms", "arms_prev", "new"} | None}], "period":
-    the line saying the period, or ""}. `better` is lower, higher or neutral."""
+    the line saying the period, or ""}. `better` is lower, higher, neutral or mixed (`better_on`: each dataset's answer)."""
     project = _project(A)
     idx = cb.metric_index(A, by_ds)
     per: dict[str, Any] = (
@@ -37,11 +38,11 @@ def metrics(
         where = idx[m]
         if dataset and dataset not in where["datasets"]:
             continue
-        lower = cb.metric_lower(A, m, where)
         out.append(
             {
                 "metric": m,
-                "better": "lower" if lower else ("neutral" if A.is_neutral(m) else "higher"),
+                "better": cb.metric_direction(A, m, where),
+                "better_on": cb.metric_directions(A, m, where),
                 "description": cb.describe_metric(m, project) or None,
                 "datasets": dict(sorted(where["datasets"].items())),
                 "decides": [g["goal_id"] for g in where["goals"]],
@@ -61,7 +62,8 @@ def metric(A, by_ds: dict, name: str, dataset: str | None = None) -> dict[str, A
     where = idx.get(name)
     if where is None:
         raise Problem(f"no metric {name!r} is recorded: one of {', '.join(sorted(idx))}", "not-found")
-    lower = cb.metric_lower(A, name, where)
+    per = cb.metric_directions(A, name, where)
+    which = cb.metric_direction(A, name, where)
     on = []
     for ds in sorted(where["datasets"]):
         if dataset and ds != dataset:
@@ -69,6 +71,7 @@ def metric(A, by_ds: dict, name: str, dataset: str | None = None) -> dict[str, A
         v = by_ds[ds]
         tiers = {r["id"]: r["tier"] for r in v["refs"]}
         arms = [a for a in v["arms"] if name in a["means"]]
+        lower = per.get(ds, which) == "lower"  # each dataset's arms go by that dataset's direction
         arms.sort(
             key=lambda a: (
                 cb.scored_by_rank(a, tiers),
@@ -94,7 +97,8 @@ def metric(A, by_ds: dict, name: str, dataset: str | None = None) -> dict[str, A
         )
     return {
         "metric": name,
-        "better": "lower" if lower else ("neutral: a description" if A.is_neutral(name) else "higher"),
+        "better": better_word(which, per),
+        "better_on": per,
         "description": cb.describe_metric(name, project) or None,
         "details": cb.metric_details(name, project),
         "kind": cb._kind_of(A, name, where["datasets"]),

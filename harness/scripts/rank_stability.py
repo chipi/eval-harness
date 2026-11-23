@@ -33,7 +33,7 @@ HERE = Path(__file__).resolve().parent
 
 from evaluation_harness import _jsonout  # noqa: E402
 from evaluation_harness._common import die  # noqa: E402
-from evaluation_harness._runs import default_metric, direction, matrix, runs_on, warn_on_ambiguous_runs  # noqa: E402  # noqa: E402
+from evaluation_harness._runs import default_metric, matrix, ranks_lower, runs_on, warn_on_ambiguous_runs  # noqa: E402  # noqa: E402
 from evaluation_harness.stats import spearman  # noqa: E402 - midranks of midranks are the midranks: same rho
 
 #: The half sizes always measured (two disjoint halves of n items each). They are drawn first, in this order, so
@@ -148,7 +148,7 @@ def measure(
 
     metric = metric or default_metric(dataset, match)
     M = load(dataset, metric, match)
-    if direction(runs_on(dataset, match=match), metric, asc, desc):
+    if ranks_lower(runs_on(dataset, match=match), metric, asc, desc):
         # Ranked best first, whichever way is better: for cost or latency the best is the
         # lowest. Negating once here keeps every rank and "winner" below the right way up.
         M = {a: {i: -v for i, v in s.items()} for a, s in M.items()}

@@ -286,6 +286,11 @@ try:
         and next(m for m in mets["metrics"] if m["metric"] == "acc")["datasets"] == {"ds1": 2, "ds2": 1}
         and {m["metric"] for m in NEW["metric-list"].call(dataset="ds2")["metrics"]} == {"acc", "words"},
     )
+    check(
+        "metric-list: better_on gives each dataset's answer",
+        next(m for m in mets["metrics"] if m["metric"] == "acc")["better_on"]
+        == {"ds1": "higher", "ds2": "higher"},
+    )
     met = NEW["metric-show"].call(metric="acc", dataset="ds1")
     check(
         "metric-show: the arms recording it on a dataset, best first",

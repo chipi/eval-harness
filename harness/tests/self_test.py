@@ -1087,6 +1087,10 @@ def test_example_scorer_suites_pass() -> None:
             "a measure only a goal names goes the goal's way on metric-list, metric-show and the catalog, not 'higher'",
         ),
         (
+            "test_direction.py",
+            "which way is better, answered once (_runs.direction): its precedence, every reader agreeing on one project, V14",
+        ),
+        (
             "test_cap_shown.py",
             "a spending cap's three meanings printed one way: no command formats a cap or asks its truth itself",
         ),

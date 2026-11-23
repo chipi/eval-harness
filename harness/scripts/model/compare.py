@@ -12,7 +12,7 @@ from functools import lru_cache
 
 from evaluation_harness import _fields, _visibility, stats
 from evaluation_harness._common import SPEED_KEYS
-from evaluation_harness.catalog_adapter import Adapter, item_fields
+from evaluation_harness.catalog_adapter import Adapter, direction_on, item_fields
 
 #: Every comparison ends in one of these, so a page can always say what it shows and why.
 STATES = ("compared", "average only", "no shared metric", "not scorable")
@@ -127,8 +127,8 @@ def _metric_rows(counts: Counter, per_arm: dict, baseline: str, dataset: str | N
         {
             "name": k,
             "arms": n,
-            "lower_is_better": A.lower_is_better(k, dataset),
-            "neutral": A.is_neutral(k, dataset or None),
+            "lower_is_better": direction_on(A, k, dataset or None) == "lower",
+            "neutral": direction_on(A, k, dataset or None) == "neutral",
             "baseline_has": k in per_arm.get(baseline, {}),
             "format": A.reference_format(_ref_of(k)) if _ref_of(k) else "",
             "archived": bool(_ref_of(k) and A.reference_archived(_ref_of(k))),
@@ -534,7 +534,8 @@ def compare(params: dict) -> dict:
         clusters = {i: v[cluster] for i, v in every.items() if v.get(cluster) not in (None, "")}
     else:
         clusters, cluster = goal_clusters_on(dataset)
-    higher, neutral = not A.lower_is_better(metric, dataset), A.is_neutral(metric, dataset or None)
+    which = direction_on(A, metric, dataset or None)
+    higher, neutral = which != "lower", which == "neutral"
     # A family and a threshold come from the URL, so they are checked, not trusted: a family
     # smaller than the arms tested here, or a threshold above alpha (or below what the family
     # allows), would turn "not significant" into "significant" by editing a link.

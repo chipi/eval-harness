@@ -39,6 +39,7 @@ from evaluation_harness import (  # noqa: E402
     _visibility,
 )
 from evaluation_harness._common import ROOT, die  # noqa: E402
+from evaluation_harness._runs import better_word, combine  # noqa: E402
 from evaluation_harness.axes import (  # noqa: E402
     STRATEGIES,
     axes_of,
@@ -53,6 +54,7 @@ from evaluation_harness.axes import (  # noqa: E402
 )
 from evaluation_harness.catalog_adapter import (  # noqa: E402
     Adapter,
+    direction_on,
     item_fields,
     load_catalog_adapter,
     scores_once,
@@ -3594,17 +3596,17 @@ def metric_index(A: Adapter, by_ds: dict) -> dict:
     return out
 
 
-def metric_lower(A: Adapter, m: str, where: dict) -> bool:
-    """Whether lower is better for `m`, `where` its metric_index entry: by the runs recording it (the goal they name
-    first, `A.lower_is_better`). A measure no run records yet goes by the goals deciding on it, then the name table; it
-    was "higher" whatever its goal said."""
-    if where["datasets"]:
-        return any(A.lower_is_better(m, ds) for ds in where["datasets"])
-    for g in where["goals"]:
-        said = ((g.get("success_criteria") or {}).get("primary") or {}).get("direction")
-        if said in ("lower", "higher"):
-            return said == "lower"
-    return A.lower_is_better(m)
+def metric_directions(A: Adapter, m: str, where: dict) -> dict[str, str]:
+    """{dataset: which way is better for `m`} on each dataset recording it (`where` is its metric_index entry), by the
+    rule (`_runs.direction`)."""
+    return {ds: direction_on(A, m, ds) for ds in where["datasets"]}
+
+
+def metric_direction(A: Adapter, m: str, where: dict) -> str:
+    """Which way is better for `m` over all its datasets: the one answer they share, else "mixed". A measure no run
+    records yet goes by the goals and the name table."""
+    per = metric_directions(A, m, where)
+    return combine(per) if per else direction_on(A, m)
 
 
 def render_metrics(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
@@ -3619,9 +3621,7 @@ def render_metrics(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
     rows, period_rows = [], period_metrics(A, by_ds)
     for m in sorted(idx, key=lambda k: (k.startswith(("total_", "self_family_", "resumed", "failed")), k)):
         where = idx[m]
-        lower = metric_lower(A, m, where)
-        # Direction first: cost, tokens and latency are "neutral" to the tests but lower is better.
-        better = "lower" if lower else ("neutral: a description" if A.is_neutral(m) else "higher")
+        better = better_word(metric_direction(A, m, where), metric_directions(A, m, where))
         text = describe_metric(m, project)
         runs = period_rows[m]["runs"]
         # What the metric is for: a goal decides on it, weighs it as an axis, or nobody uses it to
@@ -4079,7 +4079,7 @@ def render_arm(A: Adapter, a: dict, ds: str, by_ds: dict, out: Path, nav: list) 
             metric_link(m, "../"),
             f'<span data-v="{mean}">{metric_value(A, m, mean)}</span>',
             f'<span data-v="{k}">{k}</span>',
-            "lower" if A.lower_is_better(m, ds) else ("neutral" if A.is_neutral(m, ds) else "higher"),
+            better_word(direction_on(A, m, ds)),
         ]
         for m, (mean, k) in sorted(a["means"].items(), key=lambda kv: (kv[0] != a["metric"], kv[0]))
     ]
@@ -4266,8 +4266,9 @@ def render_metric(A: Adapter, m: str, where: dict, by_ds: dict, project: dict, o
     and on every dataset the arms that record it, best first, with their spread."""
     from evaluation_harness import catalog_charts as ch  # noqa: PLC0415
 
-    lower = metric_lower(A, m, where)
-    better = "lower" if lower else ("neutral: a description" if A.is_neutral(m) else "higher")
+    per = metric_directions(A, m, where)
+    which = metric_direction(A, m, where)
+    better = better_word(which, per)
     summary = describe_metric(m, project)
     details = metric_details(m, project)
     facts = [
@@ -4297,6 +4298,7 @@ def render_metric(A: Adapter, m: str, where: dict, by_ds: dict, project: dict, o
         v = by_ds[ds]
         tiers = {r["id"]: r["tier"] for r in v["refs"]}
         arms = [a for a in v["arms"] if m in a["means"]]
+        lower = per.get(ds, which) == "lower"  # each dataset's arms go by that dataset's direction
         arms.sort(
             key=lambda a: (
                 scored_by_rank(a, tiers),

@@ -108,12 +108,17 @@ from evaluation_harness._common import (
     jsonl_lines,
     load_goals,
     load_module,
-    lower_is_better,
     read_json,
     sha256,
     system_files,
 )
-from evaluation_harness._runs import recorded_direction
+from evaluation_harness._runs import (
+    direction,
+    direction_source,
+    goal_datasets,
+    goal_declarations,
+    recorded_direction,
+)
 from evaluation_harness.axes import axes_of
 from evaluation_harness.model import runs as _mr
 
@@ -1339,11 +1344,17 @@ def v14_goals() -> None:
     since = str(goal_policy().get("required_from") or "")
     unnamed, n_runs = [], 0
     filed: dict[str, list] = defaultdict(list)
+    recorded_on: dict[str, set[str]] = defaultdict(set)  # dataset -> the measures its runs record
+    runs_on_ds: dict[str, list] = defaultdict(list)
     named_runs: set[str] = set()
     for _label, run, m in all_scores():
         rid = _mr.run_of(run).name
         if m.get("goal"):
             filed[str(m["goal"])].append((run, m))
+        runs_on_ds[str(m.get("dataset_id"))].append((run, m))
+        recorded_on[str(m.get("dataset_id"))].update(
+            k for k, v in (m.get("scores") or {}).items() if isinstance(v, (int, float))
+        )
         if rid in named_runs:  # a run's goal and format are its own, whatever it was scored as
             continue
         named_runs.add(rid)
@@ -1368,10 +1379,54 @@ def v14_goals() -> None:
             bad.append(
                 f"goals/{gid}.yaml: {measure} is {says}-is-better, its runs record {recorded}-is-better"
             )
-        elif not recorded and says == "higher" and lower_is_better(measure):
+        elif not recorded and says == "higher" and direction(measure, goals={}) == "lower":
             bad.append(
                 f"goals/{gid}.yaml: {measure} is a cost, speed or token count; higher-is-better contradicts it"
             )
+    # TWO GOALS, ONE ANSWER (_runs.direction): a measure two goals give opposite directions on one dataset would be
+    # ranked one way by one goal's page and the other way by the next. Both list the dataset, or neither restricts.
+    said: dict[str, list[tuple[str, str, list[str]]]] = defaultdict(list)
+    for gid, g in sorted(goals.items()):
+        for measure, which in goal_declarations(g).items():
+            said[measure].append((gid, which, goal_datasets(g)))
+    for measure, declared in sorted(said.items()):
+        for i, (g1, d1, ds1) in enumerate(declared):
+            for g2, d2, ds2 in declared[i + 1 :]:
+                where = sorted(set(ds1) & set(ds2)) if ds1 and ds2 else [] if ds1 or ds2 else ["any dataset"]
+                if d1 != d2 and where:
+                    bad.append(
+                        f"goals/{g1}.yaml and goals/{g2}.yaml: {measure} is {d1}-is-better in the first, {d2}-is-better "
+                        f"in the second, on {', '.join(where)}"
+                    )
+    # A NOTE, never a failure: a direction that is not one (`non_inferior` is a decision rule) is read as higher, and a
+    # primary measure no run records (a prose name for the metric) decides on nothing the runs hold.
+    for gid, g in sorted(goals.items()):
+        primary = (g.get("success_criteria") or {}).get("primary") or {}
+        measure, says = primary.get("measure"), primary.get("direction")
+        if says is not None and says not in ("lower", "higher"):
+            notes.append(
+                f"V14 goal {gid}: primary direction {says!r} is neither lower nor higher, so {measure} is read as "
+                "higher-is-better; a decision rule is not a direction"
+            )
+        on = goal_datasets(g)
+        on_record = set().union(*(recorded_on.get(d, set()) for d in on)) if on else set()
+        if measure and on_record and measure not in on_record:
+            notes.append(
+                f"V14 goal {gid}: primary measure {measure!r} is recorded by no run on {', '.join(on)}; "
+                f"those runs record {', '.join(sorted(on_record))}"
+            )
+    # A goal says nothing about a dataset it does not list. Where its measure is recorded on one, another goal, the runs
+    # or the name table answer, and a note names both when the answer differs.
+    for gid, g in sorted(goals.items()):
+        listed = goal_datasets(g)
+        for measure, which in goal_declarations(g).items() if listed else []:
+            for ds in sorted(d for d in recorded_on if d not in listed and measure in recorded_on[d]):
+                answer, by = direction_source(measure, dataset=ds, runs=runs_on_ds[ds], goals=goals)
+                if answer != which:
+                    notes.append(
+                        f"V14 goal {gid}: {measure} is {which}-is-better on {', '.join(listed)}, but on {ds}, which it "
+                        f"does not list, it is read as {answer} ({by})"
+                    )
     # A goal's `cluster:` names a field the dataset's items carry: a typo would test item by item and say nothing.
     for gid, g in goals.items():
         for d in g.get("datasets") or []:

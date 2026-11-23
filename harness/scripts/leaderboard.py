@@ -38,10 +38,10 @@ from evaluation_harness._common import (
 from evaluation_harness._record import derived_with
 from evaluation_harness._runs import (
     AMBIGUOUS_HOW,
-    direction,
     is_repeat_set,
     mixed_versions,
     per_item,
+    ranks_lower,
     runs_on,
 )
 from evaluation_harness.stats import kept
@@ -850,7 +850,7 @@ def _table(args: argparse.Namespace, A, group: dict, goal: dict | None) -> dict:
         or primary
         or (quality[0] if quality else (descriptive[0] if descriptive else all_keys[0]))
     )
-    asc = direction(found, sort_key, args.asc, args.desc)
+    asc = ranks_lower(found, sort_key, args.asc, args.desc)
     # SAY SO when the headline metric was picked alphabetically. Runs written before
     # adapters declared PRIMARY_METRIC carry none, so this falls through to whichever
     # quality metric sorts first by name -- for one set of runs here that is `grounding`,

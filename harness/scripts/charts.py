@@ -486,7 +486,7 @@ def gain_cost(goal: str, round: str | None = None, study: str | None = None) -> 
         # A study decides on its own measure, in that measure's direction (as study-progress draws it): drawn on the
         # goal's primary instead, a trial better on the study's measure was plotted down and called worse.
         metric = str(spec.get("measure") or metric)
-        lower = ms_lower(goal, metric)
+        lower = ms_lower(goal, metric, spec)
         flip = -1.0 if lower else 1.0
         base = _arm_of(A, ds, st["baseline"])
         if base is None:
@@ -650,7 +650,7 @@ def study_progress(goal: str, study: str) -> dict:
             best.append((float(t["k"]), y))
     if not points:
         raise Problem(f"study {study}: no trial measured yet", "not-enough")
-    lower = ms_lower(goal, metric)
+    lower = ms_lower(goal, metric, spec)
     caption = (
         f"{metric} on {ds} per trial ({'lower' if lower else 'higher'} is better): filled kept, hollow dropped, a cross "
         "for no effect or a trial that did not decide. The line is the best so far, from the baseline at 0; a trial is "
@@ -667,11 +667,13 @@ def study_progress(goal: str, study: str) -> dict:
     )
 
 
-def ms_lower(goal: str, metric: str) -> bool:
-    """Whether the study's measure is better lower, as the study decides it."""
+def ms_lower(goal: str, metric: str, spec: dict | None = None) -> bool:
+    """Whether the study's measure is better lower, as the study decides it: the rule's answer, or the direction the
+    study itself declares."""
     from evaluation_harness import _study  # noqa: PLC0415
 
-    return bool(_study.lower_is_better(goal, metric))
+    spec = spec or {}
+    return bool(_study.lower_is_better(goal, metric, spec.get("dataset")) or spec.get("direction") == "lower")
 
 
 # ── datasets ─────────────────────────────────────────────────────────────────

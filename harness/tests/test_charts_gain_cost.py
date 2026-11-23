@@ -190,7 +190,7 @@ ms.state = lambda goal, sid, data=None: {
 ms.spec = lambda goal, sid, data=None: {"dataset": "d", "measure": "m2"}
 for a in arms.values():
     a["m2"] = a.pop("m")
-_study.lower_is_better = lambda goal, metric: (
+_study.lower_is_better = lambda goal, metric, dataset=None: (
     metric == "m"
 )  # the goal's primary m is lower; the study's m2 is not
 with charts.using(Stub("lower", arms)):

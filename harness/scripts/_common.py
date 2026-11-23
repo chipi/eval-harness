@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import sys as _sys
 from collections import OrderedDict
+from collections.abc import Iterable
 from pathlib import Path as _Path
 
 if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
@@ -1021,6 +1022,10 @@ COST_KEYS = (
 )
 #: Lower is better. Wall time.
 SPEED_KEYS = ("latency_ms", "latency_s")
+#: Lower is better. Error rates: the share of what was got wrong (word, character, diarization). A project's own
+#: rate is declared (`METRIC_DIRECTIONS`, a goal's `direction`); these three are named here because the harness's
+#: examples and the owner projects record them and a rate going up is worse in every one.
+ERROR_RATE_KEYS = ("wer", "cer", "der")
 #: Neither better nor worse: they say what the output WAS, not whether it was
 #: good. Ranking by one puts the most verbose arm on top — which is how a
 #: leaderboard ends up confidently answering the wrong question. Comparing two
@@ -1038,8 +1043,14 @@ BOOKKEEPING_PREFIXES = ("self_family_", "resumed", "failed")
 
 
 def lower_is_better(metric: str) -> bool:
-    """Whether a DECREASE in ``metric`` is an improvement (cost, tokens, latency)."""
-    return metric in COST_KEYS or metric in SPEED_KEYS or metric.startswith("total_tokens")
+    """Whether the NAME of ``metric`` says a decrease is an improvement (cost, tokens, latency, an error rate). The
+    last resort of `_runs.direction`, which every reader asks: a goal and the runs' own declarations come first."""
+    return (
+        metric in COST_KEYS
+        or metric in SPEED_KEYS
+        or metric in ERROR_RATE_KEYS
+        or metric.startswith("total_tokens")
+    )
 
 
 def is_descriptive(metric: str) -> bool:
@@ -1051,22 +1062,32 @@ def is_descriptive(metric: str) -> bool:
     return metric in DESCRIPTIVE_KEYS
 
 
-def verdict_for(metric: str, delta: float, kinds: dict[str, str] | None = None) -> str:
+def verdict_for(
+    metric: str,
+    delta: float,
+    kinds: dict[str, str] | None = None,
+    *,
+    runs: Iterable[tuple[Path, dict]] = (),
+    goals: dict | None = None,
+    dataset: str | None = None,
+) -> str:
     """ "better" / "worse" / "changed" / "identical" for ``delta`` on ``metric``.
 
-    The one place that decides what a movement MEANS. Descriptive metrics get
-    "changed" on purpose: calling a longer output "better" is a claim the number
-    cannot support, and it is exactly the claim a reader will take away.
+    The one place that decides what a movement MEANS, by which way is better (`_runs.direction`: a goal, then what
+    the runs record, then the name table). Descriptive metrics get "changed" on purpose: calling a longer output
+    "better" is a claim the number cannot support, and it is exactly the claim a reader will take away.
+    A caller passes the `runs` the movement is between (and the `kinds` their adapters declare today) so that a
+    goal's or an adapter's declaration decides, not the name alone: without them every example metric was judged
+    by the sign of the delta alone.
     """
     if delta == 0:
         return "identical"
-    # An adapter's own declaration wins over the built-in table, which only knows the
-    # metrics the bundled adapter emits. Callers pass the `metric_kinds` recorded in the
-    # run; without it every example metric was judged by the sign of the delta alone.
-    declared = (kinds or {}).get(metric)
-    if declared == "descriptive" or (declared is None and is_descriptive(metric)):
+    from evaluation_harness._runs import direction  # noqa: PLC0415
+
+    which = direction(metric, dataset=dataset, runs=runs, goals=goals, kinds=kinds)
+    if which == "neutral":
         return "changed"
-    improved = delta < 0 if lower_is_better(metric) else delta > 0
+    improved = delta < 0 if which == "lower" else delta > 0
     return "better" if improved else "worse"
 
 
