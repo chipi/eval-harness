@@ -25,7 +25,7 @@ TIER ?= silver
         holdout pair-test rank-stability \
         run-dry-run run sweep \
         runs-list run-compare leaderboard run-promote \
-        validate format-check judge judge-score check guide-check browser-install browser-check budget-check browser-real-check guard-check commands-check stores-check coverage ci test smoke-fixture cost-report clean clean-cache \
+        validate format-check judge judge-score check guide-check browser-install browser-check budget-check browser-real-check guard-check commands-check stores-check coverage ci test smoke-fixture cost-report facts-dump clean clean-cache \
         bootstrap-test family-test import-run rescore silver-calibrate site site-check docs
 
 # ── getting started ─────────────────────────────────────────────────────────
@@ -327,6 +327,13 @@ rescore:
 # its yaml. Added because RUNBOOK §7b documented this verb before it existed.
 cost-report:
 	$(PYTHON) scripts/cli.py cost-report $(ARGS)
+
+# The facts every reader states (value, runs, direction, latest run, reference, cost state, baseline, public), from
+# `evh <command> --json` alone, as one JSON document: run it under each version a project has and compare with
+# `make facts-dump ARGS="--diff old.json new.json"` (tools/facts_dump.py; standard library only, so it also runs
+# under an installed evh with another interpreter: `python tools/facts_dump.py --evh evh --project <dir>`).
+facts-dump:
+	$(PYTHON) tools/facts_dump.py $(ARGS)
 
 
 leaderboard:
