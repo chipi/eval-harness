@@ -185,11 +185,17 @@ the readers rely on:
 
 - **This repository.**
   - F1: nothing (checked, exact names: 281 (dataset, metric) pairs, none differ).
-  - F2: nothing expected. The four repeats here that name `of` have a different fingerprint hash from their original
-    (another build, one dirty). The twelve triage `_rN` repeats name no `of`. Checked by the export being identical
-    file by file.
-  - F3 to F6: display, and promotion only for a run whose build git could not read.
-- **fleet-eval-data.** F2: `triage_v2_station_dc3315d_v1` on `orrery_triage_v1_labelled_v2` goes from 2 runs to 3:
+  - F2: one run moves. `triage_local_x3_nemotron_35_bolt_e4b_v1_20261030T201736Z` repeats
+    `…_20261030T192906Z` with equal data, deployment, settings and adapter parts. It joins that arm with its four
+    scores (the first and three rescores): 673 arms become 669, and the arm reads two runs.
+    - 355 of 1,909 exported files change, nearly all from the count "92 → 88 arms scored the same way".
+    - `research/internal/TRIAGE_RESULTS_LIVE.md` loses its "(later passes)" row, and the ranks after it renumber.
+    - The three scifact repeats record no part hashes and stay under `repeats`. The twelve triage `_rN` repeats name
+      no `of`.
+  - F3 to F6: display, and promotion only for a run whose build git could not read. On this repository's export:
+    `arms.html` shows `$0` for 99 rows of local models (was `—`), and `datasets.html` names the goal beside each
+    baseline.
+- **fleet-eval-data.** F2: 5 of 447 scores change arm: the nemotron run above, and `triage_v2_station_dc3315d_v1` on `orrery_triage_v1_labelled_v2`, which goes from 2 runs to 3:
   its repeat has the same hash as `_r1`. This is the fix asked for. Its pair tests and goal page on that dataset can
   change.
 - **podcast-scraper-eval-data.** F1: `wer` on `curated_5feeds_dev_v1` (68 arms) and `curated_5feeds_benchmark_v1`
