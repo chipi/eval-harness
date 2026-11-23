@@ -11,7 +11,7 @@ catalog-serve` in a throwaway tutorial project ($0, offline): no token, a wrong 
 are refused (on a read resource of the model, GET /api/v1/goals); the token works as a bearer and as the cookie the
 session route sets; the operations that list datasets and arms and compare arms answer, through the API, exactly what
 their command answers with --json (parity); a system id that does not exist is refused before anything runs; a
-server started --public or --behind-proxy answers no /api/v1/ call. (RFC-032 step 9 removed POST /api/v1/read/<command>
+server started --behind-proxy answers no /api/v1/ call, and one started --public only the reads (RFC-039). (RFC-032 step 9 removed POST /api/v1/read/<command>
 and GET /api/v1/commands: test_openapi.py checks they answer 404.)
 """
 
@@ -385,7 +385,18 @@ try:
         try:
             host = mode[1]
             st, _b, _h = call(port, "GET", "/api/v1/goals", headers={"Authorization": "Bearer x"}, host=host)
-            check(f"a server started {mode[0]} answers no /api/v1/ call", st == 404, st)
+            if (
+                mode[0] == "--public"
+            ):  # a viewer's: the reads, with no token (RFC-039; test_workbench_viewer.py)
+                check(
+                    "a server started --public answers a read with no token, and none that writes",
+                    st == 200,
+                    st,
+                )
+                st, _b, _h = call(port, "POST", "/api/v1/estimate", {"operation": "run"}, host=host)
+                check("a server started --public refuses POST /estimate", st == 403, st)
+            else:
+                check(f"a server started {mode[0]} answers no /api/v1/ call", st == 404, st)
         finally:
             srv.terminate()
             srv.wait(timeout=10)

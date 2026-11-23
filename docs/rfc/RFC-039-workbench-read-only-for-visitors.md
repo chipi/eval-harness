@@ -158,11 +158,28 @@ The page hides a control; it does not decide what is allowed. A request the page
 
 ## The deployment
 
-- `infra/caddy/evals.caddy` routes `/workbench/*` and `/api/v1/*` to the inspector, beside `/catalog/api/*` (which it
-  answers as `/api/`). The Workbench calls `/api/v1` on its own origin, so the path layout is fixed by the page; the
-  build writes the final layout back to this RFC.
-- `infra/compose.yml` keeps `--public evals.humancopilot.eu`, `--rate 60`, `--publish outputs`. No new flag, no token.
-- The site and the catalog link to the Workbench.
+- `infra/caddy/evals.caddy` routes `/workbench`, `/workbench/*` and `/api/v1/*` to the inspector (one named matcher,
+  `@workbench`), beside `/catalog/api/*` (which it answers as `/api/`), and refuses a request body over 1 KB there.
+- `infra/compose.yml` keeps `--public evals.humancopilot.eu`, `--rate 60`, `--publish outputs`, and adds
+  `--catalog-at /catalog/`. No token.
+- The site's home page (section 06) links to the Workbench; the Workbench's own catalog links go to `/catalog/`.
+
+**Built in 0.8.1** (where the build says more than the design):
+
+- **How the page knows it is a viewer:** every `/api/v1` answer of a public server carries `X-EVH-Viewer: 1`, and
+  `X-EVH-Catalog`, the path `--catalog-at` names (`/` when not given), for the page's links to the catalog. No
+  request of its own, no setting. The header is a courtesy: the refusals are the server's.
+- **What a refusal says:** a write, a job, `POST /estimate`, `/jobs*` and `/session` answer 403 with `kind:
+  not-public`; a dropped read 404; a `public_hidden` input 400. `HEAD` answers 404 on a public server.
+- **The reads** run as public calls (`_visibility.public_call`), two at a time, their answers kept in the server's
+  bounded cache, and count against the rate limit.
+- **The page** shows the one-line notice, leaves Jobs and Settings out of its menu, and removes every acting control
+  as it is drawn; a screen whose only job is to act says "not shown publicly", with its command and a link home.
+- **Tested** by `tests/test_workbench_viewer.py` (every route, through HTTP, on a fixture with a `text: hidden`
+  dataset whose marker word must reach no answer) and `tests/test_workbench_viewer_browser.py` (every screen in the
+  menu at 1280 and 390 px: no acting control, the notice, no marker word, catalog links under `--catalog-at`).
+- **Not verified before the deploy:** `caddy adapt` on the new matcher (it runs on the box, before the reload, and a
+  failure keeps the old config).
 - After the deploy, `deploy-verify` passes, and its checks include: `GET /workbench/` is 200; a read of `/api/v1`
   is 200; a job and `POST /estimate` are refused; the sheet is refused.
 
@@ -191,6 +208,7 @@ The page hides a control; it does not decide what is allowed. A request the page
 
 ## Open questions
 
-1. Prompts: `prompt-show` (with `text`) and `prompt-diff` show a project's prompt text. `text: hidden` does not cover a
-   prompt. Serve them to a viewer as they are, or withhold the text? The recommendation is to serve them, since the
-   deployed project's prompts are in the repository.
+1. Prompts: `prompt-show` (with `text`) and `prompt-diff` show a project's prompt text, which `text: hidden` does not
+   cover. Served, as recommended: this deployment's copy holds no prompt registry (`harness/data/prompts/` has no
+   tracked file). A project that keeps private prompts in its registry should not deploy a viewer until a prompt can
+   be withheld; that rule is for a later release.

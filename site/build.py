@@ -46,6 +46,7 @@ SITE = "https://evals.humancopilot.eu"
 #: (catalog, goal pages, run inspector) live on their own subdomains, linked from the nav.
 DOCS = "https://evals.humancopilot.eu/docs/"
 CATALOG = "https://evals.humancopilot.eu/catalog/"
+WORKBENCH = "https://evals.humancopilot.eu/workbench/"  # read-only for visitors (RFC-039)
 # The bar's icons, drawn the same on the site, in the catalog (catalog_build.ICON) and in the
 # docs (site/docs_theme/partials/header.html): a glyph like ☰ or ◐ renders differently per font.
 _SVG = '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">'
@@ -980,9 +981,11 @@ def home(f: dict) -> str:
                 "The harness builds pages over your committed runs: every goal with what it recommends, "
                 "every dataset, arm, reference set and metric, and an inspector that compares any arms item "
                 "by item. On your machine the same server opens the Workbench, where the loop is worked in a "
-                "browser. Every view and action is also an evh command."
+                "browser. Every view and action is also an evh command. Ours is open here to read: the "
+                "catalog, and the Workbench as a viewer, which shows everything and changes nothing."
             ),
             (CATALOG, "Ours, on the six worked examples"),
+            (WORKBENCH, "The Workbench, read-only"),
         ),
     ]
 
@@ -1100,7 +1103,7 @@ def home(f: dict) -> str:
     )
     idea_html = "".join(
         f'<div class="habit-card"><span class="n">{n}</span><b>{e(t)}</b><span>{e(d)}'
-        + (f' <a href="{rest[0][0]}">{e(rest[0][1])} →</a>' if rest else "")
+        + "".join(f' <a href="{href}">{e(name)} →</a>' for href, name in rest)
         + "</span></div>"
         for n, t, d, *rest in ideas
     )

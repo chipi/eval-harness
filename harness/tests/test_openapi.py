@@ -12,7 +12,7 @@ schemes that exist) and every schema is valid JSON Schema 2020-12 (jsonschema's 
 itself is shown to refuse a document with a part taken out. Then a real `evh catalog-serve` in a throwaway project
 ($0, offline): `GET /api/v1/openapi.json` answers the document `evh openapi` prints, only with the token, to this
 machine's Host and Origin; a read route the document names answers, and the routes RFC-032 removed (`/api/v1/read/*`,
-`/api/v1/commands`) answer 404; a --public server answers none of it.
+`/api/v1/commands`) answer 404; a --behind-proxy server answers none of it (a --public one, only the reads: RFC-039).
 """
 
 import copy
@@ -552,7 +552,10 @@ try:
     for mode in (("--public", "a.example"), ("--behind-proxy", "evals.example")):
         port = serve(*mode, *(("--bind", "0.0.0.0") if mode[0] == "--behind-proxy" else ()))  # noqa: S104 - a mode under test  # nosec B104
         st, _b, _h = call(port, "GET", url, {"Authorization": "Bearer x"}, host=mode[1])
-        check(f"a server started {mode[0]} answers no /api/v1/openapi.json", st == 404, st)
+        if mode[0] == "--public":  # RFC-039: it describes routes, not data
+            check("a server started --public serves /api/v1/openapi.json, with no token", st == 200, st)
+        else:
+            check(f"a server started {mode[0]} answers no /api/v1/openapi.json", st == 404, st)
 finally:
     for p in SERVERS:
         if p.poll() is None:

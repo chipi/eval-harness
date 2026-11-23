@@ -1632,7 +1632,7 @@ work operation is a job (below). Every call needs the token the server writes at
 spends, a system id checked to exist, a file as an `upload` or as an `artifact` a job writes; what loads code or names a
 path of the server's (`--adapter`, output folders) is never taken, and a query's `path` must be inside the project. A read answers what the command answers with `--json`; `evh openapi` describes every resource. A refusal is a 4xx with
 `{"error", "kind", "problems"}`; a read asked with `optional=1` (a page that shows the answer only when there is one,
-as the Workbench's charts do) answers a `not-enough` or `not-found` refusal with 200 and `{"command","version","result":null,"empty":<why>,"kind"}` instead, so a browser logs no error for "nothing yet". A server started `--public` or `--behind-proxy` answers no `/api/v1/` call: the API is this machine's only.
+as the Workbench's charts do) answers a `not-enough` or `not-found` refusal with 200 and `{"command","version","result":null,"empty":<why>,"kind"}` instead, so a browser logs no error for "nothing yet". A server started `--behind-proxy` answers no `/api/v1/` call. A server started `--public` answers only the reads, with no token, and refuses every write, job, `POST /estimate`, `/jobs` and `/session` (RFC-039).
 
 **Jobs.** A decision or a work operation runs as a job: a POST on its own resource (`POST
 /api/v1/goals/{goal}/rounds/{round}/close`, `POST /api/v1/systems/{system}/runs`, ...; `evh openapi` lists them) with
@@ -1712,7 +1712,9 @@ gets `--rate` requests per minute, and at most `--max-arms` arms per comparison.
 names what text to serve besides numbers: `outputs`, `references`, or both. The item itself is
 never served publicly. `--client-header NAME` names the header that identifies each client (e.g.
 `CF-Connecting-IP` behind Cloudflare), trusted only when a reverse proxy you control sets it on
-requests from an origin no one else can reach.
+requests from an origin no one else can reach. A public server also serves the Workbench at `/workbench/`, read-only:
+the reads the public MCP server answers, under the same text rules, and no control that acts. `--catalog-at PATH`
+(default `/`) names where the deployment serves the catalog, so the Workbench links there.
 
 **Partial reference coverage:** `evh run` refuses, before a call, a reference with no
 file for any of the dataset's items, and warns when only some items have one. The run records

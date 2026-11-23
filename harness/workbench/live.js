@@ -5,7 +5,7 @@
 // wires it, never this repository's data as if it were the project's.
 (() => {
   const WB = window.WB;
-  const LIVE = { on: false, cache: {}, pending: {}, wanted: {}, quiet: new Set(), into: {}, failed: null };
+  const LIVE = { on: false, viewer: false, catalogAt: "/", cache: {}, pending: {}, wanted: {}, quiet: new Set(), into: {}, failed: null };
   window.LIVE = LIVE;
   const esc = WB.esc;
 
@@ -25,7 +25,23 @@
     el.textContent = RESTARTED;
     document.body.prepend(el);
   }
+  // The reads a public server refuses (RFC-039): the routes of the operations it leaves out (`public_dropped`, with the
+  // registry's own words) and the jobs, the estimate and the session. A viewer's page does not ask for them: it says so
+  // where the read would have shown. tests/test_workbench_viewer.py compares this list with the registry and the server.
+  const NOT_PUBLIC = [["/compare/item", "an item's text and each arm's output are not served publicly"], ["/compare/items", "it shows recorded texts: the outputs, the references and the labels"], ["/datasets/{dataset}/sheet", "the sheet shows the items' outputs and labels"], ["/scorers/{scorer}/verdicts", "the judges' reasons describe the outputs they judged"], ["/datasets/{dataset}/label-coverage", "it reads a rules file by path and the captures, which are this machine's"], ["/exposure", "a held-out side's reads are the project's own"], ["/datasets/{dataset}/sealed-counts", "a held-out side's counts are for the project's own safety watch"], ["/datasets/{dataset}/label-mutants", "it reads a rules file by path and the captures, which are this machine's"], ["/validate", "a public copy is not a whole project: validate fails by design"], ["/data", "the project's files are this machine's (the data page, UXS-004)"], ["/data/file", "a file's text is this machine's: a hidden dataset's items too (the data page, UXS-004)"], ["/jobs", "a viewer runs and starts nothing"], ["/jobs/{id}", "a viewer runs and starts nothing"], ["/jobs/{id}/log", "a viewer runs and starts nothing"], ["/jobs/{id}/files/{name}", "a viewer runs and starts nothing"], ["/jobs/{id}/stop", "a viewer runs and starts nothing"], ["/jobs/{id}/resume", "a viewer runs and starts nothing"], ["/estimate", "a viewer runs and starts nothing"], ["/session", "a viewer runs and starts nothing"]];
+  const NOT_PUBLIC_RE = NOT_PUBLIC.map(([t, why]) => [new RegExp(`^${t.replace(/\{[^}]+\}/g, "[^/]+")}$`), why]);
+  // Why a viewer's page does not ask for this path (a /api/v1 path with its query), or "" when it may. Anything that is not a read is refused here too.
+  const notPublic = (url, method) => {
+    const path = url.slice("/api/v1".length).split("?")[0];
+    const hit = NOT_PUBLIC_RE.find(([re]) => re.test(path));
+    return hit ? hit[1] : method !== "GET" ? "nothing here writes, spends or runs a model" : "";
+  };
   window.fetch = async (...a) => {
+    const asked = String(a[0] && a[0].url || a[0]);
+    if (LIVE.viewer && asked.startsWith("/api/v1")) {
+      const why = notPublic(asked, String((a[1] && a[1].method) || "GET").toUpperCase());
+      if (why) return new Response(JSON.stringify({ error: `Not shown publicly: ${why}.`, kind: "not-public" }), { status: 403, headers: { "Content-Type": "application/json" } });
+    }
     const r = await realFetch(...a);
     if (r.status === 401 && String(a[0] && a[0].url || a[0]).startsWith("/api/v1")) {
       if (LIVE.on) noteRestarted(); // before the project answered (LIVE.on), a 401 is the first visit: the Sign-in screen says so
@@ -63,7 +79,7 @@
         .then(async (r) => {
           const body = await r.json().catch(() => ({}));
           // An optional read with nothing to show (the server answers 200 and why, `empty`) reads as one that refused.
-          LIVE.cache[key] = r.ok && body.empty != null ? { error: body.empty, empty: true } : r.ok ? (raw ? body : body.result) : { error: body.error || `${r.status}` };
+          LIVE.cache[key] = r.ok && body.empty != null ? { error: body.empty, empty: true } : r.ok ? (raw ? body : body.result) : { error: body.error || `${r.status}`, kind: body.kind };
         })
         .catch((e) => { LIVE.cache[key] = { error: String(e) }; })
         .finally(() => {
@@ -87,7 +103,7 @@
     return undefined;
   }
   const loading = (what) => `<p class="muted" role="status">Reading ${esc(what)}…</p>`;
-  const failed = (x) => `<p class="note" role="alert"><b>Could not read it.</b> ${esc(x.error)}</p>`;
+  const failed = (x) => (x.kind === "not-public" ? `<p class="note" role="note">${esc(x.error)}</p>` : `<p class="note" role="alert"><b>Could not read it.</b> ${esc(x.error)}</p>`);
 
   // ── home: every goal and where it stands; what is running ───────────────────
   function screenHome() {
@@ -114,7 +130,7 @@
       ${goals.goals.length ? `<div class="tablewrap" style="margin-top:18px"><table><thead><tr><th>goal</th><th>decides</th><th>datasets</th><th class="num">rounds</th><th>next</th></tr></thead><tbody>${rows.join("")}</tbody></table></div>`
         : `<div class="answer" style="margin-top:18px"><p><b>What should this project help you decide?</b></p><p>An evaluation starts with a goal: the decision you need to make, and how you will know which system is better for it.</p></div>`}
       ${WB.cmd("evh goal-list\nevh goal-status <goal>\nevh jobs-status --state queued,running", "the commands that show this")}
-      <div class="actions"><a class="btn primary" href="#goal-new">${goals.goals.length ? "New goal" : "Start with a goal"}</a><a class="btn" href="#models">Models</a><a class="btn" href="#prompts">Prompts</a><a class="btn" href="#settings">Settings</a><a class="btn" href="${location.origin}/">The catalog ↗</a></div></div>`;
+      <div class="actions"><a class="btn primary" href="#goal-new">${goals.goals.length ? "New goal" : "Start with a goal"}</a><a class="btn" href="#models">Models</a><a class="btn" href="#prompts">Prompts</a><a class="btn" href="#settings">Settings</a><a class="btn" href="${location.origin}${LIVE.catalogAt}">The catalog ↗</a></div></div>`;
   }
 
   // ── a goal: where it stands, and the next step ─────────────────────────────
@@ -182,7 +198,7 @@
   const UNSENT = new Map();
   WB.unsent = () => [...UNSENT.values()];
   WB.forgetUnsent = () => UNSENT.clear();
-  window.addEventListener("beforeunload", (e) => { if (UNSENT.size) { e.preventDefault(); e.returnValue = ""; } });
+  window.addEventListener("beforeunload", (e) => { if (UNSENT.size && !LIVE.viewer) { e.preventDefault(); e.returnValue = ""; } });
   const mark = '<span class="unsent" data-unsent-mark hidden>not saved yet</span>';
   function holds(form, what) {
     const root = document.querySelector(`[data-form="${form}"]`);
@@ -977,7 +993,7 @@
         ${isOpen && carryable.length ? `<div class="inline"><label class="name" for="cy-arm">Carry in</label><select id="cy-arm">${carryable.map((x) => `<option>${esc(x)}</option>`).join("")}</select>
           <button class="btn" type="button" id="cy-go">Carry it in</button><span class="muted">an arm of an earlier round, or a system already measured on ${esc(r.dataset_id)}: unchanged, not run again</span></div><div id="cy-out" data-out></div>` : ""}</div></section>
       ${baseline}
-      ${isOpen ? `<section class="part"><div class="parthead"><h2>Run arms in it</h2></div><div class="body">
+      ${isOpen ? `<section class="part" data-acts><div class="parthead"><h2>Run arms in it</h2></div><div class="body">
         ${toRun.length ? `<p class="muted">This screen wrote files into the project (a system, a round, an arm carried in). Commit them before a paid run: a run on uncommitted files is recorded <b>dirty</b>, and its commit then does not identify what ran. <code>git status</code> lists them.</p>
           <div class="choices">${toRun.map((x) => `<label class="choice"><input type="checkbox" data-run="${esc(x.system)}"> <span class="mono">${esc(x.system)}</span>${x.model ? ` <small>model ${esc(x.model)}</small>` : ""}</label>`).join("")}</div>
           <div class="inline"><label class="name" for="rn-cap">spend at most (USD)</label><input type="number" id="rn-cap" min="0.01" step="0.01" value="1" inputmode="decimal" style="width:7rem">
@@ -1476,7 +1492,7 @@
   }
 
   // ── step 3: prepare a dataset (UXS-005 step 3): fetch it, look inside, its reference set ────────────────────────
-  const catalogPage = (ds) => `${location.origin}/d/${String(ds || "none").replace(/[^A-Za-z0-9._-]+/g, "-").replace(/^-+|-+$/g, "") || "x"}.html`;
+  const catalogPage = (ds) => `${location.origin}${LIVE.catalogAt}d/${String(ds || "none").replace(/[^A-Za-z0-9._-]+/g, "-").replace(/^-+|-+$/g, "") || "x"}.html`;
   async function runJob(path, body, box, what) {
     const j = await send("POST", path, body);
     const done = await watchJob(j.id, box, what);
@@ -2889,6 +2905,91 @@
   new MutationObserver(queueHints).observe(document.body, { childList: true, subtree: true });
   window.addEventListener("resize", queueHints);
 
+  // ── the viewer (RFC-039, UXS-005 "The viewer") ────────────────────────────────────────────────
+  // A public server answers the reads and nothing else, and says so in a header of every /api/v1 answer: that is how this
+  // page knows it is a viewer, with no sign-in call and no setting. What is shown is the same screens over the same reads;
+  // what acts is not drawn. This is a courtesy to the reader: the server refuses every write whatever this page sends.
+  const VIEWER_NOTE = `This is a read-only view of a published project. To run your own: <code>pip install evaluation-harness</code>, <code>evh init</code>, <code>evh catalog-serve</code> (<a href="${(window.DOCS_BASE || "https://evals.humancopilot.eu/docs/")}GUIDE/" target="_blank" rel="noopener">getting started ↗</a>).`;
+  // The screens whose only job is to act: the menu leaves them out and their address says so, with the command.
+  const ACTION_ONLY = {
+    jobs: ["Jobs", "The jobs this machine runs: started, followed and stopped from the page.", "evh jobs-status\nevh jobs-logs <job>"],
+    settings: ["Settings", "Moving the project's data, checking it and editing its settings files.", "evh validate\nevh data-migrate --to sqlite"],
+    "model-new": ["Bring in a model", "Making a model's record and its first deployment.", "evh model-new <id> --set name=... --set kind=llm\nevh deployment-new <model> <deployment> --set where=..."],
+    "goal-new": ["Set the goal", "The form that makes a goal.", "evh goal-new <id> --set title=... --set statement=... --set decision=..."],
+    "goal-edit": ["The goal", "The form that edits a goal.", "evh goal-set <goal> --set KEY=VALUE"],
+    dataset: ["Add a dataset", "Choosing or making the examples a goal is tested on.", "evh dataset-create --dataset-id <id> --source-dir <dir>\nevh goal-set <goal> --set 'datasets.0.dataset_id=<id>'"],
+    label: ["Label it here", "Labelling a dataset's items by hand.", "evh label-sheet --dataset-id <dataset>\nevh label-import --sheet <dir> --dataset-id <dataset> --set <set>"],
+    reference: ["Change the reference set", "Seeing what another reference set moves, and promoting one.", "evh reference-promote --dataset-id <dataset> --labels <set> --tier gold --reason \"...\""],
+    review: ["Review the outputs", "The sheet puts each item's output and label side by side: outputs and labels are not shown publicly.", "evh sheet-show <dataset> --runs <arm>,<arm>"],
+  };
+  const screenViewerOnly = (route) => () => {
+    const [title, what, command] = ACTION_ONLY[route];
+    return `<div class="screen"><div class="kicker">Read-only view</div><h1>${esc(title)}</h1>
+      <p class="lead">${esc(what)} A read-only view does not show it: <b>not shown publicly</b>.</p>
+      ${WB.cmd(command)}<div class="actions"><a class="btn" href="#home">Your goals</a></div></div>`;
+  };
+  // What is left out of a screen is what acts: a form, a button that sends, a field that feeds one, a link to a screen
+  // that only acts. `data-view` marks a control that only changes what is shown; the help's ? and the rail's fold stay.
+  const ACT_LINKS = Object.keys(ACTION_ONLY).map((k) => `a[href^="#${k}"]`).join(", ");
+  const KEEP = ".q, .railtoggle, [data-view]";
+  const SHELLS = ".field, .inline, .choices, label.choice, .row-form";
+  function viewerize() {
+    const mine = [document.getElementById("main"), document.getElementById("rail")].filter(Boolean);
+    for (const root of mine) {
+      // a form, and what it said: its command stays (UXS-005: every screen shows the command, as text)
+      root.querySelectorAll("[data-form], [data-acts]").forEach((el) => {
+        if (!el.isConnected) return;
+        el.after(...el.querySelectorAll("details.cmd"));
+        el.remove();
+      });
+      root.querySelectorAll("[data-out]").forEach((el) => el.remove());
+      root.querySelectorAll(ACT_LINKS).forEach((a) => a.remove());
+      const shells = new Set();
+      root.querySelectorAll("button, input, select, textarea, datalist, form").forEach((el) => {
+        if (el.matches(KEEP) || el.closest("[data-view]")) return;
+        const shell = el.closest(SHELLS);
+        if (shell) shells.add(shell);
+        const bar = el.closest(".actions");
+        if (bar) shells.add(bar);
+        el.remove();
+      });
+      // a row of controls goes whole; a bar of buttons goes unless a link is left in it (the way back)
+      shells.forEach((el) => { if (el.isConnected && !(el.matches(".actions") && el.querySelector("a"))) el.remove(); });
+      root.querySelectorAll("label[for]").forEach((l) => { if (!document.getElementById(l.htmlFor)) l.remove(); });
+      for (let again = true; again;) {
+        again = false;
+        root.querySelectorAll(".actions, .inline, .choices").forEach((el) => { if (!el.children.length && !el.textContent.trim()) { el.remove(); again = true; } });
+        root.querySelectorAll(".part").forEach((part) => {
+          const body = part.querySelector(".body");
+          if (body && !body.textContent.trim() && !body.querySelector("table, svg, img, pre, ul, ol, dl, details")) { part.remove(); again = true; }
+        });
+        // a heading whose control is gone and with nothing after it
+        root.querySelectorAll("h3").forEach((h) => { const nx = h.nextElementSibling; if (!nx || /^H[1-3]$/.test(nx.tagName)) { h.remove(); again = true; } });
+      }
+    }
+    // where the deployment serves the catalog (catalog-serve --catalog-at, sent as X-EVH-Catalog)
+    document.querySelectorAll('#main a[href="/"], #nav a[href="/"]').forEach((a) => { a.setAttribute("href", LIVE.catalogAt); });
+  }
+  function viewerMode() {
+    LIVE.viewer = true;
+    document.body.classList.add("viewer");
+    const note = document.createElement("div");
+    note.id = "wb-viewer";
+    note.className = "viewer-note";
+    note.setAttribute("role", "note");
+    note.innerHTML = VIEWER_NOTE;
+    document.querySelector("header.bar").after(note);
+    document.querySelectorAll('#nav a[href="#jobs"], #nav a[href="#settings"]').forEach((a) => a.remove());
+    // nothing is typed here, so nothing is unsent: no guard on leaving a screen or the page
+    WB.unsent = () => [];
+    for (const k of Object.keys(ACTION_ONLY)) WB.routes[k] = [screenViewerOnly(k)];
+    let busy = false;
+    const keep = () => { if (busy) return; busy = true; viewerize(); busy = false; };
+    new MutationObserver(keep).observe(document.getElementById("main"), { childList: true, subtree: true });
+    new MutationObserver(keep).observe(document.getElementById("rail"), { childList: true, subtree: true });
+    keep();
+  }
+
   function goLive() {
     LIVE.on = true;
     document.body.classList.add("live");
@@ -2897,6 +2998,7 @@
     for (const [k, v] of Object.entries(WIRED)) if (v) WB.routes[k] = v;
     Object.assign(WB.routes, OWN);
     WB.routes.start = [screenHome];
+    if (LIVE.viewer) viewerMode();
     if (!location.hash || location.hash === "#start") location.hash = "#home";
     WB.render();
   }
@@ -2916,7 +3018,13 @@
   else {
     fetch("/api/v1/goals", { credentials: "same-origin" }).then((r) => {
       if (r.status === 404) noProject();
-      else if (r.status !== 401) goLive();
+      else if (r.status !== 401) {
+        if (r.headers.get("X-EVH-Viewer") === "1") LIVE.viewer = true; // before the first screen is drawn: the fetch above asks nothing a viewer may not
+        // A deployment serves the catalog under a path of its own (/catalog/); the local server, at its root.
+        LIVE.catalogAt = r.headers.get("X-EVH-Catalog") || "/";
+        document.querySelectorAll("#nav a[href='/']").forEach((a) => a.setAttribute("href", LIVE.catalogAt));
+        goLive();
+      }
       else {
         // A route, not a write into #main: workbench.js draws the routes again when the page finishes loading, and on a slow
         // machine that came after this answer and put "Opening this project…" back over the sign-in screen.

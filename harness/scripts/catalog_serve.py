@@ -402,10 +402,8 @@ def answer(path: str, query: str) -> tuple:
     if len(query) > MAX_QUERY:
         return 400, json.dumps({"error": f"the question is over {MAX_QUERY} characters"}).encode()
     key = f"{path}?{'&'.join(sorted(query.split('&')))}"
-    with _CACHE_LOCK:
-        if key in _CACHE:
-            _CACHE.move_to_end(key)
-            return _CACHE[key]
+    if (kept := _kept(key)) is not None:
+        return kept
     params = parse_qs(query)
     with _COMPUTE:
         try:
@@ -421,8 +419,22 @@ def answer(path: str, query: str) -> tuple:
             body = {"error": "internal error" if LIMITS["hosts"] else f"{type(exc).__name__}: {exc}"}
             code = 500
     data = json.dumps(body).encode()
-    # Only answers are kept: a refusal (4xx) costs nothing to repeat, and keeping it let distinct
-    # junk questions fill the cache by their keys (an independent review, 2026-10-29).
+    _keep(key, code, data)
+    return code, data
+
+
+def _kept(key: str) -> tuple | None:
+    """The answer kept for this question, (status, bytes), or None."""
+    with _CACHE_LOCK:
+        if key in _CACHE:
+            _CACHE.move_to_end(key)
+            return _CACHE[key]
+    return None
+
+
+def _keep(key: str, code: int, data: bytes) -> None:
+    """Keep an answer, within the cache's bounds. Only answers are kept: a refusal (4xx) costs nothing to repeat, and
+    keeping it let distinct junk questions fill the cache by their keys (an independent review, 2026-10-29)."""
     if code == 200 and len(data) <= _CACHE_BYTES // 4:
         with _CACHE_LOCK:
             if key not in _CACHE:
@@ -430,7 +442,6 @@ def answer(path: str, query: str) -> tuple:
                 _cache_size[0] += len(data)
             while _CACHE and (len(_CACHE) > _CACHE_MAX or _cache_size[0] > _CACHE_BYTES):
                 _cache_size[0] -= len(_CACHE.popitem(last=False)[1][1])
-    return code, data
 
 
 def client_key(header: str | None, peer: str) -> str:
@@ -565,6 +576,10 @@ WORKBENCH_TYPES = {
     ".css": "text/css; charset=utf-8",
     ".svg": "image/svg+xml",
 }
+#: What a public server (a viewer's, RFC-039) says to a call that writes, spends or runs.
+VIEWER_REFUSES = (
+    "this is a read-only view of a published project: nothing here writes, spends or runs a model"
+)
 API_MAX_JOB_BODY = 70 * 1024 * 1024  # 50 MB of files, base64 (RFC-026: owner, 2026-11-08)
 
 
@@ -618,14 +633,14 @@ def allowed(path: str, host: str, port: int, prefixes: tuple) -> int:
     p = unquote(urlparse(path).path)
     if ".." in p.split("/"):
         return 404
-    if p.startswith(
-        "/api/v1/"
-    ):  # RFC-026: this machine's only, never behind a proxy or public (owner, 2026-11-09)
-        return 404 if LIMITS["hosts"] or LIMITS.get("proxy_hosts") or not API_TOKEN else 0
+    if p.startswith("/api/v1/"):
+        # RFC-026: this machine's, with its token; never behind a proxy. A public server serves its reads to a viewer,
+        # with no token (RFC-039, owner, 2026-11-23): `_viewer` refuses the rest.
+        return 0 if LIMITS["hosts"] else 404 if LIMITS.get("proxy_hosts") or not API_TOKEN else 0
     if p.startswith("/api/"):
         return 0 if p in API_ROUTES else 404
-    if p == "/workbench" or p.startswith("/workbench/"):  # as the API's: this machine's only, with a token
-        return 404 if LIMITS["hosts"] or LIMITS.get("proxy_hosts") or not API_TOKEN else 0
+    if p == "/workbench" or p.startswith("/workbench/"):  # as the API's
+        return 0 if LIMITS["hosts"] else 404 if LIMITS.get("proxy_hosts") or not API_TOKEN else 0
     prefix = next((x for x in prefixes if p.startswith(x)), None)
     if prefix is None:
         return 404
@@ -1115,8 +1130,13 @@ class Handler(SimpleHTTPRequestHandler):
             return
         port = int(self.server.server_address[1])  # type: ignore[index]  # an AF_INET (host, port)
         origin = self.headers.get("Origin")
-        if origin is not None and origin not in (f"http://127.0.0.1:{port}", f"http://localhost:{port}"):
+        own = (f"http://127.0.0.1:{port}", f"http://localhost:{port}")
+        if LIMITS["hosts"]:  # a viewer's page is on the site's own origin
+            own = tuple(f"{scheme}://{h}" for h in LIMITS["hosts"] for scheme in ("https", "http"))
+        if origin is not None and origin not in own:
             return self._json(403, {"error": "a call from another origin is refused"}, cache=False)
+        if LIMITS["hosts"]:
+            return self._viewer(method, url)
         if method == "GET" and url.path == "/api/v1/session":
             # The Workbench's first load trades the token in its address for a cookie (HttpOnly, SameSite=Strict).
             import hmac  # noqa: PLC0415
@@ -1168,18 +1188,56 @@ class Handler(SimpleHTTPRequestHandler):
             )
         return self._json(404, {"error": f"no API route {method} {url.path}"}, cache=False)
 
+    def _viewer(self, method: str, url) -> None:
+        """/api/v1/ on a public server (RFC-039): no token, nothing written. Counted by the rate limit as the inspector's
+        reads are. Only a GET is answered; the jobs' routes, the estimate (it starts a child process) and the session (there
+        is no token to trade) are refused, and `_model_route` answers a read operation a public server offers and refuses
+        every other. The page's viewer mode is a courtesy: this is what holds."""
+        hdr = LIMITS.get("client_header")
+        if over_rate(client_key(self.headers.get(hdr) if hdr else None, self.client_address[0])):
+            return self._json(429, {"error": f"more than {LIMITS['rate']} requests a minute; wait a moment"})
+        if len(url.query) > MAX_QUERY:
+            return self._json(400, {"error": f"the question is over {MAX_QUERY} characters"})
+        fixed = url.path in ("/api/v1/session", "/api/v1/estimate", "/api/v1/jobs") or url.path.startswith(
+            "/api/v1/jobs/"
+        )
+        if method != "GET" or fixed:
+            return self._json(403, {"error": VIEWER_REFUSES, "kind": "not-public"}, cache=False)
+        if url.path == "/api/v1/openapi.json":
+            key = f"v1:{url.path}"
+            code, data = _kept(key) or (200, json.dumps(openapi.document()).encode())
+            _keep(key, code, data)
+            return self._json(code, data, cache=False)
+        if self._model_route(method, url):
+            return None
+        return self._json(404, {"error": f"no API route {method} {url.path}"}, cache=False)
+
     def _model_route(self, method: str, url) -> bool:
         """The model's resources (RFC-032): the operation whose method and route match the path, run in this process.
         A read takes its inputs from the query; a write needs the data header, its inputs as a JSON object and `by`
-        (who acted, RFC-027; an agent names `for`, the person it acts for). None when no operation's route matches."""
+        (who acted, RFC-027; an agent names `for`, the person it acts for). None when no operation's route matches.
+        On a public server (a viewer's) only a read the public MCP server offers is run, as a public call, with only the
+        inputs it takes there, its answers kept and at most two computed at once; anything else is refused."""
         import jsonschema  # noqa: PLC0415
-        from evaluation_harness import ops  # noqa: PLC0415
+        from evaluation_harness import _jsonout, mcp_server, ops  # noqa: PLC0415
         from evaluation_harness._version import __version__  # noqa: PLC0415
         from evaluation_harness.model.entity import Problem  # noqa: PLC0415
 
-        def say(code: int, body: dict) -> bool:
+        public = bool(LIMITS["hosts"])
+
+        def say(code: int, body: dict | bytes) -> bool:
             self._json(code, body, cache=False)
             return True
+
+        def words(text: str) -> str:
+            """What a refusal says: on a public server with no path of this machine in it."""
+            from evaluation_harness import _cmdline  # noqa: PLC0415
+
+            return (
+                _cmdline.public_error("ERROR: " + " ".join(text.split()), ROOT)[len("ERROR: ") :]
+                if public
+                else text
+            )
 
         parts = url.path[len("/api/v1") :].strip("/").split("/")
         for op in ops.OPS.values():
@@ -1194,6 +1252,19 @@ class Handler(SimpleHTTPRequestHandler):
             bad = next(((k, v) for k, v in params.items() if _api.id_problem(v)), None)
             if bad:
                 return say(400, {"error": f"{op.name}: {bad[0]} {bad[1]!r}: {_api.id_problem(bad[1])}"})
+            key = ""
+            if public:
+                if op.kind != "read" or op.public_dropped:
+                    return say(
+                        404,
+                        {
+                            "error": f"{op.name} is not served publicly: {op.public_dropped or 'it is not a read'}",
+                            "kind": "not-public",
+                        },
+                    )
+                key = f"v1:{url.path}?{'&'.join(sorted(url.query.split('&')))}"
+                if (kept := _kept(key)) is not None:
+                    return say(*kept)
             if op.is_job():
                 self._job_route(op, params)
                 return True
@@ -1205,6 +1276,17 @@ class Handler(SimpleHTTPRequestHandler):
                 # may not have), so a read with nothing to show is answered 200 with why (`empty`), as the command
                 # says it, not as an error (a browser logs every 4xx in its console).
                 optional = q.pop("optional", ["0"])[-1] == "1"
+                # An input a public server does not take is refused, not ignored: a caller who asked for an item's text
+                # or a rendered file is told, and never answered as if the input had been given.
+                refused = sorted(k for k in q if k in op.inputs and k not in op.schema(public)["properties"])
+                if public and refused:
+                    return say(
+                        400,
+                        {
+                            "error": f"{op.name}: {', '.join(refused)} not taken on a public server",
+                            "kind": "not-public",
+                        },
+                    )
                 try:
                     inputs = query_inputs(op.inputs, q)
                 except ValueError as exc:
@@ -1231,9 +1313,14 @@ class Handler(SimpleHTTPRequestHandler):
                 inputs = body
                 inputs["by"] = by.strip() + (f" for {for_.strip()}" if by.startswith("agent:") else "")
             try:
-                jsonschema.validate({k: v for k, v in inputs.items() if k != "by"}, op.schema())
+                if public:  # as the public MCP server checks a call: the tool's own schema, and the sizes
+                    mcp_server.check_arguments(op, {**params, **inputs}, public=True)
+                else:
+                    jsonschema.validate({k: v for k, v in inputs.items() if k != "by"}, op.schema())
             except jsonschema.ValidationError as exc:
                 return say(400, {"error": f"{op.name}: {registry.input_problem(exc)}"})
+            except ValueError as exc:
+                return say(400, {"error": f"{op.name}: {exc}"})
 
             def nothing(kind: str, why: str, optional: bool = optional, name: str = op.name) -> bool | None:
                 """A read asked as optional with nothing to show, answered 200 with why; None for any other refusal."""
@@ -1243,22 +1330,39 @@ class Handler(SimpleHTTPRequestHandler):
                     200, {"command": name, "version": __version__, "result": None, "empty": why, "kind": kind}
                 )
 
+            def call(op=op, params=params, inputs=inputs):
+                if not public:
+                    return op.call(**params, **inputs)
+                with (
+                    _COMPUTE,
+                    _visibility.public_call(True),
+                ):  # two at once; what it reads, it reads as a public call
+                    return op.call(**params, **inputs)
+
             try:
-                result = op.call(**params, **inputs)
+                result = call()
             except Problem as exc:
-                return nothing(exc.kind, str(exc)) or say(
+                return nothing(exc.kind, words(str(exc))) or say(
                     REFUSAL_STATUS.get(exc.kind, 400),
-                    {"error": str(exc), "kind": exc.kind, "problems": exc.problems},
+                    {"error": words(str(exc)), "kind": exc.kind, "problems": [] if public else exc.problems},
                 )
             except (
                 SystemExit
             ) as exc:  # a body that refuses as a command does (die): ended the thread, no answer
                 m = re.match(r"ERROR \(([a-z-]+)\): (.*)", str(exc), re.S)
                 kind = m.group(1) if m else "failed"
-                why = (m.group(2) if m else str(exc)).strip()
+                why = words((m.group(2) if m else str(exc)).strip())
                 return nothing(kind, why) or say(REFUSAL_STATUS.get(kind, 400), {"error": why, "kind": kind})
             if op.kind != "read":
                 data_changed(f"{op.name} through the API")
+            if (
+                public
+            ):  # as the MCP server answers: a NaN or an infinity is null, which a browser's JSON.parse reads
+                data = json.dumps(
+                    _jsonout.plain({"command": op.name, "version": __version__, "result": result})
+                ).encode()
+                _keep(key, 200, data)
+                return say(200, data)
             return say(200, {"command": op.name, "version": __version__, "result": result})
         return False
 
@@ -1435,8 +1539,10 @@ class Handler(SimpleHTTPRequestHandler):
             self.send_error(404)
 
     def do_HEAD(self):
-        """Handle HEAD requests with access checks."""
-        if not self._refuse():
+        """Handle HEAD requests with access checks. A public server has no file to serve (its pages are nginx's)."""
+        if LIMITS["hosts"]:
+            self.send_error(404)
+        elif not self._refuse():
             super().do_HEAD()
 
     def do_GET(self):
@@ -1563,6 +1669,12 @@ class Handler(SimpleHTTPRequestHandler):
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(data)))
         self.send_header("Cache-Control", "no-store" if code >= 400 or not cache else "public, max-age=300")
+        if LIMITS["hosts"] and urlparse(self.path).path.startswith("/api/v1/"):
+            # How the Workbench's page knows it is a viewer (RFC-039): the server says so with every answer, so the page
+            # needs no sign-in call and no setting of its own. It is a courtesy: the refusals are the server's.
+            self.send_header("X-EVH-Viewer", "1")
+            # Where the catalog is: the deployment serves it under a path of its own, the local server at its root.
+            self.send_header("X-EVH-Catalog", LIMITS.get("catalog_at") or "/")
         self.end_headers()
         self.wfile.write(data)
 
@@ -1624,6 +1736,13 @@ def main() -> int:
         help="public mode: the header that names the client (e.g. CF-Connecting-IP), only behind a proxy "
         "that sets it and an origin no one else can reach; default: the TCP peer",
     )
+    ap.add_argument(
+        "--catalog-at",
+        default="/",
+        metavar="PATH",
+        help="public mode: where the deployment serves the built catalog (e.g. /catalog/), for the Workbench's links "
+        "to it; default /",
+    )
     ap.add_argument("--max-arms", type=int, default=40, help="most arms in one comparison")
     ap.add_argument(
         "--hooks",
@@ -1658,6 +1777,11 @@ def main() -> int:
         bad = set(LIMITS["publish"]) - {"outputs", "references"}
         if bad:
             die(f"--publish takes outputs and/or references, not {', '.join(sorted(bad))}", "bad-argument")
+        if not (args.catalog_at.startswith("/") and args.catalog_at.endswith("/")):
+            die(
+                f"--catalog-at is a path that starts and ends with /, not {args.catalog_at!r}", "bad-argument"
+            )
+        LIMITS["catalog_at"] = args.catalog_at
         Handler.prefixes = ()
     else:
         if args.behind_proxy:

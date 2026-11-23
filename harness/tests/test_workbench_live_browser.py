@@ -7,7 +7,7 @@ through the model's API.
 In a project with a goal, a dataset, its reference and a run: the startup prints the link that signs in; through it the
 home lists the project's goal with the next step its status names; the goal's screen shows its dataset as the API
 says; a screen not wired yet says so instead of showing the mockup's data; a browser with no cookie is asked to sign
-in; at a phone's width nothing scrolls sideways; and a public server has no /workbench/.
+in; at a phone's width nothing scrolls sideways; a public server serves it read-only and one behind a proxy not at all.
 
 The models (step 2): a model brought in through the form is made by the model's API with who made it, and a bad id is
 refused on the page; a deployment added on its page points at a fake OpenAI-shaped server; "Run the probes" starts
@@ -170,7 +170,9 @@ def serve(*extra: str) -> tuple[subprocess.Popen, int, list[str]]:
                 break
         except OSError:
             time.sleep(0.1)
-    if "--public" in extra:
+    # Only a local server prints the start-up lines `_serve.startup` waits for.
+    if "--public" in extra or "--behind-proxy" in extra:
+        _serve.drain(p, lines)
         return p, port, lines
     return p, port, _serve.startup(p, lines)  # its start-up lines, the rest read as it comes
 
@@ -2843,22 +2845,29 @@ try:
         srv.terminate()
         srv.wait(timeout=20)
 
-    pub, pport, _ = serve("--public", "evals.example")
-    try:
-        import urllib.error
-        import urllib.request
+    import urllib.error
+    import urllib.request
 
-        req = urllib.request.Request(
-            f"http://127.0.0.1:{pport}/workbench/", headers={"Host": "evals.example"}
-        )
+    def workbench_status(port: int) -> int:
+        req = urllib.request.Request(f"http://127.0.0.1:{port}/workbench/", headers={"Host": "evals.example"})
         try:
-            code = urllib.request.urlopen(req, timeout=30).status  # noqa: S310 - the test's own server  # nosec B310
+            return urllib.request.urlopen(req, timeout=30).status  # noqa: S310 - the test's own server  # nosec B310
         except urllib.error.HTTPError as exc:
-            code = exc.code
-        check("a public server has no /workbench/", code == 404, code)
-    finally:
-        pub.terminate()
-        pub.wait(timeout=20)
+            return exc.code
+
+    # RFC-039: a public server serves the Workbench read-only (tests/test_workbench_viewer*.py say what it refuses);
+    # a server behind a private proxy still keeps it this machine's own.
+    for flag, want, says in (
+        ("--public", 200, "a public server serves /workbench/, read-only (RFC-039)"),
+        ("--behind-proxy", 404, "a server behind a proxy has no /workbench/"),
+    ):
+        pub, pport, _ = serve(flag, "evals.example")
+        try:
+            code = workbench_status(pport)
+            check(says, code == want, code)
+        finally:
+            pub.terminate()
+            pub.wait(timeout=20)
 finally:
     fake.shutdown()
     shutil.rmtree(proj, ignore_errors=True)

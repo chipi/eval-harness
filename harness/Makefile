@@ -113,12 +113,15 @@ budget-check:
 	$(PYTHON) tests/test_inspector_budget.py $(ARGS)
 
 # The inspector's test runs on both stores (the store matrix skips every *_browser.py, so
-# this is where the SQLite store meets a browser, as does browser-real-check); the workbench tests below are files only.
+# this is where the SQLite store meets a browser, as does browser-real-check). The viewer runs on both too: the deployed
+# site's store is SQLite. The other workbench tests are files only.
 browser-check:
 	EVAL_STORE=files $(PYTHON) tests/test_inspector_browser.py
 	EVAL_STORE=sqlite $(PYTHON) tests/test_inspector_browser.py
 	$(PYTHON) tests/test_workbench_browser.py
 	$(PYTHON) tests/test_workbench_live_browser.py
+	EVAL_STORE=files $(PYTHON) tests/test_workbench_viewer_browser.py
+	EVAL_STORE=sqlite $(PYTHON) tests/test_workbench_viewer_browser.py
 	$(PYTHON) tests/test_workbench_replay_browser.py
 	$(PYTHON) tests/test_workbench_store_browser.py
 	$(PYTHON) tests/test_workbench_heldout_browser.py

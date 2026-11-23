@@ -582,8 +582,9 @@ def document() -> dict[str, Any]:
             "description": "The model's entities as resources and its operations as actions, on this machine only. "
             "Every call carries the server's token (.build/api-token) as a bearer or as the cookie "
             "GET /api/v1/session sets, to a 127.0.0.1 or localhost Host and no foreign Origin; a call "
-            "that is not a read carries X-EVH-Data: 1. A server started --public or behind a proxy "
-            "answers none of it.",
+            "that is not a read carries X-EVH-Data: 1. A server started behind a proxy answers none of it; one "
+            "started --public (a deployed site) answers the reads the public MCP server offers, to anyone and with no "
+            "token, and refuses everything else (RFC-039).",
         },
         "security": [{"bearerAuth": []}, {"cookieAuth": []}],
         "paths": paths,

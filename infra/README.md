@@ -6,6 +6,7 @@ Four addresses, one repository:
 |---|---|---|
 | `evals.humancopilot.eu` | the harness site: the harness and its findings (`site/public`, built by `make site`) | prod VPS: `evals-nginx` |
 | `evals.humancopilot.eu/catalog` | the harness deployed on these example evals: the catalog, goal pages and run inspector | prod VPS: `evals-nginx` (pages) + `evals-inspector` (`/api/*`) |
+| `evals.humancopilot.eu/workbench` | the Workbench on these evals, read-only for visitors (RFC-039): every screen that reads, no control that acts; its `/api/v1` answers only the reads | prod VPS: `evals-inspector` |
 | `evals.humancopilot.eu/mcp` | the same evals for an agent: the harness's read commands as MCP tools (Streamable HTTP, read-only, no sign-in) | prod VPS: `evals-mcp` |
 | `evals.humancopilot.eu/docs` | the documentation (mkdocs) | prod VPS: `evals-nginx` (built into each release by `render.sh`); the same docs are also on GitHub Pages, `chipi.github.io/eval-harness` (`.github/workflows/pages.yml`) |
 
@@ -66,7 +67,8 @@ infra/
     such as `/api/v1/goals/{goal}`, the caches, the view cache's hits, misses, waits, evictions and invalidations
     and its weight against the budget, resident memory) on the
     container's port, which only the box's Alloy scrapes (`observability/evals.alloy`): Caddy
-    forwards nothing but `/catalog/api/` to the inspector. The SDKs
+    forwards nothing but `/catalog/api/`, `/workbench` and `/api/v1/` to the inspector (`--catalog-at /catalog/`
+    tells the read-only Workbench where the catalog is). The SDKs
     (`infra/inspector/requirements.txt`, pinned, pure-Python wheels) are vendored by `render.sh`
     into `inspector/vendor/` and found through `PYTHONPATH`; together they cost about 20 MB of the
     384 MB (measured locally 2026-10-27: 27 MB idle without, 44 MB with).
