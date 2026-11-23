@@ -58,6 +58,9 @@ def call_system(text: str, params: dict) -> Result:
                   tokens_out=out.usage.completion_tokens)
 ```
 
+[Tutorial 9](../../docs/tutorials/9-custom-adapter.md) writes one end to end, offline, and runs the loop through it
+(`make guide-check` runs it).
+
 That is the integration. Everything else — freezing the dataset, hashing it,
 recording which build ran, timing the call, aggregating, refusing bad
 comparisons — is generic and already written. The harness times every call (`latency_ms`)

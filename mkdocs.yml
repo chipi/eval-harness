@@ -42,6 +42,7 @@ nav:
       - 6 · Datasets from production: tutorials/6-datasets-from-production.md
       - 7 · Set up a model before you test it: tutorials/7-set-up-a-model.md
       - 8 · The Workbench: tutorials/8-the-workbench.md
+      - "9 · Your own system, a custom adapter": tutorials/9-custom-adapter.md
   - The harness:
       - Concepts: harness/CONCEPTS.md
       - Integration: harness/INTEGRATION.md
