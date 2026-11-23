@@ -4562,7 +4562,7 @@ def render_prompts(A: Adapter, out: Path, nav: list) -> None:
     from evaluation_harness import _prompt_cmd, _prompts  # noqa: PLC0415
     from evaluation_harness._actor import said as actor_said  # noqa: PLC0415
 
-    show = _prompts.published()
+    show = _visibility.prompt_shown(True)
     used = _prompt_cmd._runs_of()
     data = getattr(A, "data_dir", None)
     names = _prompts.names(data)

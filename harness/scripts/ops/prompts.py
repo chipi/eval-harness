@@ -50,7 +50,7 @@ def list_prompts() -> dict[str, Any]:
 
 def show_prompt(name: str, text: bool = False) -> dict[str, Any]:
     """One prompt's versions, each with the runs that used it; with `text`, each version's text."""
-    from evaluation_harness import _format, _prompt_cmd, _prompts  # noqa: PLC0415
+    from evaluation_harness import _format, _prompt_cmd, _prompts, _visibility  # noqa: PLC0415
     from evaluation_harness.model.entity import Problem  # noqa: PLC0415
 
     _format.require()
@@ -64,6 +64,10 @@ def show_prompt(name: str, text: bool = False) -> dict[str, Any]:
         )
     used = _prompt_cmd._runs_of()
     out = [{**v, "runs": used.get((name, v["sha256"]), [])} for v in vs]
+    if (
+        text and not _visibility.prompt_shown()
+    ):  # a prompt file is a prompt (owner, 2026-11-23): its text only where published
+        text = False
     if text:
         for v in out:
             v["text"] = _prompts.text_of(v["id"]).decode("utf-8", "replace")
@@ -103,7 +107,7 @@ def diff_prompts(a: str, b: str) -> dict[str, Any]:
     """Two versions' text as a unified diff, and the runs that used each."""
     import difflib  # noqa: PLC0415
 
-    from evaluation_harness import _format, _prompt_cmd, _prompts  # noqa: PLC0415
+    from evaluation_harness import _format, _prompt_cmd, _prompts, _visibility  # noqa: PLC0415
     from evaluation_harness.ops.legacy import refusing  # noqa: PLC0415
 
     _format.require()
@@ -122,7 +126,8 @@ def diff_prompts(a: str, b: str) -> dict[str, Any]:
     return {
         "a": a,
         "b": b,
-        "diff": "".join(lines),
+        "diff": "".join(lines) if _visibility.prompt_shown() else "",
+        **({} if _visibility.prompt_shown() else {"text_hidden": True}),
         "runs": {
             vid: used.get((_prompts.split_id(vid)[0], d.get("sha256", "")), [])
             for vid, d in ((a, da), (b, db))
@@ -132,7 +137,13 @@ def diff_prompts(a: str, b: str) -> dict[str, Any]:
 
 def say_diff(r: dict[str, Any]) -> str:
     """prompt-diff's answer as text: the diff, then each version's runs."""
-    out = [r["diff"].rstrip("\n") if r["diff"] else "the two versions are the same text"]
+    out = [
+        r["diff"].rstrip("\n")
+        if r["diff"]
+        else "the text is not published here (--publish prompts)"
+        if r.get("text_hidden")
+        else "the two versions are the same text"
+    ]
     for vid, runs in r["runs"].items():
         out.append(
             f"\n{vid}: {len(runs)} run(s)"
