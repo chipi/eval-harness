@@ -1,6 +1,6 @@
 # RFC-040: The catalog rendered on request, and exported: one renderer, two drivers
 
-- **Status**: Proposed. In 0.8.1 (owner, 2026-11-23: "this would be 081 item as well"); `research/internal/PLAN_0.8.1.md`, F3.
+- **Status**: Accepted (0.8.1, planned). In 0.8.1, all six steps (owner, 2026-11-23); `research/internal/PLAN_0.8.1.md`, F3.
 - **Authors**: Marko Dragoljevic
 - **Related RFCs**: [RFC-026](RFC-026-an-api-for-every-command.md) (the server's freshness: a write starts a `catalog`
   job, the pages are swapped in whole), [RFC-003](RFC-003-catalog-adapter.md) (the adapter the pages read),
@@ -162,12 +162,13 @@ the same fingerprint; it has three callers today, and the decisions are not amon
    each data change (a warm-up, not a gate: a request still renders on its own if it comes first), and the charts are
    looked at for a memo of their own.
 
-## Open questions for the owner
+## Decided
 
-- **Scope within 0.8.1.** The advisor recommends 0.8.1 take steps 1-2 and the decisions memo, and leave the serve driver
-  to 0.9.0, because 0.8.1 is at release-notes stage. The owner placed the RFC in 0.8.1; which steps does 0.8.1 ship?
-- **Goal pages at 1.4-4.0 s.** Is a warm-up after each data change (step 6) acceptable, or must every page answer under
-  a target on its first request?
+- **Scope (owner, 2026-11-23): all six steps ship in 0.8.1.** "We ship everything in 0.8.1 ... It's not a functional
+  thing, it's a non-functional thing." The advisor had recommended steps 1-2 and the decisions memo for 0.8.1 and the
+  serve driver for 0.9.0.
+- **Goal pages at 1.4-4.0 s.** Step 6 is part of "everything": if a goal page is still over about 1 s after the memo, the
+  server warms it in the background after a data change, and a request that comes first renders it itself.
 
 ## Not covered
 

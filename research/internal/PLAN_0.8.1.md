@@ -299,10 +299,12 @@ today) and a serve driver (a page rendered on request, kept until the data chang
 them in, and until it ends a page shows the data from before the write. Measured 2026-11-23: `collect()` 1.7 s; with
 the p-values cached, the home page 0.58 s, a goal page 1.4-4.0 s, every other page under 0.1 s.
 
-**Open (owner):** which of RFC-040's six steps 0.8.1 ships (the advisor recommends steps 1-2 and the decisions memo, the
-serve driver in 0.9.0); whether a goal page may be warmed in the background after a change.
+**Scope (owner, 2026-11-23):** all six of RFC-040's steps ship in 0.8.1, the serve driver and the goal pages' warm-up
+included ("It's not a functional thing, it's a non-functional thing").
 
-**Done when:** RFC-040's tests 1-4 pass on both stores, for the steps 0.8.1 ships.
+**Done when:** RFC-040's tests 1-4 pass on both stores; the export's pages are unchanged byte for byte (with `built`
+fixed); a write through the API shows on the next request for an affected page with no `catalog` job; the full gates
+pass.
 
 **Moves a result:** no.
 
