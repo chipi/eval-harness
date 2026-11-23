@@ -128,13 +128,15 @@ def flags_for(items: list[dict[str, Any]], calls: list[dict[str, Any]], params: 
                     f"slow call: {len(slow)} call(s) over half the {limit:.0f} s limit (max {max(c['s'] for c in slow):.1f} s)"
                 )
         sizes = sorted(c["tokens_out"] for c in calls if c.get("tokens_out"))
-        cap = params.get("max_tokens")
-        if cap:
+        reply_cap = params.get("max_tokens")
+        if reply_cap:
             # With a reply cap, a reply is long when it passes half the cap: an adapter that makes short probe calls
             # beside its answer (the triage fleet) made every answer 3x the median.
-            long = [n for n in sizes if n > int(cap) / 2]
+            long = [n for n in sizes if n > int(reply_cap) / 2]
             if long:
-                out.append(f"long reply: {len(long)} call(s) over half the {cap}-token cap (max {max(long)})")
+                out.append(
+                    f"long reply: {len(long)} call(s) over half the {reply_cap}-token reply_cap (max {max(long)})"
+                )
         elif len(sizes) >= LONG_MIN_CALLS:
             median = (
                 sizes[len(sizes) // 2]

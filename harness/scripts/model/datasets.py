@@ -41,9 +41,9 @@ def _dataset_links(record: dict[str, Any]) -> list[dict[str, Any]]:
         out.append(
             {"path": ["derived_from", "dataset_id"], "message": f"no dataset {parent!r} in this project"}
         )
-    cap = (record.get("made_from") or {}).get("capture")
-    if cap and not _store.is_file(CAPTURE.path(str(cap))):
-        out.append({"path": ["made_from", "capture"], "message": f"no capture {cap!r} in this project"})
+    capture = (record.get("made_from") or {}).get("capture")
+    if capture and not _store.is_file(CAPTURE.path(str(capture))):
+        out.append({"path": ["made_from", "capture"], "message": f"no capture {capture!r} in this project"})
     return out
 
 

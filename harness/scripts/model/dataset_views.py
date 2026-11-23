@@ -194,7 +194,7 @@ def show_dataset(dataset: str) -> dict[str, Any]:
     rec = DATASET.get(dataset)
     everyone = _records(DATASET)
     parent = (rec.get("derived_from") or {}).get("dataset_id")
-    cap = (rec.get("made_from") or {}).get("capture")
+    capture = (rec.get("made_from") or {}).get("capture")
     return {
         "dataset": dataset,
         "file": where(DATASET, dataset),
@@ -213,7 +213,7 @@ def show_dataset(dataset: str) -> dict[str, Any]:
         },
         "label_sets": [label_set_row(i, r) for i, r in _records(LABEL_SET) if i.split("/", 1)[0] == dataset],
         "references": [reference_row(i, REFERENCE.get(i)) for i in references_of(dataset)],
-        "captures": [cap] if cap else [],
+        "captures": [capture] if capture else [],
         "tag_sets": [tag_set_row(i, r) for i, r in _records(TAG_SET) if i.split("/", 1)[0] == dataset],
     }
 

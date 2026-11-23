@@ -3815,10 +3815,10 @@ def deploy_verdicts(sh: dict) -> str:
     """Per capture whose records say what production ran: "matches", or what differs on how many records."""
     out = []
     for c in sh.get("captures") or []:
-        cap = f'capture <a class="cell-link" href="{{up}}captures.html#capture-{e(c["capture"])}">{e(c["capture"])}</a>'
+        capture_link = f'capture <a class="cell-link" href="{{up}}captures.html#capture-{e(c["capture"])}">{e(c["capture"])}</a>'
         if c.get("ok"):
             out.append(
-                f"{cap}: every one of its {c['records']} decisions was made by the promoted model and prompt"
+                f"{capture_link}: every one of its {c['records']} decisions was made by the promoted model and prompt"
             )
             continue
         bits = []
@@ -3833,7 +3833,7 @@ def deploy_verdicts(sh: dict) -> str:
             if row["missing"]:
                 b += f"; not recorded: {row['missing']}"
             bits.append(b)
-        out.append(f"{cap}, {c['records']} decisions: " + " · ".join(bits))
+        out.append(f"{capture_link}, {c['records']} decisions: " + " · ".join(bits))
     return "".join(f"<li>{x}</li>" for x in out)
 
 
@@ -4424,12 +4424,14 @@ def render_reference_index(A: Adapter, by_ds: dict, out: Path, nav: list) -> Non
 
 def origin_html(v: dict, up: str = "") -> str:
     """A dataset's origin in a few words, its capture linked to the Captures page."""
-    cap = v.get("capture") or ""
+    capture = v.get("capture") or ""
     text = e(v.get("origin") or "")
-    if not cap:
+    if not capture:
         return text
     return text.replace(
-        e(f"capture {cap}"), f'capture <a href="{up}captures.html#capture-{e(cap)}">{e(cap)}</a>', 1
+        e(f"capture {capture}"),
+        f'capture <a href="{up}captures.html#capture-{e(capture)}">{e(capture)}</a>',
+        1,
     )
 
 
@@ -4475,8 +4477,8 @@ def render_captures(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
                     [
                         ", ".join(
                             arm_link(a, a.rsplit("/", 1)[-1])
-                            for a, cap in sorted(_recorded().items())
-                            if cap == c["capture"]
+                            for a, capture in sorted(_recorded().items())
+                            if capture == c["capture"]
                         )
                         or "—"
                     ]

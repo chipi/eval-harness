@@ -1087,6 +1087,10 @@ def test_example_scorer_suites_pass() -> None:
             "a measure only a goal names goes the goal's way on metric-list, metric-show and the catalog, not 'higher'",
         ),
         (
+            "test_cap_shown.py",
+            "a spending cap's three meanings printed one way: no command formats a cap or asks its truth itself",
+        ),
+        (
             "test_item_index.py",
             "an item's copy found once per item, the dataset record read once, read again when it changes",
         ),

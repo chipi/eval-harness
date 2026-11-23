@@ -484,9 +484,7 @@ def body(**inputs: Any) -> int:
             tc += e["calls"]
             tcost += cost or 0.0
         print("  floor        " + (f"run {args.floor_run}" if args.floor_run else "random: 0 calls, $0"))
-        print(
-            f"  TOTAL        calls {tc:5d}  est ${tcost:.4f}   cap {(f'${cap:.2f}') if cap is not None else 'NONE'}"
-        )
+        print(f"  TOTAL        calls {tc:5d}  est ${tcost:.4f}   cap {_spend.shown(cap)}")
         _jsonout.value(
             "dry_run",
             {"scorer": sid_scorer, "dataset": dataset_id, "calls": tc, "estimate_usd": round(tcost, 6), "cap_usd": cap,
@@ -507,7 +505,9 @@ def body(**inputs: Any) -> int:
         )
     # The runs share one cap, the command's: `_spend` counts across them in this process.
     if cap is not None:
-        os.environ["EVAL_MAX_COST_USD"] = str(min(cap, env_float("EVAL_MAX_COST_USD") or cap))
+        os.environ["EVAL_MAX_COST_USD"] = str(
+            min(cap, own) if (own := env_float("EVAL_MAX_COST_USD")) is not None else cap
+        )
 
     for j in chosen:
         if ensure_system(system_id(sid_scorer, j["id"]), units[j["id"]]):

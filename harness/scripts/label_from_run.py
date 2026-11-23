@@ -46,11 +46,11 @@ def _unusable(rows: list[tuple[str, str, object]], max_tokens: object) -> tuple[
     arm was scored against, with no word from the harness.
     """
     empty = [item for item, text, _ in rows if not text.strip()]
-    cap = int(max_tokens) if isinstance(max_tokens, (int, float)) and max_tokens > 0 else None
+    reply_cap = int(max_tokens) if isinstance(max_tokens, (int, float)) and max_tokens > 0 else None
     cut = [
         item
         for item, text, out in rows
-        if text.strip() and cap and isinstance(out, (int, float)) and out >= cap
+        if text.strip() and reply_cap and isinstance(out, (int, float)) and out >= reply_cap
     ]
     return empty, cut
 

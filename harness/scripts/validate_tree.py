@@ -300,14 +300,14 @@ def v2_dataset_ids() -> None:
         parent = (doc.get("derived_from") or {}).get("dataset_id")
         if parent and parent not in known:
             dangling.append(f"dataset {p.stem} derived from {parent}, which does not exist")
-        cap = (doc.get("made_from") or {}).get("capture")
-        if cap:
+        capture = (doc.get("made_from") or {}).get("capture")
+        if capture:
             try:
-                there = _store.is_file(_datasets.CAPTURE.path(str(cap)))
+                there = _store.is_file(_datasets.CAPTURE.path(str(capture)))
             except Problem:  # not a capture id
                 there = False
             if not there:
-                dangling.append(f"dataset {p.stem} made from capture {cap}, which does not exist")
+                dangling.append(f"dataset {p.stem} made from capture {capture}, which does not exist")
     for d in dangling:
         print(f"       {d}")
     check(

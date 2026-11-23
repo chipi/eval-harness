@@ -509,11 +509,11 @@ def grid_next(goal: str, sid: str) -> dict[str, Any] | None:
         if not g.get("enabled", True) or not g.get("params"):
             continue
         in_group = [t for t in st["trials"] if t.get("group") == g.get("name")]
-        cap = g.get("move_on_after")
+        move_on_after = g.get("move_on_after")
         since_kept = 0
         for t in in_group:
             since_kept = 0 if t.get("outcome") == "kept" else since_kept + 1
-        if cap and since_kept >= int(cap):
+        if move_on_after and since_kept >= int(move_on_after):
             continue
         for path, values in g["params"].items():
             vals = values if isinstance(values, list) else _range(values)

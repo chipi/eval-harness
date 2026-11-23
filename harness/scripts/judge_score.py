@@ -910,7 +910,7 @@ def run_judging(
                 all_judges = [j["params"] for j in sc["judges"]]
                 if _spend.stops(spent, cap, *all_judges):
                     raise CostCapExceeded(
-                        f"spent ${spent:.4f} of the ${cap:.4f} cap"
+                        f"spent ${spent:.4f}, cap {_spend.shown(cap)}"
                         + (f": {_spend.ZERO_CAP_HINT}" if _spend.zero_blocked(cap, *all_judges) else "")
                     )
                 if msg is None:
@@ -1873,7 +1873,7 @@ def body(**inputs: Any) -> int:
             tcost += e["est_cost_usd"]
         print(
             f"  TOTAL        calls {tc:5d}  tokens in {tt_in:>10,}  out {tt_out:>8,}  "
-            f"est ${tcost:.4f}   cap {(f'${cap:.2f}') if cap is not None else 'NONE'}"
+            f"est ${tcost:.4f}   cap {_spend.shown(cap)}"
         )
         return 0
 

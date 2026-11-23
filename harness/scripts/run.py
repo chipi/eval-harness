@@ -350,13 +350,13 @@ def _recorded_outputs(cfg: dict[str, Any], adapter_path: Path | None) -> dict[st
     from evaluation_harness.dataset_from_capture import load_capture  # noqa: PLC0415
 
     params = cfg.setdefault("params", {})
-    cap = params.get("capture")
-    if not cap:
+    capture = params.get("capture")
+    if not capture:
         die(
             f"{cfg.get('system_id')}: provider recorded needs params.capture, the capture its outputs come from",
             "bad-argument",
         )
-    _doc, recs = load_capture(cap)
+    _doc, recs = load_capture(capture)
     by_id = {r["id"]: r for r in recs}
     mod = _module_or_none(adapter_path)
     hook = getattr(mod, "recorded_output", None)
@@ -377,13 +377,15 @@ def _recorded_outputs(cfg: dict[str, Any], adapter_path: Path | None) -> dict[st
         out[it["item_id"]] = str(hook(rec) if callable(hook) else (rec.get("fields") or {}).get(field, ""))
     if missing:
         die(
-            f"capture {cap} has no record for {len(missing)} item(s) of {cfg['dataset_id']}: {', '.join(missing[:8])}",
+            f"capture {capture} has no record for {len(missing)} item(s) of {cfg['dataset_id']}: {', '.join(missing[:8])}",
             "not-found",
         )
     from evaluation_harness._common import CAPTURES  # noqa: PLC0415
 
-    params["capture_sha256"] = hashlib.sha256(_store.read_bytes(CAPTURES / cap / "capture.json")).hexdigest()
-    print(f"  a recorded arm: {len(out)} output(s) read from the capture {cap}, no system called")
+    params["capture_sha256"] = hashlib.sha256(
+        _store.read_bytes(CAPTURES / capture / "capture.json")
+    ).hexdigest()
+    print(f"  a recorded arm: {len(out)} output(s) read from the capture {capture}, no system called")
     return out
 
 
@@ -886,12 +888,7 @@ def _smoke_cost(cfg: dict[str, Any]) -> dict[str, Any] | None:
 
 
 def _cap_shown(cap: float | None) -> str:
-    if cap is None:
-        return "NONE — set EVAL_MAX_COST_USD"
-    if cap <= 0:
-        # A cap of 0 is a cap: _spend.zero_blocked refuses anything not known to be free.
-        return "$0.00 (EVAL_MAX_COST_USD) — spend nothing: only what is known to be free runs"
-    return f"${cap:.2f} (EVAL_MAX_COST_USD)"
+    return _spend.shown(cap) + (" — set EVAL_MAX_COST_USD" if cap is None else " (EVAL_MAX_COST_USD)")
 
 
 def _dry_run(

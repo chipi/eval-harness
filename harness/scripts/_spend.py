@@ -57,6 +57,16 @@ def reached(spent: float, cap_usd: float | None) -> bool:
     return cap_usd is not None and spent > 0 and spent >= cap_usd
 
 
+def shown(cap_usd: float | None) -> str:
+    """A cap as every command prints it. Three meanings, never two: no cap, spend nothing, and an amount. A test of the
+    cap's truth printed a cap of 0 as none (the homelab bake-off, v0.8.0)."""
+    if cap_usd is None:
+        return "NONE"
+    if cap_usd <= 0:
+        return "$0.00 (spend nothing: only what is known to be free runs)"
+    return f"${cap_usd:.2f}"
+
+
 ZERO_CAP_HINT = (
     "a cap of 0 runs only what is known to be free: provider echo, a judge of provider fake, a recorded arm (provider "
     "recorded), or a system that declares usd_per_mtok_in: 0 and usd_per_mtok_out: 0. Declare those two prices as 0, "
