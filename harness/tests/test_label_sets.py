@@ -867,29 +867,30 @@ try:
     )
 
     # ── agreement: --disagree keeps the items the arms decided differently (step 5) ──────────────
-    # the same run once more, as a repeat of it with a setting changed (another fingerprint hash, so it is read under
-    # `repeats`, its own arm: a repeat of the same measurement joins its original's arm, test_arm_membership): two of one
-    # system that decided differently
-    alt_id = lead + "_alt"
+    # the same run once more, as `evh run --purpose repeat --of` of it with a setting changed (a temperature the echo
+    # provider ignores: the fingerprint's settings hash differs, so it is read under `repeats`, its own arm; a repeat
+    # of the same measurement joins its original's arm, test_arm_membership): two of one system that decided differently
+    lead_yaml = _runstore.read_text(proj, "systems/tickets_lead1_v1.yaml")
+    before_ids = set(runs_named("tickets_lead1_v1_"))
+    _runstore.write_text(proj, "systems/tickets_lead1_v1.yaml", lead_yaml + "  temperature: 0.7\n")
+    r = evh(
+        "run", "--system", "tickets_lead1_v1", "--dataset", "tickets_v1", "--purpose", "repeat", "--of", lead
+    )
+    _runstore.write_text(proj, "systems/tickets_lead1_v1.yaml", lead_yaml)
+    made = sorted(set(runs_named("tickets_lead1_v1_")) - before_ids)
+    check(
+        "setup: the repeat with another temperature runs", r.returncode == 0 and len(made) == 1, out(r)[-300:]
+    )
+    alt_id = made[0]
     alt = data / "runs" / alt_id
     with _runstore._InProject(proj):
-        src_first = _R.first_score(data / "runs" / lead)
-        assert src_first is not None, f"{lead} has no first score"
-        _runstore.copy_run(data / "runs" / lead, alt)
-        _runstore.copy_run(src_first, alt / "scores" / src_first.name)
-        alt_rec = _R.run(alt)
-        assert alt_rec is not None, f"{alt_id} was not copied"
-        fp = alt_rec.get("fingerprint") or {}
-        moved = {
-            **fp,
-            "settings": {**(fp.get("settings") or {}), "temperature": 0.7},
-            "settings_sha256": "e" * 64,
-            "hash": "e" * 64,
-        }
-        _R.write_run(
-            alt_id, {**alt_rec, "run_id": alt_id, "purpose": "repeat", "of": lead, "fingerprint": moved}
-        )
+        joined = _R.same_measurement(_R.run(data / "runs" / lead) or {}, _R.run(alt) or {})
         changed = sorted(_outputs.outputs(alt))[:2]
+    check(
+        "the repeat does not join its original: the harness wrote another settings hash",
+        joined[0] is False and "settings" in joined[1],
+        joined,
+    )
     for i in changed:
         _set_output(alt, i, "a different decision")
 
