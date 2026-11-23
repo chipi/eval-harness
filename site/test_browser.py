@@ -30,6 +30,9 @@ from typing import ClassVar
 from urllib.parse import urldefrag, urljoin, urlparse
 
 SITE = Path(__file__).resolve().parent
+sys.path.insert(0, str(SITE.parent / "harness" / "tests"))  # _slow: the test font on every page
+import _slow  # noqa: E402
+
 PUBLIC = SITE / "public"
 HEADERS_CONF = SITE.parent / "infra" / "nginx" / "snippets" / "evals.humancopilot.eu-headers.conf"
 ok: list = []
@@ -72,7 +75,7 @@ def drive(base: str) -> None:
     from playwright.sync_api import sync_playwright  # noqa: PLC0415
 
     with sync_playwright() as pw:
-        browser = pw.chromium.launch()
+        browser = _slow.launch(pw)
         ctx = browser.new_context()
         # Other hosts (the analytics scripts) answer locally and empty: no network, no noise.
         ctx.route(

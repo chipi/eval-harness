@@ -20,7 +20,6 @@ import shutil
 import statistics
 import sys
 import tempfile
-import time
 from itertools import chain, compress
 from pathlib import Path
 
@@ -47,20 +46,51 @@ def fresh() -> None:
 
 
 fresh()
-t0 = time.monotonic()
 here = draw_all()
-one_by_one = time.monotonic() - t0
+
+# What the children did is read from the calls, not from a clock: a stopwatch on this phase against one on the
+# one-by-one phase failed when the machine's load came between the two (3.6 s against 2.4 s, 2026-11-22). They ran at
+# the same time if every child had its input before any output was read from any (else each would have run alone).
+events: list[tuple[str, int]] = []
+_Popen = stats.subprocess.Popen
+
+
+class _Spy:
+    def __init__(self, f, pid: int) -> None:
+        self._f, self._pid = f, pid
+
+    def close(self):
+        events.append(("closed", self._pid))
+        return self._f.close()
+
+    def read(self, *a):
+        events.append(("read", self._pid))
+        return self._f.read(*a)
+
+    def __getattr__(self, name):
+        return getattr(self._f, name)
+
+
+class _SpyPopen(_Popen):
+    def __init__(self, *a, **kw) -> None:
+        super().__init__(*a, **kw)
+        self.stdin, self.stdout = _Spy(self.stdin, self.pid), _Spy(self.stdout, self.pid)
+
 
 fresh()
 stats.PARALLEL_FROM = 0
-t0 = time.monotonic()
-n = stats.prefetch(draw_all)
-in_parallel = time.monotonic() - t0
+stats.subprocess.Popen = _SpyPopen  # type: ignore[misc]
+try:
+    n = stats.prefetch(draw_all)
+finally:
+    stats.subprocess.Popen = _Popen  # type: ignore[misc]
 check(f"all {len(cases)} drawn in child processes", n == len(cases), n)
 check("then read back: the same p's bit for bit, items and clusters", draw_all() == here, (draw_all(), here))
+kinds_seen = [k for k, _ in events]
 check(
-    f"the children ran at the same time ({in_parallel:.1f} s against {one_by_one:.1f} s one by one)",
-    in_parallel < 0.75 * one_by_one + 1.0,
+    f"the children ran at the same time ({kinds_seen.count('closed')} processes, every input closed before any output was read)",
+    kinds_seen.count("closed") == 4 and "read" in kinds_seen and kinds_seen.index("read") == 4,
+    events,
 )
 check("kept tests are not drawn again", stats.prefetch(draw_all) == 0)
 

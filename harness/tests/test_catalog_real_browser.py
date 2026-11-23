@@ -39,6 +39,8 @@ from pathlib import Path
 
 HARNESS = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(HARNESS))
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _slow
+import _slow  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 
 PAGES = (
@@ -508,7 +510,7 @@ def drive(cat: Path, base: str) -> None:
         next(iter(sorted((cat / "m").glob("*.html")))).relative_to(cat).as_posix(),
     ]
     with sync_playwright() as pw:
-        browser = pw.chromium.launch()
+        browser = _slow.launch(pw)
         errors: list = []
         phone = browser.new_page(viewport={"width": 390, "height": 844})
         phone.on("console", lambda m: errors.append(m.text) if m.type == "error" else None)
@@ -1175,7 +1177,7 @@ def main() -> int:
             from playwright.sync_api import sync_playwright  # noqa: PLC0415
 
             with sync_playwright() as pw:
-                browser = pw.chromium.launch()
+                browser = _slow.launch(pw)
                 check_display(browser, base, cat)
                 browser.close()
         else:

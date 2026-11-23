@@ -260,8 +260,14 @@ try:
                 and not errors,
                 (home[:400], errors[:2]),
             )
+            in_use = _slow.font_in_use(page)
+            check(
+                "the page is laid out in the test's bundled font, not the machine's: fit checks mean the same on every machine",
+                in_use["family"].startswith(_slow.FAMILY) and in_use["loaded"] >= 1,
+                in_use,
+            )
             served = page.evaluate(
-                "() => Promise.all(['mock.js', 'mockup.html', 'workflows.js', 'round5.js', 'live.js'].map((n) =>"
+                "() => Promise.all(['mock.js','mockup.html', 'workflows.js', 'round5.js', 'live.js'].map((n) =>"
                 " fetch('/workbench/' + n, {credentials: 'same-origin'}).then((r) => [n, r.status])))"
             )
             import tomllib
@@ -2380,8 +2386,14 @@ try:
             forms = {}
             for rid in (rounds[0], rounds[-1]):
                 page.goto(f"http://127.0.0.1:{port}/workbench/#eval/tickets_summary/{rid}")
-                page.wait_for_selector("main h2", timeout=20000)
-                page.wait_for_timeout(1500)
+                # the round's own tab drawn and every read of the screen landed: the form is there or not by then
+                page.wait_for_function(
+                    "(rid) => !Object.keys(LIVE.pending).length && !document.querySelector('main [role=status]')"
+                    " && document.querySelector('main h2')"
+                    " && [...document.querySelectorAll('main [role=tab][aria-selected=true]')].some((t) => t.textContent.startsWith(rid))",
+                    arg=rid,
+                    timeout=20000,
+                )
                 forms[rid] = page.locator("#ro-q").count()
             check(
                 "the open-round form is on the last round's tab, not on a closed round before it",
