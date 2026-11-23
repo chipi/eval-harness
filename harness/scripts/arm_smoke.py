@@ -199,16 +199,17 @@ def spend_line(
 
 
 def projection(items: list[dict[str, Any]], n_items: int) -> dict[str, Any]:
-    """The full run from the smoke: about how long and how much, from the mean and the slowest item."""
+    """The full run from the smoke: about how long and how much, from the mean and the slowest item. `usd` is None unless
+    every item recorded a cost: an item nobody priced is not a free one."""
     secs = [i["s"] for i in items if i.get("s") is not None]
-    costs = [i.get("cost_usd") or 0.0 for i in items]
+    costs = [i["cost_usd"] for i in items if i.get("cost_usd") is not None]
     if not secs:
         return {}
     return {
         "items": n_items,
         "minutes": round(statistics.fmean(secs) * n_items / 60, 1),
         "worst_minutes": round(max(secs) * n_items / 60, 1),
-        "usd": round(statistics.fmean(costs) * n_items, 4),
+        "usd": round(statistics.fmean(costs) * n_items, 4) if costs and len(costs) == len(items) else None,
     }
 
 
@@ -393,7 +394,8 @@ def _smoke(args: argparse.Namespace) -> int:
     if proj:
         print(
             f"  full run: {proj['items']} items, about {proj['minutes']} min (slowest item x all: "
-            f"{proj['worst_minutes']} min), about ${proj['usd']}"
+            f"{proj['worst_minutes']} min), "
+            + (f"about ${proj['usd']}" if proj["usd"] is not None else "cost unknown (no price recorded)")
         )
     print(f"  {spend_line(spent, billed, n_calls, unpriced, by_table[0], frozenset(sources))}")
     if once:

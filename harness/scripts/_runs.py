@@ -476,7 +476,8 @@ def deciding_metric(
     runs: Iterable[Run] | None = ...,
     goals: dict | None = ...,
     refuse: Literal[True] = ...,
-) -> str: ...
+) -> str:
+    """With `refuse` true (the default) the metric is always a name: a command with none decided refuses."""
 
 
 @overload
@@ -488,7 +489,8 @@ def deciding_metric(
     runs: Iterable[Run] | None = ...,
     goals: dict | None = ...,
     refuse: bool,
-) -> str | None: ...
+) -> str | None:
+    """With `refuse` false, None when nothing decides."""
 
 
 def deciding_metric(
