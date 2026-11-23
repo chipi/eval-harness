@@ -38,12 +38,11 @@ WHAT IT CANNOT TELL YOU
 
 from __future__ import annotations
 
-import re
 from pathlib import Path
 
 from evaluation_harness import _jsonout, _runs
 from evaluation_harness._common import die
-from evaluation_harness._runs import runs_on
+from evaluation_harness._runs import left_out, runs_on
 from evaluation_harness.model.spend import judge_costs
 
 
@@ -90,17 +89,22 @@ def _print_judging(rows: list[dict]) -> None:
 
 def _repeat_names(runs: list) -> dict[Path, str]:
     """{score dir: the name its row carries}: the system id, and for a system that ran more than once the repeat
-    (r1, r2, r3: the run id's own _rN, else its place in run order), so no two rows read alike."""
+    (r1, r2, r3: the pass the run records as its `repeat_index`, else the next number no run of the system has), so no
+    two rows read alike."""
     seen: dict[str, int] = {}
+    taken: dict[str, set[int]] = {}
     for _d, m in runs:
         seen[m["system_id"]] = seen.get(m["system_id"], 0) + 1
-    nth: dict[str, int] = {}
+        if m.get("repeat_index"):
+            taken.setdefault(m["system_id"], set()).add(int(m["repeat_index"]))
     out = {}
     for d, m in runs:
         cid = m["system_id"]
-        nth[cid] = nth.get(cid, 0) + 1
-        own = re.search(r"_(r\d+)$", m["run_id"])
-        out[d] = f"{cid} {own.group(1) if own else f'r{nth[cid]}'}" if seen[cid] > 1 else cid
+        n = int(m["repeat_index"]) if m.get("repeat_index") else 0
+        while not n:
+            n = next(i for i in range(1, len(runs) + 2) if i not in taken.setdefault(cid, set()))
+            taken[cid].add(n)
+        out[d] = f"{cid} r{n}" if seen[cid] > 1 else cid
     return out
 
 
@@ -109,6 +113,8 @@ def body(dataset_id: str | None = None, match: str | None = None) -> int:
     rows = []
     no_bill = []
     runs = runs_on(dataset_id or None, match=match)
+    for line in left_out(dataset_id or None, match=match):
+        print(f"  WARNING: {line}: its cost is not in this report.")
     names = _repeat_names(runs)
     for d, m in runs:
         cid = names[d]

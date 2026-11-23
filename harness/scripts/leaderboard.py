@@ -25,6 +25,7 @@ import shutil
 import statistics
 import textwrap
 from collections.abc import Iterable
+from pathlib import Path
 
 from evaluation_harness import _common, _jsonout, _store
 from evaluation_harness._adapter import recorded_metric_kinds
@@ -39,11 +40,11 @@ from evaluation_harness._record import derived_with
 from evaluation_harness._runs import (
     AMBIGUOUS_HOW,
     direction,
-    is_repeat_set,
     mixed_versions,
     per_item,
     runs_on,
 )
+from evaluation_harness.model.runs import is_set
 from evaluation_harness.stats import kept
 
 # COST_KEYS / SPEED_KEYS / DESCRIPTIVE_KEYS now live in _common, so that
@@ -787,12 +788,12 @@ def _heading(ref: str | None) -> str:
     return f"scored against {ref or 'no reference'}"
 
 
-def _warn_ambiguous(by_config: dict[str, list[dict]]) -> None:
-    """Say loudly when the runs averaged into one row are not one `--repeat` set: two runs of an arm read against the
+def _warn_ambiguous(arm_runs: dict[str, list[tuple[Path, dict]]]) -> None:
+    """Say loudly when the runs averaged into one row are not one repeat set: two runs of an arm read against the
     same reference that nothing says apart (a run another reference scored is not in the row)."""
-    for name, runs in by_config.items():
-        ids = sorted(m["run_id"] for m in runs)
-        if len(ids) > 1 and not is_repeat_set(ids):
+    for name, runs in arm_runs.items():
+        ids = sorted(m["run_id"] for _d, m in runs)
+        if len(ids) > 1 and not is_set(runs):
             print(f"  WARNING: {len(ids)} runs claim system_id {name!r} — {', '.join(ids)}.")
             print(AMBIGUOUS_HOW)
 
@@ -807,7 +808,7 @@ def _table(args: argparse.Namespace, A, group: dict, goal: dict | None) -> dict:
     dec = group.get("dec")
     goal_id = goal["goal_id"] if goal else ""
 
-    _warn_ambiguous(by_config)
+    _warn_ambiguous({n: rs for n, rs in arm_runs.items() if rs})
     if not by_config:
         die(
             f"no runs on dataset {args.dataset_id!r}"

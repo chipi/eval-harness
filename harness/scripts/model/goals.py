@@ -109,7 +109,9 @@ def status(goal_id: str, data: Path | None = None) -> dict[str, Any]:
         "datasets": datasets,
         "rounds": rounds,
         "running": running,
-        "next": _next(goal_id, datasets, rounds, _standing(datasets, _rounds.load_rounds(goal_id, data))),
+        "next": _next(
+            goal_id, datasets, rounds, _standing(datasets, _rounds.load_rounds(goal_id, data), data)
+        ),
     }
 
 
@@ -125,12 +127,16 @@ def _since(rounds: list[dict[str, Any]], run: str | None) -> str | None:
     )
 
 
-def _standing(datasets: list[dict[str, Any]], round_docs: list[dict[str, Any]]) -> str:
+def _standing(
+    datasets: list[dict[str, Any]], round_docs: list[dict[str, Any]], data: Path | None = None
+) -> str:
     """Where the goal stands, as the baseline of the first deciding dataset that has one: `baseline <system> (v1, since
     r2)`, or that none was ever promoted."""
     for d in (x for x in datasets if x["decides"] and x["baseline"]):
         run = d["baseline"]["run"] or ""
-        system = re.sub(r"_\d{8}T\d{6}Z(_r\d+)?$", "", run) or run
+        system = (
+            (_model_runs.run(run, data) or {}).get("system_id") or re.sub(r"_\d{8}T\d{6}Z$", "", run) or run
+        )
         since = _since(round_docs, run)
         return f"baseline {system} (v{d['baseline']['version']}{f', since {since}' if since else ''})"
     return "no baseline promoted yet"
