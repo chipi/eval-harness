@@ -120,6 +120,7 @@ browser-check:
 	EVAL_STORE=sqlite $(PYTHON) tests/test_inspector_browser.py
 	$(PYTHON) tests/test_workbench_browser.py
 	$(PYTHON) tests/test_workbench_live_browser.py
+	$(PYTHON) tests/test_workbench_spend_browser.py
 	EVAL_STORE=files $(PYTHON) tests/test_workbench_viewer_browser.py
 	EVAL_STORE=sqlite $(PYTHON) tests/test_workbench_viewer_browser.py
 	$(PYTHON) tests/test_workbench_replay_browser.py

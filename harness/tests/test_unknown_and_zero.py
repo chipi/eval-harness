@@ -1,0 +1,228 @@
+#!/usr/bin/env python3
+"""Unknown, none and zero are three answers, and a reader keeps them apart (RFC-041 F3).
+
+    EVAL_STORE=files python tests/test_unknown_and_zero.py
+    EVAL_STORE=sqlite python tests/test_unknown_and_zero.py
+
+In a throwaway project ($0, offline: the tutorial's tickets, two echo arms):
+
+- a run whose build git could not read records `dirty: null`, not `false` (clean); `run-promote` and `label-from-run`
+  refuse it, `compare-runs` says it is unknown; a ref the owner declared (EVAL_BUILD_REF) is still the sanctioned way
+  and is not refused;
+- an arm whose recorded spend is $0 (a local model) shows `$0` on the catalog's systems table and in `evh models`'s
+  sibling, the view of the same table, not `—`, which means "not recorded";
+- a study's `stop: {usd: 0, wall_h: 2}` is a stop rule (`open_study` already honours `usd: 0`).
+"""
+
+import os
+import re
+import shutil
+import sys
+import tempfile
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parents[1] / "scripts"
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+KIT = HERE.parent / "tutorial"
+from evaluation_harness import _common, _fingerprint, _format  # noqa: E402
+from evaluation_harness._check import check, summary  # noqa: E402
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _cli  # noqa: E402
+import _runstore  # noqa: E402
+from evaluation_harness.model import runs as _R  # noqa: E402
+
+proj = Path(tempfile.mkdtemp(prefix="evh-unknown-zero-"))
+env = dict(os.environ, EVH_ACTOR="person:ana", EVAL_HOME=str(proj), EVAL_BUILD_REF="test-unknown-zero")
+for k in ("EVAL_DATA_DIR", "EVAL_MAX_COST_USD", "EVH_FOR"):
+    env.pop(k, None)
+
+
+def evh(*args):
+    return _cli.run(proj, env, *args)
+
+
+def out(r):
+    return r.stdout + r.stderr
+
+
+def run_of(cid):
+    return next((n for n in sorted(_runstore.listdir(proj, "runs")) if n.startswith(cid + "_")), "")
+
+
+def clone(run_id, name, build):
+    """A copy of a run (its first score too) under a new id, with another build."""
+    with _runstore._InProject(proj) as data:
+        src, dst = data / "runs" / run_id, data / "runs" / name
+        _runstore.copy_run(src, dst)
+        first = _R.first_score(src)
+        _runstore.copy_run(first, dst / "scores" / first.name)
+        sd, meta = dst / "scores" / first.name, _R.meta(first)
+        m = _R.record(sd)
+        m["run_id"] = name
+        m["build"] = build
+        _R.write_run(name, {**(_R.run(dst) or {}), **_R.run_part(m)})
+        _R.write_score(name, meta["scorer"], meta["reference"], m, label_as=meta["label"], first=True)
+    return name
+
+
+# ── F3a: what the build records when git cannot say ──────────────────────────────────────────────────────────────
+real = _fingerprint.tree_dirt
+saved_ref = os.environ.pop("EVAL_BUILD_REF", None)
+try:
+    _fingerprint.tree_dirt = lambda *a, **k: None  # git could not say (a timeout, a broken index)
+    unknown = _common.build_info()
+    _fingerprint.tree_dirt = lambda *a, **k: ["M x.py"]
+    dirty = _common.build_info()
+    _fingerprint.tree_dirt = lambda *a, **k: []
+    clean = _common.build_info()
+finally:
+    _fingerprint.tree_dirt = real
+    if saved_ref is not None:
+        os.environ["EVAL_BUILD_REF"] = saved_ref
+check(
+    "build: git that cannot say records dirty null, a dirty tree true, a clean one false",
+    (unknown["dirty"], dirty["dirty"], clean["dirty"]) == (None, True, False),
+    (unknown, dirty, clean),
+)
+
+try:
+    (proj / "data" / "systems").mkdir(parents=True)
+    _runstore.write_text(proj, _format.NAME, f"format: {_format.FORMAT}\n")
+    (proj / "data" / "goals").mkdir()
+    shutil.copytree(KIT / "tickets", proj / "tickets")
+    goal = (KIT / "goals" / "tickets_summary.yaml").read_text().replace("tickets_v1", "tk_v1")
+    _runstore.write_text(proj, "goals/g_one.yaml", goal.replace("goal_id: tickets_summary", "goal_id: g_one"))
+    r = evh("dataset-create", "--dataset-id", "tk_v1", "--source-dir", "tickets")
+    r = r if r.returncode else evh("dataset-materialize", "--dataset-id", "tk_v1")
+    r = (
+        r
+        if r.returncode
+        else evh(
+            "label-import", "--sheet", str(KIT / "gold"), "--dataset-id", "tk_v1", "--set", "g", "--by", "ana"
+        )
+    )
+    r = (
+        r
+        if r.returncode
+        else evh(
+            "reference-promote", "--dataset-id", "tk_v1", "--labels", "g", "--tier", "gold",
+            "--reason", "the kit's hand-written summaries", "--by", "ana",
+        )
+    )  # fmt: skip
+    check("setup: a dataset with gold", r.returncode == 0, out(r)[-300:])
+    for cid, n in (("one_v1", 1), ("two_v1", 2)):
+        _runstore.write_text(
+            proj, f"systems/{cid}.yaml", f"system_id: {cid}\nparams:\n  provider: echo\n  sentences: {n}\n"
+        )
+        r = evh("run", "--system", cid, "--dataset", "tk_v1", "--goal", "g_one")
+        check(f"setup: {cid} runs", r.returncode == 0, out(r)[-300:])
+
+    one, two = run_of("one_v1"), run_of("two_v1")
+    git_null = {"ref": "abc123def456", "dirty": None, "source": "git"}
+    a = clone(one, "one_v1_gitnull", git_null)
+    b = clone(two, "two_v1_gitnull", git_null)
+
+    r = evh("run-promote", "--run", a, "--reason", "git could not say whether it was clean")
+    check(
+        "run-promote refuses a run whose tree git could not read, saying so",
+        r.returncode != 0 and "could not say" in out(r) and "--allow-dirty" in out(r),
+        out(r)[-400:],
+    )
+    r = evh("run-promote", "--run", a, "--reason", "git could not say whether it was clean", "--allow-dirty")
+    check("run-promote --allow-dirty overrides it", r.returncode == 0, out(r)[-300:])
+    r = evh("run-promote", "--run", one, "--reason", "a build declared by its owner, as asked")
+    check(
+        "run-promote still takes a build the owner declared (dirty null by declaration)",
+        r.returncode == 0,
+        out(r)[-300:],
+    )
+
+    r = evh("label-from-run", "--run", a, "--set", "s_unknown")
+    check(
+        "label-from-run refuses it too, and leaves no set",
+        r.returncode != 0
+        and "could not say" in out(r)
+        and not _runstore.exists(proj, "labels/tk_v1/s_unknown"),
+        out(r)[-400:],
+    )
+    r = evh("run-compare", "--baseline", a, "--candidate", b)
+    check(
+        "run-compare says the build is unknown, not that it is clean",
+        r.returncode == 0 and "could not say" in out(r),
+        out(r)[-500:],
+    )
+    r = evh("run-compare", "--baseline", a, "--candidate", b, "--json")
+    check(
+        "run-compare --json: dirty_build is null (unknown), not false",
+        r.returncode == 0 and '"dirty_build": null' in r.stdout.replace('":null', '": null'),
+        out(r)[-400:],
+    )
+    r = evh("runs-list")
+    rows = [ln for ln in r.stdout.splitlines() if "one_v1_gitnull" in ln]
+    check("runs-list shows a ? for it", bool(rows) and "abc123def456?" in rows[0], rows)
+    check(
+        "build: the three are told apart by one function",
+        [_common.tree_state(b) for b in (unknown, dirty, clean)] == [None, True, False]
+        and _common.tree_state({"ref": "v1", "dirty": None, "source": "EVAL_BUILD_REF"}) is False,
+        None,
+    )
+
+    # ── F3b: $0 is recorded, not "not recorded" ──────────────────────────────────────────────────────────────────
+    r = evh("catalog")
+    page = proj / ".build" / "catalog"
+    check("setup: the catalog builds", r.returncode == 0, out(r)[-300:])
+    html = (page / "arms.html").read_text()
+    spend_cells = re.findall(r'<span data-v="0">([^<]*)</span>', html)
+    check(
+        "the arms page's systems table: an arm that recorded $0 shows $0, not the — of not recorded",
+        len(spend_cells) == 2 and set(spend_cells) == {"$0"},
+        spend_cells,
+    )
+    r = evh("arm-list", "--systems", "1")
+    rows = [ln.split() for ln in r.stdout.splitlines() if ln.strip().startswith(("one_v1", "two_v1"))]
+    check(
+        "arm-list --systems prints it the same way",
+        len(rows) == 2 and all(cols[5] == "$0" for cols in rows),
+        r.stdout[-600:],
+    )
+    from evaluation_harness import catalog_build as cb
+
+    check(
+        "the one spend cell: nothing recorded is —, $0 is $0, an amount is its dollars",
+        [cb.fmt_spend(v) for v in (None, 0, 0.0, 0.5)] == ["—", "$0", "$0", "$0.5000"],
+        [cb.fmt_spend(v) for v in (None, 0, 0.0, 0.5)] if hasattr(cb, "fmt_spend") else "no fmt_spend",
+    )
+
+    # ── F3d: a stop of $0 is a stop rule ─────────────────────────────────────────────────────────────────────────
+    from evaluation_harness import _looks, _study
+
+    _common.load_goals = lambda *a, **k: {"g": {}}
+    _looks.is_test_set = lambda ds: False  # type: ignore[assignment,misc]
+
+    def stop_problems(stop):
+        spec = {
+            "dataset": "tk_v1",
+            "baseline": {"system": "one_v1"},
+            "measure": "overlap_f1",
+            "sampler": "grid",
+            "accept": "test",
+            "space": {"groups": [{"name": "x"}]},
+            "stop": stop,
+        }
+        return [p for p in _study.problems("g", "s1", spec) if p.startswith("stop")]
+
+    check(
+        "a study's stop of usd 0 with wall_h is a rule (open_study caps the spend at 0); no usd or no wall_h is not",
+        stop_problems({"usd": 0, "wall_h": 2}) == []
+        and stop_problems({"usd": 1, "wall_h": 0}) == []
+        and stop_problems({"usd": 1}) != []
+        and stop_problems({"wall_h": 2}) != []
+        and stop_problems({}) != []
+        and stop_problems({"trials": 5}) == [],
+        [stop_problems(s) for s in ({"usd": 0, "wall_h": 2}, {"usd": 1, "wall_h": 0}, {"usd": 1})],
+    )
+finally:
+    shutil.rmtree(proj, ignore_errors=True)
+
+sys.exit(summary())

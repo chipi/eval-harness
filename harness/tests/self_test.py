@@ -1099,6 +1099,10 @@ def test_example_scorer_suites_pass() -> None:
             "a dataset's catalog page at 10,000 items: its items paged, every item on one page",
         ),
         (
+            "test_unknown_and_zero.py",
+            "unknown, none and zero kept apart: a build git could not read, a $0 spend, a study's stop of $0",
+        ),
+        (
             "test_why_lines.py",
             "a goal page's reasons with many arms: the scorer named once, a long list of contenders or undecided as a count",
         ),

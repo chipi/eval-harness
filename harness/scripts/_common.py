@@ -511,9 +511,19 @@ def build_info() -> dict[str, Any]:
     dirt = tree_dirt(project_root(), _paths()["DATA"])
     return {
         "ref": ref or "unknown",
-        "dirty": bool(dirt),
+        # None when git could not say (a timeout, no repository): not False, which claims a clean tree
+        "dirty": bool(dirt) if dirt is not None else None,
         "source": "git",
     }
+
+
+def tree_state(build: dict[str, Any]) -> bool | None:
+    """Whether a run's build came from a dirty tree: True when it did, None when git was asked and could not say, False
+    when it was clean or the ref is one its owner declared (EVAL_BUILD_REF, an import), whose tree nobody looked at."""
+    dirty = build.get("dirty")
+    if dirty is None and build.get("source") == "git":
+        return None
+    return bool(dirty)
 
 
 def system_now(system_id: Any) -> Any:

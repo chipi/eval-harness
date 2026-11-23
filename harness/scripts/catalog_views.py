@@ -708,7 +708,7 @@ def print_arms(d: dict) -> None:
                     c["provider"] or "—",
                     ", ".join(c["datasets"]),
                     c["arms"],
-                    cb.fmt_amount(c["usd"], "usd") if c["usd"] else "—",
+                    cb.fmt_spend(c["usd"]),
                     "; ".join(f"{r['goal']} #{r['rank']} of {r['of']}" for r in c["ranks"]) or "—",
                     *(_pcells(per[f"c:{c['system']}"], flows) if per else []),
                 ]

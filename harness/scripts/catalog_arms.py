@@ -415,7 +415,7 @@ def render_arms(A, by_ds: dict, out, nav: list, rows: list[dict] | None = None) 
                     + f'<br><small class="muted">{e(c["provider"] or "—")}{" · local" if c["local"] else ""}</small>',
                     "<br>".join(cb.dataset_link(d) for d in c["datasets"]),
                     f'<span data-v="{c["arms"]}">{c["arms"]}</span>',
-                    f'<span data-v="{c["usd"] or 0}">{cb.fmt_amount(c["usd"], "usd") if c["usd"] else "—"}</span>',
+                    f'<span data-v="{c["usd"] or 0}">{cb.fmt_spend(c["usd"])}</span>',
                     # sorts by its best place, as a share of its field (#3 of 33 before #10 of 33)
                     (
                         f'<span data-v="{min(i / n for _g, _ds, i, n in c["ranks"]):.4f}">'

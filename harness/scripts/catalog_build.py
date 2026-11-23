@@ -1229,6 +1229,11 @@ def fmt_amount(v: float, unit: str) -> str:
     return fmt_usd(v)
 
 
+def fmt_spend(v: float | None) -> str:
+    """What a system spent: "—" when nothing was recorded, "$0" when $0 was (a local model), else its dollars."""
+    return "—" if v is None else fmt_amount(v, "usd")
+
+
 def glance_verdict(r: dict) -> str:
     """A glance row's verdict in words: the test, or why there is none."""
     t = r["test"]

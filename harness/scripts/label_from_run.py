@@ -21,7 +21,7 @@ from pathlib import Path
 from typing import Any
 
 from evaluation_harness import _outputs, _runs, _store
-from evaluation_harness._common import die, load_dataset, read_json
+from evaluation_harness._common import die, load_dataset, read_json, tree_state
 from evaluation_harness._label_sets import set_dir, write_set
 from evaluation_harness._record import empty_at_cap_note
 from evaluation_harness.model import runs as _model_runs
@@ -113,6 +113,14 @@ def _from_run(run_id: str, dataset_id: str, items: list[dict], args: argparse.Na
             "  which system wrote it. Set EVAL_BUILD_REF and run the arm again\n"
             "  (--allow-unknown-build overrides).",
             "not-configured",
+        )
+    if tree_state(build) is None and not args.allow_dirty:
+        die(
+            f"REFUSED: git could not say whether the tree run {run_id} came from was clean; "
+            f"build.ref={str(build.get('ref', '?'))[:12]}\n"
+            "  is not proven to describe what ran. Run the arm again where git works, and use that run\n"
+            "  (--allow-dirty overrides).",
+            "not-allowed",
         )
     if build.get("dirty") and not args.allow_dirty:
         die(
