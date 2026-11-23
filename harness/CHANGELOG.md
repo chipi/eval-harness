@@ -12,27 +12,33 @@ that can move a result is never a patch release without saying so under **Change
 
 ## 0.8.1 — unreleased
 
-What 0.8.0 left open. No result moves: no scorer, statistic, fingerprint or data format changed.
+What 0.8.0 left open, and what three projects found in their first day on it. **Some results move** (below, by rule; by
+project in the full notes). No data format, fingerprint version or scorer changed, and nothing is re-scored.
 
+- **Changed, results that move** ([RFC-041](https://github.com/chipi/eval-harness/blob/main/docs/rfc/RFC-041-one-source-for-each-fact.md)):
+  - a repeat made with `--purpose repeat --of RUN`, as that run was run, joins its arm: the fleet's arm goes from 2 runs to
+    3; here the nemotron repeat joins, 673 arms become 669. A set is what `repeat_index` records, not a `_rN` name;
+  - `wer`, `cer` and `der` read lower-is-better where nothing declares otherwise: the podcast project's `wer` flips on two
+    datasets. A measure whose datasets disagree reads "mixed", a descriptive one "neutral"; a baseline is per goal;
+  - a NaN, an infinity or a None score is a failed item, on read as on write: old data holding one can read differently.
+- **Refused now, by name:** a run, system or reference id that is not plain; `--purpose repeat` with no `--of`; an `--of` of
+  another system's or dataset's run; `import-run` with a missing reference or a tier with no reference; `arm-smoke` with a goal
+  or round that is not there; `run-promote` of a legacy `dirty: null` build; `leaderboard --goal` of a measure no run records (exit
+  7); a run with no goal once the goal policy's `required_from` has passed. `evh validate` has V30 (a broken link fails: a
+  deleted reference, a goal's missing dataset), and V29 holds every `of`.
 - **Added:** the Workbench, read-only, for visitors to a deployment
-  ([RFC-039](https://github.com/chipi/eval-harness/blob/main/docs/rfc/RFC-039-workbench-read-only-for-visitors.md)):
-  the reads the public MCP server answers, under the same text rules; everything that writes, spends or runs a model is
-  refused at the server. And where the judge disagrees with the gold, per item, in the inspector and the sheet
-  (`--judge-disagrees`).
+  ([RFC-039](https://github.com/chipi/eval-harness/blob/main/docs/rfc/RFC-039-workbench-read-only-for-visitors.md)); where the judge disagrees with the gold, per item
+  (`--judge-disagrees`); `import-run --goal`; the run field `cost_coverage`; a fact dump to compare two versions.
 - **Changed:** `evh catalog-serve` renders each page when it is asked for
-  ([RFC-040](https://github.com/chipi/eval-harness/blob/main/docs/rfc/RFC-040-catalog-rendered-on-request.md)): a write
-  is on the next page opened, no `catalog` job runs and nothing needs building first; `evh catalog` writes the same pages.
-  `GET /api/health`'s `catalog` is `{mode, state: idle | failed, built_at, prepared, failed}` (no `building`, `job`).
-  `evh runs-list` marks a run whose tree was never checked `?`, and `--json` says `dirty: null` for it,
-  not `false`: read null as "unknown". The inspector names arms by one rule everywhere; a scatter's names never cover a
-  dot or another name; "See the cost first" shows each arm's estimate and the cap the Workbench sends.
-- **Fixed:** the examples' `/rows` check retries a 5xx, not a 4xx; an interrupted `make site` leaves the site as it was;
-  a cap of 0 is shown as `$0.00` (spend nothing), not `NONE`; a measure only a goal names goes the goal's way on
-  `metric-list`, `metric-show` and the metric pages, not "higher".
-- **The repository:** a merge to main no longer deploys (`make deploy-dry`, then `make deploy`); a release's section
-  here is short and links its full notes; the browser tests use one bundled font and wait on state, not time.
+  ([RFC-040](https://github.com/chipi/eval-harness/blob/main/docs/rfc/RFC-040-catalog-rendered-on-request.md)); `GET /api/health`'s `catalog` is `{mode, state, built_at,
+  prepared, failed}`. A system's `params.prompt` and a prompt file's text are public only with `--publish prompts`, and a read
+  a public server drops refuses in-process. `evh runs-list` marks an unknown tree `?` (`--json`: `dirty: null`).
+- **Fixed:** a cap of 0 is `$0.00`, not `NONE`; a measure only a goal names goes the goal's way; an unknown cost is not $0.
+- **The repository:** a merge to main no longer deploys (`make deploy-dry`, then `make deploy`); a release's section here is
+  short and links its full notes.
 
-The full notes are in [docs/releases/0.8.1.md](https://github.com/chipi/eval-harness/blob/main/docs/releases/0.8.1.md).
+The full notes are in [docs/releases/0.8.1.md](https://github.com/chipi/eval-harness/blob/main/docs/releases/0.8.1.md); what a project must change is in
+[UPGRADING](https://github.com/chipi/eval-harness/blob/main/harness/docs/UPGRADING.md).
 
 ## 0.8.0 — 2026-11-22
 

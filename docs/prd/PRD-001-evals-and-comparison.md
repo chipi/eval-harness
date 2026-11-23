@@ -60,7 +60,7 @@ the [Runbook](../../harness/docs/RUNBOOK.md); the first evaluation, step by step
 
 - _As an engineer, I can cost a run before spending anything (`--dry-run`) so that a sweep never
   surprises me._
-- _As an engineer, I can repeat a system's run and see its own spread (`--repeat N`, or `--purpose repeat --of <run_id>` beside a run it already has), so that a difference
+- _As an engineer, I can repeat a system's run and see its own spread (`--repeat N`, or `--purpose repeat --of <run_id>` beside a run it already has, which joins that run's arm), so that a difference
   smaller than its noise is not mistaken for an improvement._
 - _As a researcher, I can test one arm against a declared family of others with Holm's
   correction, so that a "winner" claim accounts for every comparison made._
@@ -86,7 +86,7 @@ the [Runbook](../../harness/docs/RUNBOOK.md); the first evaluation, step by step
   reference, `scores/<scorer>@<reference>/{score.json, metrics.json, predictions.jsonl}`; each
   `metrics.json` carries the fingerprint (RFC-001).
 - **FR2.2**: `--dry-run` prints the calls, tokens and estimated cost and calls nothing; `--scratch` runs a throwaway pass under `.build/scratch/runs/`.
-- **FR2.3**: `--repeat N` measures a system's run-to-run spread; it is refused (would-overwrite) when the system already has a plain run on the dataset; use `--purpose repeat --of <run_id>` to repeat a run. A `--scratch`, `--resume` or `--labels` repeat is not refused.
+- **FR2.3**: `--repeat N` measures a system's run-to-run spread; it is refused (would-overwrite) when the system already has a plain run on the dataset; use `--purpose repeat --of <run_id>` to repeat a run. `--purpose repeat` is refused without `--of`, and `--of` must name a run of the same system and dataset. A repeat that is the same measurement (equal data, deployment, settings and adapter) is read in the arm of the run it repeats; any other is read under `repeats`. A `--scratch`, `--resume` or `--labels` repeat is not refused.
 - **FR2.4**: The core times every call (`latency_ms`) for an adapter that does not report its
   own, and records billed cost when the provider reports it, else tokens times the system's
   prices.

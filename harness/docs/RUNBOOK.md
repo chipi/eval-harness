@@ -567,7 +567,7 @@ references:
 | `success_criteria.primary.threshold` | any value | shown beside the measure on the goal page |
 | `success_criteria.primary.reduce` | `mean` (the default), `majority` or `at_least_K` | how an arm's repeats make one score per item on the goal's measure: the mean, or for 0/1 scores right when more than half (or at least K) of the repeats are right |
 | `success_criteria.min_items` | an integer, at least 1 | The fewest items a winner-picking comparison may rest on: an arm with fewer is flagged "n k < min_items m" on the goal page and is never a group's leader; `evh validate` notes a goal dataset smaller than it (a note, not a failure) |
-| `success_criteria.axes` | a map of name → `{measure, direction, stat, limit, margin, role, unit, note}`, all optional. `cost` (`cost_usd`, mean, tokens shown beside it) and `speed` (`latency_ms`, p95) are built in and need no entry; `quality` takes only a `limit`, a `margin`, a `reference` and a `note` (its measure and direction are the primary's), and `margin` belongs to quality alone; any other name is the project's own axis, a per-item metric its runs record (`measure` defaults to the name, `direction` to the adapter's `METRIC_DIRECTIONS`, else `higher`, `stat` to `mean`). `role: ignore` drops an axis. `limit: baseline` in place of a number: an arm is out when the paired test finds it worse than the group's promoted baseline on that axis (p < 0.05, each arm on its own, not corrected across the arms; RFC-022); with no baseline promoted, no limit applies and the decision says so | The goal's decision ([ADR-0006](../../docs/adr/ADR-0006-goal-axes-and-strategies.md)): an arm past a `limit` is out, with the reason; `margin`, in the measure's units, is how much worse than the leader an arm may be and still be a contender: the arm must be *shown* no worse by more than it (a one-sided non-inferiority test against the leader, Holm across the candidates: Tango's score test for 0/1 scores at any size, the bootstrap-t from 100 items or equal clusters, 250 effective clusters when they differ in size, for other scores, "too few items to call a tie" below). With no margin set, the strategy's default: `balanced` 5% of the leader's mean, `frugal` 10%; `evh validate` notes each goal on a default. `quality: {reference: baseline}` tests contenders against the group's promoted baseline instead ("no worse than what runs now", for a goal about replacing it; the margin is then a share of the baseline's mean; with none promoted the leader is used, and said). The decision also says which margin the group can detect at all: with k candidates on n items (or clusters), a truly equal arm is shown within about (z(1 − 0.025/k) + z(0.8)) × the paired standard error, 80% of the time; a goal margin under it rarely admits anyone. It does not count the leader being chosen from the same data, which raises the bar further. The goal page and `evh goal-leaderboard` show a column per axis; V14 refuses an unknown key in an entry |
+| `success_criteria.axes` | a map of name → `{measure, direction, stat, limit, margin, role, unit, note}`, all optional. `cost` (`cost_usd`, mean, tokens shown beside it) and `speed` (`latency_ms`, p95) are built in and need no entry; `quality` takes only a `limit`, a `margin`, a `reference` and a `note` (its measure and direction are the primary's), and `margin` belongs to quality alone; any other name is the project's own axis, a per-item metric its runs record (`measure` defaults to the name, `direction` to what the runs record (the adapter's `METRIC_DIRECTIONS`), else the name table, else the default `higher`: nothing declares it, and a ranking on it prints a `NOTE`; `stat` to `mean`). `role: ignore` drops an axis. `limit: baseline` in place of a number: an arm is out when the paired test finds it worse than the group's promoted baseline on that axis (p < 0.05, each arm on its own, not corrected across the arms; RFC-022); with no baseline promoted, no limit applies and the decision says so | The goal's decision ([ADR-0006](../../docs/adr/ADR-0006-goal-axes-and-strategies.md)): an arm past a `limit` is out, with the reason; `margin`, in the measure's units, is how much worse than the leader an arm may be and still be a contender: the arm must be *shown* no worse by more than it (a one-sided non-inferiority test against the leader, Holm across the candidates: Tango's score test for 0/1 scores at any size, the bootstrap-t from 100 items or equal clusters, 250 effective clusters when they differ in size, for other scores, "too few items to call a tie" below). With no margin set, the strategy's default: `balanced` 5% of the leader's mean, `frugal` 10%; `evh validate` notes each goal on a default. `quality: {reference: baseline}` tests contenders against the group's promoted baseline instead ("no worse than what runs now", for a goal about replacing it; the margin is then a share of the baseline's mean; with none promoted the leader is used, and said). The decision also says which margin the group can detect at all: with k candidates on n items (or clusters), a truly equal arm is shown within about (z(1 − 0.025/k) + z(0.8)) × the paired standard error, 80% of the time; a goal margin under it rarely admits anyone. It does not count the leader being chosen from the same data, which raises the bar further. The goal page and `evh goal-leaderboard` show a column per axis; V14 refuses an unknown key in an entry |
 | `success_criteria.secondary` | not allowed; the schema refuses it (V1/V14) | move its entries to `axes` |
 | `success_criteria.strategy` | `balanced` (the default), `quality_first` or `frugal` | Who the contenders are beside the quality leader: `balanced` shown no worse than the leader by more than the margin (default 5% of the leader); `quality_first` the same quality only; `frugal` the same test with a wider default margin (10%), so the cheaper arm wins more often |
 | `success_criteria.tie_break` | a list of axis names, default `[cost, speed]`; `quality` may be one | Among the contenders, the axes that pick, in order (`[cost, quality]`: the cheapest, then the best of the equally cheap). V14 fails a name the goal does not weigh |
@@ -578,7 +578,8 @@ references:
 | `links[]` | `{url, note}` | nothing (for the reader) |
 
 `data/goals/policy.yaml` is not a goal: `required_from: YYYY-MM-DD` makes every run created on or
-after that date name a goal (V14). Without it, goals are optional.
+after that date name a goal (V14). From that date `evh run` and `evh import-run` refuse a run with no `--goal`
+(`bad-argument`; `evh run --scratch` is exempt), where validate only failed it afterwards. Without it, goals are optional.
 
 ---
 
@@ -606,7 +607,7 @@ The last line is per item: `per item, on overlap_f1: 3 runs, the same score on 3
 that score nearly every item the same are one observation, not three: count items, never item-runs. `pair-test` does: an arm's repeats are averaged per item,
 and its `repeats` line (JSON `repeats`) names each arm's runs and how many items they agree on.
 
-`--repeat N` is refused (`would-overwrite`) when the system already has a measured run on the dataset (a previous repeat set counts too). To measure the arm's noise, repeat the run it has: `evh run --system S --dataset D --purpose repeat --of <run_id>` once per repeat, or delete it first with `evh data-rm --path runs/<run_id>`. Not refused: `--resume`, `--scratch`, `--labels`, another `--purpose`, a pair listed in validate.json `duplicate_ok`.
+`--repeat N` is refused (`would-overwrite`) when the system already has a measured run on the dataset (a previous repeat set counts too). To measure the arm's noise, repeat the run it has: `evh run --system S --dataset D --purpose repeat --of <run_id>` once per repeat (the refusal names the system's latest run), or delete it first with `evh data-rm --path runs/<run_id>`. A repeat run as that run was run (the same data, deployment, settings and adapter in the two fingerprints; a later build of the harness does not matter, and is named) joins that run's arm, which is then read as one measurement over all its runs. `evh run` says before its first call, and in its last line, whether the repeat joins, and what differs when it does not: that run is read under `repeats`, as another measurement. `--purpose repeat` with no `--of` is refused (`bad-argument`; `--scratch` excepted), and so is an `--of` that names another system's or dataset's run (`mismatch`). Not refused: `--resume`, `--scratch`, `--labels`, another `--purpose`, a pair listed in validate.json `duplicate_ok`.
 
 When the command spent anything it prints the total over every run it wrote, so nobody adds
 up `total_cost_usd` by hand across repeats (§4 says where the number comes from). The basis is one of: "(the provider's bill)", "(the system's price table: tokens x usd_per_mtok_in / usd_per_mtok_out, the provider sent no bill)", "$x the provider's bill, $y…", or the adapter's own figure:
@@ -688,6 +689,8 @@ space:
     - {name: length, reason: how much to keep, params: {sentences: [2, 3, 4]}}
 ```
 
+`stop` needs one bound: `trials`, `usd` or `wall_h`; the study ends at the first rule that fires (those, or `patience`).
+
 `evh study-run --study <goal>/<id> --spec spec.yaml` writes the spec, opens the study's round (it holds no other round back
 and closes with the study) and runs the loop: each trial is the best so far with one change, run on the validation
 set, kept or dropped by the rule (its p values nominal: this is research), its limits checked against the baseline so
@@ -704,8 +707,15 @@ a past autoresearch loop in, closed and not confirmable.
 laptop and one made on a GPU box land in the same place. What is derived from a run stays with it,
 read under a label of its own so it never shares a row with the measurement it came from:
 
-- **a repeat** of a measured run (`evh run --purpose repeat --of <run_id>`) is a run of its own, read under
-  `repeats`; `--repeat N` instead writes N runs `<id>_r1` .. `_rN`, read under the plain label (`retime` and `pair` runs are read under their own labels);
+- **a repeat** of a measured run (`evh run --purpose repeat --of <run_id>`; `--of` is required) is a run of its own. It
+  is read in the arm of the run it repeats when it is the same measurement taken again (the same system and dataset,
+  and equal data, deployment, settings and adapter parts in the two fingerprints; the harness build may differ), and
+  the arm then averages them per item. A repeat that differs in one of those, whose original is gone, or whose original
+  is itself read under `repeats` is read under `repeats`, with the reason. A repeat of a repeat follows `--of` to the
+  first run. `--repeat N` instead writes N runs `<id>_r1` .. `_rN`, each recording its `repeat_index` (the id makes no
+  set: `foo_r1` and `foo_r2` made by hand are two plain runs), read under the plain label. A closed round's numbers
+  never change: a repeat that joins after it closed is listed in its "since then". A `retime` or `pair` run is read
+  under its own label, and `--of` on it names a run of its own system and dataset too;
 - **a re-score** (`evh rescore`) is a score under the run it re-read,
   `data/runs/<run_id>/scores/<scorer>@<reference>/`, read under `rescored <scorer>` (or `--label`);
 - **a judge's verdicts** (`evh judge-score`) are a score under each judged run, read under `judged/<scorer>`, with
@@ -874,7 +884,8 @@ calls the model only for the items that are missing.
 An item whose score is not a number (NaN, an infinity, None; the adapter's `score()` returned it) is a failed item, with its reason
 (`score q is not a number: nan`), scored as a failed item is and never averaged; the run goes on, and `--resume` calls it again
 (RFC-041 F7). `rescore`, `judge-score`, `sheet-import` and `import-run` refuse such a score by name; `arm-smoke` says the
-item was not scored.
+item was not scored. A run recorded before this can hold such a score; every reader reads it the same way, as a failed item
+scored 0, on read as on write, so the verdict on old data with one can move.
 
 A writer records a fact a reader will follow, or refuses it by name (RFC-041 F7), before it spends or writes: a `--run-id` (and
 import-run's `--system-id`, and reference-promote's `--name`) is a plain name, ASCII letters, digits, `.`, `_`, `-`, never a path,
@@ -987,9 +998,33 @@ would print as 0.0000. `family-test`'s `A wins-losses (ties)` column counts the 
 opponent, and the ties apart; the inspector's `wins–losses` is each row's arm against the baseline.
 Without `--metric` they read the metric that decides on the dataset, one answer for every command: the goal that
 lists the dataset, when a run records its measure, else the primary metric the runs recorded (the adapter's
-`PRIMARY_METRIC`); with neither, they refuse and name what is recorded. Which way is better is
-inferred once for every command: a flag (`--asc`, `--desc`), else the goal the runs name, else
-the adapter's `METRIC_DIRECTIONS`, else the name (cost, latency and token metrics go down).
+`PRIMARY_METRIC`); with neither, they refuse and name what is recorded. A goal whose measure no run records decides
+nothing (V14 notes it): `evh leaderboard` of the dataset then ranks each arm on its own headline with one `NOTE`, and with
+`--goal` it refuses (exit `7`, nothing measured) and names what the arms record.
+
+Which way is better is inferred once for every command, by the first of these that answers:
+
+1. a flag (`--asc`, `--desc`);
+2. a goal that declares the measure with a `lower` or `higher` direction, as its primary measure or as an axis. For a
+   question about a dataset the goals are heard in this order: a goal that lists the dataset, then a goal the runs name.
+   A goal that names the dataset speaks for it; a run's `goal` only says what the run was made for, and the run may be on
+   a dataset that goal does not decide. A goal on another dataset says nothing about this one. A goal with `datasets: []`
+   (checked by a gate, not measured on a dataset) lists none, so it is heard only through a run that names it; a question
+   with no dataset (`metric-list`, `metric-show`, a metric's page) is answered by any goal, those included. `non_inferior`
+   is a decision rule, not a direction, and declares nothing. V14 fails two goals that give one measure opposite
+   directions on one dataset (both list it, or both list none);
+3. what the runs record: the adapter's `METRIC_DIRECTIONS`, `import-run --asc`, then the kinds they declare
+   (`METRIC_KINDS`: a descriptive measure is neutral);
+4. the name: **lower** is better for `cost_usd`, `total_cost_usd`, `tokens_in`, `tokens_out`, `total_tokens_in`,
+   `total_tokens_out` (any name from `total_tokens`), `latency_ms`, `latency_s`, `wer`, `cer` and `der`; **neutral**
+   (they say what the output was, not whether it was good, so a table prints "neutral: a description" and a movement
+   reads `changed`) for `output_words`, `output_chars`, `lines`, `chars`, `n_items` and `reasoning_tokens`;
+5. the default (nothing declares it): higher.
+
+`leaderboard`, `run-compare` and `goal-leaderboard` say so in a `NOTE` line when a ranking rests on the default, and
+`evh validate` notes each goal measure and each primary metric that does; declare the direction to settle it. A measure
+whose datasets disagree reads "mixed", with each dataset's own answer ("lower on asr_v1; higher on dev_v1").
+
 `leaderboard`, `family-test`, `pair-test` and `comparison-show` take `--round rN` for the arms in play in
 a round (`pair-test --round`, `family-test --round` and `comparison-show --round` also default the metric to the
 goal's measure; `family-test --round` tests the round's leader against every other arm in play unless
@@ -1014,7 +1049,8 @@ Two that are easy to reach for and wrong:
 evh run-promote --run <run_id> --reason "beat prev baseline by 6% on my_v1 n=40, spread 0.004"
 ```
 
-Refused if the run came from a dirty tree, if its build is unknown, or if the
+Refused if the run came from a dirty tree, if its build is unknown, if its build records `dirty: null` with no `source` (a run
+from before 0.8.0, which says nothing of its tree: as `label-from-run` refuses a build git could not read), or if the
 reason is under three words. Those refusals exist for the same reason: in six months, *"why is this the
 baseline?"* must have an answer. `--allow-dirty` and `--allow-unknown-build` override those checks when needed.
 
@@ -1110,7 +1146,7 @@ every run that must name one, every item field declared, typed and matching its 
 reference made by promotion (a manifest saying where it came from) with texts matching its checksums, every capture's
 records matching the hashes it recorded, every model record and the systems naming it consistent, and every label set
 matching its hashes and its dataset, every `hypothesis:` in a system sound (V20), and every failure-mode list well formed with every tag set naming its modes and its dataset's items (V21), and every dataset's version the one its lineage gives, its licence
-on the list, its source block in form and its card's keys Croissant RAI's (V22); V24 checks every prompt version against its bytes, V25 reports a look number two questions took, V26 checks every faithfulness record and the systems naming it, and V27 examines every study and V28 names a row that is not a JSON object with an `item_id`. V29 holds a run's `of` to a run of its own system and dataset, and V30 names a goal's dataset that does not exist and a score whose reference or label set is gone (each broken link is named with the file that holds it, as V6 names a baseline's run and V14 a round's run). V4
+on the list, its source block in form and its card's keys Croissant RAI's (V22); V24 checks every prompt version against its bytes, V25 reports a look number two questions took, V26 checks every faithfulness record and the systems naming it, and V27 examines every study and V28 names a row that is not a JSON object with an `item_id`. V29 fails a run's `of` (a repeat's, a re-timing's, a pair's) that names a run of another system or dataset, and notes, without failing, an `of` whose run is gone (the repeat is read under `repeats`) and a round that recorded a repeat under `repeats` where it now joins its arm (the round reads what it recorded), and V30 names a goal's dataset that does not exist and a score whose reference or label set is gone (each broken link is named with the file that holds it, as V6 names a baseline's run and V14 a round's run). V4
 checks only datasets materialized on this machine, and names each one it could not check (a CI
 job without the sources checks none: materialize first where the copy matters). Every run's outputs are readable: a derived run finds its source's (V23).
 
@@ -2166,7 +2202,7 @@ Every command, `make` target and `evh` subcommand, for scripts and CI that branc
 | `4` | stopped early: the cost cap, or a judge call that kept failing; the partial results are kept and the same command resumes | `run`, `judge-score` |
 | `5` | some of several runs failed; the others are kept | `sweep` |
 | `6` | the command's checks ran and some failed; the output lists them | `validate`, `self-test`, `env-check`, `importer-check`, `arm-smoke`, `model-onboard`, `deploy-sheet --capture`, `label-mutants`, `exposure-check` |
-| `7` | it ran and measured nothing | `run`, `judge-score` |
+| `7` | it ran and measured nothing | `run`, `judge-score`, `leaderboard --goal` (a goal whose measure no run records) |
 | `70` | an error nothing caught: a traceback on stderr, from the harness or the project's own code (an adapter, a scorer) | `evh` |
 | `75` | a server could not be reached: nothing is wrong with the command; run it again later and it resumes | `run` |
 | `130` | interrupted (Ctrl-C) | `evh` |
@@ -2199,6 +2235,26 @@ the rest.
 | `missing-dependency` | a package or a part of the installation is missing |
 | `over-budget` | a round's budget is spent (what its runs spent and its running commands reserved) |
 | `old-format` | the project's data is in an older format than this release reads: run evh migrate |
+
+## The words a reader prints
+
+The words a command prints for a verdict, a missing number or a refusal to say, as they are written in the code. A
+script or a test may match them; one that matches another string is matching something that is not documented.
+
+| Words | Printed by | Means |
+|---|---|---|
+| `an arm effect exists` / `NO detectable arm effect` | `evh leaderboard`, the "IS THE ORDERING REAL?" block: `global test (permutation on within-item ranks): p = 0.0002  ->  an arm effect exists` | the global test's p is under 0.05 / is not |
+| `Not enough paired data for a significance test (K arm(s), N shared item(s))` | `evh leaderboard`, in place of that block | fewer than 2 arms, or fewer than 3 items every arm scored |
+| `SIGNIFICANT` / `NOT-SIGNIFICANT` | `evh pair-test`: `verdict            SIGNIFICANT at 0.05`, or `Bonferroni/N     threshold 0.0125 -> NOT-SIGNIFICANT` with `--family N` | the paired p is at or under the level (0.05, or the family's threshold) / is not |
+| `not separated`, `too few items` | the catalog's and the inspector's charts, as a row's verdict word | the tests do not support a difference from the leader / baseline; the pair shares too few items to test |
+| `shares fewer than 2 items with the leader` (or `shares N items with the leader, in G <field> clusters: the clustered test needs at least 2`) | `evh goal-leaderboard` and the goal page, as the reason an arm is out (`X is out: ...`) | the arm cannot be tested against the leader, so it is shown and never recommended |
+| `lower on asr_v1; higher on dev_v1` | `evh metric-list`, `metric-show` and the metric pages, for "which way is better" | the measure's datasets disagree: "mixed", with each dataset's answer |
+| `neutral: a description` | the same, and the heading of `evh leaderboard` (`ranked by: output_words (neutral: a description)`) | a descriptive measure: it says what the output was, not whether it was good |
+| `changed` | `evh run-compare`, in the verdict column | a descriptive measure moved; the other verdicts are `better`, `worse`, `identical` and `NOISE (<= x)` |
+| `NOTE: <measure>: no goal or adapter says which way is better; read as higher-is-better (declare it)` | `evh leaderboard`, `run-compare` and `goal-leaderboard`; `evh validate` prints it as `note: V14 runs: ...` | the direction is the default (nothing declares it) |
+| `internal error` | a public server (`catalog-serve --public`, the public MCP server), for a crash: `{"error": "internal error"}`, or `internal error: the command failed; it is reported to the server's maintainers` | a traceback is never shown to a public caller; the log and the error tracker have it |
+| `—` | `evh cost-report`'s ratio column, and `evh rank-stability`'s rho and winner rate (`null` in `--json`) | nothing to divide by or to correlate: 0 billed against 0 recorded is no ratio, not 0 |
+| `n/a` | `evh pair-test` and the other tests, where a p is printed | the paired differences do not vary, so the test has no p |
 
 ## Environment variables
 
