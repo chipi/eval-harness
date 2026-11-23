@@ -217,8 +217,10 @@ EXPECT: dict[str, dict] = {
     "one_cluster": {"pair": "refuse", "board": r"is out|Not enough paired data", "page": r"too few items", "stats": "untestable"},
     "three_items": {"pair": "NOT-SIGNIFICANT", "board": r"NO detectable arm effect", "page": r"not separated", "stats": "not significant"},
     "half_missing_22": {"pair": "SIGNIFICANT", "board": r"is out: n 11 of 22", "page": r"n 11 of 22 items", "stats": "significant: better"},
-    "nan_scores": {"pair": "any", "board": r"is out|Not enough paired data", "page": r"too few items|not separated|shares fewer", "stats": None},
-    "none_scores": {"pair": "any", "board": r"Not enough paired data|is out", "page": None, "stats": None},
+    # RFC-041 F7: the item whose score is not a number is a failed item, 0 as every failed item is: a wins 7 of 8 and
+    # loses that one, sign-flip p 18/256 (owner 2026-11-23; before, the nan put the arm out)
+    "nan_scores": {"pair": "any", "board": r"NO detectable arm effect", "page": r"too few items|not separated|shares fewer", "stats": None},
+    "none_scores": {"pair": "any", "board": r"NO detectable arm effect", "page": None, "stats": None},
 }  # fmt: skip
 
 
