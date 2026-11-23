@@ -88,6 +88,8 @@ class Unavailable(Exception):
 
 # ── the runner: `evh <command> --json` ───────────────────────────────────────────────────────────────────────────────
 class Cli:
+    """Runs `evh` as a subprocess in a project, for the commands the dump reads."""
+
     def __init__(
         self, evh: str = "evh", project: str | None = None, env: dict[str, str] | None = None
     ) -> None:
@@ -127,6 +129,7 @@ def parse(stdout: str, op: str) -> dict[str, Any]:
 
 # ── normal forms ─────────────────────────────────────────────────────────────────────────────────────────────────────
 def cost_state(v: Any) -> str:
+    """`unknown` for no cost, `zero` for 0, else `amount`: a missing price is not a free one."""
     if v is None or (isinstance(v, float) and math.isnan(v)):
         return "unknown"
     return "zero" if v == 0 else "amount"
@@ -144,6 +147,7 @@ def ref(v: Any) -> str:
 
 
 def arm_id(label: str, dataset: str, system: str) -> str:
+    """The arm's id: `label/dataset/system`, with `runs` for a plain arm's empty label."""
     return f"{label or 'runs'}/{dataset}/{system}"
 
 
@@ -171,6 +175,7 @@ def newest(runs: list[tuple[str, str]]) -> str | None:
 
 # ── one extractor per command: result -> facts ───────────────────────────────────────────────────────────────────────
 def from_runs_list(r: dict[str, Any], label: str) -> list[Fact]:
+    """Facts from `evh runs list`: each arm's runs, latest run, mean values and cost state."""
     arms: dict[str, list[dict[str, Any]]] = {}
     for run in r.get("runs") or []:
         arms.setdefault(arm_id(label, run["dataset_id"], run["system_id"]), []).append(run)
@@ -193,6 +198,7 @@ def from_runs_list(r: dict[str, Any], label: str) -> list[Fact]:
 
 
 def from_arm_list(r: dict[str, Any]) -> list[Fact]:
+    """Facts from `evh arm list`: each arm's reference, cost state, run count, latest day and its measure's value and direction."""
     out: list[Fact] = []
     by_ds: dict[str, list[str]] = {}
     for a in r.get("arms") or []:
@@ -213,6 +219,7 @@ def from_arm_list(r: dict[str, Any]) -> list[Fact]:
 
 
 def from_arm_show(r: dict[str, Any]) -> list[Fact]:
+    """Facts from `evh arm show`: reference, runs, latest run, and each metric's mean, item count and direction."""
     arm, ds = r["arm"], r["dataset"]
     out: list[Fact] = [("reference", (arm,), ref(r.get("scored_against"))), ("n_runs", (arm,), r.get("runs"))]
     listed = r.get("run_list") or []
@@ -238,6 +245,7 @@ def from_metric_list(r: dict[str, Any]) -> list[Fact]:
 
 
 def from_metric_show(r: dict[str, Any]) -> list[Fact]:
+    """Facts from `evh metric show`: the metric's direction per dataset and each arm's mean, items, reference and runs."""
     out: list[Fact] = []
     m = r["metric"]
     on = r.get("better_on") or {}
@@ -257,6 +265,7 @@ def from_metric_show(r: dict[str, Any]) -> list[Fact]:
 
 
 def from_leaderboard(r: dict[str, Any], dataset: str) -> list[Fact]:
+    """Facts from `evh leaderboard`: the ranked-by direction and each arm's runs, values and cost state."""
     out: list[Fact] = []
     lines = [ln for b in r.get("blocks") or [] for ln in b.get("lines") or []]
     for ln in lines:
@@ -279,6 +288,7 @@ def from_leaderboard(r: dict[str, Any], dataset: str) -> list[Fact]:
 
 
 def from_baselines(r: dict[str, Any]) -> list[Fact]:
+    """Facts from `evh baselines`: the run each goal's current baseline was promoted from."""
     return [
         ("baseline_run", (b["dataset"], b["goal"]), b.get("promoted_from"))
         for b in r.get("baselines") or []
@@ -287,6 +297,7 @@ def from_baselines(r: dict[str, Any]) -> list[Fact]:
 
 
 def from_goal_leaderboard(r: dict[str, Any]) -> list[Fact]:
+    """Facts from `evh goal leaderboard`: the baseline run and arm per dataset, and each group's direction, reference, values and cost."""
     out: list[Fact] = []
     goal = r["goal"]
     for d in r.get("datasets") or []:
@@ -324,6 +335,7 @@ def from_goal_leaderboard(r: dict[str, Any]) -> list[Fact]:
 
 
 def from_dataset_items(r: dict[str, Any], dataset: str) -> list[Fact]:
+    """Facts from `evh dataset items`: whether the item text is shown (`public`)."""
     return [("public", (dataset,), not r.get("text_hidden"))]
 
 
@@ -337,6 +349,7 @@ class Collected:
         self.meta: dict[str, Any] = {}
 
     def add(self, reader: str, facts: list[Fact]) -> None:
+        """Record `reader`'s facts; a fact with a fourth element is kept under `reader:<that>`, and a None value is skipped."""
         for f in facts:
             kind, key, value = f[:3]
             d = self.facts.setdefault(f"{reader}:{f[3]}" if len(f) > 3 else reader, {})
@@ -347,6 +360,7 @@ class Collected:
             d[(kind, key)] = value
 
     def fail(self, reader: str, why: str) -> None:
+        """Record why `reader` gave no answer."""
         self.why.setdefault(reader, []).append(why)
 
 
@@ -478,6 +492,7 @@ def collect(read: Callable[..., dict[str, Any]], jobs: int = 1, only: set[str] |
 
 
 def cli_collect(evh: str, project: str | None, jobs: int) -> Collected:
+    """Collect every reader's facts through the `evh` command, with the project's data format and the evh version in `meta`."""
     cli = Cli(evh, project)
     c = collect(cli.read, jobs)
     try:
@@ -538,6 +553,7 @@ def disagreements(by_reader: dict[str, dict[tuple[str, tuple[str, ...]], Any]]) 
 
 # ── the document ─────────────────────────────────────────────────────────────────────────────────────────────────────
 def command_of(reader: str) -> str:
+    """The command a reader's facts came from, as the dump names it."""
     return f"evh {reader}{' (EVH_PUBLIC=1)' if reader == 'dataset-items' else ''} --json"
 
 
@@ -561,6 +577,7 @@ def leaf(c: Collected, kind: str, key: tuple[str, ...]) -> dict[str, Any]:
 
 
 def document(c: Collected) -> dict[str, Any]:
+    """The dump's JSON document: every fact of every dataset and arm with its source command, the disagreements and what was unavailable."""
     keys: dict[str, set[tuple[str, ...]]] = {k: set() for k in KINDS}
     for d in c.facts.values():
         for kind, key in d:
@@ -638,6 +655,7 @@ def where_of(path: tuple[str, ...]) -> tuple[str, int]:
 
 
 def diff(old: dict[str, Any], new: dict[str, Any]) -> str:
+    """Text of what changed between two dumps, grouped by fact, with the counts of facts the same and changed."""
     a, b = flat(old), flat(new)
     lines = [
         f"evh {old.get('evh_version')} (format {old.get('data_format')})  ->  evh {new.get('evh_version')} (format {new.get('data_format')})"
@@ -666,6 +684,7 @@ def diff(old: dict[str, Any], new: dict[str, Any]) -> str:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Print the facts of a project (or, with `--diff`, what changed between two dumps) and return 0."""
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--project", default=None, help="the project's folder (default: the current directory)")
     ap.add_argument("--evh", default="evh", help='the command to run, as one string (default: "evh")')
