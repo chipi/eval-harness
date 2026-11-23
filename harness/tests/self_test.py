@@ -588,6 +588,13 @@ def test_untracked_run_output_does_not_make_the_tree_dirty() -> None:
         len(filter_dirt("?? harness/scripts/new_scorer.py\n?? harness/data/datasets/x.json", d)) == 2,
     )
     check(
+        "dirty: nor a prompt version recorded by a run (RFC-028), untracked only",
+        filter_dirt("?? harness/data/prompts/summary/ab12cd.json", d) == []
+        and len(filter_dirt(" M harness/data/prompts/summary/ab12cd.json", d)) == 1,
+    )
+    # Runs live in `runs/` only since migration m0004 folded format 3's runs-linux, runs-pair and runs-repeats into it
+    # (purpose retime, pair, repeat): the first rule matched `runs*` (RFC-028's wording), the code now matches `runs/` only.
+    check(
         "dirty: a runs-* folder is not the runs directory (format 3's layout is no run output)",
         len(filter_dirt("?? harness/data/runs-linux/cnn_bart_s_n200_v1_X/", d)) == 1,
     )
@@ -2646,11 +2653,18 @@ def test_two_runs_sharing_a_system_id_are_refused() -> None:
         "    print(json.dumps({'raised': 'claim system_id' in str(exc), 'runs': 0, 'got': str(exc)}))\n"
     )
 
-    def asked(names: list[str]) -> dict:
+    def asked(names: list[str], repeat_set: bool = False) -> dict:
         with _tf.TemporaryDirectory() as td:
             data = shadow_data(Path(td))
-            for name in names:
-                add_run(data, src, name)
+            for i, name in enumerate(names, 1):
+                copy = add_run(data, src, name)
+                if (
+                    repeat_set
+                ):  # what `evh run --repeat N` records: the run's own index in its set (a name says nothing)
+                    rec = _json.loads((copy / "run.json").read_text(encoding="utf-8"))
+                    (copy / "run.json").write_text(
+                        json.dumps({**rec, "repeat_index": i}) + "\n", encoding="utf-8"
+                    )
             r = run("-c", probe, env={"EVAL_DATA_DIR": str(data)})
         try:
             return _json.loads((r.stdout or "").strip().splitlines()[-1])
@@ -2665,7 +2679,7 @@ def test_two_runs_sharing_a_system_id_are_refused() -> None:
     )
 
     # The control: a --repeat set shares a system_id BY DESIGN and must still load.
-    got = asked([f"{src.name}_r{i}" for i in (1, 2, 3)])
+    got = asked([f"{src.name}_r{i}" for i in (1, 2, 3)], repeat_set=True)
     check(
         "duplicate runs: but a --repeat set still loads as one arm",
         not got["raised"] and got["runs"] == 3,

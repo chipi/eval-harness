@@ -136,7 +136,7 @@ def validate(p: Project, goals: list[str]) -> list[str]:
     warns = [ln for ln in lines if re.match(r"\s+(WARN|warn)", ln)]
     notes = [ln.strip() for ln in lines if ln.strip().startswith("note:")]
     print(
-        f"      {p.name}: validate exit {r.returncode}: {len(fails)} FAIL, {len(warns)} warning, {len(notes)} note"
+        f"      {p.name}: validate exit {r.returncode}: {len(fails)} failing, {len(warns)} warning, {len(notes)} note"
     )
     for ln in [*fails, *warns, *notes]:
         print(f"        {ln.strip()[:170]}")
@@ -145,7 +145,7 @@ def validate(p: Project, goals: list[str]) -> list[str]:
         TRACEBACK not in r.stdout + r.stderr and r.returncode == 0,
         r.stdout[-600:],
     )
-    check(f"now: {p.name}: validate: no FAIL line and no warning", not fails and not warns, fails + warns)
+    check(f"now: {p.name}: validate: no failing check and no warning", not fails and not warns, fails + warns)
     margin = {
         m.group(1) for n in notes if (m := re.match(r"note: V14 goal (\w+): contenders are decided on", n))
     }
