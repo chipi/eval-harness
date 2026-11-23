@@ -248,6 +248,19 @@ def goal_answers(goal: dict, by_ds: dict) -> list:
     return out
 
 
+def unrecorded(goal: dict, by_ds: dict, ds: str) -> list[str] | None:
+    """What the arms on `ds` are read on (their own headlines, sorted), when `goal` names a primary measure that no arm
+    there records: V14 warns about it, and the goal decides nothing on `ds` (`_goal_rows` has no row). None when the
+    goal has no measure, the dataset no arm, or an arm records it."""
+    measure = ((goal.get("success_criteria") or {}).get("primary") or {}).get("measure", "")
+    arms = [a for a in (by_ds.get(ds) or {}).get("arms", []) if not a.get("superseded_by")]
+    if not measure or not arms:
+        return None
+    if any(measure in a["means"] or (a.get("judge") and a["metric"] in a["means"]) for a in arms):
+        return None
+    return sorted({a["metric"] for a in arms if a.get("metric")} or {k for a in arms for k in a["means"]})
+
+
 def _goal_rows(goal: dict, by_ds: dict) -> list:
     """[(dataset, role, notes, rows)]: the arms on each of the goal's datasets that record its
     measure, each with its mean, items, whether it names the goal, and its flags. A goal with no measure (a dataset
@@ -283,6 +296,12 @@ def _goal_rows(goal: dict, by_ds: dict) -> list:
             mean, n = a["means"].get(use, (0.0, a["n"]))
             flags = flags_of(goal, n, a["format"], a["wrote"])
             rows.append(dict(a, mean=mean, n=n, measure=use, filed=a["goal"] == goal["goal_id"], flags=flags))
+        seen = unrecorded(goal, by_ds, ds)
+        if seen is not None:
+            notes = (notes.rstrip(". ") + ". " if notes else "") + (
+                f"No arm records {measure!r}, which this goal reads; the arms record {', '.join(seen)}. "
+                "`evh validate` warns about it (V14); the goal needs a measure the runs record."
+            )
         out.append((ds, d.get("role", ""), notes, rows))
     return out
 
