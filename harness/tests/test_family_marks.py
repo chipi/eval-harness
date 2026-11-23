@@ -112,7 +112,7 @@ try:
     )
     err = io.StringIO()
     with contextlib.redirect_stderr(err), _runstore._InProject(proj):
-        _runs.default_metric("ds")
+        _runs.deciding_metric("ds")
     check(
         "runs that declare different primary metrics are named",
         "different primary metrics" in err.getvalue(),

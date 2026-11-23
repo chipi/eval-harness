@@ -56,7 +56,7 @@ OPS = (
            "b_dataset": {"type": "string", "description": "a second version of the dataset: B's runs are read on it, A's on the first, paired by item id. Refused unless the items, the reference they are scored against and the metric agree"},
            "round": {"type": "string", "description": "test within this round of a goal (rN): arms must be in play in it"},
            "goal": _GOAL,
-           "metric": {"type": "string", "description": "default: the round's goal measure with round, else the primary metric the runs recorded"},
+           "metric": {"type": "string", "description": "default: the round's goal measure with round, else the metric that decides on the dataset: its goal's measure, else the runs' primary metric"},
            "label": _LABEL,
            "exclude_dataset": _EXCLUDE,
            "include_exposed": {"type": "boolean", "description": "on a held-out side, also show the mean difference with its read (exposed) items kept, marked: the number without them is the one that counts (RFC-031)"},
@@ -76,7 +76,7 @@ OPS = (
        printer="evaluation_harness.family_test:text", inputs={
            "a": {"type": "string", "description": "system_id of the arm under test (with round: default its leader)"},
            "against": {"type": "string", "description": "the opponent family, declared in advance: a substring of their system ids, or a comma-separated list of system ids (with round: default every other arm in play in it)"},
-           "metric": {"type": "string", "description": "default: the primary metric the runs recorded"},
+           "metric": {"type": "string", "description": "default: the metric that decides on the dataset: its goal's measure, else the runs' primary metric"},
            "label": _LABEL,
            "exclude_dataset": _EXCLUDE,
            "items": _ITEMS,
@@ -93,7 +93,7 @@ OPS = (
     Op("rank-stability", "read", "how many items a ranking needs: how many items before a leaderboard stops moving, measured, not assumed",
        "GET", "/datasets/{dataset}/rank-stability", f"{_S}:rank_stability", f"{_S}:say_blocks", output=legacy.BLOCKS,
        printer=f"{_S}:print_rank_stability", inputs={
-           "metric": {"type": "string", "description": "default: the primary metric the runs recorded"},
+           "metric": {"type": "string", "description": "default: the metric that decides on the dataset: its goal's measure, else the runs' primary metric"},
            "match": {"type": "string", "description": "only arms whose system_id contains this substring"},
            "draws": {"type": "integer", "minimum": 1, "description": "random halves drawn per size (default 400)"},
            "seed": _SEED,

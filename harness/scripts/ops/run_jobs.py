@@ -135,7 +135,7 @@ OPS = (
        locks=(), parts={"dataset": "dataset_id"}, required=("dataset_id",), inputs={
            "dataset_id": {"type": "string", "description": "the dataset"},
            "exclude_dataset": {"type": "string", "description": "drop every item this dataset also contains"},
-           "metric": {"type": "string", "description": "default: the primary metric the runs recorded"},
+           "metric": {"type": "string", "description": "default: the metric that decides on the dataset: its goal's measure, else the runs' primary metric"},
            "match": {"type": "string", "description": "only system_ids containing this substring"},
            "asc": {"type": "boolean", "description": "lower is better (default: inferred)"},
            "desc": {"type": "boolean", "description": "higher is better, whatever the runs declare"},

@@ -22,7 +22,7 @@ from typing import Any
 from evaluation_harness import _outputs
 from evaluation_harness import leaderboard as lb
 from evaluation_harness._common import dataset_item_ids, die
-from evaluation_harness._runs import default_metric, matrix, ranks_lower, runs_on, warn_on_ambiguous_runs
+from evaluation_harness._runs import deciding_metric, matrix, ranks_lower, runs_on, warn_on_ambiguous_runs
 from evaluation_harness.ops import legacy
 
 
@@ -33,7 +33,7 @@ def body(**inputs: Any) -> int:
     # saying so. See _runs.warn_on_ambiguous_runs.
     warn_on_ambiguous_runs("", args.dataset_id)
 
-    args.metric = args.metric or default_metric(args.dataset_id, args.match)
+    args.metric = args.metric or deciding_metric(args.dataset_id, match=args.match)
     keep = None
     if args.exclude_dataset:
         prior = dataset_item_ids(args.exclude_dataset)

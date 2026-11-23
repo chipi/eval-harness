@@ -126,11 +126,13 @@ The commit keeps the tree clean: a run from a dirty tree records that its code i
 evh run --system headline_6w_v1 --dataset headlines_v1 --dry-run
 ```
 ```text
+  system      headline_6w_v1  (adapter adapters/headline.py)
   API calls   6
               1 per item, declared by the adapter (CALLS_PER_ITEM)
 ```
 
-Its dollar estimate is made for a model's reply of up to `max_tokens`; for a stub it says nothing, and the run
+The system line names what runs: this project's adapter. (The bundled adapter's systems say the provider they call, `echo`
+unless the system names another.) Its dollar estimate is made for a model's reply of up to `max_tokens`; for a stub it says nothing, and the run
 records what the adapter reports. The runs name the goal, so each records what it was for:
 
 ```bash
@@ -201,11 +203,14 @@ evh metric-show words_out
 words in the headline
 better       lower
 kind         quality: measured against a reference or by a judge
-decides      headline_short
+decides      goal headline_short (its primary measure)
+weighed as an axis by  no goal
 ```
 
 The sentence is the adapter's `METRIC_DESCRIPTIONS`, the direction is the goal's and the kind is `METRIC_KINDS`'s: the
 metrics page of the catalog (`.build/catalog/m/words_out.html`) shows the same.
+`decides` names the goals whose primary measure it is. `weighed as an axis by` names the goals that take it as one of
+their other axes (cost, speed or their own), so a measure that a goal decides on has none: that is not a contradiction.
 
 ## 7 · A call that has an effect
 

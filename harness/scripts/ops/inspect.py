@@ -58,7 +58,7 @@ OPS = (
            "disagree": {"type": "boolean", "description": "only the items the runs decided differently from the first"},
            "baseline": {"type": "string", "description": "the arm the others are compared to: it goes first"},
            "label": _LABEL,
-           "metric": {"type": "string", "description": "the measure (default: the arms' primary metric)"},
+           "metric": {"type": "string", "description": "the measure (default: the metric that decides on the dataset: its goal's measure, else the arms' primary metric)"},
            "where": _WHERE,
            "max_chars": {"type": "integer", "description": "characters of each output the command prints (default 300, 0 = all); the answer keeps them whole"},
        }, required=("runs",), public_dropped="it shows recorded texts: the outputs, the references and the labels"),
@@ -66,7 +66,7 @@ OPS = (
        "GET", "/datasets/{dataset}/sheet", f"{_I}:sheet_show", f"{_I}:say_blocks", output=legacy.BLOCKS, printer=f"{_I}:print_sheet_show",
        inputs={
            "runs": _RUNS,
-           "metric": {"type": "string", "description": "the measure, or SCORER/METRIC (default: the arms' primary metric)"},
+           "metric": {"type": "string", "description": "the measure, or SCORER/METRIC (default: the metric that decides on the dataset: its goal's measure, else the arms' primary metric)"},
            "label": _LABEL,
            "where": _WHERE,
            "by": {"type": "string", "description": "also count the shown rows by this field"},

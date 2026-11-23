@@ -45,12 +45,21 @@ class Stub:
     item_word = "item"
 
     def __init__(self, goal_direction: str, arms: dict):
-        self.direction, self.data = goal_direction, arms
+        self.goal_direction, self.data = goal_direction, arms
 
     def goals(self):
         return [
-            {"goal_id": "g", "success_criteria": {"primary": {"measure": "m", "direction": self.direction}}}
+            {
+                "goal_id": "g",
+                "success_criteria": {"primary": {"measure": "m", "direction": self.goal_direction}},
+            }
         ]
+
+    def direction(self, metric, dataset=None):
+        return self.goal_direction
+
+    def lower_is_better(self, metric, dataset=None):
+        return self.direction(metric, dataset) == "lower"
 
     def arms(self):
         return list(self.data)

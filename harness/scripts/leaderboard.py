@@ -39,10 +39,12 @@ from evaluation_harness._common import (
 from evaluation_harness._record import derived_with
 from evaluation_harness._runs import (
     AMBIGUOUS_HOW,
+    better_word,
+    deciding_metric,
     mixed_versions,
     note_assumed,
     per_item,
-    ranks_lower,
+    ranks_direction,
     runs_on,
 )
 from evaluation_harness.model.runs import is_set
@@ -854,17 +856,12 @@ def _table(args: argparse.Namespace, A, group: dict, goal: dict | None) -> dict:
     kinds = classify_metrics(declared)
     quality = [k for k in all_keys if kinds.get(k, "quality") == "quality" and not k.startswith("total_")]
     descriptive = [k for k in all_keys if kinds.get(k) == "descriptive"]
-    # The adapter's declared headline facet wins over alphabetical order. Explicit
-    # --sort still overrides both.
-    primary = next(
-        (
-            r.get("primary_metric")
-            for runs in by_config.values()
-            for r in runs
-            if r.get("primary_metric") in all_keys
-        ),
-        None,
+    # The metric that decides on the dataset (its goal's measure, else the runs' primary metric: the one every command
+    # reads) wins over alphabetical order. Explicit --sort still overrides both.
+    decided = deciding_metric(
+        args.dataset_id, runs=found, goals={g["goal_id"]: g for g in A.goals()}, refuse=False
     )
+    primary = decided if decided in all_keys else None
     measure = group.get("measure") if goal else None  # what the goal reads the group on
     sort_key = (
         args.sort
@@ -872,7 +869,8 @@ def _table(args: argparse.Namespace, A, group: dict, goal: dict | None) -> dict:
         or primary
         or (quality[0] if quality else (descriptive[0] if descriptive else all_keys[0]))
     )
-    asc = ranks_lower(found, sort_key, args.asc, args.desc)
+    which = ranks_direction(found, sort_key, args.asc, args.desc)
+    asc = which == "lower"
     if not (args.asc or args.desc):
         note_assumed(sort_key, runs=found)
     # SAY SO when the headline metric was picked alphabetically. Runs written before
@@ -881,7 +879,7 @@ def _table(args: argparse.Namespace, A, group: dict, goal: dict | None) -> dict:
     # an extractiveness measure, silently promoted to the ranking metric.
     if not args.sort and not primary and measure not in all_keys:
         print(
-            f"  NOTE: no run declares a primary metric, so {sort_key!r} was chosen by\n"
+            f"  NOTE: no goal reads a measure a run records and no run declares a primary metric, so {sort_key!r} was chosen by\n"
             f"        sort order, not by meaning. Pass --sort explicitly, or re-run with\n"
             f"        an adapter that sets PRIMARY_METRIC."
         )
@@ -935,7 +933,8 @@ def _table(args: argparse.Namespace, A, group: dict, goal: dict | None) -> dict:
             text_cols, split = tighter, True
     own = {n: view[n]["reference"] for n in by_config if view[n]["wrote"]}
     w = max(len(r["system_id"]) + (2 if r["system_id"] in own else 0) for r in rows) + 2
-    print(f"dataset: {args.dataset_id}   ranked by: {sort_key} ({'lower' if asc else 'higher'} is better)\n")
+    better = better_word(which) if which == "neutral" else f"{which} is better"
+    print(f"dataset: {args.dataset_id}   ranked by: {sort_key} ({better})\n")
     if not _jsonout.table(
         ["system_id", "n_runs", "tier", *show],
         [[r["system_id"], r["n_runs"], r["tier"], *[r.get(k) for k in show]] for r in rows],
@@ -1071,7 +1070,7 @@ def _table(args: argparse.Namespace, A, group: dict, goal: dict | None) -> dict:
         )
     return {
         "sort_by": sort_key,
-        "direction": "lower" if asc else "higher",
+        "direction": which,
         "ranked_on_descriptive": ranking_on_descriptive,
         "metrics": show,
         "kinds": {k: kinds.get(k) for k in show},

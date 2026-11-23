@@ -61,7 +61,7 @@ from evaluation_harness._common import (  # noqa: E402
     scored_against_dir,
 )
 from evaluation_harness._runs import (  # noqa: E402
-    default_metric,
+    deciding_metric,
     per_item,
     ranks_lower,
     refuse_run_level,
@@ -356,10 +356,10 @@ def _run(args: argparse.Namespace, ap: Any) -> int:
     if args.family is None:
         args.family = 1
     _named_metric = bool(args.metric)
-    args.metric = args.metric or default_metric(args.dataset_id, label=args.label)
+    args.metric = args.metric or deciding_metric(args.dataset_id, label=args.label)
     refuse_run_level([*runs, *runs_b], args.metric, "pair-test")
     if cross and not _named_metric:
-        other = default_metric(args.b_dataset, label=args.label)
+        other = deciding_metric(args.b_dataset, label=args.label)
         if other != args.metric:
             die(
                 f"the two datasets' runs record different primary metrics ({args.dataset_id}: {args.metric}, "

@@ -144,7 +144,12 @@ def print_goal(r: dict) -> None:
 
     print(f"{r['title']}\n")
     print(textwrap.fill(r["statement"], width=96))
-    print(f"\n  decision   {r['decision']}\n  decides    {r['measure']}, {r['direction']} is better")
+    better = (
+        f"{r['direction']} is better"
+        if r["direction"] != "mixed"
+        else _runs.better_word("mixed", r.get("direction_on"))
+    )
+    print(f"\n  decision   {r['decision']}\n  decides    {r['measure']}, {better}")
     if r["measure"] and (
         own := _common.load_goals().get(r["goal"])
     ):  # the line that printed "higher" is the goal's own
@@ -550,9 +555,9 @@ def print_metrics(d: dict) -> None:
         )
         print("    recorded on: " + ", ".join(f"{ds} ({n} arms)" for ds, n in sorted(m["datasets"].items())))
         if m["decides"]:
-            print("    decides: " + ", ".join(m["decides"]))
+            print("    decides: " + cb.decides_phrase(m["decides"]))
         if m["weighs"]:
-            print("    weighed by: " + ", ".join(m["weighs"]))
+            print(f"    {cb.WEIGHED_LABEL}: " + ", ".join(m["weighs"]))
         if m["period"]:
             p = m["period"]
             print(
@@ -569,8 +574,8 @@ def print_metric(d: dict) -> None:
             print(textwrap.fill(text, width=96, initial_indent="  ", subsequent_indent="  ") + "\n")
     print(f"  better       {d['better']}")
     print(f"  kind         {d['kind']}")
-    print("  decides      " + (", ".join(d["decides"]) or "no goal"))
-    print("  weighed by   " + (", ".join(d["weighs"]) or "no goal"))
+    print("  decides      " + cb.decides_phrase(d["decides"]))
+    print(f"  {cb.WEIGHED_LABEL}  " + (", ".join(d["weighs"]) or "no goal"))
     for ds in d["datasets"]:
         print(f"\non {ds['dataset']}:")
         _table(

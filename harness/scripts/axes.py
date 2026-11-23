@@ -67,16 +67,20 @@ TOKENS = ("tokens_in", "tokens_out")
 def axes_of(goal: dict, direction_of: Callable[[str], str | None] | None = None) -> list[dict]:
     """[{"name", "measure", "direction", "stat", "limit", "role", "note", "unit", "builtin"}]:
     quality (the primary measure) first, then cost and speed, then the goal's own, in its order.
-    `direction_of(measure)` names a custom measure's direction when the goal does not."""
+    `direction_of(measure)` names a measure's direction when the goal does not: the primary's too, so a goal that
+    leaves `direction` out ranks its measure as every other reader does (`_runs.direction`)."""
     crit = goal.get("success_criteria") or {}
     prim = crit.get("primary") or {}
     declared = crit.get("axes") or {}
     q = declared.get("quality") or {}
+    said = prim.get("direction")
+    if said not in ("lower", "higher") and direction_of:
+        said = direction_of(prim.get("measure", ""))
     out = [
         {
             "name": "quality",
             "measure": prim.get("measure", ""),
-            "direction": "lower" if prim.get("direction") == "lower" else "higher",
+            "direction": "lower" if said == "lower" else "higher",
             "stat": "mean",
             "limit": q.get("limit"),
             "margin": q.get("margin"),

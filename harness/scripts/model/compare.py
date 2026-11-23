@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from collections import Counter
 from functools import lru_cache
+from pathlib import Path
 
 from evaluation_harness import _fields, _visibility, stats
 from evaluation_harness._common import SPEED_KEYS
@@ -137,6 +138,20 @@ def _metric_rows(counts: Counter, per_arm: dict, baseline: str, dataset: str | N
     ]
 
 
+def _deciding(counts: Counter, arms: list, dataset: str, everyone: int) -> str | None:
+    """The metric that decides on `dataset` among the arms compared (`_runs.deciding_metric`), by its plain name, else
+    None: no dataset, or nothing that every arm scores (a measure one arm alone records leaves nothing to compare)."""
+    if not dataset:
+        return None
+    from evaluation_harness import _runs  # noqa: PLC0415
+
+    recorded = dict.fromkeys(k.split(" vs ")[0] for k, n in counts.items() if n == everyone)
+    seen = Counter(p for a in arms if (p := (A.describe(a) or {}).get("primary")) in recorded)
+    runs = [(Path(), {"scores": recorded, "primary_metric": next(iter(seen.most_common(1)), (None,))[0]})]
+    goals = {g["goal_id"]: g for g in getattr(A, "goals", list)()}
+    return _runs.deciding_metric(dataset, runs=runs, goals=goals, refuse=False)
+
+
 def _default_metric(counts: Counter, per_arm: dict, arms: list, asked: str, dataset: str = "") -> str:
     """The yardstick shown first.
 
@@ -166,10 +181,13 @@ def _default_metric(counts: Counter, per_arm: dict, arms: list, asked: str, data
     # metric all share, and left nothing to test (review, 2026-11-19).
     primaries = Counter(p for a in arms if (p := (A.describe(a) or {}).get("primary")))
     everyone = len(per_arm)
+    # The metric that decides on the dataset (`_runs.deciding_metric`: its goal's measure, else the arms' primary) first.
+    decided = _deciding(counts, arms, dataset, everyone)
 
     return min(
         pool,
         key=lambda k: (
+            k.split(" vs ")[0] != decided,
             k in A.shape_metrics,
             A.is_neutral(k, dataset or None),
             _reference_free(k),  # the bill and the clock: only when nothing is scored

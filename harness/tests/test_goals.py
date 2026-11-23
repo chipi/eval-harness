@@ -295,13 +295,15 @@ try:
     cp = cost_page.read_text() if cost_page.is_file() else ""
     check(
         "catalog: cost is its own kind, and the page names the goals that weigh it",
-        "cost: what an item cost" in cp and "<dt>weighed by</dt>" in cp and "tickets_summary.html" in cp,
+        "cost: what an item cost" in cp
+        and "<dt>weighed as an axis by</dt>" in cp
+        and "tickets_summary.html" in cp,
         f"page exists: {cost_page.is_file()}",
     )
     r = evh("metric-show", "latency_ms")
     check(
         "evh metric-list --metric: speed is its own kind, weighed by the goal",
-        "speed: how long an item took" in r.stdout and "weighed by   tickets_summary" in r.stdout,
+        "speed: how long an item took" in r.stdout and "weighed as an axis by  tickets_summary" in r.stdout,
         r.stdout[-400:] + r.stderr[-300:],
     )
 

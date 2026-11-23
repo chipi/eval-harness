@@ -48,7 +48,7 @@ OPS = (
            "dataset_id": {"type": "string", "description": "the dataset whose items are the rows"},
            "runs": {"type": "string", "description": "runs: run ids or system ids (their latest run on the dataset), comma-separated; the first is production's"},
            "csv": {"type": "string", "format": "path", "x-metavar": "FILE", "description": "the CSV to write (UTF-8 with the mark Excel needs); a blind fill's key is written beside it (sheet.key.json), and a job keeps the key: its files never serve one", "x-file": "artifact"},
-           "metric": {"type": "string", "description": "default: the arms' primary metric"},
+           "metric": {"type": "string", "description": "default: the metric that decides on the dataset: its goal's measure, else the arms' primary metric"},
            "label": {"type": "string", "default": "", "description": "the label system ids are looked up under (default: the plain arm)"},
            "where": {"type": "array", "items": {"type": "string"}, "x-metavar": "FIELD:VALUE", "description": "FIELD:VALUE or FIELD:LO..HI, keep only matching items (repeatable)"},
            "disagree": {"type": "boolean", "description": "only the items where a run decided differently from the first"},

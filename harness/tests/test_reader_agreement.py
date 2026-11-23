@@ -70,31 +70,7 @@ FactMap = dict[tuple, Any]
 
 #: Disagreements this test found that are not fixed yet: (project, fact, key, the readers that differ) -> where it is.
 #: The check reproduces each one and fails when it no longer does.
-KNOWN: dict[tuple[str, str, tuple, frozenset], str] = {
-    (
-        "tutorial",
-        "direction",
-        ("tk_hidden_v1", "output_words"),
-        frozenset({"api:leaderboard", "cli:leaderboard", "mcp:leaderboard"}),
-    ): (
-        "`leaderboard` on a dataset where no run declares a primary metric ranks by the first name in sort order and "
-        "prints `(higher is better)` for a metric every other reader calls neutral; it warns beneath: RANKED ON A DESCRIPTIVE METRIC"
-    ),
-    ("fleet", "baseline_arm", ("queue_triage_v1", "triage_a"), frozenset({"catalog:goal page"})): (
-        "a goal page tags `baseline` every arm that any goal on the dataset promoted: model/goal_views.by_dataset sets the "
-        "flag per dataset, not per goal"
-    ),
-    (
-        "fleet",
-        "baseline_arm",
-        ("queue_triage_v1", "triage_b"),
-        frozenset(f"{s}:goal-leaderboard:{x}" for s in ("api", "cli", "mcp") for x in ("arm flag", "group"))
-        | {"catalog:goal page"},
-    ): (
-        "the same flag: triage_b's group reads as its baseline the first arm flagged for any goal (arm_x, triage_a's), not "
-        "the arm its own baseline names (arm_y), which its `answer`, `baselines` and the dataset page give"
-    ),
-}
+KNOWN: dict[tuple[str, str, tuple, frozenset], str] = {}
 
 
 class Project:

@@ -47,6 +47,7 @@ from evaluation_harness._adapter import (
 )
 from evaluation_harness._common import (
     BOOKKEEPING_PREFIXES,
+    BUNDLED_ADAPTER_ID,
     DATA,
     EXIT_NOTHING,
     EXIT_STOPPED,
@@ -932,6 +933,7 @@ def _dry_run(
     once: bool = False,
     only: int | None = None,
     note: str | None = None,
+    adapter_id: str = BUNDLED_ADAPTER_ID,
 ) -> int:
     """Shape and cost the sweep without calling anything.
 
@@ -969,11 +971,19 @@ def _dry_run(
     )  # a resume pays for the items it calls, not all of them
 
     print("DRY RUN — nothing was called\n")
-    print(
-        f"  system      {cfg['system_id']}  ({params.get('provider', 'echo')}"
-        + (f" / {params['model']}" if params.get("model") else "")
-        + ")"
+    # What runs: the bundled adapter's provider (echo unless the system names one), or the project's own adapter, which
+    # reads `provider` only if its system sets one: echo is the bundled adapter's default, not a fact about another.
+    custom = adapter_id != BUNDLED_ADAPTER_ID
+    provider = params.get("provider") if custom else params.get("provider", "echo")
+    what = ", ".join(
+        x
+        for x in (
+            f"adapter {adapter_id}" if custom else "",
+            f"{provider}" + (f" / {params['model']}" if params.get("model") else "") if provider else "",
+        )
+        if x
     )
+    print(f"  system      {cfg['system_id']}  ({what})")
     print(f"  dataset     {ds['dataset_id']}  ({len(items)} items)")
     print(f"  repeats     {repeat}")
     if once:
@@ -1044,7 +1054,8 @@ def _dry_run(
         {
             "system_id": cfg["system_id"],
             "dataset_id": ds["dataset_id"],
-            "provider": params.get("provider", "echo"),
+            "adapter": adapter_id,
+            "provider": provider,
             "model": params.get("model"),
             "items": len(items),
             "repeats": repeat,
@@ -1529,7 +1540,9 @@ def _run(args: argparse.Namespace) -> int:
                 f"({'CALLED AGAIN, --recall-failed: their side effects repeat' if args.recall_failed else 'not called; --recall-failed would call them'}), "
                 f"{len(fresh)} never attempted (called): {calls_only} call(s) in all"
             )
-        return _dry_run(ds, cfg, args.repeat, adapter_path, args.config, declared_once, calls_only, note)
+        return _dry_run(
+            ds, cfg, args.repeat, adapter_path, args.config, declared_once, calls_only, note, adapter_id
+        )
 
     if declared_once:
         print(CALL_ONCE_LINE)

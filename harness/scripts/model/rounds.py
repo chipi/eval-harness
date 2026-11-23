@@ -340,7 +340,8 @@ def evidence(goal: str, rnd: dict, A: Any = None, data: Path | None = None) -> d
         data = getattr(A, "data_dir", None)
     g = load_goals(model_goals.GOAL.under(data).base()).get(goal) or {}
     prim = (g.get("success_criteria") or {}).get("primary") or {}
-    metric, lower = prim.get("measure", ""), prim.get("direction") == "lower"
+    metric = prim.get("measure", "")
+    lower = A.lower_is_better(metric, rnd.get("dataset_id"))
     # The comparisons read the round's own runs (round_view); the adapter the caller set is set back afterwards, so a
     # page built after this reads every run again.
     before = model_compare.A

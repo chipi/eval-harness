@@ -3028,7 +3028,14 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
             + (f"; threshold {prim['threshold']}" if prim.get("threshold") is not None else ""),
         ),
         ("min items", crit.get("min_items", "")),
-        ("weighs", "; ".join(axis_title(x) for x in axes_of(g) if x["role"] != "ignore")),
+        (
+            "weighs",
+            "; ".join(
+                axis_title(x)
+                for x in axes_of(g, lambda m: "lower" if A.lower_is_better(m) else None)
+                if x["role"] != "ignore"
+            ),
+        ),
         ("strategy", f"{strategy_of(g)}: {STRATEGIES[strategy_of(g)]}"),
         ("tie-break", ", ".join(tie_break_of(g))),
         (
@@ -3603,6 +3610,24 @@ def metric_index(A: Adapter, by_ds: dict) -> dict:
     return out
 
 
+#: What a goal link beside a metric means, said where it is shown: a goal DECIDES on a measure when it is its primary
+#: measure, and WEIGHS it when it takes it as one of its other axes (cost, speed or its own): a measure one goal decides
+#: on is weighed by none, and neither fact contradicts the other.
+WEIGHED_LABEL = "weighed as an axis by"
+
+
+def decides_phrase(goals: list[str]) -> str:
+    """The goals that decide on a metric, with why: "goal g (its primary measure)", "goals a, b (their primary
+    measure)", or "no goal". `goals` are the names as shown (ids or links)."""
+    if not goals:
+        return "no goal"
+    return (
+        f"goal {goals[0]} (its primary measure)"
+        if len(goals) == 1
+        else f"goals {', '.join(goals)} (their primary measure)"
+    )
+
+
 def metric_directions(A: Adapter, m: str, where: dict) -> dict[str, str]:
     """{dataset: which way is better for `m`} on each dataset recording it (`where` is its metric_index entry), by the
     rule (`_runs.direction`)."""
@@ -3660,7 +3685,7 @@ def render_metrics(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
                     )
                     + (
                         ("<br>" if where["goals"] else "")
-                        + '<span class="muted small">weighed by</span> '
+                        + f'<span class="muted small">{WEIGHED_LABEL}</span> '
                         + ", ".join(
                             f'<a class="cell-link" href="g/{slug(g["goal_id"])}.html">{e(g.get("title") or g["goal_id"])}</a>'
                             for g in where["weighs"]
@@ -4281,8 +4306,8 @@ def render_metric(A: Adapter, m: str, where: dict, by_ds: dict, project: dict, o
     facts = [
         ("better", e(better)),
         ("kind", e(_kind_of(A, m, where["datasets"]))),
-        ("decides", ", ".join(goal_link(g, "../") for g in where["goals"]) or "no goal"),
-        ("weighed by", ", ".join(goal_link(g, "../") for g in where["weighs"]) or "no goal"),
+        ("decides", decides_phrase([goal_link(g, "../") for g in where["goals"]])),
+        (WEIGHED_LABEL, ", ".join(goal_link(g, "../") for g in where["weighs"]) or "no goal"),
         ("recorded on", ", ".join(dataset_link(ds, "../") for ds in sorted(where["datasets"])) or "—"),
     ]
     dl = "".join(f"<dt>{e(k)}</dt><dd>{x}</dd>" for k, x in facts)
