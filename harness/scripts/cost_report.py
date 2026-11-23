@@ -61,6 +61,12 @@ def billed_and_recorded(run_dir: Path) -> tuple[float, float, int, int]:
     return billed, recorded, with_bill, total
 
 
+def _ratio(r: float | None) -> str:
+    """The ratio column: `billed / recorded`, or "—" where nothing was recorded to divide by: 0 billed against 0
+    recorded is no ratio (not 0), and a bill against nothing recorded is not an infinite one."""
+    return f"{r:>8.2f}x" if r is not None else f"{'—':>8} "
+
+
 def _print_judging(rows: list[dict]) -> None:
     """The judging table: a line per scorer and judging set, its judges under it, and the total."""
     sets: dict[tuple[str, str], list[dict]] = {}
@@ -135,13 +141,14 @@ def body(dataset_id: str | None = None, match: str | None = None) -> int:
         print("  " + "-" * (w + 31))
         tb = tr = 0.0
         for billed, recorded, cid, _ds in rows:
-            ratio = (billed / recorded) if recorded else float("nan")
-            flag = "  <-- recorded is the price table" if abs(ratio - 1) > 0.01 else ""
-            print(f"  {cid:{w}}{billed:>11.4f}{recorded:>11.4f}{ratio:>8.2f}x{flag}")
+            ratio = (billed / recorded) if recorded else None
+            differs = billed > 0 if ratio is None else abs(ratio - 1) > 0.01
+            flag = "  <-- recorded is the price table" if differs else ""
+            print(f"  {cid:{w}}{billed:>11.4f}{recorded:>11.4f}{_ratio(ratio)}{flag}")
             tb += billed
             tr += recorded
         print("  " + "-" * (w + 31))
-        print(f"  {'TOTAL':{w}}{tb:>11.4f}{tr:>11.4f}{(tb / tr) if tr else float('nan'):>8.2f}x")
+        print(f"  {'TOTAL':{w}}{tb:>11.4f}{tr:>11.4f}{_ratio((tb / tr) if tr else None)}")
 
     if no_bill:
         print(

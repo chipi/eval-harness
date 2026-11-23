@@ -239,21 +239,24 @@ def _run(args: argparse.Namespace) -> int:
             f"  {'n per half':>11} {'rho(half A, half B)':>21} {'5th pct':>9} "
             f"{'P(same winner)':>15} {'median |rank move|':>19} {'arms tied 1st':>14}"
         )
-    nan = float("nan")
     table_rows: list[list] = []
+
+    def shown(v: float | None, spec: str, width: int) -> str:
+        # No rho when every draw tied every arm, no rate when no draw had a unique winner in both halves: unknown,
+        # which is neither 0 nor nan.
+        return f"{'—':>{width}}" if v is None else f"{v:>{width}{spec}}"
+
     for r in m["rows"]:
         n, undecided, mean_ties = r["n_per_half"], r["undecided_draws"], r["arms_tied_first"]
-        rho_m = nan if r["rho_mean"] is None else r["rho_mean"]
-        rho_5 = nan if r["rho_5th_pct"] is None else r["rho_5th_pct"]
-        pw = nan if r["p_same_winner"] is None else r["p_same_winner"]
+        rho_m, rho_5, pw = r["rho_mean"], r["rho_5th_pct"], r["p_same_winner"]
         if args.json:
             table_rows.append(
                 [n, rho_m, rho_5, pw, r["median_rank_move"], mean_ties, mean_ties >= 2.0, undecided]
             )
         else:
             print(
-                f"  {n:>11} {rho_m:>21.3f} {rho_5:>9.3f} "
-                f"{pw:>15.2f} {r['median_rank_move']:>19.2f} "
+                f"  {n:>11} {shown(rho_m, '.3f', 21)} {shown(rho_5, '.3f', 9)} "
+                f"{shown(pw, '.2f', 15)} {r['median_rank_move']:>19.2f} "
                 f"{mean_ties:>14.1f}{'  <- ties decide' if mean_ties >= 2.0 else ''}"
                 + (f"   [{undecided}/{args.draws} draws undecided]" if undecided else "")
             )
