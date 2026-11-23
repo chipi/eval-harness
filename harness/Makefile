@@ -25,7 +25,7 @@ TIER ?= silver
         holdout pair-test rank-stability \
         run-dry-run run sweep \
         runs-list run-compare leaderboard run-promote \
-        validate format-check judge judge-score check guide-check browser-install browser-check budget-check browser-real-check guard-check commands-check stores-check coverage ci test smoke-fixture cost-report clean clean-cache \
+        validate format-check judge judge-score check guide-check browser-install browser-check budget-check browser-real-check guard-check commands-check upgrade-check stores-check coverage ci test smoke-fixture cost-report clean clean-cache \
         bootstrap-test family-test import-run rescore silver-calibrate site site-check docs
 
 # ── getting started ─────────────────────────────────────────────────────────
@@ -149,6 +149,12 @@ guard-check:
 commands-check:
 	$(PYTHON) tests/test_report_tools.py
 	$(PYTHON) tests/test_ops_commands.py
+
+# The previous release's wheel installed, a project on it per store, this tree's build installed over it, and the
+# reads UPGRADING ends on (tests/check_upgrade_install.py). Needs the network and an authenticated `gh`, and a minute
+# or two, so it is not in `make ci`: run it on the release pull request (RELEASING.md, step 4b).
+upgrade-check:
+	$(PYTHON) tests/check_upgrade_install.py $(ARGS)
 
 # Every test file on the sqlite store (RFC-025), each in its own process: the self-test runs them on files, and the
 # store's other mode is exactly as safe as the tests that run on it (architecture review, 2026-11-06).

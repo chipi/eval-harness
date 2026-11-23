@@ -104,8 +104,9 @@ offline, with the real output of every command. The tutorials take it further:
 [eval rounds and dataset versions](docs/tutorials/4-rounds-and-versions.md),
 [the catalog and the inspector](docs/tutorials/5-catalog-and-inspector.md),
 [datasets from production and evaluating what production did](docs/tutorials/6-datasets-from-production.md),
-[setting a model up](docs/tutorials/7-set-up-a-model.md), and
-[the Workbench](docs/tutorials/8-the-workbench.md). Then
+[setting a model up](docs/tutorials/7-set-up-a-model.md),
+[the Workbench](docs/tutorials/8-the-workbench.md), and
+[your own system, a custom adapter](docs/tutorials/9-custom-adapter.md). Then
 [`harness/docs/INTEGRATION.md`](harness/docs/INTEGRATION.md) to drop it into your project and
 [`harness/docs/RUNBOOK.md`](harness/docs/RUNBOOK.md) for every command and flag.
 

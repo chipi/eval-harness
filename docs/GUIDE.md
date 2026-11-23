@@ -378,6 +378,7 @@ Each tutorial starts from where this page ends, or from a project of your own:
 | [**6 · Datasets from production**](tutorials/6-datasets-from-production.md) | what your system did in production, kept as a capture: a dataset from it, labels from what happened afterwards, validation and test; then production's own decisions scored against those labels, the rows where it was wrong picked, and the next version of a dataset you govern made from them |
 | [**7 · Set up a model before you test it**](tutorials/7-set-up-a-model.md) | a model record, onboarding it where it runs (its build, whether it reasons, JSON, determinism), an arm that names it, a smoke before the full run; on your own machine with Ollama |
 | [**8 · The Workbench**](tutorials/8-the-workbench.md) | the same loop on screens: a goal, its dataset, systems, rounds, reviews, production, the reference set, a judge, the held-out test and studies; every screen calling the command it shows |
+| [**9 · Your own system: a custom adapter**](tutorials/9-custom-adapter.md) | `adapter.py` end to end: `call_system` and `score`, what the adapter declares (kinds, descriptions, `CALL_ONCE`), prices on a system, a goal that says which way is better, and every view of it, offline |
 
 And the references, for when you know what you are looking for:
 [INTEGRATION](../harness/docs/INTEGRATION.md) (your system in the harness: the adapter, what
