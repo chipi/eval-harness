@@ -47,8 +47,10 @@ Checked: a goal saying `der` is lower gives lower = False when the runs name no 
 `"lower"`, `"higher"` or `"neutral"`, by this precedence:
 
 1. A goal that declares the measure: as its primary measure (`success_criteria.primary`) or as one of its axes (`axes_of`).
-   A goal that lists `dataset` among its datasets comes first; then the goals the runs name; then any goal.
-   Goals that disagree are a V14 failure, so a project never has two answers.
+   For a question about one dataset, only a goal that lists that dataset, or a goal the runs name, decides. A goal on
+   another dataset does not, and V14 warns when it disagrees with the answer. A question with no dataset (a measure no
+   run records: `metric-list`, `metric-show`, its metric page) is decided by any goal that declares it.
+   Goals that disagree on one dataset are a V14 failure, so a project never has two answers.
 2. What the runs record (`metric_directions`: the adapter's `METRIC_DIRECTIONS`, `import-run --asc`), then their
    declared kinds (`metric_kinds`: descriptive is neutral).
 3. The name table (`_common`: cost, speed, tokens; descriptive keys; error rates `wer`, `cer`, `der` lower).
@@ -85,10 +87,23 @@ the same arms.
 run recorded:
 
 - **A plain run** (`purpose: run`): `<label>/<dataset>/<system>`, as today.
-- **A repeat with `of`:** the arm of the run it names, **when their fingerprints' `hash` is equal**. The hash covers
-  the instrument, the data, the deployment and the settings, and leaves out the runner (RFC-021), so an equal hash is
-  the same measurement taken again. With a different hash it is another measurement and stays under `repeats`.
-  `evh run --purpose repeat` says which, before its first call and in its last line.
+- **A repeat with `of`:** the arm of the run it names when `model.runs.same_measurement` says the two are the same
+  measurement taken again: the same system and dataset, and equal fingerprint parts for the data, the deployment and
+  the settings, and an equal adapter. Each run's own fingerprint is read (a rescored or judged score's fingerprint has
+  no hash). Otherwise it stays under `repeats`, and the part that differs is named. `evh run --purpose repeat` says
+  which, before its first call and in its last line.
+  - **Not the whole `hash` (owner, 2026-11-23).** The hash's instrument part covers the harness's own code
+    (`harness_code_sha256`), so every run made on 0.8.1 has a new hash, and a repeat of a 0.8.0 run would never join.
+    And the hash is not unique to an arm: in one beta project, 13 imported systems share one hash on one dataset.
+    A different harness build joins, and is named where the arm's runs are listed.
+  - **`of` names a run of the same system and dataset,** or `evh run` refuses it, and validate fails it once
+    committed.
+  - **A repeat of a repeat** follows `of` to the root, with a cycle guard. A missing link, or a link that did not join,
+    leaves it under `repeats`, with the reason.
+  - **No fingerprint, or another fingerprint version,** on either side: under `repeats`, with the reason.
+  - **A closed round's numbers never change.** A repeat that joins after the round closed is listed in its
+    "since then". In an open round, a repeat of a retired arm's run is refused: today `add_run` brings the arm back
+    without a word.
 - **A repeat with no `of`:** under `repeats`, as today.
 - **`retime` and `pair`:** under their own labels, as today. Another machine and another configuration really are
   other measurements.
@@ -115,7 +130,7 @@ The cap was one case. The same shape elsewhere:
 
 | Where | Today | The rule |
 | --- | --- | --- |
-| `_common.py:514` `build.dirty = bool(dirt)` | git failing records `false`: clean | `null` when git cannot say, as `_fingerprint` already does; readers of `dirty` treat `null` as not proven clean (promotion refuses it, `runs-list` shows `?`) |
+| `_common.py:514` `build.dirty = bool(dirt)` | git failing records `false`: clean | `null` when git cannot say, as `_fingerprint` already does, recorded so it can be told apart from a run with no tree (`EVAL_BUILD_REF`, `import-run`, which also record `null`); only "git was asked and could not say" counts as not proven clean (promotion refuses it); `runs-list` shows `?` for every `null` |
 | `catalog_arms.py:418`, `catalog_views.py:87,711` cost cells | `$0.00` shows `—`, as "not recorded" | `$0.00` shows `$0.00`; `—` only when not recorded, as `catalog_build.py:2931` already does |
 | `workbench/live.js` trial costs | unknown shows `$0.0000` | unknown shows `—` |
 | `_study.py:128` `stop.usd and stop.wall_h` | `usd: 0` refused as no stop rule | `is not None`, as `open_study` reads it |
@@ -143,6 +158,28 @@ every reader takes it from there.
 
 `catalog_build.py:1008,1046` show `baselines[-1]`, the latest promotion of any goal on that dataset, as "the" baseline.
 The cell names the baseline per goal, as the goal pages do.
+
+### F7. The writers record the fact, or refuse
+
+One source per fact is half the answer: a reader can only read what a writer recorded. Today the writers accept
+shapes the readers then assume away:
+
+- `evh run --of` checks only that the run exists (`run.py:1375`).
+- `--run-id foo_r1` is accepted, and was read as a set.
+- `build.dirty` is written `false` when git cannot say.
+- `import-run` writes `purpose: run` and `dirty: null` whatever happened (`import_run.py:182,200`).
+
+**The rule.** Each writer records the fact explicitly or refuses what it cannot know, and validate checks the link
+the readers rely on:
+
+- `of` names a run of the same system and dataset, and its relation to that run (joined, or which part differs) is
+  stated.
+- A `repeat_index` set is whole and consistent.
+- `dirty: null` comes with how the build was given.
+- A goal's measure is recorded by some run on its datasets (a warning).
+- Declared directions are `lower` or `higher` (a warning).
+
+`evh run` and `import-run` refuse at write time what validate would fail.
 
 ## What moves
 

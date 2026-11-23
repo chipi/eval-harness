@@ -320,6 +320,45 @@ own, in a shuffled order, equal to the export). The full gates: see the commit t
 
 **Moves a result:** no.
 
+## R. What the beta projects found, and why the suite did not (owner, 2026-11-23)
+
+On their first day on v0.8.0, the homelab, podcast and fleet projects each found one bug. A read of the code found
+eleven more of the same kind.
+
+**The cause.** A fact is worked out by each reader from clues, not answered once from what was recorded. The
+suite checked the harness against itself: fixtures made by its own commands, one reader at a time, presence instead
+of meaning, two tests that asserted the bug, and this repository's data lacking the shapes. The writers accept what
+the readers assume away.
+
+**Decided (owner, 2026-11-23).**
+
+- All of the plan below ships in 0.8.1.
+- A repeat joins its original's arm by the parts rule (RFC-041 F2), not the whole hash.
+- Fixtures copy the beta projects' shapes synthetically: none of their data is committed.
+- The homelab, podcast and fleet sessions are beta users at two points (R8).
+
+**The design:** [RFC-041](../../docs/rfc/RFC-041-one-source-for-each-fact.md). **The evidence:**
+`docs/wip/SLIP_ANALYSIS_0.8.1.md` and the advisor's review (Fable 5.1, 2026-11-23).
+
+| Item | What | Done when | Moves a result |
+| --- | --- | --- | --- |
+| R1 | RFC-041 F1-F7: one source per fact (direction; arm membership, sets, the runs of an arm, the latest run; unknown vs zero; the public gate; the day; the baseline per goal; writers that record or refuse) | each fact's failing test passes, on both stores; the export of this repository identical but for listed, explained differences | yes: the fleet's arm (2 runs to 3), the podcast's `wer` on two datasets; listed in the release notes |
+| R2 | Synthetic look-alike projects: an imported project (no goal on its runs, prose goal measures, free-text builds, `dirty: null`, 60+ arms on one dataset); a fleet-shaped one (a `--repeat 3` set with a pass lost and a repeat with `of`, repeats on another build, two goals on one dataset family, runs with no goal); a bakeoff-shaped one (zero-price local models, a custom adapter with kinds and no directions, datasets of 3 and 22 items) | `tests/test_foreign_projects.py` runs validate, `migrate --check`, every read command and a catalog build on each, on both stores, with the known facts asserted by hand | no |
+| R3 | `evh facts-dump --json` and the cross-reader check: for every (dataset, arm, metric), the value, the runs, the direction word, the latest run, the reference, the cost state, the baseline per goal and the public flag, as the CLI, the API, the MCP reads, the export and the inspector each give them | the check passes on the tutorial project, R2's projects and this repository, and fails when one reader is given a stub that works a fact out itself | no |
+| R4 | Writers that record or refuse (RFC-041 F7), and validate's link checks | a test feeds each writer what readers assume away and gets a named refusal | no (warnings) |
+| R5 | Data mutations: about 12 (no goal, cost 0 and missing, `dirty: null`, unicode ids, `_r1` ids that are not sets, missing and extra fields, two goals with different baselines, a far time zone, public env with no hosts) on the tutorial project and R2's | no traceback; a named refusal or exit 0; R3's check agrees; validate names the mutation | no |
+| R6 | Source checks for the six facts, from the tokens (as `test_cap_shown.py`) | each fails on a probe that works the fact out itself | no |
+| R7 | A sentinel leak test of every public read, page and export under each `--publish`; a table of statistics edge cases (all items failed, disjoint items, every cluster of one, a 3-item dataset); the suite once with a far `TZ`, another locale and `EVAL_BUILD_REF` unset; INTEGRATION's custom adapter as a guide-checked tutorial; an install of the previous wheel, then this one, then `migrate --check` and `validate` | each a test or gate that fails before its fix | no |
+| R8 | The beta sessions. Point A, after R1 merges: on a copy of their project, `validate`, `migrate --dry-run` and `facts-dump` under v0.8.0 and under 081, sent back as JSON with the diff; every diff line must be in the release notes. Point B, at the release candidate: the documented flows as a newcomer (upgrade; the fleet's `--purpose repeat --of`; the podcast's `import-run`; the bakeoff's first run) | Point A from all three with every diff explained; Point B from the fleet | no |
+| R9 | An audit of tests that assert behaviour "as intended" (the tests touched by R1, and every test whose wording says so) against RUNBOOK and the PRDs | a table, each row kept, changed or removed with a reason | no |
+
+**Not in 0.8.1:**
+
+- Mutation testing (a new dependency, slow; R2, R3 and R5 find the same on real shapes).
+- A fact registry beyond the six facts.
+- A rewrite of the suite.
+- Paid or writing work by a beta session as a gate.
+
 ## Not in this plan
 
 - **The Qwen subscription** as a judge or an arm. The owner, 2026-11-21: "leave this as it is right now".
