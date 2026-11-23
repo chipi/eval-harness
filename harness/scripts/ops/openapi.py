@@ -19,6 +19,7 @@ from evaluation_harness.ops.registry import OPS, Op
 #: A refusal of the model's, as an HTTP status (the kinds are `_common.REFUSALS`).
 REFUSAL_STATUS = {
     "not-found": 404,
+    "nothing-measured": 404,
     "bad-argument": 400,
     "invalid-file": 422,
     "would-overwrite": 409,

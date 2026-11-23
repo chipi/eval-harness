@@ -17,8 +17,9 @@ commands, as the code names it (stats.py `_set_verdict`, charts `_word`, the ref
   lists the shapes make (none, one, all zero, three, a nan).
 
 A score that is not a number (NaN, an infinity, None) makes its item a failed item (RFC-041 F7: a writer records a
-number or refuses), so no new run holds one; the "old data" checks give the readers a run recorded before that, a NaN
-in an item and in the run's mean. The checks that start "observation:" ask for more than the verdict word (why an arm
+number or refuses), so no new run holds one; the "old data" checks give the readers a run recorded before that, a NaN,
+an infinity or a None in an item (and a NaN or infinite mean), which they read as the failed item `evh run` records now
+(scored 0): the same pair-test verdict and p, and the same board, as the run written the new way. The checks that start "observation:" ask for more than the verdict word (why an arm
 is out, that an arm failed everything, what the smallest p is). Shapes whose runs break the catalog build come last,
 each with its own build, so one crash does not hide the pages before it. `EDGES_KEEP=1` leaves the project for a look.
 """
@@ -193,6 +194,18 @@ def p_of(text: str) -> float | None:
     return float(m.group(1)) if m else None
 
 
+def verdict_of(text: str) -> str | None:
+    m = re.search(r"verdict\s+(\S+)", text)
+    return m.group(1) if m else None
+
+
+def board_q() -> list:
+    """The arms of e_nan_scores' leaderboard in their order, each with its q."""
+    doc, _text, _r = cmd_json("leaderboard", "e_nan_scores")
+    arms = ((doc or {}).get("result", {}).get("values", {}).get("groups") or [{}])[0].get("arms") or []
+    return [(a["system_id"], a["metrics"].get("q")) for a in arms]
+
+
 def scores_of(sp: dict, arm: str) -> dict:
     """What a run of the shape holds for the arm: a failed item scored as an empty answer (0)."""
     on = sp.get(f"on_{arm}") or range(1, sp["n"] + 1)
@@ -208,19 +221,20 @@ def scores_of(sp: dict, arm: str) -> dict:
 #: `pair` the pair-test's verdict word, or "refuse" for the named refusal (not-enough); `board` and `page` the words a
 #: leaderboard and a goal page use for it; `stats` `compare`'s verdict.
 EXPECT: dict[str, dict] = {
-    "one_item": {"pair": "refuse", "board": r"Not enough paired data|is out", "page": r"too few items", "stats": "untestable"},
+    "one_item": {"pair": "refuse", "board": r"shares fewer than 2 items with the leader", "page": r"too few items", "stats": "untestable"},
     "all_failed_b": {"pair": "NOT-SIGNIFICANT", "board": r"NO detectable arm effect", "page": r"not separated", "stats": "not significant"},
     "identical": {"pair": "NOT-SIGNIFICANT", "board": r"NO detectable arm effect", "page": r"identical", "stats": "identical"},
     "all_zero_deltas": {"pair": "NOT-SIGNIFICANT", "board": r"NO detectable arm effect", "page": r"identical", "stats": "identical"},
     "disjoint": {"pair": "refuse", "board": r"Not enough paired data", "page": r"shares fewer than 2 items", "stats": "untestable"},
     "singleton_clusters": {"pair": "SIGNIFICANT", "board": r"an arm effect exists", "page": r"better", "stats": "significant: better"},
-    "one_cluster": {"pair": "refuse", "board": r"is out|Not enough paired data", "page": r"too few items", "stats": "untestable"},
+    "one_cluster": {"pair": "refuse", "board": r"is out: shares 8 items with the leader, in 1 batch cluster", "page": r"too few items", "stats": "untestable"},
     "three_items": {"pair": "NOT-SIGNIFICANT", "board": r"NO detectable arm effect", "page": r"not separated", "stats": "not significant"},
     "half_missing_22": {"pair": "SIGNIFICANT", "board": r"is out: n 11 of 22", "page": r"n 11 of 22 items", "stats": "significant: better"},
     # RFC-041 F7: the item whose score is not a number is a failed item, 0 as every failed item is: a wins 7 of 8 and
-    # loses that one, sign-flip p 18/256 (owner 2026-11-23; before, the nan put the arm out)
-    "nan_scores": {"pair": "any", "board": r"NO detectable arm effect", "page": r"too few items|not separated|shares fewer", "stats": None},
-    "none_scores": {"pair": "any", "board": r"NO detectable arm effect", "page": None, "stats": None},
+    # loses that one, sign-flip p 68/256 = 0.2656 for nan_scores (a loses item 2) and 118/256 = 0.4609 for none_scores
+    # (item 5), every one of the 2^8 sign patterns counted (owner 2026-11-23; before, the nan put the arm out)
+    "nan_scores": {"pair": "NOT-SIGNIFICANT", "p": 0.2656, "board": r"NO detectable arm effect", "page": r"not separated", "stats": None},
+    "none_scores": {"pair": "NOT-SIGNIFICANT", "p": 0.4609, "board": r"NO detectable arm effect", "page": None, "stats": None},
 }  # fmt: skip
 
 
@@ -256,13 +270,7 @@ def check_shape(name: str, out: Path) -> None:
     doc, text, r = pair(name)
     check(w("pair-test: no traceback; exit 0, or a named refusal"),
           "Traceback" not in text and (r.returncode == 0 or "ERROR (" in r.stderr), text[-300:])  # fmt: skip
-    if (
-        ex["pair"] == "any"
-    ):  # no verdict is pinned (the shape has no right one in the docs): a refusal by name, or a sound one
-        p = p_of(text)
-        check(w("pair-test: a named refusal, or a verdict with a p that is a probability and no nan"),
-              "ERROR (" in r.stderr or (p is not None and 0 <= p <= 1 and not has_nan(text)), text[-400:])  # fmt: skip
-    elif ex["pair"] == "refuse":
+    if ex["pair"] == "refuse":
         check(
             w("pair-test: refuses by name, ERROR (not-enough): too few to test"),
             "ERROR (not-enough)" in r.stderr,
@@ -277,6 +285,12 @@ def check_shape(name: str, out: Path) -> None:
         p = p_of(text)
         check(w("pair-test: its p is a probability"), p is not None and 0 <= p <= 1, f"sign-flip p {p}")
         check(w("pair-test: no nan or inf in what it says"), not has_nan(text), text[-400:])
+        if "p" in ex:
+            check(
+                w(f"pair-test: the exact sign-flip p is {ex['p']}"),
+                p is not None and round(p, 4) == ex["p"],
+                f"sign-flip p {p}",
+            )
     check(
         w("pair-test --json: strict JSON, no NaN or Infinity"),
         r.returncode != 0 or doc is not None,
@@ -386,19 +400,67 @@ try:
         for name in names:
             check_shape(name, proj / ".build" / f"edges-{stage}")
 
-    # ── old data: a run recorded before RFC-041 F7 holds a NaN in an item and in its mean ──────────────────────────
+    # ── old data: a run recorded before RFC-041 F7 holds a NaN, an infinity or a None in an item ───────────────────
+    # (owner 2026-11-23, one rule on read as on write: that item is a failed item, scored 0, as `evh run` records it now,
+    # so the old shape and the run `evh run` writes now give the same pair-test verdict and p, and the same board)
     rid = next(x for x in _runstore.listdir(proj, "runs") if x.startswith("e_nan_scores_a_"))
+    _doc, new_text, _r = pair("nan_scores")
+    new_facts = (verdict_of(new_text), p_of(new_text))
+    new_board = board_q()
+    check("old data: the run `evh run` writes now: NOT-SIGNIFICANT, p 68/256 = 0.2656",
+          new_facts == ("NOT-SIGNIFICANT", 0.2656), new_facts)  # fmt: skip
     with _runstore._InProject(proj) as data:
         sd = _runstore.model_runs.first_score(data / "runs" / rid)
         assert sd is not None
-        rows = _runstore.rows(sd)
+        written = _runstore.rows(sd)
+        written_mean = json.loads(_runstore._store.read_text(sd / "metrics.json"))
+    for shape in ("inf", "none", "nan"):
+        with _runstore._InProject(proj) as data:
+            sd = _runstore.model_runs.first_score(data / "runs" / rid)
+            assert sd is not None
+            rows = [dict(row) for row in written]
+            for row in rows:
+                if row["item_id"] == "i02":
+                    row["q"] = {"inf": float("inf"), "none": None, "nan": float("nan")}[shape]
+            _runstore.put_rows(sd, rows)
+            mj = json.loads(json.dumps(written_mean))
+            mj["scores"]["q"] = float("inf") if shape == "inf" else float("nan")
+            _runstore._store.write_text(sd / "metrics.json", json.dumps(mj))
+        _doc, text, _r = pair("nan_scores")
+        check(f"old data, {shape} in item i02: pair-test gives the verdict and p of the run `evh run` writes now",
+              (verdict_of(text), p_of(text)) == new_facts, (verdict_of(text), p_of(text)))  # fmt: skip
+        check(f"old data, {shape} in item i02: the leaderboard ranks the arms and gives their q as that run does",
+              board_q() == new_board, (board_q(), new_board))  # fmt: skip
+    # a boolean in an item is no score (`score_of` leaves it out): pair-test and the leaderboard both read N=7
+    with _runstore._InProject(proj) as data:
+        sd = _runstore.model_runs.first_score(data / "runs" / rid)
+        assert sd is not None
+        rows = [dict(row) for row in written]
+        for row in rows:
+            if row["item_id"] == "i02":
+                row["q"] = True
+        _runstore.put_rows(sd, rows)
+    _doc, text, _r = pair("nan_scores")
+    _d, board, _r = cmd_json("leaderboard", "e_nan_scores")
+    n_pair = re.search(r"N=(\d+)", text)
+    n_board = re.search(r"N=(\d+) items", board)
+    check(
+        "a boolean item score is left out, as `score_of` leaves it: pair-test and the leaderboard read the same N (7) and verdict",
+        n_pair is not None
+        and n_board is not None
+        and n_pair.group(1) == n_board.group(1) == "7"
+        and verdict_of(text) == "SIGNIFICANT"
+        and "NO detectable arm effect" not in board,
+        (n_pair and n_pair.group(0), n_board and n_board.group(0), verdict_of(text)),
+    )
+    with _runstore._InProject(proj) as data:
+        sd = _runstore.model_runs.first_score(data / "runs" / rid)
+        assert sd is not None
+        rows = [dict(row) for row in written]
         for row in rows:
             if row["item_id"] == "i02":
                 row["q"] = float("nan")
         _runstore.put_rows(sd, rows)
-        mj = json.loads(_runstore._store.read_text(sd / "metrics.json"))
-        mj["scores"]["q"] = float("nan")
-        _runstore._store.write_text(sd / "metrics.json", json.dumps(mj))
     old = "old data (a NaN already recorded)"
     doc, text, r = cmd_json("leaderboard", "e_nan_scores")
     check(f"{old}: leaderboard: no traceback, strict JSON, no nan or inf in a cell or a sentence",
@@ -444,6 +506,25 @@ try:
             ok,
             said,
         )
+    d7 = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7]
+    row = stats.compare(
+        {
+            "a": {f"i{k}": v for k, v in enumerate([*d7, True, "x"])},
+            "b": dict.fromkeys((f"i{k}" for k in range(9)), 0.0),
+        },
+        "b",
+    )["rows"][0]
+    check(
+        "stats: a boolean or text is no score, left out as `score_of` leaves it (N=7), where a NaN counts as 0",
+        stats.exact_p([*d7, True, "x"]) == stats.exact_p(d7)
+        and stats.sign_flip_p([*d7, True]) == stats.sign_flip_p(d7)
+        and row["n"] == 7
+        and stats.compare({"a": {"i0": float("nan"), "i1": 0.5}, "b": {"i0": 0.4, "i1": 0.5}}, "b")["rows"][
+            0
+        ]["n"]
+        == 2,
+        (row["n"], stats.exact_p([*d7, True, "x"]), stats.exact_p(d7)),
+    )
     units, sizes = stats.clustered({}, {})
     check(
         "stats on no clusters: clustered gives nothing, cluster_ci None",

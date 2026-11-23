@@ -2191,6 +2191,7 @@ the rest.
 | `invalid-file` | a file the project wrote (a system, a scorer, a sheet, records) is malformed |
 | `not-materialized` | the data is not on this machine: fetch or materialize it first |
 | `not-enough` | too little to work on: too few items, arms or outputs |
+| `nothing-measured` | the thing named is there and nothing it reads was measured (exit 7) |
 | `not-public` | the text asked for is not shown on a public server or for a hidden dataset |
 | `not-allowed` | a rule refuses it: a dirty build, a closed round, a bind beyond this machine |
 | `not-configured` | a key, a cost cap, a build ref, an endpoint or the project's store is not set |

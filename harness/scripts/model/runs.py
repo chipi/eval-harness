@@ -19,13 +19,13 @@ score's and the run's purpose's joined ("rescored cd35dc1f, repeats")."""
 from __future__ import annotations
 
 import json
-import math
 import re
 from collections.abc import Iterable, Iterator
 from pathlib import Path
 from typing import Any
 
 from evaluation_harness import _common, _store
+from evaluation_harness._number import counted, is_number, is_scored
 
 RUN = "run.json"
 SCORE = "score.json"
@@ -135,13 +135,26 @@ def record(score_dir: Path) -> dict[str, Any] | None:
     out = {k: v for k, v in r.items() if k not in unset}
     out.update(s)
     scores = out.get("scores")
-    if isinstance(scores, dict) and any(
-        isinstance(v, float) and not math.isfinite(v) for v in scores.values()
-    ):
-        # a mean that is NaN (a run recorded before RFC-041 F7): no mean for that metric, not a "nan" in a table
-        out["scores"] = {
-            k: v for k, v in scores.items() if not (isinstance(v, float) and not math.isfinite(v))
-        }
+    if isinstance(scores, dict) and any(not is_number(v) for v in scores.values()):
+        out["scores"] = _means_counted(sd, scores)
+    return out
+
+
+def _means_counted(score_dir: Path, scores: dict[str, Any]) -> dict[str, Any]:
+    """A run's means with every one that is not a number (a run recorded before RFC-041 F7, whose mean over an item with
+    no number in it is NaN) worked again over its items, each item's score as `_number.counted` reads it (a failed
+    item's 0), as `evh run` records the mean now. A mean that no item row carries (a run-level metric, `score_run`,
+    whose mean is NaN) is left out and read as unknown: there are no items to count as failed, and `aggregate_scores`
+    refuses such a mean at write time. No "nan" in a table."""
+    from evaluation_harness import _outputs  # noqa: PLC0415
+
+    rows = _outputs.rows(Path(score_dir), errors="replace", meta=False) or []
+    out: dict[str, Any] = {}
+    for k, v in scores.items():
+        if is_number(v):
+            out[k] = v
+        elif held := [counted(r[k]) for r in rows if "item_id" in r and k in r and is_scored(r[k])]:
+            out[k] = round(sum(held) / len(held), 6)
     return out
 
 
@@ -287,6 +300,13 @@ def label(score_dir: Path, rec: dict[str, Any] | None = None) -> str:
             (rec.get("machine") or "") if purpose == "retime" else PURPOSE_LABEL.get(purpose, purpose)
         )
     return ", ".join(x for x in (own, by_purpose) if x)
+
+
+def read_under(score_dir: Path, lbl: str) -> bool:
+    """Whether a score is read under the label `lbl`; or is a repeat, which a round recorded where it was read then and
+    is read elsewhere now (it joined its original's arm, or its original was removed): a round reads what it recorded,
+    and no migration relabels it (RFC-041 F2, RUNBOOK 1531), so that is no problem of the round (V29 notes it)."""
+    return label(score_dir) == lbl or _is_repeat(record(score_dir) or {})
 
 
 def arm_prefix(lbl: str) -> str:

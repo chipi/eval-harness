@@ -110,6 +110,14 @@ try:
     out = proj / "catalog"
     r = evh("catalog", "--out", out)
     check("setup: the catalog builds", r.returncode == 0, r.stderr[-300:])
+    r = evh("validate")
+    check(
+        "validate: the goal that leaves `direction` out fails, naming direction; the one that says it does not",
+        r.returncode == 6
+        and "goals/g_open.yaml: 'direction' is a required property" in r.stdout
+        and "g_higher.yaml: 'direction'" not in r.stdout,
+        "\n".join(x for x in r.stdout.splitlines() if "FAIL" in x or "goals/" in x)[:800],
+    )
 
     got = leaders("g_open", "tickets_v1", out)
     readers = {k: v for k, v in got.items() if not k.endswith("direction")}

@@ -434,8 +434,8 @@ def bakeoff() -> None:
     cells = table_row(page, f"c:{sys_}")
     spend = cells[4] if len(cells) > 4 else ""
     check(
-        f'RFC-041 F3: the catalog\'s systems table: {sys_} (priced 0, cost 0.0 recorded) spends $0.00, not "—"',
-        re.fullmatch(r"\$0(\.00)?", spend) is not None,
+        f'RFC-041 F3: the catalog\'s systems table: {sys_} (priced 0, cost 0.0 recorded) spends $0, not "—"',
+        re.fullmatch(r"\$0", spend) is not None,
         cells,
     )
     runs_page = out / "a" / f"runs-{f['datasets'][0]}-{sys_}.html"
@@ -445,8 +445,8 @@ def bakeoff() -> None:
         else None
     )
     check(
-        "RFC-041 F3: the arm page's runs table: the zero-cost run's cost cell is $0.00, not \"—\"",
-        row is not None and re.fullmatch(r"\$0(\.00)?", row.group(1)) is not None,
+        "RFC-041 F3: the arm page's runs table: the zero-cost run's cost cell is $0, not \"—\"",
+        row is not None and re.fullmatch(r"\$0", row.group(1)) is not None,
         row and row.group(1),
     )
     shown = {}

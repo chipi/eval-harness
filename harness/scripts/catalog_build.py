@@ -4270,8 +4270,9 @@ def strip_fmt(A: Adapter, m: str):
 
 
 def metric_value(A: Adapter, m: str, v) -> str:
-    """A metric's mean for a table: dollars to six places (a cheap model's $0.000012 is not
-    0.000), everything else as fmt."""
+    """A metric's mean for a table: dollars as `axes.fmt_usd` writes them ($0 for none, two significant digits under a
+    cent so a cheap model's $0.000012 is not 0.000, four places up to a dollar), milliseconds as `fmt_ms`, everything
+    else as fmt."""
     if v is not None and cost_or_speed(A, m) == "cost" and "usd" in m:
         return fmt_usd(v)
     if v is not None and m == "latency_ms":

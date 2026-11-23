@@ -24,6 +24,7 @@ from evaluation_harness._check import check, summary
 from evaluation_harness.model import compare as mc
 from evaluation_harness.model import rounds as mr
 from evaluation_harness.model import studies as ms
+from evaluation_harness.model.entity import Problem
 from evaluation_harness.ops import rounds as orr
 
 N = 40
@@ -173,13 +174,61 @@ check(
 c = round_chart(
     "higher", {"runs/d/base": scores(0.5, 0.0, cost=0.01), "runs/d/same_cost": scores(0.5, 0.2, cost=0.01)}
 )
-none_c = round_chart("higher", {"runs/d/base": scores(0.5, 0.0), "runs/d/no_cost": scores(0.5, 0.2)})
 check(
-    "a significant gain at the same cost is 'better at the same cost', with no cost recorded 'its cost not compared'; "
-    "never 'cheaper'",
-    c["rows"][0]["claim"] == "better at the same cost"
-    and none_c["rows"][0]["claim"] == "better, its cost not compared",
-    (c["rows"][0]["claim"], none_c["rows"][0]["claim"]),
+    "a significant gain at the same cost is 'better at the same cost', never 'cheaper'",
+    c["rows"][0]["claim"] == "better at the same cost",
+    c["rows"][0]["claim"],
+)
+# RFC-041 F3: no arm with a known cost is no cost axis; an unknown cost is not drawn at 0, the chart refuses
+try:
+    round_chart("higher", {"runs/d/base": scores(0.5, 0.0), "runs/d/no_cost": scores(0.5, 0.2)})
+    refusal = None
+except Problem as exc:
+    refusal = (exc.kind, str(exc))
+check(
+    "RFC-041 F3: no arm has a known cost: the chart refuses (not-enough), saying so, and draws nothing at 0",
+    refusal is not None and refusal[0] == "not-enough" and "no arm has a known cost" in refusal[1],
+    refusal,
+)
+
+# an arm whose cost is unknown is not a free arm (RFC-041 F3, RUNBOOK 886-887): it is left off the cost axis and named in
+# the caption; an arm that recorded $0 is drawn at its difference from the base's
+u = round_chart(
+    "higher",
+    {
+        "runs/d/base": scores(0.5, 0.0, cost=0.01),
+        "runs/d/priced": scores(0.5, 0.2, cost=0.02),
+        "runs/d/free": scores(0.5, 0.2, cost=0.0),
+        "runs/d/unpriced": scores(0.5, 0.2),
+    },
+)
+urows = {r["arm"]: r for r in u["rows"]}
+check(
+    "an arm with no recorded cost is not drawn on the cost axis and the caption names it; a recorded $0 is drawn",
+    set(circles(u["svg"])) == {"priced", "free"}
+    and "its cost unknown: unpriced" in u["caption"]
+    and urows["unpriced"]["claim"] == "better, its cost not compared"
+    and urows["unpriced"]["cost_delta_per_item"] is None
+    and urows["free"]["cost_delta_per_item"] == -0.01,
+    (circles(u["svg"]), u["caption"][-240:], urows["unpriced"]),
+)
+t = round_chart(
+    "higher",
+    {
+        "runs/d/base": scores(0.5, 0.0, tokens=100.0),
+        "runs/d/terse": scores(0.5, 0.2, tokens=60.0),
+        "runs/d/uncounted": scores(0.5, 0.2),
+    },
+)
+check(
+    "on the tokens axis an arm with no tokens recorded is left off and named, the same",
+    set(circles(t["svg"])) == {"terse"} and "its tokens unknown: uncounted" in t["caption"],
+    (circles(t["svg"]), t["caption"][-200:]),
+)
+check(
+    "a gain that is not separated, with no cost known on either side, is 'not separated': an unknown cost is not 'costs more'",
+    charts._claim(False, 0.1, None) == "not separated" and charts._claim(False, 0.1, 0.0) == "not separated",
+    (charts._claim(False, 0.1, None), charts._claim(False, 0.1, 0.0)),
 )
 
 # a study decided on a measure other than the goal's primary is drawn in the study's direction
@@ -213,6 +262,19 @@ check(
     and "up is better on m2" in c["caption"]
     and "flipped" not in c["caption"],
     (r, c["caption"][:200]),
+)
+
+# every reader counts a score as `_number` says: NaN, inf and None are a failed item's 0, a boolean or text is no score
+odd = Stub(
+    "higher", {"runs/d/x": {"m": {"values": {"a": 0.5, "b": float("nan"), "c": None, "d": True, "e": "t"}}}}
+)
+with charts.using(odd):
+    got = charts._values(odd, "runs/d/x", "m")
+    dropped = charts._values_dropped(odd, "runs/d/x", "m")
+check(
+    "charts._values: NaN and None count as 0 (a failed item), a boolean and text are left out and counted",
+    got == {"a": 0.5, "b": 0.0, "c": 0.0} and dropped == 2,
+    (got, dropped),
 )
 
 sys.exit(summary())

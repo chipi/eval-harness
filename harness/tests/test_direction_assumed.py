@@ -12,6 +12,7 @@ stays (a result must not move), but a ranking or a verdict that rests on it is n
 - with a goal declaring it, or --asc / --desc passed, or a measure the name table knows: no line, in any of them.
 """
 
+import json
 import os
 import shutil
 import sys
@@ -127,10 +128,18 @@ try:
     check(
         "run-compare: a verdict on a measure nobody declares prints the NOTE", LINE in said(r), said(r)[-500:]
     )
+    check("run-compare: the NOTE once", said(r).count(LINE) == 1, said(r)[-500:])
+    rj = evh("run-compare", "--baseline", "good", "--candidate", "bad", "--json")
+    verdicts = {
+        x["metric"]: x["verdict"]
+        for b in json.loads(rj.stdout).get("result", {}).get("blocks", [])
+        for x in b.get("rows", [])
+        if "verdict" in x
+    }
     check(
-        "run-compare: the NOTE once, and the verdict is the default's (a rise is better)",
-        said(r).count(LINE) == 1 and "better" in said(r),
-        said(r)[-500:],
+        "run-compare: the verdict is the default's (weird_score rose 0.1 -> 0.4, higher is better, so `better`)",
+        verdicts.get("weird_score") == "better",
+        verdicts,
     )
 
     write_goal(
@@ -155,6 +164,13 @@ try:
     )
 
     r = evh("validate")
+    check(
+        "validate: a goal whose primary leaves `direction` out fails, naming direction (goal.schema.json)",
+        r.returncode == 6
+        and "FAIL" in r.stdout
+        and "goals/g_weird.yaml: 'direction' is a required property" in r.stdout,
+        "\n".join(x for x in r.stdout.splitlines() if "FAIL" in x or "direction" in x)[:800],
+    )
     check(
         "V14: a note for the goal's primary measure that has no direction, beside the runs' primary_metric",
         "V14 goal g_weird: primary weird_score: no goal or adapter says which way is better" in r.stdout

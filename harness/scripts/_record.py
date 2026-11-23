@@ -31,6 +31,7 @@ from pathlib import Path
 from typing import Any
 
 from evaluation_harness._common import die, now
+from evaluation_harness._number import is_number
 from evaluation_harness.model.runs import RUN_ONLY
 
 #: The kinds of derivation, and what each one's `with` names.
@@ -45,7 +46,7 @@ def non_number(row: dict[str, Any]) -> str | None:
     for k, v in row.items():
         if k == "item_id" or k.startswith("_"):
             continue
-        if isinstance(v, bool) or not isinstance(v, (int, float)) or not math.isfinite(v):
+        if not is_number(v):
             return f"score {k} is not a number: {v!r}"
     return None
 
