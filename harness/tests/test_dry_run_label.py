@@ -51,7 +51,9 @@ def system(name: str, body: str) -> None:
 
 def system_line(name: str) -> str:
     r = evh("run", "--system", name, "--dataset", "tickets_v1", "--dry-run")
-    return next((ln.strip() for ln in r.stdout.splitlines() if ln.strip().startswith("system ")), r.stderr[-300:])
+    return next(
+        (ln.strip() for ln in r.stdout.splitlines() if ln.strip().startswith("system ")), r.stderr[-300:]
+    )
 
 
 try:

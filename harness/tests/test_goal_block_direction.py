@@ -66,7 +66,7 @@ def leaders(goal: str, dataset: str, out: Path) -> dict:
     """The arm each reader names the leader of `goal` on `dataset`, by reader."""
     got: dict = {}
     g = result(evh("goal-leaderboard", goal, "--json"))
-    grp = next((x for d in g.get("datasets", []) for x in d["groups"] if d["dataset"] == dataset), {})
+    grp: dict = next((x for d in g.get("datasets", []) for x in d["groups"] if d["dataset"] == dataset), {})
     got["goal-leaderboard"] = str(grp.get("leader", "")).rpartition("/")[2]
     got["goal-leaderboard direction"] = grp.get("direction")
     lb = result(evh("leaderboard", dataset, "--goal", goal, "--json"))
@@ -150,7 +150,10 @@ finally:
 #: goal's declaration for another reason, or a direction that was already decided.
 READS = {
     ("_study.py", "decide"),  # a study's own trial: the direction stats.compare gave
-    ("_study.py", "trial"),  # a study's own `direction`, added to the rule's answer (`lower_is_better` or ...)
+    (
+        "_study.py",
+        "trial",
+    ),  # a study's own `direction`, added to the rule's answer (`lower_is_better` or ...)
     ("_study.py", "weakest"),  # the same
     ("_study_cmd.py", "_confirm"),  # the same
     ("axes.py", "within"),  # an axis of a decision: already decided (`axes_of` asked `direction_of` for it)
@@ -163,7 +166,10 @@ READS = {
     ("charts.py", "items"),  # a group of the leaderboard: already decided
     ("charts.py", "ms_lower"),  # a study's own `direction`, added to the rule's answer
     ("model/goal_views.py", "baseline_gap"),  # a decision's axis: already decided
-    ("promote_baseline.py", "evidence"),  # passes the goal's declaration on to the pair test; none leaves it to the rule
+    (
+        "promote_baseline.py",
+        "evidence",
+    ),  # passes the goal's declaration on to the pair test; none leaves it to the rule
 }
 PATTERN = re.compile(r"""(\.get\("direction"\)|\["direction"\])\s*(==|!=)\s*"(lower|higher)\"""")
 

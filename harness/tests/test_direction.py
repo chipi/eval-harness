@@ -492,7 +492,10 @@ ALLOWED_ASKS = {
     ("model/goal_views.py", "_group_decision"),  # axes.decide's direction_of
     ("catalog_adapter.py", "direction_on"),  # for an adapter with no `direction`
     ("model/goal_views.py", "lower_on"),  # a goal's block ranks by the one rule (the goal's own words first)
-    ("model/rounds.py", "evidence"),  # the round's leader and tests, by the primary measure on the round's dataset
+    (
+        "model/rounds.py",
+        "evidence",
+    ),  # the round's leader and tests, by the primary measure on the round's dataset
     ("charts.py", "gain_cost"),  # a round's gain against cost, by the primary measure on the round's dataset
     ("catalog_build.py", "render_goal"),  # the goal page's axis titles: the quality limit's sign
 }

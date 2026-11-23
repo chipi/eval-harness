@@ -247,11 +247,7 @@ def goal_answers(goal: dict, by_ds: dict, A=None) -> list:
                             key=lambda r: (bool(r["flags"]), sign(r), r["label"]),
                         ),
                         "leader": next(
-                            (
-                                r
-                                for r in sorted(g, key=sign)
-                                if not r["flags"]
-                            ),
+                            (r for r in sorted(g, key=sign) if not r["flags"]),
                             None,
                         ),
                     }
@@ -864,7 +860,9 @@ def leaderboard(
             }
         )
     per_ds = {
-        str(d["dataset_id"]): "lower" if lower_on(A, g, str(prim.get("measure", "")), str(d["dataset_id"])) else "higher"
+        str(d["dataset_id"]): "lower"
+        if lower_on(A, g, str(prim.get("measure", "")), str(d["dataset_id"]))
+        else "higher"
         for d in g.get("datasets") or []
         if d.get("dataset_id")
     }

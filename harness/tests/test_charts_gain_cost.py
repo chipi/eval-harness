@@ -49,7 +49,10 @@ class Stub:
 
     def goals(self):
         return [
-            {"goal_id": "g", "success_criteria": {"primary": {"measure": "m", "direction": self.goal_direction}}}
+            {
+                "goal_id": "g",
+                "success_criteria": {"primary": {"measure": "m", "direction": self.goal_direction}},
+            }
         ]
 
     def direction(self, metric, dataset=None):
