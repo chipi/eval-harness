@@ -22,7 +22,10 @@ in `verify`. `guards` (`.github/workflows/guards.yml`, a required check) runs on
 runs `make guard-check` only when a checker or the harness code it reads changed since the base: it
 proves the checkers, and a change to the reports or the runs leaves them as they were (`make ci`
 still checks that every string it plants is in its file). A release does not re-run any of it; it
-requires CI on the tagged commit to be green on main (`.github/workflows/harness-release.yml`).
+requires CI on the tagged commit to be green on main (`.github/workflows/harness-release.yml`). The one gate that is
+neither: `make upgrade-check` (`tests/check_upgrade_install.py`) installs the previous release's wheel, makes a project
+on it per store, installs this tree's build over it and reads the project back (`docs/UPGRADING.md`); it needs the
+network and `gh`, and runs on the release pull request (RELEASING, step 4b).
 Nor does a merge, when nothing changed in between: on a push to main, each of reproduce, quality,
 guards and harness-package skips its jobs when it passed on the merged pull request's head, that
 head has the commit's file tree, and the pull request was up to date with main

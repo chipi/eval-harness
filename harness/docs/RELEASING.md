@@ -60,6 +60,13 @@ Pin a release tag:
    `python tools/validate_judge_zhang.py --scorer <scorer> --no-calls` for each scorer that
    has the records; they recompute every figure for $0. Commit any change, and run `make ci`,
    which then recomputes the report's claims from the human data too.
+
+   **4b. Check the upgrade over an install.** `make -C harness upgrade-check` (network and an authenticated `gh`; a
+   minute or two) installs the previous release's wheel in a throwaway venv, makes a `files` and a `sqlite` project on
+   it, installs this tree's build over it as `docs/UPGRADING.md` says, and runs `evh --version`, `migrate --check`,
+   `migrate --dry-run`, `validate`, `runs-list` and `leaderboard` in each. It also checks UPGRADING's claim that a plain
+   `pip install` of a build that reports the installed version keeps the old code. Run it on the release pull request, once
+   the version is bumped; a failure is a release that breaks the project of someone who upgrades.
 5. **Run the [newcomer scenario](SCENARIO.md)** on the release candidate **when the newcomer's path
    changed** since its last recorded run: the install, getting started, the tutorials, or the
    commands and files they use. It is a smoke test: a fresh project, the published docs only, two
